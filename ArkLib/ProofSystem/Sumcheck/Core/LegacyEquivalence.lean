@@ -167,7 +167,8 @@ ambient queries answered in any lawful monad. -/
 theorem simulateQ_decide_monad {m : Type → Type} [Monad m] [LawfulMonad m]
     (amb : QueryImpl ambient m) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : PathAlong oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift amb ((pathResources (polyFamily R deg n) (protocol R deg n)
+    simulateQ (QueryImpl.addLift amb ((pathResources (Spec.polynomialFamily R n deg)
+        (protocol R deg n)
         (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) : m _) := by
@@ -285,14 +286,14 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
 /-- The target of the decision's queries on a path of an oracle tree: the ambient oracle, the
 input polynomial and the path's oracles. -/
 private abbrev decisionSpec (x : Σ s : OracleProtocol.{0}, Path s) :=
-  ambient + (pathResources (polyFamily R deg n) x.1 x.2).spec
+  ambient + (pathResources (Spec.polynomialFamily R n deg) x.1 x.2).spec
 
 /-- Lift path-oracle queries into the decision's query interface, on any oracle tree: the shared
 `Interaction.Core.pathLift` at the polynomial input family, packaged over a sigma so that the
 transport proof below can move along the tree. -/
 private def pathLift (x : Σ s : OracleProtocol.{0}, Path s) :
     QueryImpl (pathFamily x.1 x.2).spec (OracleComp (decisionSpec R deg n ambient x)) :=
-  Interaction.Core.pathLift ambient (polyFamily R deg n) x.2
+  Interaction.Core.pathLift ambient (Spec.polynomialFamily R n deg) x.2
 
 variable {R deg n ambient}
 
@@ -315,7 +316,7 @@ variable (R deg n ambient) [∀ t, Inhabited (ambient.Range t)]
 tree. -/
 noncomputable def legacyVerifier : OracleVerifier ambient (protocol R deg n)
     (Spec.StatementRound R n 0) (fun _ => Spec.StatementRound R n (Fin.last n))
-    (polyFamily R deg n) (fun _ => polyFamily R deg n) :=
+    (Spec.polynomialFamily R n deg) (fun _ => Spec.polynomialFamily R n deg) :=
   (protocol_eq R deg n).symm ▸ embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)
 
 variable {R deg n D ambient}
@@ -409,7 +410,7 @@ theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
       ((embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)).outputMap stmt _
         (toView _ (cast (congrArg (PathAlong oracleSig) (protocol_eq R deg n)) tr))).f
         (data, payloads _ _) := by
-    simpa only [legacyVerifier, polyFamily, family, inferInstance, eqRec_eq_cast]
+    simpa only [legacyVerifier, Spec.polynomialFamily, family, inferInstance, eqRec_eq_cast]
       using eq_of_heq hc
   exact (embedOracleVerifier_outputMap_f (Spec.oracleVerifier R deg D n ambient)
     stmt data _).symm.trans hc'.symm
@@ -534,7 +535,7 @@ theorem run_eq_legacy {WitOut : Type} (stmt : Spec.StatementRound R n 0)
     (T := Spec.StatementRound R n (Fin.last n)) (outputs := family (Spec.OracleStatement R n deg))
     (inputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
     (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
-  simpa only [legacyVerifier, challengeReindex, hcast, polyFamily, family, inferInstance,
+  simpa only [legacyVerifier, challengeReindex, hcast, Spec.polynomialFamily, family, inferInstance,
     eqRec_eq_cast] using
     (OracleVerifier.run_cast (T := fun _ => Spec.StatementRound R n (Fin.last n))
       (inputs := family (Spec.OracleStatement R n deg))
@@ -627,11 +628,13 @@ message oracles, which the decisions do make, are compared by `runWithLog_eq_leg
 theorem decide_ambient_trace {m : Type → Type} [Monad m] [LawfulMonad m]
     (amb : QueryImpl ambient m) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : PathAlong oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift amb ((pathResources (polyFamily R deg n) (protocol R deg n)
+    simulateQ (QueryImpl.addLift amb ((pathResources (Spec.polynomialFamily R n deg)
+        (protocol R deg n)
         (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) : m _) ∧
-    simulateQ (QueryImpl.addLift amb ((pathResources (polyFamily R deg n) (protocol R deg n)
+    simulateQ (QueryImpl.addLift amb ((pathResources (Spec.polynomialFamily R n deg)
+        (protocol R deg n)
         (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
       ((legacyVerifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) : m _) :=

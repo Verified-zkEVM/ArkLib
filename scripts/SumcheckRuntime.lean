@@ -3,24 +3,28 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableCompleteness
+import ArkLib.ProofSystem.Sumcheck.Core.Computable
 import Mathlib.Algebra.Field.ZMod
 
 /-!
-# Compiled native Sumcheck checks
+# Compiled computable Sumcheck checks
 
-The sent polynomials are CompPoly coefficient arrays. These checks run ordinary native strategies
-through the shared executor and observe continuation effects, rejection, and the retained original
-oracle. The fixed challenge handler is a deterministic test fixture, not a randomness generator.
+The sent polynomials are CompPoly coefficient arrays and the input polynomial is a CompPoly
+multivariate polynomial. These checks run `Sumcheck.Core.Computable.verifier` against ordinary
+provers and observe their effects, the challenge draws, rejection, and the output oracle data. The
+challenge handlers answer a fixed value; they are deterministic test fixtures, not randomness
+generators.
 -/
 
 namespace SumcheckRuntime
 
-open OracleComp OracleSpec Interaction.Oracle
-open Sumcheck.Interaction
+open OracleComp OracleSpec PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+open Sumcheck.Core.Computable
 
+/-- The test field `ZMod 17`. -/
 abbrev F := ZMod 17
 
+/-- `17` is prime, so `F` is a field. -/
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 
 /-- Construct a two-coefficient array, trimming a zero leading coefficient. -/
@@ -35,68 +39,92 @@ def affine (a b : F) : Sumcheck.Impl.Representation.Message F 1 :=
         simp only [CompPoly.CPolynomial.degree, h]
         exact_mod_cast (show size ≤ 1 by omega)⟩
 
+/-- The prover's private event oracle: four indexed samples. -/
 abbrev events : OracleSpec (Fin 4) := Fin 4 →ₒ F
 
+/-- Query the `i`-th prover event. -/
 def event (i : Fin 4) : OracleComp events F := liftM (events.query i)
 
-/-- The second message depends on both private samples and the first public challenge. -/
-def lastProver (a b r : F) : Prover.Strategy events (Computable.protocol F 1 1).tree
-    (Computable.protocol F 1 1).roles (fun _ => Unit) := by
-  refine pure ⟨affine (b + a) (a * r + 1), ?_⟩
-  intro choice
-  cases choice <;> exact do
-    let _ ← event 3
-    return ()
+/-- A logged effect: a prover event `.inl i`, or the `j`-th challenge draw `.inr j`. -/
+abbrev Entry := Fin 4 ⊕ ℕ
 
-/-- Private memory is captured in the native continuation, with effects on either public branch. -/
-def adaptive : Prover.Strategy events (Computable.protocol F 1 2).tree
-    (Computable.protocol F 1 2).roles (fun _ => Unit) := by
-  refine do
-    let a ← event 0
-    return ⟨affine a 1, ?_⟩
-  intro choice
-  cases choice with
-  | none => exact do
-      let _ ← event 2
-      return ()
-  | some r => exact do
-      let b ← event 2
-      return lastProver a b r
+/-- Answer every challenge with `x` through the library challenge implementation
+`Sumcheck.Core.Interpreted.draw`, logging the draw with its position among the draws. -/
+def draw {deg : ℕ} (x : F) (k : ℕ) :
+    QueryImpl (challengeSpec oracleSig (protocol F deg k)) (StateM (List Entry)) :=
+  Sumcheck.Core.Interpreted.draw (do
+    modify fun log => log ++ [.inr (log.countP Sum.isRight)]
+    return x) k
 
-def original : (MultivariateRound.polynomialFamily F 2 1).Behavior := fun _ => (0 : F)
-
-def initial : Sumcheck.Spec.StatementRound F 2 0 := ⟨1, Fin.elim0⟩
-
-def record : QueryImpl events (StateM (List (Fin 4))) := fun i => do
-  modify (fun seen => seen ++ [i])
+/-- Answer the prover's events from a fixed table, logging each event. -/
+def record : QueryImpl events (StateM (List Entry)) := fun i => do
+  modify fun log => log ++ [.inl i]
   return ![7, 3, 5, 11] i
 
-def run (domain : List F) :=
-  Computable.execute F 2 1 events (event 1) domain 2 0 (by decide)
-    (MultivariateRound.polynomialFamily F 2 1).spec.toPFunctor
-    (VirtualOracle.id (MultivariateRound.polynomialFamily F 2 1))
-    initial original adaptive
+/-- The second round sends a message built from both private samples and the first challenge;
+its sample is drawn after that challenge, and a last event runs after the second challenge. -/
+def lastProver (a r : F) : Prover oracleSig events (protocol F 1 1) (fun _ => Unit) :=
+  (do
+    let b ← event 2
+    return ⟨affine (b + a) (a * r + 1), pure fun _ => (do
+      let _ ← event 3
+      return () : OracleComp events Unit)⟩ :
+    OracleComp events ((_ : Sumcheck.Impl.Representation.Message F 1) ×
+      OracleComp events ((_ : F) → OracleComp events Unit)))
 
-/-- Observe the scalar output and the original oracle separately from verifier acceptance. -/
-def observe (domain : List F) : Option (F × F × F × F) × List (Fin 4) :=
-  (simulateQ record ((fun result => result.map fun claim =>
-    (claim.stmt.target, claim.stmt.challenges ⟨0, by decide⟩,
-      claim.stmt.challenges ⟨1, by decide⟩,
-      claim.oracles ⟨(), claim.stmt.challenges⟩)) <$> run domain)).run []
+/-- Private memory is captured in the continuation, with effects on both sides of a challenge. -/
+def adaptive : Prover oracleSig events (protocol F 1 2) (fun _ => Unit) :=
+  (do
+    let a ← event 0
+    return ⟨affine a 1, pure fun r => lastProver a r⟩ :
+    OracleComp events ((_ : Sumcheck.Impl.Representation.Message F 1) ×
+      OracleComp events ((_ : F) → Prover oracleSig events (protocol F 1 1) (fun _ => Unit))))
 
+/-- The zero polynomial has every individual degree at most `1`. -/
+theorem zero_degree : ∀ j, (0 : CPoly.CMvPolynomial 2 F).degreeOf j ≤ 1 := by
+  intro j
+  rw [congrFun (CPoly.degreeOf_equiv (S := F) (p := 0)) j]
+  change (CPoly.polyRingEquiv (n := 2) (R := F) 0).degreeOf j ≤ 1
+  simp
+
+/-- The output oracle data of the adaptive runs: the zero polynomial. -/
+def original : ∀ _ : Unit, Input F 1 2 := fun _ => ⟨0, zero_degree⟩
+
+/-- The initial statement of the adaptive runs: target `1`, no challenges. -/
+def initial : Sumcheck.Spec.StatementRound F 2 0 := ⟨1, Fin.elim0⟩
+
+/-- The domain `{0}`. -/
+def zeroDomain : Fin 1 ↪ F := ⟨fun _ => 0, fun a b _ => Subsingleton.elim a b⟩
+
+/-- The empty domain: every first-round sum is `0`, so the first check fails. -/
+def emptyDomain : Fin 0 ↪ F := ⟨Fin.elim0, fun a => a.elim0⟩
+
+/-- Read the target, both accepted challenges and the output oracle at the accepted point. -/
+def readVerdict (v : Option (Sumcheck.Spec.StatementRound F 2 (Fin.last 2) × F)) :
+    Option (F × F × F × F) :=
+  v.map fun v => (v.1.target, v.1.challenges ⟨0, by decide⟩, v.1.challenges ⟨1, by decide⟩, v.2)
+
+/-- Run the adaptive prover with challenges `3` and observe the verdict and the effect log. -/
+def adaptiveObserve {d : ℕ} (D : Fin d ↪ F) : Option (F × F × F × F) × List Entry :=
+  (simulateQ (QueryImpl.add record (draw 3 2))
+    ((fun obs => readVerdict (observe obs)) <$>
+      (verifier F 1 2 D events).run initial original adaptive)).run []
+
+/-- Run a named check, failing with an error if it returns `false`. -/
 def check (label : String) (ok : Unit → Bool) : IO Unit := do
   unless ok () do throw (IO.userError s!"Sumcheck runtime check failed: {label}")
   IO.println s!"ok: {label}"
 
+/-- The Horner evaluation check and the adaptive two-round runs. -/
 def runChecks : IO Unit := do
   check "Horner evaluation, including trimmed zero leading coefficient" fun _ =>
     Sumcheck.Impl.Representation.evaluate F 1 (affine 7 1) 3 == 5 &&
     Sumcheck.Impl.Representation.evaluate F 1 (affine 0 4) 9 == 4
   check "two rounds preserve private memory and effect order" fun _ =>
-    observe [0] == (some (7, 3, 3, 0), [0, 1, 2, 1, 3])
-  check "public abort runs the prover response and stops before the challenge" fun _ =>
-    observe [] == (none, [0, 2])
-
+    adaptiveObserve zeroDomain ==
+      (some (7, 3, 3, 0), [.inl 0, .inr 0, .inl 2, .inr 1, .inl 3])
+  check "a failed first check still runs every round" fun _ =>
+    adaptiveObserve emptyDomain == (none, [.inl 0, .inr 0, .inl 2, .inr 1, .inl 3])
 
 /-- A directly constructed polynomial `x² + 3xy + 2y² + 5`. -/
 def quadratic : CPoly.CMvPolynomial 2 F :=
@@ -105,6 +133,7 @@ def quadratic : CPoly.CMvPolynomial 2 F :=
   x ^ 2 + CPoly.CMvPolynomial.C 3 * x * y + CPoly.CMvPolynomial.C 2 * y ^ 2 +
     CPoly.CMvPolynomial.C 5
 
+/-- The quadratic has every individual degree at most `2`. -/
 theorem quadratic_degree : ∀ j, quadratic.degreeOf j ≤ 2 := by
   intro j
   rw [congrFun (CPoly.degreeOf_equiv (S := F) (p := quadratic)) j]
@@ -128,47 +157,48 @@ theorem quadratic_degree : ∀ j, quadratic.degreeOf j ≤ 2 := by
         ((MvPolynomial.degreeOf_pow_le j _ 2).trans (by omega))
   · simp
 
+/-- The domain `{0, 1, 2}`. -/
 def three : Fin 3 ↪ F := ⟨fun i => (i.val : F), by decide⟩
 
-def quadraticOriginal : (MultivariateRound.polynomialFamily F 2 2).Behavior :=
-  Sumcheck.Impl.Computable.inputImpl quadratic 2
+/-- The input data of the honest runs: the quadratic. -/
+def quadraticInput : Input F 2 2 := ⟨quadratic, quadratic_degree⟩
 
+/-- The initial statement of the honest runs: the sum `15` of the quadratic over the domain. -/
 def quadraticInitial : Sumcheck.Spec.StatementRound F 2 0 := ⟨15, Fin.elim0⟩
 
-/-- Fixed challenge `4`; the log counts its actual native sampling queries. -/
-def quadraticRecord : QueryImpl events (StateM (List (Fin 4))) := fun i => do
-  modify (fun seen => seen ++ [i])
-  return 4
+/-- Run the computable honest prover with challenges `4`; the log records the challenge draws. -/
+def quadraticObserve : Option (F × F × F × F) × List Entry :=
+  (simulateQ (QueryImpl.add record (draw 4 2))
+    ((fun obs => readVerdict (observe obs)) <$>
+      (verifier F 2 2 three events).run quadraticInitial (fun _ => quadraticInput)
+        (honestProver three quadraticInitial fun _ => quadraticInput))).run []
 
-def quadraticRun :=
-  Computable.execute F 2 2 events (event 1) [0, 1, 2] 2 0 (by decide)
-    (MultivariateRound.polynomialFamily F 2 2).spec.toPFunctor
-    (VirtualOracle.id (MultivariateRound.polynomialFamily F 2 2))
-    quadraticInitial quadraticOriginal
-    (Computable.honestProver F 2 2 three events 2 0 (by decide) quadraticInitial
-      quadratic quadratic_degree)
-
-def quadraticObserve : Option (F × F × F × F) × List (Fin 4) :=
-  (simulateQ quadraticRecord ((fun result => result.map fun claim =>
-    (claim.stmt.target, claim.stmt.challenges ⟨0, by decide⟩,
-      claim.stmt.challenges ⟨1, by decide⟩,
-      claim.oracles ⟨(), claim.stmt.challenges⟩)) <$> quadraticRun)).run []
-
+/-- The final statement of the honest runs with challenges `4`. -/
 def quadraticFinal : Sumcheck.Spec.StatementRound F 2 (Fin.last 2) := ⟨16, ![4, 4]⟩
 
-def quadraticZeroRun :=
-  Computable.execute F 2 2 events (event 1) [] 0 2 (by decide)
-    (MultivariateRound.polynomialFamily F 2 2).spec.toPFunctor
-    (VirtualOracle.id (MultivariateRound.polynomialFamily F 2 2))
-    quadraticFinal quadraticOriginal
-    (Computable.honestProver F 2 2 three events 0 2 (by decide) quadraticFinal
-      quadratic quadratic_degree)
+/-- The honest prover state after both rounds. -/
+def finalState : RoundState F 2 0 := ⟨Fin.last 2, rfl, quadraticFinal⟩
 
-def quadraticZeroObserve : Option (F × F × F × F) × List (Fin 4) :=
-  (simulateQ quadraticRecord ((fun result => result.map fun claim =>
-    (claim.stmt.target, claim.stmt.challenges ⟨0, by decide⟩,
-      claim.stmt.challenges ⟨1, by decide⟩,
-      claim.oracles ⟨(), claim.stmt.challenges⟩)) <$> quadraticZeroRun)).run []
+/-- Run the computable honest prover for zero rounds from the final round state, against a
+sampler that logs every draw, and read the output statement and the output oracle at its point. -/
+def quadraticZeroProverObserve : (F × F × F × F) × List Entry :=
+  ((fun x => let out := x.2.1.1
+      (out.1.target, out.1.challenges ⟨0, by decide⟩, out.1.challenges ⟨1, by decide⟩,
+        (out.2 ()).val.eval out.1.challenges)) <$>
+    Interaction.TwoParty.Lens.run (protocol F 2 0)
+      (honestFrom (m := StateM (List Entry)) three quadraticInput 0 finalState)
+      (sampler oracleSig (protocol F 2 0) (draw 4 0))).run []
+
+/-- Run the zero-round interval verifier at the final statement and read its optional verdict. -/
+def quadraticZeroObserve : Option (F × F × F × F) × List Entry :=
+  (simulateQ (QueryImpl.add record (draw 4 0))
+    ((fun obs => obs.2.2.map fun v =>
+      (v.1.target, v.1.challenges ⟨0, by decide⟩, v.1.challenges ⟨1, by decide⟩,
+        (v.2 ()).val.eval v.1.challenges)) <$>
+      (intervalVerifier (⇑three) events 2 0 (by decide)).run ⟨16, ![4, 4]⟩
+        (fun _ => quadraticInput)
+        (intervalHonestProver (⇑three) quadratic quadratic_degree 0
+          (Sumcheck.Core.intervalInitial 2 0 (by decide) ⟨16, ![4, 4]⟩)))).run []
 
 /-- The total sum `117`, first-round value `109`, and final value `101`, reduced modulo `17`,
 are calculated independently of the projection implementation. -/
@@ -179,13 +209,16 @@ def quadraticChecks : IO Unit := do
     quadratic.eval ![4, 4] == 16 &&
     (Sumcheck.Impl.Computable.projectedMessage three (0 : Fin 2) Fin.elim0 quadratic
       quadratic_degree).val.evalHorner 4 == 7
-  check "honest native two rounds and retained computational original" fun _ =>
-    quadraticObserve == (some (16, 4, 4, 16), [1, 1])
-  check "zero rounds retain computational original without sampling" fun _ =>
-    quadraticZeroObserve == (some (16, 4, 4, 16), [])
+  check "honest computable two rounds and retained computational input" fun _ =>
+    quadraticObserve == (some (16, 4, 4, 16), [.inr 0, .inr 1])
+  check "zero rounds from the final state retain the computational input without sampling"
+    fun _ => quadraticZeroObserve == (some (16, 4, 4, 16), [])
+  check "zero-round prover output retains the computational input"
+    fun _ => quadraticZeroProverObserve == ((16, 4, 4, 16), [])
 
 end SumcheckRuntime
 
+/-- Run every compiled Sumcheck check. -/
 def main : IO Unit := do
   SumcheckRuntime.runChecks
   SumcheckRuntime.quadraticChecks

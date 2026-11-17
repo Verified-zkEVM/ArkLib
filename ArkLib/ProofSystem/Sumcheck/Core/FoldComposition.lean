@@ -112,13 +112,14 @@ theorem run_append_intervalVerifier [DecidableEq R] {n d : ℕ} (D : Fin d → R
     {Out : PathAlong oracleSig (protocol R deg (count + 1)) → Type}
     (prover : Prover oracleSig ambient (protocol R deg (count + 1)) Out) :
     let checks := intervalCheck (stop := ⟨count + 1 + start, by omega⟩) D
-    ((foldHeadVerifier (deg := deg) ambient (polyFamily R deg n) checks count).append
-      (fun _ => foldVerifier R deg ambient (polyFamily R deg n) checks IntervalClaim.finish count)
-      (nativeFoldCompatibility (deg := deg) ambient (polyFamily R deg n) checks
+    ((foldHeadVerifier (deg := deg) ambient (polynomialFamily R n deg) checks count).append
+      (fun _ => foldVerifier R deg ambient (polynomialFamily R n deg) checks
+        IntervalClaim.finish count)
+      (nativeFoldCompatibility (deg := deg) ambient (polynomialFamily R n deg) checks
         IntervalClaim.finish count)).run
         (intervalInitial start (count + 1) bound stmt) data prover =
       (intervalVerifier R deg n D ambient start (count + 1) bound).run stmt data prover :=
-  (run_append_foldVerifier ambient (polyFamily R deg n) _ IntervalClaim.finish count
+  (run_append_foldVerifier ambient (polynomialFamily R n deg) _ IntervalClaim.finish count
     (intervalInitial start (count + 1) bound stmt) data prover).trans
       (intervalVerifier_run D ambient start (count + 1) bound stmt data prover).symm
 

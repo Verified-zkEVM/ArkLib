@@ -9,7 +9,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.ComputableProjection
 public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
 
-/-! # Computable honest interval provers and interaction-layer execution -/
+/-! # Computable honest interval provers and their execution -/
 
 @[expose] public section
 
@@ -43,7 +43,7 @@ theorem interpret_intervalHonestProver {m : Type → Type} [Monad m] [LawfulMona
     Interpreted.transportProver (evaluateN := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r)
       (Impl.Representation.toMessage R deg) k (intervalHonestProver D poly hpoly k st) =
       intervalProver D (toPolynomial poly hpoly) (m := m) k st := by
-  refine (Interpreted.transportProver_foldRounds _ _ _ _ k st).trans ?_
+  refine (Interpreted.transportFocal_foldRounds _ id _ _ _ k st).trans ?_
   refine foldRounds_map (intervalMessage D (toPolynomial poly hpoly))
     (intervalNext D (toPolynomial poly hpoly)) IntervalClaim.finish _ _ _ (fun _ st => st)
     (fun k st => projectedMessage_toMessage D _ _ poly hpoly) (fun k st r => ?_)

@@ -22,19 +22,29 @@ reached statement. The list and injective forms specialize the same indexed-doma
 
 | Module | Contents |
 |---|---|
+| `SingleRound` | One round: an oracle node for the round message, then one challenge in `R`. `round` is the round at `R⦃≤ deg⦄[X]`; at any message carrier `M` with evaluation `eval` the round is `Interpreted.protocol R M eval 1`. |
+| `Protocol` | `protocolOn R M eval n` and its instance `protocol R deg n`, the `n`-fold replication of the round; the honest prover as a fold with `pure` slots. |
+| `Execution` | The verifier `verifierOn` over any message carrier, and its instance `verifier`: the legacy decision fold on the view's challenges, with message queries routed to oracle nodes. Closed forms of runs; the round check `roundCheck` and its accept and reject equations. |
+| `Completeness` | Perfect completeness of the interaction-layer honest prover, proved directly, for every challenge implementation. |
+| `LegacyEquivalence` | The equivalence with the embedded legacy verifier, and the transport of every security notion along it. |
+| `LegacyCompleteness` | Perfect completeness of the embedded legacy honest prover, transferred. |
+| `Soundness` | Soundness, transferred, with error `∑ challenges, deg / |R|`, and its form `n * (deg / |R|)`. |
+| `Knowledge` | Straight-line knowledge soundness, transferred, with the same error. |
+| `RoundByRound` | Round-by-round soundness and knowledge soundness, transferred, with error `deg / |R|` at every challenge. |
+| `Computable` | The executable instance at CompPoly messages and inputs: protocol, verifier, verdict reader and honest prover. The run correspondence `run_eq_interpret`, perfect completeness and soundness, transported. |
 | `Types` | Interaction-layer round statements, polynomial oracle data and prefix/suffix coordinates. |
 | `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree at any message carrier with its uniform challenge sampler, and transcript prepending. `Tree.challengeSampleable` is the sampler at polynomial evaluation. Transcript access uses the `InterpretedPath` helpers. |
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
 | `Indexed` | The interaction-layer indexed verifier, whose verdict and decision are the interval fold ending at the last round, its actual-run equation, the state function and interaction-layer local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
-| `DomainEquivalence` | Separate agreement checks with the injective legacy `Spec` representation. |
+| `DomainEquivalence` | Injective-domain relation and projection agreement, full-run verdict and oracle-program equations, and honest interval output correspondence. |
 | `Protocol`, `Fold` | Prover folds over any message carrier, and passive final checks that abbreviate the interpreted checks at polynomial evaluation and use their actual-run and resource-interpretation equations. |
 | `Interval`, `IntervalExecution` | Arbitrary endpoints, public midpoint transport, and one-round and empty-run equations. |
 | `IntervalCompleteness`, `IntervalAdaptive` | Support, perfect and measure completeness for every bounded interval and adaptive statement-dependent challenges. |
 | `IntervalSoundness`, `IntervalRoundSoundness` | Interaction-layer suffix RBR soundness, implication bounds, list/injective forms, full-run identity and actual one-round bounds at every variable position. |
 | `FoldComposition`, `BehaviorComposition` | Append equations for generic folds and public intervals, preserving every prover effect, private output and arbitrary original behavior. |
 | `Projection`, `Behavior` | Derived projected handlers and closed execution; retained arbitrary original behavior and its final evaluation relation. |
-| `InterpretedPath`, `Interpreted`, `InterpretedExecution` | Shape paths, transcript heads and tails, head queries, tail lifts and views for generic message trees, shared with `Tree`, `Indexed` and the legacy route; passive verification for generic message representations and effect-preserving execution interpretation. The polynomial fold in `Fold` abbreviates this verification at polynomial evaluation. |
+| `InterpretedPath`, `Interpreted`, `InterpretedExecution` | Shape paths, transcript heads and tails, head queries, tail lifts and views for generic message trees, shared with `Tree`, `Indexed` and the legacy route; passive verification for generic message representations, the carrier transport of provers and challenge implementations (`transportFocal`, its constant-output instance `transportProver`, `transportDraw`), and effect-preserving execution interpretation. The polynomial fold in `Fold` abbreviates this verification at polynomial evaluation. |
 | `ComputableProjection`, `ComputableInterval`, `ComputableSoundness` | Indexed CompPoly projections, concrete honest interval folds, execution interpretation, completeness and interaction-layer suffix soundness. |
 | `LegacyProtocol`, `Execution`, `Completeness` | Compatibility honest prover, decision, closed-form runs and direct completeness. |
 | `LegacyProjection`, `Composition` | Separate legacy projection and decision-fold comparisons. |
@@ -106,6 +116,14 @@ export and routing laws require only a commutative semiring.
 prefix `![7]`, with a repeated domain and deterministic challenge `3`, and checks
 `some (0, 7, 3, 29)`. `InterpretedTest.runExample` executes a coefficient-pair carrier directly.
 
+The protocol, the round routing, the view's challenges, the decision lift and the verifier are
+generic in the message carrier: a type `M` with an evaluation `eval : M → R → R` that answers the
+round message's evaluation queries (open question OQ17). `round`, `protocol`, `route`,
+`decisionLift` and `verifier` are their instances at `R⦃≤ deg⦄[X]` with `Polynomial.eval`, with
+unchanged types. `verifierOn` and the Core `pathLift` are `@[macro_inline]`: the compiler never
+receives the input family as a runtime argument, so `verifier` stays executable at a
+noncomputable input family.
+
 ## Equivalence with the legacy Sumcheck
 
 The equivalence runs through three correspondences:
@@ -160,6 +178,58 @@ round-by-round transfers use the guarded terminal certificates of departure 15. 
 requires inhabited ambient response types: `supportedAnswer` obtains answers from support.
 The knowledge transfers extract the constant `Unit` output witness from the prover's output.
 
+## The computable instance
+
+`Sumcheck.Core.Computable` instantiates the generic protocol and verifier at the CompPoly message
+carrier `Impl.Representation.Message R deg`, whose evaluation queries are answered by Horner
+evaluation, and at the input family of CompPoly multivariate polynomials `Computable.Input` with
+the individual degree bound. `toOracleStatement` reads an input as the mathematical polynomial
+(`interpretInput`).
+
+- **Executable definitions.** `Computable.protocol`, `Computable.verifier`, `Computable.observe`
+  and the honest prover `Computable.honestProver` are computable. The honest prover computes each
+  round message with `Impl.Computable.projectedMessage` and updates the target by Horner
+  evaluation.
+- **Run correspondence.** `run_eq_interpret` holds at every message carrier `M` with a reading
+  `f : M → R⦃≤ deg⦄[X]` that agrees with `eval`. Renaming the challenge queries of a run of
+  `verifierOn` at `M` (`renameQueries`) and mapping its observation gives the run of
+  `verifierOn` at the polynomial carrier against the interpreted prover
+  `Interpreted.transportFocal f n g P`. The interpreted prover sends the messages read through
+  `f`, keeps every effect, and maps the output by `g`. Challenge nodes of the two protocols are different
+  types, so challenge implementations move between carriers by `Interpreted.transportDraw`;
+  `experiment_renameQueries` turns the renaming into a transported challenge implementation, and
+  `transportDraw_challengeQueryImpl` shows that uniform challenges transport to uniform
+  challenges.
+- **Honest prover.** `interpretProver_honestProver`: the computable honest prover, interpreted
+  through `toMessage`, is `Sumcheck.Core.honestProver` on the interpreted input
+  (`projectedMessage_toMessage`, `projectedMessage_evaluate`).
+- **Security.** `Computable.support_completeness` accepts a true output on every supported
+  honest run, before any oracle distribution is chosen. `Computable.perfectCompleteness` follows
+  for every challenge implementation. `Computable.soundness` holds for uniform challenges, with
+  the error of `verifier_soundness`. The relations and languages are those of `Spec.relationRound`
+  on the interpreted input; the proofs transport the mathematical core results through
+  `run_eq_interpret`.
+
+### Runtime checks
+
+`scripts/SumcheckRuntime.lean` (`lake exe sumcheck-runtime`) compiles and runs the computable
+instance over `ZMod 17`. The challenge handler answers a fixed value and logs each draw; the
+ambient handler answers prover events from a fixed table and logs each event. The log holds prover
+events `.inl i` and challenge draws `.inr j` in execution order.
+
+| # | Check | Expected |
+|---|---|---|
+| 1 | `quadratic_degree`, compile-time: `x² + 3xy + 2y² + 5` has individual degree at most `2`. | Proved. |
+| 2 | Horner evaluation, including a trimmed zero leading coefficient. | `evaluate (affine 7 1) 3 = 5`, `evaluate (affine 0 4) 9 = 4`. |
+| 3 | Two rounds of an adaptive prover over the domain `{0}`, challenges `3`: private memory and effect order. | Verdict `(7, 3, 3, 0)`, log `[p0, c0, p2, c1, p3]`. |
+| 4 | The same prover over the empty domain: a failed first check still runs every round. | Rejection, log `[p0, c0, p2, c1, p3]`. |
+| 5 | Direct evaluation of the quadratic and its first projected message. | Cube sum `15`, value `16` at `(4, 4)`, first message `7` at `4`. |
+| 6 | The computable honest prover on the quadratic over `{0, 1, 2}`, challenges `4`. | Verdict `(16, 4, 4, 16)`, log `[c0, c1]`. |
+| 7 | The zero-round interval verifier from the final round state `⟨16, ![4, 4]⟩`. | Verifier verdict `some (16, 4, 4, 16)`, empty trace. The prover-only observation remains an additional check. |
+
+Rows 3, 4 and 6 require P1/P2; row 7 preserves the frozen verifier assertion
+([entry 24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime)).
+
 ## Tests
 
 The files under `ArkLibTest/ProofSystem/Sumcheck/Core/` retain the existing acceptance, rejection,
@@ -171,6 +241,46 @@ on that repeated domain, including the transcript and retained input oracle. `Do
 the repeated-point sum, its deduplicated contrast and a two-coordinate indexed sum. Axiom checks
 permit only `propext`, `Classical.choice` and `Quot.sound`.
 
+| File | Checks |
+|---|---|
+| `Protocol`, `Execution`, `Completeness` | Shape, closed-form runs, zero rounds, a bad first round followed by an honest round, completeness. |
+| `LegacyEquivalence` | Legacy prover runs, rejection agreement of the two decisions, zero rounds. |
+| `SingleRound` | One-round runs: accepting, rejecting, a dishonest message that passes, distributions of one-round runs; the sum of `X` over `{0, 1}`. |
+| `Soundness` | Soundness against any one-round prover; a soundness bound over `ZMod 17`; exact probabilities over `ZMod 5`; the adaptive message's endpoint and hit facts; the exclusion of `X ^ 2` from the degree-one carrier. |
+| `RoundByRound` | Clients of the round-by-round, knowledge and completeness transfers. |
+| `Rounds` | Two- and three-round runs: challenge draws in round order, the accepted claim, a wrong target that still runs every round and rejects. Two honest rounds on the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` with the challenges `3` and then `5`: exactly two challenge queries, in round order, and the accepted claim `⟨14, ![3, 5]⟩` with the input polynomial as output oracle. The honest messages on that input, `5 + 8 X` and `1 + 2 c + 3 X + 4 c X`, their sums, and the first-round relation transport. |
+| `Computable` | The honest message is the CompPoly projection; the interpreted honest prover; the run correspondence; the challenge transport round trip and uniformity; support completeness without an oracle distribution, and completeness and soundness over `ZMod 5`; computability of the executable definitions and axiom guards. |
+| `Effects` | A prover with ambient effects before each message and after the last challenge: the run executes them in protocol order, and a recording handler observes the order. An accepted claim that is not in the final relation. A claim whose first check fails still runs both rounds and rejects, and the decision log holds only the first round's check queries (`decide_log_badFirst` for every completed run whose first message fails its check, at every round count; `runWithLog_wrong` for the logged execution of that prover). The round message's oracle interface. |
+
+## Historical full-run limitations
+
+The following list records the pre-restack limitations. The parent’s indexed interval, projection,
+composition and generic implication results above resolve these items; the disposition tables
+below retain the parent’s exact statuses.
+
+Previously, the verifier covered rounds `0` to `n`. There is no verifier for an interval of rounds that starts
+at round `i` (departure 18). The following are not ported and are deferred to the remaining
+Sumcheck ports of part D, commit 7. Open question OQ16 of the part-D decisions settles their
+design: the projection `OracleMap` is the round's output map in `Sumcheck/Core/SingleRound.lean`,
+with `projectedRoundPolynomial` as its data map, `simulateProjectedRoundPolynomial` as its query
+implementation, and the law from `simulateProjectedRoundPolynomial_eq`.
+
+- The projection of the input polynomial to the round polynomial as an `OracleMap`, with its
+  answer law.
+- A standalone round executed through that projection map: the projected univariate output and
+  the derived query handler. The tests state the first-round relation transport on the round-`0`
+  check, which retains the original input polynomial; this is not that execution.
+- The split of `n + 1` rounds into an appended first round and `n` rounds, as program equality
+  through `Prover.append` and `OracleVerifier.append`.
+- A two-round composition through an exported oracle, with a first-round verifier that exports a
+  transformed oracle: acceptance, rejection in either part, and the output-relation implication,
+  for an arbitrary hidden component.
+- `relationRound_last_iff`, the evaluation form of the final relation, next to `relationRound` in
+  `ArkLib/ProofSystem/Sumcheck/Spec/`. The tests prove it as `relationLast_iff_eval`.
+
+The former migration list deferred the generic implication to part D, commit 6. The parent now
+exports it; see the generic soundness disposition below. The Sumcheck soundness theorems do not need
+it: they transfer the legacy soundness, which is derived through the legacy guarded implication.
 `Rounds` keeps the two- and three-round examples, including the bilinear input and challenge
 order. `Effects` checks ambient effects, routed polynomial answers over every commutative
 semiring, the `Nat` instance, and decision-query short circuiting after a bad first check.
@@ -193,8 +303,7 @@ Each row has exactly one status:
 - **premise-required (P2)**: the source changes because challenges and oracle messages never
   select shape.
 - **retired**: the row names the removed mechanism, rather than claiming a narrower equivalent.
-- **unresolved**: the row names a missing parent interface. A carrier fact cannot close a
-  behavior-guarantee assertion.
+- **unresolved**: the row names a missing parent interface.
 
 Compatibility comparisons do not close interaction-layer soundness rows. The interaction-layer
 full-run and interval bounds above close those rows. The targets below replace every interval,
@@ -226,13 +335,13 @@ effects. It does not claim equality with the frozen early-aborting program.
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `Closing.lean` #1, L17 example | Parent counterpart of `OracleModel.satisfies_guarantee`; degree subtype alone is narrower | unresolved (missing parent behavior-guarantee interface) |
+| `Closing.lean` #1, L17 example | C/Indexed.lean: `Sumcheck.Core.message_degree`; T/Domain.lean: degree example and axiom checks | equivalent |
 | `Closing.lean` #2, L20 example | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest`; T/Domain.lean: execution clients and axiom checks | equivalent |
 | `Closing.lean` #3, L28 example | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_complete` (challenge `pure r`); T/Domain.lean: execution clients and axiom checks | equivalent |
 | `Closing.lean` #4, L36 example | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_perfectCompleteness` (arbitrary challenge); T/Domain.lean: execution clients and axiom checks | equivalent |
 | `Closing.lean` #5, L43 example | T/SingleRound.lean:235, dishonest output retaining input zero | equivalent |
 | `Closing.lean` #6, L80 `#print axioms executeCore_closed` | C/Indexed.lean: `Sumcheck.Core.indexedExecuteAt_univariate_honest`; T/Domain.lean: execution clients and axiom checks | equivalent |
-| `Closing.lean` #7, L81 `#print axioms executeCore_degree_complete` | Parent counterpart of `OracleModel.satisfies_guarantee` plus completeness | unresolved (missing parent behavior-guarantee interface) |
+| `Closing.lean` #7, L81 `#print axioms executeCore_degree_complete` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_degree_complete` (challenge `pure r`); T/Domain.lean: degree-completeness example and axiom checks | equivalent |
 | `Closing.lean` #8, L82 `#print axioms executeSampled_eq` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_honest_eq` (arbitrary challenge); T/Domain.lean: execution clients and axiom checks | equivalent |
 | `Closing.lean` #9, L83 `#print axioms executeSampled_perfectCompleteness` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_perfectCompleteness` (arbitrary challenge); T/Domain.lean: execution clients and axiom checks | equivalent |
 
@@ -367,7 +476,8 @@ The exact parent dispositions, including freshness and failure scope, are in
 
 ## Remaining work
 
-The behavior-guarantee rows remain unresolved until the corresponding Core interfaces exist.
+Core has no counterpart of the generic `OracleModel.satisfies_guarantee` interface, which is tracked
+as a separate gap and keeps only the `degreeModel` and `degreeGuarantee` rows unresolved.
 `Interpreted` supplies an interaction-layer passive verifier for arbitrary evaluated message
 carriers; `InterpretedExecution` preserves message slots, challenge-response slots and terminal
 outputs under interpretation. This generic interface does not make Mathlib polynomial projections
@@ -537,7 +647,7 @@ positive probability of failure.
 | `Sumcheck.Interaction.SingleRound.outputClaim`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:35` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` (`outputMap := OracleMap.fst`; retained original data) | equivalent |
 | `Sumcheck.Interaction.SingleRound.degreeModel`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:40` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
 | `Sumcheck.Interaction.SingleRound.degreeGuarantee`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:53` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
-| `Sumcheck.Interaction.SingleRound.message_degree`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:56` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
+| `Sumcheck.Interaction.SingleRound.message_degree`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:56` | C/Indexed.lean: `Sumcheck.Core.message_degree` | equivalent |
 | `Sumcheck.Interaction.SingleRound.claimVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:62` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.claimReduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:76` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.honestRun`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:86` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult` (`data := fun _ => univariateData p`, `msg := p`) | equivalent |
@@ -549,7 +659,7 @@ positive probability of failure.
 | `Sumcheck.Interaction.SingleRound.closedInputRelation`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:140` | C/Domain.lean: `Sumcheck.Core.behaviorInputRelation` (arbitrary evaluation behavior) | equivalent |
 | `Sumcheck.Interaction.SingleRound.honestRun_closed_related`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:145` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult_univariate_honest` | equivalent |
 | `Sumcheck.Interaction.SingleRound.executeCore_complete`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:151` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_complete` (monad `OracleComp ambient`, challenge `pure r`) | equivalent |
-| `Sumcheck.Interaction.SingleRound.executeCore_degree_complete`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:161` | Parent behavior-guarantee interface plus C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_complete` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
+| `Sumcheck.Interaction.SingleRound.executeCore_degree_complete`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:161` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_univariate_degree_complete` (monad `OracleComp ambient`, challenge `pure r`) | equivalent |
 | `Sumcheck.Interaction.SingleRound.sampledClaimVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:171` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.sampledClaimReduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:187` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.simulate_challenge`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:197` | C/Indexed.lean: `Sumcheck.Core.indexedExecute_eq` (arbitrary lawful monad and challenge computation) | equivalent |
@@ -578,6 +688,55 @@ positive probability of failure.
 | `Sumcheck.Interaction.Native.execute_eq_appendExported`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:337` | C/BehaviorComposition.lean: `Sumcheck.Core.behaviorPublicIntervalCompatibility`, `Sumcheck.Core.decideWith_append_behaviorPublicInterval`, `Sumcheck.Core.run_append_behaviorIntervalVerifier` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Native.exportedSuffixRun_some`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:369` | C/BehaviorComposition.lean: `Sumcheck.Core.behaviorPublicIntervalCompatibility`, `Sumcheck.Core.decideWith_append_behaviorPublicInterval`, `Sumcheck.Core.run_append_behaviorIntervalVerifier` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Native.exportedSuffixRun_none`, `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean:398` | C/BehaviorComposition.lean: `Sumcheck.Core.behaviorPublicIntervalCompatibility`, `Sumcheck.Core.decideWith_append_behaviorPublicInterval`, `Sumcheck.Core.run_append_behaviorIntervalVerifier` | premise-required (P1, P2) |
+
+### CompPoly runtime assertions
+
+The source is `scripts/SumcheckRuntime.lean` at the frozen pre-migration runtime. Targets are
+in the current script and `ArkLibTest/ProofSystem/Sumcheck/Core/Computable.lean`.
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| L92, Horner evaluation check | `SumcheckRuntime.runChecks`, Horner check | equivalent |
+| L95, private-memory two-round check | `SumcheckRuntime.adaptiveObserve zeroDomain`, event/draw order `[p0,c0,p2,c1,p3]` | premise-required (P1, P2) |
+| L97, public-abort check | `SumcheckRuntime.adaptiveObserve emptyDomain`, rejection after every round has run | premise-required (P1, P2) |
+| L176, direct quadratic and cross term | `SumcheckRuntime.quadraticChecks`, independent evaluation check | equivalent |
+| L182, honest quadratic run | `SumcheckRuntime.quadraticObserve`, explicit challenge-node log `[c0,c1]` | premise-required (P1, P2) |
+| L184, zero-round verifier check from round 2 | `SumcheckRuntime.quadraticZeroObserve`; `ComputableSumcheckTest.zero_interval_verdict`: `some (16, 4, 4, 16)` and empty trace | equivalent |
+
+`quadraticZeroProverObserve` and `ComputableSumcheckTest.zero_prover_output` are additional
+checks of the prover output; they do not replace the verifier assertion.
+
+### Computational-input verifier bridge
+
+`Computable.intervalVerifier` retains the CompPoly input itself. Its
+`interval_run_eq_interpret` is the exact oracle-program bridge to the parent's mathematical
+`intervalVerifier`, including dependent private outputs. `interval_support_completeness`,
+`interval_perfectCompleteness` and `interval_measureCompleteness` accept every bounded interval;
+`interval_soundness` has the suffix endpoint and error `count * (deg / |R|)`. List and injective
+corollaries preserve the parent's domain specializations. The proofs reuse the parent's
+interval invariants and security bounds. The parent’s more general original-data executor
+contracts remain the targets of the frozen production rows below; these computational-input
+specializations do not replace them.
+
+### Full-run compatibility corollaries
+
+The full-run theorem statements retain their original binders, verdict guarantees and error terms.
+`DomainEquivalence.legacyVerdict_native` proves equality on every completed transcript;
+`verifier_run_full_interval` lifts this to equality of actual oracle computations at endpoints
+`0, n`, retaining every dependent private output and original oracle data. `honestFold_native`,
+`finishState_native` and `honest_full_interval` identify the honest terminal state and preserve
+the equality with the prover output required by `judgement.honest`.
+
+The CompPoly bridge `Computable.full_run_interval` retains the computational input itself.
+Completeness uses interaction-layer interval honesty through `honest_full_interval`; soundness
+applies `Computable.interval_soundness` at `0, n` and converts its product error to the unchanged
+sum. These proofs do not call the compatibility security theorems.
+
+| Exact source | Exact target | Status |
+|---|---|---|
+| `Sumcheck.Core.Computable.support_completeness`, C/Computable.lean, original full-run statement | C/DomainEquivalence.lean: `Sumcheck.Core.honest_full_interval`, `honestFold_native`, `finishState_native`; C/IntervalCompleteness.lean: `intervalVerdict_honest` at endpoints `0, n` | equivalent |
+| `Sumcheck.Core.Computable.perfectCompleteness`, C/Computable.lean, original full-run statement | C/Computable.lean: `Sumcheck.Core.Computable.support_completeness`, using `Sumcheck.Core.honest_full_interval` from C/DomainEquivalence.lean at endpoints `0, n` | equivalent |
+| `Sumcheck.Core.Computable.soundness`, C/Computable.lean, original full-run statement and sum error | C/Computable.lean: `Sumcheck.Core.Computable.full_run_interval`, `interval_soundness` at endpoints `0, n`; C/DomainEquivalence.lean: `Sumcheck.Core.legacyVerdict_native` | equivalent |
 
 ### Production: Computable
 
@@ -693,7 +852,7 @@ positive probability of failure.
 | `Sumcheck.Interaction.Native.Core.simulate_latest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:142` | C/InterpretedPath.lean: `Sumcheck.Core.Interpreted.headQuery; Interpreted.simulate_head` | equivalent |
 | `Sumcheck.Interaction.Native.Core.simulate_latestSum`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:152` | C/Interpreted.lean: `Sumcheck.Core.Interpreted.roundVerdict; Interpreted.simulate_decision` | equivalent |
 | `Sumcheck.Interaction.Native.Core.execute_zero`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:165` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_zero; behaviorRoundRelation_last` | premise-required (P1, P2) |
-| `Sumcheck.Interaction.Native.Core.execute_succ`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:181` | C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.run_step; Interpreted.execute_eq_verifier` | premise-required (P1, P2) |
+| `Sumcheck.Interaction.Native.Core.execute_succ`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:181` | C/Protocol.lean: `Sumcheck.Core.run_succ`; C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.execute_eq_verifier` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Native.Core.execute_eq_of_originalOracle_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:235` | C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.execute; Interpreted.execute_eq_verifier; Interpreted.execute_input_eq` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Native.Core.transportProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:271` | C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.transportProver; Interpreted.run_transport` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Native.Core.execute_transport`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:290` | C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.execute_transport; Interpreted.execute_eq_verifier` | premise-required (P1, P2) |
@@ -710,7 +869,7 @@ positive probability of failure.
 | `Sumcheck.Interaction.Native.simulate_latest`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:369` | C/InterpretedPath.lean: `Sumcheck.Core.Interpreted.headQuery; Interpreted.simulate_head` | equivalent |
 | `Sumcheck.Interaction.Native.simulate_latestSum`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:378` | C/Interpreted.lean: `Sumcheck.Core.Interpreted.roundVerdict; Interpreted.simulate_decision` | equivalent |
 | `Sumcheck.Interaction.Native.execute_zero`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:387` | C/Behavior.lean: `Sumcheck.Core.behaviorIntervalVerifier_run_zero; behaviorRoundRelation_last` | premise-required (P1, P2) |
-| `Sumcheck.Interaction.Native.execute_succ`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:401` | C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.run_step; Interpreted.execute_eq_verifier` | premise-required (P1, P2) |
+| `Sumcheck.Interaction.Native.execute_succ`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:401` | C/Protocol.lean: `Sumcheck.Core.run_succ`; C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.execute_eq_verifier` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Native.execute_eq_of_originalOracle_eq`, `ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean:427` | C/InterpretedExecution.lean: `Sumcheck.Core.Interpreted.execute; Interpreted.execute_eq_verifier; Interpreted.execute_input_eq` | premise-required (P1, P2) |
 
 ### Production: ProtocolCompleteness
@@ -798,14 +957,14 @@ positive probability of failure.
 |---|---|---|
 | `Sumcheck.Interaction.SingleRound.Message`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:32` | `Polynomial.degreeLE` (the same message subtype) | equivalent |
 | `Sumcheck.Interaction.SingleRound.polynomialInterface`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:36` | `inferInstance : OracleInterface R⦃≤ deg⦄[X]`, used by C/SingleRound.lean: `Sumcheck.Core.round` | equivalent |
-| `Sumcheck.Interaction.SingleRound.inputSpec`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:42` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval`; C/Types.lean: `Sumcheck.Core.polyFamily` | equivalent |
+| `Sumcheck.Interaction.SingleRound.inputSpec`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:42` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval`; C/Types.lean: `Sumcheck.Core.polynomialFamily` | equivalent |
 | `Sumcheck.Interaction.SingleRound.protocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:45` | C/SingleRound.lean: `Sumcheck.Core.round` | premise-required (P2) |
 | `Sumcheck.Interaction.SingleRound.access`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:50` | `Interaction.Core.pathResources` (input family and sent-message resources) | equivalent |
 | `Sumcheck.Interaction.SingleRound.sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:56` | C/Indexed.lean: `Sumcheck.Core.indexedDecision` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:65` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.verifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:75` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.prover`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:88` | C/Indexed.lean: `Sumcheck.Core.committedProver` | equivalent |
-| `Sumcheck.Interaction.SingleRound.inputImpl`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:93` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval`; C/Types.lean: `Sumcheck.Core.polyFamily` | equivalent |
+| `Sumcheck.Interaction.SingleRound.inputImpl`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:93` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval`; C/Types.lean: `Sumcheck.Core.polynomialFamily` | equivalent |
 | `Sumcheck.Interaction.SingleRound.simulate_sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:96` | C/Indexed.lean: `Sumcheck.Core.simulateQ_indexedSumQueries_monad` (no `DecidableEq` or sampler) | equivalent |
 | `Sumcheck.Interaction.SingleRound.simulate_terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:114` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult`; C/Indexed.lean: `Sumcheck.Core.indexedVerifier_run_one` | equivalent |
 | `Sumcheck.Interaction.SingleRound.executeAt`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:128` | C/Indexed.lean: `Sumcheck.Core.indexedExecute` (challenge `pure r`; data `univariateData p`) | equivalent |

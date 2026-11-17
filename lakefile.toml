@@ -97,7 +97,7 @@ srcDir = "scripts"
 root = "HachiRuntime"
 allowNonModules = true
 
-# Compiled checks for CompPoly-backed messages through the shared native Sumcheck executor.
+# Compiled checks for CompPoly-backed messages through the computable interaction-core Sumcheck.
 [[lean_exe]]
 name = "sumcheck-runtime"
 srcDir = "scripts"

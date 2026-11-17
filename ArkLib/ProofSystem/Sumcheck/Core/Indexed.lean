@@ -55,8 +55,9 @@ def indexedDecision (k : ℕ) : Option (IndexedClaim R n k) →
 /-- Lift the round-message queries into the verifier's final resource interface. -/
 def indexedDecisionLift {ι : Type} (ambient : OracleSpec ι) (p : Path (protocol R deg n)) :
     QueryImpl (oracles (protocol R deg n) p)
-      (OracleComp (ambient + (pathResources (polyFamily R deg n) (protocol R deg n) p).spec)) :=
-  pathLift ambient (polyFamily R deg n) p
+      (OracleComp (ambient +
+        (pathResources (polynomialFamily R n deg) (protocol R deg n) p).spec)) :=
+  pathLift ambient (polynomialFamily R n deg) p
 
 omit [DecidableEq R] in
 /-- Answering the lifted message queries is a pure computation of the transcript payloads. -/
@@ -65,7 +66,7 @@ theorem simulateQ_indexedDecisionLift_monad {ι : Type} {ambient : OracleSpec ι
     (impl : QueryImpl ambient m) (p : Path (protocol R deg n))
     (data : ∀ i, PolynomialData R n deg i) (pl : ∀ i, OracleData (protocol R deg n) p i)
     {α : Type} (oa : OracleComp (oracles (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily R deg n) (protocol R deg n)
+    simulateQ (QueryImpl.addLift impl ((pathResources (polynomialFamily R n deg) (protocol R deg n)
       p).answer (data, pl))) (simulateQ (indexedDecisionLift ambient p) oa) =
       (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         m α) :=
@@ -75,14 +76,14 @@ theorem simulateQ_indexedDecisionLift_monad {ι : Type} {ambient : OracleSpec ι
 def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
     {d : ℕ} (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι) :
     OracleVerifier ambient (protocol R deg n) (RoundStatement R n 0)
-      (fun _ => RoundStatement R n (Fin.last n)) (polyFamily R deg n)
-      (fun _ => polyFamily R deg n) where
+      (fun _ => RoundStatement R n (Fin.last n)) (polynomialFamily R n deg)
+      (fun _ => polynomialFamily R n deg) where
   decide stmt p v := OptionT.mk (simulateQ (indexedDecisionLift ambient p)
     (indexedDecision D n (some (IndexedClaim.initial stmt)) p v))
   outputMap _ p _ :=
     { f := fun x => x.1
       impl := fun q => liftM
-        ((pathResources (polyFamily R deg n) (protocol R deg n) p).spec.query (.inl q))
+        ((pathResources (polynomialFamily R n deg) (protocol R deg n) p).spec.query (.inl q))
       law := fun _ _ => rfl }
 
 /-- A rejected prefix stays rejected through every remaining round. -/
@@ -323,7 +324,7 @@ theorem simulateQ_indexedVerifier_decide {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl ambient m)
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
     (tr : PathAlong oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily R deg n) (protocol R deg n)
+    simulateQ (QueryImpl.addLift impl ((pathResources (polynomialFamily R n deg) (protocol R deg n)
       (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
       ((indexedVerifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (indexedVerdict D n (some (IndexedClaim.initial stmt)) tr) : m _) := by
@@ -703,6 +704,11 @@ theorem indexedExecute_measureCompleteness {ι : Type} (ambient : OracleSpec ι)
   rw [← prEvent_eq_evalDist_map]
   exact indexedExecute_perfectCompleteness D ambient impl challenge data target h
 
+/-- A degree-bounded message has degree at most its bound. -/
+theorem message_degree {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg⦄[X]) :
+    p.val.degree ≤ deg :=
+  Polynomial.mem_degreeLE.mp p.property
+
 /-- Embed a degree-bounded univariate input into the native one-variable polynomial resource. -/
 noncomputable def univariateData {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg⦄[X]) :
     R⦃≤ deg⦄[X Fin 1] :=
@@ -717,7 +723,7 @@ noncomputable def univariateData {R : Type} [CommSemiring R] {deg : ℕ} (p : R�
         exact Nat.zero_le _
       · let := hn
         simp [Subsingleton.elim i 0])).trans
-      (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp p.property))⟩
+      (Polynomial.natDegree_le_of_degree_le (message_degree p))⟩
 /-- The univariate adapter preserves evaluation at every challenge, with no sampling assumption. -/
 theorem univariateData_eval {R : Type} [CommSemiring R] {deg : ℕ}
     (p : R⦃≤ deg⦄[X]) (r : R) :
@@ -776,6 +782,20 @@ theorem indexedExecute_univariate_complete {ι : Type} (ambient : OracleSpec ι)
   congr 1
   funext r
   exact indexedRoundResult_univariate_honest domain p target r h
+
+/-- The message degree bound and actual execution completeness hold together, preserving every
+challenge effect. -/
+theorem indexedExecute_univariate_degree_complete {ι : Type} (ambient : OracleSpec ι)
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) (challenge : m R)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    p.val.degree ≤ deg ∧
+      (fun obs => obs.2.2.map
+        (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target)) <$>
+          indexedExecute domain.get ambient impl challenge (fun _ => univariateData p) p target =
+        (fun _ => some True) <$> challenge :=
+  ⟨message_degree p, indexedExecute_univariate_complete ambient impl challenge domain p target h⟩
 
 /-- Every supported honest univariate run has a true accepted output, for an arbitrary list. -/
 theorem indexedExecute_univariate_support {ι : Type} (ambient : OracleSpec ι)
