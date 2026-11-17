@@ -66,6 +66,15 @@ records the generic soundness implication. The
 statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
 The implication applies to lawful distribution monads, including optional computations.
 
+## Interaction-layer migration: entry 20
+
+Entry 18 records the core's universe constraints, entry 26 knowledge composition, and entry 20
+state restoration. Under approved premise P2, challenges and oracle messages never select shape.
+
+| Entry | Status and scope |
+| --- | --- |
+| [20](../interaction-rebuild/IMPLEMENTATION-NOTES.md#20-state-restoration-under-p2-authored-output-selection) | Premise-required: frozen challenge-selected output carriers are retired by P2. A prover-authored Boolean selects the exact `Fin 8`/`Fin 9` statement carriers instead. The [state-restoration disposition record](state-restoration-disposition.md) classifies each frozen production declaration and fixture assertion, including equivalent laws, P1/P2 restrictions and retired mechanisms. It gives the proved support-to-replay bridge and the zero-root/zero-leaf budget specialization. Frozen output oracles stay `Fin 8`; additional fixtures exercise path-dependent output oracle families. Unmeasured restoration predicates and bounds have independent input, intermediate and terminal witness universes; deterministic observations and shared extraction laws accept general move universes. Round samplers, probabilistic outputs and measured stage programs retain the exact small-carrier constraints recorded in entry 20. |
+
 ## The oracle correspondence gap and its resolution
 
 **Gap.** The first version of the legacy embedding defined `embedOracleProver` and

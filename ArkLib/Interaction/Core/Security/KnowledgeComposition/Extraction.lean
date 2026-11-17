@@ -270,17 +270,35 @@ def terminalWitness (stmt : S) (tr : PathAlong l s) (w : W stmt tr) :
 
 /-- A receiver transition on the remaining transcript that fails backwards preservation for
 exactly the witness extracted from the supplied terminal witness. -/
-def BadChallengeFrom (stmt : S) : {t : FreeM P PUnit.{u + 1}} →
+def badChallengeFromMaps
+    (Witness : ∀ (_stmt : S) {t : FreeM P PUnit.{u + 1}} (sp : Cursor.Spine s t),
+      PrefixMoves l sp → Type uK)
+    (state : ∀ (stmt : S) {t} (sp : Cursor.Spine s t) (history : PrefixMoves l sp),
+      Witness stmt sp history → Prop)
+    (stepMap : ∀ (stmt : S) {a next} (sp : Cursor.Spine s (.liftBind a next))
+      (history : PrefixMoves l sp) (x : Move l a),
+      Witness stmt (sp.comp (.down (l.toFunB a x) (.root _)))
+        (PrefixMoves.snoc l sp history x) → Witness stmt sp history)
+    (leafMap : ∀ (stmt : S) (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp),
+      W stmt (PrefixMoves.complete l sp history) → Witness stmt sp history)
+    (stmt : S) : {t : FreeM P PUnit.{u + 1}} →
     (sp : Cursor.Spine s t) → (history : PrefixMoves l sp) → (tr : PathAlong l t) →
     W stmt (PrefixMoves.completeWith l sp history tr) → Prop
   | .pure _, _, _, _, _ => False
   | .liftBind a _, sp, history, ⟨x, tr⟩, w =>
     (owner l a = .receiver ∧
-      ¬ F.toFun stmt sp history (F.extractFrom stmt sp history ⟨x, tr⟩ w) ∧
-      F.toFun stmt (sp.comp (.down (l.toFunB a x) (.root _)))
+      ¬ state stmt sp history ((extractFromMaps Witness stepMap leafMap) stmt sp history ⟨x,
+    tr⟩ w) ∧
+      state stmt (sp.comp (.down (l.toFunB a x) (.root _)))
         (PrefixMoves.snoc l sp history x)
-        (F.extractFrom stmt _ (PrefixMoves.snoc l sp history x) tr w)) ∨
-    BadChallengeFrom stmt _ (PrefixMoves.snoc l sp history x) tr w
+        ((extractFromMaps Witness stepMap leafMap) stmt _ (PrefixMoves.snoc l sp history x) tr w)) ∨
+    badChallengeFromMaps Witness state stepMap leafMap stmt _ (PrefixMoves.snoc l sp history x) tr w
+
+/-- A bad receiver transition computed from the certificate's states and extraction maps. -/
+def BadChallengeFrom (stmt : S) : {t : FreeM P PUnit.{u + 1}} →
+    (sp : Cursor.Spine s t) → (history : PrefixMoves l sp) → (tr : PathAlong l t) →
+    W stmt (PrefixMoves.completeWith l sp history tr) → Prop :=
+  badChallengeFromMaps F.Witness F.toFun F.extractStep F.extractLeaf stmt
 
 /-- A bad receiver transition along a completed transcript, retaining the suffix extraction
 of the supplied output witness at that transition. -/
@@ -308,11 +326,14 @@ theorem state_or_badChallengeFrom (stmt : S) : {t : FreeM P PUnit.{u + 1}} →
         | receiver => exact Or.inr (Or.inl ⟨ho, before, good⟩)
     · exact Or.inr (Or.inr bad)
 
-/-- Failure to extract a valid input witness from a valid output identifies a bad receiver
-transition with the witness extracted from that same output, for every protocol tree. -/
-theorem extraction_failure_implies_badChallengeAlong (stmt : S) (tr : PathAlong l s)
-    (w : W stmt tr) (hadm : admissible stmt) (hv : validOutput stmt tr w)
-    (hf : ¬ relIn stmt (F.extractAlong stmt tr w)) : F.BadChallengeAlong stmt tr w := by
+/-- Failure of the root knowledge state on the extracted witness identifies a bad receiver
+transition on that same witness, without an admissibility or input-relation premise. -/
+theorem extraction_failure_implies_badChallengeAlong_of_root (stmt : S) (tr : PathAlong l s)
+    (w : W stmt tr) (hv : validOutput stmt tr w)
+    (hf : ¬ F.toFun stmt (.root s) ⟨⟩
+      (F.extractFrom stmt (.root s) ⟨⟩ tr
+        (cast (congrArg (W stmt) (PrefixMoves.completeWith_root l tr).symm) w))) :
+    F.BadChallengeAlong stmt tr w := by
   have hv' : validOutput stmt (PrefixMoves.completeWith l (.root s) ⟨⟩ tr)
       (cast (congrArg (W stmt) (PrefixMoves.completeWith_root l tr).symm) w) := by
     have he : (⟨PrefixMoves.completeWith l (.root s) ⟨⟩ tr,
@@ -322,8 +343,16 @@ theorem extraction_failure_implies_badChallengeAlong (stmt : S) (tr : PathAlong 
     exact (congrArg (fun z : (tr : PathAlong l s) × W stmt tr =>
       validOutput stmt z.1 z.2) he).mpr hv
   obtain good | bad := F.state_or_badChallengeFrom stmt (.root s) ⟨⟩ tr _ hv'
-  · exact (hf (F.root stmt hadm _ good)).elim
+  · exact (hf good).elim
   · exact bad
+
+/-- Failure to extract a valid input witness from a valid output identifies a bad receiver
+transition with the witness extracted from that same output, for every protocol tree. -/
+theorem extraction_failure_implies_badChallengeAlong (stmt : S) (tr : PathAlong l s)
+    (w : W stmt tr) (hadm : admissible stmt) (hv : validOutput stmt tr w)
+    (hf : ¬ relIn stmt (F.extractAlong stmt tr w)) : F.BadChallengeAlong stmt tr w :=
+  F.extraction_failure_implies_badChallengeAlong_of_root stmt tr w hv
+    (fun good => hf (F.root stmt hadm _ good))
 
 /-! ### Local errors -/
 
@@ -349,8 +378,8 @@ def child {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} {S : Type uS} {Win 
     {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
-    (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
-    validOutput)
+    (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible
+      relIn validOutput)
     (x : Move l a) :
     KnowledgeStateFunction.{_, _, uK} l (next (l.toFunB a x)) S (fun stmt tr => W stmt ⟨x, tr⟩)
       (fun stmt => F.Witness stmt (.down (l.toFunB a x) (.root _)) ⟨⟨x, rfl⟩, ⟨⟩⟩) (fun _ => False)
@@ -844,8 +873,8 @@ theorem extractFrom_child {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} {Wi
     {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
-    (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
-    validOutput)
+    (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible
+      relIn validOutput)
     (stmt : S) (x : Move l a) : ∀ {t : FreeM P PUnit.{u + 1}}
       (sp : Cursor.Spine (next (l.toFunB a x)) t) (history : PrefixMoves l sp)
       (tr : PathAlong l t) {α : Type uO} (w : α)
@@ -866,8 +895,8 @@ theorem extractFrom_child_family {a : P.A}
     {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop} {relIn : (stmt : S) →
       Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
-    (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible relIn
-    validOutput)
+    (F : KnowledgeStateFunction.{_, _, uK} l (.liftBind a next) S W Win admissible
+      relIn validOutput)
     (stmt : S) (x : Move l a) {t : FreeM P PUnit.{u + 1}}
     (sp : Cursor.Spine (next (l.toFunB a x)) t) (history : PrefixMoves l sp)
     (tr : PathAlong l t) (w : W stmt ⟨x, PrefixMoves.completeWith l sp history tr⟩) :
@@ -875,6 +904,62 @@ theorem extractFrom_child_family {a : P.A}
         (cast (congrArg (W stmt) (PrefixMoves.completeWith_down l x sp history tr).symm) w) =
       (F.child x).extractFrom stmt sp history tr w :=
   extractFrom_child F stmt x sp history tr w _ rfl
+
+/-- Restricting below a first move preserves bad transitions and their suffix-extracted witness.
+The output witness is transported only along the equation for prefix completion. -/
+theorem badChallengeFrom_child {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} {Win : S → Type uW}
+    {W : S → PathAlong l (.liftBind a next) → Type uO} {admissible : S → Prop}
+    {relIn : (stmt : S) → Win stmt → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
+    (F : KnowledgeStateFunction.{uS, uW, uK, uO, uA, u} l (.liftBind a next) S W Win admissible
+      relIn validOutput)
+    (stmt : S) (x : Move l a) : ∀ {t : FreeM P PUnit.{u + 1}}
+      (sp : Cursor.Spine (next (l.toFunB a x)) t) (history : PrefixMoves l sp)
+      (tr : PathAlong l t) {α : Type uO} (w : α)
+      (e : α = W stmt (PrefixMoves.completeWith l (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr))
+      (e' : α = W stmt ⟨x, PrefixMoves.completeWith l sp history tr⟩),
+      F.BadChallengeFrom stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩ tr (cast e w) ↔
+        (F.child x).BadChallengeFrom stmt sp history tr (cast e' w)
+  | .pure _, _, _, _, _, _, _, _ => Iff.rfl
+  | .liftBind b cont, sp, history, ⟨y, tr⟩, _, w, e, e' => by
+    have before := congrArg (F.toFun stmt (.down _ sp) ⟨⟨x, rfl⟩, history⟩)
+      (F.extractFrom_child stmt x sp history ⟨y, tr⟩ w e e')
+    have after := congrArg
+      (F.toFun stmt (.down (l.toFunB a x) (sp.comp (.down (l.toFunB b y) (.root _))))
+        ⟨⟨x, rfl⟩, PrefixMoves.snoc l sp history y⟩)
+      (F.extractFrom_child stmt x (sp.comp (.down _ (.root _)))
+        (PrefixMoves.snoc l sp history y) tr w e e')
+    exact or_congr
+      (and_congr Iff.rfl (and_congr (not_congr (iff_of_eq before)) (iff_of_eq after)))
+      (F.badChallengeFrom_child stmt x (sp.comp (.down _ (.root _)))
+        (PrefixMoves.snoc l sp history y) tr w e e')
+
+/-- At a first move, a bad transition is either that move with its actual suffix extraction,
+or a bad transition of the restricted state function along the rest of the transcript. -/
+theorem badChallengeAlong_liftBind {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    {Win : S → Type uW} {W : S → PathAlong l (.liftBind a next) → Type uO}
+    {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
+    {validOutput : (stmt : S) → (tr : PathAlong l (.liftBind a next)) → W stmt tr → Prop}
+    (F : KnowledgeStateFunction.{uS, uW, uK, uO, uA, u} l (.liftBind a next) S W Win admissible
+      relIn validOutput)
+    (stmt : S) (x : Move l a) (tr : PathAlong l (next (l.toFunB a x))) (w : W stmt ⟨x, tr⟩) :
+    F.BadChallengeAlong stmt ⟨x, tr⟩ w ↔
+      (let after := (F.child x).extractFrom stmt (.root _) ⟨⟩ tr
+        (cast (congrArg (fun tr => W stmt ⟨x, tr⟩)
+          (PrefixMoves.completeWith_root l tr).symm) w)
+      owner l a = .receiver ∧
+        ¬ F.toFun stmt (.root _) ⟨⟩ (F.extractStep stmt (.root _) ⟨⟩ x after) ∧
+        (F.child x).toFun stmt (.root _) ⟨⟩ after) ∨
+      (F.child x).BadChallengeAlong stmt tr w := by
+  let e := congrArg (W stmt) (PrefixMoves.completeWith_root l (s := .liftBind a next) ⟨x, tr⟩).symm
+  let e' := congrArg (fun tr => W stmt ⟨x, tr⟩) (PrefixMoves.completeWith_root l tr).symm
+  have he := F.extractFrom_child stmt x (.root _) ⟨⟩ tr w e e'
+  have before := congrArg (fun after => F.toFun stmt (.root _) ⟨⟩
+    (F.extractStep stmt (.root _) ⟨⟩ x after)) he
+  have after := congrArg (F.toFun stmt (.down (l.toFunB a x) (.root _)) ⟨⟨x, rfl⟩, ⟨⟩⟩) he
+  exact or_congr
+    (and_congr Iff.rfl (and_congr (not_congr (iff_of_eq before)) (iff_of_eq after)))
+    (F.badChallengeFrom_child stmt x (.root _) ⟨⟩ tr w e e')
 
 /-- Over a leaf prefix, backward extraction of the composite is suffix extraction. -/
 theorem extractFrom_append_pure {u : PUnit.{u + 1}}
