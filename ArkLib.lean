@@ -2,7 +2,12 @@ module
 
 public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.Commitments.Functional.BitZ.Bitification
+public import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
+public import ArkLib.Commitments.Functional.BitZ.CrtVariant
 public import ArkLib.Commitments.Functional.BitZ.ExponentLift
+public import ArkLib.Commitments.Functional.BitZ.FixedWitnessError
+public import ArkLib.Commitments.Functional.BitZ.HonestMessages
 public import ArkLib.Commitments.Functional.BitZ.OutOfDomain
 public import ArkLib.Commitments.Functional.BitZ.Round1
 public import ArkLib.Commitments.Functional.BitZ.Round2
@@ -397,6 +402,34 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohn
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ChartIncidence
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ExceptionalCount
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FrobeniusFactor
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Interpolation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterpolationParams
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineEvaluation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineRoots
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.PersistenceDescent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.RationalPair
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Separation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.TaylorChart
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Theorem
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
@@ -1158,6 +1191,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.LagrangeLine
 public import ArkLib.ToMathlib.LinearAlgebra.LineInjectivity
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.KernelDescent
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Pivot
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
@@ -1174,6 +1208,7 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CoeffBound
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
+public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
