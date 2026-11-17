@@ -40,6 +40,8 @@ algebra map into a polynomial ring.
   `totalDegree_algHom_commonTaylorNumeratorOver_le` and
   `totalDegree_algHom_commonTaylorNumeratorOver_le_of_lt`: the recursion bound through any
   algebra map into a polynomial ring, for an arbitrary coefficient algebra.
+* `totalDegree_algHom_commonTaylorNumeratorOver_le_of_numerator_le`: padding a numerator
+  degree bound by a power of the separant.
 * `jointTotalDegree_rationalTaylorNumeratorOver_le`: the recursion bound, from a bound `b` on
   the separant and `b + 1` on the residual coefficients.
 * `jointTotalDegree_rationalTaylorNumeratorOver_le_of_coeffNatDegreeLE`: the bound
@@ -212,6 +214,26 @@ theorem totalDegree_algHom_rationalTaylorNumeratorOver_le_of_lt
   totalDegree_algHom_rationalTaylorNumeratorOver_step φ center Q b v hS hres hl
     fun i _ ↦ totalDegree_algHom_rationalTaylorNumeratorOver_le φ center Q b v hv hX hS hres i
 
+/-- Padding a numerator by a power of the separant gives degree at most `1 + τ * b`.
+
+Assume `2(l - r) - 1 ≤ τ`, separant degree at most `b`, and numerator degree at most
+`(2(l - r) - 1) * b + 1` after applying `φ`. -/
+theorem totalDegree_algHom_commonTaylorNumeratorOver_le_of_numerator_le
+    (φ : MvPolynomial (Fin (r + 1)) A →ₐ[F] MvPolynomial σ K)
+    (center : A) (Q : DifferentialPolynomial A r) (b τ l : ℕ)
+    (hl : 2 * (l - r) - 1 ≤ τ)
+    (hS : (φ (initialJetSeparant center Q)).totalDegree ≤ b)
+    (hN : (φ (rationalTaylorNumeratorOver F center Q l)).totalDegree ≤
+      (2 * (l - r) - 1) * b + 1) :
+    (φ (commonTaylorNumeratorOver F center Q τ l)).totalDegree ≤ 1 + τ * b := by
+  have hp := (totalDegree_pow (φ (initialJetSeparant center Q))
+    (τ - (2 * (l - r) - 1))).trans (Nat.mul_le_mul_left _ hS)
+  rw [commonTaylorNumeratorOver, map_mul, map_pow]
+  refine (totalDegree_mul _ _).trans ?_
+  have he : τ * b = (2 * (l - r) - 1) * b + (τ - (2 * (l - r) - 1)) * b := by
+    rw [← Nat.add_mul, Nat.add_sub_cancel' hl]
+  omega
+
 /-- The mapped common numerator has degree at most `1 + τ * b` when `2(l - r) - 1 ≤ τ`.
 
 The map sends jet variables to degree at most one and the separant to degree at most `b`.
@@ -228,15 +250,9 @@ theorem totalDegree_algHom_commonTaylorNumeratorOver_le
         (universalTaylorResidual l center Q)).coeff (l - r)).coeff m))).totalDegree +
           m.degree ≤ v)
     {τ l : ℕ} (hl : 2 * (l - r) - 1 ≤ τ) :
-    (φ (commonTaylorNumeratorOver F center Q τ l)).totalDegree ≤ 1 + τ * b := by
-  have hN := totalDegree_algHom_rationalTaylorNumeratorOver_le φ center Q b v hv hX hS hres l
-  have hp := (totalDegree_pow (φ (initialJetSeparant center Q))
-    (τ - (2 * (l - r) - 1))).trans (Nat.mul_le_mul_left _ hS)
-  rw [commonTaylorNumeratorOver, map_mul, map_pow]
-  refine (totalDegree_mul _ _).trans ?_
-  have he : τ * b = (2 * (l - r) - 1) * b + (τ - (2 * (l - r) - 1)) * b := by
-    rw [← Nat.add_mul, Nat.add_sub_cancel' hl]
-  omega
+    (φ (commonTaylorNumeratorOver F center Q τ l)).totalDegree ≤ 1 + τ * b :=
+  totalDegree_algHom_commonTaylorNumeratorOver_le_of_numerator_le φ center Q b τ l hl hS
+    (totalDegree_algHom_rationalTaylorNumeratorOver_le φ center Q b v hv hX hS hres l)
 
 /-- For `l > r` and `2(l - r) - 1 ≤ τ`, the mapped common numerator has degree at most
 `(τ - 1) * b + v`.
@@ -335,15 +351,9 @@ theorem jointTotalDegree_commonTaylorNumeratorOver_le
     (hS : jointTotalDegree (initialJetSeparant center Q) ≤ b)
     (hN : jointTotalDegree (rationalTaylorNumeratorOver F center Q l) ≤
       (2 * (l - r) - 1) * b + 1) :
-    jointTotalDegree (commonTaylorNumeratorOver F center Q τ l) ≤ 1 + τ * b := by
-  have hp := (jointTotalDegree_pow_le (initialJetSeparant center Q)
-    (τ - (2 * (l - r) - 1))).trans (Nat.mul_le_mul_left _ hS)
-  have hm := jointTotalDegree_mul_le
-    (rationalTaylorNumeratorOver F center Q l)
-    (initialJetSeparant center Q ^ (τ - (2 * (l - r) - 1)))
-  have he := Nat.sub_add_cancel hl
-  unfold commonTaylorNumeratorOver
-  nlinarith
+    jointTotalDegree (commonTaylorNumeratorOver F center Q τ l) ≤ 1 + τ * b :=
+  totalDegree_algHom_commonTaylorNumeratorOver_le_of_numerator_le
+    (MvPolynomial.optionEquivRight F (Fin (r + 1))).symm.toAlgHom center Q b τ l hl hS hN
 
 /-- At a constant center, if `Q` has total jet degree at most `v` and coefficient degree at most
 `h` in the parameter, and `2(l - r) - 1 ≤ τ`, the common numerator of `c_l` with exponent `τ` has

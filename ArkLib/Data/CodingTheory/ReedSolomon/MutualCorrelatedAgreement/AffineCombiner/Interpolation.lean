@@ -81,12 +81,6 @@ theorem affineExponent_injective : Function.Injective affineExponent := by
   subst h1 h2 h3
   rfl
 
-/-- The weight of an exponent in the three variables. -/
-theorem weight_affineVar (w : AffineVar → ℕ) (e : AffineVar →₀ ℕ) :
-    Finsupp.weight w e = e none * w none + e (some 0) * w (some 0) + e (some 1) * w (some 1) := by
-  rw [Finsupp.weight_apply, Finsupp.sum_fintype _ _ (by simp)]
-  simp [Fintype.sum_option, Fin.sum_univ_two, add_assoc]
-
 end Exponent
 
 section Shift
@@ -135,7 +129,7 @@ theorem affineLineEval_eq_aeval_affineShift (α β : K) (P : K[X]) (x u v : K)
 /-- Let `p` divide the images of `Z` and `X`.
 
 If every monomial has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
-theorem pow_dvd_aeval_of_le {ψ : AffineVar → K[X]} {p : K[X]} {m : ℕ}
+theorem pow_dvd_aeval_of_affineWeight_le {ψ : AffineVar → K[X]} {p : K[X]} {m : ℕ}
     (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) {R : MvPolynomial AffineVar K}
     (hR : ∀ e ∈ R.support, m ≤ e none + e (some 0)) :
     p ^ m ∣ MvPolynomial.aeval ψ R := by
@@ -155,6 +149,7 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
 /-- A nonzero `Q` of bounded degrees that vanishes along every line with an agreeing candidate.
 
+The paper's additional assertion `1 ≤ deg_Z Q` is not part of this structure.
 The candidate has degree `≤ d` and agrees with the combined word on at least `A` points. -/
 structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : ℕ)
     (Q : MvPolynomial AffineVar F) : Prop where
@@ -172,7 +167,12 @@ structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : 
     affineLineEval α β P Q = 0
 
 open Polynomial.SymbolicInterpolation in
-/-- An interpolant exists when the unknowns outnumber the constraints. -/
+/-- An interpolant exists when its allowed monomials outnumber the linear constraints.
+
+The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
+At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
+Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
+The paper's separate conclusion `1 ≤ deg_Z Q` is not exported. -/
 theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
@@ -217,14 +217,14 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
     obtain ⟨⟨j, i, t⟩, hk, rfl⟩ := hsupp e he
     simp only [S, mem_monomialSupport] at hk
     simp only [weight_affineVar, affineExponent_none, affineExponent_x, affineExponent_y,
-      affineYZWeight_none, affineYZWeight_x, affineYZWeight_y]
+      affineYZWeight_none, affineYZWeight_X, affineYZWeight_Y]
     omega
   have hline : ∀ e ∈ Q.support, Finsupp.weight (affineLineWeight d) e < m * A := by
     intro e he
     obtain ⟨⟨j, i, t⟩, hk, rfl⟩ := hsupp e he
     simp only [S, mem_monomialSupport] at hk
     simp only [weight_affineVar, affineExponent_none, affineExponent_x, affineExponent_y,
-      affineLineWeight_none, affineLineWeight_x, affineLineWeight_y]
+      affineLineWeight_none, affineLineWeight_X, affineLineWeight_Y]
     rw [mul_comm j d]
     omega
   have hlt : Q.weightedTotalDegree (affineLineWeight d) < m * A := by
@@ -244,7 +244,7 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
       (domain.injective.injOn) hA (fun i hi ↦ ?_)
       ((natDegree_affineLineEval_le α β (natDegree_le_of_degree_le hP) Q).trans_lt hlt)
     rw [affineLineEval_eq_aeval_affineShift α β P (domain i) (f i) (g i)]
-    refine pow_dvd_aeval_of_le (p := X - C (domain i)) ?_ (by simp) fun e he ↦ ?_
+    refine pow_dvd_aeval_of_affineWeight_le (p := X - C (domain i)) ?_ (by simp) fun e he ↦ ?_
     · rw [mem_polynomialAgreementSet, combinedWord_affineMultiplier] at hi
       rw [Option.elim_none, dvd_iff_isRoot]
       simp [hi]
@@ -252,8 +252,8 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
       push Not at hlow
       have hwt := (MvPolynomial.le_weightedTotalDegree affineYZWeight he).trans
         ((weightedTotalDegree_affineShift_le _ _ _ Q).trans hyz)
-      simp only [weight_affineVar, affineYZWeight_none, affineYZWeight_x,
-        affineYZWeight_y] at hwt
+      simp only [weight_affineVar, affineYZWeight_none, affineYZWeight_X,
+        affineYZWeight_Y] at hwt
       have hT : (⟨e none, (e (some 0), e (some 1))⟩ : Σ _ : ℕ, ℕ × ℕ) ∈ T := by
         simp only [T, mem_constraintSupport]
         omega

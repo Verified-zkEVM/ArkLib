@@ -6,12 +6,13 @@ Authors: Thomas Coratger
 module
 
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
-public import Mathlib.Analysis.SpecialFunctions.Pow.Real
+public import Mathlib.Analysis.Real.Sqrt
 
 /-!
 # Parameters of the affine interpolation
 
-The interpolation fixes a degree `d`, a length `n`, the degree fraction `ρ = d / n` and a gap `η`.
+The interpolation fixes a degree `d`, a length `n`, the degree fraction `ρ = d / n`,
+and a slack parameter `η`.
 From them it builds a multiplicity, two degree budgets and two agreement thresholds.
 Under the standing hypotheses, there are more unknowns than linear constraints.
 The parameter definitions use real square roots and ceilings and are noncomputable.
@@ -32,7 +33,10 @@ The parameter definitions use real square roots and ceilings and are noncomputab
 
 ## References
 
-The parameters are those of Lemma 4.2 of [CWYZ26], and the surplus is its inequality (4.5).
+The parameters are those of Lemma 4.2 and Section 4.1 of [CWYZ26].
+The sufficient surplus sums constraints over all `s < m`, whereas (4.5) stops at
+`min(m - 1, M)`.
+`AffineParams.surplus` proves the full-constraint inequality for these parameters.
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -63,17 +67,19 @@ noncomputable def affineRootBudget (d n : ℕ) (η : ℝ) : ℕ :=
   min (affineYZBudget d n η)
     ((affineMultiplicity η * affineThreshold d n η - affineYZBudget d n η - 1) / d)
 
-/-- The standing hypotheses on the degree `d`, the length `n` and the gap `η`. -/
+/-- The standing hypotheses on the degree `d`, the length `n` and the slack parameter `η`. -/
 structure AffineParams (d n : ℕ) (η : ℝ) : Prop where
   /-- The degree is positive, so the degree fraction is positive. -/
   one_le : 1 ≤ d
   /-- The degree fraction is below one. -/
-  lt_card : d < n
-  /-- The gap is positive. -/
+  degree_lt_length : d < n
+  /-- The slack parameter is positive. -/
   pos : 0 < η
   /-- The threshold `√ρ + η` is below one. -/
   lt_one_sub : η < 1 - √((d : ℝ) / n)
-  /-- The length is large: `4 / ρ ≤ n η²`. -/
+  /-- The paper's condition `4 / ρ ≤ n η²`.
+  For positive `d` and `n`, it is equivalent to `4 ≤ d η²`, independently of `n`.
+  The separate positivity hypotheses matter because real division by zero is zero. -/
   four_div_le : 4 / ((d : ℝ) / n) ≤ n * η ^ 2
 
 namespace AffineParams
@@ -82,7 +88,7 @@ variable {d n : ℕ} {η : ℝ}
 
 /-- The length is positive. -/
 theorem card_pos (h : AffineParams d n η) : (0 : ℝ) < n :=
-  Nat.cast_pos.mpr (Nat.zero_lt_of_lt h.lt_card)
+  Nat.cast_pos.mpr (Nat.zero_lt_of_lt h.degree_lt_length)
 
 /-- The degree fraction `d / n` is positive. -/
 theorem degreeFraction_pos (h : AffineParams d n η) : (0 : ℝ) < (d : ℝ) / n :=
@@ -90,7 +96,7 @@ theorem degreeFraction_pos (h : AffineParams d n η) : (0 : ℝ) < (d : ℝ) / n
 
 /-- The degree fraction `d / n` is below one. -/
 theorem degreeFraction_lt_one (h : AffineParams d n η) : (d : ℝ) / n < 1 :=
-  (div_lt_one h.card_pos).mpr (by exact_mod_cast h.lt_card)
+  (div_lt_one h.card_pos).mpr (by exact_mod_cast h.degree_lt_length)
 
 /-- The square root of the degree fraction is positive. -/
 theorem sqrt_degreeFraction_pos (h : AffineParams d n η) : 0 < √((d : ℝ) / n) :=
@@ -100,7 +106,7 @@ theorem sqrt_degreeFraction_pos (h : AffineParams d n η) : 0 < √((d : ℝ) / 
 theorem sqrt_degreeFraction_lt_one (h : AffineParams d n η) : √((d : ℝ) / n) < 1 :=
   (Real.sqrt_lt' one_pos).mpr (by simpa using h.degreeFraction_lt_one)
 
-/-- The gap is below one. -/
+/-- The slack parameter is below one. -/
 theorem lt_one (h : AffineParams d n η) : η < 1 := by
   linarith [h.lt_one_sub, h.sqrt_degreeFraction_pos]
 
@@ -199,7 +205,7 @@ theorem surplus (h : AffineParams d n η) :
       (monomialSupport d (affineMultiplicity η * affineThreshold d n η - affineYZBudget d n η)
         (affineRootBudget d n η + 1) (affineYZBudget d n η + 1)).card := by
   have hcount := card_constraints_lt_monomials n d (affineMultiplicity η) √((d : ℝ) / n)
-    (Nat.zero_lt_of_lt h.lt_card) h.three_le_multiplicity h.sqrt_degreeFraction_pos
+    (Nat.zero_lt_of_lt h.degree_lt_length) h.three_le_multiplicity h.sqrt_degreeFraction_pos
     h.sqrt_degreeFraction_lt_one.le
     (by rw [Real.sq_sqrt h.degreeFraction_pos.le]; field_simp [h.card_pos.ne'])
   rw [h.ceil_eq_yzBudget_add_one] at hcount

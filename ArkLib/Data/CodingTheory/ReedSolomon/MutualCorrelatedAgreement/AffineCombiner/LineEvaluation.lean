@@ -52,11 +52,23 @@ def affineYZWeight : AffineVar → ℕ := fun v ↦ v.elim 1 ![0, 1]
 def affineLineWeight (d : ℕ) : AffineVar → ℕ := fun v ↦ v.elim d ![1, 1]
 
 @[simp] theorem affineYZWeight_none : affineYZWeight none = 1 := rfl
-@[simp] theorem affineYZWeight_x : affineYZWeight (some 0) = 0 := rfl
-@[simp] theorem affineYZWeight_y : affineYZWeight (some 1) = 1 := rfl
+@[simp] theorem affineYZWeight_X : affineYZWeight (some 0) = 0 := rfl
+@[simp] theorem affineYZWeight_Y : affineYZWeight (some 1) = 1 := rfl
 @[simp] theorem affineLineWeight_none (d : ℕ) : affineLineWeight d none = d := rfl
-@[simp] theorem affineLineWeight_x (d : ℕ) : affineLineWeight d (some 0) = 1 := rfl
-@[simp] theorem affineLineWeight_y (d : ℕ) : affineLineWeight d (some 1) = 1 := rfl
+@[simp] theorem affineLineWeight_X (d : ℕ) : affineLineWeight d (some 0) = 1 := rfl
+@[simp] theorem affineLineWeight_Y (d : ℕ) : affineLineWeight d (some 1) = 1 := rfl
+
+/-- The weight of an exponent in the three variables. -/
+theorem weight_affineVar (w : AffineVar → ℕ) (e : AffineVar →₀ ℕ) :
+    Finsupp.weight w e = e none * w none + e (some 0) * w (some 0) + e (some 1) * w (some 1) := by
+  rw [Finsupp.weight_apply, Finsupp.sum_fintype _ _ (by simp)]
+  simp [Fintype.sum_option, Fin.sum_univ_two, add_assoc]
+
+/-- The `(Y, Z)`-weight of a monomial is its `Y`-exponent plus its `Z`-exponent. -/
+theorem weight_affineYZWeight (m : AffineVar →₀ ℕ) :
+    Finsupp.weight affineYZWeight m = m none + m (some 1) := by
+  rw [Finsupp.weight_apply, Finsupp.sum_fintype _ _ (by simp)]
+  simp [Fintype.sum_option, Fin.sum_univ_two]
 
 variable {K : Type*} [Field K]
 
@@ -68,11 +80,11 @@ noncomputable def affineLineEval (α β : K) (P : K[X]) : MvPolynomial AffineVar
     affineLineEval α β P (MvPolynomial.X none) = P := by
   simp [affineLineEval]
 
-@[simp] theorem affineLineEval_X_x (α β : K) (P : K[X]) :
+@[simp] theorem affineLineEval_X_X (α β : K) (P : K[X]) :
     affineLineEval α β P (MvPolynomial.X (some 0)) = X := by
   simp [affineLineEval]
 
-@[simp] theorem affineLineEval_X_y (α β : K) (P : K[X]) :
+@[simp] theorem affineLineEval_X_Y (α β : K) (P : K[X]) :
     affineLineEval α β P (MvPolynomial.X (some 1)) = affineMultiplier α β := by
   simp [affineLineEval]
 
@@ -96,6 +108,6 @@ theorem natDegree_affineLineEval_le (α β : K) {P : K[X]} {d : ℕ} (hP : P.nat
   · fin_cases i
     · simp [affineLineWeight]
     · simp only [affineLineWeight]
-      exact natDegree_le_of_degree_le (degree_affineMultiplier_le α β) |>.trans le_rfl
+      exact natDegree_le_of_degree_le (degree_affineMultiplier_le α β)
 
 end ReedSolomon

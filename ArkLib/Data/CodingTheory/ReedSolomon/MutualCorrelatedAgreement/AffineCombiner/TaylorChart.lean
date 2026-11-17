@@ -10,6 +10,7 @@ public import
 public import ArkLib.Data.Polynomial.Differential.RationalTaylorJointDegree
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
 public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
+public import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 public import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
 
 /-!
@@ -25,23 +26,39 @@ The numerator has joint degree at most `1 + (2l - 1)(h - 1)`, where `h` bounds t
 The chart maps and reconstructions are noncomputable mathematical views of polynomial
 rings and rational Taylor coefficients.
 
+## Main definitions
+
+* `ReedSolomon.affineChartEquation` and `ReedSolomon.affineChartSeparant`: the hypersurface
+  polynomial and its derivative in the initial value.
+* `ReedSolomon.affineChartNumerator` and `ReedSolomon.affineChartCoefficient`: Taylor coefficients.
+* `ReedSolomon.affineChartPolynomial`: the polynomial reconstruction.
+* `ReedSolomon.affineChartCut`: a cleared agreement equation.
+
 ## Main statements
 
 * `ReedSolomon.affineChartCut_eq_zero_iff`: a cleared cut says the reconstruction takes a value.
 * `ReedSolomon.degree_affineChartPolynomial_le` and
   `ReedSolomon.eval_affineChartPolynomial_center`: the reconstruction has degree at most `d` and
   starts at `y₀`.
-* `ReedSolomon.affineChartPolynomial_point`: the reconstruction of a Frobenius root is the root.
+* `ReedSolomon.affineChartPolynomial_point`: recover `P` when `expand (p^e) P` is a
+  regular root along the line.
 * `ReedSolomon.aeval_affineChartEquation_point` and `ReedSolomon.aeval_affineChartSeparant_point`:
   the chart equation and separant at the point of a root.
 * `ReedSolomon.totalDegree_affineChartEquation_le`,
   `ReedSolomon.totalDegree_affineChartNumerator_le` and
   `ReedSolomon.totalDegree_affineChartCut_le`: the joint degree bounds.
 
+The coefficient formulas and the polynomial-root reconstruction specialize Lemma 3.11.
+The existence and uniqueness of its formal power series are not stated by these declarations.
+The reconstruction map, cleared cuts, and their degree budget implement the map and hyperplanes
+used in Claim 4.9.
+The sharper positive-order numerator bound also covers the zero-degree case `h = 0`.
+Its formula must not be replaced by the coarser bound through truncated subtraction.
+
 ## References
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
-    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26], Lemma 3.11.
+    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26], Lemma 3.11 and Claim 4.9.
 -/
 
 @[expose] public section
@@ -412,15 +429,6 @@ private theorem sumAlgEquiv_symm_map_algebraMap {S : Type*} (P : MvPolynomial S 
   | add p q hp hq => simp only [map_add, hp, hq]
   | mul_X p i hp => simp only [map_mul, hp, map_X, rename_X, sumAlgEquiv_symm_X]
 
-/-- Extending `m` by a displacement exponent of weight `0` keeps its degree. -/
-private theorem weight_optionElim {K : ℕ} (m : Fin K →₀ ℕ) (y : ℕ) :
-    Finsupp.weight (fun i : Option (Fin K) ↦ i.elim 0 fun _ ↦ 1) (m.optionElim y) =
-      m.degree := by
-  rw [Finsupp.weight_apply, Finsupp.sum_option_index_smul, Finsupp.degree,
-    Finsupp.some_optionElim]
-  simp [Finsupp.sum]
-  rfl
-
 /-- Each residual monomial, with its coefficient degree added, has degree at most `h`. -/
 private theorem totalDegree_residual_coeff_add_degree_le (c : E)
     {R : MvPolynomial AffineVar E} {h : ℕ} (hR : R.weightedTotalDegree affineYZWeight ≤ h)
@@ -432,8 +440,8 @@ private theorem totalDegree_residual_coeff_add_degree_le (c : E)
   set w : Option (Fin l) → ℕ := fun i ↦ i.elim 0 fun _ ↦ 1
   set Res := universalTaylorResidual l (C c) (affineLineEquation R)
   rw [mem_support_iff, optionEquivLeft_coeff_coeff] at hm
-  rw [optionEquivLeft_coeff_coeff, ← weight_optionElim m t]
-  refine (totalDegree_coeff_add_weight_le w Res (mem_support_iff.mpr hm)).trans ?_
+  rw [optionEquivLeft_coeff_coeff, ← MvPolynomial.weight_optionElim_zero_one m t]
+  refine (totalDegree_coeff_add_weight_sumAlgEquiv_symm_le w Res (mem_support_iff.mpr hm)).trans ?_
   set flat := (sumAlgEquiv E (Option (Fin l)) (Fin 2)).symm
   have hflat : flat Res = aeval (fun v ↦ flat (aeval
       (fun i : Option (Fin (0 + 1)) ↦ i.elim (C (C c) + X none)
@@ -459,13 +467,13 @@ private theorem totalDegree_residual_coeff_add_degree_le (c : E)
       weightedTotalDegree_rename_of_injective Sum.inl_injective]
     exact weightedTotalDegree_universalTaylorJet_le l 0
   · fin_cases i
-    · simp only [Fin.zero_eta, Fin.isValue, affineYZWeight_x, Nat.reduceAdd, Fin.val_eq_zero,
+    · simp only [Fin.zero_eta, Fin.isValue, affineYZWeight_X, Nat.reduceAdd, Fin.val_eq_zero,
         aeval_eq_bind₁, Option.elim_some, Matrix.cons_val_zero, bind₁_X_right, Option.elim_none,
         map_add, flat, sumAlgEquiv_symm_C_C, sumAlgEquiv_symm_X]
       apply Submodule.add_mem
       · exact C_mem_restrictWeightedDegree (Sum.elim w 1) 0 c
       · exact X_mem_restrictWeightedDegree (Sum.elim w 1) 0 (.inl none) le_rfl
-    · simp only [Fin.mk_one, Fin.isValue, affineYZWeight_y, Nat.reduceAdd, Fin.val_eq_zero,
+    · simp only [Fin.mk_one, Fin.isValue, affineYZWeight_Y, Nat.reduceAdd, Fin.val_eq_zero,
         aeval_eq_bind₁, Option.elim_some, Matrix.cons_val_one, Matrix.cons_val_fin_one, map_add,
         algHom_C, algebraMap_eq, map_mul, bind₁_X_right, Option.elim_none, flat,
         sumAlgEquiv_symm_C_C, sumAlgEquiv_symm_X, sumAlgEquiv_symm_C_X]

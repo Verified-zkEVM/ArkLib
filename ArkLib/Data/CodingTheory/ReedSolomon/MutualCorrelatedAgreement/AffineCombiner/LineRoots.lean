@@ -7,6 +7,7 @@ module
 
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineEvaluation
+public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
@@ -39,6 +40,7 @@ The nested presentation is noncomputable because Mathlib's polynomial rings are.
 * `ReedSolomon.affineDiscriminant_ne_zero`: the discriminant of an irreducible `R` with
   nonzero `Z`-derivative is nonzero.
 * `ReedSolomon.natDegree_affineDiscriminant_le`: its `Y`-degree is at most `h (h - 1)`.
+* `ReedSolomon.card_filter_affineDiscriminant_eq_zero_le`: the count of discriminant lines.
 * `ReedSolomon.affineLineEval_pderiv_ne_zero`: off its zeros, roots along the line are simple.
 
 ## References
@@ -52,6 +54,8 @@ These are the ingredients of Lemma 4.3 of [CWYZ26].
 @[expose] public section
 
 namespace ReedSolomon
+
+open scoped Finset
 
 open Polynomial
 
@@ -163,30 +167,19 @@ theorem natDegree_coeff_affineNested_le (G : MvPolynomial AffineVar E) (i : ℕ)
   natDegree_coeff_affineNested_le_of_forall fun _ hm _ ↦
     MvPolynomial.le_degreeOf_of_mem_support (some 1) hm
 
-/-- The `(Y, Z)`-weight of a monomial is its `Y`-exponent plus its `Z`-exponent. -/
-theorem weight_affineYZWeight (m : AffineVar →₀ ℕ) :
-    Finsupp.weight affineYZWeight m = m none + m (some 1) := by
-  rw [Finsupp.weight_apply, Finsupp.sum_fintype _ _ (by simp)]
-  simp [Fintype.sum_option, Fin.sum_univ_two]
-
 /-- A monomial of `G` has `Y`- plus `Z`-exponent at most the `(Y, Z)`-degree of `G`. -/
 theorem add_le_weightedTotalDegree_affineYZWeight {G : MvPolynomial AffineVar E}
     {m : AffineVar →₀ ℕ} (hm : m ∈ G.support) :
     m none + m (some 1) ≤ G.weightedTotalDegree affineYZWeight :=
   weight_affineYZWeight m ▸ MvPolynomial.le_weightedTotalDegree affineYZWeight hm
 
-/-- The `Z`-degree is at most the `(Y, Z)`-degree. -/
-theorem degreeOf_none_le_weightedTotalDegree (G : MvPolynomial AffineVar E) :
-    G.degreeOf none ≤ G.weightedTotalDegree affineYZWeight :=
-  MvPolynomial.degreeOf_le_iff.mpr fun _ hm ↦
-    (Nat.le_add_right _ _).trans (add_le_weightedTotalDegree_affineYZWeight hm)
-
 /-- For `i ≤ deg_Z G`, `i` plus the `Y`-degree of the `Z^i`-coefficient is at most the
 `(Y, Z)`-degree. -/
 theorem add_natDegree_coeff_affineNested_le (G : MvPolynomial AffineVar E) {i : ℕ}
     (hi : i ≤ G.degreeOf none) :
     i + ((affineNested G).coeff i).natDegree ≤ G.weightedTotalDegree affineYZWeight := by
-  have hle := hi.trans (degreeOf_none_le_weightedTotalDegree G)
+  have hle := hi.trans
+    (MvPolynomial.degreeOf_le_weightedTotalDegree affineYZWeight none (by simp) G)
   have h := natDegree_coeff_affineNested_le_of_forall (G := G) (i := i)
     (b := G.weightedTotalDegree affineYZWeight - i) fun m hm hmi ↦ by
       have := add_le_weightedTotalDegree_affineYZWeight hm
@@ -206,11 +199,10 @@ theorem affineLineEval_eq_nested (α β : E) (P : E[X]) (G : MvPolynomial Affine
     · simp [hG]
     · fin_cases i <;> simp [hG]
 
-open Classical in
 /-- A nonzero `G` free of `Z` vanishes along at most `deg_Y G` lines indexed injectively by `S`.
 
 Each such line `Y = α + β X` is a root of `G` as a polynomial in `Y` over `E[X]`. -/
-theorem card_filter_affineLine_eq_zero_le {F : Type*} {G : MvPolynomial AffineVar E}
+theorem card_filter_affineLine_eq_zero_le [DecidableEq E] {F : Type*} {G : MvPolynomial AffineVar E}
     (hG : G ≠ 0) (hZ : G.degreeOf none = 0) (S : Finset (F × F)) (φ : F × F → E × E)
     (hφ : φ.Injective) :
     (S.filter fun c ↦ affineLineEval (φ c).1 (φ c).2 0 G = 0).card ≤ G.degreeOf (some 1) := by
@@ -262,7 +254,7 @@ theorem natDegree_affineDiscriminant_le {R : MvPolynomial AffineVar E} {h : ℕ}
     (affineDiscriminant R).natDegree ≤ h * (h - 1) := by
   have hb : (affineNested R).natDegree ≤ h := by
     rw [natDegree_affineNested]
-    exact (degreeOf_none_le_weightedTotalDegree R).trans hR
+    exact (MvPolynomial.degreeOf_le_weightedTotalDegree affineYZWeight none (by simp) R).trans hR
   have hres := natDegree_resultant_derivative_padded_add_sq_le (affineNested R)
     (affineNested R).natDegree h fun i hi ↦ by
       rw [natDegree_affineNested] at hi
@@ -281,5 +273,28 @@ theorem affineLineEval_pderiv_ne_zero {R : MvPolynomial AffineVar E} {α β : E}
   exact eval_derivative_map_ne_zero_of_resultant_derivative_padded_ne_zero
     (evalRingHom (affineMultiplier α β)) (affineNested R) le_rfl
     (by rwa [natDegree_affineNested]) hdisc P hroot
+
+/-- A polynomial free of `Z` has the same evaluation along a line for every candidate. -/
+theorem affineLineEval_eq_of_degreeOf_none_eq_zero {G : MvPolynomial AffineVar E}
+    (hZ : G.degreeOf none = 0) (α β : E) (P P' : Polynomial E) :
+    affineLineEval α β P G = affineLineEval α β P' G := by
+  have hC : affineNested G = Polynomial.C ((affineNested G).coeff 0) :=
+    Polynomial.eq_C_of_natDegree_eq_zero ((natDegree_affineNested G).trans hZ)
+  rw [affineLineEval_eq_nested, affineLineEval_eq_nested, hC]
+  simp
+
+/-- A nonzero discriminant of `R` vanishes on at most `h (h - 1)` lines indexed injectively by `S`,
+where `h` bounds the `(Y, Z)`-degree of `R`. -/
+theorem card_filter_affineDiscriminant_eq_zero_le [DecidableEq E] {F : Type*}
+    {R : MvPolynomial AffineVar E}
+    {h : ℕ} (hR0 : affineDiscriminant R ≠ 0) (hR : R.weightedTotalDegree affineYZWeight ≤ h)
+    (S : Finset (F × F)) (φ : F × F → E × E) (hφ : φ.Injective) :
+    #(S.filter fun c ↦
+      (affineDiscriminant R).eval (affineMultiplier (φ c).1 (φ c).2) = 0) ≤ h * (h - 1) :=
+  (Polynomial.card_le_natDegree_of_injOn_of_eval_eq_zero hR0
+    (x := fun c ↦ affineMultiplier (φ c).1 (φ c).2)
+    ((affineMultiplier_injective.comp hφ).injOn) fun _ hc ↦ (Finset.mem_filter.mp hc).2).trans
+    (natDegree_affineDiscriminant_le hR)
+
 
 end ReedSolomon

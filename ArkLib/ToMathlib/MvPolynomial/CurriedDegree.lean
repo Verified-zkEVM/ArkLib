@@ -6,7 +6,6 @@ Authors: Thomas Coratger
 module
 
 public import Mathlib.Algebra.MvPolynomial.Equiv
-public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
@@ -15,13 +14,12 @@ public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 A polynomial in `S₁ ⊕ S₂` can be read as a polynomial in `S₁` with coefficients in `S₂`.
 A weighted degree of the flat polynomial bounds, monomial by monomial, the outer weight plus the
 total degree of the coefficient.
-A partial derivative in a variable heavier than the whole polynomial vanishes.
 
 ## Main statements
 
+* `MvPolynomial.sumAlgEquiv_monomial`: currying a monomial.
 * `MvPolynomial.coeff_coeff_sumAlgEquiv`: coefficients of the curried polynomial.
-* `MvPolynomial.totalDegree_coeff_add_weight_le`: the monomialwise degree bound.
-* `MvPolynomial.pderiv_eq_zero_of_weightedTotalDegree_lt`: vanishing of a heavy derivative.
+* `MvPolynomial.totalDegree_coeff_add_weight_sumAlgEquiv_symm_le`: the monomialwise degree bound.
 -/
 
 @[expose] public section
@@ -64,7 +62,7 @@ theorem coeff_coeff_sumAlgEquiv (p : MvPolynomial (S₁ ⊕ S₂) R) (k : S₁ �
 /-- For a monomial `m` of `P`, its `w`-weight plus its coefficient degree is bounded by `P` flat.
 
 The flat weight is `w` on `S₁` and `1` on `S₂`. -/
-theorem totalDegree_coeff_add_weight_le (w : S₁ → ℕ)
+theorem totalDegree_coeff_add_weight_sumAlgEquiv_symm_le (w : S₁ → ℕ)
     (P : MvPolynomial S₁ (MvPolynomial S₂ R)) {m : S₁ →₀ ℕ} (hm : m ∈ P.support) :
     (P.coeff m).totalDegree + Finsupp.weight w m ≤
       ((sumAlgEquiv R S₁ S₂).symm P).weightedTotalDegree (Sum.elim w 1) := by
@@ -84,16 +82,5 @@ theorem totalDegree_coeff_add_weight_le (w : S₁ → ℕ)
     simp [Finsupp.sum]
   rw [totalDegree, hdeg]
   omega
-
-/-- A partial derivative in `X i` vanishes when `w i` exceeds the weighted degree. -/
-theorem pderiv_eq_zero_of_weightedTotalDegree_lt {σ : Type*} (w : σ → ℕ) (i : σ)
-    (p : MvPolynomial σ R) (h : p.weightedTotalDegree w < w i) : pderiv i p = 0 := by
-  ext m
-  rw [coeff_pderiv, AddMonoidAlgebra.coeff_zero, Finsupp.coe_zero, Pi.zero_apply]
-  by_cases hm : p.coeff (m + Finsupp.single i 1) = 0
-  · rw [hm, zero_mul]
-  · have hle := le_weightedTotalDegree w (mem_support_iff.mpr hm)
-    rw [map_add, Finsupp.weight_single, one_smul] at hle
-    omega
 
 end MvPolynomial

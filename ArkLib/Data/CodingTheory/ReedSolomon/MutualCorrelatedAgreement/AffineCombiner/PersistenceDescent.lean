@@ -22,8 +22,8 @@ which proves persistence.
 
 The paper's Claim 4.8 chooses a second base-field triple in an affine space defined over
 that field.
-The chart proof instead constructs a second regular point over the algebraic closure and
-uses coefficient descent to obtain base-field identities.
+A Taylor-chart proof can construct a second regular point over the algebraic closure and
+then use coefficient descent to obtain base-field identities.
 This lemma supports that difference in proof method.
 
 ## Main statements
@@ -110,7 +110,9 @@ variable {F : Type*} [Field F]
 
 /-- Identities `H(x) = L(x) v` at finitely many base-field points descend along a field embedding.
 
-The descended polynomials satisfy `deg H ≤ d`, `L ≠ 0`, and `deg L ≤ 1`.
+Assume `deg H ≤ d`, `deg L ≤ 1`, `L ≠ 0`, and
+`H.eval (φ (pts k)) = L.eval (φ (pts k)) * φ (vals k)` at every point.
+The descended polynomials satisfy the same degree bounds and nonzero-denominator condition.
 The identities do not assert that `L(x) ≠ 0` at every point. -/
 theorem exists_lineRatioWitness_of_map {E : Type*} [Field E] (φ : F →+* E) {κ : Type*}
     [Finite κ] (pts vals : κ → F) (d : ℕ) {H L : E[X]} (hL : L ≠ 0) (hL1 : L.degree ≤ 1)
