@@ -374,6 +374,130 @@ logs remain equal, while the traced query prefixes differ. P1 retires intermedia
 verifier actions and their former query groups; it does not retire prover slots or their prefixes.
 The disposition inventory records those qualifications separately.
 
+## 26. Knowledge composition and measured extraction
+
+The [assertion disposition record](../interaction-layer/knowledge-composition-disposition.md)
+compares this branch's frozen production laws and acceptance assertions with their exact targets.
+[Entry 18](#18-run-outputs-are-tied-to-the-monad-universe) describes inherited protocol, runner,
+output-family and oracle interfaces. The inventory below covers only this branch's additions.
+
+### Backward maps and composition
+
+`Security/KnowledgeComposition/Extraction.lean` owns full transcript cursors, backward extraction,
+certificate composition and the deterministic extraction-failure theorem. The public
+`Security/KnowledgeComposition.lean` imports it and supplies local-bound, relation-level and
+plain verifier composition theorems.
+
+| API | Change on this branch |
+| --- | --- |
+| `KnowledgeStateFunction` | `Win stmt`, `Witness stmt sp history` and `W stmt tr` retain the input statement. Statements, input witnesses, intermediate witnesses and terminal witnesses have independent universes `uS`, `uW`, `uK`, `uO`. |
+| `extractFrom`, `extractAlong`, `terminalWitness` | Pure backward maps accept large terminal witnesses directly. The root map returns `Win stmt`; no terminal or seam carrier is encoded into a small type. |
+| `child`, `withRootWitness`, `extractFromMaps` | Restrict to a first move, expose the actual root witness internally and factor extraction through its computational fields. These support recursion with an independently large input witness. |
+| `append` and its extraction/state laws | The prefix's terminal family `Wmid stmt tr₁ : Type uM` is the suffix's input family. The final family has its own universe `uO`; the seam states that the suffix root extractor returns a valid prefix witness. |
+| `guard`, `condition`, `comap` and their local bounds | Restrict states to admissible inputs, conjoin a statement predicate, or pull back statements and map dependent input/output witnesses. The source and target terminal families have independent universes. |
+| `BadChallengeFrom`, `BadChallengeAlong` | Follow the actual suffix extraction of the supplied terminal witness. `extraction_failure_implies_badChallengeAlong` identifies a receiver transition without choosing a different witness. |
+| `rbrKnowledgeSoundness` and both verifier wrappers | Pass the terminal universe through to the certificate. Both lift operations raise only `uK`, keeping the terminal and input carriers. Legacy wrappers specialize to their original small terminal families. |
+| `rbrKnowledgeSoundness_append`, `_of_mid` | Compose local errors and dependent middle relations on every prefix transcript, including false middle claims. `_of_mid` accepts explicit input and output witness maps. |
+| Plain/oracle `simulateQ_append_run`, `support_append`, `validAcceptance_append` | Decompose the two decisions with the same intermediate ambient state and, for oracle verifiers, actual routed suffix data. The support laws work in any lawful monad with lawful support. |
+| `Verifier.rbrKnowledgeSoundness_append`, `_of_pure` | Compose standalone plain verifier hypotheses. The supported prefix result must equal the named middle statement; `_of_pure` derives that law for a pure prefix decision. |
+
+The plain verifier proof conditions suffix states on possible prefix acceptance. The suffix has
+its own output relation. No theorem identifies two independently existential acceptance events
+with composite acceptance. `splitFiber_pair` and `Verifier.append_decide_pathAlong` expose the
+transports in the decision fold; heterogeneous equality identifies equal-path output fibers.
+
+The oracle fixture instead uses `rbrKnowledgeSoundness_append` and `_of_mid` with
+`composed_validAcceptance_iff` as an explicit relation-level bridge. It does not instantiate a
+generic standalone oracle verifier composition theorem. The plain `indexed_composed` client does
+instantiate the standalone plain verifier theorem. The disposition record keeps these claims
+separate.
+
+### Full-prefix distributions and local errors
+
+The shared `PrefixDraw` and `PrefixError` interfaces index draws and errors by the same receiver
+cursor and full history. The public `rbrKnowledgeSoundness` predicate and both verifier forms use
+these interfaces. `combinePrefixDraw` retains the first error before the seam. After the seam,
+it selects the second error family by the complete first transcript and evaluates it at the
+second prefix history. `appendPrefixSampler_eq_combinePrefixDraw` proves the matching sampler law.
+
+The `_prefix` composition theorems accept these families. The node-indexed predicates end in
+`OfNodes`; the established node composition theorems follow from the general laws by ignoring
+history. There is one local-bound and composition proof development. P1 removes challenge
+selection from oracle payloads and effectful receiver actions only. Earlier public challenges and
+prover messages may select later distributions and local errors. The fixed two-bit zero-error
+certificate in `ArkLibTest/Interaction/Core/Security/PrefixKnowledge.lean` checks this distinction
+without inserting a prover message. The inventory records the corrected schedule correspondences,
+including KC-065 as equivalent because its frozen schedule was already constant.
+
+### Measured extraction
+
+`Security/MeasuredResources.lean` names one VCVio `BudgetedProgram` for each root, step and leaf
+map. `programAlong` composes those programs using VCVio's `BudgetedProgram.comp` and `contramap`.
+`BudgetAtMost rootBound stepBound leafBound` gives
+`leafBound + (completeSpine l tr).length • stepBound + rootBound`.
+The frozen `length • bound` result is recovered by explicitly supplying zero root and leaf
+bounds to `programAlong_budget_le_nsmul` and `programAlong_costAtMost_nsmul`.
+The empty-protocol fixture quantifies all state functions and stage programs with those zero
+bounds. It does not assume an arbitrary root or leaf program has budget zero.
+
+The cursor induction counts full moves, including oracle messages. PolyFun's node-dependent
+charges do not directly replace it: the stage programs depend on the statement and full earlier
+moves, and the root and leaf budgets require separate accounting. Instruction budgets leave pure
+work, views, handlers, carrier identification and intermediate witness sizes uncharged. The zero
+program exists for every state function; the ordered and unbounded-depth tests use named charged
+programs to test actual instruction cost as well as budgets.
+
+The measured API retains these small carriers because of pinned VCVio declarations:
+
+| Restricted carrier | Forcing declaration at VCVio `fc54dd3d7691d6f5db7dc829e321a727f095bc2d` |
+| --- | --- |
+| Input witnesses `Win stmt : Type` and root-stage result | `OracleComp.BudgetedProgram {Input Result : Type}` in `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156`; the root program realizes `extractRoot`. |
+| Intermediate witnesses and `StageInput : Type` | The same `BudgetedProgram` input/result binders force each step's dependent input pair and result to be small. |
+| Terminal witnesses `W stmt tr : Type` | The same `BudgetedProgram` input binder forces the leaf program's argument to be small. This restriction also applies to `programAlong` and `MeasuredKnowledgeStateFunction`. |
+| Cost type `ω : Type`, instruction names and views | `OracleComp.MeasuredProgram (Input Result ω : Type)` at line 66, with fields `View : Type` and `Op : Type`; `BudgetedProgram` bundles this program. |
+
+The statement universe remains arbitrary. The pure `PrefixMoves`, `KnowledgeStateFunction`,
+lifting, extraction, extraction failure, append and restriction laws accept
+`P : PFunctor.{uA, u}` and a lens to `rolePoly.{u}`, with leaves `PUnit.{u + 1}`.
+The move, statement and witness universes are independent; branches and leaves share the move
+universe. KC-318 and KC-322 now send the frozen `ULift.{1} Nat` oracle payload, retain
+`ULift.{2} (Fin (payload.down + 1))` witnesses and prove extraction returns six.
+
+Probability bounds use the small-move instance of this general certificate. Pinned VCVio's
+`ProbComp : Type → Type` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forces `sampleAt` to return
+a small move. `challengeSpec` (`Core/Protocol.lean:65–67`) returns `Move l`, whose universe is
+shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
+remaining probabilistic limitation. It does not restrict pure backward maps or large terminal
+and seam witnesses in the verifier wrappers.
+
+### Acceptance evidence
+
+The composition fixture sends a public prover selector after the Boolean challenge. That selector
+chooses a public unit-message suffix or an oracle-message suffix under P2. Both challenge values
+remain available on each selected shape. Payload-dependent `Fin (n + 1)` carriers, extraction
+composition, terminal relations and the exported oracle from the same execution are checked on
+both shapes. The selector change is premise-required under P2, not missing parent support.
+
+The ordinary-import universe canary composes with `Type` itself as the terminal and seam carrier,
+both in `Type 1`, and tests both verifier wrappers and lifting with large terminal witnesses.
+Separate clients retain statement-indexed witnesses at unequal universes, empty carriers,
+standalone plain verifier composition and the actual shared ambient state at the seam.
+The axiom collectors check the new laws against `propext`, `Classical.choice` and `Quot.sound`.
+
+### Restoration under P2
+
+The frozen restoration fixture's `Out` chooses `Fin 8` or `Fin 9` from a Boolean challenge.
+Its replacement is **premise-required under P2**: challenges cannot select output shape.
+The child restoration branch (#1483) selects `Fin 8` versus `Fin 9` by a public prover message.
+It must retain the plain replay's payload return on both challenge values and keep oracle
+rejection separate. This branch corrects the disposition; the child owns the restoration fixture.
+No challenge-indexed parent output interface is required.
+
+### Validation
+
+The required targeted reverse-dependency build and guard commands are the acceptance checks for
+this branch. The disposition record gives their scope. No whole-library validation is requested.
+
 ## 21. Round-by-round soundness implies soundness for lawful distribution monads
 
 The probability-free escape theory is polymorphic in protocol positions and moves. Only the
