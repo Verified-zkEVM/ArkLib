@@ -74,3 +74,11 @@ example (f g : ZMod 5 → ZMod 5) :
 #print axioms ReedSolomon.scalarMcaError_zero_eq_mcaError
 #print axioms ReedSolomon.le_mcaError_affineLine_of_ceil_eq
 #print axioms ReedSolomon.affineMcaError_eq_iSup_prob
+
+-- The set-difference characterization accepts the caller's equality instance.
+example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι]
+    (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : Polynomial F) :
+    agreementLoss domain f g L P F₀ G₀ =
+      polynomialAgreementSet domain (combinedWord domain f g L) P \
+        commonPolynomialAgreementSet domain f g F₀ G₀ :=
+  agreementLoss_eq_sdiff domain f g L P F₀ G₀

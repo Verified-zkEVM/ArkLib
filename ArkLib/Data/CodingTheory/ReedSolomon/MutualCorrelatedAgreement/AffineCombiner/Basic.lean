@@ -105,9 +105,8 @@ def agreementLoss (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) : 
   (polynomialAgreementSet domain (combinedWord domain f g L) P).filter fun i ↦
     F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i
 
-open Classical in
 /-- Lost agreements are the candidate's agreement set minus common witness agreement. -/
-theorem agreementLoss_eq_sdiff (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) :
+theorem agreementLoss_eq_sdiff [DecidableEq ι] (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) :
     agreementLoss domain f g L P F₀ G₀ =
       polynomialAgreementSet domain (combinedWord domain f g L) P \
         commonPolynomialAgreementSet domain f g F₀ G₀ := by
