@@ -1191,6 +1191,7 @@ public import ArkLib.ToMathlib.Finset.LineAgreement
 public import ArkLib.ToMathlib.Finset.SumRangeFrom
 public import ArkLib.ToMathlib.Finset.ToListWithProof
 public import ArkLib.ToMathlib.Finsupp.Weight
+public import ArkLib.ToMathlib.GroupTheory.ElementaryAbelian
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.LagrangeLine

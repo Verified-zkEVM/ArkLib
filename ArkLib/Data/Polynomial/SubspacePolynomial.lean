@@ -219,7 +219,9 @@ noncomputable def subspaceTopPoly (a v : ℕ) (b : Fin (v - a) → F) : F[X] :=
   X ^ (2 ^ v) + ∑ j : Fin (v - a), C (b j) * X ^ (2 ^ (a + (j : ℕ)))
 
 /-- For a monic `2`-linearized `P` of degree `2^v`, removing the top part leaves a polynomial of
-degree `< 2^a`. -/
+degree `< 2^a`.
+`IsTwoLinearized.degree_sub_top_two_le` gives the sharper bound when only the two top
+power-of-two terms are removed. -/
 theorem subspaceTopPoly_sub_mem_degreeLT {P : F[X]} (hP : IsTwoLinearized P) (hmon : P.Monic)
     {a v : ℕ} (hdeg : P.natDegree = 2 ^ v) :
     subspaceTopPoly a v (subspaceTopCoeffs a v P) - P ∈ degreeLT F (2 ^ a) := by
@@ -282,7 +284,8 @@ theorem subspaceTopPoly_sub_mem_degreeLT {P : F[X]} (hP : IsTwoLinearized P) (hm
 
 /-- Removing the leading term and the possible term of degree `2 ^ (v + 1)` from a monic
 `2`-linearized polynomial of degree `2 ^ (v + 2)` leaves degree at most `2 ^ v`.
-The coefficient of the second removed term may be zero. -/
+The coefficient of the second removed term may be zero.
+For an arbitrary cutoff, `subspaceTopPoly_sub_mem_degreeLT` gives the corresponding strict bound. -/
 theorem IsTwoLinearized.degree_sub_top_two_le {P : F[X]} (hP : IsTwoLinearized P)
     (hmon : P.Monic) {v : ℕ} (hdeg : P.natDegree = 2 ^ (v + 2)) :
     (P - X ^ 2 ^ (v + 2) - C (P.coeff (2 ^ (v + 1))) * X ^ 2 ^ (v + 1)).degree ≤

@@ -5,6 +5,7 @@ Authors: XC0R
 -/
 module
 
+public import ArkLib.ToMathlib.GroupTheory.ElementaryAbelian
 public import Mathlib.Algebra.CharP.Two
 public import Mathlib.Algebra.Module.ZMod
 public import Mathlib.FieldTheory.Finite.Basic
@@ -19,44 +20,15 @@ A finite field with `2 ^ m` elements has at least `2 ^ (v * (m - v))` additive s
 ## Main statements
 
 * `FiniteField.two_pow_le_card_addSubgroup`
-* `AddCommGroup.nonempty_addEquiv_zmod_two_prod`: a finite group of exponent `2` and size
-  `2 ^ (v + w)` is additively `(ZMod 2) ^ v × (ZMod 2) ^ w`.
 -/
 
 @[expose] public section
-
-namespace AddCommGroup
-
-/-- A finite group with `x + x = 0` and `2 ^ (v + w)` elements is `(ZMod 2) ^ v × (ZMod 2) ^ w`. -/
-theorem nonempty_addEquiv_zmod_two_prod {G : Type*} [AddCommGroup G] [Finite G]
-    (h2 : ∀ x : G, x + x = 0) {v w : ℕ} (hG : Nat.card G = 2 ^ (v + w)) :
-    Nonempty (G ≃+ (Fin v → ZMod 2) × (Fin w → ZMod 2)) := by
-  let : Module (ZMod 2) G :=
-    AddCommGroup.zmodModule (n := 2) (fun x => by rw [two_nsmul]; exact h2 x)
-  have : Fintype G := Fintype.ofFinite G
-  have h1 : Fintype.card G = Fintype.card (ZMod 2) ^ Module.finrank (ZMod 2) G :=
-    Module.card_eq_pow_finrank
-  rw [ZMod.card, ← Nat.card_eq_fintype_card, hG] at h1
-  have h3 : Module.finrank (ZMod 2) G =
-      Module.finrank (ZMod 2) ((Fin v → ZMod 2) × (Fin w → ZMod 2)) := by
-    rw [← Nat.pow_right_injective (le_refl 2) h1, Module.finrank_prod, Module.finrank_fin_fun,
-      Module.finrank_fin_fun]
-  exact ⟨(LinearEquiv.ofFinrankEq _ _ h3).toAddEquiv⟩
-
-end AddCommGroup
 
 namespace FiniteField
 
 section Counting
 
 variable {F : Type*} [Field F] [Fintype F]
-
-/-- A field of characteristic `2` with `2 ^ m` elements is additively
-`(ZMod 2) ^ v × (ZMod 2) ^ (m - v)`. -/
-private theorem nonempty_addEquiv_prod [CharP F 2] {m v : ℕ} (hF : Fintype.card F = 2 ^ m)
-    (hv : v ≤ m) : Nonempty (F ≃+ (Fin v → ZMod 2) × (Fin (m - v) → ZMod 2)) :=
-  AddCommGroup.nonempty_addEquiv_zmod_two_prod CharTwo.add_self_eq_zero
-    (by rw [Nat.card_eq_fintype_card, hF, Nat.add_sub_cancel' hv])
 
 private theorem linearMap_graph_injective {v k : ℕ} :
     Function.Injective fun g : (Fin v → ZMod 2) →ₗ[ZMod 2] (Fin k → ZMod 2) => g.graph := by
@@ -79,7 +51,8 @@ private theorem card_linearMap_graph {v k : ℕ}
 additive subgroups of size `2 ^ v`: the graphs of the `𝔽₂`-linear maps `𝔽₂ ^ v → 𝔽₂ ^ (m - v)`. -/
 theorem two_pow_le_card_addSubgroup [CharP F 2] {m v : ℕ} (hF : Fintype.card F = 2 ^ m)
     (hv : v ≤ m) : 2 ^ (v * (m - v)) ≤ Nat.card {V : AddSubgroup F // Nat.card V = 2 ^ v} := by
-  obtain ⟨e⟩ := nonempty_addEquiv_prod hF hv
+  obtain ⟨e⟩ := AddCommGroup.nonempty_addEquiv_zmod_two_prod (G := F) CharTwo.add_self_eq_zero
+    (v := v) (w := m - v) (by rw [Nat.card_eq_fintype_card, hF, Nat.add_sub_cancel' hv])
   let f : ((Fin v → ZMod 2) →ₗ[ZMod 2] (Fin (m - v) → ZMod 2)) →
       {V : AddSubgroup F // Nat.card V = 2 ^ v} := fun g =>
     ⟨g.graph.toAddSubgroup.map e.symm.toAddMonoidHom, by

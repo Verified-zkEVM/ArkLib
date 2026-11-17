@@ -32,7 +32,7 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records its stateme
 The counting argument uses no sampler, and the error's native probability interface is
 `ReedSolomon.scalarMcaError_eq_iSup_prob`.
 
-## Main statement
+## Main statements
 
 * `ReedSolomon.le_scalarMcaError_of_addSubgroup`: the lower bound `(n - 8)/q`.
 
@@ -132,17 +132,29 @@ private theorem card_ker_inf_ker_dotHom {m : ℕ} (c c' : BinarySpace m) :
     AddSubgroup (BinarySpace m))) hr
   omega
 
-/-- Over a finite field of characteristic two, an additive domain of size `n = 2 ^ k ≥ 16`
-has scalar error at least `(n - 8)/q` at degree `n/4`, threshold `A ≤ 9n/16`,
-and agreement loss `s < 3n/16`, where `q` is the field size. -/
+/-- Let `domain` enumerate exactly the additive subgroup `V` of a finite field of characteristic
+two, with `n ≥ 16` domain points and field size `q`.
+The scalar error is at least `(n - 8)/q` at output degree `n/4`, threshold `A ≤ 9n/16`,
+and agreement loss `s < 3n/16`.
+The subgroup condition implies that `n` is a power of two. -/
 theorem le_scalarMcaError_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [Fintype F]
     [CharP F 2] {ι : Type*} [Fintype ι] (V : AddSubgroup F) (domain : ι ↪ F)
     (hV : ∀ x, x ∈ V ↔ ∃ i, domain i = x) (h16 : 16 ≤ Fintype.card ι)
-    (hpow : ∃ k, Fintype.card ι = 2 ^ k) {A s : ℕ} (hA : A ≤ 9 * Fintype.card ι / 16)
+    {A s : ℕ} (hA : A ≤ 9 * Fintype.card ι / 16)
     (hs : s < 3 * Fintype.card ι / 16) :
     ENNReal.ofReal (((Fintype.card ι - 8 : ℕ) : ℝ) / Fintype.card F) ≤
       scalarMcaError domain (Fintype.card ι / 4) A s := by
   classical
+  have hbij : Function.Bijective fun i : ι ↦ (⟨domain i, (hV _).2 ⟨i, rfl⟩⟩ : V) :=
+    ⟨fun i j h ↦ domain.injective (congrArg Subtype.val h), fun x ↦ by
+      obtain ⟨i, hi⟩ := (hV x).1 x.2
+      exact ⟨i, Subtype.ext hi⟩⟩
+  have hpow : ∃ k, Fintype.card ι = 2 ^ k := by
+    let : Module (ZMod 2) V := AddCommGroup.zmodModule (n := 2)
+      (fun x ↦ by rw [two_nsmul]; exact Subtype.ext (CharTwo.add_self_eq_zero (x : F)))
+    refine ⟨Module.finrank (ZMod 2) V, ?_⟩
+    rw [Fintype.card_of_bijective hbij, Module.card_eq_pow_finrank (K := ZMod 2) (V := V),
+      ZMod.card]
   -- Write `n = 16 N` with `N = 2 ^ m`.
   obtain ⟨k, hk⟩ := hpow
   obtain ⟨m, rfl⟩ : ∃ m, k = m + 4 := by
@@ -155,10 +167,6 @@ theorem le_scalarMcaError_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [
   have hN1 : 1 ≤ N := Nat.one_le_two_pow
   -- Coordinates: an injective additive map `ψ` from the coordinate space onto `V`.
   have hVcard : Nat.card V = 2 ^ (3 + (m + 1)) := by
-    have hbij : Function.Bijective fun i : ι ↦ (⟨domain i, (hV _).2 ⟨i, rfl⟩⟩ : V) :=
-      ⟨fun i j h ↦ domain.injective (congrArg Subtype.val h), fun x ↦ by
-        obtain ⟨i, hi⟩ := (hV x).1 x.2
-        exact ⟨i, Subtype.ext hi⟩⟩
     rw [← Nat.card_congr (Equiv.ofBijective _ hbij), Nat.card_eq_fintype_card, hk]
     ring_nf
   obtain ⟨e⟩ := AddCommGroup.nonempty_addEquiv_zmod_two_prod
@@ -187,7 +195,7 @@ theorem le_scalarMcaError_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [
   replace hs : s < 3 * N := by omega
   -- The subgroup `U` of index `8` and its subspace polynomial `W`.
   set U₀ : AddSubgroup (BinarySpace m) :=
-    (AddMonoidHom.fst (Fin 3 → ZMod 2) (Fin (m + 1) → ZMod 2)).ker with hU₀
+    (AddMonoidHom.fst (Fin 3 → ZMod 2) (Fin (m + 1) → ZMod 2)).ker
   set W : F[X] := subspacePolynomial (U₀.map ψ) with hW
   have hWdeg : W.natDegree = 2 * N := by
     rw [hW, natDegree_subspacePolynomial, AddSubgroup.card_map_of_injective hψinj, card_ker_fst]
