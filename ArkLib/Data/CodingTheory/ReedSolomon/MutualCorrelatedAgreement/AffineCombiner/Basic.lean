@@ -80,6 +80,16 @@ def combinedWord (domain : ι ↪ F) (f g : ι → F) (L : F[X]) : ι → F :=
 noncomputable def affineMultiplier (α β : F) : F[X] :=
   C α + C β * X
 
+/-- Distinct pairs `(α, β)` give distinct lines `α + β X`. -/
+theorem affineMultiplier_injective :
+    Function.Injective fun c : F × F ↦ affineMultiplier c.1 c.2 := by
+  rintro ⟨a, b⟩ ⟨a', b'⟩ h
+  have h0 := congrArg (coeff · 0) h
+  have h1 := congrArg (coeff · 1) h
+  simp only [affineMultiplier, coeff_add, coeff_C, coeff_C_mul, coeff_X] at h0 h1
+  simp at h0 h1
+  simp [h0, h1]
+
 @[simp]
 theorem eval_affineMultiplier (α β x : F) : (affineMultiplier α β).eval x = α + β * x := by
   simp [affineMultiplier]
