@@ -39,6 +39,7 @@ The status is one of equivalent, premise-required, retired or unresolved.
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+| 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
 The [resource and node universe inventory](resource-universes-disposition.md) records the frozen
 R26, R27 and decoration canaries closed by entry 18.
@@ -57,6 +58,12 @@ are in [`legacy-embedding.md`](legacy-embedding.md#departures).
 Entries 15 and 16 are the two hypotheses that a client of the round-by-round transfers must
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
+
+Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
+records the generic soundness implication. The
+[soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
+statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
+The implication applies to lawful distribution monads, including optional computations.
 
 ## The oracle correspondence gap and its resolution
 
