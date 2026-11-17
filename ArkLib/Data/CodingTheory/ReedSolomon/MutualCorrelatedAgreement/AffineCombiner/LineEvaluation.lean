@@ -28,9 +28,10 @@ The line weight `(1, 1, d)` bounds the degree after the evaluation, when `deg P 
 
 ## Main statements
 
-* `ReedSolomon.natDegree_affineLineEval_le`: the degree of the line evaluation.
-* `ReedSolomon.map_affineLineEval`: the line evaluation commutes with a field embedding.
+* `ReedSolomon.map_affineLineEval`: line evaluation commutes with a field embedding.
 * `ReedSolomon.degreeOf_none_pos_of_pderiv_ne_zero`: a nonzero `Z`-derivative needs `Z`.
+
+* `ReedSolomon.natDegree_affineLineEval_le`: the degree of the line evaluation.
 
 ## References
 

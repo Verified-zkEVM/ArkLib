@@ -11,21 +11,31 @@ public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterpolationParams
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
 
 /-!
 # The affine MCA error of Reed–Solomon codes
 
-The exceptional challenges split into persistent and nonpersistent ones.
+Exceptional challenges split into persistent and nonpersistent ones.
+The persistent challenges are counted through rational pairs.
+The interpolant bounds the others.
+For output degree `1 ≤ d < n`, write `ρ = d / n` and assume
+`0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`.
+At the agreement threshold `⌈(√ρ + η) n⌉` and loss one, the error is at most
+`4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
+The domain embedding supplies `n ≤ q`.
 
-The persistent ones are counted through rational pairs, the others through the interpolant.
-
-With the standard parameters, this bounds the affine MCA error by `4 / (η q) + O(n² / q²)`.
+The error has type `ENNReal`.
+`ReedSolomon.prob_isAffineExceptional_le` connects it to the native probability of an
+exceptional candidate for any received word pair.
+The counting bounds have no sampler assumptions.
 
 ## Main statements
 
 * `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation` and
-  `ReedSolomon.affineMCAError_le_of_interpolation`: the bound for any interpolation parameters.
-* `ReedSolomon.exists_affineExceptional_finset_card_le` and `ReedSolomon.affineMCAError_le`:
+  `ReedSolomon.affineMcaError_le_of_interpolation`: the bound for any interpolation parameters.
+* `ReedSolomon.exists_affineExceptional_finset_card_le` and `ReedSolomon.affineMcaError_le`:
   the bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)` at the threshold `⌈(√ρ + η) n⌉`.
 
 ## References
@@ -96,11 +106,14 @@ private theorem threshold_facts {d n : ℕ} {η : ℝ} (hn : 0 < n) (hη : 0 < �
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
-/-- Outside few challenges, no candidate is exceptional at the threshold `A = ⌈(√ρ + η) n⌉`.
+/-- At loss one and threshold `A = ⌈(√ρ + η)n⌉`, a finite set contains every exceptional challenge.
 
-The interpolation parameters `m, D, M` are any for which an interpolant exists.
-
-The bound has a persistent part `ℓ · max q (n choose 2)` and a nonpersistent part. -/
+Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, `ρ = d/n`, and
+`0 < η < 1 - √ρ`.
+The interpolation parameters `m, D, M` satisfy the surplus condition.
+The persistence threshold `B = ⌈(√ρ + η/2)n⌉ - 1` satisfies `n(d + 1) < B²`.
+The bound has a persistent part `ℓ · max q (n choose 2)` and a nonpersistent part,
+where `ℓ = n(B - d - 1)/(B² - n(d + 1))`. -/
 theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (domain : ι ↪ F)
     (f g : ι → F) {d m D M : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -138,32 +151,36 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (do
   have hpers := card_isAffineExceptional_persistent_le domain f g (A := A) hdB hJ
   exact ⟨Ex, by linarith, hgood⟩
 
-/-- The affine MCA error at the threshold `⌈(√ρ + η) n⌉`, for any interpolation parameters.
+/-- The affine error at loss one and threshold `A = ⌈(√ρ + η)n⌉` is bounded by interpolation.
 
-The persistent part uses the real Johnson factor `ℓ`, not its floor. -/
-theorem affineMCAError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m D M : ℕ} {η : ℝ}
+Here `n` is the domain size, `1 ≤ d < n`, `ρ = d/n`, and `0 < η < 1 - √ρ`.
+The parameters `m, D, M` satisfy the surplus condition, and the persistence threshold
+`B = ⌈(√ρ + η/2)n⌉ - 1` satisfies `n(d + 1) < B²`.
+The persistent part uses the real Johnson factor `n(B - d - 1)/(B² - n(d + 1))`. -/
+theorem affineMcaError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m D M : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * affineThreshold d (Fintype.card ι) η - D) (M + 1) (D + 1)).card)
     (hJ : Fintype.card ι * (d + 1) < affinePersistenceThreshold d (Fintype.card ι) η ^ 2) :
-    affineMCAError domain d (affineThreshold d (Fintype.card ι) η) 1 ≤
-      (Fintype.card ι : ℝ) * ((affinePersistenceThreshold d (Fintype.card ι) η : ℝ) - d - 1) /
+    affineMcaError domain d (affineThreshold d (Fintype.card ι) η) 1 ≤
+      ENNReal.ofReal
+        ((Fintype.card ι : ℝ) * ((affinePersistenceThreshold d (Fintype.card ι) η : ℝ) - d - 1) /
             ((affinePersistenceThreshold d (Fintype.card ι) η : ℝ) ^ 2 -
               Fintype.card ι * (d + 1)) *
           max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) / (Fintype.card F : ℝ) ^ 2 +
         (D ^ 2 + 4 * d ^ 2 * M ^ 2 * D ^ 3 * ((Fintype.card ι : ℝ) /
           (affineThreshold d (Fintype.card ι) η -
             affinePersistenceThreshold d (Fintype.card ι) η : ℕ)) ^ 2) /
-          (Fintype.card F : ℝ) ^ 2 := by
+          (Fintype.card F : ℝ) ^ 2) := by
   rw [← add_div]
-  exact affineMCAError_le_of_forall_exists domain fun f g ↦
+  exact affineMcaError_le_of_forall_exists domain fun f g ↦
     exists_affineExceptional_finset_card_le_of_interpolation domain f g hd hdn hη hη1 hsurplus hJ
 
 /-- With one point of agreement loss, few challenges are exceptional.
 
-Here `ρ = d / n`, `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
-
+Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
+Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
 At most `4 q / η + 2^14 n² / (ρ³ η¹⁰)` challenges are exceptional at `⌈(√ρ + η) n⌉`. -/
 theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
@@ -183,9 +200,9 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
   set B := affinePersistenceThreshold d n η with hB_def
   set r := √((d : ℝ) / n)
   have hn0 := hP.card_pos
-  have hr0 := hP.sqrt_rate_pos
-  have hr1 := hP.sqrt_rate_lt_one
-  have hρ0 := hP.rate_pos
+  have hr0 := hP.sqrt_degreeFraction_pos
+  have hr1 := hP.sqrt_degreeFraction_lt_one
+  have hρ0 := hP.degreeFraction_pos
   have hη1' := hP.lt_one
   have hrr : r ^ 2 * n = d := by rw [Real.sq_sqrt hρ0.le]; field_simp
   -- The persistence threshold is large.
@@ -283,17 +300,20 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
 
 /-- With one point of loss, the affine MCA error is at most `4 / (η q) + 2^14 n² / (ρ³ η¹⁰ q²)`.
 
-Here `ρ = d / n`, `0 < η < 1 - √ρ`, `n η² ≥ 4 / ρ` and the threshold is `⌈(√ρ + η) n⌉`. -/
-theorem affineMCAError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : ℝ}
+Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
+Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
+The threshold is `⌈(√ρ + η) n⌉`. -/
+theorem affineMcaError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
     (hn : 4 / ((d : ℝ) / Fintype.card ι) ≤ Fintype.card ι * η ^ 2) :
-    affineMCAError domain d ⌈(√((d : ℝ) / Fintype.card ι) + η) * Fintype.card ι⌉₊ 1 ≤
-      4 / (η * Fintype.card F) + 2 ^ 14 * (Fintype.card ι : ℝ) ^ 2 /
-        (((d : ℝ) / Fintype.card ι) ^ 3 * η ^ 10 * (Fintype.card F : ℝ) ^ 2) := by
+    affineMcaError domain d ⌈(√((d : ℝ) / Fintype.card ι) + η) * Fintype.card ι⌉₊ 1 ≤
+      ENNReal.ofReal (4 / (η * Fintype.card F) + 2 ^ 14 * (Fintype.card ι : ℝ) ^ 2 /
+        (((d : ℝ) / Fintype.card ι) ^ 3 * η ^ 10 * (Fintype.card F : ℝ) ^ 2)) := by
   have hq : (0 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.card_pos
-  refine (affineMCAError_le_of_forall_exists domain fun f g ↦
+  refine (affineMcaError_le_of_forall_exists domain fun f g ↦
     exists_affineExceptional_finset_card_le domain f g hd hdn hη hη1 hn).trans (le_of_eq ?_)
+  congr 1
   field_simp
 
 end ReedSolomon

@@ -15,14 +15,14 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
 /-!
 # Counting nonpersistent challenges in the Taylor chart
 
-A challenge with a nonpersistent root of one factor `R` gives a point of the chart `(y₀, a, b)`.
-
-That point lies on the hypersurface `R(c, a + c b, y₀) = 0` and on at least `A` agreement cuts.
-
+A challenge with a nonpersistent root of a factor `R` gives a chart point `(y₀, a, b)`.
+The point lies on `R(c, a + c b, y₀) = 0` and on at least `A` agreement cuts.
 The incidence bound counts such points by `h · (n · 2 s d h / (A - B)) ^ 2`.
+A positive-dimensional component on `B + 1` cuts supplies two distinct challenges,
+whose reconstructions yield persistence after descent to the base field.
 
-A component with `B + 1` cuts and positive dimension carries two challenge lines, which make the
-root persistent.
+The agreement cuts are noncomputable polynomial constructions.
+The excluded set is a predicate, with no algorithmic witness selection.
 
 ## Main statements
 
@@ -43,8 +43,6 @@ root persistent.
 
 namespace ReedSolomon
 
-noncomputable section
-
 open MvPolynomial
 open scoped Finset
 
@@ -52,7 +50,7 @@ variable {F : Type*} [Field F] {ι : Type*}
 variable {E : Type*} [Field E]
 
 /-- The agreement cut of the position `i`, with the received values mapped to `E`. -/
-def affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c : E)
+noncomputable def affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c : E)
     (R : MvPolynomial AffineVar E) (s d τ : ℕ) (i : ι) : MvPolynomial AffineChartVar E :=
   affineChartCut c R s d τ (φ (domain i)) (φ (f i)) (φ (g i))
 
@@ -65,7 +63,8 @@ def affineChartExcluded (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c
       (∀ i ∈ T, aeval pt' (affineChartAgreementCut domain f g φ c R s d τ i) = 0) ∧
       pt' ∘ Sum.inr ≠ pt ∘ Sum.inr}
 
-/-- Two regular points on `B + 1 ≥ d + 1` common cuts and the same challenge are equal. -/
+/-- For `2 s d - 1 ≤ τ`, two regular points on at least `B + 1 ≥ d + 1` common cuts
+with the same challenge are equal. -/
 theorem eq_of_affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c : E)
     (R : MvPolynomial AffineVar E) {s d τ B : ℕ} (hτ : 2 * s * d - 1 ≤ τ) (hdB : d ≤ B)
     (T : Finset ι) (hT : B + 1 ≤ #T) {pt pt' : AffineChartVar → E}
@@ -99,7 +98,8 @@ theorem eq_of_affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ :
 
 /-- A positive-dimensional prime with `B + 1` agreement cuts has its regular points excluded.
 
-Its regular points are infinitely many, and two of them on the same challenge are equal. -/
+Assume the separant is not in the prime ideal, `d ≤ B`, and `2 s d - 1 ≤ τ`.
+The regular locus is infinite, and two of its points on the same challenge are equal. -/
 theorem affineChart_terminal [IsAlgClosed E] (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E)
     (c : E) (R : MvPolynomial AffineVar E) {s d τ B : ℕ} (hτ : 2 * s * d - 1 ≤ τ)
     (hdB : d ≤ B) (J : Ideal (MvPolynomial AffineChartVar E)) (hJ : J.IsPrime)
@@ -161,7 +161,8 @@ theorem aeval_affineChartAgreementCut_point_eq_zero_iff [IsAlgClosed E] (domain 
 
 /-- A regular root whose chart point is excluded is persistent.
 
-The second challenge gives the ratio `(P' - P) / L`, which descends to `F`. -/
+The second challenge gives identities `P' - P = L g`, which descend to `F`.
+Discarding at most one root of `L` leaves at least `B` regular agreements. -/
 theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : ι ↪ F)
     (f g : ι → F) (φ : F →+* E) (c : E) (R : MvPolynomial AffineVar E) (p e : ℕ) [ExpChar E p]
     {d B : ℕ} {α β : F} {P : Polynomial F} (hP : P.degree ≤ d)
@@ -220,7 +221,9 @@ theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : 
 
 /-- Few challenges carry a simple, nonpersistent root `P(X ^ (p ^ e))` of one factor.
 
-The bound is `h · (n · 2 p^e d h / (A - B)) ^ 2`, with `h` the `(Y, Z)`-degree of the factor. -/
+Assume `1 ≤ d ≤ B < A ≤ n`, where `n` is the domain size.
+For candidates of degree at most `d` with at least `A` agreements, the bound is
+`h · (n · 2 p^e d h / (A - B)) ^ 2`, where `h` bounds the factor's `(Y, Z)`-degree. -/
 theorem card_affineNonpersistent_le [IsAlgClosed E] (domain : ι ↪ F) (f g : ι → F)
     (φ : F →+* E) (p e : ℕ) [ExpChar E p] (R : MvPolynomial AffineVar E) {d h A B : ℕ}
     (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι)
@@ -288,9 +291,10 @@ theorem card_affineNonpersistent_le [IsAlgClosed E] (domain : ι ↪ F) (f g : �
 
 /-- Outside at most `h · (n · 2 p^e d h / (A - B)) ^ 2` challenges, candidates are persistent.
 
-This holds for every candidate of degree at most `d` with `A` agreements.
-
-It must give a simple root `P(X ^ (p ^ e))` of the factor along the line. -/
+Assume `1 ≤ d ≤ B < A ≤ n`, where `n` is the domain size and `h` bounds the factor's
+`(Y, Z)`-degree.
+The guarantee covers every candidate of degree at most `d` with at least `A` agreements
+whose expansion `P(X ^ (p ^ e))` is a simple root of the factor along the line. -/
 theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (domain : ι ↪ F)
     (f g : ι → F) (φ : F →+* E) (p e : ℕ) [ExpChar E p] (R : MvPolynomial AffineVar E)
     {d h A B : ℕ} (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι)
@@ -328,7 +332,5 @@ theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (do
   intro c hc P hP hroot hsep hA
   by_contra hnp
   exact hc (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, hP, hroot, hsep, hA, hnp⟩)
-
-end
 
 end ReedSolomon

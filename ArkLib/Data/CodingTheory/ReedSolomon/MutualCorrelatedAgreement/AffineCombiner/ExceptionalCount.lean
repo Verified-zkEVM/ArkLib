@@ -19,12 +19,9 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 # Counting exceptional challenges through the factors of the interpolant
 
 An exceptional candidate makes the interpolant vanish along its challenge line.
-
 Over the algebraic closure, the interpolant splits into a content free of `Z` and irreducible
 factors of positive `Z`-degree.
-
 The content vanishes on few lines, and each factor has few nonpersistent challenges.
-
 Summing over the factors bounds the nonpersistent exceptional challenges.
 
 ## Main statements
@@ -62,7 +59,8 @@ theorem affineLineEval_eq_of_degreeOf_none_eq_zero {G : MvPolynomial AffineVar E
   simp
 
 open Classical in
-/-- The discriminant of `R` vanishes on at most `h (h - 1)` lines indexed injectively by `S`. -/
+/-- A nonzero discriminant of `R` vanishes on at most `h (h - 1)` lines indexed injectively by `S`,
+where `h` bounds the `(Y, Z)`-degree of `R`. -/
 theorem card_filter_affineDiscriminant_eq_zero_le {F : Type*} {R : MvPolynomial AffineVar E}
     {h : ℕ} (hR0 : affineDiscriminant R ≠ 0) (hR : R.weightedTotalDegree affineYZWeight ≤ h)
     (S : Finset (F × F)) (φ : F × F → E × E) (hφ : φ.Injective) :
@@ -74,7 +72,6 @@ theorem card_filter_affineDiscriminant_eq_zero_le {F : Type*} {R : MvPolynomial 
     (natDegree_affineDiscriminant_le hR)
 
 end Lines
-
 
 /-- If `δ + Σ h ≤ D`, then `δ + Σ h (h - 1) ≤ D²` and `Σ h³ ≤ D³`. -/
 private theorem budget_le {α : Type*} (s : Finset α) (h : α → ℕ) {δ D : ℕ}
@@ -106,8 +103,8 @@ variable {E : Type*} [Field E]
 /-- Outside few challenges, every root along the line of one irreducible factor is persistent.
 
 The factor has positive `Z`-degree at most `M` and `(Y, Z)`-degree at most `h`.
-
-The roots counted are candidates of degree at most `d` with `A` agreements. -/
+Assume `1 ≤ d ≤ B < A ≤ n`, where `n` is the domain size.
+The roots counted are candidates of degree at most `d` with at least `A` agreements. -/
 theorem exists_affineFactor_finset_card_le [Finite F] [IsAlgClosed E] (domain : ι ↪ F)
     (f g : ι → F) (φ : F →+* E) (p : ℕ) [ExpChar E p] [PerfectRing E p]
     {Q : MvPolynomial AffineVar E} (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf none)
@@ -175,8 +172,9 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
 /-- Outside few challenges, no candidate is exceptional.
 
-The excluded challenges are a given set plus at most `D² + 4 d² M² D³ (n / (A - B))²` others.
-
+Assume `1 ≤ d ≤ B < A ≤ n` and an interpolant with budgets `m, D, M`.
+At agreement loss one, the excluded set has size at most the size of a given set plus
+`D² + 4 d² M² D³ (n / (A - B))²`.
 Outside the given set, exceptional candidates must not be persistent. -/
 theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domain : ι ↪ F)
     (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
