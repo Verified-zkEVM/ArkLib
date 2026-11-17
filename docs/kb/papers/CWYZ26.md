@@ -20,6 +20,9 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LineRoots.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FrobeniusFactor.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/TaylorChart.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ChartIncidence.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ExceptionalCount.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean
 ---
 
 # CWYZ26
@@ -34,7 +37,7 @@ Set `ρ = d/n` and `A = ⌈(√ρ + η)n⌉`.
 If `0 < η < 1 - √ρ` and `nη² ≥ 4/ρ`, Theorem 1.1 bounds the error with one lost agreement by
 `4/(ηq) + 2¹⁴ n²/(ρ³ η¹⁰ q²)`.
 This bound holds for every such domain in every finite field of size `q ≥ n`.
-Theorem 1.1 is a planned unit in the port ledger below.
+Theorem 1.1 is formalized by `ReedSolomon.affineMcaError_le`.
 
 For fixed `ρ, η` in that range and sufficiently large `n`, scalar combiners have error
 `Ω_{ρ,η}(n/q)` at the same threshold and loss.
@@ -63,7 +66,12 @@ The embedding already implies `n ≤ q`.
 | Lemma 4.3, second condition | `ReedSolomon.affineDiscriminant`, `ReedSolomon.affineDiscriminant_ne_zero`, `ReedSolomon.natDegree_affineDiscriminant_le`, `ReedSolomon.affineLineEval_pderiv_ne_zero` | The `Z`-discriminant is a resultant with declared degrees. It stays valid when the line makes the leading `Z`-coefficient vanish. Its `Y`-degree is at most `h (h - 1)`. The simple-root statement needs `0 < deg_Z R`. |
 | Section 4, factorization: `Q_i(X^s, Y^s, Z) = R_i^s` | `ReedSolomon.exists_affineFrobeniusFactor` | Over a perfect field of exponential characteristic `p`. The exponent is `s = p^e ≤ deg_Z Q`, and `R` keeps the `(Y, Z)`-degree bound. |
 | Lemma 3.11, coefficients and polynomial-root case | `ReedSolomon.affineChartCoefficient`, `ReedSolomon.affineChartNumerator`, `ReedSolomon.affineChartPolynomial_point`, `ReedSolomon.totalDegree_affineChartNumerator_le` | At a center with nonzero separant, polynomial roots are reconstructed from the rational Taylor coefficients. The numerator bound is `1 + τ(h - 1)` for `2l - 1 ≤ τ`, where `h` is any upper bound on the `(Y, Z)`-degree. This interface does not state the paper's existence and uniqueness theorem for formal power series. |
-| Claim 4.9, chart map and agreement cuts | `ReedSolomon.affineChartPolynomial`, `ReedSolomon.affineChartCut`, `ReedSolomon.affineChartCut_eq_zero_iff`, `ReedSolomon.totalDegree_affineChartEquation_le`, `ReedSolomon.totalDegree_affineChartCut_le` | The three coordinates are `(y₀, a, b)`. The hypersurface has degree at most `h`, and the cuts have degree at most `2sdh` for `s = p^e` and positive `d`. The incidence count using this chart is in the subsequent theorem unit. |
+| Claim 4.9, chart map and agreement cuts | `ReedSolomon.affineChartPolynomial`, `ReedSolomon.affineChartCut`, `ReedSolomon.affineChartCut_eq_zero_iff`, `ReedSolomon.totalDegree_affineChartEquation_le`, `ReedSolomon.totalDegree_affineChartCut_le` | The three coordinates are `(y₀, a, b)`. The hypersurface has degree at most `h`, and the cuts have degree at most `2sdh` for `s = p^e` and positive `d`. `ChartIncidence.lean` uses these degree bounds to count nonpersistent challenges. |
+| Claim 4.8, case `c > B`, in the chart | `ReedSolomon.affineChartExcluded`, `ReedSolomon.regularLocus_subset_affineChartExcluded`, `ReedSolomon.isAffinePersistent_of_mem_affineChartExcluded` | A positive-dimensional prime with `B + 1` cuts has infinitely many regular points. Two of them lie on different challenges, since `B + 1 ≥ d + 1` cuts fix the reconstruction on a given challenge. The second triple lives over the algebraic closure, and the descent gives persistence over `F_q`. |
+| Claims 4.8 and 4.9, Lemma 4.7 for one factor | `ReedSolomon.card_le_of_affineNonpersistent_roots`, `ReedSolomon.exists_affineNonpersistent_finset_card_le` | The incidence bound in the chart `(y₀, a, b)` gives `h (n · 2 p^e d h / (A - B))²` challenges with a simple, nonpersistent root. Hypotheses: `1 ≤ d ≤ B < A ≤ n` and `h` the `(Y, Z)`-degree of the factor. One center where every separant is nonzero is chosen per finite set. |
+| Lemma 4.1, without the numerics | `ReedSolomon.exists_affineFactor_finset_card_le`, `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant` | Over the algebraic closure, the content free of `Z` vanishes on few lines. Each factor of positive `Z`-degree adds `h (h - 1)` discriminant lines and its nonpersistent challenges. Summing with `deg content + Σ h ≤ D` and `p^e ≤ M` gives `D² + 4 d² M² D³ (n / (A - B))²` beyond a given set of persistent challenges. |
+| Theorem 4.10 | `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation`, `ReedSolomon.affineMcaError_le_of_interpolation` | For `1 ≤ d < n`, `0 < η < 1 - √ρ`, and budgets satisfying the full-constraint surplus described above, with `n (d + 1) < B²`. For free `M`, that sufficient hypothesis can be stronger than the paper's (4.5). `AffineParams.surplus` establishes it for the paper's parameter choice. The paper's `M ≥ 1` and formula for `M` are not needed. The Johnson factor is the real number `n (B - d - 1) / (B² - n (d + 1))`, not its floor. |
+| Theorem 1.1 | `ReedSolomon.exists_affineExceptional_finset_card_le`, `ReedSolomon.affineMcaError_le` | The paper's hypotheses `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`, and its bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`. The crude estimates give a constant below `9824`. |
 
 ## Port Ledger
 
@@ -77,10 +85,10 @@ A unit is done when its declarations are on `main`.
 | 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | equal-degree bound in review ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); linear claims planned |
 | 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | in review ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
 | 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | in review |
-| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | ingredients in #1508; excluded-set count in #1509 |
+| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | in review |
 | 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces in review; power-series existence and uniqueness open |
-| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | planned |
-| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | planned |
+| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | in review |
+| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | in review |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
 
@@ -121,6 +129,13 @@ Unit 10 applies the equal-degree guarantee in each folding round.
 - [`AffineCombiner/TaylorChart.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/TaylorChart.lean)
   reconstructs regular roots in three chart coordinates and bounds the cleared cuts.
 
+- [`AffineCombiner/ChartIncidence.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ChartIncidence.lean)
+  counts nonpersistent challenges through the three-coordinate incidence bound.
+- [`AffineCombiner/ExceptionalCount.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ExceptionalCount.lean)
+  combines the content and irreducible-factor counts.
+- [`AffineCombiner/Theorem.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean)
+  proves the finite interpolation bound and the explicit bound of Theorem 1.1.
+
 The Taylor chart uses
 [`RationalTaylorJointDegree.lean`](../../../ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean)
 and [`Differential/TaylorChart.lean`](../../../ArkLib/Data/Polynomial/Differential/TaylorChart.lean)
@@ -130,7 +145,10 @@ Its Frobenius specialization is in
 The degree calculations use
 [`CurriedDegree.lean`](../../../ArkLib/ToMathlib/MvPolynomial/CurriedDegree.lean) and
 [`OptionWeightedDegree.lean`](../../../ArkLib/ToMathlib/MvPolynomial/OptionWeightedDegree.lean).
-These interfaces supply the algebraic inputs to the incidence count and final bound.
+The count uses
+[`AgreementIncidence.lean`](../../../ArkLib/ToMathlib/RingTheory/Nullstellensatz/AgreementIncidence.lean)
+for incidence on the chart hypersurface.
+These interfaces supply the algebraic inputs to the final bound.
 
 ## Representation Choices
 
@@ -155,12 +173,22 @@ counting theorem's hypotheses.
 Each rational pair is assigned the persistence set of one chosen candidate.
 These sets suffice for the Johnson bound because they are large and pairwise almost disjoint.
 
-The paper's Claim 4.8 chooses a second `F_q` triple in an affine space defined over `F_q`.
-A proof in the three-variable chart can instead obtain a second regular point over the algebraic closure.
-Its kernel-descent lemma supplies base-field identities `H(x) = L(x)g(x)`.
-Since the descended nonzero linear denominator can have one root, `B + 1` agreement points
-are used to retain at least `B` points where the ratio is defined.
-This is a difference in proof method, not a gap in the reference proof.
+The proof of Claims 4.8 and 4.9 uses three chart coordinates `(y₀, a, b)` over the algebraic
+closure, rather than the paper's sets in `K^{d+3}` of dimension at most two.
+The chart hypersurface is `R(c, a + cb, y₀) = 0`, of degree at most `h`.
+Its agreement cuts have degree at most `2sdh`, where `s = p^e` is the Frobenius exponent.
+`card_le_of_agreement_off_excluded_of_hypersurface` supplies the exponent two in the count.
+Thus `h(2sdh · n/(A - B))² = 4d²s²h³(n/(A - B))²`, matching the paper's degree budget
+`deg Vᵢ ≤ 4d²s²h³` times `v²`, with `v = n/(A - B)`.
+The center `c` is an element of the algebraic closure chosen for each finite set of roots,
+rather than the paper's transcendental `T₀`.
+
+A positive-dimensional regular locus supplies a second chart point with a different challenge.
+The linear descent lemma then supplies base-field identities `H(x) = L(x)g(x)`.
+Discarding at most one zero of the nonzero linear denominator retains `B` regular agreements
+from `B + 1` common cut points.
+The paper instead chooses a second `F_q` triple in an affine space defined over `F_q`.
+Both arguments are complete.
 
 ## Open Formalization Gaps
 

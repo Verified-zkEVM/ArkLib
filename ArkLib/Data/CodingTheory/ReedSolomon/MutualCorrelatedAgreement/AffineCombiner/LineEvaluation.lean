@@ -110,4 +110,19 @@ theorem natDegree_affineLineEval_le (α β : K) {P : K[X]} {d : ℕ} (hP : P.nat
     · simp only [affineLineWeight]
       exact natDegree_le_of_degree_le (degree_affineMultiplier_le α β)
 
+/-- The line evaluation commutes with a field embedding. -/
+theorem map_affineLineEval {L : Type*} [Field L] (φ : K →+* L) (α β : K) (P : K[X])
+    (Q : MvPolynomial AffineVar K) :
+    (affineLineEval α β P Q).map φ =
+      affineLineEval (φ α) (φ β) (P.map φ) (MvPolynomial.map φ Q) := by
+  induction Q using MvPolynomial.induction_on with
+  | C a => simp [affineLineEval]
+  | add p q hp hq => simp only [map_add, Polynomial.map_add, hp, hq]
+  | mul_X p v hp =>
+    simp only [map_mul, Polynomial.map_mul, hp, MvPolynomial.map_X]
+    congr 1
+    rcases v with _ | ⟨i⟩
+    · simp
+    · fin_cases i <;> simp [affineMultiplier]
+
 end ReedSolomon

@@ -36,6 +36,7 @@ rings and rational Taylor coefficients.
 
 ## Main statements
 
+* `ReedSolomon.pderiv_affineChartEquation`: the initial-value derivative is the chart separant.
 * `ReedSolomon.affineChartCut_eq_zero_iff`: a cleared cut says the reconstruction takes a value.
 * `ReedSolomon.degree_affineChartPolynomial_le` and
   `ReedSolomon.eval_affineChartPolynomial_center`: the reconstruction has degree at most `d` and
@@ -194,6 +195,19 @@ theorem affineChartSeparant_eq (c : E) (R : MvPolynomial AffineVar E) :
   rw [← affineChartEquation_eq, affineChartSeparant, affineChartEquation, initialJetSeparant,
     separant, Fin.last_zero, pderiv_affineLineEquation]
   rfl
+
+/-- The derivative of the chart equation in `y₀` is the chart separant. -/
+theorem pderiv_affineChartEquation (c : E) (R : MvPolynomial AffineVar E) :
+    pderiv (.inl 0) (affineChartEquation c R) = affineChartSeparant c R := by
+  rw [affineChartSeparant_eq, affineChartEquation_eq]
+  induction R using MvPolynomial.induction_on with
+  | C a => simp
+  | add p q hp hq => simp only [map_add, hp, hq]
+  | mul_X p v hp =>
+    simp only [map_mul, Derivation.leibniz, smul_eq_mul, map_add, hp, aeval_X]
+    rcases v with _ | ⟨i⟩
+    · simp [affineChartSubstitution, pderiv_X]
+    · fin_cases i <;> simp [affineChartSubstitution, pderiv_X]
 
 /-- The chart equation at `pt` is `R(c, a + b c, y₀)`. -/
 theorem aeval_affineChartEquation (c : E) (R : MvPolynomial AffineVar E)
