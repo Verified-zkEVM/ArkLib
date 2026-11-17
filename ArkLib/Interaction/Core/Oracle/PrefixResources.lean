@@ -204,8 +204,8 @@ theorem familyInclusion_query : {s : OracleProtocol.{u, q}} → {h k : FullPrefi
     erw [OracleMap.sum_impl_inr]
     have ih := familyInclusion_query tail ⟨i, r⟩
     let handler : QueryImpl (family k).spec
-        (OracleComp (sumFamily (singletonFamily I) (family k)).spec) := fun r =>
-      liftM ((sumFamily (singletonFamily I) (family k)).spec.query ⟨.inr r.1, r.2⟩)
+        (OracleComp (sumFamily (singletonFamily I) (family k)).spec) :=
+      (OracleMap.embedding (sumFamily (singletonFamily I) (family k)) Sum.inr).impl
     have lift_heq {α β : Type u} (eq : α = β)
         {p : OracleComp (family k).spec α} {p' : OracleComp (family k).spec β}
         (same : HEq p p') : HEq (simulateQ handler p) (simulateQ handler p') := by
@@ -217,7 +217,7 @@ theorem familyInclusion_query : {s : OracleProtocol.{u, q}} → {h k : FullPrefi
       (liftM ((sumFamily (singletonFamily I) (family k)).spec.query
         ⟨.inr (includeQuery tail ⟨i, r⟩).1, (includeQuery tail ⟨i, r⟩).2⟩) :
           OracleComp (sumFamily (singletonFamily I) (family k)).spec _)
-    simp only [simulateQ_spec_query, handler] at lifted
+    simp only [handler, OracleMap.embedding] at lifted
     exact lifted
 
 /-- Prefix-resource inclusion routes earlier queries through the later available resources. -/

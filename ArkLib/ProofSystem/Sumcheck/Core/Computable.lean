@@ -63,9 +63,9 @@ def renameQueries {ι : Type} (ambient : OracleSpec ι) (k : ℕ) :
     QueryImpl (ambient + challengeSpec oracleSig (protocolOn R M eval k))
       (OracleComp (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))) :=
   QueryImpl.add
-    (fun q => liftM ((ambient + challengeSpec oracleSig (protocolOn R M' eval' k)).query (.inl q)))
-    (Interpreted.transportDraw k fun c =>
-      liftM ((ambient + challengeSpec oracleSig (protocolOn R M' eval' k)).query (.inr c)))
+    ((QueryImpl.id' (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))).restrictLeft)
+    (Interpreted.transportDraw k
+      ((QueryImpl.id' (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))).restrictRight))
 
 /-- Renaming challenge nodes preserves every supported result. -/
 private theorem support_renameQueries {ι α : Type} (ambient : OracleSpec ι) (k : ℕ)

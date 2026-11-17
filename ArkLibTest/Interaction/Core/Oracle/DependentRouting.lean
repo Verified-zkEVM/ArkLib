@@ -82,14 +82,12 @@ def queryInput (p : Path suffix) :
 /-- Route the final unit query to the input, which answers the input value. -/
 def finalMap : (p : Path suffix) → OracleMap (suffixResources p) (finalFamily p)
   | ⟨true, ⟨⟩⟩ =>
-    { f := fun x _ => x.1 ()
-      impl := fun q =>
-        liftM ((suffixResources ⟨true, ⟨⟩⟩).spec.query (.inl ⟨(), q.2⟩))
-      law := fun _ _ => rfl }
+    (OracleMap.embedding inputFamily (fun _ : Unit => ())).comp
+      (OracleMap.fst inputFamily (pathFamily suffix ⟨true, ⟨⟩⟩))
   | ⟨false, ⟨⟩⟩ =>
     { f := fun x _ => (x.1 (), x.1 ())
       impl := fun q =>
-        liftM ((suffixResources ⟨false, ⟨⟩⟩).spec.query (.inl ⟨(), q.2⟩))
+        (OracleMap.fst inputFamily (pathFamily suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
       law := fun _ _ => rfl }
 
 /-- The suffix checks the announced Boolean against one input query. It returns `()` after a

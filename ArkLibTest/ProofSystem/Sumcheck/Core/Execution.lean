@@ -26,8 +26,7 @@ variable {ι : Type} (ambient : OracleSpec ι)
 challenge node. They are uniform when interpreted with `challengeQueryImpl`. -/
 abbrev drawOf (n : ℕ) :=
   fun c : ChallengeNode oracleSig (protocol F 1 n) =>
-    (liftM ((ambient + challengeSpec oracleSig (protocol F 1 n)).query (.inr c)) :
-      OracleComp (ambient + challengeSpec oracleSig (protocol F 1 n)) _)
+    (QueryImpl.id' (ambient + challengeSpec oracleSig (protocol F 1 n))).restrictRight c
 
 /-! ## A bad round followed by good rounds -/
 

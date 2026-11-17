@@ -26,8 +26,6 @@ universe u q dI uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
 
 -- `Fiber`, `project_split` and `splitFiber` are generic in the polynomial and the lens; they are
 -- candidates for PolyFun's path ledger, with `View.split` and `PlainView.split` remaining here.
@@ -373,13 +371,14 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
         samplerSlot, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, plainSig, Choice, Move, Choice.map, combineDraw,
-        LawfulApplicative.map_pure, Functor.map_map]
+        LawfulApplicative.map_pure]
     · congr 1
       funext x
       exact ih x (fun p => s₂ ⟨x, p⟩)
         (fun c => draw₁ ⟨.inr ⟨x, c.val⟩, c.property⟩)
         (fun p => draw₂ ⟨x, p⟩)
-    · congr 1
+    · erw [Functor.map_map, Functor.map_map]
+      congr 1
       funext x
       congr 1
       exact ih PUnit.unit (fun p => s₂ ⟨PUnit.unit, p⟩)
@@ -402,13 +401,14 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
         samplerSlot, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, oracleSig, Choice, Move, Choice.map, combineDraw,
-        LawfulApplicative.map_pure, Functor.map_map]
+        LawfulApplicative.map_pure]
     · congr 1
       funext x
       exact ih x (fun p => s₂ ⟨x, p⟩)
         (fun c => draw₁ ⟨.inr ⟨x, c.val⟩, c.property⟩)
         (fun p => draw₂ ⟨x, p⟩)
-    · congr 1
+    · erw [Functor.map_map, Functor.map_map]
+      congr 1
       funext x
       congr 1
       exact ih PUnit.unit (fun p => s₂ ⟨PUnit.unit, p⟩)

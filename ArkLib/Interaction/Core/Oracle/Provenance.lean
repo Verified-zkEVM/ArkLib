@@ -56,7 +56,7 @@ def runWithSetupTrace (V : OracleVerifier ambient s S T inputs outputs) (stmt : 
     (data : inputs.Data) (setup : OracleComp ambient (Prover oracleSig ambient s Out)) :
     OracleComp (ambient + challengeSpec oracleSig s) (TracedRun V Out) := do
   let (prover, queries) ← simulateQ
-    (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup.withQueryLog
+    ((QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft) setup.withQueryLog
   let result ← V.runWithTrace stmt data prover
   pure (result.prependSetup queries)
 
@@ -85,7 +85,7 @@ theorem runWithSetupTrace_erase (V : OracleVerifier ambient s S T inputs outputs
         (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup
       V.run stmt data prover) := by
   let lift : QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)) :=
-    fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
+    (QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft
   trans simulateQ lift setup.withQueryLog >>= fun r => V.run stmt data r.1
   · simp only [runWithSetupTrace, _root_.map_bind, LawfulApplicative.map_pure]
     refine bind_congr fun r => ?_
@@ -95,6 +95,7 @@ theorem runWithSetupTrace_erase (V : OracleVerifier ambient s S T inputs outputs
     have erased : Prod.fst <$> setup.withQueryLog = setup :=
       loggingOracle.fst_map_run_simulateQ setup
     rw [erased]
+    rfl
 
 /-- Interpreting a traced run commutes with its full-log projection, including stateful runtimes. -/
 theorem simulateQ_runWithTrace_logView {m : Type → Type u} [Monad m] [LawfulMonad m]

@@ -49,7 +49,8 @@ theorem verifier_soundness_list (domain : List R) :
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
   indexedVerifier_soundness domain.get ambient init impl
 
-/-- The injective-domain corollary uses exactly the same native verifier and proof. -/
+/-- The injective-domain corollary uses exactly the same verifier and proof in the interaction
+layer. -/
 theorem verifier_soundness_injective (embedding : Fin d ↪ R) :
     (indexedVerifier R deg n (⇑embedding) ambient).soundness init impl
       (indexedDraw (R := R) (deg := deg) n)
@@ -57,7 +58,8 @@ theorem verifier_soundness_injective (embedding : Fin d ↪ R) :
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
   indexedVerifier_soundness (⇑embedding) ambient init impl
 
-/-- The native bound is a probability statement about the accepted verdict of the actual run. -/
+/-- The interaction layer's bound is a probability statement about the accepted verdict of the
+actual run. -/
 theorem verifier_run_soundness
     {Out : PathAlong oracleSig (protocol R deg n) → Type}
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
@@ -81,7 +83,8 @@ def randomizedProver {ι : Type} (ambient : OracleSpec ι) {R : Type} [CommSemir
     (finish : R → Out) : Prover oracleSig ambient (protocol R deg 1) (fun _ => Out) :=
   commit >>= fun msg => committedProver ambient msg finish
 
-/-- A committed message satisfies the native one-round bound over every indexed domain. -/
+/-- A committed message satisfies the interaction layer's one-round bound over every indexed
+domain. -/
 theorem committed_soundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R → Out)
     (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ())) :
@@ -92,7 +95,7 @@ theorem committed_soundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R �
   simpa only [Nat.cast_one, one_mul] using
     verifier_run_soundness D ambient init impl stmt data hfalse (committedProver ambient msg finish)
 
-/-- An ambient randomized commitment satisfies the same native actual-run bound.
+/-- An ambient randomized commitment satisfies the same actual-run bound in the interaction layer.
 The commitment may fail and may change shared state before the fresh challenge is drawn. -/
 theorem randomized_soundness {Out : Type} (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
     (finish : R → Out) (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)

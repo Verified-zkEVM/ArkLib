@@ -238,8 +238,8 @@ theorem decideWith_append_checkVerifier (stmt : S) (x : ∀ i, A i)
   refine (pure_bind _ _).trans ?_
   rw [suffixRoute_round]
   unfold appendHead appendTail checkVerdict roundMessage roundChallenge
-  simp only [split_round_suffix]
   split <;> rename_i h <;> simp only [h]
+  rfl
 
 variable {ι : Type} (ambient : OracleSpec ι)
   (inputs : OracleFamily.{uI, 0, wI} I A) {K : Type} {C : K → Type}

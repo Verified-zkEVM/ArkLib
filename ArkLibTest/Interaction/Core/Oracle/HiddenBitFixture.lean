@@ -62,11 +62,9 @@ abbrev secondResources (guess : Bool) := pathResources bits bitSecond ⟨guess, 
 def xorMap (guess : Bool) : OracleMap (secondResources guess) bits where
   f x _ := guess ^^ (show Bool from x.1 ())
   impl _ := do
-    let pad : Bool ← liftM ((secondResources guess).spec.query (.inl ⟨(), ()⟩))
+    let pad : Bool ← (OracleMap.fst bits (pathFamily bitSecond ⟨guess, ⟨⟩⟩)).impl ⟨(), ()⟩
     pure (guess ^^ pad)
-  law _ _ := by
-    simp only [simulateQ_bind]
-    rfl
+  law _ _ := rfl
 
 /-- The suffix decision reads the pad, reveals the hidden bit and claims `hidden ^^ pad`. -/
 def bitSuffix : OracleVerifier bitAmbient bitSecond Unit (fun _ => Bool) bits (fun _ => bits) where

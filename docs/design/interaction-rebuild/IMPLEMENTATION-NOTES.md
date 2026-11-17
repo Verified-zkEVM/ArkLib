@@ -794,3 +794,47 @@ rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4 and 6 are premise-required und
 **Why.** The interaction core has one protocol per message carrier and a passive verifier, and
 names challenges by node occurrences. The restated rows check the same values and effect order
 under those rules.
+
+## 25. Routing owners and transparency
+
+**Code.** Forwarding subexpressions in the interaction layer and Sumcheck Core, including their
+tests, use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.embedding`, `Interaction.Core.pathLift`
+and VCVio's `QueryImpl.id'` restrictions (or `QueryImpl.ofLift` for universe-polymorphic sums).
+Coverage includes setup-trace injection, carrier-changing `renameQueries`, routing exports and
+path reads, the independent-query-universe verifier, and state-restoration payload reads and
+selected output maps. A further search also delegates both projections in the routing test's
+`closingMap` and the ambient injection in the budget test's `finishSelected`. Proof-local
+handlers in `runWithSetupTrace_erase`, `familyInclusion_query` and
+`OracleVerifier.soundnessUsing_of_localSoundness` also delegate to the existing owners.
+Theorem-statement handlers, direct input reads in decisions, legacy transcript queries and
+primitive owner implementations retain their explicit query forms. Legacy index
+elimination, equality transport, challenge-node transport, setup logging, path elimination,
+export arithmetic and surrounding effects are preserved. `OracleMap.par` uses the
+resource projections. The parent's `OracleMap.sum` already composes `par` and the family/resource
+representation maps. `oracles_split` delegates its empty-prefix family routing to `embedding`.
+The ordinary and traced runners forward ambient queries and challenge requests through the
+identity handler, without substituting a sampler. Legacy `decisionImpl` retains its substantive
+resource translation and delegates only the outer sum routing to identity restrictions.
+
+**Parent fixes retained.** `Interpreted.headQuery` and `tailLift` already use `embedding`.
+The parent's `Execution.verifier_outputMap` only stated equality to `fst`; this cleanup fixes
+`verifierOn.outputMap` through `fst`, including its specialization `verifier`.
+`roundRoute` already specializes `roundRouteOn`; the latter now delegates to `headQuery`.
+The Sumcheck `Routing` test already uses identity restrictions and projection handlers throughout
+its export map. `OracleVerifier.runWithLog` and `runWithAmbientLog` already specialize traced
+runners; the forwarding implementations in `Oracle/SlotTrace` now use identity restrictions.
+
+**Transparency.** The Core layers and their tests carry no local transparency overrides.
+Imported replication and path projection algorithms retain their definition-site transparency;
+proofs use explicit reduction and their equations where needed. The existing definition-site
+annotations on `PlainPoly`, `plainSig`, `OraclePoly`, `oracleSig`, `viewSig`, `oracleIdx`,
+`OracleData`, `sumFamily`, `singletonFamily`, `pathFamily`, `PrefixMoves` and Sumcheck `round`
+keep `implicit_reducible`. `perfectCompleteness_uniform` names the existing
+`challengeSampleable R deg n` instance explicitly when constructing `challengeQueryImpl`.
+`OracleMap.fst` is `macro_inline` so the carrier-generic verifier can project its
+inputs without computing the mathematical input family's interpreter. No attribute command
+changes another declaration's transparency.
+
+**Disposition.** No ledger row changes status. P1 still permits challenge distributions that
+depend on earlier public moves and confines resource queries to the final decision. P2 still
+prevents challenges and payloads from selecting shape. No statement or premise changes.

@@ -903,7 +903,7 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
   change Pr{let obs ← (do (simulateQ H (V.run stmt.1 stmt.2 p)).run' (← init))}[_] ≤ _
   refine prEvent_bind_le_of_forall_le _ _ _ fun st => ?_
   let liftAmbient : QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)) :=
-    fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
+    (QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft
   let k : (tr : PathAlong oracleSig s) → Out tr →
       OracleComp (ambient + challengeSpec oracleSig s)
         (Observation oracleSig s Out (OracleVerifier.Output T B)) := fun tr out =>
@@ -929,7 +929,8 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
   apply hne
   apply StateFunction.escapeAlong oracleSig F hadm hlang
   refine ⟨st, pos_iff_ne_zero.2 ?_⟩
-  simpa only [OracleVerifier.validAcceptanceUsing, k, liftAmbient, simulateQ_map,
+  unfold k liftAmbient QueryImpl.restrictLeft at hpos
+  simpa only [OracleVerifier.validAcceptanceUsing, QueryImpl.id'_apply, simulateQ_map,
     simulateQ_resources, StateT.run'_eq, StateT.run_map, prEvent_map,
     exists_map_some_iff] using hpos
 

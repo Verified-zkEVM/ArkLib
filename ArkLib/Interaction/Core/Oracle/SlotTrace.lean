@@ -339,12 +339,12 @@ def runWithTrace (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (d
     (fun action => action.run)
     (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
       (@observeSlot _ full s) (@descendPrefix s) id .focal
-      (prover.simulate (fun q => liftM (full.query (.inl q)))))
+      (prover.simulate ((QueryImpl.id' full).restrictLeft)))
     (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
       (@observeSlot _ full s) (@descendPrefix s) id .counterpart
-      (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))
+      (sampler oracleSig s ((QueryImpl.id' full).restrictRight)))
     (fun p view resources => (simulateQ (QueryImpl.addLift
-      ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
+      (((QueryImpl.id' full).restrictLeft) : QueryImpl ambient (OracleComp full))
       ((pathResources inputs s p).answer resources)).withLogging
       (V.decide stmt p view).run).run)
 
@@ -374,6 +374,7 @@ theorem runWithTrace_log (V : OracleVerifier ambient s S T inputs outputs) (stmt
   rw [id_logging, ← observeInteraction_log, bind_map_left]
   refine bind_congr fun r => ?_
   simp [TracedRun.logView]
+  rfl
 
 section AmbientTrace
 
@@ -435,7 +436,7 @@ def runWithAmbientTrace (V : OracleVerifier ambient s S T inputs outputs) (stmt 
     (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s) (AmbientTracedRun V Out) :=
   let full := ambient + challengeSpec oracleSig s
-  let toFull : QueryImpl ambient (OracleComp full) := fun r => liftM (full.query (.inl r))
+  let toFull : QueryImpl ambient (OracleComp full) := (QueryImpl.id' full).restrictLeft
   (fun r => ⟨r.1, r.2.1, r.2.2⟩) <$> V.executeWith stmt data
     (ITrace := List (SlotPhase full s)) (DTrace := fun _ => QueryLog ambient)
     (fun action => action.run)
@@ -443,7 +444,7 @@ def runWithAmbientTrace (V : OracleVerifier ambient s S T inputs outputs) (stmt 
       (@observeSlot _ full s) (@descendPrefix s) id .focal (prover.simulate toFull))
     (SlotInstrumentation.transform (C := fun t => FullPrefix t → FullPrefix s)
       (@observeSlot _ full s) (@descendPrefix s) id .counterpart
-      (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))
+      (sampler oracleSig s ((QueryImpl.id' full).restrictRight)))
     (fun p view resources => (simulateQ
       (QueryImpl.addLift toFull.withLogging ((pathResources inputs s p).answer resources) :
         QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
@@ -474,6 +475,7 @@ let full := ambient + challengeSpec oracleSig s
   rw [id_logging, ← observeInteraction_log, bind_map_left]
   refine bind_congr fun r => ?_
   simp [AmbientTracedRun.logView]
+  rfl
 
 end AmbientTrace
 
