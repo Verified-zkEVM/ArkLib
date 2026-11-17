@@ -9,29 +9,39 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Aff
 public import ArkLib.Data.Finset.PairwiseIntersection
 
 /-!
-# Equal-degree combiner
+# Equal-degree combiners
 
-The equal-degree combiner sends `f, g` to `g + (α + β x)(f + θ g)`, with three challenges.
+The combiner maps received words `f, g` to `g + (α + β x)(f + θ g)` using three independent
+uniform challenges.
+Both witnesses have degree below `d`, while the output has degree at most `d`.
+For one point of agreement loss, its error is at most the affine error plus `ℓ₀/q`, with
+`ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`, domain size `n`, and field size `q`.
+The bound requires `d + 1 < A` and `nd < (A - 1)²`.
 
-Both witnesses have degree below `d`, so the combination has degree at most `d`.
+For fixed `θ`, the affine combiner on `(g, f + θ g)` supplies witnesses `U, V`.
+The pair `(V - θ U, U)` explains the same agreements with the same loss.
+It can fail the strict degree bounds only if `U` has degree exactly `d`.
+Such a pair fixes `θ` by its leading coefficients, and the Johnson bound limits the number
+of these bad challenges.
+This is the first assertion of Theorem 5.1 in [CWYZ26]; the linear-claims assertion is separate.
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
-Its error is at most the affine error plus `ℓ₀ / q`, where `ℓ₀` is the Johnson list size.
+The error is a mathematical supremum with classical decidability for polynomial witnesses.
+Its counting definition requires no sampler.
+`ReedSolomon.equalDegreeMcaError_eq_iSup_prob` in `EqualDegreeSampling` identifies it with
+native uniform probabilities.
 
-## The reduction
+## Main definitions
 
-For a fixed `θ`, the affine combiner on `(g, f + θ g)` gives witnesses `U, V`.
-
-The pair `(V - θ U, U)` explains the candidate, unless `U` has degree exactly `d`.
-
-Then `θ` is fixed by the leading coefficients of a pair close to `(f, g)`.
-
-The Johnson bound leaves at most `ℓ₀` such pairs, hence at most `ℓ₀` bad values of `θ`.
+* `ReedSolomon.equalDegreeWord`: the combined received word.
+* `ReedSolomon.IsEqualDegreeExceptional`: an exceptional candidate for three challenges.
+* `ReedSolomon.equalDegreeMcaError`: the supremum of exceptional-event probabilities.
 
 ## Main statements
 
-* `ReedSolomon.equalDegreeMCAError_le`: with one point of agreement loss, the error is at most
-  the affine error plus `n (A - 1 - d) / ((A - 1)² - n d) / q` (Theorem 5.1 of [CWYZ26],
-  first part).
+* `ReedSolomon.equalDegreeMcaError_le`: the reduction with the rounded Johnson bound.
+* `ReedSolomon.equalDegreeMcaError_le_one`: the error is at most one.
+* `ReedSolomon.card_badEqualDegreeChallenges_mul_le`: the integer count of bad `θ` values.
 
 ## References
 
@@ -54,7 +64,6 @@ def equalDegreeWord (domain : ι ↪ F) (f g : ι → F) (θ α β : F) : ι →
 /-- The challenge `(θ, α, β)` makes `P` exceptional for the equal-degree combiner.
 
 `P` has degree at most `d` and agrees with `g + (α + β x)(f + θ g)` on at least `A` points.
-
 No witness pair of degrees below `d` loses at most `s` of these points. -/
 def IsEqualDegreeExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (θ α β : F)
     (P : F[X]) : Prop :=
@@ -66,11 +75,18 @@ def IsEqualDegreeExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) 
         F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i}
 
 open Classical in
-/-- The equal-degree MCA error: the worst fraction of exceptional challenges in `F³`. -/
-noncomputable def equalDegreeMCAError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ℝ :=
+/-- The supremum over received word pairs of the probability that some candidate is exceptional
+for independent uniform challenges `(θ, α, β)`.
+
+The output degree bound is `d`, both witness degrees are below `d`, the agreement threshold
+is `A`, and the allowed agreement loss is `s`.
+`ReedSolomon.equalDegreeMcaError_eq_iSup_prob` gives the native sampling characterization. -/
+noncomputable def equalDegreeMcaError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) : ENNReal :=
   ⨆ w : (ι → F) × (ι → F),
-    (#{c : F × F × F | ∃ P, IsEqualDegreeExceptional domain w.1 w.2 d A s c.1 c.2.1 c.2.2 P} :
-      ℝ) / (Fintype.card F : ℝ) ^ 3
+    ENNReal.ofReal
+      ((#{c : F × F × F | ∃ P,
+        IsEqualDegreeExceptional domain w.1 w.2 d A s c.1 c.2.1 c.2.2 P} : ℝ) /
+          (Fintype.card F : ℝ) ^ 3)
 
 omit [DecidableEq F] [Fintype ι] in
 /-- The equal-degree word is the affine word of the pair `(g, f + θ g)`. -/
@@ -81,18 +97,32 @@ theorem equalDegreeWord_eq_combinedWord (domain : ι ↪ F) (f g : ι → F) (θ
   simp [equalDegreeWord]
 
 open Classical in
-/-- One pair of received words bounds the equal-degree error from below. -/
-theorem le_equalDegreeMCAError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) (f g : ι → F) :
-    (#{c : F × F × F | ∃ P, IsEqualDegreeExceptional domain f g d A s c.1 c.2.1 c.2.2 P} : ℝ) /
-        (Fintype.card F : ℝ) ^ 3 ≤ equalDegreeMCAError domain d A s :=
-  le_ciSup (f := fun w : (ι → F) × (ι → F) ↦
-    (#{c : F × F × F | ∃ P, IsEqualDegreeExceptional domain w.1 w.2 d A s c.1 c.2.1 c.2.2 P} :
-      ℝ) / (Fintype.card F : ℝ) ^ 3) (Set.finite_range _).bddAbove (f, g)
+/-- One received word pair bounds the equal-degree error from below. -/
+theorem le_equalDegreeMcaError [Fintype F] (domain : ι ↪ F) (d A s : ℕ) (f g : ι → F) :
+    ENNReal.ofReal
+      ((#{c : F × F × F | ∃ P,
+        IsEqualDegreeExceptional domain f g d A s c.1 c.2.1 c.2.2 P} : ℝ) /
+          (Fintype.card F : ℝ) ^ 3) ≤ equalDegreeMcaError domain d A s := by
+  unfold equalDegreeMcaError
+  exact le_iSup_of_le (f, g) le_rfl
+
+/-- The equal-degree error is at most one. -/
+theorem equalDegreeMcaError_le_one [Fintype F] (domain : ι ↪ F) (d A s : ℕ) :
+    equalDegreeMcaError domain d A s ≤ 1 := by
+  classical
+  refine iSup_le fun w ↦ ?_
+  rw [← ENNReal.ofReal_one]
+  apply ENNReal.ofReal_le_ofReal
+  rw [div_le_one (by positivity)]
+  calc (#{c : F × F × F | ∃ P,
+        IsEqualDegreeExceptional domain w.1 w.2 d A s c.1 c.2.1 c.2.2 P} : ℝ)
+      ≤ (Finset.univ : Finset (F × F × F)).card := by
+        exact_mod_cast Finset.card_filter_le _ _
+    _ = (Fintype.card F : ℝ) ^ 3 := by simp; ring
 
 /-- An exceptional candidate is affine exceptional for `(g, f + θ g)`, or `θ` is bad.
 
 Bad means that some pair `F₀, G₀` with `deg G₀ = d` satisfies `[X^d] F₀ + θ [X^d] G₀ = 0`.
-
 That pair agrees with `(f, g)` on at least `A - s` points. -/
 theorem IsEqualDegreeExceptional.isAffineExceptional_or_exists {domain : ι ↪ F} {f g : ι → F}
     {d A s : ℕ} {θ α β : F} {P : F[X]} (h : IsEqualDegreeExceptional domain f g d A s θ α β P) :
@@ -142,39 +172,11 @@ theorem IsEqualDegreeExceptional.isAffineExceptional_or_exists {domain : ι ↪ 
     simp only [eval_sub, eval_mul, eval_C, hiL.1, hiL.2]
     exact ⟨by ring, trivial⟩
 
-/-- Two distinct pairs of degree at most `d` share at most `d` common agreement points.
-
-On a shared point both first polynomials agree, and so do both second ones.
-
-One of the two differences is a nonzero polynomial of degree at most `d`. -/
-theorem card_inter_commonPolynomialAgreementSet_le [DecidableEq ι] (domain : ι ↪ F)
-    (f g : ι → F) {d : ℕ} {F₀ G₀ F₁ G₁ : F[X]} (hF₀ : F₀.degree ≤ d) (hG₀ : G₀.degree ≤ d)
-    (hF₁ : F₁.degree ≤ d) (hG₁ : G₁.degree ≤ d) (hne : (F₀, G₀) ≠ (F₁, G₁)) :
-    #(commonPolynomialAgreementSet domain f g F₀ G₀ ∩
-      commonPolynomialAgreementSet domain f g F₁ G₁) ≤ d := by
-  have key : ∀ p : F[X], p ≠ 0 → p.degree ≤ d → ∀ S : Finset ι,
-      (∀ i ∈ S, p.eval (domain i) = 0) → #S ≤ d := fun p hp hd S hS ↦ by
-    rw [← Finset.card_map domain]
-    refine (card_le_degree_of_subset_roots fun x hx ↦ ?_).trans (natDegree_le_iff_degree_le.mpr hd)
-    obtain ⟨i, hi, rfl⟩ := Finset.mem_map.mp hx
-    exact (mem_roots hp).mpr (hS i hi)
-  by_cases hF : F₀ = F₁
-  · have hG : G₀ - G₁ ≠ 0 := sub_ne_zero.mpr fun hG ↦ hne (by rw [hF, hG])
-    refine key _ hG ((degree_sub_le _ _).trans (max_le hG₀ hG₁)) _ fun i hi ↦ ?_
-    simp only [Finset.mem_inter, mem_commonPolynomialAgreementSet] at hi
-    simp [hi.1.2, hi.2.2]
-  · refine key _ (sub_ne_zero.mpr hF) ((degree_sub_le _ _).trans (max_le hF₀ hF₁)) _
-      fun i hi ↦ ?_
-    simp only [Finset.mem_inter, mem_commonPolynomialAgreementSet] at hi
-    simp [hi.1.1, hi.2.1]
-
 open Classical in
 /-- Few values of `θ` are bad: the Johnson bound for set families.
 
 A bad `θ` comes with a pair `F₀, G₀` of degree at most `d`, with `deg G₀ = d`.
-
 The pair agrees with `(f, g)` on at least `L` points, and `[X^d] F₀ + θ [X^d] G₀ = 0`.
-
 The pair fixes `θ`, so distinct bad values give distinct pairs. -/
 theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     (d L : ℕ) :
@@ -203,20 +205,23 @@ theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f 
   rw [h₁, h₂] at this
   exact mul_right_cancel₀ (h₂ ▸ hlead) (add_left_cancel this)
 
-/-- With one point of agreement loss, the equal-degree error is at most `ε_aff + ℓ₀ / q`.
-
-Here `ℓ₀ = n (A - 1 - d) / ((A - 1)² - n d)` is the Johnson list size. -/
-theorem equalDegreeMCAError_le [Fintype F] (domain : ι ↪ F) {d A : ℕ} (hdA : d + 1 < A)
+/-- If `d + 1 < A` and `nd < (A - 1)²`, the equal-degree error at agreement loss one is
+at most the affine error plus `ℓ₀/q`, where `n = |ι|`, `q = |F|`, and
+`ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the rounded-down Johnson bound. -/
+theorem equalDegreeMcaError_le [Fintype F] (domain : ι ↪ F) {d A : ℕ} (hdA : d + 1 < A)
     (hJ : Fintype.card ι * d < (A - 1) ^ 2) :
-    equalDegreeMCAError domain d A 1 ≤ affineMCAError domain d A 1 +
-      (Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - Fintype.card ι * d) /
-        Fintype.card F := by
+    equalDegreeMcaError domain d A 1 ≤ affineMcaError domain d A 1 +
+      ENNReal.ofReal
+        (((⌊(Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) /
+          (((A : ℝ) - 1) ^ 2 - Fintype.card ι * d)⌋₊ : ℕ) : ℝ) / Fintype.card F) := by
   classical
-  refine ciSup_le fun w ↦ ?_
+  refine iSup_le fun w ↦ ?_
   obtain ⟨f, g⟩ := w
   set q : ℝ := (Fintype.card F : ℝ) with hq_def
   set n : ℕ := Fintype.card ι
-  set E := affineMCAError domain d A 1
+  set E := (affineMcaError domain d A 1).toReal
+  have hE : affineMcaError domain d A 1 ≠ ⊤ :=
+    ne_top_of_le_ne_top ENNReal.one_ne_top (affineMcaError_le_one domain d A 1)
   have hq : 0 < q := by positivity
   -- The challenges `θ` for which some pair of degree `d` explains a candidate.
   set B : Finset F := {θ : F | ∃ F₀ G₀ : F[X], F₀.degree ≤ d ∧ G₀.degree = d ∧
@@ -242,7 +247,8 @@ theorem equalDegreeMCAError_le [Fintype F] (domain : ι ↪ F) {d A : ℕ} (hdA 
     calc (∑ θ : F, (#{c : F × F | ∃ P,
           IsAffineExceptional domain g (fun i ↦ f i + θ * g i) d A 1 c.1 c.2 P} : ℝ))
         ≤ ∑ _θ : F, q ^ 2 * E := Finset.sum_le_sum fun θ _ ↦ by
-          have := le_affineMCAError domain d A 1 g (fun i ↦ f i + θ * g i)
+          have := (ENNReal.ofReal_le_iff_le_toReal hE).mp
+            (le_affineMcaError domain d A 1 g (fun i ↦ f i + θ * g i))
           rw [div_le_iff₀ (by positivity)] at this
           linarith
       _ = q ^ 3 * E := by
@@ -269,14 +275,30 @@ theorem equalDegreeMCAError_le [Fintype F] (domain : ι ↪ F) {d A : ℕ} (hdA 
       exact_mod_cast h
     push_cast [hA1, hden_nat, show d ≤ A - 1 by omega] at h'
     linarith
-  rw [div_le_iff₀ (by positivity)]
-  calc (#{c : F × F × F | ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ)
-      ≤ #(X₁ ∪ X₂) := by exact_mod_cast Finset.card_le_card hsub
-    _ ≤ #X₁ + #X₂ := by exact_mod_cast Finset.card_union_le _ _
-    _ ≤ q ^ 3 * E + n * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d) * q ^ 2 := by
-        rw [hX₂]
-        gcongr
-    _ = (E + n * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d) / q) * q ^ 3 := by
-        field_simp
+  have hBfloor : (#B : ℝ) ≤
+      ((⌊(n : ℝ) * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d)⌋₊ : ℕ) : ℝ) := by
+    exact_mod_cast Nat.le_floor hB
+  have hcount :
+      (#{c : F × F × F | ∃ P,
+        IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤
+        E + ((⌊(n : ℝ) * ((A : ℝ) - 1 - d) /
+          (((A : ℝ) - 1) ^ 2 - n * d)⌋₊ : ℕ) : ℝ) / q := by
+    rw [div_le_iff₀ (by positivity)]
+    calc (#{c : F × F × F | ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ)
+        ≤ #(X₁ ∪ X₂) := by exact_mod_cast Finset.card_le_card hsub
+      _ ≤ #X₁ + #X₂ := by exact_mod_cast Finset.card_union_le _ _
+      _ ≤ q ^ 3 * E + ((⌊(n : ℝ) * ((A : ℝ) - 1 - d) /
+          (((A : ℝ) - 1) ^ 2 - n * d)⌋₊ : ℕ) : ℝ) * q ^ 2 := by
+          rw [hX₂]
+          gcongr
+      _ = (E + ((⌊(n : ℝ) * ((A : ℝ) - 1 - d) /
+          (((A : ℝ) - 1) ^ 2 - n * d)⌋₊ : ℕ) : ℝ) / q) * q ^ 3 := by
+          field_simp
+  calc _ ≤ ENNReal.ofReal (E + ((⌊(n : ℝ) * ((A : ℝ) - 1 - d) /
+          (((A : ℝ) - 1) ^ 2 - n * d)⌋₊ : ℕ) : ℝ) / q) :=
+          ENNReal.ofReal_le_ofReal hcount
+    _ = _ := by
+      rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity)]
+      rw [ENNReal.ofReal_toReal hE]
 
 end ReedSolomon
