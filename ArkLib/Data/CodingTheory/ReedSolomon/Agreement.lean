@@ -107,19 +107,16 @@ theorem card_polynomialAgreement_map
 
 open scoped Finset
 
-open Classical in
 /-- Two distinct pairs of degree at most `d` share at most `d` common agreement points.
 
 On a shared point both first polynomials agree, and so do both second ones.
-
 One of the two differences is a nonzero polynomial of degree at most `d`. -/
 theorem card_inter_commonPolynomialAgreementSet_le
-    {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain : ι ↪ F)
+    {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] [DecidableEq ι] (domain : ι ↪ F)
     (f g : ι → F) {d : ℕ} {F₀ G₀ F₁ G₁ : F[X]} (hF₀ : F₀.degree ≤ d) (hG₀ : G₀.degree ≤ d)
     (hF₁ : F₁.degree ≤ d) (hG₁ : G₁.degree ≤ d) (hne : (F₀, G₀) ≠ (F₁, G₁)) :
     #(commonPolynomialAgreementSet domain f g F₀ G₀ ∩
       commonPolynomialAgreementSet domain f g F₁ G₁) ≤ d := by
-  classical
   have key : ∀ p : F[X], p ≠ 0 → p.degree ≤ d → ∀ S : Finset ι,
       (∀ i ∈ S, p.eval (domain i) = 0) → #S ≤ d := fun p hp hd S hS ↦ by
     rw [← Finset.card_map domain]

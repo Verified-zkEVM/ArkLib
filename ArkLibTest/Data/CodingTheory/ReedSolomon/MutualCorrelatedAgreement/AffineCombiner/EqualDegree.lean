@@ -22,7 +22,7 @@ private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
 Its floor gives an additive error term of `2 / 5`. -/
 example :
     equalDegreeMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 2 / 5 := by
-  have h := equalDegreeMcaError_le fullDomain (d := 1) (A := 4) (by norm_num)
+  have h := equalDegreeMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
     (by simp [ZMod.card])
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
@@ -35,14 +35,13 @@ example (f g : ZMod 5 → ZMod 5) :
       IsEqualDegreeExceptional fullDomain f g 1 4 1 c.1 c.2.1 c.2.2 P] ≤
         affineMcaError fullDomain 1 4 1 + 2 / 5 := by
   refine (prob_isEqualDegreeExceptional_le fullDomain f g 1 4 1).trans ?_
-  have h := equalDegreeMcaError_le fullDomain (d := 1) (A := 4) (by norm_num)
+  have h := equalDegreeMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
     (by simp [ZMod.card])
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
 
--- This generic agreement fact needs no decidable equality on the coordinate type.
-open Classical in
-example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] (domain : ι ↪ F)
+-- The agreement lemma accepts the caller's decidable equality instance.
+example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι] (domain : ι ↪ F)
     (f g : ι → F) {d : ℕ} {F₀ G₀ F₁ G₁ : Polynomial F}
     (hF₀ : F₀.degree ≤ d) (hG₀ : G₀.degree ≤ d)
     (hF₁ : F₁.degree ≤ d) (hG₁ : G₁.degree ≤ d) (hne : (F₀, G₀) ≠ (F₁, G₁)) :
@@ -50,5 +49,5 @@ example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] (domain : ι ↪ F
       commonPolynomialAgreementSet domain f g F₁ G₁) ≤ d :=
   card_inter_commonPolynomialAgreementSet_le domain f g hF₀ hG₀ hF₁ hG₁ hne
 
-#print axioms ReedSolomon.equalDegreeMcaError_le
+#print axioms ReedSolomon.equalDegreeMcaError_le_affineMcaError_add
 #print axioms ReedSolomon.equalDegreeMcaError_eq_iSup_prob
