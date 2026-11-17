@@ -36,8 +36,9 @@ The errors have type `ENNReal` and counting definitions that require no sampler.
 `ReedSolomon.affineMcaError_eq_iSup_prob` and `ReedSolomon.scalarMcaError_eq_iSup_prob` in
 `AffineCombiner.Probability` identify them with suprema of native uniform probabilities.
 The counting definitions use classical decidability for predicates over polynomial witnesses.
-The multiplier also uses noncomputable polynomial arithmetic, while its evaluation is
-`f x + (α + β x) g x`.
+The multiplier uses noncomputable polynomial arithmetic.
+Its value at `x` is `α + β * x`.
+The combined word has value `f x + (α + β * x) * g x`.
 
 ## Main definitions
 
@@ -262,13 +263,13 @@ theorem IsAffineExceptional.anti_threshold {domain : ι ↪ F} {f g : ι → F} 
     IsAffineExceptional domain f g d A' s α β P :=
   ⟨h.1, hA.trans h.2.1, h.2.2⟩
 
-/-- Scalar exceptionality is preserved when the allowed agreement loss decreases. -/
+/-- A scalar exceptional candidate stays exceptional for a smaller agreement loss. -/
 theorem IsScalarExceptional.anti_loss {domain : ι ↪ F} {f g : ι → F} {d A s s' : ℕ} {α : F}
     {P : F[X]} (h : IsScalarExceptional domain f g d A s α P) (hs : s' ≤ s) :
     IsScalarExceptional domain f g d A s' α P :=
   ⟨h.1, h.2.1, fun F₀ G₀ hF hG hw ↦ h.2.2 F₀ G₀ hF hG ⟨hw.1, hw.2.trans hs⟩⟩
 
-/-- Scalar exceptionality is preserved when the agreement threshold decreases. -/
+/-- A scalar exceptional candidate stays exceptional for a smaller agreement threshold. -/
 theorem IsScalarExceptional.anti_threshold {domain : ι ↪ F} {f g : ι → F} {d A A' s : ℕ}
     {α : F} {P : F[X]} (h : IsScalarExceptional domain f g d A s α P) (hA : A' ≤ A) :
     IsScalarExceptional domain f g d A' s α P :=

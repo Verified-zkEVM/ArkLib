@@ -177,7 +177,6 @@ The sampling characterizations provide the connection to probability bounds for 
 Counts use `ℕ`, and algebraic bound formulas can use `ℝ` with explicit `ENNReal.ofReal`
 conversion.
 Nonnegative error budgets use `ℝ≥0`.
-Characterization lemmas and real-valued views describe the same error value.
 
 Compare an `ENNReal` value with a nonnegative bound using a coercion, for example
 `mcaError G C δ ≤ (ε : ENNReal)`. Use `mcaError_ne_top` before applying `ENNReal.toNNReal`.

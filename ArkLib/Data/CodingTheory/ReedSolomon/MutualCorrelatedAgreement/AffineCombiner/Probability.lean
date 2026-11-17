@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Alexander Hicks
+Authors: Thomas Coratger
 -/
 module
 
@@ -20,8 +20,9 @@ This module supplies the sampling characterizations under `SampleableType F`.
 
 At loss zero, the scalar exceptional event equals `Code.IsProjectionBad` for
 `CoreDefinitions.AffineLineGenerator F` and `ReedSolomon.code domain (d + 1)`.
-At a radius with integer agreement threshold `A`, its probability supremum is
-`CoreDefinitions.mcaError` for that generator and code.
+Write `n` for the domain size.
+If `⌈n (1 - δ)⌉₊ = A`, the scalar error equals
+`CoreDefinitions.mcaError` for that generator and code at radius `δ`.
 The scalar lower bound therefore gives a lower bound on this value.
 An affine witness of degree at most `d` evaluates to a word in `code domain (d + 1)` by
 `ReedSolomon.evalOnPoints_mem_code_succ_of_degree_le`.
