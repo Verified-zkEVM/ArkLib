@@ -19,6 +19,8 @@ Lemmas about `Polynomial.degreeLT R n`, the submodule of polynomials of degree `
   natural degree at most `n`.
 * `Polynomial.mem_degreeLT_of_mul_left`: if the coefficient semiring has no zero divisors,
   `g ≠ 0`, and `g * q ∈ degreeLT R n`, then `q ∈ degreeLT R n`.
+* `Polynomial.prod_X_sub_C_mem_degreeLT`: a product of fewer than `m` linear factors lies in
+  `degreeLT R m`.
 
 The boundary fact is reusable for any construction that maps `degreeLT` through a linear map —
 e.g. Reed-Solomon codes (`ReedSolomon.code α n = (degreeLT F n).map (evalOnPoints α)`), folded
@@ -68,5 +70,26 @@ theorem mem_degreeLT_of_mul_left [NoZeroDivisors R] {g q : R[X]} {n : ℕ} (hg :
   rw [mem_degreeLT, degree_mul] at h
   rw [mem_degreeLT]
   exact (le_add_of_nonneg_left (zero_le_degree_iff.mpr hg)).trans_lt h
+
+end Polynomial
+
+namespace Polynomial
+
+section CommRing
+
+variable {R : Type*} [CommRing R]
+
+/-- A product of fewer than `m` linear factors `X - C (a j)` has degree `< m`. -/
+theorem prod_X_sub_C_mem_degreeLT {ι : Type*} (a : ι → R) (S : Finset ι) {m : ℕ}
+    (h : S.card < m) : ∏ j ∈ S, (X - C (a j)) ∈ degreeLT R m := by
+  rw [mem_degreeLT]
+  refine degree_le_natDegree.trans_lt ?_
+  have h1 : (∏ j ∈ S, (X - C (a j))).natDegree ≤ S.card := by
+    refine (natDegree_prod_le S fun j => X - C (a j)).trans ?_
+    refine (Finset.sum_le_sum fun j _ => natDegree_X_sub_C_le (a j)).trans ?_
+    simp
+  exact_mod_cast h1.trans_lt h
+
+end CommRing
 
 end Polynomial
