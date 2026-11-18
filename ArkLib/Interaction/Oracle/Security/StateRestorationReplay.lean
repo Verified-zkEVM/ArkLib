@@ -166,13 +166,7 @@ private theorem simulate_sourceQueries {ι : Type} (ambient : OracleSpec ι) (ac
       (simulateQ (sourceQueries ambient access) program) =
       pure (evalWithAnswerFn impl program) := by
   rw [← QueryImpl.simulateQ_compose]
-  have h : QueryImpl.compose (Verifier.liftAccessImpl ambient access impl)
-      (sourceQueries ambient access) = impl.liftTarget (OracleComp ambient) := by
-    funext q
-    simp [QueryImpl.compose, sourceQueries, QueryImpl.liftTarget]
-    rfl
-  rw [h, simulateQ_liftTarget]
-  rfl
+  exact (simulateQ_natural impl (MonadHom.pure (OracleComp ambient)) program).symm
 
 /-- The actual terminal observation uses exactly the run's accumulated closing handler. -/
 private theorem execute_sourceTerminal {ι : Type} (ambient : OracleSpec ι)

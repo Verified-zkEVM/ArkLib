@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import VCVio.OracleComp.OracleContext
-public import PolyFun.PFunctor.Lens.Basic
+public import VCVio.OracleComp.MapLens
 
 /-!
 # Extensional oracle sources
@@ -338,21 +338,17 @@ theorem simulateQ_toQueryImpl (f : SourceHom A B) (impl : QueryImpl B.spec Id) (
       simp only [toQueryImpl, simulateQ_map, simulateQ_spec_query]
     _ = _ := rfl
 
-/-- Route a program with the existing interpreter; no new virtual-oracle package is introduced. -/
+/-- Route every query and response in a program along the source lens. -/
 def mapProgram (f : SourceHom A B) {α : Type v} (program : OracleComp A.spec α) :
     OracleComp B.spec α :=
-  simulateQ f.toQueryImpl program
+  program.mapLens f.route
 
 /-- Program routing commutes with interpretation by the matching backing environment. -/
 theorem eval_mapProgram (f : SourceHom A B) (env : F) {α : Type v}
     (program : OracleComp A.spec α) :
     B.eval env (f.mapProgram program) = A.eval (f.pullEnv env) program := by
-  have h : QueryImpl.compose (B.handler env) f.toQueryImpl = A.handler (f.pullEnv env) := by
-    funext q
-    exact (simulateQ_toQueryImpl f (B.handler env) q).trans (f.commutes env q).symm
-  change simulateQ (B.handler env) (simulateQ f.toQueryImpl program) = _
-  rw [← QueryImpl.simulateQ_compose, h]
-  rfl
+  rw [SourceCtx.eval, mapProgram, OracleComp.simulateQ_mapLens]
+  exact congrArg (fun impl => simulateQ impl program) (f.pull_handler env)
 
 end Programs
 
