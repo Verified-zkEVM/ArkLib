@@ -28,6 +28,11 @@ example : ∃ a : PowerSeries ℤ,
     refine IsUnit.map _ (isUnit_iff_constantCoeff.mpr ?_)
     simp
 
+-- The lemma recovers the Henselian property of adically complete rings.
+example {R : Type*} [CommRing R] (I : Ideal R) [IsAdicComplete I R] : HenselianRing R I :=
+  ⟨IsAdicComplete.le_jacobson_bot I,
+    fun f _ a₀ h₁ h₂ ↦ IsAdicComplete.exists_isRoot_sub_mem f a₀ h₁ h₂⟩
+
 /--
 info: 'IsAdicComplete.exists_isRoot_sub_mem' depends on axioms: [propext, Classical.choice,
  Quot.sound]

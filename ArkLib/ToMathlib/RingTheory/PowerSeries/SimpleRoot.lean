@@ -22,7 +22,6 @@ Uniqueness holds because `Φ(F) - Φ(E)` is `F - E` times a unit for two such ro
 
 ## Main statements
 
-* `PowerSeries.constantCoeff_eval`: the constant term of an evaluation.
 * `PowerSeries.constantCoeff_aeval`: the constant term of a multivariate substitution.
 * `PowerSeries.existsUnique_constantCoeff_eq_and_eval_eq_zero`: simple roots lift uniquely.
 * `PowerSeries.coeff_eval_trunc_eq_zero`: truncations of a root are roots up to their length.
@@ -34,17 +33,10 @@ namespace PowerSeries
 
 variable {R : Type*} [CommRing R]
 
-/-- The constant term of `Φ(E)` is the reduction of `Φ` evaluated at the constant term of `E`. -/
-theorem constantCoeff_eval (Φ : Polynomial (PowerSeries R)) (E : PowerSeries R) :
-    constantCoeff (Φ.eval E) = (Φ.map constantCoeff).eval (constantCoeff E) := by
-  rw [Polynomial.eval_map]
-  exact Polynomial.hom_eval₂ _ _ _ _
-
 /-- The constant term of `p(g)` is `p` evaluated at the constant terms of `g`. -/
 theorem constantCoeff_aeval {σ : Type*} (g : σ → PowerSeries R) (p : MvPolynomial σ R) :
     constantCoeff (MvPolynomial.aeval g p) = MvPolynomial.eval (fun i ↦ constantCoeff (g i)) p := by
-  rw [MvPolynomial.aeval_def, MvPolynomial.eval₂_comp_left, MvPolynomial.eval]
-  congr 1
+  rw [MvPolynomial.map_aeval]; simp
 
 /-- Let `Φ` be a polynomial with power series coefficients over a commutative ring.
 
@@ -57,10 +49,10 @@ theorem existsUnique_constantCoeff_eq_and_eval_eq_zero (Φ : Polynomial (PowerSe
     ∃! E : PowerSeries R, constantCoeff E = a ∧ Φ.eval E = 0 := by
   have hunit : ∀ E : PowerSeries R, constantCoeff E = a →
       IsUnit (Φ.derivative.eval E) := fun E hE ↦ by
-    rw [isUnit_iff_constantCoeff, constantCoeff_eval, hE, ← Polynomial.derivative_map]
+    rw [isUnit_iff_constantCoeff, ← Polynomial.eval_map_apply, hE, ← Polynomial.derivative_map]
     exact h₁
   obtain ⟨E, hE, hEa⟩ := IsAdicComplete.exists_isRoot_sub_mem (I := Ideal.span {X}) Φ (C a)
-    (by rw [Ideal.mem_span_singleton, X_dvd_iff, constantCoeff_eval, constantCoeff_C, h₀])
+    (by rw [Ideal.mem_span_singleton, X_dvd_iff, ← Polynomial.eval_map_apply, constantCoeff_C, h₀])
     ((hunit _ (constantCoeff_C a)).map _)
   rw [Ideal.mem_span_singleton, X_dvd_iff, map_sub, constantCoeff_C, sub_eq_zero] at hEa
   refine ⟨E, ⟨hEa, hE⟩, fun F ⟨hFa, hF⟩ ↦ ?_⟩

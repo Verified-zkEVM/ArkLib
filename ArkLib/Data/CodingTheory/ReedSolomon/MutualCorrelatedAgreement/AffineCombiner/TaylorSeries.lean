@@ -16,10 +16,13 @@ Fix `R ∈ K[X, Y, Z]`, a center `t₀` and a challenge `(α, β)`, and write `W
 Let `z` be a simple root of `R(t₀, α + β t₀, Z)`.
 Then `R(X, α + β X, Z) = 0` has exactly one series solution `z + E(W)` with `E(0) = 0`.
 A polynomial root through `(t₀, z)` is this series.
-For `j ≥ 1`, the coefficient of `W ^ j` is `N_j / S ^ (2j - 1)`, with `S = R_Z(t₀, α + β t₀, z)`.
+For `j ≥ 1`, the coefficient of `W ^ j` is `N_j / S^(2j - 1)`, with `S = R_Z(t₀, α + β t₀, z)`.
 
 Existence and uniqueness come from Hensel's lemma for power series.
-The coefficient formula reuses the chart numerators, whose degree bounds live with them.
+The coefficient formula and the polynomial-root case hold for any root `E` with `E(0) = 0`.
+In particular they hold for the unique one.
+The paper's `P = z + E(X - t₀)` is stated through the Taylor expansion of `P` at `t₀` in `W`.
+The paper's degree bound on `N_j` is the numerator degree bound of the Taylor chart module.
 The series equation is a noncomputable view of a polynomial ring over power series.
 
 This is Lemma 3.11 of [CWYZ26].
@@ -40,7 +43,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   series root.
 * `ReedSolomon.coeff_C_add_eq_affineChartCoefficient`: the series coefficients are the chart
   coefficients.
-* `ReedSolomon.coeff_powerSeries_root`: the coefficient formula (3.5).
+* `ReedSolomon.coeff_eq_affineChartNumerator_div_of_constantCoeff_eq_zero`: the coefficient
+  formula (3.5).
 
 ## References
 
@@ -81,7 +85,7 @@ theorem eval_map_constantCoeff_affineSeriesEquation (t₀ α β : K) (R : MvPoly
     (z : K) :
     ((affineSeriesEquation t₀ α β R).map PowerSeries.constantCoeff).eval z =
       eval (fun v ↦ v.elim z ![t₀, α + β * t₀]) R := by
-  rw [← PowerSeries.constantCoeff_C z, ← PowerSeries.constantCoeff_eval,
+  rw [← PowerSeries.constantCoeff_C z, Polynomial.eval_map_apply,
     eval_affineSeriesEquation, PowerSeries.constantCoeff_aeval, PowerSeries.constantCoeff_C]
   congr 2
   funext v
@@ -173,9 +177,7 @@ theorem coe_taylor_eq_C_add_of_affineLineEval_eq_zero (R : MvPolynomial AffineVa
     (t₀ α β z : K) {P : Polynomial K} (hP : affineLineEval α β P R = 0) (hPz : P.eval t₀ = z)
     (hS : eval (fun v ↦ v.elim z ![t₀, α + β * t₀]) (pderiv none R) ≠ 0)
     {E : PowerSeries K} (hE0 : PowerSeries.constantCoeff E = 0)
-    (hE : aeval (fun v ↦ v.elim (PowerSeries.C z + E)
-      ![PowerSeries.C t₀ + PowerSeries.X,
-        PowerSeries.C (α + β * t₀) + PowerSeries.C β * PowerSeries.X]) R = 0) :
+    (hE : (affineSeriesEquation t₀ α β R).eval (PowerSeries.C z + E) = 0) :
     ((Polynomial.taylor t₀ P : Polynomial K) : PowerSeries K) = PowerSeries.C z + E := by
   have hz : eval (fun v ↦ v.elim z ![t₀, α + β * t₀]) R = 0 := by
     have h := eval_affineLineEval t₀ α β P R
@@ -188,7 +190,8 @@ theorem coe_taylor_eq_C_add_of_affineLineEval_eq_zero (R : MvPolynomial AffineVa
   have hroot := coe_taylor_affineLineEval t₀ α β P R
   rw [hP, map_zero, Polynomial.coe_zero] at hroot
   have := (existsUnique_powerSeries_root R t₀ α β z hz hS).unique
-    ⟨h0, by rw [add_sub_cancel]; exact hroot.symm⟩ ⟨hE0, hE⟩
+    ⟨h0, by rw [add_sub_cancel]; exact hroot.symm⟩
+    ⟨hE0, by rwa [← eval_affineSeriesEquation]⟩
   rw [← this, add_sub_cancel]
 
 /-- The coefficients of the power series root are the chart coefficients.
@@ -200,16 +203,12 @@ This coefficient is taken at center `t₀` and chart point `(z, α, β)`. -/
 theorem coeff_C_add_eq_affineChartCoefficient (R : MvPolynomial AffineVar K) (t₀ α β z : K)
     (hS : eval (fun v ↦ v.elim z ![t₀, α + β * t₀]) (pderiv none R) ≠ 0)
     {E : PowerSeries K} (hE0 : PowerSeries.constantCoeff E = 0)
-    (hE : aeval (fun v ↦ v.elim (PowerSeries.C z + E)
-      ![PowerSeries.C t₀ + PowerSeries.X,
-        PowerSeries.C (α + β * t₀) + PowerSeries.C β * PowerSeries.X]) R = 0) (j : ℕ) :
+    (hE : (affineSeriesEquation t₀ α β R).eval (PowerSeries.C z + E) = 0) (j : ℕ) :
     PowerSeries.coeff j (PowerSeries.C z + E) =
       affineChartCoefficient t₀ R (Sum.elim (fun _ ↦ z) ![α, β]) j := by
   set F := PowerSeries.C z + E
   set Q := affineSpecializedLine R ![α, β]
-  have hF : (affineSeriesEquation t₀ α β R).eval F = 0 := by
-    rw [eval_affineSeriesEquation]
-    exact hE
+  have hF : (affineSeriesEquation t₀ α β R).eval F = 0 := hE
   have hF0 : PowerSeries.coeff 0 F = z := by
     simp [F, hE0]
   have hSQ : aeval (fun _ : Fin 1 ↦ z) (initialJetSeparant t₀ Q) ≠ 0 := by
@@ -244,17 +243,16 @@ theorem coeff_C_add_eq_affineChartCoefficient (R : MvPolynomial AffineVar K) (t�
 
 /-- Coefficient formula (3.5) of Lemma 3.11 in [CWYZ26].
 
-Let `R ∈ K[X, Y, Z]` over a field `K` with `S = R_Z(t₀, α + β t₀, z) ≠ 0`.
-Write `W = X - t₀`.
+Let `R ∈ K[X, Y, Z]` over a field `K` and write `S(α, β, z) = R_Z(t₀, α + β t₀, z)`.
+Suppose `S(α, β, z) ≠ 0`, and write `W = X - t₀`.
 Let `E` be a power series with zero constant term and `R(t₀ + W, α + β (t₀ + W), z + E) = 0`.
-For `j ≥ 1`, the coefficient of `W ^ j` in `E` is `N_j(z, α, β) / S ^ (2j - 1)`.
+For `j ≥ 1`, the coefficient of `W ^ j` in `E` is `N_j(α, β, z) / S(α, β, z)^(2j - 1)`.
 Here `N_j` is the chart numerator at center `t₀` with separant exponent `2j - 1`. -/
-theorem coeff_powerSeries_root (R : MvPolynomial AffineVar K) (t₀ α β z : K)
+theorem coeff_eq_affineChartNumerator_div_of_constantCoeff_eq_zero (R : MvPolynomial AffineVar K)
+    (t₀ α β z : K)
     (hS : eval (fun v ↦ v.elim z ![t₀, α + β * t₀]) (pderiv none R) ≠ 0)
     {E : PowerSeries K} (hE0 : PowerSeries.constantCoeff E = 0)
-    (hE : aeval (fun v ↦ v.elim (PowerSeries.C z + E)
-      ![PowerSeries.C t₀ + PowerSeries.X,
-        PowerSeries.C (α + β * t₀) + PowerSeries.C β * PowerSeries.X]) R = 0)
+    (hE : (affineSeriesEquation t₀ α β R).eval (PowerSeries.C z + E) = 0)
     {j : ℕ} (hj : 1 ≤ j) :
     PowerSeries.coeff j E =
       aeval (Sum.elim (fun _ ↦ z) ![α, β]) (affineChartNumerator t₀ R (2 * j - 1) j) /

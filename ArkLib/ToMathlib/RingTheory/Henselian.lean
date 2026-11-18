@@ -14,8 +14,9 @@ In an `I`-adically complete ring, a simple root modulo `I` lifts to a root.
 The polynomial need not be monic.
 
 Newton's iteration `b ↦ b - f(b) / f'(b)` converges `I`-adically to the root.
-The argument is the one behind the Henselian instance of adically complete rings in Mathlib.
-That instance asks for a monic polynomial, which the iteration never uses.
+The proof adapts Mathlib's proof that adically complete rings are Henselian (Johan Commelin).
+That proof never uses monicity.
+The lemma is intended for upstreaming to Mathlib.
 
 ## Main statements
 

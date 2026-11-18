@@ -51,7 +51,7 @@ rings and rational Taylor coefficients.
 
 The coefficient formulas and the polynomial-root reconstruction specialize Lemma 3.11.
 `ReedSolomon.existsUnique_powerSeries_root` states the existence and uniqueness of its series.
-`ReedSolomon.coeff_powerSeries_root` links the series coefficients to these numerators.
+`ReedSolomon.coeff_eq_affineChartNumerator_div_of_constantCoeff_eq_zero` gives its coefficients.
 The reconstruction map, cleared cuts, and their degree budget implement the map and hyperplanes
 used in Claim 4.9.
 `ReedSolomon.totalDegree_affineChartNumerator_le_of_pos` also covers `h = 0`.
