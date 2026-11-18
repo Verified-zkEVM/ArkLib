@@ -27,6 +27,10 @@ at most `d + 1` common points.
 Under `d + 1 < B` and `n (d + 1) < B²`, the Johnson bound limits the number of pairs.
 Each pair accounts for at most `max q (n choose 2)` exceptional challenges with agreement loss one.
 
+The count also holds for challenges drawn from a subfield `K` through an embedding `K →+* E`.
+Then `q` is `|K|`, while words and candidates stay over `E`.
+This subfield form serves the interleaved count of Theorem 5.2 of [CWYZ26].
+
 The count formalizes Lemma 4.5 of [CWYZ26].
 It bounds all persistent exceptional challenges, including any excluded challenges from the
 paper's interpolation argument.
@@ -40,6 +44,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the stateme
 ## Main statements
 
 * `ReedSolomon.mem_affinePersistenceSet`: membership in the persistence set.
+* `ReedSolomon.card_isAffineExceptional_persistent_map_le`: the persistent exceptional count for
+  challenges from a subfield.
 * `ReedSolomon.card_isAffineExceptional_persistent_le`: the persistent exceptional count.
 
 ## References
@@ -159,35 +165,39 @@ private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι
       · exact (natDegree_mul_le).trans (by omega)
 
 open Classical in
-/-- If `d + 1 < B` and `n (d + 1) < B²`, the number of challenges with a persistent
-exceptional candidate at agreement loss one is at most `ℓ · max q (n choose 2)`, where
-`n = |ι|`, `q = |F|`, and `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+/-- Let `φ : K →+* E` be a field embedding.
+If `d + 1 < B` and `n (d + 1) < B²`, the number of challenges `(α, β) ∈ K²` such that
+`(φ α, φ β)` has a persistent exceptional candidate at agreement loss one is at most
+`ℓ · max q (n choose 2)`, where `n = |ι|`, `q = |K|`, and `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
 The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
-theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
-    {d A B : ℕ} (hdB : d + 1 < B) (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
-    (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
-        IsAffinePersistent domain f g d B c.1 c.2 P} : ℝ) ≤
+theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Field K] [Fintype K] [Field E]
+    [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K →+* E) {d A B : ℕ} (hdB : d + 1 < B)
+    (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
+    (#{c : K × K | ∃ P, IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
+        IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P} : ℝ) ≤
       (Fintype.card ι : ℝ) * ((B : ℝ) - d - 1) / ((B : ℝ) ^ 2 - Fintype.card ι * (d + 1)) *
-        max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) := by
-  set C : Finset (F × F) := {c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
-    IsAffinePersistent domain f g d B c.1 c.2 P}
-  set M := max (Fintype.card F) ((Fintype.card ι).choose 2)
-  have hdata : ∀ c : F × F, ∃ P H L : F[X], c ∈ C →
-      IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧ L ≠ 0 ∧ L.degree ≤ 1 ∧ H.degree ≤ d ∧
-        B ≤ #(affinePersistenceSet domain f g c.1 c.2 P H L) := by
+        max (Fintype.card K : ℝ) ((Fintype.card ι).choose 2) := by
+  set C : Finset (K × K) := {c : K × K | ∃ P,
+    IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
+      IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P}
+  set M := max (Fintype.card K) ((Fintype.card ι).choose 2)
+  have hdata : ∀ c : K × K, ∃ P H L : E[X], c ∈ C →
+      IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧ L ≠ 0 ∧ L.degree ≤ 1 ∧
+        H.degree ≤ d ∧ B ≤ #(affinePersistenceSet domain f g (φ c.1) (φ c.2) P H L) := by
     intro c
     by_cases hc : c ∈ C
     · obtain ⟨P, hex, H, L, hL, hLd, hH, hB⟩ := (mem_filter.mp hc).2
       exact ⟨P, H, L, fun _ ↦ ⟨hex, hL, hLd, hH, hB⟩⟩
     · exact ⟨0, 0, 0, fun h ↦ absurd h hc⟩
   choose P H L hdata using hdata
-  set π : F × F → RatFunc F × RatFunc F := fun c ↦ persistentPair c.1 c.2 (P c) (H c) (L c)
+  set π : K × K → RatFunc E × RatFunc E := fun c ↦
+    persistentPair (φ c.1) (φ c.2) (P c) (H c) (L c)
   set T := C.image π
   -- Each rational pair accounts for at most `M` challenges.
   have hfiber : ∀ p ∈ T, #{c ∈ C | π c = p} ≤ M := by
     intro p _
     refine (card_le_card fun c hc ↦ ?_).trans
-      (card_isAffineExceptional_ratFunc_le domain f g (d := d) (A := A) p.1 p.2)
+      (card_isAffineExceptional_ratFunc_map_le domain f g φ (d := d) (A := A) p.1 p.2)
     rw [mem_filter] at hc ⊢
     refine ⟨mem_univ _, P c, ?_, (hdata c hc.1).1⟩
     rw [← hc.2]
@@ -198,7 +208,7 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (
   have hrep : ∀ p ∈ T, ∃ c ∈ C, π c = p := fun p hp ↦ mem_image.mp hp
   choose! rep hrepC hrepπ using hrep
   have hJT := card_mul_sq_sub_card_mul_le_of_inter_card_le T
-    (fun p ↦ affinePersistenceSet domain f g (rep p).1 (rep p).2
+    (fun p ↦ affinePersistenceSet domain f g (φ (rep p).1) (φ (rep p).2)
       (P (rep p)) (H (rep p)) (L (rep p)))
     B (d + 1) (fun p hp ↦ (hdata _ (hrepC p hp)).2.2.2.2) fun p hp p' hp' hne ↦ by
       have h₀ := hdata _ (hrepC p hp)
@@ -222,8 +232,21 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (
   calc (#C : ℝ) ≤ (#T : ℝ) * (M : ℝ) := by
         rw [mul_comm]; exact_mod_cast hCT
     _ ≤ _ := by
-        rw [show (M : ℝ) = max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) by
+        rw [show (M : ℝ) = max (Fintype.card K : ℝ) ((Fintype.card ι).choose 2) by
           simp [M]]
         exact mul_le_mul_of_nonneg_right hT (by positivity)
+
+open Classical in
+/-- If `d + 1 < B` and `n (d + 1) < B²`, the number of challenges with a persistent
+exceptional candidate at agreement loss one is at most `ℓ · max q (n choose 2)`, where
+`n = |ι|`, `q = |F|`, and `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
+theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
+    {d A B : ℕ} (hdB : d + 1 < B) (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
+    (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
+        IsAffinePersistent domain f g d B c.1 c.2 P} : ℝ) ≤
+      (Fintype.card ι : ℝ) * ((B : ℝ) - d - 1) / ((B : ℝ) ^ 2 - Fintype.card ι * (d + 1)) *
+        max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) :=
+  card_isAffineExceptional_persistent_map_le domain f g (RingHom.id F) hdB hJ
 
 end ReedSolomon

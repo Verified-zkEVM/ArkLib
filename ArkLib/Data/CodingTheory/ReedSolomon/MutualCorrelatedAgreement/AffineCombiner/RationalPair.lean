@@ -27,11 +27,20 @@ The proof shows that more than `q` compatible challenges would force both ration
 to be polynomials within the witness degree bounds.
 Combining the cases gives at most `max q (n choose 2)` exceptional challenges for any rational pair.
 
+Each count also holds for challenges drawn from a subfield `K` through an embedding `K →+* E`.
+Words, witnesses and rational functions stay over `E`, and `q` becomes `|K|`.
+A nonpolynomial pair then gives an affine equation over `E` with at most `|K|` solutions in `K²`.
+This subfield form serves the interleaved count of Theorem 5.2 of [CWYZ26].
+
 ## Main statements
 
-* `ReedSolomon.card_isAffineExceptional_add_mul_le`: the polynomial witness case.
-* `ReedSolomon.card_ratFunc_combination_le`: compatibility outside the witness degree bounds.
-* `ReedSolomon.card_isAffineExceptional_ratFunc_le`: the bound for every rational pair.
+* `ReedSolomon.eval_affineMultiplier_eq_of_mem_agreementLoss`: a lost point fixes the multiplier.
+* `ReedSolomon.card_isAffineExceptional_add_mul_map_le` and
+  `ReedSolomon.card_isAffineExceptional_add_mul_le`: the polynomial witness case.
+* `ReedSolomon.card_ratFunc_combination_map_le` and `ReedSolomon.card_ratFunc_combination_le`:
+  compatibility outside the witness degree bounds.
+* `ReedSolomon.card_isAffineExceptional_ratFunc_map_le` and
+  `ReedSolomon.card_isAffineExceptional_ratFunc_le`: the bound for every rational pair.
 
 ## References
 
@@ -69,38 +78,149 @@ theorem eval_affineMultiplier_eq_of_mem_agreementLoss {domain : ι ↪ F} {f g :
   · linear_combination h
   · exact absurd (sub_eq_zero.mp h) hG
 
+section Map
+
+variable {K E : Type*} [Field K] [Field E] [DecidableEq E]
+
+open Classical in
+/-- Let `φ : K →+* E` be a field embedding and let `n` be the domain size.
+If `deg F₀ ≤ d` and `deg G₀ < d`, at most `n choose 2` challenges `(α, β) ∈ K²` make
+`F₀ + (φ α + φ β X) G₀` exceptional with agreement loss one. -/
+theorem card_isAffineExceptional_add_mul_map_le [Fintype K] (domain : ι ↪ E) (f g : ι → E)
+    (φ : K →+* E) {d A : ℕ} (F₀ G₀ : E[X]) (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
+    #{c : K × K | IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2)
+      (F₀ + affineMultiplier (φ c.1) (φ c.2) * G₀)} ≤ (Fintype.card ι).choose 2 := by
+  set S : Finset (K × K) := {c : K × K | IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2)
+    (F₀ + affineMultiplier (φ c.1) (φ c.2) * G₀)}
+  have hloss : ∀ c ∈ S, ∃ t ⊆ agreementLoss domain f g (affineMultiplier (φ c.1) (φ c.2))
+      (F₀ + affineMultiplier (φ c.1) (φ c.2) * G₀) F₀ G₀, #t = 2 := by
+    intro c hc
+    have h := (mem_filter.mp hc).2.2.2 F₀ G₀ hF hG
+    exact exists_subset_card_eq (by by_contra hlt; exact h ⟨rfl, by omega⟩)
+  choose! t ht using hloss
+  calc #S ≤ #(powersetCard 2 (univ : Finset ι)) := by
+        refine card_le_card_of_injOn t (fun c hc ↦ ?_) (fun c hc c' hc' hcc' ↦ ?_)
+        · simpa using (ht c hc).2
+        obtain ⟨i, j, hij, hcij⟩ := card_eq_two.mp (ht c hc).2
+        have hmem : ∀ k ∈ t c, φ c.1 + φ c.2 * domain k = φ c'.1 + φ c'.2 * domain k :=
+          fun k hk ↦ eval_affineMultiplier_eq_of_mem_agreementLoss ((ht c hc).1 hk)
+            ((ht c' hc').1 (hcc' ▸ hk))
+        have hi := hmem i (by simp [hcij])
+        have hj := hmem j (by simp [hcij])
+        have hx : domain i - domain j ≠ 0 := sub_ne_zero.mpr (domain.injective.ne hij)
+        have hβ : φ c.2 = φ c'.2 := by
+          have : (φ c.2 - φ c'.2) * (domain i - domain j) = 0 := by linear_combination hi - hj
+          exact sub_eq_zero.mp ((mul_eq_zero.mp this).resolve_right hx)
+        refine Prod.ext (φ.injective ?_) (φ.injective hβ)
+        rw [hβ] at hi
+        linear_combination hi
+    _ = (Fintype.card ι).choose 2 := by simp
+
+omit [DecidableEq E] in
+open Classical in
+/-- Let `φ : K →+* E` be a field embedding.
+If `(F₀, G₀)` is not a pair of polynomials with `deg F₀ ≤ d` and `deg G₀ < d`,
+at most `|K|` challenges `(α, β) ∈ K²` make `F₀ + (φ α + φ β X) G₀` a polynomial
+of degree at most `d`. -/
+theorem card_ratFunc_combination_map_le [Fintype K] (φ : K →+* E) {d : ℕ} (F₀ G₀ : RatFunc E)
+    (h : ¬ ∃ F₁ G₁ : E[X], algebraMap E[X] (RatFunc E) F₁ = F₀ ∧
+      algebraMap E[X] (RatFunc E) G₁ = G₀ ∧ F₁.degree ≤ d ∧ G₁.degree < d) :
+    #{c : K × K | ∃ P : E[X], P.degree ≤ d ∧ algebraMap E[X] (RatFunc E) P =
+      F₀ + algebraMap E[X] (RatFunc E) (affineMultiplier (φ c.1) (φ c.2)) * G₀} ≤
+      Fintype.card K := by
+  set S : Finset (K × K) := {c : K × K | ∃ P : E[X], P.degree ≤ d ∧
+    algebraMap E[X] (RatFunc E) P =
+      F₀ + algebraMap E[X] (RatFunc E) (affineMultiplier (φ c.1) (φ c.2)) * G₀}
+  -- The rational functions that are polynomials of degree at most `d`.
+  set V : Submodule E (RatFunc E) :=
+    (degreeLE E d).map ((Algebra.linearMap E[X] (RatFunc E)).restrictScalars E)
+  have hV : ∀ r, r ∈ V ↔ ∃ P : E[X], P.degree ≤ d ∧ algebraMap E[X] (RatFunc E) P = r := by
+    intro r
+    simp [V, mem_degreeLE]
+  set u : K × K → RatFunc E := fun c ↦
+    F₀ + algebraMap E[X] (RatFunc E) (affineMultiplier (φ c.1) (φ c.2)) * G₀
+  set XG : RatFunc E := algebraMap E[X] (RatFunc E) X * G₀
+  have hu : ∀ c, u c = F₀ + φ c.1 • G₀ + φ c.2 • XG := by
+    intro c
+    have hC : ∀ a : E, algebraMap E[X] (RatFunc E) (C a) = algebraMap E (RatFunc E) a :=
+      fun a ↦ (IsScalarTower.algebraMap_apply E E[X] (RatFunc E) a).symm
+    simp only [u, XG, affineMultiplier, map_add, map_mul, hC, Algebra.smul_def]
+    ring
+  have hS : ∀ c ∈ S, u c ∈ V := fun c hc ↦ (hV _).mpr (mem_filter.mp hc).2
+  by_contra hlt
+  push Not at hlt
+  obtain ⟨c, hc, c', hc', hne, heq⟩ := exists_ne_map_eq_of_card_lt_of_maps_to
+    (t := (univ : Finset K)) (f := Prod.fst) (by simpa using hlt) (by simp [Set.MapsTo])
+  have hβ : φ c'.2 - φ c.2 ≠ 0 :=
+    sub_ne_zero.mpr fun h ↦ hne (Prod.ext heq (φ.injective h).symm)
+  obtain ⟨c'', hc'', hα⟩ : ∃ c'' ∈ S, φ c''.1 - φ c.1 ≠ 0 := by
+    by_contra! hall
+    have hsub : S ⊆ (univ : Finset K).image fun b ↦ (c.1, b) := by
+      intro e he
+      simpa [Prod.ext_iff, eq_comm, sub_eq_zero] using φ.injective (sub_eq_zero.mp (hall e he))
+    exact absurd ((card_le_card hsub).trans card_image_le) (by simpa using hlt)
+  have hXG : XG ∈ V := by
+    have h := V.smul_mem (φ c'.2 - φ c.2)⁻¹ (V.sub_mem (hS c' hc') (hS c hc))
+    convert h using 1
+    rw [hu, hu, heq, eq_inv_smul_iff₀ hβ]
+    module
+  have hG : G₀ ∈ V := by
+    have h := V.smul_mem (φ c''.1 - φ c.1)⁻¹
+      (V.sub_mem (V.sub_mem (hS c'' hc'') (hS c hc)) (V.smul_mem (φ c''.2 - φ c.2) hXG))
+    convert h using 1
+    rw [hu, hu, eq_inv_smul_iff₀ hα]
+    module
+  have hF : F₀ ∈ V := by
+    have h := V.sub_mem (V.sub_mem (hS c hc) (V.smul_mem (φ c.1) hG)) (V.smul_mem (φ c.2) hXG)
+    convert h using 1
+    rw [hu]
+    module
+  obtain ⟨F₁, hF₁, rfl⟩ := (hV _).mp hF
+  obtain ⟨G₁, hG₁, rfl⟩ := (hV _).mp hG
+  obtain ⟨Q, hQ, hQX⟩ := (hV _).mp hXG
+  replace hQX : Q = G₁ * X := by
+    apply RatFunc.algebraMap_injective E
+    rw [hQX, map_mul, mul_comm]
+  refine h ⟨F₁, G₁, rfl, rfl, hF₁, ?_⟩
+  rcases eq_or_ne G₁ 0 with rfl | hG₁0
+  · simp
+  rw [hQX, degree_mul_X] at hQ
+  rw [degree_eq_natDegree hG₁0] at hQ ⊢
+  exact_mod_cast (show G₁.natDegree + 1 ≤ d by exact_mod_cast hQ)
+
+open Classical in
+/-- Let `φ : K →+* E` be a field embedding, `n` the domain size and `q = |K|`.
+For any rational pair `(F₀, G₀)` over `E`, at most `max q (n choose 2)` challenges
+`(α, β) ∈ K²` make `F₀ + (φ α + φ β X) G₀` a polynomial exceptional with agreement loss one. -/
+theorem card_isAffineExceptional_ratFunc_map_le [Fintype K] (domain : ι ↪ E) (f g : ι → E)
+    (φ : K →+* E) {d A : ℕ} (F₀ G₀ : RatFunc E) :
+    #{c : K × K | ∃ P : E[X], algebraMap E[X] (RatFunc E) P =
+        F₀ + algebraMap E[X] (RatFunc E) (affineMultiplier (φ c.1) (φ c.2)) * G₀ ∧
+      IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P} ≤
+      max (Fintype.card K) ((Fintype.card ι).choose 2) := by
+  by_cases h : ∃ F₁ G₁ : E[X], algebraMap E[X] (RatFunc E) F₁ = F₀ ∧
+      algebraMap E[X] (RatFunc E) G₁ = G₀ ∧ F₁.degree ≤ d ∧ G₁.degree < d
+  · obtain ⟨F₁, G₁, rfl, rfl, hF, hG⟩ := h
+    refine le_max_of_le_right ((card_le_card fun c hc ↦ ?_).trans
+      (card_isAffineExceptional_add_mul_map_le domain f g φ (A := A) F₁ G₁ hF hG))
+    obtain ⟨P, hP, hex⟩ := (mem_filter.mp hc).2
+    rw [← map_mul, ← map_add, (RatFunc.algebraMap_injective E).eq_iff] at hP
+    exact mem_filter.mpr ⟨mem_univ _, hP ▸ hex⟩
+  · refine le_max_of_le_left ((card_le_card fun c hc ↦ ?_).trans
+      (card_ratFunc_combination_map_le φ F₀ G₀ h))
+    obtain ⟨P, hP, hex⟩ := (mem_filter.mp hc).2
+    exact mem_filter.mpr ⟨mem_univ _, P, hex.1, hP⟩
+
+end Map
+
 open Classical in
 /-- If `deg F₀ ≤ d` and `deg G₀ < d`, at most `n choose 2` challenges `(α, β)` make
 `F₀ + (α + β X) G₀` exceptional with agreement loss one, where `n` is the domain size. -/
 theorem card_isAffineExceptional_add_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
     {d A : ℕ} (F₀ G₀ : F[X]) (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
     #{c : F × F | IsAffineExceptional domain f g d A 1 c.1 c.2
-      (F₀ + affineMultiplier c.1 c.2 * G₀)} ≤ (Fintype.card ι).choose 2 := by
-  set E : Finset (F × F) := {c : F × F | IsAffineExceptional domain f g d A 1 c.1 c.2
-    (F₀ + affineMultiplier c.1 c.2 * G₀)}
-  have hloss : ∀ c ∈ E, ∃ t ⊆ agreementLoss domain f g (affineMultiplier c.1 c.2)
-      (F₀ + affineMultiplier c.1 c.2 * G₀) F₀ G₀, #t = 2 := by
-    intro c hc
-    have h := (mem_filter.mp hc).2.2.2 F₀ G₀ hF hG
-    exact exists_subset_card_eq (by by_contra hlt; exact h ⟨rfl, by omega⟩)
-  choose! t ht using hloss
-  calc #E ≤ #(powersetCard 2 (univ : Finset ι)) := by
-        refine card_le_card_of_injOn t (fun c hc ↦ ?_) (fun c hc c' hc' hcc' ↦ ?_)
-        · simpa using (ht c hc).2
-        obtain ⟨i, j, hij, hcij⟩ := card_eq_two.mp (ht c hc).2
-        have hmem : ∀ k ∈ t c, c.1 + c.2 * domain k = c'.1 + c'.2 * domain k := fun k hk ↦
-          eval_affineMultiplier_eq_of_mem_agreementLoss ((ht c hc).1 hk)
-            ((ht c' hc').1 (hcc' ▸ hk))
-        have hi := hmem i (by simp [hcij])
-        have hj := hmem j (by simp [hcij])
-        have hx : domain i - domain j ≠ 0 := sub_ne_zero.mpr (domain.injective.ne hij)
-        have hβ : c.2 = c'.2 := by
-          have : (c.2 - c'.2) * (domain i - domain j) = 0 := by linear_combination hi - hj
-          exact sub_eq_zero.mp ((mul_eq_zero.mp this).resolve_right hx)
-        refine Prod.ext ?_ hβ
-        rw [hβ] at hi
-        linear_combination hi
-    _ = (Fintype.card ι).choose 2 := by simp
+      (F₀ + affineMultiplier c.1 c.2 * G₀)} ≤ (Fintype.card ι).choose 2 :=
+  card_isAffineExceptional_add_mul_map_le domain f g (RingHom.id F) F₀ G₀ hF hG
 
 omit [DecidableEq F] in
 open Classical in
@@ -111,65 +231,8 @@ theorem card_ratFunc_combination_le [Fintype F] {d : ℕ} (F₀ G₀ : RatFunc F
     (h : ¬ ∃ F₁ G₁ : F[X], algebraMap F[X] (RatFunc F) F₁ = F₀ ∧
       algebraMap F[X] (RatFunc F) G₁ = G₀ ∧ F₁.degree ≤ d ∧ G₁.degree < d) :
     #{c : F × F | ∃ P : F[X], P.degree ≤ d ∧ algebraMap F[X] (RatFunc F) P =
-      F₀ + algebraMap F[X] (RatFunc F) (affineMultiplier c.1 c.2) * G₀} ≤ Fintype.card F := by
-  set S : Finset (F × F) := {c : F × F | ∃ P : F[X], P.degree ≤ d ∧
-    algebraMap F[X] (RatFunc F) P =
-      F₀ + algebraMap F[X] (RatFunc F) (affineMultiplier c.1 c.2) * G₀}
-  -- The rational functions that are polynomials of degree at most `d`.
-  set V : Submodule F (RatFunc F) :=
-    (degreeLE F d).map ((Algebra.linearMap F[X] (RatFunc F)).restrictScalars F)
-  have hV : ∀ r, r ∈ V ↔ ∃ P : F[X], P.degree ≤ d ∧ algebraMap F[X] (RatFunc F) P = r := by
-    intro r
-    simp [V, mem_degreeLE]
-  set u : F × F → RatFunc F := fun c ↦
-    F₀ + algebraMap F[X] (RatFunc F) (affineMultiplier c.1 c.2) * G₀
-  set XG : RatFunc F := algebraMap F[X] (RatFunc F) X * G₀
-  have hu : ∀ c, u c = F₀ + c.1 • G₀ + c.2 • XG := by
-    intro c
-    have hC : ∀ a : F, algebraMap F[X] (RatFunc F) (C a) = algebraMap F (RatFunc F) a :=
-      fun a ↦ (IsScalarTower.algebraMap_apply F F[X] (RatFunc F) a).symm
-    simp only [u, XG, affineMultiplier, map_add, map_mul, hC, Algebra.smul_def]
-    ring
-  have hS : ∀ c ∈ S, u c ∈ V := fun c hc ↦ (hV _).mpr (mem_filter.mp hc).2
-  by_contra hlt
-  push Not at hlt
-  obtain ⟨c, hc, c', hc', hne, heq⟩ := exists_ne_map_eq_of_card_lt_of_maps_to
-    (t := (univ : Finset F)) (f := Prod.fst) (by simpa using hlt) (by simp [Set.MapsTo])
-  have hβ : c'.2 - c.2 ≠ 0 := sub_ne_zero.mpr fun h ↦ hne (Prod.ext heq h.symm)
-  obtain ⟨c'', hc'', hα⟩ : ∃ c'' ∈ S, c''.1 - c.1 ≠ 0 := by
-    by_contra! hall
-    have hsub : S ⊆ (univ : Finset F).image fun b ↦ (c.1, b) := by
-      intro e he
-      simpa [Prod.ext_iff, eq_comm, sub_eq_zero] using hall e he
-    exact absurd ((card_le_card hsub).trans card_image_le) (by simpa using hlt)
-  have hXG : XG ∈ V := by
-    have h := V.smul_mem (c'.2 - c.2)⁻¹ (V.sub_mem (hS c' hc') (hS c hc))
-    convert h using 1
-    rw [hu, hu, heq, eq_inv_smul_iff₀ hβ]
-    module
-  have hG : G₀ ∈ V := by
-    have h := V.smul_mem (c''.1 - c.1)⁻¹
-      (V.sub_mem (V.sub_mem (hS c'' hc'') (hS c hc)) (V.smul_mem (c''.2 - c.2) hXG))
-    convert h using 1
-    rw [hu, hu, eq_inv_smul_iff₀ hα]
-    module
-  have hF : F₀ ∈ V := by
-    have h := V.sub_mem (V.sub_mem (hS c hc) (V.smul_mem c.1 hG)) (V.smul_mem c.2 hXG)
-    convert h using 1
-    rw [hu]
-    module
-  obtain ⟨F₁, hF₁, rfl⟩ := (hV _).mp hF
-  obtain ⟨G₁, hG₁, rfl⟩ := (hV _).mp hG
-  obtain ⟨Q, hQ, hQX⟩ := (hV _).mp hXG
-  replace hQX : Q = G₁ * X := by
-    apply RatFunc.algebraMap_injective F
-    rw [hQX, map_mul, mul_comm]
-  refine h ⟨F₁, G₁, rfl, rfl, hF₁, ?_⟩
-  rcases eq_or_ne G₁ 0 with rfl | hG₁0
-  · simp
-  rw [hQX, degree_mul_X] at hQ
-  rw [degree_eq_natDegree hG₁0] at hQ ⊢
-  exact_mod_cast (show G₁.natDegree + 1 ≤ d by exact_mod_cast hQ)
+      F₀ + algebraMap F[X] (RatFunc F) (affineMultiplier c.1 c.2) * G₀} ≤ Fintype.card F :=
+  card_ratFunc_combination_map_le (RingHom.id F) F₀ G₀ h
 
 open Classical in
 /-- For any rational pair `(F₀, G₀)`, at most `max q (n choose 2)` challenges `(α, β)`
@@ -180,18 +243,7 @@ theorem card_isAffineExceptional_ratFunc_le [Fintype F] (domain : ι ↪ F) (f g
     #{c : F × F | ∃ P : F[X], algebraMap F[X] (RatFunc F) P =
         F₀ + algebraMap F[X] (RatFunc F) (affineMultiplier c.1 c.2) * G₀ ∧
       IsAffineExceptional domain f g d A 1 c.1 c.2 P} ≤
-      max (Fintype.card F) ((Fintype.card ι).choose 2) := by
-  by_cases h : ∃ F₁ G₁ : F[X], algebraMap F[X] (RatFunc F) F₁ = F₀ ∧
-      algebraMap F[X] (RatFunc F) G₁ = G₀ ∧ F₁.degree ≤ d ∧ G₁.degree < d
-  · obtain ⟨F₁, G₁, rfl, rfl, hF, hG⟩ := h
-    refine le_max_of_le_right ((card_le_card fun c hc ↦ ?_).trans
-      (card_isAffineExceptional_add_mul_le domain f g (A := A) F₁ G₁ hF hG))
-    obtain ⟨P, hP, hex⟩ := (mem_filter.mp hc).2
-    rw [← map_mul, ← map_add, (RatFunc.algebraMap_injective F).eq_iff] at hP
-    exact mem_filter.mpr ⟨mem_univ _, hP ▸ hex⟩
-  · refine le_max_of_le_left ((card_le_card fun c hc ↦ ?_).trans
-      (card_ratFunc_combination_le F₀ G₀ h))
-    obtain ⟨P, hP, hex⟩ := (mem_filter.mp hc).2
-    exact mem_filter.mpr ⟨mem_univ _, P, hex.1, hP⟩
+      max (Fintype.card F) ((Fintype.card ι).choose 2) :=
+  card_isAffineExceptional_ratFunc_map_le domain f g (RingHom.id F) F₀ G₀
 
 end ReedSolomon

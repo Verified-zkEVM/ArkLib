@@ -6,6 +6,7 @@ Authors: Thomas Coratger
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
 import Mathlib.Algebra.Field.ZMod
+import Mathlib.FieldTheory.Finite.GaloisField
 
 /-! # Persistence at poles and rational-pair counting -/
 
@@ -97,5 +98,52 @@ example (f g : ZMod 5 → ZMod 5) :
   norm_num [ZMod.card, Nat.choose] at h ⊢
   exact h
 
+-- Over `𝔽₄ ⊇ 𝔽₂`, the pair `(0, 1 / X)` is compatible exactly with the base-field
+-- challenges `(0, β)`, so the subfield bound `|𝔽₂| = 2` is attained.
+open Classical in
+example (d : ℕ) :
+    #{c : ZMod 2 × ZMod 2 | ∃ P : (GaloisField 2 2)[X], P.degree ≤ d ∧
+      algebraMap (GaloisField 2 2)[X] (RatFunc (GaloisField 2 2)) P =
+        algebraMap (GaloisField 2 2)[X] (RatFunc (GaloisField 2 2))
+            (affineMultiplier (algebraMap (ZMod 2) (GaloisField 2 2) c.1)
+              (algebraMap (ZMod 2) (GaloisField 2 2) c.2)) *
+          (algebraMap (GaloisField 2 2)[X] (RatFunc (GaloisField 2 2)) X)⁻¹} = 2 := by
+  set E := GaloisField 2 2
+  set ι := algebraMap E[X] (RatFunc E)
+  have hx : ι X ≠ 0 := (map_ne_zero_iff _ (RatFunc.algebraMap_injective E)).mpr X_ne_zero
+  have hnot : ¬ ∃ F₁ G₁ : E[X], ι F₁ = 0 ∧ ι G₁ = (ι X)⁻¹ ∧ F₁.degree ≤ d ∧ G₁.degree < d := by
+    rintro ⟨_, G₁, _, hG, _, _⟩
+    have hmul : ι (G₁ * X) = ι 1 := by rw [map_mul, hG, inv_mul_cancel₀ hx, map_one]
+    have := congrArg (Polynomial.eval (0 : E)) (RatFunc.algebraMap_injective E hmul)
+    norm_num at this
+  refine le_antisymm ?_ ?_
+  · simpa [ZMod.card] using
+      card_ratFunc_combination_map_le (algebraMap (ZMod 2) E) 0 (ι X)⁻¹ hnot
+  · refine (card_le_card (s := {(0, 0), (0, 1)}) fun c hc ↦ ?_).trans' (by decide)
+    refine mem_filter.mpr ⟨mem_univ _, C (algebraMap (ZMod 2) E c.2),
+      degree_C_le.trans (by exact_mod_cast Nat.zero_le d), ?_⟩
+    have hc1 : c.1 = 0 := by
+      simp only [mem_insert, mem_singleton] at hc
+      rcases hc with h | h <;> simp [h]
+    rw [hc1, affineMultiplier, map_zero, map_zero, zero_add, map_mul, mul_assoc,
+      mul_inv_cancel₀ hx, mul_one]
+
+/-- info: 'ReedSolomon.card_ratFunc_combination_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.card_ratFunc_combination_le
+
+/-- info: 'ReedSolomon.card_ratFunc_combination_map_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_ratFunc_combination_map_le
+
+/-- info: 'ReedSolomon.card_isAffineExceptional_persistent_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.card_isAffineExceptional_persistent_le
+
+/-- info: 'ReedSolomon.card_isAffineExceptional_persistent_map_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_isAffineExceptional_persistent_map_le
