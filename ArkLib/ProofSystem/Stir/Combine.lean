@@ -6,6 +6,7 @@ Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Au
 -/
 module
 
+public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Cases
 public import Mathlib.Tactic.LinearCombination
@@ -15,7 +16,6 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
-public import ArkLib.ToMathlib.Polynomial.EvalExt
 
 
 /-! Section 4.5 from STIR [ACFY24stir]
@@ -470,32 +470,30 @@ lemma master_lemma
       simp only [q, Polynomial.eval_mul, Polynomial.eval_X]
       rw [hv_eval i ⟨j, hj⟩ x hx, hv_eval i ⟨j + 1, h_fin⟩ x hx]
       ring
+    have hcard : dstar + 1 ≤ (S.image φ).card := by
+      rw [Order.add_one_le_iff, Finset.card_image_of_injective _ φ.injective]
+      have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
+        glorious_lemma
+          (by simpa using hδLt)
+          (by {
+            simp only [rate]
+            rfl
+          })
+      have h :=
+        le_trans
+          (le_of_lt <|
+            even_more_glorious_lemma (m := Fintype.card ι)
+              (by simp) (by {
+                rw [ReedSolomon.rateOfLinearCode_eq_min_div,
+                    min_eq_left (by omega)] at h
+                simpa using h
+              }))
+          hS_card
+      norm_cast at h
     have hq_coincide :=
-      Polynomial.eq_of_eval_eq_degree
-        (q := v i ⟨j + 1, h_fin⟩)
-        hq_deg (lt_trans (hv_deg _ _) (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self dstar)))
-        (Finset.image φ S) (by {
-          simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
-          rw [Finset.card_image_of_injective _ φ.injective]
-          have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
-            glorious_lemma
-              (by simpa using hδLt)
-              (by {
-                simp only [rate]
-                rfl
-              })
-          have h :=
-            le_trans
-              (le_of_lt <|
-                even_more_glorious_lemma (m := Fintype.card ι)
-                  (by simp) (by {
-                    rw [ReedSolomon.rateOfLinearCode_eq_min_div,
-                        min_eq_left (by omega)] at h
-                    simpa using h
-                  }))
-              hS_card
-          norm_cast at h
-        })
+      Polynomial.eq_of_degrees_lt_of_eval_finset_eq (S.image φ)
+        (hq_deg.trans_le (Nat.cast_le.mpr hcard))
+        ((hv_deg i ⟨j + 1, h_fin⟩).trans_le (Nat.cast_le.mpr ((Nat.le_succ _).trans hcard)))
         (by
           intro y hy
           obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy

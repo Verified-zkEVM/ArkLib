@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Component.RandomQuery
+import VCVio.OracleComp.Constructions.SampleableType.SchwartzZippel
 
 /-!
 # Random evaluation
@@ -115,7 +116,7 @@ theorem prob_answer_eq_zero_le (Q : MvPolynomial (Fin m) F) (hQ : Q ≠ 0) (d : 
     exact_mod_cast Fintype.card_ne_zero
   rw [ENNReal.coe_div hdenom]
   simp only [answer_eq_eval, map_zero, ENNReal.coe_natCast]
-  exact prob_eval_zero_univ_le_div Q hQ hd
+  exact prEvent_eval_eq_zero_univ_le_div Q hQ hd
 
 end Agreement
 

@@ -48,12 +48,6 @@ variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] [DecidableEq G₁] {
 
 variable {n : ℕ} -- the maximal degree of polynomials that can be committed to/opened.
 
-/-- Conversion to mathlib polynomials commutes with division by a monic polynomial. -/
-lemma to_poly_div_by_monic {p : ℕ} [Fact (Nat.Prime p)]
-    (f q : CPolynomial (ZMod p)) (hq : q.toPoly.Monic) :
-    (f.divByMonic q).toPoly = f.toPoly /ₘ q.toPoly :=
-  CPolynomial.toPoly_divByMonic f q hq
-
 omit [DecidableEq G₁] [Fact (0 < p)] in
 /-- Algebraic correctness of one KZG opening for a coefficient vector. -/
 theorem correctness (n : ℕ) (a : ZMod p)
@@ -96,8 +90,8 @@ theorem correctness (n : ℕ) (a : ZMod p)
     rw [eval_toPoly, CPolynomial.toPoly_sub, Polynomial.eval_sub, X_toPoly, C_toPoly,
       Polynomial.eval_X, Polynomial.eval_C]
   -- the polynomial form of (a-z) is monic
-  have hmonic : Polynomial.Monic ((X : CPolynomial (ZMod p)) - C z).toPoly := by
-    rw [CPolynomial.toPoly_sub, X_toPoly, C_toPoly]
+  have hmonic : ((X : CPolynomial (ZMod p)) - C z).monic := by
+    rw [monic_toPoly_iff, CPolynomial.toPoly_sub, X_toPoly, C_toPoly]
     exact Polynomial.monic_X_sub_C z
   -- the proof
   -- restate the commitment as the evaluation of poly at a (C => g₁^poly(a))
@@ -107,7 +101,7 @@ theorem correctness (n : ℕ) (a : ZMod p)
   simp_rw [generateOpening, ←hcoeffs]
   set q := (poly - C (eval z poly)).divByMonic (X - C z)
   have hqdeg : degree q ≤ n := by
-    rw [degree_toPoly, to_poly_div_by_monic _ _ hmonic]
+    rw [degree_toPoly, divByMonic_toPoly_eq_divByMonic _ _ hmonic]
     apply le_trans (Polynomial.degree_divByMonic_le _ _)
     rw [CPolynomial.toPoly_sub, C_toPoly]
     apply le_trans (Polynomial.degree_sub_le _ _)
@@ -141,7 +135,7 @@ theorem correctness (n : ℕ) (a : ZMod p)
   -- prove the goal using the eval isomorphism to mathlib Polynomials
   subst v q
   simp_rw [haz]
-  simp_rw [eval_toPoly, to_poly_div_by_monic _ _ hmonic, CPolynomial.toPoly_sub,
+  simp_rw [eval_toPoly, divByMonic_toPoly_eq_divByMonic _ _ hmonic, CPolynomial.toPoly_sub,
     ←Polynomial.eval_mul, C_toPoly, X_toPoly]
   simp_rw [Polynomial.X_sub_C_mul_divByMonic_eq_sub_modByMonic,
     Polynomial.modByMonic_X_sub_C_eq_C_eval]

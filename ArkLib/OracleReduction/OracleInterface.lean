@@ -10,7 +10,7 @@ public import VCVio.OracleComp.SimSemantics.ReaderT.Basic
 public import CompPoly.Data.MvPolynomial.Notation
 public import Mathlib.Algebra.Polynomial.Roots
 public import ArkLib.Data.MvPolynomial.Degrees
-public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ToMathlib.Algebra.MvPolynomial.SchwartzZippel
 -- import ArkLib.Data.MlPoly.Basic
 
 /-!
@@ -386,7 +386,6 @@ theorem distanceLE_polynomial_degreeLE :
 theorem distanceLE_mvPolynomial_degreeLE {σ : Type} [Fintype σ] [DecidableEq σ] :
     distanceLE (instMvPolynomialDegreeLE R d σ)
       (Fintype.card σ * d * Fintype.card R ^ (Fintype.card σ - 1)) := by
-  let : Field R := Fintype.fieldOfDomain R
   intro a b hab
   have hne : (a : MvPolynomial σ R) - (b : MvPolynomial σ R) ≠ 0 := by
     rw [sub_ne_zero]

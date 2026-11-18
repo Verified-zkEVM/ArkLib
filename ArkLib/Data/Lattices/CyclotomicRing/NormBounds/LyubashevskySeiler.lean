@@ -117,7 +117,7 @@ theorem phi_toPoly :
     (powTwoCyclotomic (R := ZMod q) α).φ.toPoly = X ^ (2 ^ α) + 1 := by
   change (CompPoly.CPolynomial.X ^ (2 ^ α) + 1 : CompPoly.CPolynomial (ZMod q)).toPoly = _
   rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_pow,
-    CompPoly.CPolynomial.toPoly_X, CompPoly.CPolynomial.toPoly_one]
+    CompPoly.CPolynomial.X_toPoly, CompPoly.CPolynomial.toPoly_one]
 
 omit [NeZero q] in
 open Polynomial in

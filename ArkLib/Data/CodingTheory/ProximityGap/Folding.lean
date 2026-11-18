@@ -20,7 +20,6 @@ public import ArkLib.Data.Domain.CosetFftDomain.Subdomain
 public import ArkLib.Data.Domain.CosetFftDomain.Log
 public import ArkLib.Data.Domain.CosetFftDomain.Pullback
 public import ArkLib.Data.Polynomial.Indicator
-public import ArkLib.ToMathlib.Polynomial.EvalExt
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 
 /-! This file contains all the definition needed to state
@@ -125,24 +124,21 @@ lemma foldWordAux_of_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} :
           b ∈ domain ∧ b ^ 2 = (CosetFftDomain.subdomain domain 1) i := by
           aesop
         exact ⟨j, by simp [hb, hb'], by simp [hb]⟩)
-  apply Polynomial.eq_of_eval_eq_degree (n := 2) (s := {y.1, -y.1})
-  · exact lt_of_lt_of_le
+  have hpair : Finset.card {y.1, -y.1} = 2 := calc
+    _ = (({j, j'} : Finset _).image domain).card := by simp [hj, hj']
+    _ = 2 := (Finset.card_image_of_injective _ CosetFftDomain.injective).trans hcard
+  apply Polynomial.eq_of_degrees_lt_of_eval_finset_eq {y.1, -y.1}
+  · rw [hpair]
+    exact lt_of_lt_of_le
       (Lagrange.degree_interpolate_lt _ CosetFftDomain.injOn)
       (by simp [hcard])
-  · exact lt_of_le_of_lt (Polynomial.degree_add_le _ _) <| by
-      simp only [X_mul_C, degree_mul, degree_X, WithBot.coe_ofNat, sup_lt_iff]
+  · rw [hpair]
+    exact lt_of_le_of_lt (Polynomial.degree_add_le _ _) <| by
+      simp only [X_mul_C, degree_mul, degree_X, sup_lt_iff]
       constructor
       · exact lt_trans Polynomial.degree_C_lt (by simp)
       · exact lt_of_lt_of_le
           (WithBot.add_lt_add_right (by simp) Polynomial.degree_C_lt) (by rfl)
-  · conv_rhs =>
-      rw [←hcard]
-    exact Finset.card_le_card_of_injOn (f := domain)
-      (fun x hx ↦ by
-        simp only [Finset.mem_coe, Finset.mem_insert, Finset.mem_singleton] at hx ⊢
-        rcases hx with rfl | rfl
-        · exact Or.inl hj
-        · exact Or.inr hj') CosetFftDomain.injOn
   · intro x hx
     have hx : (x = domain j ∧ y.1 = domain j) ∨
               (x = domain j' ∧ y.1 = -domain j') := by aesop
@@ -384,11 +380,12 @@ private lemma interpolate_eq_folding_poly_eval
     (FoldingPolynomial.foldingPolynomial (Y ^ 2 ^ k) ((Lagrange.interpolate univ ⇑domain) f))) := by
   by_cases hf : f = 0
   · simp [hf]
-  · apply eq_of_eval_eq_degree (n := 2 ^ k)
-        (s := block domain k x)
-    · exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _ (by simp)) <| by
+  · apply eq_of_degrees_lt_of_eval_finset_eq (block domain k x)
+    · rw [card_block_of_mem_subdomain' FoldingContextMiddle.k_le_n hx]
+      exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _ (by simp)) <| by
         aesop (add safe (by norm_cast))
-    · exact lt_of_le_of_lt Polynomial.degree_map_le <| by
+    · rw [card_block_of_mem_subdomain' FoldingContextMiddle.k_le_n hx]
+      exact lt_of_le_of_lt Polynomial.degree_map_le <| by
         have h := FoldingPolynomial.folding_polynomial_deg_y_bound_x_k
           (f := (Lagrange.interpolate univ ⇑domain) f)
           (k := 2 ^ k)
@@ -400,7 +397,6 @@ private lemma interpolate_eq_folding_poly_eval
                 CosetFftDomain.injOn (mem_univ x), contra, Polynomial.eval_zero, Pi.zero_apply]
         )] at h
         exact h
-    · simp [card_block_of_mem_subdomain' FoldingContextMiddle.k_le_n hx]
     · simp only [mem_block, and_imp]
       rintro u ⟨i, hu₁⟩ hu₂
       rw [←hu₂, ←foldValue_def', ←hu₁,
@@ -644,8 +640,9 @@ private lemma indicated_polynomial_eq_combination_of_correlated
   (hu_deg : ∀ i, (u i).natDegree < s'.card) :
   ((indicatedPolynomial domain f k s').eval (Polynomial.C α)) =
     ∑ i, (u i) * Polynomial.C (α ^ i.val) := by
-  apply Polynomial.eq_of_eval_eq_natDegree (s := s') (n := #s')
-    <;> try rfl
+  refine eq_of_degrees_lt_of_eval_finset_eq s'
+    (degree_le_natDegree.trans_lt (Nat.cast_lt.mpr ?_))
+    (degree_le_natDegree.trans_lt (Nat.cast_lt.mpr ?_)) ?_
   · simp only [indicatedPolynomial,
       eval_finsetSum, eval_mul, eval_C, eval_map_apply]
     exact natDegree_sum_lt_of_forall_lt (inst := card_ne_zero hs') _ _ <|
@@ -672,7 +669,10 @@ private lemma indicated_polynomial_eq_foldAux'
     (Polynomial.evalRingHom x)
     (indicatedPolynomial domain f k s')) =
     foldWordAux domain f k x := by
-  refine Polynomial.eq_of_eval_eq_natDegree (s := Finset.univ) (n := 2 ^ k) ?_ ?_ ?_ ?_
+  have hc : 2 ^ k ≤ (univ : Finset F).card := by simpa using h_card
+  refine eq_of_degrees_lt_of_eval_finset_eq univ
+    (degree_le_natDegree.trans_lt (Nat.cast_lt.mpr (lt_of_lt_of_le ?_ hc)))
+    (degree_le_natDegree.trans_lt (Nat.cast_lt.mpr (foldWordAux_natDegree.trans_le hc))) ?_
   · simp only
       [indicatedPolynomial, Polynomial.map_sum,
         Polynomial.map_mul, map_C, coe_evalRingHom]
@@ -681,8 +681,6 @@ private lemma indicated_polynomial_eq_foldAux'
         aesop
           (add simp [Polynomial.map_map])
           (add safe [foldWordAux_natDegree])
-  · exact foldWordAux_natDegree
-  · simpa using h_card
   · intro α _
     rw [←eval_comm,
       indicated_polynomial_eq_combination_of_correlated h_s' hu hu_deg,
