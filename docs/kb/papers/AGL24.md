@@ -8,6 +8,7 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean
   - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
   - ArkLib/ToMathlib/Combinatorics/Hypergraph/GenericZeroPattern.lean
   - ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean
@@ -48,10 +49,24 @@ the source's proof assumes implicitly.
 a bad list-decoding configuration gives a weakly partition-connected agreement hypergraph, with its
 list-size form `exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda`.
 
+`intersectionMatrix` in
+[IntersectionMatrix.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean):
+the source's reduced intersection matrix of a hypergraph, with `IsRigid`, its full column rank at
+evaluation points in polynomial form (`isRigid_iff_mulVec_injective`,
+`isRigid_iff_exists_aeval_det_ne_zero`); the source's lemma that reduced intersection matrices of
+agreement hypergraphs are not full column rank (`not_isRigid_of_mem_code`); the per-variable degree
+bound on maximal minors (`degreeOf_det_submatrix_le`); and row deletion and exchange of variables
+(`intersectionMatrix_apply_of_eq`, `rename_intersectionMatrix_apply`).
+
 ## Known Divergences From ArkLib
 
 ArkLib states the plain `Λ` bound, of which the source's average-radius form is a strengthening — the
 safe direction.
+
+ArkLib's reduced intersection matrix has entries in `MvPolynomial ι R` rather than the fraction
+field; full column rank is stated at evaluation points (`IsRigid`) and through maximal minors, and
+the per-variable degree bound on maximal minors is `s * (k - 1)`, the count in the source's proof,
+sharper than its stated `(t − 1)k`.
 
 The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}` under
 `PMF.uniformOfFintype`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
