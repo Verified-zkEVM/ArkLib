@@ -22,17 +22,20 @@ private instance : Fact (0 < H.natDegree) := ⟨by simp [H]⟩
 example : ∃ αseq : ℕ → 𝕃 H,
     αseq 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff ∧
     evalRAtPowerSeries 0 H R (gammaFromAlpha H αseq) = 0 := by
+  have hR : Bivariate.evalX (Polynomial.C (0 : ℚ)) R =
+      Polynomial.C Polynomial.X * Polynomial.X := by
+    simp [R, Bivariate.evalX_eq_map]
   apply exists_hensel_alpha_sequence_of_fractionField_separable K 0 R H
-  · refine ⟨Polynomial.C Polynomial.X, ?_⟩
-    simp [R, H, Bivariate.evalX, Polynomial.C_mul_X_eq_monomial]
+  · rw [hR]
+    exact dvd_mul_left _ _
   · have hx : algebraMap ℚ[X] K Polynomial.X ≠ 0 := by
       intro h
       apply Polynomial.X_ne_zero (R := ℚ)
       apply IsFractionRing.injective ℚ[X] K
       exact h.trans (map_zero _).symm
-    rw [Polynomial.separable_def]
+    rw [hR, Polynomial.separable_def]
     refine ⟨0, Polynomial.C ((algebraMap ℚ[X] K Polynomial.X)⁻¹), ?_⟩
-    simp [R, Bivariate.evalX, ← Polynomial.C_mul, hx]
+    simp [← Polynomial.C_mul, hx]
 
 example : ¬ (Polynomial.C Polynomial.X * Polynomial.X : ℚ[X][Y]).Separable := by
   intro h

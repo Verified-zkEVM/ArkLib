@@ -44,7 +44,8 @@ so optimized curve recovery follows from one numerical inequality.
 
 @[expose] public section
 
-open Polynomial PolynomialDifferential MvPolynomial
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE)
 
 namespace ReedSolomon
 

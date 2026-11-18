@@ -122,10 +122,10 @@ soundness statement against `verifier.knowledgeSoundness`. -/
 def outputRelationFor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
     Set ((OutputStatement (F := F) k × (∀ i, OutputOracleStatement ι A i)) ×
       OutputWitness (F := F) k) :=
-  fun input ↦
+  {input |
     (∑ j, input.2 j * input.1.1.1 j = input.1.1.2) ∧
     ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
-      ∀ j ∈ S, input.1.2 0 j = encode input.2 j
+      ∀ j ∈ S, input.1.2 0 j = encode input.2 j}
 
 /-- The language-level one-word relaxed relation is precisely the existential
 closure of the witness-bearing C6.9 output relation. -/

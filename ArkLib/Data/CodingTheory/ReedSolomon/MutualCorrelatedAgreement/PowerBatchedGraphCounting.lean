@@ -45,7 +45,8 @@ so the sharp incidence bound controls every finite family of them.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval pderiv_C totalDegree_eq_zero_iff_eq_C)
 open scoped BigOperators
 
 noncomputable section
