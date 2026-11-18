@@ -638,6 +638,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.ModuleSIS
 public import ArkLib.Data.Lattices.Vectors
+public import ArkLib.Data.List.NetMult
 public import ArkLib.Data.Matrix.Basic
 public import ArkLib.Data.Matrix.DotProduct
 public import ArkLib.Data.Matrix.ReadOnce
@@ -724,6 +725,7 @@ public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.GeneratorBatch
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.LogDerivative
 public import ArkLib.Data.Polynomial.PermutationFingerprint
 public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
@@ -949,6 +951,7 @@ public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
 public import ArkLib.ProofSystem.ConstraintSystem.Basic
 public import ArkLib.ProofSystem.ConstraintSystem.Examples
+public import ArkLib.ProofSystem.ConstraintSystem.LogUp
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
 public import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk
@@ -1163,6 +1166,7 @@ public import ArkLib.ToCompPoly.Univariate.Basic
 public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Size
+public import ArkLib.ToMathlib.Algebra.CharP.NatCast
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Semiring
