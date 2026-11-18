@@ -28,6 +28,9 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Interleaved.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/InterleavedSampling.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingRound.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Folding.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingSampling.lean
   - ArkLib/ToMathlib/Algebra/Polynomial/Pack.lean
   - ArkLib/ToMathlib/FieldTheory/Finite/Extension.lean
 ---
@@ -82,7 +85,10 @@ The embedding already implies `n ≤ q`.
 | Theorem 1.1 for base-field challenges, used in the proof of Theorem 5.2 | `ReedSolomon.exists_affineExceptional_finset_card_map_le` | Words over a finite field `E`, challenges from a subfield `K` through `φ : K →+* E`, and the same hypotheses. At most `4 |K| / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges in `K²` are exceptional. The domain lies in `E`, and no bound `n ≤ |K|` is needed. |
 | Proof of Theorem 5.2, interleaved agreement and error | `ReedSolomon.interleavedAgreementSet`, `ReedSolomon.interleavedAgreementLoss`, `ReedSolomon.IsInterleavedAffineExceptional`, `ReedSolomon.interleavedAffineMcaError`, `ReedSolomon.interleavedAffineMcaError_eq_iSup_prob` | `t` rows share one challenge and one set of lost points. A point is lost once if any row's witness fails there. At `t = 1` every definition equals its affine-combiner counterpart. |
 | Proof of Theorem 5.2, packing rows into `F_{q^t}` | `Polynomial.pack`, `Polynomial.degree_pack_le_iff`, `Polynomial.pack_injective`, `FiniteField.exists_basis_fin`, `ReedSolomon.IsInterleavedAffineExceptional.pack` | Rows are packed along a basis of the extension. An exceptional tuple packs to an exceptional word over the extension, with the same `d`, `A` and loss. |
-| Proof of Theorem 5.2, bound (5.7) | `ReedSolomon.exists_interleavedAffineExceptional_finset_card_le`, `ReedSolomon.interleavedAffineMcaError_le` | Under the Theorem 1.1 hypotheses, the interleaved error is at most `4/(ηq) + 2¹⁴n²/(ρ³η¹⁰q²)`, with no factor of `t`. The `r`-round folding statement is not included. |
+| Proof of Theorem 5.2, bound (5.7) | `ReedSolomon.exists_interleavedAffineExceptional_finset_card_le`, `ReedSolomon.interleavedAffineMcaError_le` | Under the Theorem 1.1 hypotheses, the interleaved error is at most `4/(ηq) + 2¹⁴n²/(ρ³η¹⁰q²)`, with no factor of `t`. |
+| Proof of Theorem 5.2, the equal-degree combiner for `t` rows | `ReedSolomon.IsInterleavedEqualDegreeExceptional`, `ReedSolomon.interleavedEqualDegreeMcaError`, `ReedSolomon.interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add`, `ReedSolomon.interleavedEqualDegreeMcaError_le` | `t` rows share `(θ, α, β)` and one set of lost points. The error is at most the interleaved affine error plus `ℓ₀/q`, and explicitly at most `(4/η + ℓ₀)/q + 2¹⁴n²/(ρ³η¹⁰q²)`, with no factor of `t`. The list is counted on row tuples directly, not by packing. The one-row Theorem 5.1 results are the case `t = 1`. |
+| Theorem 5.2, row folding | `ReedSolomon.foldRoundWords`, `ReedSolomon.foldWords`, `ReedSolomon.foldPolynomials` | Rows are indexed from zero: row `2i` is the paper's `f_{2i-1}` and row `2i+1` is `f_{2i}`. Challenge `c j` is round `j + 1`. |
+| Theorem 5.2 | `ReedSolomon.IsFoldingExceptional`, `ReedSolomon.foldingMcaError`, `ReedSolomon.exists_foldPolynomials_eq_of_not_hasBadFoldingRound`, `ReedSolomon.foldingMcaError_le_mul`, `ReedSolomon.prob_isFoldingExceptional_le_mul` | If no round is bad, every `P` of degree at most `d + r` agreeing with the folded word on `A + r` points has witnesses of degree at most `d` that fold to `P` and lose at most `r` points. The error of this event is at most `rε`, where `ε` bounds the `t`-row equal-degree error of every round. |
 | Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. The linear-claims assertion is not included. |
 | Proposition 6.3 | `ReedSolomon.le_scalarMcaError_of_addSubgroup` | In characteristic two, let the domain be an additive subgroup of size `n = 2^k ≥ 16`. For `d = n/4`, `A ≤ 9n/16`, and `s < 3n/16`, the scalar error is at least `(n - 8)/q`. |
 
@@ -102,7 +108,7 @@ A unit is done when its declarations are on `main`.
 | 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); power-series existence and uniqueness open |
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
-| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | count with base-field challenges in review ([#1517](https://github.com/Verified-zkEVM/ArkLib/pull/1517)); bound (5.7) in review; interleaved equal-degree bounds and folding planned |
+| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | count with base-field challenges in review ([#1517](https://github.com/Verified-zkEVM/ArkLib/pull/1517)); bound (5.7), the `t`-row equal-degree bounds and the folding in review; the `t`-row linear-claim bounds planned |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
@@ -150,7 +156,7 @@ Unit 10 applies the equal-degree guarantee in each folding round.
   proves the finite interpolation bound and the explicit bound of Theorem 1.1.
 
 - [`AffineCombiner/EqualDegree.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean)
-  defines the equal-degree error and proves its reduction to the affine error with the rounded Johnson bound.
+  defines the equal-degree error and its basic bounds.
 
 - [`AffineCombiner/EqualDegreeSampling.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean)
   identifies this error with the supremum of native uniform probabilities over three challenges.
@@ -164,6 +170,12 @@ Unit 10 applies the equal-degree guarantee in each folding round.
   defines the interleaved error and proves bound (5.7) by packing.
 - [`AffineCombiner/InterleavedSampling.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/InterleavedSampling.lean)
   identifies this error with the supremum of native uniform probabilities.
+- [`AffineCombiner/FoldingRound.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingRound.lean)
+  bounds the equal-degree error for `t` rows, and derives the one-row reduction from it.
+- [`AffineCombiner/Folding.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Folding.lean)
+  folds `2^r` rows over `r` rounds and proves Theorem 5.2.
+- [`AffineCombiner/FoldingSampling.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingSampling.lean)
+  states both errors as native probabilities.
 
 The Taylor chart uses
 [`RationalTaylorJointDegree.lean`](../../../ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean)
@@ -228,6 +240,13 @@ Only the rational-pair count changes, from `q` to `|K|`.
 Packing uses a basis of `F_{q^t}` over `F_q`, indexed by `Fin t`.
 The packing map is defined for any finite family and any algebra.
 Unpacking is proved for a basis only.
+
+The `t`-row equal-degree bound does not pack.
+Two distinct tuples of polynomial pairs differ in some row, so they share at most `d` agreements.
+This gives the same list bound `ℓ₀`.
+
+In Theorem 5.2, round `j` depends only on the challenges of earlier rounds, by construction.
+The union bound over rounds is a counting lemma over sequential challenges.
 
 ## Open Formalization Gaps
 
