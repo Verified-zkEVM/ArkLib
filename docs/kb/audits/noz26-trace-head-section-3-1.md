@@ -30,7 +30,7 @@ The production head computes over CompPoly's `CMlPolynomial`. Its read-back iden
 and the protocol's `observation` is a `CheckedObservation` written by hand. The packing is also
 stated in the `MvPolynomial`-based coordinate layer of `ProofSystem/RingSwitching/Packing/`,
 reached through CompPoly's `CMlPolynomial.equivMvPolynomialDeg1` and the monomial-side evaluation
-bridge `CMlPolynomial.eval_eq_eval_toMvPolynomial` (`ToCompPoly/Multilinear/Basic.lean`).
+theorem `CMlPolynomial.eval_toMvPolynomial` (`CompPoly.Multilinear.Unique`).
 
 - **Packing data.** `traceHeadData e = PackingData.ofBaseOpening (Basis.ofEquivFun e.symm)`:
   the packing basis is `ψ` (at `e = coefficientEquiv …`) and the opening algebra is the fixed

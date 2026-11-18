@@ -158,21 +158,6 @@ theorem leftPrefix_appendPrefixTranscript {i : Fin (m + 1)}
   simp only [leftPrefix, appendPrefixTranscript]
   exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _))
 
-private theorem split_liftRight_ambient {α : Type} (oa : OracleComp oSpec α) :
-    liftAppendRight pSpec₁ (liftM oa : OracleComp (oSpec + [pSpec₂.Challenge]ₒ) α) =
-      (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
-  unfold liftAppendRight
-  induction oa using OracleComp.inductionOn with
-  | pure a => rfl
-  | query_bind t k ih => simp [ih]; congr 1
-
-private theorem split_liftRight_challenge (i : pSpec₂.ChallengeIdx) :
-    liftAppendRight pSpec₁ (liftM (pSpec₂.getChallenge i) :
-      OracleComp (oSpec + [pSpec₂.Challenge]ₒ) (pSpec₂.Challenge i)) =
-    cast (challenge_append_inr (pSpec₁ := pSpec₁) i) <$>
-      (liftM ((pSpec₁ ++ₚ pSpec₂).getChallenge (ChallengeIdx.inr i)) :
-        OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) _) := rfl
-
 private theorem appendSuffix_processRound
     (P : Prover oSpec Stmt₁ Wit₁ Stmt₃ Wit₃ (pSpec₁ ++ₚ pSpec₂))
     (i : Fin n) (tr₁ : pSpec₁.FullTranscript) (tr₂ : pSpec₂.Transcript i.castSucc)
@@ -190,7 +175,7 @@ private theorem appendSuffix_processRound
       let z ← liftAppendRight pSpec₁ (liftM (P.sendMessage (MessageIdx.inr ⟨i, hd⟩) st) :
         OracleComp (oSpec + [pSpec₂.Challenge]ₒ) _)
       pure (rightPrefix tr₁ (tr₂.concat (cast (append_Type_natAdd i) z.1)), z.2)) = _
-    rw [split_liftRight_ambient]
+    rw [liftAppendRight_liftM]
     simp only [ChallengeTree.rightPrefix_concat]
     congr 1
     funext z
@@ -209,8 +194,8 @@ private theorem appendSuffix_processRound
       let f ← liftAppendRight pSpec₁ (liftM (P.receiveChallenge (ChallengeIdx.inr ⟨i, hd⟩) st) :
         OracleComp (oSpec + [pSpec₂.Challenge]ₒ) _)
       pure (rightPrefix tr₁ (tr₂.concat c), f (cast (challenge_append_inr ⟨i, hd⟩).symm c))) = _
-    rw [split_liftRight_challenge]
-    simp only [bind_map_left, split_liftRight_ambient, ChallengeTree.rightPrefix_concat,
+    rw [liftAppendRight_getChallenge]
+    simp only [bind_map_left, liftAppendRight_liftM, ChallengeTree.rightPrefix_concat,
       cast_cast, cast_eq]
     rfl
 
@@ -291,7 +276,7 @@ theorem run_appendSplit
       (Fin.last n) (out (appendPrefixTranscript z.1)) z.2)
     let r ← liftM (P.output z₂.2)
     pure (appendPrefixTranscript z.1 ++ₜ z₂.1, r)) = _
-  simp only [appendSuffix, split_liftRight_ambient]
+  simp only [appendSuffix, liftAppendRight_liftM]
   rfl
 
 /-- State-preserving run decomposition for an arbitrary composite prover. The suffix starts in

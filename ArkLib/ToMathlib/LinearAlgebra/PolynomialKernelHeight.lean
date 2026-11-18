@@ -133,8 +133,7 @@ theorem exists_ne_zero_mulVec_eq_zero_degreeLT {rows cols : Type*}
     exact Polynomial.natDegree_sum_le_of_forall_le Finset.univ _ fun j _ ↦ hproduct i j
   have hmulVec : M *ᵥ v = 0 := by
     funext i
-    apply Polynomial.ext
-    intro k
+    ext k : 2
     by_cases hk : k < h + b + 1
     · let k' : Fin (h + b + 1) := ⟨k, hk⟩
       have hzero := congrFun (congrFun (LinearMap.mem_ker.mp hc) i) k'

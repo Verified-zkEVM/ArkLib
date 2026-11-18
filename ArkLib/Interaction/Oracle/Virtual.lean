@@ -99,16 +99,15 @@ theorem eval_reindex (a : VirtualOracle srcSpec A) (f : K → A.Index)
 def mapSource {E : Type w'} {F : Type w''}
     {S : SourceCtx.{u, v, w'} I E} {T : SourceCtx.{u', v, w''} J F}
     (a : VirtualOracle S.spec A) (f : SourceHom S T) : VirtualOracle T.spec A :=
-  a.substSource f.toQueryImpl
+  ⟨fun q => f.mapProgram (a.query q)⟩
 
 @[simp]
 theorem eval_mapSource {E : Type w'} {F : Type w''}
     {S : SourceCtx.{u, v, w'} I E} {T : SourceCtx.{u', v, w''} J F}
     (a : VirtualOracle S.spec A) (f : SourceHom S T) (impl : QueryImpl T.spec Id) :
     (a.mapSource f).eval impl = a.eval (f.pull impl) := by
-  rw [mapSource, eval_substSource]
-  congr 1
-
+  funext q
+  exact OracleComp.simulateQ_mapLens impl f.route (a.query q)
 
 /-- Add unused sources on the right. -/
 @[macro_inline]

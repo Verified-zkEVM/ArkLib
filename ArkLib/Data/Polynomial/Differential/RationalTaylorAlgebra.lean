@@ -76,7 +76,7 @@ theorem map_rationalTaylorNumeratorOver [Algebra F B] (φ : A →ₐ[F] B)
   change map φ.toRingHom (rationalTaylorNumeratorOver F center Q l) =
     rationalTaylorNumeratorOver F (φ.toRingHom center) (map φ.toRingHom Q) l
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     rw [rationalTaylorNumeratorOver, rationalTaylorNumeratorOver]
     split_ifs with hl
     · simp
@@ -100,7 +100,7 @@ theorem rationalTaylorNumeratorOver_eq {E : Type*} [Field E] [Algebra F E]
     (center : E) (Q : DifferentialPolynomial E r) (l : ℕ) :
     rationalTaylorNumeratorOver F center Q l = rationalTaylorNumerator center Q l := by
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     rw [rationalTaylorNumeratorOver, rationalTaylorNumerator]
     split_ifs with hl
     · rfl
