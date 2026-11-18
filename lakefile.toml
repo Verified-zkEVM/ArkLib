@@ -25,7 +25,7 @@ rev = "8781becff83faa559bfd1f1abf376d6e3ecd8f2d"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "9135137f604b8df1ecea282719e4a3cb985ad05c"
+rev = "afb9b1363984a70f10e24bd597f6ff40ebc8afbb"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
