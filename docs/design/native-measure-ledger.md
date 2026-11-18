@@ -291,6 +291,7 @@ per-range binders such as `[∀ t, Fintype (spec.Range t)]`, and
   (Classical.decEq F)` in `SchwartzZippelCounting`, the local instance in `FullAgreement`, the
   `Fintype.fieldOfDomain` argument in `Probability/Instances`, and the `Finset.image` instances in
   the statements of `Probability/Combinatorial`.
+  The v4.36 update uses the integral-domain bounds from [VCVio #929](https://github.com/Verified-zkEVM/VCVio/pull/929) directly, retiring the two explicit instances in the Schwartz–Zippel proofs.
 - The four D3 `OracleComp.support_nonempty` sites now use the default instance path;
   `retiredsweep` accepts it (verified).
 - `GCXK25.linear_mca_relevant_pairs_card_le` is back to `[Fintype F']`, which its statement's

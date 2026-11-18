@@ -37,9 +37,8 @@ lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     {n d : ℕ}
     (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ d) :
     Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
-      (d : ℝ≥0∞) / Fintype.card R := open scoped Classical in by
-  let : Field R := @Fintype.fieldOfDomain R _ _ (Classical.decEq R) _
-  exact prob_eval_zero_univ_le_div P h_nonzero h_deg
+      (d : ℝ≥0∞) / Fintype.card R :=
+  prEvent_eval_eq_zero_univ_le_div P h_nonzero h_deg
 
 /-- The `d := n` specialization of
 `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`. -/
