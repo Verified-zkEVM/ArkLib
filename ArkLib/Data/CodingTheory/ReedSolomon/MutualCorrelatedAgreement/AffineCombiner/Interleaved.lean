@@ -5,7 +5,8 @@ Authors: Thomas Coratger
 -/
 module
 
-public import ArkLib.ToMathlib.FieldTheory.Finite.Packing
+public import ArkLib.ToMathlib.Algebra.Polynomial.Pack
+public import ArkLib.ToMathlib.FieldTheory.Finite.Extension
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Theorem
 
@@ -18,21 +19,21 @@ A point is lost when some row of the witness tuples fails its received word ther
 So the agreement loss of one point is shared by all rows.
 
 The rows are packed into one word over an extension `E` of degree `t` along a basis.
-Packing commutes with evaluation and with the combiner, and equality of packed values is
-equality in every row.
-An exceptional tuple therefore packs to an exceptional polynomial over `E` at the same
-challenge.
+Packing commutes with evaluation and with the combiner.
+Equality of packed values is equality in every row.
+So an exceptional tuple packs to an exceptional polynomial over `E` at the same challenge.
 The count for challenges from a subfield then gives the one-round bound without a factor of `t`.
 
 The definitions and the bound (5.7) follow the proof of Theorem 5.2 of [CWYZ26].
 The paper uses `1 ≤ d < n` and `1 ≤ A ≤ n`, where `n` is the domain size.
 The definitions also cover boundary values, and `t = 1` recovers the affine definitions.
 The rest of Theorem 5.2, the folding over `log₂ k` rounds, is not formalized here.
+The bound keeps the hypothesis `d < n` to match the paper.
+It follows from the others when `n > 0`.
 The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
 The error has type `ENNReal` and a counting definition that requires no sampler.
-`ReedSolomon.interleavedAffineMcaError_eq_iSup_prob` in
-`AffineCombiner.InterleavedSampling` identifies it with a supremum of native probabilities.
+The sibling sampling module identifies it with a supremum of native probabilities.
 The counting definition uses classical decidability for predicates over polynomial witnesses.
 
 ## Main definitions
@@ -48,7 +49,8 @@ The counting definition uses classical decidability for predicates over polynomi
 * `ReedSolomon.le_interleavedAffineMcaError`,
   `ReedSolomon.interleavedAffineMcaError_le_of_forall_exists` and
   `ReedSolomon.interleavedAffineMcaError_le_one`: basic bounds on the error.
-* `ReedSolomon.isInterleavedAffineExceptional_one_iff` and
+* `ReedSolomon.interleavedAgreementSet_one`, `ReedSolomon.interleavedAgreementLoss_one`,
+  `ReedSolomon.isInterleavedAffineExceptional_one_iff` and
   `ReedSolomon.interleavedAffineMcaError_one`: one row is the affine combiner.
 * `ReedSolomon.IsInterleavedAffineExceptional.pack`: an exceptional tuple packs to an
   exceptional polynomial over an extension.
@@ -95,19 +97,19 @@ theorem mem_interleavedAgreementLoss (domain : ι ↪ F) (f g : Fin t → ι →
         ∃ r, (F₀ r).eval (domain i) ≠ f r i ∨ (G₀ r).eval (domain i) ≠ g r i := by
   simp [interleavedAgreementLoss]
 
-/-- Every row satisfies `P r = F₀ r + (α + β X) G₀ r`, and at most `s` shared agreement
-points are lost. -/
+/-- Every row satisfies `P r = F₀ r + (α + β X) G₀ r`.
+At most `s` shared agreement points are lost. -/
 def IsInterleavedLossWitness (domain : ι ↪ F) (f g : Fin t → ι → F) (s : ℕ) (α β : F)
     (P F₀ G₀ : Fin t → F[X]) : Prop :=
   (∀ r, P r = F₀ r + affineMultiplier α β * G₀ r) ∧
     #(interleavedAgreementLoss domain f g α β P F₀ G₀) ≤ s
 
-/-- The tuple `P` is exceptional for the shared challenge `(α, β)` at threshold `A` and
-loss `s`.
+/-- The tuple `P` is exceptional for the shared challenge `(α, β)`.
 
+The agreement threshold is `A` and the allowed shared loss is `s`.
 Every row has degree at most `d`, and at least `A` points are shared agreements.
-No witness tuples with rows of degree at most `d` and below `d` lose at most `s` shared
-agreements. -/
+Consider witness tuples with `deg F₀ r ≤ d`, `deg G₀ r < d` and `P r = F₀ r + (α + β X) G₀ r`.
+No such tuples lose at most `s` shared agreements. -/
 def IsInterleavedAffineExceptional (domain : ι ↪ F) (f g : Fin t → ι → F) (d A s : ℕ)
     (α β : F) (P : Fin t → F[X]) : Prop :=
   (∀ r, (P r).degree ≤ d) ∧ A ≤ #(interleavedAgreementSet domain f g α β P) ∧
@@ -115,13 +117,12 @@ def IsInterleavedAffineExceptional (domain : ι ↪ F) (f g : Fin t → ι → F
       ¬ IsInterleavedLossWitness domain f g s α β P F₀ G₀
 
 open Classical in
-/-- The supremum over row tuples `(f, g)` of the probability that some tuple is exceptional
-for a uniform shared challenge `(α, β)`.
+/-- The worst-case probability that a uniform shared challenge has an exceptional tuple.
 
-There are `t` rows, the output degree bound is `d`, the agreement threshold is `A`, and the
-allowed shared loss is `s`.
-`ReedSolomon.interleavedAffineMcaError_eq_iSup_prob` gives the native sampling
-characterization. -/
+The supremum ranges over row tuples `(f, g)` and the challenge `(α, β)` is uniform in `F²`.
+There are `t` rows and the output degree bound is `d`.
+The agreement threshold is `A` and the allowed shared loss is `s`.
+`ReedSolomon.interleavedAffineMcaError_eq_iSup_prob` gives the sampling form. -/
 noncomputable def interleavedAffineMcaError [Fintype F] (domain : ι ↪ F) (t d A s : ℕ) :
     ENNReal :=
   ⨆ w : (Fin t → ι → F) × (Fin t → ι → F),
@@ -142,8 +143,9 @@ theorem le_interleavedAffineMcaError (d A s : ℕ) (f g : Fin t → ι → F) :
   unfold interleavedAffineMcaError
   exact le_iSup_of_le (f, g) le_rfl
 
-/-- If every pair of row tuples has a set of at most `B` challenges containing every
-interleaved exceptional challenge, the error is at most `B / |F|²`. -/
+/-- Suppose every pair of row tuples has a set of at most `B` challenges.
+Suppose that set contains every challenge with an exceptional tuple.
+Then the error is at most `B / |F|²`. -/
 theorem interleavedAffineMcaError_le_of_forall_exists {d A s : ℕ} {B : ℝ}
     (h : ∀ f g : Fin t → ι → F, ∃ S : Finset (F × F), (S.card : ℝ) ≤ B ∧
       ∀ c ∉ S, ∀ P, ¬ IsInterleavedAffineExceptional domain f g d A s c.1 c.2 P) :
@@ -195,8 +197,8 @@ theorem interleavedAgreementLoss_one (domain : ι ↪ F) (f g : Fin 1 → ι →
   ext i
   simp [agreementLoss, Fin.exists_fin_one, Fin.forall_fin_one]
 
-/-- With one row, a tuple is interleaved exceptional exactly when its row is affine
-exceptional for the single received word pair. -/
+/-- With one row, a tuple is exceptional exactly when its row is affine exceptional.
+The received word pair is the single row. -/
 theorem isInterleavedAffineExceptional_one_iff (domain : ι ↪ F) (f g : Fin 1 → ι → F)
     (d A s : ℕ) (α β : F) (P : Fin 1 → F[X]) :
     IsInterleavedAffineExceptional domain f g d A s α β P ↔
@@ -226,11 +228,11 @@ section Packing
 variable {E : Type*} [Field E] [DecidableEq E] [Algebra F E]
 
 /-- Let `b` be a basis of a field extension `E` of `F`, indexed by the `t` rows.
-Pack the rows `f r, g r` into the words `∑ r, f r · b r` and `∑ r, g r · b r` over `E`, on the
-domain mapped into `E`.
+Pack the rows `f r` into the word `∑ r, f r · b r` over `E`, and the rows `g r` likewise.
+The domain is mapped into `E`.
 An exceptional tuple `P` for `(α, β)` packs to the polynomial `∑ r, b r · P r`.
-That polynomial is exceptional for `(α, β)` over `E` with the same degree bound, threshold and
-loss. -/
+That polynomial is exceptional for `(α, β)` over `E`.
+The degree bound, threshold and loss stay the same. -/
 theorem IsInterleavedAffineExceptional.pack {domain : ι ↪ F} {f g : Fin t → ι → F}
     {d A s : ℕ} {α β : F} {P : Fin t → F[X]} (b : Module.Basis (Fin t) F E)
     (h : IsInterleavedAffineExceptional domain f g d A s α β P) :
@@ -278,13 +280,13 @@ end Packing
 
 section Bound
 
-/-- With one point of shared agreement loss, few shared challenges are exceptional, for any
-number `t` of rows.
+/-- With one point of shared agreement loss, few shared challenges are exceptional.
 
+The number `t` of rows is arbitrary.
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
 Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
-At most `4 q / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges have an exceptional tuple at
-`⌈(√ρ + η) n⌉`. -/
+Take agreement threshold `⌈(√ρ + η) n⌉`, row degree at most `d` and loss one.
+At most `4 q / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges then have an exceptional tuple. -/
 theorem exists_interleavedAffineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F)
     (f g : Fin t → ι → F) {d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι)
     (hη : 0 < η) (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -306,9 +308,9 @@ theorem exists_interleavedAffineExceptional_finset_card_le [Fintype F] (domain :
       (fun i ↦ ∑ r, g r i • b r) (algebraMap F E) hd hdn hη hη1 hn
     exact ⟨S, hS, fun c hc P hP ↦ hgood c hc _ (hP.pack b)⟩
 
-/-- With one point of shared agreement loss, the interleaved error is at most
-`4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`, for any number `t` of rows.
+/-- With one point of shared loss, the error is at most `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 
+The number `t` of rows is arbitrary.
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
 Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
 The threshold is `⌈(√ρ + η) n⌉`. -/

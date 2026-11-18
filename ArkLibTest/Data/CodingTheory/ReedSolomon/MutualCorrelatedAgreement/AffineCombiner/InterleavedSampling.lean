@@ -58,3 +58,13 @@ example (f g : Fin 3 → Fin 100 → GaloisField 2 64) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.interleavedAffineMcaError_eq_iSup_prob
+
+/-- info: 'ReedSolomon.prob_isInterleavedAffineExceptional_eq' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.prob_isInterleavedAffineExceptional_eq
+
+/-- info: 'ReedSolomon.prob_isInterleavedAffineExceptional_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.prob_isInterleavedAffineExceptional_le

@@ -11,8 +11,8 @@ public import
 /-!
 # Uniform probabilities for interleaved affine combiners
 
-The counting definition of `ReedSolomon.interleavedAffineMcaError` is the supremum of native
-uniform exceptional-event probabilities over pairs of row tuples.
+The counting interleaved affine error is a supremum of native uniform probabilities.
+The supremum ranges over pairs of row tuples.
 The shared challenge `(α, β)` is sampled uniformly from `F × F`.
 The counting definition and the bound (5.7) have no sampler assumptions.
 These characterizations use `SampleableType F` to connect them to probability bounds.
@@ -63,8 +63,7 @@ theorem interleavedAffineMcaError_eq_iSup_prob (domain : ι ↪ F) (t d A s : �
           IsInterleavedAffineExceptional domain w.1 w.2 d A s c.1 c.2 P] := by
   simp only [interleavedAffineMcaError, prob_isInterleavedAffineExceptional_eq]
 
-/-- The interleaved error bounds the exceptional-event probability for each pair of row
-tuples. -/
+/-- The interleaved error bounds the exceptional-event probability for each pair of rows. -/
 theorem prob_isInterleavedAffineExceptional_le (domain : ι ↪ F) (f g : Fin t → ι → F)
     (d A s : ℕ) :
     Pr{let c ← $ᵗ (F × F)}[∃ P, IsInterleavedAffineExceptional domain f g d A s c.1 c.2 P] ≤

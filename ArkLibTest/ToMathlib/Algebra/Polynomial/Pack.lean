@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Thomas Coratger
 -/
 
-import ArkLib.ToMathlib.FieldTheory.Finite.Packing
-import Mathlib.Algebra.Field.ZMod
+import ArkLib.ToMathlib.Algebra.Polynomial.Pack
 import Mathlib.Analysis.Complex.Basic
 
 /-! # Acceptance cases for packing polynomial tuples -/
@@ -37,11 +36,6 @@ example (P Q : Fin 2 → ℝ[X]) (h : pack Complex.basisOneI P = pack Complex.ba
 example : ∃ P : Fin 2 → ℝ[X], pack Complex.basisOneI P = X + C Complex.I :=
   exists_pack_eq Complex.basisOneI _
 
--- The prime field `𝔽₂` has an extension with a basis of size `3`.
-example : ∃ (E : Type) (_ : Field E) (_ : Finite E) (_ : Algebra (ZMod 2) E),
-    Nonempty (Module.Basis (Fin 3) (ZMod 2) E) :=
-  FiniteField.exists_basis_fin (ZMod 2) (by norm_num)
-
 /-- info: 'Polynomial.pack_injective' depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Polynomial.pack_injective
@@ -50,7 +44,12 @@ example : ∃ (E : Type) (_ : Field E) (_ : Finite E) (_ : Algebra (ZMod 2) E),
 #guard_msgs (whitespace := lax) in
 #print axioms Polynomial.exists_pack_eq
 
-/-- info: 'FiniteField.exists_basis_fin' depends on axioms:
+/-- info: 'Polynomial.degree_pack_le_iff' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms FiniteField.exists_basis_fin
+#print axioms Polynomial.degree_pack_le_iff
+
+/-- info: 'Polynomial.degree_pack_lt_iff' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Polynomial.degree_pack_lt_iff

@@ -1170,6 +1170,7 @@ public import ArkLib.ToCompPoly.Univariate.Size
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Semiring
+public import ArkLib.ToMathlib.Algebra.Polynomial.Pack
 public import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 public import ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments
 public import ArkLib.ToMathlib.Analysis.Simplex.MaxCoordinate
@@ -1189,7 +1190,7 @@ public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 public import ArkLib.ToMathlib.Control.MonadLift
-public import ArkLib.ToMathlib.FieldTheory.Finite.Packing
+public import ArkLib.ToMathlib.FieldTheory.Finite.Extension
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement
