@@ -20,7 +20,7 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "8781becff83faa559bfd1f1abf376d6e3ecd8f2d"
+rev = "f1e63c780de398fb62206dd5890f27e1ad64e0e6"
 
 [[require]]
 name = "CompPoly"
