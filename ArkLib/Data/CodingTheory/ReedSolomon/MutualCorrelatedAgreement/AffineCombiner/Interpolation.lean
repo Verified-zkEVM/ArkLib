@@ -23,20 +23,31 @@ agrees with `f + (α + β X) g` on at least `A` domain points.
 Such an interpolant exists when its coefficient space has greater dimension than the
 space of linear constraints.
 
+When `A ≤ n`, the interpolant also has positive `Z`-degree, as in Lemma 4.2 of [CWYZ26].
+A nonzero `Q` free of `Z` would be divisible by `(X - z)^m` over `F[Y]` for all `n` points `z`.
+Its `X`-degree would then be at least `m n ≥ m A`, above its weighted degree.
+The bound `A ≤ n` does not follow from the surplus condition.
+An empty domain with `M = 0` and `D < m A` meets it, yet `M = 0` forces `Z`-degree zero.
+The factor count treats content free of `Z` separately, so it uses the weaker form.
+
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
+
 ## Main definitions
 
 * `ReedSolomon.IsAffineInterpolant`: the interpolation conditions.
 
 ## Main statements
 
+* `ReedSolomon.pow_dvd_aeval_algebra_of_affineWeight_le` and
+  `ReedSolomon.pow_dvd_aeval_of_affineWeight_le`: vanishing to order `m` gives an `m`-th power
+  factor.
 * `ReedSolomon.exists_isAffineInterpolant`: an interpolant exists under the surplus condition.
+* `ReedSolomon.exists_isAffineInterpolant_degreeOf_pos`: if moreover `A ≤ n`, an interpolant of
+  positive `Z`-degree exists.
 
 ## References
 
 The interpolation is Lemma 4.2 of [CWYZ26].
-
-The interface omits the positive `Z`-degree conclusion of Lemma 4.2 in [CWYZ26].
-The factor count treats content free of `Z` separately.
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -129,22 +140,32 @@ theorem affineLineEval_eq_aeval_affineShift (α β : K) (P : K[X]) (x u v : K)
   · simp [affineShift]
   · fin_cases i <;> simp [affineShift]
 
+/-- Let `p` divide the images of `Z` and `X` in an algebra over the coefficient ring.
+
+If every monomial has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
+theorem pow_dvd_aeval_algebra_of_affineWeight_le {R A : Type*} [CommSemiring R]
+    [CommSemiring A] [Algebra R A] {ψ : AffineVar → A} {p : A} {m : ℕ}
+    (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) {Q : MvPolynomial AffineVar R}
+    (hQ : ∀ e ∈ Q.support, m ≤ e none + e (some 0)) :
+    p ^ m ∣ MvPolynomial.aeval ψ Q := by
+  classical
+  conv_rhs => rw [Q.as_sum, map_sum]
+  refine Finset.dvd_sum fun e he ↦ ?_
+  rw [MvPolynomial.aeval_monomial, Finsupp.prod_fintype _ _ (by simp)]
+  simp only [Fintype.prod_option, Fin.prod_univ_two]
+  refine Dvd.dvd.mul_left ?_ _
+  refine (pow_dvd_pow p (hQ e he)).trans ?_
+  rw [pow_add, ← mul_assoc]
+  exact Dvd.dvd.mul_right (mul_dvd_mul (pow_dvd_pow_of_dvd hz _) (pow_dvd_pow_of_dvd hx _)) _
+
 /-- Let `p` divide the images of `Z` and `X`.
 
 If every monomial has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
 theorem pow_dvd_aeval_of_affineWeight_le {ψ : AffineVar → K[X]} {p : K[X]} {m : ℕ}
     (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) {R : MvPolynomial AffineVar K}
     (hR : ∀ e ∈ R.support, m ≤ e none + e (some 0)) :
-    p ^ m ∣ MvPolynomial.aeval ψ R := by
-  classical
-  conv_rhs => rw [R.as_sum, map_sum]
-  refine Finset.dvd_sum fun e he ↦ ?_
-  rw [MvPolynomial.aeval_monomial, Finsupp.prod_fintype _ _ (by simp)]
-  simp only [Fintype.prod_option, Fin.prod_univ_two]
-  refine Dvd.dvd.mul_left ?_ _
-  refine (pow_dvd_pow p (hR e he)).trans ?_
-  rw [pow_add, ← mul_assoc]
-  exact Dvd.dvd.mul_right (mul_dvd_mul (pow_dvd_pow_of_dvd hz _) (pow_dvd_pow_of_dvd hx _)) _
+    p ^ m ∣ MvPolynomial.aeval ψ R :=
+  pow_dvd_aeval_algebra_of_affineWeight_le hz hx hR
 
 end Shift
 
@@ -169,17 +190,18 @@ structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : 
     A ≤ (polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P).card →
     affineLineEval α β P Q = 0
 
-open Polynomial.SymbolicInterpolation in
-/-- An interpolant exists when its allowed monomials outnumber the linear constraints.
+omit [DecidableEq F] in
+/-- A kernel element of the interpolation constraints, with its degree bounds.
 
-The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
-At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
-Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
-No positive lower bound on the resulting `Z`-degree is asserted. -/
-theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
+Each shift of the result to a point `(z, f(z) + Y g(z))` has only monomials of degree at least
+`m` in `Z` and `X`. -/
+private theorem exists_affineShift_support_le (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
-    ∃ Q, IsAffineInterpolant domain f g d A m D M Q := by
+    ∃ Q : MvPolynomial AffineVar F, Q ≠ 0 ∧
+      Q.weightedTotalDegree (affineLineWeight d) < m * A ∧
+      Q.weightedTotalDegree affineYZWeight ≤ D ∧ Q.degreeOf none ≤ M ∧
+      ∀ i, ∀ e ∈ (affineShift (domain i) (f i) (g i) Q).support, m ≤ e none + e (some 0) := by
   classical
   -- The unknowns are the coefficients on the monomial support.
   let S := monomialSupport d (m * A - D) (M + 1) (D + 1)
@@ -236,33 +258,138 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
     rw [MvPolynomial.weightedTotalDegree, Finset.sup_lt_iff (by
       exact (Nat.zero_le _).trans_lt (hline e he))]
     exact hline
-  refine ⟨Q, hQ0, hlt, hyz, ?_, ?_⟩
+  refine ⟨Q, hQ0, hlt, hyz, ?_, fun i e he ↦ ?_⟩
   · refine MvPolynomial.degreeOf_le_iff.mpr fun e he ↦ ?_
     obtain ⟨⟨j, i, t⟩, hk, rfl⟩ := hsupp e he
     simp only [S, mem_monomialSupport] at hk
     rw [affineExponent_none]
     exact Nat.lt_succ_iff.mp hk.1
-  · intro α β P hP hA
-    refine eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn (fun i ↦ domain i) _ m A
-      (domain.injective.injOn) hA (fun i hi ↦ ?_)
-      ((natDegree_affineLineEval_le α β (natDegree_le_of_degree_le hP) Q).trans_lt hlt)
-    rw [affineLineEval_eq_aeval_affineShift α β P (domain i) (f i) (g i)]
-    refine pow_dvd_aeval_of_affineWeight_le (p := X - C (domain i)) ?_ (by simp) fun e he ↦ ?_
-    · rw [mem_polynomialAgreementSet, combinedWord_affineMultiplier] at hi
-      rw [Option.elim_none, dvd_iff_isRoot]
-      simp [hi]
-    · by_contra hlow
-      push Not at hlow
-      have hwt := (MvPolynomial.le_weightedTotalDegree affineYZWeight he).trans
-        ((weightedTotalDegree_affineShift_le _ _ _ Q).trans hyz)
-      simp only [weight_affineVar, affineYZWeight_none, affineYZWeight_X,
-        affineYZWeight_Y] at hwt
-      have hT : (⟨e none, (e (some 0), e (some 1))⟩ : Σ _ : ℕ, ℕ × ℕ) ∈ T := by
-        simp only [T, mem_constraintSupport]
-        omega
-      have h0 := congrFun (LinearMap.mem_ker.mp hc) (i, ⟨_, hT⟩)
-      simp only [cons, LinearMap.pi_apply, LinearMap.comp_apply, AlgHom.toLinearMap_apply,
-        MvPolynomial.lcoeff_apply, affineExponent_coords, Pi.zero_apply] at h0
-      exact (MvPolynomial.mem_support_iff.mp he) h0
+  -- A low monomial of the shift would be a constraint that the kernel element violates.
+  by_contra hlow
+  push Not at hlow
+  have hwt := (MvPolynomial.le_weightedTotalDegree affineYZWeight he).trans
+    ((weightedTotalDegree_affineShift_le _ _ _ Q).trans hyz)
+  simp only [weight_affineVar, affineYZWeight_none, affineYZWeight_X,
+    affineYZWeight_Y] at hwt
+  have hT : (⟨e none, (e (some 0), e (some 1))⟩ : Σ _ : ℕ, ℕ × ℕ) ∈ T := by
+    simp only [T, mem_constraintSupport]
+    omega
+  have h0 := congrFun (LinearMap.mem_ker.mp hc) (i, ⟨_, hT⟩)
+  simp only [cons, LinearMap.pi_apply, LinearMap.comp_apply, AlgHom.toLinearMap_apply,
+    MvPolynomial.lcoeff_apply, affineExponent_coords, Pi.zero_apply] at h0
+  exact (MvPolynomial.mem_support_iff.mp he) h0
+
+/-- Let `Q` have line weight below `m A` and vanish to order `m` along every line
+`(z, Y, f(z) + Y g(z))` with `z` in the domain.
+
+Then `Q` vanishes along each challenge line with an agreeing candidate of degree at most `d`. -/
+private theorem affineLineEval_eq_zero_of_affineShift_support_le (domain : ι ↪ F)
+    (f g : ι → F) {d A m : ℕ} {Q : MvPolynomial AffineVar F}
+    (hlt : Q.weightedTotalDegree (affineLineWeight d) < m * A)
+    (hmult : ∀ i, ∀ e ∈ (affineShift (domain i) (f i) (g i) Q).support,
+      m ≤ e none + e (some 0))
+    (α β : F) (P : F[X]) (hP : P.degree ≤ d)
+    (hA : A ≤ (polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β))
+      P).card) :
+    affineLineEval α β P Q = 0 := by
+  refine eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn (fun i ↦ domain i) _ m A
+    (domain.injective.injOn) hA (fun i hi ↦ ?_)
+    ((natDegree_affineLineEval_le α β (natDegree_le_of_degree_le hP) Q).trans_lt hlt)
+  rw [affineLineEval_eq_aeval_affineShift α β P (domain i) (f i) (g i)]
+  refine pow_dvd_aeval_of_affineWeight_le (p := X - C (domain i)) ?_ (by simp) (hmult i)
+  rw [mem_polynomialAgreementSet, combinedWord_affineMultiplier] at hi
+  rw [Option.elim_none, dvd_iff_isRoot]
+  simp [hi]
+
+omit [DecidableEq F] in
+/-- Let `Q` be nonzero with line weight below `m A`, where `A ≤ n` and `n` is the domain size.
+
+If `Q` vanishes to order `m` along every line `(z, Y, f(z) + Y g(z))`, then `Q` involves `Z`.
+
+Otherwise `Q` is a polynomial in `X` over `F[Y]` with `n` roots of multiplicity `m`. -/
+private theorem degreeOf_none_pos_of_affineShift_support_le (domain : ι ↪ F) (f g : ι → F)
+    {d A m : ℕ} (hAn : A ≤ Fintype.card ι) {Q : MvPolynomial AffineVar F} (hQ : Q ≠ 0)
+    (hlt : Q.weightedTotalDegree (affineLineWeight d) < m * A)
+    (hmult : ∀ i, ∀ e ∈ (affineShift (domain i) (f i) (g i) Q).support,
+      m ≤ e none + e (some 0)) :
+    0 < Q.degreeOf none := by
+  by_contra h0
+  -- `Q` is free of `Z`, so it is a polynomial `Q₀` in `X` and `Y`.
+  obtain ⟨Q₀, rfl⟩ := MvPolynomial.exists_rename_eq_of_vars_subset_range Q some
+    (Option.some_injective _) fun w hw ↦ by
+      rcases w with _ | w
+      · exact absurd (MvPolynomial.mem_vars_iff_degreeOf_ne_zero.mp hw) (by omega)
+      · exact ⟨w, rfl⟩
+  -- View `Q₀` as a polynomial in `X` over the domain `F[X, Y]`.
+  let χ : Fin 2 → (MvPolynomial (Fin 2) F)[X] := ![X, C (MvPolynomial.X 1)]
+  set W := MvPolynomial.aeval χ Q₀ with hW
+  have hW0 : W = 0 := by
+    refine eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn
+      (fun i ↦ MvPolynomial.C (domain i)) Finset.univ m A ?_ (by simpa using hAn) ?_ ?_
+    · exact fun i _ j _ h ↦ domain.injective (MvPolynomial.C_injective _ _ h)
+    · -- The shift to `(z, f(z) + Y g(z))` turns the order-`m` vanishing into `(X - z)^m ∣ W`.
+      intro i _
+      have hshift : MvPolynomial.aeval (fun w : AffineVar ↦ w.elim 0
+          ![X - C (MvPolynomial.C (domain i)), C (MvPolynomial.X 1)])
+          (affineShift (domain i) (f i) (g i) (MvPolynomial.rename some Q₀)) = W := by
+        rw [affineShift, ← AlgHom.comp_apply, MvPolynomial.comp_aeval, MvPolynomial.aeval_rename,
+          hW]
+        congr 2
+        funext j
+        fin_cases j <;> simp [χ]
+      rw [← hshift]
+      exact pow_dvd_aeval_algebra_of_affineWeight_le (by simp) (by simp) (hmult i)
+    · have hψ : W = MvPolynomial.aeval (fun w : AffineVar ↦ w.elim 0 χ)
+          (MvPolynomial.rename some Q₀) := by
+        rw [MvPolynomial.aeval_rename]
+        rfl
+      rw [hψ, ← MvPolynomial.aeval_map_algebraMap (MvPolynomial (Fin 2) F)]
+      refine lt_of_le_of_lt ?_ hlt
+      refine (MvPolynomial.natDegree_aeval_le_weightedTotalDegree_of_le (affineLineWeight d) _ _
+        fun w ↦ ?_).trans (Finset.sup_mono (MvPolynomial.support_map_subset _ _))
+      rcases w with _ | ⟨j⟩
+      · simp
+      · fin_cases j <;> simp [χ]
+  -- Evaluating `X` at the variable `X` of the coefficient ring recovers `Q₀`.
+  have hQ₀ : Q₀ = 0 := by
+    have := congrArg
+      ((Polynomial.aeval (MvPolynomial.X 0 : MvPolynomial (Fin 2) F)).restrictScalars F) hW0
+    rw [hW, ← AlgHom.comp_apply, MvPolynomial.comp_aeval, map_zero,
+      show (fun j ↦ _) = (MvPolynomial.X : Fin 2 → MvPolynomial (Fin 2) F) from
+        funext fun j ↦ by fin_cases j <;> simp [χ], MvPolynomial.aeval_X_left_apply] at this
+    exact this
+  exact hQ (by rw [hQ₀, map_zero])
+
+open Polynomial.SymbolicInterpolation in
+/-- An interpolant exists when its allowed monomials outnumber the linear constraints.
+
+The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
+At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
+Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
+No positive lower bound on the resulting `Z`-degree is asserted. -/
+theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
+    (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
+      (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
+    ∃ Q, IsAffineInterpolant domain f g d A m D M Q := by
+  obtain ⟨Q, hQ0, hlt, hyz, hM, hmult⟩ := exists_affineShift_support_le domain f g hsurplus
+  exact ⟨Q, hQ0, hlt, hyz, hM,
+    affineLineEval_eq_zero_of_affineShift_support_le domain f g hlt hmult⟩
+
+open Polynomial.SymbolicInterpolation in
+/-- An interpolant with positive `Z`-degree exists when `A ≤ n` and its allowed monomials
+outnumber the linear constraints, where `n` is the domain size.
+
+The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
+At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
+Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction. -/
+theorem exists_isAffineInterpolant_degreeOf_pos (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
+    (hAn : A ≤ Fintype.card ι)
+    (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
+      (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
+    ∃ Q, IsAffineInterpolant domain f g d A m D M Q ∧ 0 < Q.degreeOf none := by
+  obtain ⟨Q, hQ0, hlt, hyz, hM, hmult⟩ := exists_affineShift_support_le domain f g hsurplus
+  exact ⟨Q, ⟨hQ0, hlt, hyz, hM,
+    affineLineEval_eq_zero_of_affineShift_support_le domain f g hlt hmult⟩,
+    degreeOf_none_pos_of_affineShift_support_le domain f g hAn hQ0 hlt hmult⟩
 
 end ReedSolomon
