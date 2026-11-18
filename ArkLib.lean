@@ -365,6 +365,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
+public import ArkLib.Data.CodingTheory.ReedSolomon.Dual
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
