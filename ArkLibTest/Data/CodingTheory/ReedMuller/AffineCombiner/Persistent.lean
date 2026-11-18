@@ -118,8 +118,3 @@ example (q₀ B d : ℝ) (k : ℕ) (hq : q₀ ≠ 0) (hk : 1 ≤ k) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.card_isAffineExceptional_persistent_le
-
-/-- info: 'Finset.card_le_of_fiber_card_le_of_inter_card_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms Finset.card_le_of_fiber_card_le_of_inter_card_le

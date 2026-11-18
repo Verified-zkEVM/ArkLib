@@ -183,8 +183,8 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (
   choose P H L hdata using hdata
   set π : F × F → RatFunc F × RatFunc F := fun c ↦ persistentPair c.1 c.2 (P c) (H c) (L c)
   have h := card_le_of_fiber_card_le_of_inter_card_le C π
-    (fun c ↦ affinePersistenceSet domain f g c.1 c.2 (P c) (H c) (L c)) (M := M) hdB
-    hJ (fun c hc ↦ (hdata c hc).2.2.2.2) (fun c hc c' hc' hne ↦
+    (fun c ↦ affinePersistenceSet domain f g c.1 c.2 (P c) (H c) (L c)) (M := M) hdB.le
+    (by rw [← sq]; exact hJ) (fun c hc ↦ (hdata c hc).2.2.2.2) (fun c hc c' hc' hne ↦
       card_inter_affinePersistenceSet_le (hdata c hc).1.1 (hdata c' hc').1.1 (hdata c hc).2.1
         (hdata c' hc').2.1 (hdata c hc).2.2.1 (hdata c' hc').2.2.1 (hdata c hc).2.2.2.1
         (hdata c' hc').2.2.2.1 hne) fun c hc ↦ by

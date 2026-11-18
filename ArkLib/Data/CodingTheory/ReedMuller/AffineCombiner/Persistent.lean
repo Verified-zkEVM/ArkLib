@@ -25,7 +25,8 @@ By Lemma A.1, each pair accounts for at most `max q (n choose (k + 1))` exceptio
 This formalizes the persistent count `|P| ≤ ℓ max{q, (n choose (k + 1))}` of Appendix A of [CWYZ26].
 The paper writes `ℓ = (a - b) / (a² - b)` with `a = B / n` and `b = (d + 1) / q₀`.
 The statement here writes `ℓ = n (B - (d + 1) q₀ᵏ⁻¹) / (B² - n (d + 1) q₀ᵏ⁻¹)`.
-The two agree for `k ≥ 1`, and the second form also holds at `k = 0`.
+The two agree for `k ≥ 1`.
+At `k = 0` the hypotheses leave nothing to count, since the grid has one point.
 Its hypotheses `(d + 1) q₀ᵏ⁻¹ < B` and `n (d + 1) q₀ᵏ⁻¹ < B²` are `b < a` and `b < a²`.
 The persistent count includes any excluded vectors of the interpolation argument.
 
@@ -172,14 +173,21 @@ private theorem card_inter_affinePersistenceSet_le [DecidableEq K₀] {f g : (Fi
   exact Nat.mul_le_mul_right _ hRdeg
 
 open Classical in
-/-- Let `K₀ ⊆ F` be finite fields of sizes `q₀` and `q`, and let `n = q₀ᵏ`.
+/-- Let `K₀ ⊆ F` be finite fields of sizes `q₀` and `q`.
+
+The grid `K₀ᵏ` has `n = q₀ᵏ` points, and words `f, g` on it take values in `F`.
 
 Assume `(d + 1) q₀ᵏ⁻¹ < B` and `n (d + 1) q₀ᵏ⁻¹ < B²`.
 
-Count the vectors `α ∈ F^{k+1}` with a candidate that is exceptional at agreement loss `q₀ᵏ⁻¹`
-and persistent at threshold `B`.
+Candidates have total degree at most `d` and at least `A` agreements with `f + L_α g`.
+
+Count the vectors `α ∈ F^{k+1}` with an exceptional candidate that is persistent at threshold `B`.
 
 There are at most `ℓ · max q (n choose (k + 1))` of them.
+
+Exceptional means that no witnesses `P = F₀ + L_α G₀` have agreement loss at most `q₀ᵏ⁻¹`.
+
+Here witnesses satisfy `deg F₀ ≤ d`, and `G₀ = 0` or `deg G₀ < d`, with total degrees.
 
 Here `ℓ = n (B - (d + 1) q₀ᵏ⁻¹) / (B² - n (d + 1) q₀ᵏ⁻¹)`, in real arithmetic.
 
@@ -207,8 +215,8 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (f g : (Fin k → K�
   set π := fun α ↦ persistentPair α (P α) (H α) (σ α)
   have h := card_le_of_fiber_card_le_of_inter_card_le C π
     (fun α ↦ affinePersistenceSet f g α (P α) (H α) (σ α))
-    (M := max (Fintype.card F) ((Fintype.card K₀ ^ k).choose (k + 1))) hdB
-    (by simpa using hJ) (fun α hα ↦ (hdata α hα).2.2.2) (fun α hα α' hα' hne ↦
+    (M := max (Fintype.card F) ((Fintype.card K₀ ^ k).choose (k + 1))) hdB.le
+    (by simpa [← sq] using hJ) (fun α hα ↦ (hdata α hα).2.2.2) (fun α hα α' hα' hne ↦
       card_inter_affinePersistenceSet_le (hdata α hα).1.1 (hdata α' hα').1.1 (hdata α hα).2.1
         (hdata α' hα').2.1 (hdata α hα).2.2.1 (hdata α' hα').2.2.1 hne) fun α hα ↦ by
     -- Each rational pair accounts for at most `max q (n choose (k + 1))` vectors (Lemma A.1).
@@ -219,6 +227,6 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (f g : (Fin k → K�
     rw [← hα'.2]
     simp only [π, persistentPair]
     ring
-  convert h using 2 <;> simp
+  convert h using 2 <;> simp [sq]
 
 end ReedMuller
