@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: XC0R
 -/
 
-import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+import ArkLib.Data.Probability.Instances
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Algebra.MvPolynomial.CommRing
 
@@ -30,6 +30,6 @@ example :
     simpa using congrArg (eval ![0, 0]) h
   have hle : (X 0 - X 1 - 1 : MvPolynomial (Fin 2) (ZMod 3)).totalDegree ≤ 1 :=
     (totalDegree_sub _ _).trans <| max_le ((totalDegree_sub _ _).trans (by simp)) (by simp)
-  refine (prob_eval_zero_embedding_le_div _ hne hle).trans_eq ?_
+  refine (Probability.prob_eval_zero_embedding_le_div _ hne hle).trans_eq ?_
   rw [ZMod.card]
   norm_num

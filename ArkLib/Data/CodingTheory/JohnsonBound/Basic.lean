@@ -169,7 +169,7 @@ lemma johnson_condition_weak_implies_strong
 lemma johnson_condition_strong_implies_n_pos
     (h_johnson : JohnsonConditionStrong B v) :
     0 < n := by
-  cases n <;> try simp [JohnsonConditionStrong] at *
+  cases n <;> simp [JohnsonConditionStrong] at *
 
 /-- The strong Johnson condition forces the alphabet to have at least two elements. -/
 lemma johnson_condition_strong_implies_2_le_F_card

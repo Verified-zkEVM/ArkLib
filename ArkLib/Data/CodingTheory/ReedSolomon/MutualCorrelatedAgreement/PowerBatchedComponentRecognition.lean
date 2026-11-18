@@ -37,7 +37,8 @@ ideal vanishes after graph restriction, and its separant stays nonzero on the gr
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval aeval_optionEquivRight_symm affineHilbertPolynomial zeroLocus)
 
 noncomputable section
 

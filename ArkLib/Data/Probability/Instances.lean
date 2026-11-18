@@ -8,7 +8,8 @@ module
 
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Data.MvPolynomial.Degrees
-public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelInjective
+public import VCVio.OracleComp.Constructions.SampleableType.SchwartzZippel
 public import CompPoly.Data.Fin.BigOperators
 
 /-! # Probability bounds for finite uniform samples
@@ -27,30 +28,6 @@ namespace Probability
 
 /-! ## Polynomial identity bounds -/
 
-/-- **Schwartz-Zippel**, in probability form at an arbitrary degree bound: for a nonzero
-`n`-variate polynomial `P` of total degree at most `d` over a finite domain `R`,
-
-  `Pr{let r ← $ᵗ R^n}[eval r P = 0] ≤ d / |R|`.
--/
-lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
-    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
-    {n d : ℕ}
-    (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ d) :
-    Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
-      (d : ℝ≥0∞) / Fintype.card R := open scoped Classical in by
-  let : Field R := @Fintype.fieldOfDomain R _ _ (Classical.decEq R) _
-  exact prob_eval_zero_univ_le_div P h_nonzero h_deg
-
-/-- The `d := n` specialization of
-`prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`. -/
-lemma prob_schwartz_zippel_mv_polynomial
-    {R : Type} [CommRing R] [IsDomain R] [Fintype R] [SampleableType R]
-    {n : ℕ}
-    (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ n) :
-    Pr{let r ← $ᵗ (Fin n → R)}[MvPolynomial.eval r P = 0] ≤
-      (n : ℝ≥0∞) / Fintype.card R :=
-  prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
-
 /-- Scalar-challenge form of the polynomial root bound for one variable. -/
 lemma prob_schwartz_zippel_single_variable
     {R : Type} [CommRing R] [NoZeroDivisors R] [Fintype R] [SampleableType R]
@@ -64,7 +41,7 @@ lemma prob_schwartz_zippel_single_variable
   have : IsDomain R := NoZeroDivisors.to_isDomain R
   exact (SampleableType.prEvent_uniformSample_equiv (Equiv.funUnique (Fin 1) R).symm
     (fun r => MvPolynomial.eval r p = 0)).trans_le
-      (prob_schwartz_zippel_mv_polynomial_of_totalDegree_le p hne hdeg)
+      (prEvent_eval_eq_zero_univ_le_div p hne hdeg)
 
 /-- Two distinct univariate polynomials of degree at most `d` agree at a uniform point with
 probability at most `d / |R|`: their difference has at most `d` roots. -/
@@ -193,7 +170,48 @@ lemma prob_polynomial_identity_le
       (m * (d - 1) : ℕ) / (Fintype.card R : ℝ≥0∞) := by
   have h_total_deg : P.totalDegree ≤ m * (d - 1) :=
     MvPolynomial.totalDegree_le_of_degreeOf_lt P h_indiv_deg
-  exact prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_total_deg
+  exact prEvent_eval_eq_zero_univ_le_div P h_nonzero h_total_deg
+
+private lemma natCast_div_le_natCast_div_of_mul_le {k n d m : ℕ}
+    (hm_pos : 0 < m) (h : k * m ≤ d * n) :
+    (k : ℝ≥0∞) / n ≤ d / m := by
+  by_cases hn_zero : n = 0
+  · have hk_zero : k = 0 := by nlinarith
+    simp [hk_zero]
+  have hn_pos : 0 < n := Nat.pos_of_ne_zero hn_zero
+  rw [ENNReal.div_le_iff_le_mul] <;> norm_cast
+  · rw [← ENNReal.toReal_le_toReal] <;> norm_num
+    · rw [div_mul_eq_mul_div, le_div_iff₀] <;> norm_cast
+    · exact ENNReal.mul_ne_top (ENNReal.div_ne_top (by aesop) (by aesop)) (by aesop)
+  · grind
+  · exact Or.inl <| ENNReal.natCast_ne_top _
+
+/-- Probability that a nonzero polynomial vanishes at a uniformly random tuple of pairwise-distinct
+elements of a finite field `F`: at most `d / (|F| - s + 1)`, where `d` bounds the total degree.
+This is `MvPolynomial.card_filter_injective_eval_eq_zero_le` for `S = univ`. -/
+lemma prob_eval_zero_embedding_le_div
+    {F : Type} [Field F] [Fintype F] {s d : ℕ} [SampleableType (Fin s ↪ F)]
+    (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
+    Pr{let x ← $ᵗ (Fin s ↪ F)}[MvPolynomial.eval x f = 0] ≤
+      (d : ℝ≥0∞) / (Fintype.card F - s + 1 : ℕ) := by
+  classical
+  rw [@SampleableType.prEvent_uniformSample _ _ _ (fun x : Fin s ↪ F => MvPolynomial.eval x f = 0)
+    (fun _ => Classical.propDecidable _), Fintype.card_embedding_eq, Fintype.card_fin]
+  have hcard : (Finset.univ.filter fun x : Fin s ↪ F => MvPolynomial.eval x f = 0).card =
+      (Finset.filter (fun x => Function.Injective x ∧ MvPolynomial.eval x f = 0)
+        (Fintype.piFinset fun _ => Finset.univ)).card := by
+    refine Finset.card_bij (fun x _ => ⇑x) (fun x hx => ?_)
+      (fun _ _ _ _ h => DFunLike.coe_injective h) (fun y hy => ?_)
+    · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
+      simpa using ⟨x.injective, hx⟩
+    · simp only [Finset.mem_filter, Fintype.mem_piFinset, Finset.mem_univ, implies_true,
+        true_and] at hy
+      exact ⟨⟨y, hy.1⟩, by simpa using hy.2, rfl⟩
+  rw [hcard]
+  refine natCast_div_le_natCast_div_of_mul_le (Nat.succ_pos _) ?_
+  have h := MvPolynomial.card_filter_injective_eval_eq_zero_le hf (Finset.univ : Finset F)
+  rw [Finset.card_univ] at h
+  exact h.trans (Nat.mul_le_mul_right _ hd)
 
 /-! ## Linear collision bounds -/
 

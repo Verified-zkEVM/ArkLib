@@ -56,9 +56,9 @@ public import VCVio.OracleComp.EvalDist.Measure
     language with probability one.
   - `Verifier.Outputs` — the statements the verifier *can* output on a transcript under the fixed
     sampling, with the acceptance bridges (`mem_language_of_mem_outputs`,
-    `outputs_nonempty_of_isAccepting`) and the pure-verifier pin-down (`outputs_pure_subsingleton`,
-    `pure_verdict_mem_outputs`). `support_init_nonempty_of_prob_one` and
-    `not_accepting_of_failure` read the same acceptance fact off a single transcript.
+    `outputs_nonempty_of_isAccepting`) and the deterministic verdict law
+    (`mem_outputs_iff_of_run_eq_pure`). `not_accepting_of_failure` rules out rejection at an
+    accepting transcript.
   - `ChallengeTree.LeafWitnesses` / `LeafWitnesses.IsValid` — one candidate *output* witness per
     leaf, and what makes such a witnessing honest: every answer certifies, in `relOut`, some
     statement the verifier can output at that leaf. At a pure verifier this collapses to per-verdict
@@ -374,7 +374,7 @@ A leaf witnessing (below) certifies its witnesses *at statements the verifier ca
 on that leaf's transcript. `Verifier.Outputs` is that set, read off the fixed sampling
 `(init, impl)`; the lemmas here relate it to `IsAccepting` (on an accepting tree the set is nonempty
 and contained in the output language) and pin it down at a pure verifier (there it is the singleton
-of the verdict, as soon as the sampling can produce a seed). -/
+of the verdict). -/
 
 namespace Verifier
 
@@ -444,67 +444,16 @@ theorem outputs_nonempty_of_isAccepting {init : ProbComp σ}
   rw [Set.not_nonempty_iff_eq_empty] at hempty
   exact not_isAccepting_of_no_outputs init impl V stmtIn p lang hempty hacc
 
-/-- An accepting tree with a leaf forces the sampling's support to be nonempty — the entry ticket to
-  `pure_verdict_mem_outputs`, hence to `LeafWitnesses.isValid_iff_pure`, in every certificate. -/
-theorem support_init_nonempty_of_accepting {init : ProbComp σ}
-    {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
-    {stmtIn : StmtIn} {tree : ChallengeTree pSpec arity 0} {lang : Set StmtOut}
-    (hacc : tree.IsAccepting init impl V stmtIn lang) (p : ChallengeTree.LeafPath tree) :
-    (support init).Nonempty := by
-  by_contra hempty
-  rw [Set.not_nonempty_iff_eq_empty] at hempty
-  refine not_isAccepting_of_no_outputs init impl V stmtIn p lang ?_ hacc
-  ext out
-  simp only [Outputs, Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
-  intro hmem
-  rw [mem_support_bind_iff] at hmem
-  obtain ⟨s, hs, -⟩ := hmem
-  rw [hempty] at hs
-  simp at hs
-
-/-- A pure verifier can only output its verdict: `Outputs` is a subset of that singleton. -/
-theorem outputs_pure_subsingleton {Stmt₁ Stmt₂ : Type} {m : ℕ} {pSpec₁ : ProtocolSpec m}
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
-    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) {out : Stmt₂}
-    (hout : out ∈ Outputs init impl V₁ stmt tr) : out = verify₁ stmt tr := by
-  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁] at hout
-  have : (do (simulateQ impl
-      (pure (verify₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
-      ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (verify₁ stmt tr))) := by
-    congr 1
-  rw [this] at hout
-  simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
-  exact Option.some.inj hout.1
-
-/-- A pure verifier's verdict **is** reachable, as soon as the sampling can produce a seed. -/
-theorem pure_verdict_mem_outputs (init : ProbComp σ)
-    (impl : QueryImpl oSpec (StateT σ ProbComp)) {V : Verifier oSpec StmtIn StmtOut pSpec}
-    (verify : StmtIn → pSpec.FullTranscript → StmtOut)
-    (hV : ∀ stmt tr, V.verify stmt tr = pure (verify stmt tr))
-    (hinit : (support init).Nonempty) (stmtIn : StmtIn) (tr : pSpec.FullTranscript) :
-    verify stmtIn tr ∈ Outputs init impl V stmtIn tr := by
-  obtain ⟨s, hs⟩ := hinit
-  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV]
-  have heq : (do (simulateQ impl
-      (pure (verify stmtIn tr) : OptionT (OracleComp oSpec) StmtOut)).run' (← init) :
-      ProbComp (Option StmtOut)) = (init >>= fun _ => pure (some (verify stmtIn tr))) := by
-    congr 1
-  rw [heq]
-  exact (mem_support_bind_iff init _ _).2 ⟨s, hs, (mem_support_pure_iff _ _).2 rfl⟩
-
-/-- The initial finite-sampling computation has a reachable seed. This transcript-level
-interface accepts the probability-one premise used by its callers; nonemptiness also holds
-independently of the verifier's acceptance. -/
-theorem support_init_nonempty_of_prob_one {init : ProbComp σ}
-    {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
-    {stmt : StmtIn} {tr : pSpec.FullTranscript} {lang : Set StmtOut}
-    (_h : Pr{let out ← (OptionT.mk do
-      (simulateQ impl (V.run stmt tr)).run' (← init))}[out ∈ lang] = 1) :
-    (support init).Nonempty := by
-  exact OracleComp.support_nonempty (spec := unifSpec) init
+/-- A deterministic run returns precisely its specified optional verdict under any sampling. -/
+theorem mem_outputs_iff_of_run_eq_pure (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (stmt : StmtIn) (tr : pSpec.FullTranscript) {result : Option StmtOut}
+    (h : (V.verify stmt tr).run = pure result) (out : StmtOut) :
+    out ∈ Outputs init impl V stmt tr ↔ some out = result := by
+  change some out ∈ support (do (simulateQ impl (V.verify stmt tr).run).run' (← init)) ↔ _
+  rw [h]
+  change some out ∈ support (init >>= fun _ => pure result) ↔ _
+  simp [OracleComp.support_nonempty init]
 
 /-- A verifier that **rejects outright** on a transcript cannot accept it with probability one: on
   the `failure` branch the run fails certainly.
@@ -574,7 +523,7 @@ def IsValid (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   ∀ p, ∃ w, o p = some w ∧
     ∃ out ∈ Verifier.Outputs init impl V stmtIn p.fullTranscript, (out, w) ∈ relOut
 
-/-- **The pure-case collapse.** At a pure verifier with a productive sampling, validity is *exactly*
+/-- **The pure-case collapse.** At a pure verifier, validity is *exactly*
   per-verdict witnessing: the statements are pinned by the verdict function rather than carried by
   the witnessing.
 
@@ -584,19 +533,12 @@ theorem isValid_iff_pure (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ
     {V : Verifier oSpec StmtIn StmtOut pSpec}
     (verify : StmtIn → pSpec.FullTranscript → StmtOut)
     (hV : ∀ stmt tr, V.verify stmt tr = pure (verify stmt tr))
-    (hinit : (support init).Nonempty) (relOut : Set (StmtOut × WitOut)) (stmtIn : StmtIn)
+    (relOut : Set (StmtOut × WitOut)) (stmtIn : StmtIn)
     {tree : ChallengeTree pSpec arity 0} (o : LeafWitnesses tree WitOut) :
     o.IsValid init impl V relOut stmtIn ↔
       ∀ p, ∃ w, o p = some w ∧ (verify stmtIn p.fullTranscript, w) ∈ relOut := by
-  constructor
-  · intro h p
-    obtain ⟨w, hw, out, hout, hrel⟩ := h p
-    exact ⟨w, hw,
-      Verifier.outputs_pure_subsingleton init impl V verify hV stmtIn p.fullTranscript hout ▸ hrel⟩
-  · intro h p
-    obtain ⟨w, hw, hrel⟩ := h p
-    exact ⟨w, hw, verify stmtIn p.fullTranscript,
-      Verifier.pure_verdict_mem_outputs init impl verify hV hinit stmtIn p.fullTranscript, hrel⟩
+  simp only [IsValid, Verifier.mem_outputs_iff_of_run_eq_pure init impl V stmtIn _
+    (congrArg OptionT.run (hV stmtIn _)), Option.some.injEq, exists_eq_left]
 
 end LeafWitnesses
 

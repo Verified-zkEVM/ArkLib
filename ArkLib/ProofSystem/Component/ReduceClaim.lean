@@ -212,11 +212,9 @@ theorem verifier_coordinateWiseSpecialSoundWith
       (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWith init impl D relIn relOut
       (verifier oSpec mapStmt) (treeExtractor mapWitInv D) := by
-  intro stmtIn tree _ hAcc o hvalid
-  have hne : (support init).Nonempty :=
-    Verifier.support_init_nonempty_of_accepting hAcc tree.onlyPath
+  intro stmtIn tree _ _ o hvalid
   have hvalid' := (ProtocolSpec.ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
-    (fun s _ => mapStmt s) (fun _ _ => rfl) hne relOut stmtIn o).mp hvalid
+    (fun s _ => mapStmt s) (fun _ _ => rfl) relOut stmtIn o).mp hvalid
   obtain ⟨w, hw, hrel⟩ := hvalid' tree.onlyPath
   have hrel' : (mapStmt stmtIn, w) ∈ relOut := hrel
   refine ⟨mapWitInv stmtIn w, ?_, hRel stmtIn w hrel'⟩
@@ -404,12 +402,10 @@ theorem oracleVerifier_coordinateWiseSpecialSoundWith
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).coordinateWiseSpecialSoundWith
       init impl D relIn relOut (oracleTreeExtractor mapWitInv D) := by
-  intro s tree _ hAcc o hvalid
-  have hne : (support init).Nonempty :=
-    Verifier.support_init_nonempty_of_accepting hAcc tree.onlyPath
+  intro s tree _ _ o hvalid
   have hvalid' := (ProtocolSpec.ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
     (fun p _ => (mapStmt p.1, mapOStmt embedIdx hEq p.2))
-    (fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)) hne relOut s o).mp hvalid
+    (fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)) relOut s o).mp hvalid
   obtain ⟨w, hw, hrel⟩ := hvalid' tree.onlyPath
   have hrel' : ((mapStmt s.1, mapOStmt embedIdx hEq s.2), w) ∈ relOut := hrel
   refine ⟨mapWitInv s w, ?_, hRel s.1 s.2 w hrel'⟩

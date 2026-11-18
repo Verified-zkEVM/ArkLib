@@ -75,7 +75,7 @@ example :
   · have hchoose : Nat.choose 3 (i + 2) = 0 := Nat.choose_eq_zero_of_lt (by omega)
     have hi0 : i ≠ 0 := by omega
     have hi1 : 1 ≠ i := by omega
-    simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_one, coeff_X,
+    simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_one, coeff_X,
       hi0, hi1]
 
 /-- A degree-drop canary: removing orders zero and one from a shifted quartic leaves a quadratic,
@@ -121,7 +121,7 @@ example :
   · have hchoose : Nat.choose 4 (i + 3) = 0 := Nat.choose_eq_zero_of_lt (by omega)
     have hi0 : i ≠ 0 := by omega
     have hi1 : 1 ≠ i := by omega
-    simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_C, coeff_X,
+    simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_C, coeff_X,
       hi0, hi1]
 
 /-- The packaged remainder linear map retains exactly the positive-degree part of the shift. -/
@@ -148,7 +148,7 @@ example :
     · have hchoose : Nat.choose 4 (i + 3) = 0 := Nat.choose_eq_zero_of_lt (by omega)
       have hi0 : i ≠ 0 := by omega
       have hi1 : 1 ≠ i := by omega
-      simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_add, coeff_C,
+      simp [hasseCoeffAt_apply, hasseDeriv_monomial, hchoose, coeff_C,
         coeff_X, hi0, hi1]
   rw [htail, smul_eq_C_mul, mul_add]
   have hc : C (2 : ZMod 5) * C 4 = C 3 := by
