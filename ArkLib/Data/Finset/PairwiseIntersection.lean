@@ -26,6 +26,10 @@ when the ambient type has `n` elements, with subtraction truncated in `ℕ`. The
 elementary Cauchy--Schwarz count extracted from the Reed--Solomon weighted Johnson development at
 commit `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. It has no field, polynomial, or geometric
 hypotheses.
+
+A second statement counts a family whose members share labels.
+Sets with distinct labels meet in at most `D` elements, and each label has at most `M` members.
+The family then has at most `n (A - D) / (A² - nD) · M` members.
 -/
 
 @[expose] public section
@@ -221,5 +225,56 @@ theorem card_mul_sq_sub_card_mul_le_of_inter_card_le
       (Fintype.card ι : ℝ) * (A - D : ℕ) by
     rw [hcastDen, hcastGap]
     simpa [L, n] using hreal)
+
+/-- A Johnson count for a family whose members are grouped by a label.
+
+Let `n` be the size of the ambient type and assume `D < A` and `n D < A²`.
+
+Each member `c ∈ C` has a set `S c` of at least `A` elements.
+
+Members with distinct labels have sets meeting in at most `D` elements.
+
+Each label is shared by at most `M` members.
+
+Then `C` has at most `n (A - D) / (A² - n D) · M` members, in real arithmetic. -/
+theorem card_le_of_fiber_card_le_of_inter_card_le {α β ι : Type*} [DecidableEq β] [Fintype ι]
+    [DecidableEq ι] (C : Finset α) (π : α → β) (S : α → Finset ι) {A D M : ℕ} (hDA : D < A)
+    (hden : Fintype.card ι * D < A ^ 2) (hclose : ∀ c ∈ C, A ≤ (S c).card)
+    (hpair : ∀ c ∈ C, ∀ c' ∈ C, π c ≠ π c' → (S c ∩ S c').card ≤ D)
+    (hfiber : ∀ c ∈ C, (C.filter fun c' ↦ π c' = π c).card ≤ M) :
+    (C.card : ℝ) ≤ Fintype.card ι * ((A : ℝ) - D) / ((A : ℝ) ^ 2 - Fintype.card ι * D) * M := by
+  rcases C.eq_empty_or_nonempty with rfl | ⟨c₀, -⟩
+  · simp only [card_empty, Nat.cast_zero]
+    have hpos : (0 : ℝ) < (A : ℝ) ^ 2 - Fintype.card ι * D := by
+      rw [sub_pos]
+      exact_mod_cast hden
+    have hAD : (0 : ℝ) ≤ (A : ℝ) - D := by
+      rw [sub_nonneg]
+      exact_mod_cast hDA.le
+    positivity
+  have : Nonempty α := ⟨c₀⟩
+  -- Each label class has at most `M` members.
+  set T := C.image π
+  have hCT : C.card ≤ M * T.card := card_le_mul_card_image C M fun p hp ↦ by
+    obtain ⟨c, hc, rfl⟩ := mem_image.mp hp
+    exact hfiber c hc
+  -- One representative per label gives a family with small pairwise intersections.
+  have hrep : ∀ p ∈ T, ∃ c ∈ C, π c = p := fun p hp ↦ mem_image.mp hp
+  choose! rep hrepC hrepπ using hrep
+  have hJ := card_mul_sq_sub_card_mul_le_of_inter_card_le T (S ∘ rep) A D
+    (fun p hp ↦ hclose _ (hrepC p hp)) fun p hp p' hp' hne ↦
+      hpair _ (hrepC p hp) _ (hrepC p' hp') (by rwa [hrepπ p hp, hrepπ p' hp'])
+  -- Real arithmetic.
+  have hpos : (0 : ℝ) < (A : ℝ) ^ 2 - Fintype.card ι * D := by
+    rw [sub_pos]
+    exact_mod_cast hden
+  have hT : (T.card : ℝ) ≤ Fintype.card ι * ((A : ℝ) - D) / ((A : ℝ) ^ 2 - Fintype.card ι * D) := by
+    rw [le_div_iff₀ hpos]
+    have hJ' : ((T.card * (A * A - Fintype.card ι * D) : ℕ) : ℝ) ≤
+        ((Fintype.card ι * (A - D) : ℕ) : ℝ) := by exact_mod_cast hJ
+    push_cast [Nat.cast_sub (sq A ▸ hden.le), Nat.cast_sub hDA.le] at hJ'
+    rwa [sq]
+  calc (C.card : ℝ) ≤ T.card * M := by rw [mul_comm]; exact_mod_cast hCT
+    _ ≤ _ := mul_le_mul_of_nonneg_right hT (Nat.cast_nonneg M)
 
 end Finset
