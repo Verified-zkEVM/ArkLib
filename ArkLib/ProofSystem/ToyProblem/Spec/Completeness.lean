@@ -7,6 +7,9 @@ module
 
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
+import Std.WP.Tactic
+import VCVio.ProgramLogic.Unary.WP.NecessarySpecs
+
 /-!
 # Honest completeness of the toy-problem IORs (ABF26 Constructions 6.2 and 6.9)
 
@@ -322,6 +325,7 @@ theorem derivedOutput_mem_outputRelationFor {k : ℕ}
     simp only [Pi.add_apply, Pi.smul_apply]
     rw [← h0, ← h1]
 
+open scoped OracleComp.Necessary in
 /-- **Perfect completeness of the simplified IOR** (protocol-level form).
 
 For every verifier challenge, the honest prover and the virtual-output
@@ -338,55 +342,18 @@ theorem oracleReduction_perfectCompleteness {k : ℕ}
       init impl
       (Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
       (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ) := by
-  classical
-  unfold OracleReduction.perfectCompleteness
-  rw [Reduction.perfectCompleteness_eq_prob_one]
+  apply Reduction.perfectCompleteness_of_run_support
   intro stmtIn witIn hRel
   have h0 : (pSpec (F := F)).dir 0 = .V_to_P := rfl
-  simp only [OracleReduction.toReduction, Reduction.run, oracleReduction,
+  simp only [Reduction.run_run_eq_bind, OracleReduction.toReduction, oracleReduction,
     oracleProver, Prover.run, Prover.runToRound, Fin.induction_one,
-    Prover.processRound_of_dir_eq_V_to_P 0 h0, prover]
-  apply OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support
-  intro x hx
-  obtain ⟨proverResult, hPR, hx⟩ := OptionT.mem_support_run_lift_bind _ _ hx
-  rw [show (monadLift : OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _ →
-        OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _) = id from rfl,
-      id_eq] at hPR
-  obtain ⟨r1, hr1, hPR⟩ := OracleComp.mem_support_bind_peel _ _ hPR
-  obtain ⟨out, hout, hPReq⟩ := OracleComp.mem_support_bind_peel _ _ hPR
-  change out ∈ support (pure (match r1.2 with
-      | (γ, (stmt, oStmt), M) =>
-        (((stmt.1, stmt.2.1 + γ * stmt.2.2),
-          fun _ j => oStmt 0 j + γ • oStmt 1 j),
-          fun j => M 0 j + γ * M 1 j)) :
-        OracleComp (emptySpec.{0, 0} + [(pSpec (F := F)).Challenge]ₒ) _) at hout
-  have hout_eq := OracleComp.eq_of_mem_support_pure _ hout
-  subst out
-  have hPReq_eq := OracleComp.eq_of_mem_support_pure _ hPReq
-  subst proverResult
-  obtain ⟨r0, hr0, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
-  have hr0_eq := OracleComp.eq_of_mem_support_pure _ hr0
-  subst r0
-  obtain ⟨γ, -, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
-  obtain ⟨f1, hf1, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
-  change f1 ∈ support (pure (fun γ => (γ, (default, id (stmtIn, witIn)).2)) :
-    OracleComp (emptySpec.{0, 0} + [(pSpec (F := F)).Challenge]ₒ) _) at hf1
-  have hf1_eq := OracleComp.eq_of_mem_support_pure _ hf1
-  subst f1
-  have hr1_eq := OracleComp.eq_of_mem_support_pure _ hr1
-  subst r1
-  rw [oracleVerifier_toVerifier_run_eq_pure] at hx
-  rcases OptionT.mem_support_run_bind _ _ hx with ⟨hverNone, _⟩ | ⟨stmtOut, hSO, hx⟩
-  · exact absurd (OracleComp.eq_of_mem_support_pure _ hverNone) (by simp)
-  · have hSO_eq := OracleComp.eq_of_mem_support_pure _ hSO
-    rw [Option.some.injEq] at hSO_eq
-    subst stmtOut
-    have hx_eq := OracleComp.eq_of_mem_support_pure _ hx
-    refine ⟨_, hx_eq, ?_, ?_⟩
-    · apply derivedOutput_mem_outputRelationFor
-        (encode := encode) (δ := δ) (stmtIn := stmtIn)
-        (M := witIn) (γ := cast (by rfl) γ) hRel
-    · rfl
+    Prover.processRound_of_dir_eq_V_to_P 0 h0, prover, oracleVerifier_toVerifier_run_eq_pure,
+    OptionT.run_pure, pure_bind, bind_assoc, liftComp_eq_liftM, liftM_pure]
+  refine (OracleComp.Necessary.wp_iff_forall_support _ _).mp ?_
+  set_option experimental.vcgen true in
+    vcgen [OracleComp.Necessary.Spec.ofSupport (ProtocolSpec.getChallenge _ _)]
+  exact ⟨_, rfl, derivedOutput_mem_outputRelationFor encode δ stmtIn witIn hRel _, rfl⟩
+
 
 end SimplifiedIOR
 

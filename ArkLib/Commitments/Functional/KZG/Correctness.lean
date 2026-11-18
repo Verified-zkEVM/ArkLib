@@ -171,31 +171,10 @@ theorem correctness {g₁ : G₁} {g₂ : G₂} :
     (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  refine ge_of_eq ?_
-  refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support _ _ _ _ ?_
-  intro x hx
-  simp only [kzg] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨⟨ck, vk⟩, hkeygen, hx⟩ := hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨⟨cm, decomm⟩, hcommit, hx⟩ := hx
-  replace hkeygen := OracleComp.mem_support_of_mem_support_liftComp
-    (superSpec := _) (oa := _) (x := (ck, vk)) hkeygen
-  replace hcommit := OracleComp.mem_support_of_mem_support_liftComp
-    (superSpec := _) (oa := _) (x := (cm, decomm)) hcommit
-  rw [mem_support_bind_iff] at hkeygen
-  obtain ⟨τ, _hτ, hkeygen⟩ := hkeygen
-  rw [mem_support_pure_iff] at hkeygen
-  simp only [Prod.mk.injEq] at hkeygen
-  obtain ⟨rfl, rfl⟩ := hkeygen
-  rw [mem_support_pure_iff] at hcommit
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hcommit
-  have : ProverOnly ({ dir := !v[Direction.P_to_V], «Type» := !v[G₁] } : ProtocolSpec 1) := {
-    prover_first' := by simp
-  }
-  rw [Reduction.run_of_prover_first] at hx
-  simp only [OptionT.run_bind, OptionT.run_pure] at hx
-  have hverify : verifyOpening (g₁ := g₁) (g₂ := g₂) pairing
+  refine ge_of_eq (OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support _ _ _ _ ?_)
+  have : ProverOnly ({dir := !v[Direction.P_to_V], «Type» := !v[G₁]} : ProtocolSpec 1) :=
+    {prover_first' := by simp}
+  have hverify (τ : ZMod p) : verifyOpening (g₁ := g₁) (g₂ := g₂) pairing
       (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).2
       (commit (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data)
       (generateOpening (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
@@ -203,29 +182,9 @@ theorem correctness {g₁ : G₁} {g₂ : G₂} :
     change verifyOpening pairing _ _ _ query ((CPolynomial.ofFn data).eval query) = true
     simpa only [CPolynomial.ofFn, CPolynomial.ofArray] using
       KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) n τ data query
-  simp only [Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨openingOpt, hopeningOpt, hx⟩ := hx
-  simp at hopeningOpt
-  subst openingOpt
-  dsimp only [Option.elim] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨outputOpt, houtputOpt, hx⟩ := hx
-  simp at houtputOpt
-  subst outputOpt
-  dsimp only [Option.elim] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨verifierOpt, hverifierOpt, hx⟩ := hx
-  simp [hverify] at hverifierOpt
-  subst verifierOpt
-  simp only [Option.getM_some] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨verdict, hverdict, hx⟩ := hx
-  simp at hverdict
-  subst verdict
-  simp at hx
-  subst x
-  simp [acceptRejectRel]
+  simp only [kzg, Reduction.run_run_eq_bind, Prover.run_of_prover_first, Verifier.run,
+    OptionT.run_pure]
+  simp [acceptRejectRel, hverify]
 
 end Correctness
 
