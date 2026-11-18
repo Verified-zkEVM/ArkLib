@@ -18,8 +18,8 @@ A candidate tuple agrees at a point when every row agrees there.
 A point is lost when some row of the witness tuples fails its received word there.
 This is one round of the row folding in the sibling folding module.
 
-For fixed `θ`, the interleaved affine combiner on the rows `(g r, f r + θ g r)` supplies
-witness tuples `U, V`.
+Fix `θ` and apply the interleaved affine combiner to the rows `(g r, f r + θ g r)`.
+It supplies witness tuples `U, V`.
 The tuples `(V - θ U, U)` explain the same shared agreements with the same loss.
 They fail the strict degree bounds only if some row of `U` has degree exactly `d`.
 Such a pair of tuples fixes `θ` by the leading coefficients of that row.
@@ -27,8 +27,9 @@ Distinct pairs of tuples share at most `d` common agreements, since some row dif
 So the Johnson bound limits the bad challenges by `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`.
 Here `n` is the domain size and `q` the field size.
 
-This is the first inequality of (5.4) for `t` rows, as used in the proof of Theorem 5.2
-of [CWYZ26].
+This is the first inequality of (5.4) for `t` rows.
+The proof of Theorem 5.2 of [CWYZ26] uses it in every folding round.
+The one-row statements of Theorem 5.1 are its case `t = 1`.
 The paper packs the rows into an extension of degree `t`.
 The count here works with the tuples directly; it gives the same bound without a factor of `t`.
 The explicit bound `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)` follows from the bound (5.7).
@@ -47,6 +48,7 @@ The definitions use classical decidability for predicates over polynomial witnes
 * `ReedSolomon.badInterleavedEqualDegreeChallenges`: challenges `θ` fixed by a pair of tuples
   of degree `d`.
 * `ReedSolomon.interleavedEqualDegreeMcaError`: the uniform error probability.
+* `ReedSolomon.badEqualDegreeChallenges`: the bad challenges `θ` for one row.
 
 ## Main statements
 
@@ -56,12 +58,17 @@ The definitions use classical decidability for predicates over polynomial witnes
   agreement set is the interleaved affine one for the rows `(g r, f r + θ g r)`.
 * `ReedSolomon.isInterleavedEqualDegreeExceptional_one_iff` and
   `ReedSolomon.interleavedEqualDegreeMcaError_one`: one row is the equal-degree combiner.
-* `ReedSolomon.IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_mem`: an
-  exceptional tuple is interleaved affine exceptional, or `θ` is bad.
+* `ReedSolomon.IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_exists`:
+  an exceptional tuple is interleaved affine exceptional, or `θ` is bad.
 * `ReedSolomon.card_badInterleavedEqualDegreeChallenges_mul_le`: the Johnson count of bad `θ`.
 * `ReedSolomon.interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add`: the first
   inequality of (5.4) for `t` rows.
 * `ReedSolomon.interleavedEqualDegreeMcaError_le`: the explicit bound.
+* `ReedSolomon.IsInterleavedEqualDegreeExceptional.anti_threshold` and
+  `ReedSolomon.interleavedEqualDegreeMcaError_anti_threshold`: raising the threshold.
+* `ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq`,
+  `ReedSolomon.card_badEqualDegreeChallenges_mul_le` and
+  `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add`: the one-row case, Theorem 5.1.
 
 ## References
 
@@ -106,8 +113,8 @@ theorem mem_interleavedEqualDegreeAgreementLoss (domain : ι ↪ F) (f g : Fin t
 /-- The tuple `P` is exceptional for the shared challenge `(θ, α, β)`.
 
 Every row has degree at most `d`, and at least `A` points are shared agreements.
-Consider witness tuples with `deg F₀ r < d`, `deg G₀ r < d` and
-`P r = G₀ r + (α + β X)(F₀ r + θ G₀ r)`.
+Consider witness tuples with `deg F₀ r < d` and `deg G₀ r < d`.
+They satisfy `P r = G₀ r + (α + β X)(F₀ r + θ G₀ r)` in every row.
 No such tuples lose at most `s` shared agreements. -/
 def IsInterleavedEqualDegreeExceptional (domain : ι ↪ F) (f g : Fin t → ι → F) (d A s : ℕ)
     (θ α β : F) (P : Fin t → F[X]) : Prop :=
@@ -157,6 +164,26 @@ theorem interleavedEqualDegreeMcaError_le_one (t d A s : ℕ) :
       ≤ (Finset.univ : Finset (F × F × F)).card := by
         exact_mod_cast Finset.card_filter_le _ _
     _ = (Fintype.card F : ℝ) ^ 3 := by simp [pow_succ, mul_assoc]
+
+omit [Fintype F] in
+/-- Raising the agreement threshold keeps fewer exceptional tuples. -/
+theorem IsInterleavedEqualDegreeExceptional.anti_threshold {f g : Fin t → ι → F}
+    {d A A' s : ℕ} {θ α β : F} {P : Fin t → F[X]} (hA : A' ≤ A)
+    (h : IsInterleavedEqualDegreeExceptional domain f g d A s θ α β P) :
+    IsInterleavedEqualDegreeExceptional domain f g d A' s θ α β P :=
+  ⟨h.1, hA.trans h.2.1, h.2.2⟩
+
+/-- Raising the agreement threshold does not increase the interleaved equal-degree error. -/
+theorem interleavedEqualDegreeMcaError_anti_threshold (t : ℕ) {d A A' s : ℕ} (hA : A' ≤ A) :
+    interleavedEqualDegreeMcaError domain t d A s ≤
+      interleavedEqualDegreeMcaError domain t d A' s := by
+  classical
+  refine iSup_le fun w ↦ le_iSup_of_le w (ENNReal.ofReal_le_ofReal ?_)
+  refine div_le_div_of_nonneg_right ?_ (by positivity)
+  refine Nat.cast_le.mpr (Finset.card_le_card fun c hc ↦ ?_)
+  rw [Finset.mem_filter] at hc ⊢
+  obtain ⟨P, hP⟩ := hc.2
+  exact ⟨hc.1, P, hP.anti_threshold domain hA⟩
 
 end Error
 
@@ -212,8 +239,8 @@ section Reduction
 open Classical in
 /-- Challenges `θ` fixed by a pair of tuples `F₀, G₀` of degree at most `d`.
 
-Some row of `G₀` has degree exactly `d`, and every row satisfies
-`[X^d] F₀ r + θ [X^d] G₀ r = 0`.
+Some row of `G₀` has degree exactly `d`.
+Every row satisfies `[X^d] F₀ r + θ [X^d] G₀ r = 0`.
 The pair agrees with `(f, g)` in every row on at least `L` common points. -/
 noncomputable def badInterleavedEqualDegreeChallenges [Fintype F] (domain : ι ↪ F)
     (f g : Fin t → ι → F) (d L : ℕ) : Finset F :=
@@ -230,13 +257,19 @@ theorem mem_badInterleavedEqualDegreeChallenges [Fintype F] (domain : ι ↪ F)
         L ≤ #(interleavedCommonAgreementSet domain f g F₀ G₀) := by
   simp [badInterleavedEqualDegreeChallenges]
 
-/-- An exceptional tuple is interleaved affine exceptional for the rows `(g r, f r + θ g r)`,
-or `θ` is bad at common agreement `A - s`, with the subtraction in `ℕ`. -/
-theorem IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_mem [Fintype F]
+/-- An exceptional tuple is affine exceptional, or a pair of tuples of degree `d` fixes `θ`.
+
+The affine alternative is for the rows `(g r, f r + θ g r)`.
+The pair `F₀, G₀` has rows of degree at most `d`, and some row of `G₀` has degree `d`.
+Every row satisfies `[X^d] F₀ r + θ [X^d] G₀ r = 0`.
+It agrees with `(f, g)` in every row on at least `A - s` points, with the subtraction in `ℕ`. -/
+theorem IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_exists
     {domain : ι ↪ F} {f g : Fin t → ι → F} {d A s : ℕ} {θ α β : F} {P : Fin t → F[X]}
     (h : IsInterleavedEqualDegreeExceptional domain f g d A s θ α β P) :
     IsInterleavedAffineExceptional domain g (fun r i ↦ f r i + θ * g r i) d A s α β P ∨
-      θ ∈ badInterleavedEqualDegreeChallenges domain f g d (A - s) := by
+      ∃ F₀ G₀ : Fin t → F[X], (∀ r, (F₀ r).degree ≤ d) ∧ (∀ r, (G₀ r).degree ≤ d) ∧
+        (∃ r, (G₀ r).degree = d) ∧ (∀ r, (F₀ r).coeff d + θ * (G₀ r).coeff d = 0) ∧
+        A - s ≤ #(interleavedCommonAgreementSet domain f g F₀ G₀) := by
   classical
   obtain ⟨hP, hA, hexc⟩ := h
   rw [interleavedEqualDegreeAgreementSet_eq_interleavedAgreementSet] at hA
@@ -275,7 +308,6 @@ theorem IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_me
       (fun r ↦ by rw [hw.1 r]; ring)
     rw [hloss_eq] at this
     exact absurd hw.2 (not_le.mpr this)
-  rw [mem_badInterleavedEqualDegreeChallenges]
   refine ⟨fun r ↦ V r - C θ * U r, U, hFdeg, hU, hUd, fun r ↦ ?_, ?_⟩
   · simp [coeff_sub, coeff_C_mul, coeff_eq_zero_of_degree_lt (hV r)]
   · refine (Nat.sub_le_sub_left hw.2 A).trans ((Nat.sub_le_sub_right hA _).trans
@@ -290,10 +322,10 @@ theorem IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_me
 
 /-- The bad-challenge count satisfies `#B · (L² - nd) ≤ n · (L - d)`, with subtractions in `ℕ`.
 
-Here `n` is the domain size and `B` is the set of challenges `θ` with a pair of tuples
-`F₀, G₀` of degree at most `d`.
-Some row of `G₀` has degree exactly `d`, and every row satisfies
-`[X^d] F₀ r + θ [X^d] G₀ r = 0`.
+Here `n` is the domain size.
+The set `B` holds the challenges `θ` with a pair of tuples `F₀, G₀` of degree at most `d`.
+Some row of `G₀` has degree exactly `d`.
+Every row satisfies `[X^d] F₀ r + θ [X^d] G₀ r = 0`.
 The pair agrees with `(f, g)` in every row on at least `L` common points.
 The pair fixes `θ`, so distinct bad values give distinct pairs. -/
 theorem card_badInterleavedEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F)
@@ -322,9 +354,9 @@ end Reduction
 
 section Bound
 
-/-- If `nd < (A - 1)²`, the interleaved equal-degree error at shared loss one is at most the
-interleaved affine error plus `ℓ₀/q`.
+/-- The interleaved equal-degree error at shared loss one is at most the affine one plus `ℓ₀/q`.
 
+Assume `nd < (A - 1)²`.
 The number `t` of rows is arbitrary, `n` is the domain size, and `q` is the field size.
 Here `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the rounded-down Johnson bound. -/
 theorem interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add [Fintype F]
@@ -362,9 +394,10 @@ theorem interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add [Fintype
         P} : Finset (F × F × F)) ⊆ X₁ ∪ X₂ := by
       intro c hc
       obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hc).2
-      rcases hP.isInterleavedAffineExceptional_or_mem with h | h
+      rcases hP.isInterleavedAffineExceptional_or_exists with h | h
       · exact Finset.mem_union_left _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, h⟩)
-      · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h⟩)
+      · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+          (mem_badInterleavedEqualDegreeChallenges ..).mpr h⟩)
     have hX₁ : (#X₁ : ℝ) ≤ q ^ 3 * E := by
       have hsum : #X₁ = ∑ θ : F, #{c : F × F | ∃ P, IsInterleavedAffineExceptional domain g
           (fun r i ↦ f r i + θ * g r i) d A 1 c.1 c.2 P} := by
@@ -434,8 +467,9 @@ theorem interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add [Fintype
     rw [hz]
     exact zero_le
 
-/-- With one point of shared loss, the interleaved equal-degree error is at most
-`(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
+/-- The interleaved equal-degree error is at most `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
+
+The shared loss is one.
 
 The number `t` of rows is arbitrary.
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
@@ -454,8 +488,7 @@ theorem interleavedEqualDegreeMcaError_le [Fintype F] (domain : ι ↪ F) (t : �
             Fintype.card ι * d)⌋₊ : ℕ) : ℝ)) / Fintype.card F +
         2 ^ 14 * (Fintype.card ι : ℝ) ^ 2 /
           (((d : ℝ) / Fintype.card ι) ^ 3 * η ^ 10 * (Fintype.card F : ℝ) ^ 2)) := by
-  have hJ := mul_lt_sq_ceil_sqrt_add_mul_sub_one hd hdn hη
-    (hη1.trans_le (by linarith [Real.sqrt_nonneg ((d : ℝ) / Fintype.card ι)])) hn
+  have hJ := mul_lt_sq_ceil_sqrt_add_mul_sub_one hd hdn hη hn
   refine (interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add domain t hJ).trans ?_
   refine (add_le_add_left (interleavedAffineMcaError_le domain t hd hdn hη hη1 hn) _).trans ?_
   rw [← ENNReal.ofReal_add (by positivity) (by positivity)]
@@ -464,5 +497,75 @@ theorem interleavedEqualDegreeMcaError_le [Fintype F] (domain : ι ↪ F) (t : �
   ring
 
 end Bound
+
+section OneRow
+
+/-- An exceptional candidate is affine exceptional for `(g, f + θ g)`, or `θ` is bad.
+
+Bad means that some pair `F₀, G₀` with `deg G₀ = d` satisfies `[X^d] F₀ + θ [X^d] G₀ = 0`.
+That pair agrees with `(f, g)` on at least `A - s` points, with the subtraction in `ℕ`. -/
+theorem IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq
+    {domain : ι ↪ F} {f g : ι → F}
+    {d A s : ℕ} {θ α β : F} {P : F[X]} (h : IsEqualDegreeExceptional domain f g d A s θ α β P) :
+    IsAffineExceptional domain g (fun i ↦ f i + θ * g i) d A s α β P ∨
+      ∃ F₀ G₀ : F[X], F₀.degree ≤ d ∧ G₀.degree = d ∧ F₀.coeff d + θ * G₀.coeff d = 0 ∧
+        A - s ≤ #(commonPolynomialAgreementSet domain f g F₀ G₀) := by
+  have h₁ := ((isInterleavedEqualDegreeExceptional_one_iff domain (fun _ ↦ f) (fun _ ↦ g)
+    d A s θ α β fun _ ↦ P).mpr h).isInterleavedAffineExceptional_or_exists
+  rcases h₁ with h₁ | h₁
+  · exact Or.inl ((isInterleavedAffineExceptional_one_iff domain _ _ d A s α β _).mp h₁)
+  · obtain ⟨F₀, G₀, hF, hG, ⟨r, hr⟩, hc, hL⟩ := h₁
+    obtain rfl : r = 0 := Subsingleton.elim r 0
+    refine Or.inr ⟨F₀ 0, G₀ 0, hF 0, hr, hc 0, hL.trans (Finset.card_le_card fun i hi ↦ ?_)⟩
+    rw [mem_interleavedCommonAgreementSet] at hi
+    exact (mem_commonPolynomialAgreementSet ..).mpr (hi 0)
+
+open Classical in
+/-- Challenges `θ` fixed by a pair `F₀, G₀` with `deg F₀ ≤ d` and `deg G₀ = d`.
+
+The pair satisfies `[X^d] F₀ + θ [X^d] G₀ = 0`.
+It has at least `L` common agreements with `(f, g)`. -/
+noncomputable def badEqualDegreeChallenges [Fintype F] (domain : ι ↪ F) (f g : ι → F)
+    (d L : ℕ) : Finset F :=
+  {θ : F | ∃ F₀ G₀ : F[X], F₀.degree ≤ d ∧ G₀.degree = d ∧
+    F₀.coeff d + θ * G₀.coeff d = 0 ∧
+    L ≤ #(commonPolynomialAgreementSet domain f g F₀ G₀)}
+
+/-- The bad-challenge count `B` satisfies `#B · (L² - nd) ≤ n · (L - d)`.
+
+Here `n` is the domain size and both subtractions are in `ℕ`.
+A bad `θ` comes with a pair `F₀, G₀` of degree at most `d`, with `deg G₀ = d`.
+The pair agrees with `(f, g)` on at least `L` points, and `[X^d] F₀ + θ [X^d] G₀ = 0`. -/
+theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
+    (d L : ℕ) :
+    #(badEqualDegreeChallenges domain f g d L) *
+      (L * L - Fintype.card ι * d) ≤ Fintype.card ι * (L - d) := by
+  classical
+  refine (Nat.mul_le_mul_right _ (Finset.card_le_card fun θ hθ ↦ ?_)).trans
+    (card_badInterleavedEqualDegreeChallenges_mul_le domain (fun _ : Fin 1 ↦ f)
+      (fun _ ↦ g) d L)
+  rw [badEqualDegreeChallenges, Finset.mem_filter] at hθ
+  obtain ⟨-, F₀, G₀, hF, hG, hc, hL⟩ := hθ
+  rw [mem_badInterleavedEqualDegreeChallenges]
+  refine ⟨fun _ ↦ F₀, fun _ ↦ G₀, fun _ ↦ hF, fun _ ↦ hG.le, ⟨0, hG⟩, fun _ ↦ hc,
+    hL.trans (Finset.card_le_card fun i hi ↦ ?_)⟩
+  rw [mem_interleavedCommonAgreementSet]
+  exact fun _ ↦ (mem_commonPolynomialAgreementSet ..).mp hi
+
+/-- The equal-degree error at loss one is at most the affine error plus `ℓ₀/q`.
+
+Assume `nd < (A - 1)²`.
+Here `n` is the domain size and `q` is the field size.
+The rounded-down Johnson bound is `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. -/
+theorem equalDegreeMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F) {d A : ℕ}
+    (hJ : Fintype.card ι * d < (A - 1) ^ 2) :
+    equalDegreeMcaError domain d A 1 ≤ affineMcaError domain d A 1 +
+      ENNReal.ofReal
+        (((⌊(Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) /
+          (((A : ℝ) - 1) ^ 2 - Fintype.card ι * d)⌋₊ : ℕ) : ℝ) / Fintype.card F) := by
+  rw [← interleavedEqualDegreeMcaError_one, ← interleavedAffineMcaError_one]
+  exact interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add domain 1 hJ
+
+end OneRow
 
 end ReedSolomon

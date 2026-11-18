@@ -91,9 +91,15 @@ example : ⌊(100 : ℝ) * ((90 : ℝ) - 1 - 16) / (((90 : ℝ) - 1) ^ 2 - 100 *
   rw [Nat.floor_eq_iff (by norm_num)]
   norm_num
 
+-- The paper's example in Section 5: `n = 2²⁰`, `d = 2¹⁸`, `A = 576717` give `ℓ₀ = 5`.
+example : ⌊((2 ^ 20 : ℕ) : ℝ) * ((576717 : ℝ) - 1 - (2 ^ 18 : ℕ)) /
+    (((576717 : ℝ) - 1) ^ 2 - (2 ^ 20 : ℕ) * (2 ^ 18 : ℕ))⌋₊ = 5 := by
+  rw [Nat.floor_eq_iff (by norm_num)]
+  norm_num
+
 -- The Johnson condition `nd < (A - 1)²` at these parameters: `1600 < 89²`.
 example : 100 * 16 < (⌈(√((16 : ℕ) / ((100 : ℕ) : ℝ)) + 1 / 2) * (100 : ℕ)⌉₊ - 1) ^ 2 :=
-  mul_lt_sq_ceil_sqrt_add_mul_sub_one (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  mul_lt_sq_ceil_sqrt_add_mul_sub_one (by norm_num) (by norm_num) (by norm_num)
     (by rw [show ((16 : ℕ) : ℝ) / ((100 : ℕ) : ℝ) = 16 / 100 by norm_num]; norm_num)
 
 private noncomputable instance : Fintype (GaloisField 2 64) := Fintype.ofFinite _
@@ -166,10 +172,10 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.card_badInterleavedEqualDegreeChallenges_mul_le
 
-/-- info: 'ReedSolomon.IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_mem'
+/-- info: 'ReedSolomon.IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_exists'
 depends on axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_mem
+#print axioms IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_exists
 
 /-- info: 'ReedSolomon.interleavedEqualDegreeMcaError_one' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -205,3 +211,43 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.mul_lt_sq_ceil_sqrt_add_mul_sub_one
+
+/-- info: 'ReedSolomon.mem_interleavedEqualDegreeAgreementSet' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.mem_interleavedEqualDegreeAgreementSet
+
+/-- info: 'ReedSolomon.mem_interleavedEqualDegreeAgreementLoss' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.mem_interleavedEqualDegreeAgreementLoss
+
+/-- info: 'ReedSolomon.mem_badInterleavedEqualDegreeChallenges' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.mem_badInterleavedEqualDegreeChallenges
+
+/-- info: 'ReedSolomon.mem_interleavedCommonAgreementSet' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.mem_interleavedCommonAgreementSet
+
+/-- info: 'ReedSolomon.interleavedEqualDegreeMcaError_anti_threshold' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.interleavedEqualDegreeMcaError_anti_threshold
+
+/-- info: 'ReedSolomon.equalDegreeMcaError_le_affineMcaError_add' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.equalDegreeMcaError_le_affineMcaError_add
+
+/-- info: 'ReedSolomon.card_badEqualDegreeChallenges_mul_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_badEqualDegreeChallenges_mul_le
+
+/-- info: 'ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq' depends on
+axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq

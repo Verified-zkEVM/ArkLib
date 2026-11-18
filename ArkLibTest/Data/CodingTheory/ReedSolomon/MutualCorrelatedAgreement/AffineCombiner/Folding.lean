@@ -6,6 +6,7 @@ Authors: Thomas Coratger
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Folding
 import Mathlib.Algebra.Field.ZMod
+import Mathlib.FieldTheory.Finite.GaloisField
 
 /-! # Acceptance cases for folding many words with equal-degree combiners -/
 
@@ -27,10 +28,10 @@ example {F ι : Type*} [Field F] (domain : ι ↪ F) (c : Fin 1 → F × F × F)
 -- With one round, a bad folding is an exceptional pair for the single round.
 example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] (domain : ι ↪ F) (d A : ℕ)
     (c : Fin 1 → F × F × F) (f : Fin (2 ^ 1) → ι → F) :
-    IsFoldingExceptional domain d A 1 c f ↔
+    HasBadFoldingRound domain d A 1 c f ↔
       ∃ P, IsInterleavedEqualDegreeExceptional domain (evenRows f) (oddRows f) (d + 1) A 1
         (c 0).1 (c 0).2.1 (c 0).2.2 P := by
-  simp [IsFoldingExceptional]
+  simp [HasBadFoldingRound]
 
 -- With one round, the polynomial fold is the equal-degree combination of `P 0` and `P 1`.
 example {F : Type*} [Field F] (c : Fin 1 → F × F × F) (P : Fin (2 ^ 1) → F[X]) :
@@ -56,9 +57,9 @@ example : foldWords fullDomain 2 ![(1, 2, 0), (1, 2, 0)] (fun k _ ↦ (k : ZMod 
 
 -- The zero words are never bad for one round at threshold `2` on `𝔽₅` from degree `0`.
 -- A candidate of degree at most one with two zeros vanishes, so zero witnesses lose nothing.
-private theorem zero_not_isFoldingExceptional (c : Fin 1 → ZMod 5 × ZMod 5 × ZMod 5) :
-    ¬ IsFoldingExceptional fullDomain 0 2 1 c 0 := by
-  simp only [IsFoldingExceptional, or_false]
+private theorem zero_not_hasBadFoldingRound (c : Fin 1 → ZMod 5 × ZMod 5 × ZMod 5) :
+    ¬ HasBadFoldingRound fullDomain 0 2 1 c 0 := by
+  simp only [HasBadFoldingRound, or_false]
   rintro ⟨P, hP, hA, hexc⟩
   have hzero (k : Fin (2 ^ 0)) : P k = 0 := by
     obtain ⟨S, hS, hcard⟩ := Finset.exists_subset_card_eq hA
@@ -77,16 +78,16 @@ example (c : Fin 1 → ZMod 5 × ZMod 5 × ZMod 5) :
       foldPolynomials 1 c W = 0 ∧
       #{i ∈ Finset.univ | ∃ k, (W k).eval (fullDomain i) ≠ (0 : Fin (2 ^ 1) → ZMod 5 → ZMod 5) k i}
         ≤ 1 :=
-  exists_foldPolynomials_eq_of_not_isFoldingExceptional fullDomain
-    (zero_not_isFoldingExceptional c) (by simp) (fun i _ ↦ by
+  exists_foldPolynomials_eq_of_not_hasBadFoldingRound fullDomain
+    (zero_not_hasBadFoldingRound c) (by simp) (fun i _ ↦ by
       simp [foldWords, foldRoundWords, equalDegreeWord, evenRows, oddRows])
     (by simp [ZMod.card])
 
 -- A caller may supply its own decidable equality on the field.
 example {F ι : Type*} [Field F] [Fintype F] [inst : DecidableEq F] [Fintype ι]
     (domain : ι ↪ F) (r d A : ℕ) :
-    @foldingMcaError F _ inst ι _ _ domain r d A ≤ 1 :=
-  foldingMcaError_le_one domain r d A
+    @badFoldingRoundError F _ inst ι _ _ domain r d A ≤ 1 :=
+  badFoldingRoundError_le_one domain r d A
 
 -- One round with error `ε` gives the folding bound `ε`.
 example {F ι : Type*} [Field F] [Fintype F] [DecidableEq F] [Fintype ι] (domain : ι ↪ F)
@@ -97,19 +98,110 @@ example {F ι : Type*} [Field F] [Fintype F] [DecidableEq F] [Fintype ι] (domai
       obtain rfl : j = 0 := by omega
       exact le_rfl
 
+private noncomputable instance : Fintype (GaloisField 2 64) := Fintype.ofFinite _
+
+private theorem field_card : Fintype.card (GaloisField 2 64) = 2 ^ 64 := by
+  rw [← Nat.card_eq_fintype_card, GaloisField.card 2 64 (by norm_num)]
+
+/-- A 100-point domain in the field with `2^64` elements. -/
+private noncomputable def largeDomain : Fin 100 ↪ GaloisField 2 64 :=
+  Classical.choice (Function.Embedding.nonempty_of_card_le
+    (by rw [Fintype.card_fin, field_card]; norm_num))
+
+private theorem card_fin_hundred : ((Fintype.card (Fin 100) : ℕ) : ℝ) = 100 := by simp
+
+open Classical in
+-- Round one of the client below: two pairs folded to degree `16`.
+-- At `η = 1/2` the threshold is `⌈(2/5 + 1/2) 100⌉ = 90` and `ℓ₀ = ⌊7300/6321⌋ = 1`.
+-- The threshold `92` only lowers the error.
+private theorem round_one_error_le :
+    interleavedEqualDegreeMcaError largeDomain 2 16 92 1 ≤ ENNReal.ofReal (10 / 2 ^ 64) := by
+  refine (interleavedEqualDegreeMcaError_anti_threshold largeDomain 2 (by norm_num :
+    90 ≤ 92)).trans ?_
+  have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
+    rw [card_fin_hundred, Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
+    norm_num
+  have h := interleavedEqualDegreeMcaError_le largeDomain 2 (d := 16) (η := 1 / 2)
+    (by norm_num) (by simp) (by norm_num) (by rw [hsqrt]; norm_num)
+    (by rw [card_fin_hundred]; norm_num)
+  have hA : ⌈(2 / 5 + 1 / 2) * ((Fintype.card (Fin 100) : ℕ) : ℝ)⌉₊ = 90 := by
+    rw [card_fin_hundred]
+    norm_num
+  rw [hsqrt, hA, card_fin_hundred, field_card] at h
+  have hℓ : ⌊(100 : ℝ) * (((90 : ℕ) : ℝ) - 1 - ((16 : ℕ) : ℝ)) /
+      ((((90 : ℕ) : ℝ) - 1) ^ 2 - 100 * ((16 : ℕ) : ℝ))⌋₊ = 1 := by
+    rw [Nat.floor_eq_iff (by norm_num)]
+    norm_num
+  rw [hℓ] at h
+  refine h.trans (ENNReal.ofReal_le_ofReal ?_)
+  norm_num
+
+open Classical in
+-- Round two of the client below: one pair folded to degree `17`.
+-- With `√0.17 ∈ (0.41, 0.42]` and `η = 1/2`, the threshold is `92` and `ℓ₀ = ⌊7400/6581⌋ = 1`.
+private theorem round_two_error_le :
+    interleavedEqualDegreeMcaError largeDomain 1 17 92 1 ≤ ENNReal.ofReal (10 / 2 ^ 64) := by
+  set s := √((17 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) with hs
+  have hs' : s = √(17 / 100) := by rw [hs, card_fin_hundred]; norm_num
+  have hlo : 41 / 100 < s := by
+    rw [hs', Real.lt_sqrt (by norm_num)]
+    norm_num
+  have hhi : s ≤ 42 / 100 := by
+    rw [hs', Real.sqrt_le_left (by norm_num)]
+    norm_num
+  have h := interleavedEqualDegreeMcaError_le largeDomain 1 (d := 17) (η := 1 / 2)
+    (by norm_num) (by simp) (by norm_num) (by rw [← hs]; linarith)
+    (by rw [card_fin_hundred]; norm_num)
+  have hA : ⌈(s + 1 / 2) * ((Fintype.card (Fin 100) : ℕ) : ℝ)⌉₊ = 92 := by
+    rw [card_fin_hundred, Nat.ceil_eq_iff (by norm_num)]
+    constructor <;> push_cast <;> linarith
+  rw [hA, card_fin_hundred, field_card] at h
+  have hℓ : ⌊(100 : ℝ) * (((92 : ℕ) : ℝ) - 1 - ((17 : ℕ) : ℝ)) /
+      ((((92 : ℕ) : ℝ) - 1) ^ 2 - 100 * ((17 : ℕ) : ℝ))⌋₊ = 1 := by
+    rw [Nat.floor_eq_iff (by norm_num)]
+    norm_num
+  rw [hℓ] at h
+  refine h.trans (ENNReal.ofReal_le_ofReal ?_)
+  norm_num
+
+open Classical in
+-- Four words over the field with `2⁶⁴` elements, folded in two rounds from degree `15`.
+-- Round one has two pairs at degree `16`, round two one pair at degree `17`.
+-- Both use the threshold `92`, so the failure probability is at most `2 ε = 20 / 2⁶⁴`.
+example : foldingMcaError largeDomain 2 15 92 ≤ 2 * ENNReal.ofReal (10 / 2 ^ 64) := by
+  refine foldingMcaError_le_mul largeDomain fun j hj ↦ ?_
+  interval_cases j
+  · exact round_one_error_le
+  · exact round_two_error_le
+
 -- A sequential union bound on pairs of challenges in `Fin 2`.
 example : #{c : Fin 2 → Fin 2 | c 0 = 0 ∨ Fin.tail c 0 = 0} ≤ 1 * 2 + 2 :=
   (Fin.card_filter_or_tail_le (fun a : Fin 2 ↦ a = 0) (fun _ c ↦ c 0 = 0)).trans (by decide)
 
-/-- info: 'ReedSolomon.exists_foldPolynomials_eq_of_not_isFoldingExceptional' depends on axioms:
+/-- info: 'ReedSolomon.exists_foldPolynomials_eq_of_not_hasBadFoldingRound' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.exists_foldPolynomials_eq_of_not_isFoldingExceptional
+#print axioms ReedSolomon.exists_foldPolynomials_eq_of_not_hasBadFoldingRound
+
+/-- info: 'ReedSolomon.badFoldingRoundError_le_mul' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.badFoldingRoundError_le_mul
 
 /-- info: 'ReedSolomon.foldingMcaError_le_mul' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.foldingMcaError_le_mul
+
+/-- info: 'ReedSolomon.foldingMcaError_le_badFoldingRoundError' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.foldingMcaError_le_badFoldingRoundError
+
+/-- info: 'ReedSolomon.IsFoldingExceptional.hasBadFoldingRound' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.IsFoldingExceptional.hasBadFoldingRound
 
 /-- info: 'ReedSolomon.le_foldingMcaError' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -120,6 +212,16 @@ example : #{c : Fin 2 → Fin 2 | c 0 = 0 ∨ Fin.tail c 0 = 0} ≤ 1 * 2 + 2 :=
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.foldingMcaError_le_one
+
+/-- info: 'ReedSolomon.le_badFoldingRoundError' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.le_badFoldingRoundError
+
+/-- info: 'ReedSolomon.badFoldingRoundError_le_one' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.badFoldingRoundError_le_one
 
 /-- info: 'ReedSolomon.evenRows_interleaveRows' depends on axioms:
 [propext, Quot.sound] -/

@@ -6,6 +6,8 @@ Authors: Thomas Coratger
 
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
+import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FoldingRound
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for the equal-degree combiner -/

@@ -56,13 +56,8 @@ open Classical in
 -- at most `15`, except with probability below `2⁻⁶⁰`.
 example (f : Fin (2 ^ 1) → Fin 100 → GaloisField 2 64) :
     Pr{let c ← $ᵗ (Fin 1 → GaloisField 2 64 × GaloisField 2 64 × GaloisField 2 64)}[
-      ∃ P : (GaloisField 2 64)[X], P.degree ≤ ↑(15 + 1) ∧ ∃ S : Finset (Fin 100),
-        (∀ i ∈ S, P.eval (largeDomain i) = foldWords largeDomain 1 c f i) ∧ 90 + 1 ≤ #S ∧
-        ¬ ∃ W : Fin (2 ^ 1) → (GaloisField 2 64)[X], (∀ k, (W k).degree ≤ (15 : ℕ)) ∧
-          foldPolynomials 1 c W = P ∧
-          #{i ∈ S | ∃ k, (W k).eval (largeDomain i) ≠ f k i} ≤ 1] <
-      (1 : ENNReal) / 2 ^ 60 := by
-  refine (prob_exists_not_exists_foldPolynomials_eq_le_mul largeDomain
+      IsFoldingExceptional largeDomain 15 90 1 c f] < (1 : ENNReal) / 2 ^ 60 := by
+  refine (prob_isFoldingExceptional_le_mul largeDomain
     (ε := ENNReal.ofReal (9 / 2 ^ 64 + 2 ^ 22 * 5 ^ 10 / 2 ^ 128)) (fun j hj ↦ ?_) f).trans_lt ?_
   · obtain rfl : j = 0 := by omega
     exact onePair_error_le
@@ -72,30 +67,30 @@ example (f : Fin (2 ^ 1) → Fin 100 → GaloisField 2 64) :
           (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
       _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
 
-/-- info: 'ReedSolomon.prob_exists_not_exists_foldPolynomials_eq_le_mul' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.prob_exists_not_exists_foldPolynomials_eq_le_mul
-
 /-- info: 'ReedSolomon.prob_isFoldingExceptional_le_mul' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.prob_isFoldingExceptional_le_mul
 
-/-- info: 'ReedSolomon.prob_isFoldingExceptional_le' depends on axioms:
+/-- info: 'ReedSolomon.prob_hasBadFoldingRound_le_mul' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.prob_isFoldingExceptional_le
+#print axioms ReedSolomon.prob_hasBadFoldingRound_le_mul
 
-/-- info: 'ReedSolomon.foldingMcaError_eq_iSup_prob' depends on axioms:
+/-- info: 'ReedSolomon.prob_hasBadFoldingRound_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.foldingMcaError_eq_iSup_prob
+#print axioms ReedSolomon.prob_hasBadFoldingRound_le
 
-/-- info: 'ReedSolomon.prob_isFoldingExceptional_eq' depends on axioms:
+/-- info: 'ReedSolomon.badFoldingRoundError_eq_iSup_prob' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.prob_isFoldingExceptional_eq
+#print axioms ReedSolomon.badFoldingRoundError_eq_iSup_prob
+
+/-- info: 'ReedSolomon.prob_hasBadFoldingRound_eq' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.prob_hasBadFoldingRound_eq
 
 /-- info: 'ReedSolomon.interleavedEqualDegreeMcaError_eq_iSup_prob' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -111,3 +106,18 @@ example (f : Fin (2 ^ 1) → Fin 100 → GaloisField 2 64) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.prob_isInterleavedEqualDegreeExceptional_eq
+
+/-- info: 'ReedSolomon.prob_isFoldingExceptional_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.prob_isFoldingExceptional_le
+
+/-- info: 'ReedSolomon.foldingMcaError_eq_iSup_prob' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.foldingMcaError_eq_iSup_prob
+
+/-- info: 'ReedSolomon.prob_isFoldingExceptional_eq' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.prob_isFoldingExceptional_eq

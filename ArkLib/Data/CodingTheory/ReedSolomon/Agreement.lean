@@ -153,8 +153,7 @@ def interleavedCommonAgreementSet {F : Type*} [Semiring F] [DecidableEq F] {ι �
       ∀ r, (F₀ r).eval (domain i) = f r i ∧ (G₀ r).eval (domain i) = g r i := by
   simp [interleavedCommonAgreementSet]
 
-/-- Two distinct pairs of polynomial tuples of degree at most `d` share at most `d` common
-agreement points.
+/-- Two distinct pairs of tuples of degree at most `d` share at most `d` common agreements.
 
 Some row differs, and the shared common set lies in the common set of that row. -/
 theorem card_inter_interleavedCommonAgreementSet_le
@@ -178,10 +177,10 @@ theorem card_inter_interleavedCommonAgreementSet_le
 
 /-- At the threshold `A = ⌈(√ρ + η) n⌉`, the Johnson condition `n d < (A - 1)²` holds.
 
-Here `1 ≤ d < n`, `ρ = d / n`, `0 < η < 1`, and `n η² ≥ 4 / ρ`; the subtraction is in `ℕ`.
+Here `1 ≤ d < n`, `ρ = d / n`, `0 < η`, and `n η² ≥ 4 / ρ`; the subtraction is in `ℕ`.
 The last condition gives `n η > 1`, so `A - 1 > √ρ n = √(n d)`. -/
 theorem mul_lt_sq_ceil_sqrt_add_mul_sub_one {n d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < n)
-    (hη : 0 < η) (hη1 : η < 1) (hn : 4 / ((d : ℝ) / n) ≤ n * η ^ 2) :
+    (hη : 0 < η) (hn : 4 / ((d : ℝ) / n) ≤ n * η ^ 2) :
     n * d < (⌈(√((d : ℝ) / n) + η) * n⌉₊ - 1) ^ 2 := by
   set A := ⌈(√((d : ℝ) / n) + η) * n⌉₊
   have hn0 : (0 : ℝ) < n := by exact_mod_cast Nat.zero_lt_of_lt hdn
@@ -190,7 +189,11 @@ theorem mul_lt_sq_ceil_sqrt_add_mul_sub_one {n d : ℕ} {η : ℝ} (hd : 1 ≤ d
   have h4 : (4 : ℝ) ≤ 4 / ((d : ℝ) / n) := by
     rw [le_div_iff₀ hρ0]
     linarith
-  have hηn : 1 < η * n := by nlinarith
+  have hηn : 1 < η * n := by
+    rcases lt_or_ge η 1 with hη1 | hη1
+    · nlinarith
+    · have : (2 : ℝ) ≤ n := by exact_mod_cast (show 2 ≤ n by omega)
+      nlinarith
   have hAle : (√((d : ℝ) / n) + η) * n ≤ A := Nat.le_ceil _
   have hA1 : 1 ≤ A := by
     have : (0 : ℝ) < A := by nlinarith [Real.sqrt_nonneg ((d : ℝ) / n)]
