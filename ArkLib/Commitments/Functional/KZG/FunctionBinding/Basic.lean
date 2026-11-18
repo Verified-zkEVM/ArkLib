@@ -414,7 +414,7 @@ lemma function_binding_game_ext_support_verify_all {n L : ℕ} {AuxState : Type}
 include g₁ g₂ pairing in
 /-- A supported extended function-binding violation maps to an ARSDH-winning output. -/
 lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Type}
-    (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hn : 1 ≤ n) (hp : p ≥ n + 2) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)
     {τ : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2} {cm : G₁}
     {queryOf responseOf : Fin L → ZMod p} {accepts : Fin L → Bool} {proofs : Fin L → G₁}
@@ -426,11 +426,8 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
       (τ, srs, cm, queryOf, responseOf, accepts, proofs) := by
   have hsrs : srs = Groups.PowerSrs.generate n τ (g₂ := g₂) (g₁ := g₁) := by
     exact function_binding_game_ext_support_srs (pairing := pairing) adversary hgame
-  have hgen : srs.1[0] ≠ 1 := by
-    rw [hsrs]
-    simp only [Groups.PowerSrs.generate, Groups.PowerSrs.tower, Nat.reduceAdd, Vector.getElem_ofFn,
-      pow_zero, pow_one, ne_eq]
-    exact hg₁
+  have hg₁ : g₁ ≠ 1 := ne_one_of_pairing_ne_zero pairing hpair
+  have hgen : srs.1[0] ≠ 1 := Groups.PowerSrs.generate_ne_one_of_generator_ne_one hsrs hg₁
   have hverify_all : ∀ i : Fin L, accepts i = true →
       KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
         srs.2 cm (proofs i) (queryOf i) (responseOf i) := by
@@ -444,7 +441,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
       obtain ⟨i₁, i₂⟩ := c
       simp only [Option.getD_some]
       exact function_binding_conflicting_evaluations_branch_maps_to_arsdh
-        (pairing := pairing) hn hp hpair hsrs hgen hverify_all hFBcond hfc
+        (pairing := pairing) hn hp hpair hsrs hverify_all hFBcond hfc
   | none =>
       cases hfs : List.findSome?
         (fun i ↦ if srs.1[0] ^ (queryOf i).val = srs.1[1] then some (queryOf i) else none)
@@ -454,7 +451,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
           have hcond : srs.1[0] ^ α₁.val = srs.1[1]'(Nat.lt_add_of_pos_left hn) := by
             exact find_query_with_srs_power_success hn srs queryOf hfs
           exact function_binding_query_eq_tau_branch_maps_to_arsdh
-            (g₁ := g₁) (g₂ := g₂) hn hp hg₁ hsrs hgen hcond
+            (g₁ := g₁) (g₂ := g₂) hn hp hg₁ hsrs hcond
       | none =>
           -- The interpolation has degree ≥ n + 1, since otherwise its first n + 1
           -- coefficients would witness a degree-`n` polynomial fitting all pairs,
@@ -467,8 +464,6 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
           have hRdeg : (↑(n + 1) : WithBot ℕ) ≤
               (CLagrange.interpolate R queryOf responseOf).degree := by
             exact interpolate_degree_ge_of_no_data R hRinj hRnoData
-          have hRcard : n + 1 < R.card := by
-            exact finset_card_gt_of_interpolate_degree_ge R queryOf responseOf hRinj hRdeg
           cases hfa : findA R (n + 1) queryOf responseOf with
           | some a =>
               have hres_a : some a = findA R (n + 1) queryOf responseOf := hfa.symm
@@ -482,7 +477,7 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
                   have hSinj : Set.InjOn queryOf ↑a' := hAinj.mono hSsub
                   simp only [hfs', Option.bind, Option.getD_some]
                   exact function_binding_interpolation_branch_maps_to_arsdh
-                    (pairing := pairing) hn hpair hsrs hgen hverify_all hFBcond hSinj hfs' hfs
+                    (pairing := pairing) hn hpair hsrs hverify_all hFBcond hSinj hfs' hfs
               | none =>
                   -- `findS` failed: contradicts `find_s_successful`.
                   exfalso
@@ -491,21 +486,21 @@ lemma function_binding_cond_ext_output_maps_to_arsdh {n L : ℕ} {AuxState : Typ
                   have hsome :=
                     find_s_successful (g₁ := g₁) n τ cm a queryOf responseOf srs hsrs
                       hgen
-                      (by exact_mod_cast hAdeg) hAinj hn
+                      (by exact_mod_cast hAdeg) hAinj
                   rw [hfs'] at hsome
                   simp at hsome
           | none =>
               -- `findA` failed: contradicts `find_a_successful` via `hRdeg`.
               exfalso
               have hsome :=
-                find_a_successful R (n + 1) queryOf responseOf hRcard hRinj hRdeg
+                find_a_successful R (n + 1) queryOf responseOf hRinj hRdeg
               rw [hfa] at hsome
               simp at hsome
 
 include g₁ g₂ pairing in
 /-- Transition 2: FB condition implies ARSDH condition after mapping -/
 lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type}
-    (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hn : 1 ≤ n) (hp : p ≥ n + 2) (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
     Pr{let result ← (functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
@@ -515,7 +510,7 @@ lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type}
           ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] := by
   apply _root_.prEvent_mono_of_support
   intro (τ, srs, cm, queryOf, responseOf, accepts, proofs) hgame hFBcond
-  exact function_binding_cond_ext_output_maps_to_arsdh (pairing := pairing) hn hp hg₁ hpair
+  exact function_binding_cond_ext_output_maps_to_arsdh (pairing := pairing) hn hp hpair
     adversary hgame hFBcond
 
 omit [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
@@ -625,7 +620,7 @@ lemma arsdh_error_bound {n L : ℕ} {AuxState : Type}
 whose success probability upper-bounds its function-binding advantage. This reduction inequality
 holds without a hardness assumption. -/
 theorem function_binding_reduces_to_arsdh {g₁ : G₁} {g₂ : G₂}
-    (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
+    (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2)
     (hpair : pairing g₁ g₂ ≠ 0) (AuxState : Type)
     (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState) :
     Commitment.functionBindingExperiment (L := L) (init := pure ∅) (impl := unifFwdImpl unifSpec)
@@ -639,7 +634,7 @@ theorem function_binding_reduces_to_arsdh {g₁ : G₁} {g₂ : G₂}
       function_binding_game_ext_eq_function_binding_game (pairing := pairing) adversary
     _ ≤ Pr{let result ← (game_ext)}[
       ((Groups.arsdhCondition n) ∘ mapFunctionBindingToArsdh hn) result] :=
-      function_binding_cond_le_arsdh_cond (pairing := pairing) hn hp hg₁ hpair adversary
+      function_binding_cond_le_arsdh_cond (pairing := pairing) hn hp hpair adversary
     _ = Pr{let result ← (mapFunctionBindingToArsdh hn <$> game_ext)}[
       ((Groups.arsdhCondition n)) result] :=
       map_instance_drag hn adversary scheme
@@ -653,7 +648,7 @@ theorem function_binding_reduces_to_arsdh {g₁ : G₁} {g₂ : G₂}
 This follows by composing `function_binding_reduces_to_arsdh` with the assumption's bound
 on the reduction's success probability. -/
 theorem function_binding {g₁ : G₁} {g₂ : G₂}
-    (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
+    (L : ℕ) (hn : 1 ≤ n) (hp : p ≥ n + 2)
     (hpair : pairing g₁ g₂ ≠ 0)
     {Adv : Set (Groups.arsdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
     (arsdhError : ℝ≥0)
@@ -667,7 +662,7 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
       rfl AuxState (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) adversary
     ≤ arsdhError := by
   exact (function_binding_reduces_to_arsdh (pairing := pairing)
-    L hn hp hg₁ hpair AuxState adversary).trans
+    L hn hp hpair AuxState adversary).trans
     (arsdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       hn arsdhError hArsdh adversary hAdv)
 

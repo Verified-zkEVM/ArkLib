@@ -82,6 +82,7 @@ lemma regularWeight_mk {H : F[X][Y]} (hH : 0 < H.natDegree) (p : F[X][Y])
       weight (p %ₘ monicize H) H D := by
   simp [regularWeight, canonicalRepOf𝒪_mk]
 
+omit [IsDomain F] in
 /-- If a representative is already reduced, its `𝒪`-weight is its polynomial `Λ`-weight. -/
 lemma regularWeight_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)
     {p : F[X][Y]} (hp : p.degree < (monicize H).degree) (D : ℕ) :
@@ -468,32 +469,6 @@ lemma weight_C_mul_X_pow_mul_le {c : F[X]} {k : ℕ} {f H : F[X][Y]} {D b : ℕ}
   · rw [hcoeff_eq, ite_eq_right hkn] at hcoeff_ne
     exact (hcoeff_ne rfl).elim
 
-/-- The `natDegree` of `monicize H` matches that of `H` when `0 < H.natDegree`. -/
-lemma natDegree_monicize {H : F[X][Y]} (hH : 0 < H.natDegree) :
-    (monicize H).natDegree = H.natDegree := by
-  classical
-  rw [monicize, ite_eq_right (Nat.ne_of_gt hH)]
-  have hsum_deg :
-      (∑ i ∈ Finset.range H.natDegree,
-          Polynomial.C (H.coeff i * H.coeff H.natDegree ^ (H.natDegree - 1 - i)) *
-            Polynomial.X ^ i : F[X][Y]).degree < (H.natDegree : WithBot ℕ) :=
-    (Polynomial.degree_sum_le _ _).trans_lt <|
-      (Finset.sup_lt_iff (WithBot.bot_lt_coe _)).mpr <| by
-        intro i hi
-        exact (Polynomial.degree_C_mul_X_pow_le i _).trans_lt
-          (WithBot.coe_lt_coe.mpr (Finset.mem_range.mp hi))
-  rw [show (Polynomial.X ^ H.natDegree +
-        ∑ i ∈ Finset.range H.natDegree,
-          Polynomial.C (H.coeff i * H.coeff H.natDegree ^ (H.natDegree - 1 - i)) *
-            Polynomial.X ^ i : F[X][Y]) =
-      (∑ i ∈ Finset.range H.natDegree,
-          Polynomial.C (H.coeff i * H.coeff H.natDegree ^ (H.natDegree - 1 - i)) *
-            Polynomial.X ^ i) + Polynomial.X ^ H.natDegree by ring]
-  have hX_deg : (Polynomial.X ^ H.natDegree : F[X][Y]).degree = (H.natDegree : WithBot ℕ) :=
-    Polynomial.degree_X_pow _
-  apply Polynomial.natDegree_eq_of_degree_eq_some
-  rw [Polynomial.degree_add_eq_right_of_degree_lt (hsum_deg.trans_eq hX_deg.symm), hX_deg]
-
 /-- The canonical representative has `Y`-degree strictly smaller than `H`. -/
 lemma canonicalRepOf𝒪_natDegree_lt_H {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
     (canonicalRepOf𝒪 hH β).natDegree < H.natDegree := by
@@ -609,12 +584,15 @@ lemma weight_sub_leadingCoeff_mul_monicize_le {p H : F[X][Y]} {D : ℕ}
       rw [← Nat.add_mul, hsum]
     linarith [hadd_mul]
 
+omit [IsDomain F] in
 /-- Reduction modulo `monicize H` does not increase `Λ`-weight. -/
 lemma weight_modByMonic_monicize_le {H : F[X][Y]} {D : ℕ}
     (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) :
     ∀ p : F[X][Y], weight (p %ₘ monicize H) H D ≤ weight p H D
   | p => by
       classical
+      have : Nontrivial F[X] :=
+        Polynomial.Nontrivial.of_polynomial_ne (Polynomial.ne_zero_of_natDegree_gt hH)
       have hq : (monicize H).Monic := monicize_monic H hH
       unfold Polynomial.modByMonic Polynomial.divModByMonicAux
       rw [dite_eq_left hq]
@@ -648,6 +626,7 @@ lemma weight_modByMonic_monicize_le {H : F[X][Y]} {D : ℕ}
         exact le_rfl
 termination_by p => p
 
+omit [IsDomain F] in
 /-- The `𝒪`-weight of a quotient constructor is bounded by any representative's `Λ`-weight. -/
 lemma regularWeight_mk_le {H : F[X][Y]} {D : ℕ}
     (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) (p : F[X][Y]) :
@@ -674,6 +653,7 @@ lemma weight_monicize {H : F[X][Y]} {D : ℕ}
   have h := le_weight_of_mem_support (f := monicize H) (H := H) (D := D) hmem
   rwa [hlead, Polynomial.natDegree_one, Nat.add_zero] at h
 
+omit [IsDomain F] in
 /-- `regularWeight` is the **minimum** of `weight` over all representatives of a class, attained by
 definition at `canonicalRepOf𝒪`. -/
 lemma regularWeight_le_of_mk_eq {H : F[X][Y]} {D : ℕ}

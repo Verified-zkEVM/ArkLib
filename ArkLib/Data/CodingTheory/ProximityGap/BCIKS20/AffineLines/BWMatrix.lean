@@ -25,10 +25,10 @@ open scoped BigOperators LinearCode
 universe u v w k l
 
 section CoreResults
-variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-         {F : Type} [Field F] [Fintype F] [DecidableEq F]
+variable {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+         {F : Type u} [Field F] [DecidableEq F]
 
-def BW_homMatrix {R : Type} [CommRing R] {ι : Type} [Fintype ι]
+def BW_homMatrix {R : Type*} [CommRing R] {ι : Type*} [Fintype ι]
     (e k : ℕ) (ωs : ι → R) (f : ι → R) :
     Matrix ι (Fin ((e + 1) + (e + k))) R :=
   Matrix.of fun i j =>
@@ -38,7 +38,7 @@ def BW_homMatrix {R : Type} [CommRing R] {ι : Type} [Fintype ι]
       - (ωs i) ^ (j.1 - (e + 1))
 
 open Polynomial in
-theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge {F : Type} [Field F] {ι : Type} [Fintype ι]
+theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge {F : Type u} [Field F] {ι : Type*} [Fintype ι]
     (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F) (i : ι)
     (j : Fin ((e + 1) + (e + k))) (hj : e + 1 ≤ j.1) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
@@ -52,7 +52,7 @@ theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge {F : Type} [Field F] {ι : Ty
   simp [BW_homMatrix, hle]
 
 open Polynomial in
-theorem BW_homMatrix_entry_natDegree_le_one {F : Type} [Field F] {ι : Type} [Fintype ι] (e k : ℕ)
+theorem BW_homMatrix_entry_natDegree_le_one {F : Type u} [Field F] {ι : Type*} [Fintype ι] (e k : ℕ)
     (ωs : ι → F) (f0 f1 : ι → F) (i : ι)
     (j : Fin ((e + 1) + (e + k))) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
@@ -66,7 +66,7 @@ theorem BW_homMatrix_entry_natDegree_le_one {F : Type} [Field F] {ι : Type} [Fi
     exact zero_le_one
 
 open Polynomial in
-theorem BW_homMatrix_map_evalRingHom {F : Type} [Field F] {ι : Type} [Fintype ι]
+theorem BW_homMatrix_map_evalRingHom {F : Type u} [Field F] {ι : Type*} [Fintype ι]
     (e k : ℕ) (ωs f0 f1 : ι → F) (z : F) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
           (fun i => Polynomial.C (f0 i) + Polynomial.X * Polynomial.C (f1 i))).map
@@ -81,7 +81,7 @@ theorem BW_homMatrix_map_evalRingHom {F : Type} [Field F] {ι : Type} [Fintype �
   · simp [BW_homMatrix, hje]
 
 open scoped BigOperators in
-theorem BW_homMatrix_mulVec_eq_zero_iff {R : Type} [CommRing R] {ι : Type} [Fintype ι] (e k : ℕ)
+theorem BW_homMatrix_mulVec_eq_zero_iff {R : Type*} [CommRing R] {ι : Type*} [Fintype ι] (e k : ℕ)
     (ωs : ι → R) (f : ι → R)
     (a : Fin (e + 1) → R) (b : Fin (e + k) → R) :
     Matrix.mulVec (BW_homMatrix (ι := ι) e k ωs f) (Fin.append a b) = 0 ↔
@@ -118,7 +118,7 @@ theorem BW_homMatrix_mulVec_eq_zero_iff {R : Type} [CommRing R] {ι : Type} [Fin
 open Polynomial in
 /-- The determinant of a square polynomial matrix has natural degree at most the sum of
 column-wise bounds on the natural degrees of its entries. -/
-private theorem natDegree_det_le_sum_of_natDegree_le {R : Type} [CommRing R] {n : ℕ}
+private theorem natDegree_det_le_sum_of_natDegree_le {R : Type*} [CommRing R] {n : ℕ}
     (A : Matrix (Fin n) (Fin n) R[X]) (d : Fin n → ℕ) (h : ∀ i j, (A i j).natDegree ≤ d j) :
     A.det.natDegree ≤ ∑ j, d j := by
   rw [Matrix.det_apply]
@@ -128,7 +128,7 @@ private theorem natDegree_det_le_sum_of_natDegree_le {R : Type} [CommRing R] {n 
 open Polynomial in
 /-- An entry of the Berlekamp–Welch matrix over `F[X]` has natural degree at most one in the
 first `e + 1` columns and zero in the others. -/
-private theorem BW_homMatrix_entry_natDegree_le_ite {F : Type} [Field F] {ι : Type} [Fintype ι]
+private theorem BW_homMatrix_entry_natDegree_le_ite {F : Type u} [Field F] {ι : Type*} [Fintype ι]
     (e k : ℕ) (ωs f0 f1 : ι → F) (i : ι) (j : Fin ((e + 1) + (e + k))) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
         (fun i => Polynomial.C (f0 i) + Polynomial.X * Polynomial.C (f1 i)) i j).natDegree ≤
@@ -146,7 +146,7 @@ theorem Fin_sum_ite_lt_e_add_one (e k : ℕ) :
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-theorem BW_homMatrix_det_submatrix_natDegree_le_e_add_one {F : Type} [Field F] {ι : Type}
+theorem BW_homMatrix_det_submatrix_natDegree_le_e_add_one {F : Type u} [Field F] {ι : Type*}
     [Fintype ι] (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
     (r : Fin ((e + 1) + (e + k)) → ι) :
     (Matrix.det
@@ -163,11 +163,12 @@ theorem BW_homMatrix_det_submatrix_natDegree_le_e_add_one {F : Type} [Field F] {
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-theorem BW_homMatrix_det_updateCol_natDegree_le_of_ge {F : Type} [Field F] {ι : Type} [Fintype ι]
+theorem BW_homMatrix_det_updateCol_natDegree_le_e_add_one
+    {F : Type u} [Field F] {ι : Type*} [Fintype ι]
     (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
     (r : Fin ((e + 1) + (e + k)) → ι)
     (i0 : Fin ((e + 1) + (e + k)))
-    (j : Fin ((e + 1) + (e + k))) (hj : e + 1 ≤ j.1) :
+    (j : Fin ((e + 1) + (e + k))) :
     (Matrix.det
         (Matrix.updateCol
           (Matrix.submatrix
@@ -181,7 +182,7 @@ theorem BW_homMatrix_det_updateCol_natDegree_le_of_ge {F : Type} [Field F] {ι :
   · rw [Matrix.updateCol_apply]
     by_cases hx : x = j
     · subst hx
-      rw [ite_eq_left rfl, ite_eq_right (Nat.not_le_of_gt hj), Pi.single_apply]
+      rw [ite_eq_left rfl, Pi.single_apply]
       split_ifs <;> simp
     · rw [ite_eq_right hx]
       exact BW_homMatrix_entry_natDegree_le_ite e k ωs f0 f1 (r i) x
@@ -202,7 +203,7 @@ theorem Fin_sum_ite_lt_and_ne_eq_e (e k : ℕ) (j : Fin ((e + 1) + (e + k))) (hj
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-theorem BW_homMatrix_det_updateCol_natDegree_le_of_lt {F : Type} [Field F] {ι : Type} [Fintype ι]
+theorem BW_homMatrix_det_updateCol_natDegree_le_of_lt {F : Type u} [Field F] {ι : Type*} [Fintype ι]
     (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
     (r : Fin ((e + 1) + (e + k)) → ι)
     (i0 : Fin ((e + 1) + (e + k)))
@@ -226,12 +227,13 @@ theorem BW_homMatrix_det_updateCol_natDegree_le_of_lt {F : Type} [Field F] {ι :
       simp only [hx, ne_eq, not_false_eq_true, and_true]
   · rw [sum_boole, Nat.cast_id, Fin_sum_ite_lt_and_ne_eq_e e k j (by omega)]
 
-omit [Fintype F] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 theorem RS_BW_bound_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} [NeZero deg]
     (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg)) :
     2 * Nat.floor (δ * Fintype.card ι) < Fintype.card ι - deg + 1 := by
   classical
+  have : Nonempty ι := Fintype.card_pos_iff.mp (lt_of_lt_of_le (NeZero.pos deg) hdeg)
   set n : ℕ := Fintype.card ι
   set e : ℕ := Nat.floor (δ * n)
   have hnpos : (0 : ℝ≥0) < (n : ℝ≥0) := by
@@ -253,7 +255,7 @@ theorem RS_BW_bound_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} 
 
 open Matrix in
 open Polynomial in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_adjugate_fin_succ_eq_det_submatrix_last_castSucc (n : ℕ)
     (B : Matrix (Fin (n + 1)) (Fin (n + 1)) (Polynomial F))
     (t : Fin (n + 1)) :
@@ -264,7 +266,7 @@ theorem RS_adjugate_fin_succ_eq_det_submatrix_last_castSucc (n : ℕ)
 
 open Matrix in
 open Polynomial in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_adjugate_last_last_eq_det_submatrix_castSucc_castSucc (n : ℕ)
     (B : Matrix (Fin (n + 1)) (Fin (n + 1)) (Polynomial F)) :
     B.adjugate (Fin.last n) (Fin.last n) =
@@ -275,7 +277,7 @@ theorem RS_adjugate_last_last_eq_det_submatrix_castSucc_castSucc (n : ℕ)
 
 open Matrix in
 open Polynomial in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_det_submatrix_eq_zero_of_det_eq_zero (n : ℕ)
     (K : Matrix (Fin n) (Fin n) (Polynomial F))
     (hdet : Matrix.det K = 0)
@@ -287,27 +289,48 @@ theorem RS_det_submatrix_eq_zero_of_det_eq_zero (n : ℕ)
       J.equivOfFiniteSelfEmbedding from rfl, Matrix.det_permute', Matrix.det_permute, hdet,
     mul_zero, mul_zero]
 
-omit [Fintype F] [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 theorem RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
+    (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg)) :
     Nat.floor (δ * Fintype.card ι) + deg ≤ Fintype.card ι := by
-  have hBW := RS_BW_bound_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hdeg hδ
-  omega
+  by_cases hzero : deg = 0
+  · subst deg
+    have hdist : ‖(ReedSolomon.code domain 0 : Set (ι → F))‖₀ = 0 := by
+      rw [ReedSolomon.code_zero]
+      have hbot : (↑(⊥ : Submodule F (ι → F)) : Set (ι → F)) = {0} := by
+        ext w
+        simp
+      rw [hbot]
+      exact Code.dist_subsingleton
+    have hδzero : δ = 0 := by
+      simpa [relativeUniqueDecodingRadius, hdist] using hδ
+    simp [hδzero]
+  · have : NeZero deg := ⟨hzero⟩
+    have hBW := RS_BW_bound_of_le_relUDR (deg := deg) (domain := domain) (δ := δ) hdeg hδ
+    omega
 
-omit [Fintype F] [DecidableEq ι] in
+omit [DecidableEq ι] in
 theorem RS_floor_mul_card_ι_add_one_le_card_ι_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
-    [NeZero deg] (hdeg : deg ≤ Fintype.card ι)
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F)
       (C := ReedSolomon.code domain deg)) :
-    Nat.floor (δ * Fintype.card ι) + 1 ≤ Fintype.card ι :=
-  (Nat.add_le_add_left NeZero.one_le _).trans
-    (RS_floor_mul_card_ι_add_deg_le_card_ι_of_le_relUDR hdeg hδ)
+    Nat.floor (δ * Fintype.card ι) + 1 ≤ Fintype.card ι := by
+  have hnpos : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by
+    exact_mod_cast (Fintype.card_pos (α := ι))
+  have he : (Nat.floor (δ * Fintype.card ι) : ℝ≥0) / Fintype.card ι ≤ δ :=
+    (div_le_iff₀ hnpos).2 (Nat.floor_le (by positivity))
+  have hUDR := (Code.dist_le_UDR_iff_relDist_le_relUDR
+    (C := (ReedSolomon.code domain deg : Set (ι → F)))
+    (Nat.floor (δ * Fintype.card ι))).2 (he.trans hδ)
+  have hdist := Code.dist_le_card (ReedSolomon.code domain deg : Set (ι → F))
+  have hn := Fintype.card_pos (α := ι)
+  unfold Code.uniqueDecodingRadius at hUDR
+  omega
 
 open Polynomial in
 open Matrix in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_isUnit_det_vandermonde_C_of_injective (n : ℕ) (v : Fin n → F)
     (hv : Function.Injective v) :
     IsUnit (Matrix.det (Matrix.vandermonde (fun i : Fin n => (Polynomial.C (v i) : F[X])))) := by
@@ -338,7 +361,7 @@ theorem RS_isUnit_det_vandermonde_C_of_injective (n : ℕ) (v : Fin n → F)
 
 open Matrix in
 open Polynomial in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_mulVec_adjugate_col_eq_det (n : ℕ) (A : Matrix (Fin n) (Fin n) (Polynomial F))
     (j : Fin n) :
     Matrix.mulVec A (fun i : Fin n => A.adjugate i j) =
@@ -354,7 +377,7 @@ theorem RS_mulVec_adjugate_col_eq_det (n : ℕ) (A : Matrix (Fin n) (Fin n) (Pol
 
 open Matrix in
 open Polynomial in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_mulVec_adjugate_col_eq_zero_of_det_eq_zero (n : ℕ)
     (A : Matrix (Fin n) (Fin n) (Polynomial F)) (j : Fin n) (hdet : Matrix.det A = 0) :
     Matrix.mulVec A (fun i : Fin n => A.adjugate i j) = 0 := by
@@ -370,7 +393,7 @@ theorem RS_mulVec_adjugate_col_eq_zero_of_det_eq_zero (n : ℕ)
 
 open scoped BigOperators in
 open Matrix in
-theorem RS_mulVec_append_castAdd_natAdd {R : Type} [NonUnitalNonAssocSemiring R] {ι : Type}
+theorem RS_mulVec_append_castAdd_natAdd {R : Type*} [NonUnitalNonAssocSemiring R] {ι : Type*}
     (m n : ℕ) (M : Matrix ι (Fin (m + n)) R) (a : Fin m → R) (b : Fin n → R) :
     Matrix.mulVec M (Fin.append a b) =
       Matrix.mulVec (M.submatrix id (Fin.castAdd n)) a +
@@ -381,7 +404,7 @@ theorem RS_mulVec_append_castAdd_natAdd {R : Type} [NonUnitalNonAssocSemiring R]
 
 open Polynomial in
 open Matrix in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_natDegree_det_le_of_entry_natDegree_le_one (n : ℕ) (A : Matrix (Fin n) (Fin n) F[X])
     (hdeg : ∀ i j, (A i j).natDegree ≤ 1) :
     (Matrix.det A).natDegree ≤ n :=
@@ -391,9 +414,8 @@ theorem RS_natDegree_det_le_of_entry_natDegree_le_one (n : ℕ) (A : Matrix (Fin
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-omit [Fintype F] [DecidableEq F] in
-theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
-    (hv : Function.Injective v) :
+omit [DecidableEq F] in
+theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F) :
     ∀ i j : Fin n,
       ((-Matrix.vandermonde (fun t : Fin n => (Polynomial.C (v t) : F[X])))⁻¹ i j).natDegree =
         0 := by
@@ -408,12 +430,12 @@ theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
     ext i j
     simp only [D, D0, f, Matrix.map_apply, Matrix.neg_apply, Matrix.vandermonde_apply, map_neg,
       map_pow]
-  have hdetV : (Matrix.det (Matrix.vandermonde v)) ≠ 0 :=
-    (Matrix.det_vandermonde_ne_zero_iff (v := v)).2 hv
-  have hdetD0 : (Matrix.det D0) ≠ 0 := by
-    have h : ((-1 : F) ^ (Fintype.card (Fin n)) * Matrix.det (Matrix.vandermonde v)) ≠ 0 := by
-      exact mul_ne_zero (pow_ne_zero _ (neg_ne_zero.mpr one_ne_zero)) hdetV
-    rwa [Matrix.det_neg]
+  by_cases hdetD0 : Matrix.det D0 = 0
+  · have hdetD : Matrix.det D = 0 := by
+      rw [hDmap]
+      exact (RingHom.map_det f D0).symm.trans (by rw [hdetD0, map_zero])
+    rw [Matrix.nonsing_inv_apply_not_isUnit D (by simp [hdetD])]
+    simp
   have hunit0 : IsUnit (Matrix.det D0) := (isUnit_iff_ne_zero).2 hdetD0
   have hmul0 : D0 * D0⁻¹ = 1 := Matrix.mul_nonsing_inv D0 hunit0
   have hmul : (D0.map f) * ((D0⁻¹).map f) = (1 : Matrix (Fin n) (Fin n) F[X]) := by
@@ -428,7 +450,7 @@ theorem RS_natDegree_inv_neg_vandermonde_C_eq_zero (n : ℕ) (v : Fin n → F)
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 theorem RS_vandermonde_coeffs_eq_zero (m : ℕ) {domain : ι ↪ F} (hm : m ≤ Fintype.card ι)
     (b : Fin m → F[X]) :
     (∀ i : ι,
@@ -455,7 +477,7 @@ theorem RS_vandermonde_coeffs_eq_zero (m : ℕ) {domain : ι ↪ F} (hm : m ≤ 
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 theorem RS_a_ne_zero_of_BW_homMatrix_mulVec_eq_zero {deg : ℕ} {domain : ι ↪ F} {e : ℕ}
     (u : WordStack F (Fin 2) ι)
     {a : Fin (e + 1) → F[X]} {b : Fin (e + deg) → F[X]}
@@ -496,14 +518,14 @@ theorem RS_a_ne_zero_of_BW_homMatrix_mulVec_eq_zero {deg : ℕ} {domain : ι ↪
   exact happend happend0
 
 open Matrix in
-theorem adjugate_updateRow_same_col {R : Type} [CommRing R] {n : Type} [Fintype n] [DecidableEq n]
+theorem adjugate_updateRow_same_col {R : Type*} [CommRing R] {n : Type*} [Fintype n] [DecidableEq n]
     (A : Matrix n n R) (i j : n) (b : n → R) :
     (A.updateRow i b).adjugate j i = A.adjugate j i := by
   simp [Matrix.adjugate_apply]
 
 open scoped BigOperators in
 open Matrix in
-theorem det_updateRow_eq_sum_mul_adjugate_col {R : Type} [CommRing R] {n : Type} [Fintype n]
+theorem det_updateRow_eq_sum_mul_adjugate_col {R : Type*} [CommRing R] {n : Type*} [Fintype n]
     [DecidableEq n] (A : Matrix n n R) (i : n) (b : n → R) :
     (A.updateRow i b).det = ∑ j : n, b j * A.adjugate j i := by
   classical
@@ -515,7 +537,7 @@ theorem det_updateRow_eq_sum_mul_adjugate_col {R : Type} [CommRing R] {n : Type}
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-omit [Nonempty ι] [Fintype F] [DecidableEq ι] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e : ℕ)
     (K : Matrix ι (Fin (e + 1)) F[X])
     (hcard : e + 1 ≤ Fintype.card ι)
@@ -695,7 +717,7 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
 
 open Polynomial in
 open Matrix in
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
     (K : Matrix (Fin (e + 1)) (Fin (e + 1)) F[X])
     (hdeg : ∀ i j, (K i j).natDegree ≤ 1)

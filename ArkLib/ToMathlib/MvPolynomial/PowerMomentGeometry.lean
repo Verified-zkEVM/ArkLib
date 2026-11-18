@@ -210,7 +210,7 @@ theorem powerMomentIdeal_hilbertFunction_le
       powerMomentIdeal_hilbertFunction_le_weightedFinrank D N hD
     _ = Set.ncard {m : Option σ →₀ ℕ | m.weight (powerMomentWeight D) ≤ D * N} :=
       finrank_restrictWeightedDegree (K := E) (powerMomentWeight (σ := σ) D)
-        (fun i ↦ by cases i <;> simp [powerMomentWeight, hD.ne']) (D * N)
+        (D * N)
     _ ≤ _ := powerMomentWeight_exponent_ncard_le D N hD
 
 /-- The power-moment variety has affine degree at most `D`. -/

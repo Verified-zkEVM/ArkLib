@@ -205,8 +205,8 @@ theorem IsAdmissibleChartTupleAtExponent.specialize [DecidableEq F]
       rw [map_commonTaylorNumeratorOver_eq]
       simpa only [jet, Qz, ← hφ, AlgHom.toRingHom_eq_coe,
         AlgHom.coe_toRingHom, hcenter] using hhigh l hl
-    have hleft := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
-      φ (Polynomial.C center) Q K k τ hτ jet hsepφ hhighφ
+    have hleft := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts
+      φ (Polynomial.C center) Q K k τ jet hsepφ hhighφ
     have hleft' : (rationalTaylorPolynomial center Qz K jet).degree < k := by
       simpa only [jet, Qz, ← hφ, AlgHom.toRingHom_eq_coe,
         AlgHom.coe_toRingHom, hcenter] using hleft

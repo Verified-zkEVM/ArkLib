@@ -221,7 +221,7 @@ theorem exists_polynomialGraph_of_symbolic_sample_of_exponent
     intro l hkl hlK
     simpa [Qz] using hhigh ⟨l, hlK⟩ hkl
   have hdegree : (rationalTaylorPolynomial center Qz K jet).degree < k :=
-    degree_rationalTaylorPolynomial_lt center Qz hτ k jet hS' hhigh'
+    degree_rationalTaylorPolynomial_lt center Qz (τ := τ) k jet hS' hhigh'
   have hcuts' : ∀ i ∈ sample,
       MvPolynomial.aeval jet (taylorAgreementEquation center Qz K τ (ι (domain i))
         (Polynomial.eval z (powerBatchedCoordinate (fun t ↦ ι (w t i))))) = 0 := by

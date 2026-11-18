@@ -226,28 +226,25 @@ The `k` accepting branches of a tree node share the message pair `(g^{(0)}, g^{(
 carry pairwise-distinct challenges. If two branch openings differ, both open the same
 commitment `stmt.zc.t` and both are short, so the pair is a `LiftCom.Collision` and
 `roundEsc` fires. Otherwise all branches share one opening `w̃`; for each summand the partial
-cube sum in the free coordinate is a univariate of degree `≤ 2b` resp. `≤ 2`
-(`roundPoly_degree_le_sumcheckPolyZero` / `…Alpha`) agreeing with the degree-matched `g` at
+cube sum in the free coordinate is a univariate of degree `≤ max (2b) 2`
+resp. `≤ 2`, agreeing with the corresponding `g` at
 `k > deg` distinct points, hence equal to it as a polynomial. Evaluating at `0` and `1`,
 the shared `roundPoly_sum` identity and the round check recover the round-`i`
 claims. The tree plumbing is the generic
 `ScalarRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded`.
 
-Both side conditions are necessary:
+The side condition `i < m₀` is necessary: the last step splits the round-`i` cube sum on a
+free coordinate. For `m₀ ≤ i` there is none: the sum has saturated (`hypercubeSum_of_le`) and the
+check only yields `2 · hypercubeSum = target` where the claim asks for `hypercubeSum = target`,
+so the statement fails over any `F` of characteristic `≠ 2`. The loop only instantiates rounds
+`0, …, m₀ − 1` (`roundsChainAux` threads the corresponding `count ≤ m₀`).
 
-* `i < m₀` — the last step splits the round-`i` cube sum on a free coordinate. For `m₀ ≤ i`
-  there is none: the sum has saturated (`hypercubeSum_of_le`) and the check only yields
-  `2 · hypercubeSum = target` where the claim asks for `hypercubeSum = target`, so the
-  statement fails over any `F` of characteristic `≠ 2`. The loop only instantiates rounds
-  `0, …, m₀ − 1` (`roundsChainAux` threads the corresponding `count ≤ m₀`).
-* `0 < b` — the `g^{(0)}` component is bounded by degree `roundDegZero b = 2b`, but at
-  `b = 0` the range factor `P_0(v) = v` has degree `1`, overflowing the bound
-  (`degreeOf_sumcheckPolyZero` carries the same hypothesis). Every instantiation has
-  `b ≥ 2`. -/
+At `b = 0`, the empty range product leaves a multilinear factor, so the zero summand
+has degree at most `2`. The interpolation arity `max (2b) 2 + 1` covers this case too. -/
 theorem round_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (hb : 0 < b) (i : ℕ) (hi : i < m₀) :
+    (φF : ZMod q →+* F) (i : ℕ) (hi : i < m₀) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))
       (roundEsc Φ m₀ m₁ bound bDig b K φF i)
@@ -282,8 +279,26 @@ theorem round_coordinateWiseSpecialSoundWithEscape
         have h := (hresp j).2.2.1
         rw [hall j] at h
         exact h
-      · have h₁ := Polynomial.natDegree_le_iff_degree_le.mpr
-          (roundPoly_degree_le_sumcheckPolyZero Φ hb φF s.zc.τ₀ (resp z) ⟨i, hi⟩ s.challenges)
+      · have hdegree : (roundPoly (sumcheckPolyZero Φ (M + 1) φF b s.zc.τ₀ (resp z))
+            ⟨i, hi⟩ s.challenges).degree ≤
+              (max (roundDegZero b) roundDegAlpha : ℕ) := by
+          by_cases hb : 0 < b
+          · exact (roundPoly_degree_le_sumcheckPolyZero Φ hb φF s.zc.τ₀
+              (resp z) ⟨i, hi⟩ s.challenges).trans (by exact_mod_cast le_max_left _ _)
+          · have hb0 : b = 0 := by omega
+            subst b
+            apply roundPoly_degree_le
+            intro j
+            simp only [sumcheckPolyZero, CPoly.CMvPolynomial.fromCMvPolynomial_mul',
+              cEqualityPolynomial, fromCMvPolynomial_cMultilinearExtension,
+              fromCMvPolynomial_cRangeProduct, Nat.zero_sub, Finset.Icc_eq_empty_of_lt
+                (by omega : 0 < 1), Finset.prod_empty, mul_one]
+            have h₁ := MvPolynomial.MLE_degreeOf
+              (fun x => ∏ k : Fin (M + 1), if x k = 1 then s.zc.τ₀ k else 1 - s.zc.τ₀ k) j
+            have h₂ := MvPolynomial.MLE_degreeOf (wTable Φ (M + 1) φF 0 (resp z)) j
+            exact (MvPolynomial.degreeOf_mul_le _ _ _).trans (by
+              simp only [roundDegZero, roundDegAlpha]; omega)
+        have h₁ := Polynomial.natDegree_le_iff_degree_le.mpr hdegree
         have h₂ := Polynomial.natDegree_le_iff_degree_le.mpr
           (Polynomial.mem_degreeLE.mp (CPolynomial.degreeLE_toPoly.mp g.1.2))
         rw [Fintype.card_fin]
@@ -319,11 +334,11 @@ theorem round_coordinateWiseSpecialSoundWithEscape
 
 /-- The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackage`: the guarded round
 verifier with the `k = max (2b) 2 + 1` special-soundness structure, reducing the round-`i`
-relation to the round-`(i+1)` relation, with escape event `roundEsc`. The `i < m₀` and
-`0 < b` hypotheses come from `round_coordinateWiseSpecialSoundWithEscape`. -/
+relation to the round-`(i+1)` relation, with escape event `roundEsc`. The `i < m₀`
+hypothesis comes from `round_coordinateWiseSpecialSoundWithEscape`. -/
 def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (hb : 0 < b) (i : ℕ) (hi : i < m₀) :
+    (φF : ZMod q →+* F) (i : ℕ) (hi : i < m₀) :
     EscapeGCWSSPackage init impl
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ (i + 1)) (LiftedWitness Φ μ n)
@@ -336,7 +351,7 @@ def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCom
   isGuarded := roundVerifierGuardedForm Φ m₀ m₁ b i
   extractor := roundExtractor Φ m₀ m₁ bound bDig b K i
   isCWSS :=
-    round_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound bDig b init impl K φF hb i hi
+    round_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound bDig b init impl K φF i hi
 
 /-- The empty round loop has no challenges. -/
 instance : IsEmpty (roundsSpec F b 0).ChallengeIdx := ⟨fun i => Fin.elim0 i.1⟩
@@ -364,7 +379,7 @@ whatever the recursion built — a nested disjunction of the per-round `roundEsc
 def roundsChainAux (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (hb : 0 < b) :
+    (φF : ZMod q →+* F) :
     (count : ℕ) → count ≤ m₀ →
       { P : EscapeGCWSSPackage init impl
           (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
@@ -389,9 +404,9 @@ def roundsChainAux (init : ProbComp σ)
             (fun _ _ h => h)) },
      rfl, rfl⟩
   | count + 1, hcount =>
-    let prev := roundsChainAux init impl K φF hb count (by omega)
+    let prev := roundsChainAux init impl K φF count (by omega)
     ⟨prev.1.append
-      (roundPackage Φ m₀ m₁ bound bDig b init impl K φF hb count (by omega)) prev.2.2,
+      (roundPackage Φ m₀ m₁ bound bDig b init impl K φF count (by omega)) prev.2.2,
      prev.2.1, rfl⟩
 
 /-- The composed sumcheck loop, from the round-`0` relation (installed by the sumcheck
@@ -405,12 +420,12 @@ discharge both seams by `rfl`, i.e. compose with the universal `▷` instead of 
 `appendEscapeGuarded`/`appendGuarded` at a named seam lemma. -/
 def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (hb : 0 < b) (count : ℕ) (hcount : count ≤ m₀) :
+    (φF : ZMod q →+* F) (count : ℕ) (hcount : count ≤ m₀) :
     EscapeGCWSSPackage init impl
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ count) (LiftedWitness Φ μ n)
       (roundsSpec F b count) :=
-  let aux := roundsChainAux Φ m₀ m₁ bound bDig b init impl K φF hb count hcount
+  let aux := roundsChainAux Φ m₀ m₁ bound bDig b init impl K φF count hcount
   { aux.1 with
     relIn := nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0
     relOut := nestedRoundRel Φ m₀ m₁ bound bDig K φF b count
@@ -421,8 +436,8 @@ omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 sumcheck bridge) — definitional, by the re-pinning in `roundsChain`. -/
 theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (hb : 0 < b) (count : ℕ) (hcount : count ≤ m₀) :
-    (roundsChain Φ m₀ m₁ bound bDig b init impl K φF hb count hcount).relIn =
+    (φF : ZMod q →+* F) (count : ℕ) (hcount : count ≤ m₀) :
+    (roundsChain Φ m₀ m₁ bound bDig b init impl K φF count hcount).relIn =
       nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0 :=
   rfl
 
@@ -431,8 +446,8 @@ omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 final-evaluation step) — definitional, by the re-pinning in `roundsChain`. -/
 theorem roundsChain_relOut (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
-    (φF : ZMod q →+* F) (hb : 0 < b) (count : ℕ) (hcount : count ≤ m₀) :
-    (roundsChain Φ m₀ m₁ bound bDig b init impl K φF hb count hcount).relOut =
+    (φF : ZMod q →+* F) (count : ℕ) (hcount : count ≤ m₀) :
+    (roundsChain Φ m₀ m₁ bound bDig b init impl K φF count hcount).relOut =
       nestedRoundRel Φ m₀ m₁ bound bDig K φF b count :=
   rfl
 

@@ -424,8 +424,8 @@ theorem exists_graphLine_pair_of_regular_component_agreements [IsAlgClosed E]
     have hS : aeval (fun j ↦ x (some j))
         (MvPolynomial.map φ.toRingHom (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 := by
       simpa only [jointInitialJetSeparant, aeval_optionEquivRight_symm, φ] using hsep
-    have hdegree := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
-      φ (Polynomial.C center) Q K k τ hτ (fun j ↦ x (some j)) hS
+    have hdegree := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts
+      φ (Polynomial.C center) Q K k τ (fun j ↦ x (some j)) hS
       (fun l hl ↦ by
         have hz := hx _ (hhigh l hl)
         simpa only [jointCommonTaylorNumerator, aeval_optionEquivRight_symm, φ] using hz)

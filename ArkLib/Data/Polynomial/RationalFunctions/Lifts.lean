@@ -88,7 +88,7 @@ lemma regularElementsSet_liftToFunctionField (H : F[X][Y]) (p : F[X]) :
 
 /-- Nonzero coefficient polynomials remain nonzero after embedding into the function field. -/
 lemma liftToFunctionField_ne_zero {F : Type} [Field F] {H : F[X][Y]}
-    [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    [H_natDegree_pos : Fact (0 < H.natDegree)]
     {p : F[X]} (hp : p ≠ 0) :
     liftToFunctionField (H := H) p ≠ 0 := by
   intro hzero
@@ -105,12 +105,16 @@ lemma liftToFunctionField_ne_zero {F : Type} [Field F] {H : F[X][Y]}
       Polynomial.isUnit_C.mpr (Ne.isUnit hp_map)
     simpa only [coeffAsRatFunc, RingHom.comp_apply, ToRatFunc.bivPolyHom,
       Polynomial.coe_mapRingHom, Polynomial.map_C] using hunitC
-  exact (irreducible_monicizeRatFunc_of_natDegree_pos H_natDegree_pos.out
-    H_irreducible.out).not_dvd_isUnit hunit hmem
+  have hdegree : (monicizeRatFunc H).natDegree = H.natDegree := by
+    rw [← map_monicize_eq_monicizeRatFunc H,
+      Polynomial.natDegree_map_eq_of_injective (univPolyHom_injective (F := F)),
+      natDegree_monicize H_natDegree_pos.out]
+  exact (Polynomial.not_isUnit_of_natDegree_pos _ (hdegree.symm ▸ H_natDegree_pos.out))
+    (isUnit_of_dvd_unit hmem hunit)
 
 /-- The leading coefficient `W` of a positive-`Y`-degree `H` is nonzero in the function field. -/
 lemma liftToFunctionField_leadingCoeff_ne_zero {F : Type} [Field F] {H : F[X][Y]}
-    [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)] :
+    [H_natDegree_pos : Fact (0 < H.natDegree)] :
     liftToFunctionField (H := H) H.leadingCoeff ≠ 0 := by
   exact liftToFunctionField_ne_zero
     (Polynomial.leadingCoeff_ne_zero.mpr (Polynomial.ne_zero_of_natDegree_gt H_natDegree_pos.out))
@@ -118,8 +122,10 @@ lemma liftToFunctionField_leadingCoeff_ne_zero {F : Type} [Field F] {H : F[X][Y]
 /-- If `q ∣ p` in `F[X]`, then `p / q` is regular after embedding into `𝕃`. -/
 lemma regularElementsSet_liftToFunctionField_div_of_dvd {F : Type} [Field F] {H : F[X][Y]}
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    {p q : F[X]} (hq : q ≠ 0) (hdiv : q ∣ p) :
+    {p q : F[X]} (hdiv : q ∣ p) :
     liftToFunctionField (H := H) p / liftToFunctionField (H := H) q ∈ regularElementsSet H := by
+  by_cases hq : q = 0
+  · simp [hq]
   rcases hdiv with ⟨r, rfl⟩
   have hq_lift : liftToFunctionField (H := H) q ≠ 0 := liftToFunctionField_ne_zero hq
   have heq :
@@ -137,9 +143,7 @@ lemma regularElementsSet_liftToFunctionField_div_leadingCoeff_of_dvd {F : Type} 
     (hdiv : H.leadingCoeff ∣ p) :
     liftToFunctionField (H := H) p / liftToFunctionField (H := H) H.leadingCoeff ∈
       regularElementsSet H := by
-  exact regularElementsSet_liftToFunctionField_div_of_dvd
-    (Polynomial.leadingCoeff_ne_zero.mpr (Polynomial.ne_zero_of_natDegree_gt H_natDegree_pos.out))
-    hdiv
+  exact regularElementsSet_liftToFunctionField_div_of_dvd hdiv
 
 private lemma mul_pow_mul_div_pow_eq_lower {K : Type} [Field K] {W T a : K}
     (hW : W ≠ 0) {k i : ℕ} (hi : i ≤ k) :
@@ -324,13 +328,15 @@ variable [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.n
 /-- `piZOfDiv` is well defined on `𝕃`: it depends only on the quotient `β / C`, not on the chosen
 presentation.  This is what makes the extension of A.3 legitimate. -/
 lemma piZOfDiv_congr (z : F) (root : rationalRoot (monicize H) z) {β β' : 𝒪 H} {C C' : F[X]}
-    (hC : C ≠ 0) (hC' : C' ≠ 0) (hCz : C.eval z ≠ 0) (hC'z : C'.eval z ≠ 0)
+    (hCz : C.eval z ≠ 0) (hC'z : C'.eval z ≠ 0)
     (heq : embeddingOf𝒪Into𝕃 H β / liftToFunctionField (H := H) C =
       embeddingOf𝒪Into𝕃 H β' / liftToFunctionField (H := H) C') :
     piZOfDiv z root β C = piZOfDiv z root β' C' := by
   -- clear denominators in `𝕃`
-  have hCl : liftToFunctionField (H := H) C ≠ 0 := liftToFunctionField_ne_zero hC
-  have hC'l : liftToFunctionField (H := H) C' ≠ 0 := liftToFunctionField_ne_zero hC'
+  have hCl : liftToFunctionField (H := H) C ≠ 0 :=
+    liftToFunctionField_ne_zero (fun h => hCz (by simp [h]))
+  have hC'l : liftToFunctionField (H := H) C' ≠ 0 :=
+    liftToFunctionField_ne_zero (fun h => hC'z (by simp [h]))
   rw [div_eq_div_iff hCl hC'l] at heq
   -- rewrite the two coefficient lifts as embedded `𝒪`-elements, then use injectivity
   set bC : 𝒪 H := Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.C C) with hbC

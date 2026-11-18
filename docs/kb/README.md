@@ -26,15 +26,15 @@ If you only need the practical workflow:
 3. If your PR changes how ArkLib uses or interprets a paper, update the corresponding KB page in
    the same PR.
 4. Before sending a paper-driven PR for review, attach the relevant KB paper pages or use
-   `python3 ./scripts/kb/review_context.py`.
+   `uv run --no-project --python 3.12 python ./scripts/kb/review_context.py`.
 
 Useful commands:
 
 ```bash
-python3 ./scripts/kb/sync_from_bib.py
-python3 ./scripts/kb/extract_lean_citations.py
-python3 ./scripts/kb/lint.py
-python3 ./scripts/kb/review_context.py \
+uv run --no-project --python 3.12 python ./scripts/kb/sync_from_bib.py
+uv run --no-project --python 3.12 python ./scripts/kb/extract_lean_citations.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/kb/review_context.py \
   --files ArkLib/Data/CodingTheory/ProximityGap/Basic.lean --format review
 ```
 
@@ -128,7 +128,7 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 2. If you already know the ArkLib-specific summary, add or update `docs/kb/papers/KEY.md`.
 3. If you only need the stub, leave it out of the PR; the generated-files workflow will propose
    it after merge.
-4. Run `python3 ./scripts/kb/lint.py`.
+4. Run `uv run --no-project --python 3.12 python ./scripts/kb/lint.py`.
 
 ### I am updating a paper-backed development
 
@@ -137,7 +137,7 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 
 ### I want review context for a PR
 
-1. Run `python3 ./scripts/kb/review_context.py --files <changed-lean-files> --format review`.
+1. Run `uv run --no-project --python 3.12 python ./scripts/kb/review_context.py --files <changed-lean-files> --format review`.
 2. Paste the output into a `/review` comment.
 
 ## Workflows
@@ -181,19 +181,19 @@ Suppose you add `[NEWKEY]` to a Lean module.
 4. Run:
 
 ```bash
-python3 ./scripts/kb/lint.py
-python3 ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
 ```
 
 If the page would only be a stub, omit those files. The `Refresh KB Generated Files` workflow
-will run `python3 ./scripts/kb/regenerate.py` after merge and open a generated-files PR.
+will run `uv run --no-project --python 3.12 python ./scripts/kb/regenerate.py` after merge and open a generated-files PR.
 
 ### Example: use the KB during review
 
 If a PR changes `ArkLib/Data/CodingTheory/ProximityGap/Basic.lean`, run:
 
 ```bash
-python3 ./scripts/kb/review_context.py \
+uv run --no-project --python 3.12 python ./scripts/kb/review_context.py \
   --files ArkLib/Data/CodingTheory/ProximityGap/Basic.lean \
   --format review
 ```

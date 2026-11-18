@@ -94,18 +94,16 @@ theorem weighted_floor_integral (n W : ℕ) (g m μ : ℝ) {T : Set (Fin n → �
     ∫ u in T, (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3 ≤
       ∑ c ∈ Finset.natWeightedSimplex (fun i : Fin n ↦ i.val + 1) W,
         (max (m * (1 + g) - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 3 := by
-  by_cases hint : IntegrableOn (fun u ↦ (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3) T
-  · have h := Finset.setIntegral_le_sum_natWeightedSimplex (w := fun i : Fin n ↦ i.val + 1)
-      (fun i ↦ Nat.succ_ne_zero _) (W := (W : ℝ)) hT hTW hint
-      (g := fun c ↦ (max (m * (1 + g) - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 3)
-      (fun c _ ↦ by positivity) fun u hu ↦ ?_
-    · simpa only [Nat.floor_natCast] using h
-    have hu0 := (Set.mem_weightedSimplex.mp (hTW hu)).1
-    refine floor_cubic g m μ (∑ i, u i) _ (z u) hμ (hZ u hu) ?_
-    push_cast
-    exact Finset.sum_le_sum fun i _ ↦ Nat.floor_le (hu0 i)
-  · rw [integral_undef hint]
-    exact Finset.sum_nonneg fun c _ ↦ by positivity
+  have h := Finset.setIntegral_le_sum_natWeightedSimplex (w := fun i : Fin n ↦ i.val + 1)
+    (fun i ↦ Nat.succ_ne_zero _) (W := (W : ℝ)) hT hTW
+    (f := fun u ↦ (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3)
+    (g := fun c ↦ (max (m * (1 + g) - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 3)
+    (fun c _ ↦ by positivity) fun u hu ↦ ?_
+  · simpa only [Nat.floor_natCast] using h
+  have hu0 := (Set.mem_weightedSimplex.mp (hTW hu)).1
+  refine floor_cubic g m μ (∑ i, u i) _ (z u) hμ (hZ u hu) ?_
+  push_cast
+  exact Finset.sum_le_sum fun i _ ↦ Nat.floor_le (hu0 i)
 
 /-- The rank-direction transfer. The sum, over the lattice points `c` of the simplex
 `∑ i, (i + 1) * c i ≤ W` in `Fin n → ℕ`, of the residual `max (T - ∑ i, c i) 0 + 1` is at most the

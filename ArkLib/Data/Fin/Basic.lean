@@ -118,10 +118,11 @@ theorem induction_heq {n n' : ℕ} {motive : Fin (n + 1) → Sort u} {motive' : 
     {succ : ∀ i : Fin n, motive i.castSucc → motive i.succ}
     {succ' : ∀ i : Fin n', motive' i.castSucc → motive' i.succ}
     {i : Fin (n + 1)} {i' : Fin (n' + 1)}
-    (hn : n = n') (hmotive : HEq motive motive') (hzero : HEq zero zero')
+    (hmotive : HEq motive motive') (hzero : HEq zero zero')
     (hsucc : HEq succ succ') (hi : HEq i i') :
       HEq (induction (motive := motive) zero succ i)
         (induction (motive := motive') zero' succ' i') := by
+  have hn : n = n' := Nat.succ.inj (fin_injective (type_eq_of_heq hi))
   subst hn; subst hmotive; subst hzero; subst hsucc; subst hi; rfl
 
 theorem induction_init {n : ℕ} {motive : Fin (n + 2) → Sort*} {zero : motive 0}

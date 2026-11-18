@@ -42,10 +42,12 @@ variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 
 /-! ## `reduce` lemmas via the `toPoly` bridge -/
 
+omit [BEq R] [LawfulBEq R] in
 /-- `CPolynomial.toPoly` is injective (it is the forward map of a ring isomorphism). -/
 theorem toPoly_injective :
-    Function.Injective (CPolynomial.toPoly : CPolynomial R → Polynomial R) :=
-  CPolynomial.ringEquiv.injective
+    Function.Injective (CPolynomial.toPoly : CPolynomial R → Polynomial R) := by
+  classical
+  exact fun _ _ h => CPolynomial.toPoly_inj.mp h
 
 variable (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
 
@@ -354,6 +356,12 @@ theorem coeff_eq_zero_of_natDegree_le (a : Rq Φ) {k : ℕ} (hk : Φ.φ.natDegre
         rw [CompPoly.CPolynomial.natDegree_toPoly]
         exact Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero
     _ ≤ (k : WithBot ℕ) := by exact_mod_cast hk
+
+/-- Over a constant modulus every reduced representative is zero. -/
+theorem val_eq_zero_of_natDegree_eq_zero (hd : Φ.φ.natDegree = 0) (a : Rq Φ) : a.1 = 0 := by
+  rw [CompPoly.CPolynomial.eq_iff_coeff]
+  intro k
+  rw [coeff_eq_zero_of_natDegree_le Φ a (by omega), CompPoly.CPolynomial.coeff_zero]
 
 /-- Embed a base-ring scalar `c : R` as the constant element `C c ∈ Rq Φ`. -/
 def constRq (c : R) : Rq Φ := Rq.mk Φ (CompPoly.CPolynomial.C c)

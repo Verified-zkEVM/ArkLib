@@ -626,7 +626,7 @@ lemma card_filter_isMaxCADomain_mul_le_one [Nonempty ι] (MC : ModuleCode ι F A
   have hDa : D ≤ a := by exact_mod_cast (by nlinarith : (D : ℝ) ≤ a)
   have hpos : n * D < a * a := by
     exact_mod_cast (by nlinarith [mul_pos (mul_pos hnR hnR) hη] : (n : ℝ) * D < a * a)
-  have hcorr := Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le Fam id a D hDa hpos
+  have hcorr := Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le Fam id a D
     (fun A₀ hA₀ => Nat.ceil_le.mpr (Finset.mem_filter.mp hA₀).2.2)
     (fun A₁ h₁ A₂ h₂ hne => by
       by_contra! hlt

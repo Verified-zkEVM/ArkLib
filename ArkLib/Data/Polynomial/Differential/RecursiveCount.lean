@@ -312,29 +312,45 @@ def RegularBranchRatBudget (root : DifferentialPolynomial F d) (D : ℕ)
 branch costs along the singular separant recursion. -/
 theorem boundedSolution_recursive_counting_totalJetDegree [NoZeroDivisors F]
     (Q : DifferentialPolynomial F d) (hQ : Q ≠ 0) (hcast : ∀ j, JetDegreeCastsNeZero Q j)
-    (accepts : F[X] → Prop) (cost : ℚ) (hcost : 0 ≤ cost)
+    (accepts : F[X] → Prop) (cost : ℚ)
     (roots : Finset (BoundedSolution Q D))
     (hroots : ∀ solution ∈ roots, accepts solution.polynomial)
     (hRegular : RegularBranchRatBudget Q D accepts cost) :
     (roots.card : ℚ) ≤ (jetTotalDegree Q : ℚ) * cost := by
-  obtain ⟨stages, terminal, hchain⟩ := exists_separantChain hQ hcast
-  have hcount := boundedSolution_card_le_separantChainStageSum hchain D accepts roots hroots
-      (fun _ ↦ cost) (by
-        intro stage hstage regular haccept hregular
-        have hreach := separantChain_reaches_of_mem hchain hstage
-        have hcastStage : ∀ j, JetDegreeCastsNeZero stage.1 j := fun j ↦
-          (hcast j).mono (hchain.jetDegree_le_of_mem hstage j)
-        exact hRegular stage.1 stage.2 hreach (hchain.highestActiveJet_eq_of_mem hstage)
-          hcastStage regular haccept hregular)
-  have hlength : (stages.length : ℚ) ≤ jetTotalDegree Q := by
-    exact_mod_cast hchain.length_le
-  have hsum : (stages.map fun _ : SeparantStage F d ↦ cost).sum =
-      (stages.length : ℚ) * cost := by
-    induction stages with
-    | nil => simp
-    | cons stage stages _ => simp; ring
-  rw [hsum] at hcount
-  exact hcount.trans (mul_le_mul_of_nonneg_right hlength hcost)
+  classical
+  cases hhighest : highestActiveJet Q with
+  | none =>
+      let _ : IsEmpty (BoundedSolution Q D) :=
+        isEmpty_boundedSolution_of_highestActiveJet_eq_none hQ hhighest
+      have htotal : jetTotalDegree Q = 0 := by
+        apply Nat.eq_zero_of_le_zero
+        apply (jetTotalDegree_le_sum_jetDegree Q).trans
+        simp only [show ∀ j, jetDegree Q j = 0 from fun j ↦
+          jetDegree_eq_zero_of_highestActiveJet_eq_none hhighest j,
+          Finset.sum_const_zero, le_refl]
+      simp [htotal, Finset.eq_empty_of_isEmpty roots]
+  | some s =>
+      have hcost : 0 ≤ cost := by
+        simpa using hRegular Q s Relation.ReflTransGen.refl hhighest hcast ∅
+          (by simp) (by simp)
+      obtain ⟨stages, terminal, hchain⟩ := exists_separantChain hQ hcast
+      have hcount := boundedSolution_card_le_separantChainStageSum hchain D accepts roots hroots
+          (fun _ ↦ cost) (by
+            intro stage hstage regular haccept hregular
+            have hreach := separantChain_reaches_of_mem hchain hstage
+            have hcastStage : ∀ j, JetDegreeCastsNeZero stage.1 j := fun j ↦
+              (hcast j).mono (hchain.jetDegree_le_of_mem hstage j)
+            exact hRegular stage.1 stage.2 hreach (hchain.highestActiveJet_eq_of_mem hstage)
+              hcastStage regular haccept hregular)
+      have hlength : (stages.length : ℚ) ≤ jetTotalDegree Q := by
+        exact_mod_cast hchain.length_le
+      have hsum : (stages.map fun _ : SeparantStage F d ↦ cost).sum =
+          (stages.length : ℚ) * cost := by
+        induction stages with
+        | nil => simp
+        | cons stage stages _ => simp; ring
+      rw [hsum] at hcount
+      exact hcount.trans (mul_le_mul_of_nonneg_right hlength hcost)
 
 /-- If every regular branch has cost `ν * R ^ d`, an equation of total jet degree at most `ν`
 has at most `ν ^ 2 * R ^ d` solutions in any finite family. -/
@@ -346,11 +362,9 @@ theorem boundedSolution_card_le_sq_totalJetDegree [NoZeroDivisors F]
     (hdegree : jetTotalDegree Q ≤ ν)
     (hRegular : RegularBranchRatBudget Q D accepts ((ν : ℚ) * R ^ d)) :
     (roots.card : ℚ) ≤ (ν : ℚ) ^ 2 * R ^ d := by
-  have hcost : 0 ≤ (ν : ℚ) * R ^ d :=
-    mul_nonneg (Nat.cast_nonneg ν) (pow_nonneg hR d)
   calc
     (roots.card : ℚ) ≤ (jetTotalDegree Q : ℚ) * ((ν : ℚ) * R ^ d) :=
-      boundedSolution_recursive_counting_totalJetDegree Q hQ hcast accepts _ hcost roots hroots
+      boundedSolution_recursive_counting_totalJetDegree Q hQ hcast accepts _ roots hroots
         hRegular
     _ ≤ (ν : ℚ) * ((ν : ℚ) * R ^ d) := by
       gcongr

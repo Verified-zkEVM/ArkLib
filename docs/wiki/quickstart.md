@@ -3,6 +3,15 @@
 This page is the recommended agent playbook for commands and validation.
 Use it as the main guide for routine local checks.
 
+## Python tooling
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/) for
+all repository Python entry points, including validation scripts and CI.
+CI uses uv 0.13.6. The uv commands below select Python
+3.12; uv downloads it if needed. Run them from the repository root.
+These checks use only the standard library. `--no-project` runs them without
+installing a Python package or creating a project environment.
+
 ## Dependency versions
 
 Before a large contribution or a forward-port, fetch the intended upstream remote and
@@ -16,11 +25,14 @@ leave that work intact.
 revisions; Mathlib and PolyFun arrive through those packages. `lake-manifest.json` records the
 exact resolved revision of every package, so read it, not this page, for the current versions.
 Dependency updates normally use CompPoly and doc-gen4 release/patch tags matching ArkLib's Lean
-toolchain, and an exact VCVio commit reachable from upstream `main`. An unreleased CompPoly fix may
-use a documented exception in the dependency PR body: state why the matching release is
-insufficient, link the upstream change, and identify the actual merged commit used. Preserve this
-rationale when rebasing or rewriting that PR; the manifest alone does not explain it. Do not invent
-a release tag or assume a PR head will be its eventual merge revision.
+toolchain, and an exact VCVio commit reachable from upstream `main`. doc-gen4 is pinned in
+`docbuild/lakefile.toml`; bump it with `lean-toolchain` (`check-docs-integrity.py` checks that the
+two match). `docbuild/` commits no toolchain file of its own: `lake update Arklib` writes a
+git-ignored copy, as the docs CI action expects. An
+unreleased CompPoly fix may use a documented exception in the dependency PR body: state why the
+matching release is insufficient, link the upstream change, and identify the actual merged commit
+used. Preserve this rationale when rebasing or rewriting that PR; the manifest alone does not
+explain it. Do not invent a release tag or assume a PR head will be its eventual merge revision.
 
 A side-branch dependency pin is for a **draft integration PR only**, with the upstream PR and a
 repin-before-merge obligation recorded. After upstream merge, use the actual post-squash/rebase
@@ -184,7 +196,7 @@ That deterministic, comment/string-aware inventory reports source-only construct
 environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
 constructs in files outside the imported roots. Compare this inventory with the PR base when
 checking for new admissions, for example with
-`python3 scripts/source-trust-audit.py --base-ref origin/main` after fetching the canonical base.
+`uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref origin/main` after fetching the canonical base.
 The inventory complements the kernel sweep; neither a net count nor a refreshed baseline
 substitutes for reviewing new source admissions. Working branches may still contain unfinished
 proofs while their PR is under review.
@@ -213,7 +225,7 @@ For website or blueprint output, run:
 is not installed. If blueprint output matters, install it first:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ## Important Notes
@@ -298,8 +310,8 @@ lake exe hachi-runtime
 lake exe sumcheck-runtime
 lake exe fri-extractor-runtime
 ./scripts/check-imports.sh
-python3 ./scripts/check-docs-integrity.py
-python3 ./scripts/kb/lint.py
+uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
+uv run --no-project --python 3.12 python ./scripts/kb/lint.py
 ./scripts/test-axiomsweep.sh
 lake exe axiomsweep --check
 ```
@@ -313,7 +325,7 @@ If you specifically need to regenerate `ArkLib.lean`, use:
 If blueprint output matters and `leanblueprint` is missing:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ## CI Mapping

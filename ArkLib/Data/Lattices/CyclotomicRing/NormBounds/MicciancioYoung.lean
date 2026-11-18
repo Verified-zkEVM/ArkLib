@@ -272,6 +272,7 @@ private lemma valMinAbs_coeff_eq_zero_of_le (v : Rq Φ) {i : ℕ} (hi : 2 ^ α �
     rw [hachi_degree, hachi_natDegree]; exact_mod_cast hi
   rw [hc, ZMod.valMinAbs_zero]
 
+omit [NeZero q] in
 /-- **Per-coefficient convolution bound over the negacyclic ring.** The centered absolute value of
 a product coefficient is at most the cyclic convolution of the factors' centered absolute values.
 The shared analytic core of the `ℓ₂` bound (`Rq.l2NormSq_mul_le`) and the `ℓ∞` bound
@@ -292,6 +293,7 @@ private lemma natAbs_coeff_mul_le_conv (d w : Rq Φ) {k : ℕ} (hk : k < 2 ^ α)
   rw [Int.cast_sub, cast_conv (α := α) d w k, cast_conv (α := α) d w (2 ^ α + k),
       ← coeff_mul_rq_two_block (α := α) d w hk]
 
+omit [NeZero q] in
 /-- **Per-entry product norm bound (Micciancio/Young, cf. [Mic07, ineqs. (2.6)–(2.7)]).**
 Over the negacyclic ring `X^{2^α}+1`, `‖d·w‖₂² ≤ ‖d‖₁²·‖w‖₂²`. -/
 theorem Rq.l2NormSq_mul_le (d w : Rq Φ) :
@@ -321,6 +323,7 @@ theorem Rq.l2NormSq_mul_le (d w : Rq Φ) :
     rw [e1, e2, e3]; exact key
   exact_mod_cast hgoal
 
+omit [NeZero q] in
 /-- **Per-entry `ℓ∞` product norm bound** ([Mic07, ineq. (2.7)]; [NOZ26] Lemma 2). Over the
 negacyclic ring `X^{2^α}+1`, `‖d·w‖∞ ≤ ‖d‖₁·‖w‖∞`.
 
@@ -350,6 +353,7 @@ theorem Rq.lInftyNorm_mul_le (d w : Rq Φ) :
           * (Finset.range (2 ^ α)).sup (fun j => (w.1.coeff j).valMinAbs.natAbs) := by
         rw [Finset.sum_mul]
 
+omit [NeZero q] in
 /-- **The power-of-two cyclotomic modulus satisfies the `ℓ∞` product bound**, packaged as the
 named property `Rq.HasMulLInftyBound` that the `Φ`-generic Hachi layers take as a hypothesis. -/
 theorem powTwoCyclotomic_hasMulLInftyBound : Rq.HasMulLInftyBound (Φ) :=
@@ -357,6 +361,7 @@ theorem powTwoCyclotomic_hasMulLInftyBound : Rq.HasMulLInftyBound (Φ) :=
 
 end Helpers
 
+omit [NeZero q] in
 /-- **Micciancio/Young product bound.** Over the power-of-two cyclotomic modulus
 `powTwoCyclotomic α` (`φ = X^{2^α}+1`), scaling an already-`c`-scaled vector by a further
 ring element `d` of bounded centered `ℓ₁` norm grows the squared `ℓ₂` norm by at most `κ²`

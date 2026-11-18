@@ -521,7 +521,7 @@ private lemma iteratedFoldWord_mem_code_of_mem_code_aux {d : ℕ}
     have : FoldingContext 1 (d - k) (n - k) := FoldingContext.mk' le_rfl (by omega) (by omega)
     have hstep := foldWord_mem_code_of_mem_code (domain := domain.subdomain k) (k := 1)
       (α := α ⟨k, by omega⟩) hprev
-    rw [subdomain_subdomain_one (by omega)] at hstep
+    rw [subdomain_subdomain_one] at hstep
     rw [iteratedFoldWord_succ]
     exact hstep
 

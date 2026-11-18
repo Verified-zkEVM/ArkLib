@@ -5,7 +5,7 @@ Authors: Alexander Hicks
 -/
 module
 
-public import VCVio.OracleComp.QueryTracking.CountingOracle.Core
+public import VCVio.OracleComp.QueryTracking.WriterCost
 
 /-!
 # Certified arithmetic instructions
@@ -14,9 +14,28 @@ The response types certify primitive arithmetic and coefficient reads. Proof fie
 from compiled programs; each primitive handler performs its requested operation once. Profiles
 count source instructions; an inverse is one algebraic primitive. Metadata counts designated
 control or array-operation ticks. Profiles exclude machine index, allocation, and runtime costs.
+
+A profile is the output and the PolyFun path charge of the one completed path that the
+deterministic handler selects (`profileArithmetic_eq_charge`).
 -/
 
 @[expose] public section
+
+namespace PFunctor.FreeM.Path
+
+/-- The path a fixed selector picks through a bind joins the paths it picks through the first
+program and through the continuation at that path's output. -/
+theorem ofHandler_bind {P : PFunctor} {α β : Type _} (choose : (a : P.A) → P.B a)
+    (x : FreeM P α) (f : α → FreeM P β) :
+    ofHandler choose (x.bind f) =
+      joinBind x f (ofHandler choose x) (ofHandler choose (f (output x (ofHandler choose x)))) := by
+  induction x using FreeM.rec with
+  | pure a => rfl
+  | liftBind a r ih =>
+    exact congrArg (fun p ↦ (⟨choose a, p⟩ : Path (FreeM.liftBind a fun b ↦ (r b).bind f)))
+      (ih (choose a))
+
+end PFunctor.FreeM.Path
 
 namespace CompPoly
 
@@ -96,19 +115,31 @@ theorem eq_arithmeticAnswer {F : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] 
 /-- Execute arithmetic instructions while recording every requested operation. -/
 def arithmeticMeasured {F : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F] :
     QueryImpl (ArithmeticSpec F) (AddWriterT ArithmeticCost Id) :=
-  arithmeticAnswer.withCost (fun op ↦ Multiplicative.ofAdd (arithmeticCost op))
+  arithmeticAnswer.withAddCost arithmeticCost
 
 /-- Execute the measured backend and retain its result and cost vector. -/
 def profileArithmetic {F A : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F]
     (program : OracleComp (ArithmeticSpec F) A) : A × ArithmeticCost :=
   (simulateQ arithmeticMeasured program).runAdd
 
+/-- A profile is the output and the charge of the completed path selected by the handler. -/
+theorem profileArithmetic_eq_charge {F A : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F]
+    [DecidableEq F] (program : OracleComp (ArithmeticSpec F) A) :
+    profileArithmetic program =
+      (PFunctor.FreeM.output program
+          (PFunctor.FreeM.Path.ofHandler (fun op ↦ (arithmeticAnswer op).run) program),
+        PFunctor.FreeM.Path.charge arithmeticCost program
+          (PFunctor.FreeM.Path.ofHandler (fun op ↦ (arithmeticAnswer op).run) program)) := by
+  change Prod.map id Multiplicative.toAdd
+    (simulateQ (arithmeticAnswer.withAddCost arithmeticCost) program).run = _
+  rw [QueryImpl.run_simulateQ_withAddCost_id]
+  rfl
+
 /-- Erasing the profile preserves the exact arithmetic program's result. -/
 theorem profileArithmetic_fst {F A : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F]
     (program : OracleComp (ArithmeticSpec F) A) :
-    (profileArithmetic program).1 = simulateQ arithmeticAnswer program := by
-  exact QueryImpl.fst_map_run_withCost arithmeticAnswer
-    (fun op ↦ Multiplicative.ofAdd (arithmeticCost op)) program
+    (profileArithmetic program).1 = simulateQ arithmeticAnswer program :=
+  QueryImpl.fst_map_run_simulateQ_withAddCost arithmeticAnswer arithmeticCost program
 
 namespace Arithmetic
 

@@ -49,12 +49,6 @@ theorem finset_card_le_pairwiseJohnson
     (hT : ∀ c ∈ T, c ∈ C ∧ A ≤ agree c received) :
     T.card ≤ pairwiseJohnsonListBound (Fintype.card ι) D A := by
   classical
-  rcases T.eq_empty_or_nonempty with rfl | ⟨c, hc⟩
-  · simp
-  have hAn : A ≤ Fintype.card ι :=
-    (hT c hc).2.trans (by simpa [agree] using
-      Finset.card_filter_le (Finset.univ : Finset ι) (fun i => c i = received i))
-  have hDA : D ≤ A := by nlinarith
   let S : (ι → alphabet) → Finset ι := fun c => Finset.univ.filter fun i => c i = received i
   have hclose : ∀ c ∈ T, A ≤ (S c).card := by
     intro c hc
@@ -70,7 +64,7 @@ theorem finset_card_le_pairwiseJohnson
         exact hi.1.trans hi.2.symm
       _ ≤ D := hpair c (hT c hc).1 c' (hT c' hc').1 hne
   have hmul := Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le
-    T S A D hDA hpositive hclose hinter
+    T S A D hclose hinter
   rw [pairwiseJohnsonListBound]
   exact (Nat.le_div_iff_mul_le (by omega : 0 < A * A - Fintype.card ι * D)).2 hmul
 

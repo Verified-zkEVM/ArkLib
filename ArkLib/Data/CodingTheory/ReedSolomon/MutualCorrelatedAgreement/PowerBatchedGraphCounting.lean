@@ -190,7 +190,7 @@ theorem admissibleChartTuples_card_le_dimensionSensitive_of_exponent
     (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
     (center : E) (Q : DifferentialPolynomial E[X] r) (K k L v τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ)
-    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L) (hLn : L ≤ n)
+    (hK : r < K) (hkK : k ≤ K) (hkL : k ≤ L)
     (hjet : jetTotalDegree Q ≤ v)
     (tuples : Finset (Fin (ℓ + 1) → F[X]))
     (htuples : ∀ P ∈ tuples,
@@ -211,7 +211,7 @@ theorem admissibleChartTuples_card_le_dimensionSensitive_of_exponent
     ⟨fun i ↦ iota (domain i), iota.injective.comp domain.injective⟩
   let received : Fin n → E := powerBatchedWord (fun t i ↦ iota (w t i)) z
   have hbound := finite_regularHighCutJets_card_le_dimensionSensitive_of_exponent
-    center Qz K k τ hτ hK hkK domainE received hkL hLn jets hS hA
+    center Qz K k τ hτ hK hkK domainE received hkL jets hS hA
   rw [hcard] at hbound
   apply hbound.trans
   have hvz' : jetTotalDegree Qz ≤ v := (jetTotalDegree_map_le _ Q).trans hjet
@@ -242,7 +242,7 @@ theorem admissibleChartTuples_card_le_of_exponent [DecidableEq F] [IsAlgClosed E
         ((L - k + 1 : ℕ) : ℚ)) ^ r) := by
   let B := 1 + τ * (v - 1)
   have hbound := admissibleChartTuples_card_le_dimensionSensitive_of_exponent
-    domain w iota center Q K k L v τ hτ hK hkK hkL hLn hjet tuples htuples
+    domain w iota center Q K k L v τ hτ hK hkK hkL hjet tuples htuples
   have hproduct := dimensionSensitiveIncidenceProduct_le_first_pow n L k r hkL hLn
   have hnumerator : n - k + 1 ≤ n := by omega
   have hratio :
@@ -315,13 +315,8 @@ theorem admissibleChartTupleFamilyAtExponent_card_le_dimensionSensitive
   by_cases hempty : admissibleChartTupleFamilyAtExponent domain w iota center Q K k L τ = ∅
   · rw [hempty, Finset.card_empty, Nat.cast_zero]
     exact mul_nonneg (by positivity) (dimensionSensitiveIncidenceProduct_nonneg n L k 1 r)
-  obtain ⟨P, hP⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
-  have hcommon := ((mem_admissibleChartTupleFamilyAtExponent_iff
-    domain w iota center Q K k L τ hkL P).mp hP).common
-  have hLn : L ≤ n := hcommon.trans (by
-    simpa using Finset.card_le_univ (commonCurveAgreementSet domain w P))
   apply admissibleChartTuples_card_le_dimensionSensitive_of_exponent
-    domain w iota center Q K k L v τ hτ hK hkK hkL hLn hjet
+    domain w iota center Q K k L v τ hτ hK hkK hkL hjet
   intro P hP
   exact (mem_admissibleChartTupleFamilyAtExponent_iff
     domain w iota center Q K k L τ hkL P).mp hP

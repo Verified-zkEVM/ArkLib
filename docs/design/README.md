@@ -10,6 +10,12 @@ The interaction layer is meant to replace the legacy layer (`ArkLib/OracleReduct
 needed, and the public [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer) holds the migration
 plan.
 
+The chapters below describe the current interaction layer, which is frozen and is being replaced
+by a rebuild on one protocol tree with a lens signature and passive verifiers. The
+[interaction-rebuild records](interaction-rebuild/README.md) state the rebuild's design decisions,
+D0–D9, each proposed and awaiting maintainer approval. Where a record and a chapter disagree, the
+chapter describes the frozen code and the record describes its replacement.
+
 A protocol is an interaction tree with prover and verifier strategies. The prover's continuation
 keeps its private memory. An oracle reduction returns a statement and an oracle interface: the
 next reduction can query that interface without seeing the underlying prover messages. Security

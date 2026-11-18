@@ -173,6 +173,9 @@ merge-ready.
   mechanically expand stable terminal `simp` calls, replace automation across a file, or
   equate fewer lines with faster proofs. A clear proof without a measured performance problem
   needs no performance rewrite.
+- When editing Markdown statement tables, follow the
+  [rendering check](../wiki/blueprint-and-citations.md#knowledge-base-mapping).
+  A blank line ends a table even when link and metadata checks pass.
 - These are manual review checks. A green build or source-policy gate does not establish
   semantic naming, self-contained documentation, or correspondence with the reference paper.
 - Verify with `./scripts/validate.sh` (add `--docs` for doc generation). Source style and
@@ -219,7 +222,7 @@ merge-ready.
   no admission allowance. Fix the source rather than adding linter suppressions.
 - Before declaring merge readiness, inspect source admissions and `scripts/axiom_baseline.json`
   against the canonical base, including staged/uncommitted changes. Use
-  `python3 scripts/source-trust-audit.py --base-ref <canonical-base>` to inspect source-only
+  `uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref <canonical-base>` to inspect source-only
   cases such as examples or default arguments, and run `./scripts/validate.sh --axioms` for
   proof changes. Review specific new obligations, not net counts; neither a passing gate after
   a baseline edit nor closures elsewhere can authorize a new admission.
@@ -260,8 +263,8 @@ merge-ready.
   base:
 
   ```bash
-  python3 ./scripts/kb/sync_from_bib.py          # writes docs/kb/_generated/references.json
-  python3 ./scripts/kb/extract_lean_citations.py # writes docs/kb/_generated/lean-citations.json
+  uv run --no-project --python 3.12 python ./scripts/kb/sync_from_bib.py          # writes docs/kb/_generated/references.json
+  uv run --no-project --python 3.12 python ./scripts/kb/extract_lean_citations.py # writes docs/kb/_generated/lean-citations.json
   # ... inspect for consistency, then:
   git checkout "$(git merge-base HEAD origin/main)" -- docs/kb/_generated/
   # restores index and worktree; inspect the staged diff
@@ -289,7 +292,7 @@ merge-ready.
   *Error* (fails `validate.sh`), while a **cited key with no paper page** is a *Warning*.
   For active papers introduced or substantially extended by this contribution, add substantive
   ArkLib context: the used statements, touchpoint modules, version, generalizations and remaining
-  gaps. `python3 scripts/kb/scaffold_paper.py <KEY>` can supply the initial page and metadata;
+  gaps. `uv run --no-project --python 3.12 python scripts/kb/scaffold_paper.py <KEY>` can supply the initial page and metadata;
   replace its TODOs before staging. Leave stub-only pages and generated registries to the KB
   workflow, and attribute unrelated existing coverage warnings without expanding the PR to fill
   the whole backlog. See [`../kb/README.md`](../kb/README.md).

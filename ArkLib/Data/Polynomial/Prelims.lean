@@ -7,7 +7,6 @@ module
 
 public import Mathlib.Algebra.Polynomial.Basic
 public import Mathlib.Algebra.Polynomial.Bivariate
-public import Mathlib.Algebra.Polynomial.Basic
 public import Mathlib.Algebra.Polynomial.Eval.Irreducible
 public import Mathlib.FieldTheory.RatFunc.Basic
 public import Mathlib.FieldTheory.Separable

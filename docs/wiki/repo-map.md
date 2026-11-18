@@ -9,6 +9,8 @@ Many developments are paper-scoped and spread across several modules.
 ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
   Interaction/        typed prover, verifier, and reduction foundations
+    Core/             rebuilt interaction core on PolyFun trees (staged migration)
+  Relation/           claims, witness relations, and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
@@ -21,6 +23,7 @@ docs/kb/             persistent paper, concept, audit, and query knowledge base
 docs/wiki/            reference pages and conventions
 docs/design/          interaction-layer design chapters and status
 scripts/              repo utilities
+docbuild/             documentation package: doc-gen4 and checkdecls, requiring ArkLib by path
 home_page/            site assets and assembled website root
 ```
 
@@ -32,6 +35,18 @@ home_page/            site assets and assembled website root
   `CompositionSoundness.lean` adds an exact append execution law and quantitative
   soundness under lawful distribution semantics, with an explicit admissibility-error variant.
   It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
+- `ArkLib/Interaction/Core/` is the rebuilt interaction core. It is being introduced in stages
+  beside the existing interaction modules, which stay frozen until their clients move; Core
+  imports none of them. Protocols are PolyFun `FreeM` trees whose roles come from the
+  `plainSig` and `oracleSig` lenses (`Signature.lean`); `Protocol.lean` owns paths, views and
+  nodes. `Reduction.lean` defines provers, verifiers, reductions and the public-coin sampler;
+  `OracleVerifier.lean` adds oracle verifiers with routed input and message oracles;
+  `Execution.lean` runs a verifier against an arbitrary prover and keeps rejection as a returned
+  verdict. `Composition.lean` appends verifiers, provers and oracle routes. `Security/` holds
+  completeness and soundness over adversary models, classical straight-line and transcript-only
+  extraction, and round-by-round soundness and knowledge on cursor prefixes. Its acceptance
+  tests live in `ArkLibTest/Interaction/Core/`.
+- The descriptions below cover the frozen interaction modules outside `Core/`.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
@@ -64,6 +79,10 @@ home_page/            site assets and assembled website root
   random-oracle completeness.
   Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
+- `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
+  admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
+  `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
+  evaluation-query interface, shared by the specification and the computational handler.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
   core with reusable definitions and lemmas.
 - `ArkLib/Commitments/` and `ArkLib/ProofSystem/` build on top of those foundations.
@@ -74,6 +93,8 @@ home_page/            site assets and assembled website root
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
 - Changing typed interaction or dependent reduction foundations: start in `ArkLib/Interaction/`.
+  New interaction-layer work goes in `ArkLib/Interaction/Core/`; the modules beside it are frozen
+  during the staged migration.
 - Changing legacy reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
@@ -231,10 +252,15 @@ home_page/            site assets and assembled website root
 - `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
   scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
-  BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
-  coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
-  tensor implication, and `OutOfDomain` for the multilinear-list collision bound. There is no
-  `Commitment.Scheme` instance or composed protocol security theorem yet. The
+  BitZ: `ExponentLift` for the bit inner product in an exponent, `CrtVariant` for its relaxation
+  by a second grand product modulo `ℓ₁`, `Round1` for the honest first message, its bounds and the
+  fixed-witness fingerprinting error, `Round2` for the deterministic tensor implication,
+  `OutOfDomain` for the multilinear-list collision bound, `Bitification` for the bit decomposition
+  of a witness over a finitely generated ring, `FixedWitnessError` for the fixed-witness error of
+  Rounds 1 and 2, `BitifiedClaim` for the bitified weights, the identification of the two claims
+  and the same bound for the bitified claim, and `HonestMessages` for the honest second message
+  and the honest first message of a bitified claim.
+  There is no `Commitment.Scheme` instance or composed protocol security theorem yet. The
   [BitZ paper page](../kb/papers/BGKLSW26.md) maps statements to the paper and records the remaining
   protocol obligations.
   Binary-encoding bounds and injectivity live under `Data/Nat/BitSum`; other generic helpers are
@@ -556,6 +582,9 @@ home_page/            site assets and assembled website root
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
   [coding-theory-conventions.md](coding-theory-conventions.md)).
+- `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/` ports the
+  affine combiners of [CWYZ26].
+  The [paper page](../kb/papers/CWYZ26.md) maps each module to the paper and tracks open units.
 - **Two different "folds" coexist and must not be confused.** GR08 *alphabet-enlarging* folding —
   a codeword symbol packs `(f̂(x), f̂(xω), …, f̂(xω^{s-1}))`, the degree bound is unchanged, and the
   code lives in `ι → Fin s → F` — is `ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`. The
@@ -568,7 +597,8 @@ home_page/            site assets and assembled website root
   subspace-design theorem), `ExtensionCodes.lean` (extension-field presentations and extension
   codes), `Erasure.lean` (erasure-consistency uniqueness below minimum distance),
   `HammingBallVolume.lean`,
-  `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
+  `Basic/Entropy.lean` (`qEntropy`), `Basic/ParityCheck.lean` (codes cut out by parity checks and
+  the counts of parity-check tuples). List-size bounds of Johnson type are in
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
 - List-size bounds that are *not* of Johnson type are under `ListDecodability/Bounds/`, with
@@ -576,12 +606,14 @@ home_page/            site assets and assembled website root
   the quantification conventions and the shared reference list. The split is by scope, not by paper:
   `Bounds/Basic.lean` (the three counting identities everything rests on), `Bounds/Linear.lean`
   (bounds valid for every linear code — Elias volume and its entropy form, the rate–radius
-  arithmetic, the generalized Singleton bound, random linear codes),
+  arithmetic, the generalized Singleton bound), `Bounds/RandomLinear.lean` (the random-linear-code
+  bound, with the [GLMRSW22] proof in `Bounds/RandomLinear/`),
   `Bounds/LargeAlphabet.lean` (the exponential-alphabet barrier, over the four-file development in
   `Bounds/LargeAlphabet/`: statements and family counting, centres and incidence counting, the local
   neighbourhood bound and pigeonhole barrier, then sparse large-union families and the assembly),
   `Bounds/Interleaved.lean` ([GGR11]'s interleaved-code list-size bound),
-  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound),
+  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound,
+  with the subspace-polynomial witnesses in `Bounds/ReedSolomon/SubspaceWitness.lean`),
   `Bounds/SubspaceDesign.lean` ([CZ25]'s upper bound and the folded-RS and multiplicity-code
   corollaries) over `Bounds/AgreementHypergraph.lean` (the geometric agreement machinery that proof
   needs, which mentions no list size and is reusable), and `Bounds/KKH26.lean` plus
@@ -632,7 +664,9 @@ home_page/            site assets and assembled website root
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random
-  functions is `ArkLib/Data/Probability/Combinatorial.lean`.
+  functions is `ArkLib/Data/Probability/Combinatorial.lean`. Shannon entropy and Chernoff tails for
+  real weights on finite types are `ArkLib/Data/Probability/FiniteEntropy.lean` and
+  `ArkLib/Data/Probability/FiniteChernoff.lean`.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
@@ -1023,3 +1057,7 @@ home_page/            site assets and assembled website root
 `ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
 `lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
 the generated `ArkLib.lean` umbrella and production modules must not import them.
+`ArkLibTest/Interaction/Core/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
+challenges and the public-coin sampler), `Oracle.lean` (query-only decisions and output
+oracles), `Composition.lean` (routed composed oracle queries) and `Security.lean`
+(classical-model and round-by-round security).

@@ -7,6 +7,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Oracle.Virtual
+public import ArkLib.Relation.Basic
 
 /-!
 # Open, closed, and concrete oracle claims
@@ -161,50 +162,10 @@ theorem closesTo_iff {Stmt : Type s}
 
 end ConcreteClaim
 
-/-- Public contexts and the claim type visible in each context. -/
-structure ClaimFamily (PublicCtx : Type u) where
-  /-- Claims indexed by the public context. -/
-  Claim : PublicCtx → Type v
-
 /-- Oracle relations specialize the claim fiber to closed behavior. -/
 def ClaimFamily.closedOracle (PublicCtx : Type x) (Stmt : PublicCtx → Type s)
     {Idx : PublicCtx → Type u} {Realization : ∀ ctx, Idx ctx → Type v}
     (Out : ∀ ctx, OracleFamily.{u, v, w} (Idx ctx) (Realization ctx)) : ClaimFamily PublicCtx :=
   ⟨fun ctx => ClosedClaim (Stmt ctx) (Out ctx)⟩
-
-/-- A claim-dependent witness relation with an explicit admissibility boundary. -/
-structure Problem {PublicCtx : Type u} (S : ClaimFamily.{u, v} PublicCtx) where
-  /-- Witnesses can depend on both context and claim. -/
-  Witness : ∀ ctx, S.Claim ctx → Type w
-  /-- Claim-level promises and well-formedness. -/
-  admissible : ∀ ctx, S.Claim ctx → Prop
-  /-- The relation observes only the declared claim. -/
-  rel : ∀ ctx claim, Witness ctx claim → Prop
-  /-- Every related claim satisfies the declared promise. -/
-  rel_admissible : ∀ ctx claim wit, rel ctx claim wit → admissible ctx claim
-
-/-- Membership means existence of a related witness. -/
-def Problem.language {PublicCtx : Type u} {S : ClaimFamily.{u, v} PublicCtx}
-    (P : Problem.{u, v, w} S)
-    (ctx : PublicCtx) (claim : S.Claim ctx) : Prop := ∃ wit, P.rel ctx claim wit
-
-/-- Language membership entails the claim's admissibility. -/
-theorem Problem.language_admissible {PublicCtx : Type u} {S : ClaimFamily.{u, v} PublicCtx}
-    (P : Problem.{u, v, w} S)
-    {ctx : PublicCtx} {claim : S.Claim ctx} (h : P.language ctx claim) :
-    P.admissible ctx claim := by
-  obtain ⟨wit, hw⟩ := h
-  exact P.rel_admissible ctx claim wit hw
-
-/-- A promise-free relation is the special case with universally true admissibility. -/
-abbrev Relation {PublicCtx : Type u} (S : ClaimFamily.{u, v} PublicCtx) :=
-  { P : Problem.{u, v, w} S // P.admissible = fun _ _ => True }
-
-/-- Build a promise-free problem from a claim-dependent witness family and predicate. -/
-def Relation.ofPredicate {PublicCtx : Type u} {S : ClaimFamily.{u, v} PublicCtx}
-    (Witness : ∀ ctx, S.Claim ctx → Type w)
-    (rel : ∀ ctx claim, Witness ctx claim → Prop) : Relation S :=
-  ⟨{ Witness := Witness, admissible := fun _ _ => True, rel := rel,
-      rel_admissible := fun _ _ _ _ => trivial }, rfl⟩
 
 end Interaction.Oracle

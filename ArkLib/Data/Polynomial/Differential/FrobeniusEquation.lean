@@ -362,11 +362,15 @@ theorem coeffNatDegreeLE_ordinaryUnflatten_of_degreeOf_le
       ((MvPolynomial.monomial_le_degreeOf (some 1) hm).trans hdegree)
 
 /-- Flattening a coefficient polynomial has challenge degree at most its univariate degree. -/
-theorem degreeOf_challenge_ordinaryFlatten_C_le [Nontrivial E] (c : E[X]) :
+theorem degreeOf_challenge_ordinaryFlatten_C_le (c : E[X]) :
     (ordinaryFlatten E
       (MvPolynomial.C c : DifferentialPolynomial E[X] 0)).degreeOf (some 1) ≤
         c.natDegree := by
   classical
+  cases subsingleton_or_nontrivial E
+  · rw [Subsingleton.elim (ordinaryFlatten E
+      (MvPolynomial.C c : DifferentialPolynomial E[X] 0)) 0, MvPolynomial.degreeOf_zero]
+    exact Nat.zero_le _
   have hsum : ordinaryFlatten E
       (MvPolynomial.C c : DifferentialPolynomial E[X] 0) =
       ∑ n ∈ c.support,
@@ -403,7 +407,7 @@ theorem ordinaryFlatten_monomial
 
 /-- A coefficient-degree bound gives a challenge-coordinate degree bound after flattening. -/
 theorem degreeOf_challenge_ordinaryFlatten_le
-    [Nontrivial E] (Q : DifferentialPolynomial E[X] 0) {h : ℕ}
+    (Q : DifferentialPolynomial E[X] 0) {h : ℕ}
     (hQ : CoeffNatDegreeLE Q h) :
     (ordinaryFlatten E Q).degreeOf (some 1) ≤ h := by
   classical
@@ -476,9 +480,12 @@ theorem degreeOf_independent_ordinaryFlatten_C
 
 /-- Flattening does not increase the degree of the independent variable. -/
 theorem degreeOf_independent_ordinaryFlatten_le
-    [Nontrivial E] (Q : DifferentialPolynomial E[X] 0) :
+    (Q : DifferentialPolynomial E[X] 0) :
     (ordinaryFlatten E Q).degreeOf (some 0) ≤ Q.degreeOf none := by
   classical
+  cases subsingleton_or_nontrivial E
+  · rw [Subsingleton.elim (ordinaryFlatten E Q) 0, MvPolynomial.degreeOf_zero]
+    exact Nat.zero_le _
   have hsum : ordinaryFlatten E Q =
       ∑ m ∈ Q.support,
         ordinaryFlatten E (MvPolynomial.monomial m (Q.coeff m)) := by
@@ -525,9 +532,12 @@ theorem degreeOf_independent_ordinaryFlatten_le
 
 /-- Unflattening does not increase the independent-variable degree. -/
 theorem degreeOf_independent_ordinaryUnflatten_le
-    [Nontrivial E] (H : MvPolynomial (Option (Fin 2)) E) :
+    (H : MvPolynomial (Option (Fin 2)) E) :
     (ordinaryUnflatten E H).degreeOf none ≤ H.degreeOf (some 0) := by
   classical
+  cases subsingleton_or_nontrivial E
+  · rw [Subsingleton.elim (ordinaryUnflatten E H) 0, MvPolynomial.degreeOf_zero]
+    exact Nat.zero_le _
   have hsum : ordinaryUnflatten E H =
       ∑ m ∈ H.support,
         ordinaryUnflatten E (MvPolynomial.monomial m (H.coeff m)) := by
@@ -567,7 +577,7 @@ theorem degreeOf_independent_ordinaryUnflatten_le
 
 /-- Flattening preserves the degree of the independent variable. -/
 theorem degreeOf_some_zero_ordinaryFlatten
-    [Nontrivial E] (Q : DifferentialPolynomial E[X] 0) :
+    (Q : DifferentialPolynomial E[X] 0) :
     (ordinaryFlatten E Q).degreeOf (some 0) = Q.degreeOf none := by
   apply Nat.le_antisymm (degreeOf_independent_ordinaryFlatten_le Q)
   simpa [ordinaryUnflatten] using
@@ -689,7 +699,7 @@ theorem frobeniusSpecialization_pow
 
 /-- A zero original specialization gives a zero transported specialization. -/
 theorem frobeniusSpecialization_eq_zero
-    (p e : ℕ) [NoZeroDivisors E] [ExpChar E p] [PerfectRing E p]
+    (p e : ℕ) [ExpChar E p] [PerfectRing E p]
     (Q : DifferentialPolynomial E[X] 0)
     (G : MvPolynomial (Option (Fin 2)) E)
     (hroot : rootExpansion (p ^ e) G = ordinaryFlatten E Q)
@@ -700,14 +710,17 @@ theorem frobeniusSpecialization_eq_zero
         (MvPolynomial.map (Polynomial.evalRingHom w)
           (ordinaryUnflatten E (inverseFrobeniusTwist p e G)))
         (Polynomial.expand E (p ^ e) P) = 0 := by
-  apply eq_zero_of_pow_eq_zero (n := p ^ e)
-  rw [frobeniusSpecialization_pow p e Q G hroot P w, hQ, map_zero]
+  apply Polynomial.expand_injective (expChar_pow_pos E p e)
+  apply Polynomial.map_injective (iterateFrobenius E p e)
+    (bijective_iterateFrobenius E p e).injective
+  rw [map_zero, Polynomial.map_zero, Polynomial.map_iterateFrobenius_expand,
+    frobeniusSpecialization_pow p e Q G hroot P w, hQ, map_zero]
 
 /-- An irreducible ordinary equation can be contracted in its root coordinate and pulled back
 through inverse Frobenius.  The pulled equation has nonzero root derivative, preserves the
 advertised challenge height, and transports every specialized polynomial root. -/
 theorem exists_frobeniusEquation
-    (p : ℕ) [Nontrivial E] [NoZeroDivisors E] [ExpChar E p] [PerfectRing E p]
+    (p : ℕ) [NoZeroDivisors E] [ExpChar E p] [PerfectRing E p]
     {Q : DifferentialPolynomial E[X] 0}
     (hQpos : 0 < Q.degreeOf (some 0)) (hQirr : Irreducible Q)
     {h : ℕ} (hQheight : CoeffNatDegreeLE Q h) :

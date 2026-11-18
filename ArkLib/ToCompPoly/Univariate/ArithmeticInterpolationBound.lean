@@ -50,17 +50,11 @@ private theorem basisListRaw_size_le {m : ℕ} (nodes : Array F)
     change _ ≤ (l.length + 1) + 1
     exact h.trans (by omega)
 
-omit [Field F] [DecidableEq F] in
-private theorem finRange_val (m : ℕ) :
-    (Finset.univ : Finset (Fin m)).val = (List.finRange m : Multiset (Fin m)) := by
-  have h : (List.finRange m).toFinset = Finset.univ := by ext i; simp
-  rw [← h, List.toFinset_val, List.dedup_eq_self.mpr (List.nodup_finRange m)]
-
 private theorem basis_size_le {m : ℕ} (nodes : Array F) (i : Fin m) :
     (CPolynomial.CLagrange.basis Finset.univ
       (fun j : Fin m ↦ nodes[j.val]?.getD 0) i).val.size ≤ m := by
   unfold CPolynomial.CLagrange.basis
-  rw [Finset.erase_val, finRange_val, Multiset.coe_erase]
+  rw [Finset.erase_val, Finset.val_univ_fin, Multiset.coe_erase]
   refine (CPolynomial.Raw.Trim.size_le_size _).trans ?_
   have h := basisListRaw_size_le nodes i ((List.finRange m).erase i)
   have hlen : ((List.finRange m).erase i).length = m - 1 := by
@@ -323,7 +317,7 @@ theorem size_interpolate_univ_le {F : Type} [Field F] [DecidableEq F] {m : ℕ}
       (fun j : Fin m ↦ nodes[j.val]?.getD 0) (fun j ↦ values[j.val]?.getD 0)).val.size ≤ m := by
     change (interpolateRaw Finset.univ _ _).val.size ≤ m
     unfold interpolateRaw
-    rw [Arithmetic.finRange_val]
+    rw [Finset.val_univ_fin]
     exact (Raw.Trim.size_le_size _).trans hraw
   simpa [nodes, values] using hsize
 

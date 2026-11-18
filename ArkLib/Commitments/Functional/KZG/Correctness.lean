@@ -56,7 +56,7 @@ lemma to_poly_div_by_monic {p : ℕ} [Fact (Nat.Prime p)]
 
 omit [DecidableEq G₁] [Fact (0 < p)] in
 /-- Algebraic correctness of one KZG opening for a coefficient vector. -/
-theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
+theorem correctness (n : ℕ) (a : ZMod p)
     (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) :
   let poly : CPolynomial (ZMod p) :=
     ⟨(Raw.mk (Array.ofFn coeffs)).trim, Raw.Trim.isCanonical_trim _⟩
@@ -101,7 +101,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     exact Polynomial.monic_X_sub_C z
   -- the proof
   -- restate the commitment as the evaluation of poly at a (C => g₁^poly(a))
-  simp_rw [hcoeffs, commit_eq_c_polynomial hpG1 poly hpdeg]
+  simp_rw [hcoeffs, commit_eq_c_polynomial poly hpdeg]
   -- define q(X) := (poly(X) - poly(z)) / (X-z)
   -- and restate the opening as the evaluation of q at a (opening => g₁^q(a))
   simp_rw [generateOpening, ←hcoeffs]
@@ -122,7 +122,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     pairing (commit (Groups.PowerSrs.tower g₁ a n) (fun i : Fin (n + 1) => q.coeff i) : G₁)
       ((Groups.PowerSrs.tower g₂ a 1)[1] / g₂ ^ z.val)
   rw [hfun]
-  rw [commit_eq_c_polynomial hpG1 q hqdeg]
+  rw [commit_eq_c_polynomial q hqdeg]
   -- evaluate the pairing linearly.
   -- e (g₁^poly(a) / g₂^poly(z), g₂)= e (g₁^q(a), g₂^a / g₂^(z))
   -- => (poly(a) - poly(z)) • e (g₁,g₂) = (q(a) * (a-z)) • e (g₁,g₂)
@@ -166,7 +166,7 @@ section Correctness
 
 omit [Fact (0 < p)] [DecidableEq G₁] in
 /-- The KZG scheme satisfies perfect correctness as defined in `CommitmentScheme`. -/
-theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂} :
+theorem correctness {g₁ : G₁} {g₂ : G₂} :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
     (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query
@@ -202,7 +202,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂} :
       query (OracleInterface.answer data query) := by
     change verifyOpening pairing _ _ _ query ((CPolynomial.ofFn data).eval query) = true
     simpa only [CPolynomial.ofFn, CPolynomial.ofArray] using
-      KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query
+      KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) n τ data query
   simp only [Option.elimM] at hx
   rw [mem_support_bind_iff] at hx
   obtain ⟨openingOpt, hopeningOpt, hx⟩ := hx

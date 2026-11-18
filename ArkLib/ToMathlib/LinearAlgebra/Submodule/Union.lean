@@ -26,6 +26,8 @@ covers equality. The bound is sharp: a two-dimensional space over `K` is the uni
 
 * `Submodule.exists_forall_notMem_of_card_le` — at most `|K|` proper submodules do not cover a
   module over the finite division ring `K`.
+* `Submodule.le_card_filter_notMem_of_ne_top` — a proper submodule of `κ → K` leaves at least
+  `|K| ^ (|κ| - 1) * (|K| - 1)` vectors outside it.
 
 ## Proof outline
 
@@ -157,5 +159,37 @@ theorem exists_forall_notMem_of_card_le
       simpa using hmem)
     hs
   exact ⟨x, fun i hi hxi ↦ hx i hi (by simpa using hxi)⟩
+
+open Classical in
+/-- **A proper submodule misses many vectors.** Let `K` be a finite division ring with
+`q := |K|` elements and `κ` a finite type with `s := |κ|` elements. A proper submodule `p` of
+`κ → K` has at most `q ^ (s - 1)` elements, so at least `q ^ (s - 1) * (q - 1)` vectors of
+`κ → K` lie outside it. -/
+theorem le_card_filter_notMem_of_ne_top
+    {K κ : Type*} [DivisionRing K] [Fintype K] [Fintype κ]
+    (p : Submodule K (κ → K)) (hp : p ≠ ⊤) :
+    Fintype.card K ^ (Fintype.card κ - 1) * (Fintype.card K - 1) ≤
+      (Finset.univ.filter fun v : κ → K ↦ v ∉ p).card := by
+  classical
+  have hq : 1 < Fintype.card K := Fintype.one_lt_card
+  have hd : 0 < Fintype.card κ := by
+    have h := Submodule.finrank_lt hp
+    simpa using (Nat.zero_lt_of_lt h)
+  have hcard : (Finset.univ.filter fun v : κ → K ↦ v ∈ p).card = Fintype.card p := by
+    symm
+    exact Fintype.card_ofFinset _ (by simp)
+  have hbound : Fintype.card p ≤ Fintype.card K ^ (Fintype.card κ - 1) := by
+    rw [Module.card_eq_pow_finrank (K := K) (V := p)]
+    exact Nat.pow_le_pow_right (Nat.zero_lt_of_lt hq)
+      (Nat.le_sub_one_of_lt (by simpa using Submodule.finrank_lt hp))
+  have htotal := Finset.card_filter_add_card_filter_not
+    (s := (Finset.univ : Finset (κ → K))) (p := fun v ↦ v ∈ p)
+  rw [hcard, Finset.card_univ, Fintype.card_fun] at htotal
+  have hpow : Fintype.card K ^ Fintype.card κ =
+      Fintype.card K ^ (Fintype.card κ - 1) * Fintype.card K := by
+    rw [← pow_succ, Nat.sub_add_cancel hd]
+  rw [hpow] at htotal
+  rw [Nat.mul_sub_left_distrib, mul_one]
+  omega
 
 end Submodule

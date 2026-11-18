@@ -121,7 +121,7 @@ lemma eval_vanishingPoly_mul_funcQuotient_add_ansPoly {domain : ι ↪ F} {f : �
 
 /-- Subtract the interpolant of `fPoly` on `S` and divide by the vanishing polynomial of `S`.
 
-If `fPoly.degree < d` and `S.card ≤ d`, the quotient has degree less than `d - S.card`;
+If `fPoly.degree < d`, the quotient has degree less than `d - S.card`;
 see `degree_polyQuotient_lt`. -/
 noncomputable def polyQuotient (S : Finset F) (fPoly : F[X]) : F[X] :=
     (fPoly - (ansPoly S (fun s => fPoly.eval s))) / (vanishingPoly S)
@@ -142,15 +142,15 @@ lemma vanishingPoly_mul_polyQuotient (S : Finset F) (fPoly : F[X]) :
     divByMonic_eq_div _ hV] at h
   exact h
 
-/-- If `fPoly` has degree less than `d` and `S.card ≤ d`, its quotient has degree less than
-`d - S.card`. -/
-lemma degree_polyQuotient_lt {S : Finset F} {fPoly : F[X]} {d : ℕ} (hS : S.card ≤ d)
+/-- If `fPoly` has degree less than `d`, its quotient has degree less than `d - S.card`. -/
+lemma degree_polyQuotient_lt {S : Finset F} {fPoly : F[X]} {d : ℕ}
     (hf : fPoly.degree < d) :
     (polyQuotient S fPoly).degree < ((d - S.card : ℕ) : WithBot ℕ) := by
-  have hans : (ansPoly S (fun s => fPoly.eval s)).degree < d :=
-    (degree_ansPoly_lt S _).trans_le (by exact_mod_cast hS)
-  have hsub : (fPoly - ansPoly S (fun s => fPoly.eval s)).degree < d :=
-    (degree_sub_le _ _).trans_lt (max_lt hf hans)
+  have hans : (ansPoly S (fun s => fPoly.eval s)).degree < (max d S.card : ℕ) :=
+    (degree_ansPoly_lt S _).trans_le (by exact_mod_cast le_max_right d S.card)
+  have hsub : (fPoly - ansPoly S (fun s => fPoly.eval s)).degree < (max d S.card : ℕ) :=
+    (degree_sub_le _ _).trans_lt
+      (max_lt (hf.trans_le (by exact_mod_cast le_max_left d S.card)) hans)
   by_cases hQ : polyQuotient S fPoly = 0
   · rw [hQ]; simp
   have hV := monic_vanishingPoly S

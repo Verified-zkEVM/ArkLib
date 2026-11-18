@@ -9,6 +9,7 @@ correlated agreement. For code carriers and distance types, see
 
 | Module | Contents |
 | --- | --- |
+| `ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean` | Affine/scalar errors with agreement loss, native sampling characterizations, and the scalar zero-loss bridge to `mcaError` |
 | `ProximityGenerator/Basic.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
 | `ProximityGap/Errors.lean` | `caError`, `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
@@ -138,8 +139,9 @@ hypotheses:
 - `mcaError_interleaved_le` gives the interleaved-to-base inequality;
 - `mcaError_interleaved_eq` gives equality.
 
-Jo26's field-size-weighted bound for seed spaces larger than the field remains unformalized in
-ArkLib.
+For seed spaces larger than the field, `mcaError_moduleInterleavedCode_le_fieldWeighted` gives
+Jo26's field-size-weighted bound: over a finite field with `q` elements and `s` rows, interleaving
+multiplies the error by at most `(q ^ s - 1) / (q ^ (s - 1) * (q - 1))`.
 
 The numeric correlated-agreement values are connected to the predicate API by:
 
@@ -159,6 +161,22 @@ introducing a second predicate.
 | radius quantified by `IsMCAGenerator` | `I`, the closed unit interval |
 | numeric error value or probability | `ENNReal` |
 | error bound | `ℝ≥0` |
+
+Probability-valued security errors use `ENNReal`, as native event probabilities do.
+This type supports suprema without separate boundedness proofs.
+The bound `ε ≤ 1` shows that an error value is finite.
+
+On a nonempty finite uniform challenge space, an error can use a counting definition with
+values in `ENNReal`, including `ENNReal.ofReal` of a nonnegative real fraction.
+For example, `ReedSolomon.affineMcaError_eq_iSup_prob` and
+`ReedSolomon.scalarMcaError_eq_iSup_prob` identify the counting definitions with suprema of
+native probabilities under `[SampleableType F]`.
+The event predicates and counting theorems have no sampler assumptions.
+The sampling characterizations provide the connection to probability bounds for protocols.
+
+Counts use `ℕ`, and algebraic bound formulas can use `ℝ` with explicit `ENNReal.ofReal`
+conversion.
+Nonnegative error budgets use `ℝ≥0`.
 
 Compare an `ENNReal` value with a nonnegative bound using a coercion, for example
 `mcaError G C δ ≤ (ε : ENNReal)`. Use `mcaError_ne_top` before applying `ENNReal.toNNReal`.

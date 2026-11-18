@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Check ArkLib documentation integrity.
 
 Checks:
 1. The canonical `AGENTS.md` guide and documentation entry points exist
 2. Local markdown links in tracked `.md` files resolve
+3. The doc-gen4 tag in `docbuild/lakefile.toml` matches the root `lean-toolchain`
 
 Exit code 0 if all checks pass, 1 otherwise.
 """
@@ -12,6 +13,7 @@ from __future__ import annotations
 
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
@@ -66,9 +68,23 @@ def check_markdown_links() -> list[str]:
     return errors
 
 
+def check_docbuild_toolchain() -> list[str]:
+    """`docbuild/` inherits the root toolchain, but its doc-gen4 tag is pinned by hand. `lake update`
+    writes the newest toolchain among the docbuild package's dependencies, so a mismatched tag would
+    build the docs, and the shared ArkLib build, under a different Lean."""
+    toolchain = (REPO_ROOT / "lean-toolchain").read_text().strip()
+    revision = toolchain.split(":", 1)[-1]
+    lakefile = REPO_ROOT / "docbuild" / "lakefile.toml"
+    requires = tomllib.loads(lakefile.read_text()).get("require", [])
+    tags = [r.get("rev") for r in requires if r.get("name") in ("doc-gen4", "«doc-gen4»")]
+    if tags != [revision]:
+        return [f"docbuild/lakefile.toml pins doc-gen4 at {tags}, but lean-toolchain is {toolchain}"]
+    return []
+
+
 def main() -> int:
-    print("Checking canonical agent guide and documentation links...")
-    all_errors = check_markdown_links()
+    print("Checking canonical agent guide, documentation links and the docbuild toolchain...")
+    all_errors = check_markdown_links() + check_docbuild_toolchain()
 
     if all_errors:
         print(f"\n{len(all_errors)} issue(s) found:\n")

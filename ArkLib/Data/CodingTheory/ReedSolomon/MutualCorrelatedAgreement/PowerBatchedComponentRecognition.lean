@@ -187,13 +187,13 @@ theorem exists_frobeniusPowerGraph_of_symbolic_sample
       (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom z) Q)
         K jet).degree < K := by
     simpa only [hcenter, hφ] using
-      degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
-        φ (Polynomial.C center) Q K K τ hτ jet hS (fun l hl ↦ by omega)
+      degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts
+        φ (Polynomial.C center) Q K K τ jet hS (fun l hl ↦ by omega)
   have hdegree :
       (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom z) Q)
         K jet).degree < p ^ e * k := hdegreeK.trans_le (by exact_mod_cast hKk)
   have hsparseQ := sparse_rationalTaylorPolynomial_of_symbolic_cuts
-    φ (Polynomial.C center) Q K (p ^ e) τ hτ jet hS hsparse
+    φ (Polynomial.C center) Q K (p ^ e) τ jet hS hsparse
   simp only [hcenter, hφ] at hsparseQ
   have hagree : ∀ i ∈ sample,
       (rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom z) Q)

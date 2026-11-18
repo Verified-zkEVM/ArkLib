@@ -38,6 +38,12 @@ jobs:
         with:
           persist-credentials: false
 
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
+        with:
+          version: "0.13.6"
+          enable-cache: false
+
       # Restore only: untrusted PR code must not publish a shared cache. Paths and keys must match
       # the saves in ci.yml exactly, or the restore misses.
       - uses: actions/cache/restore@v6
@@ -91,11 +97,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+          uv run --no-project --python 3.12 python scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
             --path-prefix ArkLib/Interaction/ --label 'Interaction warnings (including admissions)'
-          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+          uv run --no-project --python 3.12 python scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
             --path-prefix ArkLibTest/Interaction/ --label 'Interaction acceptance warnings'
-          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+          uv run --no-project --python 3.12 python scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
             --path-prefix ArkLib/ProofSystem/Sumcheck/Interaction/ --label 'Typed Sumcheck warnings'
-          python3 scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
+          uv run --no-project --python 3.12 python scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
             --path-prefix ArkLibTest/ProofSystem/Sumcheck/Interaction/ --label 'Typed Sumcheck acceptance warnings'

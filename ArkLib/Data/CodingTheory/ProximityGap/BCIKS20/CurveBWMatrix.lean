@@ -576,7 +576,7 @@ lemma exists_kernelVec_curveBWMatrix {l deg : ℕ} {domain : Fin n ↪ F}
   have hdegInvD0 : ∀ i j : Fin (e + deg), ((D⁻¹) i j).natDegree = 0 := by
     intro i j
     simpa [hD] using RS_natDegree_inv_neg_vandermonde_C_eq_zero (e + deg)
-      (fun i => domain (rB i)) hvB i j
+      (fun i => domain (rB i)) i j
   have hdegInvDA21 : ∀ i j, ((⅟D * A21) i j).natDegree ≤ l := by
     intro i j
     have hterm : ∀ k ∈ (Finset.univ : Finset (Fin (e + deg))),

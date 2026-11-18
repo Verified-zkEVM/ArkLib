@@ -80,7 +80,7 @@ lemma find_query_with_srs_power_success {L : ℕ} (hn : 1 ≤ n)
   · rw [ite_eq_right hif] at hbody
     exact absurd hbody (by simp)
 
-omit [DecidableEq G₁] [PrimeOrderWith G₂ p]
+omit [DecidableEq G₁] [PrimeOrderWith G₁ p] [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 /-- Equality with the second SRS power identifies a field element as the trapdoor. -/
 lemma zmod_eq_of_srs_power_eq {α τ : ZMod p}
@@ -185,7 +185,6 @@ lemma function_binding_query_eq_tau_branch_maps_to_arsdh {n : ℕ}
     (hn : 1 ≤ n) (hp : p ≥ n + 2) (hg₁ : g₁ ≠ 1)
     {τ α : ZMod p} {srs : Vector G₁ (n + 1) × Vector G₂ 2}
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hgen : srs.1[0] ≠ 1)
     (hpow : srs.1[0] ^ α.val = srs.1[1]'(Nat.lt_add_of_pos_left hn)) :
     Groups.arsdhCondition n (τ, (queryEqTauArsdhOutput (p := p) n α srs).toTuple) := by
   simp only [queryEqTauArsdhOutput, FunctionBindingArsdhOutput.toTuple,
@@ -197,7 +196,7 @@ lemma function_binding_query_eq_tau_branch_maps_to_arsdh {n : ℕ}
   · exact choose_s_middle_card hp α
   · rw [← hα_τ]
     exact choose_s_middle_eval_ne_zero α
-  · exact hgen
+  · exact Groups.PowerSrs.generate_ne_one_of_generator_ne_one hsrs hg₁
   · rw [hα_τ]
 
 end FunctionBinding

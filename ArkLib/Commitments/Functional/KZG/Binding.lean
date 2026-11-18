@@ -174,10 +174,9 @@ lemma binding_order_of_eq_prime_of_ne_one (x : G₁) (hx : x ≠ 1) : orderOf x 
 omit [DecidableEq G₁] [Group G₂] [PrimeOrderWith G₂ p]
   [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
 /-- Every element of a prime-order group is a `ZMod p` power of a nontrivial generator. -/
-lemma binding_exists_zmod_power_of_generator (hpG1 : Nat.card G₁ = p) (hg₁ : g₁ ≠ 1)
-    (hord : orderOf g₁ = p) (x : G₁) : ∃ a : ZMod p, x = g₁ ^ a.val := by
-  obtain ⟨k, hk⟩ : ∃ k : ℕ, g₁ ^ k = x := mem_powers_of_prime_card hpG1 hg₁
-  exact ⟨(k : ZMod p), by rw [ZMod.val_natCast, ← hk, ← pow_mod_orderOf g₁ k, hord]⟩
+lemma binding_exists_zmod_power_of_generator (hg₁ : g₁ ≠ 1)
+    (x : G₁) : ∃ a : ZMod p, x = g₁ ^ a.val :=
+  Groups.exists_zmod_power_of_generator hg₁ (Groups.orderOf_eq_prime_of_ne_one g₁ hg₁) x
 
 omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
@@ -192,20 +191,20 @@ lemma t_sdh_cond_of_two_valid_openings
     (τ query resp₁ resp₂ : ZMod p) (cm proof₁ proof₂ : G₁)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hresp : resp₁ ≠ resp₂) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hresp : resp₁ ≠ resp₂) (hpair : pairing g₁ g₂ ≠ 0)
     (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 cm proof₁ query resp₁)
     (hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 cm proof₂ query resp₂) :
     Groups.tSdhCondition (p := p) (g₁ := g₁)
       (τ, -query, (proof₁ / proof₂) ^ (1 / (resp₂ - resp₁)).val) := by
-  have hpG1 : Nat.card G₁ = p := PrimeOrderWith.hCard
+  have hg₁ : g₁ ≠ 1 := ne_one_of_pairing_ne_zero pairing hpair
   have hord : orderOf g₁ = p := binding_order_of_eq_prime_of_ne_one g₁ hg₁
-  obtain ⟨cm', hcm⟩ := binding_exists_zmod_power_of_generator hpG1 hg₁ hord cm
+  obtain ⟨cm', hcm⟩ := binding_exists_zmod_power_of_generator hg₁ cm
   obtain ⟨prf₁, hprf₁⟩ :=
-    binding_exists_zmod_power_of_generator hpG1 hg₁ hord proof₁
+    binding_exists_zmod_power_of_generator hg₁ proof₁
   obtain ⟨prf₂, hprf₂⟩ :=
-    binding_exists_zmod_power_of_generator hpG1 hg₁ hord proof₂
+    binding_exists_zmod_power_of_generator hg₁ proof₂
   have hEq₁ : cm' - resp₁ = prf₁ * (τ - query) :=
     verify_opening_equation pairing query resp₁ τ cm' prf₁ cm proof₁ srs hsrs hpair hcm
       hprf₁ hverify₁
@@ -242,7 +241,7 @@ lemma map_binding_to_t_sdh_of_two_valid_openings
     (τ query resp₁ resp₂ : ZMod p) (cm proof₁ proof₂ : G₁) (accept₁ accept₂ : Bool)
     (srs : Vector G₁ (n + 1) × Vector G₂ 2)
     (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hresp : resp₁ ≠ resp₂) (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hresp : resp₁ ≠ resp₂) (hpair : pairing g₁ g₂ ≠ 0)
     (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       srs.2 cm proof₁ query resp₁)
     (hverify₂ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
@@ -252,7 +251,7 @@ lemma map_binding_to_t_sdh_of_two_valid_openings
         (τ, srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁, proof₂)) := by
   simpa [mapBindingToTsdh, mapBindingInstanceToTsdh] using
     t_sdh_cond_of_two_valid_openings (p := p) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-      τ query resp₁ resp₂ cm proof₁ proof₂ srs hsrs hresp hg₁ hpair hverify₁ hverify₂
+      τ query resp₁ resp₂ cm proof₁ proof₂ srs hsrs hresp hpair hverify₁ hverify₂
 
 include g₁ g₂ pairing in
 /-- The reduction breaking t-SDH using a successful evaluation-binding adversary. -/
@@ -463,7 +462,7 @@ omit [DecidableEq G₁] in
 include g₁ g₂ pairing in
 /-- Transition 2: a successful extended binding run maps to a successful t-SDH instance. -/
 lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type}
-    (hg₁ : g₁ ≠ 1) (hpair : pairing g₁ g₂ ≠ 0)
+    (hpair : pairing g₁ g₂ ≠ 0)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
     Pr{let result ← (bindingGameExt (g₁ := g₁) (g₂ := g₂)
       AuxState adversary (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)))}[
@@ -628,7 +627,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type}
       ((Option.map (fun result : RunResult => result.1.1 0) result₂).getD (1 : G₁))
       ((Option.map (fun result : RunResult => result.2) result₁).getD false)
       ((Option.map (fun result : RunResult => result.2) result₂).getD false)
-      (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hg₁ hpair
+      (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ) rfl hresp hpair
       hverify₁ hverify₂
   change
     Pr{let result ← (OptionT.mk (do
@@ -754,7 +753,7 @@ concrete probabilities of *this* adversary and *its* reduction. It is a genuine 
 statement at every parameter, although the right-hand probability may of course be large for a
 particular adversary. `binding` below is the immediate corollary obtained by bounding the
 reduction's own success probability via the assumption. -/
-theorem binding_reduces_to_tSdh {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
+theorem binding_reduces_to_tSdh {g₁ : G₁} {g₂ : G₂}
     (hpair : pairing g₁ g₂ ≠ 0) (AuxState : Type)
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState) :
     Commitment.bindingExperiment (init := pure ∅) (impl := unifFwdImpl unifSpec)
@@ -769,7 +768,7 @@ theorem binding_reduces_to_tSdh {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
     _ ≤ Pr{let result ← (game_ext)}[
       ((Groups.tSdhCondition (p := p) (g₁ := g₁)) ∘ mapBindingToTsdh (p := p)
         (n := n)) result] :=
-      binding_cond_le_t_sdh_cond (pairing := pairing) hg₁ hpair adversary
+      binding_cond_le_t_sdh_cond (pairing := pairing) hpair adversary
     _ = Pr{let result ← (mapBindingToTsdh (p := p) (n := n) <$> game_ext)}[
       (Groups.tSdhCondition (p := p) (g₁ := g₁)) result] :=
       map_binding_instance_drag adversary scheme
@@ -783,7 +782,7 @@ omit [DecidableEq G₁] in
 
 This is an immediate corollary of `binding_reduces_to_tSdh`: compose the unconditional
 reduction bound with the assumption's bound on the reduction's own success probability. -/
-theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
+theorem binding {g₁ : G₁} {g₂ : G₂}
     (hpair : pairing g₁ g₂ ≠ 0)
     {Adv : Set (Groups.tSdhAdversary n (G₁ := G₁) (G₂ := G₂) (p := p))}
     (tSdhError : ℝ≥0)
@@ -795,7 +794,7 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
     Commitment.bindingExperiment (init := pure ∅) (impl := unifFwdImpl unifSpec)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) AuxState adversary
     ≤ tSdhError := by
-  exact (binding_reduces_to_tSdh (pairing := pairing) hg₁ hpair AuxState adversary).trans
+  exact (binding_reduces_to_tSdh (pairing := pairing) hpair AuxState adversary).trans
     (t_sdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
       tSdhError htSdh adversary hAdv)
 

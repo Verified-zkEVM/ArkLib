@@ -62,7 +62,7 @@ theorem prescribed_geometric_finite_list_bound
   let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
   let ν := 2 * m - 1
   let K := max k (Nat.floor (δ * n / 2))
-  obtain ⟨hn, hm, hν, hνm, hνn, hdK, hkK, hKn, hkA, hgap⟩ :=
+  obtain ⟨hn, hm, -, hνm, hνn, hdK, hkK, hKn, hkA, hgap⟩ :=
     prescribed_geometric_parameters δ n k hδ hδmax hblock hA
   rcases Nat.eq_zero_or_pos k with rfl | hk
   · have hzero (P : F[X]) (hP : P ∈ S) : P = 0 := by
@@ -101,7 +101,7 @@ theorem prescribed_geometric_finite_list_bound
     intro i hi
     simpa [indices, receivedLine] using (Finset.mem_filter.mp hi).2
   have hcount := finite_solutions_card_le_sq_totalJetDegree_of_agreementGap
-    Q K k ν hdK hkK hQ hdegreeQ domain received hk hkA hA hKn hν hgap hδ hchar'
+    Q K k ν hdK hkK hQ hdegreeQ domain received hk hkA hA hKn hgap hδ hchar'
     accepts hagreement S hsolution hS
   change (S.card : ℝ) ≤ 4 * (m : ℝ) ^ 2 * (4 * m / δ) ^ d * n ^ d
   have hνm' : (ν : ℝ) ≤ 2 * m := by

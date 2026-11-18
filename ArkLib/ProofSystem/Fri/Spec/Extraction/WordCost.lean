@@ -34,7 +34,7 @@ theorem profile_generateInitialQuery_word (gen : Generator ω) (z : Fin (2 ^ n))
 theorem profile_blockNodes_word (hs : (∑ j, (s j).val) ≤ n) (gen : Generator ω)
     (i : Fin (k + 1)) (roundGen : RoundGenerator s gen i)
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val}) :
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val}) :
     (profile s o α (blockNodes s o α hs gen i roundGen x projected)).2 (.inr .wordRead) = 0 := by
   simp [blockNodes, profile_arrayProgram_apply, generateBlockNode, profile_bind,
     embedArithmeticCost]
@@ -51,11 +51,11 @@ theorem profile_blockValues_word (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1
 
 /-- A non-final folded value uses one word read; the final folded value uses cached coefficients. -/
 @[simp]
-theorem profile_nextValue_word (hs : (∑ j, (s j).val) ≤ n) {d : ℕ+}
+theorem profile_nextValue_word {d : ℕ+}
     (input : PreparedInput s o α d) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val}) :
-    (profile s o α (nextValue s o α hs input i x projected)).2 (.inr .wordRead) =
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val}) :
+    (profile s o α (nextValue s o α input i x projected)).2 (.inr .wordRead) =
       if i.val < k then 1 else 0 := by
   by_cases hi : i.val < k <;>
     simp [nextValue, hi, profile_bind, embedArithmeticCost, instructionCost, AccessOp.costKind]

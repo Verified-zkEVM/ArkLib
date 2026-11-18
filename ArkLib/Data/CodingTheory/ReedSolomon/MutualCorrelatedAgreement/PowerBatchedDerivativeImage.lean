@@ -183,7 +183,7 @@ theorem
       Finset.mem_filter, Finset.mem_univ, true_and] at hf
     obtain ⟨l, _, rfl⟩ := hf
     have hmem := commonTaylorNumeratorOver_mem_restrictCappedBidegree center Q h v u K τ
-      hτ hheight hv hjet (by omega) hderiv l
+      hτ hheight hjet hderiv l
     have hcap : min (1 + τ * (v - 1)) (τ * (u - 1) + l.val) ≤ c := by
       dsimp [c, firstOrderTaylorDerivativeCap, firstOrderTaylorTotalCap]
       apply min_le_min
@@ -205,7 +205,7 @@ theorem
     have hmem := taylorAgreementEquationOver_mem_restrictCappedBidegree
       (center := center) (x := iota (domain i))
       (powerBatchedCoordinate (fun t ↦ iota (w t i))) Q ℓ h v u K τ hτ
-      (powerBatchedCoordinate_natDegree_le _) hheight hv (by omega) hjet hderiv
+      (powerBatchedCoordinate_natDegree_le _) hheight hjet hderiv
     have hcap : min (1 + τ * (v - 1)) (τ * (u - 1) + (K - 1)) ≤ c := by
       dsimp [c, firstOrderTaylorDerivativeCap, firstOrderTaylorTotalCap]
       rfl
@@ -489,10 +489,6 @@ theorem finite_powerBatchedBadChallenges_card_le_identityPair
     unfold regularPowerBatchedDerivativeCappedBoundTwo
     positivity
   obtain ⟨z₀, hz₀⟩ := Finset.nonempty_iff_ne_empty.mpr hempty
-  have hAn : A ≤ n := (hagree z₀ hz₀).trans (by
-    simpa using (Finset.card_le_univ
-      (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
-        (powerBatchedWord (fun t i ↦ iota (w t i)) z₀) (witness z₀))))
   have hinit := jointInitialJetEquation_ne_zero_of_regular center z₀ Q (jet z₀)
     (hchart z₀ hz₀).2.2.1
   have hτ : TaylorExponentSufficient 1 2 0 := by
@@ -528,7 +524,7 @@ theorem finite_powerBatchedBadChallenges_card_le_identityPair
       (T.card : ℚ) ≤ (firstOrderCurveFiberStageOne 2 v u 0 : ℚ) *
         (((n - 2 + 1 : ℕ) : ℚ) / ((L - 2 + 1 : ℕ) : ℚ)) := by
     have htuple := admissibleChartTuples_card_le_dimensionSensitive_of_exponent
-      domain w iota center Q 2 2 L v 0 hτ (by omega) le_rfl hL (hLA.trans hAn) hjet T hT
+      domain w iota center Q 2 2 L v 0 hτ (by omega) le_rfl hL hjet T hT
     simpa [dimensionSensitiveIncidenceProduct, firstOrderCurveFiberStageOne,
       firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap, cappedDegreeMixedVolume] using
       htuple

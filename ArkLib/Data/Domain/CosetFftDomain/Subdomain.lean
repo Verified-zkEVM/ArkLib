@@ -249,27 +249,39 @@ private lemma subdomain_eval_pow_core {i j : ℕ} (hij : i + j ≤ n)
   rw [← pow_mul, ← pow_add]
 
 /-- If `x` lies in the `j`th subdomain,
-  then `x ^ 2 ^ i` lies in the `(j + i)`th subdomain, provided `j + i ≤ n`. -/
-theorem pow_mem_of_mem {i j : ℕ} (hsum : j + i ≤ n) (h : x ∈ subdomain ω j) :
+  then `x ^ 2 ^ i` lies in the `(j + i)`th subdomain. -/
+theorem pow_mem_of_mem {i j : ℕ} (h : x ∈ subdomain ω j) :
     x ^ 2 ^ i ∈ subdomain ω (j + i) := by
   obtain ⟨k, rfl⟩ := h
-  refine ⟨Multiplicative.ofAdd ⟨k.val % 2 ^ (n - (j + i)), Nat.mod_lt _ (by positivity)⟩, ?_⟩
-  exact (subdomain_eval_pow_core (ω := ω) (i := j) (j := i) hsum k).symm
+  by_cases hsum : j + i ≤ n
+  · refine ⟨Multiplicative.ofAdd ⟨k.val % 2 ^ (n - (j + i)),
+      Nat.mod_lt _ (by positivity)⟩, ?_⟩
+    exact (subdomain_eval_pow_core (ω := ω) (i := j) (j := i) hsum k).symm
+  · have he : 2 ^ i • CosetFftDomainClass.subdomain_embed (n := n) j k = 0 := by
+      by_cases hj : n ≤ j
+      · simp [CosetFftDomainClass.subdomain_embed, hj]
+      · apply Fin.ext
+        rw [fin_nsmul_val, subdomain_embed_val (by omega), ←mul_assoc, ←pow_add]
+        exact Nat.mod_eq_zero_of_dvd
+          (dvd_mul_of_dvd_left (pow_dvd_pow 2 (by omega)) _)
+    refine mem_def.2 ⟨0, ?_⟩
+    rw [subdomain_apply, subdomain_apply, mul_pow, mkSubgroupUnit_pow, he,
+      CosetFftDomainClass.subdomain_embed_zero, ←pow_mul, ←pow_add]
 
 /-- If `x` lies in the original domain, then `x ^ 2 ^ i` lies in the `i`th subdomain. -/
-lemma pow_mem_subdomain_of_mem_subdomain_0 {i : ℕ} (hi : i ≤ n)
+lemma pow_mem_subdomain_of_mem_subdomain_0 {i : ℕ}
     (h : x ∈ subdomain ω 0) :
   x ^ 2 ^ i ∈ subdomain ω i := by
-  have key := pow_mem_of_mem (i := i) (j := 0) (h := h) (by omega)
+  have key := pow_mem_of_mem (i := i) (j := 0) h
   rw [mem_subdomain_of_eq_vals (j := 0 + i) (by simp)]
   exact key
 
 /-- `toFinset`-version of `pow_mem_subdomain_of_mem_subdomain_0`. -/
-lemma pow_mem_subdomain_of_mem_subdomain_0_toFinset [DecidableEq F] {i : ℕ} (hi : i ≤ n)
+lemma pow_mem_subdomain_of_mem_subdomain_0_toFinset [DecidableEq F] {i : ℕ}
     (h : x ∈ (subdomain ω 0).toFinset) :
   x ^ 2 ^ i ∈ (subdomain ω i).toFinset := by
   rw [mem_toFinset_iff_mem]
-  exact pow_mem_subdomain_of_mem_subdomain_0 hi (by simpa using h)
+  exact pow_mem_subdomain_of_mem_subdomain_0 (by simpa using h)
 
 private lemma subdomain_embed_of_le (i j : ℕ) (h : j ≤ i)
   (k : Fin (2 ^ (n - i))) :
@@ -367,15 +379,22 @@ lemma card_block_of_mem_subdomain [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n
   exact card_fin_filter_mod_eq (by omega) m.val (hsub ▸ m.isLt)
 
 /-- Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain. -/
-lemma root_exists {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+lemma root_exists {i j : ℕ} (h : x ∈ subdomain ω (i + j)) :
     ∃ y ∈ subdomain ω i, y ^ 2 ^ j = x := by
   classical
-  have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
-    have := card_block_of_mem_subdomain hij h
-    aesop
-      (add simp [block])
-      (add unsafe (by rw [←Finset.card_ne_zero]))
-  simpa [Finset.Nonempty] using h'
+  by_cases hij : i + j ≤ n
+  · have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
+      have := card_block_of_mem_subdomain hij h
+      aesop
+        (add simp [block])
+        (add unsafe (by rw [←Finset.card_ne_zero]))
+    simpa [Finset.Nonempty] using h'
+  · obtain ⟨k, rfl⟩ := h
+    refine ⟨subdomain ω i 0, by simp, ?_⟩
+    rw [subdomain_apply, subdomain_apply, CosetFftDomainClass.subdomain_embed_zero,
+      show CosetFftDomainClass.subdomain_embed (n := n) (i + j) k = 0 from
+        dite_eq_left (by omega), mkSubgroupUnit_zero', Units.val_one, mul_one,
+      ←pow_mul, ←pow_add, mul_one]
 
 /-- Any square root of an element of the `(i + 1)`th subdomain lies in the `i`th subdomain. -/
 lemma sq_root_mem_subdomain {i : ℕ} (hi : i < n) {y : F}
@@ -384,7 +403,7 @@ lemma sq_root_mem_subdomain {i : ℕ} (hi : i < n) {y : F}
   y ∈ subdomain ω i := by
   classical
   have : NeZero (n - i) := ⟨by omega⟩
-  obtain ⟨y', hy'_mem, hy'_pow⟩ := root_exists (by omega) hx
+  obtain ⟨y', hy'_mem, hy'_pow⟩ := root_exists hx
   rw [pow_one] at hy'_pow
   have hsq : y ^ 2 = y' ^ 2 := by rw [hy, hy'_pow]
   rcases eq_or_eq_neg_of_sq_eq_sq _ _ hsq with rfl | rfl
@@ -507,26 +526,35 @@ private lemma subdomain_embed_comp {k j : ℕ} (hk : k + j ≤ n)
 /-- Taking the `j`th subdomain of the `k`th subdomain gives the `(k + j)`th subdomain
 pointwise, under the canonical index identification. -/
 lemma subdomain_comp
-    {k j : ℕ} (hk : k + j ≤ n)
+    {k j : ℕ}
   {a : Fin (2 ^ (n - k - j))} {i : Fin (2 ^ (n - (k + j)))}
   (hai : a.val = i.val) :
   subdomain (subdomain ω k) j a = subdomain ω (k + j) i := by
   simp only [subdomain_apply, mkSubgroupUnit]
-  rw [subdomain_embed_comp hk a i hai]
+  have he : CosetFftDomainClass.subdomain_embed (n := n) k
+      (CosetFftDomainClass.subdomain_embed (n := n - k) j a) =
+      CosetFftDomainClass.subdomain_embed (n := n) (k + j) i := by
+    by_cases hk : k + j ≤ n
+    · exact subdomain_embed_comp hk a i hai
+    · rw [show CosetFftDomainClass.subdomain_embed (n := n - k) j a = 0 from
+        dite_eq_left (by omega), CosetFftDomainClass.subdomain_embed_zero]
+      exact (show CosetFftDomainClass.subdomain_embed (n := n) (k + j) i = 0 from
+        dite_eq_left (by omega)).symm
+  rw [he]
   simp only [CosetFftDomainClass.subdomain_embed_zero, pow_add, pow_mul]
   have h0 := CosetFftDomainClass.ne_zero ω 0
   rw [inv_mul_cancel₀ h0, mul_one, inv_mul_cancel_left₀ (pow_ne_zero _ h0)]
 
 @[simp, grind _=_]
 theorem mem_subdomain_comp_iff_mem
-    {k j : ℕ} (hk : k + j ≤ n) {x : F} :
+    {k j : ℕ} {x : F} :
   x ∈ subdomain (subdomain ω k) j ↔ x ∈ subdomain ω (k + j) := by
   have hn : n - k - j = n - (k + j) := Nat.sub_sub n k j
   constructor <;> rintro ⟨i, hi⟩
   · exact mem_def.2 ⟨⟨i.val, i.isLt.trans_eq (by rw [hn])⟩,
-      (subdomain_comp (ω := ω) hk (a := i) rfl).symm.trans hi⟩
+      (subdomain_comp (ω := ω) (a := i) rfl).symm.trans hi⟩
   · exact mem_def.2 ⟨⟨i.val, i.isLt.trans_eq (by rw [hn])⟩,
-      (subdomain_comp (ω := ω) hk (i := i) rfl).trans hi⟩
+      (subdomain_comp (ω := ω) (i := i) rfl).trans hi⟩
 
 end CosetFftDomainClass
 
@@ -549,11 +577,11 @@ lemma subdomain_zero_eq_self {n : ℕ} {ω : SmoothCosetFftDomain n F} :
   exact CosetFftDomainClass.subdomain_0_apply i
 
 omit [DecidableEq F] in
-lemma subdomain_subdomain_one {n k : ℕ} (hkn : k < n)
+lemma subdomain_subdomain_one {n k : ℕ}
     {ω : SmoothCosetFftDomain n F} :
     (ω.subdomain k).subdomain 1 = ω.subdomain (k + 1) := by
   ext ⟨i, hi⟩
-  rw [CosetFftDomainClass.subdomain_comp (i := ⟨i, by omega⟩)] <;> grind
+  exact CosetFftDomainClass.subdomain_comp (i := ⟨i, by omega⟩) rfl
 
 /-- Search through a smooth coset FFT domain for an element whose `2 ^ i`th power is `x`,
   using `fuel` as the remaining search bound. -/
@@ -565,7 +593,7 @@ def twoNthRootAux (n i : ℕ) (ω : SmoothCosetFftDomain n F) (x : F) (fuel : �
       if (ω ⟨fuel, h⟩) ^ 2 ^ i = x then ⟨ω ⟨fuel, h⟩, by simp⟩ else twoNthRootAux n i ω x fuel
     else default
 
-/-- Finds a `2 ^ i`th root of `x` when `i ≤ n`. -/
+/-- Finds a `2 ^ i`th root of `x`. -/
 def twoNthRoot {n i : ℕ} {ω : SmoothCosetFftDomain n F} (x : ω.subdomain i) : ω :=
   twoNthRootAux n i ω x.1 (2 ^ n)
 
@@ -590,14 +618,13 @@ open CosetFftDomainClass
 
 /-- The value returned by `twoNthRoot` is a `2 ^ i`th root of its input. -/
 lemma twoNthRoot_correct {n i : ℕ} {ω : SmoothCosetFftDomain n F}
-    (hi : i ≤ n)
-  {x : ω.subdomain i} :
+    {x : ω.subdomain i} :
   (twoNthRoot x).val ^ 2 ^ i = x := by
   unfold twoNthRoot
   have hx_mem : x.val ∈ ω.subdomain (0 + i) := by
     rw [Nat.zero_add, ←mem_toFinset_iff_mem]
     exact x.property
-  have hex := root_exists (by omega) hx_mem
+  have hex := root_exists hx_mem
   obtain ⟨y, hy_mem, hy_pow⟩ := hex
   rw [mem_subdomain_0_iff_mem, mem_def] at hy_mem
   obtain ⟨j, rfl⟩ := hy_mem
@@ -606,16 +633,12 @@ lemma twoNthRoot_correct {n i : ℕ} {ω : SmoothCosetFftDomain n F}
 /-- Specialized correctness statement for square roots from the first subdomain. -/
 @[simp]
 lemma twoNthRoot_correct_one {n : ℕ} {ω : SmoothCosetFftDomain n F}
-    [nz : NeZero n]
-  {x : ω.subdomain 1} :
+    {x : ω.subdomain 1} :
   (twoNthRoot x).val ^ 2 = x := by
-  have hi : 1 ≤ n := by
-    have hn : n ≠ 0 := NeZero.ne _
-    omega
   conv_lhs =>
     rhs
     rw [←pow_one 2]
-  rw [twoNthRoot_correct hi]
+  rw [twoNthRoot_correct]
 
 end CosetFftDomain
 

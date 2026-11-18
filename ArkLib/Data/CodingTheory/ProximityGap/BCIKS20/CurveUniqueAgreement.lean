@@ -66,7 +66,7 @@ theorem exists_exactPowerAgreement_unique_fin
     simp [Curve.polynomialCurveEval, powerBatchedWord]
   by_cases hS : n * ℓ < S.card
   · obtain ⟨_, v, hv, hclose, _⟩ :=
-      large_agreement_set_on_curve_implies_correlated_agreement hdeg hdeg_le hδ hS
+      large_agreement_set_on_curve_implies_correlated_agreement hdeg hδ hS
     choose P hP hPv using fun t ↦ mem_code_iff_eval.mp (hv t)
     have hPv' (z : F) : evalOnPoints domain (Polynomial.powerBatch P z) =
         Curve.polynomialCurveEval v z := by

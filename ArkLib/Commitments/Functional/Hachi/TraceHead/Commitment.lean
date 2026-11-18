@@ -42,15 +42,6 @@ def committedOpening (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α))
       innerRows (2 ^ m) (Nat.clog b q) (2 ^ r) (Nat.clog b q) :=
   commitInputWitMap b (F, (commit b hb pp F).2)
 
-omit [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
-private theorem clog_pos_of_prime (b : ℕ) (hb : 1 < b) : 0 < Nat.clog b q :=
-  Nat.clog_pos hb (Fact.out : Nat.Prime q).one_lt
-
-private theorem one_le_natDegree_powTwo (α : ℕ) :
-    1 ≤ (powTwoCyclotomic (R := ZMod q) α).φ.natDegree := by
-  rw [powTwoCyclotomic_natDegree]
-  exact Nat.one_le_two_pow
-
 /-- The honest decommitment decodes to the committed ring polynomial. -/
 theorem extractedPoly_committedOpening
     (F : CMlPolynomial (Rq (powTwoCyclotomic (R := ZMod q) α)) (r + m)) :
@@ -64,7 +55,7 @@ theorem extractedPoly_committedOpening
     rw [commit_snd]
   rw [hw]
   exact extractedPoly_honestOpening Φ (b : ZMod q) _
-    (gadgetDecompose_lawful Φ (clog_pos_of_prime b hb) (one_le_natDegree_powTwo α) dd)
+    (gadgetDecompose_lawful Φ dd)
     pp.toPublicParams F
 
 variable (hk : 2 * 2 ^ κ ∣ 2 ^ α) (h2 : (2 : ZMod q) ≠ 0)
@@ -87,7 +78,7 @@ Every scalar coefficient polynomial and query has an honest source witness under
 balanced-digit norm bounds, including the stronger message bound.
 -/
 theorem committedStatement_mem_relScalarEvalMsgShort
-    (hbq : b ≤ q / 2) {βSq γ bound : ℕ} (hbound : 1 ≤ bound)
+    {βSq γ bound : ℕ} (hbound : 1 ≤ bound)
     (hβSq : (2 ^ m) * Nat.clog b q *
       ((powTwoCyclotomic (R := ZMod q) α).φ.natDegree * (b / 2) ^ 2) ≤ βSq)
     (hγ : b / 2 ≤ γ)
@@ -100,8 +91,7 @@ theorem committedStatement_mem_relScalarEvalMsgShort
       relScalarEvalMsgShort α κ hk h2 pp (b : ZMod q) βSq γ bound (b / 2) := by
   let F := packCoefficients (coefficientEquiv q α κ h2 hk) f
   let x := (xl ++ xh).map (algebraMap _ (Rq (powTwoCyclotomic (R := ZMod q) α)))
-  have hh := mem_relPolyEvalMsgShort_of_relCommitInput b hb hbq (one_le_natDegree_powTwo α)
-    (clog_pos_of_prime b hb) hbound hβSq hγ pp
+  have hh := mem_relPolyEvalMsgShort_of_relCommitInput b hb hbound hβSq hγ pp
     ⟨(commit b hb pp F).1, ⟨x, F.eval x⟩⟩ (F, (commit b hb pp F).2) ⟨rfl, rfl⟩
   refine ⟨⟨hh.1.1, ?_⟩, hh.2⟩
   change (unpackCoefficients (coefficientEquiv q α κ h2 hk)

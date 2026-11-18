@@ -422,12 +422,11 @@ omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 that the folded instance has an `R̃¹` witness is at most
 `ε_mca + |Λ(C^{≡2}, δ)| / |F|`. Stated in the reduced form of the L6.10 game
 event so the master lemma's challenge-only hypothesis can consume it. -/
-private lemma gamma_game_bound [SampleableType F] [Nonempty ι] [Finite A]
+private lemma gamma_game_bound [SampleableType F] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (encode : (Fin k → F) →ₗ[F] (ι → A))
     (hinj : Function.Injective encode)
     (hC : Set.range encode = (C : Set (ι → A)))
-    (hδ_pos : 0 < δ)
     (hδ_lt : δ < (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0))
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
     Pr{let γ ← $ᵗ F}[
@@ -470,7 +469,7 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι] [Finite A]
         fin_cases i
         · simpa using h3 0 j hj
         · simpa using h3 1 j hj
-      refine le_trans (gamma_transition_prob_le C δ encode hinj hC hδ_pos hδ_lt
+      refine le_trans (gamma_transition_prob_le C δ encode hinj hC hδ_lt
         stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2 (stmtIn.2 0) (stmtIn.2 1) hNoWit)
         (le_of_eq ?_)
       rw [coe_certifiedGammaError]
@@ -481,7 +480,7 @@ transition algorithm whose challenge failure event has probability at most
 `gammaError` yields a straightline game theorem that keeps that algorithm in
 the proposition type. -/
 theorem knowledgeSoundnessWith_of_transition_failure_prob_le
-    [SampleableType F] [Finite A]
+    [SampleableType F]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (δ gammaError : ℝ≥0)
@@ -503,7 +502,6 @@ theorem knowledgeSoundnessWith_of_transition_failure_prob_le
       (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
       (transitionStraightlineExtractor k transition) gammaError := by
   classical
-  let _ := Fintype.ofFinite A
   unfold OracleVerifier.knowledgeSoundnessWith
   rw [oracleVerifier_toVerifier_eq_verifier (k := k)]
   unfold Verifier.knowledgeSoundnessWith
@@ -557,14 +555,13 @@ and
 `Impl.IRS.simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor`;
 existential knowledge soundness is a corollary there. -/
 theorem verifier_knowledgeSoundness
-    [SampleableType F] [Nonempty ι] [Finite A]
+    [SampleableType F] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (encode : (Fin k → F) →ₗ[F] (ι → A))
     (hinj : Function.Injective encode)
     (hC : Set.range encode = (C : Set (ι → A)))
-    (hδ_pos : 0 < δ)
     (hδ_lt_min : δ <
       (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)) :
       (verifier (ι := ι) (F := F) (k := k)).knowledgeSoundness
@@ -618,7 +615,7 @@ theorem verifier_knowledgeSoundness
   · -- The challenge-only bound: weaken the game event to the γ-round event and
     -- apply `gamma_game_bound`.
     refine le_trans ?_
-      (gamma_game_bound k C δ encode hinj hC hδ_pos hδ_lt_min (stmt, oStmt))
+      (gamma_game_bound k C δ encode hinj hC hδ_lt_min (stmt, oStmt))
     refine prEvent_mono _ _ _ ?_
     rintro c ⟨t, h1, h2⟩
     exact ⟨h1 _ rfl, t.2, h2⟩

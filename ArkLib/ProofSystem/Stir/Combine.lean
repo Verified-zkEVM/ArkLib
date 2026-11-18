@@ -107,18 +107,6 @@ private def block_start (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) :=
   ∑ j ∈ univ.filter (· < i), block_size dstar degs j
 private def total_terms (dstar : ℕ) (degs : Fin m → ℕ) := ∑ i, block_size dstar degs i
 
-private lemma block_start_monotone
-  {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (h : i ≤ j) :
-  block_start dstar degs i ≤ block_start dstar degs j := by
-  have h_subset :
-    Finset.filter (· < i) Finset.univ ⊆ Finset.filter (· < j) Finset.univ := by
-      grind
-  exact Finset.sum_le_sum_of_subset h_subset
-
-private lemma block_start_zero
-  {dstar : ℕ} {degs : Fin m.succ → ℕ} :
-  block_start dstar degs 0 = 0 := by simp [block_start]
-
 private lemma block_end_le_block_start
   {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (hij : i < j) :
   block_start dstar degs i + block_size dstar degs i ≤ block_start dstar degs j := by
@@ -427,7 +415,7 @@ open LinearCode ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
     [Nonempty ι]
   {φ : ι ↪ F} {dstar m : ℕ}
-  {fs : Fin m → ι → F} {degs : Fin m → ℕ} (hdegs : ∀ i, degs i ≤ dstar)
+  {fs : Fin m → ι → F} {degs : Fin m → ℕ}
   {δ : ℝ≥0}
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
     (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
@@ -439,6 +427,11 @@ lemma master_lemma
   (i : Fin m)
   (j : Fin (block_size dstar degs i)) :
   (v i j).degree < degs i + j := by
+  by_cases hdeg : degs i ≤ dstar
+  swap
+  · apply (hv_deg i j).trans_le
+    change WithBot.some dstar ≤ WithBot.some (degs i) + WithBot.some j.val
+    exact WithBot.coe_le_coe.mpr (show dstar ≤ degs i + j.val by omega)
   classical
   have hlt : dstar < Fintype.card ι := by
     by_contra contra
@@ -459,7 +452,7 @@ lemma master_lemma
     rw [←WithBot.coe_natCast,
         show WithBot.some (dstar - degs i) = Nat.cast (dstar - degs i) by rfl,
         ←WithBot.coe_natCast, ←WithBot.coe_add, ←Nat.cast_add,
-        Nat.add_sub_of_le (hdegs _)]
+        Nat.add_sub_of_le hdeg]
     exact hv_deg i ⟨j, hj⟩
   | succ j' ih =>
     intro j hj hj'
@@ -661,7 +654,7 @@ theorem combine_theorem
       rcases proximity_gap with ⟨S, ⟨hS_card, ⟨v, hv⟩⟩⟩
       have master_lemma :=
         @master_lemma _ _ _ _ hempty
-          _ _ _ _ hdegs _
+          _ _ _ _ _
           hδLt _ hS_card (v := v) (fs := fs)
           (fun i j => (hv i j).1)
           (fun i j x hx => (hv i j).2 x hx)
