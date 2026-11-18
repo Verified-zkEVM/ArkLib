@@ -10,6 +10,7 @@ public import Mathlib.LinearAlgebra.Dimension.Constructions
 public import Mathlib.Algebra.Algebra.Basic
 public import ArkLib.ToMathlib.LinearAlgebra.PiFinsetHyperplane
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
+public import Mathlib.Combinatorics.Nullstellensatz
 
 /-!
 # Grid points on hyperplanes
@@ -42,6 +43,7 @@ The [paper page](../../../../docs/kb/papers/CWYZ26.md) records the correspondenc
 ## Main statements
 
 * `ReedMuller.gridPoint_apply` and `ReedMuller.gridPoint_injective`: the embedding.
+* `ReedMuller.eval_gridPoint_map`: evaluation at grid points commutes with base change.
 * `ReedMuller.card_gridValues` and `ReedMuller.card_filter_gridPoint`: transport to `F`.
 * `ReedMuller.card_grid_inter_hyperplane_le`: a hyperplane holds at most `q₀ᵏ⁻¹` grid points.
 * `ReedMuller.eq_zero_of_forall_mem_add_dotProduct_eq_zero`: an affine form vanishing on more
@@ -50,6 +52,8 @@ The [paper page](../../../../docs/kb/papers/CWYZ26.md) records the correspondenc
   points on which only the zero affine form vanishes.
 * `ReedMuller.card_grid_eval_eq_zero_le`: a nonzero polynomial of total degree `D` has at most
   `D q₀ᵏ⁻¹` grid zeros.
+* `ReedMuller.eq_zero_of_forall_eval_gridPoint_eq_zero`: a polynomial of degree below `q₀` in
+  each variable that vanishes on the grid is zero.
 
 ## References
 
@@ -76,6 +80,18 @@ theorem gridPoint_apply (z : Fin k → K₀) (i : Fin k) : gridPoint F z i = alg
 /-- Distinct grid points of `K₀ᵏ` stay distinct in `Fᵏ`. -/
 theorem gridPoint_injective : Function.Injective (gridPoint F : (Fin k → K₀) → Fin k → F) :=
   fun _ _ h ↦ funext fun i ↦ (algebraMap K₀ F).injective (congrFun h i)
+
+/-- Let `K₀ ⊆ F ⊆ F'` be a tower of fields, and `P` a polynomial over `F` in `k` variables.
+Mapping `P` into `F'` and evaluating at a grid point gives the image of the value over `F`. -/
+theorem eval_gridPoint_map {F' : Type*} [Field F'] [Algebra F F'] [Algebra K₀ F']
+    [IsScalarTower K₀ F F'] (z : Fin k → K₀) (P : MvPolynomial (Fin k) F) :
+    MvPolynomial.eval (gridPoint F' z) (P.map (algebraMap F F')) =
+      algebraMap F F' (MvPolynomial.eval (gridPoint F z) P) := by
+  rw [MvPolynomial.eval_map, MvPolynomial.eval, MvPolynomial.coe_eval₂Hom,
+    MvPolynomial.eval₂_comp_left]
+  congr 1
+  funext i
+  simp [IsScalarTower.algebraMap_apply K₀ F F']
 
 variable {F} [Fintype K₀] [DecidableEq F]
 
@@ -226,5 +242,20 @@ theorem card_grid_eval_eq_zero_le {p : MvPolynomial (Fin k) F} (hp : p ≠ 0) :
   | succ k =>
     rw [card_filter_gridPoint (fun x ↦ MvPolynomial.eval x p = 0), ← card_gridValues (F := F)]
     exact MvPolynomial.card_filter_eval_eq_zero_le hp _
+
+omit [DecidableEq F] in
+/-- Let `P` be a polynomial over `F` in `k` variables of degree below `q₀ = |K₀|` in each variable.
+If `P` vanishes at every point of the grid `K₀ᵏ`, then `P = 0`. -/
+theorem eq_zero_of_forall_eval_gridPoint_eq_zero {P : MvPolynomial (Fin k) F}
+    (hP : ∀ i, P.degreeOf i < Fintype.card K₀)
+    (h : ∀ z : Fin k → K₀, MvPolynomial.eval (gridPoint F z) P = 0) : P = 0 := by
+  classical
+  refine MvPolynomial.eq_zero_of_eval_zero_at_prod_finset P (fun _ ↦ gridValues K₀ F)
+    (by simpa using hP) fun y hy ↦ ?_
+  simp only [gridValues, mem_image, mem_univ, true_and] at hy
+  choose z hz using hy
+  convert h z
+  funext i
+  simp [hz i]
 
 end ReedMuller

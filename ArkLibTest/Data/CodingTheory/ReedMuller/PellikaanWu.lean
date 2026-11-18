@@ -6,6 +6,7 @@ Authors: Thomas Coratger
 
 import ArkLib.Data.CodingTheory.ReedMuller.PellikaanWu
 import Mathlib.FieldTheory.Finite.GaloisField
+import Mathlib.Algebra.MvPolynomial.NoZeroDivisors
 
 /-! # Acceptance cases for the Pellikaan–Wu substitution -/
 
@@ -43,8 +44,30 @@ example (P : MvPolynomial (Fin 2) (GaloisField 2 2)) :
 example (P₁ P₂ : MvPolynomial (Fin 2) (GaloisField 2 2)) (h₁ : P₁.totalDegree ≤ 1)
     (h₂ : P₂.totalDegree ≤ 1) (h : traceSubstitution b P₁ = traceSubstitution b P₂) :
     P₁ = P₂ :=
-  eq_of_traceSubstitution_eq_of_totalDegree_lt b (by simp [ZMod.card]; omega)
+  injOn_traceSubstitution_totalDegree_lt b (by simp [ZMod.card]; omega)
     (by simp [ZMod.card]; omega) h
+
+-- `X₀ X₁` has total degree `2 = q₀` but degree `1 < q₀` in each variable.
+-- It is still determined, among such polynomials, by its substitution.
+example (P : MvPolynomial (Fin 2) (GaloisField 2 2))
+    (hP : P ∈ MvPolynomial.restrictDegree (Fin 2) (GaloisField 2 2) 1)
+    (h : traceSubstitution b P = traceSubstitution b (MvPolynomial.X 0 * MvPolynomial.X 1)) :
+    P = MvPolynomial.X 0 * MvPolynomial.X 1 := by
+  refine injOn_traceSubstitution b (by simpa [ZMod.card] using hP) ?_ h
+  rw [SetLike.mem_coe, ZMod.card, MvPolynomial.mem_restrictDegree_iff_sup]
+  intro i
+  rw [MvPolynomial.degrees_mul_eq (MvPolynomial.X_ne_zero _) (MvPolynomial.X_ne_zero _),
+    MvPolynomial.degrees_X, MvPolynomial.degrees_X]
+  fin_cases i <;> simp
+
+-- A polynomial over the subfield `F₂` maps into `F₄` before substitution.
+-- Those of total degree below `2` are still determined.
+example (P₁ P₂ : MvPolynomial (Fin 2) (ZMod 2)) (h₁ : P₁.totalDegree ≤ 1)
+    (h₂ : P₂.totalDegree ≤ 1)
+    (h : traceSubstitution b (P₁.map (algebraMap (ZMod 2) (GaloisField 2 2))) =
+      traceSubstitution b (P₂.map (algebraMap (ZMod 2) (GaloisField 2 2)))) :
+    P₁ = P₂ :=
+  injOn_traceSubstitution_map b (by simp [ZMod.card]; omega) (by simp [ZMod.card]; omega) h
 
 /-- info: 'ReedMuller.natDegree_traceSubstitution_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -56,22 +79,23 @@ example (P₁ P₂ : MvPolynomial (Fin 2) (GaloisField 2 2)) (h₁ : P₁.totalD
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.eval_traceSubstitution
 
-/-- info: 'ReedMuller.eq_of_traceSubstitution_eq' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.eq_of_traceSubstitution_eq
 
 /-- info: 'ReedMuller.traceSubstitution_X' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.traceSubstitution_X
 
-/-- info: 'ReedMuller.eq_zero_of_traceSubstitution_eq_zero' depends on axioms:
+/-- info: 'ReedMuller.injOn_traceSubstitution' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.eq_zero_of_traceSubstitution_eq_zero
+#print axioms ReedMuller.injOn_traceSubstitution
 
-/-- info: 'ReedMuller.eq_of_traceSubstitution_eq_of_totalDegree_lt' depends on axioms:
+/-- info: 'ReedMuller.injOn_traceSubstitution_totalDegree_lt' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.eq_of_traceSubstitution_eq_of_totalDegree_lt
+#print axioms ReedMuller.injOn_traceSubstitution_totalDegree_lt
+
+/-- info: 'ReedMuller.injOn_traceSubstitution_map' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.injOn_traceSubstitution_map

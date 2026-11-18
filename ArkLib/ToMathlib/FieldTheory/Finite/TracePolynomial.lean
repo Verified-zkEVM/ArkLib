@@ -15,6 +15,8 @@ Let `L` be an extension of degree `k` of a finite field `K` with `q` elements.
 For `c ∈ L`, the trace polynomial `T_c = ∑_{j < k} c^{qʲ} X^{qʲ}` has degree at most `qᵏ⁻¹`.
 It evaluates to the trace of `c x` at every `x ∈ L`.
 Its degree is exactly `qᵏ⁻¹` when `c ≠ 0`.
+It is additive in `c`, and it is additive as a function on every `L`-algebra.
+Both facts hold because `x ↦ x^q` is additive on every algebra over `K`.
 
 A family `c` of elements of `L` gives the `K`-linear map `x ↦ (Tr(cᵢ x))ᵢ`.
 For a basis `c`, this map is a bijection onto `K^ι`.
@@ -23,6 +25,7 @@ That basis exists since the trace form is nondegenerate.
 
 The exponent `k - 1` uses subtraction in `ℕ`.
 The trace polynomial is noncomputable, as polynomial arithmetic over a field is.
+The coordinate map and equivalence are noncomputable, as `Algebra.trace` is.
 
 ## Main definitions
 
@@ -32,7 +35,11 @@ The trace polynomial is noncomputable, as polynomial arithmetic over a field is.
 
 ## Main statements
 
+* `FiniteField.add_pow_card_pow`: `x ↦ x^{qʲ}` is additive on every algebra over `K`.
 * `FiniteField.eval_tracePolynomial`: `T_c(x) = Tr(c x)`.
+* `FiniteField.tracePolynomial_add`: `T_{c + c'} = T_c + T_{c'}`.
+* `FiniteField.aeval_tracePolynomial_add` and `FiniteField.eval_tracePolynomial_add`:
+  `T_c(x + y) = T_c(x) + T_c(y)`.
 * `FiniteField.coeff_tracePolynomial`: the coefficient of `X^{qʲ}` is `c^{qʲ}`.
 * `FiniteField.natDegree_tracePolynomial_le` and `FiniteField.natDegree_tracePolynomial`:
   the degree is at most `qᵏ⁻¹`, with equality for `c ≠ 0`.
@@ -57,7 +64,35 @@ variable (K : Type*) {L : Type*} [Field K] [Fintype K] [Field L] [Algebra K L]
 noncomputable def tracePolynomial (c : L) : L[X] :=
   ∑ j ∈ range (Module.finrank K L), C (c ^ Fintype.card K ^ j) * X ^ Fintype.card K ^ j
 
+/-- On a commutative ring `A` that is an algebra over `K`, the power `x ↦ x^{qʲ}` is additive.
+Here `q = |K|`. -/
+theorem add_pow_card_pow {A : Type*} [CommRing A] [Algebra K A] (x y : A) (j : ℕ) :
+    (x + y) ^ Fintype.card K ^ j = x ^ Fintype.card K ^ j + y ^ Fintype.card K ^ j := by
+  have h (z : A) : (frobeniusAlgHom K A ^ j) z = z ^ Fintype.card K ^ j := by
+    rw [AlgHom.coe_pow, coe_frobeniusAlgHom, pow_iterate]
+  rw [← h, ← h, ← h, map_add]
+
 variable {K}
+
+/-- The trace polynomial of `c + c'` is the sum of the trace polynomials of `c` and `c'`. -/
+theorem tracePolynomial_add (c c' : L) :
+    tracePolynomial K (c + c') = tracePolynomial K c + tracePolynomial K c' := by
+  simp only [tracePolynomial, add_pow_card_pow K, map_add, add_mul, sum_add_distrib]
+
+/-- Let `A` be a commutative ring that is an algebra over `L`, and let `c ∈ L`.
+The trace polynomial of `c` is additive as a function on `A`. -/
+theorem aeval_tracePolynomial_add {A : Type*} [CommRing A] [Algebra L A] (c : L) (x y : A) :
+    aeval (x + y) (tracePolynomial K c) =
+      aeval x (tracePolynomial K c) + aeval y (tracePolynomial K c) := by
+  let _ : Algebra K A := ((algebraMap L A).comp (algebraMap K L)).toAlgebra
+  simp only [tracePolynomial, map_sum, map_mul, aeval_C, map_pow, aeval_X, add_pow_card_pow K,
+    mul_add, sum_add_distrib]
+
+/-- The trace polynomial of `c` is additive as a function on `L`. -/
+theorem eval_tracePolynomial_add (c x y : L) :
+    (tracePolynomial K c).eval (x + y) =
+      (tracePolynomial K c).eval x + (tracePolynomial K c).eval y := by
+  simpa using aeval_tracePolynomial_add (A := L) c x y
 
 /-- Let `L` be a finite extension of a finite field `K`, and let `c ∈ L`.
 At every `x ∈ L`, the trace polynomial of `c` evaluates to the trace of `c x`. -/
@@ -111,13 +146,15 @@ theorem traceCoordinateMap_apply (c : ι → L) (x : L) (i : ι) :
     traceCoordinateMap K c x i = Algebra.trace K L (c i * x) :=
   rfl
 
-/-- Let `b` be a finite basis of a finite field `L` over `K`.
+/-- Let `b` be a finite basis of `L` over a finite field `K`, so `L` is a finite field.
 The map `x ↦ (Tr(bᵢ x))ᵢ` is a bijection from `L` onto `K^ι`.
 Its coordinates are the coordinates in the trace-dual basis. -/
-theorem traceCoordinateMap_bijective [Finite L] [Finite ι] (b : Module.Basis ι K L) :
+theorem traceCoordinateMap_bijective [Finite K] [Finite ι] (b : Module.Basis ι K L) :
     Function.Bijective (traceCoordinateMap K b) := by
   classical
   have := Fintype.ofFinite ι
+  have := Module.Finite.of_basis b
+  have : Finite L := Module.finite_of_finite K
   have h : ⇑(traceCoordinateMap K b) =
       ((Algebra.traceForm K L).dualBasis (traceForm_nondegenerate K L) b).equivFun := by
     funext x i
@@ -127,14 +164,14 @@ theorem traceCoordinateMap_bijective [Finite L] [Finite ι] (b : Module.Basis ι
 
 variable (K) in
 /-- The linear equivalence `x ↦ (Tr(bᵢ x))ᵢ` between `L` and `K^ι`.
-Here `b` is a finite basis of the finite field `L` over `K`. -/
-noncomputable def traceCoordinateEquiv [Finite L] [Finite ι] (b : Module.Basis ι K L) :
+Here `b` is a finite basis of `L` over a finite field `K`. -/
+noncomputable def traceCoordinateEquiv [Finite K] [Finite ι] (b : Module.Basis ι K L) :
     L ≃ₗ[K] (ι → K) :=
   LinearEquiv.ofBijective (traceCoordinateMap K b) (traceCoordinateMap_bijective b)
 
 /-- The `i`-th coordinate of `x` is the trace of `bᵢ x`. -/
 @[simp]
-theorem traceCoordinateEquiv_apply [Finite L] [Finite ι] (b : Module.Basis ι K L) (x : L)
+theorem traceCoordinateEquiv_apply [Finite K] [Finite ι] (b : Module.Basis ι K L) (x : L)
     (i : ι) : traceCoordinateEquiv K b x i = Algebra.trace K L (b i * x) :=
   rfl
 
@@ -143,6 +180,7 @@ variable (K L) in
 Some `k` elements `cᵢ ∈ L` make `x ↦ (Tr(cᵢ x))ᵢ` a bijection from `L` onto `Kᵏ`. -/
 theorem exists_bijective_traceCoordinateMap [Finite L] :
     ∃ c : Fin (Module.finrank K L) → L, Function.Bijective (traceCoordinateMap K c) :=
+  have : Finite K := .of_injective _ (algebraMap K L).injective
   ⟨_, traceCoordinateMap_bijective (Module.finBasis K L)⟩
 
 end Coordinates

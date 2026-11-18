@@ -26,85 +26,76 @@ private noncomputable def b : Module.Basis (Fin 2) (ZMod 2) (GaloisField 2 2) :=
 -- Over `F₂ ⊆ F₄` (`k = 2`, `n = 4`), the substituted affine multiplier has degree at most
 -- `n / q₀ = 2`.
 example (α : Fin 3 → GaloisField 2 2) :
-    (traceSubstitution b (affineMultiplier α)).natDegree ≤ 2 := by
-  simpa [ZMod.card] using natDegree_traceSubstitution_affineMultiplier_le b α
+    (traceSubstitution b ((affineMultiplier α).map
+      (algebraMap (GaloisField 2 2) (GaloisField 2 2)))).natDegree ≤ 2 := by
+  exact (natDegree_traceSubstitution_map_affineMultiplier_le b α).trans_eq (by simp [ZMod.card])
 
--- The `4³ = 64` coefficient vectors give `64` distinct univariate multipliers.
+-- The `4³ = 64` coefficient vectors over `F₄` give `64` distinct univariate multipliers.
 example : Function.Injective fun α : Fin 3 → GaloisField 2 2 ↦
-    traceSubstitution b (affineMultiplier α) :=
-  traceSubstitution_affineMultiplier_injective b
+    traceSubstitution b ((affineMultiplier α).map
+      (algebraMap (GaloisField 2 2) (GaloisField 2 2))) :=
+  traceSubstitution_map_affineMultiplier_injective b
 
--- A candidate keeps its number of agreements with the combined word.
-example (f g : (Fin 2 → ZMod 2) → GaloisField 2 2) (α : Fin 3 → GaloisField 2 2)
-    (P : MvPolynomial (Fin 2) (GaloisField 2 2)) :
-    #(ReedSolomon.polynomialAgreementSet (traceDomain _ _)
-        (ReedSolomon.combinedWord (traceDomain _ _) (fun x ↦ f (traceCoordinateEquiv (ZMod 2) b x))
-          (fun x ↦ g (traceCoordinateEquiv (ZMod 2) b x))
-          (traceSubstitution b (affineMultiplier α)))
-        (traceSubstitution b P)) =
-      #(agreementSet (combinedWord f g (affineMultiplier α)) P) :=
-  card_polynomialAgreementSet_traceSubstitution b f g _ P
+-- Coefficients over the subfield `F₂` are mapped into `F₄`: the `2³ = 8` vectors stay distinct.
+example : Function.Injective fun α : Fin 3 → ZMod 2 ↦
+    traceSubstitution b ((affineMultiplier α).map (algebraMap (ZMod 2) (GaloisField 2 2))) :=
+  traceSubstitution_map_affineMultiplier_injective b
 
--- The same correspondence with a caller-supplied decidable equality on `F'`.
-example [DecidableEq (GaloisField 2 2)] (f g : (Fin 2 → ZMod 2) → GaloisField 2 2)
-    (M P F₀ G₀ : MvPolynomial (Fin 2) (GaloisField 2 2)) :
-    #(ReedSolomon.agreementLoss (traceDomain _ _) (fun x ↦ f (traceCoordinateEquiv (ZMod 2) b x))
-        (fun x ↦ g (traceCoordinateEquiv (ZMod 2) b x)) (traceSubstitution b M)
-        (traceSubstitution b P) (traceSubstitution b F₀) (traceSubstitution b G₀)) =
-      #(agreementLoss f g M P F₀ G₀) :=
-  card_agreementLoss_traceSubstitution b f g M P F₀ G₀
-
--- Every grid point is an agreement of `P = 0` with the zero words, and so is every point of
--- `F₄`.
+-- Over `F = F₂`, take `f(z) = z₀`, `g(z) = 1`, `M = X₁` and `P = X₀`.
+-- The combined word is `z₀ + z₁`, and `P` agrees with it exactly where `z₁ = 0`.
+-- That is `2` of the `4` grid points, so `P̃` has `2` agreements on `F₄`.
 example :
-    #(ReedSolomon.polynomialAgreementSet (traceDomain (GaloisField 2 2) (GaloisField 2 2))
-        (ReedSolomon.combinedWord (traceDomain _ _) (fun _ ↦ 0) (fun _ ↦ 0)
-          (traceSubstitution b (affineMultiplier 0)))
-        (traceSubstitution b (0 : MvPolynomial (Fin 2) (GaloisField 2 2)))) = 4 := by
-  rw [card_polynomialAgreementSet_traceSubstitution b (fun _ ↦ 0) (fun _ ↦ 0)]
-  simp [agreementSet]
+    #(ReedSolomon.polynomialAgreementSet (ReedSolomon.algebraMapDomain _ _)
+        (ReedSolomon.combinedWord (ReedSolomon.algebraMapDomain _ _)
+          (fun x ↦ algebraMap (ZMod 2) (GaloisField 2 2) (traceCoordinateEquiv (ZMod 2) b x 0))
+          (fun _ ↦ algebraMap (ZMod 2) (GaloisField 2 2) 1)
+          (traceSubstitution b ((MvPolynomial.X 1 : MvPolynomial (Fin 2) (ZMod 2)).map
+            (algebraMap (ZMod 2) (GaloisField 2 2)))))
+        (traceSubstitution b ((MvPolynomial.X 0 : MvPolynomial (Fin 2) (ZMod 2)).map
+          (algebraMap (ZMod 2) (GaloisField 2 2))))) = 2 := by
+  rw [card_polynomialAgreementSet_traceSubstitution b (fun z ↦ z 0) (fun _ ↦ 1)]
+  simp only [agreementSet, Fin.isValue, MvPolynomial.eval_X, gridPoint_apply,
+    Algebra.algebraMap_self, RingHom.id_apply, combinedWord, mul_one, left_eq_add]
+  decide
 
-/-- info: 'ReedMuller.card_polynomialAgreementSet_traceSubstitution' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.card_polynomialAgreementSet_traceSubstitution
-
-/-- info: 'ReedMuller.card_agreementLoss_traceSubstitution' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.card_agreementLoss_traceSubstitution
-
-/-- info: 'ReedMuller.isLossWitness_traceSubstitution' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.isLossWitness_traceSubstitution
-
-/-- info: 'ReedMuller.traceSubstitution_affineMultiplier_injective' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.traceSubstitution_affineMultiplier_injective
-
-/-- info: 'ReedMuller.traceDomain_apply' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.traceDomain_apply
-
-/-- info: 'ReedMuller.traceSubstitution_affineMultiplier' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.traceSubstitution_affineMultiplier
-
-/-- info: 'ReedMuller.natDegree_traceSubstitution_affineMultiplier_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.natDegree_traceSubstitution_affineMultiplier_le
+-- The same count with caller-supplied decidable equalities on `F` and `F'`.
+example [DecidableEq (ZMod 2)] [DecidableEq (GaloisField 2 2)]
+    (f g : (Fin 2 → ZMod 2) → ZMod 2) (M P : MvPolynomial (Fin 2) (ZMod 2)) :
+    #(ReedSolomon.polynomialAgreementSet (ReedSolomon.algebraMapDomain _ _)
+        (ReedSolomon.combinedWord (ReedSolomon.algebraMapDomain _ _)
+          (fun x ↦ algebraMap (ZMod 2) (GaloisField 2 2) (f (traceCoordinateEquiv (ZMod 2) b x)))
+          (fun x ↦ algebraMap (ZMod 2) (GaloisField 2 2) (g (traceCoordinateEquiv (ZMod 2) b x)))
+          (traceSubstitution b (M.map (algebraMap (ZMod 2) (GaloisField 2 2)))))
+        (traceSubstitution b (P.map (algebraMap (ZMod 2) (GaloisField 2 2))))) =
+      #(agreementSet (combinedWord f g M) P) :=
+  card_polynomialAgreementSet_traceSubstitution b f g M P
 
 /-- info: 'ReedMuller.map_polynomialAgreementSet_traceSubstitution' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.map_polynomialAgreementSet_traceSubstitution
 
-/-- info: 'ReedMuller.map_agreementLoss_traceSubstitution' depends on axioms:
+/-- info: 'ReedMuller.card_polynomialAgreementSet_traceSubstitution' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.map_agreementLoss_traceSubstitution
+#print axioms ReedMuller.card_polynomialAgreementSet_traceSubstitution
+
+/-- info: 'ReedMuller.traceSubstitution_map_affineMultiplier' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.traceSubstitution_map_affineMultiplier
+
+/-- info: 'ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le
+
+/-- info: 'ReedMuller.traceSubstitution_map_affineMultiplier_injective' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.traceSubstitution_map_affineMultiplier_injective
+
+/-- info: 'ReedSolomon.algebraMapDomain_apply' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.algebraMapDomain_apply
