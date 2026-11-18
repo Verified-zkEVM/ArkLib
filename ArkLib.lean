@@ -1182,6 +1182,7 @@ public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
 public import ArkLib.ToMathlib.Combinatorics.Hypergraph.PartitionConnected
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
+public import ArkLib.ToMathlib.Combinatorics.SetFamily.IntersectingSubmodular
 public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
