@@ -275,7 +275,7 @@ variable (R : Type _) [CommSemiring R] (d : ℕ) (σ : Type*)
 
 /-- Univariate polynomials can be accessed via evaluation queries. -/
 @[reducible, inline]
-instance instPolynomial : OracleInterface R[X] where
+instance instPolynomial : OracleInterface (Polynomial R) where
   Query := R
   toOC.spec := R →ₒ R
   toOC.impl point := do return (← read).eval point

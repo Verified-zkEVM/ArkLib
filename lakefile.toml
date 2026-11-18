@@ -20,12 +20,12 @@ linter.style.header = false
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "fc54dd3d7691d6f5db7dc829e321a727f095bc2d"
+rev = "8781becff83faa559bfd1f1abf376d6e3ecd8f2d"
 
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "a1ac8925bde72472724e978d7aa9b94bef3149d9"
+rev = "9135137f604b8df1ecea282719e4a3cb985ad05c"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -134,3 +134,4 @@ name = "RetiredProbabilityTestFixtures"
 srcDir = "scripts"
 roots = []
 globs = ["RetiredProbabilityTestFixtures.+"]
+allowNonModules = true

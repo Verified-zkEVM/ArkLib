@@ -67,10 +67,10 @@ abbrev rbrExtractor := RandomQuery.rbrExtractor oSpec Statement OStatement (Fin 
 variable [CommSemiring F] (P : Statement → (∀ i, OStatement i) → MvPolynomial (Fin m) F)
 
 /-- The input relation: `P = 0`. -/
-abbrev relIn := RandomQuery.relIn Statement OStatement (MvPolynomial (Fin m) F) P 0
+abbrev relIn := {s | s ∈ RandomQuery.relIn Statement OStatement (MvPolynomial (Fin m) F) P 0}
 
 /-- The output relation: `P` vanishes at the sampled point. -/
-abbrev relOut := RandomQuery.relOut Statement OStatement (MvPolynomial (Fin m) F) P 0
+abbrev relOut := {s | s ∈ RandomQuery.relOut Statement OStatement (MvPolynomial (Fin m) F) P 0}
 
 omit [∀ i, OracleInterface (OStatement i)] in
 theorem mem_relIn_iff {s : (Statement × (∀ i, OStatement i)) × Unit} :

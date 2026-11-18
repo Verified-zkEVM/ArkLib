@@ -359,7 +359,7 @@ theorem oracleReduction_perfectCompleteness {k : ℕ}
         (((stmt.1, stmt.2.1 + γ * stmt.2.2),
           fun _ j => oStmt 0 j + γ • oStmt 1 j),
           fun j => M 0 j + γ * M 1 j)) :
-        OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _) at hout
+        OracleComp (emptySpec.{0, 0} + [(pSpec (F := F)).Challenge]ₒ) _) at hout
   have hout_eq := OracleComp.eq_of_mem_support_pure _ hout
   subst out
   have hPReq_eq := OracleComp.eq_of_mem_support_pure _ hPReq
@@ -370,7 +370,7 @@ theorem oracleReduction_perfectCompleteness {k : ℕ}
   obtain ⟨γ, -, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
   obtain ⟨f1, hf1, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
   change f1 ∈ support (pure (fun γ => (γ, (default, id (stmtIn, witIn)).2)) :
-    OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _) at hf1
+    OracleComp (emptySpec.{0, 0} + [(pSpec (F := F)).Challenge]ₒ) _) at hf1
   have hf1_eq := OracleComp.eq_of_mem_support_pure _ hf1
   subst f1
   have hr1_eq := OracleComp.eq_of_mem_support_pure _ hr1

@@ -31,7 +31,7 @@ theorem prod_Iio_succ (i : Fin n) :
     _ = ∏ j ∈ Icc 0 i.castSucc, v j :=
       prod_congr rfl (fun _ _ => rfl)
     _ = ∏ j ∈ insert i.castSucc (Ico 0 i.castSucc), v j :=
-      prod_congr (by simp only [zero_le, Ico_insert_right]) (fun _ _ => rfl)
+      prod_congr (by simp only [zero_le, insert_right_Ico]) (fun _ _ => rfl)
     _ = v i.castSucc * ∏ j ∈ Iio i.castSucc, v j :=
       prod_insert (by simp only [mem_Ico, zero_le, lt_self_iff_false, and_false, not_false_eq_true])
     _ = (∏ j ∈ Iio i.castSucc, v j) * v i.castSucc := mul_comm _ _
@@ -60,7 +60,7 @@ theorem prod_Iic_succ (i : Fin n) :
     _ = ∏ j ∈ Icc 0 i.succ, v j :=
       prod_congr (by rw [← bot_eq_zero, Icc_bot]) (fun _ _ => rfl)
     _ = ∏ j ∈ insert i.succ (Ico 0 i.succ), v j :=
-      prod_congr (by simp only [zero_le, Ico_insert_right]) (fun _ _ => rfl)
+      prod_congr (by simp only [zero_le, insert_right_Ico]) (fun _ _ => rfl)
     _ = v i.succ * ∏ j ∈ Iic i.castSucc, v j :=
       prod_insert (by simp only [mem_Ico, zero_le, lt_self_iff_false, and_false, not_false_eq_true])
     _ = (∏ j ∈ Iic i.castSucc, v j) * v i.succ := mul_comm _ _

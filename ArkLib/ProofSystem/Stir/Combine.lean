@@ -396,7 +396,7 @@ private lemma glorious_lemma
     (1 - rho - 1 / (↑m))))
   (hrho : rho = n / (↑m : ℚ≥0)) :
   ↑rho + 1 / ↑(m) < 1 - δ := by
-  all_goals simp_all +decide [lt_tsub_iff_left]
+  simp_all +decide [lt_tsub_iff_left]
   ring_nf at *
   exact hδLt.2.trans_le' (by norm_cast)
 
@@ -535,7 +535,7 @@ theorem combine_theorem
     rw [Fintype.card_eq_zero_iff] at hempty
     exists (fun i j => False.elim <| hempty.1 j)
     intro i
-    simp only [code, Submodule.mem_map]
+    simp only [ReedSolomon.code, Submodule.mem_map]
     exists 0
     simp only [zero_mem, map_zero, true_and]
     ext j
@@ -610,7 +610,7 @@ theorem combine_theorem
           exists S
           obtain ⟨v, hagr⟩ := hagr
           simp only [ge_iff_le, hcard, true_and]
-          simp only [code, Submodule.mem_map, forall_and] at hagr
+          simp only [ReedSolomon.code, Submodule.mem_map, forall_and] at hagr
           rcases hagr with ⟨hagr1, hagr2⟩
           let vaux (i : Fin m) (j : Fin (block_size dstar degs i)) :
             Fin (total_terms dstar degs - 1 + 1) :=
@@ -664,7 +664,8 @@ theorem combine_theorem
       exists (fun i => evalOnPoints φ <| v i (⟨0, hf i⟩))
       intro i
       constructor
-      · simp only [code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Submodule.mem_map]
+      · simp only [ReedSolomon.code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk,
+          Submodule.mem_map]
         exists (v i ⟨0, hf i⟩)
         simp only [Polynomial.degreeLT, ge_iff_le, Submodule.mem_iInf, LinearMap.mem_ker,
           Polynomial.lcoeff_apply, and_true]

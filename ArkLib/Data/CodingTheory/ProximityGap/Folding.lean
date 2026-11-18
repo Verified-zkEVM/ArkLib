@@ -690,41 +690,26 @@ private lemma indicated_polynomial_eq_foldAux'
       foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha]
     simp only [eval_mul, eval_C, hx]
 
-private lemma foldWordAux_poly_sum {a : F} :
-  ((foldWordAux domain f k a).sum fun e a ↦ Polynomial.C a * Polynomial.X ^ e) =
-  foldWordAux domain f k a := by
-  aesop (add safe
-    [(by rw [←Polynomial.sum_monomial_eq]),
-     (by rw [Polynomial.sum])])
-
 private lemma indicated_polynomial_comp_x_k_natDegree
   (hs' : s'.Nonempty) :
   ((Polynomial.map (Polynomial.compRingHom (Polynomial.X ^ 2 ^ k)) <|
     indicatedPolynomial domain f k s').eval Polynomial.X).natDegree < (2 ^ k) * s'.card := by
-  by_cases h_card : 1 < s'.card
-  · simp only [indicatedPolynomial,
-      Polynomial.eval_map, eval₂_finsetSum,
-      eval₂_mul, eval₂_C, coe_compRingHom]
-    exact natDegree_sum_lt_of_forall_lt
-      (inst := instNeZeroNatHMul (hm := card_ne_zero hs')) _ _ <|
-      fun i hi ↦ lt_of_le_of_lt natDegree_mul_le <| by
-      simp only [natDegree_comp, natDegree_pow, natDegree_X, mul_one, eval₂_map,
-        eval₂, RingHom.coe_comp, coe_compRingHom, comp_apply, C_comp, foldWordAux_poly_sum]
-      have h_ind :=
-        Nat.le_sub_one_of_lt (singleton_indicator_natDegree_lt_of_mem hi)
-      exact lt_of_le_of_lt
-        (Nat.add_le_add_right (Nat.mul_le_mul_right _ h_ind) _) <|
-          lt_of_lt_of_le
-            (Nat.add_lt_add_left foldWordAux_natDegree _) <| by
-            rw [Nat.mul_comm, ←Nat.mul_add_one]
-            grind +ring
-  · have h_card : #s' = 1 := by grind
-    aesop
-      (add unsafe [(by rw [Polynomial.eval_map, Polynomial.eval₂_map, eval₂])])
-      (add simp [Finset.card_eq_one, indicatedPolynomial,
-        singletonIndicator, indicator,
-        foldWordAux_poly_sum])
-      (add safe [foldWordAux_natDegree])
+  have hcomp : ((Polynomial.X ^ 2 ^ k : F[X]).compRingHom).comp Polynomial.C =
+      Polynomial.C := by
+    ext a
+    simp
+  have heval (p : F[X]) : p.eval₂ Polynomial.C Polynomial.X = p := comp_X (p := p)
+  simp only [indicatedPolynomial, Polynomial.eval_map, eval₂_finsetSum, eval₂_mul, eval₂_C,
+    eval₂_map, hcomp, heval, coe_compRingHom_apply]
+  refine natDegree_sum_lt_of_forall_lt
+    (inst := instNeZeroNatHMul (hm := card_ne_zero hs')) _ _ fun i hi ↦
+    lt_of_le_of_lt natDegree_mul_le ?_
+  simp only [natDegree_comp, natDegree_pow, natDegree_X, mul_one]
+  calc
+    _ < (singletonIndicator i s').natDegree * 2 ^ k + 2 ^ k :=
+      Nat.add_lt_add_left foldWordAux_natDegree _
+    _ = 2 ^ k * ((singletonIndicator i s').natDegree + 1) := by ring
+    _ ≤ _ := Nat.mul_le_mul_left _ (singleton_indicator_natDegree_lt_of_mem hi)
 
 end IndicatedPolynomial
 

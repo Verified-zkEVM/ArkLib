@@ -296,7 +296,7 @@ theorem toPoly_monomial (n : ℕ) (c : R) :
   ext i
   rw [show (monomial n c).toPoly = (monomial n c).val.toPoly from rfl, Raw.coeff_toPoly,
     show (monomial n c).val.coeff i = (monomial n c).coeff i from rfl,
-    coeff_monomial, Polynomial.coeff_monomial]
+    coeff_monomial, Polynomial.coeff_monomial_apply]
   exact if_congr eq_comm rfl rfl
 
 end OfFinCoeff

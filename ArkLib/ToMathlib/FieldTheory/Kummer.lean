@@ -87,7 +87,7 @@ theorem X_pow_card_sub_one_sub_C_irreducible {ω : F}
   have hEmonic : ((X : F[X]) ^ (Fintype.card F - 1) - C ω).Monic := monic_X_pow_sub_C ω hq1
   have hE0 : ((X : F[X]) ^ (Fintype.card F - 1) - C ω) ≠ 0 := hEmonic.ne_zero
   have hEdeg : ((X : F[X]) ^ (Fintype.card F - 1) - C ω).natDegree = Fintype.card F - 1 :=
-    natDegree_X_pow_sub_C
+    natDegree_X_pow_sub_C ω
   have hEnu : ¬ IsUnit ((X : F[X]) ^ (Fintype.card F - 1) - C ω) :=
     not_isUnit_of_natDegree_pos _ (by omega)
   obtain ⟨g, hg, hgd⟩ := WfDvdMonoid.exists_irreducible_factor hEnu hE0

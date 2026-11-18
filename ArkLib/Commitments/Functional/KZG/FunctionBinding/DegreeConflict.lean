@@ -133,8 +133,7 @@ lemma interpolate_degree_ge_of_no_data {n L : ℕ} (S : Finset (Fin L))
   change CPolynomial.eval (queryOf i) P_C = responseOf i
   rw [eval_toPoly]
   have hPC_eq : P_C.toPoly = Q := by
-    apply Polynomial.ext
-    intro k
+    ext k : 2
     rw [← coeff_toPoly]
     change ((CompPoly.CPolynomial.Raw.mk (Array.ofFn d)).trim).coeff k = Q.coeff k
     rw [CompPoly.CPolynomial.Raw.Trim.coeff_eq_coeff]
