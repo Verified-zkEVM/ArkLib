@@ -31,16 +31,15 @@ Each count also holds for challenges drawn from a subfield `K` through an embedd
 Words, witnesses and rational functions stay over `E`, and `q` becomes `|K|`.
 A nonpolynomial pair then gives an affine equation over `E` with at most `|K|` solutions in `K²`.
 This subfield form serves the interleaved count of Theorem 5.2 of [CWYZ26].
+The single-field Lemma 4.4 is the case `φ = RingHom.id F`.
 
 ## Main statements
 
 * `ReedSolomon.eval_affineMultiplier_eq_of_mem_agreementLoss`: a lost point fixes the multiplier.
-* `ReedSolomon.card_isAffineExceptional_add_mul_map_le` and
-  `ReedSolomon.card_isAffineExceptional_add_mul_le`: the polynomial witness case.
+* `ReedSolomon.card_isAffineExceptional_add_mul_map_le`: the polynomial witness case.
 * `ReedSolomon.card_ratFunc_combination_map_le` and `ReedSolomon.card_ratFunc_combination_le`:
   compatibility outside the witness degree bounds.
-* `ReedSolomon.card_isAffineExceptional_ratFunc_map_le` and
-  `ReedSolomon.card_isAffineExceptional_ratFunc_le`: the bound for every rational pair.
+* `ReedSolomon.card_isAffineExceptional_ratFunc_map_le`: the bound for every rational pair.
 
 ## References
 
@@ -84,8 +83,9 @@ variable {K E : Type*} [Field K] [Field E] [DecidableEq E]
 
 open Classical in
 /-- Let `φ : K →+* E` be a field embedding and let `n` be the domain size.
-If `deg F₀ ≤ d` and `deg G₀ < d`, at most `n choose 2` challenges `(α, β) ∈ K²` make
-`F₀ + (φ α + φ β X) G₀` exceptional with agreement loss one. -/
+Assume `deg F₀ ≤ d` and `deg G₀ < d`.
+At most `n choose 2` challenges `(α, β) ∈ K²` make `F₀ + (φ α + φ β X) G₀` exceptional.
+The agreement loss is one. -/
 theorem card_isAffineExceptional_add_mul_map_le [Fintype K] (domain : ι ↪ E) (f g : ι → E)
     (φ : K →+* E) {d A : ℕ} (F₀ G₀ : E[X]) (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
     #{c : K × K | IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2)
@@ -119,9 +119,8 @@ theorem card_isAffineExceptional_add_mul_map_le [Fintype K] (domain : ι ↪ E) 
 omit [DecidableEq E] in
 open Classical in
 /-- Let `φ : K →+* E` be a field embedding.
-If `(F₀, G₀)` is not a pair of polynomials with `deg F₀ ≤ d` and `deg G₀ < d`,
-at most `|K|` challenges `(α, β) ∈ K²` make `F₀ + (φ α + φ β X) G₀` a polynomial
-of degree at most `d`. -/
+Assume `(F₀, G₀)` is not a pair of polynomials with `deg F₀ ≤ d` and `deg G₀ < d`.
+At most `|K|` challenges `(α, β) ∈ K²` make `F₀ + (φ α + φ β X) G₀` polynomial of degree `≤ d`. -/
 theorem card_ratFunc_combination_map_le [Fintype K] (φ : K →+* E) {d : ℕ} (F₀ G₀ : RatFunc E)
     (h : ¬ ∃ F₁ G₁ : E[X], algebraMap E[X] (RatFunc E) F₁ = F₀ ∧
       algebraMap E[X] (RatFunc E) G₁ = G₀ ∧ F₁.degree ≤ d ∧ G₁.degree < d) :
@@ -190,8 +189,10 @@ theorem card_ratFunc_combination_map_le [Fintype K] (φ : K →+* E) {d : ℕ} (
 
 open Classical in
 /-- Let `φ : K →+* E` be a field embedding, `n` the domain size and `q = |K|`.
-For any rational pair `(F₀, G₀)` over `E`, at most `max q (n choose 2)` challenges
-`(α, β) ∈ K²` make `F₀ + (φ α + φ β X) G₀` a polynomial exceptional with agreement loss one. -/
+Fix any rational pair `(F₀, G₀)` over `E`.
+Count the challenges `(α, β) ∈ K²` for which `F₀ + (φ α + φ β X) G₀` is an exceptional polynomial.
+The agreement loss is one.
+There are at most `max q (n choose 2)` such challenges. -/
 theorem card_isAffineExceptional_ratFunc_map_le [Fintype K] (domain : ι ↪ E) (f g : ι → E)
     (φ : K →+* E) {d A : ℕ} (F₀ G₀ : RatFunc E) :
     #{c : K × K | ∃ P : E[X], algebraMap E[X] (RatFunc E) P =
@@ -213,15 +214,6 @@ theorem card_isAffineExceptional_ratFunc_map_le [Fintype K] (domain : ι ↪ E) 
 
 end Map
 
-open Classical in
-/-- If `deg F₀ ≤ d` and `deg G₀ < d`, at most `n choose 2` challenges `(α, β)` make
-`F₀ + (α + β X) G₀` exceptional with agreement loss one, where `n` is the domain size. -/
-theorem card_isAffineExceptional_add_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
-    {d A : ℕ} (F₀ G₀ : F[X]) (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
-    #{c : F × F | IsAffineExceptional domain f g d A 1 c.1 c.2
-      (F₀ + affineMultiplier c.1 c.2 * G₀)} ≤ (Fintype.card ι).choose 2 :=
-  card_isAffineExceptional_add_mul_map_le domain f g (RingHom.id F) F₀ G₀ hF hG
-
 omit [DecidableEq F] in
 open Classical in
 /-- If `(F₀, G₀)` is not a pair of polynomials with `deg F₀ ≤ d` and `deg G₀ < d`,
@@ -233,17 +225,5 @@ theorem card_ratFunc_combination_le [Fintype F] {d : ℕ} (F₀ G₀ : RatFunc F
     #{c : F × F | ∃ P : F[X], P.degree ≤ d ∧ algebraMap F[X] (RatFunc F) P =
       F₀ + algebraMap F[X] (RatFunc F) (affineMultiplier c.1 c.2) * G₀} ≤ Fintype.card F :=
   card_ratFunc_combination_map_le (RingHom.id F) F₀ G₀ h
-
-open Classical in
-/-- For any rational pair `(F₀, G₀)`, at most `max q (n choose 2)` challenges `(α, β)`
-make `F₀ + (α + β X) G₀` a polynomial exceptional with agreement loss one.
-Here `n` is the domain size and `q` is the field size. -/
-theorem card_isAffineExceptional_ratFunc_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
-    {d A : ℕ} (F₀ G₀ : RatFunc F) :
-    #{c : F × F | ∃ P : F[X], algebraMap F[X] (RatFunc F) P =
-        F₀ + algebraMap F[X] (RatFunc F) (affineMultiplier c.1 c.2) * G₀ ∧
-      IsAffineExceptional domain f g d A 1 c.1 c.2 P} ≤
-      max (Fintype.card F) ((Fintype.card ι).choose 2) :=
-  card_isAffineExceptional_ratFunc_map_le domain f g (RingHom.id F) F₀ G₀
 
 end ReedSolomon

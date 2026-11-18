@@ -62,51 +62,62 @@ private theorem largeDomain_error_lt :
         (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
     _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
 
-private noncomputable instance : Fintype (GaloisField 2 7) := Fintype.ofFinite _
+/-- An embedding of `𝔽_{2^64}` into `𝔽_{2^128}`, which exists since `64 ∣ 128`. -/
+private noncomputable def embed₆₄ : GaloisField 2 64 →+* GaloisField 2 128 :=
+  (Classical.choice (FiniteField.nonempty_algHom_of_finrank_dvd (F := ZMod 2)
+    (by rw [GaloisField.finrank 2 (by norm_num), GaloisField.finrank 2 (by norm_num)]
+        norm_num))).toRingHom
 
-private theorem smallField_card : Fintype.card (GaloisField 2 7) = 2 ^ 7 := by
-  rw [← Nat.card_eq_fintype_card, GaloisField.card 2 7 (by norm_num)]
+/-- The 100-point domain carried into `𝔽_{2^128}`. -/
+private noncomputable def wideDomain : Fin 100 ↪ GaloisField 2 128 :=
+  largeDomain.trans ⟨embed₆₄, embed₆₄.injective⟩
 
-/-- A 100-point domain in the field with `2^7` elements. -/
-private noncomputable def smallDomain : Fin 100 ↪ GaloisField 2 7 :=
-  Classical.choice (Function.Embedding.nonempty_of_card_le
-    (by rw [Fintype.card_fin, smallField_card]; norm_num))
-
--- Challenges from the prime field `𝔽₂ ⊆ 𝔽₁₂₈` at `d = 16`, `n = 100`, `η = 1/2`:
--- the persistent term is `4 · 2 / η = 16`, with `|𝔽₂| = 2` in place of `|𝔽₁₂₈| = 128`.
+-- Words over `𝔽_{2^128}` with challenges from `𝔽_{2^64}` at `d = 16`, `n = 100`, `η = 1/2`:
+-- the exceptional challenges are below a `2⁻⁶⁰` fraction of `|𝔽_{2^64}|² = 2¹²⁸`.
 open Classical in
-example (f g : Fin 100 → GaloisField 2 7) :
-    ∃ S : Finset (ZMod 2 × ZMod 2), (S.card : ℝ) ≤ 16 + 2 ^ 22 * 5 ^ 10 ∧
-      ∀ c ∉ S, ∀ P, ¬ IsAffineExceptional smallDomain f g 16 90 1
-        (algebraMap (ZMod 2) (GaloisField 2 7) c.1)
-        (algebraMap (ZMod 2) (GaloisField 2 7) c.2) P := by
+example (f g : Fin 100 → GaloisField 2 128) :
+    ∃ S : Finset (GaloisField 2 64 × GaloisField 2 64),
+      (S.card : ℝ) / (Fintype.card (GaloisField 2 64) : ℝ) ^ 2 < 1 / 2 ^ 60 ∧
+      ∀ c ∉ S, ∀ P, ¬ IsAffineExceptional wideDomain f g 16 90 1
+        (embed₆₄ c.1) (embed₆₄ c.2) P := by
   have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
     simpa using sqrt_degreeFraction
-  obtain ⟨S, hS, hgood⟩ := exists_affineExceptional_finset_card_map_le smallDomain f g
-    (algebraMap (ZMod 2) (GaloisField 2 7)) (d := 16) (η := 1 / 2) (by norm_num) (by simp)
-    (by norm_num) (by rw [hsqrt]; norm_num) (by simp; norm_num)
+  obtain ⟨S, hS, hgood⟩ := exists_affineExceptional_finset_card_map_le wideDomain f g embed₆₄
+    (d := 16) (η := 1 / 2) (by norm_num) (by simp) (by norm_num) (by rw [hsqrt]; norm_num)
+    (by simp; norm_num)
   have hA : ⌈((2 : ℝ) / 5 + 1 / 2) * ((100 : ℕ) : ℝ)⌉₊ = 90 := by norm_num
-  rw [Fintype.card_fin, ZMod.card] at hS
+  rw [Fintype.card_fin, field_card] at hS
   rw [hsqrt, Fintype.card_fin, hA] at hgood
-  refine ⟨S, hS.trans (le_of_eq ?_), hgood⟩
+  refine ⟨S, ?_, hgood⟩
+  rw [field_card, div_lt_iff₀ (by positivity)]
+  refine hS.trans_lt ?_
   norm_num
 
 /-- info: 'ReedSolomon.affineMcaError_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.affineMcaError_le
+
 /-- info: 'ReedSolomon.exists_affineExceptional_finset_card_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.exists_affineExceptional_finset_card_le
+
 /-- info: 'ReedSolomon.exists_affineExceptional_finset_card_map_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.exists_affineExceptional_finset_card_map_le
+
+/-- info: 'ReedSolomon.exists_affineExceptional_finset_card_map_le_of_interpolation' depends on
+axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.exists_affineExceptional_finset_card_map_le_of_interpolation
+
 /-- info: 'ReedSolomon.exists_finset_card_le_forall_isAffinePersistent_of_interpolant' depends on
 axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.exists_finset_card_le_forall_isAffinePersistent_of_interpolant
+
 /-- info: 'ReedSolomon.card_le_of_affineNonpersistent_roots' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in

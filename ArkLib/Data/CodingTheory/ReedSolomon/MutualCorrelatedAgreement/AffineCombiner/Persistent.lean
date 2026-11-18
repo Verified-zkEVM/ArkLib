@@ -165,10 +165,11 @@ private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι
       · exact (natDegree_mul_le).trans (by omega)
 
 open Classical in
-/-- Let `φ : K →+* E` be a field embedding.
-If `d + 1 < B` and `n (d + 1) < B²`, the number of challenges `(α, β) ∈ K²` such that
-`(φ α, φ β)` has a persistent exceptional candidate at agreement loss one is at most
-`ℓ · max q (n choose 2)`, where `n = |ι|`, `q = |K|`, and `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+/-- Let `φ : K →+* E` be a field embedding, `n = |ι|` and `q = |K|`.
+Assume `d + 1 < B` and `n (d + 1) < B²`, and set `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+Count the challenges `(α, β) ∈ K²` for which `(φ α, φ β)` has a persistent exceptional candidate.
+The agreement loss is one.
+There are at most `ℓ · max q (n choose 2)` such challenges.
 The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
 theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Field K] [Fintype K] [Field E]
     [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K →+* E) {d A B : ℕ} (hdB : d + 1 < B)

@@ -24,11 +24,12 @@ For output degree `1 ≤ d < n`, write `ρ = d / n` and assume
 `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`.
 At the agreement threshold `⌈(√ρ + η) n⌉` and loss one, the error is at most
 `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
-The domain embedding supplies `n ≤ q`.
 
-The count also holds for challenges drawn from a subfield `K` of the field `E` of the words.
+The count also holds for challenges drawn from a subfield `K` of the finite field `E` of the words.
 Then `q` is `|K|` in the persistent term, and no bound `n ≤ |K|` is needed.
 This subfield form serves the interleaved count of Theorem 5.2 of [CWYZ26].
+The error and probability forms with base-field sampling belong to the interleaved module.
+This file stops at the subfield count.
 
 The error has type `ENNReal`.
 `ReedSolomon.prob_isAffineExceptional_le` connects it to the native probability of an
@@ -117,18 +118,18 @@ private theorem threshold_facts {d n : ℕ} {η : ℝ} (hn : 0 < n) (hη : 0 < �
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
-/-- At loss one and threshold `A = ⌈(√ρ + η)n⌉`, a finite set of challenges `(α, β) ∈ K²`
-contains every challenge whose image `(φ α, φ β)` under a field embedding `φ : K →+* E` has an
-exceptional candidate over `E`.
+/-- At loss one and threshold `A = ⌈(√ρ + η)n⌉`, few subfield challenges are exceptional.
 
-Here `n` is the domain size, `q = |K|`, `1 ≤ d < n`, `ρ = d/n`, and
-`0 < η < 1 - √ρ`.
+Let `E` be a finite field and `φ : K →+* E` a field embedding.
+A challenge `(α, β) ∈ K²` is exceptional if `(φ α, φ β)` has an exceptional candidate over `E`.
+A finite set `Ex` contains every exceptional challenge.
+Here `n` is the domain size, `q = |K|`, `1 ≤ d < n`, `ρ = d/n`, and `0 < η < 1 - √ρ`.
 The interpolation multiplicity is `m`, the `(Y, Z)`-degree budget is `D`, and the `Z`-degree
 budget is `M`.
 Set `B = ⌈(√ρ + η/2)n⌉ - 1` and assume `n(d + 1) < B²`.
 The real Johnson factor is `J = n(B - d - 1)/(B² - n(d + 1))`, without a floor.
-The bound is `#Ex ≤ J max q (n choose 2) + K`, where
-`K = D² + 4d²M²D³(n/(A - B))²`.
+Set `N = D² + 4d²M²D³(n/(A - B))²`.
+The bound is `#Ex ≤ J max q (n choose 2) + N`.
 
 The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
@@ -260,11 +261,12 @@ theorem affineMcaError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m 
 
 /-- With one point of agreement loss, few challenges from a subfield are exceptional.
 
-Let `φ : K →+* E` be a field embedding and let the domain lie in `E`.
+Let `E` be a finite field, `φ : K →+* E` a field embedding, and let the domain lie in `E`.
 Here `n` is the domain size, `q = |K|`, `1 ≤ d < n`, and `ρ = d / n`.
 Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
-At most `4 q / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges `(α, β) ∈ K²` have an exceptional candidate
-over `E` for `(φ α, φ β)` at `⌈(√ρ + η) n⌉`. -/
+A challenge `(α, β) ∈ K²` is exceptional if `(φ α, φ β)` has an exceptional candidate over `E`.
+The agreement threshold is `⌈(√ρ + η) n⌉`.
+At most `4 q / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges are exceptional. -/
 theorem exists_affineExceptional_finset_card_map_le {K E : Type*} [Field K] [Fintype K]
     [Field E] [Finite E] [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K →+* E)
     {d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)

@@ -24,15 +24,14 @@ Over the algebraic closure, the interpolant splits into a content free of `Z` an
 factors of positive `Z`-degree.
 The content vanishes on few lines, and each factor has few nonpersistent challenges.
 Summing over the factors bounds the nonpersistent exceptional challenges.
-That count never mentions the field size, so it also bounds challenges drawn from a subfield.
+The count bounds a set of challenges in `F²`, and its size does not depend on `|F|`.
+For challenges from a subfield, the preimage of this set under the embedding is no larger.
 
 ## Main statements
 
 * `ReedSolomon.exists_affineFactor_finset_card_le`: the count for one irreducible factor.
 * `ReedSolomon.exists_finset_card_le_forall_isAffinePersistent_of_interpolant`: outside at most
   `D² + 4 d² M² D³ (n / (A - B))²` challenges, every exceptional candidate is persistent.
-* `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant`: outside a given set and
-  at most `D² + 4 d² M² D³ (n / (A - B))²` more challenges, no candidate is exceptional.
 
 ## References
 
@@ -149,8 +148,8 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
 /-- Outside few challenges, every exceptional candidate is persistent.
 
-Assume `1 ≤ d ≤ B < A ≤ n`, where `n` is the domain size, and an interpolant with budgets
-`m, D, M`.
+Let `n` be the domain size and assume `1 ≤ d ≤ B < A ≤ n`.
+Let `Q` be an interpolant with budgets `m, D, M`.
 At agreement loss one, the excluded set has size at most `D² + 4 d² M² D³ (n / (A - B))²`. -/
 theorem exists_finset_card_le_forall_isAffinePersistent_of_interpolant [Finite F]
     (domain : ι ↪ F) (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
@@ -233,29 +232,6 @@ theorem exists_finset_card_le_forall_isAffinePersistent_of_interpolant [Finite F
   · refine hgood c hc P ?_ hP.1 hP.2.1
     have := congrArg (Polynomial.map φ) (hQ.vanish c.1 c.2 P hP.1 hP.2.1)
     rwa [map_affineLineEval, Polynomial.map_zero] at this
-
-/-- Outside few challenges, no candidate is exceptional.
-
-Assume `1 ≤ d ≤ B < A ≤ n` and an interpolant with budgets `m, D, M`.
-At agreement loss one, the excluded set has size at most the size of a given set plus
-`D² + 4 d² M² D³ (n / (A - B))²`.
-Outside the given set, exceptional candidates must not be persistent. -/
-theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domain : ι ↪ F)
-    (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
-    (hQ : IsAffineInterpolant domain f g d A m D M Q) (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A)
-    (hAn : A ≤ Fintype.card ι) (Pset : Finset (F × F))
-    (hPset : ∀ c ∉ Pset, ∀ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P →
-      ¬ IsAffinePersistent domain f g d B c.1 c.2 P) :
-    ∃ Ex : Finset (F × F), (#Ex : ℝ) ≤ #Pset + D ^ 2 +
-        4 * d ^ 2 * M ^ 2 * D ^ 3 * ((Fintype.card ι : ℝ) / (A - B : ℕ)) ^ 2 ∧
-      ∀ c ∉ Ex, ∀ P, ¬ IsAffineExceptional domain f g d A 1 c.1 c.2 P := by
-  obtain ⟨Ex, hcard, hgood⟩ :=
-    exists_finset_card_le_forall_isAffinePersistent_of_interpolant domain f g hQ hd hdB hBA hAn
-  refine ⟨Pset ∪ Ex, ?_, fun c hc P hP ↦ ?_⟩
-  · calc (#(Pset ∪ Ex) : ℝ) ≤ #Pset + #Ex := by exact_mod_cast Finset.card_union_le _ _
-      _ ≤ _ := by linarith
-  · exact hPset c (fun h ↦ hc (Finset.mem_union_left _ h)) P hP
-      (hgood c (fun h ↦ hc (Finset.mem_union_right _ h)) P hP)
 
 end Count
 
