@@ -38,11 +38,9 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 
 ## Main statements
 
-* `ReedSolomon.pow_dvd_aeval_algebra_of_affineWeight_le` and
-  `ReedSolomon.pow_dvd_aeval_of_affineWeight_le`: vanishing to order `m` gives an `m`-th power
-  factor.
+* `ReedSolomon.pow_dvd_aeval_of_affineWeight_le`: vanishing to order `m` gives an `m`-th power.
 * `ReedSolomon.exists_isAffineInterpolant`: an interpolant exists under the surplus condition.
-* `ReedSolomon.exists_isAffineInterpolant_degreeOf_pos`: if moreover `A ≤ n`, an interpolant of
+* `ReedSolomon.exists_isAffineInterpolant_degreeOf_none_pos`: if moreover `A ≤ n`, an interpolant of
   positive `Z`-degree exists.
 
 ## References
@@ -140,11 +138,13 @@ theorem affineLineEval_eq_aeval_affineShift (α β : K) (P : K[X]) (x u v : K)
   · simp [affineShift]
   · fin_cases i <;> simp [affineShift]
 
-/-- Let `p` divide the images of `Z` and `X` in an algebra over the coefficient ring.
+/-- Let `Q` have coefficients in `R`, and let `ψ` send the variables into an `R`-algebra `S`.
 
-If every monomial has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
-theorem pow_dvd_aeval_algebra_of_affineWeight_le {R A : Type*} [CommSemiring R]
-    [CommSemiring A] [Algebra R A] {ψ : AffineVar → A} {p : A} {m : ℕ}
+Let `p` divide the images of `Z` and `X`.
+
+If every monomial of `Q` has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
+theorem pow_dvd_aeval_of_affineWeight_le {R S : Type*} [CommSemiring R] [CommSemiring S]
+    [Algebra R S] {ψ : AffineVar → S} {p : S} {m : ℕ}
     (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) {Q : MvPolynomial AffineVar R}
     (hQ : ∀ e ∈ Q.support, m ≤ e none + e (some 0)) :
     p ^ m ∣ MvPolynomial.aeval ψ Q := by
@@ -157,15 +157,6 @@ theorem pow_dvd_aeval_algebra_of_affineWeight_le {R A : Type*} [CommSemiring R]
   refine (pow_dvd_pow p (hQ e he)).trans ?_
   rw [pow_add, ← mul_assoc]
   exact Dvd.dvd.mul_right (mul_dvd_mul (pow_dvd_pow_of_dvd hz _) (pow_dvd_pow_of_dvd hx _)) _
-
-/-- Let `p` divide the images of `Z` and `X`.
-
-If every monomial has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
-theorem pow_dvd_aeval_of_affineWeight_le {ψ : AffineVar → K[X]} {p : K[X]} {m : ℕ}
-    (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) {R : MvPolynomial AffineVar K}
-    (hR : ∀ e ∈ R.support, m ≤ e none + e (some 0)) :
-    p ^ m ∣ MvPolynomial.aeval ψ R :=
-  pow_dvd_aeval_algebra_of_affineWeight_le hz hx hR
 
 end Shift
 
@@ -193,8 +184,7 @@ structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : 
 omit [DecidableEq F] in
 /-- A kernel element of the interpolation constraints, with its degree bounds.
 
-Each shift of the result to a point `(z, f(z) + Y g(z))` has only monomials of degree at least
-`m` in `Z` and `X`. -/
+Each shift of it to a point `(z, f(z) + Y g(z))` has only monomials of `(Z, X)`-degree `≥ m`. -/
 private theorem exists_affineShift_support_le (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
@@ -279,8 +269,9 @@ private theorem exists_affineShift_support_le (domain : ι ↪ F) (f g : ι → 
     MvPolynomial.lcoeff_apply, affineExponent_coords, Pi.zero_apply] at h0
   exact (MvPolynomial.mem_support_iff.mp he) h0
 
-/-- Let `Q` have line weight below `m A` and vanish to order `m` along every line
-`(z, Y, f(z) + Y g(z))` with `z` in the domain.
+/-- Let `Q` have line weight below `m A`.
+
+Let `Q` vanish to order `m` along each line `(z, Y, f(z) + Y g(z))` with `z` in the domain.
 
 Then `Q` vanishes along each challenge line with an agreeing candidate of degree at most `d`. -/
 private theorem affineLineEval_eq_zero_of_affineShift_support_le (domain : ι ↪ F)
@@ -338,7 +329,7 @@ private theorem degreeOf_none_pos_of_affineShift_support_le (domain : ι ↪ F) 
         funext j
         fin_cases j <;> simp [χ]
       rw [← hshift]
-      exact pow_dvd_aeval_algebra_of_affineWeight_le (by simp) (by simp) (hmult i)
+      exact pow_dvd_aeval_of_affineWeight_le (by simp) (by simp) (hmult i)
     · have hψ : W = MvPolynomial.aeval (fun w : AffineVar ↦ w.elim 0 χ)
           (MvPolynomial.rename some Q₀) := by
         rw [MvPolynomial.aeval_rename]
@@ -366,7 +357,8 @@ open Polynomial.SymbolicInterpolation in
 The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
 At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
 Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
-No positive lower bound on the resulting `Z`-degree is asserted. -/
+No positive lower bound on the resulting `Z`-degree is asserted.
+The sibling statement with `A ≤ n` also gives a positive `Z`-degree. -/
 theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
@@ -376,13 +368,14 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
     affineLineEval_eq_zero_of_affineShift_support_le domain f g hlt hmult⟩
 
 open Polynomial.SymbolicInterpolation in
-/-- An interpolant with positive `Z`-degree exists when `A ≤ n` and its allowed monomials
-outnumber the linear constraints, where `n` is the domain size.
+/-- Let `n` be the domain size, and assume `A ≤ n`.
+
+An interpolant with positive `Z`-degree exists when its monomials outnumber the constraints.
 
 The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
 At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
 Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction. -/
-theorem exists_isAffineInterpolant_degreeOf_pos (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
+theorem exists_isAffineInterpolant_degreeOf_none_pos (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
     (hAn : A ≤ Fintype.card ι)
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :

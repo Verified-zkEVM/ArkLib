@@ -37,10 +37,20 @@ Since `g` vanishes only on the first set, the zero candidate agrees on that set 
 Each full block thus gives exactly `A` agreements and no witness of loss at most `s`.
 Proposition 6.1 asserts these facts, and the error bound is their consequence.
 
+## Main definitions
+
+* `ReedSolomon.exactZeroChallenges`: the challenges whose combined word has exactly `A` zeros.
+
+The set is noncomputable because it is phrased through the constant polynomial `C α`.
+
 ## Main statements
 
 * `ReedSolomon.le_affineMcaError_zero_loss`: the bound `(n - A + 1)(q - 1) / q²`.
 * `ReedSolomon.le_affineMcaError_zero_loss_div_two`: the bound `(n - A + 1) / (2q)`.
+* `ReedSolomon.isScalarExceptional_of_forall_card_lt`: if `g` is far from the code, every
+  candidate with `A` agreements is scalar exceptional.
+* `ReedSolomon.le_scalarMcaError_of_forall_card_lt`: for such words, the error is at least the
+  probability that `f + α g` has exactly `A` zeros.
 * `ReedSolomon.exists_words_forall_isScalarExceptional_zero`: the words of Proposition 6.1,
   with `1 + ⌊(n - A) / (s + 1)⌋` challenges of exactly `A` agreements, all exceptional.
 * `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt`:
@@ -187,11 +197,23 @@ theorem le_affineMcaError_zero_loss_div_two [Fintype F] (domain : ι ↪ F) {d A
   nlinarith [mul_nonneg (mul_nonneg hN (by linarith : (0 : ℝ) ≤ Fintype.card F))
     (by linarith : (0 : ℝ) ≤ Fintype.card F - 2)]
 
-/-- Suppose no polynomial of degree at most `d` agrees with `g` on `A - s` points.
+/-- The challenges `α` for which the word `f + α g` has exactly `A` zeros on the domain. -/
+noncomputable def exactZeroChallenges [Fintype F] (domain : ι ↪ F) (f g : ι → F) (A : ℕ) :
+    Finset F :=
+  {α : F | #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A}
 
-Then every candidate of degree at most `d` that agrees with `f + α g` on at least `A` points is
-scalar exceptional at threshold `A` and loss `s`. -/
-private theorem isScalarExceptional_of_forall_card_lt (domain : ι ↪ F) {f g : ι → F}
+/-- A challenge lies in the set exactly when its combined word has `A` zeros. -/
+@[simp] theorem mem_exactZeroChallenges [Fintype F] (domain : ι ↪ F) (f g : ι → F) (A : ℕ)
+    (α : F) : α ∈ exactZeroChallenges domain f g A ↔
+      #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A := by
+  simp [exactZeroChallenges]
+
+/-- Suppose no polynomial of degree at most `d` agrees with `g` on `A - s` domain points.
+
+Let `P` have degree at most `d` and agree with `f + α g` on at least `A` points.
+
+Then `P` is scalar exceptional for `α` at threshold `A` and loss `s`. -/
+theorem isScalarExceptional_of_forall_card_lt (domain : ι ↪ F) {f g : ι → F}
     {d A s : ℕ} (hfar : ∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s)
     {α : F} {P : F[X]} (hP : P.degree ≤ d)
     (hA : A ≤ #(polynomialAgreementSet domain (combinedWord domain f g (C α)) P)) :
@@ -211,14 +233,34 @@ private theorem isScalarExceptional_of_forall_card_lt (domain : ι ↪ F) {f g :
   unfold agreementLoss at hloss
   omega
 
+/-- Suppose no polynomial of degree at most `d` agrees with `g` on `A - s` domain points.
+
+Let `q = |F|` be the field size.
+
+Let `E` be the set of challenges `α` for which `f + α g` has exactly `A` zeros.
+
+Then the scalar error at loss `s` is at least `|E| / q`. -/
+theorem le_scalarMcaError_of_forall_card_lt [Fintype F] (domain : ι ↪ F) {f g : ι → F}
+    {d A s : ℕ} (hfar : ∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s) :
+    ENNReal.ofReal ((#(exactZeroChallenges domain f g A) : ℝ) / (Fintype.card F : ℝ)) ≤
+      scalarMcaError domain d A s := by
+  classical
+  refine le_trans ?_ (le_scalarMcaError domain d A s f g)
+  apply ENNReal.ofReal_le_ofReal
+  apply div_le_div_of_nonneg_right _ (by positivity)
+  have hsub : exactZeroChallenges domain f g A ⊆
+      ({α : F | ∃ P, IsScalarExceptional domain f g d A s α P} : Finset F) := fun α hα ↦
+    mem_filter.mpr ⟨mem_univ _, 0, isScalarExceptional_of_forall_card_lt domain hfar (by simp)
+      ((mem_exactZeroChallenges domain f g A α).mp hα).ge⟩
+  exact_mod_cast card_le_card hsub
+
 /-- Proposition 6.1 of [CWYZ26]: received words separating scalar combiners.
 
 Let `n = |ι|` be the domain size and `q = |F|` the field size.
 Assume `d + s + 1 < A ≤ n`.
-There are words `f, g` such that no polynomial of degree at most `d` agrees with `g` on
-`A - s` points.
-Every challenge `α` whose word `f + α g` has exactly `A` zeros makes the zero candidate
-scalar exceptional at threshold `A` and loss `s`.
+There are words `f, g` such that no polynomial of degree `≤ d` agrees with `g` on `A - s` points.
+Let `α` be a challenge for which the word `f + α g` has exactly `A` zeros.
+Then the zero candidate is scalar exceptional for `α` at threshold `A` and loss `s`.
 At least `1 + ⌊(n - A) / (s + 1)⌋` challenges give exactly `A` zeros. -/
 theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι ↪ F)
     {d A s : ℕ} (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
@@ -226,8 +268,7 @@ theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι �
       (∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s) ∧
       (∀ α : F, #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A →
         IsScalarExceptional domain f g d A s α 0) ∧
-      1 + (Fintype.card ι - A) / (s + 1) ≤
-        #{α : F | #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A} := by
+      1 + (Fintype.card ι - A) / (s + 1) ≤ #(exactZeroChallenges domain f g A) := by
   classical
   set n := Fintype.card ι
   set pos : ι → ℕ := fun i ↦ (Fintype.equivFin ι i : ℕ)
@@ -336,27 +377,23 @@ theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι �
     (by simp) hα.ge, ?_⟩
   rw [← card_range k]
   refine card_le_card_of_injOn γ (fun j hj ↦ ?_) (hγ.mono ?_)
-  · exact mem_filter.mpr ⟨mem_univ _, hcard j (mem_range.mp hj)⟩
+  · exact (mem_exactZeroChallenges domain f g A _).mpr (hcard j (mem_range.mp hj))
   · intro j hj
     simp only [coe_range, Set.mem_Iio] at hj ⊢
     have : k ≤ k * (s + 1) := Nat.le_mul_of_pos_right _ (by omega)
     omega
 
-/-- If `d + s + 1 < A ≤ n`, the scalar error at loss `s` is at least
-`(1 + ⌊(n - A) / (s + 1)⌋) / q`, where `n = |ι|` and `q = |F|`. -/
+/-- Let `n = |ι|` be the domain size and `q = |F|` the field size.
+
+If `d + s + 1 < A ≤ n`, the scalar error at loss `s` is at least `(1 + ⌊(n - A)/(s + 1)⌋) / q`. -/
 theorem le_scalarMcaError_of_degree_add_loss_add_one_lt [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
     (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ENNReal.ofReal (((1 + (Fintype.card ι - A) / (s + 1) : ℕ) : ℝ) /
         (Fintype.card F : ℝ)) ≤
       scalarMcaError domain d A s := by
-  classical
-  obtain ⟨f, g, -, hexc, hcount⟩ := exists_words_forall_isScalarExceptional_zero domain hdA hAn
-  refine le_trans ?_ (le_scalarMcaError domain d A s f g)
-  apply ENNReal.ofReal_le_ofReal
-  apply div_le_div_of_nonneg_right _ (by positivity)
-  have hsub : #{α : F | #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A} ≤
-      #{α : F | ∃ P, IsScalarExceptional domain f g d A s α P} :=
-    card_le_card fun α hα ↦ mem_filter.mpr ⟨mem_univ _, 0, hexc α (mem_filter.mp hα).2⟩
-  exact_mod_cast hcount.trans hsub
+  obtain ⟨f, g, hfar, -, hcount⟩ := exists_words_forall_isScalarExceptional_zero domain hdA hAn
+  refine le_trans (ENNReal.ofReal_le_ofReal ?_)
+    (le_scalarMcaError_of_forall_card_lt domain (f := f) hfar)
+  exact div_le_div_of_nonneg_right (by exact_mod_cast hcount) (by positivity)
 
 end ReedSolomon
