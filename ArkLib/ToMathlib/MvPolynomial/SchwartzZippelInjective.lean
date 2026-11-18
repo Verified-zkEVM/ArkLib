@@ -98,7 +98,7 @@ theorem card_filter_injective_eval_eq_zero_le {n : ℕ} {p : MvPolynomial (Fin n
         obtain ⟨i, -, hi⟩ := mem_image.mp hx0
         exact Fin.succ_ne_zero i (hxinj hi)
       · have hq : p'.map (eval t) ≠ 0 := fun hq ↦ h0 <| by
-          have h := congrArg (Polynomial.coeff · k) hq
+          have h := congrArg (fun q ↦ q.coeff k) hq
           rwa [Polynomial.coeff_map, Polynomial.coeff_zero] at h
         calc #{x ∈ Z | Fin.tail x = t}
             ≤ #(p'.map (eval t)).roots.toFinset := by
