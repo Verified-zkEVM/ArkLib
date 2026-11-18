@@ -50,6 +50,7 @@ The combined word has value `f x + (α + β * x) * g x`.
 
 ## Main statements
 
+* `ReedSolomon.map_affineMultiplier`: a ring map sends `α + β X` to `φ α + φ β X`.
 * `ReedSolomon.agreementLoss_eq_sdiff`: loss is agreement minus common witness agreement.
 * `ReedSolomon.affineMcaError_le_of_forall_exists` and
   `ReedSolomon.scalarMcaError_le_of_forall_exists`: uniform counts bound the errors.
@@ -89,6 +90,12 @@ theorem affineMultiplier_injective :
   simp only [affineMultiplier, coeff_add, coeff_C, coeff_C_mul, coeff_X] at h0 h1
   simp at h0 h1
   simp [h0, h1]
+
+/-- Mapping the coefficients of `α + β X` along a ring map `φ` gives `φ α + φ β X`. -/
+@[simp]
+theorem map_affineMultiplier {K E : Type*} [Field K] [Field E] (φ : K →+* E) (α β : K) :
+    (affineMultiplier α β).map φ = affineMultiplier (φ α) (φ β) := by
+  simp [affineMultiplier]
 
 @[simp]
 theorem eval_affineMultiplier (α β x : F) : (affineMultiplier α β).eval x = α + β * x := by
