@@ -109,24 +109,6 @@ def MatchesMessages {Salt : Type} : (rounds : List Round) → Messages Salt roun
   | _ :: rounds, (message, _, messages), path =>
       path.1 = message ∧ MatchesMessages rounds messages path.2.2
 
-/-- Oracle simulation cannot add terminal outputs outside the original structural support. -/
-theorem simulateQ_support_subset {ι κ : Type}
-    {ambient : OracleSpec ι} {source : OracleSpec κ}
-    (impl : QueryImpl source (OracleComp ambient)) {α : Type} (program : OracleComp source α) :
-    support (simulateQ impl program) ⊆ support program := by
-  induction program using OracleComp.inductionOn with
-  | pure a =>
-      intro value supported
-      simp only [simulateQ_pure] at supported
-      have same := OracleComp.eq_of_mem_support_pure a supported
-      subst value
-      simp
-  | query_bind q k ih =>
-      intro value supported
-      simp only [simulateQ_bind, simulateQ_liftM_query] at supported
-      obtain ⟨response, _, hs⟩ := OracleComp.mem_support_bind_peel _ _ supported
-      exact MonadAttach.mem_support_bind.mpr ⟨response, by simp, ih response hs⟩
-
 /-- Every path in the actual open completion program has exactly the authored oracle messages. -/
 theorem complete_support_matches {Input Salt : Type} (rounds : List Round) (z : Input)
     (messages : Messages Salt rounds) (path : (protocol rounds).tree.ExecutionPath)
@@ -141,7 +123,7 @@ theorem complete_support_matches {Input Salt : Type} (rounds : List Round) (z : 
       obtain ⟨tail, htail, hpure⟩ := OracleComp.mem_support_bind_peel _ _ hs
       have same := OracleComp.eq_of_mem_support_pure _ hpure
       subst path
-      exact ⟨rfl, ih messages tail (simulateQ_support_subset _ _ htail)⟩
+      exact ⟨rfl, ih messages tail (OracleComp.support_simulateQ_subset _ _ htail)⟩
 
 /-- Ordinary fresh uniform challenge programs. -/
 def uniformPrograms : (rounds : List Round) → ChallengePrograms unifSpec rounds

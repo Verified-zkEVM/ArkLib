@@ -525,19 +525,16 @@ theorem coordinateWiseSpecialSoundWith_of_mkWitness
     Verifier.coordinateWiseSpecialSoundWith init impl
       (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)) relIn relOut V
       (treeExtractor mkWitness) := by
-  intro stmtIn tree hStruct hAcc
+  intro stmtIn tree hStruct _
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (foldStructure_arity (CarrierCom := CarrierCom) (C := C) (r := r)).symm
   intro o hvalid
-  have hne : (support init).Nonempty :=
-    Verifier.support_init_nonempty_of_accepting hAcc
-      (branchPathOf (tree2 v challenges) (Fin.cast harity 0))
   have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
       ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
         ∈ relOut :=
     (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
       (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
-      hpure hne relOut stmtIn o).mp hvalid
+      hpure relOut stmtIn o).mp hvalid
   obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
   have hfam := (nodeOk_iff_family challenges).1 hStruct.1
   have hstar : ∃ e, StarAt
@@ -585,21 +582,18 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness
       (escEvent relOut escLocal) relIn relOut V
       (treeExtractor mkWitness) := by
   classical
-  intro stmtIn tree hStruct hAcc
+  intro stmtIn tree hStruct _
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (foldStructure_arity (CarrierCom := CarrierCom) (C := C) (r := r)).symm
   by_cases hesc : escEvent relOut escLocal stmtIn (tree2 v challenges)
   · exact Or.inl hesc
   refine Or.inr fun o hvalid => ?_
-  have hne : (support init).Nonempty :=
-    Verifier.support_init_nonempty_of_accepting hAcc
-      (branchPathOf (tree2 v challenges) (Fin.cast harity 0))
   have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
       ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
         ∈ relOut :=
     (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
       (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
-      hpure hne relOut stmtIn o).mp hvalid
+      hpure relOut stmtIn o).mp hvalid
   obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
   have hfam := (nodeOk_iff_family challenges).1 hStruct.1
   have hstar : ∃ e, StarAt

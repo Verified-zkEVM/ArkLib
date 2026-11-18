@@ -324,20 +324,6 @@ section Programs
 
 variable {A : SourceCtx.{u, v, w} I E} {B : SourceCtx.{u', v, w'} J F}
 
-/-- The homogeneous-response program adapter for a pure route. -/
-def toQueryImpl (f : SourceHom A B) : QueryImpl A.spec (OracleComp B.spec) :=
-  fun q => f.route.toFunB q <$>
-    (liftM (B.spec.query (f.route.toFunA q)) : OracleComp B.spec _)
-
-/-- Interpreting a routed primitive query agrees with pure handler pullback. -/
-@[simp]
-theorem simulateQ_toQueryImpl (f : SourceHom A B) (impl : QueryImpl B.spec Id) (q : I) :
-    simulateQ impl (f.toQueryImpl q) = f.pull impl q := by
-  calc
-    _ = f.route.toFunB q <$> impl (f.route.toFunA q) := by
-      simp only [toQueryImpl, simulateQ_map, simulateQ_spec_query]
-    _ = _ := rfl
-
 /-- Route every query and response in a program along the source lens. -/
 def mapProgram (f : SourceHom A B) {α : Type v} (program : OracleComp A.spec α) :
     OracleComp B.spec α :=
