@@ -1227,6 +1227,7 @@ public import ArkLib.ToMathlib.MvPolynomial.PowerMomentLift
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
+public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelInjective
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
 public import ArkLib.ToMathlib.MvPolynomial.UnivariateSpecialization

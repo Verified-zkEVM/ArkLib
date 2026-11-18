@@ -6,6 +6,7 @@ Authors: Katerina Hristova, Aristotle
 module
 
 public import ArkLib.Data.Probability.Uniform
+public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelInjective
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 public import Mathlib.Algebra.Order.Star.Rat
 public import Mathlib.RingTheory.SimpleRing.Principal
@@ -169,6 +170,33 @@ lemma prob_eval_zero_univ_le_div
     Fintype.card_fin, Fintype.card_fun] using
       @schwartz_zippel_counting F _ (Classical.decEq F) s f hf
         (fun _ => Finset.univ) d (Fintype.card F) hd (fun _ => le_rfl)
+
+/-- Probability that a nonzero polynomial vanishes at a uniformly random tuple of pairwise-distinct
+elements of a finite field `F`: at most `d / (|F| - s + 1)`, where `d` bounds the total degree.
+This is `MvPolynomial.card_filter_injective_eval_eq_zero_le` for `S = univ`. -/
+lemma prob_eval_zero_embedding_le_div
+    {F : Type} [Field F] [Fintype F] {s d : ℕ} [SampleableType (Fin s ↪ F)]
+    (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
+    Pr{let x ← $ᵗ (Fin s ↪ F)}[MvPolynomial.eval x f = 0] ≤
+      (d : ℝ≥0∞) / (Fintype.card F - s + 1 : ℕ) := by
+  classical
+  rw [@SampleableType.prEvent_uniformSample _ _ _ (fun x : Fin s ↪ F => MvPolynomial.eval x f = 0)
+    (fun _ => Classical.propDecidable _), Fintype.card_embedding_eq, Fintype.card_fin]
+  have hcard : (Finset.univ.filter fun x : Fin s ↪ F => MvPolynomial.eval x f = 0).card =
+      (Finset.filter (fun x => Function.Injective x ∧ MvPolynomial.eval x f = 0)
+        (Fintype.piFinset fun _ => Finset.univ)).card := by
+    refine Finset.card_bij (fun x _ => ⇑x) (fun x hx => ?_)
+      (fun _ _ _ _ h => DFunLike.coe_injective h) (fun y hy => ?_)
+    · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
+      simpa using ⟨x.injective, hx⟩
+    · simp only [Finset.mem_filter, Fintype.mem_piFinset, Finset.mem_univ, implies_true,
+        true_and] at hy
+      exact ⟨⟨y, hy.1⟩, by simpa using hy.2, rfl⟩
+  rw [hcard]
+  refine ENNReal.div_le_div_of_mul_le (Nat.succ_pos _) ?_
+  have h := MvPolynomial.card_filter_injective_eval_eq_zero_le hf (Finset.univ : Finset F)
+  rw [Finset.card_univ] at h
+  exact h.trans (Nat.mul_le_mul_right _ hd)
 
 section ZeroCount
 
