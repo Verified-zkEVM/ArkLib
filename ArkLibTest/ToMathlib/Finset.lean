@@ -24,10 +24,19 @@ example : ∃ exceptional : Finset ℚ, exceptional.card ≤ 1 ∧
 
 private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
--- Only the coefficient of `y` is nonzero: `y = 0` leaves five zeros in `F₅ × F₅`.
-example : #{x : ZMod 5 × ZMod 5 | 0 + x.1 * 0 + x.2 * 1 = 0} ≤ 5 :=
-  (Finset.card_filter_add_mul_add_mul_eq_zero_le (Or.inr (Or.inr one_ne_zero))).trans_eq
-    (ZMod.card 5)
+-- The line `x = 0` attains the bound: `0 + x · 1 + y · 0` has exactly `q = 5` zeros in `F₅ × F₅`.
+example : #{x : ZMod 5 × ZMod 5 | 0 + x.1 * 1 + x.2 * 0 = 0} = Fintype.card (ZMod 5) := by
+  refine le_antisymm (Finset.card_filter_add_mul_add_mul_eq_zero_le (Or.inr (Or.inl one_ne_zero)))
+    ?_
+  have : ({x : ZMod 5 × ZMod 5 | 0 + x.1 * 1 + x.2 * 0 = 0} : Finset (ZMod 5 × ZMod 5)) =
+      {0} ×ˢ Finset.univ := by
+    ext ⟨a, b⟩
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_product,
+      Finset.mem_singleton, and_true]
+    simp
+  rw [this, Finset.card_product, Finset.card_singleton, Finset.card_univ, one_mul]
 
--- Only the constant is nonzero: the function `1` has no zeros, within the bound.
-example : #{x : ZMod 5 × ZMod 5 | 1 + x.1 * 0 + x.2 * 0 = 0} = 0 := by simp
+/-- info: 'Finset.card_filter_add_mul_add_mul_eq_zero_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Finset.card_filter_add_mul_add_mul_eq_zero_le

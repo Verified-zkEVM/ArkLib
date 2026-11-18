@@ -5,7 +5,7 @@ Authors: Thomas Coratger
 -/
 
 import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaimsSampling
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaims
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for the equal-degree combiner with linear claims -/
@@ -23,7 +23,7 @@ private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
 example (α β : ZMod 5) :
     linearClaim ![1, 2] (C 2 + affineMultiplier α β * (C 1 + C 1 * C 2)) =
       2 + α * (1 + 1 * 2) + β * 1 := by
-  rw [linearClaim_equalDegree_combination]
+  rw [linearClaim_add_affineMultiplier_mul]
   simp [linearClaim, Fin.sum_univ_two, coeff_C, coeff_X_mul, coeff_one]
   have h6 : (6 : ZMod 5) = 1 := by decide
   linear_combination β * h6
@@ -33,7 +33,7 @@ example {F : Type*} [Field F] (v : Fin 3 → F) (F₀ G₀ : F[X]) (θ α β : F
     linearClaim v (G₀ + affineMultiplier α β * (F₀ + C θ * G₀)) =
       linearClaim v G₀ + α * (linearClaim v F₀ + θ * linearClaim v G₀) +
         β * linearClaim v (X * (F₀ + C θ * G₀)) :=
-  linearClaim_equalDegree_combination v F₀ G₀ θ α β
+  linearClaim_add_affineMultiplier_mul v F₀ G₀ θ α β
 
 -- At `d = 1`, `A = 4` on `F₅`, the Johnson quotient is `5 · 2 / (9 - 5) = 5 / 2`.
 -- So `ℓ₀ = 2`, and the paper's additive term `2ℓ₀/q` is `4 / 5`.
@@ -44,31 +44,73 @@ example :
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
 
-/-- The round-saving prover announces `c_F, c_G` up front and answers `θ` with `c_F + θ c_G`. -/
-private def roundSaving {ι F : Type*} [Field F] {d : ℕ} (f g : ι → F) (v : Fin (d + 1) → F)
-    (γ₀ γ₁ cF cG : F) : LinearClaimInstance ι F d :=
-  ⟨f, g, v, γ₀, γ₁, fun θ ↦ cF + θ * cG⟩
-
 -- With honest announcements `c_F = ⟨coef(X F), v⟩`, `c_G = ⟨coef(X G), v⟩`, the derived message
 -- is the honest claim `⟨coef(X(F + θ G)), v⟩`.
 example {F : Type*} [Field F] {d : ℕ} (v : Fin (d + 1) → F) (F₀ G₀ : F[X]) (θ : F) :
     linearClaim v (X * F₀) + θ * linearClaim v (X * G₀) = linearClaim v (X * (F₀ + C θ * G₀)) := by
   rw [mul_add, mul_left_comm, linearClaim_add, linearClaim_C_mul]
 
-open scoped ProbabilityTheory
+-- Non-vacuity: on `F₅` with `f = g = 0`, `v = (1, 0)`, false claims `γ₀ = γ₁ = 1`, message `0`,
+-- and `(θ, α, β) = (0, -1, 0)`, the zero polynomial is exceptional at `d = 1`, `A = 5`, `s = 1`.
+-- It meets the combined claim `0 = 1 - 1`, but any witness `G₀` claiming `1` is the constant `1`,
+-- which misses `g = 0` at all five points.
+example : ∃ P, IsLinearClaimExceptional fullDomain 0 0 1 5 1 ![1, 0] 1 1 0 0 (-1) 0 P := by
+  refine ⟨0, by simp, ?_, by simp [linearClaim], ?_⟩
+  · have : polynomialAgreementSet fullDomain (equalDegreeWord fullDomain 0 0 0 (-1) 0) 0 =
+        Finset.univ := by
+      ext i
+      simp [equalDegreeWord]
+    rw [this, Finset.card_univ, ZMod.card]
+  · intro F₀ G₀ _ hG _ _ h₁ _
+    have hG0 : G₀ = C (G₀.coeff 0) := eq_C_of_degree_le_zero (Order.le_of_lt_succ hG)
+    have hc : G₀.coeff 0 = 1 := by simpa [linearClaim, Fin.sum_univ_two] using h₁
+    have : {i ∈ polynomialAgreementSet fullDomain (equalDegreeWord fullDomain 0 0 0 (-1) 0) 0 |
+        F₀.eval (fullDomain i) ≠ (0 : ZMod 5 → ZMod 5) i ∨
+          G₀.eval (fullDomain i) ≠ (0 : ZMod 5 → ZMod 5) i} = Finset.univ := by
+      ext i
+      rw [hG0, hc]
+      simp [equalDegreeWord]
+    rw [this, Finset.card_univ, ZMod.card]
+    norm_num
 
--- The round-saving prover is covered: its exceptional probability on `F₅` is at most
--- the affine error plus `4 / 5`.
-example (f g : ZMod 5 → ZMod 5) (v : Fin 2 → ZMod 5) (γ₀ γ₁ cF cG : ZMod 5) :
-    Pr{let c ← $ᵗ (ZMod 5 × ZMod 5 × ZMod 5)}[∃ P,
-      IsLinearClaimExceptional fullDomain f g 1 4 1 v γ₀ γ₁ (cF + c.1 * cG) c.1 c.2.1 c.2.2 P] ≤
-        affineMcaError fullDomain 1 4 1 + 4 / 5 := by
-  refine (prob_isLinearClaimExceptional_le fullDomain 1 4 1
-    (roundSaving f g v γ₀ γ₁ cF cG)).trans ?_
-  have h := linearClaimMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
-    (by simp [ZMod.card])
-  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
-  exact h
+-- Honest instance: with `f = g = 0` and correct claims `γ₀ = γ₁ = c = 0`, no challenge triple
+-- is exceptional at `d = 1`, `A = 4`, `s = 1`.
+-- A candidate of degree at most one with four roots is zero, and `F₀ = G₀ = 0` explain it.
+example (v : Fin 2 → ZMod 5) (θ α β : ZMod 5) :
+    ¬ ∃ P, IsLinearClaimExceptional fullDomain 0 0 1 4 1 v 0 0 0 θ α β P := by
+  rintro ⟨P, hdeg, hA, -, hexc⟩
+  have hP : P = 0 := by
+    refine eq_zero_of_natDegree_lt_card_of_eval_eq_zero' P
+      (polynomialAgreementSet fullDomain (equalDegreeWord fullDomain 0 0 θ α β) P)
+      (fun i hi ↦ by simpa [equalDegreeWord, fullDomain] using hi) ?_
+    have := natDegree_le_of_degree_le hdeg
+    omega
+  subst hP
+  have := hexc 0 0 (by simp) (by simp) (by simp) (by simp [linearClaim]) (by simp [linearClaim])
+    (by simp [linearClaim])
+  simp at this
+
+-- The paper's worked case: `n = 2²⁰`, `d = 2¹⁸`, `A = 576717` gives `ℓ₀ = ⌊5.714…⌋ = 5`.
+private theorem paper_johnson_floor :
+    ⌊((2 ^ 20 : ℕ) : ℝ) * (((576717 : ℕ) : ℝ) - 1 - (2 ^ 18 : ℕ)) /
+      ((((576717 : ℕ) : ℝ) - 1) ^ 2 - (2 ^ 20 : ℕ) * (2 ^ 18 : ℕ))⌋₊ = 5 := by
+  rw [Nat.floor_eq_iff (by norm_num)]
+  norm_num
+
+-- At the paper's parameters `n = 2²⁰`, `d = 2¹⁸`, `A = 576717`, and `q = 2¹²⁸`:
+-- linear claims add `2ℓ₀/q = 10 · 2⁻¹²⁸` to the affine error.
+-- That is `5 · 2⁻¹²⁸` more than the equal-degree combiner.
+example {F ι : Type*} [Field F] [DecidableEq F] [Fintype F] [Fintype ι] (domain : ι ↪ F)
+    (hn : Fintype.card ι = 2 ^ 20) (hq : Fintype.card F = 2 ^ 128) :
+    linearClaimMcaError domain (2 ^ 18) 576717 1 ≤
+      affineMcaError domain (2 ^ 18) 576717 1 + ENNReal.ofReal (2 * 5 / 2 ^ 128) := by
+  have hJ : Fintype.card ι * 2 ^ 18 < (576717 - 1) ^ 2 := by
+    rw [hn]
+    norm_num
+  have h := linearClaimMcaError_le_affineMcaError_add domain hJ
+  rw [hn, hq, paper_johnson_floor] at h
+  convert h using 4
+  norm_num
 
 -- The Johnson list bound accepts the caller's decidable equality instance.
 example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι] (domain : ι ↪ F)
@@ -83,7 +125,17 @@ example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι] (
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.linearClaimMcaError_le_affineMcaError_add
 
-/-- info: 'ReedSolomon.linearClaimMcaError_eq_iSup_prob' depends on axioms:
+/-- info: 'ReedSolomon.card_filter_linearClaimResidual_eq_zero_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.linearClaimMcaError_eq_iSup_prob
+#print axioms ReedSolomon.card_filter_linearClaimResidual_eq_zero_le
+
+/-- info: 'ReedSolomon.card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet' depends on
+axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet
+
+/-- info: 'ReedSolomon.le_floor_johnson_of_mul_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.le_floor_johnson_of_mul_le

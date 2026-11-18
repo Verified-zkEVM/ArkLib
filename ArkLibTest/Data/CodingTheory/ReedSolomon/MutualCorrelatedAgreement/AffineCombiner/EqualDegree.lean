@@ -49,10 +49,10 @@ example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι] (
       commonPolynomialAgreementSet domain f g F₁ G₁) ≤ d :=
   card_inter_commonPolynomialAgreementSet_le domain f g hF₀ hG₀ hF₁ hG₁ hne
 
--- At `n = 5`, `d = 1`, `A = 4`, a list of two passes the integer count `2 · (9 - 5) ≤ 5 · 2`.
+-- At `n = 5`, `d = 1`, `L = 3`, a list of two passes the integer count `2 · (9 - 5) ≤ 5 · 2`.
 -- So its size is at most the Johnson floor `⌊10 / 4⌋ = 2`.
-example : 2 ≤ ⌊(5 : ℝ) * ((4 : ℝ) - 1 - 1) / (((4 : ℝ) - 1) ^ 2 - 5 * 1)⌋₊ := by
-  exact_mod_cast le_floor_johnson_of_mul_le (k := 2) (n := 5) (d := 1) (A := 4)
+example : 2 ≤ ⌊(5 : ℝ) * ((3 : ℝ) - 1) / ((3 : ℝ) ^ 2 - 5 * 1)⌋₊ := by
+  exact_mod_cast le_floor_johnson_of_mul_le (k := 2) (n := 5) (d := 1) (L := 3)
     (by norm_num) (by norm_num)
 
 #print axioms ReedSolomon.equalDegreeMcaError_le_affineMcaError_add

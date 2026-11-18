@@ -14,6 +14,7 @@ public import Mathlib.Tactic.LinearCombination
 
 Let `a`, `b`, `c` be elements of a finite field with `q` elements, not all zero.
 Then the map `(x, y) ↦ a + x b + y c` vanishes at most `q` times.
+This is the degree-one, two-variable case of the Schwartz–Zippel count.
 
 When `c ≠ 0`, each `x` fixes `y`.
 When `c = 0` and `b ≠ 0`, the value of `x` is fixed.

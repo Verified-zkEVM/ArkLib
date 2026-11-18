@@ -32,7 +32,8 @@ This is the first inequality of (5.5) in Theorem 5.1 of [CWYZ26].
 The second inequality is in `Theorem`.
 The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
-The message is a function of `θ`, so every prover strategy is covered.
+The message is a function of `θ`.
+Every deterministic prover strategy is such a function; randomized strategies average over them.
 The round-saving variant sends `c = c_F + θ c_G` and is one such function.
 The paper's list has degrees at most `d`; the count uses only its pairs of degree below `d`.
 The combination identity for claims needs no degree bound, so it is stated without one.
@@ -54,15 +55,12 @@ The sampling module identifies it with native uniform probabilities.
 ## Main statements
 
 * `ReedSolomon.linearClaim_add` and `ReedSolomon.linearClaim_C_mul`: the claim is linear.
-* `ReedSolomon.linearClaim_equalDegree_combination`: honest claims combine by linearity.
-* `ReedSolomon.linearClaimMcaError_le_affineMcaError_add`: the reduction with twice the
-  rounded Johnson bound.
+* `ReedSolomon.linearClaim_add_affineMultiplier_mul`: claims combine by linearity.
+* `ReedSolomon.linearClaimMcaError_le_affineMcaError_add`: the reduction with loss `2ℓ₀/q`.
 * `ReedSolomon.le_linearClaimMcaError`: one instance bounds the error from below.
 * `ReedSolomon.linearClaimMcaError_le_one`: the error is at most one.
-* `ReedSolomon.IsLinearClaimExceptional.isEqualDegreeExceptional_or_exists`: an exceptional
-  candidate is equal-degree exceptional, or a listed pair has a vanishing residual.
-* `ReedSolomon.card_filter_linearClaimResidual_eq_zero_le`: with a false claim, the residual
-  vanishes for at most `q` challenges.
+* `ReedSolomon.IsLinearClaimExceptional.isEqualDegreeExceptional_or_exists`: the case split.
+* `ReedSolomon.card_filter_linearClaimResidual_eq_zero_le`: a false claim's residual zeros.
 
 ## References
 
@@ -179,7 +177,7 @@ omit [DecidableEq F] in
 The claim value of `G₀ + (α + βX)(F₀ + θG₀)` is
 `⟨coef(G₀), v⟩ + α(⟨coef(F₀), v⟩ + θ⟨coef(G₀), v⟩) + β⟨coef(X(F₀ + θG₀)), v⟩`.
 No degree bound is needed, since the claim value is linear in the polynomial. -/
-theorem linearClaim_equalDegree_combination {d : ℕ} (v : Fin (d + 1) → F) (F₀ G₀ : F[X])
+theorem linearClaim_add_affineMultiplier_mul {d : ℕ} (v : Fin (d + 1) → F) (F₀ G₀ : F[X])
     (θ α β : F) :
     linearClaim v (G₀ + affineMultiplier α β * (F₀ + C θ * G₀)) =
       linearClaim v G₀ + α * (linearClaim v F₀ + θ * linearClaim v G₀) +
@@ -258,7 +256,7 @@ theorem IsLinearClaimExceptional.isEqualDegreeExceptional_or_exists {domain : ι
     exact (mem_commonPolynomialAgreementSet _ _ _ _ _ _).mpr hiL
   · have := hexc F₀ G₀ hF hG hPeq h₁ h₂ h₃
     omega
-  · rw [hPeq, linearClaim_equalDegree_combination] at hclaim
+  · rw [hPeq, linearClaim_add_affineMultiplier_mul] at hclaim
     unfold linearClaimResidual
     linear_combination hclaim
 
@@ -283,6 +281,16 @@ theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
   have hE : affineMcaError domain d A 1 ≠ ⊤ :=
     ne_top_of_le_ne_top ENNReal.one_ne_top (affineMcaError_le_one domain d A 1)
   have hq : 0 < q := by positivity
+  have hA1 : 1 ≤ A := by
+    rcases A with _ | A
+    · simp at hJ
+    · omega
+  -- The integer Johnson count at `L = A - 1` gives the floor `ℓ₀`.
+  have hfloor : ∀ k : ℕ, k * ((A - 1) * (A - 1) - n * d) ≤ n * (A - 1 - d) → (k : ℝ) ≤ ℓ₀ :=
+    fun k hk ↦ by
+      have h := le_floor_johnson_of_mul_le hJ hk
+      rw [Nat.cast_sub hA1, Nat.cast_one] at h
+      exact Nat.cast_le.mpr h
   -- The list of pairs of degree below `d` with `A - 1` common agreements.
   have hfin : {p : F[X] × F[X] | p.1.degree < d ∧ p.2.degree < d ∧
       A - 1 ≤ #(commonPolynomialAgreementSet domain f g p.1 p.2)}.Finite := by
@@ -293,9 +301,8 @@ theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
     exact (hS.prod hS).subset fun p hp ↦ ⟨hp.1, hp.2.1⟩
   set T := hfin.toFinset
   have hT : (#T : ℝ) ≤ ℓ₀ := by
-    refine Nat.cast_le.mpr (le_floor_johnson_of_mul_le hJ
-      (card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet domain f g T
-        (fun p hp ↦ ?_) (fun p hp ↦ (hfin.mem_toFinset.mp hp).2.2)))
+    refine hfloor _ (card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet domain f g T
+      (fun p hp ↦ ?_) (fun p hp ↦ (hfin.mem_toFinset.mp hp).2.2))
     obtain ⟨h₁, h₂, -⟩ := hfin.mem_toFinset.mp hp
     exact ⟨h₁.le, h₂.le⟩
   -- The exceptional triples split into three sets.
@@ -362,8 +369,7 @@ theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
     calc (#X₃ : ℝ) ≤ ((#T * Fintype.card F * Fintype.card F : ℕ) : ℝ) := by exact_mod_cast h
       _ = _ := by push_cast; ring
   have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) :=
-    Nat.cast_le.mpr (le_floor_johnson_of_mul_le hJ
-      (card_badEqualDegreeChallenges_mul_le domain f g d (A - 1)))
+    hfloor _ (card_badEqualDegreeChallenges_mul_le domain f g d (A - 1))
   have hcount : (#{c : F × F × F | ∃ P, IsLinearClaimExceptional domain f g d A 1 v γ₀ γ₁
       (msg c.1) c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤ E + 2 * (ℓ₀ : ℝ) / q := by
     rw [div_le_iff₀ (by positivity)]

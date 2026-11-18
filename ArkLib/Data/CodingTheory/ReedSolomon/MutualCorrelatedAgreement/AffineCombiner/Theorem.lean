@@ -24,10 +24,9 @@ public import
 Exceptional challenges split into persistent and nonpersistent ones.
 The persistent challenges are counted through rational pairs.
 The interpolant bounds the others.
-For output degree `1 ≤ d < n`, write `ρ = d / n` and assume
-`0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`.
-At the agreement threshold `⌈(√ρ + η) n⌉` and loss one, the error is at most
-`4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
+For output degree `1 ≤ d < n`, write `ρ = d / n`.
+Assume `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`.
+At threshold `⌈(√ρ + η) n⌉` and loss one, the error is at most `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 The domain embedding supplies `n ≤ q`.
 
 The same hypotheses give `nd < (A - 1)²` at that threshold.
@@ -36,28 +35,26 @@ The linear-claim error is at most `(4/η + 2ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹�
 Here `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` and `A = ⌈(√ρ + η) n⌉`.
 
 The error has type `ENNReal`.
-`ReedSolomon.prob_isAffineExceptional_le` connects it to the native probability of an
-exceptional candidate for any received word pair.
+`ReedSolomon.prob_isAffineExceptional_le` connects it to native exceptional probabilities.
 The counting bounds have no sampler assumptions.
 
 ## Main statements
 
-* `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation` and
-  `ReedSolomon.affineMcaError_le_of_interpolation`: the bound for any interpolation parameters.
-* `ReedSolomon.exists_affineExceptional_finset_card_le` and `ReedSolomon.affineMcaError_le`:
-  the bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)` at the threshold `⌈(√ρ + η) n⌉`.
+* `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation`: any parameters.
+* `ReedSolomon.affineMcaError_le_of_interpolation`: the error for any interpolation parameters.
+* `ReedSolomon.exists_affineExceptional_finset_card_le`: the explicit exceptional count.
+* `ReedSolomon.affineMcaError_le`: the bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 * `ReedSolomon.equalDegreeMcaError_le`: the explicit equal-degree bound.
 * `ReedSolomon.linearClaimMcaError_le`: the explicit linear-claim bound.
 
 ## References
 
-The general bound corresponds to Theorem 4.10 of [CWYZ26], with a stronger sufficient
-interpolation condition for freely chosen budgets, as described below.
+The general bound corresponds to Theorem 4.10 of [CWYZ26].
+It uses a stronger sufficient interpolation condition for freely chosen budgets, described below.
 The full constraint count includes every order `s < m`; (4.5) stops at `min(m - 1, M)`.
 `AffineParams.surplus` proves the full condition for the parameter choice used in Theorem 1.1.
 The final bound is Theorem 1.1 of [CWYZ26].
-The equal-degree and linear-claim bounds are the second inequalities of (5.4) and (5.5) in
-Theorem 5.1 of [CWYZ26].
+The last two bounds are the second inequalities of (5.4) and (5.5) in Theorem 5.1 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -357,7 +354,7 @@ theorem affineMcaError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : ℝ}
 
 Here `n` is the domain size, `1 ≤ d < n`, `ρ = d / n`, `0 < η < 1`, and `n η² ≥ 4 / ρ`.
 The last condition gives `n η > 1`, so `A - 1 > √ρ n = √(nd)`. -/
-private theorem johnson_of_threshold {n d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < n) (hη : 0 < η)
+private theorem mul_lt_sq_ceil_sub_one {n d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < n) (hη : 0 < η)
     (hη1 : η < 1) (hn : 4 / ((d : ℝ) / n) ≤ n * η ^ 2) :
     n * d < (⌈(√((d : ℝ) / n) + η) * n⌉₊ - 1) ^ 2 := by
   set A := ⌈(√((d : ℝ) / n) + η) * n⌉₊
@@ -404,7 +401,7 @@ theorem equalDegreeMcaError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : �
             Fintype.card ι * d)⌋₊ : ℕ) : ℝ)) / Fintype.card F +
         2 ^ 14 * (Fintype.card ι : ℝ) ^ 2 /
           (((d : ℝ) / Fintype.card ι) ^ 3 * η ^ 10 * (Fintype.card F : ℝ) ^ 2)) := by
-  have hJ := johnson_of_threshold hd hdn hη
+  have hJ := mul_lt_sq_ceil_sub_one hd hdn hη
     (hη1.trans_le (by linarith [Real.sqrt_nonneg ((d : ℝ) / Fintype.card ι)])) hn
   refine (equalDegreeMcaError_le_affineMcaError_add domain hJ).trans ?_
   refine (add_le_add_left (affineMcaError_le domain hd hdn hη hη1 hn) _).trans ?_
@@ -432,7 +429,7 @@ theorem linearClaimMcaError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : �
             Fintype.card ι * d)⌋₊ : ℕ) : ℝ)) / Fintype.card F +
         2 ^ 14 * (Fintype.card ι : ℝ) ^ 2 /
           (((d : ℝ) / Fintype.card ι) ^ 3 * η ^ 10 * (Fintype.card F : ℝ) ^ 2)) := by
-  have hJ := johnson_of_threshold hd hdn hη
+  have hJ := mul_lt_sq_ceil_sub_one hd hdn hη
     (hη1.trans_le (by linarith [Real.sqrt_nonneg ((d : ℝ) / Fintype.card ι)])) hn
   refine (linearClaimMcaError_le_affineMcaError_add domain hJ).trans ?_
   refine (add_le_add_left (affineMcaError_le domain hd hdn hη hη1 hn) _).trans ?_

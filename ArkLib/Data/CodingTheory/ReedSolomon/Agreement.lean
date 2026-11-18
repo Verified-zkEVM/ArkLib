@@ -28,8 +28,8 @@ Reed–Solomon statements must supply their strict message-degree hypotheses sep
   including one with repeated points.
 * `commonPolynomialAgreementSet_eq_inter` identifies the common set with an intersection.
 * `card_inter_commonPolynomialAgreementSet_le` bounds common agreement of distinct polynomial pairs.
-* `card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet` is the Johnson bound on a list
-  of polynomial pairs with large common agreement.
+* `card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet` bounds lists of close pairs.
+* `le_floor_johnson_of_mul_le` turns the integer Johnson count into its floor bound.
 
 These are exact finite sets, with no decoding threshold, probability convention, or
 mutual-correlated-agreement hypothesis.
@@ -153,6 +153,32 @@ theorem card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet
     (fun p ↦ commonPolynomialAgreementSet domain f g p.1 p.2) L d hL
     fun p hp p' hp' hne ↦ card_inter_commonPolynomialAgreementSet_le domain f g (hdeg p hp).1
       (hdeg p hp).2 (hdeg p' hp').1 (hdeg p' hp').2 hne
+
+/-- The integer Johnson count gives the rounded-down real bound.
+
+Assume `nd < L²` and `k · (L² - nd) ≤ n · (L - d)`, with subtractions in `ℕ`.
+Then `k ≤ ⌊n(L - d)/(L² - nd)⌋`. -/
+theorem le_floor_johnson_of_mul_le {k n d L : ℕ} (hJ : n * d < L ^ 2)
+    (h : k * (L * L - n * d) ≤ n * (L - d)) :
+    k ≤ ⌊(n : ℝ) * ((L : ℝ) - d) / ((L : ℝ) ^ 2 - n * d)⌋₊ := by
+  have hden_nat : n * d < L * L := by rw [← sq]; exact hJ
+  by_cases hdL : d ≤ L
+  · have hden : (0 : ℝ) < (L : ℝ) ^ 2 - n * d := by
+      have : ((n * d : ℕ) : ℝ) < ((L ^ 2 : ℕ) : ℝ) := by exact_mod_cast hJ
+      push_cast at this
+      linarith
+    apply Nat.le_floor
+    rw [le_div_iff₀ hden]
+    have h' : ((k * (L * L - n * d) : ℕ) : ℝ) ≤ ((n * (L - d) : ℕ) : ℝ) := by exact_mod_cast h
+    push_cast [hden_nat.le, hdL] at h'
+    linarith
+  · have hk : k = 0 := by
+      rcases Nat.eq_zero_or_pos k with hk | hk
+      · exact hk
+      · have := Nat.mul_pos hk (Nat.sub_pos_of_lt hden_nat)
+        rw [show L - d = 0 by omega, mul_zero] at h
+        omega
+    simp [hk]
 
 end
 end ReedSolomon
