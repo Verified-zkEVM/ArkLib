@@ -359,10 +359,12 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Basic
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.PellikaanWu
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Probability
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.RationalPair
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Separation
 public import ArkLib.Data.CodingTheory.ReedMuller.Grid
+public import ArkLib.Data.CodingTheory.ReedMuller.PellikaanWu
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
@@ -1190,6 +1192,7 @@ public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 public import ArkLib.ToMathlib.Control.MonadLift
+public import ArkLib.ToMathlib.FieldTheory.Finite.TracePolynomial
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement
