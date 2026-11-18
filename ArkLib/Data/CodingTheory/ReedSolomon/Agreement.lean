@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.Basic.Distance
+public import ArkLib.Data.Finset.PairwiseIntersection
 
 /-!
 # Polynomial agreement sets
@@ -27,6 +28,8 @@ Reed–Solomon statements must supply their strict message-degree hypotheses sep
   including one with repeated points.
 * `commonPolynomialAgreementSet_eq_inter` identifies the common set with an intersection.
 * `card_inter_commonPolynomialAgreementSet_le` bounds common agreement of distinct polynomial pairs.
+* `card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet` is the Johnson bound on a list
+  of polynomial pairs with large common agreement.
 
 These are exact finite sets, with no decoding threshold, probability convention, or
 mutual-correlated-agreement hypothesis.
@@ -132,6 +135,24 @@ theorem card_inter_commonPolynomialAgreementSet_le
       fun i hi ↦ ?_
     simp only [Finset.mem_inter, mem_commonPolynomialAgreementSet] at hi
     simp [hi.1.1, hi.2.1]
+
+/-- A list `T` of polynomial pairs with large common agreement satisfies the Johnson bound.
+
+Each pair has degrees at most `d` and agrees with `(f, g)` on at least `L` common points.
+Then `#T · (L² - nd) ≤ n · (L - d)`, where `n` is the number of coordinates.
+Both subtractions are in `ℕ`.
+Distinct pairs share at most `d` common agreements, so the Johnson count applies. -/
+theorem card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet
+    {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain : ι ↪ F)
+    (f g : ι → F) {d L : ℕ} (T : Finset (F[X] × F[X]))
+    (hdeg : ∀ p ∈ T, p.1.degree ≤ d ∧ p.2.degree ≤ d)
+    (hL : ∀ p ∈ T, L ≤ #(commonPolynomialAgreementSet domain f g p.1 p.2)) :
+    #T * (L * L - Fintype.card ι * d) ≤ Fintype.card ι * (L - d) := by
+  classical
+  exact Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le T
+    (fun p ↦ commonPolynomialAgreementSet domain f g p.1 p.2) L d hL
+    fun p hp p' hp' hne ↦ card_inter_commonPolynomialAgreementSet_le domain f g (hdeg p hp).1
+      (hdeg p hp).2 (hdeg p' hp').1 (hdeg p' hp').2 hne
 
 end
 end ReedSolomon
