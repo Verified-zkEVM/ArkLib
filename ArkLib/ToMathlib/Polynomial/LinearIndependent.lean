@@ -110,7 +110,7 @@ theorem linearIndependent_iff_det_coeff_ne_zero [IsDomain R] {m : ℕ} {f : Fin 
   classical
   have hcoeff : ∀ (g : Fin m → R) (n : ℕ),
       (∑ ℓ, g ℓ • f ℓ).coeff n = ∑ ℓ, g ℓ * (f ℓ).coeff n := fun g n => by
-    simp [Polynomial.finsetSum_coeff, Polynomial.coeff_smul]
+    simp
   have hkey : ∀ g : Fin m → R, ∑ ℓ, g ℓ • f ℓ = 0 ↔
       Matrix.vecMul g (Matrix.of fun ℓ (i : Fin m) => (f ℓ).coeff i) = 0 := by
     intro g
