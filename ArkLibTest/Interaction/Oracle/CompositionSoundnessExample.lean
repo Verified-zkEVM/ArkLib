@@ -140,7 +140,7 @@ theorem allowed_boundary (sample : Fin 3) : allowed (boundary sample) ↔ sample
 theorem prefix_truth : Pr{let b ← prefixProgram}[trueMid b] = (1 / 2 : ENNReal) := by
   classical
   rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
-  rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
+  rw [add_apply, smul_apply, smul_apply]
   rw [Measure.dirac_apply' _ MeasurableSet.of_discrete,
     Measure.dirac_apply' _ MeasurableSet.of_discrete]
   have h0 : boundary 0 ∈ {x | trueMid x} := (trueMid_boundary 0).2 rfl
@@ -158,7 +158,7 @@ theorem prefix_false_invalid :
     Pr{let b ← prefixProgram}[¬ trueMid b ∧ ¬ allowed b] = 0 := by
   classical
   rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
-  rw [Measure.add_apply, Measure.smul_apply, Measure.smul_apply]
+  rw [add_apply, smul_apply, smul_apply]
   rw [Measure.dirac_apply' _ MeasurableSet.of_discrete,
     Measure.dirac_apply' _ MeasurableSet.of_discrete]
   have h0 : boundary 0 ∉ {x | ¬ trueMid x ∧ ¬ allowed x} :=

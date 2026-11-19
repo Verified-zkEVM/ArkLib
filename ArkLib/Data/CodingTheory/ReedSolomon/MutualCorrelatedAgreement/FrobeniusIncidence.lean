@@ -33,7 +33,9 @@ then controls finite sets of regular points outside those graphs.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval affineHilbertPolynomial mem_restrictBidegree_mono
+  zeroLocus)
 
 namespace ReedSolomon
 
@@ -166,7 +168,7 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
     calc
       h ≤ τ * h := by simpa using Nat.mul_le_mul_right h hτone
       _ ≤ p ^ e + τ * h := Nat.le_add_left _ _
-  apply bidegreeHypersurface_incidence_off_excluded_sharp_one
+  apply MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one
     (a := p ^ e + τ * h) (b := 1 + τ * (b - 1)) (h := h) (v := b) (L := k)
     (by omega) (by omega) hkA (jointInitialJetEquation center Q)
     (jointInitialJetSeparant center Q) hinit hproper

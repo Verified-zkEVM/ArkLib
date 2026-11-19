@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ToCompPoly.Univariate.ArithmeticCost
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
+import PolyFun.PFunctor.Handler.Meter
 
 /-!
 # Immutable access instructions for FRI extraction
@@ -207,29 +208,23 @@ theorem embedArithmeticCost_add (a b : ArithmeticCost) :
   funext kind
   cases kind <;> rfl
 
-private theorem profile_lift_query (op : ArithmeticOp F) :
-    profile s o α (liftComp (liftM (OracleSpec.query (spec := ArithmeticSpec F) op) :
-      OracleComp (ArithmeticSpec F) (ArithmeticSpec F op)) (InstructionSpec s o α)) =
-      (arithmeticAnswer op, embedArithmeticCost (arithmeticCost op)) := by
-  change profile s o α
-    (liftM (OracleSpec.query (spec := InstructionSpec s o α) (.inl op))) = _
-  rw [profile_query]
-  apply Prod.ext
-  · rfl
-  · funext kind
-    cases kind <;> simp [instructionCost, embedArithmeticCost, arithmeticCost]
-
 /-- Lifting an arithmetic program retains its result and embeds every cost coordinate. -/
 theorem profile_liftComp_arithmetic {A : Type} (p : OracleComp (ArithmeticSpec F) A) :
     profile s o α (liftComp p (InstructionSpec s o α)) =
       ((profileArithmetic p).1, embedArithmeticCost (profileArithmetic p).2) := by
-  induction p using OracleComp.inductionOn with
-  | pure a => simp
-  | query_bind op cont ih =>
-    rw [OracleComp.liftComp_bind, profile_bind, profile_lift_query,
-      profileArithmetic_bind, profileArithmetic_query]
-    simp only
-    rw [ih, embedArithmeticCost_add]
+  let f : ArithmeticCost →+ Cost :=
+    ⟨⟨embedArithmeticCost, embedArithmeticCost_zero⟩, embedArithmeticCost_add⟩
+  unfold profile profileArithmetic measuredAnswer arithmeticMeasured
+  rw [QueryImpl.simulateQ_liftComp_left_eq_of_apply _
+    (arithmeticAnswer.withAddCost (f ∘ arithmeticCost))]
+  · rw [QueryImpl.withAddCost_eq_withChargeW, QueryImpl.withAddCost_eq_withChargeW]
+    exact congrArg AddWriterT.runAdd
+      (PFunctor.Handler.mapOutputHom_liftM_withChargeW f arithmeticAnswer arithmeticCost p).symm
+  · intro op
+    simp only [QueryImpl.withAddCost_apply]
+    congr 3
+    funext kind
+    cases kind <;> simp [f, instructionCost, embedArithmeticCost, arithmeticCost]
 
 /-- Lifting arithmetic into the backend embeds its cost vector unchanged. -/
 @[simp]
