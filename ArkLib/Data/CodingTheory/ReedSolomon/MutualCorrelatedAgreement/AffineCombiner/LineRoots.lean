@@ -18,7 +18,7 @@ public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 # Multiplier curves through the roots of a trivariate polynomial
 
 A trivariate `G(X, Y, Z)` is read as a polynomial in `Z` over `E[X][Y]`.
-A nonzero `G` free of `Z` vanishes identically on at most `deg_Y G` multipliers `Y = M(X)`
+A nonzero `G` free of `Z` vanishes identically on at most `deg_Y G` multipliers `Y = L(X)`
 of an injective family.
 For Reed–Solomon codes the multipliers are the lines `α + β X`.
 
@@ -193,10 +193,10 @@ theorem add_natDegree_coeff_affineNested_le (G : MvPolynomial AffineVar E) {i : 
       omega
   omega
 
-/-- Evaluating along a multiplier substitutes `M` for `Y` in the coefficients, then `P` for
+/-- Evaluating along a multiplier substitutes `L` for `Y` in the coefficients, then `P` for
 `Z`. -/
-theorem multiplierEval_eq_nested (M P : E[X]) (G : MvPolynomial AffineVar E) :
-    multiplierEval M P G = ((affineNested G).map (Polynomial.evalRingHom M)).eval P := by
+theorem multiplierEval_eq_nested (L P : E[X]) (G : MvPolynomial AffineVar E) :
+    multiplierEval L P G = ((affineNested G).map (Polynomial.evalRingHom L)).eval P := by
   induction G using MvPolynomial.induction_on with
   | C a => simp [multiplierEval]
   | add G H hG hH => simp [hG, hH]
@@ -209,7 +209,7 @@ theorem multiplierEval_eq_nested (M P : E[X]) (G : MvPolynomial AffineVar E) :
 
 The family is injective on the finite challenge set `S`.
 
-Each such multiplier `Y = M(X)` is a root of `G` as a polynomial in `Y` over `E[X]`. -/
+Each such multiplier `Y = L(X)` is a root of `G` as a polynomial in `Y` over `E[X]`. -/
 theorem card_filter_multiplierEval_eq_zero_le [DecidableEq E] {Γ : Type*}
     {G : MvPolynomial AffineVar E} (hG : G ≠ 0) (hZ : G.degreeOf none = 0) (S : Finset Γ)
     (mult : Γ → E[X]) (hmult : Set.InjOn mult S) :
@@ -268,23 +268,23 @@ theorem natDegree_affineDiscriminant_le {R : MvPolynomial AffineVar E} {h : ℕ}
       exact (add_natDegree_coeff_affineNested_le R hi).trans hR
   exact le_of_add_sq_le_of_le hb hres
 
-/-- If the discriminant does not vanish at `M`, a root `P` of `R` along `M` is simple.
+/-- If the discriminant does not vanish at `L`, a root `P` of `R` along `L` is simple.
 
 The hypothesis `0 < deg_Z R` is needed: for `R` free of `Z` the discriminant is `1`. -/
-theorem multiplierEval_pderiv_ne_zero {R : MvPolynomial AffineVar E} {M P : E[X]}
-    (hpos : 0 < R.degreeOf none) (hroot : multiplierEval M P R = 0)
-    (hdisc : (affineDiscriminant R).eval M ≠ 0) :
-    multiplierEval M P (MvPolynomial.pderiv none R) ≠ 0 := by
+theorem multiplierEval_pderiv_ne_zero {R : MvPolynomial AffineVar E} {L P : E[X]}
+    (hpos : 0 < R.degreeOf none) (hroot : multiplierEval L P R = 0)
+    (hdisc : (affineDiscriminant R).eval L ≠ 0) :
+    multiplierEval L P (MvPolynomial.pderiv none R) ≠ 0 := by
   rw [multiplierEval_eq_nested] at hroot ⊢
   rw [← derivative_affineNested, ← derivative_map]
   exact eval_derivative_map_ne_zero_of_resultant_derivative_padded_ne_zero
-    (evalRingHom M) (affineNested R) le_rfl
+    (evalRingHom L) (affineNested R) le_rfl
     (by rwa [natDegree_affineNested]) hdisc P hroot
 
 /-- A polynomial free of `Z` has the same evaluation along a multiplier for every candidate. -/
 theorem multiplierEval_eq_of_degreeOf_none_eq_zero {G : MvPolynomial AffineVar E}
-    (hZ : G.degreeOf none = 0) (M P P' : Polynomial E) :
-    multiplierEval M P G = multiplierEval M P' G := by
+    (hZ : G.degreeOf none = 0) (L P P' : Polynomial E) :
+    multiplierEval L P G = multiplierEval L P' G := by
   have hC : affineNested G = Polynomial.C ((affineNested G).coeff 0) :=
     Polynomial.eq_C_of_natDegree_eq_zero ((natDegree_affineNested G).trans hZ)
   rw [multiplierEval_eq_nested, multiplierEval_eq_nested, hC]

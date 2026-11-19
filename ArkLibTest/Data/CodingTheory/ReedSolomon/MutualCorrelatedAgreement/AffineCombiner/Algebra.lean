@@ -133,15 +133,15 @@ example {E : Type*} [Field E] (P : E[X]) :
     multiplierEval (X ^ 2) P (MvPolynomial.X (some 1) - MvPolynomial.X (some 0) ^ 2) = 0 := by
   simp
 
--- Its discriminant vanishes at at most `h (h - 1)` quadratic multipliers.
+-- A nonzero discriminant vanishes at most at `h (h - 1)` quadratic multipliers.
 example {E : Type*} [Field E] [Fintype E] [DecidableEq E] {R : MvPolynomial AffineVar E}
     {h : ℕ} (hR0 : affineDiscriminant R ≠ 0) (hR : R.weightedTotalDegree affineYZWeight ≤ h) :
     #(Finset.univ.filter fun c : E ↦ (affineDiscriminant R).eval (X ^ 2 + C c) = 0) ≤
       h * (h - 1) :=
   card_filter_affineDiscriminant_eq_zero_le hR0 hR _ _ injective_X_sq_add_C.injOn
 
--- Frobenius transport moves a root along `M` to a root along `M` with `s`-th-rooted
--- coefficients; for a line it is the line with `s`-th-rooted coefficients.
+-- For a line, the multiplier with `s`-th-rooted coefficients is the line with `s`-th-rooted
+-- coefficients.
 example {E : Type*} [Field E] (p e : ℕ) [ExpChar E p] [PerfectRing E p] (α β : E) :
     (affineMultiplier α β).map ((iterateFrobeniusEquiv E p e).symm : E →+* E) =
       affineMultiplier ((iterateFrobeniusEquiv E p e).symm α)
@@ -197,6 +197,15 @@ example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2),
     rw [hRQ]
     exact pderiv_inseparableQ
   exact ⟨e, R, he, hder, hidentity⟩
+
+-- Frobenius transport along the quadratic multiplier `X²`: the root `X` of `Y - Z²` along `X²`
+-- gives the root `X^(2^e)` of the normalized factor along `X²`.
+example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2), Irreducible R ∧
+    multiplierEval (X ^ 2) (expand (ZMod 2) (2 ^ e) X) R = 0 := by
+  obtain ⟨e, R, hirr, -, -, -, -, hroot⟩ := exists_frobeniusFactor 2
+    irreducible_inseparableQ (by rw [degreeOf_inseparableQ_none]; norm_num)
+  have h := hroot (X ^ 2) X (by simp [inseparableQ])
+  exact ⟨e, R, hirr, by simpa using h⟩
 
 /-- info: 'ReedSolomon.multiplierEval_eq_nested' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

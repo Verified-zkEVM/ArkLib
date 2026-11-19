@@ -98,6 +98,7 @@ theorem degree_affineMultiplier_le (α β : F) : (affineMultiplier α β).degree
   unfold affineMultiplier
   compute_degree
 
+/-- The multiplier `α + β X` has degree at most one. -/
 theorem natDegree_affineMultiplier_le (α β : F) : (affineMultiplier α β).natDegree ≤ 1 :=
   natDegree_le_of_degree_le (degree_affineMultiplier_le α β)
 

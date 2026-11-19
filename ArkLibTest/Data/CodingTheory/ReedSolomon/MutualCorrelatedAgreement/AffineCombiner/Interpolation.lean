@@ -67,7 +67,7 @@ example : (monomialSupport 1 (4 * 5 - 3) (2 + 1) (3 + 1)).card = 146 ∧
 
 /-- The weight `(1, e, d)` gives `X^i Y^t Z^j` the weight `i + e t + d j`. -/
 example (e d : ℕ) (w : AffineVar →₀ ℕ) :
-    Finsupp.weight (lineWeight e d) w = w none * d + w (some 0) * 1 + w (some 1) * e := by
+    Finsupp.weight (multiplierWeight e d) w = w none * d + w (some 0) * 1 + w (some 1) * e := by
   simp [weight_affineVar]
 
 private instance : Fact (Nat.Prime 11) := ⟨by decide⟩
@@ -86,26 +86,29 @@ private theorem exists_quadraticInterpolant (f g : ZMod 11 → ZMod 11) :
   exists_isMultiplierInterpolant _ f g <| by
     norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ]
 
--- It vanishes along the quadratic multiplier `X²` at every agreeing line of degree at most one.
-example (f g : ZMod 11 → ZMod 11) (P : (ZMod 11)[X]) (hP : P.degree ≤ 1)
-    (hA : 10 ≤ (polynomialAgreementSet (Function.Embedding.refl (ZMod 11))
-      (combinedWord (Function.Embedding.refl (ZMod 11)) f g (X ^ 2)) P).card) :
-    ∃ Q : MvPolynomial AffineVar (ZMod 11), Q ≠ 0 ∧ multiplierEval (X ^ 2) P Q = 0 := by
-  obtain ⟨Q, hQ⟩ := exists_quadraticInterpolant f g
-  exact ⟨Q, hQ.ne_zero, hQ.vanish _ P (by simp) hP hA⟩
+-- In particular one exists for `f = -X²` and `g = 1`, so the next example is not vacuous.
+example : ∃ Q, IsMultiplierInterpolant (Function.Embedding.refl (ZMod 11))
+    (fun x ↦ -x ^ 2) 1 2 1 10 1 1 1 Q :=
+  exists_quadraticInterpolant _ _
 
--- The agreement hypothesis is satisfiable: `P = 0` agrees with `f + X² g` everywhere
--- when `f = -X²` and `g = 1`.
-example : 10 ≤ (polynomialAgreementSet (Function.Embedding.refl (ZMod 11))
+/-- The candidate `0` agrees with `f + X² g` everywhere when `f = -X²` and `g = 1`. -/
+private theorem agree_neg_sq : 10 ≤ (polynomialAgreementSet (Function.Embedding.refl (ZMod 11))
     (combinedWord (Function.Embedding.refl (ZMod 11)) (fun x ↦ -x ^ 2) 1 (X ^ 2)) 0).card := by
   rw [show polynomialAgreementSet _ _ _ = Finset.univ by
     ext x
     simp [combinedWord]]
   simp
 
+-- Every such interpolant vanishes along the quadratic multiplier `X²` at every agreeing
+-- candidate of degree at most one; here at the candidate `0`.
+example (Q : MvPolynomial AffineVar (ZMod 11))
+    (hQ : IsMultiplierInterpolant (Function.Embedding.refl _) (fun x ↦ -x ^ 2) 1 2 1 10 1 1 1 Q) :
+    multiplierEval (X ^ 2) 0 Q = 0 :=
+  hQ.vanish _ 0 (by simp) (by simp) agree_neg_sq
+
 -- A degree-two evaluation has degree at most the `(1, 2, d)`-weighted degree.
 example (P : (ZMod 11)[X]) (hP : P.natDegree ≤ 1) (Q : MvPolynomial AffineVar (ZMod 11)) :
-    (multiplierEval (X ^ 2) P Q).natDegree ≤ Q.weightedTotalDegree (lineWeight 2 1) :=
+    (multiplierEval (X ^ 2) P Q).natDegree ≤ Q.weightedTotalDegree (multiplierWeight 2 1) :=
   natDegree_multiplierEval_le (by simp) hP Q
 
 /-- info: 'ReedSolomon.exists_isMultiplierInterpolant' depends on axioms:
@@ -137,6 +140,11 @@ example (P : (ZMod 11)[X]) (hP : P.natDegree ≤ 1) (Q : MvPolynomial AffineVar 
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.eval_multiplierEval
+
+/-- info: 'ReedSolomon.natDegree_affineMultiplier_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.natDegree_affineMultiplier_le
 
 /-- info: 'ReedSolomon.map_multiplierEval' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

@@ -18,14 +18,14 @@ public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 
 A nonzero `Q(X, Y, Z)` of `(1, e, d)`-weighted degree below `m A` is built to vanish
 to order `m` along each line `(z, Y, f(z) + Y g(z))` indexed by a domain point `z`.
-Let `M` be a multiplier of degree at most `e`.
-Then `Q(X, M(X), P(X)) = 0` for every candidate `P` of degree at most `d` that agrees with
-`f + M g` on at least `A` domain points.
+Let `L` be a multiplier of degree at most `e`.
+Then `Q(X, L(X), P(X)) = 0` for every candidate `P` of degree at most `d` that agrees with
+`f + L g` on at least `A` domain points.
 Such an interpolant exists when its coefficient space has greater dimension than the
 space of linear constraints.
 
 Reed–Solomon codes use `e = 1`, where the multipliers are the lines `α + β X`.
-Reed–Muller codes use `e = n / q₀`.
+On the grid `𝔽_{q₀}^k` of `n = q₀^k` points, Reed–Muller codes use `e = n / q₀ = q₀^(k-1)`.
 
 ## Main definitions
 
@@ -127,10 +127,10 @@ theorem weightedTotalDegree_affineShift_le (x u v : K) (Q : MvPolynomial AffineV
     · exact MvPolynomial.X_mem_restrictWeightedDegree _ _ _ le_rfl
 
 /-- The evaluation along a multiplier factors through the shift. -/
-theorem multiplierEval_eq_aeval_affineShift (M P : K[X]) (x u v : K)
+theorem multiplierEval_eq_aeval_affineShift (L P : K[X]) (x u v : K)
     (Q : MvPolynomial AffineVar K) :
-    multiplierEval M P Q = MvPolynomial.aeval (fun w ↦ w.elim
-      (P - C u - M * C v) ![X - C x, M]) (affineShift x u v Q) := by
+    multiplierEval L P Q = MvPolynomial.aeval (fun w ↦ w.elim
+      (P - C u - L * C v) ![X - C x, L]) (affineShift x u v Q) := by
   rw [← AlgHom.comp_apply]
   congr 1
   refine MvPolynomial.algHom_ext fun w ↦ ?_
@@ -170,7 +170,7 @@ structure IsMultiplierInterpolant (domain : ι ↪ F) (f g : ι → F) (e d A m 
   /-- The interpolant is nonzero. -/
   ne_zero : Q ≠ 0
   /-- The `(1, e, d)`-weighted degree is below `m A`. -/
-  lineWeight_lt : Q.weightedTotalDegree (lineWeight e d) < m * A
+  multiplierWeight_lt : Q.weightedTotalDegree (multiplierWeight e d) < m * A
   /-- The joint degree in `Y` and `Z` is at most `D`. -/
   yzDegree_le : Q.weightedTotalDegree affineYZWeight ≤ D
   /-- The degree in `Z` is at most `M`. -/
@@ -196,6 +196,7 @@ open Polynomial.SymbolicInterpolation in
 /-- An interpolant exists when its allowed monomials outnumber the linear constraints.
 
 The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - e D`.
+The bound `m A - e D` uses natural-number subtraction, so the support is empty when `e D ≥ m A`.
 At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
 Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
 No positive lower bound on the resulting `Z`-degree is asserted. -/
@@ -245,16 +246,16 @@ theorem exists_isMultiplierInterpolant (domain : ι ↪ F) (f g : ι → F) {e d
     simp only [weight_affineVar, affineExponent_none, affineExponent_x, affineExponent_y,
       affineYZWeight_none, affineYZWeight_X, affineYZWeight_Y]
     omega
-  have hline : ∀ w ∈ Q.support, Finsupp.weight (lineWeight e d) w < m * A := by
+  have hline : ∀ w ∈ Q.support, Finsupp.weight (multiplierWeight e d) w < m * A := by
     intro w hw
     obtain ⟨⟨j, i, t⟩, hk, rfl⟩ := hsupp w hw
     simp only [S, mem_monomialSupport] at hk
     simp only [weight_affineVar, affineExponent_none, affineExponent_x, affineExponent_y,
-      lineWeight_none, lineWeight_X, lineWeight_Y]
+      multiplierWeight_none, multiplierWeight_X, multiplierWeight_Y]
     have het : t * e ≤ e * D := by rw [mul_comm]; exact Nat.mul_le_mul_left e (by omega)
     rw [mul_comm j d]
     omega
-  have hlt : Q.weightedTotalDegree (lineWeight e d) < m * A := by
+  have hlt : Q.weightedTotalDegree (multiplierWeight e d) < m * A := by
     obtain ⟨e, he⟩ : Q.support.Nonempty := Finset.nonempty_iff_ne_empty.mpr
       (by rwa [Ne, MvPolynomial.support_eq_empty])
     rw [MvPolynomial.weightedTotalDegree, Finset.sup_lt_iff (by
