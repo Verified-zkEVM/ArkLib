@@ -98,6 +98,16 @@ theorem degree_affineMultiplier_le (α β : F) : (affineMultiplier α β).degree
   unfold affineMultiplier
   compute_degree
 
+/-- The multiplier `α + β X` has degree at most one. -/
+theorem natDegree_affineMultiplier_le (α β : F) : (affineMultiplier α β).natDegree ≤ 1 :=
+  natDegree_le_of_degree_le (degree_affineMultiplier_le α β)
+
+/-- A ring map sends the multiplier `α + β X` to `φ α + φ β X`. -/
+@[simp]
+theorem map_affineMultiplier {K : Type*} [Field K] (φ : F →+* K) (α β : F) :
+    (affineMultiplier α β).map φ = affineMultiplier (φ α) (φ β) := by
+  simp [affineMultiplier]
+
 @[simp]
 theorem combinedWord_affineMultiplier (domain : ι ↪ F) (f g : ι → F) (α β : F) (i : ι) :
     combinedWord domain f g (affineMultiplier α β) i = f i + (α + β * domain i) * g i := by
