@@ -153,7 +153,7 @@ def stirRelation
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {ι : Type} [Fintype ι] [Nonempty ι]
     (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
-  fun ⟨⟨_, oracle⟩, _⟩ => δᵣ(oracle (), ReedSolomon.code φ degree) ≤ err
+  {input | δᵣ(input.1.2 (), ReedSolomon.code φ degree) ≤ err}
 
 /-- Strict version of `stirRelation`: the oracle's output is *strictly* closer than `err` to a
   Reed-Solomon codeword of degree less than `degree` over domain `φ`.
@@ -165,7 +165,7 @@ def stirOpenRelation
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {ι : Type} [Fintype ι] [Nonempty ι]
     (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
-  fun ⟨⟨_, oracle⟩, _⟩ => δᵣ(oracle (), ReedSolomon.code φ degree) < err
+  {input | δᵣ(input.1.2 (), ReedSolomon.code φ degree) < err}
 
 end MainTheorem
 

@@ -183,7 +183,7 @@ theorem totalDegree_algHom_rationalTaylorNumeratorOver_le
     (φ (rationalTaylorNumeratorOver F center Q l)).totalDegree ≤
       (2 * (l - r) - 1) * b + 1 := by
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     by_cases hl : l < r + 1
     · rw [rationalTaylorNumeratorOver, dite_eq_left_of_eq_true (eq_true hl)]
       exact (hX _).trans (Nat.le_add_left _ _)
@@ -383,7 +383,7 @@ theorem coeffNatDegreeLE_rationalTaylorNumeratorOver (center : F)
     CoeffNatDegreeLE (rationalTaylorNumeratorOver F (Polynomial.C center) Q l)
       ((2 * (l - r) - 1) * h) := by
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     rw [rationalTaylorNumeratorOver]
     split_ifs with hl
     · exact (coeffNatDegreeLE_X _).mono (Nat.zero_le _)
@@ -434,7 +434,7 @@ theorem totalDegree_rationalTaylorNumeratorOver_le_of_jet (center : Polynomial F
     (rationalTaylorNumeratorOver F center Q l).totalDegree ≤
       (2 * (l - r) - 1) * (v - 1) + 1 := by
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     rw [rationalTaylorNumeratorOver]
     split_ifs with hl
     · simp only [totalDegree_X]

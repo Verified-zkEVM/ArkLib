@@ -62,7 +62,7 @@ theorem openingClaimRel_unpackCoefficients_iff (F : CMlPolynomial A n) (x : Vect
       ∑ i, algebraMap B A (w i) * (Basis.ofEquivFun e.symm) i = e w := fun w => by
     simp only [← Algebra.smul_def, ← Basis.equivFun_symm_apply, Basis.equivFun_ofEquivFun,
       LinearEquiv.symm_symm]
-  rw [CMlPolynomial.eval_eq_eval_toMvPolynomial, hx]
+  rw [← CMlPolynomial.eval_toMvPolynomial, hx]
   change _ ↔ e v = MvPolynomial.eval _ (CMlPolynomial.toMvPolynomialDeg1 F).val
   rw [h, show (∑ i, algebraMap B A (MvPolynomial.eval x.get (ps i).val) *
       (Basis.ofEquivFun e.symm) i) = e (fun i => MvPolynomial.eval x.get (ps i).val) from hb _,

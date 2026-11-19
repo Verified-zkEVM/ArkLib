@@ -93,7 +93,9 @@ theorem encard_setOf_le_agree_encode_le_Lambda {M : Type*} (C : Set (ι → A)) 
     (a : ℕ) {encode : M → ι → A} {S : Set M} (hinj : Set.InjOn encode S)
     (hmem : ∀ m ∈ S, encode m ∈ C) :
     {m | m ∈ S ∧ a ≤ agree (encode m) y}.encard ≤ Lambda C (1 - (a : ℝ) / Fintype.card ι) := by
-  rw [← (hinj.mono fun _ hm ↦ hm.1).encard_image]
+  have hinj' : Set.InjOn encode {m | m ∈ S ∧ a ≤ agree (encode m) y} :=
+    hinj.mono fun _ hm ↦ hm.1
+  rw [← hinj'.encard_image]
   refine (Set.encard_le_encard ?_).trans (encard_setOf_le_agree_le_Lambda C y a)
   rintro _ ⟨m, hm, rfl⟩
   exact ⟨hmem m hm.1, hm.2⟩
