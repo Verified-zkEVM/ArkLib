@@ -228,7 +228,7 @@ theorem roundConsistencyCheck_eq_true_of_pow_eq {m : ℕ} [NeZero m]
     simp only [Polynomial.eval_C, hz, pow_one, CompPoly.CPolynomial.eval_toPoly,
       CompPoly.CPolynomial.FoldingPolynomial.cpolyFold_toPoly, hfold]
   · let roots : Fin m ↪ 𝔽 := ⟨fun j ↦ points j / a, fun _ _ h ↦
-      points.injective ((div_left_inj' ha).mp h)⟩
+      points.injective ((div_left_inj₀ ha).mp h)⟩
     have hroots (j : Fin m) : roots j ^ m = 1 := by
       change (points j / a) ^ m = 1
       rw [div_pow, hpow]

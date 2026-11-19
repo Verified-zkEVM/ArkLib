@@ -544,13 +544,14 @@ section neZero
     of the combination. -/
 lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
     ((linearCombination F (fun p ↦ monomial (F := F) p.1 p.2) c).coeff j).coeff i = c (i, j) := by
-    simp only [linearCombination_apply, Finsupp.sum, finsetSum_coeff, coeff_smul, smul_eq_mul]
+    simp only [linearCombination_apply, Finsupp.sum, finsetSum_coeff,
+      AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul]
     rw [Finset.sum_eq_single (i, j)] <;> simp +contextual only [Finsupp.mem_support_iff, ne_eq,
       mul_eq_zero, false_or, Prod.forall, Prod.mk.injEq, not_and]
-    · erw [coeff_monomial, ite_eq_left rfl]; aesop
+    · erw [coeff_monomial_apply, ite_eq_left rfl]; aesop
     · intro a b
       rw [monomial]
-      by_cases ha : a = i <;> by_cases hb : b = j <;> simp_all [coeff_monomial]
+      by_cases ha : a = i <;> by_cases hb : b = j <;> simp_all
     · exact fun h ↦ by left; exact Function.notMem_support.mp h
 
 /-- The monomials are linearly independent. -/
@@ -585,7 +586,7 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
     natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
     classical
     simp only [natWeightedDegree, monomial]
-    refine le_antisymm ?_ ?_ <;> norm_num [coeff_monomial]
+    refine le_antisymm ?_ ?_ <;> norm_num [coeff_monomial_apply]
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial_eq (i j u v : ℕ) :
@@ -633,7 +634,8 @@ lemma natWeightedDegree_sum_le {ι : Type*} (s : Finset ι) (f : ι → F[X][Y])
     of the polynomial. -/
 lemma natWeightedDegree_smul_le {F : Type} [Semiring F] (a : F) (p : F[X][Y]) (u v : ℕ) :
     natWeightedDegree (a • p) u v ≤ natWeightedDegree p u v := by
-    simp only [natWeightedDegree, coeff_smul, Finset.sup_le_iff, Polynomial.mem_support_iff, ne_eq]
+    simp only [natWeightedDegree, AddMonoidAlgebra.coeff_smul_apply,
+      Finset.sup_le_iff, Polynomial.mem_support_iff, ne_eq]
     intro b _
     exact le_trans (add_le_add
       (mul_le_mul_of_nonneg_left (natDegree_smul_le a (p.coeff b)) u.zero_le)
@@ -748,9 +750,8 @@ lemma rootMultiplicity_le_of_coeff_ne_zero [DecidableEq F] {Q : F[X][Y]} {x y : 
 lemma shift_eq_zero_iff {F : Type} [Field F] (f : F[X][Y]) (x y : F) : shift f x y = 0 ↔ f = 0 := by
   constructor <;> intro h <;> simp_all only [shift, zero_comp, Polynomial.map_zero]
   have h_comp : f.comp (Y + C (C y)) = 0 := by
-    rw [Polynomial.ext_iff] at *
-    intro n
-    specialize h n
+    ext n : 2
+    replace h := congrArg (fun p : F[X][Y] ↦ p.coeff n) h
     simp_all [Polynomial.coeff_map]
     rw [Polynomial.comp_eq_zero_iff ] at h
     aesop
@@ -764,7 +765,7 @@ lemma rootMultiplicity_ge_of_shift_zero [DecidableEq F] {f : F[X][Y]} {x y : F}
     m ≤ rootMultiplicity f x y := by
   obtain ⟨s, t, hst⟩ : ∃ s t, Bivariate.coeff (shift f x y) s t ≠ 0 := by
     by_contra! H
-    exact hf ((shift_eq_zero_iff f x y).1 (Polynomial.ext fun t ↦ Polynomial.ext fun s ↦ H s t))
+    exact hf ((shift_eq_zero_iff f x y).1 (by ext t s : 4; exact H s t))
   obtain ⟨μ, hμ, -⟩ := exists_rootMultiplicity_eq_some_le hst
   rw [hμ]
   exact Option.some_le_some.mpr ((rootMultiplicity₀_ge_iff _ m).1 h μ hμ)
@@ -940,7 +941,7 @@ private theorem dvd_property_of_sufficient_multiplicity_bound [DecidableEq F]
     X - C (toPolynomial p) ∣ Q := by
   contrapose! h_dist with h_distots
   have hR_nonzero : (Q.eval (toPolynomial p)) ≠ 0 := by
-    contrapose! h_distots
+    contrapose h_distots
     exact dvd_iff_isRoot.mpr h_distots
   have hR_roots : (Q.eval (toPolynomial p)).natDegree ≥
       m * (n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i))) := by

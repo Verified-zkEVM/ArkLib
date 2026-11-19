@@ -63,7 +63,8 @@ open PolynomialDifferential Polynomial
 
 namespace ReedSolomon.FirstOrder.Squarefree
 
-open MvPolynomial ReedSolomon.HiddenDerivative
+open ReedSolomon.HiddenDerivative
+open MvPolynomial (CoeffNatDegreeLE)
 
 noncomputable section
 

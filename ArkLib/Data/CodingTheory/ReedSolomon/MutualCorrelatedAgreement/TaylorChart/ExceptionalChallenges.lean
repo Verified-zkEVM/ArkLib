@@ -26,7 +26,8 @@ agreement sets from a polynomial pair.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval)
 
 namespace ReedSolomon
 
