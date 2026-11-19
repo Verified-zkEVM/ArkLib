@@ -112,7 +112,10 @@ open scoped BigOperators
 variable {ι : Type*} [Fintype ι] [Nonempty ι]
          {F : Type*} [Field F] [Fintype F]
 
-abbrev RScodeSet (domain : ι ↪ F) (deg : ℕ) : Set (ι → F) := ReedSolomon.code domain deg
+/-- The set of words in the abstract Reed–Solomon submodule, whose evaluation image is
+noncomputable. -/
+noncomputable abbrev RScodeSet (domain : ι ↪ F) (deg : ℕ) : Set (ι → F) :=
+  ReedSolomon.code domain deg
 
 open Classical in
 noncomputable def toFinset (domain : ι ↪ F) (deg : ℕ) : Finset (ι → F) :=
@@ -232,6 +235,13 @@ theorem mem_code_iff_eval_of_ne_zero {n : ℕ} [NeZero n] {α : ι ↪ F} {f : �
 lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.degree < n) :
     evalOnPoints α p ∈ code α n :=
   mem_code_of_polynomial_of_degree_lt_of_eval p h_deg (by simp [evalOnPoints])
+
+/-- A polynomial of degree at most `d` evaluates to a word in the Reed–Solomon code
+of message length `d + 1`. -/
+lemma evalOnPoints_mem_code_succ_of_degree_le {α : ι ↪ F} {p : F[X]} {d : ℕ}
+    (hdeg : p.degree ≤ d) : evalOnPoints α p ∈ code α (d + 1) := by
+  apply evalOnPoints_mem_code_of_degree_lt
+  rwa [← mem_degreeLT, degreeLT_succ_eq_degreeLE, mem_degreeLE]
 
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.natDegree < n`. -/

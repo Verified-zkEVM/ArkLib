@@ -494,10 +494,10 @@ private theorem symbolicGSPoly_coeff_pair {F : Type} [Field F]
       push Not at h
       exact hp (Prod.ext h.2 h.1)
     rcases hcases with hj | hi
-    · simp [Polynomial.coeff_smul, Polynomial.coeff_monomial, hj, hp]
+    · simp [hj, hp]
     · by_cases hj : q.1.1.2 = j
-      · simp [Polynomial.coeff_smul, Polynomial.coeff_monomial, hi, hj, hp]
-      · simp [Polynomial.coeff_smul, Polynomial.coeff_monomial, hj, hp]
+      · simp [hi, hj, hp]
+      · simp [hj, hp]
 
 open scoped BigOperators in
 private theorem symbolicGSPoly_coeff_index {F : Type} [Field F]
@@ -524,7 +524,7 @@ private theorem symbolicGSPoly_coeff_index {F : Type} [Field F]
         have hz' : rh = qh := Fin.ext hz
         subst qh
         rfl
-      simp [hp, hz, Polynomial.coeff_monomial]
+      simp [hp, hz]
     · simp [hp]
   · simp
 
@@ -597,7 +597,7 @@ private theorem symbolicGSPoly_weighted_lt {F : Type} [Field F]
     Polynomial.mem_support_iff.mp hj
   have hi : ((symbolicGSPoly (F := F) A c).coeff j).natDegree ∈
       ((symbolicGSPoly (F := F) A c).coeff j).support :=
-    Polynomial.natDegree_mem_support_of_nonzero hc
+    Polynomial.natDegree_mem_support_of_ne_zero hc
   have hp := symbolicGSPoly_coeff_ne_zero_mem A c
     (Polynomial.mem_support_iff.mp hi)
   simpa only [Prod.fst, Prod.snd, Nat.cast_add, Nat.cast_mul] using
@@ -1028,8 +1028,7 @@ private theorem symbolicGSKernelWitness_shift_vanish {F : Type} [Field F]
         (Polynomial.C (ωs i))
         (Polynomial.C (u₀ i) + Polynomial.X * Polynomial.C (u₁ i))).coeff t).coeff s = 0 := by
   intro i s t hst
-  apply Polynomial.ext
-  intro d
+  ext d : 2
   by_cases hd : d ≤ symbolicYSum A
   · have hstmem : (s, t) ∈ GuruswamiSudan.constraintIndices m := by
       unfold GuruswamiSudan.constraintIndices

@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
-public import ArkLib.Data.Probability.Instances
+public import VCVio.OracleComp.Constructions.SampleableType.SchwartzZippel
 public import ArkLib.Data.MvPolynomial.Interpolation
 public import Mathlib.Logic.Equiv.Fin.Basic
 public import Mathlib.Algebra.Polynomial.Coeff
@@ -147,7 +147,7 @@ theorem prob_fingerprint_eq_zero_le (W : U → F) (ι : U ↪ F) (σ : Equiv.Per
     (hW : W ∘ σ ≠ W) :
     Pr{let r ← $ᵗ (F × F)}[fingerprint W ι σ r.1 r.2 = 0] ≤
       (((Fintype.card U - 1 : ℕ) : ℝ≥0) / Fintype.card F : ℝ≥0) := by
-  have hb := Probability.prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
+  have hb := prEvent_eval_eq_zero_univ_le_div
     (polynomial W ι σ) (polynomial_ne_zero W ι σ hW)
     (totalDegree_polynomial_le W ι σ)
   rw [ENNReal.coe_div (by simp), ENNReal.coe_natCast, ENNReal.coe_natCast]
