@@ -61,10 +61,10 @@ example (f : Fin (2 ^ 1) → Fin 100 → GaloisField 2 64) :
     (ε := ENNReal.ofReal (9 / 2 ^ 64 + 2 ^ 22 * 5 ^ 10 / 2 ^ 128)) (fun j hj ↦ ?_) f).trans_lt ?_
   · obtain rfl : j = 0 := by omega
     exact onePair_error_le
-  · have hreal : (9 / 2 ^ 64 + 2 ^ 22 * 5 ^ 10 / 2 ^ 128 : ℝ) < 1 / 2 ^ 60 := by norm_num
-    rw [Nat.cast_one, one_mul]
-    calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) :=
-          (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
+  · rw [Nat.cast_one, one_mul]
+    calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) := by
+          rw [ENNReal.ofReal_lt_ofReal_iff (by positivity)]
+          norm_num
       _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
 
 /-- info: 'ReedSolomon.prob_isFoldingExceptional_le_mul' depends on axioms:

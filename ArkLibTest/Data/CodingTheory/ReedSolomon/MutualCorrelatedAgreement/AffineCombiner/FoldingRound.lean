@@ -136,9 +136,9 @@ open Classical in
 -- The two-row value is below `2⁻⁶⁰`.
 example : interleavedEqualDegreeMcaError largeDomain 2 16 90 1 < (1 : ENNReal) / 2 ^ 60 := by
   refine twoRows_error_le.trans_lt ?_
-  have hreal : (9 / 2 ^ 64 + 2 ^ 22 * 5 ^ 10 / 2 ^ 128 : ℝ) < 1 / 2 ^ 60 := by norm_num
-  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) :=
-        (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
+  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) := by
+        rw [ENNReal.ofReal_lt_ofReal_iff (by positivity)]
+        norm_num
     _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
 
 -- A caller may supply its own decidable equality on the field.
@@ -152,7 +152,7 @@ example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [inst : DecidableE
     (domain : ι ↪ F) (f g : Fin 2 → ι → F) {d : ℕ} {F₀ G₀ F₁ G₁ : Fin 2 → F[X]}
     (hF₀ : ∀ r, (F₀ r).degree ≤ d) (hG₀ : ∀ r, (G₀ r).degree ≤ d)
     (hF₁ : ∀ r, (F₁ r).degree ≤ d) (hG₁ : ∀ r, (G₁ r).degree ≤ d) (hne : (F₀, G₀) ≠ (F₁, G₁)) :
-    #(@Inter.inter _ (@Finset.instInter _ inst)
+    #(@Min.min _ (@Finset.instMin _ inst)
       (interleavedCommonAgreementSet domain f g F₀ G₀)
       (interleavedCommonAgreementSet domain f g F₁ G₁)) ≤ d :=
   card_inter_interleavedCommonAgreementSet_le domain f g hF₀ hG₀ hF₁ hG₁ hne

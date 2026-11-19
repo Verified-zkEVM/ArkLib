@@ -309,7 +309,7 @@ theorem IsInterleavedEqualDegreeExceptional.isInterleavedAffineExceptional_or_ex
     rw [hloss_eq] at this
     exact absurd hw.2 (not_le.mpr this)
   refine ⟨fun r ↦ V r - C θ * U r, U, hFdeg, hU, hUd, fun r ↦ ?_, ?_⟩
-  · simp [coeff_sub, coeff_C_mul, coeff_eq_zero_of_degree_lt (hV r)]
+  · simp [coeff_C_mul, coeff_eq_zero_of_degree_lt (hV r)]
   · refine (Nat.sub_le_sub_left hw.2 A).trans ((Nat.sub_le_sub_right hA _).trans
       ((Finset.le_card_sdiff _ _).trans (Finset.card_le_card fun i hi ↦ ?_)))
     obtain ⟨hiP, hiL⟩ := Finset.mem_sdiff.mp hi
