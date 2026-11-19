@@ -9,25 +9,30 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Aff
 public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 
 /-!
-# Trivariate polynomials along an affine challenge line
+# Trivariate polynomials along a multiplier curve
 
-The proof interpolates a polynomial `Q(X, Y, Z)` and evaluates it along a challenge line.
-The evaluation sends `Y` to `α + β X` and `Z` to a candidate `P(X)`.
+The proof interpolates a polynomial `Q(X, Y, Z)` and evaluates it along a curve.
+The evaluation sends `Y` to a multiplier `M(X)` and `Z` to a candidate `P(X)`.
+For Reed–Solomon codes the multiplier is the affine line `α + β X`.
 
 ## Weights
 
 The `(Y, Z)`-weight ignores `X`, so it measures the joint degree in `Y` and `Z`.
-The line weight `(1, 1, d)` bounds the degree after the evaluation, when `deg P ≤ d`.
+The line weight `(1, e, d)` bounds the degree after the evaluation, when `deg M ≤ e`
+and `deg P ≤ d`.
+Reed–Solomon codes use `e = 1`; Reed–Muller codes use `e = n / q₀`.
 
 ## Main definitions
 
 * `ReedSolomon.AffineVar`: the variables `X`, `Y`, `Z`.
-* `ReedSolomon.affineYZWeight` and `ReedSolomon.affineLineWeight`: the two weights.
-* `ReedSolomon.affineLineEval`: the evaluation `Q ↦ Q(X, α + β X, P(X))`.
+* `ReedSolomon.affineYZWeight` and `ReedSolomon.lineWeight`: the two weights.
+* `ReedSolomon.multiplierEval`: the evaluation `Q ↦ Q(X, M(X), P(X))`.
 
 ## Main statements
 
-* `ReedSolomon.natDegree_affineLineEval_le`: the degree of the line evaluation.
+* `ReedSolomon.natDegree_multiplierEval_le`: the degree of the evaluation.
+* `ReedSolomon.eval_multiplierEval`: evaluating the result at a point.
+* `ReedSolomon.map_multiplierEval`: the evaluation commutes with a field embedding.
 
 ## References
 
@@ -48,15 +53,15 @@ abbrev AffineVar : Type := Option (Fin 2)
 /-- The `(Y, Z)`-weight: `X` has weight `0`, `Y` and `Z` have weight `1`. -/
 def affineYZWeight : AffineVar → ℕ := fun v ↦ v.elim 1 ![0, 1]
 
-/-- The line weight `(1, 1, d)`: `X` and `Y` have weight `1`, `Z` has weight `d`. -/
-def affineLineWeight (d : ℕ) : AffineVar → ℕ := fun v ↦ v.elim d ![1, 1]
+/-- The line weight `(1, e, d)`: `X` has weight `1`, `Y` has weight `e`, `Z` has weight `d`. -/
+def lineWeight (e d : ℕ) : AffineVar → ℕ := fun v ↦ v.elim d ![1, e]
 
 @[simp] theorem affineYZWeight_none : affineYZWeight none = 1 := rfl
 @[simp] theorem affineYZWeight_X : affineYZWeight (some 0) = 0 := rfl
 @[simp] theorem affineYZWeight_Y : affineYZWeight (some 1) = 1 := rfl
-@[simp] theorem affineLineWeight_none (d : ℕ) : affineLineWeight d none = d := rfl
-@[simp] theorem affineLineWeight_X (d : ℕ) : affineLineWeight d (some 0) = 1 := rfl
-@[simp] theorem affineLineWeight_Y (d : ℕ) : affineLineWeight d (some 1) = 1 := rfl
+@[simp] theorem lineWeight_none (e d : ℕ) : lineWeight e d none = d := rfl
+@[simp] theorem lineWeight_X (e d : ℕ) : lineWeight e d (some 0) = 1 := rfl
+@[simp] theorem lineWeight_Y (e d : ℕ) : lineWeight e d (some 1) = e := rfl
 
 /-- The weight of an exponent in the three variables. -/
 theorem weight_affineVar (w : AffineVar → ℕ) (e : AffineVar →₀ ℕ) :
@@ -72,30 +77,30 @@ theorem weight_affineYZWeight (m : AffineVar →₀ ℕ) :
 
 variable {K : Type*} [Field K]
 
-/-- The evaluation `Q ↦ Q(X, α + β X, P(X))` along the challenge line. -/
-noncomputable def affineLineEval (α β : K) (P : K[X]) : MvPolynomial AffineVar K →ₐ[K] K[X] :=
-  MvPolynomial.aeval fun v ↦ v.elim P ![X, affineMultiplier α β]
+/-- The evaluation `Q ↦ Q(X, M(X), P(X))` along the multiplier `M`. -/
+noncomputable def multiplierEval (M P : K[X]) : MvPolynomial AffineVar K →ₐ[K] K[X] :=
+  MvPolynomial.aeval fun v ↦ v.elim P ![X, M]
 
-@[simp] theorem affineLineEval_X_none (α β : K) (P : K[X]) :
-    affineLineEval α β P (MvPolynomial.X none) = P := by
-  simp [affineLineEval]
+@[simp] theorem multiplierEval_X_none (M P : K[X]) :
+    multiplierEval M P (MvPolynomial.X none) = P := by
+  simp [multiplierEval]
 
-@[simp] theorem affineLineEval_X_X (α β : K) (P : K[X]) :
-    affineLineEval α β P (MvPolynomial.X (some 0)) = X := by
-  simp [affineLineEval]
+@[simp] theorem multiplierEval_X_X (M P : K[X]) :
+    multiplierEval M P (MvPolynomial.X (some 0)) = X := by
+  simp [multiplierEval]
 
-@[simp] theorem affineLineEval_X_Y (α β : K) (P : K[X]) :
-    affineLineEval α β P (MvPolynomial.X (some 1)) = affineMultiplier α β := by
-  simp [affineLineEval]
+@[simp] theorem multiplierEval_X_Y (M P : K[X]) :
+    multiplierEval M P (MvPolynomial.X (some 1)) = M := by
+  simp [multiplierEval]
 
-/-- If `deg P ≤ d`, the line evaluation has degree at most the line-weighted degree of `Q`. -/
-theorem natDegree_affineLineEval_le (α β : K) {P : K[X]} {d : ℕ} (hP : P.natDegree ≤ d)
-    (Q : MvPolynomial AffineVar K) :
-    (affineLineEval α β P Q).natDegree ≤ Q.weightedTotalDegree (affineLineWeight d) := by
+/-- If `deg M ≤ e` and `deg P ≤ d`, the evaluation has degree at most `wdeg_{(1, e, d)} Q`. -/
+theorem natDegree_multiplierEval_le {M P : K[X]} {e d : ℕ} (hM : M.natDegree ≤ e)
+    (hP : P.natDegree ≤ d) (Q : MvPolynomial AffineVar K) :
+    (multiplierEval M P Q).natDegree ≤ Q.weightedTotalDegree (lineWeight e d) := by
   classical
   conv_lhs => rw [Q.as_sum, map_sum]
   refine Polynomial.natDegree_sum_le_of_forall_le _ _ fun m hm ↦ ?_
-  rw [affineLineEval, MvPolynomial.aeval_monomial]
+  rw [multiplierEval, MvPolynomial.aeval_monomial]
   refine (natDegree_C_mul_le _ _).trans ?_
   refine le_trans ?_ (MvPolynomial.le_weightedTotalDegree _ hm)
   rw [Finsupp.prod, Finsupp.weight_apply, Finsupp.sum]
@@ -104,25 +109,35 @@ theorem natDegree_affineLineEval_le (α β : K) {P : K[X]} {d : ℕ} (hP : P.nat
   rw [smul_eq_mul]
   gcongr
   rcases v with _ | ⟨i⟩
-  · simpa [affineLineWeight] using hP
+  · simpa [lineWeight] using hP
   · fin_cases i
-    · simp [affineLineWeight]
-    · simp only [affineLineWeight]
-      exact natDegree_le_of_degree_le (degree_affineMultiplier_le α β)
+    · simp [lineWeight]
+    · simpa [lineWeight] using hM
 
-/-- The line evaluation commutes with a field embedding. -/
-theorem map_affineLineEval {L : Type*} [Field L] (φ : K →+* L) (α β : K) (P : K[X])
+/-- Evaluating the result at `c` evaluates `Q` at `(c, M(c), P(c))`. -/
+theorem eval_multiplierEval (c : K) (M P : K[X]) (Q : MvPolynomial AffineVar K) :
+    (multiplierEval M P Q).eval c =
+      MvPolynomial.aeval (fun v ↦ v.elim (P.eval c) ![c, M.eval c]) Q := by
+  rw [← Polynomial.coe_aeval_eq_eval, multiplierEval, ← AlgHom.comp_apply,
+    MvPolynomial.comp_aeval]
+  congr 2
+  funext v
+  rcases v with _ | ⟨i⟩
+  · simp
+  · fin_cases i <;> simp
+
+/-- The evaluation commutes with a field embedding. -/
+theorem map_multiplierEval {L : Type*} [Field L] (φ : K →+* L) (M P : K[X])
     (Q : MvPolynomial AffineVar K) :
-    (affineLineEval α β P Q).map φ =
-      affineLineEval (φ α) (φ β) (P.map φ) (MvPolynomial.map φ Q) := by
+    (multiplierEval M P Q).map φ = multiplierEval (M.map φ) (P.map φ) (MvPolynomial.map φ Q) := by
   induction Q using MvPolynomial.induction_on with
-  | C a => simp [affineLineEval]
+  | C a => simp [multiplierEval]
   | add p q hp hq => simp only [map_add, Polynomial.map_add, hp, hq]
   | mul_X p v hp =>
     simp only [map_mul, Polynomial.map_mul, hp, MvPolynomial.map_X]
     congr 1
     rcases v with _ | ⟨i⟩
     · simp
-    · fin_cases i <;> simp [affineMultiplier]
+    · fin_cases i <;> simp
 
 end ReedSolomon

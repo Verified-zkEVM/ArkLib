@@ -85,14 +85,15 @@ theorem exists_affineFactor_finset_card_le [Finite F] [IsAlgClosed E] (domain : 
     (hQ : Q.weightedTotalDegree affineYZWeight ≤ h) (hM : Q.degreeOf none ≤ M) :
     ∃ ex : Finset (F × F), (#ex : ℝ) ≤ ((h * (h - 1) : ℕ) : ℝ) +
         4 * d ^ 2 * M ^ 2 * h ^ 3 * ((Fintype.card ι : ℝ) / (A - B : ℕ)) ^ 2 ∧
-      ∀ c ∉ ex, ∀ P : Polynomial F, affineLineEval (φ c.1) (φ c.2) (P.map φ) Q = 0 →
+      ∀ c ∉ ex, ∀ P : Polynomial F,
+        multiplierEval (affineMultiplier (φ c.1) (φ c.2)) (P.map φ) Q = 0 →
         P.degree ≤ d →
         A ≤ #(polynomialAgreementSet domain
           (combinedWord domain f g (affineMultiplier c.1 c.2)) P) →
         IsAffinePersistent domain f g d B c.1 c.2 P := by
   classical
   have := Fintype.ofFinite F
-  obtain ⟨e, R, hRirr, hRder, hRdeg, hpe, -, hroot⟩ := exists_affineFrobeniusFactor p hirr hpos
+  obtain ⟨e, R, hRirr, hRder, hRdeg, hpe, -, hroot⟩ := exists_frobeniusFactor p hirr hpos
   set fr := (iterateFrobeniusEquiv E p e).symm
   have hRh : R.weightedTotalDegree affineYZWeight ≤ h := hRdeg.trans hQ
   -- The lines where the discriminant of `R` vanishes.
@@ -104,7 +105,8 @@ theorem exists_affineFactor_finset_card_le [Finite F] [IsAlgClosed E] (domain : 
   set disc := (Finset.univ : Finset (F × F)).filter fun c ↦
     (affineDiscriminant R).eval (affineMultiplier (ψ c).1 (ψ c).2) = 0
   have hdisc : #disc ≤ h * (h - 1) :=
-    card_filter_affineDiscriminant_eq_zero_le (affineDiscriminant_ne_zero hRirr hRder) hRh _ ψ hψ
+    card_filter_affineDiscriminant_eq_zero_le (affineDiscriminant_ne_zero hRirr hRder) hRh _
+      (fun c ↦ affineMultiplier (ψ c).1 (ψ c).2) (affineMultiplier_injective.comp hψ).injOn
   -- The nonpersistent challenges of `R`.
   obtain ⟨ex, hex, hgood⟩ :=
     exists_affineNonpersistent_finset_card_le domain f g φ p e R hd hdB hBA hAn hRh
@@ -131,9 +133,10 @@ theorem exists_affineFactor_finset_card_le [Finite F] [IsAlgClosed E] (domain : 
           _ = _ := by ring
   · have hcd : c ∉ disc := fun h ↦ hc (Finset.mem_union_left _ h)
     have hce : c ∉ ex := fun h ↦ hc (Finset.mem_union_right _ h)
-    have hR := hroot _ _ _ hP
+    have hR := hroot _ _ hP
+    rw [map_affineMultiplier] at hR
     refine hgood c hce P hdeg hR ?_ hA
-    refine affineLineEval_pderiv_ne_zero
+    refine multiplierEval_pderiv_ne_zero
       (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none hRder) hR ?_
     intro h0
     exact hcd (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h0⟩)
@@ -152,7 +155,7 @@ At agreement loss one, the excluded set has size at most the size of a given set
 Outside the given set, exceptional candidates must not be persistent. -/
 theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domain : ι ↪ F)
     (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
-    (hQ : IsAffineInterpolant domain f g d A m D M Q) (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A)
+    (hQ : IsMultiplierInterpolant domain f g 1 d A m D M Q) (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A)
     (hAn : A ≤ Fintype.card ι) (Pset : Finset (F × F))
     (hPset : ∀ c ∉ Pset, ∀ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P →
       ¬ IsAffinePersistent domain f g d B c.1 c.2 P) :
@@ -183,22 +186,27 @@ theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domai
         ((degreeOf_map_of_injective φ.injective Q none).trans_le hQ.rootDegree_le))
   have hcontent : ∃ ex : Finset (F × F), ((#ex : ℕ) : ℝ) ≤ (δ : ℝ) ∧
       ∀ c ∉ ex, ∀ P : Polynomial F,
-        affineLineEval (φ c.1) (φ c.2) (P.map φ) (radicalContent none QE) ≠ 0 := by
+        multiplierEval (affineMultiplier (φ c.1) (φ c.2)) (P.map φ)
+          (radicalContent none QE) ≠ 0 := by
     -- The content is free of `Z`, so it vanishes on few lines.
     have hZ := degreeOf_radicalContent none QE
     refine ⟨(Finset.univ : Finset (F × F)).filter fun c ↦
-      affineLineEval (φ c.1) (φ c.2) 0 (radicalContent none QE) = 0, ?_, fun c hc P h0 ↦ ?_⟩
-    · have := card_filter_affineLine_eq_zero_le (radicalContent_ne_zero none QE) hZ
-        Finset.univ (fun c : F × F ↦ (φ c.1, φ c.2)) fun c c' hc ↦ by
-          simp only [Prod.mk.injEq] at hc
-          exact Prod.ext (φ.injective hc.1) (φ.injective hc.2)
+      multiplierEval (affineMultiplier (φ c.1) (φ c.2)) 0 (radicalContent none QE) = 0, ?_,
+      fun c hc P h0 ↦ ?_⟩
+    · have hφ : Function.Injective fun c : F × F ↦ (φ c.1, φ c.2) := fun c c' hc ↦ by
+        simp only [Prod.mk.injEq] at hc
+        exact Prod.ext (φ.injective hc.1) (φ.injective hc.2)
+      have := card_filter_multiplierEval_eq_zero_le (radicalContent_ne_zero none QE) hZ
+        Finset.univ (fun c : F × F ↦ affineMultiplier (φ c.1) (φ c.2))
+        (affineMultiplier_injective.comp hφ).injOn
       exact_mod_cast this.trans
         (degreeOf_le_weightedTotalDegree affineYZWeight (some 1) (by simp) _)
     · refine hc (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩)
-      rwa [affineLineEval_eq_of_degreeOf_none_eq_zero hZ _ _ 0 (P.map φ)]
+      rwa [multiplierEval_eq_of_degreeOf_none_eq_zero hZ _ 0 (P.map φ)]
   have hfactors : ∀ c ∈ S, ∃ ex : Finset (F × F),
       ((#ex : ℕ) : ℝ) ≤ ((h c * (h c - 1) : ℕ) : ℝ) + K * (h c : ℝ) ^ 3 ∧
-      ∀ w ∉ ex, ∀ P : Polynomial F, affineLineEval (φ w.1) (φ w.2) (P.map φ) c.rep = 0 →
+      ∀ w ∉ ex, ∀ P : Polynomial F,
+        multiplierEval (affineMultiplier (φ w.1) (φ w.2)) (P.map φ) c.rep = 0 →
         P.degree ≤ d → A ≤ #(polynomialAgreementSet domain
           (combinedWord domain f g (affineMultiplier w.1 w.2)) P) →
         IsAffinePersistent domain f g d B w.1 w.2 P := by
@@ -210,7 +218,8 @@ theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domai
     rw [hK]
     ring
   obtain ⟨ex, hex, hgood⟩ := exists_exceptional_of_factor_exceptional (α := ℝ) none hQE
-    (fun (c : F × F) (P : Polynomial F) ↦ affineLineEval (φ c.1) (φ c.2) (P.map φ))
+    (fun (c : F × F) (P : Polynomial F) ↦
+      multiplierEval (affineMultiplier (φ c.1) (φ c.2)) (P.map φ))
     (fun c P ↦ P.degree ≤ d →
       A ≤ #(polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier c.1 c.2)) P) →
       IsAffinePersistent domain f g d B c.1 c.2 P)
@@ -235,8 +244,8 @@ theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domai
   · have hcP : c ∉ Pset := fun h ↦ hc (Finset.mem_union_left _ h)
     have hcex : c ∉ ex := fun h ↦ hc (Finset.mem_union_right _ h)
     refine hPset c hcP P hP (hgood c hcex P ?_ hP.1 hP.2.1)
-    have := congrArg (Polynomial.map φ) (hQ.vanish c.1 c.2 P hP.1 hP.2.1)
-    rwa [map_affineLineEval, Polynomial.map_zero] at this
+    have := congrArg (Polynomial.map φ) (hQ.vanish_affineMultiplier c.1 c.2 P hP.1 hP.2.1)
+    rwa [map_multiplierEval, map_affineMultiplier, Polynomial.map_zero] at this
 
 end Count
 

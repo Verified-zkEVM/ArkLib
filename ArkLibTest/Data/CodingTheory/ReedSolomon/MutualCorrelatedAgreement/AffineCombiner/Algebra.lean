@@ -15,14 +15,16 @@ import Mathlib.Basic.Complex.Basic
 /-! # Acceptance cases for coefficient descent and regular Taylor reconstruction -/
 
 open ReedSolomon Polynomial
+open scoped Finset
 
 /-- The equation `Z² - X²`, singular at the origin. -/
 private noncomputable def singularR : MvPolynomial AffineVar ℚ :=
   MvPolynomial.X none ^ 2 - MvPolynomial.X (some 0) ^ 2
 
 -- Initial value and challenge do not determine a root at a singular center.
-example : affineLineEval 0 0 (X : ℚ[X]) singularR = 0 := by simp [singularR]
-example : affineLineEval 0 0 (-X : ℚ[X]) singularR = 0 := by simp [singularR]
+example : multiplierEval (affineMultiplier 0 0) (X : ℚ[X]) singularR = 0 := by simp [singularR]
+example : multiplierEval (affineMultiplier 0 0) (-X : ℚ[X]) singularR = 0 := by
+  simp [singularR]
 example : (X : ℚ[X]).eval 0 = (-X : ℚ[X]).eval 0 := by simp
 example : (X : ℚ[X]) ≠ -X := by
   intro h
@@ -62,9 +64,9 @@ example (a b c : ℚ) :
 private theorem regular_discriminant : affineDiscriminant regularR = 1 := by
   simp [affineDiscriminant, regularR]
 
-example (a b : ℚ) : affineLineEval a b (C a + C b * X)
+example (a b : ℚ) : multiplierEval (affineMultiplier a b) (C a + C b * X)
     (MvPolynomial.pderiv none regularR) ≠ 0 := by
-  apply affineLineEval_pderiv_ne_zero
+  apply multiplierEval_pderiv_ne_zero
     (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none (by simp [regularR]))
     (by simp [regularR, affineMultiplier])
   simp [regular_discriminant]
@@ -81,7 +83,8 @@ example : affineDiscriminant freeR = 1 := by
   have hdeg : (affineNested freeR).natDegree = 0 := by simp [freeR]
   simp [affineDiscriminant, hdeg, resultant, Matrix.det_isEmpty]
 
-example (P : ℚ[X]) : affineLineEval 0 1 P freeR = 0 ∧ MvPolynomial.pderiv none freeR = 0 := by
+example (P : ℚ[X]) :
+    multiplierEval (affineMultiplier 0 1) P freeR = 0 ∧ MvPolynomial.pderiv none freeR = 0 := by
   simp [freeR, affineMultiplier]
 
 -- The normalized-factor theorem exports its defining polynomial identity.
@@ -92,16 +95,18 @@ example : ∃ e, ∃ R : MvPolynomial AffineVar ℚ,
     apply (MulEquiv.irreducible_iff (MvPolynomial.optionEquivLeft ℚ (Fin 2))).mp
     simpa [regularR] using
       Polynomial.irreducible_X_sub_C (MvPolynomial.X (1 : Fin 2) : MvPolynomial (Fin 2) ℚ)
-  obtain ⟨e, R, -, -, -, -, hidentity, -⟩ := exists_affineFrobeniusFactor 1 hirr
+  obtain ⟨e, R, -, -, -, -, hidentity, -⟩ := exists_frobeniusFactor 1 hirr
     (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none (by simp [regularR]))
   exact ⟨e, R, hidentity⟩
 
 -- Finset-filter statements retain the caller's equality instance.
+-- The Reed–Solomon lines `α + β X` of injectively embedded challenges form an injective family.
 example {E F : Type*} [Field E] [DecidableEq E] {G : MvPolynomial AffineVar E}
     (hG : G ≠ 0) (hZ : G.degreeOf none = 0) (S : Finset (F × F))
     (φ : F × F → E × E) (hφ : φ.Injective) :
-    (S.filter fun c ↦ affineLineEval (φ c).1 (φ c).2 0 G = 0).card ≤ G.degreeOf (some 1) :=
-  card_filter_affineLine_eq_zero_le hG hZ S φ hφ
+    (S.filter fun c ↦ multiplierEval (affineMultiplier (φ c).1 (φ c).2) 0 G = 0).card ≤
+      G.degreeOf (some 1) :=
+  card_filter_multiplierEval_eq_zero_le hG hZ S _ (affineMultiplier_injective.comp hφ).injOn
 
 example {E F : Type*} [Field E] [DecidableEq E] {R : MvPolynomial AffineVar E}
     {h : ℕ} (hR0 : affineDiscriminant R ≠ 0)
@@ -109,7 +114,39 @@ example {E F : Type*} [Field E] [DecidableEq E] {R : MvPolynomial AffineVar E}
     (φ : F × F → E × E) (hφ : φ.Injective) :
     (S.filter fun c ↦
       (affineDiscriminant R).eval (affineMultiplier (φ c).1 (φ c).2) = 0).card ≤ h * (h - 1) :=
-  card_filter_affineDiscriminant_eq_zero_le hR0 hR S φ hφ
+  card_filter_affineDiscriminant_eq_zero_le hR0 hR S _ (affineMultiplier_injective.comp hφ).injOn
+
+/-- The quadratic multipliers `X² + c` are pairwise distinct. -/
+private theorem injective_X_sq_add_C {E : Type*} [Field E] :
+    Function.Injective fun c : E ↦ (X ^ 2 + C c : E[X]) :=
+  fun _ _ h ↦ C_injective (add_left_cancel h)
+
+-- A nonzero `G` free of `Z` vanishes along at most `deg_Y G` quadratic multipliers `X² + c`.
+example {E : Type*} [Field E] [Fintype E] [DecidableEq E] {G : MvPolynomial AffineVar E}
+    (hG : G ≠ 0) (hZ : G.degreeOf none = 0) :
+    #(Finset.univ.filter fun c : E ↦ multiplierEval (X ^ 2 + C c) 0 G = 0) ≤
+      G.degreeOf (some 1) :=
+  card_filter_multiplierEval_eq_zero_le hG hZ _ _ injective_X_sq_add_C.injOn
+
+-- The `Z`-free polynomial `Y - X²` vanishes along the quadratic multiplier `X²`.
+example {E : Type*} [Field E] (P : E[X]) :
+    multiplierEval (X ^ 2) P (MvPolynomial.X (some 1) - MvPolynomial.X (some 0) ^ 2) = 0 := by
+  simp
+
+-- Its discriminant vanishes at at most `h (h - 1)` quadratic multipliers.
+example {E : Type*} [Field E] [Fintype E] [DecidableEq E] {R : MvPolynomial AffineVar E}
+    {h : ℕ} (hR0 : affineDiscriminant R ≠ 0) (hR : R.weightedTotalDegree affineYZWeight ≤ h) :
+    #(Finset.univ.filter fun c : E ↦ (affineDiscriminant R).eval (X ^ 2 + C c) = 0) ≤
+      h * (h - 1) :=
+  card_filter_affineDiscriminant_eq_zero_le hR0 hR _ _ injective_X_sq_add_C.injOn
+
+-- Frobenius transport moves a root along `M` to a root along `M` with `s`-th-rooted
+-- coefficients; for a line it is the line with `s`-th-rooted coefficients.
+example {E : Type*} [Field E] (p e : ℕ) [ExpChar E p] [PerfectRing E p] (α β : E) :
+    (affineMultiplier α β).map ((iterateFrobeniusEquiv E p e).symm : E →+* E) =
+      affineMultiplier ((iterateFrobeniusEquiv E p e).symm α)
+        ((iterateFrobeniusEquiv E p e).symm β) := by
+  simp
 
 -- In characteristic two, Z² - Y normalizes to Z - Y after squaring X and Y.
 open MvPolynomial in
@@ -150,7 +187,7 @@ example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2),
     0 < e ∧ MvPolynomial.pderiv none R ≠ 0 ∧
       R ^ (2 ^ e) = MvPolynomial.variablePowerSubstitution
         (fun v : AffineVar ↦ v.elim 1 fun _ ↦ 2 ^ e) inseparableQ := by
-  obtain ⟨e, R, -, hder, -, -, hidentity, -⟩ := exists_affineFrobeniusFactor 2
+  obtain ⟨e, R, -, hder, -, -, hidentity, -⟩ := exists_frobeniusFactor 2
     irreducible_inseparableQ (by rw [degreeOf_inseparableQ_none]; norm_num)
   have he : 0 < e := by
     by_contra h
@@ -160,3 +197,38 @@ example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2),
     rw [hRQ]
     exact pderiv_inseparableQ
   exact ⟨e, R, he, hder, hidentity⟩
+
+/-- info: 'ReedSolomon.multiplierEval_eq_nested' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.multiplierEval_eq_nested
+
+/-- info: 'ReedSolomon.card_filter_multiplierEval_eq_zero_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_filter_multiplierEval_eq_zero_le
+
+/-- info: 'ReedSolomon.card_filter_affineDiscriminant_eq_zero_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_filter_affineDiscriminant_eq_zero_le
+
+/-- info: 'ReedSolomon.multiplierEval_pderiv_ne_zero' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.multiplierEval_pderiv_ne_zero
+
+/-- info: 'ReedSolomon.multiplierEval_eq_of_degreeOf_none_eq_zero' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.multiplierEval_eq_of_degreeOf_none_eq_zero
+
+/-- info: 'ReedSolomon.exists_frobeniusFactor' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.exists_frobeniusFactor
+
+/-- info: 'ReedSolomon.map_affineMultiplier' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.map_affineMultiplier

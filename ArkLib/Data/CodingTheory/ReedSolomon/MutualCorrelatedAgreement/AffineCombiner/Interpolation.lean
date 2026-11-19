@@ -14,26 +14,36 @@ public import Mathlib.LinearAlgebra.Dimension.Finrank
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 
 /-!
-# Trivariate interpolation along affine lines
+# Trivariate interpolation along multiplier curves
 
-A nonzero `Q(X, Y, Z)` of `(1, 1, d)`-weighted degree below `m A` is built to vanish
+A nonzero `Q(X, Y, Z)` of `(1, e, d)`-weighted degree below `m A` is built to vanish
 to order `m` along each line `(z, Y, f(z) + Y g(z))` indexed by a domain point `z`.
-Consequently, `Q(X, α + β X, P(X)) = 0` for every candidate of degree at most `d` that
-agrees with `f + (α + β X) g` on at least `A` domain points.
+Let `M` be a multiplier of degree at most `e`.
+Then `Q(X, M(X), P(X)) = 0` for every candidate `P` of degree at most `d` that agrees with
+`f + M g` on at least `A` domain points.
 Such an interpolant exists when its coefficient space has greater dimension than the
 space of linear constraints.
 
+Reed–Solomon codes use `e = 1`, where the multipliers are the lines `α + β X`.
+Reed–Muller codes use `e = n / q₀`.
+
 ## Main definitions
 
-* `ReedSolomon.IsAffineInterpolant`: the interpolation conditions.
+* `ReedSolomon.IsMultiplierInterpolant`: the interpolation conditions.
 
 ## Main statements
 
-* `ReedSolomon.exists_isAffineInterpolant`: an interpolant exists under the surplus condition.
+* `ReedSolomon.exists_isMultiplierInterpolant`: an interpolant exists under the surplus
+  condition.
+* `ReedSolomon.exists_isAffineInterpolant`: the case `e = 1`.
+* `ReedSolomon.IsMultiplierInterpolant.vanish_affineMultiplier`: at `e = 1` the interpolant
+  vanishes along every agreeing line `α + β X`.
+* `ReedSolomon.multiplierEval_eq_aeval_affineShift`: the evaluation factors through a shift.
 
 ## References
 
 The interpolation is Lemma 4.2 of [CWYZ26].
+Appendix A of [CWYZ26] uses it with the weight `(1, n / q₀, ρ n)`.
 
 The interface omits the positive `Z`-degree conclusion of Lemma 4.2 in [CWYZ26].
 The factor count treats content free of `Z` separately.
@@ -116,18 +126,17 @@ theorem weightedTotalDegree_affineShift_le (x u v : K) (Q : MvPolynomial AffineV
       · exact MvPolynomial.X_mem_restrictWeightedDegree _ _ _ le_rfl
     · exact MvPolynomial.X_mem_restrictWeightedDegree _ _ _ le_rfl
 
-/-- The line evaluation factors through the shift. -/
-theorem affineLineEval_eq_aeval_affineShift (α β : K) (P : K[X]) (x u v : K)
+/-- The evaluation along a multiplier factors through the shift. -/
+theorem multiplierEval_eq_aeval_affineShift (M P : K[X]) (x u v : K)
     (Q : MvPolynomial AffineVar K) :
-    affineLineEval α β P Q = MvPolynomial.aeval (fun w ↦ w.elim
-      (P - C u - affineMultiplier α β * C v) ![X - C x, affineMultiplier α β])
-      (affineShift x u v Q) := by
+    multiplierEval M P Q = MvPolynomial.aeval (fun w ↦ w.elim
+      (P - C u - M * C v) ![X - C x, M]) (affineShift x u v Q) := by
   rw [← AlgHom.comp_apply]
   congr 1
   refine MvPolynomial.algHom_ext fun w ↦ ?_
   rcases w with _ | ⟨i⟩
-  · simp [affineShift]
-  · fin_cases i <;> simp [affineShift]
+  · simp [affineShift, multiplierEval]
+  · fin_cases i <;> simp [affineShift, multiplierEval]
 
 /-- Let `p` divide the images of `Z` and `X`.
 
@@ -150,39 +159,53 @@ end Shift
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
 
-/-- A nonzero `Q` of bounded degrees that vanishes along every line with an agreeing candidate.
+/-- A nonzero `Q` of bounded degrees that vanishes along multipliers with agreeing candidates.
+
+The multipliers have degree at most `e`.
 
 No positive lower bound on the `Z`-degree is required.
 The candidate has degree `≤ d` and agrees with the combined word on at least `A` points. -/
-structure IsAffineInterpolant (domain : ι ↪ F) (f g : ι → F) (d A m D M : ℕ)
+structure IsMultiplierInterpolant (domain : ι ↪ F) (f g : ι → F) (e d A m D M : ℕ)
     (Q : MvPolynomial AffineVar F) : Prop where
   /-- The interpolant is nonzero. -/
   ne_zero : Q ≠ 0
-  /-- The `(1, 1, d)`-weighted degree is below `m A`. -/
-  lineWeight_lt : Q.weightedTotalDegree (affineLineWeight d) < m * A
+  /-- The `(1, e, d)`-weighted degree is below `m A`. -/
+  lineWeight_lt : Q.weightedTotalDegree (lineWeight e d) < m * A
   /-- The joint degree in `Y` and `Z` is at most `D`. -/
   yzDegree_le : Q.weightedTotalDegree affineYZWeight ≤ D
   /-- The degree in `Z` is at most `M`. -/
   rootDegree_le : Q.degreeOf none ≤ M
-  /-- The interpolant vanishes along every line with an agreeing candidate. -/
-  vanish : ∀ (α β : F) (P : F[X]), P.degree ≤ d →
-    A ≤ (polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P).card →
-    affineLineEval α β P Q = 0
+  /-- The interpolant vanishes along each multiplier `L` of degree `≤ e` with agreeing `P`. -/
+  vanish : ∀ L P : F[X], L.natDegree ≤ e → P.degree ≤ d →
+    A ≤ (polynomialAgreementSet domain (combinedWord domain f g L) P).card →
+    multiplierEval L P Q = 0
+
+/-- With `e = 1`, the interpolant vanishes along every line `α + β X` with an agreeing candidate.
+
+The candidate has degree `≤ d` and agrees with the combined word on at least `A` points. -/
+theorem IsMultiplierInterpolant.vanish_affineMultiplier {domain : ι ↪ F} {f g : ι → F}
+    {d A m D M : ℕ} {Q : MvPolynomial AffineVar F}
+    (hQ : IsMultiplierInterpolant domain f g 1 d A m D M Q) (α β : F) (P : F[X])
+    (hP : P.degree ≤ d)
+    (hA : A ≤ (polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β))
+      P).card) :
+    multiplierEval (affineMultiplier α β) P Q = 0 :=
+  hQ.vanish _ P (natDegree_affineMultiplier_le α β) hP hA
 
 open Polynomial.SymbolicInterpolation in
 /-- An interpolant exists when its allowed monomials outnumber the linear constraints.
 
-The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
+The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - e D`.
 At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
 Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
 No positive lower bound on the resulting `Z`-degree is asserted. -/
-theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
+theorem exists_isMultiplierInterpolant (domain : ι ↪ F) (f g : ι → F) {e d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
-      (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
-    ∃ Q, IsAffineInterpolant domain f g d A m D M Q := by
+      (monomialSupport d (m * A - e * D) (M + 1) (D + 1)).card) :
+    ∃ Q, IsMultiplierInterpolant domain f g e d A m D M Q := by
   classical
   -- The unknowns are the coefficients on the monomial support.
-  let S := monomialSupport d (m * A - D) (M + 1) (D + 1)
+  let S := monomialSupport d (m * A - e * D) (M + 1) (D + 1)
   let T := constraintSupport m (D + 1)
   let embed : (S → F) →ₗ[F] MvPolynomial AffineVar F :=
     Fintype.linearCombination F fun k : S ↦ MvPolynomial.monomial (affineExponent k.1) 1
@@ -222,15 +245,16 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
     simp only [weight_affineVar, affineExponent_none, affineExponent_x, affineExponent_y,
       affineYZWeight_none, affineYZWeight_X, affineYZWeight_Y]
     omega
-  have hline : ∀ e ∈ Q.support, Finsupp.weight (affineLineWeight d) e < m * A := by
-    intro e he
-    obtain ⟨⟨j, i, t⟩, hk, rfl⟩ := hsupp e he
+  have hline : ∀ w ∈ Q.support, Finsupp.weight (lineWeight e d) w < m * A := by
+    intro w hw
+    obtain ⟨⟨j, i, t⟩, hk, rfl⟩ := hsupp w hw
     simp only [S, mem_monomialSupport] at hk
     simp only [weight_affineVar, affineExponent_none, affineExponent_x, affineExponent_y,
-      affineLineWeight_none, affineLineWeight_X, affineLineWeight_Y]
+      lineWeight_none, lineWeight_X, lineWeight_Y]
+    have het : t * e ≤ e * D := by rw [mul_comm]; exact Nat.mul_le_mul_left e (by omega)
     rw [mul_comm j d]
     omega
-  have hlt : Q.weightedTotalDegree (affineLineWeight d) < m * A := by
+  have hlt : Q.weightedTotalDegree (lineWeight e d) < m * A := by
     obtain ⟨e, he⟩ : Q.support.Nonempty := Finset.nonempty_iff_ne_empty.mpr
       (by rwa [Ne, MvPolynomial.support_eq_empty])
     rw [MvPolynomial.weightedTotalDegree, Finset.sup_lt_iff (by
@@ -242,13 +266,13 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
     simp only [S, mem_monomialSupport] at hk
     rw [affineExponent_none]
     exact Nat.lt_succ_iff.mp hk.1
-  · intro α β P hP hA
+  · intro L P hL hP hA
     refine eq_zero_of_natDegree_lt_mul_of_pow_X_sub_C_dvd_at_injOn (fun i ↦ domain i) _ m A
       (domain.injective.injOn) hA (fun i hi ↦ ?_)
-      ((natDegree_affineLineEval_le α β (natDegree_le_of_degree_le hP) Q).trans_lt hlt)
-    rw [affineLineEval_eq_aeval_affineShift α β P (domain i) (f i) (g i)]
+      ((natDegree_multiplierEval_le hL (natDegree_le_of_degree_le hP) Q).trans_lt hlt)
+    rw [multiplierEval_eq_aeval_affineShift L P (domain i) (f i) (g i)]
     refine pow_dvd_aeval_of_affineWeight_le (p := X - C (domain i)) ?_ (by simp) fun e he ↦ ?_
-    · rw [mem_polynomialAgreementSet, combinedWord_affineMultiplier] at hi
+    · rw [mem_polynomialAgreementSet, combinedWord] at hi
       rw [Option.elim_none, dvd_iff_isRoot]
       simp [hi]
     · by_contra hlow
@@ -264,5 +288,17 @@ theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D
       simp only [cons, LinearMap.pi_apply, LinearMap.comp_apply, AlgHom.toLinearMap_apply,
         MvPolynomial.lcoeff_apply, affineExponent_coords, Pi.zero_apply] at h0
       exact (MvPolynomial.mem_support_iff.mp he) h0
+
+open Polynomial.SymbolicInterpolation in
+/-- An interpolant for the lines `α + β X` exists when its monomials outnumber the constraints.
+
+The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
+At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
+Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction. -/
+theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
+    (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
+      (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
+    ∃ Q, IsMultiplierInterpolant domain f g 1 d A m D M Q :=
+  exists_isMultiplierInterpolant domain f g (by rwa [one_mul])
 
 end ReedSolomon

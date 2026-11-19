@@ -141,10 +141,10 @@ variable [DecidableEq F] [Fintype ι]
 theorem aeval_affineChartAgreementCut_point_eq_zero_iff [IsAlgClosed E] (domain : ι ↪ F)
     (f g : ι → F) (φ : F →+* E) (c : E) (R : MvPolynomial AffineVar E) (p e : ℕ) [ExpChar E p]
     {d : ℕ} {α β : F} {P : Polynomial F} (hP : P.degree ≤ d)
-    (hroot : affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ α))
-      ((iterateFrobeniusEquiv E p e).symm (φ β)) (Polynomial.expand E (p ^ e) (P.map φ)) R = 0)
-    (hsep : (affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ α))
-      ((iterateFrobeniusEquiv E p e).symm (φ β)) (Polynomial.expand E (p ^ e) (P.map φ))
+    (hroot : multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ α))
+        ((iterateFrobeniusEquiv E p e).symm (φ β))) (Polynomial.expand E (p ^ e) (P.map φ)) R = 0)
+    (hsep : (multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ α))
+        ((iterateFrobeniusEquiv E p e).symm (φ β))) (Polynomial.expand E (p ^ e) (P.map φ))
         (pderiv none R)).eval c ≠ 0) (i : ι) :
     aeval (affineChartPoint c (p ^ e) ((iterateFrobeniusEquiv E p e).symm (φ α))
         ((iterateFrobeniusEquiv E p e).symm (φ β)) (P.map φ))
@@ -172,10 +172,10 @@ Discarding at most one root of `L` leaves at least `B` regular agreements. -/
 theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : ι ↪ F)
     (f g : ι → F) (φ : F →+* E) (c : E) (R : MvPolynomial AffineVar E) (p e : ℕ) [ExpChar E p]
     {d B : ℕ} {α β : F} {P : Polynomial F} (hP : P.degree ≤ d)
-    (hroot : affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ α))
-      ((iterateFrobeniusEquiv E p e).symm (φ β)) (Polynomial.expand E (p ^ e) (P.map φ)) R = 0)
-    (hsep : (affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ α))
-      ((iterateFrobeniusEquiv E p e).symm (φ β)) (Polynomial.expand E (p ^ e) (P.map φ))
+    (hroot : multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ α))
+        ((iterateFrobeniusEquiv E p e).symm (φ β))) (Polynomial.expand E (p ^ e) (P.map φ)) R = 0)
+    (hsep : (multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ α))
+        ((iterateFrobeniusEquiv E p e).symm (φ β))) (Polynomial.expand E (p ^ e) (P.map φ))
         (pderiv none R)).eval c ≠ 0)
     (hex : affineChartPoint c (p ^ e) ((iterateFrobeniusEquiv E p e).symm (φ α))
         ((iterateFrobeniusEquiv E p e).symm (φ β)) (P.map φ) ∈
@@ -237,12 +237,12 @@ theorem card_le_of_affineNonpersistent_roots [IsAlgClosed E] (domain : ι ↪ F)
     (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι)
     (hR : R.weightedTotalDegree affineYZWeight ≤ h)
     (S : Finset (F × F)) (w : F × F → Polynomial F) (hdeg : ∀ c ∈ S, (w c).degree ≤ d)
-    (hroot : ∀ c ∈ S, affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ c.1))
-      ((iterateFrobeniusEquiv E p e).symm (φ c.2))
-        (Polynomial.expand E (p ^ e) ((w c).map φ)) R = 0)
-    (hsep : ∀ c ∈ S, affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ c.1))
-      ((iterateFrobeniusEquiv E p e).symm (φ c.2))
-        (Polynomial.expand E (p ^ e) ((w c).map φ)) (pderiv none R) ≠ 0)
+    (hroot : ∀ c ∈ S, multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ c.1))
+        ((iterateFrobeniusEquiv E p e).symm (φ c.2))) (Polynomial.expand E (p ^ e) ((w c).map φ))
+        R = 0)
+    (hsep : ∀ c ∈ S, multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ c.1))
+        ((iterateFrobeniusEquiv E p e).symm (φ c.2))) (Polynomial.expand E (p ^ e) ((w c).map φ))
+        (pderiv none R) ≠ 0)
     (hagree : ∀ c ∈ S, A ≤ #(polynomialAgreementSet domain
       (combinedWord domain f g (affineMultiplier c.1 c.2)) (w c)))
     (hnp : ∀ c ∈ S, ¬ IsAffinePersistent domain f g d B c.1 c.2 (w c)) :
@@ -311,11 +311,11 @@ theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (do
     ∃ ex : Finset (F × F),
       (#ex : ℚ) ≤ h * (((Fintype.card ι * (2 * p ^ e * d * h) : ℕ) : ℚ) / ((A - B : ℕ) : ℚ)) ^ 2 ∧
       ∀ c ∉ ex, ∀ P : Polynomial F, P.degree ≤ d →
-        affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ c.1))
-          ((iterateFrobeniusEquiv E p e).symm (φ c.2))
+        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ c.1))
+            ((iterateFrobeniusEquiv E p e).symm (φ c.2)))
             (Polynomial.expand E (p ^ e) (P.map φ)) R = 0 →
-        affineLineEval ((iterateFrobeniusEquiv E p e).symm (φ c.1))
-          ((iterateFrobeniusEquiv E p e).symm (φ c.2))
+        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ c.1))
+            ((iterateFrobeniusEquiv E p e).symm (φ c.2)))
             (Polynomial.expand E (p ^ e) (P.map φ)) (pderiv none R) ≠ 0 →
         A ≤ #(polynomialAgreementSet domain
           (combinedWord domain f g (affineMultiplier c.1 c.2)) P) →
@@ -325,9 +325,10 @@ theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (do
   set fr := (iterateFrobeniusEquiv E p e).symm
   -- A challenge is bad when some regular candidate with `A` agreements is not persistent.
   let Bad (c : F × F) (P : Polynomial F) : Prop := P.degree ≤ d ∧
-    affineLineEval (fr (φ c.1)) (fr (φ c.2)) (Polynomial.expand E (p ^ e) (P.map φ)) R = 0 ∧
-    affineLineEval (fr (φ c.1)) (fr (φ c.2)) (Polynomial.expand E (p ^ e) (P.map φ))
-      (pderiv none R) ≠ 0 ∧
+    multiplierEval (affineMultiplier (fr (φ c.1)) (fr (φ c.2)))
+      (Polynomial.expand E (p ^ e) (P.map φ)) R = 0 ∧
+    multiplierEval (affineMultiplier (fr (φ c.1)) (fr (φ c.2)))
+      (Polynomial.expand E (p ^ e) (P.map φ)) (pderiv none R) ≠ 0 ∧
     A ≤ #(polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier c.1 c.2)) P) ∧
     ¬ IsAffinePersistent domain f g d B c.1 c.2 P
   let ex : Finset (F × F) := {c | ∃ P, Bad c P}
