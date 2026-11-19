@@ -8,6 +8,7 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean
 ---
 
 # AGL24
@@ -27,6 +28,14 @@ Theorem 1.1: for `ε ∈ (0,1)`, `L ≥ 2` and a prime power `q ≥ n + k·2^{10
 ## Main ArkLib Touchpoints
 
 `rs_random_domain_lambda_le` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted).
+
+`Tuple.card_filter_card_descents_lt_le` in
+[Descents.lean](../../../ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean): the counting
+step of the source's certificate count (`cor:count` in the source): over a finite linear order
+`α`, at most `C(|α|, r) · m^r` injective tuples `Fin r ↪ α` have fewer than `m` descents. The
+source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is not
+formalized; the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its
+proof gives fewer.
 
 ## Known Divergences From ArkLib
 
