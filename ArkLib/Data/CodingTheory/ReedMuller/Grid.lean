@@ -43,6 +43,7 @@ The [paper page](../../../../docs/kb/papers/CWYZ26.md) records the correspondenc
 ## Main statements
 
 * `ReedMuller.gridPoint_apply` and `ReedMuller.gridPoint_injective`: the embedding.
+* `ReedMuller.algebraMap_comp_gridPoint`: grid points are stable under base change.
 * `ReedMuller.eval_gridPoint_map`: evaluation at grid points commutes with base change.
 * `ReedMuller.card_gridValues` and `ReedMuller.card_filter_gridPoint`: transport to `F`.
 * `ReedMuller.card_grid_inter_hyperplane_le`: a hyperplane holds at most `q₀ᵏ⁻¹` grid points.
@@ -81,6 +82,14 @@ theorem gridPoint_apply (z : Fin k → K₀) (i : Fin k) : gridPoint F z i = alg
 theorem gridPoint_injective : Function.Injective (gridPoint F : (Fin k → K₀) → Fin k → F) :=
   fun _ _ h ↦ funext fun i ↦ (algebraMap K₀ F).injective (congrFun h i)
 
+/-- Let `K₀ ⊆ F ⊆ F'` be a tower of fields.
+A grid point of `Fᵏ`, mapped into `F'ᵏ`, is the same grid point of `F'ᵏ`. -/
+theorem algebraMap_comp_gridPoint {F' : Type*} [Field F'] [Algebra F F'] [Algebra K₀ F']
+    [IsScalarTower K₀ F F'] (z : Fin k → K₀) :
+    algebraMap F F' ∘ gridPoint F z = gridPoint F' z := by
+  funext i
+  simp [IsScalarTower.algebraMap_apply K₀ F F']
+
 /-- Let `K₀ ⊆ F ⊆ F'` be a tower of fields, and `P` a polynomial over `F` in `k` variables.
 Mapping `P` into `F'` and evaluating at a grid point gives the image of the value over `F`. -/
 theorem eval_gridPoint_map {F' : Type*} [Field F'] [Algebra F F'] [Algebra K₀ F']
@@ -88,10 +97,8 @@ theorem eval_gridPoint_map {F' : Type*} [Field F'] [Algebra F F'] [Algebra K₀ 
     MvPolynomial.eval (gridPoint F' z) (P.map (algebraMap F F')) =
       algebraMap F F' (MvPolynomial.eval (gridPoint F z) P) := by
   rw [MvPolynomial.eval_map, MvPolynomial.eval, MvPolynomial.coe_eval₂Hom,
-    MvPolynomial.eval₂_comp_left]
-  congr 1
-  funext i
-  simp [IsScalarTower.algebraMap_apply K₀ F F']
+    MvPolynomial.eval₂_comp_left, ← algebraMap_comp_gridPoint F z]
+  rfl
 
 variable {F} [Fintype K₀] [DecidableEq F]
 

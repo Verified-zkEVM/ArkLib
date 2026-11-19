@@ -19,23 +19,26 @@ Let `E` be an algebraically closed field containing `F` and `L`, compatibly over
 Write `e = q₀ᵏ⁻¹`, with natural-number subtraction.
 
 The generic chart count runs over `E` with challenges `α ∈ F^{k+1}`.
-The multipliers are the substituted `L̃_α`, the family is the trace family, and `|κ| = k + 1`.
+Its chart coordinates are indexed by `κ = Fin (k + 1)`, so `|κ| = k + 1`.
+The multipliers are the substituted `L̃_α`, and the family is the trace family.
 The high cuts cut out the substituted polynomials of total degree at most `d`.
 
 An excluded chart point gives a second challenge and a substituted polynomial.
-The difference with the candidate is explained by `H / L_σ` on `B + e` agreement points.
+Their difference with the candidate gives `H` of total degree at most `d` and `σ ≠ 0`.
+Here `L_σ = σ₀ + σ₁ X₁ + ⋯ + σₖ Xₖ`, and `H = L_σ g` on `B + e` agreement points.
 The identities descend to `F`, and dropping the zeros of `L_σ` gives persistence.
 
-Hence, outside at most `D² + (2 d e M n / (A - B - e + 1)) ^ (k + 1) D ^ (k + 2)` vectors,
-every candidate with `A` agreements is persistent at threshold `B`.
-Here `D` and `M` are the degree budgets of an interpolant on `L` over `E`.
+Let `D` and `M` be the degree budgets of an interpolant on `L` over `E`.
+Few vectors are left out: at most `D² + (2 d e M n / (A - B - e + 1)) ^ (k + 1) D ^ (k + 2)`.
+Outside them, every candidate with `A` agreements is persistent at threshold `B`.
 
 This is the nonpersistent count of Appendix A of [CWYZ26], with `v = n / (A - B - e + 1)`.
 The paper's bound is `(2 ρ n M v) ^ (k + 1) D ^ (k + 2)`, with `ρ n = d e`.
-The count here also covers the excluded set `E` of the paper, with its bound `D²`.
+The count here also covers the paper's set of excluded vectors, with its bound `D²`.
 The paper's case split of Claim 4.8 is replaced by the descent of the ratio to `F`.
 The statement assumes `1 ≤ d`, `d e < B + e` and `B + e ≤ A`.
-The paper's condition `B > (d + 1) e` implies the second one.
+The second condition makes `B + e` evaluations on `L` determine candidates of degree `d e`.
+The paper's condition `B > (d + 1) e` implies it.
 The persistent set and the final numerics are not here.
 
 The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
@@ -63,19 +66,6 @@ variable {K₀ L F E : Type*} [Field K₀] [Fintype K₀] [Field L] [Algebra K�
   [Field E] [Algebra L E] [Algebra F E] [Algebra K₀ F] [Algebra K₀ E] [IsScalarTower K₀ L E]
   [IsScalarTower K₀ F E] [DecidableEq F] {k : ℕ}
 
-omit [Fintype K₀] [DecidableEq F] in
-/-- Mapping `L_α` from `F` to `E` gives `L_{φ ∘ α}`, where `φ` is the embedding. -/
-private theorem map_affineMultiplier (α : Fin (k + 1) → F) :
-    (affineMultiplier α).map (algebraMap F E) = affineMultiplier (algebraMap F E ∘ α) := by
-  simp [affineMultiplier]
-
-omit [Fintype K₀] [DecidableEq F] in
-/-- A grid point over `F`, mapped into `E`, is the grid point over `E`. -/
-private theorem comp_gridPoint (z : Fin k → K₀) :
-    algebraMap F E ∘ gridPoint F z = gridPoint E z := by
-  funext i
-  simp [IsScalarTower.algebraMap_apply K₀ F E]
-
 /-- A transported candidate whose chart point is excluded is persistent.
 
 Let `b` be a basis of `L` over `K₀` with trace coordinates `ψ`, and `q₀ = |K₀|`.
@@ -83,7 +73,9 @@ Let `e = q₀ᵏ⁻¹`, with natural-number subtraction.
 Let `p` be the exponential characteristic of `E`, and `s = p ^ r`.
 The chart uses the trace family and the coefficients `α` mapped by the inverse of `x ↦ x ^ s`.
 Let `P` have total degree at most `d`, and let `P̃` be its trace substitution in `E`.
-Assume `P̃(X ^ s)` is a root of `R` with nonzero derivative in `Z` at `c`.
+Let `R` be a polynomial in `X, Y, Z`, such as a factor of the interpolant.
+Assume `P̃(X ^ s)` is a root of `R` along the chart multiplier.
+Assume its derivative in `Z` is nonzero at `c`.
 Assume the cuts cut out the substituted polynomials of total degree at most `d`.
 If the chart point is excluded at threshold `B + e`, then `P` is persistent at threshold `B`. -/
 theorem isAffinePersistent_of_mem_chartExcluded (b : Module.Basis (Fin k) K₀ L)
@@ -154,7 +146,7 @@ theorem isAffinePersistent_of_mem_chartExcluded (b : Module.Basis (Fin k) K₀ L
   obtain ⟨H₀, σ₀, hσ₀, hH₀, h₀⟩ := exists_affineRatioWitness_of_map φ
     (fun x : U ↦ gridPoint F (ψ x)) (fun x ↦ g (ψ x)) d hσ
     ((MvPolynomial.totalDegree_sub _ _).trans (max_le hH' hPmap)) fun x ↦ by
-      rw [comp_gridPoint]
+      rw [algebraMap_comp_gridPoint]
       exact hexpl x x.2
   set T := U.map ψ.toEquiv.toEmbedding
   have hT : B + Fintype.card K₀ ^ (k - 1) ≤ #T := by rwa [card_map]
@@ -182,8 +174,8 @@ Its `(Y, Z)`-degree is at most `D` and its `Z`-degree at most `M`.
 Assume `1 ≤ d`, `d e < B + e` and `B + e ≤ A`.
 At most `D² + (2 d e M n / (A - B - e + 1)) ^ (k + 1) D ^ (k + 2)` vectors are left out.
 The subtraction `A - B - e` is natural-number subtraction.
-Outside them, every `P` of total degree at most `d` with `A` agreements with `f + L_α g`
-is persistent at threshold `B`. -/
+Outside them, let `P` have total degree at most `d` and `A` agreements with `f + L_α g`.
+Then `P` is persistent at threshold `B`. -/
 theorem exists_finset_card_le_isAffinePersistent [Finite F] [Fintype L] [DecidableEq E]
     [IsAlgClosed E] (b : Module.Basis (Fin k) K₀ L) (f g : (Fin k → K₀) → F)
     {d A B m D M : ℕ} {Q : MvPolynomial ReedSolomon.AffineVar E}
@@ -233,7 +225,7 @@ theorem exists_finset_card_le_isAffinePersistent [Finite F] [Fintype L] [Decidab
       rw [aeval_traceChartTarget]
       simp only [hfr, Polynomial.leval_apply]
       rfl)
-    (separatesDegree_of_isTraceImageCuts hcuts hdB)
+    (ReedSolomon.separatesDegree_leval (algebraMap L E).injective hdB)
     (fun α P' ↦ ∀ P : MvPolynomial (Fin k) F, P.totalDegree ≤ d →
       P' = traceSubstitution b (P.map φ) → IsAffinePersistent f g d B α P)
     (fun r R c α P' _ hroot hc hex P hP hPP' ↦ by

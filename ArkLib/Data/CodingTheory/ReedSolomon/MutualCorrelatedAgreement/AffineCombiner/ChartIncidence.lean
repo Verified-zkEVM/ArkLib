@@ -61,7 +61,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 ## Main statements
 
 * `ReedSolomon.mem_chartExcluded`: membership in the excluded set.
-* `ReedSolomon.separatesDegree_leval`: evaluations at distinct points determine polynomials.
+* `ReedSolomon.separatesDegree_leval`: evaluations at distinct points determine polynomials,
+  with any high cuts.
 * `ReedSolomon.eq_of_separatesDegree`: two points on the same challenge with `B + e` common
   agreements are equal.
 * `ReedSolomon.regularLocus_subset_chartExcluded`: the regular points of a
@@ -101,9 +102,12 @@ def SeparatesDegree (highCuts : List (Polynomial E →ₗ[E] E)) (Λ : ι → Po
   ∀ U : Finset ι, threshold ≤ #U → ∀ H : Polynomial E, H.degree ≤ d →
     (∀ Λ' ∈ highCuts, Λ' H = 0) → (∀ i ∈ U, Λ i H = 0) → H = 0
 
-/-- Evaluations at distinct points determine polynomials of degree `d` from `d + 1` points. -/
-theorem separatesDegree_leval {x : ι → E} (hx : x.Injective) {d threshold : ℕ}
-    (hd : d < threshold) : SeparatesDegree [] (fun i ↦ Polynomial.leval (x i)) d threshold := by
+/-- Evaluations at distinct points determine polynomials of degree `d` from `d + 1` points.
+
+This holds with any list of high cuts, which the argument does not use. -/
+theorem separatesDegree_leval {highCuts : List (Polynomial E →ₗ[E] E)} {x : ι → E}
+    (hx : x.Injective) {d threshold : ℕ} (hd : d < threshold) :
+    SeparatesDegree highCuts (fun i ↦ Polynomial.leval (x i)) d threshold := by
   classical
   intro U hU H hH _ hzero
   refine Polynomial.eq_zero_of_degree_lt_of_eval_finset_eq_zero (U.image x) ?_ ?_

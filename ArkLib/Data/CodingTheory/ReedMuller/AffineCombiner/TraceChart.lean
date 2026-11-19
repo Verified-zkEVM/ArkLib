@@ -20,30 +20,26 @@ A basis `b` of `L` over `K₀` gives trace polynomials `T_{bᵢ}` and coordinate
 Let `E` be a field containing `L` and the field `F` of the received words, compatibly over `K₀`.
 Write `e = q₀ᵏ⁻¹`, with natural-number subtraction.
 
-The trace family is `(1, T_{b₁}, …, T_{bₖ})` over `E`.
+The trace family `θ` is `(1, T_{b₁}, …, T_{bₖ})` over `E`.
 Its multiplier at `φ ∘ α` is the trace substitution `L̃_α` of the affine multiplier `L_α`.
 Here `φ` embeds `F` into `E`.
-It has degree at most `e`, and distinct `α` give distinct multipliers.
+Distinct `α` give distinct multipliers.
 A ring endomorphism of `E`, such as an inverse Frobenius power, maps it to the mapped family.
 
 The chart target at `x ∈ L` is `f(ψ x) + (∑ⱼ θⱼ(x) aⱼ ^ s) g(ψ x)`, of total degree at most `s`.
 A Reed–Muller candidate `P` gives the univariate candidate `P̃`, its trace substitution.
 Agreement counts are preserved.
-An interpolant on `L` for multipliers of degree `e` and candidates of degree `d e` vanishes
-along `L̃_α` and `P̃`.
+Take an interpolant on `L` for multipliers of degree `e` and candidates of degree `d e`.
+It vanishes along `L̃_α` and `P̃`.
 
-The image of the polynomials of total degree at most `d` is cut out by finitely many linear
-functionals, among polynomials of degree at most `d e`.
+Finitely many linear functionals cut out the image of the polynomials of total degree `≤ d`.
+They cut it out among the polynomials of degree at most `d e`.
 These are the high cuts of the generic chart count.
-Evaluations at `t > d e` points of `L` determine polynomials in that image.
-This is the grid Schwartz–Zippel lemma through the coordinates `ψ`.
 
-These are the reduction to univariate polynomials and the inputs of the nonpersistent count
-in Appendix A of [CWYZ26].
+This module gives the reduction to univariate polynomials of Appendix A of [CWYZ26].
+It also gives the inputs of the nonpersistent count there.
 The paper intersects its algebraic sets with the image of `(α, P) ↦ (α, P̃)`.
 Here the cuts state that image as linear equations on the reconstructed polynomial.
-The paper separates challenges by the Schwartz–Zippel lemma; here they are compared directly.
-The paper needs `B > (d + 1) e`; separation here needs only `d e < B + e`.
 
 The trace family, targets and cuts are noncomputable, as polynomial arithmetic over a field is.
 The cuts are given by an existence statement through a basis of a quotient space.
@@ -59,9 +55,9 @@ The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspond
 ## Main statements
 
 * `ReedMuller.familyMultiplier_traceFamily` and
-  `ReedMuller.traceSubstitution_map_affineMultiplier_eq`: the multipliers are `L̃_α`.
+  `ReedMuller.traceSubstitution_map_affineMultiplier_eq_familyMultiplier`: the multipliers are
+  `L̃_α`.
 * `ReedMuller.map_familyMultiplier_traceFamily`: compatibility with a ring endomorphism.
-* `ReedMuller.natDegree_familyMultiplier_traceFamily_le`: the degree is at most `e`.
 * `ReedMuller.familyMultiplier_traceFamily_injective`: distinct `α` give distinct multipliers.
 * `ReedMuller.eval_familyMultiplier_traceFamily`: the value at `x` is `L_c(ψ x)`.
 * `ReedMuller.totalDegree_traceChartTarget_le` and `ReedMuller.aeval_traceChartTarget`: the
@@ -70,7 +66,6 @@ The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspond
 * `ReedMuller.multiplierEval_traceSubstitution_eq_zero`: the interpolant vanishes along the
   transported candidate.
 * `ReedMuller.exists_isTraceImageCuts`: the cuts exist.
-* `ReedMuller.separatesDegree_of_isTraceImageCuts`: evaluations separate the image.
 
 ## References
 
@@ -113,22 +108,11 @@ section Multiplier
 variable [Algebra F E]
 
 /-- Mapping `L_α` from `F` to `E` and substituting gives the trace family at the image of `α`. -/
-theorem traceSubstitution_map_affineMultiplier_eq (b : Module.Basis (Fin k) K₀ L)
-    (α : Fin (k + 1) → F) :
+theorem traceSubstitution_map_affineMultiplier_eq_familyMultiplier
+    (b : Module.Basis (Fin k) K₀ L) (α : Fin (k + 1) → F) :
     traceSubstitution b ((affineMultiplier α).map (algebraMap F E)) =
       ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap F E ∘ α) := by
-  rw [familyMultiplier_traceFamily]
-  congr 1
-  simp [affineMultiplier]
-
-/-- The multiplier of the trace family at the image of `α` has degree at most `q₀ᵏ⁻¹`.
-Here `q₀ = |K₀|`, and `k - 1` is natural-number subtraction. -/
-theorem natDegree_familyMultiplier_traceFamily_le (b : Module.Basis (Fin k) K₀ L)
-    (α : Fin (k + 1) → F) :
-    (ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap F E ∘ α)).natDegree ≤
-      Fintype.card K₀ ^ (k - 1) := by
-  rw [← traceSubstitution_map_affineMultiplier_eq]
-  exact natDegree_traceSubstitution_map_affineMultiplier_le b α
+  rw [familyMultiplier_traceFamily, map_affineMultiplier]
 
 variable [Algebra K₀ E] [IsScalarTower K₀ L E]
 
@@ -136,7 +120,7 @@ variable [Algebra K₀ E] [IsScalarTower K₀ L E]
 theorem familyMultiplier_traceFamily_injective (b : Module.Basis (Fin k) K₀ L) :
     Function.Injective fun α : Fin (k + 1) → F ↦
       ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap F E ∘ α) := by
-  simpa only [← traceSubstitution_map_affineMultiplier_eq] using
+  simpa only [← traceSubstitution_map_affineMultiplier_eq_familyMultiplier] using
     traceSubstitution_map_affineMultiplier_injective (F' := E) b
 
 /-- At `x ∈ L`, the multiplier of the trace family at `c` is `L_c` at the grid point `ψ(x)`.
@@ -211,13 +195,13 @@ theorem ncard_eval_traceSubstitution_eq (b : Module.Basis (Fin k) K₀ L)
     ← Set.ncard_coe_finset]
   congr 1
   ext x
-  simp [ReedSolomon.combinedWord, traceSubstitution_map_affineMultiplier_eq]
+  simp [ReedSolomon.combinedWord, traceSubstitution_map_affineMultiplier_eq_familyMultiplier]
 
 /-- An interpolant on `L` vanishes along the substituted multiplier and candidate.
 
 Let `q₀ = |K₀|`, and let `e = q₀ᵏ⁻¹`, with natural-number subtraction.
-The interpolant is for the words `f ∘ ψ, g ∘ ψ` on `L ⊆ E`, multipliers of degree at most `e`,
-and candidates of degree at most `d e`.
+The interpolant is for the words `f ∘ ψ, g ∘ ψ` on `L ⊆ E`.
+It covers multipliers of degree at most `e` and candidates of degree at most `d e`.
 Let `P` have total degree at most `d` and `A` agreements with `f + L_α g` on the grid.
 Then the interpolant vanishes along `L̃_α` and `P̃`, the trace substitutions mapped into `E`. -/
 theorem multiplierEval_traceSubstitution_eq_zero [Fintype L] [DecidableEq E]
@@ -232,7 +216,7 @@ theorem multiplierEval_traceSubstitution_eq_zero [Fintype L] [DecidableEq E]
     ReedSolomon.multiplierEval
       (ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap F E ∘ α))
       (traceSubstitution b (P.map (algebraMap F E))) Q = 0 := by
-  rw [← traceSubstitution_map_affineMultiplier_eq]
+  rw [← traceSubstitution_map_affineMultiplier_eq_familyMultiplier]
   refine hQ.vanish _ _ (natDegree_traceSubstitution_map_affineMultiplier_le b α)
     (degree_le_of_natDegree_le ((natDegree_traceSubstitution_le b _).trans
       (Nat.mul_le_mul_right _ ((Finset.sup_mono
@@ -274,37 +258,6 @@ theorem exists_isTraceImageCuts (b : Module.Basis (Fin k) K₀ L) (d : ℕ) :
     rfl⟩, fun H hH hl ↦ ?_⟩
   obtain ⟨P, hP, rfl⟩ := h₂ H hH hl
   exact ⟨P, (MvPolynomial.mem_restrictTotalDegree _ _ _).mp hP, rfl⟩
-
-variable [Algebra K₀ E] [IsScalarTower K₀ L E]
-
-/-- Evaluations on `L` determine polynomials of degree at most `d q₀ᵏ⁻¹` cut out by the cuts.
-
-Assume the cuts cut out the substituted polynomials of total degree at most `d`.
-Assume `d q₀ᵏ⁻¹ < t`, where `q₀ = |K₀|` and `k - 1` is natural-number subtraction.
-Then `t` evaluations at points of `L` determine such a polynomial.
-The proof is the grid Schwartz–Zippel lemma through the trace coordinates. -/
-theorem separatesDegree_of_isTraceImageCuts {b : Module.Basis (Fin k) K₀ L} {d : ℕ}
-    {cuts : List (E[X] →ₗ[E] E)} (hcuts : IsTraceImageCuts b d cuts) {t : ℕ}
-    (ht : d * Fintype.card K₀ ^ (k - 1) < t) :
-    ReedSolomon.SeparatesDegree cuts (fun x : L ↦ Polynomial.leval (algebraMap L E x))
-      (d * Fintype.card K₀ ^ (k - 1)) t := by
-  classical
-  intro U hU H hH hhigh hzero
-  obtain ⟨P, hP, rfl⟩ := hcuts.exists_traceSubstitution_eq H hH hhigh
-  by_cases hP0 : P = 0
-  · simp [hP0]
-  -- The trace coordinates send the zeros on `U` to zeros of `P` on the grid.
-  have hsub : U.map (traceCoordinateEquiv K₀ b).toEquiv.toEmbedding ⊆
-      ({z : Fin k → K₀ | MvPolynomial.eval (gridPoint E z) P = 0} : Finset _) := by
-    intro z hz
-    obtain ⟨x, hx, rfl⟩ := Finset.mem_map.mp hz
-    have := hzero x hx
-    rw [Polynomial.leval_apply, eval_traceSubstitution] at this
-    simpa using this
-  have := (card_le_card hsub).trans (card_grid_eval_eq_zero_le (F := E) hP0)
-  rw [card_map] at this
-  have := Nat.mul_le_mul_right (Fintype.card K₀ ^ (k - 1)) hP
-  omega
 
 end Cuts
 

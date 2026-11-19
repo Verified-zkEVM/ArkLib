@@ -40,11 +40,6 @@ private theorem finrank_eq : Module.finrank (ZMod 2) (GaloisField 2 2) = 2 :=
 private noncomputable def b : Module.Basis (Fin 2) (ZMod 2) (GaloisField 2 2) :=
   Module.finBasisOfFinrankEq _ _ finrank_eq
 
--- The multiplier `L̃_α` has degree at most `n / q₀ = 2`.
-example (α : Fin 3 → ZMod 2) :
-    (ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap (ZMod 2) E ∘ α)).natDegree ≤ 2 :=
-  (natDegree_familyMultiplier_traceFamily_le b α).trans_eq (by simp [ZMod.card])
-
 -- The `2³ = 8` coefficient vectors over `𝔽₂` give `8` distinct multipliers over `E`.
 example : Function.Injective fun α : Fin 3 → ZMod 2 ↦
     ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap (ZMod 2) E ∘ α) :=
@@ -54,7 +49,7 @@ example : Function.Injective fun α : Fin 3 → ZMod 2 ↦
 example (α : Fin 3 → ZMod 2) :
     traceSubstitution b ((affineMultiplier α).map (algebraMap (ZMod 2) E)) =
       ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap (ZMod 2) E ∘ α) :=
-  traceSubstitution_map_affineMultiplier_eq b α
+  traceSubstitution_map_affineMultiplier_eq_familyMultiplier b α
 
 -- An inverse Frobenius power maps `L̃_α` to the mapped family at the mapped coefficients.
 example (r : ℕ) (c : Fin 3 → E) :
@@ -110,10 +105,65 @@ example (cuts : List (E[X] →ₗ[E] E)) (h : IsTraceImageCuts b 1 cuts) :
     ∀ Λ ∈ cuts, Λ ((tracePolynomial (ZMod 2) (b 0)).map (algebraMap _ E)) = 0 := by
   simpa using h.apply_traceSubstitution_eq_zero (MvPolynomial.X 0) (by simp)
 
--- With `d = 1`, `d n / q₀ = 2`: three evaluations on `𝔽₄` determine the cut-out polynomials.
-example (cuts : List (E[X] →ₗ[E] E)) (h : IsTraceImageCuts b 1 cuts) :
-    ReedSolomon.SeparatesDegree cuts (fun x : GaloisField 2 2 ↦ leval (algebraMap _ E x)) 2 3 := by
-  simpa [ZMod.card] using separatesDegree_of_isTraceImageCuts h (t := 3) (by simp [ZMod.card])
+-- With `d·e = 2`, three evaluations on `𝔽₄` determine the polynomials of degree at most `2`.
+-- This holds whatever the high cuts are.
+example (cuts : List (E[X] →ₗ[E] E)) :
+    ReedSolomon.SeparatesDegree cuts (fun x : GaloisField 2 2 ↦ leval (algebraMap _ E x)) 2 3 :=
+  ReedSolomon.separatesDegree_leval (x := algebraMap (GaloisField 2 2) E)
+    (algebraMap (GaloisField 2 2) E).injective (by norm_num)
+
+section Proper
+
+/-! Over `𝔽₃ ⊆ 𝔽₉` with `d = 1`, the image misses `X²`, so the cuts are not all zero there. -/
+
+private instance : Fact (Nat.Prime 3) := ⟨Nat.prime_three⟩
+
+private noncomputable instance : Fintype (GaloisField 3 2) := Fintype.ofFinite _
+
+/-- The algebraic closure of `𝔽₃`. -/
+private abbrev E₃ := AlgebraicClosure (ZMod 3)
+
+/-- An embedding of `𝔽₉` into the algebraic closure of `𝔽₃`. -/
+private noncomputable def ι₃ : GaloisField 3 2 →ₐ[ZMod 3] E₃ := IsAlgClosed.lift
+
+private noncomputable instance : Algebra (GaloisField 3 2) E₃ := ι₃.toRingHom.toAlgebra
+
+private noncomputable def b₃ : Module.Basis (Fin 2) (ZMod 3) (GaloisField 3 2) :=
+  Module.finBasisOfFinrankEq _ _ (GaloisField.finrank 3 (by norm_num))
+
+/-- A trace polynomial over `𝔽₉` has no `X²` term: its exponents are `1` and `3`. -/
+private theorem coeff_two_tracePolynomial (c : GaloisField 3 2) :
+    (tracePolynomial (ZMod 3) c).coeff 2 = 0 := by
+  rw [tracePolynomial, finsetSum_coeff, GaloisField.finrank 3 (by norm_num)]
+  simp only [Finset.sum_range_succ, Finset.sum_range_zero, coeff_C_mul_X_pow, ZMod.card]
+  norm_num
+
+-- Such cuts exist here too, so the next example is not vacuous.
+example : ∃ cuts : List (E₃[X] →ₗ[E₃] E₃), IsTraceImageCuts b₃ 1 cuts :=
+  exists_isTraceImageCuts E₃ b₃ 1
+
+-- The substitution of a polynomial of total degree at most one has no `X²` term.
+-- So `X²`, of degree `2 ≤ d·e = 3`, is outside the image, and some cut is nonzero on it.
+example (cuts : List (E₃[X] →ₗ[E₃] E₃)) (h : IsTraceImageCuts b₃ 1 cuts) :
+    ∃ Λ ∈ cuts, Λ (X ^ 2) ≠ 0 := by
+  by_contra! hall
+  obtain ⟨P, hP, hPX⟩ := h.exists_traceSubstitution_eq (X ^ 2) (by norm_num [ZMod.card]) hall
+  have h2 : (traceSubstitution b₃ P).coeff 2 = 0 := by
+    rw [P.as_sum, map_sum, finsetSum_coeff]
+    refine Finset.sum_eq_zero fun m hm ↦ ?_
+    have hm1 : m.degree ≤ 1 := (MvPolynomial.le_totalDegree hm).trans hP
+    rcases Nat.le_one_iff_eq_zero_or_eq_one.mp hm1 with h0 | h1
+    · rw [(Finsupp.degree_eq_zero_iff m).mp h0]
+      simp [traceSubstitution]
+    · obtain ⟨i, rfl⟩ : ∃ i, Finsupp.single i 1 = m := by
+        rw [← Set.mem_range, Finsupp.range_single_one]
+        exact h1
+      simp [traceSubstitution, MvPolynomial.aeval_monomial, coeff_C_mul, coeff_map,
+        coeff_two_tracePolynomial]
+  rw [hPX] at h2
+  simp at h2
+
+end Proper
 
 /-- info: 'ReedMuller.familyMultiplier_traceFamily' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -125,15 +175,10 @@ example (cuts : List (E[X] →ₗ[E] E)) (h : IsTraceImageCuts b 1 cuts) :
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.map_familyMultiplier_traceFamily
 
-/-- info: 'ReedMuller.traceSubstitution_map_affineMultiplier_eq' depends on axioms:
+/-- info: 'ReedMuller.traceSubstitution_map_affineMultiplier_eq_familyMultiplier' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.traceSubstitution_map_affineMultiplier_eq
-
-/-- info: 'ReedMuller.natDegree_familyMultiplier_traceFamily_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.natDegree_familyMultiplier_traceFamily_le
+#print axioms ReedMuller.traceSubstitution_map_affineMultiplier_eq_familyMultiplier
 
 /-- info: 'ReedMuller.familyMultiplier_traceFamily_injective' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -169,8 +214,3 @@ example (cuts : List (E[X] →ₗ[E] E)) (h : IsTraceImageCuts b 1 cuts) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.exists_isTraceImageCuts
-
-/-- info: 'ReedMuller.separatesDegree_of_isTraceImageCuts' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.separatesDegree_of_isTraceImageCuts
