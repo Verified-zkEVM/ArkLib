@@ -358,6 +358,13 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.MultilinearBasic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Basic
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.PersistenceDescent
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Persistent
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Probability
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.RationalPair
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Separation
+public import ArkLib.Data.CodingTheory.ReedMuller.Grid
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
@@ -1199,6 +1206,7 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.SupportedRows
+public import ArkLib.ToMathlib.LinearAlgebra.PiFinsetHyperplane
 public import ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.ShiftedPolynomialKernelHeight
 public import ArkLib.ToMathlib.LinearAlgebra.Submodule.Union

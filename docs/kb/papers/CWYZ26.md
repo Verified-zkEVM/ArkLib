@@ -26,6 +26,14 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/Grid.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Basic.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Probability.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Separation.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/RationalPair.lean
+  - ArkLib/ToMathlib/LinearAlgebra/PiFinsetHyperplane.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Persistent.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PersistenceDescent.lean
 ---
 
 # CWYZ26
@@ -77,6 +85,15 @@ The embedding already implies `n ≤ q`.
 | Theorem 1.1 | `ReedSolomon.exists_affineExceptional_finset_card_le`, `ReedSolomon.affineMcaError_le` | The paper's hypotheses `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`, and its bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`. The crude estimates give a constant below `9824`. |
 | Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. The linear-claims assertion is not included. |
 | Proposition 6.3 | `ReedSolomon.le_scalarMcaError_of_addSubgroup` | In characteristic two, let the domain be an additive subgroup of size `n = 2^k ≥ 16`. For `d = n/4`, `A ≤ 9n/16`, and `s < 3n/16`, the scalar error is at least `(n - 8)/q`. |
+| Section 7, bound (7.1) on a hyperplane | `ReedMuller.card_grid_inter_hyperplane_le`, `Fintype.card_filter_piFinset_dotProduct_eq_le` | A hyperplane `a · x = b` with `a ≠ 0` contains at most `n / q₀` points of the grid `K₀ᵏ`. The general form holds on any product `Sᵐ` in a domain. |
+| Section 7, after (7.1), affinely independent points | `ReedMuller.exists_subset_card_eq_forall_add_dotProduct_eq_zero`, `ReedMuller.eq_zero_of_forall_mem_add_dotProduct_eq_zero` | More than `n / q₀` grid points contain `k + 1` points on which only the zero affine form vanishes. This is the form Lemma A.1 uses. |
+| Schwartz–Zippel on the grid | `ReedMuller.card_grid_eval_eq_zero_le` | A nonzero polynomial of total degree `D` has at most `D q₀ᵏ⁻¹` zeros on the grid. |
+| Section 7, the Reed–Muller error `εRM` | `ReedMuller.affineMultiplier`, `ReedMuller.combinedWord`, `ReedMuller.agreementSet`, `ReedMuller.agreementLoss`, `ReedMuller.IsAffineExceptional`, `ReedMuller.affineMcaError`, `ReedMuller.affineMcaError_eq_iSup_prob` | Words on the grid `K₀ᵏ`, challenges `α ∈ F^{k+1}` and the multiplier `α₀ + Σ αᵢXᵢ`. The second witness is admissible when it is zero or has total degree below `d`. |
+| Section 7, the exponent `k` cannot be improved | `ReedMuller.le_affineMcaError_of_add_two_le` | For `1 ≤ k`, `d + 2 ≤ q₀` and `A ≤ n`, the error at loss `n / q₀` is at least `q⁻ᵏ`. The paper derives `d ≤ q₀ - 2` from Theorem 7.1. |
+| Lemma A.1 | `ReedMuller.card_isAffineExceptional_add_mul_le`, `ReedMuller.card_fractionRing_combination_le`, `ReedMuller.card_isAffineExceptional_fractionRing_le` | At loss `n / q₀`, a polynomial candidate has at most `n choose (k + 1)` exceptional challenges. A rational pair over the fraction field of `F[X₁, …, X_k]` has at most `q`. Together: at most `max q (n choose (k + 1))`. |
+| Appendix A, the persistent count | `ReedMuller.IsAffinePersistent`, `ReedMuller.affinePersistenceSet`, `ReedMuller.card_isAffineExceptional_persistent_le` | Persistence uses `G = H/L_σ` with `σ ≠ 0` and `deg H ≤ d`, counting agreements off the zeros of `L_σ`. At most `ℓ · max{q, C(n, k+1)}` persistent challenges are exceptional, with `ℓ = n(B - (d+1)q₀^(k-1))/(B² - n(d+1)q₀^(k-1))`. This is the paper's `(a - b)/(a² - b)`. Hypotheses: `B > (d+1)n/q₀` and `b < a²`. |
+| Appendix A, Claim 4.8 for `c > B + n/q₀ - 1` | `ReedMuller.exists_affineRatioWitness_of_map`, `ReedMuller.isAffinePersistent_of_commonAgreement` | A rational explanation over an extension field descends to `F_q`. Dropping the at most `n/q₀` zeros of `L_σ` on the grid, by (7.1), leaves `B` agreements, so the candidate is persistent. |
+| Lemma 3.2 with fibers | `Finset.card_le_of_fiber_card_le_of_inter_card_le` | The Johnson bound times the fiber size. The Reed–Solomon and Reed–Muller persistent counts both use it. |
 
 ## Port Ledger
 
@@ -85,17 +102,17 @@ A unit is done when its declarations are on `main`.
 
 | Unit | Paper | Content | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | in review |
-| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | in review |
-| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | equal-degree bound in review ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); linear claims planned |
-| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | in review ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
-| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | in review |
-| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | in review |
-| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces in review; power-series existence and uniqueness open |
-| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | in review |
-| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | in review |
+| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | done ([#1504](https://github.com/Verified-zkEVM/ArkLib/pull/1504)) |
+| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | done ([#1505](https://github.com/Verified-zkEVM/ArkLib/pull/1505)) |
+| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | equal-degree bound done ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); linear claims planned |
+| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | done ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
+| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)) |
+| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)) |
+| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); power-series existence and uniqueness open |
+| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
+| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
-| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), lower bound `q⁻ᵏ` and Lemma A.1 and the persistent count in review; Pellikaan–Wu reduction, nonpersistent count and Theorem 7.1 planned |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
 The quotient is real, and the floor rounds down.
@@ -152,6 +169,21 @@ Unit 10 applies the equal-degree guarantee in each folding round.
   It uses the binary-group decomposition in `BinaryAddSubgroup.lean` and the degree bounds in
   `SubspacePolynomial.lean`.
 
+- [`ReedMuller/Grid.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/Grid.lean)
+  embeds the grid `K₀ᵏ` in `Fᵏ` and proves the hyperplane and Schwartz–Zippel counts.
+- [`ReedMuller/AffineCombiner/Basic.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Basic.lean)
+  defines the Reed–Muller affine combiner and its error.
+- [`ReedMuller/AffineCombiner/Probability.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Probability.lean)
+  identifies this error with native probabilities.
+- [`ReedMuller/AffineCombiner/Separation.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Separation.lean)
+  proves the lower bound `q⁻ᵏ`.
+- [`ReedMuller/AffineCombiner/RationalPair.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/RationalPair.lean)
+  proves Lemma A.1.
+- [`ReedMuller/AffineCombiner/Persistent.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Persistent.lean)
+  defines Reed–Muller persistence and bounds the persistent exceptional challenges.
+- [`ReedMuller/AffineCombiner/PersistenceDescent.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PersistenceDescent.lean)
+  turns common agreements into persistence on the grid.
+
 The Taylor chart uses
 [`RationalTaylorJointDegree.lean`](../../../ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean)
 and [`Differential/TaylorChart.lean`](../../../ArkLib/Data/Polynomial/Differential/TaylorChart.lean)
@@ -205,6 +237,15 @@ Discarding at most one zero of the nonzero linear denominator retains `B` regula
 from `B + 1` common cut points.
 The paper instead chooses a second `F_q` triple in an affine space defined over `F_q`.
 Both arguments are complete.
+
+The Reed–Muller grid is `Fin k → K₀`, mapped into `Fᵏ` through `[Algebra K₀ F]`.
+A challenge is a vector `Fin (k + 1) → F` whose entry `0` is the constant term.
+Lemma A.1's affine independence is stated as: only the zero affine form vanishes on the `k + 1` points.
+For `k = 1` these definitions match the univariate ones informally; no bridge is formalized.
+
+Reed–Muller persistence names the denominator by its coefficient vector `σ`.
+The zeros of `L_σ` on the grid are left out of the persistence set.
+The Johnson factor is written with `q₀^(k-1)` in place of `n/q₀`.
 
 ## Open Formalization Gaps
 

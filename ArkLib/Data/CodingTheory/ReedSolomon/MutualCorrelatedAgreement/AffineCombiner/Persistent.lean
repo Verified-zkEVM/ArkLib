@@ -182,48 +182,20 @@ theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (
     · exact ⟨0, 0, 0, fun h ↦ absurd h hc⟩
   choose P H L hdata using hdata
   set π : F × F → RatFunc F × RatFunc F := fun c ↦ persistentPair c.1 c.2 (P c) (H c) (L c)
-  set T := C.image π
-  -- Each rational pair accounts for at most `M` challenges.
-  have hfiber : ∀ p ∈ T, #{c ∈ C | π c = p} ≤ M := by
-    intro p _
-    refine (card_le_card fun c hc ↦ ?_).trans
-      (card_isAffineExceptional_ratFunc_le domain f g (d := d) (A := A) p.1 p.2)
-    rw [mem_filter] at hc ⊢
-    refine ⟨mem_univ _, P c, ?_, (hdata c hc.1).1⟩
-    rw [← hc.2]
+  have h := card_le_of_fiber_card_le_of_inter_card_le C π
+    (fun c ↦ affinePersistenceSet domain f g c.1 c.2 (P c) (H c) (L c)) (M := M) hdB.le
+    (by rw [← sq]; exact hJ) (fun c hc ↦ (hdata c hc).2.2.2.2) (fun c hc c' hc' hne ↦
+      card_inter_affinePersistenceSet_le (hdata c hc).1.1 (hdata c' hc').1.1 (hdata c hc).2.1
+        (hdata c' hc').2.1 (hdata c hc).2.2.1 (hdata c' hc').2.2.1 (hdata c hc).2.2.2.1
+        (hdata c' hc').2.2.2.1 hne) fun c hc ↦ by
+    -- Each rational pair accounts for at most `M` challenges.
+    refine (card_le_card fun c' hc' ↦ ?_).trans
+      (card_isAffineExceptional_ratFunc_le domain f g (d := d) (A := A) (π c).1 (π c).2)
+    rw [mem_filter] at hc' ⊢
+    refine ⟨mem_univ _, P c', ?_, (hdata c' hc'.1).1⟩
+    rw [← hc'.2]
     simp only [π, persistentPair]
     ring
-  have hCT : #C ≤ M * #T := card_le_mul_card_image C M hfiber
-  -- Distinct rational pairs have almost disjoint persistence sets.
-  have hrep : ∀ p ∈ T, ∃ c ∈ C, π c = p := fun p hp ↦ mem_image.mp hp
-  choose! rep hrepC hrepπ using hrep
-  have hJT := card_mul_sq_sub_card_mul_le_of_inter_card_le T
-    (fun p ↦ affinePersistenceSet domain f g (rep p).1 (rep p).2
-      (P (rep p)) (H (rep p)) (L (rep p)))
-    B (d + 1) (fun p hp ↦ (hdata _ (hrepC p hp)).2.2.2.2) fun p hp p' hp' hne ↦ by
-      have h₀ := hdata _ (hrepC p hp)
-      have h₁ := hdata _ (hrepC p' hp')
-      refine card_inter_affinePersistenceSet_le h₀.1.1 h₁.1.1 h₀.2.1 h₁.2.1 h₀.2.2.1 h₁.2.2.1
-        h₀.2.2.2.1 h₁.2.2.2.1 fun h ↦ hne ?_
-      rw [← hrepπ p hp, ← hrepπ p' hp']
-      exact h
-  -- Real arithmetic.
-  have hBB : Fintype.card ι * (d + 1) ≤ B * B := by rw [← sq]; exact hJ.le
-  have hden : (0 : ℝ) < (B : ℝ) ^ 2 - Fintype.card ι * (d + 1) := by
-    rw [sub_pos]
-    exact_mod_cast hJ
-  have hT : (#T : ℝ) ≤ (Fintype.card ι : ℝ) * ((B : ℝ) - d - 1) /
-      ((B : ℝ) ^ 2 - Fintype.card ι * (d + 1)) := by
-    rw [le_div_iff₀ hden]
-    have hJT' : ((#T * (B * B - Fintype.card ι * (d + 1)) : ℕ) : ℝ) ≤
-        ((Fintype.card ι * (B - (d + 1)) : ℕ) : ℝ) := by exact_mod_cast hJT
-    push_cast [Nat.cast_sub hBB, Nat.cast_sub hdB.le] at hJT'
-    linear_combination hJT'
-  calc (#C : ℝ) ≤ (#T : ℝ) * (M : ℝ) := by
-        rw [mul_comm]; exact_mod_cast hCT
-    _ ≤ _ := by
-        rw [show (M : ℝ) = max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) by
-          simp [M]]
-        exact mul_le_mul_of_nonneg_right hT (by positivity)
+  convert h using 2 <;> push_cast [M] <;> ring
 
 end ReedSolomon
