@@ -366,6 +366,7 @@ public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Persistent
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Probability
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.RationalPair
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Separation
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Theorem
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.TraceChart
 public import ArkLib.Data.CodingTheory.ReedMuller.Grid
 public import ArkLib.Data.CodingTheory.ReedMuller.PellikaanWu
