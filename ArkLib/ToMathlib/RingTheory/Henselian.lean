@@ -54,7 +54,7 @@ theorem exists_isRoot_sub_mem (f : R[X]) (a₀ : R) (h₁ : f.eval a₀ ∈ I)
     exact (ih.eval f).trans h₁
   have hf'c : ∀ n, IsUnit (f'.eval (c n)) := by
     intro n
-    have := isLocalHom_of_le_jacobson_bot I (IsAdicComplete.le_jacobson_bot I)
+    have := isLocalHom_of_le_jacobson (IsAdicComplete.le_jacobson I)
     apply IsUnit.of_map (Ideal.Quotient.mk I)
     convert h₂ using 1
     exact SModEq.def.mp ((hc_mod n).eval _)
