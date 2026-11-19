@@ -1235,6 +1235,7 @@ public import ArkLib.ToMathlib.MvPolynomial.PrefixSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
+public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelInjective
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelPrefix
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
