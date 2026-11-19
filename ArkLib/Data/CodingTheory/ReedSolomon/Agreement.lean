@@ -27,13 +27,20 @@ Reed–Solomon statements must supply their strict message-degree hypotheses sep
   including one with repeated points.
 * `commonPolynomialAgreementSet_eq_inter` identifies the common set with an intersection.
 * `card_inter_commonPolynomialAgreementSet_le` bounds common agreement of distinct polynomial pairs.
+* `interleavedCommonAgreementSet` records common agreement in every row of two tuples.
+* `card_inter_interleavedCommonAgreementSet_le` bounds it for distinct pairs of tuples.
+* `mul_lt_sq_ceil_sqrt_add_mul_sub_one` gives the Johnson condition at the threshold
+  `⌈(√ρ + η) n⌉`.
 
 These are exact finite sets, with no decoding threshold, probability convention, or
 mutual-correlated-agreement hypothesis.
+The Johnson condition follows the proof of Theorem 5.1 of [CWYZ26].
 
 ## References
 
 * [DKT26]
+* [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
+    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
 -/
 
 @[expose] public section
@@ -132,6 +139,77 @@ theorem card_inter_commonPolynomialAgreementSet_le
       fun i hi ↦ ?_
     simp only [Finset.mem_inter, mem_commonPolynomialAgreementSet] at hi
     simp [hi.1.1, hi.2.1]
+
+/-- The positions where every row of `F₀` and `G₀` agrees with the matching rows of `f` and `g`. -/
+def interleavedCommonAgreementSet {F : Type*} [Semiring F] [DecidableEq F] {ι κ : Type*}
+    [Fintype ι] [Fintype κ] (domain : ι ↪ F) (f g : κ → ι → F) (F₀ G₀ : κ → F[X]) : Finset ι :=
+  Finset.univ.filter fun i ↦ ∀ r, (F₀ r).eval (domain i) = f r i ∧ (G₀ r).eval (domain i) = g r i
+
+/-- Shared common agreement keeps both equalities in every row at the same coordinate. -/
+@[simp] theorem mem_interleavedCommonAgreementSet
+    {F ι κ : Type*} [Semiring F] [DecidableEq F] [Fintype ι] [Fintype κ]
+    (domain : ι ↪ F) (f g : κ → ι → F) (F₀ G₀ : κ → F[X]) (i : ι) :
+    i ∈ interleavedCommonAgreementSet domain f g F₀ G₀ ↔
+      ∀ r, (F₀ r).eval (domain i) = f r i ∧ (G₀ r).eval (domain i) = g r i := by
+  simp [interleavedCommonAgreementSet]
+
+/-- Two distinct pairs of tuples of degree at most `d` share at most `d` common agreements.
+
+Some row differs, and the shared common set lies in the common set of that row. -/
+theorem card_inter_interleavedCommonAgreementSet_le
+    {F : Type*} [Field F] [DecidableEq F] {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
+    (domain : ι ↪ F) (f g : κ → ι → F) {d : ℕ} {F₀ G₀ F₁ G₁ : κ → F[X]}
+    (hF₀ : ∀ r, (F₀ r).degree ≤ d) (hG₀ : ∀ r, (G₀ r).degree ≤ d)
+    (hF₁ : ∀ r, (F₁ r).degree ≤ d) (hG₁ : ∀ r, (G₁ r).degree ≤ d) (hne : (F₀, G₀) ≠ (F₁, G₁)) :
+    #(interleavedCommonAgreementSet domain f g F₀ G₀ ∩
+      interleavedCommonAgreementSet domain f g F₁ G₁) ≤ d := by
+  obtain ⟨r, hr⟩ : ∃ r, (F₀ r, G₀ r) ≠ (F₁ r, G₁ r) := by
+    by_contra h
+    push Not at h
+    exact hne (Prod.ext (funext fun r ↦ (Prod.mk.inj (h r)).1)
+      (funext fun r ↦ (Prod.mk.inj (h r)).2))
+  refine (Finset.card_le_card fun i hi ↦ ?_).trans
+    (card_inter_commonPolynomialAgreementSet_le domain (f r) (g r) (hF₀ r) (hG₀ r) (hF₁ r)
+      (hG₁ r) hr)
+  simp only [Finset.mem_inter, mem_interleavedCommonAgreementSet,
+    mem_commonPolynomialAgreementSet] at hi ⊢
+  exact ⟨hi.1 r, hi.2 r⟩
+
+/-- At the threshold `A = ⌈(√ρ + η) n⌉`, the Johnson condition `n d < (A - 1)²` holds.
+
+Here `1 ≤ d < n`, `ρ = d / n`, `0 < η`, and `n η² ≥ 4 / ρ`; the subtraction is in `ℕ`.
+The last condition gives `n η > 1`, so `A - 1 > √ρ n = √(n d)`. -/
+theorem mul_lt_sq_ceil_sqrt_add_mul_sub_one {n d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < n)
+    (hη : 0 < η) (hn : 4 / ((d : ℝ) / n) ≤ n * η ^ 2) :
+    n * d < (⌈(√((d : ℝ) / n) + η) * n⌉₊ - 1) ^ 2 := by
+  set A := ⌈(√((d : ℝ) / n) + η) * n⌉₊
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast Nat.zero_lt_of_lt hdn
+  have hρ0 : (0 : ℝ) < (d : ℝ) / n := div_pos (by exact_mod_cast hd) hn0
+  have hρ1 : (d : ℝ) / n ≤ 1 := (div_le_one hn0).mpr (by exact_mod_cast hdn.le)
+  have h4 : (4 : ℝ) ≤ 4 / ((d : ℝ) / n) := by
+    rw [le_div_iff₀ hρ0]
+    linarith
+  have hηn : 1 < η * n := by
+    rcases lt_or_ge η 1 with hη1 | hη1
+    · nlinarith
+    · have : (2 : ℝ) ≤ n := by exact_mod_cast (show 2 ≤ n by omega)
+      nlinarith
+  have hAle : (√((d : ℝ) / n) + η) * n ≤ A := Nat.le_ceil _
+  have hA1 : 1 ≤ A := by
+    have : (0 : ℝ) < A := by nlinarith [Real.sqrt_nonneg ((d : ℝ) / n)]
+    exact_mod_cast this
+  have hsq : √((d : ℝ) / n) ^ 2 = (d : ℝ) / n := Real.sq_sqrt hρ0.le
+  have hlt : √((d : ℝ) / n) * n < (A : ℝ) - 1 := by linarith
+  have hreal : (n : ℝ) * d < ((A : ℝ) - 1) ^ 2 := by
+    have h0 : 0 ≤ √((d : ℝ) / n) * n := by positivity
+    calc (n : ℝ) * d = (√((d : ℝ) / n) * n) ^ 2 := by
+          rw [mul_pow, hsq]
+          field_simp
+      _ < ((A : ℝ) - 1) ^ 2 := by gcongr
+  have : ((n * d : ℕ) : ℝ) < (((A - 1) ^ 2 : ℕ) : ℝ) := by
+    push_cast [hA1]
+    exact hreal
+  exact_mod_cast this
 
 end
 end ReedSolomon
