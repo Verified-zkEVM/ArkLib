@@ -15,16 +15,18 @@ public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 
 /-!
-# Lines through the roots of a trivariate polynomial
+# Multiplier curves through the roots of a trivariate polynomial
 
 A trivariate `G(X, Y, Z)` is read as a polynomial in `Z` over `E[X][Y]`.
-A nonzero `G` free of `Z` vanishes identically on at most `deg_Y G` lines `Y = α + β X`.
+A nonzero `G` free of `Z` vanishes identically on at most `deg_Y G` multipliers `Y = L(X)`
+of an injective family.
+For Reed–Solomon codes the multipliers are the lines `α + β X`.
 
 For a polynomial `R` of positive `Z`-degree, its `Z`-discriminant is a polynomial in `Y`
 of degree at most `h (h - 1)`, where `h` bounds the `(Y, Z)`-degree of `R`.
-Where the discriminant does not vanish on the line, every root of `R` along the line is simple.
+Where the discriminant does not vanish at the multiplier, every root of `R` along it is simple.
 The discriminant is a resultant with declared degrees, so this implication also holds when
-the line makes the leading `Z`-coefficient vanish.
+the multiplier makes the leading `Z`-coefficient vanish.
 The nested presentation is noncomputable because Mathlib's polynomial rings are.
 
 ## Main definitions
@@ -34,18 +36,23 @@ The nested presentation is noncomputable because Mathlib's polynomial rings are.
 
 ## Main statements
 
-* `ReedSolomon.affineLineEval_eq_nested`: evaluation along a line through the presentation.
-* `ReedSolomon.card_filter_affineLine_eq_zero_le`: a nonzero `G` free of `Z` vanishes on at
-  most `deg_Y G` lines.
+* `ReedSolomon.multiplierEval_eq_nested`: evaluation along a multiplier through the
+  presentation.
+* `ReedSolomon.card_filter_multiplierEval_eq_zero_le`: a nonzero `G` free of `Z` vanishes on at
+  most `deg_Y G` multipliers of an injective family.
 * `ReedSolomon.affineDiscriminant_ne_zero`: the discriminant of an irreducible `R` with
   nonzero `Z`-derivative is nonzero.
 * `ReedSolomon.natDegree_affineDiscriminant_le`: its `Y`-degree is at most `h (h - 1)`.
-* `ReedSolomon.card_filter_affineDiscriminant_eq_zero_le`: the count of discriminant lines.
-* `ReedSolomon.affineLineEval_pderiv_ne_zero`: off its zeros, roots along the line are simple.
+* `ReedSolomon.card_filter_affineDiscriminant_eq_zero_le`: the count of discriminant zeros
+  among the multipliers of an injective family.
+* `ReedSolomon.multiplierEval_pderiv_ne_zero`: off its zeros, roots along a multiplier are simple.
+* `ReedSolomon.multiplierEval_eq_of_degreeOf_none_eq_zero`: a polynomial free of `Z` ignores
+  the candidate.
 
 ## References
 
 These are the ingredients of Lemma 4.3 of [CWYZ26].
+Appendix A of [CWYZ26] notes that the count of excluded challenges needs only distinct multipliers.
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -186,26 +193,27 @@ theorem add_natDegree_coeff_affineNested_le (G : MvPolynomial AffineVar E) {i : 
       omega
   omega
 
-/-- Evaluating along the line substitutes `α + β X` for `Y` in the coefficients, then `P` for
+/-- Evaluating along a multiplier substitutes `L` for `Y` in the coefficients, then `P` for
 `Z`. -/
-theorem affineLineEval_eq_nested (α β : E) (P : E[X]) (G : MvPolynomial AffineVar E) :
-    affineLineEval α β P G =
-      ((affineNested G).map (Polynomial.evalRingHom (affineMultiplier α β))).eval P := by
+theorem multiplierEval_eq_nested (L P : E[X]) (G : MvPolynomial AffineVar E) :
+    multiplierEval L P G = ((affineNested G).map (Polynomial.evalRingHom L)).eval P := by
   induction G using MvPolynomial.induction_on with
-  | C a => simp [affineLineEval]
+  | C a => simp [multiplierEval]
   | add G H hG hH => simp [hG, hH]
   | mul_X G v hG =>
     rcases v with _ | i
     · simp [hG]
     · fin_cases i <;> simp [hG]
 
-/-- A nonzero `G` free of `Z` vanishes along at most `deg_Y G` lines indexed injectively by `S`.
+/-- A nonzero `G` free of `Z` vanishes along at most `deg_Y G` multipliers of a family.
 
-Each such line `Y = α + β X` is a root of `G` as a polynomial in `Y` over `E[X]`. -/
-theorem card_filter_affineLine_eq_zero_le [DecidableEq E] {F : Type*} {G : MvPolynomial AffineVar E}
-    (hG : G ≠ 0) (hZ : G.degreeOf none = 0) (S : Finset (F × F)) (φ : F × F → E × E)
-    (hφ : φ.Injective) :
-    (S.filter fun c ↦ affineLineEval (φ c).1 (φ c).2 0 G = 0).card ≤ G.degreeOf (some 1) := by
+The family is injective on the finite challenge set `S`.
+
+Each such multiplier `Y = L(X)` is a root of `G` as a polynomial in `Y` over `E[X]`. -/
+theorem card_filter_multiplierEval_eq_zero_le [DecidableEq E] {Γ : Type*}
+    {G : MvPolynomial AffineVar E} (hG : G ≠ 0) (hZ : G.degreeOf none = 0) (S : Finset Γ)
+    (mult : Γ → E[X]) (hmult : Set.InjOn mult S) :
+    #(S.filter fun c ↦ multiplierEval (mult c) 0 G = 0) ≤ G.degreeOf (some 1) := by
   set g := (affineNested G).coeff 0
   have hC : affineNested G = C g :=
     eq_C_of_natDegree_eq_zero ((natDegree_affineNested G).trans hZ)
@@ -215,11 +223,10 @@ theorem card_filter_affineLine_eq_zero_le [DecidableEq E] {F : Type*} {G : MvPol
     apply affineNested.injective
     rw [hC, h0, map_zero, map_zero]
   refine le_trans ?_ (natDegree_coeff_affineNested_le G 0)
-  refine card_le_natDegree_of_injOn_of_eval_eq_zero hg
-    (x := fun c ↦ affineMultiplier (φ c).1 (φ c).2)
-    ((affineMultiplier_injective.comp hφ).injOn) fun c hc ↦ ?_
+  refine card_le_natDegree_of_injOn_of_eval_eq_zero hg (x := mult)
+    (hmult.mono (Finset.coe_subset.mpr (Finset.filter_subset _ _))) fun c hc ↦ ?_
   have := (Finset.mem_filter.mp hc).2
-  rwa [affineLineEval_eq_nested, hC, map_C, eval_C, coe_evalRingHom] at this
+  rwa [multiplierEval_eq_nested, hC, map_C, eval_C, coe_evalRingHom] at this
 
 /-- The `Z`-discriminant, as a polynomial in `Y` over `E[X]`.
 
@@ -261,39 +268,39 @@ theorem natDegree_affineDiscriminant_le {R : MvPolynomial AffineVar E} {h : ℕ}
       exact (add_natDegree_coeff_affineNested_le R hi).trans hR
   exact le_of_add_sq_le_of_le hb hres
 
-/-- If the discriminant does not vanish on the line, a root `P` of `R` along it is simple.
+/-- If the discriminant does not vanish at `L`, a root `P` of `R` along `L` is simple.
 
 The hypothesis `0 < deg_Z R` is needed: for `R` free of `Z` the discriminant is `1`. -/
-theorem affineLineEval_pderiv_ne_zero {R : MvPolynomial AffineVar E} {α β : E} {P : E[X]}
-    (hpos : 0 < R.degreeOf none) (hroot : affineLineEval α β P R = 0)
-    (hdisc : (affineDiscriminant R).eval (affineMultiplier α β) ≠ 0) :
-    affineLineEval α β P (MvPolynomial.pderiv none R) ≠ 0 := by
-  rw [affineLineEval_eq_nested] at hroot ⊢
+theorem multiplierEval_pderiv_ne_zero {R : MvPolynomial AffineVar E} {L P : E[X]}
+    (hpos : 0 < R.degreeOf none) (hroot : multiplierEval L P R = 0)
+    (hdisc : (affineDiscriminant R).eval L ≠ 0) :
+    multiplierEval L P (MvPolynomial.pderiv none R) ≠ 0 := by
+  rw [multiplierEval_eq_nested] at hroot ⊢
   rw [← derivative_affineNested, ← derivative_map]
   exact eval_derivative_map_ne_zero_of_resultant_derivative_padded_ne_zero
-    (evalRingHom (affineMultiplier α β)) (affineNested R) le_rfl
+    (evalRingHom L) (affineNested R) le_rfl
     (by rwa [natDegree_affineNested]) hdisc P hroot
 
-/-- A polynomial free of `Z` has the same evaluation along a line for every candidate. -/
-theorem affineLineEval_eq_of_degreeOf_none_eq_zero {G : MvPolynomial AffineVar E}
-    (hZ : G.degreeOf none = 0) (α β : E) (P P' : Polynomial E) :
-    affineLineEval α β P G = affineLineEval α β P' G := by
+/-- A polynomial free of `Z` has the same evaluation along a multiplier for every candidate. -/
+theorem multiplierEval_eq_of_degreeOf_none_eq_zero {G : MvPolynomial AffineVar E}
+    (hZ : G.degreeOf none = 0) (L P P' : Polynomial E) :
+    multiplierEval L P G = multiplierEval L P' G := by
   have hC : affineNested G = Polynomial.C ((affineNested G).coeff 0) :=
     Polynomial.eq_C_of_natDegree_eq_zero ((natDegree_affineNested G).trans hZ)
-  rw [affineLineEval_eq_nested, affineLineEval_eq_nested, hC]
+  rw [multiplierEval_eq_nested, multiplierEval_eq_nested, hC]
   simp
 
-/-- A nonzero discriminant of `R` vanishes on at most `h (h - 1)` lines indexed injectively by `S`,
-where `h` bounds the `(Y, Z)`-degree of `R`. -/
-theorem card_filter_affineDiscriminant_eq_zero_le [DecidableEq E] {F : Type*}
-    {R : MvPolynomial AffineVar E}
-    {h : ℕ} (hR0 : affineDiscriminant R ≠ 0) (hR : R.weightedTotalDegree affineYZWeight ≤ h)
-    (S : Finset (F × F)) (φ : F × F → E × E) (hφ : φ.Injective) :
-    #(S.filter fun c ↦
-      (affineDiscriminant R).eval (affineMultiplier (φ c).1 (φ c).2) = 0) ≤ h * (h - 1) :=
-  (Polynomial.card_le_natDegree_of_injOn_of_eval_eq_zero hR0
-    (x := fun c ↦ affineMultiplier (φ c).1 (φ c).2)
-    ((affineMultiplier_injective.comp hφ).injOn) fun _ hc ↦ (Finset.mem_filter.mp hc).2).trans
-    (natDegree_affineDiscriminant_le hR)
+/-- A nonzero discriminant of `R` vanishes on at most `h (h - 1)` multipliers of a family.
+
+The family is injective on the finite challenge set `S`.
+The bound `h` is on the `(Y, Z)`-degree of `R`. -/
+theorem card_filter_affineDiscriminant_eq_zero_le [DecidableEq E] {Γ : Type*}
+    {R : MvPolynomial AffineVar E} {h : ℕ} (hR0 : affineDiscriminant R ≠ 0)
+    (hR : R.weightedTotalDegree affineYZWeight ≤ h) (S : Finset Γ) (mult : Γ → E[X])
+    (hmult : Set.InjOn mult S) :
+    #(S.filter fun c ↦ (affineDiscriminant R).eval (mult c) = 0) ≤ h * (h - 1) :=
+  (Polynomial.card_le_natDegree_of_injOn_of_eval_eq_zero hR0 (x := mult)
+    (hmult.mono (Finset.coe_subset.mpr (Finset.filter_subset _ _)))
+    fun _ hc ↦ (Finset.mem_filter.mp hc).2).trans (natDegree_affineDiscriminant_le hR)
 
 end ReedSolomon
