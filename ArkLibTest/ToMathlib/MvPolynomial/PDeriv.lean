@@ -138,3 +138,13 @@ example :
 /-- Differentiating past the degree gives zero in every characteristic, here over `ℚ`. -/
 example : (pderiv 0)^[3] (X 0 ^ 2 : MvPolynomial (Fin 1) ℚ) = 0 :=
   iterate_pderiv_eq_zero_of_degreeOf_lt (by rw [degreeOf_X_self_pow]; norm_num)
+
+/-- A polynomial in `X 1` has zero derivative in `X 0`. -/
+example : MvPolynomial.pderiv 0 (Polynomial.aeval (MvPolynomial.X 1 : MvPolynomial (Fin 2) ℚ)
+    (Polynomial.X ^ 3 + 2 : Polynomial ℚ)) = 0 :=
+  MvPolynomial.pderiv_polynomial_aeval_X_of_ne (by decide) _
+
+/-- info: 'MvPolynomial.pderiv_polynomial_aeval_X_of_ne' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms MvPolynomial.pderiv_polynomial_aeval_X_of_ne

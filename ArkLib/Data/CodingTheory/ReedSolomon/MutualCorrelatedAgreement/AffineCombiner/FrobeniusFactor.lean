@@ -18,17 +18,19 @@ Over a perfect field of exponential characteristic `p`, let `Q` be irreducible w
 There is an irreducible `R` with nonzero `Z`-derivative, built so that `Q(X^s, Y^s, Z) = R^s`,
 where `s = p^e`.
 
-A root `P` of `Q` along the line `α + β X` gives the root `P(X^s)` of `R` along the line
-`α^{1/s} + β^{1/s} X`.
+A root `P` of `Q` along a multiplier `L` gives the root `P(X^s)` of `R` along `L^{1/s}`.
+The multiplier `L^{1/s}` applies the inverse of the `s`-power map to each coefficient of `L`.
+For the line `α + β X` it is the line `α^{1/s} + β^{1/s} X`.
 
 ## Main statements
 
-* `ReedSolomon.exists_affineFrobeniusFactor`: the normalized factor, its degree bounds, and the
-  transport of roots along lines.
+* `ReedSolomon.exists_frobeniusFactor`: the normalized factor, its degree bounds, and the
+  transport of roots along multipliers.
 
 ## References
 
 This is the Frobenius normalization of Section 4 of [CWYZ26].
+Appendix A of [CWYZ26] uses it along the multipliers of Reed–Muller codes.
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -42,14 +44,13 @@ open Polynomial
 
 variable {E : Type*} [Field E]
 
-/-- Substituting `X^s, Y^s`, then evaluating on the `s`-th root line, expands the evaluation. -/
-private theorem affineLineEval_variablePowerSubstitution (p e : ℕ) [ExpChar E p]
-    [PerfectRing E p] (α β : E) (P : E[X]) (Q : MvPolynomial AffineVar E) :
-    affineLineEval ((iterateFrobeniusEquiv E p e).symm α) ((iterateFrobeniusEquiv E p e).symm β)
-        (expand E (p ^ e) P)
+/-- Substituting `X^s, Y^s`, then evaluating along the `s`-th root multiplier, expands. -/
+private theorem multiplierEval_variablePowerSubstitution (p e : ℕ) [ExpChar E p]
+    [PerfectRing E p] (L P : E[X]) (Q : MvPolynomial AffineVar E) :
+    multiplierEval (L.map ((iterateFrobeniusEquiv E p e).symm : E →+* E)) (expand E (p ^ e) P)
         (MvPolynomial.variablePowerSubstitution (fun v : AffineVar ↦ v.elim 1 fun _ ↦ p ^ e) Q) =
-      expand E (p ^ e) (affineLineEval α β P Q) := by
-  rw [affineLineEval, affineLineEval, MvPolynomial.variablePowerSubstitution,
+      expand E (p ^ e) (multiplierEval L P Q) := by
+  rw [multiplierEval, multiplierEval, MvPolynomial.variablePowerSubstitution,
     MvPolynomial.aeval_bind₁, ← AlgHom.comp_apply, MvPolynomial.comp_aeval]
   congr 2
   funext v
@@ -57,10 +58,13 @@ private theorem affineLineEval_variablePowerSubstitution (p e : ℕ) [ExpChar E 
   · simp
   · fin_cases i
     · simp
-    · simp only [Option.elim_some]
-      have hfr (x : E) : ((iterateFrobeniusEquiv E p e).symm x) ^ p ^ e = x := by
-        rw [← iterateFrobeniusEquiv_def, RingEquiv.apply_symm_apply]
-      simp [affineMultiplier, add_pow_expChar_pow, mul_pow, ← C_pow, hfr]
+    · have hid : (iterateFrobenius E p e).comp ((iterateFrobeniusEquiv E p e).symm : E →+* E) =
+          RingHom.id E := RingHom.ext fun x ↦ by
+        rw [RingHom.comp_apply, ← coe_iterateFrobeniusEquiv]
+        simp
+      simp only [map_pow, MvPolynomial.aeval_X, Option.elim_some, Fin.mk_one, Matrix.cons_val_one,
+        Matrix.cons_val_fin_one]
+      rw [← map_iterateFrobenius_expand p, map_expand, map_map, hid, map_id]
 
 /-- An irreducible `Q` of positive `Z`-degree has a Frobenius normalization `R`
 over a perfect field of exponential characteristic `p`.
@@ -69,17 +73,17 @@ over a perfect field of exponential characteristic `p`.
 * The `(Y, Z)`-degree of `R` is at most that of `Q`.
 * The exponent `s = p^e`, for some `e : ℕ`, is at most the `Z`-degree of `Q`.
 * `R^s = Q(X^s, Y^s, Z)`.
-* A root `P` of `Q` on the line `α + β X` gives the root `P(X^s)` of `R` on the line
-  `α^{1/s} + β^{1/s} X`. -/
-theorem exists_affineFrobeniusFactor (p : ℕ) [ExpChar E p] [PerfectRing E p]
+* A root `P` of `Q` along a multiplier `L` gives the root `P(X^s)` of `R` along the multiplier
+  obtained by taking the `s`-th root of each coefficient of `L`. -/
+theorem exists_frobeniusFactor (p : ℕ) [ExpChar E p] [PerfectRing E p]
     {Q : MvPolynomial AffineVar E} (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf none) :
     ∃ e, ∃ R : MvPolynomial AffineVar E, Irreducible R ∧ MvPolynomial.pderiv none R ≠ 0 ∧
       R.weightedTotalDegree affineYZWeight ≤ Q.weightedTotalDegree affineYZWeight ∧
       p ^ e ≤ Q.degreeOf none ∧
       R ^ (p ^ e) = MvPolynomial.variablePowerSubstitution
-        (fun v : AffineVar ↦ v.elim 1 fun _ ↦ p ^ e) Q ∧ ∀ α β P, affineLineEval α β P Q = 0 →
-        affineLineEval ((iterateFrobeniusEquiv E p e).symm α)
-          ((iterateFrobeniusEquiv E p e).symm β) (expand E (p ^ e) P) R = 0 := by
+        (fun v : AffineVar ↦ v.elim 1 fun _ ↦ p ^ e) Q ∧ ∀ L P, multiplierEval L P Q = 0 →
+        multiplierEval (L.map ((iterateFrobeniusEquiv E p e).symm : E →+* E))
+          (expand E (p ^ e) P) R = 0 := by
   obtain ⟨e, G, hder, hGQ, hdeg, hGpos, hGirr, -⟩ :=
     MvPolynomial.exists_irreducible_frobeniusContraction_expChar p hpos hirr
   have hs : p ^ e ≠ 0 := pow_ne_zero e (expChar_pos E p).ne'
@@ -91,7 +95,7 @@ theorem exists_affineFrobeniusFactor (p : ℕ) [ExpChar E p] [PerfectRing E p]
   refine ⟨e, MvPolynomial.inverseFrobeniusTwist p e G,
     (MvPolynomial.irreducible_inverseFrobeniusTwist_iff p e).mpr hGirr,
     (MvPolynomial.pderiv_inverseFrobeniusTwist_ne_zero_iff p e G none).mpr hder, ?_,
-    hdeg ▸ Nat.le_mul_of_pos_left _ hGpos, hidentity, fun α β P hroot ↦ ?_⟩
+    hdeg ▸ Nat.le_mul_of_pos_left _ hGpos, hidentity, fun L P hroot ↦ ?_⟩
   · have hG : G = MvPolynomial.rootContraction (p ^ e) Q := by
       rw [← hGQ, MvPolynomial.rootContraction_rootExpansion hs]
     rw [MvPolynomial.inverseFrobeniusTwist, MvPolynomial.weightedTotalDegree,
@@ -105,9 +109,9 @@ theorem exists_affineFrobeniusFactor (p : ℕ) [ExpChar E p] [PerfectRing E p]
     simp only [Finsupp.optionElim_apply_none, Finsupp.optionElim_apply_some, Finsupp.some_apply]
     have := Nat.le_mul_of_pos_right (m none) (Nat.pos_of_ne_zero hs)
     omega
-  · have h := congrArg (affineLineEval ((iterateFrobeniusEquiv E p e).symm α)
-      ((iterateFrobeniusEquiv E p e).symm β) (expand E (p ^ e) P)) hidentity
-    rw [map_pow, affineLineEval_variablePowerSubstitution, hroot, map_zero] at h
+  · have h := congrArg (multiplierEval (L.map ((iterateFrobeniusEquiv E p e).symm : E →+* E))
+      (expand E (p ^ e) P)) hidentity
+    rw [map_pow, multiplierEval_variablePowerSubstitution, hroot, map_zero] at h
     exact pow_eq_zero_iff hs |>.mp h
 
 end ReedSolomon
