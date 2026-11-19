@@ -120,7 +120,8 @@ example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
 
 noncomputable section
 
-open MvPolynomial
+open MvPolynomial (CoeffNatDegreeLE aeval affineHilbertPolynomial coeffNatDegreeLE_X
+  natDegree_affineHilbertPolynomial_span_singleton_add_one zeroLocus zeroLocus_span)
 
 private abbrev MCAField := ℂ
 
@@ -139,12 +140,12 @@ private def componentIdeal : Ideal (MvPolynomial (Option (Fin 1)) MCAField) :=
   Ideal.span {componentVariable}
 
 private theorem componentIdeal_prime : componentIdeal.IsPrime :=
-  (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+  (Ideal.span_singleton_prime (MvPolynomial.X_ne_zero _)).mpr MvPolynomial.prime_X
 
 private theorem componentIdeal_positiveDimension :
     0 < (affineHilbertPolynomial componentIdeal).natDegree := by
   have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
-    (f := componentVariable) (X_ne_zero _) componentIdeal_prime.ne_top
+    (f := componentVariable) (MvPolynomial.X_ne_zero _) componentIdeal_prime.ne_top
   simp only [Nat.card_eq_fintype_card, Fintype.card_option, Fintype.card_fin] at h
   unfold componentIdeal
   omega
@@ -585,7 +586,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       ((taylorExponentSufficient_two_mul_sub_three 0 1).mono (by omega))
       (by norm_num)
       (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1)))
-      componentEquation_jetDegree (MvPolynomial.X_prime).irreducible
+      componentEquation_jetDegree (MvPolynomial.prime_X).irreducible
       (by simp [componentEquation, MvPolynomial.pderiv_X])
       (by simp [componentEquation])
   have hregularCard' : regularExceptional.card ≤ 2 := by
@@ -611,7 +612,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       componentEquation 1 0 1 0 1 2
       (by norm_num) (by norm_num)
       (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
-      MvPolynomial.X_prime.irreducible (by simp [componentEquation])
+      MvPolynomial.prime_X.irreducible (by simp [componentEquation])
       (by simp [componentEquation])
   refine ⟨hbound, exceptional, hcard, hzero, regularExceptional,
     hregularCard', ⟨w, hw, hregularPair⟩,

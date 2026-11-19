@@ -115,7 +115,7 @@ theorem append_run_outputs_guardedLeft
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- A guarded verifier's reachable outputs pin **both** the guard and the verdict: any reachable
 output is the verdict, and where the guard fails nothing is reachable at all. The guarded analogue
-of `outputs_pure_subsingleton`. -/
+of `mem_outputs_iff_of_run_eq_pure`. -/
 theorem outputs_guarded_subsingleton
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (check₁ : Stmt₁ → pSpec₁.FullTranscript → Bool)
@@ -123,23 +123,15 @@ theorem outputs_guarded_subsingleton
     (hV₁ : V₁.IsGuardedWith check₁ out₁)
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) {out : Stmt₂}
     (hout : out ∈ Outputs init impl V₁ stmt tr) : out = out₁ stmt tr := by
-  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr] at hout
-  by_cases hc : check₁ stmt tr
-  · rw [ite_eq_left hc] at hout
-    have : (do (simulateQ impl
-        (pure (out₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
-        ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (out₁ stmt tr))) := by
-      congr 1
-    rw [this] at hout
-    simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
-    exact Option.some.inj hout.1
-  · rw [ite_eq_right (by simpa using hc)] at hout
-    have : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
-        ProbComp (Option Stmt₂)) = (init >>= fun _ => pure none) := by
-      congr 1
-    rw [this] at hout
-    simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
-    exact absurd hout.1 (by simp)
+  cases hc : check₁ stmt tr with
+  | true =>
+    apply Option.some.inj
+    exact (mem_outputs_iff_of_run_eq_pure init impl V₁ stmt tr
+      (result := some (out₁ stmt tr)) (by rw [hV₁ stmt tr]; simp [hc]) out).mp hout
+  | false =>
+    have h := (mem_outputs_iff_of_run_eq_pure init impl V₁ stmt tr
+      (result := none) (by rw [hV₁ stmt tr]; simp [hc]) out).mp hout
+    contradiction
 
 /-- A guarded verifier accepts a transcript whose verdict lies in the language, **provided its guard
 passes**: `pure_accepting_of_mem` fed the passing branch of `IsGuardedWith`. -/
@@ -156,26 +148,16 @@ theorem guarded_accepting_of_mem
     (by rw [hV₁ stmt tr, ite_eq_left hc]) hmem
 
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
-/-- A guarded verifier's verdict **is** reachable where its check passes, as soon as the sampling
-can produce a seed: the guarded analogue of `pure_verdict_mem_outputs`, and what makes a composed
-prefix witnessing valid across a guarded seam. -/
+/-- A passing guard makes its verdict reachable at the prefix of a composed witnessing. -/
 theorem guarded_verdict_mem_outputs
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (check₁ : Stmt₁ → pSpec₁.FullTranscript → Bool)
     (out₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hV₁ : V₁.IsGuardedWith check₁ out₁)
-    (hinit : (support init).Nonempty)
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) (hc : check₁ stmt tr = true) :
       out₁ stmt tr ∈ Outputs init impl V₁ stmt tr := by
-  obtain ⟨s, hs⟩ := hinit
-  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr]
-  rw [ite_eq_left hc]
-  have heq : (do (simulateQ impl
-      (pure (out₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
-      ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (out₁ stmt tr))) := by
-    congr 1
-  rw [heq]
-  exact (mem_support_bind_iff init _ _).2 ⟨s, hs, (mem_support_pure_iff _ _).2 rfl⟩
+  exact (mem_outputs_iff_of_run_eq_pure init impl V₁ stmt tr
+    (result := some (out₁ stmt tr)) (by rw [hV₁ stmt tr]; simp [hc]) _).mpr rfl
 
 section GuardedAppend
 
@@ -273,7 +255,7 @@ theorem append_treeSpecialSoundWith_guardedLeft
     obtain ⟨w₂, hw₂, hrel₂⟩ := h₂' p₁ _ (hsuffValid p₁)
     exact ⟨w₂, hw₂, out₁ stmt p₁.fullTranscript,
       guarded_verdict_mem_outputs init impl V₁ check₁ out₁ hV₁
-        (support_init_nonempty_of_accepting hpreAcc p₁) stmt p₁.fullTranscript (hcheck p₁),
+        stmt p₁.fullTranscript (hcheck p₁),
       hrel₂⟩
   exact h₁ stmt tree.appendSplit.fst
     (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hpreAcc _ hpreValid
@@ -381,7 +363,7 @@ theorem append_treeSpecialSoundWithEscape_guardedLeft
         obtain ⟨w₂, hw₂, hrel₂⟩ := h₂'' p₁ _ (hsuffValid p₁)
         exact ⟨w₂, hw₂, out₁ stmt p₁.fullTranscript,
           guarded_verdict_mem_outputs init impl V₁ check₁ out₁ hV₁
-            (support_init_nonempty_of_accepting hpreAcc p₁) stmt p₁.fullTranscript
+            stmt p₁.fullTranscript
             (hcheck p₁), hrel₂⟩
       exact hext₁ _ hpreValid
 

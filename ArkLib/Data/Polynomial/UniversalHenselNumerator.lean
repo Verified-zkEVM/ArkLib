@@ -44,7 +44,7 @@ noncomputable def positivePrefix (prior : ℕ → A) (n : ℕ) : Polynomial A :=
 theorem positivePrefix_coeff (prior : ℕ → A) (n i : ℕ) :
     (positivePrefix prior n).coeff i = if 0 < i ∧ i < n then prior i else 0 := by
   classical
-  simp [positivePrefix, coeff_monomial, Nat.succ_le_iff]
+  simp [positivePrefix, coeff_monomial, Finsupp.single_apply, Nat.succ_le_iff]
 
 @[simp] theorem positivePrefix_zero (prior : ℕ → A) : positivePrefix prior 0 = 0 := by
   simp [positivePrefix]
@@ -113,7 +113,7 @@ theorem numerators_map (f : A →+* B) (Rshift : Polynomial (Polynomial A)) (s :
     (n : ℕ) :
     f (numerators Rshift s d n) = numerators (Rshift.map (mapRingHom f)) (f s) d n := by
   induction n using Nat.strong_induction_on with
-  | h n ih =>
+  | ind n ih =>
     cases n with
     | zero => simp
     | succ t =>

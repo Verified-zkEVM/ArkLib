@@ -30,7 +30,8 @@ sets descend along the injective scalar map, with no characteristic hypothesis.
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE)
 
 /-- Every nonzero ordinary equation over an arbitrary field has one finite exceptional set for
 all accepted base-field roots, with the stated root-degree and challenge-height budgets. -/
