@@ -216,7 +216,8 @@ example : ∃ z : AlgebraicClosure ℚ, ∃ P : (AlgebraicClosure ℚ)[X], P.deg
 
 end
 
-open ReedSolomon HiddenDerivative PolynomialDifferential MvPolynomial
+open ReedSolomon HiddenDerivative PolynomialDifferential
+open MvPolynomial (coeffNatDegree coeffNatDegreeLE_X coeffNatDegreeLE_coeffNatDegree)
 
 private def exceptionDomain : Fin 2 ↪ ℂ where
   toFun i := (i.val : ℂ)

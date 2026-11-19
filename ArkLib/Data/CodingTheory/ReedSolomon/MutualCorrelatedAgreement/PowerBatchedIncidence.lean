@@ -41,7 +41,10 @@ lift then bounds the points on the initial equation and high Taylor cuts that li
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval affineHilbertPolynomial coeffNatDegreeLE_C
+  coeffNatDegreeLE_sum mem_restrictBidegree_iff_weightedTotalDegree_le optionEquivRight
+  restrictBidegree totalDegree_optionEquivRight zeroLocus)
 open scoped BigOperators
 
 noncomputable section
@@ -231,7 +234,7 @@ theorem finite_admissibleChartTupleIncidence_off_graphs
     simpa only [g, jointInitialJetEquation] using hinit
   have hsSource : (optionEquivRight E (Fin (r + 1))).symm s ≠ 0 := by
     simpa only [s, jointInitialJetSeparant] using hsep
-  apply powerMomentMap_incidence_off_excluded
+  apply MvPolynomial.powerMomentMap_incidence_off_excluded
     (D := D) (M := M) (d := r + 1) (initialDegree := v + 1) (B := B)
     (A := A) (L := L) (g := g) (s := s) (high := high) (cuts := cuts)
     (excluded := admissibleChartTupleGraphLocus domain w iota center Q K k L M)

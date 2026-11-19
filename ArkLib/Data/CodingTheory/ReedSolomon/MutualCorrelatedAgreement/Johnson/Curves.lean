@@ -22,7 +22,7 @@ The constant curve has no exceptional challenges.
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential HiddenDerivative
+open Polynomial PolynomialDifferential HiddenDerivative
 
 private theorem ordinaryFactorRaw_double_height_le (theta : ℚ) (n D B H : ℕ)
     (htheta : 0 ≤ theta) :
