@@ -883,6 +883,7 @@ public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.KnowledgeSoundnessRun
+public import ArkLib.OracleReduction.Security.NestedStages
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Resources
 public import ArkLib.OracleReduction.Security.Rewinding

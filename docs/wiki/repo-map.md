@@ -872,6 +872,16 @@ home_page/            site assets and assembled website root
   guarded package `GCWSSPackage` with its append `▷ᵍ`, the `Verifier.Outputs`-level guarded seam
   lemmas, and both guarded binary CWSS append theorems (plain and escape-threaded). The umbrella
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
+- Nested stages: `Security/NestedStages.lean` takes the coordinates of the vector challenges of a
+  public-coin protocol, in order, as the rounds of one VCVio threshold finder
+  (`Rewinding.thresholdFinder`). It defines `NestedStages` with the computable error
+  `∑ (arity - 1) / |alphabet|` and tree size `∏ arity`, proves that the threshold error is at most
+  that sum (`Rewinding.thresholdError_le_sum`), and states the finder's bounds
+  (`NestedStages.finder_bounds`). `Data/MvPolynomial/VecTreeInterpolation.lean` reads a finder's
+  `Rewinding.VecTree` over a field as a `NestedEvaluationTree` and gives the zero test for a
+  polynomial that vanishes at its leaves. Acceptance clients are
+  `ArkLibTest/OracleReduction/NestedStages.lean` and
+  `ArkLibTest/Data/MvPolynomial/VecTreeInterpolation.lean`.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - `ProofSystem/Binius/` holds the Binary Basefold protocol and its tensor-prefix frontend.
