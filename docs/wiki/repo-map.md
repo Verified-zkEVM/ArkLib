@@ -621,12 +621,10 @@ home_page/            site assets and assembled website root
   file/directory pair
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
-  results about them. A few deep bounds are externally sourced solicited proofs: they carry tagged
-  `sorry` annotations and are listed in the `solicited` array of `scripts/axiom_baseline.json`
-  ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); use the paper KB pages to inspect
-  their sources. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
-  folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
-  large-alphabet barrier.
+  results about them. Every bound under `ListDecodability/` is proved in-tree; use the paper KB
+  pages to inspect their sources. In-tree results include [CZ25]'s subspace-design theorem (and
+  therefore the folded-Reed-Solomon and univariate-multiplicity capacity corollaries), the [AGL23]
+  large-alphabet barrier, and [AGL24]'s random-evaluation-domain bound.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
   `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds.
   `ProximityGap/CapacityBounds/SubspaceDesign.lean` shares the subspace-design pinning

@@ -8,9 +8,11 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/RandomDomain.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/RankLoss.lean
   - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
   - ArkLib/Data/Probability/Uniform.lean
@@ -36,7 +38,16 @@ Theorem 1.1: for `ε ∈ (0,1)`, `L ≥ 2` and a prime power `q ≥ n + k·2^{10
 
 ## Main ArkLib Touchpoints
 
-`rs_random_domain_lambda_le` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted).
+`rs_random_domain_lambda_le` in
+[Bounds/ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean):
+Theorem 1.1 with ordinary list size `Λ`, proved. Its counting core is
+`card_filter_lt_Lambda_le_two_pow_neg_mul` in
+[RandomDomain.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/RandomDomain.lean):
+at most `2^{−ℓn}·|Fin n ↪ F|` tuples of distinct points give a list of more than `ℓ` codewords at
+relative radius `ℓ/(ℓ+1)·(1 − k/n − η)`. A long list gives, through
+`exists_isWeaklyPartitionConnected_not_isRigid_of_lt_Lambda`, a `(k + ηn)`-weakly partition-connected
+hypergraph with no edge of one vertex at which the intersection matrix loses rank; the count sums
+the rank-loss bounds of RankLoss.lean over these hypergraphs.
 
 `IsWeaklyPartitionConnected` in
 [PartitionConnected.lean](../../../ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean):
@@ -147,23 +158,34 @@ their degree is `s(k − 1)` in place of `(t − 1)k`. The certificate length `r
 needed.
 
 The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}`
-sampled with `$ᵗ`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
-and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points. An
-event that depends only on the set of drawn points has the same probability under both samplers:
+sampled with `$ᵗ`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen.
+[AGL24] samples an ordered tuple of pairwise-distinct points. An event that depends only on the set
+of drawn points has the same probability under both samplers:
 `prEvent_uniformSample_finsetCard_eq_embedding` in
 [Uniform.lean](../../../ArkLib/Data/Probability/Uniform.lean), from the count
 `Fintype.card_filter_embedding_map_univ` in
 [CardEmbedding.lean](../../../ArkLib/ToMathlib/Fintype/CardEmbedding.lean) (every `n`-element set
-is the image of `n!` embeddings `Fin n ↪ F`).
+is the image of `n!` embeddings `Fin n ↪ F`). The proof of `rs_random_domain_lambda_le` uses it to
+pass to tuples, and `Code.Lambda_comp_equiv` to reindex the code on `↥S` by `Fin n`.
+
+The closing arithmetic of the proof of Theorem 1.1 differs from the source's. In ArkLib's variables
+(`ℓ` for the source's `L`, `η` for its `ε`), the source bounds the number of agreement hypergraphs
+by `2^{(ℓ+2)n}` and takes `r = ⌊ηn/2⌋` in its main lemma; its final display fails when `r = 0` and
+for some parameters with `r = 1`. ArkLib's proof dispatches two trivial cases first (relative
+radius below `1/n`, where every list has at most one element, and `k ≤ 1`, where the rank-loss
+count is zero), empties edges of one vertex and sums exactly over the `(2^{s+1} − (s+1))^n`
+remaining hypergraphs for each `s ≤ ℓ`, and then uses two regimes: the single-minor bound when
+`ηn < 4`, and the main lemma with `r = ⌊ηn/2⌋ ≥ 2` when `ηn ≥ 4`.
 
 The source's stated consequence — at `ℓ = 2(1−ρ−η)/η` — is not formalized: its `ℓ` is real-valued, so it
 needs a rounding the source does not fix.
 
 ## Open Formalization Gaps
 
-Theorem 1.1 itself. Of its predecessors, [BGM23] is formalized only in its infinite-field list-size
-form (`exists_embedding_Lambda_le`: no field-size bound, not average-radius); [GZ23] and the
-combined [AGGLZ25] are unformalized context.
+Theorem 1.1 in its average-radius form; ArkLib proves the ordinary list-size form. Of its
+predecessors, [BGM23] is formalized only in its infinite-field list-size form
+(`exists_embedding_Lambda_le`: no field-size bound, not average-radius); [GZ23] and the combined
+[AGGLZ25] are unformalized context.
 
 ## Source Access
 

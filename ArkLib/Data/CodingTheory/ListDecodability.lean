@@ -54,6 +54,8 @@ this arrangement is recorded in `docs/wiki/coding-theory-conventions.md`.
 * `Code.IsListDecodable.mono`, `Code.IsListDecodable.anti_radius`, `Code.Lambda_mono`,
   `Code.Lambda_mono_code` — monotone in the list-size bound, antitone in the radius, monotone in the
   code.
+* `Code.Lambda_le_one_of_mul_card_lt_one` — below relative radius `1 / |ι|` every point list has at
+  most one element.
 * `Code.closeCodewordsRel_comp_equiv`, `Code.Lambda_comp_equiv`,
   `Code.isListDecodable_comp_equiv` — point lists, list size and list decodability under a
   reindexing of the coordinates.
@@ -261,6 +263,22 @@ lemma Lambda_mono_code {C D : Set (ι → F)} (hDC : D ⊆ C) (δ : ℝ) :
   unfold Lambda
   refine iSup_mono fun f => ?_
   exact Set.encard_mono fun c hc => ⟨hDC hc.1, hc.2⟩
+
+/-- Below relative radius `1 / |ι|` every point list has at most one element. -/
+lemma Lambda_le_one_of_mul_card_lt_one {C : Set (ι → F)} {δ : ℝ}
+    (hδ : δ * Fintype.card ι < 1) : Lambda C δ ≤ 1 := by
+  classical
+  refine Lambda_le_iff_forall_encard_le.2 fun y ↦ Set.encard_le_one_iff.2 fun c c' hc hc' ↦ ?_
+  have key (c : ι → F) (hc : c ∈ closeCodewordsRel C y δ) : c = y := by
+    have h := (mem_closeCodewordsRel_iff.1 hc).2
+    rw [relHammingDist_coe] at h
+    rcases (Fintype.card ι).eq_zero_or_pos with h0 | h0
+    · exact funext fun i ↦ ((Fintype.card_eq_zero_iff.1 h0).false i).elim
+    · have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast h0
+      rw [div_le_iff₀ hn] at h
+      have : hammingDist y c < 1 := by exact_mod_cast h.trans_lt hδ
+      exact (hammingDist_eq_zero.1 (by omega)).symm
+  rw [key c hc, key c' hc']
 
 /-- Reindexing the coordinates by an equivalence `e` maps point lists onto point lists. Here `C'`
 is `C` with its coordinates reindexed by `e`: `w ∘ e ∈ C'` exactly when `w ∈ C`. -/
