@@ -307,7 +307,7 @@ example :
     simp [polynomialCoefficientEvaluation, I]
   have hprime : I.IsPrime := by
     change (Ideal.span {(X (some (0 : Fin 2)) : MvPolynomial (Option (Fin 2)) ℚ)}).IsPrime
-    exact (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+    exact (Ideal.span_singleton_prime (X_ne_zero _)).mpr prime_X
   have hcard : Nat.card (Option (Fin 2)) = 3 := by simp
   have hdegree : (affineHilbertPolynomial I).natDegree = 2 := by
     have h := natDegree_affineHilbertPolynomial_span_singleton_add_one

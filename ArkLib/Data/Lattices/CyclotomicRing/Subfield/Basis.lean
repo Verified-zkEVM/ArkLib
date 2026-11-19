@@ -56,7 +56,7 @@ theorem Xpow_coeff_of_lt (α : ℕ) {i : ℕ} (hi : i < 2 ^ α) (j : ℕ) :
   have hself : (powTwoCyclotomic (R := R) α).reduce (CompPoly.CPolynomial.monomial i 1)
       = CompPoly.CPolynomial.monomial i 1 := by
     refine CyclotomicModulus.reduce_eq_self_of_degree_lt _ ?_
-    rw [toPoly_monomial, Polynomial.degree_monomial i (one_ne_zero), powTwoCyclotomic_toPoly,
+    rw [monomial_toPoly, Polynomial.degree_monomial i (one_ne_zero), powTwoCyclotomic_toPoly,
       ← Polynomial.C_1, Polynomial.degree_X_pow_add_C h2 (1 : R)]
     exact_mod_cast hi
   change ((powTwoCyclotomic (R := R) α).reduce (CompPoly.CPolynomial.monomial i 1)).coeff j = _
@@ -93,7 +93,7 @@ coefficient-permutation action of `σ_m` and the sign-pairing for the trace-of-m
 /-- `X^n` lifts to the class of `X^n` in the semantic quotient. -/
 theorem Xpow_toQuotient (Φ : CyclotomicModulus R) [IsCyclotomic Φ] (n : ℕ) :
     (Xpow Φ n).toQuotient = Ideal.Quotient.mk Φ.modIdeal (Polynomial.X ^ n) := by
-  rw [Xpow, Rq.toQuotient_mk, quotientHom_apply, toPoly_monomial,
+  rw [Xpow, Rq.toQuotient_mk, quotientHom_apply, monomial_toPoly,
     ← Polynomial.X_pow_eq_monomial]
 
 /-- `X^{a+b} = X^a · X^b`. -/
@@ -153,7 +153,7 @@ theorem mk_monomial_eq (Φ : CyclotomicModulus R) [IsCyclotomic Φ] (j : ℕ) (c
       = (Rq.mk Φ (CompPoly.CPolynomial.C c)).toQuotient * (Xpow Φ j).toQuotient :=
     map_mul (Rq.toQuotientHom Φ) _ _
   rw [hmul, Rq.toQuotient_mk, quotientHom_apply, Xpow_toQuotient, Rq.toQuotient_mk,
-    quotientHom_apply, toPoly_monomial, toPoly_C, ← map_mul, Polynomial.C_mul_X_pow_eq_monomial]
+    quotientHom_apply, monomial_toPoly, C_toPoly, ← map_mul, Polynomial.C_mul_X_pow_eq_monomial]
 
 /-- **Monomial folding in `Rq`**: `c·X^j = (-1)^{j/d}·(c·X^{j mod d})`. The reduction of a
 high-degree scaled monomial is a sign times a genuine (degree `< d`) scaled monomial. -/
@@ -396,7 +396,7 @@ theorem mk_monomial_coeff_lt (α : ℕ) {i : ℕ} (hi : i < 2 ^ α) (c : R) (j :
   have hself : (powTwoCyclotomic (R := R) α).reduce (CompPoly.CPolynomial.monomial i c)
       = CompPoly.CPolynomial.monomial i c := by
     refine CyclotomicModulus.reduce_eq_self_of_degree_lt _ ?_
-    rw [toPoly_monomial]
+    rw [monomial_toPoly]
     calc (Polynomial.monomial i c).degree ≤ (i : WithBot ℕ) := Polynomial.degree_monomial_le i c
       _ < (powTwoCyclotomic α).φ.toPoly.degree := by
           rw [powTwoCyclotomic_toPoly_degree]; exact_mod_cast hi

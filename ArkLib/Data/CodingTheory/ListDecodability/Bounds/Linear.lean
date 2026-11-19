@@ -815,7 +815,7 @@ theorem linear_card_le_generalized_singleton
       rw [mem_closeCodewordsRel_iff]
       simp [Code.relHammingDist, hδnonneg]
     have := (Set.ncard_pos (Set.toFinite _)).mpr ⟨_, hmem⟩
-    simp [hzero] at hlist
+    rw [hzero] at hlist
     omega
   have harg : ((ℓ : ℝ) + 1) / ℓ * δ * n = (e : ℝ) + (e : ℝ) / ℓ := by
     calc

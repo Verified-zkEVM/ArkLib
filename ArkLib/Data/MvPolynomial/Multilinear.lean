@@ -6,6 +6,7 @@ Authors: Quang Dao, Aristotle (Harmonic), Elias Judin, Stefano Rocca
 module
 
 public import CompPoly.Data.MvPolynomial.Notation
+public import CompPoly.ToMathlib.MvPolynomial.Nullstellensatz
 public import ArkLib.Data.MvPolynomial.Interpolation
 
 /-!
@@ -407,32 +408,18 @@ theorem is_multilinear_eq_iff_eq_evals_zeroOne (p : MvPolynomial σ R) (q : MvPo
     (hp : p ∈ R⦃≤ 1⦄[X σ]) (hq : q ∈ R⦃≤ 1⦄[X σ]) :
     p = q ↔ p.toEvalsZeroOne = q.toEvalsZeroOne := by
   classical
-  let := Fintype.ofFinite σ
-  constructor <;> intro h
-  · simp only [h]
-  · unfold toEvalsZeroOne at h
-    rw [mem_restrictDegree_iff_degreeOf_le] at hp hq
-    let S : σ → Finset R := fun i => {0, 1}
-    have hDegree : ∀ i, degreeOf i (p - q) < #(S i) := fun i => by
-      have hSi : #(S i) = 2 := by simp [S]
-      rw [hSi]
-      apply Nat.lt_of_le_pred (by decide)
-      apply le_trans (degreeOf_sub_le i _ _)
-      simp [hp, hq]
-    have hEval : ∀ x ∈ piFinset fun i => S i, eval (x : σ → R) (p - q) = 0 := fun x hx => by
-      simp only [eval_sub, sub_eq_zero]
-      have hx' : ∀ i, x i = 0 ∨ x i = 1 := by
-        simpa [S] using hx
-      let y : σ → Fin 2 := fun i => if x i = 0 then 0 else 1
-      have : x = y := by
-        ext i
-        have := hx' i
-        by_cases h : x i = 0 <;> simp_all [y]
-      rw [this]
-      apply funext_iff.mp at h
-      exact h y
-    suffices p - q = 0 by exact eq_of_sub_eq_zero this
-    exact eq_zero_of_degreeOf_lt_card_of_eval_eq_zero S hDegree hEval
+  constructor
+  · rintro rfl
+    rfl
+  · intro h
+    refine eq_of_degreeOf_le_one_of_eval_zeroOne ((mem_restrictDegree_iff_degreeOf_le _ _).mp hp)
+      ((mem_restrictDegree_iff_degreeOf_le _ _).mp hq) fun x hx => ?_
+    let y : σ → Fin 2 := fun i => if x i = 0 then 0 else 1
+    have hxy : (y : σ → R) = x := by
+      funext i
+      rcases hx i with hi | hi <;> simp [y, hi]
+    rw [← hxy]
+    exact congrFun h y
 
 omit [DecidableEq R] in
 theorem is_multilinear_iff_eq_evals_zeroOne {p : MvPolynomial σ R} :

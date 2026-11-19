@@ -85,15 +85,13 @@ theorem X_pow_card_sub_one_sub_C_irreducible {ω : F}
   have hq2 : 1 < Fintype.card F := Fintype.one_lt_card
   have hq1 : Fintype.card F - 1 ≠ 0 := by omega
   have hEmonic : ((X : F[X]) ^ (Fintype.card F - 1) - C ω).Monic := monic_X_pow_sub_C ω hq1
-  have hE0 : ((X : F[X]) ^ (Fintype.card F - 1) - C ω) ≠ 0 := hEmonic.ne_zero
   have hEdeg : ((X : F[X]) ^ (Fintype.card F - 1) - C ω).natDegree = Fintype.card F - 1 :=
-    natDegree_X_pow_sub_C
+    natDegree_X_pow_sub_C ω
   have hEnu : ¬ IsUnit ((X : F[X]) ^ (Fintype.card F - 1) - C ω) :=
     not_isUnit_of_natDegree_pos _ (by omega)
-  obtain ⟨g, hg, hgd⟩ := WfDvdMonoid.exists_irreducible_factor hEnu hE0
+  obtain ⟨g, hmonic, hg, hgd⟩ := exists_monic_irreducible_factor _ hEnu
   have : Fact (Irreducible g) := ⟨hg⟩
   have hd0 : 0 < g.natDegree := hg.natDegree_pos
-  have hdle : g.natDegree ≤ Fintype.card F - 1 := hEdeg ▸ natDegree_le_of_dvd hgd hE0
   have : Module.Finite F (AdjoinRoot g) := PowerBasis.finite (AdjoinRoot.powerBasis hg.ne_zero)
   have : Finite (AdjoinRoot g) := Module.finite_of_finite F
   have : Fintype (AdjoinRoot g) := Fintype.ofFinite _
@@ -123,15 +121,7 @@ theorem X_pow_card_sub_one_sub_C_irreducible {ω : F}
       exact hfix
     exact (algebraMap F (AdjoinRoot g)).injective (mul_right_cancel₀ hx0 h1)
   have hdvd : Fintype.card F - 1 ∣ g.natDegree := hω ▸ orderOf_dvd_of_pow_eq_one hωd
-  have hdeq : g.natDegree = Fintype.card F - 1 := le_antisymm hdle (Nat.le_of_dvd hd0 hdvd)
-  obtain ⟨h, hh⟩ := hgd
-  have hh0 : h ≠ 0 := by rintro rfl; rw [mul_zero] at hh; exact hE0 hh
-  have hhdeg : h.natDegree = 0 := by
-    have := natDegree_mul hg.ne_zero hh0
-    rw [← hh, hEdeg, hdeq] at this
-    omega
-  have hhu : IsUnit h :=
-    isUnit_iff_degree_eq_zero.mpr (by rw [degree_eq_natDegree hh0, hhdeg]; rfl)
-  exact (Associated.irreducible ⟨hhu.unit, by rw [IsUnit.unit_spec]; exact hh.symm⟩ hg)
+  rwa [eq_of_monic_of_dvd_of_natDegree_le hmonic hEmonic hgd
+    (hEdeg.trans_le (Nat.le_of_dvd hd0 hdvd))]
 
 end Polynomial

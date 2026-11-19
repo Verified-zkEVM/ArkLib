@@ -156,7 +156,7 @@ instance : OracleSpec.AnswerMeasure branchSpec where
   isProbabilityMeasure _ := by
     constructor
     change branchMeasure Set.univ = 1
-    simp only [branchMeasure, Measure.add_apply, Measure.smul_apply,
+    simp only [branchMeasure, add_apply, smul_apply,
       Measure.dirac_apply_of_mem (Set.mem_univ _), smul_eq_mul, mul_one, one_div]
     rw [← two_mul, ENNReal.mul_inv_cancel (by norm_num) (by simp)]
 
@@ -230,7 +230,7 @@ theorem null_boundary_mass : 𝒟[run tree roles (StrategyOver.TwoParty.Focal.sp
     intro h
     have hout := congrArg (fun b : Boundary => b.2.2) h
     exact (by decide : (1 : Fin 4) ≠ 2) hout
-  simp [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply', h0, h1]
+  simp [Measure.dirac_apply', h0, h1]
 
 /-- At that supported null boundary the proposed suffix error bound is false. -/
 theorem null_boundary_suffix_bound_fails : ¬
