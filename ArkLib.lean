@@ -663,6 +663,7 @@ public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.Split
+public import ArkLib.Data.MvPolynomial.VecTreeInterpolation
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
