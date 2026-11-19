@@ -16,8 +16,13 @@ They use an arbitrary finite coordinate type, so a domain indexed by `Fin n`, a 
 or a chosen basis enumeration uses the same API. Neither definition imposes a degree bound:
 Reed–Solomon statements must supply their strict message-degree hypotheses separately.
 
+## Main definitions
+
+* `algebraMapDomain` is a subfield `L` of `F`, through `algebraMap`, as an evaluation domain.
+
 ## Main statements
 
+* `algebraMapDomain_apply` evaluates that domain.
 * `polynomialAgreementSet` records agreement with one polynomial.
 * `commonPolynomialAgreementSet` records simultaneous agreement with two polynomials on the
   same coordinates. Its cardinality for fixed witnesses is not the maximum common agreement.
@@ -43,6 +48,17 @@ namespace ReedSolomon
 noncomputable section
 
 open Polynomial
+
+/-- A field `L` inside `F`, through `algebraMap`, as an evaluation domain. -/
+def algebraMapDomain (L F : Type*) [Field L] [Semiring F] [Nontrivial F] [Algebra L F] :
+    L ↪ F :=
+  ⟨algebraMap L F, (algebraMap L F).injective⟩
+
+/-- The domain point `x ∈ L` is the image of `x` in `F`. -/
+@[simp]
+theorem algebraMapDomain_apply {L F : Type*} [Field L] [Semiring F] [Nontrivial F]
+    [Algebra L F] (x : L) : algebraMapDomain L F x = algebraMap L F x :=
+  rfl
 
 /-- The full set of positions where `P` agrees with a received word. -/
 def polynomialAgreementSet {F : Type*} [Semiring F] [DecidableEq F] {ι : Type*} [Fintype ι]
