@@ -12,6 +12,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean
   - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
   - ArkLib/Data/Probability/Uniform.lean
+  - ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean
   - ArkLib/ToMathlib/Combinatorics/Hypergraph/GenericZeroPattern.lean
   - ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean
   - ArkLib/ToMathlib/Fintype/CardEmbedding.lean
@@ -72,6 +73,14 @@ finite fields. Its corollary `exists_embedding_Lambda_le`: over every infinite f
 evaluation points at which the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
 `ℓ/(ℓ+1)·(1 − k/n)`. This is the infinite-field list-size form; it is not [BGM23]'s finite-field
 statement and gives no bound on the field size.
+
+`Tuple.card_filter_card_descents_lt_le` in
+[Descents.lean](../../../ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean): the counting
+step of the source's certificate count (`cor:count` in the source): over a finite linear order
+`α`, at most `C(|α|, r) · m^r` injective tuples `Fin r ↪ α` have fewer than `m` descents. The
+source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is not
+formalized; the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its
+proof gives fewer.
 
 ## Known Divergences From ArkLib
 
