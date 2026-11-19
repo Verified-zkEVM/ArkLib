@@ -35,6 +35,8 @@ related_modules:
   - ArkLib/ToMathlib/FieldTheory/Finite/TracePolynomial.lean
   - ArkLib/Data/CodingTheory/ReedMuller/PellikaanWu.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PellikaanWu.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Persistent.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PersistenceDescent.lean
 ---
 
 # CWYZ26
@@ -100,6 +102,9 @@ The embedding already implies `n ≤ q`.
 | Appendix A, agreement and the multiplier `L̃_α` | `ReedMuller.card_polynomialAgreementSet_traceSubstitution`, `ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le`, `ReedMuller.traceSubstitution_map_affineMultiplier_injective` | `P` and `P̃` have the same number of agreements. `L̃_α` has degree at most `n/q₀`, and distinct `α` give distinct `L̃_α`. Words and polynomials over `F_q` are mapped into a common field `F'`. |
 | Appendix A, interpolation with weight `(1, n/q₀, ρn)` | `ReedSolomon.multiplierWeight`, `ReedSolomon.multiplierEval`, `ReedSolomon.natDegree_multiplierEval_le`, `ReedSolomon.IsMultiplierInterpolant`, `ReedSolomon.exists_isMultiplierInterpolant` | The multiplier degree is a parameter `e`. Reed–Muller takes `e = q₀^(k-1)`. The interpolant vanishes along every multiplier of degree at most `e`. The surplus condition is a cardinality hypothesis. |
 | Appendix A, excluded coefficient vectors, ingredients of `#E ≤ D²` | `ReedSolomon.card_filter_multiplierEval_eq_zero_le`, `ReedSolomon.card_filter_affineDiscriminant_eq_zero_le` | Both counts hold for any family of multipliers injective on the challenges. The Reed–Muller assembly is planned. |
+| Appendix A, the persistent count | `ReedMuller.IsAffinePersistent`, `ReedMuller.affinePersistenceSet`, `ReedMuller.card_isAffineExceptional_persistent_le` | Persistence uses `G = H/L_σ` with `σ ≠ 0` and `deg H ≤ d`, counting agreements off the zeros of `L_σ`. At most `ℓ · max{q, C(n, k+1)}` persistent challenges are exceptional, with `ℓ = n(B - (d+1)q₀^(k-1))/(B² - n(d+1)q₀^(k-1))`. This is the paper's `(a - b)/(a² - b)`. Hypotheses: `B > (d+1)n/q₀` and `b < a²`. |
+| Appendix A, Claim 4.8 for `c > B + n/q₀ - 1` | `ReedMuller.exists_affineRatioWitness_of_map`, `ReedMuller.isAffinePersistent_of_commonAgreement` | A rational explanation over an extension field descends to `F_q`. Dropping the at most `n/q₀` zeros of `L_σ` on the grid, by (7.1), leaves `B` agreements, so the candidate is persistent. |
+| Lemma 3.2 with fibers | `Finset.card_le_of_fiber_card_le_of_inter_card_le` | The Johnson bound times the fiber size. The Reed–Solomon and Reed–Muller persistent counts both use it. |
 
 ## Port Ledger
 
@@ -118,7 +123,7 @@ A unit is done when its declarations are on `main`.
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
-| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), lower bound `q⁻ᵏ` and Lemma A.1, the Pellikaan–Wu reduction and the multiplier interpolation in review; core count and Theorem 7.1 planned |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), lower bound `q⁻ᵏ`, Lemma A.1, the Pellikaan–Wu reduction, the persistent count, the multiplier interpolation and the generic nonpersistent count in review; Reed–Muller nonpersistent count and Theorem 7.1 planned |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
 The quotient is real, and the floor rounds down.
@@ -189,6 +194,10 @@ Unit 10 applies the equal-degree guarantee in each folding round.
   maps Reed–Muller polynomials to univariate ones through the trace polynomials.
 - [`ReedMuller/AffineCombiner/PellikaanWu.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PellikaanWu.lean)
   transports agreement sets and the multiplier along that map.
+- [`ReedMuller/AffineCombiner/Persistent.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Persistent.lean)
+  defines Reed–Muller persistence and bounds the persistent exceptional challenges.
+- [`ReedMuller/AffineCombiner/PersistenceDescent.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PersistenceDescent.lean)
+  turns common agreements into persistence on the grid.
 
 The Taylor chart uses
 [`RationalTaylorJointDegree.lean`](../../../ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean)
@@ -258,6 +267,9 @@ The Pellikaan–Wu reduction works in any field `F'` containing both `F_q` and `
 It does not need the smallest such field.
 Only three facts are transported: agreement counts, injectivity of `α ↦ L̃_α`, and injectivity of `P ↦ P̃` below degree `q₀`.
 Witnesses are not transported, because the proof of Theorem 7.1 builds them on the Reed–Muller side.
+Reed–Muller persistence names the denominator by its coefficient vector `σ`.
+The zeros of `L_σ` on the grid are left out of the persistence set.
+The Johnson factor is written with `q₀^(k-1)` in place of `n/q₀`.
 
 ## Open Formalization Gaps
 
