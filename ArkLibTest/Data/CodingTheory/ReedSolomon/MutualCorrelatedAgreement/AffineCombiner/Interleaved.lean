@@ -63,9 +63,9 @@ private theorem twoRows_error_le :
 open Classical in
 example : interleavedAffineMcaError largeDomain 2 16 90 1 < (1 : ENNReal) / 2 ^ 60 := by
   refine twoRows_error_le.trans_lt ?_
-  have hreal : (1 / 2 ^ 61 + 2 ^ 22 * 5 ^ 10 / 2 ^ 128 : ℝ) < 1 / 2 ^ 60 := by norm_num
-  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) :=
-        (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
+  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) := by
+        rw [ENNReal.ofReal_lt_ofReal_iff (by positivity)]
+        norm_num
     _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
 
 private instance : Fact (Nat.Prime 5) := ⟨by decide⟩

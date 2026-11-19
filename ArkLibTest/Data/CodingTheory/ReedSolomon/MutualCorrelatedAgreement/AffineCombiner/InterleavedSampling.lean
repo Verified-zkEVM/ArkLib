@@ -46,12 +46,9 @@ example (f g : Fin 3 → Fin 100 → GaloisField 2 64) :
   have hA : ⌈((2 : ℝ) / 5 + 1 / 2) * 100⌉₊ = 90 := by norm_num
   simp only [hA, Nat.cast_pow, Nat.cast_ofNat] at h
   apply lt_of_le_of_lt h
-  have hreal :
-      (4 / ((1 / 2 : ℝ) * 2 ^ 64) + 2 ^ 14 * (100 : ℝ) ^ 2 /
-        (((16 : ℝ) / 100) ^ 3 * (1 / 2) ^ 10 * (2 ^ 64 : ℝ) ^ 2)) < 1 / 2 ^ 60 := by
-    norm_num
-  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) :=
-        (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
+  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) := by
+        rw [ENNReal.ofReal_lt_ofReal_iff (by positivity)]
+        norm_num
     _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
 
 /-- info: 'ReedSolomon.interleavedAffineMcaError_eq_iSup_prob' depends on axioms:
