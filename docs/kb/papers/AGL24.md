@@ -11,6 +11,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/RankLoss.lean
   - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
   - ArkLib/Data/Probability/Uniform.lean
   - ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean
@@ -105,8 +106,27 @@ The edges are not ordered by type; the bank is consumed from its smallest edge o
 is the source's choice of the next unused bank element of that type; variables are swapped rather
 than replaced, which agrees because the incoming variable does not occur in the minor; and a
 certificate is described by the source's events `E_j`, `F_j` rather than as the output of its
-algorithm with the choice of the smallest index. The probability of one certificate
-(`lem:product`, `cor:product`) and `lem:main` are not formalized.
+algorithm with the choice of the smallest index.
+
+`card_filter_not_isRigid_mul_pow_le` in
+[RankLoss.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/RankLoss.lean):
+the source's main lemma (`lem:main`) in counting form. For a `(k + 2r)`-weakly partition-connected
+hypergraph on `t = s + 1` vertices, the number `N` of tuples `α : Fin n ↪ F` of pairwise distinct
+evaluation points at which it is not rigid satisfies
+`N · (q − n + 1)^r ≤ C(n, r) · 2^{tr} · (s(k − 1))^r · |Fin n ↪ F|`, where `q = |F|`. The proof
+takes the source's union bound, over certificates with fewer than `2^t` descents, of its bound on
+one certificate (`cor:product`), which is `card_filter_isCertificate_mul_pow_le`. That bound applies
+the sequential Schwartz–Zippel bound over pairwise-distinct points (the source's `lem:product`),
+`MvPolynomial.card_filter_injective_sequential_le` in
+[SchwartzZippelPrefix.lean](../../../ArkLib/ToMathlib/MvPolynomial/SchwartzZippelPrefix.lean), to
+the minors of the certificate. `card_filter_not_isRigid_mul_le` in RankLoss.lean is the
+single-minor bound for a `k`-weakly partition-connected hypergraph,
+`N · (q − n + 1) ≤ n · s(k − 1) · |Fin n ↪ F|`: a nonzero maximal minor has total degree at most
+`n · s(k − 1)`, and Schwartz–Zippel over pairwise-distinct points
+(`MvPolynomial.card_filter_injective_eval_eq_zero_le` in
+[SchwartzZippelInjective.lean](../../../ArkLib/ToMathlib/MvPolynomial/SchwartzZippelInjective.lean))
+applies to it. The source states this single-minor bound only as a remark in its proof overview,
+as the probability bound `1 − Lk²/q`.
 
 ## Known Divergences From ArkLib
 
@@ -117,6 +137,14 @@ ArkLib's reduced intersection matrix has entries in `MvPolynomial ι R` rather t
 field; full column rank is stated at evaluation points (`IsRigid`) and through maximal minors, and
 the per-variable degree bound on maximal minors is `s * (k - 1)`, the count in the source's proof,
 sharper than its stated `(t − 1)k`.
+
+The rank-loss bounds count tuples of pairwise distinct points instead of bounding probabilities;
+dividing by `|Fin n ↪ F|` gives the probability under a uniform such tuple. Their denominator is
+`q − n + 1`, the least number of values left for a coordinate, which the source lowers to `q − n`;
+their degree is `s(k − 1)` in place of `(t − 1)k`. The certificate length `r` is free, for a
+`(k + 2r)`-weakly partition-connected hypergraph, in place of the source's `r = ⌊εn/2⌋` for a
+`(k + εn)`-weakly partition-connected one, and the source's assumptions `t ≥ 2` and `k ≥ 1` are not
+needed.
 
 The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}`
 sampled with `$ᵗ`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
