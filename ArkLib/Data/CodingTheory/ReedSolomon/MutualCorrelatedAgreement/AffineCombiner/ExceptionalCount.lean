@@ -30,17 +30,29 @@ Summing over the factors bounds the challenges with a root that is not good.
 The generic count takes the challenges as a finite type with injective multipliers.
 Each Frobenius root of a multiplier is a family multiplier at chart coordinates.
 Positions carry linear functionals `Λᵢ`, and high cuts restrict the counted roots.
+The received words `u` and `v` give the agreement condition `Λᵢ P = uᵢ + Λᵢ(L_γ) vᵢ`.
 Each code supplies its own conversion from an excluded chart point to persistence.
 
 Let `n` be the number of positions, `D` the `(Y, Z)`-degree budget and `M` the `Z`-degree
 budget.
+Candidates have degree at most `d`, and counted roots have at least `A` agreements.
+The persistence threshold is `B`.
+A nonzero difference of two multipliers vanishes at at most `e` positions.
+So `e = 1` for Reed–Solomon codes and `e = n / q₀` for Reed–Muller codes.
+Here `q₀` is the size of the subfield of the Reed–Muller grid.
+
 The generic bound is `D² + (2 d M n / (A - B - e + 1)) ^ |κ| D ^ (|κ| + 1)`.
 For Reed–Solomon codes, `|κ| = 2` and `e = 1`, which gives `D² + 4 d² M² D³ (n / (A - B))²`.
 The Reed–Solomon interpolant is mapped from `F` into its algebraic closure.
 
-The count is Lemma 4.1 of [CWYZ26], without its final numerics.
+Lemma 4.1 of [CWYZ26] splits the exceptional challenges into three sets.
+The count covers the excluded set of Lemma 4.3 and the nonpersistent set of Lemma 4.7.
+The persistent set enters the Reed–Solomon count as a given set of challenges.
+The final numerics of Lemma 4.1 are not here.
+
 Appendix A gives the bound `(2 ρ n M v) ^ (k + 1) D ^ (k + 2)` for Reed–Muller codes.
-It is the generic bound at `|κ| = k + 1` and `d = ρ n`, with `v = n / (A - B - e + 1)`.
+It is the generic bound at `|κ| = k + 1`, `d = ρ n` and `e = n / q₀`.
+There `v = n / (A - B - e + 1)`.
 
 The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
@@ -55,7 +67,7 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 ## References
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
-    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26], Lemmas 4.1 and 4.7 and
+    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26], Lemmas 4.1, 4.3 and 4.7 and
     Appendix A.
 -/
 
@@ -95,19 +107,21 @@ variable {E : Type*} [Field E] {κ : Type*} [Fintype κ] {ι : Type*} [Fintype �
 /-- Outside few challenges, every root of one irreducible factor is good.
 
 The challenges form a finite type with injective multipliers `L_γ`.
-For each Frobenius exponent `r`, the Frobenius root of `L_γ` is the multiplier of the family
-`θ_r` at an injective coefficient vector `a_r(γ)`, and the targets `T_r` read the agreement
-condition `Λᵢ P = uᵢ + Λᵢ(L_γ) vᵢ` in these coordinates.
-Here `p` is the exponential characteristic and `T_r` has degree at most `p ^ r`.
-Assume `1 ≤ d`, `1 ≤ e`, `B + e ≤ A ≤ n`, where `n` is the number of positions.
+The received words `u` and `v` give the agreement condition `Λᵢ P = uᵢ + Λᵢ(L_γ) vᵢ`.
+Let `p` be the exponential characteristic and `r` a Frobenius exponent.
+Assume the Frobenius root of `L_γ` is the multiplier of the family `θ_r` at `a_r(γ)`.
+Assume each `a_r` is injective.
+Assume the targets `T_r` have degree at most `p ^ r`.
+Assume `T_r` at `a_r(γ)` is `uᵢ + Λᵢ(L_γ) vᵢ`.
+Assume `1 ≤ d` and `1 ≤ B + e ≤ A ≤ n`, where `n` is the number of positions.
 Assume the functionals determine polynomials of degree at most `d` from `B + e` positions.
 The factor has positive `Z`-degree at most `M` and `(Y, Z)`-degree at most `h`.
-An excluded chart point of a regular root `P(X ^ (p ^ r))` makes `P` good.
-At most `h (h - 1) + (2 d M n / (A - B - e + 1)) ^ |κ| h ^ (|κ| + 1)` challenges are left out,
-with natural-number subtraction. -/
+Assume an excluded chart point of a regular root `P(X ^ (p ^ r))` makes `P` good.
+At most `h (h - 1) + (2 d M n / (A - B - e + 1)) ^ |κ| h ^ (|κ| + 1)` challenges are left out.
+The subtraction is natural-number subtraction. -/
 theorem exists_factorRoots_finset_card_le [Finite Γ] [IsAlgClosed E] (p : ℕ) [ExpChar E p]
     {Q : MvPolynomial AffineVar E} (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf none)
-    {d h A B e M : ℕ} (hd : 1 ≤ d) (he : 1 ≤ e) (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
+    {d h A B e M : ℕ} (hd : 1 ≤ d) (hBe : 1 ≤ B + e) (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
     (hQ : Q.weightedTotalDegree affineYZWeight ≤ h) (hM : Q.degreeOf none ≤ M)
     (mult : Γ → Polynomial E) (hmult : mult.Injective) (θ : ℕ → κ → Polynomial E)
     (a : ℕ → Γ → κ → E) (ha : ∀ r, (a r).Injective)
@@ -141,7 +155,7 @@ theorem exists_factorRoots_finset_card_le [Finite Γ] [IsAlgClosed E] (p : ℕ) 
     card_filter_affineDiscriminant_eq_zero_le (affineDiscriminant_ne_zero hRirr hRder) hRh _
       (fun γ ↦ (mult γ).map fr) ((Polynomial.map_injective fr fr.injective).comp hmult).injOn
   -- The challenges with a regular root whose chart point is not excluded.
-  obtain ⟨ex, hex, hchart⟩ := exists_chartExcluded_finset_card_le (θ r) R p r hd he hBA hAn hRh
+  obtain ⟨ex, hex, hchart⟩ := exists_chartExcluded_finset_card_le (θ r) R p r hd hBe hBA hAn hRh
     highCuts Λ (target r) (htarget r) hsep (a r) (ha r)
   refine ⟨disc ∪ ex, ?_, fun γ hγ P hP hdeg hhigh hA ↦ ?_⟩
   · set k := Fintype.card κ
@@ -177,21 +191,23 @@ theorem exists_factorRoots_finset_card_le [Finite Γ] [IsAlgClosed E] (p : ℕ) 
 
 /-- Outside few challenges, every root of the interpolant with `A` agreements is good.
 
-The interpolant `Q` over the algebraically closed field `E` is nonzero, with `(Y, Z)`-degree
-at most `D` and `Z`-degree at most `M`.
+The interpolant `Q` over the algebraically closed field `E` is nonzero.
+It has `(Y, Z)`-degree at most `D` and `Z`-degree at most `M`.
 The challenges form a finite type with injective multipliers `L_γ`.
-For each Frobenius exponent `r`, the Frobenius root of `L_γ` is the multiplier of the family
-`θ_r` at an injective coefficient vector `a_r(γ)`, and the targets `T_r` read the agreement
-condition `Λᵢ P = uᵢ + Λᵢ(L_γ) vᵢ` in these coordinates.
-Here `p` is the exponential characteristic and `T_r` has degree at most `p ^ r`.
-Assume `1 ≤ d`, `1 ≤ e`, `B + e ≤ A ≤ n`, where `n` is the number of positions.
+The received words `u` and `v` give the agreement condition `Λᵢ P = uᵢ + Λᵢ(L_γ) vᵢ`.
+Let `p` be the exponential characteristic and `r` a Frobenius exponent.
+Assume the Frobenius root of `L_γ` is the multiplier of the family `θ_r` at `a_r(γ)`.
+Assume each `a_r` is injective.
+Assume the targets `T_r` have degree at most `p ^ r`.
+Assume `T_r` at `a_r(γ)` is `uᵢ + Λᵢ(L_γ) vᵢ`.
+Assume `1 ≤ d` and `1 ≤ B + e ≤ A ≤ n`, where `n` is the number of positions.
 Assume the functionals determine polynomials of degree at most `d` from `B + e` positions.
-For every irreducible factor, an excluded chart point of a regular root `P(X ^ (p ^ r))` makes
-`P` good.
-At most `D² + (2 d M n / (A - B - e + 1)) ^ |κ| D ^ (|κ| + 1)` challenges are left out, with
-natural-number subtraction. -/
+Assume an excluded chart point of a regular root `P(X ^ (p ^ r))` makes `P` good.
+This holds for every irreducible factor `R` of `Q`.
+At most `D² + (2 d M n / (A - B - e + 1)) ^ |κ| D ^ (|κ| + 1)` challenges are left out.
+The subtraction is natural-number subtraction. -/
 theorem exists_interpolantRoots_finset_card_le [Finite Γ] [IsAlgClosed E] (p : ℕ) [ExpChar E p]
-    {Q : MvPolynomial AffineVar E} (hQ0 : Q ≠ 0) {d A B e D M : ℕ} (hd : 1 ≤ d) (he : 1 ≤ e)
+    {Q : MvPolynomial AffineVar E} (hQ0 : Q ≠ 0) {d A B e D M : ℕ} (hd : 1 ≤ d) (hBe : 1 ≤ B + e)
     (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
     (hD : Q.weightedTotalDegree affineYZWeight ≤ D) (hM : Q.degreeOf none ≤ M)
     (mult : Γ → Polynomial E) (hmult : mult.Injective) (θ : ℕ → κ → Polynomial E)
@@ -246,7 +262,7 @@ theorem exists_interpolantRoots_finset_card_le [Finite Γ] [IsAlgClosed E] (p : 
         (∀ Λ' ∈ highCuts, Λ' P = 0) → A ≤ {i | Λ i P = u i + Λ i (mult γ) * v i}.ncard →
         Good γ P := fun c hc ↦
     exists_factorRoots_finset_card_le p (irreducible_rep_of_mem_positiveDegreeFactorClasses hc)
-      (mem_positiveDegreeFactorClasses.mp hc).2 hd he hBA hAn le_rfl (hMc c hc) mult hmult θ a ha
+      (mem_positiveDegreeFactorClasses.mp hc).2 hd hBe hBA hAn le_rfl (hMc c hc) mult hmult θ a ha
       hθ highCuts Λ u v target htarget hval hsep Good hgood
   obtain ⟨ex, hex, hgoodex⟩ := exists_exceptional_of_factor_exceptional (α := ℝ) none hQ0
     (fun (γ : Γ) (P : Polynomial E) ↦ multiplierEval (mult γ) P)
@@ -311,7 +327,7 @@ theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domai
       EmbeddingLike.apply_eq_iff_eq] at h0 h1
     exact Prod.ext (φ.injective h0) (φ.injective h1)
   obtain ⟨Ex, hEx, hgood⟩ := exists_interpolantRoots_finset_card_le (κ := Fin 2) p hQE
-    (d := d) (B := B) (e := 1) hd le_rfl (by omega) hAn
+    (d := d) (B := B) (e := 1) hd (by omega) (by omega) hAn
     ((Finset.sup_mono (MvPolynomial.support_map_subset φ Q)).trans hQ.yzDegree_le)
     ((degreeOf_map_of_injective φ.injective Q none).trans_le hQ.rootDegree_le)
     (fun c ↦ affineMultiplier (φ c.1) (φ c.2)) (affineMultiplier_injective.comp hφ)

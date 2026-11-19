@@ -284,16 +284,6 @@ example (a b : ZMod 5) : familyMultiplier affineFamily ![a, b] = C a + C b * X :
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.chartFunctionalCut_eq_zero_iff
 
-/-- info: 'ReedSolomon.aeval_affineChartCut' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.aeval_affineChartCut
-
-/-- info: 'ReedSolomon.affineChartCut_eq_zero_iff' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.affineChartCut_eq_zero_iff
-
 /-- info: 'ReedSolomon.chartPolynomial_point' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
@@ -333,11 +323,6 @@ example (a b : ZMod 5) : familyMultiplier affineFamily ![a, b] = C a + C b * X :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.totalDegree_chartFunctionalCut_le
-
-/-- info: 'ReedSolomon.totalDegree_affineChartCut_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.totalDegree_affineChartCut_le
 
 /-- info: 'ReedSolomon.familyMultiplier_apply' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

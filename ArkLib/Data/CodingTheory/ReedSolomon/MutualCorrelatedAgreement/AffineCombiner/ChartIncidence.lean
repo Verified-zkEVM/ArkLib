@@ -17,6 +17,7 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.AgreementIncidence
 
 Fix polynomials `θⱼ`, indexed by a finite type `κ`, and the multipliers `L = ∑ⱼ aⱼ θⱼ`.
 A challenge `a` with a simple root `P(X ^ s)` of a factor `R` along `L` gives a chart point.
+Here `s` is a power of the exponential characteristic and `P` has degree at most `d`.
 The point lies on the hypersurface `R(c, L(c), y₀) = 0`.
 
 Each position `i` has a linear functional `Λᵢ` on polynomials and a target `Tᵢ(a)`.
@@ -25,23 +26,29 @@ High cuts are further functionals that every counted root satisfies.
 They describe the image of the trace substitution for Reed–Muller codes.
 
 Let `n` be the number of positions and `h` the `(Y, Z)`-degree of `R`.
-The points with at least `A` agreements, off an excluded set, number at most
-`h · (n · 2 s d h / (A - B - e + 1)) ^ |κ|`, with natural-number subtraction.
-A point is excluded when it shares `B + e` agreements with a regular point on another
-challenge.
+Each counted point has at least `A` agreements.
+The persistence threshold is `B`.
+A nonzero difference of two multipliers vanishes at at most `e` positions.
+So `e = 1` for Reed–Solomon codes and `e = n / q₀` for Reed–Muller codes.
+Here `q₀` is the size of the subfield of the Reed–Muller grid.
+
+A point is excluded when a regular point on another challenge shares `B + e` agreements.
+The points off the excluded set number at most `h · (n · 2 s d h / (A - B - e + 1)) ^ |κ|`.
+The subtraction is natural-number subtraction.
 Each code converts exclusion into its own persistence notion.
 
-For Reed–Solomon codes, `κ = Fin 2`, `θ = (1, X)`, `e = 1`, `Λᵢ` is evaluation at the
-position and there are no high cuts.
+For Reed–Solomon codes, `κ = Fin 2`, `θ = (1, X)`, `e = 1`, and there are no high cuts.
+Their functional `Λᵢ` is evaluation at the position.
 A Reed–Solomon excluded point is persistent after descent to the base field.
 
 The excluded set is a predicate, with no algorithmic witness selection.
 
 These statements are Claims 4.8 and 4.9 and Lemma 4.7 for one factor.
 Appendix A uses them with `|κ| = k + 1` and the cut threshold `B + n / q₀`.
-Here `q₀` is the size of the subfield of the Reed–Muller grid.
 The paper intersects its algebraic sets with the image of the trace substitution.
 The high cuts are the equations of that image, and they add no degree factor.
+
+The Reed–Solomon count for one factor is the generic factor count of the exceptional count.
 
 The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
@@ -66,8 +73,6 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   `ReedSolomon.eval_map_eq_aeval_affineChartTarget_iff`: the Reed–Solomon targets.
 * `ReedSolomon.isAffinePersistent_of_mem_chartExcluded`: a Reed–Solomon excluded point is
   persistent.
-* `ReedSolomon.exists_affineNonpersistent_finset_card_le`: outside a small set of challenges,
-  every regular root of the factor with `A` agreements is persistent.
 
 ## References
 
@@ -89,8 +94,8 @@ variable {E : Type*} [Field E] {κ : Type*} {ι : Type*}
 
 /-- The functionals determine polynomials of degree at most `d` from `threshold` positions.
 
-A polynomial of degree at most `d` killed by every high cut and by `Λᵢ` for `threshold`
-positions `i` is zero. -/
+Let `H` have degree at most `d` and be killed by every high cut.
+If `Λᵢ H = 0` for `threshold` positions `i`, then `H = 0`. -/
 def SeparatesDegree (highCuts : List (Polynomial E →ₗ[E] E)) (Λ : ι → Polynomial E →ₗ[E] E)
     (d threshold : ℕ) : Prop :=
   ∀ U : Finset ι, threshold ≤ #U → ∀ H : Polynomial E, H.degree ≤ d →
@@ -164,8 +169,8 @@ theorem eq_of_separatesDegree (c : E) (θ : κ → Polynomial E) (R : MvPolynomi
 
 /-- A positive-dimensional prime with `B + e` agreement cuts has its regular points excluded.
 
-Assume the separant is not in the prime ideal, every high cut lies in it, and
-`2 s d - 1 ≤ τ`, with natural-number subtraction.
+Assume the separant is not in the prime ideal and every high cut lies in it.
+Assume `2 s d - 1 ≤ τ`, with natural-number subtraction.
 Assume the functionals determine polynomials of degree at most `d` from `B + e` positions.
 The regular locus is infinite, and two of its points on the same challenge are equal. -/
 theorem regularLocus_subset_chartExcluded [IsAlgClosed E] (c : E) (θ : κ → Polynomial E)
@@ -216,13 +221,13 @@ variable [Fintype ι]
 /-- The regular chart points with `A` agreements, off the excluded set, are few.
 
 Let `n` be the number of positions and `h` bound the `(Y, Z)`-degree of `R`.
-Assume `1 ≤ d`, `1 ≤ s`, `1 ≤ e`, `B + e ≤ A ≤ n`, and targets of degree at most `s`.
+Assume `1 ≤ d`, `1 ≤ s`, `1 ≤ B + e ≤ A ≤ n`, and targets of degree at most `s`.
 Assume the functionals determine polynomials of degree at most `d` from `B + e` positions.
-Each point of `S` lies on the chart hypersurface, is regular, and its reconstruction is killed
-by every high cut.
+Each point of `S` lies on the chart hypersurface and is regular.
+Its reconstruction is killed by every high cut.
 The bound is `h · (n · 2 s d h / (A - B - e + 1)) ^ |κ|`, with natural-number subtraction. -/
 theorem card_le_of_regular_chartPoints [IsAlgClosed E] (c : E) (θ : κ → Polynomial E)
-    (R : MvPolynomial AffineVar E) {s d h A B e : ℕ} (hd : 1 ≤ d) (hs : 1 ≤ s) (he : 1 ≤ e)
+    (R : MvPolynomial AffineVar E) {s d h A B e : ℕ} (hd : 1 ≤ d) (hs : 1 ≤ s) (hBe : 1 ≤ B + e)
     (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
     (hR : R.weightedTotalDegree affineYZWeight ≤ h) (highCuts : List (Polynomial E →ₗ[E] E))
     (Λ : ι → Polynomial E →ₗ[E] E) (target : ι → MvPolynomial κ E)
@@ -279,15 +284,15 @@ theorem card_le_of_regular_chartPoints [IsAlgClosed E] (c : E) (θ : κ → Poly
 The challenges form a finite type, with injective coefficient vectors `a`.
 Let `n` be the number of positions, `p` the exponential characteristic, and `s = p ^ r`.
 Let `h` bound the `(Y, Z)`-degree of `R`.
-Assume `1 ≤ d`, `1 ≤ e`, `B + e ≤ A ≤ n`, and targets of degree at most `s`.
+Assume `1 ≤ d`, `1 ≤ B + e ≤ A ≤ n`, and targets of degree at most `s`.
 Assume the functionals determine polynomials of degree at most `d` from `B + e` positions.
-At most `h · (n · 2 s d h / (A - B - e + 1)) ^ |κ|` challenges are left out, with
-natural-number subtraction.
-Every other root `P(X ^ s)` with `deg P ≤ d`, killed by the high cuts, has a center `c` with
-nonzero separant where its chart point is excluded. -/
+At most `h · (n · 2 s d h / (A - B - e + 1)) ^ |κ|` challenges are left out.
+The subtraction is natural-number subtraction.
+Take any other challenge and a root `P(X ^ s)` with `deg P ≤ d`, killed by the high cuts.
+Some center `c` with nonzero separant puts its chart point in the excluded set. -/
 theorem exists_chartExcluded_finset_card_le {Γ : Type*} [Finite Γ] [IsAlgClosed E]
     (θ : κ → Polynomial E) (R : MvPolynomial AffineVar E) (p r : ℕ) [ExpChar E p]
-    {d h A B e : ℕ} (hd : 1 ≤ d) (he : 1 ≤ e) (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
+    {d h A B e : ℕ} (hd : 1 ≤ d) (hBe : 1 ≤ B + e) (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
     (hR : R.weightedTotalDegree affineYZWeight ≤ h) (highCuts : List (Polynomial E →ₗ[E] E))
     (Λ : ι → Polynomial E →ₗ[E] E) (target : ι → MvPolynomial κ E)
     (htarget : ∀ i, (target i).totalDegree ≤ p ^ r)
@@ -327,7 +332,7 @@ theorem exists_chartExcluded_finset_card_le {Γ : Type*} [Finite Γ] [IsAlgClose
     have hrec (γ) (hγ : γ ∈ ex) : chartPolynomial c θ R s d (pt γ) = w γ :=
       chartPolynomial_point c θ R rfl (hw γ hγ).1 (hw γ hγ).2.1 (hc γ hγ)
     have hbound := card_le_of_regular_chartPoints c θ R hd
-      (Nat.one_le_pow _ _ (expChar_pos E p)) he hBA hAn hR highCuts Λ target htarget hsep
+      (Nat.one_le_pow _ _ (expChar_pos E p)) hBe hBA hAn hR highCuts Λ target htarget hsep
       (ex.image pt)
       (by
         intro x hx
@@ -458,64 +463,6 @@ theorem isAffinePersistent_of_mem_chartExcluded [IsAlgClosed E] (domain : ι ↪
     (fun k : T ↦ domain k) (fun k : T ↦ g k) d hL (degree_affineMultiplier_le a' b') hH hexplain
   exact isAffinePersistent_of_commonAgreement domain f g T hT hagree hL₀ hL₀1 hH₀
     fun i hi ↦ h₀ ⟨i, hi⟩
-
-/-- Outside at most `h · (n · 2 p^r d h / (A - B)) ^ 2` challenges, candidates are persistent.
-
-Assume `1 ≤ d ≤ B < A ≤ n`, where `n` is the domain size and `h` bounds the factor's
-`(Y, Z)`-degree.
-Here `p` is the exponential characteristic of `E` and `r` a Frobenius exponent.
-The guarantee covers every candidate of degree at most `d` with at least `A` agreements
-whose expansion `P(X ^ (p ^ r))` is a simple root of the factor along the line. -/
-theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (domain : ι ↪ F)
-    (f g : ι → F) (φ : F →+* E) (p r : ℕ) [ExpChar E p] (R : MvPolynomial AffineVar E)
-    {d h A B : ℕ} (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι)
-    (hR : R.weightedTotalDegree affineYZWeight ≤ h) :
-    ∃ ex : Finset (F × F),
-      (#ex : ℚ) ≤ h * (((Fintype.card ι * (2 * p ^ r * d * h) : ℕ) : ℚ) / ((A - B : ℕ) : ℚ)) ^ 2 ∧
-      ∀ c ∉ ex, ∀ P : Polynomial F, P.degree ≤ d →
-        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p r).symm (φ c.1))
-            ((iterateFrobeniusEquiv E p r).symm (φ c.2)))
-            (Polynomial.expand E (p ^ r) (P.map φ)) R = 0 →
-        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p r).symm (φ c.1))
-            ((iterateFrobeniusEquiv E p r).symm (φ c.2)))
-            (Polynomial.expand E (p ^ r) (P.map φ)) (pderiv none R) ≠ 0 →
-        A ≤ #(polynomialAgreementSet domain
-          (combinedWord domain f g (affineMultiplier c.1 c.2)) P) →
-        IsAffinePersistent domain f g d B c.1 c.2 P := by
-  have := Fintype.ofFinite F
-  set fr := (iterateFrobeniusEquiv E p r).symm
-  set a : F × F → Fin 2 → E := fun c ↦ ![fr (φ c.1), fr (φ c.2)]
-  have ha : a.Injective := by
-    intro x y hxy
-    have h0 := congrFun hxy 0
-    have h1 := congrFun hxy 1
-    simp only [a, Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one] at h0 h1
-    exact Prod.ext (φ.injective (fr.injective h0)) (φ.injective (fr.injective h1))
-  have hx : Function.Injective fun i ↦ φ (domain i) := φ.injective.comp domain.injective
-  obtain ⟨ex, hex, hgood⟩ := exists_chartExcluded_finset_card_le affineFamily R p r
-    (B := B) (e := 1) hd le_rfl (by omega) hAn hR [] (fun i ↦ Polynomial.leval (φ (domain i)))
-    (affineChartTarget domain f g φ (p ^ r)) (totalDegree_affineChartTarget_le domain f g φ _)
-    (separatesDegree_leval hx (by omega)) a ha
-  have hAB : A - B - 1 + 1 = A - B := by omega
-  rw [hAB, Fintype.card_fin] at hex
-  refine ⟨ex, hex, fun c hc P hP hroot hsep hA ↦ ?_⟩
-  have hroot' : multiplierEval (familyMultiplier affineFamily (a c))
-      (Polynomial.expand E (p ^ r) (P.map φ)) R = 0 := by
-    rwa [familyMultiplier_affineFamily]
-  have hsep' : multiplierEval (familyMultiplier affineFamily (a c))
-      (Polynomial.expand E (p ^ r) (P.map φ)) (pderiv none R) ≠ 0 := by
-    rwa [familyMultiplier_affineFamily]
-  have hA' : A ≤ {i | Polynomial.leval (φ (domain i)) (P.map φ) =
-      aeval (a c) (affineChartTarget domain f g φ (p ^ r) i)}.ncard := by
-    refine hA.trans_eq ?_
-    rw [← Set.ncard_coe_finset]
-    congr 1
-    ext i
-    exact (eval_map_eq_aeval_affineChartTarget_iff domain f g φ p r c.1 c.2 P i).symm
-  obtain ⟨center, hcenter, hexc⟩ := hgood c hc (P.map φ) ((Polynomial.degree_map_le).trans hP)
-    hroot' hsep' (by simp) hA'
-  rw [familyMultiplier_affineFamily] at hcenter
-  exact isAffinePersistent_of_mem_chartExcluded domain f g φ center R p r hP hroot hcenter hexc
 
 end Affine
 
