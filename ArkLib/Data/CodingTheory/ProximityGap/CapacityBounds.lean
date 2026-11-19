@@ -201,16 +201,8 @@ theorem rs_mcaError_le_johnsonExceptionCount
   classical
   let e := (Fintype.equivFin ι).symm
   let domain' := e.toEmbedding.trans domain
-  have hcode (w : ι → F) :
-      w ∘ e ∈ ReedSolomon.code domain' k ↔ w ∈ ReedSolomon.code domain k := by
-    simp only [ReedSolomon.mem_code_iff_eval]
-    constructor
-    · rintro ⟨P, hP, he⟩
-      exact ⟨P, hP, fun i ↦ by simpa [domain', Function.comp_def] using he (e.symm i)⟩
-    · rintro ⟨P, hP, he⟩
-      exact ⟨P, hP, fun i ↦ he (e i)⟩
   rw [← mcaError_comp_equiv (AffineLineGenerator F) (ReedSolomon.code domain k)
-    (ReedSolomon.code domain' k) e hcode]
+    (ReedSolomon.code domain' k) e (ReedSolomon.mem_code_comp_equiv e domain k)]
   simpa only [johnsonAgreement, johnsonRhoMinus, show k - 1 + 1 = k by omega] using
     ReedSolomon.mcaError_affineLine_johnson_le (D := k - 1) domain' (by omega) (by omega) hη
 
