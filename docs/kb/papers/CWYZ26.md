@@ -37,6 +37,9 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PellikaanWu.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Persistent.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PersistenceDescent.lean
+  - ArkLib/ToMathlib/Polynomial/DegreeLEFunctionals.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/TraceChart.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/NonpersistentCount.lean
 ---
 
 # CWYZ26
@@ -105,6 +108,10 @@ The embedding already implies `n ≤ q`.
 | Appendix A, the persistent count | `ReedMuller.IsAffinePersistent`, `ReedMuller.affinePersistenceSet`, `ReedMuller.card_isAffineExceptional_persistent_le` | Persistence uses `G = H/L_σ` with `σ ≠ 0` and `deg H ≤ d`, counting agreements off the zeros of `L_σ`. At most `ℓ · max{q, C(n, k+1)}` persistent challenges are exceptional, with `ℓ = n(B - (d+1)q₀^(k-1))/(B² - n(d+1)q₀^(k-1))`. This is the paper's `(a - b)/(a² - b)`. Hypotheses: `B > (d+1)n/q₀` and `b < a²`. |
 | Appendix A, Claim 4.8 for `c > B + n/q₀ - 1` | `ReedMuller.exists_affineRatioWitness_of_map`, `ReedMuller.isAffinePersistent_of_commonAgreement` | A rational explanation over an extension field descends to `F_q`. Dropping the at most `n/q₀` zeros of `L_σ` on the grid, by (7.1), leaves `B` agreements, so the candidate is persistent. |
 | Lemma 3.2 with fibers | `Finset.card_le_of_fiber_card_le_of_inter_card_le` | The Johnson bound times the fiber size. The Reed–Solomon and Reed–Muller persistent counts both use it. |
+| Appendix A, candidate transport `(α, P) ↦ (L̃_α, P̃)` | `ReedMuller.traceFamily`, `ReedMuller.familyMultiplier_traceFamily`, `ReedMuller.traceSubstitution_map_affineMultiplier_eq_familyMultiplier`, `ReedMuller.familyMultiplier_traceFamily_injective`, `ReedMuller.ncard_eval_traceSubstitution_eq`, `ReedMuller.multiplierEval_traceSubstitution_eq_zero` | The multiplier `L̃_α` is the family `(1, T_{b₁}, …, T_{bₖ})` at `α`. Agreement counts are preserved, and the interpolant vanishes along the transported pair. The statements are parametric in `L` and in its embedding into `E`. |
+| Appendix A, "Nonpersistent": Frobenius roots and chart targets | `ReedMuller.map_familyMultiplier_traceFamily`, `ReedMuller.traceChartTarget`, `ReedMuller.totalDegree_traceChartTarget_le`, `ReedMuller.aeval_traceChartTarget` | The inverse Frobenius power maps the trace family to a trace family, with `κ = Fin (k + 1)`. |
+| Appendix A, intersection with the image of `(α, P) ↦ (α, P̃)` | `Polynomial.exists_list_linearMap_of_le_degreeLE`, `ReedMuller.IsTraceImageCuts`, `ReedMuller.exists_isTraceImageCuts` | Among polynomials of degree at most `ρn`, the image is cut out by finitely many linear functionals. These are the high cuts of the generic count. |
+| Appendix A, Claim 4.8 for Reed–Muller and the count `#N ≤ (2ρnMv)^(k+1) D^(k+2)` | `ReedMuller.isAffinePersistent_of_mem_chartExcluded`, `ReedMuller.exists_finset_card_le_isAffinePersistent`, `ReedSolomon.separatesDegree_leval` | Outside `D² + (2 d q₀^(k-1) M n / (A - B - q₀^(k-1) + 1))^(k+1) D^(k+2)` coefficient vectors, every candidate with `A` agreements is persistent. Hypotheses: `1 ≤ d`, `d q₀^(k-1) < B + q₀^(k-1) ≤ A`, and an interpolant over `E`. The paper's `B > (d + 1) n/q₀` implies the second. The reconstruction is determined by evaluation at `B + n/q₀` distinct points, and challenges are compared directly, not by Schwartz–Zippel. |
 
 ## Port Ledger
 
@@ -123,7 +130,7 @@ A unit is done when its declarations are on `main`.
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
-| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), lower bound `q⁻ᵏ`, Lemma A.1, the Pellikaan–Wu reduction, the persistent count, the multiplier interpolation and the generic nonpersistent count in review; Reed–Muller nonpersistent count and Theorem 7.1 planned |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), lower bound `q⁻ᵏ`, Lemma A.1, the Pellikaan–Wu reduction, the persistent count, the multiplier interpolation, the generic and Reed–Muller nonpersistent counts in review; the parameter assembly and Theorem 7.1 planned |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
 The quotient is real, and the floor rounds down.
@@ -270,6 +277,9 @@ Witnesses are not transported, because the proof of Theorem 7.1 builds them on t
 Reed–Muller persistence names the denominator by its coefficient vector `σ`.
 The zeros of `L_σ` on the grid are left out of the persistence set.
 The Johnson factor is written with `q₀^(k-1)` in place of `n/q₀`.
+The Reed–Muller count works in any algebraically closed `E` containing `F` and `F_n`.
+The paper's intersection with the image of the trace substitution is a list of linear functionals,
+so it adds no degree factor in the hypersurface count.
 
 ## Open Formalization Gaps
 
