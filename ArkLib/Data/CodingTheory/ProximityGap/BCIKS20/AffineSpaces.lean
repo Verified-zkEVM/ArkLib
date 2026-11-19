@@ -679,7 +679,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       have h_54_lt_deg2 : 5 / (4 * μ) < (deg : ℝ) ^ 2 / (128 * μ ^ 7) := by
         rw [div_lt_div_iff₀ (mul_pos four_pos hμ_pos) (mul_pos (by norm_num) (pow_pos hμ_pos 7))]
         convert mul_lt_mul_of_pos_right h_160 (mul_pos four_pos hμ_pos) using 1
-        all_goals ring
+        ring
       -- Extract |F| bound from hε
       have h_field : (deg : ℝ) ^ 2 / (128 * μ ^ 7) < Fintype.card F := by
         classical

@@ -224,7 +224,7 @@ theorem sum_retainedCutFamily_le (w : Ideal R → M) (hw : ∀ Q, 0 ≤ w Q) (Ps
   classical
   have hunion : ∀ {S T : Finset (Ideal R)}, ∑ Q ∈ S ⊔ T, w Q ≤ ∑ Q ∈ S, w Q + ∑ Q ∈ T, w Q :=
     fun {S T} ↦ by
-      rw [Finset.sup_eq_union, ← Finset.sum_union_inter]
+      rw [← Finset.sum_union_inter]
       exact le_add_of_nonneg_right (Finset.sum_nonneg fun Q _ ↦ hw Q)
   have hbiUnion := Finset.apply_sup_le_sum (f := fun T : Finset (Ideal R) ↦ ∑ Q ∈ T, w Q)
     Finset.sum_empty hunion (s := fun P ↦ (P ⊔ span {f}).retainedMinimalPrimes s) Ps

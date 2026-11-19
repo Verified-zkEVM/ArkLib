@@ -149,12 +149,7 @@ is the same as lifting it into the appended protocol directly. -/
 theorem liftAppendLeft_liftM {α : Type} (oa : OracleComp oSpec α) :
     (liftAppendLeft pSpec₂ (liftM oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α))
       = (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
-  unfold liftAppendLeft
-  induction oa using OracleComp.inductionOn with
-  | pure a => rfl
-  | query_bind t k ih =>
-    simp [ih]
-    congr 1
+  exact QueryImpl.simulateQ_liftComp_left_eq_of_apply _ _ (fun _ => rfl) oa
 
 /-- Lifting a left-component challenge query into the appended protocol queries the
 left-injected index and transports the response back. -/
@@ -535,19 +530,14 @@ private theorem concatLR_step (j : Fin (m + n)) (l : Fin n) (hjl : j.val = m + l
 /-! ### Right-hand lifts -/
 
 /-- The `liftAppendRight` analogue of `liftAppendLeft_liftM`. -/
-private theorem liftAppendRight_liftM {α : Type} (oa : OracleComp oSpec α) :
+theorem liftAppendRight_liftM {α : Type} (oa : OracleComp oSpec α) :
     (liftAppendRight pSpec₁ (liftM oa : OracleComp (oSpec + [pSpec₂.Challenge]ₒ) α))
       = (liftM oa : OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α) := by
-  unfold liftAppendRight
-  induction oa using OracleComp.inductionOn with
-  | pure a => rfl
-  | query_bind t k ih =>
-    simp [ih]
-    congr 1
+  exact QueryImpl.simulateQ_liftComp_left_eq_of_apply _ _ (fun _ => rfl) oa
 
 /-- Lifting a right-component challenge query into the appended protocol queries the
 right-injected index and transports the response back. -/
-private theorem liftAppendRight_getChallenge (i : ChallengeIdx pSpec₂) :
+theorem liftAppendRight_getChallenge (i : ChallengeIdx pSpec₂) :
     liftAppendRight pSpec₁
         ((liftM (pSpec₂.getChallenge i)) :
           OracleComp (oSpec + [pSpec₂.Challenge]ₒ) (pSpec₂.Challenge i))

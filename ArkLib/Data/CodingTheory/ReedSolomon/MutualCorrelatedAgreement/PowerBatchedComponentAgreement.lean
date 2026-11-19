@@ -34,7 +34,9 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval zeroLocus affineHilbertPolynomial
+  finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero)
 
 variable {F E : Type*} [Field F] [Field E] {n k K r ℓ : ℕ}
 

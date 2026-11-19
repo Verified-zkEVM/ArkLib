@@ -195,7 +195,7 @@ theorem powerMomentWeight_exponent_ncard_le
     _ = D * Set.ncard {b : Option σ →₀ ℕ | b.degree ≤ N} := by
       rw [show Nat.card B = D * Nat.card {b : Option σ →₀ ℕ // b.degree ≤ N} by
         simp only [B, Nat.card_prod, Nat.card_fin]]
-      exact congrArg (D * ·) (Nat.card_coe_set_eq _)
+      exact congrArg (D * ·) (Nat.card_coe_set_eq {b : Option σ →₀ ℕ | b.degree ≤ N})
     _ = D * (N + Nat.card (Option σ)).choose (Nat.card (Option σ)) := by
       exact congrArg (D * ·) (Finsupp.ncard_setOf_degree_le (Option σ) N)
 
