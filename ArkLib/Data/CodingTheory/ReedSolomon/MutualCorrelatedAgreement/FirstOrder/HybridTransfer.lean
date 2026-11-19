@@ -33,7 +33,8 @@ exception constant.
 
 @[expose] public section
 
-open PolynomialDifferential Polynomial MvPolynomial
+open PolynomialDifferential Polynomial
+open MvPolynomial (coeffNatDegree coeffNatDegreeLE_coeffNatDegree)
 
 namespace ReedSolomon
 

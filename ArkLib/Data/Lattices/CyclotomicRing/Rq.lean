@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
+public import CompPoly.Univariate.ToPoly.RingHom
 public import Mathlib.Algebra.Ring.InjSurj
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 -- `⇑ringEquiv` must reduce to `toPoly`; CompPoly does not expose the body.
@@ -42,19 +43,7 @@ variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
 
 /-! ## `reduce` lemmas via the `toPoly` bridge -/
 
-omit [BEq R] [LawfulBEq R] in
-/-- `CPolynomial.toPoly` is injective (it is the forward map of a ring isomorphism). -/
-theorem toPoly_injective :
-    Function.Injective (CPolynomial.toPoly : CPolynomial R → Polynomial R) := by
-  classical
-  exact fun _ _ h => CPolynomial.toPoly_inj.mp h
-
 variable (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
-
-/-- The Mathlib polynomial of a reduction is the Mathlib `%ₘ`. -/
-theorem reduce_toPoly (p : CPolynomial R) :
-    (Φ.reduce p).toPoly = p.toPoly %ₘ Φ.φ.toPoly :=
-  CPolynomial.toPoly_modByMonic p Φ.φ (IsCyclotomic.monic (Φ := Φ))
 
 /-- Reduction is idempotent: a reduced polynomial is fixed by `reduce`. -/
 @[simp] theorem reduce_reduce (p : CPolynomial R) : Φ.reduce (Φ.reduce p) = Φ.reduce p := by
@@ -372,7 +361,7 @@ theorem constRq_val (h1 : 1 ≤ Φ.φ.natDegree) (c : R) :
     (constRq Φ c).1 = CompPoly.CPolynomial.C c := by
   change Φ.reduce (CompPoly.CPolynomial.C c) = CompPoly.CPolynomial.C c
   apply Φ.reduce_eq_self_of_degree_lt
-  rw [CompPoly.CPolynomial.toPoly_C]
+  rw [CompPoly.CPolynomial.C_toPoly]
   have hpos : (0 : WithBot ℕ) < Φ.φ.toPoly.degree := by
     rw [Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero,
         ← CompPoly.CPolynomial.natDegree_toPoly]
@@ -385,7 +374,7 @@ theorem constRq_mul_coeff (h1 : 1 ≤ Φ.φ.natDegree) (c : R) (x : Rq Φ) (k : 
   have hmul : (constRq Φ c * x).1 = Φ.reduce ((constRq Φ c).1 * x.1) := rfl
   have hred : Φ.reduce (CompPoly.CPolynomial.C c * x.1) = CompPoly.CPolynomial.C c * x.1 := by
     apply Φ.reduce_eq_self_of_degree_lt
-    rw [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.toPoly_C]
+    rw [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.C_toPoly]
     have hx : x.1.toPoly.degree < Φ.φ.toPoly.degree := Φ.degree_toPoly_lt_of_reduced x.2
     rcases eq_or_ne c 0 with hc | hc
     · simpa [hc] using lt_of_le_of_lt bot_le hx

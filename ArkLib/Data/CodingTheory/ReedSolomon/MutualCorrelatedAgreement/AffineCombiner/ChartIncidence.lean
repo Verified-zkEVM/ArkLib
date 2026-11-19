@@ -197,8 +197,8 @@ theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : 
   set H := chartPolynomial c affineFamily R (p ^ e) d pt' - P.map φ
   have hL : affineMultiplier a' b' ≠ 0 := by
     intro hL0
-    have h0 := congrArg (Polynomial.coeff · 0) hL0
-    have h1 := congrArg (Polynomial.coeff · 1) hL0
+    have h0 := congrArg (fun p : Polynomial _ ↦ p.coeff 0) hL0
+    have h1 := congrArg (fun p : Polynomial _ ↦ p.coeff 1) hL0
     simp only [affineMultiplier, Polynomial.coeff_add, Polynomial.coeff_zero, Polynomial.coeff_C,
       Polynomial.coeff_C_mul, Polynomial.coeff_X_zero, Polynomial.coeff_X_one] at h0 h1
     apply hne

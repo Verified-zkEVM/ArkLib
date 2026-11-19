@@ -228,7 +228,7 @@ def eqFold (κ : ℕ) : BatchingStrategy C (Fin κ → Fin 2) where
       simpa using totalDegree_le_card_mul_of_mem_restrictDegree
         (MLE (fun u => s u - s' u)) 1 (MLE_mem_restrictDegree _)
     exact (prEvent_congr _ _ _ hev).trans_le
-      ((prob_schwartz_zippel_mv_polynomial f hf_ne hdeg).trans_eq
+      ((prEvent_eval_eq_zero_univ_le_div f hf_ne hdeg).trans_eq
         (ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)).symm)
 
 end BatchingStrategy

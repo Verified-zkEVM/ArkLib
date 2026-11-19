@@ -79,7 +79,7 @@ theorem RS_exists_bivariate_AB_of_goodCoeffs_card_gt
   have hcoeffA0 : ∀ n : ℕ, ∀ hn : n < e + 1, A0.coeff n = a ⟨n, hn⟩ := by
     intro n hn
     classical
-    simp [A0, Polynomial.coeff_monomial]
+    simp [A0, Finsupp.single_apply]
     have hsum :
         (∑ t : Fin (e + 1), (if t = ⟨n, hn⟩ then a t else (0 : F[X]))) = a ⟨n, hn⟩ := by
       simp
@@ -87,7 +87,7 @@ theorem RS_exists_bivariate_AB_of_goodCoeffs_card_gt
   have hcoeffB0 : ∀ n : ℕ, ∀ hn : n < e + deg, B0.coeff n = b ⟨n, hn⟩ := by
     intro n hn
     classical
-    simp [B0, Polynomial.coeff_monomial]
+    simp [B0, Finsupp.single_apply]
     have hsum :
         (∑ t : Fin (e + deg), (if t = ⟨n, hn⟩ then b t else (0 : F[X]))) = b ⟨n, hn⟩ := by
       simp
@@ -100,7 +100,7 @@ theorem RS_exists_bivariate_AB_of_goodCoeffs_card_gt
       intro t
       have ht : (t : ℕ) < N := lt_of_lt_of_le t.2 hN'
       exact Nat.ne_of_lt ht
-    simp [A0, Polynomial.coeff_monomial, hne]
+    simp [A0, hne]
   have hcoeffB0_big : ∀ N : ℕ, e + deg - 1 < N → B0.coeff N = 0 := by
     intro N hN
     classical
@@ -114,7 +114,7 @@ theorem RS_exists_bivariate_AB_of_goodCoeffs_card_gt
       intro t
       have ht : (t : ℕ) < N := lt_of_lt_of_le t.2 hN'
       exact Nat.ne_of_lt ht
-    simp [B0, Polynomial.coeff_monomial, hne]
+    simp [B0, hne]
   refine ⟨A, B, ?_, ?_, ?_, ?_, ?_, ?_⟩
   · -- A ≠ 0
     have hex : ∃ t : Fin (e + 1), a t ≠ 0 := by
