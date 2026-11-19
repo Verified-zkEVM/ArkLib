@@ -26,6 +26,9 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaims.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsSampling.lean
+  - ArkLib/ToMathlib/Finset/AffineZeros.lean
 ---
 
 # CWYZ26
@@ -75,7 +78,14 @@ The embedding already implies `n ≤ q`.
 | Lemma 4.1, without the numerics | `ReedSolomon.exists_affineFactor_finset_card_le`, `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant` | Over the algebraic closure, the content free of `Z` vanishes on few lines. Each factor of positive `Z`-degree adds `h (h - 1)` discriminant lines and its nonpersistent challenges. Summing with `deg content + Σ h ≤ D` and `p^e ≤ M` gives `D² + 4 d² M² D³ (n / (A - B))²` beyond a given set of persistent challenges. |
 | Theorem 4.10 | `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation`, `ReedSolomon.affineMcaError_le_of_interpolation` | For `1 ≤ d < n`, `0 < η < 1 - √ρ`, and budgets satisfying the full-constraint surplus described above, with `n (d + 1) < B²`. For free `M`, that sufficient hypothesis can be stronger than the paper's (4.5). `AffineParams.surplus` establishes it for the paper's parameter choice. The paper's `M ≥ 1` and formula for `M` are not needed. The Johnson factor is the real number `n (B - d - 1) / (B² - n (d + 1))`, not its floor. |
 | Theorem 1.1 | `ReedSolomon.exists_affineExceptional_finset_card_le`, `ReedSolomon.affineMcaError_le` | The paper's hypotheses `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`, and its bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`. The crude estimates give a constant below `9824`. |
-| Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. The linear-claims assertion is not included. |
+| Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. |
+| Theorem 5.1, second inequality of (5.4) | `ReedSolomon.equalDegreeMcaError_le` | Under the Theorem 1.1 hypotheses at `A = ⌈(√ρ + η) n⌉`, the error is at most `(4/η + ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)`. The condition `nd < (A - 1)²` follows from them, as in the paper. |
+| Theorem 5.1, (5.3), the claim holds for honest messages | `ReedSolomon.linearClaim`, `ReedSolomon.linearClaim_add_affineMultiplier_mul` | The combination identity holds for all polynomials, with no degree bound. |
+| Theorem 5.1, first inequality of (5.5) | `ReedSolomon.LinearClaimInstance`, `ReedSolomon.IsLinearClaimExceptional`, `ReedSolomon.linearClaimMcaError`, `ReedSolomon.linearClaimMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the linear-claim error is at most the affine error plus `2ℓ₀/q`. The prover message is any function of `θ`, so every deterministic prover is covered. |
+| Theorem 5.1, second inequality of (5.5) | `ReedSolomon.linearClaimMcaError_le` | The hypotheses of the second inequality of (5.4), with bound `(4/η + 2ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)`. |
+| Proof of Theorem 5.1, the residual vanishes rarely | `ReedSolomon.linearClaimResidual`, `ReedSolomon.card_filter_linearClaimResidual_eq_zero_le`, `Finset.card_filter_add_mul_add_mul_eq_zero_le` | A wrong claim survives for at most `q` challenges `(α, β)`. |
+| Proof of Theorem 5.1, the list has at most `ℓ₀` pairs | `ReedSolomon.card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet`, `ReedSolomon.le_floor_johnson_of_mul_le` | The integer Johnson count for a finite list of polynomial pairs, then its floor. |
+| Theorem 5.1, sampling form of (5.5) | `ReedSolomon.linearClaimMcaError_eq_iSup_prob`, `ReedSolomon.prob_isLinearClaimExceptional_le` | Native uniform sampling of `(θ, α, β)`. |
 | Proposition 6.3 | `ReedSolomon.le_scalarMcaError_of_addSubgroup` | In characteristic two, let the domain be an additive subgroup of size `n = 2^k ≥ 16`. For `d = n/4`, `A ≤ 9n/16`, and `s < 3n/16`, the scalar error is at least `(n - 8)/q`. |
 
 ## Port Ledger
@@ -85,15 +95,15 @@ A unit is done when its declarations are on `main`.
 
 | Unit | Paper | Content | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | in review |
-| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | in review |
-| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | equal-degree bound in review ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); linear claims planned |
-| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | in review ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
-| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | in review |
-| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | in review |
-| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces in review; power-series existence and uniqueness open |
-| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | in review |
-| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | in review |
+| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | done ([#1504](https://github.com/Verified-zkEVM/ArkLib/pull/1504)) |
+| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | done ([#1505](https://github.com/Verified-zkEVM/ArkLib/pull/1505)) |
+| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | first inequality of (5.4) done ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); the other inequalities of (5.4) and (5.5) in review |
+| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | done ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
+| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)) |
+| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)) |
+| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); power-series existence and uniqueness open |
+| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
+| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
 
@@ -152,6 +162,11 @@ Unit 10 applies the equal-degree guarantee in each folding round.
   It uses the binary-group decomposition in `BinaryAddSubgroup.lean` and the degree bounds in
   `SubspacePolynomial.lean`.
 
+- [`AffineCombiner/LinearClaims.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaims.lean)
+  defines the linear-claim error and bounds it by the affine error.
+- [`AffineCombiner/LinearClaimsSampling.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsSampling.lean)
+  identifies this error with the supremum of native uniform probabilities.
+
 The Taylor chart uses
 [`RationalTaylorJointDegree.lean`](../../../ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean)
 and [`Differential/TaylorChart.lean`](../../../ArkLib/Data/Polynomial/Differential/TaylorChart.lean)
@@ -205,6 +220,10 @@ Discarding at most one zero of the nonzero linear denominator retains `B` regula
 from `B + 1` common cut points.
 The paper instead chooses a second `F_q` triple in an affine space defined over `F_q`.
 Both arguments are complete.
+
+In the linear-claim error, the prover message is a function of the challenge `θ`.
+The supremum over instances therefore covers every deterministic prover.
+The claim value reads the first `d + 1` coefficients of any polynomial, so it is linear without degree bounds.
 
 ## Open Formalization Gaps
 
