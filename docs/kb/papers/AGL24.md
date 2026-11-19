@@ -8,6 +8,8 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/Probability/Uniform.lean
+  - ArkLib/ToMathlib/Fintype/CardEmbedding.lean
 ---
 
 # AGL24
@@ -33,10 +35,15 @@ Theorem 1.1: for `ε ∈ (0,1)`, `L ≥ 2` and a prime power `q ≥ n + k·2^{10
 ArkLib states the plain `Λ` bound, of which the source's average-radius form is a strengthening — the
 safe direction.
 
-The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}` under
-`PMF.uniformOfFintype`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
-and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points, which
-induces the same distribution over codes.
+The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}`
+sampled with `$ᵗ`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
+and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points. An
+event that depends only on the set of drawn points has the same probability under both samplers:
+`prEvent_uniformSample_finsetCard_eq_embedding` in
+[Uniform.lean](../../../ArkLib/Data/Probability/Uniform.lean), from the count
+`Fintype.card_filter_embedding_map_univ` in
+[CardEmbedding.lean](../../../ArkLib/ToMathlib/Fintype/CardEmbedding.lean) (every `n`-element set
+is the image of `n!` embeddings `Fin n ↪ F`).
 
 The source's stated consequence — at `ℓ = 2(1−ρ−η)/η` — is not formalized: its `ℓ` is real-valued, so it
 needs a rounding the source does not fix.
