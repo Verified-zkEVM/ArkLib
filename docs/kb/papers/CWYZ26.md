@@ -57,14 +57,14 @@ The embedding already implies `n ≤ q`.
 
 | Paper statement | Lean interface | Scope |
 | --- | --- | --- |
-| Section 1.1 and Definition 3.1 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMcaError`, `ReedSolomon.scalarMcaError` | The errors are suprema over received word pairs of the uniform probability that some candidate is exceptional. Definition 3.1 is the affine predicate at loss `s = 1`. |
-| Proposition 6.1, error lower bound | `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt` | For `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A)/(s + 1)⌋)/q`. The proof constructs words using a vanishing polynomial and blocks of size `s + 1`. It does not export the proposition's separate global agreement claim or its exact-agreement probability bound. |
+| Section 1.1, Definition 3.1, and the definition of `ε_sc` at the start of Section 6 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMcaError`, `ReedSolomon.scalarMcaError` | The errors are suprema over received word pairs of the uniform probability that some candidate is exceptional. Definition 3.1 is the affine predicate at loss `s = 1`. Section 1.1 defines the affine error. Section 6 defines the scalar error with a uniform scalar challenge `α` and witness degrees at most `d`. |
+| Proposition 6.1, error lower bound | `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt` | For `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A)/(s + 1)⌋)/q`. The proof constructs words using a vanishing polynomial and blocks of size `s + 1`. The constructed words and the proposition's global agreement claim have no separate Lean statement. The probability `Pr_{α←F_q}[|S_α(0)| = A]` in (6.1), and both inequalities through it, have no Lean statement. |
 | Proposition 6.2 | `ReedSolomon.le_affineMcaError_zero_loss`, `ReedSolomon.le_affineMcaError_zero_loss_div_two` | For `d + 1 < A ≤ n`, the affine error at loss zero is at least `(n - A + 1)(q - 1)/q²`, hence at least `(n - A + 1)/(2q)`. |
 | Lemma 4.4 | `ReedSolomon.card_isAffineExceptional_add_mul_le`, `ReedSolomon.card_ratFunc_combination_le`, `ReedSolomon.card_isAffineExceptional_ratFunc_le` | At loss one, a polynomial pair within the witness degree bounds gives at most `n choose 2` exceptional challenges. A rational pair outside those bounds has at most `q` compatible challenges, even without requiring exceptionality. Every rational pair gives at most `max q (n choose 2)` exceptional challenges. |
 | Lemma 4.5 | `ReedSolomon.affinePersistenceSet`, `ReedSolomon.IsAffinePersistent`, `ReedSolomon.card_isAffineExceptional_persistent_le` | The real count is at most `n (B - d - 1)/(B² - n(d + 1)) · max q (n choose 2)` under `d + 1 < B` and `n(d + 1) < B²`. It covers all persistent exceptional challenges at loss one. The paper first removes its excluded set `E`. |
 | Claim 4.8, case `c > B` | `ReedSolomon.exists_lineRatioWitness_of_map`, `ReedSolomon.isAffinePersistent_of_commonAgreement`, `Matrix.exists_mulVec_eq_zero_apply_ne_zero_of_map` | A persistence proof using the chart can construct a pair over an extension field. Linear algebra descends the identities `H(x) = L(x)g(x)` to `F_q`, with `L` a nonzero polynomial. The denominator can vanish at an agreement point. Common agreement on `B + 1` points gives persistence at `B`, since `L` has at most one root. |
-| Lemma 4.2 | `ReedSolomon.IsAffineInterpolant`, `ReedSolomon.exists_isAffineInterpolant` | The interpolant exists once the unknowns outnumber the constraints. The paper's bound `deg_Z Q ≥ 1` is not stated, since the later count does not use it. |
-| Lemma 4.2, inequality (4.5), and §4.1 parameters | `ReedSolomon.AffineParams`, `ReedSolomon.AffineParams.surplus`, `ReedSolomon.AffineParams.bounds` | The formal sufficient surplus sums constraints over all `s < m`, whereas (4.5) stops at `min(m - 1, M)`. It can be stronger for freely chosen `M`. `AffineParams.surplus` proves it for the chosen parameters. The surplus holds under `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`. The bounds give `3 ≤ m`, `D ≤ m A`, `d ≤ B < A ≤ n` and `n / (A - B) ≤ 2 / η`. |
+| Lemma 4.2 | `ReedSolomon.IsAffineInterpolant`, `ReedSolomon.exists_isAffineInterpolant` | The interpolant exists once the unknowns outnumber the constraints. The paper's conclusion `1 ≤ deg_Z Q` is not stated, since the later count does not use it. |
+| Lemma 4.2, inequality (4.5), and §4.1 parameters | `ReedSolomon.AffineParams`, `ReedSolomon.AffineParams.surplus`, `ReedSolomon.AffineParams.bounds` | The formal sufficient surplus sums constraints over all `s < m`, whereas (4.5) stops at `min(m - 1, M)`. For `M ≥ 1` given by (4.1), the surplus is equivalent to (4.5). `AffineParams.surplus` proves the surplus for the chosen parameters. The surplus holds under `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`. The bounds give `3 ≤ m`, `D ≤ m A`, `d ≤ B < A ≤ n` and `n / (A - B) ≤ 2 / η`. |
 | Lemma 4.3, first condition | `ReedSolomon.affineNested`, `ReedSolomon.affineLineEval_eq_nested`, `ReedSolomon.card_filter_affineLine_eq_zero_le` | A nonzero `G` free of `Z` vanishes on at most `deg_Y G` lines. The lines come from any finite set of challenges mapped injectively into `E × E`. |
 | Lemma 4.3, second condition | `ReedSolomon.affineDiscriminant`, `ReedSolomon.affineDiscriminant_ne_zero`, `ReedSolomon.natDegree_affineDiscriminant_le`, `ReedSolomon.affineLineEval_pderiv_ne_zero` | The `Z`-discriminant is a resultant with declared degrees. It stays valid when the line makes the leading `Z`-coefficient vanish. Its `Y`-degree is at most `h (h - 1)`. The simple-root statement needs `0 < deg_Z R`. |
 | Section 4, factorization: `Q_i(X^s, Y^s, Z) = R_i^s` | `ReedSolomon.exists_affineFrobeniusFactor` | Over a perfect field of exponential characteristic `p`. The exponent is `s = p^e ≤ deg_Z Q`, and `R` keeps the `(Y, Z)`-degree bound. |
@@ -73,7 +73,7 @@ The embedding already implies `n ≤ q`.
 | Claim 4.8, case `c > B`, in the chart | `ReedSolomon.affineChartExcluded`, `ReedSolomon.regularLocus_subset_affineChartExcluded`, `ReedSolomon.isAffinePersistent_of_mem_affineChartExcluded` | A positive-dimensional prime with `B + 1` cuts has infinitely many regular points. Two of them lie on different challenges, since `B + 1 ≥ d + 1` cuts fix the reconstruction on a given challenge. The second triple lives over the algebraic closure, and the descent gives persistence over `F_q`. |
 | Claims 4.8 and 4.9, Lemma 4.7 for one factor | `ReedSolomon.card_le_of_affineNonpersistent_roots`, `ReedSolomon.exists_affineNonpersistent_finset_card_le` | The incidence bound in the chart `(y₀, a, b)` gives `h (n · 2 p^e d h / (A - B))²` challenges with a simple, nonpersistent root. Hypotheses: `1 ≤ d ≤ B < A ≤ n` and `h` the `(Y, Z)`-degree of the factor. One center where every separant is nonzero is chosen per finite set. |
 | Lemma 4.1, without the numerics | `ReedSolomon.exists_affineFactor_finset_card_le`, `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant` | Over the algebraic closure, the content free of `Z` vanishes on few lines. Each factor of positive `Z`-degree adds `h (h - 1)` discriminant lines and its nonpersistent challenges. Summing with `deg content + Σ h ≤ D` and `p^e ≤ M` gives `D² + 4 d² M² D³ (n / (A - B))²` beyond a given set of persistent challenges. |
-| Theorem 4.10 | `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation`, `ReedSolomon.affineMcaError_le_of_interpolation` | For `1 ≤ d < n`, `0 < η < 1 - √ρ`, and budgets satisfying the full-constraint surplus described above, with `n (d + 1) < B²`. For free `M`, that sufficient hypothesis can be stronger than the paper's (4.5). `AffineParams.surplus` establishes it for the paper's parameter choice. The paper's `M ≥ 1` and formula for `M` are not needed. The Johnson factor is the real number `n (B - d - 1) / (B² - n (d + 1))`, not its floor. |
+| Theorem 4.10 | `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation`, `ReedSolomon.affineMcaError_le_of_interpolation` | For `1 ≤ d < n`, `0 < η < 1 - √ρ`, and budgets satisfying the full-constraint surplus described above, with `n (d + 1) < B²`. For `M ≥ 1` given by (4.1), that hypothesis is equivalent to (4.5). `AffineParams.surplus` establishes it for the paper's parameter choice. The paper's `M ≥ 1` and formula for `M` are not needed. The Johnson factor is the real number `n (B - d - 1) / (B² - n (d + 1))`, not its floor. |
 | Theorem 1.1 | `ReedSolomon.exists_affineExceptional_finset_card_le`, `ReedSolomon.affineMcaError_le` | The paper's hypotheses `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`, and its bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`. The crude estimates give a constant below `9824`. |
 | Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. The linear-claims assertion is not included. |
 | Proposition 6.3 | `ReedSolomon.le_scalarMcaError_of_addSubgroup` | In characteristic two, let the domain be an additive subgroup of size `n = 2^k ≥ 16`. For `d = n/4`, `A ≤ 9n/16`, and `s < 3n/16`, the scalar error is at least `(n - 8)/q`. |
@@ -82,18 +82,20 @@ The embedding already implies `n ≤ q`.
 
 The units describe the port plan, including results without Lean declarations.
 A unit is done when its declarations are on `main`.
+A part of a unit is open when no Lean statement covers it.
+A unit is deferred when the port plan postpones it.
 
 | Unit | Paper | Content | Depends on | Status |
 | --- | --- | --- | --- | --- |
-| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | in review |
-| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | in review |
-| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | equal-degree bound in review ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)); linear claims planned |
-| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | in review ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
-| 5 | Lemma 4.2 | Trivariate interpolation of `(1,1,d)`-weighted degree below `mA`, with multiplicity `m` along each received line, and vanishing after substitution | 1 | in review |
-| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization, excluded challenges `#E ≤ D²`, and simple roots outside `E` | 5 | in review |
-| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces in review; power-series existence and uniqueness open |
-| 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | in review |
-| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | in review |
+| 1 | §1.1, Definition 3.1, Propositions 6.1–6.2 | Definitions and error lower bounds for scalar combiners with loss `s` and affine combiners without loss | — | done ([#1504](https://github.com/Verified-zkEVM/ArkLib/pull/1504)), except the global agreement claim of Proposition 6.1 and the inequalities through the exact-agreement probability in (6.1), which are open |
+| 2 | Lemmas 4.4–4.5 | Counts for one rational pair and for persistent exceptional challenges | 1 | done ([#1505](https://github.com/Verified-zkEVM/ArkLib/pull/1505)) |
+| 3 | Theorem 5.1 | Equal-degree error `≤ εaff + ℓ₀/q` and linear-claim error `≤ εaff + 2ℓ₀/q` | 1 | first inequality of (5.4) done ([#1506](https://github.com/Verified-zkEVM/ArkLib/pull/1506)), second inequality of (5.4) covered by Theorem 1.1 ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), linear-claims bound (5.5) open |
+| 4 | Proposition 6.3 | Scalar lower bound with constant fractional loss on additive domains | 1 | done ([#1507](https://github.com/Verified-zkEVM/ArkLib/pull/1507)) |
+| 5 | Lemma 4.2 | A nonzero trivariate interpolant of `(1,1,d)`-weighted degree below `mA`, `(Y, Z)`-degree at most `D` and `Z`-degree at most `M`, which vanishes after substitution. The proof imposes multiplicity `m` along each received line | 1 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)), except the conclusion `1 ≤ deg_Z Q`, which is open |
+| 6 | Section 4 factorization and Lemma 4.3 | Frobenius normalization of each irreducible factor, line counts for the content free of `Z` and for the discriminant of each factor, and simple roots off the discriminant lines. No Lean statement bounds the excluded set `E` alone. The `D²` summand of the unit 9 count bounds the content and discriminant lines together | 5 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
+| 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficient and polynomial-root interfaces done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)), power-series existence and uniqueness open |
+| 8 | Claims 4.8–4.9 and Lemma 4.7 | The nonpersistent count for one factor, through an incidence bound on a hypersurface in three chart coordinates. The hypersurface takes the place of the cover of dimension at most two. The proof of the incidence bound inducts on dimension over the agreement cuts, in place of the agreement-hyperplane induction. The sum over factors is part of the unit 9 count | 2, 6, 7 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
+| 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), except the floored Johnson factor of (4.13), which is open |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
 
@@ -208,10 +210,38 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-The planned and deferred units in the ledger have no complete formalization in this port.
-The affine-chart interface for Lemma 3.11 does not export formal-power-series existence and uniqueness.
-The lower bound from Proposition 6.1 is exported, while its constructed received words and
-separate global agreement assertion are internal to the proof.
+Units 10 and 11 are deferred, so Theorem 5.2, Theorem 7.1 and Appendix A have no formalization.
+The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
+The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
+`ReedSolomon.affineMcaError_le` covers it.
+No theorem combines the two inequalities of (5.4) into an explicit bound on the equal-degree error.
+The existence and uniqueness of formal power series in Lemma 3.11 have no Lean statement.
+
+`ReedSolomon.IsAffineInterpolant` omits the conclusion `1 ≤ deg_Z Q` of Lemma 4.2.
+The factor count treats the content free of `Z` separately and does not use this conclusion.
+
+`ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation` and
+`ReedSolomon.affineMcaError_le_of_interpolation` differ from Theorem 4.10 in two ways.
+One difference makes them weaker than Theorem 4.10, and the other makes them more general.
+
+First, their Johnson factor is the real number `n(B - d - 1)/(B² - n(d + 1))`, while (4.13)
+uses the floor of this number.
+The bound of `ReedSolomon.affineMcaError_le_of_interpolation` is therefore at least the bound in
+(4.13), and larger exactly when the factor is not an integer.
+
+Second, `M` is a free parameter.
+The theorems do not require the paper's `M ≥ 1` or formula (4.1).
+
+Their interpolation condition is not a difference for the paper's `M`.
+It counts constraints for every order `s < m`, while (4.5) stops at `min(m - 1, M)`.
+For `M ≥ 1` given by (4.1), the two conditions are equivalent.
+Both conditions count the same unknowns.
+The constraint counts differ only when `M < min(m - 1, D)`.
+In that case `mA - D - dj ≤ (m - 1 - j)d < n(m - j)` for every `j ≤ M`, so both conditions fail.
+
+The global agreement claim of Proposition 6.1 has no separate Lean statement.
+The probability `Pr_{α←F_q}[|S_α(0)| = A]` in (6.1), and both inequalities through it, have no
+Lean statement.
 
 The paper reports a Lean formalization of Theorem 1.1.
 It states that the equal-degree reductions in Section 5 and the Reed–Muller extension in
