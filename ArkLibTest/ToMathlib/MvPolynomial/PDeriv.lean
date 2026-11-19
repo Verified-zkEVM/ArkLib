@@ -61,7 +61,7 @@ example :
   have hdeg : degreeOf 0 (C 2 * X 0 ^ 2 : MvPolynomial (Fin 1) (ZMod 4)) = 2 := by
     rw [hmon, degreeOf_monomial_eq _ _ (by decide), Finsupp.single_eq_same]
   refine ⟨hdeg, by rw [hdeg]; decide, ?_⟩
-  rw [pderiv_C_mul, pderiv_pow, pderiv_X_self, mul_one, ← mul_assoc, ← C_eq_coe_nat, ← C_mul]
+  rw [pderiv_C_mul, pderiv_pow, pderiv_X_self, mul_one, ← mul_assoc, ← C_eq_natCast, ← C_mul]
   have hfour : (2 : ZMod 4) * ((2 : ℕ) : ZMod 4) = 0 := by decide
   rw [hfour, C_0, zero_mul]
 
@@ -121,7 +121,7 @@ example :
     (pderiv 0)^[1] (X 0 ^ 5 : MvPolynomial (Fin 1) (ZMod 5)) = 0 ∧
       ((degreeOf 0 (X 0 ^ 5 : MvPolynomial (Fin 1) (ZMod 5)) - 0 : ℕ) : ZMod 5) = 0 := by
   constructor
-  · rw [Function.iterate_one, pderiv_pow, pderiv_X_self, mul_one, ← C_eq_coe_nat,
+  · rw [Function.iterate_one, pderiv_pow, pderiv_X_self, mul_one, ← C_eq_natCast,
       ZMod.natCast_self, C_0, zero_mul]
   · rw [degreeOf_X_self_pow]
     exact ZMod.natCast_self 5

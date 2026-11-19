@@ -168,7 +168,7 @@ lemma weight_neg (f H : F[X][Y]) (D : ℕ) : weight (-f) H D = weight f H D := b
   unfold weight
   rw [Polynomial.support_neg]
   refine Finset.sup_congr rfl (fun n _ => ?_)
-  simp [Polynomial.coeff_neg]
+  simp
 
 omit [IsDomain F] in
 /-- `Λ(f + g) ≤ max(Λ(f), Λ(g))`. -/
@@ -185,13 +185,13 @@ lemma weight_add_le (f g H : F[X][Y]) (D : ℕ) :
   · -- f.coeff n = 0, so g.coeff n ≠ 0
     have hg : g.coeff n ≠ 0 := by simpa [hf] using hsum_ne
     have hng : n ∈ g.support := Polynomial.mem_support_iff.mpr hg
-    have heq : (f + g).coeff n = g.coeff n := by simp [hcoeff, hf]
+    have heq : (f + g).coeff n = g.coeff n := by simp [hf]
     change (WithBot.some _ : WithBot ℕ) ≤ _
     rw [heq]
     exact (le_weight_of_mem_support hng).trans (le_max_right _ _)
   · have hnf : n ∈ f.support := Polynomial.mem_support_iff.mpr hf
     by_cases hg : g.coeff n = 0
-    · have heq : (f + g).coeff n = f.coeff n := by simp [hcoeff, hg]
+    · have heq : (f + g).coeff n = f.coeff n := by simp [hg]
       change (WithBot.some _ : WithBot ℕ) ≤ _
       rw [heq]
       exact (le_weight_of_mem_support hnf).trans (le_max_left _ _)

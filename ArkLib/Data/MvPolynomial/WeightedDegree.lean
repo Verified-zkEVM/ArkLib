@@ -497,7 +497,8 @@ theorem finrank_restrictWeightedDegree {K : Type*} [Field K]
     Module.finrank K (restrictWeightedDegree (R := K) w d) =
       Set.ncard {m : σ →₀ ℕ | m.weight w ≤ d} := by
   exact (Module.finrank_eq_nat_card_basis
-    (basisRestrictWeightedDegree (R := K) w d)).trans (Nat.card_coe_set_eq _)
+    (basisRestrictWeightedDegree (R := K) w d)).trans
+      (Nat.card_coe_set_eq {m : σ →₀ ℕ | m.weight w ≤ d})
 
 /-- A partial derivative in `X i` vanishes when `w i` exceeds the weighted degree. -/
 theorem pderiv_eq_zero_of_weightedTotalDegree_lt {σ : Type*} (w : σ → ℕ) (i : σ)

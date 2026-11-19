@@ -353,7 +353,7 @@ private theorem radicalContent_X :
   rw [radicalContent, show primeFactors (Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)) =
     {Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)} by
       rw [primeFactors, normalizedFactors_irreducible
-        ((Associates.irreducible_mk).2 X_prime.irreducible)]
+        ((Associates.irreducible_mk).2 prime_X.irreducible)]
       simp]
   have hfilter :
       (({Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)} :

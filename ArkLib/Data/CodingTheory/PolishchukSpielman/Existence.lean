@@ -42,7 +42,7 @@ lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type*} [Field F]
   subst ha0; simp_all only [ne_eq, C_eq_zero]
   rcases natDegree_eq_zero.1 (by simpa [degreeX, support_C hA0] using hdegX) with ⟨a, ha⟩
   subst ha; simp_all only [map_eq_zero]
-  exact ⟨B * C (C a⁻¹), by ext n m : 2; simp [coeff_mul_C, inv_mul_cancel_right₀ hA0]⟩
+  exact ⟨B * C (C a⁻¹), by simp [mul_assoc, ← map_mul, hA0]⟩
 
 /-- After cancellation in X, a large subset of evaluation points witnesses `P = quot_y`. -/
 lemma ps_exists_qx_of_cancel {F : Type*} [Field F]

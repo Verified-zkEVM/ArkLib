@@ -109,9 +109,9 @@ private theorem zeroPoint_not_mem_chartExcluded :
       simp [a]
   have hcoef (k : ℕ) (hk : 3 ≤ k) : H.coeff k = 0 :=
     Polynomial.coeff_eq_zero_of_degree_lt (hH.trans_lt (by exact_mod_cast (by omega : 2 < k)))
-  have h3 := congrArg (Polynomial.coeff · 3) hG
-  have h4 := congrArg (Polynomial.coeff · 4) hG
-  have h5 := congrArg (Polynomial.coeff · 5) hG
+  have h3 := congrArg (·.coeff 3) hG
+  have h4 := congrArg (·.coeff 4) hG
+  have h5 := congrArg (·.coeff 5) hG
   simp only [Fin.isValue, coeff_sub, coeff_add, coeff_C_mul, coeff_X_pow, ↓reduceIte, mul_one,
     Nat.reduceEqDiff, mul_zero, add_zero, Std.le_refl, hcoef, sub_zero, coeff_zero,
     Nat.succ_ne_self, zero_add, Nat.reduceLeDiff, G] at h3 h4 h5

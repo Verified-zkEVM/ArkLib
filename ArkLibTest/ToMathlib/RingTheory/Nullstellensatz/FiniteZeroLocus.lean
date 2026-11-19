@@ -33,7 +33,7 @@ theorem X_notMem_span_X_sq {k : Type*} [Field k] :
   have h1 : (X 0 : MvPolynomial (Fin 1) k) * (X 0 * q) = X 0 * 1 := by
     rw [← mul_assoc, ← pow_two, ← hq, mul_one]
   have h2 : (X 0 : MvPolynomial (Fin 1) k) * q = 1 := mul_left_cancel₀ (X_ne_zero 0) h1
-  exact X_prime.not_isUnit (IsUnit.of_mul_eq_one q h2)
+  exact prime_X.not_isUnit (IsUnit.of_mul_eq_one q h2)
 
 /-- The only zero of `(x ^ 2)`, over any field extension, is `0`. -/
 theorem eq_zero_of_mem_zeroLocus_span_X_sq {k L : Type*} [Field k] [Field L] [Algebra k L]

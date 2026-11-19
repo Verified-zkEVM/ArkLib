@@ -36,7 +36,9 @@ then bounds every finite set of regular chart points outside those graphs.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval affineHilbertPolynomial jointTotalDegree
+  optionEquivRight zeroLocus)
 
 namespace ReedSolomon
 

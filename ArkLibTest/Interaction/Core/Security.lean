@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Interaction.Core.Security.RoundByRound
 import ArkLibTest.Interaction.Core.Oracle
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-! Nonvacuous model examples and fixed-prefix bounds on a protocol with a challenge. -/
 
