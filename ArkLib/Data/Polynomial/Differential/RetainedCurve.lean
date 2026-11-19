@@ -300,7 +300,7 @@ theorem positiveCurveEquation_coeffNatDegreeLE (Q : DifferentialPolynomial F[X] 
   intro m
   by_cases hc : (positiveCurveEquation Q).coeff m = 0
   · simp [hc]
-  · have hmem := Polynomial.natDegree_mem_support_of_nonzero hc
+  · have hmem := Polynomial.natDegree_mem_support_of_ne_zero hc
     have hsource : m.optionElim
         ((positiveCurveEquation Q).coeff m).natDegree ∈ R.support := by
       apply MvPolynomial.mem_support_iff.mpr

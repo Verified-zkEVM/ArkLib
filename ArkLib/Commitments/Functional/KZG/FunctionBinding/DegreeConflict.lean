@@ -133,8 +133,7 @@ lemma interpolate_degree_ge_of_no_data {n L : ℕ} (S : Finset (Fin L))
   change CPolynomial.eval (queryOf i) P_C = responseOf i
   rw [eval_toPoly]
   have hPC_eq : P_C.toPoly = Q := by
-    apply Polynomial.ext
-    intro k
+    ext k : 2
     rw [← coeff_toPoly]
     change ((CompPoly.CPolynomial.Raw.mk (Array.ofFn d)).trim).coeff k = Q.coeff k
     rw [CompPoly.CPolynomial.Raw.Trim.coeff_eq_coeff]
@@ -655,10 +654,10 @@ lemma div_by_monic_zs_to_poly_eq_nodal_erase {L : ℕ}
   have hq_toPoly : (X - C (query i) : CPolynomial (ZMod p)).toPoly
       = Polynomial.X - Polynomial.C (query i) := by
     rw [CPolynomial.toPoly_sub, X_toPoly, C_toPoly]
-  have hmonic : (X - C (query i) : CPolynomial (ZMod p)).toPoly.Monic := by
-    rw [hq_toPoly]; exact Polynomial.monic_X_sub_C _
-  rw [CPolynomial.toPoly_divByMonic _ _ hmonic, zs_to_poly_eq_nodal S query hquery, hq_toPoly,
-    Lagrange.nodal_eq_mul_nodal_erase hi]
+  have hmonic : (X - C (query i) : CPolynomial (ZMod p)).monic := by
+    rw [monic_toPoly_iff, hq_toPoly]; exact Polynomial.monic_X_sub_C _
+  rw [CPolynomial.divByMonic_toPoly_eq_divByMonic _ _ hmonic, zs_to_poly_eq_nodal S query hquery,
+    hq_toPoly, Lagrange.nodal_eq_mul_nodal_erase hi]
   exact Polynomial.mul_divByMonic_cancel_left _ (Polynomial.monic_X_sub_C _)
 
 /-- Barycentric conversion for interpolation divided by the vanishing polynomial at `τ`. -/
@@ -769,10 +768,10 @@ lemma h1_zs_eq_h2_prime {L : ℕ} (n : ℕ) (τ : ZMod p) (cm : G₁) (S : Finse
         = cm' * (1 / (eval (query x) (Zₛ.divByMonic (X - C (query x))) * (τ - query x))) :=
         fun _ _ => by ring
       rw [Finset.sum_congr rfl h1, ← Finset.mul_sum,
-        ← lagrange_zs_conversion τ S query (fun _ => 1) hτ hquery,
-        CLagrange.interpolation_of_constants S query (fun _ => 1) 1 (fun _ _ => rfl)
-          hquery hS_ne]
-      simp only [eval_toPoly, C_toPoly, Polynomial.eval_C]
+        ← lagrange_zs_conversion τ S query (fun _ => 1) hτ hquery]
+      have hOne : (CLagrange.interpolate S query (fun _ => 1)).toPoly = 1 :=
+        CLagrange.cinterpolate_eq_interpolate.trans (Lagrange.interpolate_one hquery hS_ne)
+      simp only [eval_toPoly, hOne, Polynomial.eval_one]
       ring
     rw [hcm_sum]
     -- Abbreviate
