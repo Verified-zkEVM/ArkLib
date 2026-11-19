@@ -43,7 +43,7 @@ The counting bounds have no sampler assumptions.
 The general bound corresponds to Theorem 4.10 of [CWYZ26], with a stronger sufficient
 interpolation condition for freely chosen budgets, as described below.
 The full constraint count includes every order `s < m`; (4.5) stops at `min(m - 1, M)`.
-`AffineParams.surplus` proves the full condition for the parameter choice used in Theorem 1.1.
+The parameter choice of Theorem 1.1 satisfies the full condition.
 The final bound is Theorem 1.1 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
@@ -111,8 +111,7 @@ The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
 with subtractions in `ℕ`.
 The left sum counts constraints for every `s < m`.
-`AffineParams.surplus` supplies this condition from `AffineParams d n 1 η` for the budgets
-`affineMultiplicity η`, `affineYZBudget d n η`, and `affineRootBudget d n 1 η`. -/
+The parameter choice of Section 4.1 satisfies this condition at `e = 1`. -/
 theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (domain : ι ↪ F)
     (f g : ι → F) {d m D M : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
@@ -165,8 +164,7 @@ The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
 with subtractions in `ℕ`.
 The left sum counts constraints for every `s < m`.
-`AffineParams.surplus` supplies this condition from `AffineParams d n 1 η` for the budgets
-`affineMultiplicity η`, `affineYZBudget d n η`, and `affineRootBudget d n 1 η`. -/
+The parameter choice of Section 4.1 satisfies this condition at `e = 1`. -/
 theorem affineMcaError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m D M : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))

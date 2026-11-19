@@ -28,19 +28,21 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 
 * `ReedSolomon.AffineParams`: the standing hypotheses on `d`, `n`, `e` and `η`.
 * `ReedSolomon.affineMultiplicity`: the multiplicity `m = ⌈2 / η⌉`.
-* `ReedSolomon.affineYZBudget`: the `(Y, Z)`-degree budget `D = ⌈(m + 1/2)² / (3ρ)⌉ - 1`.
+* `ReedSolomon.affineYZBudget`: the `(Y, Z)`-degree budget `D = ⌈(m + 1/2)² / (3ρ)⌉ - 1`,
+  with natural-number subtraction.
 * `ReedSolomon.affineThreshold`: the agreement threshold `A = ⌈(√ρ + η) n⌉`.
-* `ReedSolomon.affinePersistenceThreshold`: the threshold `B = ⌈(√ρ + η / 2) n⌉ - e`.
-* `ReedSolomon.affineRootBudget`: the `Z`-degree budget `M = min D ⌊(m A - e D - 1) / d⌋`.
+* `ReedSolomon.affinePersistenceThreshold`: the threshold `B = ⌈(√ρ + η / 2) n⌉ - e`,
+  with natural-number subtraction.
+* `ReedSolomon.affineRootBudget`: the `Z`-degree budget `M = min D ⌊(m A - e D - 1) / d⌋`,
+  with natural-number subtraction.
 
 ## Main statements
 
 * `ReedSolomon.sub_le_affinePersistenceThreshold`: `(√ρ + η / 2) n - e ≤ B`.
 * `ReedSolomon.AffineParams.surplus`: more unknowns than constraints.
 * `ReedSolomon.AffineParams.ceil_add_mul_yzBudget_le`: the budgets fit, `U + e D ≤ m A`.
-* `ReedSolomon.AffineParams.mul_yzBudget_le` and `ReedSolomon.AffineParams.yzBudget_le`:
-  `e D ≤ m A` and `D ≤ m A`.
-* `ReedSolomon.AffineParams.four_mul_le`: `4 e ≤ n η² ρ`.
+* `ReedSolomon.AffineParams.mul_yzBudget_le`: `e D ≤ m A`.
+* `ReedSolomon.AffineParams.four_mul_le`: `4 e ≤ d η²`.
 * `ReedSolomon.AffineParams.persistenceThreshold_add_lt`: `B + e < A`.
 * `ReedSolomon.AffineParams.bounds`: the order relations, such as `d + e < B < A ≤ n`.
 * `ReedSolomon.AffineParams.yzBudget_le_nine_div`: `D ≤ 9 / (2 ρ η²)`.
@@ -50,7 +52,7 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   `n (B - d - e) / (B² - n (d + e)) ≤ 4 / η`.
 * `ReedSolomon.AffineParams.add_lt_persistenceThreshold` and
   `ReedSolomon.AffineParams.card_mul_add_lt_sq`: `d + e < B` and `n (d + e) < B²`.
-* `ReedSolomon.AffineParams.sixtyFour_mul_lt`: `64 e < n`.
+* `ReedSolomon.AffineParams.sixty_four_mul_lt`: `64 e < n`.
 
 ## References
 
@@ -58,18 +60,20 @@ The parameters are those of Lemma 4.2 and Section 4.1 of [CWYZ26].
 Appendix A of [CWYZ26] uses them with `e = n / q₀` and the univariate degree `ρ n`.
 The sufficient surplus sums constraints over all `s < m`.
 The count (4.5) stops at `min(m - 1, M)`.
-`AffineParams.surplus` proves the full-constraint inequality for these parameters.
+The surplus theorem proves the full-constraint inequality for these parameters.
 Its key step is the paper's condition `e D ≤ m A - U` with `U = ⌈(m + 1/2) √ρ n⌉`.
 
 The estimates are those of "The bound" in Appendix A of [CWYZ26].
-For the univariate degree `d₀ e`, the side conditions `d + e < B` and `n (d + e) < B²`
-read `B > (d₀ + 1) n / q₀` and `n (d₀ + 1) n / q₀ < B²`.
-The paper states the first and leaves the second to "the same computation".
+For a Reed–Muller code of degree `d₀`, the univariate degree is `d = d₀ e`.
+The side conditions `d + e < B` and `n (d + e) < B²` then read `(d₀ + 1) e < B`
+and `n (d₀ + 1) e < B²`.
+The paper derives both from `a − √b ≥ η/4`, which is not formalized.
+The Lean proves `d + e < B`, `n (d + e) < B²` and `ℓ ≤ 4 / η` directly.
 The paper's `q₀ > 64` is `64 e < n`.
 
 The positive multiplier degree is a standing hypothesis, which the paper leaves implicit.
-It gives `B + e < A` and `D ≤ m A`.
-At `e = 0` the standing condition is void, and `D ≤ m A` fails for small `ρ`.
+It gives `B + e < A`.
+At `e = 0` the standing condition is void.
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
     *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
@@ -84,7 +88,8 @@ open Polynomial.SymbolicInterpolation
 /-- The multiplicity `⌈2 / η⌉`. -/
 noncomputable def affineMultiplicity (η : ℝ) : ℕ := ⌈2 / η⌉₊
 
-/-- The `(Y, Z)`-degree budget `⌈(m + 1/2)² / (3 d / n)⌉ - 1`. -/
+/-- The `(Y, Z)`-degree budget `⌈(m + 1/2)² / (3 d / n)⌉ - 1`, with natural-number subtraction.
+-/
 noncomputable def affineYZBudget (d n : ℕ) (η : ℝ) : ℕ :=
   ⌈((affineMultiplicity η : ℝ) + 1 / 2) ^ 2 / (3 * ((d : ℝ) / n))⌉₊ - 1
 
@@ -163,17 +168,24 @@ private theorem degree_eq (h : AffineParams d n e η) :
   rw [Real.sq_sqrt h.degreeFraction_pos.le]
   field_simp [h.card_pos.ne']
 
-/-- The multiplier degree is small: `4 e ≤ n η² ρ`. -/
-theorem four_mul_le (h : AffineParams d n e η) :
-    4 * (e : ℝ) ≤ n * η ^ 2 * √((d : ℝ) / n) ^ 2 := by
+/-- The multiplier degree is small: `4 e ≤ d η²`. -/
+theorem four_mul_le (h : AffineParams d n e η) : 4 * (e : ℝ) ≤ d * η ^ 2 := by
   have := h.four_div_le
-  rw [Real.sq_sqrt h.degreeFraction_pos.le]
   rw [← mul_div_assoc, div_le_iff₀ h.degreeFraction_pos] at this
+  have hd : (d : ℝ) = (d : ℝ) / n * n := by field_simp [h.card_pos.ne']
+  rw [hd]
   linarith
 
-/-- The length is large: `64 e < n`. -/
-theorem sixtyFour_mul_lt (h : AffineParams d n e η) : 64 * e < n := by
-  have h4 := h.four_mul_le
+/-- The multiplier degree is small: `4 e ≤ n η² √ρ²`. -/
+private theorem four_mul_le_sqrt (h : AffineParams d n e η) :
+    4 * (e : ℝ) ≤ n * η ^ 2 * √((d : ℝ) / n) ^ 2 := by
+  have := h.four_mul_le
+  rw [h.degree_eq] at this
+  linarith
+
+/-- The length exceeds `64` times the multiplier degree: `64 e < n`. -/
+theorem sixty_four_mul_lt (h : AffineParams d n e η) : 64 * e < n := by
+  have h4 := h.four_mul_le_sqrt
   have hn := h.card_pos
   have hr0 := h.sqrt_degreeFraction_pos
   have hη := h.pos
@@ -300,11 +312,6 @@ theorem mul_yzBudget_le (h : AffineParams d n e η) :
     e * affineYZBudget d n η ≤ affineMultiplicity η * affineThreshold d n η :=
   le_of_add_le_right h.ceil_add_mul_yzBudget_le
 
-/-- The `(Y, Z)`-degree budget is at most `m A`. -/
-theorem yzBudget_le (h : AffineParams d n e η) :
-    affineYZBudget d n η ≤ affineMultiplicity η * affineThreshold d n η :=
-  (Nat.le_mul_of_pos_left _ h.one_le_multiplierDegree).trans h.mul_yzBudget_le
-
 /-- The agreement threshold is at most `n`. -/
 theorem threshold_le (h : AffineParams d n e η) : affineThreshold d n η ≤ n := by
   refine Nat.ceil_le.mpr ?_
@@ -314,7 +321,7 @@ theorem threshold_le (h : AffineParams d n e η) : affineThreshold d n η ≤ n 
 /-- The ceiling behind the persistence threshold is `B + e`. -/
 private theorem persistenceThreshold_add_eq (h : AffineParams d n e η) :
     affinePersistenceThreshold d n e η + e = ⌈(√((d : ℝ) / n) + η / 2) * n⌉₊ := by
-  have h4 := h.four_mul_le
+  have h4 := h.four_mul_le_sqrt
   have hn := h.card_pos
   have hr0 := h.sqrt_degreeFraction_pos
   have hr1 := h.sqrt_degreeFraction_lt_one
@@ -338,7 +345,7 @@ theorem persistenceThreshold_add_lt (h : AffineParams d n e η) :
   have hη := h.pos
   -- `η n > 2`, so the two real thresholds differ by more than one.
   have hηn : 2 < η * n := by
-    have h4 := h.four_mul_le
+    have h4 := h.four_mul_le_sqrt
     have he : (1 : ℝ) ≤ e := by exact_mod_cast h.one_le_multiplierDegree
     have : η * √((d : ℝ) / n) ^ 2 < 1 := by
       nlinarith [h.sqrt_degreeFraction_lt_one, h.lt_one, mul_pos hr0 hr0]
@@ -411,23 +418,19 @@ private theorem persistence_real (h : AffineParams d n e η) :
       η * n * ((affinePersistenceThreshold d n e η : ℝ) - d - e) ≤
         4 * ((affinePersistenceThreshold d n e η : ℝ) ^ 2 - n * (d + e)) := by
   have hkey := persistence_key h.card_pos h.sqrt_degreeFraction_pos h.sqrt_degreeFraction_lt_one
-    h.pos (by linarith [h.lt_one_sub]) (Nat.cast_nonneg e) h.four_mul_le
+    h.pos (by linarith [h.lt_one_sub]) (Nat.cast_nonneg e) h.four_mul_le_sqrt
     (sub_le_affinePersistenceThreshold d n e η)
   rw [← h.degree_eq] at hkey
   exact ⟨by linarith [hkey.1], by linarith [hkey.2]⟩
 
-/-- The persistence threshold exceeds the degree by more than `e`: `d + e < B`.
-
-For the univariate degree `d₀ e`, this reads `(d₀ + 1) e < B`. -/
+/-- The persistence threshold exceeds the degree by more than `e`: `d + e < B`. -/
 theorem add_lt_persistenceThreshold (h : AffineParams d n e η) :
     d + e < affinePersistenceThreshold d n e η := by
   have := h.persistence_real.1
   exact_mod_cast (show ((d + e : ℕ) : ℝ) < affinePersistenceThreshold d n e η by
     push_cast; linarith)
 
-/-- The Johnson denominator is positive: `n (d + e) < B²`.
-
-For the univariate degree `d₀ e`, this reads `n (d₀ + 1) e < B²`. -/
+/-- The Johnson denominator is positive: `n (d + e) < B²`. -/
 theorem card_mul_add_lt_sq (h : AffineParams d n e η) :
     n * (d + e) < affinePersistenceThreshold d n e η ^ 2 := by
   obtain ⟨h1, h2⟩ := h.persistence_real

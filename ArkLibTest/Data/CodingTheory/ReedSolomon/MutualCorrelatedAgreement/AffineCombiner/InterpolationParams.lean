@@ -27,7 +27,7 @@ private theorem sqrt_rs : √((16 : ℕ) / ((100 : ℕ) : ℝ)) = 2 / 5 := by
   rw [Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
   norm_num
 
-/-- The standing hypotheses hold at `d = 16`, `n = 100`, `e = 1`, `η = 1/2`. -/
+-- The standing hypotheses hold at `d = 16`, `n = 100`, `e = 1`, `η = 1/2`.
 example : AffineParams 16 100 1 (1 / 2) := by
   refine ⟨by norm_num, by norm_num, le_rfl, by norm_num, ?_, ?_⟩
   · rw [sqrt_rs]; norm_num
@@ -64,10 +64,16 @@ private theorem rm_values : affineMultiplicity (1 / 4) = 8 ∧
   rw [sqrt_rm]
   norm_num [hceil]
 
--- The surplus condition `e D ≤ m A - U` holds with `U = ⌈(m + 1/2) √ρ n⌉ = 278528`.
-example : 256 * 96 ≤ 8 * 49152 - 278528 ∧
-    ⌈((8 : ℝ) + 1 / 2) * (1 / 2) * 65536⌉₊ = 278528 := by
-  norm_num
+-- The surplus condition `U + e D ≤ m A` holds with `U = ⌈d (m + 1/2) / √ρ⌉ = 278528`.
+example : ⌈((16384 : ℕ) : ℝ) * ((((8 : ℕ) : ℝ) + 1 / 2) / (1 / 2))⌉₊ = 278528 ∧
+    278528 + 256 * affineYZBudget 16384 65536 (1 / 4) ≤
+      8 * affineThreshold 16384 65536 (1 / 4) := by
+  have hU : ⌈((16384 : ℕ) : ℝ) * ((((8 : ℕ) : ℝ) + 1 / 2) / (1 / 2))⌉₊ = 278528 := by
+    norm_num
+  refine ⟨hU, ?_⟩
+  have h := rmParams.ceil_add_mul_yzBudget_le
+  rw [rm_values.1, sqrt_rm, hU] at h
+  exact h
 
 -- The interpolation surplus holds at these budgets.
 open Polynomial.SymbolicInterpolation in
@@ -93,14 +99,32 @@ example : (64 + 1) * 256 < affinePersistenceThreshold 16384 65536 256 (1 / 4) �
   have h2 := rmParams.card_mul_add_lt_sq
   exact ⟨by simpa using h1, by simpa using h2⟩
 
--- The Johnson factor `ℓ = n (B - (d₀ + 1) e) / (B² - n (d₀ + 1) e)` is about `2.78 < 3`.
-example : (65536 : ℝ) * (40704 - 16384 - 256) / (40704 ^ 2 - 65536 * (16384 + 256)) < 3 := by
+-- The Johnson factor `ℓ = n (B - (d₀ + 1) e) / (B² - n (d₀ + 1) e)` is about `2.78 < 3`,
+-- within the general estimate `ℓ ≤ 4 / η = 16`.
+example : (65536 : ℝ) * ((affinePersistenceThreshold 16384 65536 256 (1 / 4) : ℝ) - 16384 - 256) /
+      ((affinePersistenceThreshold 16384 65536 256 (1 / 4) : ℝ) ^ 2 - 65536 * (16384 + 256)) < 3 ∧
+    (65536 : ℝ) * ((affinePersistenceThreshold 16384 65536 256 (1 / 4) : ℝ) - 16384 - 256) /
+      ((affinePersistenceThreshold 16384 65536 256 (1 / 4) : ℝ) ^ 2 - 65536 * (16384 + 256)) ≤
+      4 / (1 / 4) := by
+  refine ⟨?_, by exact_mod_cast rmParams.card_mul_sub_div_sq_sub_le⟩
+  rw [rm_values.2.2.2.1]
   norm_num
 
--- The estimates `D ≤ 9 / (2 ρ η²) = 144`, `ρ n M ≤ 3 n / η` and `q₀ = n / e > 64`.
-example : (96 : ℝ) ≤ 9 / (2 * (16384 / 65536) * (1 / 4) ^ 2) ∧
-    (16384 * 22 : ℝ) ≤ 3 * 65536 / (1 / 4) ∧ 64 * 256 < 65536 := by
-  norm_num
+-- The estimate `D ≤ 9 / (2 ρ η²) = 288`, here at `D = 96`.
+example : affineYZBudget 16384 65536 (1 / 4) = 96 ∧
+    (affineYZBudget 16384 65536 (1 / 4) : ℝ) ≤ 288 := by
+  refine ⟨rm_values.2.1, ?_⟩
+  have h := rmParams.yzBudget_le_nine_div
+  norm_num at h
+  exact_mod_cast h
+
+-- The estimate `ρ n M ≤ 3 n / η = 786432` at `ρ n = 16384` and `M = 22`.
+example : ((16384 * 22 : ℕ) : ℝ) ≤ 3 * 65536 / (1 / 4) := by
+  have h := rmParams.mul_rootBudget_le
+  rwa [rm_values.2.2.2.2] at h
+
+-- The estimate `q₀ = n / e > 64`.
+example : 64 * 256 < 65536 := rmParams.sixty_four_mul_lt
 
 -- Every parameter tuple satisfying the hypotheses has `d + e < B < A ≤ n`.
 example {d n e : ℕ} {η : ℝ} (h : AffineParams d n e η) :
@@ -118,10 +142,10 @@ example {d n e : ℕ} {η : ℝ} (h : AffineParams d n e η) :
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.AffineParams.four_mul_le
 
-/-- info: 'ReedSolomon.AffineParams.sixtyFour_mul_lt' depends on axioms:
+/-- info: 'ReedSolomon.AffineParams.sixty_four_mul_lt' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.AffineParams.sixtyFour_mul_lt
+#print axioms ReedSolomon.AffineParams.sixty_four_mul_lt
 
 /-- info: 'ReedSolomon.AffineParams.ceil_add_mul_yzBudget_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -137,11 +161,6 @@ example {d n e : ℕ} {η : ℝ} (h : AffineParams d n e η) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.AffineParams.mul_yzBudget_le
-
-/-- info: 'ReedSolomon.AffineParams.yzBudget_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.AffineParams.yzBudget_le
 
 /-- info: 'ReedSolomon.AffineParams.persistenceThreshold_add_lt' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
