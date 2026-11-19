@@ -813,7 +813,7 @@ theorem subfield_ca_exp_term_le_floor_mode
   · have hrs : r ≤ s := Nat.le_of_lt (Nat.lt_of_not_ge hsr)
     refine Nat.le_induction
       (m := r)
-      (P := fun j _ =>
+      (motive := fun j _ =>
         t ^ j / (j.factorial : ℝ) ≤
           t ^ r / (r.factorial : ℝ)) (le_refl _) ?_ s hrs
     intro j hrj ih

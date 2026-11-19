@@ -54,13 +54,12 @@ private theorem largeDomain_error_lt :
   have hA : ⌈((2 : ℝ) / 5 + 1 / 2) * 100⌉₊ = 90 := by norm_num
   simp only [hA, Nat.cast_pow, Nat.cast_ofNat] at h
   apply lt_of_le_of_lt h
-  have hreal :
-      (4 / ((1 / 2 : ℝ) * 2 ^ 64) + 2 ^ 14 * (100 : ℝ) ^ 2 /
-        (((16 : ℝ) / 100) ^ 3 * (1 / 2) ^ 10 * (2 ^ 64 : ℝ) ^ 2)) < 1 / 2 ^ 60 := by
-    norm_num
-  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) :=
-        (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr hreal
-    _ = _ := by norm_num [ENNReal.ofReal_div_of_pos, one_div]
+  calc _ < ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) := by
+        apply (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr
+        norm_num
+    _ = _ := by
+      rw [ENNReal.ofReal_div_of_pos (by positivity), ENNReal.ofReal_pow (by norm_num),
+        ENNReal.ofReal_one, ENNReal.ofReal_ofNat]
 
 /-- An embedding of `𝔽_{2^64}` into `𝔽_{2^128}`, which exists since `64 ∣ 128`. -/
 private noncomputable def embed₆₄ : GaloisField 2 64 →+* GaloisField 2 128 :=

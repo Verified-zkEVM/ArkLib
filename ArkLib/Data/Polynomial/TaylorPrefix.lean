@@ -64,13 +64,13 @@ theorem coeff_taylor_centeredCoefficientPrefix (center : R) (c : ℕ → R) (K i
     rw [Finset.sum_eq_single (⟨i, hi⟩ : Fin K)]
     · simp
     · intro j _ hj
-      rw [coeff_monomial, ite_eq_right]
+      rw [coeff_monomial, Finsupp.single_apply, ite_eq_right]
       exact fun h ↦ hj (Fin.ext h)
     · simp
   · rw [ite_eq_right hi]
     apply Finset.sum_eq_zero
     intro j _
-    rw [coeff_monomial, ite_eq_right]
+    rw [coeff_monomial, Finsupp.single_apply, ite_eq_right]
     intro h
     exact hi (h ▸ j.isLt)
 
@@ -126,7 +126,7 @@ theorem centeredCoefficientPrefix_succ (center : R) (c : ℕ → R) (K : ℕ) :
   simp only [Fin.val_castSucc, Fin.val_last]
   congr 1
   rw [taylor_mul, taylor_C, taylor_pow]
-  simp [taylor_X, C_mul_X_pow_eq_monomial]
+  simp [C_mul_X_pow_eq_monomial]
 
 end
 

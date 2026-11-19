@@ -39,7 +39,8 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE)
 
 open Classical in
 /-- If `Q` is irreducible with positive root degree and coefficient height at most `h`, then there
