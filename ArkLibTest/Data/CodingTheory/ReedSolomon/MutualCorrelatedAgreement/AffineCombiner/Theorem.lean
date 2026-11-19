@@ -89,8 +89,8 @@ example (f g : Fin 100 → GaloisField 2 128) :
   rw [hsqrt, Fintype.card_fin, hA] at hgood
   refine ⟨S, ?_, hgood⟩
   rw [field_card, div_lt_iff₀ (by positivity)]
-  refine hS.trans_lt ?_
-  norm_num
+  norm_num at hS ⊢
+  linarith
 
 /-- info: 'ReedSolomon.affineMcaError_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
