@@ -590,7 +590,7 @@ theorem exists_terminal_line_pinning
               ((d : ℝ) + ε) := by
       intro d
       induction d using Nat.strong_induction_on with
-      | h d ih =>
+      | ind d ih =>
           intro S hd
           by_cases hbot : pinnedSubspace H S = ⊥
           · refine ⟨S, hbot, ?_⟩

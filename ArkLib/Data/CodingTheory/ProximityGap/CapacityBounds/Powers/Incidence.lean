@@ -278,7 +278,7 @@ theorem powers_alpha_pow_relation
         powers_radius_base (δmin : ℝ) (η : ℝ) := by
     rw [one_div]
     convert Real.rpow_inv_natCast_pow (n := k + 2) hr (by omega) using 1
-    all_goals norm_num
+    norm_num
   have hδmul : (δmin : ℝ) * (Fintype.card ι : ℝ) =
       (Code.minDist (C : Set (ι → A)) : ℝ) := by
     calc

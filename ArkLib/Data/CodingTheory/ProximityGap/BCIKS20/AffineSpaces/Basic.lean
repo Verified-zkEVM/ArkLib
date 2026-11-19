@@ -14,6 +14,7 @@ public import ArkLib.Data.CodingTheory.DivergenceOfSets
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import VCVio.ProgramLogic.Unary.HoareTriple
 
 /-!
 # Foundations for affine-space proximity bounds
@@ -150,6 +151,7 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι]
       (α := (U : Type)) (β := (U : Type)) (e := shiftEquiv)
       (p := fun a : (U : Type) => δᵣ(a.1, V) ≤ δ))
 
+open OracleComp.ProgramLogic in
 theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     {U : Finset (ι → F)} [Nonempty U]
@@ -160,63 +162,13 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι]
       ∃ a : U, Pr{let z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε  := by
   intro hprob
   classical
-  let : MeasurableSpace U := ⊤
-  let : MeasurableSpace F := ⊤
-  let good : (ι → F) → Prop := fun w => δᵣ(w, V) ≤ δ
-  let lineProb (a : U) : ENNReal := Pr{let z ← $ᵗ F}[good (a.1 + z • dir)]
-  let P2 : ENNReal := Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)]
-  have hP2_integral : P2 = ∫⁻ a, lineProb a ∂𝒟[$ᵗ U] := by
-    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
-      ∫⁻ a, Pr{let z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
-    simpa only [id_map, bind_pure_comp] using
-      (prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
-        (fun a : U => do
-          let z ← $ᵗ F
-          return good (a.1 + z • dir)) id)
-  have hswap :
-      P2 = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] := by
-    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] = _
-    calc
-      Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
-          Pr{let za ← $ᵗ (F × U)}[good (za.2.1 + za.1 • dir)] := by
-        exact SampleableType.prEvent_uniformSample_pair_of_bijective
-          (g := fun (a : U) (z : F) => (z, a)) (Equiv.prodComm U F).bijective
-          (fun za : F × U => good (za.2.1 + za.1 • dir))
-      _ = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] :=
-        SampleableType.prEvent_uniformSample_prod
-          (fun za : F × U => good (za.2.1 + za.1 • dir))
-  have hP2_eq : P2 = Pr{let u ← $ᵗ U}[good u.1] := by
-    rw [hswap]
-    have hsplit :
-        Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] =
-          ∫⁻ z, Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
-      simpa only [id_map, bind_pure_comp] using
-        (prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
-          (fun z : F => do
-            let a ← $ᵗ U
-            return good (a.1 + z • dir)) id)
-    rw [hsplit]
-    have hconst : ∀ z : F,
-        Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] = Pr{let a ← $ᵗ U}[good a.1] := by
-      intro z
-      simpa [good] using
-        (prob_uniform_shift_invariant (U := U) (dir := dir) (hshift := hshift)
-          (V := V) (δ := δ) (z := z))
-    simp_rw [hconst]
-    rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
-  have hP2_gt : P2 > ε := by
-    simpa [hP2_eq] using hprob
-  have h_integral_gt : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) > ε := by
-    simpa [hP2_integral] using hP2_gt
-  by_contra hno
-  push Not at hno
-  have h_integral_le : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ε := by
-    calc
-      (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ∫⁻ _a : U, ε ∂𝒟[$ᵗ U] :=
-        lintegral_mono hno
-      _ = ε := by
-        rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
-  exact (not_lt_of_ge h_integral_le) h_integral_gt
+  by_contra! hno
+  have hshiftProb := prob_uniform_shift_invariant (dir := dir) (hshift := hshift) (V := V) (δ := δ)
+  have exchanged := OracleComp.prEvent_bind_map_swap ($ᵗ U) ($ᵗ F) fun a z =>
+    δᵣ(a.1 + z • dir, V) ≤ δ
+  simp only [prEvent_eq_wp, wp_bind, wp_map, Function.comp_def] at exchanged hshiftProb hprob hno
+  simp_rw [hshiftProb, wp_const] at exchanged
+  exact hprob.not_ge (exchanged ▸ wp_le_const_of_support _ fun a _ => hno a)
 
 theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
