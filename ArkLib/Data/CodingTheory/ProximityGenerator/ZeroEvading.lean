@@ -111,7 +111,7 @@ theorem prob_dotProduct_monomialGenerator_eq_zero_le {s d : ℕ} {ℓ : Type} [F
       dotProduct (fun i => MvPolynomial.eval r (MvPolynomial.monomial (e i) (1 : F))) v =
         MvPolynomial.eval r p := by
     simp [p, dotProduct, MvPolynomial.eval_monomial, mul_comm]
-  simpa only [heval] using prob_eval_zero_univ_le_div p hp hpd
+  simpa only [heval] using prEvent_eval_eq_zero_univ_le_div p hp hpd
 
 /-- Exponents for the constant monomial followed by the individual variables. -/
 noncomputable def affineExponents (n : ℕ) : Fin (n + 1) → (Fin n →₀ ℕ) :=

@@ -165,7 +165,7 @@ theorem IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq
     rw [hloss_eq] at this
     omega
   refine ⟨V - C θ * U, U, hFdeg, hUd, ?_, ?_⟩
-  · simp [coeff_sub, coeff_C_mul, coeff_eq_zero_of_degree_lt hV]
+  · simp [coeff_C_mul, coeff_eq_zero_of_degree_lt hV]
   · classical
     refine (Nat.sub_le_sub_left hloss A).trans ((Nat.sub_le_sub_right hA _).trans
       ((Finset.le_card_sdiff _ _).trans (Finset.card_le_card fun i hi ↦ ?_)))

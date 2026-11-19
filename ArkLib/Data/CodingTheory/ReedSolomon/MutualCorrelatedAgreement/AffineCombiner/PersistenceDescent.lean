@@ -88,8 +88,8 @@ private theorem degree_lineRatioDenominator_le {d : ℕ} (c : Fin (d + 1) ⊕ Fi
 private theorem lineRatioDenominator_ne_zero {d : ℕ} {c : Fin (d + 1) ⊕ Fin 2 → K}
     (hc : c (.inr 0) ≠ 0 ∨ c (.inr 1) ≠ 0) : lineRatioDenominator c ≠ 0 := by
   intro h
-  have h0 := congrArg (coeff · 0) h
-  have h1 := congrArg (coeff · 1) h
+  have h0 := congrArg (fun p : K[X] ↦ p.coeff 0) h
+  have h1 := congrArg (fun p : K[X] ↦ p.coeff 1) h
   simp [lineRatioDenominator] at h0 h1
   tauto
 

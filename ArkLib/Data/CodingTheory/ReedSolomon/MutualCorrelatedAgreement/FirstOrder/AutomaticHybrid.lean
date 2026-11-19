@@ -55,7 +55,8 @@ exception count is `E = E₀ + E₁ + E₂`, where
 
 @[expose] public section
 
-open Polynomial PolynomialDifferential MvPolynomial
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE coeffNatDegree)
 
 namespace ReedSolomon
 
