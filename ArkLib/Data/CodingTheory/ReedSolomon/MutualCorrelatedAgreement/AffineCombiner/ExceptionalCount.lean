@@ -19,24 +19,44 @@ public import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
 /-!
 # Counting exceptional challenges through the factors of the interpolant
 
-An exceptional candidate makes the interpolant vanish along its challenge line.
-Over the algebraic closure, the interpolant splits into a content free of `Z` and irreducible
-factors of positive `Z`-degree.
-The content vanishes on few lines, and each factor has few nonpersistent challenges.
-Summing over the factors bounds the nonpersistent exceptional challenges.
+A root of the interpolant along a challenge multiplier `L_γ` is counted over an algebraically
+closed field `E`.
+The interpolant splits into a content free of `Z` and irreducible factors of positive
+`Z`-degree.
+The content vanishes along few multipliers.
+Each factor has few challenges with a root whose chart point is not excluded.
+Summing over the factors bounds the challenges with a root that is not good.
+
+The generic count takes the challenges as a finite type with injective multipliers.
+Each Frobenius root of a multiplier is a family multiplier at chart coordinates.
+Positions carry linear functionals `Λᵢ`, and high cuts restrict the counted roots.
+Each code supplies its own conversion from an excluded chart point to persistence.
+
+Let `n` be the number of positions, `D` the `(Y, Z)`-degree budget and `M` the `Z`-degree
+budget.
+The generic bound is `D² + (2 d M n / (A - B - e + 1)) ^ |κ| D ^ (|κ| + 1)`.
+For Reed–Solomon codes, `|κ| = 2` and `e = 1`, which gives `D² + 4 d² M² D³ (n / (A - B))²`.
+The Reed–Solomon interpolant is mapped from `F` into its algebraic closure.
+
+The count is Lemma 4.1 of [CWYZ26], without its final numerics.
+Appendix A gives the bound `(2 ρ n M v) ^ (k + 1) D ^ (k + 2)` for Reed–Muller codes.
+It is the generic bound at `|κ| = k + 1` and `d = ρ n`, with `v = n / (A - B - e + 1)`.
+
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
 ## Main statements
 
-* `ReedSolomon.exists_affineFactor_finset_card_le`: the count for one irreducible factor.
+* `ReedSolomon.exists_factorRoots_finset_card_le`: the count for one irreducible factor.
+* `ReedSolomon.exists_interpolantRoots_finset_card_le`: outside few challenges, every root of
+  the interpolant with `A` agreements is good.
 * `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant`: outside a given set and
   at most `D² + 4 d² M² D³ (n / (A - B))²` more challenges, no candidate is exceptional.
 
 ## References
 
-The count is Lemma 4.1 of [CWYZ26], without its final numerics.
-
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
-    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26]
+    *Affine combiners for Reed–Solomon proximity gaps*][CWYZ26], Lemmas 4.1 and 4.7 and
+    Appendix A.
 -/
 
 @[expose] public section
@@ -46,102 +66,209 @@ namespace ReedSolomon
 open MvPolynomial
 open scoped Finset
 
-/-- If `δ + Σ h ≤ D`, then `δ + Σ h (h - 1) ≤ D²` and `Σ h³ ≤ D³`. -/
-private theorem budget_le {α : Type*} (s : Finset α) (h : α → ℕ) {δ D : ℕ}
+/-- If `δ + Σ h ≤ D`, then `δ + Σ h (h - 1) ≤ D²` and `Σ h ^ (k + 1) ≤ D ^ (k + 1)`. -/
+private theorem budget_le {α : Type*} (s : Finset α) (h : α → ℕ) (k : ℕ) {δ D : ℕ}
     (hD : δ + ∑ c ∈ s, h c ≤ D) :
-    δ + ∑ c ∈ s, h c * (h c - 1) ≤ D ^ 2 ∧ ∑ c ∈ s, h c ^ 3 ≤ D ^ 3 := by
+    δ + ∑ c ∈ s, h c * (h c - 1) ≤ D ^ 2 ∧ ∑ c ∈ s, h c ^ (k + 1) ≤ D ^ (k + 1) := by
   set H := ∑ c ∈ s, h c
   have hle : ∀ c ∈ s, h c ≤ H := fun c hc ↦ Finset.single_le_sum (fun _ _ ↦ Nat.zero_le _) hc
   have h2 : ∑ c ∈ s, h c * (h c - 1) ≤ H * (H - 1) := by
     rw [Finset.sum_mul]
     exact Finset.sum_le_sum fun c hc ↦ Nat.mul_le_mul_left _ (Nat.sub_le_sub_right (hle c hc) 1)
-  have h3 : ∑ c ∈ s, h c ^ 3 ≤ H ^ 3 := by
-    calc ∑ c ∈ s, h c ^ 3 ≤ ∑ c ∈ s, h c * H ^ 2 :=
+  have hk : ∑ c ∈ s, h c ^ (k + 1) ≤ H ^ (k + 1) := by
+    calc ∑ c ∈ s, h c ^ (k + 1) ≤ ∑ c ∈ s, h c * H ^ k :=
           Finset.sum_le_sum fun c hc ↦ by
             rw [pow_succ']
-            exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (hle c hc) 2)
-      _ = H ^ 3 := by rw [← Finset.sum_mul]; ring
+            exact Nat.mul_le_mul_left _ (Nat.pow_le_pow_left (hle c hc) k)
+      _ = H ^ (k + 1) := by rw [← Finset.sum_mul]; ring
   have hH : H ≤ D := le_of_add_le_right hD
-  refine ⟨?_, h3.trans (Nat.pow_le_pow_left hH 3)⟩
-  obtain ⟨k, rfl⟩ := Nat.exists_eq_add_of_le hH
-  have hδ : δ ≤ k := by omega
+  refine ⟨?_, hk.trans (Nat.pow_le_pow_left hH _)⟩
+  obtain ⟨t, rfl⟩ := Nat.exists_eq_add_of_le hH
+  have hδ : δ ≤ t := by omega
   have hHH : H * (H - 1) ≤ H * H := Nat.mul_le_mul_left _ (Nat.sub_le _ _)
-  nlinarith [Nat.le_mul_self k]
+  nlinarith [Nat.le_mul_self t]
 
-section Factor
+section Generic
 
-variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
-variable {E : Type*} [Field E]
+variable {E : Type*} [Field E] {κ : Type*} [Fintype κ] {ι : Type*} [Fintype ι] {Γ : Type*}
 
-/-- Outside few challenges, every root along the line of one irreducible factor is persistent.
+/-- Outside few challenges, every root of one irreducible factor is good.
 
+The challenges form a finite type with injective multipliers `L_γ`.
+For each Frobenius exponent `r`, the Frobenius root of `L_γ` is the multiplier of the family
+`θ_r` at an injective coefficient vector `a_r(γ)`, and the targets `T_r` read the agreement
+condition `Λᵢ P = uᵢ + Λᵢ(L_γ) vᵢ` in these coordinates.
+Here `p` is the exponential characteristic and `T_r` has degree at most `p ^ r`.
+Assume `1 ≤ d`, `1 ≤ e`, `B + e ≤ A ≤ n`, where `n` is the number of positions.
+Assume the functionals determine polynomials of degree at most `d` from `B + e` positions.
 The factor has positive `Z`-degree at most `M` and `(Y, Z)`-degree at most `h`.
-Assume `1 ≤ d ≤ B < A ≤ n`, where `n` is the domain size.
-The roots counted are candidates of degree at most `d` with at least `A` agreements. -/
-theorem exists_affineFactor_finset_card_le [Finite F] [IsAlgClosed E] (domain : ι ↪ F)
-    (f g : ι → F) (φ : F →+* E) (p : ℕ) [ExpChar E p] [PerfectRing E p]
+An excluded chart point of a regular root `P(X ^ (p ^ r))` makes `P` good.
+At most `h (h - 1) + (2 d M n / (A - B - e + 1)) ^ |κ| h ^ (|κ| + 1)` challenges are left out,
+with natural-number subtraction. -/
+theorem exists_factorRoots_finset_card_le [Finite Γ] [IsAlgClosed E] (p : ℕ) [ExpChar E p]
     {Q : MvPolynomial AffineVar E} (hirr : Irreducible Q) (hpos : 0 < Q.degreeOf none)
-    {d h A B M : ℕ} (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι)
-    (hQ : Q.weightedTotalDegree affineYZWeight ≤ h) (hM : Q.degreeOf none ≤ M) :
-    ∃ ex : Finset (F × F), (#ex : ℝ) ≤ ((h * (h - 1) : ℕ) : ℝ) +
-        4 * d ^ 2 * M ^ 2 * h ^ 3 * ((Fintype.card ι : ℝ) / (A - B : ℕ)) ^ 2 ∧
-      ∀ c ∉ ex, ∀ P : Polynomial F,
-        multiplierEval (affineMultiplier (φ c.1) (φ c.2)) (P.map φ) Q = 0 →
-        P.degree ≤ d →
-        A ≤ #(polynomialAgreementSet domain
-          (combinedWord domain f g (affineMultiplier c.1 c.2)) P) →
-        IsAffinePersistent domain f g d B c.1 c.2 P := by
+    {d h A B e M : ℕ} (hd : 1 ≤ d) (he : 1 ≤ e) (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
+    (hQ : Q.weightedTotalDegree affineYZWeight ≤ h) (hM : Q.degreeOf none ≤ M)
+    (mult : Γ → Polynomial E) (hmult : mult.Injective) (θ : ℕ → κ → Polynomial E)
+    (a : ℕ → Γ → κ → E) (ha : ∀ r, (a r).Injective)
+    (hθ : ∀ r γ, (mult γ).map ((iterateFrobeniusEquiv E p r).symm : E →+* E) =
+      familyMultiplier (θ r) (a r γ))
+    (highCuts : List (Polynomial E →ₗ[E] E)) (Λ : ι → Polynomial E →ₗ[E] E) (u v : ι → E)
+    (target : ℕ → ι → MvPolynomial κ E) (htarget : ∀ r i, (target r i).totalDegree ≤ p ^ r)
+    (hval : ∀ r γ i, aeval (a r γ) (target r i) = u i + Λ i (mult γ) * v i)
+    (hsep : SeparatesDegree highCuts Λ d (B + e)) (Good : Γ → Polynomial E → Prop)
+    (hgood : ∀ r (R : MvPolynomial AffineVar E) (c : E) γ (P : Polynomial E), P.degree ≤ d →
+      multiplierEval (familyMultiplier (θ r) (a r γ)) (Polynomial.expand E (p ^ r) P) R = 0 →
+      (multiplierEval (familyMultiplier (θ r) (a r γ)) (Polynomial.expand E (p ^ r) P)
+        (pderiv none R)).eval c ≠ 0 →
+      chartPoint c (p ^ r) (a r γ) P ∈
+        chartExcluded c (θ r) R (p ^ r) d B e highCuts Λ (target r) → Good γ P) :
+    ∃ ex : Finset Γ, (#ex : ℝ) ≤ ((h * (h - 1) : ℕ) : ℝ) +
+        (2 * d * M * ((Fintype.card ι : ℝ) / (A - B - e + 1 : ℕ))) ^ Fintype.card κ *
+          h ^ (Fintype.card κ + 1) ∧
+      ∀ γ ∉ ex, ∀ P : Polynomial E, multiplierEval (mult γ) P Q = 0 → P.degree ≤ d →
+        (∀ Λ' ∈ highCuts, Λ' P = 0) → A ≤ {i | Λ i P = u i + Λ i (mult γ) * v i}.ncard →
+        Good γ P := by
   classical
-  have := Fintype.ofFinite F
-  obtain ⟨e, R, hRirr, hRder, hRdeg, hpe, -, hroot⟩ := exists_frobeniusFactor p hirr hpos
-  set fr := (iterateFrobeniusEquiv E p e).symm
+  have := Fintype.ofFinite Γ
+  obtain ⟨r, R, hRirr, hRder, hRdeg, hpr, -, hroot⟩ := exists_frobeniusFactor p hirr hpos
+  set fr : E →+* E := ((iterateFrobeniusEquiv E p r).symm : E →+* E)
   have hRh : R.weightedTotalDegree affineYZWeight ≤ h := hRdeg.trans hQ
-  -- The lines where the discriminant of `R` vanishes.
-  set ψ : F × F → E × E := fun c ↦ (fr (φ c.1), fr (φ c.2))
-  have hψ : ψ.Injective := by
-    intro c c' hc
-    simp only [ψ, Prod.mk.injEq] at hc
-    exact Prod.ext (φ.injective (fr.injective hc.1)) (φ.injective (fr.injective hc.2))
-  set disc := (Finset.univ : Finset (F × F)).filter fun c ↦
-    (affineDiscriminant R).eval (affineMultiplier (ψ c).1 (ψ c).2) = 0
+  -- The challenges where the discriminant of `R` vanishes.
+  set disc := (Finset.univ : Finset Γ).filter fun γ ↦
+    (affineDiscriminant R).eval ((mult γ).map fr) = 0
   have hdisc : #disc ≤ h * (h - 1) :=
     card_filter_affineDiscriminant_eq_zero_le (affineDiscriminant_ne_zero hRirr hRder) hRh _
-      (fun c ↦ affineMultiplier (ψ c).1 (ψ c).2) (affineMultiplier_injective.comp hψ).injOn
-  -- The nonpersistent challenges of `R`.
-  obtain ⟨ex, hex, hgood⟩ :=
-    exists_affineNonpersistent_finset_card_le domain f g φ p e R hd hdB hBA hAn hRh
-  refine ⟨disc ∪ ex, ?_, fun c hc P hP hdeg hA ↦ ?_⟩
-  · have hexR : (#ex : ℝ) ≤ h * (((Fintype.card ι * (2 * p ^ e * d * h) : ℕ) : ℝ) /
-        ((A - B : ℕ) : ℝ)) ^ 2 := by
+      (fun γ ↦ (mult γ).map fr) ((Polynomial.map_injective fr fr.injective).comp hmult).injOn
+  -- The challenges with a regular root whose chart point is not excluded.
+  obtain ⟨ex, hex, hchart⟩ := exists_chartExcluded_finset_card_le (θ r) R p r hd he hBA hAn hRh
+    highCuts Λ (target r) (htarget r) hsep (a r) (ha r)
+  refine ⟨disc ∪ ex, ?_, fun γ hγ P hP hdeg hhigh hA ↦ ?_⟩
+  · set k := Fintype.card κ
+    set n : ℝ := (Fintype.card ι : ℝ)
+    set w : ℝ := ((A - B - e : ℕ) : ℝ) + 1
+    have hexR : (#ex : ℝ) ≤ h * ((((Fintype.card ι * (2 * p ^ r * d * h) : ℕ) : ℝ)) / w) ^ k := by
       have := (Rat.cast_le (K := ℝ)).mpr hex
       push_cast at this ⊢
       exact this
-    have hpeM : ((p ^ e : ℕ) : ℝ) ≤ M := by exact_mod_cast hpe.trans hM
+    have hprM : ((p ^ r : ℕ) : ℝ) ≤ M := by exact_mod_cast hpr.trans hM
+    have hsplit : (h : ℝ) * ((((Fintype.card ι * (2 * p ^ r * d * h) : ℕ) : ℝ)) / w) ^ k =
+        (2 * d * (p ^ r : ℕ) * (n / w)) ^ k * h ^ (k + 1) := by
+      simp only [n]
+      push_cast
+      ring
     calc (#(disc ∪ ex) : ℝ) ≤ #disc + #ex := by exact_mod_cast Finset.card_union_le _ _
-      _ ≤ ((h * (h - 1) : ℕ) : ℝ) + h * (((Fintype.card ι * (2 * p ^ e * d * h) : ℕ) : ℝ) /
-          ((A - B : ℕ) : ℝ)) ^ 2 := add_le_add (by exact_mod_cast hdisc) hexR
+      _ ≤ ((h * (h - 1) : ℕ) : ℝ) + (2 * d * (p ^ r : ℕ) * (n / w)) ^ k * h ^ (k + 1) :=
+          add_le_add (by exact_mod_cast hdisc) (hexR.trans_eq hsplit)
       _ ≤ _ := by
-        refine add_le_add le_rfl ?_
-        rw [div_pow, div_pow]
-        push_cast at hpeM ⊢
-        have : ((Fintype.card ι : ℝ) * (2 * p ^ e * d * h)) ^ 2 ≤
-            ((Fintype.card ι : ℝ) * (2 * M * d * h)) ^ 2 := by gcongr
-        calc (h : ℝ) * (((Fintype.card ι : ℝ) * (2 * p ^ e * d * h)) ^ 2 /
-              ((A - B : ℕ) : ℝ) ^ 2)
-            ≤ (h : ℝ) * (((Fintype.card ι : ℝ) * (2 * M * d * h)) ^ 2 /
-              ((A - B : ℕ) : ℝ) ^ 2) := by gcongr
-          _ = _ := by ring
-  · have hcd : c ∉ disc := fun h ↦ hc (Finset.mem_union_left _ h)
-    have hce : c ∉ ex := fun h ↦ hc (Finset.mem_union_right _ h)
+          have hw : ((A - B - e + 1 : ℕ) : ℝ) = w := by push_cast; rfl
+          rw [hw]
+          gcongr
+  · have hcd : γ ∉ disc := fun h ↦ hγ (Finset.mem_union_left _ h)
+    have hce : γ ∉ ex := fun h ↦ hγ (Finset.mem_union_right _ h)
     have hR := hroot _ _ hP
-    rw [map_affineMultiplier] at hR
-    refine hgood c hce P hdeg hR ?_ hA
-    refine multiplierEval_pderiv_ne_zero
-      (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none hRder) hR ?_
-    intro h0
-    exact hcd (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h0⟩)
+    have hsepR := multiplierEval_pderiv_ne_zero
+      (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none hRder) hR
+      (fun h0 ↦ hcd (Finset.mem_filter.mpr ⟨Finset.mem_univ _, h0⟩))
+    rw [hθ] at hR hsepR
+    obtain ⟨c, hc, hexc⟩ := hchart γ hce P hdeg hR hsepR hhigh
+      (hA.trans_eq (by simp_rw [hval]))
+    exact hgood r R c γ P hdeg hR hc hexc
 
-end Factor
+/-- Outside few challenges, every root of the interpolant with `A` agreements is good.
+
+The interpolant `Q` over the algebraically closed field `E` is nonzero, with `(Y, Z)`-degree
+at most `D` and `Z`-degree at most `M`.
+The challenges form a finite type with injective multipliers `L_γ`.
+For each Frobenius exponent `r`, the Frobenius root of `L_γ` is the multiplier of the family
+`θ_r` at an injective coefficient vector `a_r(γ)`, and the targets `T_r` read the agreement
+condition `Λᵢ P = uᵢ + Λᵢ(L_γ) vᵢ` in these coordinates.
+Here `p` is the exponential characteristic and `T_r` has degree at most `p ^ r`.
+Assume `1 ≤ d`, `1 ≤ e`, `B + e ≤ A ≤ n`, where `n` is the number of positions.
+Assume the functionals determine polynomials of degree at most `d` from `B + e` positions.
+For every irreducible factor, an excluded chart point of a regular root `P(X ^ (p ^ r))` makes
+`P` good.
+At most `D² + (2 d M n / (A - B - e + 1)) ^ |κ| D ^ (|κ| + 1)` challenges are left out, with
+natural-number subtraction. -/
+theorem exists_interpolantRoots_finset_card_le [Finite Γ] [IsAlgClosed E] (p : ℕ) [ExpChar E p]
+    {Q : MvPolynomial AffineVar E} (hQ0 : Q ≠ 0) {d A B e D M : ℕ} (hd : 1 ≤ d) (he : 1 ≤ e)
+    (hBA : B + e ≤ A) (hAn : A ≤ Fintype.card ι)
+    (hD : Q.weightedTotalDegree affineYZWeight ≤ D) (hM : Q.degreeOf none ≤ M)
+    (mult : Γ → Polynomial E) (hmult : mult.Injective) (θ : ℕ → κ → Polynomial E)
+    (a : ℕ → Γ → κ → E) (ha : ∀ r, (a r).Injective)
+    (hθ : ∀ r γ, (mult γ).map ((iterateFrobeniusEquiv E p r).symm : E →+* E) =
+      familyMultiplier (θ r) (a r γ))
+    (highCuts : List (Polynomial E →ₗ[E] E)) (Λ : ι → Polynomial E →ₗ[E] E) (u v : ι → E)
+    (target : ℕ → ι → MvPolynomial κ E) (htarget : ∀ r i, (target r i).totalDegree ≤ p ^ r)
+    (hval : ∀ r γ i, aeval (a r γ) (target r i) = u i + Λ i (mult γ) * v i)
+    (hsep : SeparatesDegree highCuts Λ d (B + e)) (Good : Γ → Polynomial E → Prop)
+    (hgood : ∀ r (R : MvPolynomial AffineVar E) (c : E) γ (P : Polynomial E), P.degree ≤ d →
+      multiplierEval (familyMultiplier (θ r) (a r γ)) (Polynomial.expand E (p ^ r) P) R = 0 →
+      (multiplierEval (familyMultiplier (θ r) (a r γ)) (Polynomial.expand E (p ^ r) P)
+        (pderiv none R)).eval c ≠ 0 →
+      chartPoint c (p ^ r) (a r γ) P ∈
+        chartExcluded c (θ r) R (p ^ r) d B e highCuts Λ (target r) → Good γ P) :
+    ∃ Ex : Finset Γ, (#Ex : ℝ) ≤ D ^ 2 +
+        (2 * d * M * ((Fintype.card ι : ℝ) / (A - B - e + 1 : ℕ))) ^ Fintype.card κ *
+          D ^ (Fintype.card κ + 1) ∧
+      ∀ γ ∉ Ex, ∀ P : Polynomial E, multiplierEval (mult γ) P Q = 0 → P.degree ≤ d →
+        (∀ Λ' ∈ highCuts, Λ' P = 0) → A ≤ {i | Λ i P = u i + Λ i (mult γ) * v i}.ncard →
+        Good γ P := by
+  classical
+  have := Fintype.ofFinite Γ
+  set k := Fintype.card κ
+  set K : ℝ := (2 * d * M * ((Fintype.card ι : ℝ) / (A - B - e + 1 : ℕ))) ^ k with hK
+  set S := positiveDegreeFactorClasses none Q
+  let h : Associates (MvPolynomial AffineVar E) → ℕ :=
+    fun c ↦ c.rep.weightedTotalDegree affineYZWeight
+  set δ := (radicalContent none Q).weightedTotalDegree affineYZWeight
+  -- The degree budgets of the factors.
+  have hbudget : δ + ∑ c ∈ S, h c ≤ D :=
+    (add_sum_positiveDegreeFactorClasses_le
+      (fun x y hx hy ↦ weightedTotalDegree_mul affineYZWeight x y hx hy) none Q).trans hD
+  have hMc : ∀ c ∈ S, c.rep.degreeOf none ≤ M := fun c hc ↦
+    (Finset.single_le_sum (f := fun c ↦ c.rep.degreeOf none) (fun _ _ ↦ Nat.zero_le _) hc).trans
+      ((le_of_add_le_right (add_sum_degreeOf_positiveDegreeFactorClasses_le none none Q)).trans hM)
+  have hcontent : ∃ ex : Finset Γ, ((#ex : ℕ) : ℝ) ≤ (δ : ℝ) ∧
+      ∀ γ ∉ ex, ∀ P : Polynomial E, multiplierEval (mult γ) P (radicalContent none Q) ≠ 0 := by
+    -- The content is free of `Z`, so it vanishes along few multipliers.
+    have hZ := degreeOf_radicalContent none Q
+    refine ⟨(Finset.univ : Finset Γ).filter fun γ ↦
+      multiplierEval (mult γ) 0 (radicalContent none Q) = 0, ?_, fun γ hγ P h0 ↦ ?_⟩
+    · exact_mod_cast (card_filter_multiplierEval_eq_zero_le (radicalContent_ne_zero none Q) hZ
+        Finset.univ mult hmult.injOn).trans
+        (degreeOf_le_weightedTotalDegree affineYZWeight (some 1) (by simp) _)
+    · refine hγ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩)
+      rwa [multiplierEval_eq_of_degreeOf_none_eq_zero hZ _ 0 P]
+  have hfactors : ∀ c ∈ S, ∃ ex : Finset Γ,
+      ((#ex : ℕ) : ℝ) ≤ ((h c * (h c - 1) : ℕ) : ℝ) + K * (h c : ℝ) ^ (k + 1) ∧
+      ∀ γ ∉ ex, ∀ P : Polynomial E, multiplierEval (mult γ) P c.rep = 0 → P.degree ≤ d →
+        (∀ Λ' ∈ highCuts, Λ' P = 0) → A ≤ {i | Λ i P = u i + Λ i (mult γ) * v i}.ncard →
+        Good γ P := fun c hc ↦
+    exists_factorRoots_finset_card_le p (irreducible_rep_of_mem_positiveDegreeFactorClasses hc)
+      (mem_positiveDegreeFactorClasses.mp hc).2 hd he hBA hAn le_rfl (hMc c hc) mult hmult θ a ha
+      hθ highCuts Λ u v target htarget hval hsep Good hgood
+  obtain ⟨ex, hex, hgoodex⟩ := exists_exceptional_of_factor_exceptional (α := ℝ) none hQ0
+    (fun (γ : Γ) (P : Polynomial E) ↦ multiplierEval (mult γ) P)
+    (fun γ P ↦ P.degree ≤ d → (∀ Λ' ∈ highCuts, Λ' P = 0) →
+      A ≤ {i | Λ i P = u i + Λ i (mult γ) * v i}.ncard → Good γ P)
+    (δ : ℝ) (fun c ↦ ((h c * (h c - 1) : ℕ) : ℝ) + K * (h c : ℝ) ^ (k + 1)) hcontent hfactors
+  refine ⟨ex, ?_, fun γ hγ P hP ↦ hgoodex γ hγ P hP⟩
+  obtain ⟨h2, hk⟩ := budget_le S h k hbudget
+  have hK0 : 0 ≤ K := by positivity
+  calc (#ex : ℝ) ≤ (δ : ℝ) + ∑ c ∈ S, (((h c * (h c - 1) : ℕ) : ℝ) + K * (h c : ℝ) ^ (k + 1)) :=
+        hex
+    _ = ((δ + ∑ c ∈ S, h c * (h c - 1) : ℕ) : ℝ) + K * ((∑ c ∈ S, h c ^ (k + 1) : ℕ) : ℝ) := by
+        rw [Finset.sum_add_distrib, ← Finset.mul_sum]
+        push_cast
+        ring
+    _ ≤ ((D ^ 2 : ℕ) : ℝ) + K * ((D ^ (k + 1) : ℕ) : ℝ) := by gcongr
+    _ = _ := by
+        rw [hK]
+        push_cast
+        ring
+
+end Generic
 
 section Count
 
@@ -166,86 +293,67 @@ theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domai
   have := Fintype.ofFinite F
   let E := AlgebraicClosure F
   let φ : F →+* E := algebraMap F E
-  let QE : MvPolynomial AffineVar E := MvPolynomial.map φ Q
-  have hQE : QE ≠ 0 :=
+  let p := ringExpChar E
+  have hQE : MvPolynomial.map φ Q ≠ 0 :=
     (map_ne_zero_iff _ (MvPolynomial.map_injective φ φ.injective)).mpr hQ.ne_zero
-  set K : ℝ := 4 * d ^ 2 * M ^ 2 * ((Fintype.card ι : ℝ) / (A - B : ℕ)) ^ 2 with hK
-  set S := positiveDegreeFactorClasses none QE
-  let h : Associates (MvPolynomial AffineVar E) → ℕ :=
-    fun c ↦ c.rep.weightedTotalDegree affineYZWeight
-  set δ := (radicalContent none QE).weightedTotalDegree affineYZWeight
-  -- The degree budgets of the factors.
-  have hQED : QE.weightedTotalDegree affineYZWeight ≤ D :=
-    (Finset.sup_mono (MvPolynomial.support_map_subset φ Q)).trans hQ.yzDegree_le
-  have hbudget : δ + ∑ c ∈ S, h c ≤ D :=
-    (add_sum_positiveDegreeFactorClasses_le
-      (fun x y hx hy ↦ weightedTotalDegree_mul affineYZWeight x y hx hy) none QE).trans hQED
-  have hM : ∀ c ∈ S, c.rep.degreeOf none ≤ M := fun c hc ↦
-    (Finset.single_le_sum (f := fun c ↦ c.rep.degreeOf none) (fun _ _ ↦ Nat.zero_le _) hc).trans
-      ((le_of_add_le_right (add_sum_degreeOf_positiveDegreeFactorClasses_le none none QE)).trans
-        ((degreeOf_map_of_injective φ.injective Q none).trans_le hQ.rootDegree_le))
-  have hcontent : ∃ ex : Finset (F × F), ((#ex : ℕ) : ℝ) ≤ (δ : ℝ) ∧
-      ∀ c ∉ ex, ∀ P : Polynomial F,
-        multiplierEval (affineMultiplier (φ c.1) (φ c.2)) (P.map φ)
-          (radicalContent none QE) ≠ 0 := by
-    -- The content is free of `Z`, so it vanishes on few lines.
-    have hZ := degreeOf_radicalContent none QE
-    refine ⟨(Finset.univ : Finset (F × F)).filter fun c ↦
-      multiplierEval (affineMultiplier (φ c.1) (φ c.2)) 0 (radicalContent none QE) = 0, ?_,
-      fun c hc P h0 ↦ ?_⟩
-    · have hφ : Function.Injective fun c : F × F ↦ (φ c.1, φ c.2) := fun c c' hc ↦ by
-        simp only [Prod.mk.injEq] at hc
-        exact Prod.ext (φ.injective hc.1) (φ.injective hc.2)
-      have := card_filter_multiplierEval_eq_zero_le (radicalContent_ne_zero none QE) hZ
-        Finset.univ (fun c : F × F ↦ affineMultiplier (φ c.1) (φ c.2))
-        (affineMultiplier_injective.comp hφ).injOn
-      exact_mod_cast this.trans
-        (degreeOf_le_weightedTotalDegree affineYZWeight (some 1) (by simp) _)
-    · refine hc (Finset.mem_filter.mpr ⟨Finset.mem_univ _, ?_⟩)
-      rwa [multiplierEval_eq_of_degreeOf_none_eq_zero hZ _ 0 (P.map φ)]
-  have hfactors : ∀ c ∈ S, ∃ ex : Finset (F × F),
-      ((#ex : ℕ) : ℝ) ≤ ((h c * (h c - 1) : ℕ) : ℝ) + K * (h c : ℝ) ^ 3 ∧
-      ∀ w ∉ ex, ∀ P : Polynomial F,
-        multiplierEval (affineMultiplier (φ w.1) (φ w.2)) (P.map φ) c.rep = 0 →
-        P.degree ≤ d → A ≤ #(polynomialAgreementSet domain
-          (combinedWord domain f g (affineMultiplier w.1 w.2)) P) →
-        IsAffinePersistent domain f g d B w.1 w.2 P := by
-    intro c hc
-    obtain ⟨ex, hex, hgood⟩ := exists_affineFactor_finset_card_le domain f g φ (ringExpChar E)
-      (irreducible_rep_of_mem_positiveDegreeFactorClasses hc)
-      (mem_positiveDegreeFactorClasses.mp hc).2 hd hdB hBA hAn le_rfl (hM c hc)
-    refine ⟨ex, hex.trans (le_of_eq ?_), hgood⟩
-    rw [hK]
-    ring
-  obtain ⟨ex, hex, hgood⟩ := exists_exceptional_of_factor_exceptional (α := ℝ) none hQE
-    (fun (c : F × F) (P : Polynomial F) ↦
-      multiplierEval (affineMultiplier (φ c.1) (φ c.2)) (P.map φ))
-    (fun c P ↦ P.degree ≤ d →
-      A ≤ #(polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier c.1 c.2)) P) →
-      IsAffinePersistent domain f g d B c.1 c.2 P)
-    (δ : ℝ) (fun c ↦ ((h c * (h c - 1) : ℕ) : ℝ) + K * (h c : ℝ) ^ 3) hcontent hfactors
-  refine ⟨Pset ∪ ex, ?_, fun c hc P hP ↦ ?_⟩
-  · obtain ⟨h2, h3⟩ := budget_le S h hbudget
-    have hK0 : 0 ≤ K := by positivity
-    calc (#(Pset ∪ ex) : ℝ) ≤ #Pset + #ex := by exact_mod_cast Finset.card_union_le _ _
-      _ ≤ #Pset + ((δ : ℝ) + ∑ c ∈ S, (((h c * (h c - 1) : ℕ) : ℝ) + K * (h c : ℝ) ^ 3)) :=
-          add_le_add le_rfl hex
-      _ = #Pset + (((δ + ∑ c ∈ S, h c * (h c - 1) : ℕ) : ℝ) +
-          K * ((∑ c ∈ S, h c ^ 3 : ℕ) : ℝ)) := by
-          rw [Finset.sum_add_distrib, ← Finset.mul_sum]
-          push_cast
-          ring
-      _ ≤ #Pset + (((D ^ 2 : ℕ) : ℝ) + K * ((D ^ 3 : ℕ) : ℝ)) := by
-          gcongr
-      _ = _ := by
-          rw [hK]
-          push_cast
+  have hfr (r : ℕ) (x : E) : (iterateFrobeniusEquiv E p r).symm x ^ p ^ r = x := by
+    rw [← iterateFrobeniusEquiv_def, RingEquiv.apply_symm_apply]
+  have hφ : Function.Injective fun c : F × F ↦ (φ c.1, φ c.2) := fun c c' hc ↦ by
+    simp only [Prod.mk.injEq] at hc
+    exact Prod.ext (φ.injective hc.1) (φ.injective hc.2)
+  have ha (r : ℕ) : Function.Injective fun c : F × F ↦
+      ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
+        (iterateFrobeniusEquiv E p r).symm (φ c.2)] := by
+    intro x y hxy
+    have h0 := congrFun hxy 0
+    have h1 := congrFun hxy 1
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+      EmbeddingLike.apply_eq_iff_eq] at h0 h1
+    exact Prod.ext (φ.injective h0) (φ.injective h1)
+  obtain ⟨Ex, hEx, hgood⟩ := exists_interpolantRoots_finset_card_le (κ := Fin 2) p hQE
+    (d := d) (B := B) (e := 1) hd le_rfl (by omega) hAn
+    ((Finset.sup_mono (MvPolynomial.support_map_subset φ Q)).trans hQ.yzDegree_le)
+    ((degreeOf_map_of_injective φ.injective Q none).trans_le hQ.rootDegree_le)
+    (fun c ↦ affineMultiplier (φ c.1) (φ c.2)) (affineMultiplier_injective.comp hφ)
+    (fun _ ↦ affineFamily) _ ha
+    (fun r c ↦ by simp [map_affineMultiplier])
+    [] (fun i ↦ Polynomial.leval (φ (domain i))) (fun i ↦ φ (f i)) (fun i ↦ φ (g i))
+    (fun r ↦ affineChartTarget domain f g φ (p ^ r))
+    (fun r ↦ totalDegree_affineChartTarget_le domain f g φ _)
+    (fun r c i ↦ by
+      simp only [affineChartTarget, map_add, map_mul, map_pow, aeval_C, aeval_X,
+        Algebra.algebraMap_self, RingHom.id_apply, Matrix.cons_val_zero, Matrix.cons_val_one,
+        Matrix.cons_val_fin_one, hfr, Polynomial.leval_apply, eval_affineMultiplier]
+      ring)
+    (separatesDegree_leval (φ.injective.comp domain.injective) (by omega))
+    (fun c P' ↦ ∀ P : Polynomial F, P' = P.map φ → IsAffinePersistent domain f g d B c.1 c.2 P)
+    (fun r R center c P' hP' hroot hcenter hex P hP ↦ by
+      subst hP
+      rw [familyMultiplier_affineFamily] at hroot hcenter
+      exact isAffinePersistent_of_mem_chartExcluded domain f g φ center R p r
+        (by rwa [Polynomial.degree_map] at hP') hroot hcenter hex)
+  refine ⟨Pset ∪ Ex, ?_, fun c hc P hP ↦ ?_⟩
+  · have hAB : A - B - 1 + 1 = A - B := by omega
+    rw [hAB, Fintype.card_fin] at hEx
+    calc (#(Pset ∪ Ex) : ℝ) ≤ #Pset + #Ex := by exact_mod_cast Finset.card_union_le _ _
+      _ ≤ _ := by
+          rw [add_assoc]
+          refine add_le_add le_rfl (hEx.trans_eq ?_)
           ring
   · have hcP : c ∉ Pset := fun h ↦ hc (Finset.mem_union_left _ h)
-    have hcex : c ∉ ex := fun h ↦ hc (Finset.mem_union_right _ h)
-    refine hPset c hcP P hP (hgood c hcex P ?_ hP.1 hP.2.1)
-    have := congrArg (Polynomial.map φ) (hQ.vanish_affineMultiplier c.1 c.2 P hP.1 hP.2.1)
-    rwa [map_multiplierEval, map_affineMultiplier, Polynomial.map_zero] at this
+    have hcEx : c ∉ Ex := fun h ↦ hc (Finset.mem_union_right _ h)
+    refine hPset c hcP P hP (hgood c hcEx (P.map φ) ?_
+      ((Polynomial.degree_map_le).trans hP.1) (by simp) (hP.2.1.trans_eq ?_) P rfl)
+    · have := congrArg (Polynomial.map φ) (hQ.vanish_affineMultiplier c.1 c.2 P hP.1 hP.2.1)
+      rwa [map_multiplierEval, map_affineMultiplier, Polynomial.map_zero] at this
+    · rw [← Set.ncard_coe_finset]
+      congr 1
+      ext i
+      simp only [Finset.coe_filter, polynomialAgreementSet, Finset.mem_univ, true_and,
+        combinedWord_affineMultiplier, Set.mem_ofPred_eq, Polynomial.leval_apply,
+        Polynomial.eval_map_apply, eval_affineMultiplier]
+      rw [← φ.injective.eq_iff]
+      simp [map_add, map_mul, mul_comm]
 
 end Count
 
