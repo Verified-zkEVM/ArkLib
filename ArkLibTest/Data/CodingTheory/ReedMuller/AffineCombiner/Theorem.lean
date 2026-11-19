@@ -25,20 +25,29 @@ private theorem sqrt_degreeFraction : √((64 : ℝ) / 256) = 1 / 2 := by
   rw [Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
   norm_num
 
--- Theorem 7.1 at `q₀ = 2⁸`, `k = 2`, `d = 64`, `η = 1/4`, `q = 2⁶⁴`: the error is
--- at most `2⁻¹²⁴ + 2⁻⁸⁸`.
+open Polynomial.SymbolicInterpolation in
+-- The general count at the worked parameters `q₀ = 2⁸`, `k = 2`, `d = 64`, `η = 1/4`:
+-- `m = 8`, `D = 96`, `M = 22`, `A = 49152` and `B = 40704`, so `A - B - e + 1 = 8193`.
+-- The surplus is `2¹⁶ · 3408 < 389267456` monomials.
 example {K₀ F : Type*} [Field K₀] [Fintype K₀] [Field F] [Fintype F] [DecidableEq F]
-    [Algebra K₀ F] (hK : Fintype.card K₀ = 2 ^ 8) (hF : Fintype.card F = 2 ^ 64) :
-    affineMcaError K₀ F 2 64 49152 (2 ^ 8) ≤ ENNReal.ofReal (2⁻¹ ^ 124 + 2⁻¹ ^ 88) := by
-  have h := affineMcaError_le (K₀ := K₀) (F := F) (k := 2) (d := 64) (η := 1 / 4)
-    (by norm_num) (by norm_num) (by rw [hK]; push_cast; rw [sqrt_degreeFraction]; norm_num)
-    (by rw [hK]; norm_num)
-  rw [hK, hF] at h
-  push_cast at h
-  rw [sqrt_degreeFraction] at h
-  have hA : ⌈((1 : ℝ) / 2 + 1 / 4) * 256 ^ 2⌉₊ = 49152 := by norm_num
-  rw [hA] at h
-  convert h using 2
+    [Algebra K₀ F] (hK : Fintype.card K₀ = 2 ^ 8) (f g : (Fin 2 → K₀) → F) :
+    ∃ Ex : Finset (Fin 3 → F), (Ex.card : ℝ) ≤
+        65536 * (40704 - 65 * 256) / (40704 ^ 2 - 65536 * (65 * 256)) *
+          max (Fintype.card F : ℝ) ((65536).choose 3 : ℕ) +
+        (96 ^ 2 + (2 * 16384 * 22 * (65536 / 8193)) ^ 3 * 96 ^ 4) ∧
+      ∀ α ∉ Ex, ∀ P, ¬ IsAffineExceptional f g 64 49152 (2 ^ 8) α P := by
+  obtain ⟨Ex, hcard, hgood⟩ := exists_affineExceptional_finset_card_le_of_interpolation
+    (k := 2) f g (d := 64) (A := 49152) (B := 40704) (m := 8) (D := 96) (M := 22)
+    (by norm_num) (by rw [hK]; norm_num) (by rw [hK]; norm_num) (by rw [hK]; norm_num)
+    (by
+      rw [hK, card_constraintSupport, card_monomialSupport]
+      simp only [Finset.sum_range_succ, Finset.sum_range_zero]
+      norm_num)
+  rw [hK] at hcard hgood
+  simp only [Nat.reducePow, Nat.reduceAdd, Nat.reduceSub, Nat.reduceMul] at hcard hgood
+  -- Keep the binomial coefficient symbolic: evaluating it is not needed.
+  generalize ((Nat.choose 65536 3 : ℕ) : ℝ) = c at hcard ⊢
+  refine ⟨Ex, hcard.trans (le_of_eq ?_), hgood⟩
   norm_num
 
 -- Theorem 7.1 at `q₀ = 2⁸`, `k = 1`, `d = 64`, `η = 1/4`: the error is at most

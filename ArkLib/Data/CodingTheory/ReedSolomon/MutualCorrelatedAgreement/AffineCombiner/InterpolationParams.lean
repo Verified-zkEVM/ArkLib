@@ -53,6 +53,7 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 * `ReedSolomon.AffineParams.add_lt_persistenceThreshold` and
   `ReedSolomon.AffineParams.card_mul_add_lt_sq`: `d + e < B` and `n (d + e) < B²`.
 * `ReedSolomon.AffineParams.sixty_four_mul_lt`: `64 e < n`.
+* `ReedSolomon.affineCount_numerics_le`: the final numerical estimate for `k ≥ 1`.
 
 ## References
 
@@ -488,5 +489,57 @@ theorem bounds (h : AffineParams d n e η) :
     h.persistenceThreshold_add_lt, h.card_div_sub_le⟩
 
 end AffineParams
+
+/-- The constant inequality `81/4 + 2 + 12ᵏ⁺¹ (9/2)ᵏ⁺² ≤ 2⁶ᵏ⁺⁸` for `k ≥ 1`. -/
+private theorem constant_le {k : ℕ} (hk : 1 ≤ k) :
+    81 / 4 + 2 + (12 : ℝ) ^ (k + 1) * (9 / 2) ^ (k + 2) ≤ 2 ^ (6 * k + 8) := by
+  obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le hk
+  have h1 : (12 : ℝ) ^ (1 + j + 1) * (9 / 2) ^ (1 + j + 2) = 13122 * 54 ^ j := by
+    rw [show 1 + j + 1 = j + 2 by ring, show 1 + j + 2 = j + 3 by ring, pow_add, pow_add,
+      show (54 : ℝ) ^ j = 12 ^ j * (9 / 2) ^ j by rw [← mul_pow]; norm_num]
+    ring
+  have h2 : (2 : ℝ) ^ (6 * (1 + j) + 8) = 16384 * 64 ^ j := by
+    rw [show 6 * (1 + j) + 8 = 6 * j + 14 by ring, pow_add, pow_mul]
+    ring
+  have h54 : (54 : ℝ) ^ j ≤ 64 ^ j := pow_le_pow_left₀ (by norm_num) (by norm_num) j
+  have h64 : (1 : ℝ) ≤ 64 ^ j := one_le_pow₀ (by norm_num)
+  rw [h1, h2]
+  linarith
+
+/-- The final numerical estimate of the error bound, for `k ≥ 1`.
+
+Read `a` as `1 / η`, `b` as `1 / ρ`, and `n ≥ 1` as the length.
+Read `D` as the `(Y, Z)`-degree budget and `v` as `n / (A - B - e + 1)`.
+Read `dM` as the degree times the `Z`-degree budget.
+Assume `a, b ≥ 1`, `0 ≤ D ≤ 9 b a² / 2`, `0 ≤ v ≤ 2 a` and `0 ≤ dM ≤ 3 a n`.
+Then `D² + (2 dM v)ᵏ⁺¹ Dᵏ⁺² + 2 nᵏ⁺¹ a ≤ 2⁶ᵏ⁺⁸ nᵏ⁺¹ bᵏ⁺² a⁴ᵏ⁺⁶`.
+Reed–Solomon codes use `k = 1`, and Reed–Muller codes in `k` variables use `k`. -/
+theorem affineCount_numerics_le {k : ℕ} (hk : 1 ≤ k) {n a b D v dM : ℝ} (hn : 1 ≤ n)
+    (ha : 1 ≤ a) (hb : 1 ≤ b) (hD0 : 0 ≤ D) (hD : D ≤ 9 / 2 * b * a ^ 2) (hv0 : 0 ≤ v)
+    (hv : v ≤ 2 * a) (hdM0 : 0 ≤ dM) (hdM : dM ≤ 3 * a * n) :
+    D ^ 2 + (2 * dM * v) ^ (k + 1) * D ^ (k + 2) + 2 * n ^ (k + 1) * a ≤
+      2 ^ (6 * k + 8) * (n ^ (k + 1) * b ^ (k + 2) * a ^ (4 * k + 6)) := by
+  set X := n ^ (k + 1) * b ^ (k + 2) * a ^ (4 * k + 6)
+  have hn1 : 1 ≤ n ^ (k + 1) := one_le_pow₀ hn
+  have hb2 : b ^ 2 ≤ b ^ (k + 2) := pow_le_pow_right₀ hb (by omega)
+  have hb0 : 1 ≤ b ^ (k + 2) := one_le_pow₀ hb
+  have ha4 : a ^ 4 ≤ a ^ (4 * k + 6) := pow_le_pow_right₀ ha (by omega)
+  have ha1 : a ≤ a ^ (4 * k + 6) := le_self_pow₀ ha (by omega)
+  have h1 : D ^ 2 ≤ 81 / 4 * X := by
+    calc D ^ 2 ≤ (9 / 2 * b * a ^ 2) ^ 2 := by gcongr
+      _ = 81 / 4 * (1 * b ^ 2 * a ^ 4) := by ring
+      _ ≤ 81 / 4 * (n ^ (k + 1) * b ^ (k + 2) * a ^ (4 * k + 6)) := by gcongr
+  have h2 : (2 * dM * v) ^ (k + 1) * D ^ (k + 2) ≤ 12 ^ (k + 1) * (9 / 2) ^ (k + 2) * X := by
+    calc (2 * dM * v) ^ (k + 1) * D ^ (k + 2) ≤
+          (2 * (3 * a * n) * (2 * a)) ^ (k + 1) * (9 / 2 * b * a ^ 2) ^ (k + 2) := by gcongr
+      _ = 12 ^ (k + 1) * (9 / 2) ^ (k + 2) * X := by ring
+  have h3 : 2 * n ^ (k + 1) * a ≤ 2 * X := by
+    have := mul_le_mul hb0 ha1 (by linarith) (by linarith)
+    rw [one_mul] at this
+    calc 2 * n ^ (k + 1) * a ≤ 2 * n ^ (k + 1) * (b ^ (k + 2) * a ^ (4 * k + 6)) := by gcongr
+      _ = 2 * X := by ring
+  have hX : 0 ≤ X := by positivity
+  have hc := constant_le hk
+  nlinarith
 
 end ReedSolomon

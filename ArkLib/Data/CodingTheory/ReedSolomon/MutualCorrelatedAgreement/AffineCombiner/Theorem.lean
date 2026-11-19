@@ -57,30 +57,6 @@ namespace ReedSolomon
 open Polynomial.SymbolicInterpolation
 open scoped Finset
 
-/-- The final numerical estimate, with `a = 1 / η` and `b = 1 / ρ`. -/
-private theorem numerics_aux {n a b D v dM : ℝ} (hn : 1 ≤ n) (ha : 1 ≤ a) (hb : 1 ≤ b)
-    (hD0 : 0 ≤ D) (hD : D ≤ 9 / 2 * b * a ^ 2) (hv0 : 0 ≤ v) (hv : v ≤ 2 * a) (hdM0 : 0 ≤ dM)
-    (hdM : dM ≤ 3 * a * n) :
-    D ^ 2 + 4 * dM ^ 2 * D ^ 3 * v ^ 2 + 2 * n ^ 2 * a ≤ 2 ^ 14 * (n ^ 2 * b ^ 3 * a ^ 10) := by
-  have hT : 1 ≤ n ^ 2 * b * a ^ 6 := one_le_mul_of_one_le_of_one_le
-    (one_le_mul_of_one_le_of_one_le (one_le_pow₀ hn) hb) (one_le_pow₀ ha)
-  have h1 : D ^ 2 ≤ (9 / 2) ^ 2 * (n ^ 2 * b ^ 3 * a ^ 10) := by
-    calc D ^ 2 ≤ (9 / 2 * b * a ^ 2) ^ 2 := by gcongr
-      _ = (9 / 2) ^ 2 * (b ^ 2 * a ^ 4) * 1 := by ring
-      _ ≤ (9 / 2) ^ 2 * (b ^ 2 * a ^ 4) * (n ^ 2 * b * a ^ 6) := by gcongr
-      _ = _ := by ring
-  have h2 : 4 * dM ^ 2 * D ^ 3 * v ^ 2 ≤
-      4 * (3 * a * n) ^ 2 * (9 / 2 * b * a ^ 2) ^ 3 * (2 * a) ^ 2 := by
-    gcongr
-  have h3 : 2 * n ^ 2 * a ≤ 2 * (n ^ 2 * b ^ 3 * a ^ 10) := by
-    have : a ≤ b ^ 3 * a ^ 10 := by
-      calc a = 1 * 1 * a := by ring
-        _ ≤ b ^ 3 * a ^ 9 * a := by gcongr <;> [exact one_le_pow₀ hb; exact one_le_pow₀ ha]
-        _ = _ := by ring
-    nlinarith [sq_nonneg n]
-  have hpos : 0 ≤ n ^ 2 * b ^ 3 * a ^ 10 := by positivity
-  nlinarith
-
 /-- The thresholds satisfy `B < A ≤ n`. -/
 private theorem threshold_facts {d n : ℕ} {η : ℝ} (hn : 0 < n) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / n)) :
@@ -237,7 +213,8 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
   have hdM : ((d * M : ℕ) : ℝ) ≤ 3 * (1 / η) * n := by
     refine hP.mul_rootBudget_le.trans (le_of_eq ?_)
     ring
-  have hnum := numerics_aux (n := n) (a := 1 / η) (b := n / d) (D := D)
+  have hnum := affineCount_numerics_le (k := 1) le_rfl (n := n) (a := 1 / η) (b := n / d)
+    (D := D)
     (v := (n : ℝ) / (A - B : ℕ)) (dM := ((d * M : ℕ) : ℝ))
     (by exact_mod_cast Nat.one_le_iff_ne_zero.mpr (Nat.pos_iff_ne_zero.mp
       (Nat.zero_lt_of_lt hdn)))
@@ -247,9 +224,10 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
   have hfin : 2 ^ 14 * ((n : ℝ) ^ 2 * (n / d) ^ 3 * (1 / η) ^ 10) =
       2 ^ 14 * (n : ℝ) ^ 2 / (((d : ℝ) / n) ^ 3 * η ^ 10) := by
     field_simp
+  simp only [Nat.reduceAdd, Nat.reduceMul] at hnum
   push_cast at hnum
   have hterm : (D : ℝ) ^ 2 + 4 * d ^ 2 * M ^ 2 * D ^ 3 * ((n : ℝ) / (A - B : ℕ)) ^ 2 =
-      D ^ 2 + 4 * (d * M) ^ 2 * D ^ 3 * ((n : ℝ) / (A - B : ℕ)) ^ 2 := by ring
+      D ^ 2 + (2 * (d * M) * ((n : ℝ) / (A - B : ℕ))) ^ 2 * D ^ 3 := by ring
   linarith [hnum, hpers, hfin, hterm]
 
 /-- With one point of loss, the affine MCA error is at most `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.

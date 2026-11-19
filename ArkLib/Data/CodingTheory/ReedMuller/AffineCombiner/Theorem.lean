@@ -6,7 +6,7 @@ Authors: Thomas Coratger
 module
 
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.NonpersistentCount
-public import
+import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterpolationParams
 import Mathlib.FieldTheory.Finite.Extension
 
@@ -46,6 +46,8 @@ The general bound is the Reed–Muller analogue of Theorem 4.10 of [CWYZ26], fro
 The paper counts `D² + ℓ max{q, (n choose (k + 1))} + (2 ρ n M v)ᵏ⁺¹ Dᵏ⁺²`.
 Here `ρ n = d e`, `v = n / (A - B - e + 1)`, and `ℓ` is the real Johnson factor.
 The thresholds `A` and `B` are free, subject to `(d + 1) e < B`, `n (d + 1) e < B²` and `B + e ≤ A`.
+The difference `A - B - e + 1` uses natural-number subtraction.
+It does not truncate, since `B + e ≤ A`.
 The interpolation condition sums constraints over every order `s < m`, as for Reed–Solomon codes.
 
 The final bound is Theorem 7.1 of [CWYZ26], with the constant `2⁶ᵏ⁺⁸` of (7.2).
@@ -82,7 +84,8 @@ Assume `n c < u`, with subtractions in `ℕ`.
 
 The real Johnson factor is `ℓ = n (B - (d + 1) e) / (B² - n (d + 1) e)`, without a floor.
 The bound is `ℓ max q (n choose (k + 1)) + K`.
-Here `K = D² + (2 d e M n / (A - B - e + 1))ᵏ⁺¹ Dᵏ⁺²`, with subtractions in `ℕ`. -/
+Here `K = D² + (2 d e M n / (A - B - e + 1))ᵏ⁺¹ Dᵏ⁺²`, with subtractions in `ℕ`.
+The difference `A - B - e` does not truncate, since `B + e ≤ A`. -/
 theorem exists_affineExceptional_finset_card_le_of_interpolation (f g : (Fin k → K₀) → F)
     {d A B m D M : ℕ} (hd : 1 ≤ d) (hdB : (d + 1) * Fintype.card K₀ ^ (k - 1) < B)
     (hJ : Fintype.card K₀ ^ k * ((d + 1) * Fintype.card K₀ ^ (k - 1)) < B ^ 2)
@@ -166,7 +169,8 @@ Let `u = ∑_{j ≤ M} (m A - e D - d e j)(D + 1 - j)` count the allowed monomia
 Assume `n c < u`, with subtractions in `ℕ`.
 
 The real Johnson factor is `ℓ = n (B - (d + 1) e) / (B² - n (d + 1) e)`, without a floor.
-Here `K = D² + (2 d e M n / (A - B - e + 1))ᵏ⁺¹ Dᵏ⁺²`, with subtractions in `ℕ`. -/
+Here `K = D² + (2 d e M n / (A - B - e + 1))ᵏ⁺¹ Dᵏ⁺²`, with subtractions in `ℕ`.
+The difference `A - B - e` does not truncate, since `B + e ≤ A`. -/
 theorem affineMcaError_le_of_interpolation {d A B m D M : ℕ} (hd : 1 ≤ d)
     (hdB : (d + 1) * Fintype.card K₀ ^ (k - 1) < B)
     (hJ : Fintype.card K₀ ^ k * ((d + 1) * Fintype.card K₀ ^ (k - 1)) < B ^ 2)
@@ -186,51 +190,6 @@ theorem affineMcaError_le_of_interpolation {d A B m D M : ℕ} (hd : 1 ≤ d)
   rw [← add_div]
   exact affineMcaError_le_of_forall_exists fun f g ↦
     exists_affineExceptional_finset_card_le_of_interpolation f g hd hdB hJ hBA hsurplus
-
-/-- The constant inequality `81/4 + 2 + 12ᵏ⁺¹ (9/2)ᵏ⁺² ≤ 2⁶ᵏ⁺⁸` for `k ≥ 1`. -/
-private theorem constant_le {k : ℕ} (hk : 1 ≤ k) :
-    81 / 4 + 2 + (12 : ℝ) ^ (k + 1) * (9 / 2) ^ (k + 2) ≤ 2 ^ (6 * k + 8) := by
-  obtain ⟨j, rfl⟩ := Nat.exists_eq_add_of_le hk
-  have h1 : (12 : ℝ) ^ (1 + j + 1) * (9 / 2) ^ (1 + j + 2) = 13122 * 54 ^ j := by
-    rw [show 1 + j + 1 = j + 2 by ring, show 1 + j + 2 = j + 3 by ring, pow_add, pow_add,
-      show (54 : ℝ) ^ j = 12 ^ j * (9 / 2) ^ j by rw [← mul_pow]; norm_num]
-    ring
-  have h2 : (2 : ℝ) ^ (6 * (1 + j) + 8) = 16384 * 64 ^ j := by
-    rw [show 6 * (1 + j) + 8 = 6 * j + 14 by ring, pow_add, pow_mul]
-    ring
-  have h54 : (54 : ℝ) ^ j ≤ 64 ^ j := pow_le_pow_left₀ (by norm_num) (by norm_num) j
-  have h64 : (1 : ℝ) ≤ 64 ^ j := one_le_pow₀ (by norm_num)
-  rw [h1, h2]
-  linarith
-
-/-- The final numerical estimate, with `a = 1 / η` and `b = 1 / ρ`. -/
-private theorem numerics_aux {k : ℕ} (hk : 1 ≤ k) {n a b D v dM : ℝ} (hn : 1 ≤ n) (ha : 1 ≤ a)
-    (hb : 1 ≤ b) (hD0 : 0 ≤ D) (hD : D ≤ 9 / 2 * b * a ^ 2) (hv0 : 0 ≤ v) (hv : v ≤ 2 * a)
-    (hdM0 : 0 ≤ dM) (hdM : dM ≤ 3 * a * n) :
-    D ^ 2 + (2 * dM * v) ^ (k + 1) * D ^ (k + 2) + 2 * n ^ (k + 1) * a ≤
-      2 ^ (6 * k + 8) * (n ^ (k + 1) * b ^ (k + 2) * a ^ (4 * k + 6)) := by
-  set X := n ^ (k + 1) * b ^ (k + 2) * a ^ (4 * k + 6)
-  have hn1 : 1 ≤ n ^ (k + 1) := one_le_pow₀ hn
-  have hb2 : b ^ 2 ≤ b ^ (k + 2) := pow_le_pow_right₀ hb (by omega)
-  have hb0 : 1 ≤ b ^ (k + 2) := one_le_pow₀ hb
-  have ha4 : a ^ 4 ≤ a ^ (4 * k + 6) := pow_le_pow_right₀ ha (by omega)
-  have ha1 : a ≤ a ^ (4 * k + 6) := le_self_pow₀ ha (by omega)
-  have h1 : D ^ 2 ≤ 81 / 4 * X := by
-    calc D ^ 2 ≤ (9 / 2 * b * a ^ 2) ^ 2 := by gcongr
-      _ = 81 / 4 * (1 * b ^ 2 * a ^ 4) := by ring
-      _ ≤ 81 / 4 * (n ^ (k + 1) * b ^ (k + 2) * a ^ (4 * k + 6)) := by gcongr
-  have h2 : (2 * dM * v) ^ (k + 1) * D ^ (k + 2) ≤ 12 ^ (k + 1) * (9 / 2) ^ (k + 2) * X := by
-    calc (2 * dM * v) ^ (k + 1) * D ^ (k + 2) ≤
-          (2 * (3 * a * n) * (2 * a)) ^ (k + 1) * (9 / 2 * b * a ^ 2) ^ (k + 2) := by gcongr
-      _ = 12 ^ (k + 1) * (9 / 2) ^ (k + 2) * X := by ring
-  have h3 : 2 * n ^ (k + 1) * a ≤ 2 * X := by
-    have := mul_le_mul hb0 ha1 (by linarith) (by linarith)
-    rw [one_mul] at this
-    calc 2 * n ^ (k + 1) * a ≤ 2 * n ^ (k + 1) * (b ^ (k + 2) * a ^ (4 * k + 6)) := by gcongr
-      _ = 2 * X := by ring
-  have hX : 0 ≤ X := by positivity
-  have hc := constant_le hk
-  nlinarith
 
 open ReedSolomon in
 /-- With loss `q₀ᵏ⁻¹`, few coefficient vectors carry an exceptional candidate.
@@ -349,7 +308,8 @@ theorem exists_affineExceptional_finset_card_le (f g : (Fin k → K₀) → F) {
     refine hP.mul_rootBudget_le.trans (le_of_eq ?_)
     rw [hnR]
     ring
-  have hnum := numerics_aux hk (n := (q₀ : ℝ) ^ k) (a := 1 / η) (b := (q₀ : ℝ) / d) (D := D)
+  have hnum := affineCount_numerics_le hk (n := (q₀ : ℝ) ^ k) (a := 1 / η) (b := (q₀ : ℝ) / d)
+    (D := D)
     (v := (n : ℝ) / (A - B - e + 1 : ℕ)) (dM := ((d * e * M : ℕ) : ℝ)) hn1 ha hb
     (Nat.cast_nonneg _) hD (by positivity) hv (Nat.cast_nonneg _) hdM
   have hfin : 2 ^ (6 * k + 8) * (((q₀ : ℝ) ^ k) ^ (k + 1) * ((q₀ : ℝ) / d) ^ (k + 2) *

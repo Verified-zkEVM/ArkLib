@@ -17,7 +17,7 @@ public import Mathlib.RingTheory.Polynomial.UniqueFactorization
 Let `K₀ ⊆ F` be finite fields of sizes `q₀ ≤ q`, and let `n = q₀ᵏ` be the grid size.
 Fix rational functions `F₀, G₀` in the fraction field of `F[X₁, …, Xₖ]`.
 These results formalize Lemma A.1 of [CWYZ26], at agreement loss `n / q₀ = q₀ᵏ⁻¹`.
-Theorem 7.1 itself is not proved here.
+Theorem 7.1 is proved in the sibling theorem module.
 The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
 First suppose `F₀, G₀` are admissible witnesses: `deg F₀ ≤ d`, and `G₀ = 0` or `deg G₀ < d`.
