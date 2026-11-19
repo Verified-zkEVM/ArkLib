@@ -40,6 +40,7 @@ related_modules:
   - ArkLib/ToMathlib/Polynomial/DegreeLEFunctionals.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/TraceChart.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/NonpersistentCount.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Theorem.lean
 ---
 
 # CWYZ26
@@ -55,6 +56,7 @@ If `0 < η < 1 - √ρ` and `nη² ≥ 4/ρ`, Theorem 1.1 bounds the error with 
 `4/(ηq) + 2¹⁴ n²/(ρ³ η¹⁰ q²)`.
 This bound holds for every such domain in every finite field of size `q ≥ n`.
 Theorem 1.1 is formalized by `ReedSolomon.affineMcaError_le`.
+Its Reed–Muller extension, Theorem 7.1, is formalized by `ReedMuller.affineMcaError_le`.
 
 For fixed `ρ, η` in that range and sufficiently large `n`, scalar combiners have error
 `Ω_{ρ,η}(n/q)` at the same threshold and loss.
@@ -104,7 +106,7 @@ The embedding already implies `n ≤ q`.
 | Appendix A, the substitution `P ↦ P̃` | `ReedMuller.traceSubstitution`, `ReedMuller.natDegree_traceSubstitution_le`, `ReedMuller.eval_traceSubstitution`, `ReedMuller.injOn_traceSubstitution_totalDegree_lt` | `deg P̃ ≤ deg P · q₀^(k-1)`, which is `ρn` at `deg P = d`. `P̃(x) = P(ψ x)`. The substitution is injective on polynomials of degree below `q₀` in each variable, which contains the paper's total-degree case. |
 | Appendix A, agreement and the multiplier `L̃_α` | `ReedMuller.card_polynomialAgreementSet_traceSubstitution`, `ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le`, `ReedMuller.traceSubstitution_map_affineMultiplier_injective` | `P` and `P̃` have the same number of agreements. `L̃_α` has degree at most `n/q₀`, and distinct `α` give distinct `L̃_α`. Words and polynomials over `F_q` are mapped into a common field `F'`. |
 | Appendix A, interpolation with weight `(1, n/q₀, ρn)` | `ReedSolomon.multiplierWeight`, `ReedSolomon.multiplierEval`, `ReedSolomon.natDegree_multiplierEval_le`, `ReedSolomon.IsMultiplierInterpolant`, `ReedSolomon.exists_isMultiplierInterpolant` | The multiplier degree is a parameter `e`. Reed–Muller takes `e = q₀^(k-1)`. The interpolant vanishes along every multiplier of degree at most `e`. The surplus condition is a cardinality hypothesis. |
-| Appendix A, excluded coefficient vectors, ingredients of `#E ≤ D²` | `ReedSolomon.card_filter_multiplierEval_eq_zero_le`, `ReedSolomon.card_filter_affineDiscriminant_eq_zero_le` | Both counts hold for any family of multipliers injective on the challenges. The Reed–Muller assembly is planned. |
+| Appendix A, excluded coefficient vectors, ingredients of `#E ≤ D²` | `ReedSolomon.card_filter_multiplierEval_eq_zero_le`, `ReedSolomon.card_filter_affineDiscriminant_eq_zero_le` | Both counts hold for any family of multipliers injective on the challenges. The Reed–Muller count applies them to the trace family. |
 | Appendix A, the persistent count | `ReedMuller.IsAffinePersistent`, `ReedMuller.affinePersistenceSet`, `ReedMuller.card_isAffineExceptional_persistent_le` | Persistence uses `G = H/L_σ` with `σ ≠ 0` and `deg H ≤ d`, counting agreements off the zeros of `L_σ`. At most `ℓ · max{q, C(n, k+1)}` persistent challenges are exceptional, with `ℓ = n(B - (d+1)q₀^(k-1))/(B² - n(d+1)q₀^(k-1))`. This is the paper's `(a - b)/(a² - b)`. Hypotheses: `B > (d+1)n/q₀` and `b < a²`. |
 | Appendix A, Claim 4.8 for `c > B + n/q₀ - 1` | `ReedMuller.exists_affineRatioWitness_of_map`, `ReedMuller.isAffinePersistent_of_commonAgreement` | A rational explanation over an extension field descends to `F_q`. Dropping the at most `n/q₀` zeros of `L_σ` on the grid, by (7.1), leaves `B` agreements, so the candidate is persistent. |
 | Lemma 3.2 with fibers | `Finset.card_le_of_fiber_card_le_of_inter_card_le` | The Johnson bound times the fiber size. The Reed–Solomon and Reed–Muller persistent counts both use it. |
@@ -112,7 +114,10 @@ The embedding already implies `n ≤ q`.
 | Appendix A, "Nonpersistent": Frobenius roots and chart targets | `ReedMuller.map_familyMultiplier_traceFamily`, `ReedMuller.traceChartTarget`, `ReedMuller.totalDegree_traceChartTarget_le`, `ReedMuller.aeval_traceChartTarget` | The inverse Frobenius power maps the trace family to a trace family, with `κ = Fin (k + 1)`. |
 | Appendix A, intersection with the image of `(α, P) ↦ (α, P̃)` | `Polynomial.exists_list_linearMap_of_le_degreeLE`, `ReedMuller.IsTraceImageCuts`, `ReedMuller.exists_isTraceImageCuts` | Among polynomials of degree at most `ρn`, the image is cut out by finitely many linear functionals. These are the high cuts of the generic count. |
 | Appendix A, Claim 4.8 for Reed–Muller and the count `#N ≤ (2ρnMv)^(k+1) D^(k+2)` | `ReedMuller.isAffinePersistent_of_mem_chartExcluded`, `ReedMuller.exists_finset_card_le_isAffinePersistent`, `ReedSolomon.separatesDegree_leval` | Outside `D² + (2 d q₀^(k-1) M n / (A - B - q₀^(k-1) + 1))^(k+1) D^(k+2)` coefficient vectors, every candidate with `A` agreements is persistent. Hypotheses: `1 ≤ d`, `d q₀^(k-1) < B + q₀^(k-1) ≤ A`, and an interpolant over `E`. The paper's `B > (d + 1) n/q₀` implies the second. The reconstruction is determined by evaluation at `B + n/q₀` distinct points, and challenges are compared directly, not by Schwartz–Zippel. |
-| Appendix A, "The bound": parameter estimates and side conditions | `ReedSolomon.AffineParams.yzBudget_le_nine_div`, `ReedSolomon.AffineParams.mul_rootBudget_le`, `ReedSolomon.AffineParams.card_div_sub_le`, `ReedSolomon.AffineParams.card_mul_sub_div_sq_sub_le`, `ReedSolomon.AffineParams.add_lt_persistenceThreshold`, `ReedSolomon.AffineParams.card_mul_add_lt_sq`, `ReedSolomon.AffineParams.sixty_four_mul_lt`, `ReedSolomon.AffineParams.four_mul_le`, `ReedSolomon.sub_le_affinePersistenceThreshold` | `D ≤ 9 / (2 ρ η²)`, `ρ n M ≤ 3 n / η`, `v ≤ 2 / η`, `ℓ ≤ 4 / η` and `q₀ > 64` (as `64 e < n`). For a Reed–Muller code of degree `d₀`, the univariate degree is `d = d₀ e`. The side conditions `d + e < B` and `n (d + e) < B²` then read `(d₀ + 1) e < B` and `n (d₀ + 1) e < B²`. The paper derives them from `a − √b ≥ η/4`; the Lean proves them directly. `q₀ > 64` is used only by the Theorem 7.1 assembly, which is planned. |
+| Appendix A, Reed–Muller analogue of Theorem 4.10 | `ReedMuller.exists_affineExceptional_finset_card_le_of_interpolation`, `ReedMuller.affineMcaError_le_of_interpolation` | At most `D² + ℓ max{q, C(n, k+1)} + (2ρnMv)^(k+1) D^(k+2)` exceptional vectors, for any thresholds and budgets. Hypotheses: `1 ≤ d`, `(d + 1) q₀^(k-1) < B`, `n (d + 1) q₀^(k-1) < B²`, `B + q₀^(k-1) ≤ A`, and the surplus. The degree-`k` extension of `K₀` and its embedding are built inside the proof. |
+| Appendix A, "The bound", numerics for general `k` | `ReedSolomon.affineCount_numerics_le` | `D² + (2dMv)^(k+1) D^(k+2) + 2n^(k+1)/η ≤ 2^(6k+8) n^(k+1)/(ρ^(k+2) η^(4k+6))` for `k ≥ 1`. Theorem 1.1 uses the case `k = 1`. |
+| Theorem 7.1, bound (7.2) | `ReedMuller.exists_affineExceptional_finset_card_le`, `ReedMuller.affineMcaError_le` | The error at `A = ⌈(√ρ + η) n⌉` and loss `q₀^(k-1)` is at most `4/(η qᵏ) + 2^(6k+8) n^(k+1)/(ρ^(k+2) η^(4k+6) q^(k+1))`, with the paper's constant. Hypotheses: `1 ≤ d` for `ρ > 0`, `0 < η < 1 - √ρ` and `4/ρ ≤ q₀ η²`. `ρ < 1` is derived, and `k ≥ 1` is not assumed, since at `k = 0` the bound exceeds one. |
+| Appendix A, "The bound": parameter estimates and side conditions | `ReedSolomon.AffineParams.yzBudget_le_nine_div`, `ReedSolomon.AffineParams.mul_rootBudget_le`, `ReedSolomon.AffineParams.card_div_sub_le`, `ReedSolomon.AffineParams.card_mul_sub_div_sq_sub_le`, `ReedSolomon.AffineParams.add_lt_persistenceThreshold`, `ReedSolomon.AffineParams.card_mul_add_lt_sq`, `ReedSolomon.AffineParams.sixty_four_mul_lt`, `ReedSolomon.AffineParams.four_mul_le`, `ReedSolomon.sub_le_affinePersistenceThreshold` | `D ≤ 9 / (2 ρ η²)`, `ρ n M ≤ 3 n / η`, `v ≤ 2 / η`, `ℓ ≤ 4 / η` and `q₀ > 64` (as `64 e < n`). For a Reed–Muller code of degree `d₀`, the univariate degree is `d = d₀ e`. The side conditions `d + e < B` and `n (d + e) < B²` then read `(d₀ + 1) e < B` and `n (d₀ + 1) e < B²`. The paper derives them from `a − √b ≥ η/4`; the Lean proves them directly. The Lean assembly does not need `q₀ > 64`. |
 
 ## Port Ledger
 
@@ -131,7 +136,7 @@ A unit is done when its declarations are on `main`.
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | Agreement-hyperplane induction, a cover of dimension at most two, and the nonpersistent count | 2, 6, 7 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
-| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), lower bound `q⁻ᵏ`, Lemma A.1, the Pellikaan–Wu reduction, the persistent count, the multiplier interpolation, the generic and Reed–Muller nonpersistent counts in review; the parameter assembly and Theorem 7.1 planned |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | in review |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
 The quotient is real, and the floor rounds down.
@@ -206,6 +211,12 @@ Unit 10 applies the equal-degree guarantee in each folding round.
   defines Reed–Muller persistence and bounds the persistent exceptional challenges.
 - [`ReedMuller/AffineCombiner/PersistenceDescent.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PersistenceDescent.lean)
   turns common agreements into persistence on the grid.
+- [`ReedMuller/AffineCombiner/TraceChart.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/TraceChart.lean)
+  transports candidates to the trace chart and cuts out the image of the trace substitution.
+- [`ReedMuller/AffineCombiner/NonpersistentCount.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/NonpersistentCount.lean)
+  bounds the Reed–Muller challenges with a nonpersistent candidate.
+- [`ReedMuller/AffineCombiner/Theorem.lean`](../../../ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Theorem.lean)
+  proves Theorem 7.1.
 
 The Taylor chart uses
 [`RationalTaylorJointDegree.lean`](../../../ArkLib/Data/Polynomial/Differential/RationalTaylorJointDegree.lean)
@@ -283,6 +294,7 @@ The Johnson factor is written with `q₀^(k-1)` in place of `n/q₀`.
 The Reed–Muller count works in any algebraically closed `E` containing `F` and `F_n`.
 The paper's intersection with the image of the trace substitution is a list of linear functionals,
 so it adds no degree factor in the hypersurface count.
+Theorem 7.1 writes `ρ q₀` as the natural number `d`, with `ρ = d / q₀`, and the loss `n/q₀` as `q₀^(k-1)`.
 
 ## Open Formalization Gaps
 
