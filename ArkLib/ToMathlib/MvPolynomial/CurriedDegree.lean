@@ -19,6 +19,7 @@ total degree of the coefficient.
 
 * `MvPolynomial.sumAlgEquiv_monomial`: currying a monomial.
 * `MvPolynomial.coeff_coeff_sumAlgEquiv`: coefficients of the curried polynomial.
+* `MvPolynomial.sumAlgEquiv_symm_map_algebraMap`: uncurrying constant coefficients is a renaming.
 * `MvPolynomial.totalDegree_coeff_add_weight_le_weightedTotalDegree_sumAlgEquiv_symm`:
   the monomialwise degree bound.
 -/
@@ -37,6 +38,14 @@ theorem sumAlgEquiv_monomial (k : S₁ ⊕ S₂ →₀ ℕ) (a : R) :
   simp only [Finsupp.sumFinsuppAddEquivProdFinsupp, Finsupp.sumFinsuppEquivProdFinsupp]
   ext s
   simp [sumAlgEquiv, monomial, Finsupp.comapDomain]
+
+/-- Uncurrying a polynomial whose coefficients are constants renames it into the left variables. -/
+theorem sumAlgEquiv_symm_map_algebraMap (P : MvPolynomial S₁ R) :
+    (sumAlgEquiv R S₁ S₂).symm (map (algebraMap R (MvPolynomial S₂ R)) P) = rename Sum.inl P := by
+  induction P using MvPolynomial.induction_on with
+  | C a => simp [MvPolynomial.algebraMap_eq]
+  | add p q hp hq => simp only [map_add, hp, hq]
+  | mul_X p i hp => simp only [map_mul, hp, map_X, rename_X, sumAlgEquiv_symm_X]
 
 /-- Coefficients of the curried polynomial, read at the two halves of `k`, are those at `k`. -/
 theorem coeff_coeff_sumAlgEquiv (p : MvPolynomial (S₁ ⊕ S₂) R) (k : S₁ ⊕ S₂ →₀ ℕ) :

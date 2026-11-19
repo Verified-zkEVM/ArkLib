@@ -118,3 +118,16 @@ example :
   · rw [← weightedTotalDegree_one, hmon, weightedTotalDegree_monomial _ _ _ one_ne_zero, map_add,
       Finsupp.weight_single, Finsupp.weight_single]
     norm_num
+
+/-- The weight-zero piece is closed under univariate evaluation: `(X₀)² + 1` stays there when
+`X₀` has weight `0`. -/
+example : Polynomial.aeval (MvPolynomial.X 0 : MvPolynomial (Fin 2) ℚ)
+    (Polynomial.X ^ 2 + 1 : Polynomial ℚ) ∈
+      MvPolynomial.restrictWeightedDegree (R := ℚ) ![0, 1] 0 :=
+  MvPolynomial.polynomial_aeval_mem_restrictWeightedDegree_zero
+    (MvPolynomial.X_mem_restrictWeightedDegree _ 0 0 (by simp)) _
+
+/-- info: 'MvPolynomial.polynomial_aeval_mem_restrictWeightedDegree_zero' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms MvPolynomial.polynomial_aeval_mem_restrictWeightedDegree_zero

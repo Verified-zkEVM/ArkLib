@@ -35,6 +35,8 @@ count.
 * `weightedTotalDegree_bind₁_le` and `weightedTotalDegree_aeval_le`: substitution bounds with
   induced source weights.
 * `bind₁_mem_restrictWeightedDegree`: preservation under prescribed-weight substitution.
+* `polynomial_aeval_mem_restrictWeightedDegree_zero`: the weight-zero piece is closed under
+  evaluating univariate polynomials.
 * `weightedTotalDegree_pderiv_le_sub`: a partial derivative in `X i` lowers the weighted total
   degree by at least `w i`, in every characteristic.
 * `degreeOf_le_weightedTotalDegree`: if `X i` has positive weight, its degree is bounded by the
@@ -177,6 +179,14 @@ theorem pow_mem_restrictWeightedDegree {w : σ → ℕ} {d : ℕ} {p : MvPolynom
   | succ n ih =>
       rw [pow_succ, Nat.succ_mul]
       exact mul_mem_restrictWeightedDegree ih hp
+
+/-- A univariate polynomial evaluated at a polynomial of weight `0` has weight `0`. -/
+theorem polynomial_aeval_mem_restrictWeightedDegree_zero {w : σ → ℕ} {x : MvPolynomial σ R}
+    (hx : x ∈ restrictWeightedDegree (R := R) w 0) (p : Polynomial R) :
+    Polynomial.aeval x p ∈ restrictWeightedDegree (R := R) w 0 := by
+  rw [Polynomial.aeval_eq_sum_range]
+  refine Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _ ?_
+  simpa using pow_mem_restrictWeightedDegree hx i
 
 /-! ### Weighted-degree bounds under substitution -/
 
