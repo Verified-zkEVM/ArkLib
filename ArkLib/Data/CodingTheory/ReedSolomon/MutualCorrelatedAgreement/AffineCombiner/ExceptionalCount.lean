@@ -288,7 +288,100 @@ end Generic
 
 section Count
 
-variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι]
+variable {F : Type*} [Field F] {ι : Type*}
+
+/-- At the Frobenius roots of `(φ α, φ β)`, the target reads the Reed–Solomon agreement. -/
+private theorem aeval_affineChartTarget_frobenius {E : Type*} [Field E] (domain : ι ↪ F)
+    (f g : ι → F) (φ : F →+* E) (p : ℕ) [ExpChar E p] [PerfectRing E p] (r : ℕ)
+    (c : F × F) (i : ι) :
+    aeval ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
+        (iterateFrobeniusEquiv E p r).symm (φ c.2)] (affineChartTarget domain f g φ (p ^ r) i) =
+      φ (f i) + Polynomial.leval (φ (domain i)) (affineMultiplier (φ c.1) (φ c.2)) * φ (g i) := by
+  have hfr (x : E) : (iterateFrobeniusEquiv E p r).symm x ^ p ^ r = x := by
+    rw [← iterateFrobeniusEquiv_def, RingEquiv.apply_symm_apply]
+  simp only [affineChartTarget, map_add, map_mul, map_pow, aeval_C, aeval_X,
+    Algebra.algebraMap_self, RingHom.id_apply, Matrix.cons_val_zero, Matrix.cons_val_one,
+    Matrix.cons_val_fin_one, hfr, Polynomial.leval_apply, eval_affineMultiplier]
+  ring
+
+/-- The Frobenius roots of `(φ α, φ β)` determine `(α, β)`. -/
+private theorem injective_frobeniusPair {E : Type*} [Field E] (φ : F →+* E) (p : ℕ)
+    [ExpChar E p] [PerfectRing E p] (r : ℕ) :
+    Function.Injective fun c : F × F ↦
+      ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
+        (iterateFrobeniusEquiv E p r).symm (φ c.2)] := by
+  intro x y hxy
+  have h0 := congrFun hxy 0
+  have h1 := congrFun hxy 1
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+    EmbeddingLike.apply_eq_iff_eq] at h0 h1
+  exact Prod.ext (φ.injective h0) (φ.injective h1)
+
+variable [DecidableEq F] [Fintype ι]
+
+/-- The agreement set of `P` along `α + β X`, read through `φ`. -/
+private theorem ncard_leval_map_eq {E : Type*} [Field E] (domain : ι ↪ F) (f g : ι → F)
+    (φ : F →+* E) (c : F × F) (P : Polynomial F) :
+    {i | Polynomial.leval (φ (domain i)) (P.map φ) = φ (f i) +
+        Polynomial.leval (φ (domain i)) (affineMultiplier (φ c.1) (φ c.2)) * φ (g i)}.ncard =
+      #(polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier c.1 c.2)) P) := by
+  rw [← Set.ncard_coe_finset]
+  congr 1
+  ext i
+  simp only [Finset.coe_filter, polynomialAgreementSet, Finset.mem_univ, true_and,
+    combinedWord_affineMultiplier, Set.mem_ofPred_eq, Polynomial.leval_apply,
+    Polynomial.eval_map_apply, eval_affineMultiplier]
+  rw [← φ.injective.eq_iff]
+  simp [map_add, map_mul, mul_comm]
+
+/-- Over an algebraically closed extension, candidates outside few challenges are persistent. -/
+private theorem exists_affinePersistent_of_map {E : Type*} [Field E] [IsAlgClosed E] [Finite F]
+    (φ : F →+* E) (p : ℕ) [ExpChar E p] (domain : ι ↪ F) (f g : ι → F) {d A B m D M : ℕ}
+    {Q : MvPolynomial AffineVar F} (hQ : IsMultiplierInterpolant domain f g 1 d A m D M Q)
+    (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι) :
+    ∃ Ex : Finset (F × F), (#Ex : ℝ) ≤ D ^ 2 +
+        (2 * d * M * ((Fintype.card ι : ℝ) / (A - B - 1 + 1 : ℕ))) ^ Fintype.card (Fin 2) *
+          D ^ (Fintype.card (Fin 2) + 1) ∧
+      ∀ c ∉ Ex, ∀ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P →
+        IsAffinePersistent domain f g d B c.1 c.2 P := by
+  have hQE : MvPolynomial.map φ Q ≠ 0 :=
+    (map_ne_zero_iff _ (MvPolynomial.map_injective φ φ.injective)).mpr hQ.ne_zero
+  have hφ : Function.Injective fun c : F × F ↦ (φ c.1, φ c.2) := fun c c' hc ↦ by
+    simp only [Prod.mk.injEq] at hc
+    exact Prod.ext (φ.injective hc.1) (φ.injective hc.2)
+  have hθ (r : ℕ) (c : F × F) :
+      (affineMultiplier (φ c.1) (φ c.2)).map ((iterateFrobeniusEquiv E p r).symm : E →+* E) =
+        familyMultiplier affineFamily ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
+          (iterateFrobeniusEquiv E p r).symm (φ c.2)] := by
+    rw [map_affineMultiplier, familyMultiplier_affineFamily]
+    rfl
+  obtain ⟨Ex, hEx, hgood⟩ := exists_interpolantRoots_finset_card_le (κ := Fin 2) p hQE
+    (d := d) (A := A) (B := B) (e := 1) hd (Nat.le_add_left 1 B)
+    (Nat.succ_le_of_lt hBA) hAn
+    ((Finset.sup_mono (MvPolynomial.support_map_subset φ Q)).trans hQ.yzDegree_le)
+    ((degreeOf_map_of_injective φ.injective Q none).trans_le hQ.rootDegree_le)
+    (fun c : F × F ↦ affineMultiplier (φ c.1) (φ c.2))
+    (fun x y h ↦ hφ (affineMultiplier_injective h))
+    (fun _ ↦ affineFamily)
+    (fun r (c : F × F) ↦ ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
+      (iterateFrobeniusEquiv E p r).symm (φ c.2)])
+    (injective_frobeniusPair φ p) hθ [] (fun i ↦ Polynomial.leval (φ (domain i)))
+    (fun i ↦ φ (f i)) (fun i ↦ φ (g i)) (fun r ↦ affineChartTarget domain f g φ (p ^ r))
+    (fun r ↦ totalDegree_affineChartTarget_le domain f g φ _)
+    (aeval_affineChartTarget_frobenius domain f g φ p)
+    (separatesDegree_leval (φ.injective.comp domain.injective) (Nat.lt_succ_of_le hdB))
+    (fun (c : F × F) P' ↦ ∀ P : Polynomial F, P' = P.map φ →
+      IsAffinePersistent domain f g d B c.1 c.2 P)
+    (fun r R center c P' hP' hroot hcenter hex P hP ↦ by
+      subst hP
+      rw [familyMultiplier_affineFamily] at hroot hcenter
+      exact isAffinePersistent_of_mem_chartExcluded domain f g φ center R p r
+        (by rwa [Polynomial.degree_map] at hP') hroot hcenter hex)
+  refine ⟨Ex, hEx, fun c hc P hP ↦ hgood c hc (P.map φ) ?_
+    ((Polynomial.degree_map_le).trans hP.1) (by simp)
+    ((hP.2.1.trans_eq (ncard_leval_map_eq domain f g φ c P).symm)) P rfl⟩
+  have := congrArg (Polynomial.map φ) (hQ.vanish_affineMultiplier c.1 c.2 P hP.1 hP.2.1)
+  rwa [map_multiplierEval, map_affineMultiplier, Polynomial.map_zero] at this
 
 /-- Outside few challenges, no candidate is exceptional.
 
@@ -306,70 +399,18 @@ theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domai
         4 * d ^ 2 * M ^ 2 * D ^ 3 * ((Fintype.card ι : ℝ) / (A - B : ℕ)) ^ 2 ∧
       ∀ c ∉ Ex, ∀ P, ¬ IsAffineExceptional domain f g d A 1 c.1 c.2 P := by
   classical
-  have := Fintype.ofFinite F
-  let E := AlgebraicClosure F
-  let φ : F →+* E := algebraMap F E
-  let p := ringExpChar E
-  have hQE : MvPolynomial.map φ Q ≠ 0 :=
-    (map_ne_zero_iff _ (MvPolynomial.map_injective φ φ.injective)).mpr hQ.ne_zero
-  have hfr (r : ℕ) (x : E) : (iterateFrobeniusEquiv E p r).symm x ^ p ^ r = x := by
-    rw [← iterateFrobeniusEquiv_def, RingEquiv.apply_symm_apply]
-  have hφ : Function.Injective fun c : F × F ↦ (φ c.1, φ c.2) := fun c c' hc ↦ by
-    simp only [Prod.mk.injEq] at hc
-    exact Prod.ext (φ.injective hc.1) (φ.injective hc.2)
-  have ha (r : ℕ) : Function.Injective fun c : F × F ↦
-      ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
-        (iterateFrobeniusEquiv E p r).symm (φ c.2)] := by
-    intro x y hxy
-    have h0 := congrFun hxy 0
-    have h1 := congrFun hxy 1
-    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
-      EmbeddingLike.apply_eq_iff_eq] at h0 h1
-    exact Prod.ext (φ.injective h0) (φ.injective h1)
-  obtain ⟨Ex, hEx, hgood⟩ := exists_interpolantRoots_finset_card_le (κ := Fin 2) p hQE
-    (d := d) (B := B) (e := 1) hd (by omega) (by omega) hAn
-    ((Finset.sup_mono (MvPolynomial.support_map_subset φ Q)).trans hQ.yzDegree_le)
-    ((degreeOf_map_of_injective φ.injective Q none).trans_le hQ.rootDegree_le)
-    (fun c ↦ affineMultiplier (φ c.1) (φ c.2)) (affineMultiplier_injective.comp hφ)
-    (fun _ ↦ affineFamily) _ ha
-    (fun r c ↦ by simp [map_affineMultiplier])
-    [] (fun i ↦ Polynomial.leval (φ (domain i))) (fun i ↦ φ (f i)) (fun i ↦ φ (g i))
-    (fun r ↦ affineChartTarget domain f g φ (p ^ r))
-    (fun r ↦ totalDegree_affineChartTarget_le domain f g φ _)
-    (fun r c i ↦ by
-      simp only [affineChartTarget, map_add, map_mul, map_pow, aeval_C, aeval_X,
-        Algebra.algebraMap_self, RingHom.id_apply, Matrix.cons_val_zero, Matrix.cons_val_one,
-        Matrix.cons_val_fin_one, hfr, Polynomial.leval_apply, eval_affineMultiplier]
-      ring)
-    (separatesDegree_leval (φ.injective.comp domain.injective) (by omega))
-    (fun c P' ↦ ∀ P : Polynomial F, P' = P.map φ → IsAffinePersistent domain f g d B c.1 c.2 P)
-    (fun r R center c P' hP' hroot hcenter hex P hP ↦ by
-      subst hP
-      rw [familyMultiplier_affineFamily] at hroot hcenter
-      exact isAffinePersistent_of_mem_chartExcluded domain f g φ center R p r
-        (by rwa [Polynomial.degree_map] at hP') hroot hcenter hex)
-  refine ⟨Pset ∪ Ex, ?_, fun c hc P hP ↦ ?_⟩
-  · have hAB : A - B - 1 + 1 = A - B := by omega
-    rw [hAB, Fintype.card_fin] at hEx
-    calc (#(Pset ∪ Ex) : ℝ) ≤ #Pset + #Ex := by exact_mod_cast Finset.card_union_le _ _
-      _ ≤ _ := by
-          rw [add_assoc]
-          refine add_le_add le_rfl (hEx.trans_eq ?_)
-          ring
-  · have hcP : c ∉ Pset := fun h ↦ hc (Finset.mem_union_left _ h)
-    have hcEx : c ∉ Ex := fun h ↦ hc (Finset.mem_union_right _ h)
-    refine hPset c hcP P hP (hgood c hcEx (P.map φ) ?_
-      ((Polynomial.degree_map_le).trans hP.1) (by simp) (hP.2.1.trans_eq ?_) P rfl)
-    · have := congrArg (Polynomial.map φ) (hQ.vanish_affineMultiplier c.1 c.2 P hP.1 hP.2.1)
-      rwa [map_multiplierEval, map_affineMultiplier, Polynomial.map_zero] at this
-    · rw [← Set.ncard_coe_finset]
-      congr 1
-      ext i
-      simp only [Finset.coe_filter, polynomialAgreementSet, Finset.mem_univ, true_and,
-        combinedWord_affineMultiplier, Set.mem_ofPred_eq, Polynomial.leval_apply,
-        Polynomial.eval_map_apply, eval_affineMultiplier]
-      rw [← φ.injective.eq_iff]
-      simp [map_add, map_mul, mul_comm]
+  obtain ⟨Ex, hEx, hgood⟩ := exists_affinePersistent_of_map
+    (algebraMap F (AlgebraicClosure F)) (ringExpChar (AlgebraicClosure F)) domain f g hQ hd hdB
+    hBA hAn
+  refine ⟨Pset ∪ Ex, ?_, fun c hc P hP ↦
+    hPset c (fun h ↦ hc (Finset.mem_union_left _ h)) P hP
+      (hgood c (fun h ↦ hc (Finset.mem_union_right _ h)) P hP)⟩
+  have hAB : A - B - 1 + 1 = A - B := by omega
+  rw [hAB, Fintype.card_fin] at hEx
+  calc (#(Pset ∪ Ex) : ℝ) ≤ #Pset + #Ex := by exact_mod_cast Finset.card_union_le _ _
+    _ ≤ #Pset + (D ^ 2 + (2 * d * M * ((Fintype.card ι : ℝ) / (A - B : ℕ))) ^ 2 * D ^ (2 + 1)) :=
+        add_le_add le_rfl hEx
+    _ = _ := by ring
 
 end Count
 
