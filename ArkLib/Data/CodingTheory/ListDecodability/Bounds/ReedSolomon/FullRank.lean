@@ -43,6 +43,8 @@ the generalized Singleton bound.
   partition-connected hypergraph is rigid for degree `k` at some point.
 * `exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected`: its intersection matrix has a
   nonzero maximal minor.
+* `exists_det_submatrix_ne_zero_of_card_le`: a `(k + b)`-weakly partition-connected hypergraph
+  has a nonzero maximal minor whose rows avoid any given `b` edges.
 * `exists_embedding_Lambda_le`: over an infinite field, for `0 < ℓ` there are evaluation points at
   which the Reed–Solomon code of dimension `k` satisfies `Lambda ≤ ℓ` at relative radius
   `ℓ / (ℓ + 1) * (1 - k / n)`.
@@ -154,6 +156,24 @@ theorem exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected (F : Type*) [
   obtain ⟨α, hα⟩ := exists_isRigid_of_isWeaklyPartitionConnected (RatFunc F) h
   obtain ⟨ρ, hρ⟩ := (isRigid_iff_exists_aeval_det_ne_zero (R := F)).1 hα
   exact ⟨ρ, fun h0 ↦ hρ (by rw [h0, map_zero])⟩
+
+/-- **Robustness to deletions.** A `(k + b)`-weakly partition-connected hypergraph `H` has a
+square submatrix of its intersection matrix over `MvPolynomial ι F` with all columns, whose rows
+avoid a given set `D` of at most `b` edges, and whose determinant is a nonzero polynomial. -/
+theorem exists_det_submatrix_ne_zero_of_card_le (F : Type*) [Field F]
+    {H : ι → Finset (Fin (s + 1))} {b : ℝ} (h : IsWeaklyPartitionConnected H (k + b))
+    {D : Finset ι} (hD : (#D : ℝ) ≤ b) :
+    ∃ ρ : Fin s × Fin k → IntersectionRow H, (∀ c, (ρ c).1.1 ∉ D) ∧
+      ((intersectionMatrix F H k).submatrix ρ id).det ≠ 0 := by
+  classical
+  obtain ⟨ρ, hρ⟩ := exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected F (h.delete hD)
+  have hD' (r : IntersectionRow fun i ↦ if i ∈ D then ∅ else H i) : r.1.1 ∉ D := fun hr ↦ by
+    simpa [hr] using r.2.1
+  have hH (r : IntersectionRow fun i ↦ if i ∈ D then ∅ else H i) :
+      (if r.1.1 ∈ D then ∅ else H r.1.1) = H r.1.1 := by simp [hD' r]
+  refine ⟨fun c ↦ ⟨(ρ c).1, hH (ρ c) ▸ (ρ c).2⟩, fun c ↦ hD' (ρ c), ?_⟩
+  convert hρ using 2
+  exact Matrix.ext fun c c' ↦ (intersectionMatrix_apply_of_eq (ρ c) (hH (ρ c)) c').symm
 
 /-- **Generic points are rigid.** Over an infinite field `K` there are pairwise distinct points
 `α : ι ↪ K` at which every `k`-weakly partition-connected hypergraph on `s + 1 ≤ ℓ + 1` vertices

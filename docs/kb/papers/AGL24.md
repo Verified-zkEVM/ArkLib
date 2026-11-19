@@ -8,6 +8,7 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean
   - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
@@ -78,9 +79,34 @@ statement and gives no bound on the field size.
 [Descents.lean](../../../ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean): the counting
 step of the source's certificate count (`cor:count` in the source): over a finite linear order
 `α`, at most `C(|α|, r) · m^r` injective tuples `Fin r ↪ α` have fewer than `m` descents. The
-source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is not
-formalized; the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its
-proof gives fewer.
+source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is
+`IsCertificate.card_descents_lt` in
+[Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean);
+the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its proof gives
+fewer, which the count needs.
+
+`exists_embedding_isCertificate_of_not_isRigid` in
+[Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean):
+the source's certificates of rank loss (`alg:matrix`, `alg:certificate`, and `lem:well-defined`
+through `lem:count`), for a `(k + 2r)`-weakly partition-connected hypergraph on `t = s + 1`
+vertices. `certificateState` is the source's matrix sequence as a function of the list of earlier
+certificate indices (`certificateState_append_singleton`); its minors are nonzero
+(`certificateMinor_ne_zero`) of degree at most `s * (k - 1)` in each variable
+(`degreeOf_certificateMinor_le`). Every point at which the hypergraph is not rigid has a
+certificate of length `r` (`exists_isCertificate_of_not_isRigid`); a certificate of length at most
+`r` is injective (`IsCertificate.injective`) and has fewer than `2^t` descents
+(`IsCertificate.card_descents_lt`). `exists_embedding_certificatePolynomial_of_not_isRigid` attaches
+the minors to the certificate's indices (`certificatePolynomial`). The source's `lem:del` is
+`exists_det_submatrix_ne_zero_of_card_le` in
+[FullRank.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean),
+and its exchange of variables of the same type is `det_submatrix_relabel` in
+[IntersectionMatrix.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean).
+The edges are not ordered by type; the bank is consumed from its smallest edge of each type, which
+is the source's choice of the next unused bank element of that type; variables are swapped rather
+than replaced, which agrees because the incoming variable does not occur in the minor; and a
+certificate is described by the source's events `E_j`, `F_j` rather than as the output of its
+algorithm with the choice of the smallest index. The probability of one certificate
+(`lem:product`, `cor:product`) and `lem:main` are not formalized.
 
 ## Known Divergences From ArkLib
 

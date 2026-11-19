@@ -272,6 +272,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.RowO
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.SecondMoment
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Types
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.Certificate
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.FullRank
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.IntersectionMatrix
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
