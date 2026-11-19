@@ -140,7 +140,7 @@ theorem eq_of_polynomialJet_eq_of_isLeftRegular (Q : DifferentialPolynomial R r)
   apply taylor_injective center
   ext i
   induction i using Nat.strong_induction_on with
-  | h i ih =>
+  | ind i ih =>
       by_cases hiD : D < i
       · rw [hhigh P hdegree i hiD, hhigh P' hdegree' i hiD]
       by_cases hir : i ≤ r

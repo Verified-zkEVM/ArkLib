@@ -89,19 +89,15 @@ private theorem largeWeightSurplusEnvelope :
         mul_le_mul_of_nonneg_right hexp (by positivity)
       _ ≤ (27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2 := by norm_num
   have hvolume : 0 ≤ volume := by positivity
-  have hvolume_def : volume =
-      ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) := rfl
   calc
     _ = volume * (Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) *
         (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
           1 / ((500 : ℝ) / 100000000))) := by
-      rw [← hvolume_def]
-      ac_rfl
+      exact mul_assoc _ _ _
     _ ≤ volume * ((27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2) :=
       mul_le_mul_of_nonneg_left hfactor hvolume
     _ = _ := by
-      rw [← hvolume_def]
-      ac_rfl
+      exact mul_comm _ _
 
 private theorem largeWeightSurplusEnvelopeForTheorem :
       (1 : ℝ) * (((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) *
@@ -120,8 +116,7 @@ private theorem largeWeightSurplusEnvelopeForTheorem :
       largeWeightSurplusEnvelope
     _ = _ := by
       rw [show (27 / 10 : ℝ) / 2 = 27 / 20 by norm_num,
-        show (100000000 : ℝ) / 500 = 200000 by norm_num]
-      ac_rfl
+        mul_one]
 
 private noncomputable def largeWeightCutoff : ℕ :=
   ⌈(200000 : ℝ) * Real.log (3000 : ℝ)⌉₊
@@ -189,14 +184,18 @@ example :
     norm_num
     ring_nf
     exact le_rfl
-  have hmoment := setAverage_weightedSimplex_succ_lowerTail_sq_gt (d := 500)
-    (by norm_num) (W := (1 : ℝ)) one_pos
-  exact partitionSupport_dimension_gt_moment (F := ℚ) (D := 1) (d := 500) (W := 1)
+  have hmoment : (27 / 10 : ℝ) < ⨍ u in Set.weightedSimplex
+      (fun i : Fin 500 ↦ (i : ℝ) + 1) ((1 : ℕ) : ℝ),
+        (max (Real.log 3000 - ((500 : ℕ) : ℝ) * (∑ i, u i) / ((1 : ℕ) : ℝ)) 0) ^ 2 := by
+    simpa only [Nat.cast_one, show (6 * (500 : ℕ) : ℝ) = 3000 by norm_num] using
+      setAverage_weightedSimplex_succ_lowerTail_sq_gt (d := 500) (by norm_num)
+        (W := (1 : ℝ)) one_pos
+  have hd : 0 < 500 := by decide
+  generalize hd500 : (500 : ℕ) = d at hd hscale hmoment ⊢
+  exact partitionSupport_dimension_gt_moment (F := ℚ) (D := 1) (d := d) (W := 1)
     (n := 1) (L := 10) (rate := 1) (level := Real.log 3000 / 500)
-    (logarithm := Real.log 3000) (μ := 27 / 10) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by simpa using hlevel) (by simpa using hscale)
-    (by simpa only [Nat.cast_one, Nat.cast_ofNat,
-      show (6 : ℝ) * 500 = 3000 by norm_num] using hmoment)
+    (logarithm := Real.log 3000) (μ := 27 / 10) one_pos hd one_pos (by norm_num)
+    hlevel hscale hmoment
 
 private theorem YOneWeights :
     fullHigherJetWeight (d := 1) (Finsupp.single (some 1) 1) = 0 ∧

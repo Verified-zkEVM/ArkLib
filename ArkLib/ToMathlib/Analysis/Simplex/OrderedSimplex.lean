@@ -238,15 +238,22 @@ private theorem measurePreserving_permuteEquiv (σ : Equiv.Perm (Fin n)) :
 
 /-- The chamber of the standard simplex whose coordinates, read in the order `σ`, decrease. -/
 private def chamber (W : ℝ) (σ : Equiv.Perm (Fin n)) : Set (Fin n → ℝ) :=
-  permuteEquiv σ ⁻¹' orderedSimplex n W
+  (fun x : Fin n → ℝ ↦ x ∘ σ) ⁻¹' orderedSimplex n W
+
+private theorem chamber_eq_preimage (W : ℝ) (σ : Equiv.Perm (Fin n)) :
+    chamber W σ = permuteEquiv σ ⁻¹' orderedSimplex n W := by
+  ext x
+  change x ∘ σ ∈ orderedSimplex n W ↔ permuteEquiv σ x ∈ orderedSimplex n W
+  rw [permuteEquiv_apply]
 
 private theorem measurableSet_chamber (W : ℝ) (σ : Equiv.Perm (Fin n)) :
-    MeasurableSet (chamber W σ) :=
-  (measurableSet_orderedSimplex n W).preimage (permuteEquiv σ).measurable
+    MeasurableSet (chamber W σ) := by
+  rw [chamber_eq_preimage]
+  exact (measurableSet_orderedSimplex n W).preimage (permuteEquiv σ).measurable
 
 private theorem mem_chamber {W : ℝ} {σ : Equiv.Perm (Fin n)} {x : Fin n → ℝ} :
     x ∈ chamber W σ ↔ x ∈ standardSimplex (Fin n) W ∧ Antitone (x ∘ σ) := by
-  simp only [chamber, Set.mem_preimage, permuteEquiv_apply, mem_orderedSimplex,
+  simp only [chamber, Set.mem_preimage, mem_orderedSimplex,
     mem_standardSimplex, Function.comp_apply]
   rw [Equiv.sum_comp σ x]
   constructor
@@ -295,6 +302,7 @@ private theorem setIntegral_chamber {f : (Fin n → ℝ) → ℝ}
     (hf : ∀ (σ : Equiv.Perm (Fin n)) x, f (x ∘ σ) = f x)
     (W : ℝ) (σ : Equiv.Perm (Fin n)) :
     ∫ x in chamber W σ, f x = ∫ v in orderedSimplex n W, f v := by
+  rw [chamber_eq_preimage]
   have h := (measurePreserving_permuteEquiv σ).setIntegral_preimage_emb
     (permuteEquiv σ).measurableEmbedding f (orderedSimplex n W)
   simp only [permuteEquiv_apply, hf] at h
@@ -304,6 +312,7 @@ private theorem integrableOn_chamber_iff {f : (Fin n → ℝ) → ℝ}
     (hf : ∀ (σ : Equiv.Perm (Fin n)) x, f (x ∘ σ) = f x)
     (W : ℝ) (σ : Equiv.Perm (Fin n)) :
     IntegrableOn f (chamber W σ) ↔ IntegrableOn f (orderedSimplex n W) := by
+  rw [chamber_eq_preimage]
   have h := (measurePreserving_permuteEquiv σ).integrableOn_comp_preimage
     (permuteEquiv σ).measurableEmbedding (f := f) (s := orderedSimplex n W)
   have hcomp : f ∘ permuteEquiv σ = f := funext fun x ↦ by

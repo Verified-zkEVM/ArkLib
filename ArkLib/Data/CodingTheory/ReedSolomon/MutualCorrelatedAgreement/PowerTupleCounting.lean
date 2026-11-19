@@ -41,7 +41,8 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval optionEquivRight)
 
 variable {F E α : Type*} [Field F] [Field E] {k K ℓ : ℕ}
 
@@ -193,8 +194,7 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
   let graphR := frobeniusPowerGraphMap center (p ^ e) (fun t ↦ (R t).map ι)
   let sep := aeval graphP (jointInitialJetSeparant center Q)
   have hinfinite : {z : E | sep.eval z ≠ 0}.Infinite :=
-    (Set.infinite_univ.sdiff (Polynomial.finite_setOfPred_isRoot hP.regular)).mono
-      (fun _ hz ↦ hz.2)
+    (Polynomial.finite_setOfPred_isRoot hP.regular).infinite_compl
   have hs : 0 < p ^ e := pow_pos (expChar_pos E p) e
   have hgraphs : graphP = graphR := by
     funext i

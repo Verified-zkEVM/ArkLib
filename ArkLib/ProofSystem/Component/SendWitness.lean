@@ -487,7 +487,7 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
 def toORelOut :
     Set ((Statement × (∀ i, (Sum.elim OStatement fun _ : Fin 1 => Witness) i)) × Unit) :=
   Set.ofPred (fun ⟨⟨stmt, oStmtAndWit⟩, _⟩ =>
-    oRelIn ⟨⟨stmt, fun i => oStmtAndWit (Sum.inl i)⟩, (oStmtAndWit (Sum.inr 0))⟩)
+    ⟨⟨stmt, fun i => oStmtAndWit (Sum.inl i)⟩, oStmtAndWit (Sum.inr 0)⟩ ∈ oRelIn)
 
 /-- The `SendSingleWitness` oracle reduction satisfies perfect completeness. -/
 @[simp]

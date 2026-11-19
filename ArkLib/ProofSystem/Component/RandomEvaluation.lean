@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Component.RandomQuery
+import VCVio.OracleComp.Constructions.SampleableType.SchwartzZippel
 
 /-!
 # Random evaluation
@@ -67,10 +68,10 @@ abbrev rbrExtractor := RandomQuery.rbrExtractor oSpec Statement OStatement (Fin 
 variable [CommSemiring F] (P : Statement → (∀ i, OStatement i) → MvPolynomial (Fin m) F)
 
 /-- The input relation: `P = 0`. -/
-abbrev relIn := RandomQuery.relIn Statement OStatement (MvPolynomial (Fin m) F) P 0
+abbrev relIn := {s | s ∈ RandomQuery.relIn Statement OStatement (MvPolynomial (Fin m) F) P 0}
 
 /-- The output relation: `P` vanishes at the sampled point. -/
-abbrev relOut := RandomQuery.relOut Statement OStatement (MvPolynomial (Fin m) F) P 0
+abbrev relOut := {s | s ∈ RandomQuery.relOut Statement OStatement (MvPolynomial (Fin m) F) P 0}
 
 omit [∀ i, OracleInterface (OStatement i)] in
 theorem mem_relIn_iff {s : (Statement × (∀ i, OStatement i)) × Unit} :
@@ -115,7 +116,7 @@ theorem prob_answer_eq_zero_le (Q : MvPolynomial (Fin m) F) (hQ : Q ≠ 0) (d : 
     exact_mod_cast Fintype.card_ne_zero
   rw [ENNReal.coe_div hdenom]
   simp only [answer_eq_eval, map_zero, ENNReal.coe_natCast]
-  exact prob_eval_zero_univ_le_div Q hQ hd
+  exact prEvent_eval_eq_zero_univ_le_div Q hQ hd
 
 end Agreement
 

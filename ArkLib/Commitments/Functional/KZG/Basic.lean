@@ -11,7 +11,7 @@ public import ArkLib.Commitments.Functional.KZG.Sampling
 public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.ToPoly
 public import CompPoly.Univariate.Lagrange
-public import ArkLib.ToCompPoly.Univariate.Basic
+public import CompPoly.Univariate.DivisionCorrectness
 public import Mathlib.Algebra.Field.ZMod
 public import Mathlib.Algebra.Order.Star.Basic
 public import Mathlib.Algebra.Polynomial.FieldDivision
