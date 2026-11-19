@@ -631,7 +631,7 @@ example : (regularJointStageSum 2 1 3 2 : ℝ) ≤
   have h := regularJointStageSum_cast_le (D := 2) (h := 1) (μ := 3) (M := 2) (e := 2)
     (by norm_num) (by norm_num)
   norm_num at h ⊢
-  all_goals exact h
+  exact h
 
 /-- The list charge increases from stage `0` to stage `1` at `θ = D = 1`, `μ = 2`. -/
 example : firstOrderListCharge 1 1 2 0 ≤ firstOrderListCharge 1 1 2 1 :=

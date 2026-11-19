@@ -216,7 +216,7 @@ example :
         ((2 : ENNReal)⁻¹ • (Measure.dirac (-1 : ℝ) + Measure.dirac 1)) := by
   set P : Measure ℝ := (2 : ENNReal)⁻¹ • (Measure.dirac (-1 : ℝ) + Measure.dirac 1)
   have hprob : IsProbabilityMeasure P := ⟨by
-    simp only [P, Measure.smul_apply, Measure.add_apply, measure_univ, smul_eq_mul]
+    simp only [P, smul_apply, add_apply, measure_univ, smul_eq_mul]
     rw [one_add_one_eq_two, ENNReal.inv_mul_cancel two_ne_zero ENNReal.ofNat_ne_top]⟩
   have hdirac : ∀ (a : ℝ) (f : ℝ → ℝ), Integrable f (Measure.dirac a) :=
     fun a f ↦ integrable_dirac (by simp)

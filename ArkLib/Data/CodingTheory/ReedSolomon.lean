@@ -112,7 +112,10 @@ open scoped BigOperators
 variable {ι : Type*} [Fintype ι] [Nonempty ι]
          {F : Type*} [Field F] [Fintype F]
 
-abbrev RScodeSet (domain : ι ↪ F) (deg : ℕ) : Set (ι → F) := ReedSolomon.code domain deg
+/-- The set of words in the abstract Reed–Solomon submodule, whose evaluation image is
+noncomputable. -/
+noncomputable abbrev RScodeSet (domain : ι ↪ F) (deg : ℕ) : Set (ι → F) :=
+  ReedSolomon.code domain deg
 
 open Classical in
 noncomputable def toFinset (domain : ι ↪ F) (deg : ℕ) : Finset (ι → F) :=

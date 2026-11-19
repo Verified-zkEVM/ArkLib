@@ -76,9 +76,9 @@ private theorem quadraticMultiplier_injective : Function.Injective quadraticMult
   funext j
   apply (algebraMap (ZMod 7) K).injective
   fin_cases j
-  · simpa using congrArg (coeff · 0) h
-  · simpa using congrArg (coeff · 1) h
-  · simpa using congrArg (coeff · 2) h
+  · simpa using congrArg (·.coeff 0) h
+  · simpa using congrArg (·.coeff 1) h
+  · simpa using congrArg (·.coeff 2) h
 
 /-- Distinct challenges give distinct chart coordinates. -/
 private theorem frobeniusCoordinates_injective (r : ℕ) :
