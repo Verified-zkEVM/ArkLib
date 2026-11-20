@@ -25,6 +25,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean
 ---
 
@@ -149,6 +150,10 @@ Unit 10 applies the equal-degree guarantee in each folding round.
 - [`AffineCombiner/EqualDegreeSampling.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean)
   identifies this error with the supremum of native uniform probabilities over three challenges.
 
+- [`AffineCombiner/Computable.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean)
+  computes the affine, scalar, and equal-degree errors as exact nonnegative rationals.
+  It proves that `ENNReal.ofReal` of the real cast of each value is the semantic error.
+
 - [`AffineCombiner/SubspaceSeparation.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean)
   proves the scalar lower bound with constant fractional agreement loss on additive domains.
   It uses the binary-group decomposition in `BinaryAddSubgroup.lean` and the degree bounds in
@@ -175,6 +180,15 @@ The error values have type `ENNReal` and counting definitions without sampler as
 them with suprema of native uniform probabilities.
 `ReedSolomon.scalarMcaError_zero_eq_mcaError` identifies the scalar error at loss zero with
 `CoreDefinitions.mcaError` at the matching integer agreement threshold.
+
+`ReedSolomon.affineMcaErrorRat`, `ReedSolomon.scalarMcaErrorRat`, and
+`ReedSolomon.equalDegreeMcaErrorRat` compute the affine, scalar, and equal-degree errors exactly in `ℚ≥0`.
+`ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
+`ReedSolomon.ofReal_equalDegreeMcaErrorRat` prove that `ENNReal.ofReal` of the real cast of each
+value is the semantic `ENNReal` error.
+The evaluators search candidates and witnesses of bounded degree with CompPoly arithmetic.
+They use no classical decision procedure and no sampler.
+The module docstring of `AffineCombiner/Computable.lean` states the cost of the exhaustive search.
 
 The output and first affine witness have degree at most `d`, which gives message length `d + 1`.
 The second affine witness has degree below `d`, which gives message length `d`.
