@@ -13,6 +13,8 @@ public import ArkLib.ToMathlib.List.Basic
 public import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 public import Mathlib.Data.PNat.Notation
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
+public import Mathlib.Data.Finset.Lattice.Fold
+public import Mathlib.Data.Multiset.UnionInter
 
 /-!
   # Definitions and lemmas related to `Finset`.
@@ -137,3 +139,12 @@ lemma sum_finRangeTo_le_sub_of_le {n k : ℕ} {s : Fin (k + 1) → ℕ+} {i : Fi
     transitivity
     · exact Finset.sum_le_univ_sum_of_nonneg (by simp)
     · exact k_le_n
+
+/-- The multiplicity of a point in an infimum of multisets is the infimum of its
+multiplicities. -/
+theorem Multiset.count_finset_inf' {α ι : Type*} [DecidableEq ι] {I : Finset α}
+    (hI : I.Nonempty)
+    (s : α → Multiset ι) (x : ι) :
+    (I.inf' hI s).count x = I.inf' hI fun i => (s i).count x :=
+  Finset.apply_inf'_eq_inf'_comp hI (fun t : Multiset ι => t.count x)
+    fun a b => Multiset.count_inter x a b
