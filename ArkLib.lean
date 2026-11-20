@@ -272,9 +272,12 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.RowO
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.SecondMoment
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Types
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.FullRank
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.IntersectionMatrix
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
+public import ArkLib.Data.CodingTheory.ListDecodability.PartitionConnected
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
 public import ArkLib.Data.CodingTheory.ListDecodability.SymbolMap
 public import ArkLib.Data.CodingTheory.PolishchukSpielman
@@ -365,6 +368,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
+public import ArkLib.Data.CodingTheory.ReedSolomon.Dual
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
@@ -1182,7 +1186,11 @@ public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
+public import ArkLib.ToMathlib.Combinatorics.Hypergraph.GenericZeroPattern
+public import ArkLib.ToMathlib.Combinatorics.Hypergraph.PartitionConnected
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
+public import ArkLib.ToMathlib.Combinatorics.SetFamily.GenericZeroPattern
+public import ArkLib.ToMathlib.Combinatorics.SetFamily.IntersectingSubmodular
 public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
@@ -1214,6 +1222,7 @@ public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CoeffBound
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
+public import ArkLib.ToMathlib.MvPolynomial.Diagonal
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
@@ -1242,6 +1251,7 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+public import ArkLib.ToMathlib.Polynomial.LinearIndependent
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RectangleDifference
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
@@ -1283,5 +1293,6 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteZeroLocus
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
+public import ArkLib.ToMathlib.RingTheory.Polynomial.GenericZeroPattern
 public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
