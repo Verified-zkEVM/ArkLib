@@ -7,6 +7,7 @@ module
 
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Heterogeneous
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
@@ -31,6 +32,10 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoC
     generic `Verifier.append_treeSpecialSoundWith` / `append_treeSpecialSoundWithEscape`. The
     composed extractor is `Extractor.TreeBased.append`, seamed by the left verifier's verdict
     function passed as data.
+  * `Heterogeneous` — the variant with one alphabet and one soundness parameter per coordinate:
+    the star condition `IsHeteroSpecialSoundFamily`, `HeteroCWSSStructure` with its shape, the
+    embedding `CWSSStructure.toHetero` of the homogeneous structure (same shape), and the tree size
+    and error sum of the heterogeneous accounting.
   * `NoChallenge` — the degenerate bridge for protocols with no challenge rounds
     (`IsEmpty pSpec.ChallengeIdx`): tree special soundness collapses to a transcript-level extractor
     (`Verifier.treeSpecialSoundWith_of_isEmpty_challengeIdx`).
