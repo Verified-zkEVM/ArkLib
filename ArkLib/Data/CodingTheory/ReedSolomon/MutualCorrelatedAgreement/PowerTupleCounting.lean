@@ -199,7 +199,7 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
   have hgraphs : graphP = graphR := by
     funext i
     cases i with
-    | none => rfl
+    | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
     | some i =>
       have hi : i = 0 := Subsingleton.elim _ _
       subst i
@@ -301,7 +301,7 @@ theorem admissibleFrobeniusPowerTuples_card_le_degreeOf [Infinite E]
             fun o ↦ o.elim Polynomial.X fun _ ↦ graph P := by
         funext o
         cases o with
-        | none => rfl
+        | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
         | some j =>
           have hj : j = 0 := Subsingleton.elim _ _
           subst j
