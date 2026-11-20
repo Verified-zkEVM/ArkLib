@@ -663,6 +663,7 @@ public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.Split
+public import ArkLib.Data.MvPolynomial.VecTreeInterpolation
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
@@ -882,6 +883,7 @@ public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.KnowledgeSoundnessRun
+public import ArkLib.OracleReduction.Security.NestedStages
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Resources
 public import ArkLib.OracleReduction.Security.Rewinding
