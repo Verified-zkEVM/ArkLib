@@ -1183,6 +1183,7 @@ public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
+public import ArkLib.ToMathlib.Combinatorics.SetFamily.GenericZeroPattern
 public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
@@ -1214,6 +1215,7 @@ public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CoeffBound
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
 public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
+public import ArkLib.ToMathlib.MvPolynomial.Diagonal
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
@@ -1242,6 +1244,7 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+public import ArkLib.ToMathlib.Polynomial.LinearIndependent
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RectangleDifference
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
@@ -1283,5 +1286,6 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteZeroLocus
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
+public import ArkLib.ToMathlib.RingTheory.Polynomial.GenericZeroPattern
 public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
