@@ -8,6 +8,15 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
+  - ArkLib/Data/Probability/Uniform.lean
+  - ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean
+  - ArkLib/ToMathlib/Combinatorics/Hypergraph/GenericZeroPattern.lean
+  - ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean
+  - ArkLib/ToMathlib/Fintype/CardEmbedding.lean
 ---
 
 # AGL24
@@ -28,23 +37,105 @@ Theorem 1.1: for `ε ∈ (0,1)`, `L ≥ 2` and a prime power `q ≥ n + k·2^{10
 
 `rs_random_domain_lambda_le` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted).
 
+`IsWeaklyPartitionConnected` in
+[PartitionConnected.lean](../../../ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean):
+weak partition-connectivity, the minimal-subset lemma
+(`exists_isWeaklyPartitionConnected_subtype`), and the combinatorial step of robustness to deletions
+(`IsWeaklyPartitionConnected.delete`).
+
+`IsWeaklyPartitionConnected.exists_isGenericZeroPattern` in
+[GenericZeroPattern.lean](../../../ArkLib/ToMathlib/Combinatorics/Hypergraph/GenericZeroPattern.lean):
+the source's corollary that a weakly partition-connected hypergraph gives a generic zero pattern,
+proved without the hypergraph orientation theorem the source uses; it assumes nonempty edges, which
+the source's proof assumes implicitly.
+
+`exists_isWeaklyPartitionConnected_agreement_of_sum_hammingDist_le` in
+[PartitionConnected.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean):
+a bad list-decoding configuration gives a weakly partition-connected agreement hypergraph, with its
+list-size form `exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda`.
+
+`intersectionMatrix` in
+[IntersectionMatrix.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean):
+the source's reduced intersection matrix of a hypergraph, with `IsRigid`, its full column rank at
+evaluation points in polynomial form (`isRigid_iff_mulVec_injective`,
+`isRigid_iff_exists_aeval_det_ne_zero`); the source's lemma that reduced intersection matrices of
+agreement hypergraphs are not full column rank (`not_isRigid_of_mem_code`); the per-variable degree
+bound on maximal minors (`degreeOf_det_submatrix_le`); and row deletion and exchange of variables
+(`intersectionMatrix_apply_of_eq`, `rename_intersectionMatrix_apply`).
+
+`exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected` in
+[FullRank.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean):
+the source's full-column-rank theorem for reduced intersection matrices (`lem:int-mat-1` in the
+source), as a nonzero maximal minor of the intersection matrix over `MvPolynomial ι F` for any
+field `F`. The proof is the source's appendix proof through generic zero patterns, run at a point
+of the infinite field `RatFunc F`
+(`exists_isRigid_of_isWeaklyPartitionConnected`) in place of the source's reduction to large
+finite fields. Its corollary `exists_embedding_Lambda_le`: over every infinite field there are
+evaluation points at which the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
+`ℓ/(ℓ+1)·(1 − k/n)`. This is the infinite-field list-size form; it is not [BGM23]'s finite-field
+statement and gives no bound on the field size.
+
+`Tuple.card_filter_card_descents_lt_le` in
+[Descents.lean](../../../ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean): the counting
+step of the source's certificate count (`cor:count` in the source): over a finite linear order
+`α`, at most `C(|α|, r) · m^r` injective tuples `Fin r ↪ α` have fewer than `m` descents. The
+source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is
+`IsCertificate.card_descents_lt` in
+[Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean);
+the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its proof gives
+fewer, which the count needs.
+
+`exists_embedding_isCertificate_of_not_isRigid` in
+[Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean):
+the source's certificates of rank loss (`alg:matrix`, `alg:certificate`, and `lem:well-defined`
+through `lem:count`), for a `(k + 2r)`-weakly partition-connected hypergraph on `t = s + 1`
+vertices. `certificateState` is the source's matrix sequence as a function of the list of earlier
+certificate indices (`certificateState_append_singleton`); its minors are nonzero
+(`certificateMinor_ne_zero`) of degree at most `s * (k - 1)` in each variable
+(`degreeOf_certificateMinor_le`). Every point at which the hypergraph is not rigid has a
+certificate of length `r` (`exists_isCertificate_of_not_isRigid`); a certificate of length at most
+`r` is injective (`IsCertificate.injective`) and has fewer than `2^t` descents
+(`IsCertificate.card_descents_lt`). `exists_embedding_certificatePolynomial_of_not_isRigid` attaches
+the minors to the certificate's indices (`certificatePolynomial`). The source's `lem:del` is
+`exists_det_submatrix_ne_zero_of_card_le` in
+[FullRank.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean),
+and its exchange of variables of the same type is `det_submatrix_relabel` in
+[IntersectionMatrix.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean).
+The edges are not ordered by type; the bank is consumed from its smallest edge of each type, which
+is the source's choice of the next unused bank element of that type; variables are swapped rather
+than replaced, which agrees because the incoming variable does not occur in the minor; and a
+certificate is described by the source's events `E_j`, `F_j` rather than as the output of its
+algorithm with the choice of the smallest index. The probability of one certificate
+(`lem:product`, `cor:product`) and `lem:main` are not formalized.
+
 ## Known Divergences From ArkLib
 
 ArkLib states the plain `Λ` bound, of which the source's average-radius form is a strengthening — the
 safe direction.
 
-The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}` under
-`PMF.uniformOfFintype`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
-and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points, which
-induces the same distribution over codes.
+ArkLib's reduced intersection matrix has entries in `MvPolynomial ι R` rather than the fraction
+field; full column rank is stated at evaluation points (`IsRigid`) and through maximal minors, and
+the per-variable degree bound on maximal minors is `s * (k - 1)`, the count in the source's proof,
+sharper than its stated `(t − 1)k`.
+
+The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}`
+sampled with `$ᵗ`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
+and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points. An
+event that depends only on the set of drawn points has the same probability under both samplers:
+`prEvent_uniformSample_finsetCard_eq_embedding` in
+[Uniform.lean](../../../ArkLib/Data/Probability/Uniform.lean), from the count
+`Fintype.card_filter_embedding_map_univ` in
+[CardEmbedding.lean](../../../ArkLib/ToMathlib/Fintype/CardEmbedding.lean) (every `n`-element set
+is the image of `n!` embeddings `Fin n ↪ F`).
 
 The source's stated consequence — at `ℓ = 2(1−ρ−η)/η` — is not formalized: its `ℓ` is real-valued, so it
 needs a rounding the source does not fix.
 
 ## Open Formalization Gaps
 
-Theorem 1.1 itself. Its predecessors [BGM23], [GZ23] and the combined [AGGLZ25] are unformalized
-context.
+Theorem 1.1 itself. Of its predecessors, [BGM23] is formalized only in its infinite-field list-size
+form (`exists_embedding_Lambda_le`: no field-size bound, not average-radius); [GZ23] and the
+combined [AGGLZ25] are unformalized context.
 
 ## Source Access
 
