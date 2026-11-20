@@ -92,6 +92,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   alphabet-free framing of the Johnson-bound layer.
 - [`papers/LNP22.md`](papers/LNP22.md) - the lattice zero-knowledge framework whose
   power-of-two cyclotomic ring setting `Data/Lattices/CyclotomicRing/` constructs.
+- [`papers/Lov18.md`](papers/Lov18.md) - the GM-MDS theorem: Theorem 1.7 and Conjecture 1.3,
+  formalized symbolically, with the infinite-field form used for generic zero patterns.
 - [`papers/LPS24.md`](papers/LPS24.md) - AGM reasoning connected back to Plonk knowledge
   soundness.
 - [`papers/LS18.md`](papers/LS18.md) - invertibility of short nonzero elements of
