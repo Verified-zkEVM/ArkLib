@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 528,
-    "keys_cited": 77,
-    "total_citation_edges": 713
+    "files_with_citations": 558,
+    "keys_cited": 80,
+    "total_citation_edges": 747
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -12,7 +12,22 @@
     "ArkLib/Commitments/Functional/Basic.lean": [
       "CGKY25"
     ],
+    "ArkLib/Commitments/Functional/BitZ/Bitification.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/BitifiedClaim.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/CrtVariant.lean": [
+      "BGKLSW26"
+    ],
     "ArkLib/Commitments/Functional/BitZ/ExponentLift.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/FixedWitnessError.lean": [
+      "BGKLSW26"
+    ],
+    "ArkLib/Commitments/Functional/BitZ/HonestMessages.lean": [
       "BGKLSW26"
     ],
     "ArkLib/Commitments/Functional/BitZ/OutOfDomain.lean": [
@@ -665,6 +680,25 @@
       "MS77",
       "ST20"
     ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean": [
+      "ABF26",
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/BerP.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Defs.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Main.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/NotRare.lean": [
+      "GLMRSW22"
+    ],
+    "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Types.lean": [
+      "GLMRSW22"
+    ],
     "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean": [
       "ABF26",
       "AGGLZ25",
@@ -825,7 +859,10 @@
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean": [
       "ABF26",
-      "GG25"
+      "AHIV22",
+      "BKS18",
+      "GG25",
+      "Hab25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean": [
       "ABF26",
@@ -957,6 +994,63 @@
       "ABF26",
       "GW13",
       "KSY14"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Basic.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ChartIncidence.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ExceptionalCount.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FrobeniusFactor.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Interpolation.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/InterpolationParams.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LineEvaluation.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LineRoots.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/PersistenceDescent.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Persistent.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/RationalPair.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/TaylorChart.lean": [
+      "CWYZ26"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean": [
+      "CWYZ26"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean": [
       "DKT26"
@@ -1791,6 +1885,7 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26Asymptotic.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/LargeAlphabet.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/SubspaceDesign.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean",
@@ -1866,7 +1961,8 @@
       "ArkLib/Data/CodingTheory/InterleavedCode.lean",
       "ArkLib/Data/CodingTheory/Prelims.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/AHIV22Support.lean"
+      "ArkLib/Data/CodingTheory/ProximityGap/AHIV22Support.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean"
     ],
     "Ajt96": [
       "ArkLib/Commitments/Ordinary/Ajtai/Simple/Scheme.lean",
@@ -1994,7 +2090,12 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "BGKLSW26": [
+      "ArkLib/Commitments/Functional/BitZ/Bitification.lean",
+      "ArkLib/Commitments/Functional/BitZ/BitifiedClaim.lean",
+      "ArkLib/Commitments/Functional/BitZ/CrtVariant.lean",
       "ArkLib/Commitments/Functional/BitZ/ExponentLift.lean",
+      "ArkLib/Commitments/Functional/BitZ/FixedWitnessError.lean",
+      "ArkLib/Commitments/Functional/BitZ/HonestMessages.lean",
       "ArkLib/Commitments/Functional/BitZ/OutOfDomain.lean",
       "ArkLib/Commitments/Functional/BitZ/Round1.lean",
       "ArkLib/Commitments/Functional/BitZ/Round2.lean",
@@ -2009,6 +2110,9 @@
     "BKR06": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
+    ],
+    "BKS18": [
+      "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean"
     ],
     "BRW26": [
       "ArkLib/ProofSystem/RingSwitching/Packing/ClaimLayout/Quirky.lean",
@@ -2048,6 +2152,27 @@
     ],
     "CW07": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
+    ],
+    "CWYZ26": [
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Basic.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ChartIncidence.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/ExceptionalCount.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FrobeniusFactor.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Interpolation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/InterpolationParams.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LineEvaluation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LineRoots.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/PersistenceDescent.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Persistent.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/RationalPair.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Separation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/TaylorChart.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean"
     ],
     "CZ25": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/AgreementHypergraph.lean",
@@ -2365,6 +2490,12 @@
     ],
     "GLMRSW22": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/Linear.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/BerP.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Defs.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Main.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/NotRare.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear/Types.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability/Bounds/RandomLinear.lean",
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "GMW25": [
@@ -2411,6 +2542,9 @@
       "ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean",
       "ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean",
       "ArkLib/ProofSystem/RingSwitching/Lift.lean"
+    ],
+    "Hab25": [
+      "ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean"
     ],
     "JH01": [
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean",
