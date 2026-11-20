@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Nam Khanh Ngo
 -/
 module
 
@@ -31,6 +31,7 @@ t  = m + 1/2                                                  (johnsonT)
 h  = ⌈t² / (3ρ₋)⌉₊ - 1          challenge height             (johnsonH)
 θ  = (n - D) / (A - D)          incidence ratio              (johnsonTheta)
 E₀ = (2μ - 1) h + θ (h + μ + 4Dμh) + (n - D - 1) μ          (johnsonExceptionCount)
+E₁ = E₀ with h replaced by h + 1                             (johnsonSuccExceptionCount)
 ```
 
 The basic bounds on `ρ₋`, `μ` and `h` need only `1 ≤ D < n`; the closed bounds on `E₀` also need
@@ -44,6 +45,9 @@ The basic bounds on `ρ₋`, `μ` and `h` need only `1 ≤ D < n`; the closed bo
 * `johnson_degree_succ_le_agreement`, `johnsonTheta_le_sqrt_envelope`: the threshold
   `(√ρ₋ + η) n ≤ A` gives `D + 1 ≤ A` and `θ ≤ (1 + √ρ₋) / √ρ₋`.
 * `johnsonExceptionCount_lt_closed`: `E₀ < (8/3) n t³ / ρ₋`.
+* `johnsonSuccExceptionCount_le_two_mul`, `johnsonSuccExceptionCount_lt_closed`: the count at
+  height `h + 1` satisfies `E₁ ≤ 2 E₀` and `E₁ < (8/3) n t³ / ρ₋`. It is the line count charged
+  by a curve of degree `ℓ`, whose height `ℓ (h + 1) - 1` is at most `ℓ (h + 1)`.
 * `johnsonExceptionCount_div_comparisonEstimate_lt`,
   `johnsonExceptionCount_lt_comparisonEstimate`: `E₀` is below `16/49` of the exception estimate
   `johnsonComparisonEstimate` of [BCPZZ26].
@@ -104,6 +108,16 @@ def johnsonTheta (n D A : ℕ) : ℝ :=
 def johnsonExceptionCount (n D A : ℕ) (eta : ℝ) : ℝ :=
   let μ := johnsonMu n D eta
   let h := johnsonH n D eta
+  (2 * μ - 1 : ℕ) * h + johnsonTheta n D A * (h + μ + 4 * D * μ * h) +
+    (n - D - 1 : ℕ) * μ
+
+/-- The raw exception count `E₁` at height `h + 1`: `johnsonExceptionCount` with the height
+`h = johnsonH` replaced by `h + 1`. A curve of degree `ℓ` has interpolation height
+`ℓ (h + 1) - 1 ≤ ℓ (h + 1)`, so it is charged at most `ℓ E₁`. The comparisons are
+`johnsonSuccExceptionCount_le_two_mul` and `johnsonSuccExceptionCount_lt_closed`. -/
+def johnsonSuccExceptionCount (n D A : ℕ) (eta : ℝ) : ℝ :=
+  let μ := johnsonMu n D eta
+  let h := johnsonH n D eta + 1
   (2 * μ - 1 : ℕ) * h + johnsonTheta n D A * (h + μ + 4 * D * μ * h) +
     (n - D - 1 : ℕ) * μ
 
@@ -386,6 +400,72 @@ theorem johnsonTheta_le_sqrt_envelope {n D A : ℕ} {eta : ℝ}
   calc
     n * (1 - x ^ 2) * x = (1 + x) * (n * (x - x ^ 2)) := by ring
     _ ≤ (1 + x) * ((A - D : ℕ) : ℝ) := hmul
+
+/-- The half-gap refinement of `johnsonTheta_le_sqrt_envelope`: with `x = √ρ₋`, `t = johnsonT`
+and `w = (1 - x)(2t - 1) + 1`, the threshold gives `θ ≤ (1 + x)/x - (1 + x)/(x w)`. The
+denominator `A - D` is at least `n (x - x² + η)`, and `johnson_half_gap` gives
+`x ≤ (2t - 1) η`, so `A - D ≥ n x w / (2t - 1)`. -/
+theorem johnsonTheta_le_halfGap_envelope {n D A : ℕ} {eta : ℝ}
+    (hD : 1 ≤ D) (hDn : D < n) (heta : 0 < eta)
+    (hthreshold : johnsonAgreement n D eta * n ≤ A) :
+    johnsonTheta n D A ≤
+      (1 + √(johnsonRhoMinus n D)) / √(johnsonRhoMinus n D) -
+        (1 + √(johnsonRhoMinus n D)) / (√(johnsonRhoMinus n D) *
+          ((1 - √(johnsonRhoMinus n D)) * (2 * johnsonT n D eta - 1) + 1)) := by
+  let rho := johnsonRhoMinus n D
+  let x := √rho
+  let t := johnsonT n D eta
+  have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+  have hx := johnsonSqrt_mem_Ioo hD hDn
+  have hx2 : x ^ 2 = rho := Real.sq_sqrt (johnsonRhoMinus_pos hD hDn).le
+  have hDEq : (D : ℝ) = n * x ^ 2 := by
+    rw [hx2]
+    dsimp only [rho]
+    unfold johnsonRhoMinus
+    field_simp
+  have ht : 7 / 2 ≤ t := johnsonT_ge_seven_halves n D eta
+  have h2t : 0 ≤ 2 * t - 1 := by linarith
+  have h1x2 : 0 ≤ 1 - x ^ 2 := by nlinarith [mul_le_mul_of_nonneg_left hx.2.le hx.1.le]
+  obtain ⟨w, hw⟩ : ∃ w : ℝ, w = (1 - x) * (2 * t - 1) + 1 := ⟨_, rfl⟩
+  have hw0 : 0 < w := by
+    have := mul_nonneg (sub_nonneg.2 hx.2.le) h2t
+    rw [hw]
+    linarith
+  have hgap : x ≤ (2 * t - 1) * eta := by
+    have hhalf := johnson_half_gap n D heta
+    have hst : 2 * t - 1 = 2 * (johnsonM n D eta : ℝ) := by
+      change 2 * johnsonT n D eta - 1 = _
+      unfold johnsonT
+      ring
+    rw [hst]
+    change √(johnsonRhoMinus n D) ≤ 2 * (johnsonM n D eta : ℝ) * eta
+    linarith
+  have hthr : (x + eta) * n ≤ (A : ℝ) := by
+    simpa only [johnsonAgreement, x, rho] using hthreshold
+  have hDA := johnson_degree_succ_le_agreement hDn heta hthreshold
+  have hADpos : (0 : ℝ) < ((A - D : ℕ) : ℝ) := by exact_mod_cast (show 0 < A - D by omega)
+  have hAD : (n : ℝ) * (x - x ^ 2 + eta) ≤ ((A - D : ℕ) : ℝ) := by
+    rw [Nat.cast_sub (show D ≤ A by omega), hDEq]
+    linarith
+  have hnxw : (n : ℝ) * x * w ≤ (2 * t - 1) * ((A - D : ℕ) : ℝ) := by
+    rw [hw]
+    linarith [mul_le_mul_of_nonneg_left hAD h2t, mul_le_mul_of_nonneg_left hgap hn.le]
+  have hnum : ((n - D : ℕ) : ℝ) = (n : ℝ) * (1 - x ^ 2) := by
+    rw [Nat.cast_sub (show D ≤ n by omega), hDEq]
+    ring
+  have hthetaxw : johnsonTheta n D A * (x * w) ≤ (1 - x ^ 2) * (2 * t - 1) := by
+    unfold johnsonTheta
+    rw [div_mul_eq_mul_div, div_le_iff₀ hADpos, hnum]
+    linarith [mul_le_mul_of_nonneg_left hnxw h1x2]
+  have hform : (1 - x ^ 2) * (2 * t - 1) / (x * w) = (1 + x) / x - (1 + x) / (x * w) := by
+    have hxne : x ≠ 0 := hx.1.ne'
+    have hwne : w ≠ 0 := hw0.ne'
+    field_simp
+    rw [hw]
+    ring
+  change johnsonTheta n D A ≤ (1 + x) / x - (1 + x) / (x * ((1 - x) * (2 * t - 1) + 1))
+  rw [← hw, ← hform]
+  exact (le_div_iff₀ (mul_pos hx.1 hw0)).2 hthetaxw
 
 /-- The normalized envelope
 `4(1 + x)/3 + (16/(21x) + 26/147) min (x²) ((1 - x²)/2) + 4x(1 - x²)/49`, obtained from
@@ -694,6 +774,234 @@ theorem johnsonExceptionCount_lt_closed {n D A : ℕ} {eta : ℝ}
       exact mul_le_mul_of_nonneg_left hpre hscale.le
     _ < ((n : ℝ) * t ^ 3 / rho) * (8 / 3) := by
       exact mul_lt_mul_of_pos_left hnormalized hscale
+    _ = (8 / 3 : ℝ) * n * t ^ 3 / rho := by ring
+
+/-- Raising the height by one at most doubles the count: `E₁ ≤ 2 E₀` for `1 ≤ D < n`. The count
+is affine in the height `h ≥ 1` with nonnegative coefficients, so `2 E₀ - E₁` is the slope times
+`h - 1` plus the nonnegative intercept. -/
+theorem johnsonSuccExceptionCount_le_two_mul {n D A : ℕ} {eta : ℝ}
+    (hD : 1 ≤ D) (hDn : D < n) :
+    johnsonSuccExceptionCount n D A eta ≤ 2 * johnsonExceptionCount n D A eta := by
+  have hh : (1 : ℝ) ≤ johnsonH n D eta := by exact_mod_cast johnsonH_pos (eta := eta) hD hDn
+  have hh1 : (0 : ℝ) ≤ johnsonH n D eta - 1 := sub_nonneg.2 hh
+  have htheta : 0 ≤ johnsonTheta n D A := div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
+  have hμ : (0 : ℝ) ≤ johnsonMu n D eta := Nat.cast_nonneg _
+  have hDμ : (0 : ℝ) ≤ 4 * D * johnsonMu n D eta := by positivity
+  have p1 := mul_nonneg
+    (Nat.cast_nonneg _ : (0 : ℝ) ≤ ((2 * johnsonMu n D eta - 1 : ℕ) : ℝ)) hh1
+  have p2 := mul_nonneg htheta hh1
+  have p3 := mul_nonneg htheta hμ
+  have p4 := mul_nonneg htheta (mul_nonneg hDμ hh1)
+  have p5 := mul_nonneg (Nat.cast_nonneg _ : (0 : ℝ) ≤ ((n - D - 1 : ℕ) : ℝ)) hμ
+  simp only [johnsonSuccExceptionCount, johnsonExceptionCount, Nat.cast_add_one]
+  linarith
+
+/-- Polynomial core of `johnsonSuccExceptionCount_lt_closed`: with `w = (1 - x)(2t - 1) + 1`,
+`3xw(2t + 1 + x) + 12(1 + x) n t x² w ≤ 4(1 + x) n t³` for `0 < x < 1`, `t ≥ 7/2` and
+`n x² ≥ 1`. It uses `x²(1 - x) ≤ 4/27`. -/
+theorem johnsonSucc_gain_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht : 7 / 2 ≤ t)
+    (hn0 : 0 < n) (hnx : 1 ≤ n * x ^ 2) (hw : w = (1 - x) * (2 * t - 1) + 1) :
+    3 * x * w * (2 * t + 1 + x) + 12 * (1 + x) * n * t * x ^ 2 * w ≤
+      4 * (1 + x) * n * t ^ 3 := by
+  have ht0 : 0 < t := by linarith
+  have h2t : 0 ≤ 2 * t - 1 := by linarith
+  have h1x : 0 ≤ 1 - x := by linarith
+  have hw0 : 0 ≤ w := by
+    have := mul_nonneg h1x h2t
+    rw [hw]
+    linarith
+  have hcube : x ^ 2 * (1 - x) ≤ 4 / 27 := by
+    nlinarith [mul_nonneg (sq_nonneg (x - 2 / 3)) (show (0 : ℝ) ≤ x + 1 / 3 by linarith)]
+  have hx2le : x ^ 2 ≤ 1 := by
+    nlinarith [mul_le_mul_of_nonneg_left hx1.le hx0.le]
+  have hx2w : x ^ 2 * w ≤ 4 / 27 * (2 * t - 1) + 1 := by
+    have := mul_le_mul_of_nonneg_right hcube h2t
+    rw [hw]
+    nlinarith [this, hx2le]
+  have hb : x * (2 * t + 1 + x) ≤ 9 / 7 * (1 + x) * t := by
+    nlinarith [mul_le_mul_of_nonneg_left hx1.le hx0.le,
+      mul_le_mul_of_nonneg_left ht hx0.le, mul_nonneg h1x ht0.le]
+  have he : 111 / 7 * (4 / 27 * (2 * t - 1) + 1) ≤ 4 * t ^ 2 := by
+    nlinarith [mul_nonneg (sub_nonneg.2 ht) (show (0 : ℝ) ≤ 756 * t + 1758 by linarith)]
+  have hpos1 : 0 ≤ x * (2 * t + 1 + x) := mul_nonneg hx0.le (by linarith)
+  have hpos2 : 0 ≤ n * x ^ 2 * w := mul_nonneg (mul_nonneg hn0.le (sq_nonneg x)) hw0
+  have hpos3 : 0 ≤ (1 + x) * n * t := mul_nonneg (mul_nonneg (by linarith) hn0.le) ht0.le
+  have hA : 3 * x * w * (2 * t + 1 + x) ≤ 27 / 7 * (1 + x) * n * t * (x ^ 2 * w) := by
+    calc
+      3 * x * w * (2 * t + 1 + x) = 3 * w * (x * (2 * t + 1 + x)) * 1 := by ring
+      _ ≤ 3 * w * (x * (2 * t + 1 + x)) * (n * x ^ 2) :=
+        mul_le_mul_of_nonneg_left hnx (mul_nonneg (mul_nonneg (by norm_num) hw0) hpos1)
+      _ = 3 * (n * x ^ 2 * w) * (x * (2 * t + 1 + x)) := by ring
+      _ ≤ 3 * (n * x ^ 2 * w) * (9 / 7 * (1 + x) * t) :=
+        mul_le_mul_of_nonneg_left hb (mul_nonneg (by norm_num) hpos2)
+      _ = 27 / 7 * (1 + x) * n * t * (x ^ 2 * w) := by ring
+  calc
+    3 * x * w * (2 * t + 1 + x) + 12 * (1 + x) * n * t * x ^ 2 * w
+        = 3 * x * w * (2 * t + 1 + x) + 12 * (1 + x) * n * t * (x ^ 2 * w) := by ring
+    _ ≤ 27 / 7 * (1 + x) * n * t * (x ^ 2 * w) + 12 * (1 + x) * n * t * (x ^ 2 * w) := by
+      linarith [hA]
+    _ = 111 / 7 * ((1 + x) * n * t) * (x ^ 2 * w) := by ring
+    _ ≤ 111 / 7 * ((1 + x) * n * t) * (4 / 27 * (2 * t - 1) + 1) :=
+      mul_le_mul_of_nonneg_left hx2w (mul_nonneg (by norm_num) hpos3)
+    _ = ((1 + x) * n * t) * (111 / 7 * (4 / 27 * (2 * t - 1) + 1)) := by ring
+    _ ≤ ((1 + x) * n * t) * (4 * t ^ 2) := mul_le_mul_of_nonneg_left he hpos3
+    _ = 4 * (1 + x) * n * t ^ 3 := by ring
+
+/-- With the half-gap incidence bound `θ ≤ (1 + x)/x - (1 + x)/(x w)`, the termwise bound on
+`E₁` is at most the termwise bound on `E₀` used in
+`johnsonExceptionCount_lt_preEnvelope_scale`. The extra height costs `2t/x + θ(1 + 4nxt)`, and
+the smaller incidence ratio saves at least `(1 + x)/(x w) · 4nxt · t²/(3x²)`. -/
+theorem johnsonSucc_termwise_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht : 7 / 2 ≤ t)
+    (hn0 : 0 < n) (hnx : 1 ≤ n * x ^ 2) (hw : w = (1 - x) * (2 * t - 1) + 1) :
+    2 * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) +
+        ((1 + x) / x - (1 + x) / (x * w)) *
+          (t ^ 2 / (3 * x ^ 2) + 1 + t / x +
+            4 * (n * x ^ 2) * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1)) +
+        (n * (1 - x ^ 2) - 1) * (t / x) ≤
+      2 * t ^ 3 / (3 * x ^ 3) + (1 + x) * t ^ 2 / (3 * x ^ 3) +
+        4 * (1 + x) * n * t ^ 3 / (3 * x ^ 2) +
+        (n * t * (1 - x ^ 2) / x + t / x ^ 2) := by
+  have ht0 : 0 < t := by linarith
+  have hw0 : 0 < w := by
+    have := mul_nonneg (show (0 : ℝ) ≤ 1 - x by linarith) (show (0 : ℝ) ≤ 2 * t - 1 by linarith)
+    rw [hw]
+    linarith
+  have hK := johnsonSucc_gain_le hx0 hx1 ht hn0 hnx hw
+  have hxne : x ≠ 0 := hx0.ne'
+  have hwne : w ≠ 0 := hw0.ne'
+  have hid :
+      (2 * t ^ 3 / (3 * x ^ 3) + (1 + x) * t ^ 2 / (3 * x ^ 3) +
+          4 * (1 + x) * n * t ^ 3 / (3 * x ^ 2) +
+          (n * t * (1 - x ^ 2) / x + t / x ^ 2)) -
+        (2 * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) +
+          ((1 + x) / x - (1 + x) / (x * w)) *
+            (t ^ 2 / (3 * x ^ 2) + 1 + t / x +
+              4 * (n * x ^ 2) * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1)) +
+          (n * (1 - x ^ 2) - 1) * (t / x)) =
+        (x * (4 * (1 + x) * n * t ^ 3 -
+            (3 * x * w * (2 * t + 1 + x) + 12 * (1 + x) * n * t * x ^ 2 * w)) +
+          (1 + x) * (t ^ 2 + 3 * x * t + 3 * x ^ 2 + 12 * n * x ^ 3 * t)) /
+          (3 * x ^ 3 * w) := by
+    field_simp
+    ring
+  rw [← sub_nonneg, hid]
+  apply div_nonneg
+  · have hgap : 0 ≤ 4 * (1 + x) * n * t ^ 3 -
+        (3 * x * w * (2 * t + 1 + x) + 12 * (1 + x) * n * t * x ^ 2 * w) := by linarith
+    have hrest : 0 ≤ (1 + x) * (t ^ 2 + 3 * x * t + 3 * x ^ 2 + 12 * n * x ^ 3 * t) := by
+      positivity
+    exact add_nonneg (mul_nonneg hx0.le hgap) hrest
+  · positivity
+
+/-- The closed bound `E₁ < (8/3) n t³ / ρ₋` at height `h + 1`, under the hypotheses of
+`johnsonExceptionCount_lt_closed`. With the crude bound `θ ≤ (1 + √ρ₋)/√ρ₋` the envelope at
+height `h + 1` exceeds `8/3` near `ρ₋ = 1`; `johnsonTheta_le_halfGap_envelope` pays for the
+extra height (`johnsonSucc_termwise_le`), and the rest is the envelope argument of
+`johnsonExceptionCount_lt_closed`. -/
+theorem johnsonSuccExceptionCount_lt_closed {n D A : ℕ} {eta : ℝ}
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (hthreshold : johnsonAgreement n D eta * n ≤ A) :
+    johnsonSuccExceptionCount n D A eta <
+      (8 / 3 : ℝ) * n * johnsonT n D eta ^ 3 / johnsonRhoMinus n D := by
+  have hDlt : D < n := by omega
+  let rho := johnsonRhoMinus n D
+  let x := √rho
+  let t := johnsonT n D eta
+  let μ := johnsonMu n D eta
+  let h := johnsonH n D eta
+  let theta := johnsonTheta n D A
+  have hn : (0 : ℝ) < n := by exact_mod_cast (show 0 < n by omega)
+  have hrho : 0 < rho := johnsonRhoMinus_pos hD hDlt
+  have hx := johnsonSqrt_mem_Ioo hD hDlt
+  have hx0 : 0 < x := hx.1
+  have hx1 : x < 1 := hx.2
+  have hxne : x ≠ 0 := hx0.ne'
+  have hx2 : x ^ 2 = rho := Real.sq_sqrt hrho.le
+  have ht : 7 / 2 ≤ t := johnsonT_ge_seven_halves n D eta
+  have ht0 : 0 < t := lt_of_lt_of_le (by norm_num) ht
+  have hμ : (μ : ℝ) < t / x := johnsonMu_lt hD hDlt
+  have hh : (h : ℝ) < t ^ 2 / (3 * x ^ 2) := by
+    rw [hx2]
+    exact johnsonH_lt hD hDlt
+  have htheta0 : 0 ≤ theta := div_nonneg (Nat.cast_nonneg _) (Nat.cast_nonneg _)
+  have hDEq : (D : ℝ) = n * x ^ 2 := by
+    rw [hx2]
+    dsimp only [rho]
+    unfold johnsonRhoMinus
+    field_simp
+  have htailEq : ((n - D - 1 : ℕ) : ℝ) = (n : ℝ) * (1 - x ^ 2) - 1 := by
+    rw [Nat.cast_sub (show 1 ≤ n - D by omega), Nat.cast_sub (show D ≤ n by omega), hDEq]
+    ring
+  have htail0 : 0 ≤ (n : ℝ) * (1 - x ^ 2) - 1 := by
+    rw [← htailEq]
+    exact Nat.cast_nonneg _
+  have hnx2 : 1 ≤ (n : ℝ) * x ^ 2 := by
+    rw [← hDEq]
+    exact_mod_cast hD
+  obtain ⟨w, hw⟩ : ∃ w : ℝ, w = (1 - x) * (2 * t - 1) + 1 := ⟨_, rfl⟩
+  have htheta : theta ≤ (1 + x) / x - (1 + x) / (x * w) := by
+    rw [hw]
+    exact johnsonTheta_le_halfGap_envelope hD hDlt heta hthreshold
+  have hcount : johnsonSuccExceptionCount n D A eta =
+      ((2 * μ - 1 : ℕ) : ℝ) * ((h : ℝ) + 1) +
+        theta * (((h : ℝ) + 1) + μ + 4 * D * μ * ((h : ℝ) + 1)) +
+        ((n - D - 1 : ℕ) : ℝ) * μ := by
+    simp only [johnsonSuccExceptionCount, Nat.cast_add_one, μ, h, theta]
+  have hT1 : ((2 * μ - 1 : ℕ) : ℝ) * ((h : ℝ) + 1) <
+      2 * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) := by
+    have hcast : ((2 * μ - 1 : ℕ) : ℝ) ≤ 2 * (μ : ℝ) := by
+      exact_mod_cast (show 2 * μ - 1 ≤ 2 * μ by omega)
+    calc
+      ((2 * μ - 1 : ℕ) : ℝ) * ((h : ℝ) + 1) ≤ 2 * (μ : ℝ) * ((h : ℝ) + 1) :=
+        mul_le_mul_of_nonneg_right hcast (by positivity)
+      _ < 2 * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) :=
+        mul_lt_mul'' (mul_lt_mul_of_pos_left hμ two_pos) (by linarith) (by positivity)
+          (by positivity)
+  have hI : ((h : ℝ) + 1) + μ + 4 * D * μ * ((h : ℝ) + 1) ≤
+      t ^ 2 / (3 * x ^ 2) + 1 + t / x +
+        4 * ((n : ℝ) * x ^ 2) * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) := by
+    have hprod : (μ : ℝ) * ((h : ℝ) + 1) ≤ (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) :=
+      mul_le_mul hμ.le (by linarith) (by positivity) (div_pos ht0 hx0).le
+    have hmain := mul_le_mul_of_nonneg_left hprod
+      (show 0 ≤ 4 * ((n : ℝ) * x ^ 2) by positivity)
+    rw [hDEq, mul_assoc (4 * ((n : ℝ) * x ^ 2)) (μ : ℝ),
+      mul_assoc (4 * ((n : ℝ) * x ^ 2)) (t / x)]
+    exact add_le_add (add_le_add (by linarith) hμ.le) hmain
+  have hsigma0 : 0 ≤ t ^ 2 / (3 * x ^ 2) + 1 + t / x +
+      4 * ((n : ℝ) * x ^ 2) * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) := by positivity
+  have hT2 := (mul_le_mul_of_nonneg_left hI htheta0).trans
+    (mul_le_mul_of_nonneg_right htheta hsigma0)
+  have hT3 : ((n - D - 1 : ℕ) : ℝ) * μ ≤ ((n : ℝ) * (1 - x ^ 2) - 1) * (t / x) := by
+    rw [htailEq]
+    exact mul_le_mul_of_nonneg_left hμ.le htail0
+  have hscale : 0 < (n : ℝ) * t ^ 3 / rho := by positivity
+  have hpre : johnsonPreEnvelope x (1 / n) t ≤ johnsonNormalizedEnvelope x :=
+    johnsonPreEnvelope_le_normalized hx0 hx1 ht (johnson_inv_length_le_min hD hDn)
+  have hold : 2 * t ^ 3 / (3 * x ^ 3) + (1 + x) * t ^ 2 / (3 * x ^ 3) +
+        4 * (1 + x) * n * t ^ 3 / (3 * x ^ 2) +
+        ((n : ℝ) * t * (1 - x ^ 2) / x + t / x ^ 2) =
+      ((n : ℝ) * t ^ 3 / rho) * johnsonPreEnvelope x (1 / n) t := by
+    unfold johnsonPreEnvelope
+    rw [← hx2]
+    field_simp [hxne, hn.ne', ht0.ne']
+    ring
+  calc
+    johnsonSuccExceptionCount n D A eta < 2 * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) +
+          ((1 + x) / x - (1 + x) / (x * w)) *
+            (t ^ 2 / (3 * x ^ 2) + 1 + t / x +
+              4 * ((n : ℝ) * x ^ 2) * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1)) +
+          ((n : ℝ) * (1 - x ^ 2) - 1) * (t / x) := by
+      rw [hcount]
+      exact add_lt_add_of_lt_of_le (add_lt_add_of_lt_of_le hT1 hT2) hT3
+    _ ≤ 2 * t ^ 3 / (3 * x ^ 3) + (1 + x) * t ^ 2 / (3 * x ^ 3) +
+          4 * (1 + x) * n * t ^ 3 / (3 * x ^ 2) +
+          ((n : ℝ) * t * (1 - x ^ 2) / x + t / x ^ 2) :=
+      johnsonSucc_termwise_le hx0 hx1 ht hn hnx2 hw
+    _ = ((n : ℝ) * t ^ 3 / rho) * johnsonPreEnvelope x (1 / n) t := hold
+    _ ≤ ((n : ℝ) * t ^ 3 / rho) * johnsonNormalizedEnvelope x :=
+      mul_le_mul_of_nonneg_left hpre hscale.le
+    _ < ((n : ℝ) * t ^ 3 / rho) * (8 / 3) :=
+      mul_lt_mul_of_pos_left (johnsonNormalizedEnvelope_lt hx0 hx1) hscale
     _ = (8 / 3 : ℝ) * n * t ^ 3 / rho := by ring
 
 /-- `johnsonM ≤ johnsonComparisonMultiplicity` for every real `η`. -/
