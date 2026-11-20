@@ -8,6 +8,7 @@ module
 public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 public import Mathlib.Data.FinEnum
 
 /-!
@@ -128,40 +129,24 @@ open _root_.MvPolynomial.Function Fintype
 variable {n : ℕ}
 
 open Polynomial
-/-- A polynomial is zero if its degrees are bounded and it is zero on the product set. -/
--- This does not follow from Schwartz-Zippel!
--- Instead we should do induction on the number of variables.
--- Hence we should state the theorem for `σ = Fin n` first.
+/-- A polynomial is zero if its degrees are bounded and it is zero on the product set.
+
+This is the nested-tree zero test on the tree whose level `i` carries the elements of `S i` below
+every node (`NestedEvaluationTree.grid`). -/
 theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin {n : ℕ} {p : R[X Fin n]}
     (S : Fin n → Finset R) (hDegree : ∀ i, p.degreeOf i < (S i).card)
     (hEval : ∀ x ∈ piFinset fun i ↦ S i, eval x p = 0) :
         p = 0 := by
-  induction n with
-  | zero =>
-    rw [eq_C_of_isEmpty p] at hEval ⊢
-    simp_all only [IsEmpty.forall_iff, piFinset_of_isEmpty, univ_unique, mem_singleton, eval_C,
-      forall_eq, C_0]
-  | succ n ih =>
-    -- The head-variable root count is shared with the nested-tree zero test; only `hEvalQ`
-    -- differs between the two (product set here, `k` subtrees there).
-    refine eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero (S 0) (hDegree 0) ?_
-    intro x hx
-    let px := Polynomial.eval (C x) (finSuccEquiv R n p)
-    have hDegreePx (i : Fin n) : px.degreeOf i < (S i.succ).card :=
-      lt_of_le_of_lt (degreeOf_eval_C_finSuccEquiv p i x) (hDegree i.succ)
-    have hEvalPx : ∀ y ∈ piFinset fun (i : Fin n) ↦ S i.succ, eval y px = 0 := by
-      intro y hy
-      change eval y (Polynomial.eval (C x) (finSuccEquiv R n p)) = 0
-      rw [eval_comp_eval_C_finSuccEquiv]
-      have hy' := Fintype.mem_piFinset.mp hy
-      have : Fin.cons x y ∈ piFinset fun i ↦ S i := by
-        rw [Fintype.mem_piFinset]
-        intro a
-        induction a using Fin.inductionOn with
-        | zero => simpa using hx
-        | succ i => simpa using hy' i
-      simpa using hEval (Fin.cons x y) this
-    simpa [px] using ih (fun i => S i.succ) hDegreePx hEvalPx
+  classical
+  let label : (i : Fin n) → Fin (S i).card → R := fun i j => ((S i).equivFin.symm j : R)
+  refine NestedEvaluationTree.eq_zero_of_vanishes_comp (k := fun i => (S i).card)
+    (fun i => lt_of_le_of_lt (Nat.zero_le _) (hDegree i)) (NestedEvaluationTree.grid label) p id
+    (fun i => (Nat.zero_add _).symm) hDegree
+    (NestedEvaluationTree.isDistinct_grid label fun i =>
+      Subtype.val_injective.comp (S i).equivFin.symm.injective) ?_
+  refine (NestedEvaluationTree.vanishes_grid label _).2 fun path => hEval _ ?_
+  rw [Fintype.mem_piFinset]
+  exact fun i => ((S i).equivFin.symm (path i)).2
 
 theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero {p : R[X σ]} (S : σ → Finset R)
     (hDegree : ∀ i, p.degreeOf i < #(S i))
