@@ -62,7 +62,7 @@ example : aeval (Sum.elim (fun _ ↦ (1 : ℚ)) ![1, 1]) (chartSeparant 0 affine
   rw [aeval_chartSeparant]
   simp [sqrtR, pderiv_X]
 
--- Formula (3.5) at `j = 1`: `c₁ = N₁ / S` with `c₁ = 1/2` and `S = 2` forces `N₁(1, 1, 1) = 1`.
+-- At `j = 1`, the identity `c₁ = N₁ / S` with `c₁ = 1/2` and `S = 2` gives `N₁(1, 1, 1) = 1`.
 example (E : PowerSeries ℚ) (hE0 : PowerSeries.constantCoeff E = 0)
     (hE : (affineSeriesEquation 0 1 1 sqrtR).eval (PowerSeries.C 1 + E) = 0) :
     aeval (Sum.elim (fun _ ↦ (1 : ℚ)) ![1, 1]) (chartNumerator 0 affineFamily sqrtR 1 1) = 1 := by
