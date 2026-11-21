@@ -29,7 +29,8 @@ Here `n` is the domain size and `q` the field size.
 
 This is the first inequality of (5.4) for `t` rows.
 The proof of Theorem 5.2 of [CWYZ26] uses it in every folding round.
-The one-row statements of Theorem 5.1 are its case `t = 1`.
+For `t = 1`, `interleavedEqualDegreeMcaError_one` identifies the error with
+`equalDegreeMcaError`. The one-row reduction is proved in `EqualDegree`.
 The paper packs the rows into an extension of degree `t`.
 The direct tuple count gives the paper’s bound with no factor of `t`.
 The explicit bound `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)` follows from the bound (5.7).

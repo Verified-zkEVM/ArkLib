@@ -19,15 +19,15 @@ private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 /-- The whole field `F₅` as the evaluation domain. -/
 private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
 
--- The first round produces `2 + X` and `4 + 3X`. The second gives `4 + X²`.
+-- The first round produces `2 + X` and `4 + 3X`. A different second challenge adds them.
 private def folded : CompPoly.CPolynomial (ZMod 5) :=
-  ReedSolomon.Computable.foldPolynomials 2 ![(0, 0, 1), (0, 0, 1)]
+  ReedSolomon.Computable.foldPolynomials 2 ![(0, 0, 1), (0, 1, 0)]
     ![CompPoly.CPolynomial.C 1, CompPoly.CPolynomial.C 2,
       CompPoly.CPolynomial.C 3, CompPoly.CPolynomial.C 4]
 
 /-- info: true -/
 #guard_msgs in
-#eval folded.coeff 0 == 4 && folded.coeff 1 == 0 && folded.coeff 2 == 1
+#eval folded.coeff 0 == 1 && folded.coeff 1 == 4 && folded.coeff 2 == 0
 
 -- One round combines the first two received rows.
 example {F ι : Type*} [Field F] (domain : ι ↪ F) (c : Fin 1 → F × F × F)
@@ -52,8 +52,7 @@ example {F : Type*} [Field F] (c : Fin 1 → F × F × F) (P : Fin (2 ^ 1) → F
 -- Two rounds with `θ = 0`, `α = 1`, `β = 0` add the four rows.
 example (W : Fin (2 ^ 2) → (ZMod 5)[X]) :
     foldPolynomials 2 ![(0, 1, 0), (0, 1, 0)] W = W 0 + W 1 + W 2 + W 3 := by
-  simp only [foldPolynomials, foldRows, foldRoundPolynomials, evenRows, oddRows, affineMultiplier]
-  simp [Fin.tail]
+  simp [foldPolynomials, foldRoundPolynomials, evenRows, oddRows, affineMultiplier]
   ring_nf
 
 -- Two rounds with `θ = 1`, `α = 2`, `β = 0` on the words `f k = k`.
@@ -90,7 +89,7 @@ example (c : Fin 1 → ZMod 5 × ZMod 5 × ZMod 5) :
         ≤ 1 :=
   exists_foldPolynomials_eq_of_not_hasBadFoldingRound fullDomain
     (zero_not_hasBadFoldingRound c) (by simp) (fun i _ ↦ by
-      simp [foldWords, foldRows, foldRoundWords, equalDegreeWord, evenRows, oddRows])
+      simp [foldWords, foldRoundWords, equalDegreeWord, evenRows, oddRows])
     (by simp [ZMod.card])
 
 -- A caller may supply its own decidable equality on the field.

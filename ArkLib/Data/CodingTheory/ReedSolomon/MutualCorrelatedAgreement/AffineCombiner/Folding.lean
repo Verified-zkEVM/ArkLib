@@ -97,6 +97,22 @@ def foldRows {C : Type*}
   | 0, _, u => u 0
   | r + 1, c, u => foldRows round r (Fin.tail c) (round (c 0) u)
 
+/-- A fold with no rounds returns its sole input row. -/
+@[simp]
+theorem foldRows_zero {C : Type*}
+    (round : ∀ {m : ℕ}, C → (Fin (2 ^ (m + 1)) → M) → Fin (2 ^ m) → M)
+    (c : Fin 0 → C) (u : Fin (2 ^ 0) → M) :
+    foldRows round 0 c u = u 0 :=
+  rfl
+
+/-- A fold with a remaining round uses the first challenge before folding the resulting rows. -/
+@[simp]
+theorem foldRows_succ {C : Type*}
+    (round : ∀ {m : ℕ}, C → (Fin (2 ^ (m + 1)) → M) → Fin (2 ^ m) → M)
+    (r : ℕ) (c : Fin (r + 1) → C) (u : Fin (2 ^ (r + 1)) → M) :
+    foldRows round (r + 1) c u = foldRows round r (Fin.tail c) (round (c 0) u) :=
+  rfl
+
 end Rows
 
 variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] {m : ℕ}
