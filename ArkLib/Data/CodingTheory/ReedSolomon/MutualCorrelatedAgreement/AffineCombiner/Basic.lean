@@ -95,10 +95,12 @@ theorem affineMultiplier_injective :
   simp at h0 h1
   simp [h0, h1]
 
+/-- Evaluate the affine multiplier using field operations. -/
 @[simp]
 theorem eval_affineMultiplier (α β x : F) : (affineMultiplier α β).eval x = α + β * x := by
   simp [affineMultiplier]
 
+/-- The affine multiplier has degree at most one, including when it vanishes. -/
 theorem degree_affineMultiplier_le (α β : F) : (affineMultiplier α β).degree ≤ 1 := by
   unfold affineMultiplier
   compute_degree
@@ -113,11 +115,13 @@ theorem map_affineMultiplier {K : Type*} [Field K] (φ : F →+* K) (α β : F) 
     (affineMultiplier α β).map φ = affineMultiplier (φ α) (φ β) := by
   simp [affineMultiplier]
 
+/-- Combine the words at a point using the two affine coefficients. -/
 @[simp]
 theorem combinedWord_affineMultiplier (domain : ι ↪ F) (f g : ι → F) (α β : F) (i : ι) :
     combinedWord domain f g (affineMultiplier α β) i = f i + (α + β * domain i) * g i := by
   simp [combinedWord]
 
+/-- A constant multiplier gives the scalar combination at every point. -/
 @[simp]
 theorem combinedWord_C (domain : ι ↪ F) (f g : ι → F) (α : F) (i : ι) :
     combinedWord domain f g (C α) i = f i + α * g i := by

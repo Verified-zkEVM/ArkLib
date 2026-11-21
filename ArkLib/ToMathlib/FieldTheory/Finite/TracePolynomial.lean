@@ -146,34 +146,30 @@ theorem traceCoordinateMap_apply (c : ι → L) (x : L) (i : ι) :
     traceCoordinateMap K c x i = Algebra.trace K L (c i * x) :=
   rfl
 
-/-- Let `b` be a finite basis of `L` over a finite field `K`, so `L` is a finite field.
-The map `x ↦ (Tr(bᵢ x))ᵢ` is a bijection from `L` onto `K^ι`.
-Its coordinates are the coordinates in the trace-dual basis. -/
-theorem traceCoordinateMap_bijective [Finite K] [Finite ι] (b : Module.Basis ι K L) :
-    Function.Bijective (traceCoordinateMap K b) := by
-  classical
-  have := Fintype.ofFinite ι
-  have := Module.Finite.of_basis b
-  have : Finite L := Module.finite_of_finite K
-  have h : ⇑(traceCoordinateMap K b) =
-      ((Algebra.traceForm K L).dualBasis (traceForm_nondegenerate K L) b).equivFun := by
-    funext x i
-    simp [LinearMap.BilinForm.dualBasis_repr_apply, mul_comm]
-  rw [h]
-  exact LinearEquiv.bijective _
-
 variable (K) in
-/-- The linear equivalence `x ↦ (Tr(bᵢ x))ᵢ` between `L` and `K^ι`.
-Here `b` is a finite basis of `L` over a finite field `K`. -/
+/-- Coordinates in the trace-dual basis of `b`, computed by tracing against `b`. -/
 noncomputable def traceCoordinateEquiv [Finite K] [Finite ι] (b : Module.Basis ι K L) :
-    L ≃ₗ[K] (ι → K) :=
-  LinearEquiv.ofBijective (traceCoordinateMap K b) (traceCoordinateMap_bijective b)
+    L ≃ₗ[K] (ι → K) := by
+  classical
+  letI : Fintype ι := Fintype.ofFinite ι
+  letI : Module.Finite K L := Module.Finite.of_basis b
+  letI : Finite L := Module.finite_of_finite K
+  exact ((Algebra.traceForm K L).dualBasis (traceForm_nondegenerate K L) b).equivFun
 
 /-- The `i`-th coordinate of `x` is the trace of `bᵢ x`. -/
 @[simp]
 theorem traceCoordinateEquiv_apply [Finite K] [Finite ι] (b : Module.Basis ι K L) (x : L)
-    (i : ι) : traceCoordinateEquiv K b x i = Algebra.trace K L (b i * x) :=
-  rfl
+    (i : ι) : traceCoordinateEquiv K b x i = Algebra.trace K L (b i * x) := by
+  simp [traceCoordinateEquiv, LinearMap.BilinForm.dualBasis_repr_apply, mul_comm]
+
+/-- Traces against a basis give a bijection from the extension field to the coordinate space. -/
+theorem traceCoordinateMap_bijective [Finite K] [Finite ι] (b : Module.Basis ι K L) :
+    Function.Bijective (traceCoordinateMap K b) := by
+  have h : ⇑(traceCoordinateMap K b) = traceCoordinateEquiv K b := by
+    funext x i
+    simp
+  rw [h]
+  exact (traceCoordinateEquiv K b).bijective
 
 variable (K L) in
 /-- Let `L` be a finite field of degree `k` over `K`.
