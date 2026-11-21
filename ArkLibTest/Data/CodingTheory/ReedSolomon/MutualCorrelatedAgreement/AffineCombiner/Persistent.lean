@@ -6,6 +6,7 @@ Authors: Thomas Coratger
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
 import Mathlib.Algebra.Field.ZMod
+import Mathlib.FieldTheory.Finite.GaloisField
 
 /-! # Persistence at poles and rational-pair counting -/
 
@@ -97,5 +98,116 @@ example (f g : ZMod 5 → ZMod 5) :
   norm_num [ZMod.card, Nat.choose] at h ⊢
   exact h
 
+-- Over `𝔽₄ ⊇ 𝔽₂`, the pair `(0, 1 / X)` is compatible exactly with the base-field
+-- challenges `(0, β)`, so the subfield bound `|𝔽₂| = 2` is attained.
+open Classical in
+example (d : ℕ) :
+    #{c : ZMod 2 × ZMod 2 | ∃ P : (GaloisField 2 2)[X], P.degree ≤ d ∧
+      algebraMap (GaloisField 2 2)[X] (RatFunc (GaloisField 2 2)) P =
+        algebraMap (GaloisField 2 2)[X] (RatFunc (GaloisField 2 2))
+            (affineMultiplier (algebraMap (ZMod 2) (GaloisField 2 2) c.1)
+              (algebraMap (ZMod 2) (GaloisField 2 2) c.2)) *
+          (algebraMap (GaloisField 2 2)[X] (RatFunc (GaloisField 2 2)) X)⁻¹} = 2 := by
+  set E := GaloisField 2 2
+  set ι := algebraMap E[X] (RatFunc E)
+  have hx : ι X ≠ 0 := (map_ne_zero_iff _ (RatFunc.algebraMap_injective E)).mpr X_ne_zero
+  have hnot : ¬ ∃ F₁ G₁ : E[X], ι F₁ = 0 ∧ ι G₁ = (ι X)⁻¹ ∧ F₁.degree ≤ d ∧ G₁.degree < d := by
+    rintro ⟨_, G₁, _, hG, _, _⟩
+    have hmul : ι (G₁ * X) = ι 1 := by rw [map_mul, hG, inv_mul_cancel₀ hx, map_one]
+    have := congrArg (Polynomial.eval (0 : E)) (RatFunc.algebraMap_injective E hmul)
+    norm_num at this
+  refine le_antisymm ?_ ?_
+  · simpa [ZMod.card] using
+      card_ratFunc_combination_map_le (algebraMap (ZMod 2) E) 0 (ι X)⁻¹ hnot
+  · refine (card_le_card (s := {(0, 0), (0, 1)}) fun c hc ↦ ?_).trans' (by decide)
+    refine mem_filter.mpr ⟨mem_univ _, C (algebraMap (ZMod 2) E c.2),
+      degree_C_le.trans (by exact_mod_cast Nat.zero_le d), ?_⟩
+    have hc1 : c.1 = 0 := by
+      simp only [mem_insert, mem_singleton] at hc
+      rcases hc with h | h <;> simp [h]
+    rw [hc1, affineMultiplier, map_zero, map_zero, zero_add, map_mul, mul_assoc,
+      mul_inv_cancel₀ hx, mul_one]
+
+private noncomputable instance : Fintype (GaloisField 2 2) := Fintype.ofFinite _
+
+private theorem card_galoisField_2_2 : Fintype.card (GaloisField 2 2) = 4 := by
+  rw [← Nat.card_eq_fintype_card, GaloisField.card 2 2 (by norm_num)]
+  norm_num
+
+/-- An embedding of `𝔽₄` into `𝔽₁₆`, which exists since `2 ∣ 4`. -/
+private noncomputable def embed₄ : GaloisField 2 2 →+* GaloisField 2 4 :=
+  (Classical.choice (FiniteField.nonempty_algHom_of_finrank_dvd (F := ZMod 2)
+    (by rw [GaloisField.finrank 2 (by norm_num), GaloisField.finrank 2 (by norm_num)]
+        norm_num))).toRingHom
+
+/-- The subfield `𝔽₄` as a 4-point domain in `𝔽₁₆`. -/
+private noncomputable def domain₄ : GaloisField 2 2 ↪ GaloisField 2 4 :=
+  ⟨embed₄, embed₄.injective⟩
+
+-- Challenges from `𝔽₄ ⊂ 𝔽₁₆` with polynomial witnesses: at most `4 choose 2 = 6` of the
+-- `|𝔽₄|² = 16` challenges are exceptional.
+open Classical in
+example (f g : GaloisField 2 2 → GaloisField 2 4) (F₀ G₀ : (GaloisField 2 4)[X])
+    (hF : F₀.degree ≤ 1) (hG : G₀.degree < 1) :
+    #{c : GaloisField 2 2 × GaloisField 2 2 | IsAffineExceptional domain₄ f g 1 3 1
+      (embed₄ c.1) (embed₄ c.2) (F₀ + affineMultiplier (embed₄ c.1) (embed₄ c.2) * G₀)} ≤ 6 := by
+  refine (card_isAffineExceptional_add_mul_map_le domain₄ f g embed₄ (d := 1) (A := 3) F₀ G₀
+    hF hG).trans ?_
+  rw [card_galoisField_2_2]
+  decide
+
+-- Any rational pair over `𝔽₁₆` accounts for at most `max |𝔽₄| (4 choose 2) = 6` challenges
+-- from `𝔽₄`, below `|𝔽₄|² = 16`.
+open Classical in
+example (f g : GaloisField 2 2 → GaloisField 2 4) (F₀ G₀ : RatFunc (GaloisField 2 4)) :
+    #{c : GaloisField 2 2 × GaloisField 2 2 | ∃ P : (GaloisField 2 4)[X],
+      algebraMap (GaloisField 2 4)[X] (RatFunc (GaloisField 2 4)) P =
+          F₀ + algebraMap (GaloisField 2 4)[X] (RatFunc (GaloisField 2 4))
+            (affineMultiplier (embed₄ c.1) (embed₄ c.2)) * G₀ ∧
+        IsAffineExceptional domain₄ f g 1 3 1 (embed₄ c.1) (embed₄ c.2) P} ≤ 6 := by
+  refine (card_isAffineExceptional_ratFunc_map_le domain₄ f g embed₄ (d := 1) (A := 3) F₀
+    G₀).trans ?_
+  rw [card_galoisField_2_2]
+  decide
+
+-- At `d = 0`, `B = 3`, `n = 4`, the persistent challenges from `𝔽₄` number at most
+-- `4 · 2 / 5 · max 4 6 = 48 / 5`, below `|𝔽₄|² = 16`.
+open Classical in
+example (f g : GaloisField 2 2 → GaloisField 2 4) :
+    (#{c : GaloisField 2 2 × GaloisField 2 2 | ∃ P,
+      IsAffineExceptional domain₄ f g 0 3 1 (embed₄ c.1) (embed₄ c.2) P ∧
+        IsAffinePersistent domain₄ f g 0 3 (embed₄ c.1) (embed₄ c.2) P} : ℝ) ≤ 48 / 5 := by
+  have h := card_isAffineExceptional_persistent_map_le domain₄ f g embed₄ (d := 0) (A := 3)
+    (B := 3) (by decide) (by rw [card_galoisField_2_2]; decide)
+  norm_num [card_galoisField_2_2, Nat.choose] at h
+  exact h
+
+/-- info: 'ReedSolomon.card_ratFunc_combination_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.card_ratFunc_combination_le
+
+/-- info: 'ReedSolomon.card_ratFunc_combination_map_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_ratFunc_combination_map_le
+
+/-- info: 'ReedSolomon.card_isAffineExceptional_persistent_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.card_isAffineExceptional_persistent_le
+
+/-- info: 'ReedSolomon.card_isAffineExceptional_persistent_map_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_isAffineExceptional_persistent_map_le
+
+/-- info: 'ReedSolomon.card_isAffineExceptional_add_mul_map_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_isAffineExceptional_add_mul_map_le
+
+/-- info: 'ReedSolomon.card_isAffineExceptional_ratFunc_map_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_isAffineExceptional_ratFunc_map_le
