@@ -1,0 +1,163 @@
+% !TEX root = ../print.tex
+% !TEX program = xelatex
+
+\subsubsection{Codec and DSFS Formalization Details}
+\label{sec:dsfs_codec_dsfs_formal_interface}
+
+\begin{definition}[Codec {\cite[Definition~4.1]{CO25}}]
+\label{def:dsfs_codec}
+Let \(\IPSymbol=(\IPProver,\IPVerifier)\) be a public-coin IP with prover-message positions \(\IPProverPositions\) and verifier-message positions \(\IPVerifierPositions\), and let \(\Alphabet\) be a finite alphabet. For each security parameter \(\secpar\) and instance-size bound \(\InstanceSizeBound\), the \defemph{codec} \(\DSFSCodec(\secpar,\InstanceSizeBound)=(\IPProverMessageEncodedLength,\IPVerifierMessageEncodedLength,\IPProverMessageEncoders,\IPVerifierMessageDecoders)\) specifies encoded lengths \(\IPProverMessageEncodedLength(i),\IPVerifierMessageEncodedLength(i)\), injective encoders and surjective decoders
+\begin{equation*}
+  \CodecEncoder_i:\IPProverMessageSpace{i}\hookrightarrow\Alphabet^{\IPProverMessageEncodedLength(i)}
+    \quad(i\in \IPProverPositions),\qquad
+  \CodecDecoder_i:\Alphabet^{\IPVerifierMessageEncodedLength(i)}\twoheadrightarrow\IPVerifierMessageSpace{i}
+    \quad(i\in \IPVerifierPositions).
+\end{equation*}
+Its decoding biases \(\DSFSCodecBias{i}(\secpar,\InstanceSizeBound)\ge0\) satisfy
+\begin{equation*}
+  \Delta\!\left(\CodecDecoder_i(\Uniform(\Alphabet^{\IPVerifierMessageEncodedLength(i)})),
+                  \Uniform(\IPVerifierMessageSpace{i})\right)
+       \le\DSFSCodecBias{i}(\secpar,\InstanceSizeBound)\qquad(i\in \IPVerifierPositions).
+\end{equation*}
+Thus encoding preserves prover messages, while decoding a uniform encoded verifier message is close to uniform in its message space. At a fixed \((\secpar,\InstanceSizeBound)\) we abbreviate \(\DSFSCodecBias{i}(\secpar,\InstanceSizeBound)\) to \(\DSFSCodecBias{i}\).
+\lean{ProtocolSpec.Codec, ProtocolSpec.HasProverMessageSize, ProtocolSpec.HasVerifierMessageSize, ProtocolSpec.Codec.mk', ProtocolSpec.Codec.decodingBias, ProtocolSpec.Codec.decode_isBiased}
+\leanok
+\uses{def:public_coin_ip_structure}
+\end{definition}
+
+\begin{remark}[Surjective decoders]
+\label{rem:dsfs_codec_comparison}
+Surjectivity permits uniform sampling from each decoder fiber; a statistical-distance bound alone does not imply it. We require surjectivity because the security reductions sample decoder preimages.
+\end{remark}
+
+The protocol schedule and codec lengths determine the sponge operations. The security bounds below assume nondegenerate rounds.
+
+\begin{definition}[Nondegenerate rounds]
+\label{def:dsfs_nondegenerate_rounds}
+\lean{DuplexSpongeFS.NondegenerateRounds}
+\leanok
+An IP has \defemph{nondegenerate rounds} if its message schedule contains both parties, alternates strictly, and its codec encoded lengths satisfy
+\begin{equation*}
+  \IPProverMessageEncodedLength(i)>0\quad(i\in\IPProverPositions),\qquad
+  \IPVerifierMessageEncodedLength(i)>0\quad(i\in\IPVerifierPositions).
+\end{equation*}
+Either party may send the first or last message.
+\end{definition}
+
+\begin{remark}[Endpoint flexibility]
+  \label{rem:dsfs_nondegenerate_rounds_comparison}
+Either party may send the first or last message, while the schedule alternates and all encoded messages remain nonempty.
+\end{remark}
+
+\begin{definition}[Ideal permutation oracle distribution {\cite[Definition~4.2]{CO25}}]
+\label{def:dsfs_oracle_distribution}
+Let \(\InstanceSpace,\Alphabet\) be finite nonempty statement and alphabet spaces, and let \(\SpongeRate\) and \(\SpongeCapacity\) be positive rate and capacity sizes. Let \(\mathcal H\) be the set of all functions from \(\InstanceSpace\) to \(\Alphabet^{\SpongeCapacity}\), and let \(\operatorname{Perm}(S)\) denote the set of bijections of \(S\). The ideal permutation oracle distribution is
+\begin{equation*}
+\SpongeOracleDistribution:=
+\left\{
+  (\SpongeOracles)
+  \;\middle|\;
+  \begin{array}{l}
+    \SpongeHash\leftarrow\Uniform(\mathcal H)\\
+    \SpongePermutation\leftarrow\Uniform(\operatorname{Perm}(\Alphabet^{\SpongeRate+\SpongeCapacity}))
+  \end{array}
+\right\}.
+\end{equation*}
+\lean{OracleSpec.duplexSpongeOracle, OracleSpec.duplexSpongeForwardOracle, OracleSpec.duplexSpongeOracleQueryImpl, OracleSpec.duplexSpongeHashOracleDistribution, OracleSpec.duplexSpongePermutationOracleDistribution, OracleSpec.D_𝔖.sample, OracleSpec.D_𝔖.answer, OracleSpec.D_𝔖.answer_run, OracleSpec.D_𝔖.sample_eq}
+\leanok
+\end{definition}
+
+\begin{construction}[Duplex-Sponge Fiat--Shamir]
+\label{constr:dsfs_transformation}
+\lean{ProtocolSpec.Messages.deriveTranscriptDSFSAux, ProtocolSpec.Messages.deriveTranscriptDSFS, InteractiveProver.duplexSpongeFiatShamir, InteractiveVerifier.duplexSpongeFiatShamirForward, InteractiveVerifier.duplexSpongeFiatShamir, InteractiveProtocol.duplexSpongeFiatShamir, InteractiveVerifier.duplexSpongeFiatShamirBytesForward, InteractiveProtocol.duplexSpongeFiatShamirBytes, MaliciousProver, DSFSNARGString, Prover.processRoundDSFS, Prover.runToRoundDSFS, Prover.runDSFS, Prover.duplexSpongeFiatShamir, Verifier.duplexSpongeFiatShamir, Verifier.duplexSpongeFiatShamirForward, Reduction.duplexSpongeFiatShamir, runForwardVerifierWide}
+\leanok
+\uses{def:dsfs_codec, def:dsfs_oracle_distribution, constr:dsfs_duplex_sponge, def:public_coin_ip_structure}
+Given a public-coin IP \(\IPSymbol=(\IPProver,\IPVerifier)\) with \(\IPRoundComplexity\) rounds, each consisting of a prover message followed by a verifier message, a codec \(\DSFSCodec=(\IPProverMessageEncodedLength,\IPVerifierMessageEncodedLength,\IPProverMessageEncoders,\IPVerifierMessageDecoders)\) over \(\Alphabet\), and a nonnegative integer salt length \(\SaltLength\), define the duplex-sponge Fiat--Shamir argument \(\NARGSymbol:=\DSFSTransform\) as follows. The argument prover receives \((\Instance,\WitnessValue)\) and returns a NARG string \(\NARGString\); the argument verifier receives \((\Instance,\NARGString)\) and returns a decision bit. Both have query access to \((\SpongeHash,\SpongePermutation)\) sampled from \Cref{def:dsfs_oracle_distribution}; inverse queries are available to adversaries. The underlying IP has no external oracle access. In this presentation, messages and codec components are indexed by round. Lean also permits the alternating endpoint conventions described above. The byte-facing argument serializes the typed NARG string below and rejects failed parses before making any oracle queries, as in \Cref{def:narg_serializer}.
+
+\emph{Non-interactive argument prover \(\NARGProver^{\SpongeHash,\SpongePermutation}(\Instance,\WitnessValue)\):}
+\begin{enumerate}
+\item Initialize \(\SpongeState'_0\leftarrow\SpongeStart^\SpongeHash(\Instance)\), sample
+  \(\SaltString\leftarrow\Uniform(\Alphabet^{\SaltLength})\), and set
+  \(\SpongeState_0\leftarrow\SpongeAbsorb^\SpongePermutation(\SpongeState'_0,\SaltString)\).
+\item For \(i=1,\ldots,\IPRoundComplexity\):
+  \begin{enumerate}
+  \item Generate the next prover message and private state:
+  \begin{equation*}
+    (\IPProverMessage_i,\mathsf{aux}_i)\leftarrow
+    \begin{cases}
+      \IPProver(\Instance,\WitnessValue),&i=1,\\
+      \IPProver(\mathsf{aux}_{i-1},\IPVerifierMessage_{i-1}),&i>1.
+    \end{cases}
+  \end{equation*}
+  \item If \(i<\IPRoundComplexity\), compute
+  \begin{equation*}
+  \begin{aligned}
+    \EncodedIPProverMessage_i&:=\CodecEncoder_i(\IPProverMessage_i),&
+    \SpongeState'_i&\leftarrow\SpongeAbsorb^\SpongePermutation(\SpongeState_{i-1},\EncodedIPProverMessage_i),\\
+    (\EncodedIPVerifierMessage_i,\SpongeState_i)&\leftarrow\SpongeSqueeze^\SpongePermutation(\SpongeState'_i,\IPVerifierMessageEncodedLength(i)),&
+    \IPVerifierMessage_i&:=\CodecDecoder_i(\EncodedIPVerifierMessage_i).
+  \end{aligned}
+  \end{equation*}
+  \end{enumerate}
+\item Return \(\NARGString:=(\SaltString,(\IPProverMessage_i)_{i\in[\IPRoundComplexity]})\).
+\end{enumerate}
+Here \(\mathsf{aux}_i\) is the prover's private state after producing \(\IPProverMessage_i\).
+
+\emph{Non-interactive argument verifier \(\NARGVerifier^{\SpongeHash,\SpongePermutation}(\Instance,\NARGString)\):}
+\begin{enumerate}
+\item Write \(\NARGString=(\SaltString,(\IPProverMessage_i)_{i\in[\IPRoundComplexity]})\).
+\item Initialize \(\SpongeState'_0\leftarrow\SpongeStart^\SpongeHash(\Instance)\) and set
+  \(\SpongeState_0\leftarrow\SpongeAbsorb^\SpongePermutation(\SpongeState'_0,\SaltString)\).
+\item For \(i=1,\ldots,\IPRoundComplexity\), compute
+  \begin{equation*}
+  \begin{aligned}
+    \EncodedIPProverMessage_i&:=\CodecEncoder_i(\IPProverMessage_i),&
+    \SpongeState'_i&\leftarrow\SpongeAbsorb^\SpongePermutation(\SpongeState_{i-1},\EncodedIPProverMessage_i),\\
+    (\EncodedIPVerifierMessage_i,\SpongeState_i)&\leftarrow\SpongeSqueeze^\SpongePermutation(\SpongeState'_i,\IPVerifierMessageEncodedLength(i)),&
+    \IPVerifierMessage_i&:=\CodecDecoder_i(\EncodedIPVerifierMessage_i).
+  \end{aligned}
+  \end{equation*}
+\item Return \(\IPVerifier(\Instance,
+  (\IPProverMessage_i)_{i\in[\IPRoundComplexity]},
+  (\IPVerifierMessage_i)_{i\in[\IPRoundComplexity]})\).
+\end{enumerate}
+\end{construction}
+
+\paragraph{Perfect completeness}
+
+\begin{theorem}[Perfect completeness of typed salted DSFS]
+\label{thm:dsfs_perfect_completeness}
+\lean{DuplexSpongeFS.duplex_sponge_fiat_shamir_perfect_completeness}
+\leanok
+\uses{constr:dsfs_transformation, def:completeness}
+Let \(\IPSymbol\) be a public-coin IP with perfect completeness for \(\Relation\), let
+\(\DSFSCodec\) be a codec for \(\IPSymbol\), and let \(\SaltLength\) be a nonnegative integer.
+With a stateless ambient oracle handler, the typed argument
+\(\NARGSymbol=\DSFSTransform\) of \Cref{constr:dsfs_transformation} has perfect
+completeness for \(\Relation\). The prover can use any salt sampler over the ambient oracle.
+In the \(\SpongeOracleDistribution\)-oracle model, for every \((\Instance,\WitnessValue)\in\Relation\),
+\begin{equation*}
+  \Pr\left[
+    \NARGVerifier^{\SpongeHash,\SpongePermutation}(\Instance,\NARGString)=1
+    \;\middle|\;
+    \begin{array}{l}
+      (\SpongeOracles)\leftarrow\SpongeOracleDistribution\\
+      \NARGString\leftarrow\NARGProver^{\SpongeHash,\SpongePermutation}(\Instance,\WitnessValue)
+    \end{array}
+  \right]=1.
+\end{equation*}
+\end{theorem}
+
+\begin{proof}
+Fix \((\Instance,\WitnessValue)\in\Relation\), a hash function \(\SpongeHash\), a permutation \(\SpongePermutation\), and a salt \(\SaltString\). The argument verifier reconstructs the verifier messages used by the honest argument prover and then computes any remaining verifier messages. Thus every resulting transcript is consistent with the honest IP prover on \((\Instance,\WitnessValue)\). Each verifier message has positive probability under uniform sampling from its finite message space, so every transcript in the support of this execution also belongs to the support of the honest interactive execution. Perfect completeness of \(\IPSymbol\) implies acceptance with probability one. Averaging over \(\SpongeHash\), \(\SpongePermutation\), and \(\SaltString\) proves the claim.
+\leanok
+\end{proof}
+
+\begin{remark}[Byte-facing execution]
+\label{rem:dsfs_byte_execution}
+\lean{NonInteractiveArgument.serialize_run}
+\leanok
+\uses{constr:dsfs_transformation, def:narg_serializer}
+For the protocol-facing DSFS compiler, serialization and parsing preserve the honest execution
+of the typed argument.
+\end{remark}

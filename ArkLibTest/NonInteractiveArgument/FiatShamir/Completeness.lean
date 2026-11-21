@@ -111,4 +111,55 @@ theorem old_completeness_claim_false :
   intro h
   exact fixed_default_not_complete (h reduction interactive_complete)
 
+/-- The decision-facing version accepts precisely the true challenge. -/
+def protocol : InteractiveProtocol []ₒ Unit Unit spec where
+  prover := prover.toInteractiveProver
+  verifier := ⟨fun _ tr => pure (tr 0)⟩
+
+/-- With zero salt and no prover messages the honest byte string is empty. -/
+def emptyPayloadEquiv : FiatShamirNARGString spec UInt8 0 ≃ Vector UInt8 0 where
+  toFun p := p.1
+  invFun salt := (salt, fun i => by
+    have hi := i.2
+    have hz := Fin.fin_one_eq_zero i.1
+    simp [spec, hz] at hi)
+  left_inv p := by
+    apply Prod.ext
+    · rfl
+    · funext i
+      have hi := i.2
+      have hz := Fin.fin_one_eq_zero i.1
+      simp [spec, hz] at hi
+  right_inv _ := rfl
+
+instance : VCVCompatible UInt8 where
+  default := 0
+
+/-- Exercise the public byte theorem with a nontrivial error and the zero-salt boundary. -/
+example [DecidableEq (srVerifierMessageOracle (Unit × Vector UInt8 0) spec).Domain] :
+    (protocol.compileFiatShamirBytes 0 ((Serializer.vector 0).ofEquiv emptyPayloadEquiv)
+      (pure #v[])).completeness
+      (pure ((), (∅ : (srVerifierMessageOracle (Unit × Vector UInt8 0) spec).QueryCache)))
+      (CanonicalFS.randomOracleImpl (pSpec := spec) (StmtIn := Unit)
+        (Salt := Vector UInt8 0) (fun q => nomatch q : QueryImpl []ₒ ProbComp))
+      Set.univ (1 / 2) := by
+  apply InteractiveProtocol.compileFiatShamirBytes_completeness
+  intro stmt wit _
+  have hr : (simulateQ
+      ((QueryImpl.liftTarget (StateT Unit ProbComp)
+        (fun q => nomatch q : QueryImpl []ₒ ProbComp)).addLift
+        challengeQueryImpl : QueryImpl _ (StateT Unit ProbComp))
+      (protocol.run stmt wit)).run' () = ($ᵗ Bool : ProbComp Bool) := by
+    let : VerifierOnly spec := { verifier_first' := rfl }
+    unfold InteractiveProtocol.run
+    change (simulateQ (_ : QueryImpl _ (StateT Unit ProbComp)) (do
+      let (tr, _) ← protocol.prover.toReductionProver.run stmt wit
+      (protocol.verifier.verify stmt tr).liftComp _)).run' () = _
+    erw [Prover.run_of_verifier_first stmt wit protocol.prover.toReductionProver]
+    simp [protocol, prover, InteractiveProver.toReductionProver, Prover.toInteractiveProver]
+    rfl
+  simp only [pure_bind]
+  rw [hr]
+  norm_num [SampleableType.prEvent_uniformSample_eq_singleton, Finset.filter_eq']
+
 end FiatShamirCompletenessTest

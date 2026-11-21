@@ -493,7 +493,7 @@ documents linked at the top of this page.
 The Fiat–Shamir transformation [FS86] replaces each verifier challenge by a hash of the
 conversation so far. ArkLib's basic version derives the $i$-th challenge from a Fiat–Shamir oracle
 applied to the input statement and all prover messages up to round $i$, following [CY24]; see
-[`OracleReduction/FiatShamir/Basic.lean`](ArkLib/OracleReduction/FiatShamir/Basic.lean). In the
+[`NonInteractiveArgument/FiatShamir/Canonical/Construction.lean`](ArkLib/NonInteractiveArgument/FiatShamir/Canonical/Construction.lean). In the
 literature, the security of this transformation in the random oracle model follows from the
 state-restoration (knowledge) soundness of the interactive protocol (Section 3.3) [BCS16, CY24].
 Special-sound protocols have a separate route: [AFK22] and [AFKR26] bound the knowledge error of

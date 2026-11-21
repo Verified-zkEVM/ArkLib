@@ -7,11 +7,12 @@ module
 
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Construction
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Security.Soundness
 
 /-!
 # Canonical Fiat–Shamir
 
-This module exports the canonical construction and its completeness theorems.
+This module exports the canonical construction and its security theorems.
 -/
 
 @[expose] public section
