@@ -13,6 +13,8 @@ public import Mathlib.LinearAlgebra.Projection
 
 ## Main statements
 
+* `Submodule.exists_list_linearMap_of_injOn` — finitely many linear functionals define a
+  subspace inside a larger subspace that embeds into a finite-dimensional space.
 * `LinearMap.finrank_eq_of_map_eq` — a linear map injective on `B` and mapping `B` onto `A`
   makes the two submodules equidimensional.
 * `Submodule.exists_adapted_basis` — a finite-dimensional space has a basis whose initial
@@ -36,6 +38,25 @@ Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
 @[expose] public section
+
+/-- If `c` embeds `U` into a finite-dimensional space, a finite list of linear
+functionals vanishes on `V ≤ U` and detects membership in `V` among elements of `U`. -/
+theorem Submodule.exists_list_linearMap_of_injOn {K M W : Type*} [DivisionRing K]
+    [AddCommGroup M] [Module K M] [AddCommGroup W] [Module K W] [Module.Finite K W]
+    {V U : Submodule K M} (hV : V ≤ U) (c : M →ₗ[K] W) (hc : Set.InjOn c U) :
+    ∃ l : List (M →ₗ[K] K), (∀ Λ ∈ l, ∀ v ∈ V, Λ v = 0) ∧
+      ∀ x ∈ U, (∀ Λ ∈ l, Λ x = 0) → x ∈ V := by
+  let Q := V.map c
+  let b := Module.finBasis K (W ⧸ Q)
+  refine ⟨List.ofFn fun j ↦ (b.coord j).comp (Q.mkQ.comp c), ?_, ?_⟩
+  · intro Λ hΛ v hv
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hΛ
+    simp [(Submodule.Quotient.mk_eq_zero Q).mpr (Submodule.mem_map_of_mem hv)]
+  · intro x hx hl
+    have hq : Q.mkQ (c x) = 0 := b.forall_coord_eq_zero_iff.mp fun j ↦
+      hl _ (List.mem_ofFn.mpr ⟨j, rfl⟩)
+    obtain ⟨v, hv, hvx⟩ := Submodule.mem_map.mp ((Submodule.Quotient.mk_eq_zero Q).mp hq)
+    exact hc (hV hv) hx hvx ▸ hv
 
 /-- If a linear map is injective on `B` and maps `B` onto `A`, then `B` and `A`
 have the same dimension. -/
