@@ -24,13 +24,32 @@ A quadratic multiplier over `𝔽₁₁` checks the interpolation beyond affine 
 
 open ReedSolomon Polynomial
 
-/-- The parameters feed the interpolation: an interpolant exists at those budgets. -/
+/-- The interpolation parameters give an interpolant with positive degree in `Z`. -/
 example {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain : ι ↪ F)
     (f g : ι → F) {d e : ℕ} {η : ℝ} (h : AffineParams d (Fintype.card ι) e η) :
     ∃ Q, IsMultiplierInterpolant domain f g e d (affineThreshold d (Fintype.card ι) η)
       (affineMultiplicity η) (affineYZBudget d (Fintype.card ι) η)
-      (affineRootBudget d (Fintype.card ι) e η) Q :=
-  exists_isMultiplierInterpolant domain f g h.surplus
+      (affineRootBudget d (Fintype.card ι) e η) Q ∧ 0 < Q.degreeOf none :=
+  exists_isMultiplierInterpolant_degreeOf_none_pos domain f g h.threshold_le h.surplus
+
+private instance : Fact (Nat.Prime 101) := ⟨by decide⟩
+
+/-- The first 100 elements of `F₁₀₁` as an evaluation domain. -/
+private def domain100 : Fin 100 ↪ ZMod 101 :=
+  ⟨fun i ↦ (i : ℕ), fun i j hij ↦ Fin.ext (by
+    have h := congrArg ZMod.val hij
+    rwa [ZMod.val_natCast, ZMod.val_natCast, Nat.mod_eq_of_lt (by omega),
+      Nat.mod_eq_of_lt (by omega)] at h)⟩
+
+-- The budgets at `d = 16`, `n = 100`, and `η = 1/2` give a positive degree at most 19.
+open Polynomial.SymbolicInterpolation in
+example (f g : Fin 100 → ZMod 101) :
+    ∃ Q, IsMultiplierInterpolant domain100 f g 1 16 90 4 42 19 Q ∧
+      0 < Q.degreeOf none ∧ Q.degreeOf none ≤ 19 := by
+  obtain ⟨Q, hQ, hpos⟩ := exists_isMultiplierInterpolant_degreeOf_none_pos domain100 f g
+    (e := 1) (d := 16) (A := 90) (m := 4) (D := 42) (M := 19) (by decide)
+    (by norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])
+  exact ⟨Q, hQ, hpos, hQ.rootDegree_le⟩
 
 -- The 146 unknowns exceed the truncated count 145, but not the full constraint count 150.
 open Polynomial.SymbolicInterpolation in
