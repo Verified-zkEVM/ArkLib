@@ -358,6 +358,11 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.MultilinearBasic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Basic
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Probability
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.RationalPair
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Separation
+public import ArkLib.Data.CodingTheory.ReedMuller.Grid
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
