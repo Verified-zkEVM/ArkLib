@@ -52,6 +52,7 @@ The multiplier, combined word, agreement set and loss use noncomputable polynomi
 
 * `ReedMuller.affineMultiplier`: the polynomial `α₀ + α₁ X₁ + ⋯ + αₖ Xₖ`.
 * `ReedMuller.combinedWord`: the combined word `f + L g` on the grid.
+* `ReedMuller.affineCombinedWord`: the executable fold from the coefficients of the challenge.
 * `ReedMuller.agreementSet` and `ReedMuller.agreementLoss`: agreement and lost points.
 * `ReedMuller.IsLossWitness` and `ReedMuller.IsAffineExceptional`: witnesses and candidates.
 * `ReedMuller.affineMcaError`: the uniform error probability.
@@ -166,6 +167,17 @@ theorem combinedWord_apply (f g : (Fin k → K₀) → F) (L : MvPolynomial (Fin
     (z : Fin k → K₀) :
     combinedWord f g L z = f z + eval (gridPoint F z) L * g z :=
   rfl
+
+/-- Combine the words directly from the affine coefficients of the challenge. -/
+def affineCombinedWord (f g : (Fin k → K₀) → F) (α : Fin (k + 1) → F) :
+    (Fin k → K₀) → F :=
+  fun z ↦ f z + (α 0 + ∑ i, α i.succ * gridPoint F z i) * g z
+
+/-- Evaluating the affine multiplier gives the coefficient-based word combiner. -/
+theorem affineCombinedWord_eq (f g : (Fin k → K₀) → F) (α : Fin (k + 1) → F) :
+    affineCombinedWord f g α = combinedWord f g (affineMultiplier α) := by
+  funext z
+  simp [affineCombinedWord]
 
 variable [DecidableEq F] [Fintype K₀]
 
