@@ -12,55 +12,28 @@ public import ArkLib.ToMathlib.Finset.AffineZeros
 /-!
 # Equal-degree combiners with linear claims
 
-A prover claims `⟨coef(F), v⟩ = γ₀` and `⟨coef(G), v⟩ = γ₁` for a public weight vector `v`.
-After the challenge `θ`, it sends `c`, meant to be `⟨coef(X(F + θ G)), v⟩`.
-The combined claim is `⟨coef(P), v⟩ = γ₁ + α(γ₀ + θ γ₁) + β c`.
-Honest claims satisfy it by linearity.
+For a public weight vector `v`, the prover claims `linearClaim v F = γ₀` and
+`linearClaim v G = γ₁`. After seeing `θ`, it sends `c` as the claim for `X(F + θG)`.
+The claim for the combined polynomial is `γ₁ + α (γ₀ + θγ₁) + βc`.
+A candidate is exceptional if it agrees, satisfies this claim, and has no witness pair
+with correct claims that loses at most the allowed number of agreements.
 
-A candidate is exceptional when it satisfies the combined claim but has no good witness pair.
-A good pair has correct claims and loses at most `s` agreements.
-For one point of loss, the error is at most the affine error plus `2ℓ₀/q`.
-Here `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`, `n` is the domain size, and `q` the field size.
-The bound assumes `nd < (A - 1)²`.
+At loss one, the Johnson bound limits the list of witness pairs of degree below `d`
+with `A - 1` common agreements. Except for the first challenges excluded by the
+equal-degree argument, each false pair needs a nonzero affine residual in `(α, β)`
+to vanish. This gives the first inequality of (5.5) in Theorem 5.1 of [CWYZ26].
+See the [paper page](../../../../../../docs/kb/papers/CWYZ26.md) for the correspondence.
 
-The equal-degree argument handles all but `ℓ₀` values of `θ`.
-Its witness pair lies in the list of pairs of degree below `d` with `A - 1` common agreements.
-The Johnson bound limits this list to `ℓ₀` pairs, independently of the challenges.
-A pair with a false claim leaves a nonzero affine residual in `(α, β)`.
-That residual has at most `q` zeros.
-This is the first inequality of (5.5) in Theorem 5.1 of [CWYZ26].
-The second inequality is in `Theorem`.
-The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
+## Main definitions and statements
 
-The message is a function of `θ`.
-Every deterministic prover strategy is such a function; randomized strategies average over them.
-The round-saving variant sends `c = c_F + θ c_G` and is one such function.
-The paper's list has degrees at most `d`; the count uses only its pairs of degree below `d`.
-The combination identity for claims needs no degree bound, so it is stated without one.
-
-The error is a mathematical supremum with classical decidability for polynomial witnesses.
-The residual is noncomputable because polynomial multiplication is.
-Its counting definition requires no sampler.
-The sampling module identifies it with native uniform probabilities.
-
-## Main definitions
-
-* `ReedSolomon.linearClaim`: the claim value `⟨coef(U), v⟩`.
-* `ReedSolomon.LinearClaimInstance`: received words, claims, and the prover's message.
-* `ReedSolomon.IsLinearClaimExceptional`: an exceptional candidate for three challenges.
-* `ReedSolomon.linearClaimMcaError`: the supremum of exceptional-event probabilities.
-* `ReedSolomon.HasCorrectLinearClaims`: the three claims of a witness pair hold.
-* `ReedSolomon.linearClaimResidual`: the residual of the combined claim for a witness pair.
-
-## Main statements
-
-* `ReedSolomon.linearClaim_add` and `ReedSolomon.linearClaim_C_mul`: the claim is linear.
-* `ReedSolomon.linearClaim_add_affineMultiplier_mul`: claims combine by linearity.
-* `ReedSolomon.linearClaimMcaError_le_affineMcaError_add`: the reduction with loss `2ℓ₀/q`.
-* `ReedSolomon.le_linearClaimMcaError`: one instance bounds the error from below.
-* `ReedSolomon.linearClaimMcaError_le_one`: the error is at most one.
-* `ReedSolomon.IsLinearClaimExceptional.isEqualDegreeExceptional_or_exists`: the case split.
-* `ReedSolomon.card_filter_linearClaimResidual_eq_zero_le`: a false claim's residual zeros.
+* `ReedSolomon.LinearClaimInstance`: words, public weights, claims, and the prover's
+  message as a function of the first challenge.
+* `ReedSolomon.linearClaim_add_affineMultiplier_mul`: the combination identity for
+  honest claims, valid at any degree.
+* `ReedSolomon.linearClaimMcaError`: the worst-case exceptional-event probability.
+  Its exact rational evaluator is in the sibling `LinearClaimsExact` module.
+* `ReedSolomon.linearClaimMcaError_le_affineMcaError_add`: the error is at most the
+  affine error plus `2ℓ₀/q`, where `ℓ₀` is the Johnson list bound.
 
 ## References
 

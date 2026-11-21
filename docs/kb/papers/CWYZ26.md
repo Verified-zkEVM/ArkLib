@@ -241,14 +241,14 @@ them with suprema of native uniform probabilities.
 `ReedSolomon.scalarMcaError_zero_eq_mcaError` identifies the scalar error at loss zero with
 `CoreDefinitions.mcaError` at the matching integer agreement threshold.
 
-`ReedSolomon.affineMcaErrorRat`, `ReedSolomon.scalarMcaErrorRat`, and
-`ReedSolomon.equalDegreeMcaErrorRat` compute the affine, scalar, and equal-degree errors exactly in `ℚ≥0`.
-`ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
-`ReedSolomon.ofReal_equalDegreeMcaErrorRat` prove that `ENNReal.ofReal` of the real cast of each
-value is the semantic `ENNReal` error.
-The evaluators search candidates and witnesses of bounded degree with CompPoly arithmetic.
-They use no classical decision procedure and no sampler.
-The module docstring of `AffineCombiner/Computable.lean` states the cost of the exhaustive search.
+`ReedSolomon.affineMcaErrorRat`, `ReedSolomon.scalarMcaErrorRat`,
+`ReedSolomon.equalDegreeMcaErrorRat`, and `ReedSolomon.linearClaimMcaErrorRat` compute the
+corresponding worst-case errors exactly in `ℚ≥0`.
+Each has an `ofReal_…` theorem equating the result with its semantic `ENNReal` error.
+The evaluators reuse finite event counting and search bounded CompPoly candidates and witnesses.
+The linear-claim evaluator also enumerates every first-challenge message function.
+The module docstrings in `AffineCombiner/Computable.lean` and
+`AffineCombiner/LinearClaimsExact.lean` give the costs of these exhaustive searches.
 
 The output and first affine witness have degree at most `d`, which gives message length `d + 1`.
 The second affine witness has degree below `d`, which gives message length `d`.
