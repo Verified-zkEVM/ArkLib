@@ -273,7 +273,7 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-Unit 10 is deferred, so Theorem 5.2 has no formalization.
+The base-field count is available. Packing, the interleaved bound, and folding remain open.
 The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
 The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
 `ReedSolomon.affineMcaError_le` covers it.
