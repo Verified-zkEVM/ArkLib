@@ -198,15 +198,21 @@ theorem le_affineMcaError_zero_loss_div_two [Fintype F] (domain : ι ↪ F) {d A
     (by linarith : (0 : ℝ) ≤ Fintype.card F - 2)]
 
 /-- The challenges `α` for which the word `f + α g` has exactly `A` zeros on the domain. -/
-noncomputable def exactZeroChallenges [Fintype F] (domain : ι ↪ F) (f g : ι → F) (A : ℕ) :
+def exactZeroChallenges [Fintype F] (f g : ι → F) (A : ℕ) :
     Finset F :=
-  {α : F | #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A}
+  {α : F | #{i : ι | f i + α * g i = 0} = A}
 
 /-- A challenge lies in the set exactly when its combined word has `A` zeros. -/
-@[simp] theorem mem_exactZeroChallenges [Fintype F] (domain : ι ↪ F) (f g : ι → F) (A : ℕ)
-    (α : F) : α ∈ exactZeroChallenges domain f g A ↔
-      #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A := by
+@[simp] theorem mem_exactZeroChallenges [Fintype F] (f g : ι → F) (A : ℕ) (α : F) :
+    α ∈ exactZeroChallenges f g A ↔ #{i : ι | f i + α * g i = 0} = A := by
   simp [exactZeroChallenges]
+
+/-- The zero positions are the agreement set with the zero polynomial on any domain. -/
+theorem mem_exactZeroChallenges_iff_card_polynomialAgreementSet [Fintype F]
+    (domain : ι ↪ F) (f g : ι → F) (A : ℕ) (α : F) :
+    α ∈ exactZeroChallenges f g A ↔
+      #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A := by
+  simp [polynomialAgreementSet, combinedWord, eq_comm]
 
 /-- Suppose no polynomial of degree at most `d` agrees with `g` on `A - s` domain points.
 
@@ -242,19 +248,19 @@ Let `E` be the set of challenges `α` for which `f + α g` has exactly `A` zeros
 Then the scalar error at loss `s` is at least `|E| / q`. -/
 theorem le_scalarMcaError_of_forall_card_lt [Fintype F] (domain : ι ↪ F) {f g : ι → F}
     {d A s : ℕ} (hfar : ∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s) :
-    ENNReal.ofReal ((#(exactZeroChallenges domain f g A) : ℝ) / (Fintype.card F : ℝ)) ≤
+    ENNReal.ofReal ((#(exactZeroChallenges f g A) : ℝ) / (Fintype.card F : ℝ)) ≤
       scalarMcaError domain d A s := by
   classical
   refine le_trans ?_ (le_scalarMcaError domain d A s f g)
   apply ENNReal.ofReal_le_ofReal
   apply div_le_div_of_nonneg_right _ (by positivity)
-  have hsub : exactZeroChallenges domain f g A ⊆
+  have hsub : exactZeroChallenges f g A ⊆
       ({α : F | ∃ P, IsScalarExceptional domain f g d A s α P} : Finset F) := fun α hα ↦
     mem_filter.mpr ⟨mem_univ _, 0, isScalarExceptional_of_forall_card_lt domain hfar (by simp)
-      ((mem_exactZeroChallenges domain f g A α).mp hα).ge⟩
+      ((mem_exactZeroChallenges_iff_card_polynomialAgreementSet domain f g A α).mp hα).ge⟩
   exact_mod_cast card_le_card hsub
 
-/-- received words separating scalar combiners.
+/-- Received words separating scalar combiners.
 
 Let `n = |ι|` be the domain size and `q = |F|` the field size.
 Assume `d + s + 1 < A ≤ n`.
@@ -268,7 +274,7 @@ theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι �
       (∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s) ∧
       (∀ α : F, #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A →
         IsScalarExceptional domain f g d A s α 0) ∧
-      1 + (Fintype.card ι - A) / (s + 1) ≤ #(exactZeroChallenges domain f g A) := by
+      1 + (Fintype.card ι - A) / (s + 1) ≤ #(exactZeroChallenges f g A) := by
   classical
   set n := Fintype.card ι
   set pos : ι → ℕ := fun i ↦ (Fintype.equivFin ι i : ℕ)
@@ -377,7 +383,8 @@ theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι �
     (by simp) hα.ge, ?_⟩
   rw [← card_range k]
   refine card_le_card_of_injOn γ (fun j hj ↦ ?_) (hγ.mono ?_)
-  · exact (mem_exactZeroChallenges domain f g A _).mpr (hcard j (mem_range.mp hj))
+  · exact (mem_exactZeroChallenges_iff_card_polynomialAgreementSet domain f g A _).mpr
+      (hcard j (mem_range.mp hj))
   · intro j hj
     simp only [coe_range, Set.mem_Iio] at hj ⊢
     have : k ≤ k * (s + 1) := Nat.le_mul_of_pos_right _ (by omega)
