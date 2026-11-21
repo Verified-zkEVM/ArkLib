@@ -826,11 +826,8 @@ public import ArkLib.InteractiveProof.StateRestorationSoundness
 public import ArkLib.InteractiveProof.ZeroKnowledge
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Application
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Execution
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.FixedOracle
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.RandomOracle
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Shared
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.SingleSalt
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Construction
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Security.Proofs.Soundness
 public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Security.Soundness

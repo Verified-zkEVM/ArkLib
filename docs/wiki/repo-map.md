@@ -93,9 +93,10 @@ home_page/            site assets and assembled website root
   private-sampling adapters.
 - `ArkLib/NonInteractiveArgument/FiatShamir/` contains the canonical and duplex-sponge compilers
   and their security proofs. `Canonical/Construction.lean` contains both canonical variants
-  and their shared round runner. `Canonical/Completeness.lean` has separate unsalted
-  and single-salt theorem sections, backed by `Canonical/Completeness/Shared.lean`.
-  `Canonical/Completeness/Execution.lean` relates the single-salt run to that shared core.
+  and their shared round runner. `Canonical/Completeness.lean` states the unsalted
+  and single-salt theorems. Their common proofs live in `Canonical/Completeness/Shared.lean`.
+  `Canonical/Completeness/SingleSalt.lean` relates the single-salt run to that shared core
+  and proves the fixed-oracle, random-oracle, and application completeness results.
   `DuplexSponge/Completeness.lean` exposes the DSFS completeness results.
   Acceptance tests live in `ArkLibTest/NonInteractiveArgument/FiatShamir/`.
   Its `Completeness.lean` covers fixed-function counterexamples and random-oracle completeness.

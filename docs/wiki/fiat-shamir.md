@@ -106,8 +106,8 @@ oracle queries. `InteractiveProtocol.compileFiatShamirBytes_completeness` uses
 bound.
 `fiatShamirSalted_completeness` preserves arbitrary completeness error with shared lazy uniform
 round functions, an initially empty cache, stateless ambient oracles, and any ambient-only salt
-sampler. The proof in `Canonical/Completeness/RandomOracle.lean` establishes equality of honest output
-distributions by conditioning on the salt and reusing the core random-oracle theorem.
+sampler. The proof in `Canonical/Completeness/SingleSalt.lean` establishes equality of honest
+output distributions by conditioning on the salt and reusing the core random-oracle theorem.
 `fiatShamirSalted_perfectCompleteness` additionally permits arbitrary fixed-function distributions;
 that stronger oracle generality applies only to zero completeness error.
 `ProtocolSpec.MessagesUpTo.completeMessages` converts an early prefix containing every prover

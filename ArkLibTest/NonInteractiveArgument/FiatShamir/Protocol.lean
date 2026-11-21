@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 -/
 
-import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Execution
+import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.SingleSalt
 import ArkLib.NonInteractiveArgument.FiatShamir.DuplexSponge.Construction
 
 /-!

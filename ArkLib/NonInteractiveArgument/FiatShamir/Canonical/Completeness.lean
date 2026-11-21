@@ -5,10 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen, Yuxi Zheng, Michele Orrù
 -/
 module
 
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Application
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.FixedOracle
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.RandomOracle
-public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Shared
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.SingleSalt
 
 /-!
 # Completeness of canonical Fiat–Shamir
@@ -33,15 +30,12 @@ statements allow an ambient salt sampler under a stateless ambient oracle.
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal ProbabilityTheory
 
-section Unsalted
-
-variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut WitOut : Type}
-  [samples : ∀ i, SampleableType (pSpec.Challenge i)]
-  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-
 /-- Statement-keyed Fiat–Shamir preserves perfect completeness for each fixed challenge table. -/
 theorem fiatShamir_perfectCompleteness
+    {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn WitIn StmtOut WitOut : Type}
+    [samples : ∀ i, SampleableType (pSpec.Challenge i)]
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (hR : R.perfectCompleteness init impl relIn relOut)
@@ -55,6 +49,10 @@ transformed prover and verifier. The cache starts empty; distinct round indices 
 honest prover query fresh, and reconstruction replays the cached answers. Decidable equality
 of query keys suffices, with no finite statement, message, or base-state assumption. -/
 theorem fiatShamir_completeness_randomOracle
+    {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
+    {StmtIn WitIn StmtOut WitOut : Type}
+    [samples : ∀ i, SampleableType (pSpec.Challenge i)]
+    {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     [DecidableEq (srVerifierMessageOracle StmtIn pSpec).Domain]
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (ε : ℝ≥0)
@@ -63,8 +61,6 @@ theorem fiatShamir_completeness_randomOracle
       (do return (← init, (∅ : (srVerifierMessageOracle StmtIn pSpec).QueryCache)))
       (FiatShamir.fsRandomOracleImpl impl) relIn relOut ε :=
   fiatShamirWithContext_completeness_randomOracle init impl relIn relOut R id ε hR
-
-end Unsalted
 
 section Salted
 
