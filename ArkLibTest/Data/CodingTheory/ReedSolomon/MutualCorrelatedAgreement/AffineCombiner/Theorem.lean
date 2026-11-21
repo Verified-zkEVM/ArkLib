@@ -69,10 +69,6 @@ private theorem largeDomain_error_lt :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.exists_affineExceptional_finset_card_le
-/-- info: 'ReedSolomon.card_le_of_affineNonpersistent_roots' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.card_le_of_affineNonpersistent_roots
 
 open scoped ProbabilityTheory
 
