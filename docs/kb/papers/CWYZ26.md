@@ -40,6 +40,7 @@ related_modules:
   - ArkLib/ToMathlib/Polynomial/DegreeLEFunctionals.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/TraceChart.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/NonpersistentCount.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Theorem.lean
 ---
 
 # CWYZ26
@@ -55,6 +56,7 @@ If `0 < η < 1 - √ρ` and `nη² ≥ 4/ρ`, Theorem 1.1 bounds the error with 
 `4/(ηq) + 2¹⁴ n²/(ρ³ η¹⁰ q²)`.
 This bound holds for every such domain in every finite field of size `q ≥ n`.
 Theorem 1.1 is formalized by `ReedSolomon.affineMcaError_le`.
+Theorem 7.1 is formalized by `ReedMuller.affineMcaError_le`.
 
 For fixed `ρ, η` in that range and sufficiently large `n`, scalar combiners have error
 `Ω_{ρ,η}(n/q)` at the same threshold and loss.
@@ -113,6 +115,9 @@ The embedding already implies `n ≤ q`.
 | Appendix A, "Nonpersistent": Frobenius roots and chart targets | `ReedMuller.map_familyMultiplier_traceFamily`, `ReedMuller.traceChartTarget`, `ReedMuller.totalDegree_traceChartTarget_le`, `ReedMuller.aeval_traceChartTarget` | The inverse Frobenius power maps the trace family to a trace family, with `κ = Fin (k + 1)`. |
 | Appendix A, intersection with the image of `(α, P) ↦ (α, P̃)` | `Polynomial.exists_list_linearMap_of_le_degreeLE`, `ReedMuller.IsTraceImageCuts`, `ReedMuller.exists_isTraceImageCuts` | Among polynomials of degree at most `ρn`, the image is cut out by finitely many linear functionals. These are the high cuts of the generic count. |
 | Appendix A, Claim 4.8 for Reed–Muller and the count `#N ≤ (2ρnMv)^(k+1) D^(k+2)` | `ReedMuller.isAffinePersistent_of_mem_chartExcluded`, `ReedMuller.exists_finset_card_le_isAffinePersistent`, `ReedSolomon.separatesDegree_leval` | Outside `D² + (2 d q₀^(k-1) M n / (A - B - q₀^(k-1) + 1))^(k+1) D^(k+2)` coefficient vectors, every candidate with `A` agreements is persistent. Hypotheses: `1 ≤ d`, `d q₀^(k-1) < B + q₀^(k-1) ≤ A`, and an interpolant over `E`. The paper's `B > (d + 1) n/q₀` gives `d q₀^(k-1) < B + q₀^(k-1)` for positive grid dimension. The reconstruction is determined by evaluation at `B + n/q₀` distinct points, and challenges are compared directly, not by Schwartz–Zippel. |
+| Appendix A, Reed–Muller analogue of Theorem 4.10 | `ReedMuller.exists_affineExceptional_finset_card_le_of_interpolation`, `ReedMuller.affineMcaError_le_of_interpolation` | At most `D² + ℓ max{q, C(n, k+1)} + (2ρnMv)^(k+1) D^(k+2)` exceptional vectors, for any thresholds and budgets. Hypotheses: `1 ≤ d`, `(d + 1) q₀^(k-1) < B`, `n (d + 1) q₀^(k-1) < B²`, `B + q₀^(k-1) ≤ A`, and the surplus. The degree-`k` extension of `K₀` and its embedding are built inside the proof. |
+| Appendix A, "The bound", numerics for general `k` | `ReedSolomon.affineCount_numerics_le` | `D² + (2dMv)^(k+1) D^(k+2) + 2n^(k+1)/η ≤ 2^(6k+8) n^(k+1)/(ρ^(k+2) η^(4k+6))` for `k ≥ 1`. Theorem 1.1 uses the case `k = 1`. |
+| Theorem 7.1, bound (7.2) | `ReedMuller.exists_affineExceptional_finset_card_le`, `ReedMuller.affineMcaError_le` | The error at `A = ⌈(√ρ + η) n⌉` and loss `q₀^(k-1)` is at most `4/(η qᵏ) + 2^(6k+8) n^(k+1)/(ρ^(k+2) η^(4k+6) q^(k+1))`, with the paper's constant. Hypotheses: `1 ≤ d` for `ρ > 0`, `0 < η < 1 - √ρ` and `4/ρ ≤ q₀ η²`. `ρ < 1` is derived, and `k ≥ 1` is not assumed, since at `k = 0` the bound exceeds one. |
 
 ## Port Ledger
 
@@ -133,7 +138,7 @@ A unit is deferred when the port plan postpones it.
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | The nonpersistent count for one factor, through an incidence bound on a hypersurface in three chart coordinates. The hypersurface takes the place of the cover of dimension at most two. The proof of the incidence bound inducts on dimension over the agreement cuts, in place of the agreement-hyperplane induction. The sum over factors is part of the unit 9 count | 2, 6, 7 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), except the floored Johnson factor of (4.13), which is open |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
-| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | grid estimates, lower bound, Lemma A.1, Pellikaan–Wu reduction and both challenge counts formalized; the final bound of Theorem 7.1 open |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | formalized through Theorem 7.1 |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
 The quotient is real, and the floor rounds down.
@@ -263,7 +268,6 @@ Both arguments are complete.
 ## Open Formalization Gaps
 
 Unit 10 is deferred, so Theorem 5.2 has no formalization.
-The Reed–Muller port has the final bound of Theorem 7.1 open.
 The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
 The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
 `ReedSolomon.affineMcaError_le` covers it.

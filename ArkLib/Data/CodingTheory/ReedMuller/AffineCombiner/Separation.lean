@@ -16,7 +16,7 @@ Let `K₀ ⊆ F` be finite fields of sizes `q₀ ≤ q`, and let `n = q₀ᵏ` b
 At agreement loss `n / q₀ = q₀ᵏ⁻¹`, the Reed–Muller error is at least `1 / qᵏ`.
 So the exponent `k` in the leading term `4 / (η qᵏ)` of Theorem 7.1 cannot be improved.
 This is the remark after Theorem 7.1 in Section 7 of [CWYZ26].
-Theorem 7.1 itself is not proved here.
+Theorem 7.1 is proved in the sibling theorem module.
 The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
 Take `f = 0` and `g = X₁ᵈ`.

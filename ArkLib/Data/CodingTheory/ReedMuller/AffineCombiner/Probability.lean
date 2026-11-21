@@ -18,7 +18,8 @@ This module supplies the sampling characterization under `SampleableType F`.
 A coefficient vector is sampled uniformly from `F^{k+1}`.
 
 The error follows the definition in Section 7 of [CWYZ26].
-Theorem 7.1 itself is not proved here.
+Theorem 7.1 is proved in the sibling theorem module.
+Its error bound transfers to each received word pair through the sampling lemma below.
 The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
 ## Main statements

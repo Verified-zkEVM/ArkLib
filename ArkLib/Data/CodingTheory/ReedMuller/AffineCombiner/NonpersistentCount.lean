@@ -39,7 +39,7 @@ For persistence, a second chart point over the extension gives a ratio that desc
 The statement assumes `1 ≤ d`, `d e < B + e` and `B + e ≤ A`.
 The second condition makes `B + e` evaluations on `L` determine candidates of degree `d e`.
 The paper's condition `B > (d + 1) e` implies it.
-The persistent set and the final numerics are not here.
+The sibling theorem module adds the persistent set and the final numerics.
 
 The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
