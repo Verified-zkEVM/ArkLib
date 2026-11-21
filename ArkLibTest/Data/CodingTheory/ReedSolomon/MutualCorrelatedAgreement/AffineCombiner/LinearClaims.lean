@@ -5,7 +5,7 @@ Authors: Thomas Coratger
 -/
 
 import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaims
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaimsExact
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for the equal-degree combiner with linear claims -/
@@ -17,6 +17,25 @@ private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 /-- The whole field `F₅` as the evaluation domain. -/
 private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
+
+private instance : Fact (Nat.Prime 2) := ⟨by decide⟩
+
+/-- The whole field `F₂` as the evaluation domain. -/
+private def binaryDomain : ZMod 2 ↪ ZMod 2 := Function.Embedding.refl _
+
+-- At degree zero, the combined word must be constant. For nonzero input words, at least one
+-- value of `θ` leaves a nontrivial equality in `(α, β)` for the two values to agree.
+-- For zero words, a false claim can be exceptional for at most two pairs per `θ`.
+-- The bound is attained at six exceptional triples with constant words `f = 0` and `g = 1`,
+-- weight and initial claims zero, and message `c(θ) = θ`.
+/-- info: true -/
+#guard_msgs in
+#eval linearClaimMcaErrorRat binaryDomain 0 2 1 == 3 / 4
+
+-- A threshold greater than the domain size excludes all candidates.
+/-- info: true -/
+#guard_msgs in
+#eval linearClaimMcaErrorRat binaryDomain 0 3 1 == 0
 
 -- Honest claims on `F₅` with `v = (1, 2)`, `F = 1`, `G = 2`, `θ = 1`:
 -- `⟨coef(G), v⟩ = 2`, `⟨coef(F), v⟩ = 1`, and `⟨coef(X(F + θ G)), v⟩ = 3 · 2 = 1`.
