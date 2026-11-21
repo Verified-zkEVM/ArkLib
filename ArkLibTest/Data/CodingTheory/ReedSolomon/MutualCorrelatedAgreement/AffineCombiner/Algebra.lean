@@ -43,7 +43,6 @@ example : ∃ H₀ L₀ : ℚ[X], L₀ ≠ 0 ∧ L₀.degree ≤ 1 ∧ H₀.degr
   · intro k
     simp
 
-#print axioms ReedSolomon.totalDegree_affineChartNumerator_le
 #print axioms ReedSolomon.exists_lineRatioWitness_of_map
 #print axioms Matrix.exists_mulVec_eq_zero_apply_ne_zero_of_map
 
@@ -53,9 +52,9 @@ private noncomputable def regularR : MvPolynomial AffineVar ℚ :=
 
 -- The chart reconstruction API has an actual linear root at every challenge and center.
 example (a b c : ℚ) :
-    affineChartPolynomial c regularR 1 1 (affineChartPoint c 1 a b (C a + C b * X)) =
+    chartPolynomial c affineFamily regularR 1 1 (chartPoint c 1 ![a, b] (C a + C b * X)) =
       C a + C b * X := by
-  refine affineChartPolynomial_point c regularR (p := 1) (e := 0) (by simp) ?_ ?_ ?_
+  refine chartPolynomial_point c affineFamily regularR (p := 1) (e := 0) (by simp) ?_ ?_ ?_
   · simpa [add_comm] using (degree_linear_le (a := b) (b := a))
   · simp [regularR, affineMultiplier]
   · simp [regularR]

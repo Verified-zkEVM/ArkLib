@@ -14,6 +14,8 @@ public import Mathlib.RingTheory.MvPolynomial.WeightedHomogeneous
 The proof interpolates a polynomial `Q(X, Y, Z)` and evaluates it along a curve.
 The evaluation sends `Y` to a multiplier `L(X)` and `Z` to a candidate `P(X)`.
 For Reed–Solomon codes the multiplier is the affine line `α + β X`.
+A family of polynomials `θⱼ` gives the multipliers `∑ⱼ aⱼ θⱼ`, linear in the coefficients `aⱼ`.
+The lines `α + β X` come from the family `(1, X)`.
 
 ## Weights
 
@@ -28,12 +30,17 @@ On the grid `𝔽_{q₀}^k` of `n = q₀^k` points, Reed–Muller codes use `e =
 * `ReedSolomon.AffineVar`: the variables `X`, `Y`, `Z`.
 * `ReedSolomon.affineYZWeight` and `ReedSolomon.multiplierWeight`: the two weights.
 * `ReedSolomon.multiplierEval`: the evaluation `Q ↦ Q(X, L(X), P(X))`.
+* `ReedSolomon.familyMultiplier`: the multiplier `∑ⱼ aⱼ θⱼ` of a linear family `θ`, as a
+  Mathlib linear combination, so it is linear in the coefficients.
+* `ReedSolomon.affineFamily`: the Reed–Solomon family `(1, X)`.
 
 ## Main statements
 
 * `ReedSolomon.natDegree_multiplierEval_le`: the degree of the evaluation.
 * `ReedSolomon.eval_multiplierEval`: evaluating the result at a point.
 * `ReedSolomon.map_multiplierEval`: the evaluation commutes with a field embedding.
+* `ReedSolomon.familyMultiplier_apply`: the multiplier as the sum `∑ⱼ C(aⱼ) θⱼ`.
+* `ReedSolomon.familyMultiplier_affineFamily`: the family `(1, X)` gives the lines `a + b X`.
 
 ## References
 
@@ -126,6 +133,23 @@ theorem eval_multiplierEval (c : K) (L P : K[X]) (Q : MvPolynomial AffineVar K) 
   rcases v with _ | ⟨i⟩
   · simp
   · fin_cases i <;> simp
+
+/-- The multiplier `∑ⱼ aⱼ θⱼ` of the family `θ` at the coefficient vector `a`. -/
+noncomputable def familyMultiplier {κ : Type*} [Fintype κ] (θ : κ → K[X]) (a : κ → K) : K[X] :=
+  Fintype.linearCombination K θ a
+
+/-- The multiplier of `θ` at `a` is `∑ⱼ C(aⱼ) θⱼ`. -/
+theorem familyMultiplier_apply {κ : Type*} [Fintype κ] (θ : κ → K[X]) (a : κ → K) :
+    familyMultiplier θ a = ∑ j, C (a j) * θ j := by
+  simp [familyMultiplier, Fintype.linearCombination_apply, smul_eq_C_mul]
+
+/-- The Reed–Solomon family `(1, X)`, whose multipliers are the lines `a + b X`. -/
+noncomputable def affineFamily : Fin 2 → K[X] := ![1, X]
+
+/-- The multiplier of the family `(1, X)` at `(a, b)` is the line `a + b X`. -/
+@[simp] theorem familyMultiplier_affineFamily (a b : K) :
+    familyMultiplier affineFamily ![a, b] = affineMultiplier a b := by
+  simp [familyMultiplier_apply, affineFamily, affineMultiplier, Fin.sum_univ_two]
 
 /-- The evaluation commutes with a field embedding. -/
 theorem map_multiplierEval {K' : Type*} [Field K'] (φ : K →+* K') (L P : K[X])

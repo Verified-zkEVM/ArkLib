@@ -56,15 +56,15 @@ variable {E : Type*} [Field E]
 
 /-- The agreement cut of the position `i`, with the received values mapped to `E`. -/
 noncomputable def affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c : E)
-    (R : MvPolynomial AffineVar E) (s d τ : ℕ) (i : ι) : MvPolynomial AffineChartVar E :=
+    (R : MvPolynomial AffineVar E) (s d τ : ℕ) (i : ι) : MvPolynomial (ChartVar (Fin 2)) E :=
   affineChartCut c R s d τ (φ (domain i)) (φ (f i)) (φ (g i))
 
 /-- Chart points on `B + 1` cuts shared with a regular point on another challenge. -/
 def affineChartExcluded (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c : E)
-    (R : MvPolynomial AffineVar E) (s d τ B : ℕ) : Set (AffineChartVar → E) :=
+    (R : MvPolynomial AffineVar E) (s d τ B : ℕ) : Set (ChartVar (Fin 2) → E) :=
   {pt | ∃ T : Finset ι, B + 1 ≤ #T ∧
     (∀ i ∈ T, aeval pt (affineChartAgreementCut domain f g φ c R s d τ i) = 0) ∧
-    ∃ pt' : AffineChartVar → E, aeval pt' (affineChartSeparant c R) ≠ 0 ∧
+    ∃ pt' : ChartVar (Fin 2) → E, aeval pt' (chartSeparant c affineFamily R) ≠ 0 ∧
       (∀ i ∈ T, aeval pt' (affineChartAgreementCut domain f g φ c R s d τ i) = 0) ∧
       pt' ∘ Sum.inr ≠ pt ∘ Sum.inr}
 
@@ -72,8 +72,9 @@ def affineChartExcluded (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c
 with the same challenge are equal. -/
 theorem eq_of_affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ : F →+* E) (c : E)
     (R : MvPolynomial AffineVar E) {s d τ B : ℕ} (hτ : 2 * s * d - 1 ≤ τ) (hdB : d ≤ B)
-    (T : Finset ι) (hT : B + 1 ≤ #T) {pt pt' : AffineChartVar → E}
-    (hS : aeval pt (affineChartSeparant c R) ≠ 0) (hS' : aeval pt' (affineChartSeparant c R) ≠ 0)
+    (T : Finset ι) (hT : B + 1 ≤ #T) {pt pt' : ChartVar (Fin 2) → E}
+    (hS : aeval pt (chartSeparant c affineFamily R) ≠ 0)
+    (hS' : aeval pt' (chartSeparant c affineFamily R) ≠ 0)
     (hcut : ∀ i ∈ T, aeval pt (affineChartAgreementCut domain f g φ c R s d τ i) = 0)
     (hcut' : ∀ i ∈ T, aeval pt' (affineChartAgreementCut domain f g φ c R s d τ i) = 0)
     (hab : pt' ∘ Sum.inr = pt ∘ Sum.inr) : pt' = pt := by
@@ -81,14 +82,15 @@ theorem eq_of_affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ :
   have h0 : pt' (.inr 0) = pt (.inr 0) := congrFun hab 0
   have h1 : pt' (.inr 1) = pt (.inr 1) := congrFun hab 1
   -- The two reconstructions agree at the `B + 1` cut points, so they are equal.
-  have hrec : affineChartPolynomial c R s d pt' = affineChartPolynomial c R s d pt := by
+  have hrec :
+      chartPolynomial c affineFamily R s d pt' = chartPolynomial c affineFamily R s d pt := by
     have hinj : Set.InjOn (fun i ↦ φ (domain i)) (T : Set ι) :=
       fun i _ j _ hij ↦ domain.injective (φ.injective hij)
     refine Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq (T.image fun i ↦ φ (domain i)) ?_ ?_
     · rw [Finset.card_image_of_injOn hinj]
       refine (Polynomial.degree_sub_le _ _).trans_lt ?_
-      refine (max_le (degree_affineChartPolynomial_le c R s d pt')
-        (degree_affineChartPolynomial_le c R s d pt)).trans_lt ?_
+      refine (max_le (degree_chartPolynomial_le c affineFamily R s d pt')
+        (degree_chartPolynomial_le c affineFamily R s d pt)).trans_lt ?_
       exact_mod_cast (by omega : d < #T)
     · intro x hx
       obtain ⟨i, hi, rfl⟩ := Finset.mem_image.mp hx
@@ -97,8 +99,8 @@ theorem eq_of_affineChartAgreementCut (domain : ι ↪ F) (f g : ι → F) (φ :
   funext v
   rcases v with ⟨j⟩ | ⟨j⟩
   · obtain rfl : j = 0 := Subsingleton.elim _ _
-    rw [← eval_affineChartPolynomial_center c R s d pt',
-      ← eval_affineChartPolynomial_center c R s d pt, hrec]
+    rw [← eval_chartPolynomial_center c affineFamily R s d pt',
+      ← eval_chartPolynomial_center c affineFamily R s d pt, hrec]
   · exact congrFun hab j
 
 /-- A positive-dimensional prime with `B + 1` agreement cuts has its regular points excluded.
@@ -108,14 +110,14 @@ The regular locus is infinite, and two of its points on the same challenge are e
 theorem regularLocus_subset_affineChartExcluded [IsAlgClosed E] (domain : ι ↪ F)
     (f g : ι → F) (φ : F →+* E)
     (c : E) (R : MvPolynomial AffineVar E) {s d τ B : ℕ} (hτ : 2 * s * d - 1 ≤ τ)
-    (hdB : d ≤ B) (J : Ideal (MvPolynomial AffineChartVar E)) (hJ : J.IsPrime)
-    (hs : affineChartSeparant c R ∉ J) (hdim : 0 < (affineHilbertPolynomial J).natDegree)
+    (hdB : d ≤ B) (J : Ideal (MvPolynomial (ChartVar (Fin 2)) E)) (hJ : J.IsPrime)
+    (hs : chartSeparant c affineFamily R ∉ J) (hdim : 0 < (affineHilbertPolynomial J).natDegree)
     (hcuts : B + 1 ≤ {i | affineChartAgreementCut domain f g φ c R s d τ i ∈ J}.ncard) :
-    {pt | pt ∈ zeroLocus E J ∧ aeval pt (affineChartSeparant c R) ≠ 0} ⊆
+    {pt | pt ∈ zeroLocus E J ∧ aeval pt (chartSeparant c affineFamily R) ≠ 0} ⊆
       affineChartExcluded domain f g φ c R s d τ B := by
   classical
-  set U := {pt | pt ∈ zeroLocus E J ∧ aeval pt (affineChartSeparant c R) ≠ 0}
-  have hregular : IsLeftRegular (Ideal.Quotient.mk J (affineChartSeparant c R)) :=
+  set U := {pt | pt ∈ zeroLocus E J ∧ aeval pt (chartSeparant c affineFamily R) ≠ 0}
+  have hregular : IsLeftRegular (Ideal.Quotient.mk J (chartSeparant c affineFamily R)) :=
     IsLeftCancelMulZero.mul_left_cancel_of_ne_zero (mt Ideal.Quotient.eq_zero_iff_mem.mp hs)
   have hinfinite : U.Infinite := fun hfin ↦ by
     have := (finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero hregular).mp hfin
@@ -146,20 +148,20 @@ theorem aeval_affineChartAgreementCut_point_eq_zero_iff [IsAlgClosed E] (domain 
     (hsep : (multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ α))
         ((iterateFrobeniusEquiv E p e).symm (φ β))) (Polynomial.expand E (p ^ e) (P.map φ))
         (pderiv none R)).eval c ≠ 0) (i : ι) :
-    aeval (affineChartPoint c (p ^ e) ((iterateFrobeniusEquiv E p e).symm (φ α))
-        ((iterateFrobeniusEquiv E p e).symm (φ β)) (P.map φ))
+    aeval (chartPoint c (p ^ e) ![(iterateFrobeniusEquiv E p e).symm (φ α),
+        (iterateFrobeniusEquiv E p e).symm (φ β)] (P.map φ))
       (affineChartAgreementCut domain f g φ c R (p ^ e) d (2 * p ^ e * d - 1) i) = 0 ↔
       i ∈ polynomialAgreementSet domain (combinedWord domain f g (affineMultiplier α β)) P := by
   set fr := (iterateFrobeniusEquiv E p e).symm
   have hfr (x : E) : fr x ^ p ^ e = x := by
     rw [← iterateFrobeniusEquiv_def, RingEquiv.apply_symm_apply]
-  have hS : aeval (affineChartPoint c (p ^ e) (fr (φ α)) (fr (φ β)) (P.map φ))
-      (affineChartSeparant c R) ≠ 0 := by
-    rwa [aeval_affineChartSeparant_point]
+  have hS : aeval (chartPoint c (p ^ e) ![fr (φ α), fr (φ β)] (P.map φ))
+      (chartSeparant c affineFamily R) ≠ 0 := by
+    rwa [aeval_chartSeparant_point, familyMultiplier_affineFamily]
   rw [affineChartAgreementCut, affineChartCut_eq_zero_iff c R le_rfl _ _ _ _ hS,
-    affineChartPolynomial_point c R rfl
-      ((Polynomial.degree_map_le).trans hP) hroot hsep]
-  simp only [affineChartPoint, Sum.elim_inr, Matrix.cons_val_zero, Matrix.cons_val_one,
+    chartPolynomial_point c affineFamily R rfl ((Polynomial.degree_map_le).trans hP)
+      (by rwa [familyMultiplier_affineFamily]) (by rwa [familyMultiplier_affineFamily])]
+  simp only [chartPoint, Sum.elim_inr, Matrix.cons_val_zero, Matrix.cons_val_one,
     Matrix.cons_val_fin_one, hfr, polynomialAgreementSet, Finset.mem_filter, Finset.mem_univ,
     true_and, combinedWord_affineMultiplier, Polynomial.eval_map_apply]
   rw [← φ.injective.eq_iff]
@@ -177,8 +179,8 @@ theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : 
     (hsep : (multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ α))
         ((iterateFrobeniusEquiv E p e).symm (φ β))) (Polynomial.expand E (p ^ e) (P.map φ))
         (pderiv none R)).eval c ≠ 0)
-    (hex : affineChartPoint c (p ^ e) ((iterateFrobeniusEquiv E p e).symm (φ α))
-        ((iterateFrobeniusEquiv E p e).symm (φ β)) (P.map φ) ∈
+    (hex : chartPoint c (p ^ e) ![(iterateFrobeniusEquiv E p e).symm (φ α),
+        (iterateFrobeniusEquiv E p e).symm (φ β)] (P.map φ) ∈
       affineChartExcluded domain f g φ c R (p ^ e) d (2 * p ^ e * d - 1) B) :
     IsAffinePersistent domain f g d B α β P := by
   set fr := (iterateFrobeniusEquiv E p e).symm
@@ -192,7 +194,7 @@ theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : 
   -- The second challenge explains `g` on `T` by the ratio `(P' - P) / L`.
   set a' := pt' (.inr 0) ^ p ^ e - φ α
   set b' := pt' (.inr 1) ^ p ^ e - φ β
-  set H := affineChartPolynomial c R (p ^ e) d pt' - P.map φ
+  set H := chartPolynomial c affineFamily R (p ^ e) d pt' - P.map φ
   have hL : affineMultiplier a' b' ≠ 0 := by
     intro hL0
     have h0 := congrArg (fun p : Polynomial _ ↦ p.coeff 0) hL0
@@ -209,7 +211,8 @@ theorem isAffinePersistent_of_mem_affineChartExcluded [IsAlgClosed E] (domain : 
     · exact hroot' _ _ (by simpa using h0)
     · exact hroot' _ _ (by simpa using h1)
   have hH : H.degree ≤ d := (Polynomial.degree_sub_le _ _).trans
-    (max_le (degree_affineChartPolynomial_le c R _ d pt') ((Polynomial.degree_map_le).trans hP))
+    (max_le (degree_chartPolynomial_le c affineFamily R _ d pt')
+      ((Polynomial.degree_map_le).trans hP))
   have hexplain : ∀ k : T, H.eval (φ (domain k)) =
       (affineMultiplier a' b').eval (φ (domain k)) * φ (g k) := by
     rintro ⟨i, hi⟩
@@ -254,23 +257,23 @@ theorem card_le_of_affineNonpersistent_roots [IsAlgClosed E] (domain : ι ↪ F)
   set fr := (iterateFrobeniusEquiv E p e).symm
   -- One center where every separant along a line of `S` is nonzero.
   obtain ⟨c, hc⟩ := Polynomial.exists_forall_eval_ne_zero S _ hsep
-  set pt : F × F → AffineChartVar → E := fun x ↦
-    affineChartPoint c (p ^ e) (fr (φ x.1)) (fr (φ x.2)) ((w x).map φ)
+  set pt : F × F → ChartVar (Fin 2) → E := fun x ↦
+    chartPoint c (p ^ e) ![fr (φ x.1), fr (φ x.2)] ((w x).map φ)
   have hinj : Set.InjOn pt S := by
     intro x _ y _ hxy
     have h0 := congrFun hxy (.inr 0)
     have h1 := congrFun hxy (.inr 1)
-    simp only [pt, affineChartPoint, Sum.elim_inr, Matrix.cons_val_zero,
+    simp only [pt, chartPoint, Sum.elim_inr, Matrix.cons_val_zero,
       Matrix.cons_val_one, Matrix.cons_val_fin_one] at h0 h1
     exact Prod.ext (φ.injective (fr.injective h0)) (φ.injective (fr.injective h1))
-  have hS (x) (hx : x ∈ S) : aeval (pt x) (affineChartSeparant c R) ≠ 0 := by
-    rw [aeval_affineChartSeparant_point]
+  have hS (x) (hx : x ∈ S) : aeval (pt x) (chartSeparant c affineFamily R) ≠ 0 := by
+    rw [aeval_chartSeparant_point, familyMultiplier_affineFamily]
     exact hc x hx
-  have hsepR : affineChartSeparant c R ≠ 0 := fun h0 ↦ hS c₀ hc₀ (by rw [h0, map_zero])
-  have hg : affineChartEquation c R ≠ 0 := fun h0 ↦
-    hsepR (by rw [← pderiv_affineChartEquation, h0, map_zero])
+  have hsepR : chartSeparant c affineFamily R ≠ 0 := fun h0 ↦ hS c₀ hc₀ (by rw [h0, map_zero])
+  have hg : chartEquation c affineFamily R ≠ 0 := fun h0 ↦
+    hsepR (by rw [← pderiv_chartEquation, h0, map_zero])
   have hbound := card_le_of_agreement_off_excluded_of_hypersurface (K := E) hg
-    (affineChartSeparant c R) (totalDegree_affineChartEquation_le c hR) []
+    (chartSeparant c affineFamily R) (totalDegree_chartEquation_le c affineFamily hR) []
     (by simp) (affineChartAgreementCut domain f g φ c R (p ^ e) d (2 * p ^ e * d - 1))
     (fun i ↦ totalDegree_affineChartCut_le c hR hd (Nat.one_le_pow _ _ (expChar_pos E p)) _ _ _)
     (L := B + 1) (A := A) (by omega) (by omega)
@@ -282,7 +285,8 @@ theorem card_le_of_affineNonpersistent_roots [IsAlgClosed E] (domain : ι ↪ F)
       intro x hx
       obtain ⟨y, hy, rfl⟩ := Finset.mem_image.mp hx
       refine ⟨?_, hS y hy, by simp, fun hex ↦ hnp y hy ?_⟩
-      · rw [aeval_affineChartEquation_point, hroot y hy, Polynomial.eval_zero]
+      · rw [aeval_chartEquation_point, familyMultiplier_affineFamily, hroot y hy,
+          Polynomial.eval_zero]
       · exact isAffinePersistent_of_mem_affineChartExcluded domain f g φ c R p e (hdeg y hy)
           (hroot y hy) (hc y hy) hex)
     (by
@@ -294,7 +298,7 @@ theorem card_le_of_affineNonpersistent_roots [IsAlgClosed E] (domain : ι ↪ F)
       ext i
       exact (aeval_affineChartAgreementCut_point_eq_zero_iff domain f g φ c R p e (hdeg y hy)
         (hroot y hy) (hc y hy) i).symm)
-  have hσ : Nat.card AffineChartVar - 1 = 2 := by simp [Nat.card_eq_fintype_card]
+  have hσ : Nat.card (ChartVar (Fin 2)) - 1 = 2 := by simp [Nat.card_eq_fintype_card]
   have hAB : A - (B + 1) + 1 = A - B := by omega
   rwa [Finset.card_image_of_injOn hinj, hσ, hAB] at hbound
 
