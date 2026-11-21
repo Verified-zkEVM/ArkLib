@@ -15,11 +15,11 @@ private instance : Fact (Nat.Prime 3) := ⟨by decide⟩
 
 private noncomputable instance : Fintype (GaloisField 3 2) := Fintype.ofFinite _
 
--- The hyperplane `x₁ = 0` holds exactly `3 = 3²⁻¹` points of the grid `F₃²`, so (7.1) is tight.
+-- The hyperplane `x₁ = 0` contains three points of `F₃²` and attains the grid bound.
 example : #{z : Fin 2 → ZMod 3 | ![1, 0] ⬝ᵥ gridPoint (ZMod 3) z = 0} = 3 := by
   decide
 
--- The bound (7.1) on the proper subfield grid `F₃² ⊆ F₉²`.
+-- The hyperplane bound on the proper subfield grid `F₃² ⊆ F₉²`.
 open Classical in
 example (a : Fin 2 → GaloisField 3 2) (ha : a ≠ 0) (b : GaloisField 3 2) :
     #{z : Fin 2 → ZMod 3 | a ⬝ᵥ gridPoint (GaloisField 3 2) z = b} ≤ 3 := by
