@@ -37,7 +37,7 @@ The coefficient formulas and the polynomial-root reconstruction give Lemma 3.11 
 multipliers.
 Appendix A uses the multipliers `y + ∑ⱼ vⱼ θⱼ(W)` with `θⱼ(0) = 0`.
 This is the family `(1, θ₁, …, θ_k)` at the coefficient vector `(y, v)`.
-The existence and uniqueness of its formal power series are not stated here.
+The sibling module `TaylorSeries` proves existence and uniqueness for the family `(1, X)`.
 The reconstruction map, the cuts and their degree budget implement the map and hyperplanes
 used in Claim 4.9.
 The bound of `ReedSolomon.totalDegree_chartNumerator_le_of_pos` also covers `h = 0`.

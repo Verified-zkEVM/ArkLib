@@ -194,7 +194,7 @@ The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
 with subtractions in `ℕ`.
 The left sum counts constraints for every `s < m`.
-The parameter choice of Section 4.1 satisfies this condition at `e = 1`. -/
+`AffineParams.surplus` proves the condition for the chosen parameters at `e = 1`. -/
 theorem affineMcaError_le_of_interpolation [Fintype F] (domain : ι ↪ F) {d m D M : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))

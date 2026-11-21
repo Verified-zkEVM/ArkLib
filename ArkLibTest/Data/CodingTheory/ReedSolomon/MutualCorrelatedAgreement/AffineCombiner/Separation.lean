@@ -25,6 +25,11 @@ private def sixDomain : Fin 6 ↪ ZMod 7 :=
     rwa [ZMod.val_natCast, ZMod.val_natCast, Nat.mod_eq_of_lt (by omega),
       Nat.mod_eq_of_lt (by omega)] at this)⟩
 
+-- The word `x + α` has one zero for each challenge over the full field.
+/-- info: true -/
+#guard_msgs in
+#eval (exactZeroChallenges (fun x : ZMod 5 ↦ x) (fun _ ↦ 1) 1).card == 5
+
 /-- Without loss, the affine error at `d = 1`, `A = 3` on `F₅` is at least `12 / 25`. -/
 example : (12 : ENNReal) / 25 ≤ affineMcaError fullDomain 1 3 0 := by
   have h := le_affineMcaError_zero_loss fullDomain (d := 1) (A := 3) (by norm_num)
@@ -40,14 +45,14 @@ example : (2 : ENNReal) / 5 ≤ scalarMcaError fullDomain 0 3 1 := by
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
 
--- Proposition 6.1 at `d = 0`, `A = 4`, `s = 1` on six points of `F₇`:
+-- On six points of `F₇` at `d = 0`, `A = 4`, and `s = 1`:
 -- the exact count is `1 + ⌊(6 - 4) / 2⌋ = 2` challenges with exactly four agreements.
 open Polynomial Finset in
 example : ∃ f g : Fin 6 → ZMod 7,
     (∀ G : (ZMod 7)[X], G.degree ≤ 0 → #(polynomialAgreementSet sixDomain g G) < 3) ∧
     (∀ α : ZMod 7, #(polynomialAgreementSet sixDomain (combinedWord sixDomain f g (C α)) 0) = 4 →
       IsScalarExceptional sixDomain f g 0 4 1 α 0) ∧
-    2 ≤ #(exactZeroChallenges sixDomain f g 4) :=
+    2 ≤ #(exactZeroChallenges f g 4) :=
   exists_words_forall_isScalarExceptional_zero sixDomain (d := 0) (A := 4) (s := 1)
     (by norm_num) (by simp)
 
@@ -57,21 +62,21 @@ example : ∃ f g : ZMod 7 → ZMod 7,
     (∀ G : (ZMod 7)[X], G.degree ≤ 1 → #(polynomialAgreementSet (.refl _) g G) < 3) ∧
     (∀ α : ZMod 7, #(polynomialAgreementSet (.refl _) (combinedWord (.refl _) f g (C α)) 0) = 4 →
       IsScalarExceptional (.refl _) f g 1 4 1 α 0) ∧
-    2 ≤ #(exactZeroChallenges (.refl _) f g 4) :=
+    2 ≤ #(exactZeroChallenges f g 4) :=
   exists_words_forall_isScalarExceptional_zero (.refl _) (d := 1) (A := 4) (s := 1)
     (by norm_num) (by simp [ZMod.card])
 
--- The middle inequality of (6.1) on six points of `F₇`:
--- the error is at least `2 / 7`, the share of challenges with exactly four agreements.
+-- On six points of `F₇`, two challenges have exactly four agreements.
+-- Their probability gives the lower bound `2 / 7` on the scalar error.
 example : (2 : ENNReal) / 7 ≤ scalarMcaError sixDomain 0 4 1 := by
   obtain ⟨f, g, hfar, -, hcount⟩ :=
     exists_words_forall_isScalarExceptional_zero sixDomain (d := 0) (A := 4) (s := 1)
       (by norm_num) (by simp)
-  have h2 : (2 : ℝ) ≤ (exactZeroChallenges sixDomain f g 4).card := by exact_mod_cast hcount
+  have h2 : (2 : ℝ) ≤ (exactZeroChallenges f g 4).card := by exact_mod_cast hcount
   calc (2 : ENNReal) / 7 = ENNReal.ofReal ((2 : ℝ) / 7) := by
         rw [ENNReal.ofReal_div_of_pos (by norm_num)]
         norm_num
-    _ ≤ ENNReal.ofReal (((exactZeroChallenges sixDomain f g 4).card : ℝ) /
+    _ ≤ ENNReal.ofReal (((exactZeroChallenges f g 4).card : ℝ) /
         (Fintype.card (ZMod 7) : ℝ)) := by
         rw [ZMod.card, Nat.cast_ofNat]
         gcongr
