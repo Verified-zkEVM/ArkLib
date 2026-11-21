@@ -42,6 +42,10 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/NonpersistentCount.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Theorem.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/TaylorSeries.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Interleaved.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/InterleavedSampling.lean
+  - ArkLib/ToMathlib/Algebra/Polynomial/Pack.lean
+  - ArkLib/ToMathlib/FieldTheory/Finite/Extension.lean
 ---
 
 # CWYZ26
@@ -123,6 +127,9 @@ challenges in `K`, the counts use `q = |K|`.
 | Lemma 3.11, existence and uniqueness | `ReedSolomon.affineSeriesEquation`, `ReedSolomon.existsUnique_powerSeries_root`, `PowerSeries.existsUnique_constantCoeff_eq_and_eval_eq_zero`, `IsAdicComplete.exists_isRoot_sub_mem` | Over any field, a simple root `z` lifts to a unique series `z + E(W)` with `E(0) = 0`, where `W = X - t₀`. The equation `R(t₀ + W, α + β(t₀ + W), U)` is a polynomial over `K⟦W⟧`. The lift uses Hensel's lemma without monicity in an adically complete ring. |
 | Lemma 3.11, polynomial roots and (3.5) | `ReedSolomon.coe_taylor_eq_C_add_of_multiplierEval_eq_zero`, `ReedSolomon.coeff_eq_chartNumerator_div_of_constantCoeff_eq_zero`, `ReedSolomon.coeff_C_add_eq_chartCoefficient` | A polynomial root `P` with `P(t₀) = z` has Taylor expansion `z + E` at `t₀`. For `j ≥ 1`, `[W^j] E = N_j(α, β, z) / S(α, β, z)^(2j - 1)` with the chart numerator below. Both hold for any root `E` with `E(0) = 0`. |
 | Theorem 1.1 for base-field challenges, used in the proof of Theorem 5.2 | `ReedSolomon.exists_affineExceptional_finset_card_map_le` | Words over a finite field `E`, challenges from a subfield `K` through `φ : K →+* E`, and the same hypotheses. At most `4 |K| / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges in `K²` are exceptional. The domain lies in `E`, and no bound `n ≤ |K|` is needed. |
+| Proof of Theorem 5.2, interleaved agreement and error | `ReedSolomon.interleavedAgreementSet`, `ReedSolomon.interleavedAgreementLoss`, `ReedSolomon.IsInterleavedAffineExceptional`, `ReedSolomon.interleavedAffineMcaError`, `ReedSolomon.interleavedAffineMcaError_eq_iSup_prob` | `t` rows share one challenge and one set of lost points. A point is lost once if any row's witness fails there. At `t = 1` every definition equals its affine-combiner counterpart. |
+| Proof of Theorem 5.2, packing rows into `F_{q^t}` | `Polynomial.pack`, `Polynomial.degree_pack_le_iff`, `Polynomial.pack_injective`, `FiniteField.exists_basis_fin`, `ReedSolomon.IsInterleavedAffineExceptional.pack` | Rows are packed along a basis of the extension. An exceptional tuple packs to an exceptional word over the extension, with the same `d`, `A` and loss. |
+| Proof of Theorem 5.2, bound (5.7) | `ReedSolomon.exists_interleavedAffineExceptional_finset_card_le`, `ReedSolomon.interleavedAffineMcaError_le` | Under the Theorem 1.1 hypotheses, the interleaved error is at most `4/(ηq) + 2¹⁴n²/(ρ³η¹⁰q²)`, with no factor of `t`. |
 
 ## Port Ledger
 
@@ -142,7 +149,7 @@ A unit is deferred when the port plan postpones it.
 | 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficients and polynomial roots done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); existence, uniqueness and the coefficient formula for power series formalized in [#1519](https://github.com/Verified-zkEVM/ArkLib/pull/1519) |
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | The nonpersistent count for one factor, through an incidence bound on a hypersurface in three chart coordinates. The hypersurface takes the place of the cover of dimension at most two. The proof of the incidence bound inducts on dimension over the agreement cuts, in place of the agreement-hyperplane induction. The sum over factors is part of the unit 9 count | 2, 6, 7 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), except the floored Johnson factor of (4.13), which is open |
-| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | base-field counts formalized; packing, the interleaved bound and folding open |
+| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | base-field counts, packing and interleaved bound (5.7) formalized; folding open |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | formalized through Theorem 7.1 |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
@@ -272,7 +279,7 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-Unit 10 is deferred, so Theorem 5.2 has no formalization.
+The folding conclusion of Theorem 5.2 is open.
 The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
 The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
 `ReedSolomon.affineMcaError_le` covers it.
