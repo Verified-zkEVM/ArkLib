@@ -18,6 +18,12 @@ example : eval ![1, 4] (affineMultiplier (![1, 2, 3] : Fin 3 → ZMod 5)) = 0 :=
   rw [eval_affineMultiplier]
   decide
 
+-- Here the multiplier is `1 + 2 · 1 + 3 · 2 = 4` in `F₅`, so the output is `2 + 4 · 3 = 4`.
+/-- info: true -/
+#guard_msgs in
+#eval affineCombinedWord (K₀ := ZMod 5) (F := ZMod 5)
+  (fun _ ↦ 2) (fun _ ↦ 3) ![1, 2, 3] ![1, 2] == 4
+
 -- The multiplier has total degree at most one, so `F₀ + L_α G₀` keeps total degree `≤ d`.
 example (α : Fin 3 → ZMod 5) : (affineMultiplier α).totalDegree ≤ 1 :=
   totalDegree_affineMultiplier_le α

@@ -421,8 +421,7 @@ theorem eq_C_coeff_zero_of_mem_restrictWeightedDegree_zero {w : σ → ℕ} (hw 
     rw [notMem_support_iff.mp hm_support]
     exact (coeff_C_of_ne_zero (R := R) hm (p.coeff 0)).symm
 
-/-- The weight-zero bounded piece is a subalgebra.  This is the fixed-bound multiplication closure
-that remains valid without incorrectly claiming the same for a positive bound. -/
+/-- Polynomials whose monomials all have weight zero form a subalgebra. -/
 def weightedDegreeZeroSubalgebra (w : σ → ℕ) : Subalgebra R (MvPolynomial σ R) where
   carrier := restrictWeightedDegree (R := R) w 0
   add_mem' := (restrictWeightedDegree (R := R) w 0).add_mem
@@ -431,6 +430,7 @@ def weightedDegreeZeroSubalgebra (w : σ → ℕ) : Subalgebra R (MvPolynomial �
     rw [algebraMap_eq]
     exact C_mem_restrictWeightedDegree w 0 r
 
+/-- The underlying submodule is the weight-zero part. -/
 @[simp]
 theorem mem_weightedDegreeZeroSubalgebra {w : σ → ℕ} {p : MvPolynomial σ R} :
     p ∈ weightedDegreeZeroSubalgebra (R := R) w ↔
@@ -457,6 +457,7 @@ def restrictWeightedDegreeCoeff (w : σ → ℕ) (d : ℕ)
     restrictWeightedDegree (R := R) w d →ₗ[R] R :=
   lcoeff R m ∘ₗ Submodule.subtype _
 
+/-- The restricted projection returns the polynomial coefficient. -/
 @[simp]
 theorem restrictWeightedDegreeCoeff_apply (w : σ → ℕ) (d : ℕ)
     (m : {m : σ →₀ ℕ // m.weight w ≤ d})
