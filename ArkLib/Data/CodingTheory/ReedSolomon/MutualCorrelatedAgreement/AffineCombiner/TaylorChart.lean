@@ -229,38 +229,28 @@ theorem aeval_affineChartSeparant (c : E) (R : MvPolynomial AffineVar E)
         (pderiv none R) := by
   rw [affineChartSeparant_eq, ← affineChartEquation_eq, aeval_affineChartEquation]
 
-/-- Evaluating a line evaluation at `c` evaluates `R` at `(c, α + β c, P(c))`. -/
-theorem eval_affineLineEval (c α β : E) (P : Polynomial E) (R : MvPolynomial AffineVar E) :
-    (affineLineEval α β P R).eval c =
-      aeval (fun v ↦ v.elim (P.eval c) ![c, α + β * c]) R := by
-  rw [← Polynomial.coe_aeval_eq_eval, affineLineEval, ← AlgHom.comp_apply, comp_aeval]
-  congr 2
-  funext v
-  rcases v with _ | ⟨i⟩
-  · simp
-  · fin_cases i <;> simp [affineMultiplier]
-
 /-- At the point of a root, the chart equation is the line evaluation at `c`. -/
 theorem aeval_affineChartEquation_point (c : E) (R : MvPolynomial AffineVar E) (s : ℕ)
     (a b : E) (P : Polynomial E) :
     aeval (affineChartPoint c s a b P) (affineChartEquation c R) =
-      (affineLineEval a b (Polynomial.expand E s P) R).eval c := by
-  rw [aeval_affineChartEquation, eval_affineLineEval]
+      (multiplierEval (affineMultiplier a b) (Polynomial.expand E s P) R).eval c := by
+  rw [aeval_affineChartEquation, eval_multiplierEval, eval_affineMultiplier]
   rfl
 
 /-- At the point of a root, the chart separant is the line evaluation of `R_Z` at `c`. -/
 theorem aeval_affineChartSeparant_point (c : E) (R : MvPolynomial AffineVar E) (s : ℕ)
     (a b : E) (P : Polynomial E) :
     aeval (affineChartPoint c s a b P) (affineChartSeparant c R) =
-      (affineLineEval a b (Polynomial.expand E s P) (pderiv none R)).eval c := by
-  rw [aeval_affineChartSeparant, eval_affineLineEval]
+      (multiplierEval (affineMultiplier a b) (Polynomial.expand E s P)
+        (pderiv none R)).eval c := by
+  rw [aeval_affineChartSeparant, eval_multiplierEval, eval_affineMultiplier]
   rfl
 
 /-- The specialized line equation along `P` is `R(X, a + b X, P)`. -/
 theorem differentialSpecialization_affineSpecializedLine (R : MvPolynomial AffineVar E)
     (ab : Fin 2 → E) (P : Polynomial E) :
     differentialSpecialization (affineSpecializedLine R ab) P =
-      affineLineEval (ab 0) (ab 1) P R := by
+      multiplierEval (affineMultiplier (ab 0) (ab 1)) P R := by
   unfold affineSpecializedLine affineLineEquation differentialSpecialization
   induction R using MvPolynomial.induction_on with
   | C a => simp
@@ -361,8 +351,9 @@ theorem affineChartCut_eq_zero_iff (c : E) (R : MvPolynomial AffineVar E) {s d �
 If `deg P ≤ d`, the reconstruction at the point of the root is `P`. -/
 theorem affineChartPolynomial_point (c : E) (R : MvPolynomial AffineVar E) {p e s d : ℕ}
     [ExpChar E p] (hs : s = p ^ e) {a b : E} {P : Polynomial E} (hP : P.degree ≤ d)
-    (hroot : affineLineEval a b (Polynomial.expand E s P) R = 0)
-    (hsep : (affineLineEval a b (Polynomial.expand E s P) (pderiv none R)).eval c ≠ 0) :
+    (hroot : multiplierEval (affineMultiplier a b) (Polynomial.expand E s P) R = 0)
+    (hsep : (multiplierEval (affineMultiplier a b) (Polynomial.expand E s P)
+      (pderiv none R)).eval c ≠ 0) :
     affineChartPolynomial c R s d (affineChartPoint c s a b P) = P := by
   set pt := affineChartPoint c s a b P
   have hab : pt ∘ Sum.inr = ![a, b] := rfl
