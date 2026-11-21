@@ -12,67 +12,31 @@ public import
 /-!
 # Folding many received words with shared equal-degree challenges
 
-Start with `k = 2^r` received words.
-Each round pairs the rows and combines every pair with the equal-degree combiner.
-All pairs of a round share one fresh challenge `(θ, α, β)`.
-After `r` rounds a single word remains.
+Each round combines adjacent even-odd pairs using the same challenge `(θ, α, β)`.
+After `r` rounds there is one word, with candidate degree bound `d + r`.
+Outside bad rounds, recovering the witnesses backward loses at most one shared agreement
+per round. Each round's input depends only on previous challenges, so the probability of
+failure is at most `r ε` if every round has interleaved error at most `ε`.
 
-Rows are indexed from zero.
-The paper indexes rows from one.
-Its new row `i` is `f_{2i} + (α + β z)(f_{2i-1} + θ f_{2i})`.
-Here row `2i` plays the role of the paper's `f_{2i-1}`, and row `2i + 1` that of `f_{2i}`.
-So the new row `i` is `f_{2i+1} + (α + β z)(f_{2i} + θ f_{2i+1})`.
-
-Round `j`, counted from one, raises the candidate degree bound from `d + j - 1` to `d + j`.
-It is bad when the one-round interleaved equal-degree guarantee fails for its input words.
-That guarantee uses degree bound `d + j`, threshold `A` and shared loss one.
-
-Outside bad rounds, work backward from a candidate `P` of degree at most `d + r`.
-Each round recovers the parent rows and loses at most one shared agreement point.
-So `P` has witnesses of degree at most `d` that fold to `P` and lose at most `r` points.
-The statement keeps the paper's `|S| ≥ A + r`.
-The proof works with `A + r - 1` points.
-The point lost when recovering the first round is never needed again.
-
-Each round's input words depend only on the earlier challenges.
-So a union bound gives failure probability at most `r ε`.
-Here `ε` bounds the interleaved equal-degree error of every round.
-
-This is Theorem 5.2 of [CWYZ26], with the round errors as a hypothesis.
-The paper assumes `k ≥ 2`; the statements here also hold for `r = 0`.
-The explicit value of `ε` for one round comes from the explicit interleaved equal-degree bound.
-The linear-claims extension of Remark 5.3 is not formalized here.
-The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
-
-The errors have type `ENNReal` and counting definitions that require no sampler.
-The sibling sampling module identifies it with a supremum of native probabilities.
-The fold of words is computable.
-The polynomial fold is noncomputable because the affine multiplier is.
+This is Theorem 5.2 of [CWYZ26] with the round errors as a hypothesis. The statements also
+cover zero rounds. See the [paper page](../../../../../../docs/kb/papers/CWYZ26.md) for the
+correspondence.
 
 ## Main definitions
 
-* `ReedSolomon.evenRows`, `ReedSolomon.oddRows` and `ReedSolomon.interleaveRows`: splitting
-  and merging `2^(m+1)` rows.
-* `ReedSolomon.foldRoundWords` and `ReedSolomon.foldRoundPolynomials`: one folding round.
-* `ReedSolomon.foldWords` and `ReedSolomon.foldPolynomials`: `r` folding rounds.
-* `ReedSolomon.HasBadFoldingRound`: some round of the folding is bad.
-* `ReedSolomon.IsFoldingExceptional`: the failure event of Theorem 5.2.
-* `ReedSolomon.badFoldingRoundError`: the uniform probability that some round is bad.
-* `ReedSolomon.foldingMcaError`: the uniform probability that the folding fails.
+* `ReedSolomon.foldWords`: fold received words by evaluating the combiner at each point.
+* `ReedSolomon.foldPolynomials`: the corresponding fold of Mathlib polynomials. Use
+  `ReedSolomon.Computable.foldPolynomials` in the sibling `FoldingComputable` module to
+  execute the fold on CompPoly polynomials.
+* `ReedSolomon.foldingMcaError`: the worst-case uniform probability of a folding failure.
+  It quantifies over bounded polynomial witnesses.
 
 ## Main statements
 
-* `ReedSolomon.evenRows_interleaveRows` and `ReedSolomon.oddRows_interleaveRows`: merging
-  inverts splitting.
-* `ReedSolomon.exists_eq_evenRows_or_eq_oddRows`: every row is an even or an odd row.
-* `ReedSolomon.exists_foldPolynomials_eq_of_not_hasBadFoldingRound`: outside bad rounds,
-  every close candidate has witnesses that fold to it.
-* `ReedSolomon.IsFoldingExceptional.hasBadFoldingRound`: a failure forces a bad round.
-* `ReedSolomon.le_badFoldingRoundError`, `ReedSolomon.badFoldingRoundError_le_one`,
-  `ReedSolomon.le_foldingMcaError` and `ReedSolomon.foldingMcaError_le_one`: basic bounds.
-* `ReedSolomon.badFoldingRoundError_le_mul`: the union bound `r ε`.
-* `ReedSolomon.foldingMcaError_le_badFoldingRoundError` and
-  `ReedSolomon.foldingMcaError_le_mul`: Theorem 5.2 in counting form.
+* `ReedSolomon.exists_foldPolynomials_eq_of_not_hasBadFoldingRound`: recover witnesses
+  outside bad rounds.
+* `ReedSolomon.badFoldingRoundError_le_mul`: the union bound over the rounds.
+* `ReedSolomon.foldingMcaError_le_mul`: bound the folding error using the round errors.
 
 ## References
 
@@ -103,11 +67,13 @@ def interleaveRows (u v : Fin (2 ^ m) → M) (j : Fin (2 ^ (m + 1))) : M :=
   if (j : ℕ) % 2 = 0 then u ⟨j / 2, by have := j.isLt; have := pow_succ 2 m; omega⟩
   else v ⟨j / 2, by have := j.isLt; have := pow_succ 2 m; omega⟩
 
+/-- The even rows recover the first input to interleaving. -/
 @[simp]
 theorem evenRows_interleaveRows (u v : Fin (2 ^ m) → M) : evenRows (interleaveRows u v) = u := by
   funext i
   simp [evenRows, interleaveRows]
 
+/-- The odd rows recover the second input to interleaving. -/
 @[simp]
 theorem oddRows_interleaveRows (u v : Fin (2 ^ m) → M) : oddRows (interleaveRows u v) = v := by
   funext i
@@ -123,6 +89,13 @@ theorem exists_eq_evenRows_or_eq_oddRows (v : Fin (2 ^ (m + 1)) → M) (j : Fin 
   rcases Nat.mod_two_eq_zero_or_one j with h | h
   · exact Or.inl (congrArg v (Fin.ext (by simp only; omega)))
   · exact Or.inr (congrArg v (Fin.ext (by simp only; omega)))
+
+/-- Apply `r` rounds of a row operation, reducing `2^r` input rows to one. -/
+def foldRows {C : Type*}
+    (round : ∀ {m : ℕ}, C → (Fin (2 ^ (m + 1)) → M) → Fin (2 ^ m) → M) :
+    (r : ℕ) → (Fin r → C) → (Fin (2 ^ r) → M) → M
+  | 0, _, u => u 0
+  | r + 1, c, u => foldRows round r (Fin.tail c) (round (c 0) u)
 
 end Rows
 
@@ -144,15 +117,15 @@ noncomputable def foldRoundPolynomials (c : F × F × F) (P : Fin (2 ^ (m + 1)) 
 
 /-- The single word left after `r` folding rounds of `2^r` received words.
 Round `j`, counted from zero, uses the challenge `c j`. -/
-def foldWords (domain : ι ↪ F) : (r : ℕ) → (Fin r → F × F × F) → (Fin (2 ^ r) → ι → F) → ι → F
-  | 0, _, f => f 0
-  | r + 1, c, f => foldWords domain r (Fin.tail c) (foldRoundWords domain (c 0) f)
+def foldWords (domain : ι ↪ F) (r : ℕ) (c : Fin r → F × F × F)
+    (f : Fin (2 ^ r) → ι → F) : ι → F :=
+  foldRows (foldRoundWords domain) r c f
 
 /-- The single polynomial left after `r` folding rounds of `2^r` polynomials.
 Round `j`, counted from zero, uses the challenge `c j`. -/
-noncomputable def foldPolynomials : (r : ℕ) → (Fin r → F × F × F) → (Fin (2 ^ r) → F[X]) → F[X]
-  | 0, _, P => P 0
-  | r + 1, c, P => foldPolynomials r (Fin.tail c) (foldRoundPolynomials (c 0) P)
+noncomputable def foldPolynomials (r : ℕ) (c : Fin r → F × F × F)
+    (P : Fin (2 ^ r) → F[X]) : F[X] :=
+  foldRows foldRoundPolynomials r c P
 
 /-- Some round of the folding of `2^r` received words with the challenges `c` is bad.
 

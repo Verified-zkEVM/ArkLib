@@ -83,8 +83,9 @@ variable {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] {t : �
 /-- The points where every row `P r` agrees with `g r + (α + β x)(f r + θ g r)`. -/
 def interleavedEqualDegreeAgreementSet (domain : ι ↪ F) (f g : Fin t → ι → F) (θ α β : F)
     (P : Fin t → F[X]) : Finset ι :=
-  {i | ∀ r, (P r).eval (domain i) = equalDegreeWord domain (f r) (g r) θ α β i}
+  interleavedPolynomialAgreementSet domain (fun i r ↦ equalDegreeWord domain (f r) (g r) θ α β i) P
 
+/-- A position agrees exactly when every combined row agrees there. -/
 @[simp]
 theorem mem_interleavedEqualDegreeAgreementSet (domain : ι ↪ F) (f g : Fin t → ι → F)
     (θ α β : F) (P : Fin t → F[X]) (i : ι) :
@@ -98,6 +99,7 @@ def interleavedEqualDegreeAgreementLoss (domain : ι ↪ F) (f g : Fin t → ι 
   (interleavedEqualDegreeAgreementSet domain f g θ α β P).filter fun i ↦
     ∃ r, (F₀ r).eval (domain i) ≠ f r i ∨ (G₀ r).eval (domain i) ≠ g r i
 
+/-- An agreeing position is lost if either witness differs from its received word in any row. -/
 @[simp]
 theorem mem_interleavedEqualDegreeAgreementLoss (domain : ι ↪ F) (f g : Fin t → ι → F)
     (θ α β : F) (P F₀ G₀ : Fin t → F[X]) (i : ι) :
@@ -244,6 +246,7 @@ noncomputable def badInterleavedEqualDegreeChallenges [Fintype F] (domain : ι �
     (∃ r, (G₀ r).degree = d) ∧ (∀ r, (F₀ r).coeff d + θ * (G₀ r).coeff d = 0) ∧
     L ≤ #(interleavedCommonAgreementSet domain f g F₀ G₀)}
 
+/-- A challenge is bad if it admits an exceptional family of candidate polynomials. -/
 @[simp]
 theorem mem_badInterleavedEqualDegreeChallenges [Fintype F] (domain : ι ↪ F)
     (f g : Fin t → ι → F) (d L : ℕ) (θ : F) :
