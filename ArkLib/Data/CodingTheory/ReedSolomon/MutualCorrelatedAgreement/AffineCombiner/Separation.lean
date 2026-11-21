@@ -33,13 +33,26 @@ If `d + s + 1 < A`, no polynomial of degree at most `d` agrees with `g` on `A - 
 Partition the remaining coordinates into blocks of size `s + 1`, with a smaller final block
 if necessary, and give each block a distinct challenge `γ`.
 On that block set `f = -γ g`.
-Each full block makes the zero candidate agree on at least `A` positions without witnesses
-of loss at most `s`.
+Since `g` vanishes only on the first set, the zero candidate agrees on that set and the block.
+Each full block thus gives exactly `A` agreements and no witness of loss at most `s`.
+Proposition 6.1 asserts these facts, and the error bound is their consequence.
+
+## Main definitions
+
+* `ReedSolomon.exactZeroChallenges`: the challenges whose combined word has exactly `A` zeros.
+
+The set is noncomputable because it is phrased through the constant polynomial `C α`.
 
 ## Main statements
 
 * `ReedSolomon.le_affineMcaError_zero_loss`: the bound `(n - A + 1)(q - 1) / q²`.
 * `ReedSolomon.le_affineMcaError_zero_loss_div_two`: the bound `(n - A + 1) / (2q)`.
+* `ReedSolomon.isScalarExceptional_of_forall_card_lt`: if `g` is far from the code, every
+  candidate with `A` agreements is scalar exceptional.
+* `ReedSolomon.le_scalarMcaError_of_forall_card_lt`: for such words, the error is at least the
+  probability that `f + α g` has exactly `A` zeros.
+* `ReedSolomon.exists_words_forall_isScalarExceptional_zero`: the words of Proposition 6.1,
+  with `1 + ⌊(n - A) / (s + 1)⌋` challenges of exactly `A` agreements, all exceptional.
 * `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt`:
   the bound `(1 + ⌊(n - A) / (s + 1)⌋) / q`.
 
@@ -184,13 +197,78 @@ theorem le_affineMcaError_zero_loss_div_two [Fintype F] (domain : ι ↪ F) {d A
   nlinarith [mul_nonneg (mul_nonneg hN (by linarith : (0 : ℝ) ≤ Fintype.card F))
     (by linarith : (0 : ℝ) ≤ Fintype.card F - 2)]
 
-/-- If `d + s + 1 < A ≤ n`, the scalar error at loss `s` is at least
-`(1 + ⌊(n - A) / (s + 1)⌋) / q`, where `n = |ι|` and `q = |F|`. -/
-theorem le_scalarMcaError_of_degree_add_loss_add_one_lt [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
-    (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
-    ENNReal.ofReal (((1 + (Fintype.card ι - A) / (s + 1) : ℕ) : ℝ) /
-        (Fintype.card F : ℝ)) ≤
+/-- The challenges `α` for which the word `f + α g` has exactly `A` zeros on the domain. -/
+noncomputable def exactZeroChallenges [Fintype F] (domain : ι ↪ F) (f g : ι → F) (A : ℕ) :
+    Finset F :=
+  {α : F | #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A}
+
+/-- A challenge lies in the set exactly when its combined word has `A` zeros. -/
+@[simp] theorem mem_exactZeroChallenges [Fintype F] (domain : ι ↪ F) (f g : ι → F) (A : ℕ)
+    (α : F) : α ∈ exactZeroChallenges domain f g A ↔
+      #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A := by
+  simp [exactZeroChallenges]
+
+/-- Suppose no polynomial of degree at most `d` agrees with `g` on `A - s` domain points.
+
+Let `P` have degree at most `d` and agree with `f + α g` on at least `A` points.
+
+Then `P` is scalar exceptional for `α` at threshold `A` and loss `s`. -/
+theorem isScalarExceptional_of_forall_card_lt (domain : ι ↪ F) {f g : ι → F}
+    {d A s : ℕ} (hfar : ∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s)
+    {α : F} {P : F[X]} (hP : P.degree ≤ d)
+    (hA : A ≤ #(polynomialAgreementSet domain (combinedWord domain f g (C α)) P)) :
+    IsScalarExceptional domain f g d A s α P := by
+  refine ⟨hP, hA, fun F₀ G₀ _ hG ⟨_, hloss⟩ ↦ ?_⟩
+  -- Off the lost points, the witness `G₀` agrees with `g`.
+  have hsplit := card_filter_add_card_filter_not
+    (s := polynomialAgreementSet domain (combinedWord domain f g (C α)) P)
+    fun i ↦ F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i
+  have hkept : #((polynomialAgreementSet domain (combinedWord domain f g (C α)) P).filter
+      fun i ↦ ¬(F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i)) ≤
+      #(polynomialAgreementSet domain g G₀) := by
+    refine card_le_card fun i hi ↦ ?_
+    simp only [mem_filter, ne_eq, not_or, not_not] at hi
+    simp [hi.2.2]
+  have := hfar G₀ hG
+  unfold agreementLoss at hloss
+  omega
+
+/-- Suppose no polynomial of degree at most `d` agrees with `g` on `A - s` domain points.
+
+Let `q = |F|` be the field size.
+
+Let `E` be the set of challenges `α` for which `f + α g` has exactly `A` zeros.
+
+Then the scalar error at loss `s` is at least `|E| / q`. -/
+theorem le_scalarMcaError_of_forall_card_lt [Fintype F] (domain : ι ↪ F) {f g : ι → F}
+    {d A s : ℕ} (hfar : ∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s) :
+    ENNReal.ofReal ((#(exactZeroChallenges domain f g A) : ℝ) / (Fintype.card F : ℝ)) ≤
       scalarMcaError domain d A s := by
+  classical
+  refine le_trans ?_ (le_scalarMcaError domain d A s f g)
+  apply ENNReal.ofReal_le_ofReal
+  apply div_le_div_of_nonneg_right _ (by positivity)
+  have hsub : exactZeroChallenges domain f g A ⊆
+      ({α : F | ∃ P, IsScalarExceptional domain f g d A s α P} : Finset F) := fun α hα ↦
+    mem_filter.mpr ⟨mem_univ _, 0, isScalarExceptional_of_forall_card_lt domain hfar (by simp)
+      ((mem_exactZeroChallenges domain f g A α).mp hα).ge⟩
+  exact_mod_cast card_le_card hsub
+
+/-- received words separating scalar combiners.
+
+Let `n = |ι|` be the domain size and `q = |F|` the field size.
+Assume `d + s + 1 < A ≤ n`.
+There are words `f, g` such that no polynomial of degree `≤ d` agrees with `g` on `A - s` points.
+Let `α` be a challenge for which the word `f + α g` has exactly `A` zeros.
+Then the zero candidate is scalar exceptional for `α` at threshold `A` and loss `s`.
+At least `1 + ⌊(n - A) / (s + 1)⌋` challenges give exactly `A` zeros. -/
+theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι ↪ F)
+    {d A s : ℕ} (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
+    ∃ f g : ι → F,
+      (∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s) ∧
+      (∀ α : F, #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A →
+        IsScalarExceptional domain f g d A s α 0) ∧
+      1 + (Fintype.card ι - A) / (s + 1) ≤ #(exactZeroChallenges domain f g A) := by
   classical
   set n := Fintype.card ι
   set pos : ι → ℕ := fun i ↦ (Fintype.equivFin ι i : ℕ)
@@ -201,12 +279,19 @@ theorem le_scalarMcaError_of_degree_add_loss_add_one_lt [Fintype F] (domain : ι
     have : k * (s + 1) = (s + 1) + (n - A) / (s + 1) * (s + 1) := by rw [hk]; ring
     omega
   -- The vanishing polynomial `V` of the first `m` coordinates is the second received word.
-  set C := univ.filter fun i : ι ↦ pos i ∈ range m
-  have hCcard : #C = m := by
+  set C₀ := univ.filter fun i : ι ↦ pos i ∈ range m
+  have hCcard : #C₀ = m := by
     rw [card_filter_equivFin_mem _ fun k hk ↦ by have := mem_range.mp hk; omega, card_range]
-  set V : F[X] := Lagrange.nodal C domain
+  set V : F[X] := Lagrange.nodal C₀ domain
   have hVdeg : V.natDegree = m := by rw [Lagrange.natDegree_nodal, hCcard]
   set g : ι → F := fun i ↦ V.eval (domain i)
+  have hg0 : ∀ i, g i = 0 ↔ pos i < m := by
+    intro i
+    refine ⟨fun h ↦ ?_, fun hi ↦ Lagrange.eval_nodal_at_node (by simpa [C₀] using hi)⟩
+    by_contra hi
+    refine Lagrange.eval_nodal_not_at_node (fun c hc hic ↦ hi ?_) h
+    rw [domain.injective hic]
+    simpa [C₀] using hc
   -- Distinct challenges, one per block of `s + 1` coordinates after the first `m`.
   set γ : ℕ → F := fun j ↦ if h : j < n then domain ((Fintype.equivFin ι).symm ⟨j, h⟩) else 0
   have hγ : Set.InjOn γ (range n) := by
@@ -215,73 +300,100 @@ theorem le_scalarMcaError_of_degree_add_loss_add_one_lt [Fintype F] (domain : ι
     have hj' : j' < n := mem_range.mp hj'
     simpa [γ, hj, hj'] using h
   set lab : ι → ℕ := fun i ↦ (pos i - m) / (s + 1)
+  have hlab : ∀ i, lab i < n := fun i ↦
+    (Nat.div_le_self _ _).trans_lt ((Nat.sub_le _ _).trans_lt (Fintype.equivFin ι i).isLt)
   set f : ι → F := fun i ↦ -(γ (lab i) * g i)
-  have hS : ∀ j i, pos i < m ∨ lab i = j →
-      i ∈ polynomialAgreementSet domain (combinedWord domain f g (Polynomial.C (γ j))) 0 := by
-    rintro j i (hi | rfl)
-    · have hg : g i = 0 := Lagrange.eval_nodal_at_node (by simpa [C] using hi)
-      simp [f, hg]
-    · simp [f]
-  have hcard : ∀ j < k, A ≤
-      #(polynomialAgreementSet domain (combinedWord domain f g (Polynomial.C (γ j))) 0) := by
+  -- No polynomial of degree at most `d < m` agrees with `V` on `m + 1` points.
+  have hfar : ∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s := by
+    intro G hG
+    by_contra hge
+    have hGd := natDegree_le_of_degree_le hG
+    have hzero : V - G = 0 := by
+      refine eq_zero_of_natDegree_lt_card_of_eval_eq_zero' _
+        ((polynomialAgreementSet domain g G).map domain) (fun x hx ↦ ?_) ?_
+      · obtain ⟨i, hi, rfl⟩ := mem_map.mp hx
+        rw [mem_polynomialAgreementSet] at hi
+        simp [g, hi]
+      · rw [card_map]
+        have := natDegree_sub_le V G
+        omega
+    rw [sub_eq_zero] at hzero
+    rw [hzero] at hVdeg
+    omega
+  -- The zeros of `f + γ_j g` are the first `m` coordinates and the block `j`.
+  have hzeros : ∀ j < n, ∀ i,
+      i ∈ polynomialAgreementSet domain (combinedWord domain f g (Polynomial.C (γ j))) 0 ↔
+        pos i < m ∨ lab i = j := by
+    intro j hj i
+    simp only [mem_polynomialAgreementSet, combinedWord, eval_zero, eval_C, f]
+    by_cases hi : pos i < m
+    · simp [(hg0 i).mpr hi, hi]
+    · have hgi : g i ≠ 0 := fun h ↦ hi ((hg0 i).mp h)
+      rw [show -(γ (lab i) * g i) + γ j * g i = (γ j - γ (lab i)) * g i by ring, eq_comm,
+        mul_eq_zero, sub_eq_zero]
+      simp only [hgi, or_false, hi, false_or]
+      exact ⟨fun h ↦ (hγ (mem_range.mpr hj) (mem_range.mpr (hlab i)) h).symm,
+        fun h ↦ by rw [h]⟩
+  have hcard : ∀ j < k,
+      #(polynomialAgreementSet domain (combinedWord domain f g (Polynomial.C (γ j))) 0) = A := by
     intro j hj
     have hjk : (j + 1) * (s + 1) ≤ k * (s + 1) := Nat.mul_le_mul_right _ hj
+    have hjn : j < n := by
+      have : k ≤ k * (s + 1) := Nat.le_mul_of_pos_right _ (by omega)
+      omega
     have hU : ∀ x ∈ range m ∪ Ico (m + j * (s + 1)) (m + (j + 1) * (s + 1)), x < n := by
       intro x hx
       rcases mem_union.mp hx with hx | hx
       · have := mem_range.mp hx; omega
       · have := mem_Ico.mp hx; omega
-    calc A = #(range m ∪ Ico (m + j * (s + 1)) (m + (j + 1) * (s + 1))) := by
+    calc _ = #{i : ι | pos i ∈ range m ∪ Ico (m + j * (s + 1)) (m + (j + 1) * (s + 1))} := by
+          congr 1
+          ext i
+          rw [hzeros j hjn i]
+          simp only [mem_filter, mem_univ, true_and, mem_union, mem_range, mem_Ico]
+          constructor
+          · rintro (hi | hi)
+            · exact Or.inl hi
+            · by_cases him : pos i < m
+              · exact Or.inl him
+              · have h1 := Nat.div_mul_le_self (pos i - m) (s + 1)
+                have h2 := Nat.lt_div_mul_add (a := pos i - m) (b := s + 1) (by omega)
+                simp only [lab] at hi
+                rw [hi] at h1 h2
+                refine Or.inr ⟨by omega, ?_⟩
+                rw [add_mul, one_mul]
+                omega
+          · rintro (hi | hi)
+            · exact Or.inl hi
+            · exact Or.inr (Nat.div_eq_of_lt_le (by omega) (by omega))
+      _ = #(range m ∪ Ico (m + j * (s + 1)) (m + (j + 1) * (s + 1))) :=
+          card_filter_equivFin_mem _ hU
+      _ = A := by
           rw [card_union_of_disjoint (disjoint_left.mpr fun x hx hx' ↦ by
             have := mem_range.mp hx; have := mem_Ico.mp hx'; omega), card_range, Nat.card_Ico]
           rw [add_mul]
           omega
-      _ = #{i : ι | pos i ∈ range m ∪ Ico (m + j * (s + 1)) (m + (j + 1) * (s + 1))} :=
-          (card_filter_equivFin_mem _ hU).symm
-      _ ≤ _ := by
-          refine card_le_card fun i hi ↦ hS j i ?_
-          simp only [mem_filter, mem_univ, true_and, mem_union, mem_range, mem_Ico] at hi
-          rcases hi with hi | hi
-          · exact Or.inl hi
-          · exact Or.inr (Nat.div_eq_of_lt_le (by omega) (by omega))
-  have hexc : ∀ j < k, IsScalarExceptional domain f g d A s (γ j) 0 := by
-    intro j hj
-    refine ⟨by simp, hcard j hj, ?_⟩
-    intro F₀ G₀ _ hG ⟨_, hloss⟩
-    -- The witness `G₀` agrees with `g` off the lost points, so on more than `m` points.
-    have hsplit := card_filter_add_card_filter_not
-      (s := polynomialAgreementSet domain (combinedWord domain f g (Polynomial.C (γ j))) 0)
-      fun i ↦ F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i
-    have hA := hcard j hj
-    have hloss' := hloss
-    unfold agreementLoss at hloss'
-    have hzero : V - G₀ = 0 := by
-      refine eq_zero_of_natDegree_lt_card_of_eval_eq_zero' _
-        (((polynomialAgreementSet domain (combinedWord domain f g (Polynomial.C (γ j))) 0).filter
-          fun i ↦ ¬(F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i)).map domain) ?_ ?_
-      · intro x hx
-        obtain ⟨i, hi, rfl⟩ := mem_map.mp hx
-        have hi := (mem_filter.mp hi).2
-        simp only [ne_eq, not_or, not_not] at hi
-        simp [g, hi.2]
-      · rw [card_map]
-        have := natDegree_sub_le V G₀
-        have := natDegree_le_of_degree_le hG
-        omega
-    have := natDegree_le_of_degree_le hG
-    rw [← sub_eq_zero.mp hzero, hVdeg] at this
+  refine ⟨f, g, hfar, fun α hα ↦ isScalarExceptional_of_forall_card_lt domain hfar
+    (by simp) hα.ge, ?_⟩
+  rw [← card_range k]
+  refine card_le_card_of_injOn γ (fun j hj ↦ ?_) (hγ.mono ?_)
+  · exact (mem_exactZeroChallenges domain f g A _).mpr (hcard j (mem_range.mp hj))
+  · intro j hj
+    simp only [coe_range, Set.mem_Iio] at hj ⊢
+    have : k ≤ k * (s + 1) := Nat.le_mul_of_pos_right _ (by omega)
     omega
-  refine le_trans ?_ (le_scalarMcaError domain d A s f g)
-  apply ENNReal.ofReal_le_ofReal
-  apply div_le_div_of_nonneg_right _ (by positivity)
-  have : k ≤ #(univ.filter fun c : F ↦ ∃ P, IsScalarExceptional domain f g d A s c P) := by
-    rw [← card_range k]
-    refine card_le_card_of_injOn γ (fun j hj ↦ ?_) (hγ.mono ?_)
-    · exact mem_filter.mpr ⟨mem_univ _, 0, hexc j (mem_range.mp hj)⟩
-    · intro j hj
-      simp only [coe_range, Set.mem_Iio] at hj ⊢
-      have : k ≤ k * (s + 1) := Nat.le_mul_of_pos_right _ (by omega)
-      omega
-  exact_mod_cast this
+
+/-- Let `n = |ι|` be the domain size and `q = |F|` the field size.
+
+If `d + s + 1 < A ≤ n`, the scalar error at loss `s` is at least `(1 + ⌊(n - A)/(s + 1)⌋) / q`. -/
+theorem le_scalarMcaError_of_degree_add_loss_add_one_lt [Fintype F] (domain : ι ↪ F) {d A s : ℕ}
+    (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
+    ENNReal.ofReal (((1 + (Fintype.card ι - A) / (s + 1) : ℕ) : ℝ) /
+        (Fintype.card F : ℝ)) ≤
+      scalarMcaError domain d A s := by
+  obtain ⟨f, g, hfar, -, hcount⟩ := exists_words_forall_isScalarExceptional_zero domain hdA hAn
+  refine le_trans (ENNReal.ofReal_le_ofReal ?_)
+    (le_scalarMcaError_of_forall_card_lt domain (f := f) hfar)
+  exact div_le_div_of_nonneg_right (by exact_mod_cast hcount) (by positivity)
 
 end ReedSolomon
