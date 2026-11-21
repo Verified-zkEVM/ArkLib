@@ -78,7 +78,7 @@ The embedding already implies `n ≤ q`.
 | Lemma 4.2, inequality (4.5), and §4.1 parameters | `ReedSolomon.AffineParams`, `ReedSolomon.AffineParams.surplus`, `ReedSolomon.AffineParams.bounds` | The formal sufficient surplus sums constraints over all `s < m`, whereas (4.5) stops at `min(m - 1, M)`. For `M ≥ 1` given by (4.1), the surplus is equivalent to (4.5). `AffineParams.surplus` proves the surplus for the chosen parameters. The surplus holds under `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`. The bounds give `3 ≤ m`, `D ≤ m A`, `d ≤ B < A ≤ n` and `n / (A - B) ≤ 2 / η`. |
 | Lemma 4.3, first condition | `ReedSolomon.affineNested`, `ReedSolomon.multiplierEval_eq_nested`, `ReedSolomon.card_filter_multiplierEval_eq_zero_le` | A nonzero `G` free of `Z` vanishes on at most `deg_Y G` multipliers of a family injective on a finite challenge set. Reed–Solomon uses the lines `α + β X`. |
 | Lemma 4.3, second condition | `ReedSolomon.affineDiscriminant`, `ReedSolomon.affineDiscriminant_ne_zero`, `ReedSolomon.natDegree_affineDiscriminant_le`, `ReedSolomon.multiplierEval_pderiv_ne_zero` | The `Z`-discriminant is a resultant with declared degrees. It stays valid when the line makes the leading `Z`-coefficient vanish. Its `Y`-degree is at most `h (h - 1)`. The simple-root statement needs `0 < deg_Z R`. |
-| Section 4, factorization: `Q_i(X^s, Y^s, Z) = R_i^s` | `ReedSolomon.exists_frobeniusFactor`, `ReedSolomon.map_affineMultiplier` | Over a perfect field of exponential characteristic `p`. The exponent is `s = p^e ≤ deg_Z Q`, and `R` keeps the `(Y, Z)`-degree bound. A root along a multiplier `L` gives a root along `L` with `s`-th-rooted coefficients. For a line this is `α^{1/s} + β^{1/s} X`. |
+| Section 4, factorization: `Q_i(X^s, Y^s, Z) = R_i^s` | `ReedSolomon.exists_frobeniusFactor`, `ReedSolomon.map_affineMultiplier` | Over a perfect field of exponential characteristic `p`. The exponent is `s = p^r ≤ deg_Z Q`, and `R` keeps the `(Y, Z)`-degree bound. A root along a multiplier `L` gives a root along `L` with `s`-th-rooted coefficients. For a line this is `α^{1/s} + β^{1/s} X`. |
 | Lemma 3.11, coefficients and polynomial-root case | `ReedSolomon.affineChartCoefficient`, `ReedSolomon.affineChartNumerator`, `ReedSolomon.affineChartPolynomial_point`, `ReedSolomon.totalDegree_affineChartNumerator_le` | At a center with nonzero separant, polynomial roots are reconstructed from the rational Taylor coefficients. The numerator bound is `1 + τ(h - 1)` for `2l - 1 ≤ τ`, where `h` is any upper bound on the `(Y, Z)`-degree. This interface does not state the paper's existence and uniqueness theorem for formal power series. |
 | Claim 4.9, chart map and agreement cuts | `ReedSolomon.affineChartPolynomial`, `ReedSolomon.affineChartCut`, `ReedSolomon.affineChartCut_eq_zero_iff`, `ReedSolomon.totalDegree_affineChartEquation_le`, `ReedSolomon.totalDegree_affineChartCut_le` | The three coordinates are `(y₀, a, b)`. The hypersurface has degree at most `h`, and the cuts have degree at most `2sdh` for `s = p^e` and positive `d`. `ChartIncidence.lean` uses these degree bounds to count nonpersistent challenges. |
 | Claim 4.8, case `c > B`, in the chart | `ReedSolomon.affineChartExcluded`, `ReedSolomon.regularLocus_subset_affineChartExcluded`, `ReedSolomon.isAffinePersistent_of_mem_affineChartExcluded` | A positive-dimensional prime with `B + 1` cuts has infinitely many regular points. Two of them lie on different challenges, since `B + 1 ≥ d + 1` cuts fix the reconstruction on a given challenge. The second triple lives over the algebraic closure, and the descent gives persistence over `F_q`. |
@@ -158,7 +158,7 @@ Unit 10 applies the equal-degree guarantee in each folding round.
 - [`AffineCombiner/LineRoots.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LineRoots.lean)
   counts vanishing lines and proves the discriminant and simple-root implications.
 - [`AffineCombiner/FrobeniusFactor.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FrobeniusFactor.lean)
-  normalizes an irreducible factor, exports `R^(p^e) = Q(X^(p^e), Y^(p^e), Z)`,
+  normalizes an irreducible factor, exports `R^(p^r) = Q(X^(p^r), Y^(p^r), Z)`,
   and transports roots along inverse-Frobenius challenges.
 - [`AffineCombiner/TaylorChart.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/TaylorChart.lean)
   reconstructs regular roots in three chart coordinates and bounds the cleared cuts.
@@ -234,7 +234,7 @@ These sets suffice for the Johnson bound because they are large and pairwise alm
 The proof of Claims 4.8 and 4.9 uses three chart coordinates `(y₀, a, b)` over the algebraic
 closure, rather than the paper's sets in `K^{d+3}` of dimension at most two.
 The chart hypersurface is `R(c, a + cb, y₀) = 0`, of degree at most `h`.
-Its agreement cuts have degree at most `2sdh`, where `s = p^e` is the Frobenius exponent.
+Its agreement cuts have degree at most `2sdh`, where `s = p^r` is the Frobenius exponent.
 `card_le_of_agreement_off_excluded_of_hypersurface` supplies the exponent two in the count.
 Thus `h(2sdh · n/(A - B))² = 4d²s²h³(n/(A - B))²`, matching the paper's degree budget
 `deg Vᵢ ≤ 4d²s²h³` times `v²`, with `v = n/(A - B)`.
@@ -260,7 +260,6 @@ The existence and uniqueness of formal power series in Lemma 3.11 have no Lean s
 
 `ReedSolomon.IsMultiplierInterpolant` omits the conclusion `1 ≤ deg_Z Q` of Lemma 4.2.
 The factor count treats the content free of `Z` separately and does not use this conclusion.
-The multiplier-degree generalization is in [#1542](https://github.com/Verified-zkEVM/ArkLib/pull/1542).
 
 `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation` and
 `ReedSolomon.affineMcaError_le_of_interpolation` differ from Theorem 4.10 in two ways.
