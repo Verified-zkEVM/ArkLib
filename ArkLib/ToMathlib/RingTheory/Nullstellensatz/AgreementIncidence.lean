@@ -518,9 +518,10 @@ theorem ncard_setOf_mem_lt_of_subsingleton [IsAlgClosed k] [Finite σ] [Finite �
   obtain ⟨T, hTsub, hTcard⟩ := Set.exists_subset_card_eq (not_lt.mp hm)
   have hreg : IsLeftRegular (Ideal.Quotient.mk Q s) :=
     IsLeftCancelMulZero.mul_left_cancel_of_ne_zero (mt Ideal.Quotient.eq_zero_iff_mem.mp hs)
-  have hfin : {x : σ → k | x ∈ zeroLocus k Q ∧ aeval x s ≠ 0}.Finite :=
-    ((hunique T.toFinite.toFinset (by rw [← Set.ncard_eq_toFinset_card]; exact hTcard)).anti
-      fun x hx ↦ ⟨hx.1, hx.2, fun i hi ↦ hx.1 _ (hTsub (by simpa using hi))⟩).finite
+  have hfin : {x : σ → k | x ∈ zeroLocus k Q ∧ aeval x s ≠ 0}.Finite := by
+    apply Set.Subsingleton.finite
+    apply (hunique T.toFinite.toFinset (by rw [← Set.ncard_eq_toFinset_card]; exact hTcard)).anti
+    exact fun x hx ↦ ⟨hx.1, hx.2, fun i hi ↦ hx.1 _ (hTsub (by simpa using hi))⟩
   have := (finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero hreg).mp hfin
   omega
 

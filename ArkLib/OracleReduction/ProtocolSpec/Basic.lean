@@ -910,10 +910,6 @@ def srVerifierMessageOracle (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n
 
 alias fsVerifierMessageOracle := srVerifierMessageOracle
 
--- Fiat-Shamir completeness rewrites computations under `srVerifierMessageOracle` handlers
--- using terms typed with `fsVerifierMessageOracle`.
-attribute [reducible] fsVerifierMessageOracle
-
 /-- Define the query implementation for the state-restoration / (slow) Fiat-Shamir oracle (returns a
     challenge given messages up to that point) in terms of `ProbComp`.
 

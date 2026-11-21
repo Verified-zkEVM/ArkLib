@@ -71,7 +71,7 @@ lemma polynomialOfCoeffs_eq_zero :
   constructor <;> intro h
   · intro x hx
     have : (polynomialOfCoeffs coeffs).coeff x = (0 : F[X]).coeff x := by rw [h]
-    simp only [polynomialOfCoeffs, ne_eq, coeff_ofFinsupp, Finsupp.coe_mk, coeff_zero,
+    simp only [polynomialOfCoeffs, ne_eq, Finsupp.coe_mk, coeff_zero,
       dite_eq_right_iff] at this
     exact this hx
   · ext m

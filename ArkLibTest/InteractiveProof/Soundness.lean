@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yuxi Zheng, Chung Thai Nguyen, Michele Orrù
 -/
 import ArkLib.InteractiveProof.Soundness
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Adaptive interactive soundness separation

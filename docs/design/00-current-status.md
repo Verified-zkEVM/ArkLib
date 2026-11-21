@@ -30,15 +30,16 @@ them yet, there is no interaction-layer rewinding extractor, and state restorati
 cover an adversary whose private randomness interleaves with its oracle queries (see
 [below](#interaction-layer-security)).
 
-No declaration under `ArkLib/` uses `sorry` outside the five solicited proofs recorded in
-`scripts/axiom_baseline.json` (coding-theory lower bounds, issue
+No declaration under `ArkLib/` uses `sorry` outside the two solicited proofs recorded in
+`scripts/axiom_baseline.json` (a correlated-agreement lower bound and a
+random-domain list-size upper bound, issue
 [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); none of those is under
 `ArkLib/Interaction/` or `ArkLib/ProofSystem/Sumcheck/`.
 
 ## Supported baseline
 
 The exact dependency revisions are in [`lake-manifest.json`](../../lake-manifest.json) and the
-toolchain in [`lean-toolchain`](../../lean-toolchain); the supported Lean version is `v4.35.0`.
+toolchain in [`lean-toolchain`](../../lean-toolchain); the supported Lean version is `v4.36.0`.
 
 | Repository | Role |
 |---|---|
@@ -56,6 +57,7 @@ boundaries use VCVio measure semantics.
 
 | Capability | Status | Primary evidence |
 |---|---|---|
+| Failure-to-return mass boundary | available | `evalDistWithFailure` in `PolyFun.Control.Monad.Measure.WithFailure` for `Terminal.observe` |
 | Typed interaction trees and complete paths | available | `Interaction.TypeTree`, `TypeTree.Path`, append and path execution |
 | Node contexts, schemas, and decorations | available | `TypeTree.Node.Context`, `TypeTree.Node.Schema`, decoration maps and context morphisms |
 | Syntax, shapes, strategies, and executions | available | `SyntaxOver`, `ShapeOver`, `StrategyOver`, `InteractionOver` |
@@ -95,14 +97,12 @@ commutativity assumption). It must not restore the legacy unrestricted compositi
 | Strict oracle-PPT certificates | available | reuse ranked resources and `HandlerCertificate` |
 | Shared-ROM Merkle extraction | available | adapt the primitive theorem; do not restate its game in ArkLib |
 | Runner-produced resumable execution artifact | available | `OracleRuntime`, `RunResult`, `run`, `resume`, `GeneratedBy` in `VCVio.OracleComp.Runtime`; used by `executeWithRuntime` |
-| Failure-to-return mass boundary | available | `evalDistWithFailure` in `VCVio.EvalDist.WithFailure`; used by `Terminal.observe` |
 | Certified query-trace transducer specialization | **missing** | waits on the generic PolyFun transducer |
 | General conditioning/dynamic-programming facade | not needed so far | the interaction-layer state-restoration proofs use the cached `randomOracle`, `IsTotalQueryBound` and its cost-distribution lemmas directly; add a facade only for a client that needs it |
 | Error-bearing and cost-bearing reduction package | incomplete | `ReductionWithCost` handles cost; later clients still need explicit additive/substitution error transport |
 
 Accept/reject/fault classification is protocol-level and lives in ArkLib (`Interaction.Terminal`).
-VCVio supplies only the separate failure-to-return mass, so the two kinds of absence are not
-identified.
+PolyFun supplies the failure-to-return mass observed by ArkLib.
 
 These gaps are integration boundaries, not permission to introduce ArkLib-private probability,
 trace, or cost semantics. The first client should either add the smallest upstream API or provide a

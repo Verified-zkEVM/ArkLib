@@ -411,7 +411,7 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
         (johnsonSourceSlotCount Xc D μ h : ℝ) := by
     rw [hsource]
     convert hsourceLower using 1
-    all_goals dsimp only [z]; push_cast; ring
+    dsimp only [z]; push_cast; ring
   have hcast : (johnsonRowSlotCount n m h : ℝ) <
       (johnsonSourceSlotCount Xc D μ h : ℝ) := by
     rw [hrow]
@@ -420,7 +420,7 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
             ((m : ℝ) ^ 3 - m) / 6) <
           (D : ℝ) * (dy * (dy + 1) / 2 * (z : ℝ) - (dy ^ 3 - dy) / 6) := by
       convert hmain using 1
-      all_goals dsimp only [z]; push_cast; ring
+      dsimp only [z]; push_cast; ring
     exact hmain'.trans_le hsourceLower'
   exact_mod_cast hcast
 

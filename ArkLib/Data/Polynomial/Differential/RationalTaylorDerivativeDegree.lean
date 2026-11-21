@@ -79,7 +79,7 @@ theorem degreeOf_rationalTaylorNumeratorOver_le
   have hsep := (degreeOf_initialJetSeparant_le center Q).trans
     (Nat.sub_le_sub_right hjet 1)
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     rw [rationalTaylorNumeratorOver]
     split_ifs with hl
     · have hdegree :

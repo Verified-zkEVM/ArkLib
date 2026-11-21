@@ -80,14 +80,15 @@ theorem galoisAut_one_eq (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
 
 /-- Composition law `σ_i ∘ σ_j = σ_{ij}` for odd `i` and arbitrary `j`. Proven on the semantic
 `aeval` side via the soundness bridge `galoisAut_toQuotient` and
-`aeval_X_pow_aeval_X_pow`. -/
+`Polynomial.expand_expand`. -/
 theorem galoisAut_comp (α i j : ℕ) (hi : Odd i)
     (a : Rq (powTwoCyclotomic (R := R) α)) :
     galoisAut (powTwoCyclotomic α) i (galoisAut (powTwoCyclotomic α) j a)
       = galoisAut (powTwoCyclotomic α) (i * j) a := by
   apply Rq.toQuotient_injective (powTwoCyclotomic α)
   rw [galoisAut_toQuotient α i hi, galoisAut_aeval_toQuotient α j, galoisAutₛ_mk,
-    galoisAut_aeval_toQuotient α (i * j), aeval_X_pow_aeval_X_pow]
+    galoisAut_aeval_toQuotient α (i * j)]
+  exact congrArg _ (Polynomial.expand_expand i j _)
 
 /-! ## The subgroup `H` as an exponent set -/
 

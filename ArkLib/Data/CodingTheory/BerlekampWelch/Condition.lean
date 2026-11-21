@@ -106,7 +106,7 @@ lemma E_and_Q_to_a_solution_coeff :
     E_and_Q_to_a_solution e E Q i = if i < e then E.coeff i else Q.coeff (i - e) := rfl
 
 def truncate (p : Polynomial F) (n : ℕ) : Polynomial F :=
-  Polynomial.ofFinsupp <| AddMonoidAlgebra.ofCoeff
+  AddMonoidAlgebra.ofCoeff
     ⟨p.support ∩ Finset.range n, fun i ↦ if i < n then p.coeff i else 0, by aesop⟩
 
 @[simp]
@@ -121,7 +121,7 @@ lemma truncate_zero_eq_zero : (truncate p 0) = 0 := by
 @[simp]
 lemma natDegree_truncate [φ : NeZero n] : (truncate p n).natDegree < n := by
   have : 0 < n := by rcases φ; omega
-  simp only [truncate, Polynomial.natDegree, Polynomial.degree]
+  simp only [truncate, Polynomial.natDegree, Polynomial.degree, Polynomial.support_ofCoeff]
   rw [WithBot.unbotD_lt_iff] <;>
   aesop (add simp [Finset.max]) (add safe [(by omega)])
 
@@ -219,7 +219,7 @@ lemma solutionToE_eq_polynomialOfCoeffs
 lemma eval_solutionToE {x : F} :
     eval x (solutionToE e k v) = x ^ e + ∑ y : Fin e, v ⟨y, by omega⟩ * x ^ y.1 := by
   suffices ∑ y ∈ Finset.range e, liftF v y * x ^ y = _ by
-    simp only [solutionToE, ne_eq, eval_eq_sum, sum_def, support_ofFinsupp, coeff_ofFinsupp,
+    simp only [solutionToE, ne_eq, eval_eq_sum, sum_def, support_ofCoeff,
       Finsupp.coe_mk, ite_mul, one_mul, zero_mul, Finset.mem_filter, Finset.mem_range,
       lt_self_iff_false, false_and, not_false_eq_true, Finset.sum_insert, ↓reduceIte,
       add_right_inj]
@@ -236,8 +236,8 @@ lemma coeff_solutionToE :
 @[simp]
 lemma natDegree_solutionToE :
     (solutionToE e k v).natDegree = e := by
-  simp only [natDegree, degree, solutionToE, ne_eq, support_ofFinsupp, Finset.max_insert]
-  rw [sup_eq_left.2 ] <;> try simp
+  simp only [natDegree, degree, solutionToE, ne_eq, support_ofCoeff, Finset.max_insert]
+  rw [sup_eq_left.2] <;> simp
   omega
 
 @[simp]
@@ -270,7 +270,7 @@ lemma solutionToQ_coeff :
 @[simp]
 lemma natDegree_solutionToQ :
     (solutionToQ e k v).natDegree ≤ e + k - 1 := by
-  simp only [natDegree, degree, solutionToQ, ne_eq, support_ofFinsupp]
+  simp only [natDegree, degree, solutionToQ, ne_eq, support_ofCoeff]
   rw [WithBot.unbotD_le_iff] <;>
   aesop (add safe (by omega))
 
@@ -279,7 +279,7 @@ lemma eval_solutionToQ_cast {x : F} (h : e = 0) :
   subst h
   simp only [solutionToQ, Nat.mul_zero, zero_add, ne_eq]
   rw [eval_eq_sum, sum_def]
-  simp only [support_ofFinsupp, coeff_ofFinsupp, Finsupp.coe_mk, ite_mul, zero_mul]
+  simp only [support_ofCoeff, Finsupp.coe_mk, ite_mul, zero_mul]
   rw [Finset.sum_filter]
   simp only [ite_not]
   exact Finset.sum_congr rfl (by aesop)
@@ -303,7 +303,7 @@ lemma eval_solutionToQ {x : F} :
 lemma eval_solutionToQ_zero {x : F} {v} : eval x (solutionToQ 0 k v) =
     ∑ a ∈ Finset.range k, liftF v a * x ^ a := by
   simp only [solutionToQ, Nat.mul_zero, zero_add, ne_eq, eval_eq_sum, sum_def,
-    support_ofFinsupp, coeff_ofFinsupp, Finsupp.coe_mk, ite_mul, zero_mul, Finset.sum_filter,
+    support_ofCoeff, Finsupp.coe_mk, ite_mul, zero_mul, Finset.sum_filter,
     ite_not]
   refine Finset.sum_congr rfl (by aesop)
 

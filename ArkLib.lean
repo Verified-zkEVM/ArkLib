@@ -2,7 +2,12 @@ module
 
 public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.Commitments.Functional.BitZ.Bitification
+public import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
+public import ArkLib.Commitments.Functional.BitZ.CrtVariant
 public import ArkLib.Commitments.Functional.BitZ.ExponentLift
+public import ArkLib.Commitments.Functional.BitZ.FixedWitnessError
+public import ArkLib.Commitments.Functional.BitZ.HonestMessages
 public import ArkLib.Commitments.Functional.BitZ.OutOfDomain
 public import ArkLib.Commitments.Functional.BitZ.Round1
 public import ArkLib.Commitments.Functional.BitZ.Round2
@@ -82,6 +87,7 @@ public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.Basic.Entropy
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.CodingTheory.Basic.MDSCode
+public import ArkLib.Data.CodingTheory.Basic.ParityCheck
 public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 public import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 public import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
@@ -255,7 +261,18 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Bas
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Centers
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pigeonhole
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.BerP
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Chernoff
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Defs
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Main
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.NotRare
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.ProductLaw
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.RowOrbit
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.SecondMoment
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Types
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
@@ -385,6 +402,42 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohn
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ChartIncidence
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Computable
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegree
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ExceptionalCount
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FrobeniusFactor
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Interpolation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterpolationParams
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineEvaluation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineRoots
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.PersistenceDescent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.RationalPair
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Separation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.SubspaceSeparation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.TaylorChart
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Theorem
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
@@ -531,6 +584,7 @@ public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
 public import ArkLib.Data.Equiv.FiberCycle
+public import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.Fin.BigOperators
@@ -608,7 +662,6 @@ public import ArkLib.Data.MvPolynomial.PrimeFingerprintProbability
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
-public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.Split
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
@@ -691,6 +744,7 @@ public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.Data.Polynomial.SplitFold
+public import ArkLib.Data.Polynomial.SubspacePolynomial
 public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
@@ -698,8 +752,11 @@ public import ArkLib.Data.Polynomial.TaylorPrefix
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
+public import ArkLib.Data.Probability.FiniteChernoff
+public import ArkLib.Data.Probability.FiniteEntropy
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
+public import ArkLib.Data.Probability.MaxEventProbability
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Core.Composition
@@ -1104,7 +1161,6 @@ public import ArkLib.Security.Game
 public import ArkLib.Security.PrivateCoins
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
-public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Arithmetic
 public import ArkLib.ToCompPoly.Univariate.ArithmeticConvolutionCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticCost
@@ -1116,8 +1172,6 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomial
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
-public import ArkLib.ToCompPoly.Univariate.Basic
-public import ArkLib.ToCompPoly.Univariate.Lagrange
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Size
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
@@ -1145,15 +1199,17 @@ public import ArkLib.ToMathlib.Control.MonadLift
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement
-public import ArkLib.ToMathlib.Finset.SumRangeFrom
 public import ArkLib.ToMathlib.Finset.ToListWithProof
 public import ArkLib.ToMathlib.Finsupp.Weight
+public import ArkLib.ToMathlib.GroupTheory.ElementaryAbelian
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.LagrangeLine
 public import ArkLib.ToMathlib.LinearAlgebra.LineInjectivity
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.KernelDescent
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Pivot
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
@@ -1169,6 +1225,7 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CoeffBound
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
+public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
@@ -1186,11 +1243,9 @@ public import ArkLib.ToMathlib.MvPolynomial.UnivariateSpecialization
 public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 public import ArkLib.ToMathlib.NumberTheory.Harmonic.Thresholds
 public import ArkLib.ToMathlib.Order.FloorHalf
-public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
 public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
-public import ArkLib.ToMathlib.Polynomial.EvalExt
 public import ArkLib.ToMathlib.Polynomial.EventualGrowth
 public import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor

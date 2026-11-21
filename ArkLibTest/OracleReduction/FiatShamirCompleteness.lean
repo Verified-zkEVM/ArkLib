@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.FiatShamir.Completeness
+import VCVio.ProgramLogic.Tactics
 
 /-!
 # Fixed default challenges do not preserve completeness error
@@ -79,14 +80,7 @@ theorem interactive_complete :
   erw [hr]
   simp only [OptionT.prEvent_mk, map_bind, map_pure, Option.elim_map,
     Set.mem_univ, and_self, Function.comp_def]
-  have he : (fun b : Bool => (if b = false then none else some ()).elim False
-      (fun _ => True)) = (fun b => b = true) := by
-    funext b
-    cases b <;> simp
-  change (1 - ↑(1 / 2 : ℝ≥0) : ℝ≥0∞) ≤
-    Pr{let b ← $ᵗ Bool}[(if b = false then none else some ()).elim False (fun _ => True)]
-  rw [he]
-  norm_num [SampleableType.prEvent_uniformSample_eq_singleton, Finset.filter_eq']
+  pvcgen
 
 /-- The conclusion of the old fixed-default completeness claim is false. -/
 theorem fixed_default_not_complete :

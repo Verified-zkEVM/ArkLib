@@ -64,7 +64,7 @@ lemma lin_shift_d [Field F] [Fintype F] :
   simp only [d, one_div, mul_inv_rev, ne_eq, Nat.cast_sum]
   rw [← lin_shift_card]
   congr 1
-  apply sum_bij (fun x _ => (x.1 - v, x.2 - v)) <;> try aesop
+  apply sum_bij (fun x _ => (x.1 - v, x.2 - v)) <;> aesop
 
 @[simp]
 lemma e_ball_le_radius [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) (r : ℚ)
