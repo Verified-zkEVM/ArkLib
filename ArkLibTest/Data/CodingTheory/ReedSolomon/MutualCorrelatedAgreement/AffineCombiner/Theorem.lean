@@ -125,3 +125,75 @@ example (f g : Fin 100 → GaloisField 2 64) :
     Pr{let c ← $ᵗ (GaloisField 2 64 × GaloisField 2 64)}[∃ P,
       IsAffineExceptional largeDomain f g 16 90 1 c.1 c.2 P] < (1 : ENNReal) / 2 ^ 60 :=
   (prob_isAffineExceptional_le largeDomain f g 16 90 1).trans_lt largeDomain_error_lt
+
+/-- At `A = 90`, `n = 100`, `d = 16`, the Johnson floor is `ℓ₀ = ⌊100 · 73 / 6321⌋ = 1`. -/
+private theorem johnson_floor :
+    ⌊(100 : ℝ) * ((90 : ℝ) - 1 - 16) / (((90 : ℝ) - 1) ^ 2 - 100 * 16)⌋₊ = 1 := by
+  rw [Nat.floor_eq_iff (by norm_num)]
+  norm_num
+
+-- At `d = 16`, `n = 100`, `η = 1/2`, the equal-degree bound is `(8 + ℓ₀)/q + 2²² 5¹⁰/q²`
+-- with `ℓ₀ = 1`.
+example {F : Type*} [Field F] [DecidableEq F] [Fintype F] (domain : Fin 100 ↪ F) :
+    equalDegreeMcaError domain 16 90 1 ≤
+      ENNReal.ofReal (9 / Fintype.card F + 2 ^ 22 * 5 ^ 10 / (Fintype.card F : ℝ) ^ 2) := by
+  have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
+    simpa using sqrt_degreeFraction
+  have h := equalDegreeMcaError_le domain (d := 16) (η := 1 / 2) (by norm_num) (by simp)
+    (by norm_num) (by rw [hsqrt]; norm_num) (by simp; norm_num)
+  have hA : ⌈((2 : ℝ) / 5 + 1 / 2) * 100⌉₊ = 90 := by norm_num
+  rw [hsqrt, Fintype.card_fin] at h
+  push_cast at h
+  rw [hA] at h
+  push_cast at h
+  rw [johnson_floor] at h
+  convert h using 2
+  field_simp
+  ring
+
+-- At the same parameters, the linear-claim bound is `(8 + 2ℓ₀)/q + 2²² 5¹⁰/q²` with `ℓ₀ = 1`.
+example {F : Type*} [Field F] [DecidableEq F] [Fintype F] (domain : Fin 100 ↪ F) :
+    linearClaimMcaError domain 16 90 1 ≤
+      ENNReal.ofReal (10 / Fintype.card F + 2 ^ 22 * 5 ^ 10 / (Fintype.card F : ℝ) ^ 2) := by
+  have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
+    simpa using sqrt_degreeFraction
+  have h := linearClaimMcaError_le domain (d := 16) (η := 1 / 2) (by norm_num) (by simp)
+    (by norm_num) (by rw [hsqrt]; norm_num) (by simp; norm_num)
+  have hA : ⌈((2 : ℝ) / 5 + 1 / 2) * 100⌉₊ = 90 := by norm_num
+  rw [hsqrt, Fintype.card_fin] at h
+  push_cast at h
+  rw [hA] at h
+  push_cast at h
+  rw [johnson_floor] at h
+  convert h using 2
+  field_simp
+  ring
+
+-- In the field with `2⁶⁴` elements on a 100-point domain, the linear-claim error is below `2⁻⁶⁰`.
+open Classical in
+example : linearClaimMcaError largeDomain 16 90 1 < (1 : ENNReal) / 2 ^ 60 := by
+  have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
+    simpa using sqrt_degreeFraction
+  have h := linearClaimMcaError_le largeDomain (d := 16) (η := 1 / 2) (by norm_num) (by simp)
+    (by norm_num) (by rw [hsqrt]; norm_num) (by simp; norm_num)
+  have hA : ⌈((2 : ℝ) / 5 + 1 / 2) * 100⌉₊ = 90 := by norm_num
+  rw [hsqrt, Fintype.card_fin, field_card] at h
+  push_cast at h
+  rw [hA] at h
+  push_cast at h
+  rw [johnson_floor] at h
+  apply lt_of_le_of_lt h
+  have hone : ENNReal.ofReal ((1 : ℝ) / 2 ^ 60) = (1 : ENNReal) / 2 ^ 60 := by
+    norm_num [ENNReal.ofReal_div_of_pos, one_div]
+  rw [← hone]
+  exact (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr (by norm_num)
+
+/-- info: 'ReedSolomon.equalDegreeMcaError_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.equalDegreeMcaError_le
+
+/-- info: 'ReedSolomon.linearClaimMcaError_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.linearClaimMcaError_le

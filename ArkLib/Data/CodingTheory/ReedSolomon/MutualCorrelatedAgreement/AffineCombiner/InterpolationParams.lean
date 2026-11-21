@@ -542,4 +542,41 @@ theorem affineCount_numerics_le {k : ℕ} (hk : 1 ≤ k) {n a b D v dM : ℝ} (h
   have hc := constant_le hk
   nlinarith
 
+
+/-- At the threshold `A = ⌈(√ρ + η) n⌉`, the Johnson condition `n d < (A - 1)²` holds.
+
+Here `1 ≤ d < n`, `ρ = d / n`, `0 < η`, and `n η² ≥ 4 / ρ`; the subtraction is in `ℕ`.
+The last condition gives `n η > 1`, so `A - 1 > √ρ n = √(n d)`. -/
+theorem affineThreshold_johnson {n d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < n)
+    (hη : 0 < η) (hn : 4 / ((d : ℝ) / n) ≤ n * η ^ 2) :
+    n * d < (affineThreshold d n η - 1) ^ 2 := by
+  set A := affineThreshold d n η
+  have hn0 : (0 : ℝ) < n := by exact_mod_cast Nat.zero_lt_of_lt hdn
+  have hρ0 : (0 : ℝ) < (d : ℝ) / n := div_pos (by exact_mod_cast hd) hn0
+  have hρ1 : (d : ℝ) / n ≤ 1 := (div_le_one hn0).mpr (by exact_mod_cast hdn.le)
+  have h4 : (4 : ℝ) ≤ 4 / ((d : ℝ) / n) := by
+    rw [le_div_iff₀ hρ0]
+    linarith
+  have hηn : 1 < η * n := by
+    rcases lt_or_ge η 1 with hη1 | hη1
+    · nlinarith
+    · have : (2 : ℝ) ≤ n := by exact_mod_cast (show 2 ≤ n by omega)
+      nlinarith
+  have hAle : (√((d : ℝ) / n) + η) * n ≤ A := Nat.le_ceil _
+  have hA1 : 1 ≤ A := by
+    have : (0 : ℝ) < A := by nlinarith [Real.sqrt_nonneg ((d : ℝ) / n)]
+    exact_mod_cast this
+  have hsq : √((d : ℝ) / n) ^ 2 = (d : ℝ) / n := Real.sq_sqrt hρ0.le
+  have hlt : √((d : ℝ) / n) * n < (A : ℝ) - 1 := by linarith
+  have hreal : (n : ℝ) * d < ((A : ℝ) - 1) ^ 2 := by
+    have h0 : 0 ≤ √((d : ℝ) / n) * n := by positivity
+    calc (n : ℝ) * d = (√((d : ℝ) / n) * n) ^ 2 := by
+          rw [mul_pow, hsq]
+          field_simp
+      _ < ((A : ℝ) - 1) ^ 2 := by gcongr
+  have : ((n * d : ℕ) : ℝ) < (((A - 1) ^ 2 : ℕ) : ℝ) := by
+    push_cast [hA1]
+    exact hreal
+  exact_mod_cast this
+
 end ReedSolomon
