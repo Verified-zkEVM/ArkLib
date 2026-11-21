@@ -77,6 +77,7 @@ def interleavedAgreementSet (domain : ι ↪ F) (f g : Fin t → ι → F) (α �
     (P : Fin t → F[X]) : Finset ι :=
   interleavedPolynomialAgreementSet domain (fun i r ↦ f r i + (α + β * domain i) * g r i) P
 
+/-- A position agrees exactly when every combined row agrees there. -/
 @[simp]
 theorem mem_interleavedAgreementSet (domain : ι ↪ F) (f g : Fin t → ι → F) (α β : F)
     (P : Fin t → F[X]) (i : ι) :
@@ -90,6 +91,7 @@ def interleavedAgreementLoss (domain : ι ↪ F) (f g : Fin t → ι → F) (α 
   (interleavedAgreementSet domain f g α β P).filter fun i ↦
     ∃ r, (F₀ r).eval (domain i) ≠ f r i ∨ (G₀ r).eval (domain i) ≠ g r i
 
+/-- An agreeing position is lost if either witness differs from its received word in any row. -/
 @[simp]
 theorem mem_interleavedAgreementLoss (domain : ι ↪ F) (f g : Fin t → ι → F) (α β : F)
     (P F₀ G₀ : Fin t → F[X]) (i : ι) :
