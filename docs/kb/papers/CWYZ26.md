@@ -69,7 +69,7 @@ The embedding already implies `n ≤ q`.
 | Paper statement | Lean interface | Scope |
 | --- | --- | --- |
 | Section 1.1, Definition 3.1, and the definition of `ε_sc` at the start of Section 6 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMcaError`, `ReedSolomon.scalarMcaError` | The errors are suprema over received word pairs of the uniform probability that some candidate is exceptional. Definition 3.1 is the affine predicate at loss `s = 1`. Section 1.1 defines the affine error. Section 6 defines the scalar error with a uniform scalar challenge `α` and witness degrees at most `d`. |
-| Proposition 6.1, error lower bound | `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt` | For `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A)/(s + 1)⌋)/q`. The proof constructs words using a vanishing polynomial and blocks of size `s + 1`. The constructed words and the proposition's global agreement claim have no separate Lean statement. The probability `Pr_{α←F_q}[|S_α(0)| = A]` in (6.1), and both inequalities through it, have no Lean statement. |
+| Proposition 6.1, error lower bound | `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt` | For `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A)/(s + 1)⌋)/q`. The proof constructs words using a vanishing polynomial and blocks of size `s + 1`. The constructed words and the proposition's global agreement claim have no separate Lean statement. The probability `Pr_{α←F_q}[\|S_α(0)\| = A]` in (6.1), and both inequalities through it, have no Lean statement. |
 | Proposition 6.2 | `ReedSolomon.le_affineMcaError_zero_loss`, `ReedSolomon.le_affineMcaError_zero_loss_div_two` | For `d + 1 < A ≤ n`, the affine error at loss zero is at least `(n - A + 1)(q - 1)/q²`, hence at least `(n - A + 1)/(2q)`. |
 | Lemma 4.4 | `ReedSolomon.card_isAffineExceptional_add_mul_le`, `ReedSolomon.card_ratFunc_combination_le`, `ReedSolomon.card_isAffineExceptional_ratFunc_le` | At loss one, a polynomial pair within the witness degree bounds gives at most `n choose 2` exceptional challenges. A rational pair outside those bounds has at most `q` compatible challenges, even without requiring exceptionality. Every rational pair gives at most `max q (n choose 2)` exceptional challenges. |
 | Lemma 4.5 | `ReedSolomon.affinePersistenceSet`, `ReedSolomon.IsAffinePersistent`, `ReedSolomon.card_isAffineExceptional_persistent_le` | The real count is at most `n (B - d - 1)/(B² - n(d + 1)) · max q (n choose 2)` under `d + 1 < B` and `n(d + 1) < B²`. It covers all persistent exceptional challenges at loss one. The paper first removes its excluded set `E`. |
@@ -106,6 +106,7 @@ The embedding already implies `n ≤ q`.
 
 The units describe the port plan, including results without Lean declarations.
 A unit is done when its declarations are on `main`.
+A result described as formalized is available in the corresponding branch of the stack.
 A part of a unit is open when no Lean statement covers it.
 A unit is deferred when the port plan postpones it.
 
