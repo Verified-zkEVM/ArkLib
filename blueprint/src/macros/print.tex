@@ -9,6 +9,12 @@
 % sense only for the web version, such as dependency graph
 % macros.
 
+% Share the numbering while giving cleveref a distinct type for each environment.
+\newcommand{\newsharedtheorem}[2]{%
+  \newaliascnt{#1}{theorem}%
+  \newtheorem{#1}[#1]{#2}%
+  \aliascntresetthe{#1}%
+}
 
 % Dummy macros that make sense only for web version.
 \newcommand{\lean}[1]{}
@@ -27,3 +33,8 @@
  {\clist_map_inline:nn{#1}{\vphantom{\ref{##1}}}%
   \ignorespaces}
 \ExplSyntaxOff
+% Arrow label naming a Lean theorem, linked to the blueprint node #1 that cites it.
+\newcommand{\leanArrowLabel}[2]{\text{\hyperref[#1]{\normalfont\ttfamily\scriptsize #2}}}
+
+% Let paragraphs with long unbreakable Lean names (\texttt) stretch instead of overflowing.
+\setlength{\emergencystretch}{3em}

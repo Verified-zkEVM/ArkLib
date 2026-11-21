@@ -49,7 +49,7 @@ at radius $\theta$.
 \begin{proof}
 \leanok
 A bad challenge is an MCA failure for the coefficient words: if every coefficient
-word agreed on the same $T$, Lemma~\ref{lem:fri-coefficient-lift} would lift the
+word agreed on the same $T$, \Cref{lem:fri-coefficient-lift} would lift the
 agreement. No union bound over subsets is needed. The generalized-Johnson
 specialization instantiates the existing powers-MCA bound from~\cite{BCGM25},
 retaining all its field-size, slack, and radius assumptions.
@@ -197,7 +197,7 @@ Use fresh folding-failure events with the empty input language, so the adaptive
 accumulation covers all inputs. For $0\leq\min\{\theta,\delta\}$,
 conditional on a safe prefix, a failed extraction
 and a valid final polynomial imply that the accepting density is less than
-$1-\min\{\theta,\delta\}$, by Theorem~\ref{thm:fri-extractor-recovery}.
+$1-\min\{\theta,\delta\}$, by \Cref{thm:fri-extractor-recovery}.
 The query-vector probability is bounded by the corresponding $l$th power.
 The logged-game bridge preserves private and shared oracle state and treats the
 optional extraction result as a value, counting failure rather than aborting it.
@@ -331,10 +331,10 @@ relation at radius $0$.
 \end{theorem}
 
 The generator hypothesis is discharged for four generators. Write
-$\rho$ for the rate of $C_0$, and $\varepsilon_{\mathrm{BCIKS}}(\delta)$ for the
-error that equals $2^n/|\field|$ when $\delta\leq(1-\rho)/2$, equals
-$d_0^2/\bigl((2\min\{1-\sqrt\rho-\delta,\sqrt\rho/20\})^7|\field|\bigr)$ when
-$(1-\rho)/2<\delta<1-\sqrt\rho$, and is $0$ otherwise.
+$\rate$ for the rate of $C_0$, and $\varepsilon_{\mathrm{BCIKS}}(\delta)$ for the
+error that equals $2^n/|\field|$ when $\delta\leq(1-\rate)/2$, equals
+$d_0^2/\bigl((2\min\{1-\sqrt\rate-\delta,\sqrt\rate/20\})^7|\field|\bigr)$ when
+$(1-\rate)/2<\delta<1-\sqrt\rate$, and is $0$ otherwise.
 
 \begin{theorem}[Batched FRI with concrete generators]\label{thm:batched_fri_generators}
 \lean{BatchedFri.Spec.batchedFRI_soundness_affineSpace,
@@ -348,9 +348,9 @@ $\mathsf{caError}$ assumption, the soundness error is the FRI error plus the
 following batching error.
 \begin{itemize}
   \item Affine space $c\mapsto(1,c_1,\ldots,c_m)$, $c\in\field^m$, with
-    $0<\delta<1-\sqrt\rho$: $\varepsilon_{\mathrm{BCIKS}}(\delta)$.
+    $0<\delta<1-\sqrt\rate$: $\varepsilon_{\mathrm{BCIKS}}(\delta)$.
   \item Powers $c\mapsto(1,c,\ldots,c^m)$, $c\in\field$, with
-    $0<\delta<1-\sqrt\rho$: $m\cdot\varepsilon_{\mathrm{BCIKS}}(\delta)$.
+    $0<\delta<1-\sqrt\rate$: $m\cdot\varepsilon_{\mathrm{BCIKS}}(\delta)$.
   \item Multilinear monomials in $t$ variables, so $m+1=2^t$, with $\delta>0$
     at most the relative unique decoding radius of $C_0$:
     $t\cdot 2^n/|\field|$.

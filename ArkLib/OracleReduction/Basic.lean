@@ -7,6 +7,7 @@ module
 
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import VCVio.OracleComp.SimSemantics.Append
+public import ArkLib.Security.PrivateCoins
 
 /-!
 # Interactive (Oracle) Reductions
@@ -248,6 +249,14 @@ prove knowledge soundness implies soundness.
 structure Verifier {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn StmtOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   verify : StmtIn → FullTranscript pSpec → OptionT (OracleComp oSpec) StmtOut
+
+/-- Embed the verifier's queries into another oracle specification. -/
+def Verifier.liftOracles {ι κ : Type} {oSpec : OracleSpec ι} {targetSpec : OracleSpec κ}
+    [MonadLiftT (OracleQuery oSpec) (OracleQuery targetSpec)]
+    {StmtIn StmtOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+    (V : Verifier oSpec StmtIn StmtOut pSpec) :
+    Verifier targetSpec StmtIn StmtOut pSpec where
+  verify x tr := OptionT.mk (liftComp (V.verify x tr).run targetSpec)
 
 /-- An **(oracle) prover** in an interactive **oracle** reduction is a prover in the non-oracle
       reduction whose input statement also consists of the underlying messages for the oracle
@@ -1052,3 +1061,12 @@ theorem Verifier.PureForm.isPure {V : Verifier oSpec StmtIn StmtOut pSpec} (P : 
 end IsPure
 
 end Classes
+
+namespace Verifier
+variable {ι : Type} {spec : OracleSpec ι} {Statement : Type} {rounds : ℕ}
+  {pSpec : ProtocolSpec rounds}
+/-- Guard the final Boolean decision by the statement-size bound, after the same execution. -/
+def restrictSize (V : Verifier spec Statement Bool pSpec) (size : Statement → ℕ)
+    (bound : ℕ) : Verifier spec Statement Bool pSpec where
+  verify x tr := (fun b => decide (size x ≤ bound) && b) <$> V.verify x tr
+end Verifier

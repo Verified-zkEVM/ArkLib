@@ -48,7 +48,7 @@ def reduction : Reduction []ₒ Unit Unit Unit Unit spec where
 def impl : QueryImpl []ₒ (StateT Unit ProbComp) := fun q => nomatch q
 
 /-- The old initialization always answered with the default Boolean. -/
-def defaultTable : QueryImpl (srChallengeOracle Unit spec) Id :=
+def defaultTable : QueryImpl (srVerifierMessageOracle Unit spec) Id :=
   fun ⟨⟨⟨0, _⟩, _⟩, _⟩ => (default : Bool)
 
 /-- The transcript of the single challenge round. -/
@@ -89,10 +89,10 @@ theorem fixed_default_not_complete :
   intro h
   have hr : (simulateQ
       ((impl.addLift fsChallengeQueryImpl' :
-        QueryImpl ([]ₒ + srChallengeOracle Unit spec)
-          (StateT (Unit × QueryImpl (srChallengeOracle Unit spec) Id) ProbComp)).addLift
+        QueryImpl ([]ₒ + srVerifierMessageOracle Unit spec)
+          (StateT (Unit × QueryImpl (srVerifierMessageOracle Unit spec) Id) ProbComp)).addLift
           challengeQueryImpl :
-        QueryImpl _ (StateT (Unit × QueryImpl (srChallengeOracle Unit spec) Id) ProbComp))
+        QueryImpl _ (StateT (Unit × QueryImpl (srVerifierMessageOracle Unit spec) Id) ProbComp))
       (reduction.fiatShamir.run () ()).run).run' ((), defaultTable) = pure none := by
     rw [Reduction.fiatShamir_run_option]
     simp only [liftComp_eq_liftM]
