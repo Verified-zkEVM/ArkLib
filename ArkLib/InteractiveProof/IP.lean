@@ -5,177 +5,138 @@ Authors: Yuxi Zheng, Chung Thai Nguyen, Michele Orrù
 -/
 module
 
-public import ArkLib.InteractiveProof.StateRestorationSoundness
+public import ArkLib.OracleReduction.Security.Basic
+public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
 /-!
-# Public-coin interactive-proof security
+# Honest public-coin interactive protocols
 
-The verifier has no ambient oracle and decides from the statement and transcript. These
-state-restoration games specialize the legacy protocol representation to Boolean acceptance;
-provers and extractors retain private randomness. The named extractor receives the statement,
-salt, transcript, and move-response trace, with no prover handle.
+The prover supplies input and round algorithms. The verifier decides whether to accept the
+statement and transcript. The interface reuses the existing round executor and supplies
+compatibility adapters for reduction-based security predicates and proofs.
+
+## References
+
+* [Chiesa, A. and Orrù, M., *A Fiat–Shamir Transformation From Duplex Sponges*][CO25]
 -/
 
 @[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal ProbabilityTheory
+open scoped NNReal
 
-namespace IP
+/-- An honest interactive prover with an input statement and witness, and no terminal output. -/
+structure InteractiveProver {ι : Type} (oSpec : OracleSpec ι)
+    (Statement Witness : Type) {n : ℕ} (pSpec : ProtocolSpec n) extends
+    ProverRound oSpec pSpec, ProverInput Statement Witness (PrvState 0)
 
-/-- An ordinary public-coin verifier's statement and full transcript determine its final
-decision. Both `none` and `some false` mean rejection. -/
-abbrev Verifier (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) :=
-  _root_.Verifier []ₒ Statement Bool pSpec
+/-- A public-coin verifier's decision algorithm.
+Random verifier messages are supplied in the transcript. -/
+structure InteractiveVerifier {ι : Type} (oSpec : OracleSpec ι)
+    (Statement : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
+  verify : Statement → pSpec.FullTranscript → OracleComp oSpec Bool
 
-/-- The empty interface has a unique handler, with no state effects. -/
-def emptyImpl {σ : Type} : QueryImpl []ₒ (StateT σ ProbComp) := fun q => nomatch q
+/-- A public-coin interactive protocol, with a decision bit as its only public output. -/
+structure InteractiveProtocol {ι : Type} (oSpec : OracleSpec ι)
+    (Statement Witness : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
+  prover : InteractiveProver oSpec Statement Witness pSpec
+  verifier : InteractiveVerifier oSpec Statement pSpec
 
-/-- An SR adversary returns `((𝕩, τ), α)`: the statement, chosen salt, and prover messages.
-It queries the single-salt challenge oracles and uses private coins. The empty summand is
-only the generic backend's interface adapter. -/
-abbrev SRProver (Statement : Type) {Salt : Type} {n : ℕ} (pSpec : ProtocolSpec n) :=
-  Prover.StateRestoration.Soundness []ₒ unifSpec Statement pSpec (Salt := Salt)
+variable {ι : Type} {oSpec : OracleSpec ι} {Statement Witness : Type}
+  {n : ℕ} {pSpec : ProtocolSpec n}
 
-/-- An ordinary non-rewinding SR extractor computes `E(𝕩, τ, T, tr_sr)` from the original
-statement, chosen salt, final transcript, and SR move-response trace. It may use private coins
-and may fail; it receives no prover handle or private sampling log. -/
-abbrev SRExtractor (Statement Witness : Type) {Salt : Type} {n : ℕ} (pSpec : ProtocolSpec n) :=
-  Statement → Salt → pSpec.FullTranscript →
-    QueryLog (srVerifierMessageOracle (Statement × Salt) pSpec) →
-    OptionT ProbComp Witness
+/-- Forget the output algorithm of a reduction prover when using it in an interactive protocol. -/
+def Prover.toInteractiveProver {StmtOut WitOut : Type}
+    (P : Prover oSpec Statement Witness StmtOut WitOut pSpec) :
+    InteractiveProver oSpec Statement Witness pSpec where
+  toProverRound := P.toProverRound
+  input := P.input
 
-/-- Run an ordinary SR adversary and reconstruct its final transcript using the same
-verifier-message functions queried during its moves. -/
-def srGame {Statement Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (P : SRProver Statement pSpec (Salt := Salt)) :
-    OracleComp (([]ₒ + srVerifierMessageOracle (Statement × Salt) pSpec) + unifSpec)
-      (pSpec.FullTranscript × (Statement × Salt)) :=
-  srSoundnessGame (Salt := Salt) P
+/-- Interpret an aborting Boolean verifier as a decision algorithm, treating abort as rejection. -/
+def Verifier.toInteractiveVerifier (V : Verifier oSpec Statement Bool pSpec) :
+    InteractiveVerifier oSpec Statement pSpec where
+  verify := fun stmt transcript => do
+    return (← (V.verify stmt transcript).run).getD false
 
-/-- The internal reduction output relation for Boolean acceptance has a dummy witness. -/
-def acceptRelation : Set (Bool × Unit) := {result | result.1 ∈ ({true} : Set Bool)}
+/-- Internal compatibility adapter for the existing reduction-based execution proofs.
+The terminal output is dummy data and is not executed by the NARG-string constructors. -/
+def InteractiveProver.toReductionProver
+    (P : InteractiveProver oSpec Statement Witness pSpec) :
+    Prover oSpec Statement Witness Bool Unit pSpec where
+  toProverRound := P.toProverRound
+  input := P.input
+  output := fun _ => pure (true, ())
 
-/-- Add the unique dummy witness required by the generic reduction game. -/
-def SRProver.toReduction {Statement Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (P : SRProver Statement pSpec (Salt := Salt)) :
-    Prover.StateRestoration.KnowledgeSoundness []ₒ unifSpec Statement Unit pSpec (Salt := Salt) :=
-  (fun result => (result.1, result.2, ())) <$> P
+/-- Embed a decision algorithm into the existing verifier proof machinery without changing
+its oracle effects. A rejection bit stays `some false`, distinct from an abort. -/
+def InteractiveVerifier.toReductionVerifier
+    (V : InteractiveVerifier oSpec Statement pSpec) :
+    Verifier oSpec Statement Bool pSpec where
+  verify := fun stmt transcript => OptionT.lift (V.verify stmt transcript)
 
-/-- Erase the generic game's dummy witness. This does not change any query. -/
-def SRProver.ofReduction {Statement Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (P : Prover.StateRestoration.KnowledgeSoundness
-      []ₒ unifSpec Statement Unit pSpec (Salt := Salt)) :
-    SRProver Statement pSpec (Salt := Salt) :=
-  (fun result => (result.1, result.2.1)) <$> P
+/-- Compatibility view for the existing security predicates and theorems. -/
+def InteractiveProtocol.toReduction
+    (protocol : InteractiveProtocol oSpec Statement Witness pSpec) :
+    Proof oSpec Statement Witness pSpec where
+  prover := protocol.prover.toReductionProver
+  verifier := protocol.verifier.toReductionVerifier
 
-/-- The dummy output witness carries no information. -/
-theorem SRProver.toReduction_ofReduction {Statement Salt : Type} {n : ℕ}
-    {pSpec : ProtocolSpec n}
-    (P : Prover.StateRestoration.KnowledgeSoundness
-      []ₒ unifSpec Statement Unit pSpec (Salt := Salt)) :
-    (SRProver.ofReduction P).toReduction = P := by
-  unfold Prover.StateRestoration.KnowledgeSoundness at P
-  simp only [SRProver.toReduction, SRProver.ofReduction, Functor.map_map]
-  have h : (fun result : (Statement × Salt) × pSpec.Messages × Unit =>
-      (result.1, result.2.1, ())) = id := by
-    funext ⟨x, messages, u⟩
-    cases u
-    rfl
-  rw [h, id_map]
+@[simp] theorem InteractiveProver.toReductionProver_toInteractiveProver
+    (P : InteractiveProver oSpec Statement Witness pSpec) :
+    P.toReductionProver.toInteractiveProver = P := rfl
 
-/-- Adapt the ordinary extractor to the general reduction interface. Pass it the statement,
-salt, transcript, and SR move-response log, discarding the empty ambient logs and dummy witness. -/
-def SRExtractor.toReduction {Statement Witness Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (E : SRExtractor Statement Witness pSpec (Salt := Salt)) :
-    Extractor.StateRestoration []ₒ Statement Witness Unit pSpec (Salt := Salt) :=
-  fun x salt _ transcript log _ => OptionT.mk
-    (liftComp (E x salt transcript log.snd).run ([]ₒ + unifSpec))
+@[simp] theorem InteractiveVerifier.toReductionVerifier_run
+    (V : InteractiveVerifier oSpec Statement pSpec)
+    (stmt : Statement) (transcript : pSpec.FullTranscript) :
+    (V.toReductionVerifier.verify stmt transcript).run = some <$> V.verify stmt transcript := by
+  simp [InteractiveVerifier.toReductionVerifier, OptionT.lift]
 
-section
+/-- Execute the honest interaction and return the verifier's decision.
+The established round executor fixes query ordering; no terminal prover output is executed. -/
+def InteractiveProtocol.run (protocol : InteractiveProtocol oSpec Statement Witness pSpec)
+    (stmt : Statement) (wit : Witness) : OracleComp (oSpec + [pSpec.Challenge]ₒ) Bool := do
+  let (transcript, _) ← protocol.prover.toReductionProver.runToRound (Fin.last n) stmt wit
+  (protocol.verifier.verify stmt transcript).liftComp _
 
-variable {Statement Witness Salt : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-  [∀ i, SampleableType (pSpec.Challenge i)]
-  [DecidableEq Statement] [∀ i, DecidableEq (pSpec.Message i)]
-  [∀ i, DecidableEq (pSpec.Challenge i)]
-  (init : ProbComp (QueryImpl (srVerifierMessageOracle (Statement × Salt) pSpec) Id))
+/-- The compatibility view returns the same decision
+and performs exactly the same oracle queries. -/
+theorem InteractiveProtocol.toReduction_verdict
+    (protocol : InteractiveProtocol oSpec Statement Witness pSpec)
+    (stmt : Statement) (wit : Witness) :
+    (protocol.toReduction.verdict stmt wit).run = some <$> protocol.run stmt wit := by
+  simp [Reduction.verdict, Reduction.run, Prover.run, Verifier.run,
+    InteractiveProtocol.toReduction, InteractiveProver.toReductionProver,
+    InteractiveVerifier.toReductionVerifier, InteractiveProtocol.run,
+    Option.getM, ← monadLift_liftM_OptionT]
 
-/-- Extraction failure for an ordinary SR adversary. The dummy witness is introduced only
-inside the general backend; the adversary and extractor interfaces do not expose it. -/
-noncomputable def srKnowledgeSoundnessFailureProb (relation : Set (Statement × Witness))
-    (V : Verifier Statement pSpec) (E : SRExtractor Statement Witness pSpec (Salt := Salt))
-    (P : SRProver Statement pSpec (Salt := Salt)) : ENNReal :=
-  _root_.Verifier.StateRestoration.knowledgeSoundnessFailureProb (Salt := Salt) init emptyImpl
-    (QueryImpl.id' unifSpec) E.toReduction relation acceptRelation V P.toReduction
+/-- Interactive completeness samples a fresh uniform verifier message at each verifier round. -/
+def InteractiveProtocol.completeness {σ : Type}
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    (protocol : InteractiveProtocol oSpec Statement Witness pSpec)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (relation : Set (Statement × Witness)) (error : ℝ≥0) : Prop :=
+  ∀ stmt wit, (stmt, wit) ∈ relation →
+    let roundImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+      QueryImpl.addLift impl challengeQueryImpl
+    Pr{let accepted ← (simulateQ roundImpl (protocol.run stmt wit)).run' (← init)}[
+      accepted = true] ≥ 1 - error
 
-omit [DecidableEq Statement] [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Challenge i)] in
-/-- The same named ordinary extractor works in the general dummy-witness game. -/
-theorem srKnowledgeSoundnessQueryBoundedWithExtractor_to_generic
-    (relation : Set (Statement × Witness)) (V : Verifier Statement pSpec)
-    (E : SRExtractor Statement Witness pSpec (Salt := Salt)) (t : ℕ) (error : ENNReal)
-    (h : ∀ P : SRProver Statement pSpec (Salt := Salt),
-      P.IsQueryBoundP (publicQuerySelector
-        (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt) (oSpec := []ₒ))) t →
-      srKnowledgeSoundnessFailureProb (Salt := Salt) init relation V E P ≤ error) :
-    _root_.Verifier.StateRestoration.knowledgeSoundnessQueryBoundedWithExtractor (Salt := Salt)
-      init emptyImpl relation acceptRelation V E.toReduction
-      (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt)) t error := by
-  intro P hP
-  unfold Prover.StateRestoration.KnowledgeSoundness at P
-  have hBound : (SRProver.ofReduction P).IsQueryBoundP
-      (publicQuerySelector (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt)
-        (oSpec := []ₒ))) t := by
-    simpa only [SRProver.ofReduction, isQueryBoundP_map_iff] using hP
-  have hResult := h (SRProver.ofReduction P) hBound
-  unfold srKnowledgeSoundnessFailureProb at hResult
-  simp only [SRProver.toReduction_ofReduction] at hResult
-  exact hResult
-
-end
-
-section Families
-
-variable {Statement Witness : Type} {Salt : ℕ → ℕ → Type}
-  {rounds : ℕ → ℕ → ℕ} {pSpec : ∀ s n, ProtocolSpec (rounds s n)}
-  [∀ s n i, SampleableType ((pSpec s n).Challenge i)]
-  [DecidableEq Statement] [∀ s n i, DecidableEq ((pSpec s n).Message i)]
-  [∀ s n i, DecidableEq ((pSpec s n).Challenge i)]
-  (init : ∀ s n, ProbComp
-    (QueryImpl (srVerifierMessageOracle (Statement × Salt s n) (pSpec s n)) Id))
-  (V : ∀ s n, Verifier Statement (pSpec s n))
-
-/-- **[snarg-book, state-restoration soundness]** SR soundness for every public salt-size
-parameter `s`, instance-size bound `n`, and move budget `t`. The salt carrier and challenge
-sampler may depend on `s,n`. Guarding the final decision implements the joint event
-`size x ≤ n ∧ x ∉ language ∧ accepted`; it does not condition or truncate the game. -/
-def srSoundness (language : Set Statement) (size : Statement → ℕ)
-    (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∀ s n t, _root_.Verifier.StateRestoration.soundnessQueryBounded (Salt := Salt s n)
-    (init s n) emptyImpl language {true} ((V s n).restrictSize size n)
-    (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt s n)) t (error s n t)
-
-/-- The state-restoration bound for a supplied non-rewinding extractor family, for every
-salt-size parameter `s`, instance-size bound `n`, move budget, and adversary. The family may
-depend on `s` and `n`; no efficiency guarantee is imposed. -/
-def srKnowledgeSoundnessWithExtractor (relation : Set (Statement × Witness)) (size : Statement → ℕ)
-    (E : ∀ s n, SRExtractor Statement Witness (pSpec s n) (Salt := Salt s n))
-    (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∀ s n t (P : SRProver Statement (pSpec s n) (Salt := Salt s n)),
-    P.IsQueryBoundP (publicQuerySelector
-      (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt s n) (oSpec := []ₒ))) t →
-    srKnowledgeSoundnessFailureProb (init s n) relation ((V s n).restrictSize size n)
-      (E s n) P ≤ error s n t
-
-/-- **[snarg-book, state-restoration knowledge soundness]** One non-rewinding extractor
-family satisfies `srKnowledgeSoundnessWithExtractor`. With no resource bound on the
-extractor, classical witness selection gives an extractor from soundness for the relation's
-language. See `Verifier.knowledgeSoundness_iff_relationSoundness` for this argument in the
-ordinary interactive game. -/
-def srKnowledgeSoundness (relation : Set (Statement × Witness)) (size : Statement → ℕ)
-    (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∃ E, srKnowledgeSoundnessWithExtractor init V relation size E error
-
-end Families
-
-end IP
+/-- The compatibility reduction has exactly the protocol's completeness error. -/
+@[simp] theorem InteractiveProtocol.toReduction_completeness_iff {σ : Type}
+    [∀ i, SampleableType (pSpec.Challenge i)]
+    (P : InteractiveProtocol oSpec Statement Witness pSpec) (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (relation : Set (Statement × Witness)) (ε : ℝ≥0) :
+    P.toReduction.completeness init impl relation ε ↔
+      P.completeness init impl relation ε := by
+  simp only [Proof.completeness, Reduction.completeness, InteractiveProtocol.completeness,
+    OptionT.prEvent_eq_run]
+  apply forall_congr'
+  intro stmt
+  apply forall_congr'
+  intro wit
+  apply imp_congr_right
+  intro _
+  simp [Reduction.run, Prover.run, Verifier.run, InteractiveProtocol.toReduction,
+    InteractiveProver.toReductionProver, InteractiveVerifier.toReductionVerifier,
+    InteractiveProtocol.run, Option.getM, ← monadLift_liftM_OptionT, acceptRejectRel,
+    OptionT.lift]

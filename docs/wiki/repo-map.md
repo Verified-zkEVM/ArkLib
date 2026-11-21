@@ -12,8 +12,8 @@ ArkLib/
     Core/             rebuilt interaction core on PolyFun trees (staged migration)
   Relation/           claims, witness relations, and oracle data families
   OracleReduction/    core IOR abstractions and security theory
-  InteractiveProof/   public-coin interactive-proof security (legacy protocol representation)
-  NonInteractiveArgument/  protocol-independent NARG games and legacy adapters
+  InteractiveProof/   honest protocols and public-coin security
+  NonInteractiveArgument/  honest arguments, adaptive games, and Fiat–Shamir
   Security/           shared game execution and private-coin operations
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
@@ -77,23 +77,24 @@ home_page/            site assets and assembled website root
   errors (`StateRestorationBudget`). The measured forms are described under measured extraction
   below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the interaction-layer Sumcheck client.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
-  layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
-  `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
-  random-oracle completeness.
-  Core transcript operations live in `ProtocolSpec/Basic.lean`. Message and challenge prefix
-  lemmas live in `ProtocolSpec/PrefixLemmas.lean`;
-  round and optional-run factorization lemmas live in `Execution.lean`.
-- `ArkLib/InteractiveProof/` owns the `IP` contracts (`IP.lean`), adaptive interactive security
-  (`Soundness.lean`), state-restoration security and its private-coin preservation lemmas
-  (`StateRestorationSoundness.lean`), and honest-verifier zero knowledge. These modules still use
-  the legacy `ProtocolSpec`, `Prover`, and `Verifier` types; moving their ownership does not
-  port their execution to the interaction layer.
-- `ArkLib/NonInteractiveArgument/NARG.lean` defines a verifier on a statement and proof string directly,
-  adaptive soundness, knowledge soundness, and statement-size restrictions. `ZeroKnowledge.lean`
-  defines the two-stage adaptive simulation games. Neither core module imports either
-  interaction layer. `Legacy.lean` converts legacy one-message verifiers/provers and
-  proves the experiment and predicate equivalences, and transports the legacy NARG experiments
-  across private-sampling adapters.
+  layer while protocol clients migrate. Core transcript operations live in `ProtocolSpec/Basic.lean`.
+  Message and challenge prefix lemmas live in `ProtocolSpec/PrefixLemmas.lean`. Round and
+  optional-run factorization lemmas live in `Execution.lean`.
+- `ArkLib/InteractiveProof/IP.lean` owns the honest protocol interface and its compatibility
+  with the legacy reduction. `Soundness.lean` owns adaptive interactive security.
+  `StateRestorationSoundness.lean` owns the general and ordinary `IP` state-restoration
+  games and private-coin preservation lemmas. `ZeroKnowledge.lean` defines honest-verifier zero
+  knowledge. These modules reuse the legacy protocol specification and executor.
+- `ArkLib/NonInteractiveArgument/NARG.lean` owns the honest argument interface and completeness,
+  along with adaptive soundness and knowledge-soundness games and statement-size restrictions.
+  `ZeroKnowledge.lean` defines the two-stage adaptive simulation games.
+  `Legacy.lean` adapts legacy one-message reductions and transports their experiments across
+  private-sampling adapters.
+- `ArkLib/NonInteractiveArgument/FiatShamir/Canonical.lean` exports the [canonical transform
+  and its completeness results](fiat-shamir.md). Its `Construction.lean`
+  defines the statement-keyed transform. `Completeness.lean` states fixed-table perfect
+  completeness and shared lazy random-oracle completeness, with execution lemmas in
+  `Completeness/Shared.lean`.
 - `ArkLib/Security/` contains only shared security machinery: `Game.lean` initializes
   and executes a shared oracle, and `PrivateCoins.lean` separates private samples from
   public-query budgets and logs. With `open scoped QueryImpl`, `left + right` also combines

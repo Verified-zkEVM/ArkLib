@@ -8,27 +8,13 @@ module
 public import ArkLib.OracleReduction.Security.Basic
 
 /-!
-  # The Basic Fiat-Shamir Transformation
+# Canonical Fiat–Shamir construction
 
-  This file defines the basic Fiat-Shamir transformation. This transformation takes in a
-  (public-coin) interactive reduction (IR) `R` and transforms it into a non-interactive reduction in
-  the following way:
-  - Each verifier's challenge, instead of being sent from the verifier, will be obtained from a
-    Fiat-Shamir oracle, which for the `i`-th challenge requires the input statement and all messages
-    up to round `i`
+The construction compiles a public-coin interactive reduction into a one-message
+non-interactive reduction. Each verifier-message query uses the round index, input
+statement, and preceding prover messages.
 
-  This is the _basic_ (or slow) version, as opposed to the more efficient duplex-sponge version,
-  which is not formalized here.
-
-  We will show that the transformation satisfies security properties as follows:
-
-  - Completeness is preserved
-  - State-restoration (knowledge) soundness implies (knowledge) soundness
-  - Honest-verifier zero-knowledge implies zero-knowledge
-
-  ## Notes
-
-  Our formalization mostly follows the treatment in the Chiesa-Yogev textbook.
+The formalization follows the treatment in the Chiesa–Yogev textbook.
 -/
 
 @[expose] public section

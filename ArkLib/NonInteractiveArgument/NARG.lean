@@ -9,18 +9,57 @@ public import ArkLib.Security.Game
 public import ArkLib.Security.PrivateCoins
 
 /-!
-# Adaptive NARG soundness and knowledge soundness
+# Non-interactive arguments
 
-The verifier consumes a statement and a proof string directly. These definitions depend only on
-oracle computations, so either interaction layer can use them. The public oracle state is shared;
-private samples are excluded from query budgets and extractor logs. One named extractor family
-is fixed before all budgets and adversaries. No running-time bound is imposed.
+The honest prover generates an argument string from a statement and witness. The verifier
+consumes the statement and argument string directly. Both algorithms share an oracle environment.
+
+In the adaptive security games, the adversary chooses the statement and argument string. Public
+oracle state is shared, and private samples are excluded from query budgets and extractor logs.
+One named extractor family is fixed before all budgets and adversaries. The games impose no
+running-time bound. The interfaces depend only on oracle computations.
+
+## References
+
+* [Chiesa, A. and Orrù, M., *A Fiat–Shamir Transformation From Duplex Sponges*][CO25]
 -/
 
 @[expose] public section
 
 open OracleComp OracleSpec
 open scoped NNReal ProbabilityTheory
+
+/-! ## Honest execution and completeness -/
+
+section HonestArgument
+
+/-- A non-interactive argument consists of NARG string generation and a decision algorithm.
+No reduced statement or witness is computed or returned. -/
+structure NonInteractiveArgument {ι : Type} (oSpec : OracleSpec ι)
+    (Statement Witness NARGString : Type) where
+  prover : Statement → Witness → OracleComp oSpec NARGString
+  verifier : Statement → NARGString → OracleComp oSpec Bool
+
+variable {ι : Type} {oSpec : OracleSpec ι} {Statement Witness NARGString : Type}
+
+/-- Generate a NARG string and verify it in the same oracle world. -/
+def NonInteractiveArgument.run
+    (argument : NonInteractiveArgument oSpec Statement Witness NARGString)
+    (stmt : Statement) (wit : Witness) : OracleComp oSpec Bool := do
+  argument.verifier stmt (← argument.prover stmt wit)
+
+/-- Completeness requires acceptance for every valid input, with the stated error bound. -/
+def NonInteractiveArgument.completeness {σ : Type}
+    (argument : NonInteractiveArgument oSpec Statement Witness NARGString)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (relation : Set (Statement × Witness)) (error : ℝ≥0) : Prop :=
+  ∀ stmt wit, (stmt, wit) ∈ relation →
+    Pr{let accepted ← (simulateQ impl (argument.run stmt wit)).run' (← init)}[
+      accepted = true] ≥ 1 - error
+
+end HonestArgument
+
+/-! ## Adaptive soundness and knowledge soundness -/
 
 /-- False-acceptance event on the NARG soundness experiment output
 `Option (StmtIn × StmtOut)`: the prover output a false statement (`x ∉ langIn`) the verifier

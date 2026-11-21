@@ -651,7 +651,7 @@ private theorem sim_add_optionLift {ι κ : Type} {spec : OracleSpec ι}
   rw [QueryImpl.simulateQ_add_liftComp_left]
 
 /-- Interpreting an optional value retains both success and failure unchanged. -/
-private theorem simulateQ_getM_run {ι α : Type} {spec : OracleSpec ι}
+theorem _root_.OracleComp.simulateQ_getM_run {ι α : Type} {spec : OracleSpec ι}
     {m : Type → Type*} [Monad m] (impl : QueryImpl spec m) (x : Option α) :
     simulateQ impl (x.getM : OptionT (OracleComp spec) α).run = pure x := by
   cases x <;> rfl

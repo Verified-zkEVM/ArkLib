@@ -250,7 +250,7 @@ section Soundness
   2. Knowledge soundness
 
   These definitions fix the input statement before initializing the shared oracle. The adaptive
-  interactive definitions in `Security/Adaptive.lean` allow an oracle-aided chooser.
+  interactive definitions in `InteractiveProof/Soundness.lean` allow an oracle-aided chooser.
 
   Note: all soundness definitions are really defined for the **verifier** only. The (honest)
 prover does not feature into the definitions.

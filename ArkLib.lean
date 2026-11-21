@@ -824,6 +824,10 @@ public import ArkLib.InteractiveProof.IP
 public import ArkLib.InteractiveProof.Soundness
 public import ArkLib.InteractiveProof.StateRestorationSoundness
 public import ArkLib.InteractiveProof.ZeroKnowledge
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Shared
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Construction
 public import ArkLib.NonInteractiveArgument.Legacy
 public import ArkLib.NonInteractiveArgument.NARG
 public import ArkLib.NonInteractiveArgument.ZeroKnowledge
@@ -855,8 +859,6 @@ public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Equiv
 public import ArkLib.OracleReduction.Execution
-public import ArkLib.OracleReduction.FiatShamir.Basic
-public import ArkLib.OracleReduction.FiatShamir.Completeness
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
