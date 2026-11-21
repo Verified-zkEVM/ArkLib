@@ -82,10 +82,7 @@ theorem natDegree_traceSubstitution_map_affineMultiplier_le (b : Module.Basis (F
     (α : Fin (k + 1) → F) :
     (traceSubstitution b ((affineMultiplier α).map (algebraMap F F'))).natDegree ≤
       Fintype.card K₀ ^ (k - 1) := by
-  have h : (affineMultiplier α).map (algebraMap F F') =
-      affineMultiplier fun i ↦ algebraMap F F' (α i) := by
-    simp [affineMultiplier]
-  rw [h]
+  rw [map_affineMultiplier]
   exact (natDegree_traceSubstitution_le b _).trans
     ((Nat.mul_le_mul_right _ (totalDegree_affineMultiplier_le _)).trans_eq (one_mul _))
 
