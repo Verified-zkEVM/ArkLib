@@ -42,8 +42,10 @@ example : Function.Bijective (traceCoordinateMap (ZMod 2) b) :=
 -- Two elements of `F₄` with equal trace coordinates are equal.
 example (x y : GaloisField 2 2)
     (h : ∀ i, Algebra.trace (ZMod 2) _ (b i * x) = Algebra.trace (ZMod 2) _ (b i * y)) :
-    x = y :=
-  (traceCoordinateEquiv (ZMod 2) b).injective (funext h)
+    x = y := by
+  apply (traceCoordinateEquiv (ZMod 2) b).injective
+  funext i
+  simpa only [traceCoordinateEquiv_apply] using h i
 
 -- `T_c` is additive in `c`: `T_{1 + b₀} = T_1 + T_{b₀}` in `F₄[X]`.
 example : tracePolynomial (ZMod 2) (1 + b 0) =
