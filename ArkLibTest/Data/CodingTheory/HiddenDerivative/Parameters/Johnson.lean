@@ -159,4 +159,19 @@ example :
   exact ⟨johnsonWeightedHeight_ge 3 1 3 2 1,
     johnsonWeightedHeight_strict hslope⟩
 
+/-- At `n = 4`, `D = 1`, `η = 1/4`, `A = 3`, the count at height `h + 1` is at most twice the
+count at height `h` and below the closed bound `5488/3`. -/
+example :
+    johnsonSuccExceptionCount 4 1 3 (1 / 4) ≤ 2 * johnsonExceptionCount 4 1 3 (1 / 4) ∧
+      johnsonSuccExceptionCount 4 1 3 (1 / 4) < 5488 / 3 := by
+  refine ⟨johnsonSuccExceptionCount_le_two_mul le_rfl (by norm_num), ?_⟩
+  calc
+    johnsonSuccExceptionCount 4 1 3 (1 / 4) <
+        (8 / 3 : ℝ) * 4 * johnsonT 4 1 (1 / 4) ^ 3 / johnsonRhoMinus 4 1 :=
+      johnsonSuccExceptionCount_lt_closed (n := 4) (D := 1) (A := 3) le_rfl (by norm_num)
+        (by norm_num) threshold_4_1
+    _ = 5488 / 3 := by
+      rw [shiftedMultiplicity_4_1, rho_4_1]
+      norm_num
+
 end ReedSolomon.HiddenDerivative

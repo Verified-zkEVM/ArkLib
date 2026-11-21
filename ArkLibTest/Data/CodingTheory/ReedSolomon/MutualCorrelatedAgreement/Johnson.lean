@@ -4,10 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Curves
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Fin.VecNotation
+import Mathlib.Tactic.NormNum.Prime
 
 /-! # Acceptance cases for Johnson decoding consequences -/
 
@@ -72,6 +74,60 @@ example : ∃ exceptional : Finset ℚ,
 local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 private def johnsonFiniteDomain : Fin 4 ↪ ZMod 5 := ⟨![0, 1, 2, 3], by decide⟩
+
+private theorem johnsonT_four_one : johnsonT 4 1 (1 / 4) = 7 / 2 := by
+  have hsqrt : √(johnsonRhoMinus 4 1) = 1 / 2 := by
+    rw [show johnsonRhoMinus 4 1 = (1 / 2) ^ 2 by norm_num [johnsonRhoMinus]]
+    exact Real.sqrt_sq (by norm_num)
+  rw [johnsonT, johnsonM, hsqrt]
+  norm_num
+
+local instance : Fact (Nat.Prime 7919) := ⟨by norm_num⟩
+
+private def johnsonCurveDomain : Fin 4 ↪ ZMod 7919 := ⟨![0, 1, 2, 3], by decide⟩
+
+/-- A degree-`2` received curve over `ZMod 7919` with nonconstant coefficient words. -/
+private def johnsonCurveValues : Fin 3 → Fin 4 → ZMod 7919 :=
+  ![![1, 2, 3, 4], ![0, 1, 0, 1], ![2, 0, 2, 0]]
+
+/-- Over `ZMod 7919` at length `4`, degree `1`, slack `1/4` and threshold `3`, the degree-`2` curve
+above has one exceptional set of at most `2 · 5488/3` challenges, the curve degree times the closed
+line bound `(8/3) n t³ / ρ₋`. The set misses some challenge, and there every agreeing candidate has
+exact power agreement. -/
+example : ∃ exceptional : Finset (ZMod 7919),
+    (exceptional.card : ℝ) ≤ 2 * (5488 / 3) ∧
+    ∃ z ∉ exceptional, ∀ P : (ZMod 7919)[X], P.degree < (1 : ℕ) + 1 →
+      3 ≤ (polynomialAgreementSet johnsonCurveDomain (powerBatchedWord johnsonCurveValues z)
+        P).card →
+      HasExactPowerAgreement johnsonCurveDomain johnsonCurveValues (RingHom.id (ZMod 7919))
+        (1 + 1) z P := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement_closed
+    (n := 4) (D := 1) (A := 3) (ℓ := 2) (eta := 1 / 4) johnsonCurveDomain johnsonCurveValues
+    le_rfl (by norm_num) (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num)
+  have hbound : (exceptional.card : ℝ) ≤ 2 * (5488 / 3) := by
+    refine hcard.trans (le_of_eq ?_)
+    rw [johnsonT_four_one, show johnsonRhoMinus 4 1 = 1 / 4 by norm_num [johnsonRhoMinus]]
+    norm_num
+  have hlt : exceptional.card < (Finset.univ : Finset (ZMod 7919)).card := by
+    rw [Finset.card_univ, ZMod.card]
+    have hreal : (exceptional.card : ℝ) < 7919 := by linarith
+    exact_mod_cast hreal
+  obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
+  exact ⟨exceptional, hbound, z, hz, by convert hgood z hz⟩
+
+/-- On the zero curve of degree `2` over `ℚ`, some challenge outside at most twice the count at
+height `h + 1` recovers the zero candidate. -/
+example : ∃ exceptional : Finset ℚ,
+    (exceptional.card : ℝ) ≤ 2 * johnsonSuccExceptionCount 4 1 3 (1 / 4) ∧
+    ∃ z ∉ exceptional,
+      HasExactPowerAgreement (natDomain 4) (0 : Fin 3 → Fin 4 → ℚ) (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement_succHeight
+    (n := 4) (D := 1) (A := 3) (ℓ := 2) (eta := 1 / 4) (natDomain 4) 0 le_rfl (by norm_num)
+    (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hcard, z, hz, ?_⟩
+  convert hgood z hz 0 (by rw [degree_zero]; exact WithBot.bot_lt_coe _) ?_
+  simp [polynomialAgreementSet, powerBatchedWord]
 
 /-- Over `ZMod 5` at length `4`, degree `1` and slack `1/4`, the affine-line MCA error at radius
 `1/4` is at most `min 1 (E₀ / 5)` with threshold `3`. -/
