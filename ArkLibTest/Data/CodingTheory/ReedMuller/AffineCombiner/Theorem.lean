@@ -50,7 +50,7 @@ example {K₀ F : Type*} [Field K₀] [Fintype K₀] [Field F] [Fintype F] [Deci
   refine ⟨Ex, hcard.trans (le_of_eq ?_), hgood⟩
   norm_num
 
--- Theorem 7.1 at `q₀ = 2⁸`, `k = 1`, `d = 64`, `η = 1/4`: the error is at most
+-- The Reed–Muller bound at `q₀ = 2⁸`, `k = 1`, `d = 64`, `η = 1/4`: the error is at most
 -- `16 / q + 2⁵⁶ / q²`.
 example {K₀ F : Type*} [Field K₀] [Fintype K₀] [Field F] [Fintype F] [DecidableEq F]
     [Algebra K₀ F] (hK : Fintype.card K₀ = 2 ^ 8) :

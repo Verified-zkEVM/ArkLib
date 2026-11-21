@@ -152,7 +152,7 @@ example (u v : Fin 6 → K) : ∃ Ex : Finset (Fin 3 → ZMod 7), (#Ex : ℝ) �
   norm_num at hEx
   exact_mod_cast hEx
 
--- At `|κ| = 2` and `e = 1`, the generic term is the Reed–Solomon term of Lemma 4.7.
+-- At `|κ| = 2` and `e = 1`, the generic term is the Reed–Solomon incidence term.
 example (d M D n A B : ℕ) (hBA : B < A) :
     (2 * d * M * ((n : ℝ) / (A - B - 1 + 1 : ℕ))) ^ 2 * D ^ (2 + 1) =
       4 * d ^ 2 * M ^ 2 * D ^ 3 * ((n : ℝ) / (A - B : ℕ)) ^ 2 := by
