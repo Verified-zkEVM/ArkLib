@@ -25,7 +25,7 @@ pattern gives pairwise distinct points `a i` and a basis `g ℓ` of the polynomi
 than `N - k`, `N` the number of nonempty edges, with `g ℓ` vanishing at `a i` whenever the vertex
 of `ℓ` is not on the edge `i`. For a tuple `f` of polynomials of degree less than `k` that agree on
 every edge, the common values `y i` on the edges are orthogonal to the dual code
-(`ReedSolomon.mem_code_iff_forall_dotProduct_eq_zero`), so `y` is a Reed–Solomon codeword of some
+(`ReedSolomon.orthogonal_grsCode`), so `y` is a Reed–Solomon codeword of some
 `Y`; every vertex lies on at least `k` edges, so `f j = Y` for every `j`, and `f = 0` since the
 last polynomial is `0`. Over `K = RatFunc F` this gives a maximal minor of the intersection matrix
 not vanishing at a point, hence nonzero.
@@ -105,28 +105,17 @@ theorem exists_isRigid_of_isWeaklyPartitionConnected (K : Type*) [Field K] [Infi
     have := hagree i j hj _ ((H i).min'_mem i.2)
     simpa only [i.2, ↓reduceDIte, Subtype.coe_eta] using this
   have hycode : y ∈ code a k := by
-    rw [mem_code_iff_forall_dotProduct_eq_zero]
-    intro p hp
-    rw [← span_range_eq_degreeLT hgdeg hgli] at hp
-    induction hp using Submodule.span_induction with
-    | mem p hp =>
-      obtain ⟨ℓ, rfl⟩ := hp
-      have hc : (fun i ↦ (f (v ℓ)).eval (a i)) ∈ code a k :=
-        mem_code_iff_eval.2 ⟨_, mem_degreeLT.1 (hdeg _), fun _ ↦ rfl⟩
-      rw [← dotProduct_eq_zero_of_mem_code a hc (hgdeg ℓ)]
-      simp only [dotProduct]
-      refine Finset.sum_congr rfl fun i _ ↦ ?_
-      by_cases hj : v ℓ ∈ H i
-      · rw [hy i _ hj]
-      · rw [hgv ℓ i (by simp [hj]), mul_zero, zero_mul, zero_mul]
-    | zero => simp [dotProduct]
-    | add p q _ _ hp hq =>
-      simp only [dotProduct, eval_add, mul_add, add_mul, Finset.sum_add_distrib] at hp hq ⊢
-      rw [hp, hq, add_zero]
-    | smul c p _ hp =>
-      simp only [dotProduct, eval_smul, smul_eq_mul] at hp ⊢
-      rw [← mul_zero c, ← hp, Finset.mul_sum]
-      exact Finset.sum_congr rfl fun i _ ↦ by ring
+    rw [← orthogonal_grsCode, grsCode, ← span_range_eq_degreeLT hgdeg hgli, Submodule.map_span,
+      LinearMap.BilinForm.orthogonal, Submodule.mem_orthogonalBilin_span]
+    rintro _ ⟨_, ⟨ℓ, rfl⟩, rfl⟩
+    have hc : (fun i ↦ (f (v ℓ)).eval (a i)) ∈ code a k :=
+      mem_code_iff_eval.2 ⟨_, mem_degreeLT.1 (hdeg _), fun _ ↦ rfl⟩
+    rw [← dotProduct_eq_zero_of_mem_code a hc (hgdeg ℓ)]
+    simp only [dotProductBilin_apply_apply, grsEvalOnPoints_apply, dotProduct]
+    refine Finset.sum_congr rfl fun i _ ↦ ?_
+    by_cases hj : v ℓ ∈ H i
+    · rw [hy i _ hj]
+    · rw [hgv ℓ i (by simp [hj]), mul_zero, zero_mul, zero_mul]
   obtain ⟨Y, hY, hYy⟩ := mem_code_iff_eval.1 hycode
   have hfY (j : Fin (s + 1)) : f j = Y := by
     have hk : k ≤ #{i : {i // (H i).Nonempty} | j ∈ H i} := by
