@@ -148,7 +148,8 @@ challenges in `K`, the counts use `q = |K|`.
 
 The units describe the port plan, including results without Lean declarations.
 A unit is done when its declarations are on `main`.
-A result described as formalized is available in the corresponding branch of the stack.
+A result described as formalized has a Lean implementation.
+A linked PR identifies where the work was introduced.
 A part of a unit is open when no Lean statement covers it.
 A unit is deferred when the port plan postpones it.
 
