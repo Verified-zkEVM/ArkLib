@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.Certificate
 public import ArkLib.Data.MvPolynomial.Degrees
-public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelInjective
+public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelPrefix
 public import Mathlib.Data.Fintype.CardEmbedding
 

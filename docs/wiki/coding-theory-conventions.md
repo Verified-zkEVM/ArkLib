@@ -89,6 +89,7 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | supremum of probabilities, including finite counting definitions with proved sampling characterizations |
 | ε-errors — *bound*, compared with `↑` not `ENNReal.ofReal` | `I → ℝ≥0` | `IsMCAGenerator`'s `ε_mca` |
+| ε-errors — exact computable value (combiner errors) | `ℚ≥0` | `affineMcaErrorRat`, `scalarMcaErrorRat`, `equalDegreeMcaErrorRat`, related to the `ENNReal` errors by the matching `ofReal_*McaErrorRat` theorems |
 | Probabilities | `ENNReal` | the `Pr{let x ← mx}[p x]` notation ([probability conventions](probability-conventions.md)) |
 | List sizes | `ℕ∞`, cast to `ENNReal` for real-valued bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | List-size *bounds* in a predicate | `ℝ≥0` | `Code.IsListDecodable`'s `ℓ` — see below for why, and why it is not `ℕ∞` |

@@ -327,6 +327,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower.BinaryBasics
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.NearCapacity
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers.Incidence
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
@@ -412,6 +413,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ChartIncidence
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Computable
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegree
 public import
@@ -761,6 +764,7 @@ public import ArkLib.Data.Probability.FiniteChernoff
 public import ArkLib.Data.Probability.FiniteEntropy
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
+public import ArkLib.Data.Probability.MaxEventProbability
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.CompositionSoundness
 public import ArkLib.Interaction.Core.Composition
@@ -1237,7 +1241,6 @@ public import ArkLib.ToMathlib.MvPolynomial.PrefixSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
-public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelInjective
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelPrefix
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset

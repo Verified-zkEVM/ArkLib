@@ -10,7 +10,8 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 /-!
 # Affine combiners with agreement loss
 
-A multiplier polynomial `L` combines received words `f, g` into `x ↦ f x + L(x) g x`.
+Let `domain : ι ↪ F` be the evaluation domain. A multiplier polynomial `L` combines received
+words `f, g : ι → F` into `i ↦ f i + L(domain i) g i`.
 Scalar combiners use a constant multiplier, while affine combiners use `L = α + β X`.
 For an output degree bound `d`, affine witnesses have degrees `≤ d` and `< d` so that
 `F₀ + L G₀` has degree at most `d`.
@@ -23,7 +24,8 @@ It is exceptional if no witness pair within the degree bounds has loss at most `
 The error is the supremum, over received word pairs, of the fraction of challenges for which
 some candidate is exceptional.
 
-The definitions follow Section 1.1 of [CWYZ26].
+The affine error follows Section 1.1 of [CWYZ26], and the scalar error follows the definition of
+`ε_sc` at the start of Section 6.
 Definition 3.1 is the affine exceptional predicate at `s = 1`.
 The paper uses `1 ≤ d < n` and `1 ≤ A ≤ n`, where `n` is the domain size.
 The Lean definitions also cover boundary values: `A > n` gives no exceptional candidates,
@@ -36,9 +38,12 @@ The errors have type `ENNReal` and counting definitions that require no sampler.
 `ReedSolomon.affineMcaError_eq_iSup_prob` and `ReedSolomon.scalarMcaError_eq_iSup_prob` in
 `AffineCombiner.Probability` identify them with suprema of native uniform probabilities.
 The counting definitions use classical decidability for predicates over polynomial witnesses.
-The multiplier uses noncomputable polynomial arithmetic.
+`ReedSolomon.affineMcaErrorRat` and `ReedSolomon.scalarMcaErrorRat` in `AffineCombiner.Computable`
+compute these errors as exact nonnegative rationals by finite searches.
+
+The affine multiplier uses noncomputable polynomial arithmetic.
 Its value at `x` is `α + β * x`.
-The combined word has value `f x + (α + β * x) * g x`.
+The combined word at index `i` has value `f i + (α + β * domain i) * g i`.
 
 ## Main definitions
 
@@ -72,7 +77,7 @@ open Polynomial Finset
 
 variable {F : Type*} [Field F] {ι : Type*}
 
-/-- The word `x ↦ f x + L(x) g x` on the evaluation domain. -/
+/-- The word `i ↦ f i + L(domain i) g i` on the evaluation domain. -/
 def combinedWord (domain : ι ↪ F) (f g : ι → F) (L : F[X]) : ι → F :=
   fun i ↦ f i + L.eval (domain i) * g i
 

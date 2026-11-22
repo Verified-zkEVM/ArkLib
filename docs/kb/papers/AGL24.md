@@ -135,7 +135,7 @@ single-minor bound for a `k`-weakly partition-connected hypergraph,
 `N · (q − n + 1) ≤ n · s(k − 1) · |Fin n ↪ F|`: a nonzero maximal minor has total degree at most
 `n · s(k − 1)`, and Schwartz–Zippel over pairwise-distinct points
 (`MvPolynomial.card_filter_injective_eval_eq_zero_le` in
-[SchwartzZippelInjective.lean](../../../ArkLib/ToMathlib/MvPolynomial/SchwartzZippelInjective.lean))
+[SchwartzZippel.lean](../../../ArkLib/ToMathlib/MvPolynomial/SchwartzZippel.lean))
 applies to it. The source states this single-minor bound only as a remark in its proof overview,
 as the probability bound `1 − Lk²/q`.
 

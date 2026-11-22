@@ -665,6 +665,8 @@ home_page/            site assets and assembled website root
   functions is `ArkLib/Data/Probability/Combinatorial.lean`. Shannon entropy and Chernoff tails for
   real weights on finite types are `ArkLib/Data/Probability/FiniteEntropy.lean` and
   `ArkLib/Data/Probability/FiniteChernoff.lean`.
+  `ArkLib/Data/Probability/MaxEventProbability.lean` computes the exact worst-case probability of
+  a finite family of Boolean events.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
