@@ -4,10 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: XC0R
 -/
 
+import ArkLib.ToMathlib.Combinatorics.SetFamily.GenericZeroPattern
 import ArkLib.ToMathlib.Combinatorics.SetFamily.IntersectingSubmodular
+import Mathlib.Data.Fin.VecNotation
 
 /-!
-# Acceptance tests for vectors below an intersecting-submodular set function
+# Acceptance tests for set families
+
+Vectors below an intersecting-submodular set function, and generic zero patterns, which `decide`
+checks without the polynomial development.
 -/
 
 open Finset
@@ -22,3 +27,11 @@ example : ∃ δ : Fin 3 → ℕ, ∑ j, (δ j : ℤ) = 3 ∧
       (fun A _ ↦ Int.natCast_nonneg _)
       (fun P ↦ by exact_mod_cast P.sum_card_parts.ge)
   exact ⟨δ, by simpa using hsum, hle⟩
+
+/-- A generic zero pattern whose first set has fewer than `3 - 1` elements. -/
+example : IsGenericZeroPattern 3 (![{0}, {1, 2}, {2, 3}] : Fin 3 → Finset (Fin 4)) := by
+  decide
+
+/-- Two equal sets of size `2` violate the condition: `#({0, 1} ∩ {0, 1}) + 2 = 4 > 3`. -/
+example : ¬ IsGenericZeroPattern 3 (![{0, 1}, {0, 1}, {2, 3}] : Fin 3 → Finset (Fin 4)) := by
+  decide
