@@ -1181,6 +1181,7 @@ public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.BigOperators.Intervals
 public import ArkLib.ToMathlib.BigOperators.LinearBudget
 public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.Descents
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount

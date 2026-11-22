@@ -10,6 +10,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
   - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
   - ArkLib/Data/Probability/Uniform.lean
+  - ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean
   - ArkLib/ToMathlib/Combinatorics/Hypergraph/GenericZeroPattern.lean
   - ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean
   - ArkLib/ToMathlib/Fintype/CardEmbedding.lean
@@ -49,6 +50,14 @@ the source's proof assumes implicitly.
 [PartitionConnected.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean):
 a bad list-decoding configuration gives a weakly partition-connected agreement hypergraph, with its
 list-size form `exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda`.
+
+`Tuple.card_filter_card_descents_lt_le` in
+[Descents.lean](../../../ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean): the counting
+step of the source's certificate count (`cor:count` in the source): over a finite linear order
+`α`, at most `C(|α|, r) · m^r` injective tuples `Fin r ↪ α` have fewer than `m` descents. The
+source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is not
+formalized; the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its
+proof gives fewer.
 
 ## Known Divergences From ArkLib
 
