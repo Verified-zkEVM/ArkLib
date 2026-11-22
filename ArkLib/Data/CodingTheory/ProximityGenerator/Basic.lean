@@ -7,7 +7,6 @@ module
 
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.MvPolynomial.Degrees
-public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.Probability.Instances
 
 /-!
@@ -519,7 +518,7 @@ theorem poly_gen_is_zero_evading
       (MvPolynomial.eval (fun i => (a i : F)) (∑ j, x j • P j) = 0) by
     intro a
     simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]]
-  refine (prob_eval_zero_le_div (∑ j, x j • P j)
+  refine (prEvent_eval_eq_zero_le_div (∑ j, x j • P j)
     (LinearCombination.linearCombination_ne_zero hG.1 hx)
     (maxTotalDegree P) (minSeedCard S)
     (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>

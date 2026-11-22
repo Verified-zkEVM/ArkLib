@@ -200,7 +200,7 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
   revert q f
   intro q f
   induction n : f.natDegree using Nat.strong_induction_on generalizing q f with
-  | h n ih =>
+  | ind n ih =>
     by_cases h_deg : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0
     · rw [folding_polynomial_def_base_case h_deg]
       simp +decide only [eval_map]
@@ -313,7 +313,7 @@ theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
     natDegreeY (foldingPolynomial q f) < q.degree := by
   simp only [natDegreeY, coe_lt_degree]
   induction n : f.natDegree using Nat.strong_induction_on generalizing f q with
-  | h n ih =>
+  | ind n ih =>
   by_cases hq : f.degree < q.degree
   · have h_folding_eq_map : foldingPolynomial q f = Polynomial.map Polynomial.C f :=
       folding_polynomial_eq_map_of_f_degree_lt_q_degree hq
@@ -385,14 +385,13 @@ private lemma folding_polynomial_deg_x_ind {q f : F[X]}
       · simp_all only [ge_iff_le, gt_iff_lt, degreeX, coeff_add, coeff_map, coeff_C_mul,
         natDegree_C_add, Finset.sup_le_iff, mem_support_iff, ne_eq]
         intro n hn
-        by_cases h : Polynomial.coeff
-          (foldingPolynomial q (f / q)) n = 0
+        by_cases h : (foldingPolynomial q (f / q)).coeff n = 0
             <;> simp_all +decide only [monic_X, Monic.leadingCoeff, one_mul, ne_eq,
               leadingCoeff_eq_zero, not_false_eq_true, natDegree_mul', natDegree_X,
               add_le_add_iff_left, mul_zero, add_zero, map_eq_zero, natDegree_zero, zero_le]
         exact Finset.le_sup
           (f := fun n ↦ Polynomial.natDegree
-            (Polynomial.coeff (foldingPolynomial q (f / q)) n))
+            ((foldingPolynomial q (f / q)).coeff n))
             (by aesop)
       · simp_all only [ge_iff_le, gt_iff_lt, degreeX, coeff_add, coeff_map, coeff_C_mul,
         natDegree_C_add, Nat.bot_eq_zero, add_pos_iff, zero_lt_one, Finset.lt_sup_iff,
@@ -439,7 +438,7 @@ theorem folding_polynomial_deg_x {q f : F[X]} :
       simp only [natDegree_C, Nat.div_zero]
     · simp only [not_le] at h
       induction n : f.natDegree using Nat.strong_induction_on generalizing f q with
-      | h n ih =>
+      | ind n ih =>
       have hqpos : 0 < q.natDegree := Polynomial.natDegree_pos_iff_degree_pos.mpr h
       by_cases h₁ : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0
       · have h_deg_zero : f.natDegree < q.natDegree := by
@@ -671,8 +670,7 @@ private lemma natDegree_iterate_divX_le_poly (f : F[X]) (k : ℕ) :
 private lemma X_pow_div_mod_decomp (f : F[X]) (k : ℕ) :
     (∑ i ∈ Finset.range k, Polynomial.C (f.coeff i) * X^i)
       + X^k * Polynomial.divX^[k] f = f := by
-  apply Polynomial.ext
-  intro n
+  ext n : 2
   rw [Polynomial.coeff_add, Polynomial.finsetSum_coeff, Polynomial.coeff_X_pow_mul',
       coeff_iterate_divX]
   simp only [coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero]

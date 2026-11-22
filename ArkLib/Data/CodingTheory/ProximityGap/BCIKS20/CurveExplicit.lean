@@ -106,10 +106,12 @@ theorem exists_curve_exactPowerAgreement_explicit_budget
       rw [hs, ReedSolomon.HiddenDerivative.sqrt_cube_eq_rpow_three_halves]
       simpa only [Nat.cast_succ] using hb
     calc
-      (E.card : ℝ) ≤ 2 * d * ReedSolomon.HiddenDerivative.johnsonExceptionCount
+      (E.card : ℝ) ≤ d * ReedSolomon.HiddenDerivative.johnsonSuccExceptionCount
           (Fintype.card ι) K A eta := hE
-      _ = d * (2 * ReedSolomon.HiddenDerivative.johnsonExceptionCount
-          (Fintype.card ι) K A eta) := by ring
+      _ ≤ d * (2 * ReedSolomon.HiddenDerivative.johnsonExceptionCount
+          (Fintype.card ι) K A eta) := mul_le_mul_of_nonneg_left
+            (ReedSolomon.HiddenDerivative.johnsonSuccExceptionCount_le_two_mul hKpos (by omega))
+            (Nat.cast_nonneg d)
       _ ≤ d * B := mul_le_mul_of_nonneg_left hb' (Nat.cast_nonneg d)
 
 

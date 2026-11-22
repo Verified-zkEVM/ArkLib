@@ -92,8 +92,9 @@ noncomputable def queryPhaseLogicStep :
       (WitOut := Unit)
       (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
   -- Relations
-  completeness_relIn := strictFinalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  completeness_relOut := acceptRejectOracleRel
+  completeness_relIn := fun input =>
+    input ∈ strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  completeness_relOut := fun output => output ∈ acceptRejectOracleRel
   -- Verifier (Oracle-Aware): verifierCheck queries oracles and returns StmtOut
   -- Iterates through all γ_repetitions and checks each one
   verifierCheck := fun stmtIn transcript => do

@@ -259,7 +259,7 @@ lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
   have hD_lt : D < (ℓ : ℚ) * (D - 1) := by
     rw [← sub_pos]
     convert sub_pos.mpr hDgt using 1
-    all_goals ring
+    ring
   have hfinal : (B.card : ℚ) < (ℓ : ℚ) := by
     by_contra hcard
     have hmul := mul_le_mul_of_nonneg_right (le_of_not_gt hcard) (sub_nonneg.mpr hD1.le)

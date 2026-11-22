@@ -18,7 +18,7 @@ path = ".."
 [[require]]
 scope = "leanprover"
 name = "doc-gen4"
-rev = "v4.35.0"
+rev = "v4.36.0"
 
 [[require]]
 name = "checkdecls"

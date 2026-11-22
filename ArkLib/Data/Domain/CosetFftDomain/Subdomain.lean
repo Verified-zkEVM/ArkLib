@@ -222,7 +222,7 @@ private lemma subdomain_eval_pow_core {i j : ℕ} (hij : i + j ≤ n)
     2 ^ j • (CosetFftDomainClass.subdomain_embed (n := n) i k) =
       CosetFftDomainClass.subdomain_embed (n := n) (i + j) ⟨k.val % 2 ^ (n - (i + j)),
     Nat.mod_lt _ (by positivity)⟩ := by
-    all_goals generalize_proofs at *
+    generalize_proofs at *
     have h_subdomain_embedding :
       (2 ^ j • (CosetFftDomainClass.subdomain_embed (n := n) i k)).val =
         (2 ^ (i + j) * (k.val % 2 ^ (n - (i + j)))) % 2 ^ n := by
