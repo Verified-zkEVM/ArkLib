@@ -6,7 +6,9 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Oracle.Terminal
-public import VCVio.EvalDist.WithFailure
+public import PolyFun.Control.Monad.Measure.WithFailure
+public import ToMathlib.MeasureTheory.Measure.GiryMonad
+public import VCVio.EvalDist.ProbabilityNotation
 
 /-!
 # Terminal observations with explicit runtime faults

@@ -33,6 +33,7 @@ See `docs/kb/papers/ACFY24stir.md` for the paper-to-API correspondence and forma
 @[expose] public section
 
 open Polynomial NNReal ReedSolomon Code
+open Lagrange (nodal)
 
 namespace Quotienting
 
@@ -46,10 +47,6 @@ variable {F : Type*} [Field F] [DecidableEq F]
 noncomputable def ansPoly (S : Finset F) (Ans : S → F) : Polynomial F :=
   Lagrange.interpolate S.attach (fun i => (i : F)) Ans
 
-/-- The monic vanishing polynomial `∏ s ∈ S, (X - C s)`, of degree `S.card`. -/
-noncomputable def vanishingPoly (S : Finset F) : Polynomial F :=
-  ∏ s ∈ S, (Polynomial.X - Polynomial.C s)
-
 /-- `ansPoly S Ans` interpolates `Ans` on `S`. -/
 lemma eval_ansPoly_of_mem (S : Finset F) (Ans : S → F) (s : S) :
     (ansPoly S Ans).eval (s : F) = Ans s := by
@@ -62,32 +59,6 @@ lemma degree_ansPoly_lt (S : Finset F) (Ans : S → F) : (ansPoly S Ans).degree 
   simpa using Lagrange.degree_interpolate_lt (s := S.attach) (v := fun i : S => (i : F)) Ans
     Subtype.val_injective.injOn
 
-section VanishingPoly
-
-omit [DecidableEq F]
-
-/-- The vanishing polynomial of `S` vanishes exactly on `S`. -/
-lemma eval_vanishingPoly_eq_zero_iff (S : Finset F) (x : F) :
-    (vanishingPoly S).eval x = 0 ↔ x ∈ S := by
-  simp [vanishingPoly, Polynomial.eval_prod, Finset.prod_eq_zero_iff, sub_eq_zero]
-
-lemma eval_vanishingPoly_of_mem {S : Finset F} {x : F} (hx : x ∈ S) :
-    (vanishingPoly S).eval x = 0 :=
-  (eval_vanishingPoly_eq_zero_iff S x).2 hx
-
-lemma eval_vanishingPoly_ne_zero {S : Finset F} {x : F} (hx : x ∉ S) :
-    (vanishingPoly S).eval x ≠ 0 :=
-  fun h => hx ((eval_vanishingPoly_eq_zero_iff S x).1 h)
-
-lemma monic_vanishingPoly (S : Finset F) : (vanishingPoly S).Monic :=
-  Polynomial.monic_prod_of_monic _ _ fun s _ => Polynomial.monic_X_sub_C s
-
-lemma natDegree_vanishingPoly (S : Finset F) : (vanishingPoly S).natDegree = S.card := by
-  rw [vanishingPoly, Polynomial.natDegree_prod_of_monic _ _ fun s _ => Polynomial.monic_X_sub_C s]
-  simp
-
-end VanishingPoly
-
 /-- The quotient function that outputs
   if `domain x ∈ S`,  Fill(domain x).
   else                (f(x) - Ans'(domain x)) / V(domain x).
@@ -99,7 +70,7 @@ noncomputable def funcQuotient (domain : ι ↪ F) (f : ι → F) (S : Finset F)
     ι → F :=
   fun x =>
     if hx : domain x ∈ S then Fill ⟨domain x, hx⟩ -- if domain x ∈ S,  Fill(domain x).
-    else (f x - (ansPoly S Ans).eval (domain x)) / (vanishingPoly S).eval (domain x)
+    else (f x - (ansPoly S Ans).eval (domain x)) / (nodal S id).eval (domain x)
 
 lemma funcQuotient_of_mem {domain : ι ↪ F} {f : ι → F} {S : Finset F} {Ans Fill : S → F} {x : ι}
     (hx : domain x ∈ S) : funcQuotient domain f S Ans Fill x = Fill ⟨domain x, hx⟩ := by
@@ -107,16 +78,17 @@ lemma funcQuotient_of_mem {domain : ι ↪ F} {f : ι → F} {S : Finset F} {Ans
 
 lemma funcQuotient_of_not_mem {domain : ι ↪ F} {f : ι → F} {S : Finset F} {Ans Fill : S → F}
     {x : ι} (hx : domain x ∉ S) : funcQuotient domain f S Ans Fill x =
-      (f x - (ansPoly S Ans).eval (domain x)) / (vanishingPoly S).eval (domain x) := by
+      (f x - (ansPoly S Ans).eval (domain x)) / (nodal S id).eval (domain x) := by
   simp [funcQuotient, hx]
 
 /-- Off `S`, multiplying the quotient back by `V_S` and adding `Ans'` recovers `f`. -/
 lemma eval_vanishingPoly_mul_funcQuotient_add_ansPoly {domain : ι ↪ F} {f : ι → F}
     {S : Finset F} {Ans Fill : S → F} {x : ι} (hx : domain x ∉ S) :
-    (vanishingPoly S).eval (domain x) * funcQuotient domain f S Ans Fill x +
+    (nodal S id).eval (domain x) * funcQuotient domain f S Ans Fill x +
       (ansPoly S Ans).eval (domain x) = f x := by
   rw [funcQuotient_of_not_mem hx]
-  field_simp [eval_vanishingPoly_ne_zero hx]
+  have hn : (nodal S id).eval (domain x) ≠ 0 := Lagrange.eval_nodal_not_at_node (by aesop)
+  field_simp [hn]
   ring
 
 /-- Subtract the interpolant of `fPoly` on `S` and divide by the vanishing polynomial of `S`.
@@ -124,23 +96,20 @@ lemma eval_vanishingPoly_mul_funcQuotient_add_ansPoly {domain : ι ↪ F} {f : �
 If `fPoly.degree < d`, the quotient has degree less than `d - S.card`;
 see `degree_polyQuotient_lt`. -/
 noncomputable def polyQuotient (S : Finset F) (fPoly : F[X]) : F[X] :=
-    (fPoly - (ansPoly S (fun s => fPoly.eval s))) / (vanishingPoly S)
+    (fPoly - (ansPoly S (fun s => fPoly.eval s))) / nodal S id
 
 /-- The vanishing polynomial of `S` divides `fPoly - Ans'`, since both agree on `S`. -/
 lemma vanishingPoly_dvd_sub_ansPoly (S : Finset F) (fPoly : F[X]) :
-    vanishingPoly S ∣ fPoly - ansPoly S (fun s => fPoly.eval s) := by
+    nodal S id ∣ fPoly - ansPoly S (fun s => fPoly.eval s) := by
   refine Finset.prod_dvd_of_coprime (fun a _ b _ hab => ?_) fun s hs => ?_
   · exact pairwise_coprime_X_sub_C (s := id) Function.injective_id hab
-  · rw [dvd_iff_isRoot, IsRoot, eval_sub, eval_ansPoly_of_mem S _ ⟨s, hs⟩, sub_self]
+  · rw [dvd_iff_isRoot, IsRoot, eval_sub, id_eq, eval_ansPoly_of_mem S _ ⟨s, hs⟩, sub_self]
 
 /-- Multiplying the polynomial quotient back by `V_S` recovers `fPoly - Ans'`. -/
 lemma vanishingPoly_mul_polyQuotient (S : Finset F) (fPoly : F[X]) :
-    vanishingPoly S * polyQuotient S fPoly = fPoly - ansPoly S (fun s => fPoly.eval s) := by
-  have hV := monic_vanishingPoly S
-  have h := modByMonic_add_div (fPoly - ansPoly S (fun s => fPoly.eval s)) (vanishingPoly S)
-  rw [(modByMonic_eq_zero_iff_dvd hV).2 (vanishingPoly_dvd_sub_ansPoly S fPoly), zero_add,
-    divByMonic_eq_div _ hV] at h
-  exact h
+    nodal S id * polyQuotient S fPoly = fPoly - ansPoly S (fun s => fPoly.eval s) := by
+  exact EuclideanDomain.mul_div_cancel' Lagrange.nodal_ne_zero
+    (vanishingPoly_dvd_sub_ansPoly S fPoly)
 
 /-- If `fPoly` has degree less than `d`, its quotient has degree less than `d - S.card`. -/
 lemma degree_polyQuotient_lt {S : Finset F} {fPoly : F[X]} {d : ℕ}
@@ -153,17 +122,18 @@ lemma degree_polyQuotient_lt {S : Finset F} {fPoly : F[X]} {d : ℕ}
       (max_lt (hf.trans_le (by exact_mod_cast le_max_left d S.card)) hans)
   by_cases hQ : polyQuotient S fPoly = 0
   · rw [hQ]; simp
-  have hV := monic_vanishingPoly S
+  have hV := Lagrange.nodal_monic (s := S) (v := id)
   rw [← vanishingPoly_mul_polyQuotient] at hsub
   have h1 := (natDegree_lt_iff_degree_lt (mul_ne_zero hV.ne_zero hQ)).2 hsub
-  rw [hV.natDegree_mul' hQ, natDegree_vanishingPoly] at h1
+  rw [hV.natDegree_mul' hQ, Lagrange.natDegree_nodal] at h1
   exact (natDegree_lt_iff_degree_lt hQ).1 (by omega)
 
 /-- Off `S`, the polynomial quotient evaluates to `(fPoly(x) - Ans'(x)) / V_S(x)`. -/
 lemma eval_polyQuotient_of_not_mem {S : Finset F} {fPoly : F[X]} {x : F} (hx : x ∉ S) :
     (polyQuotient S fPoly).eval x =
-      (fPoly.eval x - (ansPoly S (fun s => fPoly.eval s)).eval x) / (vanishingPoly S).eval x := by
-  rw [eq_div_iff (eval_vanishingPoly_ne_zero hx), mul_comm, ← eval_mul,
+      (fPoly.eval x - (ansPoly S (fun s => fPoly.eval s)).eval x) / (nodal S id).eval x := by
+  have hn : (nodal S id).eval x ≠ 0 := Lagrange.eval_nodal_not_at_node (by aesop)
+  rw [eq_div_iff hn, mul_comm, ← eval_mul,
     vanishingPoly_mul_polyQuotient, eval_sub]
 
 /-- We define the set disagreementSet(f,ι,S,Ans) as the set of all points `x ∈ ι` whose
@@ -173,26 +143,27 @@ noncomputable def disagreementSet [Fintype ι] (domain : ι ↪ F) (f : ι → F
     (Ans : S → F) : Finset ι :=
   Finset.univ.filter fun x => domain x ∈ S ∧ (ansPoly S Ans).eval (domain x) ≠ f x
 
-/-- The unquotiented polynomial `vanishingPoly S * g + ansPoly S Ans`. -/
+/-- The unquotiented polynomial `nodal S id * g + ansPoly S Ans`. -/
 noncomputable def unquotient (S : Finset F) (Ans : S → F) (g : F[X]) : F[X] :=
-  vanishingPoly S * g + ansPoly S Ans
+  nodal S id * g + ansPoly S Ans
 
 /-- On `S` the unquotiented polynomial takes the answer values, whatever `g` is. -/
 lemma eval_unquotient_of_mem (S : Finset F) (Ans : S → F) (g : F[X]) (s : S) :
     (unquotient S Ans g).eval (s : F) = Ans s := by
-  simp [unquotient, eval_vanishingPoly_of_mem s.2, eval_ansPoly_of_mem]
+  have hzero : (nodal S id).eval (s : F) = 0 := Lagrange.eval_nodal_at_node (v := id) s.2
+  simp [unquotient, hzero, eval_ansPoly_of_mem]
 
 /-- The unquotiented polynomial of a polynomial of degree less than `d - |S|` has degree less than
 `d`. -/
 lemma degree_unquotient_lt {S : Finset F} {Ans : S → F} {g : F[X]} {d : ℕ} (hS : S.card < d)
     (hg : g.degree < ((d - S.card : ℕ) : WithBot ℕ)) : (unquotient S Ans g).degree < d := by
-  have hmul : (vanishingPoly S * g).degree < d := by
+  have hmul : (nodal S id * g).degree < d := by
     by_cases hg0 : g = 0
     · simp [hg0]
-    · have hVne : vanishingPoly S ≠ 0 := (monic_vanishingPoly S).ne_zero
+    · have hVne : nodal S id ≠ 0 := Lagrange.nodal_ne_zero
       have hgnat : g.natDegree < d - S.card := (natDegree_lt_iff_degree_lt hg0).2 hg
-      have hne : vanishingPoly S * g ≠ 0 := mul_ne_zero hVne hg0
-      rw [← natDegree_lt_iff_degree_lt hne, natDegree_mul hVne hg0, natDegree_vanishingPoly]
+      have hne : nodal S id * g ≠ 0 := mul_ne_zero hVne hg0
+      rw [← natDegree_lt_iff_degree_lt hne, natDegree_mul hVne hg0, Lagrange.natDegree_nodal]
       omega
   have hans : (ansPoly S Ans).degree < d :=
     (degree_ansPoly_lt S Ans).trans (by exact_mod_cast hS)
@@ -209,7 +180,8 @@ lemma eval_unquotient_eq_of_not_mem_disagreementSet [Fintype ι] {domain : ι �
   · have hT : (ansPoly S Ans).eval (domain x) = f x := by
       by_contra hne
       exact hxT (by simp [disagreementSet, hx, hne])
-    simp [unquotient, eval_vanishingPoly_of_mem hx, hT]
+    have hzero : (nodal S id).eval (domain x) = 0 := Lagrange.eval_nodal_at_node (v := id) hx
+    simp [unquotient, hzero, hT]
   · rw [unquotient, eval_add, eval_mul, hg]
     exact eval_vanishingPoly_mul_funcQuotient_add_ansPoly hx
 

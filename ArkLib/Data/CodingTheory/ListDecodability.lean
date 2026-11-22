@@ -53,6 +53,11 @@ this arrangement is recorded in `docs/wiki/coding-theory-conventions.md`.
 * `Code.IsListDecodable.mono`, `Code.IsListDecodable.anti_radius`, `Code.Lambda_mono`,
   `Code.Lambda_mono_code` — monotone in the list-size bound, antitone in the radius, monotone in the
   code.
+* `Code.Lambda_le_one_of_mul_card_lt_one` — below relative radius `1 / |ι|` every point list has at
+  most one element.
+* `Code.closeCodewordsRel_comp_equiv`, `Code.Lambda_comp_equiv`,
+  `Code.isListDecodable_comp_equiv` — point lists, list size and list decodability under a
+  reindexing of the coordinates.
 
 ## References
 
@@ -258,6 +263,47 @@ lemma Lambda_mono_code {C D : Set (ι → F)} (hDC : D ⊆ C) (δ : ℝ) :
   refine iSup_mono fun f => ?_
   exact Set.encard_mono fun c hc => ⟨hDC hc.1, hc.2⟩
 
+/-- Below relative radius `1 / |ι|` every point list has at most one element. -/
+lemma Lambda_le_one_of_mul_card_lt_one {C : Set (ι → F)} {δ : ℝ}
+    (hδ : δ * Fintype.card ι < 1) : Lambda C δ ≤ 1 := by
+  classical
+  refine Lambda_le_iff_forall_encard_le.2 fun y ↦ Set.encard_le_one_iff.2 fun c c' hc hc' ↦ ?_
+  have key (c : ι → F) (hc : c ∈ closeCodewordsRel C y δ) : c = y := by
+    have h := (mem_closeCodewordsRel_iff.1 hc).2
+    rw [relHammingDist_coe] at h
+    rcases (Fintype.card ι).eq_zero_or_pos with h0 | h0
+    · exact funext fun i ↦ ((Fintype.card_eq_zero_iff.1 h0).false i).elim
+    · have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast h0
+      rw [div_le_iff₀ hn] at h
+      have : hammingDist y c < 1 := by exact_mod_cast h.trans_lt hδ
+      exact (hammingDist_eq_zero.1 (by omega)).symm
+  rw [key c hc, key c' hc']
+
+/-- Reindexing the coordinates by an equivalence `e` maps point lists onto point lists. Here `C'`
+is `C` with its coordinates reindexed by `e`: `w ∘ e ∈ C'` exactly when `w ∈ C`. -/
+lemma closeCodewordsRel_comp_equiv {κ : Type*} [Fintype κ] (e : κ ≃ ι) {C : Set (ι → F)}
+    {C' : Set (κ → F)} (hC : ∀ w : ι → F, w ∘ e ∈ C' ↔ w ∈ C) (f : ι → F) (δ : ℝ) :
+    closeCodewordsRel C' (f ∘ e) δ = (· ∘ e) '' closeCodewordsRel C f δ := by
+  classical
+  have hmem (c : ι → F) :
+      c ∘ e ∈ closeCodewordsRel C' (f ∘ e) δ ↔ c ∈ closeCodewordsRel C f δ := by
+    rw [mem_closeCodewordsRel_iff, mem_closeCodewordsRel_iff, hC, relHammingDist_comp_equiv]
+  ext c
+  refine ⟨fun hc => ⟨c ∘ e.symm, (hmem _).mp ?_, ?_⟩, fun ⟨c, hc, hce⟩ => hce ▸ (hmem c).mpr hc⟩
+  · simpa [Function.comp_def] using hc
+  · ext; simp
+
+/-- Reindexing the coordinates by an equivalence `e` preserves the maximised list size. Here `C'`
+is `C` with its coordinates reindexed by `e`: `w ∘ e ∈ C'` exactly when `w ∈ C`. -/
+theorem Lambda_comp_equiv {κ : Type*} [Fintype κ] (e : κ ≃ ι) {C : Set (ι → F)}
+    {C' : Set (κ → F)} (hC : ∀ w : ι → F, w ∘ e ∈ C' ↔ w ∈ C) (δ : ℝ) :
+    Lambda C' δ = Lambda C δ := by
+  have hsurj : Function.Surjective fun f : ι → F => f ∘ e :=
+    fun g => ⟨g ∘ e.symm, by ext; simp⟩
+  rw [Lambda, Lambda, ← hsurj.iSup_comp]
+  refine iSup_congr fun f => ?_
+  rw [closeCodewordsRel_comp_equiv e hC, e.surjective.injective_comp_right.encard_image]
+
 /-! ## List decodability -/
 
 /-- A code `C` is `(r, ℓ)`-**list decodable** if every point list at relative radius `r` has at
@@ -362,6 +408,13 @@ antitone in it. -/
 lemma IsListDecodable.anti_radius {C : Set (ι → F)} {r₁ r₂ : ℝ} {ℓ : ℝ≥0}
     (h : IsListDecodable C r₂ ℓ) (hr : r₁ ≤ r₂) : IsListDecodable C r₁ ℓ :=
   (Lambda_mono hr).trans h
+
+/-- Reindexing the coordinates by an equivalence `e` preserves list decodability. Here `C'` is
+`C` with its coordinates reindexed by `e`: `w ∘ e ∈ C'` exactly when `w ∈ C`. -/
+theorem isListDecodable_comp_equiv {κ : Type*} [Fintype κ] (e : κ ≃ ι) {C : Set (ι → F)}
+    {C' : Set (κ → F)} (hC : ∀ w : ι → F, w ∘ e ∈ C' ↔ w ∈ C) {r : ℝ} {ℓ : ℝ≥0} :
+    IsListDecodable C' r ℓ ↔ IsListDecodable C r ℓ := by
+  rw [isListDecodable_iff_Lambda_le, isListDecodable_iff_Lambda_le, Lambda_comp_equiv e hC]
 
 /-- `IsListDecodable` from a bound on the finite subsets of the point lists: the
 `IsListDecodable`-shaped form of `Lambda_le_of_forall_finset_card_le`, at a real bound. -/

@@ -115,9 +115,9 @@ theorem optionEquivRight_coeff_coeff
     · subst m
       have hnone : d none = i := by
         simpa using congrArg (fun e : Option σ →₀ ℕ ↦ e none) him
-      rw [Polynomial.coeff_monomial, ite_eq_left_of_eq_true _ _ (eq_true hnone)]
+      rw [Polynomial.coeff_monomial_apply, ite_eq_left_of_eq_true _ _ (eq_true hnone)]
     · subst m
-      rw [Polynomial.coeff_monomial, ite_eq_right_of_eq_false _ _ (eq_false ?_)]
+      rw [Polynomial.coeff_monomial_apply, ite_eq_right_of_eq_false _ _ (eq_false ?_)]
       intro hnone
       apply him
       rw [← hnone]

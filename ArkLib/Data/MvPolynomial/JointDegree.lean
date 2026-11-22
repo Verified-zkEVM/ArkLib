@@ -56,7 +56,7 @@ def restrictJointDegree (w : σ → ℕ) (B : ℕ) : Submodule R (MvPolynomial �
     · exact hP e n hp
   zero_mem' e n hne := by simp at hne
   smul_mem' r P hP e n hne := by
-    rw [MvPolynomial.coeff_smul, Polynomial.coeff_smul, smul_eq_mul] at hne
+    rw [MvPolynomial.coeff_smul, AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul] at hne
     exact hP e n (right_ne_zero_of_mul hne)
 
 /-- Membership in `restrictJointDegree w B`, coefficientwise: every nonzero coefficient of `X^n`

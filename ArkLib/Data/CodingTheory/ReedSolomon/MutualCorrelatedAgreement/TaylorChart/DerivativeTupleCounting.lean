@@ -33,7 +33,7 @@ ratio.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+open Polynomial PolynomialDifferential ReedSolomon.HiddenDerivative
 open scoped BigOperators
 
 noncomputable section
