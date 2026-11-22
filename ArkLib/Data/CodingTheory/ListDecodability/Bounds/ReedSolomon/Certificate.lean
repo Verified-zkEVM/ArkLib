@@ -16,10 +16,10 @@ Let `H : Fin n → Finset (Fin (s + 1))` be a hypergraph, `k` a degree, and `r` 
 `(k + 2 * r)`-weakly partition-connected. Two edges `i` and `i'` have the same type if
 `H i = H i'`. The construction and the certificates are those of [AGL24], with `t = s + 1`.
 
-For a list `l` of edges, `certificateState F hH l` is the state after `l`: the rows of a maximal
+For a list `l` of edges, `Certificate.state F hH l` is the state after `l`: the rows of a maximal
 minor of the intersection matrix, a bank of unused edges, and the number of steps since the bank
 was last chosen, built along `l` one edge at a time. The construction starts with the bank
-`certificateBank H r []`, which holds, for each type, the `r / 2 ^ (s + 1)` largest edges of that
+`Certificate.bank H r []`, which holds, for each type, the `r / 2 ^ (s + 1)` largest edges of that
 type, and with a nonzero minor whose rows avoid the bank. Such a minor exists since the bank has
 at most `r` edges (`exists_det_submatrix_ne_zero_of_card_le`). On the next edge `i` of `l`, the
 smallest edge `i'` of the bank of the same type as `i` leaves the bank and the variables `X i` and
@@ -36,12 +36,7 @@ every point at which the intersection matrix loses rank has a certificate of len
 
 ## Main definitions
 
-* `certificateBank H r used`: for each type, the `r / 2 ^ (s + 1)` largest edges of that type not
-  in `used`.
-* `rowsAvoiding`: rows of a nonzero maximal minor avoiding given edges, when such a minor exists.
-* `CertificateState`, with `CertificateState.refresh` and `CertificateState.step`, and
-  `certificateState F hH l`: the rows, the bank and the age after the list `l`.
-* `certificateMinor F hH l`: the determinant of the minor with those rows.
+* `certificateMinor F hH l`: the determinant of the minor after the list `l`.
 * `IsCertificate F hH α c`: `c` is a certificate for `α`.
 * `certificatePolynomial F hH c i`: the minor attached to the edge `i` of an injective
   certificate `c`.
@@ -50,8 +45,6 @@ every point at which the intersection matrix loses rank has a certificate of len
 
 * `certificateMinor_ne_zero`, `degreeOf_certificateMinor_le`: the minors are nonzero and have
   degree at most `s * (k - 1)` in each variable.
-* `certificateState_nil`, `certificateState_append_singleton`: the state after `[]` is the fresh
-  state, and the state after `l ++ [i]` is computed from the state after `l`.
 * `IsCertificate.injective`, `IsCertificate.card_descents_lt`: a certificate of length at most
   `r` is injective and has fewer than `2 ^ (s + 1)` descents.
 * `exists_isCertificate_of_not_isRigid`: a point at which `H` is not rigid has certificates of
@@ -61,9 +54,17 @@ every point at which the intersection matrix loses rank has a certificate of len
 * `certificatePolynomial_apply`, `degreeOf_certificatePolynomial_le`: the polynomial of the edge
   `c j` is the minor after `c 0, …, c (j - 1)`, and every polynomial has degree at most
   `s * (k - 1)` in the variable of its edge.
-* `exists_embedding_certificatePolynomial_of_not_isRigid`: a point at which `H` is not rigid has
-  an injective certificate of length `r` with fewer than `2 ^ (s + 1)` descents, with the minors
-  indexed by its edges.
+* `IsCertificate.aeval_certificatePolynomial`: for an injective certificate, the polynomial of
+  each of its edges `i` does not vanish after substituting `α j` for `X j` at every `j < i`, and
+  vanishes after substituting at every `j ≤ i`.
+
+The construction itself, proof machinery for these statements, is in the namespace
+`ReedSolomon.Certificate`: `Certificate.bank H r used` (for each type, the `r / 2 ^ (s + 1)`
+largest edges of that type not in `used`), `Certificate.rowsAvoiding` (rows of a nonzero maximal
+minor avoiding given edges, when such a minor exists), the state `Certificate.State` with
+`Certificate.State.refresh` and `Certificate.State.step`, and `Certificate.state F hH l` (the rows,
+the bank and the age after the list `l`), with `Certificate.state_nil` and
+`Certificate.state_append_singleton`.
 
 ## References
 
@@ -84,7 +85,7 @@ variable {n s : ℕ} (H : Fin n → Finset (Fin (s + 1))) (r : ℕ) (used : List
 /-- The bank for `used`: the edges `i` not in `used` such that fewer than `r / 2 ^ (s + 1)` edges
 `j > i` not in `used` have the same type as `i`. For each type these are the
 `r / 2 ^ (s + 1)` largest edges of that type not in `used`, or all of them if there are fewer. -/
-def certificateBank : Finset (Fin n) :=
+def Certificate.bank : Finset (Fin n) :=
   {i | i ∉ used ∧ #{j | j ∉ used ∧ H j = H i ∧ i < j} < r / 2 ^ (s + 1)}
 
 variable {H r used}
@@ -102,22 +103,22 @@ private theorem card_filter_lt_card_filter_of_lt {i j : Fin n} (hij : i < j) (hj
 
 /-- The bank has at most `r` edges: at most `r / 2 ^ (s + 1)` of each of the `2 ^ (s + 1)`
 types. -/
-private theorem card_certificateBank_le : #(certificateBank H r used) ≤ r := by
+private theorem Certificate.card_bank_le : #(Certificate.bank H r used) ≤ r := by
   have hfib (τ : Finset (Fin (s + 1))) :
-      #{b ∈ certificateBank H r used | H b = τ} ≤ r / 2 ^ (s + 1) := by
+      #{b ∈ Certificate.bank H r used | H b = τ} ≤ r / 2 ^ (s + 1) := by
     refine (card_le_card_of_injOn (fun b ↦ #{l | l ∉ used ∧ H l = H b ∧ b < l})
       (t := range (r / 2 ^ (s + 1))) (fun b hb ↦ ?_) fun b hb b' hb' hbb' ↦ ?_).trans
       (card_range _).le
-    · simp only [mem_coe, certificateBank, mem_filter, mem_univ, true_and] at hb
+    · simp only [mem_coe, Certificate.bank, mem_filter, mem_univ, true_and] at hb
       exact mem_range.2 hb.1.2
-    · simp only [mem_coe, certificateBank, mem_filter, mem_univ, true_and] at hb hb'
+    · simp only [mem_coe, Certificate.bank, mem_filter, mem_univ, true_and] at hb hb'
       have hτ : H b' = H b := hb'.2.trans hb.2.symm
       rcases lt_trichotomy b b' with h | h | h
       · exact absurd hbb' (card_filter_lt_card_filter_of_lt h hτ hb'.1.1).ne'
       · exact h
       · exact absurd hbb' (card_filter_lt_card_filter_of_lt h hτ.symm hb.1.1).ne
-  calc #(certificateBank H r used)
-      = ∑ τ : Finset (Fin (s + 1)), #{b ∈ certificateBank H r used | H b = τ} :=
+  calc #(Certificate.bank H r used)
+      = ∑ τ : Finset (Fin (s + 1)), #{b ∈ Certificate.bank H r used | H b = τ} :=
         card_eq_sum_card_fiberwise fun _ _ ↦ mem_univ _
     _ ≤ ∑ _τ : Finset (Fin (s + 1)), r / 2 ^ (s + 1) := sum_le_sum fun τ _ ↦ hfib τ
     _ = 2 ^ (s + 1) * (r / 2 ^ (s + 1)) := by simp
@@ -125,10 +126,10 @@ private theorem card_certificateBank_le : #(certificateBank H r used) ≤ r := b
 
 /-- An edge outside `used` and outside the bank is smaller than every edge of the bank of the same
 type. -/
-private theorem lt_of_mem_certificateBank {i b : Fin n} (hi : i ∉ used)
-    (hiB : i ∉ certificateBank H r used) (hb : b ∈ certificateBank H r used) (hbi : H b = H i) :
+private theorem Certificate.lt_of_mem_bank {i b : Fin n} (hi : i ∉ used)
+    (hiB : i ∉ Certificate.bank H r used) (hb : b ∈ Certificate.bank H r used) (hbi : H b = H i) :
     i < b := by
-  simp only [certificateBank, mem_filter, mem_univ, true_and, not_and, not_lt] at hiB hb
+  simp only [Certificate.bank, mem_filter, mem_univ, true_and, not_and, not_lt] at hiB hb
   by_contra hlt
   refine hb.2.not_ge ((hiB hi).trans (card_le_card fun j hj ↦ ?_))
   simp only [mem_filter, mem_univ, true_and] at hj ⊢
@@ -136,17 +137,17 @@ private theorem lt_of_mem_certificateBank {i b : Fin n} (hi : i ∉ used)
 
 /-- If an edge outside `used` is not in the bank, then the bank holds at least
 `r / 2 ^ (s + 1)` edges of its type. -/
-private theorem le_card_filter_certificateBank {i : Fin n} (hi : i ∉ used)
-    (hiB : i ∉ certificateBank H r used) :
-    r / 2 ^ (s + 1) ≤ #{b ∈ certificateBank H r used | H b = H i} := by
-  set S : Finset (Fin n) := {j | j ∉ used ∧ H j = H i ∧ j ∉ certificateBank H r used}
+private theorem Certificate.le_card_filter_bank {i : Fin n} (hi : i ∉ used)
+    (hiB : i ∉ Certificate.bank H r used) :
+    r / 2 ^ (s + 1) ≤ #{b ∈ Certificate.bank H r used | H b = H i} := by
+  set S : Finset (Fin n) := {j | j ∉ used ∧ H j = H i ∧ j ∉ Certificate.bank H r used}
   have hiS : i ∈ S := by simp [S, hi, hiB]
   obtain ⟨x, hxS, hxmax⟩ : ∃ x ∈ S, ∀ y ∈ S, y ≤ x :=
     ⟨S.max' ⟨i, hiS⟩, S.max'_mem _, fun y hy ↦ S.le_max' y hy⟩
-  obtain ⟨hxu, hxH, hxB⟩ : x ∉ used ∧ H x = H i ∧ x ∉ certificateBank H r used := by
+  obtain ⟨hxu, hxH, hxB⟩ : x ∉ used ∧ H x = H i ∧ x ∉ Certificate.bank H r used := by
     simpa [S] using hxS
   have hxB' := hxB
-  simp only [certificateBank, mem_filter, mem_univ, true_and, not_and, not_lt] at hxB'
+  simp only [Certificate.bank, mem_filter, mem_univ, true_and, not_and, not_lt] at hxB'
   refine (hxB' hxu).trans (card_le_card fun j hj ↦ ?_)
   simp only [mem_filter, mem_univ, true_and] at hj ⊢
   refine ⟨by_contra fun hjB ↦ ?_, hj.2.1.trans hxH⟩
@@ -161,7 +162,7 @@ variable (F : Type*) [Field F] {n s k r : ℕ} {H : Fin n → Finset (Fin (s + 1
 /-- The state of the construction: the rows of a square submatrix of the intersection matrix with
 all columns, the edges of the bank not yet used, and the number of steps since the bank was last
 chosen. -/
-structure CertificateState (H : Fin n → Finset (Fin (s + 1))) (k : ℕ) where
+structure Certificate.State (H : Fin n → Finset (Fin (s + 1))) (k : ℕ) where
   /-- The rows of the current minor. -/
   rows : Fin s × Fin k → IntersectionRow H
   /-- The edges of the bank not yet swapped into the minor. -/
@@ -174,63 +175,66 @@ open Classical in
 /-- Rows of a square submatrix of the intersection matrix with all columns, avoiding the edges in
 `D`, with nonzero determinant, if there are such rows; otherwise rows of some nonzero maximal
 minor. -/
-noncomputable def rowsAvoiding (hH : IsWeaklyPartitionConnected H k) (D : Finset (Fin n)) :
+noncomputable def Certificate.rowsAvoiding (hH : IsWeaklyPartitionConnected H k)
+    (D : Finset (Fin n)) :
     Fin s × Fin k → IntersectionRow H :=
   if h : ∃ ρ : Fin s × Fin k → IntersectionRow H, (∀ c, (ρ c).1.1 ∉ D) ∧
       ((intersectionMatrix F H k).submatrix ρ id).det ≠ 0 then h.choose
   else (exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected F hH).choose
 
-/-- The rows chosen by `rowsAvoiding` have nonzero determinant. -/
-private theorem det_submatrix_rowsAvoiding_ne_zero (hH : IsWeaklyPartitionConnected H k)
+/-- The rows chosen by `Certificate.rowsAvoiding` have nonzero determinant. -/
+private theorem Certificate.det_submatrix_rowsAvoiding_ne_zero (hH : IsWeaklyPartitionConnected H k)
     (D : Finset (Fin n)) :
-    ((intersectionMatrix F H k).submatrix (rowsAvoiding F hH D) id).det ≠ 0 := by
-  unfold rowsAvoiding
+    ((intersectionMatrix F H k).submatrix (Certificate.rowsAvoiding F hH D) id).det ≠ 0 := by
+  unfold Certificate.rowsAvoiding
   split_ifs with h
   · exact h.choose_spec.2
   · exact (exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected F hH).choose_spec
 
-/-- If some nonzero maximal minor avoids `D`, the rows chosen by `rowsAvoiding` avoid `D`. -/
-private theorem rowsAvoiding_notMem (hH : IsWeaklyPartitionConnected H k) {D : Finset (Fin n)}
+/-- If some nonzero maximal minor avoids `D`, the rows chosen by `Certificate.rowsAvoiding` avoid
+`D`. -/
+private theorem Certificate.rowsAvoiding_notMem (hH : IsWeaklyPartitionConnected H k)
+    {D : Finset (Fin n)}
     (h : ∃ ρ : Fin s × Fin k → IntersectionRow H, (∀ c, (ρ c).1.1 ∉ D) ∧
       ((intersectionMatrix F H k).submatrix ρ id).det ≠ 0) (c : Fin s × Fin k) :
-    (rowsAvoiding F hH D c).1.1 ∉ D := by
-  unfold rowsAvoiding
+    (Certificate.rowsAvoiding F hH D c).1.1 ∉ D := by
+  unfold Certificate.rowsAvoiding
   rw [dite_eq_left h]
   exact h.choose_spec.1 c
 
 variable (hH : IsWeaklyPartitionConnected H (k + 2 * r))
 
-/-- A fresh state after the edges `used`: the bank `certificateBank H r used`, and the rows
-`rowsAvoiding` of the bank and `used`, which give a nonzero maximal minor and avoid the bank and
-`used` whenever some nonzero maximal minor avoids them, for example when `used` has at most `r`
-edges. -/
-noncomputable def CertificateState.refresh (used : List (Fin n)) : CertificateState H k where
-  rows := rowsAvoiding F (hH.mono (le_add_of_nonneg_right (by positivity)))
-    (certificateBank H r used ∪ used.toFinset)
-  bank := certificateBank H r used
+/-- A fresh state after the edges `used`: the bank `Certificate.bank H r used`, and the rows
+`Certificate.rowsAvoiding` of the bank and `used`, which give a nonzero maximal minor and avoid the
+bank and `used` whenever some nonzero maximal minor avoids them, for example when `used` has at
+most `r` edges. -/
+noncomputable def Certificate.State.refresh (used : List (Fin n)) : Certificate.State H k where
+  rows := Certificate.rowsAvoiding F (hH.mono (le_add_of_nonneg_right (by positivity)))
+    (Certificate.bank H r used ∪ used.toFinset)
+  bank := Certificate.bank H r used
   age := 0
 
 /-- One step of the construction on the edge `i`, after the edges `used`. If the bank has an edge
 of the type of `i`, its smallest such edge `i'` leaves the bank and the variables `X i` and `X i'`
 are swapped in the rows; otherwise the state is chosen afresh after `used ++ [i]`. -/
-noncomputable def CertificateState.step (st : CertificateState H k) (used : List (Fin n))
-    (i : Fin n) : CertificateState H k :=
+noncomputable def Certificate.State.step (st : Certificate.State H k) (used : List (Fin n))
+    (i : Fin n) : Certificate.State H k :=
   if h : {b ∈ st.bank | H b = H i}.Nonempty then
     { rows := fun c ↦ (st.rows c).relabel (Equiv.swap i ({b ∈ st.bank | H b = H i}.min' h))
         (Equiv.apply_swap_eq_self (mem_filter.1 (min'_mem _ h)).2.symm)
       bank := st.bank.erase ({b ∈ st.bank | H b = H i}.min' h)
       age := st.age + 1 }
-  else CertificateState.refresh F hH (used ++ [i])
+  else Certificate.State.refresh F hH (used ++ [i])
 
-/-- The state after the list of edges `l`: start from `CertificateState.refresh F hH []` and apply
-`CertificateState.step` along `l`. -/
-noncomputable def certificateState (l : List (Fin n)) : CertificateState H k :=
-  (l.foldl (fun p i ↦ (p.1.step F hH p.2 i, p.2 ++ [i])) (CertificateState.refresh F hH [], [])).1
+/-- The state after the list of edges `l`: start from `Certificate.State.refresh F hH []` and apply
+`Certificate.State.step` along `l`. -/
+noncomputable def Certificate.state (l : List (Fin n)) : Certificate.State H k :=
+  (l.foldl (fun p i ↦ (p.1.step F hH p.2 i, p.2 ++ [i])) (Certificate.State.refresh F hH [], [])).1
 
 /-- The minor after the list of edges `l`: the determinant of the square submatrix of the
-intersection matrix with the rows of `certificateState F hH l`. -/
+intersection matrix with the rows of `Certificate.state F hH l`. -/
 noncomputable def certificateMinor (l : List (Fin n)) : MvPolynomial (Fin n) F :=
-  ((intersectionMatrix F H k).submatrix (certificateState F hH l).rows id).det
+  ((intersectionMatrix F H k).submatrix (Certificate.state F hH l).rows id).det
 
 /-- `c` is a certificate for `α`: for every position `j`, the minor after `c 0, …, c (j - 1)`
 does not vanish after substituting `α i` for `X i` at every `i < c j`, and vanishes after
@@ -253,7 +257,7 @@ variable (r) in
 the bank avoids `used`, every edge of the rows is smaller than the edges of the bank of its type,
 and the bank holds at least `r / 2 ^ (s + 1)` minus the age edges of the type of every edge of the
 rows. -/
-private structure CertificateState.Inv (st : CertificateState H k) (used : List (Fin n)) :
+private structure Certificate.State.Inv (st : Certificate.State H k) (used : List (Fin n)) :
     Prop where
   rows_notMem_used : ∀ c, (st.rows c).1.1 ∉ used
   rows_notMem_bank : ∀ c, (st.rows c).1.1 ∉ st.bank
@@ -265,17 +269,17 @@ private structure CertificateState.Inv (st : CertificateState H k) (used : List 
 variable {F hH}
 
 /-- The construction starts from a fresh state. -/
-theorem certificateState_nil : certificateState F hH [] = CertificateState.refresh F hH [] := rfl
+theorem Certificate.state_nil : Certificate.state F hH [] = Certificate.State.refresh F hH [] := rfl
 
 /-- The state after `l ++ [i]` is one step on `i` from the state after `l`. -/
-theorem certificateState_append_singleton (l : List (Fin n)) (i : Fin n) :
-    certificateState F hH (l ++ [i]) = (certificateState F hH l).step F hH l i := by
-  have h2 (l : List (Fin n)) (p : CertificateState H k × List (Fin n)) :
+theorem Certificate.state_append_singleton (l : List (Fin n)) (i : Fin n) :
+    Certificate.state F hH (l ++ [i]) = (Certificate.state F hH l).step F hH l i := by
+  have h2 (l : List (Fin n)) (p : Certificate.State H k × List (Fin n)) :
       (l.foldl (fun p i ↦ (p.1.step F hH p.2 i, p.2 ++ [i])) p).2 = p.2 ++ l := by
     induction l generalizing p with
     | nil => simp
     | cons a l ih => simp [List.foldl_cons, ih]
-  simp only [certificateState, List.foldl_append, List.foldl_cons, List.foldl_nil]
+  simp only [Certificate.state, List.foldl_append, List.foldl_cons, List.foldl_nil]
   rw [h2]
   simp
 
@@ -283,27 +287,27 @@ theorem certificateState_append_singleton (l : List (Fin n)) (i : Fin n) :
 minor after `l ++ [i]` is the minor after `l` with `X i` and `X i'` swapped, `i'` being the
 smallest such edge. -/
 private theorem certificateMinor_append_singleton_of_nonempty {l : List (Fin n)} {i : Fin n}
-    (h : {b ∈ (certificateState F hH l).bank | H b = H i}.Nonempty) :
+    (h : {b ∈ (Certificate.state F hH l).bank | H b = H i}.Nonempty) :
     certificateMinor F hH (l ++ [i]) = rename
-      (Equiv.swap i ({b ∈ (certificateState F hH l).bank | H b = H i}.min' h))
+      (Equiv.swap i ({b ∈ (Certificate.state F hH l).bank | H b = H i}.min' h))
       (certificateMinor F hH l) := by
   unfold certificateMinor
-  rw [certificateState_append_singleton, CertificateState.step, dite_eq_left h]
+  rw [Certificate.state_append_singleton, Certificate.State.step, dite_eq_left h]
   exact det_submatrix_relabel _ (Equiv.apply_swap_eq_self (mem_filter.1 (min'_mem _ h)).2.symm) _
 
 /-- Every minor of the construction is a nonzero polynomial. -/
 theorem certificateMinor_ne_zero (l : List (Fin n)) : certificateMinor F hH l ≠ 0 := by
   induction l using List.reverseRecOn with
   | nil =>
-    exact det_submatrix_rowsAvoiding_ne_zero F
+    exact Certificate.det_submatrix_rowsAvoiding_ne_zero F
       (hH.mono (le_add_of_nonneg_right (by positivity))) _
   | append_singleton l i ih =>
-    by_cases h : {b ∈ (certificateState F hH l).bank | H b = H i}.Nonempty
+    by_cases h : {b ∈ (Certificate.state F hH l).bank | H b = H i}.Nonempty
     · rw [certificateMinor_append_singleton_of_nonempty h]
       exact (map_ne_zero_iff _ (rename_injective _ (Equiv.injective _))).2 ih
     · unfold certificateMinor
-      rw [certificateState_append_singleton, CertificateState.step, dite_eq_right h]
-      exact det_submatrix_rowsAvoiding_ne_zero F
+      rw [Certificate.state_append_singleton, Certificate.State.step, dite_eq_right h]
+      exact Certificate.det_submatrix_rowsAvoiding_ne_zero F
         (hH.mono (le_add_of_nonneg_right (by positivity))) _
 
 /-- Every minor of the construction has degree at most `s * (k - 1)` in each variable. -/
@@ -312,30 +316,30 @@ theorem degreeOf_certificateMinor_le (l : List (Fin n)) (i : Fin n) :
   degreeOf_det_submatrix_le _ i
 
 /-- A fresh state after at most `r` edges satisfies the invariant. -/
-private theorem CertificateState.inv_refresh {used : List (Fin n)} (hlen : used.length ≤ r) :
-    (CertificateState.refresh F hH used).Inv r used := by
-  have hD : ((#(certificateBank H r used ∪ used.toFinset) : ℕ) : ℝ) ≤ 2 * r := by
-    have := (card_union_le (certificateBank H r used) used.toFinset).trans
-      (add_le_add card_certificateBank_le (used.toFinset_card_le.trans hlen))
+private theorem Certificate.State.inv_refresh {used : List (Fin n)} (hlen : used.length ≤ r) :
+    (Certificate.State.refresh F hH used).Inv r used := by
+  have hD : ((#(Certificate.bank H r used ∪ used.toFinset) : ℕ) : ℝ) ≤ 2 * r := by
+    have := (card_union_le (Certificate.bank H r used) used.toFinset).trans
+      (add_le_add Certificate.card_bank_le (used.toFinset_card_le.trans hlen))
     exact_mod_cast this.trans (by omega)
-  have hrows := rowsAvoiding_notMem F (hH.mono (le_add_of_nonneg_right (by positivity)))
+  have hrows := Certificate.rowsAvoiding_notMem F (hH.mono (le_add_of_nonneg_right (by positivity)))
     (exists_det_submatrix_ne_zero_of_card_le F hH hD)
-  have hu (c) : ((CertificateState.refresh F hH used).rows c).1.1 ∉ used := fun h ↦
+  have hu (c) : ((Certificate.State.refresh F hH used).rows c).1.1 ∉ used := fun h ↦
     hrows c (mem_union_right _ (List.mem_toFinset.2 h))
-  have hb (c) : ((CertificateState.refresh F hH used).rows c).1.1 ∉ certificateBank H r used :=
+  have hb (c) : ((Certificate.State.refresh F hH used).rows c).1.1 ∉ Certificate.bank H r used :=
     fun h ↦ hrows c (mem_union_left _ h)
   refine ⟨hu, hb, fun b hb ↦ ?_,
-    fun c b hb' hbc ↦ lt_of_mem_certificateBank (hu c) (hb c) hb' hbc,
-    fun c ↦ le_card_filter_certificateBank (hu c) (hb c)⟩
-  simp only [CertificateState.refresh, certificateBank, mem_filter] at hb
+    fun c b hb' hbc ↦ Certificate.lt_of_mem_bank (hu c) (hb c) hb' hbc,
+    fun c ↦ Certificate.le_card_filter_bank (hu c) (hb c)⟩
+  simp only [Certificate.State.refresh, Certificate.bank, mem_filter] at hb
   exact hb.2.1
 
 /-- A step on an edge of the rows preserves the invariant, as long as at most `r` edges are
 used. -/
-private theorem CertificateState.Inv.step {st : CertificateState H k} {used : List (Fin n)}
+private theorem Certificate.State.Inv.step {st : Certificate.State H k} {used : List (Fin n)}
     {i : Fin n} (hst : st.Inv r used) (hi : ∃ c, (st.rows c).1.1 = i)
     (hlen : used.length + 1 ≤ r) : (st.step F hH used i).Inv r (used ++ [i]) := by
-  unfold CertificateState.step
+  unfold Certificate.State.step
   split_ifs with h
   · set i' := {b ∈ st.bank | H b = H i}.min' h
     obtain ⟨hi'B, hi'H⟩ := mem_filter.1 (min'_mem _ h)
@@ -382,7 +386,7 @@ private theorem CertificateState.Inv.step {st : CertificateState H k} {used : Li
       have := hst.le_card_bank_add_age c
       have := pred_card_le_card_erase (s := {b ∈ st.bank | H b = H (st.rows c).1.1}) (a := i')
       omega
-  · exact CertificateState.inv_refresh (by simpa using hlen)
+  · exact Certificate.State.inv_refresh (by simpa using hlen)
 
 variable {α : Fin n → F}
 
@@ -426,17 +430,17 @@ variable {m : ℕ} {c : Fin m → Fin n}
 /-- The entry `j` of a certificate is the edge of a row of the minor after its first `j`
 entries. -/
 private theorem IsCertificate.exists_rows_eq (hc : IsCertificate F hH α c) (j : Fin m) :
-    ∃ c', ((certificateState F hH ((List.ofFn c).take j)).rows c').1.1 = c j :=
+    ∃ c', ((Certificate.state F hH ((List.ofFn c).take j)).rows c').1.1 = c j :=
   exists_rows_eq_of_aeval (hc j).1 (hc j).2
 
 /-- The states along a certificate of length at most `r` satisfy the invariant. -/
 private theorem IsCertificate.inv (hc : IsCertificate F hH α c) (hm : m ≤ r) (j : ℕ)
     (hj : j < m) :
-    (certificateState F hH ((List.ofFn c).take j)).Inv r ((List.ofFn c).take j) := by
+    (Certificate.state F hH ((List.ofFn c).take j)).Inv r ((List.ofFn c).take j) := by
   induction j with
-  | zero => exact CertificateState.inv_refresh (hH := hH) (by simp)
+  | zero => exact Certificate.State.inv_refresh (hH := hH) (by simp)
   | succ j ih =>
-    rw [take_ofFn_succ c j (by omega), certificateState_append_singleton]
+    rw [take_ofFn_succ c j (by omega), Certificate.state_append_singleton]
     exact (ih (by omega)).step (hc.exists_rows_eq ⟨j, by omega⟩) (by simp; omega)
 
 /-- The entry `j` of a certificate of length at most `r` is not among its first `j` entries. -/
@@ -458,12 +462,12 @@ theorem IsCertificate.injective (hc : IsCertificate F hH α c) (hm : m ≤ r) :
 `c 0, …, c (j - 1)` has an edge of the type of `c j`, then `c j < c (j + 1)`. -/
 private theorem IsCertificate.lt_of_nonempty (hc : IsCertificate F hH α c) (hm : m ≤ r)
     {j : ℕ} (hj : j + 1 < m)
-    (h : {b ∈ (certificateState F hH ((List.ofFn c).take j)).bank |
+    (h : {b ∈ (Certificate.state F hH ((List.ofFn c).take j)).bank |
       H b = H (c ⟨j, by omega⟩)}.Nonempty) :
     c ⟨j, by omega⟩ < c ⟨j + 1, hj⟩ := by
   set a := c ⟨j, by omega⟩
   set b := c ⟨j + 1, hj⟩
-  set i' := {b ∈ (certificateState F hH ((List.ofFn c).take j)).bank | H b = H a}.min' h
+  set i' := {b ∈ (Certificate.state F hH ((List.ofFn c).take j)).bank | H b = H a}.min' h
   obtain ⟨hi'B, hi'H⟩ := mem_filter.1 (min'_mem _ h)
   obtain ⟨c', hc'⟩ := hc.exists_rows_eq ⟨j, by omega⟩
   have hai' : a < i' := by
@@ -488,13 +492,13 @@ private theorem IsCertificate.lt_of_nonempty (hc : IsCertificate F hH α c) (hm 
 private theorem IsCertificate.card_filter_descents_mul_add_age_le
     (hc : IsCertificate F hH α c) (hm : m ≤ r) (j : ℕ) (hj : j < m) :
     #{p ∈ Tuple.descents c | p.val < j} * (r / 2 ^ (s + 1) + 1) +
-      (certificateState F hH ((List.ofFn c).take j)).age ≤ j := by
+      (Certificate.state F hH ((List.ofFn c).take j)).age ≤ j := by
   induction j with
-  | zero => simp [certificateState_nil, CertificateState.refresh]
+  | zero => simp [Certificate.state_nil, Certificate.State.refresh]
   | succ j ih =>
     have ih := ih (by omega)
-    rw [take_ofFn_succ c j (by omega), certificateState_append_singleton]
-    by_cases h : {b ∈ (certificateState F hH ((List.ofFn c).take j)).bank |
+    rw [take_ofFn_succ c j (by omega), Certificate.state_append_singleton]
+    by_cases h : {b ∈ (Certificate.state F hH ((List.ofFn c).take j)).bank |
         H b = H (c ⟨j, by omega⟩)}.Nonempty
     · have hlt := hc.lt_of_nonempty hm hj h
       have hjm : j < m := by omega
@@ -505,7 +509,7 @@ private theorem IsCertificate.card_filter_descents_mul_add_age_le
         obtain ⟨hp1, hp2⟩ := Tuple.mem_descents.1 hp
         obtain rfl : p = ⟨j, hjm⟩ := Fin.ext hpj'
         exact hp2.not_gt hlt
-      rw [hD, CertificateState.step, dite_eq_left h]
+      rw [hD, Certificate.State.step, dite_eq_left h]
       dsimp only
       omega
     · obtain ⟨c', hc'⟩ := hc.exists_rows_eq ⟨j, by omega⟩
@@ -518,8 +522,8 @@ private theorem IsCertificate.card_filter_descents_mul_add_age_le
         rcases Nat.lt_succ_iff_lt_or_eq.1 hpj with hpj | hpj
         · exact mem_insert_of_mem (mem_filter.2 ⟨hp, hpj⟩)
         · exact mem_insert.2 (.inl (Fin.ext hpj))
-      rw [CertificateState.step, dite_eq_right h]
-      simp only [CertificateState.refresh, add_zero]
+      rw [Certificate.State.step, dite_eq_right h]
+      simp only [Certificate.State.refresh, add_zero]
       nlinarith
 
 /-- **Few descents.** A certificate of length at most `r` has fewer than `2 ^ (s + 1)`
@@ -586,18 +590,16 @@ theorem degreeOf_certificatePolynomial_le (c : Fin r ↪ Fin n) (i : Fin n) :
   · rw [← C_1, degreeOf_C]
     exact Nat.zero_le _
 
-/-- **Certificates of rank loss, indexed by edges.** If `H` is `(k + 2 * r)`-weakly
-partition-connected and not rigid for degree `k` at `α`, then there is an injective
-`c : Fin r ↪ Fin n` with fewer than `2 ^ (s + 1)` descents such that, for every edge `i` of `c`,
-`certificatePolynomial F hH c i` does not vanish after substituting `α j` for `X j` at every
-`j < i`, and vanishes after substituting at every `j ≤ i`. -/
-theorem exists_embedding_certificatePolynomial_of_not_isRigid (hα : ¬IsRigid H k α) :
-    ∃ c : Fin r ↪ Fin n, #(Tuple.descents c) < 2 ^ (s + 1) ∧ ∀ i ∈ univ.map c,
+/-- **The minors of a certificate, indexed by its edges.** If an injective `c : Fin r ↪ Fin n` is
+a certificate for `α`, then for every edge `i` of `c`, `certificatePolynomial F hH c i` does not
+vanish after substituting `α j` for `X j` at every `j < i`, and vanishes after substituting at
+every `j ≤ i`. -/
+theorem IsCertificate.aeval_certificatePolynomial {c : Fin r ↪ Fin n}
+    (hc : IsCertificate F hH α c) : ∀ i ∈ univ.map c,
       aeval (fun j ↦ if j < i then C (α j) else X j) (certificatePolynomial F hH c i) ≠ 0 ∧
         aeval (fun j ↦ if j ≤ i then C (α j) else X j)
           (certificatePolynomial F hH c i) = 0 := by
-  obtain ⟨c, hd, hc⟩ := exists_embedding_isCertificate_of_not_isRigid (hH := hH) hα
-  refine ⟨c, hd, fun i hi ↦ ?_⟩
+  intro i hi
   obtain ⟨j, -, rfl⟩ := mem_map.1 hi
   rw [certificatePolynomial_apply]
   exact hc j

@@ -91,13 +91,13 @@ field size.
 [Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean):
 the source's certificates of rank loss (`alg:matrix`, `alg:certificate`, and `lem:well-defined`
 through `lem:count`), for a `(k + 2r)`-weakly partition-connected hypergraph on `t = s + 1`
-vertices. `certificateState` is the source's matrix sequence as a function of the list of earlier
-certificate indices (`certificateState_append_singleton`); its minors are nonzero
+vertices. `Certificate.state` is the source's matrix sequence as a function of the list of earlier
+certificate indices (`Certificate.state_append_singleton`); its minors are nonzero
 (`certificateMinor_ne_zero`) of degree at most `s * (k - 1)` in each variable
 (`degreeOf_certificateMinor_le`). Every point at which the hypergraph is not rigid has a
 certificate of length `r` (`exists_isCertificate_of_not_isRigid`); a certificate of length at most
 `r` is injective (`IsCertificate.injective`) and has fewer than `2^t` descents
-(`IsCertificate.card_descents_lt`). `exists_embedding_certificatePolynomial_of_not_isRigid` attaches
+(`IsCertificate.card_descents_lt`). `IsCertificate.aeval_certificatePolynomial` attaches
 the minors to the certificate's indices (`certificatePolynomial`). The source's `lem:del` is
 `exists_det_submatrix_ne_zero_of_card_le` in
 [FullRank.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean),
