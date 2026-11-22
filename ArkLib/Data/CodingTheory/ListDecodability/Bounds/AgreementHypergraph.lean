@@ -408,7 +408,9 @@ noncomputable def geometricPartitionCrossing {F : Type*} {V : Type*}
     (e : Finset V) : ℕ :=
   (Finset.univ.filter (fun a => (e ∩ P.blocks a).Nonempty)).card - 1
 
-open scoped BigOperators in
+/-- The weight of an edge `e ⊆ S` is the sum of the weights of its pieces in a rank partition of
+`S` plus its crossing number. This is `Finset.card_filter_sub_one_add_sum_card_inter_sub_one` for
+the blocks of the partition. -/
 theorem geometricEdgeWeight_partition_decomposition
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] {S : Finset V}
@@ -416,80 +418,10 @@ theorem geometricEdgeWeight_partition_decomposition
     geometricEdgeWeight e =
       (∑ a, geometricEdgeWeight (e ∩ P.blocks a)) +
         geometricPartitionCrossing P e := by
-  classical
-  let q : ℕ :=
-    (Finset.univ.filter (fun a => (e ∩ P.blocks a).Nonempty)).card
-  have hpair : ((Finset.univ : Finset
-      (Fin (geometricAffineRank (F := F) S + 1))) : Set _).PairwiseDisjoint
-      (fun a => e ∩ P.blocks a) := by
-    intro a _ b _ hab
-    exact (P.disjoint a b hab).mono Finset.inter_subset_right
-      Finset.inter_subset_right
-  have hcover : Finset.univ.biUnion (fun a => e ∩ P.blocks a) = e := by
-    ext x
-    constructor
-    · intro hx
-      obtain ⟨a, _, hxi⟩ := Finset.mem_biUnion.mp hx
-      exact (Finset.mem_inter.mp hxi).1
-    · intro hx
-      have hxS : x ∈ S := he hx
-      rw [P.cover] at hxS
-      obtain ⟨a, ha, hxa⟩ := Finset.mem_biUnion.mp hxS
-      exact Finset.mem_biUnion.mpr
-        ⟨a, ha, Finset.mem_inter.mpr ⟨hx, hxa⟩⟩
-  have hsum_card :
-      (∑ a, (e ∩ P.blocks a).card) = e.card := by
-    have hc := Finset.card_biUnion hpair
-    rw [hcover] at hc
-    simpa only using hc.symm
-  have hpoint : ∀ a : Fin (geometricAffineRank (F := F) S + 1),
-      geometricEdgeWeight (e ∩ P.blocks a) +
-        (if (e ∩ P.blocks a).Nonempty then 1 else 0) =
-          (e ∩ P.blocks a).card := by
-    intro a
-    unfold geometricEdgeWeight
-    by_cases hne : (e ∩ P.blocks a).Nonempty
-    · rw [ite_eq_left hne]
-      have hpos := Finset.card_pos.mpr hne
-      omega
-    · rw [ite_eq_right hne]
-      have hz : (e ∩ P.blocks a).card = 0 :=
-        Finset.card_eq_zero.mpr (Finset.not_nonempty_iff_eq_empty.mp hne)
-      omega
-  have hindicator :
-      (∑ a : Fin (geometricAffineRank (F := F) S + 1),
-        if (e ∩ P.blocks a).Nonempty then 1 else 0) = q := by
-    unfold q
-    rw [Finset.card_filter]
-  have hsum : (∑ a, geometricEdgeWeight (e ∩ P.blocks a)) + q = e.card := by
-    rw [← hindicator, ← Finset.sum_add_distrib]
-    calc
-      (∑ a, (geometricEdgeWeight (e ∩ P.blocks a) +
-          if (e ∩ P.blocks a).Nonempty then 1 else 0)) =
-          ∑ a, (e ∩ P.blocks a).card :=
-        Finset.sum_congr rfl fun a _ => hpoint a
-      _ = e.card := hsum_card
-  unfold geometricPartitionCrossing
-  change geometricEdgeWeight e =
-    (∑ a, geometricEdgeWeight (e ∩ P.blocks a)) + (q - 1)
-  unfold geometricEdgeWeight at hsum ⊢
-  by_cases hene : e.Nonempty
-  · obtain ⟨x, hx⟩ := hene
-    have hxS : x ∈ S := he hx
-    rw [P.cover] at hxS
-    obtain ⟨a, _, hxa⟩ := Finset.mem_biUnion.mp hxS
-    have hqpos : 0 < q := by
-      rw [Finset.card_pos]
-      refine ⟨a, Finset.mem_filter.mpr ⟨Finset.mem_univ a, ?_⟩⟩
-      exact ⟨x, Finset.mem_inter.mpr ⟨hx, hxa⟩⟩
-    have hepos : 0 < e.card := Finset.card_pos.mpr ⟨x, hx⟩
-    omega
-  · have he0 : e.card = 0 :=
-      Finset.card_eq_zero.mpr (Finset.not_nonempty_iff_eq_empty.mp hene)
-    have hsum0 :
-        (∑ a, ((e ∩ P.blocks a).card - 1)) + q = 0 := by
-      simpa only [he0] using hsum
-    omega
+  have h := Finset.card_filter_sub_one_add_sum_card_inter_sub_one
+    (fun a _ b _ hab ↦ P.disjoint a b hab) (P.cover ▸ he)
+  unfold geometricEdgeWeight geometricPartitionCrossing
+  omega
 
 theorem geometricPartitionCrossing_le_affineRank
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
