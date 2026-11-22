@@ -89,10 +89,17 @@ The metric is the block one on `ι → Fin s → F`: a position counts as a disa
 whole `s`-tuple differs, which is why interleaving leaves it unchanged. Nothing
 Reed-Solomon-specific enters; this is `Code.minDist_interleavedCodeSet`. -/
 theorem minDist_irsCode_eq_minDist_rsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] :
+    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) :
     Code.minDist ((irsCode domain k s : Submodule F (ι → Fin s → F)) : Set (ι → Fin s → F))
       = Code.minDist ((ReedSolomon.code domain (k / s) : Submodule F (ι → F)) : Set (ι → F)) := by
-  have : Nonempty (Fin s) := Fin.pos_iff_nonempty.mp (Nat.pos_of_ne_zero (NeZero.ne s))
+  rcases Nat.eq_zero_or_pos s with rfl | hs
+  · simp only [Nat.div_zero, ReedSolomon.code_zero]
+    have hempty : {d | ∃ u ∈ irsCode domain k 0, ∃ v ∈ irsCode domain k 0,
+        u ≠ v ∧ hammingDist u v = d} = (∅ : Set ℕ) :=
+      Set.eq_empty_of_forall_notMem fun _ ⟨u, _, v, _, hne, _⟩ ↦
+        hne (Subsingleton.elim u v)
+    simp [Code.minDist, hempty]
+  have : Nonempty (Fin s) := Fin.pos_iff_nonempty.mp hs
   rw [irsCode, Code.interleavedCode_eq_interleavedCodeSet_of_moduleCode]
   exact Code.minDist_interleavedCodeSet (κ := Fin s) _
 
@@ -100,16 +107,18 @@ theorem minDist_irsCode_eq_minDist_rsCode {ι : Type*} [Fintype ι] {F : Type*} 
 `min ⌊k/s⌋ |L| / |L|`. The interleaving factor `s` multiplies the dimension and the
 alphabet normalization divides it back out, so the rate does not see `s`. -/
 lemma alphabetRate_irsCode_eq_min {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    (domain : ι ↪ F) (k s : ℕ) [NeZero s] :
+    (domain : ι ↪ F) (k s : ℕ) :
     (LinearCode.alphabetRate (irsCode domain k s) : ℝ)
       = (min (k / s) (Fintype.card ι) : ℕ) / Fintype.card ι := by
-  have hs : (0 : ℝ) < s := by exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne s)
+  rcases Nat.eq_zero_or_pos s with rfl | hs
+  · simp [LinearCode.alphabetRate_cast_eq]
+  have hs : (0 : ℝ) < s := by exact_mod_cast hs
   rw [LinearCode.alphabetRate_cast_eq, dim_irsCode_eq_min domain k s, Nat.cast_mul,
     mul_div_mul_left _ _ (ne_of_gt hs)]
 
 /-- Below saturation, `⌊k/s⌋ ≤ |L|`, the alphabet-normalized rate is `⌊k/s⌋ / |L|`. -/
 lemma alphabetRate_irsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    (domain : ι ↪ F) (k s : ℕ) [NeZero s]
+    (domain : ι ↪ F) (k s : ℕ)
     (h_rs_full : k / s ≤ Fintype.card ι) :
     (LinearCode.alphabetRate (irsCode domain k s) : ℝ)
       = (k / s : ℕ) / Fintype.card ι := by
@@ -125,7 +134,7 @@ code is `⊥` and its minimum distance is `0`, against a right-hand side of `|L|
 taken explicitly rather than as `[NeZero (k / s)]`, which instance resolution could never
 discharge for symbolic `k` and `s`. -/
 theorem minDist_irsCode {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F]
-    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] (hks : 0 < k / s) :
+    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) (hks : 0 < k / s) :
     Code.minDist ((irsCode domain k s : Submodule F (ι → Fin s → F)) : Set (ι → Fin s → F))
       = Fintype.card ι - k / s + 1 := by
   let : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
@@ -144,7 +153,7 @@ the dimension `s * min ⌊k/s⌋ n` and the distance `n - ⌊k/s⌋ + 1` degrade
 `min`, and the alphabet normalization cancels the interleaving factor, leaving
 `ρ = min ⌊k/s⌋ n / n`. In the saturated regime both sides are `1/n`. -/
 theorem irs_rate_distance {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F]
-    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] (hks : 0 < k / s) :
+    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) (hks : 0 < k / s) :
     (Code.minDist ((irsCode domain k s : Submodule F (ι → Fin s → F)) :
         Set (ι → Fin s → F)) : ℝ) / Fintype.card ι
       = 1 - (LinearCode.alphabetRate (irsCode domain k s) : ℝ) + 1 / Fintype.card ι := by
@@ -159,10 +168,13 @@ theorem irs_rate_distance {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [F
 /-- The `s`-fold interleave of `ReedSolomon.code domain k'` is `irsCode domain (s * k') s`.
 Definitional once the degree arithmetic is done. -/
 lemma interleavedCodeSet_rsCode_eq_irsCode {ι : Type*} {F : Type*} [Field F]
-    (domain : ι ↪ F) (k' s : ℕ) (hs : 0 < s) :
+    (domain : ι ↪ F) (k' s : ℕ) :
     Code.interleavedCodeSet (κ := Fin s)
         ((ReedSolomon.code domain k' : Submodule F (ι → F)) : Set (ι → F))
       = ((irsCode domain (s * k') s : Submodule F (ι → Fin s → F)) : Set (ι → Fin s → F)) := by
+  rcases Nat.eq_zero_or_pos s with rfl | hs
+  · ext V
+    exact ⟨fun _ j ↦ j.elim0, fun _ j ↦ j.elim0⟩
   rw [irsCode, Nat.mul_div_cancel_left k' hs]
   rfl
 

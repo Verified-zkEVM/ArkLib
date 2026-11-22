@@ -48,15 +48,9 @@ variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] [DecidableEq G₁] {
 
 variable {n : ℕ} -- the maximal degree of polynomials that can be committed to/opened.
 
-/-- Conversion to mathlib polynomials commutes with division by a monic polynomial. -/
-lemma to_poly_div_by_monic {p : ℕ} [Fact (Nat.Prime p)]
-    (f q : CPolynomial (ZMod p)) (hq : q.toPoly.Monic) :
-    (f.divByMonic q).toPoly = f.toPoly /ₘ q.toPoly :=
-  CPolynomial.toPoly_divByMonic f q hq
-
 omit [DecidableEq G₁] [Fact (0 < p)] in
 /-- Algebraic correctness of one KZG opening for a coefficient vector. -/
-theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
+theorem correctness (n : ℕ) (a : ZMod p)
     (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) :
   let poly : CPolynomial (ZMod p) :=
     ⟨(Raw.mk (Array.ofFn coeffs)).trim, Raw.Trim.isCanonical_trim _⟩
@@ -96,18 +90,18 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     rw [eval_toPoly, CPolynomial.toPoly_sub, Polynomial.eval_sub, X_toPoly, C_toPoly,
       Polynomial.eval_X, Polynomial.eval_C]
   -- the polynomial form of (a-z) is monic
-  have hmonic : Polynomial.Monic ((X : CPolynomial (ZMod p)) - C z).toPoly := by
-    rw [CPolynomial.toPoly_sub, X_toPoly, C_toPoly]
+  have hmonic : ((X : CPolynomial (ZMod p)) - C z).monic := by
+    rw [monic_toPoly_iff, CPolynomial.toPoly_sub, X_toPoly, C_toPoly]
     exact Polynomial.monic_X_sub_C z
   -- the proof
   -- restate the commitment as the evaluation of poly at a (C => g₁^poly(a))
-  simp_rw [hcoeffs, commit_eq_c_polynomial hpG1 poly hpdeg]
+  simp_rw [hcoeffs, commit_eq_c_polynomial poly hpdeg]
   -- define q(X) := (poly(X) - poly(z)) / (X-z)
   -- and restate the opening as the evaluation of q at a (opening => g₁^q(a))
   simp_rw [generateOpening, ←hcoeffs]
   set q := (poly - C (eval z poly)).divByMonic (X - C z)
   have hqdeg : degree q ≤ n := by
-    rw [degree_toPoly, to_poly_div_by_monic _ _ hmonic]
+    rw [degree_toPoly, divByMonic_toPoly_eq_divByMonic _ _ hmonic]
     apply le_trans (Polynomial.degree_divByMonic_le _ _)
     rw [CPolynomial.toPoly_sub, C_toPoly]
     apply le_trans (Polynomial.degree_sub_le _ _)
@@ -122,7 +116,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
     pairing (commit (Groups.PowerSrs.tower g₁ a n) (fun i : Fin (n + 1) => q.coeff i) : G₁)
       ((Groups.PowerSrs.tower g₂ a 1)[1] / g₂ ^ z.val)
   rw [hfun]
-  rw [commit_eq_c_polynomial hpG1 q hqdeg]
+  rw [commit_eq_c_polynomial q hqdeg]
   -- evaluate the pairing linearly.
   -- e (g₁^poly(a) / g₂^poly(z), g₂)= e (g₁^q(a), g₂^a / g₂^(z))
   -- => (poly(a) - poly(z)) • e (g₁,g₂) = (q(a) * (a-z)) • e (g₁,g₂)
@@ -141,7 +135,7 @@ theorem correctness (hpG1 : Nat.card G₁ = p) (n : ℕ) (a : ZMod p)
   -- prove the goal using the eval isomorphism to mathlib Polynomials
   subst v q
   simp_rw [haz]
-  simp_rw [eval_toPoly, to_poly_div_by_monic _ _ hmonic, CPolynomial.toPoly_sub,
+  simp_rw [eval_toPoly, divByMonic_toPoly_eq_divByMonic _ _ hmonic, CPolynomial.toPoly_sub,
     ←Polynomial.eval_mul, C_toPoly, X_toPoly]
   simp_rw [Polynomial.X_sub_C_mul_divByMonic_eq_sub_modByMonic,
     Polynomial.modByMonic_X_sub_C_eq_C_eval]
@@ -166,67 +160,25 @@ section Correctness
 
 omit [Fact (0 < p)] [DecidableEq G₁] in
 /-- The KZG scheme satisfies perfect correctness as defined in `CommitmentScheme`. -/
-theorem correctness (hpG1 : Nat.card G₁ = p) {g₁ : G₁} {g₂ : G₂}
-    [SampleableType G₁] :
+theorem correctness {g₁ : G₁} {g₂ : G₂} :
     Commitment.perfectCorrectness (pure ∅) (randomOracle)
     (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) := by
   intro data query
   simp only [ENNReal.coe_zero, tsub_zero]
-  refine ge_of_eq ?_
-  refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support _ _ _ _ ?_
-  intro x hx
-  simp only [kzg] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨⟨ck, vk⟩, hkeygen, hx⟩ := hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨⟨cm, decomm⟩, hcommit, hx⟩ := hx
-  replace hkeygen := OracleComp.mem_support_of_mem_support_liftComp
-    (superSpec := _) (oa := _) (x := (ck, vk)) hkeygen
-  replace hcommit := OracleComp.mem_support_of_mem_support_liftComp
-    (superSpec := _) (oa := _) (x := (cm, decomm)) hcommit
-  rw [mem_support_bind_iff] at hkeygen
-  obtain ⟨τ, _hτ, hkeygen⟩ := hkeygen
-  rw [mem_support_pure_iff] at hkeygen
-  simp only [Prod.mk.injEq] at hkeygen
-  obtain ⟨rfl, rfl⟩ := hkeygen
-  rw [mem_support_pure_iff] at hcommit
-  obtain ⟨rfl, rfl⟩ := Prod.mk.inj hcommit
-  have : ProverOnly ({ dir := !v[Direction.P_to_V], «Type» := !v[G₁] } : ProtocolSpec 1) := {
-    prover_first' := by simp
-  }
-  rw [Reduction.run_of_prover_first] at hx
-  simp only [OptionT.run_bind, OptionT.run_pure] at hx
-  have hverify : verifyOpening (g₁ := g₁) (g₂ := g₂) pairing
+  refine ge_of_eq (OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support _ _ _ _ ?_)
+  have : ProverOnly ({dir := !v[Direction.P_to_V], «Type» := !v[G₁]} : ProtocolSpec 1) :=
+    {prover_first' := by simp}
+  have hverify (τ : ZMod p) : verifyOpening (g₁ := g₁) (g₂ := g₂) pairing
       (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).2
       (commit (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data)
       (generateOpening (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ).1 data query)
       query (OracleInterface.answer data query) := by
     change verifyOpening pairing _ _ _ query ((CPolynomial.ofFn data).eval query) = true
     simpa only [CPolynomial.ofFn, CPolynomial.ofArray] using
-      KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) hpG1 n τ data query
-  simp only [Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨openingOpt, hopeningOpt, hx⟩ := hx
-  simp at hopeningOpt
-  subst openingOpt
-  dsimp only [Option.elim] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨outputOpt, houtputOpt, hx⟩ := hx
-  simp at houtputOpt
-  subst outputOpt
-  dsimp only [Option.elim] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨verifierOpt, hverifierOpt, hx⟩ := hx
-  simp [hverify] at hverifierOpt
-  subst verifierOpt
-  simp only [Option.getM_some] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨verdict, hverdict, hx⟩ := hx
-  simp at hverdict
-  subst verdict
-  simp at hx
-  subst x
-  simp [acceptRejectRel]
+      KZG.correctness (pairing := pairing) (g₁ := g₁) (g₂ := g₂) n τ data query
+  simp only [kzg, Reduction.run_run_eq_bind, Prover.run_of_prover_first, Verifier.run,
+    OptionT.run_pure]
+  simp [acceptRejectRel, hverify]
 
 end Correctness
 

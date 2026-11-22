@@ -1,0 +1,145 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerBatchedCertificate
+public import
+ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.ProductCounting
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Symbolic.CurveCertificate
+import ArkLib.Data.Polynomial.Differential.WitnessCount
+/-!
+# Scalar agreement bounds from symbolic curve certificates
+
+The certificate endpoints combine a symbolic equation, its regular separant stages, and
+product-based incidence estimates. They bound the exceptional challenges for exact agreement
+with a coefficient linear in the batching length and polynomial in the block length.
+
+## Main statements
+
+* `exists_exceptional_exactPowerAgreement_of_certificate`: a bound under a block-length
+  characteristic condition.
+* `exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic`: a bound under
+  a jet-characteristic condition.
+
+## References
+
+* [DKT26]
+-/
+
+@[expose] public section
+
+noncomputable section
+
+namespace ReedSolomon
+
+open Polynomial PolynomialDifferential HiddenDerivative
+open scoped BigOperators
+
+universe u
+
+open Classical in
+/-- A symbolic curve certificate bounds challenges failing exact power agreement under a
+jet-characteristic condition. -/
+theorem exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
+    {F E : Type u} [Field F] [Field E]
+    [IsAlgClosed E]
+    {n k A K d ν H h ℓ : ℕ} {δ : ℝ}
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (iota : F →+* E)
+    (cert : SymbolicReceivedCurve.Certificate.{0, u} A k ℓ ν d H domain
+      (fun i ↦ powerBatchedCoordinate fun t ↦ values t i))
+    (hk : 0 < k) (hkK : k ≤ K) (hdK : d < K) (hKn : K ≤ n)
+    (hAn : A ≤ n) (hh : 0 < h)
+    (hH : H ≤ ℓ * h) (hδ : 0 < δ)
+    (hgap : (k : ℝ) + δ * n ≤ A)
+    (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductAgreementConstant δ ν h d *
+        (n : ℝ) ^ (d + 1) ∧
+      ∀ z ∉ exceptional, ∀ P : E[X], P.degree < k →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
+          (powerBatchedWord (fun t i ↦ iota (values t i)) z) P).card →
+        HasExactPowerAgreement domain values iota k z P := by
+  classical
+  have hn : 0 < n := hk.trans_le (hkK.trans hKn)
+  have hK : 0 < K := hk.trans_le hkK
+  have hcharJet : ringChar F = 0 ∨ ν < ringChar F :=
+    hchar.imp_right (fun hc ↦ (Nat.le_max_right _ _).trans_lt hc)
+  have hcharK : ringChar F = 0 ∨ K - 1 < ringChar F := by
+    apply hchar.imp_right
+    intro hc
+    exact (Nat.le_max_left (K - 1) ν).trans_lt hc
+  have hcutoff := correlatedProductCutoff_bounds d k A (by
+    exact_mod_cast hgap.trans' (le_add_of_nonneg_right (by positivity)))
+  let L := correlatedProductCutoff d k A
+  obtain ⟨stages, terminal, hc, exceptional, hcard, hexact⟩ :=
+    cert.exists_exceptional_powerBatchedAgreement_sharp_of_exponent iota K L (2 * K)
+      (fun r _ ↦ taylorExponentSufficient_two_mul r K) (by omega) hdK hkK
+      hcutoff.1 hcutoff.2 hcharJet
+      (by
+        intro r _ i hri hi
+        have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
+          (F := F) (D := K - 1) (s := r) hcharK (i - r) (by omega)
+        simpa only [Nat.sub_add_cancel hri.le] using hchoose)
+  refine ⟨exceptional, ?_, hexact⟩
+  have hcardR : (exceptional.card : ℝ) ≤ (H : ℝ) +
+      ∑ stage ∈ stages.toFinset,
+        (regularPowerBatchedAgreementSharpBound stage.2.val n ℓ K k L A
+          (jetTotalDegree stage.1) H (τ := 2 * K) : ℝ) := by exact_mod_cast hcard
+  apply hcardR.trans
+  apply le_trans (add_le_add (Nat.cast_le.mpr hH) le_rfl)
+  apply regularPowerBatchedAgreementSharp_product_finiteStage_le stages.toFinset
+    (fun stage ↦ stage.2.val) (fun stage ↦ jetTotalDegree stage.1) (fun _ ↦ H)
+    δ n K k A ℓ ν h d (2 * K) hδ (by
+      have hAnR : (A : ℝ) ≤ n := by exact_mod_cast hAn
+      have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+      nlinarith) hn hk hh hKn hgap hAn le_rfl
+  · exact (List.toFinset_card_le stages).trans (hc.length_le.trans cert.jetTotalDegree_le)
+  · intro stage _
+    exact Fin.is_le stage.2
+  · intro stage hs
+    have hactive := (isHighestActiveJet_of_highestActiveJet_eq_some
+      (hc.highestActiveJet_eq_of_mem (List.mem_toFinset.mp hs))).1
+    exact hactive.trans_le (jetDegree_le_total stage.1 stage.2)
+  · intro stage hs
+    exact (hc.jetTotalDegree_le_of_mem (List.mem_toFinset.mp hs)).trans cert.jetTotalDegree_le
+  · exact fun _ _ ↦ hH
+
+open Classical in
+/-- A symbolic curve certificate bounds challenges failing exact power agreement under a
+block-length characteristic condition. -/
+theorem exists_exceptional_exactPowerAgreement_of_certificate {F E : Type u} [Field F] [Field E]
+    [IsAlgClosed E] {n k A K ℓ ν d height h : ℕ} {δ : ℝ}
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F) (embedding : F →+* E)
+    (certificate : SymbolicReceivedCurve.Certificate.{0, u} A k ℓ ν d height domain
+      (fun index ↦ powerBatchedCoordinate fun term ↦ values term index))
+    (hδ : 0 < δ) (hk : 0 < k)
+    (hh : 0 < h)
+    (hdK : d < K) (hKn : K ≤ n) (hνn : ν < n)
+    (hkA : k ≤ A) (hAn : A ≤ n) (hgap : (k : ℝ) + δ * n ≤ A)
+    (hheight : height ≤ ℓ * h) (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    ∃ exceptional : Finset E,
+      (exceptional.card : ℝ) ≤ (ℓ : ℝ) * polynomialCurveProductAgreementConstant δ ν h d *
+        (n : ℝ) ^ (d + 1) ∧
+      ∀ challenge ∉ exceptional, ∀ polynomial : E[X], polynomial.degree < k →
+        A ≤ (polynomialAgreementSet (domain.trans ⟨embedding, embedding.injective⟩)
+          (powerBatchedWord (fun term index ↦ embedding (values term index)) challenge)
+            polynomial).card →
+        HasExactPowerAgreement domain values embedding k challenge polynomial := by
+  have hcharJet : ringChar F = 0 ∨ max (n - 1) ν < ringChar F := by
+    rcases hchar with hcharZero | hcharPositive
+    · exact Or.inl hcharZero
+    · apply Or.inr
+      apply max_lt_iff.mpr
+      constructor
+      · omega
+      · exact hνn.trans_le hcharPositive
+  exact exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic
+    (domain := domain) (values := values) (iota := embedding) (cert := certificate)
+    (H := height) (hk := hk) (hkK := hkA.trans hAn)
+    (hdK := hdK.trans_le hKn) (hKn := le_rfl) (hAn := hAn) (hh := hh) (hH := hheight)
+    (hδ := hδ) (hgap := hgap) (hchar := hcharJet)
+
+end ReedSolomon

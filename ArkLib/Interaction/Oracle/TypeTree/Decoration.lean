@@ -9,6 +9,7 @@ public import ArkLib.Interaction.Oracle.TypeTree
 public import ArkLib.OracleReduction.OracleInterface
 public import PolyFun.Interaction.TwoParty.Decoration
 public import PolyFun.PFunctor.Free.Displayed.Cursor
+public import PolyFun.PFunctor.Free.Displayed.Append
 
 /-!
 # Decorations on oracle interaction type trees
@@ -163,6 +164,67 @@ theorem toTypeTreeRoles_oracle (Messages : Type u)
     toTypeTreeRoles (.oracle Messages rest) roles =
       ⟨.sender, fun _ => toTypeTreeRoles (rest PUnit.unit) (roles.2 PUnit.unit)⟩ :=
   rfl
+
+private theorem runtime_roles_node_heq {Moves : Type u}
+    {left right : Moves → _root_.Interaction.TypeTree}
+    {first : (move : Moves) → TwoParty.RoleDecoration (left move)}
+    {second : (move : Moves) → TwoParty.RoleDecoration (right move)}
+    (role : Role) (htree : ∀ move, left move = right move)
+    (hroles : ∀ move, HEq (first move) (second move)) :
+    HEq (⟨role, first⟩ : TwoParty.RoleDecoration (_root_.Interaction.TypeTree.node Moves left))
+      (⟨role, second⟩ :
+        TwoParty.RoleDecoration (_root_.Interaction.TypeTree.node Moves right)) := by
+  have h := funext htree
+  cases h
+  have h := funext (fun move => eq_of_heq (hroles move))
+  cases h
+  exact HEq.rfl
+
+private theorem toTypeTreeRoles_append_heq : (tree : Oracle.TypeTree.{u}) →
+    (suffix : BranchPath tree → Oracle.TypeTree.{u}) →
+    (first : RoleDecoration tree) →
+    (second : (path : BranchPath tree) → RoleDecoration (suffix path)) →
+    HEq (toTypeTreeRoles (PFunctor.FreeM.append tree suffix) (Decoration.append first second))
+      (Decoration.append (toTypeTreeRoles tree first) (fun path =>
+        toTypeTreeRoles (suffix (ExecutionPath.ofTypeTreePath path).toBranchPath)
+          (second (ExecutionPath.ofTypeTreePath path).toBranchPath)))
+  | .done, _, _, _ => HEq.rfl
+  | .public _ rest, suffix, first, second => by
+      apply runtime_roles_node_heq first.1
+      · intro move
+        exact toTypeTree_append (rest move) (fun path => suffix ⟨move, path⟩)
+      · intro move
+        exact toTypeTreeRoles_append_heq (rest move) (fun path => suffix ⟨move, path⟩)
+          (first.2 move) (fun path => second ⟨move, path⟩)
+  | .oracle _ rest, suffix, first, second => by
+      apply runtime_roles_node_heq Role.sender
+      · intro message
+        exact toTypeTree_append (rest PUnit.unit) (fun path => suffix ⟨PUnit.unit, path⟩)
+      · intro message
+        exact toTypeTreeRoles_append_heq (rest PUnit.unit)
+          (fun path => suffix ⟨PUnit.unit, path⟩) (first.2 PUnit.unit)
+          (fun path => second ⟨PUnit.unit, path⟩)
+
+/-- Runtime role projection agrees with append. Public roles are retained and oracle sends remain
+sender-owned. The cast only identifies the runtime trees given by `toTypeTree_append`. -/
+theorem toTypeTreeRoles_append (tree : Oracle.TypeTree.{u})
+    (suffix : BranchPath tree → Oracle.TypeTree.{u}) (first : RoleDecoration tree)
+    (second : (path : BranchPath tree) → RoleDecoration (suffix path)) :
+    cast (congrArg TwoParty.RoleDecoration (toTypeTree_append tree suffix))
+      (toTypeTreeRoles (PFunctor.FreeM.append tree suffix) (Decoration.append first second)) =
+      Decoration.append (toTypeTreeRoles tree first) (fun path =>
+        toTypeTreeRoles (suffix (ExecutionPath.ofTypeTreePath path).toBranchPath)
+          (second (ExecutionPath.ofTypeTreePath path).toBranchPath)) :=
+  eq_of_heq ((cast_heq _ _).trans (toTypeTreeRoles_append_heq tree suffix first second))
+
+/-- Making implicit oracle ownership explicit preserves append without changing the tree. -/
+theorem toExplicitRoles_append (tree : Oracle.TypeTree.{u})
+    (suffix : BranchPath tree → Oracle.TypeTree.{u}) (first : RoleDecoration tree)
+    (second : (path : BranchPath tree) → RoleDecoration (suffix path)) :
+    toExplicitRoles (Decoration.append first second) =
+      Decoration.append (toExplicitRoles first) (fun path => toExplicitRoles (second path)) :=
+  by simpa only [toExplicitRoles] using
+    (Decoration.map_append RoleContext.toRuntime tree suffix first second)
 
 end RoleDecoration
 

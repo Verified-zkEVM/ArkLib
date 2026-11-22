@@ -23,7 +23,8 @@ The polynomial is zero exactly for the unit ideal. It is the constant
 natural degree zero forces the quotient to be finite-dimensional. For `⊥` it is the binomial
 polynomial `Polynomial.preHilbertPoly ℚ (Nat.card σ) 0`, and for a nonzero principal ideal
 `span {f}` it is the backward difference of that polynomial with step `totalDegree f`. Its natural
-degree and leading coefficient decrease along inclusions of ideals.
+degree decreases along inclusions of ideals, and its leading coefficient decreases when the
+natural degrees agree.
 
 For an element `f` of total degree at most `b` whose class is a non-zero-divisor on the quotient
 by `I`, the principal-cut inequality `H(I ⊔ span {f}, N) + H(I, N - b) ≤ H(I, N)` passes to the

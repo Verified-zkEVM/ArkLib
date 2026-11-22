@@ -15,25 +15,17 @@ linter.mathlibStandardSet = true
 linter.style.longFile = 1500
 linter.style.header = false
 
+# Every package that requires ArkLib resolves every `require` here. Documentation tools
+# (doc-gen4, checkdecls) are therefore required by the separate package in `docbuild/`.
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "d7089e46d69e07640fa23b5ae6b1b966f1d4b949"
-
-[[require]]
-name = "«doc-gen4»"
-git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.34.0"
-
-[[require]]
-name = "checkdecls"
-git = "https://github.com/PatrickMassot/checkdecls.git"
-rev = "lean4.18.0"
+rev = "f1e63c780de398fb62206dd5890f27e1ad64e0e6"
 
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.34.0-patch2"
+rev = "1a9ad0ef08aaeb187d51e41cad0be79b5b8faf6f"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -97,6 +89,20 @@ srcDir = "scripts"
 root = "HachiRuntime"
 allowNonModules = true
 
+# Compiled checks for CompPoly-backed messages through the shared native Sumcheck executor.
+[[lean_exe]]
+name = "sumcheck-runtime"
+srcDir = "scripts"
+root = "SumcheckRuntime"
+allowNonModules = true
+
+# Compiled edge cases and exact instruction counts for the named measured FRI extractor.
+[[lean_exe]]
+name = "fri-extractor-runtime"
+srcDir = "scripts"
+root = "FriExtractorRuntime"
+allowNonModules = true
+
 # Lean-native, exception-free source-policy gate. Since the executable imports Lake, it must link
 # Lake explicitly; keeping it out of the default target avoids adding linter-only dependencies to
 # the library build graph.
@@ -128,3 +134,4 @@ name = "RetiredProbabilityTestFixtures"
 srcDir = "scripts"
 roots = []
 globs = ["RetiredProbabilityTestFixtures.+"]
+allowNonModules = true

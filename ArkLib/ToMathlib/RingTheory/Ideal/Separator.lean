@@ -51,7 +51,7 @@ theorem exists_separators_of_pairwise_not_le [Finite ι] {P : ι → Ideal R}
   classical
   have := Fintype.ofFinite ι
   have hw : ∀ i j, i ≠ j → ∃ w, w ∈ P j ∧ w ∉ P i := fun i j hij ↦
-    SetLike.not_le_iff_exists.mp (hinc hij.symm)
+    IsConcreteLE.not_le_iff_exists.mp (hinc hij.symm)
   choose! w hwP hwnP using hw
   refine ⟨fun i ↦ ∏ j ∈ Finset.univ.erase i, w i j, fun i j ↦ ⟨fun hmem hij ↦ ?_, fun hij ↦ ?_⟩⟩
   · subst hij

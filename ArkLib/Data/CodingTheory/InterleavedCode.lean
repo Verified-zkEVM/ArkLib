@@ -74,6 +74,8 @@ Interleaved codes for generic codes over a semiring, with **unified global APIs*
 - **`pairJointProximity₂ u₀ u₁ v₀ v₁ e`** - two interleaved pairs within distance `e` of each other
 - **`jointAgreement C δ W`** - words collectively agree on large set with `C`
   (equivalent to `jointProximity`)
+- **`jointAgreement.relDistFromCode_le`** - every word of a jointly agreeing stack is `δ`-close
+  to `C`
 
 ## References
 
@@ -151,7 +153,7 @@ def interleavedCodeSet {A : Type*} {κ ι : Type*}
 /-- If C is finite and membership is decidable, then interleavedCodeSet C is finite. -/
 @[simp]
 noncomputable instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
-    [Fintype κ] [Fintype ι] [Fintype A] [DecidableEq A]
+    [Fintype κ] [Fintype ι] [Fintype A]
     (C : Set (ι → A)) :
     Fintype (interleavedCodeSet (κ := κ) (ι := ι) C) := by
   exact Fintype.ofFinite (interleavedCodeSet C)
@@ -554,6 +556,43 @@ lemma minRelHammingDistCode_moduleInterleavedCode
     rw [← h1, ← h2, hmd]
   exact_mod_cast hq
 
+/-- With a single row (`κ = Fin 1`), the Hamming distance of two interleaved words is the
+Hamming distance of their rows. -/
+lemma hammingDist_fin_one {A ι : Type*} [Fintype ι] [DecidableEq A]
+    {u v : ι → Fin 1 → A} :
+    hammingDist u v = hammingDist (fun y => u y 0) (fun y => v y 0) := by
+  convert (hammingDist_comp (fun _ (w : Fin 1 → A) => w 0)
+    (fun _ => (Equiv.funUnique (Fin 1) A).injective)).symm
+
+/-- With a single row (`κ = Fin 1`), the distance from an interleaved word to the interleaved
+code of `C` is the distance from its row to `C`. -/
+lemma distFromCode_interleavedCodeSet_fin_one {A ι : Type*} [Fintype ι] [DecidableEq A]
+    (u : ι → Fin 1 → A) (C : Set (ι → A)) :
+    Δ₀(u, interleavedCodeSet (κ := Fin 1) C) = Δ₀((fun y => u y 0), C) := by
+  classical
+  simp only [distFromCode]
+  congr 1; ext d; simp only [Set.mem_ofPred_eq]; constructor
+  · rintro ⟨v, hv_mem, hv_dist⟩
+    refine ⟨fun y => v y 0, hv_mem 0, ?_⟩
+    rwa [← hammingDist_fin_one (u := u) (v := v)]
+  · rintro ⟨w, hw_mem, hw_dist⟩
+    refine ⟨fun y _ => w y, fun k => by rwa [show k = 0 from Subsingleton.elim k 0], ?_⟩
+    rwa [hammingDist_fin_one (A := A) (u := u) (v := fun y _ => w y)]
+
+/-- Interleaving over a nonempty row index preserves the relative unique-decoding radius:
+`relUDR (interleavedCodeSet C) = relUDR C`. Both codes have block length `ι` and, by
+`minDist_interleavedCodeSet`, the same minimum distance. -/
+theorem relativeUniqueDecodingRadius_interleavedCodeSet
+    {κ ι A : Type*} [Fintype κ] [Nonempty κ] [Fintype ι] [DecidableEq A]
+    (C : Set (ι → A)) :
+    relativeUniqueDecodingRadius (interleavedCodeSet (κ := κ) C) =
+      relativeUniqueDecodingRadius C := by
+  have h : Code.dist (interleavedCodeSet (κ := κ) C) = Code.dist C :=
+    (dist_eq_minDist _).trans ((minDist_interleavedCodeSet C).trans (dist_eq_minDist C).symm)
+  -- `interleavedCodeSet C` lives in `Set (Matrix ι κ A)`, so `rw [h]` cannot see the distance
+  -- inside the left-hand side; transport `h` through the radius formula instead.
+  exact congrArg (fun d : ℕ => (((d : ℝ≥0) - 1) / 2) / (Fintype.card ι : ℝ≥0)) h
+
 section Finrank
 
 /-! ### Structure and dimension of an interleaved module code -/
@@ -891,6 +930,19 @@ def jointAgreement {F κ ι : Type*} [Fintype ι] [DecidableEq F]
     (C : Set (ι → F)) (δ : ℝ≥0) (W : κ → ι → F) : Prop :=
   ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : κ → ι → F, ∀ i, v i ∈ C ∧ S ⊆ Finset.filter (fun j => v i j = W i j) Finset.univ
+
+/-- Every word of a stack that has joint agreement with `C` is `δ`-close to `C`. -/
+theorem jointAgreement.relDistFromCode_le {F κ ι : Type*} [Fintype ι] [Nonempty ι]
+    [DecidableEq F] {C : Set (ι → F)} {δ : ℝ≥0} {W : κ → ι → F}
+    (h : jointAgreement (C := C) (δ := δ) (W := W)) (i : κ) :
+    δᵣ(W i, C) ≤ δ := by
+  obtain ⟨S, hS, v, hv⟩ := h
+  have hagree : ∀ j ∈ S, W i j = v i j := fun j hj =>
+    ((Finset.mem_filter.mp ((hv i).2 hj)).2).symm
+  refine (relCloseToCode_iff_relCloseToCodeword_of_minDist (W i) δ).2
+    ⟨v i, (hv i).1, (relCloseToWord_iff_exists_agreementCols (W i) (v i) δ).2
+      ⟨S, (relDist_floor_bound_iff_complement_bound _ _ _).2 hS,
+        fun j => ⟨hagree j, fun hne hj => hne (hagree j hj)⟩⟩⟩
 
 open InterleavedCode in
 /-- Equivalence between the agreement-based definition `jointAgreement` and

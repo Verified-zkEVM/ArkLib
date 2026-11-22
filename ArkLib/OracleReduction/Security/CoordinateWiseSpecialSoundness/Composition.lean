@@ -278,8 +278,8 @@ theorem pure_accepting_of_mem
     (stmt : Stmt₁) (tr : pSpec.FullTranscript)
     (lang : Set Stmt₂) (out : Stmt₂)
     (hV : V.verify stmt tr = pure out) (hout : out ∈ lang) :
-      Pr{let stmtOut ← OptionT.mk do
-        (simulateQ impl (V.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1 := by
+      Pr{let stmtOut ← (OptionT.mk do
+        (simulateQ impl (V.run stmt tr)).run' (← init))}[stmtOut ∈ lang] = 1 := by
   refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support init impl _ _ ?_
   intro o ho
   simp only [Verifier.run, hV] at ho
@@ -294,8 +294,8 @@ theorem mem_of_pure_accepting
     (stmt : Stmt₁) (tr : pSpec.FullTranscript)
     (lang : Set Stmt₂) (out : Stmt₂)
     (hV : V.verify stmt tr = pure out)
-    (hAcc : Pr{let stmtOut ← OptionT.mk do
-      (simulateQ impl (V.run stmt tr)).run' (← init)}[stmtOut ∈ lang] = 1) :
+    (hAcc : Pr{let stmtOut ← (OptionT.mk do
+      (simulateQ impl (V.run stmt tr)).run' (← init))}[stmtOut ∈ lang] = 1) :
       out ∈ lang := by
   -- The underlying probabilistic computation is `init >>= fun _ => pure (some out)`.
   have hrun : (do (simulateQ impl (V.run stmt tr)).run' (← init) :
@@ -323,7 +323,7 @@ established by running the **right** certificate at the canonical witnessing fir
 that is what licenses the **left** certificate. The two witnessing-validity transfers ride
 `ChallengeTree.AppendSplit.fullTranscript_gluePath` plus `append_run_outputs` — validity is
 `Outputs`-relative, so left purity rewrites the output set directly, with no statement
-identification — and the prefix witnessing's reachability comes from `pure_verdict_mem_outputs` at
+identification. The prefix witnessing is reachable by `mem_outputs_iff_of_run_eq_pure` at
 the prefix tree's own acceptance. The escape twin routes the disjunction by a case split on "does
 the right factor escape anywhere" before entering the plain skeleton. -/
 
@@ -406,8 +406,8 @@ theorem append_treeSpecialSoundWith
     intro p₁
     obtain ⟨w₂, hw₂, hrel₂⟩ := h₂' p₁ _ (hsuffValid p₁)
     exact ⟨w₂, hw₂, verify₁ stmt p₁.fullTranscript,
-      pure_verdict_mem_outputs init impl verify₁ hV₁
-        (support_init_nonempty_of_accepting hpreAcc p₁) stmt p₁.fullTranscript, hrel₂⟩
+      (mem_outputs_iff_of_run_eq_pure init impl V₁ stmt p₁.fullTranscript
+        (congrArg OptionT.run (hV₁ _ _)) _).mpr rfl, hrel₂⟩
   exact h₁ stmt tree.appendSplit.fst
     (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hpreAcc _ hpreValid
 
@@ -492,8 +492,8 @@ theorem append_treeSpecialSoundWithEscape
         intro p₁
         obtain ⟨w₂, hw₂, hrel₂⟩ := h₂'' p₁ _ (hsuffValid p₁)
         exact ⟨w₂, hw₂, verify₁ stmt p₁.fullTranscript,
-          pure_verdict_mem_outputs init impl verify₁ hV₁
-            (support_init_nonempty_of_accepting hpreAcc p₁) stmt p₁.fullTranscript, hrel₂⟩
+          (mem_outputs_iff_of_run_eq_pure init impl V₁ stmt p₁.fullTranscript
+            (congrArg OptionT.run (hV₁ _ _)) _).mpr rfl, hrel₂⟩
       exact hext₁ _ hpreValid
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in

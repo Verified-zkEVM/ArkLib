@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import CompPoly.Data.MvPolynomial.Notation
+public import ArkLib.Data.Equiv.FiberCycle
 
 /-! # The Plonk relation
 
@@ -116,18 +117,35 @@ def ConstraintSystem (𝓡 : Type) (numWires numGates : ℕ) := Fin numGates →
 
 variable {𝓡 : Type} [CommRing 𝓡] {numWires numGates : ℕ}
 
--- instance [Inhabited 𝓡] : Inhabited (ConstraintSystem 𝓡 numWires numGates) :=
---   inferInstance
-
--- instance : DecidableEq (ConstraintSystem 𝓡 numWires numGates) :=
---   inferInstance
-
 namespace ConstraintSystem
 
 /-- A constraint system accepts an input vector `x` if all of its gates accept `x`. -/
 def accepts (x : Fin numWires → 𝓡)
     (cs : ConstraintSystem 𝓡 numWires numGates) : Prop :=
   ∀ i : Fin numGates, (cs i).accepts x
+
+omit [CommRing 𝓡]
+
+/-- The variable at a position in the column-major list of left, right, and output wires. -/
+def wireAt (cs : ConstraintSystem 𝓡 numWires numGates)
+    (p : Fin (3 * numGates)) : Fin numWires :=
+  let q := finProdFinEquiv.symm p
+  if q.1 = 0 then (cs q.2).a else if q.1 = 1 then (cs q.2).b else (cs q.2).c
+
+@[simp]
+theorem wireAt_left (cs : ConstraintSystem 𝓡 numWires numGates) (i : Fin numGates) :
+    cs.wireAt (finProdFinEquiv ((0 : Fin 3), i)) = (cs i).a := by
+  simp [wireAt]
+
+@[simp]
+theorem wireAt_right (cs : ConstraintSystem 𝓡 numWires numGates) (i : Fin numGates) :
+    cs.wireAt (finProdFinEquiv ((1 : Fin 3), i)) = (cs i).b := by
+  simp [wireAt]
+
+@[simp]
+theorem wireAt_output (cs : ConstraintSystem 𝓡 numWires numGates) (i : Fin numGates) :
+    cs.wireAt (finProdFinEquiv ((2 : Fin 3), i)) = (cs i).c := by
+  simp [wireAt]
 
 /-- The partition induced by a constraint system as defined in the Plonk paper.
 
@@ -145,8 +163,39 @@ def partition (cs : ConstraintSystem 𝓡 numWires numGates) :
       else if j.1 = 1 then (cs j.2).b = i else (cs j.2).c = i)
     (Finset.univ : Finset (Fin 3 × Fin numGates)))
 
-/-- The permutation corresponding to the partition induced by a constraint system. -/
-def perm (cs : ConstraintSystem 𝓡 numWires numGates) : Equiv.Perm (Fin (3 * numGates)) := sorry
+/-- A partition block consists exactly of the positions of one variable. -/
+theorem mem_partition_iff_wireAt (cs : ConstraintSystem 𝓡 numWires numGates)
+    (v : Fin numWires) (p : Fin (3 * numGates)) :
+    p ∈ cs.partition v ↔ cs.wireAt p = v := by
+  obtain ⟨q, rfl⟩ := (finProdFinEquiv : Fin 3 × Fin numGates ≃ Fin (3 * numGates)).surjective p
+  simp [partition, wireAt]
+  split_ifs <;> rfl
+
+/-- Rotate each variable's occurrences once, in column-major order. -/
+def perm (cs : ConstraintSystem 𝓡 numWires numGates) : Equiv.Perm (Fin (3 * numGates)) :=
+  Equiv.Perm.fiberCycle cs.wireAt
+
+@[simp]
+theorem wireAt_perm (cs : ConstraintSystem 𝓡 numWires numGates) (p : Fin (3 * numGates)) :
+    cs.wireAt (cs.perm p) = cs.wireAt p :=
+  Equiv.Perm.fiberCycle_apply cs.wireAt p
+
+/-- The cycles of the wiring permutation are exactly the nonempty variable fibers. -/
+theorem sameCycle_iff_wireAt (cs : ConstraintSystem 𝓡 numWires numGates)
+    (p q : Fin (3 * numGates)) :
+    cs.perm.SameCycle p q ↔ cs.wireAt p = cs.wireAt q :=
+  Equiv.Perm.sameCycle_fiberCycle_iff cs.wireAt p q
+
+/-- Copy constraints require equal values at occurrences of the same variable. -/
+def CopyConstraintsSatisfied (cs : ConstraintSystem 𝓡 numWires numGates)
+    (w : Fin (3 * numGates) → 𝓡) : Prop :=
+  ∀ p q, cs.wireAt p = cs.wireAt q → w p = w q
+
+/-- Copy constraints are equivalent to invariance under the wiring permutation. -/
+theorem copyConstraints_iff_invariant (cs : ConstraintSystem 𝓡 numWires numGates)
+    (w : Fin (3 * numGates) → 𝓡) :
+    cs.CopyConstraintsSatisfied w ↔ ∀ p, w (cs.perm p) = w p :=
+  (Equiv.Perm.fiberCycle_invariant_iff cs.wireAt w).symm
 
 /-- A constraint system is prepared for `ℓ` public inputs, for some `ℓ ≤ numGates, numWires`,
   if for all `i ∈ [ℓ]`, the `i`-th gate constrains the `i`-th wire to be some public value. -/

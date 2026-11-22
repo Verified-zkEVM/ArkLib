@@ -7,29 +7,21 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import CompPoly.Multilinear.Equiv
+public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 
 /-!
-  # Executable Spec of the Sum-check Protocol
+# Computable Sumcheck polynomials
 
-This file contains the basic implementation of the sum-check protocol. Instead of viewing the
-protocol purely as a non-computable specification in terms of `MvPolynomial`, we give the standard
-algorithms (linear time & streaming) for the setting of:
-- A number of computable multilinear polynomials `p : ι → MlPoly R`
-- A combination function `f` that is itself a (very simple) computable multivariate polynomial
-  `f : CMvPoly ι R`. (pending merge from Plonky3's development by Nethermind)
+`Representation` defines degree-bounded CompPoly coefficient arrays and Horner evaluation.
+`Projection` constructs honest round messages directly from CompPoly multivariate polynomials
+and proves their correspondence with the mathematical specification. It also supplies direct
+computational evaluation of the original polynomial.
 
-Future extensions will include optimized variants for various protocols (well, to the extent that
-they change the verifier, since we don't care too much about prover's efficiency):
-- Not sending evaluation at 0/1
-- Sending evaluation at infinity instead
+The native verifier is in `Sumcheck.Interaction.Computable`; the honest strategy and completeness
+proofs are in `Sumcheck.Interaction.ComputableCompleteness`.
+
+The general construction enumerates the remaining summation domain. Optimized multilinear
+algorithms and their cost guarantees remain future work.
 -/
 
 @[expose] public section
-
-namespace Sumcheck
-
-namespace Impl
-
-end Impl
-
-end Sumcheck

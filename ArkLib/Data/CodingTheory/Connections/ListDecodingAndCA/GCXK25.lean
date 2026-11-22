@@ -36,12 +36,12 @@ section ListImpliesMCA
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-private noncomputable def large_family_low {κ ι π : Type} [Fintype κ] [Fintype ι]
+private noncomputable def large_family_low {κ ι π : Type} [Fintype κ]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
   classical
   exact Finset.univ.filter fun x => ∃ p, D p ⊆ A x
 
-private noncomputable def large_family_high {κ ι π : Type} [Fintype κ] [Fintype ι]
+private noncomputable def large_family_high {κ ι π : Type} [Fintype κ]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
   classical
   exact Finset.univ \ large_family_low A D
@@ -307,7 +307,7 @@ private theorem large_family_high_card_le_of_domains
     simpa [H] using hsparse
   exact hcard.le
 
-private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
+private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S]
     [DecidableEq S]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -345,7 +345,7 @@ private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempt
     nlinarith
   exact (by exact_mod_cast hcardNat : (B.card : ℝ) ≤ (Dᶜ.card : ℝ)).trans hcompR
 
-private theorem linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [Nonempty S]
+private theorem linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S]
     [DecidableEq S]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -538,7 +538,7 @@ private noncomputable def linear_mca_relevant_pairs (C : LinearCode ι F)
 
 private theorem linear_mca_relevant_pairs_card_le
     {ι' : Type} [Fintype ι']
-    {F' : Type} [Field F'] [Fintype F'] [SampleableType F'] [DecidableEq F']
+    {F' : Type} [Field F'] [Fintype F'] [DecidableEq F']
     (C : LinearCode ι' F') (L : ℕ) (p : ℝ)
     (hΛ : Lambda ((C : Set (ι' → F'))) p ≤ (L : ℕ∞))
     (u : Fin 2 → ι' → F') :
@@ -592,12 +592,10 @@ private theorem linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p :
     exact_mod_cast lt_of_le_of_lt hcomp hpn
 
 open scoped BigOperators in
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [DecidableEq F] in
 private theorem linear_mca_error_le_of_lambda_le_aux
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
-    (_hδ_lt_dist :
-        δ < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
     (_hη_pos : 0 < η) (_hη_lt : η < 1)
     (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (L : ℕ∞)) :
     mcaError (AffineLineGenerator F) C
@@ -843,13 +841,11 @@ private theorem linear_mca_error_le_of_lambda_le_aux
   have hcard' : (B.card : ENNReal) ≤ ENNReal.ofReal R := by
     exact_mod_cast (ENNReal.ofReal_le_ofReal hcard)
   simpa [B, R, r] using hcard'
-omit [DecidableEq ι] in
-/-- Converts a list-size bound at `δ` below the relative minimum distance into an
+omit [DecidableEq ι] [DecidableEq F] in
+/-- Converts a list-size bound at `δ` into an
 affine-line MCA bound at radius `1 - √(1 - δ + η)`. -/
 theorem linear_mcaError_le_of_Lambda_le (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
-    (_hδ_lt_dist :
-        δ < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
     (_hη_pos : 0 < η) (_hη_lt : η < 1)
     (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (L : ℕ∞)) :
     mcaError (AffineLineGenerator F) C
@@ -858,7 +854,7 @@ theorem linear_mcaError_le_of_Lambda_le (C : LinearCode ι F) (L : ℕ) (δ η :
         (((L : ℝ) ^ 2 * δ * Fintype.card ι + 1 / η) / Fintype.card F) := by
   classical
   exact linear_mca_error_le_of_lambda_le_aux C L δ η _hδ_pos _hδ_lt
-    _hδ_lt_dist _hη_pos _hη_lt _hΛ
+    _hη_pos _hη_lt _hΛ
 
 end ListImpliesMCA
 

@@ -11,13 +11,13 @@ public import ArkLib.Commitments.Functional.Hachi.HonestChain
 public import ArkLib.Commitments.Functional.Hachi.Correctness
 public import ArkLib.Commitments.Functional.Hachi.Concrete
 public import ArkLib.Commitments.Functional.Hachi.Params
+public import ArkLib.Commitments.Functional.Hachi.TraceHead.Basic
 public import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 public import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
-public import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
 
 /-!
 # Hachi: a Lattice-Based Multilinear Polynomial Commitment
@@ -35,11 +35,11 @@ and perfect completeness. `Composition.lean` chains the soundness certificates,
 `HonestChain.lean` the honest provers, and `Correctness.lean` packages the result as a
 `Commitment.Scheme` with perfect correctness.
 
-Two scope facts a reader should have up front. The recursive opening of [NOZ26] §4.5 —
-`Recursion/` and the `opening` field of `Commitment.lean`'s `hachi` — is outside this
-development; the complete scheme is the nonrecursive `hachiNonrecursive`. Its composed
-completeness and correctness use proved state-aware composition: pure verifier forms for the
-prefix and guarded forms for sumcheck, with suffix completeness from every shared oracle state.
+The scheme is the nonrecursive `hachiNonrecursive`: one iteration closed by revealing the
+reduced witness. The recursive opening of [NOZ26] §4.5 is not formalized; the reason is recorded
+in `docs/kb/audits/noz26-recursion-z-packing.md`. The composed completeness and correctness use
+proved state-aware composition: pure verifier forms for the prefix and guarded forms for
+sumcheck, with suffix completeness from every shared oracle state.
 
 ## Folder structure
 
@@ -53,6 +53,8 @@ re-export, and this file is the umbrella for the whole development.
   `BoundedDigitDecomposition` for the folded witness `z`, whose digit count `τ` is set by the
   deterministic bound `‖z‖∞ ≤ 2ʳ·ω·⌊b/2⌋` rather than by `q` (`τ = 5` at the `ℓ = 30`
   parameters — see `Params.lean`).
+* `TraceHead/` (§3.1) — the one-message scalar trace head, coefficient packing, and
+  honest-committer coverage into the message-bounded scalar relation `relScalarEvalMsgShort`.
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
   `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`.
 * `InnerOuter/` (§4.1) — the inner-outer Ajtai commitment: the scheme with its weak openings
@@ -66,8 +68,6 @@ re-export, and this file is the umbrella for the whole development.
   sumcheck loop, each with its own `Completeness.lean`.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
   guarded verifier checks the evaluation claim against it directly.
-* `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters of the
-  recursive opening. Outside the completed development; see `Recursion/Basic.lean`.
 * `Composition.lean` — the composed soundness certificate: the `iteration` (the nine chained
   subprotocols) and `evaluation` = iteration ⧺ end-piece.
 * `Commitment.lean` — the `Commitment.Scheme` interface: the multilinear eval oracle, honest
@@ -86,7 +86,11 @@ re-export, and this file is the umbrella for the whole development.
   `β = 2ʳ·ω·b = 262144` and the sharper `131072` proved in this development, for which `5` digits
   are minimal (`tau_minimal`). Figure 9's tabulated `z = 30583` is exactly four digits' balanced
   capacity; the paper does not derive that entry as a deterministic bound on `z`. See the
-  `Params.lean` module docstring and `docs/kb/papers/NOZ26.md`.
+  `Params.lean` module docstring and `docs/kb/papers/NOZ26.md`. At this profile the inner-SIS
+  target of the weak-binding reduction is trivially solvable for every one-row key
+  (`HachiParams.innerSISSolutionAtProfile_valid`), so the reduction gives no concrete binding
+  guarantee here. The CWSS, inclusion, and extraction statements are unaffected; a concrete
+  binding claim needs a tighter norm analysis or revised parameters.
 
 Importing this file brings in the whole development. A new file joins its folder umbrella; the
 umbrella chain carries it here.

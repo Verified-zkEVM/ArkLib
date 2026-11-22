@@ -24,10 +24,11 @@ and the degree in `X` of its coefficients. Mathlib's `MvPolynomial.optionEquivRi
 
 This file records both degrees.
 
-* `MvPolynomial.CoeffNatDegreeLE P h` says that every coefficient of `P` has `natDegree ≤ h`. It
-  is closed under sums and products (the bounds add), and under substitution of polynomials whose
-  coefficients are constants, which includes formal differentiation. Cleared substitution has a
-  corresponding coefficient-degree bound.
+* `MvPolynomial.CoeffNatDegreeLE P h` says that every coefficient of `P` has `natDegree ≤ h`.
+  `MvPolynomial.coeffNatDegree` computes such a bound from the finite support. The
+  predicate is closed under sums and products (the bounds add), and under substitution of
+  polynomials whose coefficients are constants, which includes formal differentiation. Cleared
+  substitution has a corresponding coefficient-degree bound.
 * `MvPolynomial.jointTotalDegree P` is the total degree of `P` read in `MvPolynomial (Option σ) R`,
   so that `X` counts as one more variable. It is at most `h + P.totalDegree` when every
   coefficient has degree at most `h`, and cleared substitutions satisfy a monomialwise bound.
@@ -37,9 +38,13 @@ This file records both degrees.
 * `MvPolynomial.aeval_map_optionEquivRight` and
   `MvPolynomial.aeval_optionEquivRight_symm`: evaluation through the flattened variable
   equivalence.
+* `MvPolynomial.optionEquivRight_symm_pderiv`: partial derivatives in a polynomial coefficient
+  variable agree with the corresponding derivative after flattening.
 * `MvPolynomial.CoeffNatDegreeLE` and its closure lemmas, including
-  `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval` and
-  `MvPolynomial.CoeffNatDegreeLE.pderiv` and `MvPolynomial.CoeffNatDegreeLE.clearedSubstitution`.
+  `MvPolynomial.coeffNatDegree`, `MvPolynomial.coeffNatDegreeLE_coeffNatDegree`,
+  `MvPolynomial.CoeffNatDegreeLE.map_coefficients`, `MvPolynomial.CoeffNatDegreeLE.aeval`,
+  `MvPolynomial.CoeffNatDegreeLE.pderiv`, `MvPolynomial.CoeffNatDegreeLE.iterate_pderiv`, and
+  `MvPolynomial.CoeffNatDegreeLE.clearedSubstitution`.
 * `MvPolynomial.optionEquivRight_symm_mem_restrictBidegree`: coefficient and jet degree bounds
   give a bidegree bound after flattening.
 * `MvPolynomial.optionEquivRight_symm_mem_restrictCappedBidegree`: coefficient, total-degree, and
@@ -82,6 +87,67 @@ theorem optionEquivRight_symm_C (p : Polynomial R) :
     (IsScalarTower.toAlgHom R (Polynomial R) (MvPolynomial σ (Polynomial R))) Polynomial.X p
   simpa [Polynomial.aeval_X_left_apply, algebraMap_eq] using h.symm
 
+private theorem pderiv_aeval_X_none (i : σ) (p : Polynomial R) :
+    pderiv (some i) (Polynomial.aeval
+      (X none : MvPolynomial (Option σ) R) p) = 0 := by
+  classical
+  induction p using Polynomial.induction_on' with
+  | add p q hp hq => simp only [map_add, hp, hq]; simp
+  | monomial n a =>
+      rw [← Polynomial.C_mul_X_pow_eq_monomial, Polynomial.aeval_mul,
+        Polynomial.aeval_C, map_pow, Polynomial.aeval_X]
+      rw [pderiv_mul, algebraMap_eq, pderiv_C, pderiv_pow,
+        pderiv_X_of_ne (by simp)]
+      simp
+
+/-- The inverse of `optionEquivRight` carries a coefficient-variable derivative to the
+corresponding derivative in the `some` coordinate. -/
+theorem optionEquivRight_symm_pderiv (i : σ)
+    (P : MvPolynomial σ (Polynomial R)) :
+    (optionEquivRight R σ).symm (pderiv i P) =
+      pderiv (some i) ((optionEquivRight R σ).symm P) := by
+  classical
+  induction P using MvPolynomial.induction_on with
+  | C p =>
+      rw [pderiv_C, map_zero, optionEquivRight_symm_C]
+      exact (pderiv_aeval_X_none i p).symm
+  | add P Q hP hQ =>
+      let φ := (optionEquivRight R σ).symm
+      have hp : pderiv i (P + Q) = pderiv i P + pderiv i Q := map_add _ _ _
+      have hφ : φ (P + Q) = φ P + φ Q := map_add _ _ _
+      have hp' : pderiv (some i) (φ P + φ Q) =
+          pderiv (some i) (φ P) + pderiv (some i) (φ Q) := map_add _ _ _
+      change φ (pderiv i (P + Q)) = pderiv (some i) (φ (P + Q))
+      have hP' : φ (pderiv i P) = pderiv (some i) (φ P) := by
+        simpa only [φ] using hP
+      have hQ' : φ (pderiv i Q) = pderiv (some i) (φ Q) := by
+        simpa only [φ] using hQ
+      calc
+        φ (pderiv i (P + Q)) = φ (pderiv i P + pderiv i Q) := by rw [hp]
+        _ = φ (pderiv i P) + φ (pderiv i Q) := map_add _ _ _
+        _ = pderiv (some i) (φ P) + pderiv (some i) (φ Q) := by rw [hP', hQ']
+        _ = pderiv (some i) (φ P + φ Q) := hp'.symm
+        _ = pderiv (some i) (φ (P + Q)) := by rw [hφ]
+  | mul_X P j hP =>
+      let φ := (optionEquivRight R σ).symm
+      have hvar : φ (pderiv i (X j : MvPolynomial σ (Polynomial R))) =
+          pderiv (some i) (φ (X j)) := by
+        by_cases hji : j = i
+        · subst j
+          simp [φ]
+        · simp [φ, hji]
+      have hmul : φ (P * X j) = φ P * φ (X j) := map_mul _ _ _
+      change φ (pderiv i (P * X j)) = pderiv (some i) (φ (P * X j))
+      calc
+        _ = φ (pderiv i P * X j + P * pderiv i (X j)) := by
+          rw [pderiv_mul]
+        _ = φ (pderiv i P) * φ (X j) + φ P * φ (pderiv i (X j)) := by
+          rw [map_add, map_mul, map_mul]
+        _ = pderiv (some i) (φ P) * φ (X j) +
+              φ P * pderiv (some i) (φ (X j)) := by rw [hP, hvar]
+        _ = pderiv (some i) (φ P * φ (X j)) := by rw [pderiv_mul]
+        _ = pderiv (some i) (φ (P * X j)) := by rw [hmul]
+
 /-- Evaluating a flattened polynomial after specializing its distinguished variable is the same
 as evaluating the original polynomial in all its variables. -/
 theorem aeval_map_optionEquivRight {A σ : Type*} [CommSemiring A] [Algebra R A]
@@ -113,6 +179,22 @@ theorem aeval_optionEquivRight_symm {A σ : Type*} [CommSemiring A] [Algebra R A
 /-- Every coefficient of `P : MvPolynomial σ R[X]` has `natDegree` at most `h`. -/
 def CoeffNatDegreeLE (P : MvPolynomial σ (Polynomial R)) (h : ℕ) : Prop :=
   ∀ m, (P.coeff m).natDegree ≤ h
+
+/-- The largest degree of the polynomial coefficients of `P`. -/
+def coeffNatDegree (P : MvPolynomial σ (Polynomial R)) : ℕ :=
+  P.support.sup fun m ↦ (P.coeff m).natDegree
+
+/-- Every coefficient of `P` has degree at most `coeffNatDegree P`. -/
+theorem coeffNatDegreeLE_coeffNatDegree (P : MvPolynomial σ (Polynomial R)) :
+    CoeffNatDegreeLE P (coeffNatDegree P) := by
+  classical
+  intro m
+  by_cases hm : m ∈ P.support
+  · exact Finset.le_sup (f := fun m ↦ (P.coeff m).natDegree) hm
+  · have hzero : P.coeff m = 0 := by
+      by_contra hne
+      exact hm (MvPolynomial.mem_support_iff.mpr hne)
+    simp [coeffNatDegree, hzero]
 
 /-- A constant `p` has coefficient degree at most `h` when `p.natDegree ≤ h`. -/
 theorem coeffNatDegreeLE_C {p : Polynomial R} {h : ℕ} (hp : p.natDegree ≤ h) :
@@ -265,6 +347,15 @@ theorem pderiv (hP : CoeffNatDegreeLE P a) (i : σ) :
   rw [coeff_pderiv, hc]
   exact Polynomial.natDegree_mul_le_of_le (hP (m + Finsupp.single i 1))
     (Polynomial.natDegree_C _).le
+
+/-- Iterated formal differentiation keeps the coefficient degree bound. -/
+theorem iterate_pderiv (hP : CoeffNatDegreeLE P a) (i : σ) (k : ℕ) :
+    CoeffNatDegreeLE ((MvPolynomial.pderiv i)^[k] P) a := by
+  induction k with
+  | zero => exact hP
+  | succ k ih =>
+    rw [Function.iterate_succ_apply']
+    exact ih.pderiv i
 
 end CoeffNatDegreeLE
 

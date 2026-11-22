@@ -20,8 +20,7 @@ strictly greater than one.
 
 * `fixedRatePartitionMultiplicity`, `fixedRatePartitionMultiplicity_spec`: the least accepted
   multiplicity and its finite checks.
-* `fixedRatePartitionFiniteParameters`, `exists_fixedRatePartitionFiniteParameters`: the selected
-  finite parameters at the fixed-rate order.
+* `fixedRatePartitionFiniteParameters`: the selected finite parameters at the fixed-rate order.
 
 ## References
 
@@ -36,9 +35,7 @@ namespace ReedSolomon.HiddenDerivative.RatePartition
 fixed-rate order and agreement `R + δ`. -/
 noncomputable def fixedRatePartitionMultiplicity {rate gap : ℝ}
     (hrate : 0 < rate) (hgap : 0 < gap) : ℕ :=
-  rateMultiplicity hrate (by linarith) (by
-    have horder := fixedRatePartitionOrder_ge_500 rate gap
-    omega) (fixedRateGamma_gt_one hrate hgap)
+  rateMultiplicity (by linarith) (fixedRateGamma_gt_one hrate hgap)
 
 /-- The selected fixed-rate multiplicity has positive weight budget and finite ratio above one. -/
 theorem fixedRatePartitionMultiplicity_spec {rate gap : ℝ}
@@ -50,11 +47,8 @@ theorem fixedRatePartitionMultiplicity_spec {rate gap : ℝ}
       1 < partitionFiniteRatio rate (rate + gap) (fixedRatePartitionOrder rate gap)
         multiplicity := by
   have hagreement : 0 < rate + gap := by linarith
-  have horder : 0 < fixedRatePartitionOrder rate gap := by
-    have hbound := fixedRatePartitionOrder_ge_500 rate gap
-    omega
   simpa only [fixedRatePartitionMultiplicity] using
-    (rateMultiplicity_spec hrate hagreement horder (fixedRateGamma_gt_one hrate hgap))
+    (rateMultiplicity_spec hagreement (fixedRateGamma_gt_one hrate hgap))
 
 /-- Finite parameters built from the least fixed-rate multiplicity. -/
 noncomputable def fixedRatePartitionFiniteParameters {rate gap : ℝ}
@@ -64,12 +58,5 @@ noncomputable def fixedRatePartitionFiniteParameters {rate gap : ℝ}
   multiplicity_pos := (fixedRatePartitionMultiplicity_spec hrate hgap).1
   weightBudget_pos := (fixedRatePartitionMultiplicity_spec hrate hgap).2.1
   one_lt_finiteRatio := (fixedRatePartitionMultiplicity_spec hrate hgap).2.2
-
-/-- Fixed-rate finite parameters exist at the order `fixedRatePartitionOrder R δ`. -/
-theorem exists_fixedRatePartitionFiniteParameters {rate gap : ℝ}
-    (hrate : 0 < rate) (hgap : 0 < gap) :
-    Nonempty (PartitionFiniteParameters rate (rate + gap)
-      (fixedRatePartitionOrder rate gap)) := by
-  exact ⟨fixedRatePartitionFiniteParameters hrate hgap⟩
 
 end ReedSolomon.HiddenDerivative.RatePartition

@@ -5,19 +5,32 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Basic
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CodewordBound
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.CurveCertificate
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FiniteField
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.GeometricBound
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.RatePartition
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.FixedRateExplicitGate
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.UniformRate
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.MathematicalUniformRate
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.ExactLists
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.CurveCertificate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.PartitionSupport.Counting
 import Mathlib.Data.Nat.Prime.Infinite
 
 /-!
 # Acceptance cases for Reed–Solomon capacity list bounds
 
-The examples exercise weighted-support interpolation over a large prime field and the explicit
-finite-field capacity list theorem on a concrete half-gap instance.
+The examples cover weighted-support interpolation, finite-field capacity bounds, transfer from
+close-polynomial counts to codeword-list bounds, actual-stage and gap bounds from concrete
+received-curve certificates, fixed-rate, uniform and mathematical uniform rate-partition bounds,
+and exact capacity lists at every rate.
 -/
 
 open Finset PolynomialDifferential ReedSolomon ReedSolomon.HiddenDerivative
+  ReedSolomon.HiddenDerivative.WeightedSupportParameters
   ReedSolomon.ListDecoding
 open ReedSolomon.HiddenDerivativeInterpolationCertificate
 
@@ -31,7 +44,7 @@ private def sampleN : ℕ :=
 private def sampleD : ℕ := capacityDerivativeOrder sampleDelta
 private def sampleM : ℕ := weightedSupportMultiplicity sampleD
 private def sampleMessageDim : ℕ := sampleD + 1
-private def sampleA : ℕ := agreementThreshold sampleDelta sampleN sampleMessageDim
+private def sampleA : ℕ := capacityAgreementThreshold sampleDelta sampleN sampleMessageDim
 private def sampleK : ℕ :=
   weightedSupportAmbientDimension sampleDelta sampleN sampleMessageDim
 private def sampleFieldLower : ℕ := max sampleN (2 * (sampleM * sampleA + sampleD))
@@ -66,23 +79,25 @@ private theorem prescribedSampleSetup :
         using congrArg ZMod.val hij
   }
   have hDge2 : 2 ≤ sampleD := by
-    have hd := capacityDerivativeOrder_lower (δ := sampleDelta) (by norm_num [sampleDelta])
-      (by norm_num [sampleDelta])
+    have hd := (prescribed_order_lower sampleDelta (by norm_num [sampleDelta])
+      (by norm_num [sampleDelta])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at hd
     dsimp [sampleD]
     omega
   have hm : 1 ≤ sampleM := by
     dsimp [sampleM]
     exact Nat.succ_le_of_lt (weightedSupportMultiplicity_pos_iff.mpr hDge2)
   have hHlower : (108 / 5 : ℝ) ≤ harmonic (sampleD - 1) := by
-    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
+    have h := (prescribed_order_lower sampleDelta
       (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).2.2
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at h
     change ReedSolomon.HiddenDerivative.WeightedSupportParameters.xi / sampleDelta ≤
       harmonic (sampleD - 1) at h
     norm_num [ReedSolomon.HiddenDerivative.WeightedSupportParameters.xi, sampleDelta] at h
     exact h
   have hHge1 : (1 : ℝ) ≤ harmonic (sampleD - 1) := by linarith
   have hmLower : 100 * (sampleD : ℝ) ^ 2 * harmonic (sampleD - 1) ≤ sampleM := by
-    exact_mod_cast le_weightedSupportMultiplicity sampleD
+    exact Nat.le_ceil _
   have hDreal : (1 : ℝ) ≤ sampleD := by
     exact_mod_cast (show 1 ≤ sampleD by omega)
   have hMsquare : 100 * (sampleD : ℝ) ^ 2 ≤ sampleM := by
@@ -115,8 +130,8 @@ private theorem prescribedSampleSetup :
       push_cast
       ring
     rw [hreal, Nat.ceil_natCast]
-  have hA : agreementThreshold sampleDelta sampleN sampleMessageDim ≤ sampleN := by
-    rw [agreementThreshold, hceil]
+  have hA : capacityAgreementThreshold sampleDelta sampleN sampleMessageDim ≤ sampleN := by
+    rw [capacityAgreementThreshold, hceil]
     change sampleMessageDim + sampleM ≤ 8 * sampleM
     dsimp [sampleMessageDim]
     omega
@@ -124,8 +139,7 @@ private theorem prescribedSampleSetup :
     @ReedSolomon.exists_prescribed_weightedSupport_construction
     sampleDelta sampleN sampleMessageDim q ⟨hqPrime⟩ domain (fun _ => 0)
     (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
-    (by dsimp [sampleMessageDim]; omega)
-    (by rfl) hnq hA
+    (by rfl) hA
   exact ⟨q, hqPrime, hnq, hfield, hlarge, domain, construction, hK, htotal,
     hblock, hmessageDim_pos, hmessageDim_le_n, hA, hm⟩
 
@@ -172,12 +186,13 @@ example :
         (4 * sampleM * q ^ sampleD : ℕ∞) := by
     simpa only [one_mul, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] using hbound
   have hdge2 : 2 ≤ sampleD := by
-    have h := (capacityDerivativeOrder_lower (δ := sampleDelta)
+    have h := (prescribed_order_lower sampleDelta
       (by norm_num [sampleDelta]) (by norm_num [sampleDelta])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [sampleDelta])] at h
     dsimp [sampleD]
     omega
   have hA : 2 ≤ sampleA := by
-    dsimp [sampleA, agreementThreshold, sampleMessageDim]
+    dsimp [sampleA, capacityAgreementThreshold, sampleMessageDim]
     omega
   have hfour : 4 * sampleM < q := by
     have hstrict : 4 * sampleM < 2 * (sampleM * sampleA + sampleD) := by
@@ -226,7 +241,7 @@ example :
     exact Nat.mul_pos (Nat.mul_pos (by decide) hmpos) (Nat.pow_pos hq.pos)
   have hpointwise : ∀ received : Fin sampleN → ZMod q,
       (agreeingPolynomials domain sampleMessageDim
-        (agreementThreshold sampleDelta (Fintype.card (Fin sampleN)) sampleMessageDim)
+        (capacityAgreementThreshold sampleDelta (Fintype.card (Fin sampleN)) sampleMessageDim)
         received).encard ≤
           ((4 * sampleM * q ^ (2 * sampleD) : ℕ) : ℕ∞) := by
     intro received
@@ -278,6 +293,207 @@ example :
     by simpa only [sampleD] using hcertificate.1,
     sampleZeroInList domain hA⟩
 
+private def geometricSampleDomain : Fin sampleN ↪ ℚ :=
+  ⟨fun i ↦ ((i : ℕ) : ℚ), fun _ _ h ↦ Fin.ext (Nat.cast_injective (R := ℚ) h)⟩
+
+local instance : DecidableEq ℚ := Classical.decEq _
+
+private theorem prescribedGeometricSampleData :
+    0 < sampleMessageDim ∧ sampleA ≤ sampleN ∧
+      let d := Nat.ceil (Real.exp (xi / sampleDelta))
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+      8 * m ≤ sampleN := by
+  obtain ⟨_, _, _, _, _, _, _, _, _, hblock, hk, _, hA, _⟩ := prescribedSampleSetup
+  have hδmax : sampleDelta < 1 / 4 := by norm_num [sampleDelta]
+  have hblock' :
+      let d := Nat.ceil (Real.exp (xi / sampleDelta))
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+      8 * m ≤ sampleN := by
+    simpa only [sampleN, sampleM, sampleD,
+      capacityDerivativeOrder_eq_ceil hδmax, weightedSupportMultiplicity] using hblock
+  exact ⟨hk, hA, hblock'⟩
+
+private theorem geometricSampleZero_mem :
+    (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
+      sampleMessageDim (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim) := by
+  obtain ⟨_, hA, _⟩ := prescribedGeometricSampleData
+  rw [closePolynomialSet]
+  refine ⟨by simp, ?_⟩
+  have hset : polynomialAgreementSet geometricSampleDomain (fun _ ↦ 0)
+      (0 : Polynomial ℚ) = Finset.univ := by
+    ext i
+    simp [polynomialAgreementSet]
+  rw [hset]
+  simpa [sampleA, Fintype.card_fin] using hA
+
+/-- A concrete zero polynomial belongs to a singleton finite sublist with the prescribed bound. -/
+example :
+    let d := Nat.ceil (Real.exp (xi / sampleDelta))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℝ) ≤
+        4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d ∧
+      (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
+        sampleMessageDim (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim) := by
+  obtain ⟨-, hA, hblock⟩ := prescribedGeometricSampleData
+  have hbound := prescribed_geometric_finite_list_bound sampleDelta sampleN sampleMessageDim
+    geometricSampleDomain (fun _ ↦ 0) (by norm_num [sampleDelta])
+    (by norm_num [sampleDelta]) hblock hA
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    ({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ))
+    (by
+      intro P hP
+      simp only [Finset.mem_singleton] at hP
+      subst P
+      exact geometricSampleZero_mem)
+  exact ⟨by simpa using hbound, geometricSampleZero_mem⟩
+
+/-- The complete prescribed agreement list is nonempty, finite, and geometrically bounded. -/
+example :
+    let d := Nat.ceil (Real.exp (xi / sampleDelta))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    (0 : Polynomial ℚ) ∈ closePolynomialSet geometricSampleDomain (fun _ ↦ 0)
+        sampleMessageDim (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim) ∧
+      (closePolynomialSet geometricSampleDomain (fun _ ↦ 0) sampleMessageDim
+        (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim)).Finite ∧
+        ((closePolynomialSet geometricSampleDomain (fun _ ↦ 0) sampleMessageDim
+          (capacityAgreementThreshold sampleDelta sampleN sampleMessageDim)).ncard : ℝ) ≤
+          4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d := by
+  obtain ⟨-, -, hblock⟩ := prescribedGeometricSampleData
+  have hbound := prescribed_geometric_close_list_bound sampleDelta sampleN sampleMessageDim
+    geometricSampleDomain (fun _ ↦ 0) (by norm_num [sampleDelta])
+    (by norm_num [sampleDelta]) hblock
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  exact ⟨geometricSampleZero_mem, hbound.1, hbound.2⟩
+
+private def singletonAgreementDomain : Fin 1 ↪ ℚ where
+  toFun _ := 0
+  inj' _ _ _ := Subsingleton.elim _ _
+
+example :
+    (agreeingPolynomials singletonAgreementDomain 1 1 (fun _ ↦ 0)).encard ≤
+      (closePolynomialSet singletonAgreementDomain (fun _ ↦ 0) 1 1).encard := by
+  exact agreeingPolynomials_encard_le_closePolynomialSet
+    singletonAgreementDomain (fun _ ↦ 0)
+
+example :
+    Code.Lambda (ReedSolomon.code singletonAgreementDomain 1 : Set (Fin 1 → ℚ))
+        (capacityRadius 0 1 1) ≤ 1 := by
+  have hthreshold : capacityAgreementThreshold 0 1 1 = 1 := by
+    norm_num [capacityAgreementThreshold]
+  have hB : ∀ received : Fin 1 → ℚ,
+      (closePolynomialSet singletonAgreementDomain received 1
+        (capacityAgreementThreshold 0 1 1)).Finite ∧
+        ((closePolynomialSet singletonAgreementDomain received 1
+          (capacityAgreementThreshold 0 1 1)).ncard : ℝ) ≤ 1 := by
+    intro received
+    rw [hthreshold]
+    refine ⟨closePolynomialSet_finite singletonAgreementDomain received (by norm_num), ?_⟩
+    simpa using closePolynomialSet_one_ncard_le_div singletonAgreementDomain received
+      (by norm_num)
+  have hbound := lambda_le_ceil_of_closePolynomialSet_bound
+    (δ := 0) (n := 1) (k := 1) (by norm_num) (by norm_num)
+    singletonAgreementDomain 1 hB
+  simpa using hbound
+
+/-- The prescribed close-list bound transfers to the codeword-list function. -/
+example :
+    let d := Nat.ceil (Real.exp (xi / sampleDelta))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    Code.Lambda (ReedSolomon.code geometricSampleDomain sampleMessageDim :
+      Set (Fin sampleN → ℚ)) (capacityRadius sampleDelta sampleN sampleMessageDim) ≤
+      (Nat.ceil (4 * (m : ℝ) ^ 2 * (4 * m / sampleDelta) ^ d * sampleN ^ d) : ℕ∞) := by
+  obtain ⟨-, hA, hblock⟩ := prescribedGeometricSampleData
+  exact prescribed_geometric_lambda_bound sampleDelta sampleN sampleMessageDim
+    geometricSampleDomain (by norm_num [sampleDelta]) (by norm_num [sampleDelta])
+    hblock hA (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
+private def curveCertificateCenters : Fin 2 ↪ ℚ where
+  toFun i := i.val
+  inj' := by
+    intro i j h
+    fin_cases i <;> fin_cases j <;> simp_all
+
+private def curveCertificateReceived : Fin 2 → ℚ := fun _ ↦ 0
+
+private noncomputable def curveCertificateWord : Fin 2 → Polynomial ℚ :=
+  fun i ↦ Polynomial.C (curveCertificateReceived i)
+
+private noncomputable def curveCertificate :
+    SymbolicReceivedCurve.Certificate 2 2 0 1 0 0
+      curveCertificateCenters curveCertificateWord :=
+  Classical.choice (by
+    simpa [curveCertificateWord] using
+      exists_partitionSupport_curve_certificate
+        (D := 1) (d := 0) (m := 1) (W := 0) (n := 2) (A := 2) (k := 2) (ℓ := 0)
+        (ν := 1) (L := 2) (by norm_num) (by norm_num) (by norm_num)
+        curveCertificateCenters curveCertificateWord
+        (by intro i; simp [curveCertificateWord])
+        (by
+          intro u hu
+          have h : u none + 1 * totalJetDegree u < 2 := by
+            exact_mod_cast hu.2
+          omega)
+        (by
+          have hcard : (partitionSupportExponents 1 0 0 (2 : ℝ) (by norm_num)).card =
+              partitionSourceCount 1 0 0 2 := by
+            simpa using
+              (card_partitionSupportExponents (D := 1) (d := 0) (W := 0) (by norm_num) 2)
+          rw [hcard]
+          norm_num [partitionSourceCount, localDerivativeCoordinateBudget, contactThreshold,
+            weightedHigherJetCount, Finset.natWeightedSimplex, Finset.sum_range_succ]))
+
+example :
+    let Q : DifferentialPolynomial ℚ 0 :=
+      MvPolynomial.map (Polynomial.eval₂RingHom (RingHom.id ℚ) 0) curveCertificate.Q
+    ∃ stages terminal, ∃ list : Finset (Polynomial ℚ),
+      SeparantChain Q stages terminal ∧
+        (list : Set (Polynomial ℚ)) =
+          closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2 ∧
+        (list.card : ℚ) ≤ (stages.map (directJetStageCharge 2 2 2 2)).sum := by
+  dsimp only
+  obtain ⟨stages, terminal, list, hchain, hlist, _, hbound⟩ :=
+    exists_closePolynomial_list_of_curve_certificate_actualStages
+      curveCertificateCenters curveCertificateReceived curveCertificate
+      (by norm_num)
+      (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  exact ⟨stages, terminal, list, hchain, hlist, hbound⟩
+
+example :
+    (closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2).Finite ∧
+      ((closePolynomialSet curveCertificateCenters curveCertificateReceived 2 2).ncard : ℚ) ≤
+        1 := by
+  simpa using close_list_bound_of_curve_certificate_directJetCoarse
+    curveCertificateCenters curveCertificateReceived curveCertificate
+    (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
+private noncomputable def curveCertificateDegreeOne :
+    SymbolicReceivedCurve.Certificate 2 1 0 1 0 0
+      curveCertificateCenters curveCertificateWord := by
+  let cert := curveCertificate
+  refine
+    { Q := cert.Q
+      challengeDegree_le := cert.challengeDegree_le
+      totalJetDegree_le := cert.totalJetDegree_le
+      specialization_sound := ?_ }
+  intro E hE ρ z
+  obtain ⟨hQ, hdegree, hsound⟩ := cert.specialization_sound ρ z
+  refine ⟨hQ, hdegree, ?_⟩
+  intro indices P hP hA heval
+  apply hsound indices P ?_ hA heval
+  exact lt_trans hP (by norm_num)
+
+example :
+    (closePolynomialSet curveCertificateCenters curveCertificateReceived 1 2).Finite ∧
+      ((closePolynomialSet curveCertificateCenters curveCertificateReceived 1 2).ncard :
+        ℝ) ≤ 1 := by
+  simpa using close_list_bound_of_curve_certificate_of_jetCharacteristic
+    (δ := 1 / 2) (K := 1) (d := 0) (ν := 1) (H := 0)
+    curveCertificateCenters curveCertificateReceived curveCertificateDegreeOne
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
 end
 end WeightedSupportInterpolantTest
 
@@ -295,8 +511,8 @@ example :
     ∃ list : Finset (Polynomial (ZMod 3)),
       (0 : Polynomial (ZMod 3)) ∈ list ∧ list.card ≤ 1 := by
   have h := exists_field_bounded_capacity_list (1 / 2 : ℝ) (by norm_num)
-  have hinstance := h 2 1 3 2 (by norm_num) (by norm_num) (by norm_num)
-    (by decide) (by norm_num) (by norm_num)
+  have hinstance := h 2 1 3 2 (by norm_num) (by norm_num)
+    (by decide) (by norm_num)
     finiteFieldCapacityDomain (fun _ => 0)
   obtain ⟨list, hexact, -, hhalf, -, -⟩ := hinstance
   have hagreement :
@@ -311,3 +527,253 @@ example :
     simp
   refine ⟨list, (hexact 0).2 ⟨by simp, ?_⟩, hhalf (by norm_num)⟩
   rw [hagreement]
+
+open ReedSolomon.HiddenDerivative.RatePartition
+
+section RatePartitionAcceptance
+
+noncomputable local instance : DecidableEq ℚ := Classical.decEq _
+
+private def ratePartitionSampleDomain (n : ℕ) : Fin n ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' i j hij := by
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    apply Fin.ext
+    exact_mod_cast hij
+
+private noncomputable def sampleRate : ℝ := 1 / 2
+private noncomputable def sampleGap : ℝ := 1 / 4
+private noncomputable def sampleAgreement : ℝ := sampleRate + sampleGap
+private noncomputable def sampleOrder : ℕ := fixedRatePartitionOrder sampleRate sampleGap
+
+private theorem sampleRateGate :
+    0 < sampleRate ∧ sampleRate < sampleAgreement ∧ sampleAgreement < 1 ∧
+      500 ≤ sampleOrder ∧ 1 < rateGamma sampleRate sampleAgreement sampleOrder := by
+  refine ⟨by norm_num [sampleRate], ?_, ?_, ?_, ?_⟩
+  · norm_num [sampleRate, sampleAgreement, sampleGap]
+  · norm_num [sampleRate, sampleAgreement, sampleGap]
+  · simpa only [sampleOrder] using fixedRatePartitionOrder_ge_500 sampleRate sampleGap
+  · simpa only [sampleOrder, sampleAgreement] using
+      fixedRateGamma_gt_one (by norm_num [sampleRate]) (by norm_num [sampleGap])
+
+open Classical in
+/-- The explicit fixed-rate gate gives its complete-list bound at the selected block length. -/
+example :
+    ∃ p : PartitionFiniteParameters sampleRate sampleAgreement sampleOrder,
+      ∃ n : ℕ,
+        n = rateBlockThreshold sampleRate sampleOrder p.multiplicity ∧
+        (closePolynomialSet (ratePartitionSampleDomain n) (fun _ => (0 : ℚ)) 1 n).Finite ∧
+          ((closePolynomialSet (ratePartitionSampleDomain n) (fun _ => (0 : ℚ)) 1 n).ncard :
+            ℝ) ≤
+            (rateJetCap sampleRate p.multiplicity : ℝ) ^ 2 *
+            (2 * rateJetCap sampleRate p.multiplicity / (sampleAgreement - sampleRate)) ^
+                sampleOrder * n ^ sampleOrder := by
+  obtain ⟨hR, hRa, haone, hd, hgate⟩ := sampleRateGate
+  have hδ : 0 < sampleGap := by norm_num [sampleGap]
+  obtain ⟨p, hbound⟩ :=
+    ReedSolomon.fixedRatePartitionOrder_list_bound hR hδ haone
+  let n := rateBlockThreshold sampleRate sampleOrder p.multiplicity
+  have hn : rateBlockThreshold sampleRate sampleOrder p.multiplicity ≤ n := by rfl
+  have hAn : sampleAgreement * n ≤ n := by
+    have hn_nonneg : (0 : ℝ) ≤ n := Nat.cast_nonneg _
+    nlinarith
+  have hguards := rateBlockThreshold_guards (rate := sampleRate)
+    (agreement := sampleAgreement) (order := sampleOrder) (multiplicity := p.multiplicity)
+    (n := n) (k := 0) (A := n) hR (hRa.trans haone) hn
+    (by simpa using mul_nonneg hR.le (Nat.cast_nonneg n)) hAn
+  have hfloor : 1 ≤ ⌊sampleRate * n⌋₊ := by
+    have := hguards.1
+    omega
+  have hkR : ((1 : ℕ) : ℝ) ≤ sampleRate * n := by
+    calc
+      ((1 : ℕ) : ℝ) ≤ (⌊sampleRate * n⌋₊ : ℝ) := by exact_mod_cast hfloor
+      _ ≤ sampleRate * n := Nat.floor_le (by positivity)
+  refine ⟨p, n, rfl, ?_⟩
+  have hSelector := hbound ℚ n 1 n hn (by simpa using hkR) hAn
+    (ratePartitionSampleDomain n) (fun _ => 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  have hDirect := ReedSolomon.ratePartition_close_list_bound (F := ℚ) (p := p) (n := n)
+    (k := 1) (A := n) hR hRa haone hd hn (by simpa using hkR) hAn (by rfl)
+    (ratePartitionSampleDomain n) (fun _ => 0)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+  simpa only [sampleAgreement, add_sub_cancel_left] using ⟨hDirect.1, hSelector.2⟩
+
+private noncomputable def fixedRateSampleParameters :
+    PartitionFiniteParameters sampleRate sampleAgreement sampleOrder :=
+  fixedRatePartitionFiniteParameters (by norm_num [sampleRate]) (by norm_num [sampleGap])
+
+private noncomputable def fixedRateSampleLength : ℕ :=
+  rateBlockThreshold sampleRate sampleOrder fixedRateSampleParameters.multiplicity
+
+open Classical in
+/-- The selected fixed-rate parameters bound the complete list over the rationals. -/
+example :
+    (closePolynomialSet (ratePartitionSampleDomain fixedRateSampleLength)
+      (fun _ => (0 : ℚ)) 1 fixedRateSampleLength).Finite ∧
+      ((closePolynomialSet (ratePartitionSampleDomain fixedRateSampleLength)
+        (fun _ => (0 : ℚ)) 1 fixedRateSampleLength).ncard : ℝ) ≤
+        (rateJetCap sampleRate fixedRateSampleParameters.multiplicity : ℝ) ^ 2 *
+          (2 * rateJetCap sampleRate fixedRateSampleParameters.multiplicity / sampleGap) ^
+            sampleOrder * fixedRateSampleLength ^ sampleOrder := by
+  have hR : 0 < sampleRate := by norm_num [sampleRate]
+  have hδ : 0 < sampleGap := by norm_num [sampleGap]
+  have haone : sampleRate + sampleGap < 1 := by norm_num [sampleRate, sampleGap]
+  have hn : rateBlockThreshold sampleRate sampleOrder
+      fixedRateSampleParameters.multiplicity ≤ fixedRateSampleLength := by rfl
+  have hAn : sampleAgreement * (fixedRateSampleLength : ℝ) ≤ fixedRateSampleLength := by
+    have hagreement : sampleAgreement ≤ 1 := by
+      norm_num [sampleAgreement, sampleRate, sampleGap]
+    have hn_nonneg : (0 : ℝ) ≤ fixedRateSampleLength := Nat.cast_nonneg _
+    calc
+      sampleAgreement * fixedRateSampleLength ≤ 1 * fixedRateSampleLength :=
+        mul_le_mul_of_nonneg_right hagreement hn_nonneg
+      _ = fixedRateSampleLength := by ring
+  have hk0 : (0 : ℝ) ≤ sampleRate * (fixedRateSampleLength : ℝ) :=
+    mul_nonneg (by norm_num [sampleRate]) (Nat.cast_nonneg _)
+  have hguards := rateBlockThreshold_guards (rate := sampleRate)
+    (agreement := sampleAgreement) (order := sampleOrder)
+    (multiplicity := fixedRateSampleParameters.multiplicity)
+    (n := fixedRateSampleLength) (k := 0) (A := fixedRateSampleLength) hR
+    (by norm_num [sampleRate]) hn (by simpa using hk0) hAn
+  have hfloor : 1 ≤ ⌊sampleRate * fixedRateSampleLength⌋₊ := by omega
+  have hkR : (1 : ℝ) ≤ sampleRate * fixedRateSampleLength := by
+    have hfloorReal : (1 : ℝ) ≤ (⌊sampleRate * fixedRateSampleLength⌋₊ : ℝ) := by
+      exact_mod_cast hfloor
+    exact hfloorReal.trans (Nat.floor_le (by positivity))
+  have hbound := ReedSolomon.fixedRatePartitionOrder_list_bound_selected
+    hR hδ haone
+  dsimp only at hbound
+  exact hbound ℚ fixedRateSampleLength 1 fixedRateSampleLength hn
+    (by simpa using hkR) hAn (ratePartitionSampleDomain fixedRateSampleLength)
+    (fun _ => 0) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+
+private noncomputable def uniformSampleDelta : ℝ := 1 / 5
+private noncomputable def uniformSampleLength : ℕ := uniformBlockThreshold uniformSampleDelta
+
+private theorem uniformSampleGap :
+    ((1 : ℕ) : ℝ) + uniformSampleDelta * uniformSampleLength ≤ uniformSampleLength := by
+  have hm : 1 ≤ uniformMultiplicity uniformSampleDelta := by
+    have := add_two_le_uniformMultiplicity uniformSampleDelta
+    omega
+  have hm' : 1 ≤ uniformMultiplicity (1 / 5 : ℝ) := by
+    simpa [uniformSampleDelta] using hm
+  have hm_real : (1 : ℝ) ≤ (uniformMultiplicity (1 / 5 : ℝ) : ℝ) := by
+    exact_mod_cast hm'
+  have hsize := (uniformBlockThreshold_guards (δ := uniformSampleDelta)
+    (n := uniformSampleLength) (by norm_num [uniformSampleDelta])
+    (by norm_num [uniformSampleDelta]) (by rfl)).1
+  norm_num [uniformSampleDelta] at hsize
+  have hn50 : (50 : ℝ) ≤ uniformSampleLength := by
+    have hmult : (2 : ℝ) ≤ 2 * (uniformMultiplicity (1 / 5) : ℝ) := by
+      nlinarith [hm_real]
+    have hle := hmult.trans hsize
+    norm_num at hle
+    linarith
+  norm_num [uniformSampleDelta]
+  nlinarith [hn50]
+
+open Classical in
+/-- The uniform small-gap bound holds at the selected block length over the rationals. -/
+example :
+    (closePolynomialSet (ratePartitionSampleDomain uniformSampleLength)
+      (fun _ => (0 : ℚ)) 1 uniformSampleLength).Finite ∧
+      ((closePolynomialSet (ratePartitionSampleDomain uniformSampleLength)
+        (fun _ => (0 : ℚ)) 1 uniformSampleLength).ncard : ℝ) ≤
+        (uniformJetCap uniformSampleDelta : ℝ) ^ 2 *
+          (2 * uniformJetCap uniformSampleDelta / uniformSampleDelta) ^
+            uniformDerivativeOrder uniformSampleDelta * uniformSampleLength ^
+              uniformDerivativeOrder uniformSampleDelta ∧
+      (let d := uniformDerivativeOrder uniformSampleDelta
+       let ν := uniformJetCap uniformSampleDelta
+       let C : ℝ := (ν : ℝ) ^ 2 * (2 * ν / uniformSampleDelta) ^ d
+      (closePolynomialSet (ratePartitionSampleDomain uniformSampleLength) (fun _ => (0 : ℚ)) 1
+        uniformSampleLength).Finite ∧
+         ((closePolynomialSet (ratePartitionSampleDomain uniformSampleLength) (fun _ => (0 : ℚ))
+           1 uniformSampleLength).ncard : ℝ) ≤ C * uniformSampleLength ^ d) := by
+  have hchar : ringChar ℚ = 0 ∨ uniformSampleLength ≤ ringChar ℚ :=
+    Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+  have hExpanded := uniformRatePartition_close_list_bound
+    (δ := uniformSampleDelta) (n := uniformSampleLength) (k := 1) (A := uniformSampleLength)
+    (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta]) (by rfl)
+    (by norm_num) uniformSampleGap (ratePartitionSampleDomain uniformSampleLength)
+    (fun _ => 0) hchar
+  exact ⟨hExpanded.1, hExpanded.2, uniform_capacity_list_bound uniformSampleDelta
+    (by norm_num [uniformSampleDelta]) (by norm_num [uniformSampleDelta])
+    uniformSampleLength 1 uniformSampleLength (by rfl) (by norm_num) uniformSampleGap
+    (ratePartitionSampleDomain uniformSampleLength) (fun _ => 0) hchar⟩
+
+private noncomputable def mathSampleDelta : ℝ := 1 / 5
+private noncomputable def mathSampleLength : ℕ := uniformMathematicalCapacityLength mathSampleDelta
+
+private theorem mathSampleGap :
+    ((1 : ℕ) : ℝ) + mathSampleDelta * mathSampleLength ≤ mathSampleLength := by
+  obtain ⟨-, -, hν, hνn⟩ := uniformMathematical_integer_guards (n := mathSampleLength)
+    (by norm_num [mathSampleDelta]) (by norm_num [mathSampleDelta]) (le_max_left _ _)
+  have hn : (2 : ℝ) ≤ mathSampleLength := by exact_mod_cast (show 2 ≤ mathSampleLength by omega)
+  norm_num [mathSampleDelta]
+  linarith
+
+open Classical in
+/-- The mathematical uniform capacity bound holds at the selected block length over the
+rationals. -/
+example :
+    (closePolynomialSet (ratePartitionSampleDomain mathSampleLength)
+      (fun _ => (0 : ℚ)) 1 mathSampleLength).Finite ∧
+      ((closePolynomialSet (ratePartitionSampleDomain mathSampleLength)
+        (fun _ => (0 : ℚ)) 1 mathSampleLength).ncard : ℝ) ≤
+        mathematicalUniformListConstant mathSampleDelta *
+          mathSampleLength ^ uniformDerivativeOrder mathSampleDelta :=
+  mathematicalUniform_capacity_list_bound mathSampleDelta (by norm_num [mathSampleDelta])
+    (by norm_num [mathSampleDelta]) mathSampleLength 1 mathSampleLength le_rfl (by norm_num)
+    mathSampleGap (ratePartitionSampleDomain mathSampleLength) (fun _ => 0)
+    (Or.inl ringChar.eq_zero)
+
+end RatePartitionAcceptance
+
+section ExactListsAcceptance
+
+local instance : Fact (Nat.Prime 23) := ⟨by decide⟩
+
+private def exactListDomain : Fin 23 ↪ ZMod 23 where
+  toFun i := (i.val : ZMod 23)
+  inj' i j hij := by
+    apply Fin.ext
+    simpa only [ZMod.val_natCast, Nat.mod_eq_of_lt i.isLt, Nat.mod_eq_of_lt j.isLt]
+      using congrArg ZMod.val hij
+
+/-- At gap `6/25` over `ZMod 23` with `q = n = 23`, dimension `2` and agreement `8`, the exact
+list has at most `307 * 23` members. -/
+example (received : Fin 23 → ZMod 23) :
+    ∃ list : Finset (Polynomial (ZMod 23)),
+      (∀ P, P ∈ list ↔ P.degree < 2 ∧
+        8 ≤ Code.agree (fun i ↦ P.eval (exactListDomain i)) received) ∧
+      (list.card : ℝ) ≤ 307 * 23 := by
+  obtain ⟨list, hexact, -, hcard⟩ := exists_rateCapacity_list (6 / 25) (by norm_num)
+    23 2 23 8 (by norm_num [rateCapacityLengthThreshold]) (by norm_num) (by norm_num)
+    Fact.out le_rfl (by norm_num) exactListDomain received
+  exact ⟨list, hexact, by simpa [rateCapacityListBound] using hcard⟩
+
+local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+private def quarterGapDomain : Fin 4 ↪ ZMod 5 where
+  toFun i := (i.val : ZMod 5)
+  inj' i j hij := by
+    apply Fin.ext
+    have hi : i.val < 5 := i.isLt.trans_le (by decide)
+    have hj : j.val < 5 := j.isLt.trans_le (by decide)
+    simpa only [ZMod.val_natCast, Nat.mod_eq_of_lt hi, Nat.mod_eq_of_lt hj]
+      using congrArg ZMod.val hij
+
+private def quarterGapReceived : Fin 4 → ZMod 5 := fun i => if (i : ℕ) < 2 then 0 else 1
+
+/-- At gap `1/4` over `ZMod 5` with length `4`, dimension `1` and agreement `2`, the exact list
+for the word `(0, 0, 1, 1)` contains both constants `0` and `1`, and has fewer than `4` members. -/
+example : ∃ list : Finset (Polynomial (ZMod 5)), 0 ∈ list ∧ 1 ∈ list ∧ list.card < 4 := by
+  obtain ⟨list, hexact, -, hbounds⟩ := exists_capacity_list (1 / 4) (by norm_num)
+    4 1 5 2 (by norm_num [capacityLengthThreshold]) (by norm_num) (by norm_num) Fact.out
+    (by norm_num) (by norm_num) quarterGapDomain quarterGapReceived
+  refine ⟨list, (hexact 0).2 ⟨by simp, ?_⟩, (hexact 1).2 ⟨by simp, ?_⟩,
+    hbounds.quarterGap le_rfl⟩ <;> simp only [Polynomial.eval_zero, Polynomial.eval_one] <;>
+    decide
+
+end ExactListsAcceptance

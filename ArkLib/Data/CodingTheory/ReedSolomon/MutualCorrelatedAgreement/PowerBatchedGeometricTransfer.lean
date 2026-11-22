@@ -23,7 +23,7 @@ descend to the base field by pulling the exceptional set back along the embeddin
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -72,7 +72,7 @@ theorem exists_geometricTransfer_exceptional
       z ∉ preliminary →
       (∃ s, z ∈ offGraph s) ∨
         ∃ s P, P ∈ retained s ∧
-          Q = powerBatchedPolynomial (fun t ↦ (P t).map iota) z) :
+          Q = Polynomial.powerBatch (fun t ↦ (P t).map iota) z) :
     ∃ exceptional : Finset E,
       (exceptional.card : ℚ) ≤
         geometricTransferBound preliminary.card (Fintype.card α) k ℓ L A r J fiberDegree ∧

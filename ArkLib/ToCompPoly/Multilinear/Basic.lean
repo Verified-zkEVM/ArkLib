@@ -9,25 +9,14 @@ public import ArkLib.Data.MvPolynomial.Multilinear
 public import CompPoly.Multilinear.Basic
 
 /-!
-  # Evaluation semantics of CompPoly's multilinear evaluation tables
+# Evaluating a computable table as a multilinear extension
 
-  Addition to `CompPoly.Multilinear` not yet upstreamed to CompPoly.
+CompPoly indexes Boolean evaluation tables by `Fin (2 ^ n)`, while ArkLib's `MvPolynomial.MLE`
+indexes its input by `Fin n → Fin 2`. The equivalence `finFunctionFinEquiv` identifies the two
+little-endian indexings. Evaluating a `CMlPolynomialEval` at any point therefore agrees with
+evaluating ArkLib's multilinear extension of the same table there.
 
-  CompPoly bridges the two *representations*: `CompPoly.Multilinear.Equiv` transports a hypercube
-  evaluation table `CMlPolynomialEval R n` to `MvPolynomial (Fin n) R` (via `toMvPolynomial`,
-  `toMvPolynomialDeg1`, `equivMvPolynomialDeg1`). What it does not yet record is how the computable
-  evaluator `CMlPolynomialEval.eval` — a dot product against the Lagrange basis — relates to
-  `MvPolynomial.eval` of the transported polynomial. This file supplies that missing half, stated
-  against the multilinear extension `MvPolynomial.MLE` of
-  `ArkLib/Data/MvPolynomial/Multilinear.lean`.
-
-  The bit-index reconciliation is the whole content: `CMlPolynomialEval` indexes the hypercube by
-  `Fin (2 ^ n)` through little-endian `BitVec` bits, while `MvPolynomial.MLE` indexes it by
-  `Fin n → Fin 2`, and the two are matched by `finFunctionFinEquiv`.
-
-  This is the boundary the Hachi zero-check crosses (`ZeroCheck/Constraints.lean`): the protocol
-  relations are stated with the computable `CMlPolynomialEval.eval`, while the nested-tree zero
-  test behind the corrected Lemma 10 reasons in `MvPolynomial`.
+Hachi's zero-check uses this identity to apply a nested-tree zero test to its computable tables.
 -/
 
 @[expose] public section
@@ -35,20 +24,6 @@ public import CompPoly.Multilinear.Basic
 namespace CompPoly.CMlPolynomialEval
 
 variable {R : Type*} [CommRing R] {n : ℕ}
-
-/-- The identically-zero evaluation table vanishes at every point.
-
-This is what makes an identity `H ≡ 0` usable at an *arbitrary* challenge point, hence the
-honest-direction step in protocols that reduce a polynomial identity to evaluation claims (the
-Hachi zero-check, `ZeroCheck/Completeness.lean`). -/
-@[simp]
-theorem eval_zero (x : Vector R n) : eval (0 : CMlPolynomialEval R n) x = 0 := by
-  change Vector.dotProduct (0 : CMlPolynomialEval R n) (lagrangeBasis x) = 0
-  rw [Vector.dotProduct_eq_root_dotProduct]
-  have hget : (0 : CMlPolynomialEval R n).get = 0 := by
-    funext i
-    simp [Vector.get]
-  rw [hget, zero_dotProduct]
 
 /-- Direct evaluation of a Boolean-value vector agrees with evaluating Mathlib's multilinear
 extension of the same table. This is the boundary used when a computational relation is stated

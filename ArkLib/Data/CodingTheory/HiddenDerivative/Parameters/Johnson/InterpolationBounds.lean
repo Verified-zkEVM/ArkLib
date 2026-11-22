@@ -153,8 +153,10 @@ theorem johnsonH_add_one {n D : ℕ} {eta : ℝ}
 /-- The challenge cutoff dominates the candidate cutoff, `μ ≤ h`. In real terms
 `t / √ρ₋ ≤ t² / (3ρ₋)` because `t ≥ 7/2 > 3 > 3√ρ₋`; the ceilings preserve the order. -/
 theorem johnsonMu_le_H {n D : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D < n) :
+    (hDn : D < n) :
     johnsonMu n D eta ≤ johnsonH n D eta := by
+  rcases Nat.eq_zero_or_pos D with rfl | hD
+  · simp [johnsonMu, johnsonH, johnsonRhoMinus]
   let x := √(johnsonRhoMinus n D)
   let t := johnsonT n D eta
   have hx := johnsonSqrt_mem_Ioo hD hDn
@@ -166,13 +168,13 @@ theorem johnsonMu_le_H {n D : ℕ} {eta : ℝ}
     rw [← hx2]
     have ht0 : 0 < t := lt_of_lt_of_le (by norm_num) ht
     have hgap : 0 ≤ t * (t - 3 * x) := by
-      have : 0 < t - 3 * x := by nlinarith [hx.2]
+      have : 0 < t - 3 * x := by linarith only [hx.2, ht]
       positivity
-    have hbase : 3 * t * x ≤ t ^ 2 := by nlinarith [hgap]
+    have hbase : 3 * t * x ≤ t ^ 2 := by linarith only [hgap]
     have hden : 0 < 3 * x ^ 2 := by positivity
     apply (div_le_div_iff₀ hx0 hden).2
     have hmul := mul_le_mul_of_nonneg_right hbase hx0.le
-    nlinarith
+    linarith only [hmul]
   have hc := Nat.ceil_mono hreal
   dsimp only [x, t] at hc
   rw [← johnsonMu_add_one hD hDn, ← johnsonH_add_one hD hDn] at hc
@@ -196,7 +198,7 @@ theorem johnsonM_le_H_add_one {n D : ℕ} {eta : ℝ}
       Nat.lt_ceil.mpr hreal
     rw [← johnsonMu_add_one hD hDn] at hceil
     omega
-  exact hmμ.trans (johnsonMu_le_H hD hDn |>.trans (Nat.le_add_right _ 1))
+  exact hmμ.trans (johnsonMu_le_H hDn |>.trans (Nat.le_add_right _ 1))
 
 /-- The largest `y`-slice remains strictly inside the weighted-degree cutoff: `D μ < X`, since
 `μ < t / √ρ₋` and `D = n ρ₋`. -/
@@ -256,23 +258,22 @@ theorem johnsonXCutoff_le_mul_agreement {n D A : ℕ} {eta : ℝ}
   exact Nat.ceil_le.mpr hreal
 
 private theorem staircase_closed_form_lower {d X dy y z : ℝ}
-    (hd : 0 ≤ d) (hdy : 0 ≤ dy) (hdy_y : dy ≤ y) (hy : 0 ≤ y)
+    (hd : 0 ≤ d) (hdy_y : dy ≤ y) (hy : 0 ≤ y)
     (hy_lt : y < dy + 1) (hyz : y ≤ z) (hdX : d * dy ≤ X) :
     d * (dy * (dy + 1) / 2 * z - (dy ^ 3 - dy) / 6) ≤
       X * y * z - X * (y * (y - 1) / 2) -
       d * (y * (y - 1) / 2) * z + d * (y * (y - 1) * (2 * y - 1) / 6) := by
   let r := y - dy
   have hr0 : 0 ≤ r := sub_nonneg.mpr hdy_y
-  have hr1 : r ≤ 1 := by dsimp only [r]; linarith
+  have hr1 : r ≤ 1 := sub_le_iff_le_add'.2 hy_lt.le
   have hbracket : 0 ≤ 3 * z + 1 - 3 * dy - 2 * r := by
     dsimp only [r]
-    nlinarith
+    linarith only [hyz, hdy_y]
   have hround : 0 ≤ d * r * (1 - r) * (3 * z + 1 - 3 * dy - 2 * r) / 6 := by
     positivity
   have hcoeff : 0 ≤ y * z - y * (y - 1) / 2 := by
-    have hb : 0 ≤ z - (y - 1) / 2 := by nlinarith
-    have : 0 ≤ y * (z - (y - 1) / 2) := mul_nonneg hy hb
-    nlinarith
+    have hb : 0 ≤ z - (y - 1) / 2 := by linarith only [hyz, hy]
+    exact (mul_nonneg hy hb).trans_eq (by ring)
   have hxgain : 0 ≤ (X - d * dy) * (y * z - y * (y - 1) / 2) :=
     mul_nonneg (sub_nonneg.mpr hdX) hcoeff
   have hroundId :
@@ -287,7 +288,7 @@ private theorem staircase_closed_form_lower {d X dy y z : ℝ}
       (X * y * z - X * (y * (y - 1) / 2)) -
         (d * dy * y * z - d * dy * (y * (y - 1) / 2)) =
           (X - d * dy) * (y * z - y * (y - 1) / 2) := by ring
-  nlinarith [hroundId, hxgainId]
+  linarith only [hroundId, hxgainId, hround, hxgain]
 
 /-- At the rounded Johnson cutoffs, the source-slot count strictly exceeds the row-slot count
 under the guards `1 ≤ D < n`, which make `ρ₋ ∈ (0, 1)`. -/
@@ -318,7 +319,7 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
     rw [hx2]
     unfold johnsonRhoMinus
     field_simp
-  have hμh : μ ≤ h := johnsonMu_le_H hD hDn
+  have hμh : μ ≤ h := johnsonMu_le_H hDn
   have hmz : m ≤ z := by exact johnsonM_le_H_add_one hD hDn
   have hDX : D * μ < Xc := johnson_D_mul_mu_lt_XCutoff hD hDn
   have hsource := sourceSlotCount_cast hDX hμh
@@ -343,16 +344,17 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
   have hsourceLower := staircase_closed_form_lower
     (d := (D : ℝ)) (X := (Xc : ℝ)) (dy := dy)
     (y := ((μ + 1 : ℕ) : ℝ)) (z := (z : ℝ))
-    (by positivity) hdy0 hdy_y (by positivity) hy_lt hyz hX
+    (by positivity) hdy_y (by positivity) hy_lt hyz hX
   have hz0 : t ^ 2 / (3 * x ^ 2) ≤ (z : ℝ) := by
     dsimp only [z, h]
     rw [johnsonH_add_one hD hDn, hx2]
     exact Nat.le_ceil _
-  have hcoef : 0 < t * x + 1 / 4 := by positivity
+  have hcoef : 0 < t * x + 1 / 4 :=
+    add_pos_of_nonneg_of_pos (mul_nonneg ht0.le hx0.le) (by norm_num)
   have hmterm : 0 < (m : ℝ) ^ 3 - m := by
     have hmreal : (3 : ℝ) ≤ m := by exact_mod_cast hm3
     have hmpos : 0 < (m : ℝ) := lt_of_lt_of_le (by norm_num) hmreal
-    have hmSubPos : 0 < (m : ℝ) - 1 := by linarith
+    have hmSubPos : 0 < (m : ℝ) - 1 := by linarith only [hmreal]
     rw [show (m : ℝ) ^ 3 - m = (m : ℝ) * ((m : ℝ) - 1) * ((m : ℝ) + 1) by ring]
     exact mul_pos (mul_pos hmpos hmSubPos) (by positivity)
   have hmain :
@@ -375,17 +377,22 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
     have hpositiveAtCutoff :
         0 < 3 * (t * x + 1 / 4) * (t ^ 2 / (3 * x ^ 2)) -
           (t ^ 3 / x - t * x - ((m : ℝ) ^ 3 - m)) := by
-      have htail : 0 < t ^ 2 / (4 * x ^ 2) + t * x + ((m : ℝ) ^ 3 - m) := by
-        positivity
-      field_simp [hx0.ne'] at htail ⊢
-      linarith
+      have htail : 0 < t ^ 2 / (4 * x ^ 2) + t * x + ((m : ℝ) ^ 3 - m) :=
+        add_pos (add_pos_of_nonneg_of_pos (by positivity) (mul_pos ht0 hx0)) hmterm
+      have hid : 3 * (t * x + 1 / 4) * (t ^ 2 / (3 * x ^ 2)) -
+          (t ^ 3 / x - t * x - ((m : ℝ) ^ 3 - m)) =
+          t ^ 2 / (4 * x ^ 2) + t * x + ((m : ℝ) ^ 3 - m) := by
+        field_simp
+        ring
+      exact hid ▸ htail
     have hscaled :
         3 * (t * x + 1 / 4) * (t ^ 2 / (3 * x ^ 2)) ≤
-          3 * (t * x + 1 / 4) * (z : ℝ) := by gcongr
+          3 * (t * x + 1 / 4) * (z : ℝ) :=
+      mul_le_mul_of_nonneg_left hz0 (mul_pos three_pos hcoef).le
     have hbracket :
         0 < 3 * (t * x + 1 / 4) * (z : ℝ) -
-          (t ^ 3 / x - t * x - ((m : ℝ) ^ 3 - m)) := by
-      linarith
+          (t ^ 3 / x - t * x - ((m : ℝ) ^ 3 - m)) :=
+      hpositiveAtCutoff.trans_le (sub_le_sub_right hscaled _)
     have hdiff :
         (D : ℝ) * (dy * (dy + 1) / 2 * (z : ℝ) - (dy ^ 3 - dy) / 6) -
           (n : ℝ) * ((m : ℝ) * (m + 1) / 2 * (z : ℝ) -
@@ -398,13 +405,13 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
               ((D : ℝ) * (dy ^ 3 - dy) - n * ((m : ℝ) ^ 3 - m))) := by ring
         _ = _ := by rw [hcoefId, hcubicId]; ring
     rw [← sub_pos, hdiff]
-    positivity
+    exact mul_pos (div_pos hn (by norm_num)) hbracket
   have hsourceLower' :
       (D : ℝ) * (dy * (dy + 1) / 2 * (z : ℝ) - (dy ^ 3 - dy) / 6) ≤
         (johnsonSourceSlotCount Xc D μ h : ℝ) := by
     rw [hsource]
     convert hsourceLower using 1
-    all_goals dsimp only [z]; push_cast; ring
+    dsimp only [z]; push_cast; ring
   have hcast : (johnsonRowSlotCount n m h : ℝ) <
       (johnsonSourceSlotCount Xc D μ h : ℝ) := by
     rw [hrow]
@@ -413,7 +420,7 @@ theorem johnson_interpolation_slot_surplus {n D : ℕ} {eta : ℝ}
             ((m : ℝ) ^ 3 - m) / 6) <
           (D : ℝ) * (dy * (dy + 1) / 2 * (z : ℝ) - (dy ^ 3 - dy) / 6) := by
       convert hmain using 1
-      all_goals dsimp only [z]; push_cast; ring
+      dsimp only [z]; push_cast; ring
     exact hmain'.trans_le hsourceLower'
   exact_mod_cast hcast
 

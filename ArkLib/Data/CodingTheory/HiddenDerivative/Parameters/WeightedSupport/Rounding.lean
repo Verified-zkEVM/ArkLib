@@ -89,18 +89,26 @@ radius keeps the factor `(1 - 1 / N) ^ 2`:
 `(1 - 1 / N) ^ 2 (a / (g H)) ^ 2 ≤ (⌊R⌋₊ / (d g m)) ^ 2`. The normalized unrounded radius is
 `a / (g H) = R / (d g m)`, and `(1 - 1 / N) R < ⌊R⌋₊` by `Nat.one_sub_one_div_mul_lt_floor`. The
 hypothesis `1 ≤ N` keeps `1 - 1 / N` nonnegative, so that squaring preserves the inequality. -/
-theorem floorRadius_sq_ge (N a g H : ℝ) (d m : ℕ) (hN : 1 ≤ N) (hg : 0 < g) (hH : 0 < H)
-    (hd : 0 < d) (hm : 0 < m) (hR : N ≤ a * d * m / H) :
+theorem floorRadius_sq_ge (N a g H : ℝ) (d m : ℕ) (hN : 1 ≤ N)
+    (hR : N ≤ a * d * m / H) :
     (1 - 1 / N) ^ 2 * (a / (g * H)) ^ 2 ≤ ((⌊a * d * m / H⌋₊ : ℝ) / (d * g * m)) ^ 2 := by
-  have hden : (0 : ℝ) < d * g * m := by positivity
+  by_cases hg : g = 0
+  · simp [hg]
+  have hd : (d : ℝ) ≠ 0 := by intro h; simp [h] at hR; linarith
+  have hm : (m : ℝ) ≠ 0 := by intro h; simp [h] at hR; linarith
+  have hH : H ≠ 0 := by intro h; simp [h] at hR; linarith
   have hid : a / (g * H) = (a * d * m / H) / (d * g * m) := by field_simp
   have hlt := Nat.one_sub_one_div_mul_lt_floor (by linarith : (0 : ℝ) < N) hR
   have hN0 : 0 ≤ 1 - 1 / N := by
     have : 1 / N ≤ 1 := (div_le_one (by linarith)).mpr hN
     linarith
-  rw [hid, ← mul_pow, ← mul_div_assoc]
-  exact pow_le_pow_left₀ (div_nonneg (mul_nonneg hN0 (by linarith)) hden.le)
-    (div_le_div_of_nonneg_right hlt.le hden.le) 2
+  calc
+    _ = ((1 - 1 / N) * (a * d * m / H)) ^ 2 / (d * g * m) ^ 2 := by
+      rw [hid]; ring
+    _ ≤ (⌊a * d * m / H⌋₊ : ℝ) ^ 2 / (d * g * m) ^ 2 :=
+      div_le_div_of_nonneg_right
+        (pow_le_pow_left₀ (mul_nonneg hN0 (by linarith)) hlt.le 2) (sq_nonneg _)
+    _ = _ := (div_pow _ _ 2).symm
 
 /-- The lower bound on the mean gap. Let `W = ⌊(1 + θ g) d m / H⌋₊` and `r < m`. If the additive
 error `m H / d + d.choose 2 · H / d` is at most `ε (1 - θ) g m`, then
@@ -150,11 +158,16 @@ theorem remainingDegree_upper (θ ε g H : ℝ) (d m r W : ℕ) (hd : 0 < d) (hH
 `m + d.choose 2 ≤ ε (1 + θ g) d m / H`, then
 `(W + r + d.choose 2) / d ≤ ((1 + θ g) m / H) (1 + ε)`. The floor gives `W ≤ (1 + θ g) d m / H`,
 which needs `0 ≤ 1 + θ g`. -/
-theorem enlargedRadius_upper (θ ε g H : ℝ) (d m r W : ℕ) (hd : 0 < d) (hr : r < m)
+theorem enlargedRadius_upper (θ ε g H : ℝ) (d m r W : ℕ) (hr : r < m)
     (ha : 0 ≤ 1 + θ * g) (hH : 0 < H) (hW : W = ⌊(1 + θ * g) * d * m / H⌋₊)
     (herror : (m : ℝ) + d.choose 2 ≤ ε * ((1 + θ * g) * d * m / H)) :
     ((W + r + d.choose 2 : ℕ) : ℝ) / d ≤ ((1 + θ * g) * m / H) * (1 + ε) := by
-  have hdR : (0 : ℝ) < d := by exact_mod_cast hd
+  have hdR : (0 : ℝ) < d := by
+    have hmR : (0 : ℝ) < m := by exact_mod_cast (Nat.zero_le r).trans_lt hr
+    by_contra! h
+    have hd0 : d = 0 := by exact_mod_cast (le_antisymm h (Nat.cast_nonneg d))
+    simp [hd0] at herror
+    linarith
   have hfloor : (W : ℝ) ≤ (1 + θ * g) * d * m / H := hW ▸ Nat.floor_le (by positivity)
   have hrR : (r : ℝ) ≤ m := by exact_mod_cast hr.le
   have hsum : ((W + r + d.choose 2 : ℕ) : ℝ) ≤ ((1 + θ * g) * d * m / H) * (1 + ε) := by
@@ -171,7 +184,7 @@ and `m + d.choose 2 ≤ (1 / 1000) (1 + θ g) d m / H`. These are the hypotheses
 `remainingDegree_lower`, `remainingDegree_upper` and `enlargedRadius_upper`. The bound
 `H ≤ (19 / 365) √d` controls `H / d`, and `m ≥ 100 d ^ 2 H` controls `d.choose 2 / m`. -/
 theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
-    (hd : 48000 ≤ d) (hm : 0 < m) (hg : 0 < g) (hH : 0 < H)
+    (hd : 48000 ≤ d)
     (hHlower : 54 / 5 ≤ H)
     (hHupper : H ≤ (19 / 365) * Real.sqrt d)
     (hgH : xi ≤ g * H)
@@ -184,7 +197,10 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       ((m : ℝ) + d.choose 2 ≤
         (1 / 1000) * ((1 + theta * g) * d * m / H)) := by
   have hdR : (0 : ℝ) < d := by exact_mod_cast (show 0 < d by omega)
-  have hmR : (0 : ℝ) < m := by exact_mod_cast hm
+  have hH : 0 < H := lt_of_lt_of_le (by norm_num) hHlower
+  have hmR : (0 : ℝ) < m := (by positivity : 0 < 100 * (d : ℝ) ^ 2 * H).trans_le hsize
+  have hg : 0 < g := (mul_pos_iff_of_pos_right hmR).mp
+    ((by positivity : 0 < 270 * (d : ℝ) * H).trans_le hgm)
   have hsqrt : 0 < Real.sqrt d := Real.sqrt_pos.2 hdR
   have hsqrtSq : Real.sqrt (d : ℝ) ^ 2 = d := Real.sq_sqrt hdR.le
   have hsqrtLower : (219 : ℝ) ≤ Real.sqrt d := by
@@ -210,11 +226,12 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
     hHupper.trans (mul_le_mul_of_nonneg_left hsqrtLeD (by norm_num))
   have hB : (d.choose 2 : ℝ) / m ≤ 1 / (200 * H) := by
     simpa only [show (2 : ℝ) * 100 = 200 by norm_num] using
-      InterpolationRounding.binomial_error_le 100 H d m (by norm_num) hH hm hsize
+      InterpolationRounding.binomial_error_le 100 H d m (by norm_num) hH hsize
   have hBterm : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * (d : ℝ)) := by
     calc
       _ = ((d.choose 2 : ℝ) / m) * H / d := by ring
-      _ ≤ (1 / (200 * H)) * H / d := by gcongr
+      _ ≤ (1 / (200 * H)) * H / d :=
+        div_le_div_of_nonneg_right (mul_le_mul_of_nonneg_right hB hH.le) hdR.le
       _ = 1 / (200 * d) := by field_simp
   have hxiH : xi * H ≤ g * H ^ 2 := by
     have := mul_le_mul_of_nonneg_right hgH hH.le
@@ -240,7 +257,10 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       _ ≤ g * (19 / 365) / (200 * xi) := by
         apply (div_le_div_iff₀ (by positivity : (0 : ℝ) < 200 * d)
           (by norm_num [xi] : (0 : ℝ) < 200 * xi)).2
-        nlinarith only [hxiD]
+        rw [one_mul]
+        calc
+          200 * xi ≤ 200 * (g * (19 / 365) * d) := mul_le_mul_of_nonneg_left hxiD (by norm_num)
+          _ = g * (19 / 365) * (200 * d) := by ring
   have hlowerCoeff :
       (19 / 365 : ℝ) ^ 2 / xi + (19 / 365) / (200 * xi) ≤
         (2 / 1000) * residualFraction := by
@@ -260,16 +280,17 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
     have hscaled := mul_le_mul_of_nonneg_right hlowerNormalized hmR.le
     have e : (H / d + (d.choose 2 : ℝ) * H / (d * m)) * m =
         (m : ℝ) * H / d + d.choose 2 * H / d := by field_simp
-    linarith
+    exact e ▸ hscaled
   have hdTerm : (d : ℝ) ≤ g * m / (270 * H) := by
     apply (le_div_iff₀ (by positivity : (0 : ℝ) < 270 * H)).2
-    simpa [mul_assoc, mul_left_comm, mul_comm] using hgm
+    calc
+      (d : ℝ) * (270 * H) = 270 * d * H := by ring
+      _ ≤ g * m := hgm
   have hHterm : H / d ≤ g * m / (270 * d ^ 2) := by
-    apply (div_le_iff₀ hdR).2
-    rw [show (g * m / (270 * d ^ 2)) * d = g * m / (270 * d) by
-      field_simp]
-    apply (le_div_iff₀ (by positivity : (0 : ℝ) < 270 * d)).2
-    simpa [mul_assoc, mul_left_comm, mul_comm] using hgm
+    rw [div_le_div_iff₀ hdR (by positivity)]
+    calc
+      H * (270 * d ^ 2) = 270 * d * H * d := by ring
+      _ ≤ g * m * d := mul_le_mul_of_nonneg_right hgm hdR.le
   have hgm0 : 0 ≤ g * (m : ℝ) := by positivity
   have hdTerm' : (d : ℝ) ≤ g * m / (270 * (54 / 5)) :=
     hdTerm.trans (div_le_div_of_nonneg_left hgm0 (by norm_num)
@@ -299,8 +320,7 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       H / d ≤ ((19 / 365 : ℝ) * Real.sqrt d) / d :=
         div_le_div_of_nonneg_right hHupper hdR.le
       _ = (19 / 365 : ℝ) / Real.sqrt d := by
-        field_simp [hsqrt.ne', hdR.ne']
-        nlinarith only [hsqrtSq]
+        rw [mul_div_assoc, Real.sqrt_div_self', mul_one_div]
       _ ≤ (19 / 365 : ℝ) / 219 :=
         div_le_div_of_nonneg_left (by norm_num) (by norm_num) hsqrtLower
   have hBterm' : (d.choose 2 : ℝ) * H / (d * m) ≤ 1 / (200 * 48000) := by
@@ -318,7 +338,7 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       calc
         (1 / 1000 : ℝ) = (1 / 1000) * 1 := by ring
         _ ≤ (1 / 1000) * (1 + theta * g) :=
-          mul_le_mul_of_nonneg_left (by linarith) (by norm_num)
+          mul_le_mul_of_nonneg_left (le_add_of_nonneg_right hθg) (by norm_num)
     exact hbound.trans (hc.trans htheta)
   have hradius : (m : ℝ) + d.choose 2 ≤
       (1 / 1000) * ((1 + theta * g) * d * m / H) := by
@@ -326,8 +346,8 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
       (m : ℝ) + d.choose 2 =
           (H / d + (d.choose 2 : ℝ) * H / (d * m)) * (d * m / H) := by
         field_simp
-      _ ≤ ((1 / 1000) * (1 + theta * g)) * (d * m / H) := by
-        gcongr
+      _ ≤ ((1 / 1000) * (1 + theta * g)) * (d * m / H) :=
+        mul_le_mul_of_nonneg_right hradiusNormalized (by positivity)
       _ = (1 / 1000) * ((1 + theta * g) * d * m / H) := by ring
   exact ⟨hlower, hupper, hradius⟩
 
@@ -335,12 +355,15 @@ theorem centeringErrorBounds (d m : ℕ) (g H : ℝ)
 `W' / d ≤ g m / ξ · c`, since `a m / H = (a / (g H)) (g m)`. The hypotheses `0 ≤ m`, `0 < g` and
 `0 ≤ c` make the rescaling monotone. -/
 theorem enlargedRadius_normalized (d m W' a g H ξ c : ℝ) (hm : 0 ≤ m) (hg : 0 < g)
-    (hH : 0 < H) (hc : 0 ≤ c) (hradius : W' / d ≤ (a * m / H) * c)
+    (hc : 0 ≤ c) (hradius : W' / d ≤ (a * m / H) * c)
     (ha : a / (g * H) ≤ 1 / ξ) :
     W' / d ≤ g * m / ξ * c := by
   calc
     W' / d ≤ (a * m / H) * c := hradius
-    _ = ((a / (g * H)) * (g * m)) * c := by field_simp
+    _ = ((a / (g * H)) * (g * m)) * c := by
+      by_cases hH : H = 0
+      · simp [hH]
+      · field_simp
     _ ≤ ((1 / ξ) * (g * m)) * c := by gcongr
     _ = g * m / ξ * c := by ring
 
@@ -380,16 +403,16 @@ theorem residualVariance_le (d W' H2 q ξ c h : ℝ)
 `gap + variance / (4 gap) + 1 ≤ q (448 / 625)`. The lower bound on the gap controls the division,
 and `q ≥ 2000` absorbs the lattice-counting unit `1 ≤ q / 2000`. -/
 theorem residualMeanVariance_le (gap variance q : ℝ)
-    (hq : 0 < q)
     (hlower : residualFraction * q * (998 / 1000) ≤ gap)
     (hupper : gap ≤ residualFraction * q * (1001 / 1000))
     (hvariance : variance ≤
       q ^ 2 * (1001 / 1000) ^ 2 / xi ^ 2 * (329 / 200))
     (hunit : 2000 ≤ q) :
     0 < gap ∧ gap + variance / (4 * gap) + 1 ≤ q * (448 / 625) := by
+  have hq : 0 < q := lt_of_lt_of_le (by norm_num) hunit
   have hgap : 0 < gap := by
     have : 0 < residualFraction * q * (998 / 1000) := by
-      norm_num [residualFraction, theta]
+      rw [residualFraction_eq]
       positivity
     exact this.trans_le hlower
   have hvarCorrection : variance / (4 * gap) ≤
@@ -398,14 +421,21 @@ theorem residualMeanVariance_le (gap variance q : ℝ)
     apply (div_le_iff₀ (mul_pos (by norm_num) hgap)).2
     have hc : 0 < (329 / 200 : ℝ) * (1001 / 1000) ^ 2 /
         (4 * residualFraction * (998 / 1000) * xi ^ 2) := by
-      norm_num [residualFraction, theta, xi]
-    have hmul := mul_le_mul_of_nonneg_left hlower hc.le
-    norm_num [residualFraction, theta, xi] at hvariance hmul ⊢
-    nlinarith
-  have hunit' : 1 ≤ q * (1 / 2000) := by linarith
+      rw [residualFraction_eq]
+      exact div_pos (by norm_num) (mul_pos (by norm_num) (pow_pos xi_pos 2))
+    calc
+      variance ≤ q ^ 2 * (1001 / 1000) ^ 2 / xi ^ 2 * (329 / 200) := hvariance
+      _ = q * ((329 / 200) * (1001 / 1000) ^ 2 /
+            (4 * residualFraction * (998 / 1000) * xi ^ 2)) *
+            (4 * (residualFraction * q * (998 / 1000))) := by
+        rw [residualFraction_eq, xi]
+        ring
+      _ ≤ _ := mul_le_mul_of_nonneg_left (mul_le_mul_of_nonneg_left hlower (by norm_num))
+        (mul_nonneg hq.le hc.le)
+  have hunit' : 1 ≤ q * (1 / 2000) := by linarith only [hunit]
   have hscaled := mul_le_mul_of_nonneg_left averageResidualError_le hq.le
   refine ⟨hgap, ?_⟩
-  nlinarith
+  linarith only [hupper, hvarCorrection, hunit', hscaled]
 
 /-- The per-fiber bound consumed by the weighted local-rank theorem. With `θ = 3 / 8`,
 `ξ = 27 / 10`, `W = ⌊(1 + θ g) d m / H⌋₊` and a contact residual `r < m`, let
@@ -414,7 +444,7 @@ theorem residualMeanVariance_le (gap variance q : ℝ)
 `centeringErrorBounds`, `(1 + θ g) / (g H) ≤ 1 / ξ` and `0 ≤ H₂ ≤ 329 / 200`: `0 < gap` and
 `gap + variance / (4 gap) + 1 ≤ g m (448 / 625)`. -/
 theorem prescribedFiberMeanVariance_le (d m r W : ℕ) (g H H2 : ℝ)
-    (hd : 48000 ≤ d) (hm : 0 < m) (hr : r < m) (hg : 0 < g) (hH : 0 < H)
+    (hd : 48000 ≤ d) (hr : r < m)
     (hHlower : 54 / 5 ≤ H)
     (hHupper : H ≤ (19 / 365) * Real.sqrt d)
     (hgH : xi ≤ g * H)
@@ -430,23 +460,30 @@ theorem prescribedFiberMeanVariance_le (d m r W : ℕ) (g H H2 : ℝ)
     0 < gap ∧ gap + variance / (4 * gap) + 1 ≤ g * m * (448 / 625) := by
   intro gap variance
   have hd0 : 0 < d := by omega
+  have hdR : (0 : ℝ) < d := by exact_mod_cast hd0
+  have hH : 0 < H := lt_of_lt_of_le (by norm_num) hHlower
+  have hmR : (0 : ℝ) < m := (by positivity : 0 < 100 * (d : ℝ) ^ 2 * H).trans_le hsize
+  have hg : 0 < g := (mul_pos_iff_of_pos_right hmR).mp
+    ((by positivity : 0 < 270 * (d : ℝ) * H).trans_le hgm)
   have ha : 0 ≤ 1 + theta * g := by have := theta_pos; positivity
   obtain ⟨herr1, herr2, herr3⟩ :=
-    centeringErrorBounds d m g H hd hm hg hH hHlower hHupper hgH hsize hgm
+    centeringErrorBounds d m g H hd hHlower hHupper hgH hsize hgm
   have hlower := remainingDegree_lower theta (2 / 1000) g H d m r W hr ha hH.le hW herr1
   have hupper := remainingDegree_upper theta (1 / 1000) g H d m r W hd0 hH hW herr2
-  have hradius := enlargedRadius_upper theta (1 / 1000) g H d m r W hd0 hr ha hH hW herr3
+  have hradius := enlargedRadius_upper theta (1 / 1000) g H d m r W hr ha hH hW herr3
   have hradius' := enlargedRadius_normalized (d : ℝ) (m : ℝ)
-    ((W + r + d.choose 2 : ℕ) : ℝ) (1 + theta * g) g H xi (1 + 1 / 1000) (by positivity) hg hH
+    ((W + r + d.choose 2 : ℕ) : ℝ) (1 + theta * g) g H xi (1 + 1 / 1000) (by positivity) hg
     (by norm_num) hradius hnormalized
   have hvariance := residualVariance_le (d : ℝ) ((W + r + d.choose 2 : ℕ) : ℝ) H2 (g * m) xi
     (1 + 1 / 1000) (329 / 200) (by exact_mod_cast hd0) (by positivity) hH2
     (by simpa [mul_assoc] using hradius') hH2max
   have hunit : (2000 : ℝ) ≤ g * m := by
     have hdR : (48000 : ℝ) ≤ d := by exact_mod_cast hd
-    have hHd : 0 ≤ (d : ℝ) * H := by positivity
-    nlinarith
-  refine residualMeanVariance_le gap variance (g * m) (by positivity) ?_ ?_ ?_ hunit
+    calc
+      (2000 : ℝ) ≤ 270 * 48000 * (54 / 5) := by norm_num
+      _ ≤ 270 * d * H := by gcongr
+      _ ≤ g * m := hgm
+  refine residualMeanVariance_le gap variance (g * m) ?_ ?_ ?_ hunit
   · have e : residualFraction * (g * m) * (998 / 1000) = (1 - theta) * g * m * (1 - 2 / 1000) := by
       rw [residualFraction]; ring
     rw [e]; exact hlower

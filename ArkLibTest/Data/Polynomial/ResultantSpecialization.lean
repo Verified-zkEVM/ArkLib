@@ -53,7 +53,7 @@ example (t : F) (ht : t ≠ 0) : ((canary : F[X][X]).map (evalRingHom t)).Separa
 
 example (t : F) (ht : t ≠ 0) : ((canary : F[X][X]).map (evalRingHom t)).natDegree = 1 := by
   refine natDegree_map_eq_of_resultant_derivative_padded_ne_zero (evalRingHom t) canary
-    canary_natDegree.le Nat.one_pos ?_
+    canary_natDegree.le ?_
   rwa [Nat.sub_self, canary_resultant, coe_evalRingHom, eval_X]
 
 -- At `X = 0` the canary drops to the constant `1`; the degree lemma forces the padded derivative
@@ -61,7 +61,7 @@ example (t : F) (ht : t ≠ 0) : ((canary : F[X][X]).map (evalRingHom t)).natDeg
 example : evalRingHom (0 : F) (resultant (canary : F[X][X]) canary.derivative 1 0) = 0 := by
   by_contra hres
   have hdegree := natDegree_map_eq_of_resultant_derivative_padded_ne_zero (evalRingHom (0 : F))
-    canary canary_natDegree.le Nat.one_pos hres
+    canary canary_natDegree.le hres
   simp [canary] at hdegree
 
 -- The regular-root corollary at the concrete root `-1 / t` of `t * Y + 1`.
@@ -111,7 +111,7 @@ example : (quadratic.map (Int.castRingHom (ZMod 2))).derivative.eval 1 ≠ 0 := 
 
 example : (quadratic.map (Int.castRingHom (ZMod 2))).natDegree = 2 :=
   natDegree_map_eq_of_resultant_derivative_padded_ne_zero _ quadratic quadratic_natDegree.le
-    two_pos (by rw [quadratic_resultant_map]; exact one_ne_zero)
+    (by rw [quadratic_resultant_map]; exact one_ne_zero)
 
 /-- `T * Y ^ 2 + Y` over `(ZMod 2)[T]`. Its derivative is `1`, so the derivative's degree is
 already below `m - 1 = 1` before specialization. -/

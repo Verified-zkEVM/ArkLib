@@ -17,14 +17,14 @@ public import Mathlib.Analysis.SpecialFunctions.Log.NegMulLog
 
 This file proves low-rate and high-rate lower bounds for `rateGamma` when the derivative order
 satisfies `3 / (2 * δ) ≤ log d`. It also verifies that `uniformDerivativeOrder δ` satisfies this
-condition, is at least `500` for `0 < δ < 6/25`, and retains a `151/150` margin after the
+condition, is at least `519` for `0 < δ < 6/25`, and retains a `151/150` margin after the
 multiplicity factor `exp (-1/1000)` in both rate branches.
 
 ## Main statements
 
 * `rateGamma_low_base_gt`, `rateGamma_high_base_gt`: lower bounds before finite-multiplicity loss.
 * `rateGamma_low_gt`, `rateGamma_high_gt`: lower bounds after the loss `exp (-1/1000)`.
-* `uniformDerivativeOrder_ge_500` and the four `uniformRateGamma_*` specializations.
+* `uniformDerivativeOrder_ge_519` and the four `uniformRateGamma_*` specializations.
 * `log_forty_ninths_lt_d9`: a numerical upper bound used for the scale-300 margin.
 
 ## References
@@ -86,32 +86,23 @@ private theorem log_six_eq :
   rw [← Real.log_mul (by norm_num : (2 : ℝ) ≠ 0) (by norm_num : (3 : ℝ) ≠ 0)]
   norm_num
 
-private theorem log_five_hundred_lt : Real.log 500 < (311 / 50 : ℝ) := by
-  have hlog : Real.log (500 : ℝ) = 2 * Real.log 2 + 3 * Real.log 5 := by
-    calc
-      Real.log (500 : ℝ) = Real.log ((2 : ℝ) ^ 2 * (5 : ℝ) ^ 3) := by norm_num
-      _ = Real.log ((2 : ℝ) ^ 2) + Real.log ((5 : ℝ) ^ 3) := by
-        rw [Real.log_mul] <;> positivity
-      _ = 2 * Real.log 2 + 3 * Real.log 5 := by
-        rw [Real.log_pow, Real.log_pow]
-        norm_num
-  rw [hlog]
-  linarith [Real.log_two_lt_d9, Real.log_five_lt_d9]
-
-/-- For `0 < δ < 6/25`, the uniform derivative order is at least `500`. -/
-theorem uniformDerivativeOrder_ge_500 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
-    500 ≤ uniformDerivativeOrder δ := by
-  have hexponent : (311 / 50 : ℝ) < 3 / (2 * δ) := by
+/-- The uniform derivative order is at least `519` for `0 < δ < 6/25`. -/
+theorem uniformDerivativeOrder_ge_519 {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
+    519 ≤ uniformDerivativeOrder δ := by
+  have hexponent : (25 / 4 : ℝ) < 3 / (2 * δ) := by
     apply (lt_div_iff₀ (mul_pos (by norm_num) hδ)).2
     nlinarith
-  have hlog : Real.log 500 < 3 / (2 * δ) :=
-    (log_five_hundred_lt).trans hexponent
-  have hexp : (500 : ℝ) < Real.exp (3 / (2 * δ)) := by
-    rw [← Real.exp_log (by norm_num : (0 : ℝ) < 500)]
-    exact Real.exp_lt_exp.mpr hlog
+  have hseries := Real.sum_le_exp_of_nonneg (show (0 : ℝ) ≤ 25 / 4 by norm_num) 20
+  have h518 : (518 : ℝ) < Real.exp (25 / 4) := by
+    norm_num [Finset.sum_range_succ] at hseries ⊢
+    exact lt_of_lt_of_le (by norm_num) hseries
+  have hexp : (518 : ℝ) < Real.exp (3 / (2 * δ)) :=
+    h518.trans (Real.exp_lt_exp.mpr hexponent)
   have heq : (3 / 2 : ℝ) / δ = 3 / (2 * δ) := by field_simp
-  rw [uniformDerivativeOrder, heq]
-  exact_mod_cast hexp.le.trans (Nat.le_ceil (Real.exp (3 / (2 * δ))))
+  have hceil : (518 : ℝ) < uniformDerivativeOrder δ := by
+    rw [uniformDerivativeOrder, heq]
+    exact hexp.trans_le (Nat.le_ceil _)
+  exact_mod_cast hceil
 
 private theorem uniform_margin_numeric :
     (151 / 150 : ℝ) <
@@ -123,10 +114,11 @@ private theorem uniform_margin_numeric :
     exact h
   have hexponent : Real.log (151 / 150 : ℝ) <
       3 / 2 - Real.log (40 / 9) - 1 / 1000 := by
-    linarith [log_forty_ninths_lt]
+    exact hlog151.trans_le ((by norm_num : (1 / 150 : ℝ) ≤ 3 / 2 - 373 / 250 - 1 / 1000).trans
+      (sub_le_sub_right (sub_le_sub_left log_forty_ninths_lt.le _) _))
   rw [← Real.exp_log (by norm_num : (0 : ℝ) < 151 / 150), ← Real.exp_add]
   apply Real.exp_lt_exp.mpr
-  linarith
+  exact hexponent.trans_eq (by ring)
 
 private def lowRateLogMargin (δ : ℝ) : ℝ :=
   3 / (2 * δ) - 3 + Real.log (27 / 10) +
@@ -143,13 +135,13 @@ private theorem lowRateLogMargin_quarter_gt :
 
 private theorem lowRateLogMargin_gt {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
     (3 / 10 : ℝ) < lowRateLogMargin δ := by
-  have hquarter : δ ≤ 1 / 4 := by linarith
+  have hquarter : δ ≤ 1 / 4 := hδmax.le.trans (by norm_num)
   let x : ℝ := 1 / (4 * δ)
   have hxpos : 0 < x := by dsimp [x]; positivity
   have hxone : 1 ≤ x := by
     dsimp [x]
     apply (le_div_iff₀ (mul_pos (by norm_num) hδ)).2
-    nlinarith
+    linarith only [hquarter]
   have hlogx : Real.log x ≤ x - 1 := Real.log_le_sub_one_of_pos hxpos
   have hx_eq : x = (1 / 4 : ℝ) / δ := by
     dsimp [x]
@@ -164,7 +156,7 @@ private theorem lowRateLogMargin_gt {δ : ℝ} (hδ : 0 < δ) (hδmax : δ < 6 /
   have hlog6 : 0 < Real.log 6 := Real.log_pos (by norm_num)
   have hcompare : lowRateLogMargin (1 / 4) ≤ lowRateLogMargin δ := by
     unfold lowRateLogMargin
-    nlinarith
+    linarith only [hrecip, hlogdiff, hlogx, hxone, mul_nonneg (sub_nonneg.2 hquarter) hlog6.le]
   exact lowRateLogMargin_quarter_gt.trans_le hcompare
 
 private theorem uniformDerivativeOrder_log_lower {δ : ℝ} (hδ : 0 < δ) :
@@ -179,16 +171,21 @@ private theorem uniformDerivativeOrder_log_lower {δ : ℝ} (hδ : 0 < δ) :
 /-- For an order `d` with `3/(2δ) ≤ log d`, the low-rate limiting ratio has the stated lower
 bound when `0 < δ < 6/25`. -/
 theorem rateGamma_low_base_gt {δ : ℝ} {order : ℕ}
-    (hδ : 0 < δ) (hδmax : δ < 6 / 25) (horder : 0 < order)
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25)
     (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
     Real.exp (3 / 2 - Real.log (40 / 9)) <
       rateGamma (2 * δ ^ 2) δ order := by
   let d := order
-  have hd : 0 < d := horder
+  have hd : 0 < d := by
+    have hlogpos : 0 < Real.log (d : ℝ) :=
+      (by positivity : 0 < 3 / (2 * δ)).trans_le hlogOrder
+    have hdOne := (Real.log_pos_iff (Nat.cast_nonneg d)).mp hlogpos
+    exact_mod_cast (zero_lt_one.trans hdOne)
   have hdR : (0 : ℝ) < d := by exact_mod_cast hd
   have hR : 0 < 2 * δ ^ 2 := by positivity
   have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) := hlogOrder
-  have hcoefficient : 0 < 1 - 2 * δ := by linarith
+  have hcoefficient : 0 < 1 - 2 * δ :=
+    sub_pos.2 ((mul_lt_mul_of_pos_left hδmax two_pos).trans (by norm_num))
   have hlogfactor :
       Real.log (27 * (2 * δ ^ 2) / 20 : ℝ) =
         Real.log (27 / 10) + 2 * Real.log δ := by
@@ -197,7 +194,7 @@ theorem rateGamma_low_base_gt {δ : ℝ} {order : ℕ}
       Real.log_pow]
     norm_num
   have hlogsucc : Real.log (d : ℝ) < Real.log ((d : ℝ) + 1) :=
-    Real.strictMonoOn_log (by simpa using hdR) (by simp; linarith) (by linarith)
+    Real.log_lt_log hdR (lt_add_one _)
   have hloggamma : lowRateLogMargin δ <
       Real.log (rateGamma (2 * δ ^ 2) δ d) := by
     rw [log_rateGamma hR.ne' hd, hlogfactor,
@@ -209,7 +206,7 @@ theorem rateGamma_low_base_gt {δ : ℝ} {order : ℕ}
         _ ≤ (1 - 2 * δ) * Real.log d := hmain
     have hcombine : 3 / (2 * δ) - 3 <
         Real.log ((d : ℝ) + 1) - 2 * δ * Real.log d := by
-      nlinarith
+      linarith only [hmain', hlogsucc]
     unfold lowRateLogMargin
     have hratio : (2 * δ ^ 2) / δ = 2 * δ := by field_simp
     rw [hratio]
@@ -218,14 +215,15 @@ theorem rateGamma_low_base_gt {δ : ℝ} {order : ℕ}
           2 * δ * Real.log 6 <
         Real.log (27 / 10) + 2 * Real.log δ +
           (Real.log ((d : ℝ) + 1) - 2 * δ * Real.log d) -
-            2 * δ * Real.log 6 := by linarith
+            2 * δ * Real.log 6 := by linarith only [hcombine]
       _ = Real.log (27 / 10) + 2 * Real.log δ + Real.log ((d : ℝ) + 1) -
           2 * δ * (Real.log 6 + Real.log d) := by ring
   have hlower : 3 / 2 - Real.log (40 / 9) <
       Real.log (rateGamma (2 * δ ^ 2) δ d) := by
     have hm := lowRateLogMargin_gt hδ hδmax
     have hc := log_forty_ninths_gt
-    linarith
+    exact (sub_lt_sub_left hc _).trans
+      ((by norm_num : (3 / 2 : ℝ) - 149 / 100 < 3 / 10).trans (hm.trans hloggamma))
   have hgammapos : 0 < rateGamma (2 * δ ^ 2) δ d := by
     unfold rateGamma
     positivity
@@ -240,21 +238,18 @@ theorem uniformRateGamma_low_base_gt {δ : ℝ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25) :
     Real.exp (3 / 2 - Real.log (40 / 9)) <
       rateGamma (2 * δ ^ 2) δ (uniformDerivativeOrder δ) := by
-  have horder : 0 < uniformDerivativeOrder δ := by
-    unfold uniformDerivativeOrder
-    exact Nat.ceil_pos.mpr (Real.exp_pos _)
-  exact rateGamma_low_base_gt hδ hδmax horder (uniformDerivativeOrder_log_lower hδ)
+  exact rateGamma_low_base_gt hδ hδmax (uniformDerivativeOrder_log_lower hδ)
 
 /-- For an order satisfying `3/(2δ) ≤ log d`, the low-rate ratio retains a `151/150` margin after
 the finite-multiplicity factor `exp(-1/1000)`. -/
 theorem rateGamma_low_gt {δ : ℝ} {order : ℕ}
-    (hδ : 0 < δ) (hδmax : δ < 6 / 25) (horder : 0 < order)
+    (hδ : 0 < δ) (hδmax : δ < 6 / 25)
     (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
     (151 / 150 : ℝ) <
       rateGamma (2 * δ ^ 2) δ order *
         Real.exp (-1 / 1000) := by
   exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
-    (rateGamma_low_base_gt hδ hδmax horder hlogOrder) (Real.exp_pos (-1 / 1000)))
+    (rateGamma_low_base_gt hδ hδmax hlogOrder) (Real.exp_pos (-1 / 1000)))
 
 /-- The low-rate ambient choice `R = 2δ²`, `a = δ` retains a `151/150` margin after the
 finite-multiplicity factor `exp(-1/1000)`. -/
@@ -263,10 +258,7 @@ theorem uniformRateGamma_low_gt {δ : ℝ}
     (151 / 150 : ℝ) <
       rateGamma (2 * δ ^ 2) δ (uniformDerivativeOrder δ) *
         Real.exp (-1 / 1000) := by
-  have horder : 0 < uniformDerivativeOrder δ := by
-    unfold uniformDerivativeOrder
-    exact Nat.ceil_pos.mpr (Real.exp_pos _)
-  exact rateGamma_low_gt hδ hδmax horder (uniformDerivativeOrder_log_lower hδ)
+  exact rateGamma_low_gt hδ hδmax (uniformDerivativeOrder_log_lower hδ)
 
 /-- The logarithmic constants in the high-rate penalty match. -/
 private theorem log_six_sub_log_factor :
@@ -303,7 +295,7 @@ private theorem highRatePenalty_deriv {R δ : ℝ} (hR : 0 < R) :
 private theorem highRatePenalty_le_endpoint {R δ : ℝ}
     (hδ : 0 < δ) (hδquarter : δ < 1 / 4) (hRδ : δ ≤ R) (hRtop : R ≤ 1 - δ) :
     highRatePenalty R δ ≤ highRatePenalty (1 - δ) δ := by
-  have htoppos : 0 < 1 - δ := by linarith
+  have htoppos : 0 < 1 - δ := sub_pos.2 (hδquarter.trans (by norm_num))
   have hRpos : 0 < R := hδ.trans_le hRδ
   have hmono : MonotoneOn (fun x ↦ highRatePenalty x δ) (Icc δ (1 - δ)) := by
     apply monotoneOn_of_deriv_nonneg (convex_Icc δ (1 - δ))
@@ -324,29 +316,29 @@ private theorem highRatePenalty_le_endpoint {R δ : ℝ}
       rw [highRatePenalty_deriv hxpos]
       have hlog := Real.log_le_sub_one_of_pos hxpos
       have hproduct : 0 ≤ (1 - x) * (x - δ) :=
-        mul_nonneg (by linarith) (by linarith)
+        mul_nonneg (sub_nonneg.2 (hxtop.le.trans (sub_le_self _ hδ.le))) (sub_nonneg.2 hxlow.le)
       have hsum : x + δ / x ≤ 1 + δ := by
         calc
           x + δ / x = (x ^ 2 + δ) / x := by field_simp
-          _ ≤ 1 + δ := (div_le_iff₀ hxpos).2 (by nlinarith)
-      linarith [log_forty_ninths_gt]
+          _ ≤ 1 + δ := (div_le_iff₀ hxpos).2 (by linarith only [hproduct])
+      linarith only [hlog, hsum, log_forty_ninths_gt, hδquarter]
   exact hmono ⟨hRδ, hRtop⟩ ⟨by linarith, le_rfl⟩ hRtop
 
 private theorem highRatePenalty_endpoint_lt {δ : ℝ}
     (hδ : 0 < δ) (hδquarter : δ < 1 / 4) :
     highRatePenalty (1 - δ) δ < Real.log (40 / 9) := by
-  have hspos : 0 < 1 - δ := by linarith
+  have hspos : 0 < 1 - δ := sub_pos.2 (hδquarter.trans (by norm_num))
   have hlogs := Real.one_sub_inv_le_log_of_pos hspos
   have hlog6 : (4 / 3 : ℝ) < Real.log 6 := by
     rw [log_six_eq]
-    linarith [Real.log_two_gt_d9, Real.log_three_gt_d9]
+    linarith only [Real.log_two_gt_d9, Real.log_three_gt_d9]
   have hneglog : -Real.log (1 - δ) ≤ 4 * δ / 3 := by
     have hfirst : -(Real.log (1 - δ)) ≤ δ / (1 - δ) := by
       rw [show 1 - (1 - δ)⁻¹ = -(δ / (1 - δ)) by field_simp; ring] at hlogs
-      linarith
+      exact neg_le.mp hlogs
     have hsecond : δ / (1 - δ) ≤ 4 * δ / 3 := by
       apply (div_le_iff₀ hspos).2
-      nlinarith
+      linarith only [mul_pos hδ (sub_pos.2 hδquarter)]
     exact hfirst.trans hsecond
   unfold highRatePenalty
   have hid :
@@ -356,8 +348,8 @@ private theorem highRatePenalty_endpoint_lt {δ : ℝ}
     rw [← log_six_sub_log_factor]
     ring
   rw [hid]
-  have : 4 * δ / 3 < δ * Real.log 6 := by nlinarith
-  linarith
+  have : 4 * δ / 3 < δ * Real.log 6 := by linarith only [mul_lt_mul_of_pos_left hlog6 hδ]
+  linarith only [this, hneglog]
 
 private theorem highRatePenalty_convex_low {δ : ℝ} (hδ : 0 < δ) :
     ConvexOn ℝ (Icc (δ ^ 2) δ) (fun R ↦ highRatePenalty R δ) := by
@@ -407,7 +399,8 @@ private theorem highRatePenalty_sq_endpoint_lt {δ : ℝ}
   have hLupper := log_forty_ninths_lt
   have hLlower := log_forty_ninths_gt
   have hcpos : 0 < Real.log (27 / 20 : ℝ) := Real.log_pos (by norm_num)
-  have hδsq : δ ^ 2 < 1 / 16 := by nlinarith
+  have hδsq : δ ^ 2 < 1 / 16 :=
+    (pow_lt_pow_left₀ hδquarter hδ.le two_ne_zero).trans_eq (by norm_num)
   have hδsqL : δ ^ 2 * Real.log (40 / 9 : ℝ) < 373 / 4000 := by
     calc
       δ ^ 2 * Real.log (40 / 9 : ℝ) <
@@ -417,14 +410,8 @@ private theorem highRatePenalty_sq_endpoint_lt {δ : ℝ}
   have hNmul := mul_le_mul_of_nonneg_left hN (by positivity : 0 ≤ 2 * (δ + 1))
   unfold highRatePenalty
   rw [Real.log_pow]
-  norm_num at ⊢
-  have hid :
-      δ ^ 2 * Real.log (40 / 9) - (δ ^ 2 + δ) * (2 * Real.log δ) -
-          δ * Real.log (27 / 20) =
-        δ ^ 2 * Real.log (40 / 9) + 2 * (δ + 1) * (-δ * Real.log δ) -
-          δ * Real.log (27 / 20) := by ring
-  rw [hid]
-  nlinarith
+  push_cast
+  linarith only [hδsqL, hNmul, hLlower, hδquarter, mul_pos hδ hcpos]
 
 private theorem highRatePenalty_delta_endpoint_lt {δ : ℝ}
     (hδ : 0 < δ) (hδquarter : δ < 1 / 4) :
@@ -441,7 +428,7 @@ private theorem highRatePenalty_delta_endpoint_lt {δ : ℝ}
       _ < (1 / 4) * (373 / 250) := mul_lt_mul_of_pos_left hLupper (by norm_num)
       _ = 373 / 1000 := by norm_num
   unfold highRatePenalty
-  nlinarith
+  linarith only [hδL, hN, hLlower, mul_pos hδ hcpos]
 
 private theorem highRatePenalty_low_lt {R δ : ℝ}
     (hδ : 0 < δ) (hδquarter : δ < 1 / 4)
@@ -467,29 +454,33 @@ private theorem highRatePenalty_lt {R δ : ℝ}
 bound for `δ² ≤ R ≤ 1 - δ`. -/
 theorem rateGamma_high_base_gt {R δ : ℝ} {order : ℕ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25)
-    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) (horder : 0 < order)
+    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ)
     (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
     Real.exp (3 / 2 - Real.log (40 / 9)) <
       rateGamma R (R + δ) order := by
   let d := order
-  have hd : 0 < d := horder
+  have hd : 0 < d := by
+    have hlogpos : 0 < Real.log (d : ℝ) :=
+      (by positivity : 0 < 3 / (2 * δ)).trans_le hlogOrder
+    have hdOne := (Real.log_pos_iff (Nat.cast_nonneg d)).mp hlogpos
+    exact_mod_cast (zero_lt_one.trans hdOne)
   have hdR : (0 : ℝ) < d := by exact_mod_cast hd
   have hRpos : 0 < R := (sq_pos_of_pos hδ).trans_le hRlow
   have ha : 0 < R + δ := add_pos hRpos hδ
-  have hale : R + δ ≤ 1 := by linarith
+  have hale : R + δ ≤ 1 := le_sub_iff_add_le.mp hRtop
   have hlogd : 3 / (2 * δ) ≤ Real.log (d : ℝ) := hlogOrder
   have hthree : (3 / 2 : ℝ) ≤ δ * Real.log (d : ℝ) := by
     calc
       (3 / 2 : ℝ) = δ * (3 / (2 * δ)) := by field_simp
       _ ≤ δ * Real.log (d : ℝ) := mul_le_mul_of_nonneg_left hlogd hδ.le
   have hlogsucc : Real.log (d : ℝ) < Real.log ((d : ℝ) + 1) :=
-    Real.strictMonoOn_log (by simpa using hdR) (by simp; linarith) (by linarith)
+    Real.log_lt_log hdR (lt_add_one _)
   have hcombine :
       δ * Real.log (d : ℝ) <
         (R + δ) * Real.log ((d : ℝ) + 1) - R * Real.log (d : ℝ) := by
     have hδlog := mul_lt_mul_of_pos_left hlogsucc hδ
     have hRlog := mul_nonneg hRpos.le (sub_nonneg.mpr hlogsucc.le)
-    nlinarith
+    linarith only [hδlog, hRlog]
   have hlogfactor :
       Real.log (27 * R / 20 : ℝ) = Real.log (27 / 20) + Real.log R := by
     rw [show (27 : ℝ) * R / 20 = (27 / 20) * R by ring,
@@ -513,10 +504,10 @@ theorem rateGamma_high_base_gt {R δ : ℝ} {order : ℕ}
       3 / 2 - highRatePenalty R δ <
         (R + δ) * Real.log (rateGamma R (R + δ) d) := by
     rw [hpenaltyIdentity, hscaled]
-    nlinarith
+    linarith only [hthree, hcombine]
   have hpenalty := highRatePenalty_lt hδ hδmax hRlow hRtop
-  have hbasepos : 0 < 3 / 2 - Real.log (40 / 9 : ℝ) := by
-    linarith [log_forty_ninths_lt]
+  have hbasepos : 0 < 3 / 2 - Real.log (40 / 9 : ℝ) :=
+    sub_pos.2 (log_forty_ninths_lt.trans (by norm_num))
   have hproduct :
       3 / 2 - Real.log (40 / 9 : ℝ) <
         (R + δ) * Real.log (rateGamma R (R + δ) d) :=
@@ -529,8 +520,7 @@ theorem rateGamma_high_base_gt {R δ : ℝ} {order : ℕ}
       3 / 2 - Real.log (40 / 9 : ℝ) <
         Real.log (rateGamma R (R + δ) d) := by
     have hmul := mul_le_mul_of_nonneg_right hale hloggammapos.le
-    norm_num at hmul
-    exact hproduct.trans_le hmul
+    exact hproduct.trans_le (hmul.trans_eq (one_mul _))
   have hgammapos : 0 < rateGamma R (R + δ) d := by
     unfold rateGamma
     positivity
@@ -547,23 +537,20 @@ theorem uniformRateGamma_high_base_gt {R δ : ℝ}
     (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) :
     Real.exp (3 / 2 - Real.log (40 / 9)) <
       rateGamma R (R + δ) (uniformDerivativeOrder δ) := by
-  have horder : 0 < uniformDerivativeOrder δ := by
-    unfold uniformDerivativeOrder
-    exact Nat.ceil_pos.mpr (Real.exp_pos _)
-  exact rateGamma_high_base_gt hδ hδmax hRlow hRtop horder
+  exact rateGamma_high_base_gt hδ hδmax hRlow hRtop
     (uniformDerivativeOrder_log_lower hδ)
 
 /-- For an order satisfying `3/(2δ) ≤ log d`, the high-rate ratio retains a `151/150` margin
 after the finite-multiplicity factor `exp(-1/1000)`. -/
 theorem rateGamma_high_gt {R δ : ℝ} {order : ℕ}
     (hδ : 0 < δ) (hδmax : δ < 6 / 25)
-    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ) (horder : 0 < order)
+    (hRlow : δ ^ 2 ≤ R) (hRtop : R ≤ 1 - δ)
     (hlogOrder : 3 / (2 * δ) ≤ Real.log (order : ℝ)) :
     (151 / 150 : ℝ) <
       rateGamma R (R + δ) order *
         Real.exp (-1 / 1000) := by
   exact uniform_margin_numeric.trans (mul_lt_mul_of_pos_right
-    (rateGamma_high_base_gt hδ hδmax hRlow hRtop horder hlogOrder)
+    (rateGamma_high_base_gt hδ hδmax hRlow hRtop hlogOrder)
     (Real.exp_pos (-1 / 1000)))
 
 /-- The high-rate choice `a = R + δ` retains a `151/150` margin after the
@@ -574,10 +561,7 @@ theorem uniformRateGamma_high_gt {R δ : ℝ}
     (151 / 150 : ℝ) <
       rateGamma R (R + δ) (uniformDerivativeOrder δ) *
         Real.exp (-1 / 1000) := by
-  have horder : 0 < uniformDerivativeOrder δ := by
-    unfold uniformDerivativeOrder
-    exact Nat.ceil_pos.mpr (Real.exp_pos _)
-  exact rateGamma_high_gt hδ hδmax hRlow hRtop horder
+  exact rateGamma_high_gt hδ hδmax hRlow hRtop
     (uniformDerivativeOrder_log_lower hδ)
 
 end ReedSolomon.HiddenDerivative.RatePartition

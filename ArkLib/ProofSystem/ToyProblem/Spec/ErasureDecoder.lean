@@ -7,7 +7,7 @@ module
 
 public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.Lagrange
 -- `rw [toPoly]` unfolds a CompPoly definition whose body is not exposed.
 import all CompPoly.Univariate.ToPoly.Core
 
@@ -26,9 +26,9 @@ The concrete result is for alphabet `A = F`, an injective evaluation domain
 code or folded-RS decoder.  Berlekamp--Welch, Gao, and Guruswami--Sudan are raw-error
 decoders and are neither needed nor used on this known-erasure path.
 
-## Cost (aspirational; unclocked per library convention)
+## Cost (aspirational; this decoder is unclocked)
 
-ArkLib has no cost harness. The executable path uses CompPoly's pinned v4.32.2
+This decoder has no cost harness. The executable path uses CompPoly's
 `CPolynomial` interpolation and a finite re-encoding check.  No formal field-operation
 bound, and in particular no generic `O((s n)^3)` claim, is made here.
 
@@ -148,12 +148,15 @@ theorem rsEncoder_injective [Fintype ι] {k : ℕ} {domain : ι ↪ F}
 omit [DecidableEq ι] [BEq F] [LawfulBEq F] in
 /-- The full RS minimum-distance hypothesis supplies at least `k` retained coordinates.
 This is the erasure-radius step: no half-distance error-decoding bound is used. -/
-theorem rs_large_agreement_card [Fintype ι] [Nonempty ι] {k : ℕ} [NeZero k]
+theorem rs_large_agreement_card [Fintype ι] [Nonempty ι] {k : ℕ}
     (domain : ι ↪ F) (hk : k ≤ Fintype.card ι) {δ : ℝ≥0}
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain k : Set (ι → F)) : ℝ≥0))
     {S : Finset ι} (hS : (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card) :
     k ≤ S.card := by
+  by_cases hk0 : k = 0
+  · simp [hk0]
+  have : NeZero k := ⟨hk0⟩
   have hdmin :
       (((minRelHammingDistCode
         (ReedSolomon.code domain k : Set (ι → F)) : ℚ≥0) : ℝ)) =

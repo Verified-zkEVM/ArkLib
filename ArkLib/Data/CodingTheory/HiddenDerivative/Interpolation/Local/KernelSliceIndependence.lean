@@ -17,8 +17,8 @@ visible jets. The `T^n` coefficient of `T^r (U - localJetSum d)^h G` vanishes fo
 `n = r` it is `(U - Y₁)^h` times the `T^0` coefficient of `G`, because the constant coefficient of
 `localJetSum d` is `Y₁`. If `G` has no `T`, its `T^0` coefficient determines it. So the family
 `(G_r)_{r < m} ↦ T^m-truncation of ∑_r T^r (U - localJetSum d)^(h_r) G_r` on `T`-free inputs is
-block-lower-triangular with respect to the `T`-coefficients, with injective diagonal over a domain,
-and `LinearMap.injective_sum_comp_proj_of_triangular` shows it is injective.
+block-lower-triangular with respect to the `T`-coefficients, with injective diagonal over any
+commutative ring, and `LinearMap.injective_sum_comp_proj_of_triangular` shows it is injective.
 
 Only the exhibited part of the kernel is counted: no reverse inclusion or rank equality is
 proved.
@@ -158,7 +158,7 @@ theorem finrank_exhibitedKernelFamilySource {F : Type*} [Field F] (hd : 0 < d) (
           exhibitedKernelContactCount r M (contactThreshold d m r) := by
   have : ∀ r : Fin m, Module.Finite F
       (kernelSliceSourceSpace F d r M W (contactThreshold d m r)) := fun r =>
-    kernelSliceSourceSpace_finite hd _ _ _ _
+    kernelSliceSourceSpace_finite _ _ _ _
   rw [Module.finrank_pi_fintype]
   simp_rw [finrank_kernelSliceSourceSpace (F := F) hd]
   exact Fin.sum_univ_eq_sum_range
@@ -179,11 +179,10 @@ theorem exhibitedKernelFamilyMap_apply (m M W : ℕ) (G : ExhibitedKernelFamilyS
         exhibitedKernelFactor d r (contactThreshold d m r) * (G r : LocalPolynomial R d)) := by
   simp [exhibitedKernelFamilyMap]
 
-/-- Over a domain the family map is injective, for every `d`. The slice of index `r` contributes
-nothing below `T^r`, and its `T^r` coefficient is a nonzero power (`(U - Y₁)^h`, or `U^h` when
-`d = 0`) times the `T^0` coefficient of the slice element, which determines it because it is
-`T`-free. -/
-theorem exhibitedKernelFamilyMap_injective [IsDomain R] (m M W : ℕ) :
+/-- The family map is injective, for every `d`. The slice of index `r` contributes nothing below
+`T^r`, and its `T^r` coefficient is a monic power in `U` (`(U - Y₁)^h`, or `U^h` when `d = 0`)
+times the `T^0` coefficient of the slice element, which determines it because it is `T`-free. -/
+theorem exhibitedKernelFamilyMap_injective (m M W : ℕ) :
     Function.Injective (exhibitedKernelFamilyMap (R := R) (d := d) m M W) := by
   refine LinearMap.injective_sum_comp_proj_of_triangular _
     (fun n : Fin m => localTCoefficient d n ∘ₗ (localIntermediateSpace R d m M W).subtype)
@@ -196,8 +195,18 @@ theorem exhibitedKernelFamilyMap_injective [IsDomain R] (m M W : ℕ) :
     simp only [LinearMap.comp_apply, Submodule.subtype_apply, boundedExhibitedKernelMap_apply,
       localTCoefficient_truncateLocalT, i.isLt, ↓reduceIte,
       localTCoefficient_exhibitedKernelFactor_mul_self] at hG
-    have h0 := (mul_eq_zero.mp hG).resolve_left
-      (pow_ne_zero _ (localTCoefficient_zero_hiddenErrorFactor_ne_zero d))
+    have hmonic : Polynomial.Monic
+        (optionEquivLeft R (Fin d) (localTCoefficient d 0 (hiddenErrorFactor d))) := by
+      rcases Nat.eq_zero_or_pos d with rfl | hd
+      · simp [hiddenErrorFactor, localJetSum, localTCoefficient, localU, localAux]
+      · rw [localTCoefficient_zero_hiddenErrorFactor hd, map_sub,
+          optionEquivLeft_X_none, optionEquivLeft_X_some]
+        exact Polynomial.monic_X_sub_C _
+    have h0 : localTCoefficient d 0 (G : LocalPolynomial R d) = 0 := by
+      apply (optionEquivLeft R (Fin d)).injective
+      simpa only [map_zero] using (hmonic.pow _).mul_right_eq_zero_iff.mp
+        (by simpa only [map_mul, map_pow, map_zero] using
+          congrArg (optionEquivLeft R (Fin d)) hG)
     exact Subtype.ext (eq_zero_of_localTCoefficient_zero_eq_zero
       (fun e he => tDegree_eq_zero_of_mem_kernelSliceSourceSpace G.2 he) h0)
 
@@ -220,9 +229,9 @@ theorem exhibitedKernelFamilyKernelMap_apply (hd : 0 < d) (m M W : ℕ)
       exhibitedKernelFamilyMap m M W G :=
   rfl
 
-/-- Over a domain with `d > 0`, the family injects into the kernel of the intermediate
-constraint map. -/
-theorem exhibitedKernelFamilyKernelMap_injective [IsDomain R] (hd : 0 < d) (m M W : ℕ) :
+/-- For `d > 0`, the family injects into the kernel of the intermediate constraint map over any
+commutative ring. -/
+theorem exhibitedKernelFamilyKernelMap_injective (hd : 0 < d) (m M W : ℕ) :
     Function.Injective (exhibitedKernelFamilyKernelMap (R := R) hd m M W) := fun _ _ hGH =>
   exhibitedKernelFamilyMap_injective m M W (congrArg Subtype.val hGH)
 

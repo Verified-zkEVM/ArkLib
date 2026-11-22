@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 module
 
+public import Mathlib.Algebra.Polynomial.Eval.SMul
 public import Mathlib.RingTheory.Polynomial.DegreeLT
 
 /-!

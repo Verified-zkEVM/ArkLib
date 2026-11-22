@@ -196,7 +196,8 @@ theorem roundStages_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
   congr 1
   funext r
   erw [executeCore_accepted R n deg ambient ⟨start + j, by omega⟩ input.1.stmt _ _ _ r
-    (projected_sum_of_relationRound R n deg D ⟨start + j, by omega⟩ input.1.stmt p h)]
+    (Spec.SingleRound.projected_sum_of_relationRound R n deg D
+      ⟨start + j, by omega⟩ input.1.stmt p h)]
   rfl
 
 /-- Honest execution of any remaining interval accepts from one initial multivariate relation.
@@ -242,9 +243,9 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
       erw [executeCore_sampled_eq]
       simp only [pure_bind]
       erw [executeCore_accepted R n deg ambient i current _ _ _ r
-        (projected_sum_of_relationRound R n deg D i current p hcurrent)]
+        (Spec.SingleRound.projected_sum_of_relationRound R n deg D i current p hcurrent)]
       rfl
-    · exact relationRound_projected_output R n deg D i current p r
+    · exact Spec.SingleRound.relationRound_projected_output R n deg D i current p r
   obtain ⟨output, hex, horacles, hrelation⟩ :=
     OrderedExecution.run_preserves count I stages Inv preserves
       (⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()) ⟨rfl, h⟩
@@ -256,28 +257,6 @@ theorem executeRounds_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)
     change impl = (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p) at horacles
     subst impl
     exact hrelation
-
-/-- The final closed round is precisely evaluation at the full challenge vector. -/
-theorem closedRelation_last_iff {m : ℕ} (D : Fin m ↪ R)
-    (claim : ClosedClaim (Spec.StatementRound R n (Fin.last n)) (polynomialFamily R n deg)) :
-    closedRelation R n deg D (Fin.last n) claim ↔
-      claim.oracles ⟨(), claim.stmt.challenges⟩ = claim.stmt.target := by
-  unfold closedRelation
-  have : IsEmpty (Fin (n - (Fin.last n).val)) := ⟨fun j => by
-    have hj := j.isLt
-    simp only [Fin.val_last, Nat.sub_self] at hj
-    omega⟩
-  erw [Fintype.piFinset_of_isEmpty]
-  erw [Finset.univ_unique, Finset.sum_singleton]
-  have heq : Fin.append claim.stmt.challenges
-      (default : Fin (n - (Fin.last n).val) → R) ∘ Fin.cast (by simp) =
-        claim.stmt.challenges := by
-    funext j
-    simp only [Fin.append, Function.comp_apply, Fin.addCases, Fin.val_cast,
-      show j.val < (Fin.last n).val from j.isLt, dite_true]
-    congr 1
-  erw [heq]
-  rfl
 
 /-- Completing all remaining rounds yields the original polynomial's full evaluation claim. -/
 theorem executeRounds_evaluation [DecidableEq R] {m : ℕ} (D : Fin m ↪ R)

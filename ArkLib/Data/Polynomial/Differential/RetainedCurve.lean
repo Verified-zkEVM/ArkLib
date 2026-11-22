@@ -23,9 +23,14 @@ exact jet degree and the separate bounds on `Y₁` and the challenge.
 * `positiveCurveEquation`: the first-order equation formed from the positive-`Y₁` radical factor.
 * `positiveCurveEquation_jetTotalDegree_le` and `positiveCurveEquation_yOneDegree_le`: the jet
   and `Y₁` degree bounds for the retained equation.
-* `positiveCurveEquation_coeffNatDegreeLE`: the coefficient challenge height bound.
+* `jetTotalDegree_fromFlattenedRootFirst_mul`: additivity of jet degree on root-first products.
+* `positiveCurveEquation_coeffNatDegreeLE` and
+  `positiveCurveEquation_coeffNatDegreeLE_of_input`: coefficient challenge height bounds.
 * `curveJetView_totalDegree`: the two-variable view computes the jet degree.
-* `fromFlattenedRootFirst_rootFirstChallenge`: the root-first coordinate map is invertible.
+* `fromFlattenedRootFirst_rootFirstChallenge` and
+  `challengeRetainingRootFirst_fromFlattenedRootFirst`: the root-first coordinate maps are
+  inverse.
+* `challengeRetainingRootFirst_pderiv`: the root-first map transports the `Y₁` derivative.
 
 ## References
 
@@ -76,6 +81,18 @@ private theorem fromFlattenedRootFirst_ne_zero_iff
       apply (optionEquivRight F (JetVariable 1)).injective
       simpa [fromFlattenedRootFirst] using hfrom
     exact (renameEquiv F (Equiv.swap none (some (some 1)))).injective hrename
+
+/-- Jet total degree is additive on products in root-first coordinates. -/
+theorem jetTotalDegree_fromFlattenedRootFirst_mul
+    (p q : MvPolynomial (Option (JetVariable 1)) F) (hp : p ≠ 0) (hq : q ≠ 0) :
+    jetTotalDegree (fromFlattenedRootFirst (p * q)) =
+      jetTotalDegree (fromFlattenedRootFirst p) + jetTotalDegree (fromFlattenedRootFirst q) := by
+  have hp' : fromFlattenedRootFirst p ≠ 0 := fromFlattenedRootFirst_ne_zero_iff p |>.2 hp
+  have hq' : fromFlattenedRootFirst q ≠ 0 := fromFlattenedRootFirst_ne_zero_iff q |>.2 hq
+  rw [show fromFlattenedRootFirst (p * q) =
+    fromFlattenedRootFirst p * fromFlattenedRootFirst q by
+      simp [fromFlattenedRootFirst]]
+  exact weightedTotalDegree_mul jetDegreeWeight _ _ hp' hq'
 
 /-- The product of the distinct positive-`Y₁` factors, returned to challenge-retaining
 coordinates. -/
@@ -163,23 +180,44 @@ theorem fromFlattenedRootFirst_rootFirstChallenge
       _ = _ := AlgEquiv.symm_apply_apply _ _
   rw [hswap, AlgEquiv.apply_symm_apply]
 
+/-- Applying the root-first coordinate map after recovering from those coordinates returns the
+original polynomial. -/
+theorem challengeRetainingRootFirst_fromFlattenedRootFirst
+    (R : MvPolynomial (Option (JetVariable 1)) F) :
+    challengeRetainingRootFirst (fromFlattenedRootFirst R) = R := by
+  rw [challengeRetainingRootFirst, fromFlattenedRootFirst]
+  have hswap : renameEquiv F (Equiv.swap none (some (some 1)))
+      (renameEquiv F (Equiv.swap none (some (some 1))) R) = R := by
+    let e : MvPolynomial (Option (JetVariable 1)) F ≃ₐ[F]
+        MvPolynomial (Option (JetVariable 1)) F :=
+      renameEquiv F (Equiv.swap none (some (some (1 : Fin 2))))
+    have he : e = e.symm := by simp [e, Equiv.symm_swap]
+    calc
+      e (e R) = e.symm (e R) := congrArg (fun f : _ ≃ₐ[F] _ ↦ f _) he
+      _ = R := AlgEquiv.symm_apply_apply _ _
+  calc
+    _ = renameEquiv F (Equiv.swap none (some (some 1)))
+        (renameEquiv F (Equiv.swap none (some (some 1))) R) := by
+      rw [AlgEquiv.symm_apply_apply]
+    _ = R := hswap
+
+/-- The root-first coordinate map sends the `Y₁` partial derivative to the root derivative. -/
+theorem challengeRetainingRootFirst_pderiv
+    (Q : DifferentialPolynomial F[X] 1) :
+    challengeRetainingRootFirst (pderiv (some (1 : Fin 2)) Q) =
+      pderiv none (challengeRetainingRootFirst Q) := by
+  let e : Option (JetVariable 1) ≃ Option (JetVariable 1) :=
+    Equiv.swap none (some (some (1 : Fin 2)))
+  have hrename := MvPolynomial.pderiv_rename e.injective (some (some (1 : Fin 2)))
+    ((optionEquivRight F (JetVariable 1)).symm Q)
+  unfold challengeRetainingRootFirst
+  rw [MvPolynomial.optionEquivRight_symm_pderiv]
+  simpa [e, renameEquiv_apply, Equiv.swap_apply_def] using hrename.symm
+
 /-- Removing repeated positive-`Y₁` factors does not increase total jet degree. -/
 theorem positiveCurveEquation_jetTotalDegree_le (Q : DifferentialPolynomial F[X] 1) :
     jetTotalDegree (positiveCurveEquation Q) ≤ jetTotalDegree Q := by
-  have hadd : ∀ p q : MvPolynomial (Option (JetVariable 1)) F,
-      p ≠ 0 → q ≠ 0 →
-        jetTotalDegree (fromFlattenedRootFirst (p * q)) =
-          jetTotalDegree (fromFlattenedRootFirst p) +
-            jetTotalDegree (fromFlattenedRootFirst q) := by
-    intro p q hp hq
-    have hp' : fromFlattenedRootFirst p ≠ 0 :=
-      fromFlattenedRootFirst_ne_zero_iff p |>.2 hp
-    have hq' : fromFlattenedRootFirst q ≠ 0 :=
-      fromFlattenedRootFirst_ne_zero_iff q |>.2 hq
-    rw [show fromFlattenedRootFirst (p * q) =
-      fromFlattenedRootFirst p * fromFlattenedRootFirst q by
-        simp [fromFlattenedRootFirst]]
-    exact weightedTotalDegree_mul jetDegreeWeight _ _ hp' hq'
+  have hadd := jetTotalDegree_fromFlattenedRootFirst_mul (F := F)
   have hdegree := MvPolynomial.map_radicalPrimPart_le
     (d := fun R ↦ jetTotalDegree (fromFlattenedRootFirst R)) hadd none
       (challengeRetainingRootFirst Q)
@@ -262,7 +300,7 @@ theorem positiveCurveEquation_coeffNatDegreeLE (Q : DifferentialPolynomial F[X] 
   intro m
   by_cases hc : (positiveCurveEquation Q).coeff m = 0
   · simp [hc]
-  · have hmem := Polynomial.natDegree_mem_support_of_nonzero hc
+  · have hmem := Polynomial.natDegree_mem_support_of_ne_zero hc
     have hsource : m.optionElim
         ((positiveCurveEquation Q).coeff m).natDegree ∈ R.support := by
       apply MvPolynomial.mem_support_iff.mpr
@@ -270,6 +308,42 @@ theorem positiveCurveEquation_coeffNatDegreeLE (Q : DifferentialPolynomial F[X] 
       rw [hopt]
       exact Polynomial.mem_support_iff.mp hmem
     simpa using (MvPolynomial.monomial_le_degreeOf none hsource).trans_eq hdegree
+
+/-- The retained positive-factor equation does not increase the coefficient challenge height.
+-/
+theorem positiveCurveEquation_coeffNatDegreeLE_of_input
+    (Q : DifferentialPolynomial F[X] 1) {H : ℕ}
+    (hheight : CoeffNatDegreeLE Q H) :
+    CoeffNatDegreeLE (positiveCurveEquation Q) H := by
+  have hchallenge :
+      degreeOf (some (some (1 : Fin 2))) (challengeRetainingRootFirst Q) ≤ H := by
+    classical
+    let T := (optionEquivRight F (JetVariable 1)).symm Q
+    have hT : degreeOf none T ≤ H := by
+      have hweight : T.weightedTotalDegree (fun v ↦ v.elim 1 fun _ ↦ 0) ≤ H :=
+        weightedTotalDegree_optionEquivRight_symm_coefficientDegree_le hheight
+      have hweights : (fun v : Option (JetVariable 1) ↦ v.elim 1 fun _ ↦ 0) =
+          Pi.single none 1 := by
+        funext v
+        cases v <;> simp
+      have hweight' : T.weightedTotalDegree (Pi.single none 1) ≤ H := by
+        simpa only [hweights] using hweight
+      rw [← weightedTotalDegree_piSingle none T]
+      exact hweight'
+    have hrename := degreeOf_rename_of_injective
+      (Equiv.swap none (some (some (1 : Fin 2)))).injective none (p := T)
+    change degreeOf (some (some (1 : Fin 2)))
+        (rename (Equiv.swap none (some (some 1))) T) ≤ H
+    have hrename' : degreeOf (some (some (1 : Fin 2)))
+        (rename (Equiv.swap none (some (some 1))) T) = degreeOf none T := by
+      simpa [Equiv.swap_apply_def] using hrename
+    exact hrename'.le.trans hT
+  have hprim :
+      degreeOf (some (some (1 : Fin 2)))
+        (radicalPrimPart none (challengeRetainingRootFirst Q)) ≤ H :=
+    (degreeOf_radicalPrimPart_le none (some (some (1 : Fin 2)))
+      (challengeRetainingRootFirst Q)).trans hchallenge
+  exact (positiveCurveEquation_coeffNatDegreeLE Q).mono hprim
 
 end
 

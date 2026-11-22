@@ -98,12 +98,12 @@ private lemma exactAgreementDecoder_isExact {ι F : Type*} [Field F] [Fintype F]
   simp [exactAgreementDecoder, Accepts]
 
 /-- The agreement threshold at a quarter gap is at least `k + n / 4`. -/
-private lemma agreementThreshold_quarter_gap {delta : ℝ}
+private lemma capacityAgreementThreshold_quarter_gap {delta : ℝ}
     (hdelta : (1 / 4 : ℝ) ≤ delta) (blockLength messageDim : ℕ) :
     (messageDim : ℝ) + (blockLength : ℝ) / 4 ≤
-      agreementThreshold delta blockLength messageDim := by
-  have hThreshold := (agreementThreshold_le_iff_real (by positivity) blockLength messageDim
-    (agreementThreshold delta blockLength messageDim)).mp le_rfl
+      capacityAgreementThreshold delta blockLength messageDim := by
+  have hThreshold := (capacityAgreementThreshold_le_iff_real (by positivity) blockLength messageDim
+    (capacityAgreementThreshold delta blockLength messageDim)).mp le_rfl
   nlinarith [mul_le_mul_of_nonneg_right hdelta
     (by positivity : (0 : ℝ) ≤ blockLength)]
 
@@ -118,50 +118,27 @@ private lemma pairwiseJohnsonListBound_quarter_gap_arithmetic {n messageDim A : 
   have hDcast : (D : ℝ) = (messageDim : ℝ) - 1 := by
     norm_num [D, Nat.cast_sub (by omega : 1 ≤ messageDim)]
   have hGapReal : (n : ℝ) + (n : ℝ) * D ≤ (A : ℝ) * A := by
-    rw [hDcast]; nlinarith [sq_nonneg ((messageDim : ℝ) - (n : ℝ) / 4)]
+    rw [hDcast]
+    linarith [sq_nonneg ((messageDim : ℝ) - (n : ℝ) / 4),
+      mul_le_mul hA hA (by positivity) (by positivity)]
   have hGap : n + n * D ≤ A * A := by exact_mod_cast hGapReal
   have hpositive : n * D < A * A := by omega
   have hDenPos : 0 < A * A - n * D := Nat.sub_pos_of_lt hpositive
   have hNumLt : A - D < A * A - n * D := by
-    by_cases hDZero : D = 0
-    · have hAReal : 2 ≤ (A : ℝ) := by
-        have hnReal : (1 : ℝ) ≤ n := by exact_mod_cast hn
-        have hkReal : (1 : ℝ) ≤ messageDim := by exact_mod_cast hMessageDim
-        have hAgtReal : (1 : ℝ) < A := by nlinarith [hA]
-        have hAgtNat : 1 < A := by exact_mod_cast hAgtReal
-        have hANat : 2 ≤ A := by omega
-        exact_mod_cast hANat
-      have hANat : 2 ≤ A := by exact_mod_cast hAReal
-      have hARealStrict : (A : ℝ) < (A : ℝ) * A := by nlinarith
-      have hANatStrict : A < A * A := by exact_mod_cast hARealStrict
-      simpa [hDZero] using hANatStrict
-    · have hDPos : 0 < D := Nat.pos_of_ne_zero hDZero
-      by_cases hAle : A ≤ n
-      · have hADLt : A - D < n := by omega
-        exact hADLt.trans_le (by omega)
-      · have hAn : n + 1 ≤ A := by omega
-        have hDn : D ≤ n - 1 := by omega
-        have hMon : 0 ≤ ((A : ℝ) - (n + 1)) * ((A : ℝ) + n) :=
-          mul_nonneg (sub_nonneg.mpr (by exact_mod_cast hAn)) (by positivity)
-        have hDproduct : (D : ℝ) * ((n : ℝ) - 1) ≤ ((n : ℝ) - 1) ^ 2 := by
-          have hDnReal : (D : ℝ) ≤ (n : ℝ) - 1 := by
-            have hDplus : D + 1 ≤ n := by omega
-            have hDplusReal : (D : ℝ) + 1 ≤ n := by exact_mod_cast hDplus
-            linarith
-          have hnOneReal : (1 : ℝ) ≤ n := by exact_mod_cast Nat.succ_le_of_lt hn
-          calc
-            (D : ℝ) * ((n : ℝ) - 1) ≤ ((n : ℝ) - 1) * ((n : ℝ) - 1) :=
-              mul_le_mul_of_nonneg_right hDnReal (sub_nonneg.mpr hnOneReal)
-            _ = ((n : ℝ) - 1) ^ 2 := by ring
-        have hStrictReal : (A : ℝ) - D < (A : ℝ) ^ 2 - (n : ℝ) * D := by
+    suffices A + n * D < A * A + D by omega
+    rcases Nat.lt_or_ge n A with hnA | hAn
+    · have hAA := Nat.mul_le_mul_left A hnA
+      have hnD : n * D < n * A := Nat.mul_lt_mul_of_pos_left (by omega) hn
+      linarith
+    · rcases Nat.eq_zero_or_pos D with hD0 | hDPos
+      · have hA1 : (1 : ℝ) < A := by
+          have hkReal : (1 : ℝ) ≤ messageDim := by exact_mod_cast hMessageDim
           have hnReal : (0 : ℝ) < n := by exact_mod_cast hn
-          nlinarith [hMon, hDproduct]
-        have hDA : D ≤ A := (Nat.sub_le _ _).trans hMessageDimLeA
-        have hStrictCast : ((A - D : ℕ) : ℝ) < (A * A - n * D : ℕ) := by
-          rw [Nat.cast_sub hDA, Nat.cast_sub (Nat.le_of_lt hpositive)]
-          push_cast
-          nlinarith [hStrictReal]
-        exact_mod_cast hStrictCast
+          linarith
+        have hAA := Nat.mul_le_mul_right A (show 2 ≤ A by exact_mod_cast hA1)
+        rw [hD0, Nat.mul_zero]
+        omega
+      · omega
   refine ⟨hpositive, hDenPos, ?_⟩
   rw [Code.pairwiseJohnsonListBound, Nat.div_lt_iff_lt_mul hDenPos]
   exact Nat.mul_lt_mul_of_pos_left hNumLt hn
@@ -187,17 +164,16 @@ theorem agreeingPolynomials_encard_lt_blockLength_of_quarter
     (domain : ι ↪ F) (hMessageDim : 0 < messageDim)
     (hMessageDimLe : messageDim ≤ Fintype.card ι) (received : ι → F) :
     (agreeingPolynomials domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) received).encard <
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard <
         (Fintype.card ι : ℕ∞) := by
   let n := Fintype.card ι
   let D := messageDim - 1
-  let A := agreementThreshold delta n messageDim
+  let A := capacityAgreementThreshold delta n messageDim
   let C : Set (ι → F) := ReedSolomon.code domain messageDim
   have hn : 0 < n := lt_of_lt_of_le hMessageDim hMessageDimLe
   have hNonempty : Nonempty ι := Fintype.card_pos_iff.mp hn
-  have hA : messageDim ≤ A := by simp [A, agreementThreshold]
-  have hDA : D ≤ A := (Nat.sub_le _ _).trans hA
-  have hThreshold := agreementThreshold_quarter_gap hdelta n messageDim
+  have hA : messageDim ≤ A := by simp [A, capacityAgreementThreshold]
+  have hThreshold := capacityAgreementThreshold_quarter_gap hdelta n messageDim
   have hArithmetic := pairwiseJohnsonListBound_quarter_gap_arithmetic
     hn hMessageDim hMessageDimLe hA hThreshold
   have hpair : ∀ c ∈ C, ∀ c' ∈ C, c ≠ c' → Code.agree c c' ≤ D := by
@@ -206,11 +182,11 @@ theorem agreeingPolynomials_encard_lt_blockLength_of_quarter
   have hList := agreeingPolynomials_encard_le_Lambda (minAgreement := A)
     domain hMessageDimLe received
   have hJohnson := @Code.Lambda_le_pairwiseJohnson ι F inferInstance hNonempty inferInstance
-    C D A hDA hArithmetic.1 hpair
+    C D A hArithmetic.1 hpair
   have hListJohnson := by simpa only [n, D, A, C] using hList.trans hJohnson
   have hJohnsonStrict :
       (Code.pairwiseJohnsonListBound (Fintype.card ι) (messageDim - 1)
-        (agreementThreshold delta (Fintype.card ι) messageDim) : ℕ∞) <
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) : ℕ∞) <
         (Fintype.card ι : ℕ∞) := by
     exact_mod_cast hArithmetic.2.2
   exact hListJohnson.trans_lt hJohnsonStrict
@@ -220,10 +196,26 @@ degree-bounded polynomial. -/
 theorem agreeingPolynomials_encard_le_one_of_half
     {ι F : Type*} [Field F] [DecidableEq F] [Fintype ι]
     {delta : ℝ} (hdelta : (1 / 2 : ℝ) ≤ delta) {messageDim : ℕ}
-    (domain : ι ↪ F) (hMessageDim : 0 < messageDim)
-    (hMessageDimLe : messageDim ≤ Fintype.card ι) (received : ι → F) :
+    (domain : ι ↪ F)
+    (received : ι → F) :
     (agreeingPolynomials domain messageDim
-      (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤ 1 := by
+      (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤ 1 := by
+  rcases Nat.eq_zero_or_pos messageDim with rfl | hMessageDim
+  · apply Set.encard_le_one_iff.mpr
+    intro p q _ _
+    have hzero (p : MessagePolynomial F 0) : (p : Polynomial F) = 0 := by
+      simpa only [Polynomial.degreeLT_zero, Submodule.mem_bot] using p.property
+    exact Subtype.ext ((hzero p).trans (hzero q).symm)
+  by_cases hMessageDimLe : messageDim ≤ Fintype.card ι
+  swap
+  · have hempty : agreeingPolynomials domain messageDim
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received = ∅ := by
+      apply Set.eq_empty_of_forall_notMem
+      intro p hp
+      have hcard := Code.agree_le_card (u := ReedSolomon.evalOnPoints domain p) (v := received)
+      change capacityAgreementThreshold delta (Fintype.card ι) messageDim ≤ _ at hp
+      exact hMessageDimLe ((Nat.le_add_right _ _).trans (hp.trans hcard))
+    simp [hempty]
   let C : Set (ι → F) := ReedSolomon.code domain messageDim
   have hNeZero : NeZero messageDim := ⟨Nat.ne_of_gt hMessageDim⟩
   have hn : 0 < Fintype.card ι := lt_of_lt_of_le hMessageDim hMessageDimLe
@@ -263,11 +255,11 @@ theorem agreeingPolynomials_encard_le_one_of_half
     (evaluationEmbedding domain hMessageDimLe).injective
   have hList :
       (agreeingPolynomials domain messageDim
-        (agreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received).encard ≤
         Code.Lambda C (capacityRadius delta (Fintype.card ι) messageDim) := by
     rw [← hEvaluationInjective.encard_image
       (agreeingPolynomials domain messageDim
-        (agreementThreshold delta (Fintype.card ι) messageDim) received), ← hImage]
+        (capacityAgreementThreshold delta (Fintype.card ι) messageDim) received), ← hImage]
     exact Code.encard_closeCodewordsRel_le_Lambda C _ received
   exact hList.trans hLambda
 
@@ -280,7 +272,7 @@ theorem quarter_gap_list_bound : QuarterGapListBound := by
   let _ : Fact fieldSize.Prime := ⟨hFieldPrime⟩
   have hBlockLength : 0 < blockLength := lt_of_lt_of_le hMessageDim hMessageDimLe
   have hdelta_nonneg : 0 ≤ delta := by positivity
-  let minAgreement := agreementThreshold delta blockLength messageDim
+  let minAgreement := capacityAgreementThreshold delta blockLength messageDim
   let listBound := if (1 / 2 : ℝ) ≤ delta then 1 else 4 * fieldSize
   have hDecoderExact : IsExactDecoder domain messageDim minAgreement
       (exactAgreementDecoder (minAgreement := minAgreement) domain) :=
@@ -299,8 +291,8 @@ theorem quarter_gap_list_bound : QuarterGapListBound := by
     intro received
     by_cases hhalf : (1 / 2 : ℝ) ≤ delta
     · simp only [listBound, ite_eq_left hhalf]
-      have hEnc := agreeingPolynomials_encard_le_one_of_half hhalf domain hMessageDim
-        (by simpa only [Fintype.card_fin] using hMessageDimLe) received
+      have hEnc := agreeingPolynomials_encard_le_one_of_half hhalf (messageDim := messageDim)
+        domain received
       have hCard : (exactAgreementDecoder (messageDim := messageDim)
           (minAgreement := minAgreement) domain received).card ≤ 1 := by
         have hCardEnc :
@@ -340,7 +332,7 @@ theorem quarter_gap_list_bound : QuarterGapListBound := by
   intro hdelta_lt_half received
   have hEnc' :
       (agreeingPolynomials domain messageDim
-        (agreementThreshold delta blockLength messageDim) received).encard <
+        (capacityAgreementThreshold delta blockLength messageDim) received).encard <
         (blockLength : ℕ∞) := by
     simpa only [minAgreement] using hQuarterEnc received
   have hBlockLess :

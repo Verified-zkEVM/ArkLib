@@ -163,7 +163,8 @@ example :
         ¬ Set.InjOn (evalTuple ω)
           (candidateSet anchorDomainThree anchorReceivedThree 2 1)] ≤
         ENNReal.ofReal (((9).choose 2 * (2 - 1) ^ Fintype.card (Fin 4) : ℕ) /
-          (Fintype.card (Fin 4 → ZMod 3) : ℝ)) := hprob
+          (Fintype.card (Fin 4 → ZMod 3) : ℝ)) := by
+      convert hprob using 4
     _ ≤ ENNReal.ofReal (1 / 2 : ℝ) := ENNReal.ofReal_le_ofReal (by
       norm_num [hchoose, hΩ, Fintype.card_fin])
 
@@ -267,9 +268,9 @@ private theorem singletonPowerGuarantee (w : Fin 2 → Fin 1 → ZMod 2) :
     exact (coeff_zero_eq_eval_zero Q).trans heval
   have hQeq : Q = C (powerBatchedWord w z 0) := by
     rw [eq_C_of_degree_le_zero (Order.lt_succ_iff.mp hQ), hcoeff]
-  have hbatch : powerBatchedPolynomial (fun t ↦ C (w t 0)) z =
+  have hbatch : Polynomial.powerBatch (fun t ↦ C (w t 0)) z =
       C (powerBatchedWord w z 0) := by
-    simp [powerBatchedPolynomial, powerBatchedWord, Fin.sum_univ_two, smul_eq_C_mul]
+    simp [Polynomial.powerBatch, powerBatchedWord, Fin.sum_univ_two, smul_eq_C_mul]
   have hcommon : commonCurveAgreementSet point w (fun t ↦ C (w t 0)) = Finset.univ := by
     ext i
     fin_cases i

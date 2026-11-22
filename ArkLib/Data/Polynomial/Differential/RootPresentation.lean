@@ -17,7 +17,7 @@ public import Mathlib.Algebra.Polynomial.Bivariate
 /-!
 # Ordinary symbolic root polynomials
 
-A degree-zero differential polynomial with challenge-polynomial coefficients can be rearranged
+An order-zero differential polynomial with challenge-polynomial coefficients can be rearranged
 as a polynomial in its root. This presentation preserves the root degree and irreducibility,
 turns formal differentiation in the root into ordinary polynomial differentiation, and commutes
 with challenge specialization. A nonzero derivative resultant then bounds the exceptional
@@ -52,7 +52,7 @@ open Polynomial MvPolynomial
 
 variable {F : Type*} [CommRing F]
 
-/-- Reorder a degree-zero differential equation as a polynomial in its root. -/
+/-- Reorder an order-zero differential equation as a polynomial in its root. -/
 def ordinaryRootPresentation (Q : DifferentialPolynomial F[X] 0) : F[X][X][X] :=
   Polynomial.map (Polynomial.Bivariate.swap (R := F)).toRingHom
     (Polynomial.map (uniqueAlgEquiv F[X] (Fin 1)).toRingHom
@@ -240,7 +240,6 @@ open Classical in
 /-- One exceptional set controls every ordinary root whose separant vanishes. -/
 theorem exists_exceptional_ordinary_separant
     {Q : DifferentialPolynomial F[X] 0} (hQ : Irreducible Q)
-    (hpos : 0 < Q.degreeOf (some 0))
     (hder : MvPolynomial.pderiv (some 0) Q ≠ 0)
     {h : ℕ} (hheight : MvPolynomial.CoeffNatDegreeLE Q h) :
     ∃ exceptional : Finset F,
@@ -267,7 +266,9 @@ theorem exists_exceptional_ordinary_separant
     exact hbound.trans (Nat.mul_le_mul_left _ (degreeX_ordinaryRootPresentation_le Q hheight))
   refine ⟨hfinite.toFinset, hcard.trans hdegree, ?_⟩
   intro w hw P hroot
-  apply ordinary_separant_ne_zero_of_resultant_eval_ne_zero Q hpos w P _ hroot
+  apply ordinary_separant_ne_zero_of_resultant_eval_ne_zero Q
+    (Nat.pos_of_ne_zero fun hzero ↦ hder
+      (MvPolynomial.pderiv_eq_zero_of_degreeOf_eq_zero hzero)) w P _ hroot
   intro hzero
   exact hw (hfinite.mem_toFinset.mpr hzero)
 

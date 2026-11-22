@@ -97,7 +97,7 @@ theorem executeCore_honest [DecidableEq R] (p : Message R deg)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     executeCore (claimReduction R deg ambient domain r) (inputImpl R deg p) target p =
       pure (honestRun R deg p r) := by
-  simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
+  simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute, claimReduction,
     pure_bind]
   change ((simulateQ (Verifier.liftAccessImpl ambient (access R deg)
       (Access.extendImpl (inputSpec R).toPFunctor (polynomialInterface R deg)
@@ -215,13 +215,13 @@ theorem executeSampled_eq [DecidableEq R] (challenge : ProbComp R) (p : Message 
     (domain : List R) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target) :
     executeSampled R deg challenge p domain target = honestRun R deg p <$> challenge := by
-  simp only [executeSampled, executeCore, _root_.Interaction.Oracle.Reduction.execute,
+  simp only [executeSampled, executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
     sampledClaimReduction, pure_bind]
   simp only [executeStrategies, prover, sampledClaimVerifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -234,7 +234,8 @@ theorem executeSampled_eq [DecidableEq R] (challenge : ProbComp R) (p : Message 
     _root_.Interaction.TwoParty.participantProfile,
     _root_.Interaction.TwoParty.collectParticipantOutputs]
   simp only [id_eq, simulateQ_bind, simulateQ_pure, simulate_challenge, bind_assoc, pure_bind,
-    simulateQ_map, simulate_terminal, ite_eq_left h, map_pure]
+    simulateQ_map, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_done, simulate_terminal, ite_eq_left h, map_pure]
   simp only [bind_pure_comp]
   rfl
 

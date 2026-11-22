@@ -288,7 +288,7 @@ lemma dim_frsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
   rw [dim_frsCode_eq_min domain k s ω hadm hω, min_eq_left hk]
 
 /-- The minimum block distance of a folded Reed-Solomon code, for admissible `ω ≠ 0`,
-`0 < s` and `k ≤ s * |ι|`:
+`0 < k` and `k ≤ s * |ι|`:
 
   `Code.minDist (frsCode domain k s ω) = |ι| - ⌊(k-1)/s⌋` .
 
@@ -304,13 +304,16 @@ For `≤`: for any `T ⊆ ι` of size `⌊(k-1)/s⌋`, the polynomial
 `∏ x ∈ T, ∏ j, (X - C (domain x * ω ^ j))` has degree `s * ⌊(k-1)/s⌋ < k` and vanishes on
 exactly the folds indexed by `T`. -/
 theorem minDist_frsCode {ι : Type*} [Fintype ι]
-    {F : Type*} [Field F] [DecidableEq F] {k s : ℕ} [NeZero k] (hs : 0 < s)
+    {F : Type*} [Field F] [DecidableEq F] {k s : ℕ} [NeZero k]
     (domain : ι ↪ F) (ω : F)
     (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
     (hk : k ≤ s * Fintype.card ι) :
     Code.minDist ((frsCode domain k s ω) : Set (ι → Fin s → F))
       = Fintype.card ι - (k - 1) / s := by
   classical
+  have hs : 0 < s := Nat.pos_of_ne_zero (by
+    rintro rfl
+    exact NeZero.ne k (by simpa using hk))
   -- Abbreviations.
   set D := Fintype.card ι - (k - 1) / s with hD
   -- The folded evaluation points are pairwise distinct (the workhorse for both bounds).
@@ -520,7 +523,7 @@ two agree iff `⌈k/s⌉ = k/s`. Over `ZMod 11` with `L = {1,2,3,4,5}`, `ω = -1
 `ReedSolomon.Interleaved.irs_rate_distance`, which needs no divisibility because
 interleaving truncates dimension and distance by the same `⌊k/s⌋`. -/
 theorem frs_rate_distance_of_dvd {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F]
-    [DecidableEq F] {k s : ℕ} [NeZero k] (hs : 0 < s) (hdvd : s ∣ k)
+    [DecidableEq F] {k s : ℕ} [NeZero k] (hdvd : s ∣ k)
     (domain : ι ↪ F) (ω : F)
     (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
     (hk : k ≤ s * Fintype.card ι) :
@@ -528,6 +531,9 @@ theorem frs_rate_distance_of_dvd {ι : Type*} [Fintype ι] [Nonempty ι] {F : Ty
         Set (ι → Fin s → F)) : ℝ) / Fintype.card ι
       = 1 - (LinearCode.alphabetRate (frsCode domain k s ω) : ℝ) + 1 / Fintype.card ι := by
   have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+  have hs : 0 < s := Nat.pos_of_ne_zero (by
+    rintro rfl
+    exact NeZero.ne k (zero_dvd_iff.mp hdvd))
   have hsR : (0 : ℝ) < s := by exact_mod_cast hs
   obtain ⟨m, rfl⟩ := hdvd
   have hm : 1 ≤ m := by
@@ -541,7 +547,7 @@ theorem frs_rate_distance_of_dvd {ι : Type*} [Fintype ι] [Nonempty ι] {F : Ty
   have hhi : (m - 1 + 1) * s = s * m := by rw [Nat.sub_add_cancel hm, Nat.mul_comm]
   have hfloor : (s * m - 1) / s = m - 1 :=
     Nat.div_eq_of_lt_le (by omega) (by omega)
-  rw [minDist_frsCode hs domain ω hadm hω hk, hfloor,
+  rw [minDist_frsCode domain ω hadm hω hk, hfloor,
     alphabetRate_frsCode domain (s * m) s ω hadm hω hk,
     Nat.cast_sub (by omega : m - 1 ≤ Fintype.card ι), Nat.cast_mul, Nat.cast_sub hm,
     Nat.cast_one]

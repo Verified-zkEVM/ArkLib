@@ -19,6 +19,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   `ReedSolomon`, `ListDecodability`, and `ProximityGap`.
 - [`papers/ACFY24stir.md`](papers/ACFY24stir.md) - STIR paper page for the active
   `ProofSystem/Stir` development.
+- [`papers/BRW26.md`](papers/BRW26.md) - Flock; the quirky layout and the multiplication-matrix
+  multiplier evaluator.
 - [`papers/BCFW25.md`](papers/BCFW25.md) - cited only for Lemma D.3 (extension-code list size);
   none of the accumulation machinery is used.
 - [`papers/BCIKS20.md`](papers/BCIKS20.md) - proximity gaps for Reed-Solomon codes and the main
@@ -27,7 +29,14 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   proximity-generator infrastructure.
 - [`papers/BCS16.md`](papers/BCS16.md) - original IOP reference used by the core oracle-reduction
   layer.
+- [`papers/BGKLSW26.md`](papers/BGKLSW26.md) - BitZ's exponent lift, Round 1 fingerprinting,
+  Round 2 tensor implication and OOD collision bound; paper-to-code mapping and remaining
+  protocol obligations.
 - [`papers/BBS24.md`](papers/BBS24.md) - formal verification reference for sum-check.
+- [`papers/CHA24.md`](papers/CHA24.md) - integer fingerprinting provenance from the Zaratan
+  framework and its reusable multivariate counting layer.
+- [`papers/CWYZ26.md`](papers/CWYZ26.md) - affine combiners for Reed–Solomon proximity gaps:
+  MCA error with one coordinate of agreement loss, scalar lower bounds, and the port ledger.
 - [`papers/DG25.md`](papers/DG25.md) - interleaved-code proximity gaps and the DG25 formalization
   subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius
@@ -38,6 +47,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   for subspace-design codes.
 - [`papers/GK16.md`](papers/GK16.md) - explicit subspace designs; Definition 11 and Lemma 12 supply
   the folded-Wronskian criterion behind `ABF26` Theorem 2.18.
+- [`papers/GMW25.md`](papers/GMW25.md) - FRI agreement preservation, query bounds, and
+  ordinary and round-by-round soundness of the computable IOP.
 - [`papers/GR08.md`](papers/GR08.md) - Definition 2.1, the definitional source for folded
   Reed-Solomon codes.
 - [`papers/GW13.md`](papers/GW13.md) - linear-algebraic list decoding; origin of the univariate
@@ -66,6 +77,9 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   security notion of the Hachi development.
 - [`papers/FRI1216.md`](papers/FRI1216.md) - the generalized FRI low-degree test, for the abstract
   protocol layer in `ProofSystem/Fri`.
+- [`papers/EthStark21.md`](papers/EthStark21.md) - STARK arithmetization context for coset chunks.
+- [`papers/HK24.md`](papers/HK24.md) - Lagrange quotient decomposition and cancellation of chunk
+  masks; the algebraic identities and remaining zero-knowledge protocol obligations.
 - [`papers/GWZC19.md`](papers/GWZC19.md) - Plonk, for the Plonk entry-point module.
 - [`papers/JM24.md`](papers/JM24.md) - AGM/GGM transfer context for the algebraic-group-model
   development.
@@ -78,6 +92,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   alphabet-free framing of the Johnson-bound layer.
 - [`papers/LNP22.md`](papers/LNP22.md) - the lattice zero-knowledge framework whose
   power-of-two cyclotomic ring setting `Data/Lattices/CyclotomicRing/` constructs.
+- [`papers/Lov18.md`](papers/Lov18.md) - the GM-MDS theorem: Theorem 1.7 and Conjecture 1.3,
+  formalized symbolically, with the infinite-field form used for generic zero patterns.
 - [`papers/LPS24.md`](papers/LPS24.md) - AGM reasoning connected back to Plonk knowledge
   soundness.
 - [`papers/LS18.md`](papers/LS18.md) - invertibility of short nonzero elements of
@@ -90,6 +106,7 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   and its weak-binding reduction to Module-SIS.
 - [`papers/Poseidon2.md`](papers/Poseidon2.md) - the Poseidon2 hash, translated over `KoalaBear`.
 - [`papers/PS94.md`](papers/PS94.md) - historical provenance for the Polishchuk-Spielman lemma.
+- [`papers/RSG.md`](papers/RSG.md) - ring switching with independent packing and opening bases.
 - [`papers/Spi95.md`](papers/Spi95.md) - the second Polishchuk-Spielman source, and why ArkLib
   uses the corrected statement.
 
@@ -104,6 +121,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 
 ## Audit Pages
 
+- [`audits/fri-soundness.md`](audits/fri-soundness.md) - revised FRI analysis, algebraic
+  binding and proximity consequences, and the executable-protocol soundness correspondence.
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
 - [`audits/noz26-subfield-lemmas5-6.md`](audits/noz26-subfield-lemmas5-6.md)
@@ -112,6 +131,11 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`audits/noz26-zero-check-lemma10.md`](audits/noz26-zero-check-lemma10.md)
   - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the nested-tree repair and the weak-binding
     seam as integrated into the escape-threaded opening chain.
+- [`audits/noz26-trace-head-section-3-1.md`](audits/noz26-trace-head-section-3-1.md)
+  - NOZ26 §3.1 trace head: correspondence, departures and security shape.
+- [`audits/noz26-recursion-z-packing.md`](audits/noz26-recursion-z-packing.md)
+  - Hachi §4.5 recursion: why the `Z`-packing step does not support extraction of the partial
+    evaluations, with a counterexample and candidate repairs.
 - [`audits/bciks20-appendix-a-rational-functions.md`](audits/bciks20-appendix-a-rational-functions.md)
   - status matrix for the rational-function and Hensel-lifting layer used by `BCIKS20`.
 - [`audits/bcgm25-mca-generators.md`](audits/bcgm25-mca-generators.md)

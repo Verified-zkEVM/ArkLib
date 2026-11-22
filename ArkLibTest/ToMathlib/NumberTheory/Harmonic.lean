@@ -24,5 +24,6 @@ example : (harmonic 32 : ℝ) < log 32 + 3 / 5 :=
 example : (harmonic 180 : ℝ) - log 180 < 29 / 50 := harmonic_sub_log_lt le_rfl
 
 /-- The reciprocal-square lower bound at its cutoff `n = 203`. -/
-example : (41 / 25 : ℝ) < ∑ i : Fin 203, 1 / ((i : ℝ) + 1) ^ 2 :=
-  lt_sum_fin_one_div_add_one_sq le_rfl
+example : (41 / 25 : ℝ) < ∑ i : Fin 203, 1 / ((i : ℝ) + 1) ^ 2 := by
+  generalize hn : (203 : ℕ) = n
+  exact lt_sum_fin_one_div_add_one_sq hn.le

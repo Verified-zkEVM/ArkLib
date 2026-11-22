@@ -1,5 +1,9 @@
 # Native-measure conversion ledger
 
+**Completed 2026-09-21** ([#904](https://github.com/Verified-zkEVM/ArkLib/issues/904) closed).
+This is a record of that campaign. Its pins, sizes, gates and "Now" columns describe that date,
+not current `main`; current pins are on the [status page](00-current-status.md).
+
 The merged Lean 4.34 upgrade ([#903](https://github.com/Verified-zkEVM/ArkLib/pull/903))
 converted consumers of VCVio's retiring scalar probability API
 (`Pr[… | …]`, `probEvent`, `probOutput`, `probFailure`, `evalSPMF`/`𝒮[…]`, `NeverFail`,
@@ -45,7 +49,7 @@ regression-test, or axiom checks for this upgrade.
 
 Developed on VCVio branch `codex/arklib-native-prereqs` and landed on VCVio `main` through the
 integration PR [#771](https://github.com/Verified-zkEVM/VCVio/pull/771) (which also carries the
-content of #758/#763/#764); ArkLib pins `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`.
+content of #758/#763/#764); ArkLib pinned `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6` at the time.
 
 | Family | Upstream home | Contents | Retires in ArkLib |
 |---|---|---|---|
@@ -62,7 +66,7 @@ game simulated from a sampled state, uniform counting thresholds, union bounds, 
 
 The earlier plan listed structural uniform instances (U8) and transformer losslessness glue
 (U9). These are not unresolved blockers for the current conversion: ArkLib uses native
-`IsUniformMeasureSpec` instances where needed, and the pinned dependency supplies
+`UniformAnswerMeasure` instances where needed, and the pinned dependency supplies
 `OptionT.isProbabilityMeasure_mk_iff` and the sequencing lemmas above.
 The final proof-length audit identified dependent-product sampling and conditional uniform-event
 conveniences. [VCVio #770](https://github.com/Verified-zkEVM/VCVio/pull/770) supplies them;
@@ -128,7 +132,6 @@ both use the proof-only count.
 
 | File / declaration | Before #903 | #903 | Now | Accounting |
 |---|---:|---:|---:|---|
-| `OracleReduction/Security/RoundByRound.rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness` | 31 | 67 | 31 | Resolved: bind reassociation once, then goal-inferred `prEvent_mono`. |
 | `OracleReduction/Composition/Sequential/Append/Completeness.completeness_iff_of_pure_verifier` | 14 | 32 | 14 | Resolved: `OptionT.lift` normal form, then `OptionT.prEvent_lift`/`prEvent_map` in one `simp only`. |
 | `OracleReduction/Composition/Sequential/Append/Completeness.append_completeness_of_prover_factorization` | 32 | 46 | 28 | Resolved: goal-inferred `mul_le_prEvent_bind_of_forall`; the `q₁.2 → stage 2 → q₂.2` state handoff is unchanged. |
 | `OracleReduction/Composition/Sequential/GuardedCompleteness.append_completeness_of_guarded_prover_factorization` | 27 | 41 | 23 | Resolved: same call-site refactor. |
@@ -141,10 +144,8 @@ both use the proof-only count.
 | `Commitments/Functional/KZG/Binding.binding_game_ext_eq_binding_game` | 146 | 153 | 146 | Resolved: reverse `prEvent_map` on the projected condition, then `OptionT.ext` on the game; no separate program-equality statement. |
 | `OracleReduction/Composition/Sequential/Append/Completeness.completeness_of_pure_states` | 9 | 15 | 6 | Resolved: goal-inferred bind lower bound. |
 | `OracleReduction/Composition/Sequential/GuardedCompleteness.completeness_of_guarded_states` | 9 | 15 | 6 | Resolved: same. |
-| `OracleReduction/Security/RbrGame.prEvent_simulateQ_addLift_getChallenge_bind_le` | 18 | 24 | 9 | Resolved: inferred arguments to bind-event monotonicity. |
 | `OracleReduction/Security/RbrGame.prEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le` | 46 | 49 | 13 | Resolved. |
 | `OracleReduction/Security/RbrGame.prEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` | 26 | 28 | 13 | Resolved. |
-| `OracleReduction/Security/Implications.rbrKnowledgeSoundness_implies_rbrSoundness` | 128 | 133 | 98 | Resolved: reassociation and state unfolding performed once. |
 
 Counts are proof-body lines from the final `:= by` line, as defined above. The Lean 4.34
 repairs that #903 made outside probability proofs are also back at or below their pre-#903 size:
@@ -152,7 +153,7 @@ repairs that #903 made outside probability proofs are also back at or below thei
 (1 → 5 → 2; the remaining line is the `simp` call that replaces `grind`, which no longer closes the
 goal), `PolishchukSpielman/Degrees.ps_degX_bound` (restored with `grind +qlia [natDegreeY,
 Polynomial.natDegree_mul]`), `BCIKS20/ListDecoding/Extraction.pg_sum_natDegreeY_Rset_le_natDegreeY_Q`,
-`Errors.mcaError_le_epsCa_of_pos_of_two_mul_lt_dist`, and
+`Errors.mcaError_le_epsCa_of_two_mul_lt_dist`, and
 `Subfield/Algebra.fold_density_le_eps_ca_of_not_joint_proximity` (23 → 26 → 12). The test
 `ArkLibTest/.../Completeness.rejecting_not_perfect` is back to 5 lines. Smaller probability-facing
 rows (KZG `binding`, `t_sdh_game_eq`, FunctionBinding, `Security/Basic.completeness_relOut_mono`,
@@ -229,7 +230,7 @@ multi-let files, and every one fails with a 20000-heartbeat typeclass timeout. T
 `Entropy/Counting.rsCode_disjoint_supported_of_small`, `JohnsonLower.rs_monomial_agreement_card_le_two_mul`,
 `Powers/Incidence.powers_coefficients_eq_of_agree_on_distinct_seeds`,
 `Subfield/Algebra.subfield_ca_interpolant_unique`,
-`UniqueDecoding/Internal.rs_exists_oversized_bivariate_ab(_of_dimension)`,
+`UniqueDecoding/Internal.rs_exists_oversized_bivariate_ab_of_dimension`,
 `Errors.exists_forall_notMem_of_card_le`, `LineDecoding.affine_collision_injective`,
 `LineDecoding.exists_outside_finite_union_submodules`,
 `PolynomialGenerator.isMCAGenerator_of_isPolynomialGeneratorOf` (+2 each), and
@@ -264,11 +265,13 @@ multi-let files, and every one fails with a 20000-heartbeat typeclass timeout. T
 `intro …; exact Fin.elim0 i.1` rather than `simp [Verifier.id]`, and the four
 `OracleComp.support_nonempty` applications (`TranscriptTree/Basic.not_isAccepting_of_no_outputs`,
 `support_init_nonempty_of_prob_one`, `not_accepting_of_failure`, and
-`CoordinateWiseSpecialSoundness/Composition.mem_of_pure_accepting`) pass
-`OracleSpec.IsUniformMeasureSpec.inhabited` explicitly. The shorter forms elaborate, but the
-default instance paths go through the retired `OracleSpec.IsUniformSpec.inhabited`,
-`IsUniformSpec.toIsProbabilitySpec`, `PMF`/`SPMF` and `probOutput`, and `retiredsweep` rejects
-them (verified). These rows go away when VCVio removes those instances under #532.
+`CoordinateWiseSpecialSoundness/Composition.mem_of_pure_accepting`) passed
+`OracleSpec.IsUniformMeasureSpec.inhabited` explicitly. The shorter forms elaborated, but the
+default instance paths went through the retired `OracleSpec.IsUniformSpec.inhabited`,
+`IsUniformSpec.toIsProbabilitySpec`, `PMF`/`SPMF` and `probOutput`, and `retiredsweep` rejected
+them (verified). VCVio has since removed those instances with its discrete layer
+([VCVio #836](https://github.com/Verified-zkEVM/VCVio/pull/836)); the four applications now pass
+the specification, `OracleComp.support_nonempty (spec := unifSpec)`.
 
 D1 has a single upstream fix, tracked as [VCVio #772](https://github.com/Verified-zkEVM/VCVio/issues/772)
 and implemented in [VCVio #773](https://github.com/Verified-zkEVM/VCVio/pull/773): the domain
@@ -288,8 +291,10 @@ per-range binders such as `[∀ t, Fintype (spec.Range t)]`, and
   (Classical.decEq F)` in `SchwartzZippelCounting`, the local instance in `FullAgreement`, the
   `Fintype.fieldOfDomain` argument in `Probability/Instances`, and the `Finset.image` instances in
   the statements of `Probability/Combinatorial`.
-- The four D3 `OracleComp.support_nonempty` sites now use the default instance path;
-  `retiredsweep` accepts it (verified).
+  The v4.36 update uses the integral-domain bounds from [VCVio #929](https://github.com/Verified-zkEVM/VCVio/pull/929) directly. The ArkLib Schwartz–Zippel module and its two explicit instances have been removed.
+- The D3 `OracleComp.support_nonempty` applications passed `retiredsweep` with the default instance.
+  In v4.36, pure-verifier witness validity uses this lemma directly and no longer needs an
+  acceptance premise to exhibit an initial seed.
 - `GCXK25.linear_mca_relevant_pairs_card_le` is back to `[Fintype F']`, which its statement's
   `linear_mca_relevant_pairs` requires; the D2 `Finite` generalization of that private lemma is
   reverted.
@@ -297,7 +302,7 @@ per-range binders such as `[∀ t, Fintype (spec.Range t)]`, and
   Inhabited` in `OracleInterface`, the `srChallengeOracle`/`fsChallengeOracle` instances in
   `ProtocolSpec/Basic`, and the bundled QueryRound instances in `BatchedFri/Security`, which now
   provide per-range `Inhabited`/`Fintype` and build the empty message spec's
-  `IsUniformMeasureSpec` from `queryRoundMessage_domain_false`.
+  `UniformAnswerMeasure` from `queryRoundMessage_domain_false`.
 - Because `SampleableType F` now provides `Finite F` and `Nonempty F`, several theorems no longer
   use their `[SampleableType F]` section variable; they carry `omit [SampleableType F] in`.
 
@@ -328,7 +333,7 @@ migration; the axiom regression baseline must remain unchanged.
 
 Issue #904 covers both phases: #903's VCVio scalar conversion and the follow-up retirement of
 ArkLib's independent PMF surface. The prerequisite stack landed on VCVio `main` in
-[#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pins that main commit,
+[#771](https://github.com/Verified-zkEVM/VCVio/pull/771), and ArkLib pinned that main commit,
 `210d73fd85d4f1ab99e5a707a78238e3a0dfb8d6`. Closure is judged by these gates, all checked on the
 final head: current `main` is integrated; the probability API used by `ArkLib` is native; the
 strict `retiredsweep` inventory is empty; `./scripts/validate.sh --axioms` passes with no new

@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
+public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
 
 /-!
 # A Sumcheck round retaining the multivariate oracle
@@ -26,10 +27,6 @@ open SingleRound
 noncomputable section
 
 variable (R : Type) [CommSemiring R] (n deg : ℕ)
-
-/-- The original multivariate polynomial remains available at every round boundary. -/
-def polynomialFamily : OracleFamily Unit (Spec.OracleStatement R n deg) :=
-  ⟨fun _ => inferInstance⟩
 
 /-- Input access extended by the actual univariate message. -/
 abbrev access :=
@@ -139,7 +136,8 @@ theorem executeCore_eq [DecidableEq R] (i : Fin n)
       pure (if (domain.map (fun x => q.val.eval x)).sum = stmt.target then
         acceptedRun R n deg i stmt impl q r
       else { acceptedRun R n deg i stmt impl q r with outcome := none }) := by
-  simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, reduction, pure_bind]
+  simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
+    reduction, pure_bind]
   change ((simulateQ (Verifier.liftAccessImpl ambient (access R n deg)
       (Access.extendImpl (polynomialFamily R n deg).spec.toPFunctor
         (polynomialInterface R deg) impl q))
@@ -226,13 +224,13 @@ theorem executeCore_sampled_eq [DecidableEq R] (i : Fin n)
       (do
         let r ← challenge
         executeCore (reduction R n deg ambient i domain r) impl stmt q) := by
-  simp only [executeCore, _root_.Interaction.Oracle.Reduction.execute, sampledReduction,
+  simp only [executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute, sampledReduction,
     reduction, pure_bind]
   simp only [executeStrategies, prover, sampledVerifier, verifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -272,7 +270,7 @@ theorem executeCore_honest [DecidableEq R] {m : ℕ} (D : Fin m ↪ R) (i : Fin 
         (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩ :
           ClosedClaim (Spec.StatementRound R n i.succ) (polynomialFamily R n deg))) := by
   exact executeCore_closed R n deg ambient i stmt _ _ _ r
-    (projected_sum_of_relationRound R n deg D i stmt p h)
+    (Spec.SingleRound.projected_sum_of_relationRound R n deg D i stmt p h)
 
 /-- The honest successor satisfies the next relation, including at the last round. -/
 theorem honestNext_related {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
@@ -280,7 +278,31 @@ theorem honestNext_related {m : ℕ} (D : Fin m ↪ R) (i : Fin n)
     closedRelation R n deg D i.succ
       ⟨honestNext R n deg D i stmt p r,
         (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩ := by
-  exact relationRound_projected_output R n deg D i stmt p r
+  exact Spec.SingleRound.relationRound_projected_output R n deg D i stmt p r
+
+
+/-- The final closed round is precisely evaluation at the full challenge vector. -/
+theorem closedRelation_last_iff {m : ℕ} (D : Fin m ↪ R)
+    (claim : ClosedClaim (Spec.StatementRound R n (Fin.last n)) (polynomialFamily R n deg)) :
+    closedRelation R n deg D (Fin.last n) claim ↔
+      claim.oracles ⟨(), claim.stmt.challenges⟩ = claim.stmt.target := by
+  unfold closedRelation
+  have : IsEmpty (Fin (n - (Fin.last n).val)) := ⟨fun j => by
+    have hj := j.isLt
+    simp only [Fin.val_last, Nat.sub_self] at hj
+    omega⟩
+  erw [Fintype.piFinset_of_isEmpty]
+  erw [Finset.univ_unique, Finset.sum_singleton]
+  have heq : Fin.append claim.stmt.challenges
+      (default : Fin (n - (Fin.last n).val) → R) ∘ Fin.cast (by simp) =
+        claim.stmt.challenges := by
+    funext j
+    simp only [Fin.append, Function.comp_apply, Fin.addCases, Fin.val_cast,
+      show j.val < (Fin.last n).val from j.isLt, dite_true]
+    congr 1
+  erw [heq]
+  rfl
+
 
 end
 end Sumcheck.Interaction.MultivariateRound

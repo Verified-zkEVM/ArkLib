@@ -11,13 +11,13 @@ library documentation describes only the present API (see
 [`docs/wiki/porting-conventions.md`](../wiki/porting-conventions.md)). "The source" is ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` unless a note names another revision.
 
-The key `DKTZ26` in these notes refers to the manuscript revision the source cited. The library
-now cites its published version, [DKT26] (Cryptology ePrint Archive, Paper 2026/2056), with
-ePrint numbering. The old locators map as follows: "Appendix A.3, Lemma A.5" (Regular Taylor
-chart) is DKT26 Appendix A.6, Lemma A.4; "Section 3 (local interpolation)" is DKT26 Section 3.5;
-equations (39)–(40) of the source revision (`eq:band-lattice-ratio`, `eq:band-geometric-rank`)
-correspond to the local-rank bound (72) of DKT26 Section 6.1 and the rank estimate (131) in its
-Appendix D.2.
+The library now cites the November 2026 revision of [DKT26] (Cryptology ePrint Archive, Paper
+2026/2056) and its numbering. The per-file notes below, and the following historical mapping from
+the source's manuscript locators, use the earlier published numbering: "Appendix A.3, Lemma A.5"
+(Regular Taylor chart) is DKT26 Appendix A.6, Lemma A.4; "Section 3 (local interpolation)" is DKT26
+Section 3.5; equations (39)–(40) of the source revision (`eq:band-lattice-ratio`,
+`eq:band-geometric-rank`) correspond to the local-rank bound (72) of DKT26 Section 6.1 and the rank
+estimate (131) in its Appendix D.2.
 
 The notes describe each file as it was merged. Later changes to a file are recorded in its pull
 request and ledger row, not here.
@@ -133,6 +133,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 `exists_exceptional_of_regular_stage_bounds_of_factors` keeps its name. The theorem combines regular-stage exceptional sets into a finite set bounded by the first-order curve envelope. It drops the unused assumptions `0 < k` and `k ≤ L`. The exponent-specialized `exists_exceptional_of_regular_stage_bounds_of_exponent` was not ported because it is a direct-ratio specialization of the factors theorem, and the ratio lower bound follows from the existing incidence estimate.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `FirstOrderCurveCertificate.jetDegree_one_le`, a public certificate degree bound. The two `exists_hybridDescent` certificate bridges are in `HybridAgreementCounting`; both remove the unused challenge-height parameter. The first retains the actual-degree characteristic guard, and the second uses the public derivative-cap guard.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/CurveHeightCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -215,6 +219,12 @@ polynomial `P`, and each divisibility needs agreement only at its own point. The
 the source form. The rank bound and the interpolant use `LinearMap.finrank_range_pi_le_sum` and
 `LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt` from P3 slice 10.
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/ListBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/SharpListBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrder_finite_agreement_solutions_card_le_tight` → `firstOrder_finite_agreement_solutions_card_le_tight_of_exponent` adds a bound for any sufficient Taylor exponent. `firstOrder_finite_agreement_solutions_card_le_tight` → `firstOrder_finite_agreement_solutions_card_le_tight`, `firstOrder_finite_agreement_solutions_card_le_sharp` → `firstOrder_finite_agreement_solutions_card_le_sharp`, `finite_firstOrder_list_bound_of_heightSlotCount_sharp` → `finite_firstOrder_list_bound_of_heightSlotCount_sharp`, and `finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight` → `finite_firstOrder_list_bound_of_shiftedHeightSlotCount_tight` all drop `K ≤ n` and express finite-domain agreement with the equivalent `Set.ncard` condition. The source-named tight bounds retain exponent `2 * K - 3`. No declarations were omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Profile.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -236,6 +246,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 `firstOrderExponents_subset_degree_two` was not ported because the destination rank theorem accepts arbitrary degree and agreement parameters directly. `firstOrder_rate_curve_matrix_rank_le` was not added because `rank_firstOrderLocalConstraintMatrix_le`, together with the existing first-order rank-count identity, covers it.
 
 The existing `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder.lean` acceptance file checks strict dimension surplus and the kernel-height bound for concrete two-point rate parameters, constructs a rate certificate over `ZMod 5` and converts it to a curve certificate, and applies the shared specialization theorem to that certificate.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `exists_firstOrder_symbolicCertificate_of_rank_and_height`, a shared rank-and-height constructor extracted from the interpolation-to-certificate proofs for the general-rate, automatic finite-length, and low-rate selectors. Selector-specific count arguments remain with those theorems. The helper is public so the selector modules can import it.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/FirstOrder/Space.lean`
 
@@ -559,8 +573,8 @@ instances of `finrank_range_exactLocalConstraintAt_le_sub`.
 
 Ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Local/RankBudget.lean` at
-ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows equations (39)–(40) of
-[DKTZ26].
+ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which follows the local-rank bound (72) of
+[DKT26], Section 6.1, and the rank estimate (131) in its Appendix D.2.
 
 * `localRank_ceilDiv_le` is unchanged and is derived from the generic
   `Nat.cast_ceilDiv_le_div_add_one`.
@@ -745,6 +759,14 @@ recovered in the tests.
 
 The source's lower bound `finrank_interpolationSpace_lowerBound` is in
 `Interpolation/Dimension.lean`. Deferred: the shell counts.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/CurveSupportCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/CurveSupportCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_certificate_of_fixed_margin`, `exists_weightedSupport_certificate_of_rate`, and `exists_prescribed_certificate` retain their source names. `exists_certificate_of_fixed_margin` is generalized from `Fin n` points to any finite point type. The rate and prescribed constructors preserve the curve statement and use the current harmonic API. `exists_prescribed_certificate` omits the unused positive message-dimension premise.
+
+`Certificate` is already represented by `SymbolicReceivedCurve.Certificate` in `CurveCertificate.lean`; no theorem from this unit was left out.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/Symbolic/JohnsonCertificate.lean`
 
@@ -1016,17 +1038,41 @@ the free-order extension was contributed by Pratyush Mishra. All eight definitio
 parameter data only: no theorem here or in the source proves that it bounds a list, since that
 needs a root-counting theorem of Kopparty that is not formalized. -/
 
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrderListWeight`, `firstOrderTightListWeight`, `firstOrderTightListWeight_nonneg`, `firstOrderTightListWeight_two_mul_le`, and `finite_firstOrder_agreement_solutions_card_le_sharp` keep their names. `finite_firstOrder_agreement_solutions_card_le_tight_of_exponent` also keeps its name and has the unused premise `K ≤ n` removed; the sharp-count theorem likewise drops that premise. Added `boundedSolution_card_le_separantChainStageSum` to `ArkLib/Data/Polynomial/Differential/RecursiveCount.lean` as a generic composition theorem for stage-dependent regular-branch costs along an explicit separant chain, representing the source-local regular-stage estimate and recursive induction. No public source declaration was left out. The first-order acceptance example exercises the exact count, sharp count, uniform comparison, and charge nonnegativity; the differential-polynomial acceptance example checks the `Y₁` stage charge and applies the stage-sum theorem to a nonempty bounded-solution set along `challengeChain`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent` now has one public proof stated with filter cardinality; its internal ncard caller converts through the agreement-cardinality equivalence. `finite_regular_agreement_solutions_card_le_identityPair` was moved beside it. The identity-pair theorem retains its degree-one identity-pair incidence bound.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Ported the rate-gap, surplus-slope, multiplicity, jet-degree, height, moment, and exception constants and the bounds for automatic parameters and closed list and exception constants. Renamed `automaticHybridEnvelopeConstant` to `automaticRateEnvelopeConstant`, `automaticLambdaBoundConstant` to `automaticListBoundConstant`, and `automaticHybridT_le_inv_eta_cube` to `automaticStaircaseMoment_le_inv_eta_cube`. Renamed the hybrid-envelope inequalities to name the rate envelope, and renamed the closed list, exception, and combined bounds to name their mathematical quantities. The slack comparison theorems drop unused rate, positivity, or agreement guards as reported. A private helper proves repeated rate, ratio, jet, and staircase premises once. The unused private `automaticSourceLowerCount` helper and later challenge-height applications were not ported; existing first-order threshold, count, surplus, residual, and scaled-height results cover the needed facts.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `automaticRateIncidenceJetBounds`, a shared theorem collecting the rate-envelope, incidence-ratio, and jet-degree bounds used by both automatic-envelope proofs. No declarations from the source unit were omitted.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Ported the first-order automatic agreement, surplus, multiplicity, derivative cap, jet degree, source and rank counts, challenge height, and density definitions. Renamed `automaticBeta` to `automaticDerivativeRatio`; the associated derivative-ratio theorems use the new name. The first derivative-ratio positivity theorem drops unused rate and threshold guards, and the upper-bound theorems drop an unused agreement upper guard. Generalized `automatic_sourceDensity_sub_rankDensityEnvelope` by dropping unused agreement assumptions. Reused the generic counts from `RoundedCounts`. The source threshold, recipe-specific count and surplus results, and scaled-height floor result are covered by existing first-order declarations; unused recipe helpers and challenge-height applications were not exposed.
+
+Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AutomaticParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The automatic parameter-record construction formerly local to `finite_automaticFirstOrder_hybrid_agreement_solutions_card_le` is now the shared owner-layer definition `automaticFiniteRateParameters`. The new projection identities are `automaticFiniteRateParameters_jetDegree` and `automaticFiniteRateParameters_derivativeCap`. The consumers' agreement-budget calculation is factored into `automaticAgreement_mul_le`.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/DerivativeCappedCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Geometry/DerivativeCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_regularHighCutJets_card_le_derivativeCapped_of_exponent` is specialized from the generic `card_le_of_firstOrderHighTaylorCuts_of_agreement_capped` theorem in `ArkLib.Data.Polynomial.Differential.TaylorChartIncidence`, using the first-order stage caps. It drops the global separant and positive `j` and `k` assumptions and expresses agreement counts with `Set.ncard`. The source `degreeOf_initialJetSeparant_firstOrder_le` is covered by the existing generalized `degreeOf_initialJetSeparant_le`. The private positivity helper is unnecessary because regularity on each set member supplies the needed nonzero equation, and the private two-jet cap-membership helper is replaced by a private general capped-degree helper. No public source declaration remains unported.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/FiniteRateParameters.lean`
 
@@ -1056,6 +1102,18 @@ corollary are covered by the existing `firstOrderRankCubicUpperCount` and
 existing `certifiedEnlargedRankBound_one_eq_firstOrderRateRankCount`, generalized to every
 higher-jet budget. The scaled kernel-height bound follows from the stronger
 `scaledKernelHeight_le_floor`; the source-shaped max-one bound is derived in the acceptance test.
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`HasOrderZeroTailListBound`, `hasOrderZeroTailListBound_of_nonzero`, `FirstOrderFieldDescent` and its fields, `exists_firstOrderFieldDescent`, and `FirstOrderFieldDescent.root_coverage` retain their names. The field descent tail uses `JetPrefixPresentation`. The symbolic `FirstOrderHybridDescent`, its fields, `exists_firstOrderHybridDescent`, and `FirstOrderHybridDescent.root_coverage` retain their names; the descent drops the unused coefficient-height parameter, represents its tail with `JetPrefixPresentation`, and root coverage is generalized to commutative semiring coefficients.
+
+`FirstOrderCurveCertificate.exists_hybridDescent` retains its name and actual-degree characteristic guard. `FirstOrderCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar` retains its name and uses the public derivative-cap guard; both omit the unused challenge-height parameter. `finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail`, `finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized`, `finite_firstOrder_field_hybrid_agreement_solutions_card_le`, and `finite_automaticFirstOrder_hybrid_agreement_solutions_card_le` retain their names and bounds. The optimized symbolic and field bounds share a private charge, ceiling, and closed-bound helper.
+
+Ported from `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The local symbolic-certificate construction in the automatic hybrid and squarefree bounds is factored into the shared theorem `exists_automaticFirstOrder_symbolicCertificate`. Both automatic consumers use this bridge.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridConstants.lean`
 
@@ -1150,6 +1208,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/Fi
 
 Not ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder/AllMSourceRounding.lean`: `firstOrderSourceDensity_mul_cube_le_rateSourceCount` is covered by `cube_mul_sourceDensity_le_firstOrderSourceCount`, generalized to any `mu` above the floor cutoff and to `m = 0`. Taking `mu = ⌈m a / R⌉₊` gives the corresponding ceiling-cap bound whenever the source theorem's numeric hypotheses hold.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added the generic theorem `firstOrderRankCount_le_two_mul_cube`. It has no source declaration; it replaces the selector-specific `finiteLengthRankCount_le_two_mul_cube`, since the height proof can use the generic result directly.
+
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/StageCharges.lean`
 
 Ported from
@@ -1230,7 +1292,7 @@ for `c = 2`, with the explicit threshold `⌈32 / θ⌉`.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/FixedRateGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`fixedRatePartitionMultiplicity`, `fixedRatePartitionMultiplicity_spec`, `fixedRatePartitionFiniteParameters`, and `exists_fixedRatePartitionFiniteParameters` retain their names. The selector uses the main branch's `rateMultiplicity` and `rateMultiplicity_spec` to package positive finite weight budget and ratio greater than one in `PartitionFiniteParameters`.
+`fixedRatePartitionMultiplicity`, `fixedRatePartitionMultiplicity_spec`, and `fixedRatePartitionFiniteParameters` retain their names. `exists_fixedRatePartitionFiniteParameters` is not ported: its `Nonempty` conclusion is `⟨fixedRatePartitionFiniteParameters hrate hgap⟩`. The selector uses the main branch's `rateMultiplicity` and `rateMultiplicity_spec` to package positive finite weight budget and ratio greater than one in `PartitionFiniteParameters`.
 
 A separate `leastPartitionFiniteMultiplicity` family is not ported because `rateMultiplicity`, `rateMultiplicity_spec`, and `rateMultiplicity_minimal` already provide the generic selector API.
 
@@ -1252,7 +1314,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/MathematicalUniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Renamed `uniformRatePartitionMathematicalMultiplicity`, `uniformRatePartitionMathematicalJetBound`, `uniformRatePartitionMathematicalLength`, `uniformRatePartitionMathematicalLength_eq_ceil`, `uniformRatePartitionOrder_ge_519`, `uniformRatePartitionOrder_le_mathematicalJetBound`, `uniformRatePartitionMathematical_integer_guards`, `uniformRatePartitionMathematical_totalJetDegree_le`, `uniformRatePartitionMathematical_low_ratio_gt`, and `uniformRatePartitionMathematical_high_ratio_gt` to their `uniformMathematical...` or `uniformDerivativeOrder...` destination names. `exists_mathematicalRatePartitionEnvelope` keeps its name and specializes the shared `RatePartitionEnvelope` at `uniformMathematicalMultiplicity δ`. The total-jet bound uses the equivalent `PartitionSupportEligible` predicate, and the scale-300 ratio proofs share one finite-ratio argument and reuse the generalized gamma bounds.
+Renamed `uniformRatePartitionMathematicalMultiplicity`, `uniformRatePartitionMathematicalJetBound`, `uniformRatePartitionMathematicalLength`, `uniformRatePartitionMathematicalLength_eq_ceil`, `uniformRatePartitionOrder_ge_519`, `uniformRatePartitionOrder_le_mathematicalJetBound`, `uniformRatePartitionMathematical_integer_guards`, `uniformRatePartitionMathematical_totalJetDegree_le`, `uniformRatePartitionMathematical_low_ratio_gt`, and `uniformRatePartitionMathematical_high_ratio_gt` to their `uniformMathematical...` or `uniformDerivativeOrder...` destination names. `uniformDerivativeOrder_ge_519` is stated in `UniformGamma.lean`, where it replaces the weaker order bound. `exists_mathematicalRatePartitionEnvelope` keeps its name and specializes the shared `RatePartitionEnvelope` at `uniformMathematicalMultiplicity δ`. The total-jet bound uses the equivalent `PartitionSupportEligible` predicate, and the scale-300 ratio proofs share one finite-ratio argument and reuse the generalized gamma bounds.
 
 `uniformCapacityLengthThreshold300` is deferred because this unit has no consumer; its first consumers are in the ListDecodability and MutualCorrelatedAgreement mathematical-uniform capacity units. `ratePartitionMathematicalMultiplicity_ge_order` is covered by the stronger generic `add_two_le_closedMultiplicity`, which needs only scale at least 3 and order at least 1.
 
@@ -1275,9 +1337,11 @@ Reed–Solomon half of `simplexMaximumExpectation_upperTail_sq_le` is
 lower-tail proof; the unused `momentErrorPolynomial`/`momentErrorRatio` variant is not ported.
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/BlockLength.lean`
 
-Ported from
-`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/BlockLength.lean`
-at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. `ratePartitionJetBound` is now
+Ported from `BlockLength.lean` and the definitions of `Parameters.lean` in
+`ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/` at ArkLib
+revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+
+From `Parameters.lean`: `ratePartitionJetBound` is now
 `rateJetCap`, `ratePartitionMathematicalLength` is now `rateBlockThreshold`,
 `ratePartitionLength` is now `paddedRateBlockThreshold`, and `ratePartitionHeight` is now
 `marginHeight`. `ratePartition_mathematical_length_guards` is now `rateBlockThreshold_guards`,
@@ -1285,6 +1349,16 @@ without the source's `0 < d`; `ratePartition_length_guards` is now
 `paddedRateBlockThreshold_guards`, which proves `2m < n` where the source proved `2m ≤ n`.
 `ratePartitionHeight_uniform`, the case `k = 150`, is now `marginHeight_one_add_inv` for every
 positive `k`.
+
+From `BlockLength.lean`: `rateJetCap` and `rateJetCap_pos` keep their names. The source's
+`rateBlockThreshold` is the padded threshold, so it is now `paddedRateBlockThreshold`, not main's
+`rateBlockThreshold`. `rateBlockThreshold_guards` and `rateBlockThreshold_ambient` are now
+`paddedRateBlockThreshold_guards`, which states the derived guards instead of the source's real
+inequalities. `rateHeight` is not a definition: it is
+`marginHeight (rateJetCap rate multiplicity) (partitionFiniteRatio rate agreement order multiplicity)`.
+`partitionSupport_totalJetDegree_le_rateJetCap` keeps its name in
+`HiddenDerivative/Interpolation/PartitionSupport/RateBound.lean`. `rate_ceil_agreement_bounds` is
+not ported; it combines the guards with `Nat.le_ceil` and `Nat.ceil_le`.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/ClosedMultiplicity.lean`
 
@@ -1304,9 +1378,14 @@ numeric lemmas. `ratePartitionClosedMultiplicity_ge_order`, which assumed `500 �
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition/FiniteRatio.lean`
 
 Merges `FiniteRatio.lean`, `Convergence.lean` and `FiniteParameters.lean` from the same source
-directory. `ratePartitionWeight` is now `partitionWeightBudget`, `ratePartitionFiniteRatio` is now
-`partitionFiniteRatio`, and the source's local inverse radius is the definition
-`partitionInverseRadius`. `ratePartitionFiniteRatio_eq` is now
+directory, with the matching definitions of `Parameters.lean`. In `FiniteRatio.lean`,
+`partitionWeightBudget` keeps its name, `partitionLambda` is now `partitionInverseRadius`,
+`finiteGamma` is now `partitionFiniteRatio`, `rateGamma_eq_exp` is now `rateGamma_eq_exponential`
+in `Gate.lean`, `tendsto_partitionLambda` and `tendsto_finiteGamma` are now
+`tendsto_partitionInverseRadius` and `tendsto_partitionFiniteRatio`, and
+`exists_finiteGamma_gt_one` is now `exists_partitionFiniteRatio_gt` for any bound. In
+`Parameters.lean`, `ratePartitionWeight` is now `partitionWeightBudget` and
+`ratePartitionFiniteRatio` is now `partitionFiniteRatio`. `ratePartitionFiniteRatio_eq` is now
 `partitionFiniteRatio_eq_weightBudget`, `tendsto_ratePartitionFiniteRatio` and the Convergence
 lemmas are now `tendsto_partitionWeightBudget_div`, `tendsto_partitionInverseRadius` and
 `tendsto_partitionFiniteRatio`, and
@@ -1341,7 +1420,7 @@ Renamed `UniformRatePartitionEnvelope` to `RatePartitionEnvelope` and generalize
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`uniformRatePartitionOrder_ge_500` is now `uniformDerivativeOrder_ge_500`. The four uniform-order theorems `uniformRatePartitionGamma_low_base_gt`, `uniformRatePartitionGamma_low_gt`, `uniformRatePartitionGamma_high_base_gt`, and `uniformRatePartitionGamma_high_gt` are now `uniformRateGamma_low_base_gt`, `uniformRateGamma_low_gt`, `uniformRateGamma_high_base_gt`, and `uniformRateGamma_high_gt`. The corresponding arbitrary-order bounds are generalized to positive orders satisfying the logarithmic lower bound and are named `rateGamma_low_base_gt`, `rateGamma_low_gt`, `rateGamma_high_base_gt`, and `rateGamma_high_gt`. The bounds cover low- and high-rate margins, with and without the finite-multiplicity factor.
+`uniformRatePartitionOrder_ge_500` is covered by the stronger `uniformDerivativeOrder_ge_519`, which has the same hypotheses and lives in this file. The four uniform-order theorems `uniformRatePartitionGamma_low_base_gt`, `uniformRatePartitionGamma_low_gt`, `uniformRatePartitionGamma_high_base_gt`, and `uniformRatePartitionGamma_high_gt` are now `uniformRateGamma_low_base_gt`, `uniformRateGamma_low_gt`, `uniformRateGamma_high_base_gt`, and `uniformRateGamma_high_gt`. The corresponding arbitrary-order bounds are generalized to positive orders satisfying the logarithmic lower bound and are named `rateGamma_low_base_gt`, `rateGamma_low_gt`, `rateGamma_high_base_gt`, and `rateGamma_high_gt`. The bounds cover low- and high-rate margins, with and without the finite-multiplicity factor.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/RatePartition/UniformGamma.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1359,6 +1438,12 @@ Ported from `UniformParameters.lean` of the same source directory. `uniformRateP
 with `δ ≤ 1/2` in place of `δ < 6/25`. The corresponding source-shaped high-rate and padded
 low-rate ambient bounds follow by specializing these guards to the uniform order and multiplicity.
 `uniformRatePartition_totalJetDegree_le` is deferred: it needs `RatePartitionEligible` (#977).
+
+## `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/WeightedSupport/Capacity.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.prescribed_geometric_parameters` keeps its name. It gives the prescribed order, multiplicity, Taylor cutoff, ambient dimension, and agreement bounds, dropping the unused `0 < k` assumption and using the current harmonic and agreement-threshold APIs. The source-shaped `capacityDerivativeOrder_lower` is `WeightedSupportParameters.prescribed_order_lower` after `capacityDerivativeOrder_eq_ceil`; `capacity_block_bounds` follows from `WeightedSupportParameters.prescribedBlockBounds` and `Nat.le_max_left`.
 
 ## `ArkLib/Data/CodingTheory/HiddenDerivative/Substitution.lean`
 
@@ -1429,8 +1514,10 @@ its `sum_localJet_eq_first_add_higher`, `localFirstJetExponent_eq_coordinate`, a
   `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
 
 Deferred: the shared-level fold and tensor-tight transfer of `TensorFoldAgreement.lean`, the
-anchored statements of `AnchoredAgreement.lean` and `AnchoredReconstruction.lean`, and the
-field-size-weighted transfer of [Jo26] for seed spaces larger than the field when `e ≥ |F|`.
+anchored statements of `AnchoredAgreement.lean` and `AnchoredReconstruction.lean`, and a
+count-level field-size-weighted transfer for seed spaces larger than the field when `e ≥ |F|`.
+The field-size-weighted transfer of [Jo26] is proved at the level of MCA error as
+`CoreDefinitions.mcaError_moduleInterleavedCode_le_fieldWeighted`.
 
 ## `ArkLib/Data/CodingTheory/InterleavedCode/Projection.lean`
 
@@ -1449,18 +1536,18 @@ type;
 ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 `ArkLib/Data/CodingTheory/ReedSolomon/Interleaved/AnchoredAgreement.lean`: `candidateSet_finite`
 and `candidateFamily_card_le` bound anchored candidates through
-`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` at the radius
+`ReedSolomon.relHammingDist_le_capacityRadius_iff_capacityAgreementThreshold_le` at the radius
 `capacityRadius delta n k = 1 - k / n - delta`, with the agreement threshold
 `k + ⌈delta * n⌉ ≤ a`. That threshold implies `1 - a / n ≤ capacityRadius delta n k`, so the
 statements here, at the radius `1 - a / n` and for an arbitrary code, imply the source ones by
 `Code.Lambda_mono`. The Reed–Solomon consumers are in
 `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement`.
 
-## `ArkLib/Data/CodingTheory/ListDecodability/Capacity/WeightedSupport.lean`
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`exists_weightedSupport_hiddenDerivativeConstruction`, `weightedSupport_capacity_list_bound_four_mul`, and `weightedSupport_capacity_list_bound` keep their names and mathematical statements. The construction theorem specializes the existing prescribed construction result. The pointwise list bound uses the destination's order-indexed multiplicity API and gives prefactor `4m` with exponent `2d`, refined to `d` under the large-field condition. The packaged theorem provides `WeightedSupportListBound` using the existing multiplicity positivity characterization. The generic `CapacityGapCertificate.ofPointwiseBound` helper was added to the existing capacity owner file; it has no source declaration and turns pointwise finite-list bounds into exact decoder certificates over arbitrary finite coordinate types. `weightedSupportMultiplicity_pos` was not ported because `weightedSupportMultiplicity_pos_iff` together with `capacityDerivativeOrder_lower` covers it.
+`exists_weightedSupport_hiddenDerivativeConstruction`, `weightedSupport_capacity_list_bound_four_mul`, and `weightedSupport_capacity_list_bound` keep their names and mathematical statements. The construction theorem specializes the existing prescribed construction result. The pointwise list bound uses the destination's order-indexed multiplicity API and gives prefactor `4m` with exponent `2d`, refined to `d` under the large-field condition. The packaged theorem provides `WeightedSupportListBound` using the existing multiplicity positivity characterization. The generic `CapacityGapCertificate.ofPointwiseBound` helper was added to the existing capacity owner file; it has no source declaration and turns pointwise finite-list bounds into exact decoder certificates over arbitrary finite coordinate types. `weightedSupportMultiplicity_pos` was not ported because `weightedSupportMultiplicity_pos_iff` together with `WeightedSupportParameters.prescribed_order_lower` and `capacityDerivativeOrder_eq_ceil` covers it.
 
 The acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean` check the construction contract, the pointwise bound constructor, and the packaged theorem at the prescribed sample parameters. The samples put the zero polynomial in the agreement list at a threshold no greater than the block length, and the pointwise-bound case supplies a positive finite list bound.
 
@@ -1533,14 +1620,15 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
   `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`; the seedwise transfer here is derived
   from `Code.exists_forall_isProjectionBad_of_interleaved` through `isMCA_iff_isProjectionBad`.
 
-Not covered here: the field-size-weighted transfer bound of [Jo26] for seed spaces larger than the
-field.
+For seed spaces larger than the field, `mcaError_moduleInterleavedCode_le_fieldWeighted` proves
+the field-size-weighted bound of [Jo26] Theorem 4.2.
 
 `mcaError_moduleInterleavedCode_le_of_card_le`: This generalizes [Jo26] Corollary 4.5 (one direction) and `ProximityGap.mcaError_interleaved_le`,
 which is the affine-line case.
 
 `mcaError_moduleInterleavedCode_le_of_card_le`: For larger seed spaces [Jo26]
-proves a weaker, field-size-weighted bound, which is not formalized here.
+proves a weaker, field-size-weighted bound, which is
+`mcaError_moduleInterleavedCode_le_fieldWeighted`.
 
 `mcaError_moduleInterleavedCode_eq_of_card_le`: This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
 
@@ -1551,12 +1639,21 @@ proves a weaker, field-size-weighted bound, which is not formalized here.
 at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` is now
 `exists_closePolynomial_finset_one_card_le_div`, for any received word in place of a batched
 word, with the `ncard` form `closePolynomialSet_one_ncard_le_div`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `closePolynomialSet_card_le_of_differential_equation`, a thin specialization of the generic finite-family theorem to finite sets of differential-equation solutions in `closePolynomialSet`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/AgreementThreshold.lean` at ArkLib revision
-`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the same names. `agreementThreshold`,
-`capacityRadius` and `agreementThreshold_le_iff_real` are unchanged;
-`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` holds for any finite coordinate type
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`, with the same formulas. Source
+`agreementThreshold` maps to `ReedSolomon.capacityAgreementThreshold`, and source
+`agreementThreshold_le_iff_real` maps to
+`ReedSolomon.capacityAgreementThreshold_le_iff_real`; `capacityRadius` is unchanged. Source
+`relHammingDist_le_capacityRadius_iff_agreementThreshold_le` maps to
+`ReedSolomon.relHammingDist_le_capacityRadius_iff_capacityAgreementThreshold_le`, which holds for
+any finite coordinate type
 in place of `Fin blockLength`, and goes through the new `Code.relHammingDist_le_one_sub_div_iff`
 of `ArkLib.Data.CodingTheory.ListDecodability.AgreementRadius`.
 ## `ArkLib/Data/CodingTheory/ReedSolomon/Agreement.lean`
@@ -1597,7 +1694,8 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 
 Deferred: `mcaError_interleaved_le_of_exactAgreement` needs `LineExactAgreementBound` and
 `mcaError_affineLine_le_of_exactAgreement` from `MutualCorrelatedAgreement/LineToAffine.lean`, and
-`lambda_rs_le_of_finite_polynomial_agreement_bound` needs `capacityRadius`, `agreementThreshold`
+`lambda_rs_le_of_finite_polynomial_agreement_bound` needs `capacityRadius`,
+`ReedSolomon.capacityAgreementThreshold`
 and `lambda_le_of_forall_agreeingPolynomials_encard_le` from
 `ListDecodability/Capacity/CodewordBound.lean` and its imports. None of these is on main. The
 interleaving step of the first is already `ProximityGap.mcaError_interleaved_eq`.
@@ -1615,7 +1713,8 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 * `candidateSet_finite`, `candidateFamily`, `mem_candidateFamily` and `candidateFamily_card_le`
   are replaced by `encard_candidateSet_le_Lambda` and `finite_candidateSet_of_Lambda_le`, which
   bound the set itself instead of a `Finset` built from a finiteness proof. The source's radius
-  `capacityRadius delta n (T + 3)` with the threshold `agreementThreshold delta n (T + 3) ≤ A`
+  `capacityRadius delta n (T + 3)` with the threshold
+  `ReedSolomon.capacityAgreementThreshold delta n (T + 3) ≤ A`
   is replaced by the radius `1 - A / n`, which is at most the source radius under that
   threshold; the conversion is `Code.encard_setOf_le_agree_encode_le_Lambda`. The hypotheses
   `0 ≤ delta` and `0 < n` are not needed.
@@ -1731,11 +1830,61 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
 Deferred: scalar providers of the line guarantee (list-decoding and curve-counting results) and
 the probability form of the count.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CodewordBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`agreeingPolynomials_encard_le_closePolynomialSet`, `lambda_le_ceil_of_closePolynomialSet_bound`, and `prescribed_geometric_lambda_bound` keep their names and results. The transfer uses the current `Fintype.card_fin` representation. The geometric bound uses the canonical `xi` and `harmonic` parameters in place of the source's explicit `27/10` and `harmonicNumber` parameters. No public declaration was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/CurveCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_closePolynomial_list_of_curve_certificate_actualStages`, `close_list_bound_of_curve_certificate_directJetCoarse`, and `close_list_bound_of_curve_certificate_of_jetCharacteristic` keep their names and results. The proofs use the current `SymbolicReceivedCurve.Certificate`, `SeparantChain`, agreement-list, and direct-jet APIs. No public declaration was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/ExactLists.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The module moved to `Capacity/ExactLists.lean` so it sits with the other capacity modules and does not look like an umbrella for `Capacity/*`. `capacityLengthThreshold` and `capacityListBound` are unchanged, written with main's `weightedSupportMultiplicity (capacityDerivativeOrder δ)`. `HasCapacityLists` drops the premise `A ≤ 2 * n`, which no proof used, so the property is stronger; it keeps the conjunct `n < A → list = ∅`. `HasCapacityLists.mono`, `CapacityListBounds` and `uniformFirstOrder_capacity_list` are unchanged. `exists_capacity_list` drops `δ < 1`, since main's `exists_field_bounded_capacity_list` does not need it. `rateCapacityLengthThreshold` (using `uniformMathematicalCapacityLength`), `rateCapacityListBound` (using `mathematicalUniformListConstant`) and `exists_rateCapacity_list` are unchanged. The source names `capacityLengthThreshold`, `capacityListBound` and `exists_capacity_list` are kept for the weighted-support family, and `rateCapacity*` for the all-rate family. The long source docstring was rewritten to describe only the API present on main. The private helpers are ported as private declarations.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FiniteField.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `exists_field_bounded_capacity_list` keeps its name. It drops the unused assumptions `delta < 1` and `A ≤ 2 * n`, and states the derivative order and multiplicity through the canonical capacity parameter definitions. No declarations were left unported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/FixedRateExplicitGate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`fixedRatePartitionOrder_list_bound_selected` and `fixedRatePartitionOrder_list_bound` retain their names and mathematical guarantees, using the destination parameter and threshold APIs. The destination names `RatePartition.rateBlockThreshold` and `RatePartition.rateJetCap` replace `ratePartitionMathematicalLength` and `ratePartitionJetBound`; their definitions match. Both proofs specialize `ratePartition_close_list_bound`. Both public source declarations are covered; no declarations were omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/GeometricBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`prescribed_geometric_finite_list_bound` and `prescribed_geometric_close_list_bound` keep their names. They use the current prescribed weighted-support parameters and symbolic certificate APIs to give geometric bounds for finite sublists and the complete close-polynomial set. The geometric ratio/counting lemmas, parameters, certificate, and characteristic/cast facts are reused from their current owners. No public source declaration from this module was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/MathematicalUniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/MathematicalUniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`mathematicalUniformRatePartition_close_list_bound` keeps its statement apart from main's parameter names (`uniformMathematicalLength`, `uniformMathematicalJetBound`, `uniformDerivativeOrder`). Its proof now goes through main's `close_list_bound_of_curve_certificate_of_jetCharacteristic` instead of the coarse direct-jet bound plus `geometric_ratio_le`. `uniformCapacityListConstant300` → `mathematicalUniformListConstant` with the same definition under main's parameter names. `uniform_capacity_list_bound_300` → `mathematicalUniform_capacity_list_bound`; its threshold is main's `uniformMathematicalCapacityLength`, which is the source's `uniformCapacityLengthThreshold300`. The conclusion is written directly instead of through `let d`/`let C`, and the Johnson branch uses the new public gap theorem `closePolynomialSet_finite_and_ncard_le_pairwiseJohnson_of_gap` in `ListDecodability/PairwiseJohnson.lean`. That theorem generalizes the source's private `uniformCapacity_close_list_bound_johnson`: the hypotheses `⌈4ν/δ²⌉₊ ≤ n` and `k ≤ ν` become `4 (k - 1) ≤ δ² n`, and `A ≤ n` and `DecidableEq F` are dropped.
+
+Not ported: `mathematicalUniformRatePartition_close_list_bound_of_length_characteristic`, a compatibility wrapper with no consumer that only weakens the characteristic guard to `n ≤ char F`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ratePartition_close_list_bound` and `exists_ratePartition_list_bound` keep their source names and mathematical statements. Their proofs use the current partition-parameter API, curve-certificate construction, and close-list bound. Neither declaration was deferred or left unported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/UniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/UniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`uniformRatePartition_close_list_bound` and `uniform_capacity_list_bound` keep their source names and mathematical statements. Their proofs use the current uniform parameter names, generalized envelope certificate, curve-certificate construction, and close-list bound. Neither declaration was deferred or left unported.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupportInterpolant.lean`
 
@@ -1744,6 +1893,82 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Weig
 `exists_weightedSupport_interpolant_of_fixed_margin`, `exists_prescribed_weightedSupport_construction_core`, `exists_prescribed_weightedSupport_construction`, and `HiddenDerivativeInterpolationCertificate.agreeingPolynomials_encard_le_totalJetDegree` retain their mathematical guarantees using the destination weighted-support, harmonic, parameter, certificate, and root-count APIs. The first theorem specializes the symbolic kernel construction at challenge zero; the prescribed construction uses the existing capacity parameters. The final theorem uses the solution embedding and bounded-solution root count to obtain the extension-field list bound `4 * m * q ^ (e * d)`.
 
 The symbolic height bound was renamed from `noBand_kernel_height_lt` to `kernel_height_lt_twelve_mul_of_margin`. The matrix block rank argument uses the range embedding and finite-dimensional rank bound. `map_projectLowContact` and `map_unscaledLocalSubstitution` are supplied by the existing local-constraint API. `WeightedSupportIndex` is not retained as an alias; support uses `weightedSupportExponents`. The three differential-specialization agreement lemmas are outside the unit's main statements, since the list bound uses the existing solution embedding and bounded-solution root count.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The weighted-support construction now uses `jetDegreeCastsNeZero_of_jetTotalDegree_charGuard` instead of repeating the proof of the jet-degree cast condition.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/DirectJetList.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/DirectJetList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The declarations map to themselves: `directJetAgreementSolutions` → `directJetAgreementSolutions`, `directJetStageCharge` → `directJetStageCharge`, `directJetCommonOrderSum` → `directJetCommonOrderSum`, `finite_actualStage_regularSolutions_card_le_dimensionSensitive` → `finite_actualStage_regularSolutions_card_le_dimensionSensitive`, `finset_card_le_directJetStageCharge_sum` → `finset_card_le_directJetStageCharge_sum`, `directJetAgreementSolutions_finite_and_ncard_le_chain` → `directJetAgreementSolutions_finite_and_ncard_le_chain`, `directJetStageCharge_sum_le_commonOrderSum` → `directJetStageCharge_sum_le_commonOrderSum`, `directJetCommonOrderSum_le_coarse` → `directJetCommonOrderSum_le_coarse`, `exists_chain_directJetAgreementSolutions_finite_and_ncard_le` → `exists_chain_directJetAgreementSolutions_finite_and_ncard_le`, and `exists_directJetList_actualStages_and_bounds` → `exists_directJetList_actualStages_and_bounds`. The stage charge now expresses `jetWeight` and `SymbolicSeparantChain.Stage` as `jetTotalDegree` and `SeparantStage`; the chain bound uses the current `SeparantChain` API. The regular-stage theorem derives its degree and equation hypotheses from agreement-set membership and uses the current `closePolynomialSet` API.
+
+Did not port `directJetAgreementSolutions_finite_and_ncard_le_coarse`, since it follows from `closePolynomialSet_finite` and `closePolynomialSet_card_le_of_differential_equation`. The characteristic-zero declarations are covered by existing general theorems: `separant_ne_zero` with `JetDegreeCastsNeZero`, `card_le_of_regular_solutions_agreement`, `boundedSolution_card_le_sq_totalJetDegree`, and `finite_solutions_card_le_sq_totalJetDegree_of_agreement` with the Reed–Solomon close-polynomial specialization.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`automaticFirstOrder_closePolynomialSet_finite_and_card_le`, `automatic_first_order_list_bound`, `automatic_first_order_list_bound_of_slack`, `automaticFirstOrder_closePolynomialSet_at_ceil_finite_and_card_le`, and `automatic_first_order_squarefree_list_bound_of_slack` keep their names. The private close-set membership equivalence is restated using the destination agreement-set API. No advertised declaration from the unit was omitted.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one` and `closePolynomialSet_finite_and_card_le_inv_eta_of_dimension_le_one` retain their names. `closePolynomialSet_finite_and_card_le_finiteLength_of_certificate` retains its name and conclusion, and derives `2 ≤ n` and `k ≤ n` from the certificate hypotheses. `closePolynomialSet_finite_and_card_le_inv_eta_of_certificate` retains its name and uses the finite-length certificate bound with the same derived inequalities. The inverse-eta results are retained as weaker-denominator bounds. The module reuses the existing agreement-membership equivalence.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`closePolynomialSet_finite_and_card_le_finiteLength_of_bounded_certificate` keeps its name and finite-length conclusion. The list-bounds owner now derives `k ≤ n` from `k ≤ A ≤ n`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthParameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finiteLengthSlack`, `finiteLengthSlack_pos`, `eta_le_finiteLengthSlack`, `finiteLengthSlack_inv_le_length`, `div_finiteLengthSlack_sq_le_div_eta_sq`, `div_finiteLengthSlack_four_le_div_eta_four`, and `squarefreeListExpression_le_finiteLength` retain their names. The positivity, slack comparison, and inverse-power comparison declarations were generalized by dropping `0 < n`; the inverse-length bound retains that premise. The squarefree theorem uses `regularTaylorExponent` in place of the source parameter `hybridTau`.
+
+`finiteLengthMCAEnvelope`, `finiteLengthMCAEnvelope_le_rateEnvelope`, `finiteLengthMCAEnvelope_le`, and `finiteLengthMCAEnvelope_le_inv_eta` were renamed to `finiteLengthMcaEnvelope`, `finiteLengthMcaEnvelope_le_rateEnvelope`, `finiteLengthMcaEnvelope_le`, and `finiteLengthMcaEnvelope_le_inv_eta` to match ArkLib's `Mca` casing. The public rate-envelope theorem was included although it was omitted from the source declaration inventory. All 11 public source declarations are represented; none were left unported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/FiniteLengthSelectors.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The declarations `automaticSurplusSlope_mul_finiteLengthSlack_le_margin`, `finiteLengthCertifiedAgreement`, `finiteLengthChallengeHeight`, `finiteLengthChallengeHeight_le_common_inv_slack_sq`, `finiteLengthChallengeHeight_le_inv_slack_sq`, `finiteLengthChallengeHeight_le_inv_slack_sq_of_count_gap`, `finiteLengthDensityMargin`, `finiteLengthDensityMargin_pos`, `finiteLengthDerivativeCap`, `finiteLengthDerivativeCap_le_inv_slack`, `finiteLengthDerivativeCap_le_jetDegree`, `finiteLengthDerivativeRatio`, `finiteLengthHeightBoundConstant`, `finiteLengthJetBoundConstant`, `finiteLengthJetDegree`, `finiteLengthJetDegree_le_inv_slack`, `finiteLengthMultiplicity`, `finiteLengthMultiplicityBoundConstant`, `finiteLengthMultiplicity_le_inv_slack`, `finiteLengthMultiplicity_pos`, `finiteLengthParameterBoundConstant`, `finiteLengthRankCount`, `finiteLengthRankRoundingConstant`, `finiteLengthRate`, `finiteLengthRate_eq`, `finiteLengthRate_lt_rate`, `finiteLengthRate_pos`, `finiteLengthSlack_lt_one_of_rate`, `finiteLengthSourceCount`, `finiteLength_count_gap`, `finiteLength_fixedRateMargin_eq_surplus`, `finiteLength_multiplicity_derivativeCap_jetDegree_bounds`, `length_pos_of_two_le_rate_mul_length`, and `sourceDensity_gain_at_finiteLengthRate` retain their names. `finiteLengthDerivativeCap_le_multiplicity`, `finiteLengthRankCount_le_density_add_three_mul_sq`, and `half_rate_le_finiteLengthRate` were generalized by dropping `0 < rho`, `0 < eta`, and `2 ≤ rho * n`; `finiteLengthSourceDensity_mul_cube_le_sourceCount` drops the derivative-ratio bound `≤ 1 / 2`.
+
+`finiteLengthRankCount_le_two_mul_cube` is covered by `firstOrderRankCount_le_two_mul_cube` in `RoundedCounts`. The weakening `finiteLengthChallengeHeight_le_common_inv_slack_sq_of_count_gap` was not ported because its common-constant comparison is inlined in the final common-height theorem. `one_le_finiteLengthParameterBoundConstant` follows from the outer `max 1`, so it was not added. The private rounded-count proof block was unnecessary after using the existing generic rounded-count estimates.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLength.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLength.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`lowRateEtaSlope` → `lowRateAgreementSlackSlope` and `lowRateEtaSlope_mul_eta_le_fixed_margin` → `lowRateAgreementSlackSlope_mul_slack_le_fixed_margin` use agreement-slack naming. `lowRateFiniteLengthCertifiedAgreement`, `lowRateFiniteLengthCertifiedAgreement_ge_half_slack`, `lowRateFiniteLengthCertifiedAgreement_lt_one`, `lowRateFiniteLengthCertifiedAgreement_pos`, `lowRateFiniteLengthDensityMargin`, `lowRateFiniteLengthDerivativeCap`, `lowRateFiniteLengthJetDegree`, `lowRateFiniteLengthMultiplicity`, `lowRateFiniteLengthRankCount`, `lowRateFiniteLengthRankRoundingConstant`, `lowRateFiniteLengthSlope`, `lowRateFiniteLengthSourceCount`, and `lowRateInverseLengthSlope` retain their names and statements. `lowRateFiniteLengthDensityMargin_pos`, `lowRateFiniteLengthMultiplicity_pos`, `lowRateFiniteLengthSlope_mul_slack_le_margin`, `lowRateFiniteLengthSlope_pos`, `lowRateFiniteLengthSourceDensity_mul_cube_le_sourceCount`, and `lowRateFiniteLength_count_gap` drop the `rho < 1` premise. `lowRateInverseLengthSlope_div_length_le_gain` drops `rho < 1` and the low-rate branch premise. The first-order acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder.lean` check slope positivity and the margin, source-count, generic rank-rounding, and count-gap bounds at `rho = 1/16`, `eta = 1/8`, and `n = 64`.
+
+The source declaration `lowRateFiniteLengthRankCount_le_density_add_rounding` is covered by `firstOrderRankCount_floor_le_density_add_rounding`, which is applied directly in `lowRateFiniteLength_count_gap`. The source-count rounding application uses the generic `cube_mul_sourceDensity_le_firstOrderSourceCount` result.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLengthBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/LowRateFiniteLengthBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The declarations `lowRateFiniteLengthChallengeHeight`, `lowRateMultiplicityBoundConstant`, `lowRateDerivativeCapBoundConstant`, `lowRateJetBoundConstant`, `lowRateRankBoundConstant`, `lowRateHeightBoundConstant`, `lowRateParameterBoundConstant`, `lowRateFiniteLengthSlack_lt_one`, `lowRateFiniteLengthMultiplicity_le_inv_slack`, `lowRateFiniteLengthDerivativeCap_le_inv_slack`, `lowRateFiniteLengthDerivativeCap_le_jetDegree`, `lowRateFiniteLengthJetDegree_le_inv_slack`, `lowRateFiniteLengthChallengeHeight_le_inv_slack_sq`, and `lowRateFiniteLength_parameter_bounds` keep their names. The low-rate slack and inverse-slack bounds no longer assume `rho < 1`. The derivative-cap/jet-degree theorem also drops unused `rho < 1` and low-rate branch assumptions. The shared threshold slack comparison in `FiniteLengthSelectors.lean` derives rate positivity from the length guard. The generic selector derivative-cap/jet-degree theorem drops its unused threshold-plus-slack upper bound.
+
+The generic floor-to-ceiling comparison is shared in `RoundedCounts.lean`. In `Ratio.lean`, `natCeil_mul_div_le_inv_slack` is generalized from `ℝ` to ordered fields with a floor structure and renamed `Nat.cast_ceil_mul_div_le_inv_slack`; `maxOneFloor_mul_div_le_inv_slack_sq` receives the same generalization and is renamed `Nat.cast_max_one_floor_mul_div_le_inv_slack_sq`. The low-rate challenge-height proof reuses the shared rank-count rounding estimate instead of adding a low-rate wrapper.
+
+`one_le_lowRateParameterBoundConstant` is not ported because the outer `max 1` gives the inequality directly and no main statement uses it. An acceptance case in the matching `ArkLibTest` file checks the slack bound, derivative-cap/jet-degree comparison, all four individual parameter bounds, and the shared parameter bound at `rho = 1/16`, `eta = 1/8`, and `n = 64`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length` keeps its name and moves to the low-rate finite-length bounds owner. Its unused `rho < 1` premise was dropped.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`tightListEnvelope`, `squarefreeListEnvelope`, `finiteListBound_of_profile`, and `finiteSquarefreeListBound_of_profile` keep their names. The finite-list theorems drop the redundant `p.k ≤ p.n` assumption. Their agreement condition uses the equivalent set-cardinality formulation. The squarefree theorem also drops `0 < p.firstDerivativeCap` and retains `p.firstDerivativeCap ≤ p.totalJetCap`; its envelope uses the destination regular Taylor exponent API.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Uniform.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Uniform.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_uniformFirstOrder_list` keeps its name and statement. The internals use main's names: `regularTaylorExponent` for `hybridTau` and `MvPolynomial.cappedDegreeMixedVolume` for `AffineHilbert.fixedFiberDerivativeImageDegree`. They also use main's argument order for `firstOrder_finite_agreement_solutions_card_le_squarefree`, main's `closePolynomialSet_finite_and_ncard_le_pairwiseJohnson` (`Code.pairwiseJohnsonListBound`), and `exists_closePolynomial_finset_one_card_le_div` for `k = 1`. The private helpers are ported as private declarations, except that `uniformFirstOrder_ordinaryEnvelope_eq` is inlined.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivativeBound.lean`
 
@@ -1754,6 +1979,81 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/HiddenDerivat
 In `ArkLib/Data/CodingTheory/HiddenDerivative/Interpolation/SolutionEmbedding.lean`, the general form `agreeingPolynomialsToBoundedSolution` → `solutionEmbeddingOf` accepts any root proof on list members; `agreeingPolynomialToBoundedSolution_polynomial` → `solutionEmbeddingOf_polynomial` gives its polynomial-preservation law. The new subtype projection theorem `agreeingPolynomial_boundedSolution_polynomial` supports this direct construction.
 
 No source public declarations were omitted. The generic `boundedSolutionOfPolynomial` constructor and its preservation theorem were removed; callers construct the bounded-solution subtype directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Only the sharp interface is ported, and it drops the `sharp` prefix. The parameter definitions are named `capacityLine*` and `capacityPower*` because a bare `capacityDerivativeOrder` would clash with `HiddenDerivative.capacityDerivativeOrder`.
+
+- `sharpCapacityDerivativeOrder` → `capacityLineDerivativeOrder`, unchanged.
+- `sharpCapacityLengthThreshold` → `capacityLineLength`. The branch for `δ ≥ 6/25` is `4` instead of `max 4 23`, because the first-order theorem needs only `2 ≤ n`.
+- `sharpCapacityLineConstant` → `capacityLineConstant`, unchanged. Small gaps use `mathematicalUniformLineAgreementConstant`, formerly `uniformCapacityLineConstant300`.
+- `sharpCapacityLengthThreshold_ge_four` → `four_le_capacityLineLength`; `one_le_sharpCapacityLineConstant` → `one_le_capacityLineConstant`, with `δ` explicit.
+- `HasSharpCapacityLineAgreement` → `HasCapacityLineAgreement`. The hypothesis `k ≤ n` is dropped because no proof uses it. The conclusion is `LineExactAgreementBound domain k A (E n)`, equivalent to the source's per-`(f, g)` `HasExactCorrelatedPair` form. The guard becomes `ringChar F = 0 ∨ k - 1 < ringChar F`, equivalent to the source's because `ringChar F ≠ 1`.
+- `sharpCapacity_lineAgreement` → `capacity_lineAgreement`, with `δ` implicit. The adapter `lineExactAgreementBound_sharpCapacity` is absorbed.
+- `exists_sharpCapacity_lineAgreement` → `exists_capacity_lineAgreement`; it also covers the old `exists_capacity_lineAgreement`.
+- `HasSharpCapacityAffineAgreement` → `HasCapacityAffineAgreement`. The hypothesis `1 ≤ s` is dropped, the guard is simplified as for lines, and the threshold is written `k + δ n ≤ card`.
+- `sharpCapacity_affineAgreement` and the witness part of `sharpCapacity_affineAgreement_and_mcaError` → `HasCapacityLineAgreement.affineAgreement`, proved for any line predicate at any gap `0 ≤ δ`.
+- `sharpCapacity_mcaError` and the error part of `sharpCapacity_affineAgreement_and_mcaError` → `HasCapacityLineAgreement.mcaError_le`, for any line predicate with no sign condition on `δ`. The radius is `capacityRadius δ n k`. The affine-space bound holds for every `s`. It adds `[SampleableType F]`, which `mcaError` requires.
+- `exists_sharpCapacity_affineAgreement` → `exists_capacity_affineAgreement`; `exists_sharpCapacity_mcaError` → `exists_capacity_mcaError`, which also adds `[SampleableType F]`, drops `1 ≤ s` and uses `capacityRadius δ n k`.
+- `sharpCapacityPowerGap`, `sharpCapacityPowerDerivativeOrder`, `sharpCapacityPowerJetBound`, `sharpCapacityPowerLengthThreshold` → `capacityPowerGap`, `capacityPowerDerivativeOrder`, `capacityPowerJetBound`, `capacityPowerLength`, unchanged.
+- `sharpCapacityPowerConstant` → `capacityPowerConstant`, defined as `max C 1` instead of `C + 1`, which is no larger.
+- `sharpCapacityPowerLengthThreshold_ge_four` → `four_le_capacityPowerLength`; `one_le_sharpCapacityPowerConstant` → `one_le_capacityPowerConstant`, which no longer needs `0 < δ`.
+- `HasSharpCapacityPowerBatchingAgreement` → `HasCapacityPowerBatchingAgreement`. The characteristic bound `ν` is a parameter `(δ N ν E)` instead of being fixed to `sharpCapacityPowerJetBound δ`, and `k ≤ n` is dropped.
+- `sharpCapacity_powerBatchingAgreement` → `capacity_powerBatchingAgreement`, with `ν := capacityPowerJetBound δ`.
+- `exists_sharpCapacity_powerBatchingAgreement` → `exists_capacity_powerBatchingAgreement`, with `ν` also existential: `∃ N d ν C, 4 ≤ N ∧ ν < N ∧ 0 < C ∧ …`. The conjunct `ν < N` lets a caller who knows only `n ≤ char F` discharge the characteristic guard.
+
+Not ported:
+- The old 1000-based `HasCapacityLineAgreement`, `exists_capacity_lineAgreement`, `HasCapacityAffineAgreement`, `exists_capacity_affineAgreement`, `exists_capacity_affineAgreement_and_mcaError`, `exists_capacity_mcaError`, `HasCapacityPowerBatchingAgreement` and `exists_capacity_powerBatchingAgreement`, with guard `ringChar F = 0 ∨ n ≤ ringChar F`. The sharp versions subsume them, since `n ≤ char F` implies `k - 1 < char F` and the new power theorem records `ν < N ≤ n`.
+- `uniformFirstOrder_capacity_lineAgreement`, covered by `capacity_lineAgreement` at `δ ≥ 6/25` and by `exists_uniformFirstOrder_lineMca`.
+- `HasHalfGapLineAgreement`, `halfGap_lineAgreement`, `halfGap_capacity_lineAgreement`, covered by the more general `exists_exceptionalSet_exactAgreement_of_messageDim_add_half_blockLength_le`, which works over any `Fintype ι` and needs neither `0 < k`, `k ≤ n` nor `A ≤ n`.
+- `sharpCapacityJetBound`, because no statement uses it; `sharpCapacityDerivativeOrder_pos`, because the `k = 1` branch is handled inside the line sub-theorems.
+- `sharpCapacityLineConstant_pos`, `sharpCapacityPowerConstant_pos`, one step from the `one_le_*` lemmas.
+- `lineExactAgreementBound_sharpCapacity`, because the line predicate now concludes `LineExactAgreementBound` directly.
+- `sharpCapacity_affineAgreement_and_mcaError`, `sharpCapacity_affineAgreement`, `sharpCapacity_mcaError`, which are `(capacity_lineAgreement hδ).affineAgreement hδ.le` and `(capacity_lineAgreement hδ).mcaError_le …`; a named wrapper would only fix arguments.
+- The private `constantCurveExceptionalBound_le_power`, inlined, since the constant-code bound `ℓ * (n.choose 2) / max (A - 1) 1` needs no case split.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/CertificateBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_curveMCA_of_certificate` to `exists_exceptional_exactPowerAgreement_of_certificate` and `exists_curveMCA_of_certificate_of_jetCharacteristic` to `exists_exceptional_exactPowerAgreement_of_certificate_of_jetCharacteristic`. Both declarations remove `[DecidableEq E]`; the block-length endpoint also removes the redundant `0 < n` premise, derives the jet-characteristic guard, and applies the jet-characteristic endpoint. Both public declarations are ported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/FixedRateExplicitGate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/FixedRateExplicitGate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `fixedRatePartitionOrder_lineMCA` to `fixedRatePartitionOrder_line_exactCorrelatedPair`. The mathematical guarantee is unchanged; the theorem specializes the existing general rate-partition line theorem using the current fixed-rate parameter selector and order bound. It uses the destination parameters `RatePartition.rateBlockThreshold`, `rateJetCap`, `marginHeight`, and `partitionFiniteRatio`, together with `polynomialCurveProductAgreementConstant`. Nothing was deferred or not ported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/MathematicalUniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/MathematicalUniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+- `exists_mathematicalUniformRatePartition_curveMCA` → `ReedSolomon.exists_mathematicalUniformRatePartition_curve_exactPowerAgreement`. It drops the unused `[DecidableEq E]`. It uses main's names `polynomialCurveProductAgreementConstant`, `uniformMathematical*` and `uniformDerivativeOrder`, and states the mapped domain as `domain.trans ⟨iota, _⟩`, as in `UniformRate`.
+- `exists_mathematicalUniformRatePartition_baseCurveMCA` → `ReedSolomon.exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement`, unchanged. Descent goes through main's `uniformExactPowerAgreement_of_extension`.
+- `uniformCapacityLineConstant300` → `ReedSolomon.mathematicalUniformLineAgreementConstant`, unchanged.
+- `exists_mathematicalUniformRatePartition_lineMCA` → `ReedSolomon.exists_mathematicalUniformRatePartition_line_exactCorrelatedPair`, unchanged. The constant-message branch uses main's `uniformExactPowerAgreement_constantCode`, whose bound `choose 2 / max (A-1) 1` replaces the source's `if A = 1`, so the source's positivity side condition on `A` is gone. The two power-to-line conversions share one private helper, `exists_line_exactCorrelatedPair_of_powerAgreement`. When the curve characteristic guard fails, the line theorem uses the Johnson gap bound, so it needs only `char F = 0 ∨ k - 1 < char F`.
+
+The curve theorems keep the source's sharp guard `max (k - 1) ν < char F` and do not use main's `UniformRate` form `n ≤ char F`. The private `exists_uniformCapacity_lineMCA_johnson` moved to the Johnson owner as `exists_johnson_line_exactCorrelatedPair_of_gap`. No source declaration was left out.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/Parameters.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_prescribed_correlated_parameters` keeps its name and is generalized by dropping the source hypothesis `0 < k`. It uses the current `SymbolicReceivedCurve.Certificate` and `receivedLine` APIs. The theorem gives a symbolic received-line certificate, size and agreement bounds, and all binomial pivots below the block length from the characteristic bound. A concrete rational acceptance case checks that the certificate conclusion is inhabited. The `prescribed_correlated_extension_pivots` wrapper was not ported: its base-field pivot statement is the final conjunct of the parameter theorem, and extension-field nonvanishing follows by injectivity of the field homomorphism at existing use sites, so no generic wrapper was added.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedCurve.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_prescribedCurveMCA_exact` to `exists_exceptional_exactPowerAgreement_with_prescribed_stageBounds` and `exists_prescribedCurveMCA` to `exists_exceptional_exactPowerAgreement_of_prescribedCurve`. The stage-bounds declaration removes `[DecidableEq F]` and `[DecidableEq E]`; the prescribed-curve declaration removes `[DecidableEq E]`. Both public declarations are ported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedLine.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/PrescribedLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_prescribedLineMCA` to `exists_prescribedLine_exactCorrelatedPair`. The theorem drops the decidable-equality assumptions and uses the prescribed-curve and power-to-line APIs. Its acceptance case checks a zero line and zero candidate.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductBounds.lean`
 
@@ -1780,11 +2080,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Basi
 
 `polynomialListBound`, `CapacityGapCertificate`, `CapacityGapCertificate.ofDecoderCertificate`,
 `PointwiseListBound`, `CapacityGapCertificate.pointwiseListBound`,
-`UniformPrimeFieldCapacityListBound`, `UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound`,
-`QuarterGapListBound`, and `WeightedSupportListBound` keep their names. The certificate and
+`UniformPrimeFieldCapacityListBound`, `QuarterGapListBound`, and
+`WeightedSupportListBound` keep their names. The source
+`UniformPrimeFieldCapacityListBound.exists_uniform_pointwise_bound` is omitted: apply
+`CapacityGapCertificate.pointwiseListBound` to the certificate supplied by
+`UniformPrimeFieldCapacityListBound`. The certificate and
 pointwise-list APIs generalize from `Fin n` over `ZMod q` to arbitrary finite coordinate types and
 semiring alphabets where applicable. The all-rate prime-field specifications remain over `Fin n`.
-`WeightedSupportListBound` uses the destination weighted-support parameter names.
+`WeightedSupportListBound` uses the destination weighted-support parameter names. The
+`CapacityGapCertificate.empty_of_threshold_exceeds` field is omitted because
+`DecoderCertificate.decoder_eq_empty_of_card_lt` supplies the same conclusion.
 
 Also ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/Radius.lean` at
 the same ArkLib revision, `closeCodewordsRel_eq_eval_image_agreeingPolynomials`,
@@ -1812,6 +2117,34 @@ No public declaration from this source module was omitted. The separate
 `agreeingPolynomials_eq_empty_of_card_lt` API is not duplicated; pointwise emptiness follows from
 `DecoderCertificate.decoder_eq_empty_of_card_lt`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/ProductCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `polynomialCurveProductMCAConstant` to `polynomialCurveProductAgreementConstant`, `prescribedMCAConstant` to `prescribedProductAgreementConstant`, `prescribedMCAConstant_pos` to `prescribedProductAgreementConstant_pos`, `regularSymbolicCurveMCASharpBound_product_le_stage` to `regularPowerBatchedAgreementSharpBound_product_le_stage`, and `regularSymbolicCurveMCASharp_product_finiteStage_le` to `regularPowerBatchedAgreementSharp_product_finiteStage_le`. The product scalar formula and prescribed coefficient are unchanged. The prescribed coefficient uses the current equivalent `xi` and `harmonic` definitions. The regular-stage statements use the current power-batched API and existing generalized degree-cap bounds to supply exponent bounds. `polynomialCurveProductStageBound`, `product_stage_bound`, `polynomialCurveProductStageBound_le_uniform`, and `product_stages_aggregate` keep their names; the product cutoff estimate bounds each regular stage, uniformizes its order, and aggregates a finite family under one height cap.
+
+Did not port `sourceCurveCutJetDegree_le_uniformCaps_of_exponent`, which is covered by `regularPowerBatchedCutJetDegree_le_two_mul` after deriving `τ ≤ 2*n` from `τ ≤ 2*K` and `K ≤ n`. Did not port `sourceCurveInitialMixedDegree_le_uniformCaps_of_exponent`, which is covered by `regularPowerBatchedInitialMixedDegree_le_uniformCaps` with the same derived exponent bound.
+
+Acceptance cases for `product_stage_bound`, stage uniformization, scalar aggregation, the regular-stage bound, the finite-stage bound, and prescribed-coefficient positivity were appended to `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/RatePartition.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/RatePartition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_ratePartition_curveMCA` to `exists_ratePartition_curve_exactPowerAgreement`; it uses the current finite-parameter, block-length, and certificate APIs. Renamed `exists_ratePartition_baseCurveMCA` to `exists_ratePartition_baseCurve_exactPowerAgreement`; its mathematical statement is unchanged and uses the current extension-descent API. Renamed `exists_ratePartition_lineMCA` to `exists_ratePartition_line_exactCorrelatedPair` and `exists_ratePartition_lineMCA_parameters` to `exists_ratePartition_line_exactCorrelatedPair_parameters`; their mathematical statements are unchanged and specialize the base-field curve guarantee through power-to-line, with the parameter theorem selecting finite parameters from the strict rate gate. The acceptance cases retain each exceptional-set bound and apply its guarantee to a zero candidate and zero received word at a challenge outside the exceptional set.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/SharpCountingBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Kept `correlatedMidpoint_ratios_le_two_div`, `polynomialCurveSharpStageBound`, and `polynomialCurveSharpStageBound_le_uniform`. Renamed `polynomialCurveSharpMCAConstant` to `polynomialCurveSharpAgreementConstant`, `regularSymbolicCurveMCASharpBound_midpoint_le_stageBound` to `regularPowerBatchedAgreementSharpBound_midpoint_le_stageBound`, and `regularSymbolicCurveMCASharp_finiteStage_uniform_le` to `regularPowerBatchedAgreementSharp_finiteStage_uniform_le`; the agreement theorems use the current power-batched API. `polynomialCurveSharpUniformStageBound` is not ported as a separate definition because `polynomialCurveSharpStageBound δ n ℓ v h d` supplies that bound at cap `d`. The capacity acceptance cases check midpoint ratios, the midpoint stage bound, uniformization from order `1` to cap `2`, and the finite-family bound.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/UniformRate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity/UniformRate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_uniformRatePartition_curveMCA` to `exists_uniformRatePartition_curve_exactPowerAgreement`. It drops the extension decidable-equality assumption and uses the current uniform envelope and certificate APIs. Renamed `exists_uniformRatePartition_baseCurveMCA` to `exists_uniformRatePartition_baseCurve_exactPowerAgreement`; its mathematical statement is unchanged and descends the extension-field guarantee. Renamed `exists_uniformRatePartition_lineMCA` to `exists_uniformRatePartition_line_exactCorrelatedPair`; its mathematical statement is unchanged and specializes the base-field curve guarantee through power-to-line. The acceptance cases retain each exceptional-set bound and apply its guarantee to a zero candidate and zero received word at a challenge outside the exceptional set.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ComponentDimension.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentDimension.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1828,6 +2161,10 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/EquationDesc
 
 Not ported: `ChallengeHeightLE` as a separate predicate, because main already provides `MvPolynomial.CoeffNatDegreeLE`. The standalone exceptional correlated-agreement wrapper is also omitted because this theorem performs that exceptional-set pullback directly.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_equation_powerAgreement_descend` is new. It is the power-batched analogue of `exists_exceptional_equation_correlatedAgreement_descend`, over any finite index type, and replaces the inline pullback that the two source base-field theorems repeated.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/ExtensionDescent.lean`
 
 Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDescent.lean` at ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d:
@@ -1835,6 +2172,211 @@ Ported from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/ExtensionDes
 `HasExactCorrelatedPair.descend` keeps its name and statement. `HasExactCorrelatedPair` keeps its name and mathematical meaning; its mapped evaluation domain is expressed as an embedding composition. The definition was moved from `HiddenDerivative/RootFinding/MutualCorrelatedAgreement/Symbolic/RegularEquation.lean`.
 
 Not ported: the standalone exceptional correlated-agreement wrapper from this dependency; the equation-descent theorem performs the exceptional-set pullback directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticHybrid.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticHybrid.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Bounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_firstOrder_hybrid`, `exists_automaticFirstOrder_hybridEquation`, `exists_automaticFirstOrder_hybridEquation_base` and `automatic_first_order_line_agreement` keep their names. The height premise `ChallengeHeightLE Q h` became `CoeffNatDegreeLE Q h`, `jetWeight` became `jetTotalDegree`, and `mappedDomain domain iota` became `domain.trans ⟨iota, _⟩`. The bounds were renamed: `hybridEOptimizedRaw` → `maxMinFirstOrderExceptionCharge`, `hybridEOptimizedCeil` → `firstOrderExceptionBound`, `hybridEClosed` → `firstOrderExceptionConstant`, `hybridTheta` → `agreementIncidenceRatio`, `hybridOrdinaryRaw` → `ordinaryTailCharge`, `hybridT` → `stageStaircase`, and `automaticFirstOrderThreshold` → `firstOrderRateThreshold`. The unused hypothesis `1 ≤ mu` was dropped. The theorems take `[DecidableEq F]` and `[DecidableEq E]` instead of `open Classical in`. Degree premises and conclusions are stated with `P.degree < k` and `HasExactPowerAgreement … k`, where the source used `D + 1` with `D = k - 1`. `exists_automaticFirstOrder_hybridEquation_base` states its conclusions along the line `fun i ↦ f i + z * g i` with `HasExactCorrelatedPair`, instead of `powerBatchedWord ![f, g] z` with `HasExactPowerAgreement`. `automatic_first_order_line_agreement` was moved here from `Bounds.lean`.
+
+New declarations: `exists_exceptional_firstOrder_hybrid_base`, the base-field version through an algebraic-closure mapping and `exists_exceptional_equation_correlatedAgreement_descend`, which replaces the argument the source repeated in `exists_automaticFirstOrder_hybridEquation_base` and `exists_uniformFirstOrder_squarefree_lineMCA_of_two_le`; and `FirstOrderSymbolicCertificate.exists_exceptional_hybrid`, the base-field bound for the equation of any symbolic line certificate (`k = D + 1`). Private helpers `certificate_equation_facts`, `exists_automaticFirstOrder_equation` and `automaticFirstOrder_degree_bounds` are shared by both automatic theorems, which duplicated them inline in the source. The source's private `jetWeight_map_eq` is not ported because main has `jetTotalDegree_map_eq`.
+
+Not ported: `automaticFirstOrder_list_and_lineMCA`, which is a conjunction of main's `automaticFirstOrder_closePolynomialSet_finite_and_card_le` and the line part of `exists_automaticFirstOrder_hybridEquation_base`, and `automatic_first_order_line_agreement_of_slack`, which is `automatic_first_order_line_agreement` at `a = firstOrderRateThreshold ρ + η₁` with `lt_add_of_pos_right _ hη₁`. The slack form with the rate envelope is `automaticFirstOrder_rate_bounds`. `Bounds.lean` therefore has no destination file.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticMcaError.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/AutomaticHybridProbability.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`automaticFirstOrder_hybrid_mcaError_le` keeps its name and adds `[SampleableType F]`, which main's `mcaError` requires. The three line bounds go through the new `lineExactAgreementBound_of_exactCorrelatedPair` (in `PowerToLine.lean`) instead of three copies of the conversion. The module was renamed from `AutomaticHybridProbability` because the source module name is 101 characters and cannot be imported within the 100-character limit.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finiteLengthDerivativeRatio_le_half_of_rateSwitch_le` and `firstOrderBranchFiniteLengthDerivativeCap` keep their names. `firstOrderBranchFiniteLengthMCAConstant` → `firstOrderBranchFiniteLengthMcaConstant` and `one_le_firstOrderBranchFiniteLengthMCAConstant` → `one_le_firstOrderBranchFiniteLengthMcaConstant` use ArkLib capitalization.
+
+`firstOrderBranch_finiteLength_finiteSlack_bounds` and `firstOrderBranch_finiteLength_rate_bounds` keep their names and conclusions. `firstOrderBranch_finiteLength_mcaError_le` keeps its name and adds `[SampleableType F]` for the current MCA probability API. The facade selects low-rate or automatic bounds at the rate switch and cites [DKT26].
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/CurveAgreement.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrderCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported `exists_extensionExceptional_firstOrderCurve_of_certificate_of_exponent`, `exists_extensionExceptional_firstOrderCurve_of_heightSlotCount_of_exponent`, `exists_baseExceptional_firstOrderCurve_of_certificate_of_exponent`, and `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_of_exponent` under the same names. Generalized each theorem by removing the `0 < k` assumption. The extension-field bounds come from a finite curve certificate or a strict shifted-height surplus, and the base-field bounds follow by uniform exact-agreement descent. The two height-slot tight wrappers were not ported because each only specializes its exponent theorem to `2K - 3`; the acceptance case uses the exponent theorem directly.
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMca.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthMCA.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finiteLengthMCAParameterConstant` → `finiteLengthMcaParameterConstant` and `one_le_finiteLengthMCAParameterConstant` → `one_le_finiteLengthMcaParameterConstant` keep their bounds with the destination `Mca` casing. The new `square_le_finiteLengthMcaExceptionBudget` gives the shared constant-code endpoint bound for any envelope constant at least one and finite-length slack at most one. `Squarefree.retainedSquarefreeLineMCAEnvelope_eq_finiteLengthMCAEnvelope` → `Squarefree.retainedSquarefreeLineAgreementEnvelope_eq_finiteLengthMcaEnvelope` uses the existing squarefree envelope, and `hybridEClosed_zero_eq_finiteLengthMCAEnvelope` → `firstOrderExceptionConstant_zero_eq_finiteLengthMcaEnvelope` uses the current hybrid constant.
+
+`exists_finiteLengthFirstOrder_symbolicCertificate` keeps its name and mathematical certificate, using current rank and first-order interpolation APIs. `exists_exceptional_exactLineMCA_one` → `exists_exceptional_exactLineMca_one` keeps the constant-code result. `finiteLengthSelectorMCAEnvelope_le` → `finiteLengthSelectorMcaEnvelope_le` and `finiteLengthSelectorMCAEnvelope_le_inv_eta` → `finiteLengthSelectorMcaEnvelope_le_inv_eta` drop the unused `2 ≤ k` premise. `finiteLengthSelectorJetDegree_le_listEnvelope` keeps its name and bound.
+
+`closePolynomialSet_finite_and_card_le_finiteLength_of_selector_certificate` keeps its name and bound, using the existing generic positive-cap certificate theorem. `exists_exceptional_finiteLengthMCA_of_selector_certificate` → `exists_exceptional_finiteLengthMca_of_selector_certificate` and `exists_exceptional_finiteLengthMCA_of_selector_certificate_inv_eta` → `exists_exceptional_finiteLengthMca_of_selector_certificate_inv_eta` retain exact agreement and the inverse-fourth and eta-only bounds. `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates` and `finiteLength_completeList_and_exceptionalMCA_of_selector_certificates_inv_eta` → `finiteLength_completeList_and_exceptionalMca_of_selector_certificates_inv_eta` retain the joint list and exception results.
+
+The zero derivative-cap proof uses the current symbolic-certificate hybrid theorem. Source names for `hybridTheta`, `hybridEClosed`, the threshold, and retained lines are expressed through the current `agreementIncidenceRatio`, `firstOrderExceptionConstant`, `firstOrderRateThreshold`, and retained squarefree line APIs. The private close-set membership helper was not ported because unfolding `closePolynomialSet` and `polynomialAgreementSet` suffices. The two private mapped-degree helpers and line coefficient-degree helper were not ported because `jetTotalDegree_map_le` and `jetDegree_map_le` in `PolynomialDifferential` cover them.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_firstOrderMCA_zero_derivative_of_certificate` → `exists_exceptional_firstOrderMca_zero_derivative_of_certificate` drops the unused algebraic-closure field, embedding, and positive jet-degree premise. `exists_exceptional_firstOrderMCA_of_bounded_certificate` → `exists_exceptional_firstOrderMca_of_bounded_certificate` keeps its mathematical conclusion. Both are generic certificate bridges in the finite-length MCA owner, and the automatic selector proofs reuse them. The original zero-derivative descent proof is covered by `FirstOrderSymbolicCertificate.exists_exceptional_hybrid`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/FiniteLengthRateBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`automaticFirstOrder_finiteLength_finiteSlack_bounds` and `automaticFirstOrder_finiteLength_rate_bounds` keep their names and respective finite-slack and eta-only list and line bounds. `automaticFirstOrder_finiteLength_mcaError_le` keeps its name and error bound, with the current affine-line API's `[SampleableType F]` instance. The automatic-rate results construct the symbolic certificates internally.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveProfile.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`CurveCertificate.hybridOptimizedCurveEnvelope` → `ReedSolomon.hybridOptimizedCurveEnvelope`, `CurveCertificate.bestCurveEnvelope` → `ReedSolomon.bestCurveEnvelope`, and `CurveCertificate.bestOptimizedCurveEnvelope` → `ReedSolomon.bestOptimizedCurveEnvelope` keep the profile quantities using current profile fields, including `candidateDegree`. `CurveCertificate.bestOptimizedCurveEnvelope_le_best` → `ReedSolomon.bestOptimizedCurveEnvelope_le_best` keeps its comparison.
+
+`exists_exceptional_exact_powerAgreement_hybrid_optimized` → `exists_exceptional_exactPowerAgreement_hybridOptimized` drops `2 ≤ k`, which profile verification implies. `exists_exceptional_exact_powerAgreement_best_optimized` → `exists_exceptional_exactPowerAgreement_bestOptimized` drops that premise and the unnecessary `k < n` hypothesis. `exists_exceptional_exact_powerAgreement_best` → `exists_exceptional_exactPowerAgreement_best` drops the implied `2 ≤ k` premise. The recovery statements use profile verification to establish the message-dimension lower bound.
+
+`CurveCertificate.bestCurveEnvelope_le_hybrid` and `CurveCertificate.bestCurveEnvelope_le_squarefree` were not ported because `bestCurveEnvelope` is a minimum and Mathlib's `min_le_left` and `min_le_right` give these projections directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveRecovery.lean`, `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveBase.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, merged into one module:
+
+- `exists_exceptional_firstOrder_hybridCurve_optimized` keeps its name. It drops `hDn`, renames `jetWeight` to `jetTotalDegree`, states the height premise as `CoeffNatDegreeLE Q h`, takes `DecidableEq` instances, and uses the domain `domain.trans ⟨iota, _⟩`.
+- `exists_exceptional_firstOrder_hybridCurve_base_optimized` → `exists_baseExceptional_firstOrder_hybridCurve_optimized`. Renamed to main's `exists_baseExceptional_*` convention and drops `hDn`. The proof uses main's `exists_exceptional_equation_powerAgreement_descend` instead of a hand-written preimage argument.
+- `exists_exceptional_firstOrder_hybridCurve_base_including_fullDimension` → `exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension`. Renamed the same way; the statement is otherwise unchanged apart from main's conventions.
+- `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized_fullAgreement` → `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized`. This is the agreement-set form under the shorter name, with `[DecidableEq F]` added.
+
+Not ported: the source `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized` in its "every agreeing index set" form. Any `indices` with `A ≤ indices.card` on which `P` agrees is a subset of `polynomialAgreementSet`, so the ported agreement-set form covers it; the downstream `HybridCurveEndpoints.lean` will need that subset step when ported. `therefore` in the unit's declaration list is a word from a source docstring, not a declaration.
+
+The curve tail theorem `HiddenDerivative.FirstOrderHybridDescent.hasOrdinaryCurveTailTransfer` from `HybridCurveRecovery.lean` was ported to `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean` as `ReedSolomon.HiddenDerivative.FirstOrderHybridDescent.exists_exceptional_ordinaryCurveTail`, next to the pair version. Renamed because there is no curve-transfer predicate. It drops `hDn : D + 2 ≤ n` and `hAn : A ≤ n`, takes the height as `CoeffNatDegreeLE Q h` on the starting equation, and takes `[DecidableEq F] [DecidableEq E]` instead of `open Classical`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `hybridCurveJ1` to `hybridCurveJointStageSum` and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_curve_stage` to `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage` to match the current summation and power-batched APIs. The declarations `curveRetentionMinimum`, `curveRetentionMinimum_le`, `exists_curveRetentionMinimum`, `hybridCurveTail`, `hybridCurveRegular`, `hybridCurveAtDegree`, `hybridCurveOptimized`, `hybridCurveAtDegree_le_pair`, `hybridCurveAtDegree_le_optimized`, `exists_exceptional_firstOrder_regularCurveStages`, `exists_exceptional_firstOrder_hybridCurve_of_tail`, and `exists_exceptional_firstOrder_hybridCurve_optimized_of_tail` keep their names. The exception theorems use the height-free descent API and derive the coefficient-height bound from `Q`. No public source declarations were left out. The private characteristic helper was removed because `natCast_ne_zero_of_ringChar_eq_zero_or_lt` supplies the general result.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridTransfer.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`HasOrdinaryTailTransfer` keeps its name and packages the order-zero exceptional-set guarantee using `ordinaryTailCharge` and the mapped-domain API. `exists_exceptional_firstOrder_hybrid_raw_of_tail` keeps its name and combines the ordinary tail with the regular first-order stages at a fixed split, bounding the exceptional set by `firstOrderExceptionCharge`; its coefficient degree is derived from `Q`. `exists_exceptional_firstOrder_hybrid_optimized_of_tail` keeps its name and drops `1 ≤ μ`, weakens the characteristic guard to `ringChar F = 0 ∨ D < ringChar F`, and gives the current optimized charge, ceiling, and closed-constant bounds.
+
+The source `exists_exceptional_firstOrder_regularStages` is covered by the existing more general `exists_exceptional_firstOrder_regularCurveStages`; `exists_hybridERaw_eq_hybridERawAtDegree` by `exists_curveRetentionMinimum`; `hybridERawAtDegree_le_hybridEOptimizedRaw` by `HiddenDerivative.minFirstOrderExceptionCharge_le_maxMin`; and `regularSymbolicCurveMCADerivativeBoundTwo_eq_hybrid_stage` by `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`. `ringChar_eq_of_injective_fieldHom` remains a local proof step in the existing generalized regular-stage theorem, with no consumer needing a separate public helper.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_lowRateFiniteLengthFirstOrder_symbolicCertificate`, `lowRate_closePolynomialSet_finite_and_card_le_finiteLength`, `lowRate_closePolynomialSet_finite_and_card_le_inv_eta`, `lowRateFiniteLengthJetDegree_pos`, `lowRate_finiteLength_rate_bounds`, and `lowRate_finiteLength_mcaError_le` keep their names and drop unused `rho < 1`. The list and rate conclusions and the rate theorem's quantifier order are unchanged. The finite-field MCA error theorem adds `[SampleableType F]` for the current probability API. The positive-cap theorem retains the algebraic-closure parameter used for squarefree descent.
+
+`lowRateHybridEnvelopeConstant` keeps its name. `lowRateFiniteLengthMCAParameterConstant` → `lowRateFiniteLengthMcaParameterConstant` and `one_le_lowRateFiniteLengthMCAParameterConstant` → `one_le_lowRateFiniteLengthMcaParameterConstant` use ArkLib capitalization. `lowRate_hybridTheta_le_parameterConstant` → `lowRate_agreementIncidenceRatio_le_parameterConstant` follows the current incidence-ratio API and drops unused `rho < 1`.
+
+`exists_exceptional_lowRateFiniteLengthMCA` → `exists_exceptional_lowRateFiniteLengthMca`, `exists_exceptional_lowRateFiniteLengthMCA_inv_eta` → `exists_exceptional_lowRateFiniteLengthMca_inv_eta`, `lowRate_finiteLength_completeList_and_exceptionalMCA` → `lowRate_finiteLength_completeList_and_exceptionalMca`, and `lowRate_finiteLength_completeList_and_exceptionalMCA_inv_eta` → `lowRate_finiteLength_completeList_and_exceptionalMca_inv_eta`. These keep their conclusions and drop unused `rho < 1`.
+
+The public `lowRate_closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one` and `exists_exceptional_lowRateFiniteLengthMCA_one` were not ported. Both only fixed the envelope constant for generic theorems, and their sole consumer was the low-rate facade. It instead uses `closePolynomialSet_finite_and_card_le_finiteLength_of_dimension_le_one` with `C := lowRateFiniteLengthMcaParameterConstant rho` and `one_le_lowRateFiniteLengthMcaParameterConstant rho`, or `exists_exceptional_exactLineMca_one` with `square_le_finiteLengthMcaExceptionBudget`. The private `lowRate_specialized_weightedTotalDegree_map_le`, `lowRate_specialized_degreeOf_map_le`, and `lowRate_line_degreeOf_extendSymbolicCoefficients_le` are covered by existing jet-degree map lemmas.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/OrdinaryTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FirstOrderHybridDescent.hasOrdinaryTailTransfer` keeps its name. It proves that for every first-order hybrid descent of a symbolic equation `Q`, the order-zero tail satisfies `HasOrdinaryTailTransfer`, with coefficient height `coeffNatDegree Q` and charge `ordinaryTailCharge` at the residual jet budget `μ - e`. The proof splits on the budget: a positive budget uses `exists_exceptional_ordinaryEquation`, and a zero budget uses `PolynomialDifferential.exists_exceptional_jet_independent_content`.
+
+Adapted to the height-free descent `FirstOrderHybridDescent Q μ M`. The height parameter is removed and fixed to `coeffNatDegree Q`. `Q` is implicit because the descent determines it. The theorem takes arbitrary `[DecidableEq F] [DecidableEq E]` instances instead of the source's `open Classical in` statement, and replaces them internally by the classical ones via `Subsingleton.elim`. The source's `hybridOrdinaryRaw` and `hybridTheta` become `ordinaryTailCharge` and `agreementIncidenceRatio`. The tail premise of the raw and optimized first-order hybrid transfer theorems now follows from `1 ≤ D < A ≤ n` alone.
+
+`FirstOrderHybridDescent.tail_rootDegree_le` keeps its name but is placed in `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/HybridAgreementCounting.lean`, the owner of `FirstOrderHybridDescent`, and is listed in that module's `## Main statements`. The statement uses `jetDegree … 0`, which is definitionally `degreeOf (some 0)`, and the proof uses `jetDegree_le_total`, `JetPrefixPresentation.jetTotalDegree_equation` and `stage_jetTotalDegree_le`.
+
+The source's coefficient-height induction through iterated jet derivatives is replaced by the new general lemma `MvPolynomial.CoeffNatDegreeLE.iterate_pderiv` in `ArkLib/ToMathlib/MvPolynomial/PolynomialCoefficients.lean`. It also replaces an identical inline induction in `exists_exceptional_firstOrder_regularCurveStages` in `HybridCurveTransfer.lean`.
+
+Not ported: `FirstOrderHybridDescent.tail_challengeHeight_le`, because the descent has no height field; the height bound comes from `CoeffNatDegreeLE.iterate_pderiv` and `JetPrefixPresentation.natDegree_coeff_equation_le`. `exists_exceptional_ordinaryContent` is not ported because `PolynomialDifferential.exists_exceptional_jet_independent_content` is used directly.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Profile.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, in namespace `ReedSolomon` instead of `ReedSolomon.CurveCertificate`:
+
+- `squarefreeSharpCurveEnvelope` keeps its name and is now `ℝ`-valued, defined as the sharp charge at `L₀ = D + 1`. `ordinaryUnifiedPowerFactorAt_succ_eq` shows it equals the source's `(n - D)/(A - D)` expression whenever `D + 1 ≤ A ≤ n`.
+- `squarefreeSharpOptimizedCurveEnvelope` keeps its name and is now `ℝ`-valued instead of `ℚ`.
+- `squarefreeSharpOptimizedCurveEnvelope_le_fixed` keeps its name and drops `A ≤ n`.
+- `exists_exceptional_exact_powerAgreement_squarefree_sharp_optimized` → `exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized`. Drops `k < n` and takes `[DecidableEq F]` instead of `open Classical in`.
+- Not ported: `exists_exceptional_exact_powerAgreement_squarefree_sharp` (fixed threshold) is covered by the optimized profile theorem plus `squarefreeSharpOptimizedCurveEnvelope_le_fixed`, and `exists_exceptional_exact_powerAgreement_squarefree_sharp_le` is a `hcard.trans hbound` wrapper.
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/RateBounds.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/RateBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`automaticFirstOrder_rate_bounds` and `automaticFirstOrder_rate_mcaError_le` keep their names. `automaticLambdaBoundConstant` was renamed `automaticListBoundConstant`. `automaticFirstOrder_rate_bounds` is proved directly from main's `automaticFirstOrder_closePolynomialSet_finite_and_card_le`, `exists_automaticFirstOrder_hybridEquation_base` and `automaticClosedListAndExceptionBounds`. `automaticFirstOrder_rate_mcaError_le` adds `[SampleableType F]`. The source's `automaticFirstOrder_rate_constants_pos`, a conjunction, was split into `automaticListBoundConstant_pos` and `automaticExceptionBoundConstant_pos` and moved to `HiddenDerivative/Parameters/FirstOrder/AutomaticBounds.lean`, the owner of the constants.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificates.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CertificateList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`firstOrder_finite_agreement_solutions_card_le_squarefree` keeps its name and is generalized to direct degree and agreement conditions, dropping redundant `k ≤ n` and `0 < M` hypotheses. The module applies the shared `firstOrderSymbolicCertificate_specialization_at_zero` API, which specializes a symbolic certificate at zero challenge and provides its nonzero equation, jet-degree bounds, and agreement-solution soundness for both squarefree and tight list bounds.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveMCA.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveMCA.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `retainedOrdinaryMCARaw` to `retainedOrdinaryCurveAgreementCharge`, `retainedSquarefreeCurveMCARaw` to `retainedSquarefreeCurveAgreementCharge`, `HasRetainedOrdinaryCurveTransfer` to `HasRetainedOrdinaryCurveAgreementTransfer`, and `exists_exceptional_retainedSquarefreeCurveMCA_of_tail` to `exists_exceptional_retainedSquarefreeCurveAgreement_of_tail`. The exceptional-set theorem uses the current power-batched derivative-capped API, regular Taylor exponent, coefficient-height API, and power-agreement API; its degree-one case uses the identity-pair result. The source `hybridTau` and `hybridTheta` are represented by `regularTaylorExponent` and `agreementIncidenceRatio`.
+
+Added `PolynomialDifferential.positiveCurveEquation_coeffNatDegreeLE_of_input` in the existing `PolynomialDifferential.RetainedCurve` owner. It generalizes the retained positive equation's coefficient-height bound to conclude it stays within the input equation's height. No public source declaration was omitted. The private characteristic helper is replaced by `natCast_ne_zero_of_ringChar_eq_zero_or_lt`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveUnified.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`hasRetainedOrdinaryCurveTransfer_of_unified` → `hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation`, dropping `Q ≠ 0` and weakening the characteristic guard from `max D M < ringChar F` to `M < ringChar F`. `exists_exceptional_retainedSquarefreeCurveMCA_unified` → `exists_exceptional_retainedSquarefreeCurveAgreement`, unchanged mathematically. `ordinaryUnifiedPowerFactorRaw_le_retainedOrdinaryMCARaw` is replaced by `ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw` in `Ordinary/FactorBudget.lean`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificate.lean`: `exists_extensionExceptional_retainedSquarefreeCurveMCA_of_certificate` → `exists_extensionExceptional_retainedSquarefreeCurveAgreement_of_certificate`, unchanged. `exists_baseExceptional_retainedSquarefreeCurveMCA_of_certificate` → `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate`, dropping the `[DecidableEq E]` argument that its statement does not use. The `_of_tail` variants of both are not ported because the tail premise is always discharged by `hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation` and nothing else in the source uses them. The private helper `degreeOf_extendSymbolicCoefficients_le` is covered by main's `jetDegree_map_le`. `family` is not a declaration of this source file.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveBounds.lean`: `retainedSquarefreeLineMCAEnvelope` → `retainedSquarefreeLineAgreementEnvelope`, unchanged. `retainedSquarefreeCurveMCARaw_balanced_line_le` → `retainedSquarefreeCurveAgreementCharge_balancedSplit_le`, unchanged.
+
+The file now also imports `Ordinary.Equation`, `CurveCertificate` and `HybridCurveTransfer`, the last for `regularPowerBatchedDerivativeCappedBoundTwo_eq_hybridCurveStage`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/LineCertificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` and extended with the shared certificate and union lemmas:
+
+- `exists_exceptional_retainedSquarefreeCurveAgreement_of_singularTail` is new. It generalizes `exists_exceptional_retainedSquarefreeCurveAgreement_of_tail` to an arbitrary tail bound `tailBound : ℝ`; its body is the old `_of_tail` proof, and `_of_tail` is now a one-line instance. It replaces the duplicated regular-plus-tail union proofs in the source's sharp theorems.
+- `FirstOrderCurveCertificate.map_Q_ne_zero`, `map_Q_specialization_eq_zero`, `jetTotalDegree_map_Q_le`, `degreeOf_map_Q_le` and `exactPowerAgreement_of_map_Q` are new. They factor out the certificate-to-equation step (nonvanishing, degree caps, root soundness and the `k - 1 + 1 = k` recovery transfer), which the curve certificate theorem did inline and the source repeated in each `_of_certificate` theorem.
+- `exists_extensionExceptional_retainedSquarefreeLineMCA_of_certificate` → `exists_extensionExceptional_retainedSquarefreeLineAgreement_of_certificate`, and `exists_baseExceptional_retainedSquarefreeLineMCA_of_certificate` → `exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate`. Renames: `hybridTheta` → `agreementIncidenceRatio`, `retainedSquarefreeLineMCAEnvelope` → `retainedSquarefreeLineAgreementEnvelope`, `mappedDomain domain iota` → `domain.trans ⟨iota, _⟩`. The extension theorem concludes `HasExactCorrelatedPair domain f g iota k z P` instead of `HasExactPowerAgreement domain ![f, g] iota k z P`; the two are equivalent through `exactCorrelatedPair_of_powerAgreement_one` and `powerAgreement_one_of_exactCorrelatedPair`. It specializes the curve certificate theorem at `ell = 1` and `L = balancedSplit (k - 1) A`, followed by `retainedSquarefreeCurveAgreementCharge_balancedSplit_le`. The base theorem specializes the base-field curve certificate theorem instead of re-running the descent inline.
+- Not ported: `exists_extensionExceptional_retainedSquarefreeLineMCA_of_certificate_of_tail` and `exists_baseExceptional_retainedSquarefreeLineMCA_of_certificate_of_tail`, because the tail is always discharged by `hasRetainedOrdinaryCurveAgreementTransfer_singularCurveEquation`, as slice 82 decided for the curve `_of_tail` certificate theorems. The private helpers `line_degreeOf_extendSymbolicCoefficients_le` and `hasRetainedOrdinaryLineTransfer_of_certificate` are covered by `jetDegree_map_le` and the curve theorem.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Factorwise.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`FixedWordSingularTail`, `finite_factorwise_agreement_solutions_card_le_actual`, and `finite_factorwise_agreement_solutions_card_le` keep their names. The actual-degree theorem no longer requires the unused `hQ`, `hjet`, and `hderiv` assumptions. The module was renamed from `FactorwiseList` to `Factorwise` so its generated root import stays within 100 characters. The source wrappers `positiveEquation` and `rootFirst` are not introduced; the existing `radicalPrimPart` API supplies the positive-degree factor product.
+
+The source's private `positiveRootProduct_eq_one_of_rootDegree_eq_zero'` argument is covered by the public `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`, generalized to any selected coordinate in `ArkLib/ToMathlib/MvPolynomial/RadicalSplit.lean`. The regular Taylor estimate `finite_regular_agreement_solutions_card_le_regularTaylor` combines the existing identity-pair and derivative-capped estimates in `ArkLib/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder/AgreementCounting.lean`; the hybrid counting proof also uses it. No public declaration from the unit was omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedTail.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/RetainedTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The retained-tail API keeps the challenge as a polynomial coordinate and constructs the retained content-times-derivative-resultant equation. The unchanged-role declarations are `flattenedContentCoefficient`, `flattenedSingularPolynomial`, `remainingCoordinateEquiv`, `remainingCoordinateEquiv_natDegree`, `retainedContentAsPolynomial`, `retainedPositiveAsPolynomial`, `flattenedContentCoefficient_ne_zero`, `retainedPositiveAsPolynomial_natDegree`, `remainingCoordinateEquiv_flattenedSingularPolynomial`, `retainedContent_yZeroDegree_le`, `retainedPositive_yZeroCoefficientTriangle`, `flattenedSingularPolynomial_yZeroDegree_le`, `degreeOf_flattenedContentCoefficient_le`, `retainedPositive_degreeX_le`, `flattenedSingularPolynomial_challengeDegree_le`, `singularCoordinateEquiv`, `singularCurveEquation`, `ordinaryFlatten_singularCurveEquation`, `singularCurveEquation_degree_le`, `singularCurveEquation_ne_zero`, `retainedSpecializationHom`, `retainedRootSpecializationHom`, `retainedRootSpecializationHom_eq_eval_rootPolynomial`, `retainedRootSpecializationHom_flattenedContent`, `retainedRootSpecializationHom_flattenedRootFirst`, `positiveCurveEquation_specialization_eq`, `positiveCurveSeparant_specialization_eq`, `retainedSpecializationHom_flattenedSingularPolynomial`, and `singularCurveEquation_routes_nonregular`.
+
+`flattenedContent_add_positive_jetWeight_le` is now `retainedContent_add_positiveJetDegree_le`, using canonical jet degree and removing the unnecessary nonzero-input hypothesis. `singularCurveEquation_challengeHeightLE` is now `singularCurveEquation_coeffNatDegreeLE`. `flattenedRootFirst_positiveCurveEquation` and `flattenedRootFirst_separant_positiveCurveEquation` are now `challengeRetainingRootFirst_positiveCurveEquation` and `challengeRetainingRootFirst_separant_positiveCurveEquation`, respectively. The map from flattened root-first coordinates is exposed as `challengeRetainingRootFirst_fromFlattenedRootFirst`, and its derivative law is exposed for `Y₁` as `challengeRetainingRootFirst_pderiv`.
+
+The root-first multiplication identity, repeated in the source retained-tail module, is shared from the retained-curve owner as `jetTotalDegree_fromFlattenedRootFirst_mul`. The generic coefficient-degree bound is owned by `OptionWeightedDegree` as `degreeOf_coeff_optionEquivLeft_add_le_weight`; it generalizes the coefficient-degree argument to `Option σ` weights with the distinguished and selected coordinates positively weighted. The coefficient-variable derivative transport is owned by `PolynomialCoefficients` as `optionEquivRight_symm_pderiv` and generalizes to arbitrary variable types and commutative semirings. The arbitrary-coordinate `flattenChallenge_pderiv` law is not exposed; the needed `Y₁` case lives in the retained-curve owner. `flattenedSingularPolynomial_map_eq_zero_of_content_or_commonRoot` is generalized from domain targets to commutative-ring targets. `flattenedPositiveRootProduct_eq_one_of_rootDegree_eq_zero` is covered by the existing `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`. `retainedRootJetWeight` remains private coordinate-view bookkeeping, `flattened_content_add_positive_challengeDegree_le` remains a private helper, and the private `flattenChallenge_specialization` helper is inlined into `retainedRootSpecializationHom_flattenedRootFirst`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurve.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+- `retainedSquarefreeOrdinaryCurveMCAAt` → `retainedSquarefreeOrdinaryCurveChargeAt`, `retainedSquarefreeCurveMCASharpRawAt` → `retainedSquarefreeCurveSharpChargeAt`, and `retainedSquarefreeCurveMCASharpOptimizedRaw` → `retainedSquarefreeCurveSharpOptimizedCharge`. All three are now `ℝ`-valued (the cast of the `ℚ` free-retention charge), like main's curve charges. The ordinary part of the optimized charge is `curveRetentionMinimum D A (retainedSquarefreeOrdinaryCurveChargeAt n D ell · A B M H)`.
+- `retainedSquarefreeCurveMCASharpOptimizedRaw_le_fixed` → `retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt`. Generalized from `L₀ = D + 1` to any admissible `D < L₀ ≤ A`, and drops `A ≤ n`.
+- `exists_exceptional_retainedSquarefreeCurveMCA_sharp_at` → `exists_exceptional_retainedSquarefreeCurveAgreement_sharpAt`. Drops `D + 2 ≤ n` and takes `[DecidableEq F] [DecidableEq E]` instead of `open Classical in`.
+- `exists_exceptional_retainedSquarefreeCurveMCA_sharp_optimized` → `exists_exceptional_retainedSquarefreeCurveAgreement_sharpOptimized`. Drops `D + 2 ≤ n`.
+- `exists_extensionExceptional_retainedSquarefreeCurveMCA_sharp_optimized_of_certificate` → `exists_extensionExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate`, and `exists_baseExceptional_retainedSquarefreeCurveMCA_sharp_optimized_of_certificate` → `exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate`. Both drop `k < n`.
+- Not ported: `retainedSquarefreeOrdinaryCurveMinimum`, `retainedSquarefreeOrdinaryCurveMinimum_le` and `exists_retainedSquarefreeOrdinaryCurveMinimum`, because main's `curveRetentionMinimum`, `curveRetentionMinimum_le` and `exists_curveRetentionMinimum` cover them. The fixed-threshold (`L₀ = D + 1`) forms `retainedSquarefreeOrdinaryCurveMCARaw`, `retainedSquarefreeCurveMCASharpRaw`, `retainedSquarefreeCurveMCASharpRawAt_succ_eq`, `exists_exceptional_retainedSquarefreeCurveMCA_sharp` and `exists_{extension,base}Exceptional_retainedSquarefreeCurveMCA_sharp_of_certificate` are each an instance of the `_sharpAt` or charge-at-`D + 1` forms, one `ordinaryUnifiedPowerFactorAt_succ_eq` rewrite away, or the optimized theorem followed by `retainedSquarefreeCurveSharpOptimizedCharge_le_chargeAt`; they would be wrappers. The private helpers `natCast_ne_zero_of_sharp_char_guard`, `exists_exceptional_positiveCurveEquation_regular` and `degreeOf_extendSymbolicCoefficients_le` are covered by the regular branch inside `_of_singularTail` and by `jetDegree_map_le`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`rootFirst` and `fromRootFirst` became `firstOrderRootCoordinates` and `fromFirstOrderRootCoordinates`; the coordinate round trips and the root-degree identity were added. `fromRootFirst_rootJetWeight` became the more general `fromFirstOrderRootCoordinates_weightedTotalDegree`, stated using `jetTotalDegree`. `positiveEquation` became `positiveJetFactor`, the root-coordinate radical positive factor. New bounds cover its total jet degree and `Y₁` degree. The specialization theorems `rootFirst_separant_positiveEquation`, `positiveEquation_specialization_eq`, and `positiveSeparant_specialization_eq` became `firstOrderRootCoordinates_separant_positiveJetFactor`, `positiveJetFactor_specialization_eq`, and `positiveJetFactor_separant_specialization_eq`.
+
+The singular equation and polynomial declarations retain their names except for `singularEquation_ne_zero`, which no longer requires a nonzero-input premise. The construction uses radical content and the derivative resultant of the positive-jet factor, proves the equation nonzero and within the ordinary-degree envelope, and routes content roots and singular positive-factor roots. `finite_squarefree_agreement_solutions_card_le` specializes the generic capped count and drops unused positivity premises. The order-zero presentation declarations were moved to `PolynomialDifferential` in `ArkLib/Data/Polynomial/Differential/OrderZeroPresentation.lean` and generalized there.
+
+`positiveResultant_ne_zero` is covered by `Polynomial.resultant_derivative_ne_zero_ordinaryRootPolynomial`; `positiveRootProduct_eq_one_of_rootDegree_eq_zero` is covered by `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`. The `positiveRootProduct_rootJetWeight` wrapper is unnecessary because `fromFirstOrderRootCoordinates_weightedTotalDegree` provides the general identity. `singularAsPolynomial_eval` is covered by `remainingSpecializationHom_eq_eval` and has no separate wrapper. The factorwise additions are in `Factorwise.lean`: they introduce `FixedWordRegularTail` and actual-degree and capped counts for a chosen regular equation, while retaining the radical-part APIs as a specialization.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/UniformLineMca.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/UniformLineMCA.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_uniformFirstOrder_squarefree_lineMCA_of_two_le` → `exists_uniformFirstOrder_lineMca_of_two_le`. The statement is mathematically unchanged, and the proof is now a specialization of `FirstOrderSymbolicCertificate.exists_exceptional_hybrid` plus `uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling`. The proof uses no squarefree API, so `squarefree` was dropped from the name and `MCA` became `Mca`, following main's `uniformFirstOrderMca_*`. The `_of_two_le` suffix is kept because the source's later `Capacity/UniformFirstOrder.lean` has a general `exists_uniformFirstOrder_lineMCA`. The module moved out of `Squarefree/` because it uses only the uniform `(12, 4, 23, 276)` parameters, which main already moved to `HiddenDerivative/Parameters/FirstOrder/UniformMca.lean`, and the old path is 100 characters. The private `squarefreeJetWeight_map_eq` is not ported because main has `jetTotalDegree_map_eq`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusAdmissibility.lean`
 
@@ -1850,9 +2392,17 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`frobeniusInitialGraph` keeps its name and is generalized from a `Fin 1` jet-coordinate function to `Option (Fin 1)`, with the challenge coordinate mapped to `X`, and from fields to commutative semirings. `exists_frobeniusGraph_of_symbolic_prime_sample` keeps its name and is generalized from `Fin n` to an arbitrary embedded type `ι`; Frobenius roots are required only at sampled indices. The theorem uses the current affine Hilbert polynomial and graph-restriction APIs.
+`frobeniusInitialGraph` keeps its name and is generalized from a `Fin 1` jet-coordinate function to `Option (Fin 1)`, with the challenge coordinate mapped to `X`, and from fields to commutative semirings. `exists_frobeniusGraph_of_symbolic_prime_sample` keeps its name and is generalized from `Fin n` to an arbitrary embedded type `ι`; Frobenius roots are required only at sampled indices. The theorem is derived from the two-term case of `exists_frobeniusPowerGraph_of_symbolic_prime_sample`.
 
-`symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. No new acceptance example was retained: a trial concrete component example exceeded 200,000 heartbeats, and the existing TaylorChart acceptance module exercises the point-recognition result.
+`symbolicSourceFrobeniusAgreement` is not added because the existing `jointTaylorAgreementEquation` in `PolynomialDifferential.TaylorChartAlgebra` covers it. An acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` recognizes the zero pair on a positive-dimensional prime component from a one-point sparse sample cut.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusIncidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceFrobeniusSparseCuts` to `frobeniusSparseTaylorCuts` and `sourceFrobeniusGraphLocus` to `admissibleFrobeniusPairGraphLocus`; their content is unchanged. Renamed `principalOpen_subset_sourceFrobeniusGraphLocus` to `principalOpen_subset_admissibleFrobeniusPairGraphLocus`, expressing cut counts with `Set.ncard`. Renamed `finite_sourceFrobenius_points_off_graphs_card_le` to `finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le`. This finite bound uses the current coefficient-height and agreement-count APIs and omits the unnecessary premise `A ≤ n`.
+
+Did not port `symbolicSourceFrobeniusAgreement_mem_restrictBidegree`: the existing `jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent` covers it, and the finite theorem uses that result with local degree conversions, so no public specialization was added. The current consolidated suite retains a principal-open theorem instance on the shared component fixture; the earlier finite-incidence acceptance case is historical.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FrobeniusRetainedFamily.lean`
 
@@ -1860,13 +2410,97 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `frobeniusRetainedPairFamily`, `mem_frobeniusRetainedPairFamily_iff`, `frobeniusRetainedPairFamily_card_le`, and `exists_exceptional_frobeniusRetainedPairFamily` retain their names. They are generalized from `Fin n` to any finite embedded coordinate type. The retained family is expressed as a filter of the existing correlated-pair family. The cardinality bound uses the joint initial equation; a global root premise is unnecessary because root equations are included in each admissible pair's sample witness. The exceptional-set theorem specializes the existing exceptional-set theorem for correlated pairs.
 
-Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibit a nonempty retained family and check its graph-coordinate degree bound, then exhibit a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. No public source declarations were omitted.
+Historical acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` exhibited a nonempty retained family and checked its graph-coordinate degree bound, then exhibited a retained pair and an exceptional set of size zero for a one-point domain with a one-point sample. The current consolidated suite has no retained-family example. No public source declarations were omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Certificate.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_johnsonMCA` (Certificate) and `exists_exceptional_johnson_lineMCA_allChar` (Agreement) were the same statement with the arguments in a different order. They become `ReedSolomon.exists_johnson_line_exactCorrelatedPair`. The unused hypothesis `johnsonAgreement n D eta ≤ 1` is dropped, since main's `exists_johnson_symbolic_certificate` no longer needs it. `johnsonE0` is renamed `johnsonExceptionCount`. `exists_exceptional_johnson_lineMCA_at_ceil` becomes `exists_johnson_line_exactCorrelatedPair_ceil`, unchanged apart from making `n D eta` implicit and reordering the arguments.
+
+The source's private `exists_uniformCapacity_lineMCA_johnson` (in `Capacity/MathematicalUniformRate`) becomes the public `exists_johnson_line_exactCorrelatedPair_of_gap`, because it is a general Johnson statement and the line theorem uses it. Its hypotheses `⌈4ν/δ²⌉₊ ≤ n` and `k ≤ ν` (with `ν` the mathematical jet cap) are generalized to the parameter-free `4 (k - 1) ≤ δ² n`, and the `DecidableEq F` argument is dropped.
+
+Not ported: `exists_exceptional_johnson_lineMCA_allChar` as a separate declaration, because it would duplicate `exists_johnson_line_exactCorrelatedPair`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Probability.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Probability.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Johnson/Agreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`johnson_mcaError_le` (Probability) and `johnson_lineMCA_probability` (Agreement) become one theorem, `ReedSolomon.mcaError_affineLine_johnson_le`. It is unchanged except that it adds `[SampleableType F]`, which main's `mcaError` requires. The module is kept separate from `Johnson/Agreement` so the capacity module does not import `LineToAffine`.
+
+Not ported: `johnson_lineMCA_probability` as a separate declaration, because it has the same statement as `mcaError_affineLine_johnson_le`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/BaseEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/BaseEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_ordinaryEquation_base` keeps its name and mathematical content. For a nonzero ordinary equation over an arbitrary field, it gives one finite exceptional set of challenges, of size at most `ordinaryFactorRaw ((n - D) / (A - D)) n D mu h`, outside which every base-field root of degree at most `D` that agrees with the line on at least `A` points has an exact correlated-pair witness. The height premise is `CoeffNatDegreeLE Q h` instead of the source's `ChallengeHeightLE Q h`, matching main's `exists_exceptional_ordinaryEquation`. The theorem takes `[DecidableEq F]` as an instance argument instead of the source's `open Classical in`, so `polynomialAgreementSet` and `HasExactCorrelatedPair` in the conclusion work with any decidable-equality instance. The proof uses `convert` to match the classical instances that come from `exists_exceptional_ordinaryEquation`. Nothing was left unported: the source file has one declaration. It is a separate module rather than part of `Ordinary/Equation.lean`, which would otherwise need `EquationDescent` and `AlgebraicClosure` as extra imports.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No new declarations. `exists_exceptional_ordinaryEquation_base`, which came from main, keeps its statement and is now the `ℓ = 1`, `L = D + 1` case of `exists_baseExceptional_ordinaryPowerEquation`. Its imports shrink to `Ordinary.Equation` plus a private `PowerToLine` import.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/Equation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.exists_exceptional_ordinaryEquation` → `ReedSolomon.exists_exceptional_ordinaryEquation`. The theorem retains its mathematical content and replaces the `ChallengeHeightLE` premise with the equivalent `CoeffNatDegreeLE` coefficient-height premise. No declarations were omitted. The matching `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` acceptance case uses a reducible `Y₀²` equation, obtains an exceptional set of size at most two, and exhibits an outside challenge with an exact correlated-pair witness.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Equation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_ordinaryPowerEquation_freeRetention` → `exists_exceptional_ordinaryPowerEquation_unifiedAt`, renamed to match the `ordinaryUnifiedPowerFactorAt` charge. It drops the unused `D + 2 ≤ n` and `A ≤ n`. `exists_exceptional_ordinaryPowerEquation` keeps its name and statement apart from `CoeffNatDegreeLE` and the embedding-composition domain; its proof is now the `L = D + 1` specialization of `_unifiedAt` plus the charge comparison. `exists_exceptional_ordinaryEquation` is now the `ℓ = 1` case of it.
+
+`exists_exceptional_ordinaryPowerEquation_base_freeRetention_allDegrees`, `_base_freeRetention`, `_base_zeroDegree` and `_base_unified` → `exists_baseExceptional_ordinaryPowerEquation`. It drops `D + 2 ≤ n` and `A ≤ n` and takes `[DecidableEq F]` instead of classical decidability. It charges root degree zero by its height.
+
+Not ported: `exists_exceptional_ordinaryPowerEquation_unified` and `_unifiedAt_succ` (`L := D + 1` cases), `exists_exceptional_ordinaryPowerFactorAssembly_unifiedAt` and `_unified` (covered by main's `exists_exceptional_ordinaryUnifiedPowerFactorAssembly`), and `exists_exceptional_ordinaryPowerEquation_freeRetention_of_certificates` (the `ν = Unit` instance of `exists_geometricTransfer_exceptional`, with only its own acceptance test as a user; deferred pending a maintainer decision).
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorAssembly.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Assembly.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_ordinaryPowerFactorAssembly` became `exists_exceptional_ordinaryCurveFactorAssembly`. Generalized it from the fixed `none` variable and field coefficients to an arbitrary selected variable and unique-factorization-domain coefficients, using the existing radical factor split and evaluator interface. The curve specialization shares a private charge-independent helper with the existing assembly variants. No declaration was omitted; source imports resolve to the existing `Ordinary.FactorAssembly` and `Ordinary.FactorBudget` modules.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorBudget.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/FactorBudget.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ordinaryFrobeniusPowerMixedDegree` to `ordinaryFrobeniusCurveMixedDegree` and generalized it with the polynomial curve degree `ell`. Renamed and generalized `ordinaryFrobeniusPowerMixedDegree_eq` and `ordinaryFrobeniusPowerMixedDegree_le` to give its exact form and coarse upper bound; the exact form also covers `b = 0`. Renamed `ordinaryPowerFactorRaw` to `ordinaryCurveFactorRaw`, `ordinaryFrobeniusPower_charge_le` to `ordinaryFrobeniusCurve_charge_le`, and `ordinaryPowerFactorRaw_le_mul` to `ordinaryCurveFactorRaw_le_line_mul`. `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` checks the exact and coarse degree bounds, the Frobenius curve charge, and the curve-to-line charge comparison at positive parameters.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Assembly.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ordinaryPowerFactorRaw_sum_le` became `ordinaryCurveFactorRaw_sum_le`. Added `ordinaryCurveFactorRaw_le_linear` and `ordinaryCurveFactorRaw_eq_linear` as the linear bound and equality used by the summation result. The line-charge linear, equality, and summation results specialize the polynomial-curve results at `ell = 1`. The source charge is already present as `ordinaryCurveFactorRaw`; its source import resolves to the existing `Ordinary.FactorBudget` module. The unused source argument `0 < ell` was omitted.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ordinaryFrobeniusPowerMixedDegree_le_unified` → `ordinaryFrobeniusCurveMixedDegree_le_unified`, following main's `ordinaryFrobeniusCurveMixedDegree`. The hypotheses `1 ≤ D`, `1 ≤ s` and `1 ≤ b` are dropped. `ordinaryFrobeniusPower_charge_le_unifiedAt` → `ordinaryFrobeniusCurve_charge_le_unifiedAt`, dropping `1 ≤ D` and `1 ≤ b`. `ordinaryFrobeniusPower_charge_le_unified` is not ported because it is the `L := D + 1` case of the `unifiedAt` theorem, via `ordinaryUnifiedPowerFactorRaw_eq_rawAt`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveUnified.lean`: `ordinaryUnifiedPowerFactorRaw_le_retainedOrdinaryMCARaw` → `ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw`. It is a comparison with the curve-factor charge and drops the hypothesis `1 ≤ B`. The singular-tail proof now goes through `exists_exceptional_ordinaryPowerEquation`, whose charge is exactly `retainedOrdinaryCurveAgreementCharge` at `b = B(2M+1)`, `h = H(2M+1)`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/IrreducibleEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/IrreducibleEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Ported `exists_exceptional_irreducibleOrdinaryEquation` under the same name, using the current `CoeffNatDegreeLE` interface. The theorem gives a bounded exceptional set for sufficiently agreeing, low-degree solutions of an irreducible ordinary equation and an exact correlated-pair representation outside that set in every characteristic. Nothing was omitted. The acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` applies it to `Y₀` over `ℂ`, obtains an exceptional set of size at most one, and exhibits a point outside it with an exact correlated-pair witness.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Irreducible.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_irreducibleOrdinaryPowerEquation` → `exists_exceptional_irreducibleOrdinaryPowerEquation`. The theorem is mathematically unchanged and uses `CoeffNatDegreeLE`, `ordinaryCurveFactorRaw`, and the current exact-power-agreement interface. The existing two-message correlated-pair theorem now specializes this tuple theorem at `ℓ = 1`, using the power-batched word identity, the exact-agreement conversion, and equality of the curve and line charges. Nothing was deferred or left unported.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_irreducibleOrdinaryPowerEquation_unifiedAt`, with the same name, dropping the unused `A ≤ n`. The existing `exists_exceptional_irreducibleOrdinaryPowerEquation` keeps its statement and is now proved from it. `exists_exceptional_irreducibleOrdinaryPowerEquation_unified` is not ported for the same reason as the Frobenius factor version.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedAdmissibility.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphAdmissibility.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The graph restriction, specialized jet, Taylor coefficient, admissibility structure and its fields, evaluation identities, and specialization theorem keep their names. `exists_admissibleChartTuple_of_symbolic_prime_agreements_of_exponent` is renamed to `exists_admissibleChartTuple_of_primeTaylorComponent_agreements`; its mathematical result is unchanged and uses the existing prime-component graph theorem and joint equations. The symbolic equation names are supplied by the existing joint Taylor-chart API. No public declarations from the source unit were left out.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedCertificate.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Certificate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `exists_exceptional_symbolicCurveMCA_sharp` to `Certificate.exists_exceptional_powerBatchedAgreement_sharp_of_exponent`. The theorem now uses the current certificate and power-batched APIs and charges each stage by its actual jet degree. The `eval₂_powerBatchedCoordinate_eq_powerBatchedWord` equality remains a private proof bridge because no public consumer needs a separate theorem for it.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentAgreement.lean`
 
@@ -1876,7 +2510,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 `exists_polynomialGraph_of_symbolic_prime_agreements_of_exponent` became `exists_polynomialGraph_of_primeTaylorComponent_agreements`. It handles any index set of size `L` with `k ≤ L`, chooses the interpolation sample internally, and returns the graph and ideal restriction facts.
 
-`symbolicSourceCurveAgreement_eq_zero_iff_of_exponent` was not ported because `PolynomialDifferential.aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent` covers it generically. Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` check direct constituent agreement on the prime-component fixture and tuple extraction from one joint cut for a two-entry tuple.
+`symbolicSourceCurveAgreement_eq_zero_iff_of_exponent` was not ported because `PolynomialDifferential.aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent` covers it generically. The current consolidated suite includes a compact positive-dimensional prime-component example constructing a degree-bounded tuple with a nonempty common-agreement set. The earlier separate constituent-agreement and two-entry tuple-extraction examples remain historical.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean`
 
@@ -1884,13 +2518,62 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 Renamed `exists_polynomialGraph_of_symbolic_prime_sample_of_exponent` to `exists_polynomialGraph_of_primeTaylorComponent`. It uses the destination joint Taylor cuts and recognizes a graph for tuples of arbitrary length. Added `powerBatchedJetGraphMap`. The result also proves ideal vanishing on the graph and nonvanishing of the restricted separant. The wrapper declarations `symbolicSourceCurveAgreement_of_exponent` and `symbolicSourceCurveAgreement` were not ported: their cut polynomial is `jointTaylorAgreementEquation`, and the default-exponent case follows by taking exponent `2 * K`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusPowerInitialGraph`, `exists_frobeniusPowerGraph_of_symbolic_sample`, and `exists_frobeniusPowerGraph_of_symbolic_prime_sample` keep their names; `frobeniusPowerGraphMap` is new. The initial graph is generalized from fields to commutative semirings. Both recognition theorems are generalized from `Fin n` to any embedded index type and require Frobenius roots only on the sample. The prime-component result uses the current joint Taylor and `aeval` APIs to express its symbolic cuts and graph restrictions. The proof reuses `exists_frobeniusPowerGraph_polynomials_of_sample` for interpolation and sparse expansion.
+
+`symbolicSourceFrobeniusPowerAgreement` was not ported because `jointTaylorAgreementEquation` in `TaylorChartAlgebra.lean` covers it without a wrapper. Historical acceptance cases gave a concrete symbolic chart example and a regular prime-component example; neither is in the current consolidated suite.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedDerivativeImage.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/DerivativeImage.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `finite_sourceCurve_points_off_tuples_card_le_derivativeCapped_of_exponent` to `finite_powerBatched_regular_points_off_graphs_card_le_derivativeCapped_of_exponent` and generalized it to the admissible-graph API, removing the unused `A ≤ n` premise. Renamed `regularSymbolicCurveMCADerivativeBoundTwo` to `regularPowerBatchedDerivativeCappedBoundTwo`; its mathematical bound is unchanged in the power-batched API. Renamed `finite_sourceCurve_bad_challenges_card_le_derivativeCapped_of_exponent`, `finite_regularSymbolicCurveBadChallenges_card_le_derivativeCapped_of_exponent`, and `exists_exceptional_regularSymbolicCurveMCA_derivativeCapped_of_exponent` to their `powerBatched` / `regularPowerBatched` names and removed the unused `0 < k` premise from the finite bound and the propagated premise from the regular-family bound and exceptional-set result. Renamed the identity-pair finite challenge bound, regular-family bound, and exceptional-set result to `finite_powerBatchedBadChallenges_card_le_identityPair`, `finite_regularPowerBatchedBadChallenges_card_le_identityPair`, and `exists_exceptional_regularPowerBatchedAgreement_identityPair`; these mathematical conclusions are unchanged in the current API.
+
+The four `_specialize` evaluation bridges remain private and reuse the existing `TaylorChartAlgebra` lemmas. The shared fixed-center tuple-bound theorem was extracted into the sharp power-batched agreement module for use by both sharp and derivative-capped challenge bounds.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedExceptionalChallenges.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ExceptionalChallenges.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `finite_sourceCurve_bad_challenges_card_le` to `finite_powerBatchedChart_badChallenges_card_le`. The theorem uses the destination chart and height APIs and bounds finite bad-challenge sets using off-graph incidence and exact-agreement exceptions. No declarations from this source file were omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedFrobeniusFamily.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusRetainedPowerTupleFamily` → `frobeniusRetainedPowerTupleFamily`,
+`mem_frobeniusRetainedPowerTupleFamily_iff` → `mem_frobeniusRetainedPowerTupleFamily_iff`,
+`frobeniusRetainedPowerTupleFamily_card_le` → `frobeniusRetainedPowerTupleFamily_card_le`, and
+`exists_exceptional_frobeniusRetainedPowerTupleFamily` →
+`exists_exceptional_frobeniusRetainedPowerTupleFamily` keep their names. The retained-family
+API and its bounds now accept any finite coordinate type instead of only `Fin n`. The
+cardinality theorem uses `jointInitialJetEquation` for the current initial-equation API; the
+exceptional-set theorem specializes the generic exact-power-agreement family bound.
+
+No declarations from this source file were left out. The related source wrapper
+`uniformExactPowerAgreement_descend` is covered by the existing
+`uniformExactPowerAgreement_of_extension` theorem in `PowerAgreement`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGeometricTransfer.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GeometricTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `geometricTransferBound` keeps its name and budget, and uses `dimensionSensitiveIncidenceProduct` directly. `exists_geometricTransfer_exceptional` keeps its name, generalizes `Fin n` to any finite coordinate type, and removes unused algebraic-closure and parameter-bound hypotheses. `exists_geometricTransfer_baseField_semantic` keeps its name and generalizes `Fin n` to any finite coordinate type while preserving the exceptional-set bound.
 
-`geometricTransferIncidenceProduct` and `geometricTransferIncidenceProduct_zero` were not ported because `dimensionSensitiveIncidenceProduct` covers them at degree one and its zero case. Source `ExtensionDescent` functionality is supplied by `HasExactPowerAgreement.descend` in `PowerAgreement.lean`. Acceptance cases in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` check geometric transfer for a retained zero tuple and identity-map descent.
+`geometricTransferIncidenceProduct` and `geometricTransferIncidenceProduct_zero` were not ported because `dimensionSensitiveIncidenceProduct` covers them at degree one and its zero case. Source `ExtensionDescent` functionality is supplied by `HasExactPowerAgreement.descend` in `PowerAgreement.lean`. A historical acceptance case checked geometric transfer for a retained zero tuple; it is not in the current consolidated suite. The exact-line transfer case remains covered under `PowerToLine`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGraphCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`admissibleChartTupleFamilyAtExponent`, `mem_admissibleChartTupleFamilyAtExponent_iff`, `admissibleChartTuples_card_le_of_exponent`, and `admissibleChartTupleFamilyAtExponent_card_le` retain their names and statements. The family characterization and count use the generalized tuple-family API.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedIncidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.sourceCurveTupleLocus` and `ReedSolomon.sourceCurveTupleLocus_of_exponent` become `ReedSolomon.admissibleChartTupleGraphLocus`. `ReedSolomon.principalOpen_subset_sourceCurveTupleLocus_of_exponent` becomes `ReedSolomon.principalOpen_subset_admissibleChartTupleGraphLocus`, and `ReedSolomon.finite_sourceCurve_points_off_tuples_card_le` becomes `ReedSolomon.finite_admissibleChartTupleIncidence_off_graphs`, under the current Taylor-chart and graph-locus API. The high-cut helper predicates and their membership wrappers are not ported because the statements use explicit high-cut predicates directly. `sourceCurveTupleLocus_of_exponent_two_mul_eq` is not ported because the finite incidence theorem uses exponent `2 * K` directly.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedPointRecognition.lean`
 
@@ -1911,7 +2594,7 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Powe
 
 Did not port `exists_exceptional_frobeniusPower_challenges_of_sample` because `ReedSolomon.exists_exceptional_exactPowerAgreement` in `PowerBatchedPointRecognition` already covers it: sample agreement proves the required common-agreement lower bound, and specialization to `Fin n` gives the source bound.
 
-The singleton-sample characteristic-two acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` checks the zero sparse Frobenius pullback and both recognition conclusions.
+The singleton-sample characteristic-two acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` checked the zero sparse Frobenius pullback and both recognition conclusions; it is historical. The current suite retains the separate symbolic sample case over `ZMod 3` with a nonzero second word component.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/GraphLineComponent.lean`
 
@@ -1927,6 +2610,42 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Poly
 
 The graph-line component result now uses the shared `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` results from `TaylorChartAlgebra`, and `regular_principalOpen_graph_restriction` from `PrincipalOpenParametrization`.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedRegularEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/RegularEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `regularSymbolicCurveBadChallenges` to `regularPowerBatchedBadChallenges` and `regularSymbolicCurveMCABound` to `regularPowerBatchedAgreementBound`; the predicate and rational formula are unchanged, with the current exact-power-agreement API and agreement meaning. Renamed `finite_regularSymbolicCurveBadChallenges_card_le` to `finite_regularPowerBatchedBadChallenges_card_le`, `regularSymbolicCurveBadChallenges_finite` to `regularPowerBatchedBadChallenges_finite`, and `exists_exceptional_regularSymbolicCurveMCA` to `exists_exceptional_regularPowerBatchedAgreement`. Generalized the degree and height premises of these three theorems to `jetTotalDegree` and `CoeffNatDegreeLE`. No public declarations were omitted. The common-center and Taylor-reconstruction helpers use `PolynomialDifferential.exists_forall_jetEvaluation_ne_zero_of_family` and `rationalTaylorPolynomial_polynomialJet`.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedSharpRegularAgreement.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpRegularEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceCurveCutChallengeDegree`, `sourceCurveCutJetDegree`, `sourceCurveInitialMixedDegreeTwo`, and `regularSymbolicCurveMCASharpBoundTwo` to `regularPowerBatchedCutChallengeDegree`, `regularPowerBatchedCutJetDegree`, `regularPowerBatchedInitialMixedDegreeTwo`, and `regularPowerBatchedAgreementSharpBoundTwo`, respectively, retaining their formulas. The common Taylor numerator bidegree results (`commonTaylorNumeratorOver_mem_sourceCurveCutBidegree_of_exponent` and `symbolicSourceNumerator_mem_sourceCurveCutBidegree[_of_exponent]`) are covered by `jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent`; this is generalized to arbitrary differential order, sufficient Taylor exponents, and the joint chart API. The agreement-equation bidegree result `symbolicSourceCurveAgreement_mem_sourceCurveCutBidegree[_of_exponent]` is covered by `jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent`, generalized to the joint chart API and sufficient Taylor exponents.
+
+Renamed `finite_sourceCurve_points_off_tuples_card_le_hybrid_two_of_exponent` to `finite_powerBatched_regular_points_off_admissible_graphs_card_le_firstOrder_of_exponent` and generalized it through generic bidegree incidence. Renamed `finite_sourceCurve_bad_challenges_card_le_of_source_bound_of_exponent` and `finite_sourceCurve_bad_challenges_card_le_hybrid_two_of_exponent` to `finite_powerBatchedBadChallenges_card_le_of_off_graph_bound_of_exponent` and `finite_powerBatchedBadChallenges_card_le_firstOrder_of_exponent`. Generalized the fixed-center and first-order bad-challenge bounds to sufficient Taylor exponents, and renamed them `finite_regularPowerBatchedBadChallenges_card_le_of_fixed_center_of_exponent` and `finite_regularPowerBatchedBadChallenges_card_le_firstOrder_of_exponent`. Renamed `exists_exceptional_regularSymbolicCurveMCA_hybrid_two_of_exponent` to `exists_exceptional_regularPowerBatchedAgreement_firstOrder_of_exponent`, generalized to sufficient Taylor exponents and the current agreement API. Historical acceptance cases in the shared Reed–Solomon test file checked the incidence bound, finite bad-challenge bound, and exceptional-set conclusion for this sharp API; the current suite does not directly test this module.
+
+The order-zero declarations `sourceCurveInitialMixedDegreeOne` and `regularSymbolicCurveMCASharpBoundOne` were not ported because the source proves no bound about them and no consumer uses them. The initial-equation rectangle is covered by `initialJetEquation_mem_restrictBidegree`; initial-equation and separant cut rectangles follow from `initialJetEquation_mem_restrictBidegree` and `initialJetSeparant_mem_restrictBidegree` with `mem_restrictBidegree_mono`. The high-cut result is covered by the generalized common Taylor numerator theorem. Paired declarations without `_of_exponent` are the `τ = 2 * K` cases of their exponent theorems. Private helpers `set_finite_of_finset_card_le_rational` and `span_singleton_ne_top_of_aeval_eq_zero` are replaced by `Set.finite_of_forall_finset_card_le` and `Ideal.span_singleton_ne_top`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceCurveInitialMixedDegree` to `regularPowerBatchedInitialMixedDegree` and `regularSymbolicCurveMCASharpBound` to `regularPowerBatchedAgreementSharpBound`. Generalized the incidence theorem to the joint chart API with `k ≤ A` and explicit terminal graph recognition as `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_terminal_recognition`; derived `finite_powerBatched_regular_points_off_admissible_graphs_card_le_sharp_of_exponent` for the internally recognized `k ≤ L` case. Generalized the finite bad-challenge bound and exceptional-set theorem to arbitrary derivative order and the current power-batched API as `finite_powerBatchedBadChallenges_card_le_sharp_of_exponent`, `finite_regularPowerBatchedBadChallenges_card_le_sharp_of_exponent`, and `exists_exceptional_regularPowerBatchedAgreement_sharp_of_exponent`.
+
+Did not port `sourceCurveCutDerivativeDegree` because the generic capped-bidegree theorem supplies its cap. The common Taylor numerator, high cuts, agreement equation, and initial equation bounds are covered by generic capped-bidegree theorems. No joint Reed–Solomon separant wrapper is retained because the generic initial-separant support theorem covers it.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceCurveCutJetDegree_le` to `regularPowerBatchedCutJetDegree_le_two_mul`, `sourceCurveCutChallengeDegree_mul_le` to `regularPowerBatchedCutChallengeDegree_le_three_mul`, and `sourceCurveInitialMixedDegree_le_uniformCaps` to `regularPowerBatchedInitialMixedDegree_le_uniformCaps`. These bounds generalize to an explicit `τ ≤ 2*n`; the challenge-degree bound also takes `H ≤ ℓ*h`. Renamed `regularSymbolicCurveMCASharpBound_mono_exponent` to `regularPowerBatchedAgreementSharpBound_mono_exponent` and placed it in the module that owns the agreement budget. Historical acceptance cases checked all three degree bounds and exponent monotonicity from `τ = 0` to `τ' = 1`; they are not in the current consolidated suite.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerToLine.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exactCorrelatedPair_of_powerAgreement_one` keeps its name and turns exact degree-one power agreement for two constituents into an exact correlated-pair witness, preserving the degree bounds and full agreement-set equality. `lineExactAgreementBound_of_powerAgreement_one` keeps its name and is generalized from a rational budget and finite field to a real budget over any field. Both source public declarations are ported. The current suite retains one concrete degree-one power-agreement instance from an exact correlated-pair witness; historical cases for the reverse bridge and line-bound conversion were removed.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/PowerToLine.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`powerBatchedWord_pair_eq` names the identity between the degree-one power-batched word and the correlated line. `powerAgreement_one_of_exactCorrelatedPair` adds the converse from an exact correlated-pair witness to exact degree-one power agreement. No declarations from this source file were omitted.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleCounting.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Admissible.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1937,7 +2656,59 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 `Ordinary.PolynomialCurve.Counting.admissibleFrobeniusPowerTuples_card_le_degreeOf` → `ReedSolomon.admissibleFrobeniusPowerTuples_card_le_degreeOf`, generalized from `Fin n` to an arbitrary embedded coordinate type. No declarations from the counting source were left out. The imported adapter `Ordinary.PolynomialCurve.Admissible.exists_admissibleFrobeniusPowerTuple_of_symbolic_prime_sample` is not added because constructing admissible tuples from prime components is outside this counting unit.
 
-The shared acceptance file uses a concrete zero tuple for specialization and singleton tuple counting. A zero-pair witness covers admissible-pair counting, retained-family nonemptiness and its cardinality bound. The exceptional-family example states `exceptional.card ≤ 0` and equality of affine and common agreement sets for every retained pair. The standalone tuple admissibility example and simplification-only uniqueness example were removed.
+Historical acceptance cases used a concrete zero tuple for specialization and singleton tuple counting. A zero-pair witness covered admissible-pair counting, retained-family nonemptiness and its cardinality bound. The exceptional-family example stated `exceptional.card ≤ 0` and equality of affine and common agreement sets for every retained pair; the standalone tuple admissibility and simplification-only uniqueness examples were also removed. The current consolidated suite has no direct example for this module.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleIncidence.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `sourceFrobeniusPowerSparseCuts` to `frobeniusPowerSparseTaylorNumerators`; its mathematical content is unchanged and it uses the joint Taylor numerator API. Generalized `sourceFrobeniusPowerGraphLocusAt` and `sourceFrobeniusPowerGraphLocus` as `admissibleFrobeniusPowerTupleGraphLocus`, with finite embedded coordinate types, `Set.ncard`, and a free agreement threshold. Generalized `commonAgreement_of_frobeniusPowerCut_mem_prime` from `Fin n` to arbitrary coordinate types and renamed it `commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime`. Generalized `principalOpen_subset_sourceFrobeniusPowerGraphLocusAt` and `principalOpen_subset_sourceFrobeniusPowerGraphLocus` to finite embedded coordinate types and a free agreement threshold, under `principalOpen_subset_admissibleFrobeniusPowerTupleGraphLocus`. The finite bound combines `finite_sourceFrobeniusPower_points_off_graphs_card_le_at` and `finite_sourceFrobeniusPower_points_off_graphs_card_le` as `finite_frobeniusPowerTupleIncidence_off_graphs_card_le`; it uses the free threshold and `Set.ncard`, and drops the source assumption `A ≤ n`.
+
+The default locus and principal-open wrappers are covered at `L = k`, as is the default finite bound. `symbolicSourceFrobeniusPowerAgreement_mem_restrictBidegree` is covered by the existing generalized `jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent`, so no source-specific wrapper was added.
+
+Historical acceptance cases included concrete instances for the common-agreement theorem, principal-open graph inclusion, a finite incidence bound, high-cut jets, and chart-prime dimension. They are not in the current consolidated suite. The principal-open Frobenius-pair graph instance retained in the suite is described above.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleRegularBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/RegularBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_frobeniusPowerRegularBadWitnesses_card_le_at` and `finite_frobeniusPowerRegularBadWitnesses_card_le` → `finite_frobeniusPowerRegularBadChallenges_card_le`. The new arbitrary-threshold theorem is generalized to the current joint Taylor and degree interfaces and drops the `A ≤ n` assumption. Its specialization at `L = k` covers the source default-threshold theorem, so no fixed-threshold wrapper was added. No mathematical result was left out. A historical acceptance case imported the module and checked a nonempty singleton challenge set at zero over a two-point complex domain; it is not in the current consolidated suite.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/RegularChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`finite_frobeniusPowerRegularBadWitnesses_card_le_of_separant_at` and `finite_frobeniusPowerRegularBadWitnesses_card_le_of_separant` are covered by `finite_frobeniusPowerRegularBadChallenges_card_le_of_separant_at`. The quantitative claim is unchanged; the theorem uses the current coefficient-height, jet-degree, and mapped-domain interfaces and drops the source assumption `A ≤ n`. Specializing at `L = k` covers the default-threshold statement, so it has no separate declaration. The private helper `ordinary_source_initial_ne_zero_of_regular` is covered by `jointInitialJetEquation_ne_zero_of_regular`. A historical acceptance case invoked the theorem on a nonempty singleton challenge set over a two-point complex domain; it is not in the current consolidated suite.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Regular.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusPowerRegularSolutions_at` keeps its name. It now uses `CoeffNatDegreeLE` and `jetTotalDegree`, and does not require `A ≤ n`. A historical acceptance example specialized the arbitrary-threshold theorem over `ℂ` and showed that zero lies in an exceptional set of cardinality at most one; it is not in the current consolidated suite. The fixed-threshold `exists_exceptional_frobeniusPowerRegularSolutions` is covered by the theorem at `L = k`; no wrapper was added.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleRegularBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `finite_frobeniusRegularBadWitnesses_card_le` to `finite_frobeniusRegularBadChallenges_card_le`. This public specialization states the two-message correlated-pair bound, omits the redundant `A ≤ n` assumption, and uses current API interfaces.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RegularChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `finite_frobeniusRegularBadWitnesses_card_le_of_separant` to `finite_frobeniusRegularBadChallenges_card_le_of_separant`. The theorem uses `CoeffNatDegreeLE` and `jetTotalDegree`, and drops the unnecessary source assumption `A ≤ n`. It selects a common regular center and specializes the arbitrary-tuple bound at tuple length two and retained threshold `k`. The private center-selection and ideal-properness helpers are covered by `exists_forall_jetEvaluation_ne_zero_of_family`, `jointInitialJetEquation_ne_zero_of_regular`, and the existing singleton-span properness argument. A private helper shares the two-message conversion between the supplied-center and center-free bounds.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RegularSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusRegularSolutions` keeps its name. It is generalized to `CoeffNatDegreeLE` and `jetTotalDegree` and no longer requires `A ≤ n`. The proof specializes the power-batched exceptional-set theorem to `ℓ = 1` and `L = k`, then converts exact power agreement to exact correlated-pair agreement. No declarations were omitted.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/PolynomialCurve/Separable.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusPowerSeparableSolutions_at` → `exists_exceptional_frobeniusPowerSeparableSolutions_at`, generalized to the current `CoeffNatDegreeLE` and `jetTotalDegree` interfaces and with the source assumption `A ≤ n` dropped. The separate `exists_exceptional_frobeniusPowerSeparableSolutions` wrapper was not ported because the arbitrary-threshold theorem covers it at `L = k` with `k ≤ A`.
+
+The consolidated acceptance example applies the theorem to the concrete linear equation `Y₀`, checks the exceptional-set bound, and shows that zero belongs to the set for the nonconstant regular-bound fixture.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerTupleSeparableBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusPowerFactorSolutions` retains its name and specializes the arbitrary-threshold separable bound at threshold `D + 1`, expressing the exceptional-set cardinality bound with `ordinaryCurveFactorRaw` and the current coefficient-height and jet-degree interfaces. It uses `exists_exceptional_frobeniusPowerSeparableSolutions_at`. The consolidated acceptance example also checks the factor bound on the constant zero-word fixture, selects a challenge outside the exceptional set, and establishes exact agreement there. All seven source declarations have counterparts; none were omitted.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_exceptional_frobeniusPowerFactorSolutions_unifiedAt`, with the same name. It uses `CoeffNatDegreeLE` and `jetTotalDegree` and drops the unused `A ≤ n`. The existing `exists_exceptional_frobeniusPowerFactorSolutions` keeps its statement and is now proved from it. `exists_exceptional_frobeniusPowerFactorSolutions_unified` is not ported because it is the `L := D + 1` case followed by a rewrite with `ordinaryUnifiedPowerFactorAt_succ_eq`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean`
 
@@ -1953,6 +2724,18 @@ Merges `FirstOrder/Squarefree/Bounds.lean` and `FirstOrder/Squarefree/SingularTa
 `r ≤ j` and `A.natDegree = r`, and `singularTail_map_eq_zero_of_common_root` drops both `IsDomain`
 assumptions.
 
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/DerivativeTupleCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`admissibleChartTuples_card_le_derivativeCapped_of_exponent` and `admissibleChartTupleFamilyAtExponent_card_le_derivativeCapped` keep their names and conclusions, with the source hypothesis `0 < k` dropped. The bounds transport total and derivative degree bounds through the coefficient-map lemmas and retain the sharp agreement ratio `(n-k+1)/(L-k+1)`. The shared specialization theorem `exists_regularHighCutJetImage_of_admissibleChartTuples` is in `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PowerBatchedGraphCounting.lean`; it gives an equal-cardinality image of regular high-cut Taylor jets with inherited agreement equations.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ReedSolomon.finite_sourceChart_bad_challenges_card_le` to `ReedSolomon.finite_symbolicTaylorChart_badChallenges_card_le`. The mathematical bound is unchanged; it uses destination joint-chart equations, `CoeffNatDegreeLE`, and current set-cardinality APIs. The source height predicate was replaced, the mapped domain uses `domain.trans ⟨iota, iota.injective⟩`, the incidence boundary condition is derived from existing bounds, and the unused assumption `0 < v` was removed. No public source declaration was omitted. Private source evaluation helpers are handled by joint-chart evaluation APIs or remain private proof steps; `source_initial_ne_zero_of_regular` is represented by private `jointInitial_ne_zero_of_regular`.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -1962,6 +2745,9 @@ Renamed `sourceChartHighCuts` to `jointTaylorHighCutList`, `symbolicSourceNumera
 The graph-locus inclusion uses `Set.ncard` cut counts and the explicit exponent `2 * K`. The finite incidence bound uses `L ≤ A` and `A - L + 1 ≤ n`, counts agreement indices with `Set.ncard`, and drops the unnecessary positive cut-degree premise. Its specialization uses `jetTotalDegree` and `CoeffNatDegreeLE` and drops the positive jet-degree premise. No public source declarations were omitted; finite index-set encodings are expressed directly with `Set.ncard`.
 
 The matching acceptance module `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` replaces the high-cut membership example with two concrete singleton-set examples, one for each finite incidence bound.
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/SingularTail.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `automaticSquarefreeListBoundConstant` and `automaticSquarefreeListExpression_le` with their source names. The theorem specializes the automatic first-order recipe to a rate-only constant times `n / eta²`, using the shared premise theorem from `AutomaticBounds.lean`. No declarations from the source unit were omitted. The matching acceptance file checks the singular-tail zero case and an automatic bound instance at rate `2 / 49`, slack `1 / 100`, and parameters `n = 100`, `D = 1`, `A = 20`.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean`
 
@@ -1977,11 +2763,15 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 
 `admissibleChartPairs_card_le_sharp` and `admissibleChartPairFamily_card_le_sharp` keep their source names. Both bounds now allow `k = 0`, where the degree constraints force every admissible pair to be zero and the count is at most one. For positive `k`, they use the factor `v * (((n - k + 1) * (1 + 2 * K * (v - 1)) / (L - k + 1)) ^ r)`. The proof specializes the generic sharp high-cut incidence theorem after choosing a challenge that preserves pair injectivity. No public source declaration was omitted. The source-private `jetDegree_pos_of_initialSeparant_ne_zero_sharp` was not ported because the current generic sharp incidence theorem has no positive jet-degree premise.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PairCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Promoted the private chart-pullback evaluation helper to the public identity `ReedSolomon.eval_chartPairPullback_joint`. The source report lists no public declaration for this identity.
+
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`ReedSolomon.exists_graphLine_pair_of_symbolic_sample` keeps its name and mathematical statement. It recovers a base-field polynomial pair from the sample constraints and shows that every compatible regular symbolic chart reconstructs their affine combination, its initial jet, and its cleared Taylor coefficients. The current theorem uses the explicit `2 * K` exponent API. No declaration from the source file was omitted; the TaylorCuts bridge declarations are supplied by the current `TaylorChartAlgebra` API.
+`ReedSolomon.exists_graphLine_pair_of_symbolic_sample` is subsumed by `ReedSolomon.exists_graphLine_pair_of_symbolic_sample_of_exponent` at `τ = 2 * K`. It recovers a base-field polynomial pair from the sample constraints and shows that every compatible regular symbolic chart reconstructs their affine combination, its initial jet, and its cleared Taylor coefficients. The TaylorCuts bridge declarations are supplied by the current `TaylorChartAlgebra` API.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1989,7 +2779,17 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/TaylorChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-`exists_frobeniusGraphLine_of_symbolic_sample` keeps its name. It is generalized from `Fin n` to an arbitrary embedded coordinate type and requires root equations only on the sample, as used by interpolation. The source file's only public declaration is covered; its interpolation and Taylor-cut helpers already live in the current `GraphLine` and `TaylorChartAlgebra` APIs, so nothing is deferred or unported.
+`exists_frobeniusGraphLine_of_symbolic_sample` keeps its name in `FrobeniusComponentRecognition`. It is generalized from `Fin n` to an arbitrary embedded coordinate type and requires root equations only on the sample, as used by interpolation. The source file's only public declaration is covered; its interpolation and Taylor-cut helpers already live in the current `GraphLine` and `TaylorChartAlgebra` APIs, so nothing is deferred or unported.
+
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/RegularEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`regularSymbolicMCABound` was renamed to `regularSymbolicAgreementBound`, and `exists_exceptional_regularSymbolicLineMCA` was renamed to `exists_exceptional_regularSymbolicCorrelatedAgreement`. The rational bound formula and uniform exceptional-set conclusion are unchanged. `regularSymbolicBadChallenges`, `finite_regularSymbolicBadChallenges_card_le`, and `regularSymbolicBadChallenges_finite` keep their names. The cardinality bound, finiteness theorem, and exceptional-set theorem drop the unused `0 < v` assumption. The bad-challenge predicate uses the current embedding-composition domain API, and the bound uses `CoeffNatDegreeLE`.
+
+The common-center argument uses `Polynomial.exists_forall_eval_ne_zero`, added to the public polynomial API and owned by `SpecializationAvoidance`. `exists_forall_jetEvaluation_ne_zero_of_family` replaces `exists_common_symbolicWitness_center` and generalizes it to a finite indexed family of differential equations and solution polynomials. The existing `exists_forall_jetEvaluation_ne_zero` statement is unchanged and specializes the family theorem.
+
+`HasExactCorrelatedPair` was already defined in `MutualCorrelatedAgreement/ExtensionDescent.lean` with the exact polynomial and agreement-set conditions, so it was not redeclared. No other public declaration from the unit was omitted. `ArkLibTest/Data/Polynomial/Differential.lean` checks a common center for two distinct equations. `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean` checks the exceptional-set theorem, a nonempty singleton in the finite-family bound, and finiteness of the full bad-challenge set.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TupleSpecialization.lean`
 
@@ -2017,6 +2817,18 @@ The code-level characterizations are new. They let the counting and transfer the
 The interleaved statements are in `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
 Scalar providers of `UniformExactPowerAgreement` (list-decoding and curve-counting results) are
 not ported here.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`polynomialTupleFamily`, `mem_polynomialTupleFamily_of_commonAgreement`, `polynomialTupleFamily_card_le`, and `mem_polynomialTupleFamily_iff` retain their names and are generalized from `Fin n` to finite embedded coordinate types.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`frobeniusPowerCoordinate`, `frobeniusPowerCoordinate_eval`, and `frobeniusPowerCoordinate_natDegree_le` keep their names. The sparse coordinate is defined by expanding `powerBatchedCoordinate`; all three declarations are generalized from fields to commutative semirings. The acceptance case in `ArkLibTest/Data/CodingTheory/ReedSolomon.lean` checks evaluation at `2` and the degree bound for three values with scale `2`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added the shared `eval₂_powerBatchedCoordinate_eq_powerBatchedWord` identity with a commutative-semiring source. It replaces the private copies used by the certificate and first-order curve modules.
 
 ## `ArkLib/Data/CodingTheory/ReedSolomon/PowerAgreement/ConstantCode.lean`
 
@@ -2267,6 +3079,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordi
 
 The acceptance case in `ArkLibTest/Data/Polynomial/Differential.lean` uses a height-one nonconstant coefficient equation that vanishes at challenge zero and checks that zero belongs to an exceptional set of cardinality at most one. Nothing was deferred or left unported.
 
+## `ArkLib/Data/Polynomial/Differential/DerivativeDescent.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.HiddenDerivative.geometric_characteristic_components` became `PolynomialDifferential.characteristic_bounds_of_max`. It generalizes the field result to commutative semirings and drops the unnecessary `0 < K` assumption. `ReedSolomon.geometric_below_characteristic` became `PolynomialDifferential.jetDegreeCastsNeZero_of_jetTotalDegree_charGuard`. It generalizes to any commutative semiring and the current `JetDegreeCastsNeZero` contract, without the unused message-dimension and block-length parameters. The source-shaped `IsBelowCharacteristic (k - 1) Q` result is not recreated because that bundled predicate is absent from the current API; the jet-degree consequence is supplied in the operational cast form, and ambient-cutoff bounds remain separate in the current certificate API.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/HybridDescent.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`PolynomialDifferential.root_reaches_tail_or_regular_stage` retains its name and is now owned by the generic derivative-descent module. Added `PolynomialDifferential.jetTotalDegree_jetDerivative_le_sub`, a coefficient-generic total-degree bound on iterated jet derivatives; both descent constructors use it.
+
 ## `ArkLib/Data/Polynomial/Differential/DirectRegularLift.lean`
 
 This file ports the semantic content of `RootFinding/Regular/DirectRegularCoefficient.lean` and
@@ -2361,9 +3183,25 @@ are new.
 is what the lifting theorems need; over a general commutative ring they instead assume that the
 slope, a binomial coefficient times that value, is a unit or left-regular.
 
+## `ArkLib/Data/Polynomial/Differential/JetPrefixPresentation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`exists_firstOrderFieldTailPresentation` became `exists_jetPrefixPresentation_firstOrder_of_jetDegree_zero`, generalized to commutative semirings. Added `exists_jetPrefixPresentation_of_vars_subset_range`, which constructs a prefix presentation from variable-support inclusion. The `FirstOrderFieldTailPresentation` wrapper and its `nonzero`, `specialization`, and `jetWeight` results use the generic `JetPrefixPresentation` nonzero, differential-specialization, and total-degree methods instead.
+
+## `ArkLib/Data/Polynomial/Differential/OrderZeroPresentation.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/TailBound.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Moved `orderZeroVariableEquiv`, `orderZeroAsPolynomial`, `orderZeroOfPolynomial`, `orderZeroAsPolynomial_orderZeroOfPolynomial`, and `orderZeroAsPolynomial_eval` into the generic differential-polynomial owner. Generalized the presentation and evaluation laws from fields to commutative semirings. Renamed `orderZeroOfPolynomial_jetWeight` to `orderZeroOfPolynomial_jetTotalDegree` and generalized it to commutative semirings and canonical `jetTotalDegree`. No listed source declaration was omitted from this presentation; the separate `singularAsPolynomial_eval` wrapper remained unnecessary because `remainingSpecializationHom_eq_eval` covers its use.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Factors/IrreducibleEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Renamed `ordinary_jetWeight_eq_degreeOf` to `jetTotalDegree_eq_jetDegree_zero`. The identity is stated through the canonical jet-degree API in the existing `OrderZeroPresentation` owner and replaces a duplicate local calculation. The acceptance case in `ArkLibTest/Data/Polynomial/Differential.lean` computes the jet degree of `orderZeroOfPolynomial (X ^ 2 + 1)` using this theorem.
+
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylor.lean`
 
-[DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from
+[DKT26], Appendix A.6, Lemma A.4. The declarations are ported from
 `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Taylor/Numerator.lean` at ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -2434,6 +3272,10 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/S
 
 `derivativeWeight_eq_piSingle` was not ported because it is a source-specific encoding helper. The destination capped-bidegree API bounds an indexed coordinate directly, and the existing `weightedTotalDegree_indexWeight_eq_jetDegree_one` supplies the needed first-order weighted-degree fact.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/DerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Generalized `symbolicSourceSeparant_mem_sourceCurveCutDerivativeBidegree` as `initialJetSeparant_mem_restrictCappedBidegree` for arbitrary differential order, with an explicit highest-jet degree cap.
+
 ## `ArkLib/Data/Polynomial/Differential/RationalTaylorDerivativeDegree.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorDerivativeDegree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -2462,6 +3304,12 @@ The default-exponent corollaries `jointTotalDegree_commonTaylorNumeratorOver_le`
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The caller of `CoeffNatDegreeLE.clearedSubstitution` is adapted to pass the same parameter bound for both `h` and the new independent coefficient bound `a`. The source `totalDegree_rationalTaylorNumeratorOver_le` is covered by the generalized `totalDegree_rationalTaylorNumeratorOver_le_of_jet` theorem.
+
+## `ArkLib/Data/Polynomial/Differential/RecursiveCount.lean`
+
+Ported from `ArkLib/Data/Polynomial/Differential/RecursiveCount.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`RegularBranchRatBudget`, `boundedSolution_recursive_counting_totalJetDegree`, and `boundedSolution_card_le_sq_totalJetDegree` keep their names. The regular-branch budget and recursive counting theorems use explicit per-jet cast nonvanishing, and the square-bound corollary uses the current explicit cast contract.
 
 ## `ArkLib/Data/Polynomial/Differential/RegularIteration.lean`
 
@@ -2623,6 +3471,12 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/G
 
 `finite_regular_solutions_card_le` → `card_le_of_regular_solutions_agreement`. The result allows any algebraically closed field extension and an explicit sufficient Taylor exponent, uses the sharp numerator `n - k + 1` and `jetTotalDegree`, and drops the positive-degree and positive-`k` assumptions.
 
+Ported from `ArkLib/Data/Polynomial/Differential/TaylorChartBaseChange.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`regularBranchRatBudget_of_agreement` keeps its name and now accepts any predicate characterized by degree and agreement constraints. `finite_agreement_solutions_card_le` was generalized to that predicate form and renamed `finite_solutions_card_le_sq_totalJetDegree_of_agreement`; the finite-family argument is owned by the generic differential layer.
+
+`IsAgreementSolution` is represented by the existing `ReedSolomon.closePolynomialSet` membership condition and the generic agreement predicate. `jetTotalDegree_eq_weightedTotalDegree_elim` was not ported because it restates the existing weighted-degree API. `jetTotalDegree_le_of_reflTransGen_singularStep` and `jetTotalDegree_rename_jetPrefixEmbedding` were not ported because they already exist in `RecursiveCount.lean` and `PolynomialDifferential.JetPrefixPresentation`, respectively.
+
 ## `ArkLib/Data/Polynomial/Differential/TaylorChartAlgebra.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Symbolic/TaylorCuts.lean` at ArkLib revision
@@ -2750,7 +3604,7 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, namespace
 
 ## `ArkLib/Data/Polynomial/Differential/TaylorResidual.lean`
 
-The support bounds are [DKTZ26], Appendix A.3, Lemma A.5. The declarations are ported from ArkLib
+The support bounds are [DKT26], Appendix A.6, Lemma A.4. The declarations are ported from ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 * `universalTaylorJet`, `optionEquivLeft_universalTaylorJet`,
@@ -3098,7 +3952,7 @@ ArkLib revision a5aa2677fee4e3a79d6bb05136631cce4a08587d, which were stated over
 * The exponential envelope inside `localRank_weightedHigherJetCount_le_exp` is
   `Real.add_pow_le_pow_mul_exp`.
 
-Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/GeometricCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Renamed `geometric_ratio_le` to `agreementGap_geometricRatio_le` and `geometric_count_le_manuscript_bound` to `geometricCount_le_of_agreementGap`. Generalized both conclusions from `ℝ` to any linearly ordered field; the count theorem retains its rational count premise. The characteristic-based binomial pivot condition is covered by `PolynomialDifferential.natCast_choose_ne_zero_of_ringChar`, specialized at each index and combined with binomial symmetry, so it was not ported. No Reed–Solomon wrapper was added because the numerical statements have no Reed–Solomon-specific data.
 
@@ -3193,6 +4047,10 @@ and `hybridDimensionSensitiveIncidenceProduct_min_le` keep their names and state
 `hybridDimensionSensitiveIncidenceProduct_eq_factor_mul` keeps its name and is generalized from
 `s ≤ k` to `s ≤ k + 1`. Nothing was deferred or left unported.
 
+Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/ProductBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `natCastRatio_le_div_of_scaled_lower_bound`, a general ordered-field ratio bound that replaces the private `midpoint_ratio_le_two_div` helper. The enumerative acceptance case checks it with `δ = scale = 1`, `n = 2`, `N = 1`, and `D = 2`.
+
 ## `ArkLib/ToMathlib/Combinatorics/Enumerative/MonomialCount.lean`
 
 Ported from ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`, file
@@ -3273,7 +4131,7 @@ replaces the span-induction argument inside
 `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
 specialized to polynomial matrices, `Fin` indices, and the rational function field.
 
-## `ArkLib/ToMathlib/LinearAlgebra/Matrix/RowBlocks.lean`
+## `ArkLib/ToMathlib/LinearAlgebra/Matrix/Rank.lean`
 
 Ported from the matrix rank argument in `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -3593,6 +4451,16 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Firs
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Degree.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 `challengeHeightLE_clearedSubstitution` becomes `CoeffNatDegreeLE.clearedSubstitution`. The generic theorem takes an independent coefficient bound `a`, concludes `H * h + a`, and restricts the coefficient bound to `Q.support`, weaker than the source's all-coefficient hypothesis. The source `ChallengeHeightLE` predicate and its `mono`, `const`, `mul_bound`, `pow_bound`, and `sum_bound` lemmas are represented by `CoeffNatDegreeLE` and its existing closure lemmas. The source `prod_bound` helper is not promoted because no public result in this unit needs it; the finite-product estimate is handled internally. The private copy in `TaylorBidegree.lean` is subsumed and needs no separate entry.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/HybridCurveTransfer.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Generalized `ReedSolomon.challengeCoefficientHeight` to `MvPolynomial.coeffNatDegree`, the maximum degree of the polynomial coefficients for arbitrary variable types and commutative semiring coefficients. Renamed `ReedSolomon.coeffNatDegreeLE_challengeCoefficientHeight` to `MvPolynomial.coeffNatDegreeLE_coeffNatDegree`; this proves that the computed bound applies to every coefficient. The exception results derive this height from the equation `Q` instead of requiring it as an input.
+
+## `ArkLib/ToMathlib/MvPolynomial/PowerMomentGeometry.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.powerMomentWeight`, `powerMomentMap_weightedTotalDegree_le`, `powerMomentIdeal_hilbertFunction_le_weightedFinrank`, `powerMomentWeight_exponent_ncard_le`, `powerMomentIdeal_hilbertFunction_le`, `powerMomentIdeal_affineDegree_le`, `powerMomentPoint`, `powerMomentSourcePoint`, `powerMomentSourcePoint_powerMomentPoint`, `aeval_powerMomentPoint`, `powerMomentPoint_mem_zeroLocus`, and `aeval_eq_aeval_powerMomentMap_of_mem_zeroLocus` move into the `MvPolynomial` namespace under their destination names, using the existing `PowerMomentIndex` API. `ReedSolomon.powerMoment_incidence_off_source_excluded` becomes `MvPolynomial.powerMomentMap_incidence_off_excluded` and is generalized. The Hilbert-polynomial degree results are not ported because existing generic affine-Hilbert-polynomial theorems cover them.
 
 ## `ArkLib/ToMathlib/MvPolynomial/PowerMomentLift.lean`
 
@@ -4374,6 +5242,10 @@ main, where #1008 wrote `[P.IsPrime]`. The private `sub_mul_sub_add_one_le` move
 `card_le_of_agreement_off_excluded_sharp_of_iteratedRetainedCutFamily` is the iterated incidence
 bound with threshold `fun _ ↦ L` and `D = d`.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/Incidence.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+`ReedSolomon.primeBaseHypersurface_incidence_off_excluded` is generalized as `MvPolynomial.card_le_of_agreement_off_excluded_of_principalCut`.
+
 ## `ArkLib/ToMathlib/RingTheory/Nullstellensatz/BidegreeIncidence.lean`
 
 Ported from `ArkLib/ToMathlib/AlgebraicGeometry/Incidence/BidegreeExcluded.lean` at ArkLib revision
@@ -4521,11 +5393,19 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation
 
 An acceptance example uses the rate certificate to obtain a curve certificate, constructs a separant chain, and shows that any agreeing degree-<2 candidate for the two-point zero word is zero. It then selects a challenge outside the finite exceptional set in an infinite extension field.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example invokes `FirstOrderCurveCertificate.jetDegree_one_le` on a concrete curve certificate.
+
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/FirstOrder.lean`
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Extended the existing acceptance file with a concrete five-part `automaticParameterBounds` case at rate `1/2` and slack `1/8`, concrete closed list and exception envelope cases, a one-stage direct-ratio separant-chain bound, and the cap identity through `firstOrderCurveStageCap_add_height_eq_of_factors`. Removed the redundant ratio restatement; no separate acceptance module was added.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/FirstOrder/FirstOrderHybridList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+A nonempty singleton solution family exercises both root-coverage theorems, the regular derivative-capped and identity-pair counts, symbolic raw and optimized counts, field raw and optimized counts, the direct field theorem, and the automatic theorem. Descent examples cover characteristic zero at degree zero and characteristic two at actual degree one with total cap three. A concrete finite-characteristic curve certificate invokes both characteristic-guarded certificate bridges.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/RatePartition.lean`
 
@@ -4561,34 +5441,151 @@ An acceptance case checks a concrete scale-300 curve certificate at `δ = 1/5`.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
 
+This test file was later consolidated into
+`ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean`.
+
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The aggregate includes a concrete `d = 500`, `W = 1` instance of `partitionSupport_dimension_gt_moment`, using the lower-tail second-moment bound at logarithm `log 3000`. It checks the numeric rate and scale hypotheses and exercises the dimension conclusion without generic theorem restatements. The source-specific wrapper is not needed because the existing theorem covers it.
+## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Parameters/WeightedSupport.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks a concrete small-gap block against both the Taylor cutoff bound `2 * m - 1 < n` and the ambient-dimension bound.
+## `ArkLibTest/Data/CodingTheory/ReedSolomon.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added a concrete nonvacuity example over `ℚ` for one degree-`< 1` solution agreeing at one coordinate, checking the Reed–Solomon specialization.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/DirectJetList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Added `ZMod 5` acceptance examples showing the zero polynomial as an agreeing root, applying the regular-stage estimate, and obtaining the finite actual-chain, common-order, and coarse bounds from the final theorem.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Profile.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/FirstOrder/Bounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check the exact-ceiling and closed cardinality bounds, finite-set and explicit-envelope automatic bounds, both slack bounds, and tight and squarefree profile bounds on a concrete singleton family over `ℚ`.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean`
 
+**Historical port-time test notes, not current suite coverage.** The following descriptions record
+acceptance cases that existed at earlier port revisions. The consolidated suite currently retains
+15 concrete examples: extension descent, exact-line transfer, graph-line recognition and its
+exceptional bound, tuple collision and avoiding specialization; on the shared positive-dimensional
+prime-component fixture, graph parametrization, common-agreement extraction, admissible chart-tuple
+construction, principal-open chart-graph inclusion, admissible Frobenius-pair construction, and
+principal-open Frobenius-graph inclusion; symbolic point recognition with a nonzero second tuple
+component; and derivative-capped challenge, exceptional-set, and first-order incidence bounds.
+
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-The joint-chart case reuses the shared concrete equation and numerator identity, derives the joint-coordinate identity by flattening, and checks that the order-one numerator vanishes at the selected point while remaining nonzero at another jet. The component case uses `K = 2`, `k = 1`; its `l = 1` numerator is the nonzero jet variable `Y₀`, proved to lie in the prime component ideal. It checks that the returned graph parametrizes every regular point of that component. Existing cases for extension descent, exact agreement, graph-line recognition, singular tails, and tuple specialization remain covered.
+The earlier joint-chart acceptance case reusing the shared concrete equation and numerator identity remains historical. The former `K = 2`, `k = 1` component graph case is covered by the current shared fixture: it uses the returned graph proof to show the zero regular point lies on the recognized graph. Current coverage is summarized above.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Added an acceptance example on the algebraic-closure prime-component fixture. It checks a degree-bounded pair and a nonzero common-agreement count.
+A historical acceptance example used the algebraic-closure prime-component fixture to check a degree-bounded pair and a nonzero common-agreement count. The current suite retains a compact component-agreement case on the shared fixture, producing a degree-bounded tuple with at least one common agreement.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/ComponentRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Acceptance cases check a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant. They also check the single-tuple and finite-family exact-agreement bounds with positive power batching, including two distinct family candidates.
+Historical acceptance cases checked a positive-dimensional prime component's sample interpolation, graph coverage, and nonzero restricted separant, along with single-tuple and finite-family exact-agreement bounds. The current suite keeps a compact graph-pair instance with the regular zero point on the returned graph; the shared fixture also supports the component-agreement, chart-admissibility, and incidence examples summarized above.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-Acceptance cases check the polynomial-valued source prime bound with a polynomial received word and proved cut premise, a degree-zero chart prime with a nonempty cut, chart/source/first-order component bounds including empty-cut boundary cases (the positive-dimensional chart bound forces the cut count to zero), and a finite incidence count with a regular agreement point.
+Historical acceptance cases checked polynomial-valued source-prime bounds, a degree-zero chart prime, chart/source/first-order component bounds, and finite incidence counts. Those broader bounds remain historical; the current suite includes principal-open chart-graph inclusion and Frobenius-graph inclusion instances on the shared component fixture.
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/GraphCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-An acceptance case applies `admissibleFrobeniusPairs_card_le_degreeOf` to a singleton family containing an admissible pair from the existing concrete component example. Its initial-equation identity is shared by the ideal-membership and nonvanishing proofs.
+A historical acceptance case applied `admissibleFrobeniusPairs_card_le_degreeOf` to a singleton family containing an admissible pair from the concrete component fixture; that specific cardinal-bound example remains historical, and the production theorem is unchanged. The current suite checks a concrete admissible Frobenius pair and the zero point's membership in its graph.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
-An acceptance example applies `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the existing component ideal, agreement cuts, and separant fixtures. It specializes the returned admissible tuple at zero and checks the Taylor reconstruction identity.
+A historical acceptance example applied `exists_admissibleChartTuple_of_primeTaylorComponent_agreements` to the component ideal, agreement cuts, and separant fixtures. The current suite retains a compact instance of this theorem, constructing an admissible tuple and using its returned graph proof to place the zero regular point on that tuple's graph.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/SharpGeneralEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Historical acceptance cases invoked the sharp fixed-center and terminal-recognition bounds and checked finite regular and exceptional bad-challenge sets. The current consolidated suite retains one nonempty derivative-capped bad-challenge bound instance, as summarized above.
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Kept the nonempty two-message ordinary regular-bound instance. Added concrete checks applying `finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent`, `exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_exponent`, and `exists_exceptional_frobeniusPowerSeparableSolutions_at`, with their cardinal bounds, to the challenge set `{0}` over `ℂ`. Removed the standalone finite polynomial-tuple collision example to meet the shared file limit; the stronger root-avoiding specialization example remains.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RegularChart.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples apply the supplied-center theorem and the new center-free theorem to the existing nonempty singleton challenge set over the two-point field fixture. Each example verifies `card ≤ 2`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/RegularSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks a concrete two-message instance and shows that challenge zero belongs to an exceptional set of size at most two.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/SeparableSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The acceptance example specializes the existing `exists_exceptional_frobeniusPowerSeparableSolutions_at` at `ℓ = 1` and `L = k`, checks the exceptional-set cardinality, and exhibits a challenge outside the set with an exact correlated pair using `exactCorrelatedPair_of_powerAgreement_one`. Both declarations are already on `main`, so there are no renamed or generalized declarations. The source wrapper `exists_exceptional_frobeniusSeparableSolutions` is not added because the existing bound and exact-agreement conversion cover its statement; the source file has no other declarations.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Frobenius/FactorSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The source declaration `exists_exceptional_frobeniusFactorSolutions` is covered by `exists_exceptional_frobeniusPowerFactorSolutions`, generalized from a single line to polynomial curves with arbitrary tuple length and the current coefficient-height and jet-degree interfaces. The acceptance example checks the tuple-length-one conversion from exact power agreement to an exact correlated pair using `exactCorrelatedPair_of_powerAgreement_one`. No source declaration is left uncovered. A separate single-line wrapper was omitted because the generalized theorem and conversion theorem already provide its statement.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Capacity.lean`
+
+Acceptance examples at `δ = 1/5` and `n = uniformMathematicalCapacityLength (1/5)`, with the gap hypothesis derived from the integer guards. There is one example each for the extension-field curve, base-field curve and line theorems, over `ℚ` (and `AlgebraicClosure ℚ`). Each exhibits a challenge outside the exceptional set with an exact witness for the zero candidate.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check the base-field height theorem at the tight exponent, the base-field certificate theorem, and the extension-field height and certificate theorems. Both certificate cases reuse a certificate for the same one-point zero curve over `ℚ`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example builds a concrete profile with derivative cap `1`, checks that it is curve-verified by `decide`, and applies `exists_exceptional_exactPowerAgreement_squarefreeSharpOptimized` to get a base-field challenge with exact power agreement for `0`.
+Acceptance examples appended for the new declarations:
+
+- `exists_exceptional_firstOrder_hybrid` and `exists_exceptional_firstOrder_hybrid_base` on the equation `Y₁` over `ℂ` with `n = 2`, `D = 1`, `A = 2`, `h = 0`, `μ = M = 1`, with all hypotheses discharged by computation.
+- `exists_automaticFirstOrder_hybridEquation` (`ℚ → ℂ`), `exists_automaticFirstOrder_hybridEquation_base` and `automatic_first_order_line_agreement` (over `ℚ`) at `ρ = 1/2`, `a = 3/4`, `n = 4`, `k = 2`, `A = 3`, with the threshold inequality `a₁(1/2) < 3/4` proved.
+- `automaticFirstOrder_rate_bounds` over `ℚ` at `ρ = 1/2`, `η₁ = 1/8`.
+- `automaticFirstOrder_hybrid_mcaError_le` and `automaticFirstOrder_rate_mcaError_le` over `ZMod 2749`, where the characteristic guard is discharged by bounding the automatic derivative cap at `ρ = 1/2`, `η₁ = 1/8` below `2749` via `automaticDerivativeCap_le_inv_eta`.
+- `exists_uniformFirstOrder_lineMca_of_two_le` over `ℚ` at `n = 3`, `k = 2`, `A = 3`, which also exercises `FirstOrderSymbolicCertificate.exists_exceptional_hybrid`.
+Ported from the new declarations above; the source revision has no matching examples. Acceptance examples:
+
+- `exists_exceptional_firstOrder_hybridCurve_optimized` over `ℂ` for the equation `Y₁` (`n = 2`, `D = 1`, `A = 2`, `h = 0`, `mu = M = 1`), with every hypothesis discharged concretely. This also exercises `exists_exceptional_ordinaryCurveTail`.
+- `exists_baseExceptional_firstOrder_hybridCurve_optimized` on the same instance, with `ℂ` as the base field.
+- `exists_baseExceptional_firstOrderCurve_of_heightSlotCount_optimized` over `ℚ` at three points (`D = 1`, `A = n = 3`, `ell = 1`, `m = 1`, `M = 0`, `mu = 1`, `h = 1`). The slot surplus (6 < 8) is checked by `norm_num`, and the example finds a challenge outside the exceptional set where the zero candidate has full agreement and exact power agreement. This also goes through `exists_baseExceptional_firstOrder_hybridCurve_including_fullDimension`.
+- The three existing examples for the changed `HybridCurveTransfer` theorems now pass `coeffNatDegreeLE_coeffNatDegree _`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/LowRateSemantics.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Branchwise.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples check the low-rate symbolic certificate, complete-list and exact correlated-agreement rate bounds, and finite-field MCA error at concrete `1/16`-rate parameters. They also check branchwise finite-slack bounds, rate bounds, and finite-field MCA error at concrete `1/2`-rate parameters.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree.lean`
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/FactorwiseList.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance cases check singleton instances of `finite_factorwise_agreement_solutions_card_le_actual` and `finite_factorwise_agreement_solutions_card_le`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Certificate.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/CurveBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example builds a finite first-order curve certificate at recovery degree `1` for the zero line over the file's two-point domain `factorwiseDomain`, and applies `exists_baseExceptional_retainedSquarefreeCurveAgreement_of_certificate` to exhibit a base-field challenge with exact power agreement. This also exercises the extension theorem, the tail-free theorem and the tail discharge. A second example is one concrete instance of `retainedSquarefreeCurveAgreementCharge_balancedSplit_le`.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/LineCertificate.lean` and `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example takes a concrete rational symbolic line certificate (`n = k = A = 2`, `M = B = 1`) and uses `exists_baseExceptional_retainedSquarefreeLineAgreement_of_certificate` to get a challenge at which `0` has an exact correlated pair with the zero line. A second example uses the concrete curve certificate `certificateCurve` with `exists_baseExceptional_retainedSquarefreeCurveAgreement_sharpOptimized_of_certificate` to get exact power agreement. The existing `_of_tail` example still passes and exercises the refactored general theorem with the ordinary-tail charge.
+
+## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean`
+
+Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks an exceptional set of size at most one and exact power agreement at a challenge outside it for zero messages over `ℂ`.
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/Equations/BaseEquation.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example takes the equation `Y₀²` over `ℚ` on a two-point domain, with `f = g = 0`, `D = 1`, `h = 0`, `mu = 2` and `A = 2`. It gets an exceptional set of size at most 2 from `exists_exceptional_ordinaryEquation_base`, picks a challenge in `{0, 1, 2}` outside that set, and derives an exact correlated-pair witness for the zero root, so the conclusion is not vacuous.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Ordinary/UnifiedCurve.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example applies `exists_baseExceptional_ordinaryPowerEquation` over `ℚ` to the reducible equation `Y₀²` on a three-point domain, with `n = 3`, `D = 1`, `ℓ = 1`, `h = 0`, `B = 2` and `L = A = 3`. The retention threshold `L = D + 2` lies in the free-retention regime that the fixed-split theorems do not reach. The charge `ordinaryUnifiedPowerFactorAtOrHeight 3 1 1 2 0 3 3` simplifies to `2`, and the example exhibits a challenge outside the exceptional set at which the zero root has exact power agreement with the zero word. Main's existing example for `exists_exceptional_ordinaryEquation_base` is unchanged and covers the fixed split.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`
 
@@ -4604,7 +5601,14 @@ Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/
 
 Acceptance examples check both sharp bounds on a concrete nonempty admissible-pair set and its filtered family at `r = 0`; each bound evaluates to one.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/ExceptionalChallenges.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks a concrete nonempty singleton challenge set, its regular chart, three agreements, the absence of an exact degree-bounded pair, and the resulting bound of 12.
+
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
+
+This test file was later consolidated into
+`ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -4639,6 +5643,33 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/G
 
 The shared acceptance example applies `exists_regular_solution_jet_family_of_exponent` to the nonempty singleton family `{0}` for `Q = Y₀` over `ℚ`, and applies `card_le_of_regular_solutions_agreement` to the same family with one evaluation point.
 
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/TaylorCutoff.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples exercise the total-degree cast theorem and check `characteristic_bounds_of_max` over `ZMod 5` with `K = 5` and `ν = 3`, yielding the pivot bound at equality.
+Ported from `ArkLibTest/Data/Polynomial/Differential.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+The singleton `Y₀ = 0` example instantiates `card_mul_le_jetTotalDegree_mul`, the rational recursive count, its square-bound corollary, the agreement-derived regular-branch budget, the generic finite agreement theorem, and the sharp regular-agreement count. The standalone `Y₀ + Y₁` degree illustration was removed to keep the file under 1,500 lines while retaining the main theorem examples.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/RootFinding/Counting/TaylorCharZeroSolutions.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No library declarations were added. `separant_ne_zero_of_dependsOnJet_charZero` is covered by `PolynomialDifferential.separant_ne_zero`, using `jetDegreeCastsNeZero_of_ringChar` and `JetDegreeCastsNeZero.natCast_jetDegree_ne_zero`. `regularSolutions_card_le_of_agreement_charZero` is covered by `PolynomialDifferential.card_le_of_regular_solutions_agreement` together with `regularBranchRatBudget_of_agreement`, which allows general agreement predicates and a sufficient Taylor exponent. `boundedSolution_card_le_sq_totalJetDegree_charZero` is covered by `PolynomialDifferential.boundedSolution_card_le_sq_totalJetDegree`, using the characteristic-zero cast condition and the agreement-derived regular-branch budget. `finite_agreement_solutions_card_le_charZero` is covered by `PolynomialDifferential.finite_solutions_card_le_sq_totalJetDegree_of_agreement`; the Reed–Solomon close-polynomial specialization is `ReedSolomon.closePolynomialSet_card_le_of_differential_equation`.
+
+An acceptance example checks generic separant nonvanishing for `Y₀ = 0` over `ℚ`, deriving the cast condition from characteristic zero. Existing examples in this file cover the generic square, finite-agreement, and regular-branch bounds. No production declarations were ported because the source results are covered by these more general APIs.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Semantic.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+No library declarations were added. The acceptance example computes that `Y₁` specializes to zero over `ℚ` at the zero polynomial, then applies `MvPolynomial.map_radicalContent_mul_radicalPrimPart_eq_zero_iff` with `differentialSpecializationHom` to establish the radical-factor zero disjunction. This records the proof recipe for the future `TailBound` port.
+
+`root_content_or_positive` is covered by that generic theorem, followed by `map_mul`, `mul_eq_zero`, and `differentialSpecializationHom_apply`. The root-first declarations `contentEquation`, `positiveEquation`, `fromRootFirst`, `rootFirst_fromRootFirst`, `fromRootFirst_rootFirst`, `fromRootFirst_mul`, `rootFirstSpecializationHom`, `rootFirstSpecializationHom_rootFirst`, and `rootFirstSpecializationHom_fromRootFirst` are not ported; the root-first presentation remains outside the P6 slice 6 API boundary. The nonvanishing, divisibility, and degree declarations are covered by the corresponding existing generic `MvPolynomial` APIs listed in the report. The former direct theorem-application example for retained-curve degree bounds was replaced by this computed split example.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/FirstOrder/HybridDescent.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+Acceptance examples check a supported `Y₁` polynomial at its proper depth-one prefix, a `Y₀` polynomial at prefix depth zero through the degree-zero constructor, and the finite-stage split at endpoint one for the identity sequence. The test uses the shared generic hybrid-variable degree fact directly.
+
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/PolynomialCurve/DerivativeSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+
+An acceptance example checks the generic initial-separant cap on the recursive equation fixture.
+
 ## `ArkLibTest/Data/Probability/Uniform.lean`
 
 Ported from `ArkLib/Data/Probability/Notation.lean` at ArkLib revision
@@ -4656,7 +5687,7 @@ PMF computation is not added, and `$ᵖ` plus `Pr_{…}[…]` remain retired syn
 
 ## `ArkLibTest/ToMathlib/Analysis/SpecificLimits.lean`
 
-Ported from `ArkLib/ToMathlib/Analysis/SpecificLimits/GeometricBounds.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
+Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Parameters/GeometricCounting.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 Acceptance examples check the ratio bound at `n = K = A = 2`, `k = 1`, `ν = 2`, and `δ = 1/2`, and the count bound for `L = 20`, `m = d = 1`.
 

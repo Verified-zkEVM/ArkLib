@@ -1,9 +1,10 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """Check ArkLib documentation integrity.
 
 Checks:
-1. `CLAUDE.md` exists and is a symlink to `AGENTS.md`
+1. The canonical `AGENTS.md` guide and documentation entry points exist
 2. Local markdown links in tracked `.md` files resolve
+3. The doc-gen4 tag in `docbuild/lakefile.toml` matches the root `lean-toolchain`
 
 Exit code 0 if all checks pass, 1 otherwise.
 """
@@ -12,10 +13,10 @@ from __future__ import annotations
 
 import re
 import sys
+import tomllib
 from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
-CLAUDE_PATH = REPO_ROOT / "CLAUDE.md"
 AGENTS_PATH = REPO_ROOT / "AGENTS.md"
 
 MARKDOWN_LINK_RE = re.compile(r"(?<!!)\[[^\]]+\]\(([^)]+)\)")
@@ -36,26 +37,6 @@ def tracked_markdown_files() -> list[Path]:
     ]
 
 
-def check_claude_symlink() -> list[str]:
-    errors: list[str] = []
-    if not AGENTS_PATH.exists():
-        errors.append("Missing AGENTS.md")
-        return errors
-    if not CLAUDE_PATH.exists() and not CLAUDE_PATH.is_symlink():
-        errors.append("Missing CLAUDE.md")
-        return errors
-    if not CLAUDE_PATH.is_symlink():
-        errors.append("CLAUDE.md must be a symlink to AGENTS.md")
-        return errors
-
-    target = Path(CLAUDE_PATH.readlink())
-    if target != Path("AGENTS.md"):
-        errors.append(f"CLAUDE.md must point to AGENTS.md, found {target}")
-    elif not CLAUDE_PATH.resolve().samefile(AGENTS_PATH):
-        errors.append("CLAUDE.md symlink does not resolve to AGENTS.md")
-    return errors
-
-
 def resolve_link(source_file: Path, raw_target: str) -> Path | None:
     target = raw_target.strip().strip("`")
     if not target or "://" in target or target.startswith("mailto:"):
@@ -73,6 +54,9 @@ def resolve_link(source_file: Path, raw_target: str) -> Path | None:
 def check_markdown_links() -> list[str]:
     errors: list[str] = []
     for doc_file in tracked_markdown_files():
+        if not doc_file.is_file():
+            errors.append(f"Missing documentation file: {doc_file.relative_to(REPO_ROOT)}")
+            continue
         text = doc_file.read_text()
         for raw_target in MARKDOWN_LINK_RE.findall(text):
             resolved = resolve_link(doc_file, raw_target)
@@ -84,14 +68,23 @@ def check_markdown_links() -> list[str]:
     return errors
 
 
+def check_docbuild_toolchain() -> list[str]:
+    """`docbuild/` inherits the root toolchain, but its doc-gen4 tag is pinned by hand. `lake update`
+    writes the newest toolchain among the docbuild package's dependencies, so a mismatched tag would
+    build the docs, and the shared ArkLib build, under a different Lean."""
+    toolchain = (REPO_ROOT / "lean-toolchain").read_text().strip()
+    revision = toolchain.split(":", 1)[-1]
+    lakefile = REPO_ROOT / "docbuild" / "lakefile.toml"
+    requires = tomllib.loads(lakefile.read_text()).get("require", [])
+    tags = [r.get("rev") for r in requires if r.get("name") in ("doc-gen4", "«doc-gen4»")]
+    if tags != [revision]:
+        return [f"docbuild/lakefile.toml pins doc-gen4 at {tags}, but lean-toolchain is {toolchain}"]
+    return []
+
+
 def main() -> int:
-    all_errors: list[str] = []
-
-    print("Checking CLAUDE.md symlink...")
-    all_errors.extend(check_claude_symlink())
-
-    print("Checking tracked markdown links...")
-    all_errors.extend(check_markdown_links())
+    print("Checking canonical agent guide, documentation links and the docbuild toolchain...")
+    all_errors = check_markdown_links() + check_docbuild_toolchain()
 
     if all_errors:
         print(f"\n{len(all_errors)} issue(s) found:\n")

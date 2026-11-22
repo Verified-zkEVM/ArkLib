@@ -25,7 +25,7 @@ therefore determines a tuple with at least as many common agreements as the comp
 
 ## References
 
-* [DKTZ26]
+* [DKT26]
 -/
 
 @[expose] public section
@@ -34,7 +34,9 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval zeroLocus affineHilbertPolynomial
+  finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero)
 
 variable {F E : Type*} [Field F] [Field E] {n k K r ℓ : ℕ}
 
@@ -55,7 +57,7 @@ theorem commonCurveAgreement_of_jointTaylorAgreementEquation_mem_prime [IsAlgClo
     (hpoly : ∀ x, x ∈ {x | x ∈ zeroLocus E I ∧
         aeval x (jointInitialJetSeparant center Q) ≠ 0} →
       rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q)
-        K (fun j ↦ x (some j)) = powerBatchedPolynomial
+        K (fun j ↦ x (some j)) = Polynomial.powerBatch
           (fun t ↦ (P t).map ιₑ) (x none))
     (i : Fin n)
     (hcut : jointTaylorAgreementEquation center Q K τ (Polynomial.C (ιₑ (domain i)))
@@ -142,7 +144,7 @@ theorem exists_polynomialGraph_of_primeTaylorComponent_agreements [IsAlgClosed E
       (∀ x, x ∈ {x | x ∈ zeroLocus E I ∧
         aeval x (jointInitialJetSeparant center Q) ≠ 0} →
         rationalTaylorPolynomial center (MvPolynomial.map (Polynomial.evalRingHom (x none)) Q)
-          K (fun j ↦ x (some j)) = powerBatchedPolynomial
+          K (fun j ↦ x (some j)) = Polynomial.powerBatch
             (fun t ↦ (P t).map ιₑ) (x none)) ∧
       (∀ p ∈ I, aeval (powerBatchedJetGraphMap (r := r) center
         (fun t ↦ (P t).map ιₑ)) p = 0) ∧

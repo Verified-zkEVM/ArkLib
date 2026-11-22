@@ -237,6 +237,7 @@ theorem scaledMessage_ne_of_message_ne {base : ZMod q} {βSq κ : Nat}
     scaledMessage Φ opening₁ opening₂ i ≠ scaledMessage Φ opening₂ opening₁ i :=
   scalarVecMul_mul_ne_of_ne hB₁.unit hB₂.unit hmsgNe
 
+omit [NeZero q] in
 /-- A verified block pair bounds a scaled message's squared `ℓ₂` norm (over `𝓜(q, α)`,
 where the Micciancio/Young product bound applies). -/
 theorem scaledMessage_l2NormSq_le {base : ZMod q} {βSq κ : Nat}
@@ -252,6 +253,7 @@ theorem scaledMessage_l2NormSq_le {base : ZMod q} {βSq κ : Nat}
   scalarVecMul_mul_l2NormSq_le α (opening₁.challenge i) (opening₂.challenge i)
     (opening₁.message i) hB₂.challenge_short hB₁.scaled_short
 
+omit [NeZero q] in
 /-- Verified weak blocks with equal flattened inner decomps give a valid inner relation. -/
 theorem inner_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     {pp : PublicParams 𝓜(q, α)
@@ -290,6 +292,7 @@ theorem inner_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     rw [matVecMul_sub]; exact sub_eq_zero.mpr heq
   simp [ModuleSIS.relation, innerShort, hne, hshort, hker]
 
+omit [NeZero q] in
 /-- Verified weak openings with different flattened witnesses give a valid outer relation. -/
 theorem outer_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     {pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits}
@@ -318,6 +321,7 @@ theorem outer_relation_of_verified {base : ZMod q} {βSq γ κ : Nat}
     rw [matVecMul_sub]; exact sub_eq_zero.mpr heq
   simp [ModuleSIS.relation, outerShort, hne, hshort, hker]
 
+omit [NeZero q] in
 /-- **Extractor validity (the reusable core).** Two *verified* weak openings that differ yield
 a valid inner or outer Module-SIS witness (over `𝓜(q, α)`).
 
@@ -351,6 +355,7 @@ theorem outputToModuleSIS_valid_of_verified {base : ZMod q} {βSq γ κ : Nat}
   · simp only [hflat, ite_false]
     exact outer_relation_of_verified 𝓜(q, α) hv₁ hv₂ hflat
 
+omit [NeZero q] in
 /-- A successful pair of weak openings yields a valid inner or outer Module-SIS witness (over
 `𝓜(q, α)`). The boolean-verification wrapper around `outputToModuleSIS_valid_of_verified`:
 it extracts the `VerifiedOpening` facts from `verify_weak` and applies the core. -/
@@ -453,6 +458,7 @@ def outerAdvToModuleSIS
     | Sum.inl _ => pure (dummySolution Φ (blocks * (innerRows * innerDigits)))
     | Sum.inr z => pure z
 
+omit [NeZero q] in
 /-- Pointwise weak-binding to Module-SIS bound for fixed samples (over `𝓜(q, α)`). -/
 theorem sample_advantage_le_moduleSIS (base : ZMod q)
     (hq5 : q % 8 = 5) (βSq γ κ : Nat) (hκ : κ ^ 2 < q)
@@ -491,6 +497,7 @@ variable
   [SampleableType (Simple.PublicParams 𝓜(q, α) innerRows (messageRows * messageDigits))]
   [SampleableType (Simple.PublicParams 𝓜(q, α) outerRows (blocks * (innerRows * innerDigits)))]
 
+omit [NeZero q] in
 /-- **Weak binding reduces to Module-SIS.** The Hachi/Greyhound weak-binding advantage (over
 `𝓜(q, α)`) is bounded by the sum of the inner and outer extracted Module-SIS advantages. -/
 theorem advantage_le_moduleSIS (base : ZMod q)
@@ -507,7 +514,7 @@ theorem advantage_le_moduleSIS (base : ZMod q)
   unfold advantage experiment ModuleSIS.advantage SIS.advantage SIS.experiment
     ModuleSIS.problem innerAdvToModuleSIS outerAdvToModuleSIS
   simp only [monad_norm]
-  rw [← evalDist_bind_bind_swap
+  rw [← OracleComp.evalDist_bind_bind_swap
     ($ᵗ (Simple.PublicParams 𝓜(q, α) innerRows (messageRows * messageDigits)))
     ($ᵗ (Simple.PublicParams 𝓜(q, α) outerRows (blocks * (innerRows * innerDigits)))) _]
   refine evalDist_bind_apply_le_add_of_support

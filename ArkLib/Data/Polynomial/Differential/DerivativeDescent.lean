@@ -25,20 +25,24 @@ is `2 * Y_s = 0`, and over `ZMod 4` the derivative of `2 * Y_s ^ 2` is `4 * Y_s 
 ## Main statements
 
 * `JetDegreeCastsNeZero`: every positive integer up to `jetDegree Q s` is nonzero in `F`, with
-  `jetDegreeCastsNeZero_of_ringChar` for the usual characteristic guard.
+  `jetDegreeCastsNeZero_of_ringChar` for the usual characteristic guard and
+  `jetDegreeCastsNeZero_of_jetTotalDegree_charGuard` for a total-degree bound.
+* `characteristic_bounds_of_max`: split a joint cutoff into total-degree and pivot bounds.
 * `jetDegree_separant_le_sub_one`, `jetDegree_separant_eq_sub_one` and `separant_ne_zero`: one
   derivative in `Y_s`.
-* `jetDerivative`: the `a`-fold partial derivative in `Y_s`, with
-  `jetDegree_jetDerivative_eq_sub` and `jetDerivative_ne_zero`.
+* `jetDerivative`: the `a`-fold partial derivative in `Y_s`, with degree, total-degree, and
+  nonvanishing bounds.
 * `derivativeDescent`: the `t`-fold derivative, where `t = jetDegree Q s`.
   `jetDegree_derivativeDescent_eq_zero` and `active_lt_of_derivativeDescent` hold in every
   characteristic; `derivativeDescent_ne_zero` needs the cast hypothesis.
 * `derivativeDescent_spec_of_highestActiveJet_eq_some`: the descent from the computed highest
   active jet is nonzero and depends only on jets of lower order.
+* `root_reaches_tail_or_regular_stage`: a finite sequence starting at zero reaches zero at its
+  endpoint or has a zero stage followed by a nonzero stage.
 
 ## References
 
-* [Kopparty, S., *List-Decoding Multiplicity Codes*][Kop15], Section 4.2.
+* [Kop15]
 -/
 
 @[expose] public section
@@ -48,6 +52,20 @@ namespace PolynomialDifferential
 noncomputable section
 
 variable {F : Type*} {d : ℕ} [CommSemiring F]
+
+/-- A finite sequence starting at zero reaches zero at its endpoint or has a zero stage followed
+by a nonzero stage. -/
+theorem root_reaches_tail_or_regular_stage
+    {R : Type*} [Zero R] (stage : ℕ → R) (e : ℕ) (hzero : stage 0 = 0) :
+    stage e = 0 ∨ ∃ j < e, stage j = 0 ∧ stage (j + 1) ≠ 0 := by
+  induction e with
+  | zero => exact Or.inl hzero
+  | succ e ih =>
+      rcases ih with htail | ⟨j, hj, hstage, hnext⟩
+      · by_cases hnext : stage (e + 1) = 0
+        · exact Or.inl hnext
+        · exact Or.inr ⟨e, Nat.lt_succ_self e, htail, hnext⟩
+      · exact Or.inr ⟨j, hj.trans (Nat.lt_succ_self e), hstage, hnext⟩
 
 /-! ### The cast hypothesis -/
 
@@ -66,6 +84,27 @@ def JetDegreeCastsNeZero (Q : DifferentialPolynomial F d) (s : Fin (d + 1)) : Pr
 theorem jetDegreeCastsNeZero_of_ringChar {Q : DifferentialPolynomial F d} {s : Fin (d + 1)}
     (h : ringChar F = 0 ∨ jetDegree Q s < ringChar F) : JetDegreeCastsNeZero Q s :=
   fun _ hk hkt ↦ natCast_ne_zero_of_ringChar_eq_zero_or_lt h hk hkt
+
+/-- A total jet-degree bound and characteristic guard give the cast condition at every jet. -/
+theorem jetDegreeCastsNeZero_of_jetTotalDegree_charGuard {Q : DifferentialPolynomial F d}
+    {ν : ℕ} (hdegree : jetTotalDegree Q ≤ ν)
+    (hchar : ringChar F = 0 ∨ ν < ringChar F) :
+    ∀ s, JetDegreeCastsNeZero Q s := by
+  intro s
+  apply jetDegreeCastsNeZero_of_ringChar
+  exact hchar.imp_right (fun hc ↦
+    (jetDegree_le_total Q s).trans_lt (hdegree.trans_lt hc))
+
+/-- A joint characteristic cutoff yields separate total-degree and pivot bounds. -/
+theorem characteristic_bounds_of_max {ν K : ℕ}
+    (hchar : ringChar F = 0 ∨ max (K - 1) ν < ringChar F) :
+    (ringChar F = 0 ∨ ν < ringChar F) ∧ (ringChar F = 0 ∨ K ≤ ringChar F) := by
+  constructor
+  · exact hchar.imp_right (Nat.le_max_right (K - 1) ν |>.trans_lt)
+  · apply hchar.imp_right
+    intro hc
+    have hpred : K - 1 < ringChar F := (Nat.le_max_left (K - 1) ν).trans_lt hc
+    omega
 
 /-- `JetDegreeCastsNeZero` passes to any polynomial of no larger degree in `Y_s`. -/
 theorem JetDegreeCastsNeZero.mono {Q Q' : DifferentialPolynomial F d} {s : Fin (d + 1)}
@@ -157,6 +196,17 @@ theorem jetDegree_jetDerivative_le_sub (Q : DifferentialPolynomial F d) (s : Fin
 theorem jetDegree_jetDerivative_le (Q : DifferentialPolynomial F d) (s j : Fin (d + 1))
     (a : ℕ) : jetDegree (jetDerivative Q s a) j ≤ jetDegree Q j :=
   MvPolynomial.degreeOf_iterate_pderiv_le (some s) (some j) a Q
+
+/-- `a` derivatives in a jet variable lower total jet degree by at least `a`. -/
+theorem jetTotalDegree_jetDerivative_le_sub (Q : DifferentialPolynomial F d)
+    (s : Fin (d + 1)) (a : ℕ) :
+    jetTotalDegree (jetDerivative Q s a) ≤ jetTotalDegree Q - a := by
+  induction a with
+  | zero => simp [jetDerivative]
+  | succ a ih =>
+      rw [jetDerivative_succ]
+      have hstep := separant_total_le (jetDerivative Q s a) s
+      omega
 
 /-- If `F` has no zero divisors and the cast hypothesis holds, then `a` derivatives in `Y_s`
 lower the degree in `Y_s` by exactly `a`, in truncated subtraction.

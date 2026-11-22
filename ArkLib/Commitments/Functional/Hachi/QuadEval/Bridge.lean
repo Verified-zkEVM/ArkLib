@@ -73,8 +73,9 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Esc
   `splitForm_monomialBasis_eq_eval` on the nose.
 
   This is the `Rq`-level protocol of Hachi §4.2/Figure 3 (`Data = CMlPolynomial (Rq Φ) (r + m)`);
-  the paper's headline multilinear-over-`𝔽_{q^k}` protocol (§3 packing) is a later
-  zero-round head adapter in front of `relPolyEval`, built by the same recipe.
+  the scalar protocol of §3.1 has a one-message, zero-challenge guarded trace head in
+  `TraceHead/`. It packs monomial coefficients over the fixed subring, checks the
+  unnormalized trace equation, and forwards the same weak opening to `relPolyEval`.
 
   Sits inside `namespace ArkLib.Lattices.Ajtai.InnerOuter` (activates the scoped
   `PolyVec`/`*ᵥ`/`dot`/`splitForm`) with `open WeakBinding`; the split layer is reached as
@@ -205,6 +206,22 @@ def extractedPoly (base : ZMod q)
     (o : Opening Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :
     CMlPolynomial (Rq Φ) (r + m) :=
   Hachi.toPolynomial (derivedMsgMatrix Φ base o)
+
+omit [NeZero q] in
+/-- The polynomial extracted from an honest opening of a reshaped polynomial is that polynomial,
+for a lawful message decomposition. -/
+theorem extractedPoly_honestOpening (base : ZMod q)
+    (decomp : Decomposition Φ (2 ^ m) messageDigits innerRows innerDigits)
+    (hMessageDecomp : IsLawfulGadgetDecomposition Φ base decomp.message)
+    (pp : PublicParams Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits)
+    (F : CMlPolynomial (Rq Φ) (r + m)) :
+    extractedPoly Φ base (honestOpening Φ decomp pp (Hachi.toMatrix F)) = F := by
+  have hM : derivedMsgMatrix Φ base (honestOpening Φ decomp pp (Hachi.toMatrix F)) =
+      Hachi.toMatrix F := by
+    funext i k
+    exact congrFun (generateDecomps_derivedMessage Φ base decomp hMessageDecomp pp
+      (Hachi.toMatrix F) i) k
+  rw [extractedPoly, hM, Hachi.toPolynomial_toMatrix]
 
 /-- **`relPolyEval` — the polynomial-level input relation** of the composed Hachi evaluation
 protocol: a weak `VerifiedOpening` for `u` under the fixed key `pp` whose *extracted polynomial*

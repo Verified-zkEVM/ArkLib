@@ -288,8 +288,7 @@ private theorem linear_bgks_good_scalars_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src η : ℝ≥0) (hη : 0 < η)
     (hprob : ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
-      Pr{
-        let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
+      Pr{let x ← $ᵗ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
     2 / (η : ℝ) ^ 2 < ((linear_bgks_good_scalars C u δ_src).card : ℝ) := by
   classical
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
@@ -619,8 +618,8 @@ private theorem linear_bgks_rich_fiber_of_many_distinct
             intro b hb
             exact hfiber_le x b
       _ = (Fintype.card α : ℝ) ^ 2 / e := by
-        simp [pow_two]
-        field_simp
+        rw [Finset.sum_const, Finset.sum_const, Finset.card_univ, nsmul_eq_mul, nsmul_eq_mul]
+        ring
   have hMpos : 0 < (Fintype.card α : ℝ) :=
     lt_trans (by positivity : 0 < 2 / e ^ 2) hM
   have hsep : (Fintype.card α : ℝ) ^ 2 / e <
@@ -631,7 +630,7 @@ private theorem linear_bgks_rich_fiber_of_many_distinct
     have hfacpos : 0 < (Fintype.card α : ℝ) ^ 2 / 2 := by positivity
     have hmul := mul_lt_mul_of_pos_left hbase hfacpos
     rw [div_lt_iff₀ he]
-    nlinarith [hmul]
+    linarith [hmul]
   exact (not_lt_of_ge hupper) (lt_trans hsep hD)
 
 open scoped BigOperators in
@@ -746,14 +745,13 @@ private theorem linear_bgks_triple_intersection_moment
       apply Finset.sum_lt_sum_of_nonempty Finset.univ_nonempty
       intro x hx
       exact hS x
-    simpa [mul_assoc, mul_comm, mul_left_comm] using hlt
+    rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] at hlt
+    linarith
   have hκpos : 0 < (Fintype.card κ : ℝ) := by
     exact_mod_cast Fintype.card_pos
   have hαpos : 0 < (Fintype.card α : ℝ) := by
     exact_mod_cast Fintype.card_pos
-  have hm_nonneg (i : κ) : 0 ≤ m i := by
-    dsimp [m]
-    positivity
+  have hm_nonneg (i : κ) : 0 ≤ m i := Nat.cast_nonneg _
   have hmean :
       (∑ i : κ, m i) ^ 3 / (Fintype.card κ : ℝ) ^ 2 ≤
         ∑ i : κ, (m i) ^ 3 := by
@@ -779,7 +777,7 @@ private theorem linear_bgks_triple_intersection_moment
       _ = ∑ x : α, ∑ b : α, ∑ g : α,
           (((S x ∩ S b ∩ S g).card : ℝ)) := htriple.symm
   · have hrneg : r < 0 := lt_of_not_ge hr
-    have hr3 : r ^ 3 < 0 := by nlinarith [sq_pos_of_neg hrneg]
+    have hr3 : r ^ 3 < 0 := (Odd.pow_neg_iff ⟨1, rfl⟩).mpr hrneg
     have hleft :
         r ^ 3 * Fintype.card κ * (Fintype.card α : ℝ) ^ 3 < 0 :=
       mul_neg_of_neg_of_pos
@@ -858,11 +856,7 @@ private theorem linear_bgks_dense_triples_card_gt
         ((n - d : ℕ) : ℝ) + if p ∈ D then (n : ℝ) else 0 := by
     by_cases hp : p ∈ D
     · rw [ite_eq_left hp]
-      have hcard : (S p.1 ∩ S p.2.1 ∩ S p.2.2).card ≤ n := by
-        dsimp [n]
-        simpa using
-          (Finset.card_le_card
-            (Finset.subset_univ (S p.1 ∩ S p.2.1 ∩ S p.2.2)))
+      have hcard : (S p.1 ∩ S p.2.1 ∩ S p.2.2).card ≤ n := Finset.card_le_univ _
       have hcardR :
           (((S p.1 ∩ S p.2.1 ∩ S p.2.2).card : ℝ)) ≤ (n : ℝ) := by
         exact_mod_cast hcard
@@ -931,7 +925,8 @@ private theorem linear_bgks_dense_triples_card_gt
           (good.card : ℝ) ^ 3 <
         (1 - (δ_src : ℝ)) ^ 3 * (n : ℝ) *
           (good.card : ℝ) ^ 3 := by
-    simpa [mul_assoc] using mul_lt_mul_of_pos_right hcube hfactor_pos
+    rw [mul_assoc, mul_assoc ((1 - (δ_src : ℝ)) ^ 3)]
+    exact mul_lt_mul_of_pos_right hcube hfactor_pos
   have hlower :
       (1 - (δ_min : ℝ) + (η : ℝ)) * (n : ℝ) *
           (good.card : ℝ) ^ 3 <
@@ -941,8 +936,7 @@ private theorem linear_bgks_dense_triples_card_gt
         (1 - (δ_src : ℝ)) ^ 3 * (n : ℝ) *
             (good.card : ℝ) ^ 3 <
           ∑ x : α, ∑ b : α, ∑ g : α,
-            (((S x ∩ S b ∩ S g).card : ℝ)) := by
-      simpa [n] using hmom
+            (((S x ∩ S b ∩ S g).card : ℝ)) := hmom
     exact lt_trans hcube' hmom'
   have hmulD :
       (n : ℝ) * (D.card : ℝ) ≤
@@ -953,9 +947,7 @@ private theorem linear_bgks_dense_triples_card_gt
           (((S x ∩ S b ∩ S g).card : ℝ))) ≤
         ((n - d : ℕ) : ℝ) * (good.card : ℝ) ^ 3 +
           (n : ℝ) * ((η : ℝ) * (good.card : ℝ) ^ 3) :=
-    le_trans hupper (by
-      simpa [add_comm] using
-        add_le_add_left hmulD (((n - d : ℕ) : ℝ) * (good.card : ℝ) ^ 3))
+    le_trans hupper (add_le_add le_rfl hmulD)
   have heq :
       ((n - d : ℕ) : ℝ) * (good.card : ℝ) ^ 3 +
           (n : ℝ) * ((η : ℝ) * (good.card : ℝ) ^ 3) =
@@ -1076,13 +1068,15 @@ private theorem linear_bgks_rich_affine_line
   let α := ↥good
   let D : Finset (α × α × α) := linear_bgks_distinct_dense_triples C u δ_src
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
+  have hα : (Fintype.card α : ℝ) = (good.card : ℝ) := congrArg _ (Fintype.card_coe good)
   have hM : 2 / (η : ℝ) ^ 2 < (Fintype.card α : ℝ) := by
-    simpa [α, good] using hgood
+    rw [hα]
+    exact hgood
   have hD :
       ((η : ℝ) / 2) * (Fintype.card α : ℝ) ^ 3 < (D.card : ℝ) := by
-    simpa [α, good, D] using
-      (linear_bgks_distinct_dense_triples_card_gt C u δ_min η δ_src
-        hmin hη hη3 hηd hsrc hgood)
+    rw [hα]
+    exact linear_bgks_distinct_dense_triples_card_gt C u δ_min η δ_src
+      hmin hη hη3 hηd hsrc hgood
   have hdistinct : ∀ p ∈ D,
       p.1 ≠ p.2.1 ∧ p.1 ≠ p.2.2 ∧ p.2.1 ≠ p.2.2 := by
     intro p hp
@@ -1092,8 +1086,7 @@ private theorem linear_bgks_rich_affine_line
   obtain ⟨x, b, hxb, hrich⟩ :=
     linear_bgks_rich_fiber_of_many_distinct D (η : ℝ) he hM hD hdistinct
   let G : Finset α := Finset.univ.filter fun g : α => (x, b, g) ∈ D
-  have hGcard : 1 / (η : ℝ) < (G.card : ℝ) := by
-    simpa [G] using hrich
+  have hGcard : 1 / (η : ℝ) < (G.card : ℝ) := hrich
   have hxbval : (x : F) ≠ (b : F) := by
     intro h
     apply hxb
@@ -1156,8 +1149,7 @@ private theorem linear_bgks_rich_affine_line
     hdistinct (x, b, g) (hGtriple g hg)
   have hGline (g : α) (hg : g ∈ G) :
       linear_bgks_closest_codeword C u g = v0 + (g : F) • v1 := by
-    have hg' : (x, b, g) ∈ linear_bgks_distinct_dense_triples C u δ_src := by
-      simpa [D] using hGtriple g hg
+    have hg' : (x, b, g) ∈ linear_bgks_distinct_dense_triples C u δ_src := hGtriple g hg
     have haff :=
       linear_bgks_codewords_affine_of_distinct_dense_triple C u δ_src x b g hg'
     dsimp only at haff
@@ -1200,13 +1192,11 @@ private theorem linear_bgks_rich_affine_line
   let T : ↥A → Finset ι := fun y => linear_bgks_agreement_set C u (y : F)
   refine ⟨v0, v1, hv0, hv1, A, hAcard, T, ?_, ?_⟩
   · intro y
-    have hyGood : (y : F) ∈ linear_bgks_good_scalars C u δ_src := by
-      simpa [good] using hAgood (y : F) y.property
+    have hyGood : (y : F) ∈ linear_bgks_good_scalars C u δ_src := hAgood (y : F) y.property
     have hcard := linear_bgks_agreement_set_card_gt C u δ_src (y : F) hyGood
-    simpa [T] using le_of_lt hcard
+    exact le_of_lt hcard
   · intro y i hi
-    have hi' : i ∈ linear_bgks_agreement_set C u (y : F) := by
-      simpa [T] using hi
+    have hi' : i ∈ linear_bgks_agreement_set C u (y : F) := hi
     have hyagree :
         u 0 i + (y : F) * u 1 i =
           linear_bgks_closest_codeword C u (y : F) i := by
@@ -1297,13 +1287,13 @@ private theorem linear_eps_ca_le_one_point_five_johnson_aux
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hη3 : (η : ℝ) < 1 / 3) (hηd : η < δ_min)
-    (_hδ_fld_pos : 0 < δ_fld) (hδlt : δ_fld < δ_src)
+    (hδlt : δ_fld < δ_src)
     (hsrc : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤
       ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) := by
   classical
-  unfold epsCa
+  simp only [epsCa_eq]
   refine iSup_le fun u => ?_
   by_cases hjp : Code.jointProximity (C : Set (ι → F)) u (δ_src + η)
   · rw [ite_eq_left hjp]
@@ -1330,7 +1320,7 @@ theorem linear_epsCa_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (_hη : 0 < η) (_hη_lt_third : (η : ℝ) < 1 / 3) (_hη_lt_δ_min : η < δ_min)
-    (_hδ_fld_pos : 0 < δ_fld) (_hδ_fld_lt : δ_fld < δ_src)
+    (_hδ_fld_lt : δ_fld < δ_src)
     (_hδ_src : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤
@@ -1338,7 +1328,7 @@ theorem linear_epsCa_le_one_point_five_johnson
   classical
   exact linear_eps_ca_le_one_point_five_johnson_aux
     C δ_min η δ_fld δ_src _h_δ_min _hη _hη_lt_third _hη_lt_δ_min
-      _hδ_fld_pos _hδ_fld_lt _hδ_src
+      _hδ_fld_lt _hδ_src
 
 end General
 

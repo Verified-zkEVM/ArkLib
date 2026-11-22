@@ -628,7 +628,8 @@ def OracleVerifier.append (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ 
 
   outputOracle := .inr (appendOutputSimulation V₁ V₂)
 
-private theorem append_materializeOutput
+/-- Materialization of appended output oracles is the composition of the two materializations. -/
+theorem OracleVerifier.append_materializeOutput
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges) (oStmt : ∀ i, OStmt₁ i)

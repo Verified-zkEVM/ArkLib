@@ -93,4 +93,73 @@ theorem ExecutionPath.closingImpl_oracle (Messages : Type u)
       ExecutionPath.closingImpl path.2 (oracles.2 PUnit.unit) (Access.extend initial oracles.1)
         (Access.extendImpl initial oracles.1 impl path.1) := rfl
 
+/-- The concrete handler of an appended execution is the suffix's handler extended from the
+prefix's actual handler. This heterogeneous equality keeps the independently computed signatures
+visible; `closingImpl_append` gives the ordinary equality after their canonical identification. -/
+private theorem ExecutionPath.closingImpl_append_heq :
+    (tree : Oracle.TypeTree.{u}) → (suffix : BranchPath tree → Oracle.TypeTree.{u}) →
+    (first : OracleDecoration.{u, v} tree) →
+    (second : (p : BranchPath tree) → OracleDecoration.{u, v} (suffix p)) →
+    (initial : PFunctor.{v, u}) → (path : ExecutionPath tree) →
+    (rest : ExecutionPath (suffix path.toBranchPath)) →
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) →
+    HEq (ExecutionPath.closingImpl
+      (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix path rest)
+      (PFunctor.FreeM.Displayed.Decoration.append first second) initial impl)
+      (rest.closingImpl (second path.toBranchPath)
+        (accessAfter tree first initial path.toBranchPath) (path.closingImpl first initial impl))
+  | .done, _, _, _, _, _, _, _ => HEq.rfl
+  | .public _ restTree, suffix, first, second, initial, path, rest, impl =>
+      ExecutionPath.closingImpl_append_heq (restTree path.1)
+        (fun tail => suffix ⟨path.1, tail⟩) (first.2 path.1)
+        (fun tail => second ⟨path.1, tail⟩) initial path.2 rest impl
+  | .oracle _ restTree, suffix, first, second, initial, path, rest, impl =>
+      ExecutionPath.closingImpl_append_heq (restTree PUnit.unit)
+        (fun tail => suffix ⟨PUnit.unit, tail⟩) (first.2 PUnit.unit)
+        (fun tail => second ⟨PUnit.unit, tail⟩) (Access.extend initial first.1) path.2 rest
+        (Access.extendImpl initial first.1 impl path.1)
+
+/-- Closing append uses the input resources and concrete messages of these same two paths.
+The cast only identifies the signatures proved equal by `accessAfter_append_execution`; it does
+not replace the handler or forget the messages. -/
+theorem ExecutionPath.closingImpl_append (tree : Oracle.TypeTree.{u})
+    (suffix : BranchPath tree → Oracle.TypeTree.{u})
+    (first : OracleDecoration.{u, v} tree)
+    (second : (p : BranchPath tree) → OracleDecoration.{u, v} (suffix p))
+    (initial : PFunctor.{v, u}) (path : ExecutionPath tree)
+    (rest : ExecutionPath (suffix path.toBranchPath))
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id) :
+    cast (congrArg (fun access => QueryImpl (OracleSpec.ofPFunctor access) Id)
+      (accessAfter_append_execution tree suffix first second initial path rest))
+      (ExecutionPath.closingImpl
+      (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix path rest)
+        (PFunctor.FreeM.Displayed.Decoration.append first second) initial impl) =
+      rest.closingImpl (second path.toBranchPath)
+        (accessAfter tree first initial path.toBranchPath) (path.closingImpl first initial impl) :=
+  eq_of_heq ((cast_heq _ _).trans
+    (ExecutionPath.closingImpl_append_heq tree suffix first second initial path rest impl))
+
+/-- Every query program receives the same answers from closing the combined execution as from
+closing its prefix and then its suffix. Original resources and both fragments' messages keep their
+execution-order slots, even when those slots have identical signatures. -/
+theorem ExecutionPath.simulateQ_closingImpl_append {α : Type u} (tree : Oracle.TypeTree.{u})
+    (suffix : BranchPath tree → Oracle.TypeTree.{u})
+    (first : OracleDecoration.{u, v} tree)
+    (second : (p : BranchPath tree) → OracleDecoration.{u, v} (suffix p))
+    (initial : PFunctor.{v, u}) (path : ExecutionPath tree)
+    (rest : ExecutionPath (suffix path.toBranchPath))
+    (impl : QueryImpl (OracleSpec.ofPFunctor initial) Id)
+    (program : OracleComp (OracleSpec.ofPFunctor (accessAfter (suffix path.toBranchPath)
+      (second path.toBranchPath) (accessAfter tree first initial path.toBranchPath)
+      rest.toBranchPath)) α) :
+    simulateQ (cast (congrArg (fun access => QueryImpl (OracleSpec.ofPFunctor access) Id)
+      (accessAfter_append_execution tree suffix first second initial path rest))
+      (ExecutionPath.closingImpl
+      (PFunctor.FreeM.PathAlong.append runtimeLens tree suffix path rest)
+        (PFunctor.FreeM.Displayed.Decoration.append first second) initial impl)) program =
+      simulateQ (rest.closingImpl (second path.toBranchPath)
+        (accessAfter tree first initial path.toBranchPath) (path.closingImpl first initial impl))
+        program := by
+  rw [ExecutionPath.closingImpl_append]
+
 end Interaction.Oracle.TypeTree

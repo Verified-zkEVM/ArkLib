@@ -40,7 +40,6 @@ theorem linear_mcaError_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (_hη : 0 < η) (_hη_lt_δ_min : η < δ_min)
-    (_hδ_pos : 0 < δ)
     (_hδ : (δ : ℝ) ≤ 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       ENNReal.ofReal
@@ -80,7 +79,7 @@ theorem linear_mcaError_le_one_point_five_johnson
     (by omega) (by exact Fintype.one_lt_card) _h_δ_min _hη _hη_lt_δ_min
     (by
       convert _hδ using 1
-      all_goals norm_num)
+      norm_num)
   norm_num at hpow
   rw [hgen] at hpow
   refine hpow.trans ?_

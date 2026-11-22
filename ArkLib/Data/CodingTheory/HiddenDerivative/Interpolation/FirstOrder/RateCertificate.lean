@@ -29,6 +29,8 @@ depend on the block length, ambient degree, agreement threshold, or received lin
   surplus to a strict surplus over the first-order interpolation dimension.
 * `FirstOrderFiniteRateParameters.kernelHeight_le_challengeDegree` bounds the scaled kernel height
   by the challenge degree selected by the finite rate choice.
+* `exists_firstOrder_symbolicCertificate_of_rank_and_height` constructs a certificate from an
+  interpolation rank surplus and a kernel-height bound.
 * `exists_firstOrderRate_symbolicCertificate` constructs a first-order symbolic certificate from
   rate-compatible block parameters.
 
@@ -82,32 +84,22 @@ theorem FirstOrderFiniteRateParameters.kernelHeight_le_challengeDegree
     FirstOrderFiniteRateParameters.derivativeCap, FirstOrderFiniteRateParameters.jetDegree]
     using hheight.trans (Nat.le_max_right 1 _)
 
-/-- A finite first-order rate choice constructs, over every field, a primitive symbolic
-interpolant with bounded support and coefficient degree at most its fixed challenge degree. -/
-theorem exists_firstOrderRate_symbolicCertificate
-    {F : Type*} [Field F] {n D A k : ℕ}
-    (hn : 0 < n) (hD : 0 < D) (hbudget : 0 < p.multiplicity * A)
-    (hkD : k ≤ D + 1) (hDrate : (D : ℝ) ≤ rate * n)
-    (hArate : agreement * n ≤ A)
+/-- A strict rank surplus and a kernel-height bound construct a first-order symbolic line
+certificate. The block parameters may be selected by any finite rate rule. -/
+theorem exists_firstOrder_symbolicCertificate_of_rank_and_height
+    {F : Type*} [Field F] {n D A m M μ k h : ℕ}
+    (hkD : k ≤ D + 1)
+    (hrN : n * firstOrderRankCount m M < (firstOrderExponents D A m M μ).card)
+    (hheight :
+      (n * firstOrderRankCount m M) * μ /
+        ((firstOrderExponents D A m M μ).card - n * firstOrderRankCount m M) ≤ h)
     (centers : Fin n ↪ F) (f g : Fin n → F) :
-    Nonempty (FirstOrderSymbolicCertificate (F := F)
-      D A p.multiplicity p.derivativeCap p.jetDegree k p.challengeDegree centers f g
-      (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
-        (M := p.derivativeCap) (μ := p.jetDegree))) := by
-  let m := p.multiplicity
-  let M := p.derivativeCap
-  let μ := p.jetDegree
-  let h := p.challengeDegree
+    Nonempty (FirstOrderSymbolicCertificate (F := F) D A m M μ k h centers f g
+      (firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ))) := by
   let N := (firstOrderExponents D A m M μ).card
-  let r := n * p.rankCount
+  let r := n * firstOrderRankCount m M
   let columns := firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)
   let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
-  have hN : N = firstOrderDimensionCount D A m M μ := by
-    simpa [N] using (card_firstOrderExponents (D := D) (A := A) (m := m)
-      (M := M) (μ := μ) hD)
-  have hrN : r < N := by
-    rw [hN]
-    exact p.rankCount_mul_lt_dimensionCount hn hDrate hArate
   have hy₀ : ∀ j, (columns j).y₀ ≤ μ := by
     intro j
     rw [← SourceColumn.exponent_zero]
@@ -126,21 +118,17 @@ theorem exists_firstOrderRate_symbolicCertificate
               (D := D) (A := A) (m := m) (M := M) (μ := μ) j)
       _ = r := by
         rw [certifiedEnlargedRankBound_one_eq_firstOrderRankCount]
-        rfl
   have hrN' : r < Fintype.card (Fin (Fintype.card ↑(firstOrderExponents D A m M μ))) := by
-    simpa [N, Fintype.card_coe] using hrN
+    simpa [N, r, Fintype.card_coe] using hrN
   obtain ⟨v, _hv, hvdegree, hprimitive, hnonzero, hconstraints⟩ :=
     exists_primitive_interpolant_of_rank_le m 1 μ (fun i ↦ centers i) w hw columns
       firstOrderColumns_injective hy₀ (algebraMap F[X] (RatFunc F))
       (IsFractionRing.injective F[X] (RatFunc F)) hrank hrN'
   let Q : DifferentialPolynomial F[X] 1 := SourceColumn.interpolant columns v
-  have hheight : r * μ / (N - r) ≤ h := by
-    rw [hN]
-    exact p.kernelHeight_le_challengeDegree hDrate hArate
   have hvheight : ∀ j, (v j).natDegree ≤ h := by
     intro j
     apply (hvdegree j).trans
-    simpa [N] using hheight
+    simpa [N, r, Fintype.card_coe] using hheight
   have hQsupport : Q ∈ firstOrderSpace F[X] D A m M μ :=
     interpolant_mem_firstOrderSpace columns firstOrderColumns_eligible v
   have hfirstJet : ∀ u ∈ Q.support, firstJetExponent u ≤ M := by
@@ -150,7 +138,7 @@ theorem exists_firstOrderRate_symbolicCertificate
     intro u hu
     exact (mem_firstOrderSpace_iff.mp hQsupport u hu).2.1
   refine ⟨⟨v, Q, rfl, hprimitive,
-    SourceColumn.coeff_interpolant_natDegree_le columns firstOrderColumns_injective v hvheight,
+    SourceColumn.coeff_interpolant_natDegree_le columns v hvheight,
     hQsupport, hfirstJet, htotalJet, hconstraints, ?_⟩⟩
   intro E _ ι z
   refine ⟨hnonzero (Polynomial.eval₂RingHom ι z), ?_⟩
@@ -162,7 +150,48 @@ theorem exists_firstOrderRate_symbolicCertificate
     simp [w, receivedLine]
     ring
   exact differentialSpecialization_eq_zero_of_firstOrderSpace
-    hkD hbudget centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreeCurve
+    hkD centers w Q hQsupport hconstraints ι z indices P hPdegree hcard hagreeCurve
+
+/-- A finite first-order rate choice constructs, over every field, a primitive symbolic
+interpolant with bounded support and coefficient degree at most its fixed challenge degree. -/
+theorem exists_firstOrderRate_symbolicCertificate
+    {F : Type*} [Field F] {n D A k : ℕ}
+    (hD : 0 < D)
+    (hkD : k ≤ D + 1) (hDrate : (D : ℝ) ≤ rate * n)
+    (hArate : agreement * n ≤ A)
+    (centers : Fin n ↪ F) (f g : Fin n → F) :
+    Nonempty (FirstOrderSymbolicCertificate (F := F)
+      D A p.multiplicity p.derivativeCap p.jetDegree k p.challengeDegree centers f g
+      (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
+        (M := p.derivativeCap) (μ := p.jetDegree))) := by
+  have hn : 0 < n := by
+    by_contra hn
+    have hnzero : n = 0 := by omega
+    have hDzero : D = 0 := by simpa [hnzero] using hDrate
+    omega
+  let m := p.multiplicity
+  let M := p.derivativeCap
+  let μ := p.jetDegree
+  let h := p.challengeDegree
+  let N := (firstOrderExponents D A m M μ).card
+  let r := n * p.rankCount
+  let columns := firstOrderColumns (D := D) (A := A) (m := m) (M := M) (μ := μ)
+  let w : Fin n → F[X] := fun i ↦ receivedLine (f i) (g i)
+  have hN : N = firstOrderDimensionCount D A m M μ := by
+    simpa [N] using (card_firstOrderExponents (D := D) (A := A) (m := m)
+      (M := M) (μ := μ) hD)
+  have hrN : r < N := by
+    rw [hN]
+    exact p.rankCount_mul_lt_dimensionCount hn hDrate hArate
+  have hheight : r * μ / (N - r) ≤ h := by
+    rw [hN]
+    exact p.kernelHeight_le_challengeDegree hDrate hArate
+  exact exists_firstOrder_symbolicCertificate_of_rank_and_height
+    hkD (by simpa only [r, N, m, M, μ,
+      FirstOrderFiniteRateParameters.rankCount] using hrN)
+    (by simpa only [r, N, m, M, μ,
+      FirstOrderFiniteRateParameters.rankCount] using hheight)
+    centers f g
 
 end
 

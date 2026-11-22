@@ -108,6 +108,10 @@ theorem multiplicative_margin_from_bounds (δ ρ H d g a s V m n D N R : ℝ)
     rw [hD]
     ring
   rw [heq] at hlast
-  nlinarith
+  calc
+    (543 / 500 : ℝ) * n * R ≤ (543 / 500) * n * (V * m ^ 3 * B) := by gcongr
+    _ = V * m ^ 3 * n * ((543 / 500) * B) := by ring
+    _ < _ := hlast
+    _ ≤ N := hN
 
 end ReedSolomon.HiddenDerivative.WeightedSupportParameters

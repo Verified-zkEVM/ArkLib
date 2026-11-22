@@ -12,6 +12,7 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.Simulation
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Completeness
 public import ArkLib.OracleReduction.Composition.Sequential.Append.OneMessage
 public import ArkLib.OracleReduction.Composition.Sequential.Append.RoundByRound
+public import ArkLib.OracleReduction.Composition.Sequential.Append.GuardedRoundByRound
 public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
 
 /-!
@@ -30,8 +31,14 @@ public import ArkLib.OracleReduction.Composition.Sequential.Append.Security
   * `Append.Simulation` — exact simulated execution, preserving the shared oracle state.
   * `Append.Completeness` — completeness from simulated factorization and state-uniform suffixes.
   * `Append.OneMessage` — the effectful-prover, one-message completeness specialization.
-  * `Append.RoundByRound` — soundness from fixed-prefix bounds under a pure first verifier.
-  * `Append.Security` — legacy admitted soundness claims and their inherited wrappers.
+  * `Append.RoundByRound` — round-by-round soundness under a pure first verifier.
+  * `Append.GuardedRoundByRound` — round-by-round knowledge soundness under a guarded first
+    verifier, with the composed extractor and knowledge state function named. The finite-chain
+    theorem in `Sequential/GuardedRoundByRound.lean` requires round-by-round knowledge soundness
+    and guardedness for every component.
+  * `Append.Security` — proved guarded ordinary soundness and knowledge soundness, with a suffix
+    bound valid from every deterministic shared oracle state and pure extractors for knowledge
+    soundness.
 -/
 
 @[expose] public section

@@ -172,9 +172,9 @@ theorem exists_le_of_mem_iteratedRetainedCutFamily {Ps : Finset (Ideal R)} {s : 
 `P ≤ J ≤ Q`.
 
 At each step `Q` contains the cut of the current member, so it contains a retained minimal prime
-of that cut (`Ideal.exists_mem_retainedMinimalPrimes_le`). The hypotheses on `Q` are needed:
-`s ∈ Q` would make every retained prime avoid `Q`, and a cut not in `Q` gives children not
-below `Q`. No hypothesis on `Ps` is needed. -/
+of that cut (`Ideal.exists_mem_retainedMinimalPrimes_le`). The hypothesis `s ∉ Q` guarantees
+coverage; retained primes can also lie below primes containing `s`. A cut not in `Q` gives
+children not below `Q`. No hypothesis on `Ps` is needed. -/
 theorem exists_mem_iteratedRetainedCutFamily_le {Ps : Finset (Ideal R)} {s : R} {cuts : List R}
     {P Q : Ideal R} [Q.IsPrime] (hP : P ∈ Ps) (hPQ : P ≤ Q) (hsQ : s ∉ Q)
     (hcuts : ∀ f ∈ cuts, f ∈ Q) :
@@ -224,7 +224,7 @@ theorem sum_retainedCutFamily_le (w : Ideal R → M) (hw : ∀ Q, 0 ≤ w Q) (Ps
   classical
   have hunion : ∀ {S T : Finset (Ideal R)}, ∑ Q ∈ S ⊔ T, w Q ≤ ∑ Q ∈ S, w Q + ∑ Q ∈ T, w Q :=
     fun {S T} ↦ by
-      rw [Finset.sup_eq_union, ← Finset.sum_union_inter]
+      rw [← Finset.sum_union_inter]
       exact le_add_of_nonneg_right (Finset.sum_nonneg fun Q _ ↦ hw Q)
   have hbiUnion := Finset.apply_sup_le_sum (f := fun T : Finset (Ideal R) ↦ ∑ Q ∈ T, w Q)
     Finset.sum_empty hunion (s := fun P ↦ (P ⊔ span {f}).retainedMinimalPrimes s) Ps

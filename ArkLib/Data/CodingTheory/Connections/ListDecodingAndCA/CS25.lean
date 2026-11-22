@@ -18,6 +18,8 @@ dimensions.
 ## Main result
 
 - `rs_Lambda_extended_le_of_epsCa_int_radius` gives the exact ceiling bound from CS25.
+- `le_rs_epsCa_of_le_Lambda` is its contrapositive: a list of at least `2T + 1` codewords of
+  `RS(k + 1)` at radius `f / n` forces `ε_ca(RS(k), f / n) ≥ T / |F|`.
 
 ## References
 
@@ -42,11 +44,11 @@ private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) 
     ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
-  unfold ProximityGap.epsCa
+  simp only [ProximityGap.epsCa_eq]
   refine iSup_le fun u => ?_
   split_ifs
   · exact zero_le_one
-  · exact prEvent_le_one _ _
+  · exact prEvent_le_one _
 
 private def rs_reciprocal_stack (domain : ι ↪ F) (u : ι → F) (a : F) :
     Code.WordStack F (Fin 2) ι :=
@@ -72,7 +74,7 @@ private theorem rs_fold_probability_le_eps_ca_of_not_joint
     Pr{let γ ← $ᵗ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
       ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int := by
   classical
-  unfold ProximityGap.epsCa
+  simp only [ProximityGap.epsCa_eq]
   have hle := le_iSup
     (fun w : Code.WordStack F (Fin 2) ι =>
       if Code.jointProximity C (u := w) δ_int then (0 : ENNReal)
@@ -80,12 +82,11 @@ private theorem rs_fold_probability_le_eps_ca_of_not_joint
   rw [ite_eq_right hnot] at hle
   exact hle
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Nonempty ι] in
 /-- Bounds the list size of `RS(k + 1)` at radius `f / n` from the CA error of `RS(k)`
 at the same integral radius. -/
 theorem rs_Lambda_extended_le_of_epsCa_int_radius
     (domain : ι ↪ F) (k f : ℕ) (ε : ℝ)
-    (_hk_pos : 0 < k)
     (_hf_lt : f + k + 1 < Fintype.card ι)
     (_hε_lt : ε < ((Fintype.card F : ℝ) - Fintype.card ι) / (k * Fintype.card F))
     (_hε_ca :
@@ -97,6 +98,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
         (ε * Fintype.card F * ((Fintype.card F : ℝ) - Fintype.card ι)
           / ((Fintype.card F : ℝ) - Fintype.card ι - k * ε * Fintype.card F)) : ℕ∞) := by
   classical
+  have : Nonempty ι := Fintype.card_pos_iff.mp (by omega)
   set n : ℕ := Fintype.card ι with hn
   set q : ℕ := Fintype.card F with hq
   set Ck : Set (ι → F) := (ReedSolomon.code domain k : Set (ι → F)) with hCk
@@ -105,6 +107,11 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   have hnpos : 0 < n := by simp [n]
   have hqpos : 0 < q := by simp [q]
   have hε0 : 0 ≤ ε := le_trans ENNReal.toReal_nonneg _hε_ca
+  have hkpos : 0 < k := by
+    by_contra hk
+    have hk0 : k = 0 := by omega
+    simp only [hk0, Nat.cast_zero, zero_mul, div_zero] at _hε_lt
+    exact (not_lt_of_ge hε0) _hε_lt
   have hnq : n ≤ q := by
     simpa [n, q] using Fintype.card_le_of_injective domain domain.injective
   have hnq_lt : n < q := by
@@ -118,12 +125,12 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   have hDpos : (0 : ℝ) < (q : ℝ) - n - k * ε * q := by
     have hmul := mul_lt_mul_of_pos_right _hε_lt hkqpos
     rw [div_mul_cancel₀ _ hkqpos.ne'] at hmul
-    nlinarith
+    linarith
   change Lambda Ckp ((f : ℝ) / n) ≤ (Nat.ceil B : ℕ∞)
   apply Lambda_le_of_forall_finset_card_le
   intro u T hT
   have hkpn : k + 1 < n := by omega
-  have : NeZero k := ⟨_hk_pos.ne'⟩
+  have : NeZero k := ⟨hkpos.ne'⟩
   have hTcode : ∀ c ∈ T, c ∈ Ckp := by
     intro c hc
     exact (mem_closeCodewordsRel_iff.mp (hT c hc)).1
@@ -359,7 +366,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, hgood c hc⟩
   have hprob : ((Good.card : ℝ≥0) / (q : ℝ≥0) : ENNReal) ≤
       epsCa (F := F) (A := F) Ck ((f : ℝ≥0) / n) ((f : ℝ≥0) / n) := by
-    unfold epsCa
+    simp only [epsCa_eq]
     refine le_iSup_of_le v ?_
     rw [ite_eq_right hvnot, SampleableType.prEvent_uniformSample]
     simp only [Good, q]
@@ -445,6 +452,48 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     exact (le_div_iff₀ hDpos).2 hLD
   have hceilR : (T.card : ℝ) ≤ (Nat.ceil B : ℝ) := hLB.trans (Nat.le_ceil B)
   exact_mod_cast hceilR
+
+omit [Nonempty ι] [DecidableEq ι] in
+/-- A long list for `RS(k + 1)` forces a large CA error for `RS(k)`. If `0 < k`,
+`f + k + 1 < n`, `n + 2kT ≤ |F|`, and `RS(k + 1)` has a point list of at least `L ≥ 2T + 1`
+codewords at relative radius `f / n`, then `ε_ca(RS(k), f / n, f / n) ≥ T / |F|`. This is the
+contrapositive of `rs_Lambda_extended_le_of_epsCa_int_radius`. -/
+theorem le_rs_epsCa_of_le_Lambda (domain : ι ↪ F) (k f : ℕ) (T : ℝ) {L : ℕ}
+    (hk : 0 < k) (hf : f + k + 1 < Fintype.card ι)
+    (hq : (Fintype.card ι : ℝ) + 2 * k * T ≤ Fintype.card F) (hL2 : 2 * T + 1 ≤ L)
+    (hLΛ : (L : ℕ∞) ≤ Lambda (ReedSolomon.code domain (k + 1) : Set (ι → F))
+        ((f : ℝ) / Fintype.card ι)) :
+    ENNReal.ofReal (T / Fintype.card F) ≤
+      epsCa (F := F) (A := F) (ReedSolomon.code domain k : Set (ι → F))
+        ((f : ℝ≥0) / Fintype.card ι) ((f : ℝ≥0) / Fintype.card ι) := by
+  refine le_of_not_gt fun hlt => ?_
+  have hE := ENNReal.toReal_lt_of_lt_ofReal hlt
+  set E := (epsCa (F := F) (A := F) (ReedSolomon.code domain k : Set (ι → F))
+    ((f : ℝ≥0) / Fintype.card ι) ((f : ℝ≥0) / Fintype.card ι)).toReal
+  set q : ℝ := ((Fintype.card F : ℕ) : ℝ)
+  set n : ℝ := ((Fintype.card ι : ℕ) : ℝ)
+  have hqpos : 0 < q := by positivity
+  have hEq : E * q < T := (lt_div_iff₀ hqpos).mp hE
+  have hE0 : 0 ≤ E := ENNReal.toReal_nonneg
+  have hT0 : 0 < T := by linarith [mul_nonneg hE0 hqpos.le]
+  have hkR : (0 : ℝ) < k := by exact_mod_cast hk
+  have hkT := mul_pos hkR hT0
+  have hkEq := mul_lt_mul_of_pos_left hEq hkR
+  have hQ : 2 * k * T ≤ q - n := by linarith
+  have hε : E < (q - n) / (k * q) := by
+    rw [lt_div_iff₀ (by positivity)]; linarith
+  have hΛ := hLΛ.trans (rs_Lambda_extended_le_of_epsCa_int_radius domain k f E hf hε le_rfl)
+  have hD : 0 < q - n - k * E * q := by linarith
+  have hB : E * q * (q - n) / (q - n - k * E * q) < 2 * T := by
+    rw [div_lt_iff₀ hD]
+    linarith [mul_lt_mul_of_pos_right hEq (by linarith : 0 < q - n),
+      mul_le_mul_of_nonneg_left hEq.le (by positivity : 0 ≤ 2 * T * k),
+      mul_le_mul_of_nonneg_right hQ hT0.le]
+  have hceil := Nat.ceil_lt_add_one (div_nonneg
+    (mul_nonneg (mul_nonneg hE0 hqpos.le) (by linarith : 0 ≤ q - n)) hD.le)
+  have hLc : (L : ℝ) ≤ ⌈E * q * (q - n) / (q - n - k * E * q)⌉₊ :=
+    Nat.cast_le.mpr (ENat.natCast_le_natCast.mp hΛ)
+  linarith
 
 end CAImpliesList
 

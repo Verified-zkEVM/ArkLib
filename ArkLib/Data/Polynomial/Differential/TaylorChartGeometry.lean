@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.Polynomial.Differential.TaylorChart
+public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.ToMathlib.RingTheory.MvPolynomial.AffineHilbertCutFamily
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz
 
@@ -45,7 +46,10 @@ distinct.
 * `natDegree_affineHilbertPolynomial_of_mem_initialJetPrimeFamily` and
   `sum_affineDegree_mul_pow_initialJetPrimeFamily_le_jetTotalDegree`: the dimension and the
   potential of the retained components.
-* `exists_forall_jetEvaluation_ne_zero`: a common center for finitely many solutions.
+* `exists_forall_jetEvaluation_ne_zero_of_family`: a common center for a finite family of
+  polynomials with nonzero specializations of their respective differential equations.
+* `exists_forall_jetEvaluation_ne_zero`: a common center for finitely many polynomials with
+  nonzero specializations of one differential equation.
 * `injOn_polynomialJet` and `card_image_polynomialJet`: Hasse jets separate regular solutions.
 * `polynomialJet_mem_zeroLocus_initialJetEquation_sup_highTaylorCutsIdeal` and
   `polynomialJet_mem_regularAgreementCutLocus`: regular solutions lie in these loci.
@@ -53,7 +57,7 @@ distinct.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.6.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.2 and Section 4.1.
 -/
 
 @[expose] public section
@@ -66,6 +70,20 @@ open MvPolynomial
 
 /-! ### A common regular center -/
 
+/-- In an infinite domain, a finite family of polynomials with nonzero differential
+specializations admits a common center at which each equation's jet evaluation is nonzero. -/
+theorem exists_forall_jetEvaluation_ne_zero_of_family {R ι : Type*} [CommRing R] [IsDomain R]
+    [Infinite R] {d : ℕ} (T : Finset ι) (D : ι → DifferentialPolynomial R d)
+    (P : ι → Polynomial R)
+    (hT : ∀ i ∈ T, differentialSpecialization (D i) (P i) ≠ 0) :
+    ∃ center : R, ∀ i ∈ T,
+      jetEvaluation (D i) center (polynomialJet center (P i)) ≠ 0 := by
+  obtain ⟨center, hc⟩ := Polynomial.exists_forall_eval_ne_zero T
+    (fun i ↦ differentialSpecialization (D i) (P i)) hT
+  refine ⟨center, fun i hi ↦ ?_⟩
+  rw [← eval_differentialSpecialization]
+  exact hc i hi
+
 /-- In an infinite domain, finitely many polynomials `P` with nonzero specialization
 `differentialSpecialization D P` admit a common center `a` at which
 `jetEvaluation D a (polynomialJet a P)` is nonzero for all of them. -/
@@ -73,16 +91,9 @@ theorem exists_forall_jetEvaluation_ne_zero {R : Type*} [CommRing R] [IsDomain R
     {d : ℕ} (D : DifferentialPolynomial R d) (T : Finset (Polynomial R))
     (hT : ∀ P ∈ T, differentialSpecialization D P ≠ 0) :
     ∃ center : R, ∀ P ∈ T, jetEvaluation D center (polynomialJet center P) ≠ 0 := by
-  classical
-  have hprod : ∏ P ∈ T, differentialSpecialization D P ≠ 0 := Finset.prod_ne_zero_iff.mpr hT
-  obtain ⟨center, hc⟩ :
-      ∃ center : R, (∏ P ∈ T, differentialSpecialization D P).eval center ≠ 0 := by
-    by_contra! h
-    exact hprod (Polynomial.funext (by simpa using h))
-  refine ⟨center, fun P hP ↦ ?_⟩
-  rw [← eval_differentialSpecialization]
-  rw [Polynomial.eval_prod, Finset.prod_ne_zero_iff] at hc
-  exact hc P hP
+  obtain ⟨center, hc⟩ := exists_forall_jetEvaluation_ne_zero_of_family T
+    (fun _ ↦ D) id hT
+  exact ⟨center, hc⟩
 
 variable {F : Type*} [Field F] {r : ℕ}
 

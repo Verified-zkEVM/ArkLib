@@ -7,6 +7,8 @@ module
 
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+import Std.WP.Tactic
+import VCVio.ProgramLogic.Unary.WP.NecessarySpecs
 
 /-!
   # The honest side of the Hachi sumcheck (§4.3)
@@ -110,7 +112,7 @@ theorem honestComputeG_snd_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
 /-- **The honest round message passes the round check.** For each summand the round-`i` claim of
 `nestedRoundRel` *is* the partial cube sum, which splits into its two Boolean extensions
-(`hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
+(`MvPolynomial.hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
 (`computableRoundPoly_eval`). So `g(0) + g(1) = targetᵢ` for both components, which is exactly
 `roundCheck`.
 
@@ -128,10 +130,8 @@ theorem roundCheck_honestComputeG
   change hypercubeSum (M + 1)
     (sumcheckPolyAlpha Φ (M + 1) m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα w) i
     stmt.challenges = stmt.targetα at hAlpha
-  rw [hypercubeSum_succ (i := ⟨i, hi⟩)] at hZero hAlpha
-  rw [roundCheck, Bool.and_eq_true, beq_iff_eq, beq_iff_eq,
-    honestComputeG_fst_eval, honestComputeG_fst_eval,
-    honestComputeG_snd_eval, honestComputeG_snd_eval]
+  simp only [roundCheck, Bool.and_eq_true, beq_iff_eq, honestComputeG,
+    CPolynomial.eval_toPoly, computableRoundPoly_toPoly, roundPoly_sum]
   exact ⟨hZero, hAlpha⟩
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
@@ -178,7 +178,7 @@ Holds by `rfl`. -/
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1) :
     (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).verifier
-      = (roundPackage Φ (M + 1) m₁ bound bDig b init impl K φF hb i hi).verifier :=
+      = (roundPackage Φ (M + 1) m₁ bound bDig b init impl K φF i hi).verifier :=
   rfl
 
 -- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
@@ -247,6 +247,7 @@ lemma roundProver_run_eq {TCom Wit : Type} (i : ℕ)
   rfl
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
+open scoped OracleComp.Necessary in
 /-- **Honest-run characterization of one round.** Every outcome of an honest run is the single
 success determined by the drawn challenge `a`: prover and verifier both output
 `roundOut stmt g a` at the honest message `g`, and the witness is passed through.
@@ -256,7 +257,6 @@ Failure is excluded by `roundCheck_honestComputeG` — the round verifier is
 lemma roundReduction_run_support
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1)
-    (hdir : (pSpecScalar (RoundMsg F b) F).dir 1 = .V_to_P)
     (stmt : NestedRoundStatement Φ K.TCom F n μ (M + 1) m₁ i) (w : LiftedWitness Φ μ n)
     (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b i) :
     ∀ x ∈ support ((roundReduction (oSpec := oSpec) (TCom := K.TCom)
@@ -266,32 +266,14 @@ lemma roundReduction_run_support
               roundOut Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) a, w),
             roundOut Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) a) := by
   have hg := roundCheck_honestComputeG Φ m₁ bound bDig b K hb φF i hi stmt w h
-  intro x hx
-  unfold Reduction.run at hx
-  simp only [OptionT.run_bind, Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨prOpt, hpr, hx⟩ := hx
-  rw [show ((liftM (Prover.run stmt w
-        (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).prover) :
-        OptionT (OracleComp _) _)).run
-      = (Prover.run stmt w
-          (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).prover)
-        >>= fun a => pure (some a) from rfl] at hpr
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨pr, hpr, hprOpt⟩ := hpr
-  rw [mem_support_pure_iff] at hprOpt
-  subst hprOpt
-  rw [show (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).prover
-      = roundProver Φ (M + 1) m₁ b i (honestComputeG Φ m₁ b hb φF i hi) from rfl,
-    roundProver_run_eq Φ m₁ b i _ stmt w hdir, mem_support_bind_iff] at hpr
-  obtain ⟨a, -, hpr⟩ := hpr
-  rw [mem_support_pure_iff] at hpr
-  subst hpr
-  refine ⟨a, ?_⟩
-  simp only [Option.elim_some, roundReduction, roundVerifier, Verifier.run, hg, ite_true] at hx
-  simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
-    Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
-  exact hx
+  simp only [Reduction.run_run_eq_bind, roundReduction, roundVerifier, Verifier.run,
+    apply_ite OptionT.run, OptionT.run_pure, OptionT.run_failure]
+  rw [roundProver_run_eq Φ m₁ b i _ stmt w rfl]
+  refine (OracleComp.Necessary.wp_iff_forall_support _ _).mp ?_
+  set_option experimental.vcgen true in
+    vcgen [OracleComp.Necessary.Spec.ofSupport (ProtocolSpec.getChallenge _ _)]
+  · exact ⟨_, rfl⟩
+  · exact absurd hg ‹_›
 
 omit [DecidableEq F] in
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -316,7 +298,7 @@ theorem roundReduction_perfectCompleteness
   apply Reduction.perfectCompleteness_of_run_support
   intro stmt w h x hx
   obtain ⟨a, hx'⟩ :=
-    roundReduction_run_support Φ m₁ bound bDig b K hb φF i hi rfl stmt w h x hx
+    roundReduction_run_support Φ m₁ bound bDig b K hb φF i hi stmt w h x hx
   refine ⟨_, hx', ?_, rfl⟩
   exact mem_nestedRoundRel_roundOut_honestComputeG Φ m₁ bound bDig b K hb φF i hi stmt w h a
 
@@ -381,7 +363,7 @@ theorem roundsReduction_verifier (init : ProbComp σ)
     (hb : 0 < b) (φF : ZMod q →+* F) :
     ∀ (count : ℕ) (hcount : count ≤ M + 1),
       (roundsReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF count hcount).verifier
-        = (roundsChain Φ (M + 1) m₁ bound bDig b init impl K φF hb count hcount).verifier
+        = (roundsChain Φ (M + 1) m₁ bound bDig b init impl K φF count hcount).verifier
   | 0, _ => rfl
   | count + 1, hcount =>
     congrArg (fun V => Verifier.append V (roundVerifier Φ (M + 1) m₁ b (TCom := K.TCom) count))

@@ -5,14 +5,19 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AgreementCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.BranchwiseRate
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.DerivativeCappedCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.FiniteRateParameters
+import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridAgreementCounting
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridRateEnvelope
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.RoundedCounts
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageComparison
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.StageSum
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.Uniform
 import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.UniformMca
+import Mathlib.FieldTheory.IsAlgClosed.AlgebraicClosure
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.Order.Interval.Finset.Nat
 
 /-!
@@ -95,7 +100,7 @@ example : 0 < firstOrderSourceDensity (1 / 8) 1 (firstOrderLowRateBeta (1 / 8)) 
   have hu : firstOrderLowRateStationaryU (1 / 8) < 1 := by
     by_contra h
     have hge : 1 ≤ firstOrderLowRateStationaryU (1 / 8) := le_of_not_gt h
-    have hc := firstOrderLowRateStationaryU_cubic (rho := (1 / 8 : ℝ)) (by norm_num)
+    have hc := firstOrderLowRateStationaryU_cubic (rho := (1 / 8 : ℝ))
     rw [ht] at hc
     unfold firstOrderStationaryCubic at hc
     have hbound : 4 ≤ firstOrderLowRateStationaryU (1 / 8) ^ 2 *
@@ -105,7 +110,7 @@ example : 0 < firstOrderSourceDensity (1 / 8) 1 (firstOrderLowRateBeta (1 / 8)) 
         _ ≤ firstOrderLowRateStationaryU (1 / 8) ^ 2 *
             (firstOrderLowRateStationaryU (1 / 8) + 3) := by gcongr
     linarith
-  rw [firstOrderLowRateThreshold_eq_scale_mul_one_add (by norm_num), ht]
+  rw [firstOrderLowRateThreshold_eq_scale_mul_one_add, ht]
   nlinarith [hu]
 
 /-- At rate `1/8`, the positive stationary root exists and is the unique nonnegative root. -/
@@ -115,8 +120,8 @@ example : ∃ u : ℝ, 0 < u ∧
       firstOrderLowRateScale (1 / 8) ∧
     u = firstOrderLowRateStationaryU (1 / 8) := by
   obtain ⟨u, hu, hcubic⟩ := exists_firstOrderStationaryRoot (rho := (1 / 8 : ℝ)) (by norm_num)
-  exact ⟨u, hu, hcubic, firstOrderLowRateStationaryU_cubic (by norm_num),
-    firstOrderLowRateStationaryU_unique (by norm_num) hu.le hcubic⟩
+  exact ⟨u, hu, hcubic, firstOrderLowRateStationaryU_cubic,
+    firstOrderLowRateStationaryU_unique hu.le hcubic⟩
 
 /-- The source-minus-envelope factorization at the chosen rate ratio. -/
 example :
@@ -124,8 +129,8 @@ example :
         firstOrderRankCubicEnvelope (firstOrderRateBeta (1 / 2) (3 / 4)) =
       firstOrderRateBeta (1 / 2) (3 / 4) / 2 *
         (firstOrderCleanExpression (1 / 2) (3 / 4) - 1) := by
-  rw [firstOrderSourceDensity_sub_cubicEnvelope _ _ _ (by norm_num),
-    firstOrderRateBeta_bracket _ _ (by norm_num) (by norm_num)]
+  rw [firstOrderSourceDensity_sub_cubicEnvelope _ _ _,
+    firstOrderRateBeta_bracket _ _]
 
 /-- The piecewise ratio at `R = 1/2` lies below `a/R` when `a = 3/4`. -/
 example : firstOrderBranchBeta (1 / 2) (3 / 4) < (3 / 4) / (1 / 2) := by
@@ -148,9 +153,12 @@ example : certifiedEnlargedRankBound 1 2 1 0 = 5 := by
   rw [certifiedEnlargedRankBound_one_eq_firstOrderRankCount]
   decide
 
-/-- The signed cubic count bounds the rank count at multiplicity `2`, cap `1`. -/
-example : (firstOrderRankCount 2 1 : ℝ) ≤ firstOrderRankCubicUpperCount 2 1 :=
-  firstOrderRankCount_le_cubicUpperCount 2 1
+/-- At multiplicity `2`, cap `1` satisfies both cubic rank bounds. -/
+example : (firstOrderRankCount 2 1 : ℝ) ≤ firstOrderRankCubicUpperCount 2 1 ∧
+    firstOrderRankCount 2 1 ≤ 2 * 2 ^ 3 := by
+  constructor
+  · exact firstOrderRankCount_le_cubicUpperCount 2 1
+  · exact firstOrderRankCount_le_two_mul_cube (by norm_num)
 
 /-- The rounded rank estimate at `m = 4`, `β = 1/2`. -/
 example : (firstOrderRankCount 4 ⌊(1 / 2 : ℝ) * 4⌋₊ : ℝ) ≤
@@ -187,7 +195,7 @@ example :
       firstOrderSourceCount (1 / 2) 1 64 ⌊(1 / 4 : ℝ) * 64⌋₊ 128 -
         firstOrderRankCount 64 ⌊(1 / 4 : ℝ) * 64⌋₊ := by
   exact ⟨cube_mul_sourceDensity_le_firstOrderSourceCount (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) (by norm_num),
+      (by norm_num) (by norm_num),
     cube_mul_densityGap_sub_le_sourceCount_sub_rankCount (by norm_num) (by norm_num)
       (by norm_num) (by norm_num) (by norm_num) (by norm_num)⟩
 
@@ -233,23 +241,401 @@ example : (2 : ℝ) * max (3 * (1 / 2 : ℝ) - (1 / 2) * 1) 0 ≤ max (3 * 2 - 1
     (n := 2) (D := 1) (A := 2) (m := 3) (t := 1) (by norm_num) (by norm_num)
   norm_num at h ⊢
 
+/-! ### Hybrid descent -/
+
+private noncomputable abbrev constantFirstOrderEquation :
+    DifferentialPolynomial (Polynomial ℚ) 1 := 1
+
+private theorem hybridVariable_totalDegree {R : Type*} [CommSemiring R] [Nontrivial R]
+    {d : ℕ} (i : Fin (d + 1)) :
+    jetTotalDegree (MvPolynomial.X (some i) : DifferentialPolynomial R d) = 1 := by
+  rw [jetTotalDegree,
+    show (MvPolynomial.X (some i) : DifferentialPolynomial R d) =
+      MvPolynomial.monomial (Finsupp.single (some i) 1) 1 by rfl,
+    MvPolynomial.weightedTotalDegree_monomial _ _ _ one_ne_zero]
+  rw [Finsupp.weight_single]
+  simp [jetDegreeWeight]
+
+private instance : Fact (Nat.Prime 2) := ⟨Nat.prime_two⟩
+
+private noncomputable abbrev smallCharacteristicFirstOrderEquation {F : Type*} [Field F] :
+    DifferentialPolynomial (Polynomial F) 1 := MvPolynomial.X (some (1 : Fin 2))
+
+/-- Symbolic descent includes both degree zero and actual degree one in characteristic two. -/
+example : Nonempty (FirstOrderHybridDescent constantFirstOrderEquation 0 0) ∧
+    ringChar (ZMod 2) ≤ 3 ∧
+      Nonempty (FirstOrderHybridDescent
+        (smallCharacteristicFirstOrderEquation (F := ZMod 2)) 3 1) := by
+  refine ⟨?_, ?_, ?_⟩
+  · apply exists_firstOrderHybridDescent constantFirstOrderEquation
+    · exact one_ne_zero
+    · simpa [constantFirstOrderEquation, jetTotalDegree] using
+        (MvPolynomial.weightedTotalDegree_C jetDegreeWeight (1 : Polynomial ℚ))
+    · simp [constantFirstOrderEquation, jetDegree]
+    · exact Or.inl (ringChar.eq_zero : ringChar ℚ = 0)
+  · norm_num [ZMod.ringChar_zmod_n]
+  · apply exists_firstOrderHybridDescent (F := ZMod 2)
+      (smallCharacteristicFirstOrderEquation (F := ZMod 2))
+    · simp [smallCharacteristicFirstOrderEquation]
+    · rw [smallCharacteristicFirstOrderEquation,
+      hybridVariable_totalDegree (R := Polynomial (ZMod 2))]
+      norm_num
+    · simp [smallCharacteristicFirstOrderEquation, jetDegree]
+    · exact Or.inr (by norm_num [smallCharacteristicFirstOrderEquation,
+        jetDegree, ZMod.ringChar_zmod_n])
+
+/-! ### Hybrid agreement counting -/
+
+private def hybridDomain : Fin 4 ↪ ℚ where
+  toFun i := (i.val : ℚ)
+  inj' := by
+    intro i j hij
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    apply Fin.ext
+    exact_mod_cast hij
+
+private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+private def hybridFiniteFieldDomain : Fin 4 ↪ ZMod 5 where
+  toFun i := i.val
+  inj' := by
+    intro i j hij
+    apply Fin.ext
+    change (i.val : ZMod 5) = (j.val : ZMod 5) at hij
+    have hmod := (ZMod.natCast_eq_natCast_iff _ _ 5).mp hij
+    exact hmod.eq_of_lt_of_lt (by omega) (by omega)
+
+private noncomputable def hybridCurveCertificate :
+    FirstOrderCurveCertificate.{0, 0} (F := ZMod 5) 2 3
+      concreteFiniteParameters.multiplicity concreteFiniteParameters.derivativeCap
+      concreteFiniteParameters.jetDegree 3 concreteFiniteParameters.challengeDegree
+      hybridFiniteFieldDomain (fun _ ↦ receivedLine (0 : ZMod 5) 0)
+      (firstOrderColumns (D := 2) (A := 3)
+        (m := concreteFiniteParameters.multiplicity)
+        (M := concreteFiniteParameters.derivativeCap)
+        (μ := concreteFiniteParameters.jetDegree)) := by
+  exact (Classical.choice (exists_firstOrderRate_symbolicCertificate
+    (rate := (1 / 2 : ℝ)) (agreement := (3 / 4 : ℝ))
+    (p := concreteFiniteParameters) (F := ZMod 5) (n := 4) (D := 2) (A := 3) (k := 3)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    hybridFiniteFieldDomain (fun _ ↦ 0) (fun _ ↦ 0))).toCurve
+
+private theorem hybridCurveCertificate_jetDegree_le :
+    jetDegree hybridCurveCertificate.Q 1 ≤ concreteFiniteParameters.derivativeCap :=
+  hybridCurveCertificate.jetDegree_one_le
+
+/-- A concrete curve certificate satisfies both characteristic-guarded descent bridges. -/
+example :
+    Nonempty (FirstOrderHybridDescent hybridCurveCertificate.Q
+      concreteFiniteParameters.jetDegree concreteFiniteParameters.derivativeCap) ∧
+    Nonempty (FirstOrderHybridDescent hybridCurveCertificate.Q
+      concreteFiniteParameters.jetDegree concreteFiniteParameters.derivativeCap) := by
+  have hcap : concreteFiniteParameters.derivativeCap < ringChar (ZMod 5) := by
+    norm_num [concreteFiniteParameters, FirstOrderFiniteRateParameters.derivativeCap,
+      firstOrderRateDerivativeCap, firstOrderRateBeta, ZMod.ringChar_zmod_n]
+  refine ⟨?_, ?_⟩
+  · apply hybridCurveCertificate.exists_hybridDescent
+    exact Or.inr (hybridCurveCertificate_jetDegree_le.trans_lt hcap)
+  · apply hybridCurveCertificate.exists_hybridDescent_of_derivativeCap_lt_ringChar
+    exact Or.inr hcap
+
+private def hybridReceived : Fin 4 → ℚ := fun _ ↦ 0
+
+private noncomputable def hybridSolutions : Finset (Polynomial ℚ) := {0}
+
+open Classical in
+private theorem hybridSolutions_accepted : ∀ P ∈ hybridSolutions,
+    P.degree < 2 ∧
+      3 ≤ (Finset.univ.filter fun i ↦
+        P.eval (hybridDomain i) = hybridReceived i).card := by
+  intro P hP
+  rcases Finset.mem_singleton.mp hP with rfl
+  constructor
+  · exact WithBot.bot_lt_coe _
+  · simp [hybridReceived]
+
+private noncomputable abbrev hybridFieldEquation : DifferentialPolynomial ℚ 1 :=
+  MvPolynomial.X (some (0 : Fin 2))
+
+private noncomputable abbrev hybridSymbolicEquation :
+    DifferentialPolynomial (Polynomial ℚ) 1 :=
+  MvPolynomial.X (some (0 : Fin 2))
+
+private noncomputable abbrev hybridSymbolicTailEquation :
+    DifferentialPolynomial (Polynomial ℚ) 0 :=
+  MvPolynomial.X (some (0 : Fin 1))
+
+private noncomputable def hybridFieldDescent : FirstOrderFieldDescent hybridFieldEquation 3 1 :=
+  Classical.choice (exists_firstOrderFieldDescent hybridFieldEquation
+    (by simp [hybridFieldEquation])
+    (by rw [hybridFieldEquation, hybridVariable_totalDegree (R := ℚ)]; norm_num)
+    (by rw [jetDegree, hybridFieldEquation,
+      MvPolynomial.degreeOf_X_of_ne (by decide)]; norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
+
+private noncomputable def hybridSymbolicDescent :
+    FirstOrderHybridDescent hybridSymbolicEquation 3 1 :=
+  Classical.choice (exists_firstOrderHybridDescent hybridSymbolicEquation
+    (by simp [hybridSymbolicEquation])
+    (by rw [hybridSymbolicEquation,
+      hybridVariable_totalDegree (R := Polynomial ℚ)]; norm_num)
+    (by rw [jetDegree, hybridSymbolicEquation,
+      MvPolynomial.degreeOf_X_of_ne (by decide)]; norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)))
+
+private theorem hybridFieldSolutions : ∀ P ∈ hybridSolutions,
+    differentialSpecialization hybridFieldEquation P = 0 := by
+  intro P hP
+  rcases Finset.mem_singleton.mp hP with rfl
+  simp [hybridFieldEquation, differentialSpecialization, differentialSpecializationHom]
+
+private theorem hybridJetOneSolutions : ∀ P ∈ hybridSolutions,
+    differentialSpecialization (MvPolynomial.X (some (1 : Fin 2))) P = 0 := by
+  intro P hP
+  rcases Finset.mem_singleton.mp hP with rfl
+  simp [differentialSpecialization, differentialSpecializationHom]
+
+private def hybridZeroChallenge : Polynomial ℚ →+* ℚ := Polynomial.evalRingHom 0
+
+private theorem hybridSymbolicSolutions : ∀ P ∈ hybridSolutions,
+    differentialSpecialization
+      (MvPolynomial.map (Polynomial.evalRingHom (0 : ℚ)) hybridSymbolicEquation) P = 0 := by
+  intro P hP
+  rcases Finset.mem_singleton.mp hP with rfl
+  simp [hybridSymbolicEquation, differentialSpecialization, differentialSpecializationHom]
+
+private theorem hybridSymbolicDescent_tail_equation :
+    hybridSymbolicDescent.tail.equation = hybridSymbolicTailEquation := by
+  have hactual : hybridSymbolicDescent.actualDegree = 0 := by
+    rw [hybridSymbolicDescent.actualDegree_eq, jetDegree, hybridSymbolicEquation,
+      MvPolynomial.degreeOf_X_of_ne (by decide)]
+  apply MvPolynomial.rename_injective _ (jetPrefixEmbedding (0 : Fin 2)).injective
+  rw [hybridSymbolicDescent.tail.rename_equation, hactual, jetDerivative_zero]
+  simp [hybridSymbolicEquation, hybridSymbolicTailEquation, jetPrefixEmbedding]
+
+private theorem hybridSymbolicTailBound :
+    HasOrderZeroTailListBound (D := 1) (A := 3)
+      (b := 3 - hybridSymbolicDescent.actualDegree) hybridDomain hybridReceived
+      (MvPolynomial.map hybridZeroChallenge hybridSymbolicDescent.tail.equation) := by
+  apply hasOrderZeroTailListBound_of_nonzero
+  · rw [hybridSymbolicDescent_tail_equation]
+    simp [hybridZeroChallenge, hybridSymbolicTailEquation]
+  · exact (jetTotalDegree_map_le hybridZeroChallenge _).trans (by
+      rw [hybridSymbolicDescent.tail.jetTotalDegree_equation]
+      exact hybridSymbolicDescent.stage_jetTotalDegree_le
+        hybridSymbolicDescent.actualDegree le_rfl)
+
+/-! The same nonempty singleton is accepted by all the hybrid list bounds below. -/
+
+/-- Field root coverage sends the concrete zero root to its order-zero tail. -/
+example : differentialSpecialization hybridFieldDescent.tail.equation
+    (0 : Polynomial ℚ) = 0 := by
+  rcases hybridFieldDescent.root_coverage (0 : Polynomial ℚ) (by
+      simp [hybridFieldEquation, differentialSpecialization, differentialSpecializationHom]) with
+    htail | ⟨j, hj, _, _⟩
+  · exact htail
+  · have hactual : hybridFieldDescent.actualDegree = 0 := by
+      rw [hybridFieldDescent.actualDegree_eq, jetDegree, hybridFieldEquation,
+        MvPolynomial.degreeOf_X_of_ne (by decide)]
+    rw [hactual] at hj
+    omega
+
+/-- Symbolic root coverage sends the specialized zero root to its order-zero tail. -/
+example : differentialSpecialization
+    (MvPolynomial.map hybridZeroChallenge hybridSymbolicDescent.tail.equation)
+    (0 : Polynomial ℚ) = 0 := by
+  rcases hybridSymbolicDescent.root_coverage hybridZeroChallenge (0 : Polynomial ℚ) (by
+      simp [hybridSymbolicEquation, differentialSpecialization, differentialSpecializationHom]) with
+    htail | ⟨j, hj, _, _⟩
+  · exact htail
+  · have hactual : hybridSymbolicDescent.actualDegree = 0 := by
+      rw [hybridSymbolicDescent.actualDegree_eq, jetDegree, hybridSymbolicEquation,
+        MvPolynomial.degreeOf_X_of_ne (by decide)]
+    rw [hactual] at hj
+    omega
+
+/-- A concrete regular family obeys the derivative-capped agreement count. -/
+example : (hybridSolutions.card : ℚ) ≤
+    firstOrderCurveFiberStageOne 3 1 1 1 *
+      (((4 - 2 + 1 : ℕ) : ℚ) / ((3 - 2 + 1 : ℕ) : ℚ)) := by
+  have hτ : TaylorExponentSufficient 1 3 1 :=
+    taylorExponentSufficient_firstOrder_tight 2
+  exact finite_regular_agreement_solutions_card_le_derivativeCapped_of_exponent
+    (n := 4) (A := 3) (MvPolynomial.X (some (1 : Fin 2))) 3 2 1 1 1 hτ
+    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
+    (by rw [hybridVariable_totalDegree (R := ℚ)])
+    (by rw [jetDegree, MvPolynomial.degreeOf_X_self])
+    hybridDomain hybridReceived
+    (by norm_num) hybridSolutions
+    (fun P hP ↦ (hybridSolutions_accepted P hP).1)
+    (fun P hP ↦ hybridJetOneSolutions P hP)
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [separant, pderiv_X, differentialSpecialization, differentialSpecializationHom])
+    (by
+      intro i hi hiK
+      have : i = 2 := by omega
+      subst i
+      norm_num [Nat.choose_one_right])
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [hybridReceived])
+
+/-- A degree-one message equation satisfies the identity-pair incidence bound. -/
+example : (hybridSolutions.card : ℚ) ≤
+    firstOrderCurveFiberStageOne 2 1 1 0 *
+      (((4 - 1 : ℕ) : ℚ) / ((3 - 1 : ℕ) : ℚ)) := by
+  exact finite_regular_agreement_solutions_card_le_identityPair
+    (n := 4) (A := 3) (MvPolynomial.X (some (1 : Fin 2))) 1 1
+    (by rw [hybridVariable_totalDegree (R := ℚ)]) hybridDomain hybridReceived
+    (by norm_num) hybridSolutions
+    (fun P hP ↦ (hybridSolutions_accepted P hP).1)
+    (fun P hP ↦ hybridJetOneSolutions P hP)
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [separant, pderiv_X, differentialSpecialization, differentialSpecializationHom])
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [hybridReceived])
+
+/-- The shared regular Taylor estimate bounds the concrete degree-two regular singleton. -/
+example : (hybridSolutions.card : ℚ) ≤
+    firstOrderCurveFiberStageOne 3 1 1 (regularTaylorExponent 2) *
+      (((4 - 2 : ℕ) : ℚ) / ((3 - 2 : ℕ) : ℚ)) := by
+  exact finite_regular_agreement_solutions_card_le_regularTaylor
+    (MvPolynomial.X (some (1 : Fin 2))) 2 1 1 (Or.inr ⟨by norm_num, by norm_num⟩)
+    (by rw [hybridVariable_totalDegree (R := ℚ)])
+    (by rw [jetDegree, MvPolynomial.degreeOf_X_self]) (by norm_num)
+    hybridDomain hybridReceived (by norm_num) (by norm_num) hybridSolutions
+    (fun P hP ↦ lt_trans (hybridSolutions_accepted P hP).1 (by norm_num))
+    hybridJetOneSolutions
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [separant, pderiv_X, differentialSpecialization, differentialSpecializationHom])
+    (by
+      intro i hi hiK
+      have : i = 2 := by omega
+      subst i
+      norm_num [Nat.choose_one_right])
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      simp [hybridReceived])
+
+/-- The symbolic raw hybrid bound applies to the shared accepted singleton. -/
+example : (hybridSolutions.card : ℝ) ≤
+    firstOrderListCharge (agreementIncidenceRatio 4 1 3) 1 3
+      hybridSymbolicDescent.actualDegree := by
+  exact finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
+    (D := 1) (A := 3) (μ := 3) (M := 1)
+    hybridDomain hybridReceived hybridSymbolicEquation hybridSymbolicDescent 0
+    (by norm_num) (by norm_num) (Or.inl (ringChar.eq_zero : ringChar ℚ = 0))
+    hybridSymbolicTailBound hybridSolutions hybridSymbolicSolutions
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      refine ⟨WithBot.bot_lt_coe _, ?_⟩
+      simp [hybridReceived])
+
+/-- The symbolic optimized hybrid bound applies to the shared accepted singleton. -/
+example : (hybridSolutions.card : ℝ) ≤
+      maxFirstOrderListCharge (agreementIncidenceRatio 4 1 3) 1 3 1 ∧
+    hybridSolutions.card ≤ firstOrderListBound (agreementIncidenceRatio 4 1 3) 1 3 1 ∧
+      (hybridSolutions.card : ℝ) ≤
+        firstOrderListConstant (agreementIncidenceRatio 4 1 3) 1 3 1 := by
+  exact finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail
+    (D := 1) (A := 3) (μ := 3) (M := 1)
+    hybridDomain hybridReceived hybridSymbolicEquation hybridSymbolicDescent 0
+    (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSymbolicTailBound hybridSolutions
+    hybridSymbolicSolutions (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      refine ⟨WithBot.bot_lt_coe _, ?_⟩
+      simp [hybridReceived])
+
+/-- The field raw hybrid bound applies to the shared accepted singleton. -/
+example : (hybridSolutions.card : ℝ) ≤
+    firstOrderListCharge (agreementIncidenceRatio 4 1 3) 1 3
+      hybridFieldDescent.actualDegree := by
+  exact finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw
+    (D := 1) (A := 3) (μ := 3) (M := 1)
+    hybridDomain hybridReceived hybridFieldEquation hybridFieldDescent
+    (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions hybridFieldSolutions
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      refine ⟨WithBot.bot_lt_coe _, ?_⟩
+      simp [hybridReceived])
+
+/-- The optimized field bound applies to the shared accepted singleton. -/
+example : (hybridSolutions.card : ℝ) ≤
+      maxFirstOrderListCharge (agreementIncidenceRatio 4 1 3) 1 3 1 ∧
+    hybridSolutions.card ≤ firstOrderListBound (agreementIncidenceRatio 4 1 3) 1 3 1 ∧
+      (hybridSolutions.card : ℝ) ≤
+        firstOrderListConstant (agreementIncidenceRatio 4 1 3) 1 3 1 := by
+  exact finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized
+    (D := 1) (A := 3) (μ := 3) (M := 1)
+    hybridDomain hybridReceived hybridFieldEquation hybridFieldDescent
+    (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions hybridFieldSolutions
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      refine ⟨WithBot.bot_lt_coe _, ?_⟩
+      simp [hybridReceived])
+
+/-- The direct field theorem constructs a descent and bounds the shared accepted singleton. -/
+example : (hybridSolutions.card : ℝ) ≤
+      maxFirstOrderListCharge (agreementIncidenceRatio 4 1 3) 1 3 1 ∧
+    hybridSolutions.card ≤ firstOrderListBound (agreementIncidenceRatio 4 1 3) 1 3 1 ∧
+      (hybridSolutions.card : ℝ) ≤
+        firstOrderListConstant (agreementIncidenceRatio 4 1 3) 1 3 1 := by
+  exact finite_firstOrder_field_hybrid_agreement_solutions_card_le
+    (D := 1) (A := 3) (μ := 3) (M := 1)
+    hybridDomain hybridReceived hybridFieldEquation (by simp [hybridFieldEquation])
+    (by rw [hybridFieldEquation, hybridVariable_totalDegree (R := ℚ)]; norm_num)
+    (by rw [jetDegree, hybridFieldEquation,
+      MvPolynomial.degreeOf_X_of_ne (by decide)]; norm_num)
+    (by norm_num) (by norm_num)
+    (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions
+    hybridFieldSolutions (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      refine ⟨WithBot.bot_lt_coe _, ?_⟩
+      simp [hybridReceived])
+
+/-- The automatic first-order theorem bounds the shared accepted singleton. -/
+example : (hybridSolutions.card : ℝ) ≤
+      maxFirstOrderListCharge (agreementIncidenceRatio 4 1 3) 1
+        (automaticJetDegree (1 / 2) (3 / 4)) (automaticDerivativeCap (1 / 2) (3 / 4)) ∧
+    hybridSolutions.card ≤ firstOrderListBound (agreementIncidenceRatio 4 1 3) 1
+      (automaticJetDegree (1 / 2) (3 / 4)) (automaticDerivativeCap (1 / 2) (3 / 4)) ∧
+      (hybridSolutions.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio 4 1 3) 1
+        (automaticJetDegree (1 / 2) (3 / 4)) (automaticDerivativeCap (1 / 2) (3 / 4)) := by
+  exact finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
+    (rho := 1 / 2) (a := 3 / 4) (n := 4) (D := 1) (A := 3) (k := 2)
+    (by norm_num) half_rate_threshold_lt_three_four
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    hybridDomain hybridReceived (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hybridSolutions
+    (fun P hP ↦ by
+      rcases Finset.mem_singleton.mp hP with rfl
+      refine ⟨WithBot.bot_lt_coe _, ?_⟩
+      simp [hybridReceived])
+
 /-! ### Hybrid constants -/
 
 /-- The fiber stage sum at `D = 2`, `μ = 3`, `e = M = 2` is bounded by `2DT`. -/
 example : (regularFiberStageSum 2 3 2 : ℝ) ≤ 2 * 2 * stageStaircase 3 2 :=
-  regularFiberStageSum_cast_le (by norm_num) (by norm_num) (by norm_num)
+  regularFiberStageSum_cast_le (by norm_num) (by norm_num)
 
 /-- The joint stage sum at `D = 2`, `h = 1`, `μ = 3`, `e = M = 2` is bounded by its charge. -/
 example : (regularJointStageSum 2 1 3 2 : ℝ) ≤
     (12 * 2 ^ 2 * 1 + 4 * 2) * stageStaircase 3 2 := by
   have h := regularJointStageSum_cast_le (D := 2) (h := 1) (μ := 3) (M := 2) (e := 2)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
   norm_num at h ⊢
-  all_goals exact h
+  exact h
 
 /-- The list charge increases from stage `0` to stage `1` at `θ = D = 1`, `μ = 2`. -/
 example : firstOrderListCharge 1 1 2 0 ≤ firstOrderListCharge 1 1 2 1 :=
-  firstOrderListCharge_mono (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+  firstOrderListCharge_mono (by norm_num) (by norm_num) (by norm_num)
 
 /-- Both balanced-split coordinate ratios are at most `2θ` for `n = 10`, `D = 1`, `A = 4`. -/
 example : retainedCoordinateRatio 10 4 (balancedSplit 1 4) ≤
@@ -260,13 +646,12 @@ example : retainedCoordinateRatio 10 4 (balancedSplit 1 4) ≤
 
 /-- The optimized list charge is below its closed constant at `θ = D = 1`, `μ = 2`, `M = 1`. -/
 example : maxFirstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 :=
-  maxFirstOrderListCharge_le_firstOrderListConstant (by norm_num) (by norm_num) (by norm_num)
+  maxFirstOrderListCharge_le_firstOrderListConstant (by norm_num) (by norm_num)
 
 /-- The optimized exception charge is below its closed constant for `n = 4`, `D = 1`, `A = 3`. -/
 example : maxMinFirstOrderExceptionCharge (agreementIncidenceRatio 4 1 3) 4 1 3 1 2 0 ≤
     firstOrderExceptionConstant (agreementIncidenceRatio 4 1 3) 4 1 1 2 0 :=
-  maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+  maxMinFirstOrderExceptionCharge_le_firstOrderExceptionConstant (by norm_num)
 
 /-- Concrete list and balanced-split exception charges satisfy their direct closed bounds. -/
 example : firstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 ∧
@@ -274,23 +659,22 @@ example : firstOrderListCharge 1 1 2 1 ≤ firstOrderListConstant 1 1 2 1 ∧
         (balancedSplit 1 3) ≤
       firstOrderExceptionConstant (agreementIncidenceRatio 4 1 3) 4 1 1 2 1 := by
   exact ⟨firstOrderListCharge_le_firstOrderListConstant (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num),
-    firstOrderExceptionCharge_balancedSplit_le (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num)⟩
+      (by norm_num),
+    firstOrderExceptionCharge_balancedSplit_le (by norm_num)
+      (by norm_num)⟩
 
 /-! ### Rate and polynomial envelopes -/
 
 /-- For rate fraction `1/4` and agreement fraction `1/2`, the incidence ratio is at most `4`. -/
 example : agreementIncidenceRatio 4 1 2 ≤ 1 / ((1 / 2 : ℝ) - 1 / 4) := by
   exact agreementIncidenceRatio_le_one_div_sub (n := 4) (D := 1) (A := 2)
-    (ρ := 1 / 4) (a := 1 / 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num)
+    (ρ := 1 / 4) (a := 1 / 2) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The cubic envelope at `C = θ = 1`, `q = n = μ = 2`, and `D = M = 1`. -/
 example : firstOrderListConstant 1 1 2 1 ≤ 48 := by
   have h := firstOrderListConstant_le_cubic (C := 1) (q := 2) (θ := 1) (n := 2) (D := 1)
     (μ := 2) (M := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num [stageStaircase])
+    (by norm_num) (by norm_num) (by norm_num [stageStaircase])
   norm_num at h ⊢
   exact h
 
@@ -298,7 +682,7 @@ example : firstOrderListConstant 1 1 2 1 ≤ 48 := by
 example : firstOrderExceptionConstant 1 2 1 1 2 1 ≤ 5760 := by
   have h := firstOrderExceptionConstant_le_quintic (C := 1) (q := 2) (θ := 1) (n := 2) (D := 1)
     (h := 1) (μ := 2) (M := 1) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (by norm_num [stageStaircase])
   norm_num at h ⊢
   exact h
@@ -440,7 +824,7 @@ example :
   exact automaticCurveChain.sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
     (n := 4) (K := 2) (k := 1) (L := 1) (A := 2) (μ := 1) (M := 1)
     (ell := 1) (h := 1) (τ := 0) hdegree hderivative
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
 
 /-- The stage cap identity computes the concrete first-order curve bound. -/
 example :
@@ -457,7 +841,7 @@ example :
 /-- Both regular stage sums increase from derivative degree `1` to `2`. -/
 example : regularFiberStageSum 1 3 1 ≤ regularFiberStageSum 1 3 2 ∧
     regularJointStageSum 1 1 3 1 ≤ regularJointStageSum 1 1 3 2 := by
-  exact ⟨regularFiberStageSum_mono (by norm_num) (by norm_num) (by norm_num),
+  exact ⟨regularFiberStageSum_mono (by norm_num) (by norm_num),
     regularJointStageSum_mono (by norm_num) (by norm_num)⟩
 
 /-- At `n = A = 3` and `k = 2`, the fixed height-851 source has a strict slot surplus. -/
@@ -475,7 +859,7 @@ example : firstOrderCurveShiftedRowSlotBound 1 5 12 4 23 10 1 276 <
 /-- The optimized height-276 exception charge has the integral ceiling at `n = 10`. -/
 example : maxMinFirstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 23 4 ≤
     1325775 * (10 : ℝ) ^ 2 :=
-  uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling (by norm_num) (by norm_num)
+  uniformFirstOrderMca_optimizedExceptionCharge_le_ceiling (by norm_num)
     (by norm_num) (by norm_num) (by norm_num)
 
 /-- At `D = 1`, `A = 5`, the retained split is `2` and lies strictly between `D` and `A`. -/
@@ -491,7 +875,7 @@ example : retainedCoordinateRatio 10 5 (uniformFirstOrderMcaSplit 1 5) ≤
     fixedCoordinateRatio 10 1 (uniformFirstOrderMcaSplit 1 5) ≤
       42 * agreementIncidenceRatio 10 1 5 := by
   exact ⟨uniformFirstOrderMcaSplit_retainedCoordinateRatio_le (by norm_num) (by norm_num),
-    uniformFirstOrderMcaSplit_fixedCoordinateRatio_le (by norm_num)⟩
+    uniformFirstOrderMcaSplit_fixedCoordinateRatio_le⟩
 
 /-- The agreement incidence ratios obey the gap bounds at `n = 10`, `D = 1`, `A = 5`. -/
 example : agreementIncidenceRatio 10 1 5 ≤ 25 / 6 ∧
@@ -499,8 +883,8 @@ example : agreementIncidenceRatio 10 1 5 ≤ 25 / 6 ∧
   have hdegree : (1 : ℝ) * agreementIncidenceRatio 10 1 5 ≤ (25 / 24 : ℝ) * 10 := by
     simpa using
       (uniformFirstOrderMca_degree_mul_agreementIncidenceRatio_le
-        (n := 10) (D := 1) (A := 5) (by norm_num) (by norm_num) (by norm_num))
-  exact ⟨uniformFirstOrderMca_agreementIncidenceRatio_le (by norm_num) (by norm_num), hdegree⟩
+        (n := 10) (D := 1) (A := 5) (by norm_num))
+  exact ⟨uniformFirstOrderMca_agreementIncidenceRatio_le (by norm_num), hdegree⟩
 
 /-- The four regular stage sums have their exact values at `D = 1` and `D = 2`. -/
 example : regularFiberStageSum 1 23 4 = 86 ∧ regularFiberStageSum 2 23 4 = 486 ∧
@@ -515,27 +899,172 @@ example : firstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 
       (uniformFirstOrderMcaSplit 1 5) ≤
     (1304562211 / 984 : ℝ) * (10 : ℝ) ^ 2 :=
   uniformFirstOrderMca_exceptionCharge_le
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
 /-- The raw height-276 exception charge has its integral ceiling at `n = 10`. -/
 example : firstOrderExceptionCharge (agreementIncidenceRatio 10 1 5) 10 1 5 276 23 4
       (uniformFirstOrderMcaSplit 1 5) ≤
     1325775 * (10 : ℝ) ^ 2 :=
   uniformFirstOrderMca_exceptionCharge_le_ceiling
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
 
-set_option maxRecDepth 4096 in
 /-- The fixed graded-rank profile through grade `22`. -/
 example : List.ofFn (fun t : Fin 23 ↦ uniformFirstOrderGradedRankProfile t) =
     [12, 22, 30, 36, 40, 35, 30, 25, 20, 16, 12, 9, 6, 4, 2, 1,
       0, 0, 0, 0, 0, 0, 0] := by decide
 
-set_option maxRecDepth 4096 in
 /-- The fixed graded-rank profile sums to `300` through grade `22`. -/
 example : ∑ t ∈ Finset.range 23, uniformFirstOrderGradedRankProfile t = 300 := by decide
 
-set_option maxRecDepth 4096 in
 /-- The grade-weighted fixed profile sums to `1570` through grade `22`. -/
 example : ∑ t ∈ Finset.range 23, t * uniformFirstOrderGradedRankProfile t = 1570 := by decide
+
+private noncomputable abbrev firstOrderUnitEquation (F : Type*) [CommRing F] :
+    DifferentialPolynomial F 1 :=
+  X (some 1)
+
+private def firstOrderZeroJet {F : Type*} [Zero F] : Fin 2 → F := fun _ ↦ 0
+
+private theorem commonTaylorNumerator_zeroJet_firstOrderUnitEquation {F : Type*} [Field F] :
+    aeval (firstOrderZeroJet (F := F))
+      (commonTaylorNumerator 0 (firstOrderUnitEquation F) 4 1) = 0 := by
+  have hS : aeval (firstOrderZeroJet (F := F))
+      (initialJetSeparant 0 (firstOrderUnitEquation F)) ≠ 0 := by
+    simp [firstOrderUnitEquation, initialJetSeparant, separant]
+  have hc : rationalTaylorCoefficient 0 (firstOrderUnitEquation F)
+      (firstOrderZeroJet (F := F)) 1 = 0 := by
+    simpa [firstOrderZeroJet] using rationalTaylorCoefficient_initial 0
+      (firstOrderUnitEquation F) (firstOrderZeroJet (F := F) : Fin 2 → F) ⟨1, by omega⟩
+  rw [aeval_commonTaylorNumerator (center := (0 : F)) (firstOrderUnitEquation F)
+    (firstOrderZeroJet (F := F)) (τ := 4) (l := 1) (by omega) hS]
+  simp [hc]
+
+private def firstOrderAgreementTestDomain : Fin 2 ↪ ℚ :=
+  ⟨fun i ↦ (i.val : ℚ), fun i j hij ↦ by
+    apply Fin.ext
+    change (i.val : ℚ) = (j.val : ℚ) at hij
+    exact_mod_cast hij⟩
+
+private def firstOrderAgreementTestReceived : Fin 2 → ℚ := fun _ ↦ 0
+
+/-- The exact and uniform first-order list bounds cover a singleton solution family
+over two points. -/
+example :
+    (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤
+        firstOrderTightListWeight 2 2 1 2 4 1 1 ∧
+      firstOrderTightListWeight 2 2 1 2 4 1 1 ≤
+        ((2 * firstOrderListWeight 2 1 1 : ℕ) : ℚ) / 2 ∧
+      (({(0 : Polynomial ℚ)} : Finset (Polynomial ℚ)).card : ℚ) ≤
+        ((2 * firstOrderListWeight 2 1 1 : ℕ) : ℚ) / 2 ∧
+      0 ≤ firstOrderTightListWeight 2 2 1 2 4 1 1 := by
+  let Q : DifferentialPolynomial ℚ 1 := firstOrderUnitEquation ℚ
+  let S : Finset (Polynomial ℚ) := {(0 : Polynomial ℚ)}
+  have hQ : Q ≠ 0 := by simp [Q, firstOrderUnitEquation]
+  have hdegree : jetTotalDegree Q ≤ 1 := by
+    refine (jetTotalDegree_le_iff Q 1).mpr fun u hu ↦ ?_
+    change u ∈ (MvPolynomial.X (some 1) : DifferentialPolynomial ℚ 1).support at hu
+    rw [MvPolynomial.support_X, Finset.mem_singleton] at hu
+    rw [hu]
+    simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
+  have hfirst : jetDegree Q (1 : Fin 2) ≤ 1 := by
+    exact (jetDegree_le_total Q 1).trans hdegree
+  have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    rw [differentialSpecialization, differentialSpecializationHom]
+    simp [Q, firstOrderUnitEquation]
+  have haccept : ∀ P ∈ S,
+      P.degree < 1 ∧ 2 ≤
+        ({i : Fin 2 | P.eval (firstOrderAgreementTestDomain i) =
+          firstOrderAgreementTestReceived i}).ncard := by
+    intro P hP
+    simp only [S, Finset.mem_singleton] at hP
+    subst P
+    constructor
+    · norm_num
+    · norm_num [firstOrderAgreementTestDomain, firstOrderAgreementTestReceived]
+  have hExact := finite_firstOrder_agreement_solutions_card_le_tight_of_exponent
+    Q 2 1 1 1 4 hQ hdegree hfirst
+    (fun r hr ↦ taylorExponentSufficient_two_mul r 2)
+    firstOrderAgreementTestDomain firstOrderAgreementTestReceived
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (Or.inl (by simp)) S hsol haccept
+  have hSharp := finite_firstOrder_agreement_solutions_card_le_sharp
+    Q 2 1 1 1 hQ hdegree hfirst firstOrderAgreementTestDomain
+    firstOrderAgreementTestReceived (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (Or.inl (by simp)) S hsol haccept
+  have hCompare := firstOrderTightListWeight_two_mul_le 2 2 1 2 1 1
+    (by norm_num) (by norm_num) (by norm_num)
+  refine ⟨?_, ?_, ?_, firstOrderTightListWeight_nonneg 2 2 1 2 4 1 1⟩
+  · simpa [S, firstOrderTightListWeight, firstOrderCurveFiberStageOne,
+      firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap] using hExact
+  · simpa using hCompare
+  · change (S.card : ℚ) ≤
+      ((2 * firstOrderListWeight 2 1 1 : ℕ) : ℚ) / 2
+    exact hSharp
+
+/-- The derivative-capped first-order incidence bound is attained by the zero jet of `Y₁`. -/
+example :
+    (((({firstOrderZeroJet (F := AlgebraicClosure ℚ)} :
+      Finset (Fin 2 → AlgebraicClosure ℚ)).card : ℕ) : ℚ)) ≤
+      firstOrderCurveFiberStageOne 2 1 1 4 *
+        (((1 - 1 + 1 : ℕ) : ℚ) / ((1 - 1 + 1 : ℕ) : ℚ)) := by
+  let F := AlgebraicClosure ℚ
+  let Q : DifferentialPolynomial F 1 := firstOrderUnitEquation F
+  let jet : Fin 2 → F := firstOrderZeroJet
+  let domain : Fin 1 ↪ F := ⟨fun _ ↦ 0, fun i j _ ↦ Subsingleton.elim i j⟩
+  let received : Fin 1 → F := fun _ ↦ 0
+  let S : Finset (Fin 2 → F) := {jet}
+  have hS : ∀ jet' ∈ S, aeval jet' (initialJetEquation 0 Q) = 0 ∧
+      aeval jet' (initialJetSeparant 0 Q) ≠ 0 ∧
+      ∀ l : {l : Fin 2 // 1 ≤ l.val},
+        aeval jet' (commonTaylorNumerator 0 Q 4 l.val) = 0 := by
+    intro jet' hj
+    have hjet : jet' = jet := Finset.mem_singleton.mp hj
+    subst jet'
+    refine ⟨?_, ?_, ?_⟩
+    · simp [Q, jet, firstOrderZeroJet, initialJetEquation, firstOrderUnitEquation]
+    · simp [Q, jet, initialJetSeparant, firstOrderUnitEquation, separant]
+    · intro l
+      have hl : l.val = (1 : Fin 2) := Fin.ext (by omega)
+      have hl' : l = ⟨⟨1, by decide⟩, by decide⟩ := by
+        exact Subtype.ext hl
+      subst l
+      exact commonTaylorNumerator_zeroJet_firstOrderUnitEquation
+  have hA : ∀ jet' ∈ S, 1 ≤
+      {i : Fin 1 | aeval jet'
+        (taylorAgreementEquation 0 Q 2 4 (domain i) (received i)) = 0}.ncard := by
+    intro jet' hj
+    have hjet : jet' = jet := Finset.mem_singleton.mp hj
+    subst jet'
+    have hcut : ∀ i : Fin 1, aeval jet
+        (taylorAgreementEquation 0 Q 2 4 (domain i) (received i)) = 0 := by
+      intro i
+      rw [aeval_taylorAgreementEquation 0 Q (taylorExponentSufficient_two_mul 1 2)
+        jet (by simp [Q, jet, initialJetSeparant,
+          firstOrderUnitEquation, separant]) (domain i) (received i)]
+      simp [Q, jet, firstOrderZeroJet, domain, received, firstOrderUnitEquation,
+        eval_rationalTaylorPolynomial, rationalTaylorCoefficient_initial]
+    simp [hcut]
+  have h := finite_regularHighCutJets_card_le_derivativeCapped_of_exponent
+    (F := F) (center := 0) Q 2 1 1 1 4
+    (taylorExponentSufficient_two_mul 1 2) (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num)
+    (by
+      have hjet' : jetTotalDegree Q ≤ 1 := by
+        refine (jetTotalDegree_le_iff Q 1).mpr fun u hu ↦ ?_
+        change u ∈ (MvPolynomial.X (some 1) : DifferentialPolynomial F 1).support at hu
+        rw [MvPolynomial.support_X, Finset.mem_singleton] at hu
+        rw [hu]
+        simp [totalJetDegree_eq_sum, Fin.sum_univ_two]
+      have hw : (fun i : Option (Fin 2) ↦ i.elim 0 (fun _ ↦ 1)) = jetDegreeWeight := by
+        funext i
+        cases i <;> rfl
+      simpa only [jetTotalDegree, hw] using hjet')
+    (by simp [Q, firstOrderUnitEquation])
+    domain received (by norm_num) (by norm_num) S hS hA
+  simpa [F, Q, S, jet, firstOrderCurveFiberStageOne, firstOrderTaylorDerivativeCap,
+    firstOrderTaylorTotalCap, firstOrderUnitEquation, firstOrderZeroJet] using h
 
 end ReedSolomon.HiddenDerivative

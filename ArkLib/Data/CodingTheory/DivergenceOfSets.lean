@@ -109,11 +109,10 @@ theorem divergence_attains {ι : Type} [Fintype ι] [Nonempty ι]
   simpa [possibleDeltas] using hmem
 
 open scoped ProbabilityTheory in
-theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Fintype F] [Field F] [DecidableEq F]
   {deg : ℕ} {domain : ι ↪ F}
   (U : AffineSubspace F (ι → F)) [Nonempty U] {δ : ℝ≥0}
-  (_hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)
   (hPG : ∀ {k t : ℕ} [NeZero k] [NeZero t] (C : Fin t → (Fin k → (ι → F))),
     ProximityGap.δ_ε_proximityGap
       (ReedSolomon.toFinset domain deg)
@@ -253,14 +252,14 @@ theorem real_sqrt_div_10_pow_two {r : ℝ≥0} :
       -- rewrite sqrt and 10^2
       simp [Real.sq_sqrt hr, h10]
 
-theorem real_sqrt_rate_eq_coe_nnreal_sqrt {ι : Type} [Fintype ι] [Nonempty ι]
+theorem real_sqrt_rate_eq_coe_nnreal_sqrt {ι : Type} [Fintype ι]
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   Real.sqrt ((LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) : ℝ)
     = (((LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt : ℝ≥0) : ℝ) := by
   simp
 
-theorem reedSolomon_dim_le_deg {ι : Type} [Nonempty ι]
+theorem reedSolomon_dim_le_deg {ι : Type}
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   LinearCode.dim (ReedSolomon.code domain deg) ≤ deg := by
@@ -277,7 +276,7 @@ theorem reedSolomon_dim_le_deg {ι : Type} [Nonempty ι]
   rw [Polynomial.finrank_degreeLT_n] at hle
   exact hle
 
-theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι] [Nonempty ι]
+theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι]
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   LinearCode.rate (ReedSolomon.code domain deg) ≤ 1 := by
@@ -296,11 +295,13 @@ theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι] [Nonempty ι]
     simpa using h_le
   exact_mod_cast hdim_le_len_nat
 
-theorem reedSolomon_rate_mul_card_eq_dim {ι : Type} [Fintype ι] [Nonempty ι]
+theorem reedSolomon_rate_mul_card_eq_dim {ι : Type} [Fintype ι]
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   (Fintype.card ι : ℝ≥0) * (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)
     = (LinearCode.dim (ReedSolomon.code domain deg) : ℝ≥0) := by
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · simp [LinearCode.dim, Module.finrank_zero_of_subsingleton]
   classical
   have hn : (Fintype.card ι : ℝ≥0) ≠ 0 := by
     exact_mod_cast (Fintype.card_ne_zero (α := ι))
@@ -316,7 +317,7 @@ theorem reedSolomon_rate_mul_card_eq_dim {ι : Type} [Fintype ι] [Nonempty ι]
   rw [← mul_div_assoc]
   simp
 
-theorem reedSolomon_rate_mul_card_le_deg {ι : Type} [Fintype ι] [Nonempty ι]
+theorem reedSolomon_rate_mul_card_le_deg {ι : Type} [Fintype ι]
     {F : Type} [Field F]
   {deg : ℕ} {domain : ι ↪ F} :
   (Fintype.card ι : ℝ≥0) * (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)
@@ -361,13 +362,15 @@ theorem reedSolomon_rate_pos {ι : Type} [Fintype ι] [Nonempty ι]
     div_pos hdim_pos' hlen_pos'
   simpa [LinearCode.rate] using this
 
-theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
+theorem errorBound_ge_const {ι : Type} [Fintype ι]
     {F : Type} [Fintype F] [Field F]
   {deg : ℕ} {domain : ι ↪ F}
   (hdeg : 0 < deg)
   {δ : ℝ≥0}
   (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain) :
   (Fintype.card ι : ℝ≥0) / (Fintype.card F : ℝ≥0) ≤ errorBound δ deg domain := by
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · simp
   classical
   set r : ℝ≥0 := (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) with hr
   by_cases hUD : δ ≤ (1 - r) / 2
@@ -478,13 +481,22 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
 theorem errorBound_johnson_mono {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Fintype F] [Field F]
   {deg : ℕ} {domain : ι ↪ F}
-  (hdeg : 0 < deg)
   {δ₁ δ₂ : ℝ≥0}
   (hδ : δ₁ ≤ δ₂)
   (hδ₁ : (1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) / 2 < δ₁)
   (hδ₂ : δ₂ < 1 - ReedSolomon.sqrtRate deg domain) :
   errorBound δ₁ deg domain ≤ errorBound δ₂ deg domain := by
   classical
+  by_cases hzero : deg = 0
+  · have hδ₁' : δ₁ < 1 -
+        (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt := by
+      simpa [ReedSolomon.sqrtRate] using lt_of_le_of_lt hδ hδ₂
+    have hbound : errorBound δ₁ deg domain = 0 := by
+      rw [errorBound_eq_johnson ⟨hδ₁, hδ₁'⟩]
+      apply Subtype.ext
+      simp [hzero]
+    rw [hbound]
+    exact zero_le
   -- threshold t = (1 - rate)/2
   set t : ℝ≥0 := (1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) / 2
   have ht1 : t < δ₁ := by simpa [t] using hδ₁
@@ -535,7 +547,8 @@ theorem errorBound_johnson_mono {ι : Type} [Fintype ι] [Nonempty ι]
   have hdenpos : 0 < (2 * min A₂ B) ^ 7 * (Fintype.card F : ℝ) := by
     -- show `min A₂ B > 0`, hence the whole product is positive
     have hratepos_nn : 0 < LinearCode.rate (ReedSolomon.code domain deg) :=
-      reedSolomon_rate_pos (ι := ι) (F := F) (deg := deg) (domain := domain) hdeg
+      reedSolomon_rate_pos (ι := ι) (F := F) (deg := deg) (domain := domain)
+        (Nat.pos_of_ne_zero hzero)
     have hratepos : 0 < (LinearCode.rate (ReedSolomon.code domain deg) : ℝ) := by
       exact_mod_cast hratepos_nn
     have hBpos : 0 < B := by
@@ -607,13 +620,13 @@ theorem errorBound_mono {ι : Type} [Fintype ι] [Nonempty ι]
         have ht1' :
             (1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) / 2 < δ₁ := by
           simpa [t, ρ] using ht1
-        exact errorBound_johnson_mono (deg := deg) (domain := domain) hdeg
+        exact errorBound_johnson_mono (deg := deg) (domain := domain)
           (δ₁ := δ₁) (δ₂ := δ₂) hδ ht1' hδ₂
       simpa [ProximityGap.errorBound, t, ρ, Set.mem_Icc, Set.mem_Ioo, h1, h2, ht1, ht2] using hmono
 
 theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [DecidableEq F]
-  {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V]
+  {U V : Set (ι → F)} [Nonempty V] [Fintype V]
   (u : ι → F) (hu : u ∈ U) :
   δᵣ'(u, V) ≤ divergence U V := by
   classical
@@ -630,7 +643,7 @@ theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
 
 theorem divergence_pred_spec {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [DecidableEq F]
-  {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V]
+  {U V : Set (ι → F)} [Nonempty V] [Fintype V]
   (hdiv_pos : 0 < (divergence U V : ℝ≥0)) :
   ∃ δ : ℚ≥0, δ < divergence U V ∧
     (∀ u ∈ U, δᵣ'(u, V) ≠ divergence U V ↔ δᵣ'(u, V) ≤ δ) := by
@@ -838,7 +851,7 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
             errorBound δ₁ deg domain) := by
         simpa [V] using
           (proximity_gap_affineSubspace (deg := deg) (domain := domain) (U := U) (δ := δ₁)
-            (_hδ := hδ₁_bound) (hPG := hPG hδ₁_pos hδ₁_bound))
+            (hPG := hPG hδ₁_pos hδ₁_bound))
       have hnotA₁ : (Pr{let u ← $ᵗ U}[Code.relDistFromCode u V ≤ δ₁] = 1) → False := by
         rw [← hPr_eq_δ₁]; exact hnotA
       have hPr_le₁ : Pr{let u ← $ᵗ U}[Code.relDistFromCode u V ≤ δ₁] ≤
@@ -860,7 +873,7 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
             ≤ errorBound (δ : ℝ≥0) deg domain) := by
         simpa [V] using
           (proximity_gap_affineSubspace (deg := deg) (domain := domain) (U := U) (δ := (δ : ℝ≥0))
-            (_hδ := hδ_bound) (hPG := hPG hδ_pos hδ_bound))
+            (hPG := hPG hδ_pos hδ_bound))
       have hPr_le : Pr{let u ← $ᵗ U}[Code.relDistFromCode u V ≤ (δ : ℝ≥0)] ≤
           errorBound (δ : ℝ≥0) deg domain := by
         cases hx with

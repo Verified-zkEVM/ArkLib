@@ -96,7 +96,8 @@ variable {k σ : Type*} [Field k] [Finite σ]
 Choose a graded monomial order. The map `e ↦ (e ⌊/⌋ t, fun i ↦ e i % t)` sends the standard
 exponents of `I` of degree at most `N` injectively to pairs of a standard exponent of `J` of
 degree at most `N` and a function `σ → Fin t` (`MonomialOrder.floorDiv_mem_standardExponents`).
-For `t = 0` the hypothesis forces `I = ⊤`, and both sides are `0`. -/
+For `t = 0` the hypothesis forces `I = ⊤`, so the left side is `0` and the inequality is
+immediate. -/
 theorem affineHilbertFunction_le_pow_mul_of_pow_le {I J : Ideal (MvPolynomial σ k)} {t : ℕ}
     (hpow : J ^ t ≤ I) (N : ℕ) :
     affineHilbertFunction I N ≤ t ^ Nat.card σ * affineHilbertFunction J N := by

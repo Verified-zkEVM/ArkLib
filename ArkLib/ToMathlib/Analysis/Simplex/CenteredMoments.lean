@@ -161,9 +161,9 @@ weights `w`, `n = Fintype.card ι`, `0 ≤ W` and mean `m = W * (∑ i, c i / w 
 `⨍ u in weightedSimplex w W, (∑ i, c i * u i - m) ^ 2 ≤
   W ^ 2 * (∑ i, (c i / w i) ^ 2) / ((n + 1) * (n + 2))`.
 It drops the nonpositive term `-W ^ 2 * (∑ i, c i / w i) ^ 2 / ((n + 1) ^ 2 * (n + 2))` from
-`setAverage_weightedSimplex_linearForm_sub_mean_sq`. With one coordinate and `W ≠ 0` the dropped
-term is half of the bound, so the inequality is strict. No hypothesis on `W` is needed: for `W < 0`
-the simplex is empty, so the left side is `0`. -/
+`setAverage_weightedSimplex_linearForm_sub_mean_sq`. With one coordinate, `W > 0` and a nonzero
+coefficient, the dropped term is half of the bound, so the inequality is strict. No hypothesis on
+`W` is needed: for `W < 0` the simplex is empty, so the left side is `0`. -/
 theorem setAverage_weightedSimplex_linearForm_sub_mean_sq_le {w : ι → ℝ} (hw : ∀ i, 0 < w i)
     (c : ι → ℝ) (W : ℝ) :
     ⨍ u in weightedSimplex w W,

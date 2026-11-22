@@ -7,7 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
 public import VCVio.OracleComp.EvalDist.Measure
-public import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
 # Perfect completeness of arbitrary sampled Sumcheck rounds
@@ -54,19 +54,17 @@ theorem executeRoundsSampled_support_completeness [DecidableEq R] {m : ℕ} (D :
         ∃ output, result = some output ∧ Inv j.succ output := by
     intro j input hin result hresult
     rcases hin with ⟨himpl, hcurrent⟩
-    change result ∈ support ((roundStages R n deg unifSpec start count bound
-      (Finset.univ.map D).toList (honestMessages R n deg D p) challenges j).run input) at hresult
+    dsimp only [stages] at hresult
     rw [roundStages_honest R n deg unifSpec D start count bound p challenges j input hcurrent,
       support_map] at hresult
     obtain ⟨r, _, rfl⟩ := hresult
     refine ⟨_, rfl, himpl, ?_⟩
-    exact relationRound_projected_output R n deg D ⟨start + j, by omega⟩ input.1.stmt p r
+    exact Spec.SingleRound.relationRound_projected_output R n deg D
+      ⟨start + j, by omega⟩ input.1.stmt p r
   have hrun := OrderedExecution.run_preserves_support count I stages Inv preserves
     (⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()) ⟨rfl, h⟩
   intro result hresult
-  change result ∈ support
-    (Option.map Prod.fst <$> OrderedExecution.run count I stages _) at hresult
-  rw [support_map] at hresult
+  simp only [executeRoundsSampled, support_map] at hresult
   obtain ⟨full, hfull, rfl⟩ := hresult
   obtain ⟨output, rfl, horacles, hrelation⟩ := hrun full hfull
   simp only [Option.map_some]
@@ -89,10 +87,10 @@ theorem executeRoundsSampled_perfectCompleteness [DecidableEq R] {m : ℕ} (D : 
     (p : Spec.OracleStatement R n deg ())
     (challenges : (i : Fin n) → Spec.StatementRound R n i.castSucc → ProbComp R)
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
-    Pr{let result ← executeRoundsSampled R n deg unifSpec start count bound
+    Pr{let result ← (executeRoundsSampled R n deg unifSpec start count bound
         (Finset.univ.map D).toList
         ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
-        (honestMessages R n deg D p) challenges}[
+        (honestMessages R n deg D p) challenges)}[
       result.map (closedRelation R n deg D ⟨start + count, by omega⟩) = some True] = 1 :=
   OracleComp.prEvent_eq_one_of_forall_mem_support _ _
     (executeRoundsSampled_support_completeness R n deg D start count bound stmt p challenges h)
@@ -119,10 +117,10 @@ theorem executeRounds_uniform_perfectCompleteness [DecidableEq R] [SampleableTyp
     (stmt : Spec.StatementRound R n ⟨start, by omega⟩)
     (p : Spec.OracleStatement R n deg ())
     (h : ((stmt, fun _ => p), ()) ∈ Spec.relationRound R n deg D _) :
-    Pr{let result ← executeRoundsSampled R n deg unifSpec start count bound
+    Pr{let result ← (executeRoundsSampled R n deg unifSpec start count bound
         (Finset.univ.map D).toList
         ⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩
-        (honestMessages R n deg D p) (fun _ _ => $ᵗ R)}[
+        (honestMessages R n deg D p) (fun _ _ => $ᵗ R))}[
       result.map (closedRelation R n deg D ⟨start + count, by omega⟩) = some True] = 1 :=
   executeRoundsSampled_perfectCompleteness R n deg D start count bound stmt p _ h
 

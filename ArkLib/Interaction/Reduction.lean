@@ -33,6 +33,10 @@ There are two distinct execution laws in PolyFun:
 ArkLib's prover setup is effectful in general, so `Reduction.execute_then` deliberately exposes
 the second boundary. Stateful clients without commutative effects must thread state explicitly
 rather than use this factorization theorem.
+
+`TwoParty.run_appendFlat_splitPrefix` instead splits an arbitrary whole prover at an append
+boundary and uses its actual remaining strategy. It preserves all effects under `LawfulMonad`
+when the suffix verifier is selected by a pure function of the prefix result.
 -/
 
 @[expose] public section
@@ -42,6 +46,42 @@ universe u v w x
 namespace Interaction
 
 open TwoParty
+
+namespace TwoParty
+
+open StrategyOver.TwoParty
+
+section execution
+
+variable {m : Type u → Type u} [Monad m] [LawfulMonad m]
+  {s₁ : TypeTree} {s₂ : TypeTree.Path s₁ → TypeTree}
+  {r₁ : RoleDecoration s₁} {r₂ : (t : TypeTree.Path s₁) → RoleDecoration (s₂ t)}
+  {MidC : TypeTree.Path s₁ → Type u}
+  {OutputP OutputC : TypeTree.Path (s₁.append s₂) → Type u}
+
+/-- Split an arbitrary adversary at the append boundary without changing execution order.
+The prefix returns the adversary's actual suffix strategy, including all its private memory and
+effectful continuations. No commutativity of the ambient effects is assumed. -/
+theorem run_appendFlat_splitPrefix
+    (prover : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.focal
+      (s₁.append s₂) (r₁.append r₂) OutputP)
+    (counterpart₁ : StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.counterpart
+      s₁ r₁ MidC)
+    (counterpart₂ : (t : TypeTree.Path s₁) → MidC t →
+      StrategyOver (SyntaxOver.TwoParty.pairedTypeTree m) Participant.counterpart
+        (s₂ t) (r₂ t) (fun p => OutputC (PFunctor.FreeM.Path.append s₁ s₂ t p))) :
+    run (s₁.append s₂) (r₁.append r₂) prover
+      (Counterpart.appendFlat counterpart₁ counterpart₂) = (do
+      let ⟨t, next, out⟩ ← run s₁ r₁ (Focal.splitPrefix prover) counterpart₁
+      let ⟨p, outP, outC⟩ ← run (s₂ t) (r₂ t) next (counterpart₂ t out)
+      pure ⟨PFunctor.FreeM.Path.append s₁ s₂ t p, outP, outC⟩) := by
+  have h := run_compFlat_appendFlat_pure (Focal.splitPrefix prover)
+    (fun _ next => next) counterpart₁ counterpart₂
+  simpa only [Focal.compFlat_splitPrefix, pure_bind] using h
+
+end execution
+
+end TwoParty
 
 /-! ## Participants -/
 
@@ -66,11 +106,11 @@ def splitLiftAppend
     (ctx₁ : TypeTree) (ctx₂ : TypeTree.Path ctx₁ → TypeTree)
     (StatementOut WitnessOut : (tr₁ : TypeTree.Path ctx₁) → TypeTree.Path (ctx₂ tr₁) → Type u)
     (tr : TypeTree.Path (ctx₁.append ctx₂))
-    (out : PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂
+    (out : PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂
       (fun tr₁ tr₂ => HonestProverOutput (StatementOut tr₁ tr₂) (WitnessOut tr₁ tr₂)) tr) :
     HonestProverOutput
-      (PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂ StatementOut tr)
-      (PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂ WitnessOut tr) :=
+      (PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂ StatementOut tr)
+      (PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂ WitnessOut tr) :=
   PFunctor.FreeM.Path.liftAppendProd ctx₁ ctx₂ StatementOut WitnessOut tr out
 
 theorem splitLiftAppend_packAppend
@@ -93,14 +133,14 @@ def splitLiftAppendRun
     (ctx₁ : TypeTree) (ctx₂ : TypeTree.Path ctx₁ → TypeTree)
     (StatementOut WitnessOut : (tr₁ : TypeTree.Path ctx₁) → TypeTree.Path (ctx₂ tr₁) → Type u)
     (run : (tr : TypeTree.Path (ctx₁.append ctx₂)) ×
-      PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂
+      PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂
         (fun tr₁ tr₂ => HonestProverOutput (StatementOut tr₁ tr₂) (WitnessOut tr₁ tr₂)) tr ×
-      PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂ StatementOut tr) :
+      PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂ StatementOut tr) :
     ((tr : TypeTree.Path (ctx₁.append ctx₂)) ×
       HonestProverOutput
-        (PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂ StatementOut tr)
-        (PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂ WitnessOut tr) ×
-      PFunctor.FreeM.Path.liftAppend ctx₁ ctx₂ StatementOut tr) :=
+        (PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂ StatementOut tr)
+        (PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂ WitnessOut tr) ×
+      PFunctor.FreeM.Path.LiftAppend ctx₁ ctx₂ StatementOut tr) :=
   ⟨run.1, splitLiftAppend ctx₁ ctx₂ StatementOut WitnessOut run.1 run.2.1, run.2.2⟩
 
 end HonestProverOutput
@@ -192,7 +232,7 @@ def Verifier.run {m : Type u → Type u} [Monad m]
 
 The second shared input remembers the original public statement as well as the realized prefix.
 Its statement and witness inputs are exactly the first reduction's outputs. The combined terminal
-families use `PFunctor.FreeM.Path.liftAppend`, preserving their dependence on both paths. -/
+families use `PFunctor.FreeM.Path.LiftAppend`, preserving their dependence on both paths. -/
 def Reduction.then {m : Type u → Type u} [Monad m]
     {SharedIn : Type v}
     {StatementIn : SharedIn → Type w}
@@ -217,8 +257,8 @@ def Reduction.then {m : Type u → Type u} [Monad m]
       (fun i => (ctx₁ i).append (ctx₂ i))
       (fun i => (roles₁ i).append (fun tr₁ => roles₂ i tr₁))
       StatementIn WitnessIn
-      (fun i => PFunctor.FreeM.Path.liftAppend (ctx₁ i) (ctx₂ i) (StmtOut i))
-      (fun i => PFunctor.FreeM.Path.liftAppend (ctx₁ i) (ctx₂ i) (WitOut i)) where
+      (fun i => PFunctor.FreeM.Path.LiftAppend (ctx₁ i) (ctx₂ i) (StmtOut i))
+      (fun i => PFunctor.FreeM.Path.LiftAppend (ctx₁ i) (ctx₂ i) (WitOut i)) where
   prover i stmt wit := do
     let strategy₁ ← reduction₁.prover i stmt wit
     let strategy ← StrategyOver.TwoParty.Focal.comp strategy₁ (fun tr₁ midOut =>
@@ -281,14 +321,14 @@ theorem Reduction.execute_then
     (ctx₁ i) (ctx₂ i) (StmtOut i) (WitOut i)
   let mapRun :
       ((tr : TypeTree.Path ((ctx₁ i).append (ctx₂ i))) ×
-        PFunctor.FreeM.Path.liftAppend (ctx₁ i) (ctx₂ i)
+        PFunctor.FreeM.Path.LiftAppend (ctx₁ i) (ctx₂ i)
           (fun tr₁ tr₂ => HonestProverOutput (StmtOut i tr₁ tr₂) (WitOut i tr₁ tr₂)) tr ×
-        PFunctor.FreeM.Path.liftAppend (ctx₁ i) (ctx₂ i) (StmtOut i) tr) →
+        PFunctor.FreeM.Path.LiftAppend (ctx₁ i) (ctx₂ i) (StmtOut i) tr) →
       ((tr : TypeTree.Path ((ctx₁ i).append (ctx₂ i))) ×
         HonestProverOutput
-          (PFunctor.FreeM.Path.liftAppend (ctx₁ i) (ctx₂ i) (StmtOut i) tr)
-          (PFunctor.FreeM.Path.liftAppend (ctx₁ i) (ctx₂ i) (WitOut i) tr) ×
-        PFunctor.FreeM.Path.liftAppend (ctx₁ i) (ctx₂ i) (StmtOut i) tr) :=
+          (PFunctor.FreeM.Path.LiftAppend (ctx₁ i) (ctx₂ i) (StmtOut i) tr)
+          (PFunctor.FreeM.Path.LiftAppend (ctx₁ i) (ctx₂ i) (WitOut i) tr) ×
+        PFunctor.FreeM.Path.LiftAppend (ctx₁ i) (ctx₂ i) (StmtOut i) tr) :=
     HonestProverOutput.splitLiftAppendRun
       (ctx₁ i) (ctx₂ i) (StmtOut i) (WitOut i)
   let counterpart := StrategyOver.TwoParty.Counterpart.append

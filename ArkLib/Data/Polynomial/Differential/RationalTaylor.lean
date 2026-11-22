@@ -54,7 +54,7 @@ suffice for the residual coefficient.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.6, Lemma A.4 (Regular Taylor
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.2, Lemma A.3 (Regular Taylor
   chart).
 -/
 
@@ -241,7 +241,7 @@ theorem totalDegree_rationalTaylorNumerator_le (center : F) (Q : DifferentialPol
     (rationalTaylorNumerator center Q l).totalDegree ≤
       (2 * (l - r) - 1) * (jetTotalDegree Q - 1) + 1 := by
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     rw [rationalTaylorNumerator]
     split_ifs with hl
     · exact (totalDegree_monomial_le _ _).trans (by simp)
@@ -359,7 +359,7 @@ theorem eq_rationalTaylorCoefficient_of_residual (center : F) (Q : DifferentialP
     (l : ℕ) (hlL : l ≤ L) :
     c l = rationalTaylorCoefficient center Q jet l := by
   induction l using Nat.strong_induction_on with
-  | h l ih =>
+  | ind l ih =>
     by_cases hl : l < r + 1
     · rw [hinit ⟨l, hl⟩, rationalTaylorCoefficient_initial center Q jet ⟨l, hl⟩]
     · have hlr : r < l := by omega

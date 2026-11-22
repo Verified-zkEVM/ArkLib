@@ -33,6 +33,9 @@ nonnegative numerator by `⌊R⌋₊` instead of `R ≥ 1` therefore costs at mo
 * `Nat.cast_ceil_le_max_add_one`, `Nat.cast_ceil_sub_le_max_sub_add_one`
 * `Nat.one_div_floor_le`, `Nat.div_floor_bounds`
 * `Nat.one_sub_one_div_mul_lt_floor`: `(1 - 1 / N) R < ⌊R⌋₊` for `0 < N ≤ R`
+* `Nat.cast_ceil_mul_div_le_inv_slack` bounds a natural ceiling from a multiplicity bound.
+* `Nat.cast_max_one_floor_mul_div_le_inv_slack_sq` bounds a floored quotient from rank and gap
+  bounds.
 -/
 
 @[expose] public section
@@ -111,5 +114,96 @@ theorem one_sub_one_div_mul_lt_floor {N R : K} (hN : 0 < N) (hNR : N ≤ R) :
   have h := Nat.sub_one_lt_floor R
   have heq : (1 - 1 / N) * R = R - R / N := by ring
   linarith
+
+/-- The ceiling of a multiplicity-scaled agreement has inverse-slack size. -/
+theorem cast_ceil_mul_div_le_inv_slack
+    {rho slack agreement rate C : K} {m : ℕ}
+    (hrho : 0 < rho) (hslack : 0 < slack) (hslackOne : slack ≤ 1)
+    (hagreement : 0 ≤ agreement) (hagreementOne : agreement ≤ 1)
+    (hrate : 0 < rate) (hrateLower : rho / 2 ≤ rate)
+    (hm : (m : K) ≤ C / slack) :
+    (Nat.ceil ((m : K) * agreement / rate) : K) ≤
+      (2 * C / rho + 1) / slack := by
+  have hm0 : (0 : K) ≤ m := Nat.cast_nonneg _
+  have hma : (m : K) * agreement ≤ m := by
+    nlinarith [mul_nonneg hm0 (sub_nonneg.mpr hagreementOne)]
+  have hratio : (m : K) / rate ≤ 2 * (m : K) / rho := by
+    rw [div_le_iff₀ hrate, div_eq_mul_inv]
+    field_simp [ne_of_gt hrho]
+    nlinarith
+  have harg : (m : K) * agreement / rate ≤ 2 * C / (rho * slack) := by
+    calc
+      (m : K) * agreement / rate ≤ (m : K) / rate :=
+        div_le_div_of_nonneg_right hma hrate.le
+      _ ≤ 2 * (m : K) / rho := hratio
+      _ ≤ 2 * (C / slack) / rho := by
+        exact div_le_div_of_nonneg_right
+          (mul_le_mul_of_nonneg_left hm (by norm_num)) hrho.le
+      _ = 2 * C / (rho * slack) := by ring
+  have hceil : (Nat.ceil ((m : K) * agreement / rate) : K) <
+      (m : K) * agreement / rate + 1 := by
+    apply Nat.ceil_lt_add_one
+    exact div_nonneg (mul_nonneg hm0 hagreement) hrate.le
+  calc
+    (Nat.ceil ((m : K) * agreement / rate) : K) ≤
+        2 * C / (rho * slack) + 1 :=
+      (hceil.trans_le (by simpa [add_comm] using add_le_add_right harg 1)).le
+    _ = (2 * C / rho + slack) / slack := by
+      field_simp [ne_of_gt hrho, ne_of_gt hslack]
+    _ ≤ (2 * C / rho + 1) / slack := by gcongr
+    _ = _ := by ring
+
+/-- A rank and jet bound with a cubic count gap bounds the floored challenge quotient. -/
+theorem cast_max_one_floor_mul_div_le_inv_slack_sq
+    {m rank jet : ℕ} {slack slope rankConstant jetConstant gap : K}
+    (hm : 0 < (m : K)) (hslack : 0 < slack) (hslackOne : slack ≤ 1)
+    (hslope : 0 < slope) (hrankConstant : 0 ≤ rankConstant)
+    (hjetConstant : 0 ≤ jetConstant)
+    (hrank : (rank : K) ≤ rankConstant * (m : K) ^ 3)
+    (hjet : (jet : K) ≤ jetConstant / slack)
+    (hgap : 3 * (m : K) ^ 3 * (slope * slack) / 4 ≤ gap) :
+    ((Nat.max 1 ⌊(rank : K) * jet / gap⌋₊ : ℕ) : K) ≤
+      (1 + 4 * rankConstant * jetConstant / (3 * slope)) / slack ^ 2 := by
+  have hgapPos : 0 < gap := by
+    exact (by positivity : 0 < 3 * (m : K) ^ 3 * (slope * slack) / 4).trans_le hgap
+  have hnum : (rank : K) * jet ≤
+      rankConstant * (m : K) ^ 3 * (jetConstant / slack) := by
+    gcongr
+  have hquot : (rank : K) * jet / gap ≤
+      4 * rankConstant * jetConstant / (3 * slope * slack ^ 2) := by
+    calc
+      (rank : K) * jet / gap ≤
+          (rankConstant * (m : K) ^ 3 * (jetConstant / slack)) / gap :=
+        div_le_div_of_nonneg_right hnum hgapPos.le
+      _ ≤ (rankConstant * (m : K) ^ 3 * (jetConstant / slack)) /
+          (3 * (m : K) ^ 3 * (slope * slack) / 4) := by
+        exact div_le_div_of_nonneg_left (by positivity) (by positivity) hgap
+      _ = 4 * rankConstant * jetConstant / (3 * slope * slack ^ 2) := by
+        field_simp [ne_of_gt hm, ne_of_gt hslope, ne_of_gt hslack]
+  have hquot0 : 0 ≤ (rank : K) * jet / gap := by positivity
+  have hheight : ((Nat.max 1 ⌊(rank : K) * jet / gap⌋₊ : ℕ) : K) ≤
+      1 + (rank : K) * jet / gap := by
+    rw [Nat.cast_max, Nat.cast_one]
+    apply max_le
+    · linarith
+    · exact (Nat.floor_le hquot0).trans (by linarith)
+  calc
+    ((Nat.max 1 ⌊(rank : K) * jet / gap⌋₊ : ℕ) : K) ≤
+        1 + 4 * rankConstant * jetConstant / (3 * slope * slack ^ 2) := by
+      linarith
+    _ = 1 + (4 * rankConstant * jetConstant / (3 * slope)) / slack ^ 2 := by
+      ring
+    _ ≤ (1 + 4 * rankConstant * jetConstant / (3 * slope)) / slack ^ 2 := by
+      have hslackSq : slack ^ 2 ≤ 1 := pow_le_one₀ hslack.le hslackOne
+      have hK : 0 ≤ 4 * rankConstant * jetConstant / (3 * slope) := by positivity
+      rw [le_div_iff₀ (sq_pos_of_pos hslack)]
+      calc
+        (1 + 4 * rankConstant * jetConstant / (3 * slope) / slack ^ 2) * slack ^ 2 =
+            slack ^ 2 + 4 * rankConstant * jetConstant / (3 * slope) := by
+          field_simp [ne_of_gt hslack]
+        _ ≤ 1 + 4 * rankConstant * jetConstant / (3 * slope) := by
+          simpa [add_comm] using
+            add_le_add_right hslackSq (4 * rankConstant * jetConstant / (3 * slope))
+    _ = _ := by ring_nf
 
 end Nat

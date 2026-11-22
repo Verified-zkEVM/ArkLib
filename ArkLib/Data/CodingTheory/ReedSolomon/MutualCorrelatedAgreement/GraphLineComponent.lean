@@ -37,7 +37,8 @@ vanishes after restriction to it.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval aeval_optionEquivRight_symm affineHilbertPolynomial zeroLocus)
 
 namespace ReedSolomon
 
@@ -262,7 +263,7 @@ theorem exists_graphLine_pair_of_regular_component [IsAlgClosed E]
         (Polynomial.taylor center (P₀.map iota)).coeff l.val +
           x none * (Polynomial.taylor center (P₁.map iota)).coeff l.val := by
       rw [← Polynomial.smul_eq_C_mul, map_add, map_smul]
-      simp only [Polynomial.coeff_add, Polynomial.coeff_smul, smul_eq_mul]
+      simp only [Polynomial.coeff_add, AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul]
     simp only [jointTaylorReconstructionError, map_sub, map_mul, map_pow, map_add,
       MvPolynomial.aeval_C, MvPolynomial.aeval_X, Algebra.algebraMap_self,
       RingHom.id_apply]
@@ -303,7 +304,7 @@ theorem commonAgreement_of_jointTaylorAgreementEquation_mem_prime [IsAlgClosed E
     (hτ : TaylorExponentSufficient r K τ)
     (P : Ideal (MvPolynomial (Option (Fin (r + 1))) E)) [P.IsPrime]
     (hs : jointInitialJetSeparant center Q ∉ P)
-    (hd : 0 < (affineHilbertPolynomial P).natDegree) (P₀ P₁ : F[X])
+    (hd : 0 < (affineHilbertPolynomial P).natDegree) (P₀ P₁ : Polynomial F)
     (hgraph : ∀ x ∈ {x | x ∈ zeroLocus E P ∧
         aeval x (jointInitialJetSeparant center Q) ≠ 0},
       ∃ z : E, x = fun j ↦
@@ -424,8 +425,8 @@ theorem exists_graphLine_pair_of_regular_component_agreements [IsAlgClosed E]
     have hS : aeval (fun j ↦ x (some j))
         (MvPolynomial.map φ.toRingHom (initialJetSeparant (Polynomial.C center) Q)) ≠ 0 := by
       simpa only [jointInitialJetSeparant, aeval_optionEquivRight_symm, φ] using hsep
-    have hdegree := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
-      φ (Polynomial.C center) Q K k τ hτ (fun j ↦ x (some j)) hS
+    have hdegree := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts
+      φ (Polynomial.C center) Q K k τ (fun j ↦ x (some j)) hS
       (fun l hl ↦ by
         have hz := hx _ (hhigh l hl)
         simpa only [jointCommonTaylorNumerator, aeval_optionEquivRight_symm, φ] using hz)

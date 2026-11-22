@@ -117,7 +117,7 @@ theorem phi_toPoly :
     (powTwoCyclotomic (R := ZMod q) α).φ.toPoly = X ^ (2 ^ α) + 1 := by
   change (CompPoly.CPolynomial.X ^ (2 ^ α) + 1 : CompPoly.CPolynomial (ZMod q)).toPoly = _
   rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_pow,
-    CompPoly.CPolynomial.toPoly_X, CompPoly.CPolynomial.toPoly_one]
+    CompPoly.CPolynomial.X_toPoly, CompPoly.CPolynomial.toPoly_one]
 
 omit [NeZero q] in
 open Polynomial in
@@ -192,15 +192,15 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
       rw [hg1, hg2, powTwoCyclotomic_splits_of_sq_eq_neg_one α hr hα, phi_toPoly]
     have hirr1 : Irreducible g1 := by
       rw [hg1]
-      apply irreducible_X_pow_sub_C_r α hq5 hα r hr
-      convert orderOf_q_mod_two_pow hq5 α hα using 2
+      apply irreducible_X_pow_sub_C_r α hq5 r hr
+      convert orderOf_q_mod_two_pow hq5 α using 2
     -- `g2 = X^{2^{α-1}} - C (-r)` with `(-r)² = -1`, reusing the same factor lemma for `-r`.
     have hrr : (-r) ^ 2 = -1 := by rw [neg_pow]; simp [hr]
     have hg2eq : g2 = X ^ (2 ^ (α - 1)) - C (-r) := by rw [hg2, C_neg, sub_neg_eq_add]
     have hirr2 : Irreducible g2 := by
       rw [hg2eq]
-      apply irreducible_X_pow_sub_C_r α hq5 hα (-r) hrr
-      convert orderOf_q_mod_two_pow hq5 α hα using 2
+      apply irreducible_X_pow_sub_C_r α hq5 (-r) hrr
+      convert orderOf_q_mod_two_pow hq5 α using 2
     have hnu : ¬ IsUnit (Ideal.Quotient.mk
         (Ideal.span {(powTwoCyclotomic (R := ZMod q) α).φ.toPoly}) ct) := by
       have hh := Rq.not_isUnit_toQuotientHom_of_not_isUnit
@@ -321,8 +321,7 @@ theorem Rq.eq_zero_of_l2NormSq_eq_zero {c : Rq Φ} (h : Rq.l2NormSq Φ c = 0) : 
   -- Hence the underlying polynomial is `0` (coeffs below `deg φ` by the above, coeffs at or
   -- above `deg φ` by reducedness).
   have htoP : c.1.toPoly = 0 := by
-    apply Polynomial.ext
-    intro k
+    ext k : 2
     rw [Polynomial.coeff_zero]
     by_cases hk : k < (powTwoCyclotomic (R := ZMod q) α).φ.natDegree
     · rw [← CompPoly.CPolynomial.coeff_toPoly]; exact hlt k hk

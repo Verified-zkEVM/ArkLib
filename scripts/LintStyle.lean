@@ -82,6 +82,20 @@ private def runImportPositionSelfTest : IO Unit := do
     throw <| IO.userError
       "lint-style self-test failed: module-system import diagnostics must use parser positions"
 
+private def runCommentDeclarationFixtureTests : IO Unit := do
+  let allowed := "scripts/LintStyleFixtures/CommentDeclarationsAllowed.lean"
+  let rejected := "scripts/LintStyleFixtures/CommentDeclarationsRejected.lean"
+  let allowedViolations := lintLines (sourceLines (← IO.FS.readFile allowed))
+  unless allowedViolations.isEmpty do
+    throw <| IO.userError
+      s!"lint-style self-test failed: allowed comment fixtures: {reprStr allowedViolations}"
+  let rejectedViolations := lintLines (sourceLines (← IO.FS.readFile rejected))
+  let expectedLines := (List.range 16).toArray.map (· + 9)
+  unless rejectedViolations.map (·.line) == expectedLines &&
+      rejectedViolations.all (·.code == "ERR_COMMENT_DECL") do
+    throw <| IO.userError
+      s!"lint-style self-test failed: rejected comment fixtures: {reprStr rejectedViolations}"
+
 private def formatViolation (github : Bool) (path : FilePath) (v : Violation) : String :=
   if github then
     s!"::error file={path},line={v.line},title={v.code}::{path}:{v.line} {v.code}: {v.message}"
@@ -145,6 +159,7 @@ private def repositoryHygiene (github : Bool) : IO Nat := do
 private def lintRepository (config : Config) : IO UInt32 := do
   runSelfTests
   runImportPositionSelfTest
+  runCommentDeclarationFixtureTests
   if config.selfTestOnly then
     IO.println "lint-style self-tests passed"
     return 0

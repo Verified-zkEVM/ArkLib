@@ -38,7 +38,10 @@ Lean transcription.
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean)
-  — `umEvalOnPoints`, `umCode`, `mem_umCode_one_iff_mem_rsCode`.
+  — `umEvalOnPoints`, `umCode`, `mem_umCode_one_iff_mem_rsCode`, the exact saturated dimension
+  `dim_umCode_eq_min`, and the minimum distance `hammingDist_umCode_ge`, `dist_umCode_eq`.
+  `CodingTheory.isSubspaceDesign_umCode` is an in-repo consumer of the code, proving the
+  univariate-multiplicity half of ABF26 Theorem 2.18 via GK16's classical Wronskian argument.
 
 ## Version Notes
 
@@ -69,10 +72,6 @@ Lean transcription.
 
 ## Open Formalization Gaps
 
-- **Minimum distance of `umCode` is unproved.** Its exact saturated dimension is
-  `dim_umCode_eq_min`, and `CodingTheory.isSubspaceDesign_umCode` is now a substantive
-  in-repo consumer proving the univariate-multiplicity half of ABF26 Theorem 2.18 via GK16's
-  classical Wronskian argument.
 - KSY14's actual results — local decodability, sublinear-time decoding, the high-rate LDC
   parameters — are entirely out of scope, and there is no ArkLib abstraction for local decoding to
   hang them on.

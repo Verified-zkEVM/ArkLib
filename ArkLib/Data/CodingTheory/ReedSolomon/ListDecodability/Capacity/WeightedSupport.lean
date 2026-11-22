@@ -39,10 +39,10 @@ open ListDecoding PolynomialDifferential
 /-- The prescribed weighted support realizes the public construction contract. -/
 theorem exists_weightedSupport_hiddenDerivativeConstruction :
     WeightedSupportConstruction := by
-  intro δ hδ hδmax n k q hblock hk _hkn hq hnq hA domain received
+  intro δ hδ hδmax n k q hblock hk _hkn hq _ hA domain received
   let : Fact q.Prime := ⟨hq⟩
   obtain ⟨construction, hK, _htotal⟩ :=
-    exists_prescribed_weightedSupport_construction domain received hδ hδmax hk hblock hnq hA
+    exists_prescribed_weightedSupport_construction domain received hδ hδmax hblock hA
   exact ⟨construction, hK⟩
 
 /-- Every prescribed small-gap instance has both finite-field bounds. The exponent-two bound
@@ -65,7 +65,7 @@ theorem weightedSupport_capacity_list_bound_four_mul
   let d := capacityDerivativeOrder δ
   let m := weightedSupportMultiplicity d
   let K := weightedSupportAmbientDimension δ n k
-  let A := agreementThreshold δ n k
+  let A := capacityAgreementThreshold δ n k
   have hn : 0 < n := hk.trans_le hkn
   have emptyList (received : Fin n → ZMod q) (hAn : n < A) :
       agreeingPolynomials domain k A received = ∅ := by
@@ -84,8 +84,8 @@ theorem weightedSupport_capacity_list_bound_four_mul
     intro received
     by_cases hA : A ≤ n
     · obtain ⟨construction, hK, htotal⟩ :=
-        exists_prescribed_weightedSupport_construction domain received hδ hδmax hk
-          (by simpa only [m] using hblock) hnq (by simpa only [A] using hA)
+        exists_prescribed_weightedSupport_construction domain received hδ hδmax
+          (by simpa only [m] using hblock) (by simpa only [A] using hA)
       exact construction.agreeingPolynomials_encard_le_totalJetDegree hK he htotal hfield
     · rw [emptyList received (Nat.lt_of_not_ge hA)]
       simp
@@ -95,8 +95,8 @@ theorem weightedSupport_capacity_list_bound_four_mul
     intro received
     by_cases hA : A ≤ n
     · obtain ⟨construction, hK, htotal⟩ :=
-        exists_prescribed_weightedSupport_construction domain received hδ hδmax hk
-          (by simpa only [m] using hblock) hnq (by simpa only [A] using hA)
+        exists_prescribed_weightedSupport_construction domain received hδ hδmax
+          (by simpa only [m] using hblock) (by simpa only [A] using hA)
       have hdK : d < K := by
         have hdegree := construction.order_lt_degree
         rw [hK] at hdegree
@@ -121,7 +121,7 @@ theorem weightedSupport_capacity_list_bound_four_mul
       (by simpa only [d, m, A, Fintype.card_fin] using pointwiseTwo)⟩
   · intro hlarge
     have hlarge' : 2 * (m * A + d - K) ≤ q ^ 1 := by
-      simpa only [LargeFieldCondition, agreementThreshold, d, m, K, A, pow_one] using hlarge
+      simpa only [LargeFieldCondition, capacityAgreementThreshold, d, m, K, A, pow_one] using hlarge
     exact ⟨CapacityGapCertificate.ofPointwiseBound hδ.le
       (by simpa only [Fintype.card_fin] using hn) (domain := domain)
       (by
@@ -135,7 +135,9 @@ theorem weightedSupport_capacity_list_bound : WeightedSupportListBound := by
   let m := weightedSupportMultiplicity d
   have hm : 0 < m :=
     (weightedSupportMultiplicity_pos_iff).2 (by
-      have := (capacityDerivativeOrder_lower hδ hδmax).1
+      have := (HiddenDerivative.WeightedSupportParameters.prescribed_order_lower
+        δ hδ hδmax.le).1
+      rw [← capacityDerivativeOrder_eq_ceil hδmax] at this
       dsimp only [d]
       omega)
   exact ⟨hm, 4 * m, by positivity,

@@ -5,6 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Data.Probability.Uniform
+import Mathlib.Data.Fin.VecNotation
+import Mathlib.Data.ZMod.Defs
 import Mathlib.MeasureTheory.Measure.Basic
 
 /-!
@@ -45,3 +47,40 @@ example :
       Pr{let n ← $ᵗ (Fin 2)}[n = 0] := by
   exact SampleableType.prEvent_uniformSample_equiv
     (Equiv.swap 0 1) (fun n : Fin 2 => n = 0)
+
+/-- Projection from a six-point uniform space gives probability `1/2` to either first coordinate. -/
+example : Pr{let x ← $ᵗ (Fin 2 × Fin 3)}[x.1 ∈ ({0} : Finset (Fin 2))] =
+    (1 / 2 : ENNReal) := by
+  have hc : (Finset.univ.filter (fun x : Fin 2 × Fin 3 =>
+      x.1 ∈ ({0} : Finset (Fin 2)))).card = 3 := rfl
+  rw [SampleableType.prEvent_uniformSample, hc]
+  convert ENNReal.mul_div_mul_left (a := 1) (b := 2) (c := 3)
+    (by norm_num) (by norm_num) using 1
+  norm_num
+
+instance : Nonempty (Fin 2 ↪ ZMod 3) := ⟨⟨![0, 1], by decide⟩⟩
+
+instance : Nonempty {S : Finset (ZMod 3) // S.card = 2} := ⟨⟨{0, 1}, by decide⟩⟩
+
+open Finset in
+/-- The image of a uniform embedding `Fin 2 ↪ ZMod 3` contains `0` with probability `2/3`: two of
+the three two-element subsets of `ZMod 3` contain `0`. -/
+example : Pr{let f ← $ᵗ (Fin 2 ↪ ZMod 3)}[(0 : ZMod 3) ∈ univ.map f] = (2 / 3 : ENNReal) := by
+  refine (ProbabilityTheory.prEvent_uniformSample_finsetCard_eq_embedding
+    fun T ↦ (0 : ZMod 3) ∈ T).symm.trans ?_
+  rw [SampleableType.prEvent_uniformSample]
+  have h₁ : #{S : {S : Finset (ZMod 3) // #S = 2} | (0 : ZMod 3) ∈ S.1} = 2 := by decide
+  have h₂ : Fintype.card {S : Finset (ZMod 3) // #S = 2} = 3 := by decide
+  rw [h₁, h₂]
+  norm_num
+
+open Finset in
+/-- One of the four points of `Fin 4` is `0`, so a uniform point is nonzero with probability at
+least `1 - 1/4`. -/
+example : ENNReal.ofReal (1 - 1 / 4) ≤
+    Pr{let x ← $ᵗ (Fin 4)}[x ≠ 0] := by
+  rw [SampleableType.prEvent_uniformSample]
+  refine ProbabilityTheory.ofReal_one_sub_le_card_filter_div ?_
+  have h : #{x : Fin 4 | ¬x ≠ 0} = 1 := by decide
+  rw [h]
+  norm_num

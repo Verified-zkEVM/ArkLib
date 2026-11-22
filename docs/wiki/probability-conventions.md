@@ -22,6 +22,39 @@ Use `prEvent_uniformSample_equiv`, `prEvent_uniformSample_prod`, or
 `prEvent_uniformSample_finSnoc` to transport uniform events. Two samplers with the same
 native distribution need not be equal as programs.
 
+For dependent challenges, preserve the sampling stages. Sampling `q` uniformly from a prime set
+and then `α` uniformly from `Fin k → ZMod q` gives every prime equal weight. A uniform draw from
+the dependent type of all pairs instead weights `q` by `q^k`. The reusable bridge and bounds live
+in `ArkLib/Data/MvPolynomial/PrimeFingerprintProbability.lean`; its test distinguishes the laws
+using primes `{2, 3}` and one variable. Keep the counting input in `PrimeFingerprint` independent
+of sampler assumptions. To compare two events of this sampler, use VCVio's
+`prEvent_bind_mono_of_forall_le` with `prEvent_map_le_map`: the two-stage notation elaborates to a
+bind of maps.
+
+Use `ProtocolSpec.instSampleableTypeChallengeSeqCompose` and
+`ProtocolSpec.instSampleableTypeChallengeAppend` when exposing challenge samplers for composed
+protocol families. This keeps the sampler family definitionally equal to the one expected by
+composition theorems and retains the chosen component samplers through dependent index transport.
+Rebuilding the entire family's samplers with `SampleableType.ofFintype` can preserve the
+probabilities while changing the sampler programs.
+
+## Computable values and semantic probabilities
+
+An executable sampler describes how to draw a value.
+The `ENNReal` event probability `Pr{…}[…]` is a semantic quantity and is noncomputable.
+An executable sampler alone does not make a quantified event decidable.
+
+For a finite family of Boolean events, `Probability.maxEventProbability` in
+`ArkLib/Data/Probability/MaxEventProbability.lean` computes the exact worst-case probability in
+`ℚ≥0` by exhaustive counting.
+`Probability.ofReal_maxEventProbability_eq_iSup` proves that `ENNReal.ofReal` of its real cast is
+the `ENNReal` supremum of the counting probabilities.
+The Reed–Solomon combiner-error evaluators in
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean`
+decide their events by finite searches over bounded-degree CompPoly polynomials. Their bridge
+theorems prove that `ENNReal.ofReal` of the real cast of each rational error is the semantic error.
+`maxEventProbability` and these evaluators use no classical decision procedure and no sampler.
+
 ## Event proofs
 
 Use VCVio's `prEvent_mono`, `prEvent_congr`, `prEvent_or_le`, `prEvent_exists_le`, and
@@ -32,7 +65,22 @@ belong upstream in VCVio before their ArkLib consumers are integrated.
 `ArkLib/Data/Probability/Instances.lean` retains specialized mathematical facts about
 Schwartz–Zippel, dot products, and coordinate membership. `Combinatorial.lean` contains the
 collision-to-image-size argument for probability measures on a countable full-mass carrier.
-These mathematical helpers live in `namespace Probability`.
+These mathematical helpers live in `namespace Probability`. `FiniteEntropy.lean` and
+`FiniteChernoff.lean` work with real weights on finite types (`IsProbWeight`, `weightLaw`,
+`prodLaw`): base-`q` Shannon entropy with data processing, submodularity and a Fano-type bound, and
+Chernoff tails for counts under product weights. Mathlib and VCVio have no Shannon entropy for these
+weights. To average the error of a second computation over the actual output distribution of the
+first, charging exceptional outputs separately and needing no losslessness assumption, use VCVio's
+`prEvent_bind_le_prEvent_add_lintegral_ae` (`VCVio.EvalDist.Monad.Disagreement.Measure`), or
+`OracleRuntime.run_bind_success_le` and its variants for resumed runtime runs. `KoalaBear.lean` gives the sextic extension
+`KoalaBear.Ext6` a computable `SampleableType` instance that samples six base-field limbs.
+
+`VCVio.EvalDist.ProbabilityBounds` also supplies
+`prEvent_exists_finset_le_card_mul` for a fixed finite candidate set and
+`prEvent_exists_and_le_of_subsingleton` for an exact-functional candidate predicate.
+Fix the set or predicate before the sampled challenge. Batching collision events
+exclude candidates whose full claim is already correct; adaptive candidate lists
+need a separate argument.
 
 Losslessness is `IsProbabilityMeasure 𝒟[mx]`, or the equivalent successful-event statement
 `Pr{let _ ← mx}[True] = 1`. For computations that may fail, the complement probability is

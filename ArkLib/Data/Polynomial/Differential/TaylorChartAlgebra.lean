@@ -29,12 +29,15 @@ separant denominator.
   flattened challenge and jet coordinates for the Taylor chart.
 * `jointTaylorAgreementEquation`, `jointTaylorReconstructionError`, and `affinePairCurve` describe
   the agreement cuts and affine-pair graph in those coordinates.
-* `aeval_jointInitialJetSeparant`, `aeval_jointCommonTaylorNumerator`, and
-  `aeval_jointTaylorAgreementEquation` specialize joint cuts at a point before evaluating jets.
+* `aeval_jointInitialJetEquation`, `aeval_jointInitialJetSeparant`,
+  `aeval_jointCommonTaylorNumerator`, and `aeval_jointTaylorAgreementEquation` specialize joint
+  cuts at a point before evaluating jets.
+* `jointInitialJetEquation_ne_zero_of_regular` certifies the joint initial equation from a regular
+  specialized jet.
 * `commonTaylorNumeratorOver_eq` and `map_commonTaylorNumeratorOver_eq` bridge algebra-valued
   numerators to their field-valued counterparts.
 * `aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent` characterizes regular agreement
-  cuts, while `degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent` bounds the
+  cuts, while `degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts` bounds the
   reconstruction degree.
 * `aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent` identifies symbolic common
   numerators with coefficients of the reconstructed polynomial.
@@ -174,6 +177,36 @@ def affinePairCurve {E : Type*} [Semiring E] (center : E) (P₀ P₁ : Polynomia
 
 variable {E : Type*} [Field E]
 
+/-- Evaluating the joint initial equation specializes its challenge before evaluating the jet. -/
+theorem aeval_jointInitialJetEquation (center : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) (x : Option (Fin (r + 1)) → E) :
+    aeval x (jointInitialJetEquation center Q) =
+      aeval (fun j ↦ x (some j))
+        (initialJetEquation center
+          (MvPolynomial.map (Polynomial.aeval (x none)).toRingHom Q)) := by
+  rw [jointInitialJetEquation, aeval_optionEquivRight_symm, map_initialJetEquation]
+  simp
+
+/-- A regular specialized jet implies that the joint initial equation is nonzero. -/
+theorem jointInitialJetEquation_ne_zero_of_regular (center z : E)
+    (Q : DifferentialPolynomial (Polynomial E) r) (jet : Fin (r + 1) → E)
+    (hS : aeval jet (initialJetSeparant center
+      (MvPolynomial.map (Polynomial.evalRingHom z) Q)) ≠ 0) :
+    jointInitialJetEquation center Q ≠ 0 := by
+  have hsep : initialJetSeparant center
+      (MvPolynomial.map (Polynomial.evalRingHom z) Q) ≠ 0 := by
+    intro hzero
+    exact hS (by rw [hzero]; simp)
+  have hinit := initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero center _ hsep
+  intro hzero
+  have he : initialJetEquation (Polynomial.C center) Q = 0 := by
+    apply (optionEquivRight E (Fin (r + 1))).symm.injective
+    simpa only [jointInitialJetEquation, map_zero] using hzero
+  have hm := congrArg (MvPolynomial.map (Polynomial.evalRingHom z)) he
+  rw [map_initialJetEquation, map_zero,
+    show (Polynomial.evalRingHom z) (Polynomial.C center) = center from Polynomial.eval_C] at hm
+  exact hinit hm
+
 /-- Evaluating the joint separant specializes its challenge before evaluating the jet. -/
 theorem aeval_jointInitialJetSeparant (center : E)
     (Q : DifferentialPolynomial (Polynomial E) r) (x : Option (Fin (r + 1)) → E) :
@@ -278,17 +311,17 @@ theorem aeval_map_taylorAgreementEquationOver_eq_zero_iff_of_exponent {E : Type*
   rw [aeval_map_taylorAgreementEquationOver_of_exponent φ center Q K τ hτ jet hS]
   simp only [mul_eq_zero, pow_ne_zero _ hS, false_or, sub_eq_zero]
 
-/-- Vanishing symbolic high cuts with a sufficient exponent bounds the degree of the
+/-- Vanishing symbolic high cuts bounds the degree of the
 reconstructed polynomial. -/
-theorem degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent {E : Type*}
+theorem degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts {E : Type*}
     [Field E] [Algebra F E] (φ : A →ₐ[F] E) (center : A) (Q : DifferentialPolynomial A r)
-    (K k τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (jet : Fin (r + 1) → E)
+    (K k τ : ℕ) (jet : Fin (r + 1) → E)
     (hS : aeval jet (map φ.toRingHom (initialJetSeparant center Q)) ≠ 0)
     (hhigh : ∀ l : Fin K, k ≤ l.val →
       aeval jet (map φ.toRingHom (commonTaylorNumeratorOver F center Q τ l.val)) = 0) :
     (rationalTaylorPolynomial (φ center) (map φ.toRingHom Q) K jet).degree < k := by
   rw [map_initialJetSeparant φ.toRingHom center Q] at hS
-  refine degree_rationalTaylorPolynomial_lt (φ center) (map φ.toRingHom Q) hτ k jet hS ?_
+  refine degree_rationalTaylorPolynomial_lt (φ center) (map φ.toRingHom Q) (τ := τ) k jet hS ?_
   intro l hkl hlK
   simpa only [map_commonTaylorNumeratorOver_eq] using hhigh ⟨l, hlK⟩ hkl
 
@@ -316,7 +349,7 @@ theorem aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent {E : Type
 Taylor coefficients of the reconstructed polynomial to vanish at a regular jet. -/
 theorem sparse_rationalTaylorPolynomial_of_symbolic_cuts {E : Type*} [Field E]
     [Algebra F E] (φ : A →ₐ[F] E) (center : A) (Q : DifferentialPolynomial A r)
-    (K s τ : ℕ) (hτ : TaylorExponentSufficient r K τ) (jet : Fin (r + 1) → E)
+    (K s τ : ℕ) (jet : Fin (r + 1) → E)
     (hS : aeval jet (map φ.toRingHom (initialJetSeparant center Q)) ≠ 0)
     (hcuts : ∀ l : Fin K, ¬s ∣ l.val →
       aeval jet (map φ.toRingHom (commonTaylorNumeratorOver F center Q τ l.val)) = 0) :
@@ -326,10 +359,14 @@ theorem sparse_rationalTaylorPolynomial_of_symbolic_cuts {E : Type*} [Field E]
   intro i hi
   by_cases hiK : i < K
   · have hnum := hcuts ⟨i, hiK⟩ hi
-    have hbridge := aeval_map_commonTaylorNumeratorOver_reconstruction_of_exponent
-      φ center Q K τ hτ jet hS ⟨i, hiK⟩
-    rw [hbridge] at hnum
-    exact (mul_eq_zero.mp hnum).resolve_left (pow_ne_zero _ hS)
+    rw [map_initialJetSeparant φ.toRingHom center Q] at hS
+    have hS' : aeval jet (initialJetSeparant (φ center) (map φ.toRingHom Q)) ≠ 0 := by
+      simpa only [AlgHom.toRingHom_eq_coe, AlgHom.coe_toRingHom] using hS
+    rw [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix,
+      ite_eq_left hiK, rationalTaylorCoefficient]
+    simpa only [map_commonTaylorNumeratorOver_eq, commonTaylorNumerator, map_mul,
+      map_pow, mul_eq_zero, pow_ne_zero _ hS', or_false, div_eq_zero_iff,
+      or_false] using hnum
   · simp [rationalTaylorPolynomial, Polynomial.coeff_taylor_centeredCoefficientPrefix, hiK]
 
 end

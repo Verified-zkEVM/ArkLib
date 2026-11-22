@@ -1,4 +1,4 @@
-import VCVio.OracleComp.Constructions.SampleableType.NativeMeasure
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 namespace RetiredProbabilityTestFixtures.Clean
 

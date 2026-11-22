@@ -12,6 +12,7 @@ import ArkLib.ToMathlib.MvPolynomial.OptionRoots
 import ArkLib.ToMathlib.MvPolynomial.OptionWeightedDegree
 import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 import ArkLib.ToMathlib.MvPolynomial.PowerMomentLift
+import ArkLib.ToMathlib.MvPolynomial.PowerMomentGeometry
 import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 import ArkLib.ToMathlib.MvPolynomial.RootContraction
 import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
@@ -351,7 +352,7 @@ private theorem radicalContent_X :
   rw [radicalContent, show primeFactors (Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)) =
     {Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)} by
       rw [primeFactors, normalizedFactors_irreducible
-        ((Associates.irreducible_mk).2 X_prime.irreducible)]
+        ((Associates.irreducible_mk).2 prime_X.irreducible)]
       simp]
   have hfilter :
       (({Associates.mk (X 0 : MvPolynomial (Fin 1) ℚ)} :
@@ -406,6 +407,19 @@ example : totalDegree (radicalContent 0 radicalSplitPolynomial) +
     ∑ c ∈ positiveDegreeFactorClasses 0 radicalSplitPolynomial, totalDegree c.rep ≤
       totalDegree radicalSplitPolynomial :=
   add_sum_totalDegree_positiveDegreeFactorClasses_le 0 radicalSplitPolynomial
+
+/-- The radical part of `X 0` in the unrelated coordinate `1` has degree zero and equals `1`. -/
+example : radicalPrimPart (1 : Fin 2) (X 0 : MvPolynomial (Fin 2) ℚ) = 1 := by
+  have hdegree : degreeOf (1 : Fin 2) (X 0 : MvPolynomial (Fin 2) ℚ) = 0 := by
+    rw [degreeOf_X_of_ne (by decide)]
+  have hradical :
+      degreeOf (1 : Fin 2)
+          (radicalPrimPart (1 : Fin 2) (X 0 : MvPolynomial (Fin 2) ℚ)) = 0 :=
+    Nat.eq_zero_of_le_zero
+      ((degreeOf_radicalPrimPart_le (1 : Fin 2) (1 : Fin 2)
+        (X 0 : MvPolynomial (Fin 2) ℚ)).trans_eq hdegree)
+  exact radicalPrimPart_eq_one_of_degreeOf_eq_zero (1 : Fin 2)
+    (X 0 : MvPolynomial (Fin 2) ℚ) hradical
 
 /-- For the nonconstant polynomial `X`, a proper challenge exception leaves a root whose challenge
 is nonzero, so the combined exceptional-set conclusion has content. -/
@@ -498,10 +512,15 @@ example :
 private noncomputable abbrev paramTimesVar : MvPolynomial Unit (Polynomial ℚ) :=
   C Polynomial.X * X ()
 
-/-- Each coefficient of `t * Y` has degree at most `1` in `t`. -/
-example : CoeffNatDegreeLE paramTimesVar 1 := by
-  simpa using (coeffNatDegreeLE_C (σ := Unit) (p := (Polynomial.X : Polynomial ℚ))
-    (by simp)).mul (coeffNatDegreeLE_X ())
+/-- The coefficient height of `t * Y` is one, so every coefficient has degree at most one. -/
+example : coeffNatDegree paramTimesVar = 1 ∧ CoeffNatDegreeLE paramTimesVar 1 := by
+  have hheight : coeffNatDegree paramTimesVar = 1 := by
+    classical
+    simp [coeffNatDegree, paramTimesVar, C_mul_X_eq_monomial, support_monomial,
+      coeff_monomial]
+  refine ⟨hheight, ?_⟩
+  rw [← hheight]
+  exact coeffNatDegreeLE_coeffNatDegree paramTimesVar
 
 /-- Moving `X none` out as a polynomial variable commutes with casting coefficients to `ℚ`. -/
 example :
@@ -649,6 +668,45 @@ example : #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 2)) |
     (p := (X 0 : MvPolynomial (Fin 2) (ZMod 2))) (X_ne_zero (0 : Fin 2))
     (univ : Finset (ZMod 2))
   exact ⟨hcount, hdegree, by simpa only [hcount, hdegree] using hbound⟩
+
+/-! ### Schwartz–Zippel over pairwise-distinct points -/
+
+/-- The pairs with distinct coordinates number `(#univ).descFactorial 2 = 6`. -/
+example : #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 3)) |
+      Function.Injective x} = 6 ∧ (#(univ : Finset (ZMod 3))).descFactorial 2 = 6 := by
+  refine ⟨by decide, ?_⟩
+  rw [card_univ, ZMod.card]
+  rfl
+
+/-- `X 0 - X 1` has three zeros on the grid `(ZMod 3)²` and none with distinct coordinates. -/
+example : #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 3)) |
+      eval x (X 0 - X 1 : MvPolynomial (Fin 2) (ZMod 3)) = 0} = 3 ∧
+    #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 3)) |
+      Function.Injective x ∧ eval x (X 0 - X 1 : MvPolynomial (Fin 2) (ZMod 3)) = 0} = 0 := by
+  simp only [map_sub, eval_X]
+  decide
+
+/-- `X 0 - X 1 - 1` has total degree `1` and three zeros with distinct coordinates, so it attains
+`card_filter_injective_eval_eq_zero_le`: `3 * (3 - 2 + 1) = 1 * 6`. -/
+example : #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 3)) |
+      Function.Injective x ∧ eval x (X 0 - X 1 - 1 : MvPolynomial (Fin 2) (ZMod 3)) = 0} *
+        (#(univ : Finset (ZMod 3)) - 2 + 1) =
+      (X 0 - X 1 - 1 : MvPolynomial (Fin 2) (ZMod 3)).totalDegree *
+        (#(univ : Finset (ZMod 3))).descFactorial 2 := by
+  have hcount : #{x ∈ Fintype.piFinset fun _ : Fin 2 ↦ (univ : Finset (ZMod 3)) |
+      Function.Injective x ∧ eval x (X 0 - X 1 - 1 : MvPolynomial (Fin 2) (ZMod 3)) = 0} = 3 := by
+    simp only [map_sub, map_one, eval_X]
+    decide
+  have hle : (X 0 - X 1 - 1 : MvPolynomial (Fin 2) (ZMod 3)).totalDegree ≤ 1 :=
+    (totalDegree_sub _ _).trans <| max_le ((totalDegree_sub _ _).trans (by simp)) (by simp)
+  have hge : 1 ≤ (X 0 - X 1 - 1 : MvPolynomial (Fin 2) (ZMod 3)).totalDegree := by
+    refine le_of_eq_of_le ?_ (le_totalDegree (s := Finsupp.single 0 1) ?_)
+    · simp
+    · rw [mem_support_iff]
+      simp [coeff_X, coeff_one, Finsupp.single_eq_single_iff,
+        (Finsupp.single_ne_zero.mpr one_ne_zero).symm]
+  rw [hcount, le_antisymm hle hge, card_univ, ZMod.card]
+  rfl
 
 /-! ### Support weights -/
 
@@ -913,3 +971,103 @@ example :
       chunkedPowerSource_height,
     chunkedPolynomialPowerLift_totalDegree_le 2 1 1 (by norm_num) _
       chunkedPowerSource_height chunkedPowerSource_degree⟩
+
+/-! ### Power-moment geometry -/
+
+/-- Substitution into a power-moment coordinate obeys the weighted degree bound. -/
+example :
+    (powerMomentMap (R := ℚ) 1
+      (X (Sum.inl ⟨1, by omega⟩) :
+        MvPolynomial (PowerMomentIndex 1 Unit) ℚ)).weightedTotalDegree
+      (powerMomentWeight (σ := Unit) 1) ≤ 1 := by
+  simpa using powerMomentMap_weightedTotalDegree_le (E := ℚ) (σ := Unit) 1
+    (X (Sum.inl ⟨1, by omega⟩))
+
+/-- A source with no auxiliary variables gives a concrete Hilbert-function bound. -/
+example :
+    affineHilbertFunction (powerMomentIdeal (R := ℚ) (σ := Empty) 1) 0 ≤
+      1 * (0 + Nat.card (Option Empty)).choose (Nat.card (Option Empty)) := by
+  exact powerMomentIdeal_hilbertFunction_le (E := ℚ) (σ := Empty) 1 0 (by norm_num)
+
+/-- The exponent ball at radius zero has the predicted one-element bound. -/
+example :
+    Set.ncard {m : Option Empty →₀ ℕ | m.weight (powerMomentWeight 1) ≤ 0} ≤
+      1 * (0 + Nat.card (Option Empty)).choose (Nat.card (Option Empty)) := by
+  simpa using powerMomentWeight_exponent_ncard_le (σ := Empty) 1 0 (by norm_num)
+
+/-- The affine degree of the constant-source moment variety is bounded by one. -/
+example : affineDegree (powerMomentIdeal (R := ℚ) (σ := Fin 0) 1) ≤ 1 := by
+  exact powerMomentIdeal_affineDegree_le (E := ℚ) (σ := Fin 0) 1 (by norm_num)
+
+/-- Evaluation at a canonical lifted point factors through its recovered source point. -/
+example :
+    let x : Option Unit → ℚ := fun i ↦ i.elim 2 (fun _ ↦ 3)
+    aeval (powerMomentPoint 1 x)
+        (X (Sum.inl ⟨1, by omega⟩) : MvPolynomial (PowerMomentIndex 1 Unit) ℚ) =
+      aeval (powerMomentSourcePoint 1 (by norm_num) (powerMomentPoint 1 x))
+        (powerMomentMap (R := ℚ) 1
+          (X (Sum.inl ⟨1, by omega⟩) : MvPolynomial (PowerMomentIndex 1 Unit) ℚ)) := by
+  exact aeval_eq_aeval_powerMomentMap_of_mem_zeroLocus 1 (by norm_num)
+    (powerMomentPoint 1 (fun i : Option Unit ↦ i.elim 2 (fun _ ↦ 3)))
+    (powerMomentPoint_mem_zeroLocus 1 (fun i : Option Unit ↦ i.elim 2 (fun _ ↦ 3)))
+    (X (Sum.inl ⟨1, by omega⟩))
+
+private noncomputable abbrev momentIncidenceEquation :
+    MvPolynomial (Fin 0) (Polynomial ℚ) := C (Polynomial.X : Polynomial ℚ)
+
+private theorem momentIncidenceEquation_height : CoeffNatDegreeLE momentIncidenceEquation 1 :=
+  coeffNatDegreeLE_C (by simp)
+
+/-- A singleton source point satisfies a concrete transferred incidence bound. -/
+example :
+    (({(fun _ : Option (Fin 0) ↦ (0 : ℚ))} :
+      Finset (Option (Fin 0) → ℚ)).card : ℚ) ≤ 1 := by
+  let x : Option (Fin 0) → ℚ := fun _ ↦ 0
+  let S : Finset (Option (Fin 0) → ℚ) := {x}
+  let high : Empty → MvPolynomial (Fin 0) (Polynomial ℚ) := fun i ↦ nomatch i
+  let cuts : Fin 1 → MvPolynomial (Fin 0) (Polynomial ℚ) := fun _ ↦ 0
+  have hS : ∀ y ∈ S,
+      aeval y ((optionEquivRight ℚ (Fin 0)).symm momentIncidenceEquation) = 0 ∧
+      aeval y ((optionEquivRight ℚ (Fin 0)).symm
+        (1 : MvPolynomial (Fin 0) (Polynomial ℚ))) ≠ 0 ∧
+      (∀ i : Empty, aeval y ((optionEquivRight ℚ (Fin 0)).symm
+        (high i)) = 0) ∧
+      y ∉ (∅ : Set (Option (Fin 0) → ℚ)) := by
+    intro y hy
+    simp only [S, Finset.mem_singleton] at hy
+    subst y
+    refine ⟨?_, ?_, ?_, ?_⟩
+    · simp [x, momentIncidenceEquation]
+    · simp
+    · intro i
+      exact isEmptyElim i
+    · simp
+  have hA : ∀ y ∈ S,
+      1 ≤ {i : Fin 1 | aeval y
+        ((optionEquivRight ℚ (Fin 0)).symm (cuts i)) = 0}.ncard := by
+    intro y hy
+    simp [cuts]
+  have hbound := powerMomentMap_incidence_off_excluded (E := ℚ) (σ := Fin 0)
+    (ι := Empty) (D := 1) (M := 1) (d := 0) (initialDegree := 1) (B := 2)
+    (A := 1) (L := 1) (n := 1) (by norm_num)
+    (g := momentIncidenceEquation) (s := 1) momentIncidenceEquation_height
+    (coeffNatDegreeLE_C (by simp)) (by simp [momentIncidenceEquation]) (by simp)
+    (by simp [momentIncidenceEquation, totalDegree_C])
+    (high := high)
+    (by intro i; exact isEmptyElim i) (by intro i; exact isEmptyElim i)
+    cuts (by intro i; simp [cuts, CoeffNatDegreeLE]) (by intro i; simp [cuts])
+    (by simp) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (excluded := ∅)
+    (by
+      intro J hJ hsJ hgJ hhighJ hdim hcutsJ
+      have hX : (X none : MvPolynomial (Option (Fin 0)) ℚ) ∈ J := by
+        simpa [momentIncidenceEquation] using hgJ
+      have hdim' : (affineHilbertPolynomial J).natDegree ≤ 0 := by
+        have hbound := natDegree_affineHilbertPolynomial_le_of_mem
+          (X_ne_zero (none : Option (Fin 0))) hX
+        simpa using hbound
+      intro z hz
+      exfalso
+      omega)
+    S hS hA
+  norm_num [S] at hbound ⊢

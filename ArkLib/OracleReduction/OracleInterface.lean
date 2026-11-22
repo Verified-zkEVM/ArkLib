@@ -10,7 +10,7 @@ public import VCVio.OracleComp.SimSemantics.ReaderT.Basic
 public import CompPoly.Data.MvPolynomial.Notation
 public import Mathlib.Algebra.Polynomial.Roots
 public import ArkLib.Data.MvPolynomial.Degrees
-public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+public import ToMathlib.Algebra.MvPolynomial.SchwartzZippel
 -- import ArkLib.Data.MlPoly.Basic
 
 /-!
@@ -228,6 +228,21 @@ def simOracle2 {ι : Type u} (oSpec : OracleSpec ι)
   QueryImpl.addLift (QueryImpl.id oSpec)
     (QueryImpl.add (simOracle0 T₁ t₁) (simOracle0 T₂ t₂))
 
+/-- Simulating a query to the second oracle family through `simOracle2` answers it from that
+family's values. For an oracle verifier this family is the prover's messages.
+
+The query is stated at its single-step lift into the combined specification. A verifier's
+`query` elaborates through a longer `MonadLiftT` chain, so this rewrites it only up to instance
+unfolding (`OracleVerifier.toVerifier_verify_of_query_guard` uses it with `erw`). -/
+theorem simulateQ_simOracle2_liftM_query_snd {ι : Type} {oSpec : OracleSpec ι}
+    {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, OracleInterface (T₂ i)]
+    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i) (j : ι₂) (q : Query (T₂ j)) :
+    simulateQ (simOracle2 oSpec t₁ t₂)
+      (liftM (OracleSpec.query (spec := [T₂]ₒ) ⟨j, q⟩) :
+        OracleComp (oSpec + ([T₁]ₒ + [T₂]ₒ)) _) = pure (answer (t₂ j) q) :=
+  rfl
+
 /-- The queries on which two messages give the same oracle answer. -/
 def agreementQueries {Message : Type*} (O : OracleInterface Message)
     [Fintype O.Query] [∀ q, DecidableEq (O.toOC.spec q)] (a b : Message) : Finset O.Query :=
@@ -260,7 +275,7 @@ variable (R : Type _) [CommSemiring R] (d : ℕ) (σ : Type*)
 
 /-- Univariate polynomials can be accessed via evaluation queries. -/
 @[reducible, inline]
-instance instPolynomial : OracleInterface R[X] where
+instance instPolynomial : OracleInterface (Polynomial R) where
   Query := R
   toOC.spec := R →ₒ R
   toOC.impl point := do return (← read).eval point
@@ -301,11 +316,6 @@ end Polynomial
 section Vector
 
 variable {n : ℕ} {α : Type*}
-
-/- Vectors of the form `Fin n → α` can be accessed via queries on their indices. We no longer have
-   this instance separately since it can be inferred from the instance for `Function`. -/
--- instance instOracleInterfaceForallFin :
---     OracleInterface (Fin n → α) := OracleInterface.instFunction
 
 /-- Vectors of the form `List.Vector α n` can be accessed via queries on their indices. -/
 instance instListVector : OracleInterface (List.Vector α n) where
@@ -376,7 +386,6 @@ theorem distanceLE_polynomial_degreeLE :
 theorem distanceLE_mvPolynomial_degreeLE {σ : Type} [Fintype σ] [DecidableEq σ] :
     distanceLE (instMvPolynomialDegreeLE R d σ)
       (Fintype.card σ * d * Fintype.card R ^ (Fintype.card σ - 1)) := by
-  let : Field R := Fintype.fieldOfDomain R
   intro a b hab
   have hne : (a : MvPolynomial σ R) - (b : MvPolynomial σ R) ≠ 0 := by
     rw [sub_ne_zero]

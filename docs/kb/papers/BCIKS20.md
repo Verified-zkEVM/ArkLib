@@ -48,7 +48,11 @@ machinery.
 - [`ArkLib/ProofSystem/Stir/ProximityGap.lean`](../../../ArkLib/ProofSystem/Stir/ProximityGap.lean)
   reuses this line of theory in protocol-level work.
 - [`ArkLib/ProofSystem/BatchedFri/Security.lean`](../../../ArkLib/ProofSystem/BatchedFri/Security.lean)
-  cites specific claims from the paper in a proof-system security context.
+  proves batching-round perfect completeness and ordinary and round-by-round soundness
+  using correlated agreement at the actual initial FRI degree bound.
+- [`ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineCoefficients.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineCoefficients.lean)
+  transports uniform coefficient sampling to the affine image and exposes the coefficient-form
+  correlated-agreement theorem used by Batched FRI.
 
 ## Known Divergences From ArkLib
 

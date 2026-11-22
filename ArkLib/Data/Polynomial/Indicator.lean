@@ -10,7 +10,7 @@ public import ArkLib.Data.Polynomial.Bivariate
 public import Mathlib.Algebra.Polynomial.Basic
 public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 
 /-! This module is mostly needed from proving lemma 4.9
   from [ACFY24] but we thought it might be useful for
@@ -74,8 +74,7 @@ lemma indicator_eq_1_of_neg_empty_empty_of_pos_nonempty
     have heval := indicator_eval_of_mem_union (pos := pos) (neg := ∅) hx
     simpa [hxpos] using heval
 
-/-- If `pos` is non-empty then the indicator polynomial is the constant
-  zero polynomial. -/
+/-- If `pos` is non-empty then the indicator polynomial is not the zero polynomial. -/
 lemma indicator_ne_zero_of_pos_nonempty {pos neg : Finset F}
     (h : pos.Nonempty) :
   indicator pos neg ≠ 0 := by

@@ -47,6 +47,48 @@ example : (2 : ℝ) * (1 + rateGap (1 / 2) ((2 : ℝ) / 10)) ≤ 3 + 5 := by
   norm_num at h ⊢
   exact h
 
+/-- A concrete small-gap block satisfies the prescribed geometric parameter contract. -/
+example :
+    let δ : ℝ := 1 / 5
+    let d := Nat.ceil (Real.exp (xi / δ))
+    let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+    let n := 8 * m
+    2 * m - 1 < n ∧ d < max 1 (Nat.floor (δ * n / 2)) := by
+  let δ : ℝ := 1 / 5
+  let d := Nat.ceil (Real.exp (xi / δ))
+  let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+  let n := 8 * m
+  have hδ : 0 < δ := by norm_num [δ]
+  have hδmax : δ < 1 / 4 := by norm_num [δ]
+  have ho := prescribed_order_lower δ hδ hδmax.le
+  have hH : (0 : ℝ) < (harmonic (d - 1) : ℝ) := by
+    have hxi : 0 < xi := by norm_num [xi]
+    simpa only [d] using (div_pos hxi hδ).trans_le ho.2.2
+  have hdlower : 48000 ≤ d := by simpa only [d] using ho.1
+  have hd : 0 < d := by omega
+  have hm : 0 < m := by
+    dsimp only [m]
+    apply Nat.ceil_pos.mpr
+    have hdR : (0 : ℝ) < d := by exact_mod_cast hd
+    positivity
+  have hblock :
+      let d := Nat.ceil (Real.exp (xi / δ))
+      let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
+      8 * m ≤ n := by
+    dsimp only
+    exact Nat.le_refl _
+  have hA : capacityAgreementThreshold δ n 1 ≤ n := by
+    apply (capacityAgreementThreshold_le_iff_real hδ.le n 1 n).mpr
+    have hnR : (n : ℝ) = 8 * m := by norm_num [n]
+    rw [hnR]
+    dsimp [δ]
+    push_cast
+    have hmR : (1 : ℝ) ≤ m := by exact_mod_cast (Nat.one_le_iff_ne_zero.mpr hm.ne')
+    nlinarith
+  obtain ⟨_, _, _, _, hνn, hdK, _, _, _, _⟩ :=
+    prescribed_geometric_parameters δ n 1 hδ hδmax hblock hA
+  exact ⟨hνn, hdK⟩
+
 /-- At `δ = 1/4`, `n = 8m` and `k = m`, the positive-dimensional block bounds hold. -/
 example :
     let δ : ℝ := 1 / 4
@@ -79,8 +121,9 @@ example :
 /-! ### Capacity parameters -/
 
 /-- At `δ = 1 / 8` the order is at least `48000`. -/
-example : 48000 ≤ capacityDerivativeOrder (1 / 8) :=
-  (capacityDerivativeOrder_lower (by norm_num) (by norm_num)).1
+example : 48000 ≤ capacityDerivativeOrder (1 / 8) := by
+  rw [capacityDerivativeOrder_eq_ceil (by norm_num)]
+  exact (prescribed_order_lower (1 / 8) (by norm_num) (by norm_num)).1
 
 /-- At `δ = 1/8`, `n = 8m` and `k = m`, the capacity bounds hold with positive `k`. -/
 example :
@@ -94,8 +137,9 @@ example :
   let n := 8 * m
   let K := weightedSupportAmbientDimension δ n m
   have hd : 2 ≤ capacityDerivativeOrder δ := by
-    have h := (capacityDerivativeOrder_lower (δ := δ) (by norm_num [δ])
+    have h := (prescribed_order_lower δ (by norm_num [δ])
       (by norm_num [δ])).1
+    rw [← capacityDerivativeOrder_eq_ceil (by norm_num [δ])] at h
     omega
   have hm : 0 < m := weightedSupportMultiplicity_pos_iff.mpr hd
   have hceil : ⌈δ * (n : ℝ)⌉₊ = m := by
@@ -105,10 +149,20 @@ example :
     dsimp [n]
     omega
   have hblock : 8 * m ≤ n := by dsimp [n]; omega
-  have h := capacity_block_bounds (δ := δ) (n := n) (k := m)
-    (by norm_num [δ]) (by norm_num [δ]) (by change 8 * m ≤ n; exact hblock) hA
-  rcases h with ⟨hn, hD, hk, hKhi⟩
-  exact ⟨hm, hn, hD, hk, hKhi⟩
+  have horder : capacityDerivativeOrder δ = ⌈Real.exp (xi / δ)⌉₊ :=
+    capacityDerivativeOrder_eq_ceil (by norm_num [δ])
+  have hblock' :
+      let d := ⌈Real.exp (xi / δ)⌉₊
+      let H : ℝ := harmonic (d - 1)
+      let m' := ⌈100 * (d : ℝ) ^ 2 * H⌉₊
+      8 * m' ≤ n := by
+    simpa only [m, weightedSupportMultiplicity, horder] using hblock
+  have h := prescribedBlockBounds δ n m (by norm_num [δ]) (by norm_num [δ]) hblock' hA
+  rcases h with ⟨hn, -, hD, -, -, hKhi, -⟩
+  have hk : m ≤ K := Nat.le_max_left _ _
+  have hD' : capacityDerivativeOrder δ < K - 1 := by
+    simpa only [K, weightedSupportAmbientDimension, horder] using hD
+  exact ⟨hm, hn, hD', hk, hKhi⟩
 
 /-! ### Dimension inputs -/
 
@@ -140,9 +194,9 @@ example :
   exact ⟨highRate_denominator_sq_le_rate (θ := theta) (δ := 1 / 4) (ρ := 1 / 2)
       (by norm_num) (by norm_num [theta]) (by norm_num [theta]) (by norm_num) (by norm_num),
     xi_le_rateGap_mul (δ := 1 / 4) (ρ := 1 / 2) (H := 54 / 5)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi]),
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi]),
     normalizedRadius_le_ten_twentySeven (δ := 1 / 4) (ρ := 1 / 2) (H := 54 / 5) (s := 1 / 5)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi])
+      (by norm_num) (by norm_num) (by norm_num) (by norm_num [xi])
       (by norm_num [rateGap, theta])⟩
 
 /-! ### Endpoint comparison -/
@@ -169,7 +223,7 @@ example :
     (H := 54 / 5) (logd := 54 / 5) (by norm_num [theta]) (by norm_num [xi]) (by norm_num)
     (by norm_num) (by norm_num [theta]) (by norm_num [xi]) (by norm_num [xi])
   have hv := highRate_variance_lower (θ := theta) (ξ := xi) (δ := 1 / 4) (ρ := 1 / 2)
-    (logd := 54 / 5) (by norm_num [theta]) (by norm_num [xi]) (by norm_num) (by norm_num)
+    (logd := 54 / 5) (by norm_num [theta]) (by norm_num) (by norm_num)
     (by norm_num [xi])
   exact ⟨hb, hv⟩
 
@@ -213,7 +267,6 @@ example :
     exact Nat.le_ceil _
   have hm2 : 2 ≤ m := by
     norm_num [m, d, H]
-  have hm : 0 < m := by omega
   have hd : 48000 ≤ d := by norm_num [d]
   have hr : r < m := by have := hm2; omega
   have hHlower : 54 / 5 ≤ H := by norm_num [H]
@@ -226,11 +279,10 @@ example :
   have hgm : 270 * d * H ≤ g * m := by
     norm_num [d, H, g] at hsize ⊢
     nlinarith
-  have hcenter := centeringErrorBounds d m g H hd hm (by norm_num [g]) (by norm_num [H])
+  have hcenter := centeringErrorBounds d m g H hd
     hHlower hHupper hgH hsize hgm
-  have hfiber := prescribedFiberMeanVariance_le d m r W g H 1 hd hm hr (by norm_num [g])
-    (by norm_num [H]) hHlower hHupper hgH (by norm_num [theta, xi, g, H]) hsize hgm rfl
-    (by norm_num) (by norm_num)
+  have hfiber := prescribedFiberMeanVariance_le d m r W g H 1 hd hr hHlower hHupper hgH
+    (by norm_num [theta, xi, g, H]) hsize hgm rfl (by norm_num) (by norm_num)
   refine ⟨hcenter, ?_⟩
   dsimp only [g, W] at hfiber
   simpa only [one_mul, mul_one] using hfiber
@@ -240,7 +292,7 @@ example :
 /-- At `δ = 1 / 4`, `ρ = 1 / 2`, `θ = 3 / 8` the closed form gives
 `(1 + θ g) / g = (1 / 2 + 3 / 32) / (1 / 4) = 19 / 8 ≤ 4 = 1 / δ`. -/
 example : (1 + theta * rateGap (1 / 4) (1 / 2)) / rateGap (1 / 4) (1 / 2) = 19 / 8 := by
-  rw [one_add_mul_rateGap_div theta (by norm_num) (by norm_num)]
+  rw [one_add_mul_rateGap_div theta (by norm_num)]
   norm_num [theta]
 
 example : (1 : ℝ) ≤ rateGap (1 / 2) (1 / 2) * 2 :=

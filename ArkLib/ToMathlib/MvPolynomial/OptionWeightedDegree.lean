@@ -7,6 +7,8 @@ module
 
 public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.RingTheory.MvPolynomial.Homogeneous
+public import ArkLib.Data.MvPolynomial.WeightedDegree
+public import ArkLib.ToMathlib.Finsupp.Weight
 
 /-!
 # Weighted degree after moving one variable into the coefficient ring
@@ -30,6 +32,8 @@ ignores `none`.
 * `MvPolynomial.weightedTotalDegree_optionEquivRight`: the weighted-degree identity for any `w`.
 * `MvPolynomial.totalDegree_optionEquivRight`: the case `w = 1`.
 * `MvPolynomial.degreeOf_optionEquivRight`: the degree in each remaining variable.
+* `MvPolynomial.degreeOf_coeff_optionEquivLeft_add_le_weight`: a coefficient-degree triangle for
+  a polynomial variable and the distinguished coefficient variable.
 
 Additivity under multiplication and monotonicity under divisibility over a ring without zero
 divisors need no separate statement here: they are `MvPolynomial.weightedTotalDegree_mul` and
@@ -111,9 +115,9 @@ theorem optionEquivRight_coeff_coeff
     · subst m
       have hnone : d none = i := by
         simpa using congrArg (fun e : Option σ →₀ ℕ ↦ e none) him
-      rw [Polynomial.coeff_monomial, ite_eq_left_of_eq_true _ _ (eq_true hnone)]
+      rw [Polynomial.coeff_monomial_apply, ite_eq_left_of_eq_true _ _ (eq_true hnone)]
     · subst m
-      rw [Polynomial.coeff_monomial, ite_eq_right_of_eq_false _ _ (eq_false ?_)]
+      rw [Polynomial.coeff_monomial_apply, ite_eq_right_of_eq_false _ _ (eq_false ?_)]
       intro hnone
       apply him
       rw [← hnone]
@@ -185,5 +189,49 @@ theorem degreeOf_optionEquivRight (p : MvPolynomial (Option σ) R) (i : σ) :
     _ = p.weightedTotalDegree (Pi.single (some i) 1) := by
       rw [weightedTotalDegree_optionEquivRight, hw]
     _ = degreeOf (some i) p := weightedTotalDegree_piSingle _ _
+
+/-- After making `none` the outer univariate variable, the degree in a remaining variable `j`
+of its coefficient at order `i`, plus the extracted exponent `i`, is bounded by the original
+weighted degree for `i ≤ degreeOf none V`, when `none` has weight at least one and `some j`
+has weight one. -/
+theorem degreeOf_coeff_optionEquivLeft_add_le_weight
+    (w : Option σ → ℕ) (j : σ) (hwNone : 1 ≤ w none) (hwSome : w (some j) = 1)
+    (V : MvPolynomial (Option σ) R) (i b : ℕ) (hi : i ≤ b)
+    (hdegree : degreeOf none V = b) :
+    degreeOf j ((optionEquivLeft R σ V).coeff i) + i ≤ V.weightedTotalDegree w := by
+  classical
+  have hiweight : i ≤ V.weightedTotalDegree w := by
+    calc
+      i ≤ b := hi
+      _ = degreeOf none V := hdegree.symm
+      _ ≤ V.weightedTotalDegree w := degreeOf_le_weightedTotalDegree w none hwNone V
+  have hdeg : degreeOf j ((optionEquivLeft R σ V).coeff i) ≤
+      V.weightedTotalDegree w - i := by
+    apply degreeOf_le_iff.mpr
+    intro u hu
+    have hexp : u.embDomain .some + Finsupp.single none i = u.optionElim i := by
+      ext (_ | k) <;> simp
+    have hsource : u.embDomain .some + Finsupp.single none i ∈ V.support := by
+      rw [hexp]
+      exact (mem_support_coeff_optionEquivLeft R).mp hu
+    have hle := le_weightedTotalDegree w hsource
+    have hemb : Finsupp.weight w (u.embDomain .some) =
+        Finsupp.weight (fun k ↦ w (some k)) u := by
+      rw [Finsupp.weight_apply, Finsupp.sum_embDomain, ← Finsupp.weight_apply]
+      rfl
+    have hcoord : u j ≤ Finsupp.weight (fun k ↦ w (some k)) u := by
+      have hterm := Finsupp.apply_smul_le_weight (fun k ↦ w (some k)) u j
+      simpa [hwSome] using hterm
+    have hiweight' : i ≤ i * w none := by
+      calc
+        i = i * 1 := by simp
+        _ ≤ i * w none := Nat.mul_le_mul_left i hwNone
+    have hsingle : u j + i ≤
+        (u.embDomain .some + Finsupp.single none i).weight w := by
+      rw [map_add, hemb, Finsupp.weight_single]
+      simpa only [Nat.nsmul_eq_mul] using add_le_add hcoord hiweight'
+    have hbound := hsingle.trans hle
+    omega
+  omega
 
 end MvPolynomial

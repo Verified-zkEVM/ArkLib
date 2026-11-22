@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
-public import Mathlib.Algebra.Polynomial.Roots
+public import ArkLib.Data.Probability.Instances
 
 /-! # One-round soundness for the actual closed Sumcheck execution
 
@@ -53,13 +53,13 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     (p q : Message F deg) (domain : List F) (target : F) :
     executeCommitted F deg challenge p q domain target =
       committedRun F deg p q domain target <$> challenge := by
-  simp only [executeCommitted, executeCore, _root_.Interaction.Oracle.Reduction.execute,
+  simp only [executeCommitted, executeCore_eq_execute, _root_.Interaction.Oracle.Reduction.execute,
     sampledClaimReduction, pure_bind]
   simp only [executeStrategies, prover, sampledClaimVerifier, protocol,
     Protocol.oracleWith_tree, Protocol.oracleWith_roles, Protocol.oracleWith_oracles,
     Protocol.public_tree, Protocol.public_roles, Protocol.public_oracles,
     Protocol.done_tree, Protocol.done_roles, Protocol.done_oracles,
-    Verifier.toCounterpart,
+    Verifier.toCounterpart, Verifier.toCounterpartWith,
     TypeTree.toTypeTree_oracle, TypeTree.toTypeTree_public, TypeTree.toTypeTree_done,
     TypeTree.RoleDecoration.toTypeTreeRoles_oracle,
     TypeTree.RoleDecoration.toTypeTreeRoles_public,
@@ -79,7 +79,8 @@ theorem executeCommitted_eq [DecidableEq F] (challenge : ProbComp F)
     rw [QueryImpl.simulateQ_liftComp_left_eq_of_apply _ (QueryImpl.id' unifSpec)
       (fun _ => rfl), simulateQ_id']
   simp only [id_eq, simulateQ_bind, simulateQ_pure, hc, bind_assoc, pure_bind,
-    simulateQ_map, simulate_terminal, map_pure]
+    simulateQ_map, TypeTree.accessAfter_oracle, TypeTree.accessAfter_public,
+    TypeTree.accessAfter_done, simulate_terminal, map_pure]
   simp only [bind_pure_comp]
   congr 1
   funext r
@@ -134,24 +135,15 @@ theorem executeCommitted_soundness (p q : Message F deg) (domain : List F) (targ
         (deg : ENNReal) / Fintype.card F := by
   rw [executeCommitted_eq, prEvent_map]
   by_cases hsum : (domain.map (fun x => q.val.eval x)).sum = target
-  · have hne : p.val - q.val ≠ 0 := by
-      intro h
-      have hpq := sub_eq_zero.mp h
-      exact hfalse (hpq ▸ hsum)
-    have hcard : (Finset.univ.filter (fun r => p.val.eval r = q.val.eval r)).card ≤ deg := by
-      apply (Polynomial.card_le_degree_of_subset_roots (p := p.val - q.val) ?_).trans
-      · exact natDegree_le_of_degree_le
-          ((degree_sub_le _ _).trans (max_le (message_degree F deg p) (message_degree F deg q)))
-      · intro r hr
-        apply (mem_roots hne).mpr
-        simpa only [IsRoot, eval_sub, sub_eq_zero] using (Finset.mem_filter.mp hr).2
+  · have hne : p.val ≠ q.val := fun h => hfalse (h ▸ hsum)
     have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun r => p.val.eval r = q.val.eval r) := by
       funext r
       exact propext ((committedRun_true_iff F deg p q domain target r).trans (and_iff_right hsum))
-    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r)),
-      SampleableType.prEvent_uniformSample]
-    gcongr
+    rw [prEvent_congr ($ᵗ F) _ _ (fun r => iff_of_eq (congrFun hevent r))]
+    exact Probability.prob_polynomial_eval_eq_le hne
+      (natDegree_le_of_degree_le (message_degree F deg p))
+      (natDegree_le_of_degree_le (message_degree F deg q))
   · have hevent : (fun r => (committedRun F deg p q domain target r).closed.map
         (closedOutputRelation F deg) = some True) = (fun _ => False) := by
       funext r

@@ -17,8 +17,8 @@ most are legitimate (overloaded interfaces, paper-shape vs general form).
 
 Usage::
 
-    python3 ./scripts/kb/find_dedup_candidates.py
-    python3 ./scripts/kb/find_dedup_candidates.py \
+    uv run --no-project --python 3.12 python ./scripts/kb/find_dedup_candidates.py
+    uv run --no-project --python 3.12 python ./scripts/kb/find_dedup_candidates.py \
         --in /tmp/decls.json --out /tmp/dedup.md --doc-threshold 0.9
 """
 

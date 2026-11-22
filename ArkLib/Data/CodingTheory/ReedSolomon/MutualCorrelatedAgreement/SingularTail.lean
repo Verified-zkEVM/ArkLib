@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.HybridConstants
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.FirstOrder.AutomaticBounds
 public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
 
@@ -28,6 +29,8 @@ where that bound is truncated. The analogous envelope in a challenge variable is
 
 The ordinary envelope also bounds a first-order squarefree list expression. Under a common
 incidence and degree bound, this expression is at most `7 C³ n q²`.
+For the automatic first-order parameters, the same expression is bounded by a rate-only constant
+times `n / eta²`.
 
 ## Main definitions
 
@@ -48,6 +51,8 @@ incidence and degree bound, this expression is at most `7 C³ n q²`.
   is bounded by a product envelope.
 * `ReedSolomon.FirstOrder.Squarefree.squarefreeListExpression_le_rate_envelope`: the list
   expression is bounded by `7 C³ n q²` under common incidence and degree bounds.
+* `ReedSolomon.FirstOrder.Squarefree.automaticSquarefreeListExpression_le`: the automatic
+  parameters give an inverse-square slack bound for the list expression.
 
 ## References
 
@@ -101,7 +106,8 @@ theorem content_add_resultantDegree_le {B M bU j r d : ℕ} (hrM : r ≤ M) (hMB
   obtain ⟨f, rfl⟩ := Nat.exists_eq_add_of_le hMB
   rw [show 2 * (s + 1 + e) - 1 = 2 * s + 2 * e + 1 by omega]
   rw [show 2 * (s + 1) - 1 = 2 * s + 1 by omega] at hresultant
-  nlinarith [Nat.mul_le_mul_left (2 * s + 1) hbudget, Nat.zero_le (e * f), Nat.zero_le (s * bU)]
+  linarith [Nat.mul_le_mul_left (2 * s + 1) hbudget, Nat.zero_le (e * f), Nat.zero_le (s * bU),
+    Nat.zero_le (e * e)]
 
 /-- The ordinary envelope is at most `B + 2 * B * M`. -/
 theorem ordinaryDegreeEnvelope_le (B M : ℕ) : ordinaryDegreeEnvelope B M ≤ B + 2 * B * M := by
@@ -113,73 +119,129 @@ theorem ordinaryDegreeEnvelope_le (B M : ℕ) : ordinaryDegreeEnvelope B M ≤ B
 `4 λ D B M + 2 B M + B`. -/
 theorem squarefreeListExpression_le
     {D B M : ℕ} {lambda : ℝ}
-    (hD : 1 ≤ D) (hM : 1 ≤ M) (hMB : M ≤ B) (hlambda : 0 ≤ lambda) :
+    (hD : 1 ≤ D) (hM : 1 ≤ M) (hlambda : 0 ≤ lambda) :
     (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
         ordinaryDegreeEnvelope B M ≤
       4 * D * B * M * lambda + 2 * B * M + B := by
   have hstageNat :
       firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) ≤ 4 * D * B * M := by
-    calc
-      _ ≤ 2 * D * M * (2 * B - M) :=
-        firstOrderCurveFiberStageOne_regularTaylorExponent_le hD hM hMB
-      _ ≤ 4 * D * B * M := by
-        have hsub : 2 * B - M ≤ 2 * B := Nat.sub_le _ _
-        calc
-          2 * D * M * (2 * B - M) ≤ 2 * D * M * (2 * B) :=
-            Nat.mul_le_mul_left _ hsub
-          _ = 4 * D * B * M := by ring
+    by_cases hMB : M ≤ B
+    · calc
+        _ ≤ 2 * D * M * (2 * B - M) :=
+          firstOrderCurveFiberStageOne_regularTaylorExponent_le hD hM hMB
+        _ ≤ 4 * D * B * M := by
+          have hsub : 2 * B - M ≤ 2 * B := Nat.sub_le _ _
+          calc
+            2 * D * M * (2 * B - M) ≤ 2 * D * M * (2 * B) :=
+              Nat.mul_le_mul_left _ hsub
+            _ = 4 * D * B * M := by ring
+    · unfold firstOrderCurveFiberStageOne MvPolynomial.cappedDegreeMixedVolume
+      let c := firstOrderTaylorDerivativeCap (D + 1) B M (regularTaylorExponent D)
+      have hcb : c ≤ firstOrderTaylorTotalCap B (regularTaylorExponent D) :=
+        firstOrderTaylorDerivativeCap_le_totalCap ..
+      by_cases hB : B = 0
+      · subst B
+        have hc : c = 1 := by
+          dsimp [c, firstOrderTaylorDerivativeCap, firstOrderTaylorTotalCap]
+          omega
+        change 0 * c + M * (1 - c) ≤ _
+        simp [hc]
+      · have hcap : firstOrderTaylorTotalCap B (regularTaylorExponent D) ≤ 2 * D * B := by
+          unfold firstOrderTaylorTotalCap regularTaylorExponent
+          nlinarith [Nat.sub_le (2 * D) 3, Nat.sub_add_cancel (by omega : 1 ≤ B)]
+        change B * c + M * (firstOrderTaylorTotalCap B (regularTaylorExponent D) - c) ≤ _
+        nlinarith [Nat.mul_le_mul_right c (Nat.le_of_lt (Nat.lt_of_not_ge hMB)),
+          Nat.sub_add_cancel hcb, Nat.mul_le_mul_left M hcap]
   have hstage :
       (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) ≤
         4 * D * B * M := by
     exact_mod_cast hstageNat
   have htail : (ordinaryDegreeEnvelope B M : ℝ) ≤ B + 2 * B * M := by
     exact_mod_cast ordinaryDegreeEnvelope_le B M
-  nlinarith [mul_le_mul_of_nonneg_right hstage hlambda]
+  linarith [mul_le_mul_of_nonneg_right hstage hlambda]
+
+/-- If `1 ≤ C` and `1 ≤ n`, then `(C q)² ≤ C³ n q²`. -/
+theorem mul_sq_le_rate_envelope {C : ℝ} (q : ℝ) {n : ℕ} (hC : 1 ≤ C) (hn : 1 ≤ n) :
+    (C * q) ^ 2 ≤ C ^ 3 * n * q ^ 2 := by
+  have hCn : 1 ≤ C * (n : ℝ) := one_le_mul_of_one_le_of_one_le hC (by exact_mod_cast hn)
+  calc
+    (C * q) ^ 2 = (C * q) ^ 2 * 1 := (mul_one _).symm
+    _ ≤ (C * q) ^ 2 * (C * n) := mul_le_mul_of_nonneg_left hCn (sq_nonneg _)
+    _ = C ^ 3 * n * q ^ 2 := by ring
+
+/-- If `1 ≤ C`, `1 ≤ q` and `1 ≤ n`, then `C q ≤ C³ n q²`. -/
+theorem mul_le_rate_envelope {C q : ℝ} {n : ℕ} (hC : 1 ≤ C) (hq : 1 ≤ q) (hn : 1 ≤ n) :
+    C * q ≤ C ^ 3 * n * q ^ 2 :=
+  (le_self_pow₀ (one_le_mul_of_one_le_of_one_le hC hq) two_ne_zero).trans
+    (mul_sq_le_rate_envelope q hC hn)
 
 /-- A common incidence ratio and two degree caps give the inverse-square slack envelope. -/
 theorem squarefreeListExpression_le_rate_envelope
     {C q lambda : ℝ} {n D B M : ℕ}
-    (hC : 1 ≤ C) (hq : 1 ≤ q) (hn : 1 ≤ n) (hD : 1 ≤ D) (hDn : D ≤ n)
+    (hC : 1 ≤ C) (hD : 1 ≤ D) (hDn : D ≤ n)
     (hM : 1 ≤ M) (hMB : M ≤ B) (hlambda0 : 0 ≤ lambda) (hlambda : lambda ≤ C)
     (hB : (B : ℝ) ≤ C * q) :
     (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
         ordinaryDegreeEnvelope B M ≤
       7 * C ^ 3 * n * q ^ 2 := by
-  have hraw := squarefreeListExpression_le hD hM hMB hlambda0
+  have hraw := squarefreeListExpression_le (B := B) hD hM hlambda0
   have hD' : (D : ℝ) ≤ n := by exact_mod_cast hDn
   have hM' : (M : ℝ) ≤ C * q := (Nat.cast_le.mpr hMB).trans hB
+  have hC0 : 0 ≤ C := zero_le_one.trans hC
+  have hCq0 : 0 ≤ C * q := (Nat.cast_nonneg B).trans hB
   have hrough :
       4 * (D : ℝ) * B * M * lambda + 2 * (B : ℝ) * M + B ≤
         4 * (n : ℝ) * (C * q) * (C * q) * C +
           2 * (C * q) * (C * q) + C * q := by
     gcongr
-  have hN : (1 : ℝ) ≤ n := by exact_mod_cast hn
-  have hC0 : 0 ≤ C := zero_le_one.trans hC
-  have hq0 : 0 ≤ q := zero_le_one.trans hq
-  have hx : 1 ≤ C * q := by
-    nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hq)]
-  have hCN : 1 ≤ C * (n : ℝ) := by
-    nlinarith [mul_nonneg (sub_nonneg.mpr hC) (sub_nonneg.mpr hN)]
-  have htwo : (C * q) * (C * q) ≤ C ^ 3 * n * q ^ 2 := by
-    have hnonneg : 0 ≤ (C * q) ^ 2 := sq_nonneg _
-    have hmul : (C * q) ^ 2 ≤ (C * q) ^ 2 * (C * n) := by
-      nlinarith [mul_nonneg hnonneg (sub_nonneg.mpr hCN)]
-    nlinarith [hmul]
-  have hone : C * q ≤ C ^ 3 * n * q ^ 2 := by
-    have hsquare : C * q ≤ (C * q) ^ 2 := by
-      nlinarith [mul_nonneg (mul_nonneg hC0 hq0) (sub_nonneg.mpr hx)]
-    exact hsquare.trans (by simpa only [pow_two] using htwo)
-  calc
+  have htwo := mul_sq_le_rate_envelope q hC (hD.trans hDn)
+  have hCq : 1 ≤ C * q := (by exact_mod_cast hM.trans hMB : (1 : ℝ) ≤ B).trans hB
+  have hone := (le_self_pow₀ hCq two_ne_zero).trans htwo
+  linarith
+
+/-- A rate-only coefficient for the squarefree inverse-square list envelope. -/
+noncomputable def automaticSquarefreeListBoundConstant (rho : ℝ) : ℝ :=
+  7 * automaticRateEnvelopeConstant rho ^ 3
+
+/-- The automatic squarefree list expression is bounded by a
+rate-only constant times `n / eta²`. -/
+theorem automaticSquarefreeListExpression_le
+    {rho eta : ℝ} {n D A : ℕ}
+    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (haOne : firstOrderRateThreshold rho + eta < 1)
+    (hD : 1 ≤ D) (hDn : D ≤ n)
+    (hDrate : (D : ℝ) ≤ rho * n)
+    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A) :
+    let B := automaticJetDegree rho (firstOrderRateThreshold rho + eta)
+    let M := automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)
+    let lambda := agreementIncidenceRatio n D A
     (firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) : ℝ) * lambda +
-          ordinaryDegreeEnvelope B M ≤
-        4 * (D : ℝ) * B * M * lambda + 2 * (B : ℝ) * M + B := by
-      simpa only [Nat.cast_mul, Nat.cast_ofNat] using hraw
-    _ ≤ 4 * (n : ℝ) * (C * q) * (C * q) * C +
-          2 * (C * q) * (C * q) + C * q := hrough
-    _ = 4 * (C ^ 3 * n * q ^ 2) + 2 * ((C * q) * (C * q)) + C * q := by ring
-    _ ≤ 4 * (C ^ 3 * n * q ^ 2) + 2 * (C ^ 3 * n * q ^ 2) +
-          C ^ 3 * n * q ^ 2 := by gcongr
-    _ = 7 * C ^ 3 * n * q ^ 2 := by ring
+        ordinaryDegreeEnvelope B M ≤
+      automaticSquarefreeListBoundConstant rho * n / eta ^ 2 := by
+  dsimp only
+  obtain ⟨hC, _, hIncidence0, hIncidence, _, hJetDegree⟩ :=
+    automaticRateIncidenceJetBounds hrho hrhoOne heta haOne hDrate hA
+  let B := automaticJetDegree rho (firstOrderRateThreshold rho + eta)
+  let M := automaticDerivativeCap rho (firstOrderRateThreshold rho + eta)
+  have hB : 1 ≤ B := automaticJetDegree_pos hrho hrhoOne (by linarith)
+  by_cases hM : 1 ≤ M
+  · have hbound := squarefreeListExpression_le_rate_envelope hC hD hDn hM
+      (min_le_right _ _) hIncidence0 hIncidence (hJetDegree.trans_eq (div_eq_mul_one_div _ _))
+    rwa [one_div_pow, ← div_eq_mul_one_div] at hbound
+  have hMzero : M = 0 := by omega
+  have hstage : firstOrderCurveFiberStageOne (D + 1) B M (regularTaylorExponent D) ≤
+      firstOrderCurveFiberStageOne (D + 1) B 1 (regularTaylorExponent D) :=
+    firstOrderCurveFiberStageOne_mono_derivative (by omega) hB
+  have htail : ordinaryDegreeEnvelope B M ≤ ordinaryDegreeEnvelope B 1 := by
+    rw [hMzero, ordinaryDegreeEnvelope_zero]
+    exact self_le_ordinaryDegreeEnvelope B 1
+  have hbound := squarefreeListExpression_le_rate_envelope hC hD hDn le_rfl hB
+    hIncidence0 hIncidence (hJetDegree.trans_eq (div_eq_mul_one_div _ _))
+  rw [one_div_pow, ← div_eq_mul_one_div] at hbound
+  exact (add_le_add (mul_le_mul_of_nonneg_right (Nat.cast_le.mpr hstage) hIncidence0)
+    (Nat.cast_le.mpr htail)).trans hbound
+
+
 
 /-- The degree envelope `(2 * M - 1) * H` in the challenge variable, for a challenge-degree budget
 `H` and a bound `M` on the degree in the root variable. -/

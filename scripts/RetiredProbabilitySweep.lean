@@ -9,14 +9,14 @@ import Lean
 # Retired-probability sweep: the native-measure conversion ledger
 
 Walks the compiled environment and reports every declaration in `ArkLib.*` modules whose
-statement or body *directly* references a retiring probability surface: VCVio's scalar
+statement or body *directly* references a retired probability surface: VCVio's former scalar
 evaluation functions and compatibility classes (`probOutput`, `probEvent`, `probFailure`,
-`evalSPMF`, `SPMF`, `NeverFail`, `EvalDistCompatible`, `DiscreteEvalDistCompatible`), the
+`evalSPMF`, `SPMF`, `NeverFail`, `EvalDistCompatible`, `DiscreteEvalDistCompatible`), the former
 PMF-based oracle specifications (`OracleSpec.IsUniformSpec`, `OracleSpec.IsProbabilitySpec`,
-`PFunctor.IsProbabilitySpec`), and Mathlib's `PMF`. VCVio tracks the same family with its
-`usesRetiredProbability` environment linter; ArkLib does not run environment linters in its
-validation gate and its own PMF notation emits no deprecation warning, so this executable is the
-repository's measure of conversion debt.
+`PFunctor.IsProbabilitySpec`), and Mathlib's `PMF`. VCVio no longer provides the first two groups
+and keeps `PMF` out of its own libraries with its `usesPMF` environment linter; ArkLib does not run
+environment linters in its validation gate, so this executable is the repository's measure of
+conversion debt.
 
 The check is direct rather than transitive: a declaration is reported only if one of its own
 constants is retired, not because a dependency is. That is the semantic dependency the

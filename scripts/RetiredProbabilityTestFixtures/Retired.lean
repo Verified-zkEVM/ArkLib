@@ -2,7 +2,7 @@ import Mathlib.Probability.Distributions.Uniform
 
 namespace RetiredProbabilityTestFixtures.Retired
 
-noncomputable def oldDistribution : PMF Bool := PMF.uniformOfFintype Bool
+noncomputable def oldDistribution : PMF Bool := PMF.pure false
 
 theorem retiredInType (p : PMF Bool) : p = p := rfl
 

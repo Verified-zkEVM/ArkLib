@@ -11,7 +11,7 @@ public import ArkLib.Commitments.Ordinary.Basic
   # Simple Random-Oracle Commitment Scheme
 
   A simple non-interactive commitment scheme in the random-oracle model, expressed as an
-  *ordinary* commitment scheme (VCV-io's `CommitmentScheme`):
+  *ordinary* commitment scheme (VCVio's `CommitmentScheme`):
 
   - The public parameter is the random oracle itself, modeled as a uniformly sampled function
     `ro : α × β → γ`. Over finite query and response spaces a uniformly random function is exactly
@@ -22,16 +22,16 @@ public import ArkLib.Commitments.Ordinary.Basic
     `ro (v, r)` and checks that it equals `cm`.
 
   Because opening reveals the whole message `v` (rather than an oracle evaluation of hidden data),
-  this is an *ordinary* commitment, so it instantiates VCV-io's oracle-free
-  `CommitmentScheme PP M C D` directly. It mirrors VCV-io's standard-model hash commitment
+  this is an *ordinary* commitment, so it instantiates VCVio's oracle-free
+  `CommitmentScheme PP M C D` directly. It mirrors VCVio's standard-model hash commitment
   `CollisionResistance.KeyedHashFamily.toCommitment`, with a random oracle in place of a keyed
   hash family. For commitments with oracle openings, see `ArkLib.Commitments.Functional.Basic`.
 
   DISCLAIMER: this works but is a bit weird — it's an oracle commitment scheme without an oracle.
-  VCV-io's `CommitmentScheme` only supports `ProbComp` (`OracleComp unifSpec`), not a general
+  VCVio's `CommitmentScheme` only supports `ProbComp` (`OracleComp unifSpec`), not a general
   `OracleComp`, so the random oracle is baked in as a sampled function `ro : α × β → γ`. Two
   cleaner fixes: (1) model it as a functional commitment whose function just opens the whole
-  commitment (weird, since it's then not really functional), or (2) extend VCV-io's
+  commitment (weird, since it's then not really functional), or (2) extend VCVio's
   `CommitmentScheme` to support a general `OracleComp`, not just `ProbComp`.
 -/
 

@@ -11,7 +11,7 @@ public import Mathlib.Data.Finset.Lattice.Basic
 public import Mathlib.Data.Finset.SDiff
 public import Mathlib.Data.Finset.Card
 public import Mathlib.Tactic.Cases
-public import Mathlib.Tactic.LinearCombinationPrime
+public import Mathlib.Tactic.LinearCombination
 
 /-!
   This module provides tools for picking a
@@ -59,8 +59,7 @@ lemma pick_subset_subset {s : Finset α} {n : ℕ} :
   | zero => simp
   | succ n ih =>
     by_cases h : (s \ s.pickSubset n).Nonempty
-      <;> try
-        (simp only [pickSubset, h, ↓reduceDIte, ih, singleton_union])
+      <;> simp only [pickSubset, h, ↓reduceDIte, ih, singleton_union]
     rw [Finset.insert_subset_iff]
     have h_choose := Classical.choose_spec (Finset.Nonempty.exists_mem h)
     aesop

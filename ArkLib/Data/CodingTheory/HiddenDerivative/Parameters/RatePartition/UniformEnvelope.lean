@@ -6,7 +6,9 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.ClosedMultiplicity
+public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.BlockLength
 public import ArkLib.Data.CodingTheory.HiddenDerivative.Parameters.RatePartition.UniformGamma
+public import Mathlib.Algebra.CharP.Algebra
 
 /-!
 # Uniform finite-parameter envelopes for rate partition
@@ -21,6 +23,8 @@ depend on the actual message dimension. Its closed-multiplicity finite ratio exc
   interpolation multiplicity.
 * `exists_ratePartitionEnvelope`: the envelope exists from the multiplicity, size and ratio bounds.
 * `exists_uniformRatePartitionEnvelope`: the executable recipe supplies those bounds.
+* `uniformEnvelope_exactAgreementGuards`: the shared numerical and characteristic guards for
+  uniform exact-agreement certificate endpoints.
 
 ## References
 
@@ -101,7 +105,7 @@ private theorem finiteRatio_gt_of_uniformRateGamma {δ rate agreement : ℝ}
 
 /-- Choose an interpolation envelope from a multiplicity, size bound, and finite-ratio bounds. -/
 theorem exists_ratePartitionEnvelope {δ : ℝ} {m n k A : ℕ}
-    (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hk : 0 < k)
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n)
     (hmorder : uniformDerivativeOrder δ + 2 ≤ m)
     (hsize : (m : ℝ) ≤ δ ^ 2 * n)
@@ -112,15 +116,18 @@ theorem exists_ratePartitionEnvelope {δ : ℝ} {m n k A : ℕ}
     Nonempty (RatePartitionEnvelope δ m n k A) := by
   have hδone : δ < 1 := by linarith
   have hm : 0 < m := by omega
-  have hkA : k ≤ A := by
-    have : (k : ℝ) ≤ A := by nlinarith [Nat.cast_nonneg n (α := ℝ)]
-    exact_mod_cast this
-  have hnpos : 0 < n := hk.trans_le (hkA.trans hAn)
+  have hnpos : 0 < n := by
+    by_contra hn
+    have hnzero : n = 0 := by omega
+    simp only [hnzero, Nat.cast_zero, mul_zero] at hsize
+    exact (not_le_of_gt (Nat.cast_pos.mpr hm)) hsize
   have hnR : (0 : ℝ) < n := by exact_mod_cast hnpos
   by_cases hhighRate : δ ^ 2 * n ≤ k
   · let R : ℝ := (k : ℝ) / n
     let a : ℝ := R + δ
-    have hRpos : 0 < R := by dsimp [R]; positivity
+    have hRpos : 0 < R := by
+      apply div_pos _ hnR
+      exact (mul_pos (sq_pos_of_pos hδ) hnR).trans_le hhighRate
     have hRa : R < a := by dsimp [a]; linarith
     have hRlow : δ ^ 2 ≤ R := by
       dsimp [R]
@@ -168,11 +175,12 @@ theorem exists_ratePartitionEnvelope {δ : ℝ} {m n k A : ℕ}
 /-- The executable multiplicity supplies the bounds for the shared rate-partition envelope. -/
 theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
-    (hn : uniformBlockThreshold δ ≤ n) (hk : 0 < k)
+    (hn : uniformBlockThreshold δ ≤ n)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
     Nonempty (RatePartitionEnvelope δ (uniformMultiplicity δ) n k A) := by
   have hδone : δ < 1 := by linarith
-  have hd500 := uniformDerivativeOrder_ge_500 hδ hδsmall
+  have hd500 : 500 ≤ uniformDerivativeOrder δ :=
+    (by norm_num : 500 ≤ 519).trans (uniformDerivativeOrder_ge_519 hδ hδsmall)
   have hmorder : uniformDerivativeOrder δ + 2 ≤ uniformMultiplicity δ :=
     add_two_le_uniformMultiplicity δ
   obtain ⟨hsize', _hmn, _hν, _hνn⟩ :=
@@ -191,6 +199,43 @@ theorem exists_uniformRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     have hRa : R ≤ R + δ := by linarith
     exact finiteRatio_gt_of_uniformRateGamma hd500 hRpos hRa
       (uniformRateGamma_high_gt hδ hδsmall hRlow hRtop)
-  exact exists_ratePartitionEnvelope hδ hδsmall hk hgap hAn hmorder hsize hlow hhigh
+  exact exists_ratePartitionEnvelope hδ hδsmall hgap hAn hmorder hsize hlow hhigh
+
+/-- The uniform envelope and block threshold give the common numerical and characteristic
+guards needed by exact-agreement certificate endpoints. -/
+theorem uniformEnvelope_exactAgreementGuards {F : Type*} [Semiring F]
+    {δ : ℝ} {n k A : ℕ}
+    (e : RatePartitionEnvelope δ (uniformMultiplicity δ) n k A)
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
+    (hn : uniformBlockThreshold δ ≤ n)
+    (hchar : ringChar F = 0 ∨ n ≤ ringChar F) :
+    500 ≤ uniformDerivativeOrder δ ∧ δ < 1 ∧ 0 < uniformJetCap δ ∧
+      uniformJetCap δ < n ∧ 1 < 1000 * (uniformDerivativeOrder δ : ℝ) ^ 3 ∧ k ≤ A ∧
+      (ringChar F = 0 ∨
+        max (e.ambientDegree + 1 - 1) (uniformJetCap δ) < ringChar F) := by
+  have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
+  have hd500 : 500 ≤ uniformDerivativeOrder δ :=
+    (by norm_num : 500 ≤ 519).trans hd
+  have hδone : δ < 1 := by linarith
+  obtain ⟨_, _, hν, hνn⟩ := uniformBlockThreshold_guards hδ hδone.le hn
+  have hscale : (1 : ℝ) < 1000 * (uniformDerivativeOrder δ : ℝ) ^ 3 := by
+    have hd' : (500 : ℝ) ≤ uniformDerivativeOrder δ := by exact_mod_cast hd500
+    nlinarith [sq_nonneg (uniformDerivativeOrder δ : ℝ)]
+  have hkA : k ≤ A := by
+    have hnpos : (0 : ℝ) < n := by
+      exact_mod_cast (show 0 < n by have := e.ambient_le; omega)
+    have hambient : (e.ambientDegree : ℝ) < A :=
+      e.rate_upper.trans_lt ((mul_lt_mul_of_pos_right e.rate_lt_agreement hnpos).trans_le
+        e.agreement_lower)
+    have hambientNat : e.ambientDegree < A := by exact_mod_cast hambient
+    exact e.message_le.trans (by omega)
+  have hchar' : ringChar F = 0 ∨
+      max (e.ambientDegree + 1 - 1) (uniformJetCap δ) < ringChar F := by
+    apply hchar.imp_right
+    intro hc
+    have hambient_le := e.ambient_le
+    have hambient : e.ambientDegree + 1 - 1 < n := by omega
+    exact (max_lt hambient hνn).trans_le hc
+  exact ⟨hd500, hδone, hν, hνn, hscale, hkA, hchar'⟩
 
 end ReedSolomon.HiddenDerivative.RatePartition

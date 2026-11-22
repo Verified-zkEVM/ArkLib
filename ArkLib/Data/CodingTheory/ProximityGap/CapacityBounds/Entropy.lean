@@ -137,7 +137,7 @@ private theorem rs_entropy_rate_full_parameter_facts_proof
       n - f - k ≤ k + f := by
   obtain ⟨hmargin, hfpos, hflt, _⟩ :=
     rs_entropy_rate_parameter_facts q n k f hn hlo hhi
-  have hdle := rs_entropy_rate_d_le_kf_proof q n k f hq hn hlo
+  have hdle := rs_entropy_rate_d_le_kf_proof q n k f hq hlo
   exact ⟨hmargin, hfpos, hflt, by omega, hdle⟩
 
 private theorem rs_exact_error_exchange_fiber_card_le_proof
@@ -536,7 +536,7 @@ private theorem cs25CertificateSupport_lower_bound_proof
         (N : ℝ) * (q : ℝ) ^ (K - d) * ((AN : ℝ) + (N : ℝ)) := by
     exact_mod_cast hsqNat
   have hANcast : (AN : ℝ) = A := by
-    simpa only [AN, A, q, n] using cs25SecondMomentANat_cast_proof q n k f hqpos
+    simpa only [AN, A, q, n] using cs25SecondMomentANat_cast_proof q n k f
   have hsqSupport :
       ∑ w ∈ S, (X w : ℝ) ^ 2 ≤
         (N : ℝ) * (q : ℝ) ^ (K - d) * (A + (N : ℝ)) := by
@@ -752,7 +752,7 @@ private theorem cs25SecondMomentA_le_entropy_power_proof
   dsimp
   have hqNat : 0 < q := by omega
   have hqR : (0 : ℝ) < q := by exact_mod_cast hqNat
-  have hover := cs25OverlapSum_le_exp_two_sqrt q n k f hqNat
+  have hover := cs25OverlapSum_le_exp_two_sqrt q n k f
   have hexp := cs25_overlap_exp_le_entropy_power_proof q n f hq hnq hfpos hflt
   have hcomp :
       cs25OverlapSum q n k f ≤
@@ -826,7 +826,7 @@ private theorem cs25_second_momentA_small_of_entropy_rate_proof
         (n : ℝ) * H := by
     norm_num at hexp ⊢
     nlinarith only [hexp, hid]
-  have hshell0 := cs25_entropy_shell_le_choose_proof q n f hq hn hfpos hflt
+  have hshell0 := cs25_entropy_shell_le_choose_proof q n f hq hfpos hflt
   have hshell :
       (q : ℝ) ^ ((n : ℝ) * H) ≤ (Nat.choose n f : ℝ) * B := by
     simpa only [H, B, D, mul_assoc] using hshell0
@@ -860,8 +860,6 @@ private theorem rsFarWords_card_lt_of_entropy_rate_proof
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hq : 10 ≤ Fintype.card F)
-    (hnq : Fintype.card ι ≤ Fintype.card F)
-    (hf : f ≤ Fintype.card ι)
     (hlo :
       1 - qEntropy (Fintype.card F) ((f : ℝ) / Fintype.card ι) +
           2 / (Fintype.card ι : ℝ) +
@@ -897,16 +895,14 @@ private theorem rsFarWords_card_lt_of_entropy_rate_proof
         (by simpa only [q, n] using hdle)
   have hA : 0 ≤ A := by
     simpa only [A] using cs25SecondMomentA_nonneg_proof q n k f
-  have hN : 0 < N := by
-    dsimp [N]
-    exact Nat.choose_pos (by simpa only [n] using hf)
   have hAsm : ((q : ℝ) - 1) * A < (N : ℝ) := by
     simpa only [q, n, N, A] using
       cs25_second_momentA_small_of_entropy_rate_proof q n k f
-        (by simpa only [q] using hq) (by simpa only [q, n] using hnq) hn
+        (by simpa only [q] using hq)
+        (by simpa only [q, n] using Fintype.card_le_of_embedding domain) hn
         (by simpa only [q, n] using hlo) (by simpa only [n] using hhi)
   have hfinal := nat_card_lt_pow_pred_of_weighted_bound
-    q n N B.card A hq1 hn hN hA hAsm hweighted
+    q n N B.card A hq1 hA hAsm hweighted
   simpa only [q, n, B] using hfinal
 
 open scoped ProbabilityTheory in
@@ -916,8 +912,6 @@ private theorem rs_epsCa_eq_one_of_entropy_rate_impl
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)
-    (_hn_le_q : Fintype.card ι ≤ Fintype.card F)
-    (_hf_le : f ≤ Fintype.card ι)
     (_hδ_lo :
         1 - qEntropy (Fintype.card F) ((f : ℝ) / Fintype.card ι)
             + 2 / (Fintype.card ι : ℝ)
@@ -943,7 +937,7 @@ private theorem rs_epsCa_eq_one_of_entropy_rate_impl
     dsimp [C]
     simpa [rsFarWords] using
       rsFarWords_card_lt_of_entropy_rate_proof domain k f
-        _hq_ge _hn_le_q _hf_le _hδ_lo _hδ_hi
+        _hq_ge _hδ_lo _hδ_hi
   obtain ⟨u0, hu0⟩ :=
     exists_base_all_translates_close_of_bad_count C v f hbad
   let u : Code.WordStack F (Fin 2) ι :=
@@ -983,8 +977,6 @@ theorem rs_epsCa_eq_one_of_entropy_rate
     [SampleableType F]
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)
-    (_hn_le_q : Fintype.card ι ≤ Fintype.card F)
-    (_hf_le : f ≤ Fintype.card ι)
     (_hδ_lo :
         1 - qEntropy (Fintype.card F) ((f : ℝ) / Fintype.card ι)
             + 2 / (Fintype.card ι : ℝ)
@@ -999,7 +991,7 @@ theorem rs_epsCa_eq_one_of_entropy_rate
     epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ δ = 1 := by
   classical
   exact rs_epsCa_eq_one_of_entropy_rate_impl domain k f
-    _hq_ge _hn_le_q _hf_le _hδ_lo _hδ_hi
+    _hq_ge _hδ_lo _hδ_hi
 
 end ReedSolomon
 
