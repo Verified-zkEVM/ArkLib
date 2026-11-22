@@ -12,6 +12,10 @@ ArkLib/
     Core/             rebuilt interaction core on PolyFun trees (staged migration)
   Relation/           claims, witness relations, and oracle data families
   OracleReduction/    core IOR abstractions and security theory
+  InteractiveProof/   honest protocols and public-coin security
+  NonInteractiveArgument/  honest arguments, adaptive games, and Fiat–Shamir
+    FiatShamir/       canonical and duplex-sponge Fiat–Shamir
+  Security/           shared game execution and private-coin operations
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
   ProofSystem/        protocol families and higher-level proofs
@@ -74,11 +78,39 @@ home_page/            site assets and assembled website root
   errors (`StateRestorationBudget`). The measured forms are described under measured extraction
   below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the interaction-layer Sumcheck client.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
-  layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
-  `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
-  random-oracle completeness.
-  Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
-  round and optional-run factorization lemmas live in `Execution.lean`.
+  layer while protocol clients migrate. Core transcript operations live in `ProtocolSpec/Basic.lean`.
+  Message and challenge prefix lemmas live in `ProtocolSpec/PrefixLemmas.lean`. Round and
+  optional-run factorization lemmas live in `Execution.lean`.
+- `ArkLib/InteractiveProof/IP.lean` owns the honest protocol interface and its compatibility
+  with the legacy reduction. `Soundness.lean` owns adaptive interactive security.
+  `StateRestorationSoundness.lean` owns the general and ordinary `IP` state-restoration
+  games and private-coin preservation lemmas. `ZeroKnowledge.lean` defines honest-verifier zero
+  knowledge. These modules reuse the legacy protocol specification and executor.
+- `ArkLib/NonInteractiveArgument/NARG.lean` owns the honest argument interface and completeness,
+  along with adaptive soundness and knowledge-soundness games and statement-size restrictions.
+  `ZeroKnowledge.lean` defines the two-stage adaptive simulation games.
+  `Legacy.lean` adapts legacy one-message reductions and transports their experiments across
+  private-sampling adapters.
+- `ArkLib/NonInteractiveArgument/FiatShamir/` contains the canonical and duplex-sponge compilers
+  and their security proofs. `Canonical/Construction.lean` contains both canonical variants
+  and their shared round runner. `Canonical/Completeness.lean` states the unsalted
+  and single-salt theorems. Their common proofs live in `Canonical/Completeness/Shared.lean`.
+  `Canonical/Completeness/SingleSalt.lean` relates the single-salt run to that shared core
+  and proves the fixed-oracle, random-oracle, and application completeness results.
+  `DuplexSponge/Completeness.lean` exposes the DSFS completeness results.
+  Acceptance tests live in `ArkLibTest/NonInteractiveArgument/FiatShamir/`.
+  Its `Completeness.lean` covers fixed-function counterexamples and random-oracle completeness.
+- `ArkLib/Security/` contains only shared security machinery: `Game.lean` initializes
+  and executes a shared oracle, and `PrivateCoins.lean` separates private samples from
+  public-query budgets and logs. With `open scoped QueryImpl`, `left + right` also combines
+  handlers in different monads when one lifts into the other. Same-monad sums keep their existing
+  meaning; otherwise the left monad is preferred, then the right. Use `addLift` with an explicit
+  target when both handlers need lifting into a third monad. The lemmas `QueryImpl.add_lift_right`
+  and `QueryImpl.add_lift_left` normalize the inferred lifts for existing sum lemmas.
+  These modules import neither interaction layer. The `NARG.lean` and `ZeroKnowledge.lean` tests
+  in `ArkLibTest/NonInteractiveArgument/` exercise this boundary; `Legacy.lean` tests its adapters.
+  Shared private-coin tests live in `ArkLibTest/Security/PrivateCoins.lean`, and interactive-proof
+  clients, including SR sampling tests, live in `ArkLibTest/InteractiveProof/`.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
   admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
   `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
@@ -224,6 +256,84 @@ home_page/            site assets and assembled website root
   that are not yet formalized.
 
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
+- `DuplexSponge/Defs.lean` defines the duplex sponge interface.
+  `D_𝔖.sample` samples the hash function and permutation eagerly; `D_𝔖.answer` and
+  `D_𝔖.withOracle` interpret that shared realization. This construction does not provide a lazy
+  permutation backend. The reference protocol runner lives in
+  `DuplexSponge/Security/Proofs/Execution.lean`.
+- `InteractiveProof/IP.lean` owns `InteractiveProver`, `InteractiveVerifier`, and
+  `InteractiveProtocol`. `NonInteractiveArgument/NARG.lean` owns the honest prover and
+  verifier interface. The compilers in `FiatShamir/Canonical/Construction.lean` and
+  `FiatShamir/DuplexSponge/Construction.lean` expose NARG-string generation and Boolean
+  verification as functions.
+  Explicit `toReductionProver`, `toReductionVerifier`, and `toReduction` adapters retain the
+  existing security machinery. Exact computation equalities connect the application compilers
+  to those compatibility views without changing oracle effects. See
+  [fiat-shamir.md](fiat-shamir.md) for entry points and hypotheses.
+- `FiatShamir/Codec.lean` owns message and salt encodings. `DuplexSponge/Sponge.lean` owns the
+  ideal-oracle sponge. `DuplexSponge/Construction.lean` separates full round execution from
+  shared optimized execution and owns the length-parameterized prover and verifier compilers.
+  `duplexSpongeFiatShamir δ sampleSalt` samples one private ambient salt, absorbs it once, and
+  uses the same salt for every round. The canonical FS transformation is `fiatShamirSalted δ sampleSalt`
+  in `FiatShamir/Canonical/Construction.lean`. Salt is NARG metadata. Application statements,
+  witnesses, relations, and interactive message types remain unchanged. Abstract `compileFiatShamir`
+  supplies the generic salt adapter; state restoration carries the salt separately from the IP statement.
+  The sampler cannot inspect application inputs, witness-bearing prover states, or the FS oracle.
+  Fresh uniform sampling is required by the ZK experiment; general completeness allows other
+  lossless ambient samplers. A zero-length salt has no encoded symbols and no wire-format marker.
+  Use `pure #v[]` for a query-free zero-length sampler; arbitrary zero-length sampler computations
+  can still make ambient queries, even though their return value is unique.
+  The shared runner absorbs messages only when later verifier messages are needed for another
+  prover message. It stops at `ProtocolSpec.proverMessageEnd` and returns the prover messages.
+  The reduction prover's terminal output is `(true, ())`.
+  `Canonical/Security/Soundness.lean` exposes soundness and knowledge-soundness statements;
+  their proofs live in `Canonical/Security/Proofs/Soundness.lean`.
+  DSFS soundness and zero knowledge are downstream work, not modules in this construction layer.
+  Prefer inferred lifts in DSFS `do` blocks. `open scoped DuplexSpongeFS` pins honest
+  permutation queries to the forward slot; unrestricted inference can select the identically
+  typed inverse slot. Keep explicit lifts when stating routing equations or crossing ambiguous
+  oracle interfaces.
+  `DuplexSponge/Security/Proofs/Execution.lean` contains the full reference runner and
+  `Prover.withTranscript`. `DuplexSponge/Security/Proofs/MessageLaw.lean` compares the reference and
+  compiled NARG-string laws under stateless handlers. These execution results also support ZK.
+  `DuplexSponge/Completeness/Perfect.lean` uses them to prove acceptance for valid inputs.
+  Generic one-message execution and stateless completeness lemmas live in
+  `OracleReduction/Execution.lean` and `OracleReduction/Security/Basic.lean`; read-only handler
+  simulation lives upstream in `VCVio/OracleComp/SimSemantics/StateT/Basic.lean`.
+  Complete-prefix conversion lemmas belong beside `ProtocolSpec.MessagesUpTo.completeMessages`.
+  Proof comparisons observe executions directly; there is no second prover/reduction compiler.
+  These reference executions are proof support, not additional
+  canonical compilers.
+- General DSFS probability and sampling infrastructure comes from VCV-io: `discreteTVDist` with
+  mixture and triangle bounds in `VCVio/EvalDist/DiscreteTVDist` and
+  `VCVio/OracleComp/EvalDist/DiscreteTVDistBind`, finitely supported comparisons in
+  `VCVio/EvalDist/FiniteSupport`, stateful handler laws in
+  `VCVio/OracleComp/SimSemantics/StateT/`, coordinatewise table bounds in
+  `VCVio/OracleComp/Constructions/SampleableType/Pi`, and uniform-preimage laws in
+  `VCVio/OracleComp/Constructions/UniformPreimage`. The codec uses the generic
+  `Deserialize.CloseToUniform`
+  class from `Data/Classes/CloseToUniform.lean`. Its total-variation bridge lives in
+  `FiatShamir/Codec.lean`.
+- The native random-table sampler is `OracleReduction.sampleRandomOracleTable` in
+  `OracleReduction/Security/OracleSampling.lean`. Generic list prefix/takeWhile lemmas belong in
+  `ToMathlib/List/Basic.lean`; DSFS clients import that owner instead of private copies.
+- For Fiat–Shamir, `InteractiveProof/StateRestorationSoundness.lean` owns the legacy
+  state-restoration prover types, experiments, and predicates. The `IP` namespace in the same
+  module gives their ordinary public-coin specialization with an empty ambient oracle.
+  Its single-salt game keeps `Salt` separate from the IP statement, verifier, and input relation;
+  `srVerifierMessageOracle (StmtIn × Salt) pSpec` supplies the query format directly.
+  Its `knowledgeSoundnessProverVerifierExp` retains the transcript and public query logs before extraction.
+  Protocol-specific encodings and theorem assembly stay in their protocol directories.
+  The adaptive and coin-bearing SR predicates take a `queryBoundSelector` predicate and an
+  `IsQueryBoundP` budget. The predicate selects which queries count toward the bound.
+  Uniform knowledge soundness fixes one extractor before quantifying over natural-number budgets;
+  the `WithExtractor` predicates express the guarantee for a supplied extractor at one budget.
+  `FiatShamir/Canonical/Security/Soundness.lean` states the transfers to the canonical single-salt
+  transform. `FiatShamir/Canonical/Completeness.lean` states fixed-oracle perfect completeness and
+  preservation of arbitrary completeness error for lazy random-oracle execution. The
+  completeness proofs live in the adjacent `Canonical/Completeness/` directory. The reusable
+  support criterion lives in `OracleReduction/Security/Basic.lean`, with message-prefix lemmas
+  in `OracleReduction/ProtocolSpec/PrefixLemmas.lean`.
 - Across the PolyFun/VCVio boundary, import generic polynomial-functor and handler structure from
   PolyFun and oracle/probability specializations from VCVio. Dependency internals are not an ArkLib
   proof surface: if an ordinary import is missing a usable law, upstream that law rather than reaching through the module boundary.
@@ -1059,6 +1169,19 @@ home_page/            site assets and assembled website root
 `ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
 `lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
 the generated `ArkLib.lean` umbrella and production modules must not import them.
+
+### Canonical byte encoding
+
+Under `ArkLib/NonInteractiveArgument/`, `Serialization/Serializer.lean` defines
+whole-input byte serializers, their laws, and constructors for fixed-size and subtype encodings.
+`Serialization.lean` owns the byte-facing argument wrapper and its exact execution and completeness
+correspondence. `Serialization/Security.lean` transfers soundness and knowledge soundness to those
+arguments using the legacy proof machinery in `Serialization/Legacy.lean`. DSFS keeps its
+`DSFSTypedNARGString` (salt and typed prover messages) for internal security games and uses
+`DSFSNARGString = ByteArray` publicly. `Codec` remains the sponge-message encoding interface. See
+[canonical byte NARG strings](fiat-shamir.md#canonical-byte-narg-strings) for the security contract
+and implementation guidance on untrusted lengths.
+
 `ArkLibTest/Interaction/Core/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
 challenges and the public-coin sampler), `Oracle.lean` (query-only decisions and output
 oracles), `Composition.lean` (routed composed oracle queries) and `Security.lean`

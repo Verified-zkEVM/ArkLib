@@ -1,0 +1,128 @@
+% !TEX root = ../print.tex
+% !TEX program = xelatex
+
+Lazy sampling tables and ordered query-answer logs are defined in \Cref{def:lazy_sampling_table} and~\Cref{def:oracle_run}, respectively.
+
+Several definitions in this section (most notably related to interactive proofs, non-interactive arguments, and the Fiat--Shamir transformation) are direct adaptations of definitions in \cite{snarg-book}.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Notation}
+\label{sec:dsfs_notation}
+
+With \([n]\) we denote the range \(\set{1, \dots, n}\).
+% and \(\Range{n}{m}\) denotes the range \(\set{n, n+1, \dots, m}\) if \(n \leq m\), otherwise it denotes the empty set.
+An alphabet \(\Alphabet\) is a non-empty finite set, containing an element \(0 \in \Alphabet\) denoted \emph{default value}. The Kleene closure \(\Alphabet^{*}\) denotes all finite-length strings over \(\Alphabet\).
+
+Throughout this section, fix the alphabet \(\Alphabet\), rate \(\SpongeRate\), capacity \(\SpongeCapacity\), salt length \(\SaltLength\), salt space and encoding, protocol with its statement and message spaces, and codec \(\DSFSCodec\). The sponge oracle distribution \(\SpongeOracleDistribution\) of \Cref{def:dsfs_oracle_distribution} depends on the statement space \(\InstanceSpace\), alphabet, rate and capacity: hash values lie in \(\Alphabet^{\SpongeCapacity}\), and the permutation acts on \(\Alphabet^{\SpongeRate+\SpongeCapacity}\). Security errors may depend on all these fixed data; we display their query or move budget as the varying argument.
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Basics}
+\label{sec:dsfs_basics}
+
+Write \(f^{-1}(y)\) for the fiber of \(f\) over \(y\), and \(\FunctionImage(f)\) for its image. For a relation \(\Relation\), write \(\RelationLanguage{\Relation}=\{\Instance:\exists\WitnessValue,\ (\Instance,\WitnessValue)\in\Relation\}\); \(\InstanceSizeOf{\Instance}\) is the chosen instance-size measure. A sampled family \(\OracleFamily=(\OracleFunction_i)_i\) has independent components \(\OracleFunction_i\leftarrow\Uniform(X_i\to Y_i)\).
+
+We denote \(\adv^{\OracleFunction}\) the fact that algorithm \(\adv\) has query access to the function \(\OracleFunction\), and \(\adv^{\OracleFamily}\) the fact that \(\adv\) has query access to the functions \(\OracleFamily = (\OracleFunction_{\RoundIndex})_{\RoundIndex \in \onerange{\IPRoundComplexity}}\). We say that \(\adv\) is \(\CountedQueryBound\)-query if it makes at most \(\CountedQueryBound\) calls in total to the specified public oracles (\Cref{def:counted_queries}), and is \((\CountedQueryBound_{\RoundIndex})_{\RoundIndex \in \onerange{\IPRoundComplexity}}\)-query if, for every \(\RoundIndex \in \onerange{\IPRoundComplexity}\), it makes at most \(\CountedQueryBound_{\RoundIndex}\) queries to the \(\RoundIndex\)-th oracle. We write \(a \stackrel{\QueryLog}{\gets} \adv^{\OracleFunction}\) to denote the fact that the query-answer trace of \(\adv\) with respect to the oracle \(\OracleFunction\) is \(\QueryLog\); we also write \(a \stackrel{\QueryLog}{\gets} \adv^{\OracleFamily}\) for the case of multiple oracles, in which case \(\QueryLog\) additionally includes for each query-answer pair the information about which oracle it is for.
+
+The independently sampled hash and round functions may be implemented by \defemph{lazy sampling} (\Cref{def:lazy_sampling_table}), starting from an empty lookup table. Query-answer traces separately record every call, including repeats. The ideal permutation and its inverse instead share a consistent partial bijection. A fresh forward query samples an unused output uniformly; a fresh inverse query samples an unused input uniformly. Repeated queries return the recorded answer.
+
+The underlying public-coin IP has no external oracle access. Probabilistic algorithms use private randomness. The transformed argument uses only the explicitly specified sponge or round oracles, and the query budgets below count calls to those public oracles.
+
+\begin{lemma}[Bias of map-and-back]
+\label{lem:dsfs_bias_map_and_back}
+\lean{OracleComp.UniformPreimage.sampleUniformPreimage, OracleComp.UniformPreimage.bind_sampleUniformPreimage_eq_uniform}
+Let \(A,B\) be nonempty finite sets and \(\CodecDecoder\colon B\to A\) a surjective function. On input \(a\in A\), let \(\CodecDecoder^{-1}\) sample uniformly from the nonempty fiber \(\{b\in B:\CodecDecoder(b)=a\}\); we also denote this sampler by \(\CodecDecoder^{-1}_{\mathsf{unif}}\). Sampling uniformly in \(B\), applying \(\CodecDecoder\), and resampling a uniform preimage gives the uniform distribution on \(B\) again~\cite[Lemma~3.2]{CO25}:
+\begin{equation*}
+\Delta(\Uniform(B),\CodecDecoder^{-1}\circ\CodecDecoder\circ\Uniform(B))=0.
+\end{equation*}
+\leanok
+\end{lemma}
+
+\begin{proof}
+For each \(x\in B\), let \(\bar{x}\DefineEqual\set{x'\in B:\CodecDecoder(x')=\CodecDecoder(x)}\) be its fiber. For \(x'\leftarrow\Uniform(B)\), the event \(\CodecDecoder(x')=\CodecDecoder(x)\) has probability \(\Cardinality{\bar{x}}/\Cardinality{B}\), and the sampler \(\CodecDecoder^{-1}(\CodecDecoder(x'))\) then chooses \(x\) from that fiber with probability \(1/\Cardinality{\bar{x}}\).  Hence the probability of outputting \(x\) after the map-and-back experiment is \(1/\Cardinality{B}\), exactly as for \(\Uniform(B)\).  Therefore the two distributions are equal and their statistical distance is \(0\).
+\leanok
+\end{proof}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\subsubsection{Duplex sponge in overwrite mode}
+\label{sec:dsfs_duplex_sponge}
+
+We describe a duplex sponge (in overwrite mode) that is directly inspired from \cite{BertoniDPV12}. The setting is one where there are two random oracles:
+\begin{itemize}
+\item a random function \(\SpongeHash\colon \InstanceSpace \to \SpongeCapacitySpace\), and
+\item a random permutation \(\SpongePermutation\colon \Alphabet^{\SpongePermutationWidth} \to \Alphabet^{\SpongePermutationWidth}\) (that we sometimes view as a function \(\SpongePermutation\colon \SpongeRateSpace \times \SpongeCapacitySpace \to \SpongeRateSpace \times \SpongeCapacitySpace\)).
+\end{itemize}
+Here \(\Alphabet\) is a finite (non-empty) alphabet, \(\SpongeCapacity\) is the \textbf{capacity}, \(\SpongeRate\) is the \textbf{rate}, and \(\SpongePermutationWidth\) is the \textbf{permutation length}.
+
+The \textbf{sponge state}
+\begin{equation*}
+\SpongeState=(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex)\in\SpongeStateSpace
+\end{equation*}
+contains the permutation state \(\SpongePermutationState=(\SpongeRateSegment,\SpongeCapacitySegment)\in\SpongeRateSpace\times\SpongeCapacitySpace\) and two indices \(\SpongeAbsorbIndex,\SpongeSqueezeIndex\in\ZeroRange{\SpongeRate}\). The indices track absorption and squeezing within the rate segment. On input \(\Instance\in\InstanceSpace\), initialization sets the rate segment to zero and the capacity segment to \(\SpongeHash(\Instance)\). Absorption overwrites rate symbols; squeezing reads rate symbols. Both advance through rate blocks using \(\SpongePermutation\), as specified below.
+
+\begin{construction}[Duplex sponge in overwrite mode {\cite[Construction~3.3]{CO25}}]
+\label{constr:dsfs_duplex_sponge}
+Let \(\SpongeHash:\InstanceSpace\to\Alphabet^{\SpongeCapacity}\) be a hash, let \(\SpongePermutation:\Alphabet^{\SpongeRate+\SpongeCapacity}\to\Alphabet^{\SpongeRate+\SpongeCapacity}\) be a forward function, and let \(\SpongeRate\) and \(\SpongeCapacity\) be positive rate and capacity sizes. Write \(\SpongeState=(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex)\) for a sponge state (\Cref{def:dsfs_duplex_state}); rate positions are numbered \(0,\ldots,\SpongeRate-1\). The procedures \(\SpongeSymbol=(\SpongeStart,\SpongeAbsorb,\SpongeSqueeze)\) are defined as follows.
+
+\emph{\(\SpongeStart^\SpongeHash(\Instance)\)} returns the initial sponge state:
+\begin{equation*}
+\left[\begin{array}{rl}
+  1.& \SpongeCapacitySegment\leftarrow \SpongeHash(\Instance);\\
+  2.& \text{return }((0^{\SpongeRate},\SpongeCapacitySegment),0,\SpongeRate).
+\end{array}\right]
+\end{equation*}
+\emph{\(\SpongeAbsorb^\SpongePermutation((\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex),(\chi_1,\ldots,\chi_q))\)} overwrites the rate segment with the input symbols and returns the updated state:
+\begin{equation*}
+\left[\begin{array}{rl}
+  1.& \text{if }q=0:\quad\text{return }(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex);\\
+  2.& \SpongeSqueezeIndex:=\SpongeRate;\\
+  3.& \text{for }j=1,\ldots,q:\\
+  4.& \quad\text{if }\SpongeAbsorbIndex=\SpongeRate:\quad \SpongePermutationState\leftarrow \SpongePermutation(\SpongePermutationState);\quad \SpongeAbsorbIndex:=0;\\
+  5.& \quad \SpongePermutationState[\SpongeAbsorbIndex]:=\chi_j;\quad \SpongeAbsorbIndex:=\SpongeAbsorbIndex+1;\\
+  6.& \text{return }(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex).
+\end{array}\right]
+\end{equation*}
+\label{item:dsfs_sponge_write_rate}
+In line~5, \(\SpongePermutationState[\SpongeAbsorbIndex]:=\chi_j\) replaces only that rate symbol.
+
+\emph{\(\SpongeSqueeze^\SpongePermutation((\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex),\ell)\)} reads \(\ell\) rate symbols and returns them with the updated state:
+\begin{equation*}
+\left[\begin{array}{rl}
+  1.& \text{if }\ell=0:\quad\text{return }((),(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex));\\
+  2.& \SpongeAbsorbIndex:=0;\\
+  3.& \text{for }j=1,\ldots,\ell:\\
+  4.& \quad\text{if }\SpongeSqueezeIndex=\SpongeRate:\quad \SpongePermutationState\leftarrow \SpongePermutation(\SpongePermutationState);\quad \SpongeSqueezeIndex:=0;\\
+  5.& \quad\SpongeSqueezedSymbol_j:=\SpongePermutationState[\SpongeSqueezeIndex];\quad \SpongeSqueezeIndex:=\SpongeSqueezeIndex+1;\\
+  6.& \text{return }((\SpongeSqueezedSymbol_1,\ldots,\SpongeSqueezedSymbol_\ell),(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex)).
+\end{array}\right]
+\end{equation*}
+Both procedures leave the entire state unchanged on empty input. In contrast, the paper's \(\SpongeAbsorb\) sets \(\SpongeSqueezeIndex:=\SpongeRate\) even on empty input.
+\uses{def:dsfs_duplex_state}
+\lean{DuplexSponge.start, DuplexSponge.absorb, DuplexSponge.squeeze}
+\leanok
+\end{construction}
+
+\subsubsection{Duplex Sponge Formalization Details}
+\label{sec:dsfs_duplex_formal_interface}
+
+\begin{definition}[Sponge state]
+\label{def:dsfs_duplex_state}
+\lean{SpongeUnit, SpongeSize, DuplexSponge, CanonicalDuplexSponge, DuplexSponge.absorbPos_lt_N, DuplexSponge.squeezePos_lt_N}
+\leanok
+Let the alphabet be finite with default symbol \(0\), and let the rate and capacity sizes be positive. A sponge state is a tuple
+\begin{equation*}
+\SpongeState=(\SpongePermutationState,\SpongeAbsorbIndex,\SpongeSqueezeIndex)
+\in\SpongeStateSpace
+\end{equation*}
+consisting of a permutation state
+\begin{equation*}
+\SpongePermutationState=(\SpongeRateSegment,\SpongeCapacitySegment)
+\in\Alphabet^{\SpongeRate+\SpongeCapacity},
+\qquad
+\SpongeRateSegment\in\SpongeRateSpace,\quad
+\SpongeCapacitySegment\in\SpongeCapacitySpace,
+\end{equation*}
+with rate segment \(\SpongeRateSegment\) and capacity segment \(\SpongeCapacitySegment\), and two indices \(\SpongeAbsorbIndex,\SpongeSqueezeIndex\in\ZeroRange{\SpongeRate}\). Absorb and squeeze return states of this same form, so both indices remain between \(0\) and \(\SpongeRate\), and hence strictly below the state width \(\SpongeRate+\SpongeCapacity\).
+\end{definition}
