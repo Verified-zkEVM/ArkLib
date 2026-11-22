@@ -1142,6 +1142,7 @@ public import ArkLib.ProofSystem.Sumcheck.Prover.Enumeration
 public import ArkLib.ProofSystem.Sumcheck.Source
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
+public import ArkLib.ProofSystem.Sumcheck.Spec.RoundPolynomial
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
