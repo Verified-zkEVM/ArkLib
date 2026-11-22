@@ -7,7 +7,6 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ProofSystem.Fri.Spec.General
-public import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # The FRI input relation and Reed–Solomon proximity
@@ -56,9 +55,8 @@ theorem mem_inputRelation_of_relHammingDist_le
     simp [e, initialQuery, CosetFftDomain.subdomain_zero_eq_self]
   have hdist : Code.relHammingDist ((initialOracle s stmt) ∘ e)
       ((fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e) =
-      Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) := by
-    unfold Code.relHammingDist
-    rw [hammingDist_comp_equiv, Fintype.card_congr e]
+      Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) :=
+    Code.relHammingDist_comp_equiv e _ _
   have hf : initialOracle s stmt ∘ e = (fun z ↦ initialOracle s stmt (initialQuery z)) :=
     funext (fun z ↦ congrArg (initialOracle s stmt) (he z))
   have hp : (fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e =
@@ -88,9 +86,8 @@ theorem relHammingDist_le_of_mem_inputRelation
     simp [e, initialQuery, CosetFftDomain.subdomain_zero_eq_self]
   have hdist : Code.relHammingDist ((initialOracle s stmt) ∘ e)
       ((fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e) =
-      Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) := by
-    unfold Code.relHammingDist
-    rw [hammingDist_comp_equiv, Fintype.card_congr e]
+      Code.relHammingDist (initialOracle s stmt) (fun x ↦ p.1.eval x.val) :=
+    Code.relHammingDist_comp_equiv e _ _
   have hf : initialOracle s stmt ∘ e = (fun z ↦ initialOracle s stmt (initialQuery z)) :=
     funext (fun z ↦ congrArg (initialOracle s stmt) (he z))
   have hp : (fun x : (ω.subdomain 0).toFinset ↦ p.1.eval x.val) ∘ e =

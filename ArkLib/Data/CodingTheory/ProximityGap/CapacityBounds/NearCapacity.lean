@@ -13,26 +13,32 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
 
 This module proves the [KKH26, Proposition 3] lower bound on `epsCa` close to capacity for every
 large `K` and every prime `p ≡ 1 (mod 2^K)` with `p ≥ n^{c+2}`, `n = 2^K`. The list bound
-`choose_le_Lambda_rs_vanilla_of_smooth` is turned into a CA bound by the contrapositive of
-`rs_Lambda_extended_le_of_epsCa_int_radius` [CS25, Theorem 2].
+`choose_le_Lambda_rs_vanilla_of_smooth` is turned into a CA bound by `le_rs_epsCa_of_le_Lambda`,
+the contrapositive of [CS25, Theorem 2].
+
+## Main definitions
+
+- `NearCapacityPrimeSupply c` — for one `β > max(c+2, 12/5)` and infinitely many `K`, there is a
+  prime `p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]`, `n = 2^K`.
+- `NearCapacityCaLowerBound c ρ` — the family statement: arbitrarily long smooth Reed--Solomon
+  codes over prime fields of size `Θ(n^β)`, with rate within `O(1/log₂ n)` of `ρ`, whose CA error
+  at distance `1 - ρ - Θ(1/log₂ n)` is at least `n^c / |F|`.
 
 ## Main results
 
-- `rs_epsCa_large_of_smooth` — over any finite field with a smooth domain of size
-  `n = 2^a · 2^b`, `ε_ca(RS[F, domain, k], 1 - k̂/2^b) ≥ T / |F|` with `k = (k̂-1)·2^a` whenever
-  `C(2^b, k̂) ≥ 2T + 1` and `|F| ≥ n + 2kT`.
-- `exists_rs_epsCa_large_near_capacity_of_prime` — the per-prime statement.
-- `exists_rs_epsCa_large_near_capacity_of_primes` — the family statement of
-  `exists_rs_epsCa_large_near_capacity`, given primes `p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]`, for one
-  `β > max(c+2, 12/5)` and infinitely many `K`.
+- `rs_epsCa_large_of_smooth` — [KKH26, Proposition 3] via [CS25, Theorem 2]: over any finite
+  field with a smooth domain of size `n = 2^a · 2^b`, `ε_ca(RS[F, domain, k], 1 - k̂/2^b) ≥ T / |F|`
+  with `k = (k̂-1)·2^a` whenever `C(2^b, k̂) ≥ 2T + 1` and `|F| ≥ n + 2kT`.
+- `exists_rs_epsCa_large_near_capacity_of_prime` — the per-prime statement, also
+  [KKH26, Proposition 3] via [CS25, Theorem 2].
+- `exists_rs_epsCa_large_near_capacity_of_primes` — `NearCapacityCaLowerBound c ρ` from
+  `NearCapacityPrimeSupply c`.
 
 ## References
 
-- [KKH26] Krachun, Kazanin, Haböck. *Failure of proximity gaps close to capacity*.
-  ePrint 2026/782.
-- [CS25] Crites–Stewart, *On Reed–Solomon Proximity Gaps Conjectures*, ePrint 2025/2046.
+* [Krachun, D., Kazanin, S., and Haböck, U., *Failure of Proximity Gaps Close to Capacity*][KKH26]
+* [Crites, E. and Stewart, A., *On Reed--Solomon Proximity Gaps Conjectures*][CS25]
 -/
-
 @[expose] public section
 
 namespace CodingTheory
@@ -45,50 +51,10 @@ section ReedSolomon
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-omit [Nonempty ι] [DecidableEq ι] in
-private theorem rs_epsCa_ge_of_le_Lambda (domain : ι ↪ F) (k f : ℕ) (T : ℝ)
-    (hk : 0 < k) (hf : f + k + 1 < Fintype.card ι)
-    (hq : (Fintype.card ι : ℝ) + 2 * k * T ≤ Fintype.card F)
-    (hL : ∃ L : ℕ, 2 * T + 1 ≤ L ∧
-      (L : ℕ∞) ≤ Lambda (ReedSolomon.code domain (k + 1) : Set (ι → F))
-        ((f : ℝ) / Fintype.card ι)) :
-    ENNReal.ofReal (T / Fintype.card F) ≤
-      epsCa (F := F) (A := F) (ReedSolomon.code domain k : Set (ι → F))
-        ((f : ℝ≥0) / Fintype.card ι) ((f : ℝ≥0) / Fintype.card ι) := by
-  obtain ⟨L, hL2, hLΛ⟩ := hL
-  refine le_of_not_gt fun hlt => ?_
-  have hE := ENNReal.toReal_lt_of_lt_ofReal hlt
-  set E := (epsCa (F := F) (A := F) (ReedSolomon.code domain k : Set (ι → F))
-    ((f : ℝ≥0) / Fintype.card ι) ((f : ℝ≥0) / Fintype.card ι)).toReal
-  set q : ℝ := ((Fintype.card F : ℕ) : ℝ)
-  set n : ℝ := ((Fintype.card ι : ℕ) : ℝ)
-  have hqpos : 0 < q := by positivity
-  have hEq : E * q < T := (lt_div_iff₀ hqpos).mp hE
-  have hE0 : 0 ≤ E := ENNReal.toReal_nonneg
-  have hT0 : 0 < T := by linarith [mul_nonneg hE0 hqpos.le]
-  have hkR : (0 : ℝ) < k := by exact_mod_cast hk
-  have hkT := mul_pos hkR hT0
-  have hkEq := mul_lt_mul_of_pos_left hEq hkR
-  have hQ : 2 * k * T ≤ q - n := by linarith
-  have hε : E < (q - n) / (k * q) := by
-    rw [lt_div_iff₀ (by positivity)]; linarith
-  have hΛ := hLΛ.trans (rs_Lambda_extended_le_of_epsCa_int_radius domain k f E hf hε le_rfl)
-  have hD : 0 < q - n - k * E * q := by linarith
-  have hB : E * q * (q - n) / (q - n - k * E * q) < 2 * T := by
-    rw [div_lt_iff₀ hD]
-    linarith [mul_lt_mul_of_pos_right hEq (by linarith : 0 < q - n),
-      mul_le_mul_of_nonneg_left hEq.le (by positivity : 0 ≤ 2 * T * k),
-      mul_le_mul_of_nonneg_right hQ hT0.le]
-  have hceil := Nat.ceil_lt_add_one (div_nonneg
-    (mul_nonneg (mul_nonneg hE0 hqpos.le) (by linarith : 0 ≤ q - n)) hD.le)
-  have hLc : (L : ℝ) ≤ ⌈E * q * (q - n) / (q - n - k * E * q)⌉₊ :=
-    Nat.cast_le.mpr (ENat.natCast_le_natCast.mp hΛ)
-  linarith
-
 omit [DecidableEq ι] in
-/-- [KKH26, Proposition 3] via [CS25, Theorem 2]: for a smooth domain of size `2^a · 2^b` with
-`1 ≤ a` and `2 ≤ k̂ ≤ 2^b`, the code `RS[F, domain, k]`, `k = (k̂-1)·2^a`, has
-`ε_ca(1 - k̂/2^b) ≥ T / |F|` whenever `C(2^b, k̂) ≥ 2T + 1` and `|F| ≥ n + 2kT`. -/
+/-- For a smooth domain of size `2^a · 2^b` with `1 ≤ a` and `2 ≤ k̂ ≤ 2^b`, the code
+`RS[F, domain, k]`, `k = (k̂-1)·2^a`, has `ε_ca(1 - k̂/2^b) ≥ T / |F|` whenever
+`C(2^b, k̂) ≥ 2T + 1` and `|F| ≥ n + 2kT`. -/
 theorem rs_epsCa_large_of_smooth (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     {a b khat : ℕ} (hn : Fintype.card ι = 2 ^ a * 2 ^ b) (ha : 1 ≤ a) (hk2 : 2 ≤ khat)
     (hkh : khat ≤ 2 ^ b) (T : ℝ) (hL : 2 * T + 1 ≤ ((2 ^ b).choose khat : ℝ))
@@ -105,8 +71,8 @@ theorem rs_epsCa_large_of_smooth (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     rw [← Nat.succ_mul, Nat.succ_eq_add_one, Nat.sub_add_cancel hh, Nat.mul_comm]
   have hfk : (2 ^ b - khat) * 2 ^ a + (khat - 1) * 2 ^ a = (2 ^ b - 1) * 2 ^ a := by
     rw [← Nat.add_mul]; congr 1; omega
-  refine rs_epsCa_ge_of_le_Lambda domain _ _ T (Nat.mul_pos (by omega) (by omega)) (by omega)
-    hq ⟨_, hL, ?_⟩
+  refine le_rs_epsCa_of_le_Lambda domain _ _ T (Nat.mul_pos (by omega) (by omega)) (by omega)
+    hq hL ?_
   have hlist := choose_le_Lambda_rs_vanilla_of_smooth (F := F) domain
     (khat := khat) (k := (khat - 1) * 2 ^ a + 1) hn (by omega) (by omega)
   rw [minRelDist_sub_eq domain hn (by omega) hkh (by omega)] at hlist
@@ -259,7 +225,7 @@ private theorem near_capacity_field_le (c : ℝ≥0) {n k q : ℕ} (hn : 3 ≤ n
     mul_le_mul_of_nonneg_left hone (by linarith : (0 : ℝ) ≤ n),
     mul_le_mul_of_nonneg_left hn0 (by positivity : (0 : ℝ) ≤ (n : ℝ) ^ (c : ℝ) * n)]
 
-/-- [KKH26, Proposition 3] via [CS25, Theorem 2]: for every `c` and `ρ ∈ (0, 1/2)` there are
+/-- For every `c` and `ρ ∈ (0, 1/2)` there are
 uniform constants such that for every large `K` and every prime `p ≡ 1 (mod 2^K)` with
 `p ≥ n^{c+2}`, `n = 2^K`, some smooth Reed--Solomon code over `ZMod p` of length `n` and rate
 within `O(1/log₂ n)` of `ρ` has
@@ -318,31 +284,52 @@ theorem exists_rs_epsCa_large_near_capacity_of_prime
       ← ENNReal.ofReal_rpow_of_nonneg (by positivity) (by positivity)]
     simp
 
-/-- The family statement of `exists_rs_epsCa_large_near_capacity`, given primes
-`p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]`, `n = 2^K`, for infinitely many `K`. -/
+/-- The supply of primes behind the near-capacity family: for some `β > max(c + 2, 12/5)` and
+infinitely many `K`, there is a prime `p ≡ 1 (mod 2^K)` with `n^β ≤ p ≤ 2n^β`, `n = 2^K`. -/
+def NearCapacityPrimeSupply (c : ℝ≥0) : Prop :=
+  ∃ β : ℝ, max ((c : ℝ) + 2) (12 / 5) < β ∧ ∀ K₀ : ℕ, ∃ K ≥ K₀, ∃ p : ℕ,
+    p.Prime ∧ 2 ^ K ∣ p - 1 ∧ ((2 : ℝ) ^ K) ^ β ≤ p ∧ (p : ℝ) ≤ 2 * ((2 : ℝ) ^ K) ^ β
+
+/-- The near-capacity CA lower bound as a family statement. There are arbitrarily large smooth
+Reed--Solomon codes over prime fields whose rate is within `O(1/log₂ n)` of `ρ` and for which
+
+  `ε_ca(C, 1 - ρ - Θ(1/log₂ n)) ≥ n^c / |F|`.
+
+The uniform constants record the `O(1/log₂ n)` rate control, `Θ(1/log₂ n)` capacity slack, and
+two-sided `|F| = Θ(n^β)` field growth. Quantifying over every lower length bound makes this a
+family statement rather than a single-instance asymptotic claim. -/
+def NearCapacityCaLowerBound (c ρ : ℝ≥0) : Prop :=
+  ∃ Kρ K₁ K₂ : ℝ, 0 < Kρ ∧ 0 < K₁ ∧ K₁ ≤ K₂ ∧
+  ∃ β Kq_lo Kq_hi : ℝ,
+  max ((c : ℝ) + 2) (12 / 5) < β ∧ 0 < Kq_lo ∧ Kq_lo ≤ Kq_hi ∧
+  ∀ n₀ : ℕ,
+  ∃ (ιC : Type) (_ : Fintype ιC) (_ : Nonempty ιC) (_ : DecidableEq ιC)
+    (FC : Type) (_ : Field FC) (_ : Fintype FC) (_ : DecidableEq FC)
+    (domain : ιC ↪ FC) (_ : ReedSolomon.Smooth domain) (k : ℕ) (slack : ℝ≥0),
+    -- arbitrarily large block length:
+    n₀ ≤ Fintype.card ιC ∧
+    -- `F` is a prime field:
+    (∃ p : ℕ, p.Prime ∧ CharP FC p ∧ Fintype.card FC = p) ∧
+    -- `|F| = Θ(n^β)` uniformly in the family:
+    Kq_lo * (Fintype.card ιC : ℝ) ^ β ≤ Fintype.card FC ∧
+    (Fintype.card FC : ℝ) ≤ Kq_hi * (Fintype.card ιC : ℝ) ^ β ∧
+    -- the rate, controlled only up to `O(1/log n)`:
+    |(k : ℝ) / Fintype.card ιC - (ρ : ℝ)|
+      ≤ Kρ / Real.logb 2 (Fintype.card ιC) ∧
+    -- slack pinned to `Θ(1/log₂ n)`:
+    K₁ / Real.logb 2 (Fintype.card ιC) ≤ (slack : ℝ) ∧
+    (slack : ℝ) ≤ K₂ / Real.logb 2 (Fintype.card ιC) ∧
+    let _ : SampleableType FC := SampleableType.ofFintype FC
+    epsCa (F := FC) (A := FC) ((ReedSolomon.code domain k : Set (ιC → FC)))
+        (1 - ρ - slack) (1 - ρ - slack) ≥
+      ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal)
+
+/-- The near-capacity family statement `NearCapacityCaLowerBound c ρ` for `ρ ∈ (0, 1/2)`, given
+the prime supply `NearCapacityPrimeSupply c`. -/
 theorem exists_rs_epsCa_large_near_capacity_of_primes
     (c : ℝ≥0) (ρ : ℝ≥0) (hρ_pos : 0 < ρ) (hρ_lt : ρ < (1 / 2 : ℝ≥0))
-    (primes : ∃ β : ℝ, max ((c : ℝ) + 2) (12 / 5) < β ∧ ∀ K₀ : ℕ, ∃ K ≥ K₀, ∃ p : ℕ,
-      p.Prime ∧ 2 ^ K ∣ p - 1 ∧ ((2 : ℝ) ^ K) ^ β ≤ p ∧ (p : ℝ) ≤ 2 * ((2 : ℝ) ^ K) ^ β) :
-    ∃ Kρ K₁ K₂ : ℝ, 0 < Kρ ∧ 0 < K₁ ∧ K₁ ≤ K₂ ∧
-    ∃ β Kq_lo Kq_hi : ℝ,
-    max ((c : ℝ) + 2) (12 / 5) < β ∧ 0 < Kq_lo ∧ Kq_lo ≤ Kq_hi ∧
-    ∀ n₀ : ℕ,
-    ∃ (ιC : Type) (_ : Fintype ιC) (_ : Nonempty ιC) (_ : DecidableEq ιC)
-      (FC : Type) (_ : Field FC) (_ : Fintype FC) (_ : DecidableEq FC)
-      (domain : ιC ↪ FC) (_ : ReedSolomon.Smooth domain) (k : ℕ) (slack : ℝ≥0),
-      n₀ ≤ Fintype.card ιC ∧
-      (∃ p : ℕ, p.Prime ∧ CharP FC p ∧ Fintype.card FC = p) ∧
-      Kq_lo * (Fintype.card ιC : ℝ) ^ β ≤ Fintype.card FC ∧
-      (Fintype.card FC : ℝ) ≤ Kq_hi * (Fintype.card ιC : ℝ) ^ β ∧
-      |(k : ℝ) / Fintype.card ιC - (ρ : ℝ)|
-        ≤ Kρ / Real.logb 2 (Fintype.card ιC) ∧
-      K₁ / Real.logb 2 (Fintype.card ιC) ≤ (slack : ℝ) ∧
-      (slack : ℝ) ≤ K₂ / Real.logb 2 (Fintype.card ιC) ∧
-      let _ : SampleableType FC := SampleableType.ofFintype FC
-      epsCa (F := FC) (A := FC) ((ReedSolomon.code domain k : Set (ιC → FC)))
-          (1 - ρ - slack) (1 - ρ - slack) ≥
-        ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal) := by
+    (primes : NearCapacityPrimeSupply c) :
+    NearCapacityCaLowerBound c ρ := by
   obtain ⟨β, hβ, hprimes⟩ := primes
   obtain ⟨Kρ, K₁, K₂, hKρ, hK₁, hK₁₂, K₀, hfam⟩ :=
     exists_rs_epsCa_large_near_capacity_of_prime c ρ hρ_pos hρ_lt

@@ -55,6 +55,16 @@ the source's proof assumes implicitly.
 a bad list-decoding configuration gives a weakly partition-connected agreement hypergraph, with its
 list-size form `exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda`.
 
+`Tuple.card_filter_card_descents_lt_le` in
+[Descents.lean](../../../ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean): the counting
+step of the source's certificate count (`cor:count` in the source): over a finite linear order
+`α`, at most `C(|α|, r) · m^r` injective tuples `Fin r ↪ α` have fewer than `m` descents. The
+source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is
+`IsCertificate.card_descents_lt` in
+[Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean);
+the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its proof gives
+fewer, which the count needs.
+
 `intersectionMatrix` in
 [IntersectionMatrix.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean):
 the source's reduced intersection matrix of a hypergraph, with `IsRigid`, its full column rank at
@@ -75,16 +85,6 @@ finite fields. Its corollary `exists_embedding_Lambda_le`: over every infinite f
 evaluation points at which the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
 `ℓ/(ℓ+1)·(1 − k/n)`. This is the infinite-field list-size form; it is not [BGM23]'s finite-field
 statement and gives no bound on the field size.
-
-`Tuple.card_filter_card_descents_lt_le` in
-[Descents.lean](../../../ArkLib/ToMathlib/Combinatorics/Enumerative/Descents.lean): the counting
-step of the source's certificate count (`cor:count` in the source): over a finite linear order
-`α`, at most `C(|α|, r) · m^r` injective tuples `Fin r ↪ α` have fewer than `m` descents. The
-source applies it with `m = 2^t`. That certificates have fewer than `2^t` descents is
-`IsCertificate.card_descents_lt` in
-[Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean);
-the source's certificate-structure lemma (`lem:count`) states at most `2^t`, and its proof gives
-fewer, which the count needs.
 
 `exists_embedding_isCertificate_of_not_isRigid` in
 [Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean):
@@ -133,6 +133,16 @@ as the probability bound `1 − Lk²/q`.
 ArkLib states the plain `Λ` bound, of which the source's average-radius form is a strengthening — the
 safe direction.
 
+The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}`
+sampled with `$ᵗ`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
+and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points. An
+event that depends only on the set of drawn points has the same probability under both samplers:
+`prEvent_uniformSample_finsetCard_eq_embedding` in
+[Uniform.lean](../../../ArkLib/Data/Probability/Uniform.lean), from the count
+`Fintype.card_filter_embedding_map_univ` in
+[CardEmbedding.lean](../../../ArkLib/ToMathlib/Fintype/CardEmbedding.lean) (every `n`-element set
+is the image of `n!` embeddings `Fin n ↪ F`).
+
 ArkLib's reduced intersection matrix has entries in `MvPolynomial ι R` rather than the fraction
 field; full column rank is stated at evaluation points (`IsRigid`) and through maximal minors, and
 the per-variable degree bound on maximal minors is `s * (k - 1)`, the count in the source's proof,
@@ -146,15 +156,10 @@ their degree is `s(k − 1)` in place of `(t − 1)k`. The certificate length `r
 `(k + εn)`-weakly partition-connected one, and the source's assumptions `t ≥ 2` and `k ≥ 1` are not
 needed.
 
-The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}`
-sampled with `$ᵗ`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
-and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points. An
-event that depends only on the set of drawn points has the same probability under both samplers:
-`prEvent_uniformSample_finsetCard_eq_embedding` in
-[Uniform.lean](../../../ArkLib/Data/Probability/Uniform.lean), from the count
-`Fintype.card_filter_embedding_map_univ` in
-[CardEmbedding.lean](../../../ArkLib/ToMathlib/Fintype/CardEmbedding.lean) (every `n`-element set
-is the image of `n!` embeddings `Fin n ↪ F`).
+The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}` under
+`PMF.uniformOfFintype`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
+and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points, which
+induces the same distribution over codes.
 
 The source's stated consequence — at `ℓ = 2(1−ρ−η)/η` — is not formalized: its `ℓ` is real-valued, so it
 needs a rounding the source does not fix.
