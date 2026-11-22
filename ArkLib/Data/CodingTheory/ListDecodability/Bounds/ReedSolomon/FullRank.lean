@@ -36,7 +36,8 @@ with `Code.exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda` and `not_is
 this gives, for each `0 < ℓ` and over any field, a nonzero polynomial `P` such that the
 Reed–Solomon code of dimension `k` on pairwise distinct evaluation points `α` with `P(α) ≠ 0` has
 lists of size at most `ℓ` at relative radius `ℓ / (ℓ + 1) * (1 - k / n)`, the generalized
-Singleton bound. Over an infinite field such points exist.
+Singleton bound. Over an infinite field such points exist
+(`MvPolynomial.exists_injective_eval_ne_zero`).
 
 ## Main statements
 
@@ -50,7 +51,6 @@ Singleton bound. Over an infinite field such points exist.
   polynomial `P` such that at pairwise distinct evaluation points `α` with `P(α) ≠ 0` the
   Reed–Solomon code of dimension `k` satisfies `Lambda ≤ ℓ` at relative radius
   `ℓ / (ℓ + 1) * (1 - k / n)`.
-* `exists_embedding_Lambda_le`: over an infinite field such evaluation points exist.
 
 `exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected` is the theorem of [AGL24] that the
 reduced intersection matrix of a `k`-weakly partition-connected hypergraph has full column rank,
@@ -205,17 +205,5 @@ theorem exists_ne_zero_Lambda_le_of_eval_ne_zero (F : Type*) [Field F] (k : ℕ)
     (fun i j hj j' hj' ↦ ?_) (hrigid α hα s hsℓ _ hwpc)
   simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj hj'
   exact hj.trans hj'.symm
-
-/-- **Reed–Solomon codes at the generalized Singleton bound exist** over every infinite field `K`:
-for `0 < ℓ` there are evaluation points `α : ι ↪ K` at which the Reed–Solomon code of dimension
-`k` has lists of size at most `ℓ` at relative radius `ℓ / (ℓ + 1) * (1 - k / n)`, where
-`n = Fintype.card ι`. -/
-theorem exists_embedding_Lambda_le (K : Type*) [Field K] [Infinite K] (k : ℕ) {ℓ : ℕ}
-    (hℓ : 0 < ℓ) :
-    ∃ α : ι ↪ K, Lambda (code α k : Set (ι → K))
-      ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / Fintype.card ι)) ≤ ℓ := by
-  obtain ⟨P, hP, h⟩ := exists_ne_zero_Lambda_le_of_eval_ne_zero (ι := ι) K k hℓ
-  obtain ⟨x, hx, hPx⟩ := MvPolynomial.exists_injective_eval_ne_zero hP
-  exact ⟨⟨x, hx⟩, h ⟨x, hx⟩ hPx⟩
 
 end ReedSolomon

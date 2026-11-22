@@ -32,7 +32,8 @@ cluster is [AGL24]'s.
 [FullRank.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean):
 over every field, a nonzero polynomial `P` such that at every point `α` with pairwise distinct
 coordinates and `P(α) ≠ 0` the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
-`ℓ/(ℓ+1)·(1 − k/n)`. Over every infinite field such points exist (`exists_embedding_Lambda_le`).
+`ℓ/(ℓ+1)·(1 − k/n)`. Over every infinite field such points exist
+(`MvPolynomial.exists_injective_eval_ne_zero`).
 This paper's finite-field statement, with its field size, is not formalized.
 
 ## Known Divergences From ArkLib

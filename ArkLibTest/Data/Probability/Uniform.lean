@@ -73,3 +73,14 @@ example : Pr{let f ← $ᵗ (Fin 2 ↪ ZMod 3)}[(0 : ZMod 3) ∈ univ.map f] = (
   have h₂ : Fintype.card {S : Finset (ZMod 3) // #S = 2} = 3 := by decide
   rw [h₁, h₂]
   norm_num
+
+open Finset in
+/-- One of the four points of `Fin 4` is `0`, so a uniform point is nonzero with probability at
+least `1 - 1/4`. -/
+example : ENNReal.ofReal (1 - 1 / 4) ≤
+    Pr{let x ← $ᵗ (Fin 4)}[x ≠ 0] := by
+  rw [SampleableType.prEvent_uniformSample]
+  refine ProbabilityTheory.ofReal_one_sub_le_card_filter_div ?_
+  have h : #{x : Fin 4 | ¬x ≠ 0} = 1 := by decide
+  rw [h]
+  norm_num

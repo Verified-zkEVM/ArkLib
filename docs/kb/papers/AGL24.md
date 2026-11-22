@@ -95,7 +95,8 @@ of the infinite field `RatFunc F`
 finite fields. Its corollary `exists_ne_zero_Lambda_le_of_eval_ne_zero`: over every field there
 is a nonzero polynomial `P` such that at every point `α` with pairwise distinct coordinates and
 `P(α) ≠ 0` the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
-`ℓ/(ℓ+1)·(1 − k/n)`; over an infinite field such points exist (`exists_embedding_Lambda_le`).
+`ℓ/(ℓ+1)·(1 − k/n)`; over an infinite field such points exist
+(`MvPolynomial.exists_injective_eval_ne_zero`).
 This is the list-size form; it is not [BGM23]'s finite-field statement and gives no bound on the
 field size.
 
@@ -156,8 +157,10 @@ of drawn points has the same probability under both samplers:
 [Uniform.lean](../../../ArkLib/Data/Probability/Uniform.lean), from the count
 `Fintype.card_filter_embedding_map_univ` in
 [CardEmbedding.lean](../../../ArkLib/ToMathlib/Fintype/CardEmbedding.lean) (every `n`-element set
-is the image of `n!` embeddings `Fin n ↪ F`). The proof of `rs_random_domain_lambda_le` uses it to
-pass to tuples, and `Code.Lambda_comp_equiv` to reindex the code on `↥S` by `Fin n`.
+is the image of `n!` embeddings `Fin n ↪ F`). The proof of `rs_random_domain_lambda_le` passes to
+tuples with `prEvent_uniformSample_finsetCard_eq_card_embedding`, which writes the probability as
+the fraction of embeddings whose image satisfies the event, and reindexes the code on `↥S` by
+`Fin n` with `ReedSolomon.Lambda_code_comp_equiv`.
 
 ArkLib's reduced intersection matrix has entries in `MvPolynomial ι R` rather than the fraction
 field; full column rank is stated at evaluation points (`IsRigid`) and through maximal minors, and
@@ -171,11 +174,6 @@ their degree is `s(k − 1)` in place of `(t − 1)k`. The certificate length `r
 `(k + 2r)`-weakly partition-connected hypergraph, in place of the source's `r = ⌊εn/2⌋` for a
 `(k + εn)`-weakly partition-connected one, and the source's assumptions `t ≥ 2` and `k ≥ 1` are not
 needed.
-
-The sample space is [ABF26]'s `binom(F, n)` literally: the subtype `{S : Finset F // S.card = n}` under
-`PMF.uniformOfFintype`, with the code indexed by the drawn subset (`↥S → F`), so no ordering is chosen
-and no push-forward is needed. [AGL24] samples an ordered tuple of pairwise-distinct points, which
-induces the same distribution over codes.
 
 The closing arithmetic of the proof of Theorem 1.1 differs from the source's. In ArkLib's variables
 (`ℓ` for the source's `L`, `η` for its `ε`), the source bounds the number of agreement hypergraphs

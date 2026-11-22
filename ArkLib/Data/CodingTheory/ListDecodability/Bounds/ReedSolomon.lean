@@ -9,6 +9,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.RandomDomain
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.Probability.Uniform
 import Mathlib.Algebra.CharP.CharAndCard
@@ -677,42 +678,7 @@ section RandomReedSolomon
 
 open scoped ProbabilityTheory
 
-open Finset in
-/-- If at most a fraction `x` of a nonempty finite type fails `P`, then `P` holds on at least a
-fraction `1 - x` of it. -/
-private theorem ofReal_one_sub_le_card_filter_div {α : Type*} [Fintype α] [Nonempty α]
-    {P : α → Prop} [DecidablePred P] {x : ℝ} (h : (#{a | ¬P a} : ℝ) ≤ x * Fintype.card α) :
-    ENNReal.ofReal (1 - x) ≤ (#{a | P a} : ENNReal) / Fintype.card α := by
-  have hc : (0 : ℝ) < Fintype.card α := by exact_mod_cast Fintype.card_pos
-  have hsum := card_filter_add_card_filter_not (s := (univ : Finset α)) P
-  rw [card_univ] at hsum
-  have hsum' : (#{a | P a} : ℝ) + #{a | ¬P a} = Fintype.card α := by exact_mod_cast hsum
-  rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_natCast (Fintype.card α),
-    ← ENNReal.ofReal_div_of_pos hc]
-  refine ENNReal.ofReal_le_ofReal ?_
-  rw [le_div_iff₀ hc]
-  linarith
-
-open Finset in
-/-- Reindexing the Reed–Solomon code on the image of `f : Fin n ↪ F` by `f` does not change the
-maximal list size. -/
-private theorem Lambda_code_subtype_map_univ {F : Type} [Field F] {n : ℕ} (f : Fin n ↪ F)
-    (k : ℕ) (δ : ℝ) :
-    Lambda (ReedSolomon.code (Function.Embedding.subtype fun x : F ↦ x ∈ univ.map f) k :
-        Set (↥(univ.map f) → F)) δ = Lambda (ReedSolomon.code f k : Set (Fin n → F)) δ := by
-  let e : Fin n ≃ ↥(univ.map f) := Equiv.ofBijective (fun i ↦ ⟨f i, mem_map_of_mem f (mem_univ i)⟩)
-    ⟨fun i j h ↦ f.injective (congrArg Subtype.val h), fun x ↦ by
-      obtain ⟨i, -, hi⟩ := mem_map.1 x.2
-      exact ⟨i, Subtype.ext hi⟩⟩
-  have hf : e.toEmbedding.trans (Function.Embedding.subtype fun x : F ↦ x ∈ univ.map f) = f :=
-    Function.Embedding.ext fun _ ↦ rfl
-  refine (Code.Lambda_comp_equiv e (fun w ↦ ?_) δ).symm
-  have := ReedSolomon.mem_code_comp_equiv e
-    (Function.Embedding.subtype fun x : F ↦ x ∈ univ.map f) k w
-  rw [hf] at this
-  exact this
-
-open Classical in
+open Classical Finset in
 /-- **Reed-Solomon codes on a random evaluation domain are list-decodable near capacity**
 ([ABF26] Theorem 3.6, after [AGL24, Theorem 1.1]).
 
@@ -762,13 +728,23 @@ theorem rs_random_domain_lambda_le
     have : (0 : ℝ) ≤ k * 2 ^ ((10 * ℓ : ℝ) / η) := by positivity
     exact_mod_cast (le_add_of_nonneg_right this).trans hF
   have : Nonempty (Fin n ↪ F) := Function.Embedding.nonempty_of_card_le (by simpa using hq)
-  rw [@ProbabilityTheory.prEvent_uniformSample_finsetCard_eq_embedding F _ n _
-    (SampleableType.ofFintype (Fin n ↪ F)) fun T : Finset F ↦
-    Lambda ((ReedSolomon.code (Function.Embedding.subtype fun x : F ↦ x ∈ T) k :
-      Set (↥T → F))) ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / n - η)) ≤ (ℓ : ℕ∞)]
-  simp only [Lambda_code_subtype_map_univ]
-  simp only [SampleableType.prEvent_uniformSample]
-  exact ofReal_one_sub_le_card_filter_div (by
+  -- The code on the image of `f : Fin n ↪ F` is the code on `f` reindexed by an equivalence.
+  have hΛ (f : Fin n ↪ F) (δ : ℝ) :
+      Lambda (ReedSolomon.code (Function.Embedding.subtype (· ∈ univ.map f)) k :
+          Set (↥(univ.map f) → F)) δ = Lambda (ReedSolomon.code f k : Set (Fin n → F)) δ := by
+    let e : Fin n ≃ ↥(univ.map f) :=
+      Equiv.ofBijective (fun i ↦ ⟨f i, mem_map_of_mem f (mem_univ i)⟩)
+        ⟨fun i j h ↦ f.injective (congrArg Subtype.val h), fun x ↦ by
+          obtain ⟨i, -, hi⟩ := mem_map.1 x.2
+          exact ⟨i, Subtype.ext hi⟩⟩
+    have hf : e.toEmbedding.trans (Function.Embedding.subtype (· ∈ univ.map f)) = f :=
+      Function.Embedding.ext fun _ ↦ rfl
+    rw [← ReedSolomon.Lambda_code_comp_equiv e, hf]
+  rw [ProbabilityTheory.prEvent_uniformSample_finsetCard_eq_card_embedding fun T : Finset F ↦
+    Lambda (ReedSolomon.code (Function.Embedding.subtype (· ∈ T)) k : Set (↥T → F))
+      ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / n - η)) ≤ (ℓ : ℕ∞)]
+  simp only [hΛ]
+  exact ProbabilityTheory.ofReal_one_sub_le_card_filter_div (by
     simpa only [not_le] using ReedSolomon.card_filter_lt_Lambda_le_two_pow_neg_mul (F := F)
       hℓ hη hn hF)
 
