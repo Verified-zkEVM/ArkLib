@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.PartitionConnected
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.LinearAlgebra.Basis.Flag
@@ -86,9 +87,9 @@ def agreementWeight {ι : Type*} {A : Type*} [Fintype ι] [DecidableEq A]
 
 open scoped BigOperators in
 /-- **The double-counting lower bound.** If every codeword in `S` is within relative distance `δ` of
-`y`, then `S` forces agreement weight at least `|S| · n · (1 − δ) − n`: sum the per-codeword
-agreement counts, exchange the order of summation, and pay one unit per coordinate for the `− 1` in
-`agreementWeight`. -/
+`y`, then `S` forces agreement weight at least `|S| · n · (1 − δ) − n`. This is
+`Code.card_mul_sub_sum_hammingDist_sub_le_sum_card_filter_sub_one` for the words of `S`, which
+bounds the weight by the sum of the distances. -/
 theorem agreementWeight_ge_of_hammingDist_le
     {ι : Type*} {A : Type*} [Fintype ι] [DecidableEq A]
     (δ : ℝ) (y : ι → A) (S : Finset (ι → A))
@@ -96,46 +97,21 @@ theorem agreementWeight_ge_of_hammingDist_le
       (hammingDist c y : ℝ) ≤ δ * Fintype.card ι) :
     (S.card : ℝ) * Fintype.card ι * (1 - δ) - Fintype.card ι ≤
       (agreementWeight y S : ℝ) := by
-  classical
-  have hpoint : ∀ c ∈ S,
-      (Fintype.card ι : ℝ) * (1 - δ) ≤ (Code.agree c y : ℝ) := by
-    intro c hc
-    have hcast : (Code.agree c y : ℝ) + hammingDist c y = Fintype.card ι := by
-      exact_mod_cast (Code.agree_add_hammingDist (u := c) (v := y))
-    nlinarith [hdist c hc]
-  have hlower :
-      (S.card : ℝ) * Fintype.card ι * (1 - δ) ≤
-        ∑ c ∈ S, (Code.agree c y : ℝ) := by
-    have hsum := Finset.sum_le_sum hpoint
-    simpa only [Finset.sum_const, nsmul_eq_mul, mul_assoc] using hsum
-  have hdouble :
-      (∑ c ∈ S, (Code.agree c y : ℝ)) =
-        ∑ i : ι, ((S.filter (fun c => c i = y i)).card : ℝ) := by
-    unfold Code.agree
-    simp_rw [Finset.natCast_card_filter]
-    rw [Finset.sum_comm]
-  have hfiber : ∀ i : ι,
-      ((S.filter (fun c => c i = y i)).card : ℝ) ≤
-        (((S.filter (fun c => c i = y i)).card - 1 : ℕ) : ℝ) + 1 := by
-    intro i
-    exact_mod_cast (show
-      (S.filter (fun c => c i = y i)).card ≤
-        (S.filter (fun c => c i = y i)).card - 1 + 1 by omega)
-  have hupper :
-      (∑ i : ι, ((S.filter (fun c => c i = y i)).card : ℝ)) ≤
-        (agreementWeight y S : ℝ) + Fintype.card ι := by
-    calc
-      (∑ i : ι, ((S.filter (fun c => c i = y i)).card : ℝ)) ≤
-          ∑ i : ι,
-            ((((S.filter (fun c => c i = y i)).card - 1 : ℕ) : ℝ) + 1) :=
-        Finset.sum_le_sum fun i _ => hfiber i
-      _ = (agreementWeight y S : ℝ) + Fintype.card ι := by
-        rw [Finset.sum_add_distrib]
-        unfold agreementWeight
-        rw [Nat.cast_sum]
-        simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one]
-  rw [hdouble] at hlower
-  linarith
+  have h := Code.card_mul_sub_sum_hammingDist_sub_le_sum_card_filter_sub_one y
+    (Subtype.val : S → ι → A)
+  have hweight :
+      ∑ i, ((Finset.univ.filter fun c : S => c.1 i = y i).card - 1) = agreementWeight y S :=
+    Finset.sum_congr rfl fun i _ => by
+      rw [Finset.card_filter, Finset.card_filter,
+        Finset.sum_coe_sort S fun c => if c i = y i then 1 else 0]
+  have hsum : ∑ c : S, (hammingDist y c.1 : ℝ) ≤ S.card * (δ * Fintype.card ι) := by
+    rw [Finset.sum_coe_sort S fun c => (hammingDist y c : ℝ)]
+    refine (Finset.sum_le_sum fun c hc => ?_).trans_eq
+      (by rw [Finset.sum_const, nsmul_eq_mul])
+    rw [hammingDist_comm]
+    exact hdist c hc
+  rw [hweight, Fintype.card_coe] at h
+  nlinarith
 
 /-- The **flag level** of `x` against a basis `b`: the least `k` such that `x` lies in the span of
 the first `k` basis vectors, using `Module.Basis.flag`. It is `0` exactly when `x = 0`, and `j.succ`
