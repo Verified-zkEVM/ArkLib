@@ -221,6 +221,7 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWith_of_prob_le (ε : ℝ≥0)
       CompPoly.CPolynomial.toPoly_smul] using
       Polynomial.prob_zeroOn_generatorBatch_le_of_pointwise G hG hf
 
+omit [Fintype S] [Nonempty S] in
 /-- A zero-evading generator hides each fixed false family with probability at most `ε`. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessWith (ε : unitInterval)
     (hG : IsZeroEvadingGenerator G ε) :
@@ -234,6 +235,7 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWith (ε : unitInterval)
   apply le_trans (le_sSup ?_) hG
   exact ⟨v, hv, rfl⟩
 
+omit [Fintype S] [Nonempty S] in
 /-- Existential form of the named fixed-prefix knowledge certificate. -/
 theorem oracleVerifier_rbrKnowledgeSoundness (ε : unitInterval)
     (hG : IsZeroEvadingGenerator G ε) :

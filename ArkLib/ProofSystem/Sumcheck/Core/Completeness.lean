@@ -101,6 +101,7 @@ def HonestRel (p : Spec.OracleStatement R n deg ()) (i : Fin (n + 1)) (r : ℕ)
   st.round = i ∧ HEq st.statement s ∧ st.poly = p ∧
     ((s, fun _ => st.poly), ()) ∈ Spec.relationRound R n deg D i
 
+omit [SampleableType R] in
 /-- An honest round passes its check and preserves `HonestRel`. -/
 theorem honestRel_step (p : Spec.OracleStatement R n deg ()) (i : Fin n) (r : ℕ)
     (st : RoundState R deg n (r + 1)) (s : Spec.StatementRound R n i.castSucc) (chal : R)
@@ -120,6 +121,7 @@ theorem honestRel_step (p : Spec.OracleStatement R n deg ()) (i : Fin n) (r : �
   refine ⟨_, roundCheck_eq_some i _ _ hsum, rfl, HEq.rfl, hpoly, ?_⟩
   exact Spec.SingleRound.relationRound_projected_output R n deg D i _ poly chal
 
+omit [SampleableType R] in
 /-- On an input in the round-`0` relation, the legacy verdict of the honest transcript accepts
 the honest output statement, on every choice of challenges. -/
 theorem legacyVerdict_honestTranscript (stmt : Spec.StatementRound R n 0)
@@ -196,6 +198,7 @@ def judgement :
 
 variable {R deg n} [DecidableEq R] [SampleableType R] {ι : Type} (ambient : OracleSpec ι)
 
+omit [SampleableType R] in
 /-- Perfect completeness of the interaction-layer Sumcheck.
 
 For every ambient state, ambient oracle implementation and challenge implementation, the honest

@@ -273,7 +273,7 @@ variable [∀ i, SampleableType (pSpec₁.Challenge i)]
 
 /-- A deterministic verifier output that lies in a language is accepted with probability one. -/
 theorem pure_accepting_of_mem
-    {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
+    {n : ℕ} {pSpec : ProtocolSpec n}
     (V : Verifier oSpec Stmt₁ Stmt₂ pSpec)
     (stmt : Stmt₁) (tr : pSpec.FullTranscript)
     (lang : Set Stmt₂) (out : Stmt₂)
@@ -327,7 +327,7 @@ identification. The prefix witnessing is reachable by `mem_outputs_iff_of_run_eq
 the prefix tree's own acceptance. The escape twin routes the disjunction by a case split on "does
 the right factor escape anywhere" before entering the plain skeleton. -/
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **Preservation of tree special soundness under binary verifier append**, at the witness-only
 extractor and a pure left factor. Both factors' extractors are named, and the composed one is
 `Extractor.TreeBased.append verify₁ E₁ E₂`.
@@ -411,7 +411,7 @@ theorem append_treeSpecialSoundWith
   exact h₁ stmt tree.appendSplit.fst
     (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hpreAcc _ hpreValid
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **Escape-threaded preservation of tree special soundness under binary verifier append**, at the
 witness-only extractor and a pure left factor, with the composed event the UNCHANGED
 `ChallengeTree.EscapeEvent.append` at `verify₁`.
@@ -496,7 +496,7 @@ theorem append_treeSpecialSoundWithEscape
             (congrArg OptionT.run (hV₁ _ _)) _).mpr rfl, hrel₂⟩
       exact hext₁ _ hpreValid
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **Preservation of CWSS under binary verifier append** at the witness-only extractor: the
 CWSS-shape wrapper of `append_treeSpecialSoundWith`. The shape transport across
 `CWSSStructure.toShape_append` is `treeSpecialSoundWith_congr`; the two shapes' arities are
@@ -518,7 +518,7 @@ theorem append_coordinateWiseSpecialSoundWith
     (append_treeSpecialSoundWith init impl V₁ V₂
       (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) verify₁ hV₁ E₁ E₂ h₁ h₂)
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **Escape-threaded preservation of CWSS under binary verifier append** at the witness-only
 extractor: the CWSS-shape wrapper of `append_treeSpecialSoundWithEscape`. Both the extractor and the
 event cross the shape equality `CWSSStructure.toShape_append` by `HEq.rfl`. -/
@@ -566,7 +566,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 Each notion is the underlying verifier's on the combined (oracle + non-oracle) statements, so both
 mirrors are `append_toVerifier` followed by the non-oracle theorem. -/
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- Oracle-verifier wrapper for the binary CWSS append at the witness-only extractor: the composed
 extractor is `Extractor.TreeBased.append` at the left verifier's verdict map. -/
 theorem append_coordinateWiseSpecialSoundWith
@@ -590,7 +590,7 @@ theorem append_coordinateWiseSpecialSoundWith
   exact Verifier.append_coordinateWiseSpecialSoundWith init impl V₁.toVerifier V₂.toVerifier
     D₁ D₂ verify₁ hV₁ E₁ E₂ h₁ h₂
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- Oracle-verifier wrapper for the escape-threaded binary CWSS append at the witness-only
 extractor: the composed extractor is `Extractor.TreeBased.append` and the composed event is
 `ChallengeTree.EscapeEvent.append`, both at the left verifier's verdict map. -/
