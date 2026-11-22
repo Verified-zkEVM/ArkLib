@@ -45,10 +45,13 @@ The counting bounds have no sampler assumptions.
 
 ## References
 
-The general bound corresponds to Theorem 4.10 of [CWYZ26], with a stronger sufficient
-interpolation condition for freely chosen budgets, as described below.
-The full constraint count includes every order `s < m`; (4.5) stops at `min(m - 1, M)`.
-The parameter choice of Theorem 1.1 satisfies the full condition.
+The general bound corresponds to Theorem 4.10 of [CWYZ26].
+The interpolation condition here counts the constraints of every order `s < m`, whereas (4.5)
+stops at `min(m - 1, M)`.
+For `M ≥ 1` given by (4.1), the two conditions are equivalent.
+For a smaller `M`, the condition here can be stronger.
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) gives the argument.
+The parameter choice of Theorem 1.1 satisfies the condition.
 The final bound is Theorem 1.1 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
