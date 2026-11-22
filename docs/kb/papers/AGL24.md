@@ -128,7 +128,9 @@ single-minor bound for a `k`-weakly partition-connected hypergraph,
 (`MvPolynomial.card_filter_injective_eval_eq_zero_le` in
 [SchwartzZippel.lean](../../../ArkLib/ToMathlib/MvPolynomial/SchwartzZippel.lean))
 applies to it. The source states this single-minor bound only as a remark in its proof overview,
-as the probability bound `1 − Lk²/q`.
+as the probability bound `1 − Lk²/q`. The total degree `n · s(k − 1)` is deliberately loose: the
+minor's `s·k` rows have entries of degree at most `k − 1`, so its total degree is at most
+`s·k·(k − 1)`; the looser bound is enough for `rs_random_domain_lambda_le`.
 
 ## Known Divergences From ArkLib
 

@@ -27,6 +27,11 @@ over pairwise-distinct points gives
 
   `#{α | ¬IsRigid H k α} * (q - n + 1) ≤ n * (s * (k - 1)) * E`
 
+The total degree `n * (s * (k - 1))` is deliberately loose: the minor has `s * k` rows with
+entries of degree at most `k - 1`, so its total degree is at most `s * k * (k - 1)`, which is
+smaller when `k < n`. The looser bound follows directly from the per-variable bound and is enough
+for the list-size bound on random domains.
+
 If `H` is `(k + 2 * r)`-weakly partition-connected, every tuple at which `H` is not rigid has a
 certificate `c : Fin r ↪ Fin n` with fewer than `2 ^ (s + 1)` descents. For a fixed `c`, given
 the coordinates before `c j`, the coordinate `c j` of a tuple with certificate `c` is one of at
@@ -71,7 +76,9 @@ variable {F : Type*} [Field F] [Fintype F] {n s k r : ℕ} {H : Fin n → Finset
 open Classical in
 /-- **Rank loss from one minor.** If `H` is `k`-weakly partition-connected, the number `N` of
 tuples `α : Fin n ↪ F` at which `H` is not rigid for degree `k` satisfies
-`N * (Fintype.card F - n + 1) ≤ n * (s * (k - 1)) * Fintype.card (Fin n ↪ F)`. -/
+`N * (Fintype.card F - n + 1) ≤ n * (s * (k - 1)) * Fintype.card (Fin n ↪ F)`. The total degree
+`n * (s * (k - 1))` of the minor is deliberately loose (the minor's total degree is at most
+`s * k * (k - 1)`); it is the per-variable bound summed over the `n` variables. -/
 theorem card_filter_not_isRigid_mul_le (hH : IsWeaklyPartitionConnected H k) :
     #{α : Fin n ↪ F | ¬IsRigid H k α} * (Fintype.card F - n + 1) ≤
       n * (s * (k - 1)) * Fintype.card (Fin n ↪ F) := by
@@ -112,11 +119,8 @@ theorem card_filter_isCertificate_mul_pow_le (hH : IsWeaklyPartitionConnected H 
     fun α _ β _ h ↦ DFunLike.coe_injective h) hpow).trans
     ((card_filter_injective_sequential_le univ (univ.map c) (certificatePolynomial F hH c)).trans
       (Nat.mul_le_mul hdeg ?_))
-  · refine mem_coe.2 (mem_filter.2 ⟨Fintype.mem_piFinset.2 fun _ ↦ mem_univ _, α.injective,
-      fun i hi ↦ ?_⟩)
-    obtain ⟨j, -, rfl⟩ := mem_map.1 hi
-    rw [certificatePolynomial_apply]
-    exact (mem_filter.1 (mem_coe.1 hα)).2 j
+  · exact mem_coe.2 (mem_filter.2 ⟨Fintype.mem_piFinset.2 fun _ ↦ mem_univ _, α.injective,
+      (mem_filter.1 (mem_coe.1 hα)).2.aeval_certificatePolynomial⟩)
   · rw [card_univ, Fintype.card_embedding_eq, Fintype.card_fin]
 
 open Classical in
