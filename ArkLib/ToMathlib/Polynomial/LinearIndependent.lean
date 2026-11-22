@@ -20,8 +20,8 @@ public import Mathlib.RingTheory.UniqueFactorizationDomain.Defs
 * `Polynomial.linearIndependent_of_linearIndependent_map`: linear independence is reflected along
   a ring homomorphism whose kernel lies in the principal ideal of a non-unit, over a domain with
   well-founded divisibility.
-* `Polynomial.linearIndependent_map_algebraMap_iff`: over a domain, linear independence of
-  polynomials is the same over the domain and over its fraction field.
+* `Polynomial.linearIndependent_map_algebraMap_iff`: linear independence of polynomials is the
+  same over a ring and over its fraction field.
 * `Polynomial.linearIndependent_option_of_dvd`: adjoining a polynomial that does not vanish at `c`
   to a linearly independent family of multiples of `X - C c`.
 * `Polynomial.linearIndependent_iff_det_coeff_ne_zero`: `m` polynomials of degree `< m` are
@@ -70,9 +70,9 @@ theorem linearIndependent_of_linearIndependent_map [IsDomain R] [WfDvdMonoid R] 
     rw [hg' i₀ hi₀, h0, mul_zero]
   exact hmin (g' i₀) ⟨hg'0, g', hsum', rfl⟩ ⟨hg'0, π, hπ, by rw [hg' i₀ hi₀, mul_comm]⟩
 
-/-- Polynomials over a domain are linearly independent over the fraction field iff they are
-linearly independent over the domain. -/
-theorem linearIndependent_map_algebraMap_iff [IsDomain R] {K : Type*} [Field K] [Algebra R K]
+/-- Polynomials over `R` are linearly independent over a fraction field `K` of `R` iff they are
+linearly independent over `R`. -/
+theorem linearIndependent_map_algebraMap_iff {K : Type*} [Field K] [Algebra R K]
     [IsFractionRing R K] {f : β → R[X]} :
     LinearIndependent K (fun b => (f b).map (algebraMap R K)) ↔ LinearIndependent R f := by
   rw [← LinearIndependent.iff_fractionRing R K]

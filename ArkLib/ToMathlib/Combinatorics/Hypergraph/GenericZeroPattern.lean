@@ -17,9 +17,10 @@ edges. Then the vertices can be listed, with repetitions, as `f : Fin (N - k) �
 sets of edges avoiding them, `ℓ ↦ {i | f ℓ ∉ H i}`, form a generic zero pattern: for every
 nonempty `I`, at most `N - k - #I` edges avoid all of `I.image f`.
 
-The multiplicities come from `Finset.exists_nat_sum_eq_of_le_sum_parts` applied to
-`A ↦ #{i | (H i ∩ A).Nonempty} - k` (in `ℤ`): this set function is submodular on intersecting
-pairs, nonnegative on nonempty sets, and its partition condition is weak partition-connectivity.
+The multiplicities come from `Finset.exists_nat_sum_eq_and_sum_le_of_intersecting_submodular`
+applied to `A ↦ #{i | (H i ∩ A).Nonempty} - k` (in `ℤ`): this set function is submodular on
+intersecting pairs, nonnegative on nonempty sets, and its partition condition is weak
+partition-connectivity.
 This replaces the hypergraph orientation theorem used in [AGL24]; no orientations appear.
 
 ## Main statements
@@ -108,7 +109,8 @@ theorem IsWeaklyPartitionConnected.exists_sum_add_eq_card (h : IsWeaklyPartition
       (#{i | (H i ∩ univ).Nonempty} : ℤ) - k ≤
         ∑ A ∈ P.parts, ((#{i | (H i ∩ A).Nonempty} : ℤ) - k) := by
     simpa only [inter_univ] using (isWeaklyPartitionConnected_natCast_iff H k).1 h
-  obtain ⟨δ, hsum, hle⟩ := exists_nat_sum_eq_of_le_sum_parts hsub hnonneg hpart
+  obtain ⟨δ, hsum, hle⟩ :=
+    exists_nat_sum_eq_and_sum_le_of_intersecting_submodular hsub hnonneg hpart
   refine ⟨δ, ?_, fun A hA ↦ ?_⟩
   · rw [huniv, ← Nat.cast_sum] at hsum
     omega
@@ -119,7 +121,12 @@ theorem IsWeaklyPartitionConnected.exists_sum_add_eq_card (h : IsWeaklyPartition
 /-- **Generic zero patterns from weakly partition-connected hypergraphs.** If `H : ι → Finset V`
 is `k`-weakly partition-connected and all edges are nonempty, then there is a list of vertices
 `f : Fin (card ι - k) → V` such that the sets `{i | f ℓ ∉ H i}` of edges avoiding them form a
-generic zero pattern. -/
+generic zero pattern.
+
+The edges must be nonempty, but an agreement hypergraph can have empty edges: no word agrees with
+the received word at that coordinate. To apply this theorem, first drop the empty edges with
+`isWeaklyPartitionConnected_restrict_edges_iff`, which keeps weak partition-connectivity because an
+edge with at most one vertex does not count. -/
 theorem IsWeaklyPartitionConnected.exists_isGenericZeroPattern [DecidableEq ι]
     (h : IsWeaklyPartitionConnected H k) (hH : ∀ i, (H i).Nonempty) :
     ∃ f : Fin (Fintype.card ι - k) → V,

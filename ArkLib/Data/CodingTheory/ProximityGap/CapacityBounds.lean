@@ -304,41 +304,21 @@ codes over prime fields whose rate is within `O(1/log n)` of `ρ` and for which
 
   `ε_ca(C, 1 - ρ - Θ(1/log n)) ≥ n^c / |F|`
 
-The uniform constants record the `O(1/log₂ n)` rate control, `Θ(1/log₂ n)` capacity slack, and
-two-sided `|F| = Θ(n^β)` field growth. Quantifying over every lower length bound makes this a
-family statement rather than a single-instance asymptotic claim.
+This is `NearCapacityCaLowerBound c ρ`, which spells out the uniform constants: the
+`O(1/log₂ n)` rate control, the `Θ(1/log₂ n)` capacity slack, and the two-sided `|F| = Θ(n^β)`
+field growth. The coding part is `exists_rs_epsCa_large_near_capacity_of_primes`; the proof admits
+only the supply of primes `NearCapacityPrimeSupply c`.
 
 Solicited proof: see
 <https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
 theorem exists_rs_epsCa_large_near_capacity
-    (c : ℝ≥0) (_hc : 0 < c) (ρ : ℝ≥0) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < (1 / 2 : ℝ≥0)) :
-    ∃ Kρ K₁ K₂ : ℝ, 0 < Kρ ∧ 0 < K₁ ∧ K₁ ≤ K₂ ∧
-    ∃ β Kq_lo Kq_hi : ℝ,
-    max ((c : ℝ) + 2) (12 / 5) < β ∧ 0 < Kq_lo ∧ Kq_lo ≤ Kq_hi ∧
-    ∀ n₀ : ℕ,
-    ∃ (ιC : Type) (_ : Fintype ιC) (_ : Nonempty ιC) (_ : DecidableEq ιC)
-      (FC : Type) (_ : Field FC) (_ : Fintype FC) (_ : DecidableEq FC)
-      (domain : ιC ↪ FC) (_ : ReedSolomon.Smooth domain) (k : ℕ) (slack : ℝ≥0),
-      -- arbitrarily large block length:
-      n₀ ≤ Fintype.card ιC ∧
-      -- `F` is a prime field (paper's "prime field" claim):
-      (∃ p : ℕ, p.Prime ∧ CharP FC p ∧ Fintype.card FC = p) ∧
-      -- `|F| = Θ(n^β)` uniformly in the family:
-      Kq_lo * (Fintype.card ιC : ℝ) ^ β ≤ Fintype.card FC ∧
-      (Fintype.card FC : ℝ) ≤ Kq_hi * (Fintype.card ιC : ℝ) ^ β ∧
-      -- KKH26 controls the code distance, hence its rate, only up to `O(1/log n)`:
-      |(k : ℝ) / Fintype.card ιC - (ρ : ℝ)|
-        ≤ Kρ / Real.logb 2 (Fintype.card ιC) ∧
-      -- slack pinned to `Θ(1/log₂ n)`:
-      K₁ / Real.logb 2 (Fintype.card ιC) ≤ (slack : ℝ) ∧
-      (slack : ℝ) ≤ K₂ / Real.logb 2 (Fintype.card ιC) ∧
-      let _ : SampleableType FC := SampleableType.ofFintype FC
-      epsCa (F := FC) (A := FC) ((ReedSolomon.code domain k : Set (ιC → FC)))
-          (1 - ρ - slack) (1 - ρ - slack) ≥
-        ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal) := by
-  exact exists_rs_epsCa_large_near_capacity_of_primes c ρ _hρ_pos _hρ_lt
-    sorry -- prime supply; external admit [KKH26] (ABF26-T4.16).
-
+    (c : ℝ≥0) (_hc : 0 < c) (ρ : ℝ≥0) (hρ_pos : 0 < ρ) (hρ_lt : ρ < (1 / 2 : ℝ≥0)) :
+    NearCapacityCaLowerBound c ρ := by
+  have hprimes : NearCapacityPrimeSupply c := by
+    -- External admit for ABF26 Theorem 4.17 [KKH26] (ledger numbering; Theorem 4.16 in the
+    -- 2026-04-08 PDF): primes `p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]` for infinitely many `K`.
+    sorry
+  exact exists_rs_epsCa_large_near_capacity_of_primes c ρ hρ_pos hρ_lt hprimes
 
 end ReedSolomon
 

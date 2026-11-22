@@ -88,8 +88,10 @@ noncomputable def intersectionMatrix (R : Type*) [CommRing R] (H : ι → Finset
     (if (H r.1.1).min = c.1.castSucc then MvPolynomial.X r.1.1 ^ (c.2 : ℕ) else 0) -
       if r.1.2 = c.1.castSucc then MvPolynomial.X r.1.1 ^ (c.2 : ℕ) else 0
 
-/-- `H` is rigid for degree `k` at `α` if every tuple of polynomials of degree less than `k`,
-vanishing at the last vertex, whose values at `α i` agree on every edge `H i`, is zero. -/
+/-- `H` is rigid for degree `k` at `α` if the intersection matrix of `H` for degree `k` has full
+column rank at `α`, the term [AGL24] uses. We state it in polynomial form: every tuple of
+polynomials of degree less than `k`, vanishing at the last vertex, whose values at `α i` agree on
+every edge `H i`, is zero. `isRigid_iff_mulVec_injective` gives the matrix form. -/
 def IsRigid {K : Type*} [Field K] (H : ι → Finset (Fin (s + 1))) (k : ℕ) (α : ι → K) : Prop :=
   ∀ f : Fin (s + 1) → K[X], (∀ j, f j ∈ degreeLT K k) → f (Fin.last s) = 0 →
     (∀ i, ∀ j ∈ H i, ∀ j' ∈ H i, (f j).eval (α i) = (f j').eval (α i)) → f = 0

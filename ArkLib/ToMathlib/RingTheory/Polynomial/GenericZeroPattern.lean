@@ -62,6 +62,7 @@ See `docs/kb/papers/Lov18.md`.
 universe u
 
 open Finset
+open Multiset (IsGenericMultiplicityPattern CountLeOneExcept)
 
 /-! ### The combinatorial steps of the induction -/
 
@@ -91,7 +92,7 @@ private theorem Multiset.count_map_update_id {d j : ι} (hjd : j ≠ d) (m : Mul
       simp [hxd, add_comm]
     · simp [hxd, hxj, Ne.symm hxj]
 
-namespace IsGenericMultiplicityPattern
+namespace Multiset.IsGenericMultiplicityPattern
 
 /-- Replacing a tight subfamily `I` by its infimum keeps a generic multiplicity pattern. -/
 private theorem tight_merge (hs : IsGenericMultiplicityPattern k s) {d : ι}
@@ -293,7 +294,7 @@ private theorem mem_of_forall_not_mem (hs : IsGenericMultiplicityPattern k s) {d
   · rw [Multiset.count_eq_zero.2 hxi]
     exact Nat.zero_le _
 
-end IsGenericMultiplicityPattern
+end Multiset.IsGenericMultiplicityPattern
 
 end CombinatorialSteps
 
