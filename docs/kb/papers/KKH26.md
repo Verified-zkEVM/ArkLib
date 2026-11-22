@@ -74,6 +74,7 @@ the paper's `τ` is ArkLib's `c`, and the paper's own `c` is `H₂(ρ)`.
 
 | Proposition 3 | `exists_rs_epsCa_large_near_capacity_of_prime` / `NearCapacityCaLowerBound` |
 |---|---|
+| `τ ≥ 1` | `c : ℝ≥0`; only `exists_rs_epsCa_large_near_capacity` assumes `0 < c` |
 | `ρ = 1 − δ ∈ (0,1)` | `0 < ρ < 1/2` |
 | `≳ n^{τ−o(1)}` close points | `ε_ca ≥ n^c / \|F\|`, exactly |
 | `β > max{τ+1, 12/5}`, `p = Θ(n^β)` | per prime: `p ≥ n^{c+2}`; family: one `β > max(c+2, 12/5)` with `Kq_lo·n^β ≤ \|F\| ≤ Kq_hi·n^β` |
@@ -142,7 +143,10 @@ the codewords that agree with the centre there are `u − v_S(X^m)` and `−p_{S
   arithmetic progressions for smooth moduli (p. 3; Appendix A step 2, p. 14). The other
   declarations above are proved.
 - Theorem 1, Item 1 over prime fields: `exists_rs_asymptotic_Lambda_lower_bound` takes the
-  existence of smooth domains of every size `2^K` as its `supply` hypothesis.
+  existence of smooth domains of every size `2^K` as its `supply` hypothesis, and its conclusion
+  lets the field be any finite field, not only a prime field. Over prime fields, `supply` can be
+  discharged with Mathlib's `Nat.exists_prime_gt_modEq_one` and the private
+  `exists_smooth_domain_zmod` in `NearCapacity.lean`; ArkLib does not do this.
 - Propositions 1, 2 and 4, and Lemmas 2 and 3. `sumSet_card_div_le_epsCa` and
   `two_pow_mul_choose_le_card_sumSet` are not combined into Proposition 1.
 
