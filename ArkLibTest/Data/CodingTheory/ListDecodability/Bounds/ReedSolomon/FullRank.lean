@@ -65,8 +65,10 @@ example : ∃ P : MvPolynomial (Fin 4) (ZMod 5), P ≠ 0 ∧ ∀ α : Fin 4 ↪ 
   convert h α hα using 2
   norm_num
 
+-- Over an infinite field, points off the zero set of the polynomial exist.
 example : ∃ α : Fin 4 ↪ ℚ, Lambda (code α 2 : Set (Fin 4 → ℚ)) (1 / 3) ≤ 2 := by
-  obtain ⟨α, hα⟩ := exists_embedding_Lambda_le (ι := Fin 4) ℚ 2 (ℓ := 2) two_pos
-  refine ⟨α, ?_⟩
-  convert hα using 2
+  obtain ⟨P, hP, h⟩ := exists_ne_zero_Lambda_le_of_eval_ne_zero (ι := Fin 4) ℚ 2 (ℓ := 2) two_pos
+  obtain ⟨x, hx, hPx⟩ := MvPolynomial.exists_injective_eval_ne_zero hP
+  refine ⟨⟨x, hx⟩, ?_⟩
+  convert h ⟨x, hx⟩ hPx using 2
   norm_num

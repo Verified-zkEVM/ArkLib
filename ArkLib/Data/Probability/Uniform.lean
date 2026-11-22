@@ -22,7 +22,8 @@ distinct points). An event that depends only on the drawn set has the same proba
 so a sample of ordered distinct points, as in [AGL24], may replace a uniform `n`-element set.
 `prEvent_uniformSample_finsetCard_eq_card_embedding` states the probability under a uniform
 `n`-element set as the fraction of embeddings whose image satisfies the event, which needs no
-sampler for embeddings.
+sampler for embeddings. `ofReal_one_sub_le_card_filter_div` turns a bound on the fraction of a
+finite type that fails an event into a lower bound on the fraction that satisfies it.
 
 ## References
 
@@ -80,5 +81,22 @@ theorem prEvent_uniformSample_finsetCard_eq_embedding {α : Type} [Finite α] {n
   classical
   have := Fintype.ofFinite α
   rw [prEvent_uniformSample_finsetCard_eq_card_embedding, SampleableType.prEvent_uniformSample]
+
+open Finset in
+/-- If at most a fraction `x` of a nonempty finite type fails `P`, then `P` holds on at least a
+fraction `1 - x` of it. With `prEvent_uniformSample_finsetCard_eq_card_embedding` or
+`SampleableType.prEvent_uniformSample`, this bounds the probability of `P` from below. -/
+theorem ofReal_one_sub_le_card_filter_div {α : Type*} [Fintype α] [Nonempty α]
+    {P : α → Prop} [DecidablePred P] {x : ℝ} (h : (#{a | ¬P a} : ℝ) ≤ x * Fintype.card α) :
+    ENNReal.ofReal (1 - x) ≤ (#{a | P a} : ENNReal) / Fintype.card α := by
+  have hc : (0 : ℝ) < Fintype.card α := by exact_mod_cast Fintype.card_pos
+  have hsum := card_filter_add_card_filter_not (s := (univ : Finset α)) P
+  rw [card_univ] at hsum
+  have hsum' : (#{a | P a} : ℝ) + #{a | ¬P a} = Fintype.card α := by exact_mod_cast hsum
+  rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_natCast (Fintype.card α),
+    ← ENNReal.ofReal_div_of_pos hc]
+  refine ENNReal.ofReal_le_ofReal ?_
+  rw [le_div_iff₀ hc]
+  linarith
 
 end ProbabilityTheory

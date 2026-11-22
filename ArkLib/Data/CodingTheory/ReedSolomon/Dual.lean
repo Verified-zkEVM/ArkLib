@@ -27,6 +27,8 @@ parity-check matrix of `code domain k`. No relation between `k` and `n` is assum
 
 * `ReedSolomon.grsEvalOnPoints`: evaluation with column multipliers, as a linear map.
 * `ReedSolomon.grsCode`: the generalized Reed–Solomon code, as a submodule.
+* `ReedSolomon.grsEvalOnPoints_one`, `ReedSolomon.grsCode_one`: with all column multipliers `1`
+  they are `evalOnPoints` and `code`.
 
 `grsCode` is `noncomputable`, as `code` is: `Polynomial.degreeLT` is. `grsEvalOnPoints` is
 computable.
@@ -58,7 +60,8 @@ section GeneralizedReedSolomon
 variable {ι F : Type*} [CommSemiring F] (domain : ι ↪ F)
 
 /-- Evaluation at the points `domain` with column multipliers `v`, the linear map
-`p ↦ (v i * p.eval (domain i))ᵢ`. At `v = 1` it is `evalOnPoints domain`. -/
+`p ↦ (v i * p.eval (domain i))ᵢ`. At `v = 1` it is `evalOnPoints domain`
+(`grsEvalOnPoints_one`). -/
 def grsEvalOnPoints (v : ι → F) : F[X] →ₗ[F] (ι → F) where
   toFun p i := v i * p.eval (domain i)
   map_add' p q := by ext; simp [mul_add]
@@ -84,14 +87,17 @@ lemma mem_grsCode_iff {deg : ℕ} {v f : ι → F} :
   simp only [grsCode, Submodule.mem_map]
   exact exists_congr fun p ↦ and_congr_right fun _ ↦ by rw [eq_comm]; rfl
 
+/-- With all column multipliers `1`, weighted evaluation is evaluation. -/
+@[simp]
+lemma grsEvalOnPoints_one : grsEvalOnPoints domain 1 = evalOnPoints domain := by
+  ext p i
+  simp [evalOnPoints]
+
 /-- With all column multipliers `1`, the generalized Reed–Solomon code is the Reed–Solomon
 code. -/
 @[simp]
 lemma grsCode_one (deg : ℕ) : grsCode domain deg 1 = code domain deg := by
-  have : grsEvalOnPoints domain 1 = evalOnPoints domain := by
-    ext p i
-    simp [evalOnPoints]
-  rw [grsCode, this, code]
+  rw [grsCode, grsEvalOnPoints_one, code]
 
 end GeneralizedReedSolomon
 
