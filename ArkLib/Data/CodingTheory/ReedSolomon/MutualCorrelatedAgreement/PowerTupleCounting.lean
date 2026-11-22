@@ -199,6 +199,9 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
   have hgraphs : graphP = graphR := by
     funext i
     cases i with
+    -- Not `rfl`: the kernel would compare the two graph maps argument by argument,
+    -- which does not finish under leanchecker/Comparator replay. Ascribing `X = X`
+    -- makes it reduce each side to `X`.
     | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
     | some i =>
       have hi : i = 0 := Subsingleton.elim _ _
@@ -301,6 +304,9 @@ theorem admissibleFrobeniusPowerTuples_card_le_degreeOf [Infinite E]
             fun o ↦ o.elim Polynomial.X fun _ ↦ graph P := by
         funext o
         cases o with
+        -- Not `rfl`: the kernel would compare the two graph maps argument by argument,
+        -- which does not finish under leanchecker/Comparator replay. Ascribing `X = X`
+        -- makes it reduce each side to `X`.
         | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
         | some j =>
           have hj : j = 0 := Subsingleton.elim _ _
