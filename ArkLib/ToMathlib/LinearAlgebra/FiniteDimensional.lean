@@ -5,8 +5,8 @@ Authors: Alexander Hicks
 -/
 module
 
-public import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 public import Mathlib.LinearAlgebra.Projection
 
 /-!
@@ -219,10 +219,7 @@ theorem linearIndependent_of_span_le_of_card_le {K V : Type*} [DivisionRing K] [
     (hu' : LinearIndependent K u')
     (hle : Submodule.span K (Set.range u') ≤ Submodule.span K (Set.range u))
     (hcard : Fintype.card ι ≤ Fintype.card ι') : LinearIndependent K u := by
-  rw [linearIndependent_iff_card_eq_finrank_span]
   have : Module.Finite K (Submodule.span K (Set.range u)) :=
     Module.Finite.span_of_finite K (Set.finite_range u)
-  have h1 := finrank_range_le_card (R := K) u
-  have h2 := linearIndependent_iff_card_eq_finrank_span.1 hu'
-  have h3 : (Set.range u').finrank K ≤ (Set.range u).finrank K := Submodule.finrank_mono hle
-  omega
+  exact linearIndependent_iff_card_le_finrank_span.2 <| hcard.trans <|
+    (linearIndependent_iff_card_le_finrank_span.1 hu').trans (Submodule.finrank_mono hle)
