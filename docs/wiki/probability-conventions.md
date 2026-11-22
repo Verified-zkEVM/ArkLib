@@ -38,6 +38,23 @@ composition theorems and retains the chosen component samplers through dependent
 Rebuilding the entire family's samplers with `SampleableType.ofFintype` can preserve the
 probabilities while changing the sampler programs.
 
+## Computable values and semantic probabilities
+
+An executable sampler describes how to draw a value.
+The `ENNReal` event probability `Pr{…}[…]` is a semantic quantity and is noncomputable.
+An executable sampler alone does not make a quantified event decidable.
+
+For a finite family of Boolean events, `Probability.maxEventProbability` in
+`ArkLib/Data/Probability/MaxEventProbability.lean` computes the exact worst-case probability in
+`ℚ≥0` by exhaustive counting.
+`Probability.ofReal_maxEventProbability_eq_iSup` proves that `ENNReal.ofReal` of its real cast is
+the `ENNReal` supremum of the counting probabilities.
+The Reed–Solomon combiner-error evaluators in
+`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean`
+decide their events by finite searches over bounded-degree CompPoly polynomials. Their bridge
+theorems prove that `ENNReal.ofReal` of the real cast of each rational error is the semantic error.
+`maxEventProbability` and these evaluators use no classical decision procedure and no sampler.
+
 ## Event proofs
 
 Use VCVio's `prEvent_mono`, `prEvent_congr`, `prEvent_or_le`, `prEvent_exists_le`, and
