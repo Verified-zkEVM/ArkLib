@@ -11,7 +11,6 @@ public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.Set.Finite
 /-!
 # List Decodability
@@ -270,8 +269,7 @@ lemma closeCodewordsRel_comp_equiv {κ : Type*} [Fintype κ] (e : κ ≃ ι) {C 
   classical
   have hmem (c : ι → F) :
       c ∘ e ∈ closeCodewordsRel C' (f ∘ e) δ ↔ c ∈ closeCodewordsRel C f δ := by
-    rw [mem_closeCodewordsRel_iff, mem_closeCodewordsRel_iff, hC, relHammingDist,
-      relHammingDist, hammingDist_comp_equiv, Fintype.card_congr e]
+    rw [mem_closeCodewordsRel_iff, mem_closeCodewordsRel_iff, hC, relHammingDist_comp_equiv]
   ext c
   refine ⟨fun hc => ⟨c ∘ e.symm, (hmem _).mp ?_, ?_⟩, fun ⟨c, hc, hce⟩ => hce ▸ (hmem c).mpr hc⟩
   · simpa [Function.comp_def] using hc

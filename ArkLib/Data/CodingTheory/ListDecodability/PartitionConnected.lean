@@ -24,6 +24,9 @@ alphabet only decidable equality.
 
 ## Main statements
 
+* `Code.sum_agree_le_sum_card_filter_sub_one_add`,
+  `Code.card_mul_sub_sum_hammingDist_sub_le_sum_card_filter_sub_one`: double counting, the
+  agreement hypergraph has weight at least `card V * n - ∑ j, Δ₀(y, c j) - n`.
 * `Code.exists_isWeaklyPartitionConnected_agreement_of_sum_hammingDist_le`: if
   `∑ j, Δ₀(y, c j) ≤ (card V - 1) * (n - κ)` and `V` has at least two elements, the agreement
   hypergraph of `y` and the words `c j` with `j ∈ S` is `κ`-weakly partition-connected for some
@@ -51,9 +54,10 @@ namespace Code
 
 variable {ι A : Type*} [Fintype ι] [DecidableEq A]
 
-/-- Summed over the coordinates, the agreement hypergraph of `y` and `c` has weight at least the
-total agreement of the words `c j` with `y`, less the number of coordinates. -/
-private theorem sum_agree_le_sum_card_filter_sub_one_add {V : Type*} [Fintype V] (y : ι → A)
+/-- **Double counting.** Summed over the words, the agreements of the words `c j` with `y` number
+at most the weight `∑ i, (#{j | c j i = y i} - 1)` of the agreement hypergraph plus the number of
+coordinates. -/
+theorem sum_agree_le_sum_card_filter_sub_one_add {V : Type*} [Fintype V] (y : ι → A)
     (c : V → ι → A) :
     ∑ j, agree (c j) y ≤ ∑ i, (#{j | c j i = y i} - 1) + Fintype.card ι := by
   calc ∑ j, agree (c j) y = ∑ i, #{j | c j i = y i} := by
@@ -62,12 +66,12 @@ private theorem sum_agree_le_sum_card_filter_sub_one_add {V : Type*} [Fintype V]
     _ ≤ ∑ i, (#{j | c j i = y i} - 1 + 1) := sum_le_sum fun i _ ↦ by omega
     _ = _ := by rw [sum_add_distrib, sum_const, card_univ, smul_eq_mul, mul_one]
 
-/-- If the distances from `y` to the words `c j` sum to at most `(card V - 1) * (n - κ)`, the
-agreement hypergraph has weight at least `κ * (card V - 1)`. -/
-private theorem le_sum_card_filter_sub_one_of_sum_hammingDist_le {V : Type*} [Fintype V]
-    {y : ι → A} {c : V → ι → A} {κ : ℝ} (hV : 1 ≤ Fintype.card V)
-    (hdist : (∑ j, (Δ₀(y, c j) : ℝ)) ≤ (Fintype.card V - 1 : ℝ) * (Fintype.card ι - κ)) :
-    κ * ((Fintype.card V - 1 : ℕ) : ℝ) ≤ ((∑ i, (#{j | c j i = y i} - 1) : ℕ) : ℝ) := by
+/-- The agreement hypergraph of `y` and the words `c j` has weight at least
+`card V * n - ∑ j, Δ₀(y, c j) - n`, where `n = card ι`. -/
+theorem card_mul_sub_sum_hammingDist_sub_le_sum_card_filter_sub_one {V : Type*} [Fintype V]
+    (y : ι → A) (c : V → ι → A) :
+    (Fintype.card V : ℝ) * Fintype.card ι - ∑ j, (Δ₀(y, c j) : ℝ) - Fintype.card ι ≤
+      ((∑ i, (#{j | c j i = y i} - 1) : ℕ) : ℝ) := by
   have hagree (j : V) : (agree (c j) y : ℝ) = Fintype.card ι - Δ₀(y, c j) := by
     rw [eq_sub_iff_add_eq, hammingDist_comm]
     exact_mod_cast agree_add_hammingDist
@@ -76,6 +80,15 @@ private theorem le_sum_card_filter_sub_one_of_sum_hammingDist_le {V : Type*} [Fi
     exact_mod_cast sum_agree_le_sum_card_filter_sub_one_add y c
   rw [Nat.cast_sum, sum_congr rfl fun j _ ↦ hagree j, sum_sub_distrib, sum_const, card_univ,
     nsmul_eq_mul] at hsum
+  linarith
+
+/-- If the distances from `y` to the words `c j` sum to at most `(card V - 1) * (n - κ)`, the
+agreement hypergraph has weight at least `κ * (card V - 1)`. -/
+private theorem le_sum_card_filter_sub_one_of_sum_hammingDist_le {V : Type*} [Fintype V]
+    {y : ι → A} {c : V → ι → A} {κ : ℝ} (hV : 1 ≤ Fintype.card V)
+    (hdist : (∑ j, (Δ₀(y, c j) : ℝ)) ≤ (Fintype.card V - 1 : ℝ) * (Fintype.card ι - κ)) :
+    κ * ((Fintype.card V - 1 : ℕ) : ℝ) ≤ ((∑ i, (#{j | c j i = y i} - 1) : ℕ) : ℝ) := by
+  have h := card_mul_sub_sum_hammingDist_sub_le_sum_card_filter_sub_one y c
   rw [Nat.cast_sub hV, Nat.cast_one]
   linarith
 
