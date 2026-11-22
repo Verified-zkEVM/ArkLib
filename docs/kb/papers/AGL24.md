@@ -8,6 +8,7 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/IntersectionMatrix.lean
   - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
   - ArkLib/Data/Probability/Uniform.lean
@@ -69,6 +70,20 @@ agreement hypergraphs are not full column rank (`not_isRigid_of_mem_code`); the 
 bound on maximal minors (`degreeOf_det_submatrix_le`); and row deletion and exchange of variables
 (`intersectionMatrix_apply_of_eq`, `rename_intersectionMatrix_apply`).
 
+`exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected` in
+[FullRank.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean):
+the source's full-column-rank theorem for reduced intersection matrices (`lem:int-mat-1` in the
+source), as a nonzero maximal minor of the intersection matrix over `MvPolynomial ι F` for any
+field `F`. The proof is the source's appendix proof through generic zero patterns, run at a point
+of the infinite field `RatFunc F`
+(`exists_isRigid_of_isWeaklyPartitionConnected`) in place of the source's reduction to large
+finite fields. Its corollary `exists_ne_zero_Lambda_le_of_eval_ne_zero`: over every field there
+is a nonzero polynomial `P` such that at every point `α` with pairwise distinct coordinates and
+`P(α) ≠ 0` the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
+`ℓ/(ℓ+1)·(1 − k/n)`; over an infinite field such points exist (`exists_embedding_Lambda_le`).
+This is the list-size form; it is not [BGM23]'s finite-field statement and gives no bound on the
+field size.
+
 ## Known Divergences From ArkLib
 
 ArkLib states the plain `Λ` bound, of which the source's average-radius form is a strengthening — the
@@ -99,8 +114,9 @@ needs a rounding the source does not fix.
 
 ## Open Formalization Gaps
 
-Theorem 1.1 itself. Its predecessors [BGM23], [GZ23] and the combined [AGGLZ25] are unformalized
-context.
+Theorem 1.1 itself. Of its predecessors, [BGM23] is formalized only in its list-size form at generic
+evaluation points (`exists_ne_zero_Lambda_le_of_eval_ne_zero`: no field-size bound, not
+average-radius); [GZ23] and the combined [AGGLZ25] are unformalized context.
 
 ## Source Access
 
