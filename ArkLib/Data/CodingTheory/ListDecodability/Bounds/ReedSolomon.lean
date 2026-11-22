@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.RandomDomain
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.FieldTheory.BinaryAddSubgroup
@@ -676,6 +677,41 @@ section RandomReedSolomon
 
 open scoped ProbabilityTheory
 
+open Finset in
+/-- If at most a fraction `x` of a nonempty finite type fails `P`, then `P` holds on at least a
+fraction `1 - x` of it. -/
+private theorem ofReal_one_sub_le_card_filter_div {α : Type*} [Fintype α] [Nonempty α]
+    {P : α → Prop} [DecidablePred P] {x : ℝ} (h : (#{a | ¬P a} : ℝ) ≤ x * Fintype.card α) :
+    ENNReal.ofReal (1 - x) ≤ (#{a | P a} : ENNReal) / Fintype.card α := by
+  have hc : (0 : ℝ) < Fintype.card α := by exact_mod_cast Fintype.card_pos
+  have hsum := card_filter_add_card_filter_not (s := (univ : Finset α)) P
+  rw [card_univ] at hsum
+  have hsum' : (#{a | P a} : ℝ) + #{a | ¬P a} = Fintype.card α := by exact_mod_cast hsum
+  rw [← ENNReal.ofReal_natCast, ← ENNReal.ofReal_natCast (Fintype.card α),
+    ← ENNReal.ofReal_div_of_pos hc]
+  refine ENNReal.ofReal_le_ofReal ?_
+  rw [le_div_iff₀ hc]
+  linarith
+
+open Finset in
+/-- Reindexing the Reed–Solomon code on the image of `f : Fin n ↪ F` by `f` does not change the
+maximal list size. -/
+private theorem Lambda_code_subtype_map_univ {F : Type} [Field F] {n : ℕ} (f : Fin n ↪ F)
+    (k : ℕ) (δ : ℝ) :
+    Lambda (ReedSolomon.code (Function.Embedding.subtype fun x : F ↦ x ∈ univ.map f) k :
+        Set (↥(univ.map f) → F)) δ = Lambda (ReedSolomon.code f k : Set (Fin n → F)) δ := by
+  let e : Fin n ≃ ↥(univ.map f) := Equiv.ofBijective (fun i ↦ ⟨f i, mem_map_of_mem f (mem_univ i)⟩)
+    ⟨fun i j h ↦ f.injective (congrArg Subtype.val h), fun x ↦ by
+      obtain ⟨i, -, hi⟩ := mem_map.1 x.2
+      exact ⟨i, Subtype.ext hi⟩⟩
+  have hf : e.toEmbedding.trans (Function.Embedding.subtype fun x : F ↦ x ∈ univ.map f) = f :=
+    Function.Embedding.ext fun _ ↦ rfl
+  refine (Code.Lambda_comp_equiv e (fun w ↦ ?_) δ).symm
+  have := ReedSolomon.mem_code_comp_equiv e
+    (Function.Embedding.subtype fun x : F ↦ x ∈ univ.map f) k w
+  rw [hf] at this
+  exact this
+
 open Classical in
 /-- **Reed-Solomon codes on a random evaluation domain are list-decodable near capacity**
 ([ABF26] Theorem 3.6, after [AGL24, Theorem 1.1]).
@@ -686,14 +722,13 @@ with `|F| ≥ n + k · 2^{10ℓ/η}`,
   `Pr[ |Λ(C, ℓ/(ℓ+1) · (1 − ρ − η))| ≤ ℓ ] ≥ 1 − 2^{−ℓn}` ,
 
 where the evaluation domain `L` is drawn uniformly from the size-`n` subsets of `F`, the code is
-`C := RS[F, L, k]`, and `ρ := k/n`.
+`C := RS[F, L, k]`, and `ρ := k/n`. [AGL24] proves average-radius list decodability; this theorem
+is the plain list-size (`Lambda`) form. It does not assume `η < 1`: for `η ≥ 1` the radius is at
+most `0`.
 
 **The random domain is the source's, not a reformulation.** The sample space is literally
-`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ`, and the code is
-indexed by that subset itself (`↥S → F`), so no ordering is chosen and no push-forward argument is
-needed. An earlier assessment recorded this row as blocked on missing infrastructure for a uniform
-distribution over size-`n` subsets; that gap is closed — `Finset F` is a `Fintype`, so the subtype
-is one too, and native uniform sampling applies directly.
+`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ` — and the code is
+indexed by that subset itself (`↥S → F`), so no ordering of the evaluation points is chosen.
 
 `[Nonempty {S : Finset F // S.card = n}]` is what `$ᵗ` needs, and it is implied by the field-size
 hypothesis (which forces `n ≤ |F|`, whence `Finset.exists_subset_card_eq` supplies a witness); it is
@@ -706,16 +741,13 @@ separately: its `ℓ` is real-valued, so it needs a rounding the source does not
 issue [ABF26] Theorem 3.4 raises in its `η`-form. Derive it at a call site with an explicit choice.
 
 [BGM23] (exponential alphabet) and [GZ23] (polynomial-size alphabet) are the preceding results, and
-[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem, and none is
-formalised.
-
-Solicited proof: see
-<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
+[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem. Of these, only the
+list-size form of [BGM23] over generic evaluation points is formalised
+(`ReedSolomon.exists_ne_zero_Lambda_le_of_eval_ne_zero`). -/
 theorem rs_random_domain_lambda_le
     {F : Type} [Field F] [Fintype F]
-    (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
-    (k n : ℕ)
-    (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (η : ℝ) (hη : 0 < η) (k n : ℕ)
+    (hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
       Pr{ let S ← $ᵗ {S : Finset F // S.card = n} }[
@@ -726,7 +758,19 @@ theorem rs_random_domain_lambda_le
   by_cases hn : n = 0
   · subst n
     simp
-  sorry -- external admit: [AGL24, Theorem 1.1].
+  have hq : n ≤ Fintype.card F := by
+    have : (0 : ℝ) ≤ k * 2 ^ ((10 * ℓ : ℝ) / η) := by positivity
+    exact_mod_cast (le_add_of_nonneg_right this).trans hF
+  have : Nonempty (Fin n ↪ F) := Function.Embedding.nonempty_of_card_le (by simpa using hq)
+  rw [@ProbabilityTheory.prEvent_uniformSample_finsetCard_eq_embedding F _ n _
+    (SampleableType.ofFintype (Fin n ↪ F)) fun T : Finset F ↦
+    Lambda ((ReedSolomon.code (Function.Embedding.subtype fun x : F ↦ x ∈ T) k :
+      Set (↥T → F))) ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / n - η)) ≤ (ℓ : ℕ∞)]
+  simp only [Lambda_code_subtype_map_univ]
+  simp only [SampleableType.prEvent_uniformSample]
+  exact ofReal_one_sub_le_card_filter_div (by
+    simpa only [not_le] using ReedSolomon.card_filter_lt_Lambda_le_two_pow_neg_mul (F := F)
+      hℓ hη hn hF)
 
 end RandomReedSolomon
 
