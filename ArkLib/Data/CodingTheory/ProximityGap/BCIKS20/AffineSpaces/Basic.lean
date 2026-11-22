@@ -40,42 +40,11 @@ variable {l : ℕ} [NeZero l]
 variable {ι : Type} [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-theorem jointAgreement_implies_second_proximity {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [DecidableEq F] {C : Set (ι → F)} {δ : ℝ≥0} {W : Fin 2 → ι → F} :
-    jointAgreement (C := C) (δ := δ) (W := W) → δᵣ(W 1, C) ≤ δ := by
-  intro h
-  rcases h with ⟨S, hS_card, v, hv⟩
-  have hv1 : v 1 ∈ C := (hv 1).1
-  have hSsub : S ⊆ Finset.filter (fun j => v 1 j = W 1 j) Finset.univ := (hv 1).2
-  have hdist : δᵣ(W 1, v 1) ≤ δ := by
-    rw [Code.relCloseToWord_iff_exists_agreementCols (u := W 1) (v := v 1) (δ := δ)]
-    refine ⟨S, ?_, ?_⟩
-    · have hS' : (1 - δ) * (Fintype.card ι : ℝ≥0) ≤ (S.card : ℝ≥0) := by
-        simpa [ge_iff_le, mul_comm, mul_left_comm, mul_assoc] using hS_card
-      exact (Code.relDist_floor_bound_iff_complement_bound (n := Fintype.card ι)
-        (upperBound := S.card) (δ := δ)).2 hS'
-    · intro j
-      constructor
-      · intro hj
-        have hj' : j ∈ Finset.filter (fun j => v 1 j = W 1 j) Finset.univ := hSsub hj
-        have : v 1 j = W 1 j := by
-          simpa [Finset.mem_filter] using hj'
-        exact this.symm
-      · intro hj_ne hj
-        have hj' : j ∈ Finset.filter (fun j => v 1 j = W 1 j) Finset.univ := hSsub hj
-        have : v 1 j = W 1 j := by
-          simpa [Finset.mem_filter] using hj'
-        exact hj_ne this.symm
-  have hclose : ∃ v' ∈ C, δᵣ(W 1, v') ≤ δ := by
-    exact ⟨v 1, hv1, hdist⟩
-  exact
-    (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist (u := W 1) (C := C) (δ := δ)).2 hclose
-
-/-- Generalisation of `jointAgreement_implies_second_proximity` to an arbitrary word stack over a
-submodule code. If a stack `W : Fin k → ι → F` jointly agrees with a submodule `C ⊆ ι → F`, then
-every element of the linear span of the stack is `δ`-close to `C`. The pointwise case
-`W i ∈ C` is the special case `x = W i` (choose coefficients `c` to be the i-th basis vector);
-the original `Fin 2` lemma is the case `k = 2`, `x = W 1`.
+/-- Generalisation of `Code.jointAgreement.relDistFromCode_le` from the words of a stack to their
+linear span, over a submodule code. If a stack `W : Fin k → ι → F` jointly agrees with a submodule
+`C ⊆ ι → F`, then every element of the linear span of the stack is `δ`-close to `C`. The case
+`x = W i` (choose coefficients `c` to be the i-th basis vector) is
+`Code.jointAgreement.relDistFromCode_le`, which holds for any code `C`.
 
 The proof bounds the linear combination against the matching linear combination of the agreement
 witnesses: on each agreement column `j ∈ S`, `v i j = W i j` for every `i`, so `∑ cᵢ • vᵢ` and
@@ -314,12 +283,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
     change Pr{let z ← $ᵗ F}[
       δᵣ(a.1 + z • u', ReedSolomon.code domain (k + 1)) ≤ δ] > _
     exact hline
-  have :
-      δᵣ((Code.finMapTwoWords a.1 u') 1, ReedSolomon.code domain (k + 1)) ≤ δ :=
-    jointAgreement_implies_second_proximity
-      (ι := ι) (F := F) (C := ReedSolomon.code domain (k + 1))
-      (δ := δ) (W := Code.finMapTwoWords a.1 u') hJA
-  simpa [Code.finMapTwoWords] using this
+  exact hJA.relDistFromCode_le 1
 
 end BCIKS20ProximityGapSection6
 
@@ -667,9 +631,7 @@ theorem all_affine_elements_close {k : ℕ}
       apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • dir, (V : Set (ι → F))) ≤ δ] > _
       exact hline
-    exact jointAgreement_implies_second_proximity
-      (ι := ι) (F := F) (C := (V : Set (ι → F)))
-      (δ := δ) (W := Code.finMapTwoWords a.1 dir) hJA
+    exact hJA.relDistFromCode_le 1
   -- Steps 2-4: span(U) argument
   set spanU := Submodule.span F (Set.range u)
   have hU'_le_spanU : U'_sub ≤ spanU := by
@@ -871,9 +833,7 @@ theorem all_affine_elements_close {k : ℕ}
       apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • x, (V : Set (ι → F))) ≤ δ] > _
       exact hline
-    exact jointAgreement_implies_second_proximity
-      (ι := ι) (F := F) (C := (V : Set (ι → F)))
-      (δ := δ) (W := Code.finMapTwoWords a.1 x) hJA
+    exact hJA.relDistFromCode_le 1
   intro x hx
   apply h_spanU_close
   change x ∈ Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) at hx

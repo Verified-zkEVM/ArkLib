@@ -27,7 +27,7 @@ module codes over (scalar) rings.
 - `jointAgreement_iff_jointProximity`: Equivalence between agreement and proximity formulations
 - `δ_ε_correlatedAgreementAffineLines`: Correlated agreement for affine lines (2 words)
 - `δ_ε_proximityGap_of_δ_ε_correlatedAgreementAffineLines`: Correlated agreement for affine lines
-  gives the proximity gap for affine lines
+  gives the proximity gap for affine lines (the proximity gap of Definition 1.1 in [BCIKS20])
 - `δ_ε_correlatedAgreementCurves`: Correlated agreement for parametrised curves (k words)
 - `δ_ε_correlatedAgreementAffineSpaces`: Correlated agreement for affine subspaces (k+1 words)
 
@@ -117,20 +117,6 @@ noncomputable def δ_ε_correlatedAgreementAffineLines [Module F A]
     Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin 2) (ι := ι) (C := C) (W := u) (δ := δ)
 
-omit [DecidableEq ι] in
-/-- Every word of a stack that has joint agreement with `C` is `δ`-close to `C`. -/
-theorem jointAgreement_implies_proximity {κ : Type*} {A : Type*} [DecidableEq A]
-    {C : Set (ι → A)} {δ : ℝ≥0} {W : κ → ι → A}
-    (h : jointAgreement (C := C) (δ := δ) (W := W)) (i : κ) :
-    δᵣ(W i, C) ≤ δ := by
-  obtain ⟨S, hS, v, hv⟩ := h
-  have hagree : ∀ j ∈ S, W i j = v i j := fun j hj =>
-    ((Finset.mem_filter.mp ((hv i).2 hj)).2).symm
-  refine (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist (W i) δ).2
-    ⟨v i, (hv i).1, (Code.relCloseToWord_iff_exists_agreementCols (W i) (v i) δ).2
-      ⟨S, (Code.relDist_floor_bound_iff_complement_bound _ _ _).2 hS,
-        fun j => ⟨hagree j, fun hne hj => hne (hagree j hj)⟩⟩⟩
-
 omit [DecidableEq ι] [Fintype A] [Fintype F] in
 /-- Under `(δ, ε)`-correlated agreement for affine lines, if a random point of the line
 `u₀ + z • u₁` is `δ`-close to `C` with probability exceeding `ε`, then every point of the line is
@@ -144,8 +130,7 @@ private theorem line_close_of_δ_ε_correlatedAgreementAffineLines [Module F A]
   have hshift := SampleableType.prEvent_uniformSample_equiv (Equiv.addLeft c)
     (fun z : F => δᵣ(u 0 + z • u 1, C) ≤ δ)
   simp only [Equiv.coe_addLeft, add_smul, ← add_assoc] at hshift
-  refine jointAgreement_implies_proximity
-    (hCA (finMapTwoWords (u 0 + c • u 1) (u 1)) ?_) (0 : Fin 2)
+  refine (hCA (finMapTwoWords (u 0 + c • u 1) (u 1)) ?_).relDistFromCode_le (0 : Fin 2)
   change Pr{let z ← $ᵗ F}[δᵣ(u 0 + c • u 1 + z • u 1, C) ≤ δ] > ε
   rwa [hshift]
 
@@ -186,10 +171,10 @@ private theorem prEvent_affineLine_image_eq (u : WordStack (A := A) (κ := Fin 2
 
 omit [DecidableEq ι] in
 /-- `(δ, ε)`-correlated agreement for affine lines implies that the collection of affine lines
-`{u₀ + z • u₁ | z ∈ F}` displays a `(δ, ε)`-proximity gap with respect to `P`
-(Definition 1.1 in [BCIKS20]). The code `P` need not be linear. For nonempty `P` the hypothesis
-`ε < 1` is needed for the `Xor`: for `ε ≥ 1` correlated agreement holds vacuously, while the line
-`{c}` through a codeword `c ∈ P` satisfies both `Pr = 1` and `Pr ≤ ε`. -/
+`{u₀ + z • u₁ | z ∈ F}` displays a `(δ, ε)`-proximity gap with respect to `P`. The code `P` need
+not be linear. For nonempty `P` the hypothesis `ε < 1` is needed for the `Xor`: for `ε ≥ 1`
+correlated agreement holds vacuously, while the line `{c}` through a codeword `c ∈ P` satisfies
+both `Pr = 1` and `Pr ≤ ε`. -/
 theorem δ_ε_proximityGap_of_δ_ε_correlatedAgreementAffineLines
     (P : Finset (ι → A)) {δ ε : ℝ≥0} (hε : ε < 1)
     (hCA : δ_ε_correlatedAgreementAffineLines (F := F) (P : Set (ι → A)) δ ε) :
