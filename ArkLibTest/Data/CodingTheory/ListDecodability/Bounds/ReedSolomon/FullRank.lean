@@ -14,7 +14,8 @@ import Mathlib.Data.Rat.Defs
 The triangle on three vertices, with its three edges as the coordinates, is `1`-weakly
 partition-connected, so its intersection matrix for degree `1` has a nonzero `2 × 2` minor, over `ℚ`
 and over `ZMod 2`. Over `ℚ`, some Reed–Solomon code of length `4` and dimension `2` has lists of
-size at most `2` at relative radius `2 / 3 * (1 - 2 / 4) = 1 / 3`.
+size at most `2` at relative radius `2 / 3 * (1 - 2 / 4) = 1 / 3`, and so does every such code on
+evaluation points off the zero set of some nonzero polynomial, also over `ZMod 5`.
 -/
 
 open Finset ReedSolomon Code
@@ -45,6 +46,24 @@ example : ∃ ρ : Fin 2 × Fin 1 → IntersectionRow triangle,
     ((intersectionMatrix (ZMod 2) triangle 1).submatrix ρ id).det ≠ 0 :=
   exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected (ZMod 2)
     triangle_isWeaklyPartitionConnected
+
+example : ∃ P : MvPolynomial (Fin 4) ℚ, P ≠ 0 ∧ ∀ α : Fin 4 ↪ ℚ, MvPolynomial.eval (⇑α) P ≠ 0 →
+    Lambda (code α 2 : Set (Fin 4 → ℚ)) (1 / 3) ≤ 2 := by
+  obtain ⟨P, hP, h⟩ := exists_ne_zero_Lambda_le_of_eval_ne_zero (ι := Fin 4) ℚ 2 (ℓ := 2) two_pos
+  refine ⟨P, hP, fun α hα ↦ ?_⟩
+  convert h α hα using 2
+  norm_num
+
+private instance : Fact (Nat.Prime 5) := ⟨Nat.prime_five⟩
+
+-- The field may be finite.
+example : ∃ P : MvPolynomial (Fin 4) (ZMod 5), P ≠ 0 ∧ ∀ α : Fin 4 ↪ ZMod 5,
+    MvPolynomial.eval (⇑α) P ≠ 0 → Lambda (code α 2 : Set (Fin 4 → ZMod 5)) (1 / 3) ≤ 2 := by
+  obtain ⟨P, hP, h⟩ :=
+    exists_ne_zero_Lambda_le_of_eval_ne_zero (ι := Fin 4) (ZMod 5) 2 (ℓ := 2) two_pos
+  refine ⟨P, hP, fun α hα ↦ ?_⟩
+  convert h α hα using 2
+  norm_num
 
 example : ∃ α : Fin 4 ↪ ℚ, Lambda (code α 2 : Set (Fin 4 → ℚ)) (1 / 3) ≤ 2 := by
   obtain ⟨α, hα⟩ := exists_embedding_Lambda_le (ι := Fin 4) ℚ 2 (ℓ := 2) two_pos
