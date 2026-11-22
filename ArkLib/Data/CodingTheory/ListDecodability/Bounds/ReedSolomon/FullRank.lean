@@ -30,12 +30,13 @@ every edge, the common values `y i` on the edges are orthogonal to the dual code
 last polynomial is `0`. Over `K = RatFunc F` this gives a maximal minor of the intersection matrix
 not vanishing at a point, hence nonzero.
 
-For finitely many hypergraphs at once, the product of these minors does not vanish at some point
-with pairwise distinct coordinates. Together with
-`Code.exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda` and `not_isRigid_of_mem_code` this
-gives, for each `0 < ℓ`, evaluation points over any infinite field at which the Reed–Solomon code
-of dimension `k` has lists of size at most `ℓ` at relative radius `ℓ / (ℓ + 1) * (1 - k / n)`,
-the generalized Singleton bound.
+For finitely many hypergraphs at once, the product `P` of these minors is a nonzero polynomial,
+and every hypergraph in the family is rigid at every point where `P` does not vanish. Together
+with `Code.exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda` and `not_isRigid_of_mem_code`
+this gives, for each `0 < ℓ` and over any field, a nonzero polynomial `P` such that the
+Reed–Solomon code of dimension `k` on pairwise distinct evaluation points `α` with `P(α) ≠ 0` has
+lists of size at most `ℓ` at relative radius `ℓ / (ℓ + 1) * (1 - k / n)`, the generalized
+Singleton bound. Over an infinite field such points exist.
 
 ## Main statements
 
@@ -43,17 +44,22 @@ the generalized Singleton bound.
   partition-connected hypergraph is rigid for degree `k` at some point.
 * `exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected`: its intersection matrix has a
   nonzero maximal minor.
-* `exists_embedding_Lambda_le`: over an infinite field, for `0 < ℓ` there are evaluation points at
-  which the Reed–Solomon code of dimension `k` satisfies `Lambda ≤ ℓ` at relative radius
+* `exists_det_submatrix_ne_zero_of_card_le`: a `(k + b)`-weakly partition-connected hypergraph
+  has a nonzero maximal minor whose rows avoid any given `b` edges.
+* `exists_ne_zero_Lambda_le_of_eval_ne_zero`: over any field, for `0 < ℓ` there is a nonzero
+  polynomial `P` such that at pairwise distinct evaluation points `α` with `P(α) ≠ 0` the
+  Reed–Solomon code of dimension `k` satisfies `Lambda ≤ ℓ` at relative radius
   `ℓ / (ℓ + 1) * (1 - k / n)`.
+* `exists_embedding_Lambda_le`: over an infinite field such evaluation points exist.
 
 `exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected` is the theorem of [AGL24] that the
 reduced intersection matrix of a `k`-weakly partition-connected hypergraph has full column rank,
-with the proof of [AGL24] through generic zero patterns. `exists_embedding_Lambda_le` is the
-list-size form of the theorem of [BGM23] that generic Reed–Solomon codes are list-decodable up to
-the generalized Singleton bound, for evaluation points in an infinite field. It is not the
-average-radius form that [BGM23] proves, and it gives no bound on the size of a finite field with
-such points.
+with the proof of [AGL24] through generic zero patterns.
+`exists_ne_zero_Lambda_le_of_eval_ne_zero` is the list-size form of the theorem of [BGM23] that
+generic Reed–Solomon codes are list-decodable up to the generalized Singleton bound: it holds at
+every point with pairwise distinct coordinates off the zero set of a nonzero polynomial. It is not
+the average-radius form that [BGM23] proves, and it gives no bound on the size of a finite field
+with such points.
 
 ## References
 
@@ -144,42 +150,72 @@ theorem exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected (F : Type*) [
   obtain ⟨ρ, hρ⟩ := (isRigid_iff_exists_aeval_det_ne_zero (R := F)).1 hα
   exact ⟨ρ, fun h0 ↦ hρ (by rw [h0, map_zero])⟩
 
-/-- **Generic points are rigid.** Over an infinite field `K` there are pairwise distinct points
-`α : ι ↪ K` at which every `k`-weakly partition-connected hypergraph on `s + 1 ≤ ℓ + 1` vertices
-is rigid for degree `k`. -/
-private theorem exists_embedding_forall_isRigid (K : Type*) [Field K] [Infinite K] (k ℓ : ℕ) :
-    ∃ α : ι ↪ K, ∀ s ≤ ℓ, ∀ H : ι → Finset (Fin (s + 1)),
-      IsWeaklyPartitionConnected H k → IsRigid H k α := by
+/-- **Robustness to deletions.** A `(k + b)`-weakly partition-connected hypergraph `H` has a
+square submatrix of its intersection matrix over `MvPolynomial ι F` with all columns, whose rows
+avoid a given set `D` of at most `b` edges, and whose determinant is a nonzero polynomial. -/
+theorem exists_det_submatrix_ne_zero_of_card_le (F : Type*) [Field F]
+    {H : ι → Finset (Fin (s + 1))} {b : ℝ} (h : IsWeaklyPartitionConnected H (k + b))
+    {D : Finset ι} (hD : (#D : ℝ) ≤ b) :
+    ∃ ρ : Fin s × Fin k → IntersectionRow H, (∀ c, (ρ c).1.1 ∉ D) ∧
+      ((intersectionMatrix F H k).submatrix ρ id).det ≠ 0 := by
+  classical
+  obtain ⟨ρ, hρ⟩ := exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected F (h.delete hD)
+  have hD' (r : IntersectionRow fun i ↦ if i ∈ D then ∅ else H i) : r.1.1 ∉ D := fun hr ↦ by
+    simpa [hr] using r.2.1
+  have hH (r : IntersectionRow fun i ↦ if i ∈ D then ∅ else H i) :
+      (if r.1.1 ∈ D then ∅ else H r.1.1) = H r.1.1 := by simp [hD' r]
+  refine ⟨fun c ↦ ⟨(ρ c).1, hH (ρ c) ▸ (ρ c).2⟩, fun c ↦ hD' (ρ c), ?_⟩
+  convert hρ using 2
+  exact Matrix.ext fun c c' ↦ (intersectionMatrix_apply_of_eq (ρ c) (hH (ρ c)) c').symm
+
+/-- **Generic points are rigid.** Over a field `F` there is a nonzero polynomial `P` such that
+every `k`-weakly partition-connected hypergraph on `s + 1 ≤ ℓ + 1` vertices is rigid for degree `k`
+at every point `α : ι → F` with `P(α) ≠ 0`. -/
+private theorem exists_ne_zero_forall_isRigid (F : Type*) [Field F] (k ℓ : ℕ) :
+    ∃ P : MvPolynomial ι F, P ≠ 0 ∧ ∀ α : ι → F, MvPolynomial.eval α P ≠ 0 →
+      ∀ s ≤ ℓ, ∀ H : ι → Finset (Fin (s + 1)), IsWeaklyPartitionConnected H k → IsRigid H k α := by
   classical
   let T := Σ s : Fin (ℓ + 1), {H : ι → Finset (Fin (s + 1)) // IsWeaklyPartitionConnected H k}
   choose ρ hρ using fun t : T ↦
-    exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected K t.2.2
-  obtain ⟨x, hx, hpx⟩ := MvPolynomial.exists_injective_eval_ne_zero
-    (Finset.prod_ne_zero_iff.2 fun t (_ : t ∈ univ) ↦ hρ t)
-  refine ⟨⟨x, hx⟩, fun s hs H hH ↦ ?_⟩
-  rw [isRigid_iff_exists_aeval_det_ne_zero (R := K)]
+    exists_det_submatrix_ne_zero_of_isWeaklyPartitionConnected F t.2.2
+  refine ⟨∏ t : T, ((intersectionMatrix F t.2.1 k).submatrix (ρ t) id).det,
+    Finset.prod_ne_zero_iff.2 fun t _ ↦ hρ t, fun α hα s hs H hH ↦ ?_⟩
+  rw [isRigid_iff_exists_aeval_det_ne_zero (R := F)]
   refine ⟨ρ ⟨⟨s, by omega⟩, H, hH⟩, ?_⟩
-  rw [map_prod] at hpx
-  exact Finset.prod_ne_zero_iff.1 hpx ⟨⟨s, by omega⟩, H, hH⟩ (mem_univ _)
+  rw [map_prod] at hα
+  exact Finset.prod_ne_zero_iff.1 hα ⟨⟨s, by omega⟩, H, hH⟩ (mem_univ _)
 
-/-- **Generic Reed–Solomon codes reach the generalized Singleton bound** ([BGM23]). Over an
-infinite field `K`, for `0 < ℓ` there are evaluation points `α : ι ↪ K` at which the Reed–Solomon
-code of dimension `k` has lists of size at most `ℓ` at relative radius
-`ℓ / (ℓ + 1) * (1 - k / n)`, where `n = Fintype.card ι`. -/
-theorem exists_embedding_Lambda_le (K : Type*) [Field K] [Infinite K] (k : ℕ) {ℓ : ℕ}
+/-- **Generic Reed–Solomon codes reach the generalized Singleton bound** ([BGM23]). Over a field
+`F`, for `0 < ℓ` there is a nonzero polynomial `P` in the evaluation points such that at every
+`α : ι ↪ F` with `P(α) ≠ 0` the Reed–Solomon code of dimension `k` has lists of size at most `ℓ`
+at relative radius `ℓ / (ℓ + 1) * (1 - k / n)`, where `n = Fintype.card ι`. -/
+theorem exists_ne_zero_Lambda_le_of_eval_ne_zero (F : Type*) [Field F] (k : ℕ) {ℓ : ℕ}
     (hℓ : 0 < ℓ) :
-    ∃ α : ι ↪ K, Lambda (code α k : Set (ι → K))
-      ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / Fintype.card ι)) ≤ ℓ := by
+    ∃ P : MvPolynomial ι F, P ≠ 0 ∧ ∀ α : ι ↪ F, MvPolynomial.eval (⇑α) P ≠ 0 →
+      Lambda (code α k : Set (ι → F))
+        ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / Fintype.card ι)) ≤ ℓ := by
   classical
-  obtain ⟨α, hα⟩ := exists_embedding_forall_isRigid (ι := ι) K k ℓ
-  refine ⟨α, not_lt.1 fun hlt ↦ ?_⟩
+  obtain ⟨P, hP, hrigid⟩ := exists_ne_zero_forall_isRigid (ι := ι) F k ℓ
+  refine ⟨P, hP, fun α hα ↦ not_lt.1 fun hlt ↦ ?_⟩
   obtain ⟨y, s, hs1, hsℓ, c, hc, hwpc⟩ :=
     exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda hℓ hlt
   refine not_isRigid_of_mem_code (c := ⇑c) (fun j ↦ (mem_closeCodewordsRel_iff.1 (hc j)).1)
     ⟨0, Fin.last s, c.injective.ne
       (Fin.ext_iff.not.2 (by simp only [Fin.val_zero, Fin.val_last]; omega))⟩
-    (fun i j hj j' hj' ↦ ?_) (hα s hsℓ _ hwpc)
+    (fun i j hj j' hj' ↦ ?_) (hrigid α hα s hsℓ _ hwpc)
   simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hj hj'
   exact hj.trans hj'.symm
+
+/-- **Reed–Solomon codes at the generalized Singleton bound exist** over every infinite field `K`:
+for `0 < ℓ` there are evaluation points `α : ι ↪ K` at which the Reed–Solomon code of dimension
+`k` has lists of size at most `ℓ` at relative radius `ℓ / (ℓ + 1) * (1 - k / n)`, where
+`n = Fintype.card ι`. -/
+theorem exists_embedding_Lambda_le (K : Type*) [Field K] [Infinite K] (k : ℕ) {ℓ : ℕ}
+    (hℓ : 0 < ℓ) :
+    ∃ α : ι ↪ K, Lambda (code α k : Set (ι → K))
+      ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / Fintype.card ι)) ≤ ℓ := by
+  obtain ⟨P, hP, h⟩ := exists_ne_zero_Lambda_le_of_eval_ne_zero (ι := ι) K k hℓ
+  obtain ⟨x, hx, hPx⟩ := MvPolynomial.exists_injective_eval_ne_zero hP
+  exact ⟨⟨x, hx⟩, h ⟨x, hx⟩ hPx⟩
 
 end ReedSolomon
