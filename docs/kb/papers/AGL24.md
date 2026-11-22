@@ -81,22 +81,24 @@ source), as a nonzero maximal minor of the intersection matrix over `MvPolynomia
 field `F`. The proof is the source's appendix proof through generic zero patterns, run at a point
 of the infinite field `RatFunc F`
 (`exists_isRigid_of_isWeaklyPartitionConnected`) in place of the source's reduction to large
-finite fields. Its corollary `exists_embedding_Lambda_le`: over every infinite field there are
-evaluation points at which the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
-`ℓ/(ℓ+1)·(1 − k/n)`. This is the infinite-field list-size form; it is not [BGM23]'s finite-field
-statement and gives no bound on the field size.
+finite fields. Its corollary `exists_ne_zero_Lambda_le_of_eval_ne_zero`: over every field there
+is a nonzero polynomial `P` such that at every point `α` with pairwise distinct coordinates and
+`P(α) ≠ 0` the Reed-Solomon code of dimension `k` has `Λ ≤ ℓ` at relative radius
+`ℓ/(ℓ+1)·(1 − k/n)`; over an infinite field such points exist (`exists_embedding_Lambda_le`).
+This is the list-size form; it is not [BGM23]'s finite-field statement and gives no bound on the
+field size.
 
 `exists_embedding_isCertificate_of_not_isRigid` in
 [Certificate.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/Certificate.lean):
 the source's certificates of rank loss (`alg:matrix`, `alg:certificate`, and `lem:well-defined`
 through `lem:count`), for a `(k + 2r)`-weakly partition-connected hypergraph on `t = s + 1`
-vertices. `certificateState` is the source's matrix sequence as a function of the list of earlier
-certificate indices (`certificateState_append_singleton`); its minors are nonzero
+vertices. `Certificate.state` is the source's matrix sequence as a function of the list of earlier
+certificate indices (`Certificate.state_append_singleton`); its minors are nonzero
 (`certificateMinor_ne_zero`) of degree at most `s * (k - 1)` in each variable
 (`degreeOf_certificateMinor_le`). Every point at which the hypergraph is not rigid has a
 certificate of length `r` (`exists_isCertificate_of_not_isRigid`); a certificate of length at most
 `r` is injective (`IsCertificate.injective`) and has fewer than `2^t` descents
-(`IsCertificate.card_descents_lt`). `exists_embedding_certificatePolynomial_of_not_isRigid` attaches
+(`IsCertificate.card_descents_lt`). `IsCertificate.aeval_certificatePolynomial` attaches
 the minors to the certificate's indices (`certificatePolynomial`). The source's `lem:del` is
 `exists_det_submatrix_ne_zero_of_card_le` in
 [FullRank.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/FullRank.lean),
@@ -167,8 +169,8 @@ needs a rounding the source does not fix.
 ## Open Formalization Gaps
 
 Theorem 1.1 itself. Of its predecessors, [BGM23] is formalized only in its infinite-field list-size
-form (`exists_embedding_Lambda_le`: no field-size bound, not average-radius); [GZ23] and the
-combined [AGGLZ25] are unformalized context.
+form (`exists_ne_zero_Lambda_le_of_eval_ne_zero`: no field-size bound, not average-radius); [GZ23]
+and the combined [AGGLZ25] are unformalized context.
 
 ## Source Access
 
