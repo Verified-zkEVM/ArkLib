@@ -8,7 +8,10 @@ source_metadata: ../sources/AGL24/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean
   - ArkLib/Data/Probability/Uniform.lean
+  - ArkLib/ToMathlib/Combinatorics/Hypergraph/GenericZeroPattern.lean
+  - ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean
   - ArkLib/ToMathlib/Fintype/CardEmbedding.lean
 ---
 
@@ -29,6 +32,23 @@ Theorem 1.1: for `ε ∈ (0,1)`, `L ≥ 2` and a prime power `q ≥ n + k·2^{10
 ## Main ArkLib Touchpoints
 
 `rs_random_domain_lambda_le` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted).
+
+`IsWeaklyPartitionConnected` in
+[PartitionConnected.lean](../../../ArkLib/ToMathlib/Combinatorics/Hypergraph/PartitionConnected.lean):
+weak partition-connectivity, the minimal-subset lemma
+(`exists_isWeaklyPartitionConnected_subtype`), and the combinatorial step of robustness to deletions
+(`IsWeaklyPartitionConnected.delete`).
+
+`IsWeaklyPartitionConnected.exists_isGenericZeroPattern` in
+[GenericZeroPattern.lean](../../../ArkLib/ToMathlib/Combinatorics/Hypergraph/GenericZeroPattern.lean):
+the source's corollary that a weakly partition-connected hypergraph gives a generic zero pattern,
+proved without the hypergraph orientation theorem the source uses; it assumes nonempty edges, which
+the source's proof assumes implicitly.
+
+`exists_isWeaklyPartitionConnected_agreement_of_sum_hammingDist_le` in
+[PartitionConnected.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/PartitionConnected.lean):
+a bad list-decoding configuration gives a weakly partition-connected agreement hypergraph, with its
+list-size form `exists_isWeaklyPartitionConnected_agreement_of_lt_Lambda`.
 
 ## Known Divergences From ArkLib
 
