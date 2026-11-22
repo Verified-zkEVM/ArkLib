@@ -19,7 +19,7 @@ For integer `m_k`, it is the logarithmic derivative of `prod_k (X - v_k)^(m_k)`.
 
 This file is the algebra core of lookups by logarithmic derivatives (LogUp) [Hab22].
 
-A LogUp protocol spec, such as a revived PR #503, should build on it, not on a second proof.
+A LogUp protocol spec should build on it, not on a second proof.
 
 ## Main statements
 
@@ -183,12 +183,15 @@ The multiplicities are arbitrary field elements.
 
 Only the query counts must stay nonzero. -/
 theorem subset_of_logDerivSum_eq [DecidableEq F] {f t m : List F}
-    (hp : NatCastNeZeroUpTo F f.maxCount) (hm : m.length = t.length)
+    (hp : NatCastNeZeroUpTo F f.maxCount)
     (h : logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m)) : f ⊆ t := by
   intro v hv
   by_contra hvt
   have h1 := (logDerivSum_eq_iff _ _).1 h v
-  rw [netMult_map_one, netMult_of_not_mem (by rwa [List.map_fst_zip (by omega)])] at h1
+  have hkey : v ∉ (t.zip m).map Prod.fst := fun hk => hvt <| by
+    obtain ⟨⟨a, b⟩, hab, rfl⟩ := List.mem_map.1 hk
+    exact (List.of_mem_zip hab).1
+  rw [netMult_map_one, netMult_of_not_mem hkey] at h1
   exact hp _ (List.count_pos_iff.2 hv) (f.count_le_maxCount v) h1
 
 /-- **Set inclusion.**
@@ -200,7 +203,7 @@ theorem subset_iff_exists_logDerivSum_eq [DecidableEq F] (f t : List F)
     (hp : NatCastNeZeroUpTo F f.maxCount) :
     f ⊆ t ↔ ∃ m : List F, m.length = t.length ∧
       logDerivSum (f.map (·, 1)) = logDerivSum (t.zip m) :=
-  ⟨exists_logDerivSum_eq_of_subset, fun ⟨_, hm, h⟩ => subset_of_logDerivSum_eq hp hm h⟩
+  ⟨exists_logDerivSum_eq_of_subset, fun ⟨_, _, h⟩ => subset_of_logDerivSum_eq hp h⟩
 
 /-- Set inclusion, with the number of queries as the bound. -/
 theorem subset_iff_exists_logDerivSum_eq_of_length (f t : List F)

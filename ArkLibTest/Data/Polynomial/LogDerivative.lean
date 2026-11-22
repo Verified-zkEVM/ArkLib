@@ -37,9 +37,9 @@ example : ¬ NatCastNeZeroUpTo (ZMod 7) queries.length :=
   fun h => h 7 (by decide) le_rfl (by decide)
 
 /-- Equal sums give inclusion under the largest-count bound alone. -/
-example (t m : List (ZMod 7)) (hm : m.length = t.length)
+example (t m : List (ZMod 7))
     (h : logDerivSum (queries.map (·, 1)) = logDerivSum (t.zip m)) : queries ⊆ t :=
-  subset_of_logDerivSum_eq (.of_lt _ 7 (by decide)) hm h
+  subset_of_logDerivSum_eq (.of_lt _ 7 (by decide)) h
 
 /-- Seven equal queries cancel in `ZMod 7` against an empty table. -/
 example : logDerivSum ((List.replicate 7 (3 : ZMod 7)).map (·, 1)) =
