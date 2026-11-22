@@ -157,7 +157,7 @@ def extractMlp (i : Fin ℓ) (f : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i, by o
         simp only [ne_eq, Nat.pow_eq_zero, OfNat.ofNat_ne_zero, false_and, not_false_eq_true]
     }
   -- Run Berlekamp-Welch decoder to get P(X) in monomial basis
-  let berlekamp_welch_result: Option L[X] := BerlekampWelch.decoder e k ωs f_vals
+  let berlekamp_welch_result: Option (Polynomial L) := BerlekampWelch.decoder e k ωs f_vals
   match berlekamp_welch_result with
   | none => exact none  -- Decoder failed
   | some P =>
@@ -238,7 +238,7 @@ private lemma monomialToINovelCoeffs_zero_eq_monomialToNovelCoeffs
 omit [DecidableEq 𝔽q] [NeZero ℓ] [NeZero 𝓡] in
 /-- Reconstructing from the novel coefficients of a bounded polynomial recovers it. -/
 private lemma polynomialFromNovelCoeffs_eq_self_of_monomialToNovelCoeffs
-    (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
+    (P : Polynomial L) (hP : P.degree < 2 ^ ℓ) :
     polynomialFromNovelCoeffs 𝔽q β ℓ (by omega)
       (AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) (fun k => P.coeff k.val)) = P := by
   have hget :
@@ -284,7 +284,7 @@ private lemma binaryFinMapToNat_invFun_eq (ω : Fin (2 ^ ℓ)) :
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] in
 /-- The multilinear extension of novel coefficients evaluates to each indexed coefficient. -/
-private lemma extracted_mle_eval_bits (P : L[X]) (ω : Fin (2 ^ ℓ)) :
+private lemma extracted_mle_eval_bits (P : Polynomial L) (ω : Fin (2 ^ ℓ)) :
     let monomial_coeffs : Fin (2 ^ ℓ) → L := fun k => P.coeff k.val
     let t_coeffs := AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega) monomial_coeffs
     let hypercube_evals : (Fin ℓ → Fin 2) → L := fun w =>
@@ -306,7 +306,7 @@ private lemma extracted_mle_eval_bits (P : L[X]) (ω : Fin (2 ^ ℓ)) :
 omit [DecidableEq 𝔽q] [NeZero ℓ] [NeZero 𝓡] in
 /-- Encoding the reconstructed multilinear extension recovers the bounded polynomial. -/
 private lemma extracted_mle_polynomial_eq
-    (P : L[X]) (hP : P.degree < 2 ^ ℓ) :
+    (P : Polynomial L) (hP : P.degree < 2 ^ ℓ) :
     polynomialFromNovelCoeffs 𝔽q β ℓ (by omega)
       (fun ω =>
         let monomial_coeffs : Fin (2 ^ ℓ) → L := fun k => P.coeff k.val
@@ -346,7 +346,7 @@ omit [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [NeZero 𝓡] in
 private lemma coeff_polynomialFromNovelCoeffsF₂_eq_novelToMonomialCoeffs
     (coeffs : Fin (2 ^ ℓ) → L) :
     (fun k =>
-      (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) coeffs) : L[X]).coeff k.val) =
+      (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) coeffs) : Polynomial L).coeff k.val) =
       AdditiveNTT.novelToMonomialCoeffs 𝔽q β ℓ (by omega) coeffs := by
   funext k
   change
@@ -370,7 +370,8 @@ private lemma monomialToNovelCoeffs_polynomialFromNovelCoeffsF₂
     (coeffs : Fin (2 ^ ℓ) → L) :
     AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega)
       (fun k =>
-        (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) coeffs) : L[X]).coeff k.val) = coeffs := by
+        (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) coeffs) : Polynomial L).coeff k.val) =
+        coeffs := by
   rw [coeff_polynomialFromNovelCoeffsF₂_eq_novelToMonomialCoeffs
     (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (coeffs := coeffs)]
   exact AdditiveNTT.novelToMonomial_monomialToNovel_inverse 𝔽q β ℓ (by omega) coeffs
@@ -429,7 +430,7 @@ lemma extractMlp_eq_some_iff_pairUniqueDecodingClose
         have h_poly :
             (↑(polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
               (fun ω =>
-                MvPolynomial.eval (bitsOfIndex ω) tpoly.val)) : L[X]) = P := by
+                MvPolynomial.eval (bitsOfIndex ω) tpoly.val)) : Polynomial L) = P := by
           rw [← h_mle]
           change polynomialFromNovelCoeffs 𝔽q β ℓ (by omega) _ = P
           exact extracted_mle_polynomial_eq (𝔽q := 𝔽q) (β := β)
@@ -486,18 +487,18 @@ lemma extractMlp_eq_some_iff_pairUniqueDecodingClose
     have h_dist_eq_nat : (Δ₀(f, C₀)).toNat = Δ₀(f, g₀) := by
       rw [h_dist_eq]
       simp
-    have h_P₀_natDegree_lt : (↑P₀ : L[X]).natDegree < 2 ^ ℓ := by
-      by_cases hP₀_zero : (↑P₀ : L[X]) = 0
+    have h_P₀_natDegree_lt : (↑P₀ : Polynomial L).natDegree < 2 ^ ℓ := by
+      by_cases hP₀_zero : (↑P₀ : Polynomial L) = 0
       · rw [hP₀_zero, Polynomial.natDegree_zero]
         exact pow_pos (by decide : 0 < 2) _
-      · have hP₀_deg_lt : (↑P₀ : L[X]).degree < 2 ^ ℓ := by
-          have hP₀_mem : (↑P₀ : L[X]) ∈ L[X]_(2 ^ ℓ) := P₀.property
+      · have hP₀_deg_lt : (↑P₀ : Polynomial L).degree < 2 ^ ℓ := by
+          have hP₀_mem : (↑P₀ : Polynomial L) ∈ L[X]_(2 ^ ℓ) := P₀.property
           rw [Polynomial.mem_degreeLT] at hP₀_mem
           exact hP₀_mem
-        exact (Polynomial.natDegree_lt_iff_degree_lt (p := (↑P₀ : L[X]))
+        exact (Polynomial.natDegree_lt_iff_degree_lt (p := (↑P₀ : Polynomial L))
           (n := 2 ^ ℓ) (hp := hP₀_zero)).2 hP₀_deg_lt
     have h_decoder_succeeds :
-        BerlekampWelch.decoder (Δ₀(f, C₀)).toNat (2 ^ ℓ) ωs f_vals = some (↑P₀ : L[X]) := by
+        BerlekampWelch.decoder (Δ₀(f, C₀)).toNat (2 ^ ℓ) ωs f_vals = some (↑P₀ : Polynomial L) := by
       apply BerlekampWelch.decoder_eq_some
       · have h_le :
             2 * (Δ₀(f, C₀)).toNat ≤ domain_size - 2 ^ ℓ := by
@@ -514,7 +515,7 @@ lemma extractMlp_eq_some_iff_pairUniqueDecodingClose
       · exact Function.Injective.comp Subtype.val_injective (Equiv.injective domain_to_fin.symm)
       · exact h_P₀_natDegree_lt
       · have h_functions_eq :
-            (fun a => Polynomial.eval a (↑P₀ : L[X])) ∘ ωs = g₀ ∘ domain_to_fin.symm := by
+            (fun a => Polynomial.eval a (↑P₀ : Polynomial L)) ∘ ωs = g₀ ∘ domain_to_fin.symm := by
           ext j
           simp only [Function.comp_apply, ωs, g₀]
           rfl
@@ -527,14 +528,14 @@ lemma extractMlp_eq_some_iff_pairUniqueDecodingClose
           _ = (Δ₀(f, C₀)).toNat := by
                 exact h_dist_eq_nat.symm
     have h_not_invalid :
-        ¬((↑P₀ : L[X]).natDegree ≥ 2 ^ ℓ ∨
+        ¬((↑P₀ : Polynomial L).natDegree ≥ 2 ^ ℓ ∨
           ¬PairUniqueDecodingClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
             (i := (0 : Fin r))  (f := f) (g := g₀)) := by
       intro h_invalid
       rcases h_invalid with h_deg_ge | h_not_close
       · exact (not_le_of_gt h_P₀_natDegree_lt) h_deg_ge
       · exact h_not_close h_close
-    let decodePoly : L[X] → MultilinearPoly L ℓ := fun P =>
+    let decodePoly : Polynomial L → MultilinearPoly L ℓ := fun P =>
       ⟨MvPolynomial.MLE (fun w =>
           AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega)
             (fun i => P.coeff i.val)
@@ -641,7 +642,7 @@ lemma extractMlp_zero_isSome_of_fiberwiseClose
   let P₀ := codewordPolynomial 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) g₀_sub
   let t_evals : (Fin ℓ → Fin 2) → L := fun w =>
     AdditiveNTT.monomialToNovelCoeffs 𝔽q β ℓ (by omega)
-      (fun k => (↑P₀ : L[X]).coeff k.val)
+      (fun k => (↑P₀ : Polynomial L).coeff k.val)
       (Nat.binaryFinMapToNat
         (n := ℓ) (m := fun j => (w j).val)
         (h_binary := by
@@ -681,8 +682,8 @@ lemma extractMlp_zero_isSome_of_fiberwiseClose
         (C := (code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : Fin r) :
           Set ((sDomain 𝔽q β h_ℓ_add_R_rate) 0 → L)))] at h_udr_g₀
       exact h_udr_g₀
-    have h_P₀_deg_lt : (↑P₀ : L[X]).degree < 2 ^ ℓ := by
-      have hP₀_mem : (↑P₀ : L[X]) ∈ L[X]_(2 ^ ℓ) := P₀.property
+    have h_P₀_deg_lt : (↑P₀ : Polynomial L).degree < 2 ^ ℓ := by
+      have hP₀_mem : (↑P₀ : Polynomial L) ∈ L[X]_(2 ^ ℓ) := P₀.property
       rw [Polynomial.mem_degreeLT] at hP₀_mem
       exact hP₀_mem
     have h_g₀_eq :
@@ -692,7 +693,7 @@ lemma extractMlp_zero_isSome_of_fiberwiseClose
         (0 : Fin r) g₀_sub
     dsimp [tpoly, t_evals, polynomialFromNovelCoeffsF₂]
     rw [extracted_mle_polynomial_eq (𝔽q := 𝔽q) (β := β)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := (↑P₀ : L[X])) h_P₀_deg_lt]
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := (↑P₀ : Polynomial L)) h_P₀_deg_lt]
     rw [← h_g₀_eq]
     exact h_pair_close_g₀
   refine ⟨tpoly, ?_⟩

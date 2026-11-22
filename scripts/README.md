@@ -37,7 +37,8 @@ This directory contains various utility scripts for the ArkLib project.
   additionally runs the whole composed opening and checks the verifier accepts — it passes, in
   about six minutes, which is why it is not gated: the honest sumcheck prover dominates the cost
   of the entire chain. `--timing` reports per-check costs
-- **`check-docs-integrity.py`** - Check the canonical agent guide and local documentation links
+- **`check-docs-integrity.py`** - Check the canonical agent guide, local documentation links, and
+  that the doc-gen4 tag in `docbuild/lakefile.toml` matches `lean-toolchain`
 - **`LintStyle.lean`** and **`LintStyle/Checks.lean`** (`lake exe lint-style`) - Lean-native,
   exception-free source policy, including import discipline, whitespace, headers, line/file size,
   hazardous-Unicode checks, and commented-out declarations (`ERR_COMMENT_DECL`). Delete commented

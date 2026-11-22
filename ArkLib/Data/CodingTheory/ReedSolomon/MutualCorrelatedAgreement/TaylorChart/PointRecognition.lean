@@ -29,7 +29,8 @@ Taylor coefficients satisfy the corresponding identities.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval map)
 
 namespace ReedSolomon
 

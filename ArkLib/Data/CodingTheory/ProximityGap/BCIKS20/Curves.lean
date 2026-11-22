@@ -145,9 +145,12 @@ theorem exists_curve_exactPowerAgreement_johnson_budget
       have hc := ReedSolomon.HiddenDerivative.two_mul_johnsonExceptionCount_le_bciks
         hDpos hDn hthreshold hb hbeta (by simpa using hbRate)
       have hh := mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg k)
+      have h2 := mul_le_mul_of_nonneg_left
+        (ReedSolomon.HiddenDerivative.johnsonSuccExceptionCount_le_two_mul
+          (n := Fintype.card ι) (A := A) (eta := eta) hDpos (by omega)) (Nat.cast_nonneg (α := ℝ) k)
       dsimp [B]
       push_cast
-      nlinarith only [hE, hh]
+      nlinarith only [hE, hh, h2]
   obtain ⟨E, hE, hgood⟩ := hexact
   refine ⟨E, hE.trans ?_, hgood⟩
   have hq : (Fintype.card F : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero
@@ -511,9 +514,9 @@ theorem large_agreement_set_on_curve_implies_correlated_agreement {l deg : ℕ}
     have hc : (curveParamPoly u j).coeff (i : ℕ) = u i j := by
       rw [curveParamPoly, Polynomial.finsetSum_coeff]
       rw [Finset.sum_eq_single (s := Finset.univ) i]
-      · rw [Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial, ite_eq_left rfl]
+      · rw [Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial_apply, ite_eq_left rfl]
       · intro t _ ht
-        rw [Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial, ite_eq_right]
+        rw [Polynomial.C_mul_X_pow_eq_monomial, Polynomial.coeff_monomial_apply, ite_eq_right]
         intro h
         exact ht (Fin.ext h)
       · intro h

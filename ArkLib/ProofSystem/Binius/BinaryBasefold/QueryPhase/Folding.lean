@@ -236,8 +236,8 @@ lemma iteratedFold_eq_finalConstant_of_strictFinalSumcheckRelOut
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (witIn : Unit)
-    (h_relIn : strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      ((stmtIn, oStmtIn), witIn))
+    (h_relIn : ((stmtIn, oStmtIn), witIn) ∈
+      strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     -- Hypothesis: x is the result of folding all the way to ℓ
     (h_c_correct :
       have h_mul_eq : (ℓ / ϑ) * ϑ = ℓ := Nat.div_mul_cancel hdiv.out

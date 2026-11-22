@@ -685,7 +685,7 @@ lemma coeff_sum_monomial {m : ℕ} (a : Fin m → Polynomial F) (k : ℕ) :
   · have hsingle : ∀ t ∈ (Finset.univ : Finset (Fin m)), t ≠ ⟨k, hk⟩ →
         (Polynomial.monomial (t : ℕ) (a t)).coeff k = 0 := by
       intro t _ ht
-      simp only [Polynomial.coeff_monomial]
+      simp only [Polynomial.coeff_monomial_apply]
       rw [ite_eq_right]
       intro h
       exact ht (Fin.ext h)
@@ -693,7 +693,7 @@ lemma coeff_sum_monomial {m : ℕ} (a : Fin m → Polynomial F) (k : ℕ) :
     simp
   · rw [dite_eq_right hk]
     refine Finset.sum_eq_zero fun t _ => ?_
-    simp only [Polynomial.coeff_monomial]
+    simp only [Polynomial.coeff_monomial_apply]
     rw [ite_eq_right]
     intro h
     exact hk (h ▸ t.isLt)

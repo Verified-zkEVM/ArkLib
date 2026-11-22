@@ -44,7 +44,7 @@ def forwardTaylorTruncation (m : ℕ) (a : R) (p : R[X]) : R[X] :=
 theorem coeff_forwardTaylorTruncation (m : ℕ) (a : R) (p : R[X]) (i : ℕ) :
     (forwardTaylorTruncation m a p).coeff i =
       if i < m then hasseCoeffAt a i p else 0 := by
-  simp [forwardTaylorTruncation, finsetSum_coeff]
+  simp [forwardTaylorTruncation]
 
 /-- Forward Taylor truncation as an ambient-polynomial linear map, before restricting its
 codomain to `degreeLT`. -/
@@ -56,7 +56,7 @@ def forwardTaylorTruncationToPolynomial (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] 
     split_ifs <;> simp
   map_smul' c p := by
     ext i
-    simp only [coeff_smul, coeff_forwardTaylorTruncation]
+    simp only [AddMonoidAlgebra.coeff_smul_apply, coeff_forwardTaylorTruncation]
     split_ifs <;> simp
 
 /-- Below the truncation order, the finite polynomial agrees coefficientwise with `p(X + a)`. -/
@@ -273,7 +273,7 @@ def forwardTaylorQuotientLinearMap (m : ℕ) (a : R) : R[X] →ₗ[R] R[X] where
     simp only [coeff_add, coeff_forwardTaylorQuotient, LinearMap.map_add]
   map_smul' c p := by
     ext i
-    rw [coeff_smul, coeff_forwardTaylorQuotient, coeff_forwardTaylorQuotient]
+    rw [AddMonoidAlgebra.coeff_smul_apply, coeff_forwardTaylorQuotient, coeff_forwardTaylorQuotient]
     simp
 
 @[simp]

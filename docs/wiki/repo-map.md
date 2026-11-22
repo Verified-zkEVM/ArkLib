@@ -23,6 +23,7 @@ docs/kb/             persistent paper, concept, audit, and query knowledge base
 docs/wiki/            reference pages and conventions
 docs/design/          interaction-layer design chapters and status
 scripts/              repo utilities
+docbuild/             documentation package: doc-gen4 and checkdecls, requiring ArkLib by path
 home_page/            site assets and assembled website root
 ```
 
@@ -251,10 +252,15 @@ home_page/            site assets and assembled website root
 - `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
   scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
-  BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
-  coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
-  tensor implication, and `OutOfDomain` for the multilinear-list collision bound. There is no
-  `Commitment.Scheme` instance or composed protocol security theorem yet. The
+  BitZ: `ExponentLift` for the bit inner product in an exponent, `CrtVariant` for its relaxation
+  by a second grand product modulo `ℓ₁`, `Round1` for the honest first message, its bounds and the
+  fixed-witness fingerprinting error, `Round2` for the deterministic tensor implication,
+  `OutOfDomain` for the multilinear-list collision bound, `Bitification` for the bit decomposition
+  of a witness over a finitely generated ring, `FixedWitnessError` for the fixed-witness error of
+  Rounds 1 and 2, `BitifiedClaim` for the bitified weights, the identification of the two claims
+  and the same bound for the bitified claim, and `HonestMessages` for the honest second message
+  and the honest first message of a bitified claim.
+  There is no `Commitment.Scheme` instance or composed protocol security theorem yet. The
   [BitZ paper page](../kb/papers/BGKLSW26.md) maps statements to the paper and records the remaining
   protocol obligations.
   Binary-encoding bounds and injectivity live under `Data/Nat/BitSum`; other generic helpers are
@@ -576,6 +582,9 @@ home_page/            site assets and assembled website root
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
   [coding-theory-conventions.md](coding-theory-conventions.md)).
+- `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/` ports the
+  affine combiners of [CWYZ26].
+  The [paper page](../kb/papers/CWYZ26.md) maps each module to the paper and tracks open units.
 - **Two different "folds" coexist and must not be confused.** GR08 *alphabet-enlarging* folding —
   a codeword symbol packs `(f̂(x), f̂(xω), …, f̂(xω^{s-1}))`, the degree bound is unchanged, and the
   code lives in `ι → Fin s → F` — is `ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`. The
@@ -612,12 +621,10 @@ home_page/            site assets and assembled website root
   file/directory pair
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
-  results about them. A few deep bounds are externally sourced solicited proofs: they carry tagged
-  `sorry` annotations and are listed in the `solicited` array of `scripts/axiom_baseline.json`
-  ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); use the paper KB pages to inspect
-  their sources. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
-  folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
-  large-alphabet barrier.
+  results about them. Every bound under `ListDecodability/` is proved in-tree; use the paper KB
+  pages to inspect their sources. In-tree results include [CZ25]'s subspace-design theorem (and
+  therefore the folded-Reed-Solomon and univariate-multiplicity capacity corollaries), the [AGL23]
+  large-alphabet barrier, and [AGL24]'s random-evaluation-domain bound.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
   `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds.
   `ProximityGap/CapacityBounds/SubspaceDesign.lean` shares the subspace-design pinning
@@ -658,6 +665,8 @@ home_page/            site assets and assembled website root
   functions is `ArkLib/Data/Probability/Combinatorial.lean`. Shannon entropy and Chernoff tails for
   real weights on finite types are `ArkLib/Data/Probability/FiniteEntropy.lean` and
   `ArkLib/Data/Probability/FiniteChernoff.lean`.
+  `ArkLib/Data/Probability/MaxEventProbability.lean` computes the exact worst-case probability of
+  a finite family of Boolean events.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
