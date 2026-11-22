@@ -34,6 +34,8 @@ at `α`.
 * `IntersectionRow H`: the row indices, pairs `(i, u)` with `u ∈ H i` not the least vertex of
   `H i`.
 * `intersectionMatrix R H k`: the matrix described above.
+* `IntersectionRow.relabel e he x`: the row `x` with its edge moved along a permutation `e` of the
+  edges that preserves edge sets.
 * `IsRigid H k α`: the kernel of the matrix evaluated at `α` is trivial, in polynomial form.
 
 ## Main statements
@@ -48,6 +50,8 @@ at `α`.
   at most `s * (k - 1)` in each variable.
 * `intersectionMatrix_apply_of_eq`, `rename_intersectionMatrix_apply`: a row depends only on its
   edge, so emptying edges deletes their rows, and relabelling the variables relabels the rows.
+* `det_submatrix_relabel`: permuting edges with equal edge sets maps maximal minors to maximal
+  minors, renaming their determinants.
 
 `not_isRigid_of_mem_code` with `isRigid_iff_mulVec_injective` is the lemma of [AGL24] that the
 reduced intersection matrix of an agreement hypergraph of codewords that are not all equal does not
@@ -115,6 +119,25 @@ theorem rename_intersectionMatrix_apply {ι' : Type*} (e : ι → ι') (H : ι' 
     MvPolynomial.rename e (intersectionMatrix R (H ∘ e) k r c) =
       intersectionMatrix R H k ⟨(e r.1.1, r.1.2), r.2⟩ c := by
   simp only [intersectionMatrix_apply, Function.comp_apply]
+  split_ifs <;> simp
+
+/-- The row `(e i, u)` of the intersection matrix, for a row `(i, u)` and a permutation `e` of the
+edges with `H (e i) = H i` for all `i`. -/
+def IntersectionRow.relabel (e : Equiv.Perm ι) (he : ∀ i, H (e i) = H i)
+    (x : IntersectionRow H) : IntersectionRow H :=
+  ⟨(e x.1.1, x.1.2), by simpa only [he] using x.2⟩
+
+/-- Relabelling the rows of a square submatrix of the intersection matrix along a permutation `e`
+of the edges with `H (e i) = H i` renames its determinant along `e`. -/
+theorem det_submatrix_relabel (e : Equiv.Perm ι) (he : ∀ i, H (e i) = H i)
+    (ρ : Fin s × Fin k → IntersectionRow H) :
+    ((intersectionMatrix R H k).submatrix (fun c ↦ (ρ c).relabel e he) id).det =
+      MvPolynomial.rename e ((intersectionMatrix R H k).submatrix ρ id).det := by
+  rw [AlgHom.map_det]
+  congr 1
+  ext c c'
+  simp only [AlgHom.mapMatrix_apply, Matrix.map_apply, Matrix.submatrix_apply, id,
+    intersectionMatrix_apply, IntersectionRow.relabel, he]
   split_ifs <;> simp
 
 section Field
