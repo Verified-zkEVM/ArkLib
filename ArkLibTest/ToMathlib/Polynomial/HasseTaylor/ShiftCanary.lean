@@ -172,7 +172,7 @@ example :
   norm_num [C_ofNat]
   ring_nf
   ext n
-  simp [coeff_add, coeff_sub, coeff_neg, coeff_X_pow, coeff_X]
+  simp [coeff_X_pow, coeff_X]
   split_ifs <;> norm_num
   all_goals try omega
   all_goals decide

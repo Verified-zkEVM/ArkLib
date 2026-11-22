@@ -289,7 +289,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
             subst b
             apply roundPoly_degree_le
             intro j
-            simp only [sumcheckPolyZero, CPoly.CMvPolynomial.fromCMvPolynomial_mul',
+            simp only [sumcheckPolyZero, CPoly.map_mul,
               cEqualityPolynomial, fromCMvPolynomial_cMultilinearExtension,
               fromCMvPolynomial_cRangeProduct, Nat.zero_sub, Finset.Icc_eq_empty_of_lt
                 (by omega : 0 < 1), Finset.prod_empty, mul_one]

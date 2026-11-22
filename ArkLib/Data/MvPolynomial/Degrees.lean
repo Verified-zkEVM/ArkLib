@@ -221,7 +221,7 @@ theorem degreeOf_eval_C_finSuccEquiv (p : MvPolynomial (Fin (n + 1)) R) (j : Fin
 theorem eval_comp_eval_C_finSuccEquiv (p : R[X (Fin (n + 1))]) (y : Fin n → R) (x : R) :
     eval y (Polynomial.eval (C x) (finSuccEquiv R n p)) = eval (Fin.cons x y) p := by
   rw [eval_eq_eval_mv_eval', Polynomial.eval_map, Polynomial.eval_eq_sum]
-  simp only [Polynomial.eval₂, Polynomial.sum, map_sum, map_mul, map_pow, eval_C]
+  simp only [Polynomial.eval₂_eq_sum, Polynomial.sum, map_sum, map_mul, map_pow, eval_C]
 
 end Equiv
 

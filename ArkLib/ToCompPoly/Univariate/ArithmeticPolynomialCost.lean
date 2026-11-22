@@ -46,7 +46,7 @@ theorem profileArithmetic_trimRaw_le (p : CPolynomial.Raw F) (kind : ArithmeticC
       if kind = .coefficientRead ∨ kind = .eq then p.size
       else if kind = .metadata then p.size + 1 else 0 := by
   induction hs : p.size using Nat.strong_induction_on generalizing p with
-  | h n ih =>
+  | ind n ih =>
     by_cases hp : p.size = 0
     · rw [profileArithmetic_trimRaw]
       cases kind <;> simp [hp, arithmeticCost, ArithmeticOp.costKind]
