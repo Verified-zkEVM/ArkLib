@@ -25,11 +25,11 @@ open Finset Polynomial ReedSolomon
 
 private def allEdges : Fin 10 → Finset (Fin 2) := fun _ ↦ univ
 
-example : certificateBank allEdges 4 [] = {9} := by decide
+example : Certificate.bank allEdges 4 [] = {9} := by decide
 
-example : certificateBank allEdges 4 [9, 3] = {8} := by decide
+example : Certificate.bank allEdges 4 [9, 3] = {8} := by decide
 
-example : certificateBank allEdges 8 [9] = {7, 8} := by decide
+example : Certificate.bank allEdges 8 [9] = {7, 8} := by decide
 
 /-- Every proper vertex set of `Fin 2` has at most one vertex, and the ten edges have weight
 `10`. -/
@@ -59,5 +59,7 @@ example : ∃ c : Fin 4 ↪ Fin 10, #(Tuple.descents c) < 2 ^ 2 ∧ ∀ i ∈ un
     MvPolynomial.aeval (fun j ↦ if j < i then MvPolynomial.C (0 : ℚ) else MvPolynomial.X j)
         (certificatePolynomial ℚ allEdges_isWeaklyPartitionConnected c i) ≠ 0 ∧
       MvPolynomial.aeval (fun j ↦ if j ≤ i then MvPolynomial.C (0 : ℚ) else MvPolynomial.X j)
-        (certificatePolynomial ℚ allEdges_isWeaklyPartitionConnected c i) = 0 :=
-  exists_embedding_certificatePolynomial_of_not_isRigid not_isRigid_zero
+        (certificatePolynomial ℚ allEdges_isWeaklyPartitionConnected c i) = 0 := by
+  obtain ⟨c, hd, hc⟩ := exists_embedding_isCertificate_of_not_isRigid
+    (hH := allEdges_isWeaklyPartitionConnected) not_isRigid_zero
+  exact ⟨c, hd, hc.aeval_certificatePolynomial⟩
