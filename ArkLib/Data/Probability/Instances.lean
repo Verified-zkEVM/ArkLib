@@ -8,7 +8,7 @@ module
 
 public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Data.MvPolynomial.Degrees
-public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelInjective
+public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
 public import VCVio.OracleComp.Constructions.SampleableType.SchwartzZippel
 public import CompPoly.Data.Fin.BigOperators
 
@@ -172,25 +172,11 @@ lemma prob_polynomial_identity_le
     MvPolynomial.totalDegree_le_of_degreeOf_lt P h_indiv_deg
   exact prEvent_eval_eq_zero_univ_le_div P h_nonzero h_total_deg
 
-private lemma natCast_div_le_natCast_div_of_mul_le {k n d m : ℕ}
-    (hm_pos : 0 < m) (h : k * m ≤ d * n) :
-    (k : ℝ≥0∞) / n ≤ d / m := by
-  by_cases hn_zero : n = 0
-  · have hk_zero : k = 0 := by nlinarith
-    simp [hk_zero]
-  have hn_pos : 0 < n := Nat.pos_of_ne_zero hn_zero
-  rw [ENNReal.div_le_iff_le_mul] <;> norm_cast
-  · rw [← ENNReal.toReal_le_toReal] <;> norm_num
-    · rw [div_mul_eq_mul_div, le_div_iff₀] <;> norm_cast
-    · exact ENNReal.mul_ne_top (ENNReal.div_ne_top (by aesop) (by aesop)) (by aesop)
-  · grind
-  · exact Or.inl <| ENNReal.natCast_ne_top _
-
 /-- Probability that a nonzero polynomial vanishes at a uniformly random tuple of pairwise-distinct
-elements of a finite field `F`: at most `d / (|F| - s + 1)`, where `d` bounds the total degree.
+elements of a finite domain `F`: at most `d / (|F| - s + 1)`, where `d` bounds the total degree.
 This is `MvPolynomial.card_filter_injective_eval_eq_zero_le` for `S = univ`. -/
 lemma prob_eval_zero_embedding_le_div
-    {F : Type} [Field F] [Fintype F] {s d : ℕ} [SampleableType (Fin s ↪ F)]
+    {F : Type} [CommRing F] [IsDomain F] [Fintype F] {s d : ℕ} [SampleableType (Fin s ↪ F)]
     (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
     Pr{let x ← $ᵗ (Fin s ↪ F)}[MvPolynomial.eval x f = 0] ≤
       (d : ℝ≥0∞) / (Fintype.card F - s + 1 : ℕ) := by
@@ -208,7 +194,7 @@ lemma prob_eval_zero_embedding_le_div
         true_and] at hy
       exact ⟨⟨y, hy.1⟩, by simpa using hy.2, rfl⟩
   rw [hcard]
-  refine natCast_div_le_natCast_div_of_mul_le (Nat.succ_pos _) ?_
+  refine ENNReal.div_le_div_of_mul_le (Nat.succ_pos _) ?_
   have h := MvPolynomial.card_filter_injective_eval_eq_zero_le hf (Finset.univ : Finset F)
   rw [Finset.card_univ] at h
   exact h.trans (Nat.mul_le_mul_right _ hd)
