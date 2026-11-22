@@ -30,8 +30,10 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 
 The error is a mathematical supremum with classical decidability for polynomial witnesses.
 Its counting definition requires no sampler.
-`ReedSolomon.equalDegreeMcaError_eq_iSup_prob` in `EqualDegreeSampling` identifies it with
-native uniform probabilities.
+`ReedSolomon.equalDegreeMcaError_eq_iSup_prob` in `AffineCombiner.EqualDegreeSampling` identifies
+the error with native uniform probabilities.
+`ReedSolomon.equalDegreeMcaErrorRat` in `AffineCombiner.Computable` computes this error as an exact
+nonnegative rational by finite searches.
 
 ## Main definitions
 

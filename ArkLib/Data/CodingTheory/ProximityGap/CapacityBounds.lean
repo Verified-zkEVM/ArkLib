@@ -11,6 +11,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.NearCapacity
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
@@ -66,6 +67,11 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
   existence of RS codes for which `ε_ca` at distance `1 - ρ - slack` is at
   least `n^c / |F|`, with the `slack` pinned to `Θ(1/log₂ n)` via explicit uniform
   constants (Lean lacks a generic `Θ` notation).
+- `exists_rs_epsCa_large_near_capacity_of_prime` — the [KKH26 Prop 3] bound for every large `K`
+  and every prime `p ≡ 1 (mod 2^K)` with `p ≥ n^{c+2}`, `n = 2^K`, from `rs_epsCa_large_of_smooth`;
+  `exists_rs_epsCa_large_near_capacity_of_primes` derives the family statement from primes
+  `p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]`, for one `β > max(c+2, 12/5)` and infinitely many `K`; only
+  that supply is admitted.
 - `rs_epsCa_eq_one_of_entropy_rate` — ABF26 Theorem 4.17 [CS25 Cor 1]: complete CA breakdown
   for RS codes when the rate sits inside an entropy-defined band, stated at the source's
   integer error radius.
@@ -201,16 +207,8 @@ theorem rs_mcaError_le_johnsonExceptionCount
   classical
   let e := (Fintype.equivFin ι).symm
   let domain' := e.toEmbedding.trans domain
-  have hcode (w : ι → F) :
-      w ∘ e ∈ ReedSolomon.code domain' k ↔ w ∈ ReedSolomon.code domain k := by
-    simp only [ReedSolomon.mem_code_iff_eval]
-    constructor
-    · rintro ⟨P, hP, he⟩
-      exact ⟨P, hP, fun i ↦ by simpa [domain', Function.comp_def] using he (e.symm i)⟩
-    · rintro ⟨P, hP, he⟩
-      exact ⟨P, hP, fun i ↦ he (e i)⟩
   rw [← mcaError_comp_equiv (AffineLineGenerator F) (ReedSolomon.code domain k)
-    (ReedSolomon.code domain' k) e hcode]
+    (ReedSolomon.code domain' k) e (ReedSolomon.mem_code_comp_equiv e domain k)]
   simpa only [johnsonAgreement, johnsonRhoMinus, show k - 1 + 1 = k by omega] using
     ReedSolomon.mcaError_affineLine_johnson_le (D := k - 1) domain' (by omega) (by omega) hη
 
@@ -338,7 +336,8 @@ theorem exists_rs_epsCa_large_near_capacity
       epsCa (F := FC) (A := FC) ((ReedSolomon.code domain k : Set (ιC → FC)))
           (1 - ρ - slack) (1 - ρ - slack) ≥
         ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal) := by
-  sorry -- ABF26-T4.16; external admit [KKH26].
+  exact exists_rs_epsCa_large_near_capacity_of_primes c ρ _hρ_pos _hρ_lt
+    sorry -- prime supply; external admit [KKH26] (ABF26-T4.16).
 
 
 end ReedSolomon
