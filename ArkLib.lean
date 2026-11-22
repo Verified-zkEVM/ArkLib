@@ -275,6 +275,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.Certificate
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.FullRank
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.IntersectionMatrix
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.RankLoss
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
