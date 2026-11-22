@@ -42,10 +42,9 @@ To certify `RS[n, k]` over a field `F` at threshold `ε*`:
    parameters `(m, M, μ, h)`, and check the slot inequality
    `firstOrderCurveShiftedRowSlotBound (k - 1) A m M μ n 1 h <
      firstOrderCurveShiftedHeightSlotCount (k - 1) A m M μ 1 h`.
-   It is a closed computation on natural numbers. Small instances close it by `decide`. For
-   large ones, `scripts/grand_challenges/gen_slot_arithmetic.py` generates a module that proves
-   it, in exactly this form, by checking blocks of the sums with `decide +kernel` over the
-   restatements of `GrandChallenges.SlotArithmetic`. Then
+   It is a closed computation on natural numbers, and small instances close it by `decide`.
+   For large ones, the restatements of `GrandChallenges.SlotArithmetic` let blocks of the sums
+   be checked with `decide +kernel`. Then
    `lineExactAgreementBound_of_heightSlotCount` gives a line bound `B`, and
    `McaLowerWitness.ofLineExactAgreement` gives the witness once `B ≤ ε* · |F|`.
    `lambda_interleaved_le_of_heightSlotCount` does the same for list decoding, for every
@@ -54,8 +53,8 @@ To certify `RS[n, k]` over a field `F` at threshold `ε*`:
    construction gives a list of size `⌊C(n/s - 1, r) / (n/s)⌋`, hence a `ListUpperWitness` once
    `ε* · |F|` is smaller (`ListUpperWitness.ofCosetList`). For a `McaUpperWitness`, the
    list-to-correlated-agreement transfer `CodingTheory.rs_Lambda_extended_le_of_epsCa` turns the
-   list into a lower bound on the correlated-agreement error. No generic theorem packages this
-   step yet; `Goldilocks512.epsCa_gt` carries it out for `n = 512`.
+   list into a lower bound on the correlated-agreement error. No general theorem packages this
+   step into a `McaUpperWitness` yet.
 3. Field facts. Only `ringChar F`, `|F|` and, for the unsafe side, a primitive `n`-th root of
    unity enter. For a concrete field, prove them once: for example `GaloisField p d` with a
    primality certificate for `p`.
@@ -63,7 +62,7 @@ To certify `RS[n, k]` over a field `F` at threshold `ε*`:
 Worked example: `RS[512, 128]` at `ε* = 2⁻¹²⁸` over a field with `p ^ 3` elements,
 `p = 2 ^ 64 - 2 ^ 32 + 1`, is safe at `δ = 273/512` with `A = 239` and parameters
 `(609, 280, 1148, 271081)` (MCA) and `(546, 260, 1020, 10 ^ 9)` (list decoding), and unsafe at
-`δ = 377/512` with `s = 4`, `r = 33`. The modules `GrandChallenges.Goldilocks512.*` carry it out.
+`δ = 377/512` with `s = 4`, `r = 33`.
 
 ## References
 
