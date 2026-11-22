@@ -29,7 +29,8 @@ This follows the AIR of [EthStark21], which [BBHR18] introduces.
 
 - `Air.eval_selector`: on a row of the trace, a selector is the 0/1 indicator of its domain.
 - `Air.satisfies_selector_iff`: the selector form and the domain form describe the same traces.
-- `Air.transition_vacuous_of_height_one`: on one row, a transition constraint asks nothing.
+- `Air.transition_vacuous_of_height_le_one`: on at most one row, a transition constraint asks
+  nothing.
 
 ## Selectors and domains
 
@@ -126,7 +127,7 @@ structure Instance (F : Type _) where
   /-- The value of periodic column `j` on row `i`, already expanded and not forced to repeat. -/
   periodic : ℕ → ℕ → F
 
-variable {F : Type _} [Field F]
+variable {F : Type _} [CommSemiring F]
 
 /-- The values of the variables on row `i`, where the row after the last is row 0. -/
 def rowEnv (T : Instance F) (i : ℕ) : Var → F
@@ -205,9 +206,11 @@ theorem satisfies_selector_iff (C : List (Constraint F)) (T : Instance F) :
     · simp [h c hc i hi hd]
     · simp
 
-/-- On a trace of one row, a transition constraint asks nothing. -/
-theorem transition_vacuous_of_height_one (p : MvPolynomial Var F) (T : Instance F)
-    (h : T.height = 1) : SatisfiesOn [⟨.transition, p⟩] T := by
-  simp [SatisfiesOn, Domain.Contains, h]
+/-- On a trace of at most one row, a transition constraint asks nothing. -/
+theorem transition_vacuous_of_height_le_one (p : MvPolynomial Var F) (T : Instance F)
+    (h : T.height ≤ 1) : SatisfiesOn [⟨.transition, p⟩] T := by
+  simp only [SatisfiesOn, List.mem_singleton, forall_eq, Domain.Contains]
+  intro i _ hi
+  omega
 
 end Air

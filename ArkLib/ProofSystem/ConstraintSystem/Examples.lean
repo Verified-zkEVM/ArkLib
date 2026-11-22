@@ -93,7 +93,7 @@ def Plonk.toConstraintSystem (𝓡 : Type) [CommRing 𝓡] : _root_.ConstraintSy
 /-- The index data of an AIR, which the verifier knows in full.
 
 It holds the trace height, the constraints with their domains and the periodic columns. -/
-structure Air.Shape (F : Type*) [Field F] where
+structure Air.Shape (F : Type*) [CommSemiring F] where
   /-- Number of rows of the trace. -/
   height : ℕ
   /-- The constraints, each with its domain. -/
@@ -101,13 +101,13 @@ structure Air.Shape (F : Type*) [Field F] where
   /-- The periodic columns, already expanded to one value per row. -/
   periodic : ℕ → ℕ → F
 
-/-- AIRs over a fixed field, packaged as a universal `ConstraintSystem`.
+/-- AIRs over a fixed commutative semiring, packaged as a universal `ConstraintSystem`.
 
 - index: the height, the constraints and the periodic columns;
 - statement in the clear: the public values;
 - oracle statement: the preprocessed columns;
 - witness: the main trace. -/
-def Air.toConstraintSystem (F : Type*) [Field F] : ConstraintSystem where
+def Air.toConstraintSystem (F : Type*) [CommSemiring F] : ConstraintSystem where
   Index := Air.Shape F
   Stmt := fun _ => ℕ → F
   OStmt := fun _ => ℕ → ℕ → F
@@ -117,7 +117,7 @@ def Air.toConstraintSystem (F : Type*) [Field F] : ConstraintSystem where
       { height := sh.height, main := main, prep := c.2, pub := c.1, periodic := sh.periodic })
 
 @[simp] theorem Air.toConstraintSystem_satisfies
-    (F : Type*) [Field F] (sh : Air.Shape F)
+    (F : Type*) [CommSemiring F] (sh : Air.Shape F)
     (pub : ℕ → F) (prep : ℕ → ℕ → F) (main : ℕ → ℕ → F) :
     (Air.toConstraintSystem F).satisfies sh pub prep main ↔
       Air.SatisfiesOn sh.constraints
