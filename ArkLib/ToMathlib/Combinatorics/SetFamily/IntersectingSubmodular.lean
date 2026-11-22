@@ -28,7 +28,7 @@ equivalence whose classes are tight, and summing over this finpartition gives
 
 * `Finpartition.exists_forall_mem_parts_of_union`: a covering family of finsets that is closed
   under unions of intersecting pairs contains the parts of some finpartition of `univ`.
-* `Finset.exists_nat_sum_eq_of_le_sum_parts`: the existence statement above.
+* `Finset.exists_nat_sum_eq_and_sum_le_of_intersecting_submodular`: the existence statement above.
 -/
 
 @[expose] public section
@@ -132,8 +132,8 @@ private theorem sum_union_eq_of_sum_eq [DecidableEq V] {g : Finset V → ℤ} {�
 nonnegative on nonempty sets, and satisfy `g univ ≤ ∑ A ∈ P.parts, g A` for every finpartition
 `P` of `univ`. Then some `δ : V → ℕ` has `∑ j, δ j = g univ` and `∑ j ∈ A, δ j ≤ g A` for every
 nonempty `A`. -/
-theorem exists_nat_sum_eq_of_le_sum_parts [Fintype V] [DecidableEq V] [Nonempty V]
-    {g : Finset V → ℤ}
+theorem exists_nat_sum_eq_and_sum_le_of_intersecting_submodular [Fintype V] [DecidableEq V]
+    [Nonempty V] {g : Finset V → ℤ}
     (hsub : ∀ A B : Finset V, (A ∩ B).Nonempty → g (A ∪ B) + g (A ∩ B) ≤ g A + g B)
     (hnonneg : ∀ A : Finset V, A.Nonempty → 0 ≤ g A)
     (hpart : ∀ P : Finpartition (univ : Finset V), g univ ≤ ∑ A ∈ P.parts, g A) :

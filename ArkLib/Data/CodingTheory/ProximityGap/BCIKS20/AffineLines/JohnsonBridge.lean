@@ -9,7 +9,6 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Joh
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerToLine
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
-public import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # Coordinate transport for Johnson line agreement
@@ -26,12 +25,6 @@ namespace ProximityGap
 open Polynomial ReedSolomon ReedSolomon.HiddenDerivative
 
 variable {ι κ F : Type} [Fintype ι] [Fintype κ] [Field F] [decF : DecidableEq F]
-
-omit [Field F] in
-/-- Coordinate reindexing preserves normalized Hamming distance. -/
-theorem relHammingDist_comp_equiv (e : κ ≃ ι) (u v : ι → F) :
-    Code.relHammingDist (u ∘ e) (v ∘ e) = Code.relHammingDist u v := by
-  simp only [Code.relHammingDist, hammingDist_comp_equiv, Fintype.card_congr e]
 
 /-- The number of polynomial agreements is invariant under coordinate reindexing. -/
 theorem polynomialAgreementSet_card_comp_equiv (e : κ ≃ ι) (domain : ι ↪ F)
