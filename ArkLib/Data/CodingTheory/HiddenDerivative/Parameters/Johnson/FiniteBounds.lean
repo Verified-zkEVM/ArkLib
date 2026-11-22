@@ -52,8 +52,13 @@ The basic bounds on `ρ₋`, `μ` and `h` need only `1 ≤ D < n`; the closed bo
   `johnsonExceptionCount_lt_comparisonEstimate`: `E₀` is below `16/49` of the exception estimate
   `johnsonComparisonEstimate` of [BCPZZ26].
 
+The closed bound on `E₀` follows [DKT26], Theorem 5.12 and Appendix B.1–B.2. The count `E₁`
+at height `h + 1` and the half-gap incidence bound `johnsonTheta_le_halfGap_envelope` have no
+counterpart there.
+
 ## References
 
+* [DKT26]
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
   Decoding of Reed-Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26]
 -/
@@ -799,7 +804,7 @@ theorem johnsonSuccExceptionCount_le_two_mul {n D A : ℕ} {eta : ℝ}
 /-- Polynomial core of `johnsonSuccExceptionCount_lt_closed`: with `w = (1 - x)(2t - 1) + 1`,
 `3xw(2t + 1 + x) + 12(1 + x) n t x² w ≤ 4(1 + x) n t³` for `0 < x < 1`, `t ≥ 7/2` and
 `n x² ≥ 1`. It uses `x²(1 - x) ≤ 4/27`. -/
-theorem johnsonSucc_gain_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht : 7 / 2 ≤ t)
+private theorem johnsonSucc_gain_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht : 7 / 2 ≤ t)
     (hn0 : 0 < n) (hnx : 1 ≤ n * x ^ 2) (hw : w = (1 - x) * (2 * t - 1) + 1) :
     3 * x * w * (2 * t + 1 + x) + 12 * (1 + x) * n * t * x ^ 2 * w ≤
       4 * (1 + x) * n * t ^ 3 := by
@@ -851,7 +856,7 @@ theorem johnsonSucc_gain_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht : 7 
 `E₁` is at most the termwise bound on `E₀` used in
 `johnsonExceptionCount_lt_preEnvelope_scale`. The extra height costs `2t/x + θ(1 + 4nxt)`, and
 the smaller incidence ratio saves at least `(1 + x)/(x w) · 4nxt · t²/(3x²)`. -/
-theorem johnsonSucc_termwise_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht : 7 / 2 ≤ t)
+private theorem johnsonSucc_termwise_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht : 7 / 2 ≤ t)
     (hn0 : 0 < n) (hnx : 1 ≤ n * x ^ 2) (hw : w = (1 - x) * (2 * t - 1) + 1) :
     2 * (t / x) * (t ^ 2 / (3 * x ^ 2) + 1) +
         ((1 + x) / x - (1 + x) / (x * w)) *
@@ -896,7 +901,7 @@ theorem johnsonSucc_termwise_le {x t n w : ℝ} (hx0 : 0 < x) (hx1 : x < 1) (ht 
 /-- The closed bound `E₁ < (8/3) n t³ / ρ₋` at height `h + 1`, under the hypotheses of
 `johnsonExceptionCount_lt_closed`. With the crude bound `θ ≤ (1 + √ρ₋)/√ρ₋` the envelope at
 height `h + 1` exceeds `8/3` near `ρ₋ = 1`; `johnsonTheta_le_halfGap_envelope` pays for the
-extra height (`johnsonSucc_termwise_le`), and the rest is the envelope argument of
+extra height through a private termwise comparison, and the rest is the envelope argument of
 `johnsonExceptionCount_lt_closed`. -/
 theorem johnsonSuccExceptionCount_lt_closed {n D A : ℕ} {eta : ℝ}
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)

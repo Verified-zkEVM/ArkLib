@@ -174,4 +174,16 @@ example :
       rw [shiftedMultiplicity_4_1, rho_4_1]
       norm_num
 
+/-- The exact counts at `n = 4`, `D = 1`, `η = 1/4`, `A = 3`, where `μ = 6`, `h = 16` and
+`θ = 3/2`: `E₀ = 797` and `E₁ = 1691/2`. At curve degree `2` the new bound `2 E₁ = 1691` is
+below the old bound `2 · 2 E₀ = 3188`. -/
+example :
+    johnsonExceptionCount 4 1 3 (1 / 4) = 797 ∧
+      johnsonSuccExceptionCount 4 1 3 (1 / 4) = 1691 / 2 := by
+  constructor
+  · simp only [johnsonExceptionCount, candidateDegree_4_1, challengeHeight_4_1, johnsonTheta]
+    norm_num
+  · simp only [johnsonSuccExceptionCount, candidateDegree_4_1, challengeHeight_4_1, johnsonTheta]
+    norm_num
+
 end ReedSolomon.HiddenDerivative

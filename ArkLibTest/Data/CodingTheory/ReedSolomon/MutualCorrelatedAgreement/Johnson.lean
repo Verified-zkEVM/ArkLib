@@ -115,13 +115,60 @@ example : ∃ exceptional : Finset (ZMod 7919),
   obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
   exact ⟨exceptional, hbound, z, hz, by convert hgood z hz⟩
 
+/-- At length `4`, degree `1`, slack `1/4` and threshold `3`, the Johnson count at height
+`h + 1` is `1691/2`, from `μ = 6`, `h = 16` and `θ = 3/2`. -/
+private theorem johnsonSuccExceptionCount_four_one :
+    johnsonSuccExceptionCount 4 1 3 (1 / 4) = 1691 / 2 := by
+  have hsqrt : √(johnsonRhoMinus 4 1) = 1 / 2 := by
+    rw [show johnsonRhoMinus 4 1 = (1 / 2) ^ 2 by norm_num [johnsonRhoMinus]]
+    exact Real.sqrt_sq (by norm_num)
+  have hmu : johnsonMu 4 1 (1 / 4) = 6 := by
+    rw [johnsonMu, johnsonT_four_one, hsqrt]
+    norm_num
+  have hceil : ⌈(7 / 2 : ℝ) ^ 2 / (3 * (1 / 4))⌉₊ = 17 := by
+    rw [Nat.ceil_eq_iff (by norm_num)]
+    norm_num
+  have hh : johnsonH 4 1 (1 / 4) = 16 := by
+    rw [johnsonH, johnsonT_four_one, show johnsonRhoMinus 4 1 = 1 / 4 by
+      norm_num [johnsonRhoMinus], hceil]
+  simp only [johnsonSuccExceptionCount, hmu, hh, johnsonTheta]
+  norm_num
+
+local instance : Fact (Nat.Prime 2003) := ⟨by norm_num⟩
+
+private def johnsonSmallCurveDomain : Fin 4 ↪ ZMod 2003 := ⟨![0, 1, 2, 3], by decide⟩
+
+/-- The curve of `johnsonCurveValues` over `ZMod 2003`. -/
+private def johnsonSmallCurveValues : Fin 3 → Fin 4 → ZMod 2003 :=
+  ![![1, 2, 3, 4], ![0, 1, 0, 1], ![2, 0, 2, 0]]
+
+/-- Over `ZMod 2003`, the degree-`2` curve has a challenge at which every agreeing candidate has
+exact power agreement. The exceptional set has at most `2 E₁ = 1691` elements. The earlier bound
+`2 · 2 E₀ = 3188` exceeds the field size and would not give this. -/
+example : ∃ z : ZMod 2003, ∀ P : (ZMod 2003)[X], P.degree < (1 : ℕ) + 1 →
+    3 ≤ (polynomialAgreementSet johnsonSmallCurveDomain
+      (powerBatchedWord johnsonSmallCurveValues z) P).card →
+    HasExactPowerAgreement johnsonSmallCurveDomain johnsonSmallCurveValues
+      (RingHom.id (ZMod 2003)) (1 + 1) z P := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement
+    (n := 4) (D := 1) (A := 3) (ℓ := 2) (eta := 1 / 4) johnsonSmallCurveDomain
+    johnsonSmallCurveValues le_rfl (by norm_num) (by norm_num)
+    (by rw [johnsonAgreement_four_one]; norm_num)
+  have hlt : exceptional.card < (Finset.univ : Finset (ZMod 2003)).card := by
+    rw [Finset.card_univ, ZMod.card]
+    rw [johnsonSuccExceptionCount_four_one] at hcard
+    have hreal : (exceptional.card : ℝ) < 2003 := by push_cast at hcard; linarith
+    exact_mod_cast hreal
+  obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
+  exact ⟨z, by convert hgood z hz⟩
+
 /-- On the zero curve of degree `2` over `ℚ`, some challenge outside at most twice the count at
 height `h + 1` recovers the zero candidate. -/
 example : ∃ exceptional : Finset ℚ,
     (exceptional.card : ℝ) ≤ 2 * johnsonSuccExceptionCount 4 1 3 (1 / 4) ∧
     ∃ z ∉ exceptional,
       HasExactPowerAgreement (natDomain 4) (0 : Fin 3 → Fin 4 → ℚ) (RingHom.id ℚ) 2 z 0 := by
-  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement_succHeight
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement
     (n := 4) (D := 1) (A := 3) (ℓ := 2) (eta := 1 / 4) (natDomain 4) 0 le_rfl (by norm_num)
     (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional

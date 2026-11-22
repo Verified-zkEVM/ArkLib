@@ -16,9 +16,10 @@ A single exceptional set controls every low-degree candidate on a polynomial rec
 in every characteristic. The scaled primitive Johnson certificate supplies the ordinary equation.
 The curve height `ℓ (h + 1) - 1` is at most `ℓ (h + 1)`, so the ordinary factor bound charges at
 most the curve degree times the line exception count at height `h + 1`
-(`exists_johnson_curve_exactPowerAgreement_succHeight`). That count is at most twice the line
-count (`exists_johnson_curve_exactPowerAgreement`) and below the closed bound `(8/3) n t³ / ρ₋`
-(`exists_johnson_curve_exactPowerAgreement_closed`). The constant curve has no exceptional
+(`exists_johnson_curve_exactPowerAgreement`). That count is at most twice the line count at
+height `h` (`johnsonSuccExceptionCount_le_two_mul`) and below the closed bound `(8/3) n t³ / ρ₋`
+(`johnsonSuccExceptionCount_lt_closed`), which gives
+`exists_johnson_curve_exactPowerAgreement_closed`. The constant curve has no exceptional
 challenges.
 -/
 
@@ -38,7 +39,7 @@ private theorem ordinaryFactorRaw_johnsonH_succ_eq (n D A : ℕ) (eta : ℝ) :
 open Classical in
 /-- Outside one exceptional set of at most `ℓ` times the Johnson count at height `h + 1`, every
 sufficiently agreeing candidate has exact power agreement with the coefficient words. -/
-theorem exists_johnson_curve_exactPowerAgreement_succHeight
+theorem exists_johnson_curve_exactPowerAgreement
     {F : Type*} [Field F] {n D A ℓ : ℕ} {eta : ℝ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
@@ -106,28 +107,9 @@ theorem exists_johnson_curve_exactPowerAgreement_succHeight
     simpa only [heval, challengeSpecialization] using hsound
 
 open Classical in
-/-- Outside one exceptional set of at most `2ℓ` times the finite Johnson count, every
-sufficiently agreeing candidate has exact power agreement with the coefficient words. -/
-theorem exists_johnson_curve_exactPowerAgreement
-    {F : Type*} [Field F] {n D A ℓ : ℕ} {eta : ℝ}
-    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
-    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
-    (hthreshold : johnsonAgreement n D eta * n ≤ A) :
-    ∃ exceptional : Finset F,
-      (exceptional.card : ℝ) ≤ 2 * ℓ * johnsonExceptionCount n D A eta ∧
-      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
-        A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
-        HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
-  obtain ⟨ex, hcard, hgood⟩ :=
-    exists_johnson_curve_exactPowerAgreement_succHeight domain values hD hDn heta hthreshold
-  refine ⟨ex, hcard.trans ?_, hgood⟩
-  exact mul_le_mul_of_nonneg_left (johnsonSuccExceptionCount_le_two_mul hD (by omega))
-    (Nat.cast_nonneg ℓ) |>.trans_eq (by ring)
-
-open Classical in
 /-- Outside one exceptional set of at most `ℓ (8/3) n t³ / ρ₋` challenges, every sufficiently
-agreeing candidate has exact power agreement with the coefficient words. This is the line bound
-of `johnsonExceptionCount_lt_closed` charged once per unit of curve degree. -/
+agreeing candidate has exact power agreement with the coefficient words. It combines
+`exists_johnson_curve_exactPowerAgreement` with `johnsonSuccExceptionCount_lt_closed`. -/
 theorem exists_johnson_curve_exactPowerAgreement_closed
     {F : Type*} [Field F] {n D A ℓ : ℕ} {eta : ℝ}
     (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
@@ -140,7 +122,7 @@ theorem exists_johnson_curve_exactPowerAgreement_closed
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
   obtain ⟨ex, hcard, hgood⟩ :=
-    exists_johnson_curve_exactPowerAgreement_succHeight domain values hD hDn heta hthreshold
+    exists_johnson_curve_exactPowerAgreement domain values hD hDn heta hthreshold
   exact ⟨ex, hcard.trans (mul_le_mul_of_nonneg_left
     (johnsonSuccExceptionCount_lt_closed hD hDn heta hthreshold).le (Nat.cast_nonneg ℓ)), hgood⟩
 
