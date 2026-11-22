@@ -114,9 +114,9 @@ needs a rounding the source does not fix.
 
 ## Open Formalization Gaps
 
-Theorem 1.1 itself. Of its predecessors, [BGM23] is formalized only in its infinite-field list-size
-form (`exists_ne_zero_Lambda_le_of_eval_ne_zero`: no field-size bound, not average-radius); [GZ23]
-and the combined [AGGLZ25] are unformalized context.
+Theorem 1.1 itself. Of its predecessors, [BGM23] is formalized only in its list-size form at generic
+evaluation points (`exists_ne_zero_Lambda_le_of_eval_ne_zero`: no field-size bound, not
+average-radius); [GZ23] and the combined [AGGLZ25] are unformalized context.
 
 ## Source Access
 
