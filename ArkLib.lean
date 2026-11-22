@@ -1184,6 +1184,7 @@ public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
+public import ArkLib.ToMathlib.Combinatorics.Hypergraph.GenericZeroPattern
 public import ArkLib.ToMathlib.Combinatorics.Hypergraph.PartitionConnected
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 public import ArkLib.ToMathlib.Combinatorics.SetFamily.GenericZeroPattern
