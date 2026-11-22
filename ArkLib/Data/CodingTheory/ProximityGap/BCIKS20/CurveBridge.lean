@@ -44,8 +44,8 @@ theorem exists_johnson_curve_exactPowerAgreement_of_fintype
     (hD : 1 ≤ D) (hDn : D ≤ Fintype.card ι - 2) (heta : 0 < eta)
     (hthreshold : johnsonAgreement (Fintype.card ι) D eta * Fintype.card ι ≤ A) :
     ∃ exceptional : Finset F,
-      (exceptional.card : ℝ) ≤ 2 * ℓ *
-        johnsonExceptionCount (Fintype.card ι) D A eta ∧
+      (exceptional.card : ℝ) ≤ ℓ *
+        johnsonSuccExceptionCount (Fintype.card ι) D A eta ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
@@ -56,7 +56,7 @@ theorem exists_johnson_curve_exactPowerAgreement_of_fintype
   swap
   · refine ⟨∅, ?_, fun z hz P hP hA ↦ ?_⟩
     · simp only [Finset.card_empty, Nat.cast_zero]
-      unfold johnsonExceptionCount johnsonTheta
+      unfold johnsonSuccExceptionCount johnsonTheta
       positivity
     · exact (hAn (hA.trans (Finset.card_le_univ _))).elim
   let e := (Fintype.equivFin ι).symm
