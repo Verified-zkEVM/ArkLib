@@ -260,7 +260,11 @@ them with suprema of native uniform probabilities.
 `ReedSolomon.equalDegreeMcaErrorRat`, and `ReedSolomon.linearClaimMcaErrorRat` compute the
 corresponding worst-case errors exactly in `ℚ≥0`.
 Each has an `ofReal_…` theorem equating the result with its semantic `ENNReal` error.
-The evaluators reuse finite event counting and search bounded CompPoly candidates and witnesses.
+The evaluators reuse finite event counting and enumerate bounded CompPoly candidates.
+The affine and scalar searches enumerate the second witness.
+The equal-degree and linear-claim searches enumerate `W = F₀ + θ G₀`.
+They recover the witnesses from `W` and the candidate.
+They skip each `W` whose reconstructed second witness has degree at least `d`.
 The linear-claim evaluator also enumerates every first-challenge message function.
 The module docstrings in `AffineCombiner/Computable.lean` and
 `AffineCombiner/LinearClaimsExact.lean` give the costs of these exhaustive searches.

@@ -13,14 +13,15 @@ public import
 /-!
 # Exact evaluation of the linear-claim combiner error
 
-`linearClaimMcaErrorRat` enumerates the received words, public weights, claims, and message
-functions. It uses the bounded CompPoly polynomial types to enumerate candidates and witnesses.
+`linearClaimMcaErrorRat` enumerates the received words, public weights, and initial claims.
+For each such choice it enumerates all `q^q` message functions, where `q` is the field size.
 `ofReal_linearClaimMcaErrorRat` identifies the result with the worst-case exceptional-event
 probability `linearClaimMcaError`.
 
-The search enumerates every function from the first challenge field to itself. For each
-instance and challenge triple it tests up to `q^(d+1)` candidates against `q^(2d)` witness pairs,
-where `q` is the field size. It uses executable finite enumerations and field operations.
+For each instance and challenge triple, the search tests up to `q^(d+1)` candidates against
+`q^d` combinations `W = U + θ V` per candidate. The candidate `P` and `W` determine
+`V = P - (α + β X) W` and `U = W - θ V`. The search skips the pair if `V` has degree at
+least `d`. It uses executable finite enumerations and field operations.
 -/
 
 @[expose] public section
@@ -59,10 +60,29 @@ def IsLinearClaimExceptional (domain : ι ↪ F) {d : ℕ} (w : LinearClaimInsta
       s < #(lostPositions domain w.f w.g (equalDegreeWord domain w.f w.g θ α β)
         P.val U.val V.val)
 
+/-- The decision procedure searches the combinations `W = U + θ V ∈ degreeLT d`. Each
+`W` determines the witnesses `V = P - (α + β X) W` and `U = W - θ V`. The search skips `W` if
+`V` has degree at least `d`. The claim on `X (U + θ V)` is the claim on `X W`. -/
 instance [Fintype F] (domain : ι ↪ F) {d : ℕ} (w : LinearClaimInstance ι F d) (A s : ℕ)
     (θ α β : F) (P : ↥(CPolynomial.degreeLT (R := F) (d + 1))) :
     Decidable (IsLinearClaimExceptional domain w A s θ α β P) :=
-  inferInstanceAs (Decidable (_ ∧ _))
+  let c := w.message θ
+  let word := equalDegreeWord domain w.f w.g θ α β
+  decidable_of_iff
+    (A ≤ #{i | P.val.eval (domain i) = word i} ∧
+      linearClaim w.v P.val = w.γ₁ + α * (w.γ₀ + θ * w.γ₁) + β * c ∧
+      ∀ W : ↥(CPolynomial.degreeLT (R := F) d),
+        let V := P.val - affineMultiplier α β * W.val
+        let U := W.val - CPolynomial.C θ * V
+        V.degree < d → linearClaim w.v U = w.γ₀ → linearClaim w.v V = w.γ₁ →
+          linearClaim w.v (CPolynomial.X * W.val) = c →
+          s < #(lostPositions domain w.f w.g word P.val U V))
+    (and_congr_right fun _ ↦ and_congr_right fun _ ↦ by
+      rw [forall_eq_equalDegreePolynomial_iff P.val θ α β d fun U V ↦
+        linearClaim w.v U = w.γ₀ → linearClaim w.v V = w.γ₁ →
+          linearClaim w.v (CPolynomial.X * (U + CPolynomial.C θ * V)) = c →
+          s < #(lostPositions domain w.f w.g word P.val U V)]
+      simp only [sub_add_cancel])
 
 /-- The executable predicate agrees with exceptionality of the converted candidate. -/
 theorem isLinearClaimExceptional_iff (domain : ι ↪ F) {d : ℕ} (w : LinearClaimInstance ι F d)
