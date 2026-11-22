@@ -21,22 +21,6 @@ deterministic handler selects (`profileArithmetic_eq_charge`).
 
 @[expose] public section
 
-namespace PFunctor.FreeM.Path
-
-/-- The path a fixed selector picks through a bind joins the paths it picks through the first
-program and through the continuation at that path's output. -/
-theorem ofHandler_bind {P : PFunctor} {α β : Type _} (choose : (a : P.A) → P.B a)
-    (x : FreeM P α) (f : α → FreeM P β) :
-    ofHandler choose (x.bind f) =
-      joinBind x f (ofHandler choose x) (ofHandler choose (f (output x (ofHandler choose x)))) := by
-  induction x using FreeM.rec with
-  | pure a => rfl
-  | liftBind a r ih =>
-    exact congrArg (fun p ↦ (⟨choose a, p⟩ : Path (FreeM.liftBind a fun b ↦ (r b).bind f)))
-      (ih (choose a))
-
-end PFunctor.FreeM.Path
-
 namespace CompPoly
 
 open OracleComp OracleSpec

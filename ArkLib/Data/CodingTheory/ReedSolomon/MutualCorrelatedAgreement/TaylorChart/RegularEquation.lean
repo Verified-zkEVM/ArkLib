@@ -36,7 +36,8 @@ bounded using the chart-incidence and pair-agreement estimates.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval coeffNatDegree coeffNatDegreeLE_coeffNatDegree)
 
 namespace ReedSolomon
 

@@ -856,11 +856,11 @@ lemma coeff_vec_to_bivariate_coeff (k D : ℕ)
   rw [Finset.sum_eq_single j]
   · rw [Finset.sum_eq_single i]
     · simp [hwd]
-    · intro i' _ hi'; split <;> simp [Polynomial.coeff_monomial, Fin.val_ne_of_ne hi']
+    · intro i' _ hi'; split <;> simp [Fin.val_ne_of_ne hi']
     · intro h; exact absurd (Finset.mem_univ _) h
   · intro j' _ hj'
     apply Finset.sum_eq_zero; intro i' _
-    split <;> simp [Polynomial.coeff_monomial, Fin.val_ne_of_ne hj']
+    split <;> simp [Fin.val_ne_of_ne hj']
   · intro h; exact absurd (Finset.mem_univ _) h
 
 /-- A witness satisfying `isWitnessC` produces a nonzero Mathlib bivariate polynomial

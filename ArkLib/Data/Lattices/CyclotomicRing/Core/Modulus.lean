@@ -5,10 +5,8 @@ Authors: Tobias Rothmann
 -/
 module
 
-public import ArkLib.ToCompPoly.Univariate.Basic
+public import CompPoly.Univariate.DivisionCorrectness
 public import Mathlib.RingTheory.Polynomial.Cyclotomic.Basic
--- `unfold toPoly` needs CompPoly's unexposed body.
-import all CompPoly.Univariate.ToPoly.Core
 
 /-!
 # Cyclotomic Moduli over `CPolynomial`
@@ -54,16 +52,6 @@ and the proofs are kept in **separate** structures:
 @[expose] public section
 
 open Polynomial
-
-namespace CompPoly.CPolynomial
-
-variable {R : Type*} [Field R] [BEq R] [LawfulBEq R]
-
-/-- `CPolynomial.X.toPoly = Polynomial.X`. -/
-@[simp] theorem toPoly_X : (CPolynomial.X : CPolynomial R).toPoly = Polynomial.X := by
-  unfold CPolynomial.toPoly; exact Raw.toPoly_X
-
-end CompPoly.CPolynomial
 
 namespace ArkLib.Lattices
 
@@ -112,14 +100,14 @@ instance powTwoCyclotomic_isCyclotomic (α : ℕ) :
   monic := by
     have hX : (CPolynomial.X ^ (2 ^ α) + 1 : CPolynomial R).toPoly
         = Polynomial.X ^ (2 ^ α) + 1 := by
-      rw [toPoly_add, toPoly_pow, toPoly_X, toPoly_one]
+      rw [toPoly_add, toPoly_pow, X_toPoly, toPoly_one]
     change (CPolynomial.X ^ (2 ^ α) + 1 : CPolynomial R).toPoly.Monic
     rw [hX, ← Polynomial.C_1]
     exact monic_X_pow_add_C (1 : R) (pow_ne_zero α two_ne_zero)
   isCyclotomic := by
     have hX : (CPolynomial.X ^ (2 ^ α) + 1 : CPolynomial R).toPoly
         = Polynomial.X ^ (2 ^ α) + 1 := by
-      rw [toPoly_add, toPoly_pow, toPoly_X, toPoly_one]
+      rw [toPoly_add, toPoly_pow, X_toPoly, toPoly_one]
     change (CPolynomial.X ^ (2 ^ α) + 1 : CPolynomial R).toPoly
       = Polynomial.cyclotomic (2 ^ (α + 1)) R
     rw [hX, cyclotomic_prime_pow_eq_geom_sum (R := R) (p := 2) (n := α) Nat.prime_two]
@@ -129,7 +117,7 @@ instance powTwoCyclotomic_isCyclotomic (α : ℕ) :
 theorem powTwoCyclotomic_toPoly (α : ℕ) :
     (powTwoCyclotomic (R := R) α).φ.toPoly = Polynomial.X ^ (2 ^ α) + 1 := by
   change (CPolynomial.X ^ (2 ^ α) + 1 : CPolynomial R).toPoly = _
-  rw [toPoly_add, toPoly_pow, toPoly_X, toPoly_one]
+  rw [toPoly_add, toPoly_pow, X_toPoly, toPoly_one]
 
 /-- The ring dimension: `natDegree` of the power-of-two modulus is `2^α`. -/
 theorem powTwoCyclotomic_natDegree (α : ℕ) :

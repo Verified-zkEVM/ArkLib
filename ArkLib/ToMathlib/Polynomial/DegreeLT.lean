@@ -15,6 +15,8 @@ Lemmas about `Polynomial.degreeLT R n`, the submodule of polynomials of degree `
 ## Main statements
 
 * `Polynomial.degreeLT_zero`: at the boundary `n = 0`, `degreeLT R 0` is the zero submodule.
+* `Polynomial.degree_lt_succ_iff`: a polynomial has degree below `n + 1` exactly when it has
+  degree at most `n`.
 * `Polynomial.natDegree_le_of_mem_degreeLT_succ`: a polynomial in `degreeLT R (n + 1)` has
   natural degree at most `n`.
 * `Polynomial.mem_degreeLT_of_mul_left`: if the coefficient semiring has no zero divisors,
@@ -22,10 +24,12 @@ Lemmas about `Polynomial.degreeLT R n`, the submodule of polynomials of degree `
 
 The boundary fact is reusable for any construction that maps `degreeLT` through a linear map —
 e.g. Reed-Solomon codes (`ReedSolomon.code α n = (degreeLT F n).map (evalOnPoints α)`), folded
-RS codes, and similar code families. The other two lemmas serve degree bounds stated with
-`degreeLT`: the first converts such a bound to a natural-degree bound, and the second keeps it
-when a common factor is removed, as in the primitive kernel vectors of
-`ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight`. Candidates for upstream PR to Mathlib.
+RS codes, and similar code families. The other three lemmas serve degree bounds stated with
+`degreeLT`. The first converts the strict bound `p.degree < ↑(n + 1)`, the unfolded form of
+`p ∈ degreeLT R (n + 1)`, to `p.degree ≤ n` and back. The second converts membership in
+`degreeLT R (n + 1)` to a natural-degree bound.
+The third keeps membership in `degreeLT R n` when a common factor is removed, as in the
+primitive kernel vectors of `ArkLib.ToMathlib.LinearAlgebra.PolynomialKernelHeight`.
 -/
 
 @[expose] public section
@@ -44,6 +48,10 @@ theorem degreeLT_zero : degreeLT R 0 = ⊥ := by
   rw [Polynomial.mem_degreeLT, Nat.cast_zero, Nat.WithBot.lt_zero_iff,
       Polynomial.degree_eq_bot] at hp
   exact hp ▸ Submodule.zero_mem _
+
+/-- A polynomial has degree below `n + 1` exactly when it has degree at most `n`. -/
+theorem degree_lt_succ_iff {p : R[X]} {n : ℕ} : p.degree < ↑(n + 1) ↔ p.degree ≤ n := by
+  rw [← mem_degreeLT, degreeLT_succ_eq_degreeLE, mem_degreeLE]
 
 /-- A polynomial in `degreeLT R (n + 1)` has natural degree at most `n`.
 

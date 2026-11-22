@@ -168,7 +168,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type*} [Field F]
       simp_rw [hfun]; simp [monomial_one_right_eq_X_pow]
     have hSylv : ev (M1 i col) = (sylvester (B.map ev) (A.map ev) n m).mulVec v_col i := by
       have := RingHom.map_matrix_mul (M := M0) (N := U) (i := i) (j := col) (f := ev)
-      simpa [M1, mul_apply, mulVec, dotProduct, v_col, hM0map] using this
+      simpa [M1, Matrix.mul_apply, mulVec, dotProduct, v_col, hM0map] using this
     rw [hSylv, congrArg (fun f : (Fin (n + m) → F) ↦ f i)
       (ps_sylvester_mul_vec_eq_coeff_add (A.map ev) (B.map ev) m n hmA hnB v_col)]
     simp [hsum_left, hsum_right, hBmap, q, mul_assoc, mul_left_comm, mul_comm]
@@ -234,7 +234,7 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type*} [Field F]
     by_contra h; exact hv0 (funext fun i ↦ absurd i.isLt (by omega))
   have hA_nd : A.natDegree = m := by simpa [natDegreeY] using hm.symm
   have hcomb : A * P + B * Q = 0 := by
-    apply Polynomial.ext; intro k
+    ext k : 2
     by_cases hk : k < n + m
     · simpa using hvcoeff ⟨k, hk⟩
     · have hdegAP : (A * P).natDegree < n + m := by
@@ -262,7 +262,7 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type*} [Field F]
   have hQ0 : Q = 0 := by
     by_cases hm0 : m = 0
     · simp_all only [m, P, Q]
-      ext n_1 n_2 : 2
+      ext n_1 : 2
       simp_all only [zero_le, ofFn_coeff_eq_zero_of_ge, coeff_zero]
     · rcases hA_dvd_Q with ⟨R, hR⟩
       by_contra hQ_ne
@@ -274,5 +274,5 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type*} [Field F]
       omega
   have hP0 : P = 0 := (mul_eq_zero.mp (by simpa [hQ0] using hcomb)).resolve_left hA0
   exact hv0 (funext ((Fin.forall_fin_add <| fun i ↦ v i = 0).2
-    ⟨fun j ↦ by simpa [hP_ofFn] using congrArg (Polynomial.coeff · (j : ℕ)) hP0,
-     fun j ↦ by simpa [hQ_ofFn] using congrArg (Polynomial.coeff · (j : ℕ)) hQ0⟩))
+    ⟨fun j ↦ by simpa [hP_ofFn] using congrArg (fun p : Polynomial _ ↦ p.coeff (j : ℕ)) hP0,
+     fun j ↦ by simpa [hQ_ofFn] using congrArg (fun p : Polynomial _ ↦ p.coeff (j : ℕ)) hQ0⟩))

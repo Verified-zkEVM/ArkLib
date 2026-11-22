@@ -244,10 +244,10 @@ theorem linearCombination_ne_zero
     {v : ℓ → F} (hv : v ≠ 0) :
     ∑ j : ℓ, v j • P j ≠ 0 := by
   have := @Fintype.linearIndependent_iff (ℓ) F M
-  contrapose! hv
+  contrapose hv
   contrapose! this
   refine ⟨?_,? _, ?_, ?_⟩
-  · all_goals try infer_instance
+  · infer_instance
   · exact Module.addCommMonoidToAddCommGroup F
   · exact inferInstance
   · refine ⟨P, inferInstance, Or.inl ⟨hP, v, hv, Function.ne_iff.mp this⟩⟩
