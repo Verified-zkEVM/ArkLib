@@ -121,7 +121,12 @@ theorem IsWeaklyPartitionConnected.exists_sum_add_eq_card (h : IsWeaklyPartition
 /-- **Generic zero patterns from weakly partition-connected hypergraphs.** If `H : ι → Finset V`
 is `k`-weakly partition-connected and all edges are nonempty, then there is a list of vertices
 `f : Fin (card ι - k) → V` such that the sets `{i | f ℓ ∉ H i}` of edges avoiding them form a
-generic zero pattern. -/
+generic zero pattern.
+
+The edges must be nonempty, but an agreement hypergraph can have empty edges: no word agrees with
+the received word at that coordinate. To apply this theorem, first drop the empty edges with
+`isWeaklyPartitionConnected_restrict_edges_iff`, which keeps weak partition-connectivity because an
+edge with at most one vertex does not count. -/
 theorem IsWeaklyPartitionConnected.exists_isGenericZeroPattern [DecidableEq ι]
     (h : IsWeaklyPartitionConnected H k) (hH : ∀ i, (H i).Nonempty) :
     ∃ f : Fin (Fintype.card ι - k) → V,
