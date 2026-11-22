@@ -265,7 +265,10 @@ The affine and scalar searches enumerate the second witness.
 The equal-degree and linear-claim searches enumerate `W = F₀ + θ G₀`.
 They recover the witnesses from `W` and the candidate.
 They skip each `W` whose reconstructed second witness has degree at least `d`.
-The linear-claim evaluator also enumerates every first-challenge message function.
+For each choice of words, weights, and claims, the linear-claim evaluator maximizes the number of
+exceptional second-challenge pairs over replies separately at each first challenge.
+It sums these maxima before taking the maximum over choices of words, weights, and claims.
+`Probability.maxEventCount_eq_maxEventCountWithReply` identifies the maximum over message functions.
 The module docstrings in `AffineCombiner/Computable.lean` and
 `AffineCombiner/LinearClaimsExact.lean` give the costs of these exhaustive searches.
 
