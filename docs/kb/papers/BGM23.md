@@ -47,8 +47,8 @@ non-reduced intersection matrix.
 
 ## Open Formalization Gaps
 
-Everything beyond the infinite-field list-size form above: the average-radius statement and the
-finite-field statement with its exponential field-size bound. It is context for
+Everything beyond the list-size form at generic evaluation points above: the average-radius
+statement and the finite-field statement with its exponential field-size bound. It is context for
 `rs_random_domain_lambda_le`, not an input to it.
 
 ## Source Access
