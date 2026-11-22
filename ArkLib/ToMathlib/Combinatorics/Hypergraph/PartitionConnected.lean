@@ -33,8 +33,8 @@ positive integer `k`. With no vertices every `H` is `κ`-weakly partition-connec
 ## Main statements
 
 * `IsWeaklyPartitionConnected.mono`: the condition is antitone in `κ`.
-* `IsWeaklyPartitionConnected.of_add`, `IsWeaklyPartitionConnected.delete`: changing at most `b`
-  edges arbitrarily (in particular emptying them) costs at most `b` in `κ`.
+* `IsWeaklyPartitionConnected.of_subset_outside`, `IsWeaklyPartitionConnected.delete`: changing at
+  most `b` edges arbitrarily (in particular emptying them) costs at most `b` in `κ`.
 * `IsWeaklyPartitionConnected.le_card_filter_inter_nonempty`,
   `IsWeaklyPartitionConnected.le_card_filter_mem`: with at least two vertices, at least `κ` edges
   meet every nonempty vertex set; in particular every vertex has degree at least `κ`.
@@ -55,11 +55,26 @@ positive integer `k`. With no vertices every `H` is `κ`-weakly partition-connec
   `H` has `∑ i, (#(H i) - 1) ≥ κ * (card V - 1)`.
 * `Finpartition.card_filter_inter_nonempty_le`, `Finpartition.sum_card_inter`: a finset meets at
   most `#e` parts, and its intersections with the parts partition it.
+* `Finset.card_filter_sub_one_add_sum_card_inter_sub_one`,
+  `Finpartition.card_filter_sub_one_add_sum_card_inter_sub_one`: for one finset `e` covered by
+  pairwise disjoint blocks, the blocks `e` meets beyond the first plus the elements beyond the
+  first inside each block are the elements of `e` beyond its first.
+* `Finpartition.sum_card_filter_sub_one_add_sum_card_inter_sub_one`: the weight
+  `∑ i, (#(H i) - 1)` splits into the parts each edge meets beyond its first and the weights of
+  the restrictions of `H` to the parts.
 
 `exists_isWeaklyPartitionConnected_subtype` is the lemma of [AGL24] that a hypergraph on at least
 two vertices of total weight at least `k * (card V - 1)` induces a `k`-weakly partition-connected
 hypergraph on some set of at least two vertices; `IsWeaklyPartitionConnected.delete` is the
 combinatorial step of their robustness-to-deletions lemma.
+
+## Implementation notes
+
+The hypergraph is a labeled family `H : ι → Finset V` rather than Mathlib's `Hypergraph V`
+(`Mathlib.Combinatorics.Hypergraph.Basic`), whose edges form a `Set (Set V)` and so cannot repeat.
+The application needs one edge per coordinate: the agreement hypergraph of a list of words has the
+edge `{j | c j i = y i}` for each coordinate `i`, and different coordinates often give the same
+edge. Weak partition-connectivity counts each copy, so collapsing repeated edges would change it.
 
 ## References
 
@@ -70,6 +85,37 @@ combinatorial step of their robustness-to-deletions lemma.
 @[expose] public section
 
 open Finset
+
+namespace Finset
+
+variable {κ V : Type*} [DecidableEq V]
+
+/-- Let `e` be covered by a family `B` indexed by `s` whose members are pairwise disjoint. The
+members `e` meets beyond the first, plus the elements of `e` beyond the first inside each member,
+are the elements of `e` beyond its first. -/
+theorem card_filter_sub_one_add_sum_card_inter_sub_one {s : Finset κ} {B : κ → Finset V}
+    (hB : (s : Set κ).PairwiseDisjoint B) {e : Finset V} (he : e ⊆ s.biUnion B) :
+    #{a ∈ s | (e ∩ B a).Nonempty} - 1 + ∑ a ∈ s, (#(e ∩ B a) - 1) = #e - 1 := by
+  have hcard : ∑ a ∈ s, #(e ∩ B a) = #e := by
+    rw [← card_biUnion fun a ha b hb hab ↦
+      (hB ha hb hab).mono inter_subset_right inter_subset_right, ← inter_biUnion,
+      inter_eq_left.2 he]
+  have h : ∑ a ∈ s, (#(e ∩ B a) - 1) + #{a ∈ s | (e ∩ B a).Nonempty} = #e := by
+    rw [card_filter, ← sum_add_distrib, ← hcard]
+    refine sum_congr rfl fun a _ ↦ ?_
+    split_ifs with ha
+    · have := ha.card_pos
+      omega
+    · rw [not_nonempty_iff_eq_empty.1 ha]
+      simp
+  rcases e.eq_empty_or_nonempty with rfl | ⟨v, hv⟩
+  · simp
+  · obtain ⟨a, ha, hva⟩ := mem_biUnion.1 (he hv)
+    have : 0 < #{a ∈ s | (e ∩ B a).Nonempty} :=
+      card_pos.2 ⟨a, mem_filter.2 ⟨ha, v, mem_inter.2 ⟨hv, hva⟩⟩⟩
+    omega
+
+end Finset
 
 namespace Finpartition
 
@@ -111,32 +157,28 @@ private theorem nonempty_filter_inter_nonempty (P : Finpartition (univ : Finset 
   exact ⟨P.part v, mem_filter.2 ⟨P.part_mem.2 (mem_univ v),
     v, mem_inter.2 ⟨hv, P.mem_part_self.2 (mem_univ v)⟩⟩⟩
 
+namespace Finpartition
+
 /-- For one edge `e`, the parts it meets beyond its first plus its elements beyond the first in
 each part are its elements beyond its first. -/
-private theorem card_filter_sub_one_add_sum (P : Finpartition (univ : Finset V))
+theorem card_filter_sub_one_add_sum_card_inter_sub_one (P : Finpartition (univ : Finset V))
     (e : Finset V) :
-    #{A ∈ P.parts | (e ∩ A).Nonempty} - 1 + ∑ A ∈ P.parts, (#(e ∩ A) - 1) = #e - 1 := by
-  have h : ∑ A ∈ P.parts, (#(e ∩ A) - 1) + #{A ∈ P.parts | (e ∩ A).Nonempty} = #e := by
-    rw [card_filter, ← sum_add_distrib, ← P.sum_card_inter (subset_univ e)]
-    refine sum_congr rfl fun A _ ↦ ?_
-    split_ifs with hA
-    · have := hA.card_pos
-      omega
-    · rw [not_nonempty_iff_eq_empty.1 hA]
-      simp
-  rcases e.eq_empty_or_nonempty with rfl | he
-  · simp
-  · have := (nonempty_filter_inter_nonempty P he).card_pos
-    omega
+    #{A ∈ P.parts | (e ∩ A).Nonempty} - 1 + ∑ A ∈ P.parts, (#(e ∩ A) - 1) = #e - 1 :=
+  Finset.card_filter_sub_one_add_sum_card_inter_sub_one (B := fun A ↦ A) P.disjoint
+    (P.biUnion_parts.symm ▸ subset_univ e)
 
 /-- The weight identity: summed over the edges, the parts met beyond the first plus the elements
-beyond the first inside each part give the elements beyond the first. -/
-private theorem sum_card_filter_sub_one_add_sum (H : ι → Finset V)
+beyond the first inside each part give the elements beyond the first. In hypergraph terms, the
+weight `∑ i, (#(H i) - 1)` of `H` splits into the weight of the quotient by `P` and the weights
+of the restrictions of `H` to the parts. -/
+theorem sum_card_filter_sub_one_add_sum_card_inter_sub_one (H : ι → Finset V)
     (P : Finpartition (univ : Finset V)) :
     ∑ i, (#{A ∈ P.parts | (H i ∩ A).Nonempty} - 1) + ∑ A ∈ P.parts, ∑ i, (#(H i ∩ A) - 1) =
       ∑ i, (#(H i) - 1) := by
   rw [sum_comm (s := P.parts), ← sum_add_distrib]
-  exact sum_congr rfl fun i _ ↦ card_filter_sub_one_add_sum P (H i)
+  exact sum_congr rfl fun i _ ↦ card_filter_sub_one_add_sum_card_inter_sub_one P (H i)
+
+end Finpartition
 
 /-- Weak partition-connectivity is antitone in `κ`. -/
 theorem IsWeaklyPartitionConnected.mono (h : IsWeaklyPartitionConnected H κ') (hκ : κ ≤ κ') :
@@ -145,7 +187,7 @@ theorem IsWeaklyPartitionConnected.mono (h : IsWeaklyPartitionConnected H κ') (
 
 /-- If `H` is `(κ + b)`-weakly partition-connected and `H'` contains `H` outside a set `B` of at
 most `b` edges, then `H'` is `κ`-weakly partition-connected. -/
-theorem IsWeaklyPartitionConnected.of_add {B : Finset ι}
+theorem IsWeaklyPartitionConnected.of_subset_outside {B : Finset ι}
     (h : IsWeaklyPartitionConnected H (κ + b)) (hB : (#B : ℝ) ≤ b)
     (hH : ∀ i ∉ B, H i ⊆ H' i) : IsWeaklyPartitionConnected H' κ := by
   classical
@@ -173,7 +215,7 @@ leaves a `κ`-weakly partition-connected hypergraph. -/
 theorem IsWeaklyPartitionConnected.delete [DecidableEq ι] {B : Finset ι}
     (h : IsWeaklyPartitionConnected H (κ + b)) (hB : (#B : ℝ) ≤ b) :
     IsWeaklyPartitionConnected (fun i ↦ if i ∈ B then ∅ else H i) κ :=
-  h.of_add hB fun i hi ↦ by simp [hi]
+  h.of_subset_outside hB fun i hi ↦ by simp [hi]
 
 /-- A `κ`-weakly partition-connected hypergraph has weight `∑ i, (#(H i) - 1)` at least
 `κ * (card V - 1)`. -/
@@ -185,7 +227,7 @@ theorem IsWeaklyPartitionConnected.le_sum_card_sub_one (h : IsWeaklyPartitionCon
       have := card_le_card (inter_subset_right (s₁ := H i) (s₂ := {v}))
       rw [card_singleton] at this
       omega
-  have hid := sum_card_filter_sub_one_add_sum H ⊥
+  have hid := Finpartition.sum_card_filter_sub_one_add_sum_card_inter_sub_one H ⊥
   rw [hz, add_zero] at hid
   have h' := h ⊥
   rwa [Finpartition.card_bot, card_univ, hid] at h'
@@ -394,7 +436,7 @@ theorem isWeaklyPartitionConnected_of_forall_ssubset
     exact sum_congr rfl fun A hA ↦ Nat.sub_add_cancel (P.nonempty_of_mem_parts hA).card_pos
   have hid : ((∑ i, (#{A ∈ P.parts | (H i ∩ A).Nonempty} - 1) : ℕ) : ℝ) +
       ((∑ A ∈ P.parts, ∑ i, (#(H i ∩ A) - 1) : ℕ) : ℝ) = ((∑ i, (#(H i) - 1) : ℕ) : ℝ) := by
-    rw [← Nat.cast_add, sum_card_filter_sub_one_add_sum]
+    rw [← Nat.cast_add, Finpartition.sum_card_filter_sub_one_add_sum_card_inter_sub_one]
   have hparts' : ((∑ A ∈ P.parts, (#A - 1) : ℕ) : ℝ) =
       (Fintype.card V : ℝ) - (#P.parts : ℝ) := by
     rw [← hparts, Nat.cast_add]

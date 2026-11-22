@@ -121,6 +121,16 @@ example : Tuple.descents ![0, 2, 1, 3] = ({1} : Finset (Fin 4)) := by
 example : #{c : Fin 2 ↪ Fin 4 | #(Tuple.descents c) < 1} ≤ 6 :=
   (Tuple.card_filter_card_descents_lt_le 2 1).trans_eq (by decide)
 
+/-- Exactly `C(4, 2) = 6` embeddings `Fin 2 ↪ Fin 4` have no descent, so the bound above is tight.
+The `Fintype` instance on embeddings does not reduce under `decide`, so the proof counts
+injective functions instead. -/
+example : #{c : Fin 2 ↪ Fin 4 | #(Tuple.descents c) < 1} = 6 := by
+  rw [← card_map ⟨fun c : Fin 2 ↪ Fin 4 => (c : Fin 2 → Fin 4), DFunLike.coe_injective⟩]
+  convert (by decide : #{f : Fin 2 → Fin 4 | Function.Injective f ∧ #(Tuple.descents f) < 1} = 6)
+  ext f
+  simp only [mem_map, mem_filter, mem_univ, true_and, Function.Embedding.coeFn_mk]
+  exact ⟨fun ⟨c, hc, hcf⟩ => hcf ▸ ⟨c.injective, hc⟩, fun ⟨hf, hd⟩ => ⟨⟨f, hf⟩, hd, rfl⟩⟩
+
 /-- At most `C(4, 2) * 2 ^ 2 = 24` embeddings `Fin 2 ↪ Fin 4` have fewer than two descents. -/
 example : #{c : Fin 2 ↪ Fin 4 | #(Tuple.descents c) < 2} ≤ 24 :=
   (Tuple.card_filter_card_descents_lt_le 2 2).trans_eq (by decide)

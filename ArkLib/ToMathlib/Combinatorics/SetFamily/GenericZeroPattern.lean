@@ -7,6 +7,7 @@ module
 
 public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Data.Fintype.Powerset
 public import Mathlib.Data.Finset.Lattice.Fold
 public import Mathlib.Data.Multiset.UnionInter
 
@@ -31,16 +32,17 @@ the associated polynomial families are linearly independent is in
 
 ## Main definitions
 
-* `IsGenericZeroPattern m S`: the generic zero pattern condition.
-* `IsGenericMultiplicityPattern k s`: the generic multiplicity pattern condition.
-* `CountLeOneExcept d s`: every multiplicity is at most one except at the point `d`.
+* `Finset.IsGenericZeroPattern m S`: the generic zero pattern condition. It is decidable, so
+  `decide` checks it on small explicit families.
+* `Multiset.IsGenericMultiplicityPattern k s`: the generic multiplicity pattern condition.
+* `Multiset.CountLeOneExcept d s`: every multiplicity is at most one except at the point `d`.
 
 ## Main statements
 
-* `IsGenericMultiplicityPattern.not_le`: no member of a generic multiplicity pattern is contained
-  in another one.
-* `IsGenericZeroPattern.exists_pad`: a generic zero pattern extends, by points private to each
-  set, to one whose sets all have `m - 1` elements.
+* `Multiset.IsGenericMultiplicityPattern.not_le`: no member of a generic multiplicity pattern is
+  contained in another one.
+* `Finset.IsGenericZeroPattern.exists_pad`: a generic zero pattern extends, by points private to
+  each set, to one whose sets all have `m - 1` elements.
 
 ## References
 
@@ -55,10 +57,19 @@ open Finset
 
 variable {α β ι : Type*} {σ : Type u}
 
+namespace Finset
+
 /-- A family of `m` finite sets `S ℓ` is a *generic zero pattern* if every nonempty subfamily `I`
 satisfies `#(⋂_{ℓ ∈ I} S ℓ) + #I ≤ m`. -/
 def IsGenericZeroPattern [DecidableEq σ] (m : ℕ) (S : Fin m → Finset σ) : Prop :=
   ∀ (I : Finset (Fin m)) (hI : I.Nonempty), #(I.inf' hI S) + #I ≤ m
+
+instance [DecidableEq σ] (m : ℕ) (S : Fin m → Finset σ) : Decidable (IsGenericZeroPattern m S) :=
+  inferInstanceAs (Decidable (∀ (I : Finset (Fin m)) (hI : I.Nonempty), #(I.inf' hI S) + #I ≤ m))
+
+end Finset
+
+namespace Multiset
 
 /-- A family of multisets `s i` (multiplicity vectors on `ι`) is a *generic multiplicity pattern
 of dimension `k`* if each `s i` has fewer than `k` elements and every nonempty subfamily `I`
@@ -135,6 +146,12 @@ end IsGenericMultiplicityPattern
 theorem CountLeOneExcept.comp [DecidableEq ι] {d : ι} {s : α → Multiset ι}
     (hd : CountLeOneExcept d s) (e : β → α) : CountLeOneExcept d (s ∘ e) :=
   fun i => hd (e i)
+
+end Multiset
+
+namespace Finset
+
+open Multiset (IsGenericMultiplicityPattern CountLeOneExcept)
 
 namespace IsGenericZeroPattern
 
@@ -229,3 +246,5 @@ end IsGenericZeroPattern
 theorem countLeOneExcept_val [DecidableEq σ] {γ : Type*} (d : σ) (S : γ → Finset σ) :
     CountLeOneExcept d (fun ℓ => (S ℓ).val) :=
   fun ℓ x _ => Multiset.nodup_iff_count_le_one.mp (S ℓ).nodup x
+
+end Finset
