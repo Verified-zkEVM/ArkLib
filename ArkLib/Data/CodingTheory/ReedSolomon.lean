@@ -230,6 +230,28 @@ theorem mem_code_iff_eval_of_ne_zero {n : ℕ} [NeZero n] {α : ι ↪ F} {f : �
   mem_code_iff_eval.trans <| exists_congr fun _ ↦
     and_congr_left' (degree_lt_iff_natDegree_lt_of_ne_zero (NeZero.ne n))
 
+/-- Reindexing the evaluation points by an equivalence `e` reindexes the codewords: `w ∘ e` is in
+the code on `e.toEmbedding.trans domain` exactly when `w` is in the code on `domain`. -/
+theorem mem_code_comp_equiv {κ : Type*} (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ) (w : ι → F) :
+    w ∘ e ∈ code (e.toEmbedding.trans domain) k ↔ w ∈ code domain k := by
+  simp only [mem_code_iff_eval]
+  constructor
+  · rintro ⟨P, hP, he⟩
+    exact ⟨P, hP, fun i ↦ by simpa using he (e.symm i)⟩
+  · rintro ⟨P, hP, he⟩
+    exact ⟨P, hP, fun i ↦ he (e i)⟩
+
+/-- The code on the reindexed evaluation points `e.toEmbedding.trans domain` is the code on
+`domain` with its coordinates reindexed by `e`. -/
+theorem code_comp_equiv {κ : Type*} (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ) :
+    code (e.toEmbedding.trans domain) k =
+      (code domain k).map (LinearEquiv.funCongrLeft F F e : (ι → F) →ₗ[F] κ → F) := by
+  ext w
+  rw [Submodule.mem_map_equiv, ← mem_code_comp_equiv e domain k]
+  congr!
+  ext
+  simp
+
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.degree < n`. -/
 lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.degree < n) :
@@ -240,8 +262,7 @@ lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.d
 of message length `d + 1`. -/
 lemma evalOnPoints_mem_code_succ_of_degree_le {α : ι ↪ F} {p : F[X]} {d : ℕ}
     (hdeg : p.degree ≤ d) : evalOnPoints α p ∈ code α (d + 1) := by
-  apply evalOnPoints_mem_code_of_degree_lt
-  rwa [← mem_degreeLT, degreeLT_succ_eq_degreeLE, mem_degreeLE]
+  exact evalOnPoints_mem_code_of_degree_lt (degree_lt_succ_iff.mpr hdeg)
 
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.natDegree < n`. -/

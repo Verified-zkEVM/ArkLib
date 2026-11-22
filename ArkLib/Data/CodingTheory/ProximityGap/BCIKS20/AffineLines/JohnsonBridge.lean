@@ -14,7 +14,7 @@ public import ArkLib.ToMathlib.InformationTheory.Hamming
 /-!
 # Coordinate transport for Johnson line agreement
 
-Reindexing a finite evaluation domain preserves code membership, distance and exact agreement.
+Reindexing a finite evaluation domain preserves distance and exact agreement.
 This transports the Johnson theorem on `Fin n` to the existing line agreement carrier on any
 finite coordinate type. Constant messages use the collision bound instead of Johnson parameters.
 -/
@@ -26,17 +26,6 @@ namespace ProximityGap
 open Polynomial ReedSolomon ReedSolomon.HiddenDerivative
 
 variable {ι κ F : Type} [Fintype ι] [Fintype κ] [Field F] [decF : DecidableEq F]
-
-omit [Fintype ι] [Fintype κ] [DecidableEq F] in
-/-- Coordinate reindexing preserves membership in the same Reed–Solomon code. -/
-theorem mem_code_comp_equiv (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ) (w : ι → F) :
-    w ∘ e ∈ code (e.toEmbedding.trans domain) k ↔ w ∈ code domain k := by
-  simp only [mem_code_iff_eval]
-  constructor
-  · rintro ⟨P, hP, he⟩
-    exact ⟨P, hP, fun i ↦ by simpa using he (e.symm i)⟩
-  · rintro ⟨P, hP, he⟩
-    exact ⟨P, hP, fun i ↦ he (e i)⟩
 
 omit [Field F] in
 /-- Coordinate reindexing preserves normalized Hamming distance. -/
