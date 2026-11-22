@@ -25,7 +25,7 @@ example {F : Type*} [Field F] [DecidableEq F] (L : Finset F) (f : ↥L → F) (S
     (Ans Fill : S → F) (x : ↥L) :
     funcQuotient (Function.Embedding.subtype (· ∈ L)) f S Ans Fill x =
       if hx : (x : F) ∈ S then Fill ⟨x, hx⟩
-      else (f x - (ansPoly S Ans).eval (x : F)) / (vanishingPoly S).eval (x : F) :=
+      else (f x - (ansPoly S Ans).eval (x : F)) / (Lagrange.nodal S id).eval (x : F) :=
   rfl
 
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
@@ -41,7 +41,7 @@ example : funcQuotient cube (fun x : ZMod 5 => x) ({0} : Finset (ZMod 5))
     map_zero (Lagrange.interpolate ({0} : Finset (ZMod 5)).attach fun i => (i : ZMod 5))
   have hx : cube 2 ∉ ({0} : Finset (ZMod 5)) := by decide
   rw [funcQuotient_of_not_mem hx, h0]
-  simp only [eval_zero, sub_zero, vanishingPoly, Finset.prod_singleton, eval_sub, eval_X, eval_C]
+  simp only [eval_zero, sub_zero, Lagrange.nodal, Finset.prod_singleton, eval_sub, eval_X, eval_C]
   decide +kernel
 
 end ArkLibTest.StirQuotienting

@@ -44,7 +44,7 @@ instance instSampleableType : SampleableType Ext6 := sampleableType
 theorem uniformSample_eq_sample : ($ᵗ Ext6) = sample := rfl
 
 /-- Sampling six independent base limbs induces the uniform executable distribution on `Ext6`. -/
-theorem evalDist_sample [MeasurableSpace Ext6] [MeasurableSingletonClass Ext6] :
+theorem evalDist_sample {m : MeasurableSpace Ext6} [@MeasurableSingletonClass Ext6 m] :
     𝒟[sample] = ProbabilityTheory.uniformOn Set.univ := by
   rw [← uniformSample_eq_sample]
   exact SampleableType.evalDist_uniformSample

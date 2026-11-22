@@ -27,7 +27,9 @@ make reconstruction nonvacuous when `K = 2` and `k = 1`. A characteristic-two sa
 sparse Frobenius Taylor-chart recognition.
 -/
 
-open MvPolynomial Polynomial
+open Polynomial
+open MvPolynomial (CoeffNatDegreeLE X aeval aeval_optionEquivRight_symm coeffNatDegreeLE_C
+  coeffNatDegreeLE_X jointTotalDegree optionEquivLeft optionEquivLeft_X_none)
 open PolynomialDifferential
 open ReedSolomon.HiddenDerivative
 

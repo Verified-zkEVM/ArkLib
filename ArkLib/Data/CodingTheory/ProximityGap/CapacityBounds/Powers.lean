@@ -627,9 +627,7 @@ private theorem powers_select_compatible_anchors
     calc
       ((Finset.univ.filter P).card : ℝ) =
           ∑ ys : Fin (k + 2) → S, if P ys then (1 : ℝ) else 0 := by
-        simpa using
-          (Finset.natCast_card_filter (R := ℝ) P
-            (Finset.univ : Finset (Fin (k + 2) → S)))
+        simp
       _ = ∑ xs : Fin (k + 1) → S,
             ∑ x : S, if P (Fin.snoc xs x) then (1 : ℝ) else 0 :=
         powers_sum_over_snoc (S := S) (k + 1)

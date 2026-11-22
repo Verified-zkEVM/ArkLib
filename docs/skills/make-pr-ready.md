@@ -173,6 +173,9 @@ merge-ready.
   mechanically expand stable terminal `simp` calls, replace automation across a file, or
   equate fewer lines with faster proofs. A clear proof without a measured performance problem
   needs no performance rewrite.
+- When editing Markdown statement tables, follow the
+  [rendering check](../wiki/blueprint-and-citations.md#knowledge-base-mapping).
+  A blank line ends a table even when link and metadata checks pass.
 - These are manual review checks. A green build or source-policy gate does not establish
   semantic naming, self-contained documentation, or correspondence with the reference paper.
 - Verify with `./scripts/validate.sh` (add `--docs` for doc generation). Source style and

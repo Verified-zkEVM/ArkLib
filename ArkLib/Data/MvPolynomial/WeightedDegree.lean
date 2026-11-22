@@ -487,6 +487,18 @@ theorem finrank_restrictWeightedDegree {K : Type*} [Field K]
     Module.finrank K (restrictWeightedDegree (R := K) w d) =
       Set.ncard {m : σ →₀ ℕ | m.weight w ≤ d} := by
   exact (Module.finrank_eq_nat_card_basis
-    (basisRestrictWeightedDegree (R := K) w d)).trans (Nat.card_coe_set_eq _)
+    (basisRestrictWeightedDegree (R := K) w d)).trans
+      (Nat.card_coe_set_eq {m : σ →₀ ℕ | m.weight w ≤ d})
+
+/-- A partial derivative in `X i` vanishes when `w i` exceeds the weighted degree. -/
+theorem pderiv_eq_zero_of_weightedTotalDegree_lt {σ : Type*} (w : σ → ℕ) (i : σ)
+    (p : MvPolynomial σ R) (h : p.weightedTotalDegree w < w i) : pderiv i p = 0 := by
+  ext m
+  rw [coeff_pderiv, AddMonoidAlgebra.coeff_zero, Finsupp.coe_zero, Pi.zero_apply]
+  by_cases hm : p.coeff (m + Finsupp.single i 1) = 0
+  · rw [hm, zero_mul]
+  · have hle := le_weightedTotalDegree w (mem_support_iff.mpr hm)
+    rw [map_add, Finsupp.weight_single, one_smul] at hle
+    omega
 
 end MvPolynomial

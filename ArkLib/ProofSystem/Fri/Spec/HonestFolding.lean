@@ -10,6 +10,9 @@ public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 
+import Std.WP.Tactic
+import VCVio.ProgramLogic.Unary.WP.NecessarySpecs
+
 /-!
 # Execution of the honest FRI folding prover
 
@@ -141,6 +144,7 @@ theorem foldProver_run_honest
         _ = (honestFoldState s d f p₀ β i.succ).1 := honestFoldState_succ s d f p₀ β i
     · rfl
 
+open scoped OracleComp.Necessary in
 /-- Every honest non-final run extends the supplied initial word's polynomial history. -/
 theorem foldOracleReduction_run_support_honest
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0)
@@ -157,41 +161,23 @@ theorem foldOracleReduction_run_support_honest
         (honestFoldState s d f p₀ β i.succ).1,
         (honestFoldState s d f p₀ β i.succ).2),
         (honestFoldState s d f p₀ β i.succ).1) := by
-  rw [Reduction.run_run_eq_bind] at hx
-  change x ∈ support (do
-    let pr ← (foldProver s d i).run (honestFoldState s d f p₀ α i.castSucc).1
-      (honestFoldState s d f p₀ α i.castSucc).2
-    let out ← liftComp ((foldVerifier s i).toVerifier.run
-      (honestFoldState s d f p₀ α i.castSucc).1 pr.1).run _
-    pure (out.map (fun v ↦ (pr, v)))) at hx
-  rw [foldProver_run_honest, mem_support_bind_iff] at hx
-  obtain ⟨pr, hpr, hx⟩ := hx
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨a, -, hpr⟩ := hpr
-  rw [mem_support_pure_iff] at hpr
-  subst pr
-  let β := Function.update α i.castSucc a
-  have hcur : honestFoldState s d f p₀ α i.castSucc =
-      honestFoldState s d f p₀ β i.castSucc :=
-    (honestFoldState_update s d f p₀ α i.castSucc a).symm
-  have hverify : (foldVerifier s i).toVerifier.run
-      (honestFoldState s d f p₀ α i.castSucc).1
+  revert x
+  simp only [Reduction.run_run_eq_bind, foldOracleReduction, OracleReduction.toReduction]
+  rw [foldProver_run_honest]
+  simp only [bind_assoc, pure_bind]
+  refine (OracleComp.Necessary.wp_iff_forall_support _ _).mp ?_
+  set_option experimental.vcgen true in
+    vcgen [OracleComp.Necessary.Spec.ofSupport (ProtocolSpec.getChallenge _ _),
+      OracleComp.Necessary.Spec.ofSupport ((foldVerifier s i).toVerifier.verify _ _).run]
+  rename_i hout
+  let β := Function.update α i.castSucc x
+  have hverify : (foldVerifier s i).toVerifier.verify (honestFoldState s d f p₀ α i.castSucc).1
       (foldTranscript s (fun j ↦ β j.castSucc) (honestWords s d f p₀ β) i) =
       pure (honestFoldState s d f p₀ β i.succ).1 := by
-    rw [congrArg Prod.fst hcur]
+    rw [← honestFoldState_update s d f p₀ α i.castSucc x]
     exact foldVerifier_run s (fun j ↦ β j.castSucc) (honestWords s d f p₀ β) i
-  change x ∈ support (do
-    let out ← liftComp ((foldVerifier s i).toVerifier.run
-      (honestFoldState s d f p₀ α i.castSucc).1
-      (foldTranscript s (fun j ↦ β j.castSucc) (honestWords s d f p₀ β) i)).run _
-    pure (out.map (fun v ↦
-      ((foldTranscript s (fun j ↦ β j.castSucc) (honestWords s d f p₀ β) i,
-        (honestFoldState s d f p₀ β i.succ).1,
-        (honestFoldState s d f p₀ β i.succ).2), v)))) at hx
-  rw [hverify] at hx
-  simp only [OptionT.run_pure, liftComp_pure, pure_bind, Option.map_some,
-    mem_support_pure_iff] at hx
-  exact ⟨β, hx⟩
+  rw [hverify, OptionT.run_pure, mem_support_pure_iff] at hout
+  exact ⟨β, by rw [hout, Option.map_some]⟩
 
 /-- Each non-final fold preserves histories generated from a fixed word and witness. -/
 theorem foldOracleReduction_perfectCompleteness_honest
