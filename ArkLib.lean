@@ -275,6 +275,7 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
+public import ArkLib.Data.CodingTheory.ListDecodability.PartitionConnected
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
 public import ArkLib.Data.CodingTheory.ListDecodability.SymbolMap
 public import ArkLib.Data.CodingTheory.PolishchukSpielman
