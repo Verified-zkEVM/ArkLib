@@ -722,7 +722,9 @@ with `|F| ≥ n + k · 2^{10ℓ/η}`,
   `Pr[ |Λ(C, ℓ/(ℓ+1) · (1 − ρ − η))| ≤ ℓ ] ≥ 1 − 2^{−ℓn}` ,
 
 where the evaluation domain `L` is drawn uniformly from the size-`n` subsets of `F`, the code is
-`C := RS[F, L, k]`, and `ρ := k/n`.
+`C := RS[F, L, k]`, and `ρ := k/n`. [AGL24] proves average-radius list decodability; this theorem
+is the plain list-size (`Lambda`) form. It does not assume `η < 1`: for `η ≥ 1` the radius is at
+most `0`.
 
 **The random domain is the source's, not a reformulation.** The sample space is literally
 `\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ` — and the code is
@@ -739,13 +741,13 @@ separately: its `ℓ` is real-valued, so it needs a rounding the source does not
 issue [ABF26] Theorem 3.4 raises in its `η`-form. Derive it at a call site with an explicit choice.
 
 [BGM23] (exponential alphabet) and [GZ23] (polynomial-size alphabet) are the preceding results, and
-[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem, and none is
-formalised. -/
+[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem. Of these, only the
+list-size form of [BGM23] over generic evaluation points is formalised
+(`ReedSolomon.exists_ne_zero_Lambda_le_of_eval_ne_zero`). -/
 theorem rs_random_domain_lambda_le
     {F : Type} [Field F] [Fintype F]
-    (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
-    (k n : ℕ)
-    (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (η : ℝ) (hη : 0 < η) (k n : ℕ)
+    (hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
       Pr{ let S ← $ᵗ {S : Finset F // S.card = n} }[
@@ -758,7 +760,7 @@ theorem rs_random_domain_lambda_le
     simp
   have hq : n ≤ Fintype.card F := by
     have : (0 : ℝ) ≤ k * 2 ^ ((10 * ℓ : ℝ) / η) := by positivity
-    exact_mod_cast (le_add_of_nonneg_right this).trans _hF
+    exact_mod_cast (le_add_of_nonneg_right this).trans hF
   have : Nonempty (Fin n ↪ F) := Function.Embedding.nonempty_of_card_le (by simpa using hq)
   rw [@ProbabilityTheory.prEvent_uniformSample_finsetCard_eq_embedding F _ n _
     (SampleableType.ofFintype (Fin n ↪ F)) fun T : Finset F ↦
@@ -768,7 +770,7 @@ theorem rs_random_domain_lambda_le
   simp only [SampleableType.prEvent_uniformSample]
   exact ofReal_one_sub_le_card_filter_div (by
     simpa only [not_le] using ReedSolomon.card_filter_lt_Lambda_le_two_pow_neg_mul (F := F)
-      _hℓ_ge _hη_pos hn _hF)
+      hℓ hη hn hF)
 
 end RandomReedSolomon
 
