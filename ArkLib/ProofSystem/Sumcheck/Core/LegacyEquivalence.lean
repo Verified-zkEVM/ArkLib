@@ -162,6 +162,7 @@ section DecideM
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ}
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι}
 
+omit [SampleableType R] in
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript, for
 ambient queries answered in any lawful monad. -/
 theorem simulateQ_decide_monad {m : Type → Type} [Monad m] [LawfulMonad m]
@@ -316,6 +317,7 @@ noncomputable def legacyVerifier : OracleVerifier ambient (protocol R deg n)
 
 variable {R deg n D ambient}
 
+omit [SampleableType R] in
 /-- On corresponding transcripts, the decision of the Sumcheck verifier and the decision of the
 embedded legacy verifier are the same program before any query is answered: both run the legacy
 decision fold on the same challenges, and each message query goes to the same oracle node. -/
@@ -352,6 +354,7 @@ theorem decide_heq_embed (stmt : Spec.StatementRound R n 0)
     (decisionSpec R deg n ambient) (pathLift R deg n ambient) hx
     (route_heq_queryMsg n _ _ hp i q)
 
+omit [SampleableType R] in
 /-- **Decision correspondence.** On every completed run, the decision of the Sumcheck verifier is
 the decision of the embedded legacy verifier read on the Sumcheck tree, as a program before any
 query is answered. -/
@@ -379,6 +382,7 @@ theorem decide_eq_legacy (stmt : Spec.StatementRound R n 0)
     convert hc using 1 <;> rfl
   exact eq_of_heq ((decide_heq_embed stmt tr _ htr).trans hc'.symm)
 
+omit [SampleableType R] in
 /-- On every completed run, the Sumcheck verifier and the embedded legacy verifier keep the same
 output data: the input polynomial. -/
 theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
@@ -412,12 +416,14 @@ theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
 
 variable (R deg n D ambient)
 
+omit [SampleableType R] in
 /-- **Agreement.** The Sumcheck verifier agrees with the embedded legacy verifier, so every
 security notion of the classical model transfers between them. -/
 theorem verifier_agrees :
     OracleVerifier.Agrees (verifier R deg n D ambient) (legacyVerifier R deg n D ambient) :=
   OracleVerifier.Agrees.of_decide_eq decide_eq_legacy outputMap_eq_legacy
 
+omit [SampleableType R] in
 /-- **Query trace.** For every prover, the logged run of the Sumcheck verifier is the logged run of
 the embedded legacy verifier read on the Sumcheck tree. The log records the decision's queries
 before they are answered, so the two verifiers make the same queries in the same order. -/
@@ -512,6 +518,7 @@ def finalize {WitOut : Type}
 
 variable (R deg n)
 
+omit [SampleableType R] in
 /-- **Program equality.** For every prover, the Sumcheck run, with challenges reindexed to the
 legacy challenge oracle and read as a legacy result, is the same program as the run of the embedded
 legacy verifier against the same prover. The program includes every ambient query of the prover
@@ -559,6 +566,7 @@ theorem simple_pureChallengeSlots :
 
 variable [DecidableEq R] [SampleableType R]
 
+omit [SampleableType R] in
 /-- The legacy honest Sumcheck prover receives every challenge with a `pure` slot: it is a
 sequential composition of lifted single-round provers, each of which has a `pure` challenge slot
 and a pure output. -/
@@ -597,6 +605,7 @@ private theorem eqRec_eqRec_symm {α : Sort*} {F : α → Sort*} {a b : α} (e :
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι) [∀ t, Inhabited (ambient.Range t)]
 
+omit [SampleableType R] in
 /-- **Honest run.** Against the embedded legacy honest prover, the reindexed and finalized Sumcheck
 run is the legacy run of `Spec.oracleReduction`, as a program. -/
 theorem run_legacyProver (stmt : Spec.StatementRound R n 0)
@@ -615,6 +624,7 @@ theorem run_legacyProver (stmt : Spec.StatementRound R n 0)
   exact simulateQ_oracleFinalize_run _
     (legacyProver_pureChallengeSlots R deg D n ambient) stmt oStmt ()
 
+omit [SampleableType R] in
 /-- **Ambient trace of the decision.** Answer the input and path oracles from the run's data, and
 the ambient oracle by any implementation in any lawful monad. Then the decisions of the Sumcheck
 verifier and of the embedded legacy verifier are both `pure` of the legacy verdict, so neither
