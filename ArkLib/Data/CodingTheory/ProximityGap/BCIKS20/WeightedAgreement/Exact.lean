@@ -145,7 +145,7 @@ open Classical in
 /-- A weighted proximity event with probability above the MCA error forces weighted
 correlated agreement for any generator and any finite code carrier. -/
 theorem exists_weighted_agreement_of_prob_gt_mcaError
-    [Field F] [Fintype κ] {S : Type} [Nonempty S] [Fintype S]
+    [Field F] [Fintype κ] {S : Type}
     [SampleableType S] (μ : ι → Set.Icc (0 : ℚ) 1)
     (G : Generator S κ F) (C : ModuleCode ι F F) (carrier : Finset (ι → F))
     [Nonempty carrier] (hcarrier : ∀ c ∈ carrier, c ∈ C)

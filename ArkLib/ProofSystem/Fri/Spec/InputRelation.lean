@@ -23,7 +23,7 @@ namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec ReedSolomon Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
@@ -43,12 +43,12 @@ def proximityLanguage (δ : ℝ) : Set ((ω.subdomain 0).toFinset → F) :=
 
 /-- A witness close to the indexed initial word satisfies the input relation. -/
 theorem mem_inputRelation_of_relHammingDist_le
-    (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
+    (δ : ℝ≥0)
     (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
     (p : Witness F s d (0 : Fin (k + 2)))
     (hclose : (Code.relHammingDist (fun z ↦ initialOracle s stmt (initialQuery z))
       (fun z ↦ p.1.eval (ω z)) : ℝ) ≤ δ) :
-    (stmt, p) ∈ inputRelation k s d hdom δ := by
+    (stmt, p) ∈ inputRelation k s d δ := by
   let e := (ω.subdomain 0).equivToFinset
   have he (z : Fin (2 ^ n)) : e z = initialQuery z := by
     apply Subtype.ext
@@ -74,10 +74,10 @@ theorem mem_inputRelation_of_relHammingDist_le
 
 /-- The input relation bounds the distance of the indexed initial word to its witness. -/
 theorem relHammingDist_le_of_mem_inputRelation
-    (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
+    (δ : ℝ≥0)
     (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
     (p : Witness F s d (0 : Fin (k + 2)))
-    (hmem : (stmt, p) ∈ inputRelation k s d hdom δ) :
+    (hmem : (stmt, p) ∈ inputRelation k s d δ) :
     (Code.relHammingDist (fun z ↦ initialOracle s stmt (initialQuery z))
       (fun z ↦ p.1.eval (ω z)) : ℝ) ≤ δ := by
   let e := (ω.subdomain 0).equivToFinset
@@ -103,10 +103,10 @@ theorem relHammingDist_le_of_mem_inputRelation
 /-- A word strictly within radius `δ` of the initial code has a witness in the existing
 FRI input relation, which uses a closed proximity ball. -/
 theorem mem_inputLanguage_of_proximity
-    (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
+    (δ : ℝ≥0)
     (stmt : Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
     (hclose : initialOracle s stmt ∈ proximityLanguage s d (δ : ℝ)) :
-    stmt ∈ (inputRelation k s d hdom (ω := ω) δ).language := by
+    stmt ∈ (inputRelation k s d (ω := ω) δ).language := by
   classical
   obtain ⟨u, hu, hclose⟩ := hclose
   obtain ⟨p, hp, rfl⟩ := (mem_code_iff_exists_polynomial).mp hu
@@ -119,7 +119,7 @@ theorem mem_inputLanguage_of_proximity
     exact hp
   rw [Set.mem_language_iff]
   refine ⟨⟨pc, hdegree⟩, ?_⟩
-  apply mem_inputRelation_of_relHammingDist_le s d hdom δ stmt ⟨pc, hdegree⟩
+  apply mem_inputRelation_of_relHammingDist_le s d δ stmt ⟨pc, hdegree⟩
   simpa [CompPoly.CPolynomial.eval_toPoly, hpc, ReedSolomon.evalOnPoints] using hclose.le
 
 end Fri.Spec

@@ -181,7 +181,7 @@ theorem extractorProfileBound_eq_le (n : ℕ) {k : ℕ}
 
 section MeasuredProgram
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : Domain.SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (o : ∀ j, Fri.Spec.FinalOracleStatement s ω j)
 variable (α : Fri.Spec.FinalStatement F k)

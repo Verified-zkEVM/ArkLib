@@ -29,7 +29,7 @@ namespace CoreDefinitions
 open scoped NNReal ENNReal ProbabilityTheory
 open OracleComp
 
-variable {F ι A : Type} [Field F] [Fintype F] [SampleableType F]
+variable {F ι A : Type} [Field F] [SampleableType F]
 variable [Fintype ι] [AddCommMonoid A] [Module F A]
 
 /-- Tensor MCA bound for the monomial basis; each step uses the proved tensor union bound. -/
@@ -113,7 +113,7 @@ theorem caError_multilinear_le (t : ℕ) {deg : ℕ} {domain : ι ↪ F} {δ : �
   rw [ENNReal.coe_toNNReal (mcaError_ne_top _ _ _)]
   exact rs_mcaError_le_of_le_relUDR hδ_pos hδ
 
-omit [Nonempty ι] in
+omit [Nonempty ι] [Fintype F] in
 /-- Any proved affine-line MCA bound transports to multilinear batching, with one
 copy of the error per tensor factor. -/
 theorem caError_multilinearBatch_le_of_mca (t : ℕ) (C : LinearCode ι F)

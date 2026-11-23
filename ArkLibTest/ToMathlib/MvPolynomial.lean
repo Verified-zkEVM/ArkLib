@@ -903,7 +903,7 @@ example : (powerMomentIdeal (R := ℚ) (σ := Unit) 1).IsPrime := by
 example :
     powerMomentMap (R := ℚ) (σ := Unit) 1
         (coefficientPowerLift (R := ℚ) (σ := Unit) 1
-          (Polynomial.X + 1) (by simp)) =
+          (Polynomial.X + 1)) =
       Polynomial.aeval (X none : MvPolynomial (Option Unit) ℚ)
         (Polynomial.X + 1 : Polynomial ℚ) := by
   exact powerMomentMap_coefficientPowerLift 1 (Polynomial.X + 1) (by simp)
@@ -911,21 +911,21 @@ example :
 /-- A lifted jet variable maps back to its flattened polynomial. -/
 example :
     powerMomentMap (R := ℚ) (σ := Unit) 1
-        (polynomialPowerLift (R := ℚ) 1 powerLiftSource powerLiftSource_height) =
+        (polynomialPowerLift (R := ℚ) 1 powerLiftSource) =
       (optionEquivRight ℚ Unit).symm powerLiftSource := by
   exact powerMomentMap_polynomialPowerLift 1 powerLiftSource powerLiftSource_height
 
 /-- A lifted polynomial coefficient has degree at most one. -/
 example :
     (coefficientPowerLift (R := ℚ) (σ := Unit) 1
-      (Polynomial.X + 1) (by simp)).totalDegree ≤ 1 := by
-  exact coefficientPowerLift_totalDegree_le_one 1 (Polynomial.X + 1) (by simp)
+      (Polynomial.X + 1)).totalDegree ≤ 1 := by
+  exact coefficientPowerLift_totalDegree_le_one 1 (Polynomial.X + 1)
 
 /-- A lifted jet variable has degree at most two. -/
 example :
-    (polynomialPowerLift (R := ℚ) 1 powerLiftSource powerLiftSource_height).totalDegree ≤
+    (polynomialPowerLift (R := ℚ) 1 powerLiftSource).totalDegree ≤
       2 := by
-  apply polynomialPowerLift_totalDegree_le 1 1 powerLiftSource powerLiftSource_height
+  apply polynomialPowerLift_totalDegree_le 1 1 powerLiftSource
   simp [powerLiftSource]
 
 /-! ### Chunked power-moment lifts -/
@@ -933,13 +933,13 @@ example :
 /-- A coefficient polynomial through degree two uses degree-two moment coordinates. -/
 example :
     powerMomentMap (R := ℚ) (σ := Unit) 2
-        (chunkedCoefficientPowerLift (R := ℚ) (σ := Unit) 2 1 (by norm_num)
-          ((Polynomial.X : ℚ[X]) ^ 2 + 1) (by simp)) =
+        (chunkedCoefficientPowerLift (R := ℚ) (σ := Unit) 2 (by norm_num)
+          ((Polynomial.X : ℚ[X]) ^ 2 + 1)) =
       Polynomial.aeval (X none : MvPolynomial (Option Unit) ℚ)
         ((Polynomial.X : ℚ[X]) ^ 2 + 1) ∧
-      (chunkedCoefficientPowerLift (R := ℚ) (σ := Unit) 2 1 (by norm_num)
-        ((Polynomial.X : ℚ[X]) ^ 2 + 1) (by simp)).totalDegree ≤ 2 := by
-  exact ⟨powerMomentMap_chunkedCoefficientPowerLift 2 1 (by norm_num) _ (by simp),
+      (chunkedCoefficientPowerLift (R := ℚ) (σ := Unit) 2 (by norm_num)
+        ((Polynomial.X : ℚ[X]) ^ 2 + 1)).totalDegree ≤ 2 := by
+  exact ⟨powerMomentMap_chunkedCoefficientPowerLift 2 (by norm_num) _,
     chunkedCoefficientPowerLift_totalDegree_le 2 1 (by norm_num) _ (by simp)⟩
 
 private noncomputable abbrev chunkedPowerSource : MvPolynomial Unit (Polynomial ℚ) :=
@@ -959,16 +959,16 @@ private theorem chunkedPowerSource_degree : chunkedPowerSource.totalDegree ≤ 1
     simp only [MvPolynomial.totalDegree_C, MvPolynomial.totalDegree_X]
     omega)
 
-/-- A multivariate polynomial's chunked lift recovers its flattening within the degree bound. -/
+/-- A multivariate polynomial's chunked lift recovers its flattening, and the degree bound on its
+coefficients bounds the lift's total degree. -/
 example :
     powerMomentMap (R := ℚ) (σ := Unit) 2
-        (chunkedPolynomialPowerLift (R := ℚ) (σ := Unit) 2 1 (by norm_num)
-          chunkedPowerSource chunkedPowerSource_height) =
+        (chunkedPolynomialPowerLift (R := ℚ) (σ := Unit) 2 (by norm_num)
+          chunkedPowerSource) =
       (optionEquivRight ℚ Unit).symm chunkedPowerSource ∧
-      (chunkedPolynomialPowerLift (R := ℚ) (σ := Unit) 2 1 (by norm_num)
-        chunkedPowerSource chunkedPowerSource_height).totalDegree ≤ 3 := by
-  exact ⟨powerMomentMap_chunkedPolynomialPowerLift 2 1 (by norm_num) _
-      chunkedPowerSource_height,
+      (chunkedPolynomialPowerLift (R := ℚ) (σ := Unit) 2 (by norm_num)
+        chunkedPowerSource).totalDegree ≤ 3 := by
+  exact ⟨powerMomentMap_chunkedPolynomialPowerLift 2 (by norm_num) _,
     chunkedPolynomialPowerLift_totalDegree_le 2 1 1 (by norm_num) _
       chunkedPowerSource_height chunkedPowerSource_degree⟩
 
