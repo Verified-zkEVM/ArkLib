@@ -113,9 +113,9 @@ theorem inputRelation_eq :
       ProductClaim.inputRelation K β evalMultiplier (toProductClaim ∘ evalQuery) witnessEquiv
         (ϑ := ϑ) (h_rate := h_rate) := by
   ext ⟨⟨s, ost⟩, w⟩
-  change _ ∧ _ ↔ _ ∧ _
   apply and_congr_left'
   rw [sum_evalMultiplier_mul_eq_eval]
+  rfl
 
 omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
 /-- The strict evaluation relation is the strict product-claim relation at `evalMultiplier`. -/
@@ -124,9 +124,9 @@ theorem strictInputRelation_eq :
       ProductClaim.strictInputRelation K β evalMultiplier (toProductClaim ∘ evalQuery)
         witnessEquiv (ϑ := ϑ) (h_rate := h_rate) := by
   ext ⟨⟨s, ost⟩, w⟩
-  change _ ∧ _ ↔ _ ∧ _
   apply and_congr_left'
   rw [sum_evalMultiplier_mul_eq_eval]
+  rfl
 
 /-- The evaluation-claim opening: Binary Basefold at `evalMultiplier`. -/
 def openingVerifier (γ : ℕ) :=

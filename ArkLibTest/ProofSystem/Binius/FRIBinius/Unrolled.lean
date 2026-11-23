@@ -48,14 +48,6 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
   Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness 2 (ZMod 2) basis
     (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
 
-example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness 2 (ZMod 2)
-    basis (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
-
-example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  Binius.FRIBinius.Unrolled.fullVerifier_soundness 2 (ZMod 2) basis
-    (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
-
 /-- The unrolled composite accepts the nonconstant honest source with probability one. -/
 theorem honest_probability {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -87,9 +79,7 @@ theorem concreteError_lt :
         8 / 16 + (3 / 4 : ℝ≥0) ^ 8 ∧
       Binius.FRIBinius.Unrolled.concreteError 2 (L := Gf16) (ℓ' := 1) (R := 1) 8 < 1 ∧
       Binius.FRIBinius.Unrolled.concreteError 2 (L := Gf16) (ℓ' := 1) (R := 1) 8 <
-        (2 : ℝ≥0) / Fintype.card Gf16 + (1 : ℝ≥0) * (2 / Fintype.card Gf16) +
-          Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError
-            Gf16 1 1 8 := by
+        Binius.FRIBinius.RingSwitch.concreteError 2 (L := Gf16) (ℓ' := 1) (R := 1) 8 := by
   have hadd := Binius.FRIBinius.Unrolled.concreteError_add_eq 2 (L := Gf16) (ℓ' := 1) (R := 1) 8
   refine ⟨?_, ?_, ?_⟩
   · norm_num [Binius.FRIBinius.Unrolled.concreteError, card_gf16]
