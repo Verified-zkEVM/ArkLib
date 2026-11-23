@@ -42,6 +42,7 @@ example (q : R⦃≤ deg⦄[X]) (c : R) :
 
 variable [DecidableEq R] [SampleableType R] {d : ℕ} (D : Fin d ↪ R)
 
+omit [SampleableType R] in
 /-- A message whose sum over the domain is the target passes, and the next target is the message
 at the challenge. -/
 theorem verdict_pass (stmt : Spec.StatementRound R 1 0) (q : R⦃≤ deg⦄[X]) (c : R)
@@ -50,9 +51,10 @@ theorem verdict_pass (stmt : Spec.StatementRound R 1 0) (q : R⦃≤ deg⦄[X]) 
       some ⟨q.val.eval c, Fin.snoc stmt.challenges c⟩ := by
   refine (simulateQ_oracleVerifierProgram_succ 0 _ _ stmt (roundFullTranscript q c)
     (legacyTranscript 0 Fin.elim0 Fin.elim0)).trans ?_
-  rw [roundCheck_eq_some 0 stmt _ h]
+  rw [roundCheck_eq_some 0 stmt (roundFullTranscript q c) h]
   rfl
 
+omit [SampleableType R] in
 /-- A message whose sum over the domain misses the target is rejected. -/
 theorem verdict_fail (stmt : Spec.StatementRound R 1 0) (q : R⦃≤ deg⦄[X]) (c : R)
     (h : ∑ x ∈ Finset.univ.map D, q.val.eval x ≠ stmt.target) :
@@ -72,6 +74,7 @@ noncomputable def obs1 {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out)
   ⟨tr1 q c, finish c,
     (legacyVerdict R deg 1 D amb stmt (decodeTranscript 1 (tr1 q c))).map fun t => (t, oStmt)⟩
 
+omit [SampleableType R] in
 /-- Closed form of a committed run: draw the challenge, then record the message and the
 challenge, the prover output and the verdict, with the input polynomial as output oracle. -/
 theorem run_oneRound {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out) (c₀ : R)
@@ -118,6 +121,7 @@ theorem experiment_drawOne {σ α : Type} (init : ProbComp σ)
     Functor.map_map]
   rfl
 
+omit [SampleableType R] in
 /-- The outcome of a committed run on any event is the mass of the challenges whose observation
 lies in it. -/
 theorem outcome_oneRound {Out σ : Type} (init : ProbComp σ)

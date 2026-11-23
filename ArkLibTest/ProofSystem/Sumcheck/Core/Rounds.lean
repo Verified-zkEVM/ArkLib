@@ -67,6 +67,7 @@ theorem drawChallenges_three {m : Type → Type} [Monad m] [LawfulMonad m]
 
 variable [DecidableEq R] [SampleableType R] {ι : Type} (amb : OracleSpec ι)
 
+omit [SampleableType R] in
 /-- If the honest output records the drawn challenges, the honest run on a satisfied claim
 accepts the input polynomial evaluated at the challenges, with the input polynomial as output
 oracle. -/
@@ -98,6 +99,7 @@ theorem run_honest_eval (stmt : Spec.StatementRound R n 0) (p : Spec.OracleState
 
 -- Migration rows: Sumcheck Interaction/Projection #8, ProjectionTransport #2.
 
+omit [SampleableType R] in
 /-- The first stage of the verifier's decision on an honest run: from the round-`0` relation, the
 round-`0` check on the honest first message and any challenge accepts a statement in the
 round-`1` relation, with the input polynomial unchanged. -/
@@ -375,7 +377,8 @@ example : ∃ t, simulateQ (OracleInterface.simOracle0 _ (roundFullTranscript
   have hsum := Spec.SingleRound.projected_sum_of_relationRound K 2 1 D₂ 0 ⟨1, Fin.elim0⟩ bilinear
     bilinear_relation
   rw [Finset.sum_map_toList] at hsum
-  rw [roundCheck_eq_some 0 _ _ hsum] at ht
+  rw [roundCheck_eq_some 0 _ (roundFullTranscript
+    (honestMessage D₂ 1 (initState ⟨1, Fin.elim0⟩ fun _ => bilinear)) 3) hsum] at ht
   cases Option.some.inj ht
   have key (m : K) (hm : (((⟨m, Fin.snoc (Fin.elim0 : Fin 0 → K) 3⟩ :
       Spec.StatementRound K 2 (Fin.succ 0)), fun _ => bilinear), ()) ∈

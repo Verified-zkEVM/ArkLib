@@ -50,6 +50,7 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg : �
   (D : Fin d ↪ R) {ι : Type} (amb : OracleSpec ι) {σ : Type}
   (init : ProbComp σ) (impl : QueryImpl amb (StateT σ ProbComp))
 
+omit [SampleableType R] in
 /-- A committed message whose sum over the domain misses the target is rejected with probability
 one, for every challenge implementation. -/
 theorem rejection_one {Out : Type}
