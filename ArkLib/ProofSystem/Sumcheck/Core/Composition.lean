@@ -473,6 +473,7 @@ noncomputable def projectedVerifier (i : Fin n) :
 
 variable {n D ambient}
 
+omit [SampleableType R] in
 /-- The run of the standalone round against the honest round strategy with message `msg`: one
 challenge query, then the check's verdict on the message, with the projected round polynomial of
 the input as output oracle. -/
@@ -494,6 +495,7 @@ theorem run_projectedVerifier_roundProver (i : Fin n)
     Functor.map_map]
   rfl
 
+omit [SampleableType R] in
 /-- The honest standalone round accepts every challenge `chal` on a claim in the round-`i`
 relation. The accepted statement has target `q.eval chal` for the projected round polynomial `q`,
 which is the output oracle, and is in the round-`(i + 1)` relation with the original input. -/
