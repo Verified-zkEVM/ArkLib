@@ -79,7 +79,7 @@ theorem routed_cost (v : View combined combinedPath) :
     WorstCaseCostBound (routedSuffix v) rawCost 5 :=
   program_cost.simulateQ (route v) (route_cost v)
 
-/-- The routed program is available at the produced decision step and costs at most five. -/
+/-- The routed program is available at the produced decision entry and costs at most five. -/
 theorem routed_available_and_cost (a b : Nat) (v : View combined combinedPath) :
     AllQueriesSatisfy (routedSuffix v) (decisionAllowed a b) ∧
       WorstCaseCostBound (routedSuffix v) rawCost 5 :=
@@ -285,7 +285,7 @@ def proverLog.{qJ} (payload hidden : Nat) (bit : Bool) : QueryLog PhasedRunTests
   ((simulateQ (logger bit) ((verifier.{0, 0, 0, qJ} true).runWithLog () noData
     (prover payload hidden))).run []).1.2.1
 
--- PhasedRun 3, restated: per-step profiles are removed, and the query profile is
+-- PhasedRun 3, restated: per-move profiles are removed, and the query profile is
 -- `QueryLog.countQ`. For every payload, private output and challenge, the prover's ambient log is
 -- the two setup queries followed by the queries 1, 4 and 5, so query 9 counts twice: `2 + 0` over
 -- the two segments.

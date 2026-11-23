@@ -165,7 +165,7 @@ oracle-access tests.
 
 The [runtime table of the access port table][access-runtime] holds the complete port entries and
 exact counterparts. P1 rules out the old order in the prefix, dummy query before reveal. It does not
-rule out the proofs that an oracle was sent at a transcript prefix. `TranscriptPrefix.queryNode`
+rule out the proofs that an oracle was sent at a partial transcript. `PartialTranscript.queryNode`
 and `availableMap_node` supply node names and inclusion for input queries. The access port table
 links those laws next to the concrete permission and cost assertions.
 

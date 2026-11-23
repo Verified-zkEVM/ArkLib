@@ -88,8 +88,9 @@ def falsePath : Path mixedTree := ⟨false, ⟨⟩, ⟨(0 : Fin 2), ⟨⟩⟩⟩
 -- DecorationExample 7, restated: the selector is a message, and the interface is read from the
 -- oracle family of a completed path through the `false` branch.
 /-- The `false` oracle node answers `Unit` queries. -/
-example : @OracleInterface.Query Bool ((oracleMessageFamily mixedTree falsePath).interface (.inl ⟨⟩)) =
-    Unit := rfl
+example :
+    @OracleInterface.Query Bool ((oracleMessageFamily mixedTree falsePath).interface (.inl ⟨⟩)) =
+      Unit := rfl
 
 -- DecorationExample 8, restated: decoration restriction is removed. The position at the `false`
 -- oracle node carries the `Bool` interface, and the cursor through `false` selects the `Bool`

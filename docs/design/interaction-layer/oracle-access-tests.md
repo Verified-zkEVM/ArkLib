@@ -19,38 +19,39 @@ Each row has exactly one of four statuses:
 A result that the parent already proves is linked directly instead of being copied.
 
 The two premises are **P1**, public-coin challenges with resource queries confined to the final
-decision, and **P2**, subtree selection independent of challenges and oracle payloads. P1 allows
+decision, and **P2**, subtree selection independent of challenges and oracle messages. P1 allows
 distributions that depend on earlier public challenges and prover messages.
 
 ## PhasedRun: 7 assertions
 
 | Old-layer row | Contract | Status and where it is ported |
 |---|---|---|
-| <a id="p1"></a>[1][fp1] | Intrinsic step actors | ported: [produced steps][step-api] derive each actor from the executed participant; [step_log_contract][p-step-log] checks them. |
-| <a id="p2"></a>[2][fp2] | State, actors, order | excluded by P1: P1 rules out verifier actions 2 and 3 before the challenge and action 6 at reception. [step_log_contract][p-step-log] keeps all tags, passive groups and state; [actual_step_prefixes][p-prefixes] keeps the moves of the transcript prefixes. |
-| <a id="p3"></a>[3][fp3] | Setup count | ported: [setup_step_log_contract][p-setup-step] records a separate setup step with both query 9 entries. |
-| <a id="p4"></a>[4][fp4] | Final payload | ported: [run][p-accept], [lookup][p-payload], [actual_step_prefixes][p-prefixes]. |
+| <a id="p1"></a>[1][fp1] | Intrinsic queriers | ported: [produced entries][step-api] derive each querier from the executed participant; [queries_by_move_contract][p-step-log] checks them. |
+| <a id="p2"></a>[2][fp2] | State, queriers, order | excluded by P1: P1 rules out verifier actions 2 and 3 before the challenge and action 6 at reception. [queries_by_move_contract][p-step-log] keeps all tags, passive groups and state; [actual_partial_transcripts][p-prefixes] keeps the moves of the partial transcripts. |
+| <a id="p3"></a>[3][fp3] | Setup count | ported: [setup_queries_by_move_contract][p-setup-step] records a separate setup entry with both query 9 entries. |
+| <a id="p4"></a>[4][fp4] | Final oracle message | ported: [run][p-accept], [lookup][p-payload], [actual_partial_transcripts][p-prefixes]. |
 | <a id="p5"></a>[5][fp5] | Closing, log, groups | excluded by P1: P1 rules out reception effect 1 as a separate verifier group. [closure/log][p-close] and [decision outcomes][p-decision] keep the outputs and histories of the run; [log erasure and setup/log laws][laws-api] keep the remaining groups and closing. |
 | <a id="p6"></a>[6][fp6] | Explicit rejection | ported: [decision outcomes][p-decision]. |
 | <a id="p7"></a>[7][fp7] | Fault 17, not rejection | ported: [decision outcomes][p-decision]. |
 
-The parent's step log supplies the step data: actors, transcript prefixes, membership and the
-ordered query groups. `OracleVerifier.executeWith` runs the interaction and the final decision.
-`runLoggingSteps` instruments strategies that the core runner `TwoParty.Lens.run` runs.
-`runWithSetupStep` keeps the setup as an independently selectable step, and
-`toLog_runWithSetupStep` relates its log to the ordinary logged execution. These are parent
+The parent's queries by move supply the entry data: queriers, partial transcripts, membership and
+the ordered query groups. `OracleVerifier.executeWith` runs the interaction and the final decision.
+`runLoggingMoves` instruments strategies that the core runner `TwoParty.Lens.run` runs.
+`runWithProverSetup` keeps the setup as an independently selectable entry, and
+`toLog_runWithProverSetup` relates its log to the ordinary logged execution. These are parent
 declarations, and the tests here add no second executor.
 
 For row 2, passivity changes the ambient order `[9, 9, 1, 2, 3, 4, 5, 6, 7]` to
-`[9, 9, 1, 4, 5, 2, 3, 6, 7]`. [step_log_contract][p-step-log] checks state `2102563478` and the
-produced passive groups. [actual_step_prefixes][p-prefixes] checks the challenge and payload values
-in the transcript prefixes. The local [accepting run][p-accept] quantifies over payload, private
-output and challenge independently.
+`[9, 9, 1, 4, 5, 2, 3, 6, 7]`. [queries_by_move_contract][p-step-log] checks state `2102563478` and
+the produced passive groups. [actual_partial_transcripts][p-prefixes] checks the challenge and
+oracle message values in the partial transcripts. The local [accepting run][p-accept] quantifies
+over oracle message, private output and challenge independently.
 
 Row 5 keeps input 7, accepted target 11, materialized answer 18, the sent-answer log and the
 ambient history `[9, 0, 1, 2]`. P1 moves reception effect 1 into the final decision together with
-effect 2. The remaining step observations are ported through `toLog_runWithStepLog`,
-`map_fst_runWithStepLog` and `simulateQ_toLog_runWithStepLog` in [StepLogLaws][laws-api]. The
+effect 2. The remaining observations by move are ported through `toLog_runWithQueriesByMove`,
+`map_fst_runWithQueriesByMove` and `simulateQ_toLog_runWithQueriesByMove` in
+[QueriesByMoveLaws][laws-api]. The
 closing audits at L201 and L202 have those same exact targets in the
 [parent port table][parent-phase-audits].
 
@@ -71,20 +72,20 @@ unchanged.
 |---|---|---|
 | [1][fx1] | Shared structural cursor | ported: [shared spine][x-cursor]. |
 | [2][fx2] | Different transcript prefixes | ported: [distinct full moves][x-distinct]. |
-| [3][fx3] | The crossed send gives a sent oracle | ported: [crossed-send query][x-query]; `SentOracle`, `SentOracle.node` and `IsSent` in [SentOracles][sent-api] identify the crossed oracle. |
-| [4][fx4] | The root has no sent oracle for that send | ported: [empty prefix has no sent oracle][x-no-sent]; `SentOracle` at `.here` is empty in [SentOracles][sent-api]. |
+| [3][fx3] | The crossed send gives a sent oracle | ported: [crossed-send query][x-query]; `SentOracleMessageIndex`, `SentOracleMessageIndex.node` and `IsSent` in [SentOracles][sent-api] identify the crossed oracle. |
+| [4][fx4] | The root has no sent oracle for that send | ported: [empty prefix has no sent oracle][x-no-sent]; `SentOracleMessageIndex` at `.here` is empty in [SentOracles][sent-api]. |
 | [5][fx5] | An empty-payload send permits a root prefix | ported: [root moves][x-empty-root]. |
 | [6][fx6] | No realization crosses an empty send | ported: [crossed moves][x-empty-moves]. |
 | [7][fx7] | Prefix length two | ported: [length][x-length], [completion][x-complete]. |
-| [8][fx8] | The first hidden realization is true | ported: [transcript prefix payload][x-payload]. |
+| [8][fx8] | The first hidden realization is true | ported: [transcript prefix oracle message][x-payload]. |
 
-Rows 3–4 use the parent's `TranscriptPrefix` interface in [SentOracles][sent-api]. `SentOracle` at
-an empty prefix is empty, while crossing an oracle send adds the sent oracle for that node.
-`IsSent` says that some sent oracle has a given node name, and `IsSent.mono` keeps that true when
-the transcript prefix is extended. The [prefix append identity][x-prefix] identifies the boundary
-immediately after the send, and the [crossed-send query][x-query] reads its own payload without
-choosing the future public message. [Completed-path lookup][x-sent] checks that payload for every
-later choice. [AccessExample 3][a-unsent] and [4][a-sent] check the typed access boundary.
+Rows 3–4 use the parent's `PartialTranscript` interface in [SentOracles][sent-api].
+`SentOracleMessageIndex` at an empty partial transcript is empty, while crossing an oracle send
+adds the sent oracle message for that node. `IsSent` says that some sent oracle message has a given
+node name, and `IsSent.mono` keeps that true when the partial transcript is extended. The
+[prefix append identity][x-prefix] identifies the boundary immediately after the send, and the
+[crossed-send query][x-query] reads its own oracle message without choosing the future public
+message. [Completed-path lookup][x-sent] checks that oracle message for every later choice. [AccessExample 3][a-unsent] and [4][a-sent] check the typed access boundary.
 
 ## QueryBounds: 17 assertions
 
@@ -93,19 +94,19 @@ later choice. [AccessExample 3][a-unsent] and [4][a-sent] check the typed access
 | <a id="q1"></a>[1][fq1] | Per-query cost | ported: [route_cost][c-route]. |
 | <a id="q2"></a>[2][fq2] | Source cost five | ported: [program_cost][c-program]. |
 | <a id="q3"></a>[3][fq3] | Routed cost five | ported: [routed_cost][c-routed]. |
-| <a id="q4"></a>[4][fq4] | Queried oracles were sent | ported: [routed_available][q-available] proves that every oracle the routed program queries was sent at the produced decision step. |
+| <a id="q4"></a>[4][fq4] | Queried oracles were sent | ported: [routed_available][q-available] proves that every oracle the routed program queries was sent at the produced decision entry. |
 | <a id="q5"></a>[5][fq5] | Old/old/fresh log | ported: [logged run][q-log]. |
-| <a id="q6"></a>[6][fq6] | Future exclusion | ported: [exclusion][q-future] for every prefix program; [joinStep_isSent][q-join-sent] excludes the node of the future oracle at the produced join step. |
-| <a id="q7"></a>[7][fq7] | Old/fresh identities | ported: [typed identity][q-repeat], [joinStep_node][q-join-node] and [decisionStep_isSent][q-decision-sent]. |
+| <a id="q6"></a>[6][fq6] | Future exclusion | ported: [exclusion][q-future] for every prefix program; [joinEntry_isSent][q-join-sent] excludes the node of the future oracle at the produced join entry. |
+| <a id="q7"></a>[7][fq7] | Old/fresh identities | ported: [typed identity][q-repeat], [joinEntry_node][q-join-node] and [decisionEntry_isSent][q-decision-sent]. |
 | <a id="q8"></a>[8][fq8] | Closing keeps the log | ported: [closed run log][q-log]. |
-| <a id="q9"></a>[9][fq9] | Produced join prefix | ported: [joinStep_before][q-join-before]. |
-| <a id="q10"></a>[10][fq10] | Decision-step prefix | ported: [decisionStep_before][q-decision-before]. |
-| <a id="q11"></a>[11][fq11] | Join membership | ported: [joinStep_mem][q-join-member]. |
-| <a id="q12"></a>[12][fq12] | Decision-step membership | ported: [decisionStep_mem][q-decision-member]. |
-| <a id="q13"></a>[13][fq13] | Sent oracles and cost | ported: [routed_available_and_cost][q-available-cost] proves the same routed program at the produced decision step, with cost five. |
-| <a id="q14"></a>[14][fq14] | Node-name inclusion | ported: [joinStep_node][q-join-node]; `availableMap_node`, `liftQuery_node` and `sentFamilyMap_query` in [SentOracles][sent-api] keep node names, query arguments and routing. |
-| <a id="q15"></a>[15][fq15] | Join exclusion | ported: [joinStep_isSent][q-join-sent] excludes the future oracle regardless of budget; [exclusion][q-future] proves the typed program law. |
-| <a id="q16"></a>[16][fq16] | Step log | ported: [step_source_log_contract][q-step-source] and `simulateQ_toLog_runWithStepLog` in [StepLogLaws][laws-api]. |
+| <a id="q9"></a>[9][fq9] | Produced join partial transcript | ported: [joinEntry_before][q-join-before]. |
+| <a id="q10"></a>[10][fq10] | Decision-entry partial transcript | ported: [decisionEntry_before][q-decision-before]. |
+| <a id="q11"></a>[11][fq11] | Join membership | ported: [joinEntry_mem][q-join-member]. |
+| <a id="q12"></a>[12][fq12] | Decision-entry membership | ported: [decisionEntry_mem][q-decision-member]. |
+| <a id="q13"></a>[13][fq13] | Sent oracles and cost | ported: [routed_available_and_cost][q-available-cost] proves the same routed program at the produced decision entry, with cost five. |
+| <a id="q14"></a>[14][fq14] | Node-name inclusion | ported: [joinEntry_node][q-join-node]; `availableMap_node`, `liftQuery_node` and `sentOracleMessageMap_query` in [SentOracles][sent-api] keep node names, query arguments and routing. |
+| <a id="q15"></a>[15][fq15] | Join exclusion | ported: [joinEntry_isSent][q-join-sent] excludes the future oracle regardless of budget; [exclusion][q-future] proves the typed program law. |
+| <a id="q16"></a>[16][fq16] | Queries by move | ported: [queries_by_move_source_log_contract][q-step-source] and `simulateQ_toLog_runWithQueriesByMove` in [QueriesByMoveLaws][laws-api]. |
 | <a id="q17"></a>[17][fq17] | Four is insufficient | ported: [cost-five path][c-lower]. |
 
 Rows 5 and 8 use `composed.runWithLog`. For every `a` and `b`, the doubled export records two
@@ -115,21 +116,21 @@ entries for the prefix oracle with answer `a`, then the entry for the suffix ora
 closing uses those same resources; this fixture's output family is empty.
 
 Rows 9–12 and 14–16 reuse the parent's `LoggedExecutionTests` two-oracle execution. Its
-`joinStep_mem`, `decisionStep_mem`, `joinStep_before`, `decisionStep_before`,
-`step_intrinsic_actors`, `joinStep_node`, `joinStep_isSent`, `decisionStep_isSent` and
-`step_source_log_contract` already prove the old observations. The join is the first suffix prover
-step. P1 rules out the old verifier decision at that seam, and the new tests keep its transcript
-prefix and membership. They add no duplicate assertions or executor. `toLog_runWithStepLog` and
-`simulateQ_toLog_runWithStepLog` relate steps and log for every prover, including this branch's
-composed verifier.
+`joinEntry_mem`, `decisionEntry_mem`, `joinEntry_before`, `decisionEntry_before`,
+`entry_intrinsic_queriers`, `joinEntry_node`, `joinEntry_isSent`, `decisionEntry_isSent` and
+`queries_by_move_source_log_contract` already prove the old observations. The join is the entry of
+the first suffix prover move. P1 rules out the old verifier decision at that seam, and the new tests
+keep its partial transcript and membership. They add no duplicate assertions or executor.
+`toLog_runWithQueriesByMove` and `simulateQ_toLog_runWithQueriesByMove` relate entries and log for
+every prover, including this branch's composed verifier.
 
 The additional [routed_available][q-available] and [joint proof][q-available-cost] cover this
-branch's exact doubled-export program. `composedStepLog a b` comes from `composed.runWithStepLog`.
+branch's exact doubled-export program. `composedQueriesByMove a b` comes from `composed.runWithQueriesByMove`.
 `rawAvailable` matches each raw query's node name, computed from the completed transcript, with an
-oracle that was sent at the decision step of that execution. This ties the proof that an oracle was
+oracle that was sent at the decision entry of that execution. This ties the proof that an oracle was
 sent to the same program as the cost-five bound. The [run transcript][q-run],
-[split payloads][q-split], [prefix payload][q-prefix-payload] and
-[suffix payload][q-suffix-payload] stay as additional checks.
+[split oracle messages][q-split], [prefix oracle message][q-prefix-payload] and
+[suffix oracle message][q-suffix-payload] stay as additional checks.
 
 ## RuntimeQueryBounds: 17 assertions
 
@@ -274,8 +275,8 @@ example instantiates it at `.{0, 1}` on an arbitrary tree. `UniverseProtocol.{uP
 and `universeNode` add a constructed node. The small-node canary attaches an arbitrary
 `OracleInterface.{0, 1} Nat` to a real oracle position and checks the query type of its path
 family. It does not merely install the interface as an input resource. The parent's
-[lifted_step_log_contract][d-node-run] also runs such a node, queries its payload and checks the
-transcript prefix at its decision step. The optional leaf parameter makes the message universe
+[lifted_queries_by_move_contract][d-node-run] also runs such a node, queries its oracle message and
+checks the partial transcript at its decision entry. The optional leaf parameter makes the message universe
 visible in the alias's domain, as in the parent `OracleProtocol`; it is an actual tree return type.
 
 ## MixedExample: 9 assertions
@@ -301,13 +302,13 @@ row 2 now checks that separate contract.
 
 ## Parent interfaces and remaining universe restriction
 
-The merged parent supplies the step and sent-oracle interfaces that earlier versions of this table
-listed as missing. [StepLog][step-api] produces steps with their transcript prefixes, actors and
-query groups. [StepLogLaws][laws-api] supplies closing, ordinary erasure and the correspondence
+The merged parent supplies the queries-by-move and sent-oracle interfaces that earlier versions of
+this table listed as missing. [QueriesByMove][step-api] produces entries with their partial
+transcripts, queriers and query groups. [QueriesByMoveLaws][laws-api] supplies closing, ordinary erasure and the correspondence
 with the log. [SentOracles][sent-api] supplies node names, the proof that an oracle was sent and
 inclusion, together with query routing. The [parent port table][parent-port-table] and the tables
 above identify their exact assertion targets. P1 rules out intermediate verifier effects, not the
-produced prover prefixes.
+produced prover moves.
 
 `OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig`, `OracleProtocol`, `oracleMessageFamily` and
 `pathResources` keep independent node-query universes. General `Resources.{u, uI, dI}` also
@@ -320,7 +321,7 @@ The **open** item is the large-query result interface of the full-log runner.
 [OracleVerifier.runWithLog][logged-runner] returns resource-query entries through a small
 computation monad. Returning large query indices in that complete heterogeneous log needs a parent
 logging interface with a sufficiently large result universe. `runWithAmbientLog` and
-`runWithAmbientStepLog` keep independent input-data, input-query and node-query universes by
+`runWithAmbientQueriesByMove` keep independent input-data, input-query and node-query universes by
 returning only ambient decision queries. The full-log [loggedSummary][q-log-summary] keeps the
 strongest supported output-query universe. P1 and P2 impose no universe restrictions. Run outputs
 continue to follow the parent monad's value universe, as documented in note 18.
@@ -529,12 +530,12 @@ without them. No added local or global `attribute [...]` transparency command an
 [p-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L769
 [p-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L792
 [p-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L803
-[p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L355
-[run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
+[p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L354
+[run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L122
 [oracle-position]: ../../../ArkLib/Interaction/Core/Signature.lean#L45
 [oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L57
-[resource-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L133
-[logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L332
+[resource-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L132
+[logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L336
 
 [universes]:
     ../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe
@@ -550,21 +551,21 @@ without them. No added local or global `attribute [...]` transparency command an
 [parent-port-table]: logged-execution-disposition.md
 [parent-phase-audits]: logged-execution-disposition.md#phasedrunlean
 
-[laws-api]: ../../../ArkLib/Interaction/Core/Oracle/StepLogLaws.lean
-[step-api]: ../../../ArkLib/Interaction/Core/Oracle/StepLog.lean
+[laws-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean
+[step-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
 [sent-api]: ../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean
 [p-step-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L925
 [p-prefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L944
-[p-setup-step]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L970
-[q-join-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1072
-[q-decision-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1077
-[q-join-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1064
-[q-decision-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1067
-[q-join-node]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1096
-[q-join-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1102
-[q-decision-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1113
-[q-step-source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1124
-[d-node-run]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1199
+[p-setup-step]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L971
+[q-join-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1073
+[q-decision-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1078
+[q-join-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1065
+[q-decision-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1068
+[q-join-node]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1098
+[q-join-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1104
+[q-decision-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1115
+[q-step-source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1126
+[d-node-run]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1201
 
 [d-node]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L33
 

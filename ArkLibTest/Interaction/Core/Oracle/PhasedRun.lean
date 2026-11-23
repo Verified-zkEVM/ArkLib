@@ -119,7 +119,7 @@ def decisionObserved (mode old message hidden : Nat) :
       (OracleComp.withQueryLog (spec := full) (TwoParty.Lens.run pairSend
         ((pairProver [9] message hidden).simulate (fun q => liftM (full.query (.inl q))))
         (sampler oracleSig pairSend (fun c => liftM (full.query (.inr c))))))
-    let p := tr.path
+    let p := Transcript.path tr
     let data : (pathResources inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
     let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
       (toView pairSend tr) data

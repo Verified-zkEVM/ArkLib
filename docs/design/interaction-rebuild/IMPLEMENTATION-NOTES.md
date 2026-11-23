@@ -393,11 +393,11 @@ tree off the tree, as its path family. `universeNode` additionally attaches an a
 its query type.
 
 The [oracle-access port table](../interaction-layer/oracle-access-tests.md) now links the PhasedRun
-actor, setup and prefix rows and the QueryBounds rows on join and decision step membership,
-concrete transcript prefixes, node names and the agreement of the step log with the logged run
-directly to the parent's `LoggedExecutionTests` assertions. P1 rules out intermediate verifier
-actions and the steps they were assigned to. `QueryBoundsTests.routed_available` additionally
-proves that the oracles of the exact composed doubled-export execution were sent at its decision
-step. `QueryCostTests.routed_available_and_cost` combines that proof with cost five for the same
-routed program. The payload-splitting checks remain. The parent's large-query full-log limitation
-in entry 18 is unchanged.
+querier, setup and partial-transcript rows and the QueryBounds rows on join and decision entry
+membership, concrete partial transcripts, node names and the agreement of the queries by move with
+the logged run directly to the parent's `LoggedExecutionTests` assertions. P1 rules out intermediate
+verifier actions and the entries they were assigned to. `QueryBoundsTests.routed_available`
+additionally proves that the oracles of the exact composed doubled-export execution were sent at its
+decision entry. `QueryCostTests.routed_available_and_cost` combines that proof with cost five for
+the same routed program. The oracle-message splitting checks remain. The parent's large-query
+full-log limitation in entry 18 is unchanged.

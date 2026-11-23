@@ -161,7 +161,8 @@ abbrev prefixRoute :=
 -- prefix oracles, which have no index for the suffix send. Routed into the composed run, every
 -- prefix decision program, whatever its cost, queries only ambient oracles and the prefix slot,
 -- never the suffix slot. The budget clause of the old-layer row is moot.
-example : (PEmpty ⊕ OracleMessageIndex single (Path.split single (fun _ => single) combinedPath).1) =
+example :
+    (PEmpty ⊕ OracleMessageIndex single (Path.split single (fun _ => single) combinedPath).1) =
     (PEmpty.{1} ⊕ (PUnit.{1} ⊕ PEmpty.{1})) := rfl
 
 example : True := by
@@ -200,30 +201,32 @@ def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id
 def observed.{vI, qI, qJ} (a b : Nat) :=
   simulateQ tagHandler (composed.{vI, qI, 0, qJ}.run () noData (prover a b))
 
--- Additional payload checks beside the produced-prefix assertions in LoggedExecution.
--- For all tags `a` and `b`, the composed
+-- Additional oracle message checks beside the produced partial-transcript assertions in
+-- LoggedExecution. For all tags `a` and `b`, the composed
 -- run sends `a` then `b`, keeps `a + b` and accepts `2a + b`. Its transcript is the append of the
--- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`, and splitting its payloads gives the
--- prefix payload `a` (row 9) and the suffix payload `b` (row 10).
+-- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`, and splitting its oracle messages gives
+-- the prefix oracle message `a` (row 9) and the suffix oracle message `b` (row 10).
 example (a b : Nat) :
     ((observed.{uI, wI, wJ} a b).1, (observed.{uI, wI, wJ} a b).2.1,
       (observed.{uI, wI, wJ} a b).2.2.map Prod.fst) =
-    (Transcript.append single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩, a + b,
+    (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩, a + b,
       some (a + a + b)) := by
   unfold observed composed
   rw [OracleVerifier.run_append]
   kernel_rfl
 
 example (a b : Nat) :=
-  splitOracles_payloads single (fun _ => single) (⟨a, ⟨⟩⟩ : Transcript oracleSig single)
-    (⟨b, ⟨⟩⟩ : Transcript oracleSig single)
+  splitOracleMessages_oracleMessages single (fun _ => single)
+    (⟨a, ⟨⟩⟩ : Transcript oracleSig single) (⟨b, ⟨⟩⟩ : Transcript oracleSig single)
 
 example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
-    (oracleMessages combined (Transcript.append single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
+    (oracleMessages combined
+      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inl (.inl ⟨⟩)) = a := rfl
 
 example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
-    (oracleMessages combined (Transcript.append single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
+    (oracleMessages combined
+      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inr (.inl ⟨⟩)) = b := rfl
 
 -- The full decision log fixes input indices and queries to `Type`; output queries stay
@@ -251,38 +254,38 @@ example : loggedSummary.{0} 1 2 =
   loggedSummary_eq 1 2
 
 
-/-- The composed verifier's step log for the same tag-answering execution. -/
-def composedStepLog (a b : Nat) :
-    OracleVerifier.StepLog composed.{0, 0, 0, 0} (fun _ => Nat) :=
-  simulateQ tagHandler (composed.runWithStepLog () noData (prover a b))
+/-- The composed verifier's queries by move for the same tag-answering execution. -/
+def composedQueriesByMove (a b : Nat) :
+    OracleVerifier.QueriesByMove composed.{0, 0, 0, 0} (fun _ => Nat) :=
+  simulateQ tagHandler (composed.runWithQueriesByMove () noData (prover a b))
 
-/-- A raw query has its node name among the available resources of the decision step. -/
+/-- A raw query has its node name among the available resources of the decision entry. -/
 def rawAvailable (a b : Nat) (q : rawResources.spec.Domain) : Prop :=
-  ∃ i : ((composedStepLog a b).decisionStep.availableContext none').Index,
-    TranscriptPrefix.queryNode none' (composedStepLog a b).decisionStep.before i =
-      TranscriptPrefix.queryNode none'
-        (TranscriptPrefix.ofTranscript combined ⟨a, b, ⟨⟩⟩) q
+  ∃ i : ((composedQueriesByMove a b).decision.availableContext none').Index,
+    PartialTranscript.queryNode none' (composedQueriesByMove a b).decision.before i =
+      PartialTranscript.queryNode none'
+        (PartialTranscript.ofTranscript (l := oracleSig) combined ⟨a, b, ⟨⟩⟩) q
 
-/-- Every raw query names a resource available at the transcript prefix of this execution's
-decision step. -/
+/-- Every raw query names a resource available at the partial transcript of this execution's
+decision entry. -/
 theorem raw_available (a b : Nat) (q : rawResources.spec.Domain) : rawAvailable a b q := by
-  have decision_before_eq : (composedStepLog a b).decisionStep.before =
-      TranscriptPrefix.ofTranscript combined ⟨a, b, ⟨⟩⟩ := by kernel_rfl
+  have decision_before_eq : (composedQueriesByMove a b).decision.before =
+      PartialTranscript.ofTranscript (l := oracleSig) combined ⟨a, b, ⟨⟩⟩ := by kernel_rfl
   unfold rawAvailable
-  generalize step_eq : (composedStepLog a b).decisionStep = step
-  rw [step_eq] at decision_before_eq
-  dsimp only [LoggedStep.availableContext]
+  generalize entry_eq : (composedQueriesByMove a b).decision = entry
+  rw [entry_eq] at decision_before_eq
+  dsimp only [QueriesAt.availableContext]
   rw [decision_before_eq]
   exact ⟨q, rfl⟩
 
 /-- Ambient queries are unrestricted; resource queries must name a resource available at the
-decision step. -/
+decision entry. -/
 def decisionAllowed (a b : Nat) : (ambient + rawResources.spec).Domain → Prop
   | .inl _ => True
   | .inr q => rawAvailable a b q
 
 /-- The same routed program used by the cost bound only queries resources available at the
-decision step. -/
+decision entry. -/
 theorem routed_available (a b : Nat) (v : View combined combinedPath) :
     AllQueriesSatisfy (routedSuffix v) (decisionAllowed a b) := by
   apply allQueriesSatisfy_of_forall

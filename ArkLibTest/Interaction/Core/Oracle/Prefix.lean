@@ -7,8 +7,8 @@ Authors: Quang Dao
 import ArkLib.Interaction.Core.Security.RoundByRound
 
 /-! Transcript prefixes. A prefix is a structural cursor spine decorated with full moves,
-`PartialTranscriptAt oracleSig sp`, so hidden oracle payloads stay in the prefix while the spine records
-only shape branches. Oracle slots are typed by the completed shape path. -/
+`PartialTranscriptAt oracleSig sp`, so hidden oracle messages stay in the prefix while the spine
+records only shape branches. Oracle slots are typed by the completed shape path. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
 
@@ -28,7 +28,8 @@ def afterSend : Cursor.Spine mixed (.liftBind (.message (Fin 3)) (fun _ => .pure
 def sent (message : Bool) : PartialTranscriptAt oracleSig afterSend := ⟨⟨message, rfl⟩, ⟨⟩⟩
 
 /-- A prefix of `mixed` packaged with its cursor. -/
-abbrev MixedPrefix := (t : OracleProtocol) × (sp : Cursor.Spine mixed t) × PartialTranscriptAt oracleSig sp
+abbrev MixedPrefix :=
+  (t : OracleProtocol) × (sp : Cursor.Spine mixed t) × PartialTranscriptAt oracleSig sp
 
 /-- The packaged prefix after sending `message`. -/
 def sentPrefix (message : Bool) : MixedPrefix := ⟨_, afterSend, sent message⟩
@@ -39,7 +40,8 @@ example : (sentPrefix true).2.1 = (sentPrefix false).2.1 := rfl
 -- Prefix 2, restated: the two prefixes differ.
 example : sent true ≠ sent false := by
   intro h
-  exact Bool.noConfusion (congrArg (fun moves : PartialTranscriptAt oracleSig afterSend => moves.1.1) h)
+  exact Bool.noConfusion
+    (congrArg (fun moves : PartialTranscriptAt oracleSig afterSend => moves.1.1) h)
 
 example : sentPrefix true ≠ sentPrefix false := by
   intro h
