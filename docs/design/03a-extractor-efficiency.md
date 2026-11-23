@@ -357,8 +357,18 @@ compiled CompPoly evaluation follows the separate Horner dispatch; equality of v
 transfer either cost profile. Compiled fixtures exercise outputs and recorded counters, not a
 proved bound on host runtime.
 
-Likewise, `Raw.trim` in `CompPoly.Univariate.Raw.Core` uses `lastNonzero` (`findIdxRev?`) followed
-by a prefix `extract`. The measured
+Compiled calls to CompPoly's `Raw.mulRaw` use `Raw.mulRawFast` through the `@[csimp]` lemma
+`mulRaw_eq_mulRawFast`.
+[`Arithmetic.mulRaw`](../../ArkLib/ToCompPoly/Univariate/ArithmeticPolynomial.lean)
+follows that loop's coefficient windows, term order and initial accumulator by construction.
+The proof certifies equality of the output arrays, including padding. The
+[exact profile](../../ArkLib/ToCompPoly/Univariate/ArithmeticConvolutionCost.lean)
+counts the measured program's requests: one addition, one multiplication and two reads per
+pair of stored coefficients. Metadata counts a tick per term, a tick per output position and
+one terminal tick. Canonical multiplication also charges the final trim.
+
+CompPoly's `Raw.trim` in `CompPoly.Univariate.Raw.Core` uses `lastNonzero` (`findIdxRev?`)
+followed by a prefix `extract`. The measured
 [`Arithmetic.trimRaw`](../../ArkLib/ToCompPoly/Univariate/ArithmeticPolynomial.lean) recursively
 reads, tests and pops trailing coefficients; its
 [profile bounds](../../ArkLib/ToCompPoly/Univariate/ArithmeticPolynomialCost.lean) certify that

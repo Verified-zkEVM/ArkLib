@@ -11,7 +11,7 @@ import ArkLib.ToCompPoly.Univariate.ArithmeticEvaluation
 # Measured polynomial arithmetic trust checks
 
 These classic clients guard the literal arithmetic erasure and the exact or bounded profiles
-of padded convolution, trimming, power-sum evaluation, and cached interpolation.
+of raw convolution, trimming, power-sum evaluation, and cached interpolation.
 -/
 
 /--
@@ -27,6 +27,20 @@ info: 'CompPoly.Arithmetic.profileArithmetic_mulRaw' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms CompPoly.Arithmetic.profileArithmetic_mulRaw
+
+section Convolution
+open CompPoly
+
+variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
+
+example (p q : CPolynomial.Raw F) (hp : p.size ≠ 0) :
+    let cost := (profileArithmetic (Arithmetic.mulRaw p q)).2
+    (cost .add, cost .mul, cost .coefficientRead, cost .metadata) =
+      (p.size * q.size, p.size * q.size, 2 * (p.size * q.size),
+        p.size * q.size + (q.size + p.size - 1) + 1) := by
+  simp [Arithmetic.profileArithmetic_mulRaw, CPolynomial.Raw.size_mulRaw, hp]
+
+end Convolution
 
 /--
 info: 'CompPoly.Arithmetic.profileArithmetic_trimRaw_le' depends on axioms:

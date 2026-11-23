@@ -15,8 +15,9 @@ import all CompPoly.Univariate.Raw.Ops
 /-!
 # Measured canonical polynomial arithmetic
 
-Raw convolution preserves padding until the requested canonicalization. Trimming exposes
-all coefficient reads and zero tests; coefficient negation uses subtraction from zero.
+Measured raw multiplication follows the coefficient windows of CompPoly's `mulRawFast` and
+certifies the padded result. Trimming charges each coefficient read and zero test.
+Coefficient negation uses subtraction from zero.
 -/
 
 @[expose] public section
@@ -107,21 +108,21 @@ def certifiedFoldr {A B : Type} (f : A → B → B)
     let d ← step x c.val
     pure ⟨d.val, by rw [d.property, c.property]; rfl⟩
 
-/-- Accumulate consecutive rows of the padded convolution. -/
-def mulRawFrom (p q : CPolynomial.Raw F) (i : ℕ) (acc : CPolynomial.Raw F) :
-    (t : ℕ) → OracleComp (ArithmeticSpec F) {r : CPolynomial.Raw F // r =
-      (List.range' i t).foldl (fun a j ↦ CPolynomial.Raw.addRaw a
-        (CPolynomial.Raw.mulPowX j (CPolynomial.Raw.smul (p[j]?.getD 0) q))) acc}
-  | 0 => do
+/-- Accumulate `n` terms for output entry `k`, starting at left coefficient index `lo`.
+Each term charges two coefficient reads, one multiplication, one addition, and one tick. -/
+def convolutionEntry (p q : CPolynomial.Raw F) (k lo : ℕ) :
+    (n : ℕ) → OracleComp (ArithmeticSpec F) {r : F // r =
+      n.fold (fun t _ acc ↦ acc + p[lo + t]?.getD 0 * q[k - (lo + t)]?.getD 0) 0}
+  | 0 => pure ⟨0, by simp⟩
+  | n + 1 => do
+    let acc ← convolutionEntry p q k lo n
     tick
-    pure ⟨acc, rfl⟩
-  | t + 1 => do
-    tick
-    let a ← coefficientRead p i
-    let b ← smulRaw a.val q
-    let c ← addRaw acc (CPolynomial.Raw.mulPowX i b.val)
-    let r ← mulRawFrom p q (i + 1) c.val t
-    pure ⟨r.val, by rw [r.property, c.property, b.property, a.property]; rfl⟩
+    let a ← coefficientRead p (lo + n)
+    let b ← coefficientRead q (k - (lo + n))
+    let c ← mul a.val b.val
+    let r ← add acc.val c.val
+    pure ⟨r.val, by rw [r.property, acc.property, c.property, a.property, b.property,
+      Nat.fold_succ]⟩
 
 end Operations
 
@@ -147,21 +148,29 @@ end AddGroup
 section Semiring
 variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
 
-private theorem toList_zipIdx_eq_range {R : Type} [Zero R] (p : Array R) :
-    p.zipIdx.toList = (List.range' 0 p.size).map (fun i ↦ (p[i]?.getD 0, i)) := by
-  apply List.ext_getElem
-  · simp
-  · intro i hi hi'
-    have h : i < p.size := by simpa using hi
-    simp [List.getElem_range', h]
-
-/-- Multiply coefficient arrays without trimming intermediate rows. -/
+/-- Multiply raw arrays by the coefficient windows of CompPoly's `mulRawFast`.
+The output keeps the padding of `CPolynomial.Raw.mulRaw`, including for empty inputs. -/
 def mulRaw (p q : CPolynomial.Raw F) :
     OracleComp (ArithmeticSpec F) {r : CPolynomial.Raw F // r = CPolynomial.Raw.mulRaw p q} := do
-  let r ← mulRawFrom p q 0 #[] p.size
-  pure ⟨r.val, by
-    rw [r.property, CPolynomial.Raw.mulRaw, ← Array.foldl_toList,
-      toList_zipIdx_eq_range, List.foldl_map]⟩
+  if hp : p.size = 0 then
+    tick
+    pure ⟨#[], by
+      rw [CPolynomial.Raw.mulRaw_eq_mulRawFast]
+      simp [CPolynomial.Raw.mulRawFast, hp]⟩
+  else
+    let r ← certifiedOfFn (n := q.size + p.size - 1) (fun k ↦
+      (min (k.val + 1) p.size - (k.val + 1 - q.size)).fold (fun t _ acc ↦
+        acc + p[k.val + 1 - q.size + t]?.getD 0 * q[k.val - (k.val + 1 - q.size + t)]?.getD 0) 0)
+      (fun k ↦ convolutionEntry p q k.val (k.val + 1 - q.size)
+        (min (k.val + 1) p.size - (k.val + 1 - q.size)))
+    pure ⟨r.val, by
+      rw [r.property, CPolynomial.Raw.mulRaw_eq_mulRawFast]
+      simp only [CPolynomial.Raw.mulRawFast, hp, ↓reduceIte]
+      rw [Nat.fold_push_eq_append_ofFn, Array.emptyWithCapacity_eq, Array.empty_append]
+      congr! 3 with k
+      funext t _ acc
+      rw [Array.getElem_eq_getD 0, Array.getElem_eq_getD 0]
+      simp only [Array.getD_eq_getD_getElem?]⟩
 
 /-- Multiply canonical polynomials and charge the final trim. -/
 def mulPolynomial (p q : CPolynomial F) :
