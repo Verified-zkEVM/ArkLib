@@ -32,7 +32,7 @@ variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol
   {T : Path s → Type} {J : Path s → Type}
   {B : (p : Path s) → J p → Type} {inputs : Resources.{0, 0, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-  {Out : PathAlong oracleSig s → Type}
+  {Out : Transcript oracleSig s → Type}
 
 /-- Interpreting a logged run in any lawful monad commutes with erasing both logs. -/
 theorem simulateQ_runWithLog_erase {m : Type → Type v} [Monad m] [LawfulMonad m]

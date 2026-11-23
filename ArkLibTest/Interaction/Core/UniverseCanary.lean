@@ -359,9 +359,9 @@ end IndependentRealizations
 
 /-! ### Security models with large inputs -/
 
-/-- Observations of `runnable` and `typeQueryVerifier` are small, so every set of them may be
+/-- Outcomes of `runnable` and `typeQueryVerifier` are small, so every set of them may be
 declared measurable. -/
-instance : MeasurableSpace (Observation oracleSig oracleDone (fun _ => PUnit)
+instance : MeasurableSpace (Outcome oracleSig oracleDone (fun _ => PUnit)
     (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) := ⊤
 
 /-- The ambient oracle of the security experiments answers `true` and keeps no state. -/
@@ -371,10 +371,10 @@ def ambientTrue : QueryImpl smallAmbient (StateT Unit ProbComp) := fun _ => pure
 def noChallenges : QueryImpl (challengeSpec oracleSig oracleDone) ProbComp := fun c => c.val.elim
 
 /-- The classical model of `runnable`. Its statements pair an input statement in `Type 2` with
-input data indexed by `Type`, while its observations stay in `Type 0`. -/
+input data indexed by `Type`, while its outcomes stay in `Type 0`. -/
 noncomputable def runnableModel :
     AdversaryModel ((Type 1) × (Type → Nat))
-      (Observation oracleSig oracleDone (fun _ => PUnit)
+      (Outcome oracleSig oracleDone (fun _ => PUnit)
         (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) :=
   runnable.classicalModel (pure ()) ambientTrue noChallenges
 
@@ -382,7 +382,7 @@ noncomputable def runnableModel :
 output queries lie in `Type 2`. -/
 noncomputable def typeQueryModel :
     AdversaryModel (Unit × (Unit → Nat))
-      (Observation oracleSig oracleDone (fun _ => PUnit)
+      (Outcome oracleSig oracleDone (fun _ => PUnit)
         (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) :=
   typeQueryVerifier.classicalModel (pure ()) ambientTrue noChallenges
 
@@ -390,7 +390,7 @@ noncomputable def typeQueryModel :
 example (input : StatementProblem ((Type 1) × (Type → Nat)))
     (output : PathProblem oracleDone
       (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) :
-    soundness runnableModel input output (fun obs => projectPathAlong oracleSig oracleDone obs.1)
+    soundness runnableModel input output (fun obs => Transcript.path obs.1)
       (fun obs => obs.2.2) 1 :=
   fun _ _ _ _ => le_trans (measure_mono (Set.subset_univ _)) (runnableModel.mass_le_one _ _)
 
@@ -423,7 +423,7 @@ example (input : StatementProblem (Type 1)) : Prop :=
 
 /-- An extractor that ignores its inputs and returns `7`. -/
 def sevenExtractor {S : Type v} :
-    Extractor.OracleStraightline smallAmbient oracleDone (fun _ : S => Nat) (fun _ => PUnit) :=
+    Extractor.OracleStraightLine smallAmbient oracleDone (fun _ : S => Nat) (fun _ => PUnit) :=
   fun _ _ _ _ _ => pure 7
 
 /-- The extraction game of `runnable`, whose input index lies in `Type 1`, accepts on data `3` and
@@ -433,23 +433,23 @@ example :
       ((Type 0), fun _ => 3) idle)).2 = some 7 := rfl
 
 /-- The ambient-log run of `typeQueryVerifier`, whose input queries lie in `Type 1`, keeps the
-run's observation and two empty ambient logs. -/
+run's outcome and two empty ambient logs. -/
 example :
     (simulateQ handler (typeQueryVerifier.runWithAmbientLog () (fun _ => 5) idle)).2.2.isEmpty =
       true := rfl
 
 /-- The classical straight-line extraction model of `runnable`. -/
 noncomputable def runnableExtraction :=
-  runnable.classicalStraightline (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
+  runnable.classicalStraightLine (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
     (fun _ => Nat) (pure ()) ambientTrue noChallenges (fun _ o => o)
 
-/-- Straight-line extraction for `runnable` preserves the run's observation law. -/
-example (E : Extractor.OracleStraightline smallAmbient oracleDone
+/-- Straight-line extraction for `runnable` preserves the run's outcome law. -/
+example (E : Extractor.OracleStraightLine smallAmbient oracleDone
       (fun _ : (Type 1) × (Type → Nat) => Nat) (fun _ => PUnit))
     (stmt : (Type 1) × (Type → Nat)) (adv : Prover oracleSig smallAmbient oracleDone
       (fun _ => PUnit)) :
     (runnableExtraction.experiment E stmt adv).map Prod.fst = runnableModel.outcome stmt adv :=
-  runnable.classicalStraightline_marginal _ _ _ _ _ E stmt adv
+  runnable.classicalStraightLine_marginal _ _ _ _ _ E stmt adv
 
 /-- The classical transcript-only extraction model of `typeQueryVerifier`, whose input queries
 lie in `Type 1` and whose output queries lie in `Type 2`. -/
@@ -457,7 +457,7 @@ noncomputable def typeQueryExtraction :=
   typeQueryVerifier.classicalTranscriptOnly (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
     (fun _ => Nat) (pure ()) ambientTrue noChallenges (fun _ o => o)
 
-/-- Transcript-only extraction for `typeQueryVerifier` preserves the run's observation law. -/
+/-- Transcript-only extraction for `typeQueryVerifier` preserves the run's outcome law. -/
 example (E : Extractor.OracleTranscriptOnly smallAmbient oracleDone
       (fun _ : Unit × (Unit → Nat) => Nat) (fun _ => PUnit))
     (stmt : Unit × (Unit → Nat)) (adv : Prover oracleSig smallAmbient oracleDone
@@ -471,7 +471,7 @@ example (E : Extractor.OracleTranscriptOnly smallAmbient oracleDone
 types, in `Type 1`, while its input witness is the unit, in `Type 0`. The root extractor maps a
 type to the unit. -/
 def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
-    {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
+    {S : Type v} (validOutput : S → Transcript l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
     KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ => Unit) Unit (fun _ => True)
       (fun _ _ => True) validOutput where
   Witness _ _ := Type

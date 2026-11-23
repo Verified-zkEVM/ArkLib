@@ -36,8 +36,8 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 
 | Entry | Departure | Status |
 | --- | --- | --- |
-| 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces, for each step, the transcript so far, the actor and the queries, with exact log erasure, in `Oracle/StepLog.lean`, `Oracle/StepLogLaws.lean` and `Oracle/SentOracles.lean` | ported |
-| 19 | P1 rules out intermediate verifier queries and the steps they were assigned to; prover steps and their transcript prefixes remain | excluded by P1 |
+| 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces, for each move, an entry with the partial transcript, the querier and the queries, with exact log erasure, in `Oracle/QueriesByMove.lean`, `Oracle/QueriesByMoveLaws.lean` and `Oracle/SentOracles.lean` | ported |
+| 19 | P1 rules out intermediate verifier queries and the moves they were assigned to; prover moves and their partial transcripts remain | excluded by P1 |
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
@@ -71,7 +71,7 @@ path data and output maps rather than a run.
 **Resolution.** The modules `Legacy/OracleExecution.lean`, `Legacy/OracleSecurity.lean` and
 `Legacy/OracleKnowledge.lean` state the correspondence and the transfers on the oracle tree:
 
-- `oracleFinalize` reads the legacy result off an oracle-tree observation, including both
+- `oracleFinalize` reads the legacy result off an oracle-tree outcome, including both
   parties' outputs and the verifier's output oracle data.
 - `oracleFinalize_observeWith_counterpartFirst` is program equality with legacy
   `OracleReduction.run` under the counterpart-first schedule, for every legacy protocol
@@ -106,18 +106,18 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 
 The [port table](logged-execution-disposition.md) lists each assertion in the old layer's tests,
 where it is ported or what remains, and which assertions the approved passive-verifier and
-fixed-shape premises (P1 and P2) rule out. The rows about the step log are ported under the
-passive schedule. There is no separate step executor. Instrumented strategies run through
-`TwoParty.Lens.run`, and the ordinary run, the step log and the ambient step log share
-`OracleVerifier.executeWith`. Erasure follows from a general law about running instrumented
-strategies and from the writer laws. The rows excluded by P1 name the intermediate verifier actions
-and step assignments that P1 rules out.
+fixed-shape premises (P1 and P2) rule out. The rows about the queries by move are ported under
+the passive schedule. There is no separate step executor. Instrumented strategies run through
+`TwoParty.Lens.run`, and the ordinary run, the queries by move and the ambient queries by move
+share `OracleVerifier.executeWith`. Erasure follows from a general law about running
+instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
+verifier actions and move assignments that P1 rules out.
 
 The [oracle-access port table](oracle-access-tests.md) also closes DecorationExample row 2 with
 the arbitrary-tree decoration test and the independent-universe node and path-family tests. Its
-PhasedRun and QueryBounds step rows cite the parent's produced assertions directly. These cover
-membership of the join and decision steps, node names, and the agreement between the step log and
-the logged run. The doubled-export fixture adds a proof that the oracles were sent at the decision
-step, jointly with its cost-five bound. These observations are ported. P1 still rules out
-intermediate verifier effects and the steps they were assigned to. No additional departure is
+PhasedRun and QueryBounds rows cite the parent's produced assertions directly. These cover
+membership of the join and decision entries, node names, and the agreement between the queries by
+move and the logged run. The doubled-export fixture adds a proof that the oracles were sent at the
+decision entry, jointly with its cost-five bound. These observations are ported. P1 still rules out
+intermediate verifier effects and the moves they were assigned to. No additional departure is
 introduced.

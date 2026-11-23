@@ -103,7 +103,7 @@ abbrev PrefixOutput :=
   (p : Path tree) → OracleMap (pathResources emptyFamily tree p) functions
 
 def embeddedOutput : PrefixOutput := fun p =>
-  (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+  (OracleMap.embedding (oracleMessageFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
 def virtualOutput : PrefixOutput := fun p => doubled.comp (embeddedOutput p)
 
@@ -138,7 +138,7 @@ def routedSuffix :
         (.inl 30))
       pure (mid, input, message)
   outputMap _ p _ :=
-    (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+    (OracleMap.embedding (oracleMessageFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
 /-- The suffix output map ignores the intermediate statement. -/
 def routedCompatible (out : PrefixOutput) :
@@ -152,8 +152,8 @@ def routedCompatible (out : PrefixOutput) :
 def routed (out : PrefixOutput) :=
   (routedPrefix out).append (fun _ => routedSuffix) (routedCompatible out)
 
-def firstMessage : PathAlong oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
-def secondMessage : PathAlong oracleSig tree := ⟨fun n => 7 * n, ⟨⟩⟩
+def firstMessage : Transcript oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
+def secondMessage : Transcript oracleSig tree := ⟨fun n => 7 * n, ⟨⟩⟩
 
 def twoStageProver : Prover oracleSig labels twoStages (fun _ => PUnit) :=
   pure ⟨firstMessage.1, pure ⟨secondMessage.1, pure ⟨⟩⟩⟩
@@ -173,14 +173,14 @@ def twoStageHandler : QueryImpl (labels + challengeSpec oracleSig twoStages)
 on the prefix's materialized output and its own payload. -/
 def materialized (out : PrefixOutput) : OracleComp labels (Option (Nat × Nat × Nat)) := do
   let prefixData : (pathResources emptyFamily tree _).Data :=
-    (fun i => i.elim, payloads tree firstMessage)
+    (fun i => i.elim, oracleMessages tree firstMessage)
   let mid ← (routedPrefix out).decideWith () _ (toView tree firstMessage) prefixData
   match mid with
   | none => pure none
   | some mid =>
     let middleData := ((routedPrefix out).outputMap () _ (toView tree firstMessage)).f prefixData
     routedSuffix.decideWith mid _ (toView tree secondMessage)
-      (middleData, payloads tree secondMessage)
+      (middleData, oracleMessages tree secondMessage)
 
 def checkRouting (out : PrefixOutput) (input : Nat) : Lean.Elab.Command.CommandElabM Unit := do
   let (obs, trace) := (simulateQ twoStageHandler
