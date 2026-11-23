@@ -887,8 +887,8 @@ instance [VerifierFirst pSpec] : VerifierLast pSpec where
   verifier_last' := by simp
 instance [h : ProverLast pSpec] : ProverFirst pSpec where
   prover_first' := by simpa using h.prover_last'
-instance [h : VerifierFirst pSpec] : VerifierFirst pSpec where
-  verifier_first' := by simp
+instance [h : VerifierLast pSpec] : VerifierFirst pSpec where
+  verifier_first' := by simpa using h.verifier_last'
 
 instance [ProverFirst pSpec] : Unique (pSpec.MessageIdx) where
   default := ⟨0, by simp⟩
