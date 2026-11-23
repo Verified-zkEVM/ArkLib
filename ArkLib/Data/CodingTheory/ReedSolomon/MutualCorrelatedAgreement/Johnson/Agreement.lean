@@ -49,7 +49,7 @@ equations.
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential HiddenDerivative
+open Polynomial PolynomialDifferential HiddenDerivative
 
 open Classical in
 /-- **Johnson exact correlated agreement.** For distinct evaluation points and received words

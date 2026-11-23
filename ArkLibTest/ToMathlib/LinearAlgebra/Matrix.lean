@@ -156,6 +156,28 @@ example : ∃ rows : Fin (rowBasisIntegerMatrix.map (Int.castRingHom ℚ)).rank 
   rowBasisIntegerMatrix.exists_rows_submatrix_mulVec_eq_zero_iff
     (Int.castRingHom ℚ) Int.cast_injective
 
+private def tallMatrix : Matrix (Fin 3) (Fin 2) ℚ := !![1, 1; 0, 1; 1, 0]
+
+/-- Rows `1` and `2` of a tall matrix form an invertible square, so its `mulVec` is injective. -/
+example : Function.Injective tallMatrix.mulVec :=
+  (Matrix.mulVec_injective_iff_exists_det_submatrix_ne_zero tallMatrix).2
+    ⟨![1, 2], by rw [Matrix.det_fin_two]; simp [tallMatrix]⟩
+
+private def repeatedRowMatrix : Matrix (Fin 3) (Fin 2) ℚ := !![1, 1; 2, 2; 3, 3]
+
+/-- A matrix with a nonzero kernel vector has no square submatrix with nonzero determinant. -/
+example : ∀ rows : Fin 2 → Fin 3, (repeatedRowMatrix.submatrix rows id).det = 0 := by
+  have hker : repeatedRowMatrix *ᵥ ![1, -1] = repeatedRowMatrix *ᵥ 0 := by
+    ext i
+    fin_cases i <;> simp [repeatedRowMatrix, Matrix.mulVec, dotProduct, Fin.sum_univ_two]
+  have hinj : ¬Function.Injective repeatedRowMatrix.mulVec := fun h ↦ by
+    simpa using congrFun (h hker) 0
+  simpa using mt (Matrix.mulVec_injective_iff_exists_det_submatrix_ne_zero _).2 hinj
+
+/-- An injective `mulVec` yields a square row-submatrix with nonzero determinant. -/
+example : ∃ rows : Fin 2 → Fin 2, ((1 : Matrix (Fin 2) (Fin 2) ℚ).submatrix rows id).det ≠ 0 :=
+  (Matrix.mulVec_injective_iff_exists_det_submatrix_ne_zero _).1 fun v w h ↦ by simpa using h
+
 private def determinantMatrix : Matrix (Fin 2) (Fin 2) ℤ := !![2, 0; 0, 1]
 
 /-- Divisibility of one whole column gives divisibility of the determinant. -/

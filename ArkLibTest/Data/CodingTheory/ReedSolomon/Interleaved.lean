@@ -304,7 +304,7 @@ example :
     intro g
     simp [nestedDegree]
   have hinner : UniformExactInterleavedPowerAgreement point
-      (paddedPowerValues nestedDegree hdegree nestedValues) 1 1 0 :=
+      (paddedPowerValues 1 nestedDegree nestedValues) 1 1 0 :=
     uniformExactInterleavedPowerAgreement_of_scalar point singletonPowerGuarantee le_rfl _
   have houter : ∀ u, UniformExactPowerAgreement point
       (fun g ↦ powerBatchedWord (nestedValues g) u) 1 1 0 := by

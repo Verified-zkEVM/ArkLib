@@ -27,7 +27,7 @@ variable {F : Type} [Field F] [Fintype F] [SampleableType F]
 
 omit [Fintype F] [SampleableType F] in
 /-- Zero evasion bounds the failure probability at each fixed nonzero vector. -/
-theorem IsZeroEvadingGenerator.prob_le {S ℓ : Type} [Fintype S] [Nonempty S]
+theorem IsZeroEvadingGenerator.prob_le {S ℓ : Type}
     [SampleableType S] [Fintype ℓ] {G : Generator S ℓ F} {ε : I}
     (hG : IsZeroEvadingGenerator G ε) (v : ℓ → F) (hv : v ≠ 0) :
     Pr{let s ← $ᵗ S}[dotProduct (G s) v = 0] ≤ ENNReal.ofReal ε := by
@@ -66,7 +66,7 @@ def cappedError (ε : ℝ≥0) : I :=
 
 omit [Fintype F] [SampleableType F] in
 /-- Pointwise bounds on all nonzero vectors give zero evasion, capped at probability one. -/
-theorem isZeroEvadingGenerator_of_prob_le {S ℓ : Type} [Fintype S] [Nonempty S]
+theorem isZeroEvadingGenerator_of_prob_le {S ℓ : Type}
     [SampleableType S] [Fintype ℓ] (G : Generator S ℓ F) (ε : ℝ≥0)
     (hG : ∀ v : ℓ → F, v ≠ 0 →
       Pr{let s ← $ᵗ S}[dotProduct (G s) v = 0] ≤ (ε : ℝ≥0∞)) :
@@ -111,7 +111,7 @@ theorem prob_dotProduct_monomialGenerator_eq_zero_le {s d : ℕ} {ℓ : Type} [F
       dotProduct (fun i => MvPolynomial.eval r (MvPolynomial.monomial (e i) (1 : F))) v =
         MvPolynomial.eval r p := by
     simp [p, dotProduct, MvPolynomial.eval_monomial, mul_comm]
-  simpa only [heval] using prob_eval_zero_univ_le_div p hp hpd
+  simpa only [heval] using prEvent_eval_eq_zero_univ_le_div p hp hpd
 
 /-- Exponents for the constant monomial followed by the individual variables. -/
 noncomputable def affineExponents (n : ℕ) : Fin (n + 1) → (Fin n →₀ ℕ) :=

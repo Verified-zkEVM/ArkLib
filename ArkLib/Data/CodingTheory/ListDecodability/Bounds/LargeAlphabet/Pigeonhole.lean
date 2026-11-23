@@ -263,7 +263,7 @@ the balanced-centre construction a hypothetical excess. -/
 theorem local_neighborhood_bound :
     ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
       ∀ {ι : Type} [Fintype ι]
-        {A : Type} [Finite A] [DecidableEq A]
+        {A : Type} [DecidableEq A]
         (C : Set (ι → A)), Lambda C p ≤ (ℓ : ℕ∞) →
         8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
         ∀ c ∈ C,
@@ -272,7 +272,7 @@ theorem local_neighborhood_bound :
               Nat.floor (boostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
             ≤ ℓ + Nat.ceil (4 * ((ℓ : ℝ) ^ 2) / p) := by
   classical
-  intro ℓ hℓ p hp hp_lt ι _ A _ _ C hLambda hsize c hc
+  intro ℓ hℓ p hp hp_lt ι _ A _ C hLambda hsize c hc
   have : Nonempty ι := Fintype.card_pos_iff.mp (by
     by_contra hn
     have hzero : Fintype.card ι = 0 := by omega

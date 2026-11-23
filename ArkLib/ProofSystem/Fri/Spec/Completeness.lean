@@ -27,7 +27,7 @@ namespace Fri.Spec
 open Domain OracleSpec OracleComp ProtocolSpec Finset
 open scoped NNReal ENNReal ProbabilityTheory
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -107,14 +107,14 @@ theorem queryOracleReduction_completeness
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
     {σ : Type} (state : σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (queryOracleReduction (ω := ω) s d hdom l).completeness (pure state) impl
-      (foldCompletenessRelation s d δ) (Spec.outputRelation k s d hdom 0)
+      (foldCompletenessRelation s d δ) (Spec.outputRelation k s d 0)
       (completenessError s δ l) := by
   change (queryOracleReduction (ω := ω) s d hdom l).toReduction.completeness _ _ _ _ _
   rw [Reduction.completeness_iff_of_guarded_verifier _ (queryGuardedForm s d l hdom)]
   rintro stmt p ⟨f, p₀, α, hdist, heq⟩
   rcases Prod.mk.inj heq with ⟨rfl, rfl⟩
   have hprob := verifyQueries_completeness s d (round_bound hdom) f p₀ α δ l hdist
-  have hout := honestHistory_mem_outputRelation s d hdom f p₀ α
+  have hout := honestHistory_mem_outputRelation s d f p₀ α
   simp_rw [eval_verifyQueries_ne_none_iff s (round_bound hdom)] at hprob
   simp only [pure_bind]
   erw [queryProver_simulate_run]
@@ -126,7 +126,7 @@ theorem queryOracleReduction_completeness_blocks
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0)
     {σ : Type} (state : σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (queryOracleReduction (ω := ω) s d hdom l).completeness (pure state) impl
-      (honestOutputRelation s d f p₀) (Spec.outputRelation k s d hdom 0)
+      (honestOutputRelation s d f p₀) (Spec.outputRelation k s d 0)
       (1 - (((cleanFirstQueries ω (s 0).val (fun z ↦ f (initialQuery z))
         (fun z ↦ p₀.val.eval (ω z))).card : ℝ≥0) / 2 ^ n) ^ l) := by
   change (queryOracleReduction (ω := ω) s d hdom l).toReduction.completeness _ _ _ _ _
@@ -134,7 +134,7 @@ theorem queryOracleReduction_completeness_blocks
   rintro stmt p ⟨α, heq⟩
   rcases Prod.mk.inj heq with ⟨rfl, rfl⟩
   have hprob := verifyQueries_completeness_blocks s d (round_bound hdom) f p₀ α l
-  have hout := honestHistory_mem_outputRelation s d hdom f p₀ α
+  have hout := honestHistory_mem_outputRelation s d f p₀ α
   simp_rw [eval_verifyQueries_ne_none_iff s (round_bound hdom)] at hprob
   have hpow := pow_le_one₀ (by positivity)
     (cleanFirstQueries_density_le_one ω (s 0).val
@@ -147,17 +147,17 @@ theorem queryOracleReduction_completeness_blocks
 end QueryRound
 
 /-- Uniform challenge sampling for the complete folding and query schedule. -/
-noncomputable instance instSampleableTypeChallengePSpec :
+noncomputable instance instSampleableTypeChallengePSpec [Finite F] :
     ∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j) :=
   ProtocolSpec.instSampleableTypeChallengeAppend
 
 /-- The complete reduction accepts noisy inputs with the clipped first-fold completeness error,
 and its transmitted final polynomial equals its honest output witness. -/
-theorem reduction_completeness
+theorem reduction_completeness [Finite F]
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (l : ℕ) (δ : ℝ≥0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction (ω := ω) k s d hdom l).completeness init impl
-      (inputRelation k s d hdom δ) (outputRelation k s d hdom 0)
+      (inputRelation k s d δ) (outputRelation k s d 0)
       (completenessError s δ l) := by
   simpa only [zero_add] using OracleReduction.append_completeness_of_guarded_verifiers
     (reductionFold k (ω := ω) s d) (QueryRound.queryOracleReduction s d hdom l)
@@ -168,12 +168,12 @@ theorem reduction_completeness
 
 /-- For a fixed input word and witness, completeness depends on the exact number of clean
 first-fold blocks and preserves the complete honest output history. -/
-theorem reduction_completeness_blocks
+theorem reduction_completeness_blocks [Finite F]
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (l : ℕ)
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction (ω := ω) k s d hdom l).completeness init impl
-      (honestFoldRelation s d f p₀ 0) (outputRelation k s d hdom 0)
+      (honestFoldRelation s d f p₀ 0) (outputRelation k s d 0)
       (1 - (((cleanFirstQueries ω (s 0).val (fun z ↦ f (initialQuery z))
         (fun z ↦ p₀.val.eval (ω z))).card : ℝ≥0) / 2 ^ n) ^ l) := by
   simpa only [zero_add, Fin.castSucc_zero] using
@@ -186,21 +186,21 @@ theorem reduction_completeness_blocks
         QueryRound.queryOracleReduction_completeness_blocks s d l hdom f p₀ state impl)
 
 /-- Exact input evaluations give perfect completeness for every query count. -/
-theorem perfect_completeness
+theorem perfect_completeness [Finite F]
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (l : ℕ)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction (ω := ω) k s d hdom l).perfectCompleteness init impl
-      (inputRelation k s d hdom 0) (outputRelation k s d hdom 0) := by
+      (inputRelation k s d 0) (outputRelation k s d 0) := by
   simpa only [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness,
     OracleReduction.completeness, completenessError_zero] using
     reduction_completeness s d hdom l 0 init impl
 
 /-- With no queries, honest folding is perfectly complete for every input radius. -/
-theorem perfect_completeness_zero_queries
+theorem perfect_completeness_zero_queries [Finite F]
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction (ω := ω) k s d hdom 0).perfectCompleteness init impl
-      (inputRelation k s d hdom δ) (outputRelation k s d hdom 0) := by
+      (inputRelation k s d δ) (outputRelation k s d 0) := by
   simpa only [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness,
     OracleReduction.completeness, completenessError_zero_queries] using
     reduction_completeness s d hdom 0 δ init impl

@@ -39,7 +39,9 @@ challenges and a bounded exceptional set.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+open Polynomial PolynomialDifferential ReedSolomon.HiddenDerivative
+open MvPolynomial (CoeffNatDegreeLE aeval affineHilbertPolynomial cappedBidegreeMixedVolume_eq
+  cappedDegreeMixedVolume mem_restrictCappedBidegree restrictCappedBidegree zeroLocus)
 open scoped BigOperators
 
 noncomputable section
@@ -500,7 +502,7 @@ theorem finite_powerBatchedBadChallenges_card_le_identityPair
       firstOrderTaylorTotalCap])]
     simp [firstOrderTaylorTotalCap, firstOrderTaylorDerivativeCap,
       regularPowerBatchedCutJetDegree, regularPowerBatchedCutChallengeDegree]
-    all_goals ring
+    ring
   have hoff (S : Finset (Option (Fin 2) → E))
       (hS : ∀ x ∈ S, aeval x (jointInitialJetEquation center Q) = 0 ∧
         aeval x (jointInitialJetSeparant center Q) ≠ 0 ∧

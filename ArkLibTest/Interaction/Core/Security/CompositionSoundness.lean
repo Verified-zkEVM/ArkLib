@@ -166,7 +166,7 @@ instance : OracleSpec.AnswerMeasure branchSpec where
   isProbabilityMeasure _ := by
     constructor
     change branchMeasure Set.univ = 1
-    simp only [branchMeasure, Measure.add_apply, Measure.smul_apply,
+    simp only [branchMeasure, add_apply, smul_apply,
       Measure.dirac_apply_of_mem (Set.mem_univ _), smul_eq_mul, mul_one, one_div]
     rw [← two_mul, ENNReal.mul_inv_cancel (by norm_num) (by simp)]
 
@@ -273,7 +273,7 @@ theorem null_boundary_mass : 𝒟[TwoParty.Lens.run tree (Focal.splitPrefix prov
     intro h
     have hout := congrArg (fun b : Boundary => b.2.2) h
     exact (by decide : (1 : Fin 4) ≠ 2) hout
-  simp [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply', h0, h1]
+  simp [Measure.dirac_apply', h0, h1]
 
 -- Row 9 (`null_boundary_suffix_bound_fails`), restated.
 /-- At that supported null boundary the proposed suffix error bound is false. -/
@@ -569,7 +569,7 @@ theorem prefix_truth :
     Pr{let b ← appendPrefixRun (s₂ := fun _ => second) prover}[trueMid b] = 1 / 2 := by
   classical
   rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
-  simp [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply', trueMid_boundary]
+  simp [Measure.dirac_apply', trueMid_boundary]
 
 -- Oracle example row 6 (`prefix_false_invalid`), restated.
 /-- False inadmissible midpoints have probability zero. -/
@@ -578,7 +578,7 @@ theorem prefix_false_invalid :
       0 := by
   classical
   rw [prEvent_eq_evalDist_of_discrete, prefix_measure]
-  simp [Measure.add_apply, Measure.smul_apply, Measure.dirac_apply', trueMid_boundary,
+  simp [Measure.dirac_apply', trueMid_boundary,
     allowed_boundary]
 
 -- Oracle example row 7 (`prefix_inadmissible`), restated.

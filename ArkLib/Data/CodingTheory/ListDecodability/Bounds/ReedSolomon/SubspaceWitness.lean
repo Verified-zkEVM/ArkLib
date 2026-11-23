@@ -51,7 +51,7 @@ variable {F : Type*} [Field F] [Fintype F]
 `P_V` has top coefficients `b` gives the codeword `g - P_V`, which agrees with `g` exactly on `V`.
 Distinct `V` give distinct codewords. -/
 theorem card_le_ncard_closeCodewordsRel_of_topCoeffs [CharP F 2]
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     (domain : ι ↪ F) (hdom : Fintype.card ι = Fintype.card F) {a v : ℕ}
     (b : Fin (v - a) → F) (S : Finset (AddSubgroup F))
     (hS : ∀ V ∈ S, Nat.card V = 2 ^ v ∧ subspaceTopCoeffs a v (subspacePolynomial V) = b) :
