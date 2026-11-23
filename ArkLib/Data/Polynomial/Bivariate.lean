@@ -39,23 +39,17 @@ def coeffs [DecidableEq F] (f : F[X][Y]) : Finset F[X] := f.support.image f.coef
 /-- A bivariate polynomial is non-zero if and only if its coefficient function is non-zero. -/
 @[grind =_]
 lemma ne_zero_iff_coeffs_ne_zero (f : F[X][Y]) : f ≠ 0 ↔ f.coeff ≠ 0 :=
-  ⟨
-    fun hf ↦ by have f_finsupp : f.toFinsupp ≠ 0 := by aesop
-                simpa [Polynomial.coeff],
-    fun f_coeffs ↦ by intro h; exact f_coeffs (by subst h; ext; simp)
-  ⟩
+  AddMonoidAlgebra.coeff_eq_zero.not.symm
 
 /-- The set of `Y`-degrees is non-empty. -/
-lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.coeff.support).Nonempty := by
-  rw [Polynomial.support_toFinsupp]
-  exact Polynomial.support_nonempty.mpr hf
+lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : f.support.Nonempty :=
+  Polynomial.support_nonempty.mpr hf
 
 variable {f : F[X][Y]}
 
 attribute [local grind] Finsupp.support_nonempty_iff natDegree_mul_le degree_eq_bot
                         WithBot.bot_lt_coe isMaxOn_iff sup_eq_of_isMaxOn monomial_eq_monomial_iff
-attribute [local grind ←] toFinsupp_eq_zero
-attribute [local grind _=_] Finsupp.mem_support_iff toFinsupp_apply smul_monomial
+attribute [local grind _=_] Finsupp.mem_support_iff smul_monomial
 attribute [local grind =] natDegree_mul natDegree_add_eq_right_of_degree_lt
                           natDegree_zero
 
@@ -128,12 +122,12 @@ lemma sup_eq_of_le_of_reach {α β : Type} [SemilatticeSup β] [OrderBot β] {s 
 
 /-- Evaluating a bivariate polynomial in the first variable `X` on a set of points. This results in
 a set of univariate polynomials in `Y`. -/
-def evalSetX [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset (Polynomial F) :=
+def evalSetX [DecidableEq F] (f : F[X][Y]) (P : Finset F) : Finset (Polynomial F) :=
   P.image (fun a => evalX a f)
 
 /-- Evaluating a bivariate polynomial in the second variable `Y` on a set of points resulting
 in a set of univariate polynomials in `X`. -/
-def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset (Polynomial F) :=
+def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) : Finset (Polynomial F) :=
   P.image (fun a => evalY a f)
 
 /-- The bivariate quotient polynomial. -/
@@ -494,15 +488,9 @@ coefficient in the truncation grid is nonzero, so the defining `min?` is over a 
 theorem rootMultiplicity₀_ne_none {R : Type*} [CommSemiring R] [DecidableEq R]
     (g : Polynomial (Polynomial R)) (hg : g ≠ 0) :
     Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
-  obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact hg (Polynomial.ext h)
-  obtain ⟨s, hs⟩ : ∃ s, (g.coeff t).coeff s ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact ht (Polynomial.ext h)
-  have htmem : t ∈ g.support := Polynomial.mem_support_iff.mpr ht
+  obtain ⟨t, htmem⟩ := Polynomial.support_nonempty.mpr hg
+  obtain ⟨s, hsmem⟩ := Polynomial.support_nonempty.mpr (Polynomial.mem_support_iff.mp htmem)
+  have hs := Polynomial.mem_support_iff.mp hsmem
   have hsle : s ≤ (g.coeff t).natDegree := Polynomial.le_natDegree_of_ne_zero hs
   have htotal : (g.coeff t).natDegree + t ≤
       Polynomial.Bivariate.natWeightedDegree g 1 1 := by

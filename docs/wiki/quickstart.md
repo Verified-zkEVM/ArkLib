@@ -25,11 +25,14 @@ leave that work intact.
 revisions; Mathlib and PolyFun arrive through those packages. `lake-manifest.json` records the
 exact resolved revision of every package, so read it, not this page, for the current versions.
 Dependency updates normally use CompPoly and doc-gen4 release/patch tags matching ArkLib's Lean
-toolchain, and an exact VCVio commit reachable from upstream `main`. An unreleased CompPoly fix may
-use a documented exception in the dependency PR body: state why the matching release is
-insufficient, link the upstream change, and identify the actual merged commit used. Preserve this
-rationale when rebasing or rewriting that PR; the manifest alone does not explain it. Do not invent
-a release tag or assume a PR head will be its eventual merge revision.
+toolchain, and an exact VCVio commit reachable from upstream `main`. doc-gen4 is pinned in
+`docbuild/lakefile.toml`; bump it with `lean-toolchain` (`check-docs-integrity.py` checks that the
+two match). `docbuild/` commits no toolchain file of its own: `lake update Arklib` writes a
+git-ignored copy, as the docs CI action expects. An
+unreleased CompPoly fix may use a documented exception in the dependency PR body: state why the
+matching release is insufficient, link the upstream change, and identify the actual merged commit
+used. Preserve this rationale when rebasing or rewriting that PR; the manifest alone does not
+explain it. Do not invent a release tag or assume a PR head will be its eventual merge revision.
 
 A side-branch dependency pin is for a **draft integration PR only**, with the upstream PR and a
 repin-before-merge obligation recorded. After upstream merge, use the actual post-squash/rebase
@@ -76,6 +79,9 @@ a probe using default `autoImplicit` can accept an undeclared parameter that the
 Treat such a probe as provisional until the source passes the project build.
 
 ## Recommended Validation
+
+Install uv first, as [Python tooling](#python-tooling) describes. The validation stops before
+the Lean build if uv is absent.
 
 For a convenient routine check, run:
 
@@ -140,6 +146,13 @@ project-specific mathematical Unicode notation, while rejecting invisible contro
 controls, and nonstandard space characters that can conceal source changes. It also rejects
 blanket package-root imports. The normal `lake build` loads ArkLib's Lean syntax-tree plugin, which
 rejects source-level linter suppressions in their actual parsed context.
+
+The text gate is a separate check that fails closed. It rejects `set_option` for `linter`,
+`pp`, `profiler`, `trace`, `maxHeartbeats`, `maxRecDepth`, and `synthInstance.*` in `ArkLib/`,
+`ArkLibTest/`, and the generated root `ArkLib.lean`, including comments and literal bodies.
+It also rejects `nolint` attribute heads in active code and in literal bodies. A quoted identifier
+or a syntax quotation that looks like a forbidden spelling also fails the gate. Put policy examples in `scripts/LintStyleFixtures`,
+which is outside those source trees.
 
 The header policy understands the Lean module system, so `module`, `public import`, `meta import`
 and `import all` all parse, and it pins the canonical header order every file under `ArkLib/`
@@ -224,6 +237,62 @@ is not installed. If blueprint output matters, install it first:
 ```bash
 uv tool install --python 3.12 leanblueprint
 ```
+
+### Pull request scope and generated files
+
+The scope tool compares the tracked work tree, including committed and uncommitted changes, with
+the merge base for the selected review base. Use the PR's actual target branch in a stack.
+For a PR targeting `main`:
+
+```bash
+uv run --no-project --python 3.12 python scripts/pr-scope.py summary --base origin/main
+```
+
+During a pending merge, the comparison accounts for both parents and the selected review base.
+Every command prints the merge warning. If generated KB files drift, the summary gives a
+`restore-generated` command that restores from CI's comparison source, rather than the latest
+version of `main`. The [PR preparation workflow](../skills/make-pr-ready.md) explains the audit.
+
+### Prose, titles, and pull request descriptions
+
+Use the [writing workflow](../skills/write-technical-prose.md) for documentation, comments,
+docstrings, commit messages, and PR or issue text. It applies outside PR preparation too.
+The [writing guide](writing.md) gives the rules and their STE adaptations. Its rules are advice.
+
+For a PR targeting `main`, check changed prose with:
+
+```bash
+uv run --no-project --python 3.12 python ./scripts/check-writing.py --base origin/main
+```
+
+For a stacked PR, use its actual base instead. The checker reads affected paragraphs, list items,
+and table cells. It suggests a review of listed vocabulary, phrasal verbs, Latin abbreviations,
+contractions, history words in reference documents, and approximate sentence lengths. Read each
+suggestion before you edit. Leave clear, correct text alone. A successful check does not establish
+clarity, STE dictionary compliance, or preservation of the source's meaning.
+
+To review a draft before you publish it, provide the text on standard input:
+
+```bash
+uv run --no-project --python 3.12 python ./scripts/check-writing.py --stdin description < /tmp/pr-description.md
+uv run --no-project --python 3.12 python ./scripts/check-pr-title.py "feat(fri): prove query soundness"
+```
+
+The writing checker exits successfully when it reports suggestions. CI's prose check is advisory.
+
+The title format comes from [CONTRIBUTING.md](../../CONTRIBUTING.md#title-format).
+The title check is also advisory. Pass `--strict` to request a failing exit code for an invalid format.
+
+When you evaluate the standard or its workflows, check the complete guidance too:
+
+```bash
+uv run --no-project --python 3.12 python scripts/check-writing.py \
+  AGENTS.md CONTRIBUTING.md docs/wiki/writing.md docs/wiki/writing-vocabulary.md \
+  docs/skills/write-technical-prose.md docs/skills/make-pr-ready.md .github/pull_request_template.md
+```
+
+Read the findings and review the rules that need judgment. This self-check remains advisory.
+CI tests the checker's behavior. It does not require zero findings from the guide text.
 
 ## Important Notes
 
@@ -341,6 +410,8 @@ uv tool install --python 3.12 leanblueprint
   Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
   [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
   workflow, which renders the report and posts it on the PR.
+
+  The build job installs uv before it runs `validate.sh`, which includes the PR checker tests.
 - [`../../.github/workflows/interaction.yml`](../../.github/workflows/interaction.yml)
   provides focused compilation and zero-warning checks for typed Interaction production and
   acceptance modules. It also runs on feature-base stacked PRs. Its read-only job restores,
@@ -350,6 +421,13 @@ uv tool install --python 3.12 leanblueprint
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
   checks that `AGENTS.md` exists and local markdown links resolve.
+- [`../../.github/workflows/pr-checks.yml`](../../.github/workflows/pr-checks.yml)
+  runs on each pull request, also on a stacked pull request. It checks the pull request title
+  with `scripts/check-pr-title.py`. It also runs `scripts/check-writing.py` on the changed prose
+  and on the description. Both jobs report warnings only.
+  This workflow is advisory, not a required merge check. It has no merge-queue or manual-dispatch
+  trigger. Findings do not block a merge. Tool or configuration errors still fail the job.
+  Prose findings also appear in the job summary, including those beyond the annotation display limit.
 - [`../../.github/workflows/kb-generated.yml`](../../.github/workflows/kb-generated.yml)
   regenerates KB indexes and missing cited-paper stubs nightly and after pushes to `main` that
   change the bibliography, KB papers or sources, or the KB scripts. It updates one rolling PR from
@@ -363,11 +441,15 @@ uv tool install --python 3.12 leanblueprint
   [`../../.github/workflows/release-tag.yml`](../../.github/workflows/release-tag.yml) tags a
   release when `lean-toolchain` changes on `main`.
 
-To validate a stacked PR while it targets a feature branch, dispatch the existing CI, import,
-and docs-integrity workflows on its published head branch:
+CI, import, and docs-integrity checks run automatically on pull requests, including those targeting
+a feature branch. A stacked PR does not require manual dispatch only because its base is not `main`.
+
+The KB bot creates its PR with `GITHUB_TOKEN`. GitHub does not start the ordinary PR workflows
+for that token-created event. If the bot PR has no checks, dispatch the existing workflows on its
+published head branch:
 
 ```bash
-review_branch=your-published-head-branch
+review_branch=automation/kb-generated
 gh workflow run ci.yml --ref "$review_branch"
 gh workflow run check-imports.yml --ref "$review_branch"
 gh workflow run docs-integrity.yml --ref "$review_branch"
@@ -375,10 +457,10 @@ gh run list --branch "$review_branch" --event workflow_dispatch \
   --json workflowName,headSha,status,conclusion,url
 ```
 
-Check that each run's `headSha` equals the reviewed commit, and retain the run URLs with the
-validation evidence. A later push needs checks for its new head. Dispatch uses the existing
-read-only CI build job; the Pages publisher runs only on push events. Local validation, required
-GitHub reviews, and the eventual main-target and merge-queue checks still apply.
+Confirm that each run's `headSha` matches the reviewed commit. Record the run URLs with the
+validation evidence. Dispatch can also recover checks missing from an ordinary PR.
+The Pages publisher runs only on push events. Manual dispatch does not replace local validation,
+required reviews, or eventual merge-queue checks.
 
 Pull requests enter GitHub's merge queue after their normal review and required checks pass. The
 queue creates a temporary integration ref containing the queued changes on current `main`; the CI,

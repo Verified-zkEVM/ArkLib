@@ -67,7 +67,8 @@ lemma folding_contracts_block_distance [FoldingContextMiddle k n]
       (by aesop (add safe (by grind))) <| fun i hi ↦ by
       rw [foldWord_k_1, foldWord_k_1]
       extract_lets y j j'
-      have : 2 ^ k = 2 * 2 ^ (k - 1) := by grind [←pow_succ']
+      have : 2 ^ k = 2 * 2 ^ (k - 1) := by
+        rw [← pow_succ', Nat.sub_add_cancel (FoldingContextMiddle.k_ge_1 (k := k) (n := n))]
       have hj : j ∈ blockIdx ω k x := by
         aesop
           (add simp [mem_blockIdx_iff_mem_block, pow_mul])

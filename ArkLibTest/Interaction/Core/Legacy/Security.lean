@@ -147,9 +147,10 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     stmt trivial cheatK).2.2
 
 /-- Interaction-layer knowledge soundness of `lastIfTrue`, embedded. -/
-def coreKnowledge [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
+def coreKnowledge (samples : ∀ i, SampleableType (twoWay.Challenge i)) (init : ProbComp Unit)
     (impl : QueryImpl []ₒ (StateT Unit ProbComp)) (relIn relOut : Set (Nat × Nat)) (ε : ℝ≥0) :
     Prop :=
+  letI := samples
   letI : MeasurableSpace
     (Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) (fun _ => Nat)) := ⊤
   letI : MeasurableSpace Nat := ⊤
@@ -164,7 +165,7 @@ def coreKnowledge [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp 
 soundness, and conversely. -/
 example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     (impl : QueryImpl []ₒ (StateT Unit ProbComp)) (relIn relOut : Set (Nat × Nat)) (ε : ℝ≥0) :
-    coreKnowledge init impl relIn relOut ε ↔
+    coreKnowledge inferInstance init impl relIn relOut ε ↔
       lastIfTrue.knowledgeSoundness init impl relIn relOut ε :=
   knowledgeSoundness_iff init impl lastIfTrue relIn relOut ε
 

@@ -38,7 +38,8 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE pderiv)
 
 variable {F E : Type*} [Field F] [Field E] {n k K ℓ : ℕ}
 
