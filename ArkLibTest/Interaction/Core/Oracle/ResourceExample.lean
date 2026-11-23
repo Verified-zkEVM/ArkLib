@@ -142,8 +142,8 @@ abbrev noIndices := model.reindex (fun i : PEmpty => i.elim)
 
 example : simulateQ ((sumFamily (sumFamily left right) noIndices).behaviorOfRealizations
       (sumData pairEnv (fun i => i.elim)))
-    (simulateQ (OracleMap.assoc left right noIndices).impl
-      (simulateQ (OracleMap.unassoc left right noIndices).impl
+    (simulateQ (OracleMap.familySumAssoc left right noIndices).impl
+      (simulateQ (OracleMap.familySumAssocSymm left right noIndices).impl
         (simulateQ (OracleMap.embedding (sumFamily (sumFamily left right) noIndices) Sum.inl).impl
           readPair))) = (3, 4) := rfl
 
