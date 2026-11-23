@@ -1,4 +1,4 @@
-# Source and resource port table
+# Oracle bundles: port table
 
 This port table accounts for all 74 assertions in six old-layer test files. Each row links its
 old-layer assertion by line. This branch ports four of the files. The logged-execution and routing
@@ -8,7 +8,7 @@ this table links the full entry in the
 
 The two approved premises are:
 
-- **P1 (passive verifier):** verifiers send public-coin challenges only, and resource queries
+- **P1 (passive verifier):** verifiers send public-coin challenges only, and bundle queries
   happen in the final decision. A challenge cannot be computed from an input or from a previously
   sent oracle.
 - **P2 (fixed shape):** neither a challenge nor an oracle message selects the protocol's subtree.
@@ -81,8 +81,8 @@ rows. SR1 is the split row described above. No other row is excluded, and no row
 | R23 [261][fr23] | Actual degree is below 2 | ported as a carrier guarantee: [test][nr23] |
 | R24 [265][fr24] | Degree < 0 is false | ported as a false numerical property: [test][nr24] |
 | R25 [269][fr25] | The symbol 0 is not promised | removed: reified promise membership no longer exists |
-| R26 [278][fr26] | Context universes | ported: [namedResources][nr26] and [verifier inputs][resourceRuns] |
-| R27 [284][fr27] | View universe contract | ported: [viewResources][nr27] and [verifier inputs][resourceRuns] |
+| R26 [278][fr26] | Context universes | ported: [namedBundle][nr26] and [verifier inputs][bundleRuns] |
+| R27 [284][fr27] | View universe contract | ported: [viewBundle][nr27] and [verifier inputs][bundleRuns] |
 
 ## RunSourcesExample
 
@@ -134,11 +134,11 @@ rows. SR1 is the split row described above. No other row is excluded, and no row
 
 ## Representation changes and removed mechanisms
 
-Resource indices replace separate oracle names. A sum of families creates distinct resource
+Bundle indices replace separate oracle names. A sum of families creates distinct bundle
 indices directly. It does not take the named-context `Disjoint` certificate that R3 and R5 test.
 Reindexing may be non-injective and need not preserve external names, so the exclusion in R15 no
 longer applies. Owner and origin metadata is absent, so R14's owner inequality has no
-resource-level object. R7 keeps query and data sharing and does not claim equality of a removed
+bundle-level object. R7 keeps query and data sharing and does not claim equality of a removed
 `name` field. R13's concrete inequality is the same `false ≠ true` on the two ported family
 indices.
 
@@ -161,36 +161,36 @@ rejection. Each keeps the private output, the history `[9, 0, 1, 2]` and the sen
 No TR row is removed.
 
 This branch adds a cost check to the routing tests' export map in
-[`SourceRoutingExample`][nsrc]. The exported query's implementation has worst-case cost two at unit
-cost per resource query. By `OracleMap.withAmbient_worstCaseCost`, an exported query charged two
-units and routed through the map then costs at most two unit-cost resource queries. The cost check
+[`ExportCost`][nsrc]. The exported query's implementation has worst-case cost two at unit cost per
+bundle query. By `OracleMap.withAmbient_worstCaseCost`, an exported query charged two units and
+routed through the map then costs at most two unit-cost bundle queries. The cost check
 supplements SR2 and does not discharge an old-layer row.
 
-V1 quantifies over every pure input handler, as the old-layer test does. `Resources.ofSpec`
-uses arbitrary handlers as backing data, and `OracleMap.ofQuery` supplies the simulated output
+V1 quantifies over every pure input handler, as the old-layer test does. `OracleBundle.ofSpec`
+uses arbitrary handlers as backing data, and `OracleMap.ofImpl` supplies the simulated output
 behavior. The [parent legacy client][legacy] tests legacy materialized inputs under `simOracle2`.
 It adds useful coverage, but it is only a narrower specialization. This table does not count it as
 the port of V1, which quantifies over arbitrary handlers.
 
 ## Universe contracts
 
-**SourceExample S10.** `Resources.sum` takes query universes `u`, `u'`, shared response universe
+**SourceExample S10.** `OracleBundle.sum` takes query universes `u`, `u'`, shared response universe
 `v`, and data universes `w`, `w'`. Its result is
-`Resources.{v, max u u', max w w'}`. Further tests assert the exact disjoint index carrier,
+`OracleBundle.{v, max u u', max w w'}`. Further tests assert the exact disjoint index carrier,
 product data carrier and componentwise answer handler. The port ties no universe beyond the
 old-layer sum's shared response universe.
 
-**SourceExample S11.** `Resources.tensor` pairs the queries, responses and backing data. The
+**SourceExample S11.** `OracleBundle.tensor` pairs the queries, responses and backing data. The
 query universes `u`, `u'`, response universes `v`, `v'` and data universes `w`, `w'` remain
-independent. Its result is `Resources.{max v v', max u u', max w w'}`. The tests also check the
+independent. Its result is `OracleBundle.{max v v', max u u', max w w'}`. The tests also check the
 exact product query and backing-data carriers.
 
-**SourceExample S12.** `Resources.liftResponse` raises responses from `v` to `max v v'` with
+**SourceExample S12.** `OracleBundle.liftResponse` raises responses from `v` to `max v v'` with
 `ULift`, preserving query universe `u`, data universe `w`, and both original carriers. This is
 the response-lifting contract itself.
 
-**SourceExample S13.** `ResourceEquiv.liftResponse` gives coherent raw maps between the original
-resource and its lifted responses. Both composites are identity resource maps, including their
+**SourceExample S13.** `OracleBundle.Equiv.liftResponse` gives coherent raw maps between the original
+bundle and its lifted responses. Both composites are identity bundle lenses, including their
 query, response and backing-data maps. The general pullback round-trip laws apply to arbitrary
 pure answers. The universe canary keeps independent `u`, `v`, `v'` and `w`. Additional checks
 assert that both directions preserve each backing datum.
@@ -200,28 +200,28 @@ and close by `rfl`. Unwrapping the lifted answer gives `5`; rewrapping the origi
 `.down = 5`. The natural-number family keeps its original backing data, and its query
 `⟨true, ()⟩` selects the old-layer example's index `true`.
 
-**ResourceExample R26, ported.** `namedResources` has
-`Resources.{e, max s q, max s a}` with query carrier `((x : Index) × Query (name x))` and
+**ResourceExample R26, ported.** `namedBundle` has
+`OracleBundle.{e, max s q, max s a}` with query carrier `((x : Index) × Query (name x))` and
 data carrier `((x : Index) → Realization (name x))`. Response universe `e` and realization
-universe `a` are independent. This is the identity-view specialization of `viewResources`.
+universe `a` are independent. This is the identity-view specialization of `viewBundle`.
 
-**ResourceExample R27, ported.** `viewResources` has
-`Resources.{e, max h q, max s a}`. Its query carrier is
+**ResourceExample R27, ported.** `viewBundle` has
+`OracleBundle.{e, max h q, max s a}`. Its query carrier is
 `((x : Visible) × Query (name (select x)))`; its data carrier remains the whole original
 context `((x : Index) → Realization (name x))`. The view index universe `h` is independent
 of context universe `s`, query universe `q`, realization universe `a` and response universe `e`.
-The [shared client][resourceRuns] runs both resource forms as verifier inputs using the same
+The [shared client][bundleRuns] runs both bundle forms as verifier inputs using the same
 unencoded context data. `namedVerifier` specializes `viewVerifier` at the identity selection.
-The definitions occur once in `ResourceExample.lean`, which `UniverseCanary.lean` imports.
+The definitions occur once in `BundleFamilies.lean`, which `UniverseCanary.lean` imports.
 Neither P1 nor P2 excludes any part of these contracts.
 
 ## Remaining interface restrictions
 
 [Implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md) states:
 “Its input query index and oracle-node query type must remain in `Type`.” This applies to
-`OracleVerifier.runWithLog`, whose returned full log records resource queries. It does not
-restrict R26/R27, which use general `Resources` as inputs to `OracleVerifier.run`.
-`Resources.ofFamily` keeps the shared `OracleInterface` specialization, with its `ReaderM`
+`OracleVerifier.runWithLog`, whose returned full log records bundle queries. It does not
+restrict R26/R27, which use general `OracleBundle` as inputs to `OracleVerifier.run`.
+`OracleBundle.ofFamily` keeps the shared `OracleInterface` specialization, with its `ReaderM`
 coupling. That specialization no longer restricts general verifier inputs. The shared interface
 is unchanged. The source sum, tensor, lifting and raw-routing canaries also keep all their
 old-layer universe instantiations.
@@ -229,7 +229,7 @@ old-layer universe instantiations.
 ## Open cost universes
 
 [`OracleMap.withAmbient_worstCaseCost`][cost] has independent backing-data universes `dX`, `dY`.
-Its ambient index, both resource-query indices, response/result types and cost carrier `ω` remain
+Its ambient index, both bundle-query indices, response/result types and cost carrier `ω` remain
 in `Type`. This is an open restriction of the pinned VCVio cost API. It is separate from
 `OracleInterface` and from the runner's requirement that returned values match its monad universe.
 Protocol semantics do not force query indices and costs to universe zero.
@@ -262,127 +262,127 @@ families use ordinary definition transparency as well. The exact remaining attri
 
 | File under `Core/Oracle/` | Attribute | Declarations |
 | --- | --- | --- |
-| `SourceExample` | `reducible` | `taggedInterface`, `pairInterface` |
-| `ResourceExample` | `reducible` | `countInterface`, `mixedInterface`, `evaluation` |
-| `RunSourcesExample` | `reducible` | `interface` |
+| `OracleMaps` | `reducible` | `taggedInterface`, `pairInterface` |
+| `BundleFamilies` | `reducible` | `countInterface`, `mixedInterface`, `evaluation` |
+| `RunBundles` | `reducible` | `interface` |
 
 ## Assertion links
 
 [fs1a]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L32
-[ns1a]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L47
+[ns1a]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L47
 [fs1b]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L33
-[ns1b]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L48
+[ns1b]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L48
 [fs2]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L46
-[ns2]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L68
+[ns2]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L68
 [fs3]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L54
-[ns3]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L91
+[ns3]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L91
 [fs4]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L58
-[ns4]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L97
+[ns4]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L97
 [fs5a]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L87
-[ns5a]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L138
+[ns5a]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L138
 [fs5b]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L88
-[ns5b]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L140
+[ns5b]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L140
 [fs6a]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L91
-[ns6a]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L152
+[ns6a]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L152
 [fs6b]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L94
-[ns6b]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L156
+[ns6b]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L156
 [fs7]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L98
-[ns7]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L163
+[ns7]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L163
 [fs8]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L101
-[ns8]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L188
+[ns8]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L188
 [fs9]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L105
-[ns9]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L197
+[ns9]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L197
 [fs10]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L113
-[ns10]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L205
+[ns10]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L205
 [fs11]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L116
-[ns11]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L222
+[ns11]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L222
 [fs12]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L119
-[ns12]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L235
+[ns12]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L235
 [fs13]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L123
-[ns13]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L240
+[ns13]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L240
 [fs14]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L127
-[ns14]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L253
+[ns14]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L253
 [fs15]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L131
-[ns15]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceExample.lean#L259
+[ns15]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L259
 [fr1]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L54
 [fr2]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L56
 [fr3]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L66
 [fr4]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L91
-[nr4]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L73
+[nr4]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L73
 [fr5]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L93
 [fr6]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L105
-[nr6]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L86
+[nr6]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L86
 [fr7]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L108
-[nr7]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L91
+[nr7]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L91
 [fr8]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L109
-[nr8]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L96
+[nr8]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L96
 [fr9]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L112
-[nr9]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L234
+[nr9]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L234
 [fr10]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L117
-[nr10]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L239
+[nr10]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L239
 [fr11]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L122
-[nr11]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L242
+[nr11]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L242
 [fr12]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L130
-[nr12]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L250
+[nr12]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L250
 [fr13]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L133
-[nr13]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L254
+[nr13]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L254
 [fr14]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L134
 [fr15]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L137
 [fr16]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L166
-[nr16]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L109
+[nr16]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L109
 [fr17]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L175
-[nr17]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L120
+[nr17]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L120
 [fr18]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L179
-[nr18]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L129
+[nr18]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L129
 [fr19]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L184
-[nr19]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L137
+[nr19]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L137
 [fr20]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L198
-[nr20]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L164
+[nr20]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L164
 [fr21]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L227
-[nr21]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L191
+[nr21]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L191
 [fr22a]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L253
-[nr22a]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L212
+[nr22a]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L212
 [fr22b]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L257
-[nr22b]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L218
+[nr22b]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L218
 [fr23]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L261
-[nr23]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L230
+[nr23]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L230
 [fr24]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L265
-[nr24]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L258
+[nr24]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L258
 [fr25]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L269
 [fr26]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L278
-[nr26]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L279
+[nr26]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L279
 [fr27]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L284
-[nr27]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L270
+[nr27]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L270
 [frs1]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L49
-[nrs1]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L61
+[nrs1]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L61
 [frs2]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L53
-[nrs2]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L68
+[nrs2]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L68
 [frs3]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L60
-[nrs3]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L86
+[nrs3]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L86
 [frs4]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L129
-[nrs4]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L132
+[nrs4]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L132
 [frs5]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L143
-[nrs5]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L278
+[nrs5]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L278
 [frs6a]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L153
-[nrs6a]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L293
+[nrs6a]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L293
 [frs6b]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L157
-[nrs6b]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L297
+[nrs6b]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L297
 [frs7]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L162
-[nrs7]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L144
+[nrs7]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L144
 [frs8]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L169
-[nrs8]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L153
+[nrs8]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L153
 [frs9]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L200
-[nrs9]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L192
+[nrs9]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L192
 [frs10]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L209
-[nrs10]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L230
+[nrs10]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L230
 [frs11]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L221
-[nrs11]: ../../../ArkLibTest/Interaction/Core/Oracle/RunSourcesExample.lean#L248
+[nrs11]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L248
 [fsr1]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L140
 [fsr2]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L162
 [fsr3]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L167
 [fsr4]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L174
 [lsr]: port-logged-execution.md#sourceroutingexamplelean
-[nsrc]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceRoutingExample.lean#L33
+[nsrc]: ../../../ArkLibTest/Interaction/Core/Oracle/ExportCost.lean#L33
 [ftr1]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L57
 [ftr2]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L60
 [ftr3a]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L66
@@ -394,12 +394,12 @@ families use ordinary definition transparency as well. The exact remaining attri
 [ftr7]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L87
 [ltr]: port-logged-execution.md#terminalrunexampleslean
 [fv1]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L32
-[nv1]: ../../../ArkLibTest/Interaction/Core/Oracle/Virtual.lean#L37
+[nv1]: ../../../ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L37
 [fv2]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L62
-[nv2]: ../../../ArkLibTest/Interaction/Core/Oracle/Virtual.lean#L90
+[nv2]: ../../../ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L90
 [fv3]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L66
-[nv3]: ../../../ArkLibTest/Interaction/Core/Oracle/Virtual.lean#L98
+[nv3]: ../../../ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L98
 
 [legacy]: ../../../ArkLibTest/Interaction/Core/Legacy/OracleReduction.lean#L107
 
-[resourceRuns]: ../../../ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean#L330
+[bundleRuns]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L330

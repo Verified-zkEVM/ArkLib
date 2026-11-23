@@ -12,16 +12,16 @@ public import VCVio.OracleComp.QueryTracking.CostModel.Simulation
 # Weighted cost of routed oracle programs
 
 Routing a decision through an oracle map with `OracleMap.withAmbient` keeps every ambient query
-and replaces every resource query by the map's implementing program over the input resources.
+and replaces every bundle query by the map's implementing program over the input bundle.
 Suppose each ambient query costs no more after routing, and each implementing program fits the
-charge of the resource query it implements. Then a weighted bound on the original program bounds
+charge of the bundle query it implements. Then a weighted bound on the original program bounds
 the routed program. This is VCVio's `WorstCaseCostBound.simulateQ` for the handler
 `OracleMap.withAmbient`.
 
 Query multiplicities of a recorded run are counted with VCVio's `QueryLog.countQ`, which adds
 over appended logs (`QueryLog.countQ_append`).
 
-The ambient index, resource-query indices, responses, results and cost carrier are restricted to
+The ambient index, bundle-query indices, responses, results and cost carrier are restricted to
 `Type` by the pinned VCVio cost API. Only backing-data universes are independent here. Lifting
 this open restriction requires generalizing VCVio's `CostModel`, `costDist`,
 `WorstCaseCostBound` and `WorstCaseCostBound.simulateQ`, with their cost-writer helpers. Query
@@ -35,12 +35,12 @@ universe dX dY
 namespace Interaction.Core
 open OracleComp OracleSpec Oracle
 
-/-- A weighted bound on a decision over the output resources transfers to the same decision routed
+/-- A weighted bound on a decision over the output bundle transfers to the same decision routed
 through an oracle map. Ambient queries are charged at most their original cost. The program
 implementing each output query, charged at the target cost of the input queries it makes, fits
 the original charge of that output query. -/
 theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}
-    {In : Resources.{0, 0, dX}} {Out : Resources.{0, 0, dY}}
+    {In : OracleBundle.{0, 0, dX}} {Out : OracleBundle.{0, 0, dY}}
     [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMonoid ω]
     (route : OracleMap In Out) {program : OracleComp (ambient + Out.spec) α}
     {sourceCost : CostModel (ambient + Out.spec) ω}

@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.ResourceOps
+import ArkLib.Interaction.Core.Oracle.BundleOps
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
@@ -17,7 +17,7 @@ family does not identify independently supplied realizations.
 
 open Interaction.Core Interaction.Oracle OracleComp OracleSpec
 
-namespace Interaction.Core.VirtualTests
+namespace Interaction.Core.DerivedOraclesTests
 
 section ToyProblem
 
@@ -26,8 +26,8 @@ variable {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
 
 /-- Reuse the toy protocol's simulation for every pure handler of its input specification. -/
 def toyMap (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges) :=
-  OracleMap.ofQuery
-    (Resources.ofSpec ([]ₒ + ([ToyProblem.Spec.OracleStatement ι A]ₒ +
+  OracleMap.ofImpl
+    (OracleBundle.ofSpec ([]ₒ + ([ToyProblem.Spec.OracleStatement ι A]ₒ +
       [(ToyProblem.SimplifiedIOR.pSpec (F := F)).Message]ₒ)))
     ([ToyProblem.SimplifiedIOR.OutputOracleStatement ι A]ₒ)
     (ToyProblem.SimplifiedIOR.outputSimulation.simulateOutputQuery challenges)
@@ -100,4 +100,4 @@ example :
     let behavior := repeated.behaviorOfRealizations (fun bit => (if bit then 7 else 3 : Nat))
     (behavior ⟨false, ()⟩, behavior ⟨true, ()⟩) = ((3 : Nat), (7 : Nat)) := rfl
 
-end Interaction.Core.VirtualTests
+end Interaction.Core.DerivedOraclesTests

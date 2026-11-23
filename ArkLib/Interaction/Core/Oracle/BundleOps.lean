@@ -9,14 +9,15 @@ public import ArkLib.Interaction.Core.OracleVerifier
 public import PolyFun.PFunctor.Lens.Basic
 
 /-!
-# Tensor products and response lifting of oracle resources
+# Tensor products and response lifting of oracle bundles
 
 A tensor query asks both component queries and receives both answers. Its query, response and
 backing-data universes are independent. Response lifting changes only the response carrier.
 
-Raw resource maps use polynomial lenses and coherent maps of backing data. Their response
-universes may differ: these maps pull back pure answers without interpreting an oracle program.
-Response lifting has inverse raw maps that preserve every query, answer and backing datum.
+A bundle lens pairs a polynomial lens with a coherent map of backing data. Its two bundles may
+have different response universes: the lens pulls back pure answers without interpreting an
+oracle program. Response lifting has inverse bundle lenses that preserve every query, answer and
+backing datum.
 -/
 
 @[expose] public section
@@ -26,24 +27,24 @@ universe v u w v' u' w' v'' u'' w''
 namespace Interaction.Core
 
 /-- Realize a specification by any pure handler, without a representability requirement. -/
-def Resources.ofSpec {I : Type u} (spec : OracleSpec.{u, v} I) :
-    Resources.{v, u, max u v} where
+def OracleBundle.ofSpec {I : Type u} (spec : OracleSpec.{u, v} I) :
+    OracleBundle.{v, u, max u v} where
   Index := I
   spec := spec
   Data := QueryImpl spec Id
   answer data := data
 
-/-- A query program defines output behavior by interpreting it in the supplied resources. -/
-def OracleMap.ofQuery (R : Resources.{v, u, w}) {J : Type u'}
+/-- A query program defines output behavior by interpreting it in the supplied bundle. -/
+def OracleMap.ofImpl (R : OracleBundle.{v, u, w}) {J : Type u'}
     (spec : OracleSpec.{u', v} J) (query : QueryImpl spec (OracleComp R.spec)) :
-    OracleMap R (Resources.ofSpec spec) where
+    OracleMap R (OracleBundle.ofSpec spec) where
   f data q := simulateQ (R.answer data) (query q)
   impl := query
   law _ _ := rfl
 
 /-- Pair queries, answers and backing data, keeping both components' universes independent. -/
-def Resources.tensor (R : Resources.{v, u, w}) (S : Resources.{v', u', w'}) :
-    Resources.{max v v', max u u', max w w'} where
+def OracleBundle.tensor (R : OracleBundle.{v, u, w}) (S : OracleBundle.{v', u', w'}) :
+    OracleBundle.{max v v', max u u', max w w'} where
   Index := R.Index × S.Index
   spec := OracleSpec.ofPFunctor (PFunctor.tensor R.spec.toPFunctor S.spec.toPFunctor)
   Data := R.Data × S.Data
@@ -51,12 +52,12 @@ def Resources.tensor (R : Resources.{v, u, w}) (S : Resources.{v', u', w'}) :
 
 /-- A tensor query returns the pair of answers from its two backing data components. -/
 @[simp]
-theorem Resources.tensor_answer (R : Resources.{v, u, w}) (S : Resources.{v', u', w'})
+theorem OracleBundle.tensor_answer (R : OracleBundle.{v, u, w}) (S : OracleBundle.{v', u', w'})
     (data : R.Data × S.Data) (query : R.Index × S.Index) :
     (R.tensor S).answer data query = (R.answer data.1 query.1, S.answer data.2 query.2) := rfl
 
 /-- Lift response types while preserving the query carrier and the backing data. -/
-def Resources.liftResponse (R : Resources.{v, u, w}) : Resources.{max v v', u, w} where
+def OracleBundle.liftResponse (R : OracleBundle.{v, u, w}) : OracleBundle.{max v v', u, w} where
   Index := R.Index
   spec query := ULift.{v'} (R.spec query)
   Data := R.Data
@@ -64,12 +65,12 @@ def Resources.liftResponse (R : Resources.{v, u, w}) : Resources.{max v v', u, w
 
 /-- A lifted answer contains exactly the original answer. -/
 @[simp]
-theorem Resources.liftResponse_answer (R : Resources.{v, u, w})
+theorem OracleBundle.liftResponse_answer (R : OracleBundle.{v, u, w})
     (data : R.Data) (query : R.Index) :
     (R.liftResponse.{v, u, w, v'}).answer data query = ULift.up (R.answer data query) := rfl
 
 /-- A pure query route whose backward data map realizes the backward response map. -/
-structure ResourceHom (R : Resources.{v, u, w}) (S : Resources.{v', u', w'}) where
+structure OracleBundle.Lens (R : OracleBundle.{v, u, w}) (S : OracleBundle.{v', u', w'}) where
   /-- Send queries forward and pull their responses back through a polynomial lens. -/
   route : PFunctor.Lens R.spec.toPFunctor S.spec.toPFunctor
   /-- Recover source backing data from target backing data. -/
@@ -78,23 +79,23 @@ structure ResourceHom (R : Resources.{v, u, w}) (S : Resources.{v', u', w'}) whe
   commutes : ∀ data query,
     R.answer (pullData data) query = route.toFunB query (S.answer data (route.toFunA query))
 
-namespace ResourceHom
+namespace OracleBundle.Lens
 
-variable {R : Resources.{v, u, w}} {S : Resources.{v', u', w'}}
-    {T : Resources.{v'', u'', w''}}
+variable {R : OracleBundle.{v, u, w}} {S : OracleBundle.{v', u', w'}}
+    {T : OracleBundle.{v'', u'', w''}}
 
 /-- Pull back arbitrary pure answers, including answers not represented by backing data. -/
-def pull (f : ResourceHom R S) (answer : QueryImpl S.spec Id) : QueryImpl R.spec Id :=
+def pullAnswer (f : OracleBundle.Lens R S) (answer : QueryImpl S.spec Id) : QueryImpl R.spec Id :=
   fun query => f.route.toFunB query (answer (f.route.toFunA query))
 
 /-- Identity routing preserves queries, responses and backing data. -/
-def id (R : Resources.{v, u, w}) : ResourceHom R R where
+def id (R : OracleBundle.{v, u, w}) : OracleBundle.Lens R R where
   route := PFunctor.Lens.id R.spec.toPFunctor
   pullData data := data
   commutes _ _ := rfl
 
 /-- Compose query routes forward and backing-data maps backward. -/
-def comp (g : ResourceHom S T) (f : ResourceHom R S) : ResourceHom R T where
+def comp (g : OracleBundle.Lens S T) (f : OracleBundle.Lens R S) : OracleBundle.Lens R T where
   route := PFunctor.Lens.comp g.route f.route
   pullData := f.pullData ∘ g.pullData
   commutes data query := by
@@ -106,70 +107,71 @@ def comp (g : ResourceHom S T) (f : ResourceHom R S) : ResourceHom R T where
 
 /-- Pulling answers along the identity route preserves them. -/
 @[simp]
-theorem pull_id (answer : QueryImpl R.spec Id) : (id R).pull answer = answer := rfl
+theorem pullAnswer_id (answer : QueryImpl R.spec Id) : (id R).pullAnswer answer = answer := rfl
 
 /-- Pulling answers through a composite is successive pullback through its two routes. -/
-theorem pull_comp (g : ResourceHom S T) (f : ResourceHom R S)
-    (answer : QueryImpl T.spec Id) : (g.comp f).pull answer = f.pull (g.pull answer) := rfl
+theorem pullAnswer_comp (g : OracleBundle.Lens S T) (f : OracleBundle.Lens R S)
+    (answer : QueryImpl T.spec Id) :
+    (g.comp f).pullAnswer answer = f.pullAnswer (g.pullAnswer answer) := rfl
 
 /-- Pulling interpreted answers agrees with interpreting the pulled backing data. -/
 @[simp]
-theorem pull_answer (f : ResourceHom R S) (data : S.Data) :
-    f.pull (S.answer data) = R.answer (f.pullData data) := by
+theorem pullAnswer_answer (f : OracleBundle.Lens R S) (data : S.Data) :
+    f.pullAnswer (S.answer data) = R.answer (f.pullData data) := by
   funext query
   exact (f.commutes data query).symm
 
 /-- Route into lifted responses, unwrapping each answer and preserving the backing data. -/
-def toLiftResponse (R : Resources.{v, u, w}) :
-    ResourceHom R (R.liftResponse.{v, u, w, v'}) where
+def toLiftResponse (R : OracleBundle.{v, u, w}) :
+    OracleBundle.Lens R (R.liftResponse.{v, u, w, v'}) where
   route := ⟨fun query => query, fun _ answer => answer.down⟩
   pullData data := data
   commutes _ _ := rfl
 
 /-- Route out of lifted responses, wrapping each answer and preserving the backing data. -/
-def fromLiftResponse (R : Resources.{v, u, w}) :
-    ResourceHom (R.liftResponse.{v, u, w, v'}) R where
+def fromLiftResponse (R : OracleBundle.{v, u, w}) :
+    OracleBundle.Lens (R.liftResponse.{v, u, w, v'}) R where
   route := ⟨fun query => query, fun _ answer => ⟨answer⟩⟩
   pullData data := data
   commutes _ _ := rfl
 
-end ResourceHom
+end OracleBundle.Lens
 
 /-- Inverse coherent routes preserve both polynomial query behavior and backing data. -/
-structure ResourceEquiv (R : Resources.{v, u, w}) (S : Resources.{v', u', w'}) where
-  /-- The forward raw resource map. -/
-  toHom : ResourceHom R S
-  /-- The inverse raw resource map. -/
-  invHom : ResourceHom S R
+structure OracleBundle.Equiv (R : OracleBundle.{v, u, w}) (S : OracleBundle.{v', u', w'}) where
+  /-- The forward bundle lens. -/
+  toLens : OracleBundle.Lens R S
+  /-- The inverse bundle lens. -/
+  invLens : OracleBundle.Lens S R
   /-- The source round trip is the identity on routing and backing data. -/
-  left_inv : invHom.comp toHom = ResourceHom.id R
+  left_inv : invLens.comp toLens = OracleBundle.Lens.id R
   /-- The target round trip is the identity on routing and backing data. -/
-  right_inv : toHom.comp invHom = ResourceHom.id S
+  right_inv : toLens.comp invLens = OracleBundle.Lens.id S
 
-namespace ResourceEquiv
+namespace OracleBundle.Equiv
 
-variable {R : Resources.{v, u, w}} {S : Resources.{v', u', w'}}
+variable {R : OracleBundle.{v, u, w}} {S : OracleBundle.{v', u', w'}}
 
 /-- Pulling source answers through both inverse routes recovers the original answers. -/
 @[simp]
-theorem pull_inv (e : ResourceEquiv R S) (answer : QueryImpl R.spec Id) :
-    e.toHom.pull (e.invHom.pull answer) = answer := by
-  rw [← ResourceHom.pull_comp, e.left_inv, ResourceHom.pull_id]
+theorem pullAnswer_inv (e : OracleBundle.Equiv R S) (answer : QueryImpl R.spec Id) :
+    e.toLens.pullAnswer (e.invLens.pullAnswer answer) = answer := by
+  rw [← OracleBundle.Lens.pullAnswer_comp, e.left_inv, OracleBundle.Lens.pullAnswer_id]
 
 /-- Pulling target answers through both inverse routes recovers the original answers. -/
 @[simp]
-theorem inv_pull (e : ResourceEquiv R S) (answer : QueryImpl S.spec Id) :
-    e.invHom.pull (e.toHom.pull answer) = answer := by
-  rw [← ResourceHom.pull_comp, e.right_inv, ResourceHom.pull_id]
+theorem inv_pullAnswer (e : OracleBundle.Equiv R S) (answer : QueryImpl S.spec Id) :
+    e.invLens.pullAnswer (e.toLens.pullAnswer answer) = answer := by
+  rw [← OracleBundle.Lens.pullAnswer_comp, e.right_inv, OracleBundle.Lens.pullAnswer_id]
 
 /-- Response lifting is reversible on queries, responses and backing data. -/
-def liftResponse (R : Resources.{v, u, w}) :
-    ResourceEquiv R (R.liftResponse.{v, u, w, v'}) where
-  toHom := ResourceHom.toLiftResponse R
-  invHom := ResourceHom.fromLiftResponse R
+def liftResponse (R : OracleBundle.{v, u, w}) :
+    OracleBundle.Equiv R (R.liftResponse.{v, u, w, v'}) where
+  toLens := OracleBundle.Lens.toLiftResponse R
+  invLens := OracleBundle.Lens.fromLiftResponse R
   left_inv := rfl
   right_inv := rfl
 
-end ResourceEquiv
+end OracleBundle.Equiv
 
 end Interaction.Core

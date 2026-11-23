@@ -65,7 +65,7 @@ is interpreted. It is never rebuilt from a constant or from the fault label.
 | Former effectful reception boundary | excluded by P1 | P1 excludes effect 1 as a separate verifier reception move. [faults] keeps the chronological history with that effect in the final decision. |
 | L87, closing an optional final verdict | ported | [optionalClosing] proves that embedding any optional verdict with `Except.ok` and then closing with the completed transcript's output map and bundle equals closing first and then embedding. This holds for `none` and for every accepted statement. |
 
-The [source and resource port table](oracle-universe-tests.md) numbers these rows TR1–TR7 and
+The [oracle bundle port table](port-oracle-bundles.md) numbers these rows TR1–TR7 and
 links them here.
 
 The old reception action 1 now belongs to the final decision. Running it between the send and the
@@ -116,7 +116,7 @@ first move stays in that move's entry.
 | L167, SR3, ordinary whole-prover theorem instantiation | ported | [routeWhole] instantiates [appendLaw] on the actual whole prover and input data. |
 | L174, composed routing audit | ported | [audit] and the axiom audit beside [routeWhole] include [appendLaw] and [substitution]. |
 
-The [source and resource port table](oracle-universe-tests.md) numbers these rows SR1–SR4 and
+The [oracle bundle port table](port-oracle-bundles.md) numbers these rows SR1–SR4 and
 links them here. It also links an added worst-case cost check on the same export map.
 
 ## Persistent-runtime tests

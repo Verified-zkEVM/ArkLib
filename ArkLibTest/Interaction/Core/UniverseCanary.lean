@@ -7,7 +7,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.Core.Composition
 import ArkLib.Interaction.Core.Security.Knowledge
 import ArkLib.Interaction.Core.Security.RoundByRound
-import ArkLibTest.Interaction.Core.Oracle.ResourceExample
+import ArkLibTest.Interaction.Core.Oracle.BundleFamilies
 
 /-!
 # Components that are not run outputs live in their own universes

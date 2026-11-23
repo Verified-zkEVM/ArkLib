@@ -11,16 +11,16 @@ import ArkLibTest.Interaction.Core.Oracle.Routing
 # The worst-case cost of one exported oracle query
 
 The routing tests' prefix output map `RoutingTests.exportMap` exports `input false + sent.1`.
-`RoutingTests.exportMap_raw_trace` shows that one exported query makes exactly two resource
-queries. Here the same map gets a worst-case cost bound. At unit cost per resource query, one
+`RoutingTests.exportMap_raw_trace` shows that one exported query makes exactly two bundle
+queries. Here the same map gets a worst-case cost bound. At unit cost per bundle query, one
 exported query costs at most two, and a query charged two units stays within two units after
 routing through the map.
 -/
 
 open Interaction.Core OracleComp
-open Interaction.Core.RoutingTests (prefixResources exported exportMap)
+open Interaction.Core.RoutingTests (prefixBundle exported exportMap)
 
-namespace Interaction.Core.SourceRoutingExampleTests
+namespace Interaction.Core.ExportCostTests
 
 /-- Each query costs one unit. -/
 def unitCost {ι : Type} (spec : OracleSpec ι) : CostModel spec Nat := ⟨fun _ => 1⟩
@@ -31,12 +31,12 @@ def exportCost : CostModel (OracleSpec.emptySpec + exported.spec) Nat :=
 
 /-- The exported query's implementation makes two unit-cost queries. -/
 theorem exportMap_cost (q : exported.spec.Domain) :
-    WorstCaseCostBound (exportMap.impl q) (unitCost prefixResources.spec) 2 := by
+    WorstCaseCostBound (exportMap.impl q) (unitCost prefixBundle.spec) 2 := by
   exact (worstCaseCostBound_query _ _).bind fun _ => (worstCaseCostBound_query _ _).bind
     fun _ => (worstCaseCostBound_pure _ _ (0 : Nat)).mpr le_rfl
 
 -- A use of `OracleMap.withAmbient_worstCaseCost`: one exported query, charged two units, routed
--- through `exportMap` costs at most two unit-cost queries to the prefix resources.
+-- through `exportMap` costs at most two unit-cost queries to the prefix bundle.
 example : WorstCaseCostBound
     (simulateQ (exportMap.withAmbient OracleSpec.emptySpec)
       (liftM ((OracleSpec.emptySpec + exported.spec).query (.inr ⟨⟨⟩, ()⟩)) :
@@ -47,11 +47,11 @@ example : WorstCaseCostBound
         OracleComp (OracleSpec.emptySpec + exported.spec) Nat) exportCost 2 :=
     worstCaseCostBound_query (.inr ⟨⟨⟩, ()⟩) exportCost
   exact OracleMap.withAmbient_worstCaseCost
-    (In := prefixResources) (Out := Resources.ofFamily exported)
+    (In := prefixBundle) (Out := OracleBundle.ofFamily exported)
     (ambient := OracleSpec.emptySpec) (sourceCost := exportCost) (targetCost := unitCost _)
     exportMap hquery (fun q => q.elim) exportMap_cost
 
-end Interaction.Core.SourceRoutingExampleTests
+end Interaction.Core.ExportCostTests
 
 run_cmd do
   for decl in [``Interaction.Core.OracleMap.withAmbient_worstCaseCost] do

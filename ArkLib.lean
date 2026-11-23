@@ -789,7 +789,7 @@ public import ArkLib.Interaction.Core.Oracle.Cost
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
 public import ArkLib.Interaction.Core.Oracle.QueriesByMove
 public import ArkLib.Interaction.Core.Oracle.QueriesByMoveLaws
-public import ArkLib.Interaction.Core.Oracle.ResourceOps
+public import ArkLib.Interaction.Core.Oracle.BundleOps
 public import ArkLib.Interaction.Core.Oracle.Routing
 public import ArkLib.Interaction.Core.Oracle.SentOracles
 public import ArkLib.Interaction.Core.OracleVerifier

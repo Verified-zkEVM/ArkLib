@@ -9,7 +9,7 @@ import Mathlib.Algebra.Polynomial.Degree.Operations
 import Mathlib.Algebra.Polynomial.Eval.Defs
 
 /-!
-# Named resources and oracle families with dependent carriers
+# Named bundles and oracle families with dependent carriers
 
 Oracle family indices name the oracles. A sum of families keeps two same-interface oracles with
 different carrier types apart. An embedding along a non-injective renaming makes two output
@@ -17,7 +17,7 @@ indices share one realization; an embedding along `Bool.not` transports a carrie
 index. Query and response types may vary with the index, and a carrier subtype states a degree
 bound that holds of every realization.
 
-Named resources keep response and realization universes independent. A view restricts the visible
+Named bundles keep response and realization universes independent. A view restricts the visible
 queries while retaining the whole context's data. Both forms are used directly as verifier inputs.
 
 The polynomial fixture is noncomputable because Mathlib's `Polynomial` is; it is used only for
@@ -26,7 +26,7 @@ the evaluation and degree proofs.
 
 open Interaction.Core Interaction.Oracle OracleComp
 
-namespace Interaction.Core.ResourceExampleTests
+namespace Interaction.Core.BundleFamiliesTests
 
 universe i q a s h
 
@@ -266,34 +266,34 @@ universe e
 variable {Name : Type i} {Query : Name → Type q} {Realization : Name → Type a}
   {Response : (n : Name) → Query n → Type e}
 
-/-- A view queries selected named resources while retaining the whole context's data (R27). -/
-def viewResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+/-- A view bundle queries selected named oracles while retaining the whole context's data (R27). -/
+def viewBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
-    Resources.{e, max h q, max s a} where
+    OracleBundle.{e, max h q, max s a} where
   Index := (x : Visible) × Query (name (select x))
   spec query := Response (name (select query.1)) query.2
   Data := (x : Index) → Realization (name x)
   answer data query := answer _ (data (select query.1)) query.2
 
 /-- The whole named context is the identity view (R26). -/
-abbrev namedResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) : Resources.{e, max s q, max s a} :=
-  viewResources answer name id
+abbrev namedBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) : OracleBundle.{e, max s q, max s a} :=
+  viewBundle answer name id
 
 /-- R26 keeps its exact query and data carriers without identifying `a` with `e`. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) :
-    (namedResources answer name).Index = ((x : Index) × Query (name x)) ∧
-      (namedResources answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
+    (namedBundle answer name).Index = ((x : Index) × Query (name x)) ∧
+      (namedBundle answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
 
 /-- R27 keeps the original context's data when the visible index has its own universe. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
-    (viewResources answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
-      (viewResources answer name select).Data = ((x : Index) → Realization (name x)) :=
+    (viewBundle answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
+      (viewBundle answer name select).Data = ((x : Index) → Realization (name x)) :=
   ⟨rfl, rfl⟩
 
-/-- No output oracles are needed to test the verifier's resource input boundary. -/
+/-- No output oracles are needed to test the verifier's input-bundle boundary. -/
 def noOutputs : OracleFamily.{e, e, e} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
 
 /-- A verifier consumes an R27-shaped view, with independent realization `a` and response `e`.
@@ -303,10 +303,10 @@ def viewVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n
     (x : Visible) (query : Query (name (select x))) :
     OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
       PUnit.{e + 1} (fun _ => Response (name (select x)) query)
-      (viewResources answer name select) (fun _ => noOutputs) where
+      (viewBundle answer name select) (fun _ => noOutputs) where
   decide _ p _ := liftM
     (((PEmpty.{e + 1} →ₒ PUnit.{e + 1}) +
-      (pathResources (viewResources answer name select)
+      (pathBundle (viewBundle answer name select)
         (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query (.inr (.inl ⟨x, query⟩)))
   outputMap _ _ _ :=
     { f := fun _ x => x.elim
@@ -317,7 +317,7 @@ def viewVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n
 abbrev namedVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x)) :
     OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
-      PUnit.{e + 1} (fun _ => Response (name x) query) (namedResources answer name)
+      PUnit.{e + 1} (fun _ => Response (name x) query) (namedBundle answer name)
       (fun _ => noOutputs) :=
   viewVerifier answer name id x query
 
@@ -344,10 +344,10 @@ section Universes
 
 variable {Name : Type i} {Realization : Name → Type a} {Index : Type s} {View : Type h}
 
--- OracleFamily specializes the independent resource contracts through Resources.ofFamily.
-/-- Selected oracle resources keep the independent context, query and data-index universes. -/
+-- OracleFamily specializes the independent bundle contracts through OracleBundle.ofFamily.
+/-- A bundle of selected oracles keeps the independent context, query and data-index universes. -/
 example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
-    Resources.{a, max s q, max s a} := Resources.ofFamily (C.reindex name)
+    OracleBundle.{a, max s q, max s a} := OracleBundle.ofFamily (C.reindex name)
 
 /-- Selecting interfaces preserves the context's query indices and their query universe. -/
 example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
@@ -383,4 +383,4 @@ example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
 
 end Universes
 
-end Interaction.Core.ResourceExampleTests
+end Interaction.Core.BundleFamiliesTests
