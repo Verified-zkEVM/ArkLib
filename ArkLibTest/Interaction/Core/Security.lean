@@ -150,7 +150,7 @@ run_cmd do
   let (obs, extracted) := simulateQ oracleHandler
     (queryDecision.extractionGame (fun _ n => n) oracleExtractor
       ((), fun i => i.elim) oracleProver)
-  unless extracted == some 7 do throwError "oracle resource queries polluted ambient logs"
+  unless extracted == some 7 do throwError "oracle bundle queries polluted ambient logs"
   match obs.2.2 with
   | none => throwError "logged oracle decision rejected"
   | some (n, data) =>

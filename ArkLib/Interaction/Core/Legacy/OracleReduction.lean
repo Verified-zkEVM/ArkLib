@@ -269,24 +269,24 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
 abbrev family {I : Type} (T : I → Type) [O : ∀ i, OracleInterface.{0, 0} (T i)] :
     OracleFamily.{0, 0, 0} I T := ⟨O⟩
 
-/-- Route legacy input-statement and message queries to the oracle resources of a path. -/
-def resourceImpl (p : Path (oracleProtocol pSpec)) :
+/-- Route legacy input-statement and message queries to the oracle bundle of a path. -/
+def pathBundleImpl (p : Path (oracleProtocol pSpec)) :
     QueryImpl ([OStmtIn]ₒ + [pSpec.Message]ₒ)
-      (OracleComp (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec) :=
+      (OracleComp (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec) :=
   QueryImpl.add
-    (fun q => liftM ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec.query
+    (fun q => liftM ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec.query
       (.inl q)))
     (fun q => simulateQ
-      (fun t => liftM ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec.query
+      (fun t => liftM ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec.query
         (.inr t)))
       (queryMsg 0 n _ p q.1 (Nat.zero_le _) q.2))
 
 /-- Routing answers each legacy query from the statement data and the path's messages. -/
-theorem resourceImpl_law (p : Path (oracleProtocol pSpec))
-    (r : (pathResources (family OStmtIn) (oracleProtocol pSpec) p).Data)
+theorem pathBundleImpl_law (p : Path (oracleProtocol pSpec))
+    (r : (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).Data)
     (q : ([OStmtIn]ₒ + [pSpec.Message]ₒ).Domain) :
-    simulateQ ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r)
-        (resourceImpl p q) =
+    simulateQ ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r)
+        (pathBundleImpl p q) =
       QueryImpl.add (OracleInterface.simOracle0 OStmtIn r.1)
         (OracleInterface.simOracle0 pSpec.Message (pathMessages p r.2)) q := by
   rcases q with q | q
@@ -298,13 +298,13 @@ theorem resourceImpl_law (p : Path (oracleProtocol pSpec))
 /-- Route all legacy decision queries, passing shared-oracle queries through. -/
 def decisionImpl (p : Path (oracleProtocol pSpec)) :
     QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))
-      (OracleComp (oSpec + (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec)) :=
+      (OracleComp (oSpec + (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec)) :=
   QueryImpl.add
     (fun q => liftM ((oSpec +
-      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec).query (.inl q)))
+      (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec).query (.inl q)))
     (fun q => simulateQ (fun t => liftM ((oSpec +
-      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec).query (.inr t)))
-      (resourceImpl p q))
+      (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec).query (.inr t)))
+      (pathBundleImpl p q))
 
 /-- The output map of a legacy output-oracle simulation, for the challenges of a run. Its data
 map is the legacy materialization on the input data and the path's messages, and its queries
@@ -312,12 +312,13 @@ follow legacy `simulateOutputQuery`, routed to the input and path oracles. -/
 def _root_.Interaction.Core.OracleMap.ofLegacySimulation [∀ t, Inhabited (oSpec.Range t)]
     (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
-    OracleMap (pathResources (family OStmtIn) (oracleProtocol pSpec) p)
-      (Resources.ofFamily (family OStmtOut)) where
+    OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
+      (OracleBundle.ofFamily (family OStmtOut)) where
   f r := S.materializeOutput challenges r.1 (pathMessages p r.2)
-  impl q := simulateQ (resourceImpl p) (simulateQ dropAmbient (S.simulateOutputQuery challenges q))
+  impl q :=
+    simulateQ (pathBundleImpl p) (simulateQ dropAmbient (S.simulateOutputQuery challenges q))
   law r q := by
-    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (resourceImpl_law p r)]
+    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (pathBundleImpl_law p r)]
     exact simulateQ_dropAmbient_of_eq_pure _ _ _
       (S.simulateOutputQuery_eq challenges _ _ q)
 
@@ -327,9 +328,9 @@ the input data and the path's messages. -/
 theorem simulateQ_ofLegacySimulation_impl [∀ t, Inhabited (oSpec.Range t)]
     (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec))
-    (r : (pathResources (family OStmtIn) (oracleProtocol pSpec) p).Data)
+    (r : (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).Data)
     (q : [OStmtOut]ₒ.Domain) :
-    (pure (simulateQ ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r)
+    (pure (simulateQ ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r)
         ((OracleMap.ofLegacySimulation S challenges p).impl q)) : OracleComp oSpec _) =
       simulateQ (OracleInterface.simOracle2 (T₁ := OStmtIn) (T₂ := pSpec.Message) oSpec
         r.1 (pathMessages p r.2))
@@ -342,8 +343,8 @@ its output-oracle semantics read as a simulation. -/
 def legacyOutputMap [∀ t, Inhabited (oSpec.Range t)]
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
-    OracleMap (pathResources (family OStmtIn) (oracleProtocol pSpec) p)
-      (Resources.ofFamily (family OStmtOut)) :=
+    OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
+      (OracleBundle.ofFamily (family OStmtOut)) :=
   OracleMap.ofLegacySimulation ⟨V.materializeOutput, V.simulateOutputQuery,
     V.simulateOutputQuery_eq⟩ challenges p
 

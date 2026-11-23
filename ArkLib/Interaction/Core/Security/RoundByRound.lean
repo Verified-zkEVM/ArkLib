@@ -235,7 +235,7 @@ abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : Type u
 namespace OracleVerifier
 variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : Resources.{0, uI, dI}}
+  {inputs : OracleBundle.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
 
 /-- Oracle acceptance from a possible terminal state, with actual input and path oracle messages.
@@ -247,13 +247,13 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (event : OracleVerifier.Output T B tr.path → Prop) : Prop :=
   let p := Transcript.path tr
   let view := toView s tr
-  let resources : (pathResources inputs s p).Data := (stmt.2, oracleMessages s tr)
+  let pathData : (pathBundle inputs s p).Data := (stmt.2, oracleMessages s tr)
   letI : MeasurableSpace (Option (T p)) := ⊤
-  let handler : QueryImpl (ambient + (pathResources inputs s p).spec)
+  let handler : QueryImpl (ambient + (pathBundle inputs s p).spec)
       (StateT σ ProbComp) := QueryImpl.addLift impl
-        ((pathResources inputs s p).answer resources)
+        ((pathBundle inputs s p).answer pathData)
   ∃ state : σ, 0 < 𝒟[(simulateQ handler (V.decide stmt.1 p view).run).run' state]
-      {v | ∃ t, v = some t ∧ event (t, (V.outputMap stmt.1 p view).f resources)}
+      {v | ∃ t, v = some t ∧ event (t, (V.outputMap stmt.1 p view).f pathData)}
 
 /-- Worst-case-per-prefix oracle soundness with the full input admissibility boundary. The
 output language is indexed by the shape path and judged at the transcript's path. -/

@@ -553,8 +553,8 @@ without them. No added local or global `attribute [...]` transparency command an
 
 [p-decision]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L133
 
-[parent-port-table]: logged-execution-disposition.md
-[parent-phase-audits]: logged-execution-disposition.md#phasedrunlean
+[parent-port-table]: port-logged-execution.md
+[parent-phase-audits]: port-logged-execution.md#phasedrunlean
 
 [laws-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean
 [step-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
