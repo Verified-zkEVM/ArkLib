@@ -39,6 +39,8 @@ def tree : VecTree (fun _ : Fin 2 => ZMod 5) k where
     · have h1 : p 1 = p' 1 := h 1 le_rfl
       simp [h0, h1]
 
+theorem k_pos : ∀ i, 0 < k i := fun i => by fin_cases i <;> decide
+
 theorem lt_five (r : Fin 2) (a : Fin (k r)) : (a : ℕ) < 5 :=
   lt_of_lt_of_le a.2 (by fin_cases r <;> decide)
 
@@ -51,13 +53,38 @@ theorem tree_isStructured : tree.IsStructured fun _ ch => Function.Injective ch 
 second, vanishing at the six leaves. -/
 example (p : MvPolynomial (Fin 2) (ZMod 5)) (h0 : p.degreeOf 0 < 3) (h1 : p.degreeOf 1 < 2)
     (hv : ∀ path, eval (tree.leaf path) p = 0) : p = 0 :=
-  VecTree.eq_zero_of_vanishes (k := k) (fun i => by fin_cases i <;> decide) tree tree_isStructured p
+  VecTree.eq_zero_of_vanishes (k := k) k_pos tree tree_isStructured p
     (fun i => by fin_cases i <;> assumption) hv
 
 /-- The nested tree of the challenge tree has `3 * 2 = 6` leaves. -/
-example : (VecTree.toNested (fun i => by fin_cases i <;> decide) tree).numLeaves = 6 := by
+example : (VecTree.toNested k_pos tree).numLeaves = 6 := by
   rw [NestedEvaluationTree.numLeaves_eq_prod, Fin.prod_univ_two]
   rfl
+
+/-- The labels of the first level of a nested tree. -/
+def firstLabels {n : ℕ} {k : Fin (n + 1) → ℕ} : NestedEvaluationTree (ZMod 5) (n + 1) k →
+    List (ZMod 5)
+  | .node challenges _ => List.ofFn challenges
+
+/-- The labels of the second level, one list below each branch of the first level. -/
+def secondLabels {n : ℕ} {k : Fin (n + 2) → ℕ} : NestedEvaluationTree (ZMod 5) (n + 2) k →
+    List (List (ZMod 5))
+  | .node _ children => List.ofFn fun j => firstLabels (children j)
+
+/-! Runtime evidence: `toNested` runs. The first level carries the three first-round challenges,
+and below branch `j` the second level carries `j` and `j + 1`. -/
+
+/-- info: 6 -/
+#guard_msgs in
+#eval (VecTree.toNested k_pos tree).numLeaves
+
+/-- info: [0, 1, 2] -/
+#guard_msgs in
+#eval firstLabels (VecTree.toNested k_pos tree)
+
+/-- info: [[0, 1], [1, 2], [2, 3]] -/
+#guard_msgs in
+#eval secondLabels (VecTree.toNested k_pos tree)
 
 /-- The strict degree bound is load-bearing: `T * (T - 1)` has individual degree `2 = k 0`, vanishes
 at the two leaves of a binary round and is not zero. -/
