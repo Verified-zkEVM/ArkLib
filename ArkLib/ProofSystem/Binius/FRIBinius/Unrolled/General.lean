@@ -188,25 +188,25 @@ theorem fullVerifier_rbrKnowledgeSoundness (γ : ℕ) {σ : Type}
 soundness (`Verifier.knowledgeSoundness_iff_relationSoundness`). -/
 theorem fullVerifier_knowledgeSoundness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l γ).toVerifier
-      (Oₛₒ := fun i : Empty => nomatch i)).knowledgeSoundness init impl
+    OracleProof.knowledgeSoundness init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_l
         (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
-      acceptRejectOracleRel (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) :=
-  Verifier.knowledgeSoundness_error_mono init impl
+      (fullVerifier κ K β (ϑ := ϑ) h_rate h_l γ)
+      (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) := by
+  apply Verifier.knowledgeSoundness_error_mono init impl
     (fullError_sum_le_concrete κ K β (ϑ := ϑ) h_rate γ)
-    (Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
-      (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i => nomatch i)))
-      (fullVerifier_rbrKnowledgeSoundness κ K β (ϑ := ϑ) h_rate h_l γ init impl))
+  exact Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
+    (Verifier.GuardedForm.ofEmpty _ (fun _ => (false, fun i : Empty => nomatch i)))
+    (fullVerifier_rbrKnowledgeSoundness κ K β (ϑ := ϑ) h_rate h_l γ init impl)
 
 /-- Soundness at `concreteError` for the language of the input relation. -/
 theorem fullVerifier_soundness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l γ).toVerifier
-      (Oₛₒ := fun i : Empty => nomatch i)).soundness init impl
+    OracleProof.soundness init impl
       (TensorPrefix.relIn (biniusProfile κ L K β) h_l
         (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate)).language
-      acceptRejectOracleRel.language (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) :=
+      (fullVerifier κ K β (ϑ := ϑ) h_rate h_l γ)
+      (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) :=
   Verifier.soundness_error_mono init impl
     (by exact_mod_cast fullError_sum_le_concrete κ K β (ϑ := ϑ) h_rate γ)
     (Verifier.GuardedForm.soundness_of_rbrSoundness
@@ -219,11 +219,10 @@ theorem fullVerifier_soundness (γ : ℕ) {σ : Type}
 /-- Perfect completeness of unrolled FRI-Binius for exact packed encodings. -/
 theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (fullReduction κ K β (ϑ := ϑ) h_rate h_l γ).perfectCompleteness
-      (Oₛₒ := fun i : Empty => nomatch i) init impl
-      (TensorPrefix.relIn (biniusProfile κ L K β) h_l
-        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView)
-      acceptRejectOracleRel := by
+    OracleProof.perfectCompleteness
+      (oracleProof := fullReduction κ K β (ϑ := ϑ) h_rate h_l γ)
+      (relation := TensorPrefix.relIn (biniusProfile κ L K β) h_l
+        (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView) (init := init) (impl := impl) := by
   have hhead := TensorPrefix.headReduction_perfectCompleteness (biniusProfile κ L K β) h_l
     (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView init impl
   rw [TensorPrefix.headReduction_strictView_eq] at hhead
@@ -246,16 +245,15 @@ theorem fullReduction_perfectCompleteness (γ : ℕ) {σ : Type}
 at `concreteError` for unique-radius compatibility. -/
 theorem fullReduction_perfectCompleteness_and_knowledgeSoundness (γ : ℕ) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (fullReduction κ K β (ϑ := ϑ) h_rate h_l γ).perfectCompleteness
-        (Oₛₒ := fun i : Empty => nomatch i) init impl
-        (TensorPrefix.relIn (biniusProfile κ L K β) h_l
-          (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView)
-        acceptRejectOracleRel ∧
-      ((fullVerifier κ K β (ϑ := ϑ) h_rate h_l γ).toVerifier
-        (Oₛₒ := fun i : Empty => nomatch i)).knowledgeSoundness init impl
+    OracleProof.perfectCompleteness
+        (oracleProof := fullReduction κ K β (ϑ := ϑ) h_rate h_l γ)
+        (relation := TensorPrefix.relIn (biniusProfile κ L K β) h_l
+          (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate).strictView) (init := init) (impl := impl) ∧
+      OracleProof.knowledgeSoundness init impl
         (TensorPrefix.relIn (biniusProfile κ L K β) h_l
           (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
-        acceptRejectOracleRel (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) :=
+        (fullVerifier κ K β (ϑ := ϑ) h_rate h_l γ)
+        (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) :=
   ⟨fullReduction_perfectCompleteness κ K β (ϑ := ϑ) h_rate h_l γ init impl,
     fullVerifier_knowledgeSoundness κ K β (ϑ := ϑ) h_rate h_l γ init impl⟩
 

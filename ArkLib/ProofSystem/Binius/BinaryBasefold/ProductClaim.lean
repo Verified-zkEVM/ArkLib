@@ -169,7 +169,8 @@ unique-radius compatible with the first oracle. -/
 def inputRelation : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
   { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
-    let ⟨ctx, claimedValue⟩ := toClaim stmtIn
+    let ctx := (toClaim stmtIn).1
+    let claimedValue := (toClaim stmtIn).2
     claimedValue = ∑ y : Fin ℓ → Fin 2,
         (multiplier ctx).val.eval (y : Fin ℓ → L) *
           (witnessEquiv witIn).val.eval (y : Fin ℓ → L) ∧
@@ -180,7 +181,8 @@ exact encoding. -/
 def strictInputRelation : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_rate) 0 j)) × WitIn) :=
   { ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ |
-    let ⟨ctx, claimedValue⟩ := toClaim stmtIn
+    let ctx := (toClaim stmtIn).1
+    let claimedValue := (toClaim stmtIn).2
     claimedValue = ∑ y : Fin ℓ → Fin 2,
         (multiplier ctx).val.eval (y : Fin ℓ → L) *
           (witnessEquiv witIn).val.eval (y : Fin ℓ → L) ∧

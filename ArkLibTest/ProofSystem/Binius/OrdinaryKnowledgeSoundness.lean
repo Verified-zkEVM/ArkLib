@@ -110,6 +110,7 @@ example (γ : ℕ) {σ : Type} (init : ProbComp σ)
         (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
           (inputInterface κ K β (ϑ := ϑ) h_rate))
         (fullVerifier κ K β (ϑ := ϑ) h_rate h_dim γ)
+        -- Spelled out on purpose: `RingSwitch.concreteError` must unfold to this bound.
         ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
           Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) :=
   fullReduction_perfectCompleteness_and_knowledgeSoundness κ K β h_rate h_dim γ init impl

@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.ProductClaim
+public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 
 /-!
 # Unrolled FRI-Binius: communication and error budget
@@ -19,8 +20,8 @@ ring-switching sum-check precedes it.
 `fullError` assigns the batching loss to the head's challenge and the opening's errors
 (`ProductClaim.openingError`) to the remaining challenges. `fullError_sum_le_concrete` bounds
 its sum by `concreteError`, `(κ + 2ℓ')/|L| + 2^(ℓ' + R)/|L| + (1/2 + 1/(2 · 2^R))^γ`.
-`concreteError_add_eq` shows that this is the separate-sum-check bound of
-`FRIBinius.RingSwitch.fullError_sum_le` minus one sum-check term `2ℓ'/|L|`. These are bounds on
+`concreteError_add_eq` shows that this is the separate-sum-check bound
+`FRIBinius.RingSwitch.concreteError` minus one sum-check term `2ℓ'/|L|`. These are bounds on
 challenge-error sums, not on running time.
 
 ## References
@@ -75,12 +76,11 @@ theorem concreteError_eq (γ : ℕ) :
 
 omit [Field L] [DecidableEq L] [SampleableType L] [NeZero ℓ'] [NeZero R] in
 /-- Adding one sum-check term `2ℓ'/|L|` to `concreteError` gives the bound of the composition
-with a separate ring-switching sum-check (`FRIBinius.RingSwitch.fullError_sum_le`). -/
+with a separate ring-switching sum-check (`FRIBinius.RingSwitch.concreteError`). -/
 theorem concreteError_add_eq (γ : ℕ) :
     concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ + (ℓ' : ℝ≥0) * (2 / Fintype.card L) =
-      (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
-        BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ := by
-  rw [concreteError_eq]
+      FRIBinius.RingSwitch.concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ := by
+  rw [concreteError_eq, FRIBinius.RingSwitch.concreteError]
   ring
 
 omit [DecidableEq K] [Fact (Fintype.card K = 2)] [NeZero R] in

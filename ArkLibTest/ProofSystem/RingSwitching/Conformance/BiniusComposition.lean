@@ -116,9 +116,8 @@ theorem full_error_sum_lt_one :
       (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) 8 j) < 1 := by
   apply lt_of_le_of_lt (Binius.FRIBinius.RingSwitch.fullError_sum_le 2 (ZMod 2) basis
     (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) 8)
-  rw [card_gf16]
-  norm_num [Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError,
-    card_gf16]
+  norm_num [Binius.FRIBinius.RingSwitch.concreteError,
+    Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError, card_gf16]
 
 end Actual
 end ArkLibTest.RingSwitchingConformance.BiniusComposition
