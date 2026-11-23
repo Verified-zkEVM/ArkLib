@@ -50,6 +50,7 @@ theorem simulate_consProver {m : Type → Type} [Monad m] [LawfulMonad m]
 
 variable [DecidableEq R] [SampleableType R] {n d : ℕ} (D : Fin d ↪ R)
 
+omit [SampleableType R] in
 /-- The execution of any prover is its run against the challenge sampler, followed by the legacy
 verdict of the decoded transcript, with the input oracle as output oracle. -/
 theorem run_verifier_eq {Out : FreeM.PathAlong oracleSig (protocol R deg n) → Type}
@@ -390,6 +391,7 @@ abbrev checkHandler (amb : QueryImpl ambient (OracleComp full))
       (FreeM.projectPathAlong
     oracleSig _ tr)).answer (data, payloads _ tr))
 
+omit [SampleableType R] in
 /-- When the first round's check fails, the logged decision rejects and its log is the log of
 that check alone: no query of a later round is made. -/
 theorem decide_log_badFirst (amb : QueryImpl ambient (OracleComp full))
@@ -425,7 +427,7 @@ theorem decide_log_badFirst (amb : QueryImpl ambient (OracleComp full))
         (Challenges.fst (roundFullTranscript msg chal ++ₜ decodeTranscript k tail).challenges)).run)
       = _
     rw [simulateQ_leftMessageQuery, Legacy.challenges_append_fst,
-      roundCheck_eq_none 0 stmt _ h]
+      roundCheck_eq_none 0 stmt (roundFullTranscript msg chal) h]
   have hsupp : ∀ z ∈ support (simulateQ (checkHandler amb data tr).withLogging
       (firstCheck D stmt tr)).run, z.1 = none := by
     intro z hz
