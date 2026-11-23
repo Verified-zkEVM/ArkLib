@@ -628,7 +628,7 @@ variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
 /-- The path supremum of summed node errors is at most the sum of all node errors. -/
 theorem iSup_sum_challengeNodesOn_le_tsum (ε : ChallengeNode l s → ℝ≥0∞) :
     ⨆ path : Path s, ∑ c ∈ challengeNodesOn l s path, ε c ≤ ∑' c, ε c :=
-  iSup_le fun _ => ENNReal.sum_le_tsum _
+  iSup_le fun _ => sum_le_tsum _
 
 /-- Distinct challenge ranks along each path bound the path error by the finite rank sum.
 The ranks need not be consecutive, and errors may vary arbitrarily with the rank. -/

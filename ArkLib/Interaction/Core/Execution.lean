@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Interaction.Core.Reduction
 public import VCVio.EvalDist.ProbabilityNotation
+public import VCVio.OracleComp.EvalDist
 public import ToMathlib.Control.StateT
 public import PolyFun.Interaction.TwoParty.Lens.Compose
 
