@@ -47,12 +47,18 @@ variable {ι : Type} [AddCommGroup ι]
 variable {F : Type} [Field F]
 
 /-- Membership in a class-level coset FFT domain means
-  being equal to one of the values of its indexing function. -/
+  being equal to one of the values of its indexing function.
+
+  The `CosetFftDomainClass` argument only restricts the instance to domains. Without it, every
+  `FunLike` type, such as linear maps or ring homomorphisms, would get this membership relation. -/
 instance {D : Type}
   [FunLike D ι F] [CosetFftDomainClass D ι F] : Membership F D where
   mem ω x := ∃ i, ω i = x
 
-/-- A class-level coset FFT domain coerces to the type associated to its finset of elements. -/
+/-- A class-level coset FFT domain coerces to the type associated to its finset of elements.
+
+  As with membership, the `CosetFftDomainClass` argument only restricts the instance to domains,
+  so that other `FunLike` types do not coerce to the image of their functions. -/
 instance
     {ι : Type} [AddCommGroup ι] [Fintype ι]
     {F : Type} [Field F] [DecidableEq F]
@@ -90,6 +96,7 @@ lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
 lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
     ω i ∈ toFinset ω := by simp
 
+omit [AddCommGroup ι] [Field F] [CosetFftDomainClass D ι F] in
 lemma card_toFinset_le_fintype_card [Fintype F] [Fintype ι] [DecidableEq F] :
     Finset.card (toFinset ω) ≤ Fintype.card F := Finset.card_le_card (by simp)
 

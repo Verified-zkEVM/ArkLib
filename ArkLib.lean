@@ -347,7 +347,9 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBounds
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CertificateWitnesses
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.ListDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotArithmetic
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
@@ -395,6 +397,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Uni
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.CosetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 public import
@@ -574,6 +577,7 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
+public import ArkLib.Data.CodingTheory.ReedSolomon.PrimitiveRootDomain
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block
@@ -648,6 +652,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.ModuleSIS
 public import ArkLib.Data.Lattices.Vectors
+public import ArkLib.Data.List.NetMult
 public import ArkLib.Data.Matrix.Basic
 public import ArkLib.Data.Matrix.DotProduct
 public import ArkLib.Data.Matrix.ReadOnce
@@ -733,6 +738,7 @@ public import ArkLib.Data.Polynomial.FrobeniusContraction
 public import ArkLib.Data.Polynomial.GeneratorBatch
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.LogDerivative
 public import ArkLib.Data.Polynomial.PermutationFingerprint
 public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
@@ -918,6 +924,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Opening
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Fibers
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.ProductClaim
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Completeness
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Execution
@@ -946,6 +953,8 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Spec
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
 public import ArkLib.ProofSystem.Component.GeneratorBatch
@@ -957,8 +966,10 @@ public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
 public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
+public import ArkLib.ProofSystem.ConstraintSystem.Air
 public import ArkLib.ProofSystem.ConstraintSystem.Basic
 public import ArkLib.ProofSystem.ConstraintSystem.Examples
+public import ArkLib.ProofSystem.ConstraintSystem.LogUp
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
 public import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk
@@ -1138,6 +1149,7 @@ public import ArkLib.ProofSystem.Sumcheck.Prover.Enumeration
 public import ArkLib.ProofSystem.Sumcheck.Source
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
+public import ArkLib.ProofSystem.Sumcheck.Spec.RoundPolynomial
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
@@ -1170,6 +1182,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Size
+public import ArkLib.ToMathlib.Algebra.CharP.NatCast
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Semiring

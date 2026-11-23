@@ -38,7 +38,7 @@ private theorem weakSetup : NumeratorHypotheses 0 R H where
 
 /-- A client can construct and bound the actual cleared numerator without `Hypotheses`. -/
 example : regularWeight (H := H) (by simp [H])
-    (xiOfNumeratorHypotheses 0 R H weakSetup) 2 ≤
+    (xiOfNumeratorHypotheses 0 R H) 2 ≤
       WithBot.some ((Bivariate.natDegreeY R - 1) *
         (2 - Bivariate.natDegreeY H + 1)) := by
   have hRdeg : 2 ≤ Bivariate.natDegreeY R := by

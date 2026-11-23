@@ -106,6 +106,7 @@ def oracleVerifier : OracleVerifier oSpec (Statement (R := R) pp)
           ⟨0, Fin.elim0⟩ challenges).run
   outputOracle := .inl ⟨Function.Embedding.inl, fun _ => rfl, fun _ => HEq.rfl⟩
 
+omit [SampleableType R] in
 /-- The implemented verifier is exactly the executable virtual-polynomial context lift. -/
 theorem oracleVerifier_eq_liftContext : oracleVerifier (R := R) pp oSpec =
     (Sumcheck.Spec.oracleVerifier R 3 (boolEmbedding R) pp.ℓ_m oSpec).liftContext
@@ -180,6 +181,7 @@ def oracleProver : OracleProver oSpec (Statement (R := R) pp)
   Prover.liftContext (proverContextLens pp)
     (Sumcheck.Impl.Computable.generalOracleProver R 3 oSpec pp.ℓ_m (boolEmbedding R))
 
+omit [SampleableType R] in
 /-- The executable honest prover agrees with the lifted sumcheck specification. -/
 theorem oracleProver_eq : oracleProver (R := R) pp oSpec =
     Prover.liftContext (proverContextLens pp)
@@ -207,6 +209,7 @@ def oracleReduction : OracleReduction oSpec (Statement (R := R) pp)
   prover := oracleProver pp oSpec
   verifier := oracleVerifier pp oSpec
 
+omit [SampleableType R] in
 /-- The first sumcheck verifier queries only its round messages, never its virtual input. -/
 theorem sumcheck_verifier_no_inputPolynomial_queries (s : Statement (R := R) pp)
     (challenges : (Sumcheck.Spec.pSpec R 3 pp.ℓ_m).Challenges) :
@@ -233,6 +236,7 @@ abbrev relIn := ZeroCheck.relOut (R := R) pp
 /-- The output relation is the first virtual polynomial's terminal evaluation. -/
 abbrev relOut := SendEvaluations.relIn (R := R) pp
 
+omit [SampleableType R] in
 /-- Materializing the implemented reduction gives the ordinary context lift of sumcheck. -/
 theorem oracleReduction_toReduction : (oracleReduction (R := R) pp oSpec).toReduction =
     (Sumcheck.Spec.oracleReduction R 3 (boolEmbedding R) pp.ℓ_m oSpec).toReduction.liftContext
@@ -282,6 +286,7 @@ instance contextLens_complete : (proverContextLens (R := R) pp).IsComplete
     rw [horacles] at ho
     exact (outputRelation_iff pp s o out).mp ho
 
+omit [SampleableType R] in
 private theorem compatible_oracles (s : Statement (R := R) pp)
     (o : ∀ i, OracleStatement (R := R) pp i)
     (out : Sumcheck.Spec.StatementRound R pp.ℓ_m (.last pp.ℓ_m) ×

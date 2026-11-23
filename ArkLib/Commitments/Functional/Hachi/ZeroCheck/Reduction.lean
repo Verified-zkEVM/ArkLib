@@ -187,7 +187,7 @@ security parameter; the probability and execution obligations in the module over
 /-- The evaluation tree the adapter produces has exactly `2 ^ (m₀ + m₁)` leaves: `m₀ + m₁` challenge
 rounds, two pairwise-distinct children each. -/
 theorem nestedZeroCheck_numLeaves {F : Type} {m₀ m₁ : ℕ}
-    (tree : NestedEvaluationTree F 2 (m₀ + m₁)) : tree.numLeaves = 2 ^ (m₀ + m₁) :=
+    (tree : NestedEvaluationTree F (m₀ + m₁) fun _ => 2) : tree.numLeaves = 2 ^ (m₀ + m₁) :=
   tree.numLeaves_eq_pow
 
 /-- With the two arities chosen *minimally* for their pins — `2 ^ m₀ < 2 * A` for
@@ -219,9 +219,10 @@ def nestedTreeToEvaluationTree (F : Type) (r : ℕ) :
     {i : Fin (r + 1)} →
       ChallengeTree (pSpecNestedScalar F r)
         (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i →
-        NestedEvaluationTree F 2 (r - i.val)
+        NestedEvaluationTree F (r - i.val) fun _ => 2
   | _, .leaf =>
-      (nestedRemainingDepth_last r).symm ▸ (NestedEvaluationTree.leaf : NestedEvaluationTree F 2 0)
+      (nestedRemainingDepth_last r).symm ▸
+        (NestedEvaluationTree.leaf : NestedEvaluationTree F 0 fun _ => 2)
   | _, .msgNode _ h _ _ => nomatch h
   | _, .chalNode m _ challenges children =>
       (nestedRemainingDepth_succ m).symm ▸
@@ -286,12 +287,12 @@ theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
       exact (Fin.cast (nestedRemainingDepth_last r) i).elim0
   | _, .msgNode _ h _ _, _, _, _ => nomatch h
   | _, .chalNode m hm challenges children, pre, evalAt, h => by
-      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.vanishes_cast,
-        NestedEvaluationTree.Vanishes]
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.vanishes_cast]
       intro j
       apply nestedTreeToEvaluationTree_vanishes (children j) (pre.concat (challenges j))
       intro path
       convert h (ChallengeTree.LeafPath.chal j path) using 1
+      beta_reduce
       congr 1
       funext i
       let i' := Fin.cast (nestedRemainingDepth_succ m) i
@@ -354,8 +355,7 @@ theorem nestedTreeToEvaluationTree_isDistinct (F : Type) (r : ℕ) :
       trivial
   | _, .msgNode _ h _ _, _ => nomatch h
   | _, .chalNode _ _ challenges children, h => by
-      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.isDistinct_cast,
-        NestedEvaluationTree.IsDistinct]
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.isDistinct_cast]
       have hFamily : IsSpecialSoundFamily 1 2
           (fun j => (Equiv.funUnique (Fin 1) F).symm (challenges j)) := h.1
       have hVectors := (isSpecialSoundFamily_one_iff_injective _).mp hFamily
@@ -524,7 +524,7 @@ theorem nestedAssembly_escape_or_mem_relBatched
         (nestedZeroCheckTauZero path.fullTranscript)
         (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
       relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b)
-    (evTree : NestedEvaluationTree F 2 (m₀ + m₁)) (hDistinct : evTree.IsDistinct)
+    (evTree : NestedEvaluationTree F (m₀ + m₁) fun _ => 2) (hDistinct : evTree.IsDistinct)
     (hVanishes₀ : (∀ path, resp path = resp base) →
       CMlPolynomialEval.PolynomialVanishes evTree (hZero Φ m₀ φF b (resp base)) (Fin.castAdd m₁))
     (hVanishesα : (∀ path, resp path = resp base) →

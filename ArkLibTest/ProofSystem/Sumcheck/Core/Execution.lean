@@ -53,7 +53,7 @@ theorem run_badFirstProver {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X])
           (initState stmt oStmt) chals,
         finishState (foldState (nextState (badFirst D bad)) 2 (initState stmt oStmt) chals),
         none⟩ : Observation oracleSig (protocol F 1 2) (fun _ => HonestOutput F 1 2)
-          (Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
+          (fun _ => Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
         drawChallenges 2 (drawOf ambient 2) := by
   rw [badFirstProver, run_verifier_foldRounds]
   refine congrArg (· <$> _) (funext fun chals => ?_)
@@ -89,7 +89,7 @@ example (stmt : Spec.StatementRound F 2 0) (oStmt : ∀ i, Spec.OracleStatement 
           (initState stmt oStmt) chals,
         finishState (foldState (nextState (badFirst D₂ one)) 2 (initState stmt oStmt) chals),
         none⟩ : Observation oracleSig (protocol F 1 2) (fun _ => HonestOutput F 1 2)
-          (Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
+          (fun _ => Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
         drawChallenges 2 (drawOf ambient 2) := by
   refine run_badFirstProver ambient _ _ stmt oStmt ?_
   rw [htarget, Finset.sum_map]
@@ -134,7 +134,8 @@ theorem run_honest_one {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F
         some (⟨(honestMessage D 0 (initState stmt oStmt)).val.eval (chals 0),
           Fin.snoc stmt.challenges (chals 0)⟩, oStmt)⟩ :
           Observation oracleSig (protocol F 1 1) (fun _ => HonestOutput F 1 1)
-            (Spec.StatementRound F 1 (Fin.last 1) × ∀ i, Spec.OracleStatement F 1 1 i))) <$>
+            (fun _ =>
+              Spec.StatementRound F 1 (Fin.last 1) × ∀ i, Spec.OracleStatement F 1 1 i))) <$>
         drawChallenges 1 (drawOf ambient 1) := by
   rw [run_verifier_honestProver]
   refine congrArg (· <$> _) (funext fun chals => ?_)

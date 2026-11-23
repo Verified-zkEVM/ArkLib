@@ -100,19 +100,18 @@ theorem oracleExtractionGame_embed
   have hF : (fun z => z.1.2.2.map fun t => ((stmt, oStmt), z.2, t, z.1.2.1.2)) <$>
         (embedOracleVerifier V).extractionGame (fun _ o => o.2) (liftOracleExtractor E)
           (stmt, oStmt) adv =
-      ((fun z => (z.1, z.2.1, z.2.2.fst)) <$>
-        (embedOracleVerifier V).runWithLog stmt oStmt adv) >>= fun y =>
+      (embedOracleVerifier V).runWithAmbientLog stmt oStmt adv >>= fun y =>
         match y.1.2.2 with
         | none => pure none
         | some t => (fun ex => some ((stmt, oStmt), ex, t, y.1.2.1.2)) <$>
             liftComp (E (stmt, oStmt) y.1.2.1.2 (oracleDecode pSpec y.1.1) y.2.1 y.2.2).run
               (oSpec + challengeSpec oracleSig (oracleProtocol pSpec)) := by
-    rw [bind_map_left, Core.OracleVerifier.extractionGame, _root_.map_bind]
-    refine bind_congr fun x => ?_
+    rw [Core.OracleVerifier.extractionGame]
+    refine (_root_.map_bind _ _ _).trans (bind_congr fun x => ?_)
     rcases x with ⟨⟨tr, out, _ | v⟩, pl, vl⟩ <;> simp [liftOracleExtractor]
   have hlog := Core.OracleVerifier.runWithLog_fst (embedOracleVerifier V) stmt oStmt adv
-  simp only at hlog
-  rw [hF, hlog]
+  dsimp only at hlog
+  rw [hF, ← Core.OracleVerifier.map_runWithLog_eq_runWithAmbientLog, hlog]
   simp only [ambientLogged, bind_map_left, bind_assoc]
   refine bind_congr fun x => ?_
   rw [simulateQ_embedOracleVerifier_decide, run_withLogging_inl, embedOracleVerifier_outputMap_f]
@@ -165,8 +164,9 @@ theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ Prob
 and output oracle data, with the prover's output witness. -/
 def oracleKnowledgeJudgement (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)) :
     OutputJudgement (Observation oracleSig (oracleProtocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i)))
-      (StmtOut × (∀ i, OStmtOut i)) (relProblem relOut) :=
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i)))
+      (relProblem relOut :
+        PathProblem (oracleProtocol pSpec) (fun _ => StmtOut × (∀ i, OStmtOut i))) :=
   OutputJudgement.ofObservation (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
@@ -192,14 +192,15 @@ theorem prEvent_legacy_oracleKnowledge [MeasurableSpace WitIn] {Aux : Type}
           knowledgeTail [pSpec.Challenge]ₒ V.toVerifier E (stmt, oStmt)))}[
         (∀ w ∈ r.2.1, (r.1, w) ∉ relIn) ∧ (r.2.2.1, r.2.2.2) ∈ relOut] =
       letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
-        (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+        (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut)
+        (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
       𝒟[experiment init impl (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
         ((embedOracleVerifier V).extractionGame (fun _ o => o.2) (liftOracleExtractor E)
           (stmt, oStmt) adv)]
         {z | (oracleKnowledgeJudgement relOut).valid z.1 ∧
           ∀ wit ∈ z.2, ¬ (relProblem relIn).rel () (stmt, oStmt) wit} := by
   let : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
-    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   have hprover := runEq_ambientLogged_oracleProver impl ProtocolSpec.challengeQueryImpl adv
   rw [hadv] at hprover
   have hrun : experiment init impl (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
@@ -215,7 +216,7 @@ theorem prEvent_legacy_oracleKnowledge [MeasurableSpace WitIn] {Aux : Type}
         (runEq_ambientLogged_prover impl _ P (stmt, oStmt) aux st))
       (runEq_knowledgeTail impl _ _ V.toVerifier E (stmt, oStmt))
   have hmeas : MeasurableSet {z : Observation oracleSig (oracleProtocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i)) ×
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i)) ×
         Option WitIn |
       (oracleKnowledgeJudgement relOut).valid z.1 ∧
         ∀ wit ∈ z.2, ¬ (relProblem relIn).rel () (stmt, oStmt) wit} :=
@@ -249,7 +250,7 @@ theorem oracleKnowledgeSoundnessWith_iff (init : ProbComp σ)
     (E : _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec)
     (ε : ℝ≥0) :
     letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundnessWith
         ((embedOracleVerifier V).classicalModel init impl
@@ -260,7 +261,7 @@ theorem oracleKnowledgeSoundnessWith_iff (init : ProbComp σ)
         (liftOracleExtractor E) ε ↔
       V.knowledgeSoundnessWith init impl relIn relOut E ε := by
   let : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
-    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+    (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   let : MeasurableSpace WitIn := ⊤
   have hW : ∀ s : Set WitIn, MeasurableSet s := fun _ => MeasurableSpace.measurableSet_top
   constructor
@@ -292,7 +293,7 @@ theorem oracleKnowledgeSoundness_iff (init : ProbComp σ)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)) (ε : ℝ≥0) :
     letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
-      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i))) := ⊤
+      (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundness
         ((embedOracleVerifier V).classicalModel init impl

@@ -20,7 +20,7 @@ challenge distribution: the requests are uniform when the challenge oracle is in
 
 The decision reads the challenges from the verifier view and answers each legacy message query
 through `route`, which sends it to the oracle node of its round. The output oracle is the input
-polynomial, kept by an embedding output map.
+polynomial: the output map projects to the input data.
 
 The interaction always runs every round. A failed round check makes the legacy fold return
 `none` and skips only the later checks.
@@ -295,6 +295,7 @@ def legacyProgram (stmt : Spec.StatementRound R n 0)
   Spec.oracleVerifierProgram R deg (Spec.StatementRound R n) (roundCheck R deg n D ambient)
     stmt chals
 
+omit [SampleableType R] in
 /-- The legacy oracle verifier runs exactly the legacy decision fold. -/
 theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
     (chals : (Spec.pSpec R deg n).Challenges) :
@@ -306,31 +307,33 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
 /-- Lift path-oracle queries into the decision's query interface. -/
 def decisionLift (p : Path (protocol R deg n)) :
     QueryImpl (oracles (protocol R deg n) p)
-      (OracleComp (ambient + (sumFamily (polyFamily R deg n)
-        (pathFamily (protocol R deg n) p)).spec)) :=
-  fun q => liftM ((ambient + (sumFamily (polyFamily R deg n)
-    (pathFamily (protocol R deg n) p)).spec).query (.inr ⟨.inr q.1, q.2⟩))
+      (OracleComp (ambient + (pathResources (polyFamily R deg n) (protocol R deg n) p).spec)) :=
+  fun q => liftM ((ambient +
+    (pathResources (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
 
 /-- The Sumcheck oracle verifier: the legacy decision fold on the view's challenges, with every
 message query routed to its oracle node. The output oracle is the input polynomial. -/
 def verifier : OracleVerifier ambient (protocol R deg n) (Spec.StatementRound R n 0)
-    (Spec.StatementRound R n (Fin.last n)) (polyFamily R deg n) (polyFamily R deg n) where
+    (fun _ => Spec.StatementRound R n (Fin.last n)) (polyFamily R deg n)
+    (fun _ => polyFamily R deg n) where
   decide stmt p v := OptionT.mk (simulateQ (decisionLift R deg n ambient p)
     (simulateQ (route R deg n p) (legacyProgram R deg n D ambient stmt (viewChallenges v))))
   outputMap _ p _ :=
-    { f := fun x _ => x (.inl ())
-      impl := fun q => liftM ((sumFamily (polyFamily R deg n)
-        (pathFamily (protocol R deg n) p)).spec.query ⟨.inl (), q.2⟩)
+    { f := fun x => x.1
+      impl := fun q => liftM
+        ((pathResources (polyFamily R deg n) (protocol R deg n) p).spec.query (.inl q))
       law := fun _ _ => rfl }
 
-/-- The output map keeps the input polynomial: it is the embedding of the input slot. -/
+omit [SampleableType R] in
+/-- The output map keeps the input polynomial: it is the projection to the input resources. -/
 theorem verifier_outputMap (stmt : Spec.StatementRound R n 0) (p : Path (protocol R deg n))
     (v : View (protocol R deg n) p) :
     (verifier R deg n D ambient).outputMap stmt p v =
-      OracleMap.embedding (sumFamily (polyFamily R deg n) (pathFamily (protocol R deg n) p))
-        (fun _ => .inl ()) :=
+      OracleMap.fst (Resources.ofFamily (polyFamily R deg n))
+        (Resources.ofFamily (pathFamily (protocol R deg n) p)) :=
   rfl
 
+omit [SampleableType R] in
 /-- The decision is the legacy decision fold with its message queries renamed by `route`. -/
 theorem verifier_decide (stmt : Spec.StatementRound R n 0) (p : Path (protocol R deg n))
     (v : View (protocol R deg n) p) :
@@ -358,8 +361,8 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
     (data : ∀ i, Spec.OracleStatement R n deg i)
     (pl : ∀ i, OracleData (protocol R deg n) p i) {α : Type}
     (oa : OracleComp (oracles (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift amb ((sumFamily (polyFamily R deg n)
-        (pathFamily (protocol R deg n) p)).behaviorOfRealizations (sumData data pl)))
+    simulateQ (QueryImpl.addLift amb ((polyFamily R deg n).behaviorOfRealizations data +
+        (pathFamily (protocol R deg n) p).behaviorOfRealizations pl))
       (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         OracleComp spec' α) := by
@@ -370,13 +373,14 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
   · rw [simulateQ_liftTarget]
     rfl
 
+omit [SampleableType R] in
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript. -/
 theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : PathAlong oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift amb ((sumFamily (polyFamily R deg n)
-        (pathFamily (protocol R deg n) (projectPathAlong oracleSig _ tr))).behaviorOfRealizations
-          (sumData data (payloads _ tr))))
+    simulateQ (QueryImpl.addLift amb ((polyFamily R deg n).behaviorOfRealizations data +
+        (pathFamily (protocol R deg n) (projectPathAlong oracleSig _ tr)).behaviorOfRealizations
+          (payloads _ tr)))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) :
         OracleComp spec' _) := by
@@ -384,6 +388,7 @@ theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
   congr 1
   exact QueryImpl.simulateQ_simulateQ_eq_of_apply (simulateQ_route n tr) _
 
+omit [SampleableType R] in
 /-- The legacy oracle verifier, answering its queries from the oracle statement and the messages
 of a legacy transcript, returns `legacyVerdict` without ambient effects. -/
 theorem simulateQ_legacy_verify (stmt : Spec.StatementRound R n 0)
@@ -398,6 +403,7 @@ theorem simulateQ_legacy_verify (stmt : Spec.StatementRound R n 0)
     simulateQ_liftTarget]
   rfl
 
+omit [SampleableType R] in
 /-- Closed form of the execution against a fold of pure rounds, whatever its messages: every
 round runs and draws its challenge, and the verdict is the legacy verdict of the decoded
 transcript, with the input polynomial as output oracle. -/
@@ -410,7 +416,8 @@ theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
         (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (foldTranscript msg next n st chals))).map fun t => (t, oStmt)⟩ :
           Observation oracleSig (protocol R deg n) (fun _ => Out)
-            (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
+            (fun _ =>
+              Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
   unfold Interaction.Core.OracleVerifier.run
@@ -419,6 +426,7 @@ theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
   simp only [simulateQ_decide]
   rfl
 
+omit [SampleableType R] in
 /-- Closed form of the honest execution: draw every challenge, then return the honest transcript
 and output, and the legacy verdict of the decoded honest transcript with the input polynomial as
 output oracle. -/
@@ -429,7 +437,8 @@ theorem run_verifier_honestProver (stmt : Spec.StatementRound R n 0)
         (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (honestTranscript D stmt oStmt chals))).map fun t => (t, oStmt)⟩ :
           Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
-            (Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
+            (fun _ =>
+              Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) :=
   run_verifier_foldRounds D _ _ _ _ stmt oStmt
@@ -536,6 +545,7 @@ theorem simulateQ_simOracle2_messageOnly (oStmt : ∀ i, Spec.OracleStatement R 
     rw [simulateQ_bind, simulateQ_bind, simulateQ_spec_query, simulateQ_spec_query]
     exact (pure_bind (m := OracleComp ambient) _ _).trans (ih _ (hn _))
 
+omit [SampleableType R] in
 /-- A round whose message does not sum to the target over `D` fails its check. -/
 theorem roundCheck_eq_none (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (T : FullTranscript (Spec.SingleRound.pSpec R deg))
@@ -559,6 +569,7 @@ theorem roundCheck_eq_none (i : Fin n) (stmt : Spec.StatementRound R n i.castSuc
     Option.map_eq_none_iff] at e
   exact e
 
+omit [SampleableType R] in
 /-- A round whose message sums to the target over `D` passes its check, and the next statement
 evaluates the message at the challenge. -/
 theorem roundCheck_eq_some (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
@@ -584,6 +595,7 @@ theorem roundCheck_eq_some (i : Fin n) (stmt : Spec.StatementRound R n i.castSuc
     ↓existsAndEq, true_and] at e
   exact e.1
 
+omit [SampleableType R] in
 /-- If the first round fails its check, the legacy verdict rejects, whatever the later rounds. -/
 theorem legacyVerdict_eq_none {k : ℕ} (stmt : Spec.StatementRound R (k + 1) 0)
     (A : FullTranscript (Spec.SingleRound.pSpec R deg)) (B : FullTranscript (Spec.pSpec R deg k))

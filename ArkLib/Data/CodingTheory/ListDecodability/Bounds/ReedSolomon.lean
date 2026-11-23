@@ -574,7 +574,7 @@ access and was not available for primary-source verification, so JH01 coverage r
 open rather than being attributed to this different result. -/
 theorem rs_codimension_one_list_size
     (j : ℕ)
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     (hcard_le : Fintype.card ι ≤ Fintype.card F)
     (hι : Fintype.card ι = j + 1) :

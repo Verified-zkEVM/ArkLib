@@ -99,7 +99,7 @@ if for every `S ∈ C` exactly one of the following holds:
 `ε`.
 
 We call `δ` the proximity parameter and `ε` the error parameter. -/
-noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α] [Nonempty α]
+noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α]
   (P : Finset (ι → α)) (C : Set (Finset (ι → α))) (δ ε : ℝ≥0) : Prop :=
   ∀ S ∈ C, ∀ [Nonempty S],
   Xor
@@ -169,7 +169,7 @@ private theorem prEvent_affineLine_image_eq (u : WordStack (A := A) (κ := Fin 2
     exact (SampleableType.prEvent_uniformSample_comp_of_bijective ⟨hinj, hf⟩
       fun x => p x.val).symm
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Nonempty A] in
 /-- `(δ, ε)`-correlated agreement for affine lines implies that the collection of affine lines
 `{u₀ + z • u₁ | z ∈ F}` displays a `(δ, ε)`-proximity gap with respect to `P`. The code `P` need
 not be linear. For nonempty `P` the hypothesis `ε < 1` is needed for the `Xor`: for `ε ≥ 1`
@@ -228,7 +228,7 @@ have correlated agreement.
   + to be able to support the `proximity generator` notation.
 -/
 noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
-    {A : Type 0} [AddCommMonoid A] [Module F A] [Fintype A] [DecidableEq A]
+    {A : Type 0} [AddCommMonoid A] [Module F A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
     ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
     Pr{let r ← $ᵗ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
@@ -280,7 +280,7 @@ noncomputable def mu_set (ι' : Finset ι) : ℝ :=
 
 /-- `μ`-weighted correlated agreement. -/
 noncomputable def weightedCorrelatedAgreement
-    (C : Set (ι → F)) [Nonempty C] {k : ℕ} (U : Fin k → ι → F) : ℝ :=
+    (C : Set (ι → F)) {k : ℕ} (U : Fin k → ι → F) : ℝ :=
   sSup {x |
     ∃ D' ⊆ (Finset.univ (α := ι)),
       x = mu_set μ D' ∧
