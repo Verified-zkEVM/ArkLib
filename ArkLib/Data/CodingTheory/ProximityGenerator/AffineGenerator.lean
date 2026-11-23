@@ -429,10 +429,11 @@ theorem not_isMCA_of_forall_mem {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fi
 error of the ambient module code `⊤` is `0`, since every family consists of codewords
 (`not_isMCA_of_forall_mem`). This includes radii outside `[0, 1]`. -/
 theorem mcaError_top_eq_zero {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
-    [Nonempty S] [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
+    [SampleableType S] [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (δ : ℝ) :
     mcaError G (⊤ : ModuleCode ι F A) δ = 0 := by
   classical
+  let _ : Fintype S := Fintype.ofFinite S
   refine le_antisymm ?_ bot_le
   refine (mcaError_le_ofReal_of_forall_card_le G ⊤ δ (B := 0) fun U ↦ ?_).trans_eq (by simp)
   rw [Finset.filter_false_of_mem fun x _ ↦

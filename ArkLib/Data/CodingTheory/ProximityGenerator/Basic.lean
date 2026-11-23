@@ -187,7 +187,7 @@ The supremum is over `ℓ → (ι → A)`, which is inhabited whenever `A` is �
 — so this is never a degenerate `⨆` over an empty family.
 
 The radius is `ℝ`, matching `Code.Lambda`; see `IsMCA`. -/
-noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+noncomputable def mcaError {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
   fun δ => ⨆ U : ℓ → (ι → A), Pr{let x ←$ᵗ S}[IsMCA G MC x U δ]
@@ -241,7 +241,7 @@ theorem isMCA_comp_equiv {κ : Type} [Fintype κ]
 
 /-- Coordinate equivalences preserve the worst-case MCA error. -/
 theorem mcaError_comp_equiv {κ : Type} [Fintype κ]
-    {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+    {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (MC' : ModuleCode κ F A)
     (e : κ ≃ ι) (hcode : ∀ w : ι → A, w ∘ e ∈ MC' ↔ w ∈ MC) (δ : ℝ) :
@@ -281,14 +281,14 @@ The pointwise reading — the bound at one individual family `U` — is `IsMCAGe
 The radius is quantified over `I`, the closed unit interval: this is the bound, and the bound is
 where `[0,1]` belongs, while the value underneath is total in the radius. See
 `docs/wiki/proximity-error-conventions.md`. -/
-def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+def IsMCAGenerator {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
   ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal)
 
 /-- **Unfolding lemma for `IsMCAGenerator`.** It *is* the `mcaError` bound, by definition; this is
 the entry point for `rw` and `simp only`, which do not see through a semireducible `def`. -/
-lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+lemma isMCAGenerator_iff_mcaError_le {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A) :
@@ -297,7 +297,7 @@ lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] [Sample
 /-- The pointwise reading: an MCA bound holds at each individual family `U`, not merely at the
 supremum. This is the form every consumer of an `IsMCAGenerator` hypothesis wants, and the reason
 quantifying over `U` inside the definition costs nothing after it is stated at the value. -/
-lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] [SampleableType S] {A : Type}
+lemma IsMCAGenerator.prob_le {S : Type} [SampleableType S] {A : Type}
     [AddCommMonoid A] [Module F A] {G : Generator S ℓ F} {ε_mca : I → ℝ≥0}
     {MC : ModuleCode ι F A} (h : IsMCAGenerator G ε_mca MC) (U : ℓ → (ι → A)) (δ : I) :
     Pr{let x ←$ᵗ S}[IsMCA G MC x U (δ : ℝ)] ≤ (ε_mca δ : ENNReal) :=
@@ -308,13 +308,13 @@ lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] [SampleableType
 Needed wherever the value has to cross back into `ℝ≥0` — e.g. to compare a `mcaError` against an
 `I → ℝ≥0` bound in the other direction, or to do `ENNReal` arithmetic that is only valid away
 from `⊤`. -/
-lemma mcaError_le_one {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+lemma mcaError_le_one {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) :
     mcaError G MC δ ≤ 1 :=
   iSup_le fun _ => prEvent_le_one _
 
-lemma mcaError_ne_top {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+lemma mcaError_ne_top {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) :
     mcaError G MC δ ≠ ⊤ :=
@@ -326,7 +326,7 @@ lemma mcaError_ne_top {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
 Monotonicity is specific to this notion: it holds because the event carries no
 distance-*anti*monotone conjunct. Errors whose event carries a guard do, and are not monotone —
 see `docs/wiki/proximity-error-conventions.md`. -/
-lemma mcaError_mono {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+lemma mcaError_mono {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) {δ δ' : ℝ} (h : δ ≤ δ') :
     mcaError G MC δ ≤ mcaError G MC δ' := by
@@ -351,7 +351,7 @@ same error, because the size clause only ever compares `n - |T|` against that fl
 
 So a challenge radius is really an integer grid index: a claim stated at an arbitrary real `δ` is
 either unattained or ambiguous, whereas one stated at `k/n` is neither. -/
-lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+lemma mcaError_eq_of_floor_eq {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) {δ δ' : ℝ}
     (hδ : 0 ≤ δ) (hδ' : 0 ≤ δ')
