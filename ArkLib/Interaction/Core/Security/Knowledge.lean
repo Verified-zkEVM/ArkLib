@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Security.Soundness
-public import ArkLib.Interaction.Core.Oracle.StepLog
+public import ArkLib.Interaction.Core.Oracle.QueriesByMove
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
@@ -346,7 +346,7 @@ def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OraclePr
       ((obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
         QueryLog (ambient +
           (pathResources inputs s (Transcript.path obs.1)).spec)) :=
-  StepLog.toLog <$> V.runWithStepLog stmt data prover
+  QueriesByMove.toLog <$> V.runWithQueriesByMove stmt data prover
 
 /-- The full logged specialization retains the original interaction and decision equations. -/
 theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
@@ -372,7 +372,7 @@ theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : O
   let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
     proveLog.fst, verifyLog⟩) :=
-  V.runWithStepLog_toLog stmt data prover
+  V.runWithQueriesByMove_toLog stmt data prover
 
 /-- The ambient part of the decision log is the log of an ambient-only logger, which the oracle
 extraction interfaces receive; `map_runWithLog_eq_runWithAmbientLog` names the right side. -/
@@ -448,7 +448,7 @@ def runWithAmbientLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     OracleComp (ambient + challengeSpec oracleSig s)
       (Outcome oracleSig s Out (OracleVerifier.Output T B) × QueryLog ambient ×
         QueryLog ambient) :=
-  AmbientStepLog.toLog <$> V.runWithAmbientStepLog stmt data prover
+  AmbientQueriesByMove.toLog <$> V.runWithAmbientQueriesByMove stmt data prover
 
 /-- The ambient logged specialization retains the original interaction and decision equation. -/
 theorem runWithAmbientLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
@@ -472,7 +472,7 @@ let full := ambient + challengeSpec oracleSig s
     (V.decide stmt p (toView s tr)).run).run >>= fun y =>
   pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)⟩,
     x.2.fst, y.2)) :=
-  V.runWithAmbientStepLog_toLog stmt data prover
+  V.runWithAmbientQueriesByMove_toLog stmt data prover
 
 /-- With small input universes, the ambient-log run is the full-log run with the decision log
 restricted to its ambient entries. -/

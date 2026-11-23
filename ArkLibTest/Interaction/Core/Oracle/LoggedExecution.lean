@@ -270,7 +270,7 @@ run_cmd do
       throwError "the rejected logged run is wrong: {summary false 7 19 hidden []}"
 
 /-! A persistent counter starting at 7 records three requests and ends at 10. The actual
-private output remains arbitrary and is retained by the logged observation. -/
+private output remains arbitrary and is retained by the logged outcome. -/
 example (hidden : Nat) :
     (fun result => (result.output.1.2.1, result.state, result.trace)) <$>
       (counter 7 pairChallenges).run
@@ -506,7 +506,7 @@ run_cmd do
 
 /-- The public announcement, challenge receive, oracle send and private final output all
 remain present when the verifier is passive. Equal setup requests remain separate effects. -/
-def stepProver : Prover oracleSig ambient mixed (fun _ => Nat) := do
+def moveProver : Prover oracleSig ambient mixed (fun _ => Nat) := do
   let _ ← liftM (ambient.query 9)
   let _ ← liftM (ambient.query 9)
   let _ ← liftM (ambient.query 1)
@@ -516,8 +516,8 @@ def stepProver : Prover oracleSig ambient mixed (fun _ => Nat) := do
       let _ ← liftM (ambient.query 5)
       pure ⟨(17 : Nat), pure 23⟩⟩
 
-/-- The decision keeps both former reception effects at the decision step. -/
-def stepVerifier :
+/-- The decision keeps both former reception effects at the decision entry. -/
+def moveVerifier :
     OracleVerifier ambient mixed Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ _ _ := do
     for tag in [2, 3, 6, 7] do
@@ -526,20 +526,20 @@ def stepVerifier :
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The summary reads the prover's and the verifier's query logs, the whole transcript, the
-private output and the verdict, together with the noncommutative runtime state. No actor is passed
-as an argument. -/
-def stepSummary :=
+private output and the verdict, together with the noncommutative runtime state. No querier is
+passed as an argument. -/
+def moveSummary :=
   (fun result =>
     let tr := result.output.1.1
     (result.output.2.1.map (·.1), result.output.2.2.fst.map (·.1),
       tr.1, tr.2.1, tr.2.2.1, result.output.1.2.1,
       result.output.1.2.2.map (·.1), result.state)) <$>
-    (digits mixedChallenges).run (stepVerifier.runWithLog () seven stepProver)
+    (digits mixedChallenges).run (moveVerifier.runWithLog () seven moveProver)
 
 /-- The prover's and the verifier's logs keep the multiplicity of setup queries and all actions.
-The transcript keeps both public directions and the final oracle payload. The accumulator shows the
+The transcript keeps both public directions and the final oracle message. The accumulator shows the
 order of their effects. -/
-theorem step_summary_contract : stepSummary =
+theorem move_summary_contract : moveSummary =
     pure ([9, 9, 1, 4, 5], [2, 3, 6, 7], true, true, (17 : Nat), 23, some 31, 2102563478) := by
   kernel_rfl
 
@@ -783,7 +783,7 @@ def fullDraw : (c : ChallengeNode oracleSig bitCombined) →
   fun c => liftM (bitFull.query (.inr c))
 
 /-- The prefix stage of `OracleVerifier.run_append`: the prefix interaction, ending after the
-seam step. -/
+seam move. -/
 def boundary (prover : Prover oracleSig bitAmbient bitCombined (fun _ => Nat)) :=
   TwoParty.Lens.run bitFirst (Focal.splitPrefix (prover.simulate toFull))
     (sampler oracleSig bitFirst (prefixDraw oracleSig bitFirst (fun _ => bitSecond) fullDraw))
@@ -810,7 +810,7 @@ example (secret : Nat) :
   rw [OracleVerifier.run_append]
   kernel_rfl
 
-/-! The reveal sits in the seam step, which `Focal.splitPrefix` places in the prefix stage: at the
+/-! The reveal sits in the seam move, which `Focal.splitPrefix` places in the prefix stage: at the
 boundary the informed run has state `(hidden, 1)` and trace `[challenge, true ↦ hidden]`, while
 the guess run has state `(hidden, 0)` and only the challenge. -/
 example (secret : Nat) :
@@ -880,7 +880,7 @@ example : loggedObserved 0 = (true, 13, some (0, 0)) := rfl
 /-- Logging retains the natural statement and pair realization of the nonzero branch. -/
 example : loggedObserved 7 = (false, 29, some (7, 7)) := rfl
 
-/-- Erasing a logged run retains the dependent observation for every input. -/
+/-- Erasing a logged run retains the dependent outcome for every input. -/
 example (input : Nat) : loggedObserved input = observed input := by
   have h := OracleVerifier.simulateQ_runWithLog_erase composite noQueries ()
     (fun _ => input) (prover input)
@@ -913,16 +913,16 @@ example {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtoco
 
 namespace Interaction.Core.LoggedExecutionTests
 
-/-- Read the step log from the same stateful scheduling fixture as the aggregate test. -/
-def stepLogSummary :=
+/-- Read the queries by move from the same stateful scheduling fixture as the aggregate test. -/
+def queriesByMoveSummary :=
   (fun result =>
-    (result.output.allSteps.map (fun step =>
-      (step.before.length, step.role, step.queries.map (·.1))),
-      result.output.observation.2.1, result.output.observation.2.2.map (·.1), result.state)) <$>
-    (digits mixedChallenges).run (stepVerifier.runWithStepLog () seven stepProver)
+    (result.output.withDecision.map (fun entry =>
+      (entry.before.length, entry.role, entry.queries.map (·.1))),
+      result.output.outcome.2.1, result.output.outcome.2.2.map (·.1), result.state)) <$>
+    (digits mixedChallenges).run (moveVerifier.runWithQueriesByMove () seven moveProver)
 
-/-- The passive schedule keeps every prover step boundary and gives the decision its own step. -/
-theorem step_log_contract : stepLogSummary = pure
+/-- The passive schedule keeps every move boundary and gives the decision its own entry. -/
+theorem queries_by_move_contract : queriesByMoveSummary = pure
     ([(0, .sender, [9, 9, 1]), (0, .receiver, []), (1, .sender, [4]), (1, .receiver, []),
       (2, .sender, [5]), (2, .receiver, []), (3, .sender, []), (3, .receiver, []),
       (3, .receiver, [2, 3, 6, 7])], 23, some 31, 2102563478) := by
@@ -934,22 +934,23 @@ def answerTags {s : OracleProtocol} (draw : QueryImpl (challengeSpec oracleSig s
   | .inl n => n
   | .inr c => draw c
 
-/-- The step log keeps the public challenges that were drawn and the hidden payloads that were
-sent. -/
-def actualStepLog : OracleVerifier.StepLog stepVerifier (fun _ => Nat) :=
+/-- The queries by move keep the public challenges that were drawn and the hidden oracle messages
+that were sent. -/
+def actualQueriesByMove : OracleVerifier.QueriesByMove moveVerifier (fun _ => Nat) :=
   simulateQ (answerTags mixedChallenges)
-  (stepVerifier.runWithStepLog () seven stepProver)
+  (moveVerifier.runWithQueriesByMove () seven moveProver)
 
-/-- The transcript so far at a step shows the sampled bit and the concrete sent payload. -/
-theorem actual_step_prefixes :
-    (actualStepLog.allSteps[4]'(by decide)).before =
-      (some ⟨true, some ⟨true, none⟩⟩ : TranscriptPrefix mixed) ∧
-    actualStepLog.decisionStep.before =
-      (some ⟨true, some ⟨true, some ⟨(17 : Nat), none⟩⟩⟩ : TranscriptPrefix mixed) := by
+/-- The partial transcript of an entry shows the sampled bit and the concrete sent oracle
+message. -/
+theorem actual_partial_transcripts :
+    (actualQueriesByMove.withDecision[4]'(by decide)).before =
+      (some ⟨true, some ⟨true, none⟩⟩ : PartialTranscript oracleSig mixed) ∧
+    actualQueriesByMove.decision.before =
+      (some ⟨true, some ⟨true, some ⟨(17 : Nat), none⟩⟩⟩ : PartialTranscript oracleSig mixed) := by
   constructor <;> kernel_rfl
 
-/-- An explicit setup keeps its own step in front of the same sends and the final output. -/
-def stepSetup : OracleComp ambient (Prover oracleSig ambient mixed (fun _ => Nat)) := do
+/-- An explicit setup keeps its own entry in front of the same sends and the final output. -/
+def moveSetup : OracleComp ambient (Prover oracleSig ambient mixed (fun _ => Nat)) := do
   let _ ← liftM (ambient.query 9)
   let _ ← liftM (ambient.query 9)
   pure (do
@@ -961,24 +962,24 @@ def stepSetup : OracleComp ambient (Prover oracleSig ambient mixed (fun _ => Nat
         pure ⟨(17 : Nat), pure 23⟩⟩)
 
 /-- Execute the explicitly separate setup and interaction in the same ambient world. -/
-def setupStepLog : OracleVerifier.StepLog stepVerifier (fun _ => Nat) :=
+def setupQueriesByMove : OracleVerifier.QueriesByMove moveVerifier (fun _ => Nat) :=
   simulateQ (answerTags mixedChallenges)
-  (stepVerifier.runWithSetupStep () seven stepSetup)
+  (moveVerifier.runWithProverSetup () seven moveSetup)
 
-/-- The setup step and the first send step stay separate, and both start from the empty
+/-- The setup entry and the first send entry stay separate, and both start from the empty partial
 transcript. -/
-theorem setup_step_log_contract : setupStepLog.allSteps.map (fun step =>
-    (step.before.length, step.role, step.queries.map (·.1))) =
+theorem setup_queries_by_move_contract : setupQueriesByMove.withDecision.map (fun entry =>
+    (entry.before.length, entry.role, entry.queries.map (·.1))) =
       [(0, .sender, [9, 9]), (0, .sender, [1]), (0, .receiver, []),
         (1, .sender, [4]), (1, .receiver, []), (2, .sender, [5]), (2, .receiver, []),
         (3, .sender, []), (3, .receiver, []), (3, .receiver, [2, 3, 6, 7])] := by
   kernel_rfl
 
-/-- A fixed public announcement followed by a final prover step. -/
+/-- A fixed public announcement followed by a final prover move. -/
 @[instance_reducible] def fixedMessage : OracleProtocol :=
   .liftBind (.message Unit) (fun _ => .pure ⟨⟩)
 
-/-- Place the same ambient request either before the message or in the final prover step. -/
+/-- Place the same ambient request either before the message or in the final prover move. -/
 def moveQuery (early : Bool) : Prover oracleSig ambient fixedMessage (fun _ => Nat) := do
   if early then let _ ← liftM (ambient.query 5)
   pure ⟨(), do
@@ -991,12 +992,12 @@ def fixedVerifier :
   decide _ _ _ := pure 31
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- Ordinary observations, including the whole transcript and private output, are identical. -/
+/-- Ordinary outcomes, including the whole transcript and private output, are identical. -/
 theorem moved_query_same_run :
     fixedVerifier.run () seven (moveQuery true) = fixedVerifier.run () seven (moveQuery false) := by
   kernel_rfl
 
-/-- Aggregate logs cannot tell which step made the query. -/
+/-- Aggregate logs cannot tell which move made the query. -/
 theorem moved_query_same_log :
     fixedVerifier.runWithLog () seven (moveQuery true) =
       fixedVerifier.runWithLog () seven (moveQuery false) := by
@@ -1007,30 +1008,30 @@ def fixedDraw : QueryImpl (challengeSpec oracleSig fixedMessage) Id
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
-/-- Log the steps of a run that answers each query with its tag; this protocol has no challenge
+/-- Log the entries of a run that answers each query with its tag; this protocol has no challenge
 nodes. -/
-def movedQueryStepLog (early : Bool) : OracleVerifier.StepLog fixedVerifier (fun _ => Nat) :=
-  simulateQ (answerTags fixedDraw) (fixedVerifier.runWithStepLog () seven (moveQuery early))
+def movedQueryByMove (early : Bool) : OracleVerifier.QueriesByMove fixedVerifier (fun _ => Nat) :=
+  simulateQ (answerTags fixedDraw) (fixedVerifier.runWithQueriesByMove () seven (moveQuery early))
 
-/-- The steps that make queries have different transcripts so far, although all aggregate
-observations coincide. -/
-theorem moved_query_different_prefixes :
-    ((movedQueryStepLog true).allSteps.filter (fun step => !step.queries.isEmpty)).map
-        (fun step => step.before.length) = [0] ∧
-    ((movedQueryStepLog false).allSteps.filter (fun step => !step.queries.isEmpty)).map
-        (fun step => step.before.length) = [1] := by
+/-- The entries that make queries have different partial transcripts, although all aggregate
+outcomes coincide. -/
+theorem moved_query_different_partial_transcripts :
+    ((movedQueryByMove true).withDecision.filter (fun entry => !entry.queries.isEmpty)).map
+        (fun entry => entry.before.length) = [0] ∧
+    ((movedQueryByMove false).withDecision.filter (fun entry => !entry.queries.isEmpty)).map
+        (fun entry => entry.before.length) = [1] := by
   constructor <;> kernel_rfl
 
-/-- Two oracle sends give a join step and a decision step with fixed transcripts so far. -/
+/-- Two oracle sends give a join entry and a decision entry with fixed partial transcripts. -/
 @[instance_reducible] def twoOracles : OracleProtocol :=
   .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ =>
     .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
 
-/-- The sent payloads and private result are distinct. -/
+/-- The sent oracle messages and private result are distinct. -/
 def twoOracleProver : Prover oracleSig ambient twoOracles (fun _ => Nat) :=
   pure ⟨(1 : Nat), pure ⟨(2 : Nat), pure 3⟩⟩
 
-/-- Read the old payload twice and then the fresh payload, retaining the full decision log. -/
+/-- Read the old oracle message twice and then the fresh one, retaining the full decision log. -/
 def twoOracleVerifier :
     OracleVerifier ambient twoOracles Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
@@ -1049,59 +1050,60 @@ def twoOracleDraw : QueryImpl (challengeSpec oracleSig twoOracles) Id
   | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
-/-- Run the strategies once to obtain the step log and its raw source log. -/
-def twoOracleStepLog : OracleVerifier.StepLog twoOracleVerifier (fun _ => Nat) :=
+/-- Run the strategies once to obtain the queries by move and their raw source log. -/
+def twoOracleQueriesByMove : OracleVerifier.QueriesByMove twoOracleVerifier (fun _ => Nat) :=
   simulateQ (answerTags twoOracleDraw)
-  (twoOracleVerifier.runWithStepLog () seven twoOracleProver)
+  (twoOracleVerifier.runWithQueriesByMove () seven twoOracleProver)
 
-/-- The first prover step of the second protocol is the passive join step. -/
-def joinStep : LoggedStep ambient twoOracles := twoOracleStepLog.allSteps[2]'(by decide)
+/-- The first prover move of the second protocol gives the passive join entry. -/
+def joinEntry : QueriesAt ambient twoOracles := twoOracleQueriesByMove.withDecision[2]'(by decide)
 
-/-- The final decision is its own step under P1. -/
-def decisionStep : LoggedStep ambient twoOracles := twoOracleStepLog.decisionStep
+/-- The final decision is its own entry under P1. -/
+def decisionEntry : QueriesAt ambient twoOracles := twoOracleQueriesByMove.decision
 
-/-- The join step is one of the steps of the run. -/
-theorem joinStep_mem : joinStep ∈ twoOracleStepLog.allSteps := List.getElem_mem _
+/-- The join entry is one of the entries of the run. -/
+theorem joinEntry_mem : joinEntry ∈ twoOracleQueriesByMove.withDecision := List.getElem_mem _
 
-/-- The decision step is also one of the steps of the run. -/
-theorem decisionStep_mem : decisionStep ∈ twoOracleStepLog.allSteps :=
-  twoOracleStepLog.decisionStep_mem
+/-- The decision entry is also one of the entries of the run. -/
+theorem decisionEntry_mem : decisionEntry ∈ twoOracleQueriesByMove.withDecision :=
+  twoOracleQueriesByMove.decision_mem_withDecision
 
-/-- The join step's transcript so far contains the first sent payload and stops before the
+/-- The join entry's partial transcript contains the first sent oracle message and stops before the
 second. -/
-theorem joinStep_before :
-    joinStep.before = (some ⟨(1 : Nat), none⟩ : TranscriptPrefix twoOracles) := by
+theorem joinEntry_before :
+    joinEntry.before = (some ⟨(1 : Nat), none⟩ : PartialTranscript oracleSig twoOracles) := by
   kernel_rfl
 
-/-- The decision step's transcript so far contains both concrete payloads. -/
-theorem decisionStep_before : decisionStep.before =
-    (some ⟨(1 : Nat), some ⟨(2 : Nat), none⟩⟩ : TranscriptPrefix twoOracles) := by
+/-- The decision entry's partial transcript contains both concrete oracle messages. -/
+theorem decisionEntry_before : decisionEntry.before =
+    (some ⟨(1 : Nat), some ⟨(2 : Nat), none⟩⟩ : PartialTranscript oracleSig twoOracles) := by
   kernel_rfl
 
-/-- The join step's actor is the prover, and the decision step's actor is the verifier's
+/-- The join entry's querier is the prover, and the decision entry's querier is the verifier's
 decision. -/
-theorem step_intrinsic_actors : joinStep.actor = .prover ∧ decisionStep.actor = .decision := by
+theorem entry_intrinsic_queriers :
+    joinEntry.querier = .prover ∧ decisionEntry.querier = .decision := by
   constructor <;> kernel_rfl
 
-/-- The join step's transcript so far is below the decision step's. -/
-def joinToDecisionLe : TranscriptPrefix.Le (s := twoOracles)
-    joinStep.before decisionStep.before := by
-  rw [joinStep_before, decisionStep_before]
-  exact TranscriptPrefix.Le.cons (a := .oracle Nat OracleInterface.instDefault)
+/-- The join entry's partial transcript is below the decision entry's. -/
+def joinToDecisionLe : PartialTranscript.Le (s := twoOracles)
+    joinEntry.before decisionEntry.before := by
+  rw [joinEntry_before, decisionEntry_before]
+  exact PartialTranscript.Le.cons (a := .oracle Nat OracleInterface.instDefault)
     (next := fun _ => .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
     (1 : Nat) (.empty _)
 
-/-- The sent oracle keeps its node name under the inclusion from the join step to the decision
-step. -/
-theorem joinStep_node : TranscriptPrefix.SentOracle.node decisionStep.before
-    (TranscriptPrefix.SentOracle.lift joinToDecisionLe (.inl ⟨⟩)) =
-      TranscriptPrefix.SentOracle.node joinStep.before (.inl ⟨⟩) :=
-  TranscriptPrefix.SentOracle.node_lift _ _
+/-- The sent oracle message keeps its node name under the inclusion from the join entry to the
+decision entry. -/
+theorem joinEntry_node : PartialTranscript.SentOracleMessageIndex.node decisionEntry.before
+    (PartialTranscript.SentOracleMessageIndex.lift joinToDecisionLe (.inl ⟨⟩)) =
+      PartialTranscript.SentOracleMessageIndex.node joinEntry.before (.inl ⟨⟩) :=
+  PartialTranscript.SentOracleMessageIndex.node_lift _ _
 
-/-- The first oracle is already sent at the join step, and the second oracle is not yet sent. -/
-theorem joinStep_isSent :
-    joinStep.before.IsSent (.inl ⟨⟩) ∧
-      ¬ joinStep.before.IsSent (.inr ⟨⟨⟩, .inl ⟨⟩⟩) := by
+/-- The first oracle is already sent at the join entry, and the second oracle is not yet sent. -/
+theorem joinEntry_isSent :
+    joinEntry.before.IsSent (.inl ⟨⟩) ∧
+      ¬ joinEntry.before.IsSent (.inr ⟨⟨⟩, .inl ⟨⟩⟩) := by
   constructor
   · exact ⟨.inl ⟨⟩, rfl⟩
   · rintro ⟨i, hi⟩
@@ -1109,46 +1111,46 @@ theorem joinStep_isSent :
     · cases hi
     · exact impossible.elim
 
-/-- At the decision step the newly sent oracle is sent too, under a different node name. -/
-theorem decisionStep_isSent :
-    decisionStep.before.IsSent (.inr ⟨⟨⟩, .inl ⟨⟩⟩) ∧
-      TranscriptPrefix.SentOracle.node decisionStep.before (.inl ⟨⟩) ≠
-        TranscriptPrefix.SentOracle.node decisionStep.before (.inr (.inl ⟨⟩)) := by
+/-- At the decision entry the newly sent oracle is sent too, under a different node name. -/
+theorem decisionEntry_isSent :
+    decisionEntry.before.IsSent (.inr ⟨⟨⟩, .inl ⟨⟩⟩) ∧
+      PartialTranscript.SentOracleMessageIndex.node decisionEntry.before (.inl ⟨⟩) ≠
+        PartialTranscript.SentOracleMessageIndex.node decisionEntry.before (.inr (.inl ⟨⟩)) := by
   constructor
   · exact ⟨.inr (.inl ⟨⟩), rfl⟩
   · intro equal
     cases equal
 
-/-- The step log keeps the exact old/old/fresh decision log, the private result and the closed
+/-- The queries by move keep the exact old/old/fresh decision log, the private result and the closed
 verdict. -/
-theorem step_source_log_contract :
-    twoOracleStepLog.decisionQueries.snd =
+theorem queries_by_move_source_log_contract :
+    twoOracleQueriesByMove.decisionQueries.snd =
       [⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩, ⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩,
         ⟨.inr ⟨.inr (.inl ⟨⟩), ()⟩, (2 : Nat)⟩] ∧
-    twoOracleStepLog.observation.2.1 = 3 ∧
-      twoOracleStepLog.observation.2.2.map (·.1) = some 4 := by
+    twoOracleQueriesByMove.outcome.2.1 = 3 ∧
+      twoOracleQueriesByMove.outcome.2.2.map (·.1) = some 4 := by
   constructor
   · kernel_rfl
   · constructor <;> kernel_rfl
 
-/-- Forgetting the step boundaries gives the existing logged execution, including its raw source
+/-- Forgetting the move boundaries gives the existing logged execution, including its raw source
 queries. -/
-example : OracleVerifier.StepLog.toLog <$>
-    twoOracleVerifier.runWithStepLog () seven twoOracleProver =
+example : OracleVerifier.QueriesByMove.toLog <$>
+    twoOracleVerifier.runWithQueriesByMove () seven twoOracleProver =
     twoOracleVerifier.runWithLog () seven twoOracleProver :=
-  twoOracleVerifier.toLog_runWithStepLog () seven twoOracleProver
+  twoOracleVerifier.toLog_runWithQueriesByMove () seven twoOracleProver
 
-#print axioms OracleVerifier.map_fst_runWithStepLog
-#print axioms OracleVerifier.toLog_runWithStepLog
-#print axioms OracleVerifier.runWithStepLog_prefixes
-#print axioms TranscriptPrefix.sentFamilyMap_query
-#print axioms TranscriptPrefix.availableMap_node
+#print axioms OracleVerifier.map_fst_runWithQueriesByMove
+#print axioms OracleVerifier.toLog_runWithQueriesByMove
+#print axioms OracleVerifier.runWithQueriesByMove_before_le
+#print axioms PartialTranscript.sentOracleMessageMap_query
+#print axioms PartialTranscript.availableMap_node
 
 end Interaction.Core.LoggedExecutionTests
 
 universe uQuery uInput uData
 
-/-- The ambient step log keeps the parent verifier's independent resource universes. -/
+/-- The ambient queries by move keep the parent verifier's independent resource universes. -/
 example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, uQuery}} {T J : FreeM.Path s → Type}
     {B : (p : FreeM.Path s) → J p → Type} {inputs : Resources.{0, uInput, uData}}
@@ -1156,12 +1158,12 @@ example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
-    OracleVerifier.AmbientStepLog.observation <$> V.runWithAmbientStepLog stmt data prover =
-      V.run stmt data prover := V.map_fst_runWithAmbientStepLog stmt data prover
+    OracleVerifier.AmbientQueriesByMove.outcome <$> V.runWithAmbientQueriesByMove stmt data prover =
+      V.run stmt data prover := V.map_fst_runWithAmbientQueriesByMove stmt data prover
 
 namespace Interaction.Core.LoggedExecutionTests
 
-/-- A small payload has genuinely larger query indices. -/
+/-- A small oracle message has genuinely larger query indices. -/
 @[reducible] def liftedQueries : OracleInterface.{0, 1} Nat where
   Query := ULift.{1, 0} Unit
   toOC.spec _ := Nat
@@ -1187,19 +1189,19 @@ def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
-/-- The ambient step log of a run with a genuinely larger-query oracle node, without resource
-indices. -/
-def liftedStepLog : OracleVerifier.AmbientStepLog liftedVerifier (fun _ => Nat) :=
+/-- The ambient queries by move of a run with a genuinely larger-query oracle node, without
+resource indices. -/
+def liftedQueriesByMove : OracleVerifier.AmbientQueriesByMove liftedVerifier (fun _ => Nat) :=
   simulateQ (show QueryImpl (ambient + challengeSpec oracleSig liftedNode) Id from
     fun q => match q with | .inl n => n | .inr c => liftedDraw c)
-    (liftedVerifier.runWithAmbientStepLog () seven (pure ⟨(17 : Nat), pure 23⟩))
+    (liftedVerifier.runWithAmbientQueriesByMove () seven (pure ⟨(17 : Nat), pure 23⟩))
 
-/-- The same larger-query run returns its payload, its private output and the transcript so far
-at the decision step. -/
-theorem lifted_step_log_contract : liftedStepLog.observation.2.1 = 23 ∧
-    liftedStepLog.observation.2.2.map (·.1) = some 17 ∧
-    liftedStepLog.decisionStep.before =
-      (some ⟨(17 : Nat), none⟩ : TranscriptPrefix liftedNode) := by
+/-- The same larger-query run returns its oracle message, its private output and the partial
+transcript at the decision entry. -/
+theorem lifted_queries_by_move_contract : liftedQueriesByMove.outcome.2.1 = 23 ∧
+    liftedQueriesByMove.outcome.2.2.map (·.1) = some 17 ∧
+    liftedQueriesByMove.decision.before =
+      (some ⟨(17 : Nat), none⟩ : PartialTranscript oracleSig liftedNode) := by
   constructor
   · kernel_rfl
   · constructor <;> kernel_rfl

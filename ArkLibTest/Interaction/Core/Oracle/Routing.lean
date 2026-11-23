@@ -10,7 +10,7 @@ import ArkLibTest.Interaction.Core.Oracle.DependentRouting
 /-! The prefix exports `input false + sent.1` and hides input slot `true`. The suffix samples a
 challenge, sends one oracle, and sees only the export and its own message. The composed run keeps
 the prover's private memory and ambient order, and its output data is the export of the same run.
-A prefix-slot query routed by `prefixRoute` is answered from the prefix payload. -/
+A prefix-slot query routed by `prefixRoute` is answered from the prefix oracle message. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
@@ -278,7 +278,8 @@ example (hidden secret : Nat) :=
     (inputData hidden) (prover secret)
 
 /-! Additional prefix-routing coverage: on an appended transcript built from separate
-prefix and suffix transcripts, the routed prefix data is the prefix transcript's own payload. -/
+prefix and suffix transcripts, the routed prefix data is the prefix transcript's own oracle
+message. -/
 
 /-- The prefix transcript with observable value 20 and a private second coordinate. -/
 def prefixTranscript (secret : Nat) : Transcript oracleSig firstProtocol := ⟨(20, secret), ⟨⟩⟩
@@ -301,7 +302,7 @@ example (hidden secret : Nat) :
         (pathResources inputs firstProtocol p).Data) =
       ⟨Transcript.path (prefixTranscript secret),
         (inputData hidden, oracleMessages firstProtocol (prefixTranscript secret))⟩ :=
-  OracleVerifier.prefixRoute_payload (inputs := inputs) (s₂ := fun _ => secondProtocol)
+  OracleVerifier.prefixRoute_oracleMessages (inputs := inputs) (s₂ := fun _ => secondProtocol)
     (inputData hidden)
     (prefixTranscript secret) suffixTranscript
 
@@ -310,8 +311,8 @@ end Interaction.Core.RoutingTests
 /-! SourceRoutingExample SR4: the routing declarations stay axiom-clean. -/
 run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.run_append,
-      ``Interaction.Core.OracleVerifier.prefixRoute_payload,
-      ``Interaction.Core.splitOracles_payloads, ``Interaction.Core.sampler_append_eq,
+      ``Interaction.Core.OracleVerifier.prefixRoute_oracleMessages,
+      ``Interaction.Core.splitOracleMessages_oracleMessages, ``Interaction.Core.sampler_append_eq,
       ``Interaction.Core.OracleMap.simulate_withAmbient_addLift] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do

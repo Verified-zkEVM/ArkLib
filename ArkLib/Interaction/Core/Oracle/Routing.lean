@@ -14,10 +14,10 @@ Running a composed passive oracle verifier against an arbitrary prover of the ap
 splits into the prefix interaction and the suffix interaction, then the prefix decision on the
 data that `prefixRoute` selects, then, after a prefix acceptance only, the suffix decision on the
 data that `suffixRoute` selects. The returned output data is the composite output map applied to
-the inputs and all payloads of the same run. The statement is an equality of open oracle
+the inputs and all oracle messages of the same run. The statement is an equality of open oracle
 programs, so the order of ambient and challenge queries is preserved exactly.
 
-In an appended run, the prefix decision's resources are the inputs and the payloads of the
+In an appended run, the prefix decision's resources are the inputs and the oracle messages of the
 prefix transcript alone.
 -/
 
@@ -63,8 +63,10 @@ theorem splitOracles_append : (s₁ : OracleProtocol.{u, q}) →
       funext i
       rcases i with (i | i) | i <;> rfl
 
-/-- In an appended run, the payloads routed to either component are that component's own. -/
-theorem splitOracles_payloads (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+/-- In an appended run, the oracle messages routed to either component are that component's
+own. -/
+theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{u, q})
+    (s₂ : Path s₁ → OracleProtocol.{u, q})
     (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨Path.split s₁ s₂
@@ -92,9 +94,10 @@ variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleFamily.{u, u, wK} (K p₁ p₂) (C p₁ p₂)}
 
-/-- In an appended run, the prefix decision's resources are the inputs and the prefix payloads:
-every prefix-slot query routed by `prefixRoute` is answered as `oracleMessageImpl s₁ tr₁` answers it. -/
-theorem prefixRoute_payload (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
+/-- In an appended run, the prefix decision's resources are the inputs and the prefix oracle
+messages: every prefix-slot query routed by `prefixRoute` is answered as
+`oracleMessageImpl s₁ tr₁` answers it. -/
+theorem prefixRoute_oracleMessages (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨(Path.split s₁ s₂
         (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))).1,
@@ -106,7 +109,7 @@ theorem prefixRoute_payload (data : inputs.Data) (tr₁ : Transcript oracleSig s
   have h := congrArg (fun z : SplitData s₁ s₂ =>
       (⟨z.1.1, (data, fun j => z.2 (.inl j))⟩ :
         (p : Path s₁) × (pathResources inputs s₁ p).Data))
-    (splitOracles_payloads s₁ s₂ tr₁ tr₂)
+    (splitOracleMessages_oracleMessages s₁ s₂ tr₁ tr₂)
   refine Eq.trans ?_ h
   refine Sigma.ext rfl (heq_of_eq ?_)
   rfl
@@ -114,8 +117,8 @@ theorem prefixRoute_payload (data : inputs.Data) (tr₁ : Transcript oracleSig s
 /-- A composed oracle run splits into the prefix interaction and the suffix interaction, followed
 by the prefix decision on the data `prefixRoute` selects and, after prefix acceptance only, the
 suffix decision on the data `suffixRoute` selects. The output data is the composite output map
-on the inputs and all payloads of the same run. Ambient and challenge queries keep their order.
-Intermediate and final statements and oracle families may depend on their public paths. -/
+on the inputs and all oracle messages of the same run. Ambient and challenge queries keep their
+order. Intermediate and final statements and oracle families may depend on their public paths. -/
 theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂) (stmt : S) (data : inputs.Data)
