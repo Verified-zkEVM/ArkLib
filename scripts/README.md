@@ -271,9 +271,10 @@ before and after the run; the report shows wall time beside `user + sys` CPU wor
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 The three measurements share one tree and run in order, so each leaves it warmer than the last.
-`native_build` measures the `.c.o` chain linked by the compiled runtime executables. That cost
-varies with the `.lake` cache, so measuring it separately keeps the validation wrapper's row
-comparable across dependency bumps.
+`native_build` exists to hold the `.c.o` chain that the compiled executables link
+(`toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `fri-extractor-runtime`, and
+`binius-runtime`): that is the cost which swings on `.lake` cache state,
+and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
 

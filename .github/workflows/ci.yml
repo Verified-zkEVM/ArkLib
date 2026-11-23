@@ -251,8 +251,8 @@ jobs:
             git -C .lake/packages/VCVio submodule update --init --recursive
           fi
 
-      # The runtime targets run by `validate.sh` link the native `.c.o` chain for their
-      # dependency graphs. That work is billed here rather
+      # `validate.sh` runs compiled runtime targets, which link
+      # the native `.c.o` chain for the whole dependency graph. That work is billed here rather
       # than to the validation wrapper: a dependency bump misses the dependency cache and the
       # compile costs ~5 minutes, which used to read as a wrapper regression. Every compiled
       # executable `validate.sh` runs belongs in this command; otherwise its link cost silently
