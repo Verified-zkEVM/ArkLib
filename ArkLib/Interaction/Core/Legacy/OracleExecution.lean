@@ -526,15 +526,15 @@ concrete data is legacy `simOracle2` on the input data and the path's messages. 
 queries go to any implementation `amb`: plain, stateful or logging. -/
 theorem simulateQ_decisionImpl {m : Type → Type} [Monad m] [LawfulMonad m]
     (amb : QueryImpl oSpec m) (p : Path (oracleProtocol pSpec))
-    (r : (pathResources (family OStmtIn) (oracleProtocol pSpec) p).Data) {α : Type}
+    (r : (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).Data) {α : Type}
     (x : OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)) α) :
     simulateQ (QueryImpl.addLift amb
-        ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r))
+        ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r))
         (simulateQ (decisionImpl p) x) =
       simulateQ amb (simulateQ (OracleInterface.simOracle2 (T₁ := OStmtIn) (T₂ := pSpec.Message)
         oSpec r.1 (pathMessages p r.2)) x) := by
   have key : ∀ t, simulateQ (QueryImpl.addLift amb
-        ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r))
+        ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r))
         (decisionImpl p t) =
       simulateQ amb (OracleInterface.simOracle2 (T₁ := OStmtIn) (T₂ := pSpec.Message)
         oSpec r.1 (pathMessages p r.2) t) := by
@@ -543,16 +543,16 @@ theorem simulateQ_decisionImpl {m : Type → Type} [Monad m] [LawfulMonad m]
         OracleInterface.simOracle2, QueryImpl.liftTarget_apply, QueryImpl.id_apply,
         QueryImpl.liftTarget_self]
       refine (QueryImpl.simulateQ_add_query_left amb (QueryImpl.liftTarget m
-        ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r)) q).trans ?_
+        ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r)) q).trans ?_
       rw [simulateQ_spec_query]
     · simp only [QueryImpl.addLift_def, OracleInterface.simOracle2, QueryImpl.liftTarget_self]
       change simulateQ _ (simulateQ (fun t => liftM
-          ((oSpec + (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec).query
-            (.inr t))) (resourceImpl p q)) = _
+          ((oSpec + (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec).query
+            (.inr t))) (pathBundleImpl p q)) = _
       rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
-        (impl := ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r).liftTarget m)
+        (impl := ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r).liftTarget m)
           (fun t => QueryImpl.simulateQ_add_query_right _ _ t),
-        simulateQ_liftTarget, resourceImpl_law]
+        simulateQ_liftTarget, pathBundleImpl_law]
       change pure _ = simulateQ amb (pure _)
       rw [simulateQ_pure]
   rw [QueryImpl.simulateQ_simulateQ_eq_of_apply key x]
@@ -649,12 +649,12 @@ def oracleObserveWith (order : Schedule)
     (oracleLegacySampler pSpec (challengeOracle oSpec pSpec))
   let pp := Transcript.path r.1
   let view := toView (oracleProtocol pSpec) r.1
-  let resources : (pathResources inputs (oracleProtocol pSpec) pp).Data :=
+  let pathData : (pathBundle inputs (oracleProtocol pSpec) pp).Data :=
     (data, oracleMessages (oracleProtocol pSpec) r.1)
   let verdict ← simulateQ (QueryImpl.addLift (liftShared oSpec pSpec)
-    ((pathResources inputs (oracleProtocol pSpec) pp).answer resources))
+    ((pathBundle inputs (oracleProtocol pSpec) pp).answer pathData))
     (V.decide stmt pp view).run
-  pure ⟨r.1, r.2.1, verdict.map fun t => (t, (V.outputMap stmt pp view).f resources)⟩
+  pure ⟨r.1, r.2.1, verdict.map fun t => (t, (V.outputMap stmt pp view).f pathData)⟩
 
 /-- **Challenge reindexing of an oracle run.** The run of an oracle verifier on a legacy
 protocol's oracle tree, with its challenges answered by the legacy challenge oracle, is the
@@ -727,7 +727,7 @@ theorem simulateQ_embedOracleVerifier_decide {m : Type → Type} [Monad m] [Lawf
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) (tr : Transcript oracleSig (oracleProtocol pSpec)) :
     simulateQ (QueryImpl.addLift amb
-        ((pathResources (family OStmtIn) _ tr.path).answer
+        ((pathBundle (family OStmtIn) _ tr.path).answer
           (oStmt, oracleMessages _ tr)))
         ((embedOracleVerifier V).decide stmt tr.path
           (toView _ tr)).run =

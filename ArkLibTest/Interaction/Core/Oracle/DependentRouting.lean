@@ -71,25 +71,25 @@ def exportInput : OracleVerifier ambient done Unit (fun _ => Unit) inputFamily
   decide _ _ _ := pure ()
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- The resources visible to the suffix at a completed suffix path. -/
-abbrev suffixResources (p : Path suffix) := pathResources inputFamily suffix p
+/-- The bundle visible to the suffix at a completed suffix path. -/
+abbrev suffixBundle (p : Path suffix) := pathBundle inputFamily suffix p
 
 /-- Query the exported input through its interface. -/
 def queryInput (p : Path suffix) :
-    OptionT (OracleComp (ambient + (suffixResources p).spec)) Nat :=
-  liftM ((ambient + (suffixResources p).spec).query (.inr (.inl ⟨(), ()⟩)))
+    OptionT (OracleComp (ambient + (suffixBundle p).spec)) Nat :=
+  liftM ((ambient + (suffixBundle p).spec).query (.inr (.inl ⟨(), ()⟩)))
 
 /-- Route the final unit query to the input, which answers the input value. -/
-def finalMap : (p : Path suffix) → OracleMap (suffixResources p) (finalFamily p)
+def finalMap : (p : Path suffix) → OracleMap (suffixBundle p) (finalFamily p)
   | ⟨true, ⟨⟩⟩ =>
     { f := fun x _ => x.1 ()
       impl := fun q =>
-        liftM ((suffixResources ⟨true, ⟨⟩⟩).spec.query (.inl ⟨(), q.2⟩))
+        liftM ((suffixBundle ⟨true, ⟨⟩⟩).spec.query (.inl ⟨(), q.2⟩))
       law := fun _ _ => rfl }
   | ⟨false, ⟨⟩⟩ =>
     { f := fun x _ => (x.1 (), x.1 ())
       impl := fun q =>
-        liftM ((suffixResources ⟨false, ⟨⟩⟩).spec.query (.inl ⟨(), q.2⟩))
+        liftM ((suffixBundle ⟨false, ⟨⟩⟩).spec.query (.inl ⟨(), q.2⟩))
       law := fun _ _ => rfl }
 
 /-- The suffix checks the announced Boolean against one input query. It returns `()` after a

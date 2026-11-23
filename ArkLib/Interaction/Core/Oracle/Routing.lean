@@ -18,8 +18,8 @@ data is the composite output map applied to
 the inputs and all oracle messages of the same run. The statement is an equality of open oracle
 programs, so the order of ambient and challenge queries is preserved exactly.
 
-In an appended run, the prefix decision's resources are the inputs and the oracle messages of the
-prefix transcript alone.
+In an appended run, the prefix decision's bundle consists of the inputs and the oracle messages of
+the prefix transcript alone.
 -/
 
 @[expose] public section
@@ -30,32 +30,32 @@ namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 /-- Component paths of an appended protocol with data for both component oracle families. -/
-abbrev SplitData (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q}) :=
+abbrev SplitOracleMessages (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q}) :=
   (z : (p : Path s₁) × Path (s₂ p)) ×
     (∀ i, (sumFamily (oracleMessageFamily s₁ z.1) (oracleMessageFamily (s₂ z.1) z.2)).Realization i)
 
 /-- Splitting the oracles of an appended path recovers the routed component data. -/
-theorem splitOracles_append : (s₁ : OracleProtocol.{u, q}) →
+theorem splitOracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
     (s₂ : Path s₁ → OracleProtocol.{u, q}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : ∀ i, OracleMessage (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂) i) →
     (⟨Path.split s₁ s₂ (Path.append s₁ s₂ p₁ p₂),
-      (splitOracleMessages s₁ s₂ (Path.append s₁ s₂ p₁ p₂)).f x⟩ : SplitData s₁ s₂) =
+      (splitOracleMessages s₁ s₂ (Path.append s₁ s₂ p₁ p₂)).f x⟩ : SplitOracleMessages s₁ s₂) =
       ⟨⟨p₁, p₂⟩, (oracleMessageFamily_split s₁ s₂ p₁ p₂).f x⟩
   | .pure _, _, ⟨⟩, _, _ => rfl
   | .liftBind (.message X) next, s₂, ⟨b, p₁⟩, p₂, x =>
-    congrArg (fun z : SplitData (next b) (fun p => s₂ ⟨b, p⟩) =>
-      (⟨⟨⟨b, z.1.1⟩, z.1.2⟩, z.2⟩ : SplitData (.liftBind (.message X) next) s₂))
-      (splitOracles_append (next b) (fun p => s₂ ⟨b, p⟩) p₁ p₂ x)
+    congrArg (fun z : SplitOracleMessages (next b) (fun p => s₂ ⟨b, p⟩) =>
+      (⟨⟨⟨b, z.1.1⟩, z.1.2⟩, z.2⟩ : SplitOracleMessages (.liftBind (.message X) next) s₂))
+      (splitOracleMessages_append (next b) (fun p => s₂ ⟨b, p⟩) p₁ p₂ x)
   | .liftBind (.challenge X) next, s₂, ⟨b, p₁⟩, p₂, x =>
-    congrArg (fun z : SplitData (next b) (fun p => s₂ ⟨b, p⟩) =>
-      (⟨⟨⟨b, z.1.1⟩, z.1.2⟩, z.2⟩ : SplitData (.liftBind (.challenge X) next) s₂))
-      (splitOracles_append (next b) (fun p => s₂ ⟨b, p⟩) p₁ p₂ x)
+    congrArg (fun z : SplitOracleMessages (next b) (fun p => s₂ ⟨b, p⟩) =>
+      (⟨⟨⟨b, z.1.1⟩, z.1.2⟩, z.2⟩ : SplitOracleMessages (.liftBind (.challenge X) next) s₂))
+      (splitOracleMessages_append (next b) (fun p => s₂ ⟨b, p⟩) p₁ p₂ x)
   | .liftBind (.oracle X I) next, s₂, ⟨b, p₁⟩, p₂, x => by
-    have ih := congrArg (fun z : SplitData (next b) (fun p => s₂ ⟨b, p⟩) =>
+    have ih := congrArg (fun z : SplitOracleMessages (next b) (fun p => s₂ ⟨b, p⟩) =>
       (⟨⟨⟨b, z.1.1⟩, z.1.2⟩, sumData (sumData (fun i => x (.inl i))
           (fun j => z.2 (.inl j))) (fun k => z.2 (.inr k))⟩ :
-        SplitData (.liftBind (.oracle X I) next) s₂))
-      (splitOracles_append (next b) (fun p => s₂ ⟨b, p⟩) p₁ p₂ (fun j => x (.inr j)))
+        SplitOracleMessages (.liftBind (.oracle X I) next) s₂))
+      (splitOracleMessages_append (next b) (fun p => s₂ ⟨b, p⟩) p₁ p₂ (fun j => x (.inr j)))
     refine Eq.trans ?_ (ih.trans ?_)
     · refine Sigma.ext rfl (heq_of_eq ?_)
       funext i
@@ -74,18 +74,18 @@ theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{u, q})
         (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂)),
       (splitOracleMessages s₁ s₂
         (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))).f
-        (oracleMessages _ (Transcript.append s₁ s₂ tr₁ tr₂))⟩ : SplitData s₁ s₂) =
+        (oracleMessages _ (Transcript.append s₁ s₂ tr₁ tr₂))⟩ : SplitOracleMessages s₁ s₂) =
       ⟨⟨tr₁.path, tr₂.path⟩,
         sumData (oracleMessages s₁ tr₁) (oracleMessages _ tr₂)⟩ := by
   have h := congrArg (fun d : PathWithOracleMessages (s₁.append s₂) =>
-      (⟨Path.split s₁ s₂ d.1, (splitOracleMessages s₁ s₂ d.1).f d.2⟩ : SplitData s₁ s₂))
+      (⟨Path.split s₁ s₂ d.1, (splitOracleMessages s₁ s₂ d.1).f d.2⟩ : SplitOracleMessages s₁ s₂))
     (oracleMessages_append s₁ s₂ tr₁ tr₂)
-  refine h.trans ((splitOracles_append s₁ s₂ _ _ _).trans ?_)
+  refine h.trans ((splitOracleMessages_append s₁ s₂ _ _ _).trans ?_)
   rw [oracleMessageFamily_split_append]
 
 namespace OracleVerifier
 variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-  {inputs : Resources.{u, uI, dI}}
+  {inputs : OracleBundle.{u, uI, dI}}
   {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
   {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
   {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
@@ -95,7 +95,7 @@ variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleFamily.{u, u, wK} (K p₁ p₂) (C p₁ p₂)}
 
-/-- In an appended run, the prefix decision's resources are the inputs and the prefix oracle
+/-- In an appended run, the prefix decision's bundle consists of the inputs and the prefix oracle
 messages: every prefix-slot query routed by `prefixRoute` is answered as
 `oracleMessageImpl s₁ tr₁` answers it. -/
 theorem prefixRoute_oracleMessages (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
@@ -105,11 +105,11 @@ theorem prefixRoute_oracleMessages (data : inputs.Data) (tr₁ : Transcript orac
       (prefixRoute (inputs := inputs)
         (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))).f
         (data, oracleMessages _ (Transcript.append s₁ s₂ tr₁ tr₂))⟩ :
-      (p : Path s₁) × (pathResources inputs s₁ p).Data) =
+      (p : Path s₁) × (pathBundle inputs s₁ p).Data) =
       ⟨tr₁.path, (data, oracleMessages s₁ tr₁)⟩ := by
-  have h := congrArg (fun z : SplitData s₁ s₂ =>
+  have h := congrArg (fun z : SplitOracleMessages s₁ s₂ =>
       (⟨z.1.1, (data, fun j => z.2 (.inl j))⟩ :
-        (p : Path s₁) × (pathResources inputs s₁ p).Data))
+        (p : Path s₁) × (pathBundle inputs s₁ p).Data))
     (splitOracleMessages_oracleMessages s₁ s₂ tr₁ tr₂)
   refine Eq.trans ?_ h
   refine Sigma.ext rfl (heq_of_eq ?_)
@@ -138,21 +138,21 @@ theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
       let tr := Transcript.append s₁ s₂ tr₁ tr₂
       let p := tr.path
       let v := toView _ tr
-      let resources := (data, oracleMessages _ tr)
+      let pathData := (data, oracleMessages _ tr)
       let mid ← simulateQ (QueryImpl.addLift toFull
-          ((pathResources inputs s₁ (Path.split s₁ s₂ p).1).answer
-            ((prefixRoute (inputs := inputs) p).f resources)))
+          ((pathBundle inputs s₁ (Path.split s₁ s₂ p).1).answer
+            ((prefixRoute (inputs := inputs) p).f pathData)))
         (V₁.decide stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).run
       match mid with
       | none => pure ⟨tr, out, none⟩
       | some mid => do
         let verdict ← simulateQ (QueryImpl.addLift toFull
-            ((pathResources (middle (Path.split s₁ s₂ p).1)
+            ((pathBundle (middle (Path.split s₁ s₂ p).1)
               _ (Path.split s₁ s₂ p).2).answer
-              ((suffixRoute V₁ stmt p v).f resources)))
+              ((suffixRoute V₁ stmt p v).f pathData)))
           ((V₂ (Path.split s₁ s₂ p).1).decide mid (Path.split s₁ s₂ p).2
             (View.split s₁ s₂ p v).2).run
-        pure ⟨tr, out, verdict.map fun u => (u, (compatible.outputMap stmt p v).f resources)⟩) := by
+        pure ⟨tr, out, verdict.map fun u => (u, (compatible.outputMap stmt p v).f pathData)⟩) := by
   intro full toFull draw
   simp only [OracleVerifier.run_eq]
   rw [sampler_append_eq, run_splitSampler]

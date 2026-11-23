@@ -307,9 +307,9 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
 /-- Lift path-oracle queries into the decision's query interface. -/
 def decisionLift (p : Path (protocol R deg n)) :
     QueryImpl (oracleMessageSpec (protocol R deg n) p)
-      (OracleComp (ambient + (pathResources (polyFamily R deg n) (protocol R deg n) p).spec)) :=
+      (OracleComp (ambient + (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec)) :=
   fun q => liftM ((ambient +
-    (pathResources (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
+    (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
 
 /-- The Sumcheck oracle verifier: the legacy decision fold on the view's challenges, with every
 message query routed to its oracle node. The output oracle is the input polynomial. -/
@@ -321,16 +321,16 @@ def verifier : OracleVerifier ambient (protocol R deg n) (Spec.StatementRound R 
   outputMap _ p _ :=
     { f := fun x => x.1
       impl := fun q => liftM
-        ((pathResources (polyFamily R deg n) (protocol R deg n) p).spec.query (.inl q))
+        ((pathBundle (polyFamily R deg n) (protocol R deg n) p).spec.query (.inl q))
       law := fun _ _ => rfl }
 
 omit [SampleableType R] in
-/-- The output map keeps the input polynomial: it is the projection to the input resources. -/
+/-- The output map keeps the input polynomial: it is the projection to the input bundle. -/
 theorem verifier_outputMap (stmt : Spec.StatementRound R n 0) (p : Path (protocol R deg n))
     (v : View (protocol R deg n) p) :
     (verifier R deg n D ambient).outputMap stmt p v =
-      OracleMap.fst (Resources.ofFamily (polyFamily R deg n))
-        (Resources.ofFamily (oracleMessageFamily (protocol R deg n) p)) :=
+      OracleMap.fst (OracleBundle.ofFamily (polyFamily R deg n))
+        (OracleBundle.ofFamily (oracleMessageFamily (protocol R deg n) p)) :=
   rfl
 
 omit [SampleableType R] in
