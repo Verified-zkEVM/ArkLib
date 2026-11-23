@@ -701,14 +701,16 @@ example : knowledgeSoundnessWith coinModel coinInput anyOutput coinJudgement
     (classicalStraightLine (coinInput.Witness ()) coinVerifier (pure 0) tick draw
       (fun _ n => n)) coinLoggedExtractor 0 := fun stmt _ adv =>
   ⟨classicalStraightLine_marginal _ _ _ _ _ _ _ _ _, le_refl _,
-    (bad_eq_zero coinLoggedExtractor (fun _ _ _ _ _ _ hw => ⟨_, hw⟩) stmt adv).le⟩
+    (bad_eq_zero coinLoggedExtractor
+      (fun _ _ _ _ _ _ hw => ⟨_, OracleComp.eq_of_mem_support_pure _ hw⟩) stmt adv).le⟩
 
 /-- The transcript-only extractor certifies the same bound without either log. -/
 example : knowledgeSoundnessWith coinModel coinInput anyOutput coinJudgement
     (classicalTranscriptOnly (coinInput.Witness ()) coinVerifier (pure 0) tick draw
       (fun _ n => n)) coinTranscriptExtractor 0 := fun stmt _ adv =>
   ⟨classicalTranscriptOnly_marginal _ _ _ _ _ _ _ _ _, le_refl _,
-    (bad_eq_zero coinTranscriptExtractor.withLogs (fun _ _ _ _ _ _ hw => ⟨_, hw⟩) stmt adv).le⟩
+    (bad_eq_zero coinTranscriptExtractor.withLogs
+      (fun _ _ _ _ _ _ hw => ⟨_, OracleComp.eq_of_mem_support_pure _ hw⟩) stmt adv).le⟩
 
 /-- Records ambient queries and challenges in order, answering every challenge with `b`. -/
 def traceHandler (b : Bool) :

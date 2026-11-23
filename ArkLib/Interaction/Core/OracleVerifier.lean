@@ -71,8 +71,7 @@ abbrev oracleMessageSpec (s : OracleProtocol.{u, q}) (p : Path s) := (oracleMess
 
 /-- Read the oracle messages from exactly the full transcript that produced this shape. -/
 def oracleMessages : (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig s) →
-    (i : OracleMessageIndex s tr.path) →
-      OracleMessage s tr.path i
+    (i : OracleMessageIndex s tr.path) → OracleMessage s tr.path i
   | .pure _, _, i => i.elim
   | .liftBind (.message _) next, ⟨x, tr⟩, i => oracleMessages (next x) tr i
   | .liftBind (.challenge _) next, ⟨_, tr⟩, i => oracleMessages (next ⟨⟩) tr i
@@ -82,8 +81,7 @@ def oracleMessages : (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig 
 /-- The sole oracle message handler used by execution; it answers from the completed run. -/
 def oracleMessageImpl (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
     QueryImpl (oracleMessageSpec s tr.path) Id :=
-  (oracleMessageFamily s tr.path).behaviorOfRealizations
-    (oracleMessages s tr)
+  (oracleMessageFamily s tr.path).behaviorOfRealizations (oracleMessages s tr)
 
 /-- Pair the data of two disjoint families. -/
 def sumData {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
@@ -435,10 +433,8 @@ theorem oracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
     (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
       oracleMessages (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
         PathWithOracleMessages (s₁.append s₂)) =
-      ⟨Path.append s₁ s₂ tr₁.path
-          tr₂.path,
-        (oracleMessageFamily_append s₁ s₂ tr₁.path
-          tr₂.path).f
+      ⟨Path.append s₁ s₂ tr₁.path tr₂.path,
+        (oracleMessageFamily_append s₁ s₂ tr₁.path tr₂.path).f
           (sumData (oracleMessages s₁ tr₁) (oracleMessages _ tr₂))⟩
   | .pure _, _, ⟨⟩, _ => rfl
   | .liftBind (.message _) next, s₂, ⟨x, tr₁⟩, tr₂ =>
@@ -467,14 +463,12 @@ theorem oracleMessageImpl_append (s₁ : OracleProtocol.{u, q})
     (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
       oracleMessageImpl (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
       (p : Path (s₁.append s₂)) × QueryImpl (oracleMessageSpec (s₁.append s₂) p) Id) =
-    ⟨Path.append s₁ s₂ tr₁.path
-        tr₂.path,
+    ⟨Path.append s₁ s₂ tr₁.path tr₂.path,
       QueryImpl.compose
         ((sumFamily (oracleMessageFamily s₁ tr₁.path)
           (oracleMessageFamily _ tr₂.path)).behaviorOfRealizations
             (sumData (oracleMessages s₁ tr₁) (oracleMessages _ tr₂)))
-        (oracleMessageFamily_append s₁ s₂ tr₁.path
-          tr₂.path).impl⟩ := by
+        (oracleMessageFamily_append s₁ s₂ tr₁.path tr₂.path).impl⟩ := by
   have h := congrArg
     (fun d : PathWithOracleMessages (s₁.append s₂) =>
       (⟨d.1, (oracleMessageFamily (s₁.append s₂) d.1).behaviorOfRealizations d.2⟩ :
@@ -553,7 +547,8 @@ def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
     trace, decisionTrace⟩
 
-/-- Interpret the decision's resource queries using the input and actual run payloads. -/
+/-- Interpret the decision's resource queries using the input and the oracle messages of the
+actual run. -/
 def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}

@@ -12,7 +12,8 @@ public import ArkLib.Interaction.Core.Transcript
 
 A protocol is a tree with trivial leaves. Shape paths contain public branch choices, while
 runtime transcripts additionally record challenges and oracle payloads. The verifier view is
-a fibre over the shape path. Node indices are structural and never contain erased moves.
+the set of `viewSig` transcripts over a shape path (`TranscriptAt`). Node indices are structural
+and never contain erased moves.
 -/
 
 @[expose] public section
@@ -29,18 +30,20 @@ abbrev Protocol := FreeM PlainPoly.{u} PUnit.{u + 1}
 explicit result types describe trees whose leaves retain authored return values. -/
 abbrev OracleProtocol (Result : Type u := PUnit.{u + 1}) := FreeM OraclePoly.{u, q} Result
 
-/-- The oracle verifier's outcome, over a specified shape path. -/
+/-- The oracle verifier's view of a run: the transcripts at `viewSig` that follow the shape
+path `p`. -/
 def View (s : OracleProtocol.{u, q}) (p : Path s) : Type u :=
-  {v : Transcript viewSig s // v.path = p}
+  TranscriptAt viewSig s p
 
 /-- Erase oracle payloads from a completed run, retaining its exact shape path. -/
 def toView (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
     View s tr.path :=
   ⟨Transcript.mapMoves eraseOracle tr, Transcript.path_mapMoves eraseOracle tr⟩
 
-/-- All plain moves are visible, including the challenges erased from the shape. -/
+/-- All plain moves are visible, including the challenges erased from the shape: the transcripts
+at `plainSig` that follow the shape path `p`. -/
 def PlainView (s : Protocol.{u}) (p : Path s) : Type u :=
-  {tr : Transcript plainSig s // tr.path = p}
+  TranscriptAt plainSig s p
 
 /-- The full plain transcript with its shape certificate. -/
 def toPlainView (s : Protocol.{u}) (tr : Transcript plainSig s) :

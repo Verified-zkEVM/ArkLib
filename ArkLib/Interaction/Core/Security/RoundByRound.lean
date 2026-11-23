@@ -202,7 +202,7 @@ def Verifier.validAcceptance {ι σ : Type} {S : Type uS} {ambient : OracleSpec 
     (event : T tr.path → Prop) : Prop :=
   letI : MeasurableSpace (Option (T tr.path)) := ⊤
   ∃ state : σ, 0 < 𝒟[((simulateQ impl
-    (V.decide stmt tr.path (toPlainView s tr)).run).run' state :
+    (V.decide stmt (Transcript.path tr) (toPlainView s tr)).run).run' state :
       ProbComp (Option (T tr.path)))] {v | ∃ t, v = some t ∧ event t}
 
 /-- The plain verifier's default round-by-round soundness form. The output language is indexed
@@ -245,7 +245,7 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × inputs.Data) (tr : Transcript oracleSig s)
     (event : OracleVerifier.Output T B tr.path → Prop) : Prop :=
-  let p := tr.path
+  let p := Transcript.path tr
   let view := toView s tr
   let resources : (pathResources inputs s p).Data := (stmt.2, oracleMessages s tr)
   letI : MeasurableSpace (Option (T p)) := ⊤

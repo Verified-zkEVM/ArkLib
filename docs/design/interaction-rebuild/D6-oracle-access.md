@@ -18,8 +18,8 @@ form a family indexed by the shape path:
 -- intended, not existing
 def OracleMessageIndex (s : FreeM OraclePoly PUnit) : Path s → Type          -- oracle nodes on the path
 def oracleMessageSpec (s) (p : Path s) : OracleSpec (OracleMessageIndex s p)          -- their interfaces
-def oracleMessageImpl (s) (tr : PathAlong oracleSig s) :
-    QueryImpl (oracleMessageSpec s (projectPathAlong oracleSig s tr)) Id       -- answers from `tr`'s oracle messages
+def oracleMessageImpl (s) (tr : Transcript oracleSig s) :
+    QueryImpl (oracleMessageSpec s tr.path) Id       -- answers from `tr`'s oracle messages
 
 theorem oracleMessageFamily_append (p₁ : Path s₁) (p₂ : Path (s₂ p₁)) :
     oracleMessageSpec (s₁.append s₂) (Path.append p₁ p₂) ≃ₒ oracleMessageSpec s₁ p₁ + oracleMessageSpec (s₂ p₁) p₂
@@ -29,7 +29,7 @@ theorem oracleMessageImpl_append : oracleMessageImpl (append tr₁ tr₂) ≅ or
 The index set depends on the path, because public messages select the suffix, but only through
 the shape path `p`, which the verifier sees (record D3). The decision is typed
 `StmtIn → (p : Path s) → View s p → OptionT (OracleComp (oSpec + [OStmtIn]ₒ + oracleMessageSpec s p))
-(StmtOut p)`; in a run `p` is `projectPathAlong oracleSig s tr`, so `oracleMessageImpl s tr` answers its
+(StmtOut p)`; in a run `p` is `tr.path`, so `oracleMessageImpl s tr` answers its
 queries from the same run without a cast (record D4). Round-by-round state functions and extractors read
 prefix oracle messages as transcript data, not through queries (record D7).
 

@@ -386,6 +386,7 @@ theorem mapStepsWith_prefixes {ι : Type} {spec : OracleSpec ι}
       bind_map_left, _root_.map_bind, Functor.map_map,
       mem_support_bind_iff] at hr
     obtain ⟨vp, _, vc, _, heq⟩ := hr
+    simp only [LawfulApplicative.map_pure, mem_support_pure_iff] at heq
     subst r
     simp only [List.empty_eq, List.cons_append, List.nil_append, List.mem_cons,
       List.not_mem_nil, or_false] at hp
