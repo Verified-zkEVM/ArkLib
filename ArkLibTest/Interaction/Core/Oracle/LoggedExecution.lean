@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Oracle.LoggedExecution
-import ArkLib.Interaction.Core.Oracle.PrefixResources
+import ArkLib.Interaction.Core.Oracle.SentOracles
 import ArkLib.Interaction.Core.Oracle.Routing
 import ArkLibTest.Interaction.Core.Oracle.DependentRouting
 import VCVio.OracleComp.Runtime
@@ -140,7 +140,7 @@ def summary (accept : Bool) (old message hidden : Nat) (setup : List Nat) :
   let z := observed accept old message hidden setup
   (z.1.1.2.1, z.1.1.2.2.map (fun r => (r.1, r.2 ())), describePair _ z.1.2.2, z.2)
 
-/-! Additional passive coverage of erasure and the one-send schedule. The disposition inventory
+/-! Additional passive coverage of erasure and the one-send schedule. The port table
 separates these from the full public-message and challenge trace tested by `full_schedule`. -/
 example (accept : Bool) (old message hidden : Nat) (setup : List Nat) :
     (observed accept old message hidden setup).2 =
@@ -162,8 +162,9 @@ example (hidden : Nat) :
     (summary false 7 19 hidden []).2 = (none, [("tag", 1), ("sent", 19), ("tag", 2)], [0, 1, 2]) :=
   rfl
 
-/-! Additional passive accepting and rejecting executions with a setup query. Labelled terminal
-failures are tested separately below; rejection is never used as a substitute for failure. -/
+/-! Additional passive accepting and rejecting executions with a setup query. Labelled failures of
+the final decision are tested separately below. Rejection is never used as a substitute for
+failure. -/
 example (hidden : Nat) : summary false 7 11 hidden [9] =
     (hidden, none, [("tag", 1), ("sent", 11), ("tag", 2)], [9, 0, 1, 2]) := by
   kernel_rfl
@@ -173,7 +174,7 @@ example (hidden : Nat) : summary true 7 11 hidden [9] =
   kernel_rfl
 
 /-- A final decision reads the message before accepting, rejecting, or requesting a failure. -/
-def terminalVerifier (mode : Nat) :
+def decisionVerifier (mode : Nat) :
     OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -195,14 +196,14 @@ def terminalVerifier (mode : Nat) :
 
 /-- Answered ambient requests update a persistent history; two requests fail with distinct labels.
 An unanswered failing request has no query-answer entry. -/
-def terminalHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun tag => do
+def decisionHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun tag => do
   if tag = 17 ∨ tag = 23 then throw tag
   modify (· ++ [tag])
   pure tag
 
 /-- Execute the actual prover, then interpret its final decision with recoverable labelled
 failure. The private output and transcript are captured before interpreting that decision. -/
-def terminalObserved (mode old message hidden : Nat) :=
+def decisionObserved (mode old message hidden : Nat) :=
   (do
     let ⟨tr, out, _⟩ ← simulateQ (logger pairChallenges) (TwoParty.Lens.run pairSend
       ((pairProver [9] message hidden).simulate
@@ -211,30 +212,52 @@ def terminalObserved (mode old message hidden : Nat) :=
         liftM ((ambient + challengeSpec oracleSig pairSend).query (.inr c)))))
     let p := projectPathAlong oracleSig pairSend tr
     let data : (pathResources inputs pairSend p).Data := (fun _ => old, payloads pairSend tr)
-    let (verdict, log) ← (terminalVerifier mode).decideWithFailureLog terminalHandler () p
+    let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
       (toView pairSend tr) data
     pure (out, verdict.map (Option.map fun t =>
-      (t, ((terminalVerifier mode).outputMap () p (toView pairSend tr)).f data ())),
+      (t, ((decisionVerifier mode).outputMap () p (toView pairSend tr)).f data ())),
       describePair p log) : StateM (List Nat) _).run []
 
 /-- Both failures retain their distinct labels, all earlier effects, the source answer and the
 actual private output. Rejection and acceptance use the same execution and the same resources. -/
-theorem terminal_outcomes (old message hidden : Nat) :
-    terminalObserved 1 old message hidden =
+theorem decision_outcomes (old message hidden : Nat) :
+    decisionObserved 1 old message hidden =
       ((hidden, .error 17, [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
-    terminalObserved 2 old message hidden =
+    decisionObserved 2 old message hidden =
       ((hidden, .error 23, [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
-    terminalObserved 0 old message hidden =
+    decisionObserved 0 old message hidden =
       ((hidden, .ok none, [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
-    terminalObserved 3 old message hidden =
+    decisionObserved 3 old message hidden =
       ((hidden, .ok (some (message, old + message)),
         [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) := by
   exact ⟨rfl, rfl, rfl, rfl⟩
 
 /-- Closing uses the actual input and observable message, including the second accepted example. -/
-theorem terminal_closing_examples (hidden : Nat) :
-    (terminalObserved 3 7 11 hidden).1.2.1 = .ok (some (11, 18)) ∧
-    (terminalObserved 3 13 19 hidden).1.2.1 = .ok (some (19, 32)) := ⟨rfl, rfl⟩
+theorem decision_closing_examples (hidden : Nat) :
+    (decisionObserved 3 7 11 hidden).1.2.1 = .ok (some (11, 18)) ∧
+    (decisionObserved 3 13 19 hidden).1.2.1 = .ok (some (19, 32)) := ⟨rfl, rfl⟩
+
+section CloseOptional
+
+universe v u q dI uι uI uJ uS wJ
+
+/-- Closing an optional verdict with the completed transcript's resources commutes with wrapping
+the verdict as a success. `Except.ok outcome`, mapped by `Option.map close`, equals
+`Except.ok (outcome.map close)`. An absent verdict stays a rejection and creates no failure. -/
+theorem close_optional_ok {ε : Type v} {ι : Type uι} {S : Type uS}
+    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {T : Path s → Type u}
+    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
+    {inputs : Resources.{u, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (tr : PathAlong oracleSig s) (outcome : Option (T (projectPathAlong oracleSig s tr))) :
+    let p := projectPathAlong oracleSig s tr
+    let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+    let close := fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)
+    (Except.ok outcome : Except ε (Option (T p))).map (Option.map close) =
+      Except.ok (outcome.map close) := rfl
+
+end CloseOptional
 
 -- Executable samples of the rows above.
 run_cmd do
@@ -420,12 +443,12 @@ run_cmd do
 /-! ## A public message, a challenge and an oracle send -/
 
 /-- The prover sends a public bit, receives a challenge bit, then sends a scalar oracle. -/
-@[instance_reducible] def phased : OracleProtocol :=
+@[instance_reducible] def mixed : OracleProtocol :=
   .liftBind (.message Bool) (fun _ => .liftBind (.challenge Bool) (fun _ =>
     .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩)))
 
 /-- The prover records 9, 9 and 1 before the message, 4 before the challenge and 5 after it. -/
-def phasedProver : Prover oracleSig ambient phased (fun _ => Nat) := do
+def mixedProver : Prover oracleSig ambient mixed (fun _ => Nat) := do
   for t in [9, 9, 1] do let _ ← liftM (ambient.query t)
   pure ⟨true, do
     let _ ← liftM (ambient.query 4)
@@ -434,25 +457,25 @@ def phasedProver : Prover oracleSig ambient phased (fun _ => Nat) := do
       pure ⟨(if (show Bool from c) then 11 else 0 : Nat), pure 0⟩⟩
 
 /-- The decision records 2 and 3, reads the oracle, then records 6 and 7. -/
-def phasedVerifier :
-    OracleVerifier ambient phased Unit (fun _ => List Nat) inputs (fun _ => inputs) where
+def mixedVerifier :
+    OracleVerifier ambient mixed Unit (fun _ => List Nat) inputs (fun _ => inputs) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact do
       for t in [2, 3] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
+          ambient + (pathResources inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       let sent : Nat ← liftM (OracleSpec.query (spec :=
-        ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
+        ambient + (pathResources inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       for t in [6, 7] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (pathResources inputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
+          ambient + (pathResources inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       pure [sent]
   outputMap _ p _ := OracleMap.fst _ _
 
 /-- The challenge bit is `true`. -/
-def phasedChallenges : QueryImpl (challengeSpec oracleSig phased) Id
+def mixedChallenges : QueryImpl (challengeSpec oracleSig mixed) Id
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inl _⟩, _⟩ => pure true
   | ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, h⟩ => nomatch h
@@ -460,8 +483,8 @@ def phasedChallenges : QueryImpl (challengeSpec oracleSig phased) Id
 
 /-- A runtime whose state appends the digit `tag + 1` for each ambient query, answering with the
 tag. -/
-abbrev digits (draw : QueryImpl (challengeSpec oracleSig phased) Id) :
-    OracleRuntime []ₒ (ambient + challengeSpec oracleSig phased) where
+abbrev digits (draw : QueryImpl (challengeSpec oracleSig mixed) Id) :
+    OracleRuntime []ₒ (ambient + challengeSpec oracleSig mixed) where
   State := Nat
   setup := pure 1
   handler
@@ -471,8 +494,8 @@ abbrev digits (draw : QueryImpl (challengeSpec oracleSig phased) Id) :
 /-! Additional passive scheduling coverage. The produced trace distinguishes the challenge
 from ambient requests, and the state records the order of all ambient effects. -/
 run_cmd do
-  let result := runImport ((digits phasedChallenges).run
-    (phasedVerifier.runWithLog () seven phasedProver))
+  let result := runImport ((digits mixedChallenges).run
+    (mixedVerifier.runWithLog () seven mixedProver))
   unless result.trace.fst.map (·.1) == [9, 9, 1, 4, 5, 2, 3, 6, 7] do
     throwError "the surface trace is wrong: {result.trace.fst.map (·.1)}"
   unless result.trace.length == 10 do throwError "the challenge draw is missing from the trace"
@@ -481,9 +504,9 @@ run_cmd do
   unless result.output.1.2.2.map (·.1) == some [11] do
     throwError "the decision did not read the oracle sent after the challenge"
 
-/-- The public announcement, challenge receive, oracle send and private terminal output all
+/-- The public announcement, challenge receive, oracle send and private final output all
 remain present when the verifier is passive. Equal setup requests remain separate effects. -/
-def phaseProver : Prover oracleSig ambient phased (fun _ => Nat) := do
+def stepProver : Prover oracleSig ambient mixed (fun _ => Nat) := do
   let _ ← liftM (ambient.query 9)
   let _ ← liftM (ambient.query 9)
   let _ ← liftM (ambient.query 1)
@@ -493,29 +516,30 @@ def phaseProver : Prover oracleSig ambient phased (fun _ => Nat) := do
       let _ ← liftM (ambient.query 5)
       pure ⟨(17 : Nat), pure 23⟩⟩
 
-/-- The decision retains both former reception effects at the terminal boundary. -/
-def phaseVerifier :
-    OracleVerifier ambient phased Unit (fun _ => Nat) inputs (fun _ => exported) where
+/-- The decision keeps both former reception effects at the decision step. -/
+def stepVerifier :
+    OracleVerifier ambient mixed Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ _ _ := do
     for tag in [2, 3, 6, 7] do
       let _ ← liftM (ambient.query tag)
     pure 31
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- The phase observer reads both produced owner logs, the completed prefix, private output and
-verdict, together with the noncommutative runtime state. No replacement owner is an argument. -/
-def phaseSummary :=
+/-- The summary reads the prover's and the verifier's query logs, the whole transcript, the
+private output and the verdict, together with the noncommutative runtime state. No actor is passed
+as an argument. -/
+def stepSummary :=
   (fun result =>
     let tr := result.output.1.1
     (result.output.2.1.map (·.1), result.output.2.2.fst.map (·.1),
       tr.1, tr.2.1, tr.2.2.1, result.output.1.2.1,
       result.output.1.2.2.map (·.1), result.state)) <$>
-    (digits phasedChallenges).run (phaseVerifier.runWithLog () seven phaseProver)
+    (digits mixedChallenges).run (stepVerifier.runWithLog () seven stepProver)
 
-/-- The available owner logs retain setup multiplicity and all actions; the full prefix retains
-both public directions and the final oracle payload. The accumulator witnesses their effect
-order. -/
-theorem phase_log_contract : phaseSummary =
+/-- The prover's and the verifier's logs keep the multiplicity of setup queries and all actions.
+The transcript keeps both public directions and the final oracle payload. The accumulator shows the
+order of their effects. -/
+theorem step_summary_contract : stepSummary =
     pure ([9, 9, 1, 4, 5], [2, 3, 6, 7], true, true, (17 : Nat), 23, some 31, 2102563478) := by
   kernel_rfl
 
@@ -561,7 +585,7 @@ def scheduleHandler : QueryImpl (ambient + challengeSpec oracleSig schedule)
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, .inr ⟨_, n⟩⟩⟩⟩, _⟩ => n.elim
 
 /-- The full passive action trace includes public send, oracle send, draw, receive continuation
-and final decision. It also retains the private output and the terminal answer. -/
+and final decision. It also retains the private output and the final answer. -/
 theorem full_schedule (hidden : Nat) :
     (fun z => (z.1.1.2.1, z.1.1.2.2.map (·.1), z.2))
       ((simulateQ scheduleHandler (scheduleVerifier.runWithLog () seven
@@ -759,7 +783,7 @@ def fullDraw : (c : ChallengeNode oracleSig bitCombined) →
   fun c => liftM (bitFull.query (.inr c))
 
 /-- The prefix stage of `OracleVerifier.run_append`: the prefix interaction, ending after the
-seam slot. -/
+seam step. -/
 def boundary (prover : Prover oracleSig bitAmbient bitCombined (fun _ => Nat)) :=
   TwoParty.Lens.run bitFirst (Focal.splitPrefix (prover.simulate toFull))
     (sampler oracleSig bitFirst (prefixDraw oracleSig bitFirst (fun _ => bitSecond) fullDraw))
@@ -786,7 +810,7 @@ example (secret : Nat) :
   rw [OracleVerifier.run_append]
   kernel_rfl
 
-/-! The reveal sits in the seam slot, which `Focal.splitPrefix` places in the prefix stage: at the
+/-! The reveal sits in the seam step, which `Focal.splitPrefix` places in the prefix stage: at the
 boundary the informed run has state `(hidden, 1)` and trace `[challenge, true ↦ hidden]`, while
 the guess run has state `(hidden, 0)` and only the challenge. -/
 example (secret : Nat) :
@@ -827,13 +851,13 @@ example (guess : Bool) (secret : Nat) :
 
 end Interaction.Core.LoggedExecutionTests
 
-/-! The erasure laws, runtime erasure, recoverable terminal decision and logging after
+/-! The erasure laws, runtime erasure, recoverable final decision and logging after
 substitution use only the permitted kernel axioms. -/
 run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.runWithLog_fst,
       ``Interaction.Core.OracleVerifier.map_fst_runWithLog,
-      ``Interaction.Core.OracleVerifier.decideWithFailureLog,
-      ``Interaction.Core.OracleVerifier.close_optional_ok,
+      ``Interaction.Core.OracleVerifier.decideCatching,
+      ``Interaction.Core.LoggedExecutionTests.close_optional_ok,
       ``Interaction.Core.OracleVerifier.runtime_runWithLog_erase,
       ``Interaction.Core.OracleVerifier.simulateQ_runWithLog_erase,
       ``OracleComp.withQueryLog_simulateQ] do
@@ -889,16 +913,16 @@ example {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtoco
 
 namespace Interaction.Core.LoggedExecutionTests
 
-/-- Read per-slot provenance from the same stateful scheduling fixture as the aggregate test. -/
-def tracedPhaseSummary :=
+/-- Read the step log from the same stateful scheduling fixture as the aggregate test. -/
+def stepLogSummary :=
   (fun result =>
-    (result.output.phases.map (fun phase =>
-      (phase.prefix.length, phase.party, phase.queries.map (·.1))),
+    (result.output.allSteps.map (fun step =>
+      (step.before.length, step.role, step.queries.map (·.1))),
       result.output.observation.2.1, result.output.observation.2.2.map (·.1), result.state)) <$>
-    (digits phasedChallenges).run (phaseVerifier.runWithTrace () seven phaseProver)
+    (digits mixedChallenges).run (stepVerifier.runWithStepLog () seven stepProver)
 
-/-- The passive schedule retains every prover boundary and gives the decision its own phase. -/
-theorem phase_trace_contract : tracedPhaseSummary = pure
+/-- The passive schedule keeps every prover step boundary and gives the decision its own step. -/
+theorem step_log_contract : stepLogSummary = pure
     ([(0, .sender, [9, 9, 1]), (0, .receiver, []), (1, .sender, [4]), (1, .receiver, []),
       (2, .sender, [5]), (2, .receiver, []), (3, .sender, []), (3, .receiver, []),
       (3, .receiver, [2, 3, 6, 7])], 23, some 31, 2102563478) := by
@@ -910,21 +934,22 @@ def answerTags {s : OracleProtocol} (draw : QueryImpl (challengeSpec oracleSig s
   | .inl n => n
   | .inr c => draw c
 
-/-- The produced scheduling trace retains actual public challenges and hidden payloads. -/
-def actualPhaseTrace : OracleVerifier.TracedRun phaseVerifier (fun _ => Nat) :=
-  simulateQ (answerTags phasedChallenges)
-  (phaseVerifier.runWithTrace () seven phaseProver)
+/-- The step log keeps the public challenges that were drawn and the hidden payloads that were
+sent. -/
+def actualStepLog : OracleVerifier.StepLog stepVerifier (fun _ => Nat) :=
+  simulateQ (answerTags mixedChallenges)
+  (stepVerifier.runWithStepLog () seven stepProver)
 
-/-- Reading actual prefixes observes the sampled bit and the concrete sent payload. -/
-theorem actual_phase_prefixes :
-    (actualPhaseTrace.phases[4]'(by decide)).prefix =
-      (some ⟨true, some ⟨true, none⟩⟩ : FullPrefix phased) ∧
-    actualPhaseTrace.terminalPhase.prefix =
-      (some ⟨true, some ⟨true, some ⟨(17 : Nat), none⟩⟩⟩ : FullPrefix phased) := by
+/-- The transcript so far at a step shows the sampled bit and the concrete sent payload. -/
+theorem actual_step_prefixes :
+    (actualStepLog.allSteps[4]'(by decide)).before =
+      (some ⟨true, some ⟨true, none⟩⟩ : TranscriptPrefix mixed) ∧
+    actualStepLog.decisionStep.before =
+      (some ⟨true, some ⟨true, some ⟨(17 : Nat), none⟩⟩⟩ : TranscriptPrefix mixed) := by
   constructor <;> kernel_rfl
 
-/-- An explicit setup retains its own slot before the same sends and terminal output. -/
-def phaseSetup : OracleComp ambient (Prover oracleSig ambient phased (fun _ => Nat)) := do
+/-- An explicit setup keeps its own step in front of the same sends and the final output. -/
+def stepSetup : OracleComp ambient (Prover oracleSig ambient mixed (fun _ => Nat)) := do
   let _ ← liftM (ambient.query 9)
   let _ ← liftM (ambient.query 9)
   pure (do
@@ -936,23 +961,24 @@ def phaseSetup : OracleComp ambient (Prover oracleSig ambient phased (fun _ => N
         pure ⟨(17 : Nat), pure 23⟩⟩)
 
 /-- Execute the explicitly separate setup and interaction in the same ambient world. -/
-def setupPhaseTrace : OracleVerifier.TracedRun phaseVerifier (fun _ => Nat) :=
-  simulateQ (answerTags phasedChallenges)
-  (phaseVerifier.runWithSetupTrace () seven phaseSetup)
+def setupStepLog : OracleVerifier.StepLog stepVerifier (fun _ => Nat) :=
+  simulateQ (answerTags mixedChallenges)
+  (stepVerifier.runWithSetupStep () seven stepSetup)
 
-/-- Setup and first-send query groups stay separate, at the same actual empty prefix. -/
-theorem setup_phase_trace_contract : setupPhaseTrace.phases.map (fun phase =>
-    (phase.prefix.length, phase.party, phase.queries.map (·.1))) =
+/-- The setup step and the first send step stay separate, and both start from the empty
+transcript. -/
+theorem setup_step_log_contract : setupStepLog.allSteps.map (fun step =>
+    (step.before.length, step.role, step.queries.map (·.1))) =
       [(0, .sender, [9, 9]), (0, .sender, [1]), (0, .receiver, []),
         (1, .sender, [4]), (1, .receiver, []), (2, .sender, [5]), (2, .receiver, []),
         (3, .sender, []), (3, .receiver, []), (3, .receiver, [2, 3, 6, 7])] := by
   kernel_rfl
 
-/-- A fixed public announcement followed by a terminal prover slot. -/
+/-- A fixed public announcement followed by a final prover step. -/
 @[instance_reducible] def fixedMessage : OracleProtocol :=
   .liftBind (.message Unit) (fun _ => .pure ⟨⟩)
 
-/-- Place the same ambient request either before the message or in the terminal prover slot. -/
+/-- Place the same ambient request either before the message or in the final prover step. -/
 def moveQuery (early : Bool) : Prover oracleSig ambient fixedMessage (fun _ => Nat) := do
   if early then let _ ← liftM (ambient.query 5)
   pure ⟨(), do
@@ -970,7 +996,7 @@ theorem moved_query_same_run :
     fixedVerifier.run () seven (moveQuery true) = fixedVerifier.run () seven (moveQuery false) := by
   kernel_rfl
 
-/-- Aggregate logs cannot distinguish which prefix contained the query. -/
+/-- Aggregate logs cannot tell which step made the query. -/
 theorem moved_query_same_log :
     fixedVerifier.runWithLog () seven (moveQuery true) =
       fixedVerifier.runWithLog () seven (moveQuery false) := by
@@ -981,19 +1007,21 @@ def fixedDraw : QueryImpl (challengeSpec oracleSig fixedMessage) Id
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
-/-- Interpret a trace using the tag as its answer; this protocol has no challenge nodes. -/
-def movedQueryTrace (early : Bool) : OracleVerifier.TracedRun fixedVerifier (fun _ => Nat) :=
-  simulateQ (answerTags fixedDraw) (fixedVerifier.runWithTrace () seven (moveQuery early))
+/-- Log the steps of a run that answers each query with its tag; this protocol has no challenge
+nodes. -/
+def movedQueryStepLog (early : Bool) : OracleVerifier.StepLog fixedVerifier (fun _ => Nat) :=
+  simulateQ (answerTags fixedDraw) (fixedVerifier.runWithStepLog () seven (moveQuery early))
 
-/-- The actual query prefixes differ even though all aggregate observations coincide. -/
+/-- The steps that make queries have different transcripts so far, although all aggregate
+observations coincide. -/
 theorem moved_query_different_prefixes :
-    ((movedQueryTrace true).phases.filter (fun phase => !phase.queries.isEmpty)).map
-        (fun phase => phase.prefix.length) = [0] ∧
-    ((movedQueryTrace false).phases.filter (fun phase => !phase.queries.isEmpty)).map
-        (fun phase => phase.prefix.length) = [1] := by
+    ((movedQueryStepLog true).allSteps.filter (fun step => !step.queries.isEmpty)).map
+        (fun step => step.before.length) = [0] ∧
+    ((movedQueryStepLog false).allSteps.filter (fun step => !step.queries.isEmpty)).map
+        (fun step => step.before.length) = [1] := by
   constructor <;> kernel_rfl
 
-/-- Two oracle sends with a fixed shape provide actual join and terminal boundaries. -/
+/-- Two oracle sends give a join step and a decision step with fixed transcripts so far. -/
 @[instance_reducible] def twoOracles : OracleProtocol :=
   .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ =>
     .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
@@ -1021,54 +1049,59 @@ def twoOracleDraw : QueryImpl (challengeSpec oracleSig twoOracles) Id
   | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
-/-- Execute the strategies once to obtain the phase artifacts and their raw source log. -/
-def twoOracleTrace : OracleVerifier.TracedRun twoOracleVerifier (fun _ => Nat) :=
+/-- Run the strategies once to obtain the step log and its raw source log. -/
+def twoOracleStepLog : OracleVerifier.StepLog twoOracleVerifier (fun _ => Nat) :=
   simulateQ (answerTags twoOracleDraw)
-  (twoOracleVerifier.runWithTrace () seven twoOracleProver)
+  (twoOracleVerifier.runWithStepLog () seven twoOracleProver)
 
-/-- The first suffix prover slot is the passive join phase. -/
-def joinPhase : SlotPhase ambient twoOracles := twoOracleTrace.phases[2]'(by decide)
+/-- The first prover step of the second protocol is the passive join step. -/
+def joinStep : LoggedStep ambient twoOracles := twoOracleStepLog.allSteps[2]'(by decide)
 
-/-- The final decision is its own terminal phase under P1. -/
-def terminalPhase : SlotPhase ambient twoOracles := twoOracleTrace.terminalPhase
+/-- The final decision is its own step under P1. -/
+def decisionStep : LoggedStep ambient twoOracles := twoOracleStepLog.decisionStep
 
-/-- The selected join is an actual phase of the produced execution. -/
-theorem joinPhase_mem : joinPhase ∈ twoOracleTrace.phases := List.getElem_mem _
+/-- The join step is one of the steps of the run. -/
+theorem joinStep_mem : joinStep ∈ twoOracleStepLog.allSteps := List.getElem_mem _
 
-/-- The final verifier phase belongs to the same produced execution. -/
-theorem terminalPhase_mem : terminalPhase ∈ twoOracleTrace.phases :=
-  twoOracleTrace.terminalPhase_mem
+/-- The decision step is also one of the steps of the run. -/
+theorem decisionStep_mem : decisionStep ∈ twoOracleStepLog.allSteps :=
+  twoOracleStepLog.decisionStep_mem
 
-/-- The actual join prefix contains the first sent payload and stops before the second. -/
-theorem joinPhase_prefix : joinPhase.prefix = (some ⟨(1 : Nat), none⟩ : FullPrefix twoOracles) := by
+/-- The join step's transcript so far contains the first sent payload and stops before the
+second. -/
+theorem joinStep_before :
+    joinStep.before = (some ⟨(1 : Nat), none⟩ : TranscriptPrefix twoOracles) := by
   kernel_rfl
 
-/-- The actual terminal prefix contains both concrete payloads. -/
-theorem terminalPhase_prefix : terminalPhase.prefix =
-    (some ⟨(1 : Nat), some ⟨(2 : Nat), none⟩⟩ : FullPrefix twoOracles) := by
+/-- The decision step's transcript so far contains both concrete payloads. -/
+theorem decisionStep_before : decisionStep.before =
+    (some ⟨(1 : Nat), some ⟨(2 : Nat), none⟩⟩ : TranscriptPrefix twoOracles) := by
   kernel_rfl
 
-/-- Join ownership is prover ownership; the terminal action is the verifier's decision slot. -/
-theorem phase_intrinsic_owners : joinPhase.slot = .prover ∧ terminalPhase.slot = .decision := by
+/-- The join step's actor is the prover, and the decision step's actor is the verifier's
+decision. -/
+theorem step_intrinsic_actors : joinStep.actor = .prover ∧ decisionStep.actor = .decision := by
   constructor <;> kernel_rfl
 
-/-- The actual join includes into the actual terminal context. -/
-def producedInclusion : FullPrefix.Extends (s := twoOracles)
-    joinPhase.prefix terminalPhase.prefix := by
-  rw [joinPhase_prefix, terminalPhase_prefix]
-  exact FullPrefix.Extends.cons (a := .oracle Nat OracleInterface.instDefault)
+/-- The join step's transcript so far is below the decision step's. -/
+def joinToDecisionLe : TranscriptPrefix.Le (s := twoOracles)
+    joinStep.before decisionStep.before := by
+  rw [joinStep_before, decisionStep_before]
+  exact TranscriptPrefix.Le.cons (a := .oracle Nat OracleInterface.instDefault)
     (next := fun _ => .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
-    (1 : Nat) (.here _)
+    (1 : Nat) (.empty _)
 
-/-- The old canonical name remains unchanged by the actual join-to-terminal inclusion. -/
-theorem joinPhase_name : terminalPhase.prefix.name
-    (FullPrefix.includeIndex producedInclusion (.inl ⟨⟩)) =
-      joinPhase.prefix.name (.inl ⟨⟩) := FullPrefix.includeIndex_name _ _
+/-- The sent oracle keeps its node name under the inclusion from the join step to the decision
+step. -/
+theorem joinStep_node : TranscriptPrefix.SentOracle.node decisionStep.before
+    (TranscriptPrefix.SentOracle.lift joinToDecisionLe (.inl ⟨⟩)) =
+      TranscriptPrefix.SentOracle.node joinStep.before (.inl ⟨⟩) :=
+  TranscriptPrefix.SentOracle.node_lift _ _
 
-/-- The already sent oracle is available at the join, and the second oracle is still unavailable. -/
-theorem joinPhase_availability :
-    joinPhase.prefix.Available (.inl ⟨⟩) ∧
-      ¬ joinPhase.prefix.Available (.inr ⟨⟨⟩, .inl ⟨⟩⟩) := by
+/-- The first oracle is already sent at the join step, and the second oracle is not yet sent. -/
+theorem joinStep_isSent :
+    joinStep.before.IsSent (.inl ⟨⟩) ∧
+      ¬ joinStep.before.IsSent (.inr ⟨⟨⟩, .inl ⟨⟩⟩) := by
   constructor
   · exact ⟨.inl ⟨⟩, rfl⟩
   · rintro ⟨i, hi⟩
@@ -1076,44 +1109,46 @@ theorem joinPhase_availability :
     · cases hi
     · exact impossible.elim
 
-/-- The terminal context makes the newly sent oracle available under a distinct name. -/
-theorem terminalPhase_availability :
-    terminalPhase.prefix.Available (.inr ⟨⟨⟩, .inl ⟨⟩⟩) ∧
-      terminalPhase.prefix.name (.inl ⟨⟩) ≠
-        terminalPhase.prefix.name (.inr (.inl ⟨⟩)) := by
+/-- At the decision step the newly sent oracle is sent too, under a different node name. -/
+theorem decisionStep_isSent :
+    decisionStep.before.IsSent (.inr ⟨⟨⟩, .inl ⟨⟩⟩) ∧
+      TranscriptPrefix.SentOracle.node decisionStep.before (.inl ⟨⟩) ≠
+        TranscriptPrefix.SentOracle.node decisionStep.before (.inr (.inl ⟨⟩)) := by
   constructor
   · exact ⟨.inr (.inl ⟨⟩), rfl⟩
   · intro equal
     cases equal
 
-/-- The phase artifact retains the exact old/old/fresh log, private result and closed verdict. -/
-theorem phase_source_log_contract :
-    twoOracleTrace.decisionQueries.snd =
+/-- The step log keeps the exact old/old/fresh decision log, the private result and the closed
+verdict. -/
+theorem step_source_log_contract :
+    twoOracleStepLog.decisionQueries.snd =
       [⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩, ⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩,
         ⟨.inr ⟨.inr (.inl ⟨⟩), ()⟩, (2 : Nat)⟩] ∧
-    twoOracleTrace.observation.2.1 = 3 ∧
-      twoOracleTrace.observation.2.2.map (·.1) = some 4 := by
+    twoOracleStepLog.observation.2.1 = 3 ∧
+      twoOracleStepLog.observation.2.2.map (·.1) = some 4 := by
   constructor
   · kernel_rfl
   · constructor <;> kernel_rfl
 
-/-- The phase projection is the existing logged execution, including its raw source queries. -/
-example : OracleVerifier.TracedRun.logView <$>
-    twoOracleVerifier.runWithTrace () seven twoOracleProver =
+/-- Forgetting the step boundaries gives the existing logged execution, including its raw source
+queries. -/
+example : OracleVerifier.StepLog.toLog <$>
+    twoOracleVerifier.runWithStepLog () seven twoOracleProver =
     twoOracleVerifier.runWithLog () seven twoOracleProver :=
-  twoOracleVerifier.runWithTrace_logView () seven twoOracleProver
+  twoOracleVerifier.toLog_runWithStepLog () seven twoOracleProver
 
-#print axioms OracleVerifier.runWithTrace_erase
-#print axioms OracleVerifier.runWithTrace_logView
-#print axioms OracleVerifier.runWithTrace_prefixes
-#print axioms FullPrefix.familyInclusion_query
-#print axioms FullPrefix.contextInclusion_name
+#print axioms OracleVerifier.map_fst_runWithStepLog
+#print axioms OracleVerifier.toLog_runWithStepLog
+#print axioms OracleVerifier.runWithStepLog_prefixes
+#print axioms TranscriptPrefix.sentFamilyMap_query
+#print axioms TranscriptPrefix.availableMap_node
 
 end Interaction.Core.LoggedExecutionTests
 
 universe uQuery uInput uData
 
-/-- Ambient provenance preserves the parent verifier's independent resource universes. -/
+/-- The ambient step log keeps the parent verifier's independent resource universes. -/
 example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, uQuery}} {T J : FreeM.Path s → Type}
     {B : (p : FreeM.Path s) → J p → Type} {inputs : Resources.{0, uInput, uData}}
@@ -1121,8 +1156,8 @@ example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     {Out : PathAlong oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
-    OracleVerifier.AmbientTracedRun.observation <$> V.runWithAmbientTrace stmt data prover =
-      V.run stmt data prover := V.runWithAmbientTrace_erase stmt data prover
+    OracleVerifier.AmbientStepLog.observation <$> V.runWithAmbientStepLog stmt data prover =
+      V.run stmt data prover := V.map_fst_runWithAmbientStepLog stmt data prover
 
 namespace Interaction.Core.LoggedExecutionTests
 
@@ -1152,17 +1187,19 @@ def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
-/-- Ambient tracing runs a genuinely larger-query oracle node without returning resource indices. -/
-def liftedTrace : OracleVerifier.AmbientTracedRun liftedVerifier (fun _ => Nat) :=
+/-- The ambient step log of a run with a genuinely larger-query oracle node, without resource
+indices. -/
+def liftedStepLog : OracleVerifier.AmbientStepLog liftedVerifier (fun _ => Nat) :=
   simulateQ (show QueryImpl (ambient + challengeSpec oracleSig liftedNode) Id from
     fun q => match q with | .inl n => n | .inr c => liftedDraw c)
-    (liftedVerifier.runWithAmbientTrace () seven (pure ⟨(17 : Nat), pure 23⟩))
+    (liftedVerifier.runWithAmbientStepLog () seven (pure ⟨(17 : Nat), pure 23⟩))
 
-/-- The same larger-query execution returns its payload, private output and actual terminal
-prefix. -/
-theorem lifted_trace_contract : liftedTrace.observation.2.1 = 23 ∧
-    liftedTrace.observation.2.2.map (·.1) = some 17 ∧
-    liftedTrace.terminalPhase.prefix = (some ⟨(17 : Nat), none⟩ : FullPrefix liftedNode) := by
+/-- The same larger-query run returns its payload, its private output and the transcript so far
+at the decision step. -/
+theorem lifted_step_log_contract : liftedStepLog.observation.2.1 = 23 ∧
+    liftedStepLog.observation.2.2.map (·.1) = some 17 ∧
+    liftedStepLog.decisionStep.before =
+      (some ⟨(17 : Nat), none⟩ : TranscriptPrefix liftedNode) := by
   constructor
   · kernel_rfl
   · constructor <;> kernel_rfl

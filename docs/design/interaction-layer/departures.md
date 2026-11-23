@@ -30,12 +30,14 @@ These entries are in
 
 These entries are also in
 [`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
-The status is one of equivalent, premise-required, retired or unresolved.
+The status is one of equivalent, premise-required, retired or unresolved. The rows for entry 19 use
+the plainer names ported, excluded by P1 or P2, removed and open for the same four statuses. The
+[port table](logged-execution-disposition.md) explains them.
 
 | Entry | Departure | Status |
 | --- | --- | --- |
-| 19 | Writer instrumentation of the authoritative runner produces per-slot prefix, owner and query provenance with exact log erasure, in `Oracle/SlotTrace.lean`, `Oracle/Provenance.lean` and `Oracle/PrefixResources.lean` | equivalent |
-| 19 | P1 retires intermediate verifier queries and their former phase assignments; prover slots and their prefixes remain | premise-required |
+| 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces, for each step, the transcript so far, the actor and the queries, with exact log erasure, in `Oracle/StepLog.lean`, `Oracle/StepLogLaws.lean` and `Oracle/SentOracles.lean` | ported |
+| 19 | P1 rules out intermediate verifier queries and the steps they were assigned to; prover steps and their transcript prefixes remain | excluded by P1 |
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
@@ -100,12 +102,13 @@ to the same witness.
 An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
 tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 
-## Logged execution and routing acceptance clients
+## Logged execution and routing tests
 
-The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
-assertion, its exact port or missing interface, and the assertions retired by the approved passive
-verifier and fixed-shape premises. The produced provenance rows are equivalent under the passive
-schedule. There is no separate recursive slot executor: instrumented strategies run through `TwoParty.Lens.run`, and ordinary,
-full-trace and ambient-trace APIs share `OracleVerifier.executeWith`. Erasure specializes a
-general runner naturality law and writer laws. The premise-required rows identify the intermediate
-verifier actions and phase assignments retired by P1.
+The [port table](logged-execution-disposition.md) lists each assertion in the old layer's tests,
+where it is ported or what remains, and which assertions the approved passive-verifier and
+fixed-shape premises (P1 and P2) rule out. The rows about the step log are ported under the
+passive schedule. There is no separate step executor. Instrumented strategies run through
+`TwoParty.Lens.run`, and the ordinary run, the step log and the ambient step log share
+`OracleVerifier.executeWith`. Erasure follows from a general law about running instrumented
+strategies and from the writer laws. The rows excluded by P1 name the intermediate verifier actions
+and step assignments that P1 rules out.

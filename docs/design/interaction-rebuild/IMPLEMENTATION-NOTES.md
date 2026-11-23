@@ -327,49 +327,52 @@ run extracts `w.val`.
 This keeps to record D7, whose problems already index witness types by the claim; D7 fixes no
 constant output witness type for either notion.
 
-## 19. Produced per-slot provenance under the passive schedule
+## 19. The step log under the passive schedule
 
-**Status: equivalent for produced prefix, owner, query-group and log correspondence assertions;
-premise-required for intermediate verifier actions retired by P1.**
-`Oracle/SlotTrace.lean` instruments participant strategies with a list-valued writer layer;
-`TwoParty.Lens.run` remains the sole recursive executor. `OracleVerifier.executeWith` owns the
-interaction, terminal decision and output-closing sequence. The ordinary runner, full trace
-and ambient trace specialize this mechanism without narrowing the ordinary runner's universes.
-`Oracle/Provenance.lean` supplies erasure and interpretation laws. Each executed
-participant slot records the actual preceding moves and ordered query/answer log. Ownership is
-derived from the slot constructor. The final verifier decision is its own terminal phase;
-`runWithSetupTrace` also retains an explicitly separate prover setup action.
+**Status: ported for the transcript prefix, actor, query-group and log assertions of the produced
+steps; excluded by P1 for the intermediate verifier actions that P1 rules out.**
+`Oracle/StepLog.lean` wraps the participants' strategies in a list-valued writer layer.
+`TwoParty.Lens.run` remains the only recursive executor. `OracleVerifier.executeWith` runs the
+interaction, the final decision and the output closing in sequence. The ordinary runner, the step
+log and the ambient step log all specialize it, and the ordinary runner's universes stay as wide as
+before. `Oracle/StepLogLaws.lean` supplies the erasure and interpreter laws. Each executed
+participant step records the actual earlier moves (the transcript so far) and the ordered
+query/answer log. The actor comes from the step's constructor. The final verifier decision is its
+own decision step. `runWithSetupStep` also keeps a separately run prover setup as a step.
 
-`SlotInstrumentation.run_natural` supplies the general runner naturality law missing from the
-pinned PolyFun interface. It works for arbitrary polynomials, ownership lenses, environments
-and PolyFun's existing `MonadHom` morphisms. `observeInteraction_log` specializes it to concatenation of slot query
-logs in the writer layer. Erasure uses this general law and monad laws, without an independent
-recursive execution algorithm or a protocol-specific execution equivalence induction.
-`runWithLog` is the full-log projection of the trace runner.
-`runWithTrace_logView`, `runWithTrace_ambientLog` and `runWithTrace_erase` recover the existing
-full logged, ambient logged and ordinary executions exactly. `phases_queries` states ordered
-ambient-log concatenation, and `simulateQ_runWithTrace_logView` preserves the correspondence under
-lawful interpreters, including stateful runtimes. The existing full-log universe restriction in
-entry 18 applies to the full-log trace result. `runWithAmbientTrace` uses the same instrumented
-strategies and shared sequencing mechanism, returning only ambient decision queries and preserving
-independent input-data, input-query and
-oracle-node-query universes. `runWithAmbientLog` is its aggregate projection;
-`runWithAmbientTrace_erase` gives ordinary erasure. `runWithTrace_ambientView` identifies the
-full trace with this ambient view at small query universes, including every slot prefix and owner.
+`StepInstrumentation.run_mapStepsWith` is the general naturality law for the runner that the pinned
+PolyFun interface lacks. It holds for arbitrary polynomials, actor lenses, environments and
+PolyFun's existing `MonadHom` morphisms. `runLoggingSteps_log` specializes it to concatenating the
+steps' query logs in the writer layer. Erasure uses this law and the monad laws. It needs no
+separate recursive execution algorithm and no induction on a protocol-specific execution
+equivalence. `runWithLog` is the full-log projection of `runWithStepLog`. `toLog_runWithStepLog`,
+`toAmbientLog_runWithStepLog` and `map_fst_runWithStepLog` recover the existing full-log,
+ambient-log and ordinary executions exactly. `allSteps_queries` states that the ambient logs
+concatenate in order, and `simulateQ_toLog_runWithStepLog` keeps this agreement under lawful
+interpreters, including stateful runtimes. The universe restriction on full logs in entry 18
+applies to the full-log step log. `runWithAmbientStepLog` uses the same instrumented strategies and
+the same sequencing. It returns only the ambient decision queries and keeps the input-data,
+input-query and oracle-node-query universes independent. `runWithAmbientLog` is its aggregate
+projection, and `map_fst_runWithAmbientStepLog` gives ordinary erasure. `toAmbient_runWithStepLog`
+identifies the full step log with this ambient view at small query universes, including every
+step's transcript prefix and actor.
 
-`Oracle/PrefixResources.lean` defines available payload families at actual prefixes, intrinsic
-node names, prefix-resource inclusion and typed query inclusion. `includeQuery_name` and
-`familyInclusion_query` relate canonical naming to actual query routing;
-`pathResourcesInclusion_data` identifies completed-prefix data with the payloads used by the
-verifier. `runWithTrace_prefixes` certifies that each produced phase precedes the actual completed
-transcript, and `available_at_terminal` transports its availability certificate.
-`runWithAmbientTrace_prefixes` gives the same provenance certificate for independent query
-universes. A compile-time acceptance canary checks these universe parameters directly. `joinToTerminal_name` preserves names from an appended protocol's actual seam to its
-terminal prefix. The append route continues to use `prefixRoute_payload` and `splitOutputs`.
+`Oracle/SentOracles.lean` defines the family of sent oracles at each transcript prefix, their node
+names, the inclusion of the resources of a shorter prefix into those of a longer one, and the
+inclusion of typed queries. `liftQuery_node` and `sentFamilyMap_query` relate node names to the
+routing of actual queries. `toPathResources_data` identifies the data of a completed prefix with
+the payloads that the verifier uses. `runWithStepLog_prefixes` shows that each produced step comes
+before the actual completed transcript, and `isSent_at_decision` carries the proof that an oracle
+was sent over to the decision step. `runWithAmbientStepLog_prefixes` gives the same guarantee about
+the step log for independent query universes. A compile-time test checks these universe parameters
+directly. `seamLeEnd_node` keeps node names from the seam of an appended protocol to its final
+transcript prefix. The append route still uses `prefixRoute_payload` and `splitOutputs`.
 
-The acceptance client keeps the aggregate tests and adds per-slot runtime observations, actual
-join and terminal membership, canonical availability and future-slot exclusion. Its distinguishing
-test moves one ambient request across a fixed public message: ordinary observations and aggregate
-logs remain equal, while the traced query prefixes differ. P1 retires intermediate effectful
-verifier actions and their former query groups; it does not retire prover slots or their prefixes.
-The disposition inventory records those qualifications separately.
+The test file `ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean` keeps the aggregate tests
+and adds per-step runtime observations, membership of the actual join and decision steps, proofs
+that oracles were sent, and exclusion of future steps. Its distinguishing test moves one ambient
+request across a fixed public message. The ordinary observations and aggregate logs stay equal,
+while the transcript prefixes of the queries differ. P1 rules out intermediate effectful verifier
+actions and their former query groups. It does not rule out prover steps or their transcript
+prefixes. The [port table](../interaction-layer/logged-execution-disposition.md) records these
+qualifications separately.
