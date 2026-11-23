@@ -79,7 +79,7 @@ universe uI wI wJ
 /-- Full transcript, private output, verdict and ambient history of one run. The empty input
 index and the input and output query universes are independent. -/
 def summary.{vI, qI, qJ} (accept : Bool) (payload hidden : Nat) (bit : Bool) :
-    PathAlong oracleSig phased × Nat × Option Nat × List Nat :=
+    Transcript oracleSig phased × Nat × Option Nat × List Nat :=
   let z := (simulateQ (logger bit) ((verifier.{vI, 0, qI, qJ} accept).run () noData
     (prover payload hidden))).run []
   (z.1.1, z.1.2.1, z.1.2.2.map Prod.fst, z.2)
@@ -91,7 +91,7 @@ example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} true payload 
     (⟨true, bit, payload, ⟨⟩⟩, hidden, some payload, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
 example (payload : Nat) (bit : Bool) :
-    payloads phased ⟨true, bit, payload, ⟨⟩⟩ (.inl ⟨⟩) = payload := rfl
+    oracleMessages phased ⟨true, bit, payload, ⟨⟩⟩ (.inl ⟨⟩) = payload := rfl
 
 example (payload : Nat) (bit : Bool) :
     (toView phased ⟨true, bit, payload, ⟨⟩⟩).val = ⟨true, bit, ⟨⟩, ⟨⟩⟩ := rfl
@@ -111,7 +111,7 @@ open Interaction.Core.LoggedExecutionTests OracleSpec
 /-- Execute the actual closing prover before interpreting its final decision with labelled
 failure. Retain its transcript, private output, prover log, decision log and ambient history. -/
 def decisionObserved (mode old message hidden : Nat) :
-    (PathAlong oracleSig pairSend × Nat × Except Nat (Option (Nat × Nat)) ×
+    (Transcript oracleSig pairSend × Nat × Except Nat (Option (Nat × Nat)) ×
       QueryLog ambient × List (String × Nat)) × List Nat :=
   (do
     let full := ambient + challengeSpec oracleSig pairSend
@@ -119,8 +119,8 @@ def decisionObserved (mode old message hidden : Nat) :
       (OracleComp.withQueryLog (spec := full) (TwoParty.Lens.run pairSend
         ((pairProver [9] message hidden).simulate (fun q => liftM (full.query (.inl q))))
         (sampler oracleSig pairSend (fun c => liftM (full.query (.inr c))))))
-    let p := projectPathAlong oracleSig pairSend tr
-    let data : (pathResources inputs pairSend p).Data := (fun _ => old, payloads pairSend tr)
+    let p := tr.path
+    let data : (pathResources inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
     let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
       (toView pairSend tr) data
     pure (tr, out, verdict.map (Option.map fun t =>

@@ -39,7 +39,7 @@ example (v : View bitFirst firstPath) :
 -- RuntimeQueryBounds 1, access part, restated: the export is typed over the prefix resources,
 -- which have no message slot on the only prefix path, so it reads the inputs alone; its query is
 -- the input slot. The cost part is in `QueryCost.lean`.
-example : IsEmpty (oracleIdx bitFirst firstPath) := inferInstanceAs (IsEmpty PEmpty)
+example : IsEmpty (OracleMessageIndex bitFirst firstPath) := inferInstanceAs (IsEmpty PEmpty)
 
 /-- The prefix export queries only its input oracle. -/
 theorem export_access (v : View bitFirst firstPath) :
@@ -88,7 +88,7 @@ theorem suffix_access (p : Path bitSecond) (v : View bitSecond p) :
   exact (allQueriesSatisfy_query_bind_iff _ _ _).mpr ⟨rfl, fun _ =>
     (allQueriesSatisfy_query_bind_iff _ _ _).mpr ⟨rfl, fun _ => allQueriesSatisfy_pure _ _⟩⟩
 
-example (guess : Bool) : IsEmpty (oracleIdx bitSecond ⟨guess, ⟨⟩⟩) :=
+example (guess : Bool) : IsEmpty (OracleMessageIndex bitSecond ⟨guess, ⟨⟩⟩) :=
   inferInstanceAs (IsEmpty PEmpty)
 
 /-- The suffix route of the composition, with ambient requests kept. -/
@@ -133,7 +133,7 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
   · exact i.elim
 
 /-- The observation of the hidden-bit protocol, including the materialized output oracle. -/
-abbrev BitObservation := Observation oracleSig bitCombined.{0} (fun _ => Nat)
+abbrev BitObservation := Outcome oracleSig bitCombined.{0} (fun _ => Nat)
   (OracleVerifier.Output (fun _ => Bool) (fun _ (_ : Unit) => Bool))
 
 /-- Compare the actual output-oracle answer with the accepted target bit. -/

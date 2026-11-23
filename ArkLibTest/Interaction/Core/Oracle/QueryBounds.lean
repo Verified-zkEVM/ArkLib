@@ -161,7 +161,7 @@ abbrev prefixRoute :=
 -- prefix oracles, which have no index for the suffix send. Routed into the composed run, every
 -- prefix decision program, whatever its cost, queries only ambient oracles and the prefix slot,
 -- never the suffix slot. The budget clause of the old-layer row is moot.
-example : (PEmpty ⊕ oracleIdx single (Path.split single (fun _ => single) combinedPath).1) =
+example : (PEmpty ⊕ OracleMessageIndex single (Path.split single (fun _ => single) combinedPath).1) =
     (PEmpty.{1} ⊕ (PUnit.{1} ⊕ PEmpty.{1})) := rfl
 
 example : True := by
@@ -208,22 +208,22 @@ def observed.{vI, qI, qJ} (a b : Nat) :=
 example (a b : Nat) :
     ((observed.{uI, wI, wJ} a b).1, (observed.{uI, wI, wJ} a b).2.1,
       (observed.{uI, wI, wJ} a b).2.2.map Prod.fst) =
-    (PathAlong.append oracleSig single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩, a + b,
+    (Transcript.append single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩, a + b,
       some (a + a + b)) := by
   unfold observed composed
   rw [OracleVerifier.run_append]
   kernel_rfl
 
 example (a b : Nat) :=
-  splitOracles_payloads single (fun _ => single) (⟨a, ⟨⟩⟩ : PathAlong oracleSig single)
-    (⟨b, ⟨⟩⟩ : PathAlong oracleSig single)
+  splitOracles_payloads single (fun _ => single) (⟨a, ⟨⟩⟩ : Transcript oracleSig single)
+    (⟨b, ⟨⟩⟩ : Transcript oracleSig single)
 
-example (a b : Nat) : (splitOracles single (fun _ => single) combinedPath).f
-    (payloads combined (PathAlong.append oracleSig single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
+example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
+    (oracleMessages combined (Transcript.append single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inl (.inl ⟨⟩)) = a := rfl
 
-example (a b : Nat) : (splitOracles single (fun _ => single) combinedPath).f
-    (payloads combined (PathAlong.append oracleSig single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
+example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
+    (oracleMessages combined (Transcript.append single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inr (.inl ⟨⟩)) = b := rfl
 
 -- The full decision log fixes input indices and queries to `Type`; output queries stay

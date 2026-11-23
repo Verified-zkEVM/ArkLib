@@ -309,7 +309,7 @@ inclusion, together with query routing. The [parent port table][parent-port-tabl
 above identify their exact assertion targets. P1 rules out intermediate verifier effects, not the
 produced prover prefixes.
 
-`OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig`, `OracleProtocol`, `pathFamily` and
+`OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig`, `OracleProtocol`, `oracleMessageFamily` and
 `pathResources` keep independent node-query universes. General `Resources.{u, uI, dI}` also
 separates response, resource-query and data universes without changing the shared
 `OracleInterface`; families are a specialization. The earlier node-universe and input-data
