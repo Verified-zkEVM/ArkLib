@@ -30,7 +30,7 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 namespace OracleVerifier
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : Resources.{0, 0, dI}}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
@@ -73,11 +73,11 @@ and both keep the completed query log. -/
 def decideCatching {ε : Type} {m : Type → Type v} [Monad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl ambient (ExceptT ε m)) (stmt : S) (p : Path s)
-    (view : View s p) (data : (pathResources inputs s p).Data) :
-    m (Except ε (Option (T p)) × QueryLog (ambient + (pathResources inputs s p).spec)) :=
-  let spec := ambient + (pathResources inputs s p).spec
+    (view : View s p) (data : (pathBundle inputs s p).Data) :
+    m (Except ε (Option (T p)) × QueryLog (ambient + (pathBundle inputs s p).spec)) :=
+  let spec := ambient + (pathBundle inputs s p).spec
   let answer : QueryImpl spec (ExceptT ε m) :=
-    QueryImpl.addLift handler ((pathResources inputs s p).answer data)
+    QueryImpl.addLift handler ((pathBundle inputs s p).answer data)
   let logged : QueryImpl spec (ExceptT ε (StateT (QueryLog spec) m)) := fun q =>
     ExceptT.mk do
       let result ← liftM (answer q).run

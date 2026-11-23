@@ -51,30 +51,30 @@ abbrev combined : OracleProtocol := firstProtocol.append (fun _ => secondProtoco
 @[instance_reducible] def exported : OracleFamily.{0, 0, 0} PUnit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- The prefix resources on its only path. -/
-abbrev prefixResources := pathResources inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
+/-- The prefix bundle on its only path. -/
+abbrev prefixBundle := pathBundle inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export input slot `false` plus the observable coordinate of the prefix message. -/
-def exportMap : OracleMap prefixResources exported where
+def exportMap : OracleMap prefixBundle exported where
   f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (prefixResources.spec.query (.inl ⟨false, ()⟩))
-    let b : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let a : Nat ← liftM (prefixBundle.spec.query (.inl ⟨false, ()⟩))
+    let b : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law x q := by
     simp only [simulateQ_bind]
     rfl
 
-/-- Interpret the raw resource signature, recording visible input, hidden input and sent-slot
+/-- Interpret the raw bundle signature, recording visible input, hidden input and sent-slot
 requests distinctly. The hidden slot is present and would be recorded if it were queried. -/
 def exportTraceHandler (old hidden visible secret : Nat) :
-    QueryImpl prefixResources.spec (StateM (List Nat)) := fun q => do
+    QueryImpl prefixBundle.spec (StateM (List Nat)) := fun q => do
   let label := match q with
     | .inl ⟨false, _⟩ => 0
     | .inl ⟨true, _⟩ => 1
     | .inr _ => 2
   modify (· ++ [label])
-  pure (prefixResources.answer
+  pure (prefixBundle.answer
     ((fun b => if b then hidden else old), oracleMessages firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
 
 /-- Every exported request reads the visible input followed by the sent oracle, exactly once.
@@ -98,15 +98,15 @@ def prefixVerifier :
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let _ ← liftM ((ambient + prefixResources.spec).query (.inl 10))
-      let n : Nat ← liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 10))
+      let n : Nat ← liftM ((ambient + prefixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure n
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact exportMap
 
-/-- The suffix resources on its only shape path. -/
-abbrev suffixResources := pathResources exported secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+/-- The suffix bundle on its only shape path. -/
+abbrev suffixBundle := pathBundle exported secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- The suffix records 30, reads the export and its own message, records 40 and 60, and accepts
 when the export and the message agree. On acceptance it claims the prefix's returned value
@@ -116,11 +116,11 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × 
   decide stmt p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact OptionT.mk do
-      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 30))
-      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 40))
-      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 60))
+      let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 30))
+      let e : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
+      let m : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 40))
+      let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
   outputMap _ p _ := OracleMap.fst _ _
 
@@ -172,7 +172,7 @@ def resultSummary (hidden secret : Nat) : Nat × Option ((Nat × Nat) × Nat) ×
   (result.1.2.1, result.1.2.2.map (fun z => (z.1, z.2 ⟨⟩)), result.2)
 
 /-! Additional passive composition coverage. Both verifier decisions follow the whole
-interaction. The challenge is sampled independently of resources. The port table records
+interaction. The challenge is sampled independently of the bundles. The port table records
 explicitly the export-derived message that P1 excludes, together with its former schedule. It
 does not identify this example with that contract, or with a proof that an oracle was sent at a
 produced transcript prefix. -/
@@ -190,15 +190,15 @@ example (hidden secret : Nat) : resultSummary hidden secret =
 /-- The prefix send followed by the fresh send and challenge, in that order. -/
 abbrev closingProtocol := firstProtocol.append (fun _ => closingSuffix)
 
-/-- Resources after the fresh pair and challenge. -/
-abbrev closingResources := pathResources exported closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+/-- OracleBundle after the fresh pair and challenge. -/
+abbrev closingBundle := pathBundle exported closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- The final export adds the prefix export to the fresh observable coordinate. -/
-def closingMap : OracleMap closingResources exported where
+def closingMap : OracleMap closingBundle exported where
   f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let old : Nat ← liftM (closingResources.spec.query (.inl ⟨⟨⟩, ()⟩))
-    let fresh : Nat ← liftM (closingResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let old : Nat ← liftM (closingBundle.spec.query (.inl ⟨⟨⟩, ()⟩))
+    let fresh : Nat ← liftM (closingBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (old + fresh)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -210,18 +210,18 @@ def closingVerifier : OracleVerifier ambient closingSuffix Nat (fun _ => Nat) ex
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact do
-      let _ ← liftM ((ambient + closingResources.spec).query (.inl 30))
-      let old : Nat ← liftM ((ambient + closingResources.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let fresh : Nat ← liftM ((ambient + closingResources.spec).query
+      let _ ← liftM ((ambient + closingBundle.spec).query (.inl 30))
+      let old : Nat ← liftM ((ambient + closingBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
+      let fresh : Nat ← liftM ((ambient + closingBundle.spec).query
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let _ ← liftM ((ambient + closingResources.spec).query (.inl 40))
-      let _ ← liftM ((ambient + closingResources.spec).query (.inl 60))
+      let _ ← liftM ((ambient + closingBundle.spec).query (.inl 40))
+      let _ ← liftM ((ambient + closingBundle.spec).query (.inl 60))
       pure (old + fresh)
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact closingMap
 
-/-- The composite export is computed from the same prefix and suffix resources. -/
+/-- The composite export is computed from the same prefix and suffix bundles. -/
 def closingCompatible :
     OracleVerifier.OutputCompatibility prefixVerifier (fun _ => closingVerifier) where
   outputMap stmt p view :=
@@ -252,7 +252,7 @@ def closingHandler : QueryImpl (ambient + challengeSpec oracleSig closingProtoco
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, n⟩⟩⟩, _⟩ => n.elim
 
 /-- The final claim and export both use input 7, prefix message 11 and fresh message 5.
-The hidden input and both private coordinates remain arbitrary; no resource read selects a draw. -/
+The hidden input and both private coordinates remain arbitrary; no bundle query selects a draw. -/
 theorem closing_source_contract (hidden secret : Nat) :
     (fun z => (z.1.2.1, z.1.2.2.map (fun c => (c.1, c.2 ⟨⟩)), z.2))
       ((simulateQ closingHandler
@@ -299,7 +299,7 @@ example (hidden secret : Nat) :
           (Transcript.append firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))⟩ :
       (p : FreeM.Path firstProtocol) ×
-        (pathResources inputs firstProtocol p).Data) =
+        (pathBundle inputs firstProtocol p).Data) =
       ⟨Transcript.path (prefixTranscript secret),
         (inputData hidden, oracleMessages firstProtocol (prefixTranscript secret))⟩ :=
   OracleVerifier.prefixRoute_oracleMessages (inputs := inputs) (s₂ := fun _ => secondProtocol)
@@ -371,10 +371,10 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
 
 universe u uX uY dX dY
 
-/-- Ambient routing permits independent resource index and data universes. -/
+/-- Ambient routing permits independent bundle index and data universes. -/
 example {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
     {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {inputs : Resources.{u, uX, dX}} {outputs : Resources.{u, uY, dY}}
+    {inputs : OracleBundle.{u, uX, dX}} {outputs : OracleBundle.{u, uY, dY}}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)
     {α : Type u} (program : OracleComp (ambient + outputs.spec) α) :
     simulateQ (QueryImpl.addLift handler (inputs.answer data) :
