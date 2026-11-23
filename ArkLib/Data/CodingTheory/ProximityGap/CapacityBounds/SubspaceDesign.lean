@@ -26,7 +26,7 @@ open scoped NNReal in
 open scoped BigOperators in
 /-- A subspace-design bound yields strong line decodability by pinning. -/
 theorem strongLineDecodable_of_subspaceDesign
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r a b : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -100,7 +100,7 @@ theorem strongLineDecodable_of_subspaceDesign
 
 /-- Pinning at dimension `2t` and slack `3/(2t)`. -/
 theorem strongLineDecodable_two_mul_of_subspaceDesign
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s t a : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -121,7 +121,7 @@ theorem strongLineDecodable_two_mul_of_subspaceDesign
 open scoped NNReal in
 /-- Strong line decodability when the profile is bounded by a rate plus `1/(2t)`. -/
 theorem strongLineDecodable_two_mul_of_profile_le
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s t : ℕ} (τ : ℕ → ℝ) (R : ℝ)
     (C : Submodule F (ι → Fin s → F))
@@ -158,7 +158,7 @@ theorem strongLineDecodable_two_mul_of_profile_le
 bound, then turn line decodability with `m + 1` aligned challenges into an MCA bound with `conv`.
 Outside the field-size regime of the boost, the bound follows from `mcaError ≤ 1`. -/
 private theorem mcaError_le_of_strongLineDecodable_of_conv
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s t a : ℕ} (C : Submodule F (ι → Fin s → F)) (δ : NNReal) (m : ℕ)
     (conv : ∀ a' : ℕ, IsLineDecodable (F := F) ((C : Set (ι → Fin s → F))) δ a' (m + 1) →
@@ -200,7 +200,7 @@ private theorem mcaError_le_of_strongLineDecodable_of_conv
 
 /-- Boost strong line decodability using a list bound and convert it to an MCA bound. -/
 theorem mcaError_le_of_strongLineDecodable
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s t a : ℕ} (C : Submodule F (ι → Fin s → F)) (δ : NNReal)
     (ht : 0 < t) (hδlt : δ < 1)
@@ -219,7 +219,7 @@ instead of `n + 1` (`IsLineDecodable.mcaError_le_of_floor_add_two`). The term `n
 `(⌊δ n⌋ + 1) · t`. Since `⌊δ n⌋ + 1 ≤ n`, the bound is never weaker than that of
 `mcaError_le_of_strongLineDecodable`; this version additionally assumes `n < |F|`. -/
 theorem mcaError_le_of_strongLineDecodable_of_floor_add_two
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s t a : ℕ} (C : Submodule F (ι → Fin s → F)) (δ : NNReal)
     (ht : 0 < t) (hδlt : δ < 1)

@@ -46,7 +46,8 @@ namespace ReedSolomon.HiddenDerivative
 
 noncomputable section
 
-open Polynomial MvPolynomial
+open Polynomial
+open MvPolynomial (aeval)
 open scoped BigOperators
 
 variable {F : Type*} [Field F] {d : ℕ}

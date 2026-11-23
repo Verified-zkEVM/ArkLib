@@ -813,7 +813,7 @@ theorem subfield_ca_exp_term_le_floor_mode
   · have hrs : r ≤ s := Nat.le_of_lt (Nat.lt_of_not_ge hsr)
     refine Nat.le_induction
       (m := r)
-      (P := fun j _ =>
+      (motive := fun j _ =>
         t ^ j / (j.factorial : ℝ) ≤
           t ^ r / (r.factorial : ℝ)) (le_refl _) ?_ s hrs
     intro j hrj ih
@@ -1125,7 +1125,7 @@ noncomputable def subfield_ca_pair_witness_to_parameters
     w.y w.α w.p.1 w.q.1 w.p_agree w.q_agree w.p_value w.q_value
 
 omit [Fintype F] [DecidableEq F] in
-noncomputable def subfield_ca_pair_fiber_to_parameters [Finite F]
+noncomputable def subfield_ca_pair_fiber_to_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     ↥(subfield_ca_pair_event_fiber B domainB k a S T) →

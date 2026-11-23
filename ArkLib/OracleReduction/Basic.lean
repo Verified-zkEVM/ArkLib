@@ -887,8 +887,8 @@ instance [VerifierFirst pSpec] : VerifierLast pSpec where
   verifier_last' := by simp
 instance [h : ProverLast pSpec] : ProverFirst pSpec where
   prover_first' := by simpa using h.prover_last'
-instance [h : VerifierFirst pSpec] : VerifierFirst pSpec where
-  verifier_first' := by simp
+instance [h : VerifierLast pSpec] : VerifierFirst pSpec where
+  verifier_first' := by simpa using h.verifier_last'
 
 instance [ProverFirst pSpec] : Unique (pSpec.MessageIdx) where
   default := ⟨0, by simp⟩
@@ -907,9 +907,13 @@ instance [h : VerifierFirst pSpec] : IsEmpty (pSpec.MessageIdx) where
 instance [ProverFirst pSpec] : ∀ i, VCVCompatible (pSpec.Challenge i) := isEmptyElim
 instance [VerifierFirst pSpec] : ∀ i, OracleInterface (pSpec.Message i) := isEmptyElim
 
+/-- The `ProverFirst` argument only guards instance search: without it this instance would also
+apply to verifier-first specs, where it would overlap the `isEmptyElim` instance above. -/
 instance [ProverFirst pSpec] [h : OracleInterface (pSpec.«Type» 0)] :
     ∀ i, OracleInterface (pSpec.Message i)
   | ⟨0, _⟩ => inferInstance
+/-- The `VerifierFirst` argument only guards instance search: without it this instance would also
+apply to prover-first specs, where it would overlap the `isEmptyElim` instance above. -/
 instance [VerifierFirst pSpec] [h : VCVCompatible (pSpec.«Type» 0)] :
     ∀ i, VCVCompatible (pSpec.Challenge i)
   | ⟨0, _⟩ => inferInstance

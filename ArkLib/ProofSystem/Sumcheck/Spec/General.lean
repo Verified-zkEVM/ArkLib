@@ -377,6 +377,7 @@ def oracleVerifier : OracleVerifier oSpec (StatementRound R n 0) (OracleStatemen
     (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg n).Message]ₒ))
   outputOracle := .inl ⟨Function.Embedding.inl, fun _ => rfl, fun _ => HEq.rfl⟩
 
+omit [SampleableType R] in
 /-- The executable verifier has the same query program as sequential round verification. -/
 theorem oracleVerifier_verify_eq_seqCompose
     (stmt : StatementRound R n 0) (challenges : (pSpec R deg n).Challenges) :
@@ -387,6 +388,7 @@ theorem oracleVerifier_verify_eq_seqCompose
     (SingleRound.oracleVerifier R n deg D oSpec)
     (SingleRound.oracleVerifier_only_message_queries R n deg D oSpec) stmt challenges
 
+omit [SampleableType R] in
 /-- The full sum-check verifier queries only the univariate polynomials sent in
 the rounds.  It never queries the input multivariate polynomial. -/
 theorem sumcheck_verifier_no_inputPolynomial_queries
@@ -398,6 +400,7 @@ theorem sumcheck_verifier_no_inputPolynomial_queries
     (fun _ => OracleStatement R n deg) (SingleRound.oracleVerifier R n deg D oSpec)
     (SingleRound.oracleVerifier_only_message_queries R n deg D oSpec) stmt challenges
 
+omit [SampleableType R] in
 /-- Sum-check retains the original input polynomial as its output oracle. -/
 @[simp]
 private theorem seqCompose_materializeOutput
@@ -410,6 +413,7 @@ private theorem seqCompose_materializeOutput
     (OracleStatement R n deg) (SingleRound.oracleVerifier R n deg D oSpec)
     (fun _ _ _ _ => rfl) challenges oStmt messages
 
+omit [SampleableType R] in
 /-- Sum-check retains its original input polynomial as its output oracle. -/
 @[simp]
 theorem oracleVerifier_materializeOutput
@@ -417,6 +421,7 @@ theorem oracleVerifier_materializeOutput
     (oStmt : ∀ i, OracleStatement R n deg i) (messages : (pSpec R deg n).Messages) :
     (oracleVerifier R deg D n oSpec).materializeOutput challenges oStmt messages = oStmt := rfl
 
+omit [SampleableType R] in
 /-- Materializing the executable verifier agrees with sequential round verification. -/
 theorem oracleVerifier_toVerifier_eq_seqCompose :
     (oracleVerifier R deg D n oSpec).toVerifier =
@@ -459,11 +464,13 @@ lemma reduction_verifier_eq_verifier :
     (reduction R deg D n oSpec).verifier = verifier R deg D n oSpec := by
   rfl
 
+omit [SampleableType R] in
 @[simp]
 lemma oracleReduction_verifier_eq_oracleVerifier :
     (oracleReduction R deg D n oSpec).verifier = oracleVerifier R deg D n oSpec := by
   rfl
 
+omit [SampleableType R] in
 /-- Materializing the oracle protocol gives the ordinary sum-check reduction. -/
 @[simp]
 theorem oracleReduction_toReduction :

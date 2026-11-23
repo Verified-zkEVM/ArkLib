@@ -83,6 +83,13 @@ open Finsupp
 
 variable {R σ : Type*} [CommSemiring R]
 
+/-- A nonzero partial derivative in `i` requires positive degree in `i`. -/
+theorem degreeOf_pos_of_pderiv_ne_zero (i : σ) {p : MvPolynomial σ R}
+    (hp : pderiv i p ≠ 0) : 0 < p.degreeOf i := by
+  refine Nat.pos_of_ne_zero fun h ↦ hp (pderiv_eq_zero_of_notMem_vars ?_)
+  rw [mem_vars_iff_degreeOf_ne_zero]
+  exact not_not.mpr h
+
 /-- Every monomial of `pderiv i p` comes from a monomial of `p` with one more factor `X i`. -/
 private theorem add_single_one_mem_support_of_mem_support_pderiv {i : σ}
     {p : MvPolynomial σ R} {m : σ →₀ ℕ} (hm : m ∈ (pderiv i p).support) :

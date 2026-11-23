@@ -51,7 +51,7 @@ section FoldTheory
 
 /-- Evaluates polynomial P on the domain S⁽ʲ⁾.
     This function is index-agnostic: logic doesn't change based on the round. -/
-def polyToOracleFunc {domainIdx : Fin r} (P : L[X]) :
+def polyToOracleFunc {domainIdx : Fin r} (P : Polynomial L) :
     (sDomain 𝔽q β h_ℓ_add_R_rate domainIdx) → L :=
   fun y => P.eval y.val
 
@@ -62,7 +62,8 @@ evaluation over `S⁽ⁱ⁺¹⁾` of `P⁽ⁱ⁺¹⁾(X)`, whose novel coefficie
 theorem fold_advances_evaluation_poly
     (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1) (h_destIdx_le : destIdx ≤ ℓ)
   (coeffs : Fin (2 ^ (ℓ - ↑i)) → L) (r_chal : L) : -- novel coeffs
-  let P_i : L[X] := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) coeffs
+  let P_i : Polynomial L :=
+    intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) coeffs
   let f_i := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (domainIdx := i) (P := P_i)
   let f_i_plus_1 := fold (i := i) (destIdx := destIdx) (h_destIdx := h_destIdx)
@@ -136,7 +137,8 @@ theorem iteratedFold_advances_evaluation_poly
     (i : Fin r) {destIdx : Fin r} (steps : ℕ) (h_destIdx : destIdx = i + steps)
   (h_destIdx_le : destIdx ≤ ℓ)
   (coeffs : Fin (2 ^ (ℓ - ↑i)) → L) (r_challenges : Fin steps → L) : -- novel coeffs
-  let P_i : L[X] := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) coeffs
+  let P_i : Polynomial L :=
+    intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := by omega) coeffs
   let f_i := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (domainIdx := i) (P := P_i)
   let f_i_plus_steps := iteratedFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)

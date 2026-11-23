@@ -76,7 +76,7 @@ theorem linear_close_probability_le_epsCa
     calc
       ∑ d : ι → F, (L d).card =
           ∑ d : ι → F, ∑ r : F, if Good (z + r • d) then 1 else 0 := by
-            simp [L, Finset.card_filter]
+            simp only [L, Finset.card_filter]
       _ = ∑ r : F, ∑ d : ι → F, if Good (z + r • d) then 1 else 0 := by
             rw [Finset.sum_comm]
       _ = ∑ r : F, if r = 0 then 0 else G.card := by

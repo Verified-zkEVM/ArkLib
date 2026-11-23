@@ -41,7 +41,7 @@ open Code in
 `(δ, 3t³, 2t)`-strongly-line-decodable, and it has at most `t` codewords in every ball of the
 boosted radius `δ · 2t/(2t - 1)`. -/
 private theorem frs_strongLineDecodable_and_lambda_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (hω_gen : orderOf ω = Fintype.card F - 1)

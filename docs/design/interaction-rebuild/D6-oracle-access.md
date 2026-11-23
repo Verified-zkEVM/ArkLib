@@ -16,22 +16,22 @@ form a family indexed by the shape path:
 
 ```lean
 -- intended, not existing
-def oracleIdx (s : FreeM OraclePoly PUnit) : Path s → Type          -- oracle nodes on the path
-def oracles   (s) (p : Path s) : OracleSpec (oracleIdx s p)          -- their interfaces
-def payloadImpl (s) (tr : PathAlong oracleSig s) :
-    QueryImpl (oracles s (projectPathAlong oracleSig s tr)) Id       -- answers from `tr`'s payloads
+def OracleMessageIndex (s : FreeM OraclePoly PUnit) : Path s → Type          -- oracle nodes on the path
+def oracleMessageSpec (s) (p : Path s) : OracleSpec (OracleMessageIndex s p)          -- their interfaces
+def oracleMessageImpl (s) (tr : Transcript oracleSig s) :
+    QueryImpl (oracleMessageSpec s tr.path) Id       -- answers from `tr`'s oracle messages
 
-theorem oracles_append (p₁ : Path s₁) (p₂ : Path (s₂ p₁)) :
-    oracles (s₁.append s₂) (Path.append p₁ p₂) ≃ₒ oracles s₁ p₁ + oracles (s₂ p₁) p₂
-theorem payloadImpl_append : payloadImpl (append tr₁ tr₂) ≅ payloadImpl tr₁ + payloadImpl tr₂
+theorem oracleMessageFamily_append (p₁ : Path s₁) (p₂ : Path (s₂ p₁)) :
+    oracleMessageSpec (s₁.append s₂) (Path.append p₁ p₂) ≃ₒ oracleMessageSpec s₁ p₁ + oracleMessageSpec (s₂ p₁) p₂
+theorem oracleMessageImpl_append : oracleMessageImpl (append tr₁ tr₂) ≅ oracleMessageImpl tr₁ + oracleMessageImpl tr₂
 ```
 
 The index set depends on the path, because public messages select the suffix, but only through
 the shape path `p`, which the verifier sees (record D3). The decision is typed
-`StmtIn → (p : Path s) → View s p → OptionT (OracleComp (oSpec + [OStmtIn]ₒ + oracles s p))
-(StmtOut p)`; in a run `p` is `projectPathAlong oracleSig s tr`, so `payloadImpl s tr` answers its
+`StmtIn → (p : Path s) → View s p → OptionT (OracleComp (oSpec + [OStmtIn]ₒ + oracleMessageSpec s p))
+(StmtOut p)`; in a run `p` is `tr.path`, so `oracleMessageImpl s tr` answers its
 queries from the same run without a cast (record D4). Round-by-round state functions and extractors read
-prefix payloads as transcript data, not through queries (record D7).
+prefix oracle messages as transcript data, not through queries (record D7).
 
 **2. The output interface is one oracle map.** The output oracle statements of a reduction are
 given by a single structure from the inputs to the outputs:
@@ -45,7 +45,7 @@ structure OracleMap (In : ιᵢ → Type) [∀ i, OracleInterface (In i)]
   law  : ∀ x q, simulateQ (answers x) (impl q) = pure (answer (f x) q)
 
 -- the output interface of an oracle reduction on tree `s`
-outputMap : StmtIn → (p : Path s) → View s p → OracleMap (OStmtIn + oracles s p) (OStmtOut p)
+outputMap : StmtIn → (p : Path s) → View s p → OracleMap (OStmtIn + oracleMessageSpec s p) (OStmtOut p)
 ```
 
 The output map may read the input statement and the verifier view (challenges and public
@@ -62,7 +62,7 @@ queries only the input oracle statements and the oracle messages on `p`, never t
 
 **3. Routing.** In a composed decision (record D5) the suffix's queries to its input oracles go
 through the prefix's output map, and its queries to its own oracle messages map into the larger
-family given by `oracles_append`. Both are `QueryImpl.compose` with the prefix map's `impl` and
+family given by `oracleMessageFamily_append`. Both are `QueryImpl.compose` with the prefix map's `impl` and
 a reindexing. The routing law states that the composed decision equals the prefix decision
 followed by the suffix decision on the routed oracles, and that routing through `impl` agrees with
 answering from `f` applied to the materialized prefix data.
@@ -143,14 +143,14 @@ Two differences from the legacy simulation are deliberate.
 
 **Acceptance tests (in A).** Routing through an embedding and through a virtual output both agree
 with materialized data; the decision reaches oracle messages only by queries, answered from the
-same run; `oracles_append` on a composed oracle protocol.
+same run; `oracleMessageFamily_append` on a composed oracle protocol.
 
 **Dependencies.** The composition law needs a VCVio lemma relating `simulateQ` and
 `QueryImpl.compose`. Its availability at the pinned VCVio revision is unverified.
 
 ## Open points
 
-- **Open: where `OracleInterface` instances live** (record D1), which fixes how `oracles` reads
+- **Open: where `OracleInterface` instances live** (record D1), which fixes how `oracleMessageSpec` reads
   interfaces from positions or from `Γ`.
 - **Path-indexed outputs, not open.** The output statement type and the output oracle family are
   indexed by the shape path: `StmtOut : Path s → Type u`, `J : Path s → Type uJ`,

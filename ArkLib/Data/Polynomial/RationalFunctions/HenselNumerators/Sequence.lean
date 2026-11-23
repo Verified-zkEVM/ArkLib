@@ -60,16 +60,16 @@ theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hprev : ∀ i : Fin (t + 1),
       embeddingOf𝒪Into𝕃 H (βprev i) /
         (liftToFunctionField (H := H) H.leadingCoeff ^ (i.val + 1) *
-          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i.val) =
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H)) ^ henselDenominatorExponent i.val) =
         αseq i.val) :
     ∃ βnext : 𝒪 H,
       embeddingOf𝒪Into𝕃 H βnext /
         (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
-          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent (t + 1)) =
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H)) ^ henselDenominatorExponent (t + 1)) =
         αseq (t + 1) := by
   classical
   let W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff
-  let eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)
+  let eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H)
   let E : ℕ := henselDenominatorExponent (t + 1)
   let D : 𝕃 H := W ^ (t + 1 + 1) * eta ^ E
   let Ddiv : 𝕃 H := W ^ (t + 1 + 1) * eta ^ (E - 1) * W ^ (R.natDegree - 2)
@@ -134,10 +134,10 @@ theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hα0 : αseq 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff)
     (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0) :
     ∃ βseq : ℕ → 𝒪 H,
-      HasNumeratorShape x₀ R H hHyp αseq βseq := by
+      HasNumeratorShape x₀ R H αseq βseq := by
   classical
   let W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff
-  let Xi : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)
+  let Xi : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H)
   let shapeAt : ℕ → 𝒪 H → Prop := fun t β =>
     embeddingOf𝒪Into𝕃 H β / (W ^ (t + 1) * Xi ^ henselDenominatorExponent t) = αseq t
   have hprefix :
@@ -192,10 +192,10 @@ are recombined in `exists_hensel_numerators_with_weight_bounds`. -/
 lemma exists_hensel_numerator_sequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
-    ∃ βseq : ℕ → 𝒪 H, IsHenselNumeratorSequence x₀ R H hHyp βseq := by
+    ∃ βseq : ℕ → 𝒪 H, IsHenselNumeratorSequence x₀ R H βseq := by
   rcases exists_hensel_alpha_sequence x₀ R H hHyp with ⟨αseq, hα0, hroot⟩
   rcases exists_regular_numerator_shape x₀ R H hHyp αseq hα0 hroot with ⟨βseq, hshape⟩
-  exact ⟨βseq, hensel_numerator_sequence_of_alpha_shape x₀ R H hHyp αseq βseq hα0 hroot hshape⟩
+  exact ⟨βseq, hensel_numerator_sequence_of_alpha_shape x₀ R H αseq βseq hα0 hroot hshape⟩
 
 /-- The chosen regular numerator sequence supplied by `exists_hensel_numerator_sequence`. -/
 noncomputable def betaSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
@@ -207,7 +207,7 @@ noncomputable def betaSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 lemma betaSeq_spec (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
-    IsHenselNumeratorSequence x₀ R H hHyp (betaSeq x₀ R H hHyp) :=
+    IsHenselNumeratorSequence x₀ R H (betaSeq x₀ R H hHyp) :=
   (exists_hensel_numerator_sequence x₀ R H hHyp).choose_spec
 
 /-- **The Hensel numerator sequence is unique** — the counterpart of `IsHenselNumeratorSequence`'s
@@ -218,31 +218,31 @@ satisfying the specification equals it (`eq_betaSeq`). -/
 theorem IsHenselNumeratorSequence.unique (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) {βseq βseq' : ℕ → 𝒪 H}
-    (hβ : IsHenselNumeratorSequence x₀ R H hHyp βseq)
-    (hβ' : IsHenselNumeratorSequence x₀ R H hHyp βseq') :
+    (hβ : IsHenselNumeratorSequence x₀ R H βseq)
+    (hβ' : IsHenselNumeratorSequence x₀ R H βseq') :
     βseq = βseq' := by
   have hzeta := zeta_ne_zero_of_hypotheses x₀ R H hHyp
   -- the induced coefficient sequences agree, by uniqueness of the lift
   have hroot : evalRAtPowerSeries x₀ H R
-      (gammaFromAlpha H (alphaOfNumerators x₀ R H hHyp βseq)) = 0 := by
-    rw [← gammaOfNumerators_eq_gammaFromAlpha x₀ R H hHyp _ βseq (fun _ => rfl)]
+      (gammaFromAlpha H (alphaOfNumerators x₀ R H βseq)) = 0 := by
+    rw [← gammaOfNumerators_eq_gammaFromAlpha x₀ R H _ βseq (fun _ => rfl)]
     exact hβ.2
   have hroot' : evalRAtPowerSeries x₀ H R
-      (gammaFromAlpha H (alphaOfNumerators x₀ R H hHyp βseq')) = 0 := by
-    rw [← gammaOfNumerators_eq_gammaFromAlpha x₀ R H hHyp _ βseq' (fun _ => rfl)]
+      (gammaFromAlpha H (alphaOfNumerators x₀ R H βseq')) = 0 := by
+    rw [← gammaOfNumerators_eq_gammaFromAlpha x₀ R H _ βseq' (fun _ => rfl)]
     exact hβ'.2
-  have hα : alphaOfNumerators x₀ R H hHyp βseq = alphaOfNumerators x₀ R H hHyp βseq' :=
+  have hα : alphaOfNumerators x₀ R H βseq = alphaOfNumerators x₀ R H βseq' :=
     hensel_alpha_sequence_unique x₀ R H hzeta hβ.1 hβ'.1 hroot hroot'
   -- the common denominator `W^{t+1} ξ^{eₜ}` is nonzero, so the numerators agree in `𝕃`,
   -- and `embeddingOf𝒪Into𝕃` is injective
   funext t
   have hW : liftToFunctionField (H := H) H.leadingCoeff ≠ 0 :=
     liftToFunctionField_leadingCoeff_ne_zero (H := H)
-  have heta : embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) ≠ 0 := by
+  have heta : embeddingOf𝒪Into𝕃 H (xi x₀ R H) ≠ 0 := by
     rw [embeddingOf𝒪Into𝕃_xi x₀ R H hHyp]
     exact mul_ne_zero (pow_ne_zero (R.natDegree - 2) hW) hzeta
   have hD : liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1) *
-      embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) ^ henselDenominatorExponent t ≠ 0 :=
+      embeddingOf𝒪Into𝕃 H (xi x₀ R H) ^ henselDenominatorExponent t ≠ 0 :=
     mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ heta)
   have hdiv := congrFun hα t
   simp only [alphaOfNumerators] at hdiv
@@ -253,7 +253,7 @@ theorem IsHenselNumeratorSequence.unique (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y
 theorem IsHenselNumeratorSequence.eq_betaSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) {βseq : ℕ → 𝒪 H}
-    (hβ : IsHenselNumeratorSequence x₀ R H hHyp βseq) :
+    (hβ : IsHenselNumeratorSequence x₀ R H βseq) :
     βseq = betaSeq x₀ R H hHyp :=
   IsHenselNumeratorSequence.unique x₀ R H hHyp hβ (betaSeq_spec x₀ R H hHyp)
 
@@ -325,7 +325,7 @@ theorem exists_hensel_numerators_with_weight_bounds (x₀ : F) (R : F[X][X][Y]) 
     (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
     (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
     ∃ βseq : ℕ → 𝒪 H,
-      IsHenselNumeratorSequence x₀ R H hHyp βseq ∧
+      IsHenselNumeratorSequence x₀ R H βseq ∧
       (∀ t : ℕ, regularWeight hH (βseq t) D ≤
         (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ)) ∧
       ∀ t : ℕ, regularWeight hH (βseq t) D ≤
@@ -338,7 +338,7 @@ theorem exists_hensel_numerators_with_weight_bounds (x₀ : F) (R : F[X][X][Y]) 
 /-- The chosen Hensel-lift coefficients induced by the regular numerator sequence. -/
 def alpha (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H) (t : ℕ) : 𝕃 H :=
-  alphaOfNumerators x₀ R H hHyp (betaSeq x₀ R H hHyp) t
+  alphaOfNumerators x₀ R H (betaSeq x₀ R H hHyp) t
 
 /-- Variant of `α` taking explicit irreducibility and positive-degree hypotheses. -/
 def alpha' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
@@ -350,7 +350,7 @@ sequence from `exists_hensel_numerator_sequence`. -/
 def gamma (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H) :
     PowerSeries (𝕃 H) :=
-  gammaOfNumerators x₀ R H hHyp (betaSeq x₀ R H hHyp)
+  gammaOfNumerators x₀ R H (betaSeq x₀ R H hHyp)
 
 /-- Variant of `γ` taking explicit irreducibility and positive-degree hypotheses. -/
 def gamma' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
