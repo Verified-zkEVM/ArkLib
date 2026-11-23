@@ -76,10 +76,10 @@ example :
     let prepared := circuit.prepare (by decide : 1 ≤ 3) (fun _ => 3)
     let cleared := prepared.clearPublicConstants 1
     (cleared 0).qC = 0 ∧
-      ConstraintSystem.publicInputTerm (by decide : 1 ≤ 3)
+      ConstraintSystem.publicInputTerm (n := 3)
         (fun _ : Fin 1 => (3 : Int)) 0 = -3 ∧
       (cleared 0).eval assignment +
-        ConstraintSystem.publicInputTerm (by decide : 1 ≤ 3)
+        ConstraintSystem.publicInputTerm (n := 3)
           (fun _ : Fin 1 => (3 : Int)) 0 = 0 := by
   decide
 

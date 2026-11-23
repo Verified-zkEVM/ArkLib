@@ -817,12 +817,13 @@ theorem mcaError_eq_zero_of_neg_radius
     {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
-    {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
+    {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (C : ModuleCode ι F A)
     {δ : ℝ} (hδ : δ < 0) :
     mcaError G C δ = 0 := by
   classical
+  let _ : Fintype S := Fintype.ofFinite S
   cases isEmpty_or_nonempty ι with
   | inl hι =>
     let := hι

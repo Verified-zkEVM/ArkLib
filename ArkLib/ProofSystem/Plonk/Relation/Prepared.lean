@@ -214,7 +214,7 @@ def clearPublicConstants (cs : ConstraintSystem R m n) (ℓ : ℕ) :
   fun i => if i.val < ℓ then { cs i with qC := 0 } else cs i
 
 /-- The public-input contribution on the reserved rows, zero on computational rows. -/
-def publicInputTerm (_hℓ : ℓ ≤ n) (x : Fin ℓ → R) : Fin n → R :=
+def publicInputTerm (x : Fin ℓ → R) : Fin n → R :=
   fun i => if hi : i.val < ℓ then -x ⟨i.val, hi⟩ else 0
 
 /-- Clearing a prepared constant and adding the public-input term restores it exactly once. -/
@@ -223,7 +223,7 @@ theorem eval_clearPublicConstants_add_publicInputTerm
     (x : Fin ℓ → R)
     (hpublic : ∀ i, cs (Fin.castLE hrows i) = Gate.eq (Fin.castLE hwires i) (x i))
     (z : Fin m → R) (i : Fin n) :
-    ((cs.clearPublicConstants ℓ) i).eval z + publicInputTerm hrows x i = (cs i).eval z := by
+    ((cs.clearPublicConstants ℓ) i).eval z + publicInputTerm x i = (cs i).eval z := by
   by_cases hi : i.val < ℓ
   · have hg : cs i = Gate.eq (Fin.castLE hwires ⟨i.val, hi⟩) (x ⟨i.val, hi⟩) :=
       hpublic ⟨i.val, hi⟩
@@ -246,7 +246,7 @@ theorem accepts_iff_clearPublicConstants (cs : ConstraintSystem R m n)
     (hrows : ℓ ≤ n) (hwires : ℓ ≤ m) (h : cs.isPreparedFor ℓ hrows hwires)
     (z : Fin m → R) :
     cs.accepts z ↔ ∀ i, ((cs.clearPublicConstants ℓ) i).eval z +
-      publicInputTerm hrows (cs.preparedInputs hrows) i = 0 := by
+      publicInputTerm (cs.preparedInputs hrows) i = 0 := by
   simp only [cs.eval_clearPublicConstants_add_publicInputTerm hrows hwires
     (cs.preparedInputs hrows) (cs.eq_preparedInputs_of_isPreparedFor hrows hwires h)]
   rfl

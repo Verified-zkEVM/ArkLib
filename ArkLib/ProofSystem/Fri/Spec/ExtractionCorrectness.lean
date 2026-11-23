@@ -28,7 +28,7 @@ March 27, 2026 revision of [GMW25] for the named executable extractor.
 
 namespace Fri.Spec.Extractor
 open Domain OracleComp OracleSpec CompPoly Finset
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (o : ∀ j, FinalOracleStatement s ω j)
 variable (α : FinalStatement F k)
@@ -93,7 +93,7 @@ namespace Fri.Spec
 open Domain Polynomial ReedSolomon OracleComp Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
@@ -183,7 +183,7 @@ end Fri.Spec
 
 namespace Fri.Spec.Extractor
 open Domain OracleComp OracleSpec CompPoly Finset
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
@@ -209,7 +209,7 @@ end Fri.Spec.Extractor
 
 namespace Fri.Spec.Extractor
 open Domain OracleComp OracleSpec CompPoly Finset
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
@@ -282,7 +282,7 @@ end Fri.Spec.Extractor
 
 namespace Fri.Spec.Extractor
 open Domain OracleComp OracleSpec CompPoly Finset
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
