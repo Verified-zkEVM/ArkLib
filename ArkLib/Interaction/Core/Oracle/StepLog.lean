@@ -58,7 +58,7 @@ def length : {s : OracleProtocol.{u, q}} → TranscriptPrefix s → Nat
   | .liftBind _ _, some ⟨_, tail⟩ => tail.length + 1
 
 /-- A completed transcript as a transcript prefix. It keeps every move. -/
-def ofTranscript : (s : OracleProtocol.{u, q}) → PathAlong oracleSig s → TranscriptPrefix s
+def ofTranscript : (s : OracleProtocol.{u, q}) → Transcript oracleSig s → TranscriptPrefix s
   | .pure _, _ => none
   | .liftBind _ next, ⟨x, tr⟩ => .cons x (ofTranscript (next (oracleSig.toFunB _ x)) tr)
 
@@ -130,7 +130,7 @@ def mapStepsWith
       C s → Participant.{u} → m A → n A)
     (descend : (a : P.A) → (next : P.B a → FreeM P PUnit.{u + 1}) →
       (x : Move l a) → C (.liftBind a next) → C (next (l.toFunB a x))) :
-    {s : FreeM P PUnit.{u + 1}} → {Out : PathAlong l s → Type u} →
+    {s : FreeM P PUnit.{u + 1}} → {Out : Transcript l s → Type u} →
     C s → (agent : Participant.{u}) → Strategy l m agent s Out → Strategy l n agent s Out
   | .pure _, _, env, agent, p => action env agent p
   | .liftBind a next, _, env, agent, p =>
@@ -149,7 +149,7 @@ theorem run_mapStepsWith [LawfulMonad m] [LawfulMonad n] [LawfulMonad k]
     (descend : (a : P.A) → (next : P.B a → FreeM P PUnit.{u + 1}) →
       (x : Move l a) → C (.liftBind a next) → C (next (l.toFunB a x)))
     (comm : ∀ {s A} (env : C s) agent (p : m A), F.toFun A (action env agent p) = G.toFun A p) :
-    (s : FreeM P PUnit.{u + 1}) → {OutP OutC : PathAlong l s → Type u} →
+    (s : FreeM P PUnit.{u + 1}) → {OutP OutC : Transcript l s → Type u} →
     (env : C s) → (p : Focal l m s OutP) → (c : Counterpart l m s OutC) →
     F.toFun _ (TwoParty.Lens.run s (mapStepsWith (C := C) (@action) descend env .focal p)
       (mapStepsWith (C := C) (@action) descend env .counterpart c)) =
@@ -211,10 +211,10 @@ def extendPrefix {root : OracleProtocol.{0, q}} (a : OraclePos.{0, q})
 /-- Run the core runner `TwoParty.Lens.run` on participant strategies wrapped by `logStep`. The
 writer layer collects one logged step per action. -/
 def runLoggingSteps {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q})
-    {OutP OutC : PathAlong oracleSig s → Type}
+    {OutP OutC : Transcript oracleSig s → Type}
     (p : Focal oracleSig (OracleComp spec) s OutP)
     (c : Counterpart oracleSig (OracleComp spec) s OutC) :
-    OracleComp spec (((tr : PathAlong oracleSig s) × OutP tr × OutC tr) ×
+    OracleComp spec (((tr : Transcript oracleSig s) × OutP tr × OutC tr) ×
       List (LoggedStep spec s)) :=
   (TwoParty.Lens.run s
     (StepInstrumentation.mapStepsWith (C := fun t => TranscriptPrefix t → TranscriptPrefix s)
@@ -225,7 +225,7 @@ def runLoggingSteps {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q
 /-- Concatenating the queries of the logged steps forgets the step boundaries and gives the query
 log of the ordinary run. The proof applies `run_mapStepsWith`. -/
 theorem runLoggingSteps_log {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q})
-    {OutP OutC : PathAlong oracleSig s → Type}
+    {OutP OutC : Transcript oracleSig s → Type}
     (p : Focal oracleSig (OracleComp spec) s OutP)
     (c : Counterpart oracleSig (OracleComp spec) s OutC) :
     (fun r => (r.1, concatQueries r.2)) <$> runLoggingSteps s p c =
@@ -276,27 +276,27 @@ namespace OracleVerifier
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
   {inputs : Resources.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-  {Out : PathAlong oracleSig s → Type}
+  {Out : Transcript oracleSig s → Type}
 
 /-- The log of a completed run: the participant steps, and the full query log of the final
 decision. -/
 structure StepLog (V : OracleVerifier ambient s S T inputs outputs)
-    (Out : PathAlong oracleSig s → Type) where
+    (Out : Transcript oracleSig s → Type) where
   /-- The ordinary run observation, including rejection and private prover output. -/
-  observation : Observation oracleSig s Out (OracleVerifier.Output T B)
+  observation : Outcome oracleSig s Out (OracleVerifier.Output T B)
   /-- The participant steps before the final decision, in execution order. -/
   steps : List (LoggedStep (ambient + challengeSpec oracleSig s) s)
   /-- The decision's queries, before resource routing. -/
   decisionQueries : QueryLog
-    (ambient + (pathResources inputs s (projectPathAlong oracleSig s observation.1)).spec)
+    (ambient + (pathResources inputs s (Transcript.path observation.1)).spec)
 
 namespace StepLog
 
 /-- Forget the step boundaries and keep exactly the two existing query logs. -/
 def toLog {V : OracleVerifier ambient s S T inputs outputs} (r : StepLog V Out) :=
   (⟨r.observation, (concatQueries r.steps).fst, r.decisionQueries⟩ :
-    (obs : Observation oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
-      QueryLog (ambient + (pathResources inputs s (projectPathAlong oracleSig s obs.1)).spec))
+    (obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
+      QueryLog (ambient + (pathResources inputs s (Transcript.path obs.1)).spec))
 
 /-- The verifier's decision as a step. Its transcript so far is the whole transcript of the run,
 and its actor is `decision`, which has the receiver role. -/
@@ -391,9 +391,9 @@ theorem runWithStepLog_toLog (V : OracleVerifier ambient s S T inputs outputs) (
     (TwoParty.Lens.run s
       (prover.simulate (fun q => liftM (full.query (.inl q))))
       (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run
-  let p := projectPathAlong oracleSig s tr
+  let p := Transcript.path tr
   let view := toView s tr
-  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+  let resources : (pathResources inputs s p).Data := (data, oracleMessages s tr)
   let handler : QueryImpl (ambient + (pathResources inputs s p).spec)
       (OracleComp full) := QueryImpl.addLift
     ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
@@ -414,14 +414,14 @@ section AmbientStepLog
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
   {inputs : Resources.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-  {Out : PathAlong oracleSig s → Type}
+  {Out : Transcript oracleSig s → Type}
 
 /-- The ambient step log lets the input oracles and the oracle nodes have independent query
 universes. It returns only ambient requests and challenge draws, whose indices are small. -/
 structure AmbientStepLog (V : OracleVerifier ambient s S T inputs outputs)
-    (Out : PathAlong oracleSig s → Type) where
+    (Out : Transcript oracleSig s → Type) where
   /-- The ordinary completed observation, including output resources and rejection. -/
-  observation : Observation oracleSig s Out (OracleVerifier.Output T B)
+  observation : Outcome oracleSig s Out (OracleVerifier.Output T B)
   /-- The participant steps, produced by the same runner as in `StepLog`. -/
   steps : List (LoggedStep (ambient + challengeSpec oracleSig s) s)
   /-- The decision's ambient requests and the responses it received. -/
@@ -495,8 +495,8 @@ let full := ambient + challengeSpec oracleSig s
   (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
     (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
   let tr := x.1.1
-  let p := projectPathAlong oracleSig s tr
-  let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+  let p := Transcript.path tr
+  let resources : (pathResources inputs s p).Data := (data, oracleMessages s tr)
   (simulateQ (QueryImpl.addLift toFull.withLogging
       ((pathResources inputs s p).answer resources) :
         QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))

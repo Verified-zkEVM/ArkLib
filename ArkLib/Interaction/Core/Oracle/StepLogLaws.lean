@@ -30,7 +30,7 @@ namespace OracleVerifier
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
   {inputs : Resources.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-  {Out : PathAlong oracleSig s → Type}
+  {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the step boundaries gives exactly the existing full logged run. -/
 theorem toLog_runWithStepLog (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
@@ -72,8 +72,8 @@ theorem toLog_runWithSetupStep (V : OracleVerifier ambient s S T inputs outputs)
       let (prover, queries) ← simulateQ
         (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup.withQueryLog
       (fun z => (⟨z.1, queries ++ z.2.1, z.2.2⟩ :
-        (obs : Observation oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
-          QueryLog (ambient + (pathResources inputs s (projectPathAlong oracleSig s obs.1)).spec)))
+        (obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
+          QueryLog (ambient + (pathResources inputs s (Transcript.path obs.1)).spec)))
         <$> V.runWithLog stmt data prover) := by
   simp only [runWithSetupStep, _root_.map_bind, LawfulApplicative.map_pure]
   refine bind_congr fun r => ?_
@@ -132,7 +132,7 @@ section AmbientStepLog
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
   {inputs : Resources.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-  {Out : PathAlong oracleSig s → Type}
+  {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the step boundaries of the ambient step log gives exactly the existing ambient
 logged run. -/

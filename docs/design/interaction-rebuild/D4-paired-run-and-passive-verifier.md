@@ -90,9 +90,9 @@ ambient failure or missing probability mass.
   nodes its slot is `pure` and it ignores the move; its leaf is `pure ⟨⟩`. Fiat–Shamir later
   changes only the implementation of the challenge oracle.
 - *Decision:* `decide : StmtIn → (p : Path s) → View s p → OptionT (OracleComp (oSpec +
-  [OStmtIn]ₒ + oracles s p)) StmtOut`, run once after the interaction on the shape path and the
+  [OStmtIn]ₒ + oracleMessageSpec s p)) StmtOut`, run once after the interaction on the shape path and the
   verifier view of the run (record D3). Public messages and challenges are values; oracle
-  messages are reached only by queries to `oracles s p` (record D6).
+  messages are reached only by queries to `oracleMessageSpec s p` (record D6).
 
 The decision's oracle implementation is built from the same run's payloads; no other
 implementation is admitted:
@@ -102,8 +102,8 @@ implementation is admitted:
 def Reduction.run (R) (stmt wit) : OptionT (OracleComp (oSpec + chal)) (...) := do
   let ⟨tr, outP, ⟨⟩⟩ ← TwoParty.run (R.prover stmt wit) (sampler l s)
   let p := projectPathAlong l s tr
-  let stmtOut ← simulateQ (idImpl oSpec + inputImpl oStmt + payloadImpl s tr)
-    (R.decide stmt p (toView s tr))          -- `payloadImpl s tr` answers `oracles s p`
+  let stmtOut ← simulateQ (idImpl oSpec + inputImpl oStmt + oracleMessageImpl s tr)
+    (R.decide stmt p (toView s tr))          -- `oracleMessageImpl s tr` answers `oracleMessageSpec s p`
   pure (tr, outP, stmtOut)
 ```
 

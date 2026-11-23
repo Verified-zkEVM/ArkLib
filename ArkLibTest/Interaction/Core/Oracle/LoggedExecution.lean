@@ -210,8 +210,8 @@ def decisionObserved (mode old message hidden : Nat) :=
         (fun q => liftM ((ambient + challengeSpec oracleSig pairSend).query (.inl q))))
       (sampler oracleSig pairSend (fun c =>
         liftM ((ambient + challengeSpec oracleSig pairSend).query (.inr c)))))
-    let p := projectPathAlong oracleSig pairSend tr
-    let data : (pathResources inputs pairSend p).Data := (fun _ => old, payloads pairSend tr)
+    let p := Transcript.path tr
+    let data : (pathResources inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
     let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
       (toView pairSend tr) data
     pure (out, verdict.map (Option.map fun t =>
@@ -250,9 +250,9 @@ theorem close_optional_ok {ε : Type v} {ι : Type uι} {S : Type uS}
     {inputs : Resources.{u, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
-    (tr : PathAlong oracleSig s) (outcome : Option (T (projectPathAlong oracleSig s tr))) :
-    let p := projectPathAlong oracleSig s tr
-    let resources : (pathResources inputs s p).Data := (data, payloads s tr)
+    (tr : Transcript oracleSig s) (outcome : Option (T tr.path)) :
+    let p := tr.path
+    let resources : (pathResources inputs s p).Data := (data, oracleMessages s tr)
     let close := fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)
     (Except.ok outcome : Except ε (Option (T p))).map (Option.map close) =
       Except.ok (outcome.map close) := rfl
@@ -400,7 +400,7 @@ example : describeTwice _ ((simulateQ (logger twiceChallenges)
     [("first", 11), ("input", 7), ("second", 19), ("second", 19)] := rfl
 
 /-- A private output whose type depends on the first message actually sent. -/
-abbrev firstOut (tr : PathAlong oracleSig sendTwice) := Fin (Nat.succ (show Nat from tr.1))
+abbrev firstOut (tr : Transcript oracleSig sendTwice) := Fin (Nat.succ (show Nat from tr.1))
 
 /-- The prover makes the `setup` queries, then sends the counter's answers to queries 1 and 2.
 Its private output is `0 : Fin (first + 1)`. -/
@@ -725,7 +725,7 @@ run_cmd do
 
 /-- Realizations of the prefix resources: input 7 and message 1. -/
 def prefixData : prefixResources.Data :=
-  (seven, payloads single ⟨(1 : Nat), ⟨⟩⟩)
+  (seven, oracleMessages single ⟨(1 : Nat), ⟨⟩⟩)
 
 /-- One query to the export, routed by the export's `impl`. -/
 def exportQuery : OracleComp exported.spec Nat := liftM (exported.spec.query ⟨(), ()⟩)
@@ -871,8 +871,8 @@ namespace Interaction.Core.DependentRoutingTests
 The dependent claim is read through that selected oracle interface. -/
 def loggedObserved (input : Nat) : Bool × Nat × Option (Nat × Nat) :=
   let obs := (simulateQ noQueries (composite.runWithLog () (fun _ => input) (prover input))).1
-  ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
-    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))
+  ((Transcript.path obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (Transcript.path obs.1)))
 
 /-- Logging retains the unit statement and scalar realization of the zero branch. -/
 example : loggedObserved 0 = (true, 13, some (0, 0)) := rfl
@@ -887,10 +887,10 @@ example (input : Nat) : loggedObserved input = observed input := by
   change (simulateQ noQueries (composite.runWithLog () (fun _ => input) (prover input))).1 =
     simulateQ noQueries (composite.run () (fun _ => input) (prover input)) at h
   dsimp only [loggedObserved, observed]
-  exact congrArg (fun (obs : Observation oracleSig combined (fun _ => Nat)
+  exact congrArg (fun (obs : Outcome oracleSig combined (fun _ => Nat)
     (OracleVerifier.Output finalStmt finalData)) =>
-      ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
-    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))) h
+      ((Transcript.path obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (Transcript.path obs.1)))) h
 
 end Interaction.Core.DependentRoutingTests
 
@@ -903,7 +903,7 @@ example {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtoco
     {T : FreeM.Path s → Type} {A : I → Type} {J : FreeM.Path s → Type}
     {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleFamily.{0, 0, 0} I A}
     {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {Out : Transcript oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
     (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
@@ -1153,7 +1153,7 @@ example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, uQuery}} {T J : FreeM.Path s → Type}
     {B : (p : FreeM.Path s) → J p → Type} {inputs : Resources.{0, uInput, uData}}
     {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type}
+    {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleVerifier.AmbientStepLog.observation <$> V.runWithAmbientStepLog stmt data prover =

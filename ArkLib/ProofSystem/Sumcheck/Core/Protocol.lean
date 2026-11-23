@@ -72,40 +72,40 @@ variable {R deg}
 
 /-- Every full transcript projects to the unique shape path, whatever its messages and
 challenges. -/
-theorem project_eq_protocolPath {n : ℕ} (tr : PathAlong oracleSig (protocol R deg n)) :
-    projectPathAlong oracleSig (protocol R deg n) tr = protocolPath R deg n :=
+theorem project_eq_protocolPath {n : ℕ} (tr : Transcript oracleSig (protocol R deg n)) :
+    tr.path = protocolPath R deg n :=
   protocolPath_eq R deg n _
 
 /-- Prepend one round to a transcript of the remaining rounds. -/
 def consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    PathAlong oracleSig (protocol R deg (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
+    (tail : Transcript oracleSig (protocol R deg n)) :
+    Transcript oracleSig (protocol R deg (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
 
 /-- The round polynomial of the first round of a transcript. -/
-def headMessage {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) : R⦃≤ deg⦄[X] :=
+def headMessage {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) : R⦃≤ deg⦄[X] :=
   tr.1
 
 /-- The challenge of the first round of a transcript. -/
-def headChallenge {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) : R := tr.2.1
+def headChallenge {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) : R := tr.2.1
 
 /-- The transcript of the remaining rounds. -/
-def tailTranscript {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) :
-    PathAlong oracleSig (protocol R deg n) := tr.2.2
+def tailTranscript {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) :
+    Transcript oracleSig (protocol R deg n) := tr.2.2
 
 @[simp] theorem headMessage_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
+    (tail : Transcript oracleSig (protocol R deg n)) :
     headMessage (consTranscript msg chal tail) = msg := rfl
 
 @[simp] theorem headChallenge_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
+    (tail : Transcript oracleSig (protocol R deg n)) :
     headChallenge (consTranscript msg chal tail) = chal := rfl
 
 @[simp] theorem tailTranscript_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
+    (tail : Transcript oracleSig (protocol R deg n)) :
     tailTranscript (consTranscript msg chal tail) = tail := rfl
 
 /-- A transcript is determined by its first round and its tail. -/
-theorem consTranscript_eta {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) :
+theorem consTranscript_eta {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) :
     consTranscript (headMessage tr) (headChallenge tr) (tailTranscript tr) = tr := rfl
 
 /-! ## Folding pure rounds -/
@@ -115,7 +115,7 @@ section Fold
 variable {m : Type → Type} [Monad m]
 
 /-- One round with every slot `pure`: send `msg`, then continue with the received challenge. -/
-def consProver {k : ℕ} {Out : PathAlong oracleSig (protocol R deg (k + 1)) → Type}
+def consProver {k : ℕ} {Out : Transcript oracleSig (protocol R deg (k + 1)) → Type}
     (msg : R⦃≤ deg⦄[X])
     (next : (chal : R) → Focal oracleSig m (protocol R deg k)
       (fun tail => Out (consTranscript msg chal tail))) :
@@ -141,7 +141,7 @@ variable {State : ℕ → Type}
 /-- The transcript produced by a fold of pure rounds on the given challenges. -/
 def foldTranscript (msg : (k : ℕ) → State (k + 1) → R⦃≤ deg⦄[X])
     (next : (k : ℕ) → State (k + 1) → R → State k) :
-    (k : ℕ) → State k → (Fin k → R) → PathAlong oracleSig (protocol R deg k)
+    (k : ℕ) → State k → (Fin k → R) → Transcript oracleSig (protocol R deg k)
   | 0, _, _ => ⟨⟩
   | k + 1, st, chals => consTranscript (msg k st) (chals 0)
       (foldTranscript msg next k (next k st (chals 0)) (Fin.tail chals))
@@ -194,7 +194,7 @@ theorem samplerEnd_succ {m : Type → Type} [Monad m] (k : ℕ)
 
 /-- Running one pure round draws its challenge and then runs the remaining rounds. -/
 theorem run_consProver {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
-    {Out : PathAlong oracleSig (protocol R deg (k + 1)) → Type}
+    {Out : Transcript oracleSig (protocol R deg (k + 1)) → Type}
     (msg : R⦃≤ deg⦄[X])
     (next : (chal : R) → Focal oracleSig m (protocol R deg k)
       (fun tail => Out (consTranscript msg chal tail)))
@@ -330,7 +330,7 @@ noncomputable def honestProver {m : Type → Type} [Monad m]
 /-- The honest transcript on the given challenges. -/
 noncomputable def honestTranscript (stmt : Spec.StatementRound R n 0)
     (oStmt : ∀ i, Spec.OracleStatement R n deg i) (chals : Fin n → R) :
-    PathAlong oracleSig (protocol R deg n) :=
+    Transcript oracleSig (protocol R deg n) :=
   foldTranscript (honestMessage D) (nextState (honestMessage D)) n (initState stmt oStmt) chals
 
 /-- The honest prover output on the given challenges. -/

@@ -141,8 +141,8 @@ def noQueries : QueryImpl (ambient + challengeSpec oracleSig combined) Id
 private result, and the read-out of the accepted claim. -/
 def observed (input : Nat) : Bool × Nat × Option (Nat × Nat) :=
   let obs := simulateQ noQueries (composite.run () (fun _ => input) (prover input))
-  ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
-    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))
+  ((Transcript.path obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (Transcript.path obs.1)))
 
 /-- Zero selects the unit statement and the input itself as the final oracle. -/
 example : observed 0 = (true, 13, some (0, 0)) := rfl

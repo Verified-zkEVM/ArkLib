@@ -75,7 +75,7 @@ def exportTraceHandler (old hidden visible secret : Nat) :
     | .inr _ => 2
   modify (· ++ [label])
   pure (prefixResources.answer
-    ((fun b => if b then hidden else old), payloads firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
+    ((fun b => if b then hidden else old), oracleMessages firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
 
 /-- Every exported request reads the visible input followed by the sent oracle, exactly once.
 The complete trace omits label 1, so the hidden input is never queried, even and in particular
@@ -281,28 +281,26 @@ example (hidden secret : Nat) :=
 prefix and suffix transcripts, the routed prefix data is the prefix transcript's own payload. -/
 
 /-- The prefix transcript with observable value 20 and a private second coordinate. -/
-def prefixTranscript (secret : Nat) : PathAlong oracleSig firstProtocol := ⟨(20, secret), ⟨⟩⟩
+def prefixTranscript (secret : Nat) : Transcript oracleSig firstProtocol := ⟨(20, secret), ⟨⟩⟩
 
 /-- The suffix transcript with challenge 23 and scalar message 23. -/
-def suffixTranscript : PathAlong oracleSig secondProtocol :=
+def suffixTranscript : Transcript oracleSig secondProtocol :=
   ⟨(23 : Nat), ⟨(23 : Nat), ⟨⟩⟩⟩
 
 example (hidden secret : Nat) :
     (⟨(Path.split firstProtocol (fun _ => secondProtocol)
-        (projectPathAlong oracleSig combined
-          (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
+        (Transcript.path (Transcript.append firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))).1,
       (OracleVerifier.prefixRoute (inputs := inputs)
-        (projectPathAlong oracleSig combined
-          (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
+        (Transcript.path (Transcript.append firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))).f
-        (inputData hidden, payloads combined
-          (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
+        (inputData hidden, oracleMessages combined
+          (Transcript.append firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))⟩ :
       (p : FreeM.Path firstProtocol) ×
         (pathResources inputs firstProtocol p).Data) =
-      ⟨projectPathAlong oracleSig firstProtocol (prefixTranscript secret),
-        (inputData hidden, payloads firstProtocol (prefixTranscript secret))⟩ :=
+      ⟨Transcript.path (prefixTranscript secret),
+        (inputData hidden, oracleMessages firstProtocol (prefixTranscript secret))⟩ :=
   OracleVerifier.prefixRoute_payload (inputs := inputs) (s₂ := fun _ => secondProtocol)
     (inputData hidden)
     (prefixTranscript secret) suffixTranscript
@@ -365,7 +363,7 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OracleVerifier.OutputCompatibility V₁ V₂) (stmt : S) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig (s₁.append s₂) → Type}
+    {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :=
   OracleVerifier.run_append V₁ V₂ compatible stmt data prover
 

@@ -268,8 +268,8 @@ theorem availableMap_node (inputs : Resources.{u, uI, dI}) {s : OracleProtocol.{
 
 /-- Identify the sent oracles of a completed transcript with the path family that the verifier
 uses. -/
-def sentAtTranscript : (s : OracleProtocol.{u, q}) → (tr : PathAlong oracleSig s) →
-    OracleMap (pathFamily s (projectPathAlong oracleSig s tr)) (sentFamily (ofTranscript s tr))
+def sentAtTranscript : (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig s) →
+    OracleMap (oracleMessageFamily s tr.path) (sentFamily (ofTranscript s tr))
   | .pure _, _ =>
     { f := fun _ i => i.elim
       impl := fun r => r.1.elim
@@ -280,8 +280,8 @@ def sentAtTranscript : (s : OracleProtocol.{u, q}) → (tr : PathAlong oracleSig
     (OracleMap.id (Resources.ofFamily (singletonFamily I))).sum (sentAtTranscript (next ⟨⟩) tr)
 
 /-- This identification reads exactly the payloads of the same transcript. -/
-theorem sentAtTranscript_data : (s : OracleProtocol.{u, q}) → (tr : PathAlong oracleSig s) →
-    (sentAtTranscript s tr).f (payloads s tr) = SentOracle.payload (ofTranscript s tr)
+theorem sentAtTranscript_data : (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig s) →
+    (sentAtTranscript s tr).f (oracleMessages s tr) = SentOracle.payload (ofTranscript s tr)
   | .pure _, _ => by funext i; exact i.elim
   | .liftBind (.message _) next, ⟨x, tr⟩ => sentAtTranscript_data (next x) tr
   | .liftBind (.challenge _) next, ⟨_, tr⟩ => sentAtTranscript_data (next ⟨⟩) tr
@@ -294,22 +294,22 @@ theorem sentAtTranscript_data : (s : OracleProtocol.{u, q}) → (tr : PathAlong 
 /-- Route the verifier's resources along the completed path to the resources available at the
 completed transcript. -/
 def toPathResources (inputs : Resources.{u, uI, dI})
-    (s : OracleProtocol.{u, q}) (tr : PathAlong oracleSig s) :
-    OracleMap (pathResources inputs s (projectPathAlong oracleSig s tr))
+    (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+    OracleMap (pathResources inputs s tr.path)
       ((ofTranscript s tr).availableResources inputs) :=
   (OracleMap.id inputs).par (sentAtTranscript s tr)
 
 /-- Routing from `pathResources` keeps the inputs and exactly the payloads that were sent. -/
 theorem toPathResources_data (inputs : Resources.{u, uI, dI}) (input : inputs.Data)
-    (s : OracleProtocol.{u, q}) (tr : PathAlong oracleSig s) :
-    (toPathResources inputs s tr).f (input, payloads s tr) =
+    (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+    (toPathResources inputs s tr).f (input, oracleMessages s tr) =
       (input, SentOracle.payload (ofTranscript s tr)) := by
   exact congrArg (input, ·) (sentAtTranscript_data s tr)
 
 /-- The transcript prefix of the appended protocol `s₁.append s₂` that ends at the seam: it holds
 every move of `tr₁` and no move of the second protocol. -/
 def seamPrefix : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : PathAlong oracleSig s₁) →
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : Transcript oracleSig s₁) →
     TranscriptPrefix (s₁.append s₂)
   | .pure _, _, _ => .empty
   | .liftBind a next, s₂, ⟨x, tr⟩ =>
@@ -318,10 +318,10 @@ def seamPrefix : (s₁ : OracleProtocol.{u, q}) →
 
 /-- The seam prefix is below the whole transcript of the appended run. -/
 def seamLeEnd : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : PathAlong oracleSig s₁) →
-    (tr₂ : PathAlong oracleSig (s₂ (projectPathAlong oracleSig s₁ tr₁))) →
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : Transcript oracleSig s₁) →
+    (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
     Le (seamPrefix s₁ s₂ tr₁)
-      (ofTranscript (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))
+      (ofTranscript (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂))
   | .pure _, _, _, _ => .empty _
   | .liftBind a next, s₂, ⟨x, tr₁⟩, tr₂ =>
     .cons x (seamLeEnd (next (oracleSig.toFunB a x))
@@ -329,10 +329,10 @@ def seamLeEnd : (s₁ : OracleProtocol.{u, q}) →
 
 /-- A sent oracle at the seam keeps its node name at the end of the appended run. -/
 theorem seamLeEnd_node (s₁ : OracleProtocol.{u, q})
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) (tr₁ : PathAlong oracleSig s₁)
-    (tr₂ : PathAlong oracleSig (s₂ (projectPathAlong oracleSig s₁ tr₁)))
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) (tr₁ : Transcript oracleSig s₁)
+    (tr₂ : Transcript oracleSig (s₂ tr₁.path))
     (i : SentOracle (seamPrefix s₁ s₂ tr₁)) :
-    SentOracle.node (ofTranscript _ (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂))
+    SentOracle.node (ofTranscript _ (Transcript.append s₁ s₂ tr₁ tr₂))
         (SentOracle.lift (seamLeEnd s₁ s₂ tr₁ tr₂) i) =
       SentOracle.node (seamPrefix s₁ s₂ tr₁) i := SentOracle.node_lift _ _
 
@@ -365,12 +365,12 @@ is below the whole transcript of the run, as embedded by `env`. The embedding `e
 transcripts of the rest of the protocol inside the root protocol. -/
 theorem mapStepsWith_prefixes {ι : Type} {spec : OracleSpec ι}
     {root : OracleProtocol.{0, q}} :
-    (s : OracleProtocol.{0, q}) → {OutP OutC : PathAlong oracleSig s → Type} →
+    (s : OracleProtocol.{0, q}) → {OutP OutC : Transcript oracleSig s → Type} →
     (env : TranscriptPrefix s → TranscriptPrefix root) →
     (preserves : ∀ h k, Le h k → Nonempty (Le (env h) (env k))) →
     (p : Focal oracleSig (OracleComp spec) s OutP) →
     (c : Counterpart oracleSig (OracleComp spec) s OutC) →
-    {r : ((tr : PathAlong oracleSig s) × OutP tr × OutC tr) ×
+    {r : ((tr : Transcript oracleSig s) × OutP tr × OutC tr) ×
       List (LoggedStep spec root)} →
     r ∈ support ((TwoParty.Lens.run s
       (StepInstrumentation.mapStepsWith (C := fun t => TranscriptPrefix t → TranscriptPrefix root)
@@ -410,10 +410,10 @@ theorem mapStepsWith_prefixes {ι : Type} {spec : OracleSpec ι}
 /-- At the root, every step logged by `runLoggingSteps` has a transcript so far that is below the
 whole transcript of the run. -/
 theorem runLoggingSteps_prefixes {ι : Type} {spec : OracleSpec ι}
-    (s : OracleProtocol.{0, q}) {OutP OutC : PathAlong oracleSig s → Type}
+    (s : OracleProtocol.{0, q}) {OutP OutC : Transcript oracleSig s → Type}
     (p : Focal oracleSig (OracleComp spec) s OutP)
     (c : Counterpart oracleSig (OracleComp spec) s OutC)
-    {r : ((tr : PathAlong oracleSig s) × OutP tr × OutC tr) × List (LoggedStep spec s)}
+    {r : ((tr : Transcript oracleSig s) × OutP tr × OutC tr) × List (LoggedStep spec s)}
     (hr : r ∈ support (runLoggingSteps s p c))
     (step : LoggedStep spec s) (hp : step ∈ r.2) :
     Nonempty (Le step.before (ofTranscript s r.1.1)) :=
@@ -452,7 +452,7 @@ theorem runWithStepLog_prefixes {ι : Type} {S : Type u} {ambient : OracleSpec �
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : Resources.{0, 0, dI}}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type}
+    {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
     (prover : Prover oracleSig ambient s Out) {r : StepLog V Out}
     (hr : r ∈ support (V.runWithStepLog stmt input prover))
@@ -475,7 +475,7 @@ theorem isSent_at_decision {ι : Type} {S : Type u} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : Resources.{0, 0, dI}}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type}
+    {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
     (prover : Prover oracleSig ambient s Out) {r : StepLog V Out}
     (hr : r ∈ support (V.runWithStepLog stmt input prover))
@@ -490,7 +490,7 @@ theorem runWithAmbientStepLog_prefixes {ι : Type} {S : Type u} {ambient : Oracl
     {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : Resources.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type}
+    {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
     (prover : Prover oracleSig ambient s Out) {r : AmbientStepLog V Out}
     (hr : r ∈ support (V.runWithAmbientStepLog stmt input prover))
