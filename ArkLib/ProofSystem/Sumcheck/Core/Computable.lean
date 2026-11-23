@@ -148,6 +148,7 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n :
 variable {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
 include hf
 
+omit [SampleableType R] in
 /-- On any completed run, the decision over the carrier `M` returns the legacy verdict of the
 decoded transcript of the mapped run. -/
 theorem simulateQ_decideOn {κ : Type} {spec' : OracleSpec κ}
@@ -176,6 +177,7 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n d
 
 include hf
 
+omit [SampleableType R] in
 /-- Closed form of the execution over the carrier `M` against any prover: run the prover against
 the sampler, then return the legacy verdict of the decoded transcript of the mapped run, with
 the input data as output oracle. -/
@@ -199,6 +201,7 @@ theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
   simp only [simulateQ_decideOn D inputs hf]
   rfl
 
+omit [SampleableType R] in
 /-- A run over the carrier `M`, with its queries renamed and its observation mapped, is the run
 of the interpreted prover against the verifier at the polynomial carrier. Messages are mapped by
 `f`, the prover output by `g` and the output oracle data by `dmap`. -/
