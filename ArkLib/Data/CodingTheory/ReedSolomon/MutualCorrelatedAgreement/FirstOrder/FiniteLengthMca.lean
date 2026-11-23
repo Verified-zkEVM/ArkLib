@@ -42,7 +42,6 @@ open PolynomialDifferential Polynomial
 namespace ReedSolomon.FirstOrder
 
 open HiddenDerivative
-open MvPolynomial
 
 noncomputable section
 

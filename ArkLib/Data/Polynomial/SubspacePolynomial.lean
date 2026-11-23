@@ -37,6 +37,8 @@ The file proves:
   its range is `∏ g, (X - C (L g))`.
 * `Polynomial.subspaceTopPoly_sub_mem_degreeLT`: for any monic `2`-linearized `P` of degree `2 ^ v`
   (not only a subspace polynomial), removing its top coefficients leaves degree `< 2 ^ a`.
+* `Polynomial.IsTwoLinearized.degree_sub_top_two_le`: removing the two top terms of such a `P`
+  of degree `2 ^ (v + 2)` leaves degree at most `2 ^ v`.
 
 `subspacePolynomial` is noncomputable because Mathlib's `Polynomial` arithmetic is noncomputable.
 -/
@@ -217,7 +219,9 @@ noncomputable def subspaceTopPoly (a v : ℕ) (b : Fin (v - a) → F) : F[X] :=
   X ^ (2 ^ v) + ∑ j : Fin (v - a), C (b j) * X ^ (2 ^ (a + (j : ℕ)))
 
 /-- For a monic `2`-linearized `P` of degree `2^v`, removing the top part leaves a polynomial of
-degree `< 2^a`. -/
+degree `< 2^a`.
+`IsTwoLinearized.degree_sub_top_two_le` gives the sharper bound when only the two top
+power-of-two terms are removed. -/
 theorem subspaceTopPoly_sub_mem_degreeLT {P : F[X]} (hP : IsTwoLinearized P) (hmon : P.Monic)
     {a v : ℕ} (hdeg : P.natDegree = 2 ^ v) :
     subspaceTopPoly a v (subspaceTopCoeffs a v P) - P ∈ degreeLT F (2 ^ a) := by
@@ -277,6 +281,36 @@ theorem subspaceTopPoly_sub_mem_degreeLT {P : F[X]} (hP : IsTwoLinearized P) (hm
           exact (hj (Fin.ext (by simp; omega))).elim
         · simp
       rw [this]; ring
+
+/-- Removing the leading term and the possible term of degree `2 ^ (v + 1)` from a monic
+`2`-linearized polynomial of degree `2 ^ (v + 2)` leaves degree at most `2 ^ v`.
+The coefficient of the second removed term may be zero.
+For an arbitrary cutoff, `subspaceTopPoly_sub_mem_degreeLT` gives the corresponding strict bound. -/
+theorem IsTwoLinearized.degree_sub_top_two_le {P : F[X]} (hP : IsTwoLinearized P)
+    (hmon : P.Monic) {v : ℕ} (hdeg : P.natDegree = 2 ^ (v + 2)) :
+    (P - X ^ 2 ^ (v + 2) - C (P.coeff (2 ^ (v + 1))) * X ^ 2 ^ (v + 1)).degree ≤
+      ((2 ^ v : ℕ) : WithBot ℕ) := by
+  rw [degree_le_iff_coeff_zero]
+  intro j hj
+  have hj : 2 ^ v < j := by exact_mod_cast hj
+  have hne : 2 ^ (v + 1) ≠ 2 ^ (v + 2) := (Nat.pow_right_injective le_rfl).ne (by omega)
+  simp only [coeff_sub, coeff_X_pow, coeff_C_mul]
+  by_cases h2 : j = 2 ^ (v + 2)
+  · subst h2
+    have h1 : P.coeff (2 ^ (v + 2)) = 1 := by rw [← hdeg]; exact hmon
+    simp [h1, hne.symm]
+  by_cases h1 : j = 2 ^ (v + 1)
+  · subst h1
+    simp [hne]
+  simp only [h2, h1, ite_false, mul_zero, sub_zero]
+  by_contra hP0
+  obtain ⟨i, rfl⟩ := hP _ hP0
+  have hi : i ≤ v + 2 :=
+    (Nat.pow_le_pow_iff_right (by norm_num)).mp (hdeg ▸ le_natDegree_of_ne_zero hP0)
+  have hv : v < i := (Nat.pow_lt_pow_iff_right (by norm_num)).mp hj
+  obtain rfl | rfl : i = v + 1 ∨ i = v + 2 := by omega
+  · exact h1 rfl
+  · exact h2 rfl
 
 end TopPolynomial
 

@@ -502,8 +502,7 @@ private theorem bchks_interpolant_pair_vertical_identity {ι K : Type}
         Polynomial.Bivariate.evalX (domain i) AB.1 := by
   dsimp
   intro i
-  apply Polynomial.ext
-  intro s
+  ext s : 2
   by_cases hs : s < dz + 1
   · let sf : Fin (dz + 1) := ⟨s, hs⟩
     have hzero := bchks_constraint_map_eq_zero_of_mem_ker domain u ax bx dz ab hab i sf
@@ -581,8 +580,7 @@ private theorem bchks_interpolant_pair_fst_ne_zero
     apply bchks_poly_of_matrix_injective dz (ax + 1)
     change (bchks_interpolant_pair ax bx dz ab).1 = bchks_poly_of_matrix dz (ax + 1) 0
     rw [hA]
-    apply Polynomial.ext
-    intro s
+    ext s : 2
     rw [bchks_poly_of_matrix_coeff]
     split_ifs with hs
     · change 0 = Polynomial.ofFn (ax + 1) (0 : Fin (ax + 1) → K)

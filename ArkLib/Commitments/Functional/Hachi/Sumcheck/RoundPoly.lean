@@ -6,7 +6,7 @@ Authors: Pablo Martín Vinuelas
 module
 
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
-public import ArkLib.ToCompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
 
 /-!
   # The round-polynomial layer of the Hachi sumcheck

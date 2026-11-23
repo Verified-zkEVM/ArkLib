@@ -29,11 +29,13 @@ Default checks:
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
   - uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
+  - uv run --no-project --python 3.12 python ./scripts/test-pr-checks.py
+  - uv run --no-project --python 3.12 python ./scripts/test-pr-scope.py
   - uv run --no-project --python 3.12 python ./scripts/kb/lint.py
 
 Optional checks:
   --lint    Deprecated compatibility flag; style linting is always enforced
-  --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
+  --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs in docbuild/
   --site    Run ./scripts/build-web.sh (implies --docs)
   --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
 EOF
@@ -65,6 +67,11 @@ for arg in "$@"; do
       ;;
   esac
 done
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "ERROR: uv is required. See CONTRIBUTING.md for Python setup." >&2
+  exit 1
+fi
 
 build_log="$(mktemp "${TMPDIR:-/tmp}/arklib-validate-build.XXXXXX")"
 cleanup() {
@@ -140,6 +147,11 @@ echo "# Checking docs integrity"
 uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
 
 echo ""
+echo "# Testing the pull request scripts"
+uv run --no-project --python 3.12 python ./scripts/test-pr-checks.py
+uv run --no-project --python 3.12 python ./scripts/test-pr-scope.py
+
+echo ""
 echo "# Checking knowledge base"
 uv run --no-project --python 3.12 python ./scripts/kb/lint.py
 
@@ -160,7 +172,10 @@ fi
 if (( run_docs )); then
   echo ""
   echo "# Building API docs"
-  DISABLE_EQUATIONS=1 lake build ArkLib:docs
+  # doc-gen4 reads the bibliography from the docbuild package, as in CI's docgen-action.
+  mkdir -p docbuild/docs && cp blueprint/src/references.bib docbuild/docs/references.bib
+  (cd docbuild && MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib &&
+    DISABLE_EQUATIONS=1 lake build ArkLib:docs)
 fi
 
 if (( run_site )); then

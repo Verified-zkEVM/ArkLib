@@ -28,7 +28,10 @@ routing, degree envelopes, challenge heights, nonvanishing, and the line and sha
 theorems.
 -/
 
-open MvPolynomial Polynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE coeffNatDegreeLE_X degreeOf degreeOf_X_of_ne
+  degreeOf_radicalPrimPart_le radicalPrimPart radicalPrimPart_eq_one_of_degreeOf_eq_zero
+  weightedTotalDegree weightedTotalDegree_monomial)
 open ReedSolomon.FirstOrder.Squarefree ReedSolomon.HiddenDerivative
 
 private def factorwiseDomain : Fin 2 ↪ ℚ :=

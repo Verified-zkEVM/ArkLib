@@ -381,25 +381,22 @@ lemma xi_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact
   xi_regular_of_numeratorHypotheses x₀ R H hHyp.toNumeratorHypotheses
 
 /-- The cleared derivative numerator under `NumeratorHypotheses`. -/
-noncomputable def xiOfNumeratorHypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
-    [_φ : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
-    (_hHyp : NumeratorHypotheses x₀ R H) : 𝒪 H :=
+noncomputable def xiOfNumeratorHypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : 𝒪 H :=
   Ideal.Quotient.mk _ (xiPre x₀ R H)
 
 /-- The regular element `ξ = W(Z)^(d-2) · ζ`.
 
-The `Fact` and `Hypotheses` arguments are kept for API compatibility with downstream callers
-(`α`, `γ`); they are needed for the embedding equation in `embeddingOf𝒪Into𝕃_xi`. -/
-noncomputable def xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [_φ : Fact (Irreducible H)]
-    [_H_natDegree_pos : Fact (0 < H.natDegree)] (_hHyp : Hypotheses x₀ R H) : 𝒪 H :=
-  xiOfNumeratorHypotheses x₀ R H _hHyp.toNumeratorHypotheses
+The embedding equation `embeddingOf𝒪Into𝕃_xi` needs `Hypotheses x₀ R H`; the definition
+itself does not. -/
+noncomputable def xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : 𝒪 H :=
+  xiOfNumeratorHypotheses x₀ R H
 
 /-- The defining equation for the weak-setup cleared derivative numerator. -/
 lemma embeddingOf𝒪Into𝕃_xiOfNumeratorHypotheses
     (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : NumeratorHypotheses x₀ R H) :
-    embeddingOf𝒪Into𝕃 H (xiOfNumeratorHypotheses x₀ R H hHyp) =
+    embeddingOf𝒪Into𝕃 H (xiOfNumeratorHypotheses x₀ R H) =
       liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H :=
   embeddingOf𝒪Into𝕃_mk_xiPre_of_numeratorHypotheses x₀ R H hHyp
 
@@ -408,7 +405,7 @@ lemma embeddingOf𝒪Into𝕃_xiOfNumeratorHypotheses
 lemma embeddingOf𝒪Into𝕃_xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
-    embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) =
+    embeddingOf𝒪Into𝕃 H (xi x₀ R H) =
       liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H :=
   embeddingOf𝒪Into𝕃_xiOfNumeratorHypotheses x₀ R H hHyp.toNumeratorHypotheses
 
@@ -1118,6 +1115,7 @@ theorem xiPre_eq_lower_add_top (x₀ : F) (hRdeg : 2 ≤ R.natDegree) :
   simp only [xiPre, xiPreLower, xiPreTop, hRdeg, ite_eq_left]
 
 
+omit H_irreducible H_natDegree_pos in
 /-- The weight bound `Λ(ξ) ≤ (dY - 1)·(D - dH + 1)`.
 
 The explicit hypothesis `2 ≤ R.natDegree` is needed because the paper uses `W^(d-2)`, while
@@ -1127,7 +1125,7 @@ lemma xiOfNumeratorHypotheses_weight_le
     (hRdeg : 2 ≤ Bivariate.natDegreeY R)
     {D : ℕ} (hD_H : D ≥ Bivariate.totalDegree H)
     (hD_Rx0 : D ≥ Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R)) :
-    regularWeight hH (xiOfNumeratorHypotheses x₀ R H hHyp) D ≤
+    regularWeight hH (xiOfNumeratorHypotheses x₀ R H) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
   have hRdeg' : 2 ≤ R.natDegree := by
     simpa [Bivariate.natDegreeY] using hRdeg
@@ -1146,12 +1144,13 @@ lemma xiOfNumeratorHypotheses_weight_le
       (xiPreTop_weight_over_𝒪_le_of_numeratorHypotheses
         x₀ hH hHyp hRdeg' hD_H' hD_Rx0')
 
+omit H_irreducible H_natDegree_pos in
 /-- Backward-compatible wrapper for `xiOfNumeratorHypotheses_weight_le`. -/
 lemma xi_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ Bivariate.natDegreeY R)
     {D : ℕ} (hD_H : D ≥ Bivariate.totalDegree H)
     (hD_Rx0 : D ≥ Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R)) :
-    regularWeight hH (xi x₀ R H hHyp) D ≤
+    regularWeight hH (xi x₀ R H) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) *
       (D - Bivariate.natDegreeY H + 1)) :=
   xiOfNumeratorHypotheses_weight_le

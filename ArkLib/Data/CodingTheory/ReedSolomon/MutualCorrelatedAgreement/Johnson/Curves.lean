@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao
+Authors: Quang Dao, Nam Khanh Ngo
 -/
 module
 
@@ -13,27 +13,31 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 # Exact Johnson agreement for polynomial curves
 
 A single exceptional set controls every low-degree candidate on a polynomial received curve,
-in every characteristic. The scaled primitive Johnson certificate supplies the ordinary equation;
-the ordinary factor bound charges at most twice the curve degree times the line exception count.
-The constant curve has no exceptional challenges.
+in every characteristic. The scaled primitive Johnson certificate supplies the ordinary equation.
+The curve height `ℓ (h + 1) - 1` is at most `ℓ (h + 1)`, so the ordinary factor bound charges at
+most the curve degree times the line exception count at height `h + 1`
+(`exists_johnson_curve_exactPowerAgreement`). That count is at most twice the line count at
+height `h` (`johnsonSuccExceptionCount_le_two_mul`) and below the closed bound `(8/3) n t³ / ρ₋`
+(`johnsonSuccExceptionCount_lt_closed`), which gives
+`exists_johnson_curve_exactPowerAgreement_closed`. The constant curve has no exceptional
+challenges.
 -/
 
 @[expose] public section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential HiddenDerivative
+open Polynomial PolynomialDifferential HiddenDerivative
 
-private theorem ordinaryFactorRaw_double_height_le (theta : ℚ) (n D B H : ℕ)
-    (htheta : 0 ≤ theta) :
-    ordinaryFactorRaw theta n D B (2 * H) ≤ 2 * ordinaryFactorRaw theta n D B H := by
-  unfold ordinaryFactorRaw
+private theorem ordinaryFactorRaw_johnsonH_succ_eq (n D A : ℕ) (eta : ℝ) :
+    ((ordinaryFactorRaw (((n - D : ℕ) : ℚ) / ((A - D : ℕ) : ℚ)) n D (johnsonMu n D eta)
+        (johnsonH n D eta + 1) : ℚ) : ℝ) = johnsonSuccExceptionCount n D A eta := by
+  unfold ordinaryFactorRaw johnsonSuccExceptionCount johnsonTheta
   push_cast
-  have htail : 0 ≤ theta * B + ((n - D - 1 : ℕ) : ℚ) * B := by positivity
-  nlinarith only [htail]
+  ring
 
 open Classical in
-/-- Outside one exceptional set of at most `2ℓ` times the finite Johnson count, every
+/-- Outside one exceptional set of at most `ℓ` times the Johnson count at height `h + 1`, every
 sufficiently agreeing candidate has exact power agreement with the coefficient words. -/
 theorem exists_johnson_curve_exactPowerAgreement
     {F : Type*} [Field F] {n D A ℓ : ℕ} {eta : ℝ}
@@ -41,7 +45,7 @@ theorem exists_johnson_curve_exactPowerAgreement
     (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
     (hthreshold : johnsonAgreement n D eta * n ≤ A) :
     ∃ exceptional : Finset F,
-      (exceptional.card : ℝ) ≤ 2 * ℓ * johnsonExceptionCount n D A eta ∧
+      (exceptional.card : ℝ) ≤ ℓ * johnsonSuccExceptionCount n D A eta ∧
       ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
         A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
         HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
@@ -50,7 +54,7 @@ theorem exists_johnson_curve_exactPowerAgreement
   swap
   · refine ⟨∅, ?_, ?_⟩
     · simp only [Finset.card_empty, Nat.cast_zero]
-      unfold johnsonExceptionCount johnsonTheta
+      unfold johnsonSuccExceptionCount johnsonTheta
       positivity
     · intro z hz P hP hagree
       have hcard := Finset.card_le_univ
@@ -75,28 +79,19 @@ theorem exists_johnson_curve_exactPowerAgreement
     cert.challengeDegree_le ((jetDegree_le_total cert.Q 0).trans cert.jetTotalDegree_le)
   rw [ordinaryUnifiedPowerFactorAtOrHeight_of_pos n D ℓ B H A (D + 1) hB,
     ordinaryUnifiedPowerFactorAt_succ_eq n D ℓ B H A hDA hAn] at hcard
-  have hh : H ≤ ℓ * (2 * johnsonH n D eta) := by
-    have hhpos : 0 < johnsonH n D eta :=
-      hB.trans_le (johnsonMu_le_H hDlt)
-    exact (Nat.sub_le _ _).trans (Nat.mul_le_mul_left ℓ (by omega))
-  have hbound : (ex.card : ℚ) ≤
-      (2 * ℓ : ℕ) * ordinaryFactorRaw theta n D B (johnsonH n D eta) := by
+  have hh : H ≤ ℓ * (johnsonH n D eta + 1) := Nat.sub_le _ _
+  have hbound : (ex.card : ℚ) ≤ ℓ * ordinaryFactorRaw theta n D B (johnsonH n D eta + 1) := by
     calc
       _ ≤ ordinaryUnifiedPowerFactorRaw theta n D ℓ B H := hcard
       _ ≤ ordinaryCurveFactorRaw theta n D ℓ B H :=
         ordinaryUnifiedPowerFactorRaw_le_ordinaryCurveFactorRaw n ℓ B H (by positivity) hD
-      _ ≤ ℓ * ordinaryFactorRaw theta n D B (2 * johnsonH n D eta) :=
+      _ ≤ ℓ * ordinaryFactorRaw theta n D B (johnsonH n D eta + 1) :=
         ordinaryCurveFactorRaw_le_line_mul theta n D ℓ B H _ (by positivity) hh
-      _ ≤ ℓ * (2 * ordinaryFactorRaw theta n D B (johnsonH n D eta)) :=
-        mul_le_mul_of_nonneg_left (ordinaryFactorRaw_double_height_le theta n D B _
-          (by positivity)) (by positivity)
-      _ = _ := by push_cast; ring
-  have hcardReal : (ex.card : ℝ) ≤ (2 * ℓ : ℕ) *
-      (ordinaryFactorRaw theta n D B (johnsonH n D eta) : ℝ) := by exact_mod_cast hbound
+  have hcardReal : (ex.card : ℝ) ≤
+      (ℓ : ℝ) * (ordinaryFactorRaw theta n D B (johnsonH n D eta + 1) : ℝ) := by
+    exact_mod_cast hbound
   refine ⟨ex, ?_, ?_⟩
-  · simpa only [ordinaryFactorRaw, johnsonExceptionCount, johnsonTheta, theta, B,
-      Rat.cast_add, Rat.cast_mul, Rat.cast_div, Rat.cast_natCast, Rat.cast_ofNat,
-      Nat.cast_add, Nat.cast_mul, Nat.cast_ofNat] using hcardReal
+  · rwa [← ordinaryFactorRaw_johnsonH_succ_eq]
   · intro z hz P hP hA
     apply hgood z hz P hP _ hA
     have hsound := (cert.specialization_sound (RingHom.id F) z).2.2
@@ -110,5 +105,25 @@ theorem exists_johnson_curve_exactPowerAgreement
         simp
       · simp
     simpa only [heval, challengeSpecialization] using hsound
+
+open Classical in
+/-- Outside one exceptional set of at most `ℓ (8/3) n t³ / ρ₋` challenges, every sufficiently
+agreeing candidate has exact power agreement with the coefficient words. It combines
+`exists_johnson_curve_exactPowerAgreement` with `johnsonSuccExceptionCount_lt_closed`. -/
+theorem exists_johnson_curve_exactPowerAgreement_closed
+    {F : Type*} [Field F] {n D A ℓ : ℕ} {eta : ℝ}
+    (domain : Fin n ↪ F) (values : Fin (ℓ + 1) → Fin n → F)
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (heta : 0 < eta)
+    (hthreshold : johnsonAgreement n D eta * n ≤ A) :
+    ∃ exceptional : Finset F,
+      (exceptional.card : ℝ) ≤
+        ℓ * ((8 / 3 : ℝ) * n * johnsonT n D eta ^ 3 / johnsonRhoMinus n D) ∧
+      ∀ z ∉ exceptional, ∀ P : F[X], P.degree < D + 1 →
+        A ≤ (polynomialAgreementSet domain (powerBatchedWord values z) P).card →
+        HasExactPowerAgreement domain values (RingHom.id F) (D + 1) z P := by
+  obtain ⟨ex, hcard, hgood⟩ :=
+    exists_johnson_curve_exactPowerAgreement domain values hD hDn heta hthreshold
+  exact ⟨ex, hcard.trans (mul_le_mul_of_nonneg_left
+    (johnsonSuccExceptionCount_lt_closed hD hDn heta hthreshold).le (Nat.cast_nonneg ℓ)), hgood⟩
 
 end ReedSolomon

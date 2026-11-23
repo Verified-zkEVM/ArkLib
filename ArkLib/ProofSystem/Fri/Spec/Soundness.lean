@@ -44,7 +44,7 @@ namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [SampleableType F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [SampleableType F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -83,11 +83,11 @@ theorem soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.soundness init impl
-      (inputRelation k s d hdom δ).language (outputRelation k s d hdom δ).language
+      (inputRelation k s d δ).language (outputRelation k s d δ).language
       (soundnessError (ω := ω) s d l θ δ) := by
   intro WitIn WitOut wit prover stmt hstmt
   have hnot : initialOracle s stmt ∉ proximityLanguage s d (δ : ℝ) :=
-    fun h ↦ hstmt (mem_inputLanguage_of_proximity s d hdom δ stmt h)
+    fun h ↦ hstmt (mem_inputLanguage_of_proximity s d δ stmt h)
   have h := soundness_proximity s d l hdom θ δ init impl
     WitIn WitOut wit prover stmt hnot
   refine le_trans ?_ h
@@ -102,7 +102,7 @@ theorem rbr_soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.rbrSoundness init impl
-      (inputRelation k s d hdom δ).language (outputRelation k s d hdom δ).language
+      (inputRelation k s d δ).language (outputRelation k s d δ).language
       (challengeError (ω := ω) s d l θ δ) := by
   apply Verifier.rbrSoundness_of_badEvents
     (bad := fun j stmt tr ↦ badEvent s d l (round_bound hdom) θ j (initialOracle s stmt) tr)
@@ -120,14 +120,14 @@ theorem rbr_soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     rw [hv]
     change Pr{let result ← OptionT.mk do
       (simulateQ impl (pure none)).run' (← init)}[
-        result ∈ (outputRelation k s d hdom δ).language] = 0
+        result ∈ (outputRelation k s d δ).language] = 0
     rw [OptionT.prEvent_mk]
     simp [StateT.run'_eq, StateT.run_pure]
   · intro stmt hstmt j tr hbefore
     apply badEvent_prob_le s d l (round_bound hdom) θ δ (initialOracle s stmt)
-    · exact fun h ↦ hstmt (mem_inputLanguage_of_proximity s d hdom δ stmt h)
+    · exact fun h ↦ hstmt (mem_inputLanguage_of_proximity s d δ stmt h)
     · rintro (hclose | hbad)
-      · exact hstmt (mem_inputLanguage_of_proximity s d hdom δ stmt hclose)
+      · exact hstmt (mem_inputLanguage_of_proximity s d δ stmt hclose)
       · exact hbefore (Or.inr hbad)
 
 end Fri.Spec

@@ -124,7 +124,7 @@ private theorem large_family_sum_sq_incidence_eq_sum_inter
 private def linear_mca_affine_agreement (u : Fin 2 → ι → F) (x : F) (c : ι → F) : Finset ι :=
   Finset.univ.filter fun i => u 0 i + x * u 1 i = c i
 
-omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] [DecidableEq F] in
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [SampleableType F] [DecidableEq F] [Fintype ι] in
 private theorem linear_mca_affine_two_agreements (C : LinearCode ι F)
     (u : Fin 2 → ι → F) (x y : F) (hxy : x ≠ y)
     (cx cy : ι → F) (hcx : cx ∈ C) (hcy : cy ∈ C) (S : Finset ι)
