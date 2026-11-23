@@ -154,6 +154,7 @@ def verifierAtHigherIndex :
       (fun _ => Sumcheck.Spec.StatementRound R n (Fin.last n)) inputs (fun _ => inputs) :=
   verifierOn R deg n D ambient M eval inputs
 
+omit [SampleableType R] in
 /-- The final decision law accepts higher resource indices through an ordinary import. -/
 theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
     (hf : ∀ x r, eval x r = (f x).val.eval r) {κ : Type} {target : OracleSpec κ}
