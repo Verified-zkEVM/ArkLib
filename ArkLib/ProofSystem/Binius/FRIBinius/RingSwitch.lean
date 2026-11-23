@@ -24,6 +24,9 @@ distance. The challenge
 errors are the frontend's exact `κ/|L| + 2ℓ'/|L|` and the opening's error function.
 `fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness` combines both guarantees
 with the total-error bound.
+
+`Binius.FRIBinius.Executable.modularReduction` runs this composition with explicit
+basis coordinates and bounded-degree polynomial messages in the ring-switching prefix.
 -/
 
 @[expose] public section

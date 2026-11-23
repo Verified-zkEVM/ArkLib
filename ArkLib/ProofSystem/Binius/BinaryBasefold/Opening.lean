@@ -29,7 +29,6 @@ open Binius.BinaryBasefold RingSwitching Sumcheck.Structured
 
 open scoped NNReal
 
-noncomputable section
 namespace Binius.BinaryBasefold.Opening
 
 variable {r : ℕ} [NeZero r]
@@ -54,7 +53,7 @@ def statement (s : MLPEvalStatement L ℓ) :
     Statement (L := L) (ℓ := ℓ) (SumcheckBaseContext L ℓ) 0 :=
   initialStatement (toProductClaim s).1 (toProductClaim s).2
 
-omit [Fintype L] [DecidableEq L] [SampleableType L] [NeZero ℓ] in
+omit [Fintype L] [SampleableType L] [NeZero ℓ] in
 /-- The opening multiplier's product claim is the evaluation claim:
 `∑_{y ∈ {0,1}^ℓ} eq(r, y) · t(y) = t(r)` for multilinear `t`. -/
 theorem sum_evalMultiplier_mul_eq_eval (ctx : SumcheckBaseContext L ℓ)
@@ -69,7 +68,7 @@ theorem sum_evalMultiplier_mul_eq_eval (ctx : SumcheckBaseContext L ℓ)
   have heq (y : Fin ℓ → Fin 2) :
       eval (y : Fin ℓ → L) (eqPolynomial ctx.t_eval_point) =
         eqTilde (y : Fin ℓ → L) ctx.t_eval_point := eqPolynomial_symm _ _
-  simp only [evalMultiplier, eqMultiplier, heq]
+  simp only [evalMultiplier, eqMultiplier_val, heq]
   rw [← hsum]
 
 variable {StmtIn WitIn : Type}
@@ -185,8 +184,9 @@ def mlpWitnessEquiv : WitMLP L ℓ ≃ MultilinearPoly L ℓ where
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- The Binary Basefold multilinear opening protocol. -/
-def mliopcs (γ : ℕ) : MLIOPCS L ℓ where
+/-- The Binary Basefold multilinear opening protocol with its real-valued knowledge error.
+The `openingReduction` and `openingVerifier` execute without this error metadata. -/
+noncomputable def mliopcs (γ : ℕ) : MLIOPCS L ℓ where
   toAbstractOStmtIn := abstractInput K β (ϑ := ϑ) (h_rate := h_rate)
   numRounds := _
   pSpec := (!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)

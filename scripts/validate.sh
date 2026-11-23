@@ -24,6 +24,7 @@ Default checks:
   - lake exe hachi-runtime
   - lake exe sumcheck-runtime
   - lake exe fri-extractor-runtime
+  - lake exe binius-runtime
   - fail on non-`sorry` warnings under ArkLib/
   - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
   - ./scripts/check-imports.sh
@@ -133,6 +134,10 @@ lake exe sumcheck-runtime
 echo ""
 echo "# Running measured FRI extractor runtime checks"
 lake exe fri-extractor-runtime
+
+echo ""
+echo "# Running FRI-Binius opening runtime checks"
+lake exe binius-runtime
 
 echo ""
 echo "# Checking umbrella imports"

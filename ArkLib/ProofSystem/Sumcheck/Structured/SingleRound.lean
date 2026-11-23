@@ -16,7 +16,8 @@ This file collects single-round primitives for the structured (witness-mode) sum
 
 - `getSumcheckRoundPoly` — derive the univariate `g_i(X)` sent by the prover from
   the multiquadratic round polynomial `H_i(X_i, ..., X_{ℓ-1})` by summing over the
-  remaining boolean-hypercube directions.
+  remaining domain coordinates. The mathematical definition uses Mathlib's coordinate-line
+  restriction; `getSumcheckRoundPolyExecutable` computes the same polynomial using CompPoly.
 - `pSpecSumcheckRound` — the two-message protocol spec for one round
   (`P_to_V : L⦃≤ d⦄[X]`, `V_to_P : L`; `d` defaults to 2), with `OracleInterface` /
   `SampleableType` instances.
@@ -45,22 +46,71 @@ namespace Sumcheck.Structured
 
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial
 
-noncomputable section
-
 section RoundPoly
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ] (D : SumcheckDomain L ℓ)
 
 /- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation. Degree-generic: the round polynomial
 `h` and the resulting univariate `g_i` share the degree bound `d` (inferred from `h`). -/
-def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ)
+noncomputable def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ)
     (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] :=
   ⟨∑ x ∈ (D.drop (i + 1)).cube,
       h.val.evalExcept ⟨0, by have := i.isLt; simp only [Fin.val_castSucc]; omega⟩
         (x ∘ Fin.cast (by simp only [Fin.val_castSucc]; omega)),
     Submodule.sum_mem _ fun _ _ => MvPolynomial.evalExcept_mem_degreeLE _ _ h.property⟩
 
+variable [DecidableEq L] [Nontrivial L]
+
+@[no_expose] private def evalExceptData {n : ℕ} (k : Fin n) (x : Fin (n - 1) → L)
+    (p : CPoly.CMvPolynomial n L) : CompPoly.CPolynomial L :=
+  match n with
+  | 0 => k.elim0
+  | _ + 1 => CompPoly.CPolynomial.mapRingHom (CPoly.CMvPolynomial.evalHom x)
+      (CPoly.CMvPolynomial.finSuccEquivNth k p)
+
+private theorem evalExceptData_toPoly {n : ℕ} (k : Fin n) (x : Fin (n - 1) → L)
+    (p : CPoly.CMvPolynomial n L) :
+    (evalExceptData k x p).toPoly = (CPoly.fromCMvPolynomial p).evalExcept k x := by
+  cases n with
+  | zero => exact k.elim0
+  | succ n => exact Impl.Computable.projectedSummand_toPoly k p x
+
+@[no_expose] private def roundPolyData {d : ℕ} (i : Fin ℓ)
+    (h : L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : CompPoly.CPolynomial L :=
+  let p := Impl.Computable.fromOracleStatement h
+  ∑ x ∈ (D.drop (i + 1)).cube,
+    evalExceptData ⟨0, by have := i.isLt; simp only [Fin.val_castSucc]; omega⟩
+      (x ∘ Fin.cast (by simp only [Fin.val_castSucc]; omega)) p
+
+omit [NeZero ℓ] in
+private theorem roundPolyData_toPoly {d : ℕ} (i : Fin ℓ)
+    (h : L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) :
+    (roundPolyData ℓ D i h).toPoly = (getSumcheckRoundPoly ℓ D i h).val := by
+  unfold roundPolyData
+  rw [Impl.Computable.toPoly_sum]
+  simp_rw [evalExceptData_toPoly, Impl.Computable.fromOracleStatement_interpretation]
+  rfl
+
+/-- Sum the coordinate-line restrictions on the suffix domain using computable polynomials. -/
+@[no_expose]
+def getSumcheckRoundPolyExecutable {d : ℕ} (i : Fin ℓ)
+    (h : L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] :=
+  Impl.Representation.toMessage L d ⟨roundPolyData ℓ D i h, by
+    rw [CompPoly.CPolynomial.degree_toPoly, roundPolyData_toPoly]
+    exact Polynomial.mem_degreeLE.mp (getSumcheckRoundPoly ℓ D i h).property⟩
+
+omit [NeZero ℓ] in
+/-- The executable sum is exactly the mathematical round message, including on the empty suffix. -/
+theorem getSumcheckRoundPolyExecutable_eq {d : ℕ} (i : Fin ℓ)
+    (h : L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) :
+    getSumcheckRoundPolyExecutable ℓ D i h = getSumcheckRoundPoly ℓ D i h := by
+  apply Subtype.ext
+  rw [getSumcheckRoundPolyExecutable, Impl.Representation.toMessage_val]
+  exact roundPolyData_toPoly ℓ D i h
+
 end RoundPoly
+
+noncomputable section
 
 section ProtocolSpec
 

@@ -50,8 +50,9 @@ The same basis `β`, with `β 0 = 1`, packs the source polynomial and defines th
 
 ## Computability
 
-The verifier and reduction are noncomputable because the shared batching head and the Binary
-Basefold phases are. Making them executable concerns those phases, not this composition.
+The definitions in this module use the abstract tensor carrier and basis operations.
+`Binius.FRIBinius.Executable.unrolledReduction` runs the same opening with a column-coordinate
+carrier and executable basis operations. Its Binary BaseFold suffix uses the original wire types.
 
 ## References
 

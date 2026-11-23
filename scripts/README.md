@@ -27,6 +27,8 @@ This directory contains various utility scripts for the ArkLib project.
   output-oracle and exact-extractor paths
 - **`FriExtractorRuntime.lean`** (`lake exe fri-extractor-runtime`) - Compiled checks of the
   measured FRI extractor, immutable-input guards, and exact arithmetic and word-read counts.
+- **`BiniusRuntime.lean`** (`lake exe binius-runtime`) - Compiled opening and rejection checks
+  for standalone Binary Basefold and both FRI-Binius routes over the concrete tower field GF(16).
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
   round messages and the honest multivariate prover in the shared interaction-layer Sumcheck
   executor, including continuation effects, abort, original-oracle evaluation and zero remaining
@@ -267,10 +269,9 @@ before and after the run; the report shows wall time beside `user + sys` CPU wor
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
 
 The three measurements share one tree and run in order, so each leaves it warmer than the last.
-`native_build` exists to hold the `.c.o` chain that the compiled executables link
-(`toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, and `fri-extractor-runtime`): that is the
-cost which swings on `.lake` cache state,
-and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
+`native_build` measures the `.c.o` chain linked by the compiled runtime executables. That cost
+varies with the `.lake` cache, so measuring it separately keeps the validation wrapper's row
+comparable across dependency bumps.
 Any new compiled executable run by `validate.sh` has to be added to that command as well. See
 [`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
 

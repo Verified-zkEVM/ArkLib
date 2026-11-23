@@ -39,7 +39,6 @@ oracle to the oracle statements. The step sends no challenge.
 @[expose] public section
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -91,8 +90,8 @@ def getCommitProverFinalOutput (i : Fin ℓ)
   (fᵢ_succ, (stmtIn, oStmtOut, witIn))
 
 /-- The prover of the commit step: it sends its folded word as a new oracle. -/
-noncomputable def commitOracleProver (i : Fin ℓ) :
-  OracleProver (oSpec := []ₒ)
+def commitOracleProver (i : Fin ℓ) :
+    OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -117,8 +116,8 @@ noncomputable def commitOracleProver (i : Fin ℓ) :
 
 /-- The verifier of the commit step at a commitment round: it keeps the statement and appends the
 sent oracle to the oracle statements. -/
-noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-  OracleVerifier
+def commitOracleVerifier (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
+    OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -136,8 +135,8 @@ noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : IsCommitmentRound �
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR)
 
 /-- The oracle reduction of the commit step at a commitment round. -/
-noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
-  OracleReduction (oSpec := []ₒ)
+def commitOracleReduction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
+    OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -230,8 +229,8 @@ def commitKnowledgeError {i : Fin ℓ}
       Direction.not_P_to_V_eq_V_to_P] at hj -- not a V challenge
 
 /-- The round-by-round extractor of the commit step: the witness passes through unchanged. -/
-noncomputable def commitRbrExtractor (i : Fin ℓ) :
-  Extractor.RoundByRound []ₒ
+def commitRbrExtractor (i : Fin ℓ) :
+    Extractor.RoundByRound []ₒ
     (StmtIn := (Statement (L := L) Context i.succ) × (∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
@@ -376,5 +375,4 @@ theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
 
 end CommitStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

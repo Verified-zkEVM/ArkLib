@@ -44,7 +44,6 @@ protocol uses the ring-switching multiplier.
 @[expose] public section
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open scoped NNReal ProbabilityTheory
 
@@ -72,10 +71,9 @@ section FinalSumcheckStep
 
 /-! ## Protocol definitions -/
 
-open Classical in
 /-- The prover of the final sum-check step: it sends the constant of its fully folded word. -/
-noncomputable def finalSumcheckProver :
-  OracleProver
+def finalSumcheckProver :
+    OracleProver
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context (Fin.last ℓ))
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
@@ -106,8 +104,8 @@ noncomputable def finalSumcheckProver :
 /-- The verifier of the final sum-check step: it queries the sent constant, guards on the closing
 sum-check equation of `finalSumcheckStepLogic`, and outputs the target, the challenges and the
 constant. The oracle statements pass through. -/
-noncomputable def finalSumcheckVerifier :
-  OracleVerifier
+def finalSumcheckVerifier :
+    OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context (Fin.last ℓ))
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
@@ -129,8 +127,8 @@ noncomputable def finalSumcheckVerifier :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).outputOracle
 
 /-- The oracle reduction of the final sum-check step. -/
-noncomputable def finalSumcheckOracleReduction :
-  OracleReduction
+def finalSumcheckOracleReduction :
+    OracleReduction
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context (Fin.last ℓ))
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
@@ -393,7 +391,7 @@ theorem finalSumcheckExtractWitness_knowledgeInvariant
 
 /-- The knowledge-state function of the final sum-check step, `FinalSumcheckKnowledgeState`,
 with its obligations. -/
-noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
+def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (finalSumcheckVerifier 𝔽q β multiplier (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (𝓑 := 𝓑)).KnowledgeStateFunction init impl
@@ -454,5 +452,4 @@ theorem finalSumcheckOracleVerifier_rbrKnowledgeSoundness {σ : Type}
 
 end FinalSumcheckStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

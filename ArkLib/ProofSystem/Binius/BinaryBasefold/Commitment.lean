@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
+public import CompPoly.Fields.Binary.AdditiveNTT.Correctness
 
 /-!
 # Binding of the initial Binary Basefold oracle
@@ -44,6 +45,84 @@ def firstOracleEncoding (t : MultilinearPoly L ℓ) :
   polyToOracleFunc K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0)
     (polynomialFromNovelCoeffsF₂ K β ℓ (by omega)
       (fun ω => t.val.eval (bitsOfIndex ω)))
+
+section ExecutableEncoding
+
+variable (hRate : ℓ + 𝓡 < r)
+
+/-- Materialize the novel-basis encoding of a Boolean evaluation table. -/
+@[noinline]
+def firstOracleEncodingArray (a : Fin (2 ^ ℓ) → L) : Array L :=
+  computableAdditiveNTTFast β hRate a
+
+/-- Read the fast additive-NTT table in domain index order. -/
+@[macro_inline]
+def firstOracleEncodingTable (a : Fin (2 ^ ℓ) → L) : Fin (2 ^ (ℓ + 𝓡)) → L :=
+  arrayToFinFunction (2 ^ (ℓ + 𝓡)) (firstOracleEncodingArray β hRate a)
+
+omit [DecidableEq K] [Fact (Fintype.card K = 2)] [Fact (β 0 = 1)] [NeZero ℓ] in
+private theorem evaluationPoint_eq_finToSDomain (i : Fin r) (hi : i ≤ ℓ)
+    (j : Fin (2 ^ (ℓ + 𝓡 - i.val))) :
+    evaluationPointω K β hRate i hi j =
+      (finToSDomain K β hRate i (by have := NeZero.pos 𝓡; omega) j : L) := by
+  rw [finToSDomain, Basis.repr_symm_apply]
+  have hCoeff : Finsupp.equivFunOnFinite.symm (finToBinaryCoeffs K i j) =
+      (Finsupp.linearEquivFunOnFinite K K (Fin (ℓ + 𝓡 - i.val))).symm
+        (finToBinaryCoeffs K i j) := by
+    ext k
+    simp
+  rw [hCoeff, Finsupp.linearCombination_eq_fintype_linearCombination_apply]
+  simp only [evaluationPointω, finToBinaryCoeffs, Fintype.linearCombination_apply,
+    Submodule.coe_sum, Submodule.coe_smul, get_sDomain_basis]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  split <;> simp [*]
+
+omit [DecidableEq K] [NeZero ℓ] in
+/-- Each output entry is the specified first oracle at the domain point of that index. -/
+theorem firstOracleEncodingTable_eq (t : MultilinearPoly L ℓ)
+    (a : Fin (2 ^ ℓ) → L) (ha : ∀ j, a j = t.val.eval (bitsOfIndex j))
+    (j : Fin (2 ^ (ℓ + 𝓡))) :
+    firstOracleEncodingTable β hRate a j =
+      firstOracleEncoding K β (h_ℓ_add_R_rate := hRate) t
+        (finToSDomain K β hRate ⟨0, NeZero.pos r⟩
+          (Nat.add_pos_right ℓ (NeZero.pos 𝓡)) j) := by
+  unfold firstOracleEncodingTable firstOracleEncodingArray
+  rw [computableAdditiveNTTFast_eq_additiveNTT (𝔽q := K)]
+  rw [additiveNTT_correctness K β hRate (by omega) a _ rfl j]
+  rw [evaluationPoint_eq_finToSDomain K β hRate, show a = (fun ω => t.val.eval (bitsOfIndex ω))
+    from funext ha]
+  change _ = Polynomial.eval _ (polynomialFromNovelCoeffsF₂ K β ℓ (by omega) _).val
+  rfl
+
+/-- Read an already materialized NTT table at a domain point's canonical index. -/
+def firstOracleEncodingFromArray (table : Array L) :
+    sDomain K β hRate ⟨0, NeZero.pos r⟩ → L :=
+  fun x => arrayToFinFunction (2 ^ (ℓ + 𝓡)) table
+    (sDomainToFinExecutable (𝔽q := K) β ⟨0, NeZero.pos r⟩
+      (Nat.add_pos_right ℓ (NeZero.pos 𝓡)) x)
+
+/-- Materialize the NTT table at the call site, then return its point lookup. Inlining before
+function compilation lets the returned closure capture the array rather than the transform. -/
+@[macro_inline]
+def firstOracleEncodingExecutable (t : MultilinearPoly L ℓ) :
+    sDomain K β hRate ⟨0, NeZero.pos r⟩ → L :=
+  let table := firstOracleEncodingArray β hRate (fun j => t.val.eval (bitsOfIndex j))
+  firstOracleEncodingFromArray K β hRate table
+
+omit [NeZero ℓ] in
+/-- The executable encoder agrees with polynomial evaluation at every initial domain point. -/
+theorem firstOracleEncodingExecutable_eq (t : MultilinearPoly L ℓ) :
+    firstOracleEncodingExecutable K β hRate t =
+      firstOracleEncoding K β (h_ℓ_add_R_rate := hRate) t := by
+  funext x
+  change firstOracleEncodingTable β hRate (fun j => t.val.eval (bitsOfIndex j))
+    (sDomainToFinExecutable (𝔽q := K) β ⟨0, NeZero.pos r⟩
+      (Nat.add_pos_right ℓ (NeZero.pos 𝓡)) x) = _
+  rw [sDomainToFinExecutable_eq, firstOracleEncodingTable_eq K β hRate t _ (fun _ => rfl)]
+  exact congrArg _ ((sDomainFinEquiv K β hRate ⟨0, NeZero.pos r⟩
+    (Nat.add_pos_right ℓ (NeZero.pos 𝓡))).symm_apply_apply x)
+
+end ExecutableEncoding
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero ℓ] [NeZero 𝓡] in
 /-- Novel coefficients are coordinates in the novel polynomial basis. -/
@@ -139,6 +218,26 @@ def honestInitialOracleStatement (t : MultilinearPoly L ℓ) :
     simpa only [OracleStatement, oraclePositionToDomainIndex, j₀, Fin.val_zero, zero_mul,
       Fin.mk_zero'] using firstOracleEncoding K β t
   exact fun j => if hj : j₀ = j then hj ▸ raw₀ else fun _ => 0
+
+/-- Package the executable NTT codeword as the initial oracle family. -/
+@[macro_inline]
+def honestInitialOracleStatementExecutable (t : MultilinearPoly L ℓ) :
+    ∀ j, OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j := by
+  let j₀ : Fin (toOutCodewordsCount ℓ ϑ 0) := ⟨0, by
+    rw [toOutCodewordsCount_zero]
+    omega⟩
+  let raw₀ : OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j₀ := by
+    simpa only [OracleStatement, oraclePositionToDomainIndex, j₀, Fin.val_zero, zero_mul,
+      Fin.mk_zero'] using firstOracleEncodingExecutable K β h_ℓ_add_R_rate t
+  exact fun j => if hj : j₀ = j then hj ▸ raw₀ else fun _ => 0
+
+omit [Fact (ϑ ∣ ℓ)] in
+/-- The executable initial oracle family agrees with the specified family. -/
+theorem honestInitialOracleStatementExecutable_eq (t : MultilinearPoly L ℓ) :
+    honestInitialOracleStatementExecutable K β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t =
+      honestInitialOracleStatement K β ϑ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t := by
+  unfold honestInitialOracleStatementExecutable honestInitialOracleStatement
+  rw [firstOracleEncodingExecutable_eq]
 
 private theorem cast_function_apply {α β γ : Type} (h : α = β)
     (hfun : (β → γ) = (α → γ)) (f : α → γ) (x : α) :

@@ -301,8 +301,8 @@ CI tests the checker's behavior. It does not require zero findings from the guid
 - By default it runs `lake build` and `lake test`, rejects non-`sorry` warnings under `ArkLib/` and
   every warning under `ArkLibTest/`, runs the Lean-native source-policy gate and its plugin tests,
   runs the retired-API sweep, runs the compiled `toyproblem-runtime`, `hachi-runtime`,
-  `sumcheck-runtime`, and `fri-extractor-runtime` checks, checks generated imports, tests the
-  build-timing report, checks documentation integrity, and lints knowledge-base inputs.
+  `sumcheck-runtime`, `fri-extractor-runtime`, and `binius-runtime` checks, checks generated imports,
+  tests the build-timing report, checks documentation integrity, and lints knowledge-base inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by the KB workflow's rolling generated-files PR,
   not by ordinary PR validation (see [generated files](generated-files.md)).
@@ -347,6 +347,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
 | `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
+| `binius-runtime` | `scripts/BiniusRuntime.lean` | Binary Basefold and both FRI-Binius openings over GF(16), including one and two folding blocks and rejected inputs |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
 library root, so a `#eval` in one is paid on every build by everyone; and `#eval` runs in the
@@ -375,6 +376,7 @@ lake exe toyproblem-runtime
 lake exe hachi-runtime
 lake exe sumcheck-runtime
 lake exe fri-extractor-runtime
+lake exe binius-runtime
 ./scripts/check-imports.sh
 uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
 uv run --no-project --python 3.12 python ./scripts/kb/lint.py
@@ -498,7 +500,7 @@ export BUILD_TIMING_LOG_DIR=/tmp/build-timing
 bash scripts/build_timing_report.sh run library_build /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c 'lake build'
 bash scripts/build_timing_report.sh run native_build /tmp/build-timing/results.jsonl -- \
-  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style'
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime binius-runtime lint-style'
 bash scripts/build_timing_report.sh run test_path /tmp/build-timing/results.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing/results.jsonl
@@ -509,7 +511,8 @@ Read the rows in that order, because they share one tree and each leaves it warm
 - `library_build` is `lake build` on whatever the build cache left: the changed modules and their
   importers, or everything when no cache was restored.
 - `native_build` carries the `.c.o` chain that the compiled executables link — currently
-  `toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `fri-extractor-runtime`, and `lint-style`.
+  `toyproblem-runtime`, `hachi-runtime`, `sumcheck-runtime`, `fri-extractor-runtime`, `binius-runtime`,
+  and `lint-style`.
   It is the row that swings on `.lake` cache state, so a dependency bump shows its cost here. **Adding a compiled executable to
   `validate.sh` means
   adding it to this command too**, or its link cost lands in `test_path` instead.

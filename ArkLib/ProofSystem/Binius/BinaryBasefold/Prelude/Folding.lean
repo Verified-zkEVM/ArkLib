@@ -1081,6 +1081,120 @@ lemma iteratedFold_take_suffix_of_add_eq
   exact iteratedFold_take_suffix 𝔽q β i k n hmid hdest hle f challenges
 
 
+/-- Compute one fold using the executable fiber map. -/
+def foldExecutable (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + 1)
+    (h_destIdx_le : destIdx ≤ ℓ) (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (r_chal : L) :
+    sDomain 𝔽q β h_ℓ_add_R_rate destIdx → L :=
+  fun y =>
+    let fiberMap := quotientFiberExecutable 𝔽q β i 1 h_destIdx h_destIdx_le y
+    let x₀ := fiberMap 0
+    let x₁ := fiberMap 1
+    f x₀ * ((1 - r_chal) * x₁.val - r_chal) + f x₁ * (r_chal - (1 - r_chal) * x₀.val)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The executable fold agrees with the specified fold at every point. -/
+lemma foldExecutable_eq
+    (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + 1)
+    (h_destIdx_le : destIdx ≤ ℓ) (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (r_chal : L) :
+    foldExecutable 𝔽q β i h_destIdx h_destIdx_le f r_chal =
+      fold 𝔽q β i h_destIdx h_destIdx_le f r_chal := by
+  funext y
+  simp only [foldExecutable, fold, quotientFiberExecutable_eq]
+
+/-- Compute successive folds by structural recursion over the number of rounds. -/
+def iteratedFoldExecutable (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (r_challenges : Fin steps → L) :
+    sDomain 𝔽q β h_ℓ_add_R_rate destIdx → L :=
+  match steps with
+  | 0 => fun y =>
+    have h : destIdx = i := Fin.ext (by omega)
+    f ⟨y.val, h ▸ y.property⟩
+  | n + 1 =>
+    let midIdx : Fin r := ⟨i.val + n, by omega⟩
+    let folded := iteratedFoldExecutable i n (destIdx := midIdx) rfl
+      (by dsimp [midIdx]; omega) f (Fin.init r_challenges)
+    foldExecutable 𝔽q β midIdx (destIdx := destIdx) (by dsimp [midIdx]; omega)
+      h_destIdx_le folded (r_challenges (Fin.last n))
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The structurally recursive fold agrees with the specified dependent fold. -/
+lemma iteratedFoldExecutable_eq
+    (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (r_challenges : Fin steps → L) :
+    iteratedFoldExecutable 𝔽q β i steps h_destIdx h_destIdx_le f r_challenges =
+      iteratedFold 𝔽q β i steps h_destIdx h_destIdx_le f r_challenges := by
+  revert destIdx h_destIdx h_destIdx_le
+  induction steps with
+  | zero =>
+    intro destIdx h_destIdx h_destIdx_le
+    have h : destIdx = i := Fin.ext (by omega)
+    subst destIdx
+    rw [iteratedFold_zero_steps 𝔽q β i rfl h_destIdx_le f r_challenges]
+    rfl
+  | succ n ih =>
+    intro destIdx h_destIdx h_destIdx_le
+    rw [iteratedFold_last 𝔽q β i (midIdx := ⟨i.val + n, by omega⟩) n rfl (by omega)
+      h_destIdx_le f r_challenges]
+    simp only [iteratedFoldExecutable, foldExecutable_eq 𝔽q β, ih]
+
+/-- Build the folding matrix using executable fiber coordinates. -/
+def foldMatrixExecutable (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
+    Matrix (Fin (2 ^ steps)) (Fin (2 ^ steps)) L :=
+  match steps with
+  | 0 => 1
+  | n + 1 =>
+    let midIdx : Fin r := ⟨i.val + n, by omega⟩
+    let fiberMap := quotientFiberExecutable 𝔽q β midIdx 1
+      (by dsimp [midIdx]; omega) h_destIdx_le y
+    let z₀ := fiberMap 0
+    let z₁ := fiberMap 1
+    butterflyMatrix n z₀.val z₁.val * blockDiagMatrix n
+      (foldMatrixExecutable i n (destIdx := midIdx) rfl (by dsimp [midIdx]; omega) z₀)
+      (foldMatrixExecutable i n (destIdx := midIdx) rfl (by dsimp [midIdx]; omega) z₁)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The executable folding matrix agrees entrywise with the specified matrix. -/
+lemma foldMatrixExecutable_eq
+    (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
+    foldMatrixExecutable 𝔽q β i steps h_destIdx h_destIdx_le y =
+      foldMatrix 𝔽q β i steps h_destIdx h_destIdx_le y := by
+  revert destIdx h_destIdx h_destIdx_le y
+  induction steps with
+  | zero => intros; rfl
+  | succ n ih =>
+    intros
+    simp only [foldMatrixExecutable, foldMatrix, quotientFiberExecutable_eq, ih]
+
+/-- Fold the fiber values at a point using the executable folding matrix. -/
+def pointFoldMatrixFormExecutable (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (r_challenges : Fin steps → L) (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
+    (fiber_eval_mapping : Fin (2 ^ steps) → L) : L :=
+  dotProduct (multilinearWeight (ϑ := steps) (r := r_challenges))
+    (Matrix.mulVec (foldMatrixExecutable 𝔽q β i steps h_destIdx h_destIdx_le y)
+      fiber_eval_mapping)
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- The executable point fold returns the same value for every fiber-value vector. -/
+lemma pointFoldMatrixFormExecutable_eq
+    (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (r_challenges : Fin steps → L) (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx)
+    (fiber_eval_mapping : Fin (2 ^ steps) → L) :
+    pointFoldMatrixFormExecutable 𝔽q β i steps h_destIdx h_destIdx_le r_challenges y
+      fiber_eval_mapping =
+      pointFoldMatrixForm 𝔽q β i steps h_destIdx h_destIdx_le r_challenges y
+        fiber_eval_mapping := by
+  simp only [pointFoldMatrixFormExecutable, pointFoldMatrixForm,
+    foldMatrixExecutable_eq 𝔽q β]
+
+
 end FoldTheory
 
 end Essentials

@@ -40,9 +40,9 @@ compatibility or with the exact encoding.
 An evaluation claim `s = t(r)` is the product claim at `A = eq̃(r, ·)` (`Opening`); the unrolled
 FRI-Binius protocol uses the ring-switching multiplier.
 
-The front-end reduction is noncomputable because the canonical witness is: prefix fixing of the
-residual polynomial and the folded codewords are noncomputable. The opening is noncomputable
-because the Binary Basefold phases are.
+The mathematical `initialWitness` uses abstract prefix fixing and novel-basis polynomial
+evaluation. The prover instead uses `initialWitnessExecutable`, which multiplies explicit
+coefficient supports and computes the first codeword by additive NTT.
 -/
 
 @[expose] public section
@@ -91,6 +91,42 @@ theorem sumcheckConsistencyProp_initialWitness_iff (ctx : Context) (target : L)
   simp only [initialWitness_H_val, eval_mul]
 
 variable [Fact (β 0 = 1)] [NeZero ℓ] {ϑ : ℕ} [NeZero ϑ] [Fact (ϑ ∣ ℓ)]
+
+section ExecutableWitness
+
+variable [DecidableEq K]
+
+/-- Initialize the prover with the original polynomial, its structured sum-check product,
+and its fast additive-NTT encoding. -/
+@[no_expose]
+def initialWitnessExecutable (ctx : Context) (t : MultilinearPoly L ℓ) :
+    Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0 :=
+  let table := firstOracleEncodingArray β h_rate (fun j => t.val.eval (bitsOfIndex j))
+  { t := t
+    H := computeInitialSumcheckPolyExecutable ℓ t (multpoly ctx)
+    f := firstOracleEncodingFromArray K β h_rate table }
+
+omit [NeZero ℓ] in
+/-- Executable initialization preserves all fields of the canonical mathematical witness. -/
+theorem initialWitnessExecutable_eq (ctx : Context) (t : MultilinearPoly L ℓ) :
+    initialWitnessExecutable K β multpoly (h_rate := h_rate) ctx t =
+      initialWitness K β multpoly (h_rate := h_rate) ctx t := by
+  have hH : fixPrefix ℓ 0 (computeInitialSumcheckPoly ℓ t (multpoly ctx)) Fin.elim0 =
+      computeInitialSumcheckPoly ℓ t (multpoly ctx) := by
+    apply Subtype.ext
+    exact MvPolynomial.fixFirstVariablesOfMQP_zero ℓ
+      (computeInitialSumcheckPoly ℓ t (multpoly ctx)).val
+  have hf : firstOracleEncoding K β (h_ℓ_add_R_rate := h_rate) t =
+      getMidCodewords K β (h_ℓ_add_R_rate := h_rate) (i := 0) t Fin.elim0 := by
+    symm
+    exact iteratedFold_zero_steps K β (h_ℓ_add_R_rate := h_rate) 0
+      (destIdx := ⟨0, NeZero.pos r⟩) (by simp) (by simp)
+      (firstOracleEncoding K β (h_ℓ_add_R_rate := h_rate) t) Fin.elim0
+  exact congrArg₂ (Witness.mk (𝔽q := K) (β := β) (h_ℓ_add_R_rate := h_rate) (i := 0) t)
+    ((computeInitialSumcheckPolyExecutable_eq ℓ t (multpoly ctx)).trans hH.symm)
+    ((firstOracleEncodingExecutable_eq K β h_rate t).trans hf)
+
+end ExecutableWitness
 
 /-- A relaxed round-`0` witness certifies the product claim for its own polynomial and the
 unique-radius compatibility of that polynomial with the committed first oracle. -/
@@ -193,11 +229,11 @@ def strictInputRelation : Set ((StmtIn × (∀ j, OracleStatement K β (ϑ := ϑ
 /-- The front end is the zero-message claim reduction (`ReduceClaim.oracleReduction`): it maps a
 statement to the initial statement of its claim and a witness to the canonical initial witness of
 its polynomial, and leaves the oracles unchanged. -/
-noncomputable def frontReduction := ReduceClaim.oracleReduction []ₒ
+def frontReduction := ReduceClaim.oracleReduction []ₒ
   (OStmtIn := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
   (OStmtOut := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
   (fun s : StmtIn => initialStatement (L := L) (ℓ := ℓ) (toClaim s).1 (toClaim s).2)
-  (fun s w => initialWitness K β multiplier.polynomial (h_rate := h_rate) (toClaim s).1
+  (fun s w => initialWitnessExecutable K β multiplier.polynomial (h_rate := h_rate) (toClaim s).1
     (witnessEquiv w))
   (Function.Embedding.refl _) (fun _ => rfl) (fun _ => HEq.rfl)
 
@@ -218,13 +254,13 @@ instance instMessageInterface (γ : ℕ) : ∀ j, OracleInterface
       (h_ℓ_add_R_rate := h_rate)).Message j) :=
   instOracleInterfaceMessageAppend
 
-noncomputable instance instChallengeSampleable (γ : ℕ) : ∀ j, SampleableType
+instance instChallengeSampleable (γ : ℕ) : ∀ j, SampleableType
     (((!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_rate)).Challenge j) :=
   instSampleableTypeChallengeAppend
 
 /-- The front end followed by the full Binary Basefold verifier at `multiplier`. -/
-noncomputable def openingVerifier (γ : ℕ) := OracleVerifier.append
+def openingVerifier (γ : ℕ) := OracleVerifier.append
   (Stmt₃ := Bool) (OStmt₃ := fun _ : Empty => Unit)
   (Oₛ₃ := fun i : Empty => nomatch i)
   (frontVerifier K β toClaim (ϑ := ϑ) (h_rate := h_rate))
@@ -232,7 +268,7 @@ noncomputable def openingVerifier (γ : ℕ) := OracleVerifier.append
     (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L))
 
 /-- The honest front end followed by the full Binary Basefold reduction at `multiplier`. -/
-noncomputable def openingReduction (γ : ℕ) := OracleReduction.append
+def openingReduction (γ : ℕ) := OracleReduction.append
   (Stmt₃ := Bool) (Wit₃ := Unit) (OStmt₃ := fun _ : Empty => Unit)
   (Oₛ₃ := fun i : Empty => nomatch i)
   (frontReduction K β multiplier toClaim witnessEquiv (ϑ := ϑ) (h_rate := h_rate))
@@ -341,7 +377,7 @@ theorem openingVerifier_knowledgeSoundness (γ : ℕ) {σ : Type} (init : ProbCo
 
 /-! ### Perfect completeness -/
 
-omit [SampleableType L] [DecidableEq K] [Fact (β 0 = 1)] in
+omit [SampleableType L] in
 /-- The front end is perfectly complete for any input relation contained in
 `strictInputRelation`. -/
 theorem frontReduction_perfectCompleteness {σ : Type} (init : ProbComp σ)
@@ -354,6 +390,7 @@ theorem frontReduction_perfectCompleteness {σ : Type} (init : ProbComp σ)
         (h_ℓ_add_R_rate := h_rate) (𝓑 := boolEmbedding L) 0) :=
   ReduceClaim.oracleReduction_completeness relIn _ fun s ost w hin => by
     obtain ⟨hs, ho⟩ := hrel hin
+    rw [initialWitnessExecutable_eq]
     exact mem_strictRoundRelation_zero_initialWitness K β multiplier.polynomial
       (toClaim s).1 (toClaim s).2 (witnessEquiv w) ost hs ho
 

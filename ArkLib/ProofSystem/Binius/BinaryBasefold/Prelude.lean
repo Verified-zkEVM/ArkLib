@@ -391,6 +391,25 @@ def extractMiddleFinMask [NeZero ℓ]
   let middleBits := Nat.getMiddleBits (offset := i.val) (len := steps) (n := vToFin.val)
   exact ⟨middleBits, Nat.getMiddleBits_lt_two_pow⟩
 
+/-- Recover the middle `steps` bits of the query point by executable coordinate elimination. -/
+def extractMiddleFinMaskExecutable [NeZero ℓ]
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by exact pos_of_neZero r⟩)
+    (i : Fin r) (steps : ℕ) : Fin (2 ^ steps) :=
+  let index := sDomainToFinExecutable β (i := ⟨0, pos_of_neZero r⟩)
+    (by exact Nat.add_pos_left (pos_of_neZero ℓ) 𝓡) v
+  ⟨Nat.getMiddleBits (offset := i.val) (len := steps) (n := index.val),
+    Nat.getMiddleBits_lt_two_pow⟩
+
+omit [NeZero 𝓡] h_β₀_eq_1 in
+/-- The executable mask selects exactly the specified overlap point. -/
+lemma extractMiddleFinMaskExecutable_eq [NeZero ℓ]
+    (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by exact pos_of_neZero r⟩)
+    (i : Fin r) (steps : ℕ) :
+    extractMiddleFinMaskExecutable 𝔽q β v i steps = extractMiddleFinMask 𝔽q β v i steps := by
+  simp only [extractMiddleFinMaskExecutable, extractMiddleFinMask,
+    sDomainToFinExecutable_eq (𝔽q := 𝔽q) β]
+  rfl
+
 -- `MvPolynomial.eqTilde` evaluates the equality polynomial at a second point.
 
 end Essentials

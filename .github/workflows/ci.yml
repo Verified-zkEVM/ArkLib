@@ -160,7 +160,7 @@ jobs:
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime binius-runtime lint-style" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
@@ -251,8 +251,8 @@ jobs:
             git -C .lake/packages/VCVio submodule update --init --recursive
           fi
 
-      # `validate.sh` runs the toyproblem, hachi, and sumcheck runtime targets, which link
-      # the native `.c.o` chain for the whole dependency graph. That work is billed here rather
+      # The runtime targets run by `validate.sh` link the native `.c.o` chain for their
+      # dependency graphs. That work is billed here rather
       # than to the validation wrapper: a dependency bump misses the dependency cache and the
       # compile costs ~5 minutes, which used to read as a wrapper regression. Every compiled
       # executable `validate.sh` runs belongs in this command; otherwise its link cost silently
@@ -260,7 +260,7 @@ jobs:
       - name: Time native build
         run: |
           bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
-            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style'
+            bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime binius-runtime lint-style'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any

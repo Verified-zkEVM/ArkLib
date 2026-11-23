@@ -36,7 +36,6 @@ a commit step does. It is a formalization device and has no counterpart in [DP24
 @[expose] public section
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -71,8 +70,8 @@ def RelayProverState (i : Fin ℓ) : Fin (0 + 1) → Type := fun
 
 /-- The prover of the relay step: it sends nothing and reindexes its oracle statements to round
 `i + 1`. -/
-noncomputable def relayOracleProver (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-  OracleProver (oSpec := []ₒ)
+def relayOracleProver (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
+    OracleProver (oSpec := []ₒ)
     -- current round
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -107,8 +106,8 @@ def relayOracleIndexMap (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
 
 /-- The verifier of the relay step outside a commitment round: it keeps the statement and reindexes
 the oracle statements to round `i + 1`. -/
-noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-  OracleVerifier
+def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
+    OracleVerifier
     (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
@@ -133,8 +132,8 @@ noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound
       rfl }
 
 /-- The oracle reduction of the relay step outside a commitment round. -/
-noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
-  OracleReduction (oSpec := []ₒ)
+def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ IsCommitmentRound ℓ ϑ i) :
+    OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.succ)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -273,8 +272,8 @@ def relayKnowledgeError (m : pSpecRelay.ChallengeIdx) : ℝ≥0 :=
   | ⟨j, _⟩ => j.elim0
 
 /-- The round-by-round extractor of the relay step: the witness passes through unchanged. -/
-noncomputable def relayRbrExtractor (i : Fin ℓ) :
-  Extractor.RoundByRound []ₒ
+def relayRbrExtractor (i : Fin ℓ) :
+    Extractor.RoundByRound []ₒ
     (StmtIn := (Statement (L := L) Context i.succ) × (∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j))
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
@@ -369,5 +368,4 @@ theorem relayOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
 
 end RelayStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold.CoreInteraction

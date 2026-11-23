@@ -106,6 +106,16 @@ theorem eqTilde_eq_prod (x y : σ → R) :
   simp only [map_prod, map_add, map_mul, map_sub, map_one, eval_C, eval_X]
   exact Finset.prod_congr rfl fun i _ => by ring
 
+/-- Evaluate the equality kernel directly in the coefficient ring. -/
+def eqTildeExecutable (x y : σ → R) : R :=
+  ∏ i, (x i * y i + (1 - x i) * (1 - y i))
+
+/-- The compiler evaluates `eqTilde` using its product formula. -/
+@[csimp]
+theorem eqTilde_eq_executable : @eqTilde = @eqTildeExecutable := by
+  funext _ _ _ _ x y
+  exact eqTilde_eq_prod x y
+
 /-- The equality kernel factors across appended coordinate blocks. -/
 theorem eqTilde_append {m n : ℕ} (x₁ y₁ : Fin m → R) (x₂ y₂ : Fin n → R) :
     eqTilde (Fin.append x₁ x₂) (Fin.append y₁ y₂) =

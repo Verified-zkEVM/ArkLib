@@ -50,7 +50,6 @@ with its final sum-check step is in `CoreInteractionPhase.lean`.
 @[expose] public section
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal
@@ -143,7 +142,8 @@ theorem foldRelayOracleReduction_perfectCompleteness (i : Fin ℓ)
 
 /-- The round-by-round knowledge error of the fold-relay round: the fold step's error on its
 challenge. The relay step has none. -/
-def foldRelayKnowledgeError (i : Fin ℓ) : (pSpecFoldRelay (L := L)).ChallengeIdx → ℝ≥0 :=
+noncomputable def foldRelayKnowledgeError (i : Fin ℓ) :
+    (pSpecFoldRelay (L := L)).ChallengeIdx → ℝ≥0 :=
   Sum.elim (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
     relayKnowledgeError ∘ ChallengeIdx.sumEquiv.symm
 
@@ -235,7 +235,7 @@ theorem foldCommitOracleReduction_perfectCompleteness (i : Fin ℓ)
 
 /-- The round-by-round knowledge error of the fold-commit round: the fold step's error on its
 challenge. The commit step has none. -/
-def foldCommitKnowledgeError (i : Fin ℓ) :
+noncomputable def foldCommitKnowledgeError (i : Fin ℓ) :
     (pSpecFoldCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).ChallengeIdx → ℝ≥0 :=
   Sum.elim (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)
     (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) ∘ ChallengeIdx.sumEquiv.symm
@@ -602,5 +602,4 @@ end IteratedSumcheckFoldComposition
 
 end ComponentReductions
 
-end
 end Binius.BinaryBasefold.CoreInteraction

@@ -7,6 +7,7 @@ module
 
 
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Basic
+public import CompPoly.Multivariate.Operations
 
 /-!
 # Binary Basefold relations and bad-event layer
@@ -25,11 +26,6 @@ with our UDR predicate, and its theorem is not our round-by-round knowledge-soun
 -/
 
 @[expose] public section
-
-
-
-
-noncomputable section
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -108,9 +104,31 @@ def OracleFoldingConsistent (i : Fin (ℓ + 1)) (challenges : Fin i → L)
         (h := h_k_next_le_i))
   )
 
-/-- The multilinear equality polynomial at the given evaluation point. -/
+private def eqMultiplierPoly (r : Fin ℓ → L) : MvPolynomial (Fin ℓ) L :=
+  CPoly.fromCMvPolynomial (∏ i,
+    ((1 - CPoly.CMvPolynomial.C (r i)) * (1 - CPoly.CMvPolynomial.X i) +
+      CPoly.CMvPolynomial.C (r i) * CPoly.CMvPolynomial.X i))
+
+omit [Fintype L] [NeZero ℓ] in
+private theorem eqMultiplierPoly_eq (r : Fin ℓ → L) : eqMultiplierPoly r = eqPolynomial r := by
+  unfold eqMultiplierPoly
+  rw [CPoly.CMvPolynomial.fromCMvPolynomial_prod, eqPolynomial_expanded]
+  apply Finset.prod_congr rfl
+  intro i _
+  simp only [sub_eq_add_neg, CPoly.map_add, CPoly.map_mul, CPoly.map_neg, CPoly.map_one,
+    CPoly.CMvPolynomial.fromCMvPolynomial_C, CPoly.CMvPolynomial.fromCMvPolynomial_X]
+
+/-- The multilinear equality polynomial at the given evaluation point, built on explicit
+coefficient supports. -/
+@[no_expose]
 def eqMultiplier (r : Fin ℓ → L) : MultilinearPoly L ℓ :=
-  ⟨MvPolynomial.eqPolynomial r, by simp only [eqPolynomial_mem_restrictDegree]⟩
+  ⟨eqMultiplierPoly r, by rw [eqMultiplierPoly_eq]; exact eqPolynomial_mem_restrictDegree r⟩
+
+omit [Fintype L] [NeZero ℓ] in
+/-- The executable multiplier has the conventional equality polynomial as its value. -/
+@[simp]
+theorem eqMultiplier_val (r : Fin ℓ → L) : (eqMultiplier r).val = eqPolynomial r :=
+  eqMultiplierPoly_eq r
 
 /-- The multiplier of a multilinear evaluation claim: `eq(r, X)` at the evaluation point `r` of
 the context, evaluated by `eqTilde r`. Its product sum-check proves `t(r)`, since
@@ -118,10 +136,12 @@ the context, evaluated by `eqTilde r`. Its product sum-check proves `t(r)`, sinc
 def evalMultiplier : Multiplier (SumcheckBaseContext L ℓ) L ℓ where
   polynomial ctx := eqMultiplier ctx.t_eval_point
   evaluate ctx r' := eqTilde ctx.t_eval_point r'
-  evaluate_eq _ _ := rfl
+  evaluate_eq ctx r' := by rw [eqMultiplier_val]; rfl
 
-/-- Fold the encoded witness polynomial through all challenges of the current round. -/
-def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
+/-- Fold the encoded witness polynomial through the current challenges. This mathematical
+reference uses the novel-basis polynomial construction. The honest prover instead folds the
+current word once in `getFoldProverFinalOutput`. -/
+noncomputable def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
   let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
     (a := fun ω => t.val.eval (bitsOfIndex ω))
@@ -177,7 +197,7 @@ def FoldProverState (i : Fin ℓ) : Fin (2 + 1) → Type := fun
 
 /-- Advance the sum-check statement, residual polynomial and folded word after a challenge. -/
 @[reducible]
-noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
+def getFoldProverFinalOutput (i : Fin ℓ)
     (finalPrvState : FoldProverState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       i 2 (Context := Context)) :
   ((Statement (L := L) Context i.succ × ((j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
@@ -193,13 +213,12 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
   let f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (domainIdx := ⟨i, by omega⟩) := witIn.f
   let challenges : Fin (1) → L := fun _ => r_i'
-  let fᵢ_succ := iteratedFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  let fᵢ_succ := iteratedFoldExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := ⟨i, by omega⟩) (steps := 1) (destIdx := ⟨i.succ, by omega⟩)
     (h_destIdx := by simp only [Fin.val_succ]) (h_destIdx_le := by simp only; omega)
     f_i challenges
   let witOut : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.succ := by
-    let projectedH := projectToNextSumcheckPoly (L := L) (ℓ := ℓ)
-      (i := i) (Hᵢ := witIn.H) (rᵢ := r_i')
+    let projectedH := Sumcheck.Structured.projectToNextSumcheckPolyExecutable ℓ i witIn.H r_i'
     exact {
       t := witIn.t,
       H := projectedH,
@@ -214,7 +233,7 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
 def foldProverComputeMsg (i : Fin ℓ)
     (witIn : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc) :
     L⦃≤ 2⦄[X] :=
-  getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ) (i := i) witIn.H
+  Sumcheck.Structured.getSumcheckRoundPolyExecutable ℓ (SumcheckDomain.uniform 𝓑 ℓ) i witIn.H
 
 /-- Check that the round polynomial sums to the current sum-check target. -/
 @[reducible]
@@ -256,7 +275,7 @@ def WitnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Co
 export Sumcheck.Structured (sumcheckConsistencyProp)
 
 /-- The folding bad event for a committed block that is fully challenged by the current state. -/
-noncomputable def FoldingBadEventAtBlock
+def FoldingBadEventAtBlock
     (stmtIdx : Fin (ℓ + 1)) (oracleIdx : OracleFrontierIndex stmtIdx)
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ)
       (i := oracleIdx.val) j)) (challenges : Fin stmtIdx → L)

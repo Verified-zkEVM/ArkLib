@@ -48,7 +48,6 @@ The oracle reductions built from these steps are in `Steps/`.
 
 namespace Binius.BinaryBasefold
 
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open scoped NNReal
 
@@ -124,6 +123,8 @@ lemma foldStepLogic_isStronglyComplete (i : Fin ℓ) :
   intro stmtIn witIn oStmtIn challenges h_relIn
   let step := (foldStepLogic 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
       (multpoly := multpoly) i)
+  let msg := foldProverComputeMsg 𝔽q β (𝓑 := 𝓑) i witIn
+  let challenge : L := challenges ⟨1, rfl⟩
   let transcript := step.honestProverTranscript stmtIn witIn oStmtIn challenges
   let verifierStmtOut := step.verifierOut stmtIn transcript
   let verifierOStmtOut := step.materializeOutput oStmtIn transcript
@@ -137,9 +138,11 @@ lemma foldStepLogic_isStronglyComplete (i : Fin ℓ) :
   have h_sumcheck_cons : sumcheckConsistencyProp (SumcheckDomain.uniform 𝓑 _)
       stmtIn.sumcheck_target witIn.H :=
     h_relIn.1
+  have h_msg : msg = getSumcheckRoundPoly ℓ (SumcheckDomain.uniform 𝓑 ℓ) i witIn.H :=
+    Sumcheck.Structured.getSumcheckRoundPolyExecutable_eq ℓ (SumcheckDomain.uniform 𝓑 ℓ) i witIn.H
   have h_VCheck_passed : step.verifierCheck stmtIn transcript := by
-    simp only [step, foldStepLogic, foldVerifierCheck, foldProverComputeMsg]
-    rw [h_sumcheck_cons]
+    change msg.val.eval (𝓑 0) + msg.val.eval (𝓑 1) = stmtIn.sumcheck_target
+    rw [h_msg, h_sumcheck_cons]
     exact Sumcheck.Structured.eval_add_eval_getSumcheckRoundPoly ℓ 𝓑 i witIn.H
   have hStmtOut_eq : proverStmtOut = verifierStmtOut := by
     change (step.proverOut stmtIn witIn oStmtIn transcript).1.1 = step.verifierOut stmtIn transcript
@@ -163,10 +166,10 @@ lemma foldStepLogic_isStronglyComplete (i : Fin ℓ) :
     simp only [Fin.val_succ]
     constructor
     · -- Part 2.1: sumcheck consistency
-      unfold sumcheckConsistencyProp
-      dsimp only [verifierStmtOut, proverWitOut, proverOutput]
-      simp only [step, foldStepLogic, foldVerifierStmtOut, getFoldProverFinalOutput, transcript]
-      exact (Sumcheck.Structured.sum_projectToNextSumcheckPoly_uniform ℓ 𝓑 i _ _).symm
+      change msg.val.eval challenge = ∑ x ∈ (SumcheckDomain.uniform 𝓑 (ℓ - i.succ)).cube,
+        (Sumcheck.Structured.projectToNextSumcheckPolyExecutable ℓ i witIn.H challenge).val.eval x
+      rw [h_msg, Sumcheck.Structured.projectToNextSumcheckPolyExecutable_eq]
+      exact (Sumcheck.Structured.sum_projectToNextSumcheckPoly_uniform ℓ 𝓑 i witIn.H challenge).symm
     · -- Part 2.2: StrictOracleWitnessConsistent
       simp only [Fin.val_castSucc] at h_relIn
       have h_oracleWitConsistency_In := h_relIn.2
@@ -181,12 +184,19 @@ lemma foldStepLogic_isStronglyComplete (i : Fin ℓ) :
         dsimp only [Fin.val_succ, proverWitOut, proverOutput, step,
           foldStepLogic, verifierStmtOut]
         constructor
-        · rw [h_H_In]
-          exact (Sumcheck.Structured.fixPrefix_initial_succ ℓ witIn.t _ i _ _).symm
-        · rw [h_f_In]
+        · change Sumcheck.Structured.projectToNextSumcheckPolyExecutable ℓ i witIn.H challenge =
+            MvPolynomial.fixPrefix ℓ i.succ (computeInitialSumcheckPoly ℓ witIn.t
+              (multpoly stmtIn.ctx)) (Fin.snoc stmtIn.challenges challenge)
+          rw [h_H_In, Sumcheck.Structured.projectToNextSumcheckPolyExecutable_eq]
+          exact (Sumcheck.Structured.fixPrefix_initial_succ ℓ witIn.t _ i _ challenge).symm
+        · change iteratedFoldExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+            ⟨i, by omega⟩ 1 (destIdx := ⟨i.succ, by omega⟩) (by simp only [Fin.val_succ])
+            (by simp only; omega) witIn.f (fun _ => challenge) =
+              getMidCodewords 𝔽q β witIn.t (Fin.snoc stmtIn.challenges challenge)
+          rw [h_f_In, iteratedFoldExecutable_eq]
           exact (getMidCodewords_succ 𝔽q β
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witIn.t i stmtIn.challenges
-            (transcript.challenges ⟨1, by rfl⟩)).symm
+            challenge).symm
       · -- Component 2: StrictOracleFoldingConsistent
         have h_oracleIdx_eq : (OracleFrontierIndex.mkFromStmtIdx i.castSucc).val
           = (OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i).val := by rfl
@@ -211,7 +221,7 @@ namespace CoreInteraction
 
 /-- The output oracles of the commit verifier as a simulation: the old oracles are queried as
 themselves, and the last one is answered by the sent oracle. -/
-noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
+def commitOutputSimulation (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i) :
     OracleOutputSimulation []ₒ
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
       (OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
@@ -790,5 +800,4 @@ lemma finalSumcheckStepLogic_isStronglyComplete :
 
 end FinalSumcheckStep
 end SingleIteratedSteps
-end
 end Binius.BinaryBasefold

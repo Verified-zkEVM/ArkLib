@@ -21,7 +21,6 @@ namespace Binius.BinaryBasefold
 
 /-! ## Protocol components -/
 
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset Polynomial MvPolynomial AdditiveNTT
 open scoped NNReal
 
@@ -406,15 +405,29 @@ instance : ∀ i, SampleableType ((pSpecFinalSumcheckStep (L:=L)).Challenge i)
 instance : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
-/-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
+/-- Sample a domain point by sampling its low-bit-first index uniformly. -/
 @[instance_reducible]
 def instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
-    SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
-  let T := sDomain 𝔽q β h_ℓ_add_R_rate i
-  haveI : Fintype T := fintype_sDomain 𝔽q β h_ℓ_add_R_rate i
-  haveI : Nonempty T := ⟨0⟩
-  haveI : DecidableEq T := Classical.decEq T
-  SampleableType.ofEquiv (e := (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i (by omega)).symm)
+    SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) where
+  selectElem := finToSDomainExecutable β i h_i <$> ($ᵗ Fin (2 ^ (ℓ + 𝓡 - i.val)))
+  evalDist_selectElem_eq_uniform := by
+    intro _ _
+    have h : finToSDomainExecutable (h_ℓ_add_R_rate := h_ℓ_add_R_rate) β i h_i =
+        (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i h_i).symm :=
+      funext (finToSDomainExecutable_eq_finToSDomain β i h_i)
+    rw [h]
+    let sampler := SampleableType.ofEquiv (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i h_i).symm
+    exact sampler.evalDist_selectElem_eq_uniform
+
+omit h_β₀_eq_1 [SampleableType L] [NeZero ℓ] [NeZero 𝓡] in
+/-- The executable sampler uses the same random query and point order as the basis sampler. -/
+lemma instSDomain_selectElem_eq {i : Fin r} (h_i : i < ℓ + 𝓡) :
+    (instSDomain 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_i).selectElem =
+      (SampleableType.ofEquiv (sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i h_i).symm).selectElem := by
+  change (finToSDomainExecutable (h_ℓ_add_R_rate := h_ℓ_add_R_rate) β i h_i <$> _) =
+    ((sDomainFinEquiv 𝔽q β h_ℓ_add_R_rate i h_i).symm <$> _)
+  congr 1
+  exact funext (finToSDomainExecutable_eq_finToSDomain β i h_i)
 
 instance : ∀ i, SampleableType ((pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i)
@@ -435,5 +448,4 @@ instance : ∀ j, SampleableType ((fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ)
 
 end Pspec
 
-end
 end Binius.BinaryBasefold

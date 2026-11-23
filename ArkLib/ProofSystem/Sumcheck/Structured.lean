@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.ProofSystem.Sumcheck.Domain
+public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 
 /-!
 # Structured (Witness-Mode) Sumcheck — Types and Helpers
@@ -25,6 +26,9 @@ is a context-dependent multilinear multiplier, and `H` is their degree-2 product
 verifier sees only the prover's round polynomials `pᵢ`, not `H` directly.
 
 The two modes coexist as parallel primitives under `Sumcheck`.
+
+The mathematical product and projection use Mathlib's polynomial algebra. The executable
+versions take decidable coefficient equality and perform the same operations on CompPoly data.
 
 ## TODO (option C, tracked separately)
 
@@ -50,16 +54,14 @@ modes carry independent proofs.
 
 @[expose] public section
 
-noncomputable section
-
 namespace Sumcheck.Structured
 
 open Finset MvPolynomial
 
 section SumcheckOperations
 
-abbrev MultilinearPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 1⦄[X Fin ℓ]
-abbrev MultiquadraticPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 2⦄[X Fin ℓ]
+noncomputable abbrev MultilinearPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 1⦄[X Fin ℓ]
+noncomputable abbrev MultiquadraticPoly (L : Type) [CommSemiring L] (ℓ : ℕ) := L⦃≤ 2⦄[X Fin ℓ]
 
 /-- A polynomial in `ℓ` variables over `L` whose degree in each variable `i` is bounded by `b i`
 (the "**prismalinear**" shape: SWIRL hyperprism = degree `|D|-1` in the skip coord, `≤ 1` in the
@@ -92,7 +94,7 @@ structure SumcheckMultiplierParam (L : Type) [CommSemiring L] (ℓ : ℕ) (Conte
 variable {L : Type} [CommSemiring L] (ℓ : ℕ)
 
 /-- The product polynomial `P · Q(t)`, with per-variable degree bounds. -/
-def computeRoundPoly {Context : Type} {multpolyBound : Fin ℓ → ℕ}
+noncomputable def computeRoundPoly {Context : Type} {multpolyBound : Fin ℓ → ℕ}
     (param : SumcheckMultiplierParam L ℓ Context multpolyBound)
     (ctx : Context) (t : MultilinearPoly L ℓ) :
     PrismalinearPoly L (fun i => param.degCombinator + multpolyBound i) :=
@@ -116,7 +118,8 @@ def computeRoundPoly {Context : Type} {multpolyBound : Fin ℓ → ℕ}
       _ = param.degCombinator + multpolyBound i := by ring⟩
 
 /-- The identity-combinator specialization `m · t`, packaged with its degree-two bound. -/
-def computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) : MultiquadraticPoly L ℓ :=
+noncomputable def computeInitialSumcheckPoly
+    (t m : MultilinearPoly L ℓ) : MultiquadraticPoly L ℓ :=
   computeRoundPoly ℓ
     { multpoly := fun _ : Unit => m
       combinator := fun _ => Polynomial.X
@@ -128,6 +131,34 @@ def computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) : MultiquadraticPol
 theorem coe_computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) :
     (computeInitialSumcheckPoly ℓ t m).val = m.val * t.val := by
   simp [computeInitialSumcheckPoly, computeRoundPoly]
+
+section ExecutableProduct
+
+variable [DecidableEq L]
+
+@[no_expose] private def initialProduct (t m : MultilinearPoly L ℓ) : MvPolynomial (Fin ℓ) L :=
+  CPoly.fromCMvPolynomial
+    (Impl.Computable.fromOracleStatement m * Impl.Computable.fromOracleStatement t)
+
+private theorem initialProduct_eq (t m : MultilinearPoly L ℓ) :
+    initialProduct ℓ t m = (computeInitialSumcheckPoly ℓ t m).val := by
+  unfold initialProduct
+  change CPoly.polyRingEquiv (_ * _) = _
+  rw [map_mul, CPoly.coe_polyRingEquiv,
+    Impl.Computable.fromOracleStatement_interpretation,
+    Impl.Computable.fromOracleStatement_interpretation, coe_computeInitialSumcheckPoly]
+
+/-- Multiply the two multilinear inputs using their explicit coefficient supports. -/
+@[no_expose]
+def computeInitialSumcheckPolyExecutable (t m : MultilinearPoly L ℓ) : MultiquadraticPoly L ℓ :=
+  ⟨initialProduct ℓ t m, initialProduct_eq ℓ t m ▸ (computeInitialSumcheckPoly ℓ t m).property⟩
+
+/-- The executable product is the mathematical initial sum-check polynomial. -/
+theorem computeInitialSumcheckPolyExecutable_eq (t m : MultilinearPoly L ℓ) :
+    computeInitialSumcheckPolyExecutable ℓ t m = computeInitialSumcheckPoly ℓ t m :=
+  Subtype.ext (initialProduct_eq ℓ t m)
+
+end ExecutableProduct
 
 /-- A public multilinear multiplier together with the verifier's point evaluator.
 `evaluate_eq` states that the evaluator computes the multiplier polynomial; a protocol verifier
@@ -154,12 +185,54 @@ def Multiplier.ofPolynomial {Context C : Type} [CommSemiring C] {m : ℕ}
 
 /-- Fix the next coordinate of a uniformly degree-bounded residual polynomial. The renaming
 handles the round-index equation once; prefix fixing itself is `MvPolynomial.fixPrefix`. -/
-def projectToNextSumcheckPoly {d : ℕ} (i : Fin ℓ)
+noncomputable def projectToNextSumcheckPoly {d : ℕ} (i : Fin ℓ)
     (Hᵢ : L⦃≤ d⦄[X Fin (ℓ - i)]) (rᵢ : L) : L⦃≤ d⦄[X Fin (ℓ - i.succ)] :=
   let p := fixPrefix (ℓ - i) ⟨1, by omega⟩ Hᵢ (fun _ => rᵢ)
   let hdim : ℓ - i - 1 = ℓ - i.succ := by simp only [Fin.val_succ]; omega
   ⟨rename (finCongr hdim) p.val,
     rename_equiv_mem_restrictDegreeVar (finCongr hdim) p.val (b := fun _ => d) p.property⟩
+
+section ExecutableProjection
+
+variable [DecidableEq L]
+
+@[no_expose] private def nextProjection {d : ℕ} (i : Fin ℓ)
+    (H : L⦃≤ d⦄[X Fin (ℓ - i)]) (c : L) : MvPolynomial (Fin (ℓ - i.succ)) L :=
+  CPoly.fromCMvPolynomial <| CPoly.CMvPolynomial.bind₁
+    (fun j =>
+      if h : j.val = 0 then CPoly.CMvPolynomial.C c
+      else CPoly.CMvPolynomial.X ⟨j.val - 1, by simp only [Fin.val_succ]; omega⟩)
+    (Impl.Computable.fromOracleStatement H)
+
+private theorem nextProjection_eq {d : ℕ} (i : Fin ℓ)
+    (H : L⦃≤ d⦄[X Fin (ℓ - i)]) (c : L) :
+    nextProjection ℓ i H c = (projectToNextSumcheckPoly ℓ i H c).val := by
+  unfold nextProjection projectToNextSumcheckPoly
+  rw [CPoly.CMvPolynomial.fromCMvPolynomial_bind₁,
+    Impl.Computable.fromOracleStatement_interpretation]
+  simp only [fixPrefix, fixFirstVariablesOfMQP_eq_bind₁, rename_bind₁]
+  change eval₂ C _ H.val = eval₂ C _ H.val
+  congr 1
+  funext j
+  by_cases hj : j.val = 0
+  · simp [fixFirstVariablesSubst, hj, CPoly.CMvPolynomial.fromCMvPolynomial_C]
+  · have hlt : ¬j.val < 1 := by omega
+    simp [fixFirstVariablesSubst, hj, hlt, CPoly.CMvPolynomial.fromCMvPolynomial_X]
+
+/-- Fix the next residual coordinate by substitution on its explicit coefficient support. -/
+@[no_expose]
+def projectToNextSumcheckPolyExecutable {d : ℕ} (i : Fin ℓ)
+    (H : L⦃≤ d⦄[X Fin (ℓ - i)]) (c : L) : L⦃≤ d⦄[X Fin (ℓ - i.succ)] :=
+  ⟨nextProjection ℓ i H c,
+    nextProjection_eq ℓ i H c ▸ (projectToNextSumcheckPoly ℓ i H c).property⟩
+
+/-- Executable substitution agrees with the mathematical residual projection. -/
+theorem projectToNextSumcheckPolyExecutable_eq {d : ℕ} (i : Fin ℓ)
+    (H : L⦃≤ d⦄[X Fin (ℓ - i)]) (c : L) :
+    projectToNextSumcheckPolyExecutable ℓ i H c = projectToNextSumcheckPoly ℓ i H c :=
+  Subtype.ext (nextProjection_eq ℓ i H c)
+
+end ExecutableProjection
 
 end SumcheckOperations
 

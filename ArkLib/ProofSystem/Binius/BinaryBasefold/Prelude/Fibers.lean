@@ -30,6 +30,10 @@ public import Mathlib.Tactic.Ring
 The fibers of the iterated quotient maps `S⁽ⁱ⁾ → S⁽ʲ⁾` of the additive-NTT domains, and the
 block-matrix and tensor-expansion helpers that the folding identities use.
 
+The executable coordinate conversions use the subspace-polynomial recurrence. The abstract
+fiber and point-index definitions use the basis's classical representation map and remain the
+reference for the agreement theorems.
+
 ## Main definitions
 
 * `OracleFunction`: a function on the domain `S⁽ⁱ⁾`.
@@ -37,6 +41,8 @@ block-matrix and tensor-expansion helpers that the folding identities use.
   coordinate (`quotientFiber_repr_coeff`), injectivity,
   cardinality and disjointness lemmas.
 * `fiberEvaluations`: the vector of values of a function on a fiber.
+* `finToSDomainExecutable`, `sDomainToFinExecutable`, `quotientFiberExecutable`: coordinate
+  conversion and fiber construction in the same low-bit-first order as the reference definitions.
 * `multilinearWeight`, `challengeTensorExpansionMatrix`: the tensor `⨂ⱼ (1 - rⱼ, rⱼ)` and
   its block-diagonal form.
 * `from4Blocks`: finite-ordinal reindexing of `Matrix.fromBlocks`.
@@ -276,6 +282,239 @@ theorem multilinear_eval_eq_sum_bool_hypercube {ℓ : ℕ}
 
 end Preliminaries
 
+section ExecutableDomain
+
+variable {r : ℕ} {L : Type} [Field L]
+
+/-- Evaluate the normalized subspace polynomial at `x` using the additive-NTT recurrence. -/
+def evalNormalizedWExecutable (β : Fin r → L) (i : Fin r) (x : L) : L :=
+  let constants := subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) i
+  let eval := evalWAtCachedConstants constants
+  eval x / eval (β i)
+
+variable [NeZero r] [Fintype L] [DecidableEq L]
+  {𝔽q : Type} [Field 𝔽q] [Fintype 𝔽q]
+  [hF₂ : Fact (Fintype.card 𝔽q = 2)] [Algebra 𝔽q L]
+  (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
+
+local instance [Finite 𝔽q] : Fact (Nat.Prime (ringChar 𝔽q)) := ⟨CharP.prime_ringChar 𝔽q⟩
+
+omit [DecidableEq L] in
+/-- The executable recurrence evaluates the abstract normalized subspace polynomial. -/
+lemma evalNormalizedWExecutable_eq (i : Fin r) (x : L) :
+    evalNormalizedWExecutable β i x = (normalizedW 𝔽q β i).eval x := by
+  classical
+  simp only [evalNormalizedWExecutable,
+    evalWAtCachedConstants_subspacePolynomialConstantsArray_eq_W (𝔽q := 𝔽q)]
+  rw [normalizedW]
+  simp only [Polynomial.eval_mul, Polynomial.eval_C, div_eq_mul_inv, one_mul, mul_comm]
+
+/-- Evaluate the quotient from the normalized source value to a normalized destination value. -/
+def raiseNormalizedEval (i destIdx : Fin r) (x : L) : L :=
+  let const := subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) destIdx
+  let sourceVal := evalWAtCachedConstants
+    (subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) i) (β i)
+  evalWAtCachedConstantsLoop const i.val (x * sourceVal) /
+    evalWAtCachedConstants const (β destIdx)
+
+omit [DecidableEq L] in
+/-- Advancing a normalized source evaluation gives the normalized destination evaluation. -/
+lemma raiseNormalizedEval_eval_normalizedW (i destIdx : Fin r) (h : i ≤ destIdx) (x : L) :
+    raiseNormalizedEval β i destIdx ((normalizedW 𝔽q β i).eval x) =
+      (normalizedW 𝔽q β destIdx).eval x := by
+  classical
+  unfold raiseNormalizedEval
+  dsimp only
+  rw [evalWAtCachedConstants_subspacePolynomialConstantsArray_eq_W (𝔽q := 𝔽q),
+    evalWAtCachedConstants_subspacePolynomialConstantsArray_eq_W (𝔽q := 𝔽q)]
+  rw [evalWAtCachedConstantsLoop_eq_W_of_correct (𝔽q := 𝔽q) (β := β)
+    (i := destIdx) (x := x) _ _ _
+      (subspacePolynomialConstantsArray_size (β := β) (ℓ := 0) (R_rate := 0) destIdx)
+      h i.isLt]
+  · rw [normalizedW]
+    simp [div_eq_mul_inv, mul_comm]
+  · rw [normalizedW, Polynomial.eval_mul, Polynomial.eval_C, one_div,
+      mul_comm _ ((W 𝔽q β i).eval x), mul_assoc,
+      inv_mul_cancel₀ (Wᵢ_eval_βᵢ_neq_zero 𝔽q β i), mul_one]
+  · intro k _ hk
+    exact subspacePolynomialConstantsArray_getD (𝔽q := 𝔽q) (β := β)
+      (ℓ := 0) (R_rate := 0) destIdx k hk
+
+/-- Read the binary coordinates from the highest position to the lowest. -/
+def recoverDomainCoeffs (i : Fin r) : (n : ℕ) → i.val + n < r → L → Fin n → 𝔽q
+  | 0, _, _ => Fin.elim0
+  | n + 1, h, x =>
+    let top : Fin r := ⟨i.val + n, by omega⟩
+    let c : 𝔽q := if raiseNormalizedEval β i top x = 0 then 0 else 1
+    let remainder := x - c • evalNormalizedWExecutable β i (β top)
+    Fin.snoc (recoverDomainCoeffs i n (by omega) remainder) c
+
+private lemma recoverDomainCoeffs_eval_sum (i : Fin r) (n : ℕ) (h : i.val + n < r)
+    (c : Fin n → 𝔽q) :
+    recoverDomainCoeffs β i n h
+      (∑ j : Fin n, c j • (normalizedW 𝔽q β i).eval (β ⟨i.val + j.val, by omega⟩)) = c := by
+  classical
+  induction n with
+  | zero => exact Subsingleton.elim _ _
+  | succ n ih =>
+    let top : Fin r := ⟨i.val + n, by omega⟩
+    let u := ∑ j : Fin (n + 1), c j • β ⟨i.val + j.val, by omega⟩
+    let x := ∑ j : Fin (n + 1), c j • (normalizedW 𝔽q β i).eval (β ⟨i.val + j.val, by omega⟩)
+    let normMap (k : Fin r) : L →ₗ[𝔽q] L :=
+      polyEvalLinearMap (normalizedW 𝔽q β k) (normalizedW_is_additive 𝔽q β k)
+    have hx : x = (normalizedW 𝔽q β i).eval u := by
+      change x = normMap i u
+      rw [show u = ∑ j : Fin (n + 1), c j • β ⟨i.val + j.val, by omega⟩ from rfl, map_sum]
+      simp only [map_smul, x, normMap, polyEvalLinearMap, LinearMap.coe_mk, AddHom.coe_mk]
+    have htop : (normalizedW 𝔽q β top).eval u = algebraMap 𝔽q L (c (Fin.last n)) := by
+      change normMap top u = _
+      unfold u
+      rw [map_sum, Fin.sum_univ_castSucc]
+      simp only [map_smul, normMap, polyEvalLinearMap, LinearMap.coe_mk, AddHom.coe_mk,
+        Fin.val_castSucc, Fin.val_last]
+      have hsum : ∑ j : Fin n,
+          c j.castSucc • (normalizedW 𝔽q β top).eval (β ⟨i.val + j.val, by omega⟩) = 0 := by
+        refine Finset.sum_eq_zero fun j _ => ?_
+        have hlt : i.val + j.val < top.val := by dsimp [top]; omega
+        rw [normalizedWᵢ_vanishing 𝔽q β top _ (β_lt_mem_U 𝔽q β top ⟨_, hlt⟩), smul_zero]
+      rw [hsum, zero_add, normalizedWᵢ_eval_βᵢ_eq_1 𝔽q β]
+      simp [Algebra.smul_def]
+    have hc : (if raiseNormalizedEval β i top x = 0 then (0 : 𝔽q) else 1) = c (Fin.last n) := by
+      rw [hx, raiseNormalizedEval_eval_normalizedW (𝔽q := 𝔽q) β i top (by
+        change i.val ≤ i.val + n
+        omega), htop]
+      rcases 𝔽q_element_eq_zero_or_eq_one 𝔽q (c (Fin.last n)) with hzero | hone
+      · rw [hzero]; simp
+      · rw [hone]; simp
+    have hrem : x - c (Fin.last n) • evalNormalizedWExecutable β i (β top) =
+          ∑ j : Fin n, c j.castSucc • (normalizedW 𝔽q β i).eval (β ⟨i.val + j.val, by omega⟩) := by
+      unfold x
+      rw [evalNormalizedWExecutable_eq (𝔽q := 𝔽q), Fin.sum_univ_castSucc]
+      simp [top]
+    change recoverDomainCoeffs β i (n + 1) h x = c
+    rw [recoverDomainCoeffs]
+    change Fin.snoc (recoverDomainCoeffs β i n _
+      (x - (if raiseNormalizedEval β i top x = 0 then (0 : 𝔽q) else 1) •
+        evalNormalizedWExecutable β i (β top))) _ = c
+    rw [hc, hrem, ih]
+    exact Fin.snoc_init_self c
+
+variable {ℓ 𝓡 : ℕ} {h_ℓ_add_R_rate : ℓ + 𝓡 < r}
+
+/-- Reconstruct a domain point by adding the indicated normalized basis vectors. -/
+def sDomainOfCoeffsExecutable (i : Fin r) (hi : i < ℓ + 𝓡)
+    (coeffs : Fin (ℓ + 𝓡 - i.val) → 𝔽q) : sDomain 𝔽q β h_ℓ_add_R_rate i :=
+  ⟨∑ j, (algebraMap 𝔽q L) (coeffs j) * evalNormalizedWExecutable β i
+      (β ⟨i.val + j.val, by have := j.isLt; omega⟩), by
+    apply Submodule.sum_mem
+    intro j _
+    rw [← Algebra.smul_def, evalNormalizedWExecutable_eq (𝔽q := 𝔽q)]
+    apply Submodule.smul_mem
+    rw [← get_sDomain_basis 𝔽q β h_ℓ_add_R_rate i hi j]
+    exact Subtype.prop _⟩
+
+/-- Executable reconstruction agrees with reconstruction through the abstract domain basis. -/
+lemma sDomainOfCoeffsExecutable_eq (i : Fin r) (hi : i < ℓ + 𝓡)
+    (coeffs : Fin (ℓ + 𝓡 - i.val) → 𝔽q) :
+    sDomainOfCoeffsExecutable (h_ℓ_add_R_rate := h_ℓ_add_R_rate) β i hi coeffs =
+      (sDomain_basis 𝔽q β h_ℓ_add_R_rate i hi).repr.symm
+        (Finsupp.equivFunOnFinite.symm coeffs) := by
+  apply Subtype.ext
+  simp only [sDomainOfCoeffsExecutable, Module.Basis.repr_symm_apply, ← Algebra.smul_def,
+    evalNormalizedWExecutable_eq (𝔽q := 𝔽q), ← get_sDomain_basis 𝔽q β h_ℓ_add_R_rate i hi]
+  rw [Finsupp.linearCombination_apply, Finsupp.sum_fintype]
+  · simp only [Submodule.coe_sum, Finsupp.equivFunOnFinite_symm_apply_apply,
+      SetLike.val_smul]
+  · intro j
+    exact zero_smul _ _
+
+/-- Convert a low-bit-first index to the corresponding point of the round's domain. -/
+def finToSDomainExecutable (i : Fin r) (hi : i < ℓ + 𝓡)
+    (idx : Fin (2 ^ (ℓ + 𝓡 - i.val))) : sDomain 𝔽q β h_ℓ_add_R_rate i :=
+  sDomainOfCoeffsExecutable β i hi (finToBinaryCoeffs 𝔽q i idx)
+
+/-- The executable conversion preserves the domain's `Fin` ordering. -/
+lemma finToSDomainExecutable_eq_finToSDomain (i : Fin r) (hi : i < ℓ + 𝓡)
+    (idx : Fin (2 ^ (ℓ + 𝓡 - i.val))) :
+    finToSDomainExecutable (h_ℓ_add_R_rate := h_ℓ_add_R_rate) β i hi idx =
+      finToSDomain 𝔽q β h_ℓ_add_R_rate i hi idx :=
+  sDomainOfCoeffsExecutable_eq β i hi _
+
+/-- Recovery returns exactly the coordinates in the normalized domain basis. -/
+lemma recoverDomainCoeffs_eq_repr (i : Fin r) (hi : i < ℓ + 𝓡)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) :
+    recoverDomainCoeffs β i (ℓ + 𝓡 - i.val) (by omega) x.val =
+      fun j => (sDomain_basis 𝔽q β h_ℓ_add_R_rate i hi).repr x j := by
+  let b := sDomain_basis 𝔽q β h_ℓ_add_R_rate i hi
+  have hx := congrArg (fun y : sDomain 𝔽q β h_ℓ_add_R_rate i => y.val) (b.sum_repr x)
+  simp only [Submodule.coe_sum, Submodule.coe_smul_of_tower, b, get_sDomain_basis] at hx
+  rw [← hx]
+  exact recoverDomainCoeffs_eval_sum β i _ _ _
+
+section FinIndex
+
+variable [DecidableEq 𝔽q]
+
+/-- Recover the canonical low-bit-first index of a point in an additive domain. -/
+def sDomainToFinExecutable (i : Fin r) (hi : i < ℓ + 𝓡)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) : Fin (2 ^ (ℓ + 𝓡 - i.val)) :=
+  let coefficients := recoverDomainCoeffs (𝔽q := 𝔽q) β i (ℓ + 𝓡 - i.val) (by omega) x.val
+  Nat.binaryFinMapToNat (fun j => if coefficients j = 0 then 0 else 1)
+    (fun j => by split <;> omega)
+
+/-- Coordinate recovery preserves the additive-NTT index of every domain point. -/
+lemma sDomainToFinExecutable_eq (i : Fin r) (hi : i < ℓ + 𝓡)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) :
+    sDomainToFinExecutable β i hi x = sDomainToFin 𝔽q β h_ℓ_add_R_rate i hi x := by
+  unfold sDomainToFinExecutable sDomainToFin splitPointIntoCoeffs
+  simp only [recoverDomainCoeffs_eq_repr β i hi x]
+
+end FinIndex
+
+variable [h_β₀_eq_1 : Fact (β 0 = 1)]
+
+/-- Evaluating the normalized quotient agrees with the iterated quotient map on domain points. -/
+lemma raiseNormalizedEval_eq_iteratedQuotientMap (i destIdx : Fin r) (k : ℕ)
+    (h_destIdx : destIdx.val = i.val + k) (h_destIdx_le : destIdx ≤ ℓ)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) :
+    raiseNormalizedEval β i destIdx x.val =
+      (iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i h_destIdx h_destIdx_le x).val := by
+  have hx := x.property
+  unfold sDomain at hx
+  rcases Submodule.mem_map.mp hx with ⟨u, _, hu⟩
+  change (normalizedW 𝔽q β i).eval u = x.val at hu
+  have hc : (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (i := i) (k := k) (h_k := by omega)).comp
+      (normalizedW 𝔽q β i) = normalizedW 𝔽q β destIdx := by
+    rw [← base_intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (k := i) (h_k := by omega),
+      ← base_intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (k := destIdx) (h_k := by omega)]
+    have hc := intermediateNormVpoly_comp 𝔽q β h_ℓ_add_R_rate
+      (i := 0) (k := i) (l := k) (destIdx := i)
+      (h_destIdx := by simp) (h_k := by simpa using (show i.val ≤ ℓ by omega))
+      (h_l := by simpa using (show i.val + k ≤ ℓ by omega))
+    convert hc.symm using 1
+    simp only [h_destIdx]
+  rw [← hu, raiseNormalizedEval_eval_normalizedW (𝔽q := 𝔽q) β i destIdx (by omega),
+    ← hc, Polynomial.eval_comp]
+  simp only [iteratedQuotientMap, hu]
+
+/-- Advance a point by the executable normalized quotient recurrence. -/
+def iteratedQuotientMapExecutable (i : Fin r) {destIdx : Fin r} {k : ℕ}
+    (h_destIdx : destIdx.val = i.val + k) (h_destIdx_le : destIdx ≤ ℓ)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) : sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
+  ⟨raiseNormalizedEval β i destIdx x.val, by
+    rw [raiseNormalizedEval_eq_iteratedQuotientMap β i destIdx k h_destIdx h_destIdx_le x]
+    exact (iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i h_destIdx h_destIdx_le x).property⟩
+
+/-- The executable quotient produces the exact legacy point, not just an equivalent index. -/
+lemma iteratedQuotientMapExecutable_eq (i : Fin r) {destIdx : Fin r} {k : ℕ}
+    (h_destIdx : destIdx.val = i.val + k) (h_destIdx_le : destIdx ≤ ℓ)
+    (x : sDomain 𝔽q β h_ℓ_add_R_rate i) :
+    iteratedQuotientMapExecutable β i h_destIdx h_destIdx_le x =
+      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i h_destIdx h_destIdx_le x :=
+  Subtype.ext (raiseNormalizedEval_eq_iteratedQuotientMap β i destIdx k h_destIdx h_destIdx_le x)
+
+end ExecutableDomain
+
 noncomputable section       -- expands with 𝔽q in front
 /-- At the binary point `bitsOfIndex k`, the multilinear weight of index `j` is the indicator of
 `j = k`. -/
@@ -503,6 +742,40 @@ lemma quotientFiber_repr_coeff (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     rfl
   · simp only [quotientFiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
     Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
+
+/-- Recover the target coordinates and prepend the fiber index in low-bit-first order. -/
+def quotientFiberExecutable (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
+    Fin (2 ^ steps) → sDomain 𝔽q β h_ℓ_add_R_rate i :=
+  if h_steps : steps = 0 then by
+    have h_idx : i = destIdx := by omega
+    subst h_idx
+    exact fun _ => y
+  else
+    let y_coeffs := recoverDomainCoeffs (𝔽q := 𝔽q) β destIdx
+      (ℓ + 𝓡 - destIdx.val) (by omega) y.val
+    fun k => sDomainOfCoeffsExecutable β i (by omega) fun j =>
+      if hj : j.val < steps then
+        if Nat.getBit (k := j) (n := k) = 0 then 0 else 1
+      else y_coeffs ⟨j.val - steps, by omega⟩
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 in
+/-- Every executable fiber point equals the legacy point at the same index. -/
+lemma quotientFiberExecutable_eq (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
+    quotientFiberExecutable 𝔽q β i steps h_destIdx h_destIdx_le y =
+      quotientFiber 𝔽q β i steps h_destIdx h_destIdx_le y := by
+  by_cases hs : steps = 0
+  · subst steps
+    have hi : i = destIdx := by omega
+    subst destIdx
+    rfl
+  · funext k
+    rw [quotientFiberExecutable, dite_eq_right hs, quotientFiber, dite_eq_right hs,
+      sDomainOfCoeffsExecutable_eq,
+      recoverDomainCoeffs_eq_repr β destIdx (lt_rounds_add_rate_of_le_rounds h_destIdx_le) y]
 
 /-- The fiber bit-index records which of the first `steps` basis coefficients are nonzero. -/
 def pointToIterateQuotientIndex (i : Fin r) {destIdx : Fin r} (steps : ℕ)

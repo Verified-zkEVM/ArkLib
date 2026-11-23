@@ -951,6 +951,9 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold.Protocol
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
+public import ArkLib.ProofSystem.Binius.FRIBinius.Executable
+public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Modular
+public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Unrolled
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
@@ -1058,6 +1061,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout
 public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout.Quirky
 public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
+public import ArkLib.ProofSystem.RingSwitching.Packing.Computable
 public import ArkLib.ProofSystem.RingSwitching.Packing.Conformance
 public import ArkLib.ProofSystem.RingSwitching.Packing.Coordinates
 public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
@@ -1071,6 +1075,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.Polynomial
 public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.Basic
+public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.Computable
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.Knowledge
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.Round
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.RoundExecution

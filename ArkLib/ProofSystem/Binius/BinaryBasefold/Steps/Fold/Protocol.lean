@@ -38,7 +38,6 @@ The step's round-by-round knowledge soundness is in `Steps/Fold.lean`.
 @[expose] public section
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal ProbabilityTheory
@@ -65,8 +64,8 @@ variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
 /-- The prover of the `i`-th fold step: it sends the round polynomial `foldProverComputeMsg`,
 receives the challenge, and outputs `foldStepLogic`'s prover output on the transcript. -/
-noncomputable def foldOracleProver (i : Fin ℓ) :
-  OracleProver (oSpec := []ₒ)
+def foldOracleProver (i : Fin ℓ) :
+    OracleProver (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
     (WitIn := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.castSucc)
@@ -120,8 +119,8 @@ def foldOracleVerifier (i : Fin ℓ) :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).outputOracle
 
 /-- The oracle reduction of the `i`-th fold step. -/
-noncomputable def foldOracleReduction (i : Fin ℓ) :
-  OracleReduction (oSpec := []ₒ)
+def foldOracleReduction (i : Fin ℓ) :
+    OracleReduction (oSpec := []ₒ)
     (StmtIn := Statement (L := L) Context i.castSucc)
     (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
@@ -254,5 +253,4 @@ theorem foldOracleReduction_perfectCompleteness (i : Fin ℓ) :
 
 end FoldStep
 
-end
 end Binius.BinaryBasefold.CoreInteraction

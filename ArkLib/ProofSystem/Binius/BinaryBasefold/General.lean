@@ -69,11 +69,11 @@ open CoreInteraction QueryPhase
 
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
-noncomputable def fullOracleVerifier :
-  OracleProofVerifier (oSpec:=[]ₒ)
-    (Statement := Statement (L := L) (ℓ:=ℓ) Context 0)
-    (OStatement:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
-    (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+def fullOracleVerifier :
+    OracleProofVerifier (oSpec := []ₒ)
+      (Statement := Statement (L := L) (ℓ := ℓ) Context 0)
+      (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+      (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) Context 0)
     (Stmt₂ := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -86,17 +86,17 @@ noncomputable def fullOracleVerifier :
     (Oₛ₃ := fun i : Empty => nomatch i)
     (V₁ := CoreInteraction.coreInteractionOracleVerifier 𝔽q β multiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑 := 𝓑))
-    (V₂ := QueryPhase.queryOracleVerifier 𝔽q β γ_repetitions
+    (V₂ := QueryPhase.queryOracleVerifierExecutable 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
 
 /-- The reduction for the full Binary Basefold protocol -/
 @[reducible]
-noncomputable def fullOracleReduction :
-  OracleProof (oSpec:=[]ₒ)
-    (Statement := Statement (L := L) (ℓ:=ℓ) Context 0)
-    (OStatement:= OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
-    (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ:=ℓ) 0)
-    (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+def fullOracleReduction :
+    OracleProof (oSpec := []ₒ)
+      (Statement := Statement (L := L) (ℓ := ℓ) Context 0)
+      (OStatement := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0)
+      (Witness := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) 0)
+      (pSpec := fullPSpec 𝔽q β γ_repetitions (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.append (oSpec:=[]ₒ)
     (Stmt₁ := Statement (L := L) (ℓ:=ℓ) Context 0)
     (Stmt₂ := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
@@ -112,7 +112,7 @@ noncomputable def fullOracleReduction :
     (Oₛ₃ := fun i : Empty => nomatch i)
     (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β multiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) (𝓑 := 𝓑))
-    (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
+    (R₂ := QueryPhase.queryOracleReductionExecutable 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
 
 /-!
@@ -169,8 +169,10 @@ theorem fullOracleReduction_perfectCompleteness :
       (relation := strictRoundRelation (multpoly := multiplier.polynomial) 𝔽q β (ϑ:=ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0)
       (init := init)
-      (impl := impl) :=
-  OracleReduction.append_perfectCompleteness_of_guarded_verifiers
+      (impl := impl) := by
+  unfold fullOracleReduction
+  rw [queryOracleReductionExecutable_eq]
+  exact OracleReduction.append_perfectCompleteness_of_guarded_verifiers
     (R₁ := CoreInteraction.coreInteractionOracleReduction 𝔽q β multiplier
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (R₂ := QueryPhase.queryOracleReduction 𝔽q β γ_repetitions
@@ -214,6 +216,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
       (rbrKnowledgeError := fullRbrKnowledgeError 𝔽q β γ_repetitions (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   unfold fullOracleVerifier fullRbrKnowledgeError fullPSpec
+  rw [queryOracleVerifierExecutable_eq]
   exact OracleVerifier.append_rbrKnowledgeSoundness_of_guarded_first
     (Oₛ₃ := fun i : Empty => nomatch i) _ _
     (Verifier.GuardedForm.ofEmpty _ (fun _ =>

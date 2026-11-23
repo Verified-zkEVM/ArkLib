@@ -50,7 +50,6 @@ sends the constant `c := f⁽ˡ⁾(0, …, 0)` and the verifier checks `s_ℓ = 
 @[expose] public section
 
 namespace Binius.BinaryBasefold.CoreInteraction
-noncomputable section
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
 open Binius.BinaryBasefold
 open scoped NNReal
@@ -133,7 +132,7 @@ theorem coreInteractionOracleReduction_perfectCompleteness :
 
 /-- The round-by-round knowledge error of the core interaction: that of the sum-check-and-fold
 rounds. The final sum-check step has no challenge. -/
-def coreInteractionOracleRbrKnowledgeError :
+noncomputable def coreInteractionOracleRbrKnowledgeError :
     (pSpecCoreInteraction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).ChallengeIdx →
       ℝ≥0 :=
   Sum.elim (sumcheckFoldKnowledgeError (L := L) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
@@ -372,5 +371,4 @@ theorem coreInteractionOracleReduction_perfectCompleteness_and_knowledgeSoundnes
 
 end CoreInteractionPhaseReduction
 
-end
 end Binius.BinaryBasefold.CoreInteraction
