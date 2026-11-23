@@ -7,7 +7,6 @@ module
 
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.MvPolynomial.Degrees
-public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.Probability.Instances
 
 /-!
@@ -67,7 +66,7 @@ abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 
 /-- A generator `G` is zero-evading with a zero-evading error `ε_ze` if the probability of obtaining
 a zero output from a non-zero vector is bounded above by `ε_ze`. -/
-def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] [SampleableType S]
+def IsZeroEvadingGenerator {S : Type} [SampleableType S]
     (G : Generator S ℓ F) (ε_ze : I) : Prop :=
   (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr{let x ←$ᵗ S}[dotProduct (G x) v = 0]})
     ≤ ENNReal.ofReal ε_ze
@@ -91,7 +90,7 @@ def IsPolynomialGeneratorOfFull {s : ℕ} (G : Generator (Fin s → F) ℓ F)
   LinearIndependent F P ∧ ∀ x : Fin s → F, G x = MvPolynomial.eval x ∘ P
 
 /-- The matrix whose rows are the outputs of the generator function. -/
-def M_G {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) : Matrix S ℓ F :=
+def M_G {S : Type} (G : Generator S ℓ F) : Matrix S ℓ F :=
   Matrix.of G
 
 noncomputable example {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
@@ -99,7 +98,7 @@ noncomputable example {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : G
 
 /-- A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator
 function is a generator matrix for an MDS code. -/
-def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
+def IsMDSGenerator {S : Type} [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
     Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
 /-- The condition for MCA generator.
@@ -116,7 +115,7 @@ the clause is vacuous once `δ ≥ 1` — so nothing outside `[0,1]` is asserted
 asserted at the endpoints. The `[0,1]` typing lives on the *error bound*: `IsMCAGenerator`
 quantifies `δ : I`. See
 `docs/wiki/proximity-error-conventions.md`. -/
-def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+def IsMCA {S : Type} {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A)
   (x : S) (U : ℓ → (ι → A)) (δ : ℝ) : Prop :=
   let v : ι → A := fun k => ∑ j, G x j • U j k
@@ -128,7 +127,7 @@ def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Modu
 admits codeword extensions of all input words on that same set. The extensions may depend on
 the agreement set. This is the simultaneous-extension formulation used in [BCHKS25, Theorem 4.6]. -/
 theorem not_isMCA_iff_forall_exists_codewords
-    {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+    {S : Type} {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (x : S) (U : ℓ → ι → A) (δ : ℝ) :
     ¬ IsMCA G MC x U δ ↔
       ∀ T : Finset ι, (T.card : ℝ) ≥ Fintype.card ι * (1 - δ) →
@@ -168,7 +167,7 @@ is the matrix-vector product `G x ᵥ* U`.
 The proof is `Iff.rfl`, so the two agree definitionally and not merely propositionally. Any edit
 that weakens that breaks this declaration rather than silently changing what every field-alphabet
 consumer means. -/
-theorem isMCA_iff_vecMul {S : Type} [Nonempty S] [Fintype S]
+theorem isMCA_iff_vecMul {S : Type}
     (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (ι → F)) (δ : ℝ) :
     IsMCA G LC x U δ ↔
       ∃ T : Finset ι, (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
@@ -195,7 +194,7 @@ noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] [SampleableType S
 
 /-- Coordinate equivalences preserve the MCA event when they transport code membership. -/
 theorem isMCA_comp_equiv {κ : Type} [Fintype κ]
-    {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+    {S : Type} {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (MC' : ModuleCode κ F A)
     (e : κ ≃ ι) (hcode : ∀ w : ι → A, w ∘ e ∈ MC' ↔ w ∈ MC)
     (x : S) (U : ℓ → ι → A) (δ : ℝ) :
@@ -365,14 +364,14 @@ lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] [SampleableTyp
 
 /-- Let `G : S → F^ℓ` and `G′: S′ → F^ℓ` be two generators. Their tensor product is the generator
 `G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x , x′) ↦ G(x) ⊗ G′(x′)`. -/
-def TensorGenerator {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
+def TensorGenerator {ℓ' : Type} {S S' : Type}
     (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
   (S × S') → TensorProduct F (ℓ → F) (ℓ' → F)
 | (x, x') => TensorProduct.tmul F (G x) (G' x')
 
 /-- Explicit construction of the tensor generator. The output type here is a generator
 `G ⊗ G′: S × S′→ F^(ℓ * ℓ')`. -/
-def TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
+def TensorGenerator_Explicit {ℓ' : Type} {S S' : Type}
     (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
     Generator (S × S') (ℓ × ℓ') F
   | (x, x'), (i, j) => G x i * G' x' j
@@ -433,7 +432,7 @@ theorem univariatePowersGenerator_one_eq_affineLineGenerator :
 
 /-- The same-agreement-set interpretation of MCA for a polynomial curve of arbitrary degree.
 This is a statement bridge for [BCHKS25, Theorem 4.6], independent of its exceptional-set bound. -/
-theorem not_isMCA_univariatePowersGenerator_iff [Fintype F]
+theorem not_isMCA_univariatePowersGenerator_iff
     {A : Type} [AddCommMonoid A] [Module F A]
     (M : ℕ) (MC : ModuleCode ι F A) (z : F) (U : Fin (M + 1) → ι → A) (δ : ℝ) :
     ¬ IsMCA (univariatePowersGenerator F M) MC z U δ ↔
@@ -519,7 +518,7 @@ theorem poly_gen_is_zero_evading
       (MvPolynomial.eval (fun i => (a i : F)) (∑ j, x j • P j) = 0) by
     intro a
     simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]]
-  refine (prob_eval_zero_le_div (∑ j, x j • P j)
+  refine (prEvent_eval_eq_zero_le_div (∑ j, x j • P j)
     (LinearCombination.linearCombination_ne_zero hG.1 hx)
     (maxTotalDegree P) (minSeedCard S)
     (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>

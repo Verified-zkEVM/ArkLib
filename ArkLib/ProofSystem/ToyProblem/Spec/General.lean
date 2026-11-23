@@ -271,9 +271,9 @@ the shared fixed-encoder relation family. -/
 def inputRelationFor (encode : (Fin k → F) → (ι → A)) :
     Set ((Statement (F := F) k × (∀ i, OracleStatement ι A i)) ×
       Witness (F := F) k) :=
-  fun input ↦
+  {input |
     (∀ i : Fin 2, input.1.2 i = encode (input.2 i)) ∧
-    (∀ i : Fin 2, ∑ j, input.2 i j * input.1.1.1 j = ![input.1.1.2.1, input.1.1.2.2] i)
+    (∀ i : Fin 2, ∑ j, input.2 i j * input.1.1.1 j = ![input.1.1.2.1, input.1.1.2.2] i)}
 
 /-- The IOR-shaped **fixed-encoding** *relaxed* output relation.
 The soundness statement of L6.6/6.8 is with respect to this: the verifier's
@@ -286,11 +286,11 @@ language membership. -/
 def outputRelationFor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
     Set ((Statement (F := F) k × (∀ i, OracleStatement ι A i)) ×
       Witness (F := F) k) :=
-  fun input ↦
+  {input |
     (∀ i : Fin 2, ∑ j, input.2 i j * input.1.1.1 j =
       ![input.1.1.2.1, input.1.1.2.2] i) ∧
     ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
-      ∀ i : Fin 2, ∀ j ∈ S, input.1.2 i j = encode (input.2 i) j
+      ∀ i : Fin 2, ∀ j ∈ S, input.1.2 i j = encode (input.2 i) j}
 
 omit [Fintype ι] in
 /-- The language-level exact relation `RelationFor` is precisely the
@@ -970,7 +970,8 @@ lemma oracleVerifier_simulateQ_eq_pure_ite
     (oStmt := oStmt) (msgs := msgs) (stmt1 := stmt.1)
     (mu1 := stmt.2.1) (mu2 := stmt.2.2)
     (γ := challenges ⟨0, rfl⟩) (xs := challenges ⟨2, rfl⟩) using 1
-  all_goals (simp only [Accepts, bind_pure_comp]; try congr 1)
+  all_goals simp only [Accepts, bind_pure_comp]
+  congr 1
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- **Soundness direction of the verifier-run support characterization** (converse companion

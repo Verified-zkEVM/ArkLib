@@ -82,8 +82,8 @@ abbrev BindingExtOutput (n : ℕ) (G₁ G₂ : Type) :=
     ZMod p × ZMod p × ZMod p × Bool × Bool × G₁ × G₁
 
 /-- Abbreviation for a binding adversary for KZG. -/
-abbrev KzgBindingAdversary (p : ℕ) [Fact (Nat.Prime p)] (G₁ G₂ : Type) [Group G₁]
-    [PrimeOrderWith G₁ p] [Group G₂] [PrimeOrderWith G₂ p] (n : ℕ) {ι : Type}
+abbrev KzgBindingAdversary (p : ℕ) [Fact (Nat.Prime p)] (G₁ G₂ : Type)
+    (n : ℕ) {ι : Type}
     (oSpec : OracleSpec ι) (AuxState : Type) :=
   Commitment.BindingAdversary oSpec (Fin (n + 1) → ZMod p) G₁ AuxState
     ⟨!v[.P_to_V], !v[G₁]⟩ (Vector G₁ (n + 1) × Vector G₂ 2)
@@ -640,6 +640,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type}
 
 omit [DecidableEq G₁] [Module (ZMod p) (Additive G₁)]
   [Module (ZMod p) (Additive G₂)] in
+omit [PrimeOrderWith G₂ p] in
 /-- Transition 3: dragging the map into the probability event. -/
 lemma map_binding_instance_drag {n : ℕ} {AuxState : Type}
     (adversary : KzgBindingAdversary p G₁ G₂ n unifSpec AuxState)

@@ -7,6 +7,8 @@ module
 
 public import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+import Std.WP.Tactic
+import VCVio.ProgramLogic.Unary.WP.NecessarySpecs
 
 /-!
   # The honest side of the Hachi sumcheck (§4.3)
@@ -245,6 +247,7 @@ lemma roundProver_run_eq {TCom Wit : Type} (i : ℕ)
   rfl
 
 omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
+open scoped OracleComp.Necessary in
 /-- **Honest-run characterization of one round.** Every outcome of an honest run is the single
 success determined by the drawn challenge `a`: prover and verifier both output
 `roundOut stmt g a` at the honest message `g`, and the witness is passed through.
@@ -263,32 +266,14 @@ lemma roundReduction_run_support
               roundOut Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) a, w),
             roundOut Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) a) := by
   have hg := roundCheck_honestComputeG Φ m₁ bound bDig b K hb φF i hi stmt w h
-  intro x hx
-  unfold Reduction.run at hx
-  simp only [OptionT.run_bind, Option.elimM] at hx
-  rw [mem_support_bind_iff] at hx
-  obtain ⟨prOpt, hpr, hx⟩ := hx
-  rw [show ((liftM (Prover.run stmt w
-        (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).prover) :
-        OptionT (OracleComp _) _)).run
-      = (Prover.run stmt w
-          (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).prover)
-        >>= fun a => pure (some a) from rfl] at hpr
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨pr, hpr, hprOpt⟩ := hpr
-  rw [mem_support_pure_iff] at hprOpt
-  subst hprOpt
-  rw [show (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).prover
-      = roundProver Φ (M + 1) m₁ b i (honestComputeG Φ m₁ b hb φF i hi) from rfl,
-    roundProver_run_eq Φ m₁ b i _ stmt w rfl, mem_support_bind_iff] at hpr
-  obtain ⟨a, -, hpr⟩ := hpr
-  rw [mem_support_pure_iff] at hpr
-  subst hpr
-  refine ⟨a, ?_⟩
-  simp only [Option.elim_some, roundReduction, roundVerifier, Verifier.run, hg, ite_true] at hx
-  simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
-    Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
-  exact hx
+  simp only [Reduction.run_run_eq_bind, roundReduction, roundVerifier, Verifier.run,
+    apply_ite OptionT.run, OptionT.run_pure, OptionT.run_failure]
+  rw [roundProver_run_eq Φ m₁ b i _ stmt w rfl]
+  refine (OracleComp.Necessary.wp_iff_forall_support _ _).mp ?_
+  set_option experimental.vcgen true in
+    vcgen [OracleComp.Necessary.Spec.ofSupport (ProtocolSpec.getChallenge _ _)]
+  · exact ⟨_, rfl⟩
+  · exact absurd hg ‹_›
 
 omit [DecidableEq F] in
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -366,7 +351,7 @@ def roundsReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) (count : �
       (roundsSpec F b count) :=
   roundsReductionAux Φ m₁ b (TCom := TCom) hb φF count hcount
 
-omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
 /-- **The honest chain and the soundness chain share their verifier**, at every `count`. Proved by
 recursion rather than by `rfl`: the two chains associate their appends the same way, but for an
 open `count` the recursion's endpoints are only definitional per instance, so the induction step

@@ -71,8 +71,7 @@ theorem mcaError_gridPt_mono {F ι : Type} [Field F] [Fintype F] [SampleableType
 /-! ## Logical challenge predicates -/
 
 /-- An adjacent affine-line MCA crossing, or safety at every grid point through radius one. -/
-def grandMcaChallenge {F ι : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
-    [Fintype ι] [Nonempty ι]
+def grandMcaChallenge {F ι : Type} [Field F] [Fintype F] [SampleableType F] [Fintype ι]
     (C : LinearCode ι F) (ε_star : ℝ≥0) : Prop :=
   (∃ k : ℕ, k < Fintype.card ι ∧
       mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤ (ε_star : ENNReal) ∧
@@ -82,8 +81,7 @@ def grandMcaChallenge {F ι : Type} [Field F] [Fintype F] [SampleableType F] [De
       mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤ (ε_star : ENNReal)
 
 /-- An adjacent list-size crossing, or safety at every grid point through radius one. -/
-def grandListDecodingChallenge {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
-    [Fintype ι] [Nonempty ι]
+def grandListDecodingChallenge {F ι : Type} [Fintype F] [Fintype ι]
     (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) : Prop :=
   (∃ k : ℕ, k < Fintype.card ι ∧
       (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
@@ -282,6 +280,7 @@ noncomputable def toUpperWitness (R : GrandMcaResolution C ε_star) :
 
 end GrandMcaResolution
 
+omit [DecidableEq F] [Nonempty ι] in
 /-- An adjacent affine-line MCA boundary satisfies the logical challenge. -/
 theorem GrandMcaResolution.to_challenge {C : LinearCode ι F} {ε_star : ℝ≥0}
     (R : GrandMcaResolution C ε_star) : grandMcaChallenge C ε_star :=
@@ -297,6 +296,7 @@ inductive GrandMcaAnswer (C : LinearCode ι F) (ε_star : ℝ≥0) : Type where
         mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤
           (ε_star : ENNReal))
 
+omit [DecidableEq F] [Nonempty ι] in
 /-- An affine-line MCA answer satisfies the logical challenge. -/
 theorem GrandMcaAnswer.to_challenge {C : LinearCode ι F} {ε_star : ℝ≥0}
     (A : GrandMcaAnswer C ε_star) : grandMcaChallenge C ε_star := by
@@ -314,6 +314,7 @@ structure McaPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain] : T
       (ReedSolomon.code domain (prizeDimension (ι := ι) j))
       (prizeThreshold : ℝ≥0)
 
+omit [Nonempty ι] in
 /-- Per-rate affine-line MCA answers satisfy the prize proposition. -/
 theorem McaPrizeResolution.to_prize {domain : ι ↪ F} [ReedSolomon.Smooth domain]
     (R : McaPrizeResolution domain) : mcaPrize domain :=
@@ -500,7 +501,7 @@ theorem kStar_unique (R R' : GrandListResolution C m ε_star) : R.kStar = R'.kSt
 
 end GrandListResolution
 
-omit [SampleableType F] in
+omit [SampleableType F] [DecidableEq F] [Field F] [Nonempty ι] in
 /-- An adjacent list-size boundary satisfies the logical challenge. -/
 theorem GrandListResolution.to_challenge
     {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
@@ -517,7 +518,7 @@ inductive GrandListAnswer (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) : T
         (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
           (ε_star : ENNReal) * (Fintype.card F : ENNReal))
 
-omit [SampleableType F] in
+omit [Field F] [SampleableType F] [DecidableEq F] [Nonempty ι] in
 /-- A list-decoding answer satisfies the logical challenge. -/
 theorem GrandListAnswer.to_challenge
     {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
@@ -539,7 +540,7 @@ structure ListPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain]
       (ReedSolomon.code domain (prizeDimension (ι := ι) j) : Set (ι → F))
       m (prizeThreshold : ℝ≥0)
 
-omit [SampleableType F] in
+omit [SampleableType F] [Nonempty ι] in
 /-- Per-rate list-decoding answers satisfy the prize proposition. -/
 theorem ListPrizeResolution.to_prize {domain : ι ↪ F} [ReedSolomon.Smooth domain]
     {m : ℕ} (R : ListPrizeResolution domain m) : listDecodingPrize domain m :=
