@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Interaction.Core.Security.StateRestoration
 import ArkLibTest.Interaction.Core.Oracle
 import ArkLibTest.Interaction.Core.Support
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-! A one-round state-restoration client: the prover sends an oracle in `Fin 8`, the verifier draws
 a `Bool`. On challenge `true` the verifier reads the sent payload and returns it as the claim, with
