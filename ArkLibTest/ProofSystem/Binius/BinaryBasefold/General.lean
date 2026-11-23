@@ -74,13 +74,10 @@ theorem zero_initial_strict :
     simp only [ZeroMemClass.coe_zero, mul_zero]
   · dsimp only [StrictOracleFoldingConsistent]
     intro j
-    have hp : (polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-        (fun ω => (zeroWit 𝔽q β (h_rate := h_rate)).t.val.eval (bitsOfIndex ω))).val = 0 := by
-      simp [zeroWit, polynomialFromNovelCoeffsF₂, polynomialFromNovelCoeffs]
-    simp only [hp]
-    rw [iteratedFold_eq_matrix_form]
+    rw [show (zeroWit 𝔽q β (h_rate := h_rate)).t = 0 from rfl, firstOracleEncoding_zero,
+      iteratedFold_eq_matrix_form]
     funext y
-    simp [zeroOracles, polyToOracleFunc, iteratedFoldMatrixForm,
+    simp [zeroOracles, iteratedFoldMatrixForm,
       pointFoldMatrixForm, fiberEvaluations, Matrix.mulVec, dotProduct]
 
 /-- The sampled full honest protocol accepts the exhibited initial strict zero input. -/

@@ -9,6 +9,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.FinalSumcheck.Extraction
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
+public import ArkLib.OracleReduction.ScalarRound
 
 /-!
 # Binary Basefold: the final sum-check step
@@ -81,25 +82,15 @@ def finalSumcheckProver :
     (StmtOut := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (WitOut := Unit)
-    (pSpec := pSpecFinalSumcheckStep (L := L)) where
-  PrvState := fun
-    | 0 => Statement (L := L) Context (Fin.last ℓ) × (∀ j, OracleStatement 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
-        × Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)
-    | _ => Statement (L := L) Context (Fin.last ℓ) × (∀ j, OracleStatement 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ) j)
-        × Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) × L
-  input := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (stmt, oStmt, wit)
-  sendMessage
-  | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn, witIn⟩ => do
-    let c : L := witIn.f ⟨0, by simp only [zero_mem]⟩ -- f^(ℓ)(0, ..., 0)
-    pure ⟨c, (stmtIn, oStmtIn, witIn, c)⟩
-  receiveChallenge
-  | ⟨0, h⟩ => nomatch h -- No challenges in this step
-  output := fun ⟨stmtIn, oStmtIn, witIn, c⟩ => do
-    let t := FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) c
-    pure ((finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).proverOut stmtIn witIn oStmtIn t)
+    (pSpec := pSpecFinalSumcheckStep (L := L)) :=
+  let step := finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  RingSwitching.messageRoundOracleProver
+    (prepare := fun ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ =>
+      let c : L := witIn.f ⟨0, by simp only [zero_mem]⟩ -- f^(ℓ)(0, ..., 0)
+      (c, (stmtIn, oStmtIn, witIn, c)))
+    (finish := fun ⟨stmtIn, oStmtIn, witIn, c⟩ =>
+      step.proverOut stmtIn witIn oStmtIn (FullTranscript.mk1 c))
 
 /-- The verifier of the final sum-check step: it queries the sent constant, guards on the closing
 sum-check equation of `finalSumcheckStepLogic`, and outputs the target, the challenges and the
@@ -111,20 +102,17 @@ def finalSumcheckVerifier :
     (OStmtIn := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
     (StmtOut := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (OStmtOut := OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ (Fin.last ℓ))
-    (pSpec := pSpecFinalSumcheckStep (L := L)) where
-  verify := fun stmtIn _ => do
-    let c : L ← query (spec := [(pSpecFinalSumcheckStep (L := L)).Message]ₒ)
-      ⟨⟨0, by rfl⟩, (by exact ())⟩
-    let t := FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) c
-    let logic := (finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑))
-    let : Decidable (logic.verifierCheck stmtIn t) := by
-      dsimp only [logic, finalSumcheckStepLogic]
-      infer_instance
-    guard (logic.verifierCheck stmtIn t)
-    pure (logic.verifierOut stmtIn t)
-  outputOracle := (finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).outputOracle
+    (pSpec := pSpecFinalSumcheckStep (L := L)) :=
+  let step := finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
+  let check := fun stmt c => step.verifierCheck stmt (FullTranscript.mk1 c)
+  let checkDecidable : ∀ stmt c, Decidable (check stmt c) := fun _ _ => by
+    dsimp only [check, step, finalSumcheckStepLogic]
+    infer_instance
+  RingSwitching.messageRoundOracleVerifier
+    (check := check)
+    (hcheck := checkDecidable)
+    (accept := fun stmt c => step.verifierOut stmt (FullTranscript.mk1 c))
 
 /-- The oracle reduction of the final sum-check step. -/
 def finalSumcheckOracleReduction :
@@ -146,16 +134,9 @@ def finalSumcheckOracleReduction :
 output statement on the sent constant, with the unchanged oracle statements. -/
 def finalSumcheckVerifierGuardedForm :
     (finalSumcheckVerifier 𝔽q β multiplier (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (𝓑 := 𝓑)).toVerifier.GuardedForm :=
-  Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩
-    (fun s a _ => (finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).verifierCheck s (FullTranscript.mk1 a))
-    (hcheck := fun _ _ _ => by
-      dsimp only [finalSumcheckStepLogic]
-      infer_instance)
-    (fun s a _ => (finalSumcheckStepLogic 𝔽q β multiplier (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).verifierOut s (FullTranscript.mk1 a))
-    (fun _ _ => rfl)
+      (𝓑 := 𝓑)).toVerifier.GuardedForm := by
+  unfold finalSumcheckVerifier
+  exact RingSwitching.messageRoundOracleVerifierGuardedForm _ (hcheck := _) _
 
 omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 open Classical in
@@ -215,15 +196,13 @@ theorem finalSumcheckOracleReduction_perfectCompleteness {σ : Type}
     let c : L := wit.f ⟨0, by simp only [zero_mem]⟩
     have hp : (finalSumcheckProver 𝔽q β multiplier (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)).run (stmt, oracles) wit =
-        pure (((default : (pSpecFinalSumcheckStep (L := L)).Transcript 0).concat (m := 0) c),
-          step.proverOut stmt wit oracles (FullTranscript.mk1 c)) := rfl
+        pure (FullTranscript.mk1 (pSpec := pSpecFinalSumcheckStep (L := L)) c,
+          step.proverOut stmt wit oracles (FullTranscript.mk1 c)) := by
+      unfold finalSumcheckProver
+      exact RingSwitching.messageRoundOracleProver_run _ _ stmt oracles wit
     dsimp only [finalSumcheckOracleReduction] at hq
     rw [hp] at hq
-    replace hq := OracleComp.eq_of_mem_support_pure _ hq
-    refine ⟨isEmptyElim, hq.trans ?_⟩
-    apply Prod.ext
-    · exact (FullTranscript.mk1_eq_snoc (pSpec := pSpecFinalSumcheckStep (L := L)) c).symm
-    · rfl
+    exact ⟨isEmptyElim, OracleComp.eq_of_mem_support_pure _ hq⟩
   · intro stmt oracles tr
     exact decide_eq_decide.mpr Iff.rfl
   · intro stmt oracles tr

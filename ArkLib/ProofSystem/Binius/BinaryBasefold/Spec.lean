@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 module
 
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Relations
+public import ArkLib.OracleReduction.ProtocolSpec.ScalarRound
 
 /-!
 # Binary Basefold protocol specifications
@@ -213,7 +214,7 @@ section Pspec
 /-- One round polynomial message followed by one scalar challenge. -/
 @[reducible]
 def pSpecFold (d : ℕ := 2) : ProtocolSpec 2 :=
-  ⟨![Direction.P_to_V, Direction.V_to_P], ![L⦃≤ d⦄[X], L]⟩
+  CoordinateWise.ScalarRound.pSpecScalar (L⦃≤ d⦄[X]) L
 
 -- Conditional 1-message protocol (only for commitment rounds)
 /-- Commitment to the codeword obtained after the specified fold round. -/
@@ -227,7 +228,7 @@ def pSpecCommit (i : Fin ℓ) : ProtocolSpec 1 :=
 def pSpecRelay : ProtocolSpec 0 := ⟨![], ![]⟩ -- relOut relay step
 
 /-- The final scalar message declaring the fully folded constant. -/
-def pSpecFinalSumcheckStep : ProtocolSpec 1 := ⟨![Direction.P_to_V], ![L]⟩
+def pSpecFinalSumcheckStep : ProtocolSpec 1 := RingSwitching.pSpecMessage L
 
 -- Round-level reductions
 /-- One fold round followed by a commitment to its output codeword. -/
@@ -292,8 +293,9 @@ def fullPSpec := (pSpecCoreInteraction 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_
 /-! ## Oracle Interface instances for Messages-/
 
 instance instOracleInterfaceMessagePSpecFold :
-  ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) :=
-  fun _ => OracleInterface.instDefault
+    ∀ j, OracleInterface ((pSpecFold (L:=L)).Message j) :=
+  fun j => @CoordinateWise.ScalarRound.instOracleInterfaceMessagePSpecScalar (L⦃≤ 2⦄[X]) L
+    OracleInterface.instDefault j
 
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
   | ⟨x, h⟩ => by exact x.elim0
@@ -328,8 +330,8 @@ instance : ∀ j, OracleInterface ((pSpecSumcheckFold 𝔽q β (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message j) := instOracleInterfaceMessageAppend
 
 instance instFinalSumcheckMessageInterfaces : ∀ i,
-    OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Message i)
-  | ⟨0, _⟩ => by exact OracleInterface.instDefault
+    OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Message i) :=
+  RingSwitching.instOracleInterfaceMessagePSpecMessage
 
 instance : ∀ j, OracleInterface ((pSpecFinalSumcheckStep (L:=L)).Challenge j) :=
   ProtocolSpec.challengeOracleInterface
@@ -369,11 +371,8 @@ instance {i : Fin ℓ} :
 instance : IsEmpty (pSpecFinalSumcheckStep (L := L)).ChallengeIdx :=
   ⟨fun ⟨0, h⟩ => nomatch h⟩
 
-instance : ∀ j, SampleableType ((pSpecFold (L:=L)).Challenge j)
-  | ⟨0, h0⟩ => by nomatch h0
-  | ⟨1, _⟩ => by
-    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-    infer_instance
+instance : ∀ j, SampleableType ((pSpecFold (L:=L)).Challenge j) :=
+  CoordinateWise.ScalarRound.instSampleableTypeChallengePSpecScalar
 
 instance : ∀ j, SampleableType ((pSpecRelay).Challenge j)
   | ⟨x, hj⟩ => by exact x.elim0

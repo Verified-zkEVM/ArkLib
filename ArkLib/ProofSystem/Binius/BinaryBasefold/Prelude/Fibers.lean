@@ -291,8 +291,8 @@ by its value at `β i`. The intended input is a linearly independent `β` over t
 ground field; this guarantees a nonzero denominator. -/
 def evalNormalizedWExecutable (β : Fin r → L) (i : Fin r) (x : L) : L :=
   let constants := subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) i
-  let eval := evalWAtCachedConstants constants
-  eval x / eval (β i)
+  let evalW := evalWAtCachedConstants constants
+  evalW x / evalW (β i)
 
 variable [NeZero r] [Fintype L] [DecidableEq L]
   {𝔽q : Type} [Field 𝔽q] [Fintype 𝔽q]
@@ -314,11 +314,12 @@ lemma evalNormalizedWExecutable_eq (i : Fin r) (x : L) :
 /-- Convert a normalized level-`i` evaluation to the normalized level-`destIdx` evaluation
 at the same point. The agreement theorem requires `i ≤ destIdx`. -/
 def raiseNormalizedEval (i destIdx : Fin r) (x : L) : L :=
-  let const := subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) destIdx
-  let sourceVal := evalWAtCachedConstants
+  let destConstants := subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) destIdx
+  let sourceNormalizer := evalWAtCachedConstants
     (subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) i) (β i)
-  evalWAtCachedConstantsLoop const i.val (x * sourceVal) /
-    evalWAtCachedConstants const (β destIdx)
+  let unnormalizedSourceEval := x * sourceNormalizer
+  evalWAtCachedConstantsLoop destConstants i.val unnormalizedSourceEval /
+    evalWAtCachedConstants destConstants (β destIdx)
 
 omit [DecidableEq L] in
 /-- Advancing a normalized source evaluation gives the normalized destination evaluation. -/
@@ -631,14 +632,15 @@ It computes the coefficient of the `j`-th basis vector for a point (indexed by `
 in the fiber list of `y ∈ S^{i+steps}`.
 - If `j < steps`, the coefficient comes from the binary expansion of `elementIdx`.
 - If `j ≥ steps`, the coefficient comes from `y_coeffs` (coefficients of the target point `y`). -/
-noncomputable def fiberCoeff
+@[inline]
+def fiberCoeff
     (i : Fin r) (steps : ℕ)
     {destIdx : Fin r} (h_destIdx : destIdx.val = i.val + steps)
     -- Input j is just an index in the source dimension
     (basisIdx : Fin (ℓ + 𝓡 - i))
     (elementIdx : Fin (2 ^ steps))
     -- y_coeffs now uses the clean 'destIdx'
-    (y_coeffs : Fin (ℓ + 𝓡 - destIdx) →₀ 𝔽q) : 𝔽q :=
+    (y_coeffs : Fin (ℓ + 𝓡 - destIdx) → 𝔽q) : 𝔽q :=
   if hj : basisIdx.val < steps then
     if Nat.getBit (k := basisIdx) (n := elementIdx) = 0 then 0 else 1
   else
@@ -675,14 +677,10 @@ noncomputable def quotientFiber
       (h_i := lt_rounds_add_rate_of_le_rounds (by omega))
     let y_coeffs : Fin (ℓ + 𝓡 - destIdx) →₀ 𝔽q := basis_y.repr y
     let basis_x := sDomain_basis 𝔽q β h_ℓ_add_R_rate i (h_i := by omega)
-    exact fun elementIdx => by
-      let x_coeffs : Fin (ℓ + 𝓡 - i) → 𝔽q := fun j =>
-        if hj_lt_steps : j.val < steps then
-          if Nat.getBit (k := j) (n := elementIdx) = 0 then (0 : 𝔽q)
-          else (1 : 𝔽q)
-        else
-          y_coeffs ⟨j.val - steps, by omega⟩  -- Shift indices to match y's basis
-      exact basis_x.repr.symm ((Finsupp.equivFunOnFinite).symm x_coeffs)
+    exact fun elementIdx =>
+      basis_x.repr.symm (Finsupp.equivFunOnFinite.symm fun basisIdx =>
+        fiberCoeff 𝔽q (i := i) (steps := steps) h_destIdx basisIdx elementIdx
+          (y_coeffs := y_coeffs))
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1  in
 /-- Changing an equal fold count transports the fiber parametrization. -/
@@ -745,7 +743,7 @@ lemma quotientFiber_repr_coeff (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     subst h_i_eq_destIdx
     rfl
   · simp only [quotientFiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
-    Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
+    Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply, fiberCoeff]
 
 /-- Recover the target coordinates and prepend the fiber index in low-bit-first order. -/
 def quotientFiberExecutable (i : Fin r) (steps : ℕ) {destIdx : Fin r}
@@ -759,10 +757,8 @@ def quotientFiberExecutable (i : Fin r) (steps : ℕ) {destIdx : Fin r}
   else
     let y_coeffs := recoverDomainCoeffs (𝔽q := 𝔽q) β destIdx
       (ℓ + 𝓡 - destIdx.val) (by omega) y.val
-    fun k => sDomainOfCoeffsExecutable β i (by omega) fun j =>
-      if hj : j.val < steps then
-        if Nat.getBit (k := j) (n := k) = 0 then 0 else 1
-      else y_coeffs ⟨j.val - steps, by omega⟩
+    fun elementIdx => sDomainOfCoeffsExecutable β i (by omega) fun basisIdx =>
+      fiberCoeff 𝔽q (i := i) (steps := steps) h_destIdx basisIdx elementIdx (y_coeffs := y_coeffs)
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- Every executable fiber point equals the legacy point at the same index. -/
@@ -949,7 +945,7 @@ lemma pointToIterateQuotientIndex_quotientFiber_eq_self (i : Fin r) {destIdx : F
     by_cases hsteps : steps = 0
     · simp only [hsteps, ↓reduceDIte]; omega
     · simp only [hsteps, ↓reduceDIte, Module.Basis.repr_linearCombination,
-      Finsupp.equivFunOnFinite_symm_apply_apply, h_j, ite_eq_left_iff, one_ne_zero,
+      Finsupp.equivFunOnFinite_symm_apply_apply, fiberCoeff, h_j, ite_eq_left_iff, one_ne_zero,
       imp_false, Decidable.not_not]
       have h := Nat.getBit_eq_zero_or_one (k := j) (n := k)
       by_cases h_j_getBit_k_eq_0 : j.getBit ↑k = 0

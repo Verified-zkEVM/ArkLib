@@ -29,19 +29,23 @@ Choose a commutative challenge algebra `C` with `Algebra B C`, `Algebra P C` and
 | `RingSwitch` | The head-plus-product-sumcheck protocol and contextual opening endpoint. |
 | `TensorPrefix` | The DP24 instance, preserving its tensor carrier through the column equivalence. |
 
-Choose a message carrier `M` and prove `M ≃ (ιP → E)`. The honest head sends those
-component evaluations once. The verifier checks their weighted reconstruction, then samples the
-batching challenge and computes the transpose and target itself. There is no second slice
-message. `Head` hands the same packed polynomial and oracle family directly to
-`ProductSumcheck`; its terminal verifier executes the certified multiplier evaluator.
+Choose a message carrier `M` and prove `M ≃ (ιP → E)`. The honest head sends those component
+evaluations once, then the verifier samples the batching challenge. On the completed transcript,
+the verifier checks the weighted reconstruction and, on success, computes the transpose and
+target itself. There is no second slice message. `Head` hands the same packed polynomial and
+oracle family directly to `ProductSumcheck`, whose terminal verifier uses the multiplier's
+point evaluator.
 
 DP24 uses `TensorPrefix`; new consumers instantiate the current shared phases directly.
 
-For executable FRI-Binius, `TensorPrefix.Computable` uses the carrier's column coordinates as
-the message. Both executable FRI-Binius reductions require a proof that the supplied coordinate
-map agrees with the packing basis. Their verifier agreement theorems compare complete
-transcripts after decoding the prefix. The security theorems below concern the abstract
-reductions. This coordinate backend does not replace the generic packing phases.
+The abstract and executable FRI-Binius variants use the same round constructors and opening
+composition. The executable variants send column coordinates and require a proof that the
+coordinate map agrees with the packing basis. Each executable variant has perfect completeness
+on exact encodings and the original round-by-round knowledge error on proximity inputs.
+The batching and relocation wires each define a slotwise transcript map. The complete-transcript
+decoder used for verifier agreement and the prefix decoder used for round-by-round knowledge
+soundness are both derived from these maps, which preserve uniform challenge sampling.
+The coordinate implementation does not replace the generic packing phases.
 
 ## Separate execution, honest coverage and security
 

@@ -17,9 +17,10 @@ carried from the previous block to equal the oracle's value at the suffix of `v`
 carries the fold of the fiber values to the next block. Finally it requires the carried value to
 equal the final constant.
 
-This file states that check twice: as an oracle computation, which the query-phase verifier runs,
-and as a proposition over the oracle statements, which the soundness analysis uses. It also
-provides the index and suffix bookkeeping that relates consecutive blocks.
+This file presents the check as an oracle computation for the verifier and as a proposition over
+the oracle statements for the soundness analysis. The reference and executable computations share
+the same oracle reads, checks, and loops; they differ in how they compute the domain coordinates
+and the fold. The index and suffix lemmas relate consecutive blocks.
 
 ## Main definitions
 
@@ -170,15 +171,41 @@ section FinalQueryRoundIOR
 
 /-! ### Fiber points -/
 
+namespace QueryProgram
+
+/-- The source level `block·ϑ` of a block in the query loop. -/
+abbrev sourceLevel (block : Fin (ℓ / ϑ)) : Fin r :=
+  ⟨block.val * ϑ, lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (h := k_mul_ϑ_lt_ℓ (k := block))⟩
+
+/-- The destination level `block·ϑ + ϑ` of a block in the query loop. -/
+abbrev destinationLevel (block : Fin (ℓ / ϑ)) : Fin r :=
+  ⟨block.val * ϑ + ϑ, lt_r_of_le_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (k_succ_mul_ϑ_le_ℓ_₂ (k := block))⟩
+
+/-- At the block's source level, select the ordered fiber point above the destination suffix. -/
+def fiberPointForBlock (block : Fin (ℓ / ϑ))
+    (fiberBetween : (source : Fin r) → {destination : Fin r} →
+      destination.val = source.val + ϑ → destination ≤ ℓ →
+      sDomain 𝔽q β h_ℓ_add_R_rate destination → Fin (2 ^ ϑ) → sDomain 𝔽q β h_ℓ_add_R_rate source)
+    (destinationSuffix : sDomain 𝔽q β h_ℓ_add_R_rate
+      (destinationLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block))
+    (u : Fin (2 ^ ϑ)) : sDomain 𝔽q β h_ℓ_add_R_rate
+      (sourceLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block) :=
+  fiberBetween (sourceLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block)
+    rfl (k_succ_mul_ϑ_le_ℓ_₂ (k := block)) destinationSuffix u
+
+end QueryProgram
+
 /-- The suffix of `v` at the destination index `k·ϑ + ϑ` of block `k`. -/
 def getChallengeSuffix (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
     let i := k.val * ϑ
     have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
     let destIdx : Fin r := ⟨i + ϑ, by omega⟩
     sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
-  have h_i_add_ϑ_le_ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
   extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (v:=v) (destIdx := ⟨k.val * ϑ + ϑ, by omega⟩) (h_destIdx_le:=by omega)
+    (v := v) (destIdx := QueryProgram.destinationLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k)
+    (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := k))
 
 /-- The point `(u₀, …, u_{ϑ-1}, v_{i+ϑ}, …, v_{ℓ+𝓡-1})` of `S⁽ⁱ⁾`, `i = k·ϑ`, for a fiber index
 `u ∈ B_ϑ`: the `u`-th point of the fiber over the suffix of `v` at `i + ϑ`. -/
@@ -186,22 +213,72 @@ noncomputable def getFiberPoint
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) (u : Fin (2 ^ ϑ)) :
     (sDomain 𝔽q β h_ℓ_add_R_rate) (i := ⟨oraclePositionToDomainIndex ℓ ϑ (i := Fin.last ℓ)
       (positionIdx := ⟨k, by simp only [toOutCodewordsCount_last, Fin.is_lt]⟩),
-        lt_r_of_lt_ℓ (x := k.val * ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ)⟩) := by
-    exact
-      quotientFiber 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := ⟨k.val * ϑ,
-          lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := k.val * ϑ)
-            (h := k_mul_ϑ_lt_ℓ (k := k))⟩)
-        (steps := ϑ)
-        (h_destIdx := by rfl)
-        (h_destIdx_le := by
-          exact k_succ_mul_ϑ_le_ℓ_₂ (k := k))
-        (y := getChallengeSuffix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v))
-        u
+        lt_r_of_lt_ℓ (x := k.val * ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ)⟩) :=
+  QueryProgram.fiberPointForBlock 𝔽q β k
+    (fiberBetween := fun source {_} hStep hBound => quotientFiber 𝔽q β source ϑ hStep hBound)
+    (destinationSuffix := getChallengeSuffix 𝔽q β k v) u
 
 section MonadicOracleVerification
 
 /-! ### The check as an oracle computation -/
+
+namespace QueryProgram
+
+/-- The oracle computation used for a check that may reject. -/
+abbrev QueryCheck (α : Type) := OptionT (OracleComp ([]ₒ +
+    ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
+      [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) α
+
+/-- Read block `block`'s oracle at `fiberPointAt u` in increasing fiber-index order. The vector
+stores the corresponding oracle value at index `u`. -/
+def readBlockFiber (block : Fin (ℓ / ϑ))
+    (fiberPointAt : Fin (2 ^ ϑ) → sDomain 𝔽q β h_ℓ_add_R_rate
+      (sourceLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block)) :
+    QueryCheck 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions
+      (Vector L (2 ^ ϑ)) := do
+  let oracleIdx : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
+    ⟨block, by simp only [toOutCodewordsCount_last, Fin.is_lt]⟩
+  let fiberIndices : Vector (Fin (2 ^ ϑ)) (2 ^ ϑ) :=
+    ⟨Array.finRange (2 ^ ϑ), by simp only [Array.size_finRange]⟩
+  let fiberValues ← fiberIndices.mapM fun u =>
+      queryCodeword 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (j := oracleIdx) (point := fiberPointAt u)
+  return fiberValues
+
+/-- At the source level `i = block·ϑ`, read the fiber and, if `i > 0`, compare the carried value
+with the oracle value at the source suffix of the query point. The first block has no preceding
+fold to check. Return the fold at the destination suffix using challenges `i, …, i + ϑ - 1`. -/
+def checkAndFoldBlock (block : Fin (ℓ / ϑ)) (carry : L)
+    (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+    (fiberPointAt : Fin (2 ^ ϑ) → sDomain 𝔽q β h_ℓ_add_R_rate
+      (sourceLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block))
+    (indexOfSourceSuffix : Fin r → Fin (2 ^ ϑ))
+    (foldAtDestination : (Fin ϑ → L) → (Fin (2 ^ ϑ) → L) → L) :
+    QueryCheck 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions L := do
+  have hDestination := k_succ_mul_ϑ_le_ℓ_₂ (k := block)
+  let src := sourceLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) block
+  let fiberValues ← readBlockFiber 𝔽q β γ_repetitions block (fiberPointAt := fiberPointAt)
+  if src.val > 0 then
+    let sourceOracleValue := fiberValues.get (indexOfSourceSuffix src)
+    guard (carry = sourceOracleValue)
+  let blockChallenges : Fin ϑ → L := fun j =>
+    stmt.challenges ⟨src.val + j.val, by dsimp only [src, sourceLevel, Fin.val_last]; omega⟩
+  return foldAtDestination blockChallenges fiberValues.get
+
+/-- Thread the carried value through blocks `0, …, ℓ/ϑ - 1` in order. A failed step aborts the
+repetition; after the last block, require the carried value to equal `finalConstant`. -/
+def checkRepetitionBlocks
+    (checkBlock : Fin (ℓ / ϑ) → L →
+      QueryCheck 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions L)
+    (finalConstant : L) :
+    QueryCheck 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions Unit := do
+  let mut carry : L := 0 -- The folding check ignores the initial carry in block zero.
+  for block in List.finRange (ℓ / ϑ) do
+    let nextCarry ← checkBlock block carry
+    carry := nextCarry
+  guard (carry = finalConstant)
+
+end QueryProgram
 
 /-- The oracle computation that reads the oracle of block `k` on the whole fiber: the vector of
 its values at `getFiberPoint k v u` for `u ∈ B_ϑ`. -/
@@ -212,62 +289,28 @@ noncomputable def queryFiberPoints
         (OracleComp
           ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
             [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)))
-        (Vector L (2^ϑ)) := do
-  let k_th_oracleIdx : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
-    ⟨k, by simp only [toOutCodewordsCount, Fin.val_last, lt_self_iff_false, ↓reduceIte, add_zero,
-      Fin.is_lt]⟩
-  let results : Vector L (2^ϑ) ← (⟨Array.finRange (2^ϑ), by simp only [Array.size_finRange]⟩ :
-    Vector (Fin (2^ϑ)) (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
-    queryCodeword 𝔽q β (γ_repetitions := γ_repetitions) (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (j := k_th_oracleIdx) (point :=
-        getFiberPoint 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v) (u := u))
-  )
-  pure results
+        (Vector L (2^ϑ)) :=
+  QueryProgram.readBlockFiber 𝔽q β γ_repetitions k (fiberPointAt := getFiberPoint 𝔽q β k v)
 
 /-- One block of the check as an oracle computation: read the fiber of block `k_val`; if its
 domain index `i = k_val·ϑ` is positive, fail unless `c_cur` equals the oracle's value at the
-suffix of `v` at `i`; return the fold of the fiber values by the block's challenges. -/
+suffix of `v` at `i`; return the fold of the fiber values by the block's challenges.
+The corresponding value in the propositional check is `logicalComputeFoldedValue`. -/
 noncomputable def checkSingleFoldingStep
     (k_val : Fin (ℓ / ϑ)) (c_cur : L) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) :
     OptionT (OracleComp ([]ₒ + ([OracleStatement 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ + [(pSpecQuery 𝔽q β
-      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) L := do
-  let i := k_val.val * ϑ
-  have h_k: k_val ≤ (ℓ/ϑ - 1) := by omega
-  have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := by
-    calc i + ϑ = k_val * ϑ + ϑ := by omega
-      _ ≤ (ℓ/ϑ - 1) * ϑ + ϑ := by
-        apply Nat.add_le_add_right; apply Nat.mul_le_mul_right; omega
-      _ = ℓ/ϑ * ϑ := by
-        rw [Nat.sub_mul, one_mul, Nat.sub_add_cancel];
-        conv_lhs => rw [←one_mul ϑ]
-        apply Nat.mul_le_mul_right; omega
-      _ ≤ ℓ := by apply Nat.div_mul_le_self;
-  have h_i_lt_ℓ : i < ℓ := by
-    calc i ≤ ℓ - ϑ := by omega
-      _ < ℓ := by
-        apply Nat.sub_lt (by exact Nat.pos_of_neZero ℓ) (by exact Nat.pos_of_neZero ϑ)
-  let f_i_on_fiber ← queryFiberPoints 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val v
-  -- Check consistency if i > 0
-  if h_i_pos : i > 0 then
-    let oracle_point_idx := extractMiddleFinMask 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (v:=v) (i:=⟨i, by omega⟩) (steps:=ϑ)
-    let f_i_val := f_i_on_fiber.get oracle_point_idx
-    guard (c_cur = f_i_val)
-  -- Compute next folded value
-  let destIdx : Fin r := ⟨i + ϑ, by omega⟩
-  let next_suffix_of_v : sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
-    getChallengeSuffix (k := k_val) (v := v)
-  let cur_challenge_batch : Fin ϑ → L := fun j =>
-    stmt.challenges ⟨i + j.val, by simp only [Fin.val_last]; omega⟩
-  -- c_next = folded value at step k (logical counterpart: `logicalComputeFoldedValue`)
-  let c_next : L := pointFoldMatrixForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (i:=⟨i, by omega⟩) (steps:=ϑ) (destIdx:=destIdx) (h_destIdx:=by dsimp only [destIdx])
-    (h_destIdx_le:=by omega) (r_challenges:=cur_challenge_batch) (y:=next_suffix_of_v)
-    (fiber_eval_mapping := f_i_on_fiber.get)
-  return c_next
+      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) L :=
+  let sourceLevel := QueryProgram.sourceLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val
+  QueryProgram.checkAndFoldBlock 𝔽q β γ_repetitions k_val c_cur stmt
+    (fiberPointAt := getFiberPoint 𝔽q β k_val v)
+    (indexOfSourceSuffix := fun level => extractMiddleFinMask 𝔽q β v level ϑ)
+    (foldAtDestination := fun blockChallenges fiberValueAt =>
+      let destinationSuffix := getChallengeSuffix 𝔽q β k_val v
+      pointFoldMatrixForm 𝔽q β (i := sourceLevel) (steps := ϑ)
+        (h_destIdx := rfl) (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := k_val))
+        blockChallenges destinationSuffix fiberValueAt)
 
 /-- One repetition of the check as an oracle computation: run `checkSingleFoldingStep` on the
 blocks `0, …, ℓ/ϑ - 1` in order, threading the carried value, and fail unless the final carried
@@ -277,16 +320,10 @@ noncomputable def checkSingleRepetition
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (finalConstant : L) :
     OptionT (OracleComp ([]ₒ + ([OracleStatement 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ + [(pSpecQuery 𝔽q β
-      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) Unit := do
-  let mut c_cur : L := 0 -- Will be initialized in first iteration
-  -- Blocks `0, …, ℓ/ϑ - 1`; a failed guard fails the whole computation.
-  for k_val in List.finRange (ℓ / ϑ) do
-    let c_next ← checkSingleFoldingStep 𝔽q β (ϑ:=ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (γ_repetitions := γ_repetitions)
-        ⟨k_val, by omega⟩ c_cur v stmt
-    c_cur := c_next
-  -- Final check: c_ℓ ?= finalConstant
-  guard (c_cur = finalConstant)
+      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) Unit :=
+  QueryProgram.checkRepetitionBlocks 𝔽q β γ_repetitions
+    (checkBlock := fun block carry => checkSingleFoldingStep 𝔽q β γ_repetitions block carry v stmt)
+    finalConstant
 
 end MonadicOracleVerification
 
@@ -306,9 +343,9 @@ def getChallengeSuffixExecutable (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_�
     have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
     let destIdx : Fin r := ⟨i + ϑ, by omega⟩
     sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
-  have h_i_add_ϑ_le_ℓ := k_succ_mul_ϑ_le_ℓ_₂ (k := k)
   extractSuffixFromChallengeExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (v:=v) (destIdx := ⟨k.val * ϑ + ϑ, by omega⟩) (h_destIdx_le:=by omega)
+    (v := v) (destIdx := QueryProgram.destinationLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k)
+    (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := k))
 
 /-- The point `(u₀, …, u_{ϑ-1}, v_{i+ϑ}, …, v_{ℓ+𝓡-1})` of `S⁽ⁱ⁾`, `i = k·ϑ`, for a fiber index
 `u ∈ B_ϑ`: the `u`-th point of the fiber over the suffix of `v` at `i + ϑ`. -/
@@ -316,18 +353,11 @@ def getFiberPointExecutable
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) (u : Fin (2 ^ ϑ)) :
     (sDomain 𝔽q β h_ℓ_add_R_rate) (i := ⟨oraclePositionToDomainIndex ℓ ϑ (i := Fin.last ℓ)
       (positionIdx := ⟨k, by simp only [toOutCodewordsCount_last, Fin.is_lt]⟩),
-        lt_r_of_lt_ℓ (x := k.val * ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ)⟩) := by
-    exact
-      quotientFiberExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (i := ⟨k.val * ϑ,
-          lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (x := k.val * ϑ)
-            (h := k_mul_ϑ_lt_ℓ (k := k))⟩)
-        (steps := ϑ)
-        (h_destIdx := by rfl)
-        (h_destIdx_le := by
-          exact k_succ_mul_ϑ_le_ℓ_₂ (k := k))
-        (y := getChallengeSuffixExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v)
-        u
+        lt_r_of_lt_ℓ (x := k.val * ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h := k_mul_ϑ_lt_ℓ)⟩) :=
+  QueryProgram.fiberPointForBlock 𝔽q β k
+    (fiberBetween := fun source {_} hStep hBound =>
+      quotientFiberExecutable 𝔽q β source ϑ hStep hBound)
+    (destinationSuffix := getChallengeSuffixExecutable 𝔽q β k v) u
 
 /-- The oracle computation that reads the oracle of block `k` on the whole fiber: the vector of
 its values at `getFiberPointExecutable k v u` for `u ∈ B_ϑ`. -/
@@ -338,17 +368,9 @@ def queryFiberPointsExecutable
         (OracleComp
           ([]ₒ + ([OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ +
             [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ)))
-        (Vector L (2^ϑ)) := do
-  let k_th_oracleIdx : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)) :=
-    ⟨k, by simp only [toOutCodewordsCount, Fin.val_last, lt_self_iff_false, ↓reduceIte, add_zero,
-      Fin.is_lt]⟩
-  let results : Vector L (2^ϑ) ← (⟨Array.finRange (2^ϑ), by simp only [Array.size_finRange]⟩ :
-    Vector (Fin (2^ϑ)) (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
-    queryCodeword 𝔽q β (γ_repetitions := γ_repetitions) (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (j := k_th_oracleIdx) (point :=
-        getFiberPointExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v) (u := u))
-  )
-  pure results
+        (Vector L (2^ϑ)) :=
+  QueryProgram.readBlockFiber 𝔽q β γ_repetitions k
+    (fiberPointAt := getFiberPointExecutable 𝔽q β k v)
 
 /-- One block of the check as an oracle computation: read the fiber of block `k_val`; if its
 domain index `i = k_val·ϑ` is positive, fail unless `c_cur` equals the oracle's value at the
@@ -358,42 +380,16 @@ def checkSingleFoldingStepExecutable
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) :
     OptionT (OracleComp ([]ₒ + ([OracleStatement 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ + [(pSpecQuery 𝔽q β
-      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) L := do
-  let i := k_val.val * ϑ
-  have h_k: k_val ≤ (ℓ/ϑ - 1) := by omega
-  have h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ := by
-    calc i + ϑ = k_val * ϑ + ϑ := by omega
-      _ ≤ (ℓ/ϑ - 1) * ϑ + ϑ := by
-        apply Nat.add_le_add_right; apply Nat.mul_le_mul_right; omega
-      _ = ℓ/ϑ * ϑ := by
-        rw [Nat.sub_mul, one_mul, Nat.sub_add_cancel];
-        conv_lhs => rw [←one_mul ϑ]
-        apply Nat.mul_le_mul_right; omega
-      _ ≤ ℓ := by apply Nat.div_mul_le_self;
-  have h_i_lt_ℓ : i < ℓ := by
-    calc i ≤ ℓ - ϑ := by omega
-      _ < ℓ := by
-        apply Nat.sub_lt (by exact Nat.pos_of_neZero ℓ) (by exact Nat.pos_of_neZero ϑ)
-  let f_i_on_fiber ← queryFiberPointsExecutable 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val v
-  -- Check consistency if i > 0
-  if h_i_pos : i > 0 then
-    let oracle_point_idx := extractMiddleFinMaskExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (v:=v) (i:=⟨i, by omega⟩) (steps:=ϑ)
-    let f_i_val := f_i_on_fiber.get oracle_point_idx
-    guard (c_cur = f_i_val)
-  -- Compute next folded value
-  let destIdx : Fin r := ⟨i + ϑ, by omega⟩
-  let next_suffix_of_v : sDomain 𝔽q β h_ℓ_add_R_rate destIdx :=
-    getChallengeSuffixExecutable (k := k_val) (v := v)
-  let cur_challenge_batch : Fin ϑ → L := fun j =>
-    stmt.challenges ⟨i + j.val, by simp only [Fin.val_last]; omega⟩
-  -- c_next = folded value at step k (logical counterpart: `logicalComputeFoldedValue`)
-  let c_next : L := pointFoldMatrixFormExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (i:=⟨i, by omega⟩) (steps:=ϑ) (destIdx:=destIdx) (h_destIdx:=by dsimp only [destIdx])
-    (h_destIdx_le:=by omega) (r_challenges:=cur_challenge_batch) (y:=next_suffix_of_v)
-    (fiber_eval_mapping := f_i_on_fiber.get)
-  return c_next
+      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) L :=
+  let sourceLevel := QueryProgram.sourceLevel (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k_val
+  QueryProgram.checkAndFoldBlock 𝔽q β γ_repetitions k_val c_cur stmt
+    (fiberPointAt := getFiberPointExecutable 𝔽q β k_val v)
+    (indexOfSourceSuffix := fun level => extractMiddleFinMaskExecutable 𝔽q β v level ϑ)
+    (foldAtDestination := fun blockChallenges fiberValueAt =>
+      let destinationSuffix := getChallengeSuffixExecutable 𝔽q β k_val v
+      pointFoldMatrixFormExecutable 𝔽q β (i := sourceLevel) (steps := ϑ)
+        (h_destIdx := rfl) (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := k_val))
+        blockChallenges destinationSuffix fiberValueAt)
 
 /-- Run the executable block checks in order, then compare the carried value with the final
 constant. A failed step aborts the repetition. -/
@@ -402,16 +398,11 @@ def checkSingleRepetitionExecutable
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (finalConstant : L) :
     OptionT (OracleComp ([]ₒ + ([OracleStatement 𝔽q β (ϑ:=ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ + [(pSpecQuery 𝔽q β
-      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) Unit := do
-  let mut c_cur : L := 0 -- Will be initialized in first iteration
-  -- Blocks `0, …, ℓ/ϑ - 1`; a failed guard fails the whole computation.
-  for k_val in List.finRange (ℓ / ϑ) do
-    let c_next ← checkSingleFoldingStepExecutable 𝔽q β (ϑ:=ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (γ_repetitions := γ_repetitions)
-        ⟨k_val, by omega⟩ c_cur v stmt
-    c_cur := c_next
-  -- Final check: c_ℓ ?= finalConstant
-  guard (c_cur = finalConstant)
+      γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ))) Unit :=
+  QueryProgram.checkRepetitionBlocks 𝔽q β γ_repetitions
+    (checkBlock := fun block carry =>
+      checkSingleFoldingStepExecutable 𝔽q β γ_repetitions block carry v stmt)
+    finalConstant
 
 omit [DecidableEq 𝔽q] [NeZero 𝓡] [NeZero ℓ] in
 private lemma extractSuffixFromChallengeExecutable_eq
@@ -431,7 +422,8 @@ omit [DecidableEq 𝔽q] in
 private lemma getFiberPointExecutable_eq
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) (u : Fin (2 ^ ϑ)) :
     getFiberPointExecutable 𝔽q β k v u = getFiberPoint 𝔽q β k v u := by
-  simp only [getFiberPointExecutable, getFiberPoint, quotientFiberExecutable_eq,
+  simp only [getFiberPointExecutable, getFiberPoint, QueryProgram.fiberPointForBlock,
+    quotientFiberExecutable_eq,
     getChallengeSuffixExecutable_eq]
 
 omit [DecidableEq 𝔽q] in
@@ -439,7 +431,8 @@ private lemma queryFiberPointsExecutable_eq
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
     queryFiberPointsExecutable 𝔽q β γ_repetitions k v =
       queryFiberPoints 𝔽q β γ_repetitions k v := by
-  simp only [queryFiberPointsExecutable, queryFiberPoints, getFiberPointExecutable_eq]
+  simp only [queryFiberPointsExecutable, queryFiberPoints, QueryProgram.readBlockFiber,
+    getFiberPointExecutable_eq]
 
 private lemma checkSingleFoldingStepExecutable_eq
     (k : Fin (ℓ / ϑ)) (carry : L) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
@@ -447,8 +440,10 @@ private lemma checkSingleFoldingStepExecutable_eq
     checkSingleFoldingStepExecutable 𝔽q β γ_repetitions k carry v stmt =
       checkSingleFoldingStep 𝔽q β γ_repetitions k carry v stmt := by
   simp only [checkSingleFoldingStepExecutable, checkSingleFoldingStep,
-    queryFiberPointsExecutable_eq, extractMiddleFinMaskExecutable_eq,
+    QueryProgram.checkAndFoldBlock, extractMiddleFinMaskExecutable_eq,
     pointFoldMatrixFormExecutable_eq, getChallengeSuffixExecutable_eq]
+  congr 1
+  exact queryFiberPointsExecutable_eq 𝔽q β γ_repetitions k v
 
 /-- The executable query repetition is the same oracle program, including all failed guards. -/
 lemma checkSingleRepetitionExecutable_eq
@@ -457,7 +452,7 @@ lemma checkSingleRepetitionExecutable_eq
     checkSingleRepetitionExecutable 𝔽q β (ϑ := ϑ) γ_repetitions v stmt finalConstant =
       checkSingleRepetition 𝔽q β (ϑ := ϑ) γ_repetitions v stmt finalConstant := by
   simp only [checkSingleRepetitionExecutable, checkSingleRepetition,
-    checkSingleFoldingStepExecutable_eq]
+    QueryProgram.checkRepetitionBlocks, checkSingleFoldingStepExecutable_eq]
 
 section LogicalOracleVerification
 
@@ -572,8 +567,7 @@ lemma getFiberPoint_eq_quotientFiber
         (steps := ϑ) (h_destIdx := by rfl)
         (h_destIdx_le := by exact k_succ_mul_ϑ_le_ℓ_₂ (k := k))
         (y := getChallengeSuffix 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (k := k) (v := v)) u := by
-  unfold getFiberPoint
-  simp only [oraclePositionToDomainIndex]
+  rfl
 
 omit [DecidableEq 𝔽q] hF₂  in
 /-- The fiber values of block `k` are the oracle's `fiberEvaluations` over the suffix of `v`. -/
@@ -752,7 +746,8 @@ lemma extractSuffixFromChallenge_eq_getFiberPoint_extractMiddleFinMask
             exact lt_r_of_lt_ℓ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
               (h := k_mul_ϑ_lt_ℓ (k := j))⟩)
           (steps := ϑ)) := by
-  dsimp only [getFiberPoint, extractSuffixFromChallenge, getChallengeSuffix]
+  dsimp only [getFiberPoint, QueryProgram.fiberPointForBlock, extractSuffixFromChallenge,
+    getChallengeSuffix]
   exact
     iteratedQuotientMap_eq_quotientFiber_extractMiddleFinMask
       (𝔽q := 𝔽q) (β := β) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)

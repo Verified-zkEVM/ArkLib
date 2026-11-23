@@ -45,11 +45,10 @@ variable (β : Basis (Fin (2 ^ κ)) K L)
 variable {ℓ' R ϑ : ℕ} [NeZero ℓ'] [NeZero R] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
 variable (h_rate : ℓ' + R < 2 ^ κ)
 
-/-- The batching head followed by the Binary Basefold opening wire. -/
+/-- The abstract tensor batching message and challenge followed by `openingWire`, without a
+separate ring-switching sum-check. -/
 noncomputable abbrev pSpec (γ : ℕ) :=
-  TensorPrefix.headPSpec (biniusProfile κ L K β) ++ₚ
-    ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
-      (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
+  TensorPrefix.headPSpec (biniusProfile κ L K β) ++ₚ openingWire K β (ϑ := ϑ) h_rate γ
 
 /-- The batching loss on the head's challenge, then the errors of the Binary Basefold opening. -/
 noncomputable def fullError (γ : ℕ) :

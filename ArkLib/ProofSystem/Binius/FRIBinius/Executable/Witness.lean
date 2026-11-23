@@ -107,4 +107,11 @@ theorem tableWitnessEquiv_apply [DecidableEq R] [IsDomain R] (a : (Fin n → Fin
   unfold tableWitnessEquiv
   rfl
 
+/-- Use the multilinear extension of a Boolean table as the witness in a relation,
+leaving the statement unchanged. -/
+def tableWitnessRelation [DecidableEq R] [IsDomain R] {Statement : Type}
+    (relation : Set (Statement × MultilinearPoly R n)) :
+    Set (Statement × ((Fin n → Fin 2) → R)) :=
+  (fun ⟨stmt, table⟩ => (stmt, tableWitnessEquiv table)) ⁻¹' relation
+
 end Binius.FRIBinius

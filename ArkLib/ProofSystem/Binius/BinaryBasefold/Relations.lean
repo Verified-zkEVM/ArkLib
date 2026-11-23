@@ -143,16 +143,22 @@ reference uses the novel-basis polynomial construction. The honest prover instea
 current word once in `getFoldProverFinalOutput`. -/
 noncomputable def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
-  let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
-    (a := fun ω => t.val.eval (bitsOfIndex ω))
-  let f₀ : (sDomain 𝔽q β h_ℓ_add_R_rate 0) → L := fun x => P₀.val.eval x.val
   let fᵢ := iteratedFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := 0) (steps := i) (destIdx := ⟨i, by omega⟩)
     (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, zero_mod, zero_add])
     (h_destIdx_le := by simp only; omega)
-    (f := f₀)
+    (f := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t)
     (r_challenges := challenges)
   fun x => fᵢ x
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] in
+/-- Before any fold challenge, the honest word is the initial encoding. -/
+theorem getMidCodewords_zero (t : MultilinearPoly L ℓ) :
+    getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) t Fin.elim0 =
+      firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t := by
+  exact iteratedFold_zero_steps 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0
+    (destIdx := 0) (by simp) (by simp)
+    (f := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t) Fin.elim0
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] in
 /-- Advancing the honest codeword by one round is a single fold at the next challenge. -/
@@ -173,9 +179,7 @@ lemma getMidCodewords_succ (t : L⦃≤ 1⦄[X Fin ℓ]) (i : Fin ℓ)
       (h_midIdx := by simp)
       (h_destIdx := by simp [Fin.val_succ])
       (h_destIdx_le := by simp only; omega)
-      (f := fun x =>
-        (polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
-          (a := fun ω => t.val.eval (bitsOfIndex ω))).val.eval x.val)
+      (f := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t)
       (r_challenges₁ := challenges) (r_challenges₂ := fun _ => r_i')).symm
   rw [Fin.append_right_eq_snoc] at h_trans
   exact h_trans
@@ -183,27 +187,16 @@ lemma getMidCodewords_succ (t : L⦃≤ 1⦄[X Fin ℓ]) (i : Fin ℓ)
 section FoldStepLogic
 variable {Context : Type} {multpoly : Context → MultilinearPoly L ℓ}
 
-/-- The prover state before its message, before the challenge, and after the challenge of a fold. -/
-def FoldProverState (i : Fin ℓ) : Fin (2 + 1) → Type := fun
-  | ⟨0, _⟩ => (Statement (L := L) Context i.castSucc ×
-    (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
-  | ⟨1, _⟩ => Statement (L := L) Context i.castSucc ×
-    (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc × L⦃≤ 2⦄[X]
-  | _ => Statement (L := L) Context i.castSucc ×
-    (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) ×
-    Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc × L⦃≤ 2⦄[X] × L
-
 /-- Advance the sum-check statement, residual polynomial and folded word after a challenge. -/
 @[reducible]
 def getFoldProverFinalOutput (i : Fin ℓ)
-    (finalPrvState : FoldProverState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i 2 (Context := Context)) :
+    (stmtIn : Statement (L := L) Context i.castSucc)
+    (oStmtIn : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j)
+    (witIn : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (h_i : L⦃≤ 2⦄[X]) (r_i' : L) :
   ((Statement (L := L) Context i.succ × ((j : Fin (toOutCodewordsCount ℓ ϑ i.castSucc)) →
     OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j))
       × Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ) := by
-  let (stmtIn, oStmtIn, witIn, h_i, r_i') := finalPrvState
   let newSumcheckTarget : L := h_i.val.eval r_i'
   let stmtOut : Statement (L := L) Context i.succ := {
     ctx := stmtIn.ctx,
@@ -213,16 +206,16 @@ def getFoldProverFinalOutput (i : Fin ℓ)
   let f_i : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (domainIdx := ⟨i, by omega⟩) := witIn.f
   let challenges : Fin (1) → L := fun _ => r_i'
-  let fᵢ_succ := iteratedFoldExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+  let foldedWord := iteratedFoldExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := ⟨i, by omega⟩) (steps := 1) (destIdx := ⟨i.succ, by omega⟩)
     (h_destIdx := by simp only [Fin.val_succ]) (h_destIdx_le := by simp only; omega)
-    f_i challenges
+    (f := f_i) (r_challenges := challenges)
   let witOut : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.succ := by
     let projectedH := Sumcheck.Structured.projectToNextSumcheckPolyExecutable ℓ i witIn.H r_i'
     exact {
       t := witIn.t,
       H := projectedH,
-      f := fᵢ_succ
+      f := foldedWord
     }
   let oStmtOut : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc j := oStmtIn
@@ -752,9 +745,7 @@ def finalSumcheckRelOut :
 def StrictOracleFoldingConsistent (t : MultilinearPoly L ℓ) (i : Fin (ℓ + 1))
     (challenges : Fin i → L)
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i) j) : Prop :=
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => t.val.eval (bitsOfIndex ω))
-  let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+  let f₀ := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t
   ∀ (j : Fin (toOutCodewordsCount ℓ ϑ i)),
     let destIdx : Fin r := ⟨oraclePositionToDomainIndex (positionIdx := j), by
       have h_le := oracle_index_le_ℓ (i := i) (j := j); omega

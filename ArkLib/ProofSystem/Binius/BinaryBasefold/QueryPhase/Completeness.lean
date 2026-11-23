@@ -206,7 +206,7 @@ private theorem honest_repetition_pure (γ : ℕ)
     simpa only [Nat.ne_of_gt hpos, ↓reduceDIte] using hrel
   change (simulateQ so (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
     v stmt stmt.finalConstant) : OptionT (OracleComp []ₒ) Unit) = pure ()
-  dsimp only [checkSingleRepetition]
+  dsimp only [checkSingleRepetition, QueryProgram.checkRepetitionBlocks]
   rw [simulateQ_optionT_bind, simulateQ_optionT_list_forIn]
   simp only [simulateQ_optionT_bind, simulateQ_optionT_pure]
   have hloop' : (forIn (List.finRange (ℓ / ϑ)) (0 : L) (fun k cur => do
@@ -214,7 +214,6 @@ private theorem honest_repetition_pure (γ : ℕ)
         (γ_repetitions := γ) (ϑ := ϑ) k cur v stmt) : OptionT (OracleComp []ₒ) L)
       pure (ForInStep.yield next)) : OptionT (OracleComp []ₒ) L) = pure final := by
     simpa only [Fin.eta, OptionT.mk, OptionT.run, so, tr] using hloop
-  simp only [Fin.eta]
   rw [hloop', pure_bind]
   simp only [guard_eq, hcorrect, ↓reduceIte]
   rfl
@@ -234,7 +233,7 @@ theorem queryPhaseLogicStep_simulate_honest (γ : ℕ)
     simulateQ so (step.verifierCheck stmt tr).run = pure (some true) := by
   intro step tr so
   change (simulateQ so (step.verifierCheck stmt tr) : OptionT (OracleComp []ₒ) Bool) = pure true
-  dsimp only [step, queryPhaseLogicStep]
+  dsimp only [step, queryPhaseLogicStep, QueryProgram.runRepetitions]
   rw [simulateQ_optionT_bind]
   let body := fun (rep : Fin γ) (_ : PUnit) => do
     let _ ← checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)

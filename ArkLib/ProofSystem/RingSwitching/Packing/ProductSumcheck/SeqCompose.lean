@@ -14,7 +14,9 @@ public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 
 The m scalar rounds are the sequential oracle reduction, followed by the
 terminal opening check. The empty sequence is the identity, so m=0 directly reaches the same
-terminal check. Every component keeps the original packed polynomial and its oracles.
+terminal check. In the polynomial specialization, every component keeps the original packed
+polynomial and its oracles. The executable specialization uses the same schedule and keeps the
+packed Boolean evaluation table and its oracles.
 -/
 
 @[expose] public section
@@ -26,10 +28,44 @@ open OracleSpec OracleComp ProtocolSpec MvPolynomial
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)
 
+/-- The sequence of scalar rounds for a chosen representation of a quadratic message. -/
+abbrev loopSpecOfRound (roundSpec : ProtocolSpec 2) (m : ℕ) :
+    ProtocolSpec (Fin.vsum (fun _ : Fin m => 2)) :=
+  ProtocolSpec.seqCompose (fun _ : Fin m => roundSpec)
+
+/-- The scalar rounds followed by the packed-value message, independent of the quadratic wire. -/
+abbrev pSpecOfRound (roundSpec : ProtocolSpec 2) (C : Type) (m : ℕ) :
+    ProtocolSpec (Fin.vsum (fun _ : Fin m => 2) + 1) :=
+  loopSpecOfRound roundSpec m ++ₚ Terminal.pSpec C
+
+section Program
+variable {Wit : Type} {ι : Type} (OStmt : ι → Type) [∀ j, OracleInterface (OStmt j)]
+  {roundSpec : ProtocolSpec 2} [∀ j, OracleInterface (roundSpec.Message j)]
+
+/-- Compose the scalar rounds in order with fixed witness and oracle types. -/
+def loopReductionOfRounds
+    (roundReduction : (i : Fin m) → OracleReduction []ₒ (Statement Context C i.castSucc) OStmt Wit
+      (Statement Context C i.succ) OStmt Wit roundSpec) :
+    OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))) OStmt Wit
+      (Statement Context C (Fin.last m)) OStmt Wit (loopSpecOfRound roundSpec m) :=
+  OracleReduction.seqCompose (Statement Context C) (fun _ => OStmt) (fun _ => Wit) roundReduction
+
+/-- Run the scalar rounds and then open the packed value at the resulting challenge point. -/
+def reductionOfRoundsAndTerminal
+    (roundReduction : (i : Fin m) → OracleReduction []ₒ (Statement Context C i.castSucc) OStmt Wit
+      (Statement Context C i.succ) OStmt Wit roundSpec)
+    (terminalReduction : OracleReduction []ₒ (Statement Context C (Fin.last m)) OStmt Wit
+      (Context × ((Fin m → C) × C)) OStmt Wit (Terminal.pSpec C)) :
+    OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))) OStmt Wit
+      (Context × ((Fin m → C) × C)) OStmt Wit (pSpecOfRound roundSpec C m) :=
+  (loopReductionOfRounds OStmt roundReduction).append terminalReduction
+
+end Program
+
 /-- The scalar-round protocol sequence, empty when there are no retained variables. -/
 def loopSpec (C : Type) [CommRing C] (m : ℕ) :
     ProtocolSpec (Fin.vsum (fun _ : Fin m => 2)) :=
-  ProtocolSpec.seqCompose (fun _ : Fin m => Round.pSpec C)
+  loopSpecOfRound (Round.pSpec C) m
 
 instance : ∀ j, OracleInterface ((loopSpec C m).Message j) :=
   inferInstanceAs (∀ j, OracleInterface
@@ -49,8 +85,7 @@ def loopVerifier : OracleVerifier []ₒ (Statement Context C (0 : Fin (m + 1))) 
 def loopReduction : OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))) pc.OStmt
     P⦃≤ 1⦄[X Fin m] (Statement Context C (Fin.last m)) pc.OStmt P⦃≤ 1⦄[X Fin m]
     (loopSpec C m) :=
-  OracleReduction.seqCompose (Statement Context C) (fun _ => pc.OStmt)
-    (fun _ => P⦃≤ 1⦄[X Fin m]) (Round.reduction multiplier pc)
+  loopReductionOfRounds pc.OStmt (roundReduction := Round.reduction multiplier pc)
 
 omit [Algebra P C] in
 /-- Materialization commutes with the finite verifier sequence. -/
@@ -76,7 +111,7 @@ instance : (loopReduction multiplier pc).prover.OutputIsPure :=
 /-- All scalar challenges followed by the final packed-value message. -/
 def pSpec (C : Type) [CommRing C] (m : ℕ) :
     ProtocolSpec (Fin.vsum (fun _ : Fin m => 2) + 1) :=
-  loopSpec C m ++ₚ Terminal.pSpec C
+  pSpecOfRound (Round.pSpec C) C m
 
 instance : ∀ j, OracleInterface ((pSpec C m).Message j) :=
   inferInstanceAs (∀ j, OracleInterface ((loopSpec C m ++ₚ Terminal.pSpec C).Message j))
@@ -94,7 +129,9 @@ The product-sumcheck tail preserving the commitment oracle and ending with an op
 -/
 def reduction : OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))) pc.OStmt
     P⦃≤ 1⦄[X Fin m] (Context × ((Fin m → C) × C)) pc.OStmt P⦃≤ 1⦄[X Fin m] (pSpec C m) :=
-  (loopReduction multiplier pc).append (Terminal.reduction multiplier pc)
+  reductionOfRoundsAndTerminal pc.OStmt
+    (roundReduction := Round.reduction multiplier pc)
+    (terminalReduction := Terminal.reduction multiplier pc)
 
 omit [Algebra P C] in
 -- Match the oracle-interface instances produced by loop/terminal append materialization.
@@ -112,7 +149,8 @@ def guardedForm : (verifier multiplier pc).toVerifier.GuardedForm := by
   exact (loopGuardedForm pc).append (Terminal.guardedForm multiplier pc)
 
 instance : (reduction multiplier pc).prover.OutputIsPure :=
-  Prover.OutputIsPure.append _ _ inferInstance
+  Prover.OutputIsPure.append _ _
+    (show (loopReduction multiplier pc).prover.OutputIsPure from inferInstance)
     (show (Terminal.prover (C := C) (Context := Context) pc).OutputIsPure from inferInstance)
 
 /--

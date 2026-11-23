@@ -338,7 +338,8 @@ example (c : GF4) :
       ({ acceptedStatement 0 shat 0 with target := 1 }, oStmt₀)
       (ProtocolSpec.FullTranscript.mk2 (0 : Polynomial.degreeLE GF4 2) c) = failure := by
   erw [ProductSumcheck.Round.verifier_verify]
-  simp [ProductSumcheck.Round.check, ProtocolSpec.FullTranscript.messages,
+  simp [ProductSumcheck.Round.check, ProductSumcheck.Round.sumAtZeroOne,
+    ProtocolSpec.FullTranscript.messages,
     ProtocolSpec.FullTranscript.mk2]
 
 /-- A zero final value cannot support target one in the matrix terminal check. -/
@@ -348,7 +349,8 @@ example : (ProductSumcheck.Terminal.verifier
       ProductSumcheck.Statement (layout.Query × rule.Challenge) GF4 (Fin.last 1)), oStmt₀)
     (ProductSumcheck.Terminal.transcript 0) = failure := by
   erw [ProductSumcheck.Terminal.verifier_verify]
-  simp [ProductSumcheck.Terminal.check, ProductSumcheck.Terminal.transcript,
+  simp [ProductSumcheck.Terminal.check, ProductSumcheck.Terminal.expectedTarget,
+    ProductSumcheck.Terminal.transcript,
     ProtocolSpec.FullTranscript.messages]
 
 end ArkLibTest.RingSwitchingConformance.Binius

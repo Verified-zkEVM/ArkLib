@@ -6,16 +6,19 @@ Authors: Chung Thai Nguyen
 module
 
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+public import ArkLib.ProofSystem.Binius.FRIBinius.Protocol
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Witness
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.Opening
 public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix.Computable
 
 /-!
 # Executable small-field Binius openings
 
-The ring-switching message carries column coordinates. The honest prover uses Boolean evaluation
-tables until Binary Basefold needs a multilinear polynomial. The ring-switching multiplier is
-evaluated by a matrix formula, so the verifier does not construct its Boolean table.
+The batching message carries column coordinates in place of an abstract tensor. The modular
+prefix also sends sum-check polynomials as coefficient arrays. Both honest prefixes use Boolean
+evaluation tables for their witnesses; the opening interprets the packed table as its multilinear
+extension. The Binary Basefold suffix keeps the abstract protocol's message and challenge types.
+The verifier evaluates the ring-switching multiplier by a matrix formula, without constructing
+its Boolean table.
 -/
 
 @[expose] public section
@@ -44,17 +47,19 @@ local instance [Finite K] : Fact (Nat.Prime (ringChar K)) :=
 
 /-- The unchanged family of Binary BaseFold input codeword oracles. -/
 abbrev inputOracleFamily (hRate : ℓ' + R < 2 ^ κ) :=
-  OracleStatement K β (h_ℓ_add_R_rate := hRate) ϑ 0
+  openingOracles K β (ϑ := ϑ) hRate
 
 /-- The Binary BaseFold opening suffix, including its zero-message input adapter. -/
 abbrev openingPSpec (hRate : ℓ' + R < 2 ^ κ) (γ : ℕ) :=
-  (!p[] : ProtocolSpec 0) ++ₚ fullPSpec K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := hRate)
+  openingWire K β (ϑ := ϑ) hRate γ
 
-/-- The batching message and challenge, followed by the Binary Basefold product opening. -/
+/-- The column-coordinate batching message and challenge followed by the Binary Basefold product
+opening. -/
 abbrev unrolledPSpec (hRate : ℓ' + R < 2 ^ κ) (γ : ℕ) :=
   TensorPrefix.Computable.headPSpec L κ ++ₚ openingPSpec (K := K) (ϑ := ϑ) β hRate γ
 
-/-- The full coordinate ring-switching prefix followed by the original Binary BaseFold opening. -/
+/-- The full coordinate ring-switching prefix, including its separate sum-check, followed by the
+original Binary Basefold opening. -/
 abbrev modularPSpec (hRate : ℓ' + R < 2 ^ κ) (γ : ℕ) :=
   TensorPrefix.Computable.ringSwitchPSpec L κ ℓ' ++ₚ openingPSpec (K := K) (ϑ := ϑ) β hRate γ
 
@@ -157,28 +162,50 @@ theorem multiplier_eq (h : ℓ = ℓ' + κ) (hCoordinates : CoordinatesAgree β 
   cases he
   rfl
 
+/-- The evaluation claim and proximity to the packed encoding, stated on Boolean tables. -/
+noncomputable def inputRelation (b : Basis (Fin (2 ^ κ)) K L)
+    (hRate : ℓ' + R < 2 ^ κ) (h : ℓ = ℓ' + κ) :
+    Set ((((Fin ℓ → L) × L) × (∀ j, inputOracleFamily (K := K) (ϑ := ϑ) (⇑b) hRate j)) ×
+      ((Fin ℓ → Fin 2) → K)) :=
+  tableWitnessRelation
+    (TensorPrefix.relIn (biniusProfile κ L K b) h (binaryBasefoldInput κ L K b ℓ' R ϑ hRate))
+
+/-- The evaluation claim and exact packed encoding, stated on Boolean tables. -/
+noncomputable def strictInputRelation (b : Basis (Fin (2 ^ κ)) K L)
+    (hRate : ℓ' + R < 2 ^ κ) (h : ℓ = ℓ' + κ) :
+    Set ((((Fin ℓ → L) × L) × (∀ j, inputOracleFamily (K := K) (ϑ := ϑ) (⇑b) hRate j)) ×
+      ((Fin ℓ → Fin 2) → K)) :=
+  tableWitnessRelation (TensorPrefix.relIn (biniusProfile κ L K b) h
+    (binaryBasefoldInput κ L K b ℓ' R ϑ hRate).strictView)
+
 /-- Run the tensor batching head, then open its product claim with Binary Basefold.
 The coordinate map must agree with the basis used for packing and encoding. -/
 def unrolledReduction (h : ℓ = ℓ' + κ) (hRate : ℓ' + R < 2 ^ κ) (γ : ℕ)
-    (hCoordinates : CoordinatesAgree β coordinates) :=
-  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (TensorPrefix.Computable.headReduction (inputOracleFamily (K := K) (ϑ := ϑ) β hRate)
-      (β ∘ finFunctionFinEquiv) coordinates h)
-    (ProductClaim.openingReduction K β (multiplier β coordinates h hCoordinates)
-      (ProductSumcheck.Statement.claim (m := ℓ')) tableWitnessEquiv γ
-      (ϑ := ϑ) (h_rate := hRate))
+    (hCoordinates : CoordinatesAgree β coordinates) :
+    OracleProof []ₒ ((Fin ℓ → L) × L) (inputOracleFamily (K := K) (ϑ := ϑ) β hRate)
+      ((Fin ℓ → Fin 2) → K) (unrolledPSpec (K := K) (ϑ := ϑ) β hRate γ) :=
+  appendOpeningReduction K β (ϑ := ϑ) hRate
+    (prefixReduction := TensorPrefix.Computable.headReduction
+      (OStmt := inputOracleFamily (K := K) (ϑ := ϑ) β hRate)
+      (basis := β ∘ finFunctionFinEquiv) (coordinates := coordinates) h)
+    (multiplier := multiplier β coordinates h hCoordinates)
+    (toProductClaim := ProductSumcheck.Statement.claim (m := ℓ'))
+    (witnessEquiv := tableWitnessEquiv) γ
 
 /-- Run tensor ring switching, then open the packed evaluation with Binary Basefold.
 The coordinate map must agree with the basis used for packing and encoding.
 Lean erases this proof when compiling the reduction. -/
 def modularReduction (h : ℓ = ℓ' + κ) (hRate : ℓ' + R < 2 ^ κ) (γ : ℕ)
-    (_hCoordinates : CoordinatesAgree β coordinates) :=
-  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (TensorPrefix.Computable.ringSwitchReduction
-      (inputOracleFamily (K := K) (ϑ := ϑ) β hRate)
-      (β ∘ finFunctionFinEquiv) coordinates h)
-    (Opening.openingReduction K β
-      (Opening.contextualQuery (L := L) (ℓ := ℓ') (TensorPrefix.Computable.Context L ℓ κ))
-      tableWitnessEquiv γ (ϑ := ϑ) (h_rate := hRate))
+    (_hCoordinates : CoordinatesAgree β coordinates) :
+    OracleProof []ₒ ((Fin ℓ → L) × L) (inputOracleFamily (K := K) (ϑ := ϑ) β hRate)
+      ((Fin ℓ → Fin 2) → K) (modularPSpec (K := K) (ϑ := ϑ) β hRate γ) :=
+  appendOpeningReduction K β (ϑ := ϑ) hRate
+    (prefixReduction := TensorPrefix.Computable.ringSwitchReduction
+      (OStmt := inputOracleFamily (K := K) (ϑ := ϑ) β hRate)
+      (basis := β ∘ finFunctionFinEquiv) (coordinates := coordinates) h)
+    (multiplier := evalMultiplier)
+    (toProductClaim := Opening.toProductClaim ∘
+      Opening.contextualQuery (L := L) (ℓ := ℓ') (TensorPrefix.Computable.Context L ℓ κ))
+    (witnessEquiv := tableWitnessEquiv) γ
 
 end Binius.FRIBinius.Executable

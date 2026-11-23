@@ -873,8 +873,9 @@ home_page/            site assets and assembled website root
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - `ProofSystem/Binius/` holds the Binary Basefold protocol and its tensor-prefix frontend.
-  `BinaryBasefold/Prelude/` and `Code` provide folding algebra and unique decoding;
-  `Basic`, `OracleSpec`, `Spec` and `Relations` define protocol indices, messages and relations.
+  `BinaryBasefold/Prelude` defines the reference first codeword and proves the folding identities;
+  `Prelude/` implements the domain and folding operations, and `Code` provides unique decoding.
+  `Basic`, `Spec` and `Relations` define protocol indices, messages and relations.
   `Soundness/` proves incremental folding and repeated-query bounds. `ReductionLogic` and
   `Steps/` connect those statements to oracle reductions; `CoreInteractionPhase/` composes the
   steps, `QueryPhase/` implements proximity queries and `General` composes the full protocol.
@@ -889,11 +890,15 @@ home_page/            site assets and assembled website root
   prefix reduction with Binary Basefold opening. `FRIBinius/Unrolled/` is DP24 Construction 5.1:
   the tensor batching head (`TensorPrefix.headVerifier`) followed by `ProductClaim.openingVerifier`
   at the ring-switching multiplier, so a single sum-check serves both ring switching and folding.
-  `Spec` bounds its challenge errors by DP24 equation (43). `FRIBinius/Executable` provides
-  modular and unrolled reductions with computable basis coordinates. `Executable/Witness`
-  converts Boolean evaluation tables to multilinear polynomials. The verifier agreement
-  theorems compare results after decoding the ring-switching prefix of each complete transcript.
-  The security theorems use the abstract reductions. See the
+  `Spec` bounds its challenge errors by DP24 equation (43). `FRIBinius/Protocol` composes
+  the prefix and opening for either representation. `FRIBinius/Executable` takes a coordinate
+  map with a proof that it agrees with the basis and interprets Boolean tables as multilinear
+  polynomials.
+  `Executable/Completeness` proves perfect completeness on exact encodings.
+  `Executable/Soundness` uses the same slotwise decoders as the verifier-agreement proofs to
+  transfer the original per-challenge errors and concrete soundness bounds. Decoder data and
+  composition live in `OracleReduction/ProtocolSpec/TranscriptMap`; the transport theorem lives
+  in `OracleReduction/Security/TranscriptMap`. See the
   [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
@@ -1056,11 +1061,12 @@ home_page/            site assets and assembled website root
   (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`), with the
   recovery obligation proven generically. Hachi's `Commitments/Functional/Hachi/RingSwitch/`
   is its cyclotomic instance, with law-discharge lemmas in
-  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. What the two families share lives at the
-  folder top level — the check-then-update round-shape verifiers (`RoundVerifiers.lean`,
-  over the `pSpecScalar` wire shape and the one-message `pSpecMessage` wire) and the
-  embed-and-evaluate transport algebra (`Transport/Eval.lean`, `Transport/Coeffs.lean`) — plus the
-  committed-scalar seam under `OracleReduction/`.
+  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. The families share the embed-and-evaluate
+  transport algebra (`Transport/Eval.lean`, `Transport/Coeffs.lean`) and the committed-scalar
+  seam under `OracleReduction/`. `ProtocolSpec/ScalarRound.lean` defines the shared one-message
+  and message–challenge wires. The corresponding prover and verifier constructors live in
+  `OracleReduction/ScalarRound.lean`; `RoundVerifiers.lean` re-exports them for the ring-switching
+  modules.
   Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
   `proof_systems/ring_switching.tex`. Structured sum-check support lives in
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`; the round algebra

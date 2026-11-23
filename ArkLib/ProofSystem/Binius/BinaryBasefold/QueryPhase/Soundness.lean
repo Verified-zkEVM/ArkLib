@@ -83,17 +83,21 @@ private theorem step_closed_success (γ : ℕ)
     · simp [hk, hc, guard_eq] at h
   · exact ⟨fun hpos => False.elim (hk hpos), by simpa [hk, guard_eq] using h⟩
 
-private def closedStep (γ : ℕ)
+/-- Run one block check against the supplied oracle words and transcript messages. -/
+private def simulateBlockCheck (γ : ℕ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (messages : ∀ i, (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i)
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (k : Fin (ℓ / ϑ)) (cur : L) : OptionT (OracleComp.{0, 0, 0} []ₒ) L :=
-  OptionT.mk (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
-    (checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k cur v stmt).run)
+  let oracleImpl := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages
+  let blockCheck := checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k cur v stmt
+  OptionT.mk (simulateQ oracleImpl blockCheck.run)
 
+/-- Every block before `i` passes its logical check, and `cur` is the preceding block's fold
+when there is a preceding block. -/
 private def PrefixInvariant
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
@@ -111,7 +115,7 @@ private theorem prefixInv_step (γ : ℕ)
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (cur next : L) (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (hinv : PrefixInvariant 𝔽q β oStmt v stmt k.val cur)
-    (h : some next ∈ support (closedStep 𝔽q β γ oStmt messages v stmt k cur).run) :
+    (h : some next ∈ support (simulateBlockCheck 𝔽q β γ oStmt messages v stmt k cur).run) :
     PrefixInvariant 𝔽q β oStmt v stmt (k.val + 1) next := by
   have hs := step_closed_success 𝔽q β γ oStmt messages k v cur next stmt h
   have hkcheck : LogicalCheckSingleFoldingStep 𝔽q β oStmt k v stmt := by
@@ -140,7 +144,7 @@ private theorem closed_fold_prefix (γ : ℕ)
     (hlist : List.finRange (ℓ / ϑ) = pref ++ xs)
     (cur final : L) (hinv : PrefixInvariant 𝔽q β oStmt v stmt pref.length cur)
     (h : final ∈ support (xs.foldlM
-      (fun c k => closedStep 𝔽q β γ oStmt messages v stmt k c) cur)) :
+      (fun c k => simulateBlockCheck 𝔽q β γ oStmt messages v stmt k c) cur)) :
     PrefixInvariant 𝔽q β oStmt v stmt (ℓ / ϑ) final := by
   induction xs generalizing pref cur with
   | nil =>
@@ -177,25 +181,25 @@ private theorem repetition_simulate (γ : ℕ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v stmt final).run =
     (do
       let c ← (List.finRange (ℓ / ϑ)).foldlM
-        (fun c k => closedStep 𝔽q β γ oStmt messages v stmt k c) 0
+        (fun c k => simulateBlockCheck 𝔽q β γ oStmt messages v stmt k c) 0
       guard (c = final) : OptionT (OracleComp.{0, 0, 0} []ₒ) Unit).run := by
   classical
   change (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
     (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
       v stmt final) : OptionT (OracleComp.{0, 0, 0} []ₒ) Unit) = _
-  dsimp only [checkSingleRepetition]
+  dsimp only [checkSingleRepetition, QueryProgram.checkRepetitionBlocks]
   rw [simulateQ_optionT_bind, simulateQ_optionT_list_forIn]
-  simp only [simulateQ_optionT_bind, simulateQ_optionT_pure, Fin.eta]
+  simp only [simulateQ_optionT_bind, simulateQ_optionT_pure]
   have hloop : (forIn (List.finRange (ℓ / ϑ)) (0 : L) (fun k c => do
-      let next ← closedStep 𝔽q β γ oStmt messages v stmt k c
+      let next ← simulateBlockCheck 𝔽q β γ oStmt messages v stmt k c
       pure (ForInStep.yield next)) : OptionT (OracleComp.{0, 0, 0} []ₒ) L) =
       (List.finRange (ℓ / ϑ)).foldlM
-        (fun c k => closedStep 𝔽q β γ oStmt messages v stmt k c) 0 := by
+        (fun c k => simulateBlockCheck 𝔽q β γ oStmt messages v stmt k c) 0 := by
     simpa only [map_eq_bind_pure_comp, Function.comp_def, bind_pure] using
       (List.forIn_yield_eq_foldlM
-        (fun k c => closedStep 𝔽q β γ oStmt messages v stmt k c)
+        (fun k c => simulateBlockCheck 𝔽q β γ oStmt messages v stmt k c)
         (fun _ _ x => x) (0 : L) (l := List.finRange (ℓ / ϑ)))
-  simp only [closedStep, OptionT.mk, OptionT.run] at hloop
+  simp only [simulateBlockCheck, OptionT.mk, OptionT.run] at hloop
   rw [hloop]
   congr 1
   funext c
@@ -217,7 +221,7 @@ private theorem repetition_closed_success (γ : ℕ)
   rw [repetition_simulate] at h
   have h' : () ∈ support (do
       let c ← (List.finRange (ℓ / ϑ)).foldlM
-        (fun c k => closedStep 𝔽q β γ oStmt messages v stmt k c) 0
+        (fun c k => simulateBlockCheck 𝔽q β γ oStmt messages v stmt k c) 0
       guard (c = final) : OptionT (OracleComp.{0, 0, 0} []ₒ) Unit) := by
     simpa only [OptionT.mem_support_iff] using h
   rw [mem_support_bind_iff] at h'
@@ -297,7 +301,7 @@ private theorem query_check_simulate (γ : ℕ)
             (tr.challenges ⟨0, rfl⟩ rep) stmt stmt.finalConstant).run) :
               OptionT (OracleComp.{0, 0, 0} []ₒ) Unit)
       pure true : OptionT (OracleComp.{0, 0, 0} []ₒ) Bool) := by
-  dsimp only [queryPhaseLogicStep]
+  dsimp only [queryPhaseLogicStep, QueryProgram.runRepetitions]
   rw [simulateQ_optionT_bind, simulateQ_optionT_list_forIn]
   simp only [simulateQ_optionT_bind, simulateQ_optionT_pure, OptionT.mk, OptionT.run]
 

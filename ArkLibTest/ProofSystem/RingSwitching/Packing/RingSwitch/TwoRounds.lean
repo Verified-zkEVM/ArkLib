@@ -175,7 +175,8 @@ theorem full_accepts (c : bat.Challenge) (z : Fin 2 → F16) :
 /-- The second round extends rather than overwrites the first sampled coordinate. -/
 example (c : bat.Challenge) (z : Fin 2 → F16) : (final c z).challenges = z := by
   funext i
-  fin_cases i <;> simp [final, middle, ProductSumcheck.Round.nextStatement, Fin.snoc]
+  fin_cases i <;> simp [final, middle, ProductSumcheck.Round.nextStatement,
+    ProductSumcheck.Round.appendChallenge, Fin.snoc]
 
 /-- The two-round fixture has total challenge error `3/8`, strictly below one. -/
 example : (∑ i, RingSwitch.rbrError (M := data.ιP → data.E) data 2 bat i) =
@@ -207,8 +208,9 @@ example (c : bat.Challenge) (z : Fin 2 → F16) :
         (middle c z).target := hgood
     have hb : (secondMessage c z).val.eval 0 + (secondMessage c z).val.eval 1 + 1 =
         (middle c z).target := by
-      simpa only [ProductSumcheck.Round.check, badMessage, AddMemClass.coe_add,
-        Polynomial.eval_add, Polynomial.eval_X, add_zero, add_assoc] using h
+      simpa only [ProductSumcheck.Round.check, ProductSumcheck.Round.sumAtZeroOne,
+        badMessage, AddMemClass.coe_add, Polynomial.eval_add, Polynomial.eval_X,
+        add_zero, add_assoc] using h
     rw [hs] at hb
     exact one_ne_zero (add_left_cancel (hb.trans (add_zero _).symm))
   rw [ProductSumcheck.Round.verifier_verify, ite_eq_right hbad]

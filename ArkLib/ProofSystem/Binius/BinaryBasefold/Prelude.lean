@@ -10,6 +10,9 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
 /-!
 # Binary Basefold folding preserves polynomial evaluations
 
+The initial oracle evaluates the novel-basis polynomial whose coefficients are the witness's
+Boolean evaluations, in low-bit-first order.
+
 ## Main statements
 
 * `fold_advances_evaluation_poly`: folding the evaluation of `P⁽ⁱ⁾` over `S⁽ⁱ⁾` gives the
@@ -31,29 +34,55 @@ open OracleSpec ProtocolSpec Polynomial MvPolynomial Binius.BinaryBasefold
 open scoped NNReal Polynomial
 open Finset AdditiveNTT Nat Matrix
 
-noncomputable section       -- expands with 𝔽q in front
+noncomputable section
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L]
-variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
-  [hF₂ : Fact (Fintype.card 𝔽q = 2)]
-local instance instFactPrimeRingCharPrelude [Finite 𝔽q] : Fact (Nat.Prime (ringChar 𝔽q)) :=
-  ⟨CharP.prime_ringChar 𝔽q⟩
-variable [Algebra 𝔽q L]
+
+local instance instFactPrimeRingCharPrelude (K : Type) [Field K] [Finite K] :
+    Fact (Nat.Prime (ringChar K)) := ⟨CharP.prime_ringChar K⟩
+
+section OracleEvaluation
+
+variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [Algebra 𝔽q L]
 variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
-  [h_β₀_eq_1 : Fact (β 0 = 1)]
-variable {ℓ 𝓡 : ℕ} [NeZero 𝓡]
-variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
-
-
-section Essentials
-
-section FoldTheory
+variable {ℓ 𝓡 : ℕ} {h_ℓ_add_R_rate : ℓ + 𝓡 < r}
 
 /-- Evaluates polynomial P on the domain S⁽ʲ⁾.
     This function is index-agnostic: logic doesn't change based on the round. -/
 def polyToOracleFunc {domainIdx : Fin r} (P : Polynomial L) :
     (sDomain 𝔽q β h_ℓ_add_R_rate domainIdx) → L :=
   fun y => P.eval y.val
+
+end OracleEvaluation
+
+/-- The initial novel-basis encoding, evaluated on the initial code domain. -/
+def firstOracleEncoding (K : Type) [Field K] [Fintype K] [Fact (Fintype.card K = 2)]
+    [Algebra K L] (β : Fin r → L) [Fact (LinearIndependent K β)]
+    {ℓ 𝓡 : ℕ} {h_ℓ_add_R_rate : ℓ + 𝓡 < r} (t : MultilinearPoly L ℓ) :
+    sDomain K β h_ℓ_add_R_rate 0 → L :=
+  polyToOracleFunc K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0)
+    (polynomialFromNovelCoeffsF₂ K β ℓ (by omega)
+      (fun ω => t.val.eval (bitsOfIndex ω)))
+
+variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
+  [hF₂ : Fact (Fintype.card 𝔽q = 2)]
+variable [Algebra 𝔽q L]
+variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
+  [h_β₀_eq_1 : Fact (β 0 = 1)]
+variable {ℓ 𝓡 : ℕ} [NeZero 𝓡]
+variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
+
+omit [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero 𝓡] in
+/-- The encoding of the zero multilinear polynomial is the zero word. -/
+theorem firstOracleEncoding_zero :
+    firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (0 : MultilinearPoly L ℓ) = 0 := by
+  funext x
+  simp [firstOracleEncoding, polyToOracleFunc, polynomialFromNovelCoeffsF₂,
+    polynomialFromNovelCoeffs]
+
+section Essentials
+
+section FoldTheory
 
 omit [DecidableEq 𝔽q]  in
 /-- If `f⁽ⁱ⁾` is the evaluation of `P⁽ⁱ⁾(X)` over `S⁽ⁱ⁾`, then `fold(f⁽ⁱ⁾, r_chal)` is the
@@ -161,13 +190,9 @@ theorem iteratedFold_advances_evaluation_poly
     simp only
     have h_i_eq_destIdx : i = destIdx := by omega
     subst h_i_eq_destIdx
-    dsimp only [iteratedFold, reduceAdd, Fin.val_castSucc, Fin.val_succ, Lean.Elab.WF.paramLet,
-      id_eq, Fin.reduceLast, Fin.coe_ofNat_eq_mod, reduceMod, Nat.add_zero, Fin.eta,
-      Fin.dfoldl_zero, Nat.pow_zero, multilinearWeight, Fin.val_eq_zero, zero_testBit,
-      Bool.false_eq_true]
-    simp only [univ_unique, Fin.default_eq_zero, Fin.isValue, univ_eq_empty, Fin.val_eq_zero,
-      zero_testBit, Bool.false_eq_true, ↓reduceIte, prod_empty, mul_one, add_zero, one_mul,
-      sum_singleton, Subtype.coe_eta, Fin.dfoldl_zero, Fin.eta]
+    rw [iteratedFold_zero_steps]
+    simp only [Nat.pow_zero, multilinearWeight, univ_unique, Fin.default_eq_zero, Fin.isValue,
+      univ_eq_empty, prod_empty, mul_one, Fin.val_zero, add_zero, one_mul, sum_singleton, cast_eq]
   | succ s ih =>
     intro destIdx h_destIdx h_destIdx_le
     simp only
@@ -282,9 +307,7 @@ with value `t(challenges)`. -/
 lemma iteratedFold_to_level_ℓ_eval
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
-    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => t.val.eval (bitsOfIndex ω))
-    let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+    let f₀ := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t
     let f_ℓ := iteratedFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
       (destIdx := destIdx)
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
@@ -292,7 +315,7 @@ lemma iteratedFold_to_level_ℓ_eval
       f₀ challenges
     f_ℓ = fun _ => t.val.eval challenges := by
   classical
-  intro P₀ f₀ f_ℓ
+  intro f₀ f_ℓ
   funext x
   let coeffs := fun (ω : Fin (2 ^ ℓ)) => t.val.eval (bitsOfIndex ω)
   have h_f_ℓ_eq_poly := iteratedFold_advances_evaluation_poly 𝔽q β
@@ -301,7 +324,7 @@ lemma iteratedFold_to_level_ℓ_eval
     (h_destIdx_le := by omega) (coeffs := coeffs) (r_challenges := challenges)
   -- h_f_ℓ_eq_poly says: f_ℓ = polyToOracleFunc P_ℓ where
   -- P_ℓ = intermediateEvaluationPoly with new_coeffs
-  dsimp only [f_ℓ, f₀, P₀, polynomialFromNovelCoeffsF₂]
+  dsimp only [f_ℓ, f₀, firstOracleEncoding, polynomialFromNovelCoeffsF₂]
   rw [←intermediate_poly_P_base 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (h_ℓ := by omega) (coeffs := coeffs)]
   -- Now f_ℓ x = (polyToOracleFunc P_ℓ) x = P_ℓ.eval x.val, and P_ℓ is constant.
@@ -364,9 +387,7 @@ omit [DecidableEq 𝔽q]  in
 lemma iteratedFold_to_level_ℓ_is_constant
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
-    let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => t.val.eval (bitsOfIndex ω))
-    let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+    let f₀ := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t
     let f_ℓ := iteratedFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
       (destIdx := destIdx)
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
@@ -374,7 +395,7 @@ lemma iteratedFold_to_level_ℓ_is_constant
       f₀ challenges
     ∀ x y, f_ℓ x = f_ℓ y := by
   classical
-  intro P₀ f₀ f_ℓ x y
+  intro f₀ f_ℓ x y
   dsimp only [f_ℓ]
   rw [iteratedFold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_destIdx := by omega)]
 

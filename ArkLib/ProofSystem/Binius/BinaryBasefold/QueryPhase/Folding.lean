@@ -57,7 +57,7 @@ theorem queryFiberPoints_simulate (γ : ℕ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v).run =
       pure (some ((⟨Array.finRange (2 ^ ϑ), by simp⟩ : Vector (Fin (2 ^ ϑ)) (2 ^ ϑ)).map
         (logicalQueryFiberPoints 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) oStmt k v))) := by
-  dsimp only [queryFiberPoints]
+  dsimp only [queryFiberPoints, QueryProgram.readBlockFiber]
   apply simulateQ_optionT_vector_mapM_pure
   intro u
   rfl
@@ -97,25 +97,16 @@ lemma iteratedFold_eq_queryFiberPoint_of_strictConsistency
   simp only
   have h_point_eq : extractSuffixFromChallenge 𝔽q β v ⟨↑k * ϑ, by omega⟩ (by simp only; omega) =
       getFiberPoint 𝔽q β k v (extractMiddleFinMask 𝔽q β v ⟨↑k * ϑ, by omega⟩ ϑ) := by
-    -- The key insight: getFiberPoint reconstructs a point in S^i by:
-    -- 1. Taking the suffix at i+ϑ
-    -- 2. Joining it with the fiber index u (the middle ϑ bits)
-    -- 3. Converting back to sDomain
-    -- When u = extractMiddleFinMask v i ϑ, this reconstructs exactly the suffix at i
-    -- Unfold definitions
-    dsimp only [getFiberPoint, getChallengeSuffix, extractSuffixFromChallenge]
-    -- Both sides use iteratedQuotientMap, so we need to show they're applied to the same element
-    have h_aux := iteratedQuotientMap_eq_quotientFiber_extractMiddleFinMask
-      𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := ⟨k.val * ϑ, by have := k_mul_ϑ_lt_ℓ (k := k); omega⟩) (steps := ϑ)
-      (destIdx := ⟨k.val * ϑ + ϑ, by have := k_succ_mul_ϑ_le_ℓ_₂ (k := k); omega⟩)
-      (h_destIdx := rfl) (h_destIdx_le := k_succ_mul_ϑ_le_ℓ_₂ (k := k)) (v := v)
-    exact h_aux
+    -- The middle ϑ bits select the source suffix from the fiber over the destination suffix.
+    exact extractSuffixFromChallenge_eq_getFiberPoint_extractMiddleFinMask 𝔽q β k v
   rw [h_point_eq]
-  rw [polyToOracleFunc_eq_getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (t := ⟨t, h_t_mem_support⟩) (i := Fin.last ℓ)
-    (challenges := stmtIn.challenges) (oStmt := oStmtIn)
-    (h_consistency := h_strictOracleFoldingConsistency)]
+  have hFirstOracle : firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      ⟨t, h_t_mem_support⟩ = getFirstOracle 𝔽q β oStmtIn :=
+    polyToOracleFunc_eq_getFirstOracle 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+      (t := ⟨t, h_t_mem_support⟩) (i := Fin.last ℓ)
+      (challenges := stmtIn.challenges) (oStmt := oStmtIn)
+      (h_consistency := h_strictOracleFoldingConsistency)
+  rw [hFirstOracle]
 
 omit [DecidableEq 𝔽q] in
 /-- Folding a strictly consistent queried fiber returns the next total fold. -/
@@ -163,9 +154,7 @@ lemma logicalComputeFoldedValue_eq_totalFold_of_strictConsistency
   -- Get the equality for k_oracle_idx: oStmtIn k_oracle_idx = iteratedFold from 0 to k.val * ϑ
   have h_f_mid_eq_iterated_fold := h_strictOracleFoldingConsistency k_oracle_idx
   conv_lhs => rw [h_f_mid_eq_iterated_fold]
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => t.eval (bitsOfIndex ω))
-  let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+  let f₀ := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨t, h_t_mem_support⟩
   conv_lhs => simp only [cast_eq, Fin.val_last]
   conv_lhs =>
     rw [iteratedFold_iteratedFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_destIdx := by

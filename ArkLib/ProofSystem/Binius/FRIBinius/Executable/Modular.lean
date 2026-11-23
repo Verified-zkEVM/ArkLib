@@ -27,6 +27,25 @@ variable {K L : Type} [Field K] [Fintype K] [DecidableEq K] [Fact (Fintype.card 
 variable [NeZero ℓ'] [NeZero R] [NeZero ϑ] [Fact (ϑ ∣ ℓ')]
 variable (b : Basis (Fin (2 ^ κ)) K L) [Fact (b 0 = 1)]
 
+omit [Fact (b 0 = 1)] in
+/-- Decode the ring-switching prefix and retain the original opening messages and challenges. -/
+noncomputable def modularTranscriptMap (hRate : ℓ' + R < 2 ^ κ) (γ : ℕ) :
+    TranscriptMap (modularPSpec (K := K) (ϑ := ϑ) (⇑b) hRate γ)
+      (Binius.FRIBinius.RingSwitch.pSpec κ K b (ϑ := ϑ) hRate γ) :=
+  (TensorPrefix.Computable.ringSwitchTranscriptMap (biniusProfile κ L K b)).append
+    (TranscriptMap.refl (openingPSpec (K := K) (ϑ := ϑ) (⇑b) hRate γ))
+
+omit [DecidableEq K] [Fact (Fintype.card K = 2)] [NeZero R] [Fact (b 0 = 1)] in
+/-- Only the modular wire's ring-switching prefix is decoded. -/
+theorem modularTranscriptMap_decodeFull (hRate : ℓ' + R < 2 ^ κ) (γ : ℕ)
+    (tr : (modularPSpec (K := K) (ϑ := ϑ) (⇑b) hRate γ).FullTranscript) :
+    (modularTranscriptMap (ϑ := ϑ) b hRate γ).decodeFull tr =
+      TensorPrefix.Computable.decodeRingSwitchTranscript (biniusProfile κ L K b) tr.fst ++ₜ
+        tr.snd :=
+  TranscriptMap.decodeFull_append
+    (TensorPrefix.Computable.ringSwitchTranscriptMap (biniusProfile κ L K b))
+    (TranscriptMap.refl (openingPSpec (K := K) (ϑ := ϑ) (⇑b) hRate γ)) tr
+
 /-- The executable verifier has the same result as the modular specification on every
 transcript, after decoding the ring-switching prefix and retaining the opening suffix. -/
 theorem modularReduction_verify_eq (coordinates : L → (Fin κ → Fin 2) → K)
@@ -50,8 +69,8 @@ theorem modularReduction_verify_eq (coordinates : L → (Fin κ → Fin 2) → K
     simpa only [P, biniusProfile_basis_repr_eq] using hc
   have hPrefix := TensorPrefix.Computable.ringSwitchReduction_verify_eq P h a
     (⇑b ∘ finFunctionFinEquiv) coordinates hb hCoordinates stmt ost tr.fst
-  unfold modularReduction Binius.FRIBinius.RingSwitch.fullVerifier
-  simp only [OracleReduction.append]
+  unfold modularReduction appendOpeningReduction OracleReduction.append
+    Binius.FRIBinius.RingSwitch.fullVerifier appendOpeningVerifier
   conv_lhs => erw [OracleVerifier.append_toVerifier (Oₛ₃ := fun i : Empty => nomatch i)]
   conv_rhs => erw [OracleVerifier.append_toVerifier (Oₛ₃ := fun i : Empty => nomatch i)]
   simp only [Verifier.append, FullTranscript.append_fst, FullTranscript.append_snd]

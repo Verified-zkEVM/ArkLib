@@ -60,12 +60,13 @@ theorem checkSingleFoldingStep_simulate (γ : ℕ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k v) : OptionT (OracleComp []ₒ) (Vector L (2 ^ ϑ))) =
       (pure vec : OptionT (OracleComp []ₒ) (Vector L (2 ^ ϑ))) :=
     queryFiberPoints_simulate 𝔽q β γ oStmt messages k v
+  dsimp only [queryFiberPoints] at hf
   have hget : vec.get = logicalQueryFiberPoints 𝔽q β oStmt k v := by
     funext u
     simp [vec, Vector.get_eq_getElem]
   change (simulateQ so (checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k c v stmt) : OptionT (OracleComp []ₒ) L) = _
-  dsimp only [checkSingleFoldingStep]
+  dsimp only [checkSingleFoldingStep, QueryProgram.checkAndFoldBlock]
   rw [simulateQ_optionT_bind, hf, pure_bind, hget]
   dsimp only [logicalComputeFoldedValue]
   simp only [guard_eq]

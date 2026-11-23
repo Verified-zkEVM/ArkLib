@@ -6,6 +6,7 @@ Authors: ArkLib Contributors
 import ArkLib.ProofSystem.Binius.FRIBinius.Executable
 import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 import CompPoly.Fields.Binary.Tower.Concrete.Algebra
+import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
 # Compiled FRI-Binius checks
@@ -339,6 +340,41 @@ def basefoldChecks : IO Unit := do
       packedWitnessOne [(15, 0), (3, 0)] fun tr =>
         [(show L from tr.messages ⟨2, by decide⟩).toNat]
 
+/-- Run the query verifier with two width-one blocks and log its reads even on rejection.
+With zero words the first repetition carries zero into the second block. Changing that block's
+word to one forces a carry mismatch before the second repetition can read any oracles. -/
+private def queryObservation (corruptSecondBlock : Bool) (finalConstant : L) :
+    Option Bool × Option (List (ℕ × ℕ)) :=
+  let querySpec := pSpecQuery K basisWord 2 (h_ℓ_add_R_rate := rateTwo)
+  let queryPoint (index : Fin 8) :=
+    finToSDomainExecutable (𝔽q := K) (h_ℓ_add_R_rate := rateTwo)
+      basisWord (0 : Fin 4) (by decide) index
+  let transcript := FullTranscript.mk1 (pSpec := querySpec) ![queryPoint 0, queryPoint 2]
+  let stmt : FinalSumcheckStatementOut (L := L) (ℓ := 2) :=
+    { sumcheck_target := 0, challenges := ![fromNat 2, fromNat 4], finalConstant }
+  let oracles : ∀ j, OracleStatement K basisWord (h_ℓ_add_R_rate := rateTwo) 1 (Fin.last 2) j :=
+    fun j _ => if corruptSecondBlock && j.val == 1 then 1 else 0
+  let verifier := QueryPhase.queryOracleVerifierExecutable K basisWord 2 (ϑ := 1)
+    (h_ℓ_add_R_rate := rateTwo)
+  let program := (verifier.verify (Oₛₒ := noOutputOracle) stmt transcript.challenges).run
+  let (verdict, log) := (simulateQ (OracleInterface.simOracle2 []ₒ oracles transcript.messages)
+    program.withQueryLog).runEmpty
+  let reads := log.mapM fun entry => match entry.1 with
+    | .inr (.inl ⟨block, point⟩) => some (block.val, point.val.toNat)
+    | _ => none
+  (verdict, reads)
+
+/-- Check the expected order in field words, independently of the fiber helpers under test. -/
+private def queryChecks : IO Unit := do
+  let firstRepetition : List (ℕ × ℕ) := [(0, 0), (0, 1), (1, 0), (1, 1)]
+  let secondRepetition : List (ℕ × ℕ) := [(0, 2), (0, 3), (1, 0), (1, 1)]
+  check "query verifier: both repetitions read their fibers in order" fun _ =>
+    queryObservation false 0 == (some true, some (firstRepetition ++ secondRepetition))
+  check "query verifier: carry mismatch prevents the next repetition" fun _ =>
+    queryObservation true 0 == (none, some firstRepetition)
+  check "query verifier: final constant mismatch prevents the next repetition" fun _ =>
+    queryObservation false 1 == (none, some firstRepetition)
+
 open Binius.FRIBinius.Executable in
 /-- The two-block packed polynomial is `10 + 15Y₀Y₁`, with field words for the coefficients.
 The first fold at word `2` yields the Boolean table `[10, 15]`, whose coded values at indices
@@ -424,5 +460,6 @@ def main : IO Unit := do
   BiniusRuntime.packingChecks
   BiniusRuntime.encodingChecks
   BiniusRuntime.basefoldChecks
+  BiniusRuntime.queryChecks
   BiniusRuntime.openingChecks
   BiniusRuntime.wideChecks

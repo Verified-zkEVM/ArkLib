@@ -17,9 +17,10 @@ public import ArkLib.OracleReduction.LogicStep
 # A scalar claim to a product-sumcheck claim
 
 Let `p = ∑ᵢ βᵢ pᵢ` be the packed source, and let `x(q)` and `λᵢ(q)` describe a scalar query.
-The first message decodes to component values `αᵢ`. The verifier checks
-`s = ∑ᵢ λᵢ(q) αᵢ`, then samples `c` and uses the batching weights `wᵤ(c)`. It derives the target
-`∑ᵤ wᵤ(c) · ∑ᵢ repr_E(αᵢ)ᵤ βᵢ` and the public multiplier whose Boolean values are
+The first message decodes to component values `αᵢ`. The verifier samples a fresh challenge `c`
+after that message. To verify the transcript, it checks `s = ∑ᵢ λᵢ(q) αᵢ`. On success it applies
+the batching weights `wᵤ(c)` to obtain the target `∑ᵤ wᵤ(c) · ∑ᵢ repr_E(αᵢ)ᵤ βᵢ`.
+The same weights determine the public multiplier, whose Boolean values are
 `A_c(y) = ∑ᵤ wᵤ(c) · repr_E(eq(x(q), y))ᵤ`.
 
 The transmitted carrier is `M`; an explicit equivalence decodes it to the component family.
@@ -135,30 +136,30 @@ theorem mem_relIn_commit (honest : pc.Honest) (q : layout.Query) (p : layout.Sou
     (((q, layout.eval q p), honest.commit (data.packedMLE (layout.components p))), p) ∈
       relIn data m layout pc := ⟨rfl, honest.commitsTo_commit _⟩
 
-/-- The original source before the message, its packed polynomial afterwards, then the challenge. -/
-def OracleState {ι : Type} (OStmt : ι → Type) : Fin 3 → Type
-  | ⟨0, _⟩ => (Input data m layout × (∀ j, OStmt j)) × layout.Source
-  | ⟨1, _⟩ => ((Input data m layout × (∀ j, OStmt j)) × data.P⦃≤ 1⦄[X Fin m]) ×
-      (data.ιP → data.E)
-  | _ => (((Input data m layout × (∀ j, OStmt j)) × data.P⦃≤ 1⦄[X Fin m]) ×
-      (data.ιP → data.E)) × rule.Challenge
+/-- Before sending the message, the prover holds the source. After sending it, the prover retains
+the packed polynomial and the component values. The final state also records the challenge. -/
+def OracleState {ι : Type} (OStmt : ι → Type) : Fin 3 → Type :=
+  scalarRoundProverState
+    (Input := (Input data m layout × (∀ j, OStmt j)) × layout.Source)
+    (Sent := ((Input data m layout × (∀ j, OStmt j)) × data.P⦃≤ 1⦄[X Fin m]) ×
+      (data.ιP → data.E))
+    (Challenge := rule.Challenge)
 
-/-- The honest round algorithm depends only on the oracle family, independently of compatibility. -/
+/-- This prover depends on the oracle family, not its commitment compatibility relation.
+The prover encodes the component evaluations in the carrier and caches the evaluations with the
+packed polynomial. After receiving the challenge, it batches the cached values and forwards
+the packed polynomial and original oracle statements. -/
 def proverForOracles {ι : Type} (OStmt : ι → Type) :
     OracleProver []ₒ (Input data m layout) OStmt layout.Source
-    (Output data m layout rule) OStmt data.P⦃≤ 1⦄[X Fin m] (pSpec (M := M) data rule) where
-  PrvState := OracleState data m layout rule OStmt
-  input := id
-  sendMessage
-    | ⟨0, _⟩ => fun ((stmt, ost), p) => pure
-      (messageEquiv.symm (partials data m layout stmt.1 p),
-        (((stmt, ost), data.packedMLE (layout.components p)), partials data m layout stmt.1 p))
-    | ⟨1, h⟩ => fun _ => nomatch h
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h
-    | ⟨1, _⟩ => fun st => pure fun c => (st, c)
-  output := fun ((((stmt, ost), p), α), c) =>
-    pure ((nextStatement data m layout rule stmt α c, ost), p)
+    (Output data m layout rule) OStmt data.P⦃≤ 1⦄[X Fin m] (pSpec (M := M) data rule) :=
+  scalarRoundOracleProver (oSpec := []ₒ) (OStmt := OStmt)
+    (prepare := fun ((stmtIn, oStmtIn), source) =>
+      let componentValues := partials data m layout stmtIn.1 source
+      let packedPoly := data.packedMLE (layout.components source)
+      (messageEquiv.symm componentValues, (((stmtIn, oStmtIn), packedPoly), componentValues)))
+    (finish := fun (((stmtIn, oStmtIn), packedPoly), componentValues) batchingChallenge =>
+      let stmtOut := nextStatement data m layout rule stmtIn componentValues batchingChallenge
+      ((stmtOut, oStmtIn), packedPoly))
 
 /-- The honest state family at a fixed commitment oracle interface. -/
 abbrev ProverState := OracleState data m layout rule pc.OStmt
@@ -167,12 +168,14 @@ abbrev ProverState := OracleState data m layout rule pc.OStmt
 def prover := proverForOracles data m layout messageEquiv rule pc.OStmt
 
 open scoped Classical in
-/-- Reject a failed reconstruction and otherwise return the derived batched claim. -/
+/-- Check reconstruction against the decoded component values. On success, use the recorded
+challenge to return the batched claim for the same values; otherwise reject. -/
 def verifier : OracleVerifier []ₒ (Input data m layout) pc.OStmt
     (Output data m layout rule) pc.OStmt (pSpec (M := M) data rule) :=
   scalarRoundOracleVerifier (oSpec := []ₒ) (OStmt := pc.OStmt)
-    (fun stmt z => check data m layout stmt (messageEquiv z))
-    (fun stmt z c => nextStatement data m layout rule stmt (messageEquiv z) c)
+    (check := fun stmtIn carrier => check data m layout stmtIn (messageEquiv carrier))
+    (accept := fun stmtIn carrier batchingChallenge =>
+      nextStatement data m layout rule stmtIn (messageEquiv carrier) batchingChallenge)
 
 /--
 The reusable scalar-claim reduction, parameterized by both algebras, the message encoding and the
@@ -186,8 +189,9 @@ open scoped Classical in
 /-- The exact guard and accepted output of the verifier. -/
 def guardedForm : (verifier data m layout messageEquiv rule pc).toVerifier.GuardedForm :=
   scalarRoundOracleVerifierGuardedForm (oSpec := []ₒ) (OStmt := pc.OStmt)
-    (fun stmt z => check data m layout stmt (messageEquiv z))
-    (fun stmt z c => nextStatement data m layout rule stmt (messageEquiv z) c)
+    (check := fun stmtIn carrier => check data m layout stmtIn (messageEquiv carrier))
+    (accept := fun stmtIn carrier batchingChallenge =>
+      nextStatement data m layout rule stmtIn (messageEquiv carrier) batchingChallenge)
 
 omit [Algebra B C] [IsScalarTower B data.P C] in
 open scoped Classical in
@@ -253,28 +257,8 @@ theorem prover_run (stmt : Input data m layout) (ost : ∀ j, pc.OStmt j) (p : l
         (messageEquiv.symm (partials data m layout stmt.1 p)) c,
         ((nextStatement data m layout rule stmt (partials data m layout stmt.1 p) c, ost),
           data.packedMLE (layout.components p)))) := by
-  have h0 : (pSpec (M := M) data rule).dir 0 = .P_to_V := rfl
-  have h1 : (pSpec (M := M) data rule).dir 1 = .V_to_P := rfl
-  simp only [Prover.run, Prover.runToRound, Fin.induction_two,
-    Prover.processRound_of_dir_eq_P_to_V 0 h0,
-    Prover.processRound_of_dir_eq_V_to_P 1 h1]
-  simp only [prover, proverForOracles, id_eq, pure_bind, liftM_pure, bind_pure_comp,
-    LawfulApplicative.map_pure, getChallenge]
-  simp only [liftM, map_eq_bind_pure_comp, bind_assoc]
-  apply bind_congr
-  intro c
-  change (pure
-    (((default : (pSpec (M := M) data rule).Transcript 0).concat (m := 0)
-        (messageEquiv.symm (partials data m layout stmt.1 p))).concat (m := 1) c,
-      ((nextStatement data m layout rule stmt (partials data m layout stmt.1 p) c, ost),
-        data.packedMLE (layout.components p))) :
-    OracleComp ([]ₒ + [(pSpec (M := M) data rule).Challenge]ₒ) _) = _
-  congr 1
-  exact congrArg (fun tr => (tr,
-    ((nextStatement data m layout rule stmt (partials data m layout stmt.1 p) c, ost),
-      data.packedMLE (layout.components p))))
-    (FullTranscript.mk2_eq_snoc_snoc (pSpec := pSpec (M := M) data rule)
-      (messageEquiv.symm (partials data m layout stmt.1 p)) c).symm
+  unfold prover proverForOracles
+  exact scalarRoundOracleProver_run (oSpec := []ₒ) _ _ stmt ost p
 
 /-- Perfect completeness at every initial oracle state, for every challenge sampled by the phase. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
@@ -343,16 +327,16 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
       (relIn data m layout pc) (relOut data m layout rule pc) (extractor (M := M) data m layout rule
         pc) where
   toFun
-    | ⟨0, _⟩ => fun stmt _ p => (stmt, p) ∈ relIn data m layout pc
-    | ⟨1, _⟩ => fun stmt tr p => beforeChallenge data m layout pc stmt.1 stmt.2 (messageEquiv (tr
-      0)) p
-    | ⟨2, _⟩ => fun stmt tr p => afterChallenge data m layout rule pc stmt.1 stmt.2 (messageEquiv
-      (tr 0)) (tr 1) p
+    | ⟨0, _⟩ => fun stmt _ witIn => (stmt, witIn) ∈ relIn data m layout pc
+    | ⟨1, _⟩ => fun (stmtIn, oStmtIn) tr packedPoly =>
+      beforeChallenge data m layout pc stmtIn oStmtIn (messageEquiv (tr 0)) packedPoly
+    | ⟨2, _⟩ => fun (stmtIn, oStmtIn) tr packedPoly =>
+      afterChallenge data m layout rule pc stmtIn oStmtIn (messageEquiv (tr 0)) (tr 1) packedPoly
   toFun_empty _ _ h := h
   toFun_next
-    | ⟨0, _⟩ => fun _ stmt _tr α p h =>
-      mem_relIn_of_check_of_openingClaimRel data m layout pc stmt.1 stmt.2 (messageEquiv α) p h.1
-        h.2.2 h.2.1
+    | ⟨0, _⟩ => fun _ (stmtIn, oStmtIn) _ carrier packedPoly ⟨hCheck, hCommitsTo, hOpening⟩ =>
+      mem_relIn_of_check_of_openingClaimRel data m layout pc stmtIn oStmtIn
+        (messageEquiv carrier) packedPoly hCheck hOpening hCommitsTo
     | ⟨1, _⟩ => fun hdir => nomatch hdir
   toFun_full stmt tr p h := by
     classical

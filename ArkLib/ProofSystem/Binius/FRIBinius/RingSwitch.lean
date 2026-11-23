@@ -7,21 +7,22 @@ module
 
 public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
-public import ArkLib.ProofSystem.Binius.BinaryBasefold.Opening
+public import ArkLib.ProofSystem.Binius.FRIBinius.Protocol
 
 /-!
 # Prefix ring switching followed by Binary Basefold
 
-The frontend is the shared scalar ring-switching protocol at Binius's tensor profile. Its
-original carrier message is followed by the shared product sumcheck and matrix terminal check.
-The same packed polynomial and its first oracle then enter the Binary Basefold
-opening. That opening's zero-round frontier discards the retained query context while
-formatting the evaluation claim; no additional formatting phase is inserted.
+The frontend is the shared scalar ring-switching protocol at Binius's tensor profile. It sends
+an abstract tensor, the batching challenge, the product sum-check messages and challenges, and
+the claimed packed evaluation for the terminal matrix check. The packed polynomial and unchanged
+input oracle then enter the Binary Basefold opening. Its zero-message adapter discards the retained
+source query and batching challenge and formats the packed evaluation as a product claim with the
+equality multiplier.
 
 Completeness uses exact first-codeword encodings. Round-by-round knowledge soundness
 uses unique-radius compatibility, whose functionality follows from encoding injectivity and code
-distance. The challenge
-errors are the frontend's exact `κ/|L| + 2ℓ'/|L|` and the opening's error function.
+distance. The prefix contributes `κ/|L| + 2ℓ'/|L|` to the sum of the per-challenge error bounds;
+the opening contributes its own sum.
 `fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness` combines both guarantees
 with the total-error bound.
 
@@ -47,7 +48,7 @@ variable {ℓ ℓ' R ϑ : ℕ} [NeZero ℓ'] [NeZero R] [NeZero ϑ] [Fact (ϑ �
 /-- The first-oracle relation of the packed polynomial. -/
 abbrev inputInterface := binaryBasefoldInput κ L K β ℓ' R ϑ h_rate
 
-/-- The source query and batching challenge retained until the opening frontier. -/
+/-- The source query and batching challenge retained until the opening's zero-message adapter. -/
 abbrev Context := (Fin ℓ → L) × (Fin κ → L)
 
 omit [SampleableType L] [DecidableEq K] [NeZero R] in
@@ -83,10 +84,10 @@ theorem opening_strict_input_eq :
   ext x
   rfl
 
-/-- The original carrier wire and product sumcheck followed by the opening wire. -/
+/-- The abstract tensor ring-switching wire, including its separate sum-check, followed by
+`openingWire`. -/
 abbrev pSpec (γ : ℕ) := TensorPrefix.pSpec (biniusProfile κ L K β) (ℓ' := ℓ') ++ₚ
-  ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
-    (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
+  openingWire K β (ϑ := ϑ) h_rate γ
 
 instance (γ : ℕ) : ∀ j, OracleInterface
     ((pSpec κ K β (ϑ := ϑ) h_rate γ).Message j) :=
@@ -104,19 +105,27 @@ instance (γ : ℕ) : ∀ j, SampleableType
 
 variable [Fact (β 0 = 1)]
 
-/-- The frontend followed by the concrete opening verifier. -/
-def fullVerifier (γ : ℕ) := OracleVerifier.append
-  (Oₛ₃ := fun i : Empty => nomatch i)
-  (verifier κ K β h_rate h_dim)
-  (BinaryBasefold.Opening.contextualVerifier K β (Context κ (L := L) (ℓ := ℓ)) γ
-    (ϑ := ϑ) (h_rate := h_rate))
+/-- Verify ring switching, then open the resulting packed evaluation with the equality
+multiplier. -/
+def fullVerifier (γ : ℕ) :
+    OracleProofVerifier []ₒ ((Fin ℓ → L) × L) (openingOracles K β (ϑ := ϑ) h_rate)
+      (pSpec κ K β (ϑ := ϑ) h_rate γ) :=
+  appendOpeningVerifier K β (ϑ := ϑ) h_rate
+    (prefixVerifier := verifier κ K β h_rate h_dim)
+    (multiplier := BinaryBasefold.evalMultiplier)
+    (toProductClaim := BinaryBasefold.Opening.toProductClaim ∘
+      BinaryBasefold.Opening.contextualQuery (L := L) (ℓ := ℓ') (Context κ (L := L) (ℓ := ℓ))) γ
 
 /-- The frontend and opening provers share the same packed-polynomial witness. -/
-def fullReduction (γ : ℕ) := OracleReduction.append
-  (Oₛ₃ := fun i : Empty => nomatch i)
-  (reduction κ K β h_rate h_dim)
-  (BinaryBasefold.Opening.contextualReduction K β (Context κ (L := L) (ℓ := ℓ)) γ
-    (ϑ := ϑ) (h_rate := h_rate))
+def fullReduction (γ : ℕ) :
+    OracleProof []ₒ ((Fin ℓ → L) × L) (openingOracles K β (ϑ := ϑ) h_rate) (MultilinearPoly K ℓ)
+      (pSpec κ K β (ϑ := ϑ) h_rate γ) :=
+  appendOpeningReduction K β (ϑ := ϑ) h_rate
+    (prefixReduction := reduction κ K β h_rate h_dim)
+    (multiplier := BinaryBasefold.evalMultiplier)
+    (toProductClaim := BinaryBasefold.Opening.toProductClaim ∘
+      BinaryBasefold.Opening.contextualQuery (L := L) (ℓ := ℓ') (Context κ (L := L) (ℓ := ℓ)))
+    (witnessEquiv := Equiv.refl _) γ
 
 /-- Each full-protocol challenge keeps its component's error bound. -/
 def fullError (γ : ℕ) : (pSpec κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ).ChallengeIdx → ℝ≥0 :=

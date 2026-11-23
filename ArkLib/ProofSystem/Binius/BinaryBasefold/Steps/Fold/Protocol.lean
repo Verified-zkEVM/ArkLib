@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.ReductionLogic
 public import ArkLib.OracleReduction.Composition.Sequential.GuardedCompleteness
+public import ArkLib.OracleReduction.ScalarRound
 
 /-!
 # Binary Basefold: the fold step
@@ -72,25 +73,16 @@ def foldOracleProver (i : Fin ℓ) :
     (StmtOut := Statement (L := L) Context i.succ)
     (OStmtOut := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
     (WitOut := Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.succ)
-    (pSpec := pSpecFold (L := L)) where
-  PrvState := FoldProverState 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-  input := fun ⟨⟨stmt, oStmt⟩, wit⟩ => (stmt, oStmt, wit)
-  sendMessage
-  | ⟨0, _⟩ => fun ⟨stmt, oStmt, wit⟩ => do
-    let h_i := foldProverComputeMsg (L := L) 𝔽q β
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i wit
-    pure ⟨h_i, (stmt, oStmt, wit, h_i)⟩
-  | ⟨1, _⟩ => by contradiction
-  receiveChallenge
-  | ⟨0, h⟩ => nomatch h
-  | ⟨1, _⟩ => fun ⟨stmt, oStmt, wit, h_i⟩ => do
-    pure (fun r_i' => (stmt, oStmt, wit, h_i, r_i'))
-  output := fun finalPrvState =>
-    let (stmt, oStmt, wit, h_i, r_i') := finalPrvState
-    let t := FullTranscript.mk2 (pSpec := pSpecFold (L := L)) h_i r_i'
-    pure ((foldStepLogic 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).proverOut
-        stmt wit oStmt t)
+    (pSpec := pSpecFold (L := L)) :=
+  let step := foldStepLogic 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i
+  RingSwitching.scalarRoundOracleProver
+    (prepare := fun ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ =>
+      let h_i := foldProverComputeMsg (L := L) 𝔽q β
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i witIn
+      (h_i, (stmtIn, oStmtIn, witIn, h_i)))
+    (finish := fun ⟨stmtIn, oStmtIn, witIn, h_i⟩ r_i' =>
+      step.proverOut stmtIn witIn oStmtIn (FullTranscript.mk2 h_i r_i'))
 
 /-- The verifier of the `i`-th fold step: it queries the round polynomial, guards on
 `foldStepLogic`'s check, and outputs its output statement. The oracle statements pass through. -/
@@ -103,20 +95,18 @@ def foldOracleVerifier (i : Fin ℓ) :
     (StmtOut := Statement (L := L) Context i.succ)
     (OStmtOut := OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
-    (pSpec := pSpecFold (L := L)) where
-  verify := fun stmtIn pSpecChallenges => do
-    let h_i ← query (spec := [(pSpecFold (L := L)).Message]ₒ) ⟨⟨0, by rfl⟩, (by exact ())⟩
-    let r_i' := pSpecChallenges ⟨1, rfl⟩
-    let t := FullTranscript.mk2 h_i r_i'
-    let logic := (foldStepLogic 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i)
-    let : Decidable (logic.verifierCheck stmtIn t) := by
-      dsimp only [logic, foldStepLogic, foldVerifierCheck]
+    (pSpec := pSpecFold (L := L)) :=
+  let step := foldStepLogic 𝔽q β (ϑ := ϑ)
+    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i
+  let checkDecidable : ∀ stmt h_i, Decidable (foldVerifierCheck i stmt (𝓑 := 𝓑) h_i) :=
+    fun _ _ => by
+      unfold foldVerifierCheck
       infer_instance
-    guard (logic.verifierCheck stmtIn t)
-    pure (logic.verifierOut stmtIn t)
-  outputOracle := (foldStepLogic 𝔽q β (ϑ := ϑ)
-    (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).outputOracle
+  RingSwitching.scalarRoundOracleVerifier (oSpec := []ₒ) (C := L)
+    (OStmt := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    (check := fun stmt h_i => foldVerifierCheck i stmt (𝓑 := 𝓑) h_i)
+    (hcheck := checkDecidable)
+    (accept := fun stmt h_i r_i' => step.verifierOut stmt (FullTranscript.mk2 h_i r_i'))
 
 /-- The oracle reduction of the `i`-th fold step. -/
 def foldOracleReduction (i : Fin ℓ) :
@@ -139,17 +129,11 @@ def foldOracleReduction (i : Fin ℓ) :
 the sent round polynomial and the challenge, with the unchanged oracle statements. -/
 def foldOracleVerifierGuardedForm (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).toVerifier.GuardedForm :=
-  Verifier.GuardedForm.ofQueryGuard _ ⟨⟨0, rfl⟩, ()⟩
-    (fun s a c => (foldStepLogic 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).verifierCheck
-        s (FullTranscript.mk2 a (c ⟨1, rfl⟩)))
-    (hcheck := fun _ _ _ => by
-      dsimp only [foldStepLogic, foldVerifierCheck]
-      infer_instance)
-    (fun s a c => (foldStepLogic 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (multpoly := multpoly) i).verifierOut
-        s (FullTranscript.mk2 a (c ⟨1, rfl⟩))) (fun _ _ => rfl)
+      (multpoly := multpoly) i).toVerifier.GuardedForm := by
+  unfold foldOracleVerifier
+  exact RingSwitching.scalarRoundOracleVerifierGuardedForm (oSpec := []ₒ) (C := L)
+    (OStmt := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.castSucc)
+    _ (hcheck := _) _
 
 omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 open Classical in
@@ -227,20 +211,9 @@ theorem foldOracleReduction_perfectCompleteness (i : Fin ℓ) :
         (multpoly := multpoly) i).run (stmt, oracles) wit = (sample >>= fun c =>
         pure (FullTranscript.mk2 (pSpec := pSpecFold (L := L)) msg c,
           step.proverOut stmt wit oracles (FullTranscript.mk2 msg c))) := by
-      simp only [pSpecFold, ChallengeIdx, Challenge, Prover.run, Fin.reduceLast, foldOracleProver,
-        Fin.isValue, MessageIdx, Message, Fin.castSucc_zero, Fin.succ_zero_eq_one,
-        Fin.castSucc_one, Fin.succ_one_eq_two, Prover.runToRound, Nat.reduceAdd,
-        Fin.induction_two', Prover.processRound, bind_pure_comp, pure_bind, liftM_pure,
-        LawfulApplicative.map_pure, HasQuery.instOfMonadLift_query, sample, msg, step]
-      change (sample >>= fun c => pure
-        (((default : (pSpecFold (L := L)).Transcript 0).concat (m := 0) msg).concat (m := 1) c,
-          step.proverOut stmt wit oracles (FullTranscript.mk2 msg c))) = _
-      conv_rhs => rw [map_eq_bind_pure_comp]
-      apply bind_congr
-      intro c
-      congr 1
-      exact congrArg (fun tr => (tr, step.proverOut stmt wit oracles (FullTranscript.mk2 msg c)))
-        (FullTranscript.mk2_eq_snoc_snoc (pSpec := pSpecFold (L := L)) msg c).symm
+      unfold foldOracleProver
+      rw [RingSwitching.scalarRoundOracleProver_run]
+      rfl
     dsimp only [foldOracleReduction] at hq
     rw [hp] at hq
     obtain ⟨c, _, hq⟩ := (mem_support_bind_iff _ _ _).mp hq

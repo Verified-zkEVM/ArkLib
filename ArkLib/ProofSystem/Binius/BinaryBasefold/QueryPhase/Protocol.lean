@@ -67,6 +67,20 @@ open scoped NNReal ProbabilityTheory
 
 section FinalQueryRoundIOR
 
+namespace QueryProgram
+
+/-- Check the supplied query points in repetition order. A failed check stops the loop and
+rejects; if every check succeeds, return `true`. -/
+def runRepetitions {ι QueryPoint : Type} {spec : OracleSpec ι}
+    (queryPoints : Fin γ_repetitions → QueryPoint)
+    (checkRepetitionAt : QueryPoint → OptionT (OracleComp spec) Unit) :
+    OptionT (OracleComp spec) Bool := do
+  for repetition in List.finRange γ_repetitions do
+    let _ ← checkRepetitionAt (queryPoints repetition)
+  return true
+
+end QueryProgram
+
 /-!
 ### Oracle-Aware Reduction Logic for Query Phase
 
@@ -76,11 +90,11 @@ oracle queries (querying committed codewords at fiber points).
 
 /-- The oracle-aware reduction logic step for the query phase.
 
-This encapsulates the pure logic of the query phase:
+This packages the query-phase checks and outputs:
 - `verifierCheck`: Runs oracle checks at the fiber evaluations
 - `verifierOut`: Returns `true` after the checks pass
 - `honestProverTranscript`: The honest transcript just receives the challenges
-- `proverOut`: The honest prover always outputs `(true, ())` -/
+- `proverOut`: The honest prover returns `true` with no output oracles and a unit witness -/
 noncomputable def queryPhaseLogicStep :
     OracleReduction.OracleAwareLogicStep
       -- oSpec is the base/shared oracle (empty for query phase - no random oracles)
@@ -97,18 +111,12 @@ noncomputable def queryPhaseLogicStep :
   completeness_relIn := fun input =>
     input ∈ strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   completeness_relOut := fun output => output ∈ acceptRejectOracleRel
-  -- Verifier (Oracle-Aware): verifierCheck queries oracles and returns StmtOut
-  -- Iterates through all γ_repetitions and checks each one
-  verifierCheck := fun stmtIn transcript => do
-    let challenges := transcript.challenges
-    let fold_challenges : Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0 :=
-      challenges ⟨0, by rfl⟩
-    for rep in (List.finRange γ_repetitions) do
-      let v := fold_challenges rep
-      let _ ← checkSingleRepetition 𝔽q β (γ_repetitions := γ_repetitions) (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        v stmtIn stmtIn.finalConstant
-    return true  -- StmtOut = Bool for QueryPhase
+  -- The transcript's one challenge contains the query point for each repetition.
+  verifierCheck := fun stmtIn transcript =>
+    let queryPoints := transcript.challenges ⟨0, by rfl⟩
+    QueryProgram.runRepetitions γ_repetitions queryPoints
+      (checkRepetitionAt := fun queryPoint =>
+        checkSingleRepetition 𝔽q β (ϑ := ϑ) γ_repetitions queryPoint stmtIn stmtIn.finalConstant)
   -- Pure output computation (deterministic)
   verifierOut := fun _stmtIn _transcript => true
   outputInterfaces := fun i => nomatch i
@@ -117,7 +125,7 @@ noncomputable def queryPhaseLogicStep :
   -- Honest prover transcript: just receives the challenges
   honestProverTranscript := fun stmtIn _witIn _oStmtIn challenges =>
     FullTranscript.mk1 (challenges ⟨0, by rfl⟩)
-  -- Prover output: always outputs (true, ())
+  -- The prover returns `true` with a unit witness and no output oracles.
   proverOut := fun _stmtIn _witIn _oStmtIn _transcript =>
     ((true, fun i => Empty.elim i), ())
 
@@ -151,12 +159,9 @@ def queryOracleProver :
     pure (fun queryPoints => (stmtIn, oStmtIn, witIn, queryPoints))
   output := fun _ => pure ((true, fun i => Empty.elim i), ())
 
-/-- The oracle verifier for the final query phase.
-
-Uses components from `queryPhaseLogicStep` for consistency with the logic specification:
-- `verifierCheck`: monadic check via `verifyQueryPhase`
-- `verifierOut`: pure output computation
-- The output has no oracles; `OracleProofVerifier.ofVerify` supplies that interface. -/
+/-- The oracle verifier for the final query phase. Run `queryPhaseLogicStep.verifierCheck`
+and produce `verifierOut` only if the checks pass.
+`OracleProofVerifier.ofVerify` supplies the empty output-oracle interface. -/
 noncomputable def queryOracleVerifier :
   OracleProofVerifier
     (oSpec := []ₒ)
@@ -191,8 +196,8 @@ noncomputable def queryOracleReduction :
 
 /-! ### Executable query phase -/
 
-/-- Check every repetition in order. A failed guard returns `none` through `OptionT`;
-the acceptance value is mapped over successful results only. -/
+/-- Use executable arithmetic in the shared repetition loop. A failed guard returns `none`
+through `OptionT`; the verifier returns `true` only if all repetitions pass. -/
 def queryOracleVerifierExecutable :
     OracleProofVerifier
       (oSpec := []ₒ)
@@ -201,10 +206,11 @@ def queryOracleVerifierExecutable :
         (Fin.last ℓ))
       (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleProofVerifier.ofVerify fun stmtIn challenges =>
-    (fun () => true) <$> (do
-      for rep in List.finRange γ_repetitions do
+    let queryPoints := challenges ⟨0, by rfl⟩
+    QueryProgram.runRepetitions γ_repetitions queryPoints
+      (checkRepetitionAt := fun queryPoint =>
         checkSingleRepetitionExecutable 𝔽q β (ϑ := ϑ) γ_repetitions
-          (challenges ⟨0, by rfl⟩ rep) stmtIn stmtIn.finalConstant)
+          queryPoint stmtIn stmtIn.finalConstant)
 
 /-- The executable verifier is exactly the specified verifier, including aborts and query order. -/
 lemma queryOracleVerifierExecutable_eq :
@@ -214,13 +220,13 @@ lemma queryOracleVerifierExecutable_eq :
   unfold queryOracleVerifierExecutable queryOracleVerifier
   congr 1
   funext stmtIn challenges
-  simp only [queryPhaseLogicStep, map_eq_bind_pure_comp, bind_assoc, Function.comp_apply, pure_bind]
+  simp only [queryPhaseLogicStep, QueryProgram.runRepetitions, bind_assoc, pure_bind]
   congr 1
   congr 1
-  funext rep state
+  funext repetition state
   exact congrArg (fun check => check >>= fun _ => pure (ForInStep.yield PUnit.unit))
     (checkSingleRepetitionExecutable_eq 𝔽q β (ϑ := ϑ) γ_repetitions
-      (challenges ⟨0, by rfl⟩ rep) stmtIn stmtIn.finalConstant)
+      (challenges ⟨0, by rfl⟩ repetition) stmtIn stmtIn.finalConstant)
 
 /-- The executable oracle reduction for the final query phase. -/
 def queryOracleReductionExecutable :

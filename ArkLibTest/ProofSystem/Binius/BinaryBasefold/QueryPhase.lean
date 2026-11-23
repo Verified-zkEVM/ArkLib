@@ -48,16 +48,9 @@ private theorem zero_input_strict (stmt : FinalSumcheckStatementOut (L := L) (�
       strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) := by
   refine ⟨0, ?_, ?_⟩
   · intro j
-    simp only [polynomialFromNovelCoeffsF₂, polynomialFromNovelCoeffs,
-      ZeroMemClass.coe_zero, map_zero, zero_mul,
-      Finset.sum_const_zero]
     change (fun _ => (0 : L)) = _
     symm
-    have hp (d : Fin r) : polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (domainIdx := d) (P := (0 : Polynomial L)) = fun _ => (0 : L) := by
-      funext y
-      simp [polyToOracleFunc]
-    rw [hp]
+    rw [firstOracleEncoding_zero]
     exact fold_zero 𝔽q β (ℓ := ℓ) (𝓡 := 𝓡)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) _ _ _ _ _
   · simp [zeroOracles, getLastOracle, fold_zero]
@@ -105,7 +98,7 @@ private theorem repetition_rejects (γ : ℕ)
   change (simulateQ so (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v stmt 1) : OptionT (OracleComp []ₒ) Unit) =
       (OptionT.mk (pure none) : OptionT (OracleComp []ₒ) Unit)
-  dsimp only [checkSingleRepetition]
+  dsimp only [checkSingleRepetition, QueryProgram.checkRepetitionBlocks]
   rw [simulateQ_optionT_bind]
   let body := fun (k : Fin (ℓ / ϑ)) (cur : L) => (do
     let next ← checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
@@ -152,7 +145,8 @@ example (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
   change (simulateQ so ((queryOracleVerifier 𝔽q β (ϑ := ϑ) 1).verify
       (Oₛₒ := fun i : Empty => nomatch i) bad chals) : OptionT (OracleComp []ₒ) Bool) =
     (OptionT.mk (pure none) : OptionT (OracleComp []ₒ) Bool)
-  dsimp only [queryOracleVerifier, OracleProofVerifier.ofVerify, queryPhaseLogicStep]
+  dsimp only [queryOracleVerifier, OracleProofVerifier.ofVerify, queryPhaseLogicStep,
+    QueryProgram.runRepetitions]
   simp only [show List.finRange 1 = [0] from rfl, List.forIn_cons, List.forIn_nil,
     simulateQ_optionT_bind, simulateQ_optionT_pure]
   rw [hr]

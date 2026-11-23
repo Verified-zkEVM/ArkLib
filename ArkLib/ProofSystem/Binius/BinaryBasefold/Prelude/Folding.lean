@@ -137,6 +137,10 @@ section Essentials
 
 section FoldTheory
 
+/-- Fold the values at the ordered fiber points `x₀` and `x₁` at the given challenge. -/
+@[macro_inline]
+def foldPair (challenge x₀ x₁ value₀ value₁ : L) : L :=
+  value₀ * ((1 - challenge) * x₁ - challenge) + value₁ * (challenge - (1 - challenge) * x₀)
 
 /-- Single-step fold : Given `f : S⁽ⁱ⁾ → L` and challenge `r`, produce `S⁽ⁱ⁺¹⁾ → L`, where
 `f⁽ⁱ⁺¹⁾ = fold(f⁽ⁱ⁾, r) : y ↦ [1-r, r] · [[x₁, -x₀], [-1, 1]] · [f⁽ⁱ⁾(x₀), f⁽ⁱ⁾(x₁)]`
@@ -151,43 +155,55 @@ def fold (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx = i.val + 1)
     let x₁ := fiberMap 1
     let f_x₀ := f x₀
     let f_x₁ := f x₁
-    exact f_x₀ * ((1 - r_chal) * x₁.val - r_chal) + f_x₁ * (r_chal - (1 - r_chal) * x₀.val)
+    exact foldPair (challenge := r_chal) (x₀ := x₀.val) (x₁ := x₁.val)
+      (value₀ := f_x₀) (value₁ := f_x₁)
 
-/-- The recursive definition of the `k-step` fold matrix of point `y`: `M_{k, y}`.
-`M_{k, y} = butterflyMatrix(k, z₀, z₁) * [M_{k-1, z₀}, 0; 0, M_{k-1, z₁}]`
-where `z₀` and `z₁` are the one-step fiber of `y`. -/
-def foldMatrix (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+/-- Build the folding matrix by recursively traversing the ordered one-step fibers
+supplied by `oneStepFiber`. The abstract and executable versions use the same recursion
+with different ways of obtaining the fiber points. -/
+def foldMatrixWith
+    (oneStepFiber : (sourceIdx : Fin r) → {destIdx : Fin r} →
+      destIdx.val = sourceIdx.val + 1 → destIdx ≤ ℓ →
+      sDomain 𝔽q β h_ℓ_add_R_rate destIdx → Fin 2 → sDomain 𝔽q β h_ℓ_add_R_rate sourceIdx)
+    (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
     Matrix (Fin (2 ^ steps)) (Fin (2 ^ steps)) L :=
   match steps with
-  | 0 =>
-    -- Base case: steps = 0. Identity matrix of size 1 (2^0).
-    (1 : Matrix (Fin 1) (Fin 1) L) -- diagonal matrix
-  | n + 1 => by
-    -- Recursive step: n -> n + 1
-    -- 1. Identify the "previous" y's (z₀ and z₁) from the fiber of the current y
-    --    Note: y is at index i + n + 1. We need the fiber at i + n.
-    let midIdx : Fin r := ⟨i + n, by omega⟩
-    have h_midIdx_val : midIdx.val = i + n := by dsimp only [midIdx]
-    let fiberMap := quotientFiber 𝔽q β (i := midIdx) (steps := 1)
-       h_destIdx h_destIdx_le (y := y)
-    let z₀ : sDomain 𝔽q β h_ℓ_add_R_rate midIdx := fiberMap 0
-    let z₁ : sDomain 𝔽q β h_ℓ_add_R_rate midIdx := fiberMap 1
-    -- 2. Recursively compute M for z₀ and z₁
-    --    These matrices have size 2^n x 2^n
-    let M_z₀ := foldMatrix i n (destIdx := midIdx) (by omega) (by omega) z₀
-    let M_z₁ := foldMatrix i n (destIdx := midIdx) (by omega) (by omega) z₁
-    -- 3. Construct the Block Diagonal Matrix: [ M_z₀  0  ]
-    --                                         [  0   M_z₁]
-    let blk_diag : Matrix (Fin (2 ^ (n + 1))) (Fin (2 ^ (n + 1))) L :=
-      blockDiagMatrix (n := n) (Mz₀ := M_z₀) (Mz₁ := M_z₁)
-    -- 4. Construct the Butterfly Matrix using Scalar Identities
-    --    [ z₁*I_{2^n}   -z₀*I_{2^n} ]
-    --    [ -1*I_{2^n}     1*I_{2^n} ]
-    let butterfly : Matrix (Fin (2 ^ (n + 1))) (Fin (2 ^ (n + 1))) L :=
-      butterflyMatrix (n := n) (z₀ := z₀) (z₁ := z₁)
-    exact butterfly * blk_diag
+  -- Zero steps: the fiber is a singleton, so the matrix is the 1 × 1 identity.
+  | 0 => 1
+  | n + 1 =>
+    -- 1. The point y is at level i + n + 1; find its two fiber points at level i + n.
+    let midIdx : Fin r := ⟨i.val + n, by omega⟩
+    have h_step : destIdx.val = midIdx.val + 1 := by dsimp [midIdx]; omega
+    have h_mid_le : midIdx ≤ ℓ := by dsimp [midIdx]; omega
+    let fiberPoints := oneStepFiber midIdx (destIdx := destIdx) h_step h_destIdx_le y
+    let z₀ := fiberPoints 0
+    let z₁ := fiberPoints 1
+    -- 2. The recursive calls for z₀ and z₁ produce two 2^n × 2^n folding matrices.
+    let matrix₀ := foldMatrixWith (oneStepFiber := oneStepFiber)
+      i n (destIdx := midIdx) rfl h_mid_le z₀
+    let matrix₁ := foldMatrixWith (oneStepFiber := oneStepFiber)
+      i n (destIdx := midIdx) rfl h_mid_le z₁
+    -- 3. Place them on the diagonal in that order:
+    --    [ M_z₀    0 ]
+    --    [   0  M_z₁ ]
+    -- 4. Multiply on the left by the butterfly, with I the 2^n × 2^n identity:
+    --    [ z₁ I   -z₀ I ]
+    --    [  -I        I ]
+    butterflyMatrix n z₀.val z₁.val * blockDiagMatrix n matrix₀ matrix₁
+
+/-- The recursive definition of the `k-step` fold matrix of point `y`: `M_{k, y}`.
+For `k > 0`, `M_{k, y} = butterflyMatrix(k - 1, z₀, z₁) * [M_{k-1, z₀}, 0; 0, M_{k-1, z₁}]`,
+where `z₀` and `z₁` are the one-step fiber of `y` given by `quotientFiber`. -/
+def foldMatrix (i : Fin r) {destIdx : Fin r} (steps : ℕ)
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
+    Matrix (Fin (2 ^ steps)) (Fin (2 ^ steps)) L :=
+  foldMatrixWith 𝔽q β
+    (oneStepFiber := fun sourceIdx {_} h_step h_le point =>
+      quotientFiber 𝔽q β sourceIdx (steps := 1) h_step h_le point)
+    i steps h_destIdx h_destIdx_le y
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1  in
 /-- The recursive folding matrix of each quotient fiber has nonzero determinant. -/
@@ -200,16 +216,15 @@ lemma foldMatrix_det_ne_zero (i : Fin r) {destIdx : Fin r} (steps : ℕ)
   induction steps with
   | zero =>
     intro destIdx h_destIdx h_destIdx_le y
-    simp only [Nat.pow_zero, foldMatrix, det_unique, one_apply_eq, ne_eq, one_ne_zero,
-    not_false_eq_true];
+    simp only [Nat.pow_zero, foldMatrix, foldMatrixWith, det_unique, one_apply_eq,
+      ne_eq, one_ne_zero, not_false_eq_true]
   | succ n ih =>
     intro destIdx h_destIdx h_destIdx_le y
-    rw [foldMatrix]
     -- 1. Determinant of product = product of determinants
     -- 2. det(butterfly) ≠ 0 because z₀ ≠ z₁ (by injectivity of quotientFiber)
     -- 3. det(block_diag) ≠ 0 because det(M_z₀) ≠ 0 and det(M_z₁) ≠ 0 (by IH)
     -- Expand definition of foldMatrix for n+1
-    dsimp [foldMatrix]
+    simp only [foldMatrix, foldMatrixWith]
     -- Determinant of product
     rw [Matrix.det_mul]
     let midIdx : Fin r := ⟨i + n, by omega⟩
@@ -244,37 +259,37 @@ lemma foldMatrix_det_ne_zero (i : Fin r) {destIdx : Fin r} (steps : ℕ)
         (ih (destIdx := midIdx) rfl (by dsimp only [midIdx]; omega) z₀)
         (ih (destIdx := midIdx) rfl (by dsimp only [midIdx]; omega) z₁)
 
+/-- Apply the supplied one-step fold as the domain advances from level `i` to level
+`i + steps`. The recursion uses the challenges in order. -/
+def iteratedFoldWith
+    (foldStep : (sourceIdx : Fin r) → {destIdx : Fin r} →
+      destIdx.val = sourceIdx.val + 1 → destIdx ≤ ℓ →
+      (sDomain 𝔽q β h_ℓ_add_R_rate sourceIdx → L) → L → sDomain 𝔽q β h_ℓ_add_R_rate destIdx → L)
+    (i : Fin r) (steps : ℕ) {destIdx : Fin r}
+    (h_destIdx : destIdx.val = i.val + steps)
+    (h_destIdx_le : destIdx ≤ ℓ)
+    (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (challenges : Fin steps → L) :
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) → L :=
+  match steps with
+  | 0 => fun y =>
+    -- The destination is the source domain; return the original value.
+    have h : destIdx = i := Fin.ext (by omega)
+    f ⟨y.val, h ▸ y.property⟩
+  | n + 1 =>
+    -- Fold to level i + n with the first n challenges, then apply the last challenge.
+    let midIdx : Fin r := ⟨i.val + n, by omega⟩
+    have h_step : destIdx.val = midIdx.val + 1 := by dsimp [midIdx]; omega
+    have h_mid_le : midIdx ≤ ℓ := by dsimp [midIdx]; omega
+    let foldedPrefix := iteratedFoldWith (foldStep := foldStep)
+      i n (destIdx := midIdx) rfl h_mid_le f (Fin.init challenges)
+    foldStep midIdx (destIdx := destIdx) h_step h_destIdx_le foldedPrefix (challenges (Fin.last n))
+
 /-- The iterated fold over `steps` steps starting at domain index `i`. -/
 def iteratedFold (i : Fin r) (steps : ℕ) {destIdx : Fin r}
-    (h_destIdx : destIdx.val = i.val + steps)
-  (h_destIdx_le : destIdx ≤ ℓ)
-  (f : sDomain 𝔽q β h_ℓ_add_R_rate (i := i) → L) (r_challenges : Fin steps → L) :
-    (y : sDomain 𝔽q β h_ℓ_add_R_rate (i := destIdx)) → L := by
-  let domain_type := sDomain 𝔽q β h_ℓ_add_R_rate
-  let fold_func := fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  let α (j : Fin (steps + 1)) := domain_type (⟨i + j.val, by omega⟩) → L
-  let fold_step (j : Fin steps) (f_acc : α ⟨j, by omega⟩) : α j.succ := by
-    unfold α domain_type at *
-    intro x
-    have fold_func := fold_func (i := ⟨i + j.val, by omega⟩)
-      (destIdx := ⟨i + j.val + 1, by omega⟩)
-      (h_destIdx := by simp only)
-      (h_destIdx_le := by simp only; omega)
-      (f := f_acc) (r_chal := r_challenges j)
-    exact fold_func x
-  let res : α (Fin.last steps) := Fin.dfoldl (n := steps) (α := α)
-    (f := fun i (accF : α i.castSucc) =>
-      have fSucc : α ⟨i.succ, by omega⟩ := fold_step i accF
-      fSucc) (init := f)
-  exact fun y => res ⟨y, by
-    simp only [Fin.val_last]
-    have h_eq : ⟨i + steps, by omega⟩ = destIdx := by
-      apply Fin.eq_of_val_eq
-      simp only
-      exact h_destIdx.symm
-    rw [h_eq]
-    simp only [SetLike.coe_mem]
-  ⟩
+    (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
+    (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (r_challenges : Fin steps → L) :
+    (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) → L :=
+  iteratedFoldWith 𝔽q β (foldStep := fold 𝔽q β) i steps h_destIdx h_destIdx_le f r_challenges
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1  in
 /-- **Base Case**: Iterated fold with 0 steps is the identity
@@ -290,9 +305,7 @@ lemma iteratedFold_zero_steps (i : Fin r) {destIdx : Fin r}
           (Fin.ext h_destIdx)) y) := by
   have h_eq : destIdx = i := by omega
   subst destIdx
-  dsimp only [iteratedFold]
-  simp only [reduceAdd, Fin.val_castSucc, Fin.val_succ, id_eq, Fin.reduceLast, Fin.coe_ofNat_eq_mod,
-    Subtype.coe_eta, Fin.dfoldl_zero, cast_eq]
+  rfl
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1  in
 /-- An iterated fold is one fold of its prefix at the last challenge. -/
@@ -309,17 +322,9 @@ lemma iteratedFold_last (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
     (destIdx := destIdx) (h_destIdx := by omega) (h_destIdx_le := by omega)
     (f := fold_init) (r_chal := r_challenges (Fin.last steps))
   fold_full = fold_init_fold := by
-  have h_bound_dest : i.val + steps + 1 < r := by omega
   have h_bound_mid : i.val + steps < r := by omega
-  have h_mid_clean : midIdx = ⟨i.val + steps, h_bound_mid⟩ := Fin.eq_of_val_eq (by omega)
-  have h_dest_clean : destIdx = ⟨i.val + steps + 1, h_bound_dest⟩ := Fin.eq_of_val_eq (by omega)
-  subst h_mid_clean h_dest_clean
-  simp only
-  conv_lhs => unfold iteratedFold
-  simp only
-  erw [Fin.dfoldl_succ_last]
-  simp only [Fin.succ_last, succ_eq_add_one, Fin.val_last, Function.comp_apply, Fin.val_castSucc,
-    Fin.val_succ, id_eq]
+  have h_mid_clean : midIdx = ⟨i.val + steps, h_bound_mid⟩ := Fin.ext h_midIdx
+  subst h_mid_clean
   rfl
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1  in
@@ -577,9 +582,6 @@ lemma iteratedFold_first (i : Fin r) {midIdx destIdx : Fin r} (steps : ℕ)
         (destIdx := ⟨i.val + 1, h_bound_mid⟩) (h_destIdx := h_midIdx)
         (h_destIdx_le := h_midIdx_le) f (r_challenges 0) := by
     funext y
-    unfold iteratedFold
-    rw [Fin.dfoldl_succ, Fin.dfoldl_zero]
-    simp only [Fin.val_zero, Nat.add_zero, id_eq]
     rfl
   have h_challenges :
       Fin.append (fun _ : Fin 1 => r_challenges 0) (fun j => r_challenges j.succ) =
@@ -665,7 +667,7 @@ lemma fold_eq_foldMatrixForm (i : Fin r) {destIdx : Fin r}
     (h_destIdx := by omega) (h_destIdx_le := h_destIdx_le) (f := f) (r_chal := r_challenge)
   = foldMatrixForm 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
     h_destIdx h_destIdx_le (f := f) (r_challenge := r_challenge) := by
-  unfold foldMatrixForm fold
+  unfold foldMatrixForm fold foldPair
   funext y
   simp only [Fin.isValue, reducePow, vec2_dotProduct]
   -- Approach: decompose the rhs into a flat sum expression
@@ -894,17 +896,11 @@ theorem iteratedFold_eq_matrix_form (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     intro destIdx h_destIdx h_destIdx_le
     have h_destIdx_eq_i: destIdx = i := by omega
     subst h_destIdx_eq_i
-    unfold iteratedFold iteratedFoldMatrixForm pointFoldMatrixForm
-    simp only [Nat.add_zero, Fin.dfoldl, reduceAdd, Fin.val_succ, id_eq, Fin.dfoldlM_zero,
-      Fin.isValue, Fin.coe_ofNat_eq_mod, reduceMod, Nat.pow_zero]
-    -- The fold loop is empty, returns f(y)
-    unfold foldMatrix fiberEvaluations quotientFiber
-    simp only [pure, Fin.reduceLast, Fin.coe_ofNat_eq_mod, reduceMod, Nat.add_zero, Fin.eta,
-      Subtype.coe_eta, Nat.pow_zero, ↓reduceDIte, one_mulVec]
-    unfold dotProduct
-    simp only [univ_unique, Fin.default_eq_zero, Fin.isValue, multilinearWeight, univ_eq_empty,
-      Nat.pow_zero, Fin.val_eq_zero, zero_testBit, Bool.false_eq_true, ↓reduceIte, prod_empty,
-      one_mul, sum_const, card_singleton, one_smul]
+    -- The fold loop is empty and returns f(y); the matrix form uses the 1 × 1 identity.
+    rw [iteratedFold_zero_steps]
+    unfold iteratedFoldMatrixForm pointFoldMatrixForm
+    unfold foldMatrix foldMatrixWith fiberEvaluations quotientFiber
+    simp [dotProduct, multilinearWeight]
   | succ n ih =>
     intro destIdx h_destIdx h_destIdx_le
     -- Inductive Step: steps = n + 1
@@ -1089,7 +1085,8 @@ def foldExecutable (i : Fin r) {destIdx : Fin r} (h_destIdx : destIdx.val = i.va
     let fiberMap := quotientFiberExecutable 𝔽q β i 1 h_destIdx h_destIdx_le y
     let x₀ := fiberMap 0
     let x₁ := fiberMap 1
-    f x₀ * ((1 - r_chal) * x₁.val - r_chal) + f x₁ * (r_chal - (1 - r_chal) * x₀.val)
+    foldPair (challenge := r_chal) (x₀ := x₀.val) (x₁ := x₁.val)
+      (value₀ := f x₀) (value₁ := f x₁)
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- The executable fold agrees with the specified fold at every point. -/
@@ -1101,60 +1098,41 @@ lemma foldExecutable_eq
   funext y
   simp only [foldExecutable, fold, quotientFiberExecutable_eq]
 
-/-- Compute successive folds by structural recursion over the number of rounds. -/
+/-- Compute successive folds by structural recursion over the number of rounds,
+using the executable single-step fold. -/
 def iteratedFoldExecutable (i : Fin r) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (r_challenges : Fin steps → L) :
     sDomain 𝔽q β h_ℓ_add_R_rate destIdx → L :=
-  match steps with
-  | 0 => fun y =>
-    have h : destIdx = i := Fin.ext (by omega)
-    f ⟨y.val, h ▸ y.property⟩
-  | n + 1 =>
-    let midIdx : Fin r := ⟨i.val + n, by omega⟩
-    let folded := iteratedFoldExecutable i n (destIdx := midIdx) rfl
-      (by dsimp [midIdx]; omega) f (Fin.init r_challenges)
-    foldExecutable 𝔽q β midIdx (destIdx := destIdx) (by dsimp [midIdx]; omega)
-      h_destIdx_le folded (r_challenges (Fin.last n))
+  iteratedFoldWith 𝔽q β (foldStep := foldExecutable 𝔽q β)
+    i steps h_destIdx h_destIdx_le f r_challenges
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 in
-/-- The structurally recursive fold agrees with the specified dependent fold. -/
+/-- The executable and mathematical traversals use pointwise equal single-step folds. -/
 lemma iteratedFoldExecutable_eq
     (i : Fin r) (steps : ℕ) {destIdx : Fin r}
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f : sDomain 𝔽q β h_ℓ_add_R_rate i → L) (r_challenges : Fin steps → L) :
     iteratedFoldExecutable 𝔽q β i steps h_destIdx h_destIdx_le f r_challenges =
       iteratedFold 𝔽q β i steps h_destIdx h_destIdx_le f r_challenges := by
-  revert destIdx h_destIdx h_destIdx_le
-  induction steps with
-  | zero =>
-    intro destIdx h_destIdx h_destIdx_le
-    have h : destIdx = i := Fin.ext (by omega)
-    subst destIdx
-    rw [iteratedFold_zero_steps 𝔽q β i rfl h_destIdx_le f r_challenges]
-    rfl
-  | succ n ih =>
-    intro destIdx h_destIdx h_destIdx_le
-    rw [iteratedFold_last 𝔽q β i (midIdx := ⟨i.val + n, by omega⟩) n rfl (by omega)
-      h_destIdx_le f r_challenges]
-    simp only [iteratedFoldExecutable, foldExecutable_eq 𝔽q β, ih]
+  have hStep : (fun (i : Fin r) {j : Fin r} h hle f c =>
+      foldExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (destIdx := j) h hle f c) =
+      fun (i : Fin r) {j : Fin r} h hle f c =>
+        fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i (destIdx := j) h hle f c := by
+    funext i j h hle f c
+    exact foldExecutable_eq 𝔽q β i h hle f c
+  exact congrArg (fun step =>
+    iteratedFoldWith 𝔽q β (foldStep := step) i steps h_destIdx h_destIdx_le f r_challenges) hStep
 
 /-- Build the folding matrix using executable fiber coordinates. -/
 def foldMatrixExecutable (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     (h_destIdx : destIdx.val = i.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
     Matrix (Fin (2 ^ steps)) (Fin (2 ^ steps)) L :=
-  match steps with
-  | 0 => 1
-  | n + 1 =>
-    let midIdx : Fin r := ⟨i.val + n, by omega⟩
-    let fiberMap := quotientFiberExecutable 𝔽q β midIdx 1
-      (by dsimp [midIdx]; omega) h_destIdx_le y
-    let z₀ := fiberMap 0
-    let z₁ := fiberMap 1
-    butterflyMatrix n z₀.val z₁.val * blockDiagMatrix n
-      (foldMatrixExecutable i n (destIdx := midIdx) rfl (by dsimp [midIdx]; omega) z₀)
-      (foldMatrixExecutable i n (destIdx := midIdx) rfl (by dsimp [midIdx]; omega) z₁)
+  foldMatrixWith 𝔽q β
+    (oneStepFiber := fun sourceIdx {_} h_step h_le point =>
+      quotientFiberExecutable 𝔽q β sourceIdx (steps := 1) h_step h_le point)
+    i steps h_destIdx h_destIdx_le y
 
 omit [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- The executable folding matrix agrees entrywise with the specified matrix. -/
@@ -1164,12 +1142,15 @@ lemma foldMatrixExecutable_eq
     (y : sDomain 𝔽q β h_ℓ_add_R_rate destIdx) :
     foldMatrixExecutable 𝔽q β i steps h_destIdx h_destIdx_le y =
       foldMatrix 𝔽q β i steps h_destIdx h_destIdx_le y := by
-  revert destIdx h_destIdx h_destIdx_le y
-  induction steps with
-  | zero => intros; rfl
-  | succ n ih =>
-    intros
-    simp only [foldMatrixExecutable, foldMatrix, quotientFiberExecutable_eq, ih]
+  have hFiber : (fun (i : Fin r) {j : Fin r} h hle y =>
+      quotientFiberExecutable 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i 1
+        (destIdx := j) h hle y) =
+      fun (i : Fin r) {j : Fin r} h hle y =>
+        quotientFiber 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i 1 (destIdx := j) h hle y := by
+    funext i j h hle y
+    exact quotientFiberExecutable_eq 𝔽q β i 1 h hle y
+  exact congrArg (fun oneStepFiber =>
+    foldMatrixWith 𝔽q β (oneStepFiber := oneStepFiber) i steps h_destIdx h_destIdx_le y) hFiber
 
 /-- Fold the fiber values at a point using the executable folding matrix. -/
 def pointFoldMatrixFormExecutable (i : Fin r) {destIdx : Fin r} (steps : ℕ)

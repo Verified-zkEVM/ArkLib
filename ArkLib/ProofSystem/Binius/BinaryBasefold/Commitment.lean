@@ -39,26 +39,19 @@ variable [Algebra K L]
 variable (β : Fin r → L) [Fact (LinearIndependent K β)] [Fact (β 0 = 1)]
 variable {ℓ 𝓡 : ℕ} [NeZero ℓ] [NeZero 𝓡] {h_ℓ_add_R_rate : ℓ + 𝓡 < r}
 
-/-- The initial novel-basis encoding, evaluated on the initial code domain. -/
-def firstOracleEncoding (t : MultilinearPoly L ℓ) :
-    sDomain K β h_ℓ_add_R_rate 0 → L :=
-  polyToOracleFunc K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0)
-    (polynomialFromNovelCoeffsF₂ K β ℓ (by omega)
-      (fun ω => t.val.eval (bitsOfIndex ω)))
-
 section ExecutableEncoding
 
 variable (hRate : ℓ + 𝓡 < r)
 
 /-- Materialize the novel-basis encoding of a Boolean evaluation table. -/
 @[noinline]
-def firstOracleEncodingArray (a : Fin (2 ^ ℓ) → L) : Array L :=
-  computableAdditiveNTTFast β hRate a
+def firstOracleEncodingArray (evaluations : Fin (2 ^ ℓ) → L) : Array L :=
+  computableAdditiveNTTFast β hRate evaluations
 
 /-- Read the fast additive-NTT table in domain index order. -/
 @[macro_inline]
-def firstOracleEncodingTable (a : Fin (2 ^ ℓ) → L) : Fin (2 ^ (ℓ + 𝓡)) → L :=
-  arrayToFinFunction (2 ^ (ℓ + 𝓡)) (firstOracleEncodingArray β hRate a)
+def firstOracleEncodingTable (evaluations : Fin (2 ^ ℓ) → L) : Fin (2 ^ (ℓ + 𝓡)) → L :=
+  arrayToFinFunction (2 ^ (ℓ + 𝓡)) (firstOracleEncodingArray β hRate evaluations)
 
 omit [DecidableEq K] [Fact (Fintype.card K = 2)] [Fact (β 0 = 1)] [NeZero ℓ] in
 private theorem evaluationPoint_eq_finToSDomain (i : Fin r) (hi : i ≤ ℓ)
@@ -107,7 +100,8 @@ function compilation lets the returned closure capture the array rather than the
 @[macro_inline]
 def firstOracleEncodingExecutable (t : MultilinearPoly L ℓ) :
     sDomain K β hRate ⟨0, NeZero.pos r⟩ → L :=
-  let table := firstOracleEncodingArray β hRate (fun j => t.val.eval (bitsOfIndex j))
+  let evaluations := fun j => t.val.eval (bitsOfIndex j)
+  let table := firstOracleEncodingArray β hRate (evaluations := evaluations)
   firstOracleEncodingFromArray K β hRate table
 
 omit [NeZero ℓ] in
@@ -209,28 +203,30 @@ theorem firstOracleWitnessConsistent_firstOracleEncoding (t : MultilinearPoly L 
 
 variable (ϑ : ℕ) [NeZero ϑ] [Fact (ϑ ∣ ℓ)]
 
-/-- The initial oracle family contains the honest first codeword. -/
-def honestInitialOracleStatement (t : MultilinearPoly L ℓ) :
+/-- Package the initial codeword as the sole oracle of the initial frontier. -/
+@[macro_inline]
+def initialOracleFamily (firstWord : sDomain K β h_ℓ_add_R_rate 0 → L) :
     ∀ j, OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j := by
   let j₀ : Fin (toOutCodewordsCount ℓ ϑ 0) := ⟨0, by
     rw [toOutCodewordsCount_zero]
     omega⟩
   let raw₀ : OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j₀ := by
     simpa only [OracleStatement, oraclePositionToDomainIndex, j₀, Fin.val_zero, zero_mul,
-      Fin.mk_zero'] using firstOracleEncoding K β t
+      Fin.mk_zero'] using firstWord
   exact fun j => if hj : j₀ = j then hj ▸ raw₀ else fun _ => 0
 
-/-- Package the executable NTT codeword as the initial oracle family. -/
+/-- The initial oracle family contains the honest first codeword. -/
+def honestInitialOracleStatement (t : MultilinearPoly L ℓ) :
+    ∀ j, OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j :=
+  initialOracleFamily K β ϑ (firstWord := firstOracleEncoding K β t)
+
+/-- Package the executable NTT codeword as the initial oracle family.
+Point queries read the captured array instead of rerunning the transform. -/
 @[macro_inline]
 def honestInitialOracleStatementExecutable (t : MultilinearPoly L ℓ) :
-    ∀ j, OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j := by
-  let j₀ : Fin (toOutCodewordsCount ℓ ϑ 0) := ⟨0, by
-    rw [toOutCodewordsCount_zero]
-    omega⟩
-  let raw₀ : OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j₀ := by
-    simpa only [OracleStatement, oraclePositionToDomainIndex, j₀, Fin.val_zero, zero_mul,
-      Fin.mk_zero'] using firstOracleEncodingExecutable K β h_ℓ_add_R_rate t
-  exact fun j => if hj : j₀ = j then hj ▸ raw₀ else fun _ => 0
+    ∀ j, OracleStatement K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ 0 j :=
+  let firstWord := firstOracleEncodingExecutable K β h_ℓ_add_R_rate t
+  initialOracleFamily K β ϑ (firstWord := firstWord)
 
 omit [Fact (ϑ ∣ ℓ)] in
 /-- The executable initial oracle family agrees with the specified family. -/
@@ -253,7 +249,7 @@ omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero 𝓡] in
     getFirstOracle K β (honestInitialOracleStatement K β ϑ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t) = firstOracleEncoding K β t := by
   funext y
-  simp only [getFirstOracle, honestInitialOracleStatement, dite_eq_left rfl]
+  simp only [getFirstOracle, honestInitialOracleStatement, initialOracleFamily, dite_eq_left rfl]
   exact cast_function_apply _ _ _ _
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero 𝓡] in

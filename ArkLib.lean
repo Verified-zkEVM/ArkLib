@@ -873,8 +873,11 @@ public import ArkLib.OracleReduction.OracleInterface
 public import ArkLib.OracleReduction.Prelude
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.OracleReduction.ProtocolSpec.ScalarRound
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
+public import ArkLib.OracleReduction.ProtocolSpec.TranscriptMap
 public import ArkLib.OracleReduction.Salt
+public import ArkLib.OracleReduction.ScalarRound
 public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.Accumulation
 public import ArkLib.OracleReduction.Security.BadEvents
@@ -902,6 +905,7 @@ public import ArkLib.OracleReduction.Security.Rewinding
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.SoundnessInitialization
 public import ArkLib.OracleReduction.Security.SpecialSoundness
+public import ArkLib.OracleReduction.Security.TranscriptMap
 public import ArkLib.OracleReduction.Security.TranscriptTree
 public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
@@ -952,10 +956,13 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Fold.Protocol
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable
+public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Completeness
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Modular
+public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Soundness
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Unrolled
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Witness
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
+public import ArkLib.ProofSystem.Binius.FRIBinius.Protocol
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Spec

@@ -43,35 +43,38 @@ instance [SampleableType C] : ∀ j, SampleableType ((pSpec C).Challenge j)
 def honestMessage (stmt : Statement Context C i.castSucc) (p : P⦃≤ 1⦄[X Fin m]) :
     C⦃≤ 2⦄[X] := roundMessage i (productPoly (multiplier stmt.ctx) p) stmt.challenges
 
+/-- Sum the two Boolean evaluations of a message. -/
+def sumAtZeroOne (evaluate : C → C) : C := evaluate 0 + evaluate 1
+
 /-- The local sumcheck equation. -/
 def check (stmt : Statement Context C i.castSucc) (g : C⦃≤ 2⦄[X]) : Prop :=
-  g.val.eval 0 + g.val.eval 1 = stmt.target
+  sumAtZeroOne g.val.eval = stmt.target
+
+/-- Append the challenge and record the new target at that challenge. -/
+def appendChallenge (stmt : Statement Context C i.castSucc) (challenge nextTarget : C) :
+    Statement Context C i.succ :=
+  ⟨stmt.ctx, Fin.snoc stmt.challenges challenge, nextTarget⟩
 
 /-- Append the sampled scalar and set the next target to the received polynomial's evaluation. -/
 def nextStatement (stmt : Statement Context C i.castSucc) (g : C⦃≤ 2⦄[X]) (c : C) :
-    Statement Context C i.succ := ⟨stmt.ctx, Fin.snoc stmt.challenges c, g.val.eval c⟩
+    Statement Context C i.succ :=
+  appendChallenge i stmt (challenge := c) (nextTarget := g.val.eval c)
 
 /-- The first two states keep the original input and polynomial; the last also records c. -/
-def OracleState {ι : Type} (OStmt : ι → Type) : Fin 3 → Type
-  | ⟨0, _⟩ => (Statement Context C i.castSucc × (∀ j, OStmt j)) × P⦃≤ 1⦄[X Fin m]
-  | ⟨1, _⟩ => (Statement Context C i.castSucc × (∀ j, OStmt j)) × P⦃≤ 1⦄[X Fin m]
-  | ⟨2, _⟩ => ((Statement Context C i.castSucc × (∀ j, OStmt j)) ×
-      P⦃≤ 1⦄[X Fin m]) × C
+def OracleState {ι : Type} (OStmt : ι → Type) : Fin 3 → Type :=
+  let Input := (Statement Context C i.castSucc × (∀ j, OStmt j)) × P⦃≤ 1⦄[X Fin m]
+  scalarRoundProverState Input Input C
 
 /-- The honest round algorithm depends only on the oracle family, independently of compatibility. -/
 def proverForOracles {ι : Type} (OStmt : ι → Type) :
     OracleProver []ₒ (Statement Context C i.castSucc) OStmt P⦃≤ 1⦄[X Fin m]
-    (Statement Context C i.succ) OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) where
-  PrvState := OracleState (P := P) (C := C) (Context := Context) i OStmt
-  input := id
-  sendMessage
-    | ⟨0, _⟩ => fun st => pure (honestMessage multiplier i st.1.1 st.2, st)
-    | ⟨1, h⟩ => fun _ => nomatch h
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h
-    | ⟨1, _⟩ => fun st => pure fun c => (st, c)
-  output := fun (((stmt, ost), p), c) =>
-    pure ((nextStatement i stmt (honestMessage multiplier i stmt p) c, ost), p)
+    (Statement Context C i.succ) OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) :=
+  scalarRoundOracleProver
+    (prepare := fun input =>
+      let ((stmtIn, _), witIn) := input
+      (honestMessage multiplier i stmtIn witIn, input))
+    (finish := fun ((stmtIn, oStmtIn), witIn) c =>
+      ((nextStatement i stmtIn (honestMessage multiplier i stmtIn witIn) c, oStmtIn), witIn))
 
 /-- The honest state family at a fixed commitment oracle interface. -/
 abbrev ProverState := OracleState (P := P) (C := C) (Context := Context) i pc.OStmt

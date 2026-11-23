@@ -216,8 +216,10 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
     have h_m_eq_0 : m = 0 := by
       cases m using Fin.cases with
       | zero => rfl
-      | succ m' => simp only [ne_eq, reduceCtorEq, not_false_eq_true, Matrix.cons_val_succ,
-        Matrix.cons_val_fin_one, Direction.not_V_to_P_eq_P_to_V] at hDir
+      | succ m' =>
+        have hm' : m' = 0 := Subsingleton.elim _ _
+        subst m'
+        exact Direction.noConfusion hDir
     subst h_m_eq_0
     intro h_kState_round1
     unfold FoldKnowledgeState at h_kState_round1 ⊢

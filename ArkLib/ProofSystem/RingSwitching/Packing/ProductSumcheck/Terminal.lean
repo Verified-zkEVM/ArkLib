@@ -37,9 +37,14 @@ instance : ∀ i, OracleInterface ((pSpec C).Message i) :=
 instance : ∀ i, SampleableType ((pSpec C).Challenge i)
   | ⟨0, h⟩ => nomatch h
 
+/-- Compute the terminal target from the multiplier evaluation and the claimed packed value. -/
+def expectedTarget (evaluateMultiplier : Context → (Fin m → C) → C)
+    (stmt : Statement Context C (Fin.last m)) (v : C) : C :=
+  evaluateMultiplier stmt.ctx stmt.challenges * v
+
 /-- The only verifier equation, valid also when the multiplier is zero. -/
 def check (stmt : Statement Context C (Fin.last m)) (v : C) : Prop :=
-  stmt.target = multiplier.evaluate stmt.ctx stmt.challenges * v
+  stmt.target = expectedTarget multiplier.evaluate stmt v
 
 /-- Preserve the complete challenge point and forward the packed evaluation itself. -/
 def nextStatement (stmt : Statement Context C (Fin.last m)) (v : C) : Context × ((Fin m → C) × C) :=
@@ -48,15 +53,14 @@ def nextStatement (stmt : Statement Context C (Fin.last m)) (v : C) : Context ×
 /-- The honest prover preserves the packed polynomial and commitment oracle. -/
 def proverForOracles {ι : Type} (OStmt : ι → Type) :
     OracleProver []ₒ (Statement Context C (Fin.last m)) OStmt
-    P⦃≤ 1⦄[X Fin m] (Context × ((Fin m → C) × C)) OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) where
-  PrvState _ := ((Statement Context C (Fin.last m)) × (∀ j, OStmt j)) ×
-    P⦃≤ 1⦄[X Fin m]
-  input := id
-  sendMessage
-    | ⟨0, _⟩ => fun st => pure (aeval st.1.1.challenges st.2.val, st)
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h
-  output st := pure ((nextStatement st.1.1 (aeval st.1.1.challenges st.2.val), st.1.2), st.2)
+    P⦃≤ 1⦄[X Fin m] (Context × ((Fin m → C) × C)) OStmt P⦃≤ 1⦄[X Fin m] (pSpec C) :=
+  messageRoundOracleProver
+    (prepare := fun input =>
+      let ((stmtIn, _), witIn) := input
+      (aeval stmtIn.challenges witIn.val, input))
+    (finish := fun ((stmtIn, oStmtIn), witIn) =>
+      let packedValue := aeval stmtIn.challenges witIn.val
+      ((nextStatement stmtIn packedValue, oStmtIn), witIn))
 
 /-- Send the packed evaluation with unchanged oracle values. -/
 def prover := proverForOracles (P := P) (C := C) (Context := Context) (m := m) pc.OStmt
@@ -113,7 +117,7 @@ instance : (prover (C := C) (Context := Context) pc).OutputIsPure where
 theorem check_aeval_of_mem_rel {stmt : Statement Context C (Fin.last m)} {ost : ∀ j, pc.OStmt j}
     {p : P⦃≤ 1⦄[X Fin m]} (h : ((stmt, ost), p) ∈ rel multiplier pc (Fin.last m)) :
     check multiplier stmt (aeval stmt.challenges p.val) := by
-  rw [check, multiplier.evaluate_eq]
+  rw [check, expectedTarget, multiplier.evaluate_eq]
   exact ((rel_last multiplier pc stmt ost p).mp h).1
 
 /-- Honest output is an opening of the same P-polynomial against the same oracles. -/
@@ -130,7 +134,7 @@ theorem mem_rel_last_of_check (stmt : Statement Context C (Fin.last m)) (ost : �
     (ho : ((nextStatement stmt v, ost), p) ∈ (pc.evalRelWithContext Context)) :
     ((stmt, ost), p) ∈ rel multiplier pc (Fin.last m) := by
   apply (rel_last multiplier pc stmt ost p).mpr
-  rw [check, multiplier.evaluate_eq] at hc
+  rw [check, expectedTarget, multiplier.evaluate_eq] at hc
   exact ⟨hc.trans (congrArg ((multiplier stmt.ctx).val.eval stmt.challenges * ·) ho.1), ho.2⟩
 
 /-- The sole-message transcript. -/
@@ -142,16 +146,15 @@ theorem prover_run (stmt : Statement Context C (Fin.last m)) (ost : ∀ j, pc.OS
     (prover pc).run (stmt, ost) p =
       pure (transcript (aeval stmt.challenges p.val),
         (nextStatement stmt (aeval stmt.challenges p.val), ost), p) := by
-  have h0 : (pSpec C).dir 0 = .P_to_V := rfl
-  simp only [Prover.run, Prover.runToRound, Fin.induction_one,
-    Prover.processRound_of_dir_eq_P_to_V 0 h0]
-  simp only [prover, proverForOracles, pure_bind, liftM_pure]
-  congr 1
-  apply Prod.ext
-  · funext i
-    fin_cases i
-    rfl
-  · rfl
+  exact messageRoundOracleProver_run (oSpec := []ₒ) (OStmt := pc.OStmt) (Msg := C)
+    (WitIn := P⦃≤ 1⦄[X Fin m]) (WitOut := P⦃≤ 1⦄[X Fin m])
+    (prepare := fun input =>
+      let ((stmtIn, _), witIn) := input
+      (aeval stmtIn.challenges witIn.val, input))
+    (finish := fun ((stmtIn, oStmtIn), witIn) =>
+      let packedValue := aeval stmtIn.challenges witIn.val
+      ((nextStatement stmtIn packedValue, oStmtIn), witIn))
+    stmt ost p
 
 open scoped Classical in
 /-- Complete execution retains failure and the true forwarded value. -/

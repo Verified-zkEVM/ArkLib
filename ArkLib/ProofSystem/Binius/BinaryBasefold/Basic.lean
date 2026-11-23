@@ -85,11 +85,8 @@ def OracleStatement (ϑ : ℕ) [NeZero ϑ] (i : Fin (ℓ + 1)) :
     evaluated on the initial domain S^(0), must be close within unique decoding radius to f^(0) -/
 def FirstOracleWitnessConsistent (t : MultilinearPoly L ℓ)
     (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L) : Prop :=
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => t.val.eval (bitsOfIndex ω))
-  -- The constraint: P_0 evaluated on S^(0) is close within unique decoding radius to f^(0)
-  PairUniqueDecodingClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0)  (f := f₀)
-    (g := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀))
+  PairUniqueDecodingClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (f := f₀)
+    (g := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) t)
 
 omit [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
 /-- Oracle evaluation is invariant under equal oracle indices and transported equal points. -/

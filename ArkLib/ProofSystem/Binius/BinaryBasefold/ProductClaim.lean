@@ -101,10 +101,10 @@ and its fast additive-NTT encoding. -/
 @[no_expose]
 def initialWitnessExecutable (ctx : Context) (t : MultilinearPoly L ℓ) :
     Witness K β (h_ℓ_add_R_rate := h_rate) (ℓ := ℓ) 0 :=
-  let table := firstOracleEncodingArray β h_rate (fun j => t.val.eval (bitsOfIndex j))
+  let multiplier := multpoly ctx
   { t := t
-    H := computeInitialSumcheckPolyExecutable ℓ t (multpoly ctx)
-    f := firstOracleEncodingFromArray K β h_rate table }
+    H := computeInitialSumcheckPolyExecutable ℓ t multiplier
+    f := firstOracleEncodingExecutable K β h_rate t }
 
 omit [NeZero ℓ] in
 /-- Executable initialization preserves all fields of the canonical mathematical witness. -/
@@ -116,15 +116,10 @@ theorem initialWitnessExecutable_eq (ctx : Context) (t : MultilinearPoly L ℓ) 
     apply Subtype.ext
     exact MvPolynomial.fixFirstVariablesOfMQP_zero ℓ
       (computeInitialSumcheckPoly ℓ t (multpoly ctx)).val
-  have hf : firstOracleEncoding K β (h_ℓ_add_R_rate := h_rate) t =
-      getMidCodewords K β (h_ℓ_add_R_rate := h_rate) (i := 0) t Fin.elim0 := by
-    symm
-    exact iteratedFold_zero_steps K β (h_ℓ_add_R_rate := h_rate) 0
-      (destIdx := ⟨0, NeZero.pos r⟩) (by simp) (by simp)
-      (firstOracleEncoding K β (h_ℓ_add_R_rate := h_rate) t) Fin.elim0
   exact congrArg₂ (Witness.mk (𝔽q := K) (β := β) (h_ℓ_add_R_rate := h_rate) (i := 0) t)
     ((computeInitialSumcheckPolyExecutable_eq ℓ t (multpoly ctx)).trans hH.symm)
-    ((firstOracleEncodingExecutable_eq K β h_rate t).trans hf)
+    ((firstOracleEncodingExecutable_eq K β h_rate t).trans
+      (getMidCodewords_zero K β (h_ℓ_add_R_rate := h_rate) t).symm)
 
 end ExecutableWitness
 
@@ -232,16 +227,22 @@ its polynomial, and leaves the oracles unchanged. -/
 def frontReduction := ReduceClaim.oracleReduction []ₒ
   (OStmtIn := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
   (OStmtOut := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
-  (fun s : StmtIn => initialStatement (L := L) (ℓ := ℓ) (toClaim s).1 (toClaim s).2)
-  (fun s w => initialWitnessExecutable K β multiplier.polynomial (h_rate := h_rate) (toClaim s).1
-    (witnessEquiv w))
+  (mapStmt := fun stmtIn =>
+    let (ctx, target) := toClaim stmtIn
+    initialStatement (L := L) (ℓ := ℓ) ctx target)
+  (mapWit := fun stmtIn witIn =>
+    let ctx := (toClaim stmtIn).1
+    initialWitnessExecutable K β (multpoly := multiplier.polynomial) (h_rate := h_rate) ctx
+      (witnessEquiv witIn))
   (Function.Embedding.refl _) (fun _ => rfl) (fun _ => HEq.rfl)
 
 /-- The front-end verifier: it outputs the initial statement of the claim. -/
 def frontVerifier := ReduceClaim.oracleVerifier []ₒ
   (OStmtIn := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
   (OStmtOut := OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0)
-  (fun s : StmtIn => initialStatement (L := L) (ℓ := ℓ) (toClaim s).1 (toClaim s).2)
+  (mapStmt := fun stmtIn =>
+    let (ctx, target) := toClaim stmtIn
+    initialStatement (L := L) (ℓ := ℓ) ctx target)
   (Function.Embedding.refl _) (fun _ => rfl) (fun _ => HEq.rfl)
 
 /-- The front-end verifier always accepts. -/

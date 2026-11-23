@@ -280,7 +280,7 @@ private lemma card_disappearing_fiber_le_one
       = Δ₀ * ((1 - r_new) * x₁.val - r_new)
       + Δ₁ * (r_new - (1 - r_new) * x₀.val) := by
     intro r_new
-    simp only [fold, Δ₀, Δ₁, x₀, x₁, fiberMap_w]
+    simp only [fold, foldPair, Δ₀, Δ₁, x₀, x₁, fiberMap_w]
     ring
   have h_Δ_ne_zero : Δ₀ ≠ 0 ∨ Δ₁ ≠ 0 := by
     rcases hw_disagree with h0 | h1
@@ -550,7 +550,7 @@ lemma fold_eq_multilinearCombine_preTensorCombine
       simp [blockDiagMatrix, reindexSquareMatrix, from4Blocks]
   simp only [Fin.isValue, butterflyMatrix_zero_apply, cons_mulVec,
     cons_dotProduct, neg_mul, dotProduct_of_isEmpty, add_zero, one_mul, empty_mulVec,
-    Matrix.dotProduct_cons, preTensorCombine, reducePow, foldMatrix, reduceAdd,
+    Matrix.dotProduct_cons, preTensorCombine, reducePow, foldMatrix, foldMatrixWith, reduceAdd,
     Nat.add_zero, h_blk, mul_one, Fin.sum_univ_two, cons_val_zero, cons_val_one, cons_val_fin_one]
   have h_w0 :
       vecHead (multilinearWeight (F := L) (r := fun _ : Fin 1 => r_new)) =

@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.SeqCompose
 public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.Composition.Sequential.IsPure
+public import ArkLib.OracleReduction.ProtocolSpec.TranscriptMap
 public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import CompPoly.Univariate.ToPoly.Degree
@@ -196,13 +197,13 @@ variable [BEq C]
 /-- Test the sum of the message's Boolean evaluations against the current claim. -/
 def roundCheck (i : Fin m) (stmt : Statement Context C i.castSucc)
     (g : Sumcheck.Impl.Representation.Message C 2) : Bool :=
-  let eval := Sumcheck.Impl.Representation.evaluate C 2 g
-  eval 0 + eval 1 == stmt.target
+  Round.sumAtZeroOne (Sumcheck.Impl.Representation.evaluate C 2 g) == stmt.target
 
 /-- Extend the prefix by the challenge and set the target to the message's evaluation. -/
 def roundNext (i : Fin m) (stmt : Statement Context C i.castSucc)
     (g : Sumcheck.Impl.Representation.Message C 2) (c : C) : Statement Context C i.succ :=
-  ⟨stmt.ctx, Fin.snoc stmt.challenges c, Sumcheck.Impl.Representation.evaluate C 2 g c⟩
+  Round.appendChallenge i stmt (challenge := c)
+    (nextTarget := Sumcheck.Impl.Representation.evaluate C 2 g c)
 
 /-- Check the two Boolean evaluations and, on acceptance, append the challenge. -/
 def verifyRound (i : Fin m) (stmt : Statement Context C i.castSucc)
@@ -218,14 +219,15 @@ theorem verifyRound_eq [LawfulBEq C] (i : Fin m) (stmt : Statement Context C i.c
       if Round.check i stmt g' then
         some (Round.nextStatement i stmt g' c)
       else none := by
-  simp only [verifyRound, roundCheck, roundNext, Round.check, Round.nextStatement, beq_iff_eq,
+  simp only [verifyRound, roundCheck, roundNext, Round.check, Round.sumAtZeroOne,
+    Round.nextStatement, Round.appendChallenge, beq_iff_eq,
     Sumcheck.Impl.Representation.evaluate_eq]
   split <;> rename_i h <;> simp [h]
 
 /-- Test the terminal product at the complete challenge point. -/
 def terminalCheck (evaluateMultiplier : Context → (Fin m → C) → C)
     (stmt : Statement Context C (Fin.last m)) (v : C) : Bool :=
-  stmt.target == evaluateMultiplier stmt.ctx stmt.challenges * v
+  stmt.target == Terminal.expectedTarget evaluateMultiplier stmt v
 
 /-- Check the terminal multiplication and forward the same evaluation claim on acceptance. -/
 def verifyTerminal (evaluateMultiplier : Context → (Fin m → C) → C)
@@ -242,7 +244,7 @@ theorem verifyTerminal_eq [LawfulBEq C] (evaluateMultiplier : Context → (Fin m
     (stmt : Statement Context C (Fin.last m)) (v : C) :
     verifyTerminal evaluateMultiplier stmt v =
       if Terminal.check multiplier stmt v then some (Terminal.nextStatement stmt v) else none := by
-  simp only [verifyTerminal, terminalCheck, Terminal.check, beq_iff_eq, h]
+  simp only [verifyTerminal, terminalCheck, Terminal.check, Terminal.expectedTarget, beq_iff_eq, h]
   split <;> rename_i hguard <;> simp [hguard]
 
 end Verifier
@@ -311,49 +313,33 @@ instance [SampleableType C] : ∀ j, SampleableType ((roundPSpec C).Challenge j)
 section OracleRounds
 variable {ι : Type} (OStmt : ι → Type)
 
-/-- The first-round input, the sent message, and then the verifier's challenge. -/
-def RoundState (i : Fin m) : Fin 3 → Type
-  | ⟨0, _⟩ => (Statement Context C i.castSucc × (∀ j, OStmt j)) × ((Fin m → Fin 2) → C)
-  | ⟨1, _⟩ =>
-      ((Statement Context C i.castSucc × (∀ j, OStmt j)) × ((Fin m → Fin 2) → C)) ×
-        Sumcheck.Impl.Representation.Message C 2
-  | ⟨2, _⟩ =>
-      (((Statement Context C i.castSucc × (∀ j, OStmt j)) × ((Fin m → Fin 2) → C)) ×
-        Sumcheck.Impl.Representation.Message C 2) × C
+/-- The round input, the sent message, and then the verifier's challenge. -/
+def RoundState (i : Fin m) : Fin 3 → Type :=
+  let Input := (Statement Context C i.castSucc × (∀ j, OStmt j)) × ((Fin m → Fin 2) → C)
+  scalarRoundProverState Input (Input × Sumcheck.Impl.Representation.Message C 2) C
 
 /-- Send the honest quadratic and retain the same packed table and oracles. -/
 def roundProver [BEq C] [LawfulBEq C] (i : Fin m) (a : Context → (Fin m → Fin 2) → C) :
     OracleProver []ₒ (Statement Context C i.castSucc) OStmt ((Fin m → Fin 2) → C)
-      (Statement Context C i.succ) OStmt ((Fin m → Fin 2) → C) (roundPSpec C) where
-  PrvState := RoundState OStmt i
-  input := id
-  sendMessage
-    | ⟨0, _⟩ => fun st =>
-      let g := roundMessage i (a st.1.1.ctx) st.2 st.1.1.challenges
-      pure (g, (st, g))
-    | ⟨1, h⟩ => fun _ => nomatch h
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h
-    | ⟨1, _⟩ => fun st => pure fun c => (st, c)
-  output := fun ((((stmt, ost), p), g), c) => pure ((roundNext i stmt g c, ost), p)
+      (Statement Context C i.succ) OStmt ((Fin m → Fin 2) → C) (roundPSpec C) :=
+  scalarRoundOracleProver
+    (prepare := fun input =>
+      let ((stmtIn, _), witIn) := input
+      let g := roundMessage i (a stmtIn.ctx) witIn stmtIn.challenges
+      (g, (input, g)))
+    (finish := fun (((stmtIn, oStmtIn), witIn), g) c => ((roundNext i stmtIn g c, oStmtIn), witIn))
 
 /-- Send the final table evaluation and retain the same packed table and oracles. -/
 def terminalProver :
     OracleProver []ₒ (Statement Context C (Fin.last m)) OStmt ((Fin m → Fin 2) → C)
-      (Context × ((Fin m → C) × C)) OStmt ((Fin m → Fin 2) → C) (Terminal.pSpec C) where
-  PrvState
-    | ⟨0, _⟩ =>
-        (Statement Context C (Fin.last m) × (∀ j, OStmt j)) × ((Fin m → Fin 2) → C)
-    | ⟨1, _⟩ =>
-        ((Statement Context C (Fin.last m) × (∀ j, OStmt j)) × ((Fin m → Fin 2) → C)) × C
-  input := id
-  sendMessage
-    | ⟨0, _⟩ => fun st =>
-      let v := terminalMessage st.2 st.1.1
-      pure (v, (st, v))
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h
-  output := fun (((stmt, ost), p), v) => pure ((Terminal.nextStatement stmt v, ost), p)
+      (Context × ((Fin m → C) × C)) OStmt ((Fin m → Fin 2) → C) (Terminal.pSpec C) :=
+  messageRoundOracleProver
+    (prepare := fun input =>
+      let ((stmtIn, _), witIn) := input
+      let packedValue := terminalMessage witIn stmtIn
+      (packedValue, (input, packedValue)))
+    (finish := fun (((stmtIn, oStmtIn), witIn), packedValue) =>
+      ((Terminal.nextStatement stmtIn packedValue, oStmtIn), witIn))
 
 instance [BEq C] [LawfulBEq C] (i : Fin m) (a : Context → (Fin m → Fin 2) → C) :
     (roundProver OStmt i a).OutputIsPure where
@@ -431,11 +417,12 @@ end OracleRounds
 /-- The dependent sequence of quadratic arrays and scalar challenges. -/
 abbrev tailLoopPSpec (C : Type) [CommRing C] (m : ℕ) :
     ProtocolSpec (Fin.vsum (fun _ : Fin m => 2)) :=
-  ProtocolSpec.seqCompose (fun _ : Fin m => roundPSpec C)
+  loopSpecOfRound (roundPSpec C) m
 
 /-- The scalar rounds followed by the final packed evaluation. -/
 abbrev tailPSpec (C : Type) [CommRing C] (m : ℕ) :
-    ProtocolSpec (Fin.vsum (fun _ : Fin m => 2) + 1) := tailLoopPSpec C m ++ₚ Terminal.pSpec C
+    ProtocolSpec (Fin.vsum (fun _ : Fin m => 2) + 1) :=
+  pSpecOfRound (roundPSpec C) C m
 
 section Tail
 variable {ι : Type} (OStmt : ι → Type) [∀ j, OracleInterface (OStmt j)] [BEq C] [LawfulBEq C]
@@ -445,14 +432,15 @@ variable {ι : Type} (OStmt : ι → Type) [∀ j, OracleInterface (OStmt j)] [B
 def tailLoopReduction :
     OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))) OStmt ((Fin m → Fin 2) → C)
       (Statement Context C (Fin.last m)) OStmt ((Fin m → Fin 2) → C) (tailLoopPSpec C m) :=
-  OracleReduction.seqCompose (Statement Context C) (fun _ => OStmt)
-    (fun _ => (Fin m → Fin 2) → C) (fun i => roundReduction OStmt i a)
+  loopReductionOfRounds OStmt (roundReduction := fun i => roundReduction OStmt i a)
 
 /-- Compose the executable rounds and terminal check, including the zero-round case. -/
 def tailReduction :
     OracleReduction []ₒ (Statement Context C (0 : Fin (m + 1))) OStmt ((Fin m → Fin 2) → C)
       (Context × ((Fin m → C) × C)) OStmt ((Fin m → Fin 2) → C) (tailPSpec C m) :=
-  (tailLoopReduction OStmt a).append (terminalReduction OStmt evaluateMultiplier)
+  reductionOfRoundsAndTerminal OStmt
+    (roundReduction := fun i => roundReduction OStmt i a)
+    (terminalReduction := terminalReduction OStmt evaluateMultiplier)
 
 instance : (tailLoopReduction OStmt a).prover.OutputIsPure :=
   Prover.OutputIsPure.seqCompose
@@ -484,21 +472,36 @@ end Tail
 section Correspondence
 variable [BEq C] [LawfulBEq C]
 
+/-- Decode the coefficient message while keeping the round challenge. -/
+def roundTranscriptMap (C : Type) [CommRing C] [BEq C] [LawfulBEq C] :
+    TranscriptMap (roundPSpec C) (Round.pSpec C) :=
+  TranscriptMap.proverThenChallenge (Sumcheck.Impl.Representation.toMessage C 2)
+
 /-- Interpret a quadratic coefficient array on the legacy wire, leaving the challenge intact. -/
 def decodeRoundTranscript (tr : (roundPSpec C).FullTranscript) :
     (Round.pSpec C).FullTranscript :=
-  FullTranscript.mk2 (Sumcheck.Impl.Representation.toMessage C 2 (tr 0)) (tr 1)
+  (roundTranscriptMap C).decodeFull tr
 
 /-- The challenge at the second entry is unchanged by round decoding. -/
 theorem decodeRoundTranscript_challenge
     (tr : (roundPSpec C).FullTranscript) : (decodeRoundTranscript tr) 1 = tr 1 := rfl
 
+/-- Decode each coefficient message in the relocation sumcheck. -/
+def loopTranscriptMap (C : Type) [CommRing C] [BEq C] [LawfulBEq C] (m : ℕ) :
+    TranscriptMap (tailLoopPSpec C m) (ProductSumcheck.loopSpec C m) :=
+  TranscriptMap.seqCompose (fun _ : Fin m => roundTranscriptMap C)
+
 /-- Decode each scalar-round message and keep the original sequence of challenges. -/
 def decodeLoopTranscript (tr : (tailLoopPSpec C m).FullTranscript) :
     (ProductSumcheck.loopSpec C m).FullTranscript :=
-  FullTranscript.seqCompose (pSpec := fun _ : Fin m => Round.pSpec C)
-    fun i => decodeRoundTranscript
-      (FullTranscript.component (pSpec := fun _ : Fin m => roundPSpec C) tr i)
+  (loopTranscriptMap C m).decodeFull tr
+
+private theorem decodeLoopTranscript_eq (tr : (tailLoopPSpec C m).FullTranscript) :
+    decodeLoopTranscript tr =
+      FullTranscript.seqCompose (pSpec := fun _ : Fin m => Round.pSpec C)
+        (fun i => decodeRoundTranscript
+          (FullTranscript.component (pSpec := fun _ : Fin m => roundPSpec C) tr i)) :=
+  TranscriptMap.decodeFull_seqCompose (fun _ : Fin m => roundTranscriptMap C) tr
 
 /-- The loop transports each component independently, with no reordering. -/
 theorem decodeLoopTranscript_component (tr : (tailLoopPSpec C m).FullTranscript) (i : Fin m) :
@@ -507,18 +510,35 @@ theorem decodeLoopTranscript_component (tr : (tailLoopPSpec C m).FullTranscript)
       decodeRoundTranscript
         (FullTranscript.component (pSpec := fun _ : Fin m => roundPSpec C) tr i) := by
   funext j
-  simp only [FullTranscript.component, decodeLoopTranscript, FullTranscript.seqCompose_embedSum,
-    cast_cast, cast_eq]
+  simp only [FullTranscript.component, decodeLoopTranscript_eq,
+    FullTranscript.seqCompose_embedSum, cast_cast, cast_eq]
+
+/-- Decode the sumcheck messages while keeping the final claimed value. -/
+def tailTranscriptMap (C : Type) [CommRing C] [BEq C] [LawfulBEq C] (m : ℕ) :
+    TranscriptMap (tailPSpec C m) (ProductSumcheck.pSpec C m) :=
+  (loopTranscriptMap C m).append (TranscriptMap.refl (Terminal.pSpec C))
 
 /-- Decode the scalar-round messages, keeping the final packed evaluation unchanged. -/
 def decodeTailTranscript (tr : (tailPSpec C m).FullTranscript) :
     (ProductSumcheck.pSpec C m).FullTranscript :=
-  decodeLoopTranscript tr.fst ++ₜ tr.snd
+  (tailTranscriptMap C m).decodeFull tr
+
+private theorem decodeTailTranscript_eq (tr : (tailPSpec C m).FullTranscript) :
+    decodeTailTranscript tr = decodeLoopTranscript tr.fst ++ₜ tr.snd :=
+  TranscriptMap.decodeFull_append (loopTranscriptMap C m)
+    (TranscriptMap.refl (Terminal.pSpec C)) tr
+
+/-- The scalar-round prefix of the decoded tail is the decoded loop. -/
+theorem decodeTailTranscript_fst (tr : (tailPSpec C m).FullTranscript) :
+    (decodeTailTranscript tr).fst = decodeLoopTranscript tr.fst := by
+  rw [decodeTailTranscript_eq]
+  exact FullTranscript.append_fst _ _
 
 /-- Decoding preserves the terminal transcript verbatim. -/
 theorem decodeTailTranscript_snd (tr : (tailPSpec C m).FullTranscript) :
-    (decodeTailTranscript tr).snd = tr.snd :=
-  FullTranscript.append_snd (decodeLoopTranscript tr.fst) tr.snd
+    (decodeTailTranscript tr).snd = tr.snd := by
+  rw [decodeTailTranscript_eq]
+  exact FullTranscript.append_snd (decodeLoopTranscript tr.fst) tr.snd
 
 private theorem seqCompose_verify_eq {k : ℕ} (S : Fin (k + 1) → Type)
     {n : Fin k → ℕ} {ps qs : ∀ i, ProtocolSpec (n i)}
@@ -596,7 +616,8 @@ private theorem tailLoopReduction_verify_eq (a : Context → (Fin m → Fin 2) �
     (tailLoopReduction pc.OStmt a).verifier.toVerifier.verify (stmt, ost) tr =
       (ProductSumcheck.loopVerifier pc).toVerifier.verify (stmt, ost)
         (decodeLoopTranscript tr) := by
-  rw [tailLoopReduction, OracleReduction.seqCompose, OracleVerifier.seqCompose_toVerifier,
+  rw [tailLoopReduction, loopReductionOfRounds, OracleReduction.seqCompose,
+    OracleVerifier.seqCompose_toVerifier,
     ProductSumcheck.loopVerifier_toVerifier]
   have h := seqCompose_verify_eq (fun i => Statement Context C i × (∀ j, pc.OStmt j))
     (fun i => (roundVerifier pc.OStmt i).toVerifier) (fun i => (Round.verifier pc i).toVerifier)
@@ -604,7 +625,7 @@ private theorem tailLoopReduction_verify_eq (a : Context → (Fin m → Fin 2) �
     (fun i => decodeRoundTranscript
       (FullTranscript.component (pSpec := fun _ : Fin m => roundPSpec C) tr i))
     (fun i s => roundVerifier_compare pc i s.1 s.2 _) (stmt, ost)
-  simpa only [FullTranscript.seqCompose_component, roundReduction, decodeLoopTranscript] using h
+  simpa only [FullTranscript.seqCompose_component, roundReduction, decodeLoopTranscript_eq] using h
 
 omit [Algebra P C] in
 /-- The decoded transcript gives exactly the same verdict, including rejection and oracle output. -/
@@ -620,8 +641,8 @@ theorem tailReduction_verify_eq (a : Context → (Fin m → Fin 2) → C)
   change ((tailLoopReduction pc.OStmt a).verifier.append
     (terminalVerifier pc.OStmt evaluateMultiplier)).toVerifier.verify (stmt, ost) tr = _
   rw [OracleVerifier.append_toVerifier, ProductSumcheck.verifier_toVerifier]
-  simp only [Verifier.append, decodeTailTranscript, FullTranscript.append_fst,
-    FullTranscript.append_snd]
+  simp only [Verifier.append]
+  erw [decodeTailTranscript_fst, decodeTailTranscript_snd]
   rw [tailLoopReduction_verify_eq pc]
   congr 1
   funext s
@@ -651,7 +672,8 @@ theorem roundProver_send_eq :
     (fun sent => Sumcheck.Impl.Representation.toMessage C 2 sent.1) <$>
       native.sendMessage ⟨0, rfl⟩ (native.input ((stmt, ost), p)) =
       Prod.fst <$> legacy.sendMessage ⟨0, rfl⟩ (legacy.input ((stmt, ost), Q)) := by
-  simp only [roundProver, Round.prover, Round.proverForOracles, id_eq, map_pure]
+  simp only [roundProver, Round.prover, Round.proverForOracles, scalarRoundOracleProver,
+    id_eq, map_pure]
   exact congrArg pure
     (roundMessage_toMessage i (a stmt.ctx) p stmt.challenges (multiplier stmt.ctx) Q ha hp)
 
@@ -672,7 +694,8 @@ theorem roundProver_finish_eq (c : C) :
     (funext hp).symm
   have hNext : roundNext i stmt (roundMessage i (a stmt.ctx) p stmt.challenges) c =
       Round.nextStatement i stmt (Round.honestMessage multiplier i stmt Q) c := by
-    simp only [roundNext, Round.nextStatement, Sumcheck.Impl.Representation.evaluate_eq]
+    simp only [roundNext, Round.nextStatement, Round.appendChallenge,
+      Sumcheck.Impl.Representation.evaluate_eq]
     rw [roundMessage_toMessage i (a stmt.ctx) p stmt.challenges (multiplier stmt.ctx) Q ha hp]
     rfl
   change (pure ((roundNext i stmt (roundMessage i (a stmt.ctx) p stmt.challenges) c, ost), p) :
@@ -696,8 +719,8 @@ theorem terminalProver_send_eq :
     let legacy := Terminal.prover (C := C) (Context := Context) pc
     Prod.fst <$> native.sendMessage ⟨0, rfl⟩ (native.input ((stmt, ost), p)) =
       Prod.fst <$> legacy.sendMessage ⟨0, rfl⟩ (legacy.input ((stmt, ost), Q)) := by
-  simp only [terminalProver, Terminal.prover, Terminal.proverForOracles, id_eq, map_pure,
-    terminalMessage_eq p Q hp stmt]
+  change (pure (terminalMessage p stmt) : OracleComp []ₒ C) = pure (aeval stmt.challenges Q.val)
+  rw [terminalMessage_eq p Q hp stmt]
 
 /-- The terminal provers return the same evaluation claim and original oracles, and the returned
 table represents the returned legacy polynomial. -/
@@ -712,8 +735,11 @@ theorem terminalProver_finish_eq :
         legacy.output sent.2) := by
   have hTable : (fun b : Fin m → Fin 2 => aeval (b : Fin m → C) Q.val) = p :=
     (funext hp).symm
-  simp only [terminalProver, Terminal.prover, Terminal.proverForOracles, id_eq, pure_bind,
-    map_pure, terminalMessage_eq p Q hp stmt, hTable]
+  change (pure ((Terminal.nextStatement stmt (terminalMessage p stmt), ost), p) :
+    OracleComp []ₒ _) =
+      pure ((Terminal.nextStatement stmt (aeval stmt.challenges Q.val), ost),
+        fun b : Fin m → Fin 2 => aeval (b : Fin m → C) Q.val)
+  rw [terminalMessage_eq p Q hp stmt, hTable]
 
 end ProverTerminal
 end ProverCorrespondence

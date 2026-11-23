@@ -106,11 +106,11 @@ def foldStepLogic (i : Fin ℓ) :
     let msg : ↥L⦃≤ 2⦄[X] := foldProverComputeMsg (L := L) 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i witIn
     FullTranscript.mk2 msg (chal ⟨1, rfl⟩)
-  proverOut := fun s w o t =>
-    let h_i : (pSpecFold (L := L)).«Type» 0 := t ⟨0, by omega⟩
-    let r_i' : (pSpecFold (L := L)).«Type» 1 := t ⟨1, by omega⟩
+  proverOut := fun stmtIn witIn oStmtIn tr =>
+    let h_i : (pSpecFold (L := L)).«Type» 0 := tr ⟨0, by omega⟩
+    let r_i' : (pSpecFold (L := L)).«Type» 1 := tr ⟨1, by omega⟩
     getFoldProverFinalOutput 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i
-      (s, o, w, h_i, r_i')
+      stmtIn oStmtIn witIn h_i r_i'
 
 omit [SampleableType L] [DecidableEq 𝔽q] h_β₀_eq_1 in
 /-- The fold step is strongly complete: from the strict round relation at `i`, the honest round
@@ -347,9 +347,7 @@ lemma strictOracleFoldingConsistent_commitStepLogic
   --    (when IsCommitmentRound)
   -- Simplify the step definitions
   intro step transcript verifierStmtOut verifierOStmtOut
-  let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => witIn.t.val.eval (bitsOfIndex ω))
-  let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
+  let f₀ := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witIn.t
   have h_wit_f_eq : witIn.f = getMidCodewords 𝔽q β witIn.t stmtIn.challenges :=
     h_wit_struct_In.2
   -- Oracle extension: verifierOStmtOut = snocOracle oStmtIn witIn.f
@@ -406,12 +404,10 @@ lemma strictOracleFoldingConsistent_commitStepLogic
       (h_destIdx_le := by simp only [oracle_index_le_ℓ])
       (h_destIdx_eq_destIdx' := by simp only [Fin.val_succ, Fin.mk.injEq]; exact h_domain_idx_eq)
       (f := f₀) (r_challenges := stmtIn.challenges)
-    dsimp only [f₀, P₀] at h_cast_elim
-    unfold polyToOracleFunc at h_cast_elim
+    dsimp only [f₀] at h_cast_elim
     rw [← h_cast_elim]
     unfold getFoldingChallenges
     rw [←h_challenges_eq]
-    unfold polyToOracleFunc
     have h_cast_elim2 := iteratedFold_congr_steps_index 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := 0) (steps := i.succ) (steps' := j.val * ϑ)
       (destIdx := ⟨oraclePositionToDomainIndex ℓ ϑ j, by omega⟩)
@@ -421,8 +417,7 @@ lemma strictOracleFoldingConsistent_commitStepLogic
         exact h_domain_idx_eq)
       (h_destIdx_le := by simp only [oracle_index_le_ℓ])
       (f := f₀) (r_challenges := stmtIn.challenges)
-    dsimp only [f₀, P₀] at h_cast_elim2
-    unfold polyToOracleFunc at h_cast_elim2
+    dsimp only [f₀] at h_cast_elim2
     rw [h_cast_elim2]
     dsimp only [Fin.val_succ, Fin.take_apply, Fin.castLE_refl]
     congr 1
@@ -623,10 +618,7 @@ lemma iteratedFold_lastOracle_eq_finalConstant
   let k := start.val
   have hsteps : k + ϑ = ℓ := lastBlockEnd_val
     (r := r) (ℓ := ℓ) (𝓡 := 𝓡) (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => witIn.t.val.eval (bitsOfIndex ω))
-  let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-    (domainIdx := 0) P₀
+  let f₀ := firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witIn.t
   have hlast : getLastOracle 𝔽q β (ϑ := ϑ) (destIdx := start)
       (h_destIdx := lastBlockStart_val_eq_getLastOracleDomainIndex) oStmtIn =
       iteratedFold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := k) (destIdx := start)
@@ -661,14 +653,15 @@ lemma iteratedFold_lastOracle_eq_finalConstant
       (h_destIdx := by simp [k]) (h_destIdx_le := by dsimp [start]; rw [lastBlockStart_val]; omega)
       f₀ (Fin.take k (by change k ≤ ℓ; omega) stmtIn.challenges))
     (fun j => stmtIn.challenges ⟨k + j.val, by change k + j.val < ℓ; omega⟩) y = _
-  rw [hsplit, iteratedFold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t := witIn.t)
+  rw [hsplit]
+  dsimp only [f₀]
+  rw [iteratedFold_to_level_ℓ_eval 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t := witIn.t)
     (h_destIdx := by dsimp [dest]; rw [lastBlockEnd_val])]
   rw [h_witness]
   dsimp only [getMidCodewords]
   have hconstant := iteratedFold_to_level_ℓ_eval 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) witIn.t ⟨ℓ, by omega⟩ rfl stmtIn.challenges
   dsimp only at hconstant
-  unfold polyToOracleFunc at hconstant
   exact (congr_fun hconstant ⟨0, by simp only [zero_mem]⟩).symm
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
@@ -779,8 +772,7 @@ lemma finalSumcheckStepLogic_isStronglyComplete :
     refine ⟨?_, ?_⟩
     · -- Component 1: OracleFoldingConsistent
       use t
-      simp only [SetLike.coe_mem, exists_const]
-      exact h_oracle_folding_In
+      exact ⟨t.property, h_oracle_folding_In⟩
     · -- Component 2: finalOracleFoldingConsistency
       funext y
       classical

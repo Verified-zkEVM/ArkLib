@@ -926,9 +926,7 @@ lemma iteratedFold_mem_code (i : Fin r) {destIdx : Fin r} (steps : ℕ)
     have h_i_eq_destIdx : i = destIdx := by omega
     subst h_i_eq_destIdx
     -- Base case: 0 steps. iteratedFold is identity. Code is the same.
-    simp only [Fin.eta, iteratedFold, reduceAdd, Fin.val_castSucc, Fin.val_succ, id_eq,
-      Fin.reduceLast, Fin.coe_ofNat_eq_mod, reduceMod, Nat.add_zero, Subtype.coe_eta,
-      Fin.dfoldl_zero, SetLike.coe_mem]
+    simpa only [iteratedFold_zero_steps, cast_eq] using f.property
   | succ k ih =>
     intro destIdx h_destIdx h_destIdx_le
     let midIdx : Fin r := ⟨i + k, by omega⟩

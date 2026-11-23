@@ -14,12 +14,14 @@ public import ArkLib.OracleReduction.Security.GuardedBridges
 The unrolled small-field polynomial commitment of [DP24] runs the ring-switching product
 sum-check inside the Binary Basefold sum-check-and-fold loop:
 
-1. the tensor batching head (`TensorPrefix.headVerifier`) checks the carrier message against the
-   original claim, samples the batching challenge, and outputs a product claim
+1. the tensor batching head receives the carrier message and sends a batching challenge. Its
+   verifier (`TensorPrefix.headVerifier`) checks the carrier against the original claim and
+   outputs a product claim
    `s₀ = ∑_y A(y) · t'(y)` for the packed polynomial `t'` with the ring-switching multiplier
    `A = TensorPrefix.multiplier`;
-2. the Binary Basefold opening of that product claim (`ProductClaim.openingVerifier`) runs the
-   sum-check-and-fold loop and the query phase at the same multiplier. Its final check is
+2. the Binary Basefold opening of that product claim (`ProductClaim.openingVerifier`) reuses the
+   same input oracle and runs the sum-check-and-fold loop and the query phase at that multiplier.
+   Its final scalar check is
    `s_ℓ' = A(r') · c`, where the verifier's value of `A(r')` equals `compute_final_eq_value`
    (`TensorPrefix.multiplier_evaluate_eq_compute_final_eq_value`).
 
@@ -98,20 +100,29 @@ noncomputable def tailReduction (γ : ℕ) :=
     (ProductSumcheck.Statement.claim (m := ℓ')) (Equiv.refl _) γ (ϑ := ϑ)
     (h_rate := h_rate)
 
-/-- The unrolled FRI-Binius verifier: the tensor batching head, then `tailVerifier`. -/
-noncomputable def fullVerifier (γ : ℕ) :=
-  OracleVerifier.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (TensorPrefix.headVerifier (biniusProfile κ L K β) h_l
+/-- The tensor batching head followed by the Binary Basefold verifier for its product claim
+(`tailVerifier`). -/
+noncomputable def fullVerifier (γ : ℕ) :
+    OracleProofVerifier []ₒ ((Fin ℓ → L) × L) (openingOracles K β (ϑ := ϑ) h_rate)
+      (pSpec κ K β (ϑ := ϑ) h_rate γ) :=
+  appendOpeningVerifier K β (ϑ := ϑ) h_rate
+    (prefixVerifier := TensorPrefix.headVerifier (biniusProfile κ L K β) h_l
       (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
-    (tailVerifier κ K β (ϑ := ϑ) h_rate h_l γ)
+    (multiplier := TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (toProductClaim := ProductSumcheck.Statement.claim (m := ℓ')) γ
 
-/-- The unrolled FRI-Binius reduction: the honest head, then `tailReduction`. Its verifier is
-`fullVerifier` (`fullReduction_verifier`). -/
-noncomputable def fullReduction (γ : ℕ) :=
-  OracleReduction.append (Oₛ₃ := fun i : Empty => nomatch i)
-    (TensorPrefix.headReduction (biniusProfile κ L K β) h_l
+/-- The tensor batching head followed by the honest Binary Basefold opening (`tailReduction`).
+The opening reuses the packed-polynomial witness. The composed verifier is `fullVerifier`
+(`fullReduction_verifier`). -/
+noncomputable def fullReduction (γ : ℕ) :
+    OracleProof []ₒ ((Fin ℓ → L) × L) (openingOracles K β (ϑ := ϑ) h_rate) (MultilinearPoly K ℓ)
+      (pSpec κ K β (ϑ := ϑ) h_rate γ) :=
+  appendOpeningReduction K β (ϑ := ϑ) h_rate
+    (prefixReduction := TensorPrefix.headReduction (biniusProfile κ L K β) h_l
       (binaryBasefoldInput κ L K β ℓ' R ϑ h_rate))
-    (tailReduction κ K β (ϑ := ϑ) h_rate h_l γ)
+    (multiplier := TensorPrefix.multiplier (biniusProfile κ L K β) h_l)
+    (toProductClaim := ProductSumcheck.Statement.claim (m := ℓ'))
+    (witnessEquiv := Equiv.refl _) γ
 
 /-- Completeness and soundness concern the same verifier. -/
 theorem fullReduction_verifier (γ : ℕ) :

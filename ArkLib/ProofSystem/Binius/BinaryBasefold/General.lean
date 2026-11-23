@@ -145,6 +145,8 @@ theorem strictRoundRelation_subset_roundRelation_zero {multpoly : Context → Mu
         (0 : Fin (ℓ + 1))).val) (v := stmt.challenges)
         (h := by simp only [Fin.val_fin_le, OracleFrontierIndex.val_le_i]))
       (oStmt := oStmt) h_strict_fold
+    change firstOracleEncoding 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit.t =
+      getFirstOracle 𝔽q β oStmt at h_eq
     dsimp only [FirstOracleWitnessConsistent]
     rw [h_eq]
     dsimp only [PairUniqueDecodingClose]

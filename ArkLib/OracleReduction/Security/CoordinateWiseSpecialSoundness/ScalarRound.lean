@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 module
 
+public import ArkLib.OracleReduction.ProtocolSpec.ScalarRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
@@ -58,11 +59,6 @@ open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWis
 
 namespace CoordinateWise.ScalarRound
 
-/-- The two-round scalar-challenge protocol: the prover sends a message `Msg` (round 0,
-`P_to_V`), the verifier replies with a single scalar challenge `C` (round 1, `V_to_P`). -/
-@[reducible] def pSpecScalar (Msg C : Type) : ProtocolSpec 2 :=
-  ⟨!v[.P_to_V, .V_to_P], !v[Msg, C]⟩
-
 variable {Msg C : Type} {arity : (pSpecScalar Msg C).ChallengeIdx → ℕ}
 
 /-- The scalar-round CWSS structure at soundness parameter `k`: a single challenge coordinate
@@ -78,23 +74,6 @@ analogue of `SingleRound.foldStructure_arity`. -/
 theorem scalarStructure_arity {k : ℕ} (hk : 2 ≤ k) :
     (scalarStructure (Msg := Msg) (C := C) k hk).arity ⟨1, rfl⟩ = k :=
   show 1 * (k - 1) + 1 = k from by omega
-
-section Instances
-
-variable [SampleableType C] [OracleInterface Msg]
-
-/-- Hand-written 2-round instances (not auto-derived for `ProtocolSpec 2`). -/
-instance : ∀ i, SampleableType ((pSpecScalar Msg C).Challenge i)
-  | ⟨0, h⟩ => nomatch h
-  | ⟨1, _⟩ => (inferInstance : SampleableType C)
-
-/-- `OracleInterface` for each message index: round 0 carries the prover message `Msg`;
-round 1 is a challenge, so it has no message. -/
-instance : ∀ i, OracleInterface ((pSpecScalar Msg C).Message i)
-  | ⟨0, _⟩ => (inferInstance : OracleInterface Msg)
-  | ⟨1, h⟩ => nomatch h
-
-end Instances
 
 /-! ## Round readers
 

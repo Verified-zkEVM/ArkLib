@@ -160,31 +160,28 @@ instance [SampleableType L] : ∀ j, SampleableType ((headPSpec L κ).Challenge 
   | ⟨0, h⟩ => nomatch h
   | ⟨1, _⟩ => inferInstanceAs (SampleableType (Fin κ → L))
 
-/-- The runtime head state caches the column message until the batching challenge arrives. -/
-def HeadState {ι : Type} (OStmt : ι → Type) (K L : Type) (ℓ κ : ℕ) : Fin 3 → Type
-  | ⟨0, _⟩ => (((Fin ℓ → L) × L) × (∀ j, OStmt j)) × (Cube ℓ → K)
-  | ⟨1, _⟩ =>
-    ((((Fin ℓ → L) × L) × (∀ j, OStmt j)) × (Cube ℓ → K)) × (Cube κ → L)
-  | ⟨2, _⟩ =>
-    (((((Fin ℓ → L) × L) × (∀ j, OStmt j)) × (Cube ℓ → K)) × (Cube κ → L)) × (Fin κ → L)
+/-- Retain the source table and cache the sent column values for use after the
+batching challenge. -/
+def HeadState {ι : Type} (OStmt : ι → Type) (K L : Type) (ℓ κ : ℕ) : Fin 3 → Type :=
+  let SourceState := (((Fin ℓ → L) × L) × (∀ j, OStmt j)) × (Cube ℓ → K)
+  scalarRoundProverState
+    (Input := SourceState) (Sent := SourceState × (Cube κ → L)) (Challenge := Fin κ → L)
 
-/-- The honest head prover sends columns and forwards the packed table and unchanged oracles. -/
+/-- Compute the column table before sending it and retain the source table. After receiving the
+challenge, batch the cached columns and pack the source table for the next phase. The oracle
+statements pass through unchanged. -/
 def headProver {ι : Type} (OStmt : ι → Type) (basis : Cube κ → L)
     (coordinates : L → Cube κ → K) (h : ℓ = m + κ) :
     OracleProver []ₒ ((Fin ℓ → L) × L) OStmt (Cube ℓ → K)
-      (HeadOutput L ℓ κ m) OStmt (Cube m → L) (headPSpec L κ) where
-  PrvState := HeadState OStmt K L ℓ κ
-  input := id
-  sendMessage
-    | ⟨0, _⟩ => fun st =>
-      let α := honestMessage h st.1.1.1 st.2
-      pure (α, (st, α))
-    | ⟨1, h⟩ => fun _ => nomatch h
-  receiveChallenge
-    | ⟨0, h⟩ => nomatch h
-    | ⟨1, _⟩ => fun st => pure fun c => (st, c)
-  output := fun ((((stmt, ost), source), α), c) =>
-    pure ((headNext basis coordinates stmt.1 α c, ost), pack basis h source)
+      (HeadOutput L ℓ κ m) OStmt (Cube m → L) (headPSpec L κ) :=
+  scalarRoundOracleProver (oSpec := []ₒ) (OStmt := OStmt)
+    (prepare := fun sourceState =>
+      let (((query, _), _), sourceTable) := sourceState
+      let columns := honestMessage h query sourceTable
+      (columns, (sourceState, columns)))
+    (finish := fun ((((query, _), oStmtIn), sourceTable), columns) batchingChallenge =>
+      let stmtOut := headNext basis coordinates query columns batchingChallenge
+      ((stmtOut, oStmtIn), pack basis h sourceTable))
 
 instance {ι : Type} (OStmt : ι → Type) (basis : Cube κ → L)
     (coordinates : L → Cube κ → K) (h : ℓ = m + κ) :
@@ -192,14 +189,17 @@ instance {ι : Type} (OStmt : ι → Type) (basis : Cube κ → L)
   output_is_pure := ⟨fun ((((stmt, ost), source), α), c) =>
     ((headNext basis coordinates stmt.1 α c, ost), pack basis h source), fun _ => rfl⟩
 
-/-- The runtime head verifier reads the column message before accepting or aborting. -/
+/-- Read the column message to check the claimed evaluation. On success, batch the same columns
+using the recorded challenge and preserve the oracle statements; otherwise reject. -/
 def headVerifier [DecidableEq L] {ι : Type} (OStmt : ι → Type)
     [∀ j, OracleInterface (OStmt j)] (basis : Cube κ → L)
     (coordinates : L → Cube κ → K) (h : ℓ = m + κ) :
     OracleVerifier []ₒ ((Fin ℓ → L) × L) OStmt (HeadOutput L ℓ κ m) OStmt
       (headPSpec L κ) :=
-  scalarRoundOracleVerifier (fun stmt α => stmt.2 = reconstruct h stmt.1 α)
-    (fun stmt α c => headNext basis coordinates stmt.1 α c)
+  scalarRoundOracleVerifier
+    (check := fun stmtIn columns => stmtIn.2 = reconstruct h stmtIn.1 columns)
+    (accept := fun stmtIn columns batchingChallenge =>
+      headNext basis coordinates stmtIn.1 columns batchingChallenge)
 
 /-- The tensor batching reduction with coordinate messages and Boolean-table witnesses.
 Agreement with the tensor specification assumes that `coordinates` gives the coefficients
@@ -255,24 +255,8 @@ theorem headProver_run {ι : Type} (OStmt : ι → Type)
       let α := honestMessage h stmt.1 source
       pure (FullTranscript.mk2 (pSpec := headPSpec L κ) α c,
         ((headNext basis coordinates stmt.1 α c, ost), pack basis h source))) := by
-  have h0 : (headPSpec L κ).dir 0 = .P_to_V := rfl
-  have h1 : (headPSpec L κ).dir 1 = .V_to_P := rfl
-  simp only [Prover.run, Prover.runToRound, Fin.induction_two,
-    Prover.processRound_of_dir_eq_P_to_V 0 h0, Prover.processRound_of_dir_eq_V_to_P 1 h1]
-  simp only [headProver, id_eq, pure_bind, liftM_pure, bind_pure_comp,
-    LawfulApplicative.map_pure, getChallenge]
-  simp only [liftM, map_eq_bind_pure_comp, bind_assoc]
-  apply bind_congr
-  intro c
-  let _ : ∀ j, OracleInterface ((headPSpec L κ).Challenge j) := challengeOracleInterface
-  let α := honestMessage h stmt.1 source
-  let out := ((headNext (m := m) basis coordinates stmt.1 α c, ost), pack basis h source)
-  change (pure (((default : (headPSpec L κ).Transcript 0).concat (m := 0) α).concat
-      (m := 1) c, out) : OracleComp ([]ₒ + [(headPSpec L κ).Challenge]ₒ) _) =
-    pure (FullTranscript.mk2 α c, out)
-  congr 1
-  exact congrArg (fun tr => (tr, out))
-    (FullTranscript.mk2_eq_snoc_snoc (pSpec := headPSpec L κ) α c).symm
+  unfold headProver
+  exact scalarRoundOracleProver_run (oSpec := []ₒ) _ _ stmt ost source
 
 /-- The public product-sumcheck multiplier on Boolean input. -/
 def multiplierTable (coordinates : L → Cube κ → K) (r : Fin m → L) (c : Fin κ → L)
@@ -374,8 +358,8 @@ theorem headNext_eq [SampleableType L] (stmt : (Fin ℓ → L) × L) (α : Cube 
   rw [batch_eq]
   rfl
 
-/-- The head's actual send action agrees after decoding its carrier and interpreting the
-runtime source table as the legacy packed state. -/
+/-- Reconstruct the abstract carrier from the sent columns and pack the retained source table.
+This gives the abstract prover's sent message and cached state. -/
 theorem headProver_sendMessage_eq [SampleableType L] (a : AbstractOStmtIn L m)
     (basis : Cube κ → L) (coordinates : L → Cube κ → K) (hBasis : basis = ⇑P.basis)
     (stmt : (Fin ℓ → L) × L) (ost : ∀ j, (TensorPrefix.commitment a).OStmt j)
@@ -388,7 +372,7 @@ theorem headProver_sendMessage_eq [SampleableType L] (a : AbstractOStmtIn L m)
         ⟨0, rfl⟩ ((stmt, ost), toMultilinear source) := by
   subst basis
   simp only [headProver, TensorPrefix.headReduction, Head.reduction, Head.prover,
-    Head.proverForOracles, LawfulApplicative.map_pure]
+    Head.proverForOracles, scalarRoundOracleProver, LawfulApplicative.map_pure]
   rw [toMultilinear_pack P h, ← TensorPrefix.packedMLE_components_eq_packMLE]
   have hα : honestMessage h stmt.1 source =
       Head.partials (PackingData.ofBasis P.basis) m (TensorPrefix.layout P h)
@@ -412,7 +396,7 @@ theorem headProver_output_eq [SampleableType L] (a : AbstractOStmtIn L m)
           ((TensorPrefix.layout P h).components (toMultilinear source))), α), c) := by
   subst basis coordinates
   simp only [headProver, TensorPrefix.headReduction, Head.reduction, Head.prover,
-    Head.proverForOracles, LawfulApplicative.map_pure]
+    Head.proverForOracles, scalarRoundOracleProver, LawfulApplicative.map_pure]
   rw [headNext_eq P h, toMultilinear_pack P h, ← TensorPrefix.packedMLE_components_eq_packMLE]
   rfl
 
@@ -482,13 +466,26 @@ theorem headVerifier_verify_eq [DecidableEq L] [SampleableType L]
     rw [headVerify, ite_eq_right hc, ite_eq_right (fun hp => hcheck (of_decide_eq_true hp))]
     rfl
 
+/-- Decode the batching message into a tensor, keeping the original challenge. -/
+noncomputable def headTranscriptMap [SampleableType L] :
+    TranscriptMap (headPSpec L κ) (TensorPrefix.headPSpec P) :=
+  TranscriptMap.proverThenChallenge (TensorPrefix.messageEquiv P).symm
+
 /-- Interpret the column message as the abstract carrier, keeping its batching challenge. -/
 noncomputable def decodeHeadTranscript [SampleableType L]
     (tr : (headPSpec L κ).FullTranscript) : (TensorPrefix.headPSpec P).FullTranscript :=
-  FullTranscript.mk2 ((TensorPrefix.messageEquiv P).symm (tr 0)) (tr 1)
+  (headTranscriptMap P).decodeFull tr
 
 theorem decodeHeadTranscript_challenge [SampleableType L]
     (tr : (headPSpec L κ).FullTranscript) : decodeHeadTranscript P tr 1 = tr 1 := rfl
+
+private theorem decodeHeadTranscript_eq [SampleableType L]
+    (tr : (headPSpec L κ).FullTranscript) :
+    decodeHeadTranscript P tr =
+      FullTranscript.mk2 (pSpec := TensorPrefix.headPSpec P)
+        ((TensorPrefix.messageEquiv P).symm (tr 0)) (tr 1) := by
+  funext i
+  fin_cases i <;> rfl
 
 /-- Arbitrary runtime head transcripts verify identically after carrier decoding. -/
 theorem headVerifier_verify_decodeHeadTranscript [DecidableEq L] [SampleableType L]
@@ -503,6 +500,7 @@ theorem headVerifier_verify_decodeHeadTranscript [DecidableEq L] [SampleableType
     fin_cases i <;> rfl
   have hagree := headVerifier_verify_eq P h a stmt ost (tr 0) (tr 1)
   rw [htr] at hagree
+  rw [decodeHeadTranscript_eq]
   exact hagree
 
 theorem multiplierTable_eq [SampleableType L] (r : Fin ℓ → L) (c : Fin κ → L) (y : Cube m) :
@@ -624,7 +622,7 @@ variable [DecidableEq L] [BEq L] [LawfulBEq L] [SampleableType L]
 
 /-- The full verifier comparison follows by checking the head and tail at their respective
 transcript projections. Failure from either phase is preserved by sequential composition. -/
-theorem ringSwitchReduction_verify_eq_of_tail
+private theorem ringSwitchReduction_verify_eq_of_tail
     (decodeTail : (ProductSumcheck.Computable.tailPSpec L m).FullTranscript →
       (ProductSumcheck.pSpec L m).FullTranscript)
     (hTail : ∀ (stmt : HeadOutput L ℓ κ m) (ost : ∀ j, (TensorPrefix.commitment a).OStmt j)
@@ -653,12 +651,23 @@ theorem ringSwitchReduction_verify_eq_of_tail
   simp only [hTail]
   rfl
 
-/-- Interpret the executable prefix transcript on the original tensor and polynomial wire.
-The carrier is reconstructed from columns and the scalar messages are decoded in order. -/
+/-- Decode the batching and relocation phases in place. -/
+noncomputable def ringSwitchTranscriptMap :
+    TranscriptMap (ringSwitchPSpec L κ m) (TensorPrefix.pSpec P (ℓ' := m)) :=
+  (headTranscriptMap P).append (ProductSumcheck.Computable.tailTranscriptMap L m)
+
+/-- Interpret the executable prefix transcript on the original tensor and polynomial wire. -/
 noncomputable def decodeRingSwitchTranscript
     (tr : (ringSwitchPSpec L κ m).FullTranscript) :
     (TensorPrefix.pSpec P (ℓ' := m)).FullTranscript :=
-  decodeHeadTranscript P tr.fst ++ₜ ProductSumcheck.Computable.decodeTailTranscript tr.snd
+  (ringSwitchTranscriptMap P).decodeFull tr
+
+omit [DecidableEq L] in
+private theorem decodeRingSwitchTranscript_eq (tr : (ringSwitchPSpec L κ m).FullTranscript) :
+    decodeRingSwitchTranscript P tr =
+      decodeHeadTranscript P tr.fst ++ₜ ProductSumcheck.Computable.decodeTailTranscript tr.snd :=
+  TranscriptMap.decodeFull_append (headTranscriptMap P)
+    (ProductSumcheck.Computable.tailTranscriptMap L m) tr
 
 /-- The executable prefix verifier agrees with the original verifier at every decoded transcript.
 Acceptance, rejection, evaluation claims, and the output commitment oracles all agree.
@@ -673,6 +682,7 @@ theorem ringSwitchReduction_verify_eq
       (TensorPrefix.verifier P h a).toVerifier.verify (stmt, ost)
         (decodeRingSwitchTranscript P tr) := by
   subst basis coordinates
+  rw [decodeRingSwitchTranscript_eq]
   refine ringSwitchReduction_verify_eq_of_tail P h a
     ProductSumcheck.Computable.decodeTailTranscript ?_ stmt ost tr
   intro s os tail

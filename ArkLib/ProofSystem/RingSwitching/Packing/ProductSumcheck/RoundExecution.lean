@@ -34,18 +34,13 @@ theorem prover_run (stmt : Statement Context C i.castSucc) (ost : ∀ j, pc.OStm
         ([]ₒ + [(pSpec C).Challenge]ₒ'challengeOracleInterface)
       let g := honestMessage multiplier i stmt p
       pure (FullTranscript.mk2 g c, (nextStatement i stmt g c, ost), p)) := by
-  have h0 : (pSpec C).dir 0 = .P_to_V := rfl
-  have h1 : (pSpec C).dir 1 = .V_to_P := rfl
-  simp only [Prover.run, Prover.runToRound, Fin.induction_two,
-    Prover.processRound_of_dir_eq_P_to_V 0 h0,
-    Prover.processRound_of_dir_eq_V_to_P 1 h1]
-  simp only [prover, proverForOracles, pure_bind, liftM_pure, bind_assoc]
-  congr 1
-  funext c
-  exact congrArg (fun tr =>
-    (pure (tr, (nextStatement i stmt (honestMessage multiplier i stmt p) c, ost), p) :
-      OracleComp ([]ₒ + [(pSpec C).Challenge]ₒ'challengeOracleInterface) _))
-    (FullTranscript.mk2_eq_snoc_snoc _ _).symm
+  exact scalarRoundOracleProver_run (oSpec := []ₒ) (OStmt := pc.OStmt)
+    (prepare := fun input =>
+      let ((stmtIn, _), witIn) := input
+      (honestMessage multiplier i stmtIn witIn, input))
+    (finish := fun ((stmtIn, oStmtIn), witIn) c =>
+      ((nextStatement i stmtIn (honestMessage multiplier i stmtIn witIn) c, oStmtIn), witIn))
+    stmt ost p
 
 open scoped Classical in
 /-- The whole reduction preserves the checked verdict and the original oracle collection. -/
