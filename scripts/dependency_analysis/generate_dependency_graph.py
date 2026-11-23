@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env -S uv run --no-project --python 3.12 python
 """
 Generate dependency graph for ArkLib Lean files.
 This script parses import statements and creates a visual representation

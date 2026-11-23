@@ -26,10 +26,10 @@ variable (s : Fin (k + 1) → ℕ+) (o : ∀ j, FinalOracleStatement s ω j)
 variable (α : FinalStatement F k)
 
 /-- Compute the projected query point using charged squarings. -/
-def projectedPoint (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
+def projectedPoint (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) :
     OracleComp (InstructionSpec s o α)
-      {a : F // a = (QueryRound.queryPoint s hs i x).val} := do
+      {a : F // a = (QueryRound.queryPoint s i x).val} := do
   let a ← liftComp (Arithmetic.squareIter x.val (foldingPrefix s i.castSucc)) _
   pure ⟨a.val, a.property⟩
 
@@ -37,7 +37,7 @@ def projectedPoint (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
 def blockNodes (hs : (∑ j, (s j).val) ≤ n) (gen : Generator ω)
     (i : Fin (k + 1)) (roundGen : RoundGenerator s gen i)
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val}) :
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val}) :
     OracleComp (InstructionSpec s o α)
       {a : Array F // a = Array.ofFn (fun j : Fin (2 ^ (s i).val) ↦
         (blockNode s hs i x j).val)} :=

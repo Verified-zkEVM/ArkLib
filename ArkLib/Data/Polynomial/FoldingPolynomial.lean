@@ -200,7 +200,7 @@ lemma substitution_property_of_folding_polynomial {q f : F[X]} :
   revert q f
   intro q f
   induction n : f.natDegree using Nat.strong_induction_on generalizing q f with
-  | h n ih =>
+  | ind n ih =>
     by_cases h_deg : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0
     · rw [folding_polynomial_def_base_case h_deg]
       simp +decide only [eval_map]
@@ -313,7 +313,7 @@ theorem folding_polynomial_deg_y_bound {q f : F[X]} (h : 0 < q.degree) :
     natDegreeY (foldingPolynomial q f) < q.degree := by
   simp only [natDegreeY, coe_lt_degree]
   induction n : f.natDegree using Nat.strong_induction_on generalizing f q with
-  | h n ih =>
+  | ind n ih =>
   by_cases hq : f.degree < q.degree
   · have h_folding_eq_map : foldingPolynomial q f = Polynomial.map Polynomial.C f :=
       folding_polynomial_eq_map_of_f_degree_lt_q_degree hq
@@ -385,14 +385,13 @@ private lemma folding_polynomial_deg_x_ind {q f : F[X]}
       · simp_all only [ge_iff_le, gt_iff_lt, degreeX, coeff_add, coeff_map, coeff_C_mul,
         natDegree_C_add, Finset.sup_le_iff, mem_support_iff, ne_eq]
         intro n hn
-        by_cases h : Polynomial.coeff
-          (foldingPolynomial q (f / q)) n = 0
+        by_cases h : (foldingPolynomial q (f / q)).coeff n = 0
             <;> simp_all +decide only [monic_X, Monic.leadingCoeff, one_mul, ne_eq,
               leadingCoeff_eq_zero, not_false_eq_true, natDegree_mul', natDegree_X,
               add_le_add_iff_left, mul_zero, add_zero, map_eq_zero, natDegree_zero, zero_le]
         exact Finset.le_sup
           (f := fun n ↦ Polynomial.natDegree
-            (Polynomial.coeff (foldingPolynomial q (f / q)) n))
+            ((foldingPolynomial q (f / q)).coeff n))
             (by aesop)
       · simp_all only [ge_iff_le, gt_iff_lt, degreeX, coeff_add, coeff_map, coeff_C_mul,
         natDegree_C_add, Nat.bot_eq_zero, add_pos_iff, zero_lt_one, Finset.lt_sup_iff,
@@ -439,7 +438,7 @@ theorem folding_polynomial_deg_x {q f : F[X]} :
       simp only [natDegree_C, Nat.div_zero]
     · simp only [not_le] at h
       induction n : f.natDegree using Nat.strong_induction_on generalizing f q with
-      | h n ih =>
+      | ind n ih =>
       have hqpos : 0 < q.natDegree := Polynomial.natDegree_pos_iff_degree_pos.mpr h
       by_cases h₁ : f.degree < q.degree ∨ f.degree ≤ 0 ∨ q.degree ≤ 0
       · have h_deg_zero : f.natDegree < q.natDegree := by
@@ -537,7 +536,6 @@ lemma folding_polynomial_is_the_reminder {q f : F[X]} :
 /-- The uniqueness of the folding polynomial. -/
 theorem folding_polynomial_is_unique {q f : F[X]} {Q : F[X][Y]}
     (h : (Q.map (Polynomial.compRingHom q)).eval X = f)
-  (h_x : degreeX Q = f.natDegree / q.natDegree)
   (h_y : natDegreeY Q < q.natDegree) :
   Q = foldingPolynomial q f := by
     by_contra h_contra
@@ -611,21 +609,6 @@ lemma folded_poly_degree_bound {Q : F[X][Y]} {q : F[X]} {t : ℕ}
     _ < (degreeX Q + 1) * q.natDegree := by rw [Nat.add_mul, Nat.one_mul]; omega
     _ ≤ t * q.natDegree := Nat.mul_le_mul_right _ h_x
 
-/-- Alternative uniqueness theorem for the folding polynomial.
-    The only difference is the `h_x` condition which in this theorem
-    is only and inequality. Handy in practice since `degreeX` is defined
-    as a supremum so inequality is much easier to prove for it.
--/
-theorem folding_polynomial_is_unique' {q f : Polynomial F} {Q : Polynomial (Polynomial F)}
-    (h : (Q.map (Polynomial.compRingHom q)).eval Polynomial.X = f)
-  (h_x : degreeX Q ≤ f.natDegree / q.natDegree)
-  (h_y : natDegreeY Q < q.natDegree) :
-  Q = foldingPolynomial q f := by
-  refine folding_polynomial_is_unique h (le_antisymm h_x (Nat.le_of_lt_succ ?_)) h_y
-  have h_deg := folded_poly_degree_bound (Nat.lt_succ_self (degreeX Q)) h_y
-  rw [h, Nat.mul_comm] at h_deg
-  exact Nat.div_lt_of_lt_mul h_deg
-
 /-- Polynomial folding function that turns
     a polynomial of degree `≤n` into a polynomial
     of degree `≤n/k` for given `k`.
@@ -687,8 +670,7 @@ private lemma natDegree_iterate_divX_le_poly (f : F[X]) (k : ℕ) :
 private lemma X_pow_div_mod_decomp (f : F[X]) (k : ℕ) :
     (∑ i ∈ Finset.range k, Polynomial.C (f.coeff i) * X^i)
       + X^k * Polynomial.divX^[k] f = f := by
-  apply Polynomial.ext
-  intro n
+  ext n : 2
   rw [Polynomial.coeff_add, Polynomial.finsetSum_coeff, Polynomial.coeff_X_pow_mul',
       coeff_iterate_divX]
   simp only [coeff_C_mul, coeff_X_pow, mul_ite, mul_one, mul_zero]
@@ -752,25 +734,34 @@ lemma polyFold_base {f : F[X]} {k : ℕ} {r : F} (h : k = 0 ∨ f.natDegree < k)
   rw [folding_polynomial_def_base_case h_deg]
   exact eval_C_map_C f r
 
-/-- Recursive case of `polyFold`: when `0 < k ≤ f.natDegree`,
+/-- Recurrence for `polyFold`: when `0 < k`,
     `polyFold f k r = C ((f %ₘ X^k).eval r) + X * polyFold (f /ₘ X^k) k r`. -/
-lemma polyFold_step {f : F[X]} {k : ℕ} {r : F} (hk : 0 < k) (hf : k ≤ f.natDegree) :
+lemma polyFold_step {f : F[X]} {k : ℕ} {r : F} (hk : 0 < k) :
     polyFold f k r =
       Polynomial.C ((f %ₘ X^k).eval r) + X * polyFold (f /ₘ X^k) k r := by
-  unfold polyFold
-  have h_deg_q : 0 < (X^k : F[X]).degree := by
-    rw [Polynomial.degree_X_pow]; exact_mod_cast hk
-  have h_deg_f : (X^k : F[X]).degree ≤ f.degree := by
-    rw [Polynomial.degree_X_pow]
-    have hf0 : f ≠ 0 := by
-      rintro rfl; simp at hf; omega
-    rw [Polynomial.degree_eq_natDegree hf0]; exact_mod_cast hf
-  rw [folding_polynomial_def_ind_case h_deg_f h_deg_q]
-  rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, eval_C_map_C]
-  rw [show f / X^k = f /ₘ X^k from
-        (divByMonic_eq_div f (Polynomial.monic_X_pow k)).symm,
-      show f % X^k = f %ₘ X^k from
-        (modByMonic_eq_mod f (Polynomial.monic_X_pow k)).symm]
+  by_cases hf : k ≤ f.natDegree
+  · unfold polyFold
+    have h_deg_q : 0 < (X^k : F[X]).degree := by
+      rw [Polynomial.degree_X_pow]; exact_mod_cast hk
+    have h_deg_f : (X^k : F[X]).degree ≤ f.degree := by
+      rw [Polynomial.degree_X_pow]
+      have hf0 : f ≠ 0 := by
+        rintro rfl; simp at hf; omega
+      rw [Polynomial.degree_eq_natDegree hf0]; exact_mod_cast hf
+    rw [folding_polynomial_def_ind_case h_deg_f h_deg_q]
+    rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_C, eval_C_map_C]
+    rw [show f / X^k = f /ₘ X^k from
+          (divByMonic_eq_div f (Polynomial.monic_X_pow k)).symm,
+        show f % X^k = f %ₘ X^k from
+          (modByMonic_eq_mod f (Polynomial.monic_X_pow k)).symm]
+  · have hdeg : f.degree < (X ^ k : F[X]).degree := by
+      rw [Polynomial.degree_X_pow]
+      exact lt_of_le_of_lt Polynomial.degree_le_natDegree (by
+        exact_mod_cast (by omega : f.natDegree < k))
+    rw [polyFold_base (by omega),
+      (Polynomial.modByMonic_eq_self_iff (Polynomial.monic_X_pow k)).mpr hdeg,
+      (Polynomial.divByMonic_eq_zero_iff (Polynomial.monic_X_pow k)).mpr hdeg]
+    simp
 
 end PolyFoldRecurrence
 
@@ -863,7 +854,7 @@ private lemma cpolyFoldAux_toPoly (p : CompPoly.CPolynomial F) (k : ℕ) (r : F)
         have h_step : (CompPoly.CPolynomial.divX^[k] p).natDegree ≤ fuel := by
           refine le_trans (natDegree_iterate_divX_le p k) ?_
           omega
-        rw [Polynomial.FoldingPolynomial.polyFold_step hk_pos hsmall']
+        rw [Polynomial.FoldingPolynomial.polyFold_step hk_pos]
         rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.C_toPoly,
             CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.X_toPoly]
         congr 1

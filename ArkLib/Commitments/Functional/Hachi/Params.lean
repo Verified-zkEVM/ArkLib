@@ -75,7 +75,7 @@ what `BoundedDigitDecomposition` (`Gadget/Core.lean`) is for.
 * `tau_minimal` — `τ = 5` is the *least* digit count that bound admits.
 * `params` — the `HonestRangeParams hachiQ` profile (`γ = 15`, `bZero = 16`), at the pinned point
   `HonestRangeParams.ofPinnedDigitBase` realizes, together with the correctness theorem's `τ`-side
-  hypotheses (`params_hcap`, `params_hzb`, `hachiTau_pos`, `clog_pos`) discharged at it.
+  hypotheses (`params_hcap`, `params_hzb`) discharged at it.
 * `mu0`, `liftKeyWidth`, `sumcheckWidthAtProfile` — the `τ`-dependent dimensions: the `R^lin`
   column count `μ₀ = 57344`, the lift key's `57384` columns, and the sumcheck coverage bound `hμn`
   at `M = 25` (least such, `sumcheckWidthAtProfile_minimal`).
@@ -261,8 +261,8 @@ theorem params_bZero_pos : 0 < params.bZero := by norm_num [params_bZero, hachiB
 
 /-! ## The correctness theorem's `τ`-side hypotheses, at the profile
 
-`hachiNonrecursive_perfectCorrectness` / `hachiNonrecursiveConcrete_perfectCorrectness` take `hcap`,
-`hzb` and `hτ` on the `τ` side; the message side's `hqm` is `Nat.le_pow_clog`. All are discharged
+`hachiNonrecursive_perfectCorrectness` / `hachiNonrecursiveConcrete_perfectCorrectness` take `hcap`
+and `hzb` on the `τ` side; the message side's `hqm` is `Nat.le_pow_clog`. Both are discharged
 here at `τ = 5`, `zBound = 131072`. -/
 
 /-- `hcap`: the honest bound fits the balanced capacity of `τ = 5` digits. -/
@@ -468,7 +468,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 Every hypothesis is discharged from this file's arithmetic: the message side by
 `q_le_sixteen_pow_delta`, the `z` side by `honestZBound_le_capacity` (capacity `489335 ≥ 131072`)
-and `params_hzb`, the anti-wraparound by `hachiB_le_half`, the ring dimension by `ringDim_pos`. No
+and `params_hzb`, and the anti-wraparound by `hachiB_le_half`. No
 `q ≤ 16 ^ 5` appears anywhere; it is false (`sixteen_pow_tau_lt_q`). -/
 theorem quadEvalLink_perfectCompleteness_atProfile
     [∀ i, SampleableType
@@ -482,7 +482,7 @@ theorem quadEvalLink_perfectCompleteness_atProfile
     (quadEvalReduction (oSpec := oSpec) (zDigits := hachiTau) (ω := hachiOmega)
         𝓜(hachiQ, hachiAlpha) pp
         (balancedZmodDigitDecomposition hachiB hachiDelta one_lt_hachiB q_le_sixteen_pow_delta)
-        (boundedBalancedZmodDigitDecomposition hachiB hachiTau honestZBound one_lt_hachiB
+        (boundedBalancedZmodDigitDecomposition hachiB hachiTau honestZBound
           honestZBound_le_capacity)).perfectCompleteness init impl
       (relInMsgShort 𝓜(hachiQ, hachiAlpha) pp (hachiB : ZMod hachiQ)
         βSq params.γ κ (hachiB / 2))
@@ -491,10 +491,9 @@ theorem quadEvalLink_perfectCompleteness_atProfile
   quadEvalReduction_perfectCompleteness
     𝓜(hachiQ, hachiAlpha) init impl pp _ _
     (powTwoCyclotomic_hasMulLInftyBound hachiAlpha)
-    (by norm_num [hachiDelta]) hachiTau_pos ringDim_pos
     params_hzb
     (fun x e => le_trans
-      (balancedZmodDigit_natAbs_le one_lt_hachiB q_le_sixteen_pow_delta hachiB_le_half x e)
+      (balancedZmodDigit_natAbs_le one_lt_hachiB q_le_sixteen_pow_delta x e)
       params.hbγ)
     (fun x e => le_trans
       (boundedBalancedZmodDigit_natAbs_le one_lt_hachiB hachiB_le_half x e) params.hbγ)
@@ -521,7 +520,7 @@ theorem quadEvalLink_perfectCompleteness_atProfile_paperRelOut
     (quadEvalReduction (oSpec := oSpec) (zDigits := hachiTau) (ω := hachiOmega)
         𝓜(hachiQ, hachiAlpha) pp
         (balancedZmodDigitDecomposition hachiB hachiDelta one_lt_hachiB q_le_sixteen_pow_delta)
-        (boundedBalancedZmodDigitDecomposition hachiB hachiTau honestZBound one_lt_hachiB
+        (boundedBalancedZmodDigitDecomposition hachiB hachiTau honestZBound
           honestZBound_le_capacity)).perfectCompleteness init impl
       (relInBoxMsgShort 𝓜(hachiQ, hachiAlpha) pp (hachiB : ZMod hachiQ) βSq γ κ hachiB
         (hachiB / 2))
@@ -532,7 +531,6 @@ theorem quadEvalLink_perfectCompleteness_atProfile_paperRelOut
     (powTwoCyclotomic_hasMulLInftyBound hachiAlpha)
     one_lt_hachiB q_le_sixteen_pow_delta honestZBound_le_capacity hachiB_le_half
     params_hzb
-    (by norm_num [hachiDelta]) hachiTau_pos ringDim_pos
 
 /-! ### Soundness at the same `τ`, and the coupling -/
 
@@ -555,7 +553,7 @@ def packageAtProfile
     (pp : Hachi.PublicParamsD 𝓜(hachiQ, hachiAlpha) innerRows (2 ^ hachiM) hachiDelta outerRows
       (2 ^ hachiR) hachiDelta dRows) :=
   quadEvalPackage (zDigits := hachiTau) (b := hachiB) (ω := hachiOmega) (γ := params.γ)
-    init impl hachiQ_mod_eight sq_two_omega_lt_q hachiTau_pos pp
+    init impl hachiQ_mod_eight sq_two_omega_lt_q pp
 
 /-- **Coupling, output side.** The soundness certificate's output relation is the relation the
 completeness theorems land in, at `γ = params.γ`. Holds by `rfl`; note it could not be *stated* at
@@ -625,7 +623,7 @@ theorem sumcheckWidthAtProfile_minimal :
 
 `hachiNonrecursiveConcrete_perfectCorrectness` is parametric in `τ`/`zBound`, and each of its
 profile-side hypotheses is one of the facts above: `hcap` = `params_hcap`, `hzb` = `params_hzb`,
-`hτ` = `hachiTau_pos`, `hclog` = `clog_pos`, `hd` = `ringDim_pos`, `hbZero` = `params_bZero_pos`,
+`hd` = `ringDim_pos`, `hbZero` = `params_bZero_pos`,
 `hZeroγ` = `params_hZeroγ`, `hμn` = `sumcheckWidthAtProfile` at `M = 25`. The substituted instance
 is not written out as a declaration: its *type* alone carries `Nat.clog params.b 4294967197` inside
 `Fin (2¹⁰)`-indexed matrices, a `μ₀ = 57344` column count and a 26-deep `ProtocolSpec` append tower,

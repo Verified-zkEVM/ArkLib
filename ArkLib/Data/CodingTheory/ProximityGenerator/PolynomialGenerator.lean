@@ -90,6 +90,7 @@ noncomputable def powersMCAError [DecidableEq F] (LC : LinearCode ι F) (d m : �
         else
         1
 
+omit [Nonempty ι] in
 /-- The MDS error bound `mdsMCAError` for output size `d + 1` (the univariate powers generator of
 degree `d`, whose code has dimension `d + 1`) coincides with the univariate-powers error
 `powersMCAError` of degree `d`. -/
@@ -193,7 +194,7 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
     ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
       [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, SampleableType (α i)]
       [SampleableType (∀ i, α i)]
-      [∀ i, Fintype (ℓ i)] [∀ i, Nonempty (ℓ i)]
+      [∀ i, Fintype (ℓ i)]
       (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ≥0),
       (∀ i, ∀ {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
         (MC : ModuleCode ι F A), Code.minRelHammingDistCode MC.carrier = δ₀ →
@@ -204,7 +205,7 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
   intro s
   induction s with
   | zero =>
-    intro α ℓ _ _ _ _ _ _ G ε _ A _ _ _ MC _ γ
+    intro α ℓ _ _ _ _ _ G ε _ A _ _ _ MC _ γ
     classical
     refine iSup_le fun U => ?_
     have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
@@ -217,12 +218,21 @@ lemma isMCAGenerator_tensorGeneratorPi_tight {δ₀ : ℚ≥0} :
       rwa [hvec] at hmem
     simpa using le_of_eq (prEvent_eq_zero_of_forall_not ($ᵗ _) _ hfalse)
   | succ s ih =>
-    intro α ℓ _ _ hα _ _ _ G ε hmca A _ _ _ MC hδ
+    intro α ℓ _ _ hα _ _ G ε hmca A _ _ _ MC hδ
+    classical
+    by_cases hℓ : Nonempty (ℓ 0)
+    case neg =>
+      intro γ
+      refine iSup_le fun U => ?_
+      have hfalse : ∀ x, ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
+        rintro x ⟨T, hT, hmem, j, hj⟩
+        exact hℓ ⟨j 0⟩
+      exact (prEvent_eq_zero_of_forall_not ($ᵗ _) _ hfalse).le.trans (by positivity)
+    let := hℓ
     let : ∀ i : Fin s, Fintype (Fin.tail α i) := fun i => inferInstanceAs (Fintype (α i.succ))
     let : ∀ i : Fin s, SampleableType (Fin.tail α i) := fun i => hα i.succ
     let : SampleableType (∀ i : Fin s, Fin.tail α i) := SampleableType.piOfFintype _
     let : ∀ i : Fin s, Fintype (Fin.tail ℓ i) := fun i => inferInstanceAs (Fintype (ℓ i.succ))
-    let : ∀ i : Fin s, Nonempty (Fin.tail ℓ i) := fun i => inferInstanceAs (Nonempty (ℓ i.succ))
     set eS : (∀ i : Fin (s + 1), α i) ≃ (α 0 × (∀ i : Fin s, Fin.tail α i)) :=
       (Fin.consEquiv α).symm with heS
     set eL : (ℓ 0 × (∀ i : Fin s, Fin.tail ℓ i)) ≃ (∀ i : Fin (s + 1), ℓ i) :=
@@ -276,7 +286,7 @@ univariate powers generator of degree `d`, at sharpness parameter `m`: up to the
 radius `1 - (1 + 1/(2m))√ρ` the error is `(d n²/|F|) · (m + 1/2)⁷ / (3 ρ^{3/2})`, and beyond it
 the trivial bound `1`. Valued in `ℝ≥0`, clamping the underlying real expression at `0` via
 `Real.toNNReal`. -/
-noncomputable def reedSolomonMCAError [Fintype F] [NeZero k] (d m : ℕ) : I → ℝ≥0 :=
+noncomputable def reedSolomonMCAError [Fintype F] (d m : ℕ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   let ρ_sqrt := ReedSolomon.sqrtRate k D
   fun γ =>
@@ -335,7 +345,7 @@ lemma isMCAGenerator_univariatePowersGenerator [Fintype F] [SampleableType F] [N
   let B : ℝ := (m + 1 / 2 : ℝ) ^ 7 * (Fintype.card ι : ℝ) ^ 2 /
     (3 * (ReedSolomon.sqrtRate k D : ℝ) ^ 3)
   have hexact := ProximityGap.exists_curve_exactPowerAgreement_explicit_budget
-    k D d m (γ : ℝ) hkpos hproper hm γ.2.1 hγ
+    k D d m (γ : ℝ) hkpos hproper hm hγ
   have hbound := ProximityGap.mcaError_powers_le_of_exactPowerAgreement k D d A
     (d * B) (γ : ℝ) le_rfl hexact
   apply hbound.trans
@@ -391,13 +401,13 @@ lemma isMCAGenerator_tensorGeneratorPiUnivariate [Fintype F] [SampleableType F]
 /-- The coefficient matrix expressing the polynomial generator `G` as a right multiplication of
 the tensor generator of powers: the entry at `(e, j)` is the coefficient of the monomial
 `exponentFinsupp e` in the polynomial `P j` (see `generatorByRightMul_coeffMatrix`). -/
-noncomputable def coeffMatrix {s : ℕ} {ℓ : Type} [Fintype ℓ] (P : ℓ → MvPolynomial (Fin s) F)
+noncomputable def coeffMatrix {s : ℕ} {ℓ : Type} (P : ℓ → MvPolynomial (Fin s) F)
     (d : Fin s → ℕ) : Matrix ((i : Fin s) → Fin (d i + 1)) ℓ F :=
   fun e j => (P j).coeff (exponentFinsupp e)
 
 /-- A generator that evaluates the polynomials `P` is the right multiplication of the tensor
 generator of powers by the coefficient matrix of `P`. -/
-lemma generatorByRightMul_coeffMatrix {s : ℕ} {ℓ : Type} [Fintype ℓ]
+lemma generatorByRightMul_coeffMatrix {s : ℕ} {ℓ : Type}
     (P : ℓ → MvPolynomial (Fin s) F) (d : Fin s → ℕ)
     (hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ d i)
     (G : Generator (Fin s → F) ℓ F) (hG : ∀ x, G x = MvPolynomial.eval x ∘ P) :
@@ -418,10 +428,11 @@ lemma generatorByRightMul_coeffMatrix {s : ℕ} {ℓ : Type} [Fintype ℓ]
 
 /-- The coefficient matrix of a linearly independent family of polynomials whose individual
 degrees are bounded by the box `d` has a left inverse. -/
-lemma hasLeftPseudoInverse_coeffMatrix {s : ℕ} {ℓ : Type} [Fintype ℓ] [DecidableEq ℓ]
+lemma hasLeftPseudoInverse_coeffMatrix {s : ℕ} {ℓ : Type} [Finite ℓ] [DecidableEq ℓ]
     (P : ℓ → MvPolynomial (Fin s) F) (d : Fin s → ℕ)
     (hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ d i) (hP : LinearIndependent F P) :
     HasLeftPseudoInverse (coeffMatrix P d) := by
+  have := Fintype.ofFinite ℓ
   set A := coeffMatrix P d with hA
   have hinj : LinearMap.ker A.mulVecLin = ⊥ := by
     rw [LinearMap.ker_eq_bot']
@@ -461,7 +472,7 @@ domain `D`, with error `∑ i, reedSolomonMCAError k D (maxDegreeOf P i) m`, for
 
 The proof factors the generator through `tensorGeneratorPiUnivariate` via `coeffMatrix`. Its
 only unproved input is `isMCAGenerator_univariatePowersGenerator` (Lemma 9.3) for each factor. -/
-lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [SampleableType F] [NeZero k]
+lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [NeZero k]
     (m : ℕ) (hm : 3 ≤ m)
     {ℓ : Type} [Fintype ℓ] {s : ℕ} [SampleableType (Fin s → F)]
     {P : ℓ → MvPolynomial (Fin s) F}
@@ -469,6 +480,7 @@ lemma isMCAGenerator_of_isPolynomialGeneratorOfFull [Fintype F] [SampleableType 
     letI ε := ∑ i : Fin s, reedSolomonMCAError k D (maxDegreeOf P i) m
     IsMCAGenerator G ε (ReedSolomon.code D k) := by
   classical
+  let : SampleableType F := SampleableType.ofFintype F
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ maxDegreeOf P i := by
     intro j i
     simpa [maxDegreeOf] using
@@ -499,7 +511,7 @@ def univariatePowersGeneratorOn (s : Set F) (d : ℕ) : Generator s (Fin (d + 1)
 
 /-- The code `C_G` of the restricted univariate powers generator is the Reed–Solomon code of
 degree less than `d + 1` over `s`: its `M_G` matrix is the non-square Vandermonde matrix. -/
-lemma univariatePowersGeneratorOn_code_eq_reedSolomon (s : Set F) [Fintype s] [Nonempty s] (d : ℕ) :
+lemma univariatePowersGeneratorOn_code_eq_reedSolomon (s : Set F) (d : ℕ) :
     fromColGenMat (M_G (univariatePowersGeneratorOn s d))
       = ReedSolomon.code (Function.Embedding.subtype (· ∈ s)) (d + 1) := by
   have hMG : M_G (univariatePowersGeneratorOn s d)
@@ -588,7 +600,7 @@ lemma isMCAGenerator_tensorGeneratorPiUnivariateOn {ι : Type} [Fintype ι] [Non
 
 /-- A generator that evaluates the polynomials `P` on restricted seed sets is the right
 multiplication of the restricted tensor generator of powers by the coefficient matrix of `P`. -/
-lemma generatorByRightMul_coeffMatrix_on {s : ℕ} {ℓ : Type} [Fintype ℓ]
+lemma generatorByRightMul_coeffMatrix_on {s : ℕ} {ℓ : Type}
     (S : Fin s → Set F) (P : ℓ → MvPolynomial (Fin s) F) (d : Fin s → ℕ)
     (hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ d i)
     (G : Generator (∀ i, ↥(S i)) ℓ F)

@@ -165,7 +165,7 @@ theorem proximity_gap_two_constants :
       simpa [ENNReal.coe_NNRat_coe_NNReal] using hdist
     simp [Fin.sum_univ_two, hzero]
   apply STIR.proximity_gap (φ := pts) (degree := 1) (δ := 1 / 4)
-    (f := fun (i : Fin 2) (_ : Fin 4) => (i.val : ZMod 5)) (by decide) (by norm_num)
+    (f := fun (i : Fin 2) (_ : Fin 4) => (i.val : ZMod 5)) (by decide)
   · rw [bstar_rate]
     exact (lt_tsub_iff_right).2 (by norm_num)
   · have herr : proximityError (ZMod 5) 1 (LinearCode.rate (code pts 1)) (1 / 4) 2 =

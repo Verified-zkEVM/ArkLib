@@ -9,12 +9,11 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Joh
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.PowerToLine
 public import ArkLib.Data.CodingTheory.ProximityGap.Errors
-public import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # Coordinate transport for Johnson line agreement
 
-Reindexing a finite evaluation domain preserves code membership, distance and exact agreement.
+Reindexing a finite evaluation domain preserves distance and exact agreement.
 This transports the Johnson theorem on `Fin n` to the existing line agreement carrier on any
 finite coordinate type. Constant messages use the collision bound instead of Johnson parameters.
 -/
@@ -26,23 +25,6 @@ namespace ProximityGap
 open Polynomial ReedSolomon ReedSolomon.HiddenDerivative
 
 variable {ι κ F : Type} [Fintype ι] [Fintype κ] [Field F] [decF : DecidableEq F]
-
-omit [Fintype ι] [Fintype κ] [DecidableEq F] in
-/-- Coordinate reindexing preserves membership in the same Reed–Solomon code. -/
-theorem mem_code_comp_equiv (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ) (w : ι → F) :
-    w ∘ e ∈ code (e.toEmbedding.trans domain) k ↔ w ∈ code domain k := by
-  simp only [mem_code_iff_eval]
-  constructor
-  · rintro ⟨P, hP, he⟩
-    exact ⟨P, hP, fun i ↦ by simpa using he (e.symm i)⟩
-  · rintro ⟨P, hP, he⟩
-    exact ⟨P, hP, fun i ↦ he (e i)⟩
-
-omit [Field F] in
-/-- Coordinate reindexing preserves normalized Hamming distance. -/
-theorem relHammingDist_comp_equiv (e : κ ≃ ι) (u v : ι → F) :
-    Code.relHammingDist (u ∘ e) (v ∘ e) = Code.relHammingDist u v := by
-  simp only [Code.relHammingDist, hammingDist_comp_equiv, Fintype.card_congr e]
 
 /-- The number of polynomial agreements is invariant under coordinate reindexing. -/
 theorem polynomialAgreementSet_card_comp_equiv (e : κ ≃ ι) (domain : ι ↪ F)
@@ -81,8 +63,7 @@ theorem lineExactAgreementBound_of_comp_equiv (e : κ ≃ ι) (domain : ι ↪ F
 
 /-- Johnson's exact agreement bound on an arbitrary finite evaluation domain. -/
 theorem lineExactAgreementBound_johnson (domain : ι ↪ F) {D : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D ≤ Fintype.card ι - 2) (heta : 0 < eta)
-    (ha : johnsonAgreement (Fintype.card ι) D eta ≤ 1) :
+    (hD : 1 ≤ D) (hDn : D ≤ Fintype.card ι - 2) (heta : 0 < eta) :
     LineExactAgreementBound domain (D + 1)
       ⌈johnsonAgreement (Fintype.card ι) D eta * Fintype.card ι⌉₊
       (johnsonExceptionCount (Fintype.card ι) D
@@ -93,7 +74,7 @@ theorem lineExactAgreementBound_johnson (domain : ι ↪ F) {D : ℕ} {eta : ℝ
   apply lineExactAgreementBound_of_comp_equiv (Fintype.equivFin ι).symm domain
   apply lineExactAgreementBound_of_exactCorrelatedPair
   intro f g
-  exact exists_johnson_line_exactCorrelatedPair_ceil _ f g hD hDn heta ha
+  exact exists_johnson_line_exactCorrelatedPair_ceil _ f g hD hDn heta
 
 /-- Constant messages have at most one exceptional challenge per coordinate pair. -/
 theorem lineExactAgreementBound_constantCode (domain : ι ↪ F) (A : ℕ) :

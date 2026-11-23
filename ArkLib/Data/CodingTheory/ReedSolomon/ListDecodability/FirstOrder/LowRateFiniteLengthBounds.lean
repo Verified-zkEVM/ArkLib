@@ -78,10 +78,12 @@ def lowRateParameterBoundConstant (rho : ℝ) : ℝ :=
 /-- The finite-length slack is below one when the low-rate threshold plus slack is below one. -/
 theorem lowRateFiniteLengthSlack_lt_one
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     finiteLengthSlack eta n < 1 := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
   have hthreshold := rate_lt_firstOrderLowRateThreshold hrho hregime
   exact finiteLengthSlack_lt_one_of_threshold hthreshold haOne hn
@@ -89,10 +91,12 @@ theorem lowRateFiniteLengthSlack_lt_one
 /-- The finite-length slack is below one when the rate times length is at least one. -/
 theorem lowRateFiniteLengthSlack_lt_one_of_one_le_rate_mul_length
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : 1 ≤ rho * n) :
     finiteLengthSlack eta n < 1 := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   have hnPos : (0 : ℝ) < n := by
     have hprod : 0 < rho * (n : ℝ) := lt_of_lt_of_le zero_lt_one hn
     nlinarith [hrho]
@@ -117,11 +121,11 @@ theorem lowRateFiniteLengthMultiplicity_le_inv_slack
   let delta := lowRateFiniteLengthDensityMargin rho eta n
   let crank := lowRateFiniteLengthRankRoundingConstant rho
   let m := lowRateFiniteLengthMultiplicity rho eta n
-  have hc : 0 < c := lowRateFiniteLengthSlope_pos hrho hlow
+  have hc : 0 < c := lowRateFiniteLengthSlope_pos hrho
   have hs : 0 < s := finiteLengthSlack_pos heta
-  have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
+  have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hlow haOne hn).le
   have hdelta : c * s ≤ delta :=
-    lowRateFiniteLengthSlope_mul_slack_le_margin hrho hlow heta haOne hn
+    lowRateFiniteLengthSlope_mul_slack_le_margin hlow heta haOne hn
   have hdeltaPos : 0 < delta := (mul_pos hc hs).trans_le hdelta
   have hcrank0 : 0 ≤ crank := by
     dsimp only [crank, lowRateFiniteLengthRankRoundingConstant]
@@ -144,11 +148,13 @@ theorem lowRateFiniteLengthMultiplicity_le_inv_slack
 /-- The selected low-rate derivative cap is bounded by inverse slack. -/
 theorem lowRateFiniteLengthDerivativeCap_le_inv_slack
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     (lowRateFiniteLengthDerivativeCap rho eta n : ℝ) ≤
       lowRateDerivativeCapBoundConstant rho / finiteLengthSlack eta n := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   have hfloor : (lowRateFiniteLengthDerivativeCap rho eta n : ℝ) ≤
       firstOrderLowRateBeta rho * lowRateFiniteLengthMultiplicity rho eta n := by
     unfold lowRateFiniteLengthDerivativeCap
@@ -166,15 +172,16 @@ theorem lowRateFiniteLengthDerivativeCap_le_inv_slack
 /-- The selected derivative cap does not exceed the total jet degree. -/
 theorem lowRateFiniteLengthDerivativeCap_le_jetDegree
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     lowRateFiniteLengthDerivativeCap rho eta n ≤ lowRateFiniteLengthJetDegree rho eta n := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let R := finiteLengthRate rho n
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let beta := firstOrderLowRateBeta rho
   let m := lowRateFiniteLengthMultiplicity rho eta n
-  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hR : 0 < R := finiteLengthRate_pos hn
   have hRrho : R < rho := finiteLengthRate_lt_rate
     (length_pos_of_two_le_rate_mul_length hn)
   have ha0 : 0 < a := lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le
@@ -203,8 +210,8 @@ theorem lowRateFiniteLengthJetDegree_le_inv_slack
   let a := lowRateFiniteLengthCertifiedAgreement rho eta
   let R := finiteLengthRate rho n
   have hs : 0 < s := finiteLengthSlack_pos heta
-  have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
-  have hR : 0 < R := finiteLengthRate_pos hrho hn
+  have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hlow haOne hn).le
+  have hR : 0 < R := finiteLengthRate_pos hn
   have hRhalf : rho / 2 ≤ R := half_rate_le_finiteLengthRate hn
   have ha0 : 0 ≤ a := (lowRateFiniteLengthCertifiedAgreement_pos hrho heta.le).le
   have haOne' : a < 1 := lowRateFiniteLengthCertifiedAgreement_lt_one haOne
@@ -217,11 +224,13 @@ theorem lowRateFiniteLengthJetDegree_le_inv_slack
 /-- The selected low-rate challenge height is bounded by inverse slack squared. -/
 theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     (lowRateFiniteLengthChallengeHeight rho eta n : ℝ) ≤
       lowRateHeightBoundConstant rho / finiteLengthSlack eta n ^ 2 := by
+  have hrho : 0 < rho :=
+    pos_of_mul_pos_left (lt_of_lt_of_le (by norm_num) hn) (Nat.cast_nonneg n)
   let s := finiteLengthSlack eta n
   let m := lowRateFiniteLengthMultiplicity rho eta n
   let B := lowRateFiniteLengthJetDegree rho eta n
@@ -231,10 +240,10 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
   let cr := lowRateRankBoundConstant rho
   let cB := lowRateJetBoundConstant rho
   have hs : 0 < s := finiteLengthSlack_pos heta
-  have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hrho hlow haOne hn).le
-  have hmNat : 0 < m := lowRateFiniteLengthMultiplicity_pos hrho hlow heta haOne hn
+  have hsOne : s ≤ 1 := (lowRateFiniteLengthSlack_lt_one hlow haOne hn).le
+  have hmNat : 0 < m := lowRateFiniteLengthMultiplicity_pos hlow heta haOne hn
   have hm : (0 : ℝ) < m := Nat.cast_pos.mpr hmNat
-  have hc : 0 < c := lowRateFiniteLengthSlope_pos hrho hlow
+  have hc : 0 < c := lowRateFiniteLengthSlope_pos hrho
   have hregime := (firstOrderLowRateRegime_iff_lt_rateSwitch rho).2 hlow
   have hrankDensity : 0 ≤ firstOrderRankDensity (firstOrderLowRateBeta rho) := by
     rw [firstOrderRankDensity, ite_eq_right (not_le.mpr
@@ -253,8 +262,8 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
       lowRateFiniteLengthRankRoundingConstant]
     positivity
   have hdelta := lowRateFiniteLengthSlope_mul_slack_le_margin
-    hrho hlow heta haOne hn
-  have hgap := lowRateFiniteLength_count_gap hrho hlow heta haOne hn
+    hlow heta haOne hn
+  have hgap := lowRateFiniteLength_count_gap hlow heta haOne hn
   have hgapLower : 3 * (m : ℝ) ^ 3 * (c * s) / 4 ≤ N - r := by
     exact (div_le_div_of_nonneg_right
       (mul_le_mul_of_nonneg_left hdelta (by positivity)) (by norm_num)).trans hgap
@@ -289,7 +298,7 @@ theorem lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
 /-- One rate-only constant bounds all low-rate finite-length interpolation parameters. -/
 theorem lowRateFiniteLength_parameter_bounds
     {rho eta : ℝ} {n : ℕ}
-    (hrho : 0 < rho) (hlow : rho < firstOrderRateSwitch)
+    (hlow : rho < firstOrderRateSwitch)
     (heta : 0 < eta) (haOne : firstOrderLowRateThreshold rho + eta < 1)
     (hn : (2 : ℝ) ≤ rho * n) :
     let C := lowRateParameterBoundConstant rho
@@ -298,13 +307,17 @@ theorem lowRateFiniteLength_parameter_bounds
       (lowRateFiniteLengthDerivativeCap rho eta n : ℝ) ≤ C / s ∧
       (lowRateFiniteLengthJetDegree rho eta n : ℝ) ≤ C / s ∧
       (lowRateFiniteLengthChallengeHeight rho eta n : ℝ) ≤ C / s ^ 2 := by
+  have hrho : 0 < rho := by
+    by_contra h
+    have := mul_nonpos_of_nonpos_of_nonneg (le_of_not_gt h) (Nat.cast_nonneg n : (0 : ℝ) ≤ n)
+    linarith
   dsimp only
   have hs := finiteLengthSlack_pos (n := n) heta
   have hm := lowRateFiniteLengthMultiplicity_le_inv_slack hrho hlow heta haOne hn
-  have hM := lowRateFiniteLengthDerivativeCap_le_inv_slack hrho hlow heta haOne hn
+  have hM := lowRateFiniteLengthDerivativeCap_le_inv_slack hlow heta haOne hn
   have hB := lowRateFiniteLengthJetDegree_le_inv_slack hrho hlow heta haOne hn
   have hH := lowRateFiniteLengthChallengeHeight_le_inv_slack_sq
-    hrho hlow heta haOne hn
+    hlow heta haOne hn
   unfold lowRateParameterBoundConstant
   refine ⟨hm.trans (div_le_div_of_nonneg_right ?_ hs.le),
     hM.trans (div_le_div_of_nonneg_right ?_ hs.le),

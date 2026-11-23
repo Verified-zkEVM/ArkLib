@@ -34,18 +34,20 @@ jobs:
           ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
-      - uses: actions/setup-python@v7
+      - name: Set up uv
+        uses: astral-sh/setup-uv@c771a70e6277c0a99b617c7a806ffedaca235ff9 # v9.0.0
         with:
-          python-version: "3.12"
+          version: "0.13.6"
+          enable-cache: false
 
       - name: Regenerate KB files
-        run: python3 ./scripts/kb/regenerate.py
+        run: uv run --no-project --python 3.12 python ./scripts/kb/regenerate.py
 
       - name: Check generated files
-        run: python3 ./scripts/kb/check_generated.py
+        run: uv run --no-project --python 3.12 python ./scripts/kb/check_generated.py
 
       - name: Lint generated KB state
-        run: python3 ./scripts/kb/lint.py --strict-cited-pages --use-generated-indexes
+        run: uv run --no-project --python 3.12 python ./scripts/kb/lint.py --strict-cited-pages --use-generated-indexes
 
       - name: Open generated update PR
         env:

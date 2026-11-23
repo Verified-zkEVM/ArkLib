@@ -61,7 +61,7 @@ theorem exists_johnson_curve_symbolic_certificate
   let columns := johnsonColumns Xc D μ
   have hcut : Xc ≤ m * A := johnsonXCutoff_le_mul_agreement heta hthreshold
   have hbudget : 0 < m * A := by
-    have := johnson_degree_succ_le_agreement hD (show D < n by omega) heta hthreshold
+    have := johnson_degree_succ_le_agreement (show D < n by omega) heta hthreshold
     have := johnsonM_ge_three n D eta
     exact Nat.mul_pos (by omega) (by omega)
   have hslots :
@@ -102,8 +102,8 @@ theorem exists_johnson_curve_symbolic_certificate
     exact Nat.le_of_lt_succ
       ((Fintype.equivFin (JohnsonColumnIndex Xc D μ)).symm j).1.isLt
   let Q := interpolant columns v
-  refine ⟨⟨Q, coeff_interpolant_natDegree_le columns (johnsonColumns_injective Xc D μ)
-    v hvheight, interpolant_totalJetDegree_le columns hcolumns v, ?_⟩⟩
+  refine ⟨⟨Q, coeff_interpolant_natDegree_le columns v hvheight,
+    interpolant_totalJetDegree_le columns hcolumns v, ?_⟩⟩
   intro E _ ρ z
   let ψ := Polynomial.eval₂RingHom ρ z
   refine ⟨hnonzero ρ z, map_interpolant_jetTotalDegree_le ψ columns hcolumns v, ?_⟩

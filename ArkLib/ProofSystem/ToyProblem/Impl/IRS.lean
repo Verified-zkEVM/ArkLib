@@ -385,11 +385,25 @@ def straightlineExtractor (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F) :
       (tr ⟨0, Nat.zero_lt_succ _⟩)
       (tr ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
 
+omit [DecidableEq ι] [Field F] [BEq F] [LawfulBEq F] [Fintype F] in
+private lemma nonempty_of_lt_minRelHammingDistCode
+    (C : Set (ι → F)) {δ : ℝ≥0}
+    (hδ : δ < (minRelHammingDistCode C : ℝ≥0)) : Nonempty ι := by
+  classical
+  by_contra hι
+  have : IsEmpty ι := not_nonempty_iff.mp hι
+  have hempty : ¬ (Code.possibleRelHammingDists C).Nonempty := by
+    rintro ⟨d, p, hp, _⟩
+    exact hp.2.2 (Subsingleton.elim _ _)
+  rw [Code.minRelHammingDistCode_of_empty hempty] at hδ
+  simp at hδ
+
+omit [Fintype F] in
 /-- On a non-MCA transition, the executable extractor returns a two-row point-list
 element whose affine constraint holds at the sampled challenge.  This is the
 deterministic kernel of the extractor-certified probability bound. -/
-theorem transitionExtractor_pointList_and_affine [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+theorem transitionExtractor_pointList_and_affine
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) {δ : ℝ≥0}
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -413,6 +427,7 @@ theorem transitionExtractor_pointList_and_affine [Nonempty ι]
           (∑ j, M 1 j * stmtIn.1.1 j) =
         stmtIn.1.2.1 + γ * stmtIn.1.2.2 := by
   classical
+  have : Nonempty ι := nonempty_of_lt_minRelHammingDistCode _ hδ
   let nodes := gammaAgreementSet k s hdvd domain
     (stmtIn.2 0) (stmtIn.2 1) γ g
   have hnodes : (1 - (δ : ℝ)) * Fintype.card ι ≤ nodes.card :=
@@ -497,16 +512,13 @@ theorem transitionExtractor_pointList_and_affine [Nonempty ι]
       (encoder k s hdvd domain)
       (ReedSolomon.Interleaved.irsCode domain k s)
       (encoder_range k s hdvd domain)]
-    · refine ⟨nodes, hnodes, fun x hx ↦ ⟨?_, ?_⟩⟩
-      · rw [hmsgs 0]
-        have hp := congrFun (hproj 0) ⟨x, hx⟩
-        simpa [LinearCode.projectedWord] using hp
-      · rw [hmsgs 1]
-        have hp := congrFun (hproj 1) ⟨x, hx⟩
-        simpa [LinearCode.projectedWord] using hp
-    · exact lt_of_lt_of_le hδ (by
-        exact_mod_cast (Code.minRelHammingDistCode_le_one
-          (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))
+    refine ⟨nodes, hnodes, fun x hx ↦ ⟨?_, ?_⟩⟩
+    · rw [hmsgs 0]
+      have hp := congrFun (hproj 0) ⟨x, hx⟩
+      simpa [LinearCode.projectedWord] using hp
+    · rw [hmsgs 1]
+      have hp := congrFun (hproj 1) ⟨x, hx⟩
+      simpa [LinearCode.projectedWord] using hp
   · have hlinear := hstate.1
     rw [hcombMsg] at hlinear
     simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_mul,
@@ -532,7 +544,7 @@ combination-round error.  Unlike `gamma_transition_prob_le`, this statement does
 not assume that the input has no valid witness: it bounds failure of the specific
 witness computed from each transcript. -/
 theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -583,9 +595,6 @@ theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
     have hcast : (Smsg.card : ENat) ≤ Code.Lambda Cint (δ : ℝ) :=
       le_trans (by exact_mod_cast hncard) hencard
     rwa [← ENat.natCast_toNat hfinite, Nat.cast_le] at hcast
-  have hδ1 : δ < 1 := lt_of_lt_of_le hδ (by
-    exact_mod_cast (Code.minRelHammingDistCode_le_one
-      (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))
   have hcards : (Finset.univ.filter (fun γ : F ↦
       ExactGammaFailure k s hdvd domain δ stmtIn γ ∧
         ¬ IsMCA (AffineLineGenerator F) C γ
@@ -615,7 +624,7 @@ theorem exactGammaFailure_prob_le [SampleableType F] [Nonempty ι]
         obtain ⟨S, hScard, hagree⟩ :=
           (encStack_mem_closeCodewordsRel_iff
             (encoder k s hdvd domain) C
-            (encoder_range k s hdvd domain) hδ1 (M 0, M 1)).mp hlist
+            (encoder_range k s hdvd domain) (M 0, M 1)).mp hlist
         refine ⟨fun i ↦ ?_, S, hScard, fun i x hx ↦ ?_⟩
         · fin_cases i
           · exact hlin.1
@@ -688,7 +697,7 @@ noncomputable def certifiedExtractorError [SampleableType F] (k s t : ℕ)
 /-- The uniform challenge bound in the exact shape consumed by the generic
 knowledge-soundness assembly theorem. -/
 theorem exactGammaFailure_sample_le [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -705,7 +714,7 @@ algorithm erasure-decodes both input rows from the challenge and the claimed
 combined message. -/
 theorem simplifiedOracleVerifier_knowledgeSoundnessWith_straightlineExtractor
     [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -732,8 +741,8 @@ public exact straightline-extractor theorem. The existential statement forgets
 the executable extractor and has the content of relation soundness
 (`Verifier.knowledgeSoundness_iff_relationSoundness`). -/
 theorem simplifiedOracleVerifier_knowledgeSoundness
-    [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    [SampleableType F]
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -746,6 +755,7 @@ theorem simplifiedOracleVerifier_knowledgeSoundness
         (SimplifiedIOR.outputRelationFor k (encoder k s hdvd domain) δ)
         (certifiedGammaError k s domain δ) := by
   classical
+  have : Nonempty ι := nonempty_of_lt_minRelHammingDistCode _ hδ
   exact OracleVerifier.knowledgeSoundness_of_with init impl
     (simplifiedOracleVerifier_knowledgeSoundnessWith_straightlineExtractor
       k s hdvd domain hfull δ hδ init impl)
@@ -783,7 +793,7 @@ theorem type.  This is the deterministic Definition A.5 contract used by
 the combination-round argument. -/
 theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
     [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -816,7 +826,7 @@ omit [DecidableEq ι] in
 corollary of the exact-object theorem. -/
 theorem simplifiedOracleVerifier_rbrKnowledgeSoundness
     [SampleableType F] [Nonempty ι]
-    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (k s : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -882,8 +892,8 @@ exact named executable interleaved-RS extractor and its knowledge-state
 function.  Both objects occur in the proposition type, rather than being
 hidden behind existential quantifiers. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessWith_rbrExtractor
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
-    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    [SampleableType F] [SampleableType ι]
+    (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -931,8 +941,8 @@ omit [DecidableEq ι] in
 /-- Existential RBR knowledge soundness, retained as a compatibility
 corollary of the exact-object theorem. -/
 theorem oracleVerifier_rbrKnowledgeSoundness
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
-    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    [SampleableType F] [SampleableType ι]
+    (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -957,8 +967,8 @@ theorem oracleVerifier_rbrKnowledgeSoundness
 protocol.  The theorem type names `straightlineExtractor`, so downstream
 code can inspect and run exactly the algorithm whose game bound is proved. -/
 theorem oracleVerifier_knowledgeSoundnessWith_straightlineExtractor
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
-    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    [SampleableType F] [SampleableType ι]
+    (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
@@ -987,8 +997,8 @@ exact-extractor theorem. The existential statement forgets the executable
 extractor and has the content of relation soundness
 (`Verifier.knowledgeSoundness_iff_relationSoundness`). -/
 theorem oracleVerifier_knowledgeSoundness [SampleableType F]
-    [SampleableType ι] [Nonempty ι]
-    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    [SampleableType ι]
+    (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
     (hδ : δ < (minRelHammingDistCode
       (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))

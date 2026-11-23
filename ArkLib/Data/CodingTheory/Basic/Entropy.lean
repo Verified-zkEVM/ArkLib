@@ -33,10 +33,11 @@ monotonicity, concavity — transfers through a single division by the positive 
 * `CodingTheory.qEntropy_eq_logb_form`: the three-`logb`-term formula.
 * `CodingTheory.qEntropy_eq_qaryEntropy_div_log`: the bridge to Mathlib.
 * `CodingTheory.qEntropy_one_sub_inv`: `H_q(1 - 1/q) = 1`, the base-`q` normalisation;
-  it is also the maximum, whence `CodingTheory.qEntropy_le_one`.
+  it is also the maximum, whence `CodingTheory.qEntropy_le_one` and, below it,
+  `CodingTheory.qEntropy_lt_one`.
 * `CodingTheory.qEntropy_nonneg`, `CodingTheory.qEntropy_pos`: sign on `[0, 1]` / `(0, 1)`.
 * `CodingTheory.qEntropy_strictMonoOn`, `CodingTheory.qEntropy_strictAntiOn`: strict
-  monotonicity either side of the maximum at `1 - 1/q`.
+  monotonicity either side of the maximum at `1 - 1/q`; `CodingTheory.qEntropy_monotoneOn`.
 * `CodingTheory.qEntropy_continuous`, `CodingTheory.concaveOn_qEntropy`.
 * `CodingTheory.qEntropy_zero`, `CodingTheory.qEntropy_one`: the endpoints of `[0, 1]`.
 * `CodingTheory.qEntropy_two`, `CodingTheory.qEntropy_two_inv`: the binary case, in bits.
@@ -175,10 +176,16 @@ lemma qEntropy_strictAntiOn (hq : 2 ≤ q) :
   gcongr
   exact Real.qaryEntropy_strictAntiOn hq ha hb hab
 
-/-- `H_q ≤ 1` on `[0, 1]`: the base-`q` entropy of a `q`-ary symbol never exceeds one
-`q`-ary symbol's worth of information. For `q ≥ 2` the bound is attained at `1 - 1/q`
-(`qEntropy_one_sub_inv`); for `q ≤ 1` the function is identically zero. -/
-lemma qEntropy_le_one (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by
+/-- `H_q ≤ 1` for `x ≤ 1` (for `x < 0` it is nonpositive): the base-`q` entropy of a `q`-ary
+symbol never exceeds one `q`-ary symbol's worth of information. For `q ≥ 2` the bound is
+attained at `1 - 1/q` (`qEntropy_one_sub_inv`); for `q ≤ 1` the function is identically zero. -/
+lemma qEntropy_le_one (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by
+  by_cases hx₀ : 0 ≤ x
+  swap
+  · rw [qEntropy_eq_qaryEntropy_div_log]
+    exact (div_nonpos_of_nonpos_of_nonneg
+      (Real.qaryEntropy_nonpos_of_nonpos (le_of_not_ge hx₀))
+      (Real.log_natCast_nonneg q)).trans zero_le_one
   by_cases hqle : q ≤ 1
   · rw [qEntropy_of_le_one hqle]
     norm_num
@@ -193,6 +200,17 @@ lemma qEntropy_le_one (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 :
   rcases le_total x (1 - 1 / (q : ℝ)) with h | h
   · exact (qEntropy_strictMonoOn hq).monotoneOn ⟨hx₀, h⟩ ⟨hmax₀, le_rfl⟩ h
   · exact (qEntropy_strictAntiOn hq).antitoneOn ⟨le_rfl, hmax₁⟩ ⟨h, hx₁⟩ h
+
+/-- `H_q(x) < 1` for `0 ≤ x < 1 - 1/q`: below the maximiser at `1 - 1/q` the bound is strict. -/
+lemma qEntropy_lt_one (hq : 2 ≤ q) (hx₀ : 0 ≤ x) (hx₁ : x < 1 - 1 / q) : qEntropy q x < 1 := by
+  have hm : (0 : ℝ) ≤ 1 - 1 / q := by
+    rw [sub_nonneg, div_le_one (by positivity)]; exact_mod_cast (by omega : 1 ≤ q)
+  rw [← qEntropy_one_sub_inv hq]
+  exact qEntropy_strictMonoOn hq ⟨hx₀, hx₁.le⟩ ⟨hm, le_rfl⟩ hx₁
+
+/-- `H_q` is monotone on `[0, 1 - 1/q]`. -/
+lemma qEntropy_monotoneOn (hq : 2 ≤ q) : MonotoneOn (qEntropy q) (Set.Icc 0 (1 - 1 / q)) :=
+  (qEntropy_strictMonoOn hq).monotoneOn
 
 /-- `H_q` is concave on `[0, 1]`, inherited from `Real.strictConcaveOn_qaryEntropy` through
 nonnegative rescaling. This includes `q = 0` and `q = 1`, where the rescaling and hence

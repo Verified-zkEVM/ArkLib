@@ -61,11 +61,15 @@ theorem errorBound_eq_johnson {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
   unfold errorBound
   rw [ite_eq_right (fun h ↦ (not_le_of_gt hδ.1) h.2), ite_eq_left hδ]
 
-omit [DecidableEq ι] in
+omit [Nonempty ι] [DecidableEq ι] in
 theorem errorBound_eq_n_div_q_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg)) :
     errorBound δ deg domain = Fintype.card ι / Fintype.card F := by
   classical
+  rcases isEmpty_or_nonempty ι with h | h
+  · have hδzero : δ = 0 := by
+      simpa [Code.relativeUniqueDecodingRadius] using hδ
+    simp [hδzero, errorBound]
   let C : LinearCode ι F := ReedSolomon.code domain deg
   let n : ℕ := Fintype.card ι
   let kdim : ℕ := Module.finrank F C

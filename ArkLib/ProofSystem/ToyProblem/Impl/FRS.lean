@@ -229,7 +229,7 @@ theorem minRelHammingDistCode_range_encoder :
       (↑(ReedSolomon.Folded.frsCode domain (2 ^ 20) 32 foldOmega) :
         Set (Fin (2 ^ 16) → Fin 32 → KoalaBear.Ext6)) := encoder_range
   have hmin : Code.minDist (Set.range ⇑encoder) = 32769 := by
-    have h := ReedSolomon.Folded.minDist_frsCode (k := 2 ^ 20) (s := 32) (by norm_num)
+    have h := ReedSolomon.Folded.minDist_frsCode (k := 2 ^ 20) (s := 32)
       domain foldOmega admissible_domain gamma_ne_zero
       (by rw [Fintype.card_fin]; norm_num)
     simp only [Fintype.card_fin] at h
@@ -386,7 +386,7 @@ theorem minRelHammingDistCode_range_encoder12 :
       (↑(ReedSolomon.Folded.frsCode domain12 (2 ^ 20) (2 ^ 12) foldOmega) :
         Set (Fin (2 ^ 9) → Fin (2 ^ 12) → KoalaBear.Ext6)) := encoder12_range
   have hmin : Code.minDist (Set.range ⇑encoder12) = 257 := by
-    have h := ReedSolomon.Folded.minDist_frsCode (k := 2 ^ 20) (s := 2 ^ 12) (by norm_num)
+    have h := ReedSolomon.Folded.minDist_frsCode (k := 2 ^ 20) (s := 2 ^ 12)
       domain12 foldOmega admissible_domain12 gamma_ne_zero
       (by rw [Fintype.card_fin]; norm_num)
     simp only [Fintype.card_fin] at h

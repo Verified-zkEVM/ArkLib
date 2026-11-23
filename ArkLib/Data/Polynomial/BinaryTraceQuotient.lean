@@ -62,7 +62,7 @@ section Field
 variable {F : Type*} [Field F]
 
 /-- Every quotient has degree strictly below the quarter-field threshold, including at `s = 0`. -/
-lemma natDegree_binaryTraceQuotient_lt {m : ℕ} (hm : 3 ≤ m) (s : F) :
+lemma natDegree_binaryTraceQuotient_lt {m : ℕ} (s : F) :
     (binaryTraceQuotient m s).natDegree < binaryTraceQuarterDegree m := by
   classical
   apply lt_of_le_of_lt (natDegree_sum_le_of_forall_le (Finset.range (m - 1)) _ ?_)
@@ -103,18 +103,21 @@ lemma eval_binaryNormalizedTracePoly_zero (m : ℕ) (s : F) :
     zero_pow (pow_ne_zero _ (by omega : (2 : ℕ) ≠ 0))]
 
 /-- The lower quotient terms do not disturb the normalized leading coefficient. -/
-lemma monic_binaryNormalizedTracePoly {m : ℕ} (hm : 3 ≤ m) (s : F) :
+lemma monic_binaryNormalizedTracePoly {m : ℕ} (s : F) :
     (binaryNormalizedTracePoly m s).Monic := by
+  by_cases hm : m < 2
+  · have hm1 : m - 1 = 0 := by omega
+    simp [binaryNormalizedTracePoly, binaryTraceTopDegree, binaryTraceQuotient, hm1]
   rw [binaryNormalizedTracePoly]
   apply monic_X_pow_add
   by_cases hq : binaryTraceQuotient m s = 0
   · simp only [hq, mul_zero, degree_zero]
     exact WithBot.bot_lt_coe _
   rw [← natDegree_lt_iff_degree_lt (mul_ne_zero X_ne_zero hq), natDegree_X_mul hq]
-  have hqdeg := natDegree_binaryTraceQuotient_lt hm s
+  have hqdeg := natDegree_binaryTraceQuotient_lt (m := m) s
   simp only [binaryTraceTopDegree, binaryTraceQuarterDegree] at hqdeg ⊢
   have hquarter : 2 ^ (m - 2) + 1 ≤ 2 ^ (m - 1) := by
-    have hm2 : 1 ≤ m - 2 := by omega
+    have hp : 0 < 2 ^ (m - 2) := pow_pos Nat.zero_lt_two _
     calc
       2 ^ (m - 2) + 1 ≤ 2 ^ (m - 2) + 2 ^ (m - 2) := by omega
       _ = 2 ^ (m - 1) := by
@@ -123,8 +126,11 @@ lemma monic_binaryNormalizedTracePoly {m : ℕ} (hm : 3 ≤ m) (s : F) :
   omega
 
 /-- The normalized polynomial has the half-field degree threshold. -/
-lemma natDegree_binaryNormalizedTracePoly {m : ℕ} (hm : 3 ≤ m) (s : F) :
+lemma natDegree_binaryNormalizedTracePoly {m : ℕ} (s : F) :
     (binaryNormalizedTracePoly m s).natDegree = binaryTraceTopDegree m := by
+  by_cases hm : m < 2
+  · have hm1 : m - 1 = 0 := by omega
+    simp [binaryNormalizedTracePoly, binaryTraceTopDegree, binaryTraceQuotient, hm1]
   rw [binaryNormalizedTracePoly]
   calc
     (X ^ binaryTraceTopDegree m + X * binaryTraceQuotient m s).natDegree =
@@ -133,7 +139,7 @@ lemma natDegree_binaryNormalizedTracePoly {m : ℕ} (hm : 3 ≤ m) (s : F) :
       by_cases hq : binaryTraceQuotient m s = 0
       · simp [hq, binaryTraceTopDegree]
       rw [natDegree_X_mul hq, natDegree_X_pow]
-      have hqdeg := natDegree_binaryTraceQuotient_lt hm s
+      have hqdeg := natDegree_binaryTraceQuotient_lt (m := m) s
       simp only [binaryTraceTopDegree, binaryTraceQuarterDegree] at hqdeg ⊢
       have hquarter : 2 ^ (m - 2) + 1 ≤ 2 ^ (m - 1) := by
         calc
@@ -191,10 +197,16 @@ private lemma inv_mul_trace_term (s x : F) (hs : s ≠ 0) (i : ℕ) :
 
 omit [DecidableEq F] [CharP F 2] in
 /-- The normalized polynomial evaluates to a scaled absolute trace when `s ≠ 0`. -/
-lemma eval_binaryNormalizedTracePoly {m : ℕ} (hm : 1 ≤ m)
+lemma eval_binaryNormalizedTracePoly {m : ℕ}
     (hcard : Fintype.card F = 2 ^ m) {s : F} (hs : s ≠ 0) (x : F) :
     (binaryNormalizedTracePoly m s).eval x = s⁻¹ * binaryTrace m (s ^ 2 * x) := by
   classical
+  have hm : 0 < m := by
+    by_contra h
+    have hm0 : m = 0 := by omega
+    have hnontrivial := Fintype.one_lt_card (α := F)
+    simp only [hm0, pow_zero] at hcard
+    omega
   obtain ⟨n, hn⟩ : ∃ n, m = n + 1 := ⟨m - 1, by omega⟩
   rw [binaryNormalizedTracePoly, eval_add, eval_X_pow, eval_mul, eval_X,
     binaryTrace, hn, Finset.sum_range_succ, mul_add, Finset.mul_sum]

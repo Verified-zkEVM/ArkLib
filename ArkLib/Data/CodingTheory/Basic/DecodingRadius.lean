@@ -111,7 +111,7 @@ A word `u` is within the `uniqueDecodingRadius` of a code `C` if and only if
 there exists *exactly one* codeword `v` in `C` that is that close.
 -/
 theorem UDR_close_iff_exists_unique_close_codeword {ι : Type*} [Fintype ι] {F : Type*}
-    [DecidableEq F] (C : Set (ι → F)) [Nonempty C] (u : ι → F) :
+    [DecidableEq F] (C : Set (ι → F)) (u : ι → F) :
     Δ₀(u, C) ≤ Code.uniqueDecodingRadius C ↔ ∃! v ∈ C, Δ₀(u, v) ≤ Code.uniqueDecodingRadius C := by
   -- 1. Define t (radius) and d (distance) for brevity
   set t := Code.uniqueDecodingRadius C
@@ -120,15 +120,8 @@ theorem UDR_close_iff_exists_unique_close_codeword {ι : Type*} [Fintype ι] {F 
   · -- (→) Direction 1: "Close" implies "Uniquely Close"
     intro h_dist_le_t
     -- 2. First, prove *existence*
-    let v := pickClosestCodeword_of_Nonempty_Code (C := C) (u := u)
-    have h_close_to_v : Δ₀(u, v) ≤ t := by
-      rw [distFromPickClosestCodeword_of_Nonempty_Code (C := C) (u := u)] at h_dist_le_t
-      simp only [Nat.cast_le] at h_dist_le_t
-      exact h_dist_le_t
-    have h_exists : ∃ v, v ∈ C ∧ Δ₀(u, v) ≤ t := by
-      use v
-      simp only [Subtype.coe_prop, true_and]
-      exact h_close_to_v
+    have h_exists : ∃ v, v ∈ C ∧ Δ₀(u, v) ≤ t :=
+      (closeToCode_iff_closeToCodeword_of_minDist u t).mp h_dist_le_t
     -- 3. Second, prove *uniqueness*
     have h_uniq : ∀ (v₁ : ι → F) (v₂ : ι → F),
       v₁ ∈ C → v₂ ∈ C → Δ₀(u, v₁) ≤ t → Δ₀(u, v₂) ≤ t → v₁ = v₂ := by

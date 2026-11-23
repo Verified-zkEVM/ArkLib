@@ -15,25 +15,17 @@ linter.mathlibStandardSet = true
 linter.style.longFile = 1500
 linter.style.header = false
 
+# Every package that requires ArkLib resolves every `require` here. Documentation tools
+# (doc-gen4, checkdecls) are therefore required by the separate package in `docbuild/`.
 [[require]]
 name = "VCVio"
 git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "6214f907760776ceab8b1f828c9015f549e66e31"
-
-[[require]]
-name = "«doc-gen4»"
-git = "https://github.com/leanprover/doc-gen4"
-rev = "v4.35.0"
-
-[[require]]
-name = "checkdecls"
-git = "https://github.com/PatrickMassot/checkdecls.git"
-rev = "lean4.18.0"
+rev = "f1e63c780de398fb62206dd5890f27e1ad64e0e6"
 
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "v4.35.0"
+rev = "1a9ad0ef08aaeb187d51e41cad0be79b5b8faf6f"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -142,3 +134,4 @@ name = "RetiredProbabilityTestFixtures"
 srcDir = "scripts"
 roots = []
 globs = ["RetiredProbabilityTestFixtures.+"]
+allowNonModules = true

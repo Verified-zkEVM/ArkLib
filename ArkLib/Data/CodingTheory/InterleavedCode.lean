@@ -74,6 +74,8 @@ Interleaved codes for generic codes over a semiring, with **unified global APIs*
 - **`pairJointProximity₂ u₀ u₁ v₀ v₁ e`** - two interleaved pairs within distance `e` of each other
 - **`jointAgreement C δ W`** - words collectively agree on large set with `C`
   (equivalent to `jointProximity`)
+- **`jointAgreement.relDistFromCode_le`** - every word of a jointly agreeing stack is `δ`-close
+  to `C`
 
 ## References
 
@@ -151,7 +153,7 @@ def interleavedCodeSet {A : Type*} {κ ι : Type*}
 /-- If C is finite and membership is decidable, then interleavedCodeSet C is finite. -/
 @[simp]
 noncomputable instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
-    [Fintype κ] [Fintype ι] [Fintype A] [DecidableEq A]
+    [Fintype κ] [Fintype ι] [Fintype A]
     (C : Set (ι → A)) :
     Fintype (interleavedCodeSet (κ := κ) (ι := ι) C) := by
   exact Fintype.ofFinite (interleavedCodeSet C)
@@ -928,6 +930,19 @@ def jointAgreement {F κ ι : Type*} [Fintype ι] [DecidableEq F]
     (C : Set (ι → F)) (δ : ℝ≥0) (W : κ → ι → F) : Prop :=
   ∃ S : Finset ι, S.card ≥ (1 - δ) * (Fintype.card ι) ∧
       ∃ v : κ → ι → F, ∀ i, v i ∈ C ∧ S ⊆ Finset.filter (fun j => v i j = W i j) Finset.univ
+
+/-- Every word of a stack that has joint agreement with `C` is `δ`-close to `C`. -/
+theorem jointAgreement.relDistFromCode_le {F κ ι : Type*} [Fintype ι] [Nonempty ι]
+    [DecidableEq F] {C : Set (ι → F)} {δ : ℝ≥0} {W : κ → ι → F}
+    (h : jointAgreement (C := C) (δ := δ) (W := W)) (i : κ) :
+    δᵣ(W i, C) ≤ δ := by
+  obtain ⟨S, hS, v, hv⟩ := h
+  have hagree : ∀ j ∈ S, W i j = v i j := fun j hj =>
+    ((Finset.mem_filter.mp ((hv i).2 hj)).2).symm
+  refine (relCloseToCode_iff_relCloseToCodeword_of_minDist (W i) δ).2
+    ⟨v i, (hv i).1, (relCloseToWord_iff_exists_agreementCols (W i) (v i) δ).2
+      ⟨S, (relDist_floor_bound_iff_complement_bound _ _ _).2 hS,
+        fun j => ⟨hagree j, fun hne hj => hne (hagree j hj)⟩⟩⟩
 
 open InterleavedCode in
 /-- Equivalence between the agreement-based definition `jointAgreement` and

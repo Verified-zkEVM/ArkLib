@@ -123,7 +123,7 @@ example : Module.finrank ℚ (LinearMap.range
       2 (0 : ℚ) 0)) ≤ 5 := by
   let S : Submodule ℚ (LocalPolynomial ℚ 1) := localIntermediateSpace ℚ 1 2 1 0
   have : Module.Finite ℚ (localIntermediateSpace ℚ 1 2 1 0) :=
-    localIntermediateSpace_finite (by norm_num) 2 1 0
+    localIntermediateSpace_finite 2 1 0
   have hS (Q : DifferentialPolynomial ℚ 1) (hQ :
       Q ∈ exactInterpolationSpace ℚ 2 1 1 2 1 0 (by norm_num)) :
       translatedLocalTruncation 2 (0 : ℚ) 0 Q ∈ S :=

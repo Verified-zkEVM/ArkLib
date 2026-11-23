@@ -257,10 +257,10 @@ theorem firstOrderGradedSourceColumn_x_add_y₀ (D A m M s t : ℕ)
   simp only [firstOrderGradedSourceColumn_x, firstOrderGradedSourceColumn_y₀]
   omega
 
-/-- For positive `D`, every canonical slice column belongs to the uncapped first-order support;
+/-- Every canonical slice column belongs to the uncapped first-order support;
 the separate hypothesis `t ≤ μ` inserts it into the chosen finite support. -/
 theorem firstOrderGradedSourceColumn_mem {D A m M s t μ : ℕ}
-    (hD : 0 < D) (ht : t ≤ μ)
+    (ht : t ≤ μ)
     (q : Fin (firstOrderGradedSourceCount D A m M s t)) :
     (firstOrderGradedSourceColumn D A m M s t q).exponent ∈
       firstOrderExponents D A m M μ := by
@@ -285,6 +285,9 @@ theorem firstOrderGradedSourceColumn_mem {D A m M s t μ : ℕ}
   have ha_s : a ≤ s := hbounds.2.2.trans (min_le_right _ _)
   have ht_split : a + (t - a) = t := Nat.add_sub_of_le ha_t
   have hs_split : s - a + a = s := Nat.sub_add_cancel ha_s
+  rcases Nat.eq_zero_or_pos D with rfl | hD
+  · simp only [Nat.zero_sub, zero_mul, add_zero] at hbounds ⊢
+    omega
   have hDform : D - 1 + 1 = D := Nat.sub_add_cancel (by omega : 1 ≤ D)
   have hDa : D * a = (D - 1) * a + a := by
     calc

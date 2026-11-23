@@ -74,7 +74,7 @@ an empty query cache and receives only the public SRS generated from `τ`.
 -/
 
 /-- The t-SDH game for a specific adversary. -/
-abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
+abbrev tSdhGame
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
     OptionT ProbComp (ZMod p × ZMod p × G₁) :=
@@ -86,7 +86,7 @@ abbrev tSdhGame [∀ i, SampleableType (unifSpec.Range i)]
       (τ, c, h))))
 
 /-- The probability of breaking `t`-SDH for a specific adversary. -/
-noncomputable def tSdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
+noncomputable def tSdhExperiment
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
   Pr{let result ← (tSdhGame (g₁ := g₁) (g₂ := g₂) D adversary)}[(tSdhCondition (g₁ := g₁)) result]
@@ -104,7 +104,7 @@ private lemma verifier_exponent_injective (hg₂ : g₂ ≠ 1) :
 For `Adv = Set.univ` and a nontrivial verifier generator, this is false below error `1`: the
 trapdoor is a classical function of the verifier SRS. A meaningful instance must restrict `Adv`,
 for example to generic or algebraic group adversaries, or resource-bounded adversaries. -/
-def tSdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
+def tSdhAssumption
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (Adv : Set (tSdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p))) (error : ℝ≥0) : Prop :=
   ∀ adversary ∈ Adv,
@@ -113,7 +113,7 @@ def tSdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
 omit [PrimeOrderWith G₁ p] in
 /-- Over all Lean functions, `t`-SDH cannot have error below one when the verifier generator is
 nontrivial: a classical inverse of its exponent map recovers the trapdoor from the SRS. -/
-lemma not_tSdhAssumption_univ [∀ i, SampleableType (unifSpec.Range i)]
+lemma not_tSdhAssumption_univ
     (D : ℕ) (hg₂ : g₂ ≠ 1) (error : ℝ≥0) (herror : error < 1) :
     ¬ tSdhAssumption (p := p) (g₁ := g₁) (g₂ := g₂) D Set.univ error := by
   classical
@@ -150,7 +150,7 @@ abbrev arsdhCondition (D : ℕ) : (ZMod p × Finset (ZMod p) × G₁ × G₁) �
     S.card = D + 1 ∧ Zₛ.eval τ ≠ 0 ∧ h₁ ≠ 1 ∧ h₂ = h₁ ^ (1 / Zₛ.eval τ).val
 
 /-- The ARSDH game for a specific adversary. -/
-abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
+abbrev arsdhGame
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) :
     OptionT ProbComp (ZMod p × Finset (ZMod p) × G₁ × G₁) :=
@@ -162,7 +162,7 @@ abbrev arsdhGame [∀ i, SampleableType (unifSpec.Range i)]
       (τ, S, h₁, h₂))))
 
 /-- The probability of breaking ARSDH for a specific adversary. -/
-noncomputable def arsdhExperiment [∀ i, SampleableType (unifSpec.Range i)]
+noncomputable def arsdhExperiment
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (adversary : arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p)) : ℝ≥0∞ :=
   Pr{let result ← (arsdhGame (g₁ := g₁) (g₂ := g₂) D adversary)}[(arsdhCondition D) result]
@@ -173,7 +173,7 @@ probability of every adversary in `Adv` by `error`.
 For `Adv = Set.univ`, nontrivial generators and `p ≥ D + 2`, this is false below error `1`:
 the trapdoor is a classical function of the verifier SRS. A meaningful instance must restrict
 `Adv`, for example to generic or algebraic group adversaries, or resource-bounded adversaries. -/
-def arsdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
+def arsdhAssumption
     {g₁ : G₁} {g₂ : G₂} (D : ℕ)
     (Adv : Set (arsdhAdversary D (G₁ := G₁) (G₂ := G₂) (p := p))) (error : ℝ≥0) : Prop :=
   ∀ adversary ∈ Adv,
@@ -182,7 +182,7 @@ def arsdhAssumption [∀ i, SampleableType (unifSpec.Range i)]
 /-- Over all Lean functions, ARSDH cannot have error below one when both generators are
 nontrivial and the field contains at least `D + 2` elements. A classical adversary recovers the
 trapdoor and chooses a set of size `D + 1` avoiding it. -/
-lemma not_arsdhAssumption_univ [∀ i, SampleableType (unifSpec.Range i)]
+lemma not_arsdhAssumption_univ
     (D : ℕ) (hg₁ : g₁ ≠ 1) (hg₂ : g₂ ≠ 1) (hp : p ≥ D + 2)
     (error : ℝ≥0) (herror : error < 1) :
     ¬ arsdhAssumption (p := p) (g₁ := g₁) (g₂ := g₂) D Set.univ error := by

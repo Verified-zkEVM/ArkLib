@@ -3,7 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Data.OracleComp.QueryBounds
+import VCVio.OracleComp.QueryTracking.CostModel.Simulation
+import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 import ArkLib.Interaction.Oracle.Prefix
 import ArkLib.Interaction.Oracle.SourceRouting
 import ArkLib.Interaction.Oracle.PhasedRun
@@ -99,10 +100,10 @@ theorem route_cost (q : (ofPFunctor suffixAccess).Domain) :
       let left : Nat ← liftM ((ofPFunctor finalAccess).query (.inl (.inr ())))
       let right : Nat ← liftM ((ofPFunctor finalAccess).query (.inl (.inr ())))
       return left + right) rawCost 2
-    apply worstCaseCostBound_bind _ _ rawCost 1 1
+    apply WorstCaseCostBound.bind (A := 1) (B := 1)
       (worstCaseCostBound_query _ rawCost)
     intro left
-    apply worstCaseCostBound_bind _ _ rawCost 1 0
+    apply WorstCaseCostBound.bind (A := 1) (B := 0)
       (worstCaseCostBound_query _ rawCost)
     intro right result member
     change result ∈ support (costDist (pure (left + right)) rawCost) at member
@@ -114,10 +115,10 @@ theorem route_cost (q : (ofPFunctor suffixAccess).Domain) :
 
 /-- The source program's nonuniform charges reserve the whole expansion. -/
 theorem program_cost : WorstCaseCostBound suffixProgram sourceCost 5 := by
-  apply worstCaseCostBound_bind _ _ sourceCost 2 3
+  apply WorstCaseCostBound.bind (A := 2) (B := 3)
     (worstCaseCostBound_query _ sourceCost)
   intro old
-  apply worstCaseCostBound_bind _ _ sourceCost 3 0
+  apply WorstCaseCostBound.bind (A := 3) (B := 0)
     (worstCaseCostBound_query _ sourceCost)
   intro fresh result member
   change result ∈ support (costDist (pure (old + fresh)) sourceCost) at member
@@ -127,8 +128,7 @@ theorem program_cost : WorstCaseCostBound suffixProgram sourceCost 5 := by
 
 /-- The actual exported route issues two old-slot calls and one fresh-slot call. -/
 example : WorstCaseCostBound (simulateQ route suffixProgram) rawCost 5 :=
-  worstCaseCostBound_simulateQ route suffixProgram sourceCost rawCost 5
-    program_cost route_cost
+  program_cost.simulateQ route route_cost
 
 open Interaction.Oracle.TypeTree PFunctor.FreeM in
 /-- Concrete realizations of the two messages from the same execution. -/
@@ -148,8 +148,7 @@ def rawAllowed (first second : Nat) (q : finalAccess.A) : Prop :=
 /-- Access is certified for the same route used by the cost theorem. -/
 theorem routed_available (first second : Nat) :
     AllQueriesSatisfy (simulateQ route suffixProgram) (rawAllowed first second) := by
-  apply allQueriesSatisfy_simulateQ route suffixProgram (fun _ => True)
-    (rawAllowed first second)
+  apply AllQueriesSatisfy.simulateQ (P := fun _ => True)
   · induction suffixProgram using OracleComp.inductionOn with
     | pure value => exact allQueriesSatisfy_pure _ _
     | query_bind query next ih =>
@@ -272,8 +271,7 @@ example :
     WorstCaseCostBound (simulateQ route suffixProgram) rawCost 5 := by
   constructor
   · exact routed_available 1 2
-  · exact worstCaseCostBound_simulateQ route suffixProgram sourceCost rawCost 5
-      program_cost route_cost
+  · exact program_cost.simulateQ route route_cost
 
 /-- The old query's actual join name survives inclusion into this execution's terminal context. -/
 example :
@@ -331,18 +329,18 @@ example : ¬ WorstCaseCostBound (simulateQ route suffixProgram) rawCost 4 := by
     have last : (0, Multiplicative.ofAdd 3) ∈ support (costDist (do
         let fresh : Nat ← liftM ((ofPFunctor finalAccess).query (.inr ()))
         return 0 + 0 + fresh) rawCost) :=
-      mem_support_costDist_query_bind (spec := ofPFunctor finalAccess) (.inr ())
+      mem_support_costDist_query_bind (source := ofPFunctor finalAccess) (.inr ())
         (fun (fresh : Nat) => pure (0 + 0 + fresh)) (0 : Nat) rawCost (0, 1)
         (by rw [costDist_pure, mem_support_pure_iff])
     have middle : (0, Multiplicative.ofAdd 4) ∈ support (costDist (do
         let right : Nat ← liftM ((ofPFunctor finalAccess).query (.inl (.inr ())))
         let fresh : Nat ← liftM ((ofPFunctor finalAccess).query (.inr ()))
         return 0 + right + fresh) rawCost) :=
-      mem_support_costDist_query_bind (spec := ofPFunctor finalAccess) (.inl (.inr ()))
+      mem_support_costDist_query_bind (source := ofPFunctor finalAccess) (.inl (.inr ()))
         (fun (right : Nat) => do
           let fresh : Nat ← liftM ((ofPFunctor finalAccess).query (.inr ()))
           return 0 + right + fresh) (0 : Nat) rawCost (0, Multiplicative.ofAdd 3) last
-    exact mem_support_costDist_query_bind (spec := ofPFunctor finalAccess) (.inl (.inr ()))
+    exact mem_support_costDist_query_bind (source := ofPFunctor finalAccess) (.inl (.inr ()))
       (fun (left : Nat) => do
         let right : Nat ← liftM ((ofPFunctor finalAccess).query (.inl (.inr ())))
         let fresh : Nat ← liftM ((ofPFunctor finalAccess).query (.inr ()))

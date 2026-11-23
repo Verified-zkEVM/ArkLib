@@ -42,7 +42,4 @@ example (g : G) (hg : g ≠ 1) :
 example (g : G) : g ^ ((-1 : ZMod p) + 1).val = g ^ (-1 : ZMod p).val * g := by
   simpa [ZMod.val_one] using GroupRepresentation.pow_val_add g (-1) 1
 
-example (g : G) : 0 < p :=
-  GroupRepresentation.modulus_pos (singletonRepresentation (p := p) g)
-
 end AGM.GroupRepresentationTest

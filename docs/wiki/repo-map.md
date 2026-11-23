@@ -9,6 +9,8 @@ Many developments are paper-scoped and spread across several modules.
 ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
   Interaction/        typed prover, verifier, and reduction foundations
+    Core/             rebuilt interaction core on PolyFun trees (staged migration)
+  Relation/           claims, witness relations, and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
@@ -21,6 +23,7 @@ docs/kb/             persistent paper, concept, audit, and query knowledge base
 docs/wiki/            reference pages and conventions
 docs/design/          interaction-layer design chapters and status
 scripts/              repo utilities
+docbuild/             documentation package: doc-gen4 and checkdecls, requiring ArkLib by path
 home_page/            site assets and assembled website root
 ```
 
@@ -32,6 +35,18 @@ home_page/            site assets and assembled website root
   `CompositionSoundness.lean` adds an exact append execution law and quantitative
   soundness under lawful distribution semantics, with an explicit admissibility-error variant.
   It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
+- `ArkLib/Interaction/Core/` is the rebuilt interaction core. It is being introduced in stages
+  beside the existing interaction modules, which stay frozen until their clients move; Core
+  imports none of them. Protocols are PolyFun `FreeM` trees whose roles come from the
+  `plainSig` and `oracleSig` lenses (`Signature.lean`); `Protocol.lean` owns paths, views and
+  nodes. `Reduction.lean` defines provers, verifiers, reductions and the public-coin sampler;
+  `OracleVerifier.lean` adds oracle verifiers with routed input and message oracles;
+  `Execution.lean` runs a verifier against an arbitrary prover and keeps rejection as a returned
+  verdict. `Composition.lean` appends verifiers, provers and oracle routes. `Security/` holds
+  completeness and soundness over adversary models, classical straight-line and transcript-only
+  extraction, and round-by-round soundness and knowledge on cursor prefixes. Its acceptance
+  tests live in `ArkLibTest/Interaction/Core/`.
+- The descriptions below cover the frozen interaction modules outside `Core/`.
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
@@ -64,6 +79,10 @@ home_page/            site assets and assembled website root
   random-oracle completeness.
   Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
+- `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
+  admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
+  `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
+  evaluation-query interface, shared by the specification and the computational handler.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
   core with reusable definitions and lemmas.
 - `ArkLib/Commitments/` and `ArkLib/ProofSystem/` build on top of those foundations.
@@ -74,6 +93,8 @@ home_page/            site assets and assembled website root
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
 - Changing typed interaction or dependent reduction foundations: start in `ArkLib/Interaction/`.
+  New interaction-layer work goes in `ArkLib/Interaction/Core/`; the modules beside it are frozen
+  during the staged migration.
 - Changing legacy reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
@@ -186,7 +207,10 @@ home_page/            site assets and assembled website root
   the program's operation-count vector through `knowledgeSoundnessWithResources`.
   `Spec/Extraction/` owns the immutable access backend, generated domain points, driver, and
   resource proofs; reusable measured
-  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Compiled small cases run
+  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Raw coefficient-array
+  size facts come from `CompPoly.Univariate.Raw.Size`; canonical-polynomial bounds remain in
+  `ToCompPoly/Univariate/Size.lean`. These size facts count stored coefficients, not execution cost.
+  Compiled small cases run
   with `lake exe fri-extractor-runtime`; classic trust checks live in
   `ArkLibTest/ProofSystem/Fri/Extraction.lean`.
   `RoundConsistency.lean` connects local checks to word folding. Generic persistent-event
@@ -228,10 +252,15 @@ home_page/            site assets and assembled website root
 - `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
   scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
-  BitZ: `ExponentLift` for the bit inner product in an exponent, `Round1` for the honest-message
-  coefficient bound and fixed-witness fingerprinting error, `Round2` for the deterministic
-  tensor implication, and `OutOfDomain` for the multilinear-list collision bound. There is no
-  `Commitment.Scheme` instance or composed protocol security theorem yet. The
+  BitZ: `ExponentLift` for the bit inner product in an exponent, `CrtVariant` for its relaxation
+  by a second grand product modulo `ℓ₁`, `Round1` for the honest first message, its bounds and the
+  fixed-witness fingerprinting error, `Round2` for the deterministic tensor implication,
+  `OutOfDomain` for the multilinear-list collision bound, `Bitification` for the bit decomposition
+  of a witness over a finitely generated ring, `FixedWitnessError` for the fixed-witness error of
+  Rounds 1 and 2, `BitifiedClaim` for the bitified weights, the identification of the two claims
+  and the same bound for the bitified claim, and `HonestMessages` for the honest second message
+  and the honest first message of a bitified claim.
+  There is no `Commitment.Scheme` instance or composed protocol security theorem yet. The
   [BitZ paper page](../kb/papers/BGKLSW26.md) maps statements to the paper and records the remaining
   protocol obligations.
   Binary-encoding bounds and injectivity live under `Data/Nat/BitSum`; other generic helpers are
@@ -553,6 +582,9 @@ home_page/            site assets and assembled website root
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
   [coding-theory-conventions.md](coding-theory-conventions.md)).
+- `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/` ports the
+  affine combiners of [CWYZ26].
+  The [paper page](../kb/papers/CWYZ26.md) maps each module to the paper and tracks open units.
 - **Two different "folds" coexist and must not be confused.** GR08 *alphabet-enlarging* folding —
   a codeword symbol packs `(f̂(x), f̂(xω), …, f̂(xω^{s-1}))`, the degree bound is unchanged, and the
   code lives in `ι → Fin s → F` — is `ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`. The
@@ -565,7 +597,8 @@ home_page/            site assets and assembled website root
   subspace-design theorem), `ExtensionCodes.lean` (extension-field presentations and extension
   codes), `Erasure.lean` (erasure-consistency uniqueness below minimum distance),
   `HammingBallVolume.lean`,
-  `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
+  `Basic/Entropy.lean` (`qEntropy`), `Basic/ParityCheck.lean` (codes cut out by parity checks and
+  the counts of parity-check tuples). List-size bounds of Johnson type are in
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
 - List-size bounds that are *not* of Johnson type are under `ListDecodability/Bounds/`, with
@@ -573,12 +606,14 @@ home_page/            site assets and assembled website root
   the quantification conventions and the shared reference list. The split is by scope, not by paper:
   `Bounds/Basic.lean` (the three counting identities everything rests on), `Bounds/Linear.lean`
   (bounds valid for every linear code — Elias volume and its entropy form, the rate–radius
-  arithmetic, the generalized Singleton bound, random linear codes),
+  arithmetic, the generalized Singleton bound), `Bounds/RandomLinear.lean` (the random-linear-code
+  bound, with the [GLMRSW22] proof in `Bounds/RandomLinear/`),
   `Bounds/LargeAlphabet.lean` (the exponential-alphabet barrier, over the four-file development in
   `Bounds/LargeAlphabet/`: statements and family counting, centres and incidence counting, the local
   neighbourhood bound and pigeonhole barrier, then sparse large-union families and the assembly),
   `Bounds/Interleaved.lean` ([GGR11]'s interleaved-code list-size bound),
-  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound),
+  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound,
+  with the subspace-polynomial witnesses in `Bounds/ReedSolomon/SubspaceWitness.lean`),
   `Bounds/SubspaceDesign.lean` ([CZ25]'s upper bound and the folded-RS and multiplicity-code
   corollaries) over `Bounds/AgreementHypergraph.lean` (the geometric agreement machinery that proof
   needs, which mentions no list size and is reusable), and `Bounds/KKH26.lean` plus
@@ -586,12 +621,10 @@ home_page/            site assets and assembled website root
   file/directory pair
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
-  results about them. A few deep bounds are externally sourced solicited proofs: they carry tagged
-  `sorry` annotations and are listed in the `solicited` array of `scripts/axiom_baseline.json`
-  ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); use the paper KB pages to inspect
-  their sources. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
-  folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
-  large-alphabet barrier.
+  results about them. Every bound under `ListDecodability/` is proved in-tree; use the paper KB
+  pages to inspect their sources. In-tree results include [CZ25]'s subspace-design theorem (and
+  therefore the folded-Reed-Solomon and univariate-multiplicity capacity corollaries), the [AGL23]
+  large-alphabet barrier, and [AGL24]'s random-evaluation-domain bound.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
   `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds.
   `ProximityGap/CapacityBounds/SubspaceDesign.lean` shares the subspace-design pinning
@@ -629,7 +662,11 @@ home_page/            site assets and assembled website root
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random
-  functions is `ArkLib/Data/Probability/Combinatorial.lean`.
+  functions is `ArkLib/Data/Probability/Combinatorial.lean`. Shannon entropy and Chernoff tails for
+  real weights on finite types are `ArkLib/Data/Probability/FiniteEntropy.lean` and
+  `ArkLib/Data/Probability/FiniteChernoff.lean`.
+  `ArkLib/Data/Probability/MaxEventProbability.lean` computes the exact worst-case probability of
+  a finite family of Boolean events.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
@@ -716,8 +753,9 @@ home_page/            site assets and assembled website root
 - `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
   an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
   equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
-  When extraction itself matters, state `knowledgeSoundnessWith` for a named extractor and bound
-  that extractor's cost separately.
+  `knowledgeSoundnessWith` names an extractor without cost.
+  `knowledgeSoundnessWithResources` adds declared instruction counts; complete execution bounds
+  remain proposed in the [execution design](../design/03b-extractor-execution.md).
 - Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It is the instance of
   `Verifier.treeSpecialSound` for the pairwise-distinct shape `distinctShape k` (arity `kᵢ`, node
   predicate `Function.Injective`), with input/output relations like CWSS; it is the `ℓᵢ = 1`
@@ -758,32 +796,34 @@ home_page/            site assets and assembled website root
   `Security/GuardedSoundness.lean` gives the corresponding soundness bridges
   (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
-- Measured extraction lives in `Security/Resources.lean`. Its game-independent core,
-  `OracleComp.MeasuredProgram` in `Data/OracleComp/MeasuredProgram.lean`, is an uncharged view of
-  a function's input, a charged instruction program on that view, and deterministic handlers, with
-  `Realizes` and a budget `CostAtMost` on every program path (VCVio `WorstCaseCostBound`);
-  `OracleComp.BudgetedProgram f` bundles a program realizing `f` with its budget, and
-  `BudgetedProgram.ofFun` shows every function has one with budget zero.
-  `Extractor.Straightline.MeasuredProgram` is its instance at the straightline extractor's inputs.
-  Its `RealizesExtractor` relates the extractor's run to the program execution, and
-  `Verifier.knowledgeSoundnessWithResources` adds to `knowledgeSoundnessWith` that the named
-  extractor executes the program within the budget. The interaction-layer contract is
-  `Interaction/Oracle/Security/KnowledgeResources.lean`: `RoundExtractor.stageMap` is the backward
-  witness map at a node, on its move and later witness; `RoundExtractor.MeasuredStages` names a
-  budgeted program for the stage at every authored node; and `MeasuredKnowledgeCertificate`
-  extends `KnowledgeCertificate` with them; `MeasuredStages.BudgetAtMost` bounds every stage's
-  budget uniformly. The packaged theorem in
-  `Interaction/Oracle/Security/StateRestorationResources.lean`,
-  `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform`,
-  conjoins the security bound and the stage budget for the same named extractor.
-  It bounds each stage only: earlier moves, the carrier identifications such as
-  `terminalWitness`, the stages' composition and intermediate witness sizes are uncharged.
-  Clients: `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and the state-restoration client
-  `ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean`. All of this counts
-  declared instructions only, not running time. Only a named program with a stated instruction
-  set is evidence.
-  `Data/OracleComp/DeterminedCost.lean` turns a deterministic handler's recorded cost into that
-  bound when responses are certified.
+- Measured extraction lives in `Security/Resources.lean`. Its game-independent core is
+  `OracleComp.MeasuredProgram` in
+  `VCVio.OracleComp.QueryTracking.MeasuredProgram`:
+  an uncharged input view, an instruction program, deterministic handlers and declared charges.
+  `Realizes` is output equality; `CostAtMost` bounds every permitted completed instruction path.
+  `BudgetedProgram f` bundles both proofs, and `ofFun` realizes every function with zero budget.
+  These facts do not certify host computation time or operational identity with arbitrary code.
+  The legacy `RealizesExtractor` identifies the same extractor's monadic result with that run;
+  `knowledgeSoundnessWithResources` adds its game and raw count profile `Kind → ℕ`.
+  Native `Interaction/Oracle/Security/KnowledgeResources.lean` defines `RoundExtractor.stageMap`,
+  per-node `MeasuredStages` and `BudgetAtMost`. Generic stages remain weighted; public
+  `MeasuredKnowledgeCertificate Kind` and legacy count contracts require `[Finite Kind]` and
+  standard profiles `Kind → ℕ`. Pricing coordinates is a separate justified valuation step.
+  `KnowledgeResources/Composition.lean` composes named programs on a supplied typed path:
+  `programAlong` returns the same `extractWitness`, and `programAlong_budget_le` bounds its
+  budget by `path.length • bound` under a common local bound.
+  `StateRestorationResources.lean` supplies the
+  [role-specific resource contract](../design/03a-extractor-efficiency.md#state-restoration-resource-contract),
+  including the all-witness identity to the game's `extractInputWitness`. The
+  [common accounting boundary](../design/03a-extractor-efficiency.md#proof-and-accounting-boundary)
+  applies to every count certificate, and the
+  [native composition priorities](../design/05-roadmap.md#native-resource-composition) record
+  the remaining client and resource-closure proofs.
+  Acceptance clients are `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and
+  `ArkLibTest/Interaction/Oracle/Security/{StateRestorationBudget,MeasuredPathBudgets}.lean`.
+  `VCVio.OracleComp.QueryTracking.DeterminedCost`
+  turns the handler's recorded-cost bound into an all-path bound when every permitted response
+  equals the handler's answer.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
   (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms
@@ -836,10 +876,19 @@ home_page/            site assets and assembled website root
   `Soundness/` proves incremental folding and repeated-query bounds. `ReductionLogic` and
   `Steps/` connect those statements to oracle reductions; `CoreInteractionPhase/` composes the
   steps, `QueryPhase/` implements proximity queries and `General` composes the full protocol.
-  `Commitment` owns the first-oracle interface, and `Opening` supplies multilinear opening with
-  exact-encoding completeness and unique-radius round-by-round security. `FRIBinius/Prelude`
-  instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared prefix reduction
-  with Binary Basefold opening. See the [consumer guide](ring-switching-consumers.md).
+  The sum-check-and-fold loop takes the multiplier polynomial of a context; the final sum-check
+  step, core interaction and full protocol take a `Sumcheck.Structured.Multiplier`, whose evaluator
+  the final check uses. `ProductClaim` opens a product claim: the claim reduction
+  `ReduceClaim.oracleReduction` as front end, then full Binary Basefold, secure for any input
+  relation containing `ProductClaim.inputRelation`. `Commitment` owns the first-oracle interface,
+  and `Opening` is the evaluation-claim instance at `evalMultiplier` (`Opening.inputRelation_eq`),
+  with exact-encoding completeness and unique-radius round-by-round security.
+  `FRIBinius/Prelude` instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared
+  prefix reduction with Binary Basefold opening. `FRIBinius/Unrolled/` is DP24 Construction 5.1:
+  the tensor batching head (`TensorPrefix.headVerifier`) followed by `ProductClaim.openingVerifier`
+  at the ring-switching multiplier, so a single sum-check serves both ring switching and folding.
+  `Spec` bounds its challenge errors by DP24 equation (43). See the
+  [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
@@ -979,6 +1028,8 @@ home_page/            site assets and assembled website root
   `Binius/FRIBinius/Conformance` identifies source and exact first-oracle inputs;
   `Binius/FRIBinius/RingSwitch` composes the shared frontend with the Binary Basefold
   contextual opening. Completeness uses exact encodings, security unique-radius compatibility.
+  `TensorPrefix.headVerifier` is the batching head alone, ending at the product claim
+  `headRelOut` for a backend that runs its own product sum-check (`Binius/FRIBinius/Unrolled`).
   `Packing/OpeningAdapter` transports a standard `MLIOPCS` to the contextual opening contract
   through a zero-round projection, preserving completeness and round-by-round security.
   `ArkLibTest/ProofSystem/RingSwitching/Packing/RingSwitch/{UnequalRankSuffix,Quirky}` instantiate full protocols
@@ -1017,3 +1068,7 @@ home_page/            site assets and assembled website root
 `ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
 `lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
 the generated `ArkLib.lean` umbrella and production modules must not import them.
+`ArkLibTest/Interaction/Core/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
+challenges and the public-coin sampler), `Oracle.lean` (query-only decisions and output
+oracles), `Composition.lean` (routed composed oracle queries) and `Security.lean`
+(classical-model and round-by-round security).

@@ -62,7 +62,7 @@ def inject_nav(directory, root_dir):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print("Usage: python3 inject_nav.py <target_directory_base>")
+        print("Usage: uv run --no-project --python 3.12 python inject_nav.py <target_directory_base>")
         sys.exit(1)
         
     base_dir = sys.argv[1] # e.g., home_page

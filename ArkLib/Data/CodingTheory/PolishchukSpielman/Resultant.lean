@@ -35,7 +35,7 @@ open Polynomial.Bivariate Polynomial Matrix
 open scoped BigOperators
 
 /-- The degree of `Q * X ^ j` is at most `n - 1` when `deg Q ≤ n - m` and `j < m ≤ n`. -/
-lemma ps_nat_degree_mul_x_pow_le {F : Type} [Semiring F] [Nontrivial F]
+lemma ps_nat_degree_mul_x_pow_le {F : Type*} [Semiring F]
     (Q : F[X]) {m n : ℕ} (j : Fin m)
     (hmn : m ≤ n) (hQdeg : Q.natDegree ≤ n - m) :
     (Q * X ^ (j : ℕ)).natDegree ≤ n - 1 := by
@@ -44,14 +44,14 @@ lemma ps_nat_degree_mul_x_pow_le {F : Type} [Semiring F] [Nontrivial F]
   simpa [Nat.sub_add_cancel hmn] using Nat.add_lt_add_left j.isLt (n - m)
 
 /-- The degree of `resultant(B, A, n, m)` is at most `m · degX(B) + n · degX(A)`. -/
-lemma ps_nat_degree_resultant_le {F : Type} [Field F]
+lemma ps_nat_degree_resultant_le {F : Type*} [Field F]
     (A B : F[X][Y]) (m n : ℕ) :
     (resultant B A n m).natDegree ≤
       m * (degreeX B) + n * (degreeX A) :=
   natDegree_resultant_le_degreeX B A n m
 
 /-- The resultant commutes with ring homomorphisms. -/
-lemma ps_resultant_map {R S : Type} [CommRing R] [CommRing S]
+lemma ps_resultant_map {R S : Type*} [CommRing R] [CommRing S]
     (f : R →+* S) (p q : R[X]) (m n : ℕ) :
     f (resultant p q m n) = resultant (p.map f) (q.map f) m n := by
   classical
@@ -64,14 +64,14 @@ lemma ps_resultant_map {R S : Type} [CommRing R] [CommRing S]
       simp [sylvester, of_apply, coeff_map, h]
 
 /-- The resultant evaluated at `x` equals the resultant of the evaluated polynomials. -/
-lemma ps_resultant_eval_x {F : Type} [Field F]
+lemma ps_resultant_eval_x {F : Type*} [Field F]
     (x : F) (A B : F[X][Y]) (m n : ℕ) :
     (evalRingHom x) (resultant B A n m) =
       resultant (B.map (evalRingHom x)) (A.map (evalRingHom x)) n m := by
   simp only [coe_evalRingHom, resultant_map_map]
 
 /-- The Sylvester matrix commutes with ring homomorphisms. -/
-lemma ps_sylvester_map {R S : Type} [CommRing R] [CommRing S]
+lemma ps_sylvester_map {R S : Type*} [CommRing R] [CommRing S]
     (f : R →+* S) (A B : R[X]) (m n : ℕ) :
     (sylvester B A n m).map f = sylvester (B.map f) (A.map f) n m := by
   ext i j
@@ -84,7 +84,7 @@ lemma ps_sylvester_map {R S : Type} [CommRing R] [CommRing S]
       simp [sylvester, of_apply, coeff_map, h]
 
 /-- The Sylvester matrix–vector product gives coefficients of `A * P + B * Q`. -/
-lemma ps_sylvester_mul_vec_eq_coeff_add {R : Type} [CommRing R]
+lemma ps_sylvester_mul_vec_eq_coeff_add {R : Type*} [CommRing R]
     (A B : R[X]) (m n : ℕ)
     (hm : A.natDegree ≤ m) (hn : B.natDegree ≤ n)
     (v : Fin (n + m) → R) :
@@ -99,9 +99,9 @@ lemma ps_sylvester_mul_vec_eq_coeff_add {R : Type} [CommRing R]
     ps_coeff_mul_sum_monomial B n m hn (fun j ↦ v (Fin.natAdd n j)) (i : ℕ), add_comm]
 
 /-- If `B(x, Y) = Q · A(x, Y)`, then `(X - x)^(natDegreeY A)` divides `resultant(B, A)`. -/
-lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
+lemma ps_resultant_dvd_pow_eval_x {F : Type*} [Field F]
     (A B : F[X][Y]) (x : F) (Q : F[X]) (n : ℕ)
-    (hmn : natDegreeY A ≤ n) (hn : natDegreeY B ≤ n)
+    (hmn : natDegreeY A ≤ n)
     (hQdeg : Q.natDegree ≤ n - natDegreeY A)
     (hQ : evalX x B = Q * evalX x A) :
     (X - C x) ^ (natDegreeY A) ∣ resultant B A n (natDegreeY A) := by
@@ -140,13 +140,14 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
       simpa [M0] using ps_sylvester_map ev A B m n
     have hmA : (A.map ev).natDegree ≤ m :=
       le_trans natDegree_map_le (by simp [hm, natDegreeY])
-    have hnB : (B.map ev).natDegree ≤ n :=
-      le_trans natDegree_map_le (by simpa [natDegreeY] using hn)
+    have hBmap : B.map ev = Q * A.map ev := by simpa [ps_eval_x_eq_map, ev] using hQ
+    have hnB : (B.map ev).natDegree ≤ n := by
+      rw [hBmap]
+      exact (natDegree_mul_le_of_le hQdeg hmA).trans (Nat.sub_add_cancel hmn).le
     set q : F[X] := Q * X ^ (j' : ℕ) with hq_def
     have hqdeg_lt : q.natDegree < n :=
       lt_of_le_of_lt (ps_nat_degree_mul_x_pow_le Q j' hmn hQdeg)
         (Nat.sub_lt (lt_of_lt_of_le (Fin.size_positive j') hmn) Nat.one_pos)
-    have hBmap : B.map ev = Q * A.map ev := by simpa [ps_eval_x_eq_map, ev] using hQ
     have hsum_left : (∑ j : Fin n, monomial (j : ℕ) (v_col (.castAdd m j))) = -q := by
       have hv : (fun j : Fin n ↦ v_col (.castAdd m j)) = fun j : Fin n ↦ -(toFn n q j) := by
         funext j; simp [v_col, col, U, ev, q, toFn]
@@ -167,7 +168,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
       simp_rw [hfun]; simp [monomial_one_right_eq_X_pow]
     have hSylv : ev (M1 i col) = (sylvester (B.map ev) (A.map ev) n m).mulVec v_col i := by
       have := RingHom.map_matrix_mul (M := M0) (N := U) (i := i) (j := col) (f := ev)
-      simpa [M1, mul_apply, mulVec, dotProduct, v_col, hM0map] using this
+      simpa [M1, Matrix.mul_apply, mulVec, dotProduct, v_col, hM0map] using this
     rw [hSylv, congrArg (fun f : (Fin (n + m) → F) ↦ f i)
       (ps_sylvester_mul_vec_eq_coeff_add (A.map ev) (B.map ev) m n hmA hnB v_col)]
     simp [hsum_left, hsum_right, hBmap, q, mul_assoc, mul_left_comm, mul_comm]
@@ -191,9 +192,9 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
   simpa [p, m, hm, natDegreeY, resultant, M0] using (hdet1 ▸ hdivM1)
 
 /-- If `B(X, y) = Q · A(X, y)`, then `(X - y)^(degreeX A)` divides the swapped resultant. -/
-lemma ps_resultant_dvd_pow_eval_y {F : Type} [Field F]
+lemma ps_resultant_dvd_pow_eval_y {F : Type*} [Field F]
     (A B : F[X][Y]) (y : F) (Q : F[X]) (n : ℕ)
-    (hmn : degreeX A ≤ n) (hn : degreeX B ≤ n)
+    (hmn : degreeX A ≤ n)
     (hQdeg : Q.natDegree ≤ n - degreeX A)
     (hQ : evalY y B = Q * evalY y A) :
     (X - C y) ^ (degreeX A) ∣
@@ -202,12 +203,11 @@ lemma ps_resultant_dvd_pow_eval_y {F : Type} [Field F]
   simpa [ps_nat_degree_y_swap] using
     ps_resultant_dvd_pow_eval_x (swap A) (swap B) y Q n
       (by simpa [ps_nat_degree_y_swap] using hmn)
-      (by simpa [ps_nat_degree_y_swap] using hn)
       (by simpa [ps_nat_degree_y_swap] using hQdeg)
       (by simpa [ps_eval_y_eq_eval_x_swap] using hQ)
 
 /-- The resultant of relatively prime polynomials is nonzero. -/
-lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
+lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type*} [Field F]
     (A B : F[X][Y]) (n : ℕ)
     (hn : natDegreeY B ≤ n) (hA0 : A ≠ 0) (hrel : IsRelPrime A B) :
     resultant B A n (natDegreeY A) ≠ 0 := by
@@ -234,7 +234,7 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
     by_contra h; exact hv0 (funext fun i ↦ absurd i.isLt (by omega))
   have hA_nd : A.natDegree = m := by simpa [natDegreeY] using hm.symm
   have hcomb : A * P + B * Q = 0 := by
-    apply Polynomial.ext; intro k
+    ext k : 2
     by_cases hk : k < n + m
     · simpa using hvcoeff ⟨k, hk⟩
     · have hdegAP : (A * P).natDegree < n + m := by
@@ -262,7 +262,7 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
   have hQ0 : Q = 0 := by
     by_cases hm0 : m = 0
     · simp_all only [m, P, Q]
-      ext n_1 n_2 : 2
+      ext n_1 : 2
       simp_all only [zero_le, ofFn_coeff_eq_zero_of_ge, coeff_zero]
     · rcases hA_dvd_Q with ⟨R, hR⟩
       by_contra hQ_ne
@@ -274,5 +274,5 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
       omega
   have hP0 : P = 0 := (mul_eq_zero.mp (by simpa [hQ0] using hcomb)).resolve_left hA0
   exact hv0 (funext ((Fin.forall_fin_add <| fun i ↦ v i = 0).2
-    ⟨fun j ↦ by simpa [hP_ofFn] using congrArg (Polynomial.coeff · (j : ℕ)) hP0,
-     fun j ↦ by simpa [hQ_ofFn] using congrArg (Polynomial.coeff · (j : ℕ)) hQ0⟩))
+    ⟨fun j ↦ by simpa [hP_ofFn] using congrArg (fun p : Polynomial _ ↦ p.coeff (j : ℕ)) hP0,
+     fun j ↦ by simpa [hQ_ofFn] using congrArg (fun p : Polynomial _ ↦ p.coeff (j : ℕ)) hQ0⟩))

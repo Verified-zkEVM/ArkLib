@@ -82,14 +82,13 @@ The radius hypothesis is on the base code, not the interleaved one —
 is the one a caller can discharge. -/
 noncomputable def ListLowerWitness.ofUniqueDecodingRange
     (C : Set (ι → F)) (m : ℕ) (δ ε_star : ℝ≥0)
-    (hm : 0 < m)
     (hδ_le_one : δ ≤ 1)
     (hδ : δ ≤ relativeUniqueDecodingRadius C)
     (hle : (1 : ENNReal) ≤ (ε_star : ENNReal) * (Fintype.card F : ENNReal)) :
     ListLowerWitness C m ε_star :=
   ListLowerWitness.ofLe hδ_le_one
     (le_trans
-      (by exact_mod_cast InterleavedCode.lambda_interleaved_le_one_of_le_relUDR C hm hδ) hle)
+      (by exact_mod_cast InterleavedCode.lambda_interleaved_le_one_of_le_relUDR C (m := m) hδ) hle)
 
 /-! ## The Johnson regime -/
 
@@ -101,7 +100,6 @@ codewords is witnessed.
 The list-size bound and the corresponding Johnson-range MCA bound are both proved in-tree. -/
 noncomputable def ListLowerWitness.ofJohnsonBound
     (C : Set (ι → F)) (m ℓ : ℕ) (δ ε_star : ℝ≥0)
-    (hm : 0 < m)
     (hℓ : 1 ≤ ℓ)
     (hδ_le_one : δ ≤ 1)
     (hδ : (δ : ℝ) ≤ JohnsonBound.Jqℓ ((Fintype.card F : ℚ) ^ m) (ℓ : ℚ)
@@ -110,6 +108,6 @@ noncomputable def ListLowerWitness.ofJohnsonBound
     ListLowerWitness C m ε_star :=
   ListLowerWitness.ofLe hδ_le_one
     (le_trans
-      (by exact_mod_cast CodingTheory.lambda_interleaved_le_of_le_johnson C hm hℓ hδ) hle)
+      (by exact_mod_cast CodingTheory.lambda_interleaved_le_of_le_johnson C hℓ hδ) hle)
 
 end ProximityGap.GrandChallenges

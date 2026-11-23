@@ -44,7 +44,8 @@ theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime {deg : ℕ} {dom
       hprob
   have hS : (RS_goodCoeffs (deg := deg) (domain := domain) u δ).card > Fintype.card ι :=
     card_RS_goodCoeffs_gt_of_prob_gt_n_div_q (deg := deg) (domain := domain) (δ := δ) u hprob'
-  exact RS_jointAgreement_of_goodCoeffs_card_gt (deg := deg) (domain := domain) (δ := δ) hδ u hS
+  exact RS_jointAgreement_of_goodCoeffs_card_gt (deg := deg) (domain := domain) (δ := δ) hδ u _
+    (fun _ hz => mem_RS_goodCoeffs.1 hz) hS
 
 end CoreResults
 

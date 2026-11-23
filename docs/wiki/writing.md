@@ -21,7 +21,7 @@ in [CONTRIBUTING.md](../../CONTRIBUTING.md); this guide does not add a second se
 Keep formulas, identifiers, commands, source quotations, official titles, generated output, and
 license terms accurate. Do not rewrite them to satisfy a prose rule. These exclusions do not cover
 explanations that an author puts in quotation marks. Headings and table labels can be fragments,
-but they must use clear and consistent terms.
+but they should still use clear and consistent terms.
 
 ## How to use STE
 
@@ -126,7 +126,7 @@ not require an edit.
   them in an explanation. (STE 6.1)
 - **L1.** Use a vertical list when it makes steps, cases, or conditions easier to distinguish.
   A short series does not always need a list. (STE 4.3)
-- **L2.** Introduce a list with a clear purpose and a colon. Each item must connect to that
+- **L2.** Introduce a list with a clear purpose and a colon. Each item should connect to that
   introduction. Items can complete the introductory sentence or be complete sentences. (STE 4.3)
 - **L3.** Keep the grammatical form and punctuation consistent within a list. Start prose items
   with a capital letter. Preserve the case of identifiers. (STE 4.3, ArkLib formatting convention)
@@ -182,7 +182,7 @@ requirements, including the statement audit, remain in CONTRIBUTING.md:
 - **C3.** Describe the present library in its reference documentation. Change history belongs in
   commit messages, PR descriptions, and documents whose purpose is to record history.
 - **C4.** Replace internal session notes and temporary planning codes with accessible explanations
-  or maintained references. A reader of the merged tree must be able to find the cited source.
+  or maintained references. Then a reader of the merged tree can find the cited source.
 - **C5.** Replace unsupported quality claims with a fact or evidence. Words such as "robust" or
   "comprehensive" do not supply that evidence.
 - **C6.** Give an argument or a precise reference instead of calling a result "obvious" or

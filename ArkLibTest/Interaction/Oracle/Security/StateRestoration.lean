@@ -118,24 +118,9 @@ theorem bounded (z : Nat) : RoundExtractor.IsLocallyBounded (extractor z) roles
   intro round context
   change Pr{let challenge ← $ᵗ Bool}[
     RoundExtractor.badChallenge (extractor z message).2.2 challenge] ≤ 1 / 2
-  have half : Pr{let challenge ← $ᵗ Bool}[challenge = true] = (1 / 2 : ENNReal) := by
-    rw [SampleableType.prEvent_uniformSample_eq_singleton]
-    simp only [Fintype.card_bool, Nat.cast_ofNat, one_div]
-  change Pr{let challenge ← $ᵗ Bool}[
-    ∃ witness : Nat × Unit, ¬ False ∧
-      challenge = true ∧ witness.1 ≤ message.val] ≤ 1 / 2
-  have event : (fun challenge : Bool =>
-      ∃ witness : Nat × Unit, ¬ False ∧ challenge = true ∧ witness.1 ≤ message.val) =
-      (fun challenge => challenge = true) := by
-    funext challenge
-    apply propext
-    constructor
-    · rintro ⟨witness, _, known, _⟩
-      exact known
-    · intro known
-      exact ⟨⟨0, ()⟩, not_false, known, Nat.zero_le _⟩
-  rw [event]
-  exact half.le
+  rw [prEvent_congr ($ᵗ Bool) _ (· = true) (badChallenge_iff z message),
+    SampleableType.prEvent_uniformSample_eq_singleton]
+  simp
 
 def messages : Messages Unit rounds := ⟨(7 : Fin 8), (), PUnit.unit⟩
 def path (challenge : Bool) : tree.ExecutionPath := ⟨(7 : Fin 8), challenge, PUnit.unit⟩

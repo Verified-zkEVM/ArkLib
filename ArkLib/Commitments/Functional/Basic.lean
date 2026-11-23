@@ -318,7 +318,6 @@ abbrev functionBindingCondition {L : ℕ} :
 /-- The function-binding game for a specific adversary. -/
 abbrev functionBindingGame {L : ℕ} (hn : n = 1)
     (AuxState : Type)
-    [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
     (adversary :
@@ -346,7 +345,6 @@ abbrev functionBindingGame {L : ℕ} (hn : n = 1)
 /-- The probability of breaking function binding for a specific adversary. -/
 def functionBindingExperiment {L : ℕ} (hn : n = 1)
     (AuxState : Type)
-    [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
     (adversary :
@@ -372,7 +370,6 @@ prover in the opening procedure), and for all malicious provers in the opening p
 
   Note: This is an adaptation of the function binding property introduced in [CGKY25]. -/
 def functionBinding {L : ℕ} (hn : n = 1)
-    [∀ i, VCVCompatible ((hn ▸ pSpec).Challenge i)]
     [∀ i, SampleableType ((hn ▸ pSpec).Challenge i)]
     (scheme : Scheme oSpec Data Commitment Decommitment ComKey VerifKey (hn ▸ pSpec))
     (functionBindingError : ℝ≥0) : Prop :=

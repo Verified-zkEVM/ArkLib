@@ -90,8 +90,8 @@ theorem large_alphabet_lambda_lower
     (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < 1) :
     ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
       ∀ (η : ℝ), 0 < η →
-          ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-            {F : Type} [Field F] [Fintype F] [DecidableEq F]
+          ∀ {ι : Type} [Fintype ι]
+            {F : Type} [Field F] [Fintype F]
             (C : Submodule F (ι → F)),
             n₀ ≤ Fintype.card ι →
             1 / η ≤ (Fintype.card ι : ℝ) →
@@ -116,7 +116,10 @@ theorem large_alphabet_lambda_lower
       ℓ _hℓ_ge ρ _hρ_pos _hρ_lt B₀ hB₀
   refine ⟨min αsep ((1 - ρ) / 2), ?_, max Nlocal nsep, ?_⟩
   · exact lt_min hαsep (by linarith)
-  · intro η hη ι _ _ _ F _ _ _ C hn hηn hrate hLambda
+  · intro η hη ι _ F _ _ C hn hηn hrate hLambda
+    have : Nonempty ι := Fintype.card_pos_iff.mp (by
+      have : (0 : ℝ) < Fintype.card ι := (one_div_pos.mpr hη).trans_le hηn
+      exact_mod_cast this)
     by_cases hlarge : (1 - ρ) / 2 ≤ η
     · exact alphabet_card_ge_rpow_of_alpha_le_eta _ _ hη
         ((min_le_right _ _).trans hlarge) Fintype.one_lt_card
@@ -182,7 +185,7 @@ theorem large_alphabet_lambda_lower
         greedy_separated_extraction
           (C : Set (ι → F))
           (Nat.floor (boostedRadius ℓ p * Fintype.card ι)) B₀
-          (Set.toFinite _) hcap
+          hcap
       have hDsep' : separated D
           (Nat.ceil (boostedRadius ℓ p * Fintype.card ι)) := by
         intro u hu v hv huv
@@ -222,19 +225,17 @@ the consequence [ABF26] draws from Theorem 3.10, and the only use it puts that t
 shows that achieving exactly the generalized singleton bound (which implies the case when
 `η = Θ(1/n)`) requires an alphabet of exponential size, which is undesirable.*"
 
-At `η := c/n` the barrier's `2^{α/η}` becomes `2^{(α/c)·n}`, so for every `ℓ ≥ 2`, `ρ ∈ (0,1)` and
-`c ≥ 1` there is `α > 0` with
+At inverse-length slack `c/n`, for every `ℓ ≥ 2`, `ρ ∈ (0,1)` and `c ∈ ℝ` there is `α > 0` with
 
   `|Λ(C, ℓ/(ℓ+1) · (1 − ρ − c/n))| ≤ ℓ  ⟹  |F| ≥ 2^{α·n}`
 
 for every rate-`ρ` linear code of sufficiently large length `n`.
 
-**Derived in-tree, sorry-free and axiom-clean** from `large_alphabet_lambda_lower`. `1 ≤ c` is
-exactly [AGL23]'s `ε ≥ 1/n` at `η = c/n`, and it is the meaningful range: relative radii are
-`1/n`-quantised, so `η < 1/n` asks for a radius finer than the lattice the list size lives on. -/
+**Derived in-tree and axiom-clean** from `large_alphabet_lambda_lower`, using
+`η = max c 1 / n` and monotonicity of the list size in the radius. -/
 theorem large_alphabet_card_ge_exp_of_inv_length
     (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (hρ_pos : 0 < ρ) (hρ_lt : ρ < 1)
-    (c : ℝ) (hc : 1 ≤ c) :
+    (c : ℝ) :
     ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
       ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
         {F : Type} [Field F] [Fintype F] [DecidableEq F]
@@ -245,17 +246,23 @@ theorem large_alphabet_card_ge_exp_of_inv_length
             ((ℓ : ℝ) / (ℓ + 1) * (1 - ρ - c / Fintype.card ι)) ≤ (ℓ : ℕ∞) →
         (Fintype.card F : ℝ) ≥ (2 : ℝ) ^ (α * Fintype.card ι) := by
   obtain ⟨α, hα_pos, n₀, hmain⟩ := large_alphabet_lambda_lower ℓ hℓ_ge ρ hρ_pos hρ_lt
-  have hc_pos : (0 : ℝ) < c := lt_of_lt_of_le zero_lt_one hc
-  refine ⟨α / c, div_pos hα_pos hc_pos, n₀, fun {ι} _ _ _ {F} _ _ _ C hn hrate hΛ => ?_⟩
+  let c' := max c 1
+  have hc : 1 ≤ c' := le_max_right _ _
+  have hc_pos : (0 : ℝ) < c' := lt_of_lt_of_le zero_lt_one hc
+  refine ⟨α / c', div_pos hα_pos hc_pos, n₀, fun {ι} _ _ _ {F} _ _ _ C hn hrate hΛ => ?_⟩
   have hn_pos : (0 : ℝ) < Fintype.card ι := Nat.cast_pos.mpr Fintype.card_pos
-  -- Instantiate the barrier at `η := c/n`, whose two length conditions are `n₀ ≤ n` and `1/η ≤ n`.
-  have hη_pos : (0 : ℝ) < c / Fintype.card ι := div_pos hc_pos hn_pos
-  have hinv : 1 / (c / (Fintype.card ι : ℝ)) ≤ (Fintype.card ι : ℝ) := by
+  -- Instantiate the barrier at `η := max c 1 / n`.
+  have hη_pos : (0 : ℝ) < c' / Fintype.card ι := div_pos hc_pos hn_pos
+  have hinv : 1 / (c' / (Fintype.card ι : ℝ)) ≤ (Fintype.card ι : ℝ) := by
     rw [one_div_div, div_le_iff₀ hc_pos]
     nlinarith
-  have hkey := hmain (c / Fintype.card ι) hη_pos C hn hinv hrate hΛ
-  -- `α / (c/n) = (α/c) · n`.
-  rwa [show α / (c / (Fintype.card ι : ℝ)) = α / c * Fintype.card ι by
+  have hkey := hmain (c' / Fintype.card ι) hη_pos C hn hinv hrate
+    ((Code.Lambda_mono (by
+      apply mul_le_mul_of_nonneg_left _ (by positivity)
+      have hdiv := div_le_div_of_nonneg_right (le_max_left c 1) hn_pos.le
+      linarith)).trans hΛ)
+  -- `α / (c'/n) = (α/c') · n`.
+  rwa [show α / (c' / (Fintype.card ι : ℝ)) = α / c' * Fintype.card ι by
     field_simp] at hkey
 
 end LargeAlphabetBarrier

@@ -80,6 +80,7 @@ instance (i : Fin n) : (oracleProver R deg oSpec n D i).OutputIsPure := by
 
 variable [DecidableEq R] [SampleableType R]
 
+omit [SampleableType R] in
 /-- The executable honest round prover refines the existing oracle reduction exactly. -/
 theorem oracleProver_eq (i : Fin n) :
     oracleProver R deg oSpec n D i =
@@ -96,6 +97,7 @@ def generalOracleProver : OracleProver oSpec
     (fun i => Spec.StatementRound R n i × (∀ j, Spec.OracleStatement R n deg j))
     (fun _ => Unit) (oracleProver R deg oSpec n D)
 
+omit [SampleableType R] in
 /-- The executable full prover is exactly the prover in the specified sumcheck reduction. -/
 theorem generalOracleProver_eq :
     generalOracleProver R deg oSpec n D = (Spec.oracleReduction R deg D n oSpec).prover := by

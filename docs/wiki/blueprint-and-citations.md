@@ -48,6 +48,11 @@ wiki routes contributors to them.
 - `docs/kb/_generated/lean-citations.json` is the generated map from Lean files to cited keys.
   Do not commit `_generated` changes from feature PRs.
 
+Check rendered tables when editing a curated paper page.
+A blank line ends a table, so later lines starting with `|` can render as plain text.
+Verify that each statement mapping appears as a row of the table.
+Link and metadata checks do not verify that structure.
+
 ## Build And Publish Checks
 
 For a local preview of the docs + blueprint website:
@@ -59,38 +64,52 @@ DISABLE_EQUATIONS=1 ./scripts/build-web.sh
 The nondefault `ArkLibBlueprint` library imports dependency declarations cited only by the
 blueprint, including the abstract binary tower. It keeps those references available to
 `checkdecls` without adding them to the production `ArkLib` import graph or default build.
-For a direct declaration check, run:
+
+doc-gen4 and `checkdecls` are required by the separate package in `docbuild/`, not by ArkLib's
+root lakefile, because every package that requires ArkLib resolves every root `require`.
+`docbuild` requires ArkLib by path and shares its `.lake/packages` and build. Its manifest and
+`lean-toolchain` are not committed: `lake update Arklib` refreshes the manifest from ArkLib's and
+copies the root toolchain, so run it before use. For a direct declaration check, run:
 
 ```bash
 lake build ArkLib ArkLibBlueprint
-lake exe checkdecls blueprint/lean_decls
+cd docbuild
+MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib
+lake build BlueprintDecls
+lake exe checkdecls ../blueprint/lean_decls
 ```
+
+`checkdecls` imports the library roots of the package it runs from; `docbuild/BlueprintDecls.lean`
+imports `ArkLib` and `ArkLibBlueprint` for that purpose.
 
 If blueprint output matters and `leanblueprint` is missing:
 
 ```bash
-python3 -m pip install leanblueprint
+uv tool install --python 3.12 leanblueprint
 ```
 
 ### Continuous integration
 
-Publishing to GitHub Pages is handled by [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml),
-which delegates to the maintained [`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)
-rather than a hand-rolled TeX/pygraphviz setup. The action runs after CI's Lean
-build on the same runner, so blueprint validation and documentation publishing
-reuse the existing `.lake` build instead of compiling the project again. It
-builds the API docs via doc-gen4 (in an isolated `docbuild` project, the layout
-recommended by [doc-gen4](https://github.com/leanprover/doc-gen4)), builds the
-blueprint with `leanblueprint pdf` + `leanblueprint web`, runs
-`lake exe checkdecls blueprint/lean_decls` to confirm every `\lean{...}`
-declaration exists, and deploys the static `home_page/` (with `docs/` and
-`blueprint/` copied in). Pull requests run a validation-only build (blueprint +
-`checkdecls`, no deploy), so LaTeX and declaration errors are caught before they
-reach `main`. CI explicitly builds `ArkLibBlueprint` before the declaration check. On
-main pushes, a following step adds `ArkLibBlueprint:docs` in the same isolated `docbuild`
-project and copies the combined output before upload, since the pinned action selects only
-default-target API facets. The local preview builds `ArkLib:docs` then
-`ArkLibBlueprint:docs` sequentially for the same coverage; both facets update shared indexes.
+[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml) renders the blueprint PDF and HTML
+on a separate read-only runner using the pinned TeXLive action. Its artifact contains only the
+rendered PDF, web directory and generated `blueprint/lean_decls`; it contains no Lean build
+cache. The required `build` job checks rendering success explicitly, then runs the normal Lean
+validation and `checkdecls` (from `docbuild/`) against its existing `ArkLibBlueprint`
+build. Rendering or declaration failures block the build check on PRs and merge groups too.
+The renderer installs `leanblueprint` with pip inside the TeX Live container, where the
+runner's uv is not available. It is the only CI step that does not run Python through uv.
+
+On trusted main pushes, the pinned
+[`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)
+generates API documentation from that same Lean build in `docbuild/`, rewriting its lakefile
+with an equivalent template that requires ArkLib by path and doc-gen4 at the toolchain's tag.
+A following step adds `ArkLibBlueprint:docs`, since the action selects only default-target API
+facets. The local preview builds `ArkLib:docs` then `ArkLibBlueprint:docs` sequentially for the
+same coverage; both facets update shared indexes.
+
+The read-only build assembles the rendered blueprint and API pages under `home_page/` and
+uploads the site. A separate Pages-privileged job deploys it only after a successful main push.
+PR-head jobs receive neither Pages nor OIDC write permission.
 
 ### Blueprint LaTeX gotchas
 

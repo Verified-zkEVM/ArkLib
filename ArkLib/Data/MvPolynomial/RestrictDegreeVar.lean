@@ -7,6 +7,7 @@ module
 
 public import Mathlib.RingTheory.MvPolynomial.Basic
 public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
 
 /-!
 # Per-variable degree restriction ("prismalinear" polynomials)
@@ -23,9 +24,6 @@ per-coordinate, so the characterisation `mem_restrictDegreeVar_iff_degreeOf_le` 
 -/
 
 @[expose] public section
-
--- The `sumAlgEquiv_monomial_aux` lemma below and its two helpers mirror the private uniform
--- proofs in `RestrictDegree.lean`.
 
 namespace MvPolynomial
 
@@ -58,10 +56,8 @@ theorem mem_restrictDegreeVar_iff_degreeOf_le {b : σ → ℕ} (p : MvPolynomial
 
 /-- `restrictDegreeVar` is monotone in the per-variable bound. -/
 theorem restrictDegreeVar_mono {b₁ b₂ : σ → ℕ} (h : ∀ i, b₁ i ≤ b₂ i) :
-    restrictDegreeVar σ R b₁ ≤ restrictDegreeVar σ R b₂ := by
-  intro p hp
-  rw [mem_restrictDegreeVar_iff_degreeOf_le] at hp ⊢
-  exact fun i => (hp i).trans (h i)
+    restrictDegreeVar σ R b₁ ≤ restrictDegreeVar σ R b₂ :=
+  restrictSupport_mono R (fun _ hn i => (hn i).trans (h i))
 
 /-- A prismalinear polynomial whose per-variable bound is everywhere `≤ m` lies in the uniform
 `restrictDegree σ R m` (i.e. `R⦃≤ m⦄[X σ]`). -/
@@ -83,15 +79,6 @@ Per-variable analogs of the (private) uniform helpers `rename_equiv_mem_restrict
 `sumAlgEquiv_mem_restrictDegree` in `RestrictDegree.lean`. Used by
 `fixFirstVariablesOfMQP_degreeVarLE` (the prismalinear analog of `fixFirstVariablesOfMQP_degreeLE`).
 -/
-
-lemma sumAlgEquiv_monomial_aux {R : Type*} [CommSemiring R]
-    {S₁ S₂ : Type*}
-    (m : (S₁ ⊕ S₂) →₀ ℕ) (c : R) :
-    MvPolynomial.sumAlgEquiv R S₁ S₂ (MvPolynomial.monomial m c) =
-      MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
-        (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
-  ext s
-  simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, Finsupp.comapDomain]
 
 /-- Renaming by an equivalence `e : σ ≃ τ` transports a per-variable degree bound `b` to the
 pulled-back bound `b ∘ e.symm` on the target. -/
@@ -126,7 +113,9 @@ lemma sumAlgEquiv_mem_restrictDegreeVar {R : Type*} [CommSemiring R]
               (p.coeff m)) := by
       conv_lhs => rw [p.as_sum]
       rw [map_sum]
-      exact Finset.sum_congr rfl fun _ _ => sumAlgEquiv_monomial_aux _ _
+      refine Finset.sum_congr rfl fun _ _ ↦ ?_
+      simpa [Finsupp.sumFinsuppAddEquivProdFinsupp, Finsupp.sumFinsuppEquivProdFinsupp] using
+        sumAlgEquiv_monomial _ _
     rw [h_sum] at hs
     have hs_union := (MvPolynomial.support_sum (s := p.support)
       (f := fun m =>

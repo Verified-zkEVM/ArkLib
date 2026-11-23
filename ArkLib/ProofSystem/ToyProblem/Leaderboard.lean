@@ -93,7 +93,7 @@ omit [Fintype A] in
 /-- At every admissible radius, the winning-set/spot-check upper bound is
 bounded by the executable extractor certificate. -/
 theorem FixedRadiusParameters.winningSetUpperBound_le_certifiedExtractorError
-    [SampleableType F] [Finite A] [DecidableEq A] [Nonempty ι]
+    [SampleableType F] [Finite A] [DecidableEq A]
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)

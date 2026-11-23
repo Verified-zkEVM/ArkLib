@@ -44,7 +44,10 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval aeval_optionEquivRight_symm affineHilbertPolynomial
+  finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero mem_restrictBidegree_mono
+  zeroLocus)
 
 variable {F E α : Type*} [Field F] [Field E] {n k K ℓ : ℕ}
 
@@ -56,7 +59,7 @@ def frobeniusPowerSparseTaylorNumerators (center : E)
     (fun l ↦ jointCommonTaylorNumerator center Q τ l)
 
 /-- Retained admissible tuple graphs with at least `L` common agreement positions. -/
-def admissibleFrobeniusPowerTupleGraphLocus [Fintype α]
+def admissibleFrobeniusPowerTupleGraphLocus
     (domain : α ↪ F) (values : Fin (ℓ + 1) → α → F)
     (ι : F →+* E) (roots : α → E) (center : E)
     (Q : DifferentialPolynomial E[X] 0) (K k L τ s : ℕ) :
@@ -167,7 +170,7 @@ theorem commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime [IsAlgClose
 /-- A regular positive-dimensional prime component containing `L` agreement cuts lies in a
 retained Frobenius power tuple graph with at least `L` common agreements. -/
 theorem principalOpen_subset_admissibleFrobeniusPowerTupleGraphLocus [IsAlgClosed E]
-    [Fintype α] {L : ℕ}
+    [Finite α] {L : ℕ}
     (domain : α ↪ F) (values : Fin (ℓ + 1) → α → F) (ι : F →+* E)
     (p e : ℕ) [ExpChar E p] (roots : α → E)
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
@@ -251,7 +254,7 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
     (center : E) (Q : DifferentialPolynomial E[X] 0)
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (τ h b A : ℕ)
     (hτ : TaylorExponentSufficient 0 K τ) (hτpos : 0 < τ) (hℓ : 0 < ℓ)
-    (hb : 0 < b) (hkL : k ≤ L) (hLA : L ≤ A)
+    (hkL : k ≤ L) (hLA : L ≤ A)
     (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ b)
     (hinit : jointInitialJetEquation center Q ≠ 0)
     (hproper : Ideal.span ({jointInitialJetEquation center Q} :
@@ -270,6 +273,18 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
       (h * (1 + τ * (b - 1)) + b * (p ^ e * ℓ + τ * h) : ℕ) *
         (((n - L + 1 : ℕ) : ℚ) / ((A - L + 1 : ℕ) : ℚ)) := by
   classical
+  by_cases hb : 0 < b
+  case neg =>
+    have hsep : separant Q (Fin.last 0) = 0 := by
+      apply MvPolynomial.pderiv_eq_zero_of_degreeOf_eq_zero
+      exact Nat.eq_zero_of_le_zero ((jetDegree_le_total Q _).trans (by omega))
+    change separant Q 0 = 0 at hsep
+    have hS0 : S = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro x hx
+      exact (hS x hx).2.1 (by simp [jointInitialJetSeparant, initialJetSeparant, hsep])
+    rw [hS0]
+    positivity
   have hp : 0 < p ^ e := pow_pos (expChar_pos E p) e
   have hτone : 1 ≤ τ := Nat.succ_le_of_lt hτpos
   have hchallengeLe : h ≤ p ^ e * ℓ + τ * h := by
@@ -283,7 +298,7 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
     calc
       (b - 1) + 1 ≤ τ * (b - 1) + 1 := Nat.add_le_add_right hmul 1
       _ = 1 + τ * (b - 1) := by omega
-  apply bidegreeHypersurface_incidence_off_excluded_sharp_one
+  apply MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one
     (a := p ^ e * ℓ + τ * h) (b := 1 + τ * (b - 1)) (h := h) (v := b)
     (by positivity) (by omega) hLA
     (jointInitialJetEquation center Q) (jointInitialJetSeparant center Q)
@@ -318,11 +333,11 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
       Finset.mem_toList, Finset.mem_filter, Finset.mem_univ, true_and] at hq
     obtain ⟨l, _, rfl⟩ := hq
     exact jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
-      center Q (p ^ e * ℓ) K h b τ hτ hb hheight hjet l
+      center Q (p ^ e * ℓ) K h b τ hτ hheight hjet l
   · intro i
     apply jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent
       center (roots i) (frobeniusPowerCoordinate (p ^ e) (fun t ↦ ι (values t i)))
-      Q (p ^ e * ℓ) K h b τ hτ ?_ hb hheight hjet
+      Q (p ^ e * ℓ) K h b τ hτ ?_ hheight hjet
     exact (frobeniusPowerCoordinate_natDegree_le (p ^ e) _)
 
 end ReedSolomon

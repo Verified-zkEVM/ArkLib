@@ -7,6 +7,8 @@ module
 
 public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
 public import VCVio.OracleComp.QueryTracking.CostModel
+import VCVio.OracleComp.QueryTracking.CostModel.Simulation
+import PolyFun.PFunctor.Free.Path.Bounded
 
 /-!
 # Nonuniform round errors in state restoration
@@ -129,34 +131,16 @@ theorem queryBound_round_cost {Input Salt A : Type} {rounds : List Round}
     (Q : Nat) (bounded : IsTotalQueryBound program Q) :
     WorstCaseCostBound program (⟨keyError errors⟩ :
       CostModel (oracleSpec Input Salt rounds) ENNReal) (Q * Finset.univ.sup errors) := by
-  induction program using OracleComp.inductionOn generalizing Q with
-  | pure value => simp
-  | query_bind key next ih =>
-      rw [isTotalQueryBound_query_bind_iff] at bounded
-      apply (worstCaseCostBound_query_bind_iff _ _ _ _).mpr
-      intro response result supported
-      have tail := ih response (Q - 1) (bounded.2 response) result supported
-      calc
-        keyError errors key + Multiplicative.toAdd result.2 ≤
-            Finset.univ.sup errors + (Q - 1 : Nat) * Finset.univ.sup errors :=
-          add_le_add (keyError_le_max errors key) tail
-        _ = Q * Finset.univ.sup errors := by
-          have hQ : Q = (Q - 1) + 1 := by omega
-          conv_rhs => rw [hQ]
-          rw [Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm]
-
-/-- The suffix-key injection preserves a complete-path error budget. -/
-theorem roundCost_prependQuery {Input Salt A : Type} {round : Round} {rounds : List Round}
-    (errors : RoundErrors (round :: rounds)) (message : round.Message) (salt : Salt)
-    (program : OracleComp (oracleSpec Input Salt rounds) A) (budget : ENNReal)
-    (bounded : WorstCaseCostBound program (⟨keyError (fun j => errors j.succ)⟩ :
-      CostModel (oracleSpec Input Salt rounds) ENNReal) budget) :
-    WorstCaseCostBound (simulateQ (prependQuery message salt) program)
-      (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt (round :: rounds)) ENNReal) budget := by
-  intro result supported
-  change result ∈ support (costDist _ _) at supported
-  rw [costDist_prependQuery] at supported
-  exact bounded result (simulateQ_support_subset _ _ supported)
+  rw [worstCaseCostBound_iff_forall_charge_le]
+  intro path
+  rw [PFunctor.FreeM.Path.charge_eq_traceList_charge, PFunctor.TraceList.charge]
+  refine (List.sum_le_length_nsmul _ (Finset.univ.sup errors) ?_).trans ?_
+  · simp only [List.mem_map]
+    rintro _ ⟨event, _, rfl⟩
+    exact keyError_le_max errors event.1
+  · rw [List.length_map, ← PFunctor.FreeM.Path.length_eq_length_trace, nsmul_eq_mul]
+    gcongr
+    exact PFunctor.FreeM.Path.length_le_of_isTotalRollBound program bounded path
 
 /-- Completion pays one round error per actual access, hence the sum of the round-error vector. -/
 theorem complete_round_cost {Input Salt : Type} (rounds : List Round) (errors : RoundErrors rounds)
@@ -169,16 +153,12 @@ theorem complete_round_cost {Input Salt : Type} (rounds : List Round) (errors : 
       rcases messages with ⟨message, salt, messages⟩
       simp only [complete, List.length_cons]
       rw [Fin.sum_univ_succ]
-      apply (worstCaseCostBound_query_bind_iff _ _ _ _).mpr
-      intro challenge result supported
-      have tail := roundCost_prependQuery errors message salt (complete rounds z messages) _
-        (ih (fun j => errors j.succ) messages)
-      have combined := tail.bind (fun path => show WorstCaseCostBound
-        (pure (⟨message, challenge, path⟩ : (protocol (round :: rounds)).tree.ExecutionPath))
-          (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt (round :: rounds)) ENNReal) 0 from
-            by simp)
-      have hcost := combined result supported
-      simpa only [keyError, add_zero, zero_add, add_comm] using add_le_add_left hcost (errors 0)
+      apply WorstCaseCostBound.bind
+      · exact worstCaseCostBound_query (Key.here z message salt) _
+      · intro challenge
+        erw [bind_pure_comp, worstCaseCostBound_map_iff]
+        exact (ih (fun j => errors j.succ) messages).simulateQ _
+          (fun key => worstCaseCostBound_query (Key.later message salt key) _)
 
 /-- Adversary and completion budgets add in the same actual restoration oracle program. -/
 theorem restoredExecution_round_cost {Input Salt W : Type} (rounds : List Round)
@@ -190,10 +170,9 @@ theorem restoredExecution_round_cost {Input Salt W : Type} (rounds : List Round)
       (Q * Finset.univ.sup errors + ∑ j, errors j) := by
   apply (queryBound_round_cost errors adversary Q bounded).bind
   rintro ⟨z, messages, witness⟩
-  have completed := (complete_round_cost rounds errors z messages).bind
-    (fun path => show WorstCaseCostBound (pure (z, path, witness))
-      (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt rounds) ENNReal) 0 from by simp)
-  simpa only [add_zero] using completed
+  dsimp only
+  erw [bind_pure_comp, worstCaseCostBound_map_iff]
+  exact complete_round_cost rounds errors z messages
 
 /-- Per-round knowledge errors imply the `Q * max + sum` extraction bound in the actual cached
 restoration experiment. Inputs may be adaptive and keys may be queried out of order or repeatedly.

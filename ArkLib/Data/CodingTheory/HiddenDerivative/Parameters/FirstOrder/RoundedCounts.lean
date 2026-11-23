@@ -59,7 +59,7 @@ below the corresponding residual of the code, and the scaled kernel-height quoti
 * `certifiedEnlargedRankBound_one_eq_firstOrderRankCount`: the certified rank bound at derivative
   order one is `firstOrderRankCount`.
 * `firstOrderRankCount_le_cubicUpperCount`: `r(m, M)` is below a signed cubic count.
-* `firstOrderRankCount_le_two_mul_cube`: a positive multiplicity and `M ≤ m` give a coarse
+* `firstOrderRankCount_le_two_mul_cube`: `M ≤ m` gives a coarse
   cubic upper bound on the local rank count.
 * `firstOrderRankCount_floor_le`: the rank rounding estimate with loss `3 m²`.
 * `firstOrderRankCount_floor_le_density_add_rounding_upper` and
@@ -584,12 +584,25 @@ private theorem sourcePolynomialCount_shift_eq {rate a : ℝ} {m M L : ℕ} (hm 
 
 /-- Rounding the caps to `M = ⌊β m⌋₊` and `μ ≥ ⌊m a / R⌋₊` loses nothing against the source
 density: `m³ (β a²/(2R) - a β²/2 + R β³/6) ≤ N₀(R, a, m, M, μ)` for `0 < R ≤ a`
-and `0 ≤ β ≤ a / R`. -/
+and `β ≤ a / R`. -/
 theorem cube_mul_sourceDensity_le_firstOrderSourceCount {rate a beta : ℝ} {m mu : ℕ}
-    (hrate : 0 < rate) (hra : rate ≤ a) (hb0 : 0 ≤ beta) (hba : beta ≤ a / rate)
+    (hrate : 0 < rate) (hra : rate ≤ a) (hba : beta ≤ a / rate)
     (hmu : ⌊m * a / rate⌋₊ ≤ mu) :
     (m : ℝ) ^ 3 * (beta * a ^ 2 / (2 * rate) - a * beta ^ 2 / 2 + rate * beta ^ 3 / 6) ≤
       firstOrderSourceCount rate a m ⌊beta * m⌋₊ mu := by
+  by_cases hb0 : 0 ≤ beta
+  swap
+  · have hb : beta ≤ 0 := (lt_of_not_ge hb0).le
+    have hdensity : beta * a ^ 2 / (2 * rate) - a * beta ^ 2 / 2 +
+        rate * beta ^ 3 / 6 ≤ 0 := by
+      have hfirst := div_nonpos_of_nonpos_of_nonneg
+        (mul_nonpos_of_nonpos_of_nonneg hb (sq_nonneg a)) (by positivity : 0 ≤ 2 * rate)
+      have hthird := mul_nonpos_of_nonneg_of_nonpos hrate.le
+        (show beta ^ 3 ≤ 0 by nlinarith [sq_nonneg beta])
+      have hmiddle : 0 ≤ a * beta ^ 2 := mul_nonneg (hrate.trans_le hra).le (sq_nonneg _)
+      linarith
+    exact (mul_nonpos_of_nonneg_of_nonpos (by positivity) hdensity).trans
+      (sum_nonneg fun t _ => by positivity)
   rcases Nat.eq_zero_or_pos m with rfl | hm
   · rw [Nat.cast_zero, zero_pow three_ne_zero, zero_mul]
     exact sum_nonneg fun t _ => by positivity
@@ -681,7 +694,7 @@ theorem cube_mul_densityGap_sub_le_sourceCount_sub_rankCount {rate a beta : ℝ}
         (beta / 2 - beta ^ 2 / 2 + beta ^ 3 / 3)) - 3 * m ^ 2 ≤
       firstOrderSourceCount rate a m ⌊beta * m⌋₊ mu -
         firstOrderRankCount m ⌊beta * m⌋₊ := by
-  have hsource := cube_mul_sourceDensity_le_firstOrderSourceCount hrate hra hb0 hba hmu
+  have hsource := cube_mul_sourceDensity_le_firstOrderSourceCount hrate hra hba hmu
   have hrank := firstOrderRankCount_floor_le m hb0 hb34
   linarith only [hsource, hrank]
 
@@ -771,9 +784,11 @@ theorem scaledKernelHeight_le_floor {n N r mu : ℕ} {N₀ : ℝ} (hsurplus : (r
       _ = (r : ℝ) * mu / (N₀ - r) := mul_div_mul_left _ _ hnR.ne'
   exact Nat.le_floor ((Nat.cast_div_le).trans hfrac)
 
-/-- A positive multiplicity and derivative cap `M ≤ m` give a cubic bound on the local rank. -/
-theorem firstOrderRankCount_le_two_mul_cube {m M : ℕ} (hm : 0 < m) (hM : M ≤ m) :
+/-- A derivative cap `M ≤ m` gives a cubic bound on the local rank. -/
+theorem firstOrderRankCount_le_two_mul_cube {m M : ℕ} (hM : M ≤ m) :
     firstOrderRankCount m M ≤ 2 * m ^ 3 := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · simp [firstOrderRankCount]
   have hone : m + 1 ≤ 2 * m := by omega
   unfold firstOrderRankCount
   calc

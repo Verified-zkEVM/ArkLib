@@ -983,7 +983,7 @@ def possibleDists (C : Set (ι → F)) (δf : (ι → F) → (ι → F) → α) 
 
 /-- A generalisation of `distFromCode` for an arbitrary distance function `δf`.
 -/
-noncomputable def distToCode [LinearOrder α] [Zero α]
+noncomputable def distToCode [LinearOrder α]
                              (w : ι → F) (C : Set (ι → F))
                              (δf : (ι → F) → (ι → F) → α)
                              (h : (possibleDistsToCode w C δf).Finite) : WithTop α :=
@@ -992,7 +992,7 @@ noncomputable def distToCode [LinearOrder α] [Zero α]
 
 end
 
-lemma distToCode_of_nonempty {α : Type*} [LinearOrder α] [Zero α]
+lemma distToCode_of_nonempty {α : Type*} [LinearOrder α]
     {ι F : Type*}
                              {w : ι → F} {C : Set (ι → F)}
                              {δf : (ι → F) → (ι → F) → α}

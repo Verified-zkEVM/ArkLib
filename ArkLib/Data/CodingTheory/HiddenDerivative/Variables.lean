@@ -199,11 +199,13 @@ theorem weight_localFirstJetWeight (hd : 0 < d) (e : LocalVariable d →₀ ℕ)
 
 /-- The higher-jet weight of an exponent is the weighted sum `∑ i, (i + 1) c_i` of its
 higher-jet coordinates. -/
-theorem weight_localHigherJetWeight (hd : 0 < d) (e : LocalVariable d →₀ ℕ) :
+theorem weight_localHigherJetWeight (e : LocalVariable d →₀ ℕ) :
     e.weight (localHigherJetWeight d) =
       ∑ i : Fin (d - 1), (i.val + 1) * e (localY ⟨i.val + 1, by omega⟩) := by
-  simp [Finsupp.weight_eq_sum, Fintype.sum_option, localHigherJetWeight,
-    sum_fin_eq_zero_add_sum_succ hd, localY, mul_comm]
+  rcases Nat.eq_zero_or_pos d with rfl | hd
+  · simp [Finsupp.weight_eq_sum, localHigherJetWeight]
+  · simp [Finsupp.weight_eq_sum, Fintype.sum_option, localHigherJetWeight,
+      sum_fin_eq_zero_add_sum_succ hd, localY, mul_comm]
 
 /-- The local jet degree of an exponent is its `U` degree plus its `Y₁` degree plus the sum of its
 higher-jet coordinates. -/

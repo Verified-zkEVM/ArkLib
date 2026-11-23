@@ -158,7 +158,7 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_factors
     (hc : SeparantChain Q stages terminal) {n K k L A μ M ell h : ℕ}
     (τ : ℕ) (η : ℚ) (hη : 1 ≤ η)
     (hμ : jetTotalDegree Q ≤ μ) (hM : jetDegree Q 1 ≤ M)
-    (hK : 2 ≤ K) (hLA : L ≤ A) (hAn : A ≤ n) :
+    (hK : 2 ≤ K) :
     (h : ℚ) +
         (stages.map (fun stage ↦
           firstOrderCurveStageCharge n K k L A ell h stage (τ := τ) (η := η))).sum ≤
@@ -166,16 +166,25 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_factors
   let s := firstOrderCurveJointRatio n L A
   let t := firstOrderCurveFiberRatio n k L
   let c : ℚ := ((ell * (n - L) : ℕ) : ℚ)
-  have hs : 1 ≤ s := by
-    simpa [s, firstOrderCurveJointRatio, firstOrderCurveIncidenceRatio] using
-      one_le_incidenceFactor (T := L) (b := 1) hAn one_pos
-  have ht : 1 ≤ t := by
-    simpa [t, firstOrderCurveFiberRatio, firstOrderCurveIncidenceRatio] using
-      one_le_incidenceFactor (T := k) (b := 1) (hLA.trans hAn) one_pos
-  have hs0 : 0 ≤ s := (by positivity)
-  have ht0 : 0 ≤ t := (by positivity)
+  have hs0 : 0 ≤ s := by
+    dsimp [s, firstOrderCurveJointRatio, firstOrderCurveIncidenceRatio]
+    positivity
+  have ht0 : 0 ≤ t := by
+    dsimp [t, firstOrderCurveFiberRatio, firstOrderCurveIncidenceRatio]
+    positivity
   have hη0 : 0 ≤ η := (by positivity)
   have hc0 : 0 ≤ c := by positivity
+  have hcompare : ∀ v, orderZeroCurveStageCharge ell h s c v τ ≤
+      orderOneCurveStageCharge K ell h s t c v 1 τ η := by
+    intro v
+    by_cases hLn : L ≤ n
+    · have ht : 1 ≤ t := by
+        simpa [t, firstOrderCurveFiberRatio, firstOrderCurveIncidenceRatio] using
+          one_le_incidenceFactor (T := k) (b := 1) hLn one_pos
+      exact orderZeroCurveStageCharge_le_orderOne K ell h hK hs0 hη ht hc0 v τ
+    · have hcZero : c = 0 := by simp [c, Nat.sub_eq_zero_of_le (by omega : n ≤ L)]
+      simpa [hcZero, orderZeroCurveStageCharge, orderOneCurveStageCharge] using
+        orderZeroCurveStageCharge_le_orderOne K ell h hK hs0 hη le_rfl hc0 v τ
   have hsum := hc.sum_firstOrderStageCharge_le hμ hM
     (fun v ↦ orderZeroCurveStageCharge_nonneg ell h hs0 hc0 v τ)
     (fun v r ↦ orderOneCurveStageCharge_nonneg K ell h hs0 hη0 ht0 hc0 v r τ)
@@ -183,7 +192,7 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_factors
     (fun {_j _w _r} _ _hvw ↦
       orderOneCurveStageCharge_mono_total K ell h hs0 hη0 ht0 hc0 τ _hvw)
     (orderOneCurveStageCharge_mono_derivative K ell h hs0 hη0 ht0 hc0 τ)
-    (fun v ↦ orderZeroCurveStageCharge_le_orderOne K ell h hK hs0 hη ht hc0 v τ)
+    hcompare
   change (h : ℚ) + (stages.map (firstOrderStageCharge
     (fun v ↦ orderZeroCurveStageCharge ell h s c v (τ := τ))
     (fun v r ↦ orderOneCurveStageCharge K ell h s t c v r (τ := τ) (η := η)))).sum ≤ _
@@ -203,7 +212,7 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
     (hc : SeparantChain Q stages terminal) {n K k L A μ M ell h : ℕ}
     (τ : ℕ)
     (hμ : jetTotalDegree Q ≤ μ) (hM : jetDegree Q 1 ≤ M)
-    (hK : 2 ≤ K) (hLA : L ≤ A) (hAn : A ≤ n) :
+    (hK : 2 ≤ K) (hAn : A ≤ n) :
     (h : ℚ) +
         (stages.map (fun stage ↦ firstOrderCurveStageCharge n K k L A ell h stage
           (τ := τ) (η := firstOrderCurveDirectRatio n k A))).sum ≤
@@ -214,6 +223,6 @@ theorem sum_firstOrderCurveStageCharge_add_height_le_of_directRatio
     (by
       simpa [firstOrderCurveDirectRatio, firstOrderCurveIncidenceRatio] using
         one_le_incidenceFactor (T := k) (b := 1) hAn one_pos)
-    hμ hM hK hLA hAn
+    hμ hM hK
 
 end PolynomialDifferential.SeparantChain

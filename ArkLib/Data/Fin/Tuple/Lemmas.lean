@@ -106,8 +106,7 @@ theorem vcons_right_injective (a : α) :
   rwa [tail_vcons, tail_vcons] at this
 
 theorem vcons_left_injective (v : Fin n → α) : Function.Injective (fun a => a ::ᵛ v) := by
-  intro a b h
-  simpa only [vcons_zero] using congr_fun h 0
+  simpa only [vcons_eq_cons] using Fin.cons_left_injective (α := fun _ => α) v
 
 theorem vcons_injective2 : Function.Injective2 (@vcons α n) := by
   intro a₁ v₁ a₂ v₂ h

@@ -225,7 +225,7 @@ example :
     simp [closePolynomialSet, polynomialAgreementSet, domain]
   have hcount := closePolynomialSet_card_le_of_differential_equation Q
     1 1 1 (by norm_num) (by norm_num) hQ hcast hdegree domain (fun _ ↦ 0)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (by intro r hr i hir hi; omega) S hsol hS
   norm_num [S] at hcount ⊢
 
@@ -279,8 +279,7 @@ example :
   have hbound := closePolynomialSet_finite_and_ncard_le_of_differential_equation_and_gap
     (δ := 1 / 2) (n := 2) (A := 2)
     Q 2 1 1 (by norm_num) (by norm_num) hQ hdegree geometricBoundDomain (fun _ ↦ 0)
-    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
     (Or.inl (ringChar.eq_zero : ringChar ℚ = 0)) hsound
   refine ⟨0, ?_, hbound.1, ?_⟩
   · simp [closePolynomialSet, polynomialAgreementSet, geometricBoundDomain]

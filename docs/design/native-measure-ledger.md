@@ -153,7 +153,7 @@ repairs that #903 made outside probability proofs are also back at or below thei
 (1 → 5 → 2; the remaining line is the `simp` call that replaces `grind`, which no longer closes the
 goal), `PolishchukSpielman/Degrees.ps_degX_bound` (restored with `grind +qlia [natDegreeY,
 Polynomial.natDegree_mul]`), `BCIKS20/ListDecoding/Extraction.pg_sum_natDegreeY_Rset_le_natDegreeY_Q`,
-`Errors.mcaError_le_epsCa_of_pos_of_two_mul_lt_dist`, and
+`Errors.mcaError_le_epsCa_of_two_mul_lt_dist`, and
 `Subfield/Algebra.fold_density_le_eps_ca_of_not_joint_proximity` (23 → 26 → 12). The test
 `ArkLibTest/.../Completeness.rejecting_not_perfect` is back to 5 lines. Smaller probability-facing
 rows (KZG `binding`, `t_sdh_game_eq`, FunctionBinding, `Security/Basic.completeness_relOut_mono`,
@@ -291,8 +291,10 @@ per-range binders such as `[∀ t, Fintype (spec.Range t)]`, and
   (Classical.decEq F)` in `SchwartzZippelCounting`, the local instance in `FullAgreement`, the
   `Fintype.fieldOfDomain` argument in `Probability/Instances`, and the `Finset.image` instances in
   the statements of `Probability/Combinatorial`.
-- The four D3 `OracleComp.support_nonempty` sites now use the default instance path;
-  `retiredsweep` accepts it (verified).
+  The v4.36 update uses the integral-domain bounds from [VCVio #929](https://github.com/Verified-zkEVM/VCVio/pull/929) directly. The ArkLib Schwartz–Zippel module and its two explicit instances have been removed.
+- The D3 `OracleComp.support_nonempty` applications passed `retiredsweep` with the default instance.
+  In v4.36, pure-verifier witness validity uses this lemma directly and no longer needs an
+  acceptance premise to exhibit an initial seed.
 - `GCXK25.linear_mca_relevant_pairs_card_le` is back to `[Fintype F']`, which its statement's
   `linear_mca_relevant_pairs` requires; the D2 `Finite` generalization of that private lemma is
   reverted.

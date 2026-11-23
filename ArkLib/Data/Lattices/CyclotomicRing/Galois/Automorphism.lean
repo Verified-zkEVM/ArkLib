@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 module
 
 public import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
-public import ArkLib.ToMathlib.Polynomial.AevalXPow
+public import Mathlib.Algebra.Polynomial.Expand
 
 /-!
 # Galois Automorphisms `σ_i : X ↦ X^i` of the Cyclotomic Ring
@@ -181,7 +181,8 @@ theorem galoisAut_sum_toPoly_eq_aeval (α i : ℕ) (a : Rq (powTwoCyclotomic (R 
       from a.1.toPoly.as_sum_range' _ (Rq.natDegree_val_toPoly_lt α a),
     map_sum]
   refine Finset.sum_congr rfl (fun k _ => ?_)
-  rw [toPoly_monomial, aeval_X_pow_monomial, coeff_toPoly]
+  rw [monomial_toPoly, coeff_toPoly]
+  exact (Polynomial.expand_monomial i k _).symm
 
 /-- **Soundness**: the computable automorphism agrees with the semantic one under
 `Rq.toQuotient`. This is the key bridge (Hachi [NOZ26, §3]); it lets all algebraic structure

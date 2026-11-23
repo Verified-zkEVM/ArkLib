@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Commitments.Functional.Hachi.EvalSplit
 public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout
-public import ArkLib.ToCompPoly.Multilinear.Basic
+public import CompPoly.Multilinear.Unique
 
 /-!
 # Packing monomial coefficients along the final variables
@@ -160,7 +160,7 @@ noncomputable def traceHeadLayout : ClaimLayout (traceHeadData e) n where
     obtain ⟨x, xp⟩ := q
     change f.eval (x ++ xp) = ∑ j, (CMlPolynomial.monomialBasis xp).get j *
       MvPolynomial.eval x.get (CMlPolynomial.toMvPolynomial (coefficientRows f j))
-    simp only [← CMlPolynomial.eval_eq_eval_toMvPolynomial]
+    simp only [CMlPolynomial.eval_toMvPolynomial]
     rw [← evalSplit_eq_eval]
     simp only [evalSplit, splitForm, dot_eq_sum, matVecMul_apply, Finset.mul_sum,
       CMlPolynomial.eval, Vector.dotProduct_eq_root_dotProduct, _root_.dotProduct]

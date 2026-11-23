@@ -53,15 +53,15 @@ each line has one exceptional set that works for every nonexceptional challenge 
 polynomial. -/
 theorem automaticFirstOrder_rate_bounds
     (rho eta : ℝ) (n k A : ℕ)
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
     /-
 
     The dimension and integer agreement threshold enforce the fixed physical rate
     and the requested agreement fraction.
     -/
-    (hn : 0 < n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
-    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A) (hAn : A ≤ n)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hA : (firstOrderRateThreshold rho + eta) * n ≤ A)
     /-
 
     Distinct evaluation points turn agreement into a count of distinct polynomial roots.
@@ -83,17 +83,22 @@ theorem automaticFirstOrder_rate_bounds
         ∀ z ∉ exceptional, ∀ P : F[X], P.degree < k →
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
+  have hrate : 0 < rho * (n : ℝ) := lt_of_lt_of_le (by exact_mod_cast (by omega : 0 < k))
+    hkRate
+  have hrho : 0 < rho := pos_of_mul_pos_left hrate (Nat.cast_nonneg n)
+  have hn : 0 < n := by
+    exact_mod_cast pos_of_mul_pos_right hrate hrho.le
   have ha : firstOrderRateThreshold rho < firstOrderRateThreshold rho + eta :=
     lt_add_of_pos_right _ heta
   obtain ⟨hlistBound, hexceptionBound⟩ := automaticClosedListAndExceptionBounds
     hrho hrhoOne heta haOne (by omega : 1 ≤ n) rfl hkRate hA
   refine ⟨fun received ↦ ?_, fun f g ↦ ?_⟩
   · obtain ⟨hfinite, -, -, hclosed⟩ := automaticFirstOrder_closePolynomialSet_finite_and_card_le
-      hrho hrhoOne ha haOne hn rfl hk hkRate hA hAn domain received hchar
+      hrhoOne ha rfl hk hkRate hA domain received hchar
     exact ⟨hfinite, hclosed.trans hlistBound⟩
   · obtain ⟨-, -, -, -, -, -, exceptional, -, -, hclosed, hgood⟩ :=
-      exists_automaticFirstOrder_hybridEquation_base hrho hrhoOne ha haOne hn rfl hk hkRate hA
-        hAn hchar domain f g
+      exists_automaticFirstOrder_hybridEquation_base hrhoOne ha rfl hk hkRate hA
+        hchar domain f g
     exact ⟨exceptional, hclosed.trans hexceptionBound, hgood⟩
 
 /-- The quintic exception envelope controls a uniform finite-field affine-line challenge.
@@ -104,13 +109,13 @@ exceptional set of size at most `C_E(ρ) n² / η₁⁵`. Uniform sampling turns
 ratio over `|F|`, and `min 1` records that a probability cannot exceed one. -/
 theorem automaticFirstOrder_rate_mcaError_le
     (rho eta : ℝ) (n k : ℕ)
-    (hrho : 0 < rho) (hrhoOne : rho < 1) (heta : 0 < eta)
+    (hrhoOne : rho < 1) (heta : 0 < eta)
     (haOne : firstOrderRateThreshold rho + eta < 1)
     /-
 
     The dimension and the rate guard enforce the fixed physical rate.
     -/
-    (hn : 0 < n) (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
+    (hk : 2 ≤ k) (hkRate : (k : ℝ) ≤ rho * n)
     /-
 
     Distinct evaluation points turn agreement into a count of distinct polynomial roots.
@@ -125,14 +130,12 @@ theorem automaticFirstOrder_rate_mcaError_le
   classical
   have hA : (firstOrderRateThreshold rho + eta) * n ≤
       (⌈(firstOrderRateThreshold rho + eta) * n⌉₊ : ℝ) := Nat.le_ceil _
-  have hAn : ⌈(firstOrderRateThreshold rho + eta) * n⌉₊ ≤ n :=
-    Nat.ceil_le.mpr (mul_le_of_le_one_left (Nat.cast_nonneg n) haOne.le)
   have hthreshold : ⌈(firstOrderRateThreshold rho + eta) * n⌉₊ ≤
       ⌈(Fintype.card (Fin n) : ℝ) * (1 - (1 - (firstOrderRateThreshold rho + eta)))⌉₊ := by
     rw [Fintype.card_fin, sub_sub_cancel, mul_comm]
   exact mcaError_affineLine_le_min_one_of_exactAgreement domain _
     (lineExactAgreementBound_of_exactCorrelatedPair domain _
-      (automaticFirstOrder_rate_bounds rho eta n k _ hrho hrhoOne heta haOne hn hk hkRate hA hAn
+      (automaticFirstOrder_rate_bounds rho eta n k _ hrhoOne heta haOne hk hkRate hA
         domain hchar).2) _ hthreshold
 
 end ReedSolomon

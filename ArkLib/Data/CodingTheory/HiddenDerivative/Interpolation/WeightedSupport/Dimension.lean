@@ -48,8 +48,8 @@ The integral and probability forms of the bound are in `WeightedSupport/Estimate
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 6.1, the support (70) and its
-  coefficient count (71).
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 8.2, the related support (56) and
+  coefficient count (57).
 -/
 
 @[expose] public section
@@ -82,18 +82,21 @@ def weightedSupportSlotExponent (hd : 0 < d) (c : Fin (d - 1) → ℕ) {L' : ℝ
     (a : CubicStaircase.Slot D L') : JetVariable d →₀ ℕ :=
   (jetExponentCoordinatesEquiv hd).symm (a.exponents.1, a.exponents.2.1, a.exponents.2.2, c)
 
-/-- If `c` lies in the higher-jet lattice simplex of budget `W` and `0 < D`, every slot of the
+/-- If `c` lies in the higher-jet lattice simplex of budget `W`, every slot of the
 cubic staircase at the remaining cutoff `L / D - ∑ i, c i` gives an eligible exponent. The slot
-satisfies `x + D (b₀ + b₁) < D * (L / D - ∑ i, c i) = L - D * ∑ i, c i`; the hypothesis `0 < D`
-is used to cancel `D` against `L / D`. -/
-theorem weightedSupportSlotExponent_eligible (hd : 0 < d) (hD : 0 < D) {c : Fin (d - 1) → ℕ}
+satisfies `x + D (b₀ + b₁) < D * (L / D - ∑ i, c i) = L - D * ∑ i, c i`.
+The case `D = 0` gives no slots; otherwise `D` cancels against `L / D`. -/
+theorem weightedSupportSlotExponent_eligible (hd : 0 < d) {c : Fin (d - 1) → ℕ}
     (hc : c ∈ natWeightedSimplex (fun i : Fin (d - 1) => i.val + 1) W)
     (a : CubicStaircase.Slot D (L / D - ((∑ i, c i : ℕ) : ℝ))) :
     WeightedSupportEligible D d W L (weightedSupportSlotExponent hd c a) := by
   rw [weightedSupportSlotExponent, weightedSupportEligible_coordinates_iff]
   refine ⟨(mem_natWeightedSimplex fun i => Nat.succ_ne_zero _).mp hc, ?_⟩
   have hslot := a.weighted_degree_lt
-  have hD0 : (D : ℝ) ≠ 0 := by exact_mod_cast hD.ne'
+  have hD0 : (D : ℝ) ≠ 0 := by
+    intro hzero
+    simp only [hzero, zero_mul, add_zero] at hslot
+    exact (Nat.cast_nonneg a.exponents.1).not_gt hslot
   have hcancel : (D : ℝ) * (L / D - ((∑ i, c i : ℕ) : ℝ)) = L - D * ((∑ i, c i : ℕ) : ℝ) := by
     field_simp
   rw [hcancel] at hslot
@@ -131,7 +134,7 @@ theorem sum_count_le_card_weightedSupportExponents (hd : 0 < d) (hD : 0 < D) :
   · rintro ⟨c, a⟩ hp
     rw [coe_sigma, Set.mem_sigma_iff] at hp
     exact mem_coe.mpr (mem_weightedSupportExponents.mpr
-      (weightedSupportSlotExponent_eligible hd hD hp.1 a))
+      (weightedSupportSlotExponent_eligible hd hp.1 a))
   · rintro ⟨c, a⟩ - ⟨c', a'⟩ - h
     obtain ⟨rfl, ha⟩ := weightedSupportSlotExponent_injective hd h
     dsimp only at ha ⊢

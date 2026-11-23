@@ -96,15 +96,15 @@ Around the core:
 - [`ArkLib/ProofSystem/`](ArkLib/ProofSystem/) holds protocols and reusable protocol components.
 - [`ArkLib/Commitments/`](ArkLib/Commitments/) holds commitment schemes and opening arguments.
 - [`ArkLib/Data/`](ArkLib/Data/) holds supporting mathematics: coding theory, proximity gaps,
-  polynomials, probability and measured programs.
+  polynomials and probability.
 - [`ArkLib/AGM/`](ArkLib/AGM/) holds algebraic group model representations.
 - [`ArkLib/ToCompPoly/`](ArkLib/ToCompPoly/) and [`ArkLib/ToMathlib/`](ArkLib/ToMathlib/) hold
   local bridges to, and extensions of, ArkLib's dependencies.
 - [`ArkLibTest/`](ArkLibTest/) holds compile-time acceptance tests.
 
 ArkLib depends on [Mathlib](https://github.com/leanprover-community/mathlib4),
-[VCVio](https://github.com/Verified-zkEVM/VCVio) (oracle computations, probability and
-cryptographic games), [CompPoly](https://github.com/Verified-zkEVM/CompPoly) (computable
+[VCVio](https://github.com/Verified-zkEVM/VCVio) (oracle computations, probability, resource
+accounting and cryptographic games), [CompPoly](https://github.com/Verified-zkEVM/CompPoly) (computable
 polynomials and fields) and, through VCVio, PolyFun. [`lake-manifest.json`](lake-manifest.json)
 records the exact revisions.
 
