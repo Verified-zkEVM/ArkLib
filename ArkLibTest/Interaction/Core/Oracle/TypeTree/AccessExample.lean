@@ -7,20 +7,20 @@ Authors: Quang Dao
 import ArkLib.Interaction.Core.OracleVerifier
 import PolyFun.PFunctor.Free.Cursor
 
-/-! Oracle access as typing. A decision on a completed shape path queries the input family and
-the oracle family of that path, `pathResources inputs s p`. A public bit selects message
-types; an oracle slot exists only on paths that cross its send. Same-signature input and message
-slots stay distinct, and a non-faithful interface hides representation data. -/
+/-! Oracle access as typing. A decision on a completed path queries the input family and the
+oracle family of that path, `pathResources inputs s p`. A public bit selects message types. An
+oracle exists only on paths that cross its send. Input oracles and oracle messages with the same
+signature stay distinct, and a non-faithful interface hides representation data. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp OracleSpec
 
 namespace Interaction.Core.AccessExampleTests
 
-/-- One scalar input slot. -/
+/-- One scalar input oracle. -/
 def inputs : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- The input data: the single slot holds 7. -/
+/-- The input data: the single input oracle holds 7. -/
 def seven : ∀ _ : Unit, Nat := fun _ => 7
 
 /-- The part of `accessTree` before its oracle send: the public bit. -/
@@ -38,19 +38,19 @@ def after : Path before → OracleProtocol
 /-- A public bit selects the type of the next oracle message. -/
 abbrev accessTree : OracleProtocol := before.append after
 
-/-- The `false` branch, with payload `false`. -/
+/-- The `false` branch, with oracle message `false`. -/
 def leftPath : Transcript oracleSig accessTree := ⟨false, false, (0 : Fin 2), ⟨⟩⟩
 
-/-- The same public choices, with payload `true`. -/
+/-- The same public choices, with oracle message `true`. -/
 def rightPath : Transcript oracleSig accessTree := ⟨false, true, (0 : Fin 2), ⟨⟩⟩
 
-/-- The `true` branch, with payload `2 : Fin 3`. -/
+/-- The `true` branch, with oracle message `2 : Fin 3`. -/
 def finPath : Transcript oracleSig accessTree := ⟨true, (2 : Fin 3), false, ⟨⟩⟩
 
 -- AccessExample 1, restated: a decision stopped before the send is a decision on `before`, the
 -- prefix of `accessTree`. Its resources are the inputs and the oracles of `before`, which has
 -- none on the `false` path.
-/-- Before the `false`-branch send there are no oracle slots. -/
+/-- Before the `false`-branch send there are no sent oracles. -/
 example : OracleMessageIndex before ⟨false, ⟨⟩⟩ = PEmpty := rfl
 
 example : IsEmpty (OracleMessageIndex before ⟨false, ⟨⟩⟩) := inferInstanceAs (IsEmpty PEmpty)
@@ -82,15 +82,15 @@ example : (oracleMessageSpec accessTree leftPath.path).Range
 example : (oracleMessageSpec accessTree finPath.path).Range
     ⟨.inl ⟨⟩, ()⟩ = Fin 3 := rfl
 
--- AccessExample 7, restated: after the send, the decision's resource index is the input slot
--- and the one sent slot.
+-- AccessExample 7, restated: after the send, the decision's resource index is the input oracle
+-- and the one sent oracle.
 example : (Unit ⊕ OracleMessageIndex accessTree leftPath.path) =
     (Unit ⊕ (PUnit ⊕ PEmpty)) := rfl
 
--- AccessExample 8, restated: decoration restriction is removed. The future after the oracle send
--- is selected by a cursor whose oracle edge carries only a unit marker, and the projected shape of
--- that future is independent of the payload (`oracle_payload_shape`).
-/-- The public future after the `false`-branch send, selected without a payload. -/
+-- AccessExample 8, restated: decoration restriction is removed. A cursor whose oracle edge
+-- carries only a unit marker selects the future after the oracle send. The projected shape of that
+-- future is independent of the oracle message (`oracle_payload_shape`).
+/-- The public future after the `false`-branch send, selected without an oracle message. -/
 def afterSend : Cursor.Spine accessTree (.liftBind (.message (Fin 2)) (fun _ => .pure ⟨⟩)) :=
   .down false (.down ⟨⟩ (.root _))
 
@@ -101,12 +101,12 @@ example (x y : Bool) (tr : Transcript oracleSig (.liftBind (.message (Fin 2))
   oracle_payload_shape Bool OracleInterface.instDefault _ x y tr
 
 -- AccessExample 9, restated: execution paths are full transcripts.
-/-- Distinct payloads give distinct full transcripts. -/
+/-- Distinct oracle messages give distinct full transcripts. -/
 example : leftPath ≠ rightPath := by
   intro h
   cases h
 
--- AccessExample 10, restated: equal shape paths give the same oracle family, by `rfl`.
+-- AccessExample 10, restated: equal paths give the same oracle family, by `rfl`.
 example : leftPath.path =
     rightPath.path := rfl
 
@@ -123,7 +123,7 @@ example : oracleMessageSpec accessTree leftPath.path =
 def terminalTree : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩)
 
-/-- The only shape path of `terminalTree`. -/
+/-- The only path of `terminalTree`. -/
 abbrev terminalPath : Path terminalTree := ⟨⟨⟩, ⟨⟩⟩
 
 /-- The decision resources on `terminalTree`. -/
@@ -137,20 +137,20 @@ example : (Unit ⊕ OracleMessageIndex terminalTree terminalPath) = (Unit ⊕ (P
 -- interface.
 example : (oracleMessageSpec terminalTree terminalPath).Range ⟨.inl ⟨⟩, ()⟩ = Nat := rfl
 
-/-- Read the input slot and the sent slot; both have the same signature `Unit → Nat`. -/
+/-- Read the input oracle and the sent oracle. Both have the same signature `Unit → Nat`. -/
 def derivedQuery : OracleComp terminalResources.spec Nat := do
   let old : Nat ← liftM (terminalResources.spec.query (.inl ⟨(), ()⟩))
   let fresh : Nat ← liftM (terminalResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
   pure (old + fresh)
 
 -- AccessExample 13, restated: input behaviour is the input data 7, and the message is the sent
--- payload. The two same-signature slots are answered from their own data: `7 + 11 = 18`, for every
--- hidden coordinate.
+-- oracle message. The two oracles with the same signature are answered from their own data:
+-- `7 + 11 = 18`, for every hidden coordinate.
 example (hidden : Nat) : simulateQ (terminalResources.answer
     (seven, oracleMessages terminalTree ⟨(11, hidden), ⟨⟩⟩)) derivedQuery = (18 : Nat) := rfl
 
--- AccessExample 14, restated: the handler of the run's payloads does not depend on the hidden
--- coordinate.
+-- AccessExample 14, restated: the handler of the run's oracle messages does not depend on the
+-- hidden coordinate.
 example (visible hidden₁ hidden₂ : Nat) :
     oracleMessageImpl terminalTree ⟨(visible, hidden₁), ⟨⟩⟩ =
       oracleMessageImpl terminalTree ⟨(visible, hidden₂), ⟨⟩⟩ := by
@@ -159,8 +159,8 @@ example (visible hidden₁ hidden₂ : Nat) :
   · rfl
   · exact i.elim
 
--- AccessExample 15, restated: a one-send protocol has exactly one oracle slot; naming a second
--- slot does not typecheck.
+-- AccessExample 15, restated: a one-send protocol has exactly one oracle. Naming a second oracle
+-- does not typecheck.
 example (i j : OracleMessageIndex terminalTree terminalPath) : i = j := by
   rcases i with ⟨⟩ | i
   · rcases j with ⟨⟩ | j
@@ -178,12 +178,12 @@ def twoSends : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface)
     (fun _ => .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩))
 
--- AccessExample 16, restated: after the second send the decision can query the second slot.
-/-- Query the second sent slot. -/
+-- AccessExample 16, restated: after the second send the decision can query the second oracle.
+/-- Query the second sent oracle. -/
 def secondQuery : OracleComp (oracleMessageSpec twoSends ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) Nat :=
   liftM ((oracleMessageSpec twoSends ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).query ⟨.inr (.inl ⟨⟩), ()⟩)
 
-/-- It is answered from the second payload. -/
+/-- It is answered from the second oracle message. -/
 example (first second : Nat × Nat) :
     simulateQ (oracleMessageImpl twoSends ⟨first, second, ⟨⟩⟩) secondQuery = second.1 := rfl
 

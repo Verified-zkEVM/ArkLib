@@ -11,9 +11,9 @@ import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
 /-! Routed oracle access in a composition. The prefix receives one oracle and exports a view that
 reads it twice. The suffix receives another oracle and its decision reads the export and its own
-fresh slot. Availability is typing: the routed suffix decision is a program over the inputs and
-the oracles of the completed composed path, and the prefix decision, routed into the composed run,
-never reaches the suffix slot. Both routed reads of the export name the same prefix slot. -/
+fresh oracle. Availability is typing. The routed suffix decision is a program over the inputs and
+the oracles of the completed composed path. The prefix decision, routed into the composed run,
+never reaches the suffix oracle. Both routed reads of the export name the same prefix oracle. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
@@ -39,10 +39,10 @@ def single : OracleProtocol :=
 /-- The prefix send, then the suffix send. -/
 abbrev combined : OracleProtocol := single.append (fun _ => single)
 
-/-- The only shape path of `single`. -/
+/-- The only path of `single`. -/
 abbrev singlePath : Path single := ⟨⟨⟩, ⟨⟩⟩
 
-/-- The only shape path of `combined`. -/
+/-- The only path of `combined`. -/
 abbrev combinedPath : Path combined := ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- One exported scalar oracle. -/
@@ -58,7 +58,7 @@ abbrev suffixResources := pathResources exported single singlePath
 /-- The resources of a decision on the composed path: the inputs and both sends. -/
 abbrev rawResources := pathResources none' combined combinedPath
 
-/-- Export twice the prefix message, reading the same prefix slot twice. -/
+/-- Export twice the prefix message, reading the same prefix oracle twice. -/
 def view : OracleMap prefixResources exported where
   f x _ := (show Nat from x.2 (.inl ⟨⟩)) + (show Nat from x.2 (.inl ⟨⟩))
   impl _ := do
@@ -77,7 +77,7 @@ def prefixVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact view
 
-/-- The suffix decision program: read the export, then the suffix's own slot, and add. -/
+/-- The suffix decision program: read the export, then the suffix's own oracle, and add. -/
 def suffixProgram : OracleComp (ambient + suffixResources.spec) Nat := do
   let old : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
   let fresh : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
@@ -97,7 +97,7 @@ def suffixVerifier :
     exact liftM suffixProgram
   outputMap _ _ _ := noOutput _
 
-/-- No output oracles, so the composite output map is trivially compatible. -/
+/-- With no output oracles, the compatibility condition ranges over an empty index type. -/
 def compatible : OracleVerifier.OutputCompatibility prefixVerifier (fun _ => suffixVerifier) where
   outputMap _ _ _ := noOutput _
   agrees _ _ _ _ _ _ := funext fun i => i.elim
@@ -115,10 +115,10 @@ def prover (a b : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
       let second : Nat ← liftM (ambient.query b)
       pure ⟨second, pure (first + second)⟩))
 
-/-- The prefix slot of the composed resources. -/
+/-- The query to the prefix oracle in the composed resources. -/
 abbrev prefixSlot : rawResources.spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
 
-/-- The suffix slot of the composed resources. -/
+/-- The query to the suffix oracle in the composed resources. -/
 abbrev suffixSlot : rawResources.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
 
 /-- The prefix and suffix queries name distinct sent oracles. -/
@@ -138,8 +138,8 @@ def routedSuffix (v : View combined combinedPath) :
   simulateQ (route v) suffixProgram
 
 -- QueryBounds 7, restated: node names are removed. Both routed reads of the export query the same
--- prefix slot of the composed resources; the suffix's own read queries the suffix slot, which is
--- distinct.
+-- prefix oracle of the composed resources. The suffix's own read queries the suffix oracle, which
+-- is distinct.
 example (v : View combined combinedPath) :
     (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inl ⟨(), ()⟩) = (do
       let left : Nat ← liftM (rawResources.spec.query prefixSlot)
@@ -159,8 +159,8 @@ abbrev prefixRoute :=
 
 -- QueryBounds 6, restated: at the join, the prefix decision's resources are the inputs and the
 -- prefix oracles, which have no index for the suffix send. Routed into the composed run, every
--- prefix decision program, whatever its cost, queries only ambient oracles and the prefix slot,
--- never the suffix slot. The budget clause of the old-layer row is moot.
+-- prefix decision program, whatever its cost, queries only ambient oracles and the prefix
+-- oracle, never the suffix oracle. The budget clause of the old-layer row is moot.
 example :
     (PEmpty ⊕ OracleMessageIndex single (Path.split single (fun _ => single) combinedPath).1) =
     (PEmpty.{1} ⊕ (PUnit.{1} ⊕ PEmpty.{1})) := rfl
@@ -185,7 +185,7 @@ theorem future_rejected {α : Type} (program : OracleComp (ambient + prefixResou
   · exact i.elim
 
 -- QueryBounds 15, restated as row 6: the actual join is the prefix component of the only
--- composed path, and its routed queries never reach the suffix slot.
+-- composed path, and its routed queries never reach the suffix oracle.
 example {α : Type} (program : OracleComp (ambient + prefixResources.spec) α) :
     AllQueriesSatisfy (simulateQ prefixRoute program) (· ≠ .inr suffixSlot) :=
   future_rejected program
@@ -204,7 +204,7 @@ def observed.{vI, qI, qJ} (a b : Nat) :=
 -- Additional oracle message checks beside the produced partial-transcript assertions in
 -- LoggedExecution. For all tags `a` and `b`, the composed
 -- run sends `a` then `b`, keeps `a + b` and accepts `2a + b`. Its transcript is the append of the
--- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`, and splitting its oracle messages gives
+-- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`. Splitting its oracle messages gives
 -- the prefix oracle message `a` (row 9) and the suffix oracle message `b` (row 10).
 example (a b : Nat) :
     ((observed.{uI, wI, wJ} a b).1, (observed.{uI, wI, wJ} a b).2.1,
@@ -246,7 +246,7 @@ theorem loggedSummary_eq (a b : Nat) :
         [⟨.inr prefixSlot, a⟩, ⟨.inr prefixSlot, a⟩, ⟨.inr suffixSlot, b⟩]) := by
   kernel_rfl
 
-/-- Prefix value one and suffix value two recover the concrete repeated-read observation. -/
+/-- Prefix value one and suffix value two recover the concrete repeated-read outcome. -/
 example : loggedSummary.{0} 1 2 =
     (3, some 4,
       [⟨.inr prefixSlot, (1 : Nat)⟩, ⟨.inr prefixSlot, (1 : Nat)⟩,

@@ -82,7 +82,7 @@ def falseNode : Node mixedTree := .inr ⟨false, .inl ⟨⟩⟩
 /-- The oracle node selected by `true`. -/
 def trueNode : Node mixedTree := .inr ⟨true, .inl ⟨⟩⟩
 
-/-- The shape path through the `false` branch. -/
+/-- The path through the `false` branch. -/
 def falsePath : Path mixedTree := ⟨false, ⟨⟩, ⟨(0 : Fin 2), ⟨⟩⟩⟩
 
 -- DecorationExample 7, restated: the selector is a message, and the interface is read from the

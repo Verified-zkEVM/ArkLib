@@ -10,11 +10,11 @@ import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 import VCVio.OracleComp.EvalDist.AnswerMeasure
 
 /-! Access certificates for the hidden-bit composition of
-`ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture`. The prefix exports its input slot and its
+`ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture`. The prefix exports its input oracle and its
 decision makes one dummy request. The suffix decision reads the export as a pad and reveals the
-hidden bit. Oracle access is typing: the export is a map over the prefix resources, which on the
-only prefix path are the inputs alone, and the suffix decision routed by `suffixRoute` queries only
-the reveal request and the input slot of the composed resources. -/
+hidden bit. Oracle access is typing. The export is a map over the prefix resources, which on the
+only prefix path are the inputs alone. The suffix decision routed by `suffixRoute` queries only
+the reveal request and the input oracle of the composed resources. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
@@ -22,23 +22,23 @@ open Interaction.Core.HiddenBitFixture
 
 namespace Interaction.Core.RuntimeQueryBoundsTests
 
-/-- The only shape path of the prefix. -/
+/-- The only path of the prefix. -/
 abbrev firstPath : Path bitFirst := ⟨⟨⟩, ⟨⟩⟩
 
-/-- The shape path of the composition on which the prover guesses `guess`. -/
+/-- The path of the composition on which the prover guesses `guess`. -/
 abbrev combinedPath (guess : Bool) : Path bitCombined := ⟨⟨⟩, guess, ⟨⟩⟩
 
 /-- The export returned by the prefix. -/
 abbrev exportMap (v : View bitFirst firstPath) := bitPrefix.outputMap () firstPath v
 
--- RuntimeQueryBounds 2, restated: node names are removed. The export's only query is the input slot
--- `.inl ()` of the prefix resources.
+-- RuntimeQueryBounds 2, restated: node names are removed. The export's only query is the input
+-- oracle `.inl ()` of the prefix resources.
 example (v : View bitFirst firstPath) :
     (exportMap v).impl ⟨(), ()⟩ = liftM (firstResources.spec.query (.inl ⟨(), ()⟩)) := rfl
 
--- RuntimeQueryBounds 1, access part, restated: the export is typed over the prefix resources,
--- which have no message slot on the only prefix path, so it reads the inputs alone; its query is
--- the input slot. The cost part is in `QueryCost.lean`.
+-- RuntimeQueryBounds 1, access part, restated: the export is typed over the prefix resources.
+-- On the only prefix path these resources have no oracle message, and the export reads the inputs
+-- alone. Its query is the input oracle. The cost part is in `QueryCost.lean`.
 example : IsEmpty (OracleMessageIndex bitFirst firstPath) := inferInstanceAs (IsEmpty PEmpty)
 
 /-- The prefix export queries only its input oracle. -/
@@ -46,7 +46,7 @@ theorem export_access (v : View bitFirst firstPath) :
     AllQueriesSatisfy ((exportMap v).impl ⟨(), ()⟩) (fun q => q = .inl ⟨(), ()⟩) :=
   (allQueriesSatisfy_query_iff (spec := firstResources.spec) (.inl ⟨(), ()⟩) _).mpr rfl
 
--- RuntimeQueryBounds 3, restated: the prefix output map is the embedding of the input slot, and
+-- RuntimeQueryBounds 3, restated: the prefix output map is the embedding of the input oracle, and
 -- the prefix decision makes the dummy request and accepts.
 example (v : View bitFirst firstPath) :
     exportMap v = OracleMap.fst _ _ := rfl
@@ -72,14 +72,14 @@ example (guess : Bool) (v : View bitSecond ⟨guess, ⟨⟩⟩)
     (bitSuffix.outputMap () ⟨guess, ⟨⟩⟩ v).f x () = (guess ^^ (show Bool from x.1 ())) :=
   rfl
 
-/-- The suffix may request only the reveal, and may query only the export slot. -/
+/-- The suffix may request only the reveal, and may query only the export oracle. -/
 abbrev suffixAllowed (p : Path bitSecond) :
     (bitAmbient + (pathResources bits bitSecond p).spec).Domain → Prop
   | .inl request => request = true
   | .inr q => q = .inl ⟨(), ()⟩
 
--- RuntimeQueryBounds 5, restated: the ambient permission is kept; the suffix's resource queries
--- go to the export slot, and the suffix resources have no other slot on any path.
+-- RuntimeQueryBounds 5, restated: the ambient permission is kept. The suffix's resource queries
+-- go to the export oracle, and the suffix resources have no other oracle on any path.
 /-- The suffix decision queries only its export oracle and the reveal request. -/
 theorem suffix_access (p : Path bitSecond) (v : View bitSecond p) :
     AllQueriesSatisfy (bitSuffix.decide () p v).run (suffixAllowed p) := by
@@ -102,21 +102,21 @@ def routedSuffix (p : Path bitCombined) (v : View bitCombined p) :
     (bitSuffix.decide () (Path.split bitFirst (fun _ => bitSecond) p).2
       (View.split bitFirst (fun _ => bitSecond) p v).2).run
 
-/-- The routed export query is the input-slot query of the composed resources. -/
+/-- The routed export query is the input-oracle query of the composed resources. -/
 theorem routeSuffix_export (guess : Bool) (v : View bitCombined (combinedPath guess)) :
     routeSuffix (combinedPath guess) v (.inr (.inl ⟨(), ()⟩)) =
       liftM ((bitAmbient + (pathResources bits bitCombined
         (combinedPath guess)).spec).query (.inr (.inl ⟨(), ()⟩))) := rfl
 
-/-- The raw permissions: only the reveal request, and only the input slot. -/
+/-- The raw permissions: only the reveal request, and only the input oracle. -/
 abbrev rawAllowed (p : Path bitCombined) :
     (bitAmbient + (pathResources bits bitCombined p).spec).Domain → Prop
   | .inl request => request = true
   | .inr q => q = .inl ⟨(), ()⟩
 
 -- RuntimeQueryBounds 8, restated: on every composed path and view, the routed suffix decision
--- satisfies the raw permissions: the ambient permission is kept, and the export query becomes the
--- input-slot query.
+-- satisfies the raw permissions. The ambient permission is kept, and the export query becomes the
+-- input-oracle query.
 /-- The routed suffix decision queries only the input oracle and the reveal request. -/
 theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
     AllQueriesSatisfy (routedSuffix p v) (rawAllowed p) := by
@@ -132,7 +132,7 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
         (.inr (.inl ⟨(), ()⟩)) _).mpr rfl
   · exact i.elim
 
-/-- The observation of the hidden-bit protocol, including the materialized output oracle. -/
+/-- The outcome of the hidden-bit protocol, including the materialized output oracle. -/
 abbrev BitObservation := Outcome oracleSig bitCombined.{0} (fun _ => Nat)
   (OracleVerifier.Output (fun _ => Bool) (fun _ (_ : Unit) => Bool))
 
@@ -140,7 +140,7 @@ abbrev BitObservation := Outcome oracleSig bitCombined.{0} (fun _ => Nat)
 def answers (observation : BitObservation) : Option (Bool × Bool) :=
   observation.2.2.map fun claim => (claim.2 (), claim.1)
 
-/-- The fixed guess and the actual target bit are both retained by the runtime execution. -/
+/-- The fixed guess and the actual target bit are both kept by the runtime execution. -/
 theorem guess_answers (guess : Bool) (secret : Nat) :
     (fun result => answers result.output) <$>
       bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret)) =

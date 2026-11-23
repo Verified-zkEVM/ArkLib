@@ -8,9 +8,9 @@ import ArkLib.Interaction.Core.OracleVerifier
 import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
 
 /-! One run of a public message, a challenge and a hidden oracle send. The full transcript of the
-run keeps the hidden payload, which the payload family returns and the verifier view erases. A
-rejecting decision returns an explicit `none` that keeps the transcript, the private output and
-the ambient history. -/
+run keeps the hidden oracle message. The oracle message family returns it, and the verifier view
+erases it. A rejecting decision returns an explicit `none` that keeps the transcript, the private
+output and the ambient history. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
@@ -84,9 +84,9 @@ def summary.{vI, qI, qJ} (accept : Bool) (payload hidden : Nat) (bit : Bool) :
     (prover payload hidden))).run []
   (z.1.1, z.1.2.1, z.1.2.2.map Prod.fst, z.2)
 
--- PhasedRun 4: for every payload, private output and challenge,
--- the run's full transcript is `⟨true, bit, payload⟩`; its payload family returns `payload` and its
--- verifier view erases it. The decision reads the payload and accepts with it.
+-- PhasedRun 4: for every oracle message `payload`, private output and challenge, the run's full
+-- transcript is `⟨true, bit, payload⟩`. Its oracle message family returns `payload`, and its
+-- verifier view erases it. The decision reads the oracle message and accepts with it.
 example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} true payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, some payload, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
@@ -96,9 +96,9 @@ example (payload : Nat) (bit : Bool) :
 example (payload : Nat) (bit : Bool) :
     (toView phased ⟨true, bit, payload, ⟨⟩⟩).val = ⟨true, bit, ⟨⟩, ⟨⟩⟩ := rfl
 
--- PhasedRun 6: the passive decision returns `none`, the final
--- rejection. For every payload, private output and challenge, the run keeps the transcript, the
--- private output and the full ambient history.
+-- PhasedRun 6: the passive decision returns `none`, the final rejection. For every oracle
+-- message, private output and challenge, the run keeps the transcript, the private output and the
+-- full ambient history.
 example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} false payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, none, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 

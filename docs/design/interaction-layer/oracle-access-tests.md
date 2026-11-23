@@ -9,28 +9,32 @@ definitions and the diagnostic axiom-print commands are not counted as assertion
 This document holds the full entries for the overlapping PhasedRun, QueryBounds and
 RuntimeQueryBounds rows. The [parent port table][parent-port-table] lists the same contracts.
 
-Each row has exactly one of four statuses:
+The two approved premises are:
 
-- **ported:** the new test keeps the observation and its quantifiers.
-- **excluded by P1** (or **P2**): the row names the premise and the assertion it excludes.
+- **P1 (passive verifier):** verifiers send public-coin challenges only, and resource queries
+  happen in the final decision. A challenge cannot be computed from an input or from a previously
+  sent oracle. Challenge distributions may still depend on earlier public challenges and prover
+  messages.
+- **P2 (fixed shape):** neither a challenge nor an oracle message selects the protocol's subtree.
+
+Each row has one of four statuses:
+
+- **ported:** the new tests check the same mathematical observation, with the same quantifiers.
+- **excluded by P1** (or **P2**): the row states exactly which assertion P1 (or P2) excludes.
 - **removed:** the row names a mechanism that no longer exists.
-- **open:** the row names an interface that the parent is missing.
+- **open:** the row names an interface that the parent branch is missing.
 
 A result that the parent already proves is linked directly instead of being copied.
-
-The two premises are **P1**, public-coin challenges with resource queries confined to the final
-decision, and **P2**, subtree selection independent of challenges and oracle messages. P1 allows
-distributions that depend on earlier public challenges and prover messages.
 
 ## PhasedRun: 7 assertions
 
 | Old-layer row | Contract | Status and where it is ported |
 |---|---|---|
 | <a id="p1"></a>[1][fp1] | Intrinsic queriers | ported: [produced entries][step-api] derive each querier from the executed participant; [queries_by_move_contract][p-step-log] checks them. |
-| <a id="p2"></a>[2][fp2] | State, queriers, order | excluded by P1: P1 excludes verifier actions 2 and 3 before the challenge and action 6 at reception. [queries_by_move_contract][p-step-log] keeps all tags, passive groups and state; [actual_partial_transcripts][p-prefixes] keeps the moves of the partial transcripts. |
+| <a id="p2"></a>[2][fp2] | State, queriers, order | excluded by P1: P1 excludes verifier actions 2 and 3 before the challenge and action 6 at reception. The [queries_by_move_contract][p-step-log] test keeps all tags, passive groups and state. [actual_partial_transcripts][p-prefixes] keeps the moves of the partial transcripts. |
 | <a id="p3"></a>[3][fp3] | Setup count | ported: [setup_queries_by_move_contract][p-setup-step] records a separate setup entry with both query 9 entries. |
 | <a id="p4"></a>[4][fp4] | Final oracle message | ported: [run][p-accept], [lookup][p-payload], [actual_partial_transcripts][p-prefixes]. |
-| <a id="p5"></a>[5][fp5] | Closing, log, groups | excluded by P1: P1 excludes reception effect 1 as a separate verifier group. [closure/log][p-close] and [decision outcomes][p-decision] keep the outputs and histories of the run; [log erasure and setup/log laws][laws-api] keep the remaining groups and closing. |
+| <a id="p5"></a>[5][fp5] | Closing, log, groups | excluded by P1: P1 excludes reception effect 1 as a separate verifier group. The [closure/log][p-close] and [decision outcomes][p-decision] tests keep the outputs and histories of the run. [log erasure and setup/log laws][laws-api] keep the remaining groups and closing. |
 | <a id="p6"></a>[6][fp6] | Explicit rejection | ported: [decision outcomes][p-decision]. |
 | <a id="p7"></a>[7][fp7] | Fault 17, not rejection | ported: [decision outcomes][p-decision]. |
 
@@ -41,10 +45,11 @@ the ordered query groups. `OracleVerifier.executeWith` runs the interaction and 
 `toLog_runWithProverSetup` relates its log to the ordinary logged execution. These are parent
 declarations, and the tests here add no second executor.
 
-For row 2, passivity changes the ambient order `[9, 9, 1, 2, 3, 4, 5, 6, 7]` to
-`[9, 9, 1, 4, 5, 2, 3, 6, 7]`. [queries_by_move_contract][p-step-log] checks state `2102563478` and
-the produced passive groups. [actual_partial_transcripts][p-prefixes] checks the challenge and
-oracle message values in the partial transcripts. The local [accepting run][p-accept] quantifies
+For row 2, passivity changes the ambient order. The old order is `[9, 9, 1, 2, 3, 4, 5, 6, 7]`.
+The passive order is `[9, 9, 1, 4, 5, 2, 3, 6, 7]`. The [queries_by_move_contract][p-step-log]
+test checks state `2102563478` and the produced passive groups. The
+[actual_partial_transcripts][p-prefixes] test checks the challenge and oracle message values in
+the partial transcripts. The local [accepting run][p-accept] quantifies
 over oracle message, private output and challenge independently.
 
 Row 5 keeps input 7, accepted target 11, materialized answer 18, the sent-answer log and the
@@ -71,13 +76,13 @@ unchanged.
 | Old-layer row | Contract | Status and where it is ported |
 |---|---|---|
 | [1][fx1] | Shared structural cursor | ported: [shared spine][x-cursor]. |
-| [2][fx2] | Different transcript prefixes | ported: [distinct full moves][x-distinct]. |
+| [2][fx2] | Different partial transcripts | ported: [distinct full moves][x-distinct]. |
 | [3][fx3] | The crossed send gives a sent oracle | ported: [crossed-send query][x-query]; `SentOracleMessageIndex`, `SentOracleMessageIndex.node` and `IsSent` in [SentOracles][sent-api] identify the crossed oracle. |
-| [4][fx4] | The root has no sent oracle for that send | ported: [empty prefix has no sent oracle][x-no-sent]; `SentOracleMessageIndex` at `.here` is empty in [SentOracles][sent-api]. |
-| [5][fx5] | An empty-payload send permits a root prefix | ported: [root moves][x-empty-root]. |
+| [4][fx4] | The root has no sent oracle for that send | ported: [empty partial transcript has no sent oracle][x-no-sent]; `SentOracleMessageIndex` at `.here` is empty in [SentOracles][sent-api]. |
+| [5][fx5] | A send of an empty oracle message type permits a root partial transcript | ported: [root moves][x-empty-root]. |
 | [6][fx6] | No realization crosses an empty send | ported: [crossed moves][x-empty-moves]. |
 | [7][fx7] | Prefix length two | ported: [length][x-length], [completion][x-complete]. |
-| [8][fx8] | The first hidden realization is true | ported: [transcript prefix oracle message][x-payload]. |
+| [8][fx8] | The first hidden realization is true | ported: [oracle message in the partial transcript][x-payload]. |
 
 Rows 3–4 use the parent's `PartialTranscript` interface in [SentOracles][sent-api].
 `SentOracleMessageIndex` at an empty partial transcript is empty, while crossing an oracle send
@@ -110,8 +115,8 @@ message. [Completed-path lookup][x-sent] checks that oracle message for every la
 | <a id="q17"></a>[17][fq17] | Four is insufficient | ported: [cost-five path][c-lower]. |
 
 Rows 5 and 8 use `composed.runWithLog`. For every `a` and `b`, the doubled export records two
-entries for the prefix oracle with answer `a`, then the entry for the suffix oracle with answer
-`b`. The same assertion checks private output `a + b` and verdict `some (a + a + b)`. The
+entries for the prefix oracle with answer `a`. The entry for the suffix oracle with answer `b`
+follows. The same assertion checks private output `a + b` and verdict `some (a + a + b)`. The
 [one/two specialization][q-concrete-log] recovers private output 3 and accepted result 4. Output
 closing uses those same resources; this fixture's output family is empty.
 
@@ -156,7 +161,7 @@ sent to the same program as the cost-five bound. The [run transcript][q-run],
 
 Rows 1, 2, 5, 8 and 16 use the input case of the parent's `queryNode`, `availableMap_node` and
 `liftNode` in [SentOracles][sent-api]. The prefix has no sent oracle: its export reads only its
-input, whose node name is `.inl` of that same input index at every prefix. The inclusion keeps that
+input, whose node name is `.inl` of that same input index at every partial transcript. The inclusion keeps that
 input index unchanged. The linked access and cost tests quantify over every relevant path and view,
 and use precisely that input query.
 
@@ -172,7 +177,7 @@ For rows 9 and 13, the full trace includes a challenge event. Its ambient projec
 Under the passive schedule, row 12 is ported by the general whole-prover `OracleVerifier.run_append`
 with its [ordinary-import client][p-general-split]. It quantifies over arbitrary whole provers, not
 just the guessing and informed examples. Applying runtime execution and the pure
-state/trace/charge observation to this open-program equality proves the charged runtime/history
+state/trace/charge outcome to this open-program equality proves the charged runtime/history
 equality for every such prover. The exact target is the stronger
 [open-program split law][run-append]. No two-prover specialization counts as the all-prover port.
 P1 separately excludes the old effectful-prefix order.
@@ -184,13 +189,13 @@ seven. The old dummy-before-reveal order needs a non-passive prefix verifier, so
 is not an open question about which steps are allowed. The extra passive history does not port the
 former order.
 
-The row-16 conjunction includes the exact prefix decision and export, the typed access and cost
-certificates, the import budget, the charged history and the half bound for every fixed guess and
-secret. [Answers][r-guess-answers] keep the materialized output oracle and target, and
+The row-16 conjunction holds for every fixed guess and secret. It includes the exact prefix
+decision and export, the typed access and cost certificates, the import budget, the charged
+history and the half bound. [Answers][r-guess-answers] keep the materialized output oracle and target, and
 [guess_success][r-guess-success] proves probability exactly one half. This conjunction uses the
 parent's node names for inputs and the inclusion laws described above. The row-17 passive
 conjunction keeps charge seven and [success one][r-informed-success], with its different order
-stated explicitly, and its [answer observation][r-informed-answers]. Neither theorem derives
+stated explicitly, and its [answer outcome][r-informed-answers]. Neither theorem derives
 arbitrary-prover security from access and cost certificates alone.
 
 ## AccessExample: 18 assertions
@@ -203,10 +208,10 @@ arbitrary-prover security from access and cost certificates alone.
 | [4][fa4] | The oracle can be queried after its send | ported: [positive client][a-sent]. |
 | [5][fa5] | False-branch response is Bool | ported: [response type][a-bool]. |
 | [6][fa6] | True-branch response is Fin 3 | ported: [response type][a-fin]. |
-| [7][fa7] | Inputs and one sent oracle | removed: literal `Access.extend` index layout; [oracle indices][a-slots] keep the input-plus-one-payload count. |
-| [8][fa8] | Access restriction/rebuild | removed: stored `AccessDecoration.restrict_build`; [independent future][a-future] keeps payload-independent shape. |
-| [9][fa9] | Different execution paths | ported: [distinct payloads][a-distinct]. |
-| [10][fa10] | Access depends only on shape | ported: [shape][a-shape], [family][a-family]. |
+| [7][fa7] | Inputs and one sent oracle | removed: literal `Access.extend` index layout; [oracle indices][a-slots] keep the count of inputs plus one oracle message. |
+| [8][fa8] | Access restriction/rebuild | removed: stored `AccessDecoration.restrict_build`; [independent future][a-future] keeps a future that does not depend on the oracle message. |
+| [9][fa9] | Different execution paths | ported: [distinct oracle messages][a-distinct]. |
+| [10][fa10] | Access depends only on the path | ported: [path][a-shape], [family][a-family]. |
 | [11][fa11] | Terminal send can be queried | removed: literal `Access.extend` index layout; [terminal oracles][a-terminal] keep the terminal send queryable. |
 | [12][fa12] | Non-faithful terminal response is Nat | ported: [response type][a-nat]. |
 | [13][fa13] | Route input 7 and sent 11 | ported: [sum eighteen][a-route], all hidden values. |
@@ -216,13 +221,13 @@ arbitrary-prover security from access and cost certificates alone.
 | [17][fa17] | Large message universe | ported: [independent universes][a-large-data]. |
 | [18][fa18] | Large query universe | ported: [independent universes][a-large-query]. |
 
-Rows 7 and 11 keep the count of input oracles plus one payload. They do not assert literal equality
-with the old `Access.extend` query-index layout `Unit ⊕ Unit`: the interaction layer uses family
+Rows 7 and 11 keep the count of input oracles plus one oracle message. They do not assert literal equality
+with the old `Access.extend` query-index layout `Unit ⊕ Unit`. The interaction layer uses family
 indices and sigma-indexed interface queries, and heterogeneous resources keep their data as a pair.
 The [one-oracle uniqueness test][a-single] excludes an extra sent oracle. Row 8 keeps
-payload-independent future selection, but `AccessDecoration.restrict_build` was an identity about
+future selection that does not depend on the oracle message, but `AccessDecoration.restrict_build` was an identity about
 stored per-node access decorations. There is no such decoration to restrict or rebuild now.
-`pathResources` computes resources from a completed shape, and composition routes them explicitly.
+`pathResources` computes resources from a completed path, and composition routes them explicitly.
 
 Rows 17–18 quantify over every message type, interface and initial polynomial at the exact
 universe instantiations of the old tests. Row 17 uses `OracleInterface.{1, 0}` on
@@ -255,12 +260,12 @@ The true future is a constant-continuation `.challenge Bool`, while the false fu
 `.message (Fin 2)`. Each cursor crosses its branch's oracle marker. The test checks each future's
 position and actor separately, and the [future positions are distinct][d-distinct]. The sender is
 the actor at both oracle nodes. The root remains a prover-authored message: only public messages
-select shape branches in [oracleSig][oracle-signature]. A choice by the receiver that changes the
+select branches in [oracleSig][oracle-signature]. A choice by the receiver that changes the
 next oracle type is therefore not represented by this fixture. Row 4 records that change of
 authoring model instead of calling the sender test a port of the receiver test.
 
-Rows 1, 8–9 and 13 used separate role and oracle decorations, restriction of those stored objects,
-and conversion to a second runtime tree with a second role assignment. Oracle positions now carry
+Rows 1, 8–9 and 13 used separate role and oracle decorations and restricted those stored objects.
+They also converted to a second runtime tree with a second role assignment. Oracle positions now carry
 their interfaces, the signature fixes the actor, and the runtime follows that signature on the same
 tree. The identities for restricting interfaces and converting runtime roles have no such objects
 in Core to apply to. The linked cursor types also select the complete corresponding oracle
@@ -287,16 +292,16 @@ visible in the alias's domain, as in the parent `OracleProtocol`; it is an actua
 | [2][fm2] | Arbitrary tree universe | ported: [tree canary][m-tree]. |
 | [3][fm3] | Arbitrary branch-path universe | ported: [branch canary][m-branch]. |
 | [4][fm4] | Arbitrary execution-path universe | ported: [execution canary][m-execution]. |
-| [5][fm5] | Distinct hidden payloads give distinct paths | ported: [inequality][m-distinct]. |
-| [6][fm6] | Equal public choices give equal shapes | ported: [projection equality][m-shared]. |
-| [7][fm7] | False branch keeps the public choice only | ported: [false shape][m-false]. |
-| [8][fm8] | True branch erases Fin 3 payload | ported: [true shape][m-true]. |
+| [5][fm5] | Distinct hidden oracle messages give distinct paths | ported: [inequality][m-distinct]. |
+| [6][fm6] | Equal public choices give equal paths | ported: [projection equality][m-shared]. |
+| [7][fm7] | False branch keeps the public choice only | ported: [false path][m-false]. |
+| [8][fm8] | True branch erases the Fin 3 oracle message | ported: [true path][m-true]. |
 | [9][fm9] | Complete runtime message | ported: [full transcript][m-runtime]. |
 
 The branch selector is re-authored as a prover message, and row 9 no longer converts to a second
 generic runtime tree. `PathAlong oracleSig` is already the full transcript. The new test checks the
-complete transcript, including the public branch and payload. The separate
-[payload lookup][m-payload] and [view-erasure test][m-view] also keep the observable boundary. The
+complete transcript, including the public branch and oracle message. The separate
+[oracle message lookup][m-payload] and [view-erasure test][m-view] also keep the observable boundary. The
 position canary alone does not establish independent oracle-query universes, and DecorationExample
 row 2 now checks that separate contract.
 
