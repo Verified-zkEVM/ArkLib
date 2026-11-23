@@ -197,8 +197,8 @@ private theorem rs_exact_error_union_card_proof
     _ = f + (E \ E').card := by omega
 
 private theorem rsAgreementPair_finrank_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
+    [Field F]
     (domain : ι ↪ F) (k f : ℕ) (E E' : Finset ι)
     (hsmall : k + f ≤ Fintype.card ι)
     (hE : E.card = f) (hE' : E'.card = f) :
@@ -227,8 +227,8 @@ private theorem rsAgreementPair_finrank_proof
     omega
 
 private theorem rsAgreementPairCount_eq_pow_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
+    [Field F] [Fintype F]
     (domain : ι ↪ F) (k f : ℕ) (E E' : Finset ι)
     (hsmall : k + f ≤ Fintype.card ι)
     (hE : E.card = f) (hE' : E'.card = f) :
@@ -260,8 +260,8 @@ private theorem rsAgreementPairCount_eq_pow_proof
 
 open scoped BigOperators in
 private theorem rsAgreementPairCount_high_overlap_sum_le_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
+    [Field F] [Fintype F]
     (domain : ι ↪ F) (k f : ℕ) (E : Finset ι)
     (hsmall : k + f ≤ Fintype.card ι) (hE : E.card = f) :
     ∑ E' ∈ (rsExactErrorSets (ι := ι) f).filter
@@ -299,8 +299,8 @@ private theorem rsAgreementPairCount_high_overlap_sum_le_proof
 
 open scoped BigOperators in
 private theorem rsAgreementPairCount_low_overlap_fiber_le_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
+    [Field F] [Fintype F]
     (domain : ι ↪ F) (k f ℓ : ℕ) (E : Finset ι)
     (hsmall : k + f ≤ Fintype.card ι) (hE : E.card = f)
     (hℓ : ℓ < Fintype.card ι - f - k) :
@@ -335,8 +335,8 @@ private theorem rsAgreementPairCount_low_overlap_fiber_le_proof
 
 open scoped BigOperators in
 private theorem rsAgreementPairCount_low_overlap_sum_le_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
+    [Field F] [Fintype F]
     (domain : ι ↪ F) (k f : ℕ) (E : Finset ι)
     (hsmall : k + f ≤ Fintype.card ι) (hE : E.card = f)
     (hdle : Fintype.card ι - f - k ≤ k + f) :
@@ -392,8 +392,8 @@ private theorem rsAgreementPairCount_low_overlap_sum_le_proof
 
 open scoped BigOperators in
 private theorem rsAgreementPairCount_fixed_error_sum_le_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
+    [Field F] [Fintype F]
     (domain : ι ↪ F) (k f : ℕ) (E : Finset ι)
     (hsmall : k + f ≤ Fintype.card ι) (hE : E.card = f)
     (hdle : Fintype.card ι - f - k ≤ k + f) :
@@ -439,7 +439,7 @@ private theorem rsAgreementPairCount_fixed_error_sum_le_proof
 
 open scoped BigOperators in
 private theorem cs25CertificateCount_sq_sum_le_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hsmall : k + f ≤ Fintype.card ι)
@@ -481,7 +481,7 @@ private theorem cs25CertificateCount_sq_sum_le_proof
 
 open scoped BigOperators in
 private theorem cs25CertificateSupport_lower_bound_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hqpos : 0 < Fintype.card F)
@@ -610,7 +610,7 @@ private theorem cs25CertificateSupport_lower_bound_proof
 
 open scoped BigOperators in
 private theorem rsFarWords_weighted_card_bound_proof
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
     (hqpos : 0 < Fintype.card F)

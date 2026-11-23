@@ -738,7 +738,7 @@ non-empty code `C`. This one is intended to mimic the definition of `distFromCod
 However, **we don't have `ENNRat (ℚ≥0∞)` (as counterpart of `ENat (ℕ∞)` in `distFromCode'`)**
 so we require `[Nonempty C]`.
 TODO: define `ENNRat (ℚ≥0∞)` so we can migrate `relDistFromCode'` to `ℚ≥0∞` -/
-def relDistFromCode' {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F]
+def relDistFromCode' {ι : Type*} [Fintype ι] {F : Type*} [DecidableEq F]
     (w : ι → F) (C : Set (ι → F)) [Fintype C] [Nonempty C] : ℚ≥0 :=
   Finset.min'
     (Finset.univ.image (fun (c : C) => relHammingDist w c))

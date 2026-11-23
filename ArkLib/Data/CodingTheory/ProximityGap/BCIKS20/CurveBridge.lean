@@ -108,7 +108,7 @@ theorem mcaError_powers_le_of_exactPowerAgreement
 
 /-- Reindexing preserves proximity to the Reed–Solomon code. -/
 theorem relCloseToCode_comp_equiv
-    {ι κ F : Type} [Fintype ι] [Fintype κ] [Nonempty ι] [Nonempty κ] [Field F] [DecidableEq F]
+    {ι κ F : Type} [Fintype ι] [Fintype κ] [Field F] [DecidableEq F]
     (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ) (w : ι → F) (δ : ℝ≥0) :
     Code.relDistFromCode (w ∘ e) (code (e.toEmbedding.trans domain) k) ≤ δ ↔
       Code.relDistFromCode w (code domain k) ≤ δ := by

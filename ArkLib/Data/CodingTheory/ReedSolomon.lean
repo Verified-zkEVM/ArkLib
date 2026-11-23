@@ -170,7 +170,7 @@ open LinearCode
 
 /-- The Vandermonde matrix is the generator matrix for an RS code of length `ι` and dimension `deg`.
 -/
-lemma genMatIsVandermonde [Fintype ι] [Field F] {α : ι ↪ F} :
+lemma genMatIsVandermonde [Field F] {α : ι ↪ F} :
     fromColGenMat (Vandermonde.nonsquare (ι' := m) α) = ReedSolomon.code α m := by
   classical
   by_cases hm : m = 0
@@ -412,7 +412,7 @@ lemma card_le_card_of_count_inj {α β : Type*} [DecidableEq α] [DecidableEq β
 
 section
 
-def constantCode {α : Type*} (x : α) (ι' : Type*) [Fintype ι'] : ι' → α := fun _ ↦ x
+def constantCode {α : Type*} (x : α) (ι' : Type*) : ι' → α := fun _ ↦ x
 
 variable [Semiring F] {x : F} [Fintype ι] {α : ι ↪ F}
 
@@ -424,12 +424,14 @@ lemma weight_constantCode [DecidableEq F] :
   · exact iff_of_true (.inl h) (.inl h)
   · exact or_congr_right ⟨fun hx ↦ hx i, fun hx _ ↦ hx⟩
 
+omit [Fintype ι] in
 @[simp]
 lemma constantCode_mem_code [NeZero n] :
     constantCode x ι ∈ ReedSolomon.code α n :=
   Submodule.mem_map.2 ⟨C x, mem_degreeLT.2 <| degree_C_le.trans_lt <|
     WithBot.coe_lt_coe.2 (Nat.pos_of_ne_zero (NeZero.ne n)), evalOnPoints_C⟩
 
+omit [Fintype ι] in
 @[simp]
 lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
     constantCode x ι = 0 ↔ x = 0 := by

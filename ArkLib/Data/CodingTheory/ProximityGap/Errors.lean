@@ -141,7 +141,7 @@ theorem caError_antitone_right
 
 omit [SampleableType S] in
 /-- A close combination of a stack outside joint proximity witnesses MCA. -/
-lemma isMCA_of_close_of_not_jointProximity [Fintype S] [Nonempty S]
+lemma isMCA_of_close_of_not_jointProximity
     (G : Generator S ℓ F) (MC : ModuleCode ι F A)
     (u : WordStack A ℓ ι) (δ : ℝ≥0) (x : S)
     (hjp : ¬ jointProximity (C := (MC : Set (ι → A))) (u := u) δ)
@@ -468,7 +468,7 @@ theorem epsPg_le_epsCa (MC : ModuleCode ι F A) (δ : ℝ≥0) :
       exact zero_le
     · rw [ite_eq_right hall, ite_eq_right hjp]
 
-omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] [SampleableType F] in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] [SampleableType F] [Fintype F] in
 /-- A line-close event outside joint proximity satisfies affine-line `IsMCA`. -/
 lemma isMCA_affineLine_of_line_close_of_not_jointProximity
     (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0) (γ : F)
@@ -574,7 +574,7 @@ theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
     · rw [ite_eq_right hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
-omit [DecidableEq ι] [Fintype F] [DecidableEq F] in
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
 /-- Bridge for the polynomial-curve correlated-agreement predicate. -/
 theorem δ_ε_correlatedAgreementCurves_iff_caError_le {k : ℕ}
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
@@ -686,7 +686,7 @@ private lemma jointProximity_iff_exists_pairErrors_le
       · exact of_not_not hiE.1 |>.symm
       · exact of_not_not hiE.2 |>.symm
 
-omit [SampleableType F] in
+omit [SampleableType F] [Fintype F] in
 private lemma line_close_of_isMCA_affineLine
     (C : LinearCode ι F) (u : Fin 2 → ι → F) (δ : ℝ≥0) (γ : F)
     (h : IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)) :
