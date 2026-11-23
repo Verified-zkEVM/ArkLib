@@ -53,7 +53,7 @@ theorem polynomialTuple_eq_of_infinite_specializations (φ : F →+* E)
     refine eq_of_infinite_eval_eq _ _ (h.mono fun z hz ↦ ?_)
     have hc := congrArg (fun p : E[X] ↦ p.coeff j) hz
     simpa only [Set.mem_ofPred_eq, powerBatchedCoordinate_eval, Polynomial.powerBatch,
-      finsetSum_coeff, coeff_smul, smul_eq_mul, coeff_map] using hc
+      finsetSum_coeff, AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul, coeff_map] using hc
   exact φ.injective (congrFun (powerBatchedCoordinate_injective hab) t)
 
 /-- Two distinct tuples have the same specialization along `φ` at only finitely many

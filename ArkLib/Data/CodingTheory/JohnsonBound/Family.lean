@@ -259,7 +259,7 @@ lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
   have hD_lt : D < (ℓ : ℚ) * (D - 1) := by
     rw [← sub_pos]
     convert sub_pos.mpr hDgt using 1
-    all_goals ring
+    ring
   have hfinal : (B.card : ℚ) < (ℓ : ℚ) := by
     by_contra hcard
     have hmul := mul_le_mul_of_nonneg_right (le_of_not_gt hcard) (sub_nonneg.mpr hD1.le)
@@ -874,7 +874,7 @@ No transfer lemma is involved: `IsListDecodable C δ ℓ` unfolds to `Lambda C �
 `johnson_bound_lambda_le_ell` composed with `Lambda_mono`, modulo `⌊(ℓ : ℝ≥0)⌋₊ = ℓ` for a natural
 `ℓ` — which is exactly `isListDecodable_natCast_iff`. -/
 theorem johnson_isListDecodable
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι)) :
@@ -970,7 +970,7 @@ the base code: the alphabet size is `|F|^m`, and the minimum distance is unchang
 (`Code.minDist_interleavedCodeSet`). A caller holds `C`, not `C^⋈(Fin m)`, so this is the form
 it can discharge. -/
 theorem lambda_interleaved_le_of_le_johnson
-    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Fintype F] [DecidableEq F]
+    {ι : Type*} [Fintype ι] {F : Type*} [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) {m ℓ : ℕ} (hℓ : 1 ≤ ℓ) {δ : ℝ≥0}
     (hδ : (δ : ℝ) ≤ Jqℓ ((Fintype.card F : ℚ) ^ m) (ℓ : ℚ)
             ((Code.minDist C : ℚ) / (Fintype.card ι : ℚ))) :

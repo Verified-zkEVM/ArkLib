@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 module
 
+public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import Mathlib.Algebra.MvPolynomial.Equiv
 public import Mathlib.Algebra.MvPolynomial.PDeriv
 public import Mathlib.Algebra.Polynomial.Expand
@@ -35,6 +36,7 @@ contraction by `p` divides the degree in `none` by `p` exactly.
   derivative.
 * `MvPolynomial.eval_rootExpansion`, `MvPolynomial.map_rootExpansion`,
   `MvPolynomial.eval₂_rootExpansion`, and `MvPolynomial.rootContraction_rootExpansion`.
+* `MvPolynomial.rootExpansion_eq_variablePowerSubstitution`: expansion as a power substitution.
 * `MvPolynomial.coeff_rootContraction` and `MvPolynomial.degreeOf_rootContraction_some_le`.
 * `MvPolynomial.degreeOf_rootContraction_none_mul`: the degree identity for a contraction of a
   polynomial with vanishing partial derivative in `none`.
@@ -75,6 +77,19 @@ noncomputable def rootExpansion (s : ℕ) (P : MvPolynomial (Option σ) R) :
     MvPolynomial (Option σ) R :=
   (optionEquivLeft R σ).symm
     (Polynomial.expand (MvPolynomial σ R) s (optionEquivLeft R σ P))
+
+/-- Expansion in the distinguished variable substitutes its `s`-th power. -/
+theorem rootExpansion_eq_variablePowerSubstitution (s : ℕ)
+    (G : MvPolynomial (Option σ) R) :
+    rootExpansion s G = variablePowerSubstitution (fun v ↦ v.elim s fun _ ↦ 1) G := by
+  let φ : MvPolynomial (Option σ) R →ₐ[R] MvPolynomial (Option σ) R :=
+    (optionEquivLeft R σ).symm.toAlgHom.comp
+      (((Polynomial.expand (MvPolynomial σ R) s).restrictScalars R).comp
+        (optionEquivLeft R σ).toAlgHom)
+  have hφ : φ = variablePowerSubstitution fun v : Option σ ↦ v.elim s fun _ ↦ 1 := by
+    apply algHom_ext
+    rintro (_ | i) <;> simp [φ]
+  exact DFunLike.congr_fun hφ G
 
 /-- Evaluating `rootExpansion s P` at `y` in the distinguished variable evaluates `P` at `y ^ s`
 in that variable. -/

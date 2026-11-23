@@ -59,7 +59,6 @@ theorem honestPolynomial_congr (p₀ : Witness F s d 0) {α β : Fin (k + 1) →
       ih (fun j hj ↦ h j (by simpa using Nat.lt_succ_of_lt hj)), h i (by simp)]
 
 
-variable [Fintype F]
 
 /-- The retained non-final words: the supplied input followed by exact folded evaluations. -/
 def honestWords (f : OracleStatement s ω (0 : Fin (k + 1)) 0)
@@ -125,7 +124,7 @@ def foldCompletenessRelation (δ : ℝ≥0) :
     (Code.relHammingDist f (fun x ↦ p₀.val.eval x.val) : ℝ≥0) ≤ δ ∧
     sw = ((α, honestHistory s d f p₀ α), honestPolynomial s d p₀ α (Fin.last (k + 1)))}
 
-omit [DecidableEq F] [Fintype F] in
+omit [DecidableEq F] in
 /-- Every polynomial witness satisfies its executable natural-degree bound. -/
 theorem witness_natDegree_lt (i : Fin (k + 2)) (p : Witness F s d i) :
     p.val.natDegree < foldingDegree s d i := by
@@ -136,7 +135,6 @@ theorem witness_natDegree_lt (i : Fin (k + 2)) (p : Witness F s d i) :
   · apply (Polynomial.natDegree_lt_iff_degree_lt hp).mpr
     exact (Polynomial.mem_degreeLT.mp (CompPoly.CPolynomial.degreeLT_toPoly.mp p.property))
 
-omit [Fintype F] in
 /-- The final honest polynomial satisfies the final verifier's degree guard. -/
 theorem honestPolynomial_last_natDegree_lt (p₀ : Witness F s d 0)
     (α : Fin (k + 1) → F) :
@@ -145,11 +143,10 @@ theorem honestPolynomial_last_natDegree_lt (p₀ : Witness F s d 0)
 
 /-- The transmitted final polynomial and honest output witness satisfy radius-zero output. -/
 theorem honestHistory_mem_outputRelation
-    (hdom : (2 ^ (∑ i, (s i).val)) * d ≤ 2 ^ n)
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0)
     (p₀ : Witness F s d 0) (α : Fin (k + 1) → F) :
     ((α, honestHistory s d f p₀ α), honestPolynomial s d p₀ α (Fin.last (k + 1))) ∈
-      outputRelation k s d hdom 0 := by
+      outputRelation k s d 0 := by
   simp only [outputRelation, QueryRound.outputRelation, FinalFoldPhase.outputRelation,
     Set.mem_ofPred_eq]
   change (Code.relHammingDist

@@ -65,6 +65,12 @@ abbrev Output := ProductSumcheck.Statement (layout.Query × rule.Challenge) C (0
 /-- One component-value message followed by one batching challenge. -/
 def pSpec : ProtocolSpec 2 := pSpecScalar M rule.Challenge
 
+omit [CommRing C] [Algebra B C] [Algebra data.P C] [IsScalarTower B data.P C] in
+/-- The head sends one message and samples one challenge. -/
+theorem card_challengeIdx : Fintype.card (pSpec (M := M) data rule).ChallengeIdx = 1 := by
+  change Fintype.card (pSpecScalar Unit Unit).ChallengeIdx = 1
+  decide
+
 instance : ∀ i, OracleInterface ((pSpec (M := M) data rule).Message i) :=
   letI : OracleInterface M := OracleInterface.instDefault
   inferInstanceAs (∀ i, OracleInterface
@@ -89,12 +95,13 @@ def nextStatement (stmt : Input data m layout) (α : data.ιP → data.E)
 
 /-- The input anchors the scalar claim to this commitment's packed source. -/
 def relIn : Set (((Input data m layout) × (∀ j, pc.OStmt j)) × layout.Source) :=
-  { sw | sw.1.1.2 = layout.eval sw.1.1.1 sw.2 ∧
-    pc.commitsTo sw.1.2 (data.packedMLE (layout.components sw.2)) }
+  { ⟨⟨⟨query, claimedValue⟩, oStmtIn⟩, witIn⟩ |
+    claimedValue = layout.eval query witIn ∧
+      pc.commitsTo oStmtIn (data.packedMLE (layout.components witIn)) }
 
 open scoped Classical in
 /-- The multiplier polynomial and its read-once matrix evaluator. -/
-def multiplier : ProductSumcheck.Multiplier (layout.Query × rule.Challenge) C m where
+def multiplier : Sumcheck.Structured.Multiplier (layout.Query × rule.Challenge) C m where
   polynomial ctx := data.multiplier (layout.point ctx.1) (rule.weight ctx.2)
   evaluate ctx r := data.evaluateMultiplier (layout.point ctx.1) (rule.weight ctx.2) r
   evaluate_eq ctx r := data.evaluateMultiplier_eq (layout.point ctx.1) (rule.weight ctx.2) r

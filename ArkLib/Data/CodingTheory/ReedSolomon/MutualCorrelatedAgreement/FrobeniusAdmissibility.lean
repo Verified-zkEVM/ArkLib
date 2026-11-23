@@ -33,7 +33,9 @@ Frobenius graph. Every regular specialization reconstructs the same base-field p
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval aeval_map_optionEquivRight affineHilbertPolynomial map optionEquivRight
+  zeroLocus)
 
 namespace ReedSolomon
 
@@ -180,9 +182,8 @@ theorem IsAdmissibleFrobeniusPair.eq_of_initialGraph_eq [Infinite E]
   let sep := aeval
     (frobeniusInitialGraph center (p ^ e) (F₀.map iota) (G₀.map iota))
     (jointInitialJetSeparant center Q)
-  have hinfinite : Set.Infinite {w : E | sep.eval w ≠ 0} := by
-    exact (Set.infinite_univ.sdiff (Polynomial.finite_setOfPred_isRoot hP.regular)).mono
-      (fun _ hw ↦ hw.2)
+  have hinfinite : Set.Infinite {w : E | sep.eval w ≠ 0} :=
+    (Polynomial.finite_setOfPred_isRoot hP.regular).infinite_compl
   have hs : 0 < p ^ e := pow_pos (expChar_pos E p) e
   have heq (w : E) (hw : sep.eval w ≠ 0) :
       F₀.map iota + Polynomial.C (w ^ (p ^ e)) * G₀.map iota =
@@ -240,7 +241,10 @@ theorem admissibleFrobeniusPairs_card_le_degreeOf [Infinite E]
           frobeniusInitialGraph center (p ^ e) (R.1.map iota) (R.2.map iota) := by
       funext j
       cases j with
-      | none => rfl
+      -- Not `rfl`: the kernel would compare the two graph maps argument by argument,
+      -- which does not finish under leanchecker/Comparator replay. Ascribing `X = X`
+      -- makes it reduce each side to `X`.
+      | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
       | some j =>
           have : j = 0 := Subsingleton.elim _ _
           subst j

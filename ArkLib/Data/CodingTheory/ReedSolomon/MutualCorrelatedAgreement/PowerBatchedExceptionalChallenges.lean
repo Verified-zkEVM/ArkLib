@@ -32,7 +32,8 @@ power agreements.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval)
 open scoped BigOperators
 
 noncomputable section

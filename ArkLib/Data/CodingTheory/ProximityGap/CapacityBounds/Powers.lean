@@ -238,7 +238,7 @@ private theorem powers_middle_bound_nonneg (n q k : ℕ) (δmin η : ℝ)
   positivity
 
 private theorem powers_power_difference_pos_of_module_code
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
     (C : ModuleCode ι F A) (k : ℕ) (δmin η : NNReal)
@@ -627,9 +627,7 @@ private theorem powers_select_compatible_anchors
     calc
       ((Finset.univ.filter P).card : ℝ) =
           ∑ ys : Fin (k + 2) → S, if P ys then (1 : ℝ) else 0 := by
-        simpa using
-          (Finset.natCast_card_filter (R := ℝ) P
-            (Finset.univ : Finset (Fin (k + 2) → S)))
+        simp
       _ = ∑ xs : Fin (k + 1) → S,
             ∑ x : S, if P (Fin.snoc xs x) then (1 : ℝ) else 0 :=
         powers_sum_over_snoc (S := S) (k + 1)
@@ -1076,7 +1074,7 @@ private theorem linear_mca_error_powers_bad_seed_card_le
   exact hfin
 
 private theorem univariate_powers_generator_code_eq_rs
-    {F : Type} [Field F] [Fintype F] (k : ℕ) :
+    {F : Type} [Field F] (k : ℕ) :
     LinearCode.fromColGenMat (CoreDefinitions.M_G (CoreDefinitions.univariatePowersGenerator F k)) =
       ReedSolomon.code (Function.Embedding.refl F) (k + 1) := by
   simpa [CoreDefinitions.M_G, CoreDefinitions.univariatePowersGenerator,
