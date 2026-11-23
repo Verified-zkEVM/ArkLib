@@ -32,17 +32,17 @@ These entries are also in
 [`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
 The status is one of equivalent, premise-required, retired or unresolved. The rows for entry 19 use
 the plainer names ported, excluded by P1 or P2, removed and open for the same four statuses. The
-[port table](logged-execution-disposition.md) explains them.
+[port table](port-logged-execution.md) explains them.
 
 | Entry | Departure | Status |
 | --- | --- | --- |
 | 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces one entry per move, with the partial transcript, the querier and the queries. Erasing the entries gives the aggregate logs exactly. The code is in `Oracle/QueriesByMove.lean`, `Oracle/QueriesByMoveLaws.lean` and `Oracle/SentOracles.lean` | ported |
 | 19 | P1 excludes intermediate verifier queries and the moves they were assigned to; prover moves and their partial transcripts remain | excluded by P1 |
-| 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
+| 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general bundle API | equivalent: `OracleBundle` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
-| 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+| 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
 
-The [resource and node universe port table](resource-universes-disposition.md) records the
+The [resource and node universe port table](port-bundle-universes.md) records the
 old-layer R26, R27 and decoration canaries closed by entry 18. The R26/R27 definitions occur
 once, in `ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean`, and `UniverseCanary.lean`
 imports them.
@@ -106,7 +106,7 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 
 ## Logged execution and routing tests
 
-The [port table](logged-execution-disposition.md) lists each assertion in the old layer's tests
+The [port table](port-logged-execution.md) lists each assertion in the old layer's tests
 and where it is ported or what remains. It also lists which assertions the approved
 passive-verifier and fixed-shape premises (P1 and P2) exclude. The rows about the queries by move are ported under
 the passive schedule. There is no separate step executor. Instrumented strategies run through

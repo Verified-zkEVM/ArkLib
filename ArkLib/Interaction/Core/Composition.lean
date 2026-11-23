@@ -317,9 +317,10 @@ def splitOracleMessages : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ �
       ((OracleMap.embedding (singletonFamily I) id).sum
         (splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p))
 
-/-- Preserve ambient queries while routing resource queries through an oracle map. -/
+/-- Preserve ambient queries while routing bundle queries through an oracle map. -/
 def OracleMap.withAmbient {ι : Type uι}
-    (ambient : OracleSpec.{uι, u} ι) {In : Resources.{u, uX, dX}} {Out : Resources.{u, uY, dY}}
+    (ambient : OracleSpec.{uι, u} ι) {In : OracleBundle.{u, uX, dX}}
+    {Out : OracleBundle.{u, uY, dY}}
     (route : OracleMap In Out) : QueryImpl (ambient + Out.spec) (OracleComp (ambient + In.spec))
   | .inl q => liftM ((ambient + In.spec).query (.inl q))
   | .inr q => simulateQ
@@ -329,7 +330,7 @@ def OracleMap.withAmbient {ι : Type uι}
 for any interpretation of the ambient queries. -/
 theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
     {ambient : OracleSpec.{uι, u} ι} {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {In : Resources.{u, uX, dX}} {Out : Resources.{u, uY, dY}}
+    {In : OracleBundle.{u, uX, dX}} {Out : OracleBundle.{u, uY, dY}}
     (lift : QueryImpl ambient m) (route : OracleMap In Out) (x : In.Data)
     {α : Type u} (program : OracleComp (ambient + Out.spec) α) :
     simulateQ (QueryImpl.addLift lift (In.answer x) :
@@ -348,7 +349,8 @@ theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
 
 /-- Routing through a map and answering from data agrees with answering from the mapped data. -/
 theorem OracleMap.simulate_withAmbient {ι : Type uι}
-    {ambient : OracleSpec.{uι, u} ι} {In : Resources.{u, uX, dX}} {Out : Resources.{u, uY, dY}}
+    {ambient : OracleSpec.{uι, u} ι} {In : OracleBundle.{u, uX, dX}}
+    {Out : OracleBundle.{u, uY, dY}}
     (route : OracleMap In Out) (x : In.Data) {α : Type u}
     (program : OracleComp (ambient + Out.spec) α) :
     simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.answer x) :
@@ -361,7 +363,7 @@ theorem OracleMap.simulate_withAmbient {ι : Type uι}
 
 namespace OracleVerifier
 variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
-  {inputs : Resources.{u, uI, dI}}
+  {inputs : OracleBundle.{u, uI, dI}}
   {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
   {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
   {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
@@ -370,32 +372,32 @@ variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
   {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂)}
 
-/-- Reassociate inputs and both sets of messages into prefix resources and suffix messages. -/
-def splitResources (p : Path (s₁.append s₂)) :
-    OracleMap (pathResources inputs (s₁.append s₂) p)
-      (Resources.sum (pathResources inputs s₁ (Path.split s₁ s₂ p).1)
-        (Resources.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))) :=
+/-- Reassociate inputs and both sets of messages into the prefix bundle and the suffix messages. -/
+def splitPathBundle (p : Path (s₁.append s₂)) :
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (OracleBundle.sum (pathBundle inputs s₁ (Path.split s₁ s₂ p).1)
+        (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))) :=
   (OracleMap.sumAssocSymm inputs
-    (Resources.ofFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1))
-    (Resources.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))).comp
+    (OracleBundle.ofFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1))
+    (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))).comp
     ((OracleMap.id inputs).par
       ((OracleMap.ofSumFamily _ _).comp (splitOracleMessages s₁ s₂ p)))
 
 /-- Prefix decisions see the original inputs and only prefix messages. -/
 def prefixRoute (p : Path (s₁.append s₂)) :
-    OracleMap (pathResources inputs (s₁.append s₂) p)
-      (pathResources inputs s₁ (Path.split s₁ s₂ p).1) :=
-  (OracleMap.fst _ _).comp (splitResources (inputs := inputs) p)
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (pathBundle inputs s₁ (Path.split s₁ s₂ p).1) :=
+  (OracleMap.fst _ _).comp (splitPathBundle (inputs := inputs) p)
 
 /-- Suffix input queries use the prefix map at the prefix path; suffix message queries retain
 their own slots. -/
 def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p) :
-    OracleMap (pathResources inputs (s₁.append s₂) p)
-      (pathResources (middle (Path.split s₁ s₂ p).1) _ (Path.split s₁ s₂ p).2) :=
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (pathBundle (middle (Path.split s₁ s₂ p).1) _ (Path.split s₁ s₂ p).2) :=
   ((V₁.outputMap stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).par
-    (OracleMap.id (Resources.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
-      (splitResources (inputs := inputs) p)
+    (OracleMap.id (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
+      (splitPathBundle (inputs := inputs) p)
 
 /-- The output oracle family of an appended oracle protocol: at a path of the appended tree, the
 suffix's output family at the split path. -/
@@ -408,7 +410,7 @@ abbrev splitOutputs
 
 /-- A composite output map must represent every intermediate statement the prefix can accept.
 
-The condition concerns the actual prefix decision on the same view, with its resource queries
+The condition concerns the actual prefix decision on the same view, with its bundle queries
 answered from the routed input data and every ambient answer allowed. Statements the prefix cannot
 return impose no condition. The condition is still needed because the prefix decision can query
 ambient oracles, whereas output maps cannot.
@@ -417,8 +419,8 @@ structure OutputCompatibility (V₁ : OracleVerifier ambient s₁ S T inputs mid
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p)) where
   /-- The composite output map, which sees only the statement, the path and the view. -/
   outputMap : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p →
-    OracleMap (pathResources inputs (s₁.append s₂) p)
-      (Resources.ofFamily (splitOutputs outputs p))
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (OracleBundle.ofFamily (splitOutputs outputs p))
   /-- On every accepted intermediate statement it agrees with the suffix's map after routing. -/
   agrees : ∀ stmt p v data mid,
     some mid ∈ support (V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
@@ -442,7 +444,7 @@ def OutputCompatibility.ofStatement (V₁ : OracleVerifier ambient s₁ S T inpu
     rw [accepted stmt p v data t h]
     rfl
 
-/-- Fold passive decisions at the end, routing all suffix resource queries through the prefix.
+/-- Fold passive decisions at the end, routing all suffix bundle queries through the prefix.
 The composite's output statement and output oracle family at an appended path are the suffix's
 at the split path. -/
 def append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
@@ -470,7 +472,7 @@ theorem append_decideWith (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂) (stmt : S) (p : Path (s₁.append s₂))
     (v : View (s₁.append s₂) p)
-    (data : (pathResources inputs (s₁.append s₂) p).Data) :
+    (data : (pathBundle inputs (s₁.append s₂) p).Data) :
     (V₁.append V₂ compatible).decideWith stmt p v data =
       V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
           ((prefixRoute (inputs := inputs) p).f data) >>= fun

@@ -7,7 +7,7 @@ settle a row.
 
 The two approved premises are:
 
-- **P1 (passive verifier):** verifiers send public-coin challenges only, and resource queries
+- **P1 (passive verifier):** verifiers send public-coin challenges only, and bundle queries
   happen in the final decision. A challenge cannot be computed from an input or from a previously
   sent oracle.
 - **P2 (fixed shape):** neither a challenge nor an oracle message selects the protocol's subtree.
@@ -34,7 +34,7 @@ obligations directly, without inferring them from a trace equality.
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
 | L29, complete trace | excluded by P1 | P1 excludes three verifier tags: 0 after the public receive, 5 after the first oracle receive, and 2 before a challenge derived from an input or an oracle. It also excludes the querier assignments that go with them. [full] keeps all six action tags in a passive client, but **not** this former assignment of queriers. |
-| L29, six-action coverage | ported | [full] checks `[0, 1, 5, 2, 4, 3]` across a public send, an oracle send, challenge service, challenge continuation and the final decision, with private output `(777, hidden)` and verdict 37. The draw is independent of resources. |
+| L29, six-action coverage | ported | [full] checks `[0, 1, 5, 2, 4, 3]` across a public send, an oracle send, challenge service, challenge continuation and the final decision, with private output `(777, hidden)` and verdict 37. The draw is independent of the bundles. |
 | L64, ordered source requests and repeats | ported | [source] keeps first 11, input 7, second 19, second 19 in that order. |
 | L64, first request between sends | excluded by P1 | P1 excludes the verifier's request to the first message before the second send. [source] is extra coverage of the final decision. |
 | L75, source log of the one-send accepting run | ported | [accepted] includes exactly one sent-oracle request, answered 11. Computing exported data adds no query. |
@@ -63,7 +63,7 @@ is interpreted. It is never rebuilt from a constant or from the fault label.
 | L82, input 13/message 19 closes to 32 | ported | [closing], second conjunct. [faults] proves the stronger closing equation for arbitrary input and message. |
 | L86, erasure audit of the final decision | ported | [erasure] and [audit] for the ordinary rejecting and accepting run. |
 | Former effectful reception boundary | excluded by P1 | P1 excludes effect 1 as a separate verifier reception move. [faults] keeps the chronological history with that effect in the final decision. |
-| L87, closing an optional final verdict | ported | [optionalClosing] proves that embedding any optional verdict with `Except.ok` and then closing with the completed transcript's output map and resources equals closing first and then embedding. This holds for `none` and for every accepted statement. |
+| L87, closing an optional final verdict | ported | [optionalClosing] proves that embedding any optional verdict with `Except.ok` and then closing with the completed transcript's output map and bundle equals closing first and then embedding. This holds for `none` and for every accepted statement. |
 
 The [source and resource port table](oracle-universe-tests.md) numbers these rows TR1–TR7 and
 links them here.
@@ -101,7 +101,7 @@ first move stays in that move's entry.
 | L178, queries by move for the remaining allowed groups | ported | [queriesByMoveLaws] keeps explicit setup, the moves' entries and the decision entry, with full-log and ordinary erasure. The reception action that P1 excludes is identified separately above. |
 | L194, explicit rejection | ported | [faults], third conjunct. |
 | L198, explicit fault 17 | ported | [faults], first conjunct. Rejection is a different constructor. |
-| L201, closing audit of the run by moves | ported | `map_fst_runWithQueriesByMove` and `toLog_runWithQueriesByMove` in [queriesByMoveLaws] keep the ordinary outcome, including its closed optional verdict and output resources. |
+| L201, closing audit of the run by moves | ported | `map_fst_runWithQueriesByMove` and `toLog_runWithQueriesByMove` in [queriesByMoveLaws] keep the ordinary outcome, including its closed optional verdict and output oracles. |
 | L202, closing audit of the decision in the run by moves | ported | [queriesByMoveLaws] keeps the same closed optional verdict under log projection. [optionalClosing] keeps the optional verdict through the labelled final-decision presentation. |
 
 ## SourceRoutingExample.lean
@@ -110,7 +110,7 @@ first move stays in that move's entry.
 | --- | --- | --- |
 | L140, SR1, verifier message 23 derived from exported resources | excluded by P1 | P1 excludes the assertion that this message is computed by reading the prefix export and the suffix message. The verifier may send only a public-coin challenge. [sourceClosing] keeps the allowed observations with an independent draw. [routePassive] remains extra coverage. |
 | L140, SR1, ambient order `[1, 10, 20, 30, 40, 50, 60]` | excluded by P1 | P1 excludes decision effects 10, 30 and 40 happening before the prover's interaction completes. [sourceClosing] and [routePassive] explicitly check the different passive schedule `[1, 20, 50, 10, 30, 40, 60]`. |
-| L140, SR1, arbitrary hidden input and private memory, and actual output resources | ported | [sourceClosing] keeps the send/send/challenge order, input 7, messages 11 and 5, private result `secret + 23 + 50`, and claim/export `(23, 23)` computed from those same actual resources. The challenge is drawn independently, so its former dependency on resources is excluded in the rows above. |
+| L140, SR1, arbitrary hidden input and private memory, and actual output resources | ported | [sourceClosing] keeps the send/send/challenge order, input 7, messages 11 and 5, private result `secret + 23 + 50`, and claim/export `(23, 23)` computed from those same actual bundles. The challenge is drawn independently, so its former dependency on the bundles is excluded in the rows above. |
 | L162, SR2, exactly two ordered raw requests | ported | [rawHidden] quantifies over the old input, hidden input, visible message and private coordinate. The requests are exactly `[0, 2]` and the answer is `old + visible`. In particular, old 7 and message 11 answer 18. |
 | L162, SR2, hidden input never queried | ported | [notHidden] proves that request label 1 does not occur in that same raw execution. The handler would record it even if its answer were discarded. |
 | L167, SR3, ordinary whole-prover theorem instantiation | ported | [routeWhole] instantiates [appendLaw] on the actual whole prover and input data. |
@@ -139,8 +139,8 @@ The old-layer file is named `NativeRuntime.lean`. This heading describes what it
 ## QueryBounds.lean
 
 [sentOracles] identifies the oracle messages sent at a partial transcript, includes them in the
-resources of longer partial transcripts, and keeps node names and typed query routing. Its `toPathResources_data` law
-connects the family of sent oracles to the same transcript's `pathResources`.
+bundles of longer partial transcripts, and keeps node names and typed query routing. Its `toPathBundle_data` law
+connects the family of sent oracles to the same transcript's `pathBundle`.
 `OracleVerifier.prefixRoute_oracleMessages` connects the append route, whose outputs use
 `splitOutputs`, to that prefix's inputs and oracle messages. [joinEntryNode], [joinEntryIsSent] and
 [decisionEntryIsSent] exercise the node names on actual produced entries. Typed access and cost certificates remain in the
@@ -161,7 +161,7 @@ oracle-access tests.
 | L252, partial transcript of the actual decision entry | ported | [decisionEntryBefore] reads the complete actual oracle message partial transcript from the produced decision entry. |
 | L255, membership of the join entry | ported | [joinEntryMem] proves that the selected actual join entry is one of the run's entries. `QueriesByMove.mem_withDecision` in [queriesByMove] is the general selection law. |
 | L257, membership of the decision entry | ported | [decisionEntryMem] and `QueriesByMove.decision_mem_withDecision` in [queriesByMove] prove membership in the produced execution. |
-| L266, the decision entry's partial transcript shows the oracle was sent, and cost 5 | ported | [decisionEntryIsSent] shows that the oracles in the actual decision entry's resources were sent. [sentOracles] supplies inclusion and routing. The access tests keep the cost-five certificate. |
+| L266, the decision entry's partial transcript shows the oracle was sent, and cost 5 | ported | [decisionEntryIsSent] shows that the oracles in the actual decision entry's bundle were sent. [sentOracles] supplies inclusion and routing. The access tests keep the cost-five certificate. |
 | L277, old node name survives inclusion from the join to the end | ported | [joinEntryNode] uses `SentOracleMessageIndex.node_lift` for the actual produced partial transcripts. `firstMovesLe_node` and `availableMap_node` in [sentOracles] give the general laws. |
 | L286, no budget makes the fresh oracle sent at the actual join | ported | [joinEntryIsSent] excludes the fresh oracle occurrence independently of any cost budget. [decisionEntryIsSent] identifies that occurrence at the decision entry. |
 | L300, raw log of the run by moves is old/old/fresh | ported | [queriesByMoveSourceLog] keeps the exact old/old/fresh log, private output 3 and verdict 4. [queriesByMoveLaws] proves that the full log agrees for every prover. |
@@ -205,7 +205,7 @@ specializes it with `QueryImpl.id' ambient`.
 [decideCatching] interprets final decisions with labelled failures and keeps the log of answered
 queries. Its handler has type `QueryImpl ambient (ExceptT ε m)` and it requires only `[Monad m]`.
 Its input-statement and output-query universes match the full-decision-log interface.
-[optionalClosing] states the optional-closing correspondence for the output map and resources of
+[optionalClosing] states the optional-closing correspondence for the output map and bundle of
 any completed transcript, with independent input-index, input-query and output-query universes.
 
 The obligations about the queries by move are ported under the passive schedule. R1 replaces the
@@ -279,7 +279,7 @@ Ports held in the oracle-access tests:
 [routeWhole]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L275
 [oracleMessages]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L100
 [appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L122
-[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L335
+[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L336
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
 [unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L315
 [optionalClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L247

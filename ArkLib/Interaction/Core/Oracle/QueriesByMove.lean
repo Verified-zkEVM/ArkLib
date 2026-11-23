@@ -253,7 +253,7 @@ namespace OracleVerifier
 
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : Resources.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- The queries of a completed run by move: the entries of the prover and the sampler, and the full
@@ -264,9 +264,9 @@ structure QueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
   outcome : Outcome oracleSig s Out (OracleVerifier.Output T B)
   /-- The entries of the moves before the final decision, in execution order. -/
   moves : List (QueriesAt (ambient + challengeSpec oracleSig s) s)
-  /-- The decision's queries, before resource routing. -/
+  /-- The decision's queries, before the bundle queries are routed. -/
   decisionQueries : QueryLog
-    (ambient + (pathResources inputs s (Transcript.path outcome.1)).spec)
+    (ambient + (pathBundle inputs s (Transcript.path outcome.1)).spec)
 
 namespace QueriesByMove
 
@@ -274,7 +274,7 @@ namespace QueriesByMove
 def toLog {V : OracleVerifier ambient s S T inputs outputs} (r : QueriesByMove V Out) :=
   (⟨r.outcome, (concatQueries r.moves).fst, r.decisionQueries⟩ :
     (obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
-      QueryLog (ambient + (pathResources inputs s (Transcript.path obs.1)).spec))
+      QueryLog (ambient + (pathBundle inputs s (Transcript.path obs.1)).spec))
 
 /-- The verifier's decision as an entry. Its partial transcript is the whole transcript of the
 run, and its querier is `decision`, which has the receiver role. -/
@@ -341,7 +341,7 @@ theorem decision_before {V : OracleVerifier ambient s S T inputs outputs}
 end QueriesByMove
 
 /-- Run the verifier once. Log each move's queries with the partial transcript before the move,
-then log the verifier's decision. The decision's log has both its resource queries and its
+then log the verifier's decision. The decision's log has both its bundle queries and its
 ambient queries. -/
 def runWithQueriesByMove (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
@@ -349,7 +349,7 @@ def runWithQueriesByMove (V : OracleVerifier ambient s S T inputs outputs) (stmt
   let full := ambient + challengeSpec oracleSig s
   (fun r => ⟨r.1, r.2.1, r.2.2⟩) <$> V.executeWith stmt data
     (ITrace := List (QueriesAt full s))
-    (DTrace := fun p => QueryLog (ambient + (pathResources inputs s p).spec))
+    (DTrace := fun p => QueryLog (ambient + (pathBundle inputs s p).spec))
     (fun action => action.run)
     (MoveInstrumentation.mapMovesWith
       (C := fun t => PartialTranscript oracleSig t → PartialTranscript oracleSig s)
@@ -359,9 +359,9 @@ def runWithQueriesByMove (V : OracleVerifier ambient s S T inputs outputs) (stmt
       (C := fun t => PartialTranscript oracleSig t → PartialTranscript oracleSig s)
       (@logMove _ full s) (@embedAfterMove s) id .counterpart
       (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))
-    (fun p view resources => (simulateQ (QueryImpl.addLift
+    (fun p view pathData => (simulateQ (QueryImpl.addLift
       ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
-      ((pathResources inputs s p).answer resources)).withLogging
+      ((pathBundle inputs s p).answer pathData)).withLogging
       (V.decide stmt p view).run).run)
 
 /-- Forgetting the move boundaries gives the ordinary logging of the interaction and of the
@@ -376,13 +376,13 @@ theorem runWithQueriesByMove_toLog (V : OracleVerifier ambient s S T inputs outp
       (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run
   let p := Transcript.path tr
   let view := toView s tr
-  let resources : (pathResources inputs s p).Data := (data, oracleMessages s tr)
-  let handler : QueryImpl (ambient + (pathResources inputs s p).spec)
+  let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
+  let handler : QueryImpl (ambient + (pathBundle inputs s p).spec)
       (OracleComp full) := QueryImpl.addLift
     ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
-    ((pathResources inputs s p).answer resources)
+    ((pathBundle inputs s p).answer pathData)
   let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
-  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f resources)⟩,
+  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
     proveLog.fst, verifyLog⟩) := by
   simp only [runWithQueriesByMove, executeWith, Functor.map_map, _root_.map_bind]
   have id_logging {α : Type} (p : OracleComp (ambient + challengeSpec oracleSig s) α) :
@@ -396,14 +396,14 @@ section AmbientQueriesByMove
 
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : Resources.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- The ambient queries by move let the input oracles and the oracle nodes have independent query
 universes. It returns only ambient requests and challenge draws, whose indices are small. -/
 structure AmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (Out : Transcript oracleSig s → Type) where
-  /-- The ordinary completed outcome, including output resources and rejection. -/
+  /-- The ordinary completed outcome, including output oracles and rejection. -/
   outcome : Outcome oracleSig s Out (OracleVerifier.Output T B)
   /-- The entries of the moves, produced by the same runner as in `QueriesByMove`. -/
   moves : List (QueriesAt (ambient + challengeSpec oracleSig s) s)
@@ -453,7 +453,7 @@ theorem withDecision_queries {V : OracleVerifier ambient s S T inputs outputs}
 end AmbientQueriesByMove
 
 /-- Log the same moves, but log only the ambient queries of the final decision.
-Resource indices and input data keep their independent universes. -/
+Bundle query indices and input data keep their independent universes. -/
 def runWithAmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s) (AmbientQueriesByMove V Out) :=
@@ -469,8 +469,8 @@ def runWithAmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs
       (C := fun t => PartialTranscript oracleSig t → PartialTranscript oracleSig s)
       (@logMove _ full s) (@embedAfterMove s) id .counterpart
       (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))
-    (fun p view resources => (simulateQ
-      (QueryImpl.addLift toFull.withLogging ((pathResources inputs s p).answer resources) :
+    (fun p view pathData => (simulateQ
+      (QueryImpl.addLift toFull.withLogging ((pathBundle inputs s p).answer pathData) :
         QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
       (V.decide stmt p view).run).run)
 
@@ -484,12 +484,12 @@ let full := ambient + challengeSpec oracleSig s
     (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
   let tr := x.1.1
   let p := Transcript.path tr
-  let resources : (pathResources inputs s p).Data := (data, oracleMessages s tr)
+  let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
   (simulateQ (QueryImpl.addLift toFull.withLogging
-      ((pathResources inputs s p).answer resources) :
+      ((pathBundle inputs s p).answer pathData) :
         QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
     (V.decide stmt p (toView s tr)).run).run >>= fun y =>
-  pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)⟩,
+  pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)⟩,
     x.2.fst, y.2)) := by
   simp only [runWithAmbientQueriesByMove, executeWith, Functor.map_map,
     _root_.map_bind]

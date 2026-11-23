@@ -78,15 +78,15 @@ with the sent value or rejects. The output data closes to `input + sent.1`. -/
 @[instance_reducible] def pairSend : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ => .pure ⟨⟩)
 
-/-- The decision resources on the only path of `pairSend`. -/
-abbrev pairResources := pathResources inputs pairSend ⟨⟨⟩, ⟨⟩⟩
+/-- The decision's bundle on the only path of `pairSend`. -/
+abbrev pairBundle := pathBundle inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 
 /-- Close to the input plus the observable coordinate of the sent pair. -/
-def closeMap : OracleMap pairResources exported where
+def closeMap : OracleMap pairBundle exported where
   f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (pairResources.spec.query (.inl ⟨(), ()⟩))
-    let b : Nat ← liftM (pairResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let a : Nat ← liftM (pairBundle.spec.query (.inl ⟨(), ()⟩))
+    let b : Nat ← liftM (pairBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -98,9 +98,9 @@ def pairVerifier (accept : Bool) :
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
-      let _ ← liftM ((ambient + pairResources.spec).query (.inl 1))
-      let sent : Nat ← liftM ((ambient + pairResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let _ ← liftM ((ambient + pairResources.spec).query (.inl 2))
+      let _ ← liftM ((ambient + pairBundle.spec).query (.inl 1))
+      let sent : Nat ← liftM ((ambient + pairBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((ambient + pairBundle.spec).query (.inl 2))
       pure (if accept then some sent else none)
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -120,7 +120,7 @@ def pairChallenges : QueryImpl (challengeSpec oracleSig pairSend) Id
 
 /-- Name and answer of each decision log entry on `pairSend`. -/
 def describePair (p : FreeM.Path pairSend) :
-    QueryLog (ambient + (pathResources inputs pairSend p).spec) →
+    QueryLog (ambient + (pathBundle inputs pairSend p).spec) →
       List (String × Nat) := by
   rcases p with ⟨⟨⟩, ⟨⟩⟩
   exact List.map fun
@@ -179,15 +179,15 @@ def decisionVerifier (mode : Nat) :
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
-      let _ ← liftM ((ambient + pairResources.spec).query (.inl 1))
-      let _ ← liftM ((ambient + pairResources.spec).query (.inl 2))
-      let sent : Nat ← liftM ((ambient + pairResources.spec).query
+      let _ ← liftM ((ambient + pairBundle.spec).query (.inl 1))
+      let _ ← liftM ((ambient + pairBundle.spec).query (.inl 2))
+      let sent : Nat ← liftM ((ambient + pairBundle.spec).query
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       if mode = 1 then
-        let _ ← liftM ((ambient + pairResources.spec).query (.inl 17))
+        let _ ← liftM ((ambient + pairBundle.spec).query (.inl 17))
         pure none
       else if mode = 2 then
-        let _ ← liftM ((ambient + pairResources.spec).query (.inl 23))
+        let _ ← liftM ((ambient + pairBundle.spec).query (.inl 23))
         pure none
       else pure (if mode = 0 then none else some sent)
   outputMap _ p _ := by
@@ -211,7 +211,7 @@ def decisionObserved (mode old message hidden : Nat) :=
       (sampler oracleSig pairSend (fun c =>
         liftM ((ambient + challengeSpec oracleSig pairSend).query (.inr c)))))
     let p := Transcript.path tr
-    let data : (pathResources inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
+    let data : (pathBundle inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
     let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
       (toView pairSend tr) data
     pure (out, verdict.map (Option.map fun t =>
@@ -219,7 +219,7 @@ def decisionObserved (mode old message hidden : Nat) :=
       describePair p log) : StateM (List Nat) _).run []
 
 /-- Both failures retain their distinct labels, all earlier effects, the source answer and the
-actual private output. Rejection and acceptance use the same execution and the same resources. -/
+actual private output. Rejection and acceptance use the same execution and the same bundle. -/
 theorem decision_outcomes (old message hidden : Nat) :
     decisionObserved 1 old message hidden =
       ((hidden, .error 17, [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
@@ -241,19 +241,19 @@ section CloseOptional
 
 universe v u q dI uι uI uJ uS wJ
 
-/-- Closing an optional verdict with the completed transcript's resources commutes with wrapping
+/-- Closing an optional verdict with the completed transcript's bundle commutes with wrapping
 the verdict as a success. `Except.ok outcome`, mapped by `Option.map close`, equals
 `Except.ok (outcome.map close)`. An absent verdict stays a rejection and creates no failure. -/
 theorem close_optional_ok {ε : Type v} {ι : Type uι} {S : Type uS}
     {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {T : Path s → Type u}
     {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    {inputs : Resources.{u, uI, dI}}
+    {inputs : OracleBundle.{u, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (tr : Transcript oracleSig s) (outcome : Option (T tr.path)) :
     let p := tr.path
-    let resources : (pathResources inputs s p).Data := (data, oracleMessages s tr)
-    let close := fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)
+    let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
+    let close := fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)
     (Except.ok outcome : Except ε (Option (T p))).map (Option.map close) =
       Except.ok (outcome.map close) := rfl
 
@@ -293,10 +293,10 @@ def unitVerifier :
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let _ ← liftM ((unitAmbient + pairResources.spec).query (.inl 1))
-      let sent : Nat ← liftM ((unitAmbient + pairResources.spec).query
+      let _ ← liftM ((unitAmbient + pairBundle.spec).query (.inl 1))
+      let sent : Nat ← liftM ((unitAmbient + pairBundle.spec).query
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let _ ← liftM ((unitAmbient + pairResources.spec).query (.inl 2))
+      let _ ← liftM ((unitAmbient + pairBundle.spec).query (.inl 2))
       pure sent
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -337,23 +337,23 @@ run_cmd do
   .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ =>
     .liftBind (.oracle Nat OracleInterface.instDefault) (fun _ => .pure ⟨⟩))
 
-/-- The decision resources on the only path of `sendTwice`. -/
-abbrev twiceResources := pathResources inputs sendTwice ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+/-- The decision's bundle on the only path of `sendTwice`. -/
+abbrev twiceBundle := pathBundle inputs sendTwice ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
-/-- Decision programs over the ambient and the resources of `sendTwice`. -/
-abbrev Decision := OptionT (OracleComp (ambient + twiceResources.spec)) (List Nat)
+/-- Decision programs over the ambient and the bundle of `sendTwice`. -/
+abbrev Decision := OptionT (OracleComp (ambient + twiceBundle.spec)) (List Nat)
 
 /-- Read the scalar input oracle. -/
-def readInput : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr (.inl ⟨(), ()⟩)))
+def readInput : OracleComp (ambient + twiceBundle.spec) Nat :=
+  liftM ((ambient + twiceBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
 
 /-- Read the first scalar message oracle. -/
-def readFirst : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+def readFirst : OracleComp (ambient + twiceBundle.spec) Nat :=
+  liftM ((ambient + twiceBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
 
 /-- Read the second scalar message oracle. -/
-def readSecond : OracleComp (ambient + twiceResources.spec) Nat :=
-  liftM ((ambient + twiceResources.spec).query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+def readSecond : OracleComp (ambient + twiceBundle.spec) Nat :=
+  liftM ((ambient + twiceBundle.spec).query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
 
 /-- A verifier on `sendTwice` running a fixed decision program; its outputs are its inputs. -/
 def twiceVerifier (program : Decision) :
@@ -371,7 +371,7 @@ def twiceChallenges : QueryImpl (challengeSpec oracleSig sendTwice) Id
 
 /-- Name and answer of each decision log entry on `sendTwice`. -/
 def describeTwice (p : FreeM.Path sendTwice) :
-    QueryLog (ambient + (pathResources inputs sendTwice p).spec) →
+    QueryLog (ambient + (pathBundle inputs sendTwice p).spec) →
       List (String × Nat) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   exact List.map fun
@@ -464,13 +464,13 @@ def mixedVerifier :
     exact do
       for t in [2, 3] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (pathResources inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
+          ambient + (pathBundle inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       let sent : Nat ← liftM (OracleSpec.query (spec :=
-        ambient + (pathResources inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
+        ambient + (pathBundle inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       for t in [6, 7] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (pathResources inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
+          ambient + (pathBundle inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       pure [sent]
   outputMap _ p _ := OracleMap.fst _ _
 
@@ -566,13 +566,13 @@ def scheduleVerifier : OracleVerifier ambient schedule Unit (fun _ => Nat) input
     rcases p with ⟨b, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩⟩⟩
     exact do
       let _ ← liftM (ambient.query 3)
-      let last : Nat ← liftM ((ambient + (pathResources inputs schedule
+      let last : Nat ← liftM ((ambient + (pathBundle inputs schedule
         ⟨b, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩⟩⟩).spec).query
           (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
       pure (if (show Bool from b) then last + (show Nat from view.val.2.2.1) else 0)
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- The challenge service records both parts of its draw, without reading any resource. -/
+/-- The challenge service records both parts of its draw, without reading the bundle. -/
 def scheduleHandler : QueryImpl (ambient + challengeSpec oracleSig schedule)
     (StateM (List Nat))
   | .inl tag => do modify (· ++ [tag]); pure tag
@@ -602,29 +602,29 @@ theorem full_schedule (hidden : Nat) :
 /-- Two consecutive scalar oracle sends. -/
 abbrev pair : OracleProtocol := single.append (fun _ => single)
 
-/-- The prefix resources on the only path of `single`. -/
-abbrev prefixResources := pathResources inputs single ⟨⟨⟩, ⟨⟩⟩
+/-- The prefix bundle on the only path of `single`. -/
+abbrev prefixBundle := pathBundle inputs single ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export the input plus the prefix message. -/
-def sumExport : OracleMap prefixResources exported where
+def sumExport : OracleMap prefixBundle exported where
   f x _ := (show Nat from x.1 ()) + (show Nat from x.2 (.inl ⟨⟩))
   impl _ := do
-    let a : Nat ← liftM (prefixResources.spec.query (.inl ⟨(), ()⟩))
-    let b : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let a : Nat ← liftM (prefixBundle.spec.query (.inl ⟨(), ()⟩))
+    let b : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (a + b)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
 /-- Export the prefix message. -/
-def messageExport : OracleMap prefixResources exported where
+def messageExport : OracleMap prefixBundle exported where
   f x _ := show Nat from x.2 (.inl ⟨⟩)
-  impl _ := liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+  impl _ := liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
   law _ _ := rfl
 
 /-- A prefix verifier with a fixed decision program and export. -/
-def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spec)) Nat)
-    (exportMap : OracleMap prefixResources exported) :
+def prefixVerifier (program : OptionT (OracleComp (ambient + prefixBundle.spec)) Nat)
+    (exportMap : OracleMap prefixBundle exported) :
     OracleVerifier ambient single Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -634,11 +634,11 @@ def prefixVerifier (program : OptionT (OracleComp (ambient + prefixResources.spe
     exact exportMap
 
 /-- The prefix decision reads its message. -/
-def readPrefix : OptionT (OracleComp (ambient + prefixResources.spec)) Nat :=
-  liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+def readPrefix : OptionT (OracleComp (ambient + prefixBundle.spec)) Nat :=
+  liftM ((ambient + prefixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
 
-/-- The suffix resources on the only path of `single`. -/
-abbrev suffixResources := pathResources exported single ⟨⟨⟩, ⟨⟩⟩
+/-- The suffix bundle on the only path of `single`. -/
+abbrev suffixBundle := pathBundle exported single ⟨⟨⟩, ⟨⟩⟩
 
 /-- The suffix records 3, reads the export and its own message, and claims their sum plus the
 statement. -/
@@ -647,9 +647,9 @@ def suffixVerifier :
   decide stmt p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 3))
-      let e : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
-      let m : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 3))
+      let e : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
+      let m : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure (stmt + e + m)
   outputMap _ p _ := OracleMap.fst _ _
 
@@ -681,7 +681,7 @@ def appendChallenges : QueryImpl (challengeSpec oracleSig pair) Id
 
 /-- Name and answer of each composite decision log entry. -/
 def describeAppend (p : FreeM.Path pair) :
-    QueryLog (ambient + (pathResources inputs pair p).spec) →
+    QueryLog (ambient + (pathBundle inputs pair p).spec) →
       List (String × Nat) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   exact List.map fun
@@ -700,7 +700,7 @@ def appendSummary
     (counter 0 appendChallenges).run ((composed V).runWithLog () seven (appendProver out))
 
 /-! The composite decision reads the exported input and prefix message, followed by the
-suffix message. The returned data is the export of those same resources. -/
+suffix message. The returned data is the export of those same bundles. -/
 example (secret : Nat) : appendSummary (prefixVerifier (pure 0) sumExport) secret =
     pure (secret, some (10, 8), [("tag", 3), ("input", 7), ("prefix", 1), ("suffix", 2)], 3,
       [⟨.inl 1, (1 : Nat)⟩, ⟨.inl 2, (2 : Nat)⟩, ⟨.inl 3, (3 : Nat)⟩]) := by
@@ -723,19 +723,19 @@ run_cmd do
         log == [("tag", 3), ("input", 7), ("prefix", 1), ("suffix", 2)] do
       throwError "the composed counter execution is wrong: {log}"
 
-/-- Realizations of the prefix resources: input 7 and message 1. -/
-def prefixData : prefixResources.Data :=
+/-- Realizations of the prefix bundle: input 7 and message 1. -/
+def prefixData : prefixBundle.Data :=
   (seven, oracleMessages single ⟨(1 : Nat), ⟨⟩⟩)
 
 /-- One query to the export, routed by the export's `impl`. -/
 def exportQuery : OracleComp exported.spec Nat := liftM (exported.spec.query ⟨(), ()⟩)
 
-/-- Answer prefix resource queries from `prefixData`. -/
-def answerPrefix : QueryImpl prefixResources.spec Id :=
-  fun q => pure (prefixResources.answer prefixData q)
+/-- Answer prefix bundle queries from `prefixData`. -/
+def answerPrefix : QueryImpl prefixBundle.spec Id :=
+  fun q => pure (prefixBundle.answer prefixData q)
 
-/-- Name and answer of a prefix resource log entry. -/
-def nameEntry : (z : (i : prefixResources.spec.Domain) × prefixResources.spec.Range i) →
+/-- Name and answer of a log entry for a prefix bundle query. -/
+def nameEntry : (z : (i : prefixBundle.spec.Domain) × prefixBundle.spec.Range i) →
     String × Nat
   | ⟨.inl ⟨_, _⟩, a⟩ => ("input", show Nat from a)
   | ⟨.inr ⟨.inl _, _⟩, a⟩ => ("prefix", show Nat from a)
@@ -743,7 +743,7 @@ def nameEntry : (z : (i : prefixResources.spec.Domain) × prefixResources.spec.R
 
 /-! Logging after substitution records both raw requests and answers of one exported query. -/
 example : (fun z => (z.1, z.2.map nameEntry)) (simulateQ answerPrefix
-    (simulateQ (QueryImpl.compose prefixResources.spec.loggingOracle sumExport.impl)
+    (simulateQ (QueryImpl.compose prefixBundle.spec.loggingOracle sumExport.impl)
       exportQuery).run) = (8, [("input", 7), ("prefix", 1)]) := by
   rw [← OracleComp.withQueryLog_simulateQ]
   rfl
@@ -1036,7 +1036,7 @@ def twoOracleVerifier :
     OracleVerifier ambient twoOracles Unit (fun _ => Nat) inputs (fun _ => exported) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-    let spec := ambient + (pathResources inputs twoOracles ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec
+    let spec := ambient + (pathBundle inputs twoOracles ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec
     exact do
       let a : Nat ← liftM (spec.query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       let b : Nat ← liftM (spec.query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
@@ -1150,10 +1150,10 @@ end Interaction.Core.LoggedExecutionTests
 
 universe uQuery uInput uData
 
-/-- The ambient queries by move keep the parent verifier's independent resource universes. -/
+/-- The ambient queries by move keep the parent verifier's independent bundle universes. -/
 example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, uQuery}} {T J : FreeM.Path s → Type}
-    {B : (p : FreeM.Path s) → J p → Type} {inputs : Resources.{0, uInput, uData}}
+    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleBundle.{0, uInput, uData}}
     {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -1179,7 +1179,7 @@ def liftedVerifier : OracleVerifier ambient liftedNode Unit (fun _ => Nat) input
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let sent : Nat ← liftM ((ambient + (pathResources inputs liftedNode ⟨⟨⟩, ⟨⟩⟩).spec).query
+      let sent : Nat ← liftM ((ambient + (pathBundle inputs liftedNode ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inr (.inr ⟨.inl ⟨⟩, ⟨()⟩⟩)))
       pure sent
   outputMap _ _ _ := OracleMap.fst _ _
@@ -1190,7 +1190,7 @@ def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
 /-- The ambient queries by move of a run with a genuinely larger-query oracle node, without
-resource indices. -/
+bundle query indices. -/
 def liftedQueriesByMove : OracleVerifier.AmbientQueriesByMove liftedVerifier (fun _ => Nat) :=
   simulateQ (show QueryImpl (ambient + challengeSpec oracleSig liftedNode) Id from
     fun q => match q with | .inl n => n | .inr c => liftedDraw c)

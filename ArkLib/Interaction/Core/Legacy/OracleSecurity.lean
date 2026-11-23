@@ -59,7 +59,7 @@ theorem oracleAcceptanceAgrees (impl : QueryImpl oSpec (StateT σ ProbComp))
   let : MeasurableSpace (Option StmtOut) := ⊤
   refine exists_congr fun st => ?_
   change 0 < 𝒟[StateT.run' (simulateQ (QueryImpl.addLift impl
-      ((pathResources (family OStmtIn) _ tr.path).answer
+      ((pathBundle (family OStmtIn) _ tr.path).answer
         (oStmt, oracleMessages _ tr)))
       ((embedOracleVerifier V).decide stmt tr.path
         (toView _ tr)).run) st]

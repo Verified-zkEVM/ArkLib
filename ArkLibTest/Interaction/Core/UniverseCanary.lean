@@ -80,7 +80,7 @@ def oracleVerifier : OracleVerifier bigAmbient oracleDone (Type 1) (fun _ => Nat
     (fun _ => bigInputs) where
   decide _ p _ := by
     cases p
-    exact liftM ((bigAmbient + (pathResources bigInputs oracleDone ⟨⟩).spec).query
+    exact liftM ((bigAmbient + (pathBundle bigInputs oracleDone ⟨⟩).spec).query
       (.inr (.inl ⟨Nat, ()⟩)))
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -106,7 +106,7 @@ def oracleAppend := oracleVerifier.append (fun _ => oracleSuffix) oracleCompatib
 theorem oracleAppend_decideWith (stmt : Type 1)
     (p : Path (oracleDone.append (fun _ => oracleDone)))
     (v : View (oracleDone.append (fun _ => oracleDone)) p)
-    (data : (pathResources bigInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
+    (data : (pathBundle bigInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
     oracleAppend.decideWith stmt p v data =
       oracleVerifier.decideWith stmt (Path.split oracleDone (fun _ => oracleDone) p).1
           (View.split oracleDone (fun _ => oracleDone) p v).1
@@ -139,7 +139,7 @@ def runnable : OracleVerifier smallAmbient oracleDone (Type 1) (fun _ => Nat) bi
     (fun _ => smallOutputs) where
   decide _ p _ := by
     cases p
-    exact liftM ((smallAmbient + (pathResources bigInputs oracleDone ⟨⟩).spec).query
+    exact liftM ((smallAmbient + (pathBundle bigInputs oracleDone ⟨⟩).spec).query
       (.inr (.inl ⟨Bool, ()⟩)))
   outputMap _ _ _ := (OracleMap.embedding bigInputs (fun _ : Unit => Bool)).comp
     (OracleMap.fst _ _)
@@ -187,10 +187,10 @@ def bigQueryOracles : OracleFamily.{0, 0, 2} Unit (fun _ => Nat) := ⟨fun _ => 
 
 /-- The output oracle answers each query by asking the input oracle at `Nat`. -/
 def forwardQueries (p : Path oracleDone) :
-    OracleMap (pathResources typeQueryInputs oracleDone p) (Resources.ofFamily bigQueryOracles)
+    OracleMap (pathBundle typeQueryInputs oracleDone p) (OracleBundle.ofFamily bigQueryOracles)
     where
   f x _ := x.1 ()
-  impl _ := liftM ((pathResources typeQueryInputs oracleDone p).spec.query (.inl ⟨(), Nat⟩))
+  impl _ := liftM ((pathBundle typeQueryInputs oracleDone p).spec.query (.inl ⟨(), Nat⟩))
   law _ _ := rfl
 
 /-- An oracle verifier whose input queries lie in `Type 1` and whose output queries lie in
@@ -200,7 +200,7 @@ def typeQueryVerifier : OracleVerifier smallAmbient oracleDone Unit (fun _ => Na
     typeQueryInputs (fun _ => bigQueryOracles) where
   decide _ p _ := by
     cases p
-    exact liftM ((smallAmbient + (pathResources typeQueryInputs oracleDone ⟨⟩).spec).query
+    exact liftM ((smallAmbient + (pathBundle typeQueryInputs oracleDone ⟨⟩).spec).query
       (.inr (.inl ⟨(), Bool⟩)))
   outputMap _ p _ := forwardQueries p
 
@@ -218,12 +218,12 @@ def typeQuerySuffix : OracleVerifier smallAmbient oracleDone Nat (fun _ => Nat)
   decide n p _ := by
     cases p
     exact (fun m => n + m) <$> liftM
-      ((smallAmbient + (pathResources bigQueryOracles oracleDone ⟨⟩).spec).query
+      ((smallAmbient + (pathBundle bigQueryOracles oracleDone ⟨⟩).spec).query
         (.inr (.inl ⟨(), Type⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
       impl := fun _ => liftM
-        ((pathResources bigQueryOracles oracleDone p).spec.query (.inl ⟨(), Type⟩))
+        ((pathBundle bigQueryOracles oracleDone p).spec.query (.inl ⟨(), Type⟩))
       law := fun _ _ => rfl }
 
 /-- The composite output map ignores the intermediate statement, so any certificate holds. -/
@@ -242,7 +242,7 @@ def typeQueryAppend := typeQueryVerifier.append (fun _ => typeQuerySuffix) typeQ
 theorem typeQueryAppend_decideWith (stmt : Unit)
     (p : Path (oracleDone.append (fun _ => oracleDone)))
     (v : View (oracleDone.append (fun _ => oracleDone)) p)
-    (data : (pathResources typeQueryInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
+    (data : (pathBundle typeQueryInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
     typeQueryAppend.decideWith stmt p v data =
       typeQueryVerifier.decideWith stmt (Path.split oracleDone (fun _ => oracleDone) p).1
           (View.split oracleDone (fun _ => oracleDone) p v).1
@@ -273,12 +273,12 @@ def typeQueryProtocol : OracleProtocol.{0, 1} :=
 def nodeQueryVerifier : OracleVerifier smallAmbient typeQueryProtocol Unit (fun _ => Nat)
     typeQueryInputs (fun _ => smallOutputs) where
   decide _ p _ := liftM
-    ((smallAmbient + (pathResources typeQueryInputs typeQueryProtocol p).spec).query
+    ((smallAmbient + (pathBundle typeQueryInputs typeQueryProtocol p).spec).query
       (.inr (.inr ⟨.inl ⟨⟩, Bool⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
       impl := fun _ => liftM
-        ((pathResources typeQueryInputs typeQueryProtocol p).spec.query (.inl ⟨(), Bool⟩))
+        ((pathBundle typeQueryInputs typeQueryProtocol p).spec.query (.inl ⟨(), Bool⟩))
       law := fun _ _ => rfl }
 
 /-- The prover sends a natural-number oracle payload and terminates. -/
@@ -291,7 +291,7 @@ def nodeHandler : QueryImpl (smallAmbient + challengeSpec oracleSig typeQueryPro
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
-/-- The decision reads the sent payload, independently of the input resource's value. -/
+/-- The decision reads the sent payload, independently of the input bundle's data. -/
 example : (simulateQ nodeHandler (nodeQueryVerifier.run () (fun _ => 5) nodeProver)).2.2.map
     Prod.fst = some 17 := rfl
 

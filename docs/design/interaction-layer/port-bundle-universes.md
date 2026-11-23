@@ -1,4 +1,4 @@
-# Resource and oracle-node universe contracts
+# Oracle-bundle and oracle-node universe contracts
 
 This port table records the universe assertions reviewed as F3 and F4 for PR #1492. It reads the
 old-layer sources at `9829e83ced`. The ports import only the interaction Core APIs.

@@ -4,7 +4,7 @@ This port table accounts for all 74 assertions in six old-layer test files. Each
 old-layer assertion by line. This branch ports four of the files. The logged-execution and routing
 tests port the 13 assertions of `SourceRoutingExample` and `TerminalRun/Examples`. For those rows,
 this table links the full entry in the
-[logged-execution port table](logged-execution-disposition.md). A ported row links the exact Core client. Added checks supplement these rows.
+[logged-execution port table](port-logged-execution.md). A ported row links the exact Core client. Added checks supplement these rows.
 
 The two approved premises are:
 
@@ -381,7 +381,7 @@ families use ordinary definition transparency as well. The exact remaining attri
 [fsr2]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L162
 [fsr3]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L167
 [fsr4]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L174
-[lsr]: logged-execution-disposition.md#sourceroutingexamplelean
+[lsr]: port-logged-execution.md#sourceroutingexamplelean
 [nsrc]: ../../../ArkLibTest/Interaction/Core/Oracle/SourceRoutingExample.lean#L33
 [ftr1]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L57
 [ftr2]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L60
@@ -392,7 +392,7 @@ families use ordinary definition transparency as well. The exact remaining attri
 [ftr5b]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L82
 [ftr6]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L86
 [ftr7]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L87
-[ltr]: logged-execution-disposition.md#terminalrunexampleslean
+[ltr]: port-logged-execution.md#terminalrunexampleslean
 [fv1]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L32
 [nv1]: ../../../ArkLibTest/Interaction/Core/Oracle/Virtual.lean#L37
 [fv2]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L62
