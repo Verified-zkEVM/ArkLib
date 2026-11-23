@@ -7,13 +7,13 @@ Authors: Quang Dao
 import ArkLib.Interaction.Core.Composition
 
 /-!
-# Decision resources of a completed run: distinct slots and hidden coordinates
+# Decision resources of a completed run: distinct oracles and hidden coordinates
 
 The resources of a completed run are the input family and the oracle nodes on its path, with data
-read from the full transcript. Same-signature slots stay distinct, an unqueried coordinate of a
-message is not observable, and a path through an uninhabited oracle node has no payload. For an
-appended protocol whose suffix shape is selected by a prefix message, the appended run's resources
-answer every component slot as the two component runs do.
+read from the full transcript. Same-signature oracles stay distinct, an unqueried coordinate of a
+message is not observable, and a path through an uninhabited oracle node has no oracle message.
+For an appended protocol whose suffix shape is selected by a prefix message, the appended run's
+resources answer every component oracle as the two component runs do.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
@@ -27,11 +27,11 @@ namespace Interaction.Core.RunSourcesExampleTests
   toOC.spec := fun _ => Nat
   toOC.impl _ := do return (← read).1
 
-/-- One scalar input slot. -/
+/-- One scalar input oracle. -/
 def inputs : OracleFamily PUnit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- The input slot holds 7. -/
+/-- The input oracle holds 7. -/
 def inputData : ∀ i, inputs.Realization i := fun _ => 7
 
 /-- A prover message `Bool`, then two oracle sends of equal signature. -/
@@ -44,20 +44,20 @@ def tree : OracleProtocol :=
 def path (hidden : Nat) : Transcript oracleSig tree :=
   ⟨true, (11, hidden), (19, hidden + 1), ⟨⟩⟩
 
-/-- The decision resources on the shape path of `path`. -/
+/-- The decision resources on the path of `path`. -/
 abbrev resources := sumFamily inputs (oracleMessageFamily tree ⟨true, ⟨⟩, ⟨⟩, ⟨⟩⟩)
 
-/-- Read the input, first sent and last sent slots. -/
+/-- Read the input, first sent and last sent oracles. -/
 def readAll : OracleComp resources.spec (Nat × Nat × Nat) := do
   let old : Nat ← liftM (resources.spec.query ⟨.inl ⟨⟩, ()⟩)
   let first : Nat ← liftM (resources.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
   let last : Nat ← liftM (resources.spec.query ⟨.inr (.inr (.inl ⟨⟩)), ()⟩)
   return (old, first, last)
 
--- RunSourcesExample RS1, restated: the frozen closing handler becomes the resources of the
+-- RunSourcesExample RS1, restated: the old-layer closing handler becomes the resources of the
 -- completed run, `sumFamily inputs (oracleMessageFamily tree p)` answered from the input data and
--- the oracle messages of the same transcript. The frozen public `Bool` is a prover message, and the
--- frozen behaviour-only input `fun _ => 7` is input data 7. Holds for every hidden value.
+-- the oracle messages of the same transcript. The old-layer public `Bool` is a prover message, and
+-- the old-layer behaviour-only input `fun _ => 7` is input data 7. Holds for every hidden value.
 example (hidden : Nat) :
     simulateQ ((sumFamily inputs (oracleMessageFamily tree (Transcript.path (path hidden)))
       ).behaviorOfRealizations (sumData inputData (oracleMessages tree (path hidden)))) readAll =
@@ -81,8 +81,8 @@ example (hidden₁ hidden₂ : Nat) :
 def impossible : OracleProtocol :=
   .liftBind (.oracle Empty OracleInterface.instDefault) fun _ => .pure ⟨⟩
 
--- RunSourcesExample RS3, restated: the shape path through an `Empty` oracle node exists, its
--- oracle index exists, and the payload at that index does not; no full transcript exists either.
+-- RunSourcesExample RS3, restated: the path through an `Empty` oracle node and its oracle index
+-- exist. The oracle message at that index does not, and no full transcript exists either.
 example : IsEmpty (OracleMessage impossible ⟨⟨⟩, ⟨⟩⟩ (.inl ⟨⟩)) := by
   change IsEmpty Empty
   infer_instance
@@ -90,10 +90,10 @@ example : IsEmpty (OracleMessage impossible ⟨⟨⟩, ⟨⟩⟩ (.inl ⟨⟩)) 
 example : IsEmpty (Transcript oracleSig impossible) :=
   ⟨fun tr => tr.1.elim⟩
 
-/-! ## Dependent append with distinguishable slots
+/-! ## Dependent append with distinguishable oracles
 
 A prover message `Bool` selects the suffix shape: one oracle send, or a `Unit` message followed by
-two sends. The messages keep private coordinates, and all same-signature slots stay distinct. -/
+two sends. The messages keep private coordinates, and all same-signature oracles stay distinct. -/
 
 /-- A prover message `Bool`, then one oracle send. -/
 def firstTree : OracleProtocol :=
@@ -148,7 +148,7 @@ example (branch : Bool) (hidden : Nat) :
     (secondPath branch hidden)
 
 -- RunSourcesExample RS8, restated: splitting the projected appended path selects the same
--- dependent suffix as projecting the two component runs; this is `project_split` with the
+-- dependent suffix as projecting the two component runs. This is `project_split` with the
 -- concrete `PathAlong.split` of an appended run. Holds for every branch and hidden value.
 example (branch : Bool) (hidden : Nat) :
     Path.split firstTree secondTree
@@ -157,7 +157,7 @@ example (branch : Bool) (hidden : Nat) :
         Transcript.path (secondPath branch hidden)⟩ := by
   rw [← project_split, combinedPath, Transcript.split_append]
 
-/-- The component resources: the input, the prefix slots and the suffix slots. -/
+/-- The component resources: the input, the prefix oracles and the suffix oracles. -/
 abbrev splitResources (branch : Bool) (hidden : Nat) :=
   sumFamily inputs (sumFamily
     (oracleMessageFamily firstTree (Transcript.path (firstPath branch hidden)))
@@ -168,7 +168,7 @@ def splitData (branch : Bool) (hidden : Nat) : ∀ i, (splitResources branch hid
   sumData inputData (sumData (oracleMessages firstTree (firstPath branch hidden))
     (oracleMessages _ (secondPath branch hidden)))
 
-/-- Query the input and each prefix and suffix slot, in slot order. -/
+/-- Query the input and each prefix and suffix oracle, in oracle order. -/
 def readSplit (branch : Bool) (hidden : Nat) :
     OracleComp (splitResources branch hidden).spec (List Nat) :=
   match branch with
@@ -185,18 +185,18 @@ def readSplit (branch : Bool) (hidden : Nat) :
       liftM ((splitResources false hidden).spec.query ⟨.inr (.inr (.inr (.inl ⟨⟩))), ()⟩)
     return [old, first, next, last]
 
--- RunSourcesExample RS9, restated: the frozen prefix-then-suffix closing becomes the component
+-- RunSourcesExample RS9, restated: the old-layer prefix-then-suffix closing becomes the component
 -- resources `sumFamily inputs (sumFamily (oracleMessageFamily …) (oracleMessageFamily …))` with the
--- oracle messages of the two component runs. Both suffix shapes answer each slot. Holds for every
+-- oracle messages of the two component runs. Both suffix shapes answer each oracle. Holds for every
 -- hidden value.
-/-- Closing the two component runs answers each queried slot in the selected suffix shape. -/
+/-- Closing the two component runs answers each queried oracle in the selected suffix shape. -/
 theorem readSplit_split (branch : Bool) (hidden : Nat) :
     simulateQ ((splitResources branch hidden).behaviorOfRealizations (splitData branch hidden))
       (readSplit branch hidden) = if branch then [7, 11, 19] else [7, 11, 23, 29] := by
   cases branch <;> rfl
 
 /-- Route component queries into the appended run's resources: the input stays, and the oracle
-slots go through `oracleMessageFamily_split`. -/
+nodes go through `oracleMessageFamily_split`. -/
 def splitRoute (branch : Bool) (hidden : Nat) :=
   (OracleMap.embedding inputs id).sum
     (oracleMessageFamily_split firstTree secondTree
@@ -208,12 +208,12 @@ abbrev combinedResources (branch : Bool) (hidden : Nat) :=
   sumFamily inputs (oracleMessageFamily combined
     (Transcript.path (combinedPath branch hidden)))
 
-/-- The input data and oracle payloads of the appended transcript. -/
+/-- The input data and oracle messages of the appended transcript. -/
 def combinedData (branch : Bool) (hidden : Nat) :
     ∀ i, (combinedResources branch hidden).Realization i :=
   sumData inputData (oracleMessages combined (combinedPath branch hidden))
 
-/-- On this run, the appended path materializes exactly the routed component payloads. -/
+/-- On this run, the appended path materializes exactly the routed component oracle messages. -/
 theorem payloads_combined (branch : Bool) (hidden : Nat) :
     oracleMessages combined (combinedPath branch hidden) =
       (oracleMessageFamily_append firstTree secondTree
@@ -224,7 +224,7 @@ theorem payloads_combined (branch : Bool) (hidden : Nat) :
   eq_of_heq (Sigma.mk.inj (oracleMessages_append firstTree secondTree (firstPath branch hidden)
     (secondPath branch hidden))).2
 
--- RunSourcesExample RS10, restated: the frozen append query law for closing handlers becomes the
+-- RunSourcesExample RS10, restated: the old-layer append query law for closing handlers becomes the
 -- appended run's resources answering the component program through `oracleMessageFamily_split`. The
 -- proof uses the oracle map law (`OracleMap.simulate_eq`), the append law for oracle messages
 -- (`oracleMessages_append`) and `oracleMessageFamily_split_append`, then RS9. Holds for every

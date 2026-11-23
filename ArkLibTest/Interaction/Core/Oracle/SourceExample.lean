@@ -10,8 +10,8 @@ import ArkLib.Interaction.Core.Oracle.ResourceOps
 # Oracle families and oracle maps: dependent answers, routing and hidden data
 
 Queries with different response types both affect a result. Answer-transforming oracle maps are
-observable in both composition orders. Sum embeddings read the matching component, a constant
-renaming gives two indices to one realization, a pair interface answers both of its queries, and
+observable in both composition orders. Sum embeddings read the matching component, and a constant
+renaming gives two indices to one realization. A pair interface answers both of its queries, and
 an unqueried coordinate of a realization is not observable.
 -/
 
@@ -41,7 +41,7 @@ def observe : OracleComp dependent.spec Nat := do
   let value : Fin 3 ← liftM (dependent.spec.query ⟨true, ()⟩)
   return if bit then value.val + 7 else value.val + 11
 
--- SourceExample S1 (two examples), restated: the frozen `SourceCtx` with response types `Bool`
+-- SourceExample S1 (two examples), restated: the old-layer `SourceCtx` with response types `Bool`
 -- and `Fin 3` becomes a `Bool`-indexed oracle family with those carriers, answered by
 -- `behaviorOfRealizations`. Not weaker.
 example : simulateQ (dependent.behaviorOfRealizations (env true 2)) observe = 9 := rfl
@@ -62,7 +62,7 @@ def twist : OracleMap dependent dependent where
   law x q := by
     rcases q with ⟨_ | _, _⟩ <;> rfl
 
--- SourceExample S2, restated: the frozen `SourceHom` backward maps become an `OracleMap` whose
+-- SourceExample S2, restated: the old-layer `SourceHom` backward maps become an `OracleMap` whose
 -- `impl` transforms each answer and whose `f` transforms the data. Both the simulated answers and
 -- the materialized data show `not` and the `Fin` wraparound `2 + 1 = 0`. Not weaker.
 example : simulateQ (dependent.behaviorOfRealizations (env true 2)) (twist.impl ⟨false, ()⟩) =
@@ -85,7 +85,7 @@ example : dependent.behaviorOfRealizations (twist.f (env true 2)) ⟨false, ()�
 def tagged : OracleFamily Bool (fun b => Carrier b × Nat) :=
   ⟨taggedInterface⟩
 
--- SourceExample S3, restated: the frozen `comapEnv Prod.fst` becomes realizations with an
+-- SourceExample S3, restated: the old-layer `comapEnv Prod.fst` becomes realizations with an
 -- unqueried coordinate. For every program and every visible data, tags 4 and 19 give equal
 -- answers. Not weaker.
 example (x : ∀ b, Carrier b) {α : Type} (program : OracleComp tagged.spec α) :
@@ -100,11 +100,11 @@ example (x : ∀ b, Carrier b) :
   have htag := congrArg (fun y => (y false).2) h
   norm_num at htag
 
-/-- Two scalar slots, each revealing its value. -/
+/-- Two scalar oracles, each revealing its value. -/
 def numbers : OracleFamily Bool (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- Read the other slot and add three. -/
+/-- Read the other oracle and add three. -/
 def shift : OracleMap numbers numbers where
   f x q := x (!q) + 3
   impl q := do
@@ -112,7 +112,7 @@ def shift : OracleMap numbers numbers where
     pure (a + 3)
   law _ _ := rfl
 
-/-- Double the answer of the same slot. -/
+/-- Double the answer of the same oracle. -/
 def double : OracleMap numbers numbers where
   f x q := x q * 2
   impl q := do
@@ -120,19 +120,19 @@ def double : OracleMap numbers numbers where
     pure (a * 2)
   law _ _ := rfl
 
-/-- Distinct answers reject a route that always reads one slot. -/
+/-- Distinct answers reject a route that always reads one oracle. -/
 def answers : ∀ _ : Bool, Nat
   | false => 2
   | true => 5
 
-/-- Both observations, in order. -/
+/-- Both answers, in order. -/
 def twoQueries : OracleComp numbers.spec (Nat × Nat) := do
   let a : Nat ← liftM (numbers.spec.query ⟨false, ()⟩)
   let b : Nat ← liftM (numbers.spec.query ⟨true, ()⟩)
   return (a, b)
 
 -- SourceExample S5 (two examples), restated: `SourceHom.comp` becomes `OracleMap.comp`, which
--- composes in function order (`g.comp h` applies `h` first), so the frozen
+-- composes in function order (`g.comp h` applies `h` first), so the old-layer
 -- `double.comp shift` is `shift.comp double` here. Both orders are checked through the composed
 -- `impl`, and the composed data agrees. Not weaker.
 example : simulateQ (numbers.behaviorOfRealizations answers)
@@ -163,7 +163,7 @@ example : simulateQ ((sumFamily numbers numbers).behaviorOfRealizations pairData
 example : simulateQ (numbers.behaviorOfRealizations answers)
     ((OracleMap.embedding numbers (fun _ : Bool => true)).impl ⟨false, ()⟩) = (5 : Nat) := rfl
 
-/-- A pair interface: one query selects a slot of each component and returns both answers. -/
+/-- A pair interface: one query selects an oracle of each component and returns both answers. -/
 @[reducible] def pairInterface : OracleInterface ((∀ b, Carrier b) × (∀ _ : Bool, Nat)) where
   Query := Bool × Bool
   toOC.spec := fun q => Carrier q.1 × Nat
@@ -199,13 +199,13 @@ example : functions.behaviorOfRealizations
 
 section Universes
 
--- SourceExample S10: response universe v is shared, while query universes u and u' and data
+-- SourceExample S10: response universe v is shared. Query universes u and u' and data
 -- universes w and w' are independent, exactly as for the disjoint sum of reader sources.
 /-- Disjoint resources preserve the independent query and data universes of both sources. -/
 example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'}) :
     Resources.{v, max u u', max w w'} := S.sum T
 
-/-- Disjoint queries retain their original index carriers. -/
+/-- Disjoint queries keep their original index carriers. -/
 example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'}) :
     OracleSpec.{max u u', v} (S.Index ⊕ T.Index) := (S.sum T).spec
 
@@ -217,7 +217,7 @@ example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'}) :
 example (S : Resources.{v, u, w}) (T : Resources.{v, u', w'})
     (x : S.Data × T.Data) : (S.sum T).answer x = S.answer x.1 + T.answer x.2 := rfl
 
--- SourceExample S11: the two sources retain independent query, response and data universes.
+-- SourceExample S11: the two sources keep independent query, response and data universes.
 /-- A paired query and answer resource has the maxima of the independent component universes. -/
 example (S : Resources.{v, u, w}) (T : Resources.{v', u', w'}) :
     Resources.{max v v', max u u', max w w'} := S.tensor T

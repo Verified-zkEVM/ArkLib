@@ -12,10 +12,10 @@ public import VCVio.OracleComp.QueryTracking.CostModel.Simulation
 # Weighted cost of routed oracle programs
 
 Routing a decision through an oracle map with `OracleMap.withAmbient` keeps every ambient query
-and replaces every resource query by the map's implementing program over the input resources. A
-weighted bound on the routed program follows from a bound on the original program when each
-ambient query costs no more after routing and each implementing program fits the charge of the
-resource query it implements. This is VCVio's `WorstCaseCostBound.simulateQ` for the handler
+and replaces every resource query by the map's implementing program over the input resources.
+Suppose each ambient query costs no more after routing, and each implementing program fits the
+charge of the resource query it implements. Then a weighted bound on the original program bounds
+the routed program. This is VCVio's `WorstCaseCostBound.simulateQ` for the handler
 `OracleMap.withAmbient`.
 
 Query multiplicities of a recorded run are counted with VCVio's `QueryLog.countQ`, which adds
@@ -23,7 +23,7 @@ over appended logs (`QueryLog.countQ_append`).
 
 The ambient index, resource-query indices, responses, results and cost carrier are restricted to
 `Type` by the pinned VCVio cost API. Only backing-data universes are independent here. Lifting
-this unresolved restriction requires generalizing VCVio's `CostModel`, `costDist`,
+this open restriction requires generalizing VCVio's `CostModel`, `costDist`,
 `WorstCaseCostBound` and `WorstCaseCostBound.simulateQ`, with their cost-writer helpers. Query
 indices and the cost carrier are not restricted by the protocol semantics.
 -/
@@ -36,7 +36,7 @@ namespace Interaction.Core
 open OracleComp OracleSpec Oracle
 
 /-- A weighted bound on a decision over the output resources transfers to the same decision routed
-through an oracle map. Ambient queries are charged at most their original cost, and the program
+through an oracle map. Ambient queries are charged at most their original cost. The program
 implementing each output query, charged at the target cost of the input queries it makes, fits
 the original charge of that output query. -/
 theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}

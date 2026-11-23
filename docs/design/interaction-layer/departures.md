@@ -42,9 +42,10 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
 
-The [resource and node universe inventory](resource-universes-disposition.md) records the frozen
-R26, R27 and decoration canaries closed by entry 18. The single R26/R27 definitions are in
-`ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean`; `UniverseCanary.lean` imports them.
+The [resource and node universe port table](resource-universes-disposition.md) records the
+old-layer R26, R27 and decoration canaries closed by entry 18. The R26/R27 definitions occur
+once, in `ArkLibTest/Interaction/Core/Oracle/ResourceExample.lean`, and `UniverseCanary.lean`
+imports them.
 
 ## Legacy embedding: entries 14–16
 

@@ -49,7 +49,7 @@ end ToyProblem
 def scalarFamily : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- Two scalar source slots. -/
+/-- Two scalar source oracles. -/
 def source : OracleFamily Bool (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
@@ -79,11 +79,11 @@ def withSuffix : OracleMap (sumFamily scalarFamily (suffix.reindex id)) scalarFa
 def substituted : OracleMap (sumFamily source suffix) scalarFamily :=
   withSuffix.comp (weightedQueries.sum (OracleMap.embedding suffix id))
 
-/-- Source slot `false` holds 3, slot `true` holds 7, and the suffix holds 5. -/
+/-- Source oracle `false` holds 3, oracle `true` holds 7, and the suffix holds 5. -/
 def data : ∀ k, (sumFamily source suffix).Realization k :=
   sumData (fun bit => if bit then 7 else 3) (fun _ => 5)
 
--- Virtual V2, restated: the frozen `substWithSuffix` becomes `OracleMap.comp` with
+-- Virtual V2, restated: the old-layer `substWithSuffix` becomes `OracleMap.comp` with
 -- `OracleMap.sum` of the derived map and the identity embedding of the suffix; the map also
 -- supplies the materialized data. Both the simulated query and the data give
 -- `10 * (2 * 3 + 7) + 5 = 135`. Not weaker.
@@ -93,7 +93,7 @@ example : simulateQ ((sumFamily source suffix).behaviorOfRealizations data)
 example : substituted.f data () = 135 := rfl
 
 -- Virtual V3: unchanged, since its providers (`OracleFamily.reindex`, `behaviorOfRealizations`)
--- are outside the frozen interaction layer and remain available.
+-- are outside the old interaction layer and remain available.
 /-- Reindexing interface types does not identify independently supplied realizations. -/
 example :
     let repeated := scalarFamily.reindex (fun _ : Bool => ())

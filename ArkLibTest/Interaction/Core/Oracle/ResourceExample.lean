@@ -67,7 +67,7 @@ def readPair : OracleComp pair.spec (Nat × Nat) := do
   let y : Nat ← liftM (pair.spec.query ⟨.inr ⟨⟩, false⟩)
   return (x, y)
 
--- ResourceExample R4, restated: the frozen disjoint union of two named contexts becomes
+-- ResourceExample R4, restated: the old-layer disjoint union of two named contexts becomes
 -- `sumFamily` of two single-index families with carriers `Fin 3` and `Fin 5`, queried by index.
 -- Not weaker.
 example : simulateQ (pair.behaviorOfRealizations pairEnv) readPair = (3, 4) := rfl
@@ -81,7 +81,7 @@ def readAliases : OracleComp (left.reindex (fun _ : Bool => PUnit.unit)).spec (N
   let y : Nat ← liftM ((left.reindex (fun _ : Bool => PUnit.unit)).spec.query ⟨true, false⟩)
   return (x, y)
 
--- ResourceExample R6, restated: the frozen aliasing view becomes the embedding along a constant
+-- ResourceExample R6, restated: the old-layer aliasing view becomes the embedding along a constant
 -- renaming; both output indices answer from the single realization. Not weaker.
 example : simulateQ (left.behaviorOfRealizations (fun _ => smallRealization))
     (simulateQ aliases.impl readAliases) = (2, 2) := rfl
@@ -103,7 +103,7 @@ def bothEnv : ∀ r, Carrier r
 /-- The embedding along `Bool.not`: output index `false` denotes input index `true`. -/
 def inclusion := OracleMap.embedding model Bool.not
 
--- ResourceExample R16, restated: the frozen inclusion from a reindex becomes the embedding along
+-- ResourceExample R16, restated: the old-layer inclusion from a reindex becomes the embedding along
 -- `Bool.not`; its data map transports the five-valued realization to output index `false`. Not
 -- weaker.
 example : inclusion.f bothEnv false = (largeRealization : Fin 5) := rfl
@@ -114,7 +114,7 @@ def readRenamed : OracleComp (model.reindex Bool.not).spec (Nat × Nat) := do
   let y : Nat ← liftM ((model.reindex Bool.not).spec.query ⟨true, true⟩)
   return (x, y)
 
--- ResourceExample R17, restated: the frozen program routed through the inclusion becomes the
+-- ResourceExample R17, restated: the old-layer program routed through the inclusion becomes the
 -- program simulated through the embedding's `impl`, then answered from the original data. The
 -- same answers follow from the transported data by `OracleMap.simulate_eq`. Not weaker.
 example : simulateQ (model.behaviorOfRealizations bothEnv)
@@ -131,9 +131,9 @@ example : ∀ i, (model.reindex (fun i : PEmpty => i.elim)).Realization i := fun
 /-- Apply the identity embedding to each side of the sum. -/
 def sumOfSides := (OracleMap.embedding left id).sum (OracleMap.embedding right id)
 
--- ResourceExample R19, restated: the frozen correspondence between a disjoint union and the sum of
--- its interpreted sources becomes the sum of the two side maps; routing `readPair` through it
--- keeps R4's answers. Reassociating with the empty family on the right does too.
+-- ResourceExample R19, restated: the old-layer correspondence between a disjoint union and the
+-- sum of its interpreted sources becomes the sum of the two side maps. Routing `readPair` through
+-- it keeps R4's answers. Reassociating with the empty family on the right does too.
 example : simulateQ (pair.behaviorOfRealizations pairEnv)
     (simulateQ sumOfSides.impl readPair) = (3, 4) := rfl
 
@@ -185,7 +185,7 @@ def readMixed : OracleComp (mixedModel.reindex Bool.not).spec (Bool × Nat) := d
   let value : Nat ← liftM ((mixedModel.reindex Bool.not).spec.query ⟨true, false⟩)
   return (bit, value)
 
--- ResourceExample R21, restated: the frozen model with name-dependent query and response types
+-- ResourceExample R21, restated: the old-layer model with name-dependent query and response types
 -- becomes an oracle family with per-index interfaces, renamed by the embedding along `Bool.not`.
 -- Not weaker.
 example : simulateQ (mixedModel.behaviorOfRealizations bothEnv)
@@ -207,7 +207,7 @@ def polynomials : OracleFamily Unit (fun _ => LowDegree) :=
 /-- The polynomial `X`, whose carrier certifies its degree bound. -/
 noncomputable def linearRealization : LowDegree := ⟨Polynomial.X, by simp⟩
 
--- ResourceExample R22 (two examples), restated: the frozen polynomial model becomes a family
+-- ResourceExample R22 (two examples), restated: the old-layer polynomial model becomes a family
 -- with carrier `{p // natDegree < 2}` and an evaluation interface. Not weaker.
 example :
     polynomials.behaviorOfRealizations (fun _ => linearRealization) ⟨(), (3 : Nat)⟩ =
@@ -221,7 +221,7 @@ example :
   change (Polynomial.X : Polynomial Nat).eval 7 = 7
   simp
 
--- ResourceExample R23, restated: the frozen reified guarantee becomes the carrier subtype.
+-- ResourceExample R23, restated: the old-layer reified guarantee becomes the carrier subtype.
 -- The degree bound holds of every realization of the family, in particular of
 -- `linearRealization`.
 example (x : ∀ i, polynomials.Realization i) (i : Unit) : (x i).val.natDegree < 2 :=
@@ -280,13 +280,13 @@ abbrev namedResources (answer : ∀ n, Realization n → (q : Query n) → Respo
     {Index : Type s} (name : Index → Name) : Resources.{e, max s q, max s a} :=
   viewResources answer name id
 
-/-- R26 retains its exact query and data carriers without identifying `a` with `e`. -/
+/-- R26 keeps its exact query and data carriers without identifying `a` with `e`. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) :
     (namedResources answer name).Index = ((x : Index) × Query (name x)) ∧
       (namedResources answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
 
-/-- R27 retains the original context's data when the visible index has its own universe. -/
+/-- R27 keeps the original context's data when the visible index has its own universe. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
     (viewResources answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
@@ -345,7 +345,7 @@ section Universes
 variable {Name : Type i} {Realization : Name → Type a} {Index : Type s} {View : Type h}
 
 -- OracleFamily specializes the independent resource contracts through Resources.ofFamily.
-/-- Selected oracle resources retain the independent context, query and data-index universes. -/
+/-- Selected oracle resources keep the independent context, query and data-index universes. -/
 example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
     Resources.{a, max s q, max s a} := Resources.ofFamily (C.reindex name)
 
@@ -359,7 +359,7 @@ example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
     (∀ x, Realization (name x)) → QueryImpl (C.reindex name).spec Id :=
   (C.reindex name).behaviorOfRealizations
 
--- The family specialization retains the original context when routing through a view.
+-- The family specialization keeps the original context when routing through a view.
 /-- An arbitrary view changes query indices without changing the original context data. -/
 example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x)) :
@@ -367,7 +367,7 @@ example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
   (C.reindex (name ∘ view)).behaviorOfRealizations
     ((OracleMap.embedding (C.reindex name) view).f data)
 
-/-- View queries retain the selected name's dependent query carrier at the independent universe. -/
+/-- View queries keep the selected name's dependent query carrier at the independent universe. -/
 example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
     (view : View → Index) :
     OracleSpec.{max h q, a} ((x : View) × (C.interface (name (view x))).Query) :=

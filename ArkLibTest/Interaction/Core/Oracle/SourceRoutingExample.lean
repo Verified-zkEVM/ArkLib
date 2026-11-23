@@ -12,7 +12,7 @@ import ArkLibTest.Interaction.Core.Oracle.Routing
 
 The routing tests' prefix output map `RoutingTests.exportMap` exports `input false + sent.1`.
 `RoutingTests.exportMap_raw_trace` shows that one exported query makes exactly two resource
-queries. Here the same map gets a worst-case cost bound: at unit cost per resource query, one
+queries. Here the same map gets a worst-case cost bound. At unit cost per resource query, one
 exported query costs at most two, and a query charged two units stays within two units after
 routing through the map.
 -/
