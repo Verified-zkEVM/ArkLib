@@ -14,6 +14,7 @@ public import ArkLib.Data.CodingTheory.DivergenceOfSets
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.CodingTheory.Basic.DecodingRadius
+import VCVio.ProgramLogic.Unary.HoareTriple
 
 /-!
 # Foundations for affine-space proximity bounds
@@ -40,42 +41,11 @@ variable {l : ℕ} [NeZero l]
 variable {ι : Type} [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
 
-theorem jointAgreement_implies_second_proximity {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [DecidableEq F] {C : Set (ι → F)} {δ : ℝ≥0} {W : Fin 2 → ι → F} :
-    jointAgreement (C := C) (δ := δ) (W := W) → δᵣ(W 1, C) ≤ δ := by
-  intro h
-  rcases h with ⟨S, hS_card, v, hv⟩
-  have hv1 : v 1 ∈ C := (hv 1).1
-  have hSsub : S ⊆ Finset.filter (fun j => v 1 j = W 1 j) Finset.univ := (hv 1).2
-  have hdist : δᵣ(W 1, v 1) ≤ δ := by
-    rw [Code.relCloseToWord_iff_exists_agreementCols (u := W 1) (v := v 1) (δ := δ)]
-    refine ⟨S, ?_, ?_⟩
-    · have hS' : (1 - δ) * (Fintype.card ι : ℝ≥0) ≤ (S.card : ℝ≥0) := by
-        simpa [ge_iff_le, mul_comm, mul_left_comm, mul_assoc] using hS_card
-      exact (Code.relDist_floor_bound_iff_complement_bound (n := Fintype.card ι)
-        (upperBound := S.card) (δ := δ)).2 hS'
-    · intro j
-      constructor
-      · intro hj
-        have hj' : j ∈ Finset.filter (fun j => v 1 j = W 1 j) Finset.univ := hSsub hj
-        have : v 1 j = W 1 j := by
-          simpa [Finset.mem_filter] using hj'
-        exact this.symm
-      · intro hj_ne hj
-        have hj' : j ∈ Finset.filter (fun j => v 1 j = W 1 j) Finset.univ := hSsub hj
-        have : v 1 j = W 1 j := by
-          simpa [Finset.mem_filter] using hj'
-        exact hj_ne this.symm
-  have hclose : ∃ v' ∈ C, δᵣ(W 1, v') ≤ δ := by
-    exact ⟨v 1, hv1, hdist⟩
-  exact
-    (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist (u := W 1) (C := C) (δ := δ)).2 hclose
-
-/-- Generalisation of `jointAgreement_implies_second_proximity` to an arbitrary word stack over a
-submodule code. If a stack `W : Fin k → ι → F` jointly agrees with a submodule `C ⊆ ι → F`, then
-every element of the linear span of the stack is `δ`-close to `C`. The pointwise case
-`W i ∈ C` is the special case `x = W i` (choose coefficients `c` to be the i-th basis vector);
-the original `Fin 2` lemma is the case `k = 2`, `x = W 1`.
+/-- Generalisation of `Code.jointAgreement.relDistFromCode_le` from the words of a stack to their
+linear span, over a submodule code. If a stack `W : Fin k → ι → F` jointly agrees with a submodule
+`C ⊆ ι → F`, then every element of the linear span of the stack is `δ`-close to `C`. The case
+`x = W i` (choose coefficients `c` to be the i-th basis vector) is
+`Code.jointAgreement.relDistFromCode_le`, which holds for any code `C`.
 
 The proof bounds the linear combination against the matching linear combination of the agreement
 witnesses: on each agreement column `j ∈ S`, `v i j = W i j` for every `i`, so `∑ cᵢ • vᵢ` and
@@ -150,6 +120,7 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι]
       (α := (U : Type)) (β := (U : Type)) (e := shiftEquiv)
       (p := fun a : (U : Type) => δᵣ(a.1, V) ≤ δ))
 
+open OracleComp.ProgramLogic in
 theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
     {U : Finset (ι → F)} [Nonempty U]
@@ -160,63 +131,13 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι]
       ∃ a : U, Pr{let z ←$ᵗ F}[δᵣ(a.1 + z • dir, V) ≤ δ] > ε  := by
   intro hprob
   classical
-  let : MeasurableSpace U := ⊤
-  let : MeasurableSpace F := ⊤
-  let good : (ι → F) → Prop := fun w => δᵣ(w, V) ≤ δ
-  let lineProb (a : U) : ENNReal := Pr{let z ← $ᵗ F}[good (a.1 + z • dir)]
-  let P2 : ENNReal := Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)]
-  have hP2_integral : P2 = ∫⁻ a, lineProb a ∂𝒟[$ᵗ U] := by
-    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
-      ∫⁻ a, Pr{let z ← $ᵗ F}[good (a.1 + z • dir)] ∂𝒟[$ᵗ U]
-    simpa only [id_map, bind_pure_comp] using
-      (prEvent_bind_eq_lintegral_of_discrete ($ᵗ U)
-        (fun a : U => do
-          let z ← $ᵗ F
-          return good (a.1 + z • dir)) id)
-  have hswap :
-      P2 = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] := by
-    change Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] = _
-    calc
-      Pr{let a ← $ᵗ U; let z ← $ᵗ F}[good (a.1 + z • dir)] =
-          Pr{let za ← $ᵗ (F × U)}[good (za.2.1 + za.1 • dir)] := by
-        exact SampleableType.prEvent_uniformSample_pair_of_bijective
-          (g := fun (a : U) (z : F) => (z, a)) (Equiv.prodComm U F).bijective
-          (fun za : F × U => good (za.2.1 + za.1 • dir))
-      _ = Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] :=
-        SampleableType.prEvent_uniformSample_prod
-          (fun za : F × U => good (za.2.1 + za.1 • dir))
-  have hP2_eq : P2 = Pr{let u ← $ᵗ U}[good u.1] := by
-    rw [hswap]
-    have hsplit :
-        Pr{let z ← $ᵗ F; let a ← $ᵗ U}[good (a.1 + z • dir)] =
-          ∫⁻ z, Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] ∂𝒟[$ᵗ F] := by
-      simpa only [id_map, bind_pure_comp] using
-        (prEvent_bind_eq_lintegral_of_discrete ($ᵗ F)
-          (fun z : F => do
-            let a ← $ᵗ U
-            return good (a.1 + z • dir)) id)
-    rw [hsplit]
-    have hconst : ∀ z : F,
-        Pr{let a ← $ᵗ U}[good (a.1 + z • dir)] = Pr{let a ← $ᵗ U}[good a.1] := by
-      intro z
-      simpa [good] using
-        (prob_uniform_shift_invariant (U := U) (dir := dir) (hshift := hshift)
-          (V := V) (δ := δ) (z := z))
-    simp_rw [hconst]
-    rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
-  have hP2_gt : P2 > ε := by
-    simpa [hP2_eq] using hprob
-  have h_integral_gt : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) > ε := by
-    simpa [hP2_integral] using hP2_gt
-  by_contra hno
-  push Not at hno
-  have h_integral_le : (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ε := by
-    calc
-      (∫⁻ a, lineProb a ∂𝒟[$ᵗ U]) ≤ ∫⁻ _a : U, ε ∂𝒟[$ᵗ U] :=
-        lintegral_mono hno
-      _ = ε := by
-        rw [lintegral_const, OracleComp.evalDist_apply_univ_eq_one, mul_one]
-  exact (not_lt_of_ge h_integral_le) h_integral_gt
+  by_contra! hno
+  have hshiftProb := prob_uniform_shift_invariant (dir := dir) (hshift := hshift) (V := V) (δ := δ)
+  have exchanged := OracleComp.prEvent_bind_map_swap ($ᵗ U) ($ᵗ F) fun a z =>
+    δᵣ(a.1 + z • dir, V) ≤ δ
+  simp only [prEvent_eq_wp, wp_bind, wp_map, Function.comp_def] at exchanged hshiftProb hprob hno
+  simp_rw [hshiftProb, wp_const] at exchanged
+  exact hprob.not_ge (exchanged ▸ wp_le_const_of_support _ fun a _ => hno a)
 
 theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι]
     {F : Type} [Field F] [SampleableType F] [DecidableEq F]
@@ -314,12 +235,7 @@ theorem average_proximity_implies_proximity_of_linear_subspace
     change Pr{let z ← $ᵗ F}[
       δᵣ(a.1 + z • u', ReedSolomon.code domain (k + 1)) ≤ δ] > _
     exact hline
-  have :
-      δᵣ((Code.finMapTwoWords a.1 u') 1, ReedSolomon.code domain (k + 1)) ≤ δ :=
-    jointAgreement_implies_second_proximity
-      (ι := ι) (F := F) (C := ReedSolomon.code domain (k + 1))
-      (δ := δ) (W := Code.finMapTwoWords a.1 u') hJA
-  simpa [Code.finMapTwoWords] using this
+  exact hJA.relDistFromCode_le 1
 
 end BCIKS20ProximityGapSection6
 
@@ -667,9 +583,7 @@ theorem all_affine_elements_close {k : ℕ}
       apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • dir, (V : Set (ι → F))) ≤ δ] > _
       exact hline
-    exact jointAgreement_implies_second_proximity
-      (ι := ι) (F := F) (C := (V : Set (ι → F)))
-      (δ := δ) (W := Code.finMapTwoWords a.1 dir) hJA
+    exact hJA.relDistFromCode_le 1
   -- Steps 2-4: span(U) argument
   set spanU := Submodule.span F (Set.range u)
   have hU'_le_spanU : U'_sub ≤ spanU := by
@@ -871,9 +785,7 @@ theorem all_affine_elements_close {k : ℕ}
       apply RS_correlatedAgreement_affineLines hdeg hδ
       change Pr{let z ← $ᵗ F}[δᵣ(a.1 + z • x, (V : Set (ι → F))) ≤ δ] > _
       exact hline
-    exact jointAgreement_implies_second_proximity
-      (ι := ι) (F := F) (C := (V : Set (ι → F)))
-      (δ := δ) (W := Code.finMapTwoWords a.1 x) hJA
+    exact hJA.relDistFromCode_le 1
   intro x hx
   apply h_spanU_close
   change x ∈ Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u) at hx

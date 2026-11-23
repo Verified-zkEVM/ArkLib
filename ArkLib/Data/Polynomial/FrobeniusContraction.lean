@@ -54,7 +54,7 @@ theorem exists_frobeniusContraction (P : R[X]) (hP : 0 < P.natDegree) :
       G.natDegree * p ^ e = P.natDegree ∧
       0 < G.natDegree := by
   induction hN : P.natDegree using Nat.strong_induction_on generalizing P with
-  | h N ih =>
+  | ind N ih =>
       by_cases hder : derivative P = 0
       · have : Nontrivial R := ⟨⟨P.leadingCoeff, 0, leadingCoeff_ne_zero.mpr
           (ne_zero_of_natDegree_gt hP)⟩⟩

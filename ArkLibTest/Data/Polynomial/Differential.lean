@@ -177,7 +177,7 @@ example :
   · ext j
     fin_cases j <;>
       rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
-      norm_num [naturalBase, Polynomial.taylor, Polynomial.coeff_X,
+      norm_num [naturalBase, Finsupp.single_apply, Polynomial.taylor, Polynomial.coeff_X,
         Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
   constructor
   · ext j
@@ -188,8 +188,8 @@ example :
   · ext j
     fin_cases j <;>
       rw [polynomialJet, Polynomial.hasseJet_eq_taylor_coeff] <;>
-      norm_num [naturalBase, naturalDirection, Polynomial.taylor, Polynomial.coeff_X,
-        Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
+      norm_num [naturalBase, naturalDirection, Finsupp.single_apply, Polynomial.taylor,
+        Polynomial.coeff_X, Polynomial.coeff_C, Polynomial.coeff_X_pow, Polynomial.coeff_one]
 
 private def exactDegreeEquation : DifferentialPolynomial ℚ 1 :=
   MvPolynomial.X none ^ 2 * MvPolynomial.X (some (Fin.last 1)) ^ 3
@@ -391,7 +391,7 @@ example : ¬∃ P : Polynomial ℚ, P.degree ≤ 2 ∧
   obtain ⟨hPiter, -, -⟩ := (solution_iff_eq_regularIterate expEquation 0 (D := 2)
     hP₀ hslope P).mp ⟨hdegree, hsolution, hjet⟩
   rw [hPiter, differentialSpecialization_regularIterate_expEquation_one, neg_eq_zero] at hsolution
-  have hcoeff := congrArg (Polynomial.coeff · 2) hsolution
+  have hcoeff := congrArg (fun p : Polynomial ℚ => p.coeff 2) hsolution
   simp at hcoeff
 
 /-- The residual coefficients of `1 + X` and `1 + X + X ^ 2` for `y' = y` differ by `2`. -/

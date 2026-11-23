@@ -18,6 +18,8 @@ dimensions.
 ## Main result
 
 - `rs_Lambda_extended_le_of_epsCa_int_radius` gives the exact ceiling bound from CS25.
+- `le_rs_epsCa_of_le_Lambda` is its contrapositive: a list of at least `2T + 1` codewords of
+  `RS(k + 1)` at radius `f / n` forces `ε_ca(RS(k), f / n) ≥ T / |F|`.
 
 ## References
 
@@ -450,6 +452,48 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     exact (le_div_iff₀ hDpos).2 hLD
   have hceilR : (T.card : ℝ) ≤ (Nat.ceil B : ℝ) := hLB.trans (Nat.le_ceil B)
   exact_mod_cast hceilR
+
+omit [Nonempty ι] [DecidableEq ι] in
+/-- A long list for `RS(k + 1)` forces a large CA error for `RS(k)`. If `0 < k`,
+`f + k + 1 < n`, `n + 2kT ≤ |F|`, and `RS(k + 1)` has a point list of at least `L ≥ 2T + 1`
+codewords at relative radius `f / n`, then `ε_ca(RS(k), f / n, f / n) ≥ T / |F|`. This is the
+contrapositive of `rs_Lambda_extended_le_of_epsCa_int_radius`. -/
+theorem le_rs_epsCa_of_le_Lambda (domain : ι ↪ F) (k f : ℕ) (T : ℝ) {L : ℕ}
+    (hk : 0 < k) (hf : f + k + 1 < Fintype.card ι)
+    (hq : (Fintype.card ι : ℝ) + 2 * k * T ≤ Fintype.card F) (hL2 : 2 * T + 1 ≤ L)
+    (hLΛ : (L : ℕ∞) ≤ Lambda (ReedSolomon.code domain (k + 1) : Set (ι → F))
+        ((f : ℝ) / Fintype.card ι)) :
+    ENNReal.ofReal (T / Fintype.card F) ≤
+      epsCa (F := F) (A := F) (ReedSolomon.code domain k : Set (ι → F))
+        ((f : ℝ≥0) / Fintype.card ι) ((f : ℝ≥0) / Fintype.card ι) := by
+  refine le_of_not_gt fun hlt => ?_
+  have hE := ENNReal.toReal_lt_of_lt_ofReal hlt
+  set E := (epsCa (F := F) (A := F) (ReedSolomon.code domain k : Set (ι → F))
+    ((f : ℝ≥0) / Fintype.card ι) ((f : ℝ≥0) / Fintype.card ι)).toReal
+  set q : ℝ := ((Fintype.card F : ℕ) : ℝ)
+  set n : ℝ := ((Fintype.card ι : ℕ) : ℝ)
+  have hqpos : 0 < q := by positivity
+  have hEq : E * q < T := (lt_div_iff₀ hqpos).mp hE
+  have hE0 : 0 ≤ E := ENNReal.toReal_nonneg
+  have hT0 : 0 < T := by linarith [mul_nonneg hE0 hqpos.le]
+  have hkR : (0 : ℝ) < k := by exact_mod_cast hk
+  have hkT := mul_pos hkR hT0
+  have hkEq := mul_lt_mul_of_pos_left hEq hkR
+  have hQ : 2 * k * T ≤ q - n := by linarith
+  have hε : E < (q - n) / (k * q) := by
+    rw [lt_div_iff₀ (by positivity)]; linarith
+  have hΛ := hLΛ.trans (rs_Lambda_extended_le_of_epsCa_int_radius domain k f E hf hε le_rfl)
+  have hD : 0 < q - n - k * E * q := by linarith
+  have hB : E * q * (q - n) / (q - n - k * E * q) < 2 * T := by
+    rw [div_lt_iff₀ hD]
+    linarith [mul_lt_mul_of_pos_right hEq (by linarith : 0 < q - n),
+      mul_le_mul_of_nonneg_left hEq.le (by positivity : 0 ≤ 2 * T * k),
+      mul_le_mul_of_nonneg_right hQ hT0.le]
+  have hceil := Nat.ceil_lt_add_one (div_nonneg
+    (mul_nonneg (mul_nonneg hE0 hqpos.le) (by linarith : 0 ≤ q - n)) hD.le)
+  have hLc : (L : ℝ) ≤ ⌈E * q * (q - n) / (q - n - k * E * q)⌉₊ :=
+    Nat.cast_le.mpr (ENat.natCast_le_natCast.mp hΛ)
+  linarith
 
 end CAImpliesList
 

@@ -9,6 +9,9 @@ public import ArkLib.ProofSystem.Fri.Spec.HonestExecution
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 public import ArkLib.OracleReduction.Security.Acceptance
 
+import Std.WP.Tactic
+import VCVio.ProgramLogic.Unary.WP.NecessarySpecs
+
 /-!
 # Honest execution of the final FRI fold
 
@@ -24,12 +27,12 @@ namespace Fri.Spec.FinalFoldPhase
 open Domain OracleComp OracleSpec ProtocolSpec Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
 /-- Uniform sampling of the field challenge of the final fold. -/
-noncomputable instance instSampleableTypeChallenge :
+noncomputable instance instSampleableTypeChallenge [Finite F] :
     ∀ j, SampleableType ((pSpec F).Challenge j) :=
   fun _ ↦ SampleableType.ofFintype _
 
@@ -181,6 +184,7 @@ theorem finalFoldVerifier_run_honest
   · simp [Fin.append_right_eq_snoc]
   · simp [Fin.append_right_eq_snoc, honestFoldState, foldState]
 
+open scoped OracleComp.Necessary in
 /-- Every final honest run transmits the honest witness and agrees on the entire history. -/
 theorem finalFoldOracleReduction_run_support_honest
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0)
@@ -195,41 +199,24 @@ theorem finalFoldOracleReduction_run_support_honest
     ∃ β, x = some ((honestFinalTranscript s d p₀ β,
       (β, honestHistory s d f p₀ β), honestPolynomial s d p₀ β (Fin.last (k + 1))),
       (β, honestHistory s d f p₀ β)) := by
-  rw [Reduction.run_run_eq_bind] at hx
-  change x ∈ support (do
-    let pr ← (finalFoldProver s d).run (honestFoldState s d f p₀ α (Fin.last k)).1
-      (honestFoldState s d f p₀ α (Fin.last k)).2
-    let out ← liftComp ((finalFoldVerifier s d).toVerifier.run
-      (honestFoldState s d f p₀ α (Fin.last k)).1 pr.1).run _
-    pure (out.map (fun v ↦ (pr, v)))) at hx
-  rw [finalFoldProver_run_honest, mem_support_bind_iff] at hx
-  obtain ⟨pr, hpr, hx⟩ := hx
-  rw [mem_support_bind_iff] at hpr
-  obtain ⟨a, -, hpr⟩ := hpr
-  rw [mem_support_pure_iff] at hpr
-  subst pr
-  let β := Function.update α (Fin.last k) a
-  have hcur : honestFoldState s d f p₀ α (Fin.last k) =
-      honestFoldState s d f p₀ β (Fin.last k) :=
-    (honestFoldState_update s d f p₀ α (Fin.last k) a).symm
+  revert x
+  simp only [Reduction.run_run_eq_bind, finalFoldOracleReduction, OracleReduction.toReduction]
+  rw [finalFoldProver_run_honest]
+  refine (OracleComp.Necessary.wp_iff_forall_support _ _).mp ?_
+  set_option experimental.vcgen true in
+    vcgen [OracleComp.Necessary.Spec.ofSupport (ProtocolSpec.getChallenge _ _),
+      OracleComp.Necessary.Spec.ofSupport ((finalFoldVerifier s d).toVerifier.verify _ _).run]
+  rename_i hout
   have hverify := finalFoldVerifier_run_honest s d f p₀ β
-  rw [← congrArg Prod.fst hcur] at hverify
-  change x ∈ support (do
-    let out ← liftComp ((finalFoldVerifier s d).toVerifier.run
-      (honestFoldState s d f p₀ α (Fin.last k)).1
-      (honestFinalTranscript s d p₀ β)).run _
-    pure (out.map (fun v ↦
-      ((honestFinalTranscript s d p₀ β, (β, honestHistory s d f p₀ β),
-        honestPolynomial s d p₀ β (Fin.last (k + 1))), v)))) at hx
-  rw [hverify] at hx
-  simp only [liftComp_pure, pure_bind, Option.map_some, mem_support_pure_iff] at hx
-  exact ⟨β, hx⟩
+  rw [honestFoldState_update] at hverify
+  rw [hverify, mem_support_pure_iff] at hout
+  exact ⟨β, by rw [hout, Option.map_some]⟩
 
 variable {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
 
 /-- The final fold is perfectly complete for every honest history, including noisy input. -/
-theorem finalFoldOracleReduction_perfectCompleteness
+theorem finalFoldOracleReduction_perfectCompleteness [Finite F]
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0) :
     (finalFoldOracleReduction s d).perfectCompleteness init impl
       (honestFoldRelation s d f p₀ (Fin.last k)) (honestOutputRelation s d f p₀) := by

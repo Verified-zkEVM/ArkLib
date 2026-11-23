@@ -44,7 +44,10 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval aeval_optionEquivRight_symm affineHilbertPolynomial
+  finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero mem_restrictBidegree_mono
+  zeroLocus)
 
 variable {F E α : Type*} [Field F] [Field E] {n k K ℓ : ℕ}
 
@@ -56,7 +59,7 @@ def frobeniusPowerSparseTaylorNumerators (center : E)
     (fun l ↦ jointCommonTaylorNumerator center Q τ l)
 
 /-- Retained admissible tuple graphs with at least `L` common agreement positions. -/
-def admissibleFrobeniusPowerTupleGraphLocus [Fintype α]
+def admissibleFrobeniusPowerTupleGraphLocus
     (domain : α ↪ F) (values : Fin (ℓ + 1) → α → F)
     (ι : F →+* E) (roots : α → E) (center : E)
     (Q : DifferentialPolynomial E[X] 0) (K k L τ s : ℕ) :
@@ -167,7 +170,7 @@ theorem commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime [IsAlgClose
 /-- A regular positive-dimensional prime component containing `L` agreement cuts lies in a
 retained Frobenius power tuple graph with at least `L` common agreements. -/
 theorem principalOpen_subset_admissibleFrobeniusPowerTupleGraphLocus [IsAlgClosed E]
-    [Fintype α] {L : ℕ}
+    [Finite α] {L : ℕ}
     (domain : α ↪ F) (values : Fin (ℓ + 1) → α → F) (ι : F →+* E)
     (p e : ℕ) [ExpChar E p] (roots : α → E)
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
@@ -295,7 +298,7 @@ theorem finite_frobeniusPowerTupleIncidence_off_graphs_card_le [IsAlgClosed E]
     calc
       (b - 1) + 1 ≤ τ * (b - 1) + 1 := Nat.add_le_add_right hmul 1
       _ = 1 + τ * (b - 1) := by omega
-  apply bidegreeHypersurface_incidence_off_excluded_sharp_one
+  apply MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one
     (a := p ^ e * ℓ + τ * h) (b := 1 + τ * (b - 1)) (h := h) (v := b)
     (by positivity) (by omega) hLA
     (jointInitialJetEquation center Q) (jointInitialJetSeparant center Q)

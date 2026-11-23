@@ -75,7 +75,7 @@ program returning the same result. The budget bounds the program's declared inst
 only; see the module documentation for what is uncharged.
 The program uses deterministic handlers, agrees with the extractor's pure return, and has a fixed
 pointwise natural-number budget. -/
-def knowledgeSoundnessWithResources {Kind : Type} [Finite Kind]
+def knowledgeSoundnessWithResources {Kind : Type}
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
@@ -87,7 +87,7 @@ def knowledgeSoundnessWithResources {Kind : Type} [Finite Kind]
 
 namespace knowledgeSoundnessWithResources
 
-variable {Kind : Type} [Finite Kind]
+variable {Kind : Type}
   {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
   {verifier : Verifier oSpec StmtIn StmtOut pSpec}
   {extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec} {knowledgeError : ℝ≥0}
@@ -127,7 +127,7 @@ variable {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface
   [∀ i, OracleInterface (pSpec.Message i)]
 
 /-- Measured knowledge soundness of an oracle verifier is that of its non-oracle verifier. -/
-def knowledgeSoundnessWithResources {Kind : Type} [Finite Kind]
+def knowledgeSoundnessWithResources {Kind : Type}
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
@@ -141,7 +141,7 @@ def knowledgeSoundnessWithResources {Kind : Type} [Finite Kind]
 
 namespace knowledgeSoundnessWithResources
 
-variable {Kind : Type} [Finite Kind]
+variable {Kind : Type}
   {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
   {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
   {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}

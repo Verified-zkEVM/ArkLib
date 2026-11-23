@@ -73,7 +73,7 @@ private lemma solutionToQ_from_Q
   (h_p_deg : p.natDegree < k)
   (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) :
   solutionToQ e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = Q ωs f p e := by
-  refine Polynomial.ext fun i ↦ ?p₁
+  ext i : 2
   simp only [solutionToQ_coeff, Fin.liftF, E_and_Q_to_a_solution_coeff, add_lt_iff_neg_left,
     not_lt_zero, ↓reduceIte, add_tsub_cancel_left, dite_eq_ite]
   split_ifs <;>
@@ -90,11 +90,10 @@ private lemma solutionToE_from_E
   (h_p_deg : p.natDegree < k)
   (h_dist : (Δ₀(f, p.eval ∘ ωs) : ℕ) ≤ e) :
   solutionToE e k (E_and_Q_to_a_solution e (E ωs f p e) (Q ωs f p e)) = E ωs f p e := by
-  apply Polynomial.ext
-  intro i
+  ext i : 2
   simp only [coeff_solutionToE]
   split_ifs <;>
-    try aesop (config := {warnOnNonterminal := false})
+    aesop (config := {warnOnNonterminal := false})
               (add simp [Fin.liftF, leadingCoeff_E'])
               (add safe (by omega))
   by_contra he

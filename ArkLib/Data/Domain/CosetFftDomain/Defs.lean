@@ -337,9 +337,9 @@ abbrev SmoothCosetFftDomain (n : ℕ) (F : Type) [Field F] : Type :=
 variable [Fintype ι] [DecidableEq F]
 
 namespace CosetFftDomainClass
-/-- The elements of a domain as a finset. -/
-def toFinset {D : Type} [FunLike D ι F] [CosetFftDomainClass D ι F]
-    (ω : D) : Finset F := Finset.image ω Finset.univ
+/-- The values of `ω` as a finset. For a domain this is its set of elements; `card_toFinset`
+uses the domain's injectivity to count them. -/
+def toFinset {D : Type} [FunLike D ι F] (ω : D) : Finset F := Finset.image ω Finset.univ
 
 /-- The cardinality of the finset of elements of a domain is
   the cardinality of the indexing type. -/

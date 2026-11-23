@@ -40,7 +40,8 @@ charts with the exceptional challenges for retained polynomial tuples.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE)
 
 namespace ReedSolomon
 

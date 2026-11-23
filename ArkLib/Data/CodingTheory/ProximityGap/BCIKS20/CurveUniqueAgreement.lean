@@ -55,8 +55,8 @@ theorem exists_exactPowerAgreement_unique_fin
       domain w (fun _ ↦ 0) (by simp)
     refine ⟨E, by simpa using hE, fun z hz Q hQ _ ↦ ?_⟩
     have hQzero : Q = 0 := by
-      apply Polynomial.ext
-      simpa using (Polynomial.degree_lt_iff_coeff_zero Q 0).mp hQ
+      ext i : 2
+      simpa using (Polynomial.degree_lt_iff_coeff_zero Q 0).mp hQ i (Nat.zero_le i)
     simpa [hQzero, Polynomial.powerBatch, Polynomial.generatorBatch] using hgood z hz
   let : NeZero n := ⟨by omega⟩
   let : NeZero deg := ⟨hdeg.ne'⟩

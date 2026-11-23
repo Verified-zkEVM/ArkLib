@@ -41,11 +41,11 @@ private theorem coeff_sum_range_monomial (d : ℕ) (f : ℕ → R) (n : ℕ) :
   rw [finsetSum_coeff]
   by_cases hn : n < d
   · rw [ite_eq_left hn, Finset.sum_eq_single n (fun b _ hb => by
-      rw [coeff_monomial, ite_eq_right hb])
-      (fun h => absurd (Finset.mem_range.mpr hn) h), coeff_monomial, ite_eq_left rfl]
+      rw [coeff_monomial_apply, ite_eq_right hb])
+      (fun h => absurd (Finset.mem_range.mpr hn) h), coeff_monomial_apply, ite_eq_left rfl]
   · rw [ite_eq_right hn]
     exact Finset.sum_eq_zero fun k hk => by
-      rw [coeff_monomial, ite_eq_right (by have := Finset.mem_range.mp hk; omega)]
+      rw [coeff_monomial_apply, ite_eq_right (by have := Finset.mem_range.mp hk; omega)]
 
 /-- **Degree-`< 2d` division by `X ^ d + 1` in closed form**: the quotient is the upper half of the
 dividend's coefficients, shifted down by `d`.

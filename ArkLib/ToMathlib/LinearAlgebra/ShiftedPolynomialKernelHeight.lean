@@ -182,8 +182,7 @@ theorem exists_ne_zero_mulVec_eq_zero_shifted_degreeLT {rows cols : Type*}
     funext i
     have hrow : (M *ᵥ v) i ∈ degreeLT F (rowSlots i) :=
       Submodule.sum_mem _ fun j _ ↦ hproduct i j
-    apply Polynomial.ext
-    intro k
+    ext k : 2
     by_cases hk : k < rowSlots i
     · have hcoefficient :=
         congrFun (congrFun (LinearMap.mem_ker.mp hc) i) (⟨k, hk⟩ : Fin (rowSlots i))

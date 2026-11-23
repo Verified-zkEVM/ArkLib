@@ -79,7 +79,12 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial
+open Polynomial
+open MvPolynomial (CoeffNatDegreeLE aeval affineDegree
+  affineDegree_comap_bidegreeMap_span_singleton_le affineHilbertPolynomial
+  bidegreeHypersurface_incidence_off_excluded_hybrid
+  bidegreeHypersurface_incidence_off_excluded_hybrid_two bidegreeMap mem_restrictBidegree_mono
+  natDegree_affineHilbertPolynomial_span_singleton_add_one restrictBidegree zeroLocus)
 
 variable {F E : Type*} [Field F] [Field E] {n ℓ : ℕ}
 
