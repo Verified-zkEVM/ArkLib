@@ -52,8 +52,6 @@ example : tree.numLeaves = 6 := by
   rw [numLeaves_eq_prod, Fin.prod_univ_two]
   rfl
 
-#eval tree.numLeaves
-
 /-- The zero test at arities `(3, 2)`: individual degree below `3` in the first variable and below
 `2` in the second. -/
 example (p : MvPolynomial (Fin 2) (ZMod 5)) (h0 : p.degreeOf 0 < 3) (h1 : p.degreeOf 1 < 2)
