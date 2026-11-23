@@ -53,7 +53,7 @@ namespace Fri.Spec.Extractor
 
 open Domain OracleComp OracleSpec CompPoly
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+)
 
@@ -117,7 +117,7 @@ end Fri.Spec.Extractor
 
 namespace Fri.Spec.Extractor
 open Domain OracleComp OracleSpec CompPoly
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+)
 
@@ -132,7 +132,6 @@ def blockNode (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   (QueryRound.queryBlock s hs i x).get
     (j.cast (QueryRound.queryBlock_length s hs i x).symm)
 
-omit [Fintype F] in
 private theorem blockNode_val (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) (j : Fin (2 ^ (s i).val)) :
     (blockNode s hs i x j).val =

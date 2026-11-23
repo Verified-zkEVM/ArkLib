@@ -8,7 +8,7 @@ module
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 public import ArkLib.Data.MvPolynomial.Hypercube
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
-public import ArkLib.ToCompPoly.Multivariate.Eval
+public import CompPoly.Multivariate.Eval
 public import CompPoly.Multivariate.Operations
 
 /-!
@@ -299,13 +299,13 @@ This is the Hachi range-polynomial specialization of
 extra `s` levels below the window are the challenge rounds that `H_α` consumes
 (`hAlpha_eq_zero_of_evaluationTree`), which is why the same tree serves both identities. -/
 theorem hZero_eq_zero_of_evaluationTree {k s : ℕ} (hk : 2 ≤ k) (φF : ZMod q →+* F) (b : ℕ)
-    (w : LiftedWitness Φ μ n) (tree : NestedEvaluationTree F k (m₀ + s))
+    (w : LiftedWitness Φ μ n) (tree : NestedEvaluationTree F (m₀ + s) fun _ => k)
     (hDistinct : tree.IsDistinct)
     (hVanishes : CMlPolynomialEval.PolynomialVanishes tree (hZero Φ m₀ φF b w)
       (Fin.castAdd s)) :
     hZero Φ m₀ φF b w = 0 :=
-  CMlPolynomialEval.eq_zero_of_polynomialVanishes_castAdd hk tree (hZero Φ m₀ φF b w)
-    hDistinct hVanishes
+  CMlPolynomialEval.eq_zero_of_polynomialVanishes_castAdd (fun _ => by omega) tree
+    (hZero Φ m₀ φF b w) (fun _ => hk) hDistinct hVanishes
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **The same transcript tree determines `H_α`.** `H_α` reads the *last* `m₁` levels of the tree,
@@ -320,12 +320,12 @@ protocol supplies — `pSpecNestedZeroCheck` is one run of `m₀ + m₁` challen
 only `k ^ m + k ^ m₁` of them, but there is no second run to draw them from. -/
 theorem hAlpha_eq_zero_of_evaluationTree {k m : ℕ} (hk : 2 ≤ k) (φF : ZMod q →+* F) (b : ℕ)
     (s : RlinStatement Φ n μ) (α : F) (w : LiftedWitness Φ μ n)
-    (tree : NestedEvaluationTree F k (m + m₁)) (hDistinct : tree.IsDistinct)
+    (tree : NestedEvaluationTree F (m + m₁) fun _ => k) (hDistinct : tree.IsDistinct)
     (hVanishes : CMlPolynomialEval.PolynomialVanishes tree (hAlpha Φ m₁ φF b s α w)
       (Fin.natAdd m)) :
     hAlpha Φ m₁ φF b s α w = 0 :=
-  CMlPolynomialEval.eq_zero_of_polynomialVanishes_natAdd hk tree (hAlpha Φ m₁ φF b s α w)
-    hDistinct hVanishes
+  CMlPolynomialEval.eq_zero_of_polynomialVanishes_natAdd (fun _ => by omega) tree
+    (hAlpha Φ m₁ φF b s α w) (fun _ => hk) hDistinct hVanishes
 
 /-- The computable multilinear extension of the table `w̃` itself, the committed object the
 final-evaluation step opens. -/
@@ -935,7 +935,7 @@ The summands are assembled from three computable pieces — the Lagrange basis
 `cRangeProduct`. Each of the next lemmas says what one of them evaluates to, which is all the
 sum identities below need: they turn a `CMvPolynomial` evaluation into an `F`-level expression,
 after which the argument is ordinary algebra over the Boolean cube. The `CMvPolynomial`-side
-`Finset` machinery is `ArkLib/ToCompPoly/Multivariate/Eval.lean`. -/
+`Finset` machinery is `CompPoly.Multivariate.Eval`. -/
 
 omit [BEq F] [LawfulBEq F] in
 /-- `eq̃(x, τ)` for a *Boolean* `x`: the Mathlib equality polynomial of a cube point, evaluated at
@@ -1020,8 +1020,7 @@ theorem fromCMvPolynomial_cBooleanEqPolynomial (x : Fin m₀ → Fin 2) :
   by_cases h : x i = 1
   · rw [ite_eq_left h, ite_eq_right (by rw [h]; decide), CMvPolynomial.fromCMvPolynomial_X]
   · have h0 : x i = 0 := by fin_omega
-    rw [ite_eq_right h, ite_eq_left h0, CMvPolynomial.fromCMvPolynomial_sub',
-      CMvPolynomial.fromCMvPolynomial_one', CMvPolynomial.fromCMvPolynomial_X]
+    simp [h0, sub_eq_add_neg, CMvPolynomial.fromCMvPolynomial_X]
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- **The computable multilinear extension transports to Mathlib's `MLE`.** Strictly stronger than
@@ -1031,7 +1030,7 @@ theorem fromCMvPolynomial_cMultilinearExtension (evals : (Fin m₀ → Fin 2) �
     fromCMvPolynomial (cMultilinearExtension m₀ evals) = MLE evals := by
   rw [cMultilinearExtension, CMvPolynomial.fromCMvPolynomial_sum, MLE]
   exact Finset.sum_congr rfl fun x _ => by
-    rw [CMvPolynomial.fromCMvPolynomial_mul', CMvPolynomial.fromCMvPolynomial_C,
+    rw [CPoly.map_mul, CMvPolynomial.fromCMvPolynomial_C,
       fromCMvPolynomial_cBooleanEqPolynomial, mul_comm]
 
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -1041,11 +1040,8 @@ theorem fromCMvPolynomial_cRangeProduct (b : ℕ) (p : CMvPolynomial m₀ F) :
       fromCMvPolynomial p * ∏ k ∈ Finset.Icc 1 (b - 1),
         ((fromCMvPolynomial p - MvPolynomial.C (k : F)) *
           (fromCMvPolynomial p + MvPolynomial.C (k : F))) := by
-  rw [cRangeProduct, CMvPolynomial.fromCMvPolynomial_mul',
-    CMvPolynomial.fromCMvPolynomial_prod]
-  exact congrArg _ (Finset.prod_congr rfl fun k _ => by
-    rw [CMvPolynomial.fromCMvPolynomial_mul', CMvPolynomial.fromCMvPolynomial_sub',
-      CMvPolynomial.fromCMvPolynomial_add', CMvPolynomial.fromCMvPolynomial_C])
+  simp [cRangeProduct, CMvPolynomial.fromCMvPolynomial_prod, sub_eq_add_neg,
+    CMvPolynomial.fromCMvPolynomial_C]
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- Shifting by a constant does not raise the per-variable degree. -/
@@ -1088,7 +1084,7 @@ that `RoundMsg`'s first component and Lemma 11's `k = max (2b) 2 + 1` are set ag
 theorem degreeOf_sumcheckPolyZero {b : ℕ} (hb : 0 < b) (φF : ZMod q →+* F) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) (j : Fin m₀) :
     (fromCMvPolynomial (sumcheckPolyZero Φ m₀ φF b τ₀ w)).degreeOf j ≤ roundDegZero b := by
-  rw [sumcheckPolyZero, CMvPolynomial.fromCMvPolynomial_mul', cEqualityPolynomial,
+  rw [sumcheckPolyZero, CPoly.map_mul, cEqualityPolynomial,
     fromCMvPolynomial_cMultilinearExtension, fromCMvPolynomial_cRangeProduct,
     fromCMvPolynomial_cMultilinearExtension, roundDegZero]
   refine le_trans (MvPolynomial.degreeOf_mul_le _ _ _) ?_
@@ -1104,7 +1100,7 @@ theorem degreeOf_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinSta
     (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (j : Fin m₀) :
     (fromCMvPolynomial (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w)).degreeOf j
       ≤ roundDegAlpha := by
-  rw [sumcheckPolyAlpha, CMvPolynomial.fromCMvPolynomial_mul',
+  rw [sumcheckPolyAlpha, CPoly.map_mul,
     fromCMvPolynomial_cMultilinearExtension,
     fromCMvPolynomial_cMultilinearExtension, roundDegAlpha]
   refine le_trans (MvPolynomial.degreeOf_mul_le _ _ _) ?_

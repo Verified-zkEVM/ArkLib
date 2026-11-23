@@ -546,7 +546,7 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
     simp only [common, Finset.mem_filter, Finset.mem_univ, true_and]
     intro i
     have hcoeff := congrArg (fun p : Polynomial F => p.coeff i) hzero
-    simp only [difference, Polynomial.finsetSum_coeff, Polynomial.coeff_monomial,
+    simp only [difference, Polynomial.finsetSum_coeff, Polynomial.coeff_monomial_apply,
       Polynomial.coeff_zero] at hcoeff
     have : u i x - v i x = 0 := by
       rw [Finset.sum_eq_single i] at hcoeff

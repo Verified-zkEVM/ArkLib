@@ -377,6 +377,7 @@ def legacyProgram (stmt : Spec.StatementRound R n 0)
   Spec.oracleVerifierProgram R deg (Spec.StatementRound R n) (roundCheck R deg n D ambient)
     stmt chals
 
+omit [SampleableType R] in
 /-- The legacy oracle verifier runs exactly the legacy decision fold. -/
 theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
     (chals : (Spec.pSpec R deg n).Challenges) :
@@ -426,6 +427,7 @@ def verifier : OracleVerifier ambient (protocol R deg n) (Spec.StatementRound R 
     (fun _ => Spec.polynomialFamily R n deg) :=
   verifierOn R deg n D ambient _ _ (Spec.polynomialFamily R n deg)
 
+omit [SampleableType R] in
 /-- The output map keeps the input polynomial: it is the projection to the input resources. -/
 theorem verifier_outputMap (stmt : Spec.StatementRound R n 0) (p : Path (protocol R deg n))
     (v : View (protocol R deg n) p) :
@@ -434,6 +436,7 @@ theorem verifier_outputMap (stmt : Spec.StatementRound R n 0) (p : Path (protoco
         (Resources.ofFamily (pathFamily (protocol R deg n) p)) :=
   rfl
 
+omit [SampleableType R] in
 /-- The decision is the legacy decision fold with its message queries renamed by `route`. -/
 theorem verifier_decide (stmt : Spec.StatementRound R n 0) (p : Path (protocol R deg n))
     (v : View (protocol R deg n) p) :
@@ -484,6 +487,7 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
         OracleComp spec' α) :=
   simulateQ_pathLift amb p data pl oa
 
+omit [SampleableType R] in
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript. -/
 theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (stmt : Spec.StatementRound R n 0)
@@ -498,6 +502,7 @@ theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
   congr 1
   exact QueryImpl.simulateQ_simulateQ_eq_of_apply (simulateQ_route n tr) _
 
+omit [SampleableType R] in
 /-- The legacy oracle verifier, answering its queries from the oracle statement and the messages
 of a legacy transcript, returns `legacyVerdict` without ambient effects. -/
 theorem simulateQ_legacy_verify (stmt : Spec.StatementRound R n 0)
@@ -512,6 +517,7 @@ theorem simulateQ_legacy_verify (stmt : Spec.StatementRound R n 0)
     simulateQ_liftTarget]
   rfl
 
+omit [SampleableType R] in
 /-- Closed form of the execution against a fold of pure rounds, whatever its messages: every
 round runs and draws its challenge, and the verdict is the legacy verdict of the decoded
 transcript, with the input polynomial as output oracle. -/
@@ -534,6 +540,7 @@ theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
   simp only [simulateQ_decide]
   rfl
 
+omit [SampleableType R] in
 /-- Closed form of the honest execution: draw every challenge, then return the honest transcript
 and output, and the legacy verdict of the decoded honest transcript with the input polynomial as
 output oracle. -/
@@ -652,6 +659,7 @@ theorem simulateQ_simOracle2_messageOnly (oStmt : ∀ i, Spec.OracleStatement R 
     rw [simulateQ_bind, simulateQ_bind, simulateQ_spec_query, simulateQ_spec_query]
     exact (pure_bind (m := OracleComp ambient) _ _).trans (ih _ (hn _))
 
+omit [SampleableType R] in
 /-- A round whose message does not sum to the target over `D` fails its check. -/
 theorem roundCheck_eq_none (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (T : FullTranscript (Spec.SingleRound.pSpec R deg))
@@ -675,6 +683,7 @@ theorem roundCheck_eq_none (i : Fin n) (stmt : Spec.StatementRound R n i.castSuc
     Option.map_eq_none_iff] at e
   exact e
 
+omit [SampleableType R] in
 /-- A round whose message sums to the target over `D` passes its check, and the next statement
 evaluates the message at the challenge. -/
 theorem roundCheck_eq_some (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
@@ -700,6 +709,7 @@ theorem roundCheck_eq_some (i : Fin n) (stmt : Spec.StatementRound R n i.castSuc
     ↓existsAndEq, true_and] at e
   exact e.1
 
+omit [SampleableType R] in
 /-- If the first round fails its check, the legacy verdict rejects, whatever the later rounds. -/
 theorem legacyVerdict_eq_none {k : ℕ} (stmt : Spec.StatementRound R (k + 1) 0)
     (A : FullTranscript (Spec.SingleRound.pSpec R deg)) (B : FullTranscript (Spec.pSpec R deg k))

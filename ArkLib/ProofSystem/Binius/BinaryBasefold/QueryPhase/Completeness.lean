@@ -76,8 +76,8 @@ private theorem honest_step_pure (γ : ℕ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (chals : (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges)
-    (hstrict : strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((stmt, oStmt), ()))
+    (hstrict : ((stmt, oStmt), ()) ∈
+      strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (cur : L)
     (hcur : CheckSingleRepetitionFoldRel 𝔽q β (stmtIn := stmt) (oStmtIn := oStmt) (v := v)
@@ -122,8 +122,8 @@ private theorem honest_loop_pure (γ : ℕ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (chals : (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges)
-    (hstrict : strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((stmt, oStmt), ()))
+    (hstrict : ((stmt, oStmt), ()) ∈
+      strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
     let tr := (queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).honestProverTranscript stmt () oStmt chals
     let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
@@ -183,8 +183,8 @@ private theorem honest_repetition_pure (γ : ℕ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (chals : (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges)
-    (hstrict : strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((stmt, oStmt), ()))
+    (hstrict : ((stmt, oStmt), ()) ∈
+      strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
     let tr := (queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).honestProverTranscript stmt () oStmt chals
     let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
@@ -226,8 +226,8 @@ theorem queryPhaseLogicStep_simulate_honest (γ : ℕ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (chals : (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges)
-    (hstrict : strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((stmt, oStmt), ())) :
+    (hstrict : ((stmt, oStmt), ()) ∈
+      strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :
     let step := queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ
     let tr := step.honestProverTranscript stmt () oStmt chals
     let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
@@ -274,8 +274,8 @@ theorem queryOracleVerifier_simulate_honest (γ : ℕ)
     (oStmt : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (chals : (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges)
-    (hstrict : strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ((stmt, oStmt), ())) :
+    (hstrict : ((stmt, oStmt), ()) ∈
+      strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :
     let tr := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (chals ⟨0, by rfl⟩)
     simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
@@ -337,8 +337,9 @@ theorem queryOracleReduction_perfectCompleteness (γ_repetitions : ℕ) {σ : Ty
     pure_bind] at h_output
   let tr := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) chal
-  have hstrict : strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ)
-      ((stmtIn, oStmtIn), ()) := by cases witIn; exact h_relIn
+  have hstrict : ((stmtIn, oStmtIn), ()) ∈ strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) := by
+    cases witIn
+    exact h_relIn
   have hv : (OracleVerifier.toVerifier (Oₛₒ := fun i : Empty => nomatch i)
       (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)).verify (stmtIn, oStmtIn) tr =
       (pure (true, fun i : Empty => nomatch i) : OptionT (OracleComp []ₒ) _) := by

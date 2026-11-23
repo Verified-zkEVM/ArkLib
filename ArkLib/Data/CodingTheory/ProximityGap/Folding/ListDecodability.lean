@@ -67,7 +67,8 @@ lemma folding_contracts_block_distance [FoldingContextMiddle k n]
       (by aesop (add safe (by grind))) <| fun i hi ↦ by
       rw [foldWord_k_1, foldWord_k_1]
       extract_lets y j j'
-      have : 2 ^ k = 2 * 2 ^ (k - 1) := by grind [←pow_succ']
+      have : 2 ^ k = 2 * 2 ^ (k - 1) := by
+        rw [← pow_succ', Nat.sub_add_cancel (FoldingContextMiddle.k_ge_1 (k := k) (n := n))]
       have hj : j ∈ blockIdx ω k x := by
         aesop
           (add simp [mem_blockIdx_iff_mem_block, pow_mul])
@@ -415,7 +416,7 @@ lemma two_pow_d_sub_one_le_rate_mul (hdn : d ≤ n) :
 
 open CoreDefinitions unitInterval FoldingContext in
 /-- Claim 4.23 from [ACFY24]. -/
-private lemma folding_reflects_balls_aux [Fintype F] [SampleableType F] [FoldingContext k d n]
+private lemma folding_reflects_balls_aux [SampleableType F] [FoldingContext k d n]
   {ε_mca : I → ℝ≥0}
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
@@ -528,7 +529,7 @@ open CoreDefinitions unitInterval in
   `k`-wise block list of `f`. One containment holds for every `α`
   (`folding_preserves_block_balls`, Claim 4.22); the other except with probability
   `ε_mca δ` (Claim 4.23). -/
-theorem folding_reflects_balls [Fintype F] [SampleableType F] [FoldingContext k d n]
+theorem folding_reflects_balls [SampleableType F] [FoldingContext k d n]
     {ε_mca : I → ℝ≥0}
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
@@ -562,7 +563,7 @@ open CoreDefinitions unitInterval in
   probability is bounded by the mutual-correlated-agreement error `ε i` of the generator
   `Gen(2; α) = (1, α)` for the code `C^(i+1)`; the total failure probability is at most the sum
   of these errors. -/
-private theorem iterated_folding_reflects_balls_aux [Fintype F] [SampleableType F] (k : ℕ) :
+private theorem iterated_folding_reflects_balls_aux [SampleableType F] (k : ℕ) :
     ∀ (n d b : ℕ) (ω : SmoothCosetFftDomain n F) (f : Word F (Fin (2 ^ n)))
       (ε : ℕ → I → ℝ≥0) (δ : ℝ≥0) (hδ1 : δ ≤ 1),
       b + k ≤ d → d ≤ n →
@@ -655,7 +656,7 @@ open CoreDefinitions unitInterval in
   error is total in `δ`, so only the rate bound `1 - rate(C⁽ⁱ⁾)` is needed to make the codewords
   explaining the folded agreement unique. Every regime proposed in the paper has
   `B⋆ ≥ rate` (with equality in the capacity regime), so the paper's range implies this one. -/
-theorem iterated_folding_reflects_balls [Fintype F] [SampleableType F]
+theorem iterated_folding_reflects_balls [SampleableType F]
     [FoldingContext k d n]
     {ω : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
     (ε : ℕ → I → ℝ≥0) {δ : ℝ≥0} (hδ1 : δ ≤ 1)

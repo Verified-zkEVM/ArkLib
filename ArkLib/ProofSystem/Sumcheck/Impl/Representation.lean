@@ -32,10 +32,10 @@ variable [BEq R] [LawfulBEq R]
 
 /-- Convert the coefficient array to the degree-bounded mathematical message. -/
 def toMessage (q : Message R deg) : Polynomial.degreeLE R deg :=
-  let p : Polynomial R := .ofFinsupp (.ofCoeff {
+  let p : Polynomial R := .ofCoeff {
     support := q.val.support
     toFun := q.val.coeff
-    mem_support_toFun := CompPoly.CPolynomial.mem_support_iff q.val })
+    mem_support_toFun := CompPoly.CPolynomial.mem_support_iff q.val }
   have hp : p = q.val.toPoly := by
     ext i
     exact CompPoly.CPolynomial.coeff_toPoly q.val i

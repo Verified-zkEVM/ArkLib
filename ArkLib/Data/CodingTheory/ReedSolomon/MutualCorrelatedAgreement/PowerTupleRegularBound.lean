@@ -51,7 +51,9 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval mem_restrictBidegree_iff_weightedTotalDegree_le
+  restrictBidegree)
 
 variable {F E : Type*} [Field F] [Field E] {n k K ℓ : ℕ}
 
