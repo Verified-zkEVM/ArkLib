@@ -150,16 +150,6 @@ section Proofs
 
 variable {F : Type} [CommRing F]
 
-/-! ## The first variable -/
-
-/-- Fixing the first variable evaluates by prepending its value. -/
-theorem eval_fixFirstVariablesOfMQP_cons {n : ℕ} (a : F) (g : MvPolynomial (Fin (n + 1)) F)
-    (s : Fin n → F) :
-    eval s (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ g (fun _ => a)) =
-      eval (Fin.cons a s) g := by
-  rw [eval_fixFirstVariablesOfMQP_one (ℓ := n + 1) (h := by omega) (H := g) (c := a) (x := s)]
-  rfl
-
 /-! ## The honest prover -/
 
 /-- The honest first message evaluates to the hypercube sum with the first variable fixed. -/
@@ -288,11 +278,14 @@ variable {F : Type} [CommRing F] {Msg : Type}
 
 Each round runs the acceptance check, then moves the claim to the message's value at the challenge.
 
-The result is the final claim, or nothing if some round rejects.
+The result is the final claim.
+
+It is nothing if some round rejects, or if there are not exactly as many messages as challenges.
 -/
 def replay (ops : MessageOps F Msg) : F → List Msg → List F → Option F
+  | c, [], [] => some c
   | c, m :: ms, r :: rs => if ops.accept c m then replay ops (ops.evaluate c m r) ms rs else none
-  | c, _, _ => some c
+  | _, _, _ => none
 
 /-- The final claim of the mathematical view.
 
@@ -301,21 +294,26 @@ noncomputable def finalClaim (dec : F → Msg → Polynomial F) : F → List Msg
   | c, m :: ms, r :: rs => finalClaim dec ((dec c m).eval r) ms rs
   | c, _, _ => c
 
-/-- When every message is accepted, the replay ends at the decoded polynomials' final claim. -/
+/-- When every message is accepted and there is one message per challenge,
+the replay ends at the decoded polynomials' final claim. -/
 theorem replay_eq_some_finalClaim (ops : MessageOps F Msg) (dec : F → Msg → Polynomial F)
     (hev : ∀ c m x, ops.evaluate c m x = (dec c m).eval x) (hacc : ∀ c m, ops.accept c m = true) :
-    ∀ (c : F) (ms : List Msg) (rs : List F), replay ops c ms rs = some (finalClaim dec c ms rs)
-  | _, [], _ => by simp [replay, finalClaim]
-  | _, _ :: _, [] => by simp [replay, finalClaim]
-  | c, m :: ms, r :: rs => by
+    ∀ (c : F) (ms : List Msg) (rs : List F), ms.length = rs.length →
+      replay ops c ms rs = some (finalClaim dec c ms rs)
+  | _, [], [], _ => by simp [replay, finalClaim]
+  | _, [], _ :: _, h => by simp at h
+  | _, _ :: _, [], h => by simp at h
+  | c, m :: ms, r :: rs, h => by
     simp only [replay, finalClaim, hacc, ↓reduceIte, hev]
-    exact replay_eq_some_finalClaim ops dec hev hacc _ ms rs
+    exact replay_eq_some_finalClaim ops dec hev hacc _ ms rs (by simpa using h)
 
-/-- The executable replay of quadratic messages ends at the decoded quadratics' final claim. -/
-theorem replay_quadraticOps (c : F) (ms : List (F × F)) (rs : List F) :
+/-- With one message per challenge,
+the executable replay of quadratic messages ends at the decoded quadratics' final claim. -/
+theorem replay_quadraticOps (c : F) (ms : List (F × F)) (rs : List F)
+    (h : ms.length = rs.length) :
     replay quadraticOps c ms rs = some (finalClaim (fun c m => (quadratic c m).val) c ms rs) :=
   replay_eq_some_finalClaim _ _ (fun _ _ _ => by simp [quadraticOps, quadratic])
-    (fun _ _ => rfl) c ms rs
+    (fun _ _ => rfl) c ms rs h
 
 /-- The polynomials the verifier decodes, as a prover strategy. -/
 noncomputable def induced (dec : F → Msg → Polynomial F) :

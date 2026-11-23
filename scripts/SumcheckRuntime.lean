@@ -202,6 +202,8 @@ For `g = x + 2y + 3`:
 - `g(4, 3) = 13`.
 
 Replaying the same messages from the false claim `2` ends at `8`, not at `13`.
+
+A replay with one message too few or too many is rejected.
 -/
 def replayChecks : IO Unit := do
   check "quadratic replay with a nonzero X^2 coefficient ends at g(r)" fun _ =>
@@ -213,6 +215,11 @@ def replayChecks : IO Unit := do
   check "replay rejects a failed sum check" fun _ =>
     Sumcheck.Counting.replay linearOps (5 : F) [(2, 1)] [4] == some 6 &&
     Sumcheck.Counting.replay linearOps (6 : F) [(2, 1)] [4] == none
+  check "replay rejects fewer messages than challenges" fun _ =>
+    Sumcheck.Counting.replay Sumcheck.quadraticOps (1 : F) [(8, 0)] [4, 3] == none &&
+    Sumcheck.Counting.replay Sumcheck.quadraticOps (1 : F) [] [4, 3] == none
+  check "replay rejects more messages than challenges" fun _ =>
+    Sumcheck.Counting.replay Sumcheck.quadraticOps (1 : F) [(8, 0), (7, 0)] [4] == none
 
 end SumcheckRuntime
 
