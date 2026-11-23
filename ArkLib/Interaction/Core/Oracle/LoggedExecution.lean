@@ -12,8 +12,8 @@ public import VCVio.OracleComp.Runtime
 # Logged execution of passive oracle verifiers
 
 `OracleVerifier.runWithLog` records the prover's ambient queries and every query of the decision
-before routing: ambient queries and queries to the input and message oracles, in order and with
-repeats. Forgetting both logs gives `OracleVerifier.run` exactly.
+before routing. The decision log holds ambient queries and queries to the input and message
+oracles, in order and with repeats. Forgetting both logs gives `OracleVerifier.run` exactly.
 
 Logging after substitution, VCVio's `OracleComp.withQueryLog_simulateQ`, records the target
 queries each handler program makes, in order. A persistent `OracleRuntime` executes the logged run

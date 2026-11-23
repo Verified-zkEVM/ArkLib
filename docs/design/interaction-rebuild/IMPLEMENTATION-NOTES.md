@@ -331,7 +331,7 @@ constant output witness type for either notion.
 ## 19. The queries by move under the passive schedule
 
 **Status: ported for the partial transcript, querier, query-group and log assertions of the produced
-entries; excluded by P1 for the intermediate verifier actions that P1 rules out.**
+entries; excluded by P1 for the intermediate verifier actions that P1 excludes.**
 `Oracle/QueriesByMove.lean` wraps the participants' strategies in a list-valued writer layer.
 `TwoParty.Lens.run` remains the only recursive executor. `OracleVerifier.executeWith` runs the
 interaction, the final decision and the output closing in sequence. The ordinary runner, the
@@ -361,9 +361,9 @@ oracle-node-query universes independent. `runWithAmbientLog` is its aggregate pr
 identifies the full queries by move with this ambient view at small query universes, including
 every entry's partial transcript and querier.
 
-`Oracle/SentOracles.lean` defines the family of sent oracle messages at each partial transcript,
-their node names, the inclusion of the resources of a shorter partial transcript into those of a
-longer one, and the inclusion of typed queries. `liftQuery_node` and
+`Oracle/SentOracles.lean` defines the family of sent oracle messages at each partial transcript
+and their node names. It also includes the resources of a shorter partial transcript, and its
+typed queries, into those of a longer one. `liftQuery_node` and
 `sentOracleMessageMap_query` relate node names to the routing of actual queries.
 `toPathResources_data` identifies the data of a completed partial transcript with the oracle
 messages that the verifier uses. `runWithQueriesByMove_before_le` shows that each produced entry
@@ -374,11 +374,11 @@ checks these universe parameters directly. `firstMovesLe_node` keeps node names 
 appended protocol to its final partial transcript. The append route still uses
 `prefixRoute_oracleMessages` and `splitOutputs`.
 
-The test file `ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean` keeps the aggregate tests
-and adds per-entry runtime observations, membership of the actual join and decision entries, proofs
+The test file `ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean` keeps the aggregate tests.
+It adds per-entry runtime observations, membership of the actual join and decision entries, proofs
 that oracles were sent, and exclusion of future moves. Its distinguishing test moves one ambient
 request across a fixed public message. The ordinary outcomes and aggregate logs stay equal, while
-the partial transcripts of the queries differ. P1 rules out intermediate effectful verifier
-actions and their former query groups. It does not rule out prover moves or their partial
+the partial transcripts of the queries differ. P1 excludes intermediate effectful verifier
+actions and their former query groups. It does not exclude prover moves or their partial
 transcripts. The [port table](../interaction-layer/logged-execution-disposition.md) records these
 qualifications separately.

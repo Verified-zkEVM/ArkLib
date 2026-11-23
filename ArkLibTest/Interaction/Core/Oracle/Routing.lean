@@ -109,8 +109,8 @@ def prefixVerifier :
 abbrev suffixResources := pathResources exported secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- The suffix records 30, reads the export and its own message, records 40 and 60, and accepts
-when the export and the message agree, claiming the prefix's returned value together with its own
-message. -/
+when the export and the message agree. On acceptance it claims the prefix's returned value
+together with its own message. -/
 def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × Nat) exported
     (fun _ => exported) where
   decide stmt p _ := by
@@ -173,7 +173,7 @@ def resultSummary (hidden secret : Nat) : Nat × Option ((Nat × Nat) × Nat) ×
 
 /-! Additional passive composition coverage. Both verifier decisions follow the whole
 interaction. The challenge is sampled independently of resources. The port table records
-explicitly the export-derived message that P1 rules out, together with its former schedule. It
+explicitly the export-derived message that P1 excludes, together with its former schedule. It
 does not identify this example with that contract, or with a proof that an oracle was sent at a
 produced transcript prefix. -/
 example (hidden secret : Nat) : resultSummary hidden secret =

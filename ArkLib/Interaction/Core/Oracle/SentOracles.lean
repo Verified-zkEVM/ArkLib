@@ -20,12 +20,12 @@ behavior.
 
 The core (`Core/OracleVerifier.lean`) names the oracle messages of a completed path with
 `OracleMessageIndex`, `OracleMessage`, `oracleMessageFamily` and `oracleMessages`. A partial
-transcript has the same data for the messages sent so far, so this file uses the same stems with
-a `Sent` prefix: `SentOracleMessageIndex`, `SentOracleMessage`, `sentOracleMessageFamily` and
-`sentOracleMessages`. They differ from the core names in the type they depend on: a partial
-transcript instead of a path. `oracleMessagesToSent` is renamed `oracleMessagesToSent`, because it
-identifies the core's `oracleMessageFamily` of a completed transcript with the sent oracle
-messages of the same transcript.
+transcript has the same data for the messages sent so far. This file therefore uses the same
+stems with a `Sent` prefix: `SentOracleMessageIndex`, `SentOracleMessage`,
+`sentOracleMessageFamily` and `sentOracleMessages`. They differ from the core names in the type
+they depend on: a partial transcript instead of a path. `oracleMessagesToSent` identifies the
+core's `oracleMessageFamily` of a completed transcript with the sent oracle messages of the same
+transcript.
 -/
 
 @[expose] public section

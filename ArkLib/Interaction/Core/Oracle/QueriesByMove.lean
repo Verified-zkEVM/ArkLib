@@ -14,8 +14,8 @@ public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 A run of an oracle protocol is a sequence of moves: prover messages, challenge draws and oracle
 messages. For each move, this file records the queries made at that point. The prover and the
 sampler each query at their moves. The verifier makes its queries once, in its decision after the
-last move. The decision and a separate prover setup are not moves, so an entry of the log is
-named for what it holds: the queries that one querier made at one partial transcript.
+last move. The decision and a separate prover setup are not moves. For that reason an entry of
+the log is named for what it holds: the queries that one querier made at one partial transcript.
 
 * `PartialTranscript oracleSig s` (from `Core/Transcript.lean`) is the partial transcript at one
   point: the moves already made, including challenges and oracle messages.

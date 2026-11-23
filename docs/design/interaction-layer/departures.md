@@ -36,8 +36,8 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 
 | Entry | Departure | Status |
 | --- | --- | --- |
-| 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces, for each move, an entry with the partial transcript, the querier and the queries, with exact log erasure, in `Oracle/QueriesByMove.lean`, `Oracle/QueriesByMoveLaws.lean` and `Oracle/SentOracles.lean` | ported |
-| 19 | P1 rules out intermediate verifier queries and the moves they were assigned to; prover moves and their partial transcripts remain | excluded by P1 |
+| 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces one entry per move, with the partial transcript, the querier and the queries. Erasing the entries gives the aggregate logs exactly. The code is in `Oracle/QueriesByMove.lean`, `Oracle/QueriesByMoveLaws.lean` and `Oracle/SentOracles.lean` | ported |
+| 19 | P1 excludes intermediate verifier queries and the moves they were assigned to; prover moves and their partial transcripts remain | excluded by P1 |
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
@@ -104,11 +104,11 @@ tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 
 ## Logged execution and routing tests
 
-The [port table](logged-execution-disposition.md) lists each assertion in the old layer's tests,
-where it is ported or what remains, and which assertions the approved passive-verifier and
-fixed-shape premises (P1 and P2) rule out. The rows about the queries by move are ported under
+The [port table](logged-execution-disposition.md) lists each assertion in the old layer's tests
+and where it is ported or what remains. It also lists which assertions the approved
+passive-verifier and fixed-shape premises (P1 and P2) exclude. The rows about the queries by move are ported under
 the passive schedule. There is no separate step executor. Instrumented strategies run through
 `TwoParty.Lens.run`, and the ordinary run, the queries by move and the ambient queries by move
 share `OracleVerifier.executeWith`. Erasure follows from a general law about running
 instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
-verifier actions and move assignments that P1 rules out.
+verifier actions and move assignments that P1 excludes.
