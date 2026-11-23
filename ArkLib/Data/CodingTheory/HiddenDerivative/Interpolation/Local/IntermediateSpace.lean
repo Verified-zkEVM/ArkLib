@@ -354,13 +354,13 @@ theorem truncateLocalT_exhibitedKernelMultiplier_mem_localIntermediateSpace {m r
     | (intro j
        simp only [balanceWeight, firstWeight, localFirstJetWeight, higherBalanceWeight, localT,
          localY, Int.reduceNeg, mul_neg, mul_one, mul_zero, add_zero, zero_add, neg_add_cancel,
-         Int.neg_natCast_le_ofNat, CharP.cast_eq_zero, Nat.cast_ite, Nat.cast_one, Std.le_refl]
-       all_goals (split_ifs <;> omega))
+         Int.neg_natCast_le_ofNat, CharP.cast_eq_zero, Nat.cast_ite, Nat.cast_one, Std.le_refl])
     | (simp [balanceWeight, firstWeight, localFirstJetWeight, higherBalanceWeight,
         localT, localU, localAux])
     | (obtain ⟨h1, h2, h3, h4⟩ := hsrc e he
        simp only [weight_balanceWeight, weight_firstWeight, weight_higherBalanceWeight]
        omega)
+  split_ifs <;> omega
 
 /-! ### Bounded exhibited maps -/
 

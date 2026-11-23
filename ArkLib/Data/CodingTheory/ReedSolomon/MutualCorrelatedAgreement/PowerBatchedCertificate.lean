@@ -32,7 +32,8 @@ height to the sharp contribution of each regular separant stage.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential ReedSolomon
+open Polynomial PolynomialDifferential ReedSolomon
+open MvPolynomial (CoeffNatDegreeLE map)
 
 noncomputable section
 

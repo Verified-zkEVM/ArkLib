@@ -66,8 +66,8 @@ private theorem columnDifference_eq_zero_iff (w : Fin (ℓ + 1) → ι → F) (i
     columnDifference w i j = 0 ↔ ∀ t, w t i = w t j := by
   constructor
   · intro hzero t
-    have hcoeff := congrArg (coeff · t.val) hzero
-    simp only [columnDifference, finsetSum_coeff, coeff_monomial, Fin.val_inj,
+    have hcoeff := congrArg (fun p : F[X] ↦ p.coeff t.val) hzero
+    simp only [columnDifference, finsetSum_coeff, coeff_monomial_apply, Fin.val_inj,
       Finset.sum_ite_eq', Finset.mem_univ, ite_true, coeff_zero] at hcoeff
     exact sub_eq_zero.mp hcoeff
   · intro h

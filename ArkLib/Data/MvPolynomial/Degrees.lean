@@ -221,7 +221,7 @@ theorem degreeOf_eval_C_finSuccEquiv (p : MvPolynomial (Fin (n + 1)) R) (j : Fin
 theorem eval_comp_eval_C_finSuccEquiv (p : R[X (Fin (n + 1))]) (y : Fin n → R) (x : R) :
     eval y (Polynomial.eval (C x) (finSuccEquiv R n p)) = eval (Fin.cons x y) p := by
   rw [eval_eq_eval_mv_eval', Polynomial.eval_map, Polynomial.eval_eq_sum]
-  simp only [Polynomial.eval₂, Polynomial.sum, map_sum, map_mul, map_pow, eval_C]
+  simp only [Polynomial.eval₂_eq_sum, Polynomial.sum, map_sum, map_mul, map_pow, eval_C]
 
 end Equiv
 
@@ -235,11 +235,10 @@ variable [CommRing R]
 `R[X Fin n]`. If its individual degree in `X 0` is below `#T` and every `x ∈ T` is a root, then
 `p = 0`.
 
-This is the inductive step shared by the two multivariate zero tests over a domain: the
-Cartesian-grid one (`eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`, taking `T = S 0`) and
-the path-dependent nested-tree one (`NestedEvaluationTree.eq_zero_of_vanishes_comp`, taking `T` to
-be the sibling labels of the head node). They differ only in how `hT` is produced — from a product
-set in the first case, from `k` subtrees in the second. -/
+This is the inductive step of the multivariate zero test over a domain on a path-dependent nested
+tree (`NestedEvaluationTree.eq_zero_of_vanishes_comp`, taking `T` to be the sibling labels of the
+head node), from which the Cartesian-grid test
+(`eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`) is derived. -/
 theorem eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero [IsDomain R] {n : ℕ}
     {p : MvPolynomial (Fin (n + 1)) R} (T : Finset R) (hDegree : p.degreeOf 0 < T.card)
     (hT : ∀ x ∈ T, Polynomial.eval (C x) (finSuccEquiv R n p) = 0) : p = 0 := by

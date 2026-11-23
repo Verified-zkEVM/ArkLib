@@ -34,7 +34,8 @@ free-retention bound `hybridCurveTail` at every retention threshold.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE coeffNatDegree coeffNatDegreeLE_coeffNatDegree)
 
 namespace ReedSolomon
 

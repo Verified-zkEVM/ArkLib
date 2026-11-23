@@ -35,7 +35,7 @@ The `hε : errorBound δ deg domain < 1` hypothesis is required for the `Xor` ex
 when `ε = 1`, violating `Xor`.
 
 This proof depends on `correlatedAgreement_affine_spaces` (Theorem 1.6) in `AffineSpaces.lean`. -/
-theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {domain : ι ↪ F}
+theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] {deg : ℕ} {domain : ι ↪ F}
     (hdeg : 0 < deg)
     (C : Fin t → (Fin k → (ι → F))) {δ : ℝ≥0}
     (hδ : δ < 1 - ReedSolomon.sqrtRate deg domain)

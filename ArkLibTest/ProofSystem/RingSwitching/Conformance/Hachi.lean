@@ -156,7 +156,7 @@ example : ((![1, 3], (#v[(0 : B)]).get),
   intro j
   change _ = MvPolynomial.eval (#v[(0 : B)]).get
     (CMlPolynomial.toMvPolynomial (coefficientRows fDistinct j))
-  rw [← CMlPolynomial.eval_eq_eval_toMvPolynomial]
+  rw [CMlPolynomial.eval_toMvPolynomial]
   fin_cases j <;>
     simp [CMlPolynomial.eval, Vector.dotProduct_eq_root_dotProduct, dotProduct,
       monomialBasis_get, coefficientRows, toMatrix, fDistinct] <;> rfl
