@@ -95,7 +95,7 @@ code `MC`, at slack parameter `η`. As a function of the proximity parameter `γ
 function with three regimes: a unique-decoding bound `(⌊n·γ⌋ + 1)·(ℓ - 1) / s` below
 `δ_C / (ℓ + 1)`, a list-decoding bound up to `1 - (ρ_C + η) ^ (1 / (ℓ + 1))`, and the trivial
 bound `1` beyond. The unique-decoding regime replaces the paper's `max{n·γ, 1}` by `⌊n·γ⌋ + 1`. -/
-noncomputable def mdsMCAError [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
+noncomputable def mdsMCAError [DecidableEq A] (MC : ModuleCode ι F A)
   (ℓ s : ℕ) (η : ℝ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   letI δ_C : ℝ := (Code.minRelHammingDistCode (MC.carrier) : ℝ)
@@ -117,7 +117,7 @@ noncomputable def mdsMCAError [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι 
 
 /-- `mdsMCAError` reads the code only through the block length `ι` and the relative distance
 `δᵣ`. -/
-lemma mdsMCAError_congr [Nonempty ι] {A' : Type} [DecidableEq A]
+lemma mdsMCAError_congr {A' : Type} [DecidableEq A]
     [AddCommMonoid A'] [Module F A'] [DecidableEq A']
     (MC : ModuleCode ι F A) (MC' : ModuleCode ι F A') (ℓ s : ℕ) (η : ℝ)
     (hδ : Code.minRelHammingDistCode MC'.carrier = Code.minRelHammingDistCode MC.carrier) :
@@ -154,7 +154,7 @@ Lemma 3.13 [BCGM25], field form. The paper's single statement is split across tw
 it has to hold at two different alphabets; the module form is
 `card_filter_sum_smul_eq_le_of_isMDSGenerator`. Both are stated as seed counts rather than as an
 `IsZeroEvadingGenerator` error, which is the form the proofs below consume. -/
-lemma card_filter_dotProduct_eq_zero_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+lemma card_filter_dotProduct_eq_zero_le_of_isMDSGenerator {S : Type} [Fintype S]
     [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     {v : ℓ → F} (hv : v ≠ 0) :
@@ -183,7 +183,7 @@ of `C_G` vanishing at `|ℓ|` seeds.
 
 This is a version of Lemma 3.6 [BCGM25]: the direction from MDS to independence, specialised at
 `k = |ℓ|`. -/
-lemma isUnit_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+lemma isUnit_of_isMDSGenerator {S : Type} [Fintype S] [DecidableEq F]
     [DecidableEq ℓ] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     {xs : ℓ → S} (hxs : Function.Injective xs) :
@@ -210,7 +210,7 @@ lemma sum_smul_sum_smul_eq_of_mul_eq_one [DecidableEq ℓ] {N M : Matrix ℓ ℓ
 invertible matrix through which `v` and `w` are recovered from the combinations.
 
 This is the module form of Lemma 3.13 [BCGM25]. -/
-lemma card_filter_sum_smul_eq_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+lemma card_filter_sum_smul_eq_le_of_isMDSGenerator {S : Type} [Fintype S]
     [DecidableEq F] [DecidableEq A] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     {v w : ℓ → A} (hvw : v ≠ w) :
@@ -242,7 +242,7 @@ codewords `cs` such that:
 
 The paper's hypothesis `|A₁ ∩ ⋯ ∩ A_{ℓ+1}| > n - Δ_C` is stated as
 `|(A₀ ∩ T')ᶜ| < d_C`, with `A₀` any set inside the first `ℓ` agreement sets. -/
-lemma exists_codewordSpan_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+lemma exists_codewordSpan_of_isMDSGenerator {S : Type} [Fintype S] [DecidableEq F]
     [DecidableEq ι] [DecidableEq A] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {xs : ℓ → S} (hxs : Function.Injective xs)
@@ -282,7 +282,7 @@ families. The words `c` need not be codewords.
 
 Double counting: every disagreement coordinate is cancelled by at most `|ℓ| - 1` seeds, and every
 seed in `X` leaves at most `e - t` coordinates uncancelled. -/
-lemma hammingDist_lt_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+lemma hammingDist_lt_of_isMDSGenerator {S : Type} [Fintype S] [DecidableEq F]
     [DecidableEq A] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (U c : ℓ → (ι → A)) (X : Finset S) {e t : ℕ} (ht : t ≤ e)
@@ -318,7 +318,7 @@ open Classical in
 /-- For `γ < δ_C / (|ℓ| + 1)` and any family `U`, at most `(⌊n·γ⌋ + 1)·(|ℓ| - 1)` seeds `x` satisfy
 the MCA event `IsMCA G MC x U γ`.
 Lemma 6.2 [BCGM25], with the corrected bound. -/
-lemma card_filter_isMCA_le_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+lemma card_filter_isMCA_le_of_isMDSGenerator {S : Type} [Fintype S] [DecidableEq F]
     [DecidableEq A] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {γ : ℝ} (hγ0 : 0 ≤ γ)
@@ -438,7 +438,7 @@ the same span codeword `∑ j, G x j • cs j`, and `Tx` is the exact agreement 
 (`LinearCode.IsMaxAgreementDomain.exists_codeword`). This is the step of [BCGM25] cited as "from
 the proof of Lemma 6.4": with `x := xs k` and `Tx := T k` it is the maximality half of
 `isMaxCADomain_inf_of_isMDSGenerator`, and with `B := A₀` it gives `A₀ ⊆ Tx`. -/
-lemma subset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+lemma subset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Fintype S]
     [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {xs : ℓ → S} (hxs : Function.Injective xs)
@@ -472,7 +472,7 @@ The intersection is a CA agreement set by `exists_codewordSpan_of_isMDSGenerator
 codeword is `∑ j, G (xs k) j • cs j`. Maximality: on any larger CA agreement set `B`, each
 generated word agrees with some codeword (`projectedCode_linearCombination`), so `B` lies in each
 domain by `subset_isMaxAgreementDomain_of_isMDSGenerator`. -/
-lemma isMaxCADomain_inf_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+lemma isMaxCADomain_inf_of_isMDSGenerator {S : Type} [Fintype S] [DecidableEq F]
     (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {xs : ℓ → S} (hxs : Function.Injective xs)
@@ -501,7 +501,7 @@ fewer than `d_C` positions, and let each `B t` be a maximal agreement domain of 
 word at seed `xs t` containing `A₀`. Then any `|ℓ|` of the `B t` intersect exactly in `A₀`: the
 intersection contains `A₀`, is a maximal CA domain by `isMaxCADomain_inf_of_isMDSGenerator`, and
 `A₀`'s own maximality forces equality. -/
-lemma inf_isMaxAgreementDomain_eq_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+lemma inf_isMaxAgreementDomain_eq_of_isMDSGenerator {S : Type} [Fintype S]
     [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {τ : Type} {xs : τ → S}
@@ -528,7 +528,7 @@ This is the inequality `∑ᵢ |Bᵢ \ A| ≤ (ℓ - 1)·|⋃ᵢ Bᵢ \ A|` insi
 [BCGM25]. A lower bound `m ≤ |B t \ A₀|` turns it into the seed count `m·|τ| ≤ (ℓ - 1)·|A₀ᶜ|`:
 `m = 1` is Lemma 6.6 (`card_le_pred_mul_card_compl_of_isMDSGenerator`), and a larger `m` is the
 modification of it used in the list-decoding count of Theorem 6.1. -/
-lemma sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator {S : Type} [Nonempty S]
+lemma sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator {S : Type}
     [Fintype S] [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {τ : Type} [Fintype τ] {xs : τ → S}
@@ -563,7 +563,7 @@ open Classical in
 strictly contains `A₀`, then there are at most `(|ℓ| - 1)·|A₀ᶜ|` seeds: each `B t` reaches
 outside `A₀` somewhere, so this is `sum_card_sdiff_le_pred_mul_card_compl_of_isMDSGenerator`
 with every summand at least `1`. -/
-lemma card_le_pred_mul_card_compl_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+lemma card_le_pred_mul_card_compl_of_isMDSGenerator {S : Type} [Fintype S]
     [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {τ : Type} [Fintype τ] {xs : τ → S}
@@ -649,7 +649,7 @@ open Classical in
 /-- **Claim 6.8 [BCGM25].**  Fix a maximal CA domain `A₀` with at least `n · α` positions and fewer
 than `d_C` missing, and a set `Bad` of seeds whose maximal agreement domains `T x` strictly contain
 `A₀`. Then `|Bad| ≤ n · (1 - α) · (|ℓ| - 1)`. -/
-lemma card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator {S : Type} [Nonempty S]
+lemma card_le_of_ssubset_isMaxAgreementDomain_of_isMDSGenerator {S : Type}
     [Fintype S] [DecidableEq F] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (MC : ModuleCode ι F A) (U : ℓ → (ι → A)) {A₀ : Finset ι}
@@ -685,7 +685,7 @@ open Classical in
 `n · β` positions but contain no maximal CA domain with `n · α` positions. Then
 `|Bad| ≤ max (2 · (|ℓ| - 1) / (η · (β - α))) (|ℓ| · (|ℓ| + 1) / η)`, stated division-free as the
 disjunction of the two cleared bounds. -/
-lemma card_mul_le_of_forall_not_subset_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S]
+lemma card_mul_le_of_forall_not_subset_of_isMDSGenerator {S : Type} [Fintype S]
     [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A))
@@ -787,7 +787,7 @@ open Classical in
 /-- **The list-decoding seed count of Theorem 6.1 [BCGM25].** At a radius `γ ≤ 1 - β`, at most
 `n · (1 - α) · (|ℓ| - 1) / η + max (2 · (|ℓ| - 1) / (η · (β - α))) (|ℓ| · (|ℓ| + 1) / η)`
 seeds witness the MCA event for a fixed family `U`. -/
-lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Nonempty S] [Fintype S]
+lemma card_filter_isMCA_le_of_isMDSGenerator_of_le_one_sub {S : Type} [Fintype S]
     [DecidableEq F] [Nonempty ι] (G : Generator S ℓ F) (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (hℓ : 2 ≤ Fintype.card ℓ) (MC : ModuleCode ι F A) (U : ℓ → (ι → A))

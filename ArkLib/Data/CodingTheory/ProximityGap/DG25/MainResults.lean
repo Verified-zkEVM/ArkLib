@@ -198,7 +198,8 @@ def constructInterleavedCodewordsAndRowWiseCA
   exact (V₀₁ rowIdx).2.2 -- definitional equality of V₀ V₁ according to V₀₁
 
 open Classical in
-omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
+omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
+  [DecidableEq ι] [Nonempty ι] in
 /-- **Lemma 3.2 (DG25): Closeness implies Closeness to Constructed Codeword**
 Context:
 - `C` is a linear code in `F^n` with proximity gaps for affine lines (params `e`, `ε`).
@@ -394,7 +395,8 @@ lemma disjoint_R_star_star_filter_columns_in_D_not_in_D (U₀ U₁ : Interleaved
 
 -- Keep the code coercion explicit: asking elaboration to infer it here unfolds the large
 -- `e_ε_correlatedAgreementAffineLinesNat` proposition during definitional equality checking.
-omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
+omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
+  [DecidableEq ι] [Nonempty ι] in
 lemma D_card_le_e_implies_interleaved_correlatedAgreement₂ [Nontrivial MC]
     (U₀ U₁ : InterleavedWord A (Fin m) ι)
   (hC_gap : e_ε_correlatedAgreementAffineLinesNat (F := F) (C := (MC : Set (ι → A))) e ε)
@@ -649,7 +651,7 @@ lemma card_agreeing_cells_in_D_le
   simp only [sum_const, smul_eq_mul, mul_one] at h_fibers_le_one_sum
   exact le_trans (Nat.le_of_eq h_card_eq_sum_fibers) h_fibers_le_one_sum
 
-omit [Fintype A] [DecidableEq F] [Module.Free F A] in
+omit [Fintype A] [DecidableEq F] [Module.Free F A] [DecidableEq ι] [Nonempty ι] in
 /-- **Lemma 3.3 (DG25): Upper Bound on R** Cardinality**
 Context:
 - `U₀, U₁` are columnWise words; `V₀, V₁` are columnWise codewords
@@ -707,7 +709,8 @@ lemma R_star_star_upper_bound
       (V₀ := V₀) (V₁ := V₁) D (by rfl)
     exact h_in_D
 
-omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
+omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
+  [DecidableEq ι] [Nonempty ι] in
 /-- **Lemma 3.4 (DG25): Lower Bound on R** Cardinality**
 Context:
 - Same as Lemma 3.2, including hypotheses on `C`, `e`, `V₀`, `V₁`, `R_star`.
@@ -855,7 +858,7 @@ lemma e_mul_R_div_R_sub_1_lt_e_add_1_real {e R : ℕ} (hR_gt_e_add_1 : e + 1 < R
   linarith [h_R_gt_e_add_1_real]
 
 open Classical in
-omit [Fintype A] [DecidableEq F] [Module.Free F A] in
+omit [Fintype A] [DecidableEq F] [Module.Free F A] [DecidableEq ι] [Nonempty ι] in
 /- **Theorem 3.1**. If `C` features proximity gaps for affine lines with respect to the
 proximity parameter `e ∈ {0, ..., ⌊(d-1)/2⌋}` and the false witness bound
 `ε ≥ e+1`, then, for each `m > 1`, `C`'s interleaving `C^m` also does.
@@ -993,7 +996,8 @@ def R_star_tensor (U₀ U₁ : (Fin (2 ^ m)) → Word A ι) : Finset F :=
     R_star_tensor_filter MC (m := m) (e := e) (ε := ε) U₀ U₁ r_affine_combine
   ) Finset.univ
 
-omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A] in
+omit [NoZeroDivisors F] [DecidableEq F] [Fintype A] [Module.Free F A]
+  [DecidableEq ι] [Nonempty ι] in
 open Classical in
 /-- inductively to each such matrix, we conclude that,
 for each `r_{ϑ-1} ∈ R*`, `d^{2^{ϑ-1}}((1-r_{ϑ-1}) · U₀ + r_{ϑ-1} · U₁, C^{2^{ϑ-1}}) ≤ e`
@@ -1172,7 +1176,8 @@ lemma prob_R_star_gt_threshold
   rw [h_sub_eq_goal] at h_lt_sub
   exact h_lt_sub
 
-omit [DecidableEq F] [NoZeroDivisors F] [Fintype A] [Module.Free F A] in
+omit [DecidableEq F] [NoZeroDivisors F] [Fintype A] [Module.Free F A]
+  [DecidableEq ι] [Nonempty ι] in
 /- **Theorem 3.6 (Angeris-Evans-Roh AER24): Interleaved Affine Gaps -> Tensor Gaps**
 If, for **every** interleaving factor `m ≥ 1`, the `m`-fold interleaved code `C^m`
 features proximity gaps for affine lines with respect to parameters `e` and `ε`,

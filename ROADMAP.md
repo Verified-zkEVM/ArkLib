@@ -95,8 +95,10 @@ entry says so, the specification is not claimed to be executable.
   `Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` proves
   perfect completeness on exact encodings and ordinary knowledge soundness, obtained from
   round-by-round knowledge soundness through the proved guarded bridge
-  `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The fused FRI-Binius
-  protocol is not yet formalized. The
+  `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The unrolled protocol of
+  DP24 Construction 5.1 for `K = GF(2)`, in which the Binary Basefold sum-check is the ring-switching sum-check,
+  is `Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness`, with
+  error bound DP24 equation (43). The
   [consumer guide](docs/wiki/ring-switching-consumers.md) records the interfaces.
 - **Spartan** ([`ProofSystem/Spartan/`](ArkLib/ProofSystem/Spartan/)): a seven-stage oracle
   reduction for R1CS. `Spartan.perfectCompleteness`; `Spartan.knowledgeSoundness`, with error
@@ -166,9 +168,9 @@ entry says so, the specification is not claimed to be executable.
 
 ## In progress
 
-- **Solicited proofs.** Two coding-theory declarations, covering a correlated-agreement lower
-  bound and a random-domain list-size upper bound, are stated faithfully and left open for contributors. They are the only admitted statements in the library, and nothing
-  else depends on them
+- **Solicited proofs.** One coding-theory declaration, a correlated-agreement lower bound, is
+  stated faithfully and left open for contributors. It is the only admitted statement in the
+  library, and nothing else depends on it
   ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).
 - **Rewinding knowledge soundness.** A shared rewinding engine with legacy-layer and
   interaction-layer instances
@@ -186,8 +188,7 @@ entry says so, the specification is not claimed to be executable.
 - **STIR protocol.** Construction 5.2 and its round-by-round soundness (Lemma 5.4, Theorem 5.1),
   tied to a concrete prover and verifier
   ([#1292](https://github.com/Verified-zkEVM/ArkLib/issues/1292)).
-- **BitZ.** A relaxed overflow bound
-  ([#1307](https://github.com/Verified-zkEVM/ArkLib/issues/1307)).
+- **BitZ.** The use of the CRT overflow bound in Round 2.
 - **Group models.** ArkLib's side of the generic and algebraic group model consolidation in VCVio
   ([#1310](https://github.com/Verified-zkEVM/ArkLib/issues/1310)).
 

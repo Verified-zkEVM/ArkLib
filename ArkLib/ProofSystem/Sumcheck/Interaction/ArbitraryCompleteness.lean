@@ -54,8 +54,7 @@ theorem executeRoundsSampled_support_completeness [DecidableEq R] {m : ℕ} (D :
         ∃ output, result = some output ∧ Inv j.succ output := by
     intro j input hin result hresult
     rcases hin with ⟨himpl, hcurrent⟩
-    change result ∈ support ((roundStages R n deg unifSpec start count bound
-      (Finset.univ.map D).toList (honestMessages R n deg D p) challenges j).run input) at hresult
+    dsimp only [stages] at hresult
     rw [roundStages_honest R n deg unifSpec D start count bound p challenges j input hcurrent,
       support_map] at hresult
     obtain ⟨r, _, rfl⟩ := hresult
@@ -65,9 +64,7 @@ theorem executeRoundsSampled_support_completeness [DecidableEq R] {m : ℕ} (D :
   have hrun := OrderedExecution.run_preserves_support count I stages Inv preserves
     (⟨stmt, (polynomialFamily R n deg).behaviorOfRealizations (fun _ => p)⟩, ()) ⟨rfl, h⟩
   intro result hresult
-  change result ∈ support
-    (Option.map Prod.fst <$> OrderedExecution.run count I stages _) at hresult
-  rw [support_map] at hresult
+  simp only [executeRoundsSampled, support_map] at hresult
   obtain ⟨full, hfull, rfl⟩ := hresult
   obtain ⟨output, rfl, horacles, hrelation⟩ := hrun full hfull
   simp only [Option.map_some]

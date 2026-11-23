@@ -418,7 +418,7 @@ theorem mcaError_le_ofReal_of_forall_card_le {ι F ℓ S A : Type} [Fintype ι] 
 whose restriction to the agreement set is not the restriction of a codeword, and the restriction
 of `U j` itself is one. No hypothesis on `G`, `x` or `δ` is needed. -/
 theorem not_isMCA_of_forall_mem {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
-    [Nonempty S] [Fintype S] [AddCommMonoid A] [Module F A]
+    [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (x : S) {U : ℓ → ι → A}
     (hU : ∀ j, U j ∈ MC) (δ : ℝ) :
     ¬ IsMCA G MC x U δ := by

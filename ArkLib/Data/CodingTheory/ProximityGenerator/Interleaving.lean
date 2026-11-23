@@ -105,7 +105,7 @@ variable {ι F A κ ℓ : Type} [Fintype ι] [Field F] [AddCommMonoid A] [Module
 /-- **The MCA event is an integer-threshold event.** The size condition `|T| ≥ |ι| · (1 - δ)` of
 `IsMCA` holds exactly when `⌈|ι| · (1 - δ)⌉₊ ≤ |T|`, so `IsMCA G C x U δ` is
 `Code.IsProjectionBad G C ⌈|ι| · (1 - δ)⌉₊ x U`. For `δ ≥ 1` the threshold is `0`. -/
-theorem isMCA_iff_isProjectionBad {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F)
+theorem isMCA_iff_isProjectionBad {S : Type} (G : Generator S ℓ F)
     (C : ModuleCode ι F A) (x : S) (U : ℓ → ι → A) (δ : ℝ) :
     IsMCA G C x U δ ↔ IsProjectionBad G C ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ x U := by
   simp only [IsMCA, IsProjectionBad, ge_iff_le, Nat.ceil_le]
@@ -121,7 +121,7 @@ The bound `hs` is the hypothesis of that lemma;
 it is automatic for infinite `F`. The generator and the radius are arbitrary: a seed keeps its
 witness set `T`, so the size clause of `IsMCA` carries over unchanged at every real `δ`. For
 empty `s`, any `V` works. -/
-theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type} [Nonempty S] [Fintype S]
+theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type}
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) (U : ℓ → ι → κ → A) (s : Finset S)
     (hs : (s.card : ℕ∞) ≤ ENat.card F) (hbad : ∀ x ∈ s, IsMCA G (C^⋈κ) x U δ) :
     ∃ V : ℓ → ι → A, ∀ x ∈ s, IsMCA G C x V δ := by
@@ -224,7 +224,7 @@ witness set `T`. -/
 lemma card_le_card_filter_isMCA_rowCombination
     {ι F A κ ℓ : Type} [Fintype ι] [Field F] [Fintype F]
     [AddCommMonoid A] [Module F A] [Fintype κ] [Fintype ℓ]
-    {S : Type} [Nonempty S] [Fintype S]
+    {S : Type}
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
     (U : ℓ → ι → κ → A) (x : S) (hx : IsMCA G (C^⋈κ) x U δ) :
     Fintype.card F ^ (Fintype.card κ - 1) * (Fintype.card F - 1) ≤

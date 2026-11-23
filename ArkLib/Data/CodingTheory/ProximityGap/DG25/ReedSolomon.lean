@@ -36,6 +36,7 @@ variable {n k : ℕ} {A : Type} [NeZero n] [NeZero k] (hk : k ≤ n)
     (h_deg_le_length : k ≤ Fintype.card ι)
   {domain : (Fin n) ↪ A} [DecidableEq A] [Field A] [Fintype A] [SampleableType A]
 
+omit [DecidableEq ι] in
 /-
 Theorem 2.2 (Ben-Sasson, et al. [Ben+23, Thm. 4.1]). For each `e ∈ {0, ..., ⌊(d-1)/2⌋}`,
 `RS_{F, S}[k, n]` exhibits proximity gaps for affine lines with respect to the
@@ -123,6 +124,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding
   rw [h_δ_mul_n_eq_e] at jointProximity₂_u₀_u₁
   exact jointProximity₂_u₀_u₁
 
+omit [DecidableEq ι] in
 /-- **Corollary 3.7**: RS Codes have Tensor-Style Proximity Gaps (Unique Decoding)
 Example 4.1 shows that ε=n is tight for RS codes (Ben+23 Thm 4.1 is sharp). -/
 theorem reedSolomon_multilinearCorrelatedAgreement_Nat

@@ -194,7 +194,7 @@ end BackwardDifference
 
 section Order
 
-variable {K : Type*} [NormedField K] [LinearOrder K] [IsStrictOrderedRing K] [OrderTopology K]
+variable {K : Type*} [NormedField K] [LinearOrder K] [IsStrictOrderedRing K]
   [Archimedean K]
 
 /-- A polynomial that is eventually nonnegative on the natural numbers has a nonnegative leading

@@ -90,12 +90,13 @@ words by acting on `U` by left multiplication with an `ℓ × ℓ'` matrix `M` o
 def matrixMulCodewords (M : Matrix ℓ ℓ' F) (U : ℓ' → (ι → A)) : ℓ → (ι → A) :=
   fun i k => ∑ j : ℓ', M i j • U j k
 
+omit [Fintype S] in
 /-- If the MCA condition `IsMCA` holds for `generatorByRightMul G M`, then it holds for the
 original generator `G` with the word family transported by `M`.
 
 This event implication is the whole mathematical content of the bound; the error statements below
 follow from it by `mcaError_le_of_forall_isMCA_imp`. -/
-lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
+lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] (G : Generator S ℓ F)
     (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M)
     (U : ℓ' → (ι → A)) (γ : ℝ) (x : S) :
     IsMCA (generatorByRightMul G M) MC x U γ → IsMCA G MC x (matrixMulCodewords M U) γ := by
@@ -143,9 +144,10 @@ positions with zeros. -/
 noncomputable def zeroExtend (κ : Set ℓ) (U : κ → (ι → A)) : ℓ → (ι → A) :=
 fun i => if h : i ∈ κ then U ⟨i, h⟩ else 0
 
+omit [Fintype S] in
 /-- If the MCA condition `IsMCA` holds for a projected generator, then `IsMCA` holds for the
 original generator `G` with the zero-extension defined above. -/
-lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G : Generator S ℓ F)
+lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) (G : Generator S ℓ F)
     (κ : Set ℓ) [Fintype κ] (U : κ → (ι → A)) (γ : ℝ) (x : S) :
     IsMCA (projectedGenerator G κ) MC x U γ → IsMCA G MC x (zeroExtend κ U) γ := by
   have smulSum_projectedGenerator (i : ι) :

@@ -22,6 +22,7 @@ commutative ring with no zero divisors.
 
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck.Round
+open Sumcheck.Structured (Multiplier)
 open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial Probability ProbabilityTheory
 open scoped NNReal ENNReal
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}

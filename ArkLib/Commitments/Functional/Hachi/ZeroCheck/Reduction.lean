@@ -574,21 +574,19 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       (nestedZeroCheckExtractor (Φ := Φ) (n := n) (μ := μ) (F := F) (m₀ := m₀) (m₁ := m₁)
         (TCom := K.TCom)) := by
   classical
-  intro stmt tree hStruct hAcc
+  intro stmt tree hStruct _
   by_cases hEsc : nestedZeroCheckEsc Φ m₀ m₁ bound bDig K φF b stmt tree
   · exact Or.inl hEsc
   · refine Or.inr ?_
     intro leafWits hValid
     let pureForm := nestedZeroCheckVerifierPureForm (oSpec := oSpec) Φ
       (n := n) (μ := μ) (F := F) (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom)
-    have hne : (support init).Nonempty :=
-      Verifier.support_init_nonempty_of_accepting hAcc (nestedLeftPath tree)
     have hValidPure : ∀ path : ChallengeTree.LeafPath tree, ∃ w,
         leafWits path = some w ∧
           (pureForm.verify stmt path.fullTranscript, w) ∈
             relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b :=
       (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl pureForm.verify pureForm.verify_eq
-        hne (relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) stmt leafWits).mp hValid
+        (relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) stmt leafWits).mp hValid
     let resp : ChallengeTree.LeafPath tree → LiftedWitness Φ μ n :=
       fun path => (hValidPure path).choose
     have hrel : ∀ path : ChallengeTree.LeafPath tree,

@@ -82,13 +82,10 @@ This file is the umbrella; the statements are in `Bounds/`.
 * `Bounds/KKH26.lean` and `Bounds/KKH26Asymptotic.lean` — the concrete [KKH26] useful-family
   templates and the derived ABF26 Theorem 3.15.
 
-## External admits
+## Proof status
 
-One statement is admitted with a tagged `sorry`, never an `axiom`: the random-evaluation-domain
-bound (`rs_random_domain_lambda_le`, [AGL24]). Its source locator and formulation notes are recorded
-in the defining module and knowledge-base page.
-
-Everything else is proved and axiom-clean, including the random-linear-code bound
+Every statement here is proved and axiom-clean, including the random-evaluation-domain bound
+`rs_random_domain_lambda_le` ([AGL24]), the random-linear-code bound
 `random_linear_lambda_lower` ([GLMRSW22]) and its existence form
 `random_linear_lambda_lower_exists`, the alphabet-generic volume/averaging lower
 bounds `lambda_ge_elias_volume` and `lambda_ge_entropy_volume` and their field specializations

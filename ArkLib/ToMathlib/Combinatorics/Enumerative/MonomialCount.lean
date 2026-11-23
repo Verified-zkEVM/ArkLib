@@ -136,7 +136,7 @@ theorem card_filter_forall_not_le_degreeLEFinset (B : Finset (σ →₀ ℕ)) (N
     induction T using Finset.induction_on with
     | empty => simp
     | insert b T _ ih =>
-      rw [inf_insert, inf_eq_inter, mem_inter, ih]
+      rw [inf_insert, mem_inter, ih]
       simp [cone]
   have hinf_compl : ∀ e : degreeLEFinset σ N,
       e ∈ B.inf (fun b ↦ (cone b)ᶜ) ↔ ∀ b ∈ B, ¬b ≤ e.1 := by
@@ -144,7 +144,7 @@ theorem card_filter_forall_not_le_degreeLEFinset (B : Finset (σ →₀ ℕ)) (N
     induction B using Finset.induction_on with
     | empty => simp
     | insert b T _ ih =>
-      rw [inf_insert, inf_eq_inter, mem_inter, ih, mem_compl]
+      rw [inf_insert, mem_inter, ih, mem_compl]
       simp [cone]
   have hcard : ∀ p : (σ →₀ ℕ) → Prop, ∀ s : Finset (degreeLEFinset σ N), [DecidablePred p] →
       (∀ e, e ∈ s ↔ p e.1) → #s = #{e ∈ degreeLEFinset σ N | p e} := by

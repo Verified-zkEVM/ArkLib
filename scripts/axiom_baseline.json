@@ -4,10 +4,6 @@
     {
       "name": "CodingTheory.exists_rs_epsCa_large_near_capacity",
       "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
-    },
-    {
-      "name": "CodingTheory.rs_random_domain_lambda_le",
-      "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
     }
   ],
   "nonstandard": []

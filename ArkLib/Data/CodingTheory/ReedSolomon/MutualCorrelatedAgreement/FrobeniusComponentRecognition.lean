@@ -30,7 +30,8 @@ This is the two-term case of `ReedSolomon.exists_frobeniusPowerGraph_of_symbolic
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval zeroLocus affineHilbertPolynomial)
 
 namespace ReedSolomon
 
