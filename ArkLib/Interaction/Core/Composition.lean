@@ -29,27 +29,21 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
 
--- `TranscriptAt`, `project_split` and `TranscriptAt.split` are generic in the polynomial and the
--- lens; they are
+-- `project_split` and `TranscriptAt.split` are generic in the polynomial and the lens; they are
 -- candidates for PolyFun's path ledger, with `View.split` and `PlainView.split` remaining here.
-
-/-- A transcript over a fixed shape, for any interaction signature. -/
-abbrev TranscriptAt {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    (s : FreeM P PUnit.{u + 1}) (p : Path s) :=
-  {tr : PathAlong l s // projectPathAlong l s tr = p}
 
 /-- Projection commutes with the prefix decomposition of a full transcript. -/
 theorem project_split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
-    (tr : PathAlong l (s₁.append s₂)) :
-    (let z := PathAlong.split l s₁ s₂ tr
-     (⟨projectPathAlong l s₁ z.1, projectPathAlong l _ z.2⟩ :
+    (tr : Transcript l (s₁.append s₂)) :
+    (let z := Transcript.split s₁ s₂ tr
+     (⟨Transcript.path z.1, Transcript.path z.2⟩ :
        (p : Path s₁) × Path (s₂ p))) =
-      Path.split s₁ s₂ (projectPathAlong l (s₁.append s₂) tr) := by
-  let z := PathAlong.split l s₁ s₂ tr
+      Path.split s₁ s₂ tr.path := by
+  let z := Transcript.split s₁ s₂ tr
   have h := congrArg (Path.split s₁ s₂)
-    (PathAlong.projectPathAlong_append l s₁ s₂ z.1 z.2)
-  simpa only [z, PathAlong.append_split, Path.split_append] using h.symm
+    (Transcript.path_append s₁ s₂ z.1 z.2)
+  simpa only [z, Transcript.append_split, Path.split_append] using h.symm
 
 /-- Split views along the shape split. Only the view transcripts are transported. -/
 def TranscriptAt.split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
@@ -58,10 +52,10 @@ def TranscriptAt.split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     TranscriptAt l s₁ (Path.split s₁ s₂ p).1 ×
       TranscriptAt l (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2 := by
   rcases v with ⟨tr, rfl⟩
-  let z := PathAlong.split l s₁ s₂ tr
+  let z := Transcript.split s₁ s₂ tr
   have h := project_split l s₁ s₂ tr
-  exact h ▸ (show TranscriptAt l s₁ (projectPathAlong l s₁ z.1) ×
-    TranscriptAt l (s₂ (projectPathAlong l s₁ z.1)) (projectPathAlong l _ z.2) from
+  exact h ▸ (show TranscriptAt l s₁ (Transcript.path z.1) ×
+    TranscriptAt l (s₂ (Transcript.path z.1)) (Transcript.path z.2) from
       (⟨z.1, rfl⟩, ⟨z.2, rfl⟩))
 
 /-- Split the oracle verifier's public view. -/
@@ -114,7 +108,7 @@ def appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
     Counterpart l m (s₁.append s₂) (fun _ => PUnit) :=
   Counterpart.appendFlat (samplerEnd l s₁ draw₁)
-    (fun tr _ => sampler l _ (draw₂ (projectPathAlong l s₁ tr)))
+    (fun tr _ => sampler l _ (draw₂ (Transcript.path tr)))
 
 /-- Combine challenge implementations using only the canonical prefix path. -/
 def combineDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
@@ -195,10 +189,10 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
 theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {m : Type u → Type u} [Monad m] [LawfulMonad m]
     {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}}
-    {Mid : PathAlong l s₁ → Type u} {Out : PathAlong l (s₁.append s₂) → Type u}
+    {Mid : Transcript l s₁ → Type u} {Out : Transcript l (s₁.append s₂) → Type u}
     (p : Focal l m s₁ Mid)
-    (f : (tr : PathAlong l s₁) → Mid tr → m (Focal l m
-      (s₂ (projectPathAlong l s₁ tr)) (fun tail => Out (PathAlong.append l s₁ s₂ tr tail))))
+    (f : (tr : Transcript l s₁) → Mid tr → m (Focal l m
+      (s₂ tr.path) (fun tail => Out (Transcript.append s₁ s₂ tr tail))))
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
     TwoParty.Lens.run (s₁.append s₂) (Prover.append p f) (appendSampler s₁ s₂ draw₁ draw₂) =
@@ -206,23 +200,23 @@ theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{
         let ⟨tr, mid, _⟩ ← TwoParty.Lens.run s₁ p (sampler l s₁ draw₁)
         let next ← f tr mid
         let ⟨tail, out, terminal⟩ ← TwoParty.Lens.run _ next
-          (sampler l _ (draw₂ (projectPathAlong l s₁ tr)))
-        pure ⟨PathAlong.append l s₁ s₂ tr tail, out, terminal⟩) :=
+          (sampler l _ (draw₂ (Transcript.path tr)))
+        pure ⟨Transcript.append s₁ s₂ tr tail, out, terminal⟩) :=
   run_compFlat_appendFlat p f (samplerEnd l s₁ draw₁) _
 
 /-- An arbitrary composed prover splits with its actual continuation and private memory. -/
 theorem run_splitSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {m : Type u → Type u} [Monad m] [LawfulMonad m]
     {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}}
-    {Out : PathAlong l (s₁.append s₂) → Type u}
+    {Out : Transcript l (s₁.append s₂) → Type u}
     (p : Focal l m (s₁.append s₂) Out)
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
     TwoParty.Lens.run (s₁.append s₂) p (appendSampler s₁ s₂ draw₁ draw₂) = (do
       let ⟨tr, next, _⟩ ← TwoParty.Lens.run s₁ (Focal.splitPrefix p) (sampler l s₁ draw₁)
       let ⟨tail, out, terminal⟩ ← TwoParty.Lens.run _ next
-        (sampler l _ (draw₂ (projectPathAlong l s₁ tr)))
-      pure ⟨PathAlong.append l s₁ s₂ tr tail, out, terminal⟩) :=
+        (sampler l _ (draw₂ (Transcript.path tr)))
+      pure ⟨Transcript.append s₁ s₂ tr tail, out, terminal⟩) :=
   run_appendFlat_splitPrefix p (samplerEnd l s₁ draw₁) _
 
 /-- Split the oracle messages of an arbitrary completed appended path. -/

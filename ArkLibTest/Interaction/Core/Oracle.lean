@@ -43,10 +43,10 @@ def emptyFamily : OracleFamily.{0, 0, 0} PEmpty.{1} (fun i => PEmpty.elim i) :=
 @[instance_reducible] def tree : OracleProtocol :=
   .liftBind (.oracle (Nat → Nat) OracleInterface.instFunction) (fun _ => .pure ⟨⟩)
 
-def first : PathAlong oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
-def second : PathAlong oracleSig tree := ⟨fun n => 2 * n, ⟨⟩⟩
+def first : Transcript oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
+def second : Transcript oracleSig tree := ⟨fun n => 2 * n, ⟨⟩⟩
 
-example : projectPathAlong oracleSig tree first = projectPathAlong oracleSig tree second := rfl
+example : first.path = second.path := rfl
 example : (toView tree first).val = (toView tree second).val := rfl
 
 /-- The decision can name an evaluation query but receives no function payload. -/

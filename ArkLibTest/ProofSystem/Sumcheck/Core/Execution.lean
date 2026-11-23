@@ -148,7 +148,7 @@ theorem run_honest_one {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F
 /-! ## Shape independence -/
 
 /-- The verifier view of any two runs differs only in the challenges it records. -/
-example (tr₁ tr₂ : PathAlong oracleSig (protocol F 1 2))
+example (tr₁ tr₂ : Transcript oracleSig (protocol F 1 2))
     (h : transcriptChallenges 2 tr₁ = transcriptChallenges 2 tr₂) :
     viewChallenges (toView (protocol F 1 2) tr₁) =
       viewChallenges (toView (protocol F 1 2) tr₂) := by
@@ -156,7 +156,7 @@ example (tr₁ tr₂ : PathAlong oracleSig (protocol F 1 2))
   rw [viewChallengeList_toView, viewChallengeList_toView, h]
 
 /-- The decoded challenges are those recorded in the view, whatever the messages. -/
-example (tr : PathAlong oracleSig (protocol F 1 3)) :
+example (tr : Transcript oracleSig (protocol F 1 3)) :
     (decodeTranscript 3 tr).challenges = viewChallenges (toView (protocol F 1 3) tr) :=
   (viewChallenges_toView 3 tr).symm
 

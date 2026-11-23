@@ -59,12 +59,12 @@ theorem oracleAcceptanceAgrees (impl : QueryImpl oSpec (StateT σ ProbComp))
   let : MeasurableSpace (Option StmtOut) := ⊤
   refine exists_congr fun st => ?_
   change 0 < 𝒟[StateT.run' (simulateQ (QueryImpl.addLift impl
-      ((pathResources (family OStmtIn) _ (projectPathAlong oracleSig _ tr)).answer
+      ((pathResources (family OStmtIn) _ tr.path).answer
         (oStmt, oracleMessages _ tr)))
-      ((embedOracleVerifier V).decide stmt (projectPathAlong oracleSig _ tr)
+      ((embedOracleVerifier V).decide stmt tr.path
         (toView _ tr)).run) st]
       {v | ∃ t, v = some t ∧ p (t, ((embedOracleVerifier V).outputMap stmt
-        (projectPathAlong oracleSig _ tr) (toView _ tr)).f (oStmt, oracleMessages _ tr))} ↔
+        tr.path (toView _ tr)).f (oStmt, oracleMessages _ tr))} ↔
     ∃ t, some t ∈ support (StateT.run' (simulateQ impl
       (Option.map (fun s => (s, V.materializeOutput (oracleDecode pSpec tr).challenges oStmt
         (oracleDecode pSpec tr).messages)) <$>
@@ -92,7 +92,7 @@ induced legacy verifier, against the transported prover. -/
 theorem evalDist_experiment_embedOracleVerifier_run (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
-    (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
+    (oStmt : ∀ i, OStmtIn i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out)
     (E : Set (Outcome oracleSig (oracleProtocol pSpec) Out
       (fun _ => StmtOut × (∀ i, OStmtOut i)))) :
@@ -189,13 +189,13 @@ theorem oracleSoundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : 
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (langIn : Set (StmtIn × (∀ i, OStmtIn i))) (langOut : Set (StmtOut × (∀ i, OStmtOut i)))
     (ε : ℝ≥0) :
-    (∀ Out : PathAlong oracleSig (oracleProtocol pSpec) → Type,
+    (∀ Out : Transcript oracleSig (oracleProtocol pSpec) → Type,
       letI : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec) Out
         (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
       Core.soundness ((embedOracleVerifier V).classicalModel (Out := Out) init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (langProblem langIn) (langProblem langOut)
-        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2) ε) ↔
+        (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε) ↔
       V.soundness init impl langIn langOut ε := by
   constructor
   · intro h WitIn WitOut witIn P stmt hstmt

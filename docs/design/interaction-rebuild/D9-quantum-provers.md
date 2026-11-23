@@ -47,7 +47,7 @@ prover currently holds.
 /-- Quantum prover on the tree `s`, holding register `R`. `Out tr u` is its output at the end
 of the transcript `tr`, on the final register `u`. -/
 def QProver (L : LocalSig.{1, 0}) (spec : QuantumOracleSpec.{0, 0}) :
-    (s : FreeM P PUnit) → (Out : PathAlong l s → QReg → Type 1) → QReg → Type 1
+    (s : FreeM P PUnit) → (Out : Transcript l s → QReg → Type 1) → QReg → Type 1
   | .pure _,         Out => fun R => QuantumComp L spec (Out ⟨⟩) R
   | .liftBind a k,   Out => fun R =>
       if prover owns a then
@@ -79,7 +79,7 @@ The run against a classical verifier is one quantum program:
 -- intended, not existing (ArkLib/Interaction/Core/Quantum/Run.lean)
 def QProver.run (q : ∀ B, QueryImpl oSpec (QComp spec B B))
     (p : QProver L spec s Out R) (v : Sampler l (OracleComp oSpec) s) :
-    QuantumComp L' spec (fun u => (tr : PathAlong l s) × Out tr u) R
+    QuantumComp L' spec (fun u => (tr : Transcript l s) × Out tr u) R
 ```
 
 At a challenge node the sampler's coins are drawn by the instrument `SubInstrument.uniform`, which

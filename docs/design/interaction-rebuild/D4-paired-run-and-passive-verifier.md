@@ -13,7 +13,7 @@ each party: one before every node and one at the end. On a path with `n` moves a
 
 ```lean
 -- intended, not existing
--- Strategy of participant `who` on tree `s`, with output family `Out : PathAlong l s → Type u`.
+-- Strategy of participant `who` on tree `s`, with output family `Out : Transcript l s → Type u`.
 Strat l who (pure _) Out    = m (Out ⟨⟩)                                            -- leaf
 Strat l who (roll a k) Out  =
   if who owns a  then m ((x : Move l a) × Strat l who (k (l.toFunB a x)) (Out ∘ cons x))
@@ -32,7 +32,7 @@ the focal-first instance:
 -- intended, not existing
 inductive Schedule | focalFirst | counterpartFirst
 runWith (sched : Schedule) : Strat l .focal s OutP → Strat l .counterpart s OutC →
-    m ((tr : PathAlong l s) × OutP tr × OutC tr)
+    m ((tr : Transcript l s) × OutP tr × OutC tr)
 abbrev run := runWith .focalFirst
 
 run_done   : run p c = do let a ← p; let b ← c; pure ⟨⟨⟩, a, b⟩
@@ -101,7 +101,7 @@ implementation is admitted:
 -- intended, not existing
 def Reduction.run (R) (stmt wit) : OptionT (OracleComp (oSpec + chal)) (...) := do
   let ⟨tr, outP, ⟨⟩⟩ ← TwoParty.run (R.prover stmt wit) (sampler l s)
-  let p := projectPathAlong l s tr
+  let p := tr.path
   let stmtOut ← simulateQ (idImpl oSpec + inputImpl oStmt + oracleMessageImpl s tr)
     (R.decide stmt p (toView s tr))          -- `oracleMessageImpl s tr` answers `oracleMessageSpec s p`
   pure (tr, outP, stmtOut)

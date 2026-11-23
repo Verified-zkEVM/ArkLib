@@ -34,17 +34,17 @@ def oracleSig : Lens OraclePoly rolePoly.{u}   -- as above; `oracle X ↦ (.send
 ```
 
 The *shape restriction* follows from the branch types. A challenge or an oracle payload has a
-`PUnit` branch, so it is recorded in `PathAlong` but not in `Path`. A suffix family has type
+`PUnit` branch, so it is recorded in `Transcript` but not in `Path`. A suffix family has type
 `s₂ : Path s₁ → FreeM P PUnit`, and a participant after a transcript `tr₁` sees
-`s₂ (projectPathAlong l s₁ tr₁)` (record D0). Hence:
+`s₂ tr₁.path` (record D0). Hence:
 
 ```lean
 -- intended, not existing
 -- Two full transcripts that differ only in challenges and oracle payloads have the same shape
 -- path, and therefore the same suffix tree.
-theorem projectPathAlong_eq_of_publicMessages_eq
-    (tr tr' : PathAlong plainSig s) (h : publicMessages tr = publicMessages tr') :
-    projectPathAlong plainSig s tr = projectPathAlong plainSig s tr'
+theorem path_eq_of_publicMessages_eq
+    (tr tr' : Transcript plainSig s) (h : publicMessages tr = publicMessages tr') :
+    tr.path = tr'.path
 ```
 
 (For a plain protocol the shape path *is* the list of public messages, so the theorem is close
@@ -54,7 +54,7 @@ The restriction holds across composition: the suffix of an appended reduction is
 prefix's shape path and the composed reduction's input statement, never by a challenge, an
 oracle payload, or a value that the prefix verifier obtained by an oracle query (record D6).
 A challenge or oracle payload may still change strategy state, outputs, and relations; such data
-is carried in `PathAlong`-indexed state (record D3), not in the shape.
+is carried in `Transcript`-indexed state (record D3), not in the shape.
 
 "Public" or "hashed" is not a reason to allow shape dependence. Challenges are public and are
 still erased from the shape path.

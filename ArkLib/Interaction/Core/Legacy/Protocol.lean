@@ -55,63 +55,67 @@ variable {pSpec : ProtocolSpec n} {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rol
 
 /-- Read a legacy transcript off a runtime path, extending the transcript `pre` of the rounds
 before `k`. -/
-def decodeFrom : (k m : ℕ) → (h : k + m = n) → Transcript ⟨k, by omega⟩ pSpec →
-    PathAlong l (chain pos k m h) → FullTranscript pSpec
+def decodeFrom : (k m : ℕ) → (h : k + m = n) → ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec →
+    Transcript l (chain pos k m h) → FullTranscript pSpec
   | k, 0, h, pre, _ => fun i => pre ⟨i.val, show i.val < k by omega⟩
   | k, m + 1, h, pre, ⟨d, rest⟩ =>
     decodeFrom (k + 1) m (by omega)
-      (Transcript.concat (m := ⟨k, by omega⟩) (e ⟨k, by omega⟩ d) pre) rest
+      (ProtocolSpec.Transcript.concat (m := ⟨k, by omega⟩) (e ⟨k, by omega⟩ d) pre) rest
 
 /-- Write the rounds `k, …, n - 1` of a legacy transcript as a runtime path. -/
 def encodeFrom (tr : FullTranscript pSpec) :
-    (k m : ℕ) → (h : k + m = n) → PathAlong l (chain pos k m h)
+    (k m : ℕ) → (h : k + m = n) → Transcript l (chain pos k m h)
   | _, 0, _ => ⟨⟩
   | k, m + 1, h => ⟨(e ⟨k, by omega⟩).symm (tr ⟨k, by omega⟩), encodeFrom tr (k + 1) m (by omega)⟩
 
 /-- Decoding keeps the rounds that were already in the prefix. -/
-theorem decodeFrom_lt : (k m : ℕ) → (h : k + m = n) → (pre : Transcript ⟨k, by omega⟩ pSpec) →
-    (p : PathAlong l (chain pos k m h)) → (i : Fin n) → (hi : i.val < k) →
+theorem decodeFrom_lt : (k m : ℕ) → (h : k + m = n) →
+    (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec) →
+    (p : Transcript l (chain pos k m h)) → (i : Fin n) → (hi : i.val < k) →
     decodeFrom l pos e k m h pre p i = pre ⟨i.val, hi⟩
   | _, 0, _, _, _, _, _ => rfl
   | k, m + 1, h, pre, ⟨d, rest⟩, i, hi => by
     refine (decodeFrom_lt (k + 1) m (by omega) _ rest i (by omega)).trans ?_
-    exact eq_of_heq (Transcript.concat_apply_lt (m := ⟨k, by omega⟩) pre _ i.val hi _)
+    exact eq_of_heq (ProtocolSpec.Transcript.concat_apply_lt (m := ⟨k, by omega⟩) pre _ i.val hi _)
 
 /-- Decoding an encoded transcript recovers it, given a prefix that agrees with it. -/
 theorem decodeFrom_encodeFrom (tr : FullTranscript pSpec) : (k m : ℕ) → (h : k + m = n) →
-    (pre : Transcript ⟨k, by omega⟩ pSpec) →
+    (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec) →
     (∀ (i : Fin n) (hi : i.val < k), pre ⟨i.val, hi⟩ = tr i) →
     decodeFrom l pos e k m h pre (encodeFrom l pos e tr k m h) = tr
   | _, 0, _, _, hpre => funext fun i => hpre i (by omega)
   | k, m + 1, h, pre, hpre => by
     refine decodeFrom_encodeFrom tr (k + 1) m (by omega) _ fun i hi => ?_
     rcases Nat.lt_succ_iff_lt_or_eq.mp hi with hlt | heq
-    · exact (eq_of_heq (Transcript.concat_apply_lt (m := ⟨k, by omega⟩) pre _ i.val hlt _)).trans
+    · exact (eq_of_heq (ProtocolSpec.Transcript.concat_apply_lt (m := ⟨k, by omega⟩) pre _ i.val hlt
+      _)).trans
         (hpre i hlt)
     · obtain ⟨i, hi'⟩ := i
       simp only at heq
       subst heq
-      exact eq_of_heq ((Transcript.concat_apply_last (m := ⟨i, by omega⟩) pre _ i rfl _).trans
+      exact eq_of_heq ((ProtocolSpec.Transcript.concat_apply_last (m := ⟨i, by omega⟩) pre _ i rfl
+        _).trans
         (heq_of_eq ((e _).apply_symm_apply _)))
 
 /-- Encoding a decoded path recovers it. -/
 theorem encodeFrom_decodeFrom : (k m : ℕ) → (h : k + m = n) →
-    (pre : Transcript ⟨k, by omega⟩ pSpec) → (p : PathAlong l (chain pos k m h)) →
+    (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec) → (p : Transcript l (chain pos k m h)) →
     encodeFrom l pos e (decodeFrom l pos e k m h pre p) k m h = p
   | _, 0, _, _, _ => rfl
   | k, m + 1, h, pre, ⟨d, rest⟩ => by
     have hrest := encodeFrom_decodeFrom (k + 1) m (by omega)
-      (Transcript.concat (m := ⟨k, by omega⟩) (e ⟨k, by omega⟩ d) pre) rest
+      (ProtocolSpec.Transcript.concat (m := ⟨k, by omega⟩) (e ⟨k, by omega⟩ d) pre) rest
     have hhead : decodeFrom l pos e (k + 1) m (by omega)
-        (Transcript.concat (m := ⟨k, by omega⟩) (e ⟨k, by omega⟩ d) pre) rest ⟨k, by omega⟩ =
+        (ProtocolSpec.Transcript.concat (m := ⟨k, by omega⟩) (e ⟨k, by omega⟩ d) pre) rest
+          ⟨k, by omega⟩ =
           e ⟨k, by omega⟩ d := by
       rw [decodeFrom_lt l pos e (k + 1) m (by omega) _ rest ⟨k, by omega⟩ (by simp)]
-      exact eq_of_heq (Transcript.concat_apply_last (m := ⟨k, by omega⟩) pre _ k rfl _)
+      exact eq_of_heq (ProtocolSpec.Transcript.concat_apply_last (m := ⟨k, by omega⟩) pre _ k rfl _)
     simp only [encodeFrom, decodeFrom] at hrest ⊢
     rw [hrest, hhead, Equiv.symm_apply_apply]
 
 /-- Runtime paths through the whole chain are legacy full transcripts. -/
-def chainEquiv : PathAlong l (chain pos 0 n (Nat.zero_add n)) ≃ FullTranscript pSpec where
+def chainEquiv : Transcript l (chain pos 0 n (Nat.zero_add n)) ≃ FullTranscript pSpec where
   toFun := decodeFrom l pos e 0 n _ default
   invFun tr := encodeFrom l pos e tr 0 n _
   left_inv p := encodeFrom_decodeFrom l pos e 0 n _ default p
@@ -150,21 +154,22 @@ abbrev protocol (pSpec : ProtocolSpec n) : Protocol.{0} := suffix pSpec 0 n (Nat
 
 /-- Read the legacy transcript off a plain runtime path, after the prefix `pre`. -/
 abbrev decodePlainFrom (pSpec : ProtocolSpec n) (k m : ℕ) (h : k + m = n)
-    (pre : Transcript ⟨k, by omega⟩ pSpec) (p : PathAlong plainSig (suffix pSpec k m h)) :
+    (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec)
+      (p : Transcript plainSig (suffix pSpec k m h)) :
     FullTranscript pSpec :=
   decodeFrom plainSig (plainRound pSpec) (fun _ => plainMoveEquiv _ _) k m h pre p
 
 /-- Legacy full transcripts are the runtime paths of the plain tree. -/
 def transcriptEquiv (pSpec : ProtocolSpec n) :
-    PathAlong plainSig (protocol pSpec) ≃ FullTranscript pSpec :=
+    Transcript plainSig (protocol pSpec) ≃ FullTranscript pSpec :=
   chainEquiv plainSig (plainRound pSpec) (fun _ => plainMoveEquiv _ _)
 
 /-- Read the legacy full transcript off a completed plain run. -/
-abbrev decode (pSpec : ProtocolSpec n) (tr : PathAlong plainSig (protocol pSpec)) :
+abbrev decode (pSpec : ProtocolSpec n) (tr : Transcript plainSig (protocol pSpec)) :
     FullTranscript pSpec :=
   transcriptEquiv pSpec tr
 
-theorem decode_eq (pSpec : ProtocolSpec n) (tr : PathAlong plainSig (protocol pSpec)) :
+theorem decode_eq (pSpec : ProtocolSpec n) (tr : Transcript plainSig (protocol pSpec)) :
     decode pSpec tr = decodePlainFrom pSpec 0 n _ default tr := rfl
 
 /-! ### Oracle trees -/
@@ -201,12 +206,12 @@ abbrev oracleProtocol (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (p
 /-- Legacy full transcripts are the runtime paths of the oracle tree. -/
 def oracleTranscriptEquiv (pSpec : ProtocolSpec n)
     [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
-    PathAlong oracleSig (oracleProtocol pSpec) ≃ FullTranscript pSpec :=
+    Transcript oracleSig (oracleProtocol pSpec) ≃ FullTranscript pSpec :=
   chainEquiv oracleSig (oracleRound pSpec) (fun j => oracleMoveEquiv pSpec j _ rfl)
 
 /-- Read the legacy full transcript off a completed oracle run. -/
 abbrev oracleDecode (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
-    (tr : PathAlong oracleSig (oracleProtocol pSpec)) : FullTranscript pSpec :=
+    (tr : Transcript oracleSig (oracleProtocol pSpec)) : FullTranscript pSpec :=
   oracleTranscriptEquiv pSpec tr
 
 end Interaction.Core.Legacy

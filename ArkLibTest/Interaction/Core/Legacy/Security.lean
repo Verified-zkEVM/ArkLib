@@ -178,7 +178,8 @@ def afterFirst :=
 /-- After the first message `42`, the legacy prefix is at round `1` and records `42`. -/
 example : (legacyPrefix _ afterFirst).1 = 1 ∧
     (show Nat from
-      (show Transcript 1 twoWay from (legacyPrefix _ afterFirst).2) ⟨0, by decide⟩) = 42 :=
+      (show ProtocolSpec.Transcript 1 twoWay from (legacyPrefix _ afterFirst).2) ⟨0, by decide⟩) =
+        42 :=
   ⟨rfl, rfl⟩
 
 /-- The empty full prefix is the empty legacy transcript at round `0`. -/

@@ -70,9 +70,8 @@ def oracleMessageFamily : (s : OracleProtocol.{u, q}) → (p : Path s) →
 abbrev oracleMessageSpec (s : OracleProtocol.{u, q}) (p : Path s) := (oracleMessageFamily s p).spec
 
 /-- Read the oracle messages from exactly the full transcript that produced this shape. -/
-def oracleMessages : (s : OracleProtocol.{u, q}) → (tr : PathAlong oracleSig s) →
-    (i : OracleMessageIndex s (projectPathAlong oracleSig s tr)) →
-      OracleMessage s (projectPathAlong oracleSig s tr) i
+def oracleMessages : (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig s) →
+    (i : OracleMessageIndex s tr.path) → OracleMessage s tr.path i
   | .pure _, _, i => i.elim
   | .liftBind (.message _) next, ⟨x, tr⟩, i => oracleMessages (next x) tr i
   | .liftBind (.challenge _) next, ⟨_, tr⟩, i => oracleMessages (next ⟨⟩) tr i
@@ -80,10 +79,9 @@ def oracleMessages : (s : OracleProtocol.{u, q}) → (tr : PathAlong oracleSig s
   | .liftBind (.oracle _ _) next, ⟨_, tr⟩, .inr i => oracleMessages (next ⟨⟩) tr i
 
 /-- The sole oracle message handler used by execution; it answers from the completed run. -/
-def oracleMessageImpl (s : OracleProtocol.{u, q}) (tr : PathAlong oracleSig s) :
-    QueryImpl (oracleMessageSpec s (projectPathAlong oracleSig s tr)) Id :=
-  (oracleMessageFamily s (projectPathAlong oracleSig s tr)).behaviorOfRealizations
-    (oracleMessages s tr)
+def oracleMessageImpl (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+    QueryImpl (oracleMessageSpec s tr.path) Id :=
+  (oracleMessageFamily s tr.path).behaviorOfRealizations (oracleMessages s tr)
 
 /-- Pair the data of two disjoint families. -/
 def sumData {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
@@ -410,15 +408,13 @@ def PathWithOracleMessages.prepend : (a : OraclePos.{u, q}) →
 
 /-- Appending full transcripts materializes exactly the two routed oracle message families. -/
 theorem oracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : PathAlong oracleSig s₁) →
-    (tr₂ : PathAlong oracleSig (s₂ (projectPathAlong oracleSig s₁ tr₁))) →
-    (⟨projectPathAlong oracleSig (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂),
-      oracleMessages (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂)⟩ :
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : Transcript oracleSig s₁) →
+    (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
+    (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
+      oracleMessages (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
         PathWithOracleMessages (s₁.append s₂)) =
-      ⟨Path.append s₁ s₂ (projectPathAlong oracleSig s₁ tr₁)
-          (projectPathAlong oracleSig _ tr₂),
-        (oracleMessageFamily_append s₁ s₂ (projectPathAlong oracleSig s₁ tr₁)
-          (projectPathAlong oracleSig _ tr₂)).f
+      ⟨Path.append s₁ s₂ tr₁.path tr₂.path,
+        (oracleMessageFamily_append s₁ s₂ tr₁.path tr₂.path).f
           (sumData (oracleMessages s₁ tr₁) (oracleMessages _ tr₂))⟩
   | .pure _, _, ⟨⟩, _ => rfl
   | .liftBind (.message _) next, s₂, ⟨x, tr₁⟩, tr₂ =>
@@ -442,19 +438,17 @@ theorem oracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
 
 /-- The appended transcript's handler agrees with routing into its component handlers. -/
 theorem oracleMessageImpl_append (s₁ : OracleProtocol.{u, q})
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) (tr₁ : PathAlong oracleSig s₁)
-    (tr₂ : PathAlong oracleSig (s₂ (projectPathAlong oracleSig s₁ tr₁))) :
-    (⟨projectPathAlong oracleSig (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂),
-      oracleMessageImpl (s₁.append s₂) (PathAlong.append oracleSig s₁ s₂ tr₁ tr₂)⟩ :
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) (tr₁ : Transcript oracleSig s₁)
+    (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
+    (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
+      oracleMessageImpl (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
       (p : Path (s₁.append s₂)) × QueryImpl (oracleMessageSpec (s₁.append s₂) p) Id) =
-    ⟨Path.append s₁ s₂ (projectPathAlong oracleSig s₁ tr₁)
-        (projectPathAlong oracleSig _ tr₂),
+    ⟨Path.append s₁ s₂ tr₁.path tr₂.path,
       QueryImpl.compose
-        ((sumFamily (oracleMessageFamily s₁ (projectPathAlong oracleSig s₁ tr₁))
-          (oracleMessageFamily _ (projectPathAlong oracleSig _ tr₂))).behaviorOfRealizations
+        ((sumFamily (oracleMessageFamily s₁ tr₁.path)
+          (oracleMessageFamily _ tr₂.path)).behaviorOfRealizations
             (sumData (oracleMessages s₁ tr₁) (oracleMessages _ tr₂)))
-        (oracleMessageFamily_append s₁ s₂ (projectPathAlong oracleSig s₁ tr₁)
-          (projectPathAlong oracleSig _ tr₂)).impl⟩ := by
+        (oracleMessageFamily_append s₁ s₂ tr₁.path tr₂.path).impl⟩ := by
   have h := congrArg
     (fun d : PathWithOracleMessages (s₁.append s₂) =>
       (⟨d.1, (oracleMessageFamily (s₁.append s₂) d.1).behaviorOfRealizations d.2⟩ :
@@ -514,7 +508,7 @@ def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
     {inputs : Resources.{u, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type u}
+    {Out : Transcript oracleSig s → Type u}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
@@ -523,7 +517,7 @@ def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (prover.simulate (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))))
     (sampler oracleSig s (fun c =>
       liftM ((ambient + challengeSpec oracleSig s).query (.inr c))))
-  let p := projectPathAlong oracleSig s tr
+  let p := Transcript.path tr
   let view := toView s tr
   let resources : (pathResources inputs s p).Data := (data, oracleMessages s tr)
   let verdict ← simulateQ

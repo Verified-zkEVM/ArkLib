@@ -390,7 +390,7 @@ noncomputable def typeQueryModel :
 example (input : StatementProblem ((Type 1) × (Type → Nat)))
     (output : PathProblem oracleDone
       (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) :
-    soundness runnableModel input output (fun obs => projectPathAlong oracleSig oracleDone obs.1)
+    soundness runnableModel input output (fun obs => Transcript.path obs.1)
       (fun obs => obs.2.2) 1 :=
   fun _ _ _ _ => le_trans (measure_mono (Set.subset_univ _)) (runnableModel.mass_le_one _ _)
 
@@ -471,7 +471,7 @@ example (E : Extractor.OracleTranscriptOnly smallAmbient oracleDone
 types, in `Type 1`, while its input witness is the unit, in `Type 0`. The root extractor maps a
 type to the unit. -/
 def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
-    {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
+    {S : Type v} (validOutput : S → Transcript l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
     KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ => Unit) Unit (fun _ => True)
       (fun _ _ => True) validOutput where
   Witness _ _ := Type

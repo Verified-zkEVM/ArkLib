@@ -132,7 +132,7 @@ theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ Prob
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) (fun _ => X)) :
     RunEq (expHandler impl (oracleChallengeImpl chImpl))
       (expHandler impl (plainChallengeImpl chImpl))
-      ((fun z : ((_ : PathAlong oracleSig (oracleProtocol pSpec)) × X × PUnit) × QueryLog oSpec =>
+      ((fun z : ((_ : Transcript oracleSig (oracleProtocol pSpec)) × X × PUnit) × QueryLog oSpec =>
           ((oracleDecode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (oracleProtocol pSpec)
           (p.simulate (fun q =>
@@ -140,7 +140,7 @@ theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ Prob
           (sampler oracleSig (oracleProtocol pSpec) (fun c =>
             liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query
               (.inr c))))))
-      ((fun z : ((_ : PathAlong plainSig (protocol pSpec)) × X × PUnit) × QueryLog oSpec =>
+      ((fun z : ((_ : Transcript plainSig (protocol pSpec)) × X × PUnit) × QueryLog oSpec =>
           ((decode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (protocol pSpec)
           (Core.Prover.simulate (fun q =>

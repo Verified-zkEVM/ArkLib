@@ -152,8 +152,8 @@ def routedCompatible (out : PrefixOutput) :
 def routed (out : PrefixOutput) :=
   (routedPrefix out).append (fun _ => routedSuffix) (routedCompatible out)
 
-def firstMessage : PathAlong oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
-def secondMessage : PathAlong oracleSig tree := ⟨fun n => 7 * n, ⟨⟩⟩
+def firstMessage : Transcript oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
+def secondMessage : Transcript oracleSig tree := ⟨fun n => 7 * n, ⟨⟩⟩
 
 def twoStageProver : Prover oracleSig labels twoStages (fun _ => PUnit) :=
   pure ⟨firstMessage.1, pure ⟨secondMessage.1, pure ⟨⟩⟩⟩

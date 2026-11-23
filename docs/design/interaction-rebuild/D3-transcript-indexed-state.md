@@ -13,10 +13,10 @@ them.
 |---|---|---|---|
 | Shape path | `p : Path s` | Public messages (the branches taken) | Suffix trees, the oracle family `oracleMessageSpec s p` (record D6) |
 | Verifier view | `(p : Path s) × View s p` | Public messages and challenges as values; oracle positions as `PUnit` markers | The verifier's decision, the output oracle map |
-| Full transcript | `PathAlong l s` | Every move, including oracle payloads | Party outputs, strategy state, bookkeeping claims, state functions and extractors |
+| Full transcript | `Transcript l s` | Every move, including oracle payloads | Party outputs, strategy state, bookkeeping claims, state functions and extractors |
 
 **Outputs and state are indexed by the full transcript; trees by the shape path.** A party's
-output family is `OutputP : PathAlong l s → Type u` (and `OutputC` for the counterpart), so an
+output family is `OutputP : Transcript l s → Type u` (and `OutputC` for the counterpart), so an
 output may depend on challenges and on oracle payloads. A suffix tree is `s₂ : Path s₁ → FreeM P
 PUnit` (record D0), so it cannot. Challenge-dependent state (for example Sumcheck's running
 target) is carried in the strategy and its outputs, never in the shape.
@@ -36,9 +36,12 @@ theorem projectPathAlong_mapMoves (g s tr) :
 theorem PathAlong.mapMoves_id : mapMoves (MoveMap.id l) s tr = tr
 ```
 
-**The verifier view is the fibre of the view transcript over the shape path.** ArkLib defines a
+ArkLib states these as `Transcript.mapMoves g tr`, `Transcript.path_mapMoves g tr` (with `l` and
+`s` implicit) and `tr.path`.
+
+**The verifier view is the view transcripts over the shape path.** ArkLib defines a
 view signature that agrees with `oracleSig` except that it erases the payload type of oracle
-positions, the move map that performs the erasure, and the view as a fibre:
+positions, the move map that performs the erasure, and the view as `TranscriptAt viewSig s p`:
 
 ```lean
 -- intended, not existing (ArkLib PR A)
@@ -51,10 +54,10 @@ def viewSig : Lens OraclePoly rolePoly.{u} where
 def eraseOracle : PathAlong.MoveMap oracleSig viewSig
 
 def View (s : FreeM OraclePoly PUnit) (p : Path s) : Type u :=
-  {v : PathAlong viewSig s // projectPathAlong viewSig s v = p}
+  TranscriptAt viewSig s p        -- {v : Transcript viewSig s // v.path = p}
 
-def toView (s) (tr : PathAlong oracleSig s) : View s (projectPathAlong oracleSig s tr) :=
-  ⟨PathAlong.mapMoves eraseOracle s tr, projectPathAlong_mapMoves eraseOracle s tr⟩
+def toView (s) (tr : Transcript oracleSig s) : View s tr.path :=
+  ⟨Transcript.mapMoves eraseOracle tr, Transcript.path_mapMoves eraseOracle tr⟩
 ```
 
 The decision is typed against the shape path and the view over it:
@@ -63,18 +66,18 @@ The decision is typed against the shape path and the view over it:
 -- intended, not existing
 decide : StmtIn → (p : Path s) → View s p →
   OptionT (OracleComp (oSpec + [OStmtIn]ₒ + oracleMessageSpec s p)) StmtOut
--- in a run: decide stmt (projectPathAlong oracleSig s tr) (toView s tr)
+-- in a run: decide stmt tr.path (toView s tr)
 ```
 
 The call needs no cast: the oracle family is indexed by `p`, which is the run's shape path
-itself, and the fibre carries the equation `projectPathAlong viewSig s v = p` as a proof rather
+itself, and the view carries the equation `v.path = p` as a proof (it is a `TranscriptAt`) rather
 than in a type index. The decision reads public messages and challenges as values from `v` (or
 `p`) and reaches oracle payloads only by queries to `oracleMessageSpec s p`, answered from the same run
 (record D4).
 
 For a plain signature every move is public: the view signature is `plainSig`, the move map is
-the identity (`mapMoves_id`), and the fibre over `p` holds the full transcripts with shape path
-`p`, so the plain view carries every move.
+the identity (`mapMoves_id`), and `PlainView s p` is `TranscriptAt plainSig s p`, the full
+transcripts with shape path `p`, so the plain view carries every move.
 
 **Who may read the full transcript.** A claim may be indexed by the full transcript for
 bookkeeping. Round-by-round state functions and extractors read the full transcript, including
@@ -91,15 +94,15 @@ message, so a public message must be given a trivial oracle interface and querie
 interface uses it, so the two observations are distinguished only by which function is called.
 
 The interaction layer has public messages that are read as values (they may select shape) and
-oracle messages that must not be. A decision typed against the full `PathAlong` would receive
+oracle messages that must not be. A decision typed against the full `Transcript` would receive
 oracle payloads as values, and "the decision does not read them" would be a convention rather
 than a typing fact.
 
 The view is a fibre over `Path s` because the decision's oracle family is indexed by the path.
 If the view were a free-standing transcript `v` with a separate projection law, the decision would
-be typed at `oracleMessageSpec s (projectPathAlong viewSig s v)`, and running it on the view of `tr` would
-require identifying `OracleComp (… + oracleMessageSpec s (projectPathAlong viewSig s (mapMoves … tr)))` with
-`OracleComp (… + oracleMessageSpec s (projectPathAlong oracleSig s tr))` along a propositional equation.
+be typed at `oracleMessageSpec s v.path`, and running it on the view of `tr` would
+require identifying `OracleComp (… + oracleMessageSpec s (mapMoves … tr).path)` with
+`OracleComp (… + oracleMessageSpec s tr.path)` along a propositional equation.
 That is a cast in the index type of `OracleComp`, and every statement about the decision
 (simulation, query logs, the composition and legacy equivalence laws) would have to commute past
 it. Passing `p` explicitly and keeping the equation inside the fibre indexes the decision and the
@@ -107,17 +110,17 @@ oracle implementation of record D6 by the same `p`.
 
 ## Alternatives considered
 
-- **Decision on the full `PathAlong`, with a no-payload convention.** Not enforced, and the
+- **Decision on the full `Transcript`, with a no-payload convention.** Not enforced, and the
   acceptance test "the decision reaches oracle messages only by queries" would have nothing to
   check.
-- **Decision on the full `PathAlong`, plus a law that it depends only on the view** (`decide stmt
+- **Decision on the full `Transcript`, plus a law that it depends only on the view** (`decide stmt
   tr = decide stmt tr'` whenever the two transcripts have the same view). This is a proof
   obligation on every verifier, and it leaves the same acceptance test with nothing to check.
-- **A free-standing view transcript `PathAlong viewSig s`, with the projection law outside the
+- **A free-standing view transcript `Transcript viewSig s`, with the projection law outside the
   type.** Introduces the `OracleComp` index casts described above.
 - **Decision on the shape path plus a separate list of challenges** (the legacy form, adapted).
   Challenges sit at tree nodes whose existence depends on earlier public messages, so "the list of
-  challenges" is itself a dependent type over the shape path; the fibre `View s p` supplies it.
+  challenges" is itself a dependent type over the shape path; `View s p` supplies it.
 - **A second tree for the verifier, converted from the protocol tree.** Excluded: no lens is used
   as a conversion between tree types.
 - **Indexing state by the shape path.** Loses challenge dependence, which Sumcheck's running
@@ -125,8 +128,9 @@ oracle implementation of record D6 by the same `p`.
 
 ## Consequences
 
-- P's output families, composition and packing operate on `PathAlong` (records D0 and D5). No
-  output is indexed by `Path` except through `projectPathAlong`. P also adds `PathAlong.MoveMap`,
+- P's output families, composition and packing operate on `PathAlong`, which ArkLib states as
+  `Transcript` (records D0 and D5). No output is indexed by `Path` except through `tr.path`
+  (`projectPathAlong`). P also adds `PathAlong.MoveMap`,
   `mapMoves`, `projectPathAlong_mapMoves` and `mapMoves_id`.
 - A provides `viewSig`, `eraseOracle`, `View`, `toView`, and the decision and output oracle map
   (record D6) typed against `(p, View s p)`. Composition splits views along `Path.append` (record D5).

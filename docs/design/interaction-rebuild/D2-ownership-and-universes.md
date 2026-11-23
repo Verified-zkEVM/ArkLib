@@ -28,7 +28,7 @@ def roleSwap : Lens rolePoly rolePoly := ⟨fun r => (r.1.swap, r.2), fun _ => i
 def Lens.swapOwners (l : Lens P rolePoly) : Lens P rolePoly := roleSwap ∘ₗ l
 theorem swapOwners_swapOwners (l) : l.swapOwners.swapOwners = l
 theorem owner_swapOwners (l a) : owner l.swapOwners a = (owner l a).swap
-theorem PathAlong_swapOwners (l s) : PathAlong l.swapOwners s = PathAlong l s   -- same moves
+theorem Transcript_swapOwners (l s) : Transcript l.swapOwners s = Transcript l s   -- same moves
 ```
 
 The exchange of the paired participants and of the run under swap belongs to record D4, because

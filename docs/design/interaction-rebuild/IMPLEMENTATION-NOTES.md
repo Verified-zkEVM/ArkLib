@@ -124,11 +124,12 @@ fixes the owner.
 
 ## 12. Path-fiber splitting stays in ArkLib
 
-Record D5 splits paths and views at the seam with PolyFun's path operations and adds nothing to
-ArkLib for it. `TranscriptAt`,
-`project_split` and `TranscriptAt.split` in `Composition.lean` are generic in the polynomial and the lens
-but remain in ArkLib, marked as candidates for PolyFun; `project_split` is now derived from
-PolyFun's `projectPathAlong_append`, `append_split` and `split_append` laws. The same holds for
+Record D5 splits paths and views at the seam with PolyFun's path operations, reached through
+`Transcript.split` and `Transcript.append` (`Core/Transcript.lean`, where `TranscriptAt` is also
+defined). `project_split` and `TranscriptAt.split` in `Composition.lean` are generic in the
+polynomial and the lens but remain in ArkLib, marked as candidates for PolyFun; `project_split` is
+derived from `Transcript.path_append`, `Transcript.append_split` and `Transcript.split_append`,
+which restate PolyFun's laws of the same names. The same holds for
 `Node.appendEquiv` and `ChallengeNode.appendEquiv` in `Protocol.lean`, which split the node
 occurrences and challenge nodes of an appended protocol into prefix and suffix-fibre parts. They
 stay local to avoid a further PolyFun API change and repin beyond the merged lens work this slice
@@ -280,7 +281,7 @@ routing example.
 ### Output witnesses are indexed by the transcript
 
 The round-by-round and straight-line knowledge interfaces took a constant output witness type,
-although the prover's output `Out : PathAlong l s → Type` and the intermediate witnesses
+although the prover's output `Out : Transcript l s → Type` and the intermediate witnesses
 `Witness sp history` of a knowledge state function were already indexed by the transcript. A
 protocol whose output witness depends on a message, such as an index `Fin (payload + 1)` bounded
 by a sent `payload`, had to encode that carrier into a constant type and track its compatibility
@@ -288,22 +289,22 @@ with the transcript separately. The old interfaces could not expose the transcri
 directly.
 
 **Round-by-round knowledge** (`Security/RoundByRound.lean`). The output witness of
-`KnowledgeStateFunction` and `rbrKnowledgeSoundness` is a family `W : PathAlong l s → Type`.
-`validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W tr → Prop`, and
+`KnowledgeStateFunction` and `rbrKnowledgeSoundness` is a family `W : Transcript l s → Type`.
+`validOutput` takes `(stmt : S) → (tr : Transcript l s) → W tr → Prop`, and
 `extractLeaf sp history stmt` takes `W (PartialTranscriptAt.complete l sp history)`. The input witness
 type `Win` stays a plain type. The verifier forms take the family implicitly, with output
 relations
 
-- `Verifier.rbrKnowledgeSoundness`: `relOut : (tr : PathAlong plainSig s) → T → W tr → Prop`;
+- `Verifier.rbrKnowledgeSoundness`: `relOut : (tr : Transcript plainSig s) → T → W tr → Prop`;
 - `OracleVerifier.rbrKnowledgeSoundness`:
-  `relOut : (tr : PathAlong oracleSig s) → (T × ∀ j, B j) → W tr → Prop`, where the second
+  `relOut : (tr : Transcript oracleSig s) → (T × ∀ j, B j) → W tr → Prop`, where the second
   argument pairs the output statement with the output oracle data.
 
 **Straight-line knowledge** (`Security/Knowledge.lean`). The extractor interfaces
 `Extractor.StraightLine`, `Extractor.TranscriptOnly`, `Extractor.OracleStraightLine` and
-`Extractor.OracleTranscriptOnly` take an output witness family `Wout : PathAlong plainSig s → Type`
-or `Wout : PathAlong oracleSig s → Type`. Their arguments are ordered
-`(stmt : S) → (tr : PathAlong _ s) → Wout tr → …`, so the witness is typed at the transcript passed
+`Extractor.OracleTranscriptOnly` take an output witness family `Wout : Transcript plainSig s → Type`
+or `Wout : Transcript oracleSig s → Type`. Their arguments are ordered
+`(stmt : S) → (tr : Transcript _ s) → Wout tr → …`, so the witness is typed at the transcript passed
 with it. The extraction games read the prover output through `readOut : ∀ tr, Out tr → Wout tr`;
 the identity is a valid `readOut` when `Wout = Out`. The `withLogs` adapters, both extraction
 games, `mem_support_extractionGame`, the classical interfaces and their marginal lemmas carry the

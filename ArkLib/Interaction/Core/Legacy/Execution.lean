@@ -139,14 +139,14 @@ theorem samplerFrom_zero {M : Type → Type} [Monad M]
 theorem runWith_liftBind {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}}
     {M : Type → Type} [Monad M] [LawfulMonad M] (order : Schedule)
     (a : P.A) (rest : P.B a → FreeM P PUnit.{1})
-    {OutP OutC : PathAlong l (.liftBind a rest) → Type}
+    {OutP OutC : Transcript l (.liftBind a rest) → Type}
     (p : Focal l M (.liftBind a rest) OutP)
     (c : Counterpart l M (.liftBind a rest) OutC) :
     runWith (l := l) (m := M) order (.liftBind a rest) p c =
       step (owner l a) order p c (fun x pn cn =>
         runWith (l := l) (m := M) order (rest (l.toFunB a x)) pn cn >>= fun r =>
           pure (⟨⟨x, r.1⟩, r.2.1, r.2.2⟩ :
-            (t : PathAlong l (.liftBind a rest)) × OutP t × OutC t)) :=
+            (t : Transcript l (.liftBind a rest)) × OutP t × OutC t)) :=
   runWith_node (l := l) (m := M) order a rest p c
 
 /-- A counterpart-first run whose first node is round `j`, with the embedded slot and a sampler
@@ -163,7 +163,7 @@ theorem runWith_roundSlot {β Out : Type}
     (hdraw : ∀ hc, draw ⟨.inl ⟨⟩, hc⟩ = (plainMoveEquiv D _).symm <$>
       challengeOracle oSpec pSpec ⟨j, hD.trans (dir_eq_of_owner hc)⟩)
     (st : P.PrvState j.castSucc) (pre : pSpec.Transcript j.castSucc)
-    (G : ((_ : PathAlong plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) × Out ×
+    (G : ((_ : Transcript plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) × Out ×
       PUnit) → OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
     (F : pSpec.Transcript j.succ × P.PrvState j.succ →
       OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
@@ -223,13 +223,13 @@ variable {StmtIn WitIn StmtOut WitOut : Type}
 /-- Run an embedded interaction under `order`, in the legacy query monad, against a prover on the
 plain tree, then decide. The challenge oracle is the legacy `[pSpec.Challenge]ₒ`. -/
 def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
-    (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
+    (stmt : StmtIn) {Out : Transcript plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
       (Outcome plainSig (protocol pSpec) Out StmtOutAt) := do
   let r ← runWith order (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (legacySampler pSpec (challengeOracle oSpec pSpec))
-  let verdict ← liftComp (V.decide stmt (projectPathAlong plainSig _ r.1)
+  let verdict ← liftComp (V.decide stmt (Transcript.path r.1)
     (toPlainView _ r.1)).run (oSpec + [pSpec.Challenge]ₒ)
   pure ⟨r.1, r.2.1, verdict⟩
 
@@ -376,7 +376,7 @@ theorem sampler_challenge {M : Type → Type} [Monad M] [LawfulMonad M] (C : Typ
 the two schedules give the same distribution of output and final state, for every prover. -/
 theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
     (chImpl : QueryImpl chal ProbComp) :
-    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
+    (s : Protocol.{0}) → {Out : Transcript plainSig s → Type} →
     (p : Focal plainSig (OracleComp (ambient + chal)) s Out) →
     (draw : (c : ChallengeNode plainSig s) →
       OracleComp (ambient + chal) (challengeSpec plainSig s c)) →
@@ -418,7 +418,7 @@ variable {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
 theorem simulate_simulate {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}}
     {κ'' : Type} {spec'' : OracleSpec κ''}
     (F : QueryImpl spec' (OracleComp spec'')) (G : QueryImpl spec (OracleComp spec')) :
-    (s : FreeM P PUnit.{1}) → {Out : PathAlong l s → Type} →
+    (s : FreeM P PUnit.{1}) → {Out : Transcript l s → Type} →
     (p : Core.Prover l spec s Out) →
     Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
   | .pure _, _, p => by
@@ -434,7 +434,7 @@ theorem simulate_simulate {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0
 
 /-- Simulating a run against a public-coin sampler simulates every prover slot and every draw. -/
 theorem simulateQ_runWith (F : QueryImpl spec (OracleComp spec')) (order : Schedule) :
-    (s : Protocol.{0}) → {Out : PathAlong plainSig s → Type} →
+    (s : Protocol.{0}) → {Out : Transcript plainSig s → Type} →
     (p : Focal plainSig (OracleComp spec) s Out) →
     (draw : (c : ChallengeNode plainSig s) → OracleComp spec (challengeSpec plainSig s c)) →
     simulateQ F (runWith order s p (sampler plainSig s draw)) =
@@ -506,7 +506,7 @@ abbrev challengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
 
 /-- The prover-sampler run of the interaction layer, with its queries reindexed, is the
 focal-first run against the legacy sampler. -/
-theorem simulateQ_challengeReindex_run {Out : PathAlong plainSig (protocol pSpec) → Type}
+theorem simulateQ_challengeReindex_run {Out : Transcript plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (TwoParty.Lens.run (protocol pSpec)
       (p.simulate (fun q => liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query
@@ -529,7 +529,7 @@ theorem simulateQ_challengeReindex_run {Out : PathAlong plainSig (protocol pSpec
 /-- The run of the interaction layer, with its challenges answered by the legacy challenge
 oracle, is the focal-first outcome. -/
 theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
-    (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
+    (stmt : StmtIn) {Out : Transcript plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
   rw [Core.Verifier.run, observeWith, simulateQ_bind, simulateQ_challengeReindex_run]
@@ -651,7 +651,7 @@ theorem experiment_evalDistEq {κ : Type} {ambient : OracleSpec ι} {chal : Orac
 theorem distEqFrom_observeWith (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
-    {Out : PathAlong plainSig (protocol pSpec) → Type}
+    {Out : Transcript plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     DistEqFrom impl chImpl (observeWith .focalFirst V stmt p)
       (observeWith .counterpartFirst V stmt p) :=
@@ -664,7 +664,7 @@ the counterpart-first schedule. -/
 theorem experiment_verifier_run_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
-    {Out : PathAlong plainSig (protocol pSpec) → Type}
+    {Out : Transcript plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) {β : Type}
     (f : Outcome plainSig (protocol pSpec) Out StmtOutAt → β) :
     experiment init impl (plainChallengeImpl chImpl) (f <$> V.run stmt p) =ᵈ

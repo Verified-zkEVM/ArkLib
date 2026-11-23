@@ -266,7 +266,7 @@ theorem decide_run' (stmt : Bool) (p) (v) (st : Nat) :
   rel_admissible _ _ _ _ := trivial
 
 theorem validAcceptance_iff {langOut : Nat → Prop} (hl : ∀ t, langOut t) (stmt : Bool)
-    (tr : PathAlong plainSig coin) :
+    (tr : Transcript plainSig coin) :
     coinVerifier.validAcceptance tick stmt tr langOut ↔
       (stmt || (tr.1 : Bool)) = true := by
   rcases tr with ⟨x, ⟨⟩⟩
@@ -280,7 +280,7 @@ theorem validAcceptance_iff {langOut : Nat → Prop} (hl : ∀ t, langOut t) (st
 /-- The state is true at the root of a true statement and at a leaf with a true challenge. -/
 def coinState : StateFunction plainSig coin Bool (boolProblem.admissible ())
     (boolProblem.language ()) (fun stmt tr => coinVerifier.validAcceptance tick stmt tr
-      (anyOutput.language (projectPathAlong plainSig coin tr))) where
+      (anyOutput.language tr.path)) where
   toFun {_} sp history stmt := match sp, history with
     | .root _, _ => stmt = true
     | .down _ _, history => (stmt || (history.1.1 : Bool)) = true
@@ -432,10 +432,10 @@ contract.
 abbrev payloadMsg : Protocol := .liftBind (.message Nat) (fun _ => .pure ⟨⟩)
 
 /-- The payload of a completed transcript. -/
-def payloadOf (tr : PathAlong plainSig payloadMsg) : Nat := tr.1
+def payloadOf (tr : Transcript plainSig payloadMsg) : Nat := tr.1
 
 /-- The output witness carrier: an index bounded by the payload. -/
-abbrev BoundedIndex (tr : PathAlong plainSig payloadMsg) : Type := Fin (payloadOf tr + 1)
+abbrev BoundedIndex (tr : Transcript plainSig payloadMsg) : Type := Fin (payloadOf tr + 1)
 
 /-- Accepts when the payload equals the statement, and outputs the payload. -/
 def payloadVerifier : Verifier counter payloadMsg Nat (fun _ => Nat) where
@@ -443,7 +443,7 @@ def payloadVerifier : Verifier counter payloadMsg Nat (fun _ => Nat) where
     (pure (if payloadOf v.val = stmt then some (payloadOf v.val) else none))
 
 theorem payload_validAcceptance_iff {langOut : Nat → Prop} (stmt : Nat)
-    (tr : PathAlong plainSig payloadMsg) :
+    (tr : Transcript plainSig payloadMsg) :
     payloadVerifier.validAcceptance tick stmt tr langOut ↔ payloadOf tr = stmt ∧ langOut stmt := by
   rcases tr with ⟨x, ⟨⟩⟩
   have key : ∀ st, (simulateQ tick (payloadVerifier.decide stmt _
@@ -588,7 +588,7 @@ instance : MeasurableSpace (Outcome plainSig coin (fun _ => Nat) (fun _ => Nat))
 instance : DiscreteMeasurableSpace (Outcome plainSig coin (fun _ => Nat) (fun _ => Nat)) :=
   ⟨fun _ => MeasurableSpace.measurableSet_top⟩
 
-instance : Countable (PathAlong plainSig coin) :=
+instance : Countable (Transcript plainSig coin) :=
   Function.Injective.countable (β := Bool) (f := fun tr => tr.1) fun
     | ⟨_, ⟨⟩⟩, ⟨_, ⟨⟩⟩, rfl => rfl
 

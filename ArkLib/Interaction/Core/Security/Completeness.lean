@@ -61,12 +61,12 @@ structure OutputJudgement (Obs : Type*) {Ctx : Type*} {T : ClaimFamily Ctx} (P :
 type is indexed by the shape path of the outcome's transcript. -/
 def OutputJudgement.ofOutcome {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
-    {Out : PathAlong l s → Type} {T : Path s → Type} (output : PathProblem s T)
-    (readStatement : ∀ tr, Out tr → T (projectPathAlong l s tr))
+    {Out : Transcript l s → Type} {T : Path s → Type} (output : PathProblem s T)
+    (readStatement : ∀ tr, Out tr → T tr.path)
     (readWitness : ∀ obs : Outcome l s Out T, ∀ t,
-      obs.2.2 = some t → output.Witness (projectPathAlong l s obs.1) t) :
+      obs.2.2 = some t → output.Witness (Transcript.path obs.1) t) :
     OutputJudgement (Outcome l s Out T) output where
-  context obs := projectPathAlong l s obs.1
+  context obs := Transcript.path obs.1
   verdict obs := obs.2.2
   proverStatement obs := readStatement obs.1 obs.2.1
   witness := readWitness
@@ -118,7 +118,7 @@ def challengeQueryImpl {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 /-- The default classical model contains every focal prover over the ambient oracle interface.
 The input statement is an argument of the run, so its type may lie in any universe. -/
 noncomputable def Verifier.classicalModel {ι σ : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {S : Type uS} {T : Path s → Type} {Out : PathAlong plainSig s → Type}
+    {s : Protocol} {S : Type uS} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     [MeasurableSpace (Outcome plainSig s Out T)]
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -140,7 +140,7 @@ noncomputable def OracleVerifier.classicalModel {ι σ : Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : Resources.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type}
+    {Out : Transcript oracleSig s → Type}
     [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -155,14 +155,14 @@ noncomputable def OracleVerifier.classicalModel {ι σ : Type}
 output problem's claims are indexed by the shape path. The input statement and the honest input
 witness are arguments of the run, so their types may lie in any universe. -/
 abbrev Reduction.completeness {ι σ : Type} {S : Type uS} {W : Type uW} {ambient : OracleSpec ι}
-    {s : Protocol} {T : Path s → Type} {Out : PathAlong plainSig s → Type}
+    {s : Protocol} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     (R : Reduction ambient s S W T Out) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
     (input : StatementProblem S) (output : PathProblem s T)
-    (readStatement : ∀ tr, Out tr → T (projectPathAlong plainSig s tr))
+    (readStatement : ∀ tr, Out tr → T tr.path)
     (readWitness : ∀ obs : Outcome plainSig s Out T, ∀ t,
-      obs.2.2 = some t → output.Witness (projectPathAlong plainSig s obs.1) t)
+      obs.2.2 = some t → output.Witness (Transcript.path obs.1) t)
     (witness : ∀ stmt, input.Witness () stmt → W) (ε : ℝ≥0∞) : Prop :=
   letI : MeasurableSpace (Outcome plainSig s Out T) := ⊤
   Core.completeness (R.verifier.classicalModel init impl challenges) input output

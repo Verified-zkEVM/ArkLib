@@ -48,9 +48,9 @@ abbrev Verifier.soundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
     (input : StatementProblem S) (output : PathProblem s T) (ε : ℝ≥0∞) : Prop :=
-  ∀ Out : PathAlong plainSig s → Type,
+  ∀ Out : Transcript plainSig s → Type,
   letI : MeasurableSpace (Outcome plainSig s Out T) := ⊤
   Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
-    (fun obs => projectPathAlong plainSig s obs.1) (fun obs => obs.2.2) ε
+    (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε
 
 end Interaction.Core

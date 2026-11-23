@@ -145,7 +145,7 @@ abbrev viewSpec (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.M
 
 /-- The verifier's views of a run are its per-round views. -/
 def viewEquiv (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
-    PathAlong viewSig (oracleProtocol pSpec) ≃ FullTranscript (viewSpec pSpec) :=
+    Transcript viewSig (oracleProtocol pSpec) ≃ FullTranscript (viewSpec pSpec) :=
   chainEquiv (pSpec := viewSpec pSpec) viewSig (oracleRound pSpec) (fun _ => Equiv.refl _)
 
 /-- The challenge in the view of a challenge round. -/
@@ -155,7 +155,7 @@ def viewChallenge (j : Fin n) : (d : Direction) → (hd : pSpec.dir j = d) → d
   | .P_to_V, _, h, _ => nomatch h
 
 /-- The challenges in a verifier view. -/
-def viewChallenges (v : PathAlong viewSig (oracleProtocol pSpec)) : pSpec.Challenges :=
+def viewChallenges (v : Transcript viewSig (oracleProtocol pSpec)) : pSpec.Challenges :=
   fun i => viewChallenge i.1 _ rfl i.2 (viewEquiv pSpec v i.1)
 
 

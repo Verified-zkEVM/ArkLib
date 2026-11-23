@@ -51,7 +51,7 @@ def PartialTranscriptAt.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
 
 /-- A terminal full prefix is a completed transcript. -/
 def PartialTranscriptAt.complete : {s : FreeM P PUnit} →
-    (sp : Cursor.Spine s (.pure PUnit.unit)) → PartialTranscriptAt l sp → PathAlong l s
+    (sp : Cursor.Spine s (.pure PUnit.unit)) → PartialTranscriptAt l sp → Transcript l s
   | _, .root _, _ => ⟨⟩
   | _, .down b tail, history => by
     rcases history with ⟨⟨x, h⟩, rest⟩
@@ -85,7 +85,7 @@ def sampleAt {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
 /-- A state predicate on every full prefix, with root, sender and terminal obligations. The
 statement may lie in any universe. -/
 structure StateFunction (s : FreeM P PUnit) (S : Type uS)
-    (admissible language : S → Prop) (accepts : S → PathAlong l s → Prop) where
+    (admissible language : S → Prop) (accepts : S → Transcript l s → Prop) where
   toFun : ∀ {t}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → S → Prop
   root : ∀ stmt, admissible stmt → toFun (.root s) ⟨⟩ stmt → language stmt
   send : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history stmt,
@@ -97,7 +97,7 @@ structure StateFunction (s : FreeM P PUnit) (S : Type uS)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
 def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
-    (admissible language : S → Prop) (accepts : S → PathAlong l s → Prop)
+    (admissible language : S → Prop) (accepts : S → Transcript l s → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
   ∃ F : StateFunction l s S admissible language accepts,
     ∀ stmt, admissible stmt → ¬ language stmt →
@@ -119,9 +119,9 @@ each lie in their own universe: the extractors are plain functions, so the root 
 map a large intermediate witness to a small input witness and back. As for soundness states,
 the root extraction obligation applies only within the input promise.
 -/
-structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS) (W : PathAlong l s → Type)
+structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS) (W : Transcript l s → Type)
     (Win : Type uW) (admissible : S → Prop) (relIn : S → Win → Prop)
-    (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop) where
+    (validOutput : (stmt : S) → (tr : Transcript l s) → W tr → Prop) where
   Witness : ∀ {t} (sp : Cursor.Spine s t), PartialTranscriptAt l sp → Type uK
   toFun : ∀ {t} (sp : Cursor.Spine s t) (history : PartialTranscriptAt l sp), S →
     Witness sp history → Prop
@@ -148,9 +148,9 @@ The output witness type `W tr` is indexed by the completed transcript `tr`. The 
 witnesses of the state function lie in the universe `uK`, which is a parameter of this
 definition. -/
 def rbrKnowledgeSoundness {S : Type uS} {Win : Type uW} (s : FreeM P PUnit)
-    {W : PathAlong l s → Type}
+    {W : Transcript l s → Type}
     (admissible : S → Prop) (relIn : S → Win → Prop)
-    (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop)
+    (validOutput : (stmt : S) → (tr : Transcript l s) → W tr → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
   ∃ F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
@@ -166,9 +166,9 @@ def rbrKnowledgeSoundness {S : Type uS} {Win : Type uW} (s : FreeM P PUnit)
 /-- Move a knowledge state function to a larger universe of intermediate witnesses. Each new
 intermediate witness is an old one in a larger universe; the states, extractors and obligations
 are the old ones. -/
-def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS} {W : PathAlong l s → Type}
+def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS} {W : Transcript l s → Type}
     {Win : Type uW} {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
+    {validOutput : (stmt : S) → (tr : Transcript l s) → W tr → Prop}
     (F : KnowledgeStateFunction.{uS, uW, uK} l s S W Win admissible relIn validOutput) :
     KnowledgeStateFunction.{uS, uW, max uK v} l s S W Win admissible relIn validOutput where
   Witness sp history := ULift.{v} (F.Witness sp history)
@@ -183,8 +183,8 @@ def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit} {S : Type uS} {W : PathA
 /-- Round-by-round knowledge soundness with intermediate witnesses in a universe `uK` implies
 it with intermediate witnesses in any larger universe, at the same error. -/
 theorem rbrKnowledgeSoundness.lift.{v} {S : Type uS} {Win : Type uW} {s : FreeM P PUnit}
-    {W : PathAlong l s → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
-    {validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop}
+    {W : Transcript l s → Type} {admissible : S → Prop} {relIn : S → Win → Prop}
+    {validOutput : (stmt : S) → (tr : Transcript l s) → W tr → Prop}
     {draw : QueryImpl (challengeSpec l s) ProbComp} {ε : ChallengeNode l s → ℝ≥0∞}
     (h : rbrKnowledgeSoundness.{uS, uW, uK} l s admissible relIn validOutput draw ε) :
     rbrKnowledgeSoundness.{uS, uW, max uK v} l s admissible relIn validOutput draw ε := by
@@ -198,12 +198,12 @@ predicate on the output statement type at the transcript's shape path. The input
 lie in any universe. -/
 def Verifier.validAcceptance {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type} (V : Verifier ambient s S T)
-    (impl : QueryImpl ambient (StateT σ ProbComp)) (stmt : S) (tr : PathAlong plainSig s)
-    (event : T (projectPathAlong plainSig s tr) → Prop) : Prop :=
-  letI : MeasurableSpace (Option (T (projectPathAlong plainSig s tr))) := ⊤
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (stmt : S) (tr : Transcript plainSig s)
+    (event : T tr.path → Prop) : Prop :=
+  letI : MeasurableSpace (Option (T tr.path)) := ⊤
   ∃ state : σ, 0 < 𝒟[((simulateQ impl
-    (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run).run' state :
-      ProbComp (Option (T (projectPathAlong plainSig s tr))))] {v | ∃ t, v = some t ∧ event t}
+    (V.decide stmt (Transcript.path tr) (toPlainView s tr)).run).run' state :
+      ProbComp (Option (T tr.path)))] {v | ∃ t, v = some t ∧ event t}
 
 /-- The plain verifier's default round-by-round soundness form. The output language is indexed
 by the shape path and judged at the transcript's path. -/
@@ -215,18 +215,18 @@ abbrev Verifier.rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec 
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
   Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
     (fun stmt tr => V.validAcceptance impl stmt tr
-      (output.language (projectPathAlong plainSig s tr))) draw ε
+      (output.language tr.path)) draw ε
 
 /-- The plain verifier's default round-by-round knowledge form. The output witness type `W tr`
 and the output relation `relOut tr` are indexed by the completed transcript `tr`, and the output
 statement has the type at its shape path. -/
 abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : Type uW}
     {ambient : OracleSpec ι}
-    {s : Protocol} {T : Path s → Type} {W : PathAlong plainSig s → Type}
+    {s : Protocol} {T : Path s → Type} {W : Transcript plainSig s → Type}
     (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S → Prop) (relIn : S → Win → Prop)
-    (relOut : (tr : PathAlong plainSig s) → T (projectPathAlong plainSig s tr) → W tr → Prop)
+    (relOut : (tr : Transcript plainSig s) → T tr.path → W tr → Prop)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness.{uS, uW, uK} plainSig s admissible relIn
@@ -243,9 +243,9 @@ The event is a predicate on the output statement and oracle data at the transcri
 The input statement, the input index and the input query type may lie in any universe. -/
 def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (stmt : S × inputs.Data) (tr : PathAlong oracleSig s)
-    (event : OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) : Prop :=
-  let p := projectPathAlong oracleSig s tr
+    (stmt : S × inputs.Data) (tr : Transcript oracleSig s)
+    (event : OracleVerifier.Output T B tr.path → Prop) : Prop :=
+  let p := Transcript.path tr
   let view := toView s tr
   let resources : (pathResources inputs s p).Data := (stmt.2, oracleMessages s tr)
   letI : MeasurableSpace (Option (T p)) := ⊤
@@ -265,17 +265,17 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
     (fun stmt tr => V.validAcceptance impl stmt tr
-      (output.language (projectPathAlong oracleSig s tr))) draw ε
+      (output.language tr.path)) draw ε
 
 /-- Worst-case-per-prefix oracle knowledge with full payload-bearing prefix access. The output
 witness type `W tr` and the output relation `relOut tr` are indexed by the completed
 transcript `tr`, and the output statement and oracle data have the types at its shape path. -/
-abbrev rbrKnowledgeSoundness {Win : Type uW} {W : PathAlong oracleSig s → Type}
+abbrev rbrKnowledgeSoundness {Win : Type uW} {W : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × inputs.Data → Prop) (relIn : (S × inputs.Data) → Win → Prop)
-    (relOut : (tr : PathAlong oracleSig s) →
-      OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W tr → Prop)
+    (relOut : (tr : Transcript oracleSig s) →
+      OracleVerifier.Output T B tr.path → W tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Core.rbrKnowledgeSoundness.{max uS dI, uW, uK} oracleSig s admissible relIn
