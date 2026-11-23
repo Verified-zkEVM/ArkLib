@@ -64,7 +64,7 @@ variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
          {A : Type} [AddCommMonoid A] [Module F A]
          {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
-         {S S' : Type} [Fintype S] [Fintype S'] [SampleableType S] [SampleableType S']
+         {S S' : Type} [SampleableType S] [SampleableType S']
 
 /-- If `G` has mutual correlated agreement with error `ε_mca` for `MC`, and `G'` has it with error
 `ε'_mca` for the `ℓ`-fold interleaving of `MC`, then the tensor generator has it for `MC` with the
@@ -238,7 +238,7 @@ variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
          {A : Type} [AddCommMonoid A] [Module F A]
          {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
-         {S S' : Type} [Fintype S] [Fintype S'] [SampleableType S] [SampleableType S']
+         {S S' : Type} [SampleableType S] [SampleableType S']
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
 generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`

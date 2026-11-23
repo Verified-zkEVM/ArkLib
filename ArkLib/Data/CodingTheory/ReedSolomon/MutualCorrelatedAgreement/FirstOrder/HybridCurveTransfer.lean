@@ -39,7 +39,8 @@ open PolynomialDifferential Polynomial
 
 namespace ReedSolomon
 
-open HiddenDerivative MvPolynomial
+open HiddenDerivative
+open MvPolynomial (CoeffNatDegreeLE)
 
 noncomputable section
 

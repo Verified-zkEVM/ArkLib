@@ -117,7 +117,7 @@ theorem phi_toPoly :
     (powTwoCyclotomic (R := ZMod q) α).φ.toPoly = X ^ (2 ^ α) + 1 := by
   change (CompPoly.CPolynomial.X ^ (2 ^ α) + 1 : CompPoly.CPolynomial (ZMod q)).toPoly = _
   rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_pow,
-    CompPoly.CPolynomial.toPoly_X, CompPoly.CPolynomial.toPoly_one]
+    CompPoly.CPolynomial.X_toPoly, CompPoly.CPolynomial.toPoly_one]
 
 omit [NeZero q] in
 open Polynomial in
@@ -321,8 +321,7 @@ theorem Rq.eq_zero_of_l2NormSq_eq_zero {c : Rq Φ} (h : Rq.l2NormSq Φ c = 0) : 
   -- Hence the underlying polynomial is `0` (coeffs below `deg φ` by the above, coeffs at or
   -- above `deg φ` by reducedness).
   have htoP : c.1.toPoly = 0 := by
-    apply Polynomial.ext
-    intro k
+    ext k : 2
     rw [Polynomial.coeff_zero]
     by_cases hk : k < (powTwoCyclotomic (R := ZMod q) α).φ.natDegree
     · rw [← CompPoly.CPolynomial.coeff_toPoly]; exact hlt k hk

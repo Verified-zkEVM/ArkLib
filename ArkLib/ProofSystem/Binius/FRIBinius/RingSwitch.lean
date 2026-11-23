@@ -118,7 +118,7 @@ def fullReduction (γ : ℕ) := OracleReduction.append
 /-- Each full-protocol challenge keeps its component's error bound. -/
 def fullError (γ : ℕ) : (pSpec κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ).ChallengeIdx → ℝ≥0 :=
   Sum.elim (TensorPrefix.rbrError (biniusProfile κ L K β))
-    (BinaryBasefold.Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) ∘
+    (BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate)) ∘
       ChallengeIdx.sumEquiv.symm
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [Fact (Fintype.card K = 2)] [NeZero R] in
@@ -128,23 +128,29 @@ set_option backward.isDefEq.respectTransparency false in
 theorem fullError_sum (γ : ℕ) :
     (∑ j, fullError κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ j) =
       (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
-        ∑ j, BinaryBasefold.Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate) j :=
+        ∑ j, BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate) j :=
   RingSwitching.Packing.RingSwitch.append_rbrError_sum
     (M := (biniusProfile κ L K β).A) (PackingData.ofBasis (biniusProfile κ L K β).basis) ℓ'
     (BatchingStrategy.eqFold L κ)
     ((!p[] : ProtocolSpec 0) ++ₚ BinaryBasefold.fullPSpec K β γ
       (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate))
-    (BinaryBasefold.Opening.openingError K β γ (ϑ := ϑ) (h_rate := h_rate))
+    (BinaryBasefold.ProductClaim.openingError K β γ (ϑ := ϑ) (h_rate := h_rate))
+
+/-- The closed-form bound of this composition: the batching loss `κ/|L|`, one ring-switching
+sum-check term `2ℓ'/|L|`, and the Binary Basefold bound. -/
+def concreteError (γ : ℕ) : ℝ≥0 :=
+  (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
+    BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ
 
 omit [DecidableEq K] [Fact (β 0 = 1)] in
-/-- The challenge sum is bounded by the frontend loss and the opening's closed-form bound. -/
+/-- The challenge sum is bounded by the frontend loss and the opening's closed-form bound,
+`concreteError`. -/
 theorem fullError_sum_le (γ : ℕ) :
     (∑ j, fullError κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ j) ≤
-      (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
-        BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ := by
-  rw [fullError_sum]
+      concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ := by
+  rw [fullError_sum, concreteError]
   exact add_le_add (le_refl _)
-    (BinaryBasefold.Opening.openingError_sum_le_concrete K β γ
+    (BinaryBasefold.ProductClaim.openingError_sum_le_concrete K β γ
       (ϑ := ϑ) (h_rate := h_rate))
 
 omit [DecidableEq K] [Fact (β 0 = 1)] [NeZero R] in
@@ -237,8 +243,7 @@ theorem fullReduction_perfectCompleteness_and_rbrKnowledgeSoundness
           (inputInterface κ K β (ϑ := ϑ) h_rate))
         acceptRejectOracleRel (fullError κ K β (ϑ := ϑ) h_rate γ) ∧
       (∑ j, fullError κ K β (ϑ := ϑ) h_rate (ℓ' := ℓ') γ j) ≤
-        (κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
-          BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ :=
+        concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ :=
   ⟨fullReduction_perfectCompleteness κ K β h_rate h_dim γ init impl,
     fullVerifier_rbrKnowledgeSoundness κ K β h_rate h_dim γ init impl,
     fullError_sum_le κ K β h_rate γ⟩
@@ -264,8 +269,7 @@ theorem fullVerifier_knowledgeSoundness {σ : Type} (γ : ℕ) (init : ProbComp 
       (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
         (inputInterface κ K β (ϑ := ϑ) h_rate))
       (fullVerifier κ K β h_rate h_dim γ)
-      ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
-        BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) := by
+      (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) := by
   apply Verifier.knowledgeSoundness_error_mono init impl
     (fullError_sum_le κ K β (ϑ := ϑ) h_rate γ)
   exact Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
@@ -284,8 +288,7 @@ theorem fullReduction_perfectCompleteness_and_knowledgeSoundness {σ : Type} (γ
         (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
           (inputInterface κ K β (ϑ := ϑ) h_rate))
         (fullVerifier κ K β h_rate h_dim γ)
-        ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
-          BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) :=
+        (concreteError κ (L := L) (ℓ' := ℓ') (R := R) γ) :=
   ⟨fullReduction_perfectCompleteness κ K β h_rate h_dim γ init impl,
     fullVerifier_knowledgeSoundness κ K β h_rate h_dim γ init impl⟩
 

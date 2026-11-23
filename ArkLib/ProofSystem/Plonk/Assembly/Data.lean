@@ -35,10 +35,10 @@ variable {F : Type} [Field F] [DecidableEq F] {m n ℓ : ℕ}
 def publicInputPolynomial (D : EvaluationDomain F (ℓ + n)) (hn : 0 < ℓ + n)
     (x : Fin ℓ → F) :
     GeneratorBatch.Poly F (ℓ + n) :=
-  ⟨Computable.publicInputPolynomial D (Nat.le_add_right ℓ n) x, by
+  ⟨Computable.publicInputPolynomial D x, by
     rw [Computable.publicInputPolynomial_toPoly]
-    have h := (Plonk.publicInputPolynomial D (Nat.le_add_right ℓ n) x).property
-    by_cases hz : (Plonk.publicInputPolynomial D (Nat.le_add_right ℓ n) x).val = 0
+    have h := (Plonk.publicInputPolynomial D x).property
+    by_cases hz : (Plonk.publicInputPolynomial D x).val = 0
     · simpa [hz] using hn
     · exact (Polynomial.natDegree_lt_iff_degree_lt hz).mpr
         (Polynomial.mem_degreeLT.mp h)⟩
@@ -48,7 +48,7 @@ def publicInputPolynomial (D : EvaluationDomain F (ℓ + n)) (hn : 0 < ℓ + n)
 theorem publicInputPolynomial_toPoly (D : EvaluationDomain F (ℓ + n))
     (hn : 0 < ℓ + n) (x : Fin ℓ → F) :
     (publicInputPolynomial D hn x).val.toPoly =
-      (Plonk.publicInputPolynomial D (Nat.le_add_right ℓ n) x).val := by
+      (Plonk.publicInputPolynomial D x).val := by
   simp [publicInputPolynomial]
 
 /-- Evaluate an executable table at each wire position. -/
@@ -94,7 +94,7 @@ theorem inputRelation_iff_polynomialRelation (ω : F)
   have hpi : GrandProduct.mathPoly
       (publicInputPolynomial (EvaluationDomain.primitiveRoot ω hω) hn x) =
       Plonk.publicInputPolynomial (EvaluationDomain.primitiveRoot ω hω)
-        (Nat.le_add_right ℓ n) x := by
+        x := by
     apply Subtype.ext
     exact publicInputPolynomial_toPoly _ _ _
   simp only [GrandProduct.InputRelation, GrandProduct.gate_toPoly, hpi,

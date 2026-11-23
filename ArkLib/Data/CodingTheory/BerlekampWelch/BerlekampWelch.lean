@@ -45,7 +45,6 @@ variable [DecidableEq F]
   ### Parameters:
   - `e : ℕ` - Maximum number of correctable errors
   - `k : ℕ` - Degree bound of message polynomial (`<k`)
-  - `[NeZero n]` - Instance that codeword length `n` is non-zero
   - `ωs : Fin n → F` - Evaluation points used during encoding
   - `f : Fin n → F` - Received (possibly corrupted) codeword evaluations
 
@@ -53,7 +52,7 @@ variable [DecidableEq F]
   - `some p` if successful (where `p : Polynomial F` is the recovered polynomial)
   - `none` if decoding fails (too many errors or unsolvable system)
 -/
-noncomputable def decoder (e k : ℕ) [NeZero n] (ωs f : Fin n → F) : Option (Polynomial F) :=
+noncomputable def decoder (e k : ℕ) (ωs f : Fin n → F) : Option (Polynomial F) :=
   if ‖f‖₀ ≤ e
   then some 0
   else
@@ -80,7 +79,7 @@ noncomputable def decoder (e k : ℕ) [NeZero n] (ωs f : Fin n → F) : Option 
 - `f : Fin n → F` - Received (possibly corrupted) codeword
 - `h` - Hypothesis that decoder succeeded (returns `some p`)
 -/
-theorem hammingDist_le_of_decoder_eq_some [NeZero n] {ωs f : Fin n → F}
+theorem hammingDist_le_of_decoder_eq_some {ωs f : Fin n → F}
     (h : decoder e k ωs f = some p) : Δ₀(f, p.eval ∘ ωs) ≤ e :=
   by aesop (add simp decoder)
 

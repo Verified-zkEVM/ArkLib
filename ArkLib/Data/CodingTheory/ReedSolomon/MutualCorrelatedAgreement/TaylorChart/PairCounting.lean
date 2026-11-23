@@ -38,7 +38,8 @@ the high-cut incidence bound gives a sharp count for finite families of admissib
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval aeval_optionEquivRight_symm optionEquivRight)
 open scoped BigOperators
 
 namespace ReedSolomon
@@ -127,7 +128,7 @@ theorem coeff_taylor_correlatedPairSpecialization (iota : F →+* E) (center z :
       (Polynomial.taylor center (pair.1.map iota)).coeff l +
         z * (Polynomial.taylor center (pair.2.map iota)).coeff l := by
   rw [correlatedPairSpecialization, ← Polynomial.smul_eq_C_mul, map_add, map_smul]
-  simp only [Polynomial.coeff_add, Polynomial.coeff_smul, smul_eq_mul]
+  simp only [Polynomial.coeff_add, AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul]
 
 /-- Every cleared reconstruction identity identifies the rational Taylor polynomial with the
 specialized pair whenever the initial separant is nonzero. -/

@@ -6,7 +6,7 @@ Authors: Pablo Martín Vinuelas
 module
 
 public import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
-public import ArkLib.ToCompPoly.Univariate.Basic
+public import CompPoly.Univariate.ToPoly
 public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
 
 /-!

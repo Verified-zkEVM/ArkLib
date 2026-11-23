@@ -196,16 +196,17 @@ def HasExactNestedPowerAgreement {m : ℕ} (domain : ι ↪ F) (ℓ : Fin (m + 1
       Finset.univ.filter fun i ↦ ∀ g t, (P g t).eval (domain i) = w g t i
 
 omit [Field F] [Fintype ι] [DecidableEq F] in
-/-- Extension of a tuple `f : Fin a → A` by zero to `Fin b`, for `a ≤ b`. -/
-def padFin {A : Type*} [Zero A] {a b : ℕ} (_h : a ≤ b) (f : Fin a → A) (i : Fin b) : A :=
+/-- Extension of a tuple `f : Fin a → A` by zero to `Fin b`. When `b < a` this truncates `f`;
+the lemmas below assume `a ≤ b`. -/
+def padFin {A : Type*} [Zero A] {a b : ℕ} (f : Fin a → A) (i : Fin b) : A :=
   if hi : i.val < a then f ⟨i.val, hi⟩ else 0
 
 omit [Field F] [Fintype ι] [DecidableEq F] in
 /-- Padding by zero does not change the sum. -/
 theorem sum_padFin {A : Type*} [AddCommMonoid A] {a b : ℕ} (h : a ≤ b) (f : Fin a → A) :
-    ∑ i : Fin b, padFin h f i = ∑ i : Fin a, f i := by
+    ∑ i : Fin b, padFin f i = ∑ i : Fin a, f i := by
   let g : ℕ → A := fun i ↦ if hi : i < a then f ⟨i, hi⟩ else 0
-  calc ∑ i : Fin b, padFin h f i = ∑ i ∈ Finset.range b, g i := by
+  calc ∑ i : Fin b, padFin f i = ∑ i ∈ Finset.range b, g i := by
         rw [← Fin.sum_univ_eq_sum_range g b]
         rfl
     _ = ∑ i ∈ Finset.range a, g i := by
@@ -220,17 +221,17 @@ theorem sum_padFin {A : Type*} [AddCommMonoid A] {a b : ℕ} (h : a ≤ b) (f : 
 omit [Fintype ι] [DecidableEq F] in
 /-- The groups `values g : Fin (degree g + 1) → ι → F`, padded by zero to a common size
 `maxDegree + 1` and arranged as an array with one row per group. -/
-def paddedPowerValues {rows maxDegree : ℕ} (degree : Fin rows → ℕ)
-    (hdegree : ∀ g, degree g ≤ maxDegree) (values : (g : Fin rows) → Fin (degree g + 1) → ι → F) :
+def paddedPowerValues {rows : ℕ} (maxDegree : ℕ) (degree : Fin rows → ℕ)
+    (values : (g : Fin rows) → Fin (degree g + 1) → ι → F) :
     Fin (maxDegree + 1) → ι → Fin rows → F :=
-  fun t i g ↦ padFin (Nat.add_le_add_right (hdegree g) 1) (fun j ↦ values g j i) t
+  fun t i g ↦ padFin (fun j ↦ values g j i) t
 
 omit [Fintype ι] [DecidableEq F] in
 /-- Padding preserves the batched word of each group. -/
 theorem interleavedPowerBatchedWord_padded_apply {rows maxDegree : ℕ} (degree : Fin rows → ℕ)
     (hdegree : ∀ g, degree g ≤ maxDegree) (values : (g : Fin rows) → Fin (degree g + 1) → ι → F)
     (z : F) (i : ι) (g : Fin rows) :
-    interleavedPowerBatchedWord (paddedPowerValues degree hdegree values) z i g =
+    interleavedPowerBatchedWord (paddedPowerValues maxDegree degree values) z i g =
       powerBatchedWord (values g) z i := by
   unfold interleavedPowerBatchedWord paddedPowerValues powerBatchedWord
   rw [← sum_padFin (Nat.add_le_add_right (hdegree g) 1)
@@ -258,18 +259,18 @@ theorem exactNestedPowerAgreement_of_interleaved {m maxDegree k L : ℕ} (domain
       (RingHom.id F) k v Q)
     (hinner : ∀ R : Fin (m + 1) → F[X], (∀ g, (R g).degree < k) →
       L ≤ (interleavedPolynomialAgreementSet domain
-        (interleavedPowerBatchedWord (paddedPowerValues degree hdegree values) u) R).card →
-      HasExactInterleavedPowerAgreement domain (paddedPowerValues degree hdegree values) k u R) :
+        (interleavedPowerBatchedWord (paddedPowerValues maxDegree degree values) u) R).card →
+      HasExactInterleavedPowerAgreement domain (paddedPowerValues maxDegree degree values) k u R) :
     HasExactNestedPowerAgreement domain degree values k u v Q := by
   obtain ⟨R, hRdegree, hQeq, houterSet⟩ := (hasExactPowerAgreement_id_iff _ _ _ _ _).mp houter
-  set padded := paddedPowerValues degree hdegree values
+  set padded := paddedPowerValues maxDegree degree values
   have hsets : interleavedPolynomialAgreementSet domain (interleavedPowerBatchedWord padded u) R =
       polynomialAgreementSet domain
         (powerBatchedWord (fun g ↦ powerBatchedWord (values g) u) v) Q := by
     rw [houterSet]
     ext i
     simp [interleavedPolynomialAgreementSet, padded,
-      interleavedPowerBatchedWord_padded_apply]
+      interleavedPowerBatchedWord_padded_apply degree hdegree values]
   have hinnerClose : L ≤ (interleavedPolynomialAgreementSet domain
       (interleavedPowerBatchedWord padded u) R).card := hsets ▸ hclose
   obtain ⟨Ppad, hPdegree, hReq, hinnerSet⟩ := hinner R hRdegree hinnerClose
@@ -328,7 +329,7 @@ theorem nestedPowerAgreement_sharedInner [Fintype F] {m maxDegree k L innerE out
     (domain : ι ↪ F) (degree : Fin (m + 1) → ℕ) (hdegree : ∀ g, degree g ≤ maxDegree)
     (values : (g : Fin (m + 1)) → Fin (degree g + 1) → ι → F) (hk : k ≤ L)
     (hinner : UniformExactInterleavedPowerAgreement domain
-      (paddedPowerValues degree hdegree values) k L innerE)
+      (paddedPowerValues maxDegree degree values) k L innerE)
     (houter : ∀ u, UniformExactPowerAgreement domain
       (fun g ↦ powerBatchedWord (values g) u) k L outerE) :
     ∃ bad : Finset (F × F), bad.card ≤ Fintype.card F * (innerE + outerE) ∧
@@ -370,7 +371,7 @@ theorem nestedPowerAgreement_probability_le [Fintype F] [SampleableType F]
     (domain : ι ↪ F) (degree : Fin (m + 1) → ℕ) (hdegree : ∀ g, degree g ≤ maxDegree)
     (values : (g : Fin (m + 1)) → Fin (degree g + 1) → ι → F) (hk : k ≤ L)
     (hinner : UniformExactInterleavedPowerAgreement domain
-      (paddedPowerValues degree hdegree values) k L innerE)
+      (paddedPowerValues maxDegree degree values) k L innerE)
     (houter : ∀ u, UniformExactPowerAgreement domain
       (fun g ↦ powerBatchedWord (values g) u) k L outerE) :
     Pr{let p ← $ᵗ (F × F)}[∃ Q : F[X], Q.degree < k ∧

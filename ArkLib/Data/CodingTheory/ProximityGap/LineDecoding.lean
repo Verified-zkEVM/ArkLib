@@ -487,6 +487,7 @@ private theorem exists_synthetic_affine_zero_set
 
 omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [SampleableType F] [Fintype A]
   [DecidableEq A] in
+omit [Fintype F] in
 open scoped NNReal in
 private theorem is_mca_affine_line_bad_witness_nonempty
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδ : δ ≤ 1)
@@ -909,7 +910,7 @@ private theorem subsingleton_bad_set_pick
   · intro γ
     simpa using hmismatch γ
 
-omit [DecidableEq ι] [DecidableEq F] [SampleableType F] [Fintype A] in
+omit [DecidableEq ι] [DecidableEq F] [SampleableType F] [Fintype A] [Fintype F] in
 open scoped NNReal in
 private theorem subsingleton_original_line_exact
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
@@ -1056,7 +1057,7 @@ private theorem subsingleton_synthetic_line_exact
       have hi := (Finset.mem_filter.mp hiZero).2
       exact hne (by simpa only [Pi.add_apply, Pi.smul_apply, Pi.zero_apply] using hi)
 
-omit [DecidableEq ι] [DecidableEq F] [Fintype A] [SampleableType F] in
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] [SampleableType F] [Fintype F] in
 open scoped NNReal in
 private theorem subsingleton_bad_set_exact_close
     (C : ModuleCode ι F A) [Subsingleton C] (δ : ℝ≥0) (hδlt : δ < 1)
