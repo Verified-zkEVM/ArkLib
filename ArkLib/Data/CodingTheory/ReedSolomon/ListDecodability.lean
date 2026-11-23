@@ -18,6 +18,9 @@ public import ArkLib.Data.CodingTheory.ReedSolomon
   in [ACFY24].
   The bound is independent of the size of `F`.
 
+  `ReedSolomon.Lambda_code_comp_equiv`: reindexing the evaluation points by an equivalence does
+  not change the maximal list size `Code.Lambda`.
+
 ## References
 
   * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
@@ -65,5 +68,13 @@ theorem listDecodable_reedSolomon [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (h
   rw [Code.isListDecodable_iff_forall_finset_card_le]
   intro y T hT
   exact card_le_of_subset_closeCodewords domain hm hη y T fun c hc ↦ hT _ hc
+
+/-- Reindexing the evaluation points of a Reed–Solomon code by an equivalence `e : κ ≃ ι` does not
+change the maximal list size. -/
+theorem Lambda_code_comp_equiv {κ : Type*} [Fintype κ] (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ)
+    (δ : ℝ) :
+    Code.Lambda (code (e.toEmbedding.trans domain) k : Set (κ → F)) δ =
+      Code.Lambda (code domain k : Set (ι → F)) δ :=
+  Code.Lambda_comp_equiv e (mem_code_comp_equiv e domain k) δ
 
 end ReedSolomon

@@ -47,7 +47,7 @@ open OracleSpec OracleComp ProtocolSpec NNReal BatchingRound Domain
   - `l`, the number of round consistency checks to be run by the query round.
   - `m`, one less than the number of batched input polynomials.
 -/
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)

@@ -91,12 +91,17 @@ noncomputable def quotientHom : CPolynomial R →+* Φ.CyclotomicRing :=
     Φ.quotientHom p = Ideal.Quotient.mk Φ.modIdeal p.toPoly := by
   simp [quotientHom]
 
+/-- Conversion to a Mathlib polynomial sends reduction modulo `φ` to `%ₘ`. -/
+theorem reduce_toPoly [IsCyclotomic Φ] (p : CPolynomial R) :
+    (Φ.reduce p).toPoly = p.toPoly %ₘ Φ.φ.toPoly :=
+  CPolynomial.modByMonic_toPoly_eq_modByMonic p Φ.φ
+    ((monic_toPoly_iff _).2 (IsCyclotomic.monic (Φ := Φ)))
+
 /-- Reduction modulo `φ` is invisible in the quotient: `reduce p ≡ p (mod φ)`.
 This is the cyclotomic analogue of the `NegacyclicRingSemantics` soundness data. -/
 @[simp] theorem quotientHom_reduce [IsCyclotomic Φ] (p : CPolynomial R) :
     Φ.quotientHom (Φ.reduce p) = Φ.quotientHom p := by
-  rw [quotientHom_apply, quotientHom_apply, reduce,
-    CPolynomial.toPoly_modByMonic _ _ (IsCyclotomic.monic (Φ := Φ)), Ideal.Quotient.eq]
+  rw [quotientHom_apply, quotientHom_apply, reduce_toPoly, Ideal.Quotient.eq]
   have h : p.toPoly %ₘ Φ.φ.toPoly - p.toPoly
       = -(Φ.φ.toPoly * (p.toPoly /ₘ Φ.φ.toPoly)) := by
     rw [Polynomial.modByMonic_eq_sub_mul_div]; ring

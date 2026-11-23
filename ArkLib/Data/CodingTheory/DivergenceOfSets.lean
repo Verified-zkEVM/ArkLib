@@ -48,6 +48,7 @@ variable {ι : Type*} [Fintype ι] [Nonempty ι]
 def possibleDeltas (U V : Set (ι → F)) [Nonempty V] [Fintype V] : Set ℚ≥0 :=
   {d : ℚ≥0 | ∃ u ∈ U, δᵣ'(u,V) = d}
 
+omit [Nonempty ι] in
 /-- The set of possible relative Hamming distances between two sets is well-defined. -/
 @[simp]
 lemma possibleDeltas_subset_relHammingDistRange :
@@ -64,6 +65,7 @@ lemma possibleDeltas_subset_relHammingDistRange :
     rw [←h_eq]
     exact relHammingDist_mem_relHammingDistRange
 
+omit [Nonempty ι] in
 /-- The set of possible relative Hamming distances between two sets is finite. -/
 @[simp]
 lemma finite_possibleDeltas : (possibleDeltas U V).Finite :=
@@ -88,7 +90,7 @@ variable {ι : Type} [Fintype ι] [Nonempty ι]
          {F : Type} [Fintype F] [Field F]
          {U V : Set (ι → F)}
 
-theorem divergence_attains {ι : Type} [Fintype ι] [Nonempty ι]
+theorem divergence_attains {ι : Type} [Fintype ι]
     {F : Type} [DecidableEq F]
   {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V] :
   ∃ u ∈ U, δᵣ'(u, V) = divergence U V := by
@@ -624,7 +626,7 @@ theorem errorBound_mono {ι : Type} [Fintype ι] [Nonempty ι]
           (δ₁ := δ₁) (δ₂ := δ₂) hδ ht1' hδ₂
       simpa [ProximityGap.errorBound, t, ρ, Set.mem_Icc, Set.mem_Ioo, h1, h2, ht1, ht2] using hmono
 
-theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
+theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι]
     {F : Type} [DecidableEq F]
   {U V : Set (ι → F)} [Nonempty V] [Fintype V]
   (u : ι → F) (hu : u ∈ U) :
@@ -641,7 +643,7 @@ theorem relDistFromCode'_le_divergence {ι : Type} [Fintype ι] [Nonempty ι]
   -- Show `δᵣ'(u, V)` is one of the possible deltas.
   simpa [Set.mem_toFinset] using hδ
 
-theorem divergence_pred_spec {ι : Type} [Fintype ι] [Nonempty ι]
+theorem divergence_pred_spec {ι : Type} [Fintype ι]
     {F : Type} [DecidableEq F]
   {U V : Set (ι → F)} [Nonempty V] [Fintype V]
   (hdiv_pos : 0 < (divergence U V : ℝ≥0)) :

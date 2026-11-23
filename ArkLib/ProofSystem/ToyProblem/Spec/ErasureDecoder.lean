@@ -7,7 +7,7 @@ module
 
 public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.Data.CodingTheory.ReedSolomon
-public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.Lagrange
 -- `rw [toPoly]` unfolds a CompPoly definition whose body is not exposed.
 import all CompPoly.Univariate.ToPoly.Core
 
