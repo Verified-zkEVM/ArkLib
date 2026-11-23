@@ -889,7 +889,11 @@ home_page/            site assets and assembled website root
   prefix reduction with Binary Basefold opening. `FRIBinius/Unrolled/` is DP24 Construction 5.1:
   the tensor batching head (`TensorPrefix.headVerifier`) followed by `ProductClaim.openingVerifier`
   at the ring-switching multiplier, so a single sum-check serves both ring switching and folding.
-  `Spec` bounds its challenge errors by DP24 equation (43). See the
+  `Spec` bounds its challenge errors by DP24 equation (43). `FRIBinius/Executable` provides
+  modular and unrolled reductions with computable basis coordinates. `Executable/Witness`
+  converts Boolean evaluation tables to multilinear polynomials. The verifier agreement
+  theorems compare results after decoding the ring-switching prefix of each complete transcript.
+  The security theorems use the abstract reductions. See the
   [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
@@ -1025,6 +1029,8 @@ home_page/            site assets and assembled website root
   `TensorPrefix` is the equal-algebra prefix specialization: the transmitted carrier
   remains `P.A`, decoded by `P.columnEquiv`. Its original scalar check, row target, honest message,
   packed source, extractor and matrix terminal equations are proved against that single program.
+  `Packing/TensorPrefix/Computable` uses the column coordinates directly as the message.
+  `ProductSumcheck/Computable` supplies the scalar rounds over Boolean evaluation tables.
   `Profile`, `Algebra`, `ProfileCoordinates`, `ProfileLayout`, `BatchingAlgebra` and `FinalAlgebra`
   retain the tensor-coordinate algebra. `Packing/Conformance` states pure prefix/carrier laws.
   `Binius/FRIBinius/Conformance` identifies source and exact first-oracle inputs;

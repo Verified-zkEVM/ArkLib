@@ -94,7 +94,8 @@ theorem firstOracleEncodingTable_eq (t : MultilinearPoly L ℓ)
   change _ = Polynomial.eval _ (polynomialFromNovelCoeffsF₂ K β ℓ (by omega) _).val
   rfl
 
-/-- Read an already materialized NTT table at a domain point's canonical index. -/
+/-- Read an NTT table in canonical domain order, with one entry per domain point
+(`2 ^ (ℓ + 𝓡)` entries). Missing entries are read as zero. -/
 def firstOracleEncodingFromArray (table : Array L) :
     sDomain K β hRate ⟨0, NeZero.pos r⟩ → L :=
   fun x => arrayToFinFunction (2 ^ (ℓ + 𝓡)) table

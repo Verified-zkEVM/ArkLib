@@ -9,9 +9,6 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Commitment
 public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
-public import CompPoly.Multilinear.Unique
-public import CompPoly.Multivariate.MvPolyEquiv.Instances
-public import CompPoly.Multivariate.Operations
 
 /-!
 # FRI-Binius IOPCS Prelude
@@ -30,95 +27,6 @@ namespace Binius.FRIBinius
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial
   MvPolynomial TensorProduct Module Sumcheck.Structured
 open scoped NNReal
-
-section BooleanWitness
-
-open CompPoly CPoly
-
-variable {R : Type} [CommRing R] {n : ℕ}
-
-@[no_expose] private def polynomialFromTable [DecidableEq R] (a : (Fin n → Fin 2) → R) :
-    MvPolynomial (Fin n) R :=
-  let table : CMlPolynomialEval R n := Vector.ofFn (a ∘ finFunctionFinEquiv.symm)
-  let coeffs := CMlPolynomial.lagrangeToMono n table
-  CPoly.fromCMvPolynomial (∑ j : Fin (2 ^ n),
-    CMvPolynomial.monomial (Vector.ofFn fun (i : Fin n) => Nat.getBit i.val j.val) (coeffs.get j))
-
-private theorem polynomialFromTable_eq [DecidableEq R] (a : (Fin n → Fin 2) → R) :
-    polynomialFromTable a =
-      (CMlPolynomialEval.toMvPolynomial (Vector.ofFn (a ∘ finFunctionFinEquiv.symm))) := by
-  unfold polynomialFromTable CMlPolynomialEval.toMvPolynomial CMlPolynomial.toMvPolynomial
-  rw [CMvPolynomial.fromCMvPolynomial_sum]
-  refine Finset.sum_congr rfl fun j _ => ?_
-  rw [CMvPolynomial.fromCMvPolynomial_monomial]
-  have hMono : CMvMonomial.toFinsupp (Vector.ofFn fun (i : Fin n) =>
-      Nat.getBit i.val j.val) = CMlPolynomial.monomialOfNat j.val := by
-    apply Finsupp.ext
-    intro i
-    simp [CMvMonomial.toFinsupp, CMlPolynomial.monomialOfNat]
-  rw [hMono]
-  rfl
-
-/-- Construct the multilinear extension of the Boolean table with computable coefficients. -/
-@[no_expose]
-def multilinearOfTable [DecidableEq R] (a : (Fin n → Fin 2) → R) : MultilinearPoly R n :=
-  ⟨polynomialFromTable a, by
-    rw [polynomialFromTable_eq]
-    exact CMlPolynomial.toMvPolynomial_is_multilinear _⟩
-
-/-- Evaluating the constructed polynomial on a Boolean point recovers the table entry. -/
-theorem eval_multilinearOfTable [DecidableEq R] (a : (Fin n → Fin 2) → R)
-    (y : Fin n → Fin 2) : (multilinearOfTable a).val.eval (y : Fin n → R) = a y := by
-  have h := CMlPolynomialEval.eval_toMvPolynomial_vertex
-    (Vector.ofFn (a ∘ finFunctionFinEquiv.symm)) (finFunctionFinEquiv y)
-  change (polynomialFromTable a).eval (y : Fin n → R) = a y
-  rw [polynomialFromTable_eq]
-  have hVertex : (CMlPolynomialEval.vertex (R := R) (finFunctionFinEquiv y)).get =
-      (y : Fin n → R) := by
-    calc
-      _ = Binius.BinaryBasefold.bitsOfIndex (finFunctionFinEquiv y) := by
-        funext i
-        simp [CMlPolynomialEval.vertex, Binius.BinaryBasefold.bitsOfIndex,
-          BitVec.getLsb]
-      _ = ((finFunctionFinEquiv.symm (finFunctionFinEquiv y) : Fin n → Fin 2) : Fin n → R) :=
-        (Binius.BinaryBasefold.coe_fin_pow_two_eq_bitsOfIndex _).symm
-      _ = _ := congrArg (fun a : Fin n → Fin 2 => (a : Fin n → R))
-        (Equiv.symm_apply_apply _ _)
-  rw [hVertex] at h
-  have ha : (Vector.ofFn (a ∘ finFunctionFinEquiv.symm))[finFunctionFinEquiv y] = a y := by
-    change (Vector.ofFn (a ∘ finFunctionFinEquiv.symm)).get (finFunctionFinEquiv y) = _
-    simp only [Vector.get_ofFn, Function.comp_apply, Equiv.symm_apply_apply]
-  exact h.trans ha
-
-private theorem toTable_multilinearOfTable [DecidableEq R] [IsDomain R]
-    (a : (Fin n → Fin 2) → R) :
-    MvPolynomial.MLEEquiv (R := R) (σ := Fin n) (multilinearOfTable a) = a :=
-  funext (eval_multilinearOfTable a)
-
-private theorem multilinearOfTable_toTable [DecidableEq R] [IsDomain R]
-    (p : MultilinearPoly R n) :
-    multilinearOfTable (fun x : Fin n → Fin 2 => p.val.eval (x : Fin n → R)) = p := by
-  let e := MvPolynomial.MLEEquiv (R := R) (σ := Fin n)
-  have hp : (fun x : Fin n → Fin 2 => p.val.eval (x : Fin n → R)) = e p := rfl
-  rw [hp]
-  exact e.injective (toTable_multilinearOfTable (e p))
-
-/-- Equivalence of Boolean tables and multilinear witnesses, with executable conversions. -/
-@[no_expose]
-def tableWitnessEquiv [DecidableEq R] [IsDomain R] :
-    ((Fin n → Fin 2) → R) ≃ MultilinearPoly R n where
-  toFun := multilinearOfTable
-  invFun t y := t.val.eval (y : Fin n → R)
-  left_inv a := funext (eval_multilinearOfTable a)
-  right_inv := multilinearOfTable_toTable
-
-/-- The forward conversion constructs the multilinear extension of the table. -/
-theorem tableWitnessEquiv_apply [DecidableEq R] [IsDomain R] (a : (Fin n → Fin 2) → R) :
-    tableWitnessEquiv a = multilinearOfTable a := by
-  unfold tableWitnessEquiv
-  rfl
-
-end BooleanWitness
 
 variable (κ : ℕ) [NeZero κ]
 variable (L : Type) [Field L] [Fintype L] [DecidableEq L]
@@ -151,6 +59,22 @@ instance instFactLinearIndependentBasis : Fact (LinearIndependent K ⇑β) := by
 reindexing `booleanHypercubeBasis` of `β`. -/
 def biniusProfile : RingSwitching.RingSwitchingProfile K L κ :=
   RingSwitching.tensorProductProfile κ K L (booleanHypercubeBasis κ L K β)
+
+omit [NeZero κ] [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K]
+  [DecidableEq K] [Fact (Fintype.card K = 2)] in
+/-- The profile uses the original basis vectors at the corresponding Boolean indices. -/
+theorem biniusProfile_basis_eq :
+    (⇑(biniusProfile κ L K β).basis : (Fin κ → Fin 2) → L) = ⇑β ∘ finFunctionFinEquiv := by
+  change ⇑(booleanHypercubeBasis κ L K β) = _
+  simp only [booleanHypercubeBasis, Basis.coe_reindex, hypercubeEquivFin, Equiv.symm_symm]
+
+omit [NeZero κ] [Fintype L] [DecidableEq L] [SampleableType L] [Fintype K]
+  [DecidableEq K] [Fact (Fintype.card K = 2)] in
+/-- A profile coordinate is the original basis coordinate at the corresponding Boolean index. -/
+theorem biniusProfile_basis_repr_eq (x : L) (u : Fin κ → Fin 2) :
+    (biniusProfile κ L K β).basis.repr x u = β.repr x (finFunctionFinEquiv u) := by
+  change (booleanHypercubeBasis κ L K β).repr x u = _
+  simp only [booleanHypercubeBasis, Basis.repr_reindex_apply, hypercubeEquivFin, Equiv.symm_symm]
 
 /-- The shared Binary Basefold first-oracle interface at the packed dimension. -/
 def binaryBasefoldInput : RingSwitching.AbstractOStmtIn L ℓ' :=

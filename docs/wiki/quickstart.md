@@ -347,7 +347,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
 | `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
-| `binius-runtime` | `scripts/BiniusRuntime.lean` | Binary Basefold and both FRI-Binius openings over GF(16), including one and two folding blocks and rejected inputs |
+| `binius-runtime` | `scripts/BiniusRuntime.lean` | Binary Basefold and both FRI-Binius openings over GF(16), including a two-fold block and rejection of a changed terminal value |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
 library root, so a `#eval` in one is paid on every build by everyone; and `#eval` runs in the

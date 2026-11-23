@@ -19,8 +19,8 @@ Oracle-aware logic, prover, verifier, and reduction bundles for the final query 
 Folding, completeness, and soundness proofs live in the corresponding sibling modules;
 the `QueryPhase` umbrella re-exports their public API.
 
-`queryOracleReductionExecutable` uses executable domain and folding operations. Its prover and
-verifier equal the reference implementations, which still depend on the abstract domain basis.
+`queryOracleReductionExecutable` shares the reference prover and replaces the verifier's
+domain and folding operations with executable ones that run the same queries and checks.
 -/
 
 @[expose] public section
@@ -130,37 +130,26 @@ def QueryPhaseProverState : Fin (1 + 1) → Type := fun
     (∀ i, OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) i) × Unit ×
     (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge ⟨0, by rfl⟩
 
-/-- The oracle prover for the final query phase.
-
-Uses components from `queryPhaseLogicStep` for consistency with the logic specification. -/
-noncomputable def queryOracleProver :
-  OracleProver
-    (oSpec := []ₒ)
-    (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
-    (OStmtIn := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
-    Fin.last ℓ))
-    (WitIn := Unit)
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (WitOut := Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  -- Prover state: tracks (stmtIn, oStmtIn, witIn) and optionally the challenges
+/-- Retain the final query challenge and return `true` with a unit witness and no output oracles.
+The verifier performs all query checks. -/
+def queryOracleProver :
+    OracleProver
+      (oSpec := []ₒ)
+      (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
+      (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+      (WitIn := Unit)
+      (StmtOut := Bool)
+      (OStmtOut := fun _ : Empty => Unit)
+      (WitOut := Unit)
+      (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
   PrvState := QueryPhaseProverState 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
   input := fun ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ => (stmtIn, oStmtIn, witIn)
   sendMessage
   | ⟨0, h⟩ => nomatch h
   receiveChallenge
-  | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn, witIn⟩  => do
-    -- V sends all γ challenges v₁, ..., v_γ
-    pure (fun challenges => (stmtIn, oStmtIn, witIn, challenges))
-  output := fun ⟨stmtIn, oStmtIn, witIn, challenges⟩ => do
-    -- Build the transcript using the logic step's honestProverTranscript
-    let transcript := FullTranscript.mk1 (pSpec :=
-      pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (challenges)
-    -- Delegate to proverOut from the logic step
-    pure (OracleReduction.LogicStep.proverOut
-      (queryPhaseLogicStep 𝔽q β (ϑ:=ϑ) γ_repetitions
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) stmtIn witIn oStmtIn transcript)
+  | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn, witIn⟩ =>
+    pure (fun queryPoints => (stmtIn, oStmtIn, witIn, queryPoints))
+  output := fun _ => pure ((true, fun i => Empty.elim i), ())
 
 /-- The oracle verifier for the final query phase.
 
@@ -201,34 +190,6 @@ noncomputable def queryOracleReduction :
     (queryOracleVerifier 𝔽q β (ϑ := ϑ) γ_repetitions)
 
 /-! ### Executable query phase -/
-
-/-- Retain the query challenge and return the prover's unit witness. -/
-def queryOracleProverExecutable :
-    OracleProver
-      (oSpec := []ₒ)
-      (StmtIn := FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-      (OStmtIn := OracleStatement 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
-      (WitIn := Unit)
-      (StmtOut := Bool)
-      (OStmtOut := fun _ : Empty => Unit)
-      (WitOut := Unit)
-      (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  -- Prover state: tracks (stmtIn, oStmtIn, witIn) and optionally the challenges
-  PrvState := QueryPhaseProverState 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  input := fun ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ => (stmtIn, oStmtIn, witIn)
-  sendMessage
-  | ⟨0, h⟩ => nomatch h
-  receiveChallenge
-  | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn, witIn⟩  => do
-    -- V sends all γ challenges v₁, ..., v_γ
-    pure (fun challenges => (stmtIn, oStmtIn, witIn, challenges))
-  output := fun _ => pure ((true, fun i => Empty.elim i), ())
-
-/-- The executable prover has the same state transitions and output as the specified prover. -/
-lemma queryOracleProverExecutable_eq :
-    queryOracleProverExecutable 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions =
-      queryOracleProver 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions :=
-  rfl
 
 /-- Check every repetition in order. A failed guard returns `none` through `OptionT`;
 the acceptance value is mapped over successful results only. -/
@@ -274,7 +235,7 @@ def queryOracleReductionExecutable :
       (WitOut := Unit)
       (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.mk (Oₛₒ := fun i : Empty => nomatch i)
-    (queryOracleProverExecutable 𝔽q β (ϑ := ϑ) γ_repetitions)
+    (queryOracleProver 𝔽q β (ϑ := ϑ) γ_repetitions)
     (queryOracleVerifierExecutable 𝔽q β (ϑ := ϑ) γ_repetitions)
 
 /-- The executable reduction preserves the specified prover and verifier. -/
@@ -282,7 +243,7 @@ lemma queryOracleReductionExecutable_eq :
     queryOracleReductionExecutable 𝔽q β (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions =
       queryOracleReduction 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) γ_repetitions := by
-  simp only [queryOracleReductionExecutable, queryOracleReduction, queryOracleProverExecutable_eq,
+  simp only [queryOracleReductionExecutable, queryOracleReduction,
     queryOracleVerifierExecutable_eq]
 
 end FinalQueryRoundIOR

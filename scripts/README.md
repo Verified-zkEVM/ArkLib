@@ -29,6 +29,8 @@ This directory contains various utility scripts for the ArkLib project.
   measured FRI extractor, immutable-input guards, and exact arithmetic and word-read counts.
 - **`BiniusRuntime.lean`** (`lake exe binius-runtime`) - Compiled opening and rejection checks
   for standalone Binary Basefold and both FRI-Binius routes over the concrete tower field GF(16).
+  Both FRI-Binius routes check a two-fold block with nonzero batching challenges and reject a
+  change to the final scalar message.
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
   round messages and the honest multivariate prover in the shared interaction-layer Sumcheck
   executor, including continuation effects, abort, original-oracle evaluation and zero remaining

@@ -954,6 +954,7 @@ public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Modular
 public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Unrolled
+public import ArkLib.ProofSystem.Binius.FRIBinius.Executable.Witness
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
 public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
@@ -1061,7 +1062,6 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.CheckedObservation
 public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout
 public import ArkLib.ProofSystem.RingSwitching.Packing.ClaimLayout.Quirky
 public import ArkLib.ProofSystem.RingSwitching.Packing.Compatibility
-public import ArkLib.ProofSystem.RingSwitching.Packing.Computable
 public import ArkLib.ProofSystem.RingSwitching.Packing.Conformance
 public import ArkLib.ProofSystem.RingSwitching.Packing.Coordinates
 public import ArkLib.ProofSystem.RingSwitching.Packing.DerivedBatching
@@ -1088,6 +1088,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.ProfileLayout
 public import ArkLib.ProofSystem.RingSwitching.Packing.Relations
 public import ArkLib.ProofSystem.RingSwitching.Packing.RingSwitch
 public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix
+public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix.Computable
 public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
 public import ArkLib.ProofSystem.RingSwitching.Transport
 public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs

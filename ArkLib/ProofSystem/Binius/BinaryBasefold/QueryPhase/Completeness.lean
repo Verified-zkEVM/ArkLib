@@ -333,8 +333,7 @@ theorem queryOracleReduction_perfectCompleteness (γ_repetitions : ℕ) {σ : Ty
   simp only [monadLift_self] at hx
   rw [support_map] at hx
   obtain ⟨chal, _, rfl⟩ := hx
-  simp only [queryPhaseLogicStep, map_pure, monadLift_pure,
-    pure_bind] at h_output
+  simp only [map_pure, monadLift_pure, pure_bind] at h_output
   let tr := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ_repetitions
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) chal
   have hstrict : ((stmtIn, oStmtIn), ()) ∈ strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) := by

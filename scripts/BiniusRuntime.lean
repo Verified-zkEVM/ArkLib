@@ -19,7 +19,7 @@ open ConcreteBinaryTower Module OracleSpec OracleComp ProtocolSpec
 namespace BiniusRuntime
 
 open Binius.BinaryBasefold AdditiveNTT
-open RingSwitching.Packing.Computable
+open RingSwitching.Packing.TensorPrefix.Computable
 
 private abbrev noOutputOracle (i : Empty) : OracleInterface Unit := nomatch i
 
@@ -58,8 +58,13 @@ theorem coords_fromCoords (f : Fin 4 → K) (i : Fin 4) : coords (fromCoords f) 
   intro j hj
   have hj0 : j = 0 := by omega
   subst j
-  fin_cases i <;> simp [coords, fromCoords]
-  all_goals repeat' (rw [BitVec.getElem_append]; norm_num)
+  fin_cases i <;>
+    simp only [coords, fromCoords, ConcreteBTField.toBitVec_ofBitVec, Nat.pow_zero, Fin.zero_eta,
+      Fin.mk_one, Fin.reduceFinMk, Fin.isValue, Order.lt_one_iff, BitVec.getLsbD_eq_getElem,
+      BitVec.getElem_extractLsb', Nat.add_zero]
+  all_goals
+    rw [BitVec.getLsbD_eq_getElem] <;> norm_num
+    repeat' (rw [BitVec.getElem_append]; norm_num)
 
 theorem fromCoords_coords (x : L) : fromCoords (coords x) = x := by
   apply ConcreteBTField.ext
@@ -157,14 +162,15 @@ def firstOne : Fin 4 → L :=
 def firstTwo : Fin 8 → L :=
   firstOracleEncodingTable (ℓ := 2) (𝓡 := 1) basisWord rateTwo packedTwo
 
-/-- At round zero, the domain index is the low-bit-first tower word. For the negative test
-the initial oracle is changed only at zero, which is also the scripted query point. -/
-abbrev InitialOracles {m : ℕ} [NeZero m] (hRate : m + 1 < 4) :=
-  ∀ j, OracleStatement K basisWord (h_ℓ_add_R_rate := hRate) 1 (0 : Fin (m + 1)) j
+/-- At round zero, the domain index is the low-bit-first tower word. -/
+abbrev InitialOracles {m : ℕ} [NeZero m] (hRate : m + 1 < 4)
+    (ϑ : ℕ := 1) [NeZero ϑ] :=
+  ∀ j, OracleStatement K basisWord (h_ℓ_add_R_rate := hRate) ϑ (0 : Fin (m + 1)) j
 
 /-- Read the coded word, optionally changing the value queried at zero. -/
 def firstFamily {m : ℕ} [NeZero m] (hRate : m + 1 < 4)
-    (encoded : Fin (2 ^ (m + 1)) → L) (tamper : Bool) : InitialOracles hRate :=
+    (encoded : Fin (2 ^ (m + 1)) → L) (tamper : Bool)
+    (ϑ : ℕ := 1) [NeZero ϑ] : InitialOracles hRate ϑ :=
   fun _ x =>
     let result := encoded (Fin.ofNat (2 ^ (m + 1)) x.val.toNat)
     if tamper && x.val.toNat == 0 then result + 1 else result
@@ -209,6 +215,7 @@ structure OpeningObservation where
   honest : Option Bool
   wrongClaim : Option Bool
   wrongFirstWord : Option Bool
+  tamperedTranscriptVerdict : Option (Option Bool)
   wireValues : List ℕ
   deriving Repr
 
@@ -217,16 +224,22 @@ def observe {n : ℕ} {wire : ProtocolSpec n} {Stmt Witness Out WitOut : Type}
     [∀ j, SampleableType (wire.Challenge j)]
     (R : Reduction []ₒ Stmt Witness Out WitOut wire) (readVerdict : Out → Bool)
     (stmts : Stmt × Stmt × Stmt) (witness : Witness) (samples : List (ℕ × ℕ))
-    (readWire : wire.FullTranscript → List ℕ) : OpeningObservation :=
+    (readWire : wire.FullTranscript → List ℕ)
+    (tamperTranscript : Option (wire.FullTranscript → wire.FullTranscript) := none) :
+    OpeningObservation :=
   let ((tr, st, _), script) :=
     (simulateQ challengeScript (R.prover.run stmts.1 witness)).run (SampleScript.mk samples true)
-  let verify s := (R.verifier.run s tr).run.runEmpty.map readVerdict
-  ⟨script.finished, readVerdict st, verify stmts.1, verify stmts.2.1,
-    verify stmts.2.2, readWire tr⟩
+  let verify s transcript := (R.verifier.run s transcript).run.runEmpty.map readVerdict
+  ⟨script.finished, readVerdict st, verify stmts.1 tr, verify stmts.2.1 tr,
+    verify stmts.2.2 tr, tamperTranscript.map (fun tamper => verify stmts.1 (tamper tr)),
+    readWire tr⟩
 
-def OpeningObservation.passes (o : OpeningObservation) (expectedWire : List ℕ) : Bool :=
+def OpeningObservation.passes (o : OpeningObservation) (expectedWire : List ℕ)
+    (expectTamper : Bool) : Bool :=
   o.samplesMatched && o.proverAccepted && o.honest == some true && o.wrongClaim == none &&
-    o.wrongFirstWord == none && o.wireValues == expectedWire
+    o.wrongFirstWord == none &&
+    o.tamperedTranscriptVerdict == (if expectTamper then some none else none) &&
+    o.wireValues == expectedWire
 
 def observeOne {n : ℕ} {wire : ProtocolSpec n} {Out WitOut : Type}
     [∀ j, SampleableType (wire.Challenge j)]
@@ -259,9 +272,9 @@ def check (label : String) (ok : Unit → Bool) : IO Unit := do
   IO.println s!"ok: {label}"
 
 def checkOpening (label : String) (expectedWire : List ℕ)
-    (run : Unit → OpeningObservation) : IO Unit := do
+    (run : Unit → OpeningObservation) (expectTamper : Bool := false) : IO Unit := do
   let result := run ()
-  unless result.passes expectedWire do
+  unless result.passes expectedWire expectTamper do
     throw (IO.userError s!"Binius runtime check failed: {label}: {repr result}")
   IO.println s!"ok: {label}"
 
@@ -333,12 +346,12 @@ The first fold at word `2` yields the Boolean table `[10, 15]`, whose coded valu
 def openingChecks : IO Unit := do
   checkOpening "modular, one block: accept honest and reject both mutations" [10] fun _ =>
     let R := modularReduction (K := K) (κ := 2) (ℓ' := 1) (R := 1) (ϑ := 1)
-      basisWord (hIndependent := independentBasis) cubeCoords rfl rateOne 1
+      basisWord (hIndependent := independentBasis) cubeCoords rfl rateOne 1 cubeCoords_spec
     observeOne (R.toReduction (Oₛₒ := noOutputOracle)) Prod.fst 1
       (fun tr => tr.messages ⟨7, by decide⟩)
   checkOpening "modular, two blocks: accept honest and reject both mutations" [10, 5, 7] fun _ =>
     let R := modularReduction (K := K) (κ := 2) (ℓ' := 2) (R := 1) (ϑ := 1)
-      basisWord (hIndependent := independentBasis) cubeCoords rfl rateTwo 1
+      basisWord (hIndependent := independentBasis) cubeCoords rfl rateTwo 1 cubeCoords_spec
     observeTwo (R.toReduction (Oₛₒ := noOutputOracle)) Prod.fst 2
       (fun tr => tr.messages ⟨12, by decide⟩) (fun tr => tr.messages ⟨9, by decide⟩)
   checkOpening "unrolled, one block: accept honest and reject both mutations" [10] fun _ =>
@@ -352,6 +365,58 @@ def openingChecks : IO Unit := do
     observeTwo (R.toReduction (Oₛₒ := noOutputOracle)) Prod.fst 0
       (fun tr => tr.messages ⟨7, by decide⟩) (fun tr => tr.messages ⟨4, by decide⟩)
 
+local instance : Fact ((2 : ℕ) ∣ 2) := ⟨dvd_rfl⟩
+
+private abbrev wideOpeningPSpec :=
+  Binius.FRIBinius.Executable.openingPSpec (K := K) (κ := 2) (ℓ' := 2) (R := 1) (ϑ := 2)
+    basisWord (hIndependent := independentBasis) rateTwo 2
+
+/-- Two polynomial/challenge pairs precede the final scalar in the width-two suffix. -/
+private def wideFinalPos : Fin 6 := ⟨4, by decide⟩
+
+private def wideFinalScalar (tr : wideOpeningPSpec.FullTranscript) : L :=
+  tr wideFinalPos
+
+/-- Replace only the final scalar in the common Binary BaseFold suffix. -/
+private def changeWideFinalScalar (tr : wideOpeningPSpec.FullTranscript) :
+    wideOpeningPSpec.FullTranscript :=
+  Function.update tr wideFinalPos (wideFinalScalar tr + 1)
+
+/-- Open the same packed polynomial as in the two-block cases, but fold at words 2 and 4
+within a single block. The source point is off the Boolean cube. The batching challenges
+are words 2 and 4; the modular relocation challenges are words 3 and 5. The two query
+repetitions use domain indices 0 and 7. -/
+private def observeWide {n : ℕ} {prefixSpec : ProtocolSpec n} {Out WitOut : Type}
+    [∀ j, SampleableType ((prefixSpec ++ₚ wideOpeningPSpec).Challenge j)]
+    (R : Reduction []ₒ (((Fin 4 → L) × L) × InitialOracles rateTwo 2) (Cube 4 → K)
+      Out WitOut (prefixSpec ++ₚ wideOpeningPSpec))
+    (verdict : Out → Bool) (relocation : List ℕ) : OpeningObservation :=
+  let point : Fin 4 → L := ![fromNat 2, fromNat 4, fromNat 4, fromNat 2]
+  let claim := point 0 + point 2 * point 3
+  let oracle := firstFamily rateTwo firstTwo false 2
+  let badOracle := firstFamily rateTwo firstTwo true 2
+  let samples := ([2, 4] ++ relocation ++ [2, 4]).map (15, ·) ++ [(7, 0), (7, 7)]
+  observe (wire := prefixSpec ++ₚ wideOpeningPSpec) R verdict
+    (((point, claim), oracle), ((point, claim + 1), oracle),
+      ((point, claim), badOracle))
+    sourceTwo samples
+    (fun tr => [(wideFinalScalar tr.snd).toNat])
+    (some fun tr => tr.fst ++ₜ changeWideFinalScalar tr.snd)
+
+open Binius.FRIBinius.Executable in
+def wideChecks : IO Unit := do
+  checkOpening "modular, two folds in one block: reject a changed final scalar" [7]
+      (expectTamper := true) fun _ =>
+    let R := modularReduction (K := K) (κ := 2) (ℓ' := 2) (R := 1) (ϑ := 2)
+      basisWord (hIndependent := independentBasis) cubeCoords rfl rateTwo 2 cubeCoords_spec
+    observeWide (prefixSpec := ringSwitchPSpec L 2 2) (R.toReduction (Oₛₒ := noOutputOracle))
+      Prod.fst [3, 5]
+  checkOpening "unrolled, two folds in one block: reject a changed final scalar" [7]
+      (expectTamper := true) fun _ =>
+    let R := unrolledReduction (K := K) (κ := 2) (ℓ' := 2) (R := 1) (ϑ := 2)
+      basisWord (hIndependent := independentBasis) cubeCoords rfl rateTwo 2 cubeCoords_spec
+    observeWide (prefixSpec := headPSpec L 2) (R.toReduction (Oₛₒ := noOutputOracle)) Prod.fst []
+
 end BiniusRuntime
 
 def main : IO Unit := do
@@ -360,3 +425,4 @@ def main : IO Unit := do
   BiniusRuntime.encodingChecks
   BiniusRuntime.basefoldChecks
   BiniusRuntime.openingChecks
+  BiniusRuntime.wideChecks

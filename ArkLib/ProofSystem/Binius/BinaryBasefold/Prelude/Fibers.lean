@@ -286,7 +286,9 @@ section ExecutableDomain
 
 variable {r : ℕ} {L : Type} [Field L]
 
-/-- Evaluate the normalized subspace polynomial at `x` using the additive-NTT recurrence. -/
+/-- Evaluate the level-`i` subspace polynomial at `x` using the additive-NTT recurrence and divide
+by its value at `β i`. The intended input is a linearly independent `β` over the two-element
+ground field; this guarantees a nonzero denominator. -/
 def evalNormalizedWExecutable (β : Fin r → L) (i : Fin r) (x : L) : L :=
   let constants := subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) i
   let eval := evalWAtCachedConstants constants
@@ -309,7 +311,8 @@ lemma evalNormalizedWExecutable_eq (i : Fin r) (x : L) :
   rw [normalizedW]
   simp only [Polynomial.eval_mul, Polynomial.eval_C, div_eq_mul_inv, one_mul, mul_comm]
 
-/-- Evaluate the quotient from the normalized source value to a normalized destination value. -/
+/-- Convert a normalized level-`i` evaluation to the normalized level-`destIdx` evaluation
+at the same point. The agreement theorem requires `i ≤ destIdx`. -/
 def raiseNormalizedEval (i destIdx : Fin r) (x : L) : L :=
   let const := subspacePolynomialConstantsArray (β := β) (ℓ := 0) (R_rate := 0) destIdx
   let sourceVal := evalWAtCachedConstants
@@ -340,7 +343,8 @@ lemma raiseNormalizedEval_eval_normalizedW (i destIdx : Fin r) (h : i ≤ destId
     exact subspacePolynomialConstantsArray_getD (𝔽q := 𝔽q) (β := β)
       (ℓ := 0) (R_rate := 0) destIdx k hk
 
-/-- Read the binary coordinates from the highest position to the lowest. -/
+/-- Recover the coordinates of an element in the span of the first `n` normalized
+level-`i` basis vectors, from highest index to lowest. -/
 def recoverDomainCoeffs (i : Fin r) : (n : ℕ) → i.val + n < r → L → Fin n → 𝔽q
   | 0, _, _ => Fin.elim0
   | n + 1, h, x =>

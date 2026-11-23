@@ -36,7 +36,7 @@ local instance [Finite K] : Fact (Nat.Prime (ringChar K)) := ⟨CharP.prime_ring
 noncomputable def decodeUnrolledTranscript
     (tr : (unrolledPSpec (K := K) (ϑ := ϑ) (⇑b) hRate γ).FullTranscript) :
     (Unrolled.pSpec κ K b (ϑ := ϑ) hRate γ).FullTranscript :=
-  Packing.Computable.decodeHeadTranscript (biniusProfile κ L K b) tr.fst ++ₜ tr.snd
+  TensorPrefix.Computable.decodeHeadTranscript (biniusProfile κ L K b) tr.fst ++ₜ tr.snd
 
 /-- Unrolled FRI-Binius returns the same verifier result on every executable transcript
 as the specification on the decoded transcript. The coordinates must agree with the
@@ -56,29 +56,23 @@ theorem unrolledReduction_verify_eq
           (stmt, ost) (decodeUnrolledTranscript b hRate γ tr) := by
   let P := biniusProfile κ L K b
   let a := binaryBasefoldInput κ L K b ℓ' R ϑ hRate
-  have hb : ((⇑b) ∘ finFunctionFinEquiv) = (⇑P.basis) := by
-    change _ = (⇑(booleanHypercubeBasis κ L K b))
-    rw [booleanHypercubeBasis, Basis.coe_reindex]
-    rfl
+  have hb : (⇑b ∘ finFunctionFinEquiv) = ⇑P.basis :=
+    (biniusProfile_basis_eq κ L K b).symm
   have hcoords : coordinates = fun x u => P.basis.repr x u := by
-    rw [hc]
-    funext x u
-    change _ = (booleanHypercubeBasis κ L K b).repr x u
-    rw [booleanHypercubeBasis, Basis.repr_reindex_apply]
-    rfl
-  have hHead : (Packing.Computable.headVerifier (TensorPrefix.commitment a).OStmt
+    simpa only [P, biniusProfile_basis_repr_eq] using hc
+  have hHead : (TensorPrefix.Computable.headVerifier (TensorPrefix.commitment a).OStmt
       (⇑b ∘ finFunctionFinEquiv) coordinates h).toVerifier.verify (stmt, ost) tr.fst =
       (TensorPrefix.headVerifier P h a).toVerifier.verify (stmt, ost)
-        (Packing.Computable.decodeHeadTranscript P tr.fst) := by
+        (TensorPrefix.Computable.decodeHeadTranscript P tr.fst) := by
     rw [hb, hcoords]
-    exact Packing.Computable.headVerifier_verify_decodeHeadTranscript P h a stmt ost tr.fst
+    exact TensorPrefix.Computable.headVerifier_verify_decodeHeadTranscript P h a stmt ost tr.fst
   unfold unrolledReduction OracleReduction.append Unrolled.fullVerifier
   conv_lhs => erw [OracleVerifier.append_toVerifier (Oₛ₃ := fun i : Empty => nomatch i)]
   conv_rhs => erw [OracleVerifier.append_toVerifier (Oₛ₃ := fun i : Empty => nomatch i)]
   simp only [Verifier.append, decodeUnrolledTranscript, FullTranscript.append_fst,
     FullTranscript.append_snd]
   change (do
-      let s ← (Packing.Computable.headVerifier (TensorPrefix.commitment a).OStmt
+      let s ← (TensorPrefix.Computable.headVerifier (TensorPrefix.commitment a).OStmt
         (⇑b ∘ finFunctionFinEquiv) coordinates h).toVerifier.verify (stmt, ost) tr.fst
       ((ProductClaim.openingVerifier K b (multiplier (⇑b) coordinates h ⟨b, rfl, hc⟩)
         (ProductSumcheck.Statement.claim (m := ℓ')) γ (ϑ := ϑ) (h_rate := hRate)).toVerifier

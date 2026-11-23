@@ -9,17 +9,18 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.TensorPrefix
 public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.Computable
 
 /-!
-# Executable prefix ring switching
+# Executable tensor-prefix ring switching
 
 The source and packed witness are Boolean evaluation tables. The prover transmits the column
 coordinates of the tensor carrier, rather than constructing a tensor product. The runtime basis
-is supplied as vector values and a coordinate projection. The agreement lemmas relate these
-operations to the same basis and carrier as the abstract TensorPrefix protocol.
+is supplied as basis vectors and a coordinate map. The agreement lemmas compare this
+implementation with `TensorPrefix`, the packing layout with the same opening and challenge
+algebra. Other packing layouts do not use this backend.
 -/
 
 @[expose] public section
 
-namespace RingSwitching.Packing.Computable
+namespace RingSwitching.Packing.TensorPrefix.Computable
 
 open MvPolynomial Module OracleSpec OracleComp ProtocolSpec CoordinateWise.ScalarRound
 open Sumcheck.Structured (MultilinearPoly)
@@ -200,7 +201,9 @@ def headVerifier [DecidableEq L] {ι : Type} (OStmt : ι → Type)
   scalarRoundOracleVerifier (fun stmt α => stmt.2 = reconstruct h stmt.1 α)
     (fun stmt α c => headNext basis coordinates stmt.1 α c)
 
-/-- The executable reduction with coordinate messages and Boolean source and packed witnesses. -/
+/-- The tensor batching reduction with coordinate messages and Boolean-table witnesses.
+Agreement with the tensor specification assumes that `coordinates` gives the coefficients
+in the supplied basis. -/
 def headReduction [DecidableEq L] {ι : Type} (OStmt : ι → Type)
     [∀ j, OracleInterface (OStmt j)] (basis : Cube κ → L)
     (coordinates : L → Cube κ → K) (h : ℓ = m + κ) :
@@ -578,7 +581,10 @@ instance [SampleableType L] : ∀ j, SampleableType ((ringSwitchPSpec L κ m).Ch
   ProtocolSpec.instSampleableTypeChallengeAppend
     (pSpec₁ := headPSpec L κ) (pSpec₂ := ProductSumcheck.Computable.tailPSpec L m)
 
-/-- Executable ring switching from the source claim to a packed opening claim. -/
+/-- Reduce a source claim to a packed opening claim using tensor ring switching.
+This low-level constructor does not require a proof that the coordinate map agrees with the
+basis. `ringSwitchReduction_verify_eq` states the agreement needed to recover the tensor
+prefix specification. -/
 def ringSwitchReduction [DecidableEq L] [BEq L] [LawfulBEq L] {ι : Type}
     (OStmt : ι → Type) [∀ j, OracleInterface (OStmt j)]
     (basis : Cube κ → L) (coordinates : L → Cube κ → K) (h : ℓ = m + κ) :
@@ -678,4 +684,4 @@ theorem ringSwitchReduction_verify_eq
 
 end VerifyAgreement
 
-end RingSwitching.Packing.Computable
+end RingSwitching.Packing.TensorPrefix.Computable

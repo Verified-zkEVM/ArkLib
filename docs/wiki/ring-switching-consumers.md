@@ -37,6 +37,12 @@ message. `Head` hands the same packed polynomial and oracle family directly to
 
 DP24 uses `TensorPrefix`; new consumers instantiate the current shared phases directly.
 
+For executable FRI-Binius, `TensorPrefix.Computable` uses the carrier's column coordinates as
+the message. Both executable FRI-Binius reductions require a proof that the supplied coordinate
+map agrees with the packing basis. Their verifier agreement theorems compare complete
+transcripts after decoding the prefix. The security theorems below concern the abstract
+reductions. This coordinate backend does not replace the generic packing phases.
+
 ## Separate execution, honest coverage and security
 
 The program uses the oracle interfaces and an operational batching rule. The compatibility

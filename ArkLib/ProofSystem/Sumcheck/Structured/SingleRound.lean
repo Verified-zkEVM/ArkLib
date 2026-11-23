@@ -14,12 +14,11 @@ public import ArkLib.OracleReduction.Security.Guarded
 
 This file collects single-round primitives for the structured (witness-mode) sumcheck:
 
-- `getSumcheckRoundPoly` — derive the univariate `g_i(X)` sent by the prover from
-  the multiquadratic round polynomial `H_i(X_i, ..., X_{ℓ-1})` by summing over the
-  remaining domain coordinates. The mathematical definition uses Mathlib's coordinate-line
-  restriction; `getSumcheckRoundPolyExecutable` computes the same polynomial using CompPoly.
+- `getSumcheckRoundPoly` — derive the prover's univariate `g_i(X)` from
+  `H_i(X_i, ..., X_{ℓ-1})`, of degree at most `d` in each variable, by summing over
+  the suffix-domain points. `getSumcheckRoundPolyExecutable` uses CompPoly for the same operation.
 - `pSpecSumcheckRound` — the two-message protocol spec for one round
-  (`P_to_V : L⦃≤ d⦄[X]`, `V_to_P : L`; `d` defaults to 2), with `OracleInterface` /
+  (`P_to_V : L⦃≤ d⦄[X]`, `V_to_P : L`; `d` is explicit), with `OracleInterface` /
   `SampleableType` instances.
 - `roundPrvState`, `getRoundProverFinalOutput`, `roundOracleProver`, `roundOracleVerifier`,
   `roundOracleReduction` — the per-round prover / verifier / reduction, generic in a protocol
@@ -50,8 +49,8 @@ section RoundPoly
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ] (D : SumcheckDomain L ℓ)
 
-/- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation. Degree-generic: the round polynomial
-`h` and the resulting univariate `g_i` share the degree bound `d` (inferred from `h`). -/
+/-- Sum `h` over the suffix-domain points, leaving the first variable free.
+The resulting univariate polynomial inherits `h`'s per-variable degree bound `d`. -/
 noncomputable def getSumcheckRoundPoly {d : ℕ} (i : Fin ℓ)
     (h : ↥L⦃≤ d⦄[X Fin (ℓ - ↑i.castSucc)]) : L⦃≤ d⦄[X] :=
   ⟨∑ x ∈ (D.drop (i + 1)).cube,
