@@ -14,8 +14,9 @@ second pair oracle. Only the first coordinate of each pair is observable. The pa
 reads the input, both sent oracles and the challenge, after every prover effect. A stateful logger
 distinguishes the exact effect schedule from reordered or duplicated execution.
 
-The composition section checks verdicts, seam effects and rejection of appended oracle verifiers,
-and the typing facts that keep payloads and later oracles out of a decision's reach.
+The composition section checks verdicts, seam effects and rejection of appended oracle verifiers.
+It also checks the typing facts that keep oracle messages and later oracles out of a decision's
+reach.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
@@ -96,12 +97,12 @@ def observed (hidden : Nat) :=
 def publicResult (hidden : Nat) : Transcript viewSig protocol × Option Nat :=
   ((toView protocol (observed hidden).1.1).val, (observed hidden).1.2.2.map Prod.fst)
 
--- ExecutionExample 1, restated: the frozen verifier computes its challenge 7 + 11 by querying.
--- Challenges are sampled, so the sampler draws 18; the decision checks it against the
--- queried input and first message and returns the final message 19 plus 18. For every hidden value.
+-- ExecutionExample 1, restated: the old-layer verifier computes its challenge 7 + 11 by querying.
+-- Challenges are sampled, and the sampler draws 18. The decision checks it against the queried
+-- input and first message and returns the final message 19 plus 18. For every hidden value.
 example (hidden : Nat) : (observed hidden).1.2.2.map Prod.fst = some 37 := rfl
 
--- ExecutionExample 2, restated: the frozen schedule interleaves verifier effects between the
+-- ExecutionExample 2, restated: the old-layer schedule interleaves verifier effects between the
 -- prover's. The verifier is passive: the prover's events 1 and 4, then the decision's
 -- events 0, 5, 2 and 3, each once, for every hidden value.
 example (hidden : Nat) : (observed hidden).2 = [1, 4, 0, 5, 2, 3] := rfl
@@ -110,7 +111,7 @@ example (hidden : Nat) : (observed hidden).2 = [1, 4, 0, 5, 2, 3] := rfl
 example (hidden : Nat) : (observed hidden).1.2.1 = (777, hidden) := rfl
 
 -- ExecutionExample 4, restated: the verifier's view keeps the announced choice and the
--- challenge, and erases both payloads.
+-- challenge, and erases both oracle messages.
 example (hidden : Nat) : (publicResult hidden).1 = ⟨true, ⟨⟩, (18 : Nat), ⟨⟩, ⟨⟩⟩ := rfl
 
 -- ExecutionExample 5, restated: the same view with the verdict 37.
@@ -123,7 +124,7 @@ example (hidden₁ hidden₂ : Nat) : publicResult hidden₁ = publicResult hidd
   rw [publicResult_eq, publicResult_eq]
 
 -- ExecutionExample 7, restated: the decision of an oracle node receives a view, whose oracle move
--- is `PUnit`, so a decision reading the payload's hidden coordinate does not elaborate.
+-- is `PUnit`. A decision reading the hidden coordinate of the oracle message does not elaborate.
 example : True := by
   fail_if_success
     have _ : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
@@ -132,8 +133,8 @@ example : True := by
         outputMap := fun _ p _ => noOutputMap (pathResources inputs pairSend p) }
   trivial
 
--- ExecutionExample 8, restated: its positive counterpart reaches the payload only through the
--- query interface, which answers the observable coordinate.
+-- ExecutionExample 8, restated: its positive counterpart reaches the oracle message only through
+-- the query interface, which answers the observable coordinate.
 example : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
     (fun _ => noOutputs) where
   decide _ p _ := by
@@ -142,10 +143,10 @@ example : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
       (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
   outputMap _ p _ := noOutputMap (pathResources inputs pairSend p)
 
--- ExecutionExample 10, restated: the frozen row erases the oracle executor to an ordinary paired
--- run through tree conversions, which are retired. The oracle verifier's run of these
--- strategies is, by definition, the paired run against the sampler followed by the decision with
--- its resource queries answered from the input and this run's payloads.
+-- ExecutionExample 10, restated: the old-layer row erases the oracle executor to an ordinary
+-- paired run through tree conversions, which are removed. By definition, the oracle verifier's run
+-- of these strategies is the paired run against the sampler, followed by the decision. The
+-- decision's resource queries are answered from the input and this run's oracle messages.
 example (hidden : Nat) :
     verifier.run () seven (prover hidden) = (do
       let ⟨tr, out, _⟩ ← TwoParty.Lens.run protocol
@@ -191,10 +192,10 @@ oracle. The challenge preserves the shape and changes the suffix verdict. -/
 /-- The prefix followed by one more pair oracle. -/
 abbrev combined : OracleProtocol := firstProtocol.append (fun _ => pairSend)
 
-/-- The prefix resources on its only shape path. -/
+/-- The prefix resources on its only path. -/
 abbrev prefixResources := pathResources inputs firstProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
-/-- The suffix resources on its only shape path. -/
+/-- The suffix resources on its only path. -/
 abbrev suffixResources := pathResources inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 
 /-- The prefix decision records 11, reads its sent oracle, records 12, reads the input, and passes
@@ -270,17 +271,17 @@ def logger (draw : Nat) : QueryImpl (ambient + challengeSpec oracleSig combined)
 def observed (proceed : Bool) (draw hidden : Nat) :=
   (simulateQ (logger draw) ((verifier proceed).run () seven (prover hidden))).run []
 
-/-- The shape path, the verdict, the private output and the history of one run. -/
+/-- The path, the verdict, the private output and the history of one run. -/
 def summary (proceed : Bool) (draw hidden : Nat) :
     Path combined × Option Nat × Nat × List Nat :=
   let z := observed proceed draw hidden
   (Transcript.path z.1.1, z.1.2.2.map Prod.fst, z.1.2.1, z.2)
 
--- ExecutionExample 19, restated: the frozen prefix ends with an `Option Nat` challenge that
--- selects the suffix shape. Here the prefix challenge preserves the shape, the suffix always sends
--- its oracle, and the suffix decision returns its latest answer plus the prefix value 11. With the
--- challenge drawn as 18 the verdict is `19 + 11 = 30`, for every hidden value; the history is the
--- prover's events, then the decisions', and the private output keeps the ambient answer 14 read
+-- ExecutionExample 19, restated: the old-layer prefix ends with an `Option Nat` challenge that
+-- selects the suffix shape. Here the prefix challenge preserves the shape, and the suffix always
+-- sends its oracle. The suffix decision returns its latest answer plus the prefix value 11. With
+-- the challenge drawn as 18, the verdict is `19 + 11 = 30` for every hidden value. The history is
+-- the prover's events, then the decisions'. The private output keeps the ambient answer 14 read
 -- after the challenge.
 example (hidden : Nat) :
     summary true 18 hidden =
@@ -289,8 +290,8 @@ example (hidden : Nat) :
   rw [OracleVerifier.run_append]
   rfl
 
--- Companion to ExecutionExample 19: for every challenge the shape path is the same, while the
--- verdict, carried by the prover's second message, changes with the challenge.
+-- Companion to ExecutionExample 19: for every challenge the path is the same. The verdict,
+-- carried by the prover's second message, changes with the challenge.
 example (draw hidden : Nat) :
     summary true draw hidden =
       (⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩, some (draw + 1 + 11), hidden + 14, [10, 14, 15, 11, 12, 16, 17]) := by
@@ -298,11 +299,11 @@ example (draw hidden : Nat) :
   rw [OracleVerifier.run_append]
   rfl
 
--- ExecutionExample 22 to 24, restated: the frozen abort comes from an `Option` challenge that
--- selects a branch without a second send, and its final action records 17 once after the
--- prover's response. Here the prefix decision rejects at the end with verdict `none`. Because the
--- shape is fixed, the suffix interaction still runs (event 15); because decisions are passive, the
--- prefix events 11 and 12 follow the prover's events. The final action 17 is kept: the rejecting
+-- ExecutionExample 22 to 24, restated: the old-layer abort comes from an `Option` challenge that
+-- selects a branch without a second send. Its final action records 17 once after the prover's
+-- response. Here the prefix decision rejects at the end with verdict `none`. Because the shape is
+-- fixed, the suffix interaction still runs (event 15). Because decisions are passive, the prefix
+-- events 11 and 12 follow the prover's events. The final action 17 is kept: the rejecting
 -- prefix decision records it once, and the skipped suffix decision records neither 16 nor its own
 -- 17. The private output keeps the answer 14. Stated for every draw and hidden value.
 example (draw hidden : Nat) :
@@ -312,9 +313,9 @@ example (draw hidden : Nat) :
   rw [OracleVerifier.run_append]
   rfl
 
--- ExecutionExample 9, restated: the frozen row checks that a verifier node before the second send
--- cannot query the second oracle. A decision's resources are fixed by its own shape path: the
--- composed decision can name the second sent oracle, the prefix decision cannot.
+-- ExecutionExample 9, restated: the old-layer row checks that a verifier node before the second
+-- send cannot query the second oracle. A decision's own path fixes its resources. The composed
+-- decision can name the second sent oracle, and the prefix decision cannot.
 example : OracleComp (ambient +
     (pathResources inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec) Nat :=
   liftM ((ambient + (pathResources inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec).query
@@ -484,9 +485,9 @@ def publicLogger (draw : Nat) : QueryImpl (ambient + challengeSpec oracleSig com
 def observedPublic (hidden : Nat) :=
   (simulateQ (publicLogger 59) (publicVerifier.run () seven (publicProver hidden))).run []
 
--- ExecutionExample 28, restated: the frozen suffix verifier computes its challenge from an
--- ambient answer at the seam. The challenge is sampled: the draw (logged as its value 59)
--- follows the prover's event 48 and precedes its response 51; the decisions' events 49, 50 and 52
+-- ExecutionExample 28, restated: the old-layer suffix verifier computes its challenge from an
+-- ambient answer at the seam. Here the challenge is sampled. The draw, logged as its value 59,
+-- follows the prover's event 48 and precedes its response 51. The decisions' events 49, 50 and 52
 -- follow, for every hidden value.
 example (hidden : Nat) : (observedPublic hidden).2 = [48, 59, 51, 49, 50, 52] := by
   unfold observedPublic publicVerifier

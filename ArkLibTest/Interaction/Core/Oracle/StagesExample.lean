@@ -10,26 +10,26 @@ import ArkLibTest.Interaction.Core.Oracle.CompositionExample
 /-!
 # Passive composition of heterogeneous oracle stages
 
-The first two stages are the prefix and suffix verifiers of the composition example. The first
-stage reads the input oracle, decides its parity and exports the input plus 11. The second stage
-takes the `Bool` statement, receives a `Nat` or a `Bool` message chosen by the prover, and exports
-the parity of what it read. The third stage takes the `Nat` statement and the `Bool` oracle, draws
-a challenge through an ambient event, checks the prover's response, and exports the negation of
-the `Bool` oracle. The statement type changes at every stage: `Unit`, then `Bool`, then `Nat`,
-then `Bool × Nat`. The oracle data changes from `Nat` to `Bool` at the second stage. The prover's
-private output changes from `Nat` to a pair at the second stage and to a triple at the third.
+The first two stages are the prefix and suffix verifiers of the composition example. The first stage
+reads the input oracle, decides its parity and exports the input plus 11. The second stage takes the
+`Bool` statement, receives a `Nat` or a `Bool` message chosen by the prover, and exports the parity
+of what it read. The third stage takes the `Nat` statement and the `Bool` oracle and draws a
+challenge through an ambient event. It checks the prover's response and exports the negation of the
+`Bool` oracle. The statement type changes at every stage: `Unit`, then `Bool`, then `Nat`, then
+`Bool × Nat`. The oracle data changes from `Nat` to `Bool` at the second stage. The prover's private
+output changes from `Nat` to a pair at the second stage and to a triple at the third.
 
 A stateful logger detects reordered, duplicated or skipped effects. The composition runs every
-interaction before any decision: the prover's events 0, 2 and 4 and the draw 5, then the decisions
-1, 3 and 6. A rejecting first decision skips the later decisions 3 and 6, but none of the later
-interactions.
+interaction before any decision. The prover's events 0, 2 and 4 and the draw 5 come first, then
+the decisions 1, 3 and 6. A rejecting first decision skips the later decisions 3 and 6, but none
+of the later interactions.
 
 The chains above have output maps that do not read their input statements, which
 `Stages.StatementFree` records. A later section composes stages whose output maps read the input
 statement, with the general compatibility certificates. Another composes stages whose oracle
-families have their queries in different universes, and another derives a property of a
-three-stage decision from one hypothesis per stage boundary. The section on shape selection
-composes two stages whose second stage is selected by a message of the first.
+families have their queries in different universes. Another derives a property of a three-stage
+decision from one hypothesis per stage boundary. The section on message selection composes two
+stages in which a message of the first selects the second.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
@@ -145,8 +145,8 @@ example (accept : Bool) :
           fun _ => lastMaps.outputMap_eq) :=
   rfl
 
-/-- The honest prover: the first prover records 0 and passes on `hidden + 1` with the parity of
-the input; the seam records 2 and starts the second prover on the chosen branch; the third prover
+/-- The honest prover. The first prover records 0 and passes on `hidden + 1` with the parity of
+the input. The seam records 2 and starts the second prover on the chosen branch. The third prover
 records 4 and answers the challenge. -/
 def prover (answer hidden : Nat) : Prover oracleSig ambient threeProtocol
     (fun _ => Nat × Nat × Nat) :=
@@ -171,7 +171,7 @@ def summary (accept : Bool) (answer hidden : Nat) :
   (z.1.2.2.map fun r => (r.1, r.2 ()), z.1.2.1, z.2)
 
 -- The run of the three stages is the run of the binary append of the first stage and the other
--- two, with the challenges answered by the combined draws.
+-- two. The combined draws answer the challenges.
 example (accept : Bool) (answer hidden : Nat) :=
   Stages.run_cons done (firstVerifier accept) (fun c => c.val.elim) (fun _ => lastStages)
     (stagesMaps accept).compatibility.1 (stagesMaps accept).compatibility.2 () (fun _ => answer)
@@ -204,9 +204,9 @@ run_cmd do
     unless summary false 7 hidden == (none, (hidden + 1, hidden + 2, 9), [0, 2, 4, 5, 1]) do
       throwError "the rejected run is wrong: {summary false 7 hidden}"
 
-/-! ## The frozen two-stage family
+/-! ## The old-layer two-stage family
 
-The frozen ordered execution of the first two stages, ported to their passive composition. -/
+The old-layer ordered execution of the first two stages, ported to their passive composition. -/
 
 /-- The second stage alone, closed by the empty chain. -/
 def secondStages : Stages ambient Bool inputs :=
@@ -251,8 +251,8 @@ def summaryTwoWith (choice accept : Bool) (answer hidden : Nat) :
 def summaryTwo (accept : Bool) (answer hidden : Nat) :=
   summaryTwoWith (answer % 2 == 0) accept answer hidden
 
--- CompositionExample 3 to 5, restated: the chain lists its two stages in order, and its run is
--- the run of the binary append of the first stage and the composed second stage.
+-- CompositionExample 3 to 5, restated: the chain lists its two stages in order. Its run is the
+-- run of the binary append of the first stage and the composed second stage.
 -- `OracleVerifier.run_append` splits that run into both interactions, then the first decision
 -- and, after its acceptance only, the second decision.
 example (accept : Bool) (answer hidden : Nat) :=
@@ -338,9 +338,9 @@ example : summaryTwo false 7 40 = (none, (41, 42), [0, 2, 1]) := rfl
 
 /-! ## A later stage selected by an earlier prover message
 
-The first stage receives a `Bool` from the prover and accepts its input statement. The second
-stage is selected by that message: on `true` it is the third stage above, which draws a challenge;
-on `false` it receives one `Nat` and has no challenge. -/
+The first stage receives a `Bool` from the prover and accepts its input statement. That message
+selects the second stage. On `true` it is the third stage above, which draws a challenge. On
+`false` it receives one `Nat` and has no challenge. -/
 
 /-- The prover sends one `Bool`. -/
 @[instance_reducible] def pick : OracleProtocol :=
@@ -396,7 +396,7 @@ def selectedMaps : (p : Path pick) → (selected p).StatementFree
   | ⟨true, _⟩ => thirdMaps
   | ⟨false, _⟩ => ⟨replyVerifier.outputMap 0, fun _ => rfl, fun _ => ⟨⟩⟩
 
-/-- No output map of the shape-selected chain reads its input statement. -/
+/-- No output map of the message-selected chain reads its input statement. -/
 def shapeMaps : shapeStages.StatementFree :=
   ⟨pickVerifier.outputMap 0, fun _ => rfl, selectedMaps⟩
 
@@ -421,17 +421,17 @@ def shapeObserved (choice : Bool) :=
   (simulateQ logger (shapeStages.run shapeMaps.compatibility 7 (fun _ => true)
     (shapeProver choice (1, 2)))).run []
 
-/-- The shape path's message, the final statement, the private output, and the history. The type
-of the final statement is computed from the shape path. -/
+/-- The path's message, the final statement, the private output, and the history. The type of the
+final statement is computed from the path. -/
 def shapeSummary (choice : Bool) :=
   let z := shapeObserved choice
   ((Transcript.path z.1.1).1, z.1.2.2.map (·.1), z.1.2.1, z.2)
 
--- The prover's `true` selects the stage with a challenge: the prover event 4 and the draw 5 run,
+-- The prover's `true` selects the stage with a challenge. The prover event 4 and the draw 5 run,
 -- the response is 10, and the second decision 6 accepts the statement 7 plus 10.
 example : shapeSummary true = (true, some (true, 17), (1, 2, 9), [30, 4, 5, 20, 6]) := rfl
 
--- The prover's `false` selects the stage without a challenge: no draw runs, the prover records 33
+-- The prover's `false` selects the stage without a challenge. No draw runs, the prover records 33
 -- and sends 5, and the second decision 22 accepts the statement 7 plus 5.
 example : shapeSummary false = (false, some (true, 12), (1, 2, 0), [30, 33, 20, 22]) := rfl
 
@@ -686,9 +686,9 @@ def sumMaps : sumStages.StatementFree :=
     ⟨fun _ _ => OracleMap.fst _ _, fun _ => rfl, fun _ =>
       ⟨fun _ _ => OracleMap.fst _ _, fun _ => rfl, fun _ => ⟨⟩⟩⟩⟩
 
-/-- The predicates after each stage, for a first message `a` and a second message `b`: at least
-`1 + a`; a pair whose first entry is at least `1 + a` and whose second entry is `b`; at least
-`1 + a + b`. -/
+/-- The predicates after each stage, for a first message `a` and a second message `b`. After the
+first stage the statement is at least `1 + a`. After the second it is a pair whose first entry is
+at least `1 + a` and whose second entry is `b`. After the third it is at least `1 + a + b`. -/
 def sumBounds : sumStages.Boundaries (· → Prop) :=
   ⟨fun pa n => 1 + (show Nat from pa.1) ≤ n, fun pa =>
     ⟨fun pb r => 1 + (show Nat from pa.1) ≤ r.1 ∧ r.2 = (show Nat from pb.1), fun pb =>
@@ -707,9 +707,9 @@ theorem sumSteps : sumStages.DeterministicSteps (1 ≤ ·) sumBounds :=
           omega⟩,
         fun _ => trivial⟩⟩⟩
 
-/-- The composed decision, the fold of the three decisions after all interactions, accepts a
-statement at least `1 + a + b` deterministically, from every statement at least 1, where `a` and
-`b` are the first two messages. -/
+/-- The composed decision folds the three decisions after all interactions. From every statement
+at least 1, it deterministically accepts a statement at least `1 + a + b`, where `a` and `b` are
+the first two messages. -/
 theorem sumStages_accepts (stmt : Nat) (h : 1 ≤ stmt) (a b : Nat)
     (v : View sumStages.protocol ⟨a, b, ⟨⟩⟩)
     (data : (pathResources inputs sumStages.protocol ⟨a, b, ⟨⟩⟩).Data) :

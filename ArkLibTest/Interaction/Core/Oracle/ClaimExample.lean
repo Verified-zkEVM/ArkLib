@@ -25,7 +25,7 @@ namespace Interaction.Core.ClaimExampleTests
     { Query := Unit
       toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
 
--- ClaimExample 1, restated: the frozen row compares two closed claims. A closed claim is a
+-- ClaimExample 1, restated: the old-layer row compares two closed claims. A closed claim is a
 -- statement with the behavior of the realizations: the unobservable tag vanishes.
 example : ((7 : Nat), tagged.behaviorOfRealizations (fun _ => (7, true))) =
     ((7 : Nat), tagged.behaviorOfRealizations (fun _ => (7, false))) := rfl
@@ -64,12 +64,12 @@ def closedProblem : Problem closedClaims where
   rel := fun _ claim wit => observedClosed claim ∧ wit.val = claim.1
   rel_admissible := fun _ _ _ h => h.1
 
--- The frozen relation reads closed claims; on concrete data it is the relation above.
+-- The old-layer relation reads closed claims; on concrete data it is the relation above.
 example (s : Nat) (x : ∀ i, tagged.Realization i) :
     answerProblem.language () (s, x) ↔
       closedProblem.language () (s, tagged.behaviorOfRealizations x) := Iff.rfl
 
--- ClaimExample 2, at the frozen relation: the closed claim of statement 7 and tagged data
+-- ClaimExample 2, at the old-layer relation: the closed claim of statement 7 and tagged data
 -- `(7, true)` is in the language.
 example : closedProblem.language () (7, tagged.behaviorOfRealizations fun _ => (7, true)) :=
   ⟨⟨7, by decide⟩, rfl, rfl⟩
@@ -93,8 +93,8 @@ def repeated : OracleMap tagged tagged where
 /-- The identity oracle map. -/
 def identity : OracleMap tagged tagged := OracleMap.embedding tagged id
 
--- ClaimExample 3, restated: the frozen row states `SemEquiv (.id tagged) repeated`, equality of
--- the two programs' evaluations under every deterministic handler. The same equality holds here
+-- ClaimExample 3, restated: the old-layer row states `SemEquiv (.id tagged) repeated`, equality
+-- of the two programs' evaluations under every deterministic handler. The same equality holds here
 -- for the query-twice map and the identity embedding, under every handler, not only those
 -- induced by data.
 example (impl : QueryImpl tagged.spec Id) (q : tagged.spec.Domain) :
@@ -109,10 +109,10 @@ example (x : ∀ i, tagged.Realization i) {α : Type} (program : OracleComp tagg
       simulateQ (tagged.behaviorOfRealizations x) (simulateQ identity.impl program) :=
   (repeated.simulate_eq x program).trans (identity.simulate_eq x program).symm
 
--- ClaimExample 4, restated: the frozen row closes a substituted open claim. Substitution is
--- `OracleMap.comp`: under every deterministic handler of the inner inputs, the composite answers
--- as the outer program closed with the evaluated inner map, and its concrete data is the outer
--- data map applied to the inner data.
+-- ClaimExample 4, restated: the old-layer row closes a substituted open claim. Substitution is
+-- `OracleMap.comp`. Under every deterministic handler of the inner inputs, the composite answers
+-- as the outer program closed with the evaluated inner map. Its concrete data is the outer data
+-- map applied to the inner data.
 example {I : Type} {A : I → Type} {In : OracleFamily I A} (view : OracleMap In tagged)
     (impl : QueryImpl In.spec Id) (q : tagged.spec.Domain) :
     simulateQ impl ((repeated.comp view).impl q) =
@@ -124,10 +124,10 @@ example {I : Type} {A : I → Type} {In : OracleFamily I A} (view : OracleMap In
 example {I : Type} {A : I → Type} {In : OracleFamily I A} (view : OracleMap In tagged)
     (x : ∀ i, A i) : (repeated.comp view).f x = repeated.f (view.f x) := rfl
 
--- ClaimExample 5, restated: the frozen row shows that the relation cannot distinguish derivations
--- with equal statements and equal semantics. Two maps whose simulated answers agree on all input
--- data give claims with the same language membership, because by their laws the materialized
--- outputs have the same behavior.
+-- ClaimExample 5, restated: the old-layer row shows that the relation cannot distinguish
+-- derivations with equal statements and equal semantics. Take two maps whose simulated answers
+-- agree on all input data. They give claims with the same language membership, because by their
+-- laws the materialized outputs have the same behavior.
 example {I : Type} {A : I → Type} {In : OracleFamily I A} (a b : OracleMap In tagged)
     (ho : ∀ x q, simulateQ (In.behaviorOfRealizations x) (a.impl q) =
       simulateQ (In.behaviorOfRealizations x) (b.impl q))
@@ -135,8 +135,8 @@ example {I : Type} {A : I → Type} {In : OracleFamily I A} (a b : OracleMap In 
     answerProblem.language () (s, a.f x) ↔ answerProblem.language () (s, b.f x) := by
   exact language_congr s _ _ (funext fun q => (a.law x q).symm.trans ((ho x q).trans (b.law x q)))
 
--- ClaimExample 4, at full strength: for an arbitrary source specification, an arbitrary virtual
--- program `view` for the tagged queries and an arbitrary deterministic source handler, closing the
+-- ClaimExample 4, at full strength. Take an arbitrary source specification, an arbitrary virtual
+-- program `view` for the tagged queries and an arbitrary deterministic source handler. Closing the
 -- claim with substituted programs equals closing the original programs with the evaluated view.
 example {I : Type} {spec : OracleSpec I} (view : QueryImpl tagged.spec (OracleComp spec))
     (impl : QueryImpl spec Id) :
@@ -147,10 +147,10 @@ example {I : Type} {spec : OracleSpec I} (view : QueryImpl tagged.spec (OracleCo
   funext q
   exact (QueryImpl.simulateQ_compose impl view (repeated.impl q)).symm
 
--- ClaimExample 5, at full strength: for an arbitrary source specification, two claims made of a
--- statement and virtual programs, with equal statements and equal answers under every
--- deterministic source handler, close under any handler to inputs with the same membership in
--- the frozen closed-claim language.
+-- ClaimExample 5, at full strength. Take an arbitrary source specification and two claims made of
+-- a statement and virtual programs, with equal statements and equal answers under every
+-- deterministic source handler. Under any handler, they close to inputs with the same membership
+-- in the old-layer closed-claim language.
 example {I : Type} {spec : OracleSpec I} (a b : Nat × QueryImpl tagged.spec (OracleComp spec))
     (hs : a.1 = b.1)
     (ho : ∀ impl : QueryImpl spec Id, QueryImpl.compose impl a.2 = QueryImpl.compose impl b.2)

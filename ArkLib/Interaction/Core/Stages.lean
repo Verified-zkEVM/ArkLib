@@ -12,19 +12,19 @@ public import VCVio.OracleComp.EvalDist
 # Finite heterogeneous stage composition
 
 A finite chain of passive oracle verifiers composes into one passive oracle verifier through
-`OracleVerifier.append`. The first stage has a fixed protocol. Every later stage is selected by
-the shape path of the stages before it, which records the prover's public messages and nothing
-else: challenges and oracle payloads never select a later stage, and neither does an earlier
-verdict. The statement types and oracle families at the stage boundaries may all differ, and may
-depend on the same shape paths.
+`OracleVerifier.append`. The first stage has a fixed protocol. The path of the stages before a
+later stage selects it. That path records the prover's public messages and nothing else.
+Challenges and oracle messages never select a later stage, and neither does an earlier verdict.
+The statement types and oracle families at the stage boundaries may all differ, and may depend on
+the same paths.
 
-The composed execution runs the interactions of all stages, then folds the decisions: each stage's
-decision receives the statement that the previous decision accepted, and a rejection makes the
-composite reject. A rejecting decision does not skip any interaction. `Stages.run` is the core run
-`OracleVerifier.run` of the composed verifier, with the challenge queries answered by the stages'
-draws. `Stages.run_cons` states that it is the run of the binary append of the first stage and the
-composed rest, which `OracleVerifier.run_append` splits into the two interactions and the two
-decisions.
+The composed execution runs the interactions of all stages, then folds the decisions. Each
+stage's decision receives the statement that the previous decision accepted, and a rejection makes
+the composite reject. A rejecting decision does not skip any interaction. `Stages.run` is the core
+run `OracleVerifier.run` of the composed verifier, with the challenge queries answered by the
+stages' draws. `Stages.run_cons` states that it is the run of the binary append of the first stage
+and the composed rest. `OracleVerifier.run_append` splits that run into the two interactions and
+the two decisions.
 
 A chain is given in two parts. `Stages` is the plan: the protocols, verifiers and draws of the
 stages. `Stages.Compatibility` is the evidence: at every boundary, an
@@ -32,17 +32,17 @@ stages. `Stages.Compatibility` is the evidence: at every boundary, an
 verifier of the stages after it. `Stages.verifier` builds the composed verifier from both, by
 recursion on the plan. The certificates are general, so output maps may read the input statement;
 `OutputCompatibility.ofStatement` gives one when the intermediate statement is public.
-`Stages.StatementFree` is the special case in which no output map reads its input statement. The
-evidence is computed from the plan, rather than stored in the plan's constructors, so that the
-inductive type does not refer to the verifier computed from it.
+`Stages.StatementFree` is the special case in which no output map reads its input statement.
+`Stages.compose` computes the evidence from the plan instead of storing it in the plan's
+constructors. The inductive type then does not refer to the verifier computed from it.
 
-Every oracle family of a chain has its queries in one universe `w`, because a recursive occurrence
-of an inductive type has the universe parameters of the type. This is a choice of representation:
-the binary append keeps independent query universes, and families with smaller query universes
-enter a chain through `Interaction.Oracle.OracleFamily.liftQueries`:
-`OracleVerifier.liftInputs` and `OracleVerifier.liftOutputs` adapt a stage, and
-`OracleVerifier.lowerOutputs` recovers the original family of the chain's output. These adapters
-leave the data, the decisions and the output data unchanged.
+Every oracle family of a chain has its queries in one universe `w`. A recursive occurrence of an
+inductive type has the universe parameters of the type. This is a choice of representation. The
+binary append keeps independent query universes, and families with smaller query universes enter
+a chain through `Interaction.Oracle.OracleFamily.liftQueries`. `OracleVerifier.liftInputs` and
+`OracleVerifier.liftOutputs` adapt a stage, and `OracleVerifier.lowerOutputs` recovers the
+original family of the chain's output. These adapters leave the data, the decisions and the
+output data unchanged.
 
 The invariant laws `Stages.decideWith_accepts`, `Stages.decideWith_preserves_support` and
 `Stages.decideWith_preserves_measure` derive a property of the composed decision from one
@@ -108,7 +108,7 @@ def comapInputs (V : OracleVerifier ambient s S T inputs outputs)
     (simulateQ ((r.par (OracleMap.id _)).withAmbient ambient) (V.decide stmt p v).run)
   outputMap stmt p v := (V.outputMap stmt p v).comp (r.par (OracleMap.id _))
 
-/-- Export the outputs through an oracle map at every shape path. The decision is unchanged. -/
+/-- Export the outputs through an oracle map at every path. The decision is unchanged. -/
 def mapOutputs (V : OracleVerifier ambient s S T inputs outputs)
     (r : (p : Path s) → OracleMap (Resources.ofFamily (outputs p))
       (Resources.ofFamily (outputs' p))) :
@@ -220,7 +220,7 @@ variable {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} ι} {A : I →
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{u, u, wK} (K p₁ p₂) (C p₁ p₂)}
 
 /-- The output map of an appended verifier whose component output maps do not read their input
-statements: the prefix map routes the inputs, and the suffix map reads the routed inputs and the
+statements. The prefix map routes the inputs, and the suffix map reads the routed inputs and the
 suffix messages. -/
 def appendMap
     (map₁ : (p : Path s₁) → View s₁ p →
@@ -278,9 +278,9 @@ theorem append_decideWith_of_accept (mid : T (Path.split s₁ s₂ p).1)
   rw [append_decideWith, h, LawfulMonad.pure_bind]
   exact hrest
 
-/-- An invariant propagates over the support: if every possible prefix result is an accepted
+/-- An invariant propagates over the support. Suppose every possible prefix result is an accepted
 statement satisfying `Mid`, and every possible suffix result from such a statement is an accepted
-statement satisfying `Post`, so is every possible result of the appended decision. -/
+statement satisfying `Post`. Then so is every possible result of the appended decision. -/
 theorem append_decideWith_preserves_support (Mid : T (Path.split s₁ s₂ p).1 → Prop)
     (Post : U (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2 → Prop)
     (h : ∀ r ∈ support (V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
@@ -298,10 +298,10 @@ theorem append_decideWith_preserves_support (Mid : T (Path.split s₁ s₂ p).1 
   obtain ⟨mid, rfl, hmid⟩ := h first hfirst
   exact hrest mid hmid r hr
 
-/-- An invariant propagates almost surely: almost-sure acceptance with `Mid` by the prefix
-decision and, from every statement satisfying `Mid`, almost-sure acceptance with `Post` by the
-suffix decision give almost-sure acceptance with `Post` by the appended decision. The ambient
-oracles carry an answer measure, and both statement spaces are measurable and discrete. -/
+/-- An invariant propagates almost surely. The prefix decision accepts with `Mid` almost surely.
+From every statement satisfying `Mid`, the suffix decision accepts with `Post` almost surely.
+Then the appended decision accepts with `Post` almost surely. The ambient oracles carry an answer
+measure, and both statement spaces are measurable and discrete. -/
 theorem append_decideWith_preserves_measure [ambient.AnswerMeasure]
     [MeasurableSpace (T (Path.split s₁ s₂ p).1)]
     [DiscreteMeasurableSpace (T (Path.split s₁ s₂ p).1)]
@@ -333,7 +333,7 @@ end OracleVerifier
 the input oracle family `inputs`.
 
 `nil` is the empty chain. `cons s V draw rest` runs the protocol `s`, whose challenges are answered
-by `draw`, and then, at each shape path `p` of `s`, the chain `rest p`. The verifier `V` accepts a
+by `draw`, and then, at each path `p` of `s`, the chain `rest p`. The verifier `V` accepts a
 statement of type `T p` with the oracle family `middle p`, which are the inputs of `rest p`.
 Statement types and index types live in the computation universe `u`, and every oracle family of
 the chain has its queries in one universe `w`. `Stages.Compatibility` gives the evidence that
@@ -344,7 +344,7 @@ inductive Stages {ι : Type u} (ambient : OracleSpec.{u, u} ι) :
   /-- No stages. -/
   | nil {S : Type u} {I : Type u} {A : I → Type u} (inputs : OracleFamily.{u, u, w} I A) :
       Stages ambient S inputs
-  /-- A first stage, then the remaining stages selected by its shape path. -/
+  /-- A first stage, then the remaining stages selected by its path. -/
   | cons {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A}
       (s : OracleProtocol.{u, u}) {T : Path s → Type u} {J : Path s → Type u}
       {B : (p : Path s) → J p → Type u}
@@ -358,14 +358,14 @@ namespace Stages
 
 variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
-/-- The composed protocol: the first stage's protocol, followed at each of its shape paths by the
+/-- The composed protocol: the first stage's protocol, followed at each of its paths by the
 composed protocol of the remaining stages. -/
 def protocol {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     Stages ambient S inputs → OracleProtocol.{u}
   | .nil _ => .pure ⟨⟩
   | .cons s _ _ rest => s.append fun p => (rest p).protocol
 
-/-- The composed output statement type at a shape path: the input statement type for no stages,
+/-- The composed output statement type at a path. It is the input statement type for no stages,
 and otherwise the output of the remaining stages at the split path. -/
 def Out {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → Path c.protocol → Type u
@@ -373,14 +373,14 @@ def Out {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, 
   | .cons _ _ _ rest, p =>
     splitFamily (s₂ := fun p => (rest p).protocol) (fun p₁ => (rest p₁).Out) p
 
-/-- The index type of the composed output oracle family at a shape path. -/
+/-- The index type of the composed output oracle family at a path. -/
 def OutIdx {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → Path c.protocol → Type u
   | .nil (I := I) _, _ => I
   | .cons _ _ _ rest, p =>
     splitFamily (s₂ := fun p => (rest p).protocol) (fun p₁ => (rest p₁).OutIdx) p
 
-/-- The data types of the composed output oracle family at a shape path. -/
+/-- The data types of the composed output oracle family at a path. -/
 def OutData {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (p : Path c.protocol) → c.OutIdx p → Type u
   | .nil (A := A) _, _ => A
@@ -388,7 +388,7 @@ def OutData {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.
     (rest (Path.split s (fun p => (rest p).protocol) p).1).OutData
       (Path.split s (fun p => (rest p).protocol) p).2
 
-/-- The composed output oracle family at a shape path: the inputs for no stages, and otherwise the
+/-- The composed output oracle family at a path. It is the inputs for no stages, and otherwise the
 output family of the remaining stages at the split path. -/
 def outputs {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (p : Path c.protocol) →
@@ -407,9 +407,9 @@ def nilVerifier {S : Type u} {I : Type u} {A : I → Type u} (inputs : OracleFam
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The evidence type of a chain together with the composed verifier it determines. For no stages
-there is no evidence. For a first stage, the evidence is evidence for the remaining stages at each
-shape path and a compatibility certificate between the first stage's verifier and the composed
-verifiers of the rest; the composed verifier is their binary append. -/
+there is no evidence. For a first stage, the evidence has two parts: evidence for the remaining
+stages at each path, and a compatibility certificate between the first stage's verifier and the
+composed verifiers of the rest. The composed verifier is their binary append. -/
 def compose {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) →
       (E : Type (max (u + 1) w)) × (E → OracleVerifier ambient c.protocol S c.Out inputs c.outputs)
@@ -432,8 +432,8 @@ def verifier {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily
     OracleVerifier ambient c.protocol S c.Out inputs c.outputs :=
   c.compose.2 e
 
-/-- The composed challenge implementation, which combines the stages' draws along the shape path
-of the earlier stages. -/
+/-- The composed challenge implementation, which combines the stages' draws along the path of the
+earlier stages. -/
 def draw {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (ch : ChallengeNode oracleSig c.protocol) →
       OracleComp ambient (challengeSpec oracleSig c.protocol ch)
@@ -460,9 +460,9 @@ def run {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, 
 
 /-! ## Statement-free output maps -/
 
-/-- Output maps that do not read the input statement, for every stage of a chain: at a first
-stage, a map with the equation that the stage's output map is that map at every statement, and
-such maps for the remaining stages at each shape path. -/
+/-- Output maps that do not read the input statement, for every stage of a chain. At a first
+stage, this is a map with the equation that the stage's output map is that map at every
+statement, together with such maps for the remaining stages at each path. -/
 def StatementFree {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} : Stages ambient S inputs → Type (max u w)
   | .nil _ => PUnit
@@ -524,8 +524,8 @@ variable {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u,
 @[simp] theorem protocol_cons :
     (cons s V draw₁ rest).protocol = s.append fun p => (rest p).protocol := rfl
 
-/-- The composed verifier of a chain with a first stage is the binary append of that stage's
-verifier and the composed verifiers of the rest, with the certificate of the evidence. -/
+/-- The composed verifier of a chain with a first stage is a binary append. It appends that
+stage's verifier and the composed verifiers of the rest, with the certificate of the evidence. -/
 theorem verifier_cons :
     (cons s V draw₁ rest).verifier ⟨e, compatible⟩ =
       V.append (fun p => (rest p).verifier (e p)) compatible := rfl
@@ -536,8 +536,8 @@ theorem draw_cons :
     (cons s V draw₁ rest).draw =
       combineDraw oracleSig s (fun p => (rest p).protocol) draw₁ fun p => (rest p).draw := rfl
 
-/-- The run of a chain with a first stage is the core run of the binary append of that stage's
-verifier and the composed rest, with the challenges answered by the combined draws.
+/-- The run of a chain with a first stage is the core run of a binary append. It appends that
+stage's verifier and the composed rest, and the combined draws answer the challenges.
 `OracleVerifier.run_append` splits it into the first stage's interaction, the rest's interaction,
 the first decision and, after its acceptance only, the rest's decision. This is the split after
 the first stage, not a split at an arbitrary stage. -/
@@ -607,17 +607,17 @@ theorem decideWith_one {S : Type u} {I : Type u} {A : I → Type u}
 
 /-! ## Invariants over a chain -/
 
-/-- A property at every stage boundary of a chain, given by `P` on the boundary statement type
-and indexed by the shape paths of the stages up to that boundary. For a first stage, it is the
-property at that stage's output at each of its shape paths and the properties of the remaining
-stages there. The boundary before the first stage is not included. -/
+/-- A property at every stage boundary of a chain. `P` gives it on the boundary statement type,
+indexed by the paths of the stages up to that boundary. For a first stage, it is the property at
+that stage's output at each of its paths, together with the properties of the remaining stages
+there. The boundary before the first stage is not included. -/
 def Boundaries (P : Type u → Type u) {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} : Stages ambient S inputs → Type u
   | .nil _ => PUnit
   | @Stages.cons _ _ _ _ _ _ s T _ _ _ _ _ rest =>
     ((p : Path s) → P (T p)) × ((p : Path s) → (rest p).Boundaries P)
 
-/-- The property at the final boundary of a chain at a composed shape path: the entry property
+/-- The property at the final boundary of a chain at a composed path. It is the entry property
 for no stages, and otherwise the final property of the remaining stages at the split path. -/
 def Boundaries.final {P : Type u → Type u} {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} :
@@ -629,8 +629,8 @@ def Boundaries.final {P : Type u → Type u} {S : Type u} {I : Type u} {A : I �
       (b.2 (Path.split s (fun p => (rest p).protocol) p).1)
       (Path.split s (fun p => (rest p).protocol) p).2
 
-/-- Every stage decision deterministically accepts a statement satisfying the predicate after it,
-from every input statement satisfying the predicate before it, at every shape path, view and
+/-- Every stage decision deterministically accepts a statement satisfying the predicate after it.
+This holds from every input statement satisfying the predicate before it, at every path, view and
 resource value. -/
 def DeterministicSteps {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} :
@@ -642,8 +642,8 @@ def DeterministicSteps {S : Type u} {I : Type u} {A : I → Type u}
     ∀ p, (rest p).DeterministicSteps (b.1 p) (b.2 p)
 
 /-- Every possible result of every stage decision is an accepted statement satisfying the
-predicate after it, from every input statement satisfying the predicate before it, at every shape
-path, view and resource value. -/
+predicate after it. This holds from every input statement satisfying the predicate before it, at
+every path, view and resource value. -/
 def SupportSteps {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (S → Prop) → c.Boundaries (· → Prop) → Prop
@@ -653,9 +653,9 @@ def SupportSteps {S : Type u} {I : Type u} {A : I → Type u}
       ∃ mid, r = some mid ∧ b.1 p mid) ∧
     ∀ p, (rest p).SupportSteps (b.1 p) (b.2 p)
 
-/-- The deterministic chain law: if every stage decision deterministically accepts a statement
-satisfying its boundary predicate, then the composed decision, the fold of the stage decisions
-after all interactions, deterministically accepts a statement satisfying the final predicate. -/
+/-- The deterministic chain law. Suppose every stage decision deterministically accepts a
+statement satisfying its boundary predicate. The composed decision folds the stage decisions after
+all interactions. It then deterministically accepts a statement satisfying the final predicate. -/
 theorem decideWith_accepts {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (e : c.Compatibility) → (pre : S → Prop) →
@@ -675,10 +675,10 @@ theorem decideWith_accepts {S : Type u} {I : Type u} {A : I → Type u}
     exact ⟨out, OracleVerifier.append_decideWith_of_accept V _ e.2 stmt p v data mid out
       hmid hout, hfinal⟩
 
-/-- The support chain law: if every possible result of every stage decision is an accepted
-statement satisfying its boundary predicate, then every possible result of the composed decision,
-the fold of the stage decisions after all interactions, is an accepted statement satisfying the
-final predicate. -/
+/-- The support chain law. Suppose every possible result of every stage decision is an accepted
+statement satisfying its boundary predicate. The composed decision is the fold of the stage
+decisions after all interactions. Then every possible result of the composed decision is an
+accepted statement satisfying the final predicate. -/
 theorem decideWith_preserves_support {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (e : c.Compatibility) → (pre : S → Prop) →
@@ -711,9 +711,9 @@ structure DiscreteEvent (α : Type u) where
   /-- The event. -/
   holds : α → Prop
 
-/-- Every stage decision accepts a statement in the event after it almost surely, from every input
-statement satisfying the predicate before it, at every shape path, view and resource value. Each
-boundary event carries the measurable structure of its statement type. -/
+/-- Every stage decision accepts a statement in the event after it almost surely. This holds from
+every input statement satisfying the predicate before it, at every path, view and resource value.
+Each boundary event carries the measurable structure of its statement type. -/
 def MeasureSteps [ambient.AnswerMeasure] {S : Type u} {I : Type u} {A : I → Type u}
     {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (S → Prop) → c.Boundaries DiscreteEvent → Prop
@@ -724,11 +724,11 @@ def MeasureSteps [ambient.AnswerMeasure] {S : Type u} {I : Type u} {A : I → Ty
       𝒟[V.decideWith stmt p v data] {r | ∃ mid, r = some mid ∧ (b.1 p).holds mid} = 1) ∧
     ∀ p, (rest p).MeasureSteps (b.1 p).holds (b.2 p)
 
-/-- The almost-sure chain law: if every stage decision accepts a statement in its boundary event
-almost surely, then the composed decision, the fold of the stage decisions after all
+/-- The almost-sure chain law. Suppose every stage decision accepts a statement in its boundary
+event almost surely. Then the composed decision, the fold of the stage decisions after all
 interactions, accepts a statement in the final event almost surely. The ambient oracles carry an
-answer measure; the boundary events carry the discrete measurable structures, and the entry event
-`pre` gives the structure of the input statement type. -/
+answer measure. The boundary events carry the discrete measurable structures, and the entry
+event `pre` gives the structure of the input statement type. -/
 theorem decideWith_preserves_measure [ambient.AnswerMeasure] {S : Type u} {I : Type u}
     {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : Stages ambient S inputs) → (e : c.Compatibility) → (pre : DiscreteEvent S) →

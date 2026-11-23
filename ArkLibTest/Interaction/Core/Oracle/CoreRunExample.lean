@@ -11,8 +11,8 @@ import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
 
 The prover sends one pair oracle whose interface exposes only the first coordinate, and keeps the
 second coordinate as private output. The passive decision reads the sent oracle by query. The
-output data is the input plus the sent coordinate, materialized from the input and the payloads of
-the same run. A stateful logger exposes the exact effect order.
+output data is the input plus the sent coordinate, materialized from the input and the oracle
+messages of the same run. A stateful logger exposes the exact effect order.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
@@ -61,7 +61,7 @@ def summary (accept : Bool) (setup : List Nat) (message hidden : Nat) :
   let z := observed accept setup message hidden
   (z.1.2.1, z.1.2.2.map (fun r => (r.1, r.2 ())), z.2)
 
--- CoreRunExample 1, restated: the frozen verifier's reception event 1 moves into the passive
+-- CoreRunExample 1, restated: the old-layer verifier's reception event 1 moves into the passive
 -- decision, which runs after the prover's event 0. For every hidden value the history is
 -- `[0, 1, 2]`, each event once.
 example (hidden : Nat) : (summary true [] 11 hidden).2.2 = [0, 1, 2] := rfl
@@ -73,7 +73,7 @@ example (hidden : Nat) : (summary true [] 11 hidden).1 = hidden := rfl
 example (hidden : Nat) : (summary true [] 11 hidden).2.1.map Prod.fst = some 11 := rfl
 
 -- CoreRunExample 4, restated: the output data is the input 7 plus the sent 11, materialized from
--- this run's input and payloads.
+-- this run's input and oracle messages.
 example (hidden : Nat) : (summary true [] 11 hidden).2.1.map Prod.snd = some 18 := rfl
 
 -- CoreRunExample 5, restated: a different run closes with its own message 19.
@@ -86,9 +86,9 @@ example (message hidden : Nat) :
 -- CoreRunExample 6: a rejecting decision yields no claim, for every message and hidden value.
 example (message hidden : Nat) : (observed false [] message hidden).1.2.2 = none := rfl
 
--- CoreRunExample 7, restated: the frozen setup runs before the strategies; here it is the prover's
--- first slot. Setup event 3 runs once, before the same send and decision events, and the
--- observation is the same as without setup.
+-- CoreRunExample 7, restated: the old-layer setup runs before the strategies. Here it is the
+-- prover's first effect. Setup event 3 runs once, before the same send and decision events, and
+-- the outcome is the same as without setup.
 example (accept : Bool) (message hidden : Nat) :
     observed accept [3] message hidden =
       ((observed accept [] message hidden).1, [3, 0, 1, 2]) := by

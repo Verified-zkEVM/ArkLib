@@ -115,13 +115,13 @@ verifier actions and move assignments that P1 excludes.
 
 ## Stage composition and oracle execution acceptance clients
 
-The [stage and execution inventory](stage-execution-disposition.md) lists each frozen assertion of
-the claim, composition, core-run, execution and dependent-reduction clients and each replaced
-ordered-execution law, with its exact port, the premise that retires part of it, or the removed
-mechanism it belonged to. The frozen ordered execution decided each stage before the next one and
-skipped the later stages after a rejection; the port composes passive stages, runs every
-interaction before the decisions, and selects later stages by shape paths only. The inventory
-also records the universe placement of stage chains. Its one unresolved row, the split of a chain
-at an arbitrary stage, remains a migration obligation: protocol associativity exists in PolyFun,
-and the missing interface is a reassociation law for `OracleVerifier.append` with its path, view,
-routing and certificate transport.
+The [stage and execution port table](stage-execution-disposition.md) lists each old-layer
+assertion of the claim, composition, core-run, execution and dependent-reduction clients. It also
+lists each replaced ordered-execution law. Each row gives the assertion's exact port, the premise
+that excludes part of it, or the removed mechanism it belonged to. The old-layer ordered execution
+decided each stage before the next one and skipped the later stages after a rejection. The port
+composes passive stages, runs every interaction before the decisions, and selects later stages by
+paths only. The table also records the universe placement of stage chains. Its one open row, the
+split of a chain at an arbitrary stage, remains a migration obligation. Protocol associativity
+exists in PolyFun. The missing interface is a reassociation law for `OracleVerifier.append` with
+its path, view, routing and certificate transport.

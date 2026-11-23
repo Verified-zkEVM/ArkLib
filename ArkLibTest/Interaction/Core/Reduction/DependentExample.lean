@@ -20,12 +20,12 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleCo
 namespace Interaction.Core.DependentExampleTests
 
 -- DependentExample 1, restated: the shared, statement, witness and interaction universes are
--- independent, as in the frozen canary. A family of reductions over a shared index is a function
--- from the index; ownership comes from the signature, so there is no role decoration. The output
--- statement and the prover output stay in the interaction universe, as in the frozen canary. The
--- ambient index is also in the interaction universe, because the prover runs in
--- `OracleComp ambient : Type u → Type u` (implementation note 18, premise-required); the frozen
--- canary has no ambient oracles, which the empty specification below recovers.
+-- independent, as in the old-layer canary. A family of reductions over a shared index is a
+-- function from the index. The signature assigns each move to a participant, so there is no role
+-- decoration. The output statement and the prover output stay in the interaction universe, as in
+-- the old-layer canary. The ambient index is also in the interaction universe, because the prover
+-- runs in `OracleComp ambient : Type u → Type u` (implementation note 18, premise-required). The
+-- old-layer canary has no ambient oracles, which the empty specification below recovers.
 section UniverseCanary
 
 universe uShared uStatement uWitness uInteraction
@@ -45,7 +45,7 @@ abbrev UniverseSeparatedReduction {ι : Type uInteraction}
 
 end UniverseCanary
 
--- The canary at four distinct universes, with no ambient oracles: the shared index lies in
+-- The canary at four distinct universes, with no ambient oracles. The shared index lies in
 -- `Type 3`, the statements in `Type 2`, the witnesses in `Type 1` and the interaction in `Type 0`.
 example : UniverseSeparatedReduction ([]ₒ : OracleSpec.{0, 0} PEmpty) (Type 2)
     (fun _ => (.pure ⟨⟩ : Protocol)) (fun X => X) (fun _ => Type) (fun _ _ => Unit)
@@ -102,27 +102,27 @@ def evaluate {α : Type} (program : OracleComp (ambient + challengeSpec plainSig
     | .inr c => nomatch c : QueryImpl (ambient + challengeSpec plainSig composedTree) Option)
     program
 
-/-- The shape path, the prover's statement and the verifier's verdict of one honest run. -/
+/-- The path, the prover's statement and the verifier's verdict of one honest run. -/
 def summary (bit : Bool) : Option (Path composedTree × Nat × Option Nat) :=
   evaluate ((fun obs => (Transcript.path obs.1, obs.2.1.1, obs.2.2)) <$>
     composed.runOutcome () bit)
 
 -- DependentExample 2, restated: the false prefix message selects the `Bool` suffix branch; the
--- path is a shape path of the appended protocol.
+-- result is a path of the appended protocol.
 example : (summary false).map (·.1) = some ⟨false, false, ⟨⟩⟩ := rfl
 
 -- DependentExample 3, restated: the true prefix message selects the `Fin 3` suffix branch.
 example : (summary true).map (·.1) = some ⟨true, (2 : Fin 3), ⟨⟩⟩ := rfl
 
 -- DependentExample 4, restated: the full result on the `Bool` branch. The prover's output and the
--- verifier's accepted verdict are both 0. The frozen `packAppend` wrapping is not needed, because
--- outputs are typed over the appended transcript directly.
+-- verifier's accepted verdict are both 0. The old-layer `packAppend` wrapping is not needed,
+-- because outputs are typed over the appended transcript directly.
 example : summary false = some (⟨false, false, ⟨⟩⟩, 0, some 0) := rfl
 
 -- DependentExample 5, restated: the full result on the `Fin 3` branch: both statements are 2.
 example : summary true = some (⟨true, (2 : Fin 3), ⟨⟩⟩, 2, some 2) := rfl
 
--- The same results, from the full observation without the summary projection.
+-- The same results, from the full outcome without the summary projection.
 example : composed.runOutcome () false =
     pure ⟨⟨false, false, ⟨⟩⟩, (0, ()), some 0⟩ := rfl
 

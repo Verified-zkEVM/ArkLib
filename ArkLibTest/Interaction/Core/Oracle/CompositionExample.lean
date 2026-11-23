@@ -161,10 +161,10 @@ def summaryWith (choice accept : Bool) (answer hidden : Nat) :
 def summary (accept : Bool) (answer hidden : Nat) :=
   summaryWith (answer % 2 == 0) accept answer hidden
 
--- CompositionExample 1, the first stage on its own: the prefix verifier's run against the prefix
--- prover is the prover's event 0, then the decision's event 1; the statement is the input's parity,
--- and the output data is the input plus 11. Stated for every verdict, input, choice and hidden
--- value.
+-- CompositionExample 1, the first stage on its own. The prefix verifier's run against the prefix
+-- prover is the prover's event 0, then the decision's event 1. The statement is the input's
+-- parity, and the output data is the input plus 11. Stated for every verdict, input, choice and
+-- hidden value.
 example (accept choice : Bool) (answer hidden : Nat) :
     (firstVerifier accept).run () (fun _ => answer) (firstProver choice hidden) = (do
       liftM ((ambient + challengeSpec oracleSig done).query (.inl 0))
@@ -173,9 +173,9 @@ example (accept choice : Bool) (answer hidden : Nat) :
         if accept then some (answer % 2 == 0, fun _ => answer + 11) else none⟩) := by
   cases accept <;> rfl
 
--- CompositionExample 2, the second stage on its own, on both message types. The frozen stage's
--- setup event 2 is the seam action, here the suffix prover's first slot; the branch is chosen by
--- the prover's `Bool` message. Stated for every input statement, exported value and hidden value.
+-- CompositionExample 2, the second stage on its own, on both message types. The old-layer stage's
+-- setup event 2 is the seam action, here the suffix prover's first effect. The prover's `Bool`
+-- message chooses the branch. Stated for every input statement, exported value and hidden value.
 example (mid : Bool) (value hidden : Nat) :
     secondVerifier.run mid (fun _ => value) (Strategy.joinSlot (seam (hidden, true))) = (do
       liftM ((ambient + challengeSpec oracleSig branchProtocol).query (.inl 2))
@@ -263,7 +263,7 @@ example (choice : Bool) (answer hidden : Nat) :
   rw [OracleVerifier.run_append]
   cases choice <;> rfl
 
--- CompositionExample 14, restated: the frozen lower adapter keeps the oracle output and the
+-- CompositionExample 14, restated: the old-layer lower adapter keeps the oracle output and the
 -- hidden prover output of an oracle message. Here the oracle verifier's run of the one-send
 -- fixture keeps both: output data 18 and private output `hidden`, for every hidden value.
 example (hidden : Nat) :
