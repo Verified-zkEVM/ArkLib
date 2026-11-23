@@ -9,7 +9,6 @@ source_metadata: ../sources/LFKN92/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/ProofSystem/Sumcheck/Spec/General.lean
-  - ArkLib/ProofSystem/Sumcheck/Counting.lean
 ---
 
 # LFKN92
