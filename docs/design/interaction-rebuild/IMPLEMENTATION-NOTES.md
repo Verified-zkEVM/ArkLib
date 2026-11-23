@@ -19,7 +19,7 @@ separate from moves and the monad; entry 18 records the independent oracle-query
 ## 2. Observations retain the transcript and output on rejection
 
 Records D4 and D7 describe a run that either outputs a statement or rejects. The code's
-`Observation` keeps the full transcript and prover output together with an optional verdict
+`Outcome` keeps the full transcript and prover output together with an optional verdict
 (`Execution.lean`), and `Reduction.run` gives the accepting `OptionT` presentation. Rejection is
 therefore a returned observation, distinct from missing probability mass. In the classical
 experiment every program is an `OracleComp`, which cannot fail, so rejection is the only way a run
@@ -30,7 +30,7 @@ rejection and that the total mass is one.
 
 Record D6 sketches routing through an equivalence of oracle signatures. The code represents
 append and split by lawful `OracleMap`s with round-trip laws on the materialized data
-(`OracleVerifier.lean`), with `payloadImpl_append` as the handler law. This is enough for both
+(`OracleVerifier.lean`), with `oracleMessageImpl_append` as the handler law. This is enough for both
 materialization and query routing. It does not claim syntactic equality of query traces, which
 the agreement law would not imply.
 
@@ -59,7 +59,7 @@ counted as bad (`Knowledge.lean`). This prevents an extractor from deleting acce
 general interface whose extractor can lose mass it is stronger than legacy `knowledgeSoundnessWith`,
 whose bad event simply drops the missing mass, so a transfer from the legacy layer needs a
 non-loss premise or a chosen failure-completion semantics. For the classical straight-line and
-transcript-only interfaces the qualification is moot: `classicalStraightline_marginal` and
+transcript-only interfaces the qualification is moot: `classicalStraightLine_marginal` and
 `classicalTranscriptOnly_marginal` prove that marginal preservation always holds, since the
 extractor runs after the observation is fixed and `OracleComp` cannot lose mass.
 
@@ -124,11 +124,12 @@ fixes the owner.
 
 ## 12. Path-fiber splitting stays in ArkLib
 
-Record D5 splits paths and views at the seam with PolyFun's path operations and adds nothing to
-ArkLib for it. `Fiber`,
-`project_split` and `splitFiber` in `Composition.lean` are generic in the polynomial and the lens
-but remain in ArkLib, marked as candidates for PolyFun; `project_split` is now derived from
-PolyFun's `projectPathAlong_append`, `append_split` and `split_append` laws. The same holds for
+Record D5 splits paths and views at the seam with PolyFun's path operations, reached through
+`Transcript.split` and `Transcript.append` (`Core/Transcript.lean`, where `TranscriptAt` is also
+defined). `project_split` and `TranscriptAt.split` in `Composition.lean` are generic in the
+polynomial and the lens but remain in ArkLib, marked as candidates for PolyFun; `project_split` is
+derived from `Transcript.path_append`, `Transcript.append_split` and `Transcript.split_append`,
+which restate PolyFun's laws of the same names. The same holds for
 `Node.appendEquiv` and `ChallengeNode.appendEquiv` in `Protocol.lean`, which split the node
 occurrences and challenge nodes of an appended protocol into prefix and suffix-fibre parts. They
 stay local to avoid a further PolyFun API change and repin beyond the merged lens work this slice
@@ -184,7 +185,7 @@ lets the pinned universe linter distinguish the move universe in the alias's typ
 universe remains independent, without a linter suppression or source-policy exception.
 
 **Query types are separated.** The decision no longer reads one homogeneous family
-`sumFamily inputs (pathFamily s p)`. It reads `pathResources inputs s p`, the disjoint sum of the
+`sumFamily inputs (oracleMessageFamily s p)`. It reads `pathResources inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
 (`Resources.sum`). `OracleSpec` addition allows the two index types to lie in different universes,
 and the input queries (`Resources.{u, uI, dI}`), oracle-node queries (`OracleProtocol.{u, q}`)
@@ -218,7 +219,7 @@ any universe, including input data and oracle-node queries.
 the full-log run with the decision log restricted to its ambient entries, and
 `map_fst_runWithAmbientLog` proves at the general signature that forgetting both logs gives
 `OracleVerifier.run`. The oracle extraction game, the classical oracle extraction models and their
-marginal lemmas run on it at the general signature. `Extractor.OracleStraightline` and
+marginal lemmas run on it at the general signature. `Extractor.OracleStraightLine` and
 `Extractor.OracleTranscriptOnly` take a statement in any universe and have no input-family
 parameter, so they never had the restriction.
 
@@ -269,7 +270,7 @@ and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type u` 
 targets `outputs p`; `OracleVerifier.Output T B p := T p × ∀ j, B p j` is the accepted claim of a
 run. In an append the composite's output at a path of `s₁.append s₂` is the suffix's output at the
 split path (`splitFamily`, `OracleVerifier.splitOutputs`), so composed decisions return the
-suffix's output without a cast. `Observation` takes the indexed family, and the security
+suffix's output without a cast. `Outcome` takes the indexed family, and the security
 definitions take output problems over the path context (`PathProblem s T`), with acceptance
 predicates typed at the transcript's path (`validAcceptance impl stmt tr (event : T p → Prop)`).
 Constant families `fun _ => T` recover every earlier user; the legacy embedding and the sumcheck
@@ -280,7 +281,7 @@ routing example.
 ### Output witnesses are indexed by the transcript
 
 The round-by-round and straight-line knowledge interfaces took a constant output witness type,
-although the prover's output `Out : PathAlong l s → Type` and the intermediate witnesses
+although the prover's output `Out : Transcript l s → Type` and the intermediate witnesses
 `Witness sp history` of a knowledge state function were already indexed by the transcript. A
 protocol whose output witness depends on a message, such as an index `Fin (payload + 1)` bounded
 by a sent `payload`, had to encode that carrier into a constant type and track its compatibility
@@ -288,22 +289,22 @@ with the transcript separately. The old interfaces could not expose the transcri
 directly.
 
 **Round-by-round knowledge** (`Security/RoundByRound.lean`). The output witness of
-`KnowledgeStateFunction` and `rbrKnowledgeSoundness` is a family `W : PathAlong l s → Type`.
-`validOutput` takes `(stmt : S) → (tr : PathAlong l s) → W tr → Prop`, and
-`extractLeaf sp history stmt` takes `W (PrefixMoves.complete l sp history)`. The input witness
+`KnowledgeStateFunction` and `rbrKnowledgeSoundness` is a family `W : Transcript l s → Type`.
+`validOutput` takes `(stmt : S) → (tr : Transcript l s) → W tr → Prop`, and
+`extractLeaf sp history stmt` takes `W (PartialTranscriptAt.complete l sp history)`. The input witness
 type `Win` stays a plain type. The verifier forms take the family implicitly, with output
 relations
 
-- `Verifier.rbrKnowledgeSoundness`: `relOut : (tr : PathAlong plainSig s) → T → W tr → Prop`;
+- `Verifier.rbrKnowledgeSoundness`: `relOut : (tr : Transcript plainSig s) → T → W tr → Prop`;
 - `OracleVerifier.rbrKnowledgeSoundness`:
-  `relOut : (tr : PathAlong oracleSig s) → (T × ∀ j, B j) → W tr → Prop`, where the second
+  `relOut : (tr : Transcript oracleSig s) → (T × ∀ j, B j) → W tr → Prop`, where the second
   argument pairs the output statement with the output oracle data.
 
 **Straight-line knowledge** (`Security/Knowledge.lean`). The extractor interfaces
-`Extractor.Straightline`, `Extractor.TranscriptOnly`, `Extractor.OracleStraightline` and
-`Extractor.OracleTranscriptOnly` take an output witness family `Wout : PathAlong plainSig s → Type`
-or `Wout : PathAlong oracleSig s → Type`. Their arguments are ordered
-`(stmt : S) → (tr : PathAlong _ s) → Wout tr → …`, so the witness is typed at the transcript passed
+`Extractor.StraightLine`, `Extractor.TranscriptOnly`, `Extractor.OracleStraightLine` and
+`Extractor.OracleTranscriptOnly` take an output witness family `Wout : Transcript plainSig s → Type`
+or `Wout : Transcript oracleSig s → Type`. Their arguments are ordered
+`(stmt : S) → (tr : Transcript _ s) → Wout tr → …`, so the witness is typed at the transcript passed
 with it. The extraction games read the prover output through `readOut : ∀ tr, Out tr → Wout tr`;
 the identity is a valid `readOut` when `Wout = Out`. The `withLogs` adapters, both extraction
 games, `mem_support_extractionGame`, the classical interfaces and their marginal lemmas carry the
