@@ -13,8 +13,8 @@ Records D1 and D4 left open where an oracle payload's query interface lives and 
 named. The code carries the interface in the oracle position (`OraclePos.oracle X interface` in
 `Signature.lean`) and indexes challenges by structural node occurrences (`Node`, `ChallengeNode`
 in `Protocol.lean`). This resolves the open choice without a separate decoration, and node
-occurrences name each challenge independently of any transcript. Positions stay one universe above
-moves and the monad, as D2 requires.
+occurrences name each challenge independently of any transcript. Position universes remain
+separate from moves and the monad; entry 18 records the independent oracle-query universe.
 
 ## 2. Observations retain the transcript and output on rejection
 
@@ -146,11 +146,136 @@ oracle extraction game passes that projection.
 
 ## Continuation
 
-Entries 14 onwards record the departures of the legacy embedding. They are in
+Entries 14–16 record the departures of the legacy embedding. They are in
 [`legacy-embedding.md`](../interaction-layer/legacy-embedding.md#departures), and
-[`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13.
+[`departures.md`](../interaction-layer/departures.md) indexes every entry, including 1–13 and 18.
+Entry 18 below is a later core entry; number 17 belonged to an entry that was removed.
+
+## 18. Run outputs are tied to the monad universe
+
+**Status: equivalent for independent input data and query universes; unresolved for the
+full-log oracle runner's large-query interface.** Record D2's ledger puts moves and participant
+outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
+component that is not a run output its own universe as far as the definitions allow: the ambient
+index of a verifier, the input resource index and data, the output oracle index `J p` of an
+oracle verifier, the query types of the input and output oracle interfaces, the input statement, the
+input witness and the intermediate witnesses of a knowledge state function.
+
+**Retained runner contract.** Run outputs stay in `Type u`: the output statement `StmtOut p`, the output
+oracle data `B p j` returned by a run, the output index `J p` once a run returns `∀ j, B p j`,
+prover outputs, extracted witnesses and the state `σ` of a security experiment. Positions live one
+universe up for plain protocols (`PlainPos : Type (u+1)`) and in
+`Type (max (u+1) (q+1))` for oracle protocols, because an oracle position names both a payload
+type and a query type. Moves and returned values stay in `Type u`, and the runner is
+`m : Type u → Type u`
+(`OracleComp ambient` with responses in `Type u`). `simulateQ`, which answers the decision's
+resource queries in a run and in `decideWith`, also needs the value universe to equal the response
+universe. A run output in another universe would need a `ULift` adapter or a monad on a larger
+universe, which record D2 rejects. A prover's ambient index is in `Type u` for the same reason:
+`OracleComp ambient : Type u → Type (max uι u)` is the prover's monad, so `Reduction`, `Prover`,
+both runs and the classical security models fix it.
+
+`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `PUnit`.
+All execution, path-resource and security APIs use those default trivial leaves, preserving their
+previous carriers by definitional equality. An explicit leaf type describes return values in the
+authored `FreeM` tree. The parameter is used by the tree representation and is not a phantom:
+the universe canary constructs and reads a natural-number leaf. Exposing that parameter also
+lets the pinned universe linter distinguish the move universe in the alias's type; the query
+universe remains independent, without a linter suppression or source-policy exception.
+
+**Query types are separated.** The decision no longer reads one homogeneous family
+`sumFamily inputs (pathFamily s p)`. It reads `pathResources inputs s p`, the disjoint sum of the
+input specification and the path's specification, with their data kept as a pair
+(`Resources.sum`). `OracleSpec` addition allows the two index types to lie in different universes,
+and the input queries (`Resources.{u, uI, dI}`), oracle-node queries (`OracleProtocol.{u, q}`)
+and output queries (`OracleFamily.{uJ, u, wJ}`) take their own universes through routing, append
+and `decideWith`. `splitFamily` was already generic in the polynomial position universe;
+`splitOutputs` and both path-routing directions now carry the independent node-query universe.
+The query types never become values of the runner: they are answered by `simulateQ`, which
+returns only responses.
+
+**Equivalent: independent input data.** `OracleVerifier`, `pathResources`, `decideWith`, `run`,
+append, the ambient-log runner and the security wrappers accept general
+`Resources.{u, uI, dI}` inputs. Their data is `inputs.Data : Type dI`; only responses lie in
+`Type u`. The R26 and R27 canaries retain the exact named query and realization carriers with
+response universe `e` independent of realization universe `a`. No encoding or lift of a
+realization is needed. `Resources.ofFamily` remains the specialization for existing
+`OracleFamily` clients. Its `OracleInterface` uses `ReaderM`, which still ties that
+specialization's data and response universes together. This no longer restricts the verifier
+input API, and the shared interface is unchanged. Output families and oracle-node payload
+interfaces still use `OracleInterface`; a run returns their data in the move/response universe.
+
+**Unresolved: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the decision's
+full query log, which records resource queries. Its input query index and oracle-node query
+type must remain in `Type`. A large-query full-log API needs a parent logging interface whose
+log can be returned by the small computation monad. Input data has its independent universe
+even in this API, because the log never stores realizations. Only this full-log API keeps the
+restriction, for clients that need the resource queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
+ambient handler before adding the pure resource handler, so its result holds only two ambient
+logs, and it takes the input statement, the input index and the input and output query types in
+any universe, including input data and oracle-node queries.
+`map_runWithLog_eq_runWithAmbientLog` proves that, at small input universes, it is
+the full-log run with the decision log restricted to its ambient entries, and
+`map_fst_runWithAmbientLog` proves at the general signature that forgetting both logs gives
+`OracleVerifier.run`. The oracle extraction game, the classical oracle extraction models and their
+marginal lemmas run on it at the general signature. `Extractor.OracleStraightline` and
+`Extractor.OracleTranscriptOnly` take a statement in any universe and have no input-family
+parameter, so they never had the restriction.
+
+**Security wrappers.** The input statement `S`, the honest input witness `W` and the input oracle
+data and query index are arguments of a run, so the security wrappers take them in any universe:
+`Verifier.classicalModel`, `OracleVerifier.classicalModel` (statement and input index),
+`Reduction.completeness`, `Verifier.soundness`, `StateFunction`, `rbrSoundness`,
+`Verifier.validAcceptance`, `KnowledgeStateFunction`, `rbrKnowledgeSoundness`, the plain
+straight-line and transcript-only extractors and extraction game, and the oracle extraction game
+and classical oracle extraction models (statement, input index, input and output query types).
+The intermediate witnesses of a `KnowledgeStateFunction` take their own universe `uK`. Its
+extractors are plain functions, not computations of the runner, so the root extractor may map an
+intermediate witness in one universe to an input witness in another. `rbrKnowledgeSoundness`,
+`Verifier.rbrKnowledgeSoundness` and `OracleVerifier.rbrKnowledgeSoundness` take `uK` as an
+explicit universe parameter and pass it to the existential, so elaboration does not specialize
+it. `KnowledgeStateFunction.lift` moves a knowledge state function to a larger witness universe
+by lifting each intermediate witness, and `rbrKnowledgeSoundness.lift` transports the bound from
+`uK` to `max uK v` at the same error. A legacy intermediate witness lies in `Type`, which fixes
+the universe of the certificate that the legacy-to-interaction theorems construct but not the
+universe of their conclusions: they lift that certificate and hold for every `uK`. The
+interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted
+witnesses returned by the extraction games are values of the runner and stay in `Type`. The
+restrictions that remain are the retained runner contracts above (ambient index and experiment state
+in `Type`, output data, output index and extracted witnesses in `Type`) and the unresolved
+large-query full-log interface. Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
+
+`ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes against
+`Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
+`OracleMap.simulate_eq`, two oracle runs, the classical security models, the oracle extraction
+game and the classical extraction models with their marginal laws. One input interface is an
+`OracleInterface.{0, 1} Nat` whose queries are types, and an append routes it through a middle
+family with queries in `Type 1` to an output family with queries in `Type 0`. A knowledge state
+function with intermediate witnesses in `Type 1` and the input witness `Unit` certifies
+round-by-round knowledge for the core definition and both verifier wrappers. The same module
+now constructs an actual oracle node carrying `OracleInterface.{0, 1} Nat`, runs a verifier
+that queries its payload, and checks the returned value by `rfl`. Its R26/R27 resource
+constructors quantify independently over `a` and `e`, and an R26 verifier and run consume
+the original realization family directly.
 
 ## Changes that keep to the records
+
+### Verifier outputs are indexed by the shape path
+
+Record D6 fixed the output family for the first milestone. Both verifiers now index their outputs
+by the public shape path: `Verifier ambient s StmtIn StmtOut` takes `StmtOut : Path s → Type u`,
+and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type u` and
+`outputs : (p : Path s) → OracleFamily (J p) (B p)`. The decision returns `T p` and the output map
+targets `outputs p`; `OracleVerifier.Output T B p := T p × ∀ j, B p j` is the accepted claim of a
+run. In an append the composite's output at a path of `s₁.append s₂` is the suffix's output at the
+split path (`splitFamily`, `OracleVerifier.splitOutputs`), so composed decisions return the
+suffix's output without a cast. `Observation` takes the indexed family, and the security
+definitions take output problems over the path context (`PathProblem s T`), with acceptance
+predicates typed at the transcript's path (`validAcceptance impl stmt tr (event : T p → Prop)`).
+Constant families `fun _ => T` recover every earlier user; the legacy embedding and the sumcheck
+core use them, so their statements are unchanged. Record D6 is updated accordingly, and
+`ArkLibTest/Interaction/Core/Oracle/DependentRouting.lean` ports the frozen layer's dependent
+routing example.
 
 ### Output witnesses are indexed by the transcript
 
