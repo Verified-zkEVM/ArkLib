@@ -174,7 +174,8 @@ $\gamma\in\mathbb{N}$. Challenges in $L$ use the uniform sampler.
   \label{def:unrolled_fri_binius}
   In the concrete setup above, the unrolled protocol of~\cite{DP24} (Construction 5.1), for
   $K = \mathbb{F}_2$, is the DP24 tensor batching head followed by the Binary Basefold opening of
-  the head's product claim $s = \sum_{y} A(y)\, t(y)$, where $A$ is the ring-switching multiplier.
+  the head's product claim $s_0 = \sum_{y \in \{0,1\}^{\ell'}} \mathcal{M}(y)\, t'(y)$, where
+  $\mathcal{M}$ is the ring-switching multiplier and $t'$ the packed polynomial.
   The Binary Basefold sum-check is the ring-switching sum-check, so no separate sum-check runs
   before the opening.
 \end{definition}

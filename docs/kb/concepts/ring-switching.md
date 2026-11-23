@@ -95,7 +95,7 @@ no second certified phase implementation.
 `Binius/FRIBinius/RingSwitch` appends the Binary Basefold contextual opening. Its existing
 zero-round frontier projects the final evaluation and formats the witness, with no extra wire
 phase. Exact first-codeword encodings give completeness; unique-radius compatibility gives
-round-by-round security. `fullError_sum_le` bounds the full challenge sum by `concreteError`,
+round-by-round security. `fullError_sum_le` bounds the full challenge sum by `RingSwitch.concreteError`,
 the frontend loss plus the backend's closed-form upper bound. The concrete nonconstant
 `GF(16)/GF(2)` acceptance fixture instantiates both and bounds that sum strictly below one.
 
