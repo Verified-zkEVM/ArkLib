@@ -12,7 +12,7 @@ records only branch choices. The type of oracle indices depends on the completed
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
 
-namespace Interaction.Core.PrefixTests
+namespace Interaction.Core.PartialTranscriptsTests
 
 -- Prefix fixture: the old layer's public node is re-authored as a prover message.
 /-- One hidden `Bool` oracle message followed by a public `Fin 3` message. -/
@@ -110,4 +110,4 @@ def prefixQuery : OracleComp (oracleMessageSpec oraclePrefix ⟨⟨⟩, ⟨⟩�
 theorem crossed_send_answer (message : Bool) :
     simulateQ (oracleMessageImpl oraclePrefix ⟨message, ⟨⟩⟩) prefixQuery = message := rfl
 
-end Interaction.Core.PrefixTests
+end Interaction.Core.PartialTranscriptsTests

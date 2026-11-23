@@ -261,10 +261,10 @@ entries use [queriesByMove] and [queriesByMoveLaws]. Typed access and whole-run 
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
 [unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L315
 [optionalClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L247
-[access]: oracle-access-tests.md
-[access-runtime]: oracle-access-tests.md#runtimequerybounds-17-assertions
-[accessTerminal]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L133
-[routedAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L286
+[access]: port-oracle-access.md
+[access-runtime]: port-oracle-access.md#runtimequerybounds-17-assertions
+[accessTerminal]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L133
+[routedAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L286
 [availableCost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L83
 
 [queriesByMoveLaws]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean

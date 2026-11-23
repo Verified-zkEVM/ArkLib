@@ -13,7 +13,7 @@ carries its interface in its position, and its owner comes from the signature. -
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens
 
-namespace Interaction.Core.DecorationExampleTests
+namespace Interaction.Core.PositionsAndOwnersTests
 
 section UniverseCanary
 
@@ -33,7 +33,7 @@ def universeNode (Message : Type uProtocol)
 example (interface : OracleInterface.{0, 1} Nat) :
     Node.position (universeNode Nat interface) (.inl ⟨⟩) = .oracle Nat interface := rfl
 
-/-- The actual node's path resources retain the interface's larger query type. -/
+/-- The actual node's path bundle retains the interface's larger query type. -/
 example (interface : OracleInterface.{0, 1} Nat) :
     @OracleInterface.Query Nat
       ((oracleMessageFamily (universeNode Nat interface) ⟨⟨⟩, ⟨⟩⟩).interface (.inl ⟨⟩)) =
@@ -152,4 +152,4 @@ theorem future_positions_ne :
   intro equal
   cases equal
 
-end Interaction.Core.DecorationExampleTests
+end Interaction.Core.PositionsAndOwnersTests

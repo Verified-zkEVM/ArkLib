@@ -12,7 +12,7 @@ project to the same path. The verifier view erases them. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core
 
-namespace Interaction.Core.MixedExampleTests
+namespace Interaction.Core.MixedTranscriptsTests
 
 section UniverseCanary
 
@@ -86,4 +86,4 @@ example : (toView mixedTree finPayload).val = ⟨true, ⟨⟩, ⟨⟩⟩ := rfl
 /-- The runtime transcript contains the public branch and the complete `Fin 3` oracle message. -/
 theorem finPayload_runtime : finPayload = ⟨true, (2 : Fin 3), ⟨⟩⟩ := rfl
 
-end Interaction.Core.MixedExampleTests
+end Interaction.Core.MixedTranscriptsTests

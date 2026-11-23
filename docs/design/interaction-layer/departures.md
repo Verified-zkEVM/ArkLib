@@ -113,7 +113,7 @@ share `OracleVerifier.executeWith`. Erasure follows from a general law about run
 instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
 verifier actions and move assignments that P1 excludes.
 
-The [oracle-access port table](oracle-access-tests.md) also closes DecorationExample row 2 with
+The [oracle-access port table](port-oracle-access.md) also closes DecorationExample row 2 with
 the arbitrary-tree decoration test and the independent-universe node and path-family tests. Its
 PhasedRun and QueryBounds rows cite the parent's produced assertions directly. These cover
 membership of the join and decision entries, node names, and the agreement between the queries by

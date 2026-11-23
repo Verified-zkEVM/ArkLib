@@ -11,7 +11,7 @@ RuntimeQueryBounds rows. The [parent port table][parent-port-table] lists the sa
 
 The two approved premises are:
 
-- **P1 (passive verifier):** verifiers send public-coin challenges only, and resource queries
+- **P1 (passive verifier):** verifiers send public-coin challenges only, and bundle queries
   happen in the final decision. A challenge cannot be computed from an input or from a previously
   sent oracle. Challenge distributions may still depend on earlier public challenges and prover
   messages.
@@ -118,7 +118,7 @@ Rows 5 and 8 use `composed.runWithLog`. For every `a` and `b`, the doubled expor
 entries for the prefix oracle with answer `a`. The entry for the suffix oracle with answer `b`
 follows. The same assertion checks private output `a + b` and verdict `some (a + a + b)`. The
 [one/two specialization][q-concrete-log] recovers private output 3 and accepted result 4. Output
-closing uses those same resources; this fixture's output family is empty.
+closing uses that same bundle; this fixture's output family is empty.
 
 Rows 9–12 and 14–16 reuse the parent's `LoggedExecutionTests` two-oracle execution. Its
 `joinEntry_mem`, `decisionEntry_mem`, `joinEntry_before`, `decisionEntry_before`,
@@ -167,7 +167,7 @@ and use precisely that input query.
 
 Row 3's decision performs the dummy request and accepts the unit statement, and its output map is
 exactly the input projection. Row 4 checks the entire effectful decision and the output map on
-arbitrary resource data. The [routed export query][r-route] identifies the input oracle that the
+arbitrary bundle data. The [routed export query][r-route] identifies the input oracle that the
 cost theorem uses. The delegated exact-decision and output-map obligations therefore have
 counterparts here, with the node names of the inputs supplied by the parent.
 
@@ -223,19 +223,19 @@ arbitrary-prover security from access and cost certificates alone.
 
 Rows 7 and 11 keep the count of input oracles plus one oracle message. They do not assert literal equality
 with the old `Access.extend` query-index layout `Unit ⊕ Unit`. The interaction layer uses family
-indices and sigma-indexed interface queries, and heterogeneous resources keep their data as a pair.
+indices and sigma-indexed interface queries, and heterogeneous bundles keep their data as a pair.
 The [one-oracle uniqueness test][a-single] excludes an extra sent oracle. Row 8 keeps
 future selection that does not depend on the oracle message, but `AccessDecoration.restrict_build` was an identity about
 stored per-node access decorations. There is no such decoration to restrict or rebuild now.
-`pathResources` computes resources from a completed path, and composition routes them explicitly.
+`pathBundle` computes the bundle of a completed path, and composition routes it explicitly.
 
 Rows 17–18 quantify over every message type, interface and initial polynomial at the exact
 universe instantiations of the old tests. Row 17 uses `OracleInterface.{1, 0}` on
 `Messages : Type 1` and initial and result `PFunctor.{0, 1}`. Row 18 uses
 `OracleInterface.{0, 1}` on `Messages : Type` and initial and result `PFunctor.{1, 0}`.
-[Resources.sum][resource-sum] extends an arbitrary prior query handler with the given interface and
+[OracleBundle.sum][bundle-sum] extends an arbitrary prior query handler with the given interface and
 its message realization. Neither test restricts the prior polynomial, replaces a family with a
-constant, or uses a universe lift. These tests cover resource extension; DecorationExample 2
+constant, or uses a universe lift. These tests cover bundle extension; DecorationExample 2
 separately checks interfaces inside protocol oracle nodes.
 
 ## DecorationExample: 13 assertions
@@ -243,7 +243,7 @@ separately checks interfaces inside protocol oracle nodes.
 | Old-layer row | Contract | Status and where it is ported |
 |---|---|---|
 | [1][fd1] | Role decorations at arbitrary tree universe | removed: no authored role decoration. |
-| [2][fd2] | Raw oracle/query universes | ported: [arbitrary-tree decoration][d-decoration] at independent message and query universes; [unequal-universe node and path resources][d-node]. |
+| [2][fd2] | Raw oracle/query universes | ported: [arbitrary-tree decoration][d-decoration] at independent message and query universes; [unequal-universe node and path bundles][d-node]. |
 | [3][fd3] | Protocol bundle at arbitrary universe | ported: [protocol canary][d-protocol]. |
 | [4][fd4] | Branching root chosen by the receiver | excluded by P2: P2 excludes subtree selection by the receiver; [sender root][d-root] makes the choice prover-authored. |
 | [5][fd5] | False future actor | ported: [position][d-false-pos], [actor][d-false-actor]. |
@@ -279,7 +279,7 @@ tree. [UniverseOracleDecoration][d-decoration] takes any
 example instantiates it at `.{0, 1}` on an arbitrary tree. `UniverseProtocol.{uProtocol, uQuery}`
 and `universeNode` add a constructed node. The small-node canary attaches an arbitrary
 `OracleInterface.{0, 1} Nat` to a real oracle position and checks the query type of its path
-family. It does not merely install the interface as an input resource. The parent's
+family. It does not merely install the interface in the input bundle. The parent's
 [lifted_queries_by_move_contract][d-node-run] also runs such a node, queries its oracle message and
 checks the partial transcript at its decision entry. The optional leaf parameter makes the message universe
 visible in the alias's domain, as in the parent `OracleProtocol`; it is an actual tree return type.
@@ -316,14 +316,14 @@ above identify their exact assertion targets. P1 excludes intermediate verifier 
 produced prover moves.
 
 `OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig`, `OracleProtocol`, `oracleMessageFamily` and
-`pathResources` keep independent node-query universes. General `Resources.{u, uI, dI}` also
-separates response, resource-query and data universes without changing the shared
+`pathBundle` keep independent node-query universes. General `OracleBundle.{u, uI, dI}` also
+separates response, bundle-query and data universes without changing the shared
 `OracleInterface`; families are a specialization. The earlier node-universe and input-data
 coupling entries are therefore closed by the parent, as recorded in
 [implementation note 18][universes].
 
 The **open** item is the large-query result interface of the full-log runner.
-[OracleVerifier.runWithLog][logged-runner] returns resource-query entries through a small
+[OracleVerifier.runWithLog][logged-runner] returns bundle-query entries through a small
 computation monad. Returning large query indices in that complete heterogeneous log needs a parent
 logging interface with a sufficiently large result universe. `runWithAmbientLog` and
 `runWithAmbientQueriesByMove` keep independent input-data, input-query and node-query universes by
@@ -334,7 +334,7 @@ continue to follow the parent monad's value universe, as documented in note 18.
 ## Definition-site transparency
 
 The only definition-site attribute this branch keeps is `@[instance_reducible]` on
-`Interaction.Core.AccessExampleTests.firstInterface`. It declares a value of the class
+`Interaction.Core.AccessTypingTests.firstInterface`. It declares a value of the class
 `OracleInterface`, and ordinary semireducibility triggers Lean's class-definition transparency
 warning. The attribute gives this declaration the expected instance transparency, with no command
 modifying another declaration. It replaces the former `@[reducible]` with a narrower choice. All 18
@@ -431,75 +431,75 @@ without them. No added local or global `attribute [...]` transparency command an
 [fm7]: ../../../ArkLibTest/Interaction/Oracle/TypeTree/MixedExample.lean#L64
 [fm8]: ../../../ArkLibTest/Interaction/Oracle/TypeTree/MixedExample.lean#L68
 [fm9]: ../../../ArkLibTest/Interaction/Oracle/TypeTree/MixedExample.lean#L72
-[a-before-f]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L54
-[a-before-t]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L59
-[a-unsent]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L65
-[a-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L74
-[a-bool]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L78
-[a-fin]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L82
-[a-slots]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L87
-[a-future]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L97
-[a-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L105
-[a-shape]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L110
-[a-family]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L113
-[a-terminal]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L134
-[a-nat]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L138
-[a-route]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L149
-[a-hidden]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L154
-[a-single]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L164
-[a-missing-second]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L171
-[a-second]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L187
-[a-large-data]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L191
-[a-large-query]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/AccessExample.lean#L202
-[d-protocol]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L23
-[d-decoration]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L45
-[d-root]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L117
-[d-false-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L126
-[d-true-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L130
-[d-false-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L134
-[d-true-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L138
-[d-false-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L141
-[d-true-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L145
-[d-query]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L91
-[d-false-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L98
-[d-true-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L105
-[d-oracle-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L112
-[m-position]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L23
-[m-tree]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L27
-[m-branch]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L31
-[m-execution]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L35
-[m-runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L87
-[m-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L57
-[m-shared]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L63
-[m-false]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L68
-[m-true]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L72
-[m-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L77
-[m-view]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/MixedExample.lean#L81
-[x-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L37
-[x-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L40
-[x-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L54
-[x-no-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L61
-[x-empty-root]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L69
-[x-empty-moves]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L74
-[x-length]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L88
-[x-complete]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L90
-[x-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L93
-[p-accept]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L90
-[p-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L93
-[p-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L102
-[q-route]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L136
-[q-future]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L173
-[q-log]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L240
-[q-log-summary]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L232
-[q-repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L143
-[q-fresh]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L149
-[q-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L153
-[q-untyped]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L167
-[q-run]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L208
-[q-split]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L217
-[q-prefix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L221
-[q-suffix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L225
-[q-concrete-log]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L247
+[a-before-f]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L54
+[a-before-t]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L59
+[a-unsent]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L65
+[a-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L74
+[a-bool]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L78
+[a-fin]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L82
+[a-slots]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L87
+[a-future]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L97
+[a-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L105
+[a-shape]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L110
+[a-family]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L113
+[a-terminal]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L134
+[a-nat]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L138
+[a-route]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L149
+[a-hidden]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L154
+[a-single]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L164
+[a-missing-second]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L171
+[a-second]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L187
+[a-large-data]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L191
+[a-large-query]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L202
+[d-protocol]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L23
+[d-decoration]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L45
+[d-root]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L117
+[d-false-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L126
+[d-true-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L130
+[d-false-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L134
+[d-true-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L138
+[d-false-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L141
+[d-true-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L145
+[d-query]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L91
+[d-false-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L98
+[d-true-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L105
+[d-oracle-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L112
+[m-position]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L23
+[m-tree]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L27
+[m-branch]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L31
+[m-execution]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L35
+[m-runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L87
+[m-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L57
+[m-shared]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L63
+[m-false]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L68
+[m-true]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L72
+[m-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L77
+[m-view]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L81
+[x-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L37
+[x-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L40
+[x-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L54
+[x-no-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L61
+[x-empty-root]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L69
+[x-empty-moves]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L74
+[x-length]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L88
+[x-complete]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L90
+[x-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L93
+[p-accept]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L90
+[p-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L93
+[p-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L102
+[q-route]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L136
+[q-future]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L173
+[q-log]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L240
+[q-log-summary]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L232
+[q-repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L143
+[q-fresh]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L149
+[q-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L153
+[q-untyped]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L167
+[q-run]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L208
+[q-split]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L217
+[q-prefix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L221
+[q-suffix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L225
+[q-concrete-log]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L247
 [c-route]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L48
 [c-program]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L69
 [c-routed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L78
@@ -515,19 +515,19 @@ without them. No added local or global `attribute [...]` transparency command an
 [c-lower]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L116
 [c-input-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L166
 [c-count]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L297
-[r-export]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L45
-[r-decide]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L60
-[r-access]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L84
-[r-route]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L106
-[r-raw-access]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L121
-[r-guess-answers]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L144
-[r-informed-answers]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L154
-[r-guess-success]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L165
-[r-informed-success]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L185
-[r-input]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L36
-[r-map]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L51
-[r-pre]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L54
-[r-output]: ../../../ArkLibTest/Interaction/Core/Oracle/RuntimeQueryBounds.lean#L70
+[r-export]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L45
+[r-decide]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L60
+[r-access]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L84
+[r-route]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L106
+[r-raw-access]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L121
+[r-guess-answers]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L144
+[r-informed-answers]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L154
+[r-guess-success]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L165
+[r-informed-success]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L185
+[r-input]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L36
+[r-map]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L51
+[r-pre]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L54
+[r-output]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L70
 [p-order]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L542
 [p-close]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L223
 [p-parent-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L219
@@ -539,19 +539,19 @@ without them. No added local or global `attribute [...]` transparency command an
 [run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L122
 [oracle-position]: ../../../ArkLib/Interaction/Core/Signature.lean#L45
 [oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L57
-[resource-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L132
+[bundle-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L132
 [logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L336
 
 [universes]:
     ../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe
 
-[x-query]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L108
+[x-query]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L108
 
-[x-prefix]: ../../../ArkLibTest/Interaction/Core/Oracle/Prefix.lean#L100
+[x-prefix]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L100
 
-[d-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L149
+[d-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L149
 
-[p-decision]: ../../../ArkLibTest/Interaction/Core/Oracle/PhasedRun.lean#L133
+[p-decision]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L133
 
 [parent-port-table]: port-logged-execution.md
 [parent-phase-audits]: port-logged-execution.md#phasedrunlean
@@ -572,8 +572,8 @@ without them. No added local or global `attribute [...]` transparency command an
 [q-step-source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1126
 [d-node-run]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1201
 
-[d-node]: ../../../ArkLibTest/Interaction/Core/Oracle/TypeTree/DecorationExample.lean#L33
+[d-node]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L33
 
-[q-available]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryBounds.lean#L286
+[q-available]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L286
 
 [q-available-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L83

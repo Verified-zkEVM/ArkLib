@@ -20,7 +20,7 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.Two
 
 universe uI uD wI wJ
 
-namespace Interaction.Core.QueryBoundsTests
+namespace Interaction.Core.RoutedAccessTests
 
 /-- Ambient queries carry tags. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
@@ -49,21 +49,21 @@ abbrev combinedPath : Path combined := ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 def exported : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- The prefix decision resources. -/
-abbrev prefixResources := pathResources none' single singlePath
+/-- The prefix decision bundle. -/
+abbrev prefixBundle := pathBundle none' single singlePath
 
-/-- The suffix decision resources. -/
-abbrev suffixResources := pathResources exported single singlePath
+/-- The suffix decision bundle. -/
+abbrev suffixBundle := pathBundle exported single singlePath
 
-/-- The resources of a decision on the composed path: the inputs and both sends. -/
-abbrev rawResources := pathResources none' combined combinedPath
+/-- The bundle of a decision on the composed path: the inputs and both sends. -/
+abbrev rawBundle := pathBundle none' combined combinedPath
 
 /-- Export twice the prefix message, reading the same prefix oracle twice. -/
-def view : OracleMap prefixResources exported where
+def view : OracleMap prefixBundle exported where
   f x _ := (show Nat from x.2 (.inl ⟨⟩)) + (show Nat from x.2 (.inl ⟨⟩))
   impl _ := do
-    let left : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
-    let right : Nat ← liftM (prefixResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let left : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let right : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (left + right)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -78,13 +78,13 @@ def prefixVerifier :
     exact view
 
 /-- The suffix decision program: read the export, then the suffix's own oracle, and add. -/
-def suffixProgram : OracleComp (ambient + suffixResources.spec) Nat := do
-  let old : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
-  let fresh : Nat ← liftM ((ambient + suffixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+def suffixProgram : OracleComp (ambient + suffixBundle.spec) Nat := do
+  let old : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
+  let fresh : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
   pure (old + fresh)
 
 /-- The empty output map. -/
-def noOutput (In : Resources.{0, uI, uD}) : OracleMap In none' where
+def noOutput (In : OracleBundle.{0, uI, uD}) : OracleMap In none' where
   f _ i := i.elim
   impl q := q.1.elim
   law _ q := q.1.elim
@@ -115,11 +115,11 @@ def prover (a b : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
       let second : Nat ← liftM (ambient.query b)
       pure ⟨second, pure (first + second)⟩))
 
-/-- The query to the prefix oracle in the composed resources. -/
-abbrev prefixSlot : rawResources.spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
+/-- The query to the prefix oracle in the composed bundle. -/
+abbrev prefixSlot : rawBundle.spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
 
-/-- The query to the suffix oracle in the composed resources. -/
-abbrev suffixSlot : rawResources.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
+/-- The query to the suffix oracle in the composed bundle. -/
+abbrev suffixSlot : rawBundle.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
 
 /-- The prefix and suffix queries name distinct sent oracles. -/
 theorem prefixSlot_ne_suffixSlot : prefixSlot ≠ suffixSlot := by
@@ -131,24 +131,24 @@ abbrev route (v : View combined combinedPath) :=
   (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).withAmbient ambient
 
 -- QueryBounds 4, restated: availability is typing. The suffix decision routed by `suffixRoute`
--- is a program over the ambient oracle and the resources of the completed composed path.
+-- is a program over the ambient oracle and the bundle of the completed composed path.
 /-- The routed suffix decision. -/
 def routedSuffix (v : View combined combinedPath) :
-    OracleComp (ambient + rawResources.spec) Nat :=
+    OracleComp (ambient + rawBundle.spec) Nat :=
   simulateQ (route v) suffixProgram
 
 -- QueryBounds 7, restated: node names are removed. Both routed reads of the export query the same
--- prefix oracle of the composed resources. The suffix's own read queries the suffix oracle, which
--- is distinct.
+-- prefix oracle of the composed bundle. The suffix's own read queries the suffix oracle, which is
+-- distinct.
 example (v : View combined combinedPath) :
     (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inl ⟨(), ()⟩) = (do
-      let left : Nat ← liftM (rawResources.spec.query prefixSlot)
-      let right : Nat ← liftM (rawResources.spec.query prefixSlot)
+      let left : Nat ← liftM (rawBundle.spec.query prefixSlot)
+      let right : Nat ← liftM (rawBundle.spec.query prefixSlot)
       pure (left + right)) := rfl
 
 example (v : View combined combinedPath) :
     (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inr ⟨.inl ⟨⟩, ()⟩) =
-      (liftM (rawResources.spec.query suffixSlot) : OracleComp rawResources.spec Nat) := rfl
+      (liftM (rawBundle.spec.query suffixSlot) : OracleComp rawBundle.spec Nat) := rfl
 
 example : prefixSlot ≠ suffixSlot := prefixSlot_ne_suffixSlot
 
@@ -157,8 +157,8 @@ abbrev prefixRoute :=
   (OracleVerifier.prefixRoute (inputs := none') (s₁ := single) (s₂ := fun _ => single)
     combinedPath).withAmbient ambient
 
--- QueryBounds 6, restated: at the join, the prefix decision's resources are the inputs and the
--- prefix oracles, which have no index for the suffix send. Routed into the composed run, every
+-- QueryBounds 6, restated: at the join, the prefix decision's bundle consists of the inputs and
+-- the prefix oracles, which have no index for the suffix send. Routed into the composed run, every
 -- prefix decision program, whatever its cost, queries only ambient oracles and the prefix
 -- oracle, never the suffix oracle. The budget clause of the old-layer row is moot.
 example :
@@ -167,18 +167,18 @@ example :
 
 example : True := by
   fail_if_success
-    have _ : prefixResources.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
+    have _ : prefixBundle.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
   trivial
 
 /-- Routing any prefix decision excludes the suffix oracle query. -/
-theorem future_rejected {α : Type} (program : OracleComp (ambient + prefixResources.spec) α) :
+theorem future_rejected {α : Type} (program : OracleComp (ambient + prefixBundle.spec) α) :
     AllQueriesSatisfy (simulateQ prefixRoute program) (· ≠ .inr suffixSlot) := by
   refine (allQueriesSatisfy_of_forall (fun _ => True.intro) program).simulateQ fun q _ => ?_
   rcases q with q | (⟨i, q⟩ | ⟨⟨⟩ | i, q⟩)
   · exact (allQueriesSatisfy_query_iff _ _).mpr Sum.inl_ne_inr
   · exact i.elim
   · cases q
-    refine (allQueriesSatisfy_query_iff (spec := ambient + rawResources.spec)
+    refine (allQueriesSatisfy_query_iff (spec := ambient + rawBundle.spec)
       (.inr prefixSlot) _).mpr ?_
     intro h
     exact prefixSlot_ne_suffixSlot (Sum.inr.inj h)
@@ -186,7 +186,7 @@ theorem future_rejected {α : Type} (program : OracleComp (ambient + prefixResou
 
 -- QueryBounds 15, restated as row 6: the actual join is the prefix component of the only
 -- composed path, and its routed queries never reach the suffix oracle.
-example {α : Type} (program : OracleComp (ambient + prefixResources.spec) α) :
+example {α : Type} (program : OracleComp (ambient + prefixBundle.spec) α) :
     AllQueriesSatisfy (simulateQ prefixRoute program) (· ≠ .inr suffixSlot) :=
   future_rejected program
 
@@ -233,7 +233,7 @@ example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath
 -- independent. See interaction rebuild implementation note 18.
 /-- Private output, verdict and every raw decision query of the composed logged run. -/
 def loggedSummary.{qJ} (a b : Nat) :
-    Nat × Option Nat × QueryLog (ambient + rawResources.spec) :=
+    Nat × Option Nat × QueryLog (ambient + rawBundle.spec) :=
   let result := simulateQ tagHandler
     (composed.{0, 0, 0, qJ}.runWithLog () noData (prover a b))
   (result.1.2.1, result.1.2.2.map Prod.fst, result.2.2)
@@ -259,16 +259,16 @@ def composedQueriesByMove (a b : Nat) :
     OracleVerifier.QueriesByMove composed.{0, 0, 0, 0} (fun _ => Nat) :=
   simulateQ tagHandler (composed.runWithQueriesByMove () noData (prover a b))
 
-/-- A raw query has its node name among the available resources of the decision entry. -/
-def rawAvailable (a b : Nat) (q : rawResources.spec.Domain) : Prop :=
+/-- A raw query has its node name among the nodes of the available bundle at the decision entry. -/
+def rawAvailable (a b : Nat) (q : rawBundle.spec.Domain) : Prop :=
   ∃ i : ((composedQueriesByMove a b).decision.availableContext none').Index,
     PartialTranscript.queryNode none' (composedQueriesByMove a b).decision.before i =
       PartialTranscript.queryNode none'
         (PartialTranscript.ofTranscript (l := oracleSig) combined ⟨a, b, ⟨⟩⟩) q
 
-/-- Every raw query names a resource available at the partial transcript of this execution's
-decision entry. -/
-theorem raw_available (a b : Nat) (q : rawResources.spec.Domain) : rawAvailable a b q := by
+/-- Every raw query names an oracle of the bundle available at the partial transcript of this
+execution's decision entry. -/
+theorem raw_available (a b : Nat) (q : rawBundle.spec.Domain) : rawAvailable a b q := by
   have decision_before_eq : (composedQueriesByMove a b).decision.before =
       PartialTranscript.ofTranscript (l := oracleSig) combined ⟨a, b, ⟨⟩⟩ := by kernel_rfl
   unfold rawAvailable
@@ -278,13 +278,13 @@ theorem raw_available (a b : Nat) (q : rawResources.spec.Domain) : rawAvailable 
   rw [decision_before_eq]
   exact ⟨q, rfl⟩
 
-/-- Ambient queries are unrestricted; resource queries must name a resource available at the
-decision entry. -/
-def decisionAllowed (a b : Nat) : (ambient + rawResources.spec).Domain → Prop
+/-- Ambient queries are unrestricted; bundle queries must name an oracle of the bundle available at
+the decision entry. -/
+def decisionAllowed (a b : Nat) : (ambient + rawBundle.spec).Domain → Prop
   | .inl _ => True
   | .inr q => rawAvailable a b q
 
-/-- The same routed program used by the cost bound only queries resources available at the
+/-- The same routed program used by the cost bound only queries the bundle available at the
 decision entry. -/
 theorem routed_available (a b : Nat) (v : View combined combinedPath) :
     AllQueriesSatisfy (routedSuffix v) (decisionAllowed a b) := by
@@ -294,4 +294,4 @@ theorem routed_available (a b : Nat) (v : View combined combinedPath) :
   | inl _ => trivial
   | inr q => exact raw_available a b q
 
-end Interaction.Core.QueryBoundsTests
+end Interaction.Core.RoutedAccessTests

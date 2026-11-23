@@ -8,13 +8,13 @@ import ArkLib.Interaction.Core.OracleVerifier
 import PolyFun.PFunctor.Free.Cursor
 
 /-! Oracle access as typing. A decision on a completed path queries the input family and the
-oracle family of that path, `pathResources inputs s p`. A public bit selects message types. An
+oracle family of that path, `pathBundle inputs s p`. A public bit selects message types. An
 oracle exists only on paths that cross its send. Input oracles and oracle messages with the same
 signature stay distinct, and a non-faithful interface hides representation data. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp OracleSpec
 
-namespace Interaction.Core.AccessExampleTests
+namespace Interaction.Core.AccessTypingTests
 
 /-- One scalar input oracle. -/
 def inputs : OracleFamily Unit (fun _ => Nat) :=
@@ -48,7 +48,7 @@ def rightPath : Transcript oracleSig accessTree := ⟨false, true, (0 : Fin 2), 
 def finPath : Transcript oracleSig accessTree := ⟨true, (2 : Fin 3), false, ⟨⟩⟩
 
 -- AccessExample 1, restated: a decision stopped before the send is a decision on `before`, the
--- prefix of `accessTree`. Its resources are the inputs and the oracles of `before`, which has
+-- prefix of `accessTree`. Its bundle holds the inputs and the oracles of `before`, which has
 -- none on the `false` path.
 /-- Before the `false`-branch send there are no sent oracles. -/
 example : OracleMessageIndex before ⟨false, ⟨⟩⟩ = PEmpty := rfl
@@ -61,17 +61,17 @@ example : OracleMessageIndex before ⟨true, ⟨⟩⟩ = PEmpty := rfl
 example : IsEmpty (OracleMessageIndex before ⟨true, ⟨⟩⟩) := inferInstanceAs (IsEmpty PEmpty)
 
 -- AccessExample 3, restated: a query naming the unsent message does not typecheck in the
--- resources of a decision stopped before the send.
+-- bundle of a decision stopped before the send.
 example : True := by
   fail_if_success
-    have _ : (pathResources inputs before ⟨false, ⟨⟩⟩).spec.Domain :=
+    have _ : (pathBundle inputs before ⟨false, ⟨⟩⟩).spec.Domain :=
       (.inr ⟨.inl ⟨⟩, ()⟩)
   trivial
 
 -- AccessExample 4, restated: the same query constructor typechecks for a decision on a completed
 -- path through the send.
 /-- A decision on the completed `false` path can query the sent message. -/
-example : (pathResources inputs accessTree
+example : (pathBundle inputs accessTree
     leftPath.path).spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
 
 -- AccessExample 5, restated: the response type of the `false`-branch message.
@@ -82,7 +82,7 @@ example : (oracleMessageSpec accessTree leftPath.path).Range
 example : (oracleMessageSpec accessTree finPath.path).Range
     ⟨.inl ⟨⟩, ()⟩ = Fin 3 := rfl
 
--- AccessExample 7, restated: after the send, the decision's resource index is the input oracle
+-- AccessExample 7, restated: after the send, the decision's bundle index is the input oracle
 -- and the one sent oracle.
 example : (Unit ⊕ OracleMessageIndex accessTree leftPath.path) =
     (Unit ⊕ (PUnit ⊕ PEmpty)) := rfl
@@ -126,10 +126,10 @@ def terminalTree : OracleProtocol :=
 /-- The only path of `terminalTree`. -/
 abbrev terminalPath : Path terminalTree := ⟨⟨⟩, ⟨⟩⟩
 
-/-- The decision resources on `terminalTree`. -/
-abbrev terminalResources := pathResources inputs terminalTree terminalPath
+/-- The decision bundle on `terminalTree`. -/
+abbrev terminalBundle := pathBundle inputs terminalTree terminalPath
 
--- AccessExample 11, restated: on `terminalTree`, the decision's resource index includes the
+-- AccessExample 11, restated: on `terminalTree`, the decision's bundle index includes the
 -- terminal send.
 example : (Unit ⊕ OracleMessageIndex terminalTree terminalPath) = (Unit ⊕ (PUnit ⊕ PEmpty)) := rfl
 
@@ -138,15 +138,15 @@ example : (Unit ⊕ OracleMessageIndex terminalTree terminalPath) = (Unit ⊕ (P
 example : (oracleMessageSpec terminalTree terminalPath).Range ⟨.inl ⟨⟩, ()⟩ = Nat := rfl
 
 /-- Read the input oracle and the sent oracle. Both have the same signature `Unit → Nat`. -/
-def derivedQuery : OracleComp terminalResources.spec Nat := do
-  let old : Nat ← liftM (terminalResources.spec.query (.inl ⟨(), ()⟩))
-  let fresh : Nat ← liftM (terminalResources.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+def derivedQuery : OracleComp terminalBundle.spec Nat := do
+  let old : Nat ← liftM (terminalBundle.spec.query (.inl ⟨(), ()⟩))
+  let fresh : Nat ← liftM (terminalBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
   pure (old + fresh)
 
 -- AccessExample 13, restated: input behaviour is the input data 7, and the message is the sent
 -- oracle message. The two oracles with the same signature are answered from their own data:
 -- `7 + 11 = 18`, for every hidden coordinate.
-example (hidden : Nat) : simulateQ (terminalResources.answer
+example (hidden : Nat) : simulateQ (terminalBundle.answer
     (seven, oracleMessages terminalTree ⟨(11, hidden), ⟨⟩⟩)) derivedQuery = (18 : Nat) := rfl
 
 -- AccessExample 14, restated: the handler of the run's oracle messages does not depend on the
@@ -187,26 +187,26 @@ def secondQuery : OracleComp (oracleMessageSpec twoSends ⟨⟨⟩, ⟨⟨⟩, �
 example (first second : Nat × Nat) :
     simulateQ (oracleMessageImpl twoSends ⟨first, second, ⟨⟩⟩) secondQuery = second.1 := rfl
 
-/-- Message and response types may lie above the query type when extending resources. -/
+/-- Message and response types may lie above the query type when extending a bundle. -/
 example (Messages : Type 1) (interface : OracleInterface.{1, 0} Messages)
     (initial : PFunctor.{0, 1}) : PFunctor.{0, 1} :=
-  let prior : Resources.{1, 0, 1} :=
+  let prior : OracleBundle.{1, 0, 1} :=
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
-  let latest : Resources.{1, 0, 1} :=
+  let latest : OracleBundle.{1, 0, 1} :=
     ⟨interface.Query, interface.toOC.spec, Messages,
       fun message query => (interface.toOC.impl query).run message⟩
   (prior.sum latest).spec.toPFunctor
 
-/-- Query types may lie above the message and response types when extending resources. -/
+/-- Query types may lie above the message and response types when extending a bundle. -/
 example (Messages : Type) (interface : OracleInterface.{0, 1} Messages)
     (initial : PFunctor.{1, 0}) : PFunctor.{1, 0} :=
-  let prior : Resources.{0, 1, 1} :=
+  let prior : OracleBundle.{0, 1, 1} :=
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
-  let latest : Resources.{0, 1, 0} :=
+  let latest : OracleBundle.{0, 1, 0} :=
     ⟨interface.Query, interface.toOC.spec, Messages,
       fun message query => (interface.toOC.impl query).run message⟩
   (prior.sum latest).spec.toPFunctor
 
-end Interaction.Core.AccessExampleTests
+end Interaction.Core.AccessTypingTests

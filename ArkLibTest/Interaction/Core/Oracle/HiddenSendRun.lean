@@ -15,7 +15,7 @@ output and the ambient history. -/
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
 
-namespace Interaction.Core.PhasedRunTests
+namespace Interaction.Core.HiddenSendRunTests
 
 /-- Ambient events carry tags and need no meaningful response. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
@@ -53,13 +53,13 @@ def verifier.{uI, uJ, wI, wJ} (accept : Bool) :
     exact OptionT.mk do
       for t in [2, 3] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (pathResources noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
+          ambient + (pathBundle noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       let sent : Nat ← liftM (OracleSpec.query (spec :=
-        ambient + (pathResources noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
+        ambient + (pathBundle noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       for t in [6, 7] do
         let _ ← liftM (OracleSpec.query (spec :=
-          ambient + (pathResources noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
+          ambient + (pathBundle noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       pure (if accept then some sent else none)
   outputMap _ _ _ :=
     { f := fun _ i => i.elim
@@ -102,9 +102,9 @@ example (payload : Nat) (bit : Bool) :
 example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} false payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, none, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
-end Interaction.Core.PhasedRunTests
+end Interaction.Core.HiddenSendRunTests
 
-namespace Interaction.Core.PhasedRunClosingTests
+namespace Interaction.Core.HiddenSendRunClosingTests
 
 open Interaction.Core.LoggedExecutionTests OracleSpec
 
@@ -120,7 +120,7 @@ def decisionObserved (mode old message hidden : Nat) :
         ((pairProver [9] message hidden).simulate (fun q => liftM (full.query (.inl q))))
         (sampler oracleSig pairSend (fun c => liftM (full.query (.inr c))))))
     let p := Transcript.path tr
-    let data : (pathResources inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
+    let data : (pathBundle inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
     let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
       (toView pairSend tr) data
     pure (tr, out, verdict.map (Option.map fun t =>
@@ -145,4 +145,4 @@ theorem decision_outcomes (old message hidden : Nat) :
         [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) := by
   exact ⟨rfl, rfl, rfl⟩
 
-end Interaction.Core.PhasedRunClosingTests
+end Interaction.Core.HiddenSendRunClosingTests

@@ -12,15 +12,15 @@ import VCVio.OracleComp.EvalDist.AnswerMeasure
 /-! Access certificates for the hidden-bit composition of
 `ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture`. The prefix exports its input oracle and its
 decision makes one dummy request. The suffix decision reads the export as a pad and reveals the
-hidden bit. Oracle access is typing. The export is a map over the prefix resources, which on the
-only prefix path are the inputs alone. The suffix decision routed by `suffixRoute` queries only
-the reveal request and the input oracle of the composed resources. -/
+hidden bit. Oracle access is typing. The export is a map over the prefix bundle, which on the
+only prefix path consists of the inputs alone. The suffix decision routed by `suffixRoute` queries
+only the reveal request and the input oracle of the composed bundle. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 open Interaction.Core.HiddenBitFixture
 
-namespace Interaction.Core.RuntimeQueryBoundsTests
+namespace Interaction.Core.HiddenBitAccessTests
 
 /-- The only path of the prefix. -/
 abbrev firstPath : Path bitFirst := ⟨⟨⟩, ⟨⟩⟩
@@ -32,19 +32,19 @@ abbrev combinedPath (guess : Bool) : Path bitCombined := ⟨⟨⟩, guess, ⟨�
 abbrev exportMap (v : View bitFirst firstPath) := bitPrefix.outputMap () firstPath v
 
 -- RuntimeQueryBounds 2, restated: node names are removed. The export's only query is the input
--- oracle `.inl ()` of the prefix resources.
+-- oracle `.inl ()` of the prefix bundle.
 example (v : View bitFirst firstPath) :
-    (exportMap v).impl ⟨(), ()⟩ = liftM (firstResources.spec.query (.inl ⟨(), ()⟩)) := rfl
+    (exportMap v).impl ⟨(), ()⟩ = liftM (firstBundle.spec.query (.inl ⟨(), ()⟩)) := rfl
 
--- RuntimeQueryBounds 1, access part, restated: the export is typed over the prefix resources.
--- On the only prefix path these resources have no oracle message, and the export reads the inputs
+-- RuntimeQueryBounds 1, access part, restated: the export is typed over the prefix bundle.
+-- On the only prefix path this bundle has no oracle message, and the export reads the inputs
 -- alone. Its query is the input oracle. The cost part is in `QueryCost.lean`.
 example : IsEmpty (OracleMessageIndex bitFirst firstPath) := inferInstanceAs (IsEmpty PEmpty)
 
 /-- The prefix export queries only its input oracle. -/
 theorem export_access (v : View bitFirst firstPath) :
     AllQueriesSatisfy ((exportMap v).impl ⟨(), ()⟩) (fun q => q = .inl ⟨(), ()⟩) :=
-  (allQueriesSatisfy_query_iff (spec := firstResources.spec) (.inl ⟨(), ()⟩) _).mpr rfl
+  (allQueriesSatisfy_query_iff (spec := firstBundle.spec) (.inl ⟨(), ()⟩) _).mpr rfl
 
 -- RuntimeQueryBounds 3, restated: the prefix output map is the embedding of the input oracle, and
 -- the prefix decision makes the dummy request and accepts.
@@ -52,34 +52,34 @@ example (v : View bitFirst firstPath) :
     exportMap v = OracleMap.fst _ _ := rfl
 
 example (v : View bitFirst firstPath) : (bitPrefix.decide () firstPath v).run = (do
-    let _ : Bool ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
+    let _ : Bool ← liftM ((bitAmbient + firstBundle.spec).query (.inl false))
     pure (some ())) := rfl
 
 /-- The suffix decision reads the pad from the export, reveals the hidden bit and claims
 `hidden ^^ pad`. -/
 theorem suffix_decide (guess : Bool) (v : View bitSecond ⟨guess, ⟨⟩⟩) :
     (bitSuffix.decide () ⟨guess, ⟨⟩⟩ v).run = (do
-      let pad : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query
+      let pad : Bool ← liftM ((bitAmbient + (secondBundle guess).spec).query
         (.inr (.inl ⟨(), ()⟩)))
-      let hidden : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query (.inl true))
+      let hidden : Bool ← liftM ((bitAmbient + (secondBundle guess).spec).query (.inl true))
       pure (some (hidden ^^ pad))) := rfl
 
 -- RuntimeQueryBounds 4, restated: the suffix decision unfolds to the pad and reveal queries
 -- (`suffix_decide`), and the suffix output data is `guess ^^ pad`, with the pad read from the
 -- export.
 example (guess : Bool) (v : View bitSecond ⟨guess, ⟨⟩⟩)
-    (x : (secondResources guess).Data) :
+    (x : (secondBundle guess).Data) :
     (bitSuffix.outputMap () ⟨guess, ⟨⟩⟩ v).f x () = (guess ^^ (show Bool from x.1 ())) :=
   rfl
 
 /-- The suffix may request only the reveal, and may query only the export oracle. -/
 abbrev suffixAllowed (p : Path bitSecond) :
-    (bitAmbient + (pathResources bits bitSecond p).spec).Domain → Prop
+    (bitAmbient + (pathBundle bits bitSecond p).spec).Domain → Prop
   | .inl request => request = true
   | .inr q => q = .inl ⟨(), ()⟩
 
--- RuntimeQueryBounds 5, restated: the ambient permission is kept. The suffix's resource queries
--- go to the export oracle, and the suffix resources have no other oracle on any path.
+-- RuntimeQueryBounds 5, restated: the ambient permission is kept. The suffix's bundle queries
+-- go to the export oracle, and the suffix bundle has no other oracle on any path.
 /-- The suffix decision queries only its export oracle and the reveal request. -/
 theorem suffix_access (p : Path bitSecond) (v : View bitSecond p) :
     AllQueriesSatisfy (bitSuffix.decide () p v).run (suffixAllowed p) := by
@@ -95,22 +95,22 @@ example (guess : Bool) : IsEmpty (OracleMessageIndex bitSecond ⟨guess, ⟨⟩�
 abbrev routeSuffix (p : Path bitCombined) (v : View bitCombined p) :=
   (OracleVerifier.suffixRoute bitPrefix () p v).withAmbient bitAmbient
 
-/-- The suffix decision with its resource queries routed into the composed resources. -/
+/-- The suffix decision with its bundle queries routed into the composed bundle. -/
 def routedSuffix (p : Path bitCombined) (v : View bitCombined p) :
-    OracleComp (bitAmbient + (pathResources bits bitCombined p).spec) (Option Bool) :=
+    OracleComp (bitAmbient + (pathBundle bits bitCombined p).spec) (Option Bool) :=
   simulateQ (routeSuffix p v)
     (bitSuffix.decide () (Path.split bitFirst (fun _ => bitSecond) p).2
       (View.split bitFirst (fun _ => bitSecond) p v).2).run
 
-/-- The routed export query is the input-oracle query of the composed resources. -/
+/-- The routed export query is the input-oracle query of the composed bundle. -/
 theorem routeSuffix_export (guess : Bool) (v : View bitCombined (combinedPath guess)) :
     routeSuffix (combinedPath guess) v (.inr (.inl ⟨(), ()⟩)) =
-      liftM ((bitAmbient + (pathResources bits bitCombined
+      liftM ((bitAmbient + (pathBundle bits bitCombined
         (combinedPath guess)).spec).query (.inr (.inl ⟨(), ()⟩))) := rfl
 
 /-- The raw permissions: only the reveal request, and only the input oracle. -/
 abbrev rawAllowed (p : Path bitCombined) :
-    (bitAmbient + (pathResources bits bitCombined p).spec).Domain → Prop
+    (bitAmbient + (pathBundle bits bitCombined p).spec).Domain → Prop
   | .inl request => request = true
   | .inr q => q = .inl ⟨(), ()⟩
 
@@ -128,7 +128,7 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
     cases q
     exact (routeSuffix_export guess v).symm ▸
       (allQueriesSatisfy_query_iff (spec := bitAmbient +
-        (pathResources bits bitCombined (combinedPath guess)).spec)
+        (pathBundle bits bitCombined (combinedPath guess)).spec)
         (.inr (.inl ⟨(), ()⟩)) _).mpr rfl
   · exact i.elim
 
@@ -181,7 +181,7 @@ theorem guess_success (guess : Bool) (secret : Nat) :
   rfl
 
 /-- The query-informed prover's actual output-oracle answer matches the target with probability
-one; resource access alone does not imply the fixed-guess half bound. -/
+one; bundle access alone does not imply the fixed-guess half bound. -/
 theorem informed_success (secret : Nat) :
     Pr{let result ← bitRuntime.run (bitVerifier.run () falseData (informedProver secret))}[
       (answers result.output).map (fun pair => pair.1 = pair.2) = some True] = 1 := by
@@ -193,4 +193,4 @@ theorem informed_success (secret : Nat) :
   simp only [Option.map_some, eq_self, prEvent_true_eq_evalDist_apply_univ,
     OracleComp.evalDist_apply_univ_eq_one]
 
-end Interaction.Core.RuntimeQueryBoundsTests
+end Interaction.Core.HiddenBitAccessTests
