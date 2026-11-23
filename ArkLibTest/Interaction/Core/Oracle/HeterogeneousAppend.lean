@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Oracle.Routing
-import ArkLibTest.Interaction.Core.Oracle.CoreRunExample
+import ArkLibTest.Interaction.Core.Oracle.OutputClosing
 
 /-!
 # Heterogeneous composed oracle execution
@@ -25,7 +25,7 @@ open Interaction.Core.DependentRoutingTests (done)
 
 universe uX dX
 
-namespace Interaction.Core.CompositionExampleTests
+namespace Interaction.Core.HeterogeneousAppendTests
 
 /-- Tagged ambient events. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
@@ -34,23 +34,23 @@ abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 @[instance_reducible] def booleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
-/-- Export the scalar input plus 11, next to any message resources. -/
-def addEleven (messages : Resources.{0, uX, dX}) :
-    OracleMap (Resources.sum inputs messages) inputs where
+/-- Export the scalar input plus 11, next to any message bundle. -/
+def addEleven (messages : OracleBundle.{0, uX, dX}) :
+    OracleMap (OracleBundle.sum inputs messages) inputs where
   f x _ := (show Nat from x.1 ()) + 11
   impl _ := do
-    let old : Nat ← liftM ((Resources.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
+    let old : Nat ← liftM ((OracleBundle.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (old + 11)
   law _ _ := by
     simp only [simulateQ_bind]
     rfl
 
-/-- Export the parity of the scalar input, next to any message resources. -/
-def isEven (messages : Resources.{0, uX, dX}) :
-    OracleMap (Resources.sum inputs messages) booleans where
+/-- Export the parity of the scalar input, next to any message bundle. -/
+def isEven (messages : OracleBundle.{0, uX, dX}) :
+    OracleMap (OracleBundle.sum inputs messages) booleans where
   f x _ := (show Nat from x.1 ()) % 2 == 0
   impl _ := do
-    let value : Nat ← liftM ((Resources.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
+    let value : Nat ← liftM ((OracleBundle.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (value % 2 == 0)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -60,8 +60,8 @@ def isEven (messages : Resources.{0, uX, dX}) :
 def firstVerifier (accept : Bool) :
     OracleVerifier ambient done Unit (fun _ => Bool) inputs (fun _ => inputs) where
   decide _ p _ := OptionT.mk do
-    let _ ← liftM ((ambient + (pathResources inputs done p).spec).query (.inl 1))
-    let old : Nat ← liftM ((ambient + (pathResources inputs done p).spec).query
+    let _ ← liftM ((ambient + (pathBundle inputs done p).spec).query (.inl 1))
+    let old : Nat ← liftM ((ambient + (pathBundle inputs done p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
     pure (if accept then some (old % 2 == 0) else none)
   outputMap _ p _ := addEleven (oracleMessageFamily done p)
@@ -84,10 +84,10 @@ def messageValue : Path branchProtocol → Nat
 def secondVerifier :
     OracleVerifier ambient branchProtocol Bool (fun _ => Nat) inputs (fun _ => booleans) where
   decide _ p _ := do
-    let _ ← liftM ((ambient + (pathResources inputs branchProtocol p).spec).query
+    let _ ← liftM ((ambient + (pathBundle inputs branchProtocol p).spec).query
       (.inl 3))
     let value : Nat ← liftM
-      ((ambient + (pathResources inputs branchProtocol p).spec).query
+      ((ambient + (pathBundle inputs branchProtocol p).spec).query
         (.inr (.inl ⟨(), ()⟩)))
     pure (messageValue p + value)
   outputMap _ p _ := isEven (oracleMessageFamily branchProtocol p)
@@ -191,15 +191,15 @@ example (mid : Bool) (value hidden : Nat) :
         some ((if decide (hidden > 0) then 100 else 200) + value, fun _ => value % 2 == 0)⟩) :=
   rfl
 
--- CompositionExample 3 to 5: the same two stages as a chain are `StagesExample.twoStages`, whose
--- run is this binary composition (`Stages.run_cons`). Both run both interactions, then the prefix
--- decision, then the suffix decision only after prefix acceptance. This is
+-- CompositionExample 3 to 5: the same two stages as a chain are `StageChainTests.twoStages`,
+-- whose run is this binary composition (`StageChain.run_cons`). Both run both interactions, then
+-- the prefix decision, then the suffix decision only after prefix acceptance. This is
 -- `OracleVerifier.run_append` at this fixture and the ordinary whole prover.
 example (accept : Bool) (answer hidden : Nat) :=
   OracleVerifier.run_append (firstVerifier accept) (fun _ => secondVerifier) (compatible accept) ()
     (fun _ => answer) (prover answer hidden)
 
--- CompositionExample 6 to 13 are also ported for the stage chain in `StagesExample`, with a third
+-- CompositionExample 6 to 13 are also ported for the stage chain in `StageChainTests`, with a third
 -- stage. Here, the same rows for the binary composition. CompositionExample 6: the normal form of
 -- the accepted run, for every branch choice, input and hidden value. The history becomes
 -- `[0, 2, 1, 3]`: the prover's events, then the decisions, because both decisions are passive and
@@ -267,8 +267,8 @@ example (choice : Bool) (answer hidden : Nat) :
 -- hidden prover output of an oracle message. Here the oracle verifier's run of the one-send
 -- fixture keeps both: output data 18 and private output `hidden`, for every hidden value.
 example (hidden : Nat) :
-    ((CoreRunExampleTests.observed true [] 11 hidden).1.2.2.map (fun r => r.2 ()),
-      (CoreRunExampleTests.observed true [] 11 hidden).1.2.1) = (some 18, hidden) := rfl
+    ((OutputClosingTests.observed true [] 11 hidden).1.2.2.map (fun r => r.2 ()),
+      (OutputClosingTests.observed true [] 11 hidden).1.2.1) = (some 18, hidden) := rfl
 
 run_cmd do
   for hidden in [0, 40] do
@@ -281,4 +281,4 @@ run_cmd do
     unless summary false 7 hidden == (none, (hidden + 1, hidden + 2), [0, 2, 1]) do
       throwError "the rejected run is wrong: {summary false 7 hidden}"
 
-end Interaction.Core.CompositionExampleTests
+end Interaction.Core.HeterogeneousAppendTests

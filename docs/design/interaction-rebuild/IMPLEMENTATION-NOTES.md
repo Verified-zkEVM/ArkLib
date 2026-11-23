@@ -282,25 +282,25 @@ routing example.
 
 The interaction layer had no replacement for the old-layer ordered execution of a finite family of
 closed stages (`ExecutionInterface`, `ClosedStage`, `OrderedExecution.run` in
-`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/Stages.lean` adds an n-ary
+`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/StageChain.lean` adds an n-ary
 composition through the passive append `OracleVerifier.append` (record D5).
 
-- `Stages ambient S inputs` is the plan of a finite chain of passive oracle verifiers from the
-  statement type `S` and the oracle family `inputs`. `Stages.nil` has no stages.
-  `Stages.cons s V draw rest` has a first stage with protocol `s`, verifier `V` and challenge
+- `StageChain ambient S inputs` is the plan of a finite chain of passive oracle verifiers from the
+  statement type `S` and the oracle family `inputs`. `StageChain.nil` has no stages.
+  `StageChain.cons s V draw rest` has a first stage with protocol `s`, verifier `V` and challenge
   draws `draw`. At each path `p` of `s`, the chain `rest p` follows. Its inputs are `V`'s output
   statement type and output family at `p`. Statement types and families may change at every
   boundary and may depend on the paths. Statements live in the computation universe `u`.
-- `Stages.Compatibility c` is the evidence: at every boundary, an
+- `StageChain.Compatibility c` is the evidence: at every boundary, an
   `OracleVerifier.OutputCompatibility` certificate between the stage's verifier and the composed
-  verifier of the stages after it. `Stages.compose` computes the evidence type and the composed
-  verifier together by recursion on the plan, and `Stages.verifier c e` is the composed verifier.
+  verifier of the stages after it. `StageChain.compose` computes the evidence type and the composed
+  verifier together by recursion on the plan, and `StageChain.verifier c e` is the composed verifier.
   The plan does not store its verifiers' certificates, because the certificate at a boundary
   refers to the composed verifier of the rest. Storing it in the constructor would need an
   inductive-recursive definition. The certificates are general, so an output map may read its
   input statement. For example, it may do so through `OutputCompatibility.ofStatement` when the
-  intermediate statement is public. `Stages.StatementFree c` is the special case in which no
-  output map reads its input statement. `Stages.StatementFree.certify` builds its evidence with
+  intermediate statement is public. `StageChain.StatementFree c` is the special case in which no
+  output map reads its input statement. `StageChain.StatementFree.certify` builds its evidence with
   `OutputCompatibility.ofStatementFree`.
 - Inside a chain, the oracle families share one query universe `w`, because a recursive
   occurrence of an inductive type keeps the type's universe parameters. Families from other query
@@ -310,39 +310,39 @@ composition through the passive append `OracleVerifier.append` (record D5).
   The recovery laws (`liftInputs_decideWith`, `liftInputs_outputData`, `liftOutputs_outputData`,
   `lowerOutputs_outputData`, `comapInputs_run`) state that the adapters keep the decision, the
   output data and the run.
-- `Stages.protocol`, `Stages.draw` and `Stages.run` are the composed protocol, the combined draws
+- `StageChain.protocol`, `StageChain.draw` and `StageChain.run` are the composed protocol, the combined draws
   and the core run `OracleVerifier.run` of the composed verifier with the challenges answered by
-  the draws. `Stages.verifier_cons` and `Stages.draw_cons` state that a chain with a first stage
-  composes by `OracleVerifier.append` and `combineDraw`. `Stages.run_cons` states that its run is
+  the draws. `StageChain.verifier_cons` and `StageChain.draw_cons` state that a chain with a first stage
+  composes by `OracleVerifier.append` and `combineDraw`. `StageChain.run_cons` states that its run is
   the run of the binary append of the first stage and the composed rest.
   `OracleVerifier.run_append` splits that run into both interactions and both decisions.
-- The decision laws are `Stages.decideWith_nil` (no stages accept the input statement, and
-  `Stages.outputData_nil` forwards the input data), `Stages.decideWith_one` (one stage decides as
-  that stage) and `Stages.decideWith_cons_of_reject` (a rejecting first decision rejects).
+- The decision laws are `StageChain.decideWith_nil` (no stages accept the input statement, and
+  `StageChain.outputData_nil` forwards the input data), `StageChain.decideWith_one` (one stage decides as
+  that stage) and `StageChain.decideWith_cons_of_reject` (a rejecting first decision rejects).
 - The chain laws derive a property of the composed decision from one hypothesis per stage
   boundary. The predicates may differ in type at every boundary and may depend on the paths up to
-  it (`Stages.Boundaries`). There are three chain laws:
-  - deterministic acceptance (`Stages.decideWith_accepts` from `Stages.DeterministicSteps`);
-  - the support (`Stages.decideWith_preserves_support` from `Stages.SupportSteps`);
-  - almost-sure acceptance (`Stages.decideWith_preserves_measure` from `Stages.MeasureSteps`).
-    Each boundary event is a `Stages.DiscreteEvent` that carries the discrete measurable
+  it (`StageChain.Boundaries`). There are three chain laws:
+  - deterministic acceptance (`StageChain.decideWith_accepts_of_deterministic` from `StageChain.AcceptsDeterministically`);
+  - the support (`StageChain.decideWith_accepts_of_onSupport` from `StageChain.AcceptsOnSupport`);
+  - almost-sure acceptance (`StageChain.decideWith_accepts_of_almostSurely` from `StageChain.AcceptsAlmostSurely`).
+    Each boundary event is a `StageChain.DiscreteEvent` that carries the discrete measurable
     structure of its statement type.
 
   They concern the fold of the decisions after all interactions. Each is proved by induction on
   the chain from the binary law `OracleVerifier.append_decideWith_of_accept`,
-  `OracleVerifier.append_decideWith_preserves_support` or
-  `OracleVerifier.append_decideWith_preserves_measure`.
+  `OracleVerifier.append_decideWith_accepts_of_onSupport` or
+  `OracleVerifier.append_decideWith_accepts_of_almostSurely`.
 
 The composition runs the interactions of all stages and then folds the decisions. A rejecting
 decision makes the composite reject and skips the later decisions, but no interaction. Only the
 path of the earlier stages selects a later stage, and that path records the prover's public
 messages. Neither a challenge, nor an oracle message, nor an earlier verdict selects it (premises
 P1 and P2 of the
-[stage and execution port table](../interaction-layer/stage-execution-disposition.md)).
+[stage and execution port table](../interaction-layer/port-stages.md)).
 
 The old-layer executor decided each stage before the next one started, so a rejection skipped the
 later interactions. It also selected each stage's protocol by the statement the previous stage had
-accepted. P1 and P2 exclude both. `ArkLibTest/Interaction/Core/Oracle/StagesExample.lean` ports
+accepted. P1 and P2 exclude both. `ArkLibTest/Interaction/Core/Oracle/StageChain.lean` ports
 the old-layer two-stage tests with the history `[0, 2, 1, 3]` and the rejection history
 `[0, 2, 1]`. It runs three stages with a sampled challenge, with history
 `[0, 2, 4, 5, 1, 3, 6]`, or `[0, 2, 4, 5, 1]` when the first decision rejects. It selects a second
@@ -356,7 +356,7 @@ PolyFun's `PFunctor.FreeM.append_assoc`, with the inverse laws of `Path.append` 
 and the concatenation `Chain.then` with `Chain.toTypeTree_then`. The missing part is a
 reassociation law for `OracleVerifier.append`. It must transport paths and views along the
 protocol associativity, reconcile `prefixRoute` and `suffixRoute`, and reassociate the
-compatibility certificates. The split after the first stage is `Stages.run_cons`.
+compatibility certificates. The split after the first stage is `StageChain.run_cons`.
 
 ### Output witnesses are indexed by the transcript
 

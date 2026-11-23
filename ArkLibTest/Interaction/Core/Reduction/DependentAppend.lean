@@ -17,14 +17,15 @@ intermediate statements and the prover's private witness.
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
 
-namespace Interaction.Core.DependentExampleTests
+namespace Interaction.Core.DependentAppendTests
 
 -- DependentExample 1, restated: the shared, statement, witness and interaction universes are
 -- independent, as in the old-layer canary. A family of reductions over a shared index is a
 -- function from the index. The signature assigns each move to a participant, so there is no role
 -- decoration. The output statement and the prover output stay in the interaction universe, as in
 -- the old-layer canary. The ambient index is also in the interaction universe, because the prover
--- runs in `OracleComp ambient : Type u → Type u` (implementation note 18, premise-required). The
+-- runs in `OracleComp ambient : Type u → Type u`. This restriction comes from the runner contract
+-- of implementation note 18, not from P1 or P2. The port table marks this canary ported. The
 -- old-layer canary has no ambient oracles, which the empty specification below recovers.
 section UniverseCanary
 
@@ -165,4 +166,4 @@ def disagreeing : Reduction ambient observedTree Unit Bool (fun _ => Bool)
 example (bit : Bool) : disagreeing.runOutcome () bit = pure ⟨⟨bit, ⟨⟩⟩, (true, 8), some false⟩ := by
   cases bit <;> rfl
 
-end Interaction.Core.DependentExampleTests
+end Interaction.Core.DependentAppendTests

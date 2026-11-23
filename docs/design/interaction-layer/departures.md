@@ -115,7 +115,7 @@ verifier actions and move assignments that P1 excludes.
 
 ## Stage composition and oracle execution acceptance clients
 
-The [stage and execution port table](stage-execution-disposition.md) lists each old-layer
+The [stage and execution port table](port-stages.md) lists each old-layer
 assertion of the claim, composition, core-run, execution and dependent-reduction clients. It also
 lists each replaced ordered-execution law. Each row gives the assertion's exact port, the premise
 that excludes part of it, or the removed mechanism it belonged to. The old-layer ordered execution

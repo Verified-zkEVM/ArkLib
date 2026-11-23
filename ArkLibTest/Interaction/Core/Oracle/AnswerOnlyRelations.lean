@@ -17,7 +17,7 @@ closing the outer map with the evaluated inner map.
 
 open PFunctor Interaction.Core Interaction.Oracle OracleComp
 
-namespace Interaction.Core.ClaimExampleTests
+namespace Interaction.Core.AnswerOnlyRelationsTests
 
 /-- A concrete representation carries an unobservable Boolean tag. -/
 @[instance_reducible] def tagged : OracleFamily Unit (fun _ => Nat × Bool) where
@@ -159,4 +159,4 @@ example {I : Type} {spec : OracleSpec I} (a b : Nat × QueryImpl tagged.spec (Or
       closedProblem.language () (b.1, QueryImpl.compose impl b.2) := by
   rw [hs, ho impl]
 
-end Interaction.Core.ClaimExampleTests
+end Interaction.Core.AnswerOnlyRelationsTests

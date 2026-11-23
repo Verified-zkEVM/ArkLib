@@ -26,14 +26,14 @@ open Interaction.Core.DependentRoutingTests (done)
 
 universe uX dX
 
-namespace Interaction.Core.ExecutionExampleTests
+namespace Interaction.Core.PassiveExecutionTests
 
 /-- No output oracles. -/
 @[instance_reducible] def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun i => i.elim) :=
   ⟨fun i => i.elim⟩
 
-/-- The output map from any resources into no oracles. -/
-def noOutputMap (In : Resources.{0, uX, dX}) : OracleMap In noOutputs where
+/-- The output map from any bundle into no oracles. -/
+def noOutputMap (In : OracleBundle.{0, uX, dX}) : OracleMap In noOutputs where
   f _ i := i.elim
   impl q := q.1.elim
   law _ q := q.1.elim
@@ -44,9 +44,9 @@ def noOutputMap (In : Resources.{0, uX, dX}) : OracleMap In noOutputs where
     .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ =>
       .liftBind (.challenge Nat) (fun _ => pairSend)))
 
-/-- The decision resources on a path of `protocol`. -/
-abbrev resources (announced : Bool) :=
-  pathResources inputs protocol ⟨announced, ⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩
+/-- The decision bundle on a path of `protocol`. -/
+abbrev pathData (announced : Bool) :=
+  pathBundle inputs protocol ⟨announced, ⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩
 
 /-- The decision records 0 and 5, reads the first sent oracle, records 2, reads the input, records
 3, and reads the final sent oracle. It accepts the latest answer plus the challenge if the
@@ -56,19 +56,19 @@ def verifier : OracleVerifier ambient protocol Unit (fun _ => Nat) inputs (fun _
   decide _ p v := by
     rcases p with ⟨announced, ⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
-      let _ ← liftM ((ambient + (resources announced).spec).query (.inl 0))
-      let _ ← liftM ((ambient + (resources announced).spec).query (.inl 5))
-      let sent : Nat ← liftM ((ambient + (resources announced).spec).query
+      let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 0))
+      let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 5))
+      let sent : Nat ← liftM ((ambient + (pathData announced).spec).query
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let _ ← liftM ((ambient + (resources announced).spec).query (.inl 2))
-      let old : Nat ← liftM ((ambient + (resources announced).spec).query (.inr (.inl ⟨(), ()⟩)))
-      let _ ← liftM ((ambient + (resources announced).spec).query (.inl 3))
-      let latest : Nat ← liftM ((ambient + (resources announced).spec).query
+      let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 2))
+      let old : Nat ← liftM ((ambient + (pathData announced).spec).query (.inr (.inl ⟨(), ()⟩)))
+      let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 3))
+      let latest : Nat ← liftM ((ambient + (pathData announced).spec).query
         (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
       let challenge : Nat := v.val.2.2.1
       pure (if challenge = old + sent then
         some (if show Bool from announced then latest + challenge else 0) else none)
-  outputMap _ p _ := noOutputMap (pathResources inputs protocol p)
+  outputMap _ p _ := noOutputMap (pathBundle inputs protocol p)
 
 /-- The prover announces `true`, records 1, sends `(11, hidden)`, receives the challenge, records
 4, sends `(challenge + 1, 99)`, and keeps `(777, hidden)` as private output. -/
@@ -130,7 +130,7 @@ example : True := by
     have _ : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
         (fun _ => noOutputs) :=
       { decide := fun _ _ v => pure (show Nat × Nat from v.val.1).2
-        outputMap := fun _ p _ => noOutputMap (pathResources inputs pairSend p) }
+        outputMap := fun _ p _ => noOutputMap (pathBundle inputs pairSend p) }
   trivial
 
 -- ExecutionExample 8, restated: its positive counterpart reaches the oracle message only through
@@ -139,14 +139,14 @@ example : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
     (fun _ => noOutputs) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
-    exact liftM ((ambient + (pathResources inputs pairSend ⟨⟨⟩, ⟨⟩⟩).spec).query
+    exact liftM ((ambient + (pathBundle inputs pairSend ⟨⟨⟩, ⟨⟩⟩).spec).query
       (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-  outputMap _ p _ := noOutputMap (pathResources inputs pairSend p)
+  outputMap _ p _ := noOutputMap (pathBundle inputs pairSend p)
 
 -- ExecutionExample 10, restated: the old-layer row erases the oracle executor to an ordinary
 -- paired run through tree conversions, which are removed. By definition, the oracle verifier's run
 -- of these strategies is the paired run against the sampler, followed by the decision. The
--- decision's resource queries are answered from the input and this run's oracle messages.
+-- decision's bundle queries are answered from the input and this run's oracle messages.
 example (hidden : Nat) :
     verifier.run () seven (prover hidden) = (do
       let ⟨tr, out, _⟩ ← TwoParty.Lens.run protocol
@@ -159,7 +159,7 @@ example (hidden : Nat) :
         (QueryImpl.addLift
           ((fun q => liftM ((ambient + challengeSpec oracleSig protocol).query (.inl q))) :
             QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig protocol)))
-          ((pathResources inputs protocol p).answer (seven, oracleMessages protocol tr)))
+          ((pathBundle inputs protocol p).answer (seven, oracleMessages protocol tr)))
         (verifier.decide () p (toView protocol tr)).run
       pure ⟨tr, out, verdict.map fun t => (t,
         (verifier.outputMap () p (toView protocol tr)).f
@@ -173,11 +173,11 @@ run_cmd do
     unless (observed hidden).1.2.2.map Prod.fst == some 37 do
       throwError "the verdict is wrong"
 
-end Interaction.Core.ExecutionExampleTests
+end Interaction.Core.PassiveExecutionTests
 
-namespace Interaction.Core.ExecutionExampleTests.Append
+namespace Interaction.Core.PassiveExecutionTests.Append
 
-open Interaction.Core.ExecutionExampleTests
+open Interaction.Core.PassiveExecutionTests
 
 /-! ## Appended oracle verifiers
 
@@ -192,11 +192,11 @@ oracle. The challenge preserves the shape and changes the suffix verdict. -/
 /-- The prefix followed by one more pair oracle. -/
 abbrev combined : OracleProtocol := firstProtocol.append (fun _ => pairSend)
 
-/-- The prefix resources on its only path. -/
-abbrev prefixResources := pathResources inputs firstProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+/-- The prefix bundle on its only path. -/
+abbrev prefixBundle := pathBundle inputs firstProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
-/-- The suffix resources on its only path. -/
-abbrev suffixResources := pathResources inputs pairSend ⟨⟨⟩, ⟨⟩⟩
+/-- The suffix bundle on its only path. -/
+abbrev suffixBundle := pathBundle inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 
 /-- The prefix decision records 11, reads its sent oracle, records 12, reads the input, and passes
 the sent answer on. Otherwise it records the final event 17 and rejects. Its output map forwards
@@ -206,12 +206,12 @@ def firstVerifier (proceed : Bool) :
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
-      let _ ← liftM ((ambient + prefixResources.spec).query (.inl 11))
-      let sent : Nat ← liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
-      let _ ← liftM ((ambient + prefixResources.spec).query (.inl 12))
-      let _ ← liftM ((ambient + prefixResources.spec).query (.inr (.inl ⟨(), ()⟩)))
+      let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 11))
+      let sent : Nat ← liftM ((ambient + prefixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 12))
+      let _ ← liftM ((ambient + prefixBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
       if proceed then pure (some sent) else do
-        let _ ← liftM ((ambient + prefixResources.spec).query (.inl 17))
+        let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 17))
         pure none
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -221,12 +221,12 @@ def secondVerifier :
   decide mid p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 16))
-      let _ ← liftM ((ambient + suffixResources.spec).query (.inl 17))
-      let latest : Nat ← liftM ((ambient + suffixResources.spec).query
+      let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 16))
+      let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 17))
+      let latest : Nat ← liftM ((ambient + suffixBundle.spec).query
         (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure (latest + mid)
-  outputMap _ p _ := noOutputMap (pathResources inputs pairSend p)
+  outputMap _ p _ := noOutputMap (pathBundle inputs pairSend p)
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
 def compatible (proceed : Bool) :
@@ -314,17 +314,17 @@ example (draw hidden : Nat) :
   rfl
 
 -- ExecutionExample 9, restated: the old-layer row checks that a verifier node before the second
--- send cannot query the second oracle. A decision's own path fixes its resources. The composed
+-- send cannot query the second oracle. A decision's own path fixes its bundle. The composed
 -- decision can name the second sent oracle, and the prefix decision cannot.
 example : OracleComp (ambient +
-    (pathResources inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec) Nat :=
-  liftM ((ambient + (pathResources inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec).query
+    (pathBundle inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec) Nat :=
+  liftM ((ambient + (pathBundle inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec).query
     (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
 
 example : True := by
   fail_if_success
-    have _ : OracleComp (ambient + prefixResources.spec) Nat :=
-      liftM ((ambient + prefixResources.spec).query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+    have _ : OracleComp (ambient + prefixBundle.spec) Nat :=
+      liftM ((ambient + prefixBundle.spec).query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
   trivial
 
 /-! ### A completed prefix decision is not moved before the next prover send
@@ -336,14 +336,14 @@ an end decision and follows the suffix prover. The two orders differ. -/
 def completedVerifier :
     OracleVerifier ambient done Unit (fun _ => Unit) inputs (fun _ => inputs) where
   decide _ p _ := do
-    let _ ← liftM ((ambient + (pathResources inputs done p).spec).query (.inl 40))
+    let _ ← liftM ((ambient + (pathBundle inputs done p).spec).query (.inl 40))
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- A decision without effects. -/
 def quietVerifier :
     OracleVerifier ambient pairSend Unit (fun _ => Unit) inputs (fun _ => noOutputs) where
   decide _ _ _ := pure ()
-  outputMap _ p _ := noOutputMap (pathResources inputs pairSend p)
+  outputMap _ p _ := noOutputMap (pathBundle inputs pairSend p)
 
 /-- The next prover records 41 and sends `(11, 0)`. -/
 def nextProver : Prover oracleSig ambient pairSend (fun _ => Unit) := do
@@ -429,7 +429,7 @@ abbrev combinedPublic : OracleProtocol := firstPublic.append (fun _ => secondPub
 def firstPublicVerifier :
     OracleVerifier ambient firstPublic Unit (fun _ => Nat) inputs (fun _ => inputs) where
   decide _ p _ := do
-    let _ ← liftM ((ambient + (pathResources inputs firstPublic p).spec).query (.inl 49))
+    let _ ← liftM ((ambient + (pathBundle inputs firstPublic p).spec).query (.inl 49))
     pure 9
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -438,12 +438,12 @@ that answer plus the prefix value. -/
 def secondPublicVerifier :
     OracleVerifier ambient secondPublic Nat (fun _ => Nat) inputs (fun _ => noOutputs) where
   decide mid p v := OptionT.mk do
-    let answer : Nat ← liftM ((ambient + (pathResources inputs secondPublic p).spec).query
+    let answer : Nat ← liftM ((ambient + (pathBundle inputs secondPublic p).spec).query
       (.inl 50))
-    let _ ← liftM ((ambient + (pathResources inputs secondPublic p).spec).query (.inl 52))
+    let _ ← liftM ((ambient + (pathBundle inputs secondPublic p).spec).query (.inl 52))
     let challenge : Nat := v.val.1
     pure (if challenge = answer + mid then some challenge else none)
-  outputMap _ p _ := noOutputMap (pathResources inputs secondPublic p)
+  outputMap _ p _ := noOutputMap (pathBundle inputs secondPublic p)
 
 /-- The composite output map is the suffix output map after `suffixRoute`. -/
 def publicCompatible :
@@ -507,7 +507,7 @@ example (hidden : Nat) : (observedPublic hidden).1.2.2.map Prod.fst = some 59 :=
   rw [OracleVerifier.run_append]
   rfl
 
-end Interaction.Core.ExecutionExampleTests.Append
+end Interaction.Core.PassiveExecutionTests.Append
 
 -- ExecutionExample 16 and 18: the oracle execution and composition laws stay axiom-clean.
 run_cmd do

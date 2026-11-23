@@ -17,9 +17,9 @@ messages of the same run. A stateful logger exposes the exact effect order.
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
-open Interaction.Core.LoggedExecutionTests (inputs exported seven pairSend pairResources closeMap)
+open Interaction.Core.LoggedExecutionTests (inputs exported seven pairSend pairBundle closeMap)
 
-namespace Interaction.Core.CoreRunExampleTests
+namespace Interaction.Core.OutputClosingTests
 
 /-- Observable ambient events. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
@@ -30,9 +30,9 @@ def verifier (accept : Bool) : OracleVerifier ambient pairSend Unit (fun _ => Na
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
-      let _ ← liftM ((ambient + pairResources.spec).query (.inl 1))
-      let _ ← liftM ((ambient + pairResources.spec).query (.inl 2))
-      let sent : Nat ← liftM ((ambient + pairResources.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let _ ← liftM ((ambient + pairBundle.spec).query (.inl 1))
+      let _ ← liftM ((ambient + pairBundle.spec).query (.inl 2))
+      let sent : Nat ← liftM ((ambient + pairBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
       pure (if accept then some sent else none)
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -101,4 +101,4 @@ run_cmd do
     unless summary false [] 19 hidden == (hidden, none, [0, 1, 2]) do
       throwError "the rejected run is wrong: {summary false [] 19 hidden}"
 
-end Interaction.Core.CoreRunExampleTests
+end Interaction.Core.OutputClosingTests

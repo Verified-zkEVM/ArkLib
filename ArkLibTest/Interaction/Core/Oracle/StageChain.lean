@@ -4,20 +4,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Stages
-import ArkLibTest.Interaction.Core.Oracle.CompositionExample
+import ArkLib.Interaction.Core.StageChain
+import ArkLibTest.Interaction.Core.Oracle.HeterogeneousAppend
 
 /-!
 # Passive composition of heterogeneous oracle stages
 
-The first two stages are the prefix and suffix verifiers of the composition example. The first stage
-reads the input oracle, decides its parity and exports the input plus 11. The second stage takes the
-`Bool` statement, receives a `Nat` or a `Bool` message chosen by the prover, and exports the parity
-of what it read. The third stage takes the `Nat` statement and the `Bool` oracle and draws a
-challenge through an ambient event. It checks the prover's response and exports the negation of the
-`Bool` oracle. The statement type changes at every stage: `Unit`, then `Bool`, then `Nat`, then
-`Bool × Nat`. The oracle data changes from `Nat` to `Bool` at the second stage. The prover's private
-output changes from `Nat` to a pair at the second stage and to a triple at the third.
+The first two stages are the prefix and suffix verifiers of the `HeterogeneousAppend` tests. The
+first stage reads the input oracle, decides its parity and exports the input plus 11. The second
+stage takes the `Bool` statement, receives a `Nat` or a `Bool` message chosen by the prover, and
+exports the parity of what it read. The third stage takes the `Nat` statement and the `Bool`
+oracle and draws a challenge through an ambient event. It checks the prover's response and
+exports the negation of the `Bool` oracle. The statement type changes at every stage: `Unit`,
+then `Bool`, then `Nat`, then `Bool × Nat`. The oracle data changes from `Nat` to `Bool` at the
+second stage. The prover's private output changes from `Nat` to a pair at the second stage and to
+a triple at the third.
 
 A stateful logger detects reordered, duplicated or skipped effects. The composition runs every
 interaction before any decision. The prover's events 0, 2 and 4 and the draw 5 come first, then
@@ -25,7 +26,7 @@ the decisions 1, 3 and 6. A rejecting first decision skips the later decisions 3
 of the later interactions.
 
 The chains above have output maps that do not read their input statements, which
-`Stages.StatementFree` records. A later section composes stages whose output maps read the input
+`StageChain.StatementFree` records. A later section composes stages whose output maps read the input
 statement, with the general compatibility certificates. Another composes stages whose oracle
 families have their queries in different universes. Another derives a property of a three-stage
 decision from one hypothesis per stage boundary. The section on message selection composes two
@@ -33,11 +34,11 @@ stages in which a message of the first selects the second.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
-  OracleComp Interaction.Core.CompositionExampleTests
+  OracleComp Interaction.Core.HeterogeneousAppendTests
 open Interaction.Core.LoggedExecutionTests (inputs)
 open Interaction.Core.DependentRoutingTests (done)
 
-namespace Interaction.Core.StagesExampleTests
+namespace Interaction.Core.StageChainTests
 
 universe uX dX
 
@@ -62,15 +63,15 @@ def responseDraw : (c : ChallengeNode oracleSig responseProtocol) →
   | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
-/-- The decision resources on a path of `responseProtocol`. -/
-abbrev responseResources (p : Path responseProtocol) :=
-  pathResources booleans responseProtocol p
+/-- The decision bundle on a path of `responseProtocol`. -/
+abbrev responseBundle (p : Path responseProtocol) :=
+  pathBundle booleans responseProtocol p
 
 /-- Export the negation of the `Bool` input oracle. -/
-def negate (p : Path responseProtocol) : OracleMap (responseResources p) booleans where
+def negate (p : Path responseProtocol) : OracleMap (responseBundle p) booleans where
   f x _ := !(show Bool from x.1 ())
   impl _ := do
-    let b : Bool ← liftM ((responseResources p).spec.query (.inl ⟨(), ()⟩))
+    let b : Bool ← liftM ((responseBundle p).spec.query (.inl ⟨(), ()⟩))
     pure !b
   law _ _ := by
     simp only [simulateQ_bind]
@@ -81,8 +82,8 @@ statement plus the response if the response is the challenge plus 1. -/
 def responseVerifier : OracleVerifier ambient responseProtocol Nat (fun _ => Bool × Nat) booleans
     (fun _ => booleans) where
   decide stmt p v := OptionT.mk do
-    let _ ← liftM ((ambient + (responseResources p).spec).query (.inl 6))
-    let b : Bool ← liftM ((ambient + (responseResources p).spec).query (.inr (.inl ⟨(), ()⟩)))
+    let _ ← liftM ((ambient + (responseBundle p).spec).query (.inl 6))
+    let b : Bool ← liftM ((ambient + (responseBundle p).spec).query (.inr (.inl ⟨(), ()⟩)))
     let challenge : Nat := v.val.1
     let response : Nat := v.val.2.1
     pure (if response = challenge + 1 then some (b, stmt + response) else none)
@@ -103,7 +104,7 @@ def close {s : OracleProtocol} {Out : Type} (prover : Prover oracleSig ambient s
 /-! ## Three heterogeneous stages -/
 
 /-- The third stage alone, closed by the empty chain. -/
-def thirdStages : Stages ambient Nat booleans :=
+def thirdStages : StageChain ambient Nat booleans :=
   .cons responseProtocol responseVerifier responseDraw fun _ => .nil booleans
 
 /-- The third stage's output map does not read its input statement. -/
@@ -111,7 +112,7 @@ def thirdMaps : thirdStages.StatementFree :=
   ⟨responseVerifier.outputMap 0, fun _ => rfl, fun _ => ⟨⟩⟩
 
 /-- The second and third stages. -/
-def lastStages : Stages ambient Bool inputs :=
+def lastStages : StageChain ambient Bool inputs :=
   .cons branchProtocol secondVerifier (fun c => (branchProtocol_noChallenge c).elim)
     fun _ => thirdStages
 
@@ -120,7 +121,7 @@ def lastMaps : lastStages.StatementFree :=
   ⟨secondVerifier.outputMap false, fun _ => rfl, fun _ => thirdMaps⟩
 
 /-- The three stages. The first decision accepts if `accept` holds. -/
-def stages (accept : Bool) : Stages ambient Unit inputs :=
+def stages (accept : Bool) : StageChain ambient Unit inputs :=
   .cons done (firstVerifier accept) (fun c => c.val.elim) fun _ => lastStages
 
 /-- No output map of the three stages reads its input statement. -/
@@ -141,7 +142,7 @@ example (accept : Bool) :
     (stages accept).verifier (stagesMaps accept).compatibility =
       (firstVerifier accept).append (fun _ => lastStages.verifier lastMaps.compatibility)
         (OracleVerifier.OutputCompatibility.ofStatementFree (firstVerifier accept) _ _
-          (fun _ => rfl) (fun _ => Stages.StatementFree.map lastStages lastMaps)
+          (fun _ => rfl) (fun _ => StageChain.StatementFree.map lastStages lastMaps)
           fun _ => lastMaps.outputMap_eq) :=
   rfl
 
@@ -173,7 +174,7 @@ def summary (accept : Bool) (answer hidden : Nat) :
 -- The run of the three stages is the run of the binary append of the first stage and the other
 -- two. The combined draws answer the challenges.
 example (accept : Bool) (answer hidden : Nat) :=
-  Stages.run_cons done (firstVerifier accept) (fun c => c.val.elim) (fun _ => lastStages)
+  StageChain.run_cons done (firstVerifier accept) (fun c => c.val.elim) (fun _ => lastStages)
     (stagesMaps accept).compatibility.1 (stagesMaps accept).compatibility.2 () (fun _ => answer)
     (prover answer hidden)
 
@@ -209,7 +210,7 @@ run_cmd do
 The old-layer ordered execution of the first two stages, ported to their passive composition. -/
 
 /-- The second stage alone, closed by the empty chain. -/
-def secondStages : Stages ambient Bool inputs :=
+def secondStages : StageChain ambient Bool inputs :=
   .cons branchProtocol secondVerifier (fun c => (branchProtocol_noChallenge c).elim)
     fun _ => .nil booleans
 
@@ -218,7 +219,7 @@ def secondMaps : secondStages.StatementFree :=
   ⟨secondVerifier.outputMap false, fun _ => rfl, fun _ => ⟨⟩⟩
 
 /-- The first two stages. -/
-def twoStages (accept : Bool) : Stages ambient Unit inputs :=
+def twoStages (accept : Bool) : StageChain ambient Unit inputs :=
   .cons done (firstVerifier accept) (fun c => c.val.elim) fun _ => secondStages
 
 /-- No output map of the two stages reads its input statement. -/
@@ -256,7 +257,7 @@ def summaryTwo (accept : Bool) (answer hidden : Nat) :=
 -- `OracleVerifier.run_append` splits that run into both interactions, then the first decision
 -- and, after its acceptance only, the second decision.
 example (accept : Bool) (answer hidden : Nat) :=
-  Stages.run_cons done (firstVerifier accept) (fun c => c.val.elim) (fun _ => secondStages)
+  StageChain.run_cons done (firstVerifier accept) (fun c => c.val.elim) (fun _ => secondStages)
     (twoMaps accept).compatibility.1 (twoMaps accept).compatibility.2 () (fun _ => answer)
     (twoProver answer hidden)
 
@@ -269,7 +270,7 @@ theorem summaryTwoWith_true (choice : Bool) (answer hidden : Nat) :
         (hidden + 1, hidden + 1 + 1), [0, 2, 1, 3]) := by
   have h : (twoStages true).run (twoMaps true).compatibility () (fun _ => answer)
       (twoProverWith choice hidden) = _ :=
-    (Stages.run_cons done (firstVerifier true) (fun c => c.val.elim) (fun _ => secondStages)
+    (StageChain.run_cons done (firstVerifier true) (fun c => c.val.elim) (fun _ => secondStages)
       (twoMaps true).compatibility.1 (twoMaps true).compatibility.2 () (fun _ => answer)
       (twoProverWith choice hidden)).trans
       (congrArg _ (OracleVerifier.run_append (firstVerifier true)
@@ -324,7 +325,7 @@ example (choice : Bool) (answer hidden : Nat) :
       (none, (hidden + 1, hidden + 1 + 1), [0, 2, 1]) := by
   have h : (twoStages false).run (twoMaps false).compatibility () (fun _ => answer)
       (twoProverWith choice hidden) = _ :=
-    (Stages.run_cons done (firstVerifier false) (fun c => c.val.elim) (fun _ => secondStages)
+    (StageChain.run_cons done (firstVerifier false) (fun c => c.val.elim) (fun _ => secondStages)
       (twoMaps false).compatibility.1 (twoMaps false).compatibility.2 () (fun _ => answer)
       (twoProverWith choice hidden)).trans
       (congrArg _ (OracleVerifier.run_append (firstVerifier false)
@@ -350,7 +351,7 @@ selects the second stage. On `true` it is the third stage above, which draws a c
 def pickVerifier :
     OracleVerifier ambient pick Nat (fun _ => Nat) booleans (fun _ => booleans) where
   decide stmt p _ := OptionT.mk do
-    let _ ← liftM ((ambient + (pathResources booleans pick p).spec).query (.inl 20))
+    let _ ← liftM ((ambient + (pathBundle booleans pick p).spec).query (.inl 20))
     pure (some stmt)
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -363,8 +364,8 @@ plus the message. It forwards the input oracle. -/
 def replyVerifier :
     OracleVerifier ambient reply Nat (fun _ => Bool × Nat) booleans (fun _ => booleans) where
   decide stmt p v := OptionT.mk do
-    let _ ← liftM ((ambient + (pathResources booleans reply p).spec).query (.inl 22))
-    let b : Bool ← liftM ((ambient + (pathResources booleans reply p).spec).query
+    let _ ← liftM ((ambient + (pathBundle booleans reply p).spec).query (.inl 22))
+    let b : Bool ← liftM ((ambient + (pathBundle booleans reply p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
     pure (some (b, stmt + (show Nat from v.val.1)))
   outputMap _ _ _ := OracleMap.fst _ _
@@ -376,7 +377,7 @@ theorem reply_noChallenge : ChallengeNode oracleSig reply → False := by
   · exact n.elim
 
 /-- The second stage, selected by the first stage's message. -/
-def selected : (p : Path pick) → Stages ambient Nat booleans
+def selected : (p : Path pick) → StageChain ambient Nat booleans
   | ⟨true, _⟩ => thirdStages
   | ⟨false, _⟩ =>
       .cons reply replyVerifier (fun c => (reply_noChallenge c).elim) fun _ => .nil booleans
@@ -388,7 +389,7 @@ theorem pick_noChallenge : ChallengeNode oracleSig pick → False := by
   · exact n.elim
 
 /-- The first stage, then the stage its message selects. -/
-def shapeStages : Stages ambient Nat booleans :=
+def shapeStages : StageChain ambient Nat booleans :=
   .cons pick pickVerifier (fun c => (pick_noChallenge c).elim) selected
 
 /-- No output map of the selected stages reads its input statement. -/
@@ -443,8 +444,8 @@ statement-free map exists for it, even in a chain of one stage. The general cert
 `OutputCompatibility.ofStatement` composes it, because the accepted statement is the public input
 statement. -/
 
-/-- The scalar oracle with data `n`, whose one query answers `n`, from any resources. -/
-def statementOracle (n : Nat) (R : Resources.{0, uX, dX}) : OracleMap R inputs where
+/-- The scalar oracle with data `n`, whose one query answers `n`, from any bundle. -/
+def statementOracle (n : Nat) (R : OracleBundle.{0, uX, dX}) : OracleMap R inputs where
   f _ _ := n
   impl _ := pure n
   law _ _ := rfl
@@ -452,23 +453,23 @@ def statementOracle (n : Nat) (R : Resources.{0, uX, dX}) : OracleMap R inputs w
 /-- Accept the input statement and export it as a scalar oracle. -/
 def echoVerifier : OracleVerifier ambient done Nat (fun _ => Nat) inputs (fun _ => inputs) where
   decide stmt _ _ := pure stmt
-  outputMap stmt p _ := statementOracle stmt (pathResources inputs done p)
+  outputMap stmt p _ := statementOracle stmt (pathBundle inputs done p)
 
 /-- The echo decision accepts its input statement. -/
 theorem echo_decideWith (stmt : Nat) (p : Path done) (v : View done p)
-    (data : (pathResources inputs done p).Data) :
+    (data : (pathBundle inputs done p).Data) :
     echoVerifier.decideWith stmt p v data = pure (some stmt) :=
   simulateQ_pure _ _
 
 /-- The only statement the echo decision can accept is its input statement. -/
 theorem echo_accepted (stmt t : Nat) (p : Path done) (v : View done p)
-    (data : (pathResources inputs done p).Data)
+    (data : (pathBundle inputs done p).Data)
     (h : some t ∈ support (echoVerifier.decideWith stmt p v data)) : t = stmt := by
   rw [echo_decideWith] at h
   simpa using h
 
 /-- The echo stage alone, closed by the empty chain. -/
-def echoStages : Stages ambient Nat inputs :=
+def echoStages : StageChain ambient Nat inputs :=
   .cons done echoVerifier (fun c => c.val.elim) fun _ => .nil inputs
 
 /-- The echo stage composed with the empty chain: the intermediate statement is the input. -/
@@ -478,7 +479,7 @@ def echoEvidence : echoStages.Compatibility :=
       echo_accepted stmt t _ _ ((OracleVerifier.prefixRoute p).f data) h⟩
 
 /-- The input data of a run of the echo stage: the input oracle holds 3. -/
-def echoData : (pathResources inputs echoStages.protocol ⟨⟩).Data :=
+def echoData : (pathBundle inputs echoStages.protocol ⟨⟩).Data :=
   (fun _ => 3, fun i => i.elim)
 
 -- The composed output data is the input statement, whatever the input oracle holds.
@@ -500,13 +501,13 @@ theorem echoStages_not_statementFree : echoStages.StatementFree → False := fun
 the input statement. -/
 def checkVerifier : OracleVerifier ambient done Nat (fun _ => Nat) inputs (fun _ => inputs) where
   decide stmt p _ := OptionT.mk do
-    let value : Nat ← liftM ((ambient + (pathResources inputs done p).spec).query
+    let value : Nat ← liftM ((ambient + (pathBundle inputs done p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
     pure (if value = stmt then some stmt else none)
-  outputMap stmt p _ := statementOracle (2 * stmt) (pathResources inputs done p)
+  outputMap stmt p _ := statementOracle (2 * stmt) (pathBundle inputs done p)
 
 /-- The check stage alone, closed by the empty chain. -/
-def checkStages : Stages ambient Nat inputs :=
+def checkStages : StageChain ambient Nat inputs :=
   .cons done checkVerifier (fun c => c.val.elim) fun _ => .nil inputs
 
 /-- The check stage composed with the empty chain, whose output map ignores the statement. -/
@@ -517,7 +518,7 @@ def checkEvidence : checkStages.Compatibility :=
       agrees := fun _ _ _ _ _ _ => rfl }⟩
 
 /-- The echo stage, then the check stage, which reads the echoed statement. -/
-def echoCheck : Stages ambient Nat inputs :=
+def echoCheck : StageChain ambient Nat inputs :=
   .cons done echoVerifier (fun c => c.val.elim) fun _ => checkStages
 
 /-- The echo stage passes its input statement to the check stage. -/
@@ -560,11 +561,11 @@ def wideInterface : OracleInterface.{0, 1} Bool where
 def wideBooleans : OracleFamily.{0, 0, 1} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
 
 /-- Export the parity of the scalar input as a wide oracle. -/
-def wideParity (messages : Resources.{0, uX, dX}) :
-    OracleMap (Resources.sum inputs messages) wideBooleans where
+def wideParity (messages : OracleBundle.{0, uX, dX}) :
+    OracleMap (OracleBundle.sum inputs messages) wideBooleans where
   f x _ := (show Nat from x.1 ()) % 2 == 0
   impl _ := do
-    let value : Nat ← liftM ((Resources.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
+    let value : Nat ← liftM ((OracleBundle.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (value % 2 == 0)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -575,7 +576,7 @@ query lies in `Type 0` and the output query in `Type 1`. -/
 def wideVerifier :
     OracleVerifier ambient done Unit (fun _ => Bool) inputs (fun _ => wideBooleans) where
   decide _ p _ := OptionT.mk do
-    let value : Nat ← liftM ((ambient + (pathResources inputs done p).spec).query
+    let value : Nat ← liftM ((ambient + (pathBundle inputs done p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
     pure (some (value % 2 == 0))
   outputMap _ p _ := wideParity (oracleMessageFamily done p)
@@ -585,19 +586,19 @@ oracle. -/
 def narrowVerifier :
     OracleVerifier ambient done Bool (fun _ => Bool) wideBooleans (fun _ => booleans) where
   decide stmt p _ := OptionT.mk do
-    let b : Bool ← liftM ((ambient + (pathResources wideBooleans done p).spec).query
+    let b : Bool ← liftM ((ambient + (pathBundle wideBooleans done p).spec).query
       (.inr (.inl ⟨(), ⟨()⟩⟩)))
     pure (some (b && stmt))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ => liftM ((pathResources wideBooleans done p).spec.query (.inl ⟨(), ⟨()⟩⟩))
+      impl := fun _ => liftM ((pathBundle wideBooleans done p).spec.query (.inl ⟨(), ⟨()⟩⟩))
       law := fun _ _ => rfl }
 
 /-- The small input family with its query lifted to `Type 1`. -/
 abbrev liftedInputs : OracleFamily.{0, 0, 1} Unit (fun _ => Nat) := inputs.liftQueries.{0, 1}
 
 /-- The first stage alone: small-query inputs, larger-query outputs. -/
-def wideStages : Stages.{0, 1} ambient Unit liftedInputs :=
+def wideStages : StageChain.{0, 1} ambient Unit liftedInputs :=
   .cons done wideVerifier.liftInputs (fun c => c.val.elim) fun _ => .nil wideBooleans
 
 /-- The first stage's output map does not read its input statement. -/
@@ -606,16 +607,16 @@ def wideMaps : wideStages.StatementFree :=
 
 /-- The one-stage chain decides as the original first stage on the original input data. -/
 example (p : Path wideStages.protocol) (v : View _ p)
-    (data : (pathResources liftedInputs wideStages.protocol p).Data) :
+    (data : (pathBundle liftedInputs wideStages.protocol p).Data) :
     (wideStages.verifier wideMaps.compatibility).decideWith () p v data =
       wideVerifier.decideWith () (Path.split done _ p).1 (View.split done _ p v).1
         ((OracleVerifier.prefixRoute (inputs := liftedInputs) p).f data) :=
-  (Stages.decideWith_one done _ _ _ _ () p v data).trans
+  (StageChain.decideWith_one done _ _ _ _ () p v data).trans
     (wideVerifier.liftInputs_decideWith () _ _ _)
 
 /-- Both stages: the input query lies in `Type 0`, the middle query in `Type 1`, and the output
 query, lifted inside the chain, in `Type 0`. -/
-def wideNarrow : Stages.{0, 1} ambient Unit liftedInputs :=
+def wideNarrow : StageChain.{0, 1} ambient Unit liftedInputs :=
   .cons done wideVerifier.liftInputs (fun c => c.val.elim) fun _ =>
     .cons done narrowVerifier.liftOutputs (fun c => c.val.elim) fun _ =>
       .nil booleans.liftQueries.{0, 1}
@@ -675,7 +676,7 @@ def sumVerifier :
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The three stages. -/
-def sumStages : Stages ambient Nat inputs :=
+def sumStages : StageChain ambient Nat inputs :=
   .cons reply addVerifier (fun c => (reply_noChallenge c).elim) fun _ =>
     .cons reply pairVerifier (fun c => (reply_noChallenge c).elim) fun _ =>
       .cons done sumVerifier (fun c => c.val.elim) fun _ => .nil inputs
@@ -696,7 +697,7 @@ def sumBounds : sumStages.Boundaries (· → Prop) :=
 
 /-- Each stage, separately, accepts deterministically a statement satisfying its predicate from a
 statement satisfying the predicate before it. -/
-theorem sumSteps : sumStages.DeterministicSteps (1 ≤ ·) sumBounds :=
+theorem sumSteps : sumStages.AcceptsDeterministically (1 ≤ ·) sumBounds :=
   ⟨fun stmt h pa _ _ => ⟨stmt + (show Nat from pa.1), simulateQ_pure _ _, by
       change 1 + _ ≤ _
       omega⟩,
@@ -712,13 +713,13 @@ at least 1, it deterministically accepts a statement at least `1 + a + b`, where
 the first two messages. -/
 theorem sumStages_accepts (stmt : Nat) (h : 1 ≤ stmt) (a b : Nat)
     (v : View sumStages.protocol ⟨a, b, ⟨⟩⟩)
-    (data : (pathResources inputs sumStages.protocol ⟨a, b, ⟨⟩⟩).Data) :
+    (data : (pathBundle inputs sumStages.protocol ⟨a, b, ⟨⟩⟩).Data) :
     ∃ out, (sumStages.verifier sumMaps.compatibility).decideWith stmt ⟨a, b, ⟨⟩⟩ v data =
       pure (some out) ∧ 1 + a + b ≤ out :=
-  Stages.decideWith_accepts sumStages _ _ sumBounds sumSteps stmt h _ v data
+  StageChain.decideWith_accepts_of_deterministic sumStages _ _ sumBounds sumSteps stmt h _ v data
 
 /-- Each stage, separately, accepts only statements satisfying its predicate. -/
-theorem sumSupportSteps : sumStages.SupportSteps (1 ≤ ·) sumBounds := by
+theorem sumSupportSteps : sumStages.AcceptsOnSupport (1 ≤ ·) sumBounds := by
   refine ⟨fun stmt h pa v data r hr => ?_, fun pa => ⟨fun stmt h pb v data r hr => ?_,
     fun pb => ⟨fun s h _ v data r hr => ?_, fun _ => trivial⟩⟩⟩
   · obtain ⟨mid, hmid, hp⟩ := sumSteps.1 stmt h pa v data
@@ -735,9 +736,9 @@ theorem sumSupportSteps : sumStages.SupportSteps (1 ≤ ·) sumBounds := by
 -/
 theorem sumStages_support (stmt : Nat) (h : 1 ≤ stmt) (a b : Nat)
     (v : View sumStages.protocol ⟨a, b, ⟨⟩⟩)
-    (data : (pathResources inputs sumStages.protocol ⟨a, b, ⟨⟩⟩).Data) :
+    (data : (pathBundle inputs sumStages.protocol ⟨a, b, ⟨⟩⟩).Data) :
     ∀ r ∈ support ((sumStages.verifier sumMaps.compatibility).decideWith stmt ⟨a, b, ⟨⟩⟩ v data),
       ∃ out, r = some out ∧ 1 + a + b ≤ out :=
-  Stages.decideWith_preserves_support sumStages _ _ sumBounds sumSupportSteps stmt h _ v data
+  StageChain.decideWith_accepts_of_onSupport sumStages _ _ sumBounds sumSupportSteps stmt h _ v data
 
-end Interaction.Core.StagesExampleTests
+end Interaction.Core.StageChainTests

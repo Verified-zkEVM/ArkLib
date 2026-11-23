@@ -15,7 +15,7 @@ those two files themselves.
 
 The two approved premises are:
 
-- **P1 (passive verifier):** verifiers send public-coin challenges only, and resource queries
+- **P1 (passive verifier):** verifiers send public-coin challenges only, and bundle queries
   happen in the final decision. A challenge cannot be computed from an input or from a previously
   sent oracle.
 - **P2 (fixed shape):** neither a challenge nor an oracle message selects the protocol's subtree.
@@ -38,8 +38,8 @@ L258). It needs a reassociation law for `OracleVerifier.append`.
 The ports keep the old-layer universe placement, with one restriction in the dependent-reduction
 canary.
 
-- `Stages` ([stages]) puts every statement type, oracle index type and oracle data type of a chain
-  in the computation universe `u`, as `ExecutionInterface.{u}` does. It takes
+- `StageChain` ([stages]) puts every statement type, oracle index type and oracle data type of a
+  chain in the computation universe `u`, as `ExecutionInterface.{u}` does. It takes
   `ambient : OracleSpec.{u, u} ι` with `ι : Type u`, as the old-layer stage does. The old-layer
   stage passes its input resource as `I.oracles.spec.toPFunctor : PFunctor.{u, u}`, so its query
   domain lies in `u`.
@@ -102,12 +102,12 @@ canary.
 
 The old-layer ordered execution decides each stage before the next stage's interaction starts, and
 a rejection skips the later stages. P1 excludes that schedule. A passive decision runs after the
-whole interaction, and its resource queries happen in the final decision. The port is the chain
-`twoStages` in `StagesExample.lean`. Both interactions run first, and then the decisions fold. The
-accepted history is therefore `[0, 2, 1, 3]`, and a rejecting first decision still runs the second
-stage's interaction. `Stages.run_cons` identifies the chain's run with the binary composition of
-the same two stages in `CompositionExample.lean` ([compRow3to5], [compSummary], [compRow13]), which
-states the same rows. Additional coverage:
+whole interaction, and its bundle queries happen in the final decision. The port is the chain
+`twoStages` in the core test `StageChain.lean`. Both interactions run first, and then the decisions
+fold. The accepted history is therefore `[0, 2, 1, 3]`, and a rejecting first decision still runs
+the second stage's interaction. `StageChain.run_cons` identifies the chain's run with the binary
+composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5], [compSummary],
+[compRow13]), which states the same rows. Additional coverage:
 
 - a third stage with a sampled challenge, whose interaction also runs after a rejection
   ([threeAccept], [threeReject]);
@@ -142,9 +142,9 @@ states the same rows. Additional coverage:
 | L129, hidden data does not change the public result | excluded by P1 | P1, as for L116. [execRow6] keeps the invariance for every pair of hidden values, at the draw 18. |
 | L141, negative test: an oracle-node verifier cannot receive the oracle message | ported | [execRow7]: a decision that reads the hidden coordinate of a sent oracle does not elaborate, because the view gives oracle moves the type `PUnit`. |
 | L149, positive counterpart: a query reaches the observable coordinate | ported | [execRow8]. |
-| L159, negative test: a verifier before the second send cannot query the second oracle | ported | [execRow9Neg]: the prefix decision's resources do not name the second sent oracle, so the query does not elaborate. [execRow9Pos]: the composed decision can name it. |
+| L159, negative test: a verifier before the second send cannot query the second oracle | ported | [execRow9Neg]: the prefix decision's bundle does not name the second sent oracle, so the query does not elaborate. [execRow9Pos]: the composed decision can name it. |
 | L165, `executeStrategies_eq_run` erasure equation | removed | Removed mechanism: conversion of oracle strategies to plain counterparts on the type tree (`Verifier.toCounterpart`, `TypeTree.ExecutionPath.ofTypeTreePath`). [execRow10] states the oracle verifier's run of the same strategies by definition. It is the paired run against the sampler followed by the decision. |
-| L44 and L47, access after each oracle send | removed | Removed mechanism: per-node access (`Access.extend`). A decision's resources depend only on its path ([pathResources]). Record D6 removes per-node access once verifiers are passive. |
+| L44 and L47, access after each oracle send | removed | Removed mechanism: per-node access (`Access.extend`). A decision's bundle depends only on its path ([pathBundle]). Record D6 removes per-node access once verifiers are passive. |
 | L180 to L182, axioms of `accessAt_comp`, `AccessDecoration.restrict_build`, `Verifier.decorate_access` | removed | Removed mechanism: per-node access decorations. |
 | L183 and L184, axioms of `toCounterpart_oracle_eq_of_answer_eq`, `executeStrategies_eq_run` | removed | Removed mechanism: the counterpart conversion of L165. |
 | L185, axioms of `Reduction.execute` | ported | [execAxioms] checks that `OracleVerifier.run` and `Reduction.run` use only `propext`, `Classical.choice` and `Quot.sound`, and fails the build otherwise. |
@@ -196,141 +196,141 @@ states the same rows. Additional coverage:
 | L230, `run_preserves_measure` | excluded by P1 | P1, as for L182. [chainMeasure] keeps the almost-sure chain statement over the decisions, from one hypothesis per stage ([measureSteps]), by induction from [appendMeasure]. It uses the old-layer assumptions: an answer measure on the ambient oracles and measurable, discrete statement spaces. Each boundary event carries the discrete measurable structure of its statement type ([discreteEvent]). |
 | L258, `run_append` | open | Missing parent interface: a reassociation law for `OracleVerifier.append`. It relates `(V₁.append V₂ c₁₂).append V₃ c` to the append of `V₁` with the appends of `V₂` and `V₃`. The interface also includes the transport of paths and views along protocol associativity and the agreement of `prefixRoute` and `suffixRoute` on both sides. It also includes the reassociation of the compatibility certificates and their output maps. The split of a chain at an arbitrary stage needs this law and the concatenation of chains. The protocol part exists at the PolyFun pin `d3ec3a41`: `PFunctor.FreeM.append_assoc` (`PolyFun/PFunctor/Free/Path.lean` L727), with the inverse laws `Path.split_append` and `Path.append_split`. The concatenation pattern is `Chain.then` with `Chain.toTypeTree_then` (`PolyFun/Interaction/Basic/Chain/Append.lean` L94). [runCons] gives only the split after the first stage. |
 
-[logged]: logged-execution-disposition.md
-[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L557
+[logged]: port-logged-execution.md
+[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L589
 [closeMap]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L84
-[claimRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L30
-[claimAnswerProblem]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L42
-[claimRow2]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L50
-[claimClosedProblem]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L61
-[claimBridge]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L68
-[claimRow2Closed]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L74
-[claimCongr]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L78
-[claimRow3]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L100
-[claimLaws]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L107
-[claimRow4Map]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L116
-[claimRow4Data]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L124
-[claimRow5Map]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L131
-[claimRow4]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L141
-[claimRow5]: ../../../ArkLibTest/Interaction/Core/Oracle/ClaimExample.lean#L154
-[coreVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L28
-[coreRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L67
-[coreRow2]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L70
-[coreRow3]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L73
-[coreRow4]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L77
-[coreRow5]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L80
-[coreSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L83
-[coreRow6]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L87
-[coreRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L92
-[coreRunCmd]: ../../../ArkLibTest/Interaction/Core/Oracle/CoreRunExample.lean#L97
-[execRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L103
-[execRow2]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L108
-[execRow3]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L111
-[execRow4]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L115
-[execRow5]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L119
-[execRow6]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L123
-[execRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L128
-[execRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L138
-[execRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L150
-[execFirstVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L204
-[execRow19]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L286
-[execRow19All]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L295
-[execRow22]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L309
-[execRow9Pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L319
-[execRow9Neg]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L324
-[execRow25]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L403
-[execRow26]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L407
-[execRow27]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L410
-[execRow28]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L492
-[execRow29]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L498
-[execRow30]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L505
-[execAxioms]: ../../../ArkLibTest/Interaction/Core/Oracle/ExecutionExample.lean#L513
-[depCanary]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L35
-[depCanaryUse]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L50
-[depComposed]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L92
-[depRow2]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L112
-[depRow3]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L115
-[depRow4]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L120
-[depRow5]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L123
-[depObserveFalse]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L126
-[depObserveTrue]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L129
-[depRow6]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentExample.lean#L165
-[compRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L168
-[compRow2True]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L179
-[compRow2False]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L186
-[compRow3to5]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L198
-[compSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L208
-[compRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L260
-[compRow14]: ../../../ArkLibTest/Interaction/Core/Oracle/CompositionExample.lean#L269
-[threeVerifierCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L140
-[threeRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L175
-[threeAccept]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L183
-[threeReject]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L192
-[twoRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L258
-[summaryTwoWithTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L266
-[stagesRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L291
-[stagesRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L295
-[stagesRow9]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L301
-[stagesRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L306
-[stagesRow11]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L311
-[stagesRow12]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L317
-[stagesRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L322
-[stagesRow13Fixed]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L337
-[shapeTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L432
-[shapeFalse]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L436
-[echoVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L453
-[echoEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L475
-[echoOutput]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L485
-[echoNotFree]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L494
-[echoCheckEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L524
-[echoCheckRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L540
-[wideStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L600
-[wideDecide]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L608
-[wideNarrow]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L618
-[wideNarrowRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L650
-[sumStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L678
-[sumSteps]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L699
-[sumAccepts]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L713
-[sumSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StagesExample.lean#L736
-[liftQueries]: ../../../ArkLib/Interaction/Core/Stages.lean#L63
-[comapInputs]: ../../../ArkLib/Interaction/Core/Stages.lean#L104
-[mapOutputs]: ../../../ArkLib/Interaction/Core/Stages.lean#L112
-[comapInputsDecide]: ../../../ArkLib/Interaction/Core/Stages.lean#L121
-[comapInputsRun]: ../../../ArkLib/Interaction/Core/Stages.lean#L194
-[liftInputs]: ../../../ArkLib/Interaction/Core/Stages.lean#L150
-[liftOutputs]: ../../../ArkLib/Interaction/Core/Stages.lean#L155
-[lowerOutputs]: ../../../ArkLib/Interaction/Core/Stages.lean#L160
-[liftInputsDecide]: ../../../ArkLib/Interaction/Core/Stages.lean#L166
-[liftInputsData]: ../../../ArkLib/Interaction/Core/Stages.lean#L173
-[liftOutputsData]: ../../../ArkLib/Interaction/Core/Stages.lean#L179
-[lowerOutputsData]: ../../../ArkLib/Interaction/Core/Stages.lean#L185
-[appendReject]: ../../../ArkLib/Interaction/Core/Stages.lean#L263
-[appendAccept]: ../../../ArkLib/Interaction/Core/Stages.lean#L271
-[appendSupport]: ../../../ArkLib/Interaction/Core/Stages.lean#L284
-[appendMeasure]: ../../../ArkLib/Interaction/Core/Stages.lean#L305
-[stages]: ../../../ArkLib/Interaction/Core/Stages.lean#L341
-[compose]: ../../../ArkLib/Interaction/Core/Stages.lean#L413
-[compatibility]: ../../../ArkLib/Interaction/Core/Stages.lean#L425
-[stagesVerifier]: ../../../ArkLib/Interaction/Core/Stages.lean#L430
-[stagesRun]: ../../../ArkLib/Interaction/Core/Stages.lean#L453
-[statementFree]: ../../../ArkLib/Interaction/Core/Stages.lean#L466
-[statementFreeCertify]: ../../../ArkLib/Interaction/Core/Stages.lean#L488
-[verifierCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L529
-[drawCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L535
-[runCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L544
-[rejectCons]: ../../../ArkLib/Interaction/Core/Stages.lean#L554
-[decideWithNil]: ../../../ArkLib/Interaction/Core/Stages.lean#L564
-[outputDataNil]: ../../../ArkLib/Interaction/Core/Stages.lean#L575
-[decideWithOne]: ../../../ArkLib/Interaction/Core/Stages.lean#L585
-[boundaries]: ../../../ArkLib/Interaction/Core/Stages.lean#L614
-[deterministicSteps]: ../../../ArkLib/Interaction/Core/Stages.lean#L635
-[supportSteps]: ../../../ArkLib/Interaction/Core/Stages.lean#L647
-[measureSteps]: ../../../ArkLib/Interaction/Core/Stages.lean#L717
-[discreteEvent]: ../../../ArkLib/Interaction/Core/Stages.lean#L706
-[chainAccept]: ../../../ArkLib/Interaction/Core/Stages.lean#L659
-[chainSupport]: ../../../ArkLib/Interaction/Core/Stages.lean#L682
-[chainMeasure]: ../../../ArkLib/Interaction/Core/Stages.lean#L732
-[appendDecide]: ../../../ArkLib/Interaction/Core/Composition.lean#L474
-[pathResources]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L462
-[oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L503
-[runAppend]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L119
+[claimRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L30
+[claimAnswerProblem]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L42
+[claimRow2]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L50
+[claimClosedProblem]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L61
+[claimBridge]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L68
+[claimRow2Closed]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L74
+[claimCongr]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L78
+[claimRow3]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L100
+[claimLaws]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L107
+[claimRow4Map]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L116
+[claimRow4Data]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L124
+[claimRow5Map]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L131
+[claimRow4]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L141
+[claimRow5]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L154
+[coreVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L28
+[coreRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L67
+[coreRow2]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L70
+[coreRow3]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L73
+[coreRow4]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L77
+[coreRow5]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L80
+[coreSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L83
+[coreRow6]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L87
+[coreRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L92
+[coreRunCmd]: ../../../ArkLibTest/Interaction/Core/Oracle/OutputClosing.lean#L97
+[execRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L103
+[execRow2]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L108
+[execRow3]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L111
+[execRow4]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L115
+[execRow5]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L119
+[execRow6]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L123
+[execRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L128
+[execRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L138
+[execRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L150
+[execFirstVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L204
+[execRow19]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L286
+[execRow19All]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L295
+[execRow22]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L309
+[execRow9Pos]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L319
+[execRow9Neg]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L324
+[execRow25]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L403
+[execRow26]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L407
+[execRow27]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L410
+[execRow28]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L492
+[execRow29]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L498
+[execRow30]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L505
+[execAxioms]: ../../../ArkLibTest/Interaction/Core/Oracle/PassiveExecution.lean#L513
+[depCanary]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L36
+[depCanaryUse]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L51
+[depComposed]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L93
+[depRow2]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L113
+[depRow3]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L116
+[depRow4]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L121
+[depRow5]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L124
+[depObserveFalse]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L127
+[depObserveTrue]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L130
+[depRow6]: ../../../ArkLibTest/Interaction/Core/Reduction/DependentAppend.lean#L166
+[compRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L168
+[compRow2True]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L179
+[compRow2False]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L186
+[compRow3to5]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L198
+[compSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L208
+[compRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L260
+[compRow14]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L269
+[threeVerifierCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L141
+[threeRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L176
+[threeAccept]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L184
+[threeReject]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L193
+[twoRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L259
+[summaryTwoWithTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L267
+[stagesRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L292
+[stagesRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L296
+[stagesRow9]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L302
+[stagesRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L307
+[stagesRow11]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L312
+[stagesRow12]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L318
+[stagesRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L323
+[stagesRow13Fixed]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L338
+[shapeTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L433
+[shapeFalse]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L437
+[echoVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L454
+[echoEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L476
+[echoOutput]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L486
+[echoNotFree]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L495
+[echoCheckEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L525
+[echoCheckRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L541
+[wideStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L601
+[wideDecide]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L609
+[wideNarrow]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L619
+[wideNarrowRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L651
+[sumStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L679
+[sumSteps]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L700
+[sumAccepts]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L714
+[sumSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L737
+[liftQueries]: ../../../ArkLib/Interaction/Core/StageChain.lean#L64
+[comapInputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L107
+[mapOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L115
+[comapInputsDecide]: ../../../ArkLib/Interaction/Core/StageChain.lean#L124
+[comapInputsRun]: ../../../ArkLib/Interaction/Core/StageChain.lean#L197
+[liftInputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L153
+[liftOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L158
+[lowerOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L163
+[liftInputsDecide]: ../../../ArkLib/Interaction/Core/StageChain.lean#L169
+[liftInputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L176
+[liftOutputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L182
+[lowerOutputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L188
+[appendReject]: ../../../ArkLib/Interaction/Core/StageChain.lean#L266
+[appendAccept]: ../../../ArkLib/Interaction/Core/StageChain.lean#L274
+[appendSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L287
+[appendMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L308
+[stages]: ../../../ArkLib/Interaction/Core/StageChain.lean#L344
+[compose]: ../../../ArkLib/Interaction/Core/StageChain.lean#L416
+[compatibility]: ../../../ArkLib/Interaction/Core/StageChain.lean#L428
+[stagesVerifier]: ../../../ArkLib/Interaction/Core/StageChain.lean#L434
+[stagesRun]: ../../../ArkLib/Interaction/Core/StageChain.lean#L457
+[statementFree]: ../../../ArkLib/Interaction/Core/StageChain.lean#L470
+[statementFreeCertify]: ../../../ArkLib/Interaction/Core/StageChain.lean#L492
+[verifierCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L533
+[drawCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L539
+[runCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L548
+[rejectCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L558
+[decideWithNil]: ../../../ArkLib/Interaction/Core/StageChain.lean#L568
+[outputDataNil]: ../../../ArkLib/Interaction/Core/StageChain.lean#L579
+[decideWithOne]: ../../../ArkLib/Interaction/Core/StageChain.lean#L589
+[boundaries]: ../../../ArkLib/Interaction/Core/StageChain.lean#L618
+[deterministicSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L639
+[supportSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L651
+[measureSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L721
+[discreteEvent]: ../../../ArkLib/Interaction/Core/StageChain.lean#L710
+[chainAccept]: ../../../ArkLib/Interaction/Core/StageChain.lean#L663
+[chainSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L686
+[chainMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L736
+[appendDecide]: ../../../ArkLib/Interaction/Core/Composition.lean#L471
+[pathBundle]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L486
+[oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L554
+[runAppend]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
