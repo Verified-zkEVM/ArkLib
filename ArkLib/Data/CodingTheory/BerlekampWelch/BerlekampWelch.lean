@@ -45,7 +45,6 @@ variable [DecidableEq F]
   ### Parameters:
   - `e : ℕ` - Maximum number of correctable errors
   - `k : ℕ` - Degree bound of message polynomial (`<k`)
-  - `[NeZero n]` - Instance that codeword length `n` is non-zero
   - `ωs : Fin n → F` - Evaluation points used during encoding
   - `f : Fin n → F` - Received (possibly corrupted) codeword evaluations
 
@@ -53,7 +52,7 @@ variable [DecidableEq F]
   - `some p` if successful (where `p : Polynomial F` is the recovered polynomial)
   - `none` if decoding fails (too many errors or unsolvable system)
 -/
-noncomputable def decoder (e k : ℕ) [NeZero n] (ωs f : Fin n → F) : Option (Polynomial F) :=
+noncomputable def decoder (e k : ℕ) (ωs f : Fin n → F) : Option (Polynomial F) :=
   if ‖f‖₀ ≤ e
   then some 0
   else
@@ -80,7 +79,7 @@ noncomputable def decoder (e k : ℕ) [NeZero n] (ωs f : Fin n → F) : Option 
 - `f : Fin n → F` - Received (possibly corrupted) codeword
 - `h` - Hypothesis that decoder succeeded (returns `some p`)
 -/
-theorem hammingDist_le_of_decoder_eq_some [NeZero n] {ωs f : Fin n → F}
+theorem hammingDist_le_of_decoder_eq_some {ωs f : Fin n → F}
     (h : decoder e k ωs f = some p) : Δ₀(f, p.eval ∘ ωs) ≤ e :=
   by aesop (add simp decoder)
 
@@ -111,16 +110,9 @@ theorem decoder_eq_some {e k : ℕ} [NeZero n] {ωs f : Fin n → F} {p : Polyno
     · omega
   · rcases hlinsolve : linsolve (BerlekampWelchMatrix e k ωs f) (Rhs e ωs f)
     · simp only [reduceCtorEq]; exact linsolve_always_some_berlekamp_welch h_deg h_dist hlinsolve
-    · by_cases hp : p = 0
-      · have : ‖f‖₀ ≤ e := by aesop
-        omega
-      · have h_cond := linsolve_to_BerlekampWelch_condition hlinsolve
-        have h :=
-          Q'_div_E'_eq_p
-            h_deg he hn h_dist h_inj
-            (solutionToQ_ne_zero (not_le.1 hif)
-                                (BerlekampWelchCondition_iff_Solution.2 h_cond) h_inj) hp h_cond
-        simp_all
+    · have h_cond := linsolve_to_BerlekampWelch_condition hlinsolve
+      have h := Q'_div_E'_eq_p h_deg he hn h_dist h_inj h_cond
+      simp_all
 
 /--
 **Decoding failure characterization**:
@@ -138,13 +130,29 @@ within `e` Hamming errors of the received word `f`.
 - `f : Fin n → F` - Received word
 -/
 theorem not_exists_of_decoder_eq_none {e k : ℕ} [NeZero n] {ωs f : Fin n → F}
-    (he : 2 * e < n - k + 1) (hn : k ≤ n)
+    (he : 2 * e < n - k + 1)
     (h_inj : Function.Injective ωs)
     (h_none : decoder e k ωs f = none) :
     ¬ ∃ p : F[X], Δ₀(f, p.eval ∘ ωs) ≤ e ∧ p.natDegree < k := by
   rintro ⟨p, hp, hpk⟩
-  have := decoder_eq_some he hn h_inj hpk hp
-  aesop
+  by_cases hn : k ≤ n
+  · have := decoder_eq_some he hn h_inj hpk hp
+    aesop
+  have he0 : e = 0 := by omega
+  subst e
+  simp only [decoder] at h_none
+  split_ifs at h_none with hnorm
+  cases hx : linsolve (BerlekampWelchMatrix 0 k ωs f) (Rhs 0 ωs f) with
+  | none => exact linsolve_always_some_berlekamp_welch hpk hp hx
+  | some x =>
+    have hcond := linsolve_to_BerlekampWelch_condition hx
+    have h_eval : (solutionToQ 0 k x).eval ∘ ωs = f := by
+      funext i
+      simpa using hcond.cond i
+    rw [hx] at h_none
+    simp only [solutionToE_zero_eq_C, C_1, EuclideanDomain.mod_one,
+      EuclideanDomain.div_one, h_eval] at h_none
+    simp at h_none
 
 end
 

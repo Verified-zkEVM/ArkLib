@@ -22,14 +22,17 @@ namespace ReedSolomon.HiddenDerivative
 /-- A prescribed multiplicity bounds the rounded Johnson multiplicity as soon as it supplies
 the required half-gap. -/
 theorem johnsonT_le_of_half_gap {n D m : ℕ} {eta : ℝ}
-    (hm : 3 ≤ m) (heta : 0 < eta)
+    (hm : 3 ≤ m)
     (hgap : Real.sqrt (johnsonRhoMinus n D) / (2 * (m : ℝ)) ≤ eta) :
     johnsonT n D eta ≤ (m : ℝ) + 1 / 2 := by
   have hmpos : (0 : ℝ) < m := by exact_mod_cast (show 0 < m by omega)
   have hmul := (div_le_iff₀ (by positivity : (0 : ℝ) < 2 * m)).mp hgap
   have hfrac : Real.sqrt (johnsonRhoMinus n D) / (2 * eta) ≤ (m : ℝ) := by
-    apply (div_le_iff₀ (by positivity)).mpr
-    nlinarith only [hmul]
+    by_cases heta : 0 < eta
+    · apply (div_le_iff₀ (by positivity)).mpr
+      nlinarith only [hmul]
+    · exact (div_nonpos_of_nonneg_of_nonpos (Real.sqrt_nonneg _)
+        (by linarith)).trans (Nat.cast_nonneg m)
   have hceil : ⌈Real.sqrt (johnsonRhoMinus n D) / (2 * eta)⌉₊ ≤ m :=
     Nat.ceil_le.mpr hfrac
   unfold johnsonT johnsonM
@@ -40,11 +43,9 @@ theorem johnsonT_le_of_half_gap {n D m : ℕ} {eta : ℝ}
 /-- The source's full-rate agreement threshold implies the half-gap for the smaller degree
 ratio used by the ordinary interpolation certificate. -/
 theorem johnson_half_gap_of_legacy_threshold {n D m : ℕ} {eta : ℝ}
-    (hm : 3 ≤ m)
     (ha : (1 + 1 / (2 * (m : ℝ))) * Real.sqrt (((D : ℝ) + 1) / n) ≤
       johnsonAgreement n D eta) :
     Real.sqrt (johnsonRhoMinus n D) / (2 * (m : ℝ)) ≤ eta := by
-  have hmpos : (0 : ℝ) < m := by exact_mod_cast (show 0 < m by omega)
   have hroot : Real.sqrt (johnsonRhoMinus n D) ≤
       Real.sqrt (((D : ℝ) + 1) / n) := by
     apply Real.sqrt_le_sqrt
@@ -61,7 +62,7 @@ theorem johnson_half_gap_of_legacy_threshold {n D m : ℕ} {eta : ℝ}
 /-- Twice the finite exception count lies below the explicit seventh-power budget. The factor
 two covers either rounded curve height or the affine sampling loss. -/
 theorem two_mul_johnsonExceptionCount_le_explicit_budget {n D A m : ℕ} {eta : ℝ}
-    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (hm : 3 ≤ m) (heta : 0 < eta)
+    (hD : 1 ≤ D) (hDn : D ≤ n - 2) (hm : 3 ≤ m)
     (hthreshold : johnsonAgreement n D eta * n ≤ A)
     (ha : (1 + 1 / (2 * (m : ℝ))) * Real.sqrt (((D : ℝ) + 1) / n) ≤
       johnsonAgreement n D eta) :
@@ -88,11 +89,13 @@ theorem two_mul_johnsonExceptionCount_le_explicit_budget {n D A m : ℕ} {eta : 
   have hkey : 16 * s ^ 3 ≤ (D : ℝ) * t ^ 4 := by
     have hh := mul_le_mul_of_nonneg_right hD1 (pow_nonneg htpos.le 4)
     nlinarith only [hs3, ht4, hh]
-  have hT := johnsonT_le_of_half_gap hm heta (johnson_half_gap_of_legacy_threshold hm ha)
+  have hT := johnsonT_le_of_half_gap hm (johnson_half_gap_of_legacy_threshold ha)
   have hTpos : 0 ≤ johnsonT n D eta := by
     have := johnsonT_ge_seven_halves n D eta
     linarith
-  have hclosed := (johnsonExceptionCount_lt_closed hD hDn heta hthreshold).le
+  have hclosed := (johnsonExceptionCount_lt_closed hD hDn
+    (lt_of_lt_of_le (div_pos (johnsonSqrt_mem_Ioo hD (by omega)).1 (by positivity))
+      (johnson_half_gap_of_legacy_threshold ha)) hthreshold).le
   have hrpow : Real.rpow (((D : ℝ) + 1) / n) (3 / 2 : ℝ) = s ^ 3 := by
     calc
       _ = Real.rpow s (3 : ℝ) := Real.rpow_div_two_eq_sqrt 3 (by positivity)
@@ -117,9 +120,11 @@ theorem two_mul_johnsonExceptionCount_le_explicit_budget {n D A m : ℕ} {eta : 
 
 /-- The pair-collision count for constant codes also fits the explicit budget, with a factor two
 available for affine sampling. -/
-theorem two_mul_choose_two_le_explicit_budget {n m : ℕ} (hn : 0 < n) (hm : 3 ≤ m) :
+theorem two_mul_choose_two_le_explicit_budget {n m : ℕ} (hm : 3 ≤ m) :
     2 * (n.choose 2 : ℝ) ≤ ((m : ℝ) + 1 / 2) ^ 7 * (n : ℝ) ^ 2 /
       (3 * Real.rpow (1 / (n : ℝ)) (3 / 2 : ℝ)) := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
   have hnpos : (0 : ℝ) < n := by exact_mod_cast hn
   have hn1 : (1 : ℝ) ≤ n := by exact_mod_cast hn
   have hm3 : (3 : ℝ) ≤ m := by exact_mod_cast hm

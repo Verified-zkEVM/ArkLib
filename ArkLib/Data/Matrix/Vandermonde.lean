@@ -102,7 +102,7 @@ lemma rank_nonsquare_rows_eq_min (inj : Function.Injective α) :
 end
 
 theorem mulVecLin_coeff_vandermondens_eq_eval_matrixOfPolynomials
-    {n : ℕ} [NeZero n] {v : ι ↪ F} {p : F[X]} (h_deg : p.natDegree < n) :
+    {n : ℕ} {v : ι ↪ F} {p : F[X]} (h_deg : p.natDegree < n) :
   (Vandermonde.nonsquare (ι' := n) v).mulVecLin (Fin.liftF' p.coeff) =
   fun i => p.eval (v i) := by
   ext i

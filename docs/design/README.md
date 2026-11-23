@@ -10,6 +10,12 @@ The interaction layer is meant to replace the legacy layer (`ArkLib/OracleReduct
 needed, and the public [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer) holds the migration
 plan.
 
+The chapters below describe the current interaction layer, which is frozen and is being replaced
+by a rebuild on one protocol tree with a lens signature and passive verifiers. The
+[interaction-rebuild records](interaction-rebuild/README.md) state the rebuild's design decisions,
+D0–D9, each proposed and awaiting maintainer approval. Where a record and a chapter disagree, the
+chapter describes the frozen code and the record describes its replacement.
+
 A protocol is an interaction tree with prover and verifier strategies. The prover's continuation
 keeps its private memory. An oracle reduction returns a statement and an oracle interface: the
 next reduction can query that interface without seeing the underlying prover messages. Security
@@ -20,7 +26,7 @@ world state and query history continue across the boundary.
 
 | Your question | Read |
 |---|---|
-| What is implemented and proved on main? | [Current status](00-current-status.md) |
+| What is implemented and proved on `main`? | [Current status](00-current-status.md) |
 | What should we implement next, and how will we check it? | [Roadmap](05-roadmap.md) |
 | What does the full framework aim to cover? | [End state](00-end-state.md) |
 | What does an oracle reduction return, and how do reductions compose? | [Claims, closing, and composition](02-oracle-reduction-core.md) |
@@ -44,7 +50,7 @@ implementation schedule.
 | [Claims, closing, and composition](02-oracle-reduction-core.md) | Output interfaces, their interpretation, and execution conditions for composition |
 | [Execution and security](03-adversarial-oracle-execution.md) | Persistent worlds, security events, probability premises, extraction, and costs |
 | [Extractor efficiency](03a-extractor-efficiency.md) | The implemented unbounded-game and measured-operation contracts for named extractors, the obligations of each extractor-bearing notion, and FRI and Toy requirements |
-| [Extractor execution backends](03b-extractor-execution.md) | Proposed complete execution bounds, backend requirements, and uniform families for extractors |
+| [Extractor execution backends](03b-extractor-execution.md) | Proposed complete execution bounds, backend requirements, and security-parameter families for extractors |
 | [Oracle-elimination compiler](04-oracle-elimination-compiler.md) | Backend obligations and how compilation preserves oracle guarantees |
 | [Roadmap](05-roadmap.md) | Remaining interaction-layer work, dependencies, acceptance checks, and issue links |
 

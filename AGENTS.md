@@ -30,7 +30,7 @@ Start with [`README.md`](README.md) for the project overview.
 
 ## Where To Work
 
-- `ArkLib/Data/` - reusable math, coding theory, polynomials, probability, and measured programs.
+- `ArkLib/Data/` - reusable math, coding theory, polynomials, and probability.
 - `ArkLibTest/` - compile-time acceptance examples and regression tests. Run them with `lake test`.
 - `ArkLib/Interaction/` - the interaction layer: interaction-tree protocols and their security
   theory. It is meant to replace the legacy layer ([`README.md`](README.md#two-layers)).
@@ -102,7 +102,7 @@ Start with [`README.md`](README.md) for the project overview.
 - [`docs/design/README.md`](docs/design/README.md) - interaction-layer architecture and its
   implementation plan.
 - [`docs/kb/README.md`](docs/kb/README.md) - paper knowledge base.
-- [`docs/wiki/writing.md`](docs/wiki/writing.md) - the writing standard for all prose.
+- [`docs/wiki/writing.md`](docs/wiki/writing.md) - the writing guide. Its rules are advice.
 
 ## Canonical Project Docs
 

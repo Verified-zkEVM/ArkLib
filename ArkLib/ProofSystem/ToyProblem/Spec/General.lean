@@ -271,9 +271,9 @@ the shared fixed-encoder relation family. -/
 def inputRelationFor (encode : (Fin k → F) → (ι → A)) :
     Set ((Statement (F := F) k × (∀ i, OracleStatement ι A i)) ×
       Witness (F := F) k) :=
-  fun input ↦
+  {input |
     (∀ i : Fin 2, input.1.2 i = encode (input.2 i)) ∧
-    (∀ i : Fin 2, ∑ j, input.2 i j * input.1.1.1 j = ![input.1.1.2.1, input.1.1.2.2] i)
+    (∀ i : Fin 2, ∑ j, input.2 i j * input.1.1.1 j = ![input.1.1.2.1, input.1.1.2.2] i)}
 
 /-- The IOR-shaped **fixed-encoding** *relaxed* output relation.
 The soundness statement of L6.6/6.8 is with respect to this: the verifier's
@@ -286,11 +286,11 @@ language membership. -/
 def outputRelationFor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
     Set ((Statement (F := F) k × (∀ i, OracleStatement ι A i)) ×
       Witness (F := F) k) :=
-  fun input ↦
+  {input |
     (∀ i : Fin 2, ∑ j, input.2 i j * input.1.1.1 j =
       ![input.1.1.2.1, input.1.1.2.2] i) ∧
     ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
-      ∀ i : Fin 2, ∀ j ∈ S, input.1.2 i j = encode (input.2 i) j
+      ∀ i : Fin 2, ∀ j ∈ S, input.1.2 i j = encode (input.2 i) j}
 
 omit [Fintype ι] in
 /-- The language-level exact relation `RelationFor` is precisely the
@@ -970,7 +970,8 @@ lemma oracleVerifier_simulateQ_eq_pure_ite
     (oStmt := oStmt) (msgs := msgs) (stmt1 := stmt.1)
     (mu1 := stmt.2.1) (mu2 := stmt.2.2)
     (γ := challenges ⟨0, rfl⟩) (xs := challenges ⟨2, rfl⟩) using 1
-  all_goals (simp only [Accepts, bind_pure_comp]; try congr 1)
+  all_goals simp only [Accepts, bind_pure_comp]
+  congr 1
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- **Soundness direction of the verifier-run support characterization** (converse companion
@@ -1249,12 +1250,11 @@ omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- Per-transcript combination-round bound for the generic classical
 toy-protocol extractor.  The error is the certified affine-line
 MCA-plus-two-row-list upper bound. -/
-lemma gamma_round_game_bound [SampleableType F] [Nonempty ι] [Finite A]
+lemma gamma_round_game_bound [SampleableType F] [Finite A]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (encode : (Fin k → F) →ₗ[F] (ι → A))
     (hinj : Function.Injective encode)
     (hC : Set.range encode = (C : Set (ι → A)))
-    (hδ_pos : 0 < δ)
     (hδ_lt : δ < (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0))
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
     Pr{let γ ← $ᵗ F}[∃ w : Fin k → F,
@@ -1296,7 +1296,7 @@ lemma gamma_round_game_bound [SampleableType F] [Nonempty ι] [Finite A]
         fin_cases i
         · simpa using h3 0 j hj
         · simpa using h3 1 j hj
-      refine le_trans (gamma_transition_prob_le C δ encode hinj hC hδ_pos hδ_lt
+      refine le_trans (gamma_transition_prob_le C δ encode hinj hC hδ_lt
         stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
         (stmtIn.2 0) (stmtIn.2 1) hNoWit) (le_of_eq ?_)
       rw [coe_certifiedGammaError]
@@ -1305,7 +1305,7 @@ omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Per-transcript spot-check-round bound for the toy protocol: if the
 post-combination knowledge state is false, uniform spot checks accept with
 probability at most `(1 - δ)^t`. -/
-lemma spotcheck_round_game_bound [Nonempty ι]
+lemma spotcheck_round_game_bound
     (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
     (γ : F) (g : Fin k → F) [SampleableType ι] :
@@ -1328,10 +1328,15 @@ lemma spotcheck_round_game_bound [Nonempty ι]
     exact hlin hacc.1
   let S₀ : Finset ι :=
     Finset.univ.filter (fun j ↦ stmtIn.2 0 j + γ • stmtIn.2 1 j = encode g j)
-  have hι : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hAcard : (S₀.card : ℝ) < (1 - (δ : ℝ)) * Fintype.card ι :=
     not_le.mp fun hge ↦ hbad ⟨hlin, S₀, hge,
       fun j hj ↦ (Finset.mem_filter.mp hj).2⟩
+  have hι : (0 : ℝ) < Fintype.card ι := by
+    by_contra hzero
+    have hcard : (Fintype.card ι : ℝ) = 0 :=
+      le_antisymm (not_lt.mp hzero) (Nat.cast_nonneg _)
+    rw [hcard, mul_zero] at hAcard
+    exact (not_lt_of_ge (Nat.cast_nonneg S₀.card)) hAcard
   have hδ1 : δ ≤ 1 := by
     by_contra hgt
     have h1δ : (1 : ℝ) - (δ : ℝ) < 0 :=
@@ -1339,7 +1344,7 @@ lemma spotcheck_round_game_bound [Nonempty ι]
     linarith [mul_neg_of_neg_of_pos h1δ hι,
       (Nat.cast_nonneg S₀.card : (0 : ℝ) ≤ S₀.card)]
   have hbase : ((S₀.card : ℝ≥0) / (Fintype.card ι : ℝ≥0)) ≤ 1 - δ := by
-    rw [div_le_iff₀ (by exact_mod_cast Fintype.card_pos :
+    rw [div_le_iff₀ (by exact_mod_cast hι :
       (0 : ℝ≥0) < Fintype.card ι), ← NNReal.coe_le_coe]
     push_cast [NNReal.coe_sub hδ1]
     linarith
@@ -1353,7 +1358,7 @@ lemma spotcheck_round_game_bound [Nonempty ι]
         (ENNReal.coe_natCast _).symm,
       show ((Fintype.card ι : ENNReal)) =
         ((Fintype.card ι : ℝ≥0) : ENNReal) from (ENNReal.coe_natCast _).symm,
-      ← ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)]
+      ← ENNReal.coe_div (by exact_mod_cast ne_of_gt hι)]
     exact ENNReal.coe_le_coe.mpr hbase
 
 omit [DecidableEq ι] [Fintype A] in
@@ -1362,14 +1367,13 @@ the toy protocol in the alphabet-generic classical-extractor form.  Concrete
 IRS clients should prefer `Impl.IRS.oracleVerifier_rbrKnowledgeSoundness`,
 whose extractor is executable and named. -/
 theorem oracleVerifier_rbrKnowledgeSoundness
-    [SampleableType F] [SampleableType ι] [Nonempty ι] [Finite A]
+    [SampleableType F] [SampleableType ι] [Finite A]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (encode : (Fin k → F) →ₗ[F] (ι → A))
     (hinj : Function.Injective encode)
     (hC : Set.range encode = (C : Set (ι → A)))
-    (hδ_pos : 0 < δ)
     (hδ_lt_min : δ <
       (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)) :
     ((oracleVerifier (k := k) (t := t)
@@ -1387,7 +1391,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness
   intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, hdir⟩ := i
   rcases iv with _ | _ | _ | iv
-  · exact gamma_round_game_bound k C δ encode hinj hC hδ_pos hδ_lt_min stmtIn
+  · exact gamma_round_game_bound k C δ encode hinj hC hδ_lt_min stmtIn
   · exact absurd hdir (fun h ↦ Direction.noConfusion h)
   · exact spotcheck_round_game_bound k t
       (encode : (Fin k → F) → (ι → A)) δ stmtIn

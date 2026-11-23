@@ -45,7 +45,6 @@ theorem exists_prescribedLine_exactCorrelatedPair {F E : Type u} [Field F] [Fiel
     (hblock : 8 * Nat.ceil
       (100 * (Nat.ceil (Real.exp ((27 / 10) / δ)) : ℝ) ^ 2 *
         harmonic (Nat.ceil (Real.exp ((27 / 10) / δ)) - 1)) ≤ n)
-    (hA : capacityAgreementThreshold δ n k ≤ n)
     (hchar :
       let d := Nat.ceil (Real.exp ((27 / 10) / δ))
       let m := Nat.ceil (100 * (d : ℝ) ^ 2 * harmonic (d - 1))
@@ -60,10 +59,18 @@ theorem exists_prescribedLine_exactCorrelatedPair {F E : Type u} [Field F] [Fiel
           (polynomialAgreementSet (domain.trans ⟨iota, iota.injective⟩)
             (fun i ↦ iota (f i) + z * iota (g i)) P).card →
         HasExactCorrelatedPair domain f g iota k z P := by
+  classical
+  by_cases hA : capacityAgreementThreshold δ n k ≤ n
+  swap
+  · refine ⟨∅, ?_, ?_⟩
+    · simp only [Finset.card_empty, Nat.cast_zero]
+      exact mul_nonneg (prescribedProductAgreementConstant_pos hδ).le (by positivity)
+    · intro z _ P _ hagree
+      exact (hA (hagree.trans ((Finset.card_le_univ _).trans_eq (Fintype.card_fin n)))).elim
   let values : Fin 2 → Fin n → F := ![f, g]
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_exceptional_exactPowerAgreement_of_prescribedCurve δ n k 1 domain values iota
-      hδ hδ' hk (by norm_num) (by simpa [xi] using hblock)
+      hδ hδ' hk (by simpa [xi] using hblock)
     hA (by simpa [xi] using hchar)
   refine ⟨exceptional, by simpa [xi] using hcard, ?_⟩
   intro z hz P hdegree hagree

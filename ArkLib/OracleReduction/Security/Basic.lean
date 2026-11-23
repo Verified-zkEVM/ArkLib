@@ -345,8 +345,10 @@ def knowledgeSoundnessWith
   The extractor is unconstrained, so this contract carries no efficiency content. The classical
   witness selector `Extractor.Straightline.choose` makes it equivalent to
   `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`). Extraction in
-  the cryptographic sense is `knowledgeSoundnessWith` for a named extractor together with a cost
-  bound on that extractor.
+  the cryptographic sense needs a named extractor and a bound on its complete execution.
+  `knowledgeSoundnessWith` fixes the extractor. `knowledgeSoundnessWithResources` in
+  `Security/Resources.lean` additionally bounds the declared instruction counts of a measured
+  program returning the same value, which does not bound the extractor's complete execution.
 -/
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=
@@ -373,6 +375,14 @@ theorem knowledgeSoundness_of_with
     verifier.knowledgeSoundness init impl relIn relOut knowledgeError :=
   (knowledgeSoundness_iff_exists_with init impl relIn relOut verifier knowledgeError).mpr
     ⟨extractor, h⟩
+
+/-- Increasing the allowed error preserves soundness. -/
+theorem soundness_error_mono {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε ε' : ℝ≥0}
+    (hε : ε ≤ ε') (h : verifier.soundness init impl langIn langOut ε) :
+    verifier.soundness init impl langIn langOut ε' :=
+  fun WitIn WitOut witIn prover stmtIn hstmt =>
+    (h WitIn WitOut witIn prover stmtIn hstmt).trans (by exact_mod_cast hε)
 
 /-- Increasing the allowed error preserves knowledge soundness. -/
 theorem knowledgeSoundness_error_mono

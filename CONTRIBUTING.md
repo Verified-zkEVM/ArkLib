@@ -16,7 +16,8 @@ The [wiki](docs/wiki/README.md) describes repository commands and conventions.
 ### Set Up and Validate
 
 Install [uv](https://docs.astral.sh/uv/getting-started/installation/) before running validation.
-The wrapper uses it for the Python checker tests and stops before the Lean build if it is absent.
+The wrapper runs the Python checks through uv and stops before the Lean build if uv is absent.
+[Python tooling](docs/wiki/quickstart.md#python-tooling) lists the prerequisites and commands.
 On a new clone, download the build cache. Then run the full validation:
 
 ```bash
@@ -26,8 +27,6 @@ lake exe cache get
 
 For a change to proofs or admissions, also run `./scripts/validate.sh --axioms`.
 The [quickstart](docs/wiki/quickstart.md) explains the checks and optional build targets.
-The Python commands in the writing workflow select Python 3.12 through uv and do not install a
-project package.
 
 ### Check for Overlap
 
@@ -42,9 +41,10 @@ If an open PR covers the same declarations, ask its author whether the work is a
 Do not duplicate active work. If you open a PR for the same target, link the earlier PR and
 explain how your work relates to it.
 
-If the earlier PR appears abandoned and its author does not reply, you can ask a maintainer
-whether to proceed. A maintainer may waive the overlap rule. This creates no response deadline
-or obligation for maintainers.
+An earlier PR is inactive when its author has added no commit or comment for 30 days and has not
+answered a question in the PR within 7 days. For an inactive PR, you can ask a maintainer to
+waive the overlap rule. A maintainer may waive it. This creates no response deadline or
+obligation for maintainers.
 
 ### Reuse Existing Definitions
 

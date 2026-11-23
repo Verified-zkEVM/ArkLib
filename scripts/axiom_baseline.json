@@ -4,22 +4,6 @@
     {
       "name": "CodingTheory.exists_rs_epsCa_large_near_capacity",
       "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
-    },
-    {
-      "name": "CodingTheory.random_linear_lambda_lower",
-      "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
-    },
-    {
-      "name": "CodingTheory.random_linear_lambda_lower_exists",
-      "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
-    },
-    {
-      "name": "CodingTheory.rs_lambda_superpoly_extension",
-      "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
-    },
-    {
-      "name": "CodingTheory.rs_random_domain_lambda_le",
-      "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
     }
   ],
   "nonstandard": []

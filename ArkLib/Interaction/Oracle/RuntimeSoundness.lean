@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Interaction.Oracle.CompositionSoundness
 public import ArkLib.Interaction.Oracle.PhasedRun
-public import ArkLib.Data.Probability.Sequential
+public import VCVio.OracleComp.Runtime
 
 /-! # Composition soundness in a persistent runtime -/
 
@@ -15,71 +15,6 @@ public import ArkLib.Data.Probability.Sequential
 
 open OracleComp OracleSpec MeasureTheory
 open scoped ENNReal
-
-namespace OracleRuntime
-variable {ι κ B X : Type} {imports : OracleSpec ι} {surface : OracleSpec κ}
-  [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
-
-/-- Average actual resumed success over the joint prefix result. The fixed authored continuation
-receives only `B`; the runtime retains state and history internally. Analytic exceptional and error
-predicates may inspect the full joint result. No independence or normalization is assumed. -/
-theorem run_bind_success_le (runtime : OracleRuntime imports surface)
-    (first : OracleComp surface B) (next : B → OracleComp surface X)
-    (Exceptional : RunResult runtime B → Prop) (Success : X → Prop)
-    (error : RunResult runtime B → ENNReal)
-    (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
-      (∫⁻ b in {b | ¬ Exceptional b},
-        Pr{let result ← runtime.resume b next}[Success result.output] ∂𝒟[runtime.run first]) ≤
-      ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first]) :
-    let : MeasurableSpace (RunResult runtime B) := ⊤
-    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{let b ← runtime.run first}[Exceptional b] +
-        ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
-  let : MeasurableSpace (RunResult runtime B) := ⊤
-  rw [runtime.run_bind]
-  exact (prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
-    (fun b => runtime.resume b next) Exceptional (fun result => Success result.output)
-    (fun b => Pr{let result ← runtime.resume b next}[Success result.output])
-    (Filter.Eventually.of_forall (fun _ _ => le_rfl))).trans (add_le_add le_rfl hsuffix)
-/-- A stronger pointwise almost-everywhere premise implies the joint average bound. -/
-theorem run_bind_success_le_ae (runtime : OracleRuntime imports surface)
-    (first : OracleComp surface B) (next : B → OracleComp surface X)
-    (Exceptional : RunResult runtime B → Prop) (Success : X → Prop)
-    (error : RunResult runtime B → ENNReal)
-    (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
-      ∀ᵐ b ∂𝒟[runtime.run first], ¬ Exceptional b →
-        Pr{let result ← runtime.resume b next}[Success result.output] ≤ error b) :
-    let : MeasurableSpace (RunResult runtime B) := ⊤
-    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{let b ← runtime.run first}[Exceptional b] +
-        ∫⁻ b in {b | ¬ Exceptional b}, error b ∂𝒟[runtime.run first] := by
-  let : MeasurableSpace (RunResult runtime B) := ⊤
-  rw [runtime.run_bind]
-  exact prEvent_bind_le_prEvent_add_lintegral_ae (runtime.run first)
-    (fun b => runtime.resume b next) Exceptional (fun result => Success result.output) error hsuffix
-
-/-- A uniform actual-resume bound yields a uniform error term, even with missing mass. -/
-theorem run_bind_success_le_uniform (runtime : OracleRuntime imports surface)
-    (first : OracleComp surface B) (next : B → OracleComp surface X)
-    (Exceptional : RunResult runtime B → Prop) (Success : X → Prop) (error : ENNReal)
-    (hsuffix : letI : MeasurableSpace (RunResult runtime B) := ⊤
-      ∀ᵐ b ∂𝒟[runtime.run first], ¬ Exceptional b →
-        Pr{let result ← runtime.resume b next}[Success result.output] ≤ error) :
-    Pr{let result ← runtime.run (first >>= next)}[Success result.output] ≤
-      Pr{let b ← runtime.run first}[Exceptional b] + error := by
-  let : MeasurableSpace (RunResult runtime B) := ⊤
-  apply (runtime.run_bind_success_le_ae first next Exceptional Success (fun _ => error)
-    hsuffix).trans
-  apply add_le_add le_rfl
-  calc
-    _ ≤ ∫⁻ _, error ∂𝒟[runtime.run first] := by
-      simpa only [Measure.restrict_univ] using
-        (lintegral_mono_set (f := fun _ => error)
-          (μ := 𝒟[runtime.run first]) (Set.subset_univ {b | ¬ Exceptional b}))
-    _ = error * 𝒟[runtime.run first] Set.univ := lintegral_const error
-    _ ≤ error := mul_le_of_le_one_right' (evalDist_apply_univ_le_one (runtime.run first))
-
-end OracleRuntime
 
 namespace Interaction.Oracle
 

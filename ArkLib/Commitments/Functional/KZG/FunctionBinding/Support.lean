@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Commitments.Functional.KZG.Correctness
 public import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
-public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import CompPoly.Univariate.Lagrange
 -- `rfl` below reduces CompPoly's `toPoly`/`ringEquiv`, whose bodies are not exposed.
 import all CompPoly.Univariate.ToPoly.Core
 import all CompPoly.Univariate.ToPoly.Equiv

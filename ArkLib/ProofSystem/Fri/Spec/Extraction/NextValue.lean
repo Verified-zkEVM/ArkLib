@@ -26,10 +26,10 @@ variable (s : Fin (k + 1) → ℕ+) (o : ∀ j, FinalOracleStatement s ω j)
 variable (α : FinalStatement F k)
 
 /-- Read the next word value, or evaluate the cached final coefficients after the last fold. -/
-def nextValue (hs : (∑ j, (s j).val) ≤ n) {d : ℕ+}
+def nextValue {d : ℕ+}
     (input : PreparedInput s o α d) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val}) :
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val}) :
     OracleComp (InstructionSpec s o α)
       {a : F // a = committedFunction s o i.succ (x.val ^ (2 ^ foldingPrefix s i.succ))} := do
   let t ← liftComp (Arithmetic.squareIter projected.val (s i).val) _
@@ -43,7 +43,7 @@ def nextValue (hs : (∑ j, (s j).val) ≤ n) {d : ℕ+}
     let q : (ω.subdomain (foldingPrefix s j.castSucc)).toFinset := ⟨t.val, by
       rw [hj, ht]
       exact CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset
-        ((foldingPrefix_le s i.succ).trans hs) x.property⟩
+        x.property⟩
     let a ← readWord s o α j q
     pure ⟨a.val, by
       rw [a.property]

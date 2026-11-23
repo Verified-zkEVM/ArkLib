@@ -7,7 +7,6 @@ module
 
 public import Mathlib.Algebra.Polynomial.Basic
 public import Mathlib.Algebra.Polynomial.Bivariate
-public import Mathlib.Algebra.Polynomial.Basic
 public import Mathlib.Algebra.Polynomial.Eval.Irreducible
 public import Mathlib.FieldTheory.RatFunc.Basic
 public import Mathlib.FieldTheory.Separable
@@ -45,7 +44,7 @@ namespace Univariate
 
 section
 
-theorem resultant_is_divisible_by_leadingCoeff {F : Type} [CommRing F] [Inhabited F]
+theorem resultant_is_divisible_by_leadingCoeff {F : Type} [CommRing F]
     (f : F[X]) (hf : 0 < f.degree) :
     ∃ r',
       Polynomial.resultant f (Polynomial.derivative f) f.natDegree (f.natDegree - 1) =

@@ -7,6 +7,7 @@ module
 
 public import ArkLib.Interaction.Oracle.Source
 public import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Relation.Basic
 
 /-!
 # Virtual oracle programs
@@ -24,41 +25,12 @@ universe u v w u' w' u'' w'' t a b
 
 namespace Interaction.Oracle
 
-/-- An indexed family of realization types with explicitly selected oracle interfaces. -/
-structure OracleFamily (Index : Type u) (Realization : Index → Type v) where
-  /-- Observable interface, supplied as data rather than inferred. -/
-  interface : ∀ i, OracleInterface.{v, w} (Realization i)
-
 namespace OracleFamily
 
 variable {I : Type u} {Data : I → Type v}
 
-/-- Index carrier of the interface family. -/
-abbrev Index (_ : OracleFamily.{u, v, w} I Data) := I
-
-/-- The admissible realization type at each index. -/
-abbrev Realization (O : OracleFamily.{u, v, w} I Data) : O.Index → Type v := Data
-
-/-- The dependent query signature of the explicit interfaces. -/
-abbrev spec (O : OracleFamily.{u, v, w} I Data) := [O.Realization]ₒ' O.interface
-
-/-- Arbitrary deterministic answers, without a representability assumption. -/
-abbrev Behavior (O : OracleFamily.{u, v, w} I Data) := QueryImpl O.spec Id
-
-/-- Interpret a family of admissible realizations through its declared interfaces. -/
-def behaviorOfRealizations (O : OracleFamily.{u, v, w} I Data)
-    (data : ∀ i, O.Realization i) : O.Behavior :=
-  fun q => (O.interface q.1).answer (data q.1) q.2
-
 /-- The source whose environments are arbitrary behaviors, including unrepresentable ones. -/
 def asBehaviorSource (O : OracleFamily.{u, v, w} I Data) := SourceCtx.ofSpec O.spec
-
-/-- Pull back the indexed interface family along an arbitrary map.
-
-Repeated indices copy interface types; they do not force independently supplied realizations or
-behaviors to agree. Use a named-context view when aliases must share a realization. -/
-def reindex (O : OracleFamily.{u, v, w} I Data) {J : Type u'} (f : J → O.Index) :
-    OracleFamily J (O.Realization ∘ f) := ⟨fun j => O.interface (f j)⟩
 
 end OracleFamily
 
@@ -127,16 +99,15 @@ theorem eval_reindex (a : VirtualOracle srcSpec A) (f : K → A.Index)
 def mapSource {E : Type w'} {F : Type w''}
     {S : SourceCtx.{u, v, w'} I E} {T : SourceCtx.{u', v, w''} J F}
     (a : VirtualOracle S.spec A) (f : SourceHom S T) : VirtualOracle T.spec A :=
-  a.substSource f.toQueryImpl
+  ⟨fun q => f.mapProgram (a.query q)⟩
 
 @[simp]
 theorem eval_mapSource {E : Type w'} {F : Type w''}
     {S : SourceCtx.{u, v, w'} I E} {T : SourceCtx.{u', v, w''} J F}
     (a : VirtualOracle S.spec A) (f : SourceHom S T) (impl : QueryImpl T.spec Id) :
     (a.mapSource f).eval impl = a.eval (f.pull impl) := by
-  rw [mapSource, eval_substSource]
-  congr 1
-
+  funext q
+  exact OracleComp.simulateQ_mapLens impl f.route (a.query q)
 
 /-- Add unused sources on the right. -/
 @[macro_inline]

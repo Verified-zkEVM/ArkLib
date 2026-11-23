@@ -46,10 +46,10 @@ promise deprecation periods; see the [compatibility policy](CONTRIBUTING.md#comp
 
 ## Complete
 
-Every result below is on `main` and depends only on Lean's standard axioms (`propext`,
-`Classical.choice`, `Quot.sound`). Theorem names are full Lean names. Each theorem's docstring
-states its hypotheses; read them before relying on a result. The interaction-layer status page,
-[`docs/design/00-current-status.md`](docs/design/00-current-status.md), records that layer's APIs
+Every result below is on `main` and depends only on Lean's standard axioms
+(`propext`, `Classical.choice`, `Quot.sound`). Theorem names are full Lean names. Each theorem's
+docstring states its hypotheses; read them before relying on a result. The interaction-layer status
+page, [`docs/design/00-current-status.md`](docs/design/00-current-status.md), records that layer's APIs
 and remaining proof gaps in detail.
 
 ### Protocols and commitments
@@ -95,8 +95,10 @@ entry says so, the specification is not claimed to be executable.
   `Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness_and_knowledgeSoundness` proves
   perfect completeness on exact encodings and ordinary knowledge soundness, obtained from
   round-by-round knowledge soundness through the proved guarded bridge
-  `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The fused FRI-Binius
-  protocol is not yet formalized. The
+  `Verifier.GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness`. The unrolled protocol of
+  DP24 Construction 5.1 for `K = GF(2)`, in which the Binary Basefold sum-check is the ring-switching sum-check,
+  is `Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness`, with
+  error bound DP24 equation (43). The
   [consumer guide](docs/wiki/ring-switching-consumers.md) records the interfaces.
 - **Spartan** ([`ProofSystem/Spartan/`](ArkLib/ProofSystem/Spartan/)): a seven-stage oracle
   reduction for R1CS. `Spartan.perfectCompleteness`; `Spartan.knowledgeSoundness`, with error
@@ -151,13 +153,14 @@ entry says so, the specification is not claimed to be executable.
   `(Q + k) * error`. No concrete protocol consumes the knowledge certificates yet, and randomized
   state restoration is in progress (below). The
   [interaction-layer status page](docs/design/00-current-status.md) has the details.
-- **Measured extraction**: measured programs and operation-count budgets
-  ([`Data/OracleComp/MeasuredProgram.lean`](ArkLib/Data/OracleComp/MeasuredProgram.lean)), their use
-  in knowledge soundness ([`OracleReduction/Security/Resources.lean`](ArkLib/OracleReduction/Security/Resources.lean)),
-  and measured stages for interaction-layer knowledge and state-restoration certificates
-  (`Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`). The
-  [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states what these budgets
-  do and do not certify.
+- **Measured extraction**: VCVio's game-independent measured programs and declared instruction
+  budgets (`VCVio.OracleComp.QueryTracking.MeasuredProgram`), their
+  [knowledge-soundness adapter](ArkLib/OracleReduction/Security/Resources.lean), and native measured
+  stages for knowledge and state-restoration certificates
+  (`Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`).
+  [Composition along typed paths](ArkLib/Interaction/Oracle/Security/KnowledgeResources/Composition.lean)
+  preserves the named extractor and sums its stage budgets. The
+  [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states their accounting scope.
 - **Commitment games**: binding and extractability experiments that keep the oracle state left by
   setup ([`Commitments/Functional/Basic.lean`](ArkLib/Commitments/Functional/Basic.lean)).
 - **Algebraic group model**: group representations for algebraic adversaries
@@ -165,9 +168,9 @@ entry says so, the specification is not claimed to be executable.
 
 ## In progress
 
-- **Solicited proofs.** Five coding-theory declarations, covering lower bounds, separations and a
-  random-domain list-size upper bound, are stated faithfully and left open for contributors. They are the only admitted statements in the library, and nothing
-  else depends on them
+- **Solicited proofs.** One coding-theory declaration, a correlated-agreement lower bound, is
+  stated faithfully and left open for contributors. It is the only admitted statement in the
+  library, and nothing else depends on it
   ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).
 - **Rewinding knowledge soundness.** A shared rewinding engine with legacy-layer and
   interaction-layer instances
@@ -185,9 +188,7 @@ entry says so, the specification is not claimed to be executable.
 - **STIR protocol.** Construction 5.2 and its round-by-round soundness (Lemma 5.4, Theorem 5.1),
   tied to a concrete prover and verifier
   ([#1292](https://github.com/Verified-zkEVM/ArkLib/issues/1292)).
-- **BitZ.** The general relation over a finitely generated ring and a relaxed overflow bound
-  ([#1331](https://github.com/Verified-zkEVM/ArkLib/issues/1331),
-  [#1307](https://github.com/Verified-zkEVM/ArkLib/issues/1307)).
+- **BitZ.** The use of the CRT overflow bound in Round 2.
 - **Group models.** ArkLib's side of the generic and algebraic group model consolidation in VCVio
   ([#1310](https://github.com/Verified-zkEVM/ArkLib/issues/1310)).
 

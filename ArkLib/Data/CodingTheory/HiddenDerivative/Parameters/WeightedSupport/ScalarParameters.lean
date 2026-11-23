@@ -59,11 +59,11 @@ theorem residualFraction_eq : residualFraction = 5 / 8 := by norm_num [residualF
 /-- The clipped rate gap `g = min 1 (δ / ρ)`: it is `1` for `ρ ≤ δ` and `δ / ρ` for `δ ≤ ρ`. -/
 noncomputable def rateGap (δ ρ : ℝ) : ℝ := min 1 (δ / ρ)
 
-/-- For `δ, ρ > 0`, `rateGap δ ρ = δ / max δ ρ`. -/
-theorem rateGap_eq_div_max {δ ρ : ℝ} (hδ : 0 < δ) (hρ : 0 < ρ) :
+/-- For `ρ > 0`, `rateGap δ ρ = δ / max δ ρ`. -/
+theorem rateGap_eq_div_max {δ ρ : ℝ} (hρ : 0 < ρ) :
     rateGap δ ρ = δ / max δ ρ := by
   rcases le_total ρ δ with h | h
-  · rw [rateGap, max_eq_left h, div_self hδ.ne', min_eq_left ((one_le_div hρ).mpr h)]
+  · rw [rateGap, max_eq_left h, div_self (hρ.trans_le h).ne', min_eq_left ((one_le_div hρ).mpr h)]
   · rw [rateGap, max_eq_right h, min_eq_right ((div_le_one hρ).mpr h)]
 
 /-- For `δ, ρ > 0` the rate gap is positive. -/
@@ -73,12 +73,14 @@ theorem rateGap_pos {δ ρ : ℝ} (hδ : 0 < δ) (hρ : 0 < ρ) : 0 < rateGap δ
 /-- The rate gap is at most `1`. -/
 theorem rateGap_le_one (δ ρ : ℝ) : rateGap δ ρ ≤ 1 := min_le_left _ _
 
-/-- For `δ, ρ > 0`, `(1 + θ g) / g = (max δ ρ + θ δ) / δ` where `g = rateGap δ ρ`, for every `θ`.
+/-- For `ρ > 0`, `(1 + θ g) / g = (max δ ρ + θ δ) / δ` where `g = rateGap δ ρ`, for every `θ`.
 -/
-theorem one_add_mul_rateGap_div (θ : ℝ) {δ ρ : ℝ} (hδ : 0 < δ) (hρ : 0 < ρ) :
+theorem one_add_mul_rateGap_div (θ : ℝ) {δ ρ : ℝ} (hρ : 0 < ρ) :
     (1 + θ * rateGap δ ρ) / rateGap δ ρ = (max δ ρ + θ * δ) / δ := by
-  have hm : 0 < max δ ρ := lt_max_of_lt_left hδ
-  rw [rateGap_eq_div_max hδ hρ]
+  by_cases hδ : δ = 0
+  · simp [hδ, rateGap]
+  have hm : 0 < max δ ρ := lt_max_of_lt_right hρ
+  rw [rateGap_eq_div_max hρ]
   field_simp
 
 /-- If `0 ≤ ξ`, `0 < δ ≤ 1`, `0 < ρ ≤ 1` and `ξ / δ ≤ H`, then `ξ ≤ g H` for `g = rateGap δ ρ`.
@@ -89,29 +91,38 @@ theorem le_rateGap_mul {ξ δ ρ H : ℝ} (hξ : 0 ≤ ξ) (hδ : 0 < δ) (hδ1 
   have hH0 : 0 ≤ H := (div_nonneg hξ hδ.le).trans hH
   have hδH : ξ ≤ δ * H := by rwa [div_le_iff₀ hδ, mul_comm] at hH
   have hg : δ ≤ rateGap δ ρ := by
-    rw [rateGap_eq_div_max hδ hρ]
+    rw [rateGap_eq_div_max hρ]
     rw [le_div_iff₀ (lt_max_of_lt_left hδ)]
     exact mul_le_of_le_one_right hδ.le (max_le hδ1 hρ1)
   exact hδH.trans (mul_le_mul_of_nonneg_right hg hH0)
 
 /-- If `max δ ρ + θ δ ≤ 1`, then `(1 + θ g) / g ≤ 1 / δ` for `g = rateGap δ ρ`. By
-`one_add_mul_rateGap_div` the hypothesis is also necessary. -/
-theorem one_add_mul_rateGap_div_le (θ : ℝ) {δ ρ : ℝ} (hδ : 0 < δ) (hρ : 0 < ρ)
+`one_add_mul_rateGap_div` the hypothesis is also necessary when `ρ > 0`. -/
+theorem one_add_mul_rateGap_div_le (θ : ℝ) {δ ρ : ℝ} (hδ : 0 < δ)
     (h : max δ ρ + θ * δ ≤ 1) : (1 + θ * rateGap δ ρ) / rateGap δ ρ ≤ 1 / δ := by
-  rw [one_add_mul_rateGap_div θ hδ hρ]
-  exact div_le_div_of_nonneg_right h hδ.le
+  rcases lt_trichotomy ρ 0 with hρ | rfl | hρ
+  · have hδρ : δ / ρ < 0 := div_neg_of_pos_of_neg hδ hρ
+    rw [rateGap, min_eq_right (hδρ.le.trans (by norm_num))]
+    have he : (1 + θ * (δ / ρ)) / (δ / ρ) = (ρ + θ * δ) / δ := by
+      field_simp [hρ.ne, hδ.ne']
+    rw [he]
+    apply div_le_div_of_nonneg_right _ hδ.le
+    linarith only [h, le_max_right δ ρ]
+  · simpa [rateGap] using (one_div_nonneg.mpr hδ.le)
+  · rw [one_add_mul_rateGap_div θ hρ]
+    exact div_le_div_of_nonneg_right h hδ.le
 
 /-- If `0 < ξ`, `max δ ρ + θ δ ≤ 1`, `ξ / δ ≤ H` and `s ≤ (1 + θ g) / (g H)` for
 `g = rateGap δ ρ`, then `s ≤ 1 / ξ`: the quotient is at most `(1 / δ) / H` by
 `one_add_mul_rateGap_div_le`, and `δ H ≥ ξ`. The hypothesis `0 < ξ` makes `H` positive. -/
 theorem le_inv_of_le_one_add_mul_rateGap_div {θ ξ δ ρ H s : ℝ} (hξ : 0 < ξ) (hδ : 0 < δ)
-    (hρ : 0 < ρ) (h : max δ ρ + θ * δ ≤ 1) (hH : ξ / δ ≤ H)
+    (h : max δ ρ + θ * δ ≤ 1) (hH : ξ / δ ≤ H)
     (hs : s ≤ (1 + θ * rateGap δ ρ) / (rateGap δ ρ * H)) : s ≤ 1 / ξ := by
   have hH0 : 0 < H := (div_pos hξ hδ).trans_le hH
   have hδH : ξ ≤ δ * H := by rwa [div_le_iff₀ hδ, mul_comm] at hH
   have hq : (1 + θ * rateGap δ ρ) / (rateGap δ ρ * H) ≤ 1 / δ / H := by
     rw [← div_div]
-    exact div_le_div_of_nonneg_right (one_add_mul_rateGap_div_le θ hδ hρ h) hH0.le
+    exact div_le_div_of_nonneg_right (one_add_mul_rateGap_div_le θ hδ h) hH0.le
   refine hs.trans (hq.trans ?_)
   rw [div_div]
   exact one_div_le_one_div_of_le hξ hδH
@@ -142,17 +153,17 @@ theorem prescribed_order_lower (δ : ℝ) (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4)
       ((Real.exp_le_exp.mpr he).trans hceil)).le
   exact ⟨by exact_mod_cast hd, hlog, hlog.trans (Real.log_le_harmonic_pred d)⟩
 
-/-- For `0 < δ ≤ 1 / 4`, `0 < ρ ≤ 1 - δ` and `ξ / δ ≤ H` with `ξ = 27 / 10`: `ξ ≤ g H`. -/
-theorem xi_le_rateGap_mul {δ ρ H : ℝ} (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4) (hρ : 0 < ρ)
+/-- For `0 < δ`, `0 < ρ ≤ 1 - δ` and `ξ / δ ≤ H` with `ξ = 27 / 10`: `ξ ≤ g H`. -/
+theorem xi_le_rateGap_mul {δ ρ H : ℝ} (hδ : 0 < δ) (hρ : 0 < ρ)
     (hρmax : ρ ≤ 1 - δ) (hH : xi / δ ≤ H) : xi ≤ rateGap δ ρ * H :=
   le_rateGap_mul xi_pos.le hδ (by linarith) hρ (by linarith) hH
 
-/-- For `0 < δ ≤ 1 / 4`, `0 < ρ ≤ 1 - δ` and `ξ / δ ≤ H`, a radius
+/-- For `0 < δ ≤ 1 / 4`, `ρ ≤ 1 - δ` and `ξ / δ ≤ H`, a radius
 `s ≤ (1 + θ g) / (g H)` is at most `1 / ξ = 10 / 27`. -/
 theorem normalizedRadius_le_ten_twentySeven {δ ρ H s : ℝ} (hδ : 0 < δ) (hδmax : δ ≤ 1 / 4)
-    (hρ : 0 < ρ) (hρmax : ρ ≤ 1 - δ) (hH : xi / δ ≤ H)
+    (hρmax : ρ ≤ 1 - δ) (hH : xi / δ ≤ H)
     (hs : s ≤ (1 + theta * rateGap δ ρ) / (rateGap δ ρ * H)) : s ≤ 10 / 27 := by
-  have h := le_inv_of_le_one_add_mul_rateGap_div xi_pos hδ hρ
+  have h := le_inv_of_le_one_add_mul_rateGap_div xi_pos hδ
     (max_add_theta_mul_le_one hδ hδmax hρmax) hH hs
   norm_num [xi] at h
   linarith

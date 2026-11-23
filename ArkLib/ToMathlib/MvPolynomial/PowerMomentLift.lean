@@ -56,9 +56,8 @@ def powerMomentIdeal {σ : Type*} (D : ℕ) :
     Ideal (MvPolynomial (PowerMomentIndex D σ) R) :=
   RingHom.ker (powerMomentMap (R := R) (σ := σ) D).toRingHom
 
-/-- The power-moment ideal is prime when the coefficient semiring is additively cancellative
-and a domain. -/
-theorem powerMomentIdeal_isPrime {σ : Type*} [IsCancelAdd R] [IsDomain R] (D : ℕ) :
+/-- The power-moment ideal is prime when the coefficient semiring is a domain. -/
+theorem powerMomentIdeal_isPrime {σ : Type*} [IsDomain R] (D : ℕ) :
     (powerMomentIdeal (R := R) (σ := σ) D).IsPrime :=
   RingHom.ker_isPrime (powerMomentMap (R := R) (σ := σ) D).toRingHom
 

@@ -19,7 +19,8 @@ Commands:
   deleted      the deleted and renamed paths, one on each line
   stale-refs   the tracked lines that still refer to a deleted path
   restore-generated
-               restore the generated KB files of the merge base, or of the base during a merge
+               restore the generated KB files of the merge base; during a merge, of the
+               merge base of the base, HEAD, and MERGE_HEAD
 
 The default base is `origin/main`. Run `git fetch` first, so that the base is current.
 """

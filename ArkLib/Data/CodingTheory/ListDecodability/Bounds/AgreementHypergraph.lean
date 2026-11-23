@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.PartitionConnected
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import Mathlib.InformationTheory.Hamming
 public import Mathlib.LinearAlgebra.Basis.Flag
@@ -86,9 +87,9 @@ def agreementWeight {ι : Type*} {A : Type*} [Fintype ι] [DecidableEq A]
 
 open scoped BigOperators in
 /-- **The double-counting lower bound.** If every codeword in `S` is within relative distance `δ` of
-`y`, then `S` forces agreement weight at least `|S| · n · (1 − δ) − n`: sum the per-codeword
-agreement counts, exchange the order of summation, and pay one unit per coordinate for the `− 1` in
-`agreementWeight`. -/
+`y`, then `S` forces agreement weight at least `|S| · n · (1 − δ) − n`. This is
+`Code.card_mul_sub_sum_hammingDist_sub_le_sum_card_filter_sub_one` for the words of `S`, which
+bounds the weight by the sum of the distances. -/
 theorem agreementWeight_ge_of_hammingDist_le
     {ι : Type*} {A : Type*} [Fintype ι] [DecidableEq A]
     (δ : ℝ) (y : ι → A) (S : Finset (ι → A))
@@ -96,46 +97,21 @@ theorem agreementWeight_ge_of_hammingDist_le
       (hammingDist c y : ℝ) ≤ δ * Fintype.card ι) :
     (S.card : ℝ) * Fintype.card ι * (1 - δ) - Fintype.card ι ≤
       (agreementWeight y S : ℝ) := by
-  classical
-  have hpoint : ∀ c ∈ S,
-      (Fintype.card ι : ℝ) * (1 - δ) ≤ (Code.agree c y : ℝ) := by
-    intro c hc
-    have hcast : (Code.agree c y : ℝ) + hammingDist c y = Fintype.card ι := by
-      exact_mod_cast (Code.agree_add_hammingDist (u := c) (v := y))
-    nlinarith [hdist c hc]
-  have hlower :
-      (S.card : ℝ) * Fintype.card ι * (1 - δ) ≤
-        ∑ c ∈ S, (Code.agree c y : ℝ) := by
-    have hsum := Finset.sum_le_sum hpoint
-    simpa only [Finset.sum_const, nsmul_eq_mul, mul_assoc] using hsum
-  have hdouble :
-      (∑ c ∈ S, (Code.agree c y : ℝ)) =
-        ∑ i : ι, ((S.filter (fun c => c i = y i)).card : ℝ) := by
-    unfold Code.agree
-    simp_rw [Finset.natCast_card_filter]
-    rw [Finset.sum_comm]
-  have hfiber : ∀ i : ι,
-      ((S.filter (fun c => c i = y i)).card : ℝ) ≤
-        (((S.filter (fun c => c i = y i)).card - 1 : ℕ) : ℝ) + 1 := by
-    intro i
-    exact_mod_cast (show
-      (S.filter (fun c => c i = y i)).card ≤
-        (S.filter (fun c => c i = y i)).card - 1 + 1 by omega)
-  have hupper :
-      (∑ i : ι, ((S.filter (fun c => c i = y i)).card : ℝ)) ≤
-        (agreementWeight y S : ℝ) + Fintype.card ι := by
-    calc
-      (∑ i : ι, ((S.filter (fun c => c i = y i)).card : ℝ)) ≤
-          ∑ i : ι,
-            ((((S.filter (fun c => c i = y i)).card - 1 : ℕ) : ℝ) + 1) :=
-        Finset.sum_le_sum fun i _ => hfiber i
-      _ = (agreementWeight y S : ℝ) + Fintype.card ι := by
-        rw [Finset.sum_add_distrib]
-        unfold agreementWeight
-        rw [Nat.cast_sum]
-        simp only [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_one]
-  rw [hdouble] at hlower
-  linarith
+  have h := Code.card_mul_sub_sum_hammingDist_sub_le_sum_card_filter_sub_one y
+    (Subtype.val : S → ι → A)
+  have hweight :
+      ∑ i, ((Finset.univ.filter fun c : S => c.1 i = y i).card - 1) = agreementWeight y S :=
+    Finset.sum_congr rfl fun i _ => by
+      rw [Finset.card_filter, Finset.card_filter,
+        Finset.sum_coe_sort S fun c => if c i = y i then 1 else 0]
+  have hsum : ∑ c : S, (hammingDist y c.1 : ℝ) ≤ S.card * (δ * Fintype.card ι) := by
+    rw [Finset.sum_coe_sort S fun c => (hammingDist y c : ℝ)]
+    refine (Finset.sum_le_sum fun c hc => ?_).trans_eq
+      (by rw [Finset.sum_const, nsmul_eq_mul])
+    rw [hammingDist_comm]
+    exact hdist c hc
+  rw [hweight, Fintype.card_coe] at h
+  nlinarith
 
 /-- The **flag level** of `x` against a basis `b`: the least `k` such that `x` lies in the span of
 the first `k` basis vectors, using `Module.Basis.flag`. It is `0` exactly when `x = 0`, and `j.succ`
@@ -408,7 +384,9 @@ noncomputable def geometricPartitionCrossing {F : Type*} {V : Type*}
     (e : Finset V) : ℕ :=
   (Finset.univ.filter (fun a => (e ∩ P.blocks a).Nonempty)).card - 1
 
-open scoped BigOperators in
+/-- The weight of an edge `e ⊆ S` is the sum of the weights of its pieces in a rank partition of
+`S` plus its crossing number. This is `Finset.card_filter_sub_one_add_sum_card_inter_sub_one` for
+the blocks of the partition. -/
 theorem geometricEdgeWeight_partition_decomposition
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] {S : Finset V}
@@ -416,88 +394,36 @@ theorem geometricEdgeWeight_partition_decomposition
     geometricEdgeWeight e =
       (∑ a, geometricEdgeWeight (e ∩ P.blocks a)) +
         geometricPartitionCrossing P e := by
-  classical
-  let q : ℕ :=
-    (Finset.univ.filter (fun a => (e ∩ P.blocks a).Nonempty)).card
-  have hpair : ((Finset.univ : Finset
-      (Fin (geometricAffineRank (F := F) S + 1))) : Set _).PairwiseDisjoint
-      (fun a => e ∩ P.blocks a) := by
-    intro a _ b _ hab
-    exact (P.disjoint a b hab).mono Finset.inter_subset_right
-      Finset.inter_subset_right
-  have hcover : Finset.univ.biUnion (fun a => e ∩ P.blocks a) = e := by
-    ext x
-    constructor
-    · intro hx
-      obtain ⟨a, _, hxi⟩ := Finset.mem_biUnion.mp hx
-      exact (Finset.mem_inter.mp hxi).1
-    · intro hx
-      have hxS : x ∈ S := he hx
-      rw [P.cover] at hxS
-      obtain ⟨a, ha, hxa⟩ := Finset.mem_biUnion.mp hxS
-      exact Finset.mem_biUnion.mpr
-        ⟨a, ha, Finset.mem_inter.mpr ⟨hx, hxa⟩⟩
-  have hsum_card :
-      (∑ a, (e ∩ P.blocks a).card) = e.card := by
-    have hc := Finset.card_biUnion hpair
-    rw [hcover] at hc
-    simpa only using hc.symm
-  have hpoint : ∀ a : Fin (geometricAffineRank (F := F) S + 1),
-      geometricEdgeWeight (e ∩ P.blocks a) +
-        (if (e ∩ P.blocks a).Nonempty then 1 else 0) =
-          (e ∩ P.blocks a).card := by
-    intro a
-    unfold geometricEdgeWeight
-    by_cases hne : (e ∩ P.blocks a).Nonempty
-    · rw [ite_eq_left hne]
-      have hpos := Finset.card_pos.mpr hne
-      omega
-    · rw [ite_eq_right hne]
-      have hz : (e ∩ P.blocks a).card = 0 :=
-        Finset.card_eq_zero.mpr (Finset.not_nonempty_iff_eq_empty.mp hne)
-      omega
-  have hindicator :
-      (∑ a : Fin (geometricAffineRank (F := F) S + 1),
-        if (e ∩ P.blocks a).Nonempty then 1 else 0) = q := by
-    unfold q
-    rw [Finset.card_filter]
-  have hsum : (∑ a, geometricEdgeWeight (e ∩ P.blocks a)) + q = e.card := by
-    rw [← hindicator, ← Finset.sum_add_distrib]
-    calc
-      (∑ a, (geometricEdgeWeight (e ∩ P.blocks a) +
-          if (e ∩ P.blocks a).Nonempty then 1 else 0)) =
-          ∑ a, (e ∩ P.blocks a).card :=
-        Finset.sum_congr rfl fun a _ => hpoint a
-      _ = e.card := hsum_card
-  unfold geometricPartitionCrossing
-  change geometricEdgeWeight e =
-    (∑ a, geometricEdgeWeight (e ∩ P.blocks a)) + (q - 1)
-  unfold geometricEdgeWeight at hsum ⊢
-  by_cases hene : e.Nonempty
-  · obtain ⟨x, hx⟩ := hene
-    have hxS : x ∈ S := he hx
-    rw [P.cover] at hxS
-    obtain ⟨a, _, hxa⟩ := Finset.mem_biUnion.mp hxS
-    have hqpos : 0 < q := by
-      rw [Finset.card_pos]
-      refine ⟨a, Finset.mem_filter.mpr ⟨Finset.mem_univ a, ?_⟩⟩
-      exact ⟨x, Finset.mem_inter.mpr ⟨hx, hxa⟩⟩
-    have hepos : 0 < e.card := Finset.card_pos.mpr ⟨x, hx⟩
-    omega
-  · have he0 : e.card = 0 :=
-      Finset.card_eq_zero.mpr (Finset.not_nonempty_iff_eq_empty.mp hene)
-    have hsum0 :
-        (∑ a, ((e ∩ P.blocks a).card - 1)) + q = 0 := by
-      simpa only [he0] using hsum
-    omega
+  have h := Finset.card_filter_sub_one_add_sum_card_inter_sub_one
+    (fun a _ b _ hab ↦ P.disjoint a b hab) (P.cover ▸ he)
+  unfold geometricEdgeWeight geometricPartitionCrossing
+  omega
 
 theorem geometricPartitionCrossing_le_affineRank
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] {S : Finset V}
-    (P : GeometricRankPartition (F := F) S) (e : Finset V) (he : e ⊆ S) :
+    (P : GeometricRankPartition (F := F) S) (e : Finset V) :
     geometricPartitionCrossing P e ≤ geometricAffineRank (F := F) e := by
+  classical
+  let : FiniteDimensional F (vectorSpan F (e : Set V)) :=
+    finiteDimensional_vectorSpan_of_finite F e.finite_toSet
+  have hfilter :
+      Finset.univ.filter (fun a => (e ∩ P.blocks a).Nonempty) =
+        Finset.univ.filter (fun a => ((e ∩ S) ∩ P.blocks a).Nonempty) := by
+    congr 1
+    funext a
+    have hinter : e ∩ P.blocks a = (e ∩ S) ∩ P.blocks a := by
+      ext x
+      simp only [Finset.mem_inter]
+      exact ⟨fun h => ⟨⟨h.1, P.subset a h.2⟩, h.2⟩,
+        fun h => ⟨h.1.1, h.2⟩⟩
+    rw [hinter]
+  have hrank : geometricAffineRank (F := F) (e ∩ S) ≤ geometricAffineRank (F := F) e :=
+    Submodule.finrank_mono (vectorSpan_mono F (by
+      exact_mod_cast (Finset.inter_subset_left : e ∩ S ⊆ e)))
   unfold geometricPartitionCrossing
-  have h := P.rank_bound e he
+  rw [hfilter]
+  have h := P.rank_bound (e ∩ S) Finset.inter_subset_right
   omega
 
 theorem geometricRankPartition_blocks_ssubset
@@ -702,7 +628,6 @@ theorem minimal_linear_heavy_crossing_lower
     [Fintype ι] [Field F] [AddCommGroup V] [Module F V] [DecidableEq V]
     {S : Finset V} (P : GeometricRankPartition (F := F) S)
     (E : ι → Finset V) (κ : ℝ)
-    (hblocks : ∀ a, P.blocks a ⊂ S)
     (hheavy : (geometricEdgeWeight S : ℝ) * κ ≤
       (geometricTotalWeight E S : ℝ))
     (hminimal : ∀ U : Finset V, U ⊂ S → 2 ≤ U.card →
@@ -711,55 +636,62 @@ theorem minimal_linear_heavy_crossing_lower
     (geometricAffineRank (F := F) S : ℝ) * κ ≤
       ∑ i : ι, (geometricPartitionCrossing P (E i ∩ S) : ℝ) := by
   classical
-  have hblock : ∀ a, (geometricTotalWeight E (P.blocks a) : ℝ) ≤
-      (geometricEdgeWeight (P.blocks a) : ℝ) * κ := by
-    intro a
-    by_cases hcard : (P.blocks a).card ≤ 1
-    · have hzero := geometricTotalWeight_eq_zero_of_card_le_one
-        E (P.blocks a) hcard
-      have hwzero : geometricEdgeWeight (P.blocks a) = 0 := by
-        unfold geometricEdgeWeight
-        omega
-      rw [hzero, hwzero]
-      norm_num
-    · have htwo : 2 ≤ (P.blocks a).card := by omega
-      exact (hminimal (P.blocks a) (hblocks a) htwo).le
-  have hsum_blocks :
-      (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) ≤
-        ∑ a, (geometricEdgeWeight (P.blocks a) : ℝ) * κ :=
-    Finset.sum_le_sum fun a _ => hblock a
-  have hsum_weight_nat := geometricRankPartition_sum_blockWeight P
-  have hrank_le := geometricAffineRank_le_edgeWeight (F := F) S
-  have hsum_weight :
-      (∑ a, (geometricEdgeWeight (P.blocks a) : ℝ)) =
-        (geometricEdgeWeight S : ℝ) -
-          (geometricAffineRank (F := F) S : ℝ) := by
-    rw [← Nat.cast_sum, hsum_weight_nat, Nat.cast_sub hrank_le]
-  have hsum_blocks' :
-      (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) ≤
-        ((geometricEdgeWeight S : ℝ) -
-          (geometricAffineRank (F := F) S : ℝ)) * κ := by
-    calc
-      (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) ≤
-          ∑ a, (geometricEdgeWeight (P.blocks a) : ℝ) * κ := hsum_blocks
-      _ = (∑ a, (geometricEdgeWeight (P.blocks a) : ℝ)) * κ := by
-        rw [Finset.sum_mul]
-      _ = ((geometricEdgeWeight S : ℝ) -
-          (geometricAffineRank (F := F) S : ℝ)) * κ := by
-        rw [hsum_weight]
-  have hdecomp_nat := geometricTotalWeight_partition_decomposition P E
-  have hdecomp : (geometricTotalWeight E S : ℝ) =
-      (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) +
-        ∑ i : ι, (geometricPartitionCrossing P (E i ∩ S) : ℝ) := by
-    exact_mod_cast hdecomp_nat
-  linarith
+  by_cases hS : 2 ≤ S.card
+  · have hblock : ∀ a, (geometricTotalWeight E (P.blocks a) : ℝ) ≤
+        (geometricEdgeWeight (P.blocks a) : ℝ) * κ := by
+      intro a
+      by_cases hcard : (P.blocks a).card ≤ 1
+      · have hzero := geometricTotalWeight_eq_zero_of_card_le_one
+          E (P.blocks a) hcard
+        have hwzero : geometricEdgeWeight (P.blocks a) = 0 := by
+          unfold geometricEdgeWeight
+          omega
+        rw [hzero, hwzero]
+        norm_num
+      · have htwo : 2 ≤ (P.blocks a).card := by omega
+        exact (hminimal (P.blocks a) (geometricRankPartition_blocks_ssubset P hS a) htwo).le
+    have hsum_blocks :
+        (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) ≤
+          ∑ a, (geometricEdgeWeight (P.blocks a) : ℝ) * κ :=
+      Finset.sum_le_sum fun a _ => hblock a
+    have hsum_weight_nat := geometricRankPartition_sum_blockWeight P
+    have hrank_le := geometricAffineRank_le_edgeWeight (F := F) S
+    have hsum_weight :
+        (∑ a, (geometricEdgeWeight (P.blocks a) : ℝ)) =
+          (geometricEdgeWeight S : ℝ) -
+            (geometricAffineRank (F := F) S : ℝ) := by
+      rw [← Nat.cast_sum, hsum_weight_nat, Nat.cast_sub hrank_le]
+    have hsum_blocks' :
+        (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) ≤
+          ((geometricEdgeWeight S : ℝ) -
+            (geometricAffineRank (F := F) S : ℝ)) * κ := by
+      calc
+        (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) ≤
+            ∑ a, (geometricEdgeWeight (P.blocks a) : ℝ) * κ := hsum_blocks
+        _ = (∑ a, (geometricEdgeWeight (P.blocks a) : ℝ)) * κ := by
+          rw [Finset.sum_mul]
+        _ = ((geometricEdgeWeight S : ℝ) -
+            (geometricAffineRank (F := F) S : ℝ)) * κ := by
+          rw [hsum_weight]
+    have hdecomp_nat := geometricTotalWeight_partition_decomposition P E
+    have hdecomp : (geometricTotalWeight E S : ℝ) =
+        (∑ a, (geometricTotalWeight E (P.blocks a) : ℝ)) +
+          ∑ i : ι, (geometricPartitionCrossing P (E i ∩ S) : ℝ) := by
+      exact_mod_cast hdecomp_nat
+    linarith
+  · have hrank : geometricAffineRank (F := F) S = 0 := by
+      have hle := geometricAffineRank_le_edgeWeight (F := F) S
+      unfold geometricEdgeWeight at hle
+      omega
+    rw [hrank, Nat.cast_zero, zero_mul]
+    exact Finset.sum_nonneg fun _ _ => Nat.cast_nonneg _
 
 open scoped BigOperators in
 theorem minimal_linear_heavy_affineRank_lower_of_partition
     {ι : Type*} {F : Type*} {V : Type*}
     [Fintype ι] [Field F] [AddCommGroup V] [Module F V] [DecidableEq V]
     {S : Finset V} (P : GeometricRankPartition (F := F) S)
-    (E : ι → Finset V) (κ : ℝ) (hS : 2 ≤ S.card)
+    (E : ι → Finset V) (κ : ℝ)
     (hheavy : (geometricEdgeWeight S : ℝ) * κ ≤
       (geometricTotalWeight E S : ℝ))
     (hminimal : ∀ U : Finset V, U ⊂ S → 2 ≤ U.card →
@@ -770,13 +702,11 @@ theorem minimal_linear_heavy_affineRank_lower_of_partition
   calc
     (geometricAffineRank (F := F) S : ℝ) * κ ≤
         ∑ i : ι, (geometricPartitionCrossing P (E i ∩ S) : ℝ) :=
-      minimal_linear_heavy_crossing_lower P E κ
-        (geometricRankPartition_blocks_ssubset P hS) hheavy hminimal
+      minimal_linear_heavy_crossing_lower P E κ hheavy hminimal
     _ ≤ ∑ i : ι, (geometricAffineRank (F := F) (E i ∩ S) : ℝ) := by
       apply Finset.sum_le_sum
       intro i _
       exact_mod_cast geometricPartitionCrossing_le_affineRank P (E i ∩ S)
-        Finset.inter_subset_right
 
 /-- The block index of `x` in the partition induced by a selected flag basis: the flag level of
 `x − B.base`, and `0` for points outside `S`. -/
@@ -1002,7 +932,7 @@ open scoped BigOperators in
 /-- The subspace-design premise, in the form the counting argument consumes: for any subspace `A` of
 the code, `∑ᵢ dim (A ⊓ ker (proj i)) ≤ n · dim A · τ (dim A)`. -/
 theorem subspaceDesign_kernelSum_le_profile
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {F : Type*} [Field F] {s : ℕ} {τ : ℕ → ℝ}
     (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -1012,6 +942,10 @@ theorem subspaceDesign_kernelSum_le_profile
         (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i)) : ℝ)) ≤
       (Fintype.card ι : ℝ) * (Module.finrank F A : ℝ) *
         τ (Module.finrank F A) := by
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · let := hι
+    simp
+  let := hι
   have h := hdesign (Module.finrank F A) A hAC le_rfl
   have hn : (0 : ℝ) < Fintype.card ι := by
     exact_mod_cast Fintype.card_pos
@@ -1114,7 +1048,7 @@ theorem agreementWeight_lt_of_subspaceDesign
     Finset.card_pos.mp (show 0 < U.card by omega)
   obtain ⟨P⟩ := exists_geometricRankPartition (F := F) U hUne
   have hlower := minimal_linear_heavy_affineRank_lower_of_partition
-    P E κ hU2 hUheavy hUmin
+    P E κ hUheavy hUmin
   have hinter : ∀ i : ι, E i ∩ U = agreementEdges U y i := by
     intro i
     exact agreementEdges_inter_subset T U y i hUT
@@ -1181,7 +1115,7 @@ theorem agreementWeight_lt_of_subspaceDesign
 `τ(r) = (s·R − 1/n) / (s − r + 1)`: a set of `d + 1` codewords has agreement weight strictly less
 than `n · d · (s·R / (s − d + 1))`. -/
 theorem agreementWeight_lt_of_subspaceDesign_rate
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {F : Type*} [Field F] [DecidableEq F]
     {s : ℕ} {R : ℝ} {C : Submodule F (ι → Fin s → F)}
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
@@ -1194,6 +1128,11 @@ theorem agreementWeight_lt_of_subspaceDesign_rate
     (agreementWeight y T : ℝ) <
       (Fintype.card ι : ℝ) * d *
         (s * R / ((s : ℝ) - d + 1)) := by
+  rcases isEmpty_or_nonempty ι with hι | hι
+  · let := hι
+    have hcard1 : T.card ≤ 1 := Finset.card_le_one_of_subsingleton T
+    omega
+  let := hι
   have hR0 : (0 : ℝ) ≤ R := by
     rw [← hR]
     positivity

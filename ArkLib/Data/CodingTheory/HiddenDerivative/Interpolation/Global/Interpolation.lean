@@ -47,7 +47,7 @@ counting criterion `∑ i, rank_i < dim`.
 * [Brakensiek, J., Chen, Y., Putterman, A., Zhang, Z., and Zheng, K. Z., *Algorithmic List
   Decoding of Reed–Solomon Codes up to Capacity in the Low-Rate Regime*][BCPZZ26], Section 3
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.6, Proposition 3.10
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Section 3.2, Proposition 3.9
 -/
 
 @[expose] public section

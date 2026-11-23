@@ -47,11 +47,6 @@ theorem pow_val_add (g : G) (a b : ZMod p) :
     simpa only [PrimeOrderWith.hCard (G := G)] using pow_mod_natCard g (a.val + b.val)
   rw [ZMod.val_add, hpow, pow_add]
 
-/-- A representation's modulus is positive; the `ZMod 0` integer case is excluded. -/
-theorem modulus_pos {ι : Type*} [Fintype ι] {basis : ι → G} {target : G}
-    (_ : GroupRepresentation (p := p) basis target) : 0 < p :=
-  (Fact.out : Nat.Prime p).pos
-
 end GroupRepresentation
 
 end AGM

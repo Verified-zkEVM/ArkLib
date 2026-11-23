@@ -54,7 +54,7 @@ lemma proximity_gap
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [SampleableType F]
   {ι : Type} [Fintype ι] [Nonempty ι] {φ : ι ↪ F}
   {degree m : ℕ} {δ : ℝ≥0} {f : Fin m → ι → F}
-  (hdegPos : 0 < degree) (hδPos : 0 < δ)
+  (hdegPos : 0 < degree)
   (hδLt : δ < 1 - Bstar (LinearCode.rate (code φ degree)))
   (hProb :
     Pr{let r ← $ᵗ F}[δᵣ((fun x => ∑ j : Fin m, r ^ (j : ℕ) * f j x), code φ degree) ≤ δ] >
@@ -105,7 +105,7 @@ lemma proximity_gap
           Nat.cast_one, add_tsub_cancel_right]
         ring
     have hcurve := ProximityGap.correlatedAgreement_affine_curves
-      hdegPos hδPos (show δ < 1 - sqrtRate degree φ from hδLt) f
+      hdegPos (show δ < 1 - sqrtRate degree φ from hδLt) f
     have hword (r : F) : (fun x => ∑ j : Fin (k + 1), r ^ (j : ℕ) * f j x) =
         ∑ j : Fin (k + 1), r ^ (j : ℕ) • f j := by
       ext x

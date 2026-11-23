@@ -41,7 +41,8 @@ noncomputable section
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval optionEquivRight)
 
 variable {F E α : Type*} [Field F] [Field E] {k K ℓ : ℕ}
 
@@ -193,13 +194,15 @@ theorem IsAdmissibleFrobeniusPowerTuple.eq_of_initialGraph_eq [Infinite E]
   let graphR := frobeniusPowerGraphMap center (p ^ e) (fun t ↦ (R t).map ι)
   let sep := aeval graphP (jointInitialJetSeparant center Q)
   have hinfinite : {z : E | sep.eval z ≠ 0}.Infinite :=
-    (Set.infinite_univ.sdiff (Polynomial.finite_setOfPred_isRoot hP.regular)).mono
-      (fun _ hz ↦ hz.2)
+    (Polynomial.finite_setOfPred_isRoot hP.regular).infinite_compl
   have hs : 0 < p ^ e := pow_pos (expChar_pos E p) e
   have hgraphs : graphP = graphR := by
     funext i
     cases i with
-    | none => rfl
+    -- Not `rfl`: the kernel would compare the two graph maps argument by argument,
+    -- which does not finish under leanchecker/Comparator replay. Ascribing `X = X`
+    -- makes it reduce each side to `X`.
+    | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
     | some i =>
       have hi : i = 0 := Subsingleton.elim _ _
       subst i
@@ -260,13 +263,24 @@ theorem admissibleFrobeniusPowerTuples_card_le_degreeOf [Infinite E]
     (p e τ : ℕ) [ExpChar E p]
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))
     (hK : 0 < K) (hKk : K ≤ p ^ e * k) (hτ : TaylorExponentSufficient 0 K τ)
-    (hinit : jointInitialJetEquation center Q ≠ 0)
     (tuples : Finset (Fin (ℓ + 1) → F[X]))
     (htuples : ∀ P ∈ tuples,
       IsAdmissibleFrobeniusPowerTuple
         domain values ι roots center Q K k τ (p ^ e) P) :
     tuples.card ≤ (jointInitialJetEquation center Q).degreeOf (some 0) := by
   classical
+  rcases tuples.eq_empty_or_nonempty with rfl | ⟨P, hP⟩
+  · simp
+  have hsep : initialJetSeparant (Polynomial.C center) Q ≠ 0 := by
+    intro hzero
+    have hjoint : jointInitialJetSeparant center Q = 0 := by
+      simp [jointInitialJetSeparant, hzero]
+    exact (htuples P hP).regular (by simp [hjoint])
+  have hinit : jointInitialJetEquation center Q ≠ 0 := by
+    intro hzero
+    apply initialJetEquation_ne_zero_of_initialJetSeparant_ne_zero _ Q hsep
+    apply (optionEquivRight E (Fin 1)).symm.injective
+    simpa [jointInitialJetEquation] using hzero
   let graph : (Fin (ℓ + 1) → F[X]) → E[X] := fun P ↦
     frobeniusPowerInitialGraph center (p ^ e) (fun t ↦ (P t).map ι) 0
   have hinj : Set.InjOn graph (tuples : Set (Fin (ℓ + 1) → F[X])) := by
@@ -290,7 +304,10 @@ theorem admissibleFrobeniusPowerTuples_card_le_degreeOf [Infinite E]
             fun o ↦ o.elim Polynomial.X fun _ ↦ graph P := by
         funext o
         cases o with
-        | none => rfl
+        -- Not `rfl`: the kernel would compare the two graph maps argument by argument,
+        -- which does not finish under leanchecker/Comparator replay. Ascribing `X = X`
+        -- makes it reduce each side to `X`.
+        | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
         | some j =>
           have hj : j = 0 := Subsingleton.elim _ _
           subst j

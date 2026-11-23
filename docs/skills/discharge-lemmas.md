@@ -85,17 +85,21 @@ the rating and placement decisions are what keep the result maintainable.
 
 - For each gap, ask: where in the repo does this lemma belong? Match the routing in
   [`../wiki/repo-map.md`](../wiki/repo-map.md):
-  - reusable math / coding theory / polynomials → `ArkLib/Data/`
-  - oracle computations, probability and measured programs → `ArkLib/Data/OracleComp/` (or
-    upstream in VCVio when fully generic)
+  - generic polynomial algorithms and their semantic/size facts → CompPoly, staged in
+    `ArkLib/ToCompPoly/` until a pinned CompPoly revision provides them
+  - generic oracle computations, probability, cost instrumentation and measured programs → VCVio
+  - ArkLib-specific supporting math and coding theory → `ArkLib/Data/`
+  - polynomial instrumentation adapters currently live in `ArkLib/ToCompPoly/`; review a shared
+    adapter API with its upstream owners before expanding it
+  - protocol-specific extraction/game adapters → their owning ArkLib interaction or protocol layer
   - general-purpose extensions meant for upstreaming → `ArkLib/ToMathlib/`
   - interaction layer (interaction-tree protocols) and its security theory → `ArkLib/Interaction/`
   - legacy layer (oracle-reduction core) and its security theory → `ArkLib/OracleReduction/`
   - protocol-specific → `ArkLib/ProofSystem/`
   - commitment-specific → `ArkLib/Commitments/`
 - Prefer keeping a lemma next to the definitions it is about, not next to the theorem that happens
-  to need it. A reusable algebraic fact about an existing structure usually belongs in `Data/` or
-  `ToMathlib/`, not buried in a protocol file.
+  to need it. A reusable fact about an existing structure belongs in its owning upstream library
+  first; use ArkLib `Data/` for ArkLib-owned facts and `ToMathlib/` for Mathlib-specific extensions.
 - Decide whether a **new file** is warranted. Create one only when several related lemmas share a
   topic that does not fit an existing file, or when adding them would push a file past the long-file
   cap or muddy its module docstring. Otherwise extend an existing file.

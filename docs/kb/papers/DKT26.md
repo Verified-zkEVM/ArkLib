@@ -21,11 +21,25 @@ TODO: list the main definitions, theorems, or protocol ideas ArkLib relies on.
 
 ## Main ArkLib Touchpoints
 
-TODO: add the relevant Lean modules or doc pages.
+- [`ArkLib/Data/CodingTheory/HiddenDerivative/`](../../../ArkLib/Data/CodingTheory/HiddenDerivative/):
+  interpolation spaces, local constraints, symbolic certificates, and parameter choices.
+- [`ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/`](../../../ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/):
+  Reed–Solomon list-size bounds, including first-order and capacity bounds.
+- [`ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/):
+  line, affine-family, and power-batching agreement bounds.
+- [`ArkLib/Data/Polynomial/Differential/`](../../../ArkLib/Data/Polynomial/Differential/):
+  differential equations, separant chains, unique lifting, and rational Taylor charts.
 
 ## Version Notes
 
-TODO: record version lineage, duplicate keys, or publication-status issues if relevant.
+The library's numbered [DKT26] citations use the November 2026 revision of
+[ePrint 2026/2056](https://eprint.iacr.org/2026/2056).
+
+The historical per-file [port correspondence notes](../../design/reed-solomon-port-correspondence.md)
+use the earlier published ePrint numbering, including Section 6.1, equations (70)–(72), and
+Appendix A.6, Lemma A.4 for the regular Taylor chart. Those historical locators are preserved;
+the library now cites Section 8.2, equations (56)–(58), and Appendix A.2, Lemma A.3 for these
+constructions.
 
 ## Known Divergences From ArkLib
 

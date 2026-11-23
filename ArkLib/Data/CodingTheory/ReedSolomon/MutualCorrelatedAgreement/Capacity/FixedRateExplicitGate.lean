@@ -50,12 +50,11 @@ theorem fixedRatePartitionOrder_line_exactCorrelatedPair {R δ : ℝ}
     -- Fix the explicit order and its finite interpolation parameters before the field and code.
     let p := RatePartition.fixedRatePartitionFiniteParameters hR hδ
     ∀ (F : Type u) [Field F] (n k A : ℕ),
-      -- The code is long enough, has rate at most `R`, and realizes agreement between `R + δ`
-      -- and `1`.
+      -- The code is long enough, has rate at most `R`, and realizes agreement at least `R + δ`.
       RatePartition.rateBlockThreshold R (RatePartition.fixedRatePartitionOrder R δ)
         p.multiplicity ≤ n →
       0 < k →
-      (k : ℝ) ≤ R * n → (R + δ) * n ≤ A → A ≤ n →
+      (k : ℝ) ≤ R * n → (R + δ) * n ≤ A →
       -- `domain` is injective; `f` and `g` determine the received line `f + z*g`.
       ∀ (domain : Fin n ↪ F) (f g : Fin n → F),
       -- Characteristic zero or above the message, order, and selected jet-degree bounds.
@@ -76,12 +75,12 @@ theorem fixedRatePartitionOrder_line_exactCorrelatedPair {R δ : ℝ}
           A ≤ (polynomialAgreementSet domain (fun i ↦ f i + z * g i) P).card →
           HasExactCorrelatedPair domain f g (RingHom.id F) k z P := by
   dsimp only
-  intro F _ n k A hn hk hkR haA hAn domain f g hchar
+  intro F _ n k A hn hk hkR haA domain f g hchar
   simpa only [add_sub_cancel_left] using
     exists_ratePartition_line_exactCorrelatedPair
-      (RatePartition.fixedRatePartitionFiniteParameters hR hδ) hR
+      (RatePartition.fixedRatePartitionFiniteParameters hR hδ)
       (by linarith : R < R + δ) haone
       (RatePartition.fixedRatePartitionOrder_ge_500 R δ)
-      hn hk hkR haA hAn domain f g hchar
+      hn hk hkR haA domain f g hchar
 
 end ReedSolomon

@@ -8,6 +8,9 @@ source_metadata: ../sources/BKR06/metadata.yml
 status: seeded
 related_modules:
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/SubspaceWitness.lean
+  - ArkLib/Data/Polynomial/SubspacePolynomial.lean
 ---
 
 # BKR06
@@ -28,7 +31,11 @@ parameters to reals; ArkLib follows the primary source instead.
 
 ## Main ArkLib Touchpoints
 
-`rs_lambda_superpoly_extension` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted).
+`rs_lambda_superpoly_extension` in
+[Bounds/ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon.lean),
+proved from the subspace polynomials of
+[SubspacePolynomial.lean](../../../ArkLib/Data/Polynomial/SubspacePolynomial.lean) and the witnesses of
+[Bounds/ReedSolomon/SubspaceWitness.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/ReedSolomon/SubspaceWitness.lean).
 
 ## Known Divergences From ArkLib
 
@@ -44,13 +51,13 @@ witnesses inside the degree-`< k` code.
 
 **Rationality is encoded, not approximated.** Corollary 2.2 requires `δ, ρ ∈ ℚ` and its proof needs
 `u = δm`, `v = ρm` integral. The Lean declaration therefore binds `α β : ℚ`, coercing them
-explicitly to `ℝ` in real powers and logarithmic exponents. There is no admitted all-real
+explicitly to `ℝ` in real powers and logarithmic exponents. There is no all-real
 compatibility alias. Naive floor/ceiling approximation loses same-order slack and does not justify
 the all-real statement printed by [ABF26].
 
 ## Open Formalization Gaps
 
-Corollary 2.2 itself. An arbitrary-real extension is also open and would require a separate proof.
+An arbitrary-real extension of Corollary 2.2 is open and would require a separate proof.
 
 ## Source Access
 

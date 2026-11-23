@@ -141,7 +141,6 @@ omit [DecidableEq 𝔽q] [NeZero ℓ] [SampleableType L] in
 does not occur at `f_star`, and `f_next` is within the unique-decoding radius, then the fold of
 `f_star` is not within the unique-decoding radius of the decoded codeword of `f_next`. -/
 lemma not_pairUniqueDecodingClose_iteratedFold_of_not_isCompliant (i_star : Fin ℓ) (steps : ℕ)
-    [NeZero steps]
     {destIdx : Fin r} (h_destIdx : destIdx.val = i_star.val + steps) (h_destIdx_le : destIdx ≤ ℓ)
     (f_star : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ⟨i_star, by omega⟩)
     (f_next : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) destIdx)

@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
-public import ArkLib.ToCompPoly.Univariate.Raw.Size
+public import CompPoly.Univariate.Raw.Size
 
 import all CompPoly.Univariate.Raw.Ops
 

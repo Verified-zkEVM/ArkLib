@@ -250,13 +250,13 @@ theorem weightedSupportCutoff_le_two_mul (D m : ℕ) {g : ℝ} (hg : g ≤ 1) :
     _ = (D : ℝ) * ((2 * m : ℕ) : ℝ) := by push_cast; ring
 
 /-- Under the prescribed slack bound, the strict band cutoff gives `Y₀ ≤ 2m - 1`. -/
-theorem y₀_le_two_mul_sub_one_of_eligible {g : ℝ} (hD : 0 < D) (hg : g ≤ 1)
+theorem y₀_le_two_mul_sub_one_of_eligible {g : ℝ} (hg : g ≤ 1)
     {u : JetVariable d →₀ ℕ}
     (hu : WeightedSupportEligible D d W ((D : ℝ) * m * (1 + g)) u) :
     u (some 0) ≤ 2 * m - 1 := by
   have hcut := weightedSupportCutoff_le_two_mul D m hg
   have htotal := totalJetDegree_le_pred_of_weightedSupportEligible
-    (D := D) (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) (t := 2 * m) hD hcut hu
+    (D := D) (d := d) (W := W) (L := (D : ℝ) * m * (1 + g)) (t := 2 * m) hcut hu
   have hcoord : u (some 0) ≤ totalJetDegree u := by
     rw [totalJetDegree_eq_sum]
     exact Finset.single_le_sum (fun j _ => Nat.zero_le (u (some j))) (Finset.mem_univ 0)
@@ -359,9 +359,8 @@ theorem exists_symbolic_weightedSupport_interpolant_of_fixed_margin {n ν : ℕ}
     hband⟩
 
 /-- Zero local rank yields a primitive interpolant whose coefficients are constant polynomials. -/
-theorem exists_constant_interpolant_of_zero_rank {n ν : ℕ} (hD : 0 < D) (hν : 0 < ν)
+theorem exists_constant_interpolant_of_zero_rank {n : ℕ} (hD : 0 < D)
     (centers f g : Fin n → F)
-    (hy₀ : ∀ u, WeightedSupportEligible D d W L u → u (some 0) ≤ ν)
     (hrank : Module.finrank F (LinearMap.range
       (weightedSupportLocalConstraint (R := F) (d := d) (W := W) (L := L) m hD 0 0)) = 0)
     (hdim : 0 < Module.finrank F (weightedSupportSpace F D d W L hD)) :
@@ -376,18 +375,24 @@ theorem exists_constant_interpolant_of_zero_rank {n ν : ℕ} (hD : 0 < D) (hν 
             (SourceColumn.interpolant columns v) ≠ 0) ∧
         ∀ i, SatisfiesLocalConstraints m (Polynomial.C (centers i))
           (receivedLine (f i) (g i)) (SourceColumn.interpolant columns v) := by
-  have hmargin : (543 / 500 : ℝ) * n * Module.finrank F (LinearMap.range
-      (weightedSupportLocalConstraint (R := F) (d := d) (W := W) (L := L) m hD 0 0)) <
-        Module.finrank F (weightedSupportSpace F D d W L hD) := by
-    rw [hrank]
-    simpa using (show (0 : ℝ) < Module.finrank F (weightedSupportSpace F D d W L hD) by
-      exact_mod_cast hdim)
-  obtain ⟨v, hv, _, hdegree, _, hprimitive, hnozero, hconstraints, _⟩ :=
-    exists_symbolic_weightedSupport_interpolant_of_fixed_margin hD hν centers f g hy₀ hmargin
-  refine ⟨v, hv, ?_, hprimitive, hnozero, hconstraints⟩
-  intro j
-  have h := hdegree j
-  simpa [hrank] using h
+  classical
+  dsimp only
+  let columns := weightedSupportColumns (d := d) (W := W) (L := L) hD
+  let ν := ∑ j, (columns j).y₀
+  have hy₀ : ∀ j, (columns j).y₀ ≤ ν := fun j ↦
+    Finset.single_le_sum (f := fun j ↦ (columns j).y₀)
+      (fun _ _ ↦ Nat.zero_le _) (Finset.mem_univ j)
+  have hrank' := receivedLine_matrix_rank_le_base_actual (m := m) hD centers f g columns
+    (weightedSupportColumns_eligible hD)
+  rw [hrank, mul_zero] at hrank'
+  have hdim' : 0 < Fintype.card (↥(weightedSupportExponents D d W L hD)) := by
+    simpa only [finrank_weightedSupportSpace_eq_card, Fintype.card_coe] using hdim
+  obtain ⟨v, hv, hdegree, hprimitive, hnozero, hconstraints⟩ :=
+    exists_primitive_receivedLine_interpolant_of_rank_le m ν centers f g columns
+      (weightedSupportColumns_injective hD) hy₀ (algebraMap F[X] (RatFunc F))
+      (IsFractionRing.injective F[X] (RatFunc F)) hrank' (by simpa using hdim')
+  exact ⟨v, hv, fun j ↦ by simpa using hdegree j, hprimitive,
+    fun ι z ↦ hnozero _, hconstraints⟩
 
 variable {R : Type*} [CommSemiring R] {κ : Type*} [Fintype κ]
 

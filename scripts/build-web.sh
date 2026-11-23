@@ -8,9 +8,17 @@ lake exe cache get
 echo "Building Blueprint Declaration Environment..."
 lake build ArkLibBlueprint
 
+# doc-gen4 and checkdecls are required by the separate docbuild package, which requires ArkLib
+# by path and shares its packages and build; see docbuild/lakefile.toml.
+echo "Resolving Documentation Package..."
+# doc-gen4 reads the bibliography from docs/references.bib in the package it runs in; CI's
+# docgen-action copies `blueprint/src/references.bib` there the same way.
+mkdir -p docbuild/docs
+cp blueprint/src/references.bib docbuild/docs/references.bib
+(cd docbuild && MATHLIB_NO_CACHE_ON_UPDATE=1 lake update Arklib)
+
 echo "Building Project Documentation..."
-lake build ArkLib:docs
-lake build ArkLibBlueprint:docs
+(cd docbuild && lake build ArkLib:docs && lake build ArkLibBlueprint:docs)
 
 # Build the Blueprint
 if [ -d "blueprint" ]; then
@@ -21,10 +29,10 @@ if [ -d "blueprint" ]; then
         leanblueprint web
     else
         echo "Warning: 'leanblueprint' command not found. Skipping blueprint generation."
-        echo "To install: pip install leanblueprint"
+        echo "To install: uv tool install --python 3.12 leanblueprint"
     fi
     cd ..
-    lake exe checkdecls blueprint/lean_decls
+    (cd docbuild && lake build BlueprintDecls && lake exe checkdecls ../blueprint/lean_decls)
 fi
 
 # Prepare the Website Directory
@@ -36,9 +44,9 @@ mkdir -p "$DEST/docs"
 mkdir -p "$DEST/blueprint"
 
 # Copy Documentation
-if [ -d ".lake/build/doc" ]; then
+if [ -d "docbuild/.lake/build/doc" ]; then
     echo "Copying docs..."
-    cp -r .lake/build/doc/* "$DEST/docs/"
+    cp -r docbuild/.lake/build/doc/* "$DEST/docs/"
 else
     echo "Warning: Docs build directory not found."
 fi
@@ -59,7 +67,7 @@ echo "Website build complete in $DEST/"
 # Inject Global Navigation
 echo "Injecting Global Navigation..."
 if [ -f "scripts/inject_nav.py" ]; then
-    python3 scripts/inject_nav.py "$DEST"
+    uv run --no-project --python 3.12 python scripts/inject_nav.py "$DEST"
 fi
 
 echo "Open $DEST/index.html to view."

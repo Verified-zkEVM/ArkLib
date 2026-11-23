@@ -461,7 +461,7 @@ theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
     {F : Type*} [Field F] {n D A μ M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q : DifferentialPolynomial F[X] 1) (descent : FirstOrderHybridDescent Q μ M)
-    (z : F) (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (z : F) (hD : 1 ≤ D) (hDA : D + 1 ≤ A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (htail : HasOrderZeroTailListBound (D := D) (A := A)
       (b := μ - descent.actualDegree) domain received
@@ -473,6 +473,13 @@ theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
       A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
     (S.card : ℝ) ≤ firstOrderListCharge (agreementIncidenceRatio n D A)
       D μ descent.actualDegree := by
+  rcases S.eq_empty_or_nonempty with rfl | ⟨P, hP⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    unfold firstOrderListCharge agreementIncidenceRatio
+    positivity
+  have hAn : A ≤ n := (haccept P hP).2.trans (by
+    simpa using Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
+      (p := fun i ↦ P.eval (domain i) = received i))
   let φ := Polynomial.evalRingHom z
   let Q' := MvPolynomial.map φ Q
   let stage := fun j ↦ MvPolynomial.map φ (jetDerivative Q (1 : Fin 2) j)
@@ -514,7 +521,7 @@ theorem finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
 
 private theorem firstOrderListCount_optimized_of_raw
     {n D A μ M e count : ℕ} (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
-    (hMμ : M ≤ μ) (heM : e ≤ M)
+    (heM : e ≤ M)
     (hraw : (count : ℝ) ≤
       firstOrderListCharge (agreementIncidenceRatio n D A) D μ e) :
     (count : ℝ) ≤ maxFirstOrderListCharge (agreementIncidenceRatio n D A) D μ M ∧
@@ -524,8 +531,8 @@ private theorem firstOrderListCount_optimized_of_raw
   have hceil : count ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M := by
     unfold firstOrderListBound maxFirstOrderListCharge at hopt ⊢
     exact_mod_cast hopt.trans (Nat.le_ceil _)
-  have hclosed := maxFirstOrderListCharge_le_firstOrderListConstant
-    (one_le_agreementIncidenceRatio hDA hAn) hD hMμ
+  have hclosed := maxFirstOrderListCharge_le_firstOrderListConstant (μ := μ) (M := M)
+    (one_le_agreementIncidenceRatio hDA hAn) hD
   exact ⟨hopt, hceil, hopt.trans hclosed⟩
 
 open Classical in
@@ -535,7 +542,7 @@ theorem finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail
     {F : Type*} [Field F] {n D A μ M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q : DifferentialPolynomial F[X] 1) (descent : FirstOrderHybridDescent Q μ M)
-    (z : F) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMμ : M ≤ μ)
+    (z : F) (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (htail : HasOrderZeroTailListBound (D := D) (A := A)
       (b := μ - descent.actualDegree) domain received
@@ -550,8 +557,8 @@ theorem finite_firstOrder_hybrid_agreement_solutions_card_le_optimized_of_tail
       S.card ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M ∧
       (S.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D μ M := by
   have hraw := finite_firstOrder_hybrid_agreement_solutions_card_le_raw_of_tail
-    domain received Q descent z hD (by omega) hAn hchar htail S hsol haccept
-  exact firstOrderListCount_optimized_of_raw hD hDA hAn hMμ descent.actualDegree_le hraw
+    domain received Q descent z hD (by omega) hchar htail S hsol haccept
+  exact firstOrderListCount_optimized_of_raw hD hDA hAn descent.actualDegree_le hraw
 
 open Classical in
 /-- The field descent bounds the accepted roots by the regular-stage charges and the tail. -/
@@ -607,7 +614,7 @@ theorem finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw
     {F : Type*} [Field F] {n D A μ M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q : DifferentialPolynomial F 1) (descent : FirstOrderFieldDescent Q μ M)
-    (hD : 1 ≤ D) (hDA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hDA : D + 1 ≤ A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (S : Finset F[X])
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
@@ -615,6 +622,13 @@ theorem finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw
       A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card) :
     (S.card : ℝ) ≤ firstOrderListCharge (agreementIncidenceRatio n D A)
       D μ descent.actualDegree := by
+  rcases S.eq_empty_or_nonempty with rfl | ⟨P, hP⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    unfold firstOrderListCharge agreementIncidenceRatio
+    positivity
+  have hAn : A ≤ n := (haccept P hP).2.trans (by
+    simpa using Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
+      (p := fun i ↦ P.eval (domain i) = received i))
   have htailWeight : jetTotalDegree descent.tail.equation ≤ μ - descent.actualDegree := by
     rw [descent.tail.jetTotalDegree_equation]
     exact descent.stage_jetTotalDegree_le descent.actualDegree le_rfl
@@ -630,7 +644,7 @@ theorem finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized
     {F : Type*} [Field F] {n D A μ M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q : DifferentialPolynomial F 1) (descent : FirstOrderFieldDescent Q μ M)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMμ : M ≤ μ)
+    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (S : Finset F[X])
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
@@ -640,8 +654,8 @@ theorem finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized
       S.card ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M ∧
       (S.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D μ M := by
   have hraw := finite_firstOrder_field_hybrid_agreement_solutions_card_le_raw
-    domain received Q descent hD (by omega) hAn hchar S hsol haccept
-  exact firstOrderListCount_optimized_of_raw hD hDA hAn hMμ descent.actualDegree_le hraw
+    domain received Q descent hD (by omega) hchar S hsol haccept
+  exact firstOrderListCount_optimized_of_raw hD hDA hAn descent.actualDegree_le hraw
 
 open Classical in
 /-- A first-order equation's nonzero and degree bounds construct the descent and give the
@@ -651,7 +665,7 @@ theorem finite_firstOrder_field_hybrid_agreement_solutions_card_le
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0)
     (hweight : jetTotalDegree Q ≤ μ) (hdegree : jetDegree Q (1 : Fin 2) ≤ M)
-    (hD : 1 ≤ D) (hDA : D < A) (hAn : A ≤ n) (hMμ : M ≤ μ)
+    (hD : 1 ≤ D) (hDA : D < A)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
     (S : Finset F[X])
     (hsol : ∀ P ∈ S, differentialSpecialization Q P = 0)
@@ -660,39 +674,44 @@ theorem finite_firstOrder_field_hybrid_agreement_solutions_card_le
     (S.card : ℝ) ≤ maxFirstOrderListCharge (agreementIncidenceRatio n D A) D μ M ∧
       S.card ≤ firstOrderListBound (agreementIncidenceRatio n D A) D μ M ∧
       (S.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D μ M := by
+  classical
+  rcases S.eq_empty_or_nonempty with rfl | ⟨P, hP⟩
+  · simp only [Finset.card_empty, Nat.cast_zero]
+    refine ⟨?_, Nat.zero_le _, ?_⟩
+    · exact (show 0 ≤ firstOrderListCharge (agreementIncidenceRatio n D A) D μ 0 by
+        simp [firstOrderListCharge, regularFiberStageSum]).trans
+          (firstOrderListCharge_le_max (Nat.zero_le M))
+    · have hT := stageStaircase_nonneg μ M
+      unfold firstOrderListConstant agreementIncidenceRatio
+      positivity
+  have hAn : A ≤ n := (haccept P hP).2.trans (by
+    simpa using Finset.card_filter_le (s := (Finset.univ : Finset (Fin n)))
+      (p := fun i ↦ P.eval (domain i) = received i))
   have hactualChar : ringChar F = 0 ∨ jetDegree Q (1 : Fin 2) < ringChar F :=
     hchar.imp_right fun h ↦ (hdegree.trans (Nat.le_max_right D M)).trans_lt h
   obtain ⟨descent⟩ := exists_firstOrderFieldDescent Q hQ hweight hdegree hactualChar
   exact finite_firstOrder_field_hybrid_agreement_solutions_card_le_optimized
-    domain received Q descent hD hDA hAn hMμ hchar S hsol haccept
+    domain received Q descent hD hDA hAn hchar S hsol haccept
 
 /-- The automatic first-order parameters construct a symbolic certificate for every received
 line. -/
 theorem exists_automaticFirstOrder_symbolicCertificate
     {F : Type*} [Field F] {rho a : ℝ} {n D A k : ℕ}
     (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
-    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
+    (ha : firstOrderRateThreshold rho < a)
+    (hD : D = k - 1) (hk : 2 ≤ k)
     (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A)
     (centers : Fin n ↪ F) (f g : Fin n → F) :
-    let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
+    let p := automaticFiniteRateParameters hrho hrhoOne ha
     Nonempty (FirstOrderSymbolicCertificate (F := F)
       D A p.multiplicity p.derivativeCap p.jetDegree k p.challengeDegree centers f g
       (firstOrderColumns (D := D) (A := A) (m := p.multiplicity)
         (M := p.derivativeCap) (μ := p.jetDegree))) := by
-  let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
-  have hagreementPos : 0 < automaticAgreement rho a :=
-    hrho.trans (rho_lt_automaticAgreement hrho hrhoOne ha)
+  let p := automaticFiniteRateParameters hrho hrhoOne ha
   have hArate : automaticAgreement rho a * n ≤ A := automaticAgreement_mul_le hA
-  have hAposReal : (0 : ℝ) < A := by
-    have hpos : (0 : ℝ) < automaticAgreement rho a * n :=
-      mul_pos hagreementPos (Nat.cast_pos.mpr hn)
-    exact hpos.trans_le hArate
-  have hApos : 0 < A := by exact_mod_cast hAposReal
-  have hbudget : 0 < p.multiplicity * A := Nat.mul_pos p.multiplicity_pos hApos
   have hDpos : 0 < D := by omega
   have hkD : k ≤ D + 1 := by omega
-  exact exists_firstOrderRate_symbolicCertificate p hn hDpos hbudget hkD
+  exact exists_firstOrderRate_symbolicCertificate p hDpos hkD
     (automatic_degree_le_rate_mul hD hkRate) hArate centers f g
 
 open Classical in
@@ -700,10 +719,10 @@ open Classical in
 bounds for every received word. -/
 theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
     {F : Type*} [Field F] {rho a : ℝ} {n D A k : ℕ}
-    (hrho : 0 < rho) (hrhoOne : rho < 1)
-    (ha : firstOrderRateThreshold rho < a) (haOne : a < 1)
-    (hn : 0 < n) (hD : D = k - 1) (hk : 2 ≤ k)
-    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A) (hAn : A ≤ n)
+    (hrhoOne : rho < 1)
+    (ha : firstOrderRateThreshold rho < a)
+    (hD : D = k - 1) (hk : 2 ≤ k)
+    (hkRate : (k : ℝ) ≤ rho * n) (hA : a * n ≤ A)
     (domain : Fin n ↪ F) (received : Fin n → F)
     (hchar : ringChar F = 0 ∨
       max D (automaticDerivativeCap rho a) < ringChar F)
@@ -716,10 +735,15 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
         (automaticJetDegree rho a) (automaticDerivativeCap rho a) ∧
       (S.card : ℝ) ≤ firstOrderListConstant (agreementIncidenceRatio n D A) D
         (automaticJetDegree rho a) (automaticDerivativeCap rho a) := by
-  let p := automaticFiniteRateParameters hrho hrhoOne ha haOne
+  have hkpos : (0 : ℝ) < k := by exact_mod_cast (by omega : 0 < k)
+  have hproduct : 0 < rho * n := hkpos.trans_le hkRate
+  have hrho : 0 < rho := pos_of_mul_pos_left hproduct (Nat.cast_nonneg n)
+  have hn : 0 < n := by
+    exact_mod_cast (pos_of_mul_pos_right hproduct hrho.le)
+  let p := automaticFiniteRateParameters hrho hrhoOne ha
   have hArate : automaticAgreement rho a * n ≤ A := automaticAgreement_mul_le hA
   obtain ⟨cert⟩ := exists_automaticFirstOrder_symbolicCertificate
-    (F := F) hrho hrhoOne ha haOne hn hD hk hkRate hA domain received received
+    (F := F) hrho hrhoOne ha hD hk hkRate hA domain received received
   let phi := Polynomial.eval₂RingHom (RingHom.id F) (0 : F)
   let Q : DifferentialPolynomial F 1 := MvPolynomial.map phi cert.Q
   obtain ⟨hQ, hsound⟩ := cert.specialization_sound (RingHom.id F) 0
@@ -729,14 +753,14 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
   have hweight : jetTotalDegree Q ≤ automaticJetDegree rho a := by
     exact (jetTotalDegree_map_le phi cert.Q).trans
       (hweightCert.trans_eq
-        (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha haOne))
+        (automaticFiniteRateParameters_jetDegree hrho hrhoOne ha))
   have hdegreeCert : jetDegree cert.Q 1 ≤ p.derivativeCap := by
     change jetDegree cert.toCurve.Q 1 ≤ p.derivativeCap
     exact cert.toCurve.jetDegree_one_le
   have hdegree : jetDegree Q 1 ≤ automaticDerivativeCap rho a := by
     exact (jetDegree_map_le phi cert.Q 1).trans
       (hdegreeCert.trans_eq
-        (automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha haOne))
+        (automaticFiniteRateParameters_derivativeCap hrho hrhoOne ha))
   have hsol : ∀ P ∈ S, differentialSpecialization Q P = 0 := by
     intro P hP
     let indices := Finset.univ.filter fun i ↦ P.eval (domain i) = received i
@@ -750,7 +774,7 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
   have hDA : D < A := by
     have hkrho : (k : ℝ) ≤ rho * n := hkRate
     have hrhoAgreement : rho < automaticAgreement rho a :=
-      rho_lt_automaticAgreement hrho hrhoOne ha
+      rho_lt_automaticAgreement hrhoOne ha
     have hnreal : (0 : ℝ) < n := Nat.cast_pos.mpr hn
     have hkAreal : (k : ℝ) ≤ A := by
       exact (calc
@@ -760,9 +784,6 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
           _ ≤ A := hArate).le
     have hkA : k ≤ A := by exact_mod_cast hkAreal
     omega
-  have hMμ : automaticDerivativeCap rho a ≤ automaticJetDegree rho a := by
-    rw [automaticDerivativeCap_eq_raw hrho hrhoOne ha haOne]
-    exact automaticDerivativeCapRaw_le_jetDegree hrho hrhoOne ha haOne
   have haccept : ∀ P ∈ S, P.degree < D + 1 ∧
       A ≤ (Finset.univ.filter fun i ↦ P.eval (domain i) = received i).card := by
     intro P hP
@@ -771,7 +792,7 @@ theorem finite_automaticFirstOrder_hybrid_agreement_solutions_card_le
     refine ⟨?_, (hS P hP).2⟩
     simpa only [hDkCast] using (hS P hP).1
   exact finite_firstOrder_field_hybrid_agreement_solutions_card_le
-    domain received Q hQ hweight hdegree hDpos hDA hAn hMμ hchar S hsol haccept
+    domain received Q hQ hweight hdegree hDpos hDA hchar S hsol haccept
 
 end
 

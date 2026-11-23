@@ -58,7 +58,7 @@ agreement constraints by the tight list envelope. -/
 theorem finiteListBound_of_profile
     {p : LineProfile} (hp : p.CurveVerification)
     (hell : p.batchingDegree = 1)
-    (hkA : p.k ≤ p.agreement) (hAn : p.agreement ≤ p.n)
+    (hkA : p.k ≤ p.agreement)
     {F : Type u} [Field F]
     (domain : Fin p.n ↪ F) (received : Fin p.n → F)
     (hchar : ringChar F = 0 ∨ max (p.k - 1) p.totalJetCap < ringChar F)
@@ -66,6 +66,18 @@ theorem finiteListBound_of_profile
     (hS : ∀ P ∈ S, P.degree < p.k ∧
       p.agreement ≤ ({i : Fin p.n | P.eval (domain i) = received i} : Set (Fin p.n)).ncard) :
     (S.card : ℚ) ≤ tightListEnvelope p := by
+  by_cases hAn : p.agreement ≤ p.n
+  swap
+  · have hempty : S = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro P hP
+      have hcard := Set.ncard_le_ncard (Set.subset_univ
+        ({i : Fin p.n | P.eval (domain i) = received i} : Set (Fin p.n)))
+      simp only [Set.ncard_univ, Nat.card_fin] at hcard
+      have := (hS P hP).2
+      omega
+    rw [hempty, Finset.card_empty, Nat.cast_zero]
+    exact firstOrderTightListWeight_nonneg _ _ _ _ _ _ _
   have hD := hp.1
   have hk : 0 < p.k := by
     simp only [LineProfile.candidateDegree] at hD
@@ -80,10 +92,10 @@ theorem finiteListBound_of_profile
   rw [hell] at hheight
   obtain ⟨cert⟩ :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hp.1 hp.2.1 hkD domain received (fun _ ↦ 0) hheight
+      hp.1 hkD domain received (fun _ ↦ 0) hheight
   simpa only [tightListEnvelope] using
     firstOrder_finite_agreement_solutions_card_le_tight domain received p.columns cert
-      hK le_rfl hk hkA hAn hchar S hS
+      hK le_rfl hk hkA hchar S hS
 
 open Classical in
 /-- A curve-verified profile bounds every finite family of polynomials meeting its degree and
@@ -91,7 +103,7 @@ agreement constraints by the squarefree list envelope. -/
 theorem finiteSquarefreeListBound_of_profile
     {p : LineProfile} (hp : p.CurveVerification)
     (hell : p.batchingDegree = 1)
-    (hkA : p.k ≤ p.agreement) (hAn : p.agreement ≤ p.n)
+    (hkA : p.k ≤ p.agreement)
     (hMμ : p.firstDerivativeCap ≤ p.totalJetCap)
     {F : Type u} [Field F]
     (domain : Fin p.n ↪ F) (received : Fin p.n → F)
@@ -111,7 +123,7 @@ theorem finiteSquarefreeListBound_of_profile
   rw [hell] at hheight
   obtain ⟨cert⟩ :=
     exists_finite_firstOrder_symbolic_certificate_of_heightSlotCount
-      hp.1 hp.2.1 hkD domain received (fun _ ↦ 0) hheight
+      hp.1 hkD domain received (fun _ ↦ 0) hheight
   have hS' : ∀ P ∈ S, P.degree < p.k ∧
       p.agreement ≤ (Finset.univ.filter fun i ↦
         P.eval (domain i) = received i).card := by
@@ -128,7 +140,7 @@ theorem finiteSquarefreeListBound_of_profile
     exact hcount
   simpa only [squarefreeListEnvelope] using
     FirstOrder.Squarefree.firstOrder_finite_agreement_solutions_card_le_squarefree
-      domain received p.columns cert hk hkA hAn hMμ hchar S hS'
+      domain received p.columns cert hk hkA hMμ hchar S hS'
 
 end
 

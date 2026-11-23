@@ -68,6 +68,7 @@ private lemma traceLineWord_ne_zero (m : ℕ) (τ z : F) {x : F} (hx : x ≠ 0) 
       x ^ (binaryTraceTopDegree m - 1) + z * x⁻¹ := by
   simp [modifiedPowerWord, reciprocalWord, hx]
 
+omit [CharP F 2] in
 /-- Every word on the trace line has an explicit polynomial below the quarter-field degree
 threshold agreeing at exactly half the field. -/
 theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
@@ -77,15 +78,16 @@ theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
         (fun x ↦ p.eval x) =
         binaryTraceTopDegree m := by
   classical
+  have : CharP F 2 := charP_of_card_eq_prime_pow hcard
   by_cases hz : z = 0
   · -- The repaired origin completes the nonzero trace-zero fiber.
     subst z
-    refine ⟨binaryTraceQuotient m 1, natDegree_binaryTraceQuotient_lt hm 1, ?_⟩
+    refine ⟨binaryTraceQuotient m 1, natDegree_binaryTraceQuotient_lt 1, ?_⟩
     let nonzeroAgreements := Finset.univ.filter fun x : F ↦ x ≠ 0 ∧
       (binaryTraceQuotient m 1).eval x = x ^ (binaryTraceTopDegree m - 1)
     have hnonzero : nonzeroAgreements.card = Fintype.card F / 2 - 1 := by
       simpa [nonzeroAgreements] using
-        binaryTraceQuotient_one_nonzero_agreement_card (F := F) hm hcard
+        binaryTraceQuotient_one_nonzero_agreement_card (F := F) hcard
     have hsets :
         Finset.univ.filter (fun x : F ↦
           modifiedPowerWord m x + 0 * reciprocalWord τ x =
@@ -114,7 +116,7 @@ theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
   · -- Invert the line parameter to obtain the normalized trace-one witness.
     let s : F := z⁻¹
     have hs : s ≠ 0 := inv_ne_zero hz
-    refine ⟨binaryTraceQuotient m s, natDegree_binaryTraceQuotient_lt hm s, ?_⟩
+    refine ⟨binaryTraceQuotient m s, natDegree_binaryTraceQuotient_lt s, ?_⟩
     --
     -- Trace one rules out an accidental extra agreement at the pole.
     have horigin :
@@ -159,7 +161,7 @@ theorem exists_polynomial_agree_traceLine_eq_half {m : ℕ} (hm : 3 ≤ m)
     change (Finset.univ.filter fun x : F ↦
       modifiedPowerWord m x + z * reciprocalWord τ x =
         (binaryTraceQuotient m s).eval x).card = binaryTraceTopDegree m
-    rw [hsets, binaryTraceQuotient_agreement_card hm hcard hs]
+    rw [hsets, binaryTraceQuotient_agreement_card hcard hs]
     exact (binaryTraceTopDegree_eq_card_div_two (F := F) (by omega) hcard).symm
 
 end FiniteBinaryField

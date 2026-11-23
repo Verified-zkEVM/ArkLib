@@ -312,14 +312,16 @@ oracle families, while their realization types and interfaces may vary with the 
 No equality of raw and exported query logs is asserted: one exported query may require several
 source queries. This is an execution and closing theorem, with no probability or soundness premise.
 
-[`Data/OracleComp/QueryBounds.lean`](../../ArkLib/Data/OracleComp/QueryBounds.lean) accounts for the
-same routing programs used by substitution. Each exported query has a charge large enough to pay
-for every source query in its actual route. A bound on the exported program then gives the same
-bound on its routed source program. Charges may differ by query; a virtual call that reads the
-same source twice pays twice. Sequential prefix and suffix budgets add under the same cost model.
+`VCVio.OracleComp.QueryTracking.CostModel.Simulation` provides `WorstCaseCostBound.simulateQ` for
+stateless `QueryImpl exported (OracleComp base)` routes. The base queries may be interpreted by a
+stateful runtime, but the route handler has no extra handler-local `StateT` state. Each exported
+query has a charge covering the declared weight of every permitted completed run of its base-query
+route. A bound on the exported program then bounds its routed base program. Repeated base queries
+contribute their declared weight at each call. Sequential prefix and suffix budgets add under the
+same cost model.
 
-Access is a separate obligation. `allQueriesSatisfy_simulateQ` transports an allowed-query
-condition through that same route when every allowed exported query expands only to allowed source
+Access is a separate obligation. `OracleComp.AllQueriesSatisfy.simulateQ` transports an allowed-query
+condition through that same route when every allowed exported query expands only to allowed base
 queries. A cheap query may still be unavailable. In particular, a cost bound by itself does not
 certify that an oracle message has already been sent.
 

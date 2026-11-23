@@ -5,8 +5,11 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Oracle.Security.Soundness
-import VCVio.EvalDist.Defs.Measure.OptionT
-import VCVio.EvalDist.Monad.Failure
+import PolyFun.Control.Monad.Measure.OptionT
+import ToMathlib.MeasureTheory.Measure.GiryMonad
+import VCVio.EvalDist.Defs.Measure.Core
+import PolyFun.Control.Monad.Measure.Failure
+import VCVio.EvalDist.ProbabilityNotation
 
 /-!
 This ordinary-import consumer checks the failure scope of the soundness API.

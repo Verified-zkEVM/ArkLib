@@ -203,16 +203,20 @@ theorem subspaceDesign_tau_lower_of_ne_bot
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
-    (h_design : IsSubspaceDesign s τ C) (hs : 1 ≤ s) (hCne : C ≠ ⊥) :
+    (h_design : IsSubspaceDesign s τ C) (hCne : C ≠ ⊥) :
     ∀ r, 1 ≤ r →
       τ r ≥ (Module.finrank F C : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι := by
   classical
   intro r hr1
   have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-  have hs_pos : (0 : ℝ) < s := by exact_mod_cast hs
   -- Run the GG25 argument at the span of a distance-attaining word.
   -- Step 1: a distance-attaining pair, hence a nonzero codeword `a` of block-weight ≤ d.
   obtain ⟨x, hxC, hx0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hCne
+  have hs_pos : (0 : ℝ) < s := by
+    have hs0 : s ≠ 0 := by
+      rintro rfl
+      exact hx0 (funext fun _ => funext fun j => j.elim0)
+    exact_mod_cast Nat.pos_of_ne_zero hs0
   set d := Code.dist (C : Set (ι → Fin s → F)) with hd
   have hS_ne : {m | ∃ u ∈ (C : Set (ι → Fin s → F)), ∃ v ∈ (C : Set (ι → Fin s → F)),
       u ≠ v ∧ hammingDist u v ≤ m}.Nonempty :=
@@ -338,10 +342,10 @@ a ratio of dimensions, `0 ≤ τ` holds for every profile arising from a constru
 the `_of_ne_bot` form when the profile is unknown but the code is known to be nontrivial.
 See that declaration for the rate convention and for why `r ≥ 1` is needed. -/
 theorem subspaceDesign_tau_lower
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {F : Type*} [Field F] [Finite F]
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
-    (h_design : IsSubspaceDesign s τ C) (hs : 1 ≤ s)
+    (h_design : IsSubspaceDesign s τ C)
     (hτ_nonneg : ∀ r, 0 ≤ τ r) :
     ∀ r, 1 ≤ r →
       τ r ≥ (Module.finrank F C : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι := by
@@ -354,7 +358,12 @@ theorem subspaceDesign_tau_lower
       simp only [Nat.cast_zero, zero_div, zero_sub]
       exact neg_nonpos.mpr (by positivity)
     exact le_trans hb (hτ_nonneg r)
-  · exact subspaceDesign_tau_lower_of_ne_bot s τ C h_design hs hCne r hr1
+  · obtain ⟨x, _, hx0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hCne
+    have : Nonempty ι := by
+      by_contra h
+      have : IsEmpty ι := not_nonempty_iff.mp h
+      exact hx0 (funext fun i => isEmptyElim i)
+    exact subspaceDesign_tau_lower_of_ne_bot s τ C h_design hCne r hr1
 
 private lemma mul_sub_add_one_le_of_le
     {S s σ r bound : ℝ} (hS : 0 ≤ S) (hσr : σ ≤ r)
@@ -659,8 +668,8 @@ The proof is a Wronskian root count. Outside `1 ≤ r ≤ s`, and for `A = ⊥`,
 follows from `dim (A ⊓ ker (proj i)) ≤ σ := dim A`. When `1 ≤ s` and `k > s * n`, the rate
 is `1`, and the bound follows from `sum_finrank_inf_ker_le`. This bookkeeping is shared with
 `isSubspaceDesign_umCode_sub_one`. In the remaining regime `1 ≤ r ≤ s` and `1 ≤ k ≤ s * n`,
-the `n * s` folded evaluation points are distinct and nonzero, the encoder is injective on
-`degreeLT F k`, and `A` together with each `A ⊓ ker (proj i)` lifts to message-side
+the `n * s` folded evaluation points are distinct (and nonzero for `s ≥ 2`), the encoder is
+injective on `degreeLT F k`, and `A` together with each `A ⊓ ker (proj i)` lifts to message-side
 subspaces `B` and `Nᵢ ≤ B` of the same dimension, the latter consisting of polynomials
 vanishing on the whole orbit `{domain i * ω ^ j | j < s}`. The `ω`-folded Wronskian `W` of a
 basis of `B` is nonzero and has `deg W ≤ σ * (k - 1)`, while each of the `n * (s - σ + 1)`
@@ -669,10 +678,9 @@ distinct points `domain i * ω ^ m` with `m ≤ s - σ` is a root of `W` of mult
 Comparing the two gives `(s - σ + 1) * ∑ i, dim (A ⊓ ker (proj i)) ≤ σ * (k - 1)`, and
 `σ ≤ r` turns this into the design bound. -/
 theorem isSubspaceDesign_frsCode_sub_one
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {F : Type*} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (hFn : Fintype.card ι < Fintype.card F)
     (hω_adm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (hω_gen : orderOf ω = Fintype.card F - 1) :
     let τ : ℕ → ℝ := fun r ↦
@@ -683,12 +691,13 @@ theorem isSubspaceDesign_frsCode_sub_one
       else 1
     IsSubspaceDesign s τ (ReedSolomon.Folded.frsCode domain k s ω) := by
   classical
+  rcases isEmpty_or_nonempty ι with h | h
+  · intro τ r A hAC hAr
+    simp [Module.finrank_zero_of_subsingleton]
   have hω0 : ω ≠ 0 := by
     intro hzero
     rw [hzero, orderOf_zero] at hω_gen
-    have hcard2 : 2 ≤ Fintype.card F := by
-      have hn1 : 1 ≤ Fintype.card ι := Fintype.card_pos
-      omega
+    have hcard2 := Fintype.one_lt_card (α := F)
     omega
   have hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω := hω_adm
   intro τ
@@ -698,32 +707,6 @@ theorem isSubspaceDesign_frsCode_sub_one
   set σ := Module.finrank F ↥A with hσdef
   have hpt_inj := ReedSolomon.Folded.admissible_foldedPoints_injective domain ω hadm hω0
   have : NeZero k := ⟨by omega⟩
-  -- `k ≤ q − 1`: the `n·s` folded points are distinct and nonzero (for `s ≥ 2`);
-  -- for `s = 1` this is `hFn` directly.
-  have hns_q : Fintype.card ι * s ≤ Fintype.card F - 1 := by
-    rcases Nat.lt_or_ge s 2 with hs2 | hs2
-    · have hs1 : s = 1 := by omega
-      rw [hs1, Nat.mul_one]
-      omega
-    · have hzero : ∀ x : ι, domain x ≠ 0 := by
-        intro x hx
-        -- The two side conditions of the intra-orbit clause are `0 < 1` and `1 < s`;
-        -- both are discharged by `omega`, so this is insensitive to their order.
-        exact hω_adm.2 (domain x) (Finset.mem_map_of_mem _ (Finset.mem_univ x)) 1
-          (by omega) (by omega) (by rw [hx]; ring)
-      have himg : (Finset.univ : Finset (ι × Fin s)).image
-          (fun xi => domain xi.1 * ω ^ (xi.2 : ℕ)) ⊆ Finset.univ.erase 0 := by
-        intro y hy
-        obtain ⟨xi, -, rfl⟩ := Finset.mem_image.mp hy
-        exact Finset.mem_erase.mpr ⟨mul_ne_zero (hzero _) (pow_ne_zero _ hω0),
-          Finset.mem_univ _⟩
-      have hcard := Finset.card_le_card himg
-      rw [Finset.card_image_of_injective _ hpt_inj, Finset.card_univ, Fintype.card_prod,
-        Fintype.card_fin, Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ]
-        at hcard
-      exact hcard
-  have hk_ns : k ≤ Fintype.card ι * s := by rw [Nat.mul_comm]; exact hk_le
-  have hkq : k ≤ Fintype.card F - 1 := by omega
   -- The FRS encoder and its injectivity on `degreeLT F k`.
   set enc := ReedSolomon.Folded.frsEvalOnPoints domain s ω with henc
   have hencinj := ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective
@@ -769,8 +752,30 @@ theorem isSubspaceDesign_frsCode_sub_one
     bas.linearIndependent.map' B.subtype (Submodule.ker_subtype B)
   -- The folded Wronskian of that basis.
   set W := Polynomial.foldedWronskian σ ω P with hWdef
-  have hWne : W ≠ 0 :=
-    Polynomial.foldedWronskian_ne_zero_of_linearIndependent hω_gen hkq P hPdeg hPind
+  have hWne : W ≠ 0 := by
+    by_cases hσ : σ = 1
+    · have hsingle : ∀ (t : ℕ) (Q : Fin t → Polynomial F), t = 1 → LinearIndependent F Q →
+          Polynomial.foldedWronskian t ω Q ≠ 0 := by
+        rintro t Q rfl hQ
+        simpa [Polynomial.foldedWronskian, Matrix.det_fin_one] using hQ.ne_zero (0 : Fin 1)
+      exact hsingle σ P hσ hPind
+    have hs2 : 2 ≤ s := by omega
+    have hzero : ∀ x : ι, domain x ≠ 0 := by
+      intro x hx
+      exact hω_adm.2 (domain x) (Finset.mem_map_of_mem _ (Finset.mem_univ x)) 1
+        (by omega) (by omega) (by rw [hx]; ring)
+    have himg : (Finset.univ : Finset (ι × Fin s)).image
+        (fun xi => domain xi.1 * ω ^ (xi.2 : ℕ)) ⊆ Finset.univ.erase 0 := by
+      intro y hy
+      obtain ⟨xi, -, rfl⟩ := Finset.mem_image.mp hy
+      exact Finset.mem_erase.mpr ⟨mul_ne_zero (hzero _) (pow_ne_zero _ hω0),
+        Finset.mem_univ _⟩
+    have hcard := Finset.card_le_card himg
+    rw [Finset.card_image_of_injective _ hpt_inj, Finset.card_univ, Fintype.card_prod,
+      Fintype.card_fin, Finset.card_erase_of_mem (Finset.mem_univ _), Finset.card_univ] at hcard
+    have hkq : k ≤ Fintype.card F - 1 :=
+      hk_le.trans (by simpa [Nat.mul_comm] using hcard)
+    exact Polynomial.foldedWronskian_ne_zero_of_linearIndependent hω_gen hkq P hPdeg hPind
   have hWdegle : W.natDegree ≤ σ * (k - 1) :=
     Polynomial.natDegree_foldedWronskian_le σ ω P (k - 1) (fun j => by
       have := ReedSolomon.natDegree_lt_of_mem_degreeLT (hPdeg j)
@@ -900,7 +905,6 @@ theorem isSubspaceDesign_frsCode
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (hFn : Fintype.card ι < Fintype.card F)
     (hω_adm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (hω_gen : orderOf ω = Fintype.card F - 1) :
     let τ : ℕ → ℝ := fun r ↦
@@ -910,7 +914,7 @@ theorem isSubspaceDesign_frsCode
       else 1
     IsSubspaceDesign s τ (ReedSolomon.Folded.frsCode domain k s ω) := by
   exact isSubspaceDesign_of_sub_one _
-    (isSubspaceDesign_frsCode_sub_one domain k s ω hFn hω_adm hω_gen)
+    (isSubspaceDesign_frsCode_sub_one domain k s ω hω_adm hω_gen)
 
 /-- Univariate multiplicity codes are subspace designs for the profile
 
@@ -946,7 +950,7 @@ its block point of multiplicity at least `(s - σ + 1) * t`, by
 `pow_dvd_classicalWronskian`. Summing over the distinct evaluation points and comparing
 with `deg W ≤ σ * (k - 1)` gives the design bound. -/
 theorem isSubspaceDesign_umCode_sub_one
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (hchar : ringChar F = 0 ∨ k ≤ ringChar F) :
     let τ : ℕ → ℝ := fun r ↦
@@ -956,6 +960,9 @@ theorem isSubspaceDesign_umCode_sub_one
       else 1
     IsSubspaceDesign s τ (ReedSolomon.Multiplicity.umCode domain k s) := by
   classical
+  rcases isEmpty_or_nonempty ι with h | h
+  · intro τ r A hAC hAr
+    simp [Module.finrank_zero_of_subsingleton]
   intro τ
   refine isSubspaceDesign_sub_one_of_count _
     (ReedSolomon.Multiplicity.dim_umCode_eq_min domain k s hchar)
@@ -1084,7 +1091,7 @@ This is the `1/n`-relaxation of `isSubspaceDesign_umCode_sub_one`, which is what
 count actually proves; consumers proving list-decodability up to capacity need the sharp
 version. See `isSubspaceDesign_frsCode` for the folded Reed-Solomon counterpart. -/
 theorem isSubspaceDesign_umCode
-    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {ι : Type*} [Fintype ι]
     {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (hchar : ringChar F = 0 ∨ k ≤ ringChar F) :
     let τ : ℕ → ℝ := fun r ↦
@@ -1093,6 +1100,9 @@ theorem isSubspaceDesign_umCode
           (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) / (s - r + 1)
       else 1
     IsSubspaceDesign s τ (ReedSolomon.Multiplicity.umCode domain k s) := by
+  rcases isEmpty_or_nonempty ι with h | h
+  · intro τ r A hAC hAr
+    simp [Module.finrank_zero_of_subsingleton]
   exact isSubspaceDesign_of_sub_one _ (isSubspaceDesign_umCode_sub_one domain k s hchar)
 
 end CodingTheory

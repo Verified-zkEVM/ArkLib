@@ -113,6 +113,9 @@ follows it. A green build does not check these rules, so check them yourself:
    profiler to find the slow declaration and tactic. Compare the times on the same workload. Do
    not expand a stable terminal `simp` into a `simp only` list. A shorter proof is not always
    faster.
+7. **Markdown tables**: when you edit a statement table, follow the
+   [rendering check](../wiki/blueprint-and-citations.md#knowledge-base-mapping). A blank line ends
+   a table, and the link and metadata checks do not find that.
 
 Then run the validation, and keep its exit code:
 

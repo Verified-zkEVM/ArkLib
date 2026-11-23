@@ -84,20 +84,19 @@ theorem sum_fin_succ_eq_choose_two (n : ℕ) : ∑ i : Fin n, (i.val + 1) = (n +
 same simplex, of `(max (m * (1 + g) - ∑ i, c i) 0) ^ 3`.
 
 The hypothesis `μ ≤ (1 + 3 * g / 8) * m` is that of `floor_cubic`, applied at each point with `C`
-the coordinate sum of the floored point. Integrability on `T` is assumed
-because the Bochner integral of a non-integrable function is zero by convention; when `T` is
-closed and `z` is continuous on it, integrability follows from compactness of the simplex. -/
+the coordinate sum of the floored point. If the integrand is not integrable on `T`,
+the Bochner integral is zero and the bound follows from nonnegativity of the lattice sum. -/
 theorem weighted_floor_integral (n W : ℕ) (g m μ : ℝ) {T : Set (Fin n → ℝ)}
     (hT : MeasurableSet T)
     (hTW : T ⊆ Set.weightedSimplex (fun i : Fin n ↦ ((i.val + 1 : ℕ) : ℝ)) W)
     (z : (Fin n → ℝ) → ℝ) (hμ : μ ≤ (1 + 3 * g / 8) * m)
-    (hZ : ∀ u ∈ T, ∑ i, u i - μ = z u * (g * m))
-    (hint : IntegrableOn (fun u ↦ (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3) T) :
+    (hZ : ∀ u ∈ T, ∑ i, u i - μ = z u * (g * m)) :
     ∫ u in T, (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3 ≤
       ∑ c ∈ Finset.natWeightedSimplex (fun i : Fin n ↦ i.val + 1) W,
         (max (m * (1 + g) - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 3 := by
   have h := Finset.setIntegral_le_sum_natWeightedSimplex (w := fun i : Fin n ↦ i.val + 1)
-    (fun i ↦ Nat.succ_ne_zero _) (W := (W : ℝ)) hT hTW hint
+    (fun i ↦ Nat.succ_ne_zero _) (W := (W : ℝ)) hT hTW
+    (f := fun u ↦ (g * m) ^ 3 * (max (5 / 8 - z u) 0) ^ 3)
     (g := fun c ↦ (max (m * (1 + g) - ((∑ i, c i : ℕ) : ℝ)) 0) ^ 3)
     (fun c _ ↦ by positivity) fun u hu ↦ ?_
   · simpa only [Nat.floor_natCast] using h

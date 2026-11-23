@@ -89,7 +89,7 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
 /-- The `CheckClaim` reduction satisfies perfect completeness with respect to the predicate as the
   input relation, and the output relation being always true. -/
 @[simp]
-theorem reduction_completeness [Nonempty σ] :
+theorem reduction_completeness :
     (reduction oSpec Statement pred).perfectCompleteness init impl
     (relIn Statement pred) (relOut Statement) := by
   classical

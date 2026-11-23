@@ -89,7 +89,6 @@ theorem batchedFRI_perfectCompleteness
 theorem batchedFRI_soundness_affineSpace
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (hdom : 2 ^ (∑ i, (s i).val) * d ≤ 2 ^ n)
     (l m : ℕ) (θ : ℝ) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).val) * d)
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -100,13 +99,12 @@ theorem batchedFRI_soundness_affineSpace
       (ProximityGap.errorBound δ (2 ^ (∑ i, (s i).val) * d)
         (ω : Fin (2 ^ n) ↪ F) + Fri.Spec.soundnessError (ω := ω) s d l θ δ) := by
   exact batchedFRI_soundness s d hdom l m (CoreDefinitions.AffineSpaceGenerator F m) θ δ _
-    (ProximityGap.caError_affineSpace_le m (by positivity) hδ_pos hδ) init impl
+    (ProximityGap.caError_affineSpace_le m (by positivity) hδ) init impl
 
 /-- End-to-end powers batching with the BCIKS20 open-Johnson error. -/
 theorem batchedFRI_soundness_powers
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (hdom : 2 ^ (∑ i, (s i).val) * d ≤ 2 ^ n)
     (l m : ℕ) (θ : ℝ) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ < 1 - ReedSolomon.sqrtRate (2 ^ (∑ i, (s i).val) * d)
       (ω : Fin (2 ^ n) ↪ F))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -117,7 +115,7 @@ theorem batchedFRI_soundness_powers
       (m * ProximityGap.errorBound δ (2 ^ (∑ i, (s i).val) * d)
         (ω : Fin (2 ^ n) ↪ F) + Fri.Spec.soundnessError (ω := ω) s d l θ δ) := by
   exact batchedFRI_soundness s d hdom l m (CoreDefinitions.univariatePowersGenerator F m) θ δ _
-    (ProximityGap.caError_powers_le m (by positivity) hδ_pos hδ) init impl
+    (ProximityGap.caError_powers_le m (by positivity) hδ) init impl
 
 
 
@@ -126,7 +124,6 @@ batching error `t * n / |F|` adds to the FRI soundness error. -/
 theorem batchedFRI_soundness_multilinear
     (s : Fin (k + 1) → ℕ+) (d : ℕ+) (hdom : 2 ^ (∑ i, (s i).val) * d ≤ 2 ^ n)
     (l t : ℕ) (θ : ℝ) (δ : ℝ≥0)
-    (hδ_pos : 0 < δ)
     (hδ : δ ≤ Code.relativeUniqueDecodingRadius
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).val) * d)).carrier)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
@@ -137,7 +134,7 @@ theorem batchedFRI_soundness_multilinear
       (t * (2 ^ n / Fintype.card F) + Fri.Spec.soundnessError (ω := ω) s d l θ δ) := by
   exact batchedFRI_soundness s d hdom l (2 ^ t - 1)
     (CoreDefinitions.multilinearBatchGenerator F t) θ δ _
-    (by simpa using ProximityGap.caError_multilinearBatch_le t hδ_pos hδ) init impl
+    (by simpa using ProximityGap.caError_multilinearBatch_le t hδ) init impl
 
 
 
@@ -149,7 +146,7 @@ theorem batchedFRI_soundness_multilinear_johnson
     (hdist : (δ_min : ℝ) = (Code.minDist
       (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F)
         (2 ^ (∑ i, (s i).val) * d)).carrier : ℝ) / Fintype.card (Fin (2 ^ n)))
-    (hη : 0 < η) (hη_lt : η < δ_min) (hδ_pos : 0 < δ)
+    (hη : 0 < η) (hη_lt : η < δ_min)
     (hδ : (δ : ℝ) ≤ 1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchedFRIreduction (ω := ω) k s d hdom l (2 ^ t - 1)
@@ -164,6 +161,6 @@ theorem batchedFRI_soundness_multilinear_johnson
       simpa only [Fintype.card_fin, PNat.val] using
         ProximityGap.caError_multilinearBatch_le_johnson t
           (ReedSolomon.code (ω : Fin (2 ^ n) ↪ F) (2 ^ (∑ i, (s i).val) * d))
-          δ_min η δ hdist hη hη_lt hδ_pos hδ) init impl
+          δ_min η δ hdist hη hη_lt hδ) init impl
 
 end BatchedFri.Spec

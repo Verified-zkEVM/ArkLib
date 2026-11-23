@@ -4,10 +4,12 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Curves
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.FullCode
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Johnson.Probability
 import Mathlib.Algebra.Field.ZMod
 import Mathlib.Data.Fin.VecNotation
+import Mathlib.Tactic.NormNum.Prime
 
 /-! # Acceptance cases for Johnson decoding consequences -/
 
@@ -50,7 +52,7 @@ example : ∃ exceptional : Finset ℚ,
     ∃ z ∉ exceptional, HasExactCorrelatedPair (natDomain 4) 0 0 (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair
     (n := 4) (D := 1) (A := 3) (eta := 1 / 4) (natDomain 4) 0 0 le_rfl (by norm_num)
-    (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num) (by norm_num)
+    (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨exceptional, hcard, z, hz, ?_⟩
   convert hgood z hz 0 (by rw [degree_zero]; exact WithBot.bot_lt_coe _) ?_
@@ -63,7 +65,7 @@ example : ∃ exceptional : Finset ℚ,
     ∃ z ∉ exceptional, HasExactCorrelatedPair (natDomain 16) 0 0 (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_line_exactCorrelatedPair_of_gap
     (n := 16) (k := 2) (A := 10) (δ := 1 / 2) (natDomain 16) 0 0
-    (by norm_num) le_rfl (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) le_rfl (by norm_num) (by norm_num)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨exceptional, by simpa using hcard, z, hz, ?_⟩
   convert hgood z hz 0 (by rw [degree_zero]; exact WithBot.bot_lt_coe _) ?_
@@ -73,13 +75,113 @@ local instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 private def johnsonFiniteDomain : Fin 4 ↪ ZMod 5 := ⟨![0, 1, 2, 3], by decide⟩
 
+private theorem johnsonT_four_one : johnsonT 4 1 (1 / 4) = 7 / 2 := by
+  have hsqrt : √(johnsonRhoMinus 4 1) = 1 / 2 := by
+    rw [show johnsonRhoMinus 4 1 = (1 / 2) ^ 2 by norm_num [johnsonRhoMinus]]
+    exact Real.sqrt_sq (by norm_num)
+  rw [johnsonT, johnsonM, hsqrt]
+  norm_num
+
+local instance : Fact (Nat.Prime 7919) := ⟨by norm_num⟩
+
+private def johnsonCurveDomain : Fin 4 ↪ ZMod 7919 := ⟨![0, 1, 2, 3], by decide⟩
+
+/-- A degree-`2` received curve over `ZMod 7919` with nonconstant coefficient words. -/
+private def johnsonCurveValues : Fin 3 → Fin 4 → ZMod 7919 :=
+  ![![1, 2, 3, 4], ![0, 1, 0, 1], ![2, 0, 2, 0]]
+
+/-- Over `ZMod 7919` at length `4`, degree `1`, slack `1/4` and threshold `3`, the degree-`2` curve
+above has one exceptional set of at most `2 · 5488/3` challenges, the curve degree times the closed
+line bound `(8/3) n t³ / ρ₋`. The set misses some challenge, and there every agreeing candidate has
+exact power agreement. -/
+example : ∃ exceptional : Finset (ZMod 7919),
+    (exceptional.card : ℝ) ≤ 2 * (5488 / 3) ∧
+    ∃ z ∉ exceptional, ∀ P : (ZMod 7919)[X], P.degree < (1 : ℕ) + 1 →
+      3 ≤ (polynomialAgreementSet johnsonCurveDomain (powerBatchedWord johnsonCurveValues z)
+        P).card →
+      HasExactPowerAgreement johnsonCurveDomain johnsonCurveValues (RingHom.id (ZMod 7919))
+        (1 + 1) z P := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement_closed
+    (n := 4) (D := 1) (A := 3) (ℓ := 2) (eta := 1 / 4) johnsonCurveDomain johnsonCurveValues
+    le_rfl (by norm_num) (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num)
+  have hbound : (exceptional.card : ℝ) ≤ 2 * (5488 / 3) := by
+    refine hcard.trans (le_of_eq ?_)
+    rw [johnsonT_four_one, show johnsonRhoMinus 4 1 = 1 / 4 by norm_num [johnsonRhoMinus]]
+    norm_num
+  have hlt : exceptional.card < (Finset.univ : Finset (ZMod 7919)).card := by
+    rw [Finset.card_univ, ZMod.card]
+    have hreal : (exceptional.card : ℝ) < 7919 := by linarith
+    exact_mod_cast hreal
+  obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
+  exact ⟨exceptional, hbound, z, hz, by convert hgood z hz⟩
+
+/-- At length `4`, degree `1`, slack `1/4` and threshold `3`, the Johnson count at height
+`h + 1` is `1691/2`, from `μ = 6`, `h = 16` and `θ = 3/2`. -/
+private theorem johnsonSuccExceptionCount_four_one :
+    johnsonSuccExceptionCount 4 1 3 (1 / 4) = 1691 / 2 := by
+  have hsqrt : √(johnsonRhoMinus 4 1) = 1 / 2 := by
+    rw [show johnsonRhoMinus 4 1 = (1 / 2) ^ 2 by norm_num [johnsonRhoMinus]]
+    exact Real.sqrt_sq (by norm_num)
+  have hmu : johnsonMu 4 1 (1 / 4) = 6 := by
+    rw [johnsonMu, johnsonT_four_one, hsqrt]
+    norm_num
+  have hceil : ⌈(7 / 2 : ℝ) ^ 2 / (3 * (1 / 4))⌉₊ = 17 := by
+    rw [Nat.ceil_eq_iff (by norm_num)]
+    norm_num
+  have hh : johnsonH 4 1 (1 / 4) = 16 := by
+    rw [johnsonH, johnsonT_four_one, show johnsonRhoMinus 4 1 = 1 / 4 by
+      norm_num [johnsonRhoMinus], hceil]
+  simp only [johnsonSuccExceptionCount, hmu, hh, johnsonTheta]
+  norm_num
+
+local instance : Fact (Nat.Prime 2003) := ⟨by norm_num⟩
+
+private def johnsonSmallCurveDomain : Fin 4 ↪ ZMod 2003 := ⟨![0, 1, 2, 3], by decide⟩
+
+/-- The curve of `johnsonCurveValues` over `ZMod 2003`. -/
+private def johnsonSmallCurveValues : Fin 3 → Fin 4 → ZMod 2003 :=
+  ![![1, 2, 3, 4], ![0, 1, 0, 1], ![2, 0, 2, 0]]
+
+/-- Over `ZMod 2003`, the degree-`2` curve has a challenge at which every agreeing candidate has
+exact power agreement. The exceptional set has at most `2 E₁ = 1691` elements. The earlier bound
+`2 · 2 E₀ = 3188` exceeds the field size and would not give this. -/
+example : ∃ z : ZMod 2003, ∀ P : (ZMod 2003)[X], P.degree < (1 : ℕ) + 1 →
+    3 ≤ (polynomialAgreementSet johnsonSmallCurveDomain
+      (powerBatchedWord johnsonSmallCurveValues z) P).card →
+    HasExactPowerAgreement johnsonSmallCurveDomain johnsonSmallCurveValues
+      (RingHom.id (ZMod 2003)) (1 + 1) z P := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement
+    (n := 4) (D := 1) (A := 3) (ℓ := 2) (eta := 1 / 4) johnsonSmallCurveDomain
+    johnsonSmallCurveValues le_rfl (by norm_num) (by norm_num)
+    (by rw [johnsonAgreement_four_one]; norm_num)
+  have hlt : exceptional.card < (Finset.univ : Finset (ZMod 2003)).card := by
+    rw [Finset.card_univ, ZMod.card]
+    rw [johnsonSuccExceptionCount_four_one] at hcard
+    have hreal : (exceptional.card : ℝ) < 2003 := by push_cast at hcard; linarith
+    exact_mod_cast hreal
+  obtain ⟨z, -, hz⟩ := Finset.exists_mem_notMem_of_card_lt_card hlt
+  exact ⟨z, by convert hgood z hz⟩
+
+/-- On the zero curve of degree `2` over `ℚ`, some challenge outside at most twice the count at
+height `h + 1` recovers the zero candidate. -/
+example : ∃ exceptional : Finset ℚ,
+    (exceptional.card : ℝ) ≤ 2 * johnsonSuccExceptionCount 4 1 3 (1 / 4) ∧
+    ∃ z ∉ exceptional,
+      HasExactPowerAgreement (natDomain 4) (0 : Fin 3 → Fin 4 → ℚ) (RingHom.id ℚ) 2 z 0 := by
+  obtain ⟨exceptional, hcard, hgood⟩ := exists_johnson_curve_exactPowerAgreement
+    (n := 4) (D := 1) (A := 3) (ℓ := 2) (eta := 1 / 4) (natDomain 4) 0 le_rfl (by norm_num)
+    (by norm_num) (by rw [johnsonAgreement_four_one]; norm_num)
+  obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
+  refine ⟨exceptional, by simpa using hcard, z, hz, ?_⟩
+  convert hgood z hz 0 (by rw [degree_zero]; exact WithBot.bot_lt_coe _) ?_
+  simp [polynomialAgreementSet, powerBatchedWord]
+
 /-- Over `ZMod 5` at length `4`, degree `1` and slack `1/4`, the affine-line MCA error at radius
 `1/4` is at most `min 1 (E₀ / 5)` with threshold `3`. -/
 example : mcaError (AffineLineGenerator (ZMod 5)) (code johnsonFiniteDomain 2) (1 / 4 : ℝ) ≤
     min 1 (ENNReal.ofReal (johnsonExceptionCount 4 1 3 (1 / 4) / 5)) := by
   have h := mcaError_affineLine_johnson_le (n := 4) (D := 1) (eta := 1 / 4)
     johnsonFiniteDomain le_rfl (by norm_num) (by norm_num)
-    (by rw [johnsonAgreement_four_one]; norm_num)
   rw [johnsonAgreement_four_one, show ⌈(3 / 4 : ℝ) * ((4 : ℕ) : ℝ)⌉₊ = 3 by norm_num,
     ZMod.card] at h
   norm_num at h ⊢
@@ -97,7 +199,7 @@ example : ∃ exceptional : Finset ℚ,
     (exceptional.card : ℚ) ≤ 5 ∧
     ∃ z ∉ exceptional, HasExactCorrelatedPair (natDomain 3) 0 0 (RingHom.id ℚ) 2 z 0 := by
   obtain ⟨exceptional, hcard, hgood⟩ := exists_weightedJohnson_line_exactCorrelatedPair
-    (natDomain 3) 0 0 weightedJohnsonCertificate_three le_rfl (by norm_num) le_rfl (by norm_num)
+    (natDomain 3) 0 0 weightedJohnsonCertificate_three le_rfl (by norm_num) (by norm_num)
   obtain ⟨z, hz⟩ := Finset.exists_notMem exceptional
   refine ⟨exceptional, hcard.trans (by norm_num [johnsonWeightedRefinedExceptionCount]), z, hz,
     ?_⟩
@@ -113,7 +215,7 @@ affine-line MCA error at radius `0` by `5 / 7`. -/
 example : mcaError (AffineLineGenerator (ZMod 7)) (code weightedJohnsonFiniteDomain 2) 0 ≤
     ENNReal.ofReal (5 / 7) := by
   have h := mcaError_affineLine_weightedJohnson_le weightedJohnsonFiniteDomain
-    weightedJohnsonCertificate_three le_rfl (by norm_num) le_rfl (by norm_num) 0 (by norm_num)
+    weightedJohnsonCertificate_three le_rfl (by norm_num) (by norm_num) 0 (by norm_num)
   rw [ZMod.card] at h
   norm_num [johnsonWeightedRefinedExceptionCount] at h
   exact h

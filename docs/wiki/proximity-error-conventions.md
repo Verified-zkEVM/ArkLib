@@ -9,6 +9,8 @@ correlated agreement. For code carriers and distance types, see
 
 | Module | Contents |
 | --- | --- |
+| `ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Probability.lean` | Affine/scalar errors with agreement loss, native sampling characterizations, and the scalar zero-loss bridge to `mcaError` |
+| `ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean` | Exact `ℚ≥0` evaluators and their bridges to the `ENNReal` errors |
 | `ProximityGenerator/Basic.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
 | `ProximityGap/Errors.lean` | `caError`, `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
@@ -121,8 +123,8 @@ This is `epsPg_le_epsCa_le_epsMca`; its two component inequalities are
 
 The unique-decoding comparison is:
 
-- `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the MCA-to-CA direction;
-- `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` for the resulting equality.
+- `mcaError_le_epsCa_of_two_mul_lt_dist` for the MCA-to-CA direction;
+- `mcaError_eq_epsCa_of_two_mul_lt_dist` for the resulting equality.
 
 For any generator whose finite seed space has at most as many elements as the field,
 `CoreDefinitions.mcaError_moduleInterleavedCode_le_of_card_le` bounds the error of a finite
@@ -138,8 +140,9 @@ hypotheses:
 - `mcaError_interleaved_le` gives the interleaved-to-base inequality;
 - `mcaError_interleaved_eq` gives equality.
 
-Jo26's field-size-weighted bound for seed spaces larger than the field remains unformalized in
-ArkLib.
+For seed spaces larger than the field, `mcaError_moduleInterleavedCode_le_fieldWeighted` gives
+Jo26's field-size-weighted bound: over a finite field with `q` elements and `s` rows, interleaving
+multiplies the error by at most `(q ^ s - 1) / (q ^ (s - 1) * (q - 1))`.
 
 The numeric correlated-agreement values are connected to the predicate API by:
 
@@ -157,8 +160,47 @@ introducing a second predicate.
 | radius passed to `IsMCA`, `mcaError`, or `Code.Lambda` | `ℝ` |
 | radius passed to `caError`, `epsPg`, `epsCa`, or `epsMca` | `ℝ≥0` |
 | radius quantified by `IsMCAGenerator` | `I`, the closed unit interval |
-| numeric error value or probability | `ENNReal` |
+| semantic error value or probability | `ENNReal` |
+| exact computable error value | `ℚ≥0` |
 | error bound | `ℝ≥0` |
+
+Probability-valued security errors use `ENNReal`, as native event probabilities do.
+This type supports suprema without separate boundedness proofs.
+The bound `ε ≤ 1` shows that an error value is finite.
+
+On a nonempty finite uniform challenge space, an error can use a counting definition with
+values in `ENNReal`, including `ENNReal.ofReal` of a nonnegative real fraction.
+For example, `ReedSolomon.affineMcaError_eq_iSup_prob` and
+`ReedSolomon.scalarMcaError_eq_iSup_prob` identify the counting definitions with suprema of
+native probabilities under `[SampleableType F]`.
+The event predicates and counting theorems have no sampler assumptions.
+The sampling characterizations provide the connection to probability bounds for protocols.
+
+The affine, scalar, and equal-degree combiner errors also have exact computable values in `ℚ≥0`:
+`ReedSolomon.affineMcaErrorRat`, `ReedSolomon.scalarMcaErrorRat`, and
+`ReedSolomon.equalDegreeMcaErrorRat`.
+`ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
+`ReedSolomon.ofReal_equalDegreeMcaErrorRat` prove that `ENNReal.ofReal` of the real cast of each
+value is the semantic `ENNReal` error.
+The evaluators enumerate received word pairs, challenges, and bounded-degree CompPoly candidates
+and witnesses, and count with `Probability.maxEventProbability` from
+[`MaxEventProbability.lean`](../../ArkLib/Data/Probability/MaxEventProbability.lean).
+The evaluators use no classical decision procedure and no sampler.
+The module docstring of
+[`AffineCombiner/Computable.lean`](../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean)
+states the cost of the exhaustive search.
+
+Evaluating the generic `mcaError` would require executable code membership and radius comparisons.
+For the affine-line generator and `ReedSolomon.code domain (d + 1)`, the scalar evaluator computes
+`mcaError` exactly from the matching integer threshold. Let `n` be the domain size and
+`A = ⌈n(1 - δ)⌉₊`.
+By `ReedSolomon.scalarMcaError_zero_eq_mcaError` and `ReedSolomon.ofReal_scalarMcaErrorRat`,
+`mcaError (AffineLineGenerator F) (ReedSolomon.code domain (d + 1)) δ` equals
+`ENNReal.ofReal` of the real cast of `scalarMcaErrorRat domain d A 0`.
+
+Counts use `ℕ`, and algebraic bound formulas can use `ℝ` with explicit `ENNReal.ofReal`
+conversion.
+Nonnegative error budgets use `ℝ≥0`.
 
 Compare an `ENNReal` value with a nonnegative bound using a coercion, for example
 `mcaError G C δ ≤ (ε : ENNReal)`. Use `mcaError_ne_top` before applying `ENNReal.toNNReal`.

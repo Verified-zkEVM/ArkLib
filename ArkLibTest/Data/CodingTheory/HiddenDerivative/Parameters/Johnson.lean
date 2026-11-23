@@ -69,9 +69,9 @@ example :
   have hheight := johnsonH_lt (n := 4) (D := 1) (eta := 1 / 4) hD (by norm_num)
   have hgap := johnson_half_gap 4 1 (eta := 1 / 4) heta
   have hdegree := johnson_degree_succ_le_agreement (n := 4) (D := 1) (A := 3)
-    (by norm_num) (by norm_num) heta threshold_4_1
+    (by norm_num) heta threshold_4_1
   have htheta := johnsonTheta_le_sqrt_envelope (n := 4) (D := 1) (A := 3)
-    (by norm_num) (by norm_num) heta threshold_4_1
+    (by norm_num) heta threshold_4_1
   have hclosed := johnsonExceptionCount_lt_closed (n := 4) (D := 1) (A := 3)
     hD hDn heta threshold_4_1
   have hratio := johnsonExceptionCount_div_comparisonEstimate_lt hD hDn heta ha threshold_4_1
@@ -110,7 +110,7 @@ example :
   have hthreshold := threshold_4_1
   have hmuAdd := johnsonMu_add_one (n := 4) (D := 1) (eta := 1 / 4) hD hDn
   have hheightAdd := johnsonH_add_one (n := 4) (D := 1) (eta := 1 / 4) hD hDn
-  have hmuH := johnsonMu_le_H (n := 4) (D := 1) (eta := 1 / 4) hD hDn
+  have hmuH := johnsonMu_le_H (n := 4) (D := 1) (eta := 1 / 4) hDn
   have hMHeight := johnsonM_le_H_add_one (n := 4) (D := 1) (eta := 1 / 4) hD hDn
   have hcutoff := johnson_D_mul_mu_lt_XCutoff (n := 4) (D := 1) (eta := 1 / 4) hD hDn
   have hbudget := johnsonXCutoff_le_mul_agreement (n := 4) (D := 1) (A := 3) heta hthreshold
@@ -158,5 +158,32 @@ example :
   have hslope : 3 * johnsonWeightedR 2 1 < johnsonWeightedN 1 3 2 1 := by decide
   exact ⟨johnsonWeightedHeight_ge 3 1 3 2 1,
     johnsonWeightedHeight_strict hslope⟩
+
+/-- At `n = 4`, `D = 1`, `η = 1/4`, `A = 3`, the count at height `h + 1` is at most twice the
+count at height `h` and below the closed bound `5488/3`. -/
+example :
+    johnsonSuccExceptionCount 4 1 3 (1 / 4) ≤ 2 * johnsonExceptionCount 4 1 3 (1 / 4) ∧
+      johnsonSuccExceptionCount 4 1 3 (1 / 4) < 5488 / 3 := by
+  refine ⟨johnsonSuccExceptionCount_le_two_mul le_rfl (by norm_num), ?_⟩
+  calc
+    johnsonSuccExceptionCount 4 1 3 (1 / 4) <
+        (8 / 3 : ℝ) * 4 * johnsonT 4 1 (1 / 4) ^ 3 / johnsonRhoMinus 4 1 :=
+      johnsonSuccExceptionCount_lt_closed (n := 4) (D := 1) (A := 3) le_rfl (by norm_num)
+        (by norm_num) threshold_4_1
+    _ = 5488 / 3 := by
+      rw [shiftedMultiplicity_4_1, rho_4_1]
+      norm_num
+
+/-- The exact counts at `n = 4`, `D = 1`, `η = 1/4`, `A = 3`, where `μ = 6`, `h = 16` and
+`θ = 3/2`: `E₀ = 797` and `E₁ = 1691/2`. At curve degree `2` the new bound `2 E₁ = 1691` is
+below the old bound `2 · 2 E₀ = 3188`. -/
+example :
+    johnsonExceptionCount 4 1 3 (1 / 4) = 797 ∧
+      johnsonSuccExceptionCount 4 1 3 (1 / 4) = 1691 / 2 := by
+  constructor
+  · simp only [johnsonExceptionCount, candidateDegree_4_1, challengeHeight_4_1, johnsonTheta]
+    norm_num
+  · simp only [johnsonSuccExceptionCount, candidateDegree_4_1, challengeHeight_4_1, johnsonTheta]
+    norm_num
 
 end ReedSolomon.HiddenDerivative

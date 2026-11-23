@@ -57,7 +57,7 @@ distinct.
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient
-  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.6.
+  Decoding and Smaller Cryptographic Proofs*][DKT26], Appendix A.2 and Section 4.1.
 -/
 
 @[expose] public section

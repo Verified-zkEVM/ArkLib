@@ -558,7 +558,7 @@ set_option backward.isDefEq.respectTransparency false in
 omit [Fintype F] [SampleableType F] in
 private theorem executeStrategies_terminal {m₀ : ℕ} (D : Fin m₀ ↪ F)
     {ι : Type} (ambient : OracleSpec ι) {m : Type → Type v}
-    [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
+    [Monad m] [LawfulMonad m]
     [MonadAttach m] [ExactMonadAttach m] (handler : QueryImpl ambient m)
     (challenge : OracleComp ambient F) (domain : List F)
     (count start : ℕ) (finish : start + count = n)

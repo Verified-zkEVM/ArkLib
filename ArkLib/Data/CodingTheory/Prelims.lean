@@ -130,18 +130,26 @@ def subLeftFull (U : Matrix (Fin m) (Fin n) F) (c_reindex : Fin m → Fin n) :
 variable [CommRing F] [Nontrivial F]
          {U : Matrix (Fin m) (Fin n) F}
 
+omit [Nontrivial F] in
 /-- An m×n matrix has full rank if the submatrix consisting of rows 1 through n has rank n. -/
 lemma rank_eq_if_subUpFull_eq (h : n ≤ m) :
     (subUpFull U (Fin.castLE h)).rank = n → U.rank = n  := by
+   rcases subsingleton_or_nontrivial F with hF | hF
+   · simp [Matrix.rank_subsingleton]
+   let := hF
    intro h_sub_mat_rank
    apply le_antisymm
    ·  exact Matrix.rank_le_width U
    ·  calc n = (subUpFull U (Fin.castLE h)).rank := by rw[h_sub_mat_rank]
            _ ≤ U.rank := by exact Matrix.rank_submatrix_le U (Fin.castLE h) (Equiv.refl (Fin n))
 
+omit [Nontrivial F] in
 /-- cRank and Rank agree for a finite matirx -/
 lemma cRank_rank_conversion :
     ↑(U.rank) = U.cRank := by
+  rcases subsingleton_or_nontrivial F with hF | hF
+  · simp [Matrix.rank_subsingleton, Matrix.cRank_subsingleton]
+  let := hF
   rw[
     Matrix.rank_eq_finrank_span_cols,
     ← Matrix.cRank_toNat_eq_finrank,
@@ -151,9 +159,13 @@ lemma cRank_rank_conversion :
          _ = ↑n := by rw[Fintype.card_fin]
   exact Cardinal.natCast_lt_aleph0
 
+omit [Nontrivial F] in
 /-- An m×n matrix has full rank if the submatrix consisting of columns 1 through m has rank m. -/
 lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
     (subLeftFull U (Fin.castLE h)).rank = m → U.rank = m := by
+   rcases subsingleton_or_nontrivial F with hF | hF
+   · simp [Matrix.rank_subsingleton]
+   let := hF
    intro h_sub_mat_rank
    rw[
     Matrix.rank_eq_finrank_span_cols,
@@ -232,10 +244,10 @@ theorem linearCombination_ne_zero
     {v : ℓ → F} (hv : v ≠ 0) :
     ∑ j : ℓ, v j • P j ≠ 0 := by
   have := @Fintype.linearIndependent_iff (ℓ) F M
-  contrapose! hv
+  contrapose hv
   contrapose! this
   refine ⟨?_,? _, ?_, ?_⟩
-  · all_goals try infer_instance
+  · infer_instance
   · exact Module.addCommMonoidToAddCommGroup F
   · exact inferInstance
   · refine ⟨P, inferInstance, Or.inl ⟨hP, v, hv, Function.ne_iff.mp this⟩⟩
@@ -288,7 +300,7 @@ lemma mem_affineSubspaceFrom_iff [Ring F] [AddCommGroup A] [DecidableEq A] [Modu
 instance : VAdd (ι → F) (AffineSubspace F (ι → F)) := AffineSubspace.pointwiseVAdd
 
 /-- A translate of a finite affine subspace is finite. -/
-noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} [Fintype s] :
+noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} :
     Fintype (v +ᵥ s) := Fintype.ofFinite ↥(v +ᵥ s)
 
 /-- The affine span of a set is finite over a finite field. -/
@@ -311,23 +323,23 @@ noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} [inst : 
 
 /-- The carrier set of the affine span of the image of a function `U : Fin k → ι → F`.
   This is the set of all affine combinations of `U 0, U 1, ..., U (k-1)`. -/
-abbrev AffSpanSet [NeZero k] (U : Fin k → ι → F) : Set (ι → F) :=
+abbrev AffSpanSet (U : Fin k → ι → F) : Set (ι → F) :=
   (affineSpan F (Finset.univ.image U : Set (ι → F))).carrier
 
 omit [Fintype F] in
 /-- The affine span of a finite set of vectors is finite over a finite field. -/
-lemma AffSpanSet.instFinite [Finite F] [NeZero k] (u : Fin k → ι → F) :
+lemma AffSpanSet.instFinite [Finite F] (u : Fin k → ι → F) :
     (AffSpanSet u).Finite := by
   let : Fintype F := Fintype.ofFinite F
   unfold AffSpanSet
   exact Set.toFinite _
 
 /-- The affine span as a `Finset`, using `AffSpanFinite` to convert from the set. -/
-noncomputable def AffSpanFinset [NeZero k] (U : Fin k → ι → F) : Finset (ι → F) :=
+noncomputable def AffSpanFinset (U : Fin k → ι → F) : Finset (ι → F) :=
   (AffSpanSet.instFinite U).toFinset
 
 /-- A collection of affine subspaces in `F^ι`. -/
-noncomputable def AffSpanFinsetCollection {t : ℕ} [NeZero k] [NeZero t]
+noncomputable def AffSpanFinsetCollection {t : ℕ}
   (C : Fin t → (Fin k → (ι → F))) : Set (Finset (ι → F)) :=
   Set.range (fun i => AffSpanFinset (C i))
 

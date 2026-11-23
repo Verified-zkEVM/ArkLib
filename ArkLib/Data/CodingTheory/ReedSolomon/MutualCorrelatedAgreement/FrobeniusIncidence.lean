@@ -33,7 +33,9 @@ then controls finite sets of regular points outside those graphs.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE aeval affineHilbertPolynomial mem_restrictBidegree_mono
+  zeroLocus)
 
 namespace ReedSolomon
 
@@ -126,8 +128,6 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
     (hheight : CoeffNatDegreeLE Q h)
     (hjet : Q.weightedTotalDegree (fun i ↦ i.elim 0 (fun _ ↦ 1)) ≤ b)
     (hinit : jointInitialJetEquation center Q ≠ 0)
-    (hproper : Ideal.span ({jointInitialJetEquation center Q} :
-      Set (MvPolynomial (Option (Fin 1)) E)) ≠ ⊤)
     (S : Finset (Option (Fin 1) → E))
     (hS : ∀ x ∈ S,
       aeval x (jointInitialJetEquation center Q) = 0 ∧
@@ -141,6 +141,15 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
     (S.card : ℚ) ≤ (h * (1 + τ * (b - 1)) + b * (p ^ e + τ * h) : ℕ) *
       (((n - k + 1 : ℕ) : ℚ) / ((A - k + 1 : ℕ) : ℚ)) := by
   classical
+  by_cases hproper : Ideal.span ({jointInitialJetEquation center Q} :
+      Set (MvPolynomial (Option (Fin 1)) E)) = ⊤
+  · have hSempty : S = ∅ := by
+      apply Finset.eq_empty_iff_forall_notMem.mpr
+      intro x hx
+      exact ((Ideal.span_singleton_eq_top.mp hproper).map (MvPolynomial.aeval x)).ne_zero
+        (hS x hx).1
+    rw [hSempty, Finset.card_empty, Nat.cast_zero]
+    positivity
   have hp : 0 < p ^ e := pow_pos (expChar_pos E p) e
   have hjet' : jetTotalDegree Q ≤ b := by
     have hw : (jetDegreeWeight : JetVariable 0 → ℕ) =
@@ -159,7 +168,7 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
     calc
       h ≤ τ * h := by simpa using Nat.mul_le_mul_right h hτone
       _ ≤ p ^ e + τ * h := Nat.le_add_left _ _
-  apply bidegreeHypersurface_incidence_off_excluded_sharp_one
+  apply MvPolynomial.bidegreeHypersurface_incidence_off_excluded_sharp_one
     (a := p ^ e + τ * h) (b := 1 + τ * (b - 1)) (h := h) (v := b) (L := k)
     (by omega) (by omega) hkA (jointInitialJetEquation center Q)
     (jointInitialJetSeparant center Q) hinit hproper
@@ -184,7 +193,7 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
       simp only [frobeniusSparseTaylorCuts, List.mem_map, Finset.mem_toList] at hq
       obtain ⟨l, _, rfl⟩ := hq
       exact jointCommonTaylorNumerator_mem_regularPowerBatchedCutBidegree_of_exponent
-        center Q (p ^ e) K h b τ hτ hb hheight hjet' l)
+        center Q (p ^ e) K h b τ hτ hheight hjet' l)
     (fun i ↦ jointTaylorAgreementEquation center Q K τ
       (Polynomial.C (roots i))
       (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) * Polynomial.C (iota (g i))))
@@ -206,7 +215,7 @@ theorem finite_frobeniusChartPoints_off_admissiblePairGraphs_card_le [IsAlgClose
         regularPowerBatchedCutJetDegree] using
         jointTaylorAgreementEquation_mem_regularPowerBatchedCutBidegree_of_exponent
           center (roots i) (Polynomial.C (iota (f i)) + Polynomial.X ^ (p ^ e) *
-            Polynomial.C (iota (g i))) Q (p ^ e) K h b τ hτ hy hb hheight hjet')
+            Polynomial.C (iota (g i))) Q (p ^ e) K h b τ hτ hy hheight hjet')
     (admissibleFrobeniusPairGraphLocus domain f g iota roots center Q K k τ (p ^ e))
     (fun I hI hs hi hsp hd hc ↦ principalOpen_subset_admissibleFrobeniusPairGraphLocus
       domain f g iota p e roots hroots center Q hK hKk τ hτ I (hI := hI) hs hi hsp hd hc)

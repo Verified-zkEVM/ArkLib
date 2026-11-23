@@ -64,18 +64,18 @@ def checkRoundProgram (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatem
         (QueryRound.checkRound s hs (finalPolynomial s o) (α i) i x)} := do
   let root ← readRoundGenerator s o α input i
   let challenge ← readCachedChallenge s o α input i
-  let projected ← projectedPoint s o α hs i x
+  let projected ← projectedPoint s o α i x
   let nodes ← blockNodes s o α hs input.generator i root x projected
   let values ← blockValues s o α hs i x nodes
   let p ← liftComp (Arithmetic.interpolate nodes.val values.val (2 ^ (s i).val)) _
   let y ← liftComp (Arithmetic.evalRaw p.val.val challenge.val) _
-  let β ← nextValue s o α hs input i x projected
+  let β ← nextValue s o α input i x projected
   let e ← liftComp (Arithmetic.eq y.val β.val) _
   pure ⟨e.val, by
     rw [e.property, y.property, CPolynomial.Raw.eval_val]
     rw [p.property, nodes.property, values.property, challenge.property, β.property,
       QueryRound.eval_checkRound]
-    rw [← QueryRound.eval_queryNext s hs o i x]
+    rw [← QueryRound.eval_queryNext s o i x]
     rw [← interpolate_blockArrays_eq_roundConsistencyCheck s hs o (α i) _ i x]
     apply Bool.eq_iff_iff.mpr
     simp only [decide_eq_true_eq, beq_iff_eq]⟩

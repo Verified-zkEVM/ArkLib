@@ -51,7 +51,7 @@ example :
   simpa only [Nat.cast_one, Nat.cast_ofNat, one_mul, mul_one] using
     partitionSupport_largeOrder_finiteRatio_surplus (F := ℚ) (D := 1) (d := 500) (m := 1)
       (n := 1) (L := 3000) (rate := 500) (agreement := Real.log 3000)
-      one_pos (by omega) one_pos (by norm_num) hlog (by rw [hbudget]; norm_num)
+      one_pos (by omega) one_pos (by rw [hbudget]; norm_num)
       (by norm_num) (by simpa using hlevel)
 
 private theorem largeWeightLowerTailMoment :
@@ -89,19 +89,15 @@ private theorem largeWeightSurplusEnvelope :
         mul_le_mul_of_nonneg_right hexp (by positivity)
       _ ≤ (27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2 := by norm_num
   have hvolume : 0 ≤ volume := by positivity
-  have hvolume_def : volume =
-      ((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) := rfl
   calc
     _ = volume * (Real.exp ((500 : ℝ) / 100000000 * (1 + (501 : ℕ).choose 2)) *
         (1 / (((500 : ℝ) + 1) * ((500 : ℝ) / 100000000) ^ 2) +
           1 / ((500 : ℝ) / 100000000))) := by
-      rw [← hvolume_def]
-      ac_rfl
+      exact mul_assoc _ _ _
     _ ≤ volume * ((27 / 20 : ℝ) * ((100000000 : ℝ) / 500) ^ 2) :=
       mul_le_mul_of_nonneg_left hfactor hvolume
     _ = _ := by
-      rw [← hvolume_def]
-      ac_rfl
+      exact mul_comm _ _
 
 private theorem largeWeightSurplusEnvelopeForTheorem :
       (1 : ℝ) * (((100000000 : ℝ) ^ 500 / (Nat.factorial 500 : ℝ) ^ 2) *
@@ -120,8 +116,7 @@ private theorem largeWeightSurplusEnvelopeForTheorem :
       largeWeightSurplusEnvelope
     _ = _ := by
       rw [show (27 / 10 : ℝ) / 2 = 27 / 20 by norm_num,
-        show (100000000 : ℝ) / 500 = 200000 by norm_num]
-      ac_rfl
+        mul_one]
 
 private noncomputable def largeWeightCutoff : ℕ :=
   ⌈(200000 : ℝ) * Real.log (3000 : ℝ)⌉₊
@@ -189,14 +184,18 @@ example :
     norm_num
     ring_nf
     exact le_rfl
-  have hmoment := setAverage_weightedSimplex_succ_lowerTail_sq_gt (d := 500)
-    (by norm_num) (W := (1 : ℝ)) one_pos
-  exact partitionSupport_dimension_gt_moment (F := ℚ) (D := 1) (d := 500) (W := 1)
+  have hmoment : (27 / 10 : ℝ) < ⨍ u in Set.weightedSimplex
+      (fun i : Fin 500 ↦ (i : ℝ) + 1) ((1 : ℕ) : ℝ),
+        (max (Real.log 3000 - ((500 : ℕ) : ℝ) * (∑ i, u i) / ((1 : ℕ) : ℝ)) 0) ^ 2 := by
+    simpa only [Nat.cast_one, show (6 * (500 : ℕ) : ℝ) = 3000 by norm_num] using
+      setAverage_weightedSimplex_succ_lowerTail_sq_gt (d := 500) (by norm_num)
+        (W := (1 : ℝ)) one_pos
+  have hd : 0 < 500 := by decide
+  generalize hd500 : (500 : ℕ) = d at hd hscale hmoment ⊢
+  exact partitionSupport_dimension_gt_moment (F := ℚ) (D := 1) (d := d) (W := 1)
     (n := 1) (L := 10) (rate := 1) (level := Real.log 3000 / 500)
-    (logarithm := Real.log 3000) (μ := 27 / 10) (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by simpa using hlevel) (by simpa using hscale)
-    (by simpa only [Nat.cast_one, Nat.cast_ofNat,
-      show (6 : ℝ) * 500 = 3000 by norm_num] using hmoment)
+    (logarithm := Real.log 3000) (μ := 27 / 10) one_pos hd one_pos (by norm_num)
+    hlevel hscale hmoment
 
 private theorem YOneWeights :
     fullHigherJetWeight (d := 1) (Finsupp.single (some 1) 1) = 0 ∧
@@ -265,9 +264,9 @@ example :
       partitionSupportAreaSlotExponent xCoefficientAreaSlot ≠
         partitionSupportAreaSlotExponent constantCoefficientAreaSlot := by
   refine ⟨(mem_partitionSupportExponents).mpr
-      (partitionSupportAreaSlotExponent_eligible two_pos xCoefficientAreaSlot),
+      (partitionSupportAreaSlotExponent_eligible xCoefficientAreaSlot),
     (mem_partitionSupportExponents).mpr
-      (partitionSupportAreaSlotExponent_eligible two_pos constantCoefficientAreaSlot), ?_⟩
+      (partitionSupportAreaSlotExponent_eligible constantCoefficientAreaSlot), ?_⟩
   intro h
   have hslots := partitionSupportAreaSlotExponent_injective h
   have hX := congrArg (fun p => p.2.exponents.1) hslots
@@ -319,7 +318,7 @@ example : Module.finrank ℚ (LinearMap.range
 example :
     totalJetDegree (Finsupp.single (some 0 : JetVariable 1) 1) ≤ rateJetCap (1 / 2) 1 := by
   apply partitionSupport_totalJetDegree_le_rateJetCap (D := 2) (W := 1) (m := 1) (n := 4)
-    (A := 4) (rate := 1 / 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (A := 4) (rate := 1 / 2) (by norm_num) (by norm_num) (by norm_num)
   simp [PartitionSupportEligible, fullDerivativeJetWeight, totalJetDegree,
     jetDerivativeWeight, Finsupp.weight_single]
   norm_num
@@ -358,8 +357,8 @@ example : partitionFiniteRatio 1 1 500 6 * 1 *
       (d := 500) (by norm_num) hW'
   simpa only [Nat.cast_one] using
     partitionSupport_finiteRatio_surplus (F := ℚ) (D := 1) (d := 500) (n := 1) (m := 6)
-      (A := 1) (rate := 1) (agreement := 1) (by norm_num) (by norm_num) (by norm_num)
-      (by norm_num) (by norm_num) hW (by norm_num) (by norm_num) hmoment
+      (A := 1) (rate := 1) (agreement := 1) (by norm_num)
+      (by norm_num) (by norm_num) hmoment
 
 private def twoCenters : Fin 2 ↪ ℚ where
   toFun i := i.val
@@ -372,7 +371,7 @@ private noncomputable def zeroReceived : Fin 2 → Polynomial ℚ := fun _ ↦ 0
 example : Nonempty (SymbolicReceivedCurve.Certificate 2 2 0 1 0 0 twoCenters zeroReceived) := by
   simpa using exists_partitionSupport_curve_certificate
     (D := 1) (d := 0) (m := 1) (W := 0) (n := 2) (A := 2) (k := 2) (ℓ := 0) (ν := 1)
-    (L := 2) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+    (L := 2) (by norm_num) (by norm_num) (by norm_num)
     twoCenters zeroReceived (by intro i; simp [zeroReceived])
     (by
       intro u hu
@@ -426,7 +425,7 @@ example : Nonempty (SymbolicReceivedCurve.Certificate
   have he : Nonempty (RatePartitionEnvelope δ m n k A) := by
     simpa [m, uniformMathematicalMultiplicity] using
       (exists_mathematicalRatePartitionEnvelope (δ := δ) hδ hδsmall hlength
-        (by dsimp [k]; omega) (by dsimp [δ, k, n, A]; norm_num; nlinarith)
+        (by dsimp [δ, k, n, A]; norm_num; nlinarith)
         (by dsimp [A, n]; omega))
   obtain ⟨e⟩ := he
   have hd : 519 ≤ uniformDerivativeOrder δ := uniformDerivativeOrder_ge_519 hδ hδsmall
@@ -444,9 +443,8 @@ example : Nonempty (SymbolicReceivedCurve.Certificate
   have hreceived : ∀ i, (zeroReceivedOf n i).natDegree ≤ 1 := by
     intro i
     simp [zeroReceivedOf]
-  have hcert := RatePartitionEnvelope.exists_curve_certificate (scale := 300) e hδ
-    (by norm_num [δ] : δ < 1) hd500 hscale hAn (rationalCenters n)
-    (zeroReceivedOf n) hreceived
+  have hcert := RatePartitionEnvelope.exists_curve_certificate (scale := 300) e hd500
+    hscale hAn (rationalCenters n) (zeroReceivedOf n) hreceived
   simpa [δ, m, n, k, A, uniformMathematicalMultiplicity,
     uniformMathematicalJetBound] using hcert
 
@@ -521,7 +519,7 @@ example : Nonempty (SymbolicReceivedCurve.Certificate 10 1 0
       (W := RatePartition.partitionWeightBudget (1 / 10) (9 / 10) 500
         finiteCertificateParameters.multiplicity)
       (m := finiteCertificateParameters.multiplicity) (n := 10) (A := 10) (rate := 1 / 10)
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) hu
+      (by norm_num) (by norm_num) (by norm_num) hu
   have hratioTwo : (2 : ℝ) ≤ RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
       finiteCertificateParameters.multiplicity := by
     change (2 : ℝ) ≤ RatePartition.partitionFiniteRatio (1 / 10) (9 / 10) 500
@@ -532,9 +530,8 @@ example : Nonempty (SymbolicReceivedCurve.Certificate 10 1 0
       (agreement := 9 / 10) (γ := 2) (D := 1) (d := 500)
       (m := finiteCertificateParameters.multiplicity) (n := 10) (k := 1) (A := 10) (ℓ := 0)
       (ν := RatePartition.rateJetCap (1 / 10) finiteCertificateParameters.multiplicity)
-      (by norm_num) (by norm_num) finiteCertificateParameters.multiplicity_pos (by norm_num)
-      (by norm_num) finiteCertificateParameters.weightBudget_pos (by norm_num) (by norm_num)
-      (by norm_num) (rationalCenters 10) (zeroReceivedOf 10)
+      (by norm_num) (by norm_num) finiteCertificateParameters.weightBudget_pos
+      (by norm_num) (by norm_num) (by norm_num) (rationalCenters 10) (zeroReceivedOf 10)
       (by intro i; simp [zeroReceivedOf]) hdegree (by norm_num) hratioTwo
 
 /-- The padded block-length threshold gives a concrete rate-dependent certificate. -/
@@ -555,7 +552,7 @@ example : ∃ n k : ℕ,
   simpa only [zero_mul] using
     exists_partitionSupport_curve_certificate_of_paddedRateBlockThreshold (F := ℚ)
       (rate := 1 / 10) (agreement := 9 / 10) (d := 500) (n := n) (k := k) (A := n)
-      (ℓ := 0) finiteCertificateParameters (by norm_num) (by norm_num) (by norm_num)
+      (ℓ := 0) finiteCertificateParameters (by norm_num)
       (by norm_num : 500 ≤ 500) le_rfl
       (by dsimp [k]; exact Nat.floor_le (by positivity))
       (by
@@ -580,7 +577,7 @@ example : ∃ n k : ℕ,
   simpa only [zero_mul] using
     exists_partitionSupport_curve_certificate_of_rateBlockThreshold (F := ℚ)
       (rate := 1 / 10) (agreement := 9 / 10) (d := 500) (n := n) (k := k) (A := n)
-      (ℓ := 0) finiteCertificateParameters (by norm_num) (by norm_num) (by norm_num)
+      (ℓ := 0) finiteCertificateParameters (by norm_num) (by norm_num)
       (by norm_num : 500 ≤ 500) le_rfl
       (by dsimp [k]; exact Nat.floor_le (by positivity))
       (by

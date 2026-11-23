@@ -26,6 +26,8 @@ module codes over (scalar) rings.
 - `jointAgreement`: Words collectively agree with code `C` on the same coordinate set
 - `jointAgreement_iff_jointProximity`: Equivalence between agreement and proximity formulations
 - `δ_ε_correlatedAgreementAffineLines`: Correlated agreement for affine lines (2 words)
+- `δ_ε_proximityGap_of_δ_ε_correlatedAgreementAffineLines`: Correlated agreement for affine lines
+  gives the proximity gap for affine lines (the proximity gap of Definition 1.1 in [BCIKS20])
 - `δ_ε_correlatedAgreementCurves`: Correlated agreement for parametrised curves (k words)
 - `δ_ε_correlatedAgreementAffineSpaces`: Correlated agreement for affine subspaces (k+1 words)
 
@@ -97,7 +99,7 @@ if for every `S ∈ C` exactly one of the following holds:
 `ε`.
 
 We call `δ` the proximity parameter and `ε` the error parameter. -/
-noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α] [Nonempty α]
+noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α]
   (P : Finset (ι → α)) (C : Set (Finset (ι → α))) (δ ε : ℝ≥0) : Prop :=
   ∀ S ∈ C, ∀ [Nonempty S],
   Xor
@@ -107,13 +109,89 @@ noncomputable def δ_ε_proximityGap {α : Type} [DecidableEq α] [Nonempty α]
 /-- Definition: `(δ, ε)`-correlated agreement for affine lines.
 For every pair of words `u₀, u₁`, if the probability that a random affine line `u₀ + z • u₁` is
 `δ`-close to `C` exceeds `ε`, then `u₀` and `u₁` have correlated agreement with `C`.
--- **TODO**: prove that `δ_ε_correlatedAgreementAffineLines` implies `δ_ε_proximityGap`
--/
+`δ_ε_proximityGap_of_δ_ε_correlatedAgreementAffineLines` derives the proximity gap for affine
+lines from it. -/
 noncomputable def δ_ε_correlatedAgreementAffineLines [Module F A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
   ∀ (u : WordStack (A := A) (κ := Fin 2) (ι := ι)),
     Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε →
     jointAgreement (F := A) (κ := Fin 2) (ι := ι) (C := C) (W := u) (δ := δ)
+
+omit [DecidableEq ι] [Fintype A] [Fintype F] in
+/-- Under `(δ, ε)`-correlated agreement for affine lines, if a random point of the line
+`u₀ + z • u₁` is `δ`-close to `C` with probability exceeding `ε`, then every point of the line is
+`δ`-close to `C`. -/
+private theorem line_close_of_δ_ε_correlatedAgreementAffineLines [Module F A]
+    {C : Set (ι → A)} {δ ε : ℝ≥0}
+    (hCA : δ_ε_correlatedAgreementAffineLines (F := F) C δ ε)
+    (u : WordStack (A := A) (κ := Fin 2) (ι := ι))
+    (hu : Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, C) ≤ δ] > ε) (c : F) :
+    δᵣ(u 0 + c • u 1, C) ≤ δ := by
+  have hshift := SampleableType.prEvent_uniformSample_equiv (Equiv.addLeft c)
+    (fun z : F => δᵣ(u 0 + z • u 1, C) ≤ δ)
+  simp only [Equiv.coe_addLeft, add_smul, ← add_assoc] at hshift
+  refine (hCA (finMapTwoWords (u 0 + c • u 1) (u 1)) ?_).relDistFromCode_le (0 : Fin 2)
+  change Pr{let z ← $ᵗ F}[δᵣ(u 0 + c • u 1 + z • u 1, C) ≤ δ] > ε
+  rwa [hshift]
+
+section AffineLinesProximityGap
+
+-- `δ_ε_proximityGap` needs `A : Type` with `[Nonempty A]`; the sampling bridge takes `[Field F]`.
+variable {F : Type} [Field F] [Fintype F] [SampleableType F]
+variable {A : Type} [DecidableEq A] [Nonempty A] [AddCommGroup A] [Module F A]
+
+omit [DecidableEq ι] [Nonempty ι] [Nonempty A] in
+/-- A uniform point of the affine line `{u₀ + z • u₁ | z ∈ F}` is distributed as `u₀ + z • u₁`
+for a uniform parameter `z`. -/
+private theorem prEvent_affineLine_image_eq (u : WordStack (A := A) (κ := Fin 2) (ι := ι))
+    [Nonempty ↥(Finset.univ.image fun z : F => u 0 + z • u 1)] (p : (ι → A) → Prop) :
+    Pr{let x ← $ᵗ ↥(Finset.univ.image fun z : F => u 0 + z • u 1)}[p x.val] =
+      Pr{let z ← $ᵗ F}[p (u 0 + z • u 1)] := by
+  let f : F → ↥(Finset.univ.image fun z : F => u 0 + z • u 1) :=
+    fun z => ⟨u 0 + z • u 1, Finset.mem_image_of_mem _ (Finset.mem_univ z)⟩
+  have hf : Function.Surjective f := by
+    rintro ⟨x, hx⟩
+    obtain ⟨z, -, rfl⟩ := Finset.mem_image.mp hx
+    exact ⟨z, rfl⟩
+  by_cases hu : u 1 = 0
+  · have hx : ∀ x : ↥(Finset.univ.image fun z : F => u 0 + z • u 1), x.val = u 0 := by
+      intro x
+      obtain ⟨z, rfl⟩ := hf x
+      simp [f, hu]
+    simp only [hx, hu, smul_zero, add_zero]
+    by_cases hp : p (u 0)
+    · rw [(SampleableType.prEvent_uniformSample_eq_one_iff _).2 fun _ => hp,
+        (SampleableType.prEvent_uniformSample_eq_one_iff _).2 fun _ => hp]
+    · rw [(SampleableType.prEvent_uniformSample_eq_zero_iff _).2 fun _ => hp,
+        (SampleableType.prEvent_uniformSample_eq_zero_iff _).2 fun _ => hp]
+  · have hinj : Function.Injective f := fun a b h =>
+      smul_left_injective F hu (add_left_cancel (congrArg Subtype.val h))
+    exact (SampleableType.prEvent_uniformSample_comp_of_bijective ⟨hinj, hf⟩
+      fun x => p x.val).symm
+
+omit [DecidableEq ι] [Nonempty A] in
+/-- `(δ, ε)`-correlated agreement for affine lines implies that the collection of affine lines
+`{u₀ + z • u₁ | z ∈ F}` displays a `(δ, ε)`-proximity gap with respect to `P`. The code `P` need
+not be linear. For nonempty `P` the hypothesis `ε < 1` is needed for the `Xor`: for `ε ≥ 1`
+correlated agreement holds vacuously, while the line `{c}` through a codeword `c ∈ P` satisfies
+both `Pr = 1` and `Pr ≤ ε`. -/
+theorem δ_ε_proximityGap_of_δ_ε_correlatedAgreementAffineLines
+    (P : Finset (ι → A)) {δ ε : ℝ≥0} (hε : ε < 1)
+    (hCA : δ_ε_correlatedAgreementAffineLines (F := F) (P : Set (ι → A)) δ ε) :
+    δ_ε_proximityGap P
+      (Set.range fun u : WordStack (A := A) (κ := Fin 2) (ι := ι) =>
+        Finset.univ.image fun z : F => u 0 + z • u 1)
+      δ ε := by
+  rintro S ⟨u, rfl⟩ _
+  rw [prEvent_affineLine_image_eq u (fun y => δᵣ(y, (P : Set (ι → A))) ≤ δ)]
+  by_cases h : Pr{let z ← $ᵗ F}[δᵣ(u 0 + z • u 1, (P : Set (ι → A))) ≤ δ] ≤ ε
+  · refine Or.inr ⟨h, fun h1 => ?_⟩
+    rw [h1] at h
+    exact not_le.mpr (by exact_mod_cast hε) h
+  · refine Or.inl ⟨(SampleableType.prEvent_uniformSample_eq_one_iff _).2 fun z => ?_, h⟩
+    exact line_close_of_δ_ε_correlatedAgreementAffineLines hCA u (not_le.mp h) z
+
+end AffineLinesProximityGap
 
 section MultilinearCA
 
@@ -150,7 +228,7 @@ have correlated agreement.
   + to be able to support the `proximity generator` notation.
 -/
 noncomputable def δ_ε_correlatedAgreementCurves {k : ℕ}
-    {A : Type 0} [AddCommMonoid A] [Module F A] [Fintype A] [DecidableEq A]
+    {A : Type 0} [AddCommMonoid A] [Module F A] [DecidableEq A]
     (C : Set (ι → A)) (δ ε : ℝ≥0) : Prop :=
     ∀ (u : WordStack (A := A) (κ := Fin (k + 1)) (ι := ι)),
     Pr{let r ← $ᵗ F}[ δᵣ(∑ i : Fin (k + 1), (r ^ (i : ℕ)) • u i, C) ≤ δ ] > k * ε
@@ -202,7 +280,7 @@ noncomputable def mu_set (ι' : Finset ι) : ℝ :=
 
 /-- `μ`-weighted correlated agreement. -/
 noncomputable def weightedCorrelatedAgreement
-    (C : Set (ι → F)) [Nonempty C] {k : ℕ} (U : Fin k → ι → F) : ℝ :=
+    (C : Set (ι → F)) {k : ℕ} (U : Fin k → ι → F) : ℝ :=
   sSup {x |
     ∃ D' ⊆ (Finset.univ (α := ι)),
       x = mu_set μ D' ∧

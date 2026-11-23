@@ -65,8 +65,8 @@ construction at the gap `min δ (1/8)`.
 
 ## References
 
-* [DKT26], Section 5.8, Theorem 5.13; Section 6.3, Theorem 6.6; Section 6.6, Theorem 6.8;
-  Section 6.7, Theorem 6.9; Section 7.1, Lemma 7.1 and Corollary 7.2; Section 7.2, Corollary 7.3
+* [DKT26], Section 5.5, Theorem 5.7; Section 8.3, Theorem 8.5; Section 8.4, Corollary 8.8;
+  Section 8.1, Theorem 8.1; Section 6.1, Lemma 6.2 and Corollary 6.3; Section 8.3, Corollary 8.6
 -/
 
 @[expose] public section
@@ -127,7 +127,7 @@ def HasCapacityLineAgreement (δ : ℝ) (N : ℕ) (E : ℕ → ℝ) : Prop :=
 /-- **Line agreement up to capacity.** At every positive gap `δ`, exact line agreement holds from
 length `capacityLineLength δ` on with at most
 `capacityLineConstant δ * n ^ (capacityLineDerivativeOrder δ + 1)` exceptional challenges
-([DKT26], Theorems 5.13 and 6.8). -/
+([DKT26], Theorem 8.1). -/
 theorem capacity_lineAgreement {δ : ℝ} (hδ : 0 < δ) :
     HasCapacityLineAgreement δ (capacityLineLength δ)
       (fun n ↦ capacityLineConstant δ * (n : ℝ) ^ (capacityLineDerivativeOrder δ + 1)) := by
@@ -148,18 +148,17 @@ theorem capacity_lineAgreement {δ : ℝ} (hδ : 0 < δ) :
     cases hdec
     simpa only [capacityLineConstant, capacityLineDerivativeOrder, hsmall, ↓reduceIte] using
       exists_mathematicalUniformRatePartition_line_exactCorrelatedPair hδ hsmall hnMath hk hgap
-        hAn domain f g hchar
+        domain f g hchar
   · have hgapFirstOrder : (k : ℝ) + (6 / 25 : ℝ) * n ≤ A := by
       have := mul_le_mul_of_nonneg_right (le_of_not_gt hsmall) (Nat.cast_nonneg (α := ℝ) n)
       linarith
-    have hnTwo : 2 ≤ n := by have := (four_le_capacityLineLength δ).trans hn; omega
     simpa only [capacityLineConstant, capacityLineDerivativeOrder, hsmall, ↓reduceIte] using
-      exists_uniformFirstOrder_lineMca n k A domain f g hnTwo hk hAn hgapFirstOrder hchar
+      exists_uniformFirstOrder_lineMca n k A domain f g hk hAn hgapFirstOrder hchar
 
 /-- **Line agreement up to capacity, with gap-only constants.** For every `δ > 0` there are
 `N ≥ 4`, `d` and `C > 0`, chosen before the code, the field and the received line, such that
 exact line agreement holds from length `N` on with at most `C n^(d+1)` exceptional challenges
-([DKT26], Theorem 6.9). -/
+([DKT26], Theorem 8.1). -/
 theorem exists_capacity_lineAgreement {δ : ℝ} (hδ : 0 < δ) :
     ∃ N d : ℕ, ∃ C : ℝ, 4 ≤ N ∧ 0 < C ∧
       HasCapacityLineAgreement δ N (fun n ↦ C * (n : ℝ) ^ (d + 1)) :=
@@ -201,7 +200,7 @@ private theorem card_mul_one_sub_capacityRadius {δ : ℝ} {n k : ℕ} (hn : 0 <
 
 /-- **Affine-family agreement from line agreement.** Exact line agreement at a nonnegative gap
 gives exact affine-family agreement with the same length threshold and exceptional-set bound
-([DKT26], Corollary 7.2). -/
+([DKT26], Corollary 6.3). -/
 theorem HasCapacityLineAgreement.affineAgreement {δ : ℝ} {N : ℕ} {E : ℕ → ℝ}
     (h : HasCapacityLineAgreement.{0} δ N E) (hδ : 0 ≤ δ) : HasCapacityAffineAgreement δ N E := by
   intro n k hn hk hkn F _ _ _ hchar domain s a u
@@ -220,7 +219,7 @@ theorem HasCapacityLineAgreement.affineAgreement {δ : ℝ} {N : ℕ} {E : ℕ �
 /-- **Affine-family agreement up to capacity, with gap-only constants.** For every `δ > 0` there
 are `N ≥ 4`, `d` and `C > 0` such that exact affine-family agreement holds from length `N` on with
 exceptional density at most `C n^(d+1) / (|F| - 1)` in every number of directions
-([DKT26], Theorem 6.9 and Corollary 7.2). -/
+([DKT26], Theorem 8.1 and Corollary 6.3). -/
 theorem exists_capacity_affineAgreement {δ : ℝ} (hδ : 0 < δ) :
     ∃ N d : ℕ, ∃ C : ℝ, 4 ≤ N ∧ 0 < C ∧
       HasCapacityAffineAgreement δ N (fun n ↦ C * (n : ℝ) ^ (d + 1)) :=
@@ -229,12 +228,12 @@ theorem exists_capacity_affineAgreement {δ : ℝ} (hδ : 0 < δ) :
     (capacity_lineAgreement hδ).affineAgreement hδ.le⟩
 
 /-- **MCA errors from line agreement.** Under exact line agreement at a gap `δ`, for every
-Reed–Solomon code of block length `n ≥ N` and dimension `0 < k ≤ n` over a finite field of
+Reed–Solomon code of block length `n ≥ N` and dimension `0 < k` over a finite field of
 characteristic zero or larger than `k - 1`, the MCA error at radius
 `capacityRadius δ n k = 1 - k / n - δ` is at most `E n / |F|` for the affine-line generator and at
 most `E n / (|F| - 1)` for the affine-space generator of every dimension. -/
 theorem HasCapacityLineAgreement.mcaError_le {δ : ℝ} {N : ℕ} {E : ℕ → ℝ}
-    (h : HasCapacityLineAgreement.{0} δ N E) {n k : ℕ} (hn : N ≤ n) (hk : 0 < k) (hkn : k ≤ n)
+    (h : HasCapacityLineAgreement.{0} δ N E) {n k : ℕ} (hn : N ≤ n) (hk : 0 < k)
     {F : Type} [Field F] [Fintype F] [SampleableType F]
     (hchar : ringChar F = 0 ∨ k - 1 < ringChar F) (domain : Fin n ↪ F) :
     mcaError (AffineLineGenerator F) (code domain k) (capacityRadius δ n k) ≤
@@ -242,7 +241,14 @@ theorem HasCapacityLineAgreement.mcaError_le {δ : ℝ} {N : ℕ} {E : ℕ → �
       ∀ s : ℕ, mcaError (AffineSpaceGenerator F s) (code domain k) (capacityRadius δ n k) ≤
         ENNReal.ofReal (E n / ((Fintype.card F : ℝ) - 1)) := by
   classical
-  have hthreshold := card_mul_one_sub_capacityRadius (δ := δ) (k := k) (hk.trans_le hkn)
+  rcases Nat.eq_zero_or_pos n with rfl | hnpos
+  · have hcode : code domain k = ⊤ := by
+      apply top_unique
+      intro w _
+      rw [show w = 0 from Subsingleton.elim _ _]
+      exact (code domain k).zero_mem
+    simp [hcode, mcaError_top_eq_zero]
+  have hthreshold := card_mul_one_sub_capacityRadius (δ := δ) (k := k) hnpos
   have hline := h n k ⌈(k : ℝ) + δ * n⌉₊ hn hk (Nat.le_ceil _) F hchar domain
   exact ⟨mcaError_affineLine_le_of_exactAgreement domain _ hline _ (by rw [hthreshold]),
     fun _ ↦ mcaError_affineSpace_le_of_exactAgreement domain _ hline _ (by rw [hthreshold])⟩
@@ -252,10 +258,10 @@ theorem HasCapacityLineAgreement.mcaError_le {δ : ℝ} {N : ℕ} {E : ℕ → �
 characteristic zero or larger than `k - 1` has MCA error at radius
 `capacityRadius δ n k = 1 - k / n - δ` at most `C n^(d+1) / |F|` for lines and at most
 `C n^(d+1) / (|F| - 1)` for affine spaces of every dimension
-([DKT26], Theorem 6.9 and Corollary 7.2). -/
+([DKT26], Theorem 8.1 and Corollary 6.3). -/
 theorem exists_capacity_mcaError {δ : ℝ} (hδ : 0 < δ) :
     ∃ N d : ℕ, ∃ C : ℝ, 4 ≤ N ∧ 0 < C ∧
-      ∀ n k : ℕ, N ≤ n → 0 < k → k ≤ n →
+      ∀ n k : ℕ, N ≤ n → 0 < k →
       ∀ (F : Type) [Field F] [Fintype F] [SampleableType F],
         (ringChar F = 0 ∨ k - 1 < ringChar F) → ∀ domain : Fin n ↪ F,
           mcaError (AffineLineGenerator F) (code domain k) (capacityRadius δ n k) ≤
@@ -264,8 +270,8 @@ theorem exists_capacity_mcaError {δ : ℝ} (hδ : 0 < δ) :
               ENNReal.ofReal (C * (n : ℝ) ^ (d + 1) / ((Fintype.card F : ℝ) - 1)) :=
   ⟨capacityLineLength δ, capacityLineDerivativeOrder δ, capacityLineConstant δ,
     four_le_capacityLineLength δ, zero_lt_one.trans_le (one_le_capacityLineConstant δ),
-    fun _ _ hn hk hkn _ _ _ _ hchar domain ↦
-      (capacity_lineAgreement hδ).mcaError_le hn hk hkn hchar domain⟩
+    fun _ _ hn hk _ _ _ _ hchar domain ↦
+      (capacity_lineAgreement hδ).mcaError_le hn hk hchar domain⟩
 
 /-! ## Power batching -/
 
@@ -300,7 +306,7 @@ theorem four_le_capacityPowerLength (δ : ℝ) : 4 ≤ capacityPowerLength δ :=
 theorem one_le_capacityPowerConstant (δ : ℝ) : 1 ≤ capacityPowerConstant δ :=
   le_max_right _ _
 
-/-- **Exact power-batching agreement at a gap.** For every batching degree `0 < ℓ`, block length
+/-- **Exact power-batching agreement at a gap.** For every batching degree `ℓ`, block length
 `n ≥ N`, dimension `0 < k`, integer threshold `A ≥ k + δ n`, field `F` with `k = 1`, or of
 characteristic zero or larger than `max (k - 1) ν`, distinct evaluation points `domain`, and rows
 `w : Fin (ℓ + 1) → Fin n → F`, one set of at most `E ℓ n` challenges is exceptional. Outside it,
@@ -309,7 +315,7 @@ every polynomial `Q` of degree below `k` with at least `A` agreements with
 polynomials `P t` of degree below `k`, and the agreement set of `Q` is the common agreement set of
 the `P t` with the rows. The field may be infinite. -/
 def HasCapacityPowerBatchingAgreement (δ : ℝ) (N ν : ℕ) (E : ℕ → ℕ → ℝ) : Prop :=
-  ∀ ℓ n k A : ℕ, 0 < ℓ → N ≤ n → 0 < k → (k : ℝ) + δ * n ≤ A →
+  ∀ ℓ n k A : ℕ, N ≤ n → 0 < k → (k : ℝ) + δ * n ≤ A →
     ∀ (F : Type u) [Field F] [DecidableEq F],
       (k = 1 ∨ ringChar F = 0 ∨ max (k - 1) ν < ringChar F) →
       ∀ (domain : Fin n ↪ F) (w : Fin (ℓ + 1) → Fin n → F),
@@ -322,7 +328,7 @@ def HasCapacityPowerBatchingAgreement (δ : ℝ) (N ν : ℕ) (E : ℕ → ℕ �
 agreement holds from length `capacityPowerLength δ` on, with characteristic bound
 `capacityPowerJetBound δ` and at most
 `ℓ * capacityPowerConstant δ * n ^ (capacityPowerDerivativeOrder δ + 1)` exceptional challenges
-([DKT26], Corollary 7.3). -/
+([DKT26], Corollary 8.6 and Theorem 8.1). -/
 theorem capacity_powerBatchingAgreement {δ : ℝ} (hδ : 0 < δ) :
     HasCapacityPowerBatchingAgreement δ (capacityPowerLength δ) (capacityPowerJetBound δ)
       (fun ℓ n ↦ (ℓ : ℝ) * capacityPowerConstant δ *
@@ -331,7 +337,7 @@ theorem capacity_powerBatchingAgreement {δ : ℝ} (hδ : 0 < δ) :
   have hεsmall : capacityPowerGap δ < 6 / 25 := (min_le_right _ _).trans_lt (by norm_num)
   have hd : 519 ≤ capacityPowerDerivativeOrder δ := uniformDerivativeOrder_ge_519 hε hεsmall
   have hC := one_le_capacityPowerConstant δ
-  intro ℓ n k A hℓ hn hk hgap F _ decF hchar domain w
+  intro ℓ n k A hn hk hgap F _ decF hchar domain w
   have hnFour : 4 ≤ n := (four_le_capacityPowerLength δ).trans hn
   have hbound : 0 ≤ (ℓ : ℝ) * capacityPowerConstant δ *
       (n : ℝ) ^ (capacityPowerDerivativeOrder δ + 1) :=
@@ -363,7 +369,7 @@ theorem capacity_powerBatchingAgreement {δ : ℝ} (hδ : 0 < δ) :
   cases hdec
   obtain ⟨exceptional, hcard, hgood⟩ :=
     exists_mathematicalUniformRatePartition_baseCurve_exactPowerAgreement hε hεsmall
-      ((le_max_right _ _).trans hn) hk hgapε hAn hℓ domain w (hchar.resolve_left hkOne)
+      ((le_max_right _ _).trans hn) hk hgapε domain w (hchar.resolve_left hkOne)
   refine ⟨exceptional, hcard.trans ?_, hgood⟩
   exact mul_le_mul_of_nonneg_right
     (mul_le_mul_of_nonneg_left (le_max_left _ _) (Nat.cast_nonneg ℓ)) (by positivity)
@@ -371,7 +377,7 @@ theorem capacity_powerBatchingAgreement {δ : ℝ} (hδ : 0 < δ) :
 /-- **Power-batching agreement up to capacity, with gap-only constants.** For every `δ > 0` there
 are `N ≥ 4`, `d`, a characteristic bound `ν < N` and `C > 0`, chosen before the batching degree, the
 code, the field and the rows, such that exact power-batching agreement holds from length `N` on
-with at most `ℓ C n^(d+1)` exceptional challenges ([DKT26], Corollary 7.3). -/
+with at most `ℓ C n^(d+1)` exceptional challenges ([DKT26], Corollary 8.6 and Theorem 8.1). -/
 theorem exists_capacity_powerBatchingAgreement {δ : ℝ} (hδ : 0 < δ) :
     ∃ N d ν : ℕ, ∃ C : ℝ, 4 ≤ N ∧ ν < N ∧ 0 < C ∧
       HasCapacityPowerBatchingAgreement δ N ν (fun ℓ n ↦ (ℓ : ℝ) * C * (n : ℝ) ^ (d + 1)) :=

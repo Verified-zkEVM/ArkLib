@@ -29,9 +29,10 @@ the prover actually supplies, and its type is fixed. Language soundness for the 
 implies it (`Verifier.relationSoundness_of_soundness`); the converse needs the prover to be able to
 supply an output witness.
 
-An existential knowledge-soundness theorem therefore certifies extraction in the cryptographic
-sense only together with a resource bound on a named extractor, stated through
-`Verifier.knowledgeSoundnessWith`.
+`Verifier.knowledgeSoundnessWith` names the extractor but bounds no cost.
+`Verifier.knowledgeSoundnessWithResources` in `Security/Resources.lean` additionally certifies
+its declared instruction counts. Efficient extraction in a computational model still needs a
+complete execution bound, beyond the uncharged work of that measured program.
 -/
 
 @[expose] public section
