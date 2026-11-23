@@ -810,9 +810,9 @@ example (secret : Nat) :
   rw [OracleVerifier.run_append]
   kernel_rfl
 
-/-! The reveal sits in the seam move, which `Focal.splitPrefix` places in the prefix stage: at the
-boundary the informed run has state `(hidden, 1)` and trace `[challenge, true ↦ hidden]`, while
-the guess run has state `(hidden, 0)` and only the challenge. -/
+/-! The reveal sits in the seam move, which `Focal.splitPrefix` places in the prefix stage. At the
+boundary the informed run has state `(hidden, 1)` and trace `[challenge, true ↦ hidden]`. The
+guess run has state `(hidden, 0)` and only the challenge. -/
 example (secret : Nat) :
     (fun result => (result.state, result.trace)) <$>
       bitRuntime.run (boundary (informedProver secret)) =

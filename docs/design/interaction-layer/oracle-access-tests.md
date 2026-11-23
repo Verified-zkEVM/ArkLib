@@ -12,7 +12,7 @@ RuntimeQueryBounds rows. The [parent port table][parent-port-table] lists the sa
 Each row has exactly one of four statuses:
 
 - **ported:** the new test keeps the observation and its quantifiers.
-- **excluded by P1** (or **P2**): the row names the premise and the assertion it rules out.
+- **excluded by P1** (or **P2**): the row names the premise and the assertion it excludes.
 - **removed:** the row names a mechanism that no longer exists.
 - **open:** the row names an interface that the parent is missing.
 
@@ -27,10 +27,10 @@ distributions that depend on earlier public challenges and prover messages.
 | Old-layer row | Contract | Status and where it is ported |
 |---|---|---|
 | <a id="p1"></a>[1][fp1] | Intrinsic queriers | ported: [produced entries][step-api] derive each querier from the executed participant; [queries_by_move_contract][p-step-log] checks them. |
-| <a id="p2"></a>[2][fp2] | State, queriers, order | excluded by P1: P1 rules out verifier actions 2 and 3 before the challenge and action 6 at reception. [queries_by_move_contract][p-step-log] keeps all tags, passive groups and state; [actual_partial_transcripts][p-prefixes] keeps the moves of the partial transcripts. |
+| <a id="p2"></a>[2][fp2] | State, queriers, order | excluded by P1: P1 excludes verifier actions 2 and 3 before the challenge and action 6 at reception. [queries_by_move_contract][p-step-log] keeps all tags, passive groups and state; [actual_partial_transcripts][p-prefixes] keeps the moves of the partial transcripts. |
 | <a id="p3"></a>[3][fp3] | Setup count | ported: [setup_queries_by_move_contract][p-setup-step] records a separate setup entry with both query 9 entries. |
 | <a id="p4"></a>[4][fp4] | Final oracle message | ported: [run][p-accept], [lookup][p-payload], [actual_partial_transcripts][p-prefixes]. |
-| <a id="p5"></a>[5][fp5] | Closing, log, groups | excluded by P1: P1 rules out reception effect 1 as a separate verifier group. [closure/log][p-close] and [decision outcomes][p-decision] keep the outputs and histories of the run; [log erasure and setup/log laws][laws-api] keep the remaining groups and closing. |
+| <a id="p5"></a>[5][fp5] | Closing, log, groups | excluded by P1: P1 excludes reception effect 1 as a separate verifier group. [closure/log][p-close] and [decision outcomes][p-decision] keep the outputs and histories of the run; [log erasure and setup/log laws][laws-api] keep the remaining groups and closing. |
 | <a id="p6"></a>[6][fp6] | Explicit rejection | ported: [decision outcomes][p-decision]. |
 | <a id="p7"></a>[7][fp7] | Fault 17, not rejection | ported: [decision outcomes][p-decision]. |
 
@@ -119,7 +119,7 @@ Rows 9–12 and 14–16 reuse the parent's `LoggedExecutionTests` two-oracle exe
 `joinEntry_mem`, `decisionEntry_mem`, `joinEntry_before`, `decisionEntry_before`,
 `entry_intrinsic_queriers`, `joinEntry_node`, `joinEntry_isSent`, `decisionEntry_isSent` and
 `queries_by_move_source_log_contract` already prove the old observations. The join is the entry of
-the first suffix prover move. P1 rules out the old verifier decision at that seam, and the new tests
+the first suffix prover move. P1 excludes the old verifier decision at that seam, and the new tests
 keep its partial transcript and membership. They add no duplicate assertions or executor.
 `toLog_runWithQueriesByMove` and `simulateQ_toLog_runWithQueriesByMove` relate entries and log for
 every prover, including this branch's composed verifier.
@@ -145,14 +145,14 @@ sent to the same program as the cost-five bound. The [run transcript][q-run],
 | <a id="r7"></a>[7][fr7] | Routed cost five | ported: [routed bound][c-suffix-routed]. |
 | <a id="r8"></a>[8][fr8] | Raw permissions | ported: [typed][r-raw-access] and `availableMap_node` in [SentOracles][sent-api]. |
 | <a id="r9"></a>[9][fr9] | Guess history | ported: ambient history, [charged run][c-history]. |
-| <a id="r10"></a>[10][fr10] | Informed order | excluded by P1: P1 rules out the dummy-before-reveal order; [passive split][p-informed-split]. |
+| <a id="r10"></a>[10][fr10] | Informed order | excluded by P1: P1 excludes the dummy-before-reveal order; [passive split][p-informed-split]. |
 | <a id="r11"></a>[11][fr11] | Setup import cost | ported: [setup_budget][c-setup]. |
-| <a id="r12"></a>[12][fr12] | Generic runtime split | excluded by P1: P1 rules out the effectful-prefix order; [all-prover passive law][run-append]. |
+| <a id="r12"></a>[12][fr12] | Generic runtime split | excluded by P1: P1 excludes the effectful-prefix order; [all-prover passive law][run-append]. |
 | <a id="r13"></a>[13][fr13] | Logged guess history | ported: ambient projection, [log][p-guess-log]. |
-| <a id="r14"></a>[14][fr14] | Logged informed order | excluded by P1: P1 rules out the dummy-before-reveal order; [passive log][p-informed-log]. |
+| <a id="r14"></a>[14][fr14] | Logged informed order | excluded by P1: P1 excludes the dummy-before-reveal order; [passive log][p-informed-log]. |
 | <a id="r15"></a>[15][fr15] | Run import cost | ported: [import_budget][c-import]. |
 | <a id="r16"></a>[16][fr16] | Joint half bound | ported: [joint][c-joint] with the input node-name and inclusion laws in [SentOracles][sent-api]. |
-| <a id="r17"></a>[17][fr17] | Charge 7, success 1 | excluded by P1: P1 rules out the dummy-before-reveal order; [passive charge and success][c-informed]. |
+| <a id="r17"></a>[17][fr17] | Charge 7, success 1 | excluded by P1: P1 excludes the dummy-before-reveal order; [passive charge and success][c-informed]. |
 
 Rows 1, 2, 5, 8 and 16 use the input case of the parent's `queryNode`, `availableMap_node` and
 `liftNode` in [SentOracles][sent-api]. The prefix has no sent oracle: its export reads only its
@@ -219,7 +219,7 @@ arbitrary-prover security from access and cost certificates alone.
 Rows 7 and 11 keep the count of input oracles plus one payload. They do not assert literal equality
 with the old `Access.extend` query-index layout `Unit ⊕ Unit`: the interaction layer uses family
 indices and sigma-indexed interface queries, and heterogeneous resources keep their data as a pair.
-The [one-oracle uniqueness test][a-single] rules out an extra sent oracle. Row 8 keeps
+The [one-oracle uniqueness test][a-single] excludes an extra sent oracle. Row 8 keeps
 payload-independent future selection, but `AccessDecoration.restrict_build` was an identity about
 stored per-node access decorations. There is no such decoration to restrict or rebuild now.
 `pathResources` computes resources from a completed shape, and composition routes them explicitly.
@@ -240,7 +240,7 @@ separately checks interfaces inside protocol oracle nodes.
 | [1][fd1] | Role decorations at arbitrary tree universe | removed: no authored role decoration. |
 | [2][fd2] | Raw oracle/query universes | ported: [arbitrary-tree decoration][d-decoration] at independent message and query universes; [unequal-universe node and path resources][d-node]. |
 | [3][fd3] | Protocol bundle at arbitrary universe | ported: [protocol canary][d-protocol]. |
-| [4][fd4] | Branching root chosen by the receiver | excluded by P2: P2 rules out subtree selection by the receiver; [sender root][d-root] makes the choice prover-authored. |
+| [4][fd4] | Branching root chosen by the receiver | excluded by P2: P2 excludes subtree selection by the receiver; [sender root][d-root] makes the choice prover-authored. |
 | [5][fd5] | False future actor | ported: [position][d-false-pos], [actor][d-false-actor]. |
 | [6][fd6] | True future actor | ported: [position][d-true-pos], [actor][d-true-actor]. |
 | [7][fd7] | False oracle has Unit queries | ported: [query type][d-query]. |
@@ -307,7 +307,7 @@ this table listed as missing. [QueriesByMove][step-api] produces entries with th
 transcripts, queriers and query groups. [QueriesByMoveLaws][laws-api] supplies closing, ordinary erasure and the correspondence
 with the log. [SentOracles][sent-api] supplies node names, the proof that an oracle was sent and
 inclusion, together with query routing. The [parent port table][parent-port-table] and the tables
-above identify their exact assertion targets. P1 rules out intermediate verifier effects, not the
+above identify their exact assertion targets. P1 excludes intermediate verifier effects, not the
 produced prover moves.
 
 `OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig`, `OracleProtocol`, `oracleMessageFamily` and

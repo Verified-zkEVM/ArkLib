@@ -10,10 +10,11 @@ public import ArkLib.Interaction.Core.Composition
 /-!
 # Routing an appended oracle run
 
-Running a composed passive oracle verifier against an arbitrary prover of the appended protocol
-splits into the prefix interaction and the suffix interaction, then the prefix decision on the
-data that `prefixRoute` selects, then, after a prefix acceptance only, the suffix decision on the
-data that `suffixRoute` selects. The returned output data is the composite output map applied to
+This file runs a composed passive oracle verifier against an arbitrary prover of the appended
+protocol. The run splits into four parts. The prefix interaction and the suffix interaction come
+first. The prefix decision follows, on the data that `prefixRoute` selects. Only if the prefix
+accepts, the suffix decision runs last, on the data that `suffixRoute` selects. The returned output
+data is the composite output map applied to
 the inputs and all oracle messages of the same run. The statement is an equality of open oracle
 programs, so the order of ambient and challenge queries is preserved exactly.
 
@@ -115,8 +116,8 @@ theorem prefixRoute_oracleMessages (data : inputs.Data) (tr₁ : Transcript orac
   rfl
 
 /-- A composed oracle run splits into the prefix interaction and the suffix interaction, followed
-by the prefix decision on the data `prefixRoute` selects and, after prefix acceptance only, the
-suffix decision on the data `suffixRoute` selects. The output data is the composite output map
+by the prefix decision on the data `prefixRoute` selects. Only if the prefix accepts, the suffix
+decision follows, on the data `suffixRoute` selects. The output data is the composite output map
 on the inputs and all oracle messages of the same run. Ambient and challenge queries keep their
 order. Intermediate and final statements and oracle families may depend on their public paths. -/
 theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
