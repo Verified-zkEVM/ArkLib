@@ -213,9 +213,9 @@ theorem runWith_embedFrom {β : Type}
 
 end Node
 
-/-! ### The common observation -/
+/-! ### The common outcome -/
 
-section Observation
+section Outcome
 
 variable {StmtIn WitIn StmtOut WitOut : Type}
   {StmtOutAt : Path (protocol pSpec) → Type}
@@ -226,7 +226,7 @@ def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) Stm
     (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (Observation plainSig (protocol pSpec) Out StmtOutAt) := do
+      (Outcome plainSig (protocol pSpec) Out StmtOutAt) := do
   let r ← runWith order (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (legacySampler pSpec (challengeOracle oSpec pSpec))
   let verdict ← liftComp (V.decide stmt (projectPathAlong plainSig _ r.1)
@@ -240,7 +240,7 @@ abbrev LegacyResult (pSpec : ProtocolSpec n) (StmtOut WitOut : Type) :=
 
 /-- Forget the rejected run and decode the transcript of an accepted one. -/
 def finalize
-    (r : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) :
+    (r : Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) :
     LegacyResult pSpec StmtOut WitOut :=
   r.2.2.map fun t => ((decode pSpec r.1, r.2.1), t)
 
@@ -281,7 +281,7 @@ theorem finalize_observeWith_counterpartFirst
     erw [LawfulMonad.pure_bind]
     rfl
 
-end Observation
+end Outcome
 
 /-! ### Exchanging slots in distribution -/
 
@@ -527,7 +527,7 @@ theorem simulateQ_challengeReindex_run {Out : PathAlong plainSig (protocol pSpec
   rfl
 
 /-- The run of the interaction layer, with its challenges answered by the legacy challenge
-oracle, is the focal-first observation. -/
+oracle, is the focal-first outcome. -/
 theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
@@ -647,7 +647,7 @@ theorem experiment_evalDistEq {κ : Type} {ambient : OracleSpec ι} {chal : Orac
   simp only [StateT.run'_eq]
   exact (h st).map Prod.fst
 
-/-- The two schedules of the legacy observation agree in distribution, for every prover. -/
+/-- The two schedules of the legacy outcome agree in distribution, for every prover. -/
 theorem distEqFrom_observeWith (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
@@ -658,15 +658,15 @@ theorem distEqFrom_observeWith (impl : QueryImpl oSpec (StateT σ ProbComp))
   DistEqFrom.bind (distEqFrom_runWith impl chImpl _ _ _ fun _ =>
     (stateless_challengeOracle impl chImpl _).map _) fun _ => DistEqFrom.refl _
 
-/-- **Observation transfer.** For every prover, the interaction-layer observation under the
-reindexed challenge implementation has the distribution of the legacy-indexed observation under
+/-- **Outcome transfer.** For every prover, the interaction-layer outcome under the
+reindexed challenge implementation has the distribution of the legacy-indexed outcome under
 the counterpart-first schedule. -/
 theorem experiment_verifier_run_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
     {Out : PathAlong plainSig (protocol pSpec) → Type}
     (p : Core.Prover plainSig oSpec (protocol pSpec) Out) {β : Type}
-    (f : Observation plainSig (protocol pSpec) Out StmtOutAt → β) :
+    (f : Outcome plainSig (protocol pSpec) Out StmtOutAt → β) :
     experiment init impl (plainChallengeImpl chImpl) (f <$> V.run stmt p) =ᵈ
       experiment init impl chImpl (f <$> observeWith .counterpartFirst V stmt p) := by
   rw [experiment_challengeReindex, simulateQ_map, simulateQ_verifier_run]
@@ -675,12 +675,12 @@ theorem experiment_verifier_run_evalDistEq (init : ProbComp σ)
 /-- **Execution correspondence in distribution.** The finalized interaction-layer execution of
 the embedded reduction, with challenges drawn by the reindexed legacy challenge implementation,
 has the distribution of the legacy execution. -/
-theorem experiment_finalize_observe_evalDistEq (init : ProbComp σ)
+theorem experiment_finalize_runOutcome_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn)
     (wit : WitIn) :
     experiment init impl (plainChallengeImpl chImpl)
-        (finalize <$> (embedReduction R).observe stmt wit) =ᵈ
+        (finalize <$> (embedReduction R).runOutcome stmt wit) =ᵈ
       experiment init impl chImpl (R.run stmt wit).run := by
   rw [← finalize_observeWith_counterpartFirst]
   exact experiment_verifier_run_evalDistEq init impl chImpl _ stmt _ finalize
@@ -688,15 +688,16 @@ theorem experiment_finalize_observe_evalDistEq (init : ProbComp σ)
 /-- **Execution correspondence as measures.** For every measurable structure on the legacy
 result, the two output measures agree. Both experiments are `ProbComp`s, whose answer measure
 is the global uniform one; `none` is an outcome of the result type, not missing mass. -/
-theorem evalDist_experiment_finalize_observe [MeasurableSpace (LegacyResult pSpec StmtOut WitOut)]
+theorem evalDist_experiment_finalize_runOutcome
+    [MeasurableSpace (LegacyResult pSpec StmtOut WitOut)]
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn)
     (wit : WitIn) :
     𝒟[experiment init impl (plainChallengeImpl chImpl)
-        (finalize <$> (embedReduction R).observe stmt wit)] =
+        (finalize <$> (embedReduction R).runOutcome stmt wit)] =
       𝒟[experiment init impl chImpl (R.run stmt wit).run] :=
-  (experiment_finalize_observe_evalDistEq init impl chImpl R stmt wit).evalDist_eq
+  (experiment_finalize_runOutcome_evalDistEq init impl chImpl R stmt wit).evalDist_eq
 
 end Distribution
 
@@ -794,11 +795,11 @@ theorem observeWith_focalFirst_eq (P : _root_.Prover oSpec StmtIn WitIn StmtOut 
 /-- **Execution correspondence as program equality.** When the honest prover's challenge slots
 are pure, reindexing the challenges of the finalized interaction-layer execution gives the
 legacy execution. -/
-theorem simulateQ_finalize_observe (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+theorem simulateQ_finalize_runOutcome (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (hP : PureChallengeSlots R.prover) (stmt : StmtIn) (wit : WitIn) :
-    simulateQ (challengeReindex oSpec pSpec) (finalize <$> (embedReduction R).observe stmt wit) =
+    simulateQ (challengeReindex oSpec pSpec) (finalize <$> (embedReduction R).runOutcome stmt wit) =
       (R.run stmt wit).run := by
-  rw [simulateQ_map, Core.Reduction.observe, simulateQ_verifier_run, ←
+  rw [simulateQ_map, Core.Reduction.runOutcome, simulateQ_verifier_run, ←
     finalize_observeWith_counterpartFirst]
   exact congrArg _ (observeWith_focalFirst_eq R.prover hP _ stmt wit)
 

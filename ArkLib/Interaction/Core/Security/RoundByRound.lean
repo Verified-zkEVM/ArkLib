@@ -12,7 +12,7 @@ public import PolyFun.PFunctor.Free.Cursor
 # Round-by-round security
 
 Full moves decorate PolyFun cursor spines, so states and extractors can inspect prefix oracle
-payloads as well as public messages and challenges. Soundness states are false at false roots,
+messages as well as public messages and challenges. Soundness states are false at false roots,
 remain false across sender moves and rule out valid acceptance at a false leaf. Knowledge states
 carry intermediate witnesses and extract them backwards. Both error bounds quantify each fixed
 prefix before drawing one fresh challenge; their indices contain only shape choices.
@@ -31,30 +31,31 @@ attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
 
 variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
-/-- Full runtime moves decorating a structural cursor, including erased payloads. -/
+/-- The partial transcript at a round position `sp`: the full moves made so far along the cursor,
+including erased payloads. -/
 @[implicit_reducible]
-def PrefixMoves : {s t : FreeM P PUnit} → Cursor.Spine s t → Type
+def PartialTranscriptAt : {s t : FreeM P PUnit} → Cursor.Spine s t → Type
   | _, _, .root _ => PUnit
   | _, _, .down (a := a) b tail =>
-    {x : Move l a // l.toFunB a x = b} × PrefixMoves tail
+    {x : Move l a // l.toFunB a x = b} × PartialTranscriptAt tail
 
 /-- Extend a full prefix by one move using cursor composition. -/
-def PrefixMoves.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
+def PartialTranscriptAt.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
     {s : FreeM P PUnit} → (sp : Cursor.Spine s (.liftBind a next)) →
-    PrefixMoves l sp → (x : Move l a) →
-    PrefixMoves l (sp.comp (.down (l.toFunB a x) (.root _)))
+    PartialTranscriptAt l sp → (x : Move l a) →
+    PartialTranscriptAt l (sp.comp (.down (l.toFunB a x) (.root _)))
   | _, .root _, _, x => ⟨⟨x, rfl⟩, ⟨⟩⟩
   | _, .down b tail, history, x => by
     rcases history with ⟨⟨y, h⟩, rest⟩
-    exact ⟨⟨y, h⟩, PrefixMoves.snoc tail rest x⟩
+    exact ⟨⟨y, h⟩, PartialTranscriptAt.snoc tail rest x⟩
 
 /-- A terminal full prefix is a completed transcript. -/
-def PrefixMoves.complete : {s : FreeM P PUnit} →
-    (sp : Cursor.Spine s (.pure PUnit.unit)) → PrefixMoves l sp → PathAlong l s
+def PartialTranscriptAt.complete : {s : FreeM P PUnit} →
+    (sp : Cursor.Spine s (.pure PUnit.unit)) → PartialTranscriptAt l sp → PathAlong l s
   | _, .root _, _ => ⟨⟩
   | _, .down b tail, history => by
     rcases history with ⟨⟨x, h⟩, rest⟩
-    exact ⟨x, h.symm ▸ PrefixMoves.complete tail rest⟩
+    exact ⟨x, h.symm ▸ PartialTranscriptAt.complete tail rest⟩
 
 /-- The structural node reached by a cursor ending at an interaction node. -/
 def spineNode {a : P.A} {next : P.B a → FreeM P PUnit} :
@@ -85,14 +86,14 @@ def sampleAt {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
 statement may lie in any universe. -/
 structure StateFunction (s : FreeM P PUnit) (S : Type uS)
     (admissible language : S → Prop) (accepts : S → PathAlong l s → Prop) where
-  toFun : ∀ {t}, (sp : Cursor.Spine s t) → PrefixMoves l sp → S → Prop
+  toFun : ∀ {t}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → S → Prop
   root : ∀ stmt, admissible stmt → toFun (.root s) ⟨⟩ stmt → language stmt
   send : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history stmt,
     owner l a = .sender → ¬ toFun sp history stmt → ∀ x,
       ¬ toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-        (PrefixMoves.snoc l sp history x) stmt
+        (PartialTranscriptAt.snoc l sp history x) stmt
   leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) history stmt,
-    ¬ toFun sp history stmt → ¬ accepts stmt (PrefixMoves.complete l sp history)
+    ¬ toFun sp history stmt → ¬ accepts stmt (PartialTranscriptAt.complete l sp history)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
 def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
@@ -102,15 +103,15 @@ def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
     ∀ stmt, admissible stmt → ¬ language stmt →
     ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
-      (history : PrefixMoves l sp),
+      (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ¬ F.toFun sp history stmt ∧
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h)
+          (PartialTranscriptAt.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h)
 
 /-- Intermediate witnesses and their backwards extraction at full transcript prefixes.
 
-Witness types, states and extractors may all read the full prefix, including oracle payloads.
+Witness types, states and extractors may all read the full prefix, including oracle messages.
 The output witness type `W tr` is indexed by the completed transcript `tr`, and the leaf
 extractor receives a witness of the type at the transcript its prefix completes. The input
 witness type `Win` is fixed. The statement, the input witness and the intermediate witnesses
@@ -121,25 +122,25 @@ the root extraction obligation applies only within the input promise.
 structure KnowledgeStateFunction (s : FreeM P PUnit) (S : Type uS) (W : PathAlong l s → Type)
     (Win : Type uW) (admissible : S → Prop) (relIn : S → Win → Prop)
     (validOutput : (stmt : S) → (tr : PathAlong l s) → W tr → Prop) where
-  Witness : ∀ {t} (sp : Cursor.Spine s t), PrefixMoves l sp → Type uK
-  toFun : ∀ {t} (sp : Cursor.Spine s t) (history : PrefixMoves l sp), S →
+  Witness : ∀ {t} (sp : Cursor.Spine s t), PartialTranscriptAt l sp → Type uK
+  toFun : ∀ {t} (sp : Cursor.Spine s t) (history : PartialTranscriptAt l sp), S →
     Witness sp history → Prop
   extractRoot : S → Witness (.root s) ⟨⟩ → Win
   extractStep : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next))
-    (history : PrefixMoves l sp), S → (x : Move l a) →
-      Witness (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp history x) →
+    (history : PartialTranscriptAt l sp), S → (x : Move l a) →
+      Witness (sp.comp (.down (l.toFunB a x) (.root _))) (PartialTranscriptAt.snoc l sp history x) →
         Witness sp history
-  extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PrefixMoves l sp), S →
-    W (PrefixMoves.complete l sp history) → Witness sp history
+  extractLeaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) (history : PartialTranscriptAt l sp), S →
+    W (PartialTranscriptAt.complete l sp history) → Witness sp history
   root : ∀ stmt, admissible stmt → ∀ wit,
     toFun (.root s) ⟨⟩ stmt wit → relIn stmt (extractRoot stmt wit)
   send : ∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history stmt,
     owner l a = .sender → ∀ x wit,
       toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-        (PrefixMoves.snoc l sp history x) stmt wit →
+        (PartialTranscriptAt.snoc l sp history x) stmt wit →
       toFun sp history stmt (extractStep sp history stmt x wit)
   leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) history stmt wit,
-    validOutput stmt (PrefixMoves.complete l sp history) wit →
+    validOutput stmt (PartialTranscriptAt.complete l sp history) wit →
       toFun sp history stmt (extractLeaf sp history stmt wit)
 
 /-- Worst-case-per-prefix knowledge: a fresh challenge rarely defeats backwards extraction.
@@ -155,12 +156,12 @@ def rbrKnowledgeSoundness {S : Type uS} {Win : Type uW} (s : FreeM P PUnit)
     ∀ stmt, admissible stmt →
     ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
-      (history : PrefixMoves l sp),
+      (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ∃ wit,
         ¬ F.toFun sp history stmt (F.extractStep sp history stmt x wit) ∧
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x) stmt wit} ≤ ε (spineChallenge l sp h)
+          (PartialTranscriptAt.snoc l sp history x) stmt wit} ≤ ε (spineChallenge l sp h)
 
 /-- Move a knowledge state function to a larger universe of intermediate witnesses. Each new
 intermediate witness is an old one in a larger universe; the states, extractors and obligations
@@ -237,8 +238,8 @@ variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProto
   {inputs : Resources.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
 
-/-- Oracle acceptance from a possible terminal state, with actual input and path payloads. The
-event is a predicate on the output statement and oracle data at the transcript's shape path.
+/-- Oracle acceptance from a possible terminal state, with actual input and path oracle messages.
+The event is a predicate on the output statement and oracle data at the transcript's shape path.
 The input statement, the input index and the input query type may lie in any universe. -/
 def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -246,7 +247,7 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (event : OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → Prop) : Prop :=
   let p := projectPathAlong oracleSig s tr
   let view := toView s tr
-  let resources : (pathResources inputs s p).Data := (stmt.2, payloads s tr)
+  let resources : (pathResources inputs s p).Data := (stmt.2, oracleMessages s tr)
   letI : MeasurableSpace (Option (T p)) := ⊤
   let handler : QueryImpl (ambient + (pathResources inputs s p).spec)
       (StateT σ ProbComp) := QueryImpl.addLift impl

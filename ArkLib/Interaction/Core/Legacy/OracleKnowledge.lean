@@ -14,7 +14,7 @@ public import ArkLib.Interaction.Core.Legacy.Security
 Legacy knowledge soundness of an oracle verifier `V` is knowledge soundness of the induced plain
 verifier `V.toVerifier`. This file transfers it to the embedded oracle verifier
 `embedOracleVerifier V` on the oracle tree, in the classical straight-line oracle interface
-`OracleVerifier.classicalStraightline`, with challenges drawn by the reindexed legacy challenge
+`OracleVerifier.classicalStraightLine`, with challenges drawn by the reindexed legacy challenge
 implementation `oracleChallengeImpl challengeQueryImpl`.
 
 * The logged prover-sampler run of the oracle tree is the logged run of the transported prover on
@@ -50,20 +50,20 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0
 the transcript decoded from the oracle tree, and the same two shared-oracle logs. -/
 def liftOracleExtractor
     (E : _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec) :
-    Core.Extractor.OracleStraightline oSpec (oracleProtocol pSpec)
+    Core.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
       (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut) :=
   fun stmt tr w pl vl => E stmt w (oracleDecode pSpec tr) pl vl
 
 /-- The legacy view of an interaction-layer straight-line extractor on the oracle tree. -/
 def lowerOracleExtractor
-    (E : Core.Extractor.OracleStraightline oSpec (oracleProtocol pSpec)
+    (E : Core.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
       (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut)) :
     _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec :=
   fun stmt w T pl vl => E stmt ((oracleTranscriptEquiv pSpec).symm T) w pl vl
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₛᵢ Oₛₒ in
 @[simp] theorem liftOracleExtractor_lowerOracleExtractor
-    (E : Core.Extractor.OracleStraightline oSpec (oracleProtocol pSpec)
+    (E : Core.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
       (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut)) :
     liftOracleExtractor (lowerOracleExtractor E) = E := by
   funext stmt tr w pl vl
@@ -163,11 +163,11 @@ theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ Prob
 /-- The output judgement of a legacy relation on the oracle tree: the verifier's output statement
 and output oracle data, with the prover's output witness. -/
 def oracleKnowledgeJudgement (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)) :
-    OutputJudgement (Observation oracleSig (oracleProtocol pSpec)
+    OutputJudgement (Outcome oracleSig (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i)))
       (relProblem relOut :
         PathProblem (oracleProtocol pSpec) (fun _ => StmtOut × (∀ i, OStmtOut i))) :=
-  OutputJudgement.ofObservation (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
+  OutputJudgement.ofOutcome (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
@@ -191,7 +191,7 @@ theorem prEvent_legacy_oracleKnowledge [MeasurableSpace WitIn] {Aux : Type}
         (ambientLogged (P.run (stmt, oStmt) aux) >>=
           knowledgeTail [pSpec.Challenge]ₒ V.toVerifier E (stmt, oStmt)))}[
         (∀ w ∈ r.2.1, (r.1, w) ∉ relIn) ∧ (r.2.2.1, r.2.2.2) ∈ relOut] =
-      letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
+      letI : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec)
         (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut)
         (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
       𝒟[experiment init impl (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
@@ -199,7 +199,7 @@ theorem prEvent_legacy_oracleKnowledge [MeasurableSpace WitIn] {Aux : Type}
           (stmt, oStmt) adv)]
         {z | (oracleKnowledgeJudgement relOut).valid z.1 ∧
           ∀ wit ∈ z.2, ¬ (relProblem relIn).rel () (stmt, oStmt) wit} := by
-  let : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
+  let : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec)
     (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   have hprover := runEq_ambientLogged_oracleProver impl ProtocolSpec.challengeQueryImpl adv
   rw [hadv] at hprover
@@ -215,7 +215,7 @@ theorem prEvent_legacy_oracleKnowledge [MeasurableSpace WitIn] {Aux : Type}
     exact RunEq.bind (fun st => (hprover st).trans
         (runEq_ambientLogged_prover impl _ P (stmt, oStmt) aux st))
       (runEq_knowledgeTail impl _ _ V.toVerifier E (stmt, oStmt))
-  have hmeas : MeasurableSet {z : Observation oracleSig (oracleProtocol pSpec)
+  have hmeas : MeasurableSet {z : Outcome oracleSig (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i)) ×
         Option WitIn |
       (oracleKnowledgeJudgement relOut).valid z.1 ∧
@@ -230,7 +230,7 @@ theorem prEvent_legacy_oracleKnowledge [MeasurableSpace WitIn] {Aux : Type}
   congr 1
   funext ⟨⟨tr, out, v⟩, ex⟩
   cases v <;> simp [oracleKnowledgeJudgement, OutputJudgement.valid,
-    OutputJudgement.ofObservation, relProblem, and_comm]
+    OutputJudgement.ofOutcome, relProblem, and_comm]
 
 /-- **Knowledge-soundness transfer for oracle verifiers.** A legacy straight-line extractor
 certifies knowledge soundness of the embedded oracle verifier, in the classical straight-line
@@ -249,18 +249,18 @@ theorem oracleKnowledgeSoundnessWith_iff (init : ProbComp σ)
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (E : _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec)
     (ε : ℝ≥0) :
-    letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
+    letI : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundnessWith
         ((embedOracleVerifier V).classicalModel init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut) (oracleKnowledgeJudgement relOut)
-        ((embedOracleVerifier V).classicalStraightline (fun _ => WitIn) init impl
+        ((embedOracleVerifier V).classicalStraightLine (fun _ => WitIn) init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2))
         (liftOracleExtractor E) ε ↔
       V.knowledgeSoundnessWith init impl relIn relOut E ε := by
-  let : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
+  let : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec)
     (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
   let : MeasurableSpace WitIn := ⊤
   have hW : ∀ s : Set WitIn, MeasurableSet s := fun _ => MeasurableSpace.measurableSet_top
@@ -273,7 +273,7 @@ theorem oracleKnowledgeSoundnessWith_iff (init : ProbComp σ)
         (toPlainFrom_embedOracleProver P stmt.1 stmt.2 aux) hW)
       (h stmt trivial (embedOracleProver P stmt.1 stmt.2 aux)).2.2
   · intro h stmt _ adv
-    refine ⟨Core.OracleVerifier.classicalStraightline_marginal _ _ _ _ _ _ _ stmt adv, le_rfl, ?_⟩
+    refine ⟨Core.OracleVerifier.classicalStraightLine_marginal _ _ _ _ _ _ _ stmt adv, le_rfl, ?_⟩
     have h' := h PUnit stmt ⟨⟩ (translate (toPlainFrom .focal 0 n (Nat.zero_add n) adv))
     dsimp only at h'
     rw [legacy_exec_run] at h'
@@ -292,14 +292,14 @@ theorem oracleKnowledgeSoundness_iff (init : ProbComp σ)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)) (ε : ℝ≥0) :
-    letI : MeasurableSpace (Observation oracleSig (oracleProtocol pSpec)
+    letI : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundness
         ((embedOracleVerifier V).classicalModel init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut) (oracleKnowledgeJudgement relOut)
-        ((embedOracleVerifier V).classicalStraightline (fun _ => WitIn) init impl
+        ((embedOracleVerifier V).classicalStraightLine (fun _ => WitIn) init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2)) ε ↔
       V.knowledgeSoundness init impl relIn relOut ε := by
   constructor

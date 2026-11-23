@@ -60,10 +60,10 @@ def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamil
         (.inr (.inr ⟨.inl ⟨⟩, (3 : Nat)⟩)))
       pure n
   outputMap _ p _ :=
-    (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+    (OracleMap.embedding (oracleMessageFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
-example : payloadImpl tree first ⟨.inl ⟨⟩, (3 : Nat)⟩ = (8 : Nat) := rfl
-example : payloadImpl tree second ⟨.inl ⟨⟩, (3 : Nat)⟩ = (6 : Nat) := rfl
+example : oracleMessageImpl tree first ⟨.inl ⟨⟩, (3 : Nat)⟩ = (8 : Nat) := rfl
+example : oracleMessageImpl tree second ⟨.inl ⟨⟩, (3 : Nat)⟩ = (6 : Nat) := rfl
 
 run_cmd do
   let answer : Nat := simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
@@ -79,7 +79,7 @@ abbrev emptyTree : OracleProtocol.{0, 0} := .pure ⟨⟩
 /-- The resources of the protocol with no rounds and no input oracles: both parts are empty. -/
 abbrev emptyResources := pathResources emptyFamily emptyTree ⟨⟩
 
-/-- The empty pair of input data and path payloads. -/
+/-- The empty pair of input data and path oracle messages. -/
 def emptyData : emptyResources.Data := (fun i => i.elim, fun i => i.elim)
 
 /-- The prefix can return a statement obtained from an ambient query. -/
@@ -121,8 +121,9 @@ run_cmd do
   for decl in [``Interaction.Core.plain_challenge_shape,
       ``Interaction.Core.oracle_payload_shape, ``Interaction.Core.Reduction.run,
       ``Interaction.Core.OracleMap.comp, ``Interaction.Core.OracleMap.simulate_eq,
-      ``Interaction.Core.oracles_split_append, ``Interaction.Core.oracles_append_split,
-      ``Interaction.Core.payloads_append, ``Interaction.Core.payloadImpl_append,
+      ``Interaction.Core.oracleMessageFamily_split_append,
+      ``Interaction.Core.oracleMessageFamily_append_split,
+      ``Interaction.Core.oracleMessages_append, ``Interaction.Core.oracleMessageImpl_append,
       ``Interaction.Core.OracleVerifier.run] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do

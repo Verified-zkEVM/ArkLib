@@ -69,7 +69,7 @@ abbrev msgChalPath : Path (oracleProtocol msgChal) :=
 
 /-- Input oracle `5` beside the run's message. -/
 def msgChalData : (pathResources (family InStmt) (oracleProtocol msgChal) msgChalPath).Data :=
-  (fun _ => (5 : Nat), payloads _ msgChalRun)
+  (fun _ => (5 : Nat), oracleMessages _ msgChalRun)
 
 def nineChallenges : msgChal.Challenges := fun _ => (9 : Nat)
 

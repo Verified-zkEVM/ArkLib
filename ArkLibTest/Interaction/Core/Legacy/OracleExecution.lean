@@ -111,7 +111,7 @@ def five : ∀ i, InStmt i := fun _ => (5 : Nat)
 
 /-! ### Program equality -/
 
-/-- The counterpart-first oracle observation, finalized, is the legacy run. -/
+/-- The counterpart-first oracle outcome, finalized, is the legacy run. -/
 example (stmt wit : Nat) (oStmt : ∀ i, InStmt i) :
     oracleFinalize <$> oracleObserveWith .counterpartFirst (embedOracleVerifier sumVerifier) stmt
         oStmt (embedOracleProver sumReduction.prover stmt oStmt wit) =
@@ -212,7 +212,7 @@ example {σ : Type} [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbCom
     (langOut : Set (Nat × ∀ i, OutSum i)) (ε : NNReal)
     (h : sumVerifier.soundness init impl langIn langOut ε)
     (Out : PathAlong oracleSig (oracleProtocol twoWay) → Type) :
-    letI : MeasurableSpace (Observation oracleSig (oracleProtocol twoWay) Out
+    letI : MeasurableSpace (Outcome oracleSig (oracleProtocol twoWay) Out
       (fun _ => Nat × ∀ i, OutSum i)) := ⊤
     Core.soundness ((embedOracleVerifier sumVerifier).classicalModel (Out := Out) init impl
         (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))

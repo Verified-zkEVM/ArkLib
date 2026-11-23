@@ -29,11 +29,12 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun owner Node Node.position challengeSpec
 
--- `Fiber`, `project_split` and `splitFiber` are generic in the polynomial and the lens; they are
+-- `TranscriptAt`, `project_split` and `TranscriptAt.split` are generic in the polynomial and the
+-- lens; they are
 -- candidates for PolyFun's path ledger, with `View.split` and `PlainView.split` remaining here.
 
 /-- A transcript over a fixed shape, for any interaction signature. -/
-abbrev Fiber {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+abbrev TranscriptAt {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     (s : FreeM P PUnit.{u + 1}) (p : Path s) :=
   {tr : PathAlong l s // projectPathAlong l s tr = p}
 
@@ -51,23 +52,23 @@ theorem project_split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
   simpa only [z, PathAlong.append_split, Path.split_append] using h.symm
 
 /-- Split views along the shape split. Only the view transcripts are transported. -/
-def splitFiber {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+def TranscriptAt.split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
-    (p : Path (s₁.append s₂)) (v : Fiber l (s₁.append s₂) p) :
-    Fiber l s₁ (Path.split s₁ s₂ p).1 ×
-      Fiber l (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2 := by
+    (p : Path (s₁.append s₂)) (v : TranscriptAt l (s₁.append s₂) p) :
+    TranscriptAt l s₁ (Path.split s₁ s₂ p).1 ×
+      TranscriptAt l (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2 := by
   rcases v with ⟨tr, rfl⟩
   let z := PathAlong.split l s₁ s₂ tr
   have h := project_split l s₁ s₂ tr
-  exact h ▸ (show Fiber l s₁ (projectPathAlong l s₁ z.1) ×
-    Fiber l (s₂ (projectPathAlong l s₁ z.1)) (projectPathAlong l _ z.2) from
+  exact h ▸ (show TranscriptAt l s₁ (projectPathAlong l s₁ z.1) ×
+    TranscriptAt l (s₂ (projectPathAlong l s₁ z.1)) (projectPathAlong l _ z.2) from
       (⟨z.1, rfl⟩, ⟨z.2, rfl⟩))
 
 /-- Split the oracle verifier's public view. -/
-abbrev View.split := splitFiber viewSig
+abbrev View.split := TranscriptAt.split viewSig
 
 /-- Split a plain public transcript. -/
-abbrev PlainView.split := splitFiber plainSig
+abbrev PlainView.split := TranscriptAt.split plainSig
 
 /-- The output family of an appended protocol: at a path of the appended tree, the suffix's
 output at the split path. PolyFun's `Path.LiftAppend` is the same family by `liftAppend_split`;
@@ -224,23 +225,23 @@ theorem run_splitSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u
       pure ⟨PathAlong.append l s₁ s₂ tr tail, out, terminal⟩) :=
   run_appendFlat_splitPrefix p (samplerEnd l s₁ draw₁) _
 
-/-- Split the oracle resources of an arbitrary completed appended path. -/
-def splitOracles : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
+/-- Split the oracle messages of an arbitrary completed appended path. -/
+def splitOracleMessages : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
     (p : Path (s₁.append s₂)) →
-    OracleMap (pathFamily (s₁.append s₂) p)
-      (sumFamily (pathFamily s₁ (Path.split s₁ s₂ p).1)
-        (pathFamily (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2))
-  | .pure _, s₂, p => oracles_split (.pure ⟨⟩) s₂ ⟨⟩ p
+    OracleMap (oracleMessageFamily (s₁.append s₂) p)
+      (sumFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1)
+        (oracleMessageFamily (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2))
+  | .pure _, s₂, p => oracleMessageFamily_split (.pure ⟨⟩) s₂ ⟨⟩ p
   | .liftBind (.message _) next, s₂, ⟨x, p⟩ =>
-    splitOracles (next x) (fun q => s₂ ⟨x, q⟩) p
+    splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p
   | .liftBind (.challenge _) next, s₂, ⟨x, p⟩ =>
-    splitOracles (next x) (fun q => s₂ ⟨x, q⟩) p
+    splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p
   | .liftBind (.oracle _ I) next, s₂, ⟨x, p⟩ =>
-    (OracleMap.unassoc (singletonFamily I)
-      (pathFamily (next x) (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).1)
-      (pathFamily _ (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).2)).comp
+    (OracleMap.familySumAssocSymm (singletonFamily I)
+      (oracleMessageFamily (next x) (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).1)
+      (oracleMessageFamily _ (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).2)).comp
       ((OracleMap.embedding (singletonFamily I) id).sum
-        (splitOracles (next x) (fun q => s₂ ⟨x, q⟩) p))
+        (splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p))
 
 /-- Preserve ambient queries while routing resource queries through an oracle map. -/
 def OracleMap.withAmbient {ι : Type uι}
@@ -282,21 +283,21 @@ variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂)}
 
 /-- Reassociate inputs and both sets of messages into prefix resources and suffix messages. -/
-def resources (p : Path (s₁.append s₂)) :
+def splitResources (p : Path (s₁.append s₂)) :
     OracleMap (pathResources inputs (s₁.append s₂) p)
       (Resources.sum (pathResources inputs s₁ (Path.split s₁ s₂ p).1)
-        (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2))) :=
-  (OracleMap.reassoc inputs
-    (Resources.ofFamily (pathFamily s₁ (Path.split s₁ s₂ p).1))
-    (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2))).comp
+        (Resources.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))) :=
+  (OracleMap.sumAssocSymm inputs
+    (Resources.ofFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1))
+    (Resources.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))).comp
     ((OracleMap.id inputs).par
-      ((OracleMap.ofSumFamily _ _).comp (splitOracles s₁ s₂ p)))
+      ((OracleMap.ofSumFamily _ _).comp (splitOracleMessages s₁ s₂ p)))
 
 /-- Prefix decisions see the original inputs and only prefix messages. -/
 def prefixRoute (p : Path (s₁.append s₂)) :
     OracleMap (pathResources inputs (s₁.append s₂) p)
       (pathResources inputs s₁ (Path.split s₁ s₂ p).1) :=
-  (OracleMap.fst _ _).comp (resources (inputs := inputs) p)
+  (OracleMap.fst _ _).comp (splitResources (inputs := inputs) p)
 
 /-- Suffix input queries use the prefix map at the prefix path; suffix message queries retain
 their own slots. -/
@@ -305,8 +306,8 @@ def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     OracleMap (pathResources inputs (s₁.append s₂) p)
       (pathResources (middle (Path.split s₁ s₂ p).1) _ (Path.split s₁ s₂ p).2) :=
   ((V₁.outputMap stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).par
-    (OracleMap.id (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2)))).comp
-      (resources (inputs := inputs) p)
+    (OracleMap.id (Resources.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
+      (splitResources (inputs := inputs) p)
 
 /-- The output oracle family of an appended oracle protocol: at a path of the appended tree, the
 suffix's output family at the split path. -/

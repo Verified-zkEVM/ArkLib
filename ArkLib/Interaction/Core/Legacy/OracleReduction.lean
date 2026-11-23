@@ -177,11 +177,11 @@ theorem lt_of_challenge {j : Fin n} (hd : pSpec.dir j = .V_to_P) (i : pSpec.Mess
 
 /-- Read message `i` at the node of round `j`, or from the rest of the path. -/
 def readMsgNode (j : Fin n) (rest : OracleProtocol.{0})
-    (recur : (p : Path rest) → (∀ o, OracleData rest p o) → (i : pSpec.MessageIdx) →
+    (recur : (p : Path rest) → (∀ o, OracleMessage rest p o) → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i) :
     (d : Direction) → (hd : pSpec.dir j = d) →
     (p : Path (FreeM.liftBind (oraclePos pSpec j d hd) (fun _ => rest))) →
-    (∀ o, OracleData _ p o) → (i : pSpec.MessageIdx) → j.val ≤ i.1.val → pSpec.Message i
+    (∀ o, OracleMessage _ p o) → (i : pSpec.MessageIdx) → j.val ≤ i.1.val → pSpec.Message i
   | .P_to_V, _, ⟨_, p⟩, x, i, hi =>
     if hij : i.1.val = j.val then cast (congrArg pSpec.«Type» (Fin.ext hij).symm) (x (.inl ⟨⟩))
     else recur p (fun o => x (.inr o)) i (by omega)
@@ -190,28 +190,28 @@ def readMsgNode (j : Fin n) (rest : OracleProtocol.{0})
 /-- Query message `i` at the node of round `j`, or in the rest of the path. -/
 def queryMsgNode (j : Fin n) (rest : OracleProtocol.{0})
     (recur : (p : Path rest) → (i : pSpec.MessageIdx) → j.val < i.1.val →
-      (q : (Oₘ i).Query) → OracleComp (pathFamily rest p).spec ((Oₘ i).Response q)) :
+      (q : (Oₘ i).Query) → OracleComp (oracleMessageFamily rest p).spec ((Oₘ i).Response q)) :
     (d : Direction) → (hd : pSpec.dir j = d) →
     (p : Path (FreeM.liftBind (oraclePos pSpec j d hd) (fun _ => rest))) →
     (i : pSpec.MessageIdx) → j.val ≤ i.1.val → (q : (Oₘ i).Query) →
-    OracleComp (pathFamily _ p).spec ((Oₘ i).Response q)
+    OracleComp (oracleMessageFamily _ p).spec ((Oₘ i).Response q)
   | .P_to_V, hd, ⟨b, p⟩, i, hi, q =>
     if hij : i.1.val = j.val then
       match i, (Subtype.ext (Fin.ext hij) : i = ⟨j, hd⟩), q with
-      | _, rfl, q => liftM ((pathFamily (FreeM.liftBind (oraclePos pSpec j .P_to_V hd)
+      | _, rfl, q => liftM ((oracleMessageFamily (FreeM.liftBind (oraclePos pSpec j .P_to_V hd)
           (fun _ => rest)) ⟨b, p⟩).spec.query ⟨.inl ⟨⟩, q⟩)
     else simulateQ (liftRight _ _) (recur p i (by omega) q)
   | .V_to_P, hd, ⟨_, p⟩, i, hi, q => recur p i (lt_of_challenge hd i hi) q
 
 theorem queryMsgNode_law (j : Fin n) (rest : OracleProtocol.{0})
-    (read : (p : Path rest) → (∀ o, OracleData rest p o) → (i : pSpec.MessageIdx) →
+    (read : (p : Path rest) → (∀ o, OracleMessage rest p o) → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i)
     (query : (p : Path rest) → (i : pSpec.MessageIdx) → j.val < i.1.val →
-      (q : (Oₘ i).Query) → OracleComp (pathFamily rest p).spec ((Oₘ i).Response q))
-    (law : ∀ p x i hi q, simulateQ ((pathFamily rest p).behaviorOfRealizations x)
+      (q : (Oₘ i).Query) → OracleComp (oracleMessageFamily rest p).spec ((Oₘ i).Response q))
+    (law : ∀ p x i hi q, simulateQ ((oracleMessageFamily rest p).behaviorOfRealizations x)
       (query p i hi q) = (Oₘ i).answer (read p x i hi) q) :
     ∀ (d : Direction) (hd : pSpec.dir j = d) p x i hi q,
-      simulateQ ((pathFamily _ p).behaviorOfRealizations x)
+      simulateQ ((oracleMessageFamily _ p).behaviorOfRealizations x)
           (queryMsgNode j rest query d hd p i hi q) =
         (Oₘ i).answer (readMsgNode j rest read d hd p x i hi) q
   | .P_to_V, hd, ⟨b, p⟩, x, i, hi, q => by
@@ -223,13 +223,13 @@ theorem queryMsgNode_law (j : Fin n) (rest : OracleProtocol.{0})
       rfl
     · simp only [queryMsgNode, readMsgNode, hij, ↓reduceDIte]
       exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
-        (impl := (pathFamily rest p).behaviorOfRealizations (fun o => x (.inr o)))
+        (impl := (oracleMessageFamily rest p).behaviorOfRealizations (fun o => x (.inr o)))
         (fun _ => rfl) _).trans (law p _ i _ q)
   | .V_to_P, hd, ⟨_, p⟩, x, i, hi, q => law p x i _ q
 
 /-- Read message `i` from the oracle data of a path through the tree from round `k`. -/
 def readMsg : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec k m h)) →
-    (∀ o, OracleData _ p o) → (i : pSpec.MessageIdx) → k ≤ i.1.val → pSpec.Message i
+    (∀ o, OracleMessage _ p o) → (i : pSpec.MessageIdx) → k ≤ i.1.val → pSpec.Message i
   | k, 0, h, _, _, i, hi => absurd i.1.isLt (by omega)
   | k, m + 1, h, p, x, i, hi =>
     readMsgNode ⟨k, by omega⟩ (oracleSuffix pSpec (k + 1) m (by omega))
@@ -238,16 +238,16 @@ def readMsg : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec 
 /-- Query message `i` in the oracle family of a path through the tree from round `k`. -/
 def queryMsg : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec k m h)) →
     (i : pSpec.MessageIdx) → k ≤ i.1.val → (q : (Oₘ i).Query) →
-    OracleComp (pathFamily _ p).spec ((Oₘ i).Response q)
+    OracleComp (oracleMessageFamily _ p).spec ((Oₘ i).Response q)
   | k, 0, h, _, i, hi, _ => absurd i.1.isLt (by omega)
   | k, m + 1, h, p, i, hi, q =>
     queryMsgNode ⟨k, by omega⟩ (oracleSuffix pSpec (k + 1) m (by omega))
       (fun p i hi q => queryMsg (k + 1) m (by omega) p i hi q) _ rfl p i hi q
 
 theorem queryMsg_law : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec k m h)) →
-    (x : ∀ o, OracleData _ p o) → (i : pSpec.MessageIdx) → (hi : k ≤ i.1.val) →
+    (x : ∀ o, OracleMessage _ p o) → (i : pSpec.MessageIdx) → (hi : k ≤ i.1.val) →
     (q : (Oₘ i).Query) →
-    simulateQ ((pathFamily _ p).behaviorOfRealizations x) (queryMsg k m h p i hi q) =
+    simulateQ ((oracleMessageFamily _ p).behaviorOfRealizations x) (queryMsg k m h p i hi q) =
       (Oₘ i).answer (readMsg k m h p x i hi) q
   | k, 0, h, _, _, i, hi, _ => absurd i.1.isLt (by omega)
   | k, m + 1, h, p, x, i, hi, q =>
@@ -255,7 +255,7 @@ theorem queryMsg_law : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuff
       (fun p x i hi q => queryMsg_law (k + 1) m (by omega) p x i hi q) _ rfl p x i hi q
 
 /-- The legacy messages held by the oracle data of a completed path. -/
-def pathMessages (p : Path (oracleProtocol pSpec)) (x : ∀ o, OracleData _ p o) :
+def pathMessages (p : Path (oracleProtocol pSpec)) (x : ∀ o, OracleMessage _ p o) :
     pSpec.Messages :=
   fun i => readMsg 0 n _ p x i (Nat.zero_le _)
 
@@ -292,7 +292,7 @@ theorem resourceImpl_law (p : Path (oracleProtocol pSpec))
   rcases q with q | q
   · rfl
   · exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
-      (impl := (pathFamily _ p).behaviorOfRealizations r.2)
+      (impl := (oracleMessageFamily _ p).behaviorOfRealizations r.2)
       (fun _ => rfl) _).trans (queryMsg_law 0 n _ p _ q.1 _ q.2)
 
 /-- Route all legacy decision queries, passing shared-oracle queries through. -/

@@ -12,9 +12,9 @@ public import ArkLib.Interaction.Core.Security.Completeness
 
 For every admissible false input and every adversary in the model, acceptance of an output in
 the output language has bounded probability. Rejected runs and missing probability mass are
-both excluded from this event, without identifying them in the observation distribution.
+both excluded from this event, without identifying them in the outcome distribution.
 For a general model the bound uses the measure's outer extension; the classical wrapper
-uses discrete observations, so every event is measurable.
+uses discrete outcomes, so every event is measurable.
 -/
 
 @[expose] public section
@@ -27,7 +27,7 @@ open scoped ENNReal
 
 /-- Soundness against all adversaries in a model, within the input admissibility promise.
 
-The verdict's claim type may depend on a public context read from the observation, such as the
+The verdict's claim type may depend on a public context read from the outcome, such as the
 shape path of the run; the output language is judged at that context.
 -/
 def soundness {S Obs Ctx : Type*} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
@@ -49,7 +49,7 @@ abbrev Verifier.soundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
     (challenges : QueryImpl (challengeSpec plainSig s) ProbComp)
     (input : StatementProblem S) (output : PathProblem s T) (ε : ℝ≥0∞) : Prop :=
   ∀ Out : PathAlong plainSig s → Type,
-  letI : MeasurableSpace (Observation plainSig s Out T) := ⊤
+  letI : MeasurableSpace (Outcome plainSig s Out T) := ⊤
   Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
     (fun obs => projectPathAlong plainSig s obs.1) (fun obs => obs.2.2) ε
 

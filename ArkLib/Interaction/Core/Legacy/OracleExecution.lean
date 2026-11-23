@@ -19,17 +19,17 @@ embedded oracle verifier on the oracle tree to legacy oracle reduction runs.
   sampler and the embedded honest prover (`toPlainFrom_embedOracleProver`). `toOraclePath`
   reads a plain runtime path back on the oracle tree.
 * Transcript. On the runtime path of an actual run, the verifier's challenges
-  (`viewChallenges_toView`) and the message oracles' data (`pathMessages_payloads`) are the
+  (`viewChallenges_toView`) and the message oracles' data (`pathMessages_oracleMessages`) are the
   components of the decoded legacy transcript.
 * Decision. Routing the legacy decision to the input and path oracles and answering them from
   the run's data is legacy `simOracle2` on the input data and decoded messages
   (`simulateQ_decisionImpl`, `simulateQ_embedOracleVerifier_decide`); the output data are the
   legacy materialization (`embedOracleVerifier_outputMap_f`).
-* Observation. `oracleObserveWith` is the run of an oracle verifier with legacy-indexed
+* Outcome. `oracleObserveWith` is the run of an oracle verifier with legacy-indexed
   challenges, under a chosen schedule. The run of `embedOracleVerifier V` is the plain run of
   `V.toVerifier` against the transported prover (`oracleObserveWith_embed`,
   `simulateQ_embedOracleVerifier_run`, `experiment_embedOracleVerifier_run`).
-* Result. `oracleFinalize` decodes an accepted oracle observation into the legacy result,
+* Result. `oracleFinalize` decodes an accepted oracle outcome into the legacy result,
   keeping the prover's output statement, output oracle data and witness, and the verifier's
   output statement and output oracle data. The counterpart-first program equality
   (`oracleFinalize_observeWith_counterpartFirst`) holds for every legacy oracle reduction; the
@@ -465,14 +465,16 @@ theorem viewChallenges_toView (tr : PathAlong oracleSig (oracleProtocol pSpec)) 
 /-- One node of the message reader reads the decoded transcript. -/
 theorem readMsgNode_decode (j : Fin n) (D : Direction) (hD : pSpec.dir j = D)
     (rest : OracleProtocol.{0})
-    (recur : (p : Path rest) → (∀ o, OracleData rest p o) → (i : pSpec.MessageIdx) →
+    (recur : (p : Path rest) → (∀ o, OracleMessage rest p o) → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i)
     (x : Move oracleSig (oraclePos pSpec j D hD)) (tr : PathAlong oracleSig rest)
     (T : FullTranscript pSpec) (hhead : T j = oracleMoveEquiv pSpec j D hD x)
-    (hrec : ∀ i hi, recur (projectPathAlong oracleSig rest tr) (payloads rest tr) i hi = T i.1) :
+    (hrec : ∀ i hi,
+      recur (projectPathAlong oracleSig rest tr) (oracleMessages rest tr) i hi = T i.1) :
     ∀ i hi, readMsgNode j rest recur D hD
         (projectPathAlong oracleSig (.liftBind (oraclePos pSpec j D hD) fun _ => rest) ⟨x, tr⟩)
-        (payloads (.liftBind (oraclePos pSpec j D hD) fun _ => rest) ⟨x, tr⟩) i hi = T i.1 := by
+        (oracleMessages (.liftBind (oraclePos pSpec j D hD) fun _ => rest) ⟨x, tr⟩) i hi =
+          T i.1 := by
   cases D with
   | P_to_V =>
     intro i hi
@@ -489,7 +491,7 @@ theorem readMsgNode_decode (j : Fin n) (D : Direction) (hD : pSpec.dir j = D)
 theorem readMsg_decodeFrom : (k m : ℕ) → (h : k + m = n) → (pre : Transcript ⟨k, by omega⟩ pSpec) →
     (tr : PathAlong oracleSig (oracleSuffix pSpec k m h)) → (i : pSpec.MessageIdx) →
     (hi : k ≤ i.1.val) →
-    readMsg k m h (projectPathAlong oracleSig _ tr) (payloads _ tr) i hi =
+    readMsg k m h (projectPathAlong oracleSig _ tr) (oracleMessages _ tr) i hi =
       decodeFrom oracleSig (oracleRound pSpec) (fun j => oracleMoveEquiv pSpec j _ rfl)
         k m h pre tr i.1
   | k, 0, h, _, _, i, hi => absurd i.1.isLt (by omega)
@@ -499,8 +501,8 @@ theorem readMsg_decodeFrom : (k m : ℕ) → (h : k + m = n) → (pre : Transcri
       (fun i hi => readMsg_decodeFrom (k + 1) m (by omega) _ tr i hi) i hi
 
 /-- **The oracle data of an oracle run carries its legacy messages.** -/
-theorem pathMessages_payloads (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
-    pathMessages (projectPathAlong oracleSig _ tr) (payloads _ tr) =
+theorem pathMessages_oracleMessages (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
+    pathMessages (projectPathAlong oracleSig _ tr) (oracleMessages _ tr) =
       (oracleDecode pSpec tr).messages :=
   funext fun i => readMsg_decodeFrom 0 n _ default tr i (Nat.zero_le _)
 
@@ -572,11 +574,11 @@ abbrev oracleChallengeImpl (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) :
     QueryImpl (challengeSpec oracleSig (oracleProtocol pSpec)) ProbComp :=
   (oracleLayout pSpec).challengeImpl chImpl
 
-/-- Read an observation of the plain tree as an observation of the oracle tree. -/
-def toOracleObservation {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type} {T : Type}
-    (r : Observation plainSig (protocol pSpec) (fun tr => Out (toOraclePath 0 n _ tr))
+/-- Read an outcome of the plain tree as an outcome of the oracle tree. -/
+def toOracleOutcome {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type} {T : Type}
+    (r : Outcome plainSig (protocol pSpec) (fun tr => Out (toOraclePath 0 n _ tr))
       (fun _ => T)) :
-    Observation oracleSig (oracleProtocol pSpec) Out (fun _ => T) :=
+    Outcome oracleSig (oracleProtocol pSpec) Out (fun _ => T) :=
   ⟨toOraclePath 0 n (Nat.zero_add n) r.1, r.2.1, r.2.2⟩
 
 /-- **A run of the oracle tree is a run of the plain tree.** Against the legacy sampler, the
@@ -631,19 +633,19 @@ variable {I S : Type} {T : Path (oracleProtocol pSpec) → Type} {A : I → Type
 
 /-- Run an oracle verifier on the oracle tree of a legacy protocol under `order`, in the legacy
 query monad. The prover runs against the legacy sampler; the decision and the output map read
-the input data and the payloads of the actual run, as in `Core.OracleVerifier.run`. -/
+the input data and the oracle messages of the actual run, as in `Core.OracleVerifier.run`. -/
 def oracleObserveWith (order : Schedule)
     (V : Core.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (Observation oracleSig (oracleProtocol pSpec) Out (Core.OracleVerifier.Output T B)) := do
+      (Outcome oracleSig (oracleProtocol pSpec) Out (Core.OracleVerifier.Output T B)) := do
   let r ← runWith order (oracleProtocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (oracleLegacySampler pSpec (challengeOracle oSpec pSpec))
   let pp := projectPathAlong oracleSig (oracleProtocol pSpec) r.1
   let view := toView (oracleProtocol pSpec) r.1
   let resources : (pathResources inputs (oracleProtocol pSpec) pp).Data :=
-    (data, payloads (oracleProtocol pSpec) r.1)
+    (data, oracleMessages (oracleProtocol pSpec) r.1)
   let verdict ← simulateQ (QueryImpl.addLift (liftShared oSpec pSpec)
     ((pathResources inputs (oracleProtocol pSpec) pp).answer resources))
     (V.decide stmt pp view).run
@@ -651,7 +653,7 @@ def oracleObserveWith (order : Schedule)
 
 /-- **Challenge reindexing of an oracle run.** The run of an oracle verifier on a legacy
 protocol's oracle tree, with its challenges answered by the legacy challenge oracle, is the
-focal-first oracle observation. -/
+focal-first oracle outcome. -/
 theorem simulateQ_oracleVerifier_run
     (V : Core.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
@@ -699,20 +701,20 @@ theorem liftComp_eq_simulateQ_liftShared {α : Type} (x : OracleComp oSpec α) :
 accepted one. The result keeps the prover's output statement, output oracle data and witness, and
 the verifier's output statement and output oracle data. -/
 def oracleFinalize
-    (r : Observation oracleSig (oracleProtocol pSpec)
+    (r : Outcome oracleSig (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) :
     LegacyResult pSpec (StmtOut × (∀ i, OStmtOut i)) WitOut :=
   r.2.2.map fun t => ((oracleDecode pSpec r.1, r.2.1), t)
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₛₒ in
-theorem oracleFinalize_toOracleObservation
-    (r : Observation plainSig (protocol pSpec)
+theorem oracleFinalize_toOracleOutcome
+    (r : Outcome plainSig (protocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) :
-    oracleFinalize (toOracleObservation (Out := fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut)
+    oracleFinalize (toOracleOutcome (Out := fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut)
       r) = finalize r := by
-  simp only [oracleFinalize, toOracleObservation, finalize, oracleDecode_toOraclePath]
+  simp only [oracleFinalize, toOracleOutcome, finalize, oracleDecode_toOraclePath]
 
-/-- The decision of the embedded oracle verifier on the actual payloads of a run is legacy
+/-- The decision of the embedded oracle verifier on the actual oracle messages of a run is legacy
 `verify` on the decoded challenges, with message and input-oracle queries answered from the
 decoded messages and the input data. The ambient queries go to any implementation `amb`. -/
 theorem simulateQ_embedOracleVerifier_decide {m : Type → Type} [Monad m] [LawfulMonad m]
@@ -721,33 +723,33 @@ theorem simulateQ_embedOracleVerifier_decide {m : Type → Type} [Monad m] [Lawf
     (oStmt : ∀ i, OStmtIn i) (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
     simulateQ (QueryImpl.addLift amb
         ((pathResources (family OStmtIn) _ (projectPathAlong oracleSig _ tr)).answer
-          (oStmt, payloads _ tr)))
+          (oStmt, oracleMessages _ tr)))
         ((embedOracleVerifier V).decide stmt (projectPathAlong oracleSig _ tr)
           (toView _ tr)).run =
       simulateQ amb
         (simulateQ (OracleInterface.simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages)
           (V.verify stmt (oracleDecode pSpec tr).challenges).run) := by
-  refine (simulateQ_decisionImpl amb _ (oStmt, payloads _ tr) _).trans ?_
+  refine (simulateQ_decisionImpl amb _ (oStmt, oracleMessages _ tr) _).trans ?_
   rw [viewChallenges_toView]
   exact congrArg (fun m => simulateQ amb
     (simulateQ (OracleInterface.simOracle2 oSpec oStmt m)
-      (V.verify stmt (oracleDecode pSpec tr).challenges).run)) (pathMessages_payloads tr)
+      (V.verify stmt (oracleDecode pSpec tr).challenges).run)) (pathMessages_oracleMessages tr)
 
-/-- The output data of the embedded oracle verifier on the actual payloads of a run are the
+/-- The output data of the embedded oracle verifier on the actual oracle messages of a run are the
 legacy materialized output on the decoded transcript. -/
 theorem embedOracleVerifier_outputMap_f
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) (tr : PathAlong oracleSig (oracleProtocol pSpec)) :
     ((embedOracleVerifier V).outputMap stmt (projectPathAlong oracleSig _ tr) (toView _ tr)).f
-        (oStmt, payloads _ tr) =
+        (oStmt, oracleMessages _ tr) =
       V.materializeOutput (oracleDecode pSpec tr).challenges oStmt
         (oracleDecode pSpec tr).messages := by
   change V.materializeOutput (viewChallenges (toView _ tr).val) oStmt
-    (pathMessages _ (payloads _ tr)) = _
-  rw [viewChallenges_toView, pathMessages_payloads]
+    (pathMessages _ (oracleMessages _ tr)) = _
+  rw [viewChallenges_toView, pathMessages_oracleMessages]
 
-/-- **Oracle execution as plain execution.** Under every schedule, the oracle observation of
-the embedded oracle verifier is the plain observation of the legacy verifier read as a plain
+/-- **Oracle execution as plain execution.** Under every schedule, the oracle outcome of
+the embedded oracle verifier is the plain outcome of the legacy verifier read as a plain
 verifier (`OracleVerifier.toVerifier`), against the transported prover, with the runtime path
 read back on the oracle tree. -/
 theorem oracleObserveWith_embed (order : Schedule)
@@ -755,7 +757,7 @@ theorem oracleObserveWith_embed (order : Schedule)
     (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     oracleObserveWith order (embedOracleVerifier V) stmt oStmt p =
-      toOracleObservation <$> observeWith order (embedVerifier V.toVerifier) (stmt, oStmt)
+      toOracleOutcome <$> observeWith order (embedVerifier V.toVerifier) (stmt, oStmt)
         (toPlainFrom .focal 0 n (Nat.zero_add n) p) := by
   rw [oracleObserveWith, runWith_oracleLegacySampler, observeWith, bind_map_left]
   refine Eq.trans ?_ (map_bind (m := OracleComp (oSpec + [pSpec.Challenge]ₒ)) _ _ _).symm
@@ -764,7 +766,7 @@ theorem oracleObserveWith_embed (order : Schedule)
   erw [simulateQ_embedOracleVerifier_decide]
   rw [embedOracleVerifier_outputMap_f]
   simp only [oracleDecode_toOraclePath, embedVerifier_decide]
-  change _ = toOracleObservation <$> (liftComp (Option.map _ <$> simulateQ _ _) _ >>= _)
+  change _ = toOracleOutcome <$> (liftComp (Option.map _ <$> simulateQ _ _) _ >>= _)
   rw [liftComp_eq_simulateQ_liftShared, simulateQ_map]
   exact (map_bind_map_pure (m := OracleComp (oSpec + [pSpec.Challenge]ₒ))
     (simulateQ (liftShared oSpec pSpec)
@@ -772,10 +774,10 @@ theorem oracleObserveWith_embed (order : Schedule)
         (V.verify stmt (decode pSpec r.1).challenges).run))
     (Option.map fun s => (s, V.materializeOutput (decode pSpec r.1).challenges oStmt
       (decode pSpec r.1).messages))
-    (fun v => (⟨r.1, r.2.1, v⟩ : Observation plainSig (protocol pSpec)
+    (fun v => (⟨r.1, r.2.1, v⟩ : Outcome plainSig (protocol pSpec)
       (fun tr => Out (toOraclePath 0 n (Nat.zero_add n) tr))
       (fun _ => StmtOut × (∀ i, OStmtOut i))))
-    toOracleObservation).symm
+    toOracleOutcome).symm
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₛᵢ Oₛₒ in
 /-- The transported embedded oracle prover is the embedded plain prover of the same legacy
@@ -788,7 +790,7 @@ theorem toPlainFrom_embedOracleProver {WitIn WitOut : Type}
   toPlainFrom_embedOracleFrom P 0 n (Nat.zero_add n) _
 
 /-- **Execution correspondence for oracle reductions.** Under the counterpart-first schedule,
-the finalized oracle observation of the embedded oracle reduction is the legacy oracle
+the finalized oracle outcome of the embedded oracle reduction is the legacy oracle
 reduction's execution. The legacy layer's transcript is decoded from the runtime path of the
 oracle tree; the output statement and output oracle data are the oracle verifier's
 `decide` result and output map. -/
@@ -802,13 +804,13 @@ theorem oracleFinalize_observeWith_counterpartFirst
     _root_.OracleReduction.run_eq_run_reduction,
     ← finalize_observeWith_counterpartFirst R.toReduction (stmt, oStmt) wit]
   refine (comp_map (f := OracleComp (oSpec + [pSpec.Challenge]ₒ))
-    (toOracleObservation (Out := fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut))
+    (toOracleOutcome (Out := fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut))
     oracleFinalize _).symm.trans ?_
-  exact congrArg (· <$> _) (funext fun r => oracleFinalize_toOracleObservation r)
+  exact congrArg (· <$> _) (funext fun r => oracleFinalize_toOracleOutcome r)
 
 omit [∀ t, Inhabited (oSpec.Range t)] in
 /-- For the embedded honest oracle prover with pure challenge slots, the two schedules give the
-same oracle observation. -/
+same oracle outcome. -/
 theorem oracleObserveWith_focalFirst_eq [∀ t, Inhabited (oSpec.Range t)] {WitIn WitOut : Type}
     (P : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
     (hP : PureChallengeSlots P)
@@ -844,7 +846,7 @@ theorem simulateQ_embedOracleVerifier_run
     (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     simulateQ (oracleChallengeReindex oSpec pSpec) ((embedOracleVerifier V).run stmt oStmt p) =
-      toOracleObservation <$> simulateQ (challengeReindex oSpec pSpec)
+      toOracleOutcome <$> simulateQ (challengeReindex oSpec pSpec)
         ((embedVerifier V.toVerifier).run (stmt, oStmt)
           (toPlainFrom .focal 0 n (Nat.zero_add n) p)) := by
   rw [simulateQ_oracleVerifier_run, oracleObserveWith_embed, simulateQ_verifier_run]
@@ -860,21 +862,21 @@ theorem experiment_embedOracleVerifier_run (init : ProbComp σ)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
-    (f : Observation oracleSig (oracleProtocol pSpec) Out
+    (f : Outcome oracleSig (oracleProtocol pSpec) Out
       (fun _ => StmtOut × (∀ i, OStmtOut i)) → β) :
     experiment init impl (oracleChallengeImpl chImpl)
         (f <$> (embedOracleVerifier V).run stmt oStmt p) =
       experiment init impl (plainChallengeImpl chImpl)
-        ((f ∘ toOracleObservation) <$>
+        ((f ∘ toOracleOutcome) <$>
           (embedVerifier V.toVerifier).run (stmt, oStmt)
             (toPlainFrom .focal 0 n (Nat.zero_add n) p)) := by
   rw [Layout.experiment_challengeReindex, experiment_challengeReindex, simulateQ_map,
     simulateQ_map]
   erw [simulateQ_embedOracleVerifier_run]
   exact congrArg (experiment init impl chImpl)
-    (comp_map (f := OracleComp (oSpec + [pSpec.Challenge]ₒ)) toOracleObservation f _).symm
+    (comp_map (f := OracleComp (oSpec + [pSpec.Challenge]ₒ)) toOracleOutcome f _).symm
 
-/-- The two schedules of the oracle observation of the embedded oracle verifier have the same
+/-- The two schedules of the oracle outcome of the embedded oracle verifier have the same
 distribution from every shared state. -/
 theorem distEqFrom_oracleObserveWith (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
@@ -886,15 +888,15 @@ theorem distEqFrom_oracleObserveWith (impl : QueryImpl oSpec (StateT σ ProbComp
   rw [oracleObserveWith_embed, oracleObserveWith_embed]
   exact (distEqFrom_observeWith impl chImpl _ _ _).map _
 
-/-- **Oracle observation transfer.** For every prover, the oracle observation under the
+/-- **Oracle outcome transfer.** For every prover, the oracle outcome under the
 reindexed challenge implementation has the distribution of the counterpart-first oracle
-observation. -/
+outcome. -/
 theorem experiment_oracleVerifier_run_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : PathAlong oracleSig (oracleProtocol pSpec) → Type}
     (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
-    (f : Observation oracleSig (oracleProtocol pSpec) Out
+    (f : Outcome oracleSig (oracleProtocol pSpec) Out
       (fun _ => StmtOut × (∀ i, OStmtOut i)) → β) :
     experiment init impl (oracleChallengeImpl chImpl)
         (f <$> (embedOracleVerifier V).run stmt oStmt p) =ᵈ

@@ -113,7 +113,7 @@ Record D7 states each notion once, against an adversary model:
 structure AdversaryModel (V : Verifier l s) where
   Adv : Type*
   /-- The subprobability distribution of (transcript, verdict, prover output). -/
-  outcome : Adv → StmtIn → Measure (Observation V)
+  outcome : Adv → StmtIn → Measure (Outcome V)
 ```
 
 - *Classical model* (the default, and the one the legacy embedding targets). `Adv` is D7's class
@@ -154,7 +154,7 @@ structure ExtractionInterface (M : AdversaryModel V) where
   /-- Extractors: programs over the interface's access operations. -/
   Ext : Type*
   /-- The extraction experiment: the law of the run together with the extracted witness. -/
-  experiment : Ext → M.Adv → StmtIn → Measure (Observation V × WitIn)
+  experiment : Ext → M.Adv → StmtIn → Measure (Outcome V × WitIn)
   /-- Expected number of access operations an extractor makes; zero for straight-line ones. -/
   cost : Ext → M.Adv → StmtIn → ℝ≥0∞
 ```

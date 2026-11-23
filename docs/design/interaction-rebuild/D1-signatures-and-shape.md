@@ -109,7 +109,7 @@ message can; recorded challenges still affect dependent outputs.
 
 - **Open: where an oracle position's `OracleInterface` lives.** Either the position carries it
   (`oracle X I`), or it lives in non-ownership metadata `Γ` beside the tree. The current
-  interaction layer uses a decoration. The choice affects record D6's definition of `oracles`
+  interaction layer uses a decoration. The choice affects record D6's definition of `oracleMessageSpec`
   but not the shape restriction.
 - **Open: a direct plain-to-oracle inclusion convenience.** Deferred until a maintainer decides
   whether a structural inclusion that is never used as a runtime representation change is

@@ -67,7 +67,7 @@ path data and output maps rather than a run.
 **Resolution.** The modules `Legacy/OracleExecution.lean`, `Legacy/OracleSecurity.lean` and
 `Legacy/OracleKnowledge.lean` state the correspondence and the transfers on the oracle tree:
 
-- `oracleFinalize` reads the legacy result off an oracle-tree observation, including both
+- `oracleFinalize` reads the legacy result off an oracle-tree outcome, including both
   parties' outputs and the verifier's output oracle data.
 - `oracleFinalize_observeWith_counterpartFirst` is program equality with legacy
   `OracleReduction.run` under the counterpart-first schedule, for every legacy protocol

@@ -11,7 +11,7 @@ them.
 
 | Observation | Type | Contains | Indexes |
 |---|---|---|---|
-| Shape path | `p : Path s` | Public messages (the branches taken) | Suffix trees, the oracle family `oracles s p` (record D6) |
+| Shape path | `p : Path s` | Public messages (the branches taken) | Suffix trees, the oracle family `oracleMessageSpec s p` (record D6) |
 | Verifier view | `(p : Path s) × View s p` | Public messages and challenges as values; oracle positions as `PUnit` markers | The verifier's decision, the output oracle map |
 | Full transcript | `PathAlong l s` | Every move, including oracle payloads | Party outputs, strategy state, bookkeeping claims, state functions and extractors |
 
@@ -62,14 +62,14 @@ The decision is typed against the shape path and the view over it:
 ```lean
 -- intended, not existing
 decide : StmtIn → (p : Path s) → View s p →
-  OptionT (OracleComp (oSpec + [OStmtIn]ₒ + oracles s p)) StmtOut
+  OptionT (OracleComp (oSpec + [OStmtIn]ₒ + oracleMessageSpec s p)) StmtOut
 -- in a run: decide stmt (projectPathAlong oracleSig s tr) (toView s tr)
 ```
 
 The call needs no cast: the oracle family is indexed by `p`, which is the run's shape path
 itself, and the fibre carries the equation `projectPathAlong viewSig s v = p` as a proof rather
 than in a type index. The decision reads public messages and challenges as values from `v` (or
-`p`) and reaches oracle payloads only by queries to `oracles s p`, answered from the same run
+`p`) and reaches oracle payloads only by queries to `oracleMessageSpec s p`, answered from the same run
 (record D4).
 
 For a plain signature every move is public: the view signature is `plainSig`, the move map is
@@ -97,9 +97,9 @@ than a typing fact.
 
 The view is a fibre over `Path s` because the decision's oracle family is indexed by the path.
 If the view were a free-standing transcript `v` with a separate projection law, the decision would
-be typed at `oracles s (projectPathAlong viewSig s v)`, and running it on the view of `tr` would
-require identifying `OracleComp (… + oracles s (projectPathAlong viewSig s (mapMoves … tr)))` with
-`OracleComp (… + oracles s (projectPathAlong oracleSig s tr))` along a propositional equation.
+be typed at `oracleMessageSpec s (projectPathAlong viewSig s v)`, and running it on the view of `tr` would
+require identifying `OracleComp (… + oracleMessageSpec s (projectPathAlong viewSig s (mapMoves … tr)))` with
+`OracleComp (… + oracleMessageSpec s (projectPathAlong oracleSig s tr))` along a propositional equation.
 That is a cast in the index type of `OracleComp`, and every statement about the decision
 (simulation, query logs, the composition and legacy equivalence laws) would have to commute past
 it. Passing `p` explicitly and keeping the equation inside the fibre indexes the decision and the

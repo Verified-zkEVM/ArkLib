@@ -27,8 +27,8 @@ The interaction always runs every round. A failed round check makes the legacy f
 
 The main results are:
 
-* `simulateQ_route`: answering routed queries from the run's payloads answers the legacy message
-  queries from the decoded transcript `decodeTranscript`;
+* `simulateQ_route`: answering routed queries from the run's oracle messages answers the legacy
+  message queries from the decoded transcript `decodeTranscript`;
 * `simulateQ_decide`: on any completed run the decision returns `legacyVerdict` of the decoded
   transcript, the verdict of the legacy oracle verifier (`simulateQ_legacy_verify`);
 * `run_verifier_foldRounds` and `run_verifier_honestProver`: closed forms of the execution;
@@ -92,22 +92,22 @@ attribute [local implicit_reducible] FreeM.replicate
 /-- Route the round message's queries to the first oracle node of a replicated protocol. -/
 def roundRoute (k : ℕ) (p : Path (protocol R deg k)) :
     QueryImpl [(Spec.SingleRound.pSpec R deg).Message]ₒ
-      (OracleComp (oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
+      (OracleComp (oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
   fun ⟨i, q⟩ => by
     obtain rfl := Unique.eq_default i
     exact liftM
-      ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, q⟩)
+      ((oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, q⟩)
 
 /-- Lift the queries of the remaining rounds to a replicated protocol with one more round. -/
 def tailLift (k : ℕ) (p : Path (protocol R deg k)) :
-    QueryImpl (oracles (protocol R deg k) p)
-      (OracleComp (oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
+    QueryImpl (oracleMessageSpec (protocol R deg k) p)
+      (OracleComp (oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
   fun q => liftM
-    ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
+    ((oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
 
 /-- Route legacy message queries to the oracle nodes of a completed shape path. -/
 def route : (k : ℕ) → (p : Path (protocol R deg k)) →
-    QueryImpl [(Spec.pSpec R deg k).Message]ₒ (OracleComp (oracles (protocol R deg k) p))
+    QueryImpl [(Spec.pSpec R deg k).Message]ₒ (OracleComp (oracleMessageSpec (protocol R deg k) p))
   | 0, _ => fun q => q.1.1.elim0
   | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => Legacy.appendRoute (roundRoute R deg k p)
       (fun q => simulateQ (tailLift R deg k p) (route k p q))
@@ -132,11 +132,11 @@ theorem route_succ_sumEquiv (k : ℕ) (p : Path (protocol R deg k))
         s q :=
   Legacy.appendRoute_sumEquiv _ _ s q
 
-/-- Answering routed queries from the run's payloads answers the legacy message queries from the
-decoded transcript. -/
+/-- Answering routed queries from the run's oracle messages answers the legacy message queries from
+the decoded transcript. -/
 theorem simulateQ_route : (k : ℕ) → (tr : PathAlong oracleSig (protocol R deg k)) →
     (q : [(Spec.pSpec R deg k).Message]ₒ.Domain) →
-    simulateQ (payloadImpl (protocol R deg k) tr)
+    simulateQ (oracleMessageImpl (protocol R deg k) tr)
         (route R deg k (projectPathAlong oracleSig _ tr) q) =
       OracleInterface.simOracle0 (Spec.pSpec R deg k).Message (decodeTranscript k tr).messages q
   | 0, _, q => q.1.1.elim0
@@ -159,7 +159,7 @@ theorem simulateQ_route : (k : ℕ) → (tr : PathAlong oracleSig (protocol R de
           (heq_of_eq (congrFun (FullTranscript.append_snd _ _) _))
       · intro q'
         refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-          (impl := payloadImpl (protocol R deg k) tail) (fun t => ?_) _).trans
+          (impl := oracleMessageImpl (protocol R deg k) tail) (fun t => ?_) _).trans
           (simulateQ_route k tail ⟨i, q'⟩)
         exact simulateQ_spec_query _ _
 
@@ -306,7 +306,7 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
 
 /-- Lift path-oracle queries into the decision's query interface. -/
 def decisionLift (p : Path (protocol R deg n)) :
-    QueryImpl (oracles (protocol R deg n) p)
+    QueryImpl (oracleMessageSpec (protocol R deg n) p)
       (OracleComp (ambient + (pathResources (polyFamily R deg n) (protocol R deg n) p).spec)) :=
   fun q => liftM ((ambient +
     (pathResources (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
@@ -330,7 +330,7 @@ theorem verifier_outputMap (stmt : Spec.StatementRound R n 0) (p : Path (protoco
     (v : View (protocol R deg n) p) :
     (verifier R deg n D ambient).outputMap stmt p v =
       OracleMap.fst (Resources.ofFamily (polyFamily R deg n))
-        (Resources.ofFamily (pathFamily (protocol R deg n) p)) :=
+        (Resources.ofFamily (oracleMessageFamily (protocol R deg n) p)) :=
   rfl
 
 omit [SampleableType R] in
@@ -355,19 +355,20 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n :
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι}
 
 omit [DecidableEq R] [SampleableType R] in
-/-- Lifted path-oracle queries are answered from the path payloads, without ambient effects. -/
+/-- Lifted path-oracle queries are answered from the path's oracle messages, without ambient
+effects. -/
 theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (p : Path (protocol R deg n))
     (data : ∀ i, Spec.OracleStatement R n deg i)
-    (pl : ∀ i, OracleData (protocol R deg n) p i) {α : Type}
-    (oa : OracleComp (oracles (protocol R deg n) p) α) :
+    (pl : ∀ i, OracleMessage (protocol R deg n) p i) {α : Type}
+    (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
     simulateQ (QueryImpl.addLift amb ((polyFamily R deg n).behaviorOfRealizations data +
-        (pathFamily (protocol R deg n) p).behaviorOfRealizations pl))
+        (oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl))
       (simulateQ (decisionLift R deg n ambient p) oa) =
-      (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
+      (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         OracleComp spec' α) := by
   refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget _)
+    (impl := ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget _)
     (fun t => ?_) oa).trans ?_
   · exact simulateQ_spec_query _ _
   · rw [simulateQ_liftTarget]
@@ -379,8 +380,9 @@ theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : PathAlong oracleSig (protocol R deg n)) :
     simulateQ (QueryImpl.addLift amb ((polyFamily R deg n).behaviorOfRealizations data +
-        (pathFamily (protocol R deg n) (projectPathAlong oracleSig _ tr)).behaviorOfRealizations
-          (payloads _ tr)))
+        (oracleMessageFamily (protocol R deg n)
+          (projectPathAlong oracleSig _ tr)).behaviorOfRealizations
+          (oracleMessages _ tr)))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) :
         OracleComp spec' _) := by
@@ -415,7 +417,7 @@ theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
       (fun chals => (⟨foldTranscript msg next n st chals, finish (foldState next n st chals),
         (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (foldTranscript msg next n st chals))).map fun t => (t, oStmt)⟩ :
-          Observation oracleSig (protocol R deg n) (fun _ => Out)
+          Outcome oracleSig (protocol R deg n) (fun _ => Out)
             (fun _ =>
               Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
@@ -436,7 +438,7 @@ theorem run_verifier_honestProver (stmt : Spec.StatementRound R n 0)
       (fun chals => (⟨honestTranscript D stmt oStmt chals, honestOutput D stmt oStmt chals,
         (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (honestTranscript D stmt oStmt chals))).map fun t => (t, oStmt)⟩ :
-          Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
+          Outcome oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
             (fun _ =>
               Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
