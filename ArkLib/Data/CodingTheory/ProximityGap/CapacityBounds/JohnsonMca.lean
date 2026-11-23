@@ -79,7 +79,7 @@ theorem linear_mcaError_le_one_point_five_johnson
     (by omega) (by exact Fintype.one_lt_card) _h_δ_min _hη _hη_lt_δ_min
     (by
       convert _hδ using 1
-      all_goals norm_num)
+      norm_num)
   norm_num at hpow
   rw [hgen] at hpow
   refine hpow.trans ?_

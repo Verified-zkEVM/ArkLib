@@ -10,9 +10,9 @@ import Lean.Elab.Tactic.Basic
 
 open Lean Elab Tactic Meta in
 /-- Close an equality goal `lhs = rhs` with `Eq.refl lhs`, leaving the definitional check to the
-kernel. The elaborator's definitional unfolding does not cache terms with free variables, so
-`rfl` on a run with a symbolic secret or hidden bit exceeds the heartbeat budget; the kernel
-checks the same proof term directly and rejects it when the sides differ. -/
+kernel. The elaborator's definitional unfolding does not cache terms with free variables. For
+that reason `rfl` on a run with a symbolic secret or hidden bit exceeds the heartbeat budget. The
+kernel checks the same proof term directly and rejects it when the sides differ. -/
 elab "kernel_rfl" : tactic => do
   let goal ← getMainGoal
   let goalType ← instantiateMVars (← goal.getType)

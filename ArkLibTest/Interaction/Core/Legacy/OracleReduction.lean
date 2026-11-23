@@ -61,15 +61,15 @@ def sumVerifier : _root_.OracleVerifier []ₒ Unit InStmt Unit OutSum msgChal wh
     simulateOutputQuery_eq _ _ _ _ := rfl }
 
 /-- A run: message `4`, challenge `9`. -/
-def msgChalRun : PathAlong oracleSig (oracleProtocol msgChal) := ⟨(4 : Nat), ⟨(9 : Nat), ⟨⟩⟩⟩
+def msgChalRun : Transcript oracleSig (oracleProtocol msgChal) := ⟨(4 : Nat), ⟨(9 : Nat), ⟨⟩⟩⟩
 
 /-- The shape path of the run. -/
 abbrev msgChalPath : Path (oracleProtocol msgChal) :=
-  projectPathAlong oracleSig _ msgChalRun
+  msgChalRun.path
 
 /-- Input oracle `5` beside the run's message. -/
 def msgChalData : (pathResources (family InStmt) (oracleProtocol msgChal) msgChalPath).Data :=
-  (fun _ => (5 : Nat), payloads _ msgChalRun)
+  (fun _ => (5 : Nat), oracleMessages _ msgChalRun)
 
 def nineChallenges : msgChal.Challenges := fun _ => (9 : Nat)
 

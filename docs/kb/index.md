@@ -35,6 +35,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`papers/BBS24.md`](papers/BBS24.md) - formal verification reference for sum-check.
 - [`papers/CHA24.md`](papers/CHA24.md) - integer fingerprinting provenance from the Zaratan
   framework and its reusable multivariate counting layer.
+- [`papers/CWYZ26.md`](papers/CWYZ26.md) - affine combiners for Reed–Solomon proximity gaps:
+  MCA error with one coordinate of agreement loss, scalar lower bounds, and the port ledger.
 - [`papers/DG25.md`](papers/DG25.md) - interleaved-code proximity gaps and the DG25 formalization
   subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius
@@ -58,6 +60,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   decodability.
 - [`papers/Joh62.md`](papers/Joh62.md) - the original Johnson bound underlying the `JohnsonBound`
   development.
+- [`papers/KKH26.md`](papers/KKH26.md) - failure of proximity gaps close to capacity; the
+  Proposition 3 CA lower bound, the Appendix A list, and the Lemma 1 sum-set bound.
 - [`papers/KSY14.md`](papers/KSY14.md) - high-rate codes with sublinear-time decoding; the
   multiplicity-code analysis, whose Hasse-derivative variant differs from `ABF26` Definition A.6.
 
@@ -90,6 +94,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   alphabet-free framing of the Johnson-bound layer.
 - [`papers/LNP22.md`](papers/LNP22.md) - the lattice zero-knowledge framework whose
   power-of-two cyclotomic ring setting `Data/Lattices/CyclotomicRing/` constructs.
+- [`papers/Lov18.md`](papers/Lov18.md) - the GM-MDS theorem: Theorem 1.7 and Conjecture 1.3,
+  formalized symbolically, with the infinite-field form used for generic zero patterns.
 - [`papers/LPS24.md`](papers/LPS24.md) - AGM reasoning connected back to Plonk knowledge
   soundness.
 - [`papers/LS18.md`](papers/LS18.md) - invertibility of short nonzero elements of

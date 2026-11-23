@@ -65,7 +65,7 @@ private def selectors : Selector (CompPoly.CPolynomial F) :=
   Computable.selectorPolynomials domain cleared
 
 private def pi : CompPoly.CPolynomial F :=
-  Computable.publicInputPolynomial domain (by decide : 1 ≤ 4) (fun _ => 3)
+  Computable.publicInputPolynomial domain (fun _ : Fin 1 => 3)
 
 private def gate : CompPoly.CPolynomial F := Computable.gatePolynomial selectors wires pi
 
@@ -90,8 +90,8 @@ example : ¬ prepared.accepts badAssignment := by
 
 example : gate.toPoly = Plonk.gatePolynomial (Plonk.selectorPolynomials domain cleared)
     (Plonk.wirePolynomials domain occurrences)
-    (Plonk.publicInputPolynomial domain (by decide : 1 ≤ 4) (fun _ => 3)) :=
-  Computable.gatePolynomial_toPoly domain cleared occurrences (by decide) (fun _ => 3)
+    (Plonk.publicInputPolynomial domain (fun _ : Fin 1 => 3)) :=
+  Computable.gatePolynomial_toPoly domain cleared occurrences (fun _ : Fin 1 => 3)
 
 -- A right occurrence in the public equality row does not affect its gate equation.
 private def copyViolation : Fin 12 → F :=

@@ -72,8 +72,8 @@ theorem firstOracleEncoding_injective :
         (show Fintype.card K = 2 from Fact.out)]
       simp only [Fin.val_zero, Nat.sub_zero]
       exact Nat.pow_le_pow_right (by decide) (Nat.le_add_right ℓ 𝓡)
-  have hP : (P : L[X]) = Q := by
-    apply Polynomial.eq_of_natDegree_lt_card_of_eval_eq (P : L[X]) (Q : L[X])
+  have hP : (P : Polynomial L) = Q := by
+    apply Polynomial.eq_of_natDegree_lt_card_of_eval_eq (P : Polynomial L) (Q : Polynomial L)
       (f := fun x : sDomain K β h_ℓ_add_R_rate (0 : Fin r) => (x : L)) Subtype.val_injective
       (by intro x; simpa only [firstOracleEncoding, polyToOracleFunc, P, Q] using congrFun h x)
     exact (max_lt (ReedSolomon.natDegree_lt_of_mem_degreeLT P.property)

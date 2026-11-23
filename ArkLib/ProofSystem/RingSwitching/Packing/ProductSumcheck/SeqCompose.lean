@@ -21,6 +21,7 @@ terminal check. Every component keeps the original packed polynomial and its ora
 
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck
+open Sumcheck.Structured (Multiplier)
 open OracleSpec OracleComp ProtocolSpec MvPolynomial
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
   (multiplier : Multiplier Context C m) (pc : PackedCommitment P m)

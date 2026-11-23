@@ -101,6 +101,7 @@ def HonestRel (p : Spec.OracleStatement R n deg ()) (i : Fin (n + 1)) (r : ℕ)
   st.round = i ∧ HEq st.statement s ∧ st.poly = p ∧
     ((s, fun _ => st.poly), ()) ∈ Spec.relationRound R n deg D i
 
+omit [SampleableType R] in
 /-- An honest round passes its check and preserves `HonestRel`. -/
 theorem honestRel_step (p : Spec.OracleStatement R n deg ()) (i : Fin n) (r : ℕ)
     (st : RoundState R deg n (r + 1)) (s : Spec.StatementRound R n i.castSucc) (chal : R)
@@ -120,6 +121,7 @@ theorem honestRel_step (p : Spec.OracleStatement R n deg ()) (i : Fin n) (r : �
   refine ⟨_, roundCheck_eq_some i _ _ hsum, rfl, HEq.rfl, hpoly, ?_⟩
   exact Spec.SingleRound.relationRound_projected_output R n deg D i _ poly chal
 
+omit [SampleableType R] in
 /-- On an input in the round-`0` relation, the legacy verdict of the honest transcript accepts
 the honest output statement, on every choice of challenges. -/
 theorem legacyVerdict_honestTranscript (stmt : Spec.StatementRound R n 0)
@@ -184,19 +186,20 @@ def relationProblem {Ctx : Type} (i : Fin (n + 1)) :
   rel _ x _ := (x, ()) ∈ Spec.relationRound R n deg D i
   rel_admissible _ _ _ _ := trivial
 
-/-- The observation of a Sumcheck run with the honest prover's output type. -/
-abbrev HonestObservation :=
-  Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
+/-- The outcome of a Sumcheck run with the honest prover's output type. -/
+abbrev HonestOutcome :=
+  Outcome oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
     (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)
 
 /-- Judge a Sumcheck run by the verifier verdict and the statement in the prover output. -/
 def judgement :
-    OutputJudgement (HonestObservation R deg n)
+    OutputJudgement (HonestOutcome R deg n)
       (relationProblem (Ctx := Path (protocol R deg n)) R deg n D (Fin.last n)) :=
-  OutputJudgement.ofObservation _ (fun _ out => out.1) fun _ _ _ => ()
+  OutputJudgement.ofOutcome _ (fun _ out => out.1) fun _ _ _ => ()
 
 variable {R deg n} [DecidableEq R] [SampleableType R] {ι : Type} (ambient : OracleSpec ι)
 
+omit [SampleableType R] in
 /-- Perfect completeness of the interaction-layer Sumcheck.
 
 For every ambient state, ambient oracle implementation and challenge implementation, the honest
@@ -205,11 +208,11 @@ statement is the prover's output statement and lies in the final relation. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig (protocol R deg n)) ProbComp) :
-    letI : MeasurableSpace (HonestObservation R deg n) := ⊤
+    letI : MeasurableSpace (HonestOutcome R deg n) := ⊤
     completeness ((verifier R deg n D ambient).classicalModel init impl challenges)
       (relationProblem R deg n D 0) (relationProblem R deg n D (Fin.last n))
       (judgement R deg n D) (fun x _ => honestProver D x.1 x.2) 0 := by
-  let : MeasurableSpace (HonestObservation R deg n) := ⊤
+  let : MeasurableSpace (HonestOutcome R deg n) := ⊤
   let : MeasurableSpace (Fin n → R) := ⊤
   refine ⟨MeasurableSpace.measurableSet_top, fun x _ hx => ?_⟩
   rcases x with ⟨stmt, oStmt⟩
@@ -228,7 +231,7 @@ theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
 /-- Perfect completeness of the interaction-layer Sumcheck with uniformly sampled challenges. -/
 theorem perfectCompleteness_uniform {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) :
-    letI : MeasurableSpace (HonestObservation R deg n) := ⊤
+    letI : MeasurableSpace (HonestOutcome R deg n) := ⊤
     completeness ((verifier R deg n D ambient).classicalModel init impl
         (challengeQueryImpl oracleSig (protocol R deg n)))
       (relationProblem R deg n D 0) (relationProblem R deg n D (Fin.last n))

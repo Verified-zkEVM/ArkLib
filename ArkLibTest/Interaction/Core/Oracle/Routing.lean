@@ -10,7 +10,7 @@ import ArkLibTest.Interaction.Core.Oracle.DependentRouting
 /-! The prefix exports `input false + sent.1` and hides input slot `true`. The suffix samples a
 challenge, sends one oracle, and sees only the export and its own message. The composed run keeps
 the prover's private memory and ambient order, and its output data is the export of the same run.
-A prefix-slot query routed by `prefixRoute` is answered from the prefix payload. -/
+A prefix-slot query routed by `prefixRoute` is answered from the prefix oracle message. -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
@@ -75,7 +75,7 @@ def exportTraceHandler (old hidden visible secret : Nat) :
     | .inr _ => 2
   modify (· ++ [label])
   pure (prefixResources.answer
-    ((fun b => if b then hidden else old), payloads firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
+    ((fun b => if b then hidden else old), oracleMessages firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
 
 /-- Every exported request reads the visible input followed by the sent oracle, exactly once.
 The complete trace omits label 1, so the hidden input is never queried, even and in particular
@@ -109,8 +109,8 @@ def prefixVerifier :
 abbrev suffixResources := pathResources exported secondProtocol ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- The suffix records 30, reads the export and its own message, records 40 and 60, and accepts
-when the export and the message agree, claiming the prefix's returned value together with its own
-message. -/
+when the export and the message agree. On acceptance it claims the prefix's returned value
+together with its own message. -/
 def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × Nat) exported
     (fun _ => exported) where
   decide stmt p _ := by
@@ -172,9 +172,10 @@ def resultSummary (hidden secret : Nat) : Nat × Option ((Nat × Nat) × Nat) ×
   (result.1.2.1, result.1.2.2.map (fun z => (z.1, z.2 ⟨⟩)), result.2)
 
 /-! Additional passive composition coverage. Both verifier decisions follow the whole
-interaction. The challenge is sampled independently of resources. The disposition inventory
-records the retired export-derived message and its former schedule explicitly; it does not
-identify this example with that contract or with a produced-prefix availability certificate. -/
+interaction. The challenge is sampled independently of resources. The port table records
+explicitly the export-derived message that P1 excludes, together with its former schedule. It
+does not identify this example with that contract, or with a proof that an oracle was sent at a
+produced transcript prefix. -/
 example (hidden secret : Nat) : resultSummary hidden secret =
     (secret + 23 + 50, some ((20, 23), 23), [1, 20, 50, 10, 30, 40, 60]) := by
   unfold resultSummary observed composed
@@ -277,32 +278,31 @@ example (hidden secret : Nat) :=
     (inputData hidden) (prover secret)
 
 /-! Additional prefix-routing coverage: on an appended transcript built from separate
-prefix and suffix transcripts, the routed prefix data is the prefix transcript's own payload. -/
+prefix and suffix transcripts, the routed prefix data is the prefix transcript's own oracle
+message. -/
 
 /-- The prefix transcript with observable value 20 and a private second coordinate. -/
-def prefixTranscript (secret : Nat) : PathAlong oracleSig firstProtocol := ⟨(20, secret), ⟨⟩⟩
+def prefixTranscript (secret : Nat) : Transcript oracleSig firstProtocol := ⟨(20, secret), ⟨⟩⟩
 
 /-- The suffix transcript with challenge 23 and scalar message 23. -/
-def suffixTranscript : PathAlong oracleSig secondProtocol :=
+def suffixTranscript : Transcript oracleSig secondProtocol :=
   ⟨(23 : Nat), ⟨(23 : Nat), ⟨⟩⟩⟩
 
 example (hidden secret : Nat) :
     (⟨(Path.split firstProtocol (fun _ => secondProtocol)
-        (projectPathAlong oracleSig combined
-          (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
+        (Transcript.path (Transcript.append firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))).1,
       (OracleVerifier.prefixRoute (inputs := inputs)
-        (projectPathAlong oracleSig combined
-          (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
+        (Transcript.path (Transcript.append firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))).f
-        (inputData hidden, payloads combined
-          (PathAlong.append oracleSig firstProtocol (fun _ => secondProtocol)
+        (inputData hidden, oracleMessages combined
+          (Transcript.append firstProtocol (fun _ => secondProtocol)
             (prefixTranscript secret) suffixTranscript))⟩ :
       (p : FreeM.Path firstProtocol) ×
         (pathResources inputs firstProtocol p).Data) =
-      ⟨projectPathAlong oracleSig firstProtocol (prefixTranscript secret),
-        (inputData hidden, payloads firstProtocol (prefixTranscript secret))⟩ :=
-  OracleVerifier.prefixRoute_payload (inputs := inputs) (s₂ := fun _ => secondProtocol)
+      ⟨Transcript.path (prefixTranscript secret),
+        (inputData hidden, oracleMessages firstProtocol (prefixTranscript secret))⟩ :=
+  OracleVerifier.prefixRoute_oracleMessages (inputs := inputs) (s₂ := fun _ => secondProtocol)
     (inputData hidden)
     (prefixTranscript secret) suffixTranscript
 
@@ -311,8 +311,8 @@ end Interaction.Core.RoutingTests
 /-! SourceRoutingExample SR4: the routing declarations stay axiom-clean. -/
 run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.run_append,
-      ``Interaction.Core.OracleVerifier.prefixRoute_payload,
-      ``Interaction.Core.splitOracles_payloads, ``Interaction.Core.sampler_append_eq,
+      ``Interaction.Core.OracleVerifier.prefixRoute_oracleMessages,
+      ``Interaction.Core.splitOracleMessages_oracleMessages, ``Interaction.Core.sampler_append_eq,
       ``Interaction.Core.OracleMap.simulate_withAmbient_addLift] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
@@ -364,7 +364,7 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OracleVerifier.OutputCompatibility V₁ V₂) (stmt : S) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig (s₁.append s₂) → Type}
+    {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :=
   OracleVerifier.run_append V₁ V₂ compatible stmt data prover
 

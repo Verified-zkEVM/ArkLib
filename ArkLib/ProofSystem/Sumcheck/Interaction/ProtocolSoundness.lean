@@ -9,6 +9,7 @@ public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateSoundness
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
 public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
 public import VCVio.EvalDist.ProbabilityBounds
+import VCVio.ProgramLogic.Unary.HoareTriple
 
 /-!
 # Soundness against interaction-layer Sumcheck prover strategies
@@ -60,7 +61,7 @@ end Sumcheck.Interaction.MultivariateRound
 namespace Sumcheck.Interaction.Native
 
 open OracleComp OracleSpec
-open SingleRound MultivariateRound
+open SingleRound MultivariateRound OracleComp.ProgramLogic
 open scoped ENNReal
 
 noncomputable section
@@ -115,9 +116,6 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
   by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
   · simp only [hcheck, ↓reduceIte, prEvent_norm]
     let i : Fin n := ⟨start, by omega⟩
-    let good : F → Prop := fun r => closedRelation F n deg D i.succ
-      ⟨⟨q.val.eval r, Fin.snoc stmt.challenges r⟩,
-        (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
     have hgood := uniform_successor_soundness n deg F D i stmt p q (by
       change ¬ closedRelation F n deg D ⟨start, by omega⟩
         ⟨stmt, (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)⟩
@@ -129,13 +127,7 @@ theorem exportedPrefixRun_soundness {m : ℕ} (D : Fin m ↪ F)
           (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
             (Access.extendImpl A (polynomialInterface F deg) impl q)⟩] ≤ _
     rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    have hbound := prEvent_bind_le_prEvent_of_forall_eq_zero ($ᵗ F)
-      (fun r => do
-        let _next ← respond (some r)
-        return good r) good (fun truth => truth) (by
-          intro r hr
-          simp only [hr, prEvent_norm, prEvent_false])
-    simpa only [bind_assoc, pure_bind, prEvent_norm] using hbound.trans hgood
+    simpa only [prEvent_eq_wp, wp_bind, wp_map, Function.comp_def, wp_const] using hgood
   · simp only [hcheck, ↓reduceIte, prEvent_norm]
     change Pr{let _next ← respond none}[False] ≤ _
     simp only [prEvent_false, zero_le]
@@ -167,26 +159,15 @@ theorem exportedPrefixRun_admissibility {m : ℕ} (D : Fin m ↪ F)
   refine prEvent_bind_le_of_forall_le _ _ _ ?_
   rintro ⟨q, respond⟩
   change SingleRound.Message F deg at q
-  by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target
-  · simp only [hcheck, ↓reduceIte, prEvent_norm]
-    change Pr{let r ← ($ᵗ F); let _next ← respond (some r)}[
-      ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
-        (Access.extendImpl A (polynomialInterface F deg) impl q) =
-          (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
-    rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    simp only [not_true_eq_false]
-    have hzero := prEvent_false (do
-      let r ← ($ᵗ F)
-      let _next ← respond (some r)
-      return ())
-    simpa only [bind_assoc, pure_bind, prEvent_norm] using hzero.le
-  · simp only [hcheck, ↓reduceIte, prEvent_norm]
-    change Pr{let _next ← respond none}[
-      ¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
-        (Access.extendImpl A (polynomialInterface F deg) impl q) =
-          (polynomialFamily F n deg).behaviorOfRealizations (fun _ => p)] ≤ 0
-    rw [VirtualOracle.eval_sumWeaken_extendImpl, horiginal]
-    simp only [not_true_eq_false, prEvent_false, le_refl]
+  have hreal := (VirtualOracle.eval_sumWeaken_extendImpl A originalOracle
+    (polynomialInterface F deg) impl q).trans horiginal
+  by_cases hcheck : ((Finset.univ.map D).toList.map (fun x => q.val.eval x)).sum = stmt.target <;>
+    simp only [hcheck, ↓reduceIte, prEvent_norm, prEvent_eq_wp, wp_bind, wp_map, Function.comp_def]
+  all_goals
+    repeat' (apply wp_le_const_of_support; intro x hx)
+    change propInd (¬ (originalOracle.sumWeaken (polynomialInterface F deg).spec).eval
+      (Access.extendImpl A (polynomialInterface F deg) impl q) = _) ≤ 0
+    simp [hreal]
 
 set_option backward.isDefEq.respectTransparency false in
 /-- Full interaction-layer Sumcheck is sound against every ordinary prover strategy. From a false

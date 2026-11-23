@@ -5,14 +5,15 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Signature
+public import ArkLib.Interaction.Core.Transcript
 
 /-!
-# Protocol trees and observations
+# Protocol trees and outcomes
 
 A protocol is a tree with trivial leaves. Shape paths contain public branch choices, while
 runtime transcripts additionally record challenges and oracle payloads. The verifier view is
-a fibre over the shape path. Node indices are structural and never contain erased moves.
+the set of `viewSig` transcripts over a shape path (`TranscriptAt`). Node indices are structural
+and never contain erased moves.
 -/
 
 @[expose] public section
@@ -29,22 +30,24 @@ abbrev Protocol := FreeM PlainPoly.{u} PUnit.{u + 1}
 explicit result types describe trees whose leaves retain authored return values. -/
 abbrev OracleProtocol (Result : Type u := PUnit.{u + 1}) := FreeM OraclePoly.{u, q} Result
 
-/-- The oracle verifier's observation, over a specified shape path. -/
+/-- The oracle verifier's view of a run: the transcripts at `viewSig` that follow the shape
+path `p`. -/
 def View (s : OracleProtocol.{u, q}) (p : Path s) : Type u :=
-  {v : PathAlong viewSig s // projectPathAlong viewSig s v = p}
+  TranscriptAt viewSig s p
 
 /-- Erase oracle payloads from a completed run, retaining its exact shape path. -/
-def toView (s : OracleProtocol.{u, q}) (tr : PathAlong oracleSig s) :
-    View s (projectPathAlong oracleSig s tr) :=
-  ⟨PathAlong.mapMoves eraseOracle s tr, projectPathAlong_mapMoves eraseOracle s tr⟩
+def toView (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+    View s tr.path :=
+  ⟨Transcript.mapMoves eraseOracle tr, Transcript.path_mapMoves eraseOracle tr⟩
 
-/-- All plain moves are visible, including the challenges erased from the shape. -/
+/-- All plain moves are visible, including the challenges erased from the shape: the transcripts
+at `plainSig` that follow the shape path `p`. -/
 def PlainView (s : Protocol.{u}) (p : Path s) : Type u :=
-  {tr : PathAlong plainSig s // projectPathAlong plainSig s tr = p}
+  TranscriptAt plainSig s p
 
 /-- The full plain transcript with its shape certificate. -/
-def toPlainView (s : Protocol.{u}) (tr : PathAlong plainSig s) :
-    PlainView s (projectPathAlong plainSig s tr) := ⟨tr, rfl⟩
+def toPlainView (s : Protocol.{u}) (tr : Transcript plainSig s) :
+    PlainView s tr.path := ⟨tr, rfl⟩
 
 /-- A node occurrence selected by source branches, in the branch universe. -/
 def Node {P : PFunctor.{uA, u}} : FreeM P PUnit.{u + 1} → Type u
@@ -165,14 +168,14 @@ def ChallengeNode.appendEquiv {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePo
 
 /-- A challenge value changes the transcript but not the projected branch. -/
 theorem plain_challenge_shape (C : Type u) (s : Protocol.{u})
-    (x y : C) (tr : PathAlong plainSig s) :
-    projectPathAlong plainSig (.liftBind (.challenge C) (fun _ => s)) ⟨x, tr⟩ =
-      projectPathAlong plainSig (.liftBind (.challenge C) (fun _ => s)) ⟨y, tr⟩ := rfl
+    (x y : C) (tr : Transcript plainSig s) :
+    Transcript.path (l := plainSig) (s := (.liftBind (.challenge C) (fun _ => s))) ⟨x, tr⟩ =
+      Transcript.path (l := plainSig) (s := (.liftBind (.challenge C) (fun _ => s))) ⟨y, tr⟩ := rfl
 
 /-- An oracle payload likewise changes no branch of the source path. -/
 theorem oracle_payload_shape (X : Type u) (I : OracleInterface.{u, q} X)
-    (s : OracleProtocol.{u, q}) (x y : X) (tr : PathAlong oracleSig s) :
-    projectPathAlong oracleSig (.liftBind (.oracle X I) (fun _ => s)) ⟨x, tr⟩ =
-      projectPathAlong oracleSig (.liftBind (.oracle X I) (fun _ => s)) ⟨y, tr⟩ := rfl
+    (s : OracleProtocol.{u, q}) (x y : X) (tr : Transcript oracleSig s) :
+    Transcript.path (l := oracleSig) (s := (.liftBind (.oracle X I) (fun _ => s))) ⟨x, tr⟩ =
+      Transcript.path (l := oracleSig) (s := (.liftBind (.oracle X I) (fun _ => s))) ⟨y, tr⟩ := rfl
 
 end Interaction.Core

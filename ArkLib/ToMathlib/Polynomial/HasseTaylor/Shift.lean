@@ -617,7 +617,8 @@ theorem normalizedBackwardTaylorError_smul (c a : R) (p : R[X]) (d : ℕ) :
     normalizedBackwardTaylorError a (c • p) d =
       c • normalizedBackwardTaylorError a p d := by
   ext n
-  simp only [coeff_normalizedBackwardTaylorError, backwardTaylorResidual_smul, coeff_smul]
+  simp only [coeff_normalizedBackwardTaylorError, backwardTaylorResidual_smul,
+    AddMonoidAlgebra.coeff_smul_apply]
 
 @[simp]
 theorem normalizedBackwardTaylorError_zero_poly (a : R) (d : ℕ) :

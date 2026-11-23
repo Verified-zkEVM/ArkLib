@@ -129,7 +129,7 @@ private lemma hachi_toPoly :
     (Φ).φ.toPoly = (Polynomial.X : (ZMod q)[X]) ^ (2 ^ α) + 1 := by
   change (CompPoly.CPolynomial.X ^ (2 ^ α) + 1 : CompPoly.CPolynomial (ZMod q)).toPoly = _
   rw [CompPoly.CPolynomial.toPoly_add, CompPoly.CPolynomial.toPoly_pow,
-      CompPoly.CPolynomial.toPoly_X, CompPoly.CPolynomial.toPoly_one]
+      CompPoly.CPolynomial.X_toPoly, CompPoly.CPolynomial.toPoly_one]
 
 omit [NeZero q] in
 /-- The degree of the modulus is `2^α`. -/

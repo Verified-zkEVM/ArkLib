@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Interaction.Core.Security.RoundByRound
 import ArkLibTest.Interaction.Core.Oracle
+import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-! Nonvacuous model examples and fixed-prefix bounds on a protocol with a challenge. -/
 
@@ -75,7 +76,7 @@ example : ¬ knowledgeSoundnessWith model problem problem judgement failedExtrac
   have bad := (h true trivial ()).2.2
   simp [failedExtraction, OutputJudgement.valid, judgement, problem] at bad
 
-/-- Deleting the experiment's entire mass cannot satisfy observation preservation. -/
+/-- Deleting the experiment's entire mass cannot satisfy outcome preservation. -/
 noncomputable def deletedExtraction : ExtractionInterface model (problem.Witness ()) where
   Ext := Unit
   experiment _ _ _ := 0
@@ -99,7 +100,7 @@ def loggedVerifier : Verifier service zero Unit (fun _ => Nat) where
     let n ← liftM (service.query 6)
     pure n
 
-def loggedExtractor : Extractor.Straightline service zero (fun _ : Unit => Nat) (fun _ => Nat) :=
+def loggedExtractor : Extractor.StraightLine service zero (fun _ : Unit => Nat) (fun _ => Nat) :=
   fun _ _ out proverLog verifierLog => do
     let n ← liftM (service.query 9)
     pure (out + proverLog.length + verifierLog.length + n)
@@ -136,7 +137,7 @@ open Interaction.Core.OracleTests
 def oracleProver : Prover oracleSig OracleSpec.emptySpec tree (fun _ => Nat) :=
   pure ⟨fun n => n + 5, pure 7⟩
 
-def oracleExtractor : Extractor.OracleStraightline OracleSpec.emptySpec tree
+def oracleExtractor : Extractor.OracleStraightLine OracleSpec.emptySpec tree
     (fun _ : Unit × (∀ i, emptyFamily.Realization i) => Nat) (fun _ => Nat) :=
   fun _ _ out proveLog verifyLog => pure (out + proveLog.length + verifyLog.length)
 
@@ -265,7 +266,7 @@ theorem decide_run' (stmt : Bool) (p) (v) (st : Nat) :
   rel_admissible _ _ _ _ := trivial
 
 theorem validAcceptance_iff {langOut : Nat → Prop} (hl : ∀ t, langOut t) (stmt : Bool)
-    (tr : PathAlong plainSig coin) :
+    (tr : Transcript plainSig coin) :
     coinVerifier.validAcceptance tick stmt tr langOut ↔
       (stmt || (tr.1 : Bool)) = true := by
   rcases tr with ⟨x, ⟨⟩⟩
@@ -279,7 +280,7 @@ theorem validAcceptance_iff {langOut : Nat → Prop} (hl : ∀ t, langOut t) (st
 /-- The state is true at the root of a true statement and at a leaf with a true challenge. -/
 def coinState : StateFunction plainSig coin Bool (boolProblem.admissible ())
     (boolProblem.language ()) (fun stmt tr => coinVerifier.validAcceptance tick stmt tr
-      (anyOutput.language (projectPathAlong plainSig coin tr))) where
+      (anyOutput.language tr.path)) where
   toFun {_} sp history stmt := match sp, history with
     | .root _, _ => stmt = true
     | .down _ _, history => (stmt || (history.1.1 : Bool)) = true
@@ -431,10 +432,10 @@ contract.
 abbrev payloadMsg : Protocol := .liftBind (.message Nat) (fun _ => .pure ⟨⟩)
 
 /-- The payload of a completed transcript. -/
-def payloadOf (tr : PathAlong plainSig payloadMsg) : Nat := tr.1
+def payloadOf (tr : Transcript plainSig payloadMsg) : Nat := tr.1
 
 /-- The output witness carrier: an index bounded by the payload. -/
-abbrev BoundedIndex (tr : PathAlong plainSig payloadMsg) : Type := Fin (payloadOf tr + 1)
+abbrev BoundedIndex (tr : Transcript plainSig payloadMsg) : Type := Fin (payloadOf tr + 1)
 
 /-- Accepts when the payload equals the statement, and outputs the payload. -/
 def payloadVerifier : Verifier counter payloadMsg Nat (fun _ => Nat) where
@@ -442,7 +443,7 @@ def payloadVerifier : Verifier counter payloadMsg Nat (fun _ => Nat) where
     (pure (if payloadOf v.val = stmt then some (payloadOf v.val) else none))
 
 theorem payload_validAcceptance_iff {langOut : Nat → Prop} (stmt : Nat)
-    (tr : PathAlong plainSig payloadMsg) :
+    (tr : Transcript plainSig payloadMsg) :
     payloadVerifier.validAcceptance tick stmt tr langOut ↔ payloadOf tr = stmt ∧ langOut stmt := by
   rcases tr with ⟨x, ⟨⟩⟩
   have key : ∀ st, (simulateQ tick (payloadVerifier.decide stmt _
@@ -495,7 +496,8 @@ def sendPayload (n : Nat) : TwoParty.Lens.Move plainSig (.message Nat) := n
 def payloadLeaf (n : Nat) : Cursor.Spine payloadMsg (.pure ⟨⟩) := .down (sendPayload n) (.root _)
 
 /-- The full prefix of the run sending payload `n`. -/
-def payloadHistory (n : Nat) : PrefixMoves plainSig (payloadLeaf n) := ⟨⟨sendPayload n, rfl⟩, ⟨⟩⟩
+def payloadHistory (n : Nat) : PartialTranscriptAt plainSig (payloadLeaf n) :=
+  ⟨⟨sendPayload n, rfl⟩, ⟨⟩⟩
 
 /-- Backwards extraction from the output witness `5 : Fin 8` at payload `7` returns `5`. -/
 example : payloadKnowledge.extractRoot 7
@@ -542,7 +544,7 @@ def payloadProver (n : Nat) (w : Fin (n + 1)) : Prover plainSig counter payloadM
 
 /-- Returns the value of the transcript-indexed output witness. -/
 def payloadExtractor :
-    Extractor.Straightline counter payloadMsg (fun _ : Nat => Nat) BoundedIndex :=
+    Extractor.StraightLine counter payloadMsg (fun _ : Nat => Nat) BoundedIndex :=
   fun _ _ w _ _ => pure w.val
 
 /-- Answers every ambient query with zero; the payload protocol has no challenge. -/
@@ -556,7 +558,7 @@ def payloadHandler : QueryImpl (counter + challengeSpec plainSig payloadMsg) Id
 theorem payload_extractionGame (w : Fin 8) :
     simulateQ payloadHandler (extractionGame payloadVerifier (fun _ w => w) payloadExtractor 7
       (payloadProver 7 w)) = ((⟨⟨sendPayload 7, ⟨⟩⟩, w, some 7⟩, some w.val) :
-        Observation plainSig payloadMsg BoundedIndex (fun _ => Nat) × Option Nat) :=
+        Outcome plainSig payloadMsg BoundedIndex (fun _ => Nat) × Option Nat) :=
   rfl
 
 run_cmd do
@@ -570,8 +572,8 @@ def countingProver : Prover plainSig counter coin (fun _ => Nat) := do
   let _ ← liftM (counter.query ())
   pure fun _ => liftM (counter.query ())
 
-/-- The observation of a run with challenge `b`. -/
-def coinObs (stmt b : Bool) : Observation plainSig coin (fun _ => Nat) (fun _ => Nat) :=
+/-- The outcome of a run with challenge `b`. -/
+def coinObs (stmt b : Bool) : Outcome plainSig coin (fun _ => Nat) (fun _ => Nat) :=
   ⟨⟨b, ⟨⟩⟩, 1, if (stmt || b) = true then some 2 else none⟩
 
 theorem experiment_counting (stmt : Bool) :
@@ -579,14 +581,14 @@ theorem experiment_counting (stmt : Bool) :
       (($ᵗ Bool : ProbComp Bool) >>= fun b => pure (coinObs stmt b)) := by
   rfl
 
-/-- Every set of observations of the coin protocol is measurable. -/
-instance : MeasurableSpace (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) := ⊤
+/-- Every set of outcomes of the coin protocol is measurable. -/
+instance : MeasurableSpace (Outcome plainSig coin (fun _ => Nat) (fun _ => Nat)) := ⊤
 
-/-- The observations of the coin protocol form a discrete measurable space. -/
-instance : DiscreteMeasurableSpace (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) :=
+/-- The outcomes of the coin protocol form a discrete measurable space. -/
+instance : DiscreteMeasurableSpace (Outcome plainSig coin (fun _ => Nat) (fun _ => Nat)) :=
   ⟨fun _ => MeasurableSpace.measurableSet_top⟩
 
-instance : Countable (PathAlong plainSig coin) :=
+instance : Countable (Transcript plainSig coin) :=
   Function.Injective.countable (β := Bool) (f := fun tr => tr.1) fun
     | ⟨_, ⟨⟩⟩, ⟨_, ⟨⟩⟩, rfl => rfl
 
@@ -596,7 +598,7 @@ noncomputable abbrev coinModel :=
 
 /-- The outcome of the counting prover is the uniform challenge bit mapped through `coinObs`. -/
 theorem outcome_counting (stmt : Bool)
-    (S : Set (Observation plainSig coin (fun _ => Nat) (fun _ => Nat))) :
+    (S : Set (Outcome plainSig coin (fun _ => Nat) (fun _ => Nat))) :
     coinModel.outcome stmt countingProver S =
       𝒟[($ᵗ Bool : ProbComp Bool)] (coinObs stmt ⁻¹' S) := by
   change 𝒟[experiment (pure 0) tick draw (coinVerifier.run stmt countingProver)] S = _
@@ -625,7 +627,7 @@ example : coinModel.outcome false countingProver
     cases h
   · exact iff_of_true rfl rfl
 
-/-- No mass is missing: rejection is an observation of the run. -/
+/-- No mass is missing: rejection is an outcome of the run. -/
 example : coinModel.outcome false countingProver
     Set.univ = 1 := by
   rw [outcome_counting, Set.preimage_univ]
@@ -646,15 +648,15 @@ instance : ∀ b, DiscreteMeasurableSpace (coinInput.Witness () b) :=
 instance : ∀ b, Countable (coinInput.Witness () b) := fun _ =>
   inferInstanceAs (Countable (Bool × Nat))
 
-/-- Judge a coin observation against `anyOutput`: the prover's output is its claimed statement,
+/-- Judge a coin outcome against `anyOutput`: the prover's output is its claimed statement,
 and every accepted claim has the unit witness. -/
 def coinJudgement :
-    OutputJudgement (Observation plainSig coin (fun _ => Nat) (fun _ => Nat)) anyOutput :=
-  .ofObservation anyOutput (fun _ n => n) (fun _ _ _ => ())
+    OutputJudgement (Outcome plainSig coin (fun _ => Nat) (fun _ => Nat)) anyOutput :=
+  .ofOutcome anyOutput (fun _ n => n) (fun _ _ _ => ())
 
 /-- Reads the challenge from the transcript and the sizes of both participant logs. -/
 def coinLoggedExtractor :
-    Extractor.Straightline counter coin (coinInput.Witness ()) (fun _ => Nat) :=
+    Extractor.StraightLine counter coin (coinInput.Witness ()) (fun _ => Nat) :=
   fun _ tr _ proveLog verifyLog => pure (tr.1, proveLog.length + verifyLog.length)
 
 /-- Reads the challenge and the prover output from the transcript alone. -/
@@ -664,7 +666,7 @@ def coinTranscriptExtractor :
 
 theorem accepted_of_mem_support (stmt : Bool)
     (adv : Prover plainSig counter coin (fun _ => Nat))
-    {obs : Observation plainSig coin (fun _ => Nat) (fun _ => Nat)}
+    {obs : Outcome plainSig coin (fun _ => Nat) (fun _ => Nat)}
     (h : obs ∈ support (coinVerifier.run stmt adv))
     {t : Nat} (ht : obs.2.2 = some t) : (stmt || (obs.1.1 : Bool)) = true := by
   have hv := Verifier.verdict_mem_support_run coinVerifier stmt adv h
@@ -675,11 +677,11 @@ theorem accepted_of_mem_support (stmt : Bool)
   simp [hc] at hv
 
 /-- An extractor that returns the transcript's challenge bit never misses a witness. -/
-theorem bad_eq_zero (E : Extractor.Straightline counter coin (coinInput.Witness ()) (fun _ => Nat))
+theorem bad_eq_zero (E : Extractor.StraightLine counter coin (coinInput.Witness ()) (fun _ => Nat))
     (hE : ∀ stmt tr out proveLog verifyLog, ∀ w ∈ support (E stmt tr out proveLog verifyLog).run,
       ∃ n, w = some ((tr.1 : Bool), n))
     (stmt : Bool) (adv : Prover plainSig counter coin (fun _ => Nat)) :
-    (classicalStraightline (coinInput.Witness ()) coinVerifier (pure 0) tick draw
+    (classicalStraightLine (coinInput.Witness ()) coinVerifier (pure 0) tick draw
       (fun _ n => n)).experiment E stmt adv
       {z | coinJudgement.valid z.1 ∧ ∀ wit ∈ z.2, ¬ coinInput.rel () stmt wit} = 0 := by
   refine evalDist.apply_eq_zero_of_disjoint_support _ (Set.to_countable _).measurableSet ?_
@@ -696,17 +698,19 @@ theorem bad_eq_zero (E : Extractor.Straightline counter coin (coinInput.Witness 
 
 /-- The logged extractor certifies classical knowledge soundness with zero error. -/
 example : knowledgeSoundnessWith coinModel coinInput anyOutput coinJudgement
-    (classicalStraightline (coinInput.Witness ()) coinVerifier (pure 0) tick draw
+    (classicalStraightLine (coinInput.Witness ()) coinVerifier (pure 0) tick draw
       (fun _ n => n)) coinLoggedExtractor 0 := fun stmt _ adv =>
-  ⟨classicalStraightline_marginal _ _ _ _ _ _ _ _ _, le_refl _,
-    (bad_eq_zero coinLoggedExtractor (fun _ _ _ _ _ _ hw => ⟨_, hw⟩) stmt adv).le⟩
+  ⟨classicalStraightLine_marginal _ _ _ _ _ _ _ _ _, le_refl _,
+    (bad_eq_zero coinLoggedExtractor
+      (fun _ _ _ _ _ _ hw => ⟨_, OracleComp.eq_of_mem_support_pure _ hw⟩) stmt adv).le⟩
 
 /-- The transcript-only extractor certifies the same bound without either log. -/
 example : knowledgeSoundnessWith coinModel coinInput anyOutput coinJudgement
     (classicalTranscriptOnly (coinInput.Witness ()) coinVerifier (pure 0) tick draw
       (fun _ n => n)) coinTranscriptExtractor 0 := fun stmt _ adv =>
   ⟨classicalTranscriptOnly_marginal _ _ _ _ _ _ _ _ _, le_refl _,
-    (bad_eq_zero coinTranscriptExtractor.withLogs (fun _ _ _ _ _ _ hw => ⟨_, hw⟩) stmt adv).le⟩
+    (bad_eq_zero coinTranscriptExtractor.withLogs
+      (fun _ _ _ _ _ _ hw => ⟨_, OracleComp.eq_of_mem_support_pure _ hw⟩) stmt adv).le⟩
 
 /-- Records ambient queries and challenges in order, answering every challenge with `b`. -/
 def traceHandler (b : Bool) :
@@ -739,14 +743,14 @@ end Interaction.Core.SecurityTests
 
 run_cmd do
   for decl in [``Interaction.Core.completeness, ``Interaction.Core.soundness,
-      ``Interaction.Core.knowledgeSoundnessWith, ``Interaction.Core.classicalStraightline,
+      ``Interaction.Core.knowledgeSoundnessWith, ``Interaction.Core.classicalStraightLine,
       ``Interaction.Core.classicalTranscriptOnly, ``Interaction.Core.Verifier.runWithLog_fst,
-      ``Interaction.Core.OracleVerifier.classicalStraightline, ``Interaction.Core.rbrSoundness,
+      ``Interaction.Core.OracleVerifier.classicalStraightLine, ``Interaction.Core.rbrSoundness,
       ``Interaction.Core.rbrKnowledgeSoundness, ``Interaction.Core.Verifier.verdict_mem_support_run,
       ``Interaction.Core.mem_support_extractionGame,
       ``Interaction.Core.map_run_withLogging_addLift_fst,
       ``Interaction.Core.OracleVerifier.runWithLog_fst,
-      ``Interaction.Core.classicalStraightline_marginal,
+      ``Interaction.Core.classicalStraightLine_marginal,
       ``Interaction.Core.classicalTranscriptOnly_marginal,
       ``Interaction.Core.SecurityTests.coin_rbrSoundness,
       ``Interaction.Core.SecurityTests.coin_not_rbrSoundness,

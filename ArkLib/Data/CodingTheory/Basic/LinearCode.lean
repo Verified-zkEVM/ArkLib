@@ -182,10 +182,10 @@ defined as an `F`-submodule of `ι → A`. -/
 abbrev ModuleCode.{u, v, w} (ι : Type u) (F : Type v) [Semiring F] -- ModuleCode ι F A
     (A : Type w) [AddCommMonoid A] [Module F A] : Type (max u w) := Submodule F (ι → A)
 
-abbrev LinearCode.{u, v} (ι : Type u) [Fintype ι] (F : Type v) [Semiring F] : Type (max u v) :=
+abbrev LinearCode.{u, v} (ι : Type u) (F : Type v) [Semiring F] : Type (max u v) :=
   Submodule F (ι → F)
 
-lemma LinearCode_is_ModuleCode.{u, v} {ι : Type u} [Fintype ι] {F : Type v} [Semiring F] :
+lemma LinearCode_is_ModuleCode.{u, v} {ι : Type u} {F : Type v} [Semiring F] :
     LinearCode ι F = ModuleCode ι F F := by
   rfl
 
@@ -436,8 +436,9 @@ lemma IsMaxCADomain.eq_of_card_compl_inter_lt_minDist [Semiring F] [Module F A] 
 def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
   Code.dist LC.carrier = length LC - dim LC + 1
 
+omit [Fintype ι] in
 /-- Every linear code over a field `F` is a finitely generated `F`-module. -/
-lemma linear_code_is_FG [Field F] (LC : LinearCode ι F) : LC.FG := Submodule.FG.of_finite
+lemma linear_code_is_FG [Finite ι] [Field F] (LC : LinearCode ι F) : LC.FG := Submodule.FG.of_finite
 
 /-- Module code defined by left multiplication by its generator matrix.
 For a matrix `G : Matrix κ ι F` (over field `F`) and module `A` over `F`, this generates
@@ -456,10 +457,11 @@ noncomputable def fromColGenMat [CommRing F] (G : Matrix ι κ F) : LinearCode �
 noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode κ F :=
   LinearMap.ker H.mulVecLin
 
+omit [Fintype ι] in
 /-- Given a linear code of length `ι` and dimension `dim` over a field `F`, there exists a
 `dim × ι` matrix over `F` which generates the code.
 Theorem 2.2.7 [GRS25]. -/
-lemma gen_matrix_exists [Field F] (LC : LinearCode ι F) :
+lemma gen_matrix_exists [Finite ι] [Field F] (LC : LinearCode ι F) :
     ∃ (G : Matrix (Fin (dim LC)) ι F), LC = fromRowGenMat G := by
   unfold dim
   unfold fromRowGenMat
@@ -544,6 +546,7 @@ generator matrix as a matrix whose columns are an `F`-basis of the code. -/
 noncomputable def genMatrixCols [Field F] (LC : LinearCode ι F) :
     Matrix ι (Fin (dim LC)) F := (matrixFromBasis LC).transpose
 
+omit [Fintype κ] in
 /-- The dimension of a linear code equals the rank of its associated generator matrix.
 -/
 lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
@@ -578,19 +581,19 @@ lemma dist_eq_minWtCodewords [Ring F] {A : Type*} [DecidableEq A] [AddCommGroup 
     refine congrArg _ (Set.ext fun _ ↦ ⟨fun ⟨u, _, v, _⟩ ↦ ⟨u - v, ?p₁⟩, fun _ ↦ ⟨0, ?p₂⟩⟩) <;>
     rename_i u hu v u_sub_v_weight hvv h_u_mem hv_u_v_rel
     -- aesop (add simp [hammingDist_eq_wt_sub, sub_eq_zero])
-    constructor
-    · rcases hv_u_v_rel with ⟨h_v_mem, h_u_ne_v, h_dist⟩
-      apply Submodule.sub_mem
-      · exact h_u_mem
-      · exact h_v_mem
-    · -- case p₂
-      rcases hv_u_v_rel with ⟨h_v_mem, h_u_ne_v, h_dist⟩
-      constructor
-      · rw [sub_ne_zero]; exact h_u_ne_v
-      · -- ⊢ Code.wt (u - v) = hv
-        -- We know `Code.wt c = h_u_mem`, so we show `Δ₀(0, c) = Code.wt c`
-        rw [← h_dist]
-        simp [Code.wt, hammingDist, sub_eq_zero]
+    · constructor
+      · rcases hv_u_v_rel with ⟨h_v_mem, h_u_ne_v, h_dist⟩
+        apply Submodule.sub_mem
+        · exact h_u_mem
+        · exact h_v_mem
+      · -- case p₂
+        rcases hv_u_v_rel with ⟨h_v_mem, h_u_ne_v, h_dist⟩
+        constructor
+        · rw [sub_ne_zero]; exact h_u_ne_v
+        · -- ⊢ Code.wt (u - v) = hv
+          -- We know `Code.wt c = h_u_mem`, so we show `Δ₀(0, c) = Code.wt c`
+          rw [← h_dist]
+          simp [Code.wt, hammingDist, sub_eq_zero]
     · simp only [SetLike.mem_coe, ne_eq, hammingDist_zero_left]
       rcases hv_u_v_rel with ⟨c, h_c_mem, h_c_ne, h_c_wt⟩
       -- We need to prove the conjunction
@@ -882,7 +885,7 @@ lemma poly_eq_zero_of_dist_lt {n k : ℕ} {F : Type*} [DecidableEq F] [CommRing 
     ] at h_dist
     have h_dist_p : k  ≤
       (@Finset.image (Fin n) F _ ωs {i | Polynomial.eval (ωs i) p = 0} : Finset F).card := by omega
-    by_cases heq_0 : p = 0 <;> try simp [heq_0]
+    by_cases heq_0 : p = 0 <;> simp [heq_0]
     have h_dist := Nat.le_trans h_dist_p (by {
       apply Polynomial.card_le_degree_of_subset_roots (p := p)
       intro x hx
