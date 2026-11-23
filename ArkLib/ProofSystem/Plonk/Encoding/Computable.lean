@@ -65,9 +65,9 @@ def permutationPolynomials (D : EvaluationDomain F n) (cs : ConstraintSystem F m
   fun c => interpolate D (fun i => label (cs.perm (finProdFinEquiv (c, i))))
 
 /-- Encode the public-input contribution on the reserved rows. -/
-def publicInputPolynomial (D : EvaluationDomain F n) (hrows : ℓ ≤ n) (x : Fin ℓ → F) :
+def publicInputPolynomial (D : EvaluationDomain F n) (x : Fin ℓ → F) :
     CPolynomial F :=
-  interpolate D (ConstraintSystem.publicInputTerm hrows x)
+  interpolate D (ConstraintSystem.publicInputTerm x)
 
 /-- Assemble the gate residual from executable polynomials. -/
 def gatePolynomial (q : Selector (CPolynomial F)) (a : Fin 3 → CPolynomial F)
@@ -102,18 +102,18 @@ theorem permutationPolynomials_toPoly (D : EvaluationDomain F n)
 /-- Executable public-input encoding agrees with the mathematical public-input encoding. -/
 @[simp]
 theorem publicInputPolynomial_toPoly (D : EvaluationDomain F n)
-    (hrows : ℓ ≤ n) (x : Fin ℓ → F) :
-    (publicInputPolynomial D hrows x).toPoly =
-      (Plonk.publicInputPolynomial D hrows x).val := by
+    (x : Fin ℓ → F) :
+    (publicInputPolynomial D x).toPoly =
+      (Plonk.publicInputPolynomial D x).val := by
   exact interpolate_toPoly D _
 
 /-- The executable gate residual represents the mathematical residual exactly. -/
 theorem gatePolynomial_toPoly (D : EvaluationDomain F n) (cs : ConstraintSystem F m n)
-    (w : Fin (3 * n) → F) (hrows : ℓ ≤ n) (x : Fin ℓ → F) :
+    (w : Fin (3 * n) → F) (x : Fin ℓ → F) :
     (gatePolynomial (selectorPolynomials D cs) (wirePolynomials D w)
-      (publicInputPolynomial D hrows x)).toPoly =
+      (publicInputPolynomial D x)).toPoly =
       Plonk.gatePolynomial (Plonk.selectorPolynomials D cs) (Plonk.wirePolynomials D w)
-        (Plonk.publicInputPolynomial D hrows x) := by
+        (Plonk.publicInputPolynomial D x) := by
   simp only [gatePolynomial, Plonk.gatePolynomial, CPolynomial.toPoly_add,
     CPolynomial.toPoly_mul, wirePolynomials_toPoly, publicInputPolynomial_toPoly,
     selectorPolynomials, Plonk.selectorPolynomials, interpolate_toPoly]
@@ -123,7 +123,7 @@ def preparedGatePolynomial (D : EvaluationDomain F (ℓ + n))
     (cs : ConstraintSystem F m n) (hℓ : ℓ ≤ m) (x : Fin ℓ → F)
     (w : Fin (3 * (ℓ + n)) → F) : CPolynomial F :=
   gatePolynomial (selectorPolynomials D (cs.prepare hℓ (fun _ => 0)))
-    (wirePolynomials D w) (publicInputPolynomial D (Nat.le_add_right ℓ n) x)
+    (wirePolynomials D w) (publicInputPolynomial D x)
 
 /-- Executable prepared residuals agree with the mathematical prepared residuals. -/
 theorem preparedGatePolynomial_toPoly (D : EvaluationDomain F (ℓ + n))
@@ -131,6 +131,6 @@ theorem preparedGatePolynomial_toPoly (D : EvaluationDomain F (ℓ + n))
     (w : Fin (3 * (ℓ + n)) → F) :
     (preparedGatePolynomial D cs hℓ x w).toPoly =
       Plonk.preparedGatePolynomial D cs hℓ x (Plonk.wirePolynomials D w) :=
-  gatePolynomial_toPoly D _ w _ x
+  gatePolynomial_toPoly D _ w x
 
 end Plonk.Computable

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Core.Oracle.Routing
-import ArkLib.Interaction.Core.Oracle.PrefixResources
+import ArkLib.Interaction.Core.Oracle.SentOracles
 import ArkLibTest.Interaction.Core.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
@@ -137,7 +137,7 @@ def routedSuffix (v : View combined combinedPath) :
     OracleComp (ambient + rawResources.spec) Nat :=
   simulateQ (route v) suffixProgram
 
--- QueryBounds 7, restated: names are retired. Both routed reads of the export query the same
+-- QueryBounds 7, restated: node names are removed. Both routed reads of the export query the same
 -- prefix slot of the composed resources; the suffix's own read queries the suffix slot, which is
 -- distinct.
 example (v : View combined combinedPath) :
@@ -160,7 +160,7 @@ abbrev prefixRoute :=
 -- QueryBounds 6, restated: at the join, the prefix decision's resources are the inputs and the
 -- prefix oracles, which have no index for the suffix send. Routed into the composed run, every
 -- prefix decision program, whatever its cost, queries only ambient oracles and the prefix slot,
--- never the suffix slot. The budget clause of the frozen row is moot.
+-- never the suffix slot. The budget clause of the old-layer row is moot.
 example : (PEmpty ⊕ oracleIdx single (Path.split single (fun _ => single) combinedPath).1) =
     (PEmpty.{1} ⊕ (PUnit.{1} ⊕ PEmpty.{1})) := rfl
 
@@ -251,36 +251,40 @@ example : loggedSummary.{0} 1 2 =
   loggedSummary_eq 1 2
 
 
-/-- The composed verifier's produced trace for the same tag-answering execution. -/
-def traced (a b : Nat) : OracleVerifier.TracedRun composed.{0, 0, 0, 0} (fun _ => Nat) :=
-  simulateQ tagHandler (composed.runWithTrace () noData (prover a b))
+/-- The composed verifier's step log for the same tag-answering execution. -/
+def composedStepLog (a b : Nat) :
+    OracleVerifier.StepLog composed.{0, 0, 0, 0} (fun _ => Nat) :=
+  simulateQ tagHandler (composed.runWithStepLog () noData (prover a b))
 
-/-- A raw query has its canonical name in the actual terminal phase's available context. -/
+/-- A raw query has its node name among the available resources of the decision step. -/
 def rawAvailable (a b : Nat) (q : rawResources.spec.Domain) : Prop :=
-  ∃ i : ((traced a b).terminalPhase.availableContext none').Index,
-    FullPrefix.queryName none' (traced a b).terminalPhase.prefix i =
-      FullPrefix.queryName none'
-        (FullPrefix.complete combined ⟨a, b, ⟨⟩⟩) q
+  ∃ i : ((composedStepLog a b).decisionStep.availableContext none').Index,
+    TranscriptPrefix.queryNode none' (composedStepLog a b).decisionStep.before i =
+      TranscriptPrefix.queryNode none'
+        (TranscriptPrefix.ofTranscript combined ⟨a, b, ⟨⟩⟩) q
 
-/-- Every raw query names a resource available at this execution's actual terminal prefix. -/
+/-- Every raw query names a resource available at the transcript prefix of this execution's
+decision step. -/
 theorem raw_available (a b : Nat) (q : rawResources.spec.Domain) : rawAvailable a b q := by
-  have terminal_prefix_eq : (traced a b).terminalPhase.prefix =
-      FullPrefix.complete combined ⟨a, b, ⟨⟩⟩ := by kernel_rfl
+  have decision_before_eq : (composedStepLog a b).decisionStep.before =
+      TranscriptPrefix.ofTranscript combined ⟨a, b, ⟨⟩⟩ := by kernel_rfl
   unfold rawAvailable
-  generalize phase_eq : (traced a b).terminalPhase = phase
-  rw [phase_eq] at terminal_prefix_eq
-  dsimp only [SlotPhase.availableContext]
-  rw [terminal_prefix_eq]
+  generalize step_eq : (composedStepLog a b).decisionStep = step
+  rw [step_eq] at decision_before_eq
+  dsimp only [LoggedStep.availableContext]
+  rw [decision_before_eq]
   exact ⟨q, rfl⟩
 
-/-- Ambient queries are unrestricted; resource queries must name an available terminal resource. -/
-def terminalAllowed (a b : Nat) : (ambient + rawResources.spec).Domain → Prop
+/-- Ambient queries are unrestricted; resource queries must name a resource available at the
+decision step. -/
+def decisionAllowed (a b : Nat) : (ambient + rawResources.spec).Domain → Prop
   | .inl _ => True
   | .inr q => rawAvailable a b q
 
-/-- The same routed program used by the cost bound has canonical terminal availability. -/
+/-- The same routed program used by the cost bound only queries resources available at the
+decision step. -/
 theorem routed_available (a b : Nat) (v : View combined combinedPath) :
-    AllQueriesSatisfy (routedSuffix v) (terminalAllowed a b) := by
+    AllQueriesSatisfy (routedSuffix v) (decisionAllowed a b) := by
   apply allQueriesSatisfy_of_forall
   intro q
   cases q with

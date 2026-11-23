@@ -31,7 +31,7 @@ abbrev combinedPath (guess : Bool) : Path bitCombined := ⟨⟨⟩, guess, ⟨�
 /-- The export returned by the prefix. -/
 abbrev exportMap (v : View bitFirst firstPath) := bitPrefix.outputMap () firstPath v
 
--- RuntimeQueryBounds 2, restated: names are retired. The export's only query is the input slot
+-- RuntimeQueryBounds 2, restated: node names are removed. The export's only query is the input slot
 -- `.inl ()` of the prefix resources.
 example (v : View bitFirst firstPath) :
     (exportMap v).impl ⟨(), ()⟩ = liftM (firstResources.spec.query (.inl ⟨(), ()⟩)) := rfl

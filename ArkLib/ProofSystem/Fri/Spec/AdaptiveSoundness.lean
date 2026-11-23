@@ -23,7 +23,7 @@ namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec ReedSolomon Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [SampleableType F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [SampleableType F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 

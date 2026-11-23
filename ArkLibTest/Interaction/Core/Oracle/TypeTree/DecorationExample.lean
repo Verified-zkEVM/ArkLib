@@ -68,7 +68,7 @@ def falseOracle : OracleProtocol :=
 def trueOracle : OracleProtocol :=
   .liftBind (.oracle (Fin 3) OracleInterface.instDefault) (fun _ => trueFuture)
 
--- DecorationExample fixture: the frozen tree's receiver-owned root is re-authored as a prover
+-- DecorationExample fixture: the old layer's receiver-owned root is re-authored as a prover
 -- message, since challenges never select the shape.
 /-- A public bit selects two different oracle nodes and two different public futures. -/
 def mixedTree : OracleProtocol :=
@@ -91,7 +91,7 @@ def falsePath : Path mixedTree := ⟨false, ⟨⟩, ⟨(0 : Fin 2), ⟨⟩⟩⟩
 example : @OracleInterface.Query Bool ((pathFamily mixedTree falsePath).interface (.inl ⟨⟩)) =
     Unit := rfl
 
--- DecorationExample 8, restated: decoration restriction is retired. The position at the `false`
+-- DecorationExample 8, restated: decoration restriction is removed. The position at the `false`
 -- oracle node carries the `Bool` interface, and the cursor through `false` selects the `Bool`
 -- oracle subtree with its future.
 /-- The `false` oracle node carries the `Bool` interface. -/

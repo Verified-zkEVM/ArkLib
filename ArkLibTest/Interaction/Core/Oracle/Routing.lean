@@ -172,9 +172,10 @@ def resultSummary (hidden secret : Nat) : Nat × Option ((Nat × Nat) × Nat) ×
   (result.1.2.1, result.1.2.2.map (fun z => (z.1, z.2 ⟨⟩)), result.2)
 
 /-! Additional passive composition coverage. Both verifier decisions follow the whole
-interaction. The challenge is sampled independently of resources. The disposition inventory
-records the retired export-derived message and its former schedule explicitly; it does not
-identify this example with that contract or with a produced-prefix availability certificate. -/
+interaction. The challenge is sampled independently of resources. The port table records
+explicitly the export-derived message that P1 rules out, together with its former schedule. It
+does not identify this example with that contract, or with a proof that an oracle was sent at a
+produced transcript prefix. -/
 example (hidden secret : Nat) : resultSummary hidden secret =
     (secret + 23 + 50, some ((20, 23), 23), [1, 20, 50, 10, 30, 40, 60]) := by
   unfold resultSummary observed composed

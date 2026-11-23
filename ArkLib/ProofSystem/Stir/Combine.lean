@@ -6,6 +6,7 @@ Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Au
 -/
 module
 
+public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Cases
 public import Mathlib.Tactic.LinearCombination
@@ -15,7 +16,6 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
-public import ArkLib.ToMathlib.Polynomial.EvalExt
 
 
 /-! Section 4.5 from STIR [ACFY24stir]
@@ -396,7 +396,7 @@ private lemma glorious_lemma
     (1 - rho - 1 / (↑m))))
   (hrho : rho = n / (↑m : ℚ≥0)) :
   ↑rho + 1 / ↑(m) < 1 - δ := by
-  all_goals simp_all +decide [lt_tsub_iff_left]
+  simp_all +decide [lt_tsub_iff_left]
   ring_nf at *
   exact hδLt.2.trans_le' (by norm_cast)
 
@@ -470,32 +470,30 @@ lemma master_lemma
       simp only [q, Polynomial.eval_mul, Polynomial.eval_X]
       rw [hv_eval i ⟨j, hj⟩ x hx, hv_eval i ⟨j + 1, h_fin⟩ x hx]
       ring
+    have hcard : dstar + 1 ≤ (S.image φ).card := by
+      rw [Order.add_one_le_iff, Finset.card_image_of_injective _ φ.injective]
+      have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
+        glorious_lemma
+          (by simpa using hδLt)
+          (by {
+            simp only [rate]
+            rfl
+          })
+      have h :=
+        le_trans
+          (le_of_lt <|
+            even_more_glorious_lemma (m := Fintype.card ι)
+              (by simp) (by {
+                rw [ReedSolomon.rateOfLinearCode_eq_min_div,
+                    min_eq_left (by omega)] at h
+                simpa using h
+              }))
+          hS_card
+      norm_cast at h
     have hq_coincide :=
-      Polynomial.eq_of_eval_eq_degree
-        (q := v i ⟨j + 1, h_fin⟩)
-        hq_deg (lt_trans (hv_deg _ _) (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self dstar)))
-        (Finset.image φ S) (by {
-          simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
-          rw [Finset.card_image_of_injective _ φ.injective]
-          have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
-            glorious_lemma
-              (by simpa using hδLt)
-              (by {
-                simp only [rate]
-                rfl
-              })
-          have h :=
-            le_trans
-              (le_of_lt <|
-                even_more_glorious_lemma (m := Fintype.card ι)
-                  (by simp) (by {
-                    rw [ReedSolomon.rateOfLinearCode_eq_min_div,
-                        min_eq_left (by omega)] at h
-                    simpa using h
-                  }))
-              hS_card
-          norm_cast at h
-        })
+      Polynomial.eq_of_degrees_lt_of_eval_finset_eq (S.image φ)
+        (hq_deg.trans_le (Nat.cast_le.mpr hcard))
+        ((hv_deg i ⟨j + 1, h_fin⟩).trans_le (Nat.cast_le.mpr ((Nat.le_succ _).trans hcard)))
         (by
           intro y hy
           obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy
@@ -535,7 +533,7 @@ theorem combine_theorem
     rw [Fintype.card_eq_zero_iff] at hempty
     exists (fun i j => False.elim <| hempty.1 j)
     intro i
-    simp only [code, Submodule.mem_map]
+    simp only [ReedSolomon.code, Submodule.mem_map]
     exists 0
     simp only [zero_mem, map_zero, true_and]
     ext j
@@ -610,7 +608,7 @@ theorem combine_theorem
           exists S
           obtain ⟨v, hagr⟩ := hagr
           simp only [ge_iff_le, hcard, true_and]
-          simp only [code, Submodule.mem_map, forall_and] at hagr
+          simp only [ReedSolomon.code, Submodule.mem_map, forall_and] at hagr
           rcases hagr with ⟨hagr1, hagr2⟩
           let vaux (i : Fin m) (j : Fin (block_size dstar degs i)) :
             Fin (total_terms dstar degs - 1 + 1) :=
@@ -664,7 +662,8 @@ theorem combine_theorem
       exists (fun i => evalOnPoints φ <| v i (⟨0, hf i⟩))
       intro i
       constructor
-      · simp only [code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Submodule.mem_map]
+      · simp only [ReedSolomon.code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk,
+          Submodule.mem_map]
         exists (v i ⟨0, hf i⟩)
         simp only [Polynomial.degreeLT, ge_iff_le, Submodule.mem_iInf, LinearMap.mem_ker,
           Polynomial.lcoeff_apply, and_true]

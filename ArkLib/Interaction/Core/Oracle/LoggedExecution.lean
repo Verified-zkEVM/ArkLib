@@ -22,7 +22,7 @@ directly as `runtime.run (V.runWithLog stmt data prover)`.
 
 @[expose] public section
 
-universe v u q dI uι uI uJ uS wI wJ
+universe v dI uS wJ
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -66,11 +66,11 @@ theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
     _ = _ := by
       simpa [QueryImpl.Stateful.runState, monad_norm] using logged
 
-/-- Interpret a final decision in a monad with labelled failures, retaining every answered
-query before a failure. The failing query has no answer and contributes no log entry. The
-state transformer lies below the exception transformer, so rejection and failure remain distinct
-and both retain the completed query log. -/
-def decideWithFailureLog {ε : Type} {m : Type → Type v} [Monad m]
+/-- Run the verifier's decision in a monad with labelled failures, and log every query that got
+an answer before a failure. The failing query has no answer and adds no log entry. The state
+transformer sits below the exception transformer. Rejection and failure therefore stay distinct,
+and both keep the completed query log. -/
+def decideCatching {ε : Type} {m : Type → Type v} [Monad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl ambient (ExceptT ε m)) (stmt : S) (p : Path s)
     (view : View s p) (data : (pathResources inputs s p).Data) :
@@ -87,21 +87,6 @@ def decideWithFailureLog {ε : Type} {m : Type → Type v} [Monad m]
         modify (· ++ [⟨q, a⟩])
         pure (.ok a)
   ((simulateQ logged (V.decide stmt p view).run).run).run []
-
-/-- Embedding an optional verdict before closing with the completed transcript's resources
-agrees with closing first and then embedding. Absence remains rejection and creates no failure. -/
-theorem close_optional_ok {ε : Type v} {ι : Type uι} {S : Type uS}
-    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {T : Path s → Type u}
-    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    {inputs : Resources.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
-    (tr : PathAlong oracleSig s) (outcome : Option (T (projectPathAlong oracleSig s tr))) :
-    let p := projectPathAlong oracleSig s tr
-    let resources : (pathResources inputs s p).Data := (data, payloads s tr)
-    let close := fun t => (t, (V.outputMap stmt p (toView s tr)).f resources)
-    (Except.ok outcome : Except ε (Option (T p))).map (Option.map close) =
-      Except.ok (outcome.map close) := rfl
 
 end OracleVerifier
 end Interaction.Core

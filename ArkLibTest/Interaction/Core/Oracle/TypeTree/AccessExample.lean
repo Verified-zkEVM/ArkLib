@@ -87,7 +87,7 @@ example : (oracles accessTree (projectPathAlong oracleSig accessTree finPath)).R
 example : (Unit ⊕ oracleIdx accessTree (projectPathAlong oracleSig accessTree leftPath)) =
     (Unit ⊕ (PUnit ⊕ PEmpty)) := rfl
 
--- AccessExample 8, restated: decoration restriction is retired. The future after the oracle send
+-- AccessExample 8, restated: decoration restriction is removed. The future after the oracle send
 -- is selected by a cursor whose oracle edge carries only a unit marker, and the projected shape of
 -- that future is independent of the payload (`oracle_payload_shape`).
 /-- The public future after the `false`-branch send, selected without a payload. -/

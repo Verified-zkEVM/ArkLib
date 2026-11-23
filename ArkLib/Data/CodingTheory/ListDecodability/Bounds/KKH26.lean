@@ -1271,7 +1271,7 @@ theorem Smooth.exists_pow_projection_structure (domain : ι ↪ F)
     intro y
     set Q : F[X] := X ^ d - C y with hQ
     have hQne : Q ≠ 0 := Polynomial.X_pow_sub_C_ne_zero hd0 y
-    have hQdeg : Q.natDegree = d := Polynomial.natDegree_X_pow_sub_C
+    have hQdeg : Q.natDegree = d := Polynomial.natDegree_X_pow_sub_C y
     have heq : (Finset.univ.filter fun i => domain i ^ d = y)
         = (Finset.univ.filter fun i => Q.eval (domain i) = 0) := by
       apply Finset.filter_congr

@@ -46,7 +46,10 @@ agreement descends.
 
 namespace ReedSolomon
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (CoeffNatDegreeLE add_sum_degreeOf_positiveDegreeFactorClasses_le
+  degreeOf_radicalContent irreducible_rep_of_mem_positiveDegreeFactorClasses
+  mem_positiveDegreeFactorClasses positiveDegreeFactorClasses radicalContent radicalContent_ne_zero)
 
 open Classical in
 /-- Every nonzero ordinary equation with root degree at most `B` and coefficient height at

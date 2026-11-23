@@ -499,19 +499,16 @@ theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
       (s, mkWitness s v fam resp) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWith init impl (scalarStructure k hk) relIn relOut V
       (treeExtractorScalar hk mkWitness) := by
-  intro stmtIn tree hStruct hAcc
+  intro stmtIn tree hStruct _
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
   intro o hvalid
-  have hne : (support init).Nonempty :=
-    Verifier.support_init_nonempty_of_accepting hAcc
-      (branchPathOf (tree2 v challenges) (Fin.cast harity ⟨0, by omega⟩))
   have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
       ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
         ∈ relOut :=
     (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
       (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
-      hpure hne relOut stmtIn o).mp hvalid
+      hpure relOut stmtIn o).mp hvalid
   obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
   have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
   have hcol : SingleRound.collect (fun j : Fin k =>
@@ -552,21 +549,18 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
       (escEventScalar hk relOut escLocal) relIn relOut V
       (treeExtractorScalar hk mkWitness) := by
   classical
-  intro stmtIn tree hStruct hAcc
+  intro stmtIn tree hStruct _
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
   by_cases hesc : escEventScalar hk relOut escLocal stmtIn (tree2 v challenges)
   · exact Or.inl hesc
   refine Or.inr fun o hvalid => ?_
-  have hne : (support init).Nonempty :=
-    Verifier.support_init_nonempty_of_accepting hAcc
-      (branchPathOf (tree2 v challenges) (Fin.cast harity ⟨0, by omega⟩))
   have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
       ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
         ∈ relOut :=
     (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
       (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
-      hpure hne relOut stmtIn o).mp hvalid
+      hpure relOut stmtIn o).mp hvalid
   obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
   have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
   have hcol : SingleRound.collect (fun j : Fin k =>

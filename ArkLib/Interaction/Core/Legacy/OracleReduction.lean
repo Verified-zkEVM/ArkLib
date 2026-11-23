@@ -52,29 +52,14 @@ theorem simulateQ_dropAmbient_of_eq_pure [∀ t, Inhabited (oSpec.Range t)]
     (h : simulateQ (QueryImpl.addLift (QueryImpl.id oSpec) g :
       QueryImpl (oSpec + spec) (OracleComp oSpec)) oa = pure x) :
     simulateQ g (simulateQ dropAmbient oa) = x := by
-  induction oa using OracleComp.inductionOn generalizing x with
-  | pure a =>
-    simp only [simulateQ_pure] at h ⊢
-    exact (OracleComp.pure_inj _ _).mp h
-  | query_bind t k ih =>
-    rcases t with t | t
-    · simp only [simulateQ_bind, simulateQ_query, QueryImpl.addLift_def, OracleQuery.cont_query,
-        OracleQuery.input_query, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply,
-        QueryImpl.id_apply] at h
-      obtain ⟨_, h1, _⟩ := (OracleComp.bind_eq_pure_iff _ _ _).mp h
-      exact absurd h1 (OracleComp.liftM_ne_pure _ _)
-    · simp only [simulateQ_bind, simulateQ_query, QueryImpl.addLift_def, OracleQuery.cont_query,
-        OracleQuery.input_query, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply] at h
-      simp only [simulateQ_bind, simulateQ_query, OracleQuery.cont_query,
-        OracleQuery.input_query, dropAmbient] at h ⊢
-      simp only [OracleComp.bind_eq_pure_iff] at h
-      obtain ⟨y, hy, hk⟩ := h
-      have hgy : g t = y := (OracleComp.pure_inj _ _).mp hy
-      change (simulateQ g (liftM (spec.query t)) >>= fun r =>
-        simulateQ g (simulateQ dropAmbient (k r))) = x
-      simp only [simulateQ_query, OracleQuery.cont_query, OracleQuery.input_query]
-      subst hgy
-      exact ih _ _ hk
+  let fallback : QueryImpl oSpec Id := fun _ => default
+  have routed : QueryImpl.compose g dropAmbient =
+      QueryImpl.compose fallback (QueryImpl.addLift (QueryImpl.id oSpec) g) := by
+    funext t
+    cases t <;>
+      simp [QueryImpl.compose, dropAmbient, QueryImpl.addLift_def, QueryImpl.add, fallback] <;> rfl
+  rw [← QueryImpl.simulateQ_compose, routed, QueryImpl.simulateQ_compose, h]
+  rfl
 
 end DropAmbient
 

@@ -79,9 +79,9 @@ theorem routed_cost (v : View combined combinedPath) :
     WorstCaseCostBound (routedSuffix v) rawCost 5 :=
   program_cost.simulateQ (route v) (route_cost v)
 
-/-- The routed program is available at the produced terminal phase and costs at most five. -/
+/-- The routed program is available at the produced decision step and costs at most five. -/
 theorem routed_available_and_cost (a b : Nat) (v : View combined combinedPath) :
-    AllQueriesSatisfy (routedSuffix v) (terminalAllowed a b) ∧
+    AllQueriesSatisfy (routedSuffix v) (decisionAllowed a b) ∧
       WorstCaseCostBound (routedSuffix v) rawCost 5 :=
   ⟨routed_available a b v, routed_cost v⟩
 
@@ -215,7 +215,7 @@ theorem guess_history (guess : Bool) (secret : Nat) :
 
 -- RuntimeQueryBounds 15, restated: the whole runtime execution of the composed run makes one
 -- import query, for every guess and secret. The proof reflects the cost through the history
--- observation, as in the frozen row.
+-- observation, as in the old-layer row.
 /-- The composed runtime execution makes at most one import query. -/
 theorem import_budget (guess : Bool) (secret : Nat) :
     WorstCaseCostBound (bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret)))
@@ -285,9 +285,10 @@ def proverLog.{qJ} (payload hidden : Nat) (bit : Bool) : QueryLog PhasedRunTests
   ((simulateQ (logger bit) ((verifier.{0, 0, 0, qJ} true).runWithLog () noData
     (prover payload hidden))).run []).1.2.1
 
--- PhasedRun 3, restated: phases are retired, and the query profile is `QueryLog.countQ`. For
--- every payload, private output and challenge, the prover's ambient log is the two setup queries
--- followed by the queries 1, 4 and 5, so query 9 counts twice: `2 + 0` over the two segments.
+-- PhasedRun 3, restated: per-step profiles are removed, and the query profile is
+-- `QueryLog.countQ`. For every payload, private output and challenge, the prover's ambient log is
+-- the two setup queries followed by the queries 1, 4 and 5, so query 9 counts twice: `2 + 0` over
+-- the two segments.
 /-- The prover log contains the two setup queries followed by its three interaction queries. -/
 theorem proverLog_eq (payload hidden : Nat) (bit : Bool) :
     proverLog.{wJ} payload hidden bit = [⟨9, ()⟩, ⟨9, ()⟩] ++ [⟨1, ()⟩, ⟨4, ()⟩, ⟨5, ()⟩] := by

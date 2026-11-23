@@ -48,7 +48,7 @@ Formally: `splitNth f n i = ∑_{j ≡ i (mod n)} aⱼ X^(j/n)`.
 -/
 def splitNth (f : 𝔽[X]) (n : ℕ) (i : Fin n) : 𝔽[X] :=
   if hn : n = 0 then f else -- unreachable: `Fin 0` is uninhabited
-  Polynomial.ofFinsupp
+  AddMonoidAlgebra.ofCoeff
     ⟨
       Finset.filterMap (fun x ↦ if x % n = i.1 then .some (x / n) else .none)
       f.support
@@ -96,7 +96,7 @@ lemma splitNth_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m : ℕ) :
     (splitNth f n i).coeff m = f.coeff (m * n + i.1) := by
   aesop
     (add unsafe [cases Fin])
-    (add simp [splitNth, Polynomial.coeff_ofFinsupp])
+    (add simp splitNth)
 
 @[simp]
 private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m : ℕ) :

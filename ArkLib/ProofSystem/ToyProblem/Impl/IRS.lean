@@ -398,6 +398,7 @@ private lemma nonempty_of_lt_minRelHammingDistCode
   rw [Code.minRelHammingDistCode_of_empty hempty] at hδ
   simp at hδ
 
+omit [Fintype F] in
 /-- On a non-MCA transition, the executable extractor returns a two-row point-list
 element whose affine constraint holds at the sampled challenge.  This is the
 deterministic kernel of the extractor-certified probability bound. -/

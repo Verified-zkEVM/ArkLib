@@ -96,7 +96,7 @@ example (payload : Nat) (bit : Bool) :
 example (payload : Nat) (bit : Bool) :
     (toView phased ⟨true, bit, payload, ⟨⟩⟩).val = ⟨true, bit, ⟨⟩, ⟨⟩⟩ := rfl
 
--- PhasedRun 6: the passive decision returns `none`, the terminal
+-- PhasedRun 6: the passive decision returns `none`, the final
 -- rejection. For every payload, private output and challenge, the run keeps the transcript, the
 -- private output and the full ambient history.
 example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} false payload hidden bit =
@@ -110,7 +110,7 @@ open Interaction.Core.LoggedExecutionTests OracleSpec
 
 /-- Execute the actual closing prover before interpreting its final decision with labelled
 failure. Retain its transcript, private output, prover log, decision log and ambient history. -/
-def terminalObserved (mode old message hidden : Nat) :
+def decisionObserved (mode old message hidden : Nat) :
     (PathAlong oracleSig pairSend × Nat × Except Nat (Option (Nat × Nat)) ×
       QueryLog ambient × List (String × Nat)) × List Nat :=
   (do
@@ -121,25 +121,25 @@ def terminalObserved (mode old message hidden : Nat) :
         (sampler oracleSig pairSend (fun c => liftM (full.query (.inr c))))))
     let p := projectPathAlong oracleSig pairSend tr
     let data : (pathResources inputs pairSend p).Data := (fun _ => old, payloads pairSend tr)
-    let (verdict, log) ← (terminalVerifier mode).decideWithFailureLog terminalHandler () p
+    let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
       (toView pairSend tr) data
     pure (tr, out, verdict.map (Option.map fun t =>
-      (t, ((terminalVerifier mode).outputMap () p (toView pairSend tr)).f data ())),
+      (t, ((decisionVerifier mode).outputMap () p (toView pairSend tr)).f data ())),
       proveLog.fst, describePair p log) : StateM (List Nat) _).run []
 
 /-- Fault 17, rejection and acceptance retain the same actual transcript, private output and
 answered-query logs. Failure is returned by the handler and is neither rejection nor acceptance.
 The failed request has no answer, so it adds no query-answer entry. -/
-theorem terminal_outcomes (old message hidden : Nat) :
-    terminalObserved 1 old message hidden =
+theorem decision_outcomes (old message hidden : Nat) :
+    decisionObserved 1 old message hidden =
       ((⟨(message, hidden), ⟨⟩⟩, hidden, .error 17,
         [⟨9, (9 : Nat)⟩, ⟨0, (0 : Nat)⟩],
         [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
-    terminalObserved 0 old message hidden =
+    decisionObserved 0 old message hidden =
       ((⟨(message, hidden), ⟨⟩⟩, hidden, .ok none,
         [⟨9, (9 : Nat)⟩, ⟨0, (0 : Nat)⟩],
         [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) ∧
-    terminalObserved 3 old message hidden =
+    decisionObserved 3 old message hidden =
       ((⟨(message, hidden), ⟨⟩⟩, hidden, .ok (some (message, old + message)),
         [⟨9, (9 : Nat)⟩, ⟨0, (0 : Nat)⟩],
         [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) := by

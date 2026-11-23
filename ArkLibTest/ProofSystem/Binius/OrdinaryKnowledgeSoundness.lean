@@ -76,16 +76,16 @@ local instance [Finite K] : Fact (Nat.Prime (ringChar K)) := ⟨CharP.prime_ring
 example (γ : ℕ) {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     OracleProof.perfectCompleteness
-        (oracleProof := fullOracleReduction K β γ (ϑ := ϑ)
+        (oracleProof := fullOracleReduction K β evalMultiplier γ (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑))
-        (relation := strictRoundRelation (multpoly := multiplier) K β (ϑ := ϑ)
+        (relation := strictRoundRelation (multpoly := evalMultiplier.polynomial) K β (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑) 0) (init := init) (impl := impl) ∧
       OracleProof.knowledgeSoundness init impl
-        (roundRelation (multpoly := multiplier) K β (ϑ := ϑ)
+        (roundRelation (multpoly := evalMultiplier.polynomial) K β (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑) 0)
-        (fullOracleVerifier K β γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑))
+        (fullOracleVerifier K β evalMultiplier γ (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) (𝓑 := 𝓑))
         (concreteBinaryBasefoldKnowledgeError L ℓ R γ) :=
-  fullOracleReduction_perfectCompleteness_and_knowledgeSoundness K β γ
+  fullOracleReduction_perfectCompleteness_and_knowledgeSoundness K β evalMultiplier γ
 end FullBasefold
 
 section FullFRIBinius
@@ -110,6 +110,7 @@ example (γ : ℕ) {σ : Type} (init : ProbComp σ)
         (TensorPrefix.relIn (biniusProfile κ L K β) h_dim
           (inputInterface κ K β (ϑ := ϑ) h_rate))
         (fullVerifier κ K β (ϑ := ϑ) h_rate h_dim γ)
+        -- Spelled out on purpose: `RingSwitch.concreteError` must unfold to this bound.
         ((κ : ℝ≥0) / Fintype.card L + (ℓ' : ℝ≥0) * (2 / Fintype.card L) +
           Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError L ℓ' R γ) :=
   fullReduction_perfectCompleteness_and_knowledgeSoundness κ K β h_rate h_dim γ init impl

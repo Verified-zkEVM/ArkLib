@@ -277,6 +277,7 @@ instance t {ι₁ ι₂ ι₃}
   (OracleQuery (spec₁ + (spec₂ + spec₃))) := by
   infer_instance
 
+omit [SampleableType R] in
 open Function in
 def oracleVerifier : OracleVerifier oSpec (StmtIn R) (OStmtIn R deg) (StmtOut R) (OStmtOut R deg)
     (pSpec R deg) where
@@ -815,7 +816,7 @@ def liftOutputSimulation {ι : Type} (oSpec : OracleSpec ι) :
     rfl
 
 def liftContextOutput {ι : Type} (oSpec : OracleSpec ι)
-    [DecidableEq R] [SampleableType R] (i : Fin n) :
+    [DecidableEq R] (i : Fin n) :
     OracleVerifier.LiftContextOutput (oStmtExecutableLens R n deg D i)
       (Simple.oracleVerifier R deg D oSpec) where
   outputOracle := .inr (liftOutputSimulation R n deg oSpec)
@@ -876,7 +877,7 @@ def verifierQueryImpl : QueryImpl
         (OracleComp ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)))
 
 /-- The oracle verifier for the `i`-th round of the sum-check protocol. -/
-def oracleVerifier [SampleableType R] (i : Fin n) :
+def oracleVerifier (i : Fin n) :
     OracleVerifier oSpec (StatementRound R n i.castSucc)
     (OracleStatement R n deg) (StatementRound R n i.succ) (OracleStatement R n deg) (pSpec R deg)
     where
@@ -889,6 +890,7 @@ def oracleVerifier [SampleableType R] (i : Fin n) :
 
 variable [SampleableType R]
 
+omit [SampleableType R] in
 /-- The message-only verifier agrees exactly with the virtual-polynomial context lift. -/
 theorem oracleVerifier_eq_liftContext (i : Fin n) :
     oracleVerifier R n deg D oSpec i =
@@ -927,6 +929,7 @@ theorem oracleVerifier_eq_liftContext (i : Fin n) :
         exact ih answer (hnext answer)
   · rfl
 
+omit [SampleableType R] in
 /-- A full sum-check round queries only its sent message polynomial.  Its virtual
 projection of the input polynomial is never evaluated by the verifier. -/
 theorem oracleVerifier_only_message_queries (i : Fin n)
@@ -980,11 +983,13 @@ lemma reduction_verifier_eq_verifier {i : Fin n} :
     (reduction R n deg D oSpec i).verifier = verifier R n deg D oSpec i := by
   rfl
 
+omit [SampleableType R] in
 @[simp]
 lemma oracleReduction_verifier_eq_verifier {i : Fin n} :
     (oracleReduction R n deg D oSpec i).verifier = oracleVerifier R n deg D oSpec i := by
   exact (oracleVerifier_eq_liftContext R n deg D oSpec i).symm
 
+omit [SampleableType R] in
 /-- Materializing the oracle round gives its ordinary context-lifted reduction. -/
 @[simp]
 theorem oracleReduction_toReduction (i : Fin n) :
@@ -1267,6 +1272,7 @@ theorem verifier_eq_unfolded (i : Fin n) :
   simp [verifier, Verifier.liftContext, Simple.verifier, Unfolded.verifier,
     oStmtLens, Statement.Lens.proj, Statement.Lens.lift, hq, OracleComp.guard_eq]
 
+omit [SampleableType R] in
 /-- The executable oracle projection preserves the repaired legacy verifier. -/
 theorem oracleVerifier_eq_verifier (i : Fin n) :
     (oracleVerifier R n deg D oSpec i).toVerifier = verifier R n deg D oSpec i := by

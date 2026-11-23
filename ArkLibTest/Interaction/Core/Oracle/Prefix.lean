@@ -14,7 +14,7 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleCo
 
 namespace Interaction.Core.PrefixTests
 
--- Prefix fixture: the frozen tree's public node is re-authored as a prover message.
+-- Prefix fixture: the old layer's public node is re-authored as a prover message.
 /-- One hidden `Bool` payload followed by a public `Fin 3` message. -/
 def mixed : OracleProtocol :=
   .liftBind (.oracle Bool OracleInterface.instDefault)
@@ -92,7 +92,7 @@ example : PrefixMoves.complete oracleSig full fullMoves = ⟨true, (2 : Fin 3), 
 -- Prefix 8, restated: the first entry of the complete prefix is the hidden payload `true`.
 example : fullMoves.1.1 = true := rfl
 
-/-- The actual prefix ending immediately after the oracle send, before the public choice. -/
+/-- The transcript prefix ending immediately after the oracle send, before the public choice. -/
 def oraclePrefix : OracleProtocol :=
   .liftBind (.oracle Bool OracleInterface.instDefault) (fun _ => .pure ⟨⟩)
 

@@ -36,7 +36,7 @@ abbrev UniverseExecutionPath (s : OracleProtocol.{uExecution}) := PathAlong orac
 
 end UniverseCanary
 
--- MixedExample fixture: the frozen tree's public node is re-authored as a prover message.
+-- MixedExample fixture: the old layer's public node is re-authored as a prover message.
 /-- A public bit selects a `Bool` oracle payload or a `Fin 3` oracle payload. -/
 def mixedTree : OracleProtocol :=
   .liftBind (.message Bool) fun
@@ -71,7 +71,7 @@ example : projectPathAlong oracleSig mixedTree falsePayload = ⟨false, ⟨⟩, 
 /-- The `true` shape path records the bit but not the `Fin 3` payload. -/
 example : projectPathAlong oracleSig mixedTree finPayload = ⟨true, ⟨⟩, ⟨⟩⟩ := rfl
 
--- MixedExample 9, restated: tree conversion is retired. The full transcript keeps the payload
+-- MixedExample 9, restated: tree conversion is removed. The full transcript keeps the payload
 -- `2 : Fin 3`, which the payload family returns, while the verifier view erases it.
 /-- The full transcript keeps the `Fin 3` payload. -/
 example : payloads mixedTree finPayload (.inl ⟨⟩) = (2 : Fin 3) := rfl
