@@ -60,6 +60,8 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   decodability.
 - [`papers/Joh62.md`](papers/Joh62.md) - the original Johnson bound underlying the `JohnsonBound`
   development.
+- [`papers/KKH26.md`](papers/KKH26.md) - failure of proximity gaps close to capacity; the
+  Proposition 3 CA lower bound, the Appendix A list, and the Lemma 1 sum-set bound.
 - [`papers/KSY14.md`](papers/KSY14.md) - high-rate codes with sublinear-time decoding; the
   multiplicity-code analysis, whose Hasse-derivative variant differs from `ABF26` Definition A.6.
 

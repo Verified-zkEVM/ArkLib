@@ -125,7 +125,7 @@ the profile basis; its first message keeps the original carrier $A$.
 
 \begin{definition}[Stages of the ring-switching reduction]
   \label{def:ring_switching_stages}
-  \lean{RingSwitching.Packing.Head.reduction, RingSwitching.Packing.TensorPrefix.head_verifier_eq,
+  \lean{RingSwitching.Packing.Head.reduction, RingSwitching.Packing.TensorPrefix.headVerifier_eq,
     RingSwitching.Packing.ProductSumcheck.reduction}
   \leanok
   \uses{def:ring_switching_profile, def:pack_mle}
@@ -144,7 +144,7 @@ the profile basis; its first message keeps the original carrier $A$.
     $2/\lvert L\rvert$; the terminal check sends no challenge. Its accepted output is the
     contextual evaluation claim about the same $t'$ and oracle family.
   \item \textbf{Opening}. The concrete Binius construction appends the Binary Basefold contextual
-    opening. Its existing zero-message frontier formats the evaluation claim and may discard the
+    opening. Its zero-message front end formats the evaluation claim and may discard the
     query context; it does not insert another wire phase or change the committed polynomial.
 \end{enumerate}
 \end{definition}
@@ -162,9 +162,10 @@ $\gamma\in\mathbb{N}$. Challenges in $L$ use the uniform sampler.
   \uses{def:ring_switching_profile, def:pack_mle}
   \label{def:full_ring_switching}
   In the concrete setup above, compose the shared DP24 prefix protocol with the Binary
-  Basefold opening. This is a
-  non-fused composition ending in an accept/reject statement, rather than an unclosed evaluation
-  claim.
+  Basefold opening. The composition runs a ring-switching sum-check before the opening and ends
+  in an accept/reject statement, rather than an unclosed evaluation claim. The unrolled protocol
+  of~\cite{DP24} (Construction 5.1), formalized for $K = \mathbb{F}_2$, instead runs a single sum-check, as the Binary Basefold
+  sum-check (\texttt{Binius.FRIBinius.Unrolled.fullReduction}).
 \end{definition}
 
 \subsection{Security}
