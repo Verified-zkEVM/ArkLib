@@ -39,7 +39,7 @@ abbrev UniverseSeparatedReduction {ι : Type uInteraction}
     (Statement : Shared → Type uStatement)
     (Witness : Shared → Type uWitness)
     (StatementOut : (i : Shared) → Path (Context i) → Type uInteraction)
-    (WitnessOut : (i : Shared) → PathAlong plainSig (Context i) → Type uInteraction) :=
+    (WitnessOut : (i : Shared) → Transcript plainSig (Context i) → Type uInteraction) :=
   (i : Shared) → Reduction ambient (Context i) (Statement i) (Witness i) (StatementOut i)
     (WitnessOut i)
 
@@ -91,7 +91,7 @@ def suffixVerifier : (p : Path prefixTree) → Verifier ambient (suffixTree p) B
 /-- The dependent two-stage reduction: the suffix prover is chosen by the prefix transcript. -/
 def composed : Reduction ambient composedTree Unit Bool (fun _ => Nat) (fun _ => Nat × Unit) where
   prover _ bit := Prover.append (prefixProver bit)
-    (fun tr _ => pure (suffixProver (projectPathAlong plainSig prefixTree tr)))
+    (fun tr _ => pure (suffixProver (Transcript.path tr)))
   verifier := prefixVerifier.append suffixVerifier
 
 /-- No challenges and no ambient queries: evaluate a run in `Option`. -/
@@ -104,8 +104,8 @@ def evaluate {α : Type} (program : OracleComp (ambient + challengeSpec plainSig
 
 /-- The shape path, the prover's statement and the verifier's verdict of one honest run. -/
 def summary (bit : Bool) : Option (Path composedTree × Nat × Option Nat) :=
-  evaluate ((fun obs => (projectPathAlong plainSig composedTree obs.1, obs.2.1.1, obs.2.2)) <$>
-    composed.observe () bit)
+  evaluate ((fun obs => (Transcript.path obs.1, obs.2.1.1, obs.2.2)) <$>
+    composed.runOutcome () bit)
 
 -- DependentExample 2, restated: the false prefix message selects the `Bool` suffix branch; the
 -- path is a shape path of the appended protocol.
@@ -123,10 +123,10 @@ example : summary false = some (⟨false, false, ⟨⟩⟩, 0, some 0) := rfl
 example : summary true = some (⟨true, (2 : Fin 3), ⟨⟩⟩, 2, some 2) := rfl
 
 -- The same results, from the full observation without the summary projection.
-example : composed.observe () false =
+example : composed.runOutcome () false =
     pure ⟨⟨false, false, ⟨⟩⟩, (0, ()), some 0⟩ := rfl
 
-example : composed.observe () true =
+example : composed.runOutcome () true =
     pure ⟨⟨true, (2 : Fin 3), ⟨⟩⟩, (2, ()), some 2⟩ := rfl
 
 /-! ## Distinct intermediate outputs
@@ -162,7 +162,7 @@ def disagreeing : Reduction ambient observedTree Unit Bool (fun _ => Bool)
 
 -- DependentExample 6, restated: the suffix prover sees the prover's `true` and witness 7 (8
 -- after its step); the suffix verifier sees the verifier's `false`. Stated for both sent bits.
-example (bit : Bool) : disagreeing.observe () bit = pure ⟨⟨bit, ⟨⟩⟩, (true, 8), some false⟩ := by
+example (bit : Bool) : disagreeing.runOutcome () bit = pure ⟨⟨bit, ⟨⟩⟩, (true, 8), some false⟩ := by
   cases bit <;> rfl
 
 end Interaction.Core.DependentExampleTests

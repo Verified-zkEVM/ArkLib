@@ -196,7 +196,7 @@ theorem comapInputs_run {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : Orac
     {A' : I' → Type u} {inputs : OracleFamily.{uI, u, wI} I A}
     {inputs' : OracleFamily.{uI', u, wI'} I' A'} {J : Path s → Type u}
     {B : (p : Path s) → J p → Type u} {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
-    {Out : PathAlong oracleSig s → Type u}
+    {Out : Transcript oracleSig s → Type u}
     (V : OracleVerifier ambient s S T inputs outputs)
     (r : OracleMap (Resources.ofFamily inputs') (Resources.ofFamily inputs)) (stmt : S)
     (data : ∀ i, A' i) (prover : Prover oracleSig ambient s Out) :
@@ -232,8 +232,8 @@ def appendMap
       (Resources.ofFamily (splitOutputs outputs p)) :=
   (map₂ (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2 (View.split s₁ s₂ p v).2).comp
     (((map₁ (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).par
-      (OracleMap.id (Resources.ofFamily (pathFamily _ (Path.split s₁ s₂ p).2)))).comp
-      (resources (inputs := inputs) p))
+      (OracleMap.id (Resources.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
+      (splitResources (inputs := inputs) p))
 
 /-- Compatibility when neither output map reads its input statement. The composite output map is
 `appendMap`, so it reads neither the input statement nor the intermediate one. -/
@@ -452,10 +452,10 @@ decisions. The verdict is the composed accepted statement with the composed outp
 `none` if a decision rejects. -/
 def run {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A}
     (c : Stages ambient S inputs) (e : c.Compatibility) (stmt : S) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig c.protocol → Type u}
+    {Out : Transcript oracleSig c.protocol → Type u}
     (prover : Prover oracleSig ambient c.protocol Out) :
     OracleComp ambient
-      (Observation oracleSig c.protocol Out (OracleVerifier.Output c.Out c.OutData)) :=
+      (Outcome oracleSig c.protocol Out (OracleVerifier.Output c.Out c.OutData)) :=
   simulateQ c.handler ((c.verifier e).run stmt data prover)
 
 /-! ## Statement-free output maps -/
@@ -542,7 +542,7 @@ verifier and the composed rest, with the challenges answered by the combined dra
 the first decision and, after its acceptance only, the rest's decision. This is the split after
 the first stage, not a split at an arbitrary stage. -/
 theorem run_cons (stmt : S) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig (s.append fun p => (rest p).protocol) → Type u}
+    {Out : Transcript oracleSig (s.append fun p => (rest p).protocol) → Type u}
     (prover : Prover oracleSig ambient (s.append fun p => (rest p).protocol) Out) :
     (cons s V draw₁ rest).run ⟨e, compatible⟩ stmt data prover =
       simulateQ (QueryImpl.id' ambient +

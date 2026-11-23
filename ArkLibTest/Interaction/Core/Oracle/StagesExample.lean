@@ -425,7 +425,7 @@ def shapeObserved (choice : Bool) :=
 of the final statement is computed from the shape path. -/
 def shapeSummary (choice : Bool) :=
   let z := shapeObserved choice
-  ((projectPathAlong oracleSig shapeStages.protocol z.1.1).1, z.1.2.2.map (·.1), z.1.2.1, z.2)
+  ((Transcript.path z.1.1).1, z.1.2.2.map (·.1), z.1.2.1, z.2)
 
 -- The prover's `true` selects the stage with a challenge: the prover event 4 and the draw 5 run,
 -- the response is 10, and the second decision 6 accepts the statement 7 plus 10.
@@ -578,7 +578,7 @@ def wideVerifier :
     let value : Nat ← liftM ((ambient + (pathResources inputs done p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
     pure (some (value % 2 == 0))
-  outputMap _ p _ := wideParity (pathFamily done p)
+  outputMap _ p _ := wideParity (oracleMessageFamily done p)
 
 /-- Read the wide oracle, accept its answer with the statement, and export the answer as a small
 oracle. -/

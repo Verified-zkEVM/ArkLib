@@ -93,7 +93,7 @@ def observed (hidden : Nat) :=
   (simulateQ (logger 18) (verifier.run () seven (prover hidden))).run []
 
 /-- The verifier's view of the run's transcript, with the verdict. -/
-def publicResult (hidden : Nat) : PathAlong viewSig protocol × Option Nat :=
+def publicResult (hidden : Nat) : Transcript viewSig protocol × Option Nat :=
   ((toView protocol (observed hidden).1.1).val, (observed hidden).1.2.2.map Prod.fst)
 
 -- ExecutionExample 1, restated: the frozen verifier computes its challenge 7 + 11 by querying.
@@ -153,16 +153,16 @@ example (hidden : Nat) :
           (fun q => liftM ((ambient + challengeSpec oracleSig protocol).query (.inl q))))
         (sampler oracleSig protocol (fun c =>
           liftM ((ambient + challengeSpec oracleSig protocol).query (.inr c))))
-      let p := projectPathAlong oracleSig protocol tr
+      let p := Transcript.path tr
       let verdict ← simulateQ
         (QueryImpl.addLift
           ((fun q => liftM ((ambient + challengeSpec oracleSig protocol).query (.inl q))) :
             QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig protocol)))
-          ((pathResources inputs protocol p).answer (seven, payloads protocol tr)))
+          ((pathResources inputs protocol p).answer (seven, oracleMessages protocol tr)))
         (verifier.decide () p (toView protocol tr)).run
       pure ⟨tr, out, verdict.map fun t => (t,
         (verifier.outputMap () p (toView protocol tr)).f
-          (seven, payloads protocol tr))⟩) :=
+          (seven, oracleMessages protocol tr))⟩) :=
   rfl
 
 run_cmd do
@@ -274,7 +274,7 @@ def observed (proceed : Bool) (draw hidden : Nat) :=
 def summary (proceed : Bool) (draw hidden : Nat) :
     Path combined × Option Nat × Nat × List Nat :=
   let z := observed proceed draw hidden
-  (projectPathAlong oracleSig combined z.1.1, z.1.2.2.map Prod.fst, z.1.2.1, z.2)
+  (Transcript.path z.1.1, z.1.2.2.map Prod.fst, z.1.2.1, z.2)
 
 -- ExecutionExample 19, restated: the frozen prefix ends with an `Option Nat` challenge that
 -- selects the suffix shape. Here the prefix challenge preserves the shape, the suffix always sends

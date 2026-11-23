@@ -64,7 +64,7 @@ def firstVerifier (accept : Bool) :
     let old : Nat ← liftM ((ambient + (pathResources inputs done p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
     pure (if accept then some (old % 2 == 0) else none)
-  outputMap _ p _ := addEleven (pathFamily done p)
+  outputMap _ p _ := addEleven (oracleMessageFamily done p)
 
 /-- The second message type depends on the first message. -/
 @[instance_reducible] def branchNext : Bool → OracleProtocol
@@ -90,7 +90,7 @@ def secondVerifier :
       ((ambient + (pathResources inputs branchProtocol p).spec).query
         (.inr (.inl ⟨(), ()⟩)))
     pure (messageValue p + value)
-  outputMap _ p _ := isEven (pathFamily branchProtocol p)
+  outputMap _ p _ := isEven (oracleMessageFamily branchProtocol p)
 
 /-- The interaction-free prefix followed by the branching suffix. -/
 abbrev composedProtocol : OracleProtocol := done.append (fun _ => branchProtocol)
