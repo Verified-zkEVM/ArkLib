@@ -33,3 +33,8 @@ example : ∃ l : List (ℚ[X] →ₗ[ℚ] ℚ),
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Polynomial.exists_list_linearMap_of_le_degreeLE
+
+/-- info: 'Submodule.exists_list_linearMap_of_injOn' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Submodule.exists_list_linearMap_of_injOn
