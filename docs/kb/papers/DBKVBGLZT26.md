@@ -52,12 +52,13 @@ layer is milestone M0 ([#1472](https://github.com/Verified-zkEVM/ArkLib/issues/1
   defines the structure with a layout per round, and maps the homogeneous structure of
   [`FMN24`](FMN24.md) into it with the same tree shape (`CWSSStructure.toBlock_toShape`).
 - [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean)
-  is the only file that imports the VCVio rewinding finder.
+  is the only file of the coordinate-wise special-soundness layer that imports the VCVio
+  rewinding finder.
 - [`ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`](../../../ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean)
   and
   [`ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean`](../../../ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean)
   hold the interpolation lemma and its bridge to the finders.
-- Tests: `ArkLibTest/OracleReduction/CoordinateWiseLayout.lean`,
+- Tests: `ArkLibTest/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean`,
   `ArkLibTest/Data/MvPolynomial/VecTreeInterpolation.lean`.
 
 ## Version Notes

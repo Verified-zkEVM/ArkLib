@@ -77,7 +77,9 @@ def IsStar (c : Fin B.arity → B.Point) : Prop := IsBlockSpecialSoundFamily B.t
 instance [∀ u, DecidableEq (B.Alphabet u)] (c : Fin B.arity → B.Point) : Decidable (B.IsStar c) :=
   inferInstanceAs (Decidable (IsBlockSpecialSoundFamily B.threshold c))
 
-/-- The failure probability of the coordinate-fibre search of a block, `∑ u, (k u - 1) / |X u|`. -/
+/-- The sum `∑ u, (k u - 1) / |X u|` over the coordinates of a block. The block finder gives this
+sum its meaning, as the failure probability of the search for siblings in the coordinate fibres of a
+uniformly sampled center; this file only defines it. -/
 def error [∀ u, Fintype (B.Alphabet u)] : ℚ≥0 :=
   ∑ u, ((B.threshold u - 1 : ℕ) : ℚ≥0) / Fintype.card (B.Alphabet u)
 

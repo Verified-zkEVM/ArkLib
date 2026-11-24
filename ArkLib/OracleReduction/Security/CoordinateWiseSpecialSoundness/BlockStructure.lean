@@ -111,9 +111,6 @@ def Admissible [∀ i b u, Fintype (((D.layout i).block b).Alphabet u)] : Prop :
 /-- The blocks of every round, in protocol order and then block order. -/
 abbrev BlockIdx : Type := Lex (Σ i : pSpec.ChallengeIdx, Fin (D.layout i).depth)
 
-/-- The blocks are linearly ordered. -/
-example : LinearOrder D.BlockIdx := inferInstance
-
 /-- The block at an index. -/
 abbrev blockOf (β : D.BlockIdx) : Block := (D.layout (ofLex β).1).block (ofLex β).2
 
@@ -214,13 +211,37 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- Tree special soundness at the shape of `D.toBlock` is coordinate-wise special soundness at
 `D`. -/
-theorem treeSpecialSound_toBlock_iff [∀ i, SampleableType (pSpec.Challenge i)]
-    (D : CWSSStructure pSpec)
+theorem treeSpecialSound_toBlock_iff (D : CWSSStructure pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) :
     verifier.treeSpecialSound init impl D.toBlock.toShape relIn relOut ↔
       verifier.coordinateWiseSpecialSound init impl D relIn relOut := by
   rw [CWSSStructure.toBlock_toShape]
   rfl
+
+/-- Tree special soundness with a named extractor at the shape of `D.toBlock` is coordinate-wise
+special soundness with that extractor at `D`. The two arities are the same, so the extractor has
+one type. -/
+theorem treeSpecialSoundWith_toBlock_iff (D : CWSSStructure pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec D.arity) :
+    treeSpecialSoundWith init impl D.toBlock.toShape relIn relOut verifier Ext ↔
+      coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext :=
+  ⟨fun h => treeSpecialSoundWith_congr init impl (CWSSStructure.toBlock_toShape D) HEq.rfl h,
+    fun h => treeSpecialSoundWith_congr init impl (CWSSStructure.toBlock_toShape D).symm HEq.rfl h⟩
+
+/-- The escape-threaded form of `treeSpecialSoundWith_toBlock_iff`. -/
+theorem treeSpecialSoundWithEscape_toBlock_iff (D : CWSSStructure pSpec)
+    (esc : ChallengeTree.EscapeEvent StmtIn pSpec D.arity)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec D.arity) :
+    treeSpecialSoundWithEscape init impl D.toBlock.toShape esc relIn relOut verifier Ext ↔
+      coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier Ext :=
+  ⟨fun h => treeSpecialSoundWithEscape_congr init impl (CWSSStructure.toBlock_toShape D) HEq.rfl
+      HEq.rfl h,
+    fun h => treeSpecialSoundWithEscape_congr init impl (CWSSStructure.toBlock_toShape D).symm
+      HEq.rfl HEq.rfl h⟩
 
 end Verifier

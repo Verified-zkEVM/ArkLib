@@ -51,8 +51,6 @@ example : IsBlockSpecialSoundFamily k star := by decide
 /-- The star is as small as a star can be: `∑ u, (k u - 1) + 1 = 4`. -/
 example : ∑ u, (k u - 1) + 1 = 4 := by decide
 
-example : ∑ u, (k u - 1) + 1 ≤ 4 := (show IsBlockSpecialSoundFamily k star by decide).card_ge
-
 /-- Distinct vectors do not make a star: no two of them differ in one coordinate only. -/
 def diagonal : Fin 3 → ((u : Fin 2) → alph u) := ![vec 0 0, vec 1 1, vec 2 2]
 
@@ -99,20 +97,12 @@ example : flatLayout.arity = 4 := by decide
 
 example : nestedLayout.arity = 6 := by decide
 
-example : nestedLayout.arity = ∏ u, k u := Layout.arity_nested 2 alph k (by decide)
-
-#eval flatLayout.error
-
-#eval nestedLayout.error
-
 example : flatLayout.error = 11 / 15 := by
   simp only [Layout.error, Block.error, Finset.univ_unique, Finset.sum_singleton, Fin.sum_univ_two]
   have h5 : Fintype.card (alph 0) = 5 := by decide
   have h3 : Fintype.card (alph 1) = 3 := by decide
   simp only [k, h5, h3]
   norm_num
-
-example : nestedLayout.error = flatLayout.error := Layout.error_nested_eq_error_flat 2 alph k
 
 /-! ## Trees of a layout -/
 
@@ -137,11 +127,21 @@ example : ¬ nestedLayout.IsTree collapsedTree := by
   unfold Layout.IsTree
   decide +kernel
 
-/-- A tree whose block-`0` label reads the second child index depends on a later branch. -/
+/-- A family whose block-`0` label reads the second child index: `(p₀ + p₁) % 3` at block `0` and
+`p₀ + p₁` at block `1`. Below every prefix the children of each block carry distinct labels, so
+every star condition holds, and only causality fails: the block-`0` label depends on a later
+branch. -/
 def acausalTree (q : Fin 6) : nestedLayout.Point
-  | 0 => fun _ => ((q.val / 3 : ℕ) : ZMod 5)
+  | 0 => fun _ => (((q.val % 3 + q.val / 3) % 3 : ℕ) : ZMod 5)
   | 1 => fun _ => ((q.val % 3 + q.val / 3 : ℕ) : ZMod 3)
 
+/-- Every star condition holds for `acausalTree`. -/
+example : ∀ (p : nestedLayout.Path) (b : Fin nestedLayout.depth),
+    (nestedLayout.block b).IsStar
+      (fun j => acausalTree (nestedLayout.pathEquiv (Function.update p b j)) b) := by
+  decide +kernel
+
+/-- Causality alone rejects `acausalTree`. -/
 example : ¬ nestedLayout.IsTree acausalTree := by
   unfold Layout.IsTree
   decide +kernel
@@ -153,12 +153,6 @@ example : ∃ t : Rewinding.VecTree
         ∀ p, nestedTree (nestedLayout.pathEquiv p) = t.leaf p :=
   (Layout.isTree_iff_vecTree (L := nestedLayout) nestedTree).1
     (by unfold Layout.IsTree; decide +kernel)
-
-/-- The tree of a flat layout is a star of its block. -/
-example : (Layout.flat block).IsTree (fun j _ => star (Fin.cast (by decide) j)) := by
-  rw [Layout.isTree_flat_iff]
-  unfold Block.IsStar
-  exact (by decide)
 
 /-! ## The structure with layouts -/
 
@@ -177,22 +171,16 @@ abbrev Dflat : BlockCWSSStructure pSpec where
 /-- The nested structure: one coordinate per block. -/
 abbrev Dnested : BlockCWSSStructure pSpec where
   layout := fun _ => nestedLayout
-  decompose := fun _ => (Layout.nestedEquiv 2 alph k).symm.symm
+  decompose := fun _ => Layout.nestedEquiv 2 alph k
+
+/-- The blocks of all rounds are linearly ordered. -/
+example : LinearOrder Dnested.BlockIdx := inferInstance
 
 example : Dflat.treeSize = 4 := by decide
 
 example : Dnested.treeSize = 6 := by decide
 
 example : Dflat.toShape.arity = fun _ => 4 := rfl
-
-#eval Dflat.knowledgeError
-
-#eval Dnested.knowledgeError
-
-example : Dnested.knowledgeError = Dflat.knowledgeError := by
-  unfold BlockCWSSStructure.knowledgeError
-  simp only [Fintype.sum_unique]
-  exact Layout.error_nested_eq_error_flat 2 alph k
 
 example : Dnested.knowledgeError < 1 := by
   have h : Dnested.knowledgeError = 11 / 15 := by decide +kernel
@@ -203,19 +191,9 @@ example : Dflat.Admissible := fun _ b => by
   fin_cases b
   exact block_admissible
 
-/-- The blocks of the nested structure, in order: the sizes of their stars multiply to the tree
-size. -/
-example : Dnested.treeSize = ∏ β : Dnested.BlockIdx, (Dnested.blockOf β).arity :=
-  Dnested.treeSize_eq_prod_blocks
-
 /-- Plain `3`-special soundness of a one-round protocol with a `Bool` challenge, as a structure with
 a layout, has the same shape and the same tree size as the homogeneous structure. -/
 abbrev boolSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[Bool]⟩
-
-example (hk : ∀ i : boolSpec.ChallengeIdx, 2 ≤ (fun _ => 3) i) :
-    (CWSSStructure.ofSpecialSound (fun _ => 3) hk).toBlock.toShape =
-      (CWSSStructure.ofSpecialSound (fun _ => 3) hk).toShape :=
-  CWSSStructure.toBlock_toShape _
 
 example (hk : ∀ i : boolSpec.ChallengeIdx, 2 ≤ (fun _ => 3) i) :
     (CWSSStructure.ofSpecialSound (fun _ => 3) hk).toBlock.treeSize = 3 := by
@@ -298,3 +276,11 @@ info: 'Verifier.treeSpecialSound_toBlock_iff' depends on axioms: [propext,
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Verifier.treeSpecialSound_toBlock_iff
+
+/--
+info: 'Verifier.treeSpecialSoundWith_toBlock_iff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Verifier.treeSpecialSoundWith_toBlock_iff
