@@ -803,6 +803,8 @@ public import ArkLib.Interaction.Core.Security.KnowledgeComposition.Extraction
 public import ArkLib.Interaction.Core.Security.MeasuredExtraction
 public import ArkLib.Interaction.Core.Security.RoundByRound
 public import ArkLib.Interaction.Core.Security.Soundness
+public import ArkLib.Interaction.Core.Security.StateRestoration
+public import ArkLib.Interaction.Core.Security.StateRestorationBudget
 public import ArkLib.Interaction.Core.Signature
 public import ArkLib.Interaction.Core.Transcript
 public import ArkLib.Interaction.Oracle.Access
