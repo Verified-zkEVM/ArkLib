@@ -41,15 +41,15 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
 language is accepted into the final language with probability at most `deg / |R|` per challenge,
 for every prover. -/
 theorem legacyVerifier_soundness [Fintype R] [IsDomain R] :
-    ∀ Out : PathAlong oracleSig (protocol R deg n) → Type,
-      letI : MeasurableSpace (Observation oracleSig (protocol R deg n) Out
+    ∀ Out : Transcript oracleSig (protocol R deg n) → Type,
+      letI : MeasurableSpace (Outcome oracleSig (protocol R deg n) Out
         (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
           ⊤
       soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init impl
           (challengeQueryImpl oracleSig (protocol R deg n)))
         (langProblem (Spec.relationRound R n deg D 0).language)
         (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
-        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
+        (fun obs => Transcript.path obs.1) (fun obs => obs.2.2)
         ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) :
           ℝ≥0∞) := by
   let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
@@ -115,15 +115,15 @@ theorem card_challengeIdx : Fintype.card (Spec.pSpec R deg n).ChallengeIdx = n :
 
 /-- Soundness of the interaction-layer Sumcheck verifier with error `n * (deg / |R|)`. -/
 theorem legacyVerifier_soundness_rounds [Fintype R] [IsDomain R] :
-    ∀ Out : PathAlong oracleSig (protocol R deg n) → Type,
-      letI : MeasurableSpace (Observation oracleSig (protocol R deg n) Out
+    ∀ Out : Transcript oracleSig (protocol R deg n) → Type,
+      letI : MeasurableSpace (Outcome oracleSig (protocol R deg n) Out
         (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
           ⊤
       soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init impl
           (challengeQueryImpl oracleSig (protocol R deg n)))
         (langProblem (Spec.relationRound R n deg D 0).language)
         (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
-        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
+        (fun obs => Transcript.path obs.1) (fun obs => obs.2.2)
         ((n * ((deg : ℝ≥0) / Fintype.card R) : ℝ≥0) : ℝ≥0∞) := by
   have h := legacyVerifier_soundness R deg n D ambient init impl
   rwa [Finset.sum_const, Finset.card_univ, card_challengeIdx, nsmul_eq_mul] at h

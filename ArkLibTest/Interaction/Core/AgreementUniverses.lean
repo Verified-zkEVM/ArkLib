@@ -26,7 +26,7 @@ variable {ι : Type} {S : Type 2} {I : Type 1}
   {V V' : OracleVerifier ambient s S T inputs outputs}
 
 example (h : Agrees V V') (stmt : S) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig s → Type} (p : Prover oracleSig ambient s Out) :
+    {Out : Transcript oracleSig s → Type} (p : Prover oracleSig ambient s Out) :
     V.run stmt data p = V'.run stmt data p := h.run_eq stmt data p
 
 example {σ : Type} (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -38,11 +38,11 @@ example {σ : Type} (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbC
   h.rbrSoundness_iff impl input output draw ε
 
 example {σ : Type} {Win : (S × (∀ i, A i)) → Type 6}
-    {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type 7}
+    {W : (S × (∀ i, A i)) → Transcript oracleSig s → Type 7}
     (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbComp))
     (adm : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
-    (relOut : (stmt : S × (∀ i, A i)) → (tr : PathAlong oracleSig s) →
-      OracleVerifier.Output T B (projectPathAlong oracleSig s tr) → W stmt tr → Prop)
+    (relOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig s) →
+      OracleVerifier.Output T B tr.path → W stmt tr → Prop)
     (draw : PrefixDraw oracleSig ProbComp s) (ε : PrefixError oracleSig s) :
     V.rbrKnowledgeSoundness.{2, 6, 1, 7} impl adm relIn relOut draw ε ↔
       V'.rbrKnowledgeSoundness.{2, 6, 1, 7} impl adm relIn relOut draw ε :=
@@ -54,7 +54,7 @@ example {σ : Type} {Win : (S × (∀ i, A i)) → Type 6}
 
 section KnowledgeCast
 variable {Win : (S × (∀ i, A i)) → Type 6}
-  {W : (S × (∀ i, A i)) → PathAlong oracleSig s → Type 7}
+  {W : (S × (∀ i, A i)) → Transcript oracleSig s → Type 7}
 
 #check OracleVerifier.rbrKnowledgeSoundness_cast (S := S) (T := T) (ambient := ambient)
   (inputs := inputs) (outputs := outputs) (Win := Win) (W := W)
@@ -71,17 +71,17 @@ section General
 
 variable {ι : Type 2} {S : Type 3} {s s' : OracleProtocol.{1, 4}}
   {ambient : OracleSpec.{2, 1} ι} {T : Path s → Type 1} {J : Path s → Type 5}
-  {B : (p : Path s) → J p → Type 1} {inputs : Resources.{1, 6, 7}}
+  {B : (p : Path s) → J p → Type 1} {inputs : OracleBundle.{1, 6, 7}}
   {outputs : (p : Path s) → OracleFamily.{5, 1, 8} (J p) (B p)}
   {V V' : OracleVerifier ambient s S T inputs outputs}
 
 -- Agreement and decision/output transport retain independent ambient and output-index universes.
 example
-    (hd : ∀ (stmt : S) (tr : PathAlong oracleSig s),
+    (hd : ∀ (stmt : S) (tr : Transcript oracleSig s),
       V.decide stmt _ (toView s tr) = V'.decide stmt _ (toView s tr))
-    (ho : ∀ (stmt : S) (data : inputs.Data) (tr : PathAlong oracleSig s),
-      (V.outputMap stmt _ (toView s tr)).f (data, payloads s tr) =
-        (V'.outputMap stmt _ (toView s tr)).f (data, payloads s tr)) :
+    (ho : ∀ (stmt : S) (data : inputs.Data) (tr : Transcript oracleSig s),
+      (V.outputMap stmt _ (toView s tr)).f (data, oracleMessages s tr) =
+        (V'.outputMap stmt _ (toView s tr)).f (data, oracleMessages s tr)) :
     Agrees V V' := Agrees.of_decide_eq hd ho
 
 #check OracleVerifier.outputMap_cast (S := S) (T := T) (ambient := ambient)
@@ -95,7 +95,7 @@ example {ι : Type 1} {ambient : OracleSpec ι} {J : Path s → Type 1}
     {outputs : (p : Path s) → OracleFamily.{1, 1, 8} (J p) (B p)}
     {V V' : OracleVerifier ambient s S T inputs outputs}
     (h : Agrees V V') (stmt : S) (data : inputs.Data)
-    {Out : PathAlong oracleSig s → Type 1} (p : Prover oracleSig ambient s Out) :
+    {Out : Transcript oracleSig s → Type 1} (p : Prover oracleSig ambient s Out) :
     V.run stmt data p = V'.run stmt data p := h.run_eq stmt data p
 
 end General

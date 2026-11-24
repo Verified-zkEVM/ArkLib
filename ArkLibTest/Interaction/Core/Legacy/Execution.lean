@@ -65,9 +65,9 @@ theorem counter_pure : PureChallengeSlots counterProver
 
 example (stmt wit : Nat) :
     simulateQ (challengeReindex []ₒ twoWay)
-        (finalize <$> (embedReduction counterReduction).observe stmt wit) =
+        (finalize <$> (embedReduction counterReduction).runOutcome stmt wit) =
       (counterReduction.run stmt wit).run :=
-  simulateQ_finalize_observe counterReduction counter_pure stmt wit
+  simulateQ_finalize_runOutcome counterReduction counter_pure stmt wit
 
 /-- The outputs of a run: the last message, the prover's output and the verifier's output. -/
 def outputs (r : LegacyResult twoWay Nat Nat) : Option (Nat × (Nat × Nat) × Nat) :=
@@ -92,11 +92,11 @@ def coreAnswers (b : Bool) :
 
 /-- The interaction-layer execution under the default schedule computes the same outputs. -/
 example : outputs (simulateQ (coreAnswers true)
-    (finalize <$> (embedReduction counterReduction).observe 2 3)) = some (60, (6, 106), 62) := by
+    (finalize <$> (embedReduction counterReduction).runOutcome 2 3)) = some (60, (6, 106), 62) := by
   decide
 
 example : outputs (simulateQ (coreAnswers false)
-    (finalize <$> (embedReduction counterReduction).observe 2 3)) = none := by
+    (finalize <$> (embedReduction counterReduction).runOutcome 2 3)) = none := by
   decide
 
 /-! ### The empty protocol with terminal queries -/
@@ -132,20 +132,20 @@ def terminalOutputs (r : LegacyResult (n := 0) !p[] Nat Nat) : Option ((Nat × N
   r.map fun x => (x.1.2, x.2)
 
 example : terminalOutputs (simulateQ (terminalAnswers 7)
-    (finalize <$> (embedReduction terminalReduction).observe 2 3)) = some ((12, 7), 14) := by
+    (finalize <$> (embedReduction terminalReduction).runOutcome 2 3)) = some ((12, 7), 14) := by
   decide
 
 example : terminalOutputs (simulateQ (terminalAnswers 0)
-    (finalize <$> (embedReduction terminalReduction).observe 2 3)) = none := by
+    (finalize <$> (embedReduction terminalReduction).runOutcome 2 3)) = none := by
   decide
 
 theorem terminal_pure : PureChallengeSlots terminalProver := fun i => i.1.elim0
 
 example (stmt wit : Nat) :
     simulateQ (challengeReindex counterSpec (n := 0) !p[])
-        (finalize <$> (embedReduction terminalReduction).observe stmt wit) =
+        (finalize <$> (embedReduction terminalReduction).runOutcome stmt wit) =
       (terminalReduction.run stmt wit).run :=
-  simulateQ_finalize_observe terminalReduction terminal_pure stmt wit
+  simulateQ_finalize_runOutcome terminalReduction terminal_pure stmt wit
 
 /-! ### Every direction, with consecutive rounds of one owner -/
 
@@ -190,16 +190,16 @@ implementation, and the output measures in any measurable structure. -/
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl counterSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [mixed.Challenge]ₒ ProbComp) (stmt : Nat) :
     experiment init impl (plainChallengeImpl chImpl)
-        (finalize <$> (embedReduction mixedReduction).observe stmt ()) =ᵈ
+        (finalize <$> (embedReduction mixedReduction).runOutcome stmt ()) =ᵈ
       experiment init impl chImpl (mixedReduction.run stmt ()).run :=
-  experiment_finalize_observe_evalDistEq init impl chImpl mixedReduction stmt ()
+  experiment_finalize_runOutcome_evalDistEq init impl chImpl mixedReduction stmt ()
 
 example {σ : Type} [MeasurableSpace (LegacyResult mixed Nat Nat)] (init : ProbComp σ)
     (impl : QueryImpl counterSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [mixed.Challenge]ₒ ProbComp) (stmt : Nat) :
     𝒟[experiment init impl (plainChallengeImpl chImpl)
-        (finalize <$> (embedReduction mixedReduction).observe stmt ())] =
+        (finalize <$> (embedReduction mixedReduction).runOutcome stmt ())] =
       𝒟[experiment init impl chImpl (mixedReduction.run stmt ()).run] :=
-  evalDist_experiment_finalize_observe init impl chImpl mixedReduction stmt ()
+  evalDist_experiment_finalize_runOutcome init impl chImpl mixedReduction stmt ()
 
 end Interaction.Core.Legacy.ExecutionTests

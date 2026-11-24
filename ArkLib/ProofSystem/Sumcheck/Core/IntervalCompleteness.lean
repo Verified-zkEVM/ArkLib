@@ -96,7 +96,7 @@ theorem intervalVerifier_honest_run {ι : Type} (ambient : OracleSpec ι)
       (fun chals => (⟨foldTranscript (intervalMessage D p) (intervalNext D p) count st chals,
         (foldState (intervalNext D p) count st chals).finish,
         some ((foldState (intervalNext D p) count st chals).finish, fun _ => p)⟩ :
-          Observation oracleSig (protocol R deg count) (fun _ => RoundStatement R n
+          Outcome oracleSig (protocol R deg count) (fun _ => RoundStatement R n
             ⟨count + start, by omega⟩)
             (fun _ => RoundStatement R n ⟨count + start, by omega⟩ ×
               (∀ i, PolynomialData R n deg i)))) <$>
@@ -111,7 +111,7 @@ theorem intervalVerifier_honest_run {ι : Type} (ambient : OracleSpec ι)
   refine bind_congr fun chals => ?_
   dsimp only
   change pure (⟨_, _, (intervalVerdict D count _ _).map (fun t => (t, fun _ => p))⟩ :
-    Observation oracleSig (protocol R deg count) (fun _ => RoundStatement R n
+    Outcome oracleSig (protocol R deg count) (fun _ => RoundStatement R n
       ⟨count + start, by omega⟩) (fun _ => RoundStatement R n ⟨count + start, by omega⟩ ×
         (∀ i, PolynomialData R n deg i))) = _
   rw [(intervalVerdict_honest D p count _ h chals).1]

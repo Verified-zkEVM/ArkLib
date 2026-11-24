@@ -9,8 +9,8 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Interpreted
 
 /-! # Execution under message interpretation
 
-Interpretation changes the message representation and retains every prover slot, public draw,
-and terminal private output.
+Interpretation changes the message representation and retains every prover move, public draw,
+and the private output at the leaf.
 -/
 
 @[expose] public section
@@ -23,8 +23,8 @@ variable {R M N : Type} {evaluate : M → R → R} {evaluateN : N → R → R}
 
 /-- Interpret the messages of a complete transcript, preserving its challenges. -/
 def mapTranscript (interpret : M → N) : (k : ℕ) →
-    PathAlong oracleSig (protocol R M evaluate k) →
-    PathAlong oracleSig (protocol R N evaluateN k)
+    Transcript oracleSig (protocol R M evaluate k) →
+    Transcript oracleSig (protocol R N evaluateN k)
   | 0, _ => PUnit.unit
   | k + 1, ⟨msg, r, rest⟩ => ⟨interpret msg, r, mapTranscript interpret k rest⟩
 
@@ -32,7 +32,7 @@ def mapTranscript (interpret : M → N) : (k : ℕ) →
 theorem verdict_transport {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
     (finish : State 0 → T) (interpret : M → N)
     (heval : ∀ msg r, evaluateN (interpret msg) r = evaluate msg r) :
-    ∀ (k : ℕ) (st : State k) (tr : PathAlong oracleSig (protocol R M evaluate k)),
+    ∀ (k : ℕ) (st : State k) (tr : Transcript oracleSig (protocol R M evaluate k)),
     verdict evaluateN checks finish k st (mapTranscript interpret k tr) =
       verdict evaluate checks finish k st tr := by
   intro k
@@ -50,7 +50,7 @@ theorem verdict_transport {State : ℕ → Type} {T : Type} (checks : RoundCheck
     | none => rfl
     | some mid => exact ih mid rest
 
-/-- Interpret every message slot, challenge-response slot and terminal computation. -/
+/-- Interpret every message move, challenge-response move and leaf computation. -/
 def transportProver {m : Type → Type} [Monad m] {Out : Type} (interpret : M → N) :
     (k : ℕ) → Focal oracleSig m (protocol R M evaluate k) (fun _ => Out) →
       Focal oracleSig m (protocol R N evaluateN k) (fun _ => Out)
@@ -84,7 +84,7 @@ theorem transportProver_foldRounds {m : Type → Type} [Monad m] [LawfulMonad m]
       (congrArg (pure (f := m)) (funext fun chal =>
         transportProver_foldRounds interpret msg next finish k _)))
 
-/-- Ambient interpretation maps the message slot and the challenge-response slot separately. -/
+/-- Ambient interpretation maps the message move and the challenge-response move separately. -/
 theorem simulate_step {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] (impl : QueryImpl ambient m) {Out : Type} (k : ℕ)
     (prover : Prover oracleSig ambient (protocol R M evaluate (k + 1)) (fun _ => Out)) :
@@ -96,7 +96,7 @@ theorem simulate_step {ι : Type} {ambient : OracleSpec ι}
             Focal oracleSig m (protocol R M evaluate k) (fun _ => Out))))) <$>
         simulateQ impl prover := rfl
 
-/-- Interpreting message carriers commutes with interpreting every ambient prover slot. -/
+/-- Interpreting message carriers commutes with interpreting every ambient prover move. -/
 theorem simulate_transport {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
     (impl : QueryImpl ambient m) (interpret : M → N) (k : ℕ)
@@ -134,7 +134,7 @@ def draw {m : Type → Type} (next : m R) : (k : ℕ) →
   | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => next
   | k + 1, ⟨.inr ⟨_, .inr ⟨_, node⟩⟩, h⟩ => draw next k ⟨node, h⟩
 
-/-- Actual execution of one more round retains both prover slots before drawing. -/
+/-- Actual execution of one more round retains both prover moves before drawing. -/
 theorem run_step {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
     (next : m R) (k : ℕ)
     (prover : Focal oracleSig m (protocol R M evaluate (k + 1)) (fun _ => Out)) :
@@ -161,7 +161,7 @@ theorem run_transport {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
     Interaction.TwoParty.Lens.run _ (transportProver (evaluateN := evaluateN) interpret k prover)
       (sampler oracleSig _ (draw next k)) =
       (fun result => (⟨mapTranscript interpret k result.1, result.2.1, result.2.2⟩ :
-        ((_tr : PathAlong oracleSig (protocol R N evaluateN k)) × Out × PUnit))) <$>
+        ((_tr : Transcript oracleSig (protocol R N evaluateN k)) × Out × PUnit))) <$>
       Interaction.TwoParty.Lens.run _ prover (sampler oracleSig _ (draw next k)) := by
   intro k
   induction k with
@@ -188,9 +188,9 @@ theorem run_transport {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
     simp only [LawfulMonad.bind_pure_comp, Functor.map_map]
     rfl
 
-/-- Close an actual interaction-layer prover-sampler execution by its final resource verdict.
-The original input may be arbitrary behavior; no polynomial realization is required by this
-executor. -/
+/-- Close an actual interaction-layer prover-sampler execution with the final decision's
+verdict, its bundle queries answered. The original input may be arbitrary behavior; this executor
+requires no polynomial realization. -/
 def execute {m : Type → Type} [Monad m] {Out Data : Type} {State : ℕ → Type} {T : Type}
     (next : m R) (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ)
     (st : State k) (data : Data)
@@ -227,7 +227,7 @@ theorem execute_eq_verifier {ι I : Type} (ambient : OracleSpec ι) {A : I → T
   rfl
 
 /-- Closed actual execution commutes with evaluation-preserving representation interpretation,
-retaining all prover effects, terminal outputs and the original oracle behavior. -/
+retaining all prover effects, leaf outputs and the original oracle behavior. -/
 theorem execute_transport {m : Type → Type} [Monad m] [LawfulMonad m]
     {Out Data : Type} {State : ℕ → Type} {T : Type} (next : m R)
     (checks : RoundChecks R State) (finish : State 0 → T) (interpret : M → N)

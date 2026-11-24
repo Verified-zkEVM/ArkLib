@@ -438,7 +438,9 @@ home_page/            site assets and assembled website root
     nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` — Mathlib-level,
     with `k i` branches at level `i` and individual degree `< k i`, so a tree may mix arities, and
     the Cartesian-grid zero test of `Data/MvPolynomial/Interpolation` is its path-independent
-    case — with the computable view in
+    case; `Data/MvPolynomial/VecTreeInterpolation` reads a challenge tree of the VCVio rewinding
+    finders (`Rewinding.VecTree`) as such a tree and gives its zero test — with the computable
+    view in
     `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`; its named
     `nestedZeroCheckExtractor` is an executable all-left lookup into
     `ChallengeTree.LeafWitnesses`, with no runtime relation search; the weak-binding failure mode

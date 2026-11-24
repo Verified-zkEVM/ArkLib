@@ -25,19 +25,19 @@ noncomputable section
 
 /-- The event that the verifier accepts a statement of the final Sumcheck language. -/
 def accepted {R : Type} [CommSemiring R] {deg n : ℕ} {d : ℕ} (D : Fin d ↪ R)
-    {Out : FreeM.PathAlong oracleSig (protocol R deg n) → Type} :
-    Set (Observation oracleSig (protocol R deg n) Out
+    {Out : Transcript oracleSig (protocol R deg n) → Type} :
+    Set (Outcome oracleSig (protocol R deg n) Out
       (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
   {obs | ∃ t, obs.2.2 = some t ∧ t ∈ (Spec.relationRound R n deg D (Fin.last n)).language}
 
 /-- The soundness event of the Sumcheck languages is the acceptance event. -/
 theorem soundnessEvent_eq {R : Type} [CommSemiring R] {deg n : ℕ} {d : ℕ} (D : Fin d ↪ R)
-    {Out : FreeM.PathAlong oracleSig (protocol R deg n) → Type} :
-    {obs : Observation oracleSig (protocol R deg n) Out
+    {Out : Transcript oracleSig (protocol R deg n) → Type} :
+    {obs : Outcome oracleSig (protocol R deg n) Out
         (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) |
       ∃ t, obs.2.2 = some t ∧
         (langProblem (Spec.relationRound R n deg D (Fin.last n)).language).language
-          (FreeM.projectPathAlong oracleSig _ obs.1) t} =
+          (Transcript.path obs.1) t} =
       accepted D := by
   ext obs
   exact exists_congr fun t => and_congr_right fun _ => langProblem_language _ t
@@ -58,12 +58,12 @@ theorem rejection_one {Out : Type}
     (q : R⦃≤ deg⦄[X]) (finish : R → Out) (c₀ : R)
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (h : ∑ x ∈ Finset.univ.map D, q.val.eval x ≠ stmt.target) :
-    letI : MeasurableSpace (Obs1 (R := R) (deg := deg) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := R) (deg := deg) Out) := ⊤
     𝒟[experiment init impl ch ((verifier R deg 1 D amb).run stmt oStmt
         (oneRound amb q finish c₀))] {obs | obs.2.2 = none} = 1 := by
   let : MeasurableSpace R := ⊤
   rw [outcome_oneRound]
-  have hall : obs1 amb D q finish stmt oStmt ⁻¹' {obs | obs.2.2 = none} = Set.univ := by
+  have hall : outcome1 amb D q finish stmt oStmt ⁻¹' {obs | obs.2.2 = none} = Set.univ := by
     refine Set.eq_univ_of_forall fun c => ?_
     change Option.map _ _ = none
     rw [verdict_fail amb D stmt q c h]
@@ -85,17 +85,17 @@ variable {R : Type} [Field R] [Fintype R] [DecidableEq R] [SampleableType R] {de
 
 /-- Against every prover, a false one-round claim is accepted into the final language with
 probability at most `deg / |R|`. -/
-theorem oneRound_soundness {Out : FreeM.PathAlong oracleSig (protocol R deg 1) → Type}
+theorem oneRound_soundness {Out : Transcript oracleSig (protocol R deg 1) → Type}
     (P : Prover oracleSig amb (protocol R deg 1) Out)
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound R 1 deg D 0).language) :
-    letI : MeasurableSpace (Observation oracleSig (protocol R deg 1) Out
+    letI : MeasurableSpace (Outcome oracleSig (protocol R deg 1) Out
       (fun _ => Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
     𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol R deg 1)
       (challengeSampleable R deg 1))
         ((verifier R deg 1 D amb).run stmt oStmt P)] (accepted D) ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
-  let : MeasurableSpace (Observation oracleSig (protocol R deg 1) Out
+  let : MeasurableSpace (Outcome oracleSig (protocol R deg 1) Out
       (fun _ => Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
   have h := legacyVerifier_soundness_rounds R deg 1 D amb init impl Out (stmt, oStmt) trivial
     (by simpa only [langProblem_language] using hfalse) P
@@ -107,7 +107,7 @@ theorem oneRound_soundness {Out : FreeM.PathAlong oracleSig (protocol R deg 1) �
 theorem committed_soundness {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out) (c₀ : R)
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound R 1 deg D 0).language) :
-    letI : MeasurableSpace (Obs1 (R := R) (deg := deg) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := R) (deg := deg) Out) := ⊤
     𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol R deg 1)
       (challengeSampleable R deg 1))
         ((verifier R deg 1 D amb).run stmt oStmt (oneRound amb q finish c₀))] (accepted D) ≤
@@ -125,7 +125,7 @@ theorem randomCommitment_soundness {Out : Type} (commit : OracleComp amb (R⦃�
     (finish : R → Out) (c₀ : R)
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
     (hfalse : (stmt, oStmt) ∉ (Spec.relationRound R 1 deg D 0).language) :
-    letI : MeasurableSpace (Obs1 (R := R) (deg := deg) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := R) (deg := deg) Out) := ⊤
     𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol R deg 1)
       (challengeSampleable R deg 1))
         ((verifier R deg 1 D amb).run stmt oStmt
@@ -174,7 +174,7 @@ theorem claim_false :
 probability at most `1/17`. -/
 example {σ Out : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (finish : K → Out) (c₀ : K) :
-    letI : MeasurableSpace (Obs1 (R := K) (deg := 1) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := K) (deg := 1) Out) := ⊤
     𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol K 1 1)
       (challengeSampleable K 1 1))
         ((verifier K 1 1 D₀₁₇ ambient).run ⟨1, Fin.elim0⟩ (fun _ => polyXK)
@@ -203,7 +203,7 @@ def msgZero (deg : ℕ) : F⦃≤ deg⦄[X] := ⟨0, Polynomial.mem_degreeLE.mpr
 the zero polynomial sums to one over `{0, 1}`. -/
 theorem rejection_probability {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) :
-    letI : MeasurableSpace (Obs1 (R := F) (deg := 1) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := F) (deg := 1) Out) := ⊤
     𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
       (challengeSampleable F 1 1))
         ((verifier F 1 1 D₂ ambient).run (claim 1) (fun _ => poly0 1)
@@ -218,7 +218,7 @@ theorem rejection_probability {σ : Type} (init : ProbComp σ)
 /-- Exactly the challenge zero repairs the false claim that the zero polynomial sums to one over
 `{0, 1}` with the message `X`: the final language is reached with probability exactly `1/5`. -/
 theorem exact_repair_probability (impl : QueryImpl ambient (StateT Unit ProbComp)) :
-    letI : MeasurableSpace (Obs1 (R := F) (deg := 1) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := F) (deg := 1) Out) := ⊤
     𝒟[experiment (pure ()) impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
       (challengeSampleable F 1 1))
         ((verifier F 1 1 D₂ ambient).run (claim 1) (fun _ => poly0 1)
@@ -228,7 +228,7 @@ theorem exact_repair_probability (impl : QueryImpl ambient (StateT Unit ProbComp
   rw [outcome_oneRound]
   have hpass (c : F) := verdict_pass ambient D₂ (claim 1) msgX c (by
     simp [msgX, D₂, claim, Fin.sum_univ_two])
-  have h : obs1 ambient D₂ msgX finish (claim 1) (fun _ => poly0 1) ⁻¹' accepted D₂ =
+  have h : outcome1 ambient D₂ msgX finish (claim 1) (fun _ => poly0 1) ⁻¹' accepted D₂ =
       {0} := by
     ext c
     change (∃ t, Option.map _ _ = some t ∧ _) ↔ _
@@ -257,7 +257,7 @@ with probability one. -/
 theorem empty_domain_rejection {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (p : Spec.OracleStatement F 1 1 ())
     (q : F⦃≤ 1⦄[X]) :
-    letI : MeasurableSpace (Obs1 (R := F) (deg := 1) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := F) (deg := 1) Out) := ⊤
     𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
       (challengeSampleable F 1 1))
         ((verifier F 1 1 D₀ ambient).run (claim 1) (fun _ => p)
@@ -312,16 +312,16 @@ def fixedAt (r : F) : QueryImpl (challengeSpec oracleSig (protocol F 2 1)) ProbC
 /-- If the challenge is sampled before the message, the adaptive message reaches the final
 language with probability one: the order of sampling matters. -/
 theorem challenge_first_probability (impl : QueryImpl ambient (StateT Unit ProbComp)) :
-    letI : MeasurableSpace (Obs1 (R := F) (deg := 2) Out) := ⊤
+    letI : MeasurableSpace (Outcome1 (R := F) (deg := 2) Out) := ⊤
     𝒟[($ᵗ F) >>= fun r => experiment (pure ()) impl (fixedAt r)
         ((verifier F 2 1 D₂ ambient).run (claim 1) (fun _ => poly0 2)
           (oneRound ambient (adaptive r) finish c₀))] (accepted D₂) = 1 := by
-  let : MeasurableSpace (Obs1 (R := F) (deg := 2) Out) := ⊤
+  let : MeasurableSpace (Outcome1 (R := F) (deg := 2) Out) := ⊤
   let : MeasurableSpace F := ⊤
   have hprog : (($ᵗ F) >>= fun r => experiment (pure ()) impl (fixedAt r)
       ((verifier F 2 1 D₂ ambient).run (claim 1) (fun _ => poly0 2)
         (oneRound ambient (adaptive r) finish c₀))) =
-      (fun r => obs1 ambient D₂ (adaptive r) finish (claim 1) (fun _ => poly0 2) r) <$>
+      (fun r => outcome1 ambient D₂ (adaptive r) finish (claim 1) (fun _ => poly0 2) r) <$>
         ($ᵗ F) := by
     rw [map_eq_bind_pure_comp]
     refine bind_congr fun r => ?_
@@ -330,7 +330,7 @@ theorem challenge_first_probability (impl : QueryImpl ambient (StateT Unit ProbC
     rfl
   rw [hprog, evalDist_map _ measurable_from_top,
     Measure.map_apply measurable_from_top MeasurableSpace.measurableSet_top]
-  have hall : (fun r => obs1 ambient D₂ (adaptive r) finish (claim 1) (fun _ => poly0 2) r) ⁻¹'
+  have hall : (fun r => outcome1 ambient D₂ (adaptive r) finish (claim 1) (fun _ => poly0 2) r) ⁻¹'
       accepted D₂ = Set.univ := by
     refine Set.eq_univ_of_forall fun r => ?_
     change ∃ t, Option.map _ _ = some t ∧ _
@@ -379,7 +379,7 @@ run_cmd do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-namespace Sumcheck.Core.NativeSoundnessTest
+namespace Sumcheck.Core.IndexedSoundnessTest
 open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.Oracle
   OracleComp OracleSpec
 open scoped ENNReal NNReal
@@ -435,9 +435,9 @@ noncomputable def oneInput : (ZMod 5)⦃≤ 0⦄[X Fin 1] :=
 /-- The actual final decision accepts target two on `[0, 0]` when the sent message is one. -/
 example {ι : Type} (amb : OracleSpec ι) (impl : QueryImpl amb ProbComp) :
     let tr := consTranscript (n := 0) oneMessage (0 : ZMod 5) ⟨⟩
-    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily (ZMod 5) 0 1)
-      (protocol (ZMod 5) 0 1) (projectPathAlong oracleSig _ tr)).answer
-        ((fun _ => oneInput), payloads _ tr)))
+    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily (ZMod 5) 0 1)
+      (protocol (ZMod 5) 0 1) tr.path).answer
+        ((fun _ => oneInput), oracleMessages _ tr)))
       ((indexedVerifier (ZMod 5) 0 1 ([0, 0] : List (ZMod 5)).get amb).decide
         ⟨2, Fin.elim0⟩ _ (toView _ tr)).run =
       (pure (some ⟨1, Fin.snoc Fin.elim0 0⟩) :
@@ -469,7 +469,7 @@ theorem repeated_run {ι : Type} (amb : OracleSpec ι) :
     pure (⟨tr, out, (indexedVerdict ([0, 0] : List (ZMod 5)).get 1
       (some (IndexedClaim.initial ⟨2, Fin.elim0⟩)) tr).map
         (fun t => (t, fun _ => oneInput))⟩ :
-      Observation oracleSig (protocol (ZMod 5) 0 1) (fun _ => ZMod 5)
+      Outcome oracleSig (protocol (ZMod 5) 0 1) (fun _ => ZMod 5)
         (fun _ => RoundStatement (ZMod 5) 1 (Fin.last 1) ×
           (∀ i, PolynomialData (ZMod 5) 1 0 i)))) = _
   rw [run_roundProver]
@@ -491,14 +491,14 @@ run_cmd
       ``Sumcheck.Core.verifier_soundness_rounds, ``Sumcheck.Core.verifier_soundness_list,
       ``Sumcheck.Core.verifier_soundness_injective, ``Sumcheck.Core.verifier_run_soundness,
       ``Sumcheck.Core.committed_soundness, ``Sumcheck.Core.randomized_soundness,
-      ``Sumcheck.Core.indexedVerifier_run, ``Sumcheck.Core.NativeSoundnessTest.repeated_run,
+      ``Sumcheck.Core.indexedVerifier_run, ``Sumcheck.Core.IndexedSoundnessTest.repeated_run,
       ``Sumcheck.Core.committed_measureSoundness,
       ``Sumcheck.Core.randomized_measureSoundness] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.NativeSoundnessTest
+end Sumcheck.Core.IndexedSoundnessTest
 
 -- The separate Simple-protocol checks do not require finite or sampleable semirings.
 run_cmd

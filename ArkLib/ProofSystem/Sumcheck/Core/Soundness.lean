@@ -59,7 +59,7 @@ theorem verifier_soundness_injective (embedding : Fin d ↪ R) :
 
 /-- The native bound is a probability statement about the accepted verdict of the actual run. -/
 theorem verifier_run_soundness
-    {Out : PathAlong oracleSig (protocol R deg n) → Type}
+    {Out : Transcript oracleSig (protocol R deg n) → Type}
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ()))
     (prover : Prover oracleSig ambient (protocol R deg n) Out) :
@@ -110,13 +110,13 @@ theorem randomized_soundness {Out : Type} (commit : OracleComp ambient (R⦃≤ 
 theorem committed_measureSoundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R → Out)
     (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ())) :
-    letI : MeasurableSpace (Observation oracleSig (protocol R deg 1) (fun _ => Out)
+    letI : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
       (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) := ⊤
     𝒟[experiment init impl (indexedDraw (R := R) (deg := deg) 1)
       ((indexedVerifier R deg 1 D ambient).run stmt data (committedProver ambient msg finish))]
       {obs | ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target} ≤
         (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
-  let : MeasurableSpace (Observation oracleSig (protocol R deg 1) (fun _ => Out)
+  let : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
     (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) := ⊤
   rw [← prEvent_eq_evalDist_of_discrete]
   exact committed_soundness D ambient init impl msg finish stmt data hfalse
@@ -125,13 +125,13 @@ theorem committed_measureSoundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finis
 theorem randomized_measureSoundness {Out : Type} (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
     (finish : R → Out) (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ())) :
-    letI : MeasurableSpace (Observation oracleSig (protocol R deg 1) (fun _ => Out)
+    letI : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
       (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) := ⊤
     𝒟[experiment init impl (indexedDraw (R := R) (deg := deg) 1)
       ((indexedVerifier R deg 1 D ambient).run stmt data (randomizedProver ambient commit finish))]
       {obs | ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target} ≤
         (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
-  let : MeasurableSpace (Observation oracleSig (protocol R deg 1) (fun _ => Out)
+  let : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
     (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) := ⊤
   rw [← prEvent_eq_evalDist_of_discrete]
   exact randomized_soundness D ambient init impl commit finish stmt data hfalse

@@ -94,7 +94,7 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
   OracleVerifier.soundness_of_rbrSoundness_uniform h (fun _ => le_rfl) hcount
 
 -- The oracle conclusion is the model soundness of the classical oracle model, with acceptance read
--- from the verdict and the output oracle data of the observation.
+-- from the verdict and the output oracle data of the outcome.
 example {ι σ : Type} {I : Type uI} {S : Type uS}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
@@ -105,42 +105,42 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (ε : ℝ≥0∞) :
     V.soundness init impl draw input output ε ↔
-      ∀ Out : PathAlong oracleSig s → Type,
-        letI : MeasurableSpace (Observation oracleSig s Out (OracleVerifier.Output T B)) := ⊤
+      ∀ Out : Transcript oracleSig s → Type,
+        letI : MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B)) := ⊤
         soundness (V.classicalModel (Out := Out) init impl draw) input output
-          (fun obs => projectPathAlong oracleSig s obs.1) (fun obs => obs.2.2) ε :=
+          (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε :=
   Iff.rfl
 
 -- Disposition R1: soundness-implication-disposition.md#roundbyroundlean.
 example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
-    {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
+    {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (F : StateFunction l s S admissible language accepts) (stmt : S)
-    (hadm : admissible stmt) (hlang : ¬ language stmt) (tr : PathAlong l s)
+    (hadm : admissible stmt) (hlang : ¬ language stmt) (tr : Transcript l s)
     (hacc : accepts stmt tr) :
     EscapeAlong l s (fun sp history => F.toFun sp history stmt) tr :=
   F.escapeAlong l hadm hlang hacc
 
 -- Pure escape certificates accept a move universe strictly above Type.
 example {s : Protocol.{1}} {S : Type uS}
-    {admissible language : S → Prop} {accepts : S → PathAlong plainSig s → Prop}
+    {admissible language : S → Prop} {accepts : S → Transcript plainSig s → Prop}
     (F : StateFunction plainSig s S admissible language accepts) {stmt : S}
-    (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : PathAlong plainSig s}
+    (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : Transcript plainSig s}
     (hacc : accepts stmt tr) :
     EscapeAlong plainSig s (fun sp history => F.toFun sp history stmt) tr :=
   F.escapeAlong plainSig hadm hlang hacc
 
 -- Disposition S4: soundness-implication-disposition.md#soundnesslean.
 example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
-    {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
+    {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
     (F : StateFunction l s S admissible language accepts) (stmt : S)
     (hF : ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
-      (history : PrefixMoves l sp),
+      (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ¬ F.toFun sp history stmt ∧
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h))
+          (PartialTranscriptAt.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h))
     {α : Type} (author : OptionT ProbComp α) (select : α → ReceiverPrefix l s) (e : ℝ≥0∞)
     (hselect : ∀ y, ε (select y).node ≤ e) :
     Pr{let flip ← (author >>= fun y =>
@@ -151,22 +151,22 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
 
 -- Disposition S4 also covers a fixed receiver node and a nonfailing prefix author.
 example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
-    {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
+    {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
     (F : StateFunction l s S admissible language accepts) (stmt : S)
     (hF : ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
-      (history : PrefixMoves l sp),
+      (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ¬ F.toFun sp history stmt ∧
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h))
+          (PartialTranscriptAt.snoc l sp history x) stmt} ≤ ε (spineChallenge l sp h))
     {a : P.A} {next : P.B a → FreeM P PUnit} (sp : Cursor.Spine s (.liftBind a next))
     (h : owner l a = .receiver) {α : Type} (author : ProbComp α)
-    (prefixOf : α → PrefixMoves l sp) :
+    (prefixOf : α → PartialTranscriptAt l sp) :
     Pr{let y ← author; let x ← sampleAt l draw sp h}[¬ F.toFun sp (prefixOf y) stmt ∧
       F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-        (PrefixMoves.snoc l sp (prefixOf y) x) stmt] ≤ ε (spineChallenge l sp h) :=
+        (PartialTranscriptAt.snoc l sp (prefixOf y) x) stmt] ≤ ε (spineChallenge l sp h) :=
   flip_random_history_le l (fun sp history => F.toFun sp history stmt) draw sp h
     (hF a next sp h) author prefixOf
 
@@ -197,16 +197,17 @@ theorem afterBit_node_ne : (afterBit true).node ≠ (afterBit false).node := by
   cases h'
 
 -- Disposition S4 also permits the selected node to depend on the author's output.
-example (G : ∀ {t : Protocol}, (sp : Cursor.Spine branchy t) → PrefixMoves plainSig sp → Prop)
+example
+    (G : ∀ {t : Protocol}, (sp : Cursor.Spine branchy t) → PartialTranscriptAt plainSig sp → Prop)
     (draw : QueryImpl (challengeSpec plainSig branchy) ProbComp)
     (ε : ChallengeNode plainSig branchy → ℝ≥0∞)
     (hlocal : ∀ (a : PlainPos) (next : PlainPoly.B a → Protocol)
       (sp : Cursor.Spine branchy (.liftBind a next)) (h : owner plainSig a = .receiver)
-      (history : PrefixMoves plainSig sp),
+      (history : PartialTranscriptAt plainSig sp),
       letI : MeasurableSpace (Move plainSig a) := ⊤
       𝒟[sampleAt plainSig draw sp h] {x | ¬ G sp history ∧
         G (sp.comp (.down (plainSig.toFunB a x) (.root _)))
-          (PrefixMoves.snoc plainSig sp history x)} ≤ ε (spineChallenge plainSig sp h))
+          (PartialTranscriptAt.snoc plainSig sp history x)} ≤ ε (spineChallenge plainSig sp h))
     (author : OptionT ProbComp Bool) (e : ℝ≥0∞) (htrue : ε (afterBit true).node ≤ e)
     (hfalse : ε (afterBit false).node ≤ e) :
     Pr{let flip ← (author >>= fun b => (afterBit b).Flips plainSig G <$>
@@ -268,9 +269,9 @@ def twoVerifier : Verifier counter twoChallenges Bool (fun _ => Nat) where
   rel_admissible _ _ _ _ := trivial
 
 /-- The two-challenge verifier accepts exactly a true statement or a zero challenge. -/
-theorem twoVerifier_validAcceptance_iff (stmt : Bool) (tr : PathAlong plainSig twoChallenges) :
+theorem twoVerifier_validAcceptance_iff (stmt : Bool) (tr : Transcript plainSig twoChallenges) :
     twoVerifier.validAcceptance tick stmt tr
-      (twoOutput.language (projectPathAlong plainSig twoChallenges tr)) ↔
+      (twoOutput.language tr.path) ↔
       (stmt || isZero tr.1 || isZero tr.2.1) = true := by
   rcases tr with ⟨x, y, ⟨⟩⟩
   have key : ∀ st, (simulateQ tick (twoVerifier.decide stmt _
@@ -286,7 +287,7 @@ theorem twoVerifier_validAcceptance_iff (stmt : Bool) (tr : PathAlong plainSig t
 certain. -/
 def twoState : StateFunction plainSig twoChallenges Bool (boolProblem.admissible ())
     (boolProblem.language ()) (fun stmt tr => twoVerifier.validAcceptance tick stmt tr
-      (twoOutput.language (projectPathAlong plainSig twoChallenges tr))) where
+      (twoOutput.language tr.path)) where
   toFun {_} sp history stmt := match sp, history with
     | .root _, _ => stmt = true
     | .down _ (.root _), history => (stmt || isZero history.1.1) = true
@@ -447,10 +448,10 @@ def optionalVerifier : Verifier counter coin Bool (fun _ => Nat) where
     (pure (if (stmt || view.val.1) = true then some 0 else none))
 
 /-- The optional verifier has the same acceptance condition as the counter verifier. -/
-theorem optionalAcceptance (stmt : Bool) (tr : PathAlong plainSig coin) :
+theorem optionalAcceptance (stmt : Bool) (tr : Transcript plainSig coin) :
     optionalVerifier.validAcceptanceWith optionalAmbient anyOutput.language stmt tr ↔
       coinVerifier.validAcceptance tick stmt tr
-        (anyOutput.language (projectPathAlong plainSig coin tr)) := by
+        (anyOutput.language tr.path) := by
   classical
   rw [validAcceptance_iff (fun _ => ⟨(), trivial⟩)]
   rcases tr with ⟨x, ⟨⟩⟩
@@ -528,7 +529,7 @@ def prover : Prover plainSig ambient protocol (fun _ => Unit) := do
   let impossible ← liftM (ambient.query ())
   nomatch impossible
 
-/-- A terminal decision that accepts every completed interaction. -/
+/-- A final decision that accepts every completed interaction. -/
 def verifier : Verifier ambient protocol Unit (fun _ => Unit) where
   decide _ _ _ := pure ()
 
@@ -545,7 +546,7 @@ def noChallenges : QueryImpl (challengeSpec plainSig protocol) ProbComp := fun c
   · cases h
   · nomatch node
 
-/-- The actual verifier run has no returned observation, including returned rejection. -/
+/-- The actual verifier run has no returned outcome, including returned rejection. -/
 theorem run_mass :
     Pr{let _ ← (simulateQ
       (handler.addLift noChallenges :
@@ -555,7 +556,7 @@ theorem run_mass :
       (handler.addLift noChallenges :
         QueryImpl (ambient + challengeSpec plainSig protocol) (OptionT ProbComp))
       (verifier.run () prover) =
-        (failure : OptionT ProbComp (Observation plainSig protocol (fun _ => Unit)
+        (failure : OptionT ProbComp (Outcome plainSig protocol (fun _ => Unit)
           (fun _ => Unit))) := by
     rfl
   rw [hfail]
@@ -594,7 +595,7 @@ run_cmd do
       ``Interaction.Core.ImplicationsTests.optionalAmbient_mass,
       ``Interaction.Core.ImplicationsTests.EmptyResponse.interpreted_action,
       ``Interaction.Core.ImplicationsTests.EmptyResponse.run_mass,
-      ``Interaction.Core.simulateQ_addLift_resources,
+      ``Interaction.Core.simulateQ_addLift_bundleAnswer,
       ``Interaction.Core.StateFunction.escapeAlong,
       ``Interaction.Core.flip_random_prefix_le,
       ``Interaction.Core.flip_random_history_le,

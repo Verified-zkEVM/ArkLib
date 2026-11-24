@@ -74,7 +74,7 @@ def initState (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStat
     RoundState R deg n n :=
   ⟨0, Nat.zero_add n, stmt, oStmt ()⟩
 
-/-- The honest Sumcheck prover. Every slot is `pure` and the output is pure. -/
+/-- The honest Sumcheck prover. Every move is `pure` and the output is pure. -/
 noncomputable def honestProver {m : Type → Type} [Monad m]
     (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStatement R n deg i) :
     Focal oracleSig m (protocol R deg n) (fun _ => HonestOutput R deg n) :=
@@ -83,7 +83,7 @@ noncomputable def honestProver {m : Type → Type} [Monad m]
 /-- The honest transcript on the given challenges. -/
 noncomputable def honestTranscript (stmt : Spec.StatementRound R n 0)
     (oStmt : ∀ i, Spec.OracleStatement R n deg i) (chals : Fin n → R) :
-    PathAlong oracleSig (protocol R deg n) :=
+    Transcript oracleSig (protocol R deg n) :=
   foldTranscript (honestMessage D) (nextState (honestMessage D)) n (initState stmt oStmt) chals
 
 /-- The honest prover output on the given challenges. -/

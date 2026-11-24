@@ -53,7 +53,7 @@ theorem interpret_intervalHonestProver {m : Type → Type} [Monad m] [LawfulMona
 variable [DecidableEq R]
 
 /-- Actual execution of computed honest messages equals mathematical honest execution. -/
-theorem execute_honest_eq_native {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem execute_honest_eq_noncomputable {m : Type → Type} [Monad m] [LawfulMonad m]
     {Data : Type} (next : m R) (k : ℕ) (st : IntervalClaim R n stop k) (data : Data) :
     Interpreted.execute next (intervalCheck D) IntervalClaim.finish k st data
       (intervalHonestProver D poly hpoly k st) =
@@ -80,7 +80,7 @@ theorem execute_honest {m : Type → Type} [Monad m] [LawfulMonad m] {Data : Typ
         (t, some (t, data))) <$>
         drawChallenges k
           (Interpreted.draw (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) next k) := by
-  rw [execute_honest_eq_native]
+  rw [execute_honest_eq_noncomputable]
   unfold Interpreted.execute intervalProver
   rw [run_foldRounds]
   simp only [Functor.map_map]

@@ -61,7 +61,7 @@ theorem nonzero_run :
   change (⟨roundTranscript zeroMessage 3, 37,
     (intervalVerdict repeated 1 (intervalInitial 1 1 (by decide) initial)
       (roundTranscript zeroMessage 3)).map (fun t => (t, fun _ => zeroInput))⟩ :
-      Observation oracleSig (protocol ℕ 0 1) (fun _ => ℕ)
+      Outcome oracleSig (protocol ℕ 0 1) (fun _ => ℕ)
         (fun _ => RoundStatement ℕ 3 2 × (∀ i, PolynomialData ℕ 3 0 i))) = _
   rw [nonzero_verdict]
   rfl
@@ -80,7 +80,7 @@ theorem zero_count :
       (intervalInitial 1 0 (by decide : 1 + 0 ≤ 3) initial) PUnit.unit).map
         (fun t => (t.target, t.challenges 0)) = some (0, 7) := rfl
 
-/-- The actual empty interval executes its terminal prover action and accepts the same claim. -/
+/-- The actual empty interval executes the prover's leaf action and accepts the same claim. -/
 theorem zero_run :
     ((fun obs => (obs.2.1, obs.2.2.map (fun t => (t.1.target, t.1.challenges 0)))) <$>
       (intervalVerifier ℕ 0 3 repeated ambient 1 0 (by decide)).run (Out := fun _ => ℕ)

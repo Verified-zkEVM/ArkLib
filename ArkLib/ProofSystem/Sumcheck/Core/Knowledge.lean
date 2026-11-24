@@ -33,7 +33,7 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
 /-- Knowledge soundness of the interaction-layer Sumcheck verifier, with the error of the legacy
 Sumcheck: `deg / |R|` for each challenge. -/
 theorem verifier_knowledgeSoundness [Fintype R] [IsDomain R] :
-    letI : MeasurableSpace (Observation oracleSig (protocol R deg n)
+    letI : MeasurableSpace (Outcome oracleSig (protocol R deg n)
       (fun _ => (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) ×
         Unit) (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg
           i))) := ⊤
@@ -43,7 +43,7 @@ theorem verifier_knowledgeSoundness [Fintype R] [IsDomain R] :
       (relProblem (Spec.relationRound R n deg D 0))
       (relProblem (Spec.relationRound R n deg D (Fin.last n)))
       (knowledgeJudgementOn (protocol R deg n) (Spec.relationRound R n deg D (Fin.last n)))
-      ((verifier R deg n D ambient).classicalStraightline (fun _ => Unit) init impl
+      ((verifier R deg n D ambient).classicalStraightLine (fun _ => Unit) init impl
         (challengeQueryImpl oracleSig (protocol R deg n))
         (fun _ (o : (Spec.StatementRound R n (Fin.last n) ×
           (∀ i, Spec.OracleStatement R n deg i)) × Unit) => o.2))
