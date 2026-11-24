@@ -137,7 +137,7 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
-| L24, local `implicit_reducible` attribute | removed | Removed mechanism: a local transparency override on `OracleInterface.toOracleSpec` and `OracleInterface.Response`. The ports need no transparency command. |
+| L24, local `implicit_reducible` attribute | removed | Removed mechanism: a local transparency override on `OracleInterface.toOracleSpec` and `OracleInterface.Response`. The ports drop these two local attributes and need no transparency command. The new fixtures keep two `@[reducible]` annotations, both on definitions of class type: `wideInterface : OracleInterface Bool` and the answer measure `alwaysTrue`. Without the one on `wideInterface`, the build warns that a definition of class type is semireducible. The earlier revision also marked 15 protocols and oracle families `@[instance_reducible]`. The fixtures elaborate without them, so this revision removes them. |
 | L134, `firstStage_run` | ported | [compRow1] holds for every verdict, input, branch choice and hidden value. It checks events 0 then 1, the input's parity as statement, the input plus 11 as data, and `hidden + 1` in the prover output. The old-layer input behavior `answers : naturals.spec.Domain → Nat` and the new data `answers : Unit → Nat` determine each other. The family has one index with one `Unit` query, answered by the data. |
 | L144, `secondStage_run` | ported | [compRow2True] and [compRow2False] hold for both message types and every input statement, exported value and hidden value. They check events 2 then 3 and the same statement, data and private output. The old-layer setup event 2 is the prover's first effect. |
 | L169 `stages_zero` and L173 `stages_one` | removed | Removed mechanism: the `Fin`-indexed stage family built with `Fin.cons`, whose indices must be resolved. A chain lists its stages in order as constructors. [threeVerifierCons] states that a chain's verifier is the append of its first stage and the rest, without unfolding either. |
@@ -307,17 +307,17 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 [echoNotFree]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L496
 [echoCheckEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L526
 [echoCheckRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L542
-[wideStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L602
-[wideDecide]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L610
-[wideNarrow]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L620
-[wideNarrowRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L652
-[sumStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L680
-[sumSteps]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L701
-[sumAccepts]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L715
-[sumSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L738
-[coinAlmostSurely]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L821
-[coinNotOnSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L833
-[coinRejectSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L840
+[wideStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L601
+[wideDecide]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L609
+[wideNarrow]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L619
+[wideNarrowRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L651
+[sumStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L679
+[sumSteps]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L700
+[sumAccepts]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L714
+[sumSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L737
+[coinAlmostSurely]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L820
+[coinNotOnSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L832
+[coinRejectSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L839
 [liftQueries]: ../../../ArkLib/Interaction/Core/StageChain.lean#L77
 [comapInputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L120
 [mapOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L128

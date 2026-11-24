@@ -52,7 +52,7 @@ theorem branchProtocol_noChallenge : ChallengeNode oracleSig branchProtocol → 
     all_goals exact nomatch h
 
 /-- A challenge, then the prover's response. -/
-@[instance_reducible] def responseProtocol : OracleProtocol :=
+def responseProtocol : OracleProtocol :=
   .liftBind (.challenge Nat) (fun _ => .liftBind (.message Nat) (fun _ => .pure ⟨⟩))
 
 /-- The challenge draw records 5 and answers 9. -/
@@ -345,7 +345,7 @@ selects the second stage. On `true` it is the third stage above, which draws a c
 `false` it receives one `Nat` and has no challenge. -/
 
 /-- The prover sends one `Bool`. -/
-@[instance_reducible] def pick : OracleProtocol :=
+def pick : OracleProtocol :=
   .liftBind (.message Bool) fun _ => .pure ⟨⟩
 
 /-- The first decision records 20 and accepts its input statement. It forwards the input oracle. -/
@@ -357,7 +357,7 @@ def pickVerifier :
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The prover sends one `Nat`. -/
-@[instance_reducible] def reply : OracleProtocol :=
+def reply : OracleProtocol :=
   .liftBind (.message Nat) fun _ => .pure ⟨⟩
 
 /-- The decision records 22, reads the input oracle, and accepts its answer with the statement
@@ -558,7 +558,6 @@ def wideInterface : OracleInterface.{0, 1} Bool where
   toOC.impl _ := read
 
 /-- One Boolean oracle whose query lies in `Type 1`. -/
-@[instance_reducible]
 def wideBooleans : OracleFamily.{0, 0, 1} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
 
 /-- Export the parity of the scalar input as a wide oracle. -/

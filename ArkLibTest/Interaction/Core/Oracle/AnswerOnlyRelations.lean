@@ -20,7 +20,7 @@ open PFunctor Interaction.Core Interaction.Oracle OracleComp
 namespace Interaction.Core.AnswerOnlyRelationsTests
 
 /-- A concrete representation carries an unobservable Boolean tag. -/
-@[instance_reducible] def tagged : OracleFamily Unit (fun _ => Nat × Bool) where
+def tagged : OracleFamily Unit (fun _ => Nat × Bool) where
   interface := fun _ =>
     { Query := Unit
       toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }

@@ -31,7 +31,7 @@ namespace Interaction.Core.HeterogeneousAppendTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
 /-- A distinct scalar Boolean oracle. -/
-@[instance_reducible] def booleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
+def booleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Export the scalar input plus 11, next to any message bundle. -/
@@ -67,12 +67,12 @@ def firstVerifier (accept : Bool) :
   outputMap _ p _ := addEleven (oracleMessageFamily done p)
 
 /-- The second message type depends on the first message. -/
-@[instance_reducible] def branchNext : Bool → OracleProtocol
+def branchNext : Bool → OracleProtocol
   | true => .liftBind (.message Nat) (fun _ => .pure ⟨⟩)
   | false => .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
 
 /-- A true choice sends a natural number; a false choice sends a Boolean. -/
-@[instance_reducible] def branchProtocol : OracleProtocol :=
+def branchProtocol : OracleProtocol :=
   .liftBind (.message Bool) branchNext
 
 /-- The numeric value of the second message on either branch. -/

@@ -57,10 +57,10 @@ example : UniverseSeparatedReduction ([]ₒ : OracleSpec.{0, 0} PEmpty) (Type 2)
 abbrev ambient : OracleSpec PEmpty := []ₒ
 
 /-- The first interaction sends one Boolean. -/
-@[instance_reducible] def prefixTree : Protocol := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
+def prefixTree : Protocol := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
 
 /-- The continuation changes its message type according to the complete prefix path. -/
-@[instance_reducible] def suffixTree : Path prefixTree → Protocol
+def suffixTree : Path prefixTree → Protocol
   | ⟨false, ⟨⟩⟩ => .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
   | ⟨true, ⟨⟩⟩ => .liftBind (.message (Fin 3)) (fun _ => .pure ⟨⟩)
 

@@ -29,7 +29,7 @@ universe uX dX
 namespace Interaction.Core.PassiveExecutionTests
 
 /-- No output oracles. -/
-@[instance_reducible] def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun i => i.elim) :=
+def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun i => i.elim) :=
   ⟨fun i => i.elim⟩
 
 /-- The output map from any bundle into no oracles. -/
@@ -39,7 +39,7 @@ def noOutputMap (In : OracleBundle.{0, uX, dX}) : OracleMap In noOutputs where
   law _ q := q.1.elim
 
 /-- A public `Bool`, a pair oracle, a challenge, and a final pair oracle. -/
-@[instance_reducible] def protocol : OracleProtocol :=
+def protocol : OracleProtocol :=
   .liftBind (.message Bool) (fun _ =>
     .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ =>
       .liftBind (.challenge Nat) (fun _ => pairSend)))
@@ -185,7 +185,7 @@ The prefix sends one pair oracle and samples a challenge; the suffix always send
 oracle. The challenge preserves the shape and changes the suffix verdict. -/
 
 /-- One pair oracle, then a challenge. -/
-@[instance_reducible] def firstProtocol : OracleProtocol :=
+def firstProtocol : OracleProtocol :=
   .liftBind (.oracle (Nat × Nat) firstInterface) (fun _ =>
     .liftBind (.challenge Nat) (fun _ => .pure ⟨⟩))
 
@@ -415,11 +415,11 @@ example : ((simulateQ tagLogger completedThen).run []).2 ≠
 /-! ### A sampled first suffix move follows the prefix and precedes the prover response -/
 
 /-- The prefix sends a public `Unit`. -/
-@[instance_reducible] def firstPublic : OracleProtocol :=
+def firstPublic : OracleProtocol :=
   .liftBind (.message Unit) (fun _ => .pure ⟨⟩)
 
 /-- The suffix samples one challenge. -/
-@[instance_reducible] def secondPublic : OracleProtocol :=
+def secondPublic : OracleProtocol :=
   .liftBind (.challenge Nat) (fun _ => .pure ⟨⟩)
 
 /-- The public prefix followed by the sampled suffix. -/

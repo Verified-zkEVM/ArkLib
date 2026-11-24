@@ -282,8 +282,9 @@ routing example.
 
 The interaction layer had no replacement for the old-layer ordered execution of a finite family of
 closed stages (`ExecutionInterface`, `ClosedStage`, `OrderedExecution.run` in
-`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/StageChain.lean` adds an n-ary
-composition through the passive append `OracleVerifier.append` (record D5).
+`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/StageChain.lean` adds the
+right-associated passive composition API: a chain appends its first stage to the composed rest
+through the passive append `OracleVerifier.append` (record D5).
 
 - `StageChain ambient S inputs` is the plan of a finite chain of passive oracle verifiers from the
   statement type `S` and the oracle family `inputs`. `StageChain.nil` has no stages.
@@ -298,8 +299,9 @@ composition through the passive append `OracleVerifier.append` (record D5).
   The plan does not store its verifiers' certificates, because the certificate at a boundary
   refers to the composed verifier of the rest. Storing it in the constructor would need an
   inductive-recursive definition. The certificates are general, so an output map may read its
-  input statement. For example, it may do so through `OutputCompatibility.ofStatement` when the
-  intermediate statement is public. `StageChain.StatementFree c` is the special case in which no
+  input statement. `OutputCompatibility.ofStatement` gives a certificate from a function of the
+  input statement, the composed path and the view, provided every accepted prefix statement
+  equals that function's result. `StageChain.StatementFree c` is the special case in which no
   output map reads its input statement. `StageChain.StatementFree.certify` builds its evidence with
   `OutputCompatibility.ofStatementFree`.
 - Inside a chain, the oracle families share one query universe `w`, because a recursive
@@ -308,8 +310,10 @@ composition through the passive append `OracleVerifier.append` (record D5).
   `OracleVerifier.liftInputs`, `OracleVerifier.liftOutputs` and `OracleVerifier.lowerOutputs`.
   These adapters are instances of `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs`.
   The recovery laws (`liftInputs_decideWith`, `liftInputs_outputData`, `liftOutputs_outputData`,
-  `lowerOutputs_outputData`, `comapInputs_run`) state that the adapters keep the decision, the
-  output data and the run.
+  `lowerOutputs_outputData`, `comapInputs_run`) state that the adapters keep the decision and the
+  output data. `comapInputs_run` gives the same run after the bundle queries are answered from the
+  supplied data. It does not bound the source queries that the routing issues, which needs a
+  separate statement.
 - `StageChain.protocol`, `StageChain.draw` and `StageChain.run` are the composed protocol, the combined draws
   and the core run `OracleVerifier.run` of the composed verifier with the challenges answered by
   the draws. `StageChain.verifier_cons` and `StageChain.draw_cons` state that a chain with a first stage
@@ -326,7 +330,9 @@ composition through the passive append `OracleVerifier.append` (record D5).
   - the support (`StageChain.decideWith_accepts_of_onSupport` from `StageChain.AcceptsOnSupport`);
   - almost-sure acceptance (`StageChain.decideWith_accepts_of_almostSurely` from `StageChain.AcceptsAlmostSurely`).
     Each boundary event is a `StageChain.DiscreteEvent` that carries the discrete measurable
-    structure of its statement type.
+    structure of its statement type. Probabilities come from the `OracleSpec.AnswerMeasure`
+    instance on `ambient`. A persistent runtime with private state needs its own compatibility
+    statement or invariant relating it to that measure.
 
   They concern the fold of the decisions after all interactions. Each is proved by induction on
   the chain from the binary law `OracleVerifier.append_decideWith_of_accept`,
@@ -336,9 +342,12 @@ composition through the passive append `OracleVerifier.append` (record D5).
 The composition runs the interactions of all stages and then folds the decisions. A rejecting
 decision makes the composite reject and skips the later decisions, but no interaction. Only the
 path of the earlier stages selects a later stage, and that path records the prover's public
-messages. Neither a challenge, nor an oracle message, nor an earlier verdict selects it (premises
-P1 and P2 of the
-[stage and execution port table](../interaction-layer/port-stages.md)).
+messages. Neither a challenge, nor an oracle message, nor an earlier verdict selects it directly
+(premises P1 and P2 of the [stage and execution port table](../interaction-layer/port-stages.md)).
+A prover can choose its messages after seeing a challenge, so a challenge can still affect the
+choice through the prover. Each challenge comes from a draw program indexed by the challenge node,
+over the same ambient interface the prover uses. The types do not make challenges public-coin; a
+client that needs public-coin sampling states it as a separate condition.
 
 The old-layer executor decided each stage before the next one started, so a rejection skipped the
 later interactions. It also selected each stage's protocol by the statement the previous stage had
@@ -349,14 +358,17 @@ the old-layer two-stage tests with the history `[0, 2, 1, 3]` and the rejection 
 stage by the first stage's prover message. It also composes a stage whose output map reads its
 input statement, both alone and followed by a second stage. It composes stages whose families
 have their queries in `Type` and `Type 1`. Finally, it derives a property of a three-stage
-decision from one hypothesis per boundary.
+decision from one hypothesis per boundary. A one-stage decision that queries an ambient `Bool`
+and rejects on `false` accepts almost surely under the answer measure `alwaysTrue`, although its
+support contains the rejection.
 
 The split of a composition at an arbitrary middle stage is not ported. The protocol part exists:
 PolyFun's `PFunctor.FreeM.append_assoc`, with the inverse laws of `Path.append` and `Path.split`,
 and the concatenation `Chain.then` with `Chain.toTypeTree_then`. The missing part is a
 reassociation law for `OracleVerifier.append`. It must transport paths and views along the
 protocol associativity, reconcile `prefixRoute` and `suffixRoute`, and reassociate the
-compatibility certificates. The split after the first stage is `StageChain.run_cons`.
+compatibility certificates. The split also needs the prover continuation retained at the cut.
+The split after the first stage is `StageChain.run_cons`.
 
 ### Output witnesses are indexed by the transcript
 
