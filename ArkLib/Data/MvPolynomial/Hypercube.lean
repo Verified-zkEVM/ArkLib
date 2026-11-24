@@ -14,6 +14,7 @@ public import ArkLib.Data.MvPolynomial.EvalExcept
 Coordinate splitting expresses a Boolean hypercube sum as the sum of its two faces.
 `hypercubeSuffix` assembles a fixed prefix and Boolean suffix for `evalExcept`.
 Summing these restrictions computes the corresponding partial hypercube sum.
+A partial hypercube sum is the full hypercube sum of the polynomial with its prefix fixed.
 Cube sums use `Fintype.piFinset`.
 -/
 
@@ -97,6 +98,15 @@ theorem hypercubeSum_succ (H : MvPolynomial (Fin (M + 1)) F) (i : Fin (M + 1)) (
   · refine Finset.sum_congr rfl fun y _ => ?_
     simpa only [Function.comp_def, finCongr_apply, Fin.val_one, Nat.cast_one] using
       congrArg (fun x => H.eval x) (hypercubePoint_cons i cs 1 y)
+
+/-- A partial hypercube sum is the full hypercube sum of the polynomial with the prefix fixed. -/
+theorem hypercubeSum_eq_fixFirstVariablesOfMQP {ℓ : ℕ} (H : MvPolynomial (Fin ℓ) F)
+    (v : Fin (ℓ + 1)) (cs : Fin v → F) :
+    hypercubeSum ℓ H v cs = hypercubeSum (ℓ - v) (fixFirstVariablesOfMQP ℓ v H cs) 0 Fin.elim0 := by
+  unfold hypercubeSum
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [eval_fixFirstVariablesOfMQP]
+  rfl
 
 /-- The sum of coordinate-line restrictions evaluates to the partial hypercube sum
 at the prefix extended by `T`. -/

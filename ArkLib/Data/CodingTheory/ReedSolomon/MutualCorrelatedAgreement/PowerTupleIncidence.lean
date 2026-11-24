@@ -59,7 +59,7 @@ def frobeniusPowerSparseTaylorNumerators (center : E)
     (fun l ↦ jointCommonTaylorNumerator center Q τ l)
 
 /-- Retained admissible tuple graphs with at least `L` common agreement positions. -/
-def admissibleFrobeniusPowerTupleGraphLocus [Fintype α]
+def admissibleFrobeniusPowerTupleGraphLocus
     (domain : α ↪ F) (values : Fin (ℓ + 1) → α → F)
     (ι : F →+* E) (roots : α → E) (center : E)
     (Q : DifferentialPolynomial E[X] 0) (K k L τ s : ℕ) :
@@ -170,7 +170,7 @@ theorem commonAgreement_of_frobeniusPowerAgreementEquation_mem_prime [IsAlgClose
 /-- A regular positive-dimensional prime component containing `L` agreement cuts lies in a
 retained Frobenius power tuple graph with at least `L` common agreements. -/
 theorem principalOpen_subset_admissibleFrobeniusPowerTupleGraphLocus [IsAlgClosed E]
-    [Fintype α] {L : ℕ}
+    [Finite α] {L : ℕ}
     (domain : α ↪ F) (values : Fin (ℓ + 1) → α → F) (ι : F →+* E)
     (p e : ℕ) [ExpChar E p] (roots : α → E)
     (hroots : ∀ i, roots i ^ (p ^ e) = ι (domain i))

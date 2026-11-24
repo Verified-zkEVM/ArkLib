@@ -182,10 +182,10 @@ defined as an `F`-submodule of `ι → A`. -/
 abbrev ModuleCode.{u, v, w} (ι : Type u) (F : Type v) [Semiring F] -- ModuleCode ι F A
     (A : Type w) [AddCommMonoid A] [Module F A] : Type (max u w) := Submodule F (ι → A)
 
-abbrev LinearCode.{u, v} (ι : Type u) [Fintype ι] (F : Type v) [Semiring F] : Type (max u v) :=
+abbrev LinearCode.{u, v} (ι : Type u) (F : Type v) [Semiring F] : Type (max u v) :=
   Submodule F (ι → F)
 
-lemma LinearCode_is_ModuleCode.{u, v} {ι : Type u} [Fintype ι] {F : Type v} [Semiring F] :
+lemma LinearCode_is_ModuleCode.{u, v} {ι : Type u} {F : Type v} [Semiring F] :
     LinearCode ι F = ModuleCode ι F F := by
   rfl
 
@@ -436,8 +436,9 @@ lemma IsMaxCADomain.eq_of_card_compl_inter_lt_minDist [Semiring F] [Module F A] 
 def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
   Code.dist LC.carrier = length LC - dim LC + 1
 
+omit [Fintype ι] in
 /-- Every linear code over a field `F` is a finitely generated `F`-module. -/
-lemma linear_code_is_FG [Field F] (LC : LinearCode ι F) : LC.FG := Submodule.FG.of_finite
+lemma linear_code_is_FG [Finite ι] [Field F] (LC : LinearCode ι F) : LC.FG := Submodule.FG.of_finite
 
 /-- Module code defined by left multiplication by its generator matrix.
 For a matrix `G : Matrix κ ι F` (over field `F`) and module `A` over `F`, this generates
@@ -456,10 +457,11 @@ noncomputable def fromColGenMat [CommRing F] (G : Matrix ι κ F) : LinearCode �
 noncomputable def byCheckMatrix [CommRing F] (H : Matrix ι κ F) : LinearCode κ F :=
   LinearMap.ker H.mulVecLin
 
+omit [Fintype ι] in
 /-- Given a linear code of length `ι` and dimension `dim` over a field `F`, there exists a
 `dim × ι` matrix over `F` which generates the code.
 Theorem 2.2.7 [GRS25]. -/
-lemma gen_matrix_exists [Field F] (LC : LinearCode ι F) :
+lemma gen_matrix_exists [Finite ι] [Field F] (LC : LinearCode ι F) :
     ∃ (G : Matrix (Fin (dim LC)) ι F), LC = fromRowGenMat G := by
   unfold dim
   unfold fromRowGenMat
@@ -544,6 +546,7 @@ generator matrix as a matrix whose columns are an `F`-basis of the code. -/
 noncomputable def genMatrixCols [Field F] (LC : LinearCode ι F) :
     Matrix ι (Fin (dim LC)) F := (matrixFromBasis LC).transpose
 
+omit [Fintype κ] in
 /-- The dimension of a linear code equals the rank of its associated generator matrix.
 -/
 lemma rank_eq_dim_fromColGenMat [CommRing F] {G : Matrix κ ι F} :
