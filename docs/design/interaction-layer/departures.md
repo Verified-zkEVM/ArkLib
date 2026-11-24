@@ -44,8 +44,7 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 
 The [oracle-bundle and oracle-node universe port table](port-bundle-universes.md) records
 the old-layer R26, R27 and decoration canaries closed by entry 18. The R26/R27 definitions occur
-once, in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`, and `UniverseCanary.lean`
-imports them.
+once, in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`.
 
 ## Legacy embedding: entries 14–16
 

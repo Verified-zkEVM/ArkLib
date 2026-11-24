@@ -3,9 +3,8 @@
 This port table records the universe assertions reviewed as F3 and F4 for PR #1492. It reads the
 old-layer sources at `9829e83ced`. The ports import only the interaction Core APIs.
 The R26/R27 acceptance client is
-[`BundleFamilies.lean`](../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean),
-imported by `ArkLibTest/Interaction/Core/UniverseCanary.lean`. The latter keeps the oracle-node
-query canary.
+[`BundleFamilies.lean`](../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean).
+`ArkLibTest/Interaction/Core/UniverseCanary.lean` keeps the separate oracle-node query canary.
 
 | Old-layer assertion | Status | Port and evidence |
 | --- | --- | --- |

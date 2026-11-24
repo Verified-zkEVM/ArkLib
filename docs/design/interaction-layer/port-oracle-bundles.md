@@ -2,8 +2,8 @@
 
 This port table accounts for all 74 assertions in six old-layer test files. Each row links its
 old-layer assertion by line. This branch ports four of the files. The logged-execution and routing
-tests port the 13 assertions of `SourceRoutingExample` and `TerminalRun/Examples`. For those rows,
-this table links the full entry in the
+tests account for the 13 assertions of `SourceRoutingExample` and `TerminalRun/Examples`. For those
+rows, this table links the full entry in the
 [logged-execution port table](port-logged-execution.md). A ported row links the exact Core client. Added checks supplement these rows.
 
 The two approved premises are:
@@ -21,12 +21,14 @@ Each row has one of four statuses:
 - **removed:** the row names a mechanism that no longer exists.
 - **open:** the row names an interface that the parent branch is missing.
 
-A row marked **ported in the logged-execution table** takes its status and exact target from the
-linked section of that table. The logged-execution table splits SR1 into three entries. It ports
-one and excludes two by P1. A narrower test never counts as a port of an old-layer assertion.
+A row marked **ported in the logged-execution table** or **removed in the logged-execution
+table** takes its status and exact target from the linked section of that table. The
+logged-execution table splits SR1 into three entries. It ports one and excludes two by P1. A
+narrower test never counts as a port of an old-layer assertion.
 
-This table has 66 ported rows, 12 of them ported in the logged-execution table, and 7 removed
-rows. SR1 is the split row described above. No other row is excluded, and no row is open.
+This table has 64 ported rows, 10 of them ported in the logged-execution table, and 9 removed
+rows, 2 of them removed in the logged-execution table. SR1 is the split row described above. No
+other row is excluded, and no row is open.
 
 ## SourceExample
 
@@ -42,7 +44,7 @@ rows. SR1 is the split row described above. No other row is excluded, and no row
 | S6a [91][fs6a] | Right injection reads right data | ported: [test][ns6a] |
 | S6b [94][fs6b] | Left injection reads left data | ported: [test][ns6b] |
 | S7 [98][fs7] | Constant renaming answers 5 | ported: [test][ns7] |
-| S8 [101][fs8] | Tensor answer is a pair | ported: [test][ns8] |
+| S8 [101][fs8] | Tensor answer is a pair | ported: [library tensor][ns8t] and [routing fixture][ns8] |
 | S9 [105][fs9] | Indexed function selection | ported: [test][ns9] |
 | S10 [113][fs10] | Independent sum universes | ported: [test][ns10] |
 | S11 [116][fs11] | Independent tensor universes | ported: [test][ns11] |
@@ -116,8 +118,8 @@ rows. SR1 is the split row described above. No other row is excluded, and no row
 | --- | --- | --- |
 | TR1 [57][ftr1] | Effects survive a fault | ported in the logged-execution table: [entry][ltr] |
 | TR2 [60][ftr2] | Private output/query survive a fault | ported in the logged-execution table: [entry][ltr] |
-| TR3a [66][ftr3a] | Fault label 17 survives closing | ported in the logged-execution table: [entry][ltr] |
-| TR3b [68][ftr3b] | Fault label 23 survives closing | ported in the logged-execution table: [entry][ltr] |
+| TR3a [66][ftr3a] | Fault label 17 survives closing | removed in the logged-execution table: a verifier can no longer return a fault, because a core verdict is an `Option`; [entry][ltr] |
+| TR3b [68][ftr3b] | Fault label 23 survives closing | removed in the logged-execution table: a verifier can no longer return a fault, because a core verdict is an `Option`; [entry][ltr] |
 | TR4 [71][ftr4] | Rejection keeps the query answering 19 | ported in the logged-execution table: [entry][ltr] |
 | TR5a [77][ftr5a] | First run closes to 18 | ported in the logged-execution table: [entry][ltr] |
 | TR5b [82][ftr5b] | Second run closes to 32 | ported in the logged-execution table: [entry][ltr] |
@@ -155,16 +157,19 @@ either suffix root. Separate role decorations and their conversion casts are rem
 oracle signature still erases challenge answers from the shape. The general signature clients do
 not claim that an oracle-protocol receiver can select its next shape.
 
-The [logged-execution port][ltr] of `TerminalRun/Examples` interprets the final decision with
-labelled failures. Fault labels 17 and 23 remain distinct outcomes, and each differs from
-rejection. Each keeps the private output, the history `[9, 0, 1, 2]` and the sent-oracle answer.
-No TR row is removed.
+In the old `TerminalRun/Examples`, the verifier itself returned fault labels 17 and 23. A core
+verdict is an `Option`, so a verifier can no longer return a fault, and TR3a and TR3b are removed.
+In the [logged-execution port][ltr], a handler throws labels 17 and 23 during the final decision.
+That test shows that a handler failure keeps its label, the private output, the history
+`[9, 0, 1, 2]` and the sent-oracle answer, and that it differs from rejection. TR1 and TR2 are
+ported under handler failure.
 
 This branch adds a cost check to the routing tests' export map in
 [`ExportCost`][nsrc]. The exported query's implementation has worst-case cost two at unit cost per
 bundle query. By `OracleMap.withAmbient_worstCaseCost`, an exported query charged two units and
-routed through the map then costs at most two unit-cost bundle queries. The cost check
-supplements SR2 and does not discharge an old-layer row.
+routed through the map then costs at most two unit-cost bundle queries. That check uses an empty
+ambient interface. A second check adds an ambient query that the target charges less than the
+source. The cost checks supplement SR2 and do not discharge an old-layer row.
 
 V1 quantifies over every pure input handler, as the old-layer test does. `OracleBundle.ofSpec`
 uses arbitrary handlers as backing data, and `OracleMap.ofImpl` supplies the simulated output
@@ -183,7 +188,8 @@ old-layer sum's shared response universe.
 **SourceExample S11.** `OracleBundle.tensor` pairs the queries, responses and backing data. The
 query universes `u`, `u'`, response universes `v`, `v'` and data universes `w`, `w'` remain
 independent. Its result is `OracleBundle.{max v v', max u u', max w w'}`. The tests also check the
-exact product query and backing-data carriers.
+exact product query and backing-data carriers. The S8 row tests a concrete answer of the library
+tensor.
 
 **SourceExample S12.** `OracleBundle.liftResponse` raises responses from `v` to `max v v'` with
 `ULift`, preserving query universe `u`, data universe `w`, and both original carriers. This is
@@ -212,7 +218,7 @@ context `((x : Index) → Realization (name x))`. The view index universe `h` is
 of context universe `s`, query universe `q`, realization universe `a` and response universe `e`.
 The [shared client][bundleRuns] runs both bundle forms as verifier inputs using the same
 unencoded context data. `namedVerifier` specializes `viewVerifier` at the identity selection.
-The definitions occur once in `BundleFamilies.lean`, which `UniverseCanary.lean` imports.
+The definitions occur once, in `BundleFamilies.lean`.
 Neither P1 nor P2 excludes any part of these contracts.
 
 ## Remaining interface restrictions
@@ -234,18 +240,18 @@ in `Type`. This is an open restriction of the pinned VCVio cost API. It is separ
 `OracleInterface` and from the runner's requirement that returned values match its monad universe.
 Protocol semantics do not force query indices and costs to universe zero.
 
-The required changes belong in VCVio, pinned here at `fc54dd3d7691d6f5db7dc829e321a727f095bc2d`:
+The required changes belong in VCVio, pinned here at `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`:
 
-- Generalize `VCVio/OracleComp/QueryTracking/CostModel.lean`: the variables at line 64, `CostModel`
-  at line 87, `costDist`, and `WorstCaseCostBound` at line 218. Query-index, response/result and
+- Generalize `VCVio/OracleComp/QueryTracking/CostModel.lean`: the variables at line 63, `CostModel`
+  at line 86, `costDist`, and `WorstCaseCostBound` at line 217. Query-index, response/result and
   cost universes must be explicit, with any necessary relation stated instead of fixing zero.
 - Generalize the corresponding cost-writer helpers and their simulation/support laws.
-- Generalize `CostModel/Simulation.lean`'s variables at line 33 and
+- Generalize `CostModel/Simulation.lean`'s variables at line 32 and
   `WorstCaseCostBound.simulateQ` to those universes.
 - Then generalize this branch's wrapper using the upstream theorem. It needs no separate cost
   semantics and no local proof of the upstream simulation law.
 
-[cost]: ../../../ArkLib/Interaction/Core/Oracle/Cost.lean#L42
+[cost]: ../../../ArkLib/Interaction/Core/Oracle/Cost.lean#L47
 
 ## Definition-site fixture transparency
 
@@ -290,20 +296,21 @@ families use ordinary definition transparency as well. The exact remaining attri
 [ns7]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L163
 [fs8]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L101
 [ns8]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L188
+[ns8t]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L193
 [fs9]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L105
-[ns9]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L197
+[ns9]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L202
 [fs10]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L113
-[ns10]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L205
+[ns10]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L210
 [fs11]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L116
-[ns11]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L222
+[ns11]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L227
 [fs12]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L119
-[ns12]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L235
+[ns12]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L240
 [fs13]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L123
-[ns13]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L240
+[ns13]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L245
 [fs14]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L127
-[ns14]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L253
+[ns14]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L258
 [fs15]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L131
-[ns15]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L259
+[ns15]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L264
 [fr1]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L54
 [fr2]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L56
 [fr3]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L66

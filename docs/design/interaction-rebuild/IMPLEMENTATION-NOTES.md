@@ -257,7 +257,7 @@ function with intermediate witnesses in `Type 1` and the input witness `Unit` ce
 round-by-round knowledge for the core definition and both verifier wrappers. The same module
 now constructs an actual oracle node carrying `OracleInterface.{0, 1} Nat`, runs a verifier
 that queries its oracle message, and checks the returned value by `rfl`. The R26/R27 bundle
-constructors in the imported `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`
+constructors in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`
 quantify independently over `a` and `e`. `viewVerifier`, its identity-view specialization
 `namedVerifier` and a shared run example consume the original realization family directly.
 
