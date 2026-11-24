@@ -30,9 +30,16 @@ Two transcript types are attached to a tree, both of which already exist in Poly
 - `projectPathAlong l s : PathAlong l s → Path s` (`Path.lean:329`) forgets each move to the
   branch it selects.
 
+ArkLib's core states everything over these types through `Interaction.Core.Transcript l s`, a
+reducible definition of `PathAlong l s`, and `tr.path`, which is `projectPathAlong l s tr`
+(`ArkLib/Interaction/Core/Transcript.lean`). `Transcript.append`, `Transcript.split` and
+`Transcript.mapMoves` are the matching PolyFun operations with `l` implicit, and
+`TranscriptAt l s p` is the transcripts `tr` with `tr.path = p`. The later records use these
+names; the PolyFun declarations below keep their PolyFun names.
+
 Appending trees uses `FreeM.append s₁ s₂` (`Path.lean:657`) with a suffix family
 `s₂ : Path s₁ → FreeM P β`. A suffix participant after a full prefix transcript `tr₁` lives on
-`s₂ (projectPathAlong l s₁ tr₁)`. The existing appended-transcript API (`PathAlong.LiftAppend`,
+`s₂ tr₁.path`. The existing appended-transcript API (`PathAlong.LiftAppend`,
 `append`, `split`, `packAppend`, `unpackAppend` and their round trips, `Path.lean:1123–1300`)
 already indexes the suffix this way.
 
@@ -81,7 +88,7 @@ authored as one tree and run as another, and every statement about a run must be
 back across the conversion. Ownership is carried by a separate role decoration (record D2).
 
 One tree with a lens signature removes both problems. The tree is the only thing that is run.
-The lens says who moves and what is sent, and `PathAlong` versus `Path` separates what was sent
+The lens says who moves and what is sent, and `Transcript` versus `Path` separates what was sent
 from what the shape may depend on. Whether a move can select the continuation is decided by the
 lens's backward map, so record D1 can make challenges and oracle payloads shape-irrelevant by
 typing.
@@ -103,9 +110,8 @@ typing.
 ## Consequences
 
 - There is one execution tree. No execution step converts it to a `TypeTree` or any other tree.
-- Clients write suffix families over `Path s₁` and participant data over `PathAlong l s₁`.
-  Moving between the two is always `projectPathAlong`, and at the identity lens
-  `projectPathAlong_id`.
+- Clients write suffix families over `Path s₁` and participant data over `Transcript l s₁`.
+  Moving between the two is always `tr.path`, and at the identity lens `projectPathAlong_id`.
 - The general polynomial universes stay independent of the role polynomial's universe (record
   D2).
 

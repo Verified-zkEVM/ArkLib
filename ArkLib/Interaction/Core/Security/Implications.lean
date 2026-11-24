@@ -18,10 +18,19 @@ also when the prefix before the node is random, and also when a possibly failing
 the node together with its prefix. The union bound over the challenge nodes of a path therefore
 bounds soundness by the supremum, over shape paths, of the sum of the node errors along the path.
 
+An escape (`EscapeAlong`), a flip (`ReceiverPrefix.Flips`) and a bad challenge of knowledge
+extraction (`BadChallengeFrom` and `BadChallengeAlong` in `KnowledgeComposition/Extraction.lean`)
+are the same kind of event: a receiver move such that the state is false at the full prefix before
+the move and true at the prefix after it. A flip is this event at one receiver prefix and one move.
+An escape is this event at some receiver move of a completed transcript. A bad challenge is this
+event along a transcript for a knowledge state function, evaluated at each prefix on the witness
+that extraction computes backwards from the output witness.
+
 The protocol-tree bounds apply to any signature lens and any lawful monad with distribution
 semantics. Challenges may depend on the full prefix; node-indexed fresh draws are a specialization.
 The classical stateful wrappers use the same bound. An oracle verifier's acceptance is its decision
-on the input data and the run's payloads, with its output read through its output oracle map.
+on the input data and the run's oracle messages, with its output read through its output oracle
+map.
 -/
 
 @[expose] public section
@@ -55,8 +64,8 @@ def challengeNodesOn : (s : FreeM P PUnit.{u + 1}) → Path s → Finset (Challe
 
 /-- Some receiver node on the transcript turns the state from false to true. -/
 def EscapeAlong : (s : FreeM P PUnit.{u + 1}) →
-    (∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop) →
-    PathAlong l s → Prop
+    (∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop) →
+    Transcript l s → Prop
   | .pure _, _, _ => False
   | .liftBind a next, G, ⟨x, tr⟩ =>
     (owner l a = .receiver ∧ ¬ G (.root _) ⟨⟩ ∧
@@ -67,13 +76,14 @@ def EscapeAlong : (s : FreeM P PUnit.{u + 1}) →
 /-- A family false at the root, kept false by sender moves and false only at rejected leaves,
 escapes along every accepted transcript. -/
 theorem escapeAlong_of_accepts (s : FreeM P PUnit.{u + 1}) :
-    ∀ (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
-      (accepts : PathAlong l s → Prop),
+    ∀ (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
+      (accepts : Transcript l s → Prop),
       (∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history, owner l a = .sender →
         ¬ G sp history → ∀ x,
-          ¬ G (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp history x)) →
+          ¬ G (sp.comp (.down (l.toFunB a x) (.root _)))
+            (PartialTranscriptAt.snoc l sp history x)) →
       (∀ (sp : Cursor.Spine s (.pure ⟨⟩)) history,
-        ¬ G sp history → ¬ accepts (PrefixMoves.complete l sp history)) →
+        ¬ G sp history → ¬ accepts (PartialTranscriptAt.complete l sp history)) →
       ¬ G (.root s) ⟨⟩ → ∀ tr, accepts tr → EscapeAlong l s G tr := by
   induction s using FreeM.rec with
   | pure u =>
@@ -98,9 +108,9 @@ theorem escapeAlong_of_accepts (s : FreeM P PUnit.{u + 1}) :
 /-- On an accepted transcript of a false admissible statement, some challenge node on the path
 turns the state from false to true. -/
 theorem StateFunction.escapeAlong {s : FreeM P PUnit.{u + 1}} {S : Type uS}
-    {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
+    {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (F : StateFunction l s S admissible language accepts) {stmt : S}
-    (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : PathAlong l s}
+    (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : Transcript l s}
     (hacc : accepts stmt tr) :
     EscapeAlong l s (fun sp history => F.toFun sp history stmt) tr :=
   escapeAlong_of_accepts l s (fun sp history => F.toFun sp history stmt) (accepts stmt)
@@ -117,8 +127,8 @@ structure ReceiverPrefix (s : FreeM P PUnit.{u + 1}) where
   spine : Cursor.Spine s (.liftBind pos next)
   /-- The receiver owns the node. -/
   receiver : owner l pos = .receiver
-  /-- The full moves before the node, including erased payloads. -/
-  history : PrefixMoves l spine
+  /-- The full moves before the node, including erased oracle messages. -/
+  history : PartialTranscriptAt l spine
 
 /-- The challenge node at which a receiver prefix ends. -/
 abbrev ReceiverPrefix.node {s : FreeM P PUnit.{u + 1}} (pfx : ReceiverPrefix l s) :
@@ -127,30 +137,31 @@ abbrev ReceiverPrefix.node {s : FreeM P PUnit.{u + 1}} (pfx : ReceiverPrefix l s
 
 /-- A fresh move at the end of a receiver prefix turns the state from false to true. -/
 abbrev ReceiverPrefix.Flips {s : FreeM P PUnit.{u + 1}}
-    (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
+    (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
     (pfx : ReceiverPrefix l s) (x : Move l pfx.pos) : Prop :=
   ¬ G pfx.spine pfx.history ∧
     G (pfx.spine.comp (.down (l.toFunB pfx.pos x) (.root _)))
-      (PrefixMoves.snoc l pfx.spine pfx.history x)
+      (PartialTranscriptAt.snoc l pfx.spine pfx.history x)
 
 variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- At a fixed receiver node, a flip averaged over a random full prefix before the node has
 probability at most any bound on the flip probability at each prefix. -/
 theorem flip_random_history_le {α : Type} {s : FreeM P PUnit}
-    (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
+    (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) {a : P.A} {next : P.B a → FreeM P PUnit}
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) {e : ℝ≥0∞}
-    (hlocal : ∀ history : PrefixMoves l sp,
+    (hlocal : ∀ history : PartialTranscriptAt l sp,
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ¬ G sp history ∧
-        G (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp history x)} ≤ e)
-    (author : ProbComp α) (prefixOf : α → PrefixMoves l sp) :
+        G (sp.comp (.down (l.toFunB a x) (.root _))) (PartialTranscriptAt.snoc l sp history x)} ≤ e)
+    (author : ProbComp α) (prefixOf : α → PartialTranscriptAt l sp) :
     Pr{let y ← author; let x ← sampleAt l draw sp h}[¬ G sp (prefixOf y) ∧
-      G (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp (prefixOf y) x)] ≤ e := by
+      G (sp.comp (.down (l.toFunB a x) (.root _)))
+        (PartialTranscriptAt.snoc l sp (prefixOf y) x)] ≤ e := by
   let : MeasurableSpace (Move l a) := ⊤
   have bound := prEvent_bind_le_of_forall_le author (fun y => (fun x => ¬ G sp (prefixOf y) ∧
-    G (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp (prefixOf y) x)) <$>
+    G (sp.comp (.down (l.toFunB a x) (.root _))) (PartialTranscriptAt.snoc l sp (prefixOf y) x)) <$>
       sampleAt l draw sp h) (fun z => z) (ε := e) fun y => by
     rw [prEvent_map, prEvent_eq_evalDist (α := Move l a) _ _ measurable_from_top]
     exact hlocal (prefixOf y)
@@ -160,7 +171,7 @@ theorem flip_random_history_le {α : Type} {s : FreeM P PUnit}
 The model's sample and encoding may both depend on the full prefix. -/
 theorem ReceiverPrefix.flip_le_of_encoded_marginals
     {m : Type → Type v} [Monad m] [EvalDistSemantics m] {s : FreeM P PUnit}
-    (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
+    (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
     (pfx : ReceiverPrefix l s) (action : m (Move l pfx.pos))
     {Result : Type} (sample : ProbComp Result) (encode : Move l pfx.pos → Result)
     (modelEvent : Result → Prop) {e : ℝ≥0∞}
@@ -194,15 +205,15 @@ move is drawn at the selected node. If every node bounds the flip probability at
 prefixes by its error, and each selectable node has error at most `e`, the flip has probability at
 most `e`. Author failure contributes no mass. -/
 theorem flip_random_prefix_le {α : Type} {s : FreeM P PUnit}
-    (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
+    (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
     (hlocal : ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
-      (history : PrefixMoves l sp),
+      (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ¬ G sp history ∧
         G (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x)} ≤ ε (spineChallenge l sp h))
+          (PartialTranscriptAt.snoc l sp history x)} ≤ ε (spineChallenge l sp h))
     (author : OptionT ProbComp α) (select : α → ReceiverPrefix l s) {e : ℝ≥0∞}
     (hselect : ∀ y, ε (select y).node ≤ e) :
     Pr{let flip ← (author >>= fun y => (select y).Flips l G <$>
@@ -313,17 +324,17 @@ theorem prEvent_run_state_le_of_local {m : Type → Type v} [Monad m] [LawfulMon
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec (StateT σ m)) (ev : β → Prop) (t : FreeM P PUnit) :
-    ∀ {Out : PathAlong l t → Type}
-      (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PrefixMoves l sp → Prop)
+    ∀ {Out : Transcript l t → Type}
+      (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PartialTranscriptAt l sp → Prop)
       (ε : ChallengeNode l t → ℝ≥0∞)
       (d : (c : ChallengeNode l t) → OracleComp spec (challengeSpec l t c))
-      (k : (tr : PathAlong l t) → Out tr → OracleComp spec β),
+      (k : (tr : Transcript l t) → Out tr → OracleComp spec β),
       (∀ (a : P.A) (next : P.B a → FreeM P PUnit)
         (sp : Cursor.Spine t (.liftBind a next)) (h : owner l a = .receiver)
-        (history : PrefixMoves l sp) (st : σ),
+        (history : PartialTranscriptAt l sp) (st : σ),
         Pr{let x ← (challengeActionAt H d sp h).run' st}[¬ G sp history ∧
           G (sp.comp (.down (l.toFunB a x) (.root _)))
-            (PrefixMoves.snoc l sp history x)] ≤ ε (spineChallenge l sp h)) →
+            (PartialTranscriptAt.snoc l sp history x)] ≤ ε (spineChallenge l sp h)) →
       (∀ tr out st, ¬ EscapeAlong l t G tr →
         Pr{let y ← (simulateQ H (k tr out)).run' st}[ev y] = 0) →
       ∀ (p : Focal l (OracleComp spec) t Out) (st : σ),
@@ -376,8 +387,8 @@ theorem prEvent_run_state_le_of_local {m : Type → Type v} [Monad m] [LawfulMon
         refine prEvent_bind_le_of_forall_le _ _ _ fun z =>
           prEvent_bind_le_of_forall_le _ _ _ fun w => ?_
         let x := w.1
-        have : IsEmpty (PathAlong l (next (l.toFunB a x))) :=
-          ⟨fun tr => hempty.false ⟨_, projectPathAlong l _ tr⟩⟩
+        have : IsEmpty (Transcript l (next (l.toFunB a x))) :=
+          ⟨fun tr => hempty.false ⟨_, tr.path⟩⟩
         refine (hsub x (fun tr => isEmptyElim tr) _ w.2).trans ?_
         have : IsEmpty (Path (next (l.toFunB a x))) := ⟨fun path => hempty.false ⟨_, path⟩⟩
         rw [iSup_of_empty]
@@ -412,22 +423,22 @@ theorem prEvent_run_state_le {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec (StateT σ m)) (ev : β → Prop) (t : FreeM P PUnit) :
-    ∀ {Out : PathAlong l t → Type}
-      (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PrefixMoves l sp → Prop)
+    ∀ {Out : Transcript l t → Type}
+      (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PartialTranscriptAt l sp → Prop)
       (draw : QueryImpl (challengeSpec l t) ProbComp)
       (ε : ChallengeNode l t → ℝ≥0∞)
       (d : (c : ChallengeNode l t) → OracleComp spec (challengeSpec l t c))
-      (k : (tr : PathAlong l t) → Out tr → OracleComp spec β),
+      (k : (tr : Transcript l t) → Out tr → OracleComp spec β),
       (∀ c st (event : challengeSpec l t c → Prop),
         Pr{let x ← (simulateQ H (d c)).run' st}[event x] =
           Pr{let x ← draw c}[event x]) →
       (∀ (a : P.A) (next : P.B a → FreeM P PUnit)
         (sp : Cursor.Spine t (.liftBind a next)) (h : owner l a = .receiver)
-        (history : PrefixMoves l sp),
+        (history : PartialTranscriptAt l sp),
         letI : MeasurableSpace (Move l a) := ⊤
         𝒟[sampleAt l draw sp h] {x | ¬ G sp history ∧
           G (sp.comp (.down (l.toFunB a x) (.root _)))
-            (PrefixMoves.snoc l sp history x)} ≤ ε (spineChallenge l sp h)) →
+            (PartialTranscriptAt.snoc l sp history x)} ≤ ε (spineChallenge l sp h)) →
       (∀ tr out st, ¬ EscapeAlong l t G tr →
         Pr{let y ← (simulateQ H (k tr out)).run' st}[ev y] = 0) →
       ∀ (p : Focal l (OracleComp spec) t Out) (st : σ),
@@ -438,7 +449,7 @@ theorem prEvent_run_state_le {m : Type → Type v} [Monad m] [LawfulMonad m]
   apply prEvent_run_state_le_of_local H ev t G ε d k _ hk p st
   intro a next sp h history st
   let event : Move l a → Prop := fun x => ¬ G sp history ∧
-    G (sp.comp (.down (l.toFunB a x) (.root _))) (PrefixMoves.snoc l sp history x)
+    G (sp.comp (.down (l.toFunB a x) (.root _))) (PartialTranscriptAt.snoc l sp history x)
   let : MeasurableSpace (Move l a) := ⊤
   calc
     _ = Pr{let x ← sampleAt l draw sp h}[event x] :=
@@ -449,26 +460,26 @@ theorem prEvent_run_state_le {m : Type → Type v} [Monad m] [LawfulMonad m]
 
 /-- For any lawful monad with distribution semantics, fresh challenge marginals and local flip
 bounds bound acceptance by the supremum of the sums of node errors along shape paths.
-The author and terminal continuation may fail. No attachment or losslessness is required. -/
+The author and the final continuation may fail. No attachment or losslessness is required. -/
 theorem prEvent_run_le {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec m) (ev : β → Prop) (t : FreeM P PUnit)
-    {Out : PathAlong l t → Type}
-    (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PrefixMoves l sp → Prop)
+    {Out : Transcript l t → Type}
+    (G : ∀ {t' : FreeM P PUnit}, (sp : Cursor.Spine t t') → PartialTranscriptAt l sp → Prop)
     (draw : QueryImpl (challengeSpec l t) ProbComp)
     (ε : ChallengeNode l t → ℝ≥0∞)
     (d : (c : ChallengeNode l t) → OracleComp spec (challengeSpec l t c))
-    (k : (tr : PathAlong l t) → Out tr → OracleComp spec β)
+    (k : (tr : Transcript l t) → Out tr → OracleComp spec β)
     (hd : ∀ c (event : challengeSpec l t c → Prop),
       Pr{let x ← simulateQ H (d c)}[event x] = Pr{let x ← draw c}[event x])
     (hlocal : ∀ (a : P.A) (next : P.B a → FreeM P PUnit)
       (sp : Cursor.Spine t (.liftBind a next)) (h : owner l a = .receiver)
-      (history : PrefixMoves l sp),
+      (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
       𝒟[sampleAt l draw sp h] {x | ¬ G sp history ∧
         G (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x)} ≤ ε (spineChallenge l sp h))
+          (PartialTranscriptAt.snoc l sp history x)} ≤ ε (spineChallenge l sp h))
     (hk : ∀ tr out, ¬ EscapeAlong l t G tr →
       Pr{let y ← simulateQ H (k tr out)}[ev y] = 0)
     (p : Focal l (OracleComp spec) t Out) :
@@ -499,13 +510,13 @@ private theorem simulateQ_stateLift_run' {m : Type → Type v} [Monad m] [Lawful
     (simulateQ (H.liftTarget (StateT σ m)) c).run' st = simulateQ H c := by
   rw [simulateQ_liftTarget, StateT.liftM_def, StateT.run'_lift']
 
-/-- Deterministic resource answers commute with an unused state lift. -/
+/-- Deterministic bundle answers commute with an unused state lift. -/
 private theorem stateLift_addLift {m : Type → Type v} [Monad m] [LawfulMonad m]
     {ι : Type uι} {κ : Type uκ} {σ : Type}
-    {spec : OracleSpec.{uι, 0} ι} {resources : OracleSpec.{uκ, 0} κ}
-    (H : QueryImpl spec m) (answer : QueryImpl resources Id) :
-    ((H.liftTarget (StateT σ m)).addLift answer : QueryImpl (spec + resources) (StateT σ m)) =
-      (H.addLift answer : QueryImpl (spec + resources) m).liftTarget (StateT σ m) := by
+    {spec : OracleSpec.{uι, 0} ι} {bundle : OracleSpec.{uκ, 0} κ}
+    (H : QueryImpl spec m) (answer : QueryImpl bundle Id) :
+    ((H.liftTarget (StateT σ m)).addLift answer : QueryImpl (spec + bundle) (StateT σ m)) =
+      (H.addLift answer : QueryImpl (spec + bundle) m).liftTarget (StateT σ m) := by
   funext q
   rcases q with q | q
   · rfl
@@ -526,14 +537,14 @@ subprobability monad. Each draw is evaluated at its matching history. -/
 theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m] {ι β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec m) (ev : β → Prop) (s : FreeM P PUnit) :
-    ∀ {Out : PathAlong l s → Type}
-      (G : ∀ {t}, (sp : Cursor.Spine s t) → PrefixMoves l sp → Prop)
+    ∀ {Out : Transcript l s → Type}
+      (G : ∀ {t}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
       (ε : ChallengeNode l s → ℝ≥0∞) (d : PrefixChallengePrograms l spec s)
-      (k : (tr : PathAlong l s) → Out tr → OracleComp spec β),
+      (k : (tr : Transcript l s) → Out tr → OracleComp spec β),
       (∀ a next (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) history,
         Pr{let x ← simulateQ H (d sp h history)}[¬ G sp history ∧
           G (sp.comp (.down (l.toFunB a x) (.root _)))
-            (PrefixMoves.snoc l sp history x)] ≤ ε (spineChallenge l sp h)) →
+            (PartialTranscriptAt.snoc l sp history x)] ≤ ε (spineChallenge l sp h)) →
       (∀ tr out, ¬ EscapeAlong l s G tr → Pr{let y ← simulateQ H (k tr out)}[ev y] = 0) →
       ∀ p : Focal l (OracleComp spec) s Out,
       Pr{let y ← simulateQ H (runPrefixChallenges l s p d >>= fun r => k r.1 r.2.1)}[ev y] ≤
@@ -572,8 +583,8 @@ theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMo
       rcases isEmpty_or_nonempty (Path (FreeM.liftBind a next)) with hempty | hne
       · refine le_trans ?_ zero_le
         refine prEvent_bind_le_of_forall_le _ _ _ fun x => ?_
-        let : IsEmpty (PathAlong l (next (l.toFunB a x))) :=
-          ⟨fun tr => hempty.false ⟨_, projectPathAlong l _ tr⟩⟩
+        let : IsEmpty (Transcript l (next (l.toFunB a x))) :=
+          ⟨fun tr => hempty.false ⟨_, tr.path⟩⟩
         refine (hsub x (fun tr => isEmptyElim tr) (f x)).trans ?_
         let : IsEmpty (Path (next (l.toFunB a x))) := ⟨fun path => hempty.false ⟨_, path⟩⟩
         rw [iSup_of_empty]
@@ -592,23 +603,23 @@ theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMo
         exact iSup_le fun path => le_iSup_of_le path
           (le_of_eq (sum_challengeNodesOn_receiver hown ε path.1 path.2).symm)
 
-/-- A full-prefix state certificate bounds soundness with prefix-dependent public challenges.
-The terminal continuation may fail; valid acceptance is required only when its event has mass. -/
+/-- A full-prefix state certificate bounds soundness with prefix-dependent challenge programs.
+The final continuation may fail; valid acceptance is required only when its event has mass. -/
 theorem prEvent_runPrefixChallenges_soundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι β : Type} {spec : OracleSpec ι} {s : FreeM P PUnit} {S : Type uS}
-    {admissible language : S → Prop} {accepts : S → PathAlong l s → Prop}
+    {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (F : StateFunction l s S admissible language accepts)
     (H : QueryImpl spec m) (ev : β → Prop) (ε : ChallengeNode l s → ℝ≥0∞)
-    (d : PrefixChallengePrograms l spec s) {Out : PathAlong l s → Type}
-    (k : (tr : PathAlong l s) → Out tr → OracleComp spec β)
+    (d : PrefixChallengePrograms l spec s) {Out : Transcript l s → Type}
+    (k : (tr : Transcript l s) → Out tr → OracleComp spec β)
     (stmt : S) (hadm : admissible stmt) (hlang : ¬ language stmt)
     (hlocal : ∀ a next (sp : Cursor.Spine s (.liftBind a next))
       (h : owner l a = .receiver) history,
       Pr{let x ← simulateQ H (d sp h history)}[¬ F.toFun sp history stmt ∧
         F.toFun (sp.comp (.down (l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc l sp history x) stmt] ≤ ε (spineChallenge l sp h))
-    (terminal : ∀ tr out, 0 < Pr{let y ← simulateQ H (k tr out)}[ev y] → accepts stmt tr)
+          (PartialTranscriptAt.snoc l sp history x) stmt] ≤ ε (spineChallenge l sp h))
+    (final : ∀ tr out, 0 < Pr{let y ← simulateQ H (k tr out)}[ev y] → accepts stmt tr)
     (p : Focal l (OracleComp spec) s Out) :
     Pr{let y ← simulateQ H (runPrefixChallenges l s p d >>= fun r => k r.1 r.2.1)}[ev y] ≤
       ⨆ path : Path s, ∑ c ∈ challengeNodesOn l s path, ε c := by
@@ -616,7 +627,7 @@ theorem prEvent_runPrefixChallenges_soundness {m : Type → Type v}
     ε d k hlocal _ p
   intro tr out hne
   by_contra hpos
-  exact hne (F.escapeAlong l hadm hlang (terminal tr out (pos_iff_ne_zero.2 hpos)))
+  exact hne (F.escapeAlong l hadm hlang (final tr out (pos_iff_ne_zero.2 hpos)))
 
 end PrefixExecution
 
@@ -666,7 +677,8 @@ end PathBounds
 
 section Plain
 
-/-- Stateful interpretation preserves the initial distribution and all possible terminal states. -/
+/-- Stateful interpretation preserves the initial distribution and all possible ambient states at
+the end of the run. -/
 theorem Verifier.soundnessUsing_of_localSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
@@ -680,22 +692,23 @@ theorem Verifier.soundnessUsing_of_localSoundness
         (fun x => x.run' st) output.language stmt tr))
     (localBound : ∀ stmt, input.admissible () stmt → ¬ input.language () stmt →
       ∀ a next (sp : Cursor.Spine s (.liftBind a next)) (h : owner plainSig a = .receiver)
-        (history : PrefixMoves plainSig sp) st,
+        (history : PartialTranscriptAt plainSig sp) st,
         Pr{let x ← (challengeActionAt H
           (fun c => liftM ((ambient + challengeSpec plainSig s).query (.inr c)))
             sp h).run' st}[¬ F.toFun sp history stmt ∧
               F.toFun (sp.comp (.down (plainSig.toFunB a x) (.root _)))
-                (PrefixMoves.snoc plainSig sp history x) stmt] ≤ ε (spineChallenge plainSig sp h)) :
+                (PartialTranscriptAt.snoc plainSig sp history x) stmt] ≤
+                  ε (spineChallenge plainSig sp h)) :
     V.soundnessUsing (fun c => do (simulateQ H c).run' (← init)) input output
       (⨆ path : Path s, ∑ c ∈ challengeNodesOn plainSig s path, ε c) := by
   intro Out stmt hadm hlang (p : Prover plainSig ambient s Out)
   change Pr{let obs ← (do (simulateQ H (V.run stmt p)).run' (← init))}[_] ≤ _
   refine prEvent_bind_le_of_forall_le _ _ _ fun st => ?_
-  let k : (tr : PathAlong plainSig s) → Out tr →
-      OracleComp (ambient + challengeSpec plainSig s) (Observation plainSig s Out T) :=
-    fun tr out => (fun v => (⟨tr, out, v⟩ : Observation plainSig s Out T)) <$>
+  let k : (tr : Transcript plainSig s) → Out tr →
+      OracleComp (ambient + challengeSpec plainSig s) (Outcome plainSig s Out T) :=
+    fun tr out => (fun v => (⟨tr, out, v⟩ : Outcome plainSig s Out T)) <$>
       OracleComp.liftComp
-        (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run
+        (V.decide stmt tr.path (toPlainView s tr)).run
         (ambient + challengeSpec plainSig s)
   have hrun : V.run stmt p = TwoParty.Lens.run s
       (Prover.simulate (fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))) p)
@@ -715,7 +728,7 @@ theorem Verifier.soundnessUsing_of_localSoundness
   refine ⟨st, pos_iff_ne_zero.2 ?_⟩
   have hdec := QueryImpl.simulateQ_liftComp_left_eq_of_apply H
     (fun q => H (.inl q)) (fun _ => rfl)
-    (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run
+    (V.decide stmt tr.path (toPlainView s tr)).run
   simpa only [Verifier.validAcceptanceUsing, k, simulateQ_map, hdec,
     StateT.run'_eq, StateT.run_map, prEvent_map] using hpos
 
@@ -740,7 +753,7 @@ theorem Verifier.soundnessUsing_of_rbrSoundness
   intro stmt hadm hlang a next sp h history st
   let event : Move plainSig a → Prop := fun x => ¬ F.toFun sp history stmt ∧
     F.toFun (sp.comp (.down (plainSig.toFunB a x) (.root _)))
-      (PrefixMoves.snoc plainSig sp history x) stmt
+      (PartialTranscriptAt.snoc plainSig sp history x) stmt
   let : MeasurableSpace (Move plainSig a) := ⊤
   calc
     _ = Pr{let x ← sampleAt plainSig draw sp h}[event x] :=
@@ -781,8 +794,8 @@ theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [
     intro stmt tr
     change (∃ st : Unit, 0 < Pr{let v ←
       (simulateQ (QueryImpl.liftTarget (StateT Unit m) (fun q => H (.inl q) : QueryImpl ambient m))
-        (V.decide stmt (projectPathAlong plainSig s tr) (toPlainView s tr)).run).run' st}[
-          ∃ t, v = some t ∧ output.language (projectPathAlong plainSig s tr) t]) ↔ _
+        (V.decide stmt tr.path (toPlainView s tr)).run).run' st}[
+          ∃ t, v = some t ∧ output.language tr.path t]) ↔ _
     simp only [simulateQ_stateLift_run', exists_const]
     rfl
   have h' : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
@@ -873,7 +886,8 @@ theorem Verifier.soundness_of_rbrSoundness_uniform {ι σ : Type} {S : Type uS}
 
 end Plain
 
-/-- Stateful interpretation preserves the initial distribution and all possible terminal states. -/
+/-- Stateful interpretation preserves the initial distribution and all possible ambient states at
+the end of the run. -/
 theorem OracleVerifier.soundnessUsing_of_localSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
@@ -890,12 +904,12 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
         (fun x => x.run' st) output.language stmt tr))
     (localBound : ∀ stmt, input.admissible () stmt → ¬ input.language () stmt →
       ∀ a next (sp : Cursor.Spine s (.liftBind a next)) (h : owner oracleSig a = .receiver)
-        (history : PrefixMoves oracleSig sp) st,
+        (history : PartialTranscriptAt oracleSig sp) st,
         Pr{let x ← (challengeActionAt H
           (fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
             sp h).run' st}[¬ F.toFun sp history stmt ∧
               F.toFun (sp.comp (.down (oracleSig.toFunB a x) (.root _)))
-                (PrefixMoves.snoc oracleSig sp history x) stmt] ≤
+                (PartialTranscriptAt.snoc oracleSig sp history x) stmt] ≤
                   ε (spineChallenge oracleSig sp h)) :
     V.soundnessUsing (fun c => do (simulateQ H c).run' (← init)) input output
       (⨆ path : Path s, ∑ c ∈ challengeNodesOn oracleSig s path, ε c) := by
@@ -904,16 +918,16 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
   refine prEvent_bind_le_of_forall_le _ _ _ fun st => ?_
   let liftAmbient : QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)) :=
     fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
-  let k : (tr : PathAlong oracleSig s) → Out tr →
+  let k : (tr : Transcript oracleSig s) → Out tr →
       OracleComp (ambient + challengeSpec oracleSig s)
-        (Observation oracleSig s Out (OracleVerifier.Output T B)) := fun tr out =>
-    (fun v => (⟨tr, out, v.map fun t => (t, (V.outputMap stmt.1 (projectPathAlong oracleSig s tr)
-        (toView s tr)).f (stmt.2, payloads s tr))⟩ :
-        Observation oracleSig s Out (OracleVerifier.Output T B))) <$>
+        (Outcome oracleSig s Out (OracleVerifier.Output T B)) := fun tr out =>
+    (fun v => (⟨tr, out, v.map fun t => (t, (V.outputMap stmt.1 tr.path
+        (toView s tr)).f (stmt.2, oracleMessages s tr))⟩ :
+        Outcome oracleSig s Out (OracleVerifier.Output T B))) <$>
       simulateQ (QueryImpl.addLift liftAmbient
-        ((pathResources inputs s (projectPathAlong oracleSig s tr)).answer
-          (stmt.2, payloads s tr)))
-        (V.decide stmt.1 (projectPathAlong oracleSig s tr) (toView s tr)).run
+        ((pathBundle inputs s tr.path).answer
+          (stmt.2, oracleMessages s tr)))
+        (V.decide stmt.1 tr.path (toView s tr)).run
   have hrun : V.run stmt.1 stmt.2 p = TwoParty.Lens.run s (Prover.simulate liftAmbient p)
       (sampler oracleSig s fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
         >>= fun r => k r.1 r.2.1 := by
@@ -930,7 +944,7 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
   apply StateFunction.escapeAlong oracleSig F hadm hlang
   refine ⟨st, pos_iff_ne_zero.2 ?_⟩
   simpa only [OracleVerifier.validAcceptanceUsing, k, liftAmbient, simulateQ_map,
-    simulateQ_resources, StateT.run'_eq, StateT.run_map, prEvent_map,
+    simulateQ_bundleAnswer, StateT.run'_eq, StateT.run_map, prEvent_map,
     exists_map_some_iff] using hpos
 
 /-- Fresh challenge marginals specialize the bound on actual flip events. -/
@@ -957,7 +971,7 @@ theorem OracleVerifier.soundnessUsing_of_rbrSoundness
   intro stmt hadm hlang a next sp h history st
   let event : Move oracleSig a → Prop := fun x => ¬ F.toFun sp history stmt ∧
     F.toFun (sp.comp (.down (oracleSig.toFunB a x) (.root _)))
-      (PrefixMoves.snoc oracleSig sp history x) stmt
+      (PartialTranscriptAt.snoc oracleSig sp history x) stmt
   let : MeasurableSpace (Move oracleSig a) := ⊤
   calc
     _ = Pr{let x ← sampleAt oracleSig draw sp h}[event x] :=
@@ -969,7 +983,7 @@ theorem OracleVerifier.soundnessUsing_of_rbrSoundness
       exact hF stmt hadm hlang a next sp h history
 
 /-- Fresh challenge marginals turn round-by-round soundness into soundness of the oracle run
-in any lawful distribution monad, with its actual resource answers and output oracle map. -/
+in any lawful distribution monad, with its actual bundle answers and output oracle map. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
@@ -1004,14 +1018,14 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     change (∃ st : Unit, 0 < Pr{let v ←
       (simulateQ ((QueryImpl.liftTarget (StateT Unit m)
         (fun q => H (.inl q) : QueryImpl ambient m)).addLift
-        ((pathResources inputs s (projectPathAlong oracleSig s tr)).answer
-          (stmt.2, payloads s tr)) : QueryImpl
-            (ambient + (pathResources inputs s (projectPathAlong oracleSig s tr)).spec)
+        ((pathBundle inputs s tr.path).answer
+          (stmt.2, oracleMessages s tr)) : QueryImpl
+            (ambient + (pathBundle inputs s tr.path).spec)
             (StateT Unit m))
-        (V.decide stmt.1 (projectPathAlong oracleSig s tr) (toView s tr)).run).run' st}[
-          ∃ t, v = some t ∧ output.language (projectPathAlong oracleSig s tr)
-            (t, (V.outputMap stmt.1 (projectPathAlong oracleSig s tr) (toView s tr)).f
-              (stmt.2, payloads s tr))]) ↔ _
+        (V.decide stmt.1 tr.path (toView s tr)).run).run' st}[
+          ∃ t, v = some t ∧ output.language tr.path
+            (t, (V.outputMap stmt.1 tr.path (toView s tr)).f
+              (stmt.2, oracleMessages s tr))]) ↔ _
     simp only [stateLift_addLift, simulateQ_stateLift_run', exists_const]
   have h' : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
       (fun stmt tr => ∃ st : Unit, V.validAcceptanceUsing (fun q => H' (.inl q))
@@ -1077,8 +1091,8 @@ variable {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι}
 
 /-- Round-by-round soundness of an oracle verifier implies its soundness for every initial state
 distribution. The error is the supremum, over shape paths, of the sum of the node errors along the
-path. Acceptance is the verifier's decision on the input data and the run's payloads, with its
-output read through the verifier's output oracle map. -/
+path. Acceptance is the verifier's decision on the input data and the run's oracle messages, with
+its output read through the verifier's output oracle map. -/
 theorem OracleVerifier.soundness_of_rbrSoundness
     (h : V.rbrSoundness impl input output draw ε) :
     V.soundness init impl draw input output
