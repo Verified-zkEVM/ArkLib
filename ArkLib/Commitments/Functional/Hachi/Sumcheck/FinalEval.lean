@@ -333,7 +333,8 @@ lemma finalEvalProver_run_support {TCom Wit : Type}
   intro x hx
   unfold Prover.run at hx
   rw [step1, step0, Prover.processRound_of_dir_eq_P_to_V (0 : Fin 1) rfl] at hx
-  simp only [finalEvalProver, Fin.isValue, Fin.vcons_of_one] at hx
+  simp only [finalEvalProver, Fin.isValue, Fin.vcons_of_one, pure_bind, liftM_pure,
+    support_pure, Set.mem_singleton_iff] at hx
   subst hx
   exact ⟨rfl, rfl⟩
 
