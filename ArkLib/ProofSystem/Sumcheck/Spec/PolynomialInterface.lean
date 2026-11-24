@@ -32,14 +32,3 @@ noncomputable def polynomialFamily : OracleFamily Unit (OracleStatement R n deg)
   ⟨fun _ => inferInstance⟩
 
 end Sumcheck.Spec
-
-namespace Sumcheck.Interaction.MultivariateRound
-
-variable (R : Type) [CommSemiring R] (n deg : ℕ)
-
-/-- The former name of `Sumcheck.Spec.polynomialFamily`, kept for the frozen interaction layer
-and `scripts/SumcheckRuntime.lean`. Remove this alias when the frozen interaction layer
-and its runtime callers are migrated. -/
-noncomputable abbrev polynomialFamily := Spec.polynomialFamily R n deg
-
-end Sumcheck.Interaction.MultivariateRound
