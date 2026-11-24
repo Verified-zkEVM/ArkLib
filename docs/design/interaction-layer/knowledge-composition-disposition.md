@@ -195,15 +195,15 @@ maps. The VCVio pin is `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`.
 | --- | --- | --- | --- |
 | KCO-036 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:36`][r37], `TerminalRelation.append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L1274`][r38], `toFun_leafWitness_append`. Preserves any supplied suffix leaf relation equivalence on the supplied witness. |
 | KCO-071 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:71`][r39], `withLeaf` | retired (verifier leaf attachment) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L460`][r40], `Verifier.validAcceptance`. The verifier record already has its final decision; execution observations have separate rows. |
-| KCO-081 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:81`][r41], `toCounterpartValue_withLeaf` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L142`][r42], `Verifier.append_decide_transcript`. Only a final decision remains; heterogeneous equality identifies the dependent outputs at equal paths. |
+| KCO-081 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:81`][r41], `toCounterpartValue_withLeaf` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L162`][r42], `Verifier.append_decide_transcript`. Only a final decision remains; heterogeneous equality identifies the dependent outputs at equal paths. |
 | KCO-102 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:102`][r43], `run_withLeaf` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L394`][r44], `Verifier.validAcceptance_append`. Both final decisions retain the actual intermediate ambient state. |
 | KCO-121 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:121`][r45], `withOutput` | retired (optional open-claim leaf adapter) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L552`][r46], `OracleVerifier.validAcceptance`. Optional decisions and deterministic output maps are separate fields. |
 | KCO-131 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:131`][r47], `executeStrategies_withOutput` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L696`][r48], `OracleVerifier.validAcceptance_append`. Acceptance uses the actual final output bundle. |
-| KCO-163 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:163`][r49], `toCounterpartWith_output` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L642`][r50], `OracleVerifier.simulateQ_append_run`. The passive decision fold preserves returned outputs and the routed bundle. |
+| KCO-163 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:163`][r49], `toCounterpartWith_output` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L662`][r50], `OracleVerifier.simulateQ_append_run`. The passive decision fold preserves returned outputs and the routed bundle. |
 | KCO-191 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:191`][r51], `closedMiddle` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L64`][r52], `firstVerifier`. The decision and output map return the claim and export together. |
 | KCO-202 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:202`][r53], `closedMiddle_oracles` | equivalent | [`ArkLib/Interaction/Core/OracleVerifier.lean#L167`][r54], `OracleMap.simulate_eq`. An output map’s simulation law identifies exported behavior with its pure data map. KC-093 specializes this to every prefix oracle message. |
-| KCO-216 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:216`][r55], `run_withLeaf_closedMiddle` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L642`][r56], `OracleVerifier.simulateQ_append_run`. Final decisions replace effectful verifier fragments. |
-| KCO-249 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:249`][r57], `executeStrategies_appendExported_withLeaf_close` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L642`][r58], `OracleVerifier.simulateQ_append_run`. The actual prefix output bundle is routed before the suffix decision. |
+| KCO-216 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:216`][r55], `run_withLeaf_closedMiddle` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L662`][r56], `OracleVerifier.simulateQ_append_run`. Final decisions replace effectful verifier fragments. |
+| KCO-249 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:249`][r57], `executeStrategies_appendExported_withLeaf_close` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L662`][r58], `OracleVerifier.simulateQ_append_run`. The actual prefix output bundle is routed before the suffix decision. |
 | KCO-342 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:342`][r59], `append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L909`][r60], `append`. Certificate composition with an explicit seam. |
 | KCO-377 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:377`][r61], `sequentialSuffix` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L89`][r62], `comap`. Explicit input/output witness maps transport the middle relation. |
 | KCO-386 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:386`][r63], `sequential` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L299`][r64], `rbrKnowledgeSoundness_append`. The suffix covers every prefix transcript; no true middle witness is assumed. |
@@ -414,7 +414,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r39]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L71
 [r40]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L460
 [r41]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L81
-[r42]: ../../../ArkLib/Interaction/Core/Composition.lean#L142
+[r42]: ../../../ArkLib/Interaction/Core/Composition.lean#L162
 [r43]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L102
 [r44]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L394
 [r45]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L121
@@ -422,15 +422,15 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r47]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L131
 [r48]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L696
 [r49]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L163
-[r50]: ../../../ArkLib/Interaction/Core/Composition.lean#L642
+[r50]: ../../../ArkLib/Interaction/Core/Composition.lean#L662
 [r51]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L191
 [r52]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L64
 [r53]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L202
 [r54]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L167
 [r55]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L216
-[r56]: ../../../ArkLib/Interaction/Core/Composition.lean#L642
+[r56]: ../../../ArkLib/Interaction/Core/Composition.lean#L662
 [r57]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L249
-[r58]: ../../../ArkLib/Interaction/Core/Composition.lean#L642
+[r58]: ../../../ArkLib/Interaction/Core/Composition.lean#L662
 [r59]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L342
 [r60]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L909
 [r61]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L377

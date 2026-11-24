@@ -716,9 +716,10 @@ semirings. The probabilistic bounds add `IsDomain`, finiteness and uniform sampl
 that constant one sums to two over `[0, 0]`, to one over `[0]`, and passes the
 interaction layer final decision with repeated points and target two. The interaction layer tests audit the theorem axioms.
 
-#1488 owns interval endpoints and builds `intervalVerifier` from `foldVerifier`. The exact-row
-Sumcheck disposition marks interval execution, projection and append clients as child-owned;
-full-run theorems do not close them. P1 and P2 explain changed abort and shape assertions.
+#1488 implements interval endpoints with `intervalVerifier`, built from the interaction-layer
+`foldVerifier`.
+The exact-row Sumcheck disposition gives interval execution, projection and append targets;
+their full-run corollaries preserve the parent statements. P1 and P2 explain changed abort and shape assertions.
 Behavior-guarantee assertions remain unresolved pending the corresponding parent interface.
 
 `Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
@@ -734,3 +735,61 @@ routed query at `2` returns `5`. These deterministic assertions require no sampl
 The other `ZMod 17` fixtures correspond to frozen `Protocol`, `Sequential`, `ArbitraryRounds`
 and soundness fixtures over that same field. Uniform sampling is used in the probabilistic
 soundness statements.
+
+## 23. Sumcheck ports
+
+**Plan.** The frozen assertions quantify over interval endpoints, projected input behavior and
+composition through exported oracles. This entry follows the parent's entries through 22.
+
+**Code.** `Sumcheck/Core/Fold.lean` implements passive interaction-layer checks. `Interval`
+specializes those checks to every `start + count ≤ n`. `IntervalCompleteness` proves support,
+perfect and measure completeness for that full range. `IntervalAdaptive` supplies current-statement
+challenge callbacks through an actual shared-state handler. `IntervalSoundness` proves
+interaction-layer round-by-round suffix soundness for exactly `start + count = n`, then applies the
+parent's uniform implication with `count` challenges and error `count * (deg / |R|)`. Lists retain
+all repetitions; embeddings specialize the same proofs. `intervalVerifier_full_run` identifies the
+zero-start full interval with the parent's interaction-layer indexed verifier without changing its
+theorems.
+
+`FoldComposition.run_append_public_intervalVerifier` compares actual public one-round and suffix
+interval verifier runs. It transports the midpoint and endpoint statements explicitly, retains the
+transcript, original polynomial and private output, and permits arbitrary effectful provers.
+`Projection` constructs the interaction-layer projected oracle map `projectedMap` and its derived
+query handler, which reads the input `d ^ (n - 1 - i)` times at round `i`
+(`projectedQuery_isChargeBound`).
+`projectedExecute_closed` identifies returned behavior with that handler; `projectedExecute_related`
+proves its evaluation claim. `Behavior` handles arbitrary original input behavior at the empty
+interval and proves its final remaining-sum relation is evaluation. The polynomial soundness
+theorems require polynomial input data and do not cover this arbitrary behavior.
+`BehaviorComposition.run_append_behaviorIntervalVerifier` extends the public append equation to
+arbitrary original evaluation behavior. `IntervalRoundSoundness` proves the actual one-round
+probability and measure bounds at every variable position, including intermediate endpoints.
+`Impl/IndexedProjection` computes indexed CompPoly projections, retaining repeated domain points.
+`Impl/Projection` specializes it to injective domains, and `ComputableProjection` connects it to
+the indexed projection of `Domain`.
+`ComputableInterval` constructs the honest computational strategy and proves its interpretation,
+actual execution equality and completeness. `ComputableSoundness` transfers the interaction-layer
+suffix bound to every computational-message prover with shared ambient state. `Interpreted` and
+`InterpretedExecution` provide generic message interfaces. For a fixed output type `Out`,
+evaluation-preserving message interpretation preserves the ambient prover effects, each challenge
+draw and the private value at the leaf. Legacy
+`Spec` projections and honest prover comparisons are isolated in `LegacyProjection` and
+`LegacyProtocol`; interaction-layer security does not depend on them.
+
+The routing fixture uses `Nat`, with semiring-general polynomial export and routing laws.
+Explicit deterministic handlers produce query order `[1, 3, 2, 4]`, accepted claim `(10, 10)` and
+private output `hidden + 110`. A prefix rejection still runs both interactions under P1, then
+skips the suffix decision. It therefore retains the full trace and output rather than the
+frozen early-abort trace `[3]` and output `hidden + 50`. Suffix rejection also retains the full
+trace. Interval tests cover nonzero starts, zero counts, repeated domains and rejection.
+
+**Premises.** P1 moves all bundle queries to the final decision and makes the verifier passive: a
+sampler draws its moves. P2 prevents challenges and oracle messages from selecting shape. The [exact
+disposition table](../interaction-layer/sumcheck.md#migration-disposition) names these premises on
+changed abort and shape rows. It records the full endpoint ranges and exact targets; a full-run
+theorem does not replace an arbitrary interval theorem.
+
+The merged parent supplies generic routing and soundness implications. Constructor, projection
+and transport equations replace this branch's added transparency commands. Existing parent
+transparency settings remain unchanged. Mathematical polynomial projections remain
+noncomputable; the generic interface and deterministic execution use computable carriers.

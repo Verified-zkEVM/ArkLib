@@ -5,9 +5,10 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
+public import ArkLib.ProofSystem.Sumcheck.Core.LegacyProtocol
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
 public import ArkLib.Interaction.Core.LegacyAppend
+public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
 
 /-!
 # Sumcheck verification and execution in the interaction layer
@@ -71,12 +72,12 @@ def legacyTranscript : (k : ℕ) → (Fin k → R⦃≤ deg⦄[X]) → (Fin k �
 def transcriptMessages :
     (k : ℕ) → Transcript oracleSig (protocol R deg k) → Fin k → R⦃≤ deg⦄[X]
   | 0, _ => Fin.elim0
-  | k + 1, tr => Fin.cons (headMessage tr) (transcriptMessages k (tailTranscript tr))
+  | k + 1, tr => Fin.cons (Interpreted.message tr) (transcriptMessages k (Interpreted.tail tr))
 
 /-- The challenges of an interaction-layer transcript. -/
 def transcriptChallenges : (k : ℕ) → Transcript oracleSig (protocol R deg k) → Fin k → R
   | 0, _ => Fin.elim0
-  | k + 1, tr => Fin.cons (headChallenge tr) (transcriptChallenges k (tailTranscript tr))
+  | k + 1, tr => Fin.cons (Interpreted.challenge tr) (transcriptChallenges k (Interpreted.tail tr))
 
 /-- Decode an interaction-layer transcript into the legacy full transcript. -/
 def decodeTranscript (k : ℕ) (tr : Transcript oracleSig (protocol R deg k)) :
@@ -114,7 +115,8 @@ def route : (k : ℕ) → (p : Path (protocol R deg k)) →
     QueryImpl [(Spec.pSpec R deg k).Message]ₒ (OracleComp (oracleMessageSpec (protocol R deg k) p))
   | 0, _ => fun q => q.1.1.elim0
   | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => Legacy.appendRoute (roundRoute R deg k p)
-      (fun q => simulateQ (tailLift R deg k p) (route k p q))
+      (fun q => simulateQ
+        (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocol R deg (k + 1)))) (route k p q))
 
 end Route
 
@@ -132,7 +134,9 @@ theorem route_succ_sumEquiv (k : ℕ) (p : Path (protocol R deg k))
       ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
     route R deg (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
       Legacy.routePart (roundRoute R deg k p)
-        (fun q => simulateQ (tailLift R deg k p) (route R deg k p q))
+        (fun q => simulateQ
+          (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocol R deg (k + 1))))
+          (route R deg k p q))
         s q :=
   Legacy.appendRoute_sumEquiv _ _ s q
 
@@ -356,13 +360,8 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
         (oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl))
       (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        OracleComp spec' α) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget _)
-    (fun t => ?_) oa).trans ?_
-  · exact simulateQ_spec_query _ _
-  · rw [simulateQ_liftTarget]
-    rfl
+        OracleComp spec' α) :=
+  simulateQ_pathLift amb p data pl oa
 
 omit [SampleableType R] in
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript. -/

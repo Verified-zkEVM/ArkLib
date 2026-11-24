@@ -58,6 +58,26 @@ def TranscriptAt.split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     TranscriptAt l (s₂ (Transcript.path z.1)) (Transcript.path z.2) from
       (⟨z.1, rfl⟩, ⟨z.2, rfl⟩))
 
+/-- Splitting a transcript at a path of an appended shape splits the transcript itself, whatever
+the proof that the transcript has that path.
+
+`TranscriptAt.split` transports along a shape equality, so the split of a transcript at a path
+built from a concrete transcript does not reduce. The transcripts it carries are those of
+`Transcript.split`. -/
+theorem TranscriptAt.split_val {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (p : Path (s₁.append s₂)) (v : TranscriptAt l (s₁.append s₂) p) :
+    (TranscriptAt.split l s₁ s₂ p v).1.1 = (Transcript.split s₁ s₂ v.1).1 ∧
+      HEq (TranscriptAt.split l s₁ s₂ p v).2.1 (Transcript.split s₁ s₂ v.1).2 := by
+  rcases v with ⟨tr, rfl⟩
+  unfold TranscriptAt.split
+  dsimp only
+  generalize project_split l s₁ s₂ tr = h
+  revert h
+  generalize Path.split s₁ s₂ tr.path = q
+  rintro rfl
+  exact ⟨rfl, HEq.rfl⟩
+
 /-- Splitting a view and its shape gives the two full transcripts with their shape certificates. -/
 theorem TranscriptAt.split_pair {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
