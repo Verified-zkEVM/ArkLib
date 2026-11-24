@@ -21,7 +21,7 @@ namespace Fri.Spec
 
 open OracleComp OracleSpec ProtocolSpec Domain Finset
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F} (s : Fin (k + 1) → ℕ+)
 
 /-! ## Retained oracle history -/
@@ -71,7 +71,6 @@ namespace QueryRound
 
 /-! ## Folding block enumeration -/
 
-omit [Fintype F] in
 @[simp]
 theorem queryBlock_length (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) :
@@ -81,7 +80,6 @@ theorem queryBlock_length (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   simp only [queryBlock, FftDomain.toList, List.length_map, List.length_finRange]
   exact congrArg (fun a ↦ 2 ^ a) (Nat.sub_sub_self hi)
 
-omit [Fintype F] in
 /-- Every point in the enumerated block has the same image under folding. -/
 theorem queryBlock_pow (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset)
@@ -104,7 +102,6 @@ theorem queryBlock_pow (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   change (r.val * (queryPoint s i x).val) ^ _ = _
   rw [mul_pow, hroot, one_mul]
 
-omit [Fintype F] in
 /-- The executable query enumeration contains each point of the folding block once. -/
 theorem queryBlock_nodup (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) : (queryBlock s hs i x).Nodup := by
@@ -116,7 +113,6 @@ theorem queryBlock_nodup (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   apply mul_right_cancel₀ (CosetFftDomainClass.ne_zero_dep (queryPoint s i x))
   exact congrArg Subtype.val hab
 
-omit [Fintype F] in
 /-- The executable query block enumerates exactly the complete folding fiber. -/
 theorem mem_queryBlock_iff_pow_eq (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset)

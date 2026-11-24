@@ -40,7 +40,7 @@ namespace Spec
    - `d` the degree bound on the final polynomial returned in the final folding round.
    - `m` is one less than the number of batched input polynomials
 -/
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n : ℕ}
 variable {k : ℕ} (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (m : ℕ)
@@ -100,8 +100,8 @@ def inputRelation (δ : ℝ≥0) :
     ∀ i, ∀ z ∈ S, sw.1.2 i (ω.equivToFinset z) = (sw.2 i).1.eval (ω z)}
 
 /-- The batching output relation is exactly the initial FRI relation at the same radius. -/
-def outputRelation (dom_size_cond : 2 ^ (∑ i, (s i).1) * d ≤ 2 ^ n) (δ : ℝ≥0) :=
-  Fri.Spec.inputRelation k (ω := ω) s d dom_size_cond δ
+def outputRelation (δ : ℝ≥0) :=
+  Fri.Spec.inputRelation k (ω := ω) s d δ
 
 /-- The verifier sends one seed in `S`. The combined word is a virtual oracle;
 the prover sends no message in this round. -/
@@ -134,7 +134,7 @@ def queryInput (i : Fin (m + 1)) (x : ω.toFinset) :
     (show ([]ₒ + ([OracleStatement m ω]ₒ + [(batchSpec S).Message]ₒ)).Domain from
       Sum.inr (Sum.inl ⟨i, x⟩))
 
-omit [Fintype F] [Fintype S] [Nonempty S] in
+omit [Fintype S] [Nonempty S] in
 @[simp]
 theorem simulateQ_queryInput
     (oStmt : ∀ i, OracleStatement m ω i) (messages : (batchSpec S).Messages)

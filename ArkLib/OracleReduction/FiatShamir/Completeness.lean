@@ -52,6 +52,7 @@ lemma simulateQ_addLift_run_left {μ : Type → Type} [Monad μ] [LawfulMonad μ
 variable [samples : ∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} (impl : QueryImpl oSpec (StateT σ ProbComp))
 
+omit samples in
 /-- One FS round, interpreted with a fixed table, runs only the original base-oracle action. -/
 lemma Prover.processRoundFS_simulate (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (j : Fin n) (messages : pSpec.MessagesUpTo j.castSucc) (stmt : StmtIn)
@@ -133,6 +134,7 @@ lemma simulateQ_deriveTranscriptSRAux {μ : Type → Type} [Monad μ] [LawfulMon
       · exact Transcript.concat_last _ _
       · exact Fin.snoc_castSucc ..
 
+omit samples in
 /-- Full verifier reconstruction replays the fixed table. -/
 lemma simulateQ_deriveTranscriptFS (messages : pSpec.Messages) (stmt : StmtIn)
     (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) (s : σ) :

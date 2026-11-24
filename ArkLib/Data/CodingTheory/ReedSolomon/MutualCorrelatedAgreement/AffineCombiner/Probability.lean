@@ -58,13 +58,7 @@ namespace ReedSolomon
 open Polynomial CoreDefinitions LinearCode Finset
 open scoped ProbabilityTheory
 
-variable {F ι : Type} [Field F]
-
-private theorem degree_lt_succ_iff_degree_le (P : F[X]) {d : ℕ} :
-    P.degree < (d + 1 : ℕ) ↔ P.degree ≤ d := by
-  rw [← mem_degreeLT, degreeLT_succ_eq_degreeLE, mem_degreeLE]
-
-variable [DecidableEq F] [Fintype ι]
+variable {F ι : Type} [Field F] [DecidableEq F] [Fintype ι]
 
 /-- A scalar challenge has an exceptional candidate at loss zero exactly when
 `Code.IsProjectionBad` holds for the affine-line generator and `code domain (d + 1)`.
@@ -85,7 +79,7 @@ theorem exists_isScalarExceptional_zero_iff_isProjectionBad (domain : ι ↪ F)
     let T := polynomialAgreementSet domain (combinedWord domain f g (C α)) P
     refine ⟨T, hA, ?_, 1, ?_⟩
     · rw [hcomb, projectedWord_mem_code_iff_exists_polynomial]
-      exact ⟨P, (degree_lt_succ_iff_degree_le P).mpr hP,
+      exact ⟨P, degree_lt_succ_iff.mpr hP,
         fun i hi ↦ (mem_polynomialAgreementSet _ _ _ _).mp hi⟩
     · intro hg
       obtain ⟨G₀, hG, hGeval⟩ := (projectedWord_mem_code_iff_exists_polynomial domain
@@ -94,8 +88,8 @@ theorem exists_isScalarExceptional_zero_iff_isProjectionBad (domain : ι ↪ F)
       · have hprod : (C α * G₀).degree ≤ G₀.degree := by
           simpa only [smul_eq_C_mul] using degree_smul_le α G₀
         exact (degree_sub_le _ _).trans
-          (max_le hP (hprod.trans ((degree_lt_succ_iff_degree_le G₀).mp hG)))
-      · exact (degree_lt_succ_iff_degree_le G₀).mp hG
+          (max_le hP (hprod.trans (degree_lt_succ_iff.mp hG)))
+      · exact degree_lt_succ_iff.mp hG
       refine ⟨by ring, ?_⟩
       apply Nat.le_zero.mpr
       rw [Finset.card_eq_zero]
@@ -108,7 +102,7 @@ theorem exists_isScalarExceptional_zero_iff_isProjectionBad (domain : ι ↪ F)
   · rintro ⟨T, hT, hP, j, hj⟩
     rw [hcomb, projectedWord_mem_code_iff_exists_polynomial] at hP
     obtain ⟨P, hP, hPeval⟩ := hP
-    refine ⟨P, (degree_lt_succ_iff_degree_le P).mp hP, hT.trans (Finset.card_le_card ?_), ?_⟩
+    refine ⟨P, degree_lt_succ_iff.mp hP, hT.trans (Finset.card_le_card ?_), ?_⟩
     · intro i hi
       exact (mem_polynomialAgreementSet _ _ _ _).mpr (hPeval i hi)
     · intro F₀ G₀ hF hG hw
@@ -123,15 +117,15 @@ theorem exists_isScalarExceptional_zero_iff_isProjectionBad (domain : ι ↪ F)
       fin_cases j
       · apply hj
         rw [projectedWord_mem_code_iff_exists_polynomial]
-        exact ⟨F₀, (degree_lt_succ_iff_degree_le F₀).mpr hF, fun i hi ↦ (hagree i hi).1⟩
+        exact ⟨F₀, degree_lt_succ_iff.mpr hF, fun i hi ↦ (hagree i hi).1⟩
       · apply hj
         rw [projectedWord_mem_code_iff_exists_polynomial]
-        exact ⟨G₀, (degree_lt_succ_iff_degree_le G₀).mpr hG, fun i hi ↦ (hagree i hi).2⟩
+        exact ⟨G₀, degree_lt_succ_iff.mpr hG, fun i hi ↦ (hagree i hi).2⟩
 
 /-- If `⌈n (1 - δ)⌉₊ = A`, scalar exceptionality at loss zero is
 `CoreDefinitions.IsMCA` for the affine-line generator, `code domain (d + 1)`, and radius `δ`,
 where `n = |ι|`. -/
-theorem exists_isScalarExceptional_zero_iff_isMCA [Fintype F] (domain : ι ↪ F)
+theorem exists_isScalarExceptional_zero_iff_isMCA (domain : ι ↪ F)
     (f g : ι → F) (d A : ℕ) (α : F) (δ : ℝ)
     (hδ : ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ = A) :
     (∃ P, IsScalarExceptional domain f g d A 0 α P) ↔

@@ -271,7 +271,6 @@ def readFinalPolynomial
   cast (finalMessage_type s l)
     (tr.read (finalMessage s l).val (by simpa only [finalMessage_val] using hi))
 
-variable [Fintype F]
 
 /-! ## History before query sampling -/
 

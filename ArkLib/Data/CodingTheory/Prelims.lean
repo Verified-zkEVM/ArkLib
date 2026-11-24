@@ -300,7 +300,7 @@ lemma mem_affineSubspaceFrom_iff [Ring F] [AddCommGroup A] [DecidableEq A] [Modu
 instance : VAdd (ι → F) (AffineSubspace F (ι → F)) := AffineSubspace.pointwiseVAdd
 
 /-- A translate of a finite affine subspace is finite. -/
-noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} [Fintype s] :
+noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} :
     Fintype (v +ᵥ s) := Fintype.ofFinite ↥(v +ᵥ s)
 
 /-- The affine span of a set is finite over a finite field. -/
@@ -323,23 +323,23 @@ noncomputable instance {v : ι → F} {s : AffineSubspace F (ι → F)} [inst : 
 
 /-- The carrier set of the affine span of the image of a function `U : Fin k → ι → F`.
   This is the set of all affine combinations of `U 0, U 1, ..., U (k-1)`. -/
-abbrev AffSpanSet [NeZero k] (U : Fin k → ι → F) : Set (ι → F) :=
+abbrev AffSpanSet (U : Fin k → ι → F) : Set (ι → F) :=
   (affineSpan F (Finset.univ.image U : Set (ι → F))).carrier
 
 omit [Fintype F] in
 /-- The affine span of a finite set of vectors is finite over a finite field. -/
-lemma AffSpanSet.instFinite [Finite F] [NeZero k] (u : Fin k → ι → F) :
+lemma AffSpanSet.instFinite [Finite F] (u : Fin k → ι → F) :
     (AffSpanSet u).Finite := by
   let : Fintype F := Fintype.ofFinite F
   unfold AffSpanSet
   exact Set.toFinite _
 
 /-- The affine span as a `Finset`, using `AffSpanFinite` to convert from the set. -/
-noncomputable def AffSpanFinset [NeZero k] (U : Fin k → ι → F) : Finset (ι → F) :=
+noncomputable def AffSpanFinset (U : Fin k → ι → F) : Finset (ι → F) :=
   (AffSpanSet.instFinite U).toFinset
 
 /-- A collection of affine subspaces in `F^ι`. -/
-noncomputable def AffSpanFinsetCollection {t : ℕ} [NeZero k] [NeZero t]
+noncomputable def AffSpanFinsetCollection {t : ℕ}
   (C : Fin t → (Fin k → (ι → F))) : Set (Finset (ι → F)) :=
   Set.range (fun i => AffSpanFinset (C i))
 

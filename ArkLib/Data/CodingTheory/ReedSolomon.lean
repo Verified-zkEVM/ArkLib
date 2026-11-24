@@ -170,7 +170,7 @@ open LinearCode
 
 /-- The Vandermonde matrix is the generator matrix for an RS code of length `ι` and dimension `deg`.
 -/
-lemma genMatIsVandermonde [Fintype ι] [Field F] {α : ι ↪ F} :
+lemma genMatIsVandermonde [Field F] {α : ι ↪ F} :
     fromColGenMat (Vandermonde.nonsquare (ι' := m) α) = ReedSolomon.code α m := by
   classical
   by_cases hm : m = 0
@@ -230,6 +230,28 @@ theorem mem_code_iff_eval_of_ne_zero {n : ℕ} [NeZero n] {α : ι ↪ F} {f : �
   mem_code_iff_eval.trans <| exists_congr fun _ ↦
     and_congr_left' (degree_lt_iff_natDegree_lt_of_ne_zero (NeZero.ne n))
 
+/-- Reindexing the evaluation points by an equivalence `e` reindexes the codewords: `w ∘ e` is in
+the code on `e.toEmbedding.trans domain` exactly when `w` is in the code on `domain`. -/
+theorem mem_code_comp_equiv {κ : Type*} (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ) (w : ι → F) :
+    w ∘ e ∈ code (e.toEmbedding.trans domain) k ↔ w ∈ code domain k := by
+  simp only [mem_code_iff_eval]
+  constructor
+  · rintro ⟨P, hP, he⟩
+    exact ⟨P, hP, fun i ↦ by simpa using he (e.symm i)⟩
+  · rintro ⟨P, hP, he⟩
+    exact ⟨P, hP, fun i ↦ he (e i)⟩
+
+/-- The code on the reindexed evaluation points `e.toEmbedding.trans domain` is the code on
+`domain` with its coordinates reindexed by `e`. -/
+theorem code_comp_equiv {κ : Type*} (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ) :
+    code (e.toEmbedding.trans domain) k =
+      (code domain k).map (LinearEquiv.funCongrLeft F F e : (ι → F) →ₗ[F] κ → F) := by
+  ext w
+  rw [Submodule.mem_map_equiv, ← mem_code_comp_equiv e domain k]
+  congr!
+  ext
+  simp
+
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.degree < n`. -/
 lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.degree < n) :
@@ -240,8 +262,7 @@ lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.d
 of message length `d + 1`. -/
 lemma evalOnPoints_mem_code_succ_of_degree_le {α : ι ↪ F} {p : F[X]} {d : ℕ}
     (hdeg : p.degree ≤ d) : evalOnPoints α p ∈ code α (d + 1) := by
-  apply evalOnPoints_mem_code_of_degree_lt
-  rwa [← mem_degreeLT, degreeLT_succ_eq_degreeLE, mem_degreeLE]
+  exact evalOnPoints_mem_code_of_degree_lt (degree_lt_succ_iff.mpr hdeg)
 
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.natDegree < n`. -/
@@ -391,7 +412,7 @@ lemma card_le_card_of_count_inj {α β : Type*} [DecidableEq α] [DecidableEq β
 
 section
 
-def constantCode {α : Type*} (x : α) (ι' : Type*) [Fintype ι'] : ι' → α := fun _ ↦ x
+def constantCode {α : Type*} (x : α) (ι' : Type*) : ι' → α := fun _ ↦ x
 
 variable [Semiring F] {x : F} [Fintype ι] {α : ι ↪ F}
 
@@ -403,12 +424,14 @@ lemma weight_constantCode [DecidableEq F] :
   · exact iff_of_true (.inl h) (.inl h)
   · exact or_congr_right ⟨fun hx ↦ hx i, fun hx _ ↦ hx⟩
 
+omit [Fintype ι] in
 @[simp]
 lemma constantCode_mem_code [NeZero n] :
     constantCode x ι ∈ ReedSolomon.code α n :=
   Submodule.mem_map.2 ⟨C x, mem_degreeLT.2 <| degree_C_le.trans_lt <|
     WithBot.coe_lt_coe.2 (Nat.pos_of_ne_zero (NeZero.ne n)), evalOnPoints_C⟩
 
+omit [Fintype ι] in
 @[simp]
 lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
     constantCode x ι = 0 ↔ x = 0 := by
