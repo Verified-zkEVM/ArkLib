@@ -49,7 +49,7 @@ def PartialTranscriptAt.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
     rcases history with ⟨⟨y, h⟩, rest⟩
     exact ⟨⟨y, h⟩, PartialTranscriptAt.snoc tail rest x⟩
 
-/-- A terminal full prefix is a completed transcript. -/
+/-- A full prefix at a leaf is a completed transcript. -/
 def PartialTranscriptAt.complete : {s : FreeM P PUnit} →
     (sp : Cursor.Spine s (.pure PUnit.unit)) → PartialTranscriptAt l sp → Transcript l s
   | _, .root _, _ => ⟨⟩
@@ -82,7 +82,7 @@ def sampleAt {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
   (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
     draw (spineChallenge l sp h)
 
-/-- A state predicate on every full prefix, with root, sender and terminal obligations. The
+/-- A state predicate on every full prefix, with root, sender and leaf obligations. The
 statement may lie in any universe. -/
 structure StateFunction (s : FreeM P PUnit) (S : Type uS)
     (admissible language : S → Prop) (accepts : S → Transcript l s → Prop) where
@@ -193,7 +193,7 @@ theorem rbrKnowledgeSoundness.lift.{v} {S : Type uS} {Win : Type uW} {s : FreeM 
   simpa only [KnowledgeStateFunction.lift, ULift.exists] using hF stmt ha a next sp ho hist
 
 /-- Valid plain acceptance from some ambient state at the fixed complete transcript.
-Terminal obligations therefore cover state changes made during the interaction. The event is a
+Leaf obligations therefore cover state changes made during the interaction. The event is a
 predicate on the output statement type at the transcript's shape path. The input statement may
 lie in any universe. -/
 def Verifier.validAcceptance {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
@@ -238,9 +238,10 @@ variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProto
   {inputs : OracleBundle.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
 
-/-- Oracle acceptance from a possible terminal state, with actual input and path oracle messages.
-The event is a predicate on the output statement and oracle data at the transcript's shape path.
-The input statement, the input index and the input query type may lie in any universe. -/
+/-- Oracle acceptance from a possible ambient state at the end of the run, with actual input and
+path oracle messages. The event is a predicate on the output statement and oracle data at the
+transcript's shape path. The input statement, the input index and the input query type may lie in
+any universe. -/
 def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × inputs.Data) (tr : Transcript oracleSig s)

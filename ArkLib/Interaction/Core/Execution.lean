@@ -58,7 +58,7 @@ theorem Verifier.verdict_mem_support_run {ι : Type u} {ambient : OracleSpec.{u,
   obtain ⟨⟨tr, out, _⟩, -, verdict, hv, rfl⟩ := h
   simpa only [mem_support_liftComp_iff] using hv
 
-/-- Execute the honest prover and terminal decision, retaining explicit rejection. -/
+/-- Execute the honest prover and the final decision, retaining explicit rejection. -/
 def Reduction.runOutcome {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : Protocol.{u}} {S : Type uS} {W : Type uW} {T : Path s → Type u}
     {Out : Transcript plainSig s → Type u}
@@ -112,7 +112,7 @@ theorem simulateQ_runWith_sampler {P : PFunctor.{uA, u}}
     rw [TwoParty.Lens.runWith_node, TwoParty.Lens.runWith_node]
     simp only [interaction]
     rw [Prover.simulate_node, sampler_node, sampler_node]
-    rw [simulateQ_step, simulateQ_map, simulateQ_samplerSlot, step_map_right, step_map]
+    rw [simulateQ_step, simulateQ_map, simulateQ_samplerNode, step_map_right, step_map]
     apply congrArg₂ (fun c k => step (owner l a) order (simulateQ F p) c k)
     · rfl
     · funext x pn cn

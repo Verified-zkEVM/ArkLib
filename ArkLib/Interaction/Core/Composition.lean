@@ -98,7 +98,7 @@ abbrev splitFamily {P : PFunctor.{uA, u}} {s₁ : FreeM P PUnit.{u + 1}}
     (p : Path (s₁.append s₂)) : Type uV :=
   U (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
 
-/-- Plain terminal decisions fold after both interactions have finished. The prefix's output type
+/-- Plain final decisions fold after both interactions have finished. The prefix's output type
 may depend on the prefix path, and the composite's output at an appended path is the suffix's
 output at the split path. -/
 def Verifier.append {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
@@ -262,7 +262,7 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
-        samplerSlot, rootDraw,
+        samplerNode, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, plainSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]
@@ -291,7 +291,7 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
-        samplerSlot, rootDraw,
+        samplerNode, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, oracleSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]
