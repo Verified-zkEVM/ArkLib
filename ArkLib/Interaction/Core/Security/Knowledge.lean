@@ -509,8 +509,8 @@ end OracleVerifier
 
 namespace Extractor
 
-/-- Straight-line extraction from an oracle protocol sees the full payload-bearing transcript.
-The output witness type `Wout tr` is indexed by that transcript `tr`. -/
+/-- Straight-line extraction from an oracle protocol sees the full transcript, oracle messages
+included. The output witness type `Wout tr` is indexed by that transcript `tr`. -/
 abbrev OracleStraightLine {ι : Type} {S : Type uS} (ambient : OracleSpec ι)
     (s : OracleProtocol.{0, q})
     (Witness : S → Type) (Wout : Transcript oracleSig s → Type) :=
