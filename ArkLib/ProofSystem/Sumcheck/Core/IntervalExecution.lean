@@ -44,7 +44,8 @@ theorem intervalVerifier_run_one {ι : Type} (ambient : OracleSpec ι)
   rw [map_eq_bind_pure_comp]
   rfl
 
-/-- An empty interval executes the prover's leaf effects, accepts, and retains the input. -/
+/-- An empty interval still runs the prover's leaf computation, with its effects. It accepts
+and returns the original claim with the input. -/
 theorem intervalVerifier_run_zero {ι : Type} (ambient : OracleSpec ι)
     (start : ℕ) (bound : start + 0 ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ i, PolynomialData R n deg i)

@@ -12,6 +12,25 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 The round-by-round state records the truth of the remaining indexed sum. The generic oracle
 verifier implication bounds the actual run by the number of remaining challenges times the
 single-round polynomial agreement bound.
+
+`intervalVerifier_soundness` covers suffixes only: it assumes `start + count = n` and fresh
+uniform challenges. It bounds the probability that the run returns an accepted **true** output
+claim from a false input claim. The list and injective corollaries specialize this theorem.
+`intervalRoundExecute_soundness` in `IntervalRoundSoundness` gives the local one-round bound at
+every variable position. A soundness theorem for an interior endpoint `start + count < n` is
+follow-up work.
+
+The remaining-claim recurrence and the agreement bound at a fresh challenge follow the sum-check
+analysis of [LFKN92] in the form of [Thaler2023], §4.1 and Proposition 4.1. Three details differ
+here. Domain indices keep repetitions, so the domain map need not be injective. The verifier
+returns the endpoint claim instead of querying the input polynomial. The application checks that
+claim in its output relation.
+
+## References
+
+* [Lund, C., Fortnow, L., Karloff, H., and Nisan, N., *Algebraic methods for interactive
+    proof systems*][LFKN92]
+* [Thaler, J., *Proofs, Arguments, and Zero-Knowledge*][Thaler2023]
 -/
 
 @[expose] public section

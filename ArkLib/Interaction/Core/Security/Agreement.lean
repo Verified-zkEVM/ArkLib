@@ -235,7 +235,7 @@ theorem Agrees.rbrKnowledgeSoundness_iff (h : Agrees V V')
     (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
     (relOut : (stmt : S × inputs.Data) → (tr : Transcript oracleSig s) →
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
-    (draw : PrefixDraw oracleSig ProbComp s) (ε : PrefixError oracleSig s) :
+    (draw : PrefixDraw viewSig ProbComp s) (ε : PrefixError oracleSig s) :
     V.rbrKnowledgeSoundness.{uS, uW, uK, uO} impl admissible relIn relOut draw ε ↔
       V'.rbrKnowledgeSoundness.{uS, uW, uK, uO} impl admissible relIn relOut draw ε := by
   have eq : (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) =
@@ -320,6 +320,14 @@ theorem prefixDraw_ofNodes_cast {m : Type u → Type vDraw} [Functor m] (e : s' 
     @Eq (PrefixDraw oracleSig m s)
       (fun {a next} => e ▸ (@PrefixDraw.ofNodes _ oracleSig m _ s' draw a next))
       (@PrefixDraw.ofNodes _ oracleSig m _ s (e ▸ draw)) := by
+  subst e; rfl
+
+/-- Reading a node-indexed draw through the verifier's view commutes with tree transport. -/
+theorem prefixDraw_ofNodesView_cast {m : Type u → Type vDraw} [Functor m] (e : s' = s)
+    (draw : QueryImpl (challengeSpec oracleSig s') m) :
+    @Eq (PrefixDraw viewSig m s)
+      (fun {a next} => e ▸ (PrefixDraw.ofNodesView (s := s') draw (a := a) (next := next)))
+      (PrefixDraw.ofNodesView (s := s) (e ▸ draw)) := by
   subst e; rfl
 
 /-- Lifting a node-indexed error to full prefixes commutes with tree transport. -/
@@ -420,7 +428,7 @@ theorem rbrKnowledgeSoundness_cast (e : s' = s)
     (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
     (relOut : (stmt : S × inputs.Data) → (tr : Transcript oracleSig s) →
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
-    (draw : PrefixDraw oracleSig ProbComp s') (ε : PrefixError oracleSig s') :
+    (draw : PrefixDraw viewSig ProbComp s') (ε : PrefixError oracleSig s') :
     (V.cast e).rbrKnowledgeSoundness.{uS, uW, uK, uO}
         impl admissible relIn relOut (e ▸ draw) (e ▸ ε) ↔
       V.rbrKnowledgeSoundness.{uS, uW, uK, uO}

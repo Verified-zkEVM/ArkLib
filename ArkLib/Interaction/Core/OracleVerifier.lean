@@ -657,14 +657,15 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   simp [OracleVerifier.run, OracleVerifier.executeWith, _root_.map_bind, bind_map_left]
 
 /-- A run is the interaction, then the decision answered from the input and the run's oracle
-messages, with its ambient queries sent to the ambient part of the run's oracle. -/
-theorem OracleVerifier.run_eq_decideWith {ι : Type u} {I : Type uI} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u}} {S : Type uS} {T : Path s → Type u} {A : I → Type u}
+messages, with its ambient queries sent to the ambient part of the run's oracle. The input is any
+oracle bundle, as in `OracleVerifier.run_eq`. -/
+theorem OracleVerifier.run_eq_decideWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleFamily.{uI, u, wI} I A}
+    {inputs : OracleBundle.{u, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
     {Out : Transcript oracleSig s → Type u}
-    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (x : ∀ i, A i)
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (x : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     V.run stmt x prover = (do
       let ⟨tr, out, _⟩ ← TwoParty.Lens.run s

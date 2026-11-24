@@ -7,7 +7,16 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalExecution
 
-/-! # Retained arbitrary input behavior at interval boundaries -/
+/-! # Retained arbitrary input behavior at interval boundaries
+
+`behaviorIntervalVerifier` runs the interval fold with an arbitrary evaluation function as its
+input and output data. Its run laws hold for every function, because the checks query only the
+sent messages. The polynomial soundness theorems do not transfer to this interface: they require
+input data with a polynomial realization of bounded individual degree. For domain `{0}` over
+`ZMod 5`, the function that is zero at `0` and one elsewhere has the false sum claim `1`, yet the
+constant-one message of degree zero passes the sum check and makes the endpoint claim true at each
+of the four nonzero challenges.
+-/
 
 @[expose] public section
 
@@ -86,7 +95,8 @@ theorem behaviorIntervalVerifier_run (D : Fin d → R) {ι : Type} (ambient : Or
         (intervalCheck D) IntervalClaim.finish count).run
         (intervalInitial start count bound stmt) (fun _ => evaluate) prover := rfl
 
-/-- A one-round interval draws once and retains its original polynomial and private output. -/
+/-- A one-round interval draws once and retains the original evaluation function and the private
+output. -/
 theorem behaviorIntervalVerifier_run_one (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι)
     (start : ℕ) (bound : start + 1 ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (evaluate : (Fin n → R) → R)

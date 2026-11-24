@@ -18,8 +18,34 @@ which is the error of its challenge node (`keyError_eq_roundEps`). An adaptive a
 most `Q` queries pays at most `Q` times the largest round error on every branch, and completion pays
 the sum of the round errors, so the restored execution has worst-case charge at most
 `Q * max + sum` (`restoredExecution_round_cost`).
--/
 
+The verification games therefore have knowledge error at most `Q * max + sum` for a fixed
+adversary program with at most `Q` queries (`stateRestoration_knowledge_soundness_nonuniform`,
+`stateRestoration_oracle_knowledge_soundness_nonuniform`). The `_privateCoins` forms average this
+bound over private coins whose sampler may fail; every fixed-coin adversary has the same query
+bound `Q`. The uniform theorems in `StateRestoration` give `(Q + rounds.length) * error` instead.
+
+## Measured extraction
+
+`MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform` bounds the
+stage programs along the completed transcript on the witness that `readOut` has already converted.
+It does not charge `readOut`. `MeasuredKnowledgeStateFunction.extractionProgram` runs a program
+realizing `readOut` before the stage programs, and
+`stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut` states the failure event on
+that composite program and charges both. Budgets are per statement and count declared stage
+instructions only.
+
+## References
+
+Chiesa and Yogev's Theorem 31.3.1 and WARP's Theorem B.4 give the uniform error bound, which this
+module refines by round. The port record
+(`docs/design/interaction-layer/state-restoration-disposition.md`) gives the detailed
+correspondence.
+
+* [Chiesa, A., and Yogev, E., *Building Cryptographic Proofs from Hash Functions*][ChiesaYogev2024]
+* [Bünz, B., Chiesa, A., Fenzi, G., and Wang, W., *Linear time accumulation
+    schemes*][BCFW25]
+-/
 @[expose] public section
 
 universe uK uW uO wI wJ uS uI
@@ -73,22 +99,6 @@ theorem keyError_le_max {Input Salt : Type} {rounds : List Round}
           intro j _
           exact Finset.le_sup (Finset.mem_univ j.succ)
 
-/-- Routing a key of the remaining rounds keeps its round's charge on every execution. -/
-theorem costDist_prependQuery {Input Salt A : Type} {round : Round} {rounds : List Round}
-    (errors : RoundErrors (round :: rounds)) (message : round.Message) (salt : Salt)
-    (program : OracleComp (oracleSpec Input Salt rounds) A) :
-    costDist (simulateQ (prependQuery message salt) program)
-        (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt (round :: rounds)) ENNReal) =
-      simulateQ (prependQuery message salt)
-        (costDist program (⟨keyError (fun j => errors j.succ)⟩ :
-          CostModel (oracleSpec Input Salt rounds) ENNReal)) := by
-  induction program using OracleComp.inductionOn with
-  | pure value => simp [costDist, instrumentedRun]
-  | query_bind key next ih =>
-      simp only [costDist, instrumentedRun, QueryImpl.withAddCost, QueryImpl.ofLift_eq_id'] at ih
-      simp [costDist, instrumentedRun, QueryImpl.withAddCost, prependQuery, OracleSpec.query,
-        WriterT.run_bind, simulateQ_bind, simulateQ_query, bind_assoc, keyError, ih]
-
 /-- A `Q`-query program pays at most `Q` times the largest round error on every branch. -/
 theorem queryBound_round_cost {Input Salt A : Type} {rounds : List Round}
     (errors : RoundErrors rounds) (program : OracleComp (oracleSpec Input Salt rounds) A)
@@ -111,18 +121,19 @@ theorem queryBound_round_cost {Input Salt A : Type} {rounds : List Round}
           conv_rhs => rw [hQ]
           rw [Nat.cast_add, Nat.cast_one, add_mul, one_mul, add_comm]
 
-/-- Routing keys of the remaining rounds preserves a worst-case charge bound. -/
+/-- Routing keys of the remaining rounds preserves a worst-case charge bound. The handler issues
+one query at the charge of the routed key, so VCVio's `WorstCaseCostBound.simulateQ` transfers the
+bound. -/
 theorem roundCost_prependQuery {Input Salt A : Type} {round : Round} {rounds : List Round}
     (errors : RoundErrors (round :: rounds)) (message : round.Message) (salt : Salt)
     (program : OracleComp (oracleSpec Input Salt rounds) A) (budget : ENNReal)
     (bounded : WorstCaseCostBound program (⟨keyError (fun j => errors j.succ)⟩ :
       CostModel (oracleSpec Input Salt rounds) ENNReal) budget) :
     WorstCaseCostBound (simulateQ (prependQuery message salt) program)
-      (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt (round :: rounds)) ENNReal) budget := by
-  intro result supported
-  change result ∈ support (costDist _ _) at supported
-  rw [costDist_prependQuery] at supported
-  exact bounded result (support_simulateQ_subset _ _ supported)
+      (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt (round :: rounds)) ENNReal) budget :=
+  bounded.simulateQ (prependQuery message salt) fun key =>
+    worstCaseCostBound_query (spec := oracleSpec Input Salt (round :: rounds))
+      (Key.later message salt key) _
 
 /-- Completion pays one round error per round, hence the sum of the round errors. -/
 theorem complete_round_cost {Input Salt : Type} (rounds : List Round) (errors : RoundErrors rounds)
@@ -271,6 +282,72 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform
   rintro ⟨stmt, tr, w⟩ ⟨hadm, ⟨claim, hc, hrel⟩, hfail⟩
   exact ⟨hadm, outputLaw stmt tr claim w hc hrel, hfail⟩
 
+/-- State-restoration knowledge soundness with per-round errors, averaged over the adversary's
+private coins. The coin sampler may fail; failed coins contribute missing mass. Every fixed-coin
+adversary has the same query bound `Q`, so averaging the fixed-coin bound gives
+`Q * max_j errors j + ∑ j, errors j`. -/
+theorem stateRestoration_knowledge_soundness_nonuniform_privateCoins
+    [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
+      T tr.path → W → Prop)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      (S × (∀ i, A i)) Wout Win admissible relIn validOutput)
+    (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
+      Wout stmt tr)
+    (outputLaw : ∀ stmt tr t w, verdict V stmt tr = some t → relOut stmt tr t w →
+      validOutput stmt tr (readOut stmt tr w))
+    (errors : RoundErrors rounds)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
+    {Coins : Type} (coins : OptionT ProbComp Coins)
+    (adversary : Coins → OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (Q : ℕ) (queryBound : ∀ c, IsTotalQueryBound (adversary c) Q) :
+    Pr{let result ← (coins >>= fun c => OptionT.lift
+        ((simulateQ randomOracle (verificationGame V (adversary c))).run' ∅))}[
+      admissible result.1 ∧
+      (∃ t, result.2.2.1 = some t ∧ relOut result.1 result.2.1 t result.2.2.2) ∧
+      ¬ relIn result.1
+        (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2.2))] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j := by
+  apply prEvent_bind_le_of_forall_le
+  intro c
+  rw [OptionT.prEvent_lift]
+  exact stateRestoration_knowledge_soundness_nonuniform V relOut F readOut outputLaw errors
+    bounded (adversary c) Q (queryBound c)
+
+/-- The private-coins form of `stateRestoration_oracle_knowledge_soundness_nonuniform`. The coin
+sampler may fail, and every fixed-coin adversary has the same query bound `Q`. -/
+theorem stateRestoration_oracle_knowledge_soundness_nonuniform_privateCoins
+    [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
+      OracleVerifier.Output T B tr.path → W → Prop)
+    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+      (S × (∀ i, A i)) Wout Win admissible relIn validOutput)
+    (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
+      Wout stmt tr)
+    (outputLaw : ∀ stmt tr claim w, closedVerdict V stmt tr = some claim →
+      relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
+    (errors : RoundErrors rounds)
+    (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
+    {Coins : Type} (coins : OptionT ProbComp Coins)
+    (adversary : Coins → OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (Q : ℕ) (queryBound : ∀ c, IsTotalQueryBound (adversary c) Q) :
+    Pr{let result ← (coins >>= fun c => OptionT.lift
+        ((simulateQ randomOracle (closedVerificationGame V (adversary c))).run' ∅))}[
+      admissible result.1 ∧
+      (∃ claim, result.2.2.1 = some claim ∧ relOut result.1 result.2.1 claim result.2.2.2) ∧
+      ¬ relIn result.1
+        (F.extractAlong result.1 result.2.1 (readOut result.1 result.2.1 result.2.2.2))] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j := by
+  apply prEvent_bind_le_of_forall_le
+  intro c
+  rw [OptionT.prEvent_lift]
+  exact stateRestoration_oracle_knowledge_soundness_nonuniform V relOut F readOut outputLaw errors
+    bounded (adversary c) Q (queryBound c)
+
 end Games
 
 end Interaction.Core.StateRestoration
@@ -362,6 +439,45 @@ namespace Interaction.Core.MeasuredKnowledgeStateFunction
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
 open Interaction.Core.StateRestoration
 
+section ReadOut
+
+variable {Kind : Type} [Finite Kind] {s : OracleProtocol} {S : Type uS} {W : Type}
+  {Win : S → Type} {Wout : S → Transcript oracleSig s → Type} {admissible : S → Prop}
+  {relIn : (stmt : S) → Win stmt → Prop}
+  {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → Wout stmt tr → Prop}
+
+/-- The full extraction program at a statement and completed transcript: a program realizing the
+conversion `readOut` of the adversary's witness, then the stage programs along the transcript.
+Its budget is the conversion budget plus the stage budgets (`extractionProgram_budget`). -/
+def extractionProgram
+    (M : MeasuredKnowledgeStateFunction Kind oracleSig s S Wout Win admissible relIn validOutput)
+    {readOut : (stmt : S) → (tr : Transcript oracleSig s) → W → Wout stmt tr}
+    (readOutProgram : ∀ stmt tr, BudgetedProgram (readOut stmt tr) (Kind → ℕ))
+    (stmt : S) (tr : Transcript oracleSig s) :
+    BudgetedProgram (M.extractAlong stmt tr ∘ readOut stmt tr) (Kind → ℕ) :=
+  (M.stages.programAlong stmt tr).comp (readOutProgram stmt tr)
+
+/-- The full extraction program returns the extracted input witness at the converted witness. -/
+theorem run_extractionProgram
+    (M : MeasuredKnowledgeStateFunction Kind oracleSig s S Wout Win admissible relIn validOutput)
+    {readOut : (stmt : S) → (tr : Transcript oracleSig s) → W → Wout stmt tr}
+    (readOutProgram : ∀ stmt tr, BudgetedProgram (readOut stmt tr) (Kind → ℕ))
+    (stmt : S) (tr : Transcript oracleSig s) (w : W) :
+    (M.extractionProgram readOutProgram stmt tr).program.run w =
+      M.extractAlong stmt tr (readOut stmt tr w) :=
+  ((M.extractionProgram readOutProgram stmt tr).realizes w).symm
+
+/-- The full extraction budget is the conversion budget plus the stage budgets. -/
+theorem extractionProgram_budget
+    (M : MeasuredKnowledgeStateFunction Kind oracleSig s S Wout Win admissible relIn validOutput)
+    {readOut : (stmt : S) → (tr : Transcript oracleSig s) → W → Wout stmt tr}
+    (readOutProgram : ∀ stmt tr, BudgetedProgram (readOut stmt tr) (Kind → ℕ))
+    (stmt : S) (tr : Transcript oracleSig s) :
+    (M.extractionProgram readOutProgram stmt tr).budget =
+      (readOutProgram stmt tr).budget + (M.stages.programAlong stmt tr).budget := rfl
+
+end ReadOut
+
 variable {rounds : List Round} {I S Salt W Kind : Type} [Finite Kind]
   {A : I → Type} {T : Path (protocol rounds) → Type}
   {J : Path (protocol rounds) → Type} {B : (p : Path (protocol rounds)) → J p → Type}
@@ -376,7 +492,17 @@ variable {rounds : List Round} {I S Salt W Kind : Type} [Finite Kind]
 /-- A measured knowledge state function with per-round errors and per-node-kind stage bounds. The
 closed verification game has knowledge error at most `Q * max_j errors j + ∑ j, errors j`, and
 for every admissible input and transcript the composed stage program returns the extracted input
-witness and costs at most the protocol budget on every execution path. -/
+witness and costs at most the protocol budget on every execution path.
+
+The measured budget begins after `readOut`. The failure event applies `M.extractAlong` to
+`readOut stmt tr w`, and the realization equality lets the event use the stage program
+`M.stages.programAlong stmt tr` on that converted witness. `readOut` is an arbitrary function of
+the input, the completed transcript and the adversary's witness, and this theorem does not charge
+it. The budget also assumes that the statement, the transcript and the stage programs are
+supplied. The bounds `rootBound`, `messageBound`, `challengeBound` and `leafBound` are per
+statement, so the theorem gives a uniform size-based budget only if the caller bounds them
+separately. `stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut` also charges a
+program realizing `readOut`. -/
 theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
@@ -411,5 +537,54 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     fun z hz tr => ⟨M.stages.run_programAlong z tr,
       KnowledgeStateFunction.MeasuredStages.programAlong_costAtMost_protocol M.stages
         (budget z hz) tr⟩⟩
+
+/-- The full extractor contract. A budgeted program realizes `readOut` at every statement and
+transcript, and `extractionProgram` runs it before the stage programs. The failure event runs
+this composite program on the adversary's witness, so the knowledge error
+`Q * max_j errors j + ∑ j, errors j` bounds failure of the program whose cost is bounded. For every
+admissible input and transcript the composite program returns the extracted input witness at the
+converted witness, and every execution path costs at most the conversion bound plus the protocol
+budget. All bounds are per statement; the statement, the transcript and the programs are
+supplied. -/
+theorem stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut
+    [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
+    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
+      OracleVerifier.Output T B tr.path → W → Prop)
+    (M : MeasuredKnowledgeStateFunction Kind oracleSig (protocol rounds) (S × (∀ i, A i)) Wout
+      Win admissible relIn validOutput)
+    (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
+      Wout stmt tr)
+    (readOutProgram : ∀ stmt tr, BudgetedProgram (readOut stmt tr) (Kind → ℕ))
+    (outputLaw : ∀ stmt tr claim w, closedVerdict V stmt tr = some claim →
+      relOut stmt tr claim w → validOutput stmt tr (readOut stmt tr w))
+    (errors : RoundErrors rounds)
+    (bounded : M.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
+    (readOutBound rootBound messageBound challengeBound leafBound : S × (∀ i, A i) → Kind → ℕ)
+    (readOutBudget : ∀ z, admissible z → ∀ tr, (readOutProgram z tr).budget ≤ readOutBound z)
+    (budget : ∀ z, admissible z → M.stages.ProtocolBudgetAtMost z (rootBound z)
+      (messageBound z) (challengeBound z) (leafBound z))
+    (adversary : OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
+      ((S × (∀ i, A i)) × Messages Salt rounds × W))
+    (Q : ℕ) (queryBound : IsTotalQueryBound adversary Q) :
+    Pr{let result ← (simulateQ randomOracle (closedVerificationGame V adversary)).run' ∅}[
+      admissible result.1 ∧
+      (∃ claim, result.2.2.1 = some claim ∧ relOut result.1 result.2.1 claim result.2.2.2) ∧
+      ¬ relIn result.1
+        ((M.extractionProgram readOutProgram result.1 result.2.1).program.run result.2.2.2)] ≤
+      Q * Finset.univ.sup errors + ∑ j, errors j ∧
+    ∀ z, admissible z → ∀ tr,
+      (∀ w, (M.extractionProgram readOutProgram z tr).program.run w =
+        M.extractAlong z tr (readOut z tr w)) ∧
+      (M.extractionProgram readOutProgram z tr).program.CostAtMost
+        (readOutBound z +
+          (leafBound z + rounds.length • (messageBound z + challengeBound z) + rootBound z)) := by
+  obtain ⟨bound, laws⟩ := stateRestoration_oracle_knowledge_soundness_nonuniform V relOut M
+    readOut outputLaw errors bounded rootBound messageBound challengeBound leafBound budget
+    adversary Q queryBound
+  refine ⟨?_, fun z hz tr => ⟨run_extractionProgram M readOutProgram z tr, ?_⟩⟩
+  · simpa only [run_extractionProgram] using bound
+  · exact MeasuredProgram.CostAtMost.comp (laws z hz tr).2
+      ((readOutProgram z tr).costAtMost.mono (readOutBudget z hz tr))
 
 end Interaction.Core.MeasuredKnowledgeStateFunction
