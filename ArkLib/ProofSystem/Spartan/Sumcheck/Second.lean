@@ -162,6 +162,7 @@ def oracleVerifier : OracleVerifier oSpec (Batching.Statement (R := R) pp)
         ⟨s.c, Fin.elim0⟩ challenges).run
   outputOracle := .inl ⟨Function.Embedding.inl, fun _ => rfl, fun _ => HEq.rfl⟩
 
+omit [SampleableType R] in
 /-- The executable verifier is exactly the named context lift of the general sumcheck. -/
 theorem oracleVerifier_eq_liftContext : oracleVerifier (R := R) pp oSpec =
     (Sumcheck.Spec.oracleVerifier R 2 (boolEmbedding R) pp.ℓ_n oSpec).liftContext
@@ -202,6 +203,7 @@ def oracleProver : OracleProver oSpec (Batching.Statement (R := R) pp)
   Prover.liftContext (proverContextLens pp)
     (Sumcheck.Impl.Computable.generalOracleProver R 2 oSpec pp.ℓ_n (boolEmbedding R))
 
+omit [SampleableType R] in
 /-- The executable honest prover is the specified prover lifted to the Spartan context. -/
 theorem oracleProver_eq : oracleProver (R := R) pp oSpec =
     Prover.liftContext (proverContextLens pp)
@@ -235,6 +237,7 @@ def relIn := Batching.relOut (R := R) pp
 /-- The output relation is the terminal second-polynomial evaluation equation. -/
 def relOut := Terminal.relIn (R := R) pp
 
+omit [SampleableType R] in
 /-- Materializing the implemented reduction gives the ordinary context lift of sumcheck. -/
 theorem oracleReduction_toReduction : (oracleReduction (R := R) pp oSpec).toReduction =
     (Sumcheck.Spec.oracleReduction R 2 (boolEmbedding R) pp.ℓ_n oSpec).toReduction.liftContext
@@ -284,6 +287,7 @@ instance contextLens_complete : (proverContextLens (R := R) pp).IsComplete
     rw [horacles] at ho
     exact (outputRelation_iff pp s o out).mp ho
 
+omit [SampleableType R] in
 private theorem compatible_oracles
     (s : Batching.Statement (R := R) pp) (o : ∀ i, OracleStatement (R := R) pp i)
     (out : Sumcheck.Spec.StatementRound R pp.ℓ_n (.last pp.ℓ_n))

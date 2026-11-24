@@ -26,6 +26,25 @@ These entries are in
 | 12 | Path-fiber splitting stays in ArkLib |
 | 13 | The oracle decision log is recorded in the core |
 
+## Interaction core: later entries
+
+These entries are also in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
+The status is one of equivalent, premise-required, retired or unresolved. The rows for entry 19 use
+the plainer names ported, excluded by P1 or P2, removed and open for the same four statuses. The
+[port table](port-logged-execution.md) explains them.
+
+| Entry | Departure | Status |
+| --- | --- | --- |
+| 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces one entry per move, with the partial transcript, the querier and the queries. Erasing the entries gives the aggregate logs exactly. The code is in `Oracle/QueriesByMove.lean`, `Oracle/QueriesByMoveLaws.lean` and `Oracle/SentOracles.lean` | ported |
+| 19 | P1 excludes intermediate verifier queries and the moves they were assigned to; prover moves and their partial transcripts remain | excluded by P1 |
+| 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general bundle API | equivalent: `OracleBundle` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
+| 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
+| 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+
+The [bundle and node universe port table](port-bundle-universes.md) records the frozen
+R26, R27 and decoration canaries closed by entry 18.
+
 ## Legacy embedding: entries 14–16
 
 These entries continue the numbering for the security transfers of the legacy embedding. They
@@ -52,7 +71,7 @@ path data and output maps rather than a run.
 **Resolution.** The modules `Legacy/OracleExecution.lean`, `Legacy/OracleSecurity.lean` and
 `Legacy/OracleKnowledge.lean` state the correspondence and the transfers on the oracle tree:
 
-- `oracleFinalize` reads the legacy result off an oracle-tree observation, including both
+- `oracleFinalize` reads the legacy result off an oracle-tree outcome, including both
   parties' outputs and the verifier's output oracle data.
 - `oracleFinalize_observeWith_counterpartFirst` is program equality with legacy
   `OracleReduction.run` under the counterpart-first schedule, for every legacy protocol
@@ -82,3 +101,14 @@ to the same witness.
 
 An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
 tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
+
+## Logged execution and routing tests
+
+The [port table](port-logged-execution.md) lists each assertion in the old layer's tests
+and where it is ported or what remains. It also lists which assertions the approved
+passive-verifier and fixed-shape premises (P1 and P2) exclude. The rows about the queries by move are ported under
+the passive schedule. There is no separate step executor. Instrumented strategies run through
+`TwoParty.Lens.run`, and the ordinary run, the queries by move and the ambient queries by move
+share `OracleVerifier.executeWith`. Erasure follows from a general law about running
+instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
+verifier actions and move assignments that P1 excludes.

@@ -6,8 +6,10 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.RandomDomain
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
 import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.Probability.Uniform
 import Mathlib.Algebra.CharP.CharAndCard
@@ -572,7 +574,7 @@ access and was not available for primary-source verification, so JH01 coverage r
 open rather than being attributed to this different result. -/
 theorem rs_codimension_one_list_size
     (j : ℕ)
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     (hcard_le : Fintype.card ι ≤ Fintype.card F)
     (hι : Fintype.card ι = j + 1) :
@@ -676,7 +678,7 @@ section RandomReedSolomon
 
 open scoped ProbabilityTheory
 
-open Classical in
+open Classical Finset in
 /-- **Reed-Solomon codes on a random evaluation domain are list-decodable near capacity**
 ([ABF26] Theorem 3.6, after [AGL24, Theorem 1.1]).
 
@@ -686,14 +688,13 @@ with `|F| ≥ n + k · 2^{10ℓ/η}`,
   `Pr[ |Λ(C, ℓ/(ℓ+1) · (1 − ρ − η))| ≤ ℓ ] ≥ 1 − 2^{−ℓn}` ,
 
 where the evaluation domain `L` is drawn uniformly from the size-`n` subsets of `F`, the code is
-`C := RS[F, L, k]`, and `ρ := k/n`.
+`C := RS[F, L, k]`, and `ρ := k/n`. [AGL24] proves average-radius list decodability; this theorem
+is the plain list-size (`Lambda`) form. It does not assume `η < 1`: for `η ≥ 1` the radius is at
+most `0`.
 
 **The random domain is the source's, not a reformulation.** The sample space is literally
-`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ`, and the code is
-indexed by that subset itself (`↥S → F`), so no ordering is chosen and no push-forward argument is
-needed. An earlier assessment recorded this row as blocked on missing infrastructure for a uniform
-distribution over size-`n` subsets; that gap is closed — `Finset F` is a `Fintype`, so the subtype
-is one too, and native uniform sampling applies directly.
+`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ` — and the code is
+indexed by that subset itself (`↥S → F`), so no ordering of the evaluation points is chosen.
 
 `[Nonempty {S : Finset F // S.card = n}]` is what `$ᵗ` needs, and it is implied by the field-size
 hypothesis (which forces `n ≤ |F|`, whence `Finset.exists_subset_card_eq` supplies a witness); it is
@@ -706,16 +707,13 @@ separately: its `ℓ` is real-valued, so it needs a rounding the source does not
 issue [ABF26] Theorem 3.4 raises in its `η`-form. Derive it at a call site with an explicit choice.
 
 [BGM23] (exponential alphabet) and [GZ23] (polynomial-size alphabet) are the preceding results, and
-[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem, and none is
-formalised.
-
-Solicited proof: see
-<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
+[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem. Of these, only the
+list-size form of [BGM23] over generic evaluation points is formalised
+(`ReedSolomon.exists_ne_zero_Lambda_le_of_eval_ne_zero`). -/
 theorem rs_random_domain_lambda_le
     {F : Type} [Field F] [Fintype F]
-    (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
-    (k n : ℕ)
-    (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (η : ℝ) (hη : 0 < η) (k n : ℕ)
+    (hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
       Pr{ let S ← $ᵗ {S : Finset F // S.card = n} }[
@@ -726,7 +724,29 @@ theorem rs_random_domain_lambda_le
   by_cases hn : n = 0
   · subst n
     simp
-  sorry -- external admit: [AGL24, Theorem 1.1].
+  have hq : n ≤ Fintype.card F := by
+    have : (0 : ℝ) ≤ k * 2 ^ ((10 * ℓ : ℝ) / η) := by positivity
+    exact_mod_cast (le_add_of_nonneg_right this).trans hF
+  have : Nonempty (Fin n ↪ F) := Function.Embedding.nonempty_of_card_le (by simpa using hq)
+  -- The code on the image of `f : Fin n ↪ F` is the code on `f` reindexed by an equivalence.
+  have hΛ (f : Fin n ↪ F) (δ : ℝ) :
+      Lambda (ReedSolomon.code (Function.Embedding.subtype (· ∈ univ.map f)) k :
+          Set (↥(univ.map f) → F)) δ = Lambda (ReedSolomon.code f k : Set (Fin n → F)) δ := by
+    let e : Fin n ≃ ↥(univ.map f) :=
+      Equiv.ofBijective (fun i ↦ ⟨f i, mem_map_of_mem f (mem_univ i)⟩)
+        ⟨fun i j h ↦ f.injective (congrArg Subtype.val h), fun x ↦ by
+          obtain ⟨i, -, hi⟩ := mem_map.1 x.2
+          exact ⟨i, Subtype.ext hi⟩⟩
+    have hf : e.toEmbedding.trans (Function.Embedding.subtype (· ∈ univ.map f)) = f :=
+      Function.Embedding.ext fun _ ↦ rfl
+    rw [← ReedSolomon.Lambda_code_comp_equiv e, hf]
+  rw [ProbabilityTheory.prEvent_uniformSample_finsetCard_eq_card_embedding fun T : Finset F ↦
+    Lambda (ReedSolomon.code (Function.Embedding.subtype (· ∈ T)) k : Set (↥T → F))
+      ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / n - η)) ≤ (ℓ : ℕ∞)]
+  simp only [hΛ]
+  exact ProbabilityTheory.ofReal_one_sub_le_card_filter_div (by
+    simpa only [not_le] using ReedSolomon.card_filter_lt_Lambda_le_two_pow_neg_mul (F := F)
+      hℓ hη hn hF)
 
 end RandomReedSolomon
 

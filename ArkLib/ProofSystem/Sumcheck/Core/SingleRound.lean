@@ -45,14 +45,14 @@ theorem roundPath_eq (p : Path (round R deg)) : p = roundPath R deg := by
 variable {R deg}
 
 /-- The full transcript of a round with the given message and challenge. -/
-def roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) : PathAlong oracleSig (round R deg) :=
+def roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) : Transcript oracleSig (round R deg) :=
   ⟨msg, ⟨chal, ⟨⟩⟩⟩
 
 /-- The round polynomial recorded in a round transcript. -/
-def roundMessage (tr : PathAlong oracleSig (round R deg)) : R⦃≤ deg⦄[X] := tr.1
+def roundMessage (tr : Transcript oracleSig (round R deg)) : R⦃≤ deg⦄[X] := tr.1
 
 /-- The challenge recorded in a round transcript. -/
-def roundChallenge (tr : PathAlong oracleSig (round R deg)) : R := tr.2.1
+def roundChallenge (tr : Transcript oracleSig (round R deg)) : R := tr.2.1
 
 @[simp] theorem roundMessage_roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
     roundMessage (roundTranscript msg chal) = msg := rfl
@@ -61,20 +61,20 @@ def roundChallenge (tr : PathAlong oracleSig (round R deg)) : R := tr.2.1
     roundChallenge (roundTranscript msg chal) = chal := rfl
 
 /-- A round transcript is determined by its message and challenge. -/
-theorem roundTranscript_eta (tr : PathAlong oracleSig (round R deg)) :
+theorem roundTranscript_eta (tr : Transcript oracleSig (round R deg)) :
     roundTranscript (roundMessage tr) (roundChallenge tr) = tr := by
   rcases tr with ⟨msg, ⟨chal, ⟨⟩⟩⟩
   rfl
 
 /-- Every round transcript projects to the unique shape path, whatever its moves. -/
 theorem project_roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
-    projectPathAlong oracleSig (round R deg) (roundTranscript msg chal) = roundPath R deg :=
+    Transcript.path (roundTranscript msg chal) = roundPath R deg :=
   roundPath_eq R deg _
 
 /-- The verifier view of a round records the challenge and erases the message. -/
 def viewChallenge {p : Path (round R deg)} (v : View (round R deg) p) : R := v.1.2.1
 
-@[simp] theorem viewChallenge_toView (tr : PathAlong oracleSig (round R deg)) :
+@[simp] theorem viewChallenge_toView (tr : Transcript oracleSig (round R deg)) :
     viewChallenge (toView (round R deg) tr) = roundChallenge tr := rfl
 
 /-- The challenge node of a round, named by shape branches alone. -/
@@ -84,7 +84,7 @@ def roundChallengeNode : ChallengeNode oracleSig (round R deg) := ⟨.inr ⟨⟨
 
 The slot at the challenge node and the leaf are `pure`. The only possibly effectful slot is the
 first one, which is also `pure` here. -/
-def roundProver {m : Type → Type} [Monad m] {Out : PathAlong oracleSig (round R deg) → Type}
+def roundProver {m : Type → Type} [Monad m] {Out : Transcript oracleSig (round R deg) → Type}
     (msg : R⦃≤ deg⦄[X]) (next : (chal : R) → Out (roundTranscript msg chal)) :
     Focal oracleSig m (round R deg) Out :=
   pure ⟨msg, pure fun chal => pure (next chal)⟩
@@ -104,7 +104,7 @@ theorem samplerEnd_round {m : Type → Type} [Monad m]
 
 /-- Running the honest round against the sampler draws once and records the honest message. -/
 theorem run_roundProver {m : Type → Type} [Monad m] [LawfulMonad m]
-    {Out : PathAlong oracleSig (round R deg) → Type}
+    {Out : Transcript oracleSig (round R deg) → Type}
     (msg : R⦃≤ deg⦄[X]) (next : (chal : R) → Out (roundTranscript msg chal))
     (draw : (c : ChallengeNode oracleSig (round R deg)) → m (challengeSpec oracleSig _ c)) :
     Interaction.TwoParty.Lens.run (round R deg) (roundProver msg next)

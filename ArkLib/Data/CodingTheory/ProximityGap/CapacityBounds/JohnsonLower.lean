@@ -157,7 +157,7 @@ private noncomputable def binary_matrix_good_coefficients
     MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M))
 
 private theorem binary_matrix_good_coefficients_card
-    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (hinj : Function.Injective (fun M : Matrix (Fin 2) (Fin b) (ZMod 2) =>
       MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M))) :
@@ -167,7 +167,7 @@ private theorem binary_matrix_good_coefficients_card
     Finset.card_univ, binary_matrix_parameter_card]
 
 private theorem binary_matrix_good_coefficients_mem
-    {K : Type} [Field K] [DecidableEq K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [DecidableEq K] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K) (γ : K) :
     γ ∈ binary_matrix_good_coefficients (K := K) (b := b) t ↔
       ∃ M : Matrix (Fin 2) (Fin b) (ZMod 2),
@@ -372,7 +372,7 @@ private noncomputable def binary_product_tuple_linear_map {K : Type} [Field K]
 
 open scoped BigOperators in
 private theorem binary_product_linear_form_mv_eval₂
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (w : (Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :
     MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t
@@ -386,7 +386,7 @@ private theorem binary_product_linear_form_mv_eval₂
 
 open scoped BigOperators in
 private theorem binary_matrix_generic_tuple_of_separator_eval_ne_zero
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (heval : MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t
       (binary_matrix_direct_configuration_separator b) ≠ 0) :
@@ -423,7 +423,7 @@ private noncomputable def binary_matrix_graph_hom {K : Type} [Field K] [Algebra 
 
 open scoped BigOperators in
 private theorem binary_matrix_lambda_eval_eq_coeff
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (M : Matrix (Fin 2) (Fin b) (ZMod 2)) :
     MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M) =
@@ -491,7 +491,7 @@ private noncomputable def mapped_binary_matrix_direct_configuration_separator
 
 open scoped BigOperators in
 private theorem mapped_binary_matrix_direct_configuration_separator_ne_zero_of_injective
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K] (b : ℕ)
+    {K : Type} [Field K] [Algebra (ZMod 2) K] (b : ℕ)
     (hinj : Function.Injective (binary_matrix_lambda_mv (b := b))) :
     mapped_binary_matrix_direct_configuration_separator (K := K) b ≠ 0 := by
   intro hzero
@@ -503,7 +503,7 @@ private theorem mapped_binary_matrix_direct_configuration_separator_ne_zero_of_i
 
 open scoped BigOperators in
 private theorem mapped_binary_matrix_direct_configuration_separator_ne_zero
-    {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
+    {K : Type} [Field K] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b) :
     mapped_binary_matrix_direct_configuration_separator (K := K) b ≠ 0 :=
   mapped_binary_matrix_direct_configuration_separator_ne_zero_of_injective b
@@ -539,7 +539,7 @@ private theorem mv_polynomial_total_degree_map_le
 open scoped BigOperators in
 private theorem exists_binary_matrix_direct_configuration_separator_eval_ne_zero
     {K : Type} [Field K] [Fintype K]
-    [CharP K 2] [Algebra (ZMod 2) K]
+    [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
     (hcard : binary_matrix_separator_threshold b ≤ Fintype.card K) :
     ∃ t : Fin (b + 2) → K,
@@ -568,7 +568,7 @@ private theorem exists_binary_matrix_direct_configuration_separator_eval_ne_zero
 open scoped BigOperators in
 private theorem exists_binary_matrix_generic_tuple
     {K : Type} [Field K] [Fintype K]
-    [CharP K 2] [Algebra (ZMod 2) K]
+    [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
     (hcard : binary_matrix_separator_threshold b ≤ Fintype.card K) :
     ∃ t : Fin (b + 2) → K,

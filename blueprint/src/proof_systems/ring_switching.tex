@@ -125,7 +125,7 @@ the profile basis; its first message keeps the original carrier $A$.
 
 \begin{definition}[Stages of the ring-switching reduction]
   \label{def:ring_switching_stages}
-  \lean{RingSwitching.Packing.Head.reduction, RingSwitching.Packing.TensorPrefix.head_verifier_eq,
+  \lean{RingSwitching.Packing.Head.reduction, RingSwitching.Packing.TensorPrefix.headVerifier_eq,
     RingSwitching.Packing.ProductSumcheck.reduction}
   \leanok
   \uses{def:ring_switching_profile, def:pack_mle}
@@ -144,7 +144,7 @@ the profile basis; its first message keeps the original carrier $A$.
     $2/\lvert L\rvert$; the terminal check sends no challenge. Its accepted output is the
     contextual evaluation claim about the same $t'$ and oracle family.
   \item \textbf{Opening}. The concrete Binius construction appends the Binary Basefold contextual
-    opening. Its existing zero-message frontier formats the evaluation claim and may discard the
+    opening. Its zero-message front end formats the evaluation claim and may discard the
     query context; it does not insert another wire phase or change the committed polynomial.
 \end{enumerate}
 \end{definition}
@@ -162,9 +162,22 @@ $\gamma\in\mathbb{N}$. Challenges in $L$ use the uniform sampler.
   \uses{def:ring_switching_profile, def:pack_mle}
   \label{def:full_ring_switching}
   In the concrete setup above, compose the shared DP24 prefix protocol with the Binary
-  Basefold opening. This is a
-  non-fused composition ending in an accept/reject statement, rather than an unclosed evaluation
-  claim.
+  Basefold opening. The composition runs a ring-switching sum-check before the opening and ends
+  in an accept/reject statement, rather than an unclosed evaluation claim. The unrolled protocol
+  of Definition~\ref{def:unrolled_fri_binius} instead runs a single sum-check.
+\end{definition}
+
+\begin{definition}[Unrolled FRI-Binius]
+  \lean{Binius.FRIBinius.Unrolled.fullReduction}
+  \leanok
+  \uses{def:full_ring_switching}
+  \label{def:unrolled_fri_binius}
+  In the concrete setup above, the unrolled protocol of~\cite{DP24} (Construction 5.1), for
+  $K = \mathbb{F}_2$, is the DP24 tensor batching head followed by the Binary Basefold opening of
+  the head's product claim $s_0 = \sum_{y \in \{0,1\}^{\ell'}} \mathcal{M}(y)\, t'(y)$, where
+  $\mathcal{M}$ is the ring-switching multiplier and $t'$ the packed polynomial.
+  The Binary Basefold sum-check is the ring-switching sum-check, so no separate sum-check runs
+  before the opening.
 \end{definition}
 
 \subsection{Security}
@@ -283,4 +296,26 @@ the round-by-round guarantees imply ordinary knowledge soundness at the summed e
       + \varepsilon_{\mathrm{BBF}},
   \]
   and the full reduction is also perfectly complete for exact encodings.
+\end{theorem}
+
+\begin{theorem}[Security of unrolled FRI-Binius]
+  \lean{Binius.FRIBinius.Unrolled.fullVerifier_rbrKnowledgeSoundness,
+    Binius.FRIBinius.Unrolled.fullReduction_perfectCompleteness_and_knowledgeSoundness,
+    Binius.FRIBinius.Unrolled.fullError_sum_le_concrete,
+    Binius.FRIBinius.Unrolled.concreteError_add_eq}
+  \leanok
+  \uses{def:unrolled_fri_binius, thm:ring_switching_knowledge_soundness,
+    thm:rbr_knowledge_soundness_implies_knowledge_soundness}
+  \label{thm:unrolled_fri_binius_security}
+  In the concrete setup above, the unrolled verifier is round-by-round knowledge sound for the
+  relaxed input relation of Theorem~\ref{thm:binius_ring_switching_soundness}, and the unrolled
+  reduction is perfectly complete for exact encodings. Its challenge-index error sum, and hence
+  its knowledge-soundness error, is at most
+  \[
+    \frac{\kappa + 2\ell'}{\lvert L\rvert} + \frac{2^{\ell'+R}}{\lvert L\rvert}
+      + \left(\frac12 + \frac{1}{2\cdot 2^R}\right)^{\gamma},
+  \]
+  which is equation (43) of~\cite{DP24}. This is the bound of
+  Theorem~\ref{thm:ring_switching_knowledge_soundness} minus $2\ell'/\lvert L\rvert$: the
+  unrolled protocol runs one sum-check where the separate composition runs two.
 \end{theorem}

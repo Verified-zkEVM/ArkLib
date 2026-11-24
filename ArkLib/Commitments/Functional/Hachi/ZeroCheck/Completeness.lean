@@ -164,7 +164,8 @@ lemma nestedZeroCheckProver_state_eq_of_mem_support {TCom Wit : Type}
     simp only [nestedZeroCheckProver] at hf
     simp only [liftM, monadLift, MonadLift.monadLift] at hf
     obtain rfl : st = ((stmt, wit), tr) := hst
-    subst hf
+    rw [OracleComp.liftComp_pure] at hf
+    obtain rfl := OracleComp.eq_of_mem_support_pure _ hf
     subst hx
     rfl
 
@@ -189,6 +190,7 @@ lemma nestedZeroCheckProver_output_of_mem_support {TCom Wit : Type}
       (Fin.last (m₀ + m₁)) (tr, st) hprev
   simp only [nestedZeroCheckProver, support_pure, Set.mem_singleton_iff] at hx
   obtain ⟨y, hy, hx⟩ := hx
+  simp only [liftM_pure, support_pure, Set.mem_singleton_iff] at hy
   subst hy
   subst hx
   rfl

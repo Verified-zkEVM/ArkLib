@@ -22,7 +22,7 @@ namespace Fri.Spec
 
 open Domain OracleComp OracleSpec ProtocolSpec Finset
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (l : ℕ)
 
@@ -32,7 +32,6 @@ def queryPrefix (tr : (pSpec k (ω := ω) s l).FullTranscript) :
   Transcript.restrict (b := Fin.last _) (by
     simp only [Fin.val_castSucc, Fin.val_last]; omega) tr
 
-omit [Fintype F] in
 private theorem component_full_heq (tr : (pSpec k (ω := ω) s l).FullTranscript)
     (i : Fin k) (j : Fin 2) :
     HEq (FullTranscript.component tr.fst.fst i j)
@@ -40,7 +39,6 @@ private theorem component_full_heq (tr : (pSpec k (ω := ω) s l).FullTranscript
   (FullTranscript.component_apply_heq tr.fst.fst i j).trans
     ((FullTranscript.fst_apply_heq tr.fst _).trans (FullTranscript.fst_apply_heq tr _))
 
-omit [Fintype F] in
 /-- The final polynomial read at the query boundary is the transmitted polynomial. -/
 theorem readFinalPolynomial_queryPrefix (tr : (pSpec k (ω := ω) s l).FullTranscript) :
     readFinalPolynomial s l (queryPrefix s l tr) (by simp) = tr.fst.snd 1 := by
@@ -50,7 +48,6 @@ theorem readFinalPolynomial_queryPrefix (tr : (pSpec k (ω := ω) s l).FullTrans
   exact ((FullTranscript.snd_apply_heq tr.fst (1 : Fin 2)).trans
     (FullTranscript.fst_apply_heq tr _)).symm
 
-omit [Fintype F] in
 /-- The non-final challenge read from the prefix is the challenge used by its verifier. -/
 theorem readFoldChallenge_queryPrefix_castSucc
     (tr : (pSpec k (ω := ω) s l).FullTranscript) (i : Fin k) :
@@ -65,7 +62,6 @@ theorem readFoldChallenge_queryPrefix_castSucc
   exact (congr_arg_heq tr (congrArg Subtype.val hi)).trans
     (component_full_heq s l tr i 0).symm
 
-omit [Fintype F] in
 /-- The final folding challenge read from the prefix is the one used by the final verifier. -/
 theorem readFoldChallenge_queryPrefix_last
     (tr : (pSpec k (ω := ω) s l).FullTranscript) :
@@ -81,7 +77,6 @@ theorem readFoldChallenge_queryPrefix_last
     ((FullTranscript.snd_apply_heq tr.fst (0 : Fin 2)).trans
       (FullTranscript.fst_apply_heq tr _)).symm
 
-omit [Fintype F] in
 /-- The challenge vectors from chronological reading and verifier composition coincide. -/
 theorem queryFoldChallenges_eq (tr : (pSpec k (ω := ω) s l).FullTranscript) :
     queryFoldChallenges s l (queryPrefix s l tr) = foldPhaseChallenges s tr.fst := by
@@ -125,7 +120,6 @@ theorem queryHistory_eq (d : ℕ+)
   · rw [finalPolynomial_queryHistory, readFinalPolynomial_queryPrefix]
     exact (FinalFoldPhase.finalPolynomial_materialize s d _ _).symm
 
-omit [Fintype F] in
 /-- The last transcript entry is exactly the vector consumed by the query verifier. -/
 theorem queryVector_eq (tr : (pSpec k (ω := ω) s l).FullTranscript) :
     cast (queryChallenge_type (ω := ω) s l) (tr (queryChallenge s l).val) = tr.snd 0 := by
