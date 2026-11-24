@@ -199,8 +199,10 @@ def decisionHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun
   pure tag
 
 /-- Execute the actual prover, then interpret its final decision with recoverable labelled
-failure. The private output and transcript are captured before interpreting that decision. -/
-def decisionObserved (mode old message hidden : Nat) :=
+failure from `handler`. The private output and transcript are captured before interpreting that
+decision. -/
+def observedWith (handler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))))
+    (mode old message hidden : Nat) :=
   (do
     let ⟨tr, out, _⟩ ← simulateQ (logger pairChallenges) (TwoParty.Lens.run pairSend
       ((pairProver [9] message hidden).simulate
@@ -209,11 +211,15 @@ def decisionObserved (mode old message hidden : Nat) :=
         ((QueryImpl.id' (ambient + challengeSpec oracleSig pairSend)).restrictRight)))
     let p := Transcript.path tr
     let data : (pathBundle inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
-    let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
+    let (verdict, log) ← (decisionVerifier mode).decideCatching handler () p
       (toView pairSend tr) data
     pure (out, verdict.map (Option.map fun t =>
       (t, ((decisionVerifier mode).outputMap () p (toView pairSend tr)).f data ())),
       describePair p log) : StateM (List Nat) _).run []
+
+/-- The run of `observedWith` under the failing handler `decisionHandler`. -/
+def decisionObserved (mode old message hidden : Nat) :=
+  observedWith decisionHandler mode old message hidden
 
 /-- Both failures retain their distinct labels, all earlier effects, the source answer and the
 actual private output. Rejection and acceptance use the same execution and the same bundle. -/
@@ -234,13 +240,30 @@ theorem decision_closing_examples (hidden : Nat) :
     (decisionObserved 3 7 11 hidden).1.2.1 = .ok (some (11, 18)) ∧
     (decisionObserved 3 13 19 hidden).1.2.1 = .ok (some (19, 32)) := ⟨rfl, rfl⟩
 
+/-- A total handler answers every request, including 17 and 23, and records each one. -/
+def totalHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun tag => do
+  modify (· ++ [tag]); pure tag
+
+/-- The run of `observedWith` under the total handler `totalHandler`. -/
+def totalObserved (mode old message hidden : Nat) :=
+  observedWith totalHandler mode old message hidden
+
+/-- Under a total handler, modes 1 and 2 reject exactly like mode 0. A core verdict is an
+`Option`, so the verifier cannot return a fault itself. The labels 17 and 23 in
+`decision_outcomes` come from `decisionHandler` failing. -/
+theorem total_handler_faults_reject (old message hidden : Nat) :
+    (totalObserved 1 old message hidden).1.2.1 = .ok none ∧
+    (totalObserved 2 old message hidden).1.2.1 = .ok none ∧
+    (totalObserved 0 old message hidden).1.2.1 = .ok none := ⟨rfl, rfl, rfl⟩
+
 section CloseOptional
 
 universe v u q dI uι uI uJ uS wJ
 
-/-- Closing an optional verdict with the completed transcript's bundle commutes with wrapping
-the verdict as a success. `Except.ok outcome`, mapped by `Option.map close`, equals
-`Except.ok (outcome.map close)`. An absent verdict stays a rejection and creates no failure. -/
+/-- For the closing map `close` of any completed transcript, `Except.ok outcome` mapped by
+`Option.map close` equals `Except.ok (outcome.map close)`. This is an equation about `Except.map`
+alone and mentions no actual run. An absent verdict stays a rejection and creates no failure.
+`decision_outcomes` checks the closed output of actual runs. -/
 theorem close_optional_ok {ε : Type v} {ι : Type uι} {S : Type uS}
     {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {T : Path s → Type u}
     {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
@@ -577,8 +600,9 @@ def scheduleHandler : QueryImpl (ambient + challengeSpec oracleSig schedule)
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, .inl _⟩⟩⟩, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, .inr ⟨_, n⟩⟩⟩⟩, _⟩ => n.elim
 
-/-- The full passive action trace includes public send, oracle send, draw, receive continuation
-and final decision. It also retains the private output and the final answer. -/
+/-- The six-tag passive trace covers a public send, an oracle send, one challenge draw, the
+receive continuation and the final decision. Tags 5 and 2 both come from that one draw. The test
+also checks the private output and the final answer. -/
 theorem full_schedule (hidden : Nat) :
     (fun z => (z.1.1.2.1, z.1.1.2.2.map (·.1), z.2))
       ((simulateQ scheduleHandler (scheduleVerifier.runWithLog () seven
@@ -842,8 +866,8 @@ example (guess : Bool) (secret : Nat) :
 
 end Interaction.Core.LoggedExecutionTests
 
-/-! The erasure laws, runtime erasure, recoverable final decision and logging after
-substitution use only the permitted kernel axioms. -/
+/-! The erasure laws, runtime erasure, recoverable final decision, logging after substitution
+and the laws of the queries by move and sent oracles use only the permitted kernel axioms. -/
 run_cmd do
   for decl in [``Interaction.Core.OracleVerifier.runWithLog_fst,
       ``Interaction.Core.OracleVerifier.map_fst_runWithLog,
@@ -851,6 +875,11 @@ run_cmd do
       ``Interaction.Core.LoggedExecutionTests.close_optional_ok,
       ``Interaction.Core.OracleVerifier.runtime_runWithLog_erase,
       ``Interaction.Core.OracleVerifier.simulateQ_runWithLog_erase,
+      ``Interaction.Core.OracleVerifier.map_fst_runWithQueriesByMove,
+      ``Interaction.Core.OracleVerifier.toLog_runWithQueriesByMove,
+      ``Interaction.Core.OracleVerifier.runWithQueriesByMove_before_le,
+      ``Interaction.Core.PartialTranscript.sentOracleMessageMap_query,
+      ``Interaction.Core.PartialTranscript.availableMap_node,
       ``OracleComp.withQueryLog_simulateQ] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
@@ -1129,12 +1158,6 @@ example : OracleVerifier.QueriesByMove.toLog <$>
     twoOracleVerifier.runWithQueriesByMove () seven twoOracleProver =
     twoOracleVerifier.runWithLog () seven twoOracleProver :=
   twoOracleVerifier.toLog_runWithQueriesByMove () seven twoOracleProver
-
-#print axioms OracleVerifier.map_fst_runWithQueriesByMove
-#print axioms OracleVerifier.toLog_runWithQueriesByMove
-#print axioms OracleVerifier.runWithQueriesByMove_before_le
-#print axioms PartialTranscript.sentOracleMessageMap_query
-#print axioms PartialTranscript.availableMap_node
 
 end Interaction.Core.LoggedExecutionTests
 

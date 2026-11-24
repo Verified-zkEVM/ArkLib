@@ -556,11 +556,11 @@ without them. No added local or global `attribute [...]` transparency command an
 [r-map]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L51
 [r-pre]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L54
 [r-output]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L70
-[p-close]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L223
-[p-guess-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L759
-[p-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L769
-[p-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L792
-[p-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L803
+[p-close]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L229
+[p-guess-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L783
+[p-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L793
+[p-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L816
+[p-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L827
 [p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L355
 [run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
 [oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L58
@@ -587,18 +587,18 @@ without them. No added local or global `attribute [...]` transparency command an
 [laws-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean
 [step-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
 [sent-api]: ../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean
-[p-step-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L925
-[p-prefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L945
-[p-setup-step]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L971
-[q-join-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1073
-[q-decision-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1078
-[q-join-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1065
-[q-decision-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1068
-[q-join-node]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1098
-[q-join-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1104
-[q-decision-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1115
-[q-step-source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1126
-[d-node-run]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1201
+[p-step-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L954
+[p-prefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L974
+[p-setup-step]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1000
+[q-join-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1102
+[q-decision-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1107
+[q-join-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1094
+[q-decision-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1097
+[q-join-node]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1127
+[q-join-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1133
+[q-decision-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1144
+[q-step-source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1155
+[d-node-run]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1213
 
 [d-node]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L33
 

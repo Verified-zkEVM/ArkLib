@@ -890,9 +890,9 @@ The parent's `Execution.verifier_outputMap` only stated equality to `fst`; this 
 `verifierOn.outputMap` through `fst`, including its specialization `verifier`.
 `roundRoute` already specializes `roundRouteOn`; the latter now delegates to `headQuery`.
 The Sumcheck `Routing` test already uses identity restrictions and projection handlers throughout
-its export map. `OracleVerifier.runWithLog` and `runWithAmbientLog` already specialize the
-queries-by-move runners; the forwarding implementations in `Oracle/QueriesByMove` and
-`Oracle/QueriesByMoveLaws` now use identity restrictions.
+its export map. `OracleVerifier.runWithLog` and `runWithAmbientLog` use the same identity
+restrictions as the queries-by-move runners. They log directly through `executeWith`.
+`Oracle/QueriesByMoveLaws` proves agreement after erasing the move boundaries.
 
 **Transparency.** The Core layers and their tests carry no local transparency overrides.
 Imported replication and transcript path definitions retain their definition-site transparency;

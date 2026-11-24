@@ -187,10 +187,10 @@ The Lean statements differ from the papers in the following ways.
 | ID | Exact frozen declaration | Status | Exact target and correspondence |
 | --- | --- | --- | --- |
 | Replay-037 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:37`][r73], `ChallengePrograms` | premise-required (P1) | [`ArkLib/Interaction/Core/Reduction.lean#L176`][r74], `sampler`. Draws from the supplied draw program replace recursive challenge-program authoring data. |
-| Replay-043 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:43`][r75], `ambientQueries` | retired (ambient challenge-query lifting adapter) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L609`][r76], `OracleVerifier.run`. The runner injects challenge queries directly; the effectful verifier-fragment signature is removed. |
+| Replay-043 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:43`][r75], `ambientQueries` | retired (ambient challenge-query lifting adapter) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L613`][r76], `OracleVerifier.run`. The runner injects challenge queries directly; the effectful verifier-fragment signature is removed. |
 | Replay-048 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:48`][r77], `sourceQueries` | retired (source-only terminal lifting adapter) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L546`][r78], `OracleVerifier.decideWith`. Answering bundle queries is part of the final decision fold. |
 | Replay-054 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:54`][r79], `challengeFragment` | retired (effectful challenge fragment) | [`ArkLib/Interaction/Core/Reduction.lean#L176`][r80], `sampler`. A passive verifier uses the external sampler rather than an authored receive/send fragment. |
-| Replay-067 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:67`][r81], `challengeVerifier` | premise-required (P1) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L609`][r82], `OracleVerifier.run`. The final decision and output map replace the fragment completed by a source-only terminal. |
+| Replay-067 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:67`][r81], `challengeVerifier` | premise-required (P1) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L613`][r82], `OracleVerifier.run`. The final decision and output map replace the fragment completed by a source-only terminal. |
 | Replay-081 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:81`][r83], `messageProver` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L477`][r84], `scriptedProver`. Same deterministic selected sends without oracle queries; the obsolete Unit continuation output becomes PUnit. |
 | Replay-090 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:90`][r85], `scriptedProver` | retired (duplicated path in prover output) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L477`][r86], `scriptedProver`. The runner already returns the transcript; the scripted prover returns PUnit. run_scriptedProver identifies the returned transcript. |
 | Replay-099 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:99`][r87], `pathPrograms` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L495`][r88], `recordedAnswers`. A challenge handler reads the transcript instead of authoring pure challenge programs. |
@@ -198,7 +198,7 @@ The Lean statements differ from the papers in the following ways.
 | Replay-113 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:113`][r91], `simulateQ_support_subset` | equivalent | [`VCVio/OracleComp/SimSemantics/StateT/Basic.lean#L324`][r92], `support_simulateQ_subset`. Pinned VCVio already proves the stronger generic-monad support-subset law; the Core support proof uses it directly. |
 | Replay-131 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:131`][r93], `complete_support_matches` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L517`][r94], `complete_support_matches`. Proves support of the open completion implies MatchesMessages. run_scriptedProver_of_mem_support then replays every supported member without a table hypothesis. |
 | Replay-147 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:147`][r95], `uniformPrograms` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L336`][r96], `uniformDraw`. Same round samplers, indexed by challenge nodes rather than recursive authoring data. |
-| Replay-151 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:151`][r97], `simulate_ambientQueries` | retired (ambientQueries cancellation proof) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L609`][r98], `OracleVerifier.run`. The effectful ambient lifting adapter is removed with challengeFragment. |
+| Replay-151 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:151`][r97], `simulate_ambientQueries` | retired (ambientQueries cancellation proof) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L613`][r98], `OracleVerifier.run`. The effectful ambient lifting adapter is removed with challengeFragment. |
 | Replay-162 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:162`][r99], `simulate_sourceQueries` | retired (sourceQueries cancellation proof) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L546`][r100], `OracleVerifier.decideWith`. The final decision interpreter replaces the source lifting adapter. |
 | Replay-178 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:178`][r101], `execute_sourceTerminal` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L665`][r102], `run_scriptedProver`. Interpreted execution returns the verdict using the same input and transcript bundle. |
 | Replay-224 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:224`][r103], `pathReplay_run` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L636`][r104], `evalWithAnswerFn_run_scriptedProver`. Actual party replay under any draws whose interpreted answers equal the recorded challenges. |
@@ -414,13 +414,13 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r73]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L37
 [r74]: ../../../ArkLib/Interaction/Core/Reduction.lean#L176
 [r75]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L43
-[r76]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L609
+[r76]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L613
 [r77]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L48
 [r78]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L546
 [r79]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L54
 [r80]: ../../../ArkLib/Interaction/Core/Reduction.lean#L176
 [r81]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L67
-[r82]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L609
+[r82]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L613
 [r83]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L81
 [r84]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L477
 [r85]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L90
@@ -436,7 +436,7 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r95]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L147
 [r96]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L336
 [r97]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L151
-[r98]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L609
+[r98]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L613
 [r99]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L162
 [r100]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L546
 [r101]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L178
