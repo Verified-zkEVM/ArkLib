@@ -23,13 +23,13 @@ The point lies on the hypersurface `R(c, L(c), y₀) = 0`.
 Each position `i` has a linear functional `Λᵢ` on polynomials and a target `Tᵢ(a)`.
 The position agrees when `Λᵢ` of the reconstructed root is `Tᵢ(a)`.
 High cuts are further functionals that every counted root satisfies.
-For the Reed–Muller application, the high cuts can describe the trace image.
+The high cuts are designed so that a Reed–Muller count can describe the trace image.
 
 Let `n` be the number of positions and `h` the `(Y, Z)`-degree of `R`.
 Each counted point has at least `A` agreements.
 The persistence threshold is `B`.
 The count takes a separation threshold `B + e`. The Reed–Solomon instance uses `e = 1`.
-The Reed–Muller application takes `e = n / q₀`, where `q₀` is the size of the grid subfield.
+Reed–Muller codes need `e = n / q₀`, where `q₀` is the size of the grid subfield.
 
 A point is excluded when a regular point on another challenge shares `B + e` agreements.
 The points off the excluded set number at most `h · (n · 2 s d h / (A - B - e + 1)) ^ |κ|`.
@@ -72,6 +72,9 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   `ReedSolomon.eval_map_eq_aeval_affineChartTarget_iff`: the Reed–Solomon targets.
 * `ReedSolomon.isAffinePersistent_of_mem_chartExcluded`: a Reed–Solomon excluded point is
   persistent.
+* `ReedSolomon.injective_frobeniusPair`: the Frobenius roots of `(φ α, φ β)` determine `(α, β)`.
+* `ReedSolomon.exists_affineNonpersistent_finset_card_le`: outside few challenges, a regular
+  Reed–Solomon root with `A` agreements is persistent.
 
 ## References
 
@@ -377,6 +380,18 @@ theorem totalDegree_affineChartTarget_le (domain : ι ↪ F) (f g : ι → F) (�
     rw [totalDegree_C, zero_add]
     exact (totalDegree_pow _ _).trans (by simp [totalDegree_X])
 
+/-- The Frobenius roots of `(φ α, φ β)` determine `(α, β)`. -/
+theorem injective_frobeniusPair (φ : F →+* E) (p : ℕ) [ExpChar E p] [PerfectRing E p] (r : ℕ) :
+    Function.Injective fun c : F × F ↦
+      ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
+        (iterateFrobeniusEquiv E p r).symm (φ c.2)] := by
+  intro x y hxy
+  have h0 := congrFun hxy 0
+  have h1 := congrFun hxy 1
+  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
+    EmbeddingLike.apply_eq_iff_eq] at h0 h1
+  exact Prod.ext (φ.injective h0) (φ.injective h1)
+
 variable [DecidableEq F] [Fintype ι]
 
 /-- At the Frobenius roots of `(φ α, φ β)`, the target is met exactly at an agreement position.
@@ -482,19 +497,12 @@ theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (do
         IsAffinePersistent domain f g d B c.1 c.2 P := by
   classical
   set fr := (iterateFrobeniusEquiv E p e).symm
-  have hinj : Function.Injective fun c : F × F ↦ ![fr (φ c.1), fr (φ c.2)] := by
-    intro x y hxy
-    have h0 := congrFun hxy 0
-    have h1 := congrFun hxy 1
-    simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
-      EmbeddingLike.apply_eq_iff_eq] at h0 h1
-    exact Prod.ext (φ.injective h0) (φ.injective h1)
   obtain ⟨ex, hex, hgood⟩ := exists_chartExcluded_finset_card_le (κ := Fin 2) (ι := ι)
     affineFamily R p e (d := d) (h := h) (A := A) (B := B) (e := 1) hd (by omega) (by omega) hAn
     hR [] (fun i ↦ Polynomial.leval (φ (domain i))) (affineChartTarget domain f g φ (p ^ e))
     (fun i ↦ totalDegree_affineChartTarget_le domain f g φ _ i)
     (separatesDegree_leval (φ.injective.comp domain.injective) (by omega))
-    (fun c : F × F ↦ ![fr (φ c.1), fr (φ c.2)]) hinj
+    (fun c : F × F ↦ ![fr (φ c.1), fr (φ c.2)]) (injective_frobeniusPair φ p e)
   refine ⟨ex, ?_, fun c hc P hP hroot hsep hA ↦ ?_⟩
   · have hAB : A - B - 1 + 1 = A - B := by omega
     simpa [hAB] using hex
