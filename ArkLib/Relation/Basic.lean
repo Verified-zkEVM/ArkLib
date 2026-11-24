@@ -61,7 +61,10 @@ structure ClaimFamily (PublicCtx : Type u) where
   /-- Claims indexed by the public context. -/
   Claim : PublicCtx → Type v
 
-/-- A claim-dependent witness relation with an explicit admissibility boundary. -/
+/-- A claim-dependent witness relation with an explicit admissibility boundary.
+
+A `Problem` is a promise relation: a witness relation together with an admissibility promise on
+claims. -/
 structure Problem {PublicCtx : Type u} (S : ClaimFamily.{u, v} PublicCtx) where
   /-- Witnesses can depend on both context and claim. -/
   Witness : ∀ ctx, S.Claim ctx → Type w

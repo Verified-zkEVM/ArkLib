@@ -29,7 +29,7 @@ open LinearCode
 open scoped ProbabilityTheory
 
 variable {ι F ℓ S A : Type} [Fintype ι] [Field F] [Fintype ℓ]
-  [Nonempty S] [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
+ [Fintype S] [SampleableType S] [AddCommMonoid A] [Module F A]
 
 /-- An exceptional set of at most `B` seeds for each input family bounds the worst-case MCA
 error by `B / |S|`. A single exceptional set must cover all bad agreement sets for that family. -/
