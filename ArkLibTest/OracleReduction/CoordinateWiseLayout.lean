@@ -244,43 +244,57 @@ info: 'CoordinateWise.isBlockSpecialSoundFamily_comp_equiv_iff' depends on axiom
 #print axioms CoordinateWise.isBlockSpecialSoundFamily_comp_equiv_iff
 
 /--
-info: 'CoordinateWise.Layout.isTree_flat_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'CoordinateWise.Layout.isTree_flat_iff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms CoordinateWise.Layout.isTree_flat_iff
 
 /--
-info: 'CoordinateWise.Layout.isTree_iff_vecTree' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'CoordinateWise.Layout.isTree_iff_vecTree' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms CoordinateWise.Layout.isTree_iff_vecTree
 
 /--
-info: 'BlockCWSSStructure.treeSize_eq_prod_blocks' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'BlockCWSSStructure.treeSize_eq_prod_blocks' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BlockCWSSStructure.treeSize_eq_prod_blocks
 
 /--
-info: 'BlockCWSSStructure.knowledgeError_eq_sum_blocks' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'BlockCWSSStructure.knowledgeError_eq_sum_blocks' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BlockCWSSStructure.knowledgeError_eq_sum_blocks
 
 /--
-info: 'CWSSStructure.toBlock_toShape' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'CWSSStructure.toBlock_toShape' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms CWSSStructure.toBlock_toShape
 
 /--
-info: 'CWSSStructure.toBlock_knowledgeError' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'CWSSStructure.toBlock_knowledgeError' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms CWSSStructure.toBlock_knowledgeError
 
 /--
-info: 'Verifier.treeSpecialSound_toBlock_iff' depends on axioms: [propext, Classical.choice, Quot.sound]
+info: 'Verifier.treeSpecialSound_toBlock_iff' depends on axioms: [propext,
+ Classical.choice,
+ Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Verifier.treeSpecialSound_toBlock_iff
