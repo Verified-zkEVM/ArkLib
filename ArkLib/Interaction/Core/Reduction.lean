@@ -88,15 +88,16 @@ def childDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     (c : ChallengeNode l (next b)) : m (challengeSpec l (next b) c) :=
   draw ⟨.inr ⟨b, c.val⟩, c.property⟩
 
-/-- Draw the move at a receiver root. -/
+/-- The challenge draw at a receiver root, taken from the draw family at the root node. -/
 def rootDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type v} (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
     (draw : (c : ChallengeNode l (.liftBind a next)) →
       m (challengeSpec l (.liftBind a next) c)) (h : owner l a = .receiver) :
     m (Move l a) := draw ⟨.inl ⟨⟩, h⟩
 
-/-- The sampler's action at one node: it passes a sender move through and draws a receiver
-move. -/
+/-- The sampler's action at one node: it passes a sender move through and makes the challenge
+draw at a receiver move. The draw is any computation in `m`; the sampler assumes nothing about
+its distribution. -/
 def samplerNode {m : Type u → Type u} [Applicative m] {X : Type u} {A : X → Type u} :
     (role : TwoParty.Role) → (role = .receiver → m X) →
     ((x : X) → A x) → m (Choice .counterpart role X A)
@@ -134,7 +135,7 @@ theorem samplerNode_map {m : Type u → Type u} [Applicative m] [LawfulApplicati
   cases role <;> simp only [samplerNode, Choice.map, LawfulApplicative.map_pure,
     Functor.map_map]
 
-/-- Simulation interprets the draw of the sampler's action at a node. -/
+/-- Simulation interprets the challenge draw of the sampler's action at a node. -/
 theorem simulateQ_samplerNode {ι : Type u} {spec : OracleSpec.{u, u} ι}
     {n : Type u → Type u} [Monad n] [LawfulMonad n] {X : Type u} {A : X → Type u}
     (F : QueryImpl spec n) (role : TwoParty.Role)
@@ -143,8 +144,8 @@ theorem simulateQ_samplerNode {ι : Type u} {spec : OracleSpec.{u, u} ι}
       samplerNode role (fun h => simulateQ F (draw h)) next := by
   cases role <;> simp only [samplerNode, simulateQ_pure, simulateQ_map]
 
-/-- A sampler that returns a pure value at each leaf. Its draws depend only on the indexed source
-node. -/
+/-- A sampler that returns a pure value at each leaf. Its challenge draws depend only on the
+indexed source node. -/
 def samplerEnd {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type u} [Monad m] :
     (s : FreeM P PUnit.{u + 1}) →
@@ -155,13 +156,16 @@ def samplerEnd {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     samplerNode (owner l a) (rootDraw l a next draw) (fun x =>
       samplerEnd l (next (l.toFunB a x)) (childDraw l a next draw (l.toFunB a x)))
 
-/-- Public-coin counterpart obtained by giving the sampler a pure leaf action. -/
+/-- The counterpart that makes the challenge draws, obtained by giving the sampler a pure leaf
+action. The draws may be any computations. Uniform public-coin sampling is a condition on the
+draw family that an interpretation supplies, not an assumption of the sampler. -/
 def sampler {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type u} [Monad m] (s : FreeM P PUnit.{u + 1})
     (draw : (c : ChallengeNode l s) → m (challengeSpec l s c)) :
     Counterpart l m s (fun _ => PUnit.{u + 1}) := (samplerEnd l s draw).toStrategy
 
-/-- At a node, the sampler attaches each child sampler to its public-coin slot. -/
+/-- At a node, the sampler makes the node's challenge draw, if any, and attaches each child
+sampler to the move. -/
 theorem sampler_node {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {m : Type u → Type u} [Monad m] [LawfulApplicative m]
     (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
@@ -422,7 +426,9 @@ structure Reduction {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol
   /-- Passive final decision. -/
   verifier : Verifier ambient s StmtIn StmtOut
 
-/-- Run a verifier only on an accepted statement; a rejected statement stays rejected. -/
+/-- Decide with a verifier on an accepted statement, and reject a rejected one. In a run, the
+interaction still takes place after a rejected statement and the decision then rejects
+(`Verifier.onAccept_run_none`). -/
 def Verifier.onAccept {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
     {s : Protocol.{u}} {T : Type uS} {U : Path s → Type u} (V : Verifier ambient s T U) :
     Verifier ambient s (Option T) U where
