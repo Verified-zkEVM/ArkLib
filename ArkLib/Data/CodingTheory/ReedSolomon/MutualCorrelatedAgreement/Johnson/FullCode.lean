@@ -56,7 +56,7 @@ theorem fullRate_code_eq_top {ι F : Type*} [Fintype ι] [Field F] (domain : ι 
 every real radius `δ`, including `δ < 0` and `δ ≥ 1`, the MCA error of `code domain k` is `0`:
 the code is `⊤` (`code_eq_top_of_card_le`), so every family consists of codewords. -/
 theorem mcaError_eq_zero_of_card_le {ι F ℓ S : Type} [Fintype ι] [Field F] [Fintype ℓ]
-    [Nonempty S] [Fintype S] [SampleableType S] (G : Generator S ℓ F) (domain : ι ↪ F) {k : ℕ}
+    [SampleableType S] (G : Generator S ℓ F) (domain : ι ↪ F) {k : ℕ}
     (hk : Fintype.card ι ≤ k) (δ : ℝ) :
     mcaError G (code domain k) δ = 0 := by
   rw [code_eq_top_of_card_le domain hk]
@@ -64,7 +64,7 @@ theorem mcaError_eq_zero_of_card_le {ι F ℓ S : Type} [Fintype ι] [Field F] [
 
 /-- At full rate, affine-line MCA has zero error at every real radius. This is
 `mcaError_eq_zero_of_card_le` for `AffineLineGenerator F` at `k = Fintype.card ι`. -/
-theorem mcaError_affineLine_fullRate_eq_zero {ι F : Type} [Fintype ι] [Field F] [Fintype F]
+theorem mcaError_affineLine_fullRate_eq_zero {ι F : Type} [Fintype ι] [Field F]
     [SampleableType F] (domain : ι ↪ F) (δ : ℝ) :
     mcaError (AffineLineGenerator F) (code domain (Fintype.card ι)) δ = 0 :=
   mcaError_eq_zero_of_card_le _ domain le_rfl δ

@@ -310,8 +310,8 @@ theorem main_hypotheses_satisfiable (c_F : ℝ) :
 
 /-- Completeness inputs are in the soundness language: with `0 < δ`, every codeword is strictly
 closer than `δ`. -/
-theorem stirRelation_zero_subset_stirOpenRelation {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {ι : Type} [Fintype ι] [Nonempty ι] (degree : ℕ) (φ : ι ↪ F) {δ : ℝ≥0} (hδ : 0 < δ) :
+theorem stirRelation_zero_subset_stirOpenRelation {F : Type} [Field F] [DecidableEq F]
+    {ι : Type} [Fintype ι] (degree : ℕ) (φ : ι ↪ F) {δ : ℝ≥0} (hδ : 0 < δ) :
     stirRelation degree φ 0 ⊆ stirOpenRelation degree φ δ := by
   rintro ⟨⟨_, oracle⟩, _⟩ h
   have h' : δᵣ(oracle (), ReedSolomon.code φ degree) ≤ ((0 : ℝ≥0) : ENNReal) := h
@@ -319,8 +319,8 @@ theorem stirRelation_zero_subset_stirOpenRelation {F : Type} [Field F] [Fintype 
 
 /-- With `δ = 0` the strict relation is empty, so soundness would have to hold for every oracle,
 codewords included: `0 < δ` is needed. -/
-theorem stirOpenRelation_zero_eq_empty {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {ι : Type} [Fintype ι] [Nonempty ι] (degree : ℕ) (φ : ι ↪ F) :
+theorem stirOpenRelation_zero_eq_empty {F : Type} [Field F] [DecidableEq F]
+    {ι : Type} [Fintype ι] (degree : ℕ) (φ : ι ↪ F) :
     stirOpenRelation degree φ 0 = ∅ := by
   ext ⟨⟨_, oracle⟩, _⟩
   simp only [Set.mem_empty_iff_false, iff_false]

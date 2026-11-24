@@ -72,7 +72,7 @@ private theorem appendPrefix_transcript_eq
   induction i using Fin.induction with
   | zero =>
     simp only [runToRound_zero_of_prover_first] at hz
-    subst z
+    obtain rfl := OracleComp.eq_of_mem_support_pure _ hz
     rfl
   | succ j ih =>
     rw [runToRound_succ] at hz

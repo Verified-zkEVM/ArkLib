@@ -644,14 +644,13 @@ theorem not_jointProximity_of_second_row_far
     exact hne ((Finset.mem_filter.mp ((hv 1).2 hj)).2).symm
 
 noncomputable def rsAgreementSpace
-    {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι) : Submodule F (ι → F) :=
   ReedSolomon.code domain k ⊔ Pi.spanSubset F (E : Set ι)
 
 noncomputable def rsAgreementPairCount
     {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    [Field F] [Fintype F]
     (domain : ι ↪ F) (k : ℕ) (E E' : Finset ι) : ℕ := by
   classical
   exact (Finset.univ.filter fun w : ι → F =>
@@ -659,8 +658,8 @@ noncomputable def rsAgreementPairCount
     w ∈ rsAgreementSpace domain k E').card
 
 private theorem rsAgreementSpace_mem_iff
-    {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι]
+    [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι) (w : ι → F) :
     w ∈ rsAgreementSpace domain k E ↔
       ∃ c : ι → F, c ∈ ReedSolomon.code domain k ∧
@@ -683,11 +682,12 @@ private theorem rsAgreementSpace_mem_iff
       simp [Pi.add_apply, Pi.sub_apply]
 
 private theorem rsAgreementSpace_eq_top_of_large
-    {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι]
+    [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hlarge : Fintype.card ι ≤ k + E.card) :
     rsAgreementSpace domain k E = ⊤ := by
+  classical
   apply top_unique
   intro w hw
   rw [rsAgreementSpace_mem_iff]
@@ -789,8 +789,8 @@ private theorem rsCode_disjoint_supported_of_small
   omega
 
 private theorem rsAgreementSpace_finrank_small
-    {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι]
+    [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
     Module.finrank F (rsAgreementSpace domain k E) = k + E.card := by
@@ -810,7 +810,7 @@ private theorem rsAgreementSpace_finrank_small
 
 private theorem rsAgreementSpace_filter_card_small_proof
     {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    [Field F] [Fintype F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
     (hsmall : k + E.card ≤ Fintype.card ι) :
     (@Finset.filter (ι → F) (fun w => w ∈ rsAgreementSpace domain k E)
@@ -834,8 +834,8 @@ private theorem rsAgreementSpace_filter_card_small_proof
       rw [rsAgreementSpace_finrank_small domain k E hsmall]
 
 theorem rsAgreementSpace_finrank
-    {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι]
+    [Field F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι) :
     Module.finrank F (rsAgreementSpace domain k E) =
       min (Fintype.card ι) (k + E.card) := by
@@ -850,8 +850,8 @@ def rsExactErrorSets {ι : Type} [Fintype ι]
   Finset.univ.powersetCard f
 
 private noncomputable def rsAgreementCertificates
-    {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F]
     (domain : ι ↪ F) (k f : ℕ) (w : ι → F) : Finset (Finset ι) := by
   classical
   exact (rsExactErrorSets f).filter fun E =>
@@ -1090,7 +1090,7 @@ private theorem rsSupportedSpace_sup
 
 theorem rsAgreementSpace_sup
     {ι F : Type} [Fintype ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    [Field F]
     (domain : ι ↪ F) (k : ℕ) (E E' : Finset ι) :
     rsAgreementSpace domain k E ⊔ rsAgreementSpace domain k E' =
       rsAgreementSpace domain k (E ∪ E') := by

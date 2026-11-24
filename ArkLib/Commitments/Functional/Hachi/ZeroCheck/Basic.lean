@@ -86,7 +86,7 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   certified in both directions; the appended statements live in `HonestChain.lean`.
 
 The generic zero test lives in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` (Mathlib-level,
-`k`-ary trees and individual degree `< k`) with the computable view in
+`k i` branches at level `i` and individual degree `< k i`) with the computable view in
 `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`.
 
 This umbrella re-exports the folder (`Completeness` imports `Reduction`, which
