@@ -70,7 +70,7 @@ take no model, because their errors bound flips over a fresh challenge for a fix
 ```lean
 -- intended, not existing
 structure StateFunction (V : Verifier l s) (langIn langOut) where
-  toFun      : StmtIn → (p : Prefix s) → PathAlong l p → Prop
+  toFun      : StmtIn → (p : Prefix s) → Transcript l p → Prop
   toFun_root : ∀ stmt, toFun stmt root ⟨⟩ → stmt ∈ langIn
   toFun_send : ∀ p (h : owner l (pos p) = .sender) stmt tr x, ¬ toFun stmt p tr → ¬ toFun stmt (p.snoc x) (tr.snoc x)
   toFun_leaf : ∀ stmt tr, ¬ toFun stmt (full tr) tr → V.rejectsOrOutside langOut stmt tr

@@ -7,7 +7,7 @@ Source links identify the frozen declaration or assertion, including its file an
 
 The approved premises are:
 
-- **P1 (passivity):** verifiers send only public-coin challenges and make all resource queries
+- **P1 (passivity):** verifiers send only public-coin challenges and make all bundle queries
   in the final decision.
 - **P2 (shape):** challenges and oracle messages never select the next subtree.
 
@@ -28,7 +28,7 @@ Frozen source: `ArkLib/Interaction/Oracle/Security/Soundness.lean`.
 
 | Row | Exact frozen source and declaration | Exact target and declaration | Status |
 | --- | --- | --- | --- |
-| S1 | [Soundness.lean:43][source-state], `executeStrategies_state_bound` | [Implications.lean, `prEvent_runPrefixChallenges_le`][prefix-bound], with [the finite rank-sum bound][rank-sum] | premise-required (P1/P2): terminal decisions replace effectful verifier continuations; challenge and payload values do not select shape. The actual interpreted action, history-dependent challenges and arbitrary rank errors remain. |
+| S1 | [Soundness.lean:43][source-state], `executeStrategies_state_bound` | [Implications.lean, `prEvent_runPrefixChallenges_le`][prefix-bound], with [the finite rank-sum bound][rank-sum] | premise-required (P1/P2): final decisions replace effectful verifier continuations; challenge and oracle-message values do not select shape. The actual interpreted action, history-dependent challenges and arbitrary rank errors remain. |
 | S2 | [Soundness.lean:157][source-sound], `executeStrategies_soundness` | [Implications.lean, `prEvent_runPrefixChallenges_soundness`][prefix-sound]; [plain][plain-local] and [oracle][oracle-local] fixed-sampler interfaces; [plain][plain-with] and [oracle][oracle-with] raw-freshness specializations | premise-required (P1/P2): same passive, shape-preserving representation as S1. [Rank-sum transport][rank-sum] retains the finite nonuniform error sum. |
 | S3 | [Soundness.lean:188][source-uniform], `executeStrategies_soundness_uniform` | [Implications.lean, `prEvent_runPrefixChallenges_soundness`][prefix-sound] with [finite rank-sum transport][rank-sum]; [plain][plain-uniform] and [oracle][oracle-uniform] fixed-sampler corollaries | premise-required (P1/P2): same representation as S1. `k • e = (k : ℝ≥0∞) * e`, including zero challenges. |
 | S4 | [Soundness.lean:218][source-prefix], `LocalSoundness.random_prefix` | [Implications.lean, `flip_random_model_le`][random-model]; [raw-node specialization][random-prefix] | equivalent: an `OptionT ProbComp` author selects a full prefix before the fresh challenge; its failure contributes no mass. Choosing `e = error round` and equal ranks recovers the frozen conclusion. |
@@ -51,12 +51,12 @@ The target fixture has an empty-response service, a Core sender prover that quer
 sending, and a verifier that accepts every completed transcript. The frozen uniform-service
 summand is unused by either failure assertion; the fixture isolates the empty-response service.
 The frozen empty input-access handler disappears with its threaded verifier-access mechanism;
-Core routes resources only in a terminal decision under P1.
+Under P1, Core answers bundle queries only in the final decision.
 
 | Row | Exact frozen assertion | Exact target and declaration | Status |
 | --- | --- | --- | --- |
 | T1 | [Soundness.lean:38][source-test-action], anonymous `simulateQ handler prover = failure` assertion | [Implications.lean: `EmptyResponse.interpreted_action`][test-action] | equivalent: interpreting the prover action yields `OptionT` failure before any move. |
-| T2 | [Soundness.lean:45][source-test-run], anonymous actual executor `Pr[True] = 0` assertion | [Implications.lean: `EmptyResponse.run_mass`][test-run] | equivalent: the actual Core verifier run has no successful observation, even though its terminal decision accepts. This also excludes converting failure into returned rejection. |
+| T2 | [Soundness.lean:45][source-test-run], anonymous actual executor `Pr[True] = 0` assertion | [Implications.lean: `EmptyResponse.run_mass`][test-run] | equivalent: the actual Core verifier run has no successful outcome, even though its final decision accepts. This also excludes converting failure into returned rejection. |
 | T3 | [Soundness.lean:54][source-test-sound], `#check executeStrategies_soundness` | [Implications.lean: general plain soundness example][test-sound] and [oracle example][test-oracle] | premise-required (P1/P2): the ordinary-import consumers check both passive verifier forms, as in S2. |
 | T4 | [Soundness.lean:55][source-test-uniform], `#check executeStrategies_soundness_uniform` | [Implications.lean: general plain uniform example][test-uniform] and [oracle uniform example][test-oracle-uniform] | premise-required (P1/P2): the ordinary-import consumers check both forms, as in S3. |
 | T5 | [Soundness.lean:57][source-test-escape], `#check OrdinaryState.exists_verifier_escape` | [Implications.lean: general escape example][test-escape] | premise-required (P1/P2): the ordinary-import consumer checks R1. |
@@ -76,23 +76,23 @@ monad with distribution semantics. Apply it separately at each full prefix. `Res
 `encode` and the model event can change between prefixes reaching the same shape node. P2 does
 not imply that `ChallengeModel.sample` is prefix-independent, and this port makes no such claim.
 
-P1 moves every resource query to the final decision and makes verifier receive actions pure
-observations. At each receiver node, the public-coin action has one sampler and a pure
-continuation for each sampled move. P2 fixes the structural successor independently of a
-challenge or payload. It does **not** fix the next sampler: two histories at the same shape node
-can choose different public-coin programs. For example, after a Boolean challenge `x`, a second
+P1 moves every bundle query to the final decision and makes the verifier's receive actions pure:
+they only observe the received move. At each receiver node, the verifier's action has one sampler
+and a pure continuation for each sampled move. P2 fixes the structural successor independently of a
+challenge or oracle message. It does **not** fix the next sampler: two histories at the same shape
+node can choose different challenge programs. For example, after a Boolean challenge `x`, a second
 challenge can be deterministically `!x` without changing shape. The [adaptive execution test][adaptive]
 checks this case.
 
 The shared interface in `Security/RoundByRound.lean` uses `PrefixChallengePrograms`, indexed by
 the structural spine
-**and the full history**, and retains every erased challenge and oracle payload in `PrefixMoves`.
+**and the full history**, and retains every erased challenge and oracle message in `PartialTranscriptAt`.
 At a sender, the passive continuation observes the sent value. At a receiver, the draw at that
 history selects the move and hence its pure continuation. Recursing this construction yields
 `prefixSampler`. `runPrefixChallenges` directly applies the ordinary Core focal-first runner to
 that counterpart; [runPrefixChallenges_eq_run][prefix-run] is definitional. Its sender and receiver
-equations follow from the owner's execution laws. Resource effects can still fail in focal slots
-or the final decision. No draw restarts the prover or an ambient handler.
+equations follow from the owner's execution laws. Query effects can still fail in the prover's
+actions or in the final decision. No draw restarts the prover or an ambient handler.
 
 Supported-continuation freshness says nothing about a prefix after an unsupported challenge.
 When extending a frozen certificate to all Core prefixes, set its state to true outside the
@@ -104,8 +104,8 @@ probability zero. This completion does not add an off-support freshness premise.
 [prEvent_runPrefixChallenges_le][prefix-bound] consumes the transported actual flip bound at
 each matching history. [prEvent_runPrefixChallenges_soundness][prefix-sound] derives the acceptance
 bound from the full-prefix state certificate and a possibly failing final decision. The frozen
-state bound is its underlying no-escape argument: initial falsity and sender preservation force
-any true terminal state to have a false-to-true challenge, by [escapeAlong_of_accepts][escape-general].
+state bound is its underlying no-escape argument: initial falsity and sender preservation force a
+false-to-true challenge on every path whose state at the leaf is true, by [escapeAlong_of_accepts][escape-general].
 Apply the encoded transport separately at each supported prefix and recursively at its supported
 continuations; the completion above handles the remaining prefixes. This derives structural-node
 **error bounds**, while keeping prefix-dependent samplers and model distributions. It does not
@@ -133,8 +133,8 @@ different nodes with the same rank, which that sum would charge separately.
 
 The prefix-dependent execution bound and both verifier implications quantify `m : Type → Type v` with `Monad`,
 `LawfulMonad`, `EvalDistSemantics` and `LawfulEvalDistSemantics`. No attachment or losslessness
-instance is needed. Optional prover actions and terminal computations can lose mass. A returned
-`none` remains a rejecting observation; ambient failure yields no observation. The [general random-prefix lemma][random-model] retains its separate `OptionT ProbComp` author
+instance is needed. Optional prover actions and final computations can lose mass. A returned
+`none` remains a rejecting outcome; ambient failure yields no outcome. The [general random-prefix lemma][random-model] retains its separate `OptionT ProbComp` author
 quantifier and permits dependent model result types. The [ordinary-import example][test-model]
 retains the frozen rank-indexed error and equal-rank premise.
 
@@ -143,12 +143,12 @@ The [plain soundness bridge][plain-bridge] and [oracle soundness bridge][oracle-
 the same interface by the **whole** `experiment init impl draw`. The experiment samples `init`
 once and threads the resulting state across all queries. The [plain acceptance bridge][plain-acc]
 and [oracle acceptance bridge][oracle-acc] retain `∃ state`, then evaluate the decision from that
-state. Resource answers and the oracle output map remain those of the fixed transcript.
+state. Bundle answers and the oracle output map remain those of the fixed transcript.
 [Ordinary-import checks][test-bridges] expose all four laws. The classical implication wrappers
 use them and the generic implication, without a separate run-to-decision or acceptance proof.
 
 Statement, input-index, input-query and output-query universes remain independent; acceptance
-and soundness retain path-indexed outputs. The execution and resource-interpretation universe
+and soundness retain path-indexed outputs. The execution and bundle-query universe
 constraints are inherited from [IMPLEMENTATION-NOTES entry 18][universes], rather than introduced
 by this implication. This record adds no second inventory of those constraints.
 
@@ -167,30 +167,30 @@ by this implication. This record adds no second inventory of those constraints.
 [source-test-escape]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L57
 [source-test-prefix]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L58
 [universes]: ../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe
-[state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L312
-[prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L526
-[prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L597
-[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L144
-[escape-general]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L69
-[rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L635
-[plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L670
-[oracle-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L877
-[plain-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L756
-[oracle-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L973
-[plain-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L861
-[oracle-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1102
-[random-prefix]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L196
-[random-model]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L180
-[encoded]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L161
-[escape]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L100
-[action-marginals]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L284
-[action-at]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L274
+[state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L321
+[prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L535
+[prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L606
+[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L145
+[escape-general]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L78
+[rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L644
+[plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L680
+[oracle-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L888
+[plain-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L766
+[oracle-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L984
+[plain-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L871
+[oracle-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1113
+[random-prefix]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L205
+[random-model]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L189
+[encoded]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L170
+[escape]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L109
+[action-marginals]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L293
+[action-at]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L283
 [plain-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L161
 [oracle-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L201
-[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L322
-[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L386
-[fresh]: ../../../ArkLib/Interaction/Core/Execution.lean#L55
-[fresh-state]: ../../../ArkLib/Interaction/Core/Execution.lean#L75
+[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L325
+[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L390
+[fresh]: ../../../ArkLib/Interaction/Core/Execution.lean#L56
+[fresh-state]: ../../../ArkLib/Interaction/Core/Execution.lean#L76
 [half-mass]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L503
 [optional]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L474
 [adaptive]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L393
