@@ -288,7 +288,7 @@ Ports pending in #1478, in the oracle-access tests that `port-oracle-access.md` 
 [bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L784
 [bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L800
 [audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L869
-[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L416
+[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L419
 [runtimeErasure]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L49
 [decideCatching]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L78
 [rawHidden]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L84
@@ -297,7 +297,7 @@ Ports pending in #1478, in the oracle-access tests that `port-oracle-access.md` 
 [routeWhole]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L277
 [oracleMessages]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L100
 [appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
-[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L507
+[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L502
 [sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L257
 [unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L334
 [optionalClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L267

@@ -347,15 +347,16 @@ def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OraclePr
         QueryLog (ambient +
           (pathBundle inputs s (Transcript.path obs.1)).spec)) :=
   let full := ambient + challengeSpec oracleSig s
+  let toFull : QueryImpl ambient (OracleComp full) := (QueryImpl.id' full).restrictLeft
   V.executeWith stmt data (m := OracleComp full)
     (ITrace := QueryLog ambient)
     (DTrace := fun p => QueryLog (ambient + (pathBundle inputs s p).spec))
     (fun action => (fun z => (z.1, z.2.fst)) <$>
       (simulateQ (QueryImpl.id' full).withLogging action).run)
-    (prover.simulate (fun q => liftM (full.query (.inl q))))
-    (sampler oracleSig s (fun c => liftM (full.query (.inr c))))
+    (prover.simulate toFull)
+    (sampler oracleSig s ((QueryImpl.id' full).restrictRight))
     (fun p view pathData => (simulateQ (QueryImpl.addLift
-      ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
+      toFull
       ((pathBundle inputs s p).answer pathData)).withLogging
       (V.decide stmt p view).run).run)
 
@@ -384,6 +385,7 @@ theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : O
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
     proveLog.fst, verifyLog⟩) := by
   simp only [runWithLog, executeWith, bind_map_left]
+  rfl
 
 /-- The ambient part of the decision log is the log of an ambient-only logger, which the oracle
 extraction interfaces receive; `map_runWithLog_eq_runWithAmbientLog` names the right side. -/
@@ -461,12 +463,12 @@ def runWithAmbientLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
       (Outcome oracleSig s Out (OracleVerifier.Output T B) × QueryLog ambient ×
         QueryLog ambient) :=
   let full := ambient + challengeSpec oracleSig s
-  let toFull : QueryImpl ambient (OracleComp full) := fun r => liftM (full.query (.inl r))
+  let toFull : QueryImpl ambient (OracleComp full) := (QueryImpl.id' full).restrictLeft
   (fun r => (r.1, r.2.1, r.2.2)) <$> V.executeWith stmt data (m := OracleComp full)
     (ITrace := QueryLog ambient) (DTrace := fun _ => QueryLog ambient)
     (fun action => (fun z => (z.1, z.2.fst)) <$>
       (simulateQ (QueryImpl.id' full).withLogging action).run)
-    (prover.simulate toFull) (sampler oracleSig s (fun c => liftM (full.query (.inr c))))
+    (prover.simulate toFull) (sampler oracleSig s ((QueryImpl.id' full).restrictRight))
     (fun p view pathData => (simulateQ
       (QueryImpl.addLift toFull.withLogging ((pathBundle inputs s p).answer pathData) :
         QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
