@@ -17,11 +17,10 @@ below put an oracle index in `Type 1` with responses in `Type 0`, input oracle q
 `Type 1`, output oracle queries in `Type 2`, an input statement in `Type 2` and an input witness
 in `Type 1`, while the initial examples keep moves, run outputs and oracle responses in `Type 0`.
 They typecheck against `Verifier`, `OracleVerifier`, `Reduction`, both appends, the oracle routing
-laws, oracle
-runs, the classical security and extraction models and round-by-round knowledge state functions,
-whose intermediate witnesses lie in their own universe. A run returns the output oracle data
-`∀ j, B p j`. The run's output index is in `Type 0`. The final pure extraction client sends
-a move in `Type 1` with a payload-dependent witness carrier in `Type 2`.
+laws, oracle runs, the classical security and extraction models and round-by-round knowledge state
+functions, whose intermediate witnesses lie in their own universe. A run returns the output
+oracle data `∀ j, B p j`. The run's output index is in `Type 0`. The final pure extraction client
+sends an oracle message in `Type 1`, with a witness carrier in `Type 2` that depends on it.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
@@ -81,7 +80,7 @@ def oracleVerifier : OracleVerifier bigAmbient oracleDone (Type 1) (fun _ => Nat
     (fun _ => bigInputs) where
   decide _ p _ := by
     cases p
-    exact liftM ((bigAmbient + (pathResources bigInputs oracleDone ⟨⟩).spec).query
+    exact liftM ((bigAmbient + (pathBundle bigInputs oracleDone ⟨⟩).spec).query
       (.inr (.inl ⟨Nat, ()⟩)))
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -107,7 +106,7 @@ def oracleAppend := oracleVerifier.append (fun _ => oracleSuffix) oracleCompatib
 theorem oracleAppend_decideWith (stmt : Type 1)
     (p : Path (oracleDone.append (fun _ => oracleDone)))
     (v : View (oracleDone.append (fun _ => oracleDone)) p)
-    (data : (pathResources bigInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
+    (data : (pathBundle bigInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
     oracleAppend.decideWith stmt p v data =
       oracleVerifier.decideWith stmt (Path.split oracleDone (fun _ => oracleDone) p).1
           (View.split oracleDone (fun _ => oracleDone) p v).1
@@ -140,7 +139,7 @@ def runnable : OracleVerifier smallAmbient oracleDone (Type 1) (fun _ => Nat) bi
     (fun _ => smallOutputs) where
   decide _ p _ := by
     cases p
-    exact liftM ((smallAmbient + (pathResources bigInputs oracleDone ⟨⟩).spec).query
+    exact liftM ((smallAmbient + (pathBundle bigInputs oracleDone ⟨⟩).spec).query
       (.inr (.inl ⟨Bool, ()⟩)))
   outputMap _ _ _ := (OracleMap.embedding bigInputs (fun _ : Unit => Bool)).comp
     (OracleMap.fst _ _)
@@ -188,10 +187,10 @@ def bigQueryOracles : OracleFamily.{0, 0, 2} Unit (fun _ => Nat) := ⟨fun _ => 
 
 /-- The output oracle answers each query by asking the input oracle at `Nat`. -/
 def forwardQueries (p : Path oracleDone) :
-    OracleMap (pathResources typeQueryInputs oracleDone p) (Resources.ofFamily bigQueryOracles)
+    OracleMap (pathBundle typeQueryInputs oracleDone p) (OracleBundle.ofFamily bigQueryOracles)
     where
   f x _ := x.1 ()
-  impl _ := liftM ((pathResources typeQueryInputs oracleDone p).spec.query (.inl ⟨(), Nat⟩))
+  impl _ := liftM ((pathBundle typeQueryInputs oracleDone p).spec.query (.inl ⟨(), Nat⟩))
   law _ _ := rfl
 
 /-- An oracle verifier whose input queries lie in `Type 1` and whose output queries lie in
@@ -201,7 +200,7 @@ def typeQueryVerifier : OracleVerifier smallAmbient oracleDone Unit (fun _ => Na
     typeQueryInputs (fun _ => bigQueryOracles) where
   decide _ p _ := by
     cases p
-    exact liftM ((smallAmbient + (pathResources typeQueryInputs oracleDone ⟨⟩).spec).query
+    exact liftM ((smallAmbient + (pathBundle typeQueryInputs oracleDone ⟨⟩).spec).query
       (.inr (.inl ⟨(), Bool⟩)))
   outputMap _ p _ := forwardQueries p
 
@@ -219,12 +218,12 @@ def typeQuerySuffix : OracleVerifier smallAmbient oracleDone Nat (fun _ => Nat)
   decide n p _ := by
     cases p
     exact (fun m => n + m) <$> liftM
-      ((smallAmbient + (pathResources bigQueryOracles oracleDone ⟨⟩).spec).query
+      ((smallAmbient + (pathBundle bigQueryOracles oracleDone ⟨⟩).spec).query
         (.inr (.inl ⟨(), Type⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
       impl := fun _ => liftM
-        ((pathResources bigQueryOracles oracleDone p).spec.query (.inl ⟨(), Type⟩))
+        ((pathBundle bigQueryOracles oracleDone p).spec.query (.inl ⟨(), Type⟩))
       law := fun _ _ => rfl }
 
 /-- The composite output map ignores the intermediate statement, so any certificate holds. -/
@@ -243,7 +242,7 @@ def typeQueryAppend := typeQueryVerifier.append (fun _ => typeQuerySuffix) typeQ
 theorem typeQueryAppend_decideWith (stmt : Unit)
     (p : Path (oracleDone.append (fun _ => oracleDone)))
     (v : View (oracleDone.append (fun _ => oracleDone)) p)
-    (data : (pathResources typeQueryInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
+    (data : (pathBundle typeQueryInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
     typeQueryAppend.decideWith stmt p v data =
       typeQueryVerifier.decideWith stmt (Path.split oracleDone (fun _ => oracleDone) p).1
           (View.split oracleDone (fun _ => oracleDone) p v).1
@@ -274,12 +273,12 @@ def typeQueryProtocol : OracleProtocol.{0, 1} :=
 def nodeQueryVerifier : OracleVerifier smallAmbient typeQueryProtocol Unit (fun _ => Nat)
     typeQueryInputs (fun _ => smallOutputs) where
   decide _ p _ := liftM
-    ((smallAmbient + (pathResources typeQueryInputs typeQueryProtocol p).spec).query
+    ((smallAmbient + (pathBundle typeQueryInputs typeQueryProtocol p).spec).query
       (.inr (.inr ⟨.inl ⟨⟩, Bool⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
       impl := fun _ => liftM
-        ((pathResources typeQueryInputs typeQueryProtocol p).spec.query (.inl ⟨(), Bool⟩))
+        ((pathBundle typeQueryInputs typeQueryProtocol p).spec.query (.inl ⟨(), Bool⟩))
       law := fun _ _ => rfl }
 
 /-- The prover sends a natural-number oracle payload and terminates. -/
@@ -292,7 +291,7 @@ def nodeHandler : QueryImpl (smallAmbient + challengeSpec oracleSig typeQueryPro
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
-/-- The decision reads the sent payload, independently of the input resource's value. -/
+/-- The decision reads the sent payload, independently of the input bundle's data. -/
 example : (simulateQ nodeHandler (nodeQueryVerifier.run () (fun _ => 5) nodeProver)).2.2.map
     Prod.fst = some 17 := rfl
 
@@ -305,34 +304,34 @@ universe i a e q s h
 variable {Name : Type i} {Query : Name → Type q} {Realization : Name → Type a}
   {Response : (n : Name) → Query n → Type e}
 
-/-- A view queries selected named resources while retaining the whole context's data (R27). -/
-def viewResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+/-- A view bundle queries selected named entries while retaining the whole context's data (R27). -/
+def viewBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
-    Resources.{e, max h q, max s a} where
+    OracleBundle.{e, max h q, max s a} where
   Index := (x : Visible) × Query (name (select x))
   spec query := Response (name (select query.1)) query.2
   Data := (x : Index) → Realization (name x)
   answer data query := answer _ (data (select query.1)) query.2
 
 /-- The whole named context is the identity view (R26). -/
-abbrev namedResources (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) : Resources.{e, max s q, max s a} :=
-  viewResources answer name id
+abbrev namedBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type s} (name : Index → Name) : OracleBundle.{e, max s q, max s a} :=
+  viewBundle answer name id
 
 /-- R26 retains its exact query and data carriers without identifying `a` with `e`. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) :
-    (namedResources answer name).Index = ((x : Index) × Query (name x)) ∧
-      (namedResources answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
+    (namedBundle answer name).Index = ((x : Index) × Query (name x)) ∧
+      (namedBundle answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
 
 /-- R27 retains the original context's data when the visible index has its own universe. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
-    (viewResources answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
-      (viewResources answer name select).Data = ((x : Index) → Realization (name x)) :=
+    (viewBundle answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
+      (viewBundle answer name select).Data = ((x : Index) → Realization (name x)) :=
   ⟨rfl, rfl⟩
 
-/-- No output oracles are needed to test the verifier's resource input boundary. -/
+/-- No output oracles are needed to test the boundary at the verifier's input bundle. -/
 def noOutputs : OracleFamily.{e, e, e} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
 
 /-- A verifier consumes an R26-shaped input, with independent realization `a` and response `e`.
@@ -340,11 +339,11 @@ Its decision returns one input answer, using no realization encoding. -/
 def namedVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x)) :
     OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
-      PUnit.{e + 1} (fun _ => Response (name x) query) (namedResources answer name)
+      PUnit.{e + 1} (fun _ => Response (name x) query) (namedBundle answer name)
       (fun _ => noOutputs) where
   decide _ p _ := liftM
     (((PEmpty.{e + 1} →ₒ PUnit.{e + 1}) +
-      (pathResources (namedResources answer name) (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query
+      (pathBundle (namedBundle answer name) (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query
       (.inr (.inl ⟨x, query⟩)))
   outputMap _ _ _ :=
     { f := fun _ x => x.elim
@@ -361,9 +360,9 @@ end IndependentRealizations
 
 /-! ### Security models with large inputs -/
 
-/-- Observations of `runnable` and `typeQueryVerifier` are small, so every set of them may be
+/-- Outcomes of `runnable` and `typeQueryVerifier` are small, so every set of them may be
 declared measurable. -/
-instance : MeasurableSpace (Observation oracleSig oracleDone (fun _ => PUnit)
+instance : MeasurableSpace (Outcome oracleSig oracleDone (fun _ => PUnit)
     (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) := ⊤
 
 /-- The ambient oracle of the security experiments answers `true` and keeps no state. -/
@@ -373,10 +372,10 @@ def ambientTrue : QueryImpl smallAmbient (StateT Unit ProbComp) := fun _ => pure
 def noChallenges : QueryImpl (challengeSpec oracleSig oracleDone) ProbComp := fun c => c.val.elim
 
 /-- The classical model of `runnable`. Its statements pair an input statement in `Type 2` with
-input data indexed by `Type`, while its observations stay in `Type 0`. -/
+input data indexed by `Type`, while its outcomes stay in `Type 0`. -/
 noncomputable def runnableModel :
     AdversaryModel ((Type 1) × (Type → Nat))
-      (Observation oracleSig oracleDone (fun _ => PUnit)
+      (Outcome oracleSig oracleDone (fun _ => PUnit)
         (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) :=
   runnable.classicalModel (pure ()) ambientTrue noChallenges
 
@@ -384,7 +383,7 @@ noncomputable def runnableModel :
 output queries lie in `Type 2`. -/
 noncomputable def typeQueryModel :
     AdversaryModel (Unit × (Unit → Nat))
-      (Observation oracleSig oracleDone (fun _ => PUnit)
+      (Outcome oracleSig oracleDone (fun _ => PUnit)
         (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) :=
   typeQueryVerifier.classicalModel (pure ()) ambientTrue noChallenges
 
@@ -392,7 +391,7 @@ noncomputable def typeQueryModel :
 example (input : StatementProblem ((Type 1) × (Type → Nat)))
     (output : PathProblem oracleDone
       (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) :
-    soundness runnableModel input output (fun obs => projectPathAlong oracleSig oracleDone obs.1)
+    soundness runnableModel input output (fun obs => Transcript.path obs.1)
       (fun obs => obs.2.2) 1 :=
   fun _ _ _ _ => le_trans (measure_mono (Set.subset_univ _)) (runnableModel.mass_le_one _ _)
 
@@ -425,7 +424,7 @@ example (input : StatementProblem (Type 1)) : Prop :=
 
 /-- An extractor that ignores its inputs and returns `7`. -/
 def sevenExtractor {S : Type v} :
-    Extractor.OracleStraightline smallAmbient oracleDone (fun _ : S => Nat) (fun _ => PUnit) :=
+    Extractor.OracleStraightLine smallAmbient oracleDone (fun _ : S => Nat) (fun _ => PUnit) :=
   fun _ _ _ _ _ => pure 7
 
 /-- The extraction game of `runnable`, whose input index lies in `Type 1`, accepts on data `3` and
@@ -435,23 +434,23 @@ example :
       ((Type 0), fun _ => 3) idle)).2 = some 7 := rfl
 
 /-- The ambient-log run of `typeQueryVerifier`, whose input queries lie in `Type 1`, keeps the
-run's observation and two empty ambient logs. -/
+run's outcome and two empty ambient logs. -/
 example :
     (simulateQ handler (typeQueryVerifier.runWithAmbientLog () (fun _ => 5) idle)).2.2.isEmpty =
       true := rfl
 
 /-- The classical straight-line extraction model of `runnable`. -/
 noncomputable def runnableExtraction :=
-  runnable.classicalStraightline (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
+  runnable.classicalStraightLine (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
     (fun _ => Nat) (pure ()) ambientTrue noChallenges (fun _ o => o)
 
-/-- Straight-line extraction for `runnable` preserves the run's observation law. -/
-example (E : Extractor.OracleStraightline smallAmbient oracleDone
+/-- Straight-line extraction for `runnable` preserves the run's outcome law. -/
+example (E : Extractor.OracleStraightLine smallAmbient oracleDone
       (fun _ : (Type 1) × (Type → Nat) => Nat) (fun _ => PUnit))
     (stmt : (Type 1) × (Type → Nat)) (adv : Prover oracleSig smallAmbient oracleDone
       (fun _ => PUnit)) :
     (runnableExtraction.experiment E stmt adv).map Prod.fst = runnableModel.outcome stmt adv :=
-  runnable.classicalStraightline_marginal _ _ _ _ _ E stmt adv
+  runnable.classicalStraightLine_marginal _ _ _ _ _ E stmt adv
 
 /-- The classical transcript-only extraction model of `typeQueryVerifier`, whose input queries
 lie in `Type 1` and whose output queries lie in `Type 2`. -/
@@ -459,7 +458,7 @@ noncomputable def typeQueryExtraction :=
   typeQueryVerifier.classicalTranscriptOnly (Out := fun _ => PUnit) (Wout := fun _ => PUnit)
     (fun _ => Nat) (pure ()) ambientTrue noChallenges (fun _ o => o)
 
-/-- Transcript-only extraction for `typeQueryVerifier` preserves the run's observation law. -/
+/-- Transcript-only extraction for `typeQueryVerifier` preserves the run's outcome law. -/
 example (E : Extractor.OracleTranscriptOnly smallAmbient oracleDone
       (fun _ : Unit × (Unit → Nat) => Nat) (fun _ => PUnit))
     (stmt : Unit × (Unit → Nat)) (adv : Prover oracleSig smallAmbient oracleDone
@@ -473,7 +472,7 @@ example (E : Extractor.OracleTranscriptOnly smallAmbient oracleDone
 types, in `Type 1`, while its input witness is the unit, in `Type 0`. The root extractor maps a
 type to the unit. -/
 def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
-    {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
+    {S : Type v} (validOutput : S → Transcript l (.pure ⟨⟩ : FreeM P PUnit) → Unit → Prop) :
     KnowledgeStateFunction.{v, 0, 1} l (.pure ⟨⟩) S (fun _ _ => Unit) (fun _ => Unit)
     (fun _ => True)
       (fun _ _ => True) validOutput where
@@ -554,8 +553,8 @@ example : rbrKnowledgeSoundnessOfNodes.{2, 2, 3} plainSig done
   rbrKnowledgeSoundness.lift.{2, 2, 1, 0, 1, 3} plainSig
     ⟨indexedLargeCertificate, fun _ _ _ _ sp => nomatch sp⟩
 
-/-- Pure backward maps accept types themselves as terminal, seam and input witnesses. -/
-def largeTerminalCertificate : KnowledgeStateFunction.{0, v + 1, v + 1, v + 1} plainSig done Unit
+/-- Pure backward maps accept types themselves as output, seam and input witnesses. -/
+def largeTypeCertificate : KnowledgeStateFunction.{0, v + 1, v + 1, v + 1} plainSig done Unit
     (fun _ _ => Type v) (fun _ => Type v) (fun _ => True) (fun _ _ => True)
     (fun _ _ _ => True) where
   Witness _ {_} _ _ := Type v
@@ -567,29 +566,29 @@ def largeTerminalCertificate : KnowledgeStateFunction.{0, v + 1, v + 1, v + 1} p
   send sp := nomatch sp
   leaf _ _ _ _ _ := trivial
 
-/-- Composition passes a terminal witness in `Type 1` through a seam in `Type 1` directly. -/
+/-- Composition passes an output witness in `Type 1` through a seam in `Type 1` directly. -/
 example (A : Type) :
     (KnowledgeStateFunction.append (s₂ := fun _ => done)
       (W := fun _ _ => Type) (validOutput := fun _ _ _ => True)
       (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
-      largeTerminalCertificate (fun _ => largeTerminalCertificate)
+      largeTypeCertificate (fun _ => largeTypeCertificate)
       (fun _ _ _ _ => trivial)).extractAlong () ⟨⟩ A = A := rfl
 
-/-- The same pure composition accepts a terminal and seam carrier in `Type 2`. -/
+/-- The same pure composition accepts an output and seam carrier in `Type 2`. -/
 example (A : Type 1) :
     (KnowledgeStateFunction.append (s₂ := fun _ => done)
       (W := fun _ _ => Type 1) (validOutput := fun _ _ _ => True)
       (admissible₂ := fun _ _ => True) (relMid := fun _ _ _ => True)
-      largeTerminalCertificate (fun _ => largeTerminalCertificate)
+      largeTypeCertificate (fun _ => largeTypeCertificate)
       (fun _ _ _ _ => trivial)).extractAlong () ⟨⟩ A = A := rfl
 
-/-- Lifting intermediate witnesses keeps the large terminal and input carriers directly. -/
+/-- Lifting intermediate witnesses keeps the large output and input carriers directly. -/
 example (A : Type) :
-    (largeTerminalCertificate.lift.{0, 1, 1, 1, 1, 0, 2}).extractAlong () ⟨⟩ A = A := rfl
+    (largeTypeCertificate.lift.{0, 1, 1, 1, 1, 0, 2}).extractAlong () ⟨⟩ A = A := rfl
 
-/-- The terminal witness may be a type even when the extracted input witness is small. -/
+/-- The output witness may be a type even when the extracted input witness is small. -/
 def largeOutputCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rolePoly)
-    {S : Type v} (validOutput : S → PathAlong l (.pure ⟨⟩ : FreeM P PUnit) → Type → Prop) :
+    {S : Type v} (validOutput : S → Transcript l (.pure ⟨⟩ : FreeM P PUnit) → Type → Prop) :
     KnowledgeStateFunction.{v, 0, 1, 1} l (.pure ⟨⟩) S (fun _ _ => Type) (fun _ => Unit)
       (fun _ => True) (fun _ _ => True) validOutput where
   Witness _ {_} _ _ := Type
@@ -601,37 +600,37 @@ def largeOutputCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.L
   send sp := nomatch sp
   leaf _ _ _ _ _ := trivial
 
-/-- The plain wrapper accepts large terminal witnesses independently of its run output. -/
+/-- The plain wrapper accepts large output witnesses independently of its run output. -/
 example : Verifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} reduction.verifier plainAmbientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noPlainChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
-/-- The oracle wrapper also accepts large terminal witnesses independently of its run output. -/
+/-- The oracle wrapper also accepts large output witnesses independently of its run output. -/
 example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} runnable ambientTrue
     (fun _ => True) (fun _ (_ : Unit) => True) (fun _ _ _ (_ : Type) => True)
     noChallenges (fun _ => 0) :=
   ⟨largeOutputCertificate oracleSig _, fun _ _ _ _ sp => nomatch sp⟩
 
-/-! ### Pure extraction after a large oracle payload -/
+/-! ### Pure extraction after a large oracle message -/
 
-/-- The oracle query and its answer are both in the payload's universe. -/
+/-- The oracle query and its answer are both in the message's universe. -/
 @[instance_reducible]
 def largePayloadInterface : OracleInterface.{1, 1} (ULift.{1} Nat) where
   Query := PUnit.{2}
   toOC.spec := fun _ => ULift.{1} Nat
   toOC.impl _ := read
 
-/-- A prover sends a natural-number payload in `Type 1`. -/
+/-- A prover sends a natural-number oracle message in `Type 1`. -/
 def largePayloadProtocol : OracleProtocol.{1} :=
   .liftBind (.oracle (ULift.{1} Nat) largePayloadInterface) (fun _ => .pure ⟨⟩)
 
-/-- The terminal carrier depends on the full oracle payload, which is erased from the shape. -/
-def largePayloadWitness (tr : PathAlong oracleSig largePayloadProtocol) : Type 2 :=
+/-- The output carrier depends on the full oracle message, which is erased from the shape. -/
+def largePayloadWitness (tr : Transcript oracleSig largePayloadProtocol) : Type 2 :=
   ULift.{2} (Fin (tr.1.down + 1))
 
 -- Disposition KC-318.
-/-- Extraction sends a payload-dependent finite witness back to a natural-number witness. -/
+/-- Extraction maps a finite witness that depends on the message to a natural-number witness. -/
 def largePayloadCertificate : KnowledgeStateFunction.{0, 2, 2, 2} oracleSig largePayloadProtocol
     Unit (fun _ => largePayloadWitness) (fun _ => ULift.{2} Nat)
     (fun _ => True) (fun _ _ => True) (fun _ _ _ => True) where
@@ -654,7 +653,7 @@ def largePayloadCertificate : KnowledgeStateFunction.{0, 2, 2, 2} oracleSig larg
   leaf _ _ _ _ _ := trivial
 
 -- Disposition KC-322.
-/-- The ordinary-import client extracts six after sending the large payload seven. -/
+/-- The ordinary-import client extracts six after sending the large oracle message seven. -/
 theorem largePayload_extractAlong :
     (largePayloadCertificate.extractAlong ()
       ⟨(⟨7⟩ : ULift.{1} Nat), ⟨⟩⟩ (⟨⟨6, by decide⟩⟩ : ULift.{2} (Fin 8))).down = 6 := rfl

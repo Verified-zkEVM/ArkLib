@@ -137,18 +137,14 @@ theorem oracleReduction_completeness :
   apply Reduction.perfectCompleteness_of_run_support
   rintro ⟨stmt, oracles⟩ wit hfg x hx
   simp only [relIn, Set.mem_ofPred_eq] at hfg
-  simp only [OracleReduction.toReduction, oracleReduction, Reduction.run,
-    Prover.run_of_verifier_first, oracleProver, oracleVerifier,
-    OracleVerifier.toVerifier] at hx
-  simp_rw [show (pure : _ → OptionT (OracleComp _) _) = fun y =>
-    (pure (some y) : OracleComp _ _) from rfl] at hx
-  simp only [Verifier.run, OracleComp.liftComp_pure, ← OracleComp.liftComp_eq_liftM,
-    pure_bind, OptionT.run_mk] at hx
-  obtain ⟨qSupport, hqSupport, hx⟩ := hx
-  obtain ⟨q, rfl⟩ := hqSupport
-  simp only [Challenge, ChallengeIdx, FullTranscript.challenges, Option.getM,
-    Fin.isValue, Fin.vcons_of_one, MessageIdx, Message] at hx
-  subst x
+  rw [Reduction.run_run_eq_bind] at hx
+  simp only [OracleReduction.toReduction, oracleReduction, Prover.run_of_verifier_first,
+    oracleProver, oracleVerifier, OracleVerifier.toVerifier, Verifier.run] at hx
+  -- A run samples one query `q`. The prover and the verifier are otherwise deterministic.
+  simp only [liftComp_eq_liftM, liftM_pure, bind_assoc, pure_bind, OptionT.run_mk,
+    OptionT.run_pure, simulateQ_pure, map_pure, Option.map_some, mem_support_bind_iff,
+    support_pure, Set.mem_singleton_iff] at hx
+  obtain ⟨q, -, rfl⟩ := hx
   refine ⟨_, rfl, ?_, rfl⟩
   change answer (f stmt oracles) _ = answer (g stmt oracles) _
   rw [hfg]

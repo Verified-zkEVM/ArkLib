@@ -30,19 +30,21 @@ These entries are in
 
 These entries are also in
 [`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
-The status is one of equivalent, premise-required, retired or unresolved.
+The status is one of equivalent, premise-required, retired or unresolved. The rows for entry 19 use
+the plainer names ported, excluded by P1 or P2, removed and open for the same four statuses. The
+[port table](port-logged-execution.md) explains them.
 
 | Entry | Departure | Status |
 | --- | --- | --- |
-| 19 | Writer instrumentation of the authoritative runner produces per-slot prefix, owner and query provenance with exact log erasure, in `Oracle/SlotTrace.lean`, `Oracle/Provenance.lean` and `Oracle/PrefixResources.lean` | equivalent |
-| 19 | P1 retires intermediate verifier queries and their former phase assignments; prover slots and their prefixes remain | premise-required |
-| 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general resource API | equivalent: `Resources` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
+| 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces one entry per move, with the partial transcript, the querier and the queries. Erasing the entries gives the aggregate logs exactly. The code is in `Oracle/QueriesByMove.lean`, `Oracle/QueriesByMoveLaws.lean` and `Oracle/SentOracles.lean` | ported |
+| 19 | P1 excludes intermediate verifier queries and the moves they were assigned to; prover moves and their partial transcripts remain | excluded by P1 |
+| 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general bundle API | equivalent: `OracleBundle` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
-| 18 | The full-log runner returns only small resource-query logs; ambient-log execution supports arbitrary resource-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+| 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
 | 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
-The [resource and node universe inventory](resource-universes-disposition.md) records the frozen
+The [bundle and node universe port table](port-bundle-universes.md) records the frozen
 R26, R27 and decoration canaries closed by entry 18.
 
 ## Legacy embedding: entries 14–16
@@ -77,7 +79,7 @@ path data and output maps rather than a run.
 **Resolution.** The modules `Legacy/OracleExecution.lean`, `Legacy/OracleSecurity.lean` and
 `Legacy/OracleKnowledge.lean` state the correspondence and the transfers on the oracle tree:
 
-- `oracleFinalize` reads the legacy result off an oracle-tree observation, including both
+- `oracleFinalize` reads the legacy result off an oracle-tree outcome, including both
   parties' outputs and the verifier's output oracle data.
 - `oracleFinalize_observeWith_counterpartFirst` is program equality with legacy
   `OracleReduction.run` under the counterpart-first schedule, for every legacy protocol
@@ -108,15 +110,16 @@ to the same witness.
 An earlier entry 17 recorded that straight-line knowledge soundness was transferred on the plain
 tree only. `Legacy/OracleKnowledge.lean` closes it, and the entry is removed.
 
-## Logged execution and routing acceptance clients
+## Logged execution and routing tests
 
-The [source-to-port inventory](logged-execution-disposition.md) lists each frozen acceptance
-assertion, its exact port or missing interface, and the assertions retired by the approved passive
-verifier and fixed-shape premises. The produced provenance rows are equivalent under the passive
-schedule. There is no separate recursive slot executor: instrumented strategies run through `TwoParty.Lens.run`, and ordinary,
-full-trace and ambient-trace APIs share `OracleVerifier.executeWith`. Erasure specializes a
-general runner naturality law and writer laws. The premise-required rows identify the intermediate
-verifier actions and phase assignments retired by P1.
+The [port table](port-logged-execution.md) lists each assertion in the old layer's tests
+and where it is ported or what remains. It also lists which assertions the approved
+passive-verifier and fixed-shape premises (P1 and P2) exclude. The rows about the queries by move are ported under
+the passive schedule. There is no separate step executor. Instrumented strategies run through
+`TwoParty.Lens.run`, and the ordinary run, the queries by move and the ambient queries by move
+share `OracleVerifier.executeWith`. Erasure follows from a general law about running
+instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
+verifier actions and move assignments that P1 excludes.
 
 ## Knowledge composition and measured extraction
 
@@ -124,7 +127,7 @@ The [assertion disposition record](knowledge-composition-disposition.md) maps th
 production laws and acceptance assertions to the composition and measured-extraction port. It
 records the public prover selector required by P2, the explicit zero root and leaf budgets that
 recover the frozen bound, and VCVio's small-carrier restriction on measured programs. Pure
-backward maps accept large terminal and seam witnesses directly. The shared full-prefix sampler
+backward maps accept large leaf and seam witnesses directly. The shared full-prefix sampler
 retains earlier public challenges and prover messages in both distributions and local errors.
-P1 retires oracle-payload-dependent challenge selection and effectful receiver actions only.
-The inventory marks the already constant KC-065 schedule equivalent.
+P1 retires only challenge selection that depends on oracle messages and effectful receiver
+actions. The inventory marks the already constant KC-065 schedule equivalent.
