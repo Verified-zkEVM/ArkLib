@@ -84,7 +84,9 @@ layer is milestone M0 ([#1472](https://github.com/Verified-zkEVM/ArkLib/issues/1
 - `Block.error` and `BlockCWSSStructure.knowledgeError` are sums. They are the failure probability
   of the search for siblings in each coordinate fibre of a uniformly sampled center, not a
   collision probability of independent samples. They get that meaning from the block finder, which
-  is not in ArkLib yet.
+  is not in ArkLib yet: VCVio's `OracleComp.blockFinder` (pull request VCVio#1223) draws the
+  siblings of each coordinate without replacement, so no two children collide, and
+  `OracleComp.isFinder_blockFinder` proves its bound `ε ≤ κ + (1 - κ) p` at `κ = Block.error`.
 
 ## Open Formalization Gaps
 
