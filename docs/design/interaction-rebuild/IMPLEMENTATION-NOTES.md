@@ -539,7 +539,10 @@ Their output is dependent on that returned transcript. The public selector makes
 oracle query, so the original salted keys, adaptive repeated query, query counts and error
 charges are unchanged. The suffix verifier at each fixed selector is used to instantiate the
 generic soundness theorem. Verdict equations and the party-run correspondence identify its
-output with the full verifier's output; the game is not a manually predicted verdict.
+output with the full verifier's output; the game is not a manually predicted verdict. The
+generic restoration protocol is a fixed list of oracle-message and challenge pairs, so the tests
+cover each fixed selector; the replay also runs the authored selector in the full verifier
+protocol.
 
 `plainScriptedRun_eq` and `replayResult_eq` return the value seven on every Boolean challenge, in
 both exact statement carriers. `selectedScriptedRun_eq` and `oracleReplayResult_eq` separately
@@ -558,7 +561,8 @@ This branch adds the following restoration interfaces on the parent's state func
 | --- | --- |
 | `verificationGame`, `closedVerificationGame` | Complete the adaptive selection, then return the transcript and its path-indexed passive verdict. |
 | `complete_support_matches`, `run_scriptedProver_of_mem_support` | Every supported open completion carries the selected messages and replays through the actual interpreted party runner. |
-| Uniform, private-coin and nonuniform knowledge bounds | Read the supplied adversary witness at the completed transcript; retain `(Q + rounds.length) * error` or `Q * max + sum`. |
+| Uniform, private-coin and nonuniform knowledge bounds | Read the supplied adversary witness at the completed transcript. The uniform theorems give `(Q + rounds.length) * error`; the per-round theorems give `Q * max + sum` for a fixed adversary program. Both have `_privateCoins` forms that average over coins whose sampler may fail, with the same query bound `Q` for every fixed coin. |
+| `MeasuredKnowledgeStateFunction.extractionProgram` | Runs a budgeted program realizing `readOut` before the stage programs. `stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut` states the failure event on this composite program and charges both; the plain measured theorem charges only the stages, after `readOut`. |
 | `programAlong_budget_le_protocol`, `programAlong_budget_le_protocol_zero` | Count message/challenge stages per round, with explicit root/leaf terms and the frozen zero-endpoint specialization. |
 | Authored-selector fixtures | A public prover Boolean selects exact `Fin 8`/`Fin 9` statement carriers; challenges still control acceptance and knowledge transitions. |
 
@@ -578,7 +582,7 @@ describes the shared certificate signatures; the [restoration record](../interac
 identifies this branch's consumers and source assertions.
 
 The remaining small carriers follow these exact declarations at VCVio pin
-`fc54dd3d7691d6f5db7dc829e321a727f095bc2d`:
+`f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`:
 
 - `SampleableType (β : Type)` in
   `VCVio/OracleComp/Constructions/SampleableType/Basic.lean:51` forces
@@ -595,6 +599,11 @@ The remaining small carriers follow these exact declarations at VCVio pin
   maps. Its restoration budget theorems and the packaged measured game theorem retain
   small input, intermediate and output witnesses. `OracleComp.MeasuredProgram` at line 66
   also fixes the cost carrier `ω` to `Type`.
+
+The planned VCVio-to-PolyFun program repin includes the measured restoration test
+(`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean`) and the local straight-line
+branch. It keeps the finite count profile `Kind → ℕ` and the named realization evidence
+(`BudgetedProgram.realizes`, `run_programAlong`, `run_extractionProgram`).
 
 ### Frozen-source dispositions
 

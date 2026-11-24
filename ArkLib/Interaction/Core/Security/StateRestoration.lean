@@ -30,6 +30,21 @@ the game's transcript and verdict (`run_scriptedProver`, `closedVerificationGame
 Each key determines a receiver cursor of the protocol (`keySpine`) and the full prefix of moves
 reaching it (`keyHistory`), read from an answer table. Changing the answer at the key itself does
 not change that prefix (`keyHistory_update`).
+
+## References
+
+The game is the salted state-restoration game of Chiesa and Yogev (Definition 23.2.1) and of WARP
+(Definitions B.1 and B.2). The knowledge event follows Chiesa and Yogev's straight-line knowledge
+experiment (Definition 23.2.3), with extraction walking backwards from the adversary's output
+witness as in WARP's Construction B.5. The uniform bound `(Q + rounds.length) * error` corresponds
+to Chiesa and Yogev's Theorem 31.3.1 and WARP's Theorem B.4. The game uses one cached dependent
+table in place of the papers' per-round random functions. The port record
+(`docs/design/interaction-layer/state-restoration-disposition.md`) gives the detailed
+correspondence.
+
+* [Chiesa, A., and Yogev, E., *Building Cryptographic Proofs from Hash Functions*][ChiesaYogev2024]
+* [Bünz, B., Chiesa, A., Fenzi, G., and Wang, W., *Linear time accumulation
+    schemes*][BCFW25]
 -/
 
 @[expose] public section
