@@ -37,7 +37,7 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
 /-- Perfect completeness of the embedded legacy honest Sumcheck prover against the
 interaction-layer Sumcheck verifier, with uniformly sampled challenges. -/
 theorem legacyProver_perfectCompleteness :
-    letI : MeasurableSpace (Observation oracleSig (protocol R deg n)
+    letI : MeasurableSpace (Outcome oracleSig (protocol R deg n)
       (fun _ => (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) ×
         Unit) (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg
           i))) := ⊤

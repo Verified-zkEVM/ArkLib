@@ -30,7 +30,7 @@ variable {ι : Type} (ambient : OracleSpec ι) {σ : Type} (init : ProbComp σ)
 
 /-- Three rounds of degree two over `ZMod 5` with uniform challenges. -/
 example :
-    letI : MeasurableSpace (HonestObservation F 2 3) := ⊤
+    letI : MeasurableSpace (HonestOutcome F 2 3) := ⊤
     completeness ((verifier F 2 3 D₂ ambient).classicalModel init impl
         (@challengeQueryImpl _ oracleSig (protocol F 2 3) (challengeSampleable F 2 3)))
       (relationProblem F 2 3 D₂ 0) (relationProblem F 2 3 D₂ (Fin.last 3))
@@ -40,12 +40,12 @@ example :
 /-- On a satisfied claim the honest event has mass one in the uniform-challenge experiment. -/
 example (stmt : Spec.StatementRound F 2 0) (oStmt : ∀ i, Spec.OracleStatement F 2 1 i)
     (h : ((stmt, oStmt), ()) ∈ Spec.relationRound F 2 1 D₂ 0) :
-    letI : MeasurableSpace (HonestObservation F 1 2) := ⊤
+    letI : MeasurableSpace (HonestOutcome F 1 2) := ⊤
     1 ≤ 𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol F 1 2)
       (challengeSampleable F 1 2))
       ((verifier F 1 2 D₂ ambient).run stmt oStmt (honestProver D₂ stmt oStmt))]
         {obs | (judgement F 1 2 D₂).honest obs} := by
-  let : MeasurableSpace (HonestObservation F 1 2) := ⊤
+  let : MeasurableSpace (HonestOutcome F 1 2) := ⊤
   exact le_of_eq_of_le (tsub_zero 1).symm
     ((perfectCompleteness_uniform D₂ ambient init impl).2 (stmt, oStmt) () h)
 
@@ -137,7 +137,7 @@ theorem run_honest_X :
         (honestProver D₂ stmtX fun _ => polyX) =
       (fun chals => (⟨honestTranscript D₂ stmtX (fun _ => polyX) chals,
         ((⟨chals 0, fun _ => chals 0⟩, fun _ => polyX), ()),
-        some (⟨chals 0, fun _ => chals 0⟩, fun _ => polyX)⟩ : HonestObservation F 1 1)) <$>
+        some (⟨chals 0, fun _ => chals 0⟩, fun _ => polyX)⟩ : HonestOutcome F 1 1)) <$>
         drawChallenges 1 (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol F 1 1)).query (.inr c))) := by
   rw [run_verifier_honestProver]
@@ -151,13 +151,13 @@ theorem run_honest_X :
 /-- Perfect completeness applies to the claim `(stmtX, X₀)`: the honest event has mass one in
 the uniform-challenge experiment. -/
 example :
-    letI : MeasurableSpace (HonestObservation F 1 1) := ⊤
+    letI : MeasurableSpace (HonestOutcome F 1 1) := ⊤
     1 ≤ 𝒟[experiment init impl (@challengeQueryImpl _ oracleSig (protocol F 1 1)
       (challengeSampleable F 1 1))
       ((verifier F 1 1 D₂ ambient).run stmtX (fun _ => polyX)
         (honestProver D₂ stmtX fun _ => polyX))]
         {obs | (judgement F 1 1 D₂).honest obs} := by
-  let : MeasurableSpace (HonestObservation F 1 1) := ⊤
+  let : MeasurableSpace (HonestOutcome F 1 1) := ⊤
   exact le_of_eq_of_le (tsub_zero 1).symm
     ((perfectCompleteness_uniform D₂ ambient init impl).2 (stmtX, fun _ => polyX) () relation_X)
 

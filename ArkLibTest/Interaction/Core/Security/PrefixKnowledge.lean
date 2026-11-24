@@ -11,7 +11,7 @@ import ArkLibTest.Interaction.Core.Support
 
 Two Boolean challenges have fixed shape. The second challenge is the complement of the first.
 The certificate has unit witnesses, identity backward maps and zero local errors, although its
-terminal predicate compares both bits and its earlier predicates are false.
+leaf predicate compares both bits and its earlier predicates are false.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp MeasureTheory
@@ -28,9 +28,9 @@ def draw : PrefixDraw plainSig ProbComp twoBits
   | _, _, .root _, _, _ => $ᵗ Bool
   | _, _, .down _ (.root _), _, history => pure (!history.1.1)
 
-/-- Knowledge holds only at the terminal prefix, when the two bits coincide. -/
+/-- Knowledge holds only at the full prefix at the leaf, when the two bits coincide. -/
 def predicate : {t : FreeM PlainPoly PUnit} →
-    (sp : Cursor.Spine twoBits t) → PrefixMoves plainSig sp → Prop
+    (sp : Cursor.Spine twoBits t) → PartialTranscriptAt plainSig sp → Prop
   | _, .root _, _ => False
   | _, .down _ (.root _), _ => False
   | _, .down _ (.down _ (.root _)), history => history.2.1.1 = history.1.1
@@ -83,12 +83,12 @@ theorem zero_error : rbrKnowledgeSoundness.{0, 0, 0} plainSig twoBits (fun (_ : 
 abbrev oneBit : Protocol := .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
 
 /-- The suffix error may depend on the erased challenge in the first transcript. -/
-def suffixError (tr : PathAlong plainSig oneBit) : PrefixError plainSig oneBit :=
+def suffixError (tr : Transcript plainSig oneBit) : PrefixError plainSig oneBit :=
   fun _ _ _ => cond (show Bool from tr.1) 2 3
 
 -- Both prefixes project to the same shape, but the composed local errors differ.
-example : projectPathAlong plainSig oneBit ⟨true, ⟨⟩⟩ =
-    projectPathAlong plainSig oneBit ⟨false, ⟨⟩⟩ := rfl
+example : Transcript.path (l := plainSig) (s := oneBit) ⟨true, ⟨⟩⟩ =
+    Transcript.path (l := plainSig) (s := oneBit) ⟨false, ⟨⟩⟩ := rfl
 
 example (first : Bool) :
     combinePrefixDraw plainSig oneBit (fun _ => oneBit) (fun _ _ _ => (1 : ℝ≥0∞)) suffixError

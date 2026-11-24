@@ -14,7 +14,7 @@ public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 The legacy statements and honest-message representation are retained here for the separate
 execution-equivalence checks. Native soundness uses `Tree`, `Domain` and `Indexed`.
 
-The honest prover is a dependent fold of pure slots. Its state records the round index, current
+The honest prover is a dependent fold of pure moves. Its state records the round index, current
 claim and original polynomial. The closed-form laws `run_foldRounds` and `simulate_foldRounds`
 separate this fold from its challenge handler.
 
@@ -37,7 +37,7 @@ section Fold
 variable {m : Type → Type} [Monad m]
 
 /-- One round with every slot `pure`: send `msg`, then continue with the received challenge. -/
-def consProver {k : ℕ} {Out : PathAlong oracleSig (protocol R deg (k + 1)) → Type}
+def consProver {k : ℕ} {Out : Transcript oracleSig (protocol R deg (k + 1)) → Type}
     (msg : R⦃≤ deg⦄[X])
     (next : (chal : R) → Focal oracleSig m (protocol R deg k)
       (fun tail => Out (consTranscript msg chal tail))) :
@@ -63,7 +63,7 @@ variable {State : ℕ → Type}
 /-- The transcript produced by a fold of pure rounds on the given challenges. -/
 def foldTranscript (msg : (k : ℕ) → State (k + 1) → R⦃≤ deg⦄[X])
     (next : (k : ℕ) → State (k + 1) → R → State k) :
-    (k : ℕ) → State k → (Fin k → R) → PathAlong oracleSig (protocol R deg k)
+    (k : ℕ) → State k → (Fin k → R) → Transcript oracleSig (protocol R deg k)
   | 0, _, _ => ⟨⟩
   | k + 1, st, chals => consTranscript (msg k st) (chals 0)
       (foldTranscript msg next k (next k st (chals 0)) (Fin.tail chals))
@@ -116,7 +116,7 @@ theorem samplerEnd_succ {m : Type → Type} [Monad m] (k : ℕ)
 
 /-- Running one pure round draws its challenge and then runs the remaining rounds. -/
 theorem run_consProver {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
-    {Out : PathAlong oracleSig (protocol R deg (k + 1)) → Type}
+    {Out : Transcript oracleSig (protocol R deg (k + 1)) → Type}
     (msg : R⦃≤ deg⦄[X])
     (next : (chal : R) → Focal oracleSig m (protocol R deg k)
       (fun tail => Out (consTranscript msg chal tail)))
@@ -252,7 +252,7 @@ noncomputable def honestProver {m : Type → Type} [Monad m]
 /-- The honest transcript on the given challenges. -/
 noncomputable def honestTranscript (stmt : Spec.StatementRound R n 0)
     (oStmt : ∀ i, Spec.OracleStatement R n deg i) (chals : Fin n → R) :
-    PathAlong oracleSig (protocol R deg n) :=
+    Transcript oracleSig (protocol R deg n) :=
   foldTranscript (honestMessage D) (nextState (honestMessage D)) n (initState stmt oStmt) chals
 
 /-- The honest prover output on the given challenges. -/

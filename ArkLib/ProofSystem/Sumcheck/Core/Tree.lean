@@ -9,7 +9,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.SingleRound
 
 /-! # The fixed Sumcheck tree
 
-The full run has one polynomial message and one public challenge per variable. Messages and
+The full run has one polynomial message and one challenge per variable. Messages and
 challenges do not select shape. The sampler leaves the challenge distribution to its handler.
 -/
 
@@ -49,40 +49,40 @@ variable {R deg}
 
 /-- Every full transcript projects to the unique shape path, whatever its messages and
 challenges. -/
-theorem project_eq_protocolPath {n : ℕ} (tr : PathAlong oracleSig (protocol R deg n)) :
-    projectPathAlong oracleSig (protocol R deg n) tr = protocolPath R deg n :=
+theorem project_eq_protocolPath {n : ℕ} (tr : Transcript oracleSig (protocol R deg n)) :
+    tr.path = protocolPath R deg n :=
   protocolPath_eq R deg n _
 
 /-- Prepend one round to a transcript of the remaining rounds. -/
 def consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
-    PathAlong oracleSig (protocol R deg (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
+    (tail : Transcript oracleSig (protocol R deg n)) :
+    Transcript oracleSig (protocol R deg (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
 
 /-- The round polynomial of the first round of a transcript. -/
-def headMessage {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) : R⦃≤ deg⦄[X] :=
+def headMessage {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) : R⦃≤ deg⦄[X] :=
   tr.1
 
 /-- The challenge of the first round of a transcript. -/
-def headChallenge {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) : R := tr.2.1
+def headChallenge {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) : R := tr.2.1
 
 /-- The transcript of the remaining rounds. -/
-def tailTranscript {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) :
-    PathAlong oracleSig (protocol R deg n) := tr.2.2
+def tailTranscript {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) :
+    Transcript oracleSig (protocol R deg n) := tr.2.2
 
 @[simp] theorem headMessage_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
+    (tail : Transcript oracleSig (protocol R deg n)) :
     headMessage (consTranscript msg chal tail) = msg := rfl
 
 @[simp] theorem headChallenge_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
+    (tail : Transcript oracleSig (protocol R deg n)) :
     headChallenge (consTranscript msg chal tail) = chal := rfl
 
 @[simp] theorem tailTranscript_consTranscript {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig (protocol R deg n)) :
+    (tail : Transcript oracleSig (protocol R deg n)) :
     tailTranscript (consTranscript msg chal tail) = tail := rfl
 
 /-- A transcript is determined by its first round and its tail. -/
-theorem consTranscript_eta {n : ℕ} (tr : PathAlong oracleSig (protocol R deg (n + 1))) :
+theorem consTranscript_eta {n : ℕ} (tr : Transcript oracleSig (protocol R deg (n + 1))) :
     consTranscript (headMessage tr) (headChallenge tr) (tailTranscript tr) = tr := rfl
 
 section Uniform
@@ -111,10 +111,10 @@ open OracleComp OracleSpec
 
 /-- Lift the queries of the remaining rounds to a replicated protocol with one more round. -/
 def tailLift (k : ℕ) (p : Path (protocol R deg k)) :
-    QueryImpl (oracles (protocol R deg k) p)
-      (OracleComp (oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
+    QueryImpl (oracleMessageSpec (protocol R deg k) p)
+      (OracleComp (oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
   fun q => liftM
-    ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
+    ((oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
 
 
 end Sumcheck.Core

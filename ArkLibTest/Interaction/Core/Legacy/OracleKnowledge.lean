@@ -94,14 +94,14 @@ example {σ : Type} [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbCom
     (impl : QueryImpl shared (StateT σ ProbComp))
     (relIn : Set ((Nat × ∀ i, InStmt i) × Nat)) (relOut : Set ((Nat × ∀ i, OutCopy i) × Nat))
     (ε : NNReal) :
-    letI : MeasurableSpace (Observation oracleSig (oracleProtocol twoWay)
+    letI : MeasurableSpace (Outcome oracleSig (oracleProtocol twoWay)
       (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (fun _ => Nat × (∀ i, OutCopy i))) := ⊤
     letI : MeasurableSpace Nat := ⊤
     knowledgeSoundnessWith
         ((embedOracleVerifier sharedVerifier).classicalModel init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut) (oracleKnowledgeJudgement relOut)
-        ((embedOracleVerifier sharedVerifier).classicalStraightline (fun _ => Nat) init impl
+        ((embedOracleVerifier sharedVerifier).classicalStraightLine (fun _ => Nat) init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2))
         (liftOracleExtractor logExtractor) ε ↔
       sharedVerifier.knowledgeSoundnessWith init impl relIn relOut logExtractor ε :=
@@ -111,14 +111,14 @@ example {σ : Type} [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbCom
     (impl : QueryImpl shared (StateT σ ProbComp))
     (relIn : Set ((Nat × ∀ i, InStmt i) × Nat)) (relOut : Set ((Nat × ∀ i, OutCopy i) × Nat))
     (ε : NNReal) :
-    letI : MeasurableSpace (Observation oracleSig (oracleProtocol twoWay)
+    letI : MeasurableSpace (Outcome oracleSig (oracleProtocol twoWay)
       (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (fun _ => Nat × (∀ i, OutCopy i))) := ⊤
     letI : MeasurableSpace Nat := ⊤
     knowledgeSoundness
         ((embedOracleVerifier sharedVerifier).classicalModel init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut) (oracleKnowledgeJudgement relOut)
-        ((embedOracleVerifier sharedVerifier).classicalStraightline (fun _ => Nat) init impl
+        ((embedOracleVerifier sharedVerifier).classicalStraightLine (fun _ => Nat) init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2)) ε ↔
       sharedVerifier.knowledgeSoundness init impl relIn relOut ε :=
   oracleKnowledgeSoundness_iff init impl sharedVerifier relIn relOut ε
@@ -157,7 +157,7 @@ def legacyAnswers (b : Bool) : QueryImpl (shared + [twoWay.Challenge]ₒ) Id :=
 
 /-- The verdict, the verifier's output oracles, and the extracted witness of an oracle
 extraction game. -/
-def gameOutputs (z : Observation oracleSig (oracleProtocol twoWay)
+def gameOutputs (z : Outcome oracleSig (oracleProtocol twoWay)
     (fun _ => (Nat × (∀ i, OutCopy i)) × Nat) (fun _ => Nat × (∀ i, OutCopy i)) × Option Nat) :
     Option (Nat × Nat × Nat) × Option Nat :=
   (z.1.2.2.map fun t => (t.1, t.2 true, t.2 false), z.2)

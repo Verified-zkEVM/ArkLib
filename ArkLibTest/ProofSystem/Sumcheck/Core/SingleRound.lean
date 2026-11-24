@@ -32,7 +32,7 @@ def oneRound {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out) (c₀ : R
   foldRounds (State := fun _ => R) (fun _ _ => q) (fun _ _ c => c) finish 1 c₀
 
 /-- The one-round transcript of the message `q` and the challenge `c`. -/
-def tr1 (q : R⦃≤ deg⦄[X]) (c : R) : PathAlong oracleSig (protocol R deg 1) :=
+def tr1 (q : R⦃≤ deg⦄[X]) (c : R) : Transcript oracleSig (protocol R deg 1) :=
   foldTranscript (State := fun _ => R) (fun _ _ => q) (fun _ _ c => c) 1 c fun _ => c
 
 /-- The transcript records the message and the challenge. -/
@@ -61,15 +61,15 @@ theorem verdict_fail (stmt : Spec.StatementRound R 1 0) (q : R⦃≤ deg⦄[X]) 
   legacyVerdict_eq_none (k := 0) stmt (roundFullTranscript q c)
     (legacyTranscript 0 Fin.elim0 Fin.elim0) h
 
-/-- The observation of a one-round run at the challenge `c`. -/
-abbrev Obs1 (Out : Type) :=
-  Observation oracleSig (protocol R deg 1) (fun _ => Out)
+/-- The outcome of a one-round run at the challenge `c`. -/
+abbrev Outcome1 (Out : Type) :=
+  Outcome oracleSig (protocol R deg 1) (fun _ => Out)
     (fun _ => Spec.StatementRound R 1 (Fin.last 1) × ∀ i, Spec.OracleStatement R 1 deg i)
 
-/-- The observation of the committed run at the challenge `c`. -/
-noncomputable def obs1 {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out)
+/-- The outcome of the committed run at the challenge `c`. -/
+noncomputable def outcome1 {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out)
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i) (c : R) :
-    Obs1 (R := R) (deg := deg) Out :=
+    Outcome1 (R := R) (deg := deg) Out :=
   ⟨tr1 q c, finish c,
     (legacyVerdict R deg 1 D amb stmt (decodeTranscript 1 (tr1 q c))).map fun t => (t, oStmt)⟩
 
@@ -79,7 +79,7 @@ challenge, the prover output and the verdict, with the input polynomial as outpu
 theorem run_oneRound {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out) (c₀ : R)
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i) :
     (verifier R deg 1 D amb).run stmt oStmt (oneRound amb q finish c₀) =
-      (fun chals => obs1 amb D q finish stmt oStmt (chals 0)) <$>
+      (fun chals => outcome1 amb D q finish stmt oStmt (chals 0)) <$>
         drawChallenges 1 (fun c =>
           liftM ((amb + challengeSpec oracleSig (protocol R deg 1)).query (.inr c))) := by
   rw [oneRound, run_verifier_foldRounds]
@@ -121,25 +121,25 @@ theorem experiment_drawOne {σ α : Type} (init : ProbComp σ)
   rfl
 
 omit [SampleableType R] in
-/-- The outcome of a committed run on any event is the mass of the challenges whose observation
-lies in it. -/
+/-- The outcome of a committed run on any event is the mass of the challenges whose outcome lies
+in it. -/
 theorem outcome_oneRound {Out σ : Type} (init : ProbComp σ)
     (impl : QueryImpl amb (StateT σ ProbComp))
     (ch : QueryImpl (challengeSpec oracleSig (protocol R deg 1)) ProbComp)
     (q : R⦃≤ deg⦄[X]) (finish : R → Out) (c₀ : R)
     (stmt : Spec.StatementRound R 1 0) (oStmt : ∀ i, Spec.OracleStatement R 1 deg i)
-    (E : Set (Obs1 (R := R) (deg := deg) Out)) :
-    letI : MeasurableSpace (Obs1 (R := R) (deg := deg) Out) := ⊤
+    (E : Set (Outcome1 (R := R) (deg := deg) Out)) :
+    letI : MeasurableSpace (Outcome1 (R := R) (deg := deg) Out) := ⊤
     letI : MeasurableSpace R := ⊤
     𝒟[experiment init impl ch
         ((verifier R deg 1 D amb).run stmt oStmt (oneRound amb q finish c₀))] E =
       𝒟[(init >>= fun _ => ch (headNode 0) : ProbComp R)]
-        ((obs1 amb D q finish stmt oStmt) ⁻¹' E) := by
-  let : MeasurableSpace (Obs1 (R := R) (deg := deg) Out) := ⊤
+        ((outcome1 amb D q finish stmt oStmt) ⁻¹' E) := by
+  let : MeasurableSpace (Outcome1 (R := R) (deg := deg) Out) := ⊤
   let : MeasurableSpace R := ⊤
   rw [run_oneRound, experiment_drawOne]
-  rw [show (init >>= fun _ => (fun c : R => obs1 amb D q finish stmt oStmt c) <$>
-      ch (headNode 0)) = obs1 amb D q finish stmt oStmt <$>
+  rw [show (init >>= fun _ => (fun c : R => outcome1 amb D q finish stmt oStmt c) <$>
+      ch (headNode 0)) = outcome1 amb D q finish stmt oStmt <$>
         (init >>= fun _ => ch (headNode 0) : ProbComp R) by
     exact (_root_.map_bind _ _ _).symm]
   rw [evalDist_map _ measurable_from_top,
@@ -210,11 +210,11 @@ theorem msgX_sum : ∑ x ∈ Finset.univ.map D₂, msgX.val.eval x = 1 := by
 /-- Committing to `X` on the true claim that `X₀` sums to one over `{0, 1}`: the run with
 challenge three records `(X, 3)`, the prover outputs `(3, 3)`, and the verifier accepts the
 target three with history three and the input polynomial `X₀`. -/
-example : obs1 ambient D₂ msgX (finishWith msgX) stmtX (fun _ => polyX) 3 =
+example : outcome1 ambient D₂ msgX (finishWith msgX) stmtX (fun _ => polyX) 3 =
     ⟨tr1 msgX 3, (3, 3), some (⟨3, Fin.snoc Fin.elim0 3⟩, fun _ => polyX)⟩ := by
   have h := verdict_pass ambient D₂ stmtX msgX 3 (by
     simp [msgX, D₂, stmtX, Fin.sum_univ_two])
-  rw [obs1, h]
+  rw [outcome1, h]
   simp [finishWith, msgX, stmtX]
   rfl
 
@@ -225,24 +225,24 @@ example : (((⟨3, fun _ => 3⟩, fun _ => polyX), ()) ∈
 
 /-- With the wrong target two, the run still records the message, the challenge and the prover
 output, and the verifier rejects. -/
-example : obs1 ambient D₂ msgX (finishWith msgX) (claim 2) (fun _ => polyX) 3 =
+example : outcome1 ambient D₂ msgX (finishWith msgX) (claim 2) (fun _ => polyX) 3 =
     ⟨tr1 msgX 3, (3, 3), none⟩ := by
   have h := verdict_fail ambient D₂ (claim 2) msgX 3 (by
     simpa [msgX, D₂, claim, Fin.sum_univ_two] using (by decide : (1 : F) ≠ 2))
-  rw [obs1, h]
+  rw [outcome1, h]
   simp [finishWith, msgX]
   rfl
 
 /-- A dishonest constant message one passes the false claim that the zero polynomial sums to one
 over `{0}`; the next target comes from the message, while the output oracle is the input
 polynomial, so the final relation fails. -/
-example (r : F) : obs1 ambient D₁ (msgOne 0) (fun c => c) (claim 1) (fun _ => poly0 0) r =
+example (r : F) : outcome1 ambient D₁ (msgOne 0) (fun c => c) (claim 1) (fun _ => poly0 0) r =
     ⟨tr1 (msgOne 0) r, r, some (⟨1, Fin.snoc Fin.elim0 r⟩, fun _ => poly0 0)⟩ ∧
     (((⟨1, fun _ => r⟩, fun _ => poly0 0), ()) ∉
       Spec.relationRound F 1 0 D₁ (Fin.last 1)) := by
   refine ⟨?_, ?_⟩
   · have h := verdict_pass ambient D₁ (claim 1) (msgOne 0) r (by simp [msgOne, claim])
-    rw [obs1, h]
+    rw [outcome1, h]
     simp [msgOne, claim]
     rfl
   · rw [relationLast_iff, eval_poly0]
@@ -254,12 +254,12 @@ example (r : F) : obs1 ambient D₁ (msgOne 0) (fun c => c) (claim 1) (fun _ => 
 
 /-- The cheating constant message one passes the false claim that `X₀` sums to one over `{0}`.
 At challenge zero the final relation fails: `X₀(0) = 0 ≠ 1`. -/
-example : obs1 ambient D₁ (msgOne 1) (fun c => c) (claim 1) (fun _ => polyX) 0 =
+example : outcome1 ambient D₁ (msgOne 1) (fun c => c) (claim 1) (fun _ => polyX) 0 =
     ⟨tr1 (msgOne 1) 0, 0, some (⟨1, Fin.snoc Fin.elim0 0⟩, fun _ => polyX)⟩ ∧
     (((⟨1, fun _ => 0⟩, fun _ => polyX), ()) ∉ Spec.relationRound F 1 1 D₁ (Fin.last 1)) := by
   refine ⟨?_, ?_⟩
   · have h := verdict_pass ambient D₁ (claim 1) (msgOne 1) 0 (by simp [msgOne, claim])
-    rw [obs1, h]
+    rw [outcome1, h]
     simp [msgOne, claim]
     rfl
   · rw [relationLast_iff, eval_X₀]
@@ -267,22 +267,22 @@ example : obs1 ambient D₁ (msgOne 1) (fun c => c) (claim 1) (fun _ => polyX) 0
 
 /-- At the collision challenge one the cheating message fools the round: the final relation
 holds. -/
-example : obs1 ambient D₁ (msgOne 1) (fun c => c) (claim 1) (fun _ => polyX) 1 =
+example : outcome1 ambient D₁ (msgOne 1) (fun c => c) (claim 1) (fun _ => polyX) 1 =
     ⟨tr1 (msgOne 1) 1, 1, some (⟨1, Fin.snoc Fin.elim0 1⟩, fun _ => polyX)⟩ ∧
     (((⟨1, fun _ => 1⟩, fun _ => polyX), ()) ∈ Spec.relationRound F 1 1 D₁ (Fin.last 1)) := by
   refine ⟨?_, ?_⟩
   · have h := verdict_pass ambient D₁ (claim 1) (msgOne 1) 1 (by simp [msgOne, claim])
-    rw [obs1, h]
+    rw [outcome1, h]
     simp [msgOne, claim]
     rfl
   · rw [relationLast_iff, eval_X₀]
 
 /-- Against target two the cheating message is rejected, even at the collision challenge. -/
-example : obs1 ambient D₁ (msgOne 1) (fun c => c) (claim 2) (fun _ => polyX) 1 =
+example : outcome1 ambient D₁ (msgOne 1) (fun c => c) (claim 2) (fun _ => polyX) 1 =
     ⟨tr1 (msgOne 1) 1, 1, none⟩ := by
   have h := verdict_fail ambient D₁ (claim 2) (msgOne 1) 1 (by
     simpa [msgOne, claim] using (by decide : (1 : F) ≠ 2))
-  rw [obs1, h]
+  rw [outcome1, h]
   rfl
 
 /-! ## Degree bound -/

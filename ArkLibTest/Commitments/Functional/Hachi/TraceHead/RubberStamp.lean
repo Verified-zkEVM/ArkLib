@@ -59,7 +59,8 @@ theorem rubber_not_cwss {ι : Type} (oSpec : OracleSpec ι)
       rfl
     refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support (pure ()) impl _ _ ?_
     intro o ho
-    exact ⟨_, ho, (Set.mem_language_iff _ _).2 ⟨w, by rw [htr']; exact hout⟩⟩
+    exact ⟨_, OracleComp.eq_of_mem_support_pure _ ho,
+      (Set.mem_language_iff _ _).2 ⟨w, by rw [htr']; exact hout⟩⟩
   have htr0 : ∀ p : tree.LeafPath, p.fullTranscript 0 = honestMessage 1 0 2 s w := by
     intro p
     rcases List.mem_singleton.1 p.mem_fullTranscripts with h

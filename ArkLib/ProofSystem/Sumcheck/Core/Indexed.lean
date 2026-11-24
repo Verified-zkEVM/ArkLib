@@ -63,23 +63,23 @@ noncomputable def indexedNext {k : ℕ} (st : Option (IndexedClaim R n (k + 1)))
 
 /-- The verdict obtained by checking every round of a completed transcript. -/
 noncomputable def indexedVerdict : (k : ℕ) → Option (IndexedClaim R n k) →
-    PathAlong oracleSig (protocol R deg k) → Option (RoundStatement R n (Fin.last n))
+    Transcript oracleSig (protocol R deg k) → Option (RoundStatement R n (Fin.last n))
   | 0, st, _ => st.map IndexedClaim.finish
   | k + 1, st, tr => indexedVerdict k (indexedNext D st (headMessage tr) (headChallenge tr))
       (tailTranscript tr)
 
 /-- Query the first round polynomial at a field or semiring element. -/
 def indexedHeadQuery {k : ℕ} : (p : Path (protocol R deg (k + 1))) → R →
-    OracleComp (oracles (protocol R deg (k + 1)) p) R
+    OracleComp (oracleMessageSpec (protocol R deg (k + 1)) p) R
   | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩, r => liftM
-      ((oracles (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, r⟩)
+      ((oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, r⟩)
 
 omit [DecidableEq R] in
-/-- The transcript payload answers a query to the first round polynomial. -/
+/-- The transcript's oracle message answers a query to the first round polynomial. -/
 theorem simulateQ_indexedHeadQuery {k : ℕ}
-    (tr : PathAlong oracleSig (protocol R deg (k + 1))) (r : R) :
-    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
-      (indexedHeadQuery (projectPathAlong oracleSig _ tr) r) = (headMessage tr).val.eval r := by
+    (tr : Transcript oracleSig (protocol R deg (k + 1))) (r : R) :
+    simulateQ (oracleMessageImpl (protocol R deg (k + 1)) tr)
+      (indexedHeadQuery tr.path r) = (headMessage tr).val.eval r := by
   rcases tr with ⟨msg, chal, tail⟩
   rfl
 
@@ -89,8 +89,8 @@ def indexedTailPath {k : ℕ} : Path (protocol R deg (k + 1)) → Path (protocol
 
 /-- Lift a query from the remaining rounds along a full Sumcheck shape path. -/
 def indexedTailLift {k : ℕ} (p : Path (protocol R deg (k + 1))) :
-    QueryImpl (oracles (protocol R deg k) (indexedTailPath p))
-      (OracleComp (oracles (protocol R deg (k + 1)) p)) := by
+    QueryImpl (oracleMessageSpec (protocol R deg k) (indexedTailPath p))
+      (OracleComp (oracleMessageSpec (protocol R deg (k + 1)) p)) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, p⟩⟩
   exact tailLift R deg k p
 
@@ -104,14 +104,14 @@ def indexedTailView {k : ℕ} {p : Path (protocol R deg (k + 1))}
   ⟨v.1.2.2, (protocolPath_eq R deg k _).trans (protocolPath_eq R deg k _).symm⟩
 
 omit [DecidableEq R] in
-/-- Answering lifted suffix queries uses precisely the suffix transcript's payloads. -/
+/-- Answering lifted suffix queries uses precisely the suffix transcript's oracle messages. -/
 theorem simulateQ_indexedTailLift {k : ℕ}
-    (tr : PathAlong oracleSig (protocol R deg (k + 1))) {α : Type}
-    (oa : OracleComp (oracles (protocol R deg k)
-      (indexedTailPath (projectPathAlong oracleSig _ tr))) α) :
-    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
-        (simulateQ (indexedTailLift (projectPathAlong oracleSig _ tr)) oa) =
-      simulateQ (payloadImpl (protocol R deg k) (tailTranscript tr)) oa := by
+    (tr : Transcript oracleSig (protocol R deg (k + 1))) {α : Type}
+    (oa : OracleComp (oracleMessageSpec (protocol R deg k)
+      (indexedTailPath tr.path)) α) :
+    simulateQ (oracleMessageImpl (protocol R deg (k + 1)) tr)
+        (simulateQ (indexedTailLift tr.path) oa) =
+      simulateQ (oracleMessageImpl (protocol R deg k) (tailTranscript tr)) oa := by
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) oa
   rcases tr with ⟨msg, chal, tail⟩
   rfl
@@ -119,7 +119,7 @@ theorem simulateQ_indexedTailLift {k : ℕ}
 /-- Query the sent message at every domain index before continuing to the next round. -/
 def indexedDecision : (k : ℕ) → Option (IndexedClaim R n k) →
     (p : Path (protocol R deg k)) → View (protocol R deg k) p →
-    OracleComp (oracles (protocol R deg k) p) (Option (RoundStatement R n (Fin.last n)))
+    OracleComp (oracleMessageSpec (protocol R deg k) p) (Option (RoundStatement R n (Fin.last n)))
   | 0, st, _, _ => pure (st.map IndexedClaim.finish)
   | k + 1, st, p, v => do
       match st with
@@ -133,26 +133,28 @@ def indexedDecision : (k : ℕ) → Option (IndexedClaim R n k) →
             (indexedTailPath p) (indexedTailView v))
         else return none
 
-/-- Lift the round-message queries into the verifier's final resource interface. -/
+/-- Lift the round-message queries into the queries of the final decision: the ambient oracle
+and the path's oracle bundle. -/
 def indexedDecisionLift {ι : Type} (ambient : OracleSpec ι) (p : Path (protocol R deg n)) :
-    QueryImpl (oracles (protocol R deg n) p)
-      (OracleComp (ambient + (pathResources (polyFamily R deg n) (protocol R deg n) p).spec)) :=
+    QueryImpl (oracleMessageSpec (protocol R deg n) p)
+      (OracleComp (ambient + (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec)) :=
   fun q => liftM ((ambient +
-    (pathResources (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
+    (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
 
 omit [DecidableEq R] in
-/-- Answering the lifted message queries is a pure computation of the transcript payloads. -/
+/-- Answering the lifted message queries is a pure computation of the transcript's oracle
+messages. -/
 theorem simulateQ_indexedDecisionLift_monad {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) (p : Path (protocol R deg n))
-    (data : ∀ i, PolynomialData R n deg i) (pl : ∀ i, OracleData (protocol R deg n) p i)
-    {α : Type} (oa : OracleComp (oracles (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily R deg n) (protocol R deg n)
+    (data : ∀ i, PolynomialData R n deg i) (pl : ∀ i, OracleMessage (protocol R deg n) p i)
+    {α : Type} (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
+    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily R deg n) (protocol R deg n)
       p).answer (data, pl))) (simulateQ (indexedDecisionLift ambient p) oa) =
-      (pure (simulateQ ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
+      (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         m α) := by
   refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((pathFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget m)
+    (impl := ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget m)
     (fun t => ?_) oa).trans ?_
   · simp only [QueryImpl.addLift_def]
     exact QueryImpl.simulateQ_add_query_right _ _ _
@@ -170,12 +172,12 @@ def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
   outputMap _ p _ :=
     { f := fun x => x.1
       impl := fun q => liftM
-        ((pathResources (polyFamily R deg n) (protocol R deg n) p).spec.query (.inl q))
+        ((pathBundle (polyFamily R deg n) (protocol R deg n) p).spec.query (.inl q))
       law := fun _ _ => rfl }
 
 /-- A rejected prefix stays rejected through every remaining round. -/
 @[simp] theorem indexedVerdict_none : ∀ (k : ℕ)
-    (tr : PathAlong oracleSig (protocol R deg k)), indexedVerdict (n := n) D k none tr = none := by
+    (tr : Transcript oracleSig (protocol R deg k)), indexedVerdict (n := n) D k none tr = none := by
   intro k
   induction k with
   | zero => intro tr; rfl
@@ -183,8 +185,8 @@ def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
 
 /-- Answering the indexed decision from a transcript computes the indexed verdict. -/
 theorem simulateQ_indexedDecision : ∀ (k : ℕ) (st : Option (IndexedClaim R n k))
-    (tr : PathAlong oracleSig (protocol R deg k)),
-    simulateQ (payloadImpl (protocol R deg k) tr)
+    (tr : Transcript oracleSig (protocol R deg k)),
+    simulateQ (oracleMessageImpl (protocol R deg k) tr)
       (indexedDecision D k st _ (toView _ tr)) = indexedVerdict D k st tr := by
   intro k
   induction k with
@@ -209,14 +211,14 @@ theorem simulateQ_indexedDecision : ∀ (k : ℕ) (st : Option (IndexedClaim R n
           simp only [hl, ite_true]
           rw [simulateQ_bind, simulateQ_indexedHeadQuery]
           change simulateQ _ (simulateQ
-            (indexedTailLift (projectPathAlong oracleSig _ ⟨msg, chal, tail⟩))
+            (indexedTailLift (Transcript.path (l := oracleSig) (s := _) ⟨msg, chal, tail⟩))
             (indexedDecision D k (some (st.next (msg.val.eval chal) chal)) _
               (indexedTailView (toView (protocol R deg (k + 1)) ⟨msg, chal, tail⟩)))) = _
           rw [simulateQ_indexedTailLift (R := R) (deg := deg) (k := k)
-            (⟨msg, chal, tail⟩ : PathAlong oracleSig (protocol R deg (k + 1)))]
-          change simulateQ (payloadImpl (protocol R deg k) tail)
+            (⟨msg, chal, tail⟩ : Transcript oracleSig (protocol R deg (k + 1)))]
+          change simulateQ (oracleMessageImpl (protocol R deg k) tail)
             (indexedDecision D k (some (st.next (msg.val.eval chal) chal))
-              (projectPathAlong oracleSig (protocol R deg k) tail)
+              (Transcript.path tail)
               (toView (protocol R deg k) tail)) = _
           rw [ih _ tail]
           simp [indexedVerdict, indexedNext, hs, headMessage, headChallenge, tailTranscript]
@@ -260,7 +262,7 @@ variable {State : ℕ → Type}
 
 /-- The current truth predicate after interpreting every completed round in a full prefix. -/
 def foldPrefix : (k : ℕ) → State k → {t : OracleProtocol} →
-    (sp : Cursor.Spine (protocol R deg k) t) → PrefixMoves oracleSig sp → Prop
+    (sp : Cursor.Spine (protocol R deg k) t) → PartialTranscriptAt oracleSig sp → Prop
   | 0, st, _, sp, _ => by
       change Cursor.Spine (P := OraclePoly) (.pure PUnit.unit) _ at sp
       cases sp
@@ -282,11 +284,11 @@ omit [DecidableEq R] in
 theorem foldPrefix_send : ∀ (k : ℕ) (st : State k) {a : OraclePos}
     {rest : OraclePoly.B a → OracleProtocol} (sp : Cursor.Spine (protocol R deg k) (.liftBind a
       rest))
-    (history : PrefixMoves oracleSig sp) (_h : owner oracleSig a = .sender)
+    (history : PartialTranscriptAt oracleSig sp) (_h : owner oracleSig a = .sender)
     (x : Move oracleSig a),
     foldPrefix Good next k st
       (sp.comp (.down (oracleSig.toFunB a x) (.root _)))
-      (PrefixMoves.snoc oracleSig sp history x) = foldPrefix Good next k st sp history := by
+      (PartialTranscriptAt.snoc oracleSig sp history x) = foldPrefix Good next k st sp history := by
   intro k
   induction k with
   | zero => intro st a rest sp; cases sp
@@ -320,13 +322,13 @@ theorem indexedGood_zero (p : R⦃≤ deg⦄[X Fin n]) (st : Option (IndexedClai
     subst round
     simp [indexedGood, IndexedClaim.finish, indexedRelation_last]
 
-/-- Truth at a terminal prefix is the indexed verdict's final evaluation claim. -/
+/-- Truth at the full prefix at a leaf is the indexed verdict's final evaluation claim. -/
 theorem foldPrefix_indexed_leaf (p : R⦃≤ deg⦄[X Fin n]) :
     ∀ (k : ℕ) (st : Option (IndexedClaim R n k))
       (sp : Cursor.Spine (protocol R deg k) (.pure PUnit.unit))
-      (history : PrefixMoves oracleSig sp),
+      (history : PartialTranscriptAt oracleSig sp),
     foldPrefix (indexedGood D p) (fun _ => indexedNext D) k st sp history ↔
-      ∃ t, indexedVerdict D k st (PrefixMoves.complete oracleSig sp history) = some t ∧
+      ∃ t, indexedVerdict D k st (PartialTranscriptAt.complete oracleSig sp history) = some t ∧
         p.val.eval t.challenges = t.target := by
   intro k
   induction k with
@@ -392,13 +394,13 @@ theorem foldPrefix_indexed_flip_le [IsDomain R] [Fintype R] [SampleableType R]
     ∀ (k : ℕ) (st : Option (IndexedClaim R n k)) {a : OraclePos}
       {rest : OraclePoly.B a → OracleProtocol}
       (sp : Cursor.Spine (protocol R deg k) (.liftBind a rest))
-      (h : owner oracleSig a = .receiver) (history : PrefixMoves oracleSig sp),
+      (h : owner oracleSig a = .receiver) (history : PartialTranscriptAt oracleSig sp),
       letI : MeasurableSpace (Move oracleSig a) := ⊤
       𝒟[sampleAt oracleSig (indexedDraw (R := R) (deg := deg) k) sp h]
         {x | ¬ foldPrefix (indexedGood D p) (fun _ => indexedNext D) k st sp history ∧
           foldPrefix (indexedGood D p) (fun _ => indexedNext D) k st
             (sp.comp (.down (oracleSig.toFunB a x) (.root _)))
-            (PrefixMoves.snoc oracleSig sp history x)} ≤
+            (PartialTranscriptAt.snoc oracleSig sp history x)} ≤
           (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   intro k
   induction k with
@@ -429,23 +431,24 @@ theorem foldPrefix_indexed_flip_le [IsDomain R] [Fintype R] [SampleableType R]
         rw [indexed_sampleAt_tail]
         exact ih _ tail h history.2.2
 
-/-- Resource answers make the indexed verifier's final decision a pure indexed verdict. -/
+/-- Bundle answers make the indexed verifier's final decision a pure indexed verdict. -/
 theorem simulateQ_indexedVerifier_decide {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl ambient m)
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
-    (tr : PathAlong oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift impl ((pathResources (polyFamily R deg n) (protocol R deg n)
-      (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
+    (tr : Transcript oracleSig (protocol R deg n)) :
+    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily R deg n) (protocol R deg n)
+      tr.path).answer (data, oracleMessages _ tr)))
       ((indexedVerifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (indexedVerdict D n (some (IndexedClaim.initial stmt)) tr) : m _) := by
   change simulateQ _ (simulateQ (indexedDecisionLift ambient _) _) = _
   rw [simulateQ_indexedDecisionLift_monad]
   exact congrArg pure (simulateQ_indexedDecision D n _ tr)
 
-/-- The actual core run records its transcript and applies the indexed verdict to its payloads. -/
+/-- The actual core run records its transcript and applies the indexed verdict to its oracle
+messages. -/
 theorem indexedVerifier_run {ι : Type} (ambient : OracleSpec ι)
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
-    {Out : PathAlong oracleSig (protocol R deg n) → Type}
+    {Out : Transcript oracleSig (protocol R deg n) → Type}
     (prover : Prover oracleSig ambient (protocol R deg n) Out) :
     (indexedVerifier R deg n D ambient).run stmt data prover = (do
       let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (protocol R deg n)
@@ -466,16 +469,16 @@ theorem indexedVerifier_run {ι : Type} (ambient : OracleSpec ι)
 omit [DecidableEq R] in
 /-- Sum the first message's query answers in the supplied list order. -/
 def indexedSumQueries {k : ℕ} (domain : List R) (p : Path (protocol R deg (k + 1))) :
-    OracleComp (oracles (protocol R deg (k + 1)) p) R := do
+    OracleComp (oracleMessageSpec (protocol R deg (k + 1)) p) R := do
   let values ← domain.mapM (indexedHeadQuery p)
   pure values.sum
 
 omit [DecidableEq R] in
 /-- Interpreting the scalar sum fragment computes the list sum, without equality decisions. -/
 theorem simulateQ_indexedSumQueries {k : ℕ} (domain : List R)
-    (tr : PathAlong oracleSig (protocol R deg (k + 1))) :
-    simulateQ (payloadImpl (protocol R deg (k + 1)) tr)
-      (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
+    (tr : Transcript oracleSig (protocol R deg (k + 1))) :
+    simulateQ (oracleMessageImpl (protocol R deg (k + 1)) tr)
+      (indexedSumQueries domain tr.path) =
       (domain.map (fun x => (headMessage tr).val.eval x)).sum := by
   rcases tr with ⟨msg, r, tail⟩
   unfold indexedSumQueries
@@ -488,10 +491,10 @@ theorem simulateQ_indexedSumQueries {k : ℕ} (domain : List R)
 omit [DecidableEq R] in
 /-- The scalar sum fragment has the same pure interpretation in every lawful target monad. -/
 theorem simulateQ_indexedSumQueries_monad {k : ℕ} (domain : List R)
-    (tr : PathAlong oracleSig (protocol R deg (k + 1)))
+    (tr : Transcript oracleSig (protocol R deg (k + 1)))
     {m : Type → Type} [Monad m] [LawfulMonad m] :
-    simulateQ ((payloadImpl (protocol R deg (k + 1)) tr).liftTarget m)
-      (indexedSumQueries domain (projectPathAlong oracleSig _ tr)) =
+    simulateQ ((oracleMessageImpl (protocol R deg (k + 1)) tr).liftTarget m)
+      (indexedSumQueries domain tr.path) =
       (pure (domain.map (fun x => (headMessage tr).val.eval x)).sum : m R) := by
   rw [simulateQ_liftTarget, simulateQ_indexedSumQueries]
   rfl
@@ -517,10 +520,10 @@ def indexedOutputProblem : PathProblem (protocol R deg n)
 theorem indexed_validAcceptance {ι σ : Type} {ambient : OracleSpec ι}
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : RoundStatement R n 0 × (∀ i, PolynomialData R n deg i))
-    (tr : PathAlong oracleSig (protocol R deg n)) :
+    (tr : Transcript oracleSig (protocol R deg n)) :
     (indexedVerifier R deg n D ambient).validAcceptance impl stmt tr
         ((indexedOutputProblem (R := R) (deg := deg) (n := n)).language
-          (projectPathAlong oracleSig _ tr)) →
+          tr.path) →
       ∃ t, indexedVerdict D n (some (IndexedClaim.initial stmt.1)) tr = some t ∧
         (stmt.2 ()).val.eval t.challenges = t.target := by
   unfold OracleVerifier.validAcceptance
@@ -540,7 +543,7 @@ noncomputable def indexedStateFunction {ι σ : Type} {ambient : OracleSpec ι}
       ((indexedInputProblem D).admissible ()) ((indexedInputProblem D).language ())
       (fun stmt tr => (indexedVerifier R deg n D ambient).validAcceptance impl stmt tr
         ((indexedOutputProblem (R := R) (deg := deg) (n := n)).language
-          (projectPathAlong oracleSig _ tr))) where
+          tr.path)) where
   toFun sp history stmt := foldPrefix (indexedGood D (stmt.2 ())) (fun _ => indexedNext D)
     n (some (IndexedClaim.initial stmt.1)) sp history
   root stmt _ h := by
@@ -599,10 +602,10 @@ def committedProver {ι : Type} (ambient : OracleSpec ι) {R : Type} [CommSemiri
     Prover oracleSig ambient (protocol R deg 1) (fun _ => Out) :=
   pure ⟨msg, pure fun r => pure (finish r)⟩
 
-/-- The complete one-round observation, retaining the original input polynomial data. -/
+/-- The complete one-round outcome, retaining the original input polynomial data. -/
 noncomputable def indexedRoundResult (data : ∀ i, PolynomialData R 1 deg i)
     (msg : R⦃≤ deg⦄[X]) (target r : R) :
-    Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+    Outcome oracleSig (protocol R deg 1) (fun _ => R × R)
       (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i)) :=
   ⟨roundTranscript msg r, (msg.val.eval r, r),
     if (∑ a : Fin d, msg.val.eval (D a)) = target then
@@ -625,7 +628,7 @@ theorem indexedVerifier_run_one {ι : Type} (ambient : OracleSpec ι)
         liftM ((ambient + challengeSpec oracleSig (protocol R deg 1)).query (.inr c))))
     pure (⟨tr, out, (indexedVerdict D 1
       (some (IndexedClaim.initial ⟨target, Fin.elim0⟩)) tr).map
-      (fun t => (t, data))⟩ : Observation oracleSig (protocol R deg 1)
+      (fun t => (t, data))⟩ : Outcome oracleSig (protocol R deg 1)
         (fun _ => R × R) (fun _ => RoundStatement R 1 (Fin.last 1) ×
           (∀ i, PolynomialData R 1 deg i)))) = _
   rw [run_roundProver]
@@ -653,13 +656,13 @@ def indexedRoundDraw {m : Type → Type} (challenge : m R) :
 noncomputable def indexedExecute {ι : Type} (ambient : OracleSpec ι) {m : Type → Type} [Monad m]
     (impl : QueryImpl ambient m) (challenge : m R)
     (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target : R) :
-    m (Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+    m (Outcome oracleSig (protocol R deg 1) (fun _ => R × R)
       (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) :=
   simulateQ (QueryImpl.addLift (r := m) impl (indexedRoundDraw (deg := deg) challenge))
     ((indexedVerifier R deg 1 D ambient).run ⟨target, Fin.elim0⟩ data
       (committedProver ambient msg (fun r => (msg.val.eval r, r))))
 
-/-- Execution transports the supplied challenge computation to complete native observations. -/
+/-- Execution transports the supplied challenge computation to complete native outcomes. -/
 theorem indexedExecute_eq {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) (challenge : m R)
@@ -678,7 +681,7 @@ theorem indexedExecuteAt_eq {ι : Type} (ambient : OracleSpec ι)
       pure (indexedRoundResult D data msg target r) := by
   rw [indexedExecute_eq, LawfulApplicative.map_pure]
 
-/-- A successful sum check gives an accepted deterministic observation at every challenge. -/
+/-- A successful sum check gives an accepted deterministic outcome at every challenge. -/
 theorem indexedExecuteAt_accepted {ι : Type} (ambient : OracleSpec ι)
     (data : ∀ i, PolynomialData R 1 deg i) (msg : R⦃≤ deg⦄[X]) (target r : R)
     (h : (∑ a : Fin d, msg.val.eval (D a)) = target) :
@@ -754,7 +757,7 @@ theorem indexedRoundResult_honest (data : ∀ i, PolynomialData R 1 deg i) (targ
         RoundStatement R 1 (Fin.last 1)) (data ())).mp hs
     exact hl
 
-/-- Honest execution with an arbitrary challenge program transports the complete observation. -/
+/-- Honest execution with an arbitrary challenge program transports the complete outcome. -/
 theorem indexedExecute_honest_eq {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) (challenge : m R)
@@ -778,7 +781,7 @@ theorem indexedExecute_honest_support {ι : Type} (ambient : OracleSpec ι)
     (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
     (data : ∀ i, PolynomialData R 1 deg i) (target : R)
     (h : indexedRelation D 0 ⟨target, Fin.elim0⟩ (data ()))
-    (obs : Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+    (obs : Outcome oracleSig (protocol R deg 1) (fun _ => R × R)
       (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i)))
     (ho : obs ∈ support (indexedExecute D ambient impl challenge data
       (indexedHonestMessage D data) target)) :
@@ -813,7 +816,7 @@ theorem indexedExecute_measureCompleteness {ι : Type} (ambient : OracleSpec ι)
   rw [← prEvent_eq_evalDist_map]
   exact indexedExecute_perfectCompleteness D ambient impl challenge data target h
 
-/-- Embed a degree-bounded univariate input into the native one-variable polynomial resource. -/
+/-- Embed a degree-bounded univariate input into the native one-variable polynomial data. -/
 noncomputable def univariateData {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg⦄[X]) :
     R⦃≤ deg⦄[X Fin 1] :=
   ⟨(MvPolynomial.uniqueAlgEquiv R (Fin 1)).symm p.val, by
@@ -848,7 +851,7 @@ theorem indexedExecuteAt_univariate_honest {ι : Type} (ambient : OracleSpec ι)
         some (⟨p.val.eval r, Fin.snoc Fin.elim0 r⟩, fun _ => univariateData p)⟩ :=
   indexedExecuteAt_list_accepted ambient domain (fun _ => univariateData p) p target r h
 
-/-- The full honest observation equation transports every lawful challenge program. -/
+/-- The full honest outcome equation transports every lawful challenge program. -/
 theorem indexedExecute_univariate_honest_eq {ι : Type} (ambient : OracleSpec ι)
     {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) (challenge : m R)
@@ -892,7 +895,7 @@ theorem indexedExecute_univariate_support {ι : Type} (ambient : OracleSpec ι)
     (impl : QueryImpl ambient ProbComp) (challenge : ProbComp R)
     (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
     (h : (domain.map (fun x => p.val.eval x)).sum = target)
-    (obs : Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+    (obs : Outcome oracleSig (protocol R deg 1) (fun _ => R × R)
       (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i)))
     (ho : obs ∈ support (indexedExecute domain.get ambient impl challenge
       (fun _ => univariateData p) p target)) :

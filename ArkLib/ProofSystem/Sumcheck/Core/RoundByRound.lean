@@ -23,7 +23,7 @@ function. For soundness, on a full transcript where the state function is false,
 verifier accepts into no output of the output language. For knowledge soundness, if the legacy
 verifier can accept an output related to an output witness, then the knowledge state function
 holds at the full transcript of the extracted witness. Neither certificate asks the verifier to
-reject every false terminal state. The legacy Sumcheck verifier has a guarded form,
+reject every false state at a leaf. The legacy Sumcheck verifier has a guarded form,
 `Spec.oracleVerifierGuardedForm`, so the certificates are the guarded ones,
 `StateTerminalCertificate.of_guarded` and `KnowledgeTerminalCertificate.of_guarded`.
 

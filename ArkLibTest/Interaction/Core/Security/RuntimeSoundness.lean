@@ -38,14 +38,15 @@ noncomputable section
 /-- A final claim: the claimed bit and the output data. -/
 abbrev Claim := Bool × (∀ _ : Unit, Bool)
 /-- The observation of a run of the composed hidden-bit verifier. -/
-abbrev Obs := Observation oracleSig.{0, 0} bitCombined (fun _ => Nat) (fun _ => Claim)
+abbrev RunOutcome := Outcome oracleSig.{0, 0} bitCombined (fun _ => Nat) (fun _ => Claim)
 
 /-- A final claim is true when its output oracle answers its statement. -/
 def TruthFinal (claim : Claim) : Prop := claim.2 () = claim.1
 /-- The run returns a true final claim. -/
-def Success (obs : Obs) : Prop := obs.2.2.map TruthFinal = some True
+def Success (obs : RunOutcome) : Prop := obs.2.2.map TruthFinal = some True
 /-- The output oracle's answer and the claimed bit, if the run accepts. -/
-def Answer (obs : Obs) : Option (Bool × Bool) := obs.2.2.map fun claim => (claim.2 (), claim.1)
+def Answer (obs : RunOutcome) : Option (Bool × Bool) :=
+  obs.2.2.map fun claim => (claim.2 (), claim.1)
 
 /-- The append boundary of a hidden-bit run. -/
 abbrev Boundary := RunBoundary oracleSig bitAmbient bitFirst.{0} (fun _ => bitSecond) (fun _ => Nat)
@@ -352,25 +353,25 @@ def routedSuffix (p : FreeM.Path bitCombined) (v : View bitCombined p) :=
 theorem routedSuffix_eq (guess : Bool) (v : View bitCombined ⟨⟨⟩, guess, ⟨⟩⟩) :
     routedSuffix ⟨⟨⟩, guess, ⟨⟩⟩ v = (do
       let pad : Bool ← liftM
-        ((bitAmbient + (pathResources bits bitCombined ⟨⟨⟩, guess, ⟨⟩⟩).spec).query
+        ((bitAmbient + (pathBundle bits bitCombined ⟨⟨⟩, guess, ⟨⟩⟩).spec).query
           (.inr (.inl ⟨(), ()⟩)))
       let hidden : Bool ← liftM
-        ((bitAmbient + (pathResources bits bitCombined ⟨⟨⟩, guess, ⟨⟩⟩).spec).query (.inl true))
+        ((bitAmbient + (pathBundle bits bitCombined ⟨⟨⟩, guess, ⟨⟩⟩).spec).query (.inl true))
       pure (some (hidden ^^ pad))) := by
   rfl
 
-/-- The decision resources of the combined protocol at a path. -/
-abbrev combinedResources (p : FreeM.Path bitCombined) :=
-  (pathResources bits bitCombined p).spec
+/-- The decision bundle of the combined protocol at a path. -/
+abbrev combinedBundle (p : FreeM.Path bitCombined) :=
+  (pathBundle bits bitCombined p).spec
 
-/-- Every resource query costs 2. -/
-def resourceCost {I : Type} (spec : OracleSpec I) : CostModel spec Nat := ⟨fun _ => 2⟩
+/-- Every bundle query costs 2. -/
+def bundleQueryCost {I : Type} (spec : OracleSpec I) : CostModel spec Nat := ⟨fun _ => 2⟩
 
-/-- A reveal costs 3, a dummy request 1, and a resource query 2. -/
+/-- A reveal costs 3, a dummy request 1, and a bundle query 2. -/
 def rawCost {I : Type} (spec : OracleSpec I) : CostModel (bitAmbient + spec) Nat :=
   ⟨fun | .inl request => if request then 3 else 1 | .inr _ => 2⟩
 
-/-- Ambient requests must be reveals; resource queries are unrestricted. -/
+/-- Ambient requests must be reveals; bundle queries are unrestricted. -/
 def rawAllowed {I : Type} (spec : OracleSpec I) : (bitAmbient + spec).Domain → Prop
   | .inl request => request = true
   | .inr _ => True
@@ -380,12 +381,12 @@ def importCost : CostModel coinSpec Nat := ⟨fun _ => 1⟩
 
 /-- Each export query makes one input query, of cost 2. -/
 theorem export_budget (p : FreeM.Path bitFirst) (v : View bitFirst p) (q) :
-    WorstCaseCostBound ((bitPrefix.outputMap () p v).impl q) (resourceCost _) 2 :=
-  worstCaseCostBound_query _ (resourceCost _)
+    WorstCaseCostBound ((bitPrefix.outputMap () p v).impl q) (bundleQueryCost _) 2 :=
+  worstCaseCostBound_query _ (bundleQueryCost _)
 
 /-- The routed suffix decision costs at most 5: the pad query 2 and the reveal 3. -/
 theorem routed_suffix_budget (p : FreeM.Path bitCombined) (v : View bitCombined p) :
-    WorstCaseCostBound (routedSuffix p v) (rawCost (combinedResources p)) 5 := by
+    WorstCaseCostBound (routedSuffix p v) (rawCost (combinedBundle p)) 5 := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
   rw [routedSuffix_eq]
   exact WorstCaseCostBound.bind (A := 2) (B := 3) (worstCaseCostBound_query _ (rawCost _))
@@ -394,7 +395,7 @@ theorem routed_suffix_budget (p : FreeM.Path bitCombined) (v : View bitCombined 
 
 /-- The routed suffix decision makes only reveal requests. -/
 theorem routed_suffix_access (p : FreeM.Path bitCombined) (v : View bitCombined p) :
-    AllQueriesSatisfy (routedSuffix p v) (rawAllowed (combinedResources p)) := by
+    AllQueriesSatisfy (routedSuffix p v) (rawAllowed (combinedBundle p)) := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
   rw [routedSuffix_eq]
   apply allQueriesSatisfy_bind
@@ -449,28 +450,28 @@ theorem prefix_returns_export :
     (∀ p v, bitPrefix.outputMap () p v =
       OracleMap.fst _ _) ∧
     ∀ v, bitPrefix.decide () ⟨⟨⟩, ⟨⟩⟩ v = (do
-      let _ ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
-      pure () : OptionT (OracleComp (bitAmbient + firstResources.spec)) Unit) :=
+      let _ ← liftM ((bitAmbient + firstBundle.spec).query (.inl false))
+      pure () : OptionT (OracleComp (bitAmbient + firstBundle.spec)) Unit) :=
   ⟨fun _ _ => rfl, fun _ => rfl⟩
 
 -- RuntimeQueryBounds row 16 (`fixed_native_resource_bounds`), restated: "for every boundary"
 -- ranges over the paths and views of the combined protocol. The source-name and source-access
--- conjuncts are redundant: oracle family indices are the names, and resource access is
+-- conjuncts are redundant: oracle family indices are the names, and bundle access is
 -- fixed by the decision's type.
 /-- The export identity, the export and routed-suffix costs, the ambient access of the routed
 suffix, the import budget, the charged history and the `1/2` bound hold together. -/
-theorem fixed_resource_bounds (guess : Bool) (secret : Nat) :
+theorem fixed_cost_bounds (guess : Bool) (secret : Nat) :
     ((∀ p v, bitPrefix.outputMap () p v =
       OracleMap.fst _ _) ∧
     ∀ v, bitPrefix.decide () ⟨⟨⟩, ⟨⟩⟩ v = (do
-      let _ ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
-      pure () : OptionT (OracleComp (bitAmbient + firstResources.spec)) Unit)) ∧
+      let _ ← liftM ((bitAmbient + firstBundle.spec).query (.inl false))
+      pure () : OptionT (OracleComp (bitAmbient + firstBundle.spec)) Unit)) ∧
     (∀ (p : FreeM.Path bitCombined) (v : View bitCombined p),
       (∀ q, WorstCaseCostBound ((bitPrefix.outputMap () (FreeM.Path.split bitFirst
         (fun _ => bitSecond) p).1 (View.split bitFirst (fun _ => bitSecond) p v).1).impl q)
-        (resourceCost _) 2) ∧
-      AllQueriesSatisfy (routedSuffix p v) (rawAllowed (combinedResources p)) ∧
-      WorstCaseCostBound (routedSuffix p v) (rawCost (combinedResources p)) 5) ∧
+        (bundleQueryCost _) 2) ∧
+      AllQueriesSatisfy (routedSuffix p v) (rawAllowed (combinedBundle p)) ∧
+      WorstCaseCostBound (routedSuffix p v) (rawCost (combinedBundle p)) 5) ∧
     WorstCaseCostBound (bitRuntime.run (bitVerifier.run () falseData (guessProver guess secret)))
       importCost 1 ∧
     ((fun result => (result.state, result.trace, bitCharge result.trace.fst)) <$>
