@@ -730,19 +730,25 @@ theorems.
 `FoldComposition.run_append_public_intervalVerifier` compares actual public one-round and suffix
 interval verifier runs. It transports the midpoint and endpoint statements explicitly, retains the
 transcript, original polynomial and private output, and permits arbitrary effectful provers.
-`Projection` constructs the interaction-layer projected oracle map and its derived query handler.
+`Projection` constructs the interaction-layer projected oracle map `projectedMap` and its derived
+query handler, which reads the input `d ^ (n - 1 - i)` times at round `i`
+(`projectedQuery_isChargeBound`).
 `projectedExecute_closed` identifies returned behavior with that handler; `projectedExecute_related`
 proves its evaluation claim. `Behavior` handles arbitrary original input behavior at the empty
-interval and proves its final remaining-sum relation is evaluation.
+interval and proves its final remaining-sum relation is evaluation. The polynomial soundness
+theorems require polynomial input data and do not cover this arbitrary behavior.
 `BehaviorComposition.run_append_behaviorIntervalVerifier` extends the public append equation to
 arbitrary original evaluation behavior. `IntervalRoundSoundness` proves the actual one-round
 probability and measure bounds at every variable position, including intermediate endpoints.
-`ComputableProjection` computes indexed CompPoly projections, retaining repeated domain points.
+`Impl/IndexedProjection` computes indexed CompPoly projections, retaining repeated domain points.
+`Impl/Projection` specializes it to injective domains, and `ComputableProjection` connects it to
+the indexed projection of `Domain`.
 `ComputableInterval` constructs the honest computational strategy and proves its interpretation,
 actual execution equality and completeness. `ComputableSoundness` transfers the interaction-layer
 suffix bound to every computational-message prover with shared ambient state. `Interpreted` and
-`InterpretedExecution` provide generic message interfaces and preserve both prover moves, each
-public draw and the leaf computation under evaluation-preserving message interpretation. Legacy
+`InterpretedExecution` provide generic message interfaces. For a fixed output type `Out`,
+evaluation-preserving message interpretation preserves the ambient prover effects, each challenge
+draw and the private value at the leaf. Legacy
 `Spec` projections and honest prover comparisons are isolated in `LegacyProjection` and
 `LegacyProtocol`; interaction-layer security does not depend on them.
 

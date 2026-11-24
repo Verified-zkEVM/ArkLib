@@ -9,8 +9,9 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Interpreted
 
 /-! # Execution under message interpretation
 
-Interpretation changes the message representation and retains every prover move, public draw,
-and the private output at the leaf.
+Interpretation changes the message representation. For a fixed output type `Out`, which does not
+depend on the transcript, it retains every ambient prover effect, every challenge draw and the
+private value at the leaf.
 -/
 
 @[expose] public section

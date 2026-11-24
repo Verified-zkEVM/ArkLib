@@ -12,11 +12,30 @@ For every ambient-effectful prover and every output family, the probability of a
 output from a false input is at most `n * (deg / |R|)`. The ring assumptions are a finite
 commutative semiring with `IsDomain`; the domain map need not be injective or nonempty.
 
-`IntervalSoundness` extends this proof to every suffix `start + count = n`, with error
-`count * (deg / |R|)`. `IntervalCompleteness` proves support, probability-one and measure-one
-completeness for every bounded interval `start + count ≤ n`, including empty intervals and
-nonzero starts. Challenge handlers may share state with ambient effects and depend on the
-reached statement. The list and injective forms specialize the same indexed-domain proofs.
+The three interval contracts have different scopes:
+
+- **Verifier and honest completeness.** `intervalVerifier` and `IntervalCompleteness` apply to
+  every bounded interval `start + count ≤ n`, including nonzero starts and zero rounds. A
+  zero-round run returns the original claim and still runs the prover's leaf computation
+  (`intervalVerifier_run_zero`). Challenge handlers may share state with ambient effects and
+  depend on the reached statement.
+- **Suffix soundness.** `intervalVerifier_soundness` assumes `start + count = n` and fresh uniform
+  challenges. It bounds by `count * (deg / |R|)` the probability that the run returns an accepted
+  **true** output claim from a false input claim. Its list and injective corollaries
+  `intervalVerifier_soundness_list` and `intervalVerifier_soundness_injective` specialize it.
+- **Local round soundness.** `intervalRoundExecute_soundness` gives the one-round bound
+  `deg / |R|` at every variable position.
+
+A soundness theorem for an interior endpoint `start + count < n` is follow-up work.
+
+The remaining-claim recurrence and the agreement bound at a fresh challenge follow
+[Thaler §4.1](https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf#page=34) and
+[Proposition 4.1](https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf#page=37), and
+the original development of
+[Lund, Fortnow, Karloff and Nisan](https://lance.fortnow.com/papers/files/ip.pdf).
+Three details differ here. Domain indices keep repetitions. The verifier returns the endpoint
+claim instead of querying the input polynomial. The application checks that claim in its output
+relation.
 
 ## Modules and ownership
 
@@ -33,9 +52,9 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | `IntervalCompleteness`, `IntervalAdaptive` | Support, perfect and measure completeness for every bounded interval and adaptive statement-dependent challenges. |
 | `IntervalSoundness`, `IntervalRoundSoundness` | Interaction-layer suffix RBR soundness, implication bounds, list/injective forms, full-run identity and actual one-round bounds at every variable position. |
 | `FoldComposition`, `BehaviorComposition` | Append equations for generic folds and public intervals, preserving every prover effect, private output and arbitrary original behavior. |
-| `Projection`, `Behavior` | Derived projected handlers and closed execution; retained arbitrary original behavior and its final evaluation relation. |
+| `Projection`, `Behavior` | Derived projected handlers, closed execution and the unit-query bound `projectedQuery_isChargeBound`; retained arbitrary original behavior and its final evaluation relation. The polynomial soundness theorems require polynomial input data and do not apply to arbitrary behavior. |
 | `InterpretedPath`, `Interpreted`, `InterpretedExecution` | Shape paths, transcript heads and tails, head queries, tail lifts and views for generic message trees, shared with `Tree`, `Indexed` and the legacy route; passive verification for generic message representations and effect-preserving execution interpretation. The polynomial fold in `Fold` abbreviates this verification at polynomial evaluation. |
-| `ComputableProjection`, `ComputableInterval`, `ComputableSoundness` | Indexed CompPoly projections, concrete honest interval folds, execution interpretation, completeness and interaction-layer suffix soundness. |
+| `ComputableProjection`, `ComputableInterval`, `ComputableSoundness` | The connection from the CompPoly enumeration of `Impl/IndexedProjection` to the indexed projection, concrete honest interval folds, execution interpretation, completeness and interaction-layer suffix soundness. |
 | `LegacyProtocol`, `Execution`, `Completeness` | Compatibility honest prover, decision, closed-form runs and direct completeness. |
 | `LegacyProjection`, `Composition` | Separate legacy projection and decision-fold comparisons. |
 | `LegacyEquivalence`, `LegacySoundness`, `LegacyCompleteness` | Separate execution and security comparisons with embedded legacy Sumcheck. |
@@ -87,12 +106,15 @@ with `start + count`. This order makes the full endpoint `n + 0` definitionally 
 |---|---|
 | `intervalVerifier_supportCompleteness`, `intervalVerifier_perfectCompleteness`, `intervalVerifier_measureCompleteness` | Every `start + count ≤ n`; every supported honest run accepts a true endpoint claim, including stateful challenge handlers. |
 | `intervalVerifier_adaptive_perfectCompleteness` | Explicit challenge callbacks from the current round and full statement, without a finite-sampling assumption. |
-| `intervalVerifier_evaluation` | At `start + count = n`, the returned target is the original polynomial's evaluation at the complete prefix. |
-| `intervalVerifier_rbrSoundness`, `intervalVerifier_soundness` | Interaction-layer suffix soundness for `start + count = n`, with local error `deg / |R|` and total error `count * (deg / |R|)`. |
+| `intervalVerifier_evaluation` | For an honest prover and a true starting claim at `start + count = n`, the returned target is the original polynomial's evaluation at the complete prefix. |
+| `intervalVerifier_rbrSoundness`, `intervalVerifier_soundness` | Interaction-layer suffix soundness for `start + count = n` and fresh uniform challenges, with local error `deg / |R|` and total error `count * (deg / |R|)` on an accepted true output claim from a false input. `intervalVerifier_soundness_list` and `intervalVerifier_soundness_injective` are its corollaries. |
 | `intervalVerifier_full_run` | Actual program equality with the parent's `indexedVerifier` at `start = 0`, `count = n`, for every prover and output family. |
 | `run_append_public_intervalVerifier` | Actual append of `intervalVerifier start 1` and `intervalVerifier (1 + start) count`, with explicit endpoint transport. |
 | `projectedInput_eq`, `simulateQ_projectedInput`, `projectedExecute_closed`, `projectedExecute_related` | Derived query behavior, arbitrary standalone programs, returned projected behavior and the final evaluation claim. |
 
+`Impl/IndexedProjection` owns the CompPoly enumeration `Impl.Computable.indexedRoundPolynomial`
+and its common proofs. `Impl/Projection` specializes it to an injective domain, and
+`Computable.indexedRoundPolynomial_toPoly` connects it to the indexed projection of `Domain`.
 `Computable.projectedMessage_toMessage` and `Computable.interpret_intervalHonestProver` identify the
 computed honest messages with the interaction-layer interval fold. `Computable.execute_soundness`
 transfers the interaction-layer suffix bound to every computational-message prover, including
@@ -104,7 +126,13 @@ repeated domain and explicit deterministic draws. `RoutingTest` also uses `Nat`;
 export and routing laws require only a commutative semiring.
 `ComputableIntervalTest.computedRun` executes the coefficient-array honest prover after
 prefix `![7]`, with a repeated domain and deterministic challenge `3`, and checks
-`some (0, 7, 3, 29)`. `InterpretedTest.runExample` executes a coefficient-pair carrier directly.
+`some (0, 7, 3, 29)`. `ComputableIntervalTest.oneRun` runs the same fixture on the constant-one
+input with incoming target `4`, so both repeated domain points count, and checks
+`some (2, 7, 3, 29)`. `IntervalTest.repeated_projectedMap` queries `projectedMap` over the
+repeated domain `[0, 0]` with one variable left to sum over and gets `2`.
+`EffectsTest.public_append_record` runs the public interval append on the effect fixture and
+gets `(some 7, [0, 1, 2, 1, 3])`. `InterpretedTest.runExample` executes a coefficient-pair carrier
+directly.
 
 ## Equivalence with the legacy Sumcheck
 
@@ -275,7 +303,7 @@ effects. It does not claim equality with the frozen early-aborting program.
 | `Protocol.lean` #4, L107 example | T/Effects.lean: `EffectsTest.bad_first_rounds`, `EffectsTest.runWithLog_wrong` | premise-required (P1) |
 | `Protocol.lean` #5, L113 example | T/Effects.lean: `EffectsTest.target_seven_not_final` | equivalent |
 | `Protocol.lean` #6, L144 example | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; interaction-layer axiom checks | premise-required (P2) |
-| `Protocol.lean` #7, L171 example | C/FoldComposition.lean: `Sumcheck.Core.publicIntervalCompatibility; decideWith_append_publicInterval; run_append_public_intervalVerifier` | equivalent |
+| `Protocol.lean` #7, L171 example | T/Interval.lean: `EffectsTest.public_append_record`, the public interval append on the effect fixture with result `(some 7, [0, 1, 2, 1, 3])`; C/FoldComposition.lean: `Sumcheck.Core.publicIntervalCompatibility; decideWith_append_publicInterval; run_append_public_intervalVerifier` | equivalent |
 | `Protocol.lean` #8, L196 `#print axioms execute_soundness` | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; interaction-layer axiom checks | premise-required (P2) |
 | `Protocol.lean` #9, L197 `#print axioms execute_support_completeness` | C/Completeness.lean: `perfectCompleteness`; T/Completeness.lean: axiom checks | premise-required (P2) |
 | `Protocol.lean` #10, L198 `#print axioms execute_perfectCompleteness` | C/Completeness.lean: `perfectCompleteness`; T/Completeness.lean: axiom checks | premise-required (P2) |
@@ -379,9 +407,9 @@ security proofs do not use a legacy fold-to-sequential bridge.
 
 | Rows | Disposition |
 |---|---|
-| Virtual V1 (B's one row, migration §3.3 / §4.4) | Already covered on this base: `OracleMap.ofLegacySimulation` and `Legacy.simulateQ_ofLegacySimulation_impl`, instantiated at `ToyProblem.SimplifiedIOR.outputSimulation` in `ArkLibTest/Interaction/Core/Legacy/OracleReduction.lean`. No duplicate lemma or fixture is added. |
+| Virtual V1 (legacy output simulation as an oracle map) | Already covered on this base: `OracleMap.ofLegacySimulation` and `Legacy.simulateQ_ofLegacySimulation_impl`, instantiated at `ToyProblem.SimplifiedIOR.outputSimulation` in `ArkLibTest/Interaction/Core/Legacy/OracleReduction.lean`. No duplicate lemma or fixture is added. |
 | LegacyVerifier #1, #2 | Keep the legacy tests `input_relation_false`, `message_sum_passes`. |
-| LegacyVerifier #3, #4 (bridge versions, §4.4) | `LegacyVerifierTest.answered_pair` and `sent_target` check both core and embedded decisions; the next target is the message's evaluation one. |
+| LegacyVerifier #3, #4 (bridge versions through `decide_ambient_trace`) | `LegacyVerifierTest.answered_pair` and `sent_target` check both core and embedded decisions; the next target is the message's evaluation one. |
 | LegacyVerifier #5 (bridge version) | `LegacyVerifierTest.run_false_relation` checks the false output relation on each run's returned verdict, retaining input zero. |
 | LegacyVerifier #6, #7 (bridge versions) | `LegacyVerifierTest.inconsistent_sum_rejected`, `honest_zero_accepted`, on both verifiers at every challenge. |
 | LegacyVerifier #8, #9 (bridge versions) | `LegacyVerifierTest.linearMessage` and `linear_sent_target`: both decisions return `r + 1` for message `X + 1` at every `r : ZMod 5`. |
@@ -401,13 +429,13 @@ above rather than adding independent security claims.
 |---|---|
 | `Spec/PolynomialInterface` | `Spec.polynomialFamily`; the plain alias `Interaction.MultivariateRound.polynomialFamily` remains only until D9. Existing Core and `Impl/Projection` clients use the neutral name. |
 | `LegacyProjection` | `messageFamily`, `projectionMap`, `projectionMap_f`, `simulateQ_projectionMap`: the univariate output interface and lawful projection. |
-| `Interaction/Core/OracleVerifier` | `Interaction.Core.pathLift`, `Interaction.Core.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.run_eq_decideWith` expresses a run through `decideWith` using the shared owner lemma `OracleVerifier.simulateQ_decideWith` in reverse. |
+| `Interaction/Core/OracleVerifier` | `Interaction.Core.pathLift`, `Interaction.Core.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.run_eq_decideWith` expresses a run through `decideWith` for any input bundle, at the protocol query universe of `OracleVerifier.run_eq`, using the shared owner lemma `OracleVerifier.simulateQ_decideWith` in reverse. |
 | `Interaction/Core/Composition` | `Interaction.Core.TranscriptAt.split_val`: the split of a transcript at a path carries the transcripts of `Transcript.split`. |
 | `Composition`, input route | `inputRoute`: the existing `OracleMap.embedding` for the input oracles. |
 | `Composition`, round | `checkRoute`, `roundChallenges`, `checkVerifier`, `roundChallenges_eq`, `decideWith_checkVerifier`, `checkVerdict`, `run_checkVerifier`: reuse the legacy per-round check, with no ambient queries in that check. |
 | `Composition`, append | `split_toView_round`, `appendHead`, `appendTail`, `prefixRoute_round`, `suffixRoute_round`, `decideWith_append_checkVerifier`, `run_append_checkVerifier`: specialize the Core append routing to one Sumcheck round. The generic routing of part D, commit 1 is not duplicated. |
 | `Composition`, fold | `foldLift`, `legacyFoldVerifier`, `verifier_eq_legacyFoldVerifier`, `simulateQ_foldLift`, `decideWith_legacyFoldVerifier`, `foldHead`, `legacyFoldCompatibility`, `decideWith_append_legacyFoldVerifier`, `run_append_legacyFoldVerifier`, `run_append_verifier`: reuse `Spec.oracleVerifierProgram` and C's `simulateQ_oracleVerifierProgram_succ`, allowing a suffix that starts from a round-1 statement. |
-| `Composition`, projection | `simulate_roundProver`, `projectedVerifier`, `run_projectedVerifier_roundProver`, `projectedVerifier_relation`: run the standalone projected round and reuse `projected_sum_of_relationRound` and `relationRound_projected_output` for its mathematical relation. |
+| `Composition`, projection | `simulate_roundProver`, `projectedVerifier`, `run_projectedVerifier_roundProver`, `projectedVerifier_relation`: run the standalone projected round with the injective-domain compatibility map `projectionMap`, and reuse `projected_sum_of_relationRound` and `relationRound_projected_output` for its mathematical relation. `projectedVerifier_relation` assumes a true starting claim and the honest projected polynomial in the transcript. The indexed-domain construction is `projectedMap` in `Projection`. |
 
 ## Departures
 
@@ -489,8 +517,9 @@ Compiler-generated recursors, constructors and equation lemmas are not separate 
 `C/` retains the Core source prefix defined above. Each target below names its implemented
 interval contract. Each row retains the source
 `start`/`count` scope, including arbitrary prefixes and the full endpoint `start + count = n`.
-For generic and computable carriers, the execution interpretation preserves ambient
-effects as well as endpoints. Restricting those rows to this branch’s mathematical polynomial
+For generic and computable carriers, the execution interpretation preserves endpoints and, for a
+fixed output type `Out`, ambient effects, the challenge draws and the private value. Restricting
+those rows to this branch’s mathematical polynomial
 carrier would not close them.
 
 The one-round execution targets below use arbitrary maps or `domain.get`, without a sampling
