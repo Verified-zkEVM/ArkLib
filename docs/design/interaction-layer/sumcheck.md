@@ -555,15 +555,18 @@ The exact parent dispositions, including freshness and failure scope, are in
 
 | Exact source | Exact target in `ArkLib/Interaction/Core/Security/Implications.lean` | Status |
 |---|---|---|
-| #3, L54 `executeStrategies_soundness` | `OracleVerifier.soundness_of_rbrSoundness` | equivalent |
-| #4, L55 `executeStrategies_soundness_uniform` | `OracleVerifier.soundness_of_rbrSoundness_uniform` | equivalent |
-| #5, L57 `OrdinaryState.exists_verifier_escape` | `StateFunction.escapeAlong` | equivalent |
-| #6, L58 `LocalSoundness.random_prefix` | `flip_random_prefix_le` | equivalent |
+| #3, L57 `executeStrategies_soundness` | `OracleVerifier.soundness_of_rbrSoundness` | premise-required (P1/P2), row T3 of the parent disposition |
+| #4, L58 `executeStrategies_soundness_uniform` | `OracleVerifier.soundness_of_rbrSoundness_uniform` | premise-required (P1/P2), row T4 of the parent disposition |
+| #5, L60 `OrdinaryState.exists_verifier_escape` | `StateFunction.escapeAlong` | premise-required (P1/P2), row T5 of the parent disposition |
+| #6, L61 `LocalSoundness.random_prefix` | `flip_random_prefix_le` | equivalent |
 
 ## Remaining work
 
-Core has no counterpart of the generic `OracleModel.satisfies_guarantee` interface, which is tracked
-as a separate gap and keeps only the `degreeModel` and `degreeGuarantee` rows unresolved.
+The `degreeModel` and `degreeGuarantee` rows are retired. Their only client is `message_degree`,
+which `Sumcheck.Core.message_degree` proves directly from the degree bound that the message type
+`R⦃≤ deg⦄[X]` carries. Core has no counterpart of the generic `OracleModel.satisfies_guarantee`
+interface and needs none: #1476 removes the property-symbol languages and keeps degree facts as
+carrier guarantees (its rows R23 and R24).
 `Interpreted` supplies an interaction-layer passive verifier for arbitrary evaluated message
 carriers; `InterpretedExecution` preserves message moves, challenge-response moves and leaf
 outputs under interpretation. This generic interface does not make Mathlib polynomial projections
@@ -734,8 +737,8 @@ positive probability of failure.
 | `Sumcheck.Interaction.SingleRound.outputFamily`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:27` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` (`outputMap := OracleMap.fst`; retained original data) | equivalent |
 | `Sumcheck.Interaction.SingleRound.outputOracle`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:31` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` (`outputMap := OracleMap.fst`; retained original data) | equivalent |
 | `Sumcheck.Interaction.SingleRound.outputClaim`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:35` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` (`outputMap := OracleMap.fst`; retained original data) | equivalent |
-| `Sumcheck.Interaction.SingleRound.degreeModel`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:40` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
-| `Sumcheck.Interaction.SingleRound.degreeGuarantee`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:53` | `Interaction.Core` counterpart of `OracleModel.satisfies_guarantee` | unresolved (missing parent `OracleModel.satisfies_guarantee` behavior-guarantee interface) |
+| `Sumcheck.Interaction.SingleRound.degreeModel`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:40` | None; `message_degree` reads the bound from the message type | retired: the guarantee interface is removed, and its only client is ported as `Sumcheck.Core.message_degree` |
+| `Sumcheck.Interaction.SingleRound.degreeGuarantee`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:53` | None; `message_degree` reads the bound from the message type | retired: the guarantee interface is removed, and its only client is ported as `Sumcheck.Core.message_degree` |
 | `Sumcheck.Interaction.SingleRound.message_degree`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:56` | C/Indexed.lean: `Sumcheck.Core.message_degree` | equivalent |
 | `Sumcheck.Interaction.SingleRound.claimVerifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:62` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.claimReduction`, `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean:76` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier`; C/Indexed.lean: `Sumcheck.Core.indexedExecute` | premise-required (P1) |

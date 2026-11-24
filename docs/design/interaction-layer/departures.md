@@ -76,9 +76,9 @@ Entry 22 covers Sumcheck in the interaction layer. Its two departures are descri
 
 The second departure distinguishes the unchanged full-run interface from the arbitrary interval
 interface. The [exact-row disposition](sumcheck.md#migration-disposition) now names
-interaction-layer interval, projection and append targets. The generic
-`OracleModel.satisfies_guarantee` interface has no Core counterpart and is tracked as a separate
-gap. Both full-run and suffix soundness use the generic round-by-round-to-soundness implication
+interaction-layer interval, projection and append targets. The `degreeModel` and
+`degreeGuarantee` rows are retired: their only client, `message_degree`, reads the bound from the
+message type. Core therefore needs no counterpart of `OracleModel.satisfies_guarantee`. Both full-run and suffix soundness use the generic round-by-round-to-soundness implication
 over indexed domains, including lists with repetitions.
 
 Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)

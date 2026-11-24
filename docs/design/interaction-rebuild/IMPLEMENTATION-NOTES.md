@@ -723,8 +723,9 @@ interaction layer final decision with repeated points and target two. The intera
 `foldVerifier`.
 The exact-row Sumcheck disposition gives interval execution, projection and append targets;
 their full-run corollaries preserve the parent statements. P1 and P2 explain changed abort and shape assertions.
-The generic `OracleModel.satisfies_guarantee` interface has no Core counterpart and is tracked as a
-separate gap.
+The generic `OracleModel.satisfies_guarantee` interface has no Core counterpart. The Sumcheck
+rows that used it, `degreeModel` and `degreeGuarantee`, are retired: their only client,
+`message_degree`, reads the bound from the message type.
 
 `Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
 `Interaction/Core/Reduction.lean`. It now covers every protocol tree, lens, dependent prover
