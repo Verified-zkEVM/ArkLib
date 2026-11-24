@@ -19,7 +19,8 @@ retains the transcript and prover output on rejection. Ambient failure remains a
 oracle computation, distinct from a returned rejecting verdict.
 
 Simulating a run against a sampler, under either schedule and into any lawful monad, simulates
-every prover slot and every draw (`simulateQ_runWith_sampler`). Simulating a simulated prover
+every prover slot and every challenge draw (`simulateQ_runWith_sampler`). The challenge draws may
+be any computations. Simulating a simulated prover
 composes the two handlers (`Prover.simulate_simulate`).
 -/
 
@@ -132,8 +133,9 @@ theorem simulateQ_step {X : Type u} {A B : X → Type u} {R : Type u}
         (fun x a b => simulateQ F (k x a b)) := by
   cases role <;> cases order <;> simp only [step, Schedule.seq, simulateQ_bind]
 
-/-- Simulating a run against a public-coin sampler, under either schedule, simulates every
-    prover slot and every draw for any ownership lens. -/
+/-- Simulating a run against a sampler, under either schedule, simulates every prover slot and
+every challenge draw, for any ownership lens. The law holds for arbitrary challenge draws; it
+assumes nothing about their distribution. -/
 theorem simulateQ_runWith_sampler {P : PFunctor.{uA, u}}
     {l : PFunctor.Lens P rolePoly.{u}} (F : QueryImpl spec n) (order : Schedule) :
     (s : FreeM P PUnit.{u + 1}) → {Out : Transcript l s → Type u} →
@@ -166,7 +168,8 @@ variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
   {n : Type u → Type u}
   [Monad n] [LawfulMonad n]
 
-/-- Interpreting a run against a sampler interprets every prover slot and every draw. -/
+/-- Interpreting a run against a sampler interprets every prover slot and every challenge
+draw. -/
 theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
     (ιm : QueryImpl ambient (OracleComp spec)) (s : FreeM P PUnit.{u + 1})
     {Out : Transcript l s → Type u} (k : Prover l ambient s Out)
