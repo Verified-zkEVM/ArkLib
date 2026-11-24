@@ -68,8 +68,8 @@ end Operations
 section Semiring
 variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
 
-/-- Raw multiplication charges one addition, one multiplication, and two reads per pair of
-stored coefficients. Metadata also counts each output position and the terminal step. -/
+/-- Raw multiplication charges one addition, one multiplication, two reads and one tick per pair
+of stored coefficients. Metadata also counts one tick per output position and one terminal tick. -/
 theorem profileArithmetic_mulRaw (p q : CPolynomial.Raw F) :
     (profileArithmetic (mulRaw p q)).2 =
       fun kind ↦ if kind = .add ∨ kind = .mul then p.size * q.size

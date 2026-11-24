@@ -10,6 +10,7 @@ public import CompPoly.Univariate.Basic
 
 import all CompPoly.Univariate.Basic
 import all CompPoly.Univariate.Raw.Core
+-- `mulRaw` uses `CPolynomial.Raw.mulRawFast_eq_ofFn`, which is private in this module.
 import all CompPoly.Univariate.Raw.Ops
 
 /-!
@@ -158,18 +159,12 @@ def mulRaw (p q : CPolynomial.Raw F) :
       rw [CPolynomial.Raw.mulRaw_eq_mulRawFast]
       simp [CPolynomial.Raw.mulRawFast, hp]⟩
   else
-    let r ← certifiedOfFn (n := q.size + p.size - 1) (fun k ↦
-      (min (k.val + 1) p.size - (k.val + 1 - q.size)).fold (fun t _ acc ↦
-        acc + p[k.val + 1 - q.size + t]?.getD 0 * q[k.val - (k.val + 1 - q.size + t)]?.getD 0) 0)
-      (fun k ↦ convolutionEntry p q k.val (k.val + 1 - q.size)
-        (min (k.val + 1) p.size - (k.val + 1 - q.size)))
+    let r ← certifiedOfFn (n := q.size + p.size - 1) _ fun k ↦
+      let lo := k.val + 1 - q.size
+      convolutionEntry p q k.val lo (min (k.val + 1) p.size - lo)
     pure ⟨r.val, by
-      rw [r.property, CPolynomial.Raw.mulRaw_eq_mulRawFast]
-      simp only [CPolynomial.Raw.mulRawFast, hp, ↓reduceIte]
-      rw [Nat.fold_push_eq_append_ofFn, Array.emptyWithCapacity_eq, Array.empty_append]
-      congr! 3 with k
-      funext t _ acc
-      rw [Array.getElem_eq_getD 0, Array.getElem_eq_getD 0]
+      rw [r.property, CPolynomial.Raw.mulRaw_eq_mulRawFast,
+        CPolynomial.Raw.mulRawFast_eq_ofFn q hp]
       simp only [Array.getD_eq_getD_getElem?]⟩
 
 /-- Multiply canonical polynomials and charge the final trim. -/

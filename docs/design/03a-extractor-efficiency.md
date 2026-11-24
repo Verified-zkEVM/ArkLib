@@ -360,8 +360,13 @@ proved bound on host runtime.
 Compiled calls to CompPoly's `Raw.mulRaw` use `Raw.mulRawFast` through the `@[csimp]` lemma
 `mulRaw_eq_mulRawFast`.
 [`Arithmetic.mulRaw`](../../ArkLib/ToCompPoly/Univariate/ArithmeticPolynomial.lean)
-follows that loop's coefficient windows, term order and initial accumulator by construction.
-The proof certifies equality of the output arrays, including padding. The
+is written to request the same additions and multiplications as that loop, in the same order and
+from the same initial accumulator. No theorem relates the two programs. The proof certifies only
+equality of the output arrays, including padding. On five small shapes, the
+[acceptance module](../../ArkLibTest/ToCompPoly/Univariate/Arithmetic.lean) checks the sums that
+`Raw.mulRawFast` computes and the operations that `Arithmetic.mulRaw` requests against one list of
+terms per shape. It also checks that the compiler replaces
+`Raw.mulRaw` with `Raw.mulRawFast`. It does not inspect the code that the compiler generates. The
 [exact profile](../../ArkLib/ToCompPoly/Univariate/ArithmeticConvolutionCost.lean)
 counts the measured program's requests: one addition, one multiplication and two reads per
 pair of stored coefficients. Metadata counts a tick per term, a tick per output position and
