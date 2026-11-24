@@ -351,7 +351,7 @@ def roundsReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) (count : �
       (roundsSpec F b count) :=
   roundsReductionAux Φ m₁ b (TCom := TCom) hb φF count hcount
 
-omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
 /-- **The honest chain and the soundness chain share their verifier**, at every `count`. Proved by
 recursion rather than by `rfl`: the two chains associate their appends the same way, but for an
 open `count` the recursion's endpoints are only definitional per instance, so the induction step

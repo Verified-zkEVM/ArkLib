@@ -15,6 +15,8 @@ open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction.Core Interaction.
   ProtocolSpec MeasureTheory
 open scoped NNReal
 
+universe v
+
 namespace Interaction.Core.Legacy.SecurityTests
 open Interaction.Core.Legacy.ExecutionTests
 
@@ -70,7 +72,8 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     (impl : QueryImpl []ₒ (StateT Unit ProbComp))
     (langIn langOut : Set Nat) (ε : ℝ≥0) (h : lastIfTrue.soundness init impl langIn langOut ε)
     (stmt : Nat) (hstmt : stmt ∉ langIn) :
-    letI : MeasurableSpace (Observation plainSig (protocol twoWay) (fun _ => Bool) Nat) := ⊤
+    letI : MeasurableSpace
+      (Outcome plainSig (protocol twoWay) (fun _ => Bool) (fun _ => Nat)) := ⊤
     𝒟[experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         ((embedVerifier lastIfTrue).run stmt cheat)]
       {obs | ∃ t, obs.2.2 = some t ∧ (langProblem langOut).language () t} ≤ ε :=
@@ -104,7 +107,8 @@ def firstMessage : _root_.Extractor.Straightline []ₒ Nat Nat Nat twoWay :=
   fun _ _ tr _ _ => pure (show Nat from tr 0)
 
 def extractionOutputs
-    (z : Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) Nat × Option Nat) :
+    (z : Outcome plainSig (protocol twoWay) (fun _ => Nat × Nat) (fun _ => Nat) ×
+      Option Nat) :
     Option Nat × Option Nat :=
   (z.1.2.2, z.2)
 
@@ -132,9 +136,9 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     (impl : QueryImpl []ₒ (StateT Unit ProbComp)) (relIn relOut : Set (Nat × Nat)) (ε : ℝ≥0)
     (h : lastIfTrue.knowledgeSoundnessWith init impl relIn relOut firstMessage ε) (stmt : Nat) :
     letI : MeasurableSpace
-      (Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) Nat) := ⊤
+      (Outcome plainSig (protocol twoWay) (fun _ => Nat × Nat) (fun _ => Nat)) := ⊤
     letI : MeasurableSpace Nat := ⊤
-    (classicalStraightline (Out := fun _ => Nat × Nat) (fun _ => Nat) (embedVerifier lastIfTrue)
+    (classicalStraightLine (Out := fun _ => Nat × Nat) (fun _ => Nat) (embedVerifier lastIfTrue)
         init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2)).experiment
       (liftExtractor firstMessage) stmt cheatK
       {z | (knowledgeJudgement relOut).valid z.1 ∧
@@ -147,13 +151,14 @@ def coreKnowledge (samples : ∀ i, SampleableType (twoWay.Challenge i)) (init :
     (impl : QueryImpl []ₒ (StateT Unit ProbComp)) (relIn relOut : Set (Nat × Nat)) (ε : ℝ≥0) :
     Prop :=
   letI := samples
-  letI : MeasurableSpace (Observation plainSig (protocol twoWay) (fun _ => Nat × Nat) Nat) := ⊤
+  letI : MeasurableSpace
+    (Outcome plainSig (protocol twoWay) (fun _ => Nat × Nat) (fun _ => Nat)) := ⊤
   letI : MeasurableSpace Nat := ⊤
   knowledgeSoundness
     ((embedVerifier lastIfTrue).classicalModel init impl
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl))
     (relProblem relIn) (relProblem relOut) (knowledgeJudgement relOut)
-    (classicalStraightline (fun _ => Nat) (embedVerifier lastIfTrue) init impl
+    (classicalStraightLine (fun _ => Nat) (embedVerifier lastIfTrue) init impl
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2)) ε
 
 /-- Interaction-layer knowledge soundness of the embedded verifier gives legacy knowledge
@@ -168,12 +173,13 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
 
 /-- The full prefix after the first message `42`. -/
 def afterFirst :=
-  PrefixMoves.snoc plainSig (Cursor.Spine.root (protocol twoWay)) PUnit.unit (42 : Nat)
+  PartialTranscriptAt.snoc plainSig (Cursor.Spine.root (protocol twoWay)) PUnit.unit (42 : Nat)
 
 /-- After the first message `42`, the legacy prefix is at round `1` and records `42`. -/
 example : (legacyPrefix _ afterFirst).1 = 1 ∧
     (show Nat from
-      (show Transcript 1 twoWay from (legacyPrefix _ afterFirst).2) ⟨0, by decide⟩) = 42 :=
+      (show ProtocolSpec.Transcript 1 twoWay from (legacyPrefix _ afterFirst).2) ⟨0, by decide⟩) =
+        42 :=
   ⟨rfl, rfl⟩
 
 /-- The empty full prefix is the empty legacy transcript at round `0`. -/
@@ -203,11 +209,12 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
     lastIfTrue.rbrSoundness init impl langIn langOut ε :=
   rbrSoundness_of_embedVerifier init impl lastIfTrue langIn langOut ε h
 
-/-- Round-by-round knowledge soundness of the embedded verifier is legacy round-by-round
-knowledge soundness, for `Nat` witnesses and `init := pure ()`. -/
+/-- Round-by-round knowledge soundness of the embedded verifier, with intermediate witnesses in
+any universe `v`, is legacy round-by-round knowledge soundness, for `Nat` witnesses and
+`init := pure ()`. -/
 example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Unit ProbComp))
     (relIn relOut : Set (Nat × Nat)) (ε : twoWay.ChallengeIdx → ℝ≥0) :
-    (embedVerifier lastIfTrue).rbrKnowledgeSoundness impl (fun _ => True)
+    Verifier.rbrKnowledgeSoundness.{0, 0, v} (embedVerifier lastIfTrue) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) ↔
@@ -248,11 +255,12 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (St
   embedVerifier_rbrSoundness (pure false) impl lastIfTrue langIn langOut ε
     (StateTerminalCertificate.of_guarded lastIfTrueGuarded) h
 
-/-- Round-by-round knowledge soundness of the embedded verifier is legacy round-by-round
-knowledge soundness from `init := pure false`, through the guarded certificates. -/
+/-- Round-by-round knowledge soundness of the embedded verifier, with intermediate witnesses in
+`Type 2`, is legacy round-by-round knowledge soundness from `init := pure false`, through the
+guarded certificates. -/
 example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (StateT Bool ProbComp))
     (relIn relOut : Set (Nat × Nat)) (ε : twoWay.ChallengeIdx → ℝ≥0) :
-    (embedVerifier lastIfTrue).rbrKnowledgeSoundness impl (fun _ => True)
+    Verifier.rbrKnowledgeSoundness.{0, 0, 2} (embedVerifier lastIfTrue) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 3 (Nat.zero_add 3) c)) ↔

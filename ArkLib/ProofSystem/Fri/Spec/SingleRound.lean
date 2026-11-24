@@ -48,7 +48,7 @@ namespace Spec
 
 open Domain
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n : ℕ}
 variable {k : ℕ} (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 variable (domain_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n) (i : Fin k)
@@ -76,7 +76,7 @@ def FinalStatement (F : Type) (k : ℕ) : Type := Fin (k + 1) → F
 
 /-- The initial word and the `i` subsequent committed words, each on its folding domain. -/
 @[reducible]
-def OracleStatement {F : Type} [Field F] [DecidableEq F] [Fintype F]
+def OracleStatement {F : Type} [Field F] [DecidableEq F]
     (ω : SmoothCosetFftDomain n F)
   (i : Fin (k + 1)) : Fin (i.val + 1) → Type :=
   fun j ↦
@@ -86,7 +86,7 @@ def OracleStatement {F : Type} [Field F] [DecidableEq F] [Fintype F]
 /-- The committed oracle words followed by the explicitly transmitted final polynomial. -/
 @[reducible]
 def FinalOracleStatement
-    {F : Type} [Field F] [DecidableEq F] [Fintype F]
+    {F : Type} [Field F] [DecidableEq F]
   (ω : SmoothCosetFftDomain n F) : Fin (k + 2) → Type :=
   fun j ↦
     if j.1 = k + 1
@@ -220,7 +220,7 @@ namespace FoldPhase
 
 /-- The latest oracle word before non-final folding round `i` is within relative Hamming
 distance `δ` of the degree-bounded witness polynomial's evaluations on its domain. -/
-def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+def inputRelation (δ : ℝ≥0) :
     Set
       (
         (Statement F i.castSucc × (∀ j, OracleStatement s ω i.castSucc j)) ×
@@ -230,7 +230,7 @@ def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
 
 /-- The latest oracle word after non-final folding round `i` is within relative Hamming
 distance `δ` of the output degree-bounded witness polynomial's evaluations on its domain. -/
-def outputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+def outputRelation (δ : ℝ≥0) :
     Set
       (
         (Statement F i.succ × (∀ j, OracleStatement s ω i.succ j)) ×
@@ -277,7 +277,8 @@ instance {i : Fin k} : ∀ j, Inhabited ((pSpec s (ω := ω) i).Challenge j) := 
   subst h_j_eq_0
   simpa [Challenge] using (inferInstance : Inhabited F)
 
-noncomputable instance {i : Fin k} : ∀ j, Fintype ((pSpec s (ω := ω) i).Challenge j) := by
+noncomputable instance [Finite F] {i : Fin k} :
+    ∀ j, Fintype ((pSpec s (ω := ω) i).Challenge j) := by
   intro j
   letI : Fintype F := Fintype.ofFinite _
   rcases j with ⟨j, hj⟩
@@ -412,7 +413,7 @@ namespace FinalFoldPhase
 /- Definition of the final folding round of the FRI protocol. -/
 
 /-- Proximity of the last oracle word to the polynomial witness before the final fold. -/
-def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+def inputRelation (δ : ℝ≥0) :
     Set
       (
         (
@@ -426,7 +427,7 @@ def inputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
 /-- Proximity of the transmitted final polynomial's evaluations to the final witness.
 The witness type enforces the final degree bound. These stage relations describe proximity;
 soundness of the full protocol additionally uses the query checks against the retained history. -/
-def outputRelation (_cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+def outputRelation (δ : ℝ≥0) :
     Set
       (
         (FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
@@ -463,7 +464,7 @@ instance : ∀ j, Inhabited ((pSpec F).Challenge j) := by
   subst h_j_eq_0
   simpa [pSpec, Challenge] using (inferInstance : Inhabited F)
 
-noncomputable instance : ∀ j, Fintype ((pSpec F).Challenge j) := by
+noncomputable instance [Finite F] : ∀ j, Fintype ((pSpec F).Challenge j) := by
   intro j
   letI : Fintype F := Fintype.ofFinite _
   rcases j with ⟨j, hj⟩
@@ -657,19 +658,19 @@ namespace QueryRound
 variable (l : ℕ) [NeZero l]
 
 /- Input/Output relations for the query round of the FRI protocol -/
-def inputRelation (cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+def inputRelation (δ : ℝ≥0) :
     Set
       (
         (FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
         Witness F s d (Fin.last (k + 1))
-      ) := FinalFoldPhase.outputRelation s d cond δ
+      ) := FinalFoldPhase.outputRelation s d δ
 
-def outputRelation (cond : ∑ i, (s i).1 ≤ n) (δ : ℝ≥0) :
+def outputRelation (δ : ℝ≥0) :
     Set
       (
         (FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
         Witness F s d (Fin.last (k + 1))
-      ) := FinalFoldPhase.outputRelation s d cond δ
+      ) := FinalFoldPhase.outputRelation s d δ
 
 /-- One verifier challenge containing `l` initial-domain query positions. -/
 @[reducible]

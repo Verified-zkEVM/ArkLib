@@ -264,16 +264,16 @@ private theorem globallyCloseAffinePairs_card_le
   omega
 
 noncomputable def lineAgreementSeeds
-    {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type}
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (T : Finset F) (i : ι) : Finset F :=
   T.filter (fun γ => U γ i = f₀ i + γ • f₁ i)
 
 private theorem lineAgreementSeeds_card_le_one_of_ne_at
-    {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type}
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ} (f₀ f₁ u₀ u₁ : ι → Fin s → F)
     (T : Finset F) (i : ι) (γ : F)
     (hne : f₀ i + γ • f₁ i ≠ u₀ i + γ • u₁ i) :
@@ -317,8 +317,8 @@ private theorem lineAgreementSeeds_card_le_one_of_ne_at
     · exact (hs (sub_eq_zero.mp hv)).elim
 
 private theorem lineAgreement_span_finrank_le_two
-    {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type}
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (T : Finset F) (i : ι) :
@@ -365,8 +365,8 @@ private theorem lineAgreement_span_finrank_le_two
     _ ≤ 2 := Finset.card_le_two
 
 private theorem lineAgreementSeeds_card_le_kernel_finrank_add_two
-    {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Finite ι]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (T : Finset F) (hlin : LinearIndepOn F U (↑T : Set F)) (i : ι) :
@@ -459,7 +459,7 @@ noncomputable def lineCloseSeeds
 
 open scoped NNReal in
 def StrongLineDecodable
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal) (a b : ℕ) : Prop :=
   ∀ f₀ f₁ : ι → Fin s → F, ∀ U : F → ι → Fin s → F,
@@ -470,7 +470,7 @@ def StrongLineDecodable
 
 open scoped NNReal in
 noncomputable def lineCloseSpan
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F) (δ : ℝ) :
@@ -478,7 +478,7 @@ noncomputable def lineCloseSpan
   Submodule.span F (U '' (↑(lineCloseSeeds f₀ f₁ U δ) : Set F))
 
 private theorem exists_lineCloseSeeds_linearIndepOn_card_eq
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F) (δ : ℝ)
@@ -524,7 +524,7 @@ private theorem exists_lineCloseSeeds_linearIndepOn_card_eq
 
 open scoped NNReal in
 theorem lineCloseSpan_le_code
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (C : Submodule F (ι → Fin s → F))
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F) (δ : ℝ)
@@ -537,7 +537,7 @@ theorem lineCloseSpan_le_code
 open scoped NNReal in
 theorem lineClose_sum_agreement_lower
     {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ}
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (δ : ℝ) (T : Finset F)
@@ -675,7 +675,7 @@ private theorem aligned_affineLine_global_close
 
 noncomputable def linePinnedSeedsOn
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (S : Finset ι) : Finset F :=
@@ -683,7 +683,7 @@ noncomputable def linePinnedSeedsOn
 
 theorem linePinnedSeedsOn_empty
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F) :
     linePinnedSeedsOn T f₀ f₁ U ∅ = T := by
@@ -693,7 +693,7 @@ theorem linePinnedSeedsOn_empty
 
 theorem linePinnedSeedsOn_insert
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (S : Finset ι) (i : ι) :
@@ -707,7 +707,7 @@ theorem linePinnedSeedsOn_insert
 
 private theorem linePinnedSeedsOn_insert_subset
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (S : Finset ι) (i : ι) :
@@ -725,7 +725,7 @@ private theorem linePinnedSeedsOn_insert_subset
 
 theorem linePinnedSeedsOn_insert_card_le
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
     (f₀ f₁ : ι → Fin s → F) (U : F → ι → Fin s → F)
     (S : Finset ι) (i : ι) :
@@ -817,12 +817,13 @@ theorem mcaError_eq_zero_of_neg_radius
     {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
-    {S : Type} [Fintype S] [Nonempty S] [SampleableType S]
+    {S : Type} [SampleableType S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (C : ModuleCode ι F A)
     {δ : ℝ} (hδ : δ < 0) :
     mcaError G C δ = 0 := by
   classical
+  let _ : Fintype S := Fintype.ofFinite S
   cases isEmpty_or_nonempty ι with
   | inl hι =>
     let := hι
@@ -877,7 +878,7 @@ noncomputable def sharpSubspaceProfile
   else 1
 
 theorem isSubspaceDesign_frsCode_sharpProfile
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
@@ -950,7 +951,7 @@ then `C` is `(δ, (b' - 1) · L + a, b')`-strongly-line-decodable for every `b'`
 most `L` globally close pairs, each aligning fewer than `b'` seeds, costs at most `(b' - 1) · L`
 seeds. -/
 theorem strongLineDecodable_boost_of_lambda_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s a b L b' : ℕ} {δ : NNReal}
     (C : Submodule F (ι → Fin s → F))
@@ -1050,7 +1051,7 @@ theorem strongLineDecodable_boost_of_lambda_le
 open scoped NNReal in
 open scoped ProbabilityTheory in
 theorem strongLineDecodable_to_isLineDecodable
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [SampleableType F] [DecidableEq F]
     {s a b : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal)
     (hstrong : StrongLineDecodable C δ a b) :
@@ -1097,7 +1098,7 @@ theorem strongLineDecodable_to_isLineDecodable
 open scoped BigOperators in
 open scoped NNReal in
 theorem subspaceDesign_lineCloseSpan_finrank_lt
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -1211,7 +1212,7 @@ noncomputable def vanishOnCoordinates
     (LinearMap.funLeft F (Fin s → F) (Subtype.val : S → ι))
 
 noncomputable def pinnedSubspace
-    {ι : Type} [Fintype ι]
+    {ι : Type}
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι) :
     Submodule F (ι → Fin s → F) :=
