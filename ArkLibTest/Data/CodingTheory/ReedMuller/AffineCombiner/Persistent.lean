@@ -65,7 +65,7 @@ example (f g : (Fin 2 → ZMod 3) → GaloisField 3 2) (A : ℕ) :
   norm_num [Nat.choose] at h
   exact_mod_cast h
 
--- The worked case `q₀ = 2⁸`, `k = 2`, `d = 64`, `B = 40704` over `F = GF(2⁶⁴)`.
+-- An example with `q₀ = 2⁸`, `k = 2`, `d = 64`, `B = 40704` over `F = GF(2⁶⁴)`.
 -- Here `ℓ = 65536 · 24064 / 566296576 < 3`, and `(2¹⁶ choose 3) < 2⁶⁴ = q`.
 open Classical in
 example (f g : (Fin 2 → GaloisField 2 8) → GaloisField 2 64) (A : ℕ) :

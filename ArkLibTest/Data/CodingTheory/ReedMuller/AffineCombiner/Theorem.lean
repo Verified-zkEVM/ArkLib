@@ -11,7 +11,7 @@ import Mathlib.FieldTheory.Finite.GaloisField
 /-!
 # Acceptance cases for the Reed–Muller affine MCA bound
 
-The worked case has `q₀ = 2⁸`, `d = 64` (so `ρ = 1/4`), `η = 1/4` and `q = 2⁶⁴`.
+The formalization example has `q₀ = 2⁸`, `d = 64` (so `ρ = 1/4`), `η = 1/4` and `q = 2⁶⁴`.
 Then `q₀ η² = 16 = 4 / ρ`, so the slack condition holds with equality.
 With `k = 2` variables, `n = 2¹⁶`, the threshold is `A = 49152` and the loss is `2⁸`.
 The bound `4 / (η q²) + 2²⁰ n³ / (ρ⁴ η¹⁴ q³)` is `2⁻¹²⁴ + 2⁻⁸⁸`.
@@ -26,7 +26,7 @@ private theorem sqrt_degreeFraction : √((64 : ℝ) / 256) = 1 / 2 := by
   norm_num
 
 open Polynomial.SymbolicInterpolation in
--- The general count at the worked parameters `q₀ = 2⁸`, `k = 2`, `d = 64`, `η = 1/4`:
+-- The general count at the example parameters `q₀ = 2⁸`, `k = 2`, `d = 64`, `η = 1/4`:
 -- `m = 8`, `D = 96`, `M = 22`, `A = 49152` and `B = 40704`, so `A - B - e + 1 = 8193`.
 -- The surplus is `2¹⁶ · 3408 < 389267456` monomials.
 example {K₀ F : Type*} [Field K₀] [Fintype K₀] [Field F] [Fintype F] [DecidableEq F]
@@ -111,7 +111,7 @@ private theorem card_subfield : Fintype.card (GaloisField 2 8) = 2 ^ 8 := by
 private theorem card_field : Fintype.card (GaloisField 2 64) = 2 ^ 64 := by
   rw [← Nat.card_eq_fintype_card, GaloisField.card 2 64 (by norm_num)]
 
--- The worked case over the concrete fields `𝔽_{2⁸} ⊆ 𝔽_{2⁶⁴}`.
+-- The example over the concrete fields `𝔽_{2⁸} ⊆ 𝔽_{2⁶⁴}`.
 private theorem galoisField_error_le :
     affineMcaError (GaloisField 2 8) (GaloisField 2 64) 2 64 49152 (2 ^ 8) ≤
       ENNReal.ofReal (2⁻¹ ^ 124 + 2⁻¹ ^ 88) := by
