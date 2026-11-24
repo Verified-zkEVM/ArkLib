@@ -53,6 +53,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingRound.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Folding.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingSampling.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingComputable.lean
 ---
 
 # CWYZ26
@@ -142,7 +143,8 @@ challenges in `K`, the counts use `q = |K|`.
 | Theorem 5.1, first inequality of (5.5) | `ReedSolomon.LinearClaimInstance`, `ReedSolomon.IsLinearClaimExceptional`, `ReedSolomon.linearClaimMcaError`, `ReedSolomon.linearClaimMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the linear-claim error is at most the affine error plus `2ℓ₀/q`. The prover message is any function of `θ`, so every deterministic prover is covered. |
 | Theorem 5.1, second inequality of (5.5) | `ReedSolomon.linearClaimMcaError_le` | The hypotheses of the second inequality of (5.4), with bound `(4/η + 2ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)`. |
 | Theorem 5.1, sampling form of (5.5) | `ReedSolomon.linearClaimMcaError_eq_iSup_prob`, `ReedSolomon.prob_isLinearClaimExceptional_le` | Native uniform sampling of `(θ, α, β)`. |
-| Theorem 5.2, row folding | `ReedSolomon.foldRoundWords`, `ReedSolomon.foldWords`, `ReedSolomon.foldPolynomials` | Rows are indexed from zero: row `2i` is the paper's `f_{2i-1}` and row `2i+1` is `f_{2i}`. Challenge `c j` is round `j + 1`. |
+| Theorem 5.1 for `t` rows, (5.4) | `ReedSolomon.interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add`, `ReedSolomon.interleavedEqualDegreeMcaError_le`, `ReedSolomon.interleavedEqualDegreeMcaError_one` | For loss one and `nd < (A - 1)²`, the interleaved equal-degree error is at most the interleaved affine error plus `ℓ₀/q`. Under the Theorem 1.1 hypotheses this gives `(4/η + ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)` for any number `t` of rows. At `t = 1` the error equals the equal-degree error. |
+| Theorem 5.2, row folding | `ReedSolomon.foldRoundWords`, `ReedSolomon.foldWords`, `ReedSolomon.foldPolynomials` | Rows are indexed from zero: Lean row `j` is the paper's `f_{j+1}`, so rows `2i` and `2i+1` are `f_{2i+1}` and `f_{2i+2}`. Challenge `c j` is round `j + 1`. |
 | Theorem 5.2 | `ReedSolomon.IsFoldingExceptional`, `ReedSolomon.foldingMcaError`, `ReedSolomon.exists_foldPolynomials_eq_of_not_hasBadFoldingRound`, `ReedSolomon.foldingMcaError_le_mul`, `ReedSolomon.prob_isFoldingExceptional_le_mul` | If no round is bad, every `P` of degree at most `d + r` agreeing with the folded word on `A + r` points has witnesses of degree at most `d` that fold to `P` and lose at most `r` points. The probability of an exceptional folded candidate is at most `rε`, where `ε` bounds the `t`-row equal-degree error of every round. |
 
 ## Port Ledger

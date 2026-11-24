@@ -247,7 +247,10 @@ noncomputable def badInterleavedEqualDegreeChallenges [Fintype F] (domain : ι �
     (∃ r, (G₀ r).degree = d) ∧ (∀ r, (F₀ r).coeff d + θ * (G₀ r).coeff d = 0) ∧
     L ≤ #(interleavedCommonAgreementSet domain f g F₀ G₀)}
 
-/-- A challenge is bad if it admits an exceptional family of candidate polynomials. -/
+/-- A challenge `θ` is bad when some pair of tuples `F₀, G₀` of degree at most `d` fixes it.
+
+Some row of `G₀` has degree exactly `d`, and every row satisfies `[X^d] F₀ r + θ [X^d] G₀ r = 0`.
+The pair agrees with `(f, g)` in every row on at least `L` common points. -/
 @[simp]
 theorem mem_badInterleavedEqualDegreeChallenges [Fintype F] (domain : ι ↪ F)
     (f g : Fin t → ι → F) (d L : ℕ) (θ : F) :
@@ -366,86 +369,67 @@ theorem interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add [Fintype
         (((⌊(Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) /
           (((A : ℝ) - 1) ^ 2 - Fintype.card ι * d)⌋₊ : ℕ) : ℝ) / Fintype.card F) := by
   classical
-  by_cases hAn : A ≤ Fintype.card ι
-  · have hdA : d + 1 < A := by
-      rcases Nat.eq_zero_or_pos d with rfl | hd
-      · have : A - 1 ≠ 0 := fun h ↦ by simp [h] at hJ
-        omega
-      · by_contra h
-        have : (A - 1) ^ 2 ≤ Fintype.card ι * d := by
-          rw [sq]
-          exact Nat.mul_le_mul (by omega) (by omega)
-        omega
-    refine iSup_le fun w ↦ ?_
-    obtain ⟨f, g⟩ := w
-    set q : ℝ := (Fintype.card F : ℝ) with hq_def
-    set n : ℕ := Fintype.card ι
-    set ℓ₀ := ⌊(n : ℝ) * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d)⌋₊
-    set E := (interleavedAffineMcaError domain t d A 1).toReal
-    have hE : interleavedAffineMcaError domain t d A 1 ≠ ⊤ :=
-      ne_top_of_le_ne_top ENNReal.one_ne_top (interleavedAffineMcaError_le_one domain t d A 1)
-    have hq : 0 < q := by positivity
-    -- The challenges `θ` for which some pair of tuples of degree `d` explains a candidate.
-    set B := badInterleavedEqualDegreeChallenges domain f g d (A - 1)
-    set X₁ : Finset (F × F × F) := {c | ∃ P, IsInterleavedAffineExceptional domain g
-      (fun r i ↦ f r i + c.1 * g r i) d A 1 c.2.1 c.2.2 P}
-    set X₂ : Finset (F × F × F) := {c | c.1 ∈ B}
-    have hsub : ({c | ∃ P, IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2
-        P} : Finset (F × F × F)) ⊆ X₁ ∪ X₂ := by
-      intro c hc
-      obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hc).2
-      rcases hP.isInterleavedAffineExceptional_or_exists with h | h
-      · exact Finset.mem_union_left _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, h⟩)
-      · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-          (mem_badInterleavedEqualDegreeChallenges ..).mpr h⟩)
-    have hX₁ : (#X₁ : ℝ) ≤ q ^ 3 * E := by
-      refine card_filter_triples_le_mul _ E fun θ ↦ ?_
-      have hcount := (ENNReal.ofReal_le_iff_le_toReal hE).mp
-        (le_interleavedAffineMcaError domain d A 1 g (fun r i ↦ f r i + θ * g r i))
-      rw [div_le_iff₀ (by positivity)] at hcount
-      simpa [mul_comm] using hcount
-    have hX₂ : (#X₂ : ℝ) = #B * q ^ 2 := by
-      have : X₂ = B ×ˢ (Finset.univ : Finset (F × F)) := by
-        ext c
-        simp [X₂]
-      rw [this, Finset.card_product, Finset.card_univ, Fintype.card_prod]
-      push_cast
-      ring
-    -- The Johnson bound on the bad values of `θ`.
-    have hA1 : 1 ≤ A := by omega
-    have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) := by
-      have h := le_floor_johnson_of_mul_le hJ
-        (card_badInterleavedEqualDegreeChallenges_mul_le domain f g d (A - 1))
-      simp only [Nat.cast_sub hA1, Nat.cast_one] at h
-      exact Nat.cast_le.mpr h
-    have hcount : (#{c : F × F × F | ∃ P,
-          IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤
-          E + (ℓ₀ : ℝ) / q := by
-      rw [div_le_iff₀ (by positivity)]
-      calc (#{c : F × F × F | ∃ P,
-            IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ)
-          ≤ #(X₁ ∪ X₂) := by exact_mod_cast Finset.card_le_card hsub
-        _ ≤ #X₁ + #X₂ := by exact_mod_cast Finset.card_union_le _ _
-        _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by
-            rw [hX₂]
-            gcongr
-        _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by
-            field_simp
-    calc _ ≤ ENNReal.ofReal (E + (ℓ₀ : ℝ) / q) := ENNReal.ofReal_le_ofReal hcount
-      _ = _ := by
-        rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity), ENNReal.ofReal_toReal hE]
-  · have hz : interleavedEqualDegreeMcaError domain t d A 1 = 0 := by
-      refine le_antisymm (iSup_le fun w ↦ ?_) bot_le
-      rw [nonpos_iff_eq_zero, ENNReal.ofReal_eq_zero]
-      apply div_nonpos_of_nonpos_of_nonneg _ (by positivity)
-      norm_cast
-      rw [Nat.le_zero, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-      rintro c - ⟨P, -, hP, -⟩
-      have := Finset.card_le_univ (interleavedEqualDegreeAgreementSet domain w.1 w.2
-        c.1 c.2.1 c.2.2 P)
-      omega
-    rw [hz]
-    exact zero_le
+  refine iSup_le fun w ↦ ?_
+  obtain ⟨f, g⟩ := w
+  set q : ℝ := (Fintype.card F : ℝ) with hq_def
+  set n : ℕ := Fintype.card ι
+  set ℓ₀ := ⌊(n : ℝ) * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d)⌋₊
+  set E := (interleavedAffineMcaError domain t d A 1).toReal
+  have hE : interleavedAffineMcaError domain t d A 1 ≠ ⊤ :=
+    ne_top_of_le_ne_top ENNReal.one_ne_top (interleavedAffineMcaError_le_one domain t d A 1)
+  have hq : 0 < q := by positivity
+  -- The challenges `θ` for which some pair of tuples of degree `d` explains a candidate.
+  set B := badInterleavedEqualDegreeChallenges domain f g d (A - 1)
+  set X₁ : Finset (F × F × F) := {c | ∃ P, IsInterleavedAffineExceptional domain g
+    (fun r i ↦ f r i + c.1 * g r i) d A 1 c.2.1 c.2.2 P}
+  set X₂ : Finset (F × F × F) := {c | c.1 ∈ B}
+  have hsub : ({c | ∃ P, IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2
+      P} : Finset (F × F × F)) ⊆ X₁ ∪ X₂ := by
+    intro c hc
+    obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hc).2
+    rcases hP.isInterleavedAffineExceptional_or_exists with h | h
+    · exact Finset.mem_union_left _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, h⟩)
+    · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
+        (mem_badInterleavedEqualDegreeChallenges ..).mpr h⟩)
+  have hX₁ : (#X₁ : ℝ) ≤ q ^ 3 * E := by
+    refine card_filter_triples_le_mul _ E fun θ ↦ ?_
+    have hcount := (ENNReal.ofReal_le_iff_le_toReal hE).mp
+      (le_interleavedAffineMcaError domain d A 1 g (fun r i ↦ f r i + θ * g r i))
+    rw [div_le_iff₀ (by positivity)] at hcount
+    simpa [mul_comm] using hcount
+  have hX₂ : (#X₂ : ℝ) = #B * q ^ 2 := by
+    have : X₂ = B ×ˢ (Finset.univ : Finset (F × F)) := by
+      ext c
+      simp [X₂]
+    rw [this, Finset.card_product, Finset.card_univ, Fintype.card_prod]
+    push_cast
+    ring
+  -- The Johnson bound on the bad values of `θ`.
+  have hA1 : 1 ≤ A := by
+    rcases A with _ | A
+    · simp at hJ
+    · omega
+  have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) := by
+    have h := le_floor_johnson_of_mul_le hJ
+      (card_badInterleavedEqualDegreeChallenges_mul_le domain f g d (A - 1))
+    simp only [Nat.cast_sub hA1, Nat.cast_one] at h
+    exact Nat.cast_le.mpr h
+  have hcount : (#{c : F × F × F | ∃ P,
+        IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤
+        E + (ℓ₀ : ℝ) / q := by
+    rw [div_le_iff₀ (by positivity)]
+    calc (#{c : F × F × F | ∃ P,
+          IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ)
+        ≤ #(X₁ ∪ X₂) := by exact_mod_cast Finset.card_le_card hsub
+      _ ≤ #X₁ + #X₂ := by exact_mod_cast Finset.card_union_le _ _
+      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by
+          rw [hX₂]
+          gcongr
+      _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by
+          field_simp
+  calc _ ≤ ENNReal.ofReal (E + (ℓ₀ : ℝ) / q) := ENNReal.ofReal_le_ofReal hcount
+    _ = _ := by
+      rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity), ENNReal.ofReal_toReal hE]
 
 /-- The interleaved equal-degree error is at most `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 
