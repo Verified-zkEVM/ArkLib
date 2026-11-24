@@ -32,7 +32,7 @@ attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
 variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- The partial transcript at a round position `sp`: the full moves made so far along the cursor,
-including erased payloads. -/
+including the oracle messages the verifier's view erases. -/
 @[implicit_reducible]
 def PartialTranscriptAt : {s t : FreeM P PUnit} → Cursor.Spine s t → Type
   | _, _, .root _ => PUnit
@@ -268,9 +268,10 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (fun stmt tr => V.validAcceptance impl stmt tr
       (output.language tr.path)) draw ε
 
-/-- Worst-case-per-prefix oracle knowledge with full payload-bearing prefix access. The output
-witness type `W tr` and the output relation `relOut tr` are indexed by the completed
-transcript `tr`, and the output statement and oracle data have the types at its shape path. -/
+/-- Worst-case-per-prefix oracle knowledge with access to the full prefix, oracle messages
+included. The output witness type `W tr` and the output relation `relOut tr` are indexed by the
+completed transcript `tr`, and the output statement and oracle data have the types at its shape
+path. -/
 abbrev rbrKnowledgeSoundness {Win : Type uW} {W : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
