@@ -283,7 +283,7 @@ theorem pure_accepting_of_mem
   refine OptionT.prEvent_mk_simulateQ_run'_eq_one_of_support init impl _ _ ?_
   intro o ho
   simp only [Verifier.run, hV] at ho
-  subst o
+  obtain rfl := OracleComp.eq_of_mem_support_pure _ ho
   exact ⟨out, rfl, hout⟩
 
 /-- Converse of `pure_accepting_of_mem`: if a verifier deterministically outputs `out` on

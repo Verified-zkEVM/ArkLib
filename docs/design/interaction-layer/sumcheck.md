@@ -23,7 +23,7 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | Module | Contents |
 |---|---|
 | `SingleRound` | One round: an oracle node for the round message, then one challenge in `R`. `round` is the round at `R⦃≤ deg⦄[X]`; at any message carrier `M` with evaluation `eval` the round is `Interpreted.protocol R M eval 1`. |
-| `Protocol` | `protocolOn R M eval n` and its instance `protocol R deg n`, the `n`-fold replication of the round; the honest prover as a fold with `pure` slots. |
+| `Protocol` | `protocolOn R M eval n` and its instance `protocol R deg n`, the `n`-fold replication of the round; the honest prover as a fold with `pure` moves. |
 | `Execution` | The verifier `verifierOn` over any message carrier, and its instance `verifier`: the legacy decision fold on the view's challenges, with message queries routed to oracle nodes. Closed forms of runs; the round check `roundCheck` and its accept and reject equations. |
 | `Completeness` | Perfect completeness of the interaction-layer honest prover, proved directly, for every challenge implementation. |
 | `LegacyEquivalence` | The equivalence with the embedded legacy verifier, and the transport of every security notion along it. |
@@ -32,13 +32,13 @@ reached statement. The list and injective forms specialize the same indexed-doma
 | `Knowledge` | Straight-line knowledge soundness, transferred, with the same error. |
 | `RoundByRound` | Round-by-round soundness and knowledge soundness, transferred, with error `deg / |R|` at every challenge. |
 | `Computable` | The executable instance at CompPoly messages and inputs: protocol, verifier, verdict reader and honest prover. The run correspondence `run_eq_interpret`, perfect completeness and soundness, transported. |
-| `Types` | Interaction-layer round statements, polynomial oracle data and prefix/suffix coordinates. |
-| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/public-challenge round, the fixed full-run tree at any message carrier with its uniform challenge sampler, and transcript prepending. `Tree.challengeSampleable` is the sampler at polynomial evaluation. Transcript access uses the `InterpretedPath` helpers. |
+| `Types` | Interaction layer round statements, polynomial oracle data and prefix/suffix coordinates. |
+| `SingleRound`, `MessageTree`, `Tree` | The oracle-message/challenge round, the fixed full-run tree at any message carrier with its uniform challenge sampler, and transcript prepending. `Tree.challengeSampleable` is the sampler at polynomial evaluation. Transcript access uses the `InterpretedPath` helpers. |
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
 | `Indexed` | The interaction-layer indexed verifier, whose verdict and decision are the interval fold ending at the last round, its actual-run equation, the state function and interaction-layer local-to-global soundness proof. |
 | `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
 | `DomainEquivalence` | Injective-domain relation and projection agreement, full-run verdict and oracle-program equations, and honest interval output correspondence. |
-| `Protocol`, `Fold` | Prover folds over any message carrier, and passive final checks that abbreviate the interpreted checks at polynomial evaluation and use their actual-run and resource-interpretation equations. |
+| `Protocol`, `Fold` | Prover folds over any message carrier, and passive final checks that abbreviate the interpreted checks at polynomial evaluation and use their actual-run and bundle-answer equations. |
 | `Interval`, `IntervalExecution` | Arbitrary endpoints, public midpoint transport, and one-round and empty-run equations. |
 | `IntervalCompleteness`, `IntervalAdaptive` | Support, perfect and measure completeness for every bounded interval and adaptive statement-dependent challenges. |
 | `IntervalSoundness`, `IntervalRoundSoundness` | Interaction-layer suffix RBR soundness, implication bounds, list/injective forms, full-run identity and actual one-round bounds at every variable position. |
@@ -61,7 +61,7 @@ separately. The compatibility `verifier` keeps its old name; the interaction-lay
 ## The interaction-layer verifier and its bound
 
 `protocol R deg n` has exactly `n` rounds. Each sends a degree-bounded polynomial and draws a
-public challenge in `R`. Neither the oracle message nor the challenge selects shape (P2).
+challenge in `R`. Neither the oracle message nor the challenge selects shape (P2).
 The verifier is passive: it queries the messages and decides after the interaction (P1).
 A failed sum check skips the remaining decision queries. All prover effects and challenge draws
 have already run. Its output oracle is the original input polynomial.
@@ -174,7 +174,8 @@ comparison check. The interaction-layer security statements do not use them.
 `perfectCompleteness` proves completeness directly for the compatibility honest prover and
 every challenge implementation. `legacyProver_perfectCompleteness` concerns the embedded legacy
 honest prover with uniform challenges and also judges its output witness. The compatibility
-round-by-round transfers use the guarded terminal certificates of departure 15. No transfer
+round-by-round transfers use the guarded certificates of departure 15
+(`StateTerminalCertificate.of_guarded` and `KnowledgeTerminalCertificate.of_guarded`). No transfer
 requires inhabited ambient response types: `supportedAnswer` obtains answers from support.
 The knowledge transfers extract the constant `Unit` output witness from the prover's output.
 
@@ -192,7 +193,7 @@ the individual degree bound. `toOracleStatement` reads an input as the mathemati
   evaluation.
 - **Run correspondence.** `run_eq_interpret` holds at every message carrier `M` with a reading
   `f : M → R⦃≤ deg⦄[X]` that agrees with `eval`. Renaming the challenge queries of a run of
-  `verifierOn` at `M` (`renameQueries`) and mapping its observation gives the run of
+  `verifierOn` at `M` (`renameQueries`) and mapping its outcome gives the run of
   `verifierOn` at the polynomial carrier against the interpreted prover
   `Interpreted.transportFocal f n g P`. The interpreted prover sends the messages read through
   `f`, keeps every effect, and maps the output by `g`. Challenge nodes of the two protocols are different
@@ -225,7 +226,7 @@ events `.inl i` and challenge draws `.inr j` in execution order.
 | 4 | The same prover over the empty domain: a failed first check still runs every round. | Rejection, log `[p0, c0, p2, c1, p3]`. |
 | 5 | Direct evaluation of the quadratic and its first projected message. | Cube sum `15`, value `16` at `(4, 4)`, first message `7` at `4`. |
 | 6 | The computable honest prover on the quadratic over `{0, 1, 2}`, challenges `4`. | Verdict `(16, 4, 4, 16)`, log `[c0, c1]`. |
-| 7 | The zero-round interval verifier from the final round state `⟨16, ![4, 4]⟩`. | Verifier verdict `some (16, 4, 4, 16)`, empty trace. The prover-only observation remains an additional check. |
+| 7 | The zero-round interval verifier from the final round state `⟨16, ![4, 4]⟩`. | Verifier verdict `some (16, 4, 4, 16)`, empty trace. The prover-only outcome remains an additional check. |
 
 Rows 3, 4 and 6 require P1/P2; row 7 preserves the frozen verifier assertion
 ([entry 24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime)).
@@ -236,7 +237,7 @@ The files under `ArkLibTest/ProofSystem/Sumcheck/Core/` retain the existing acce
 exact-probability, adaptive-message, effect-order, routing and axiom checks. Compatibility tests
 import the comparison modules explicitly. Interaction-layer tests add arbitrary maps and lists,
 committed and randomized actual runs, and an actual final decision with constant message one and
-target two over `[0, 0]`. `NativeSoundnessTest.repeated_run` checks the complete accepting program
+target two over `[0, 0]`. `IndexedSoundnessTest.repeated_run` checks the complete accepting program
 on that repeated domain, including the transcript and retained input oracle. `Domain` also checks
 the repeated-point sum, its deduplicated contrast and a two-coordinate indexed sum. Axiom checks
 permit only `propext`, `Classical.choice` and `Quot.sound`.
@@ -299,7 +300,7 @@ Each row has exactly one status:
 
 - **equivalent**: the target preserves the source assertion's scope.
 - **premise-required (P1)**: the source changes because the passive verifier sends only public
-  coins and makes every resource query in the final decision.
+  coins and makes every bundle query in the final decision.
 - **premise-required (P2)**: the source changes because challenges and oracle messages never
   select shape.
 - **retired**: the row names the removed mechanism, rather than claiming a narrower equivalent.
@@ -479,7 +480,7 @@ The exact parent dispositions, including freshness and failure scope, are in
 Core has no counterpart of the generic `OracleModel.satisfies_guarantee` interface, which is tracked
 as a separate gap and keeps only the `degreeModel` and `degreeGuarantee` rows unresolved.
 `Interpreted` supplies an interaction-layer passive verifier for arbitrary evaluated message
-carriers; `InterpretedExecution` preserves message slots, challenge-response slots and terminal
+carriers; `InterpretedExecution` preserves message moves, challenge-response moves and leaf
 outputs under interpretation. This generic interface does not make Mathlib polynomial projections
 computable. Executable coefficient representations remain in `Sumcheck.Impl`. The interaction-layer
 security proofs do not use a legacy fold-to-sequential bridge.
@@ -511,11 +512,11 @@ above rather than adding independent security claims.
 | `Spec/PolynomialInterface` | `Spec.polynomialFamily`; the plain alias `Interaction.MultivariateRound.polynomialFamily` remains only until D9. Existing Core and `Impl/Projection` clients use the neutral name. |
 | `LegacyProjection` | `messageFamily`, `projectionMap`, `projectionMap_f`, `simulateQ_projectionMap`: the univariate output interface and lawful projection. |
 | `Interaction/Core/OracleVerifier` | `Interaction.Core.pathLift`, `Interaction.Core.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.run_eq_decideWith` expresses a run through `decideWith` using the shared owner lemma `OracleVerifier.simulateQ_decideWith` in reverse. |
-| `Interaction/Core/Composition` | `Interaction.Core.splitFiber_val`: the split of a fiber carries the transcripts of `PathAlong.split`. |
-| `Composition`, input slot | `inputSlot`: the existing `OracleMap.embedding` for the input slot. |
+| `Interaction/Core/Composition` | `Interaction.Core.TranscriptAt.split_val`: the split of a transcript at a path carries the transcripts of `Transcript.split`. |
+| `Composition`, input route | `inputRoute`: the existing `OracleMap.embedding` for the input oracles. |
 | `Composition`, round | `checkRoute`, `roundChallenges`, `checkVerifier`, `roundChallenges_eq`, `decideWith_checkVerifier`, `checkVerdict`, `run_checkVerifier`: reuse the legacy per-round check, with no ambient queries in that check. |
 | `Composition`, append | `split_toView_round`, `appendHead`, `appendTail`, `prefixRoute_round`, `suffixRoute_round`, `decideWith_append_checkVerifier`, `run_append_checkVerifier`: specialize the Core append routing to one Sumcheck round. The generic routing of part D, commit 1 is not duplicated. |
-| `Composition`, fold | `foldLift`, `legacyFoldVerifier`, `verifier_eq_legacyFoldVerifier`, `simulateQ_foldLift`, `decideWith_legacyFoldVerifier`, `foldHead`, `foldCompatibility`, `decideWith_append_legacyFoldVerifier`, `run_append_legacyFoldVerifier`, `run_append_verifier`: reuse `Spec.oracleVerifierProgram` and C's `simulateQ_oracleVerifierProgram_succ`, allowing a suffix that starts from a round-1 statement. |
+| `Composition`, fold | `foldLift`, `legacyFoldVerifier`, `verifier_eq_legacyFoldVerifier`, `simulateQ_foldLift`, `decideWith_legacyFoldVerifier`, `foldHead`, `legacyFoldCompatibility`, `decideWith_append_legacyFoldVerifier`, `run_append_legacyFoldVerifier`, `run_append_verifier`: reuse `Spec.oracleVerifierProgram` and C's `simulateQ_oracleVerifierProgram_succ`, allowing a suffix that starts from a round-1 statement. |
 | `Composition`, projection | `simulate_roundProver`, `projectedVerifier`, `run_projectedVerifier_roundProver`, `projectedVerifier_relation`: run the standalone projected round and reuse `projected_sum_of_relationRound` and `relationRound_projected_output` for its mathematical relation. |
 
 ## Departures
@@ -546,7 +547,7 @@ accepts every bounded pair `start`, `count`; its suffix security theorem assumes
 zero-start interval. `run_append_public_intervalVerifier` compares actual public interval
 interfaces, and `projectedExecute_closed` retains the derived projected input behavior.
 
-**Premises.** P1 moves resource queries into the final decision. P2 removes public abort shape
+**Premises.** P1 moves bundle queries into the final decision. P2 removes public abort shape
 selection. Both apply to the changed abort execution rows; neither narrows the endpoint range,
 message representation or original-oracle behavior quantified by the corresponding targets.
 
@@ -554,15 +555,15 @@ message representation or original-oracle behavior quantified by the correspondi
 
 `Interaction.Core.OracleVerifier.Agrees` and every law in `Security/Agreement.lean` accept
 path-dependent output statements `T p`, oracle indices `J p`, carriers `B p j` and interfaces
-`outputs p`. Observations and output problems use `OracleVerifier.Output T B`. The decision and
+`outputs p`. Outcomes and output problems use `OracleVerifier.Output T B`. The decision and
 output-map cast laws retain the verifier owner's independent ambient and output-index universes;
 ordinary runs retain its move/response universe `u`. `cast_const` identifies the general
 transport with ordinary equality substitution for constant output families. Ordinary substitution
 keeps those output carriers fixed while changing the tree. Classical probability interfaces specialize
 the move and returned-value universe to zero, as their owners require.
 
-Agreement accepts general `Resources.{u, uI, dI}` inputs, with independent query and data
-universes. Family-shaped inputs specialize this API through `Resources.ofFamily`.
+Agreement accepts general `OracleBundle.{u, uI, dI}` inputs, with independent query and data
+universes. Family-shaped inputs specialize this API through `OracleBundle.ofFamily`.
 Round-by-round knowledge agreement and transport retain `Win stmt`, `W stmt tr`, and relations
 `relOut stmt tr output witness`, with independent witness universes. They also preserve the
 parent's full-prefix challenge distributions and local errors. Sumcheck's compatibility theorem
@@ -583,9 +584,9 @@ The remaining restrictions come from these parent interfaces:
 
 | New API | Parent interface | Required restriction |
 |---|---|---|
-| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Resource-query indices and oracle-node queries are small because the full log is a small run output. Input data and output queries remain independent. |
+| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Bundle-query indices and oracle-node queries are small because the full log is a small run output. Input data and output queries remain independent. |
 | `Agrees.run_eq` and `run_cast` | `OracleVerifier.run` in `Core/OracleVerifier.lean` | Ambient and output indices share the move/response universe `u`. Output statements and oracle data are values in `Type u`; node and output queries remain independent. |
-| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightline`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. Input data and queries remain independent. Pure RBR witness carriers retain the owner's independent universes. |
+| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightLine`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. Input data and queries remain independent. Pure RBR witness carriers retain the owner's independent universes. |
 | Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem` in `Core/Legacy/Security.lean` | The parent convenience adapter fixes claims to `Type 0`; the tree adapter accepts larger claims. The underlying `Problem` and classical security interfaces already accept larger claims. |
 
 ## Production declaration inventory
@@ -603,11 +604,11 @@ effects as well as endpoints. Restricting those rows to this branch’s mathemat
 carrier would not close them.
 
 The one-round execution targets below use arbitrary maps or `domain.get`, without a sampling
-assumption. `univariateData` embeds the original univariate input into the interaction-layer
-one-variable polynomial resource and `univariateData_eval` identifies every evaluation. The
+assumption. `univariateData` embeds the original univariate input into the interaction layer
+one-variable polynomial data and `univariateData_eval` identifies every evaluation. The
 execution equations retain that original data independently of the sent message. The
-interaction-layer total-mass equation and explicit rejection are separate contracts. `ProbComp` is
-lossless in the pinned VCVio model; neither the old nor the new total-mass equation asserts a
+interaction layer total-mass equation and explicit rejection are separate contracts. `ProbComp`
+is lossless in the pinned VCVio model; neither the old nor the new total-mass equation asserts a
 positive probability of failure.
 
 ### Production: ArbitraryCompleteness
@@ -701,9 +702,9 @@ in the current script and `ArkLibTest/ProofSystem/Sumcheck/Core/Computable.lean`
 | L97, public-abort check | `SumcheckRuntime.adaptiveObserve emptyDomain`, rejection after every round has run | premise-required (P1, P2) |
 | L176, direct quadratic and cross term | `SumcheckRuntime.quadraticChecks`, independent evaluation check | equivalent |
 | L182, honest quadratic run | `SumcheckRuntime.quadraticObserve`, explicit challenge-node log `[c0,c1]` | premise-required (P1, P2) |
-| L184, zero-round verifier check from round 2 | `SumcheckRuntime.quadraticZeroObserve`; `ComputableSumcheckTest.zero_interval_verdict`: `some (16, 4, 4, 16)` and empty trace | equivalent |
+| L184, zero-round verifier check from round 2 | `SumcheckRuntime.quadraticZeroObserve`; `Sumcheck.Core.ComputableTest.zero_interval_verdict`: `some (16, 4, 4, 16)` and empty trace | equivalent |
 
-`quadraticZeroProverObserve` and `ComputableSumcheckTest.zero_prover_output` are additional
+`quadraticZeroProverObserve` and `Sumcheck.Core.ComputableTest.zero_prover_output` are additional
 checks of the prover output; they do not replace the verifier assertion.
 
 ### Computational-input verifier bridge
@@ -721,10 +722,10 @@ specializations do not replace them.
 ### Full-run compatibility corollaries
 
 The full-run theorem statements retain their original binders, verdict guarantees and error terms.
-`DomainEquivalence.legacyVerdict_native` proves equality on every completed transcript;
+`DomainEquivalence.legacyVerdict_map_ofSpec` proves equality on every completed transcript;
 `verifier_run_full_interval` lifts this to equality of actual oracle computations at endpoints
-`0, n`, retaining every dependent private output and original oracle data. `honestFold_native`,
-`finishState_native` and `honest_full_interval` identify the honest terminal state and preserve
+`0, n`, retaining every dependent private output and original oracle data. `honestFold_eq_intervalFold`,
+`RoundStatement.ofSpec_finishState` and `honest_full_interval` identify the honest leaf state and preserve
 the equality with the prover output required by `judgement.honest`.
 
 The CompPoly bridge `Computable.full_run_interval` retains the computational input itself.
@@ -734,9 +735,9 @@ sum. These proofs do not call the compatibility security theorems.
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `Sumcheck.Core.Computable.support_completeness`, C/Computable.lean, original full-run statement | C/DomainEquivalence.lean: `Sumcheck.Core.honest_full_interval`, `honestFold_native`, `finishState_native`; C/IntervalCompleteness.lean: `intervalVerdict_honest` at endpoints `0, n` | equivalent |
+| `Sumcheck.Core.Computable.support_completeness`, C/Computable.lean, original full-run statement | C/DomainEquivalence.lean: `Sumcheck.Core.honest_full_interval`, `honestFold_eq_intervalFold`, `RoundStatement.ofSpec_finishState`; C/IntervalCompleteness.lean: `intervalVerdict_honest` at endpoints `0, n` | equivalent |
 | `Sumcheck.Core.Computable.perfectCompleteness`, C/Computable.lean, original full-run statement | C/Computable.lean: `Sumcheck.Core.Computable.support_completeness`, using `Sumcheck.Core.honest_full_interval` from C/DomainEquivalence.lean at endpoints `0, n` | equivalent |
-| `Sumcheck.Core.Computable.soundness`, C/Computable.lean, original full-run statement and sum error | C/Computable.lean: `Sumcheck.Core.Computable.full_run_interval`, `interval_soundness` at endpoints `0, n`; C/DomainEquivalence.lean: `Sumcheck.Core.legacyVerdict_native` | equivalent |
+| `Sumcheck.Core.Computable.soundness`, C/Computable.lean, original full-run statement and sum error | C/Computable.lean: `Sumcheck.Core.Computable.full_run_interval`, `interval_soundness` at endpoints `0, n`; C/DomainEquivalence.lean: `Sumcheck.Core.legacyVerdict_map_ofSpec` | equivalent |
 
 ### Production: Computable
 
@@ -756,7 +757,7 @@ sum. These proofs do not call the compatibility security theorems.
 |---|---|---|
 | `Sumcheck.Interaction.Computable.honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:37` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.intervalHonestProver` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Computable.interpretProver_honestProver`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:51` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.interpret_intervalHonestProver` | premise-required (P1, P2) |
-| `Sumcheck.Interaction.Computable.execute_honestProver_eq_native`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:81` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.execute_honest_eq_native` | premise-required (P1, P2) |
+| `Sumcheck.Interaction.Computable.execute_honestProver_eq_native`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:81` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.execute_honest_eq_noncomputable` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Computable.execute_support_completeness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:95` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.execute_supportCompleteness` | premise-required (P1, P2) |
 | `Sumcheck.Interaction.Computable.execute_perfectCompleteness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean:116` | C/ComputableInterval.lean: `Sumcheck.Core.Computable.execute_perfectCompleteness` | premise-required (P1, P2) |
 
@@ -764,7 +765,7 @@ sum. These proofs do not call the compatibility security theorems.
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `Sumcheck.Interaction.Computable.execute_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableSoundness.lean:31` | C/ComputableSoundness.lean: `Sumcheck.Core.Computable.executeExperiment_eq_native`, `Sumcheck.Core.Computable.execute_soundness` | premise-required (P1, P2) |
+| `Sumcheck.Interaction.Computable.execute_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableSoundness.lean:31` | C/ComputableSoundness.lean: `Sumcheck.Core.Computable.executeExperiment_eq_intervalVerifier`, `Sumcheck.Core.Computable.execute_soundness` | premise-required (P1, P2) |
 
 ### Production: Legacy
 
@@ -959,7 +960,7 @@ sum. These proofs do not call the compatibility security theorems.
 | `Sumcheck.Interaction.SingleRound.polynomialInterface`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:36` | `inferInstance : OracleInterface R⦃≤ deg⦄[X]`, used by C/SingleRound.lean: `Sumcheck.Core.round` | equivalent |
 | `Sumcheck.Interaction.SingleRound.inputSpec`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:42` | C/Indexed.lean: `Sumcheck.Core.univariateData_eval`; C/Types.lean: `Sumcheck.Core.polynomialFamily` | equivalent |
 | `Sumcheck.Interaction.SingleRound.protocol`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:45` | C/SingleRound.lean: `Sumcheck.Core.round` | premise-required (P2) |
-| `Sumcheck.Interaction.SingleRound.access`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:50` | `Interaction.Core.pathResources` (input family and sent-message resources) | equivalent |
+| `Sumcheck.Interaction.SingleRound.access`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:50` | `Interaction.Core.pathBundle` (input family and sent oracle messages) | equivalent |
 | `Sumcheck.Interaction.SingleRound.sumQueries`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:56` | C/Indexed.lean: `Sumcheck.Core.indexedDecision` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.terminal`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:65` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` | premise-required (P1) |
 | `Sumcheck.Interaction.SingleRound.verifier`, `ArkLib/ProofSystem/Sumcheck/Interaction/SingleRound.lean:75` | C/Indexed.lean: `Sumcheck.Core.indexedVerifier` | premise-required (P1) |

@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Quang Dao
 -/
-import ArkLib.Interaction.Core.Security.MeasuredResources
+import ArkLib.Interaction.Core.Security.MeasuredExtraction
 import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
@@ -26,7 +26,7 @@ namespace Interaction.Core.MeasuredExtractionTests
 abbrev oneRound : Protocol.{0} := .liftBind (.message (Fin 8)) fun _ => .pure ⟨⟩
 
 /-- Output witnesses after message `m` are numbers below `m + 1`. -/
-abbrev OutWitness (tr : PathAlong plainSig oneRound) : Type := Fin (tr.1.val + 1)
+abbrev OutWitness (tr : Transcript plainSig oneRound) : Type := Fin (tr.1.val + 1)
 
 /-- Input witnesses are natural numbers; after message `m`, a witness is a number below `m + 1`,
 the output witness carrier. The leaf map is the identity, and the step map adds the message. -/
@@ -95,7 +95,7 @@ def emptyState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) U
 
 -- Disposition ME-094.
 /-- The empty protocol with no witnesses has a zero-budget extraction program. -/
-example (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) :
+example (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) :
     ((KnowledgeStateFunction.MeasuredStages.zero emptyState (ω := Nat)).programAlong () tr).budget
       = 0 := rfl
 
@@ -119,7 +119,7 @@ def indexedState : KnowledgeStateFunction plainSig oneRound Nat (fun n _ => Fin 
   leaf _ _ _ _ _ := trivial
 
 /-- Measured extraction retains the statement-indexed input and output carrier without encoding. -/
-example (n : Nat) (tr : PathAlong plainSig oneRound) (w : Fin (n + 1)) :
+example (n : Nat) (tr : Transcript plainSig oneRound) (w : Fin (n + 1)) :
     ((KnowledgeStateFunction.MeasuredStages.zero indexedState
       (ω := Nat)).programAlong n tr).program.run w = w := by
   rw [KnowledgeStateFunction.MeasuredStages.run_programAlong]
@@ -133,9 +133,9 @@ example (n : Nat) (tr : PathAlong plainSig oneRound) (w : Fin (n + 1)) :
 
 section FixedCountArithmetic
 
-variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → PathAlong plainSig s → Type}
+variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → Transcript plainSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
-  {validOutput : (stmt : S) → (tr : PathAlong plainSig s) → W stmt tr → Prop}
+  {validOutput : (stmt : S) → (tr : Transcript plainSig s) → W stmt tr → Prop}
 
 -- Disposition ME-112.
 /-- Standard count stages extend a state function without supplying a cost model. -/
@@ -205,9 +205,9 @@ end FixedCountArithmetic
 
 section ZeroStageAccounting
 
-variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → PathAlong plainSig s → Type}
+variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → Transcript plainSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
-  {validOutput : (stmt : S) → (tr : PathAlong plainSig s) → W stmt tr → Prop}
+  {validOutput : (stmt : S) → (tr : Transcript plainSig s) → W stmt tr → Prop}
 
 -- Disposition ME-186.
 /-- The zero-instruction stages of every state function have zero budgets. -/

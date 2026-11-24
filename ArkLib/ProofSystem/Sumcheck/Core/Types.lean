@@ -11,7 +11,7 @@ public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.MvPolynomial.EvalExcept
 public import ArkLib.Data.Fin.Basic
 
-/-! # Sumcheck claims and polynomial resources -/
+/-! # Sumcheck claims and polynomial oracle data -/
 
 @[expose] public section
 
@@ -22,10 +22,10 @@ open Polynomial MvPolynomial Interaction.Core Interaction.Oracle
 structure RoundStatement (R : Type) (n : ℕ) (i : Fin (n + 1)) where
   /-- The claimed remaining sum. -/
   target : R
-  /-- The public challenges already drawn. -/
+  /-- The challenges already drawn. -/
   challenges : Fin i → R
 
-/-- The polynomial resource carried unchanged through Sumcheck. -/
+/-- The polynomial oracle data carried unchanged through Sumcheck. -/
 @[reducible]
 def PolynomialData (R : Type) [CommSemiring R] (n deg : ℕ) : Unit → Type :=
   fun _ => R⦃≤ deg⦄[X Fin n]

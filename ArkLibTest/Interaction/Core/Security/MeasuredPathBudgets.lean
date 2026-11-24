@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Quang Dao
 -/
-import ArkLib.Interaction.Core.Security.MeasuredResources
+import ArkLib.Interaction.Core.Security.MeasuredExtraction
 import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
@@ -127,12 +127,12 @@ def deepStages : deepState.MeasuredStages Nat where
   leaf _ _ _ := BudgetedProgram.ofFun _
 
 /-- The chain transcript. -/
-def chainPath : (n : Nat) → PathAlong plainSig (chain n)
+def chainPath : (n : Nat) → Transcript plainSig (chain n)
   | 0 => ⟨⟩
   | n + 1 => ⟨(), chainPath n⟩
 
 /-- The transcript of `deep` whose first message is `n`. -/
-def deepPath (n : Nat) : PathAlong plainSig deep := ⟨n, chainPath n⟩
+def deepPath (n : Nat) : Transcript plainSig deep := ⟨n, chainPath n⟩
 
 -- Disposition MP-063.
 /-- Every chain stage has budget at most one. -/
@@ -149,7 +149,7 @@ theorem deepStages_budgetAtMost : deepStages.BudgetAtMost 0 1 0 where
 
 /-- From any chain cursor, the remaining chain costs one per message. -/
 theorem chain_budgetFrom (n : Nat) : (k : Nat) → (sp : Cursor.Spine (chain n) (chain k)) →
-    (history : PrefixMoves plainSig sp) →
+    (history : PartialTranscriptAt plainSig sp) →
     ((chainStages n).programFrom () sp history (chainPath k)).budget = k
   | 0, _, _ => rfl
   | k + 1, _, _ => congrArg (· + 1) (chain_budgetFrom n k _ _)
@@ -161,7 +161,7 @@ theorem chain_budget (n : Nat) : ((chainStages n).programAlong () (chainPath n))
 
 /-- Below the first message of `deep`, the remaining chain costs one per message. -/
 theorem deep_budgetFrom : (k : Nat) → (sp : Cursor.Spine deep (chain k)) → isRoot sp = false →
-    (history : PrefixMoves plainSig sp) →
+    (history : PartialTranscriptAt plainSig sp) →
     (deepStages.programFrom () sp history (chainPath k)).budget = k
   | 0, _, _, _ => rfl
   | k + 1, sp, hsp, history => by
@@ -178,7 +178,7 @@ theorem deep_budget (n : Nat) : (deepStages.programAlong () (deepPath n)).budget
 -- Disposition MP-081.
 /-- Locally unit-cost instruction programs can have no global composed budget. -/
 theorem no_global_budget_of_stage_bound :
-    deepStages.BudgetAtMost 0 1 0 ∧ ∀ bound : Nat, ∃ tr : PathAlong plainSig deep,
+    deepStages.BudgetAtMost 0 1 0 ∧ ∀ bound : Nat, ∃ tr : Transcript plainSig deep,
       ¬ (deepStages.programAlong () tr).budget ≤ bound := by
   refine ⟨deepStages_budgetAtMost, fun bound => ⟨deepPath (bound + 1), ?_⟩⟩
   rw [deep_budget]
@@ -186,7 +186,7 @@ theorem no_global_budget_of_stage_bound :
 
 /-- From any chain cursor, the recorded cost of the remaining chain is one per message. -/
 theorem chain_recordedFrom (n : Nat) : (k : Nat) → (sp : Cursor.Spine (chain n) (chain k)) →
-    (history : PrefixMoves plainSig sp) → (w : Nat) →
+    (history : PartialTranscriptAt plainSig sp) → (w : Nat) →
     (recorded ((chainStages n).programFrom () sp history (chainPath k)).program w).2 = k
   | 0, _, _, _ => rfl
   | k + 1, sp, history, w => by
@@ -203,7 +203,7 @@ theorem chain_recorded_cost (n w : Nat) :
 /-- Below the first message of `deep`, the recorded cost of the remaining chain is one per
 message. -/
 theorem deep_recordedFrom : (k : Nat) → (sp : Cursor.Spine deep (chain k)) → isRoot sp = false →
-    (history : PrefixMoves plainSig sp) → (w : Nat) →
+    (history : PartialTranscriptAt plainSig sp) → (w : Nat) →
     (recorded (deepStages.programFrom () sp history (chainPath k)).program w).2 = k
   | 0, _, _, _, _ => rfl
   | k + 1, sp, hsp, history, w => by
@@ -226,7 +226,7 @@ theorem deep_recorded_cost (n w : Nat) :
 -- Disposition MP-119.
 /-- No global bound controls actual instruction cost, despite local budget one. -/
 theorem no_global_cost_bound_of_stage_bound :
-    deepStages.BudgetAtMost 0 1 0 ∧ ∀ bound : Nat, ∃ tr : PathAlong plainSig deep,
+    deepStages.BudgetAtMost 0 1 0 ∧ ∀ bound : Nat, ∃ tr : Transcript plainSig deep,
       ¬ (deepStages.programAlong () tr).program.CostAtMost bound := by
   refine ⟨deepStages_budgetAtMost, fun bound => ⟨deepPath (bound + 1), fun h => ?_⟩⟩
   have cost_le := h.runAdd_le
@@ -238,27 +238,27 @@ theorem no_global_cost_bound_of_stage_bound :
 
 -- Disposition MP-137.
 /-- The path-length bound applies without unfolding the chosen branch. -/
-example (tr : PathAlong plainSig deep) :
+example (tr : Transcript plainSig deep) :
     (deepStages.programAlong () tr).program.CostAtMost
       ((completeSpine plainSig tr).length • (1 : Nat)) :=
   deepStages.programAlong_costAtMost_nsmul deepStages_budgetAtMost () tr
 
 -- Disposition MP-142.
 /-- On the empty protocol, stages with zero root and leaf bounds cost nothing. -/
-example {S : Type} {Win : S → Type} {W : S → PathAlong plainSig (.pure ⟨⟩ : Protocol.{0}) → Type}
+example {S : Type} {Win : S → Type} {W : S → Transcript plainSig (.pure ⟨⟩ : Protocol.{0}) → Type}
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
-    {validOutput : (stmt : S) → (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) → W stmt tr →
+    {validOutput : (stmt : S) → (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) → W stmt tr →
       Prop}
     (F : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) S W Win admissible relIn
       validOutput)
     (stages : F.MeasuredStages Nat) {stepBound : Nat} (h : stages.BudgetAtMost 0 stepBound 0)
-    (stmt : S) (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) :
+    (stmt : S) (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) :
     (stages.programAlong stmt tr).program.CostAtMost 0 := by
   simpa [completeSpine, Cursor.Spine.length] using stages.programAlong_costAtMost_nsmul h stmt tr
 
 -- Disposition MP-149.
 /-- The empty transcript has length zero. -/
-example (tr : PathAlong plainSig (.pure ⟨⟩ : Protocol.{0})) :
+example (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) :
     (completeSpine plainSig tr).length = 0 := rfl
 
 -- Disposition MP-152.
@@ -305,7 +305,7 @@ def orderedStages : orderedState.MeasuredStages Nat where
   leaf _ _ _ := BudgetedProgram.ofFun _
 
 /-- The transcript of `orderedProtocol`. -/
-def orderedPath : PathAlong plainSig orderedProtocol := ⟨(), (), (), ⟨⟩⟩
+def orderedPath : Transcript plainSig orderedProtocol := ⟨(), (), (), ⟨⟩⟩
 
 /-- The extracted witness and recorded cost of the ordered extraction. -/
 def orderedObservation (w : Nat) : Nat × Nat :=

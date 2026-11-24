@@ -347,7 +347,9 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBounds
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CertificateWitnesses
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.ListDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotArithmetic
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
@@ -395,6 +397,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Uni
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.CosetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 public import
@@ -574,6 +577,7 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
+public import ArkLib.Data.CodingTheory.ReedSolomon.PrimitiveRootDomain
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block
@@ -672,6 +676,7 @@ public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.Split
+public import ArkLib.Data.MvPolynomial.VecTreeInterpolation
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
@@ -784,10 +789,10 @@ public import ArkLib.Interaction.Core.Legacy.Security
 public import ArkLib.Interaction.Core.Legacy.Verifier
 public import ArkLib.Interaction.Core.LegacyAppend
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
-public import ArkLib.Interaction.Core.Oracle.PrefixResources
-public import ArkLib.Interaction.Core.Oracle.Provenance
+public import ArkLib.Interaction.Core.Oracle.QueriesByMove
+public import ArkLib.Interaction.Core.Oracle.QueriesByMoveLaws
 public import ArkLib.Interaction.Core.Oracle.Routing
-public import ArkLib.Interaction.Core.Oracle.SlotTrace
+public import ArkLib.Interaction.Core.Oracle.SentOracles
 public import ArkLib.Interaction.Core.OracleVerifier
 public import ArkLib.Interaction.Core.Protocol
 public import ArkLib.Interaction.Core.Reduction
@@ -798,12 +803,13 @@ public import ArkLib.Interaction.Core.Security.Implications
 public import ArkLib.Interaction.Core.Security.Knowledge
 public import ArkLib.Interaction.Core.Security.KnowledgeComposition
 public import ArkLib.Interaction.Core.Security.KnowledgeComposition.Extraction
-public import ArkLib.Interaction.Core.Security.MeasuredResources
+public import ArkLib.Interaction.Core.Security.MeasuredExtraction
 public import ArkLib.Interaction.Core.Security.RoundByRound
 public import ArkLib.Interaction.Core.Security.Soundness
 public import ArkLib.Interaction.Core.Security.StateRestoration
 public import ArkLib.Interaction.Core.Security.StateRestorationBudget
 public import ArkLib.Interaction.Core.Signature
+public import ArkLib.Interaction.Core.Transcript
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
 public import ArkLib.Interaction.Oracle.Composition

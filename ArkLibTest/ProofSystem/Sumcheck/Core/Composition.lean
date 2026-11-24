@@ -34,9 +34,9 @@ variable (clientAmbient : OracleSpec Unit) {I : Type 1} {A : I → Type}
   (check : Type 1 → (Spec.SingleRound.pSpec ℕ 1).Challenges →
     OptionT (OracleComp [(Spec.SingleRound.pSpec ℕ 1).Message]ₒ) ℕ)
   (out : Type 1 → (p : Path (round ℕ 1)) → View (round ℕ 1) p →
-    OracleMap (pathResources inputs (round ℕ 1) p) (Resources.ofFamily outputs))
+    OracleMap (pathBundle inputs (round ℕ 1) p) (OracleBundle.ofFamily outputs))
 
-/-- A large input statement and resource queries can produce a small round output. -/
+/-- A large input statement and bundle queries can produce a small round output. -/
 def largeInputVerifier :
     OracleVerifier clientAmbient (round ℕ 1) (Type 1) (fun _ => ℕ) inputs
       (fun _ => outputs) :=
@@ -127,18 +127,18 @@ theorem projected_relation :
 
 /-- The append equivalence at two rounds on `bilinear`: the round-`0` check appended to the
 one-round verifier of the rest, run against any composed prover, is the two-round verifier. -/
-theorem run_append_bilinear {Mid : PathAlong oracleSig (round K 1) → Type}
-    {Out : PathAlong oracleSig (protocol K 1 2) → Type}
+theorem run_append_bilinear {Mid : Transcript oracleSig (round K 1) → Type}
+    {Out : Transcript oracleSig (protocol K 1 2) → Type}
     (p : Prover oracleSig ambient (round K 1) Mid)
-    (f : (tr : PathAlong oracleSig (round K 1)) → Mid tr →
+    (f : (tr : Transcript oracleSig (round K 1)) → Mid tr →
       OracleComp ambient (Prover oracleSig ambient (protocol K 1 1)
-        fun tail => Out (PathAlong.append oracleSig (round K 1) (fun _ => protocol K 1 1) tr
+        fun tail => Out (Transcript.append (round K 1) (fun _ => protocol K 1 1) tr
           tail))) :
     ((checkVerifier ambient (Spec.polynomialFamily K 2 1)
-        (foldHead (roundCheck K 1 2 D₂ ambient)) fun _ p _ => inputSlot _ p).append
+        (foldHead (roundCheck K 1 2 D₂ ambient)) fun _ p _ => inputRoute _ p).append
         (fun _ => legacyFoldVerifier K 1 ambient (Spec.polynomialFamily K 2 1) 1
           (Spec.StatementRound K 2 ∘ Fin.succ) fun i => roundCheck K 1 2 D₂ ambient i.succ)
-        (foldCompatibility K 1 ambient _ 1 _ _)).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
+        (legacyFoldCompatibility K 1 ambient _ 1 _ _)).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
         (Interaction.Core.Prover.append (s₂ := fun _ => protocol K 1 1) (Out := Out) p f) =
       (verifier K 1 2 D₂ ambient).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
         (Interaction.Core.Prover.append (s₂ := fun _ => protocol K 1 1) (Out := Out) p f) :=

@@ -103,7 +103,7 @@ noncomputable def executeExperiment (D : Fin d → R) {ι σ Out : Type} (ambien
     (Prover.simulate impl prover)).run' (← init)
 
 /-- Interpreting every computational message preserves the actual closed interval experiment. -/
-theorem executeExperiment_eq_native [BEq R] [LawfulBEq R] (D : Fin d → R)
+theorem executeExperiment_eq_intervalVerifier [BEq R] [LawfulBEq R] (D : Fin d → R)
     {ι σ Out : Type} (ambient : OracleSpec ι) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ j, PolynomialData R n deg j)
@@ -138,7 +138,7 @@ theorem execute_soundness [BEq R] [LawfulBEq R] [IsDomain R] [Fintype R] (D : Fi
     Pr{let result ← (executeExperiment D ambient init impl start count finish.le stmt data prover)}[
       ∃ t, result.2 = some t ∧ indexedRelation D _ t.1 (t.2 ())] ≤
         ((count : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) := by
-  rw [executeExperiment_eq_native, prEvent_map]
+  rw [executeExperiment_eq_intervalVerifier, prEvent_map]
   have h := ((intervalVerifier R deg n D ambient start count finish.le).soundness_iff_soundnessUsing
     init impl (indexedDraw (R := R) (deg := deg) count)
       (intervalInputProblem D ⟨start, by omega⟩)

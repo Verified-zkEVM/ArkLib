@@ -23,7 +23,7 @@ def checks : RoundChecks ℕ (fun _ => ℕ) := fun _ target r => OptionT.mk do
     return some value
   else return none
 
-/-- A concrete interaction-layer prover with an explicit pure challenge-response slot and
+/-- A concrete interaction-layer prover with an explicit pure challenge-response move and
 private output. -/
 def prover : Focal oracleSig Id (Interpreted.protocol ℕ (ℕ × ℕ) evaluate 1) (fun _ => ℕ) :=
   show Id ((_msg : ℕ × ℕ) × Id (ℕ →

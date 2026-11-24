@@ -27,7 +27,7 @@ def computedRun : Option (ℕ × ℕ × ℕ × ℕ) :=
 /-- The actual computed-message executor accepts and preserves the earlier prefix and data. -/
 example : computedRun = some (0, 7, 3, 29) := by
   dsimp only [computedRun]
-  rw [Computable.execute_honest_eq_native]
+  rw [Computable.execute_honest_eq_noncomputable]
   unfold Interpreted.execute intervalProver
   rw [run_foldRounds]
   have hid {α : Type} (x : α) : (pure x : Id α) = x := rfl

@@ -57,7 +57,7 @@ abbrev guessVerifier {m : Type → Type} [Monad m] (challenge : m F) (prior : Pr
 /-- The guess run: the prover's guess, its post-guess slot, the fresh challenge, the prover's
 response, and the counterpart's output. -/
 theorem run_guess {m : Type → Type} [Monad m] [LawfulMonad m]
-    {Out : PathAlong plainSig guessTree → Type} (challenge : m F) (prior : Prop)
+    {Out : Transcript plainSig guessTree → Type} (challenge : m F) (prior : Prop)
     (prover : Focal plainSig m guessTree Out) :
     TwoParty.Lens.run guessTree prover (guessVerifier challenge prior) = (do
       let v ← (show m ((guess : F) × m ((sample : F) → m (Out ⟨guess, sample, ⟨⟩⟩))) from prover)
@@ -86,11 +86,11 @@ theorem run_guess {m : Type → Type} [Monad m] [LawfulMonad m]
         pure (⟨⟨sample.1, terminal.1⟩, terminal.2.1, terminal.2.2⟩ :
           (tr : (_ : F) × PUnit) × m (Out ⟨chosen.1, tr⟩) × m Prop))
       pure (⟨⟨chosen.1, tail.1⟩, tail.2.1, tail.2.2⟩ :
-        (tr : PathAlong plainSig guessTree) × m (Out tr) × m Prop))
+        (tr : Transcript plainSig guessTree) × m (Out tr) × m Prop))
     let out ← result.2.1
     let matched ← result.2.2
     pure (⟨result.1, out, matched⟩ :
-      (tr : PathAlong plainSig guessTree) × Out tr × Prop)) = _
+      (tr : Transcript plainSig guessTree) × Out tr × Prop)) = _
   simp only [LawfulMonad.bind_assoc, LawfulMonad.pure_bind, bind_map_left]
 
 -- Row 1 (`guess_soundness`), restated over `TwoParty.Lens.run` on plainSig
@@ -100,7 +100,7 @@ theorem run_guess {m : Type → Type} [Monad m] [LawfulMonad m]
 private output and post-challenge response effects are unrestricted. -/
 theorem guess_soundness {m : Type → Type} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {Out : PathAlong plainSig guessTree → Type}
+    {Out : Transcript plainSig guessTree → Type}
     (challenge : m F) (ε : ℝ≥0∞)
     (hsample : ∀ guess : F, Pr{let sample ← challenge}[guess = sample] ≤ ε)
     (prior : Prop) (hprior : ¬ prior) (prover : Focal plainSig m guessTree Out) :
@@ -188,7 +188,7 @@ def prefixVerifier : PureEnd plainSig M .counterpart tree (fun _ => Fin 4) := do
   pure ⟨sample, sample.castSucc⟩
 
 /-- The suffix counterpart accepts exactly when the stored value is nonzero. -/
-def suffixVerifier (_ : PathAlong plainSig tree) (out : Fin 4) :
+def suffixVerifier (_ : Transcript plainSig tree) (out : Fin 4) :
     Counterpart plainSig M (.pure ⟨⟩) (fun _ => Bool) := pure (out != 0)
 
 /-- The append boundary: the prefix transcript, the suffix strategy and the stored value. -/
@@ -207,7 +207,7 @@ def boundary (sample : Fin 3) : Boundary :=
 /-- The suffix error: one at the boundary storing `1`, zero elsewhere. -/
 def error (b : Boundary) : ℝ≥0∞ := if b.2.2 = 1 then 1 else 0
 
--- Row 4 (`Weighted.prefix_execution`), restated over `PathAlong`.
+-- Row 4 (`Weighted.prefix_execution`), restated over `Transcript`.
 /-- The prefix run queries once and returns the boundary of the answer. -/
 theorem prefix_execution : TwoParty.Lens.run tree (Focal.splitPrefix prover)
     prefixVerifier.toStrategy = (query (spec := branchSpec) () : M (Fin 3)) >>=
@@ -332,14 +332,14 @@ theorem weighted_success :
   simpa only [prEvent_const_of_not _ not_false, zero_add, average_error] using h
 
 /-- The final action makes a fresh query and can reject an otherwise accepted suffix. -/
-def finishWithQuery (_ : PathAlong plainSig (tree.append rest))
+def finishWithQuery (_ : Transcript plainSig (tree.append rest))
     (_ : Unit) (accepted : Bool) : M Bool := do
   let sample ← query (spec := branchSpec) ()
   return accepted && sample == 1
 
--- Row 13 (`finishWithQuery_mass`), restated over `PathAlong`.
+-- Row 13 (`finishWithQuery_mass`), restated over `Transcript`.
 /-- The final query halves the success mass on an accepted branch. -/
-theorem finishWithQuery_mass (path : PathAlong plainSig (tree.append rest))
+theorem finishWithQuery_mass (path : Transcript plainSig (tree.append rest))
     (accepted : Bool) :
     Pr{let answer ← finishWithQuery path () accepted}[answer = true] =
       if accepted then (1 / 2 : ℝ≥0∞) else 0 := by
@@ -364,7 +364,7 @@ theorem weighted_success_after_final_query :
       prefixVerifier.toStrategy], ¬ False →
         Pr{let answer ← (do
           let result ← TwoParty.Lens.run (.pure ⟨⟩) b.2.1 (suffixVerifier b.1 b.2.2)
-          finishWithQuery (PathAlong.append plainSig tree rest b.1 result.1)
+          finishWithQuery (Transcript.append tree rest b.1 result.1)
             result.2.1 result.2.2)}[answer = true] ≤ error b / 2 := by
     rw [prefix_measure, ae_add_measure_iff]
     constructor <;> apply Measure.ae_smul_measure <;>
@@ -442,10 +442,10 @@ def sampleOf {p : Path first} (v : View first p) : Fin 3 := v.1.1
 
 /-- The prefix exports its input value plus the sample, querying only the input. -/
 def exportMap (sample : Fin 3) (p : Path first) :
-    OracleMap (pathResources nats first p) nats where
+    OracleMap (pathBundle nats first p) nats where
   f x _ := (show Nat from x.1 ()) + sample.val
   impl _ := do
-    let value : Nat ← liftM ((pathResources nats first p).spec.query (.inl ⟨(), ()⟩))
+    let value : Nat ← liftM ((pathBundle nats first p).spec.query (.inl ⟨(), ()⟩))
     pure (value + sample.val)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -461,9 +461,9 @@ is `7` or the coin is `1`. It returns the export value and keeps the exported or
 def secondVerifier (_ : Path first) : OracleVerifier ambient second (Fin 3)
     (fun _ => Nat) nats (fun _ => nats) where
   decide _ p _ := OptionT.mk do
-    let value : Nat ← liftM ((ambient + (pathResources nats second p).spec).query
+    let value : Nat ← liftM ((ambient + (pathBundle nats second p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
-    let coin : Fin 3 ← liftM ((ambient + (pathResources nats second p).spec).query
+    let coin : Fin 3 ← liftM ((ambient + (pathBundle nats second p).spec).query
       (.inl ()))
     pure (if value = 7 ∨ coin = 1 then some value else none)
   outputMap _ _ _ := OracleMap.fst _ _
@@ -539,10 +539,10 @@ theorem prefix_measure : 𝒟[appendPrefixRun (s₂ := fun _ => second) prover] 
 def sampleAt (b : Boundary) : Fin 3 := b.1.1
 
 /-- The materialized export at a boundary: the prefix output map on the input and the prefix
-payloads, at the prefix view. -/
+oracle messages, at the prefix view. -/
 def exported (b : Boundary) : Nat :=
-  (firstVerifier.outputMap () (projectPathAlong oracleSig first b.1) (toView first b.1)).f
-    ((input, payloads first b.1)) ()
+  (firstVerifier.outputMap () (Transcript.path b.1) (toView first b.1)).f
+    ((input, oracleMessages first b.1)) ()
 
 /-- The midpoint is true when the export is `7`. -/
 def trueMid (b : Boundary) : Prop := exported b = 7
@@ -593,11 +593,11 @@ theorem prefix_inadmissible :
 -- `7 + sample`, and the export's query implementation answers the same on the run's data.
 /-- The export at a boundary is `7 + sample`, both as data and as simulated queries. -/
 theorem exported_behavior (sample : Fin 3) :
-    (firstVerifier.outputMap () (projectPathAlong oracleSig first (boundary sample).1)
+    (firstVerifier.outputMap () (Transcript.path (boundary sample).1)
         (toView first (boundary sample).1)).f
-          ((input, payloads first (boundary sample).1)) = (fun _ => 7 + sample.val) ∧
-    ∀ q, simulateQ ((pathResources nats first ⟨⟨⟩, ⟨⟩⟩).answer
-        ((input, payloads first (boundary sample).1)))
+          ((input, oracleMessages first (boundary sample).1)) = (fun _ => 7 + sample.val) ∧
+    ∀ q, simulateQ ((pathBundle nats first ⟨⟨⟩, ⟨⟩⟩).answer
+        ((input, oracleMessages first (boundary sample).1)))
       ((firstVerifier.outputMap () ⟨⟨⟩, ⟨⟩⟩ (toView first (boundary sample).1)).impl q) =
         (7 + sample.val : Nat) :=
   ⟨rfl, fun q => (OracleMap.law _ _ q).trans rfl⟩
@@ -609,7 +609,7 @@ abbrev Claim := Nat × (∀ _ : Unit, Nat)
 def finalTrue (claim : Claim) : Prop := claim.2 () = claim.1
 
 /-- The run returns a true final claim. -/
-def suffixTrue (obs : Observation oracleSig combined (fun _ => Unit) (fun _ => Claim)) : Prop :=
+def suffixTrue (obs : Outcome oracleSig combined (fun _ => Unit) (fun _ => Claim)) : Prop :=
   obs.2.2.map finalTrue = some True
 
 -- Oracle example row 9 (`suffix_execution`), restated: the rest of the run after the boundary,
@@ -701,7 +701,7 @@ observations, which implies the verdict equality the corollary asks for.
 -/
 
 variable {ι σ : Type} {ambient : OracleSpec ι} {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
-  {S T U : Type} {Out : PathAlong plainSig (s₁.append s₂) → Type}
+  {S T U : Type} {Out : Transcript plainSig (s₁.append s₂) → Type}
 
 /-- A prefix decision without ambient queries composes with a standalone-sound suffix at
 `ε₁ + δ + ε₂`. -/
@@ -718,8 +718,8 @@ theorem append_soundness_of_pure_decide
     (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
-      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+    (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
@@ -744,8 +744,8 @@ theorem append_soundness_of_stateless
     (hadmissible : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
       (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
         o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
-    (hsuffix : ∀ p state (Out : PathAlong plainSig (s₂ p) → Type),
-      letI : MeasurableSpace (Observation plainSig (s₂ p) Out (fun _ => U)) := ⊤
+    (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
+      letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
         (g.liftTarget (StateT σ ProbComp))
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output

@@ -23,13 +23,13 @@ abbrev F := ZMod 5
 
 /-- Two rounds with different messages and challenges have the same shape path. -/
 example (msg₁ msg₂ : F⦃≤ 1⦄[X]) (c₁ c₂ : F) :
-    projectPathAlong oracleSig (round F 1) (roundTranscript msg₁ c₁) =
-      projectPathAlong oracleSig (round F 1) (roundTranscript msg₂ c₂) := rfl
+    Transcript.path (roundTranscript msg₁ c₁) =
+      Transcript.path (roundTranscript msg₂ c₂) := rfl
 
 /-- Any two runs, whatever their messages and challenge histories, have the same shape path. -/
-example (tr₁ tr₂ : PathAlong oracleSig (protocol F 1 3)) :
-    projectPathAlong oracleSig (protocol F 1 3) tr₁ =
-      projectPathAlong oracleSig (protocol F 1 3) tr₂ := by
+example (tr₁ tr₂ : Transcript oracleSig (protocol F 1 3)) :
+    tr₁.path =
+      tr₂.path := by
   rw [project_eq_shape, project_eq_shape]
 
 /-- The challenge carrier at every round is the field, whatever was drawn before. -/

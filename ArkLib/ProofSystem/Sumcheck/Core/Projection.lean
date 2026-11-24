@@ -149,7 +149,7 @@ theorem projectedExecute_honest_eq {ι : Type} (ambient : OracleSpec ι)
     projectedExecute D ambient impl challenge i stmt data q =
       (fun r => (⟨roundTranscript q r, (q.val.eval r, r),
         some (⟨q.val.eval r, Fin.snoc Fin.elim0 r⟩, fun _ => univariateData q)⟩ :
-          Observation oracleSig (protocol R deg 1) (fun _ => R × R)
+          Outcome oracleSig (protocol R deg 1) (fun _ => R × R)
             (fun _ => RoundStatement R 1 (Fin.last 1) ×
               (∀ j, PolynomialData R 1 deg j)))) <$> challenge := by
   dsimp only
