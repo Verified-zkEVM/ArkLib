@@ -21,7 +21,7 @@ open scoped NNReal
 open CoreDefinitions ProximityGap
 
 theorem pinnedSubspace_empty
-    {ι : Type} [Fintype ι]
+    {ι : Type}
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) :
     pinnedSubspace H (∅ : Finset ι) = H := by
@@ -148,7 +148,7 @@ private theorem pinningActiveCoordinates_disjoint_inactive
 
 open scoped BigOperators in
 private theorem pinning_tau_nonneg
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C)
@@ -224,7 +224,7 @@ private theorem vanishOnCoordinates_insert
       simpa [vanishOnCoordinates] using hj
 
 private theorem pinnedSubspace_insert_le
-    {ι : Type} [Fintype ι] [DecidableEq ι]
+    {ι : Type} [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι) (i : ι) :
     pinnedSubspace H (insert i S) ≤ pinnedSubspace H S := by

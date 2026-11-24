@@ -51,10 +51,10 @@ complete when C merges.
 
 | Record | Owns | Implemented by | Status |
 |---|---|---|---|
-| [D0](D0-tree-and-transcripts.md) | One protocol tree `FreeM P PUnit`, the lens signature into `rolePoly`, and the two transcript types `Path` and `PathAlong` | P | Proposed: awaiting maintainer approval |
+| [D0](D0-tree-and-transcripts.md) | One protocol tree `FreeM P PUnit`, the lens signature into `rolePoly`, and the two transcript types `Path` and `PathAlong` (`Transcript` in the core) | P | Proposed: awaiting maintainer approval |
 | [D1](D1-signatures-and-shape.md) | Plain and oracle positions, their signatures, and the rule that challenges and oracle payloads cannot select shape | A | Proposed: awaiting maintainer approval |
 | [D2](D2-ownership-and-universes.md) | Ownership read from the signature, the universe ledger, and role-free metadata | P, A | Proposed: awaiting maintainer approval |
-| [D3](D3-transcript-indexed-state.md) | Which data is indexed by the full transcript, the verifier view (a fibre over the shape path), or the shape path | P, A | Proposed: awaiting maintainer approval |
+| [D3](D3-transcript-indexed-state.md) | Which data is indexed by the full transcript, the verifier view (`TranscriptAt viewSig s p`, over the shape path), or the shape path | P, A | Proposed: awaiting maintainer approval |
 | [D4](D4-paired-run-and-passive-verifier.md) | Uniform effect slots, the two run schedules and their exchange, the legacy slot correspondence, zero rounds, swap, and the passive verifier | P, A, B | Proposed: awaiting maintainer approval |
 | [D5](D5-composition.md) | Sequential composition, its run laws, prefix decomposition, the end-decided composed verifier, and iteration | P, A | Proposed: awaiting maintainer approval |
 | [D6](D6-oracle-access.md) | Oracle families along a completed path, the output oracle map (which may read the statement and the verifier view), and query routing | A, D | Proposed: awaiting maintainer approval |

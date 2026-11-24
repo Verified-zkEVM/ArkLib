@@ -218,7 +218,7 @@ def GammaEvent {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥
     ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
       ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j
 
-omit [DecidableEq F] [Fintype A] in
+omit [DecidableEq F] [Fintype A] [Fintype F] in
 /-- Off the canonical MCA event, a successful folded state determines a message
 pair in the two-row point list whose affine constraints hold at `γ`. -/
 theorem gamma_bad_pair {k : ℕ} (C : ModuleCode ι F A) {δ : ℝ≥0}

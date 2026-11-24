@@ -27,7 +27,7 @@ example : protocol (n := 0) !p[] = .pure ⟨⟩ := rfl
 example (tr : FullTranscript (n := 0) !p[]) : (transcriptEquiv !p[]).symm tr = ⟨⟩ := rfl
 
 /-- A runtime path through the mixed tree. -/
-def mixedPath : PathAlong plainSig (protocol mixed) :=
+def mixedPath : Transcript plainSig (protocol mixed) :=
   ⟨(3 : Nat), ⟨true, ⟨false, ⟨(7 : Nat), ⟨(), ⟨⟩⟩⟩⟩⟩⟩
 
 example : decode mixed mixedPath 0 = (3 : Nat) := rfl
@@ -38,8 +38,8 @@ example : decode mixed mixedPath 3 = (7 : Nat) := rfl
 example : (transcriptEquiv mixed).symm (decode mixed mixedPath) = mixedPath := rfl
 
 /-- Challenge values are recorded in the transcript without changing the shape path. -/
-example : projectPathAlong plainSig (protocol mixed) mixedPath =
-    projectPathAlong plainSig (protocol mixed)
+example : mixedPath.path =
+    Transcript.path (l := plainSig) (s := (protocol mixed))
       ⟨(3 : Nat), ⟨true, ⟨true, ⟨(0 : Nat), ⟨(), ⟨⟩⟩⟩⟩⟩⟩ := rfl
 
 /-- Only challenge rounds are receiver nodes. -/
