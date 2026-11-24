@@ -76,14 +76,14 @@ def indexedDecision (k : ℕ) : Option (IndexedClaim R n k) →
 def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
     {d : ℕ} (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι) :
     OracleVerifier ambient (protocol R deg n) (RoundStatement R n 0)
-      (fun _ => RoundStatement R n (Fin.last n)) (polyFamily R deg n)
-      (fun _ => polyFamily R deg n) where
+      (fun _ => RoundStatement R n (Fin.last n)) (polynomialFamily R n deg)
+      (fun _ => polynomialFamily R n deg) where
   decide stmt p v := OptionT.mk (simulateQ (decisionLift R deg n ambient p)
     (indexedDecision D n (some (IndexedClaim.initial stmt)) p v))
   outputMap _ p _ :=
     { f := fun x => x.1
       impl := fun q => liftM
-        ((pathBundle (polyFamily R deg n) (protocol R deg n) p).spec.query (.inl q))
+        ((pathBundle (polynomialFamily R n deg) (protocol R deg n) p).spec.query (.inl q))
       law := fun _ _ => rfl }
 
 /-- A rejected prefix stays rejected through every remaining round. -/
@@ -324,7 +324,7 @@ theorem simulateQ_indexedVerifier_decide {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl ambient m)
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
     (tr : Transcript oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily R deg n) (protocol R deg n)
+    simulateQ (QueryImpl.addLift impl ((pathBundle (polynomialFamily R n deg) (protocol R deg n)
       tr.path).answer (data, oracleMessages _ tr)))
       ((indexedVerifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (indexedVerdict D n (some (IndexedClaim.initial stmt)) tr) : m _) := by
@@ -707,6 +707,11 @@ theorem indexedExecute_measureCompleteness {ι : Type} (ambient : OracleSpec ι)
   rw [← prEvent_eq_evalDist_map]
   exact indexedExecute_perfectCompleteness D ambient impl challenge data target h
 
+/-- A degree-bounded message has degree at most its bound. -/
+theorem message_degree {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg⦄[X]) :
+    p.val.degree ≤ deg :=
+  Polynomial.mem_degreeLE.mp p.property
+
 /-- Embed a degree-bounded univariate input into the native one-variable polynomial data. -/
 noncomputable def univariateData {R : Type} [CommSemiring R] {deg : ℕ} (p : R⦃≤ deg⦄[X]) :
     R⦃≤ deg⦄[X Fin 1] :=
@@ -721,7 +726,7 @@ noncomputable def univariateData {R : Type} [CommSemiring R] {deg : ℕ} (p : R�
         exact Nat.zero_le _
       · let := hn
         simp [Subsingleton.elim i 0])).trans
-      (Polynomial.natDegree_le_of_degree_le (Polynomial.mem_degreeLE.mp p.property))⟩
+      (Polynomial.natDegree_le_of_degree_le (message_degree p))⟩
 /-- The univariate adapter preserves evaluation at every challenge, with no sampling assumption. -/
 theorem univariateData_eval {R : Type} [CommSemiring R] {deg : ℕ}
     (p : R⦃≤ deg⦄[X]) (r : R) :
@@ -780,6 +785,20 @@ theorem indexedExecute_univariate_complete {ι : Type} (ambient : OracleSpec ι)
   congr 1
   funext r
   exact indexedRoundResult_univariate_honest domain p target r h
+
+/-- The message degree bound and actual execution completeness hold together, preserving every
+challenge effect. -/
+theorem indexedExecute_univariate_degree_complete {ι : Type} (ambient : OracleSpec ι)
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) (challenge : m R)
+    (domain : List R) (p : R⦃≤ deg⦄[X]) (target : R)
+    (h : (domain.map (fun x => p.val.eval x)).sum = target) :
+    p.val.degree ≤ deg ∧
+      (fun obs => obs.2.2.map
+        (fun out => (out.2 ()).val.eval out.1.challenges = out.1.target)) <$>
+          indexedExecute domain.get ambient impl challenge (fun _ => univariateData p) p target =
+        (fun _ => some True) <$> challenge :=
+  ⟨message_degree p, indexedExecute_univariate_complete ambient impl challenge domain p target h⟩
 
 /-- Every supported honest univariate run has a true accepted output, for an arbitrary list. -/
 theorem indexedExecute_univariate_support {ι : Type} (ambient : OracleSpec ι)

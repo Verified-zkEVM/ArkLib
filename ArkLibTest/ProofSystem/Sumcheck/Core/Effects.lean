@@ -370,7 +370,8 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg k d
 to the oracle nodes of the run. -/
 def firstCheck (stmt : Spec.StatementRound R (k + 1) 0)
     (tr : Transcript oracleSig (protocol R deg (k + 1))) :
-    OracleComp (ambient + (pathBundle (polyFamily R deg (k + 1)) _ tr.path).spec)
+    OracleComp (ambient + (pathBundle (Spec.polynomialFamily R (k + 1) deg) _
+      tr.path).spec)
       (Option (Spec.StatementRound R (k + 1) (0 : Fin (k + 1)).succ)) :=
   simulateQ (decisionLift R deg (k + 1) ambient _) (simulateQ (route R deg (k + 1) _)
     (simulateQ (Spec.leftMessageQuery R deg k) (roundCheck R deg (k + 1) D ambient 0 stmt
@@ -382,10 +383,10 @@ oracles answer from the input data and the run's oracle messages. -/
 abbrev checkHandler (amb : QueryImpl ambient (OracleComp full))
     (data : ∀ i, Spec.OracleStatement R (k + 1) deg i)
     (tr : Transcript oracleSig (protocol R deg (k + 1))) :
-    QueryImpl (ambient + (pathBundle (polyFamily R deg (k + 1)) _ tr.path).spec)
-      (OracleComp full) :=
-  QueryImpl.addLift amb
-    ((pathBundle (polyFamily R deg (k + 1)) _ tr.path).answer (data, oracleMessages _ tr))
+    QueryImpl (ambient + (pathBundle (Spec.polynomialFamily R (k + 1) deg) _
+      tr.path).spec) (OracleComp full) :=
+  QueryImpl.addLift amb ((pathBundle (Spec.polynomialFamily R (k + 1) deg) _
+      tr.path).answer (data, oracleMessages _ tr))
 
 omit [SampleableType R] in
 /-- When the first round's check fails, the logged decision rejects and its log is the log of

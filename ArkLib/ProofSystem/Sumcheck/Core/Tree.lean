@@ -103,8 +103,8 @@ and the path's oracle bundle. This is the path lift `pathLift` with the input po
 The interaction-layer `indexedVerifier` and the compatibility `verifier` both use this lift. -/
 def decisionLift (n : ℕ) {ι : Type} (ambient : OracleSpec ι) (p : Path (protocol R deg n)) :
     QueryImpl (oracleMessageSpec (protocol R deg n) p)
-      (OracleComp (ambient + (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec)) :=
-  pathLift ambient (polyFamily R deg n) p
+      (OracleComp (ambient + (pathBundle (polynomialFamily R n deg) (protocol R deg n) p).spec)) :=
+  pathLift ambient (polynomialFamily R n deg) p
 
 variable {R deg}
 
@@ -115,7 +115,7 @@ theorem simulateQ_decisionLift_monad {n : ℕ} {ι : Type} {ambient : OracleSpec
     (impl : QueryImpl ambient m) (p : Path (protocol R deg n))
     (data : ∀ i, PolynomialData R n deg i) (pl : ∀ i, OracleMessage (protocol R deg n) p i)
     {α : Type} (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily R deg n) (protocol R deg n)
+    simulateQ (QueryImpl.addLift impl ((pathBundle (polynomialFamily R n deg) (protocol R deg n)
       p).answer (data, pl))) (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         m α) :=

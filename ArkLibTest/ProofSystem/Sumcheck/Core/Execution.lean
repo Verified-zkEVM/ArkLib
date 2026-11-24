@@ -41,7 +41,8 @@ noncomputable def badFirst {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X]) :
 noncomputable def badFirstProver {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X])
     (stmt : Spec.StatementRound F 2 0) (oStmt : ∀ i, Spec.OracleStatement F 2 1 i) :
     Prover oracleSig ambient (protocol F 1 2) (fun _ => HonestOutput F 1 2) :=
-  foldRounds (badFirst D bad) (nextState (badFirst D bad)) finishState 2 (initState stmt oStmt)
+  foldRounds (badFirst D bad) (fun k st _ => nextState (badFirst D bad) k st) finishState 2
+    (initState stmt oStmt)
 
 /-- A first message whose sum over `D` misses the target: the execution still draws both
 challenges and records both rounds, and the verdict rejects. -/
@@ -152,8 +153,11 @@ example (tr₁ tr₂ : Transcript oracleSig (protocol F 1 2))
     (h : transcriptChallenges 2 tr₁ = transcriptChallenges 2 tr₂) :
     viewChallenges (toView (protocol F 1 2) tr₁) =
       viewChallenges (toView (protocol F 1 2) tr₂) := by
-  unfold viewChallenges
-  rw [viewChallengeList_toView, viewChallengeList_toView, h]
+  have h₁ := viewChallengeList_toView 2 tr₁
+  have h₂ := viewChallengeList_toView 2 tr₂
+  unfold viewChallengeList at h₁ h₂
+  unfold viewChallenges viewChallengesOn
+  rw [h₁, h₂, h]
 
 /-- The decoded challenges are those recorded in the view, whatever the messages. -/
 example (tr : Transcript oracleSig (protocol F 1 3)) :

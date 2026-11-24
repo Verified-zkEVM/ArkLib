@@ -190,7 +190,7 @@ def oneInput : ℕ⦃≤ 0⦄[X Fin 2] := ⟨1, by
 /-- A `projectedMap` query over the repeated domain `[0, 0]` with one variable left to sum over
 reads the constant-one input twice and returns `2`. -/
 theorem repeated_projectedMap (r : ℕ) :
-    simulateQ ((polyFamily ℕ 0 2).behaviorOfRealizations fun _ => oneInput)
+    simulateQ ((polynomialFamily ℕ 2 0).behaviorOfRealizations fun _ => oneInput)
       ((projectedMap (deg := 0) repeated (0 : Fin 2) Fin.elim0).impl ⟨(), r⟩) = (2 : ℕ) := by
   refine (simulateQ_projectedQuery (deg := 0) repeated (0 : Fin 2) Fin.elim0
     (fun _ => oneInput) r).trans ?_

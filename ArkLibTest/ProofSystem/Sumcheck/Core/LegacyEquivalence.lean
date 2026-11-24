@@ -151,10 +151,10 @@ example {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl amb m) {
     (hbad : ∑ x ∈ Finset.univ.map D, bad.val.eval x ≠ stmt.target) (chals : Fin 2 → F) :
     let tr := foldTranscript (badFirst D bad) (nextState (badFirst D bad)) 2
       (initState stmt oStmt) chals
-    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily F 1 2) (protocol F 1 2)
+    simulateQ (QueryImpl.addLift impl ((pathBundle (Spec.polynomialFamily F 2 1) (protocol F 1 2)
         tr.path).answer (oStmt, oracleMessages _ tr)))
       ((verifier F 1 2 D amb).decide stmt _ (toView _ tr)).run = (pure none : m _) ∧
-    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily F 1 2) (protocol F 1 2)
+    simulateQ (QueryImpl.addLift impl ((pathBundle (Spec.polynomialFamily F 2 1) (protocol F 1 2)
         tr.path).answer (oStmt, oracleMessages _ tr)))
       ((legacyVerifier F 1 2 D amb).decide stmt _ (toView _ tr)).run = (pure none : m _) := by
   intro tr

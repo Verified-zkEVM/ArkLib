@@ -29,18 +29,18 @@ noncomputable def roundFamily (R : Type) [CommSemiring R] (deg : ℕ) :
 
 /-- A query to the original multivariate polynomial. -/
 noncomputable def projectionInput (point : Fin n → R) :
-    OracleComp (polyFamily R deg n).spec R :=
-  liftM ((polyFamily R deg n).spec.query ⟨(), point⟩)
+    OracleComp (polynomialFamily R n deg).spec R :=
+  liftM ((polynomialFamily R n deg).spec.query ⟨(), point⟩)
 
 /-- The realized input answers with its polynomial evaluation. -/
 @[simp] theorem simulateQ_projectionInput (data : ∀ j, PolynomialData R n deg j)
     (point : Fin n → R) :
-    simulateQ ((polyFamily R deg n).behaviorOfRealizations data) (projectionInput point) =
+    simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data) (projectionInput point) =
       (pure ((data ()).val.eval point) : Id R) := rfl
 
 /-- Simulate a projected evaluation by summing queries over suffix domain assignments. -/
 noncomputable def projectedQuery (i : Fin n) (c : Fin i.castSucc → R) (r : R) :
-    OracleComp (polyFamily R deg n).spec R := by
+    OracleComp (polynomialFamily R n deg).spec R := by
   cases n with
   | zero => exact i.elim0
   | succ n =>
@@ -52,7 +52,7 @@ noncomputable def projectedQuery (i : Fin n) (c : Fin i.castSucc → R) (r : R) 
 /-- Answering projected queries from the input realizes the honest round polynomial. -/
 theorem simulateQ_projectedQuery (i : Fin n) (c : Fin i.castSucc → R)
     (data : ∀ j, PolynomialData R n deg j) (r : R) :
-    simulateQ ((polyFamily R deg n).behaviorOfRealizations data) (projectedQuery D i c r) =
+    simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data) (projectedQuery D i c r) =
       (projectedRoundPolynomial D i c (data ())).val.eval r := by
   cases n with
   | zero => exact i.elim0
@@ -95,7 +95,7 @@ polynomial once per suffix assignment, `d ^ (n - 1 - i)` times in all
 `OracleMap.withAmbient_worstCaseCost` (#1476) is follow-up work, and enumeration and arithmetic
 costs are out of scope here. -/
 noncomputable def projectedMap (i : Fin n) (c : Fin i.castSucc → R) :
-    OracleMap (polyFamily R deg n) (roundFamily R deg) where
+    OracleMap (polynomialFamily R n deg) (roundFamily R deg) where
   f data _ := projectedRoundPolynomial D i c (data ())
   impl q := projectedQuery D i c q.2
   law data q := simulateQ_projectedQuery D i c data q.2
@@ -117,7 +117,7 @@ theorem projectedMap_sum (i : Fin n) (stmt : RoundStatement R n i.castSucc)
 against the original input handler. -/
 noncomputable def projectedInput (i : Fin n) (c : Fin i.castSucc → R)
     (data : ∀ j, PolynomialData R n deg j) : QueryImpl (R →ₒ R) Id := fun r =>
-  simulateQ ((polyFamily R deg n).behaviorOfRealizations data)
+  simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data)
     ((projectedMap (deg := deg) D i c).impl ⟨(), r⟩)
 
 /-- The derived handler agrees at every query with honest projected polynomial evaluation. -/
