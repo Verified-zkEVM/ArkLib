@@ -52,8 +52,8 @@ theorem run_badFirstProver {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X])
       (fun chals => (⟨foldTranscript (badFirst D bad) (nextState (badFirst D bad)) 2
           (initState stmt oStmt) chals,
         finishState (foldState (nextState (badFirst D bad)) 2 (initState stmt oStmt) chals),
-        none⟩ : Observation oracleSig (protocol F 1 2) (fun _ => HonestOutput F 1 2)
-          (Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
+        none⟩ : Outcome oracleSig (protocol F 1 2) (fun _ => HonestOutput F 1 2)
+          (fun _ => Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
         drawChallenges 2 (drawOf ambient 2) := by
   rw [badFirstProver, run_verifier_foldRounds]
   refine congrArg (· <$> _) (funext fun chals => ?_)
@@ -88,8 +88,8 @@ example (stmt : Spec.StatementRound F 2 0) (oStmt : ∀ i, Spec.OracleStatement 
       (fun chals => (⟨foldTranscript (badFirst D₂ one) (nextState (badFirst D₂ one)) 2
           (initState stmt oStmt) chals,
         finishState (foldState (nextState (badFirst D₂ one)) 2 (initState stmt oStmt) chals),
-        none⟩ : Observation oracleSig (protocol F 1 2) (fun _ => HonestOutput F 1 2)
-          (Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
+        none⟩ : Outcome oracleSig (protocol F 1 2) (fun _ => HonestOutput F 1 2)
+          (fun _ => Spec.StatementRound F 2 (Fin.last 2) × ∀ i, Spec.OracleStatement F 2 1 i))) <$>
         drawChallenges 2 (drawOf ambient 2) := by
   refine run_badFirstProver ambient _ _ stmt oStmt ?_
   rw [htarget, Finset.sum_map]
@@ -133,8 +133,9 @@ theorem run_honest_one {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F
       (fun chals => (⟨honestTranscript D stmt oStmt chals, honestOutput D stmt oStmt chals,
         some (⟨(honestMessage D 0 (initState stmt oStmt)).val.eval (chals 0),
           Fin.snoc stmt.challenges (chals 0)⟩, oStmt)⟩ :
-          Observation oracleSig (protocol F 1 1) (fun _ => HonestOutput F 1 1)
-            (Spec.StatementRound F 1 (Fin.last 1) × ∀ i, Spec.OracleStatement F 1 1 i))) <$>
+          Outcome oracleSig (protocol F 1 1) (fun _ => HonestOutput F 1 1)
+            (fun _ =>
+              Spec.StatementRound F 1 (Fin.last 1) × ∀ i, Spec.OracleStatement F 1 1 i))) <$>
         drawChallenges 1 (drawOf ambient 1) := by
   rw [run_verifier_honestProver]
   refine congrArg (· <$> _) (funext fun chals => ?_)
@@ -147,7 +148,7 @@ theorem run_honest_one {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F
 /-! ## Shape independence -/
 
 /-- The verifier view of any two runs differs only in the challenges it records. -/
-example (tr₁ tr₂ : PathAlong oracleSig (protocol F 1 2))
+example (tr₁ tr₂ : Transcript oracleSig (protocol F 1 2))
     (h : transcriptChallenges 2 tr₁ = transcriptChallenges 2 tr₂) :
     viewChallenges (toView (protocol F 1 2) tr₁) =
       viewChallenges (toView (protocol F 1 2) tr₂) := by
@@ -155,7 +156,7 @@ example (tr₁ tr₂ : PathAlong oracleSig (protocol F 1 2))
   rw [viewChallengeList_toView, viewChallengeList_toView, h]
 
 /-- The decoded challenges are those recorded in the view, whatever the messages. -/
-example (tr : PathAlong oracleSig (protocol F 1 3)) :
+example (tr : Transcript oracleSig (protocol F 1 3)) :
     (decodeTranscript 3 tr).challenges = viewChallenges (toView (protocol F 1 3) tr) :=
   (viewChallenges_toView 3 tr).symm
 

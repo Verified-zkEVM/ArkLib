@@ -168,6 +168,14 @@ theorem eval_fixFirstVariablesOfMQP_one (h : 0 < ℓ) (H : MvPolynomial (Fin ℓ
   rw [eval_fixFirstVariablesOfMQP_append (ℓ := ℓ) ⟨1, by omega⟩, Fin.append_left_eq_cons]
   simp only [Function.comp_def, Fin.cast_cast]
 
+/-- Fixing the first of `n + 1` variables evaluates by prepending its value. -/
+theorem eval_fixFirstVariablesOfMQP_cons {n : ℕ} (c : L) (H : MvPolynomial (Fin (n + 1)) L)
+    (x : Fin n → L) :
+    eval x (fixFirstVariablesOfMQP (n + 1) ⟨1, by omega⟩ H (fun _ => c)) =
+      eval (Fin.cons c x) H := by
+  rw [eval_fixFirstVariablesOfMQP_one (ℓ := n + 1) (h := by omega) (H := H) (c := c) (x := x)]
+  rfl
+
 /-- Fixing every variable leaves evaluation at the fixed point. -/
 theorem eval_fixFirstVariablesOfMQP_last (H : MvPolynomial (Fin ℓ) L)
     (challenges : Fin (Fin.last ℓ : Fin (ℓ + 1)) → L)

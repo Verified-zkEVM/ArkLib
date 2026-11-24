@@ -236,7 +236,7 @@ lemma coe_toPolynomialLT_evalOnPoints [Fintype ι] [DecidableEq ι] {domain : ι
 
 /-- The relative distance to a Reed-Solomon code is realized by a polynomial of degree less than
 `d`. -/
-lemma exists_polynomial_relDistFromCode_eq [Fintype ι] [Nonempty ι] (domain : ι ↪ F) (d : ℕ)
+lemma exists_polynomial_relDistFromCode_eq [Fintype ι] (domain : ι ↪ F) (d : ℕ)
     (u : ι → F) :
     ∃ g : F[X], g.degree < d ∧
       δᵣ(u, (code domain d : Set (ι → F))) =

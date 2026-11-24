@@ -449,7 +449,11 @@ home_page/            site assets and assembled website root
     `liftShort` is *derived* from `H₀ ≡ 0` rather than assumed); `ZeroCheck/Reduction` is the
     corrected Lemma 10 (`m₀ + m₁` scalar challenge rounds with `k = 2` each, extracted through the
     nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` — Mathlib-level,
-    `k`-ary, individual degree `< k` — with the computable view in
+    with `k i` branches at level `i` and individual degree `< k i`, so a tree may mix arities, and
+    the Cartesian-grid zero test of `Data/MvPolynomial/Interpolation` is its path-independent
+    case; `Data/MvPolynomial/VecTreeInterpolation` reads a challenge tree of the VCVio rewinding
+    finders (`Rewinding.VecTree`) as such a tree and gives its zero test — with the computable
+    view in
     `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`; its named
     `nestedZeroCheckExtractor` is an executable all-left lookup into
     `ChallengeTree.LeafWitnesses`, with no runtime relation search; the weak-binding failure mode
@@ -648,12 +652,10 @@ home_page/            site assets and assembled website root
   file/directory pair
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
-  results about them. A few deep bounds are externally sourced solicited proofs: they carry tagged
-  `sorry` annotations and are listed in the `solicited` array of `scripts/axiom_baseline.json`
-  ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)); use the paper KB pages to inspect
-  their sources. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
-  folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
-  large-alphabet barrier.
+  results about them. Every bound under `ListDecodability/` is proved in-tree; use the paper KB
+  pages to inspect their sources. In-tree results include [CZ25]'s subspace-design theorem (and
+  therefore the folded-Reed-Solomon and univariate-multiplicity capacity corollaries), the [AGL23]
+  large-alphabet barrier, and [AGL24]'s random-evaluation-domain bound.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
   `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds.
   `ProximityGap/CapacityBounds/SubspaceDesign.lean` shares the subspace-design pinning
@@ -905,10 +907,19 @@ home_page/            site assets and assembled website root
   `Soundness/` proves incremental folding and repeated-query bounds. `ReductionLogic` and
   `Steps/` connect those statements to oracle reductions; `CoreInteractionPhase/` composes the
   steps, `QueryPhase/` implements proximity queries and `General` composes the full protocol.
-  `Commitment` owns the first-oracle interface, and `Opening` supplies multilinear opening with
-  exact-encoding completeness and unique-radius round-by-round security. `FRIBinius/Prelude`
-  instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared prefix reduction
-  with Binary Basefold opening. See the [consumer guide](ring-switching-consumers.md).
+  The sum-check-and-fold loop takes the multiplier polynomial of a context; the final sum-check
+  step, core interaction and full protocol take a `Sumcheck.Structured.Multiplier`, whose evaluator
+  the final check uses. `ProductClaim` opens a product claim: the claim reduction
+  `ReduceClaim.oracleReduction` as front end, then full Binary Basefold, secure for any input
+  relation containing `ProductClaim.inputRelation`. `Commitment` owns the first-oracle interface,
+  and `Opening` is the evaluation-claim instance at `evalMultiplier` (`Opening.inputRelation_eq`),
+  with exact-encoding completeness and unique-radius round-by-round security.
+  `FRIBinius/Prelude` instantiates the tensor profile; `FRIBinius/RingSwitch` composes the shared
+  prefix reduction with Binary Basefold opening. `FRIBinius/Unrolled/` is DP24 Construction 5.1:
+  the tensor batching head (`TensorPrefix.headVerifier`) followed by `ProductClaim.openingVerifier`
+  at the ring-switching multiplier, so a single sum-check serves both ring switching and folding.
+  `Spec` bounds its challenge errors by DP24 equation (43). See the
+  [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
@@ -1048,6 +1059,8 @@ home_page/            site assets and assembled website root
   `Binius/FRIBinius/Conformance` identifies source and exact first-oracle inputs;
   `Binius/FRIBinius/RingSwitch` composes the shared frontend with the Binary Basefold
   contextual opening. Completeness uses exact encodings, security unique-radius compatibility.
+  `TensorPrefix.headVerifier` is the batching head alone, ending at the product claim
+  `headRelOut` for a backend that runs its own product sum-check (`Binius/FRIBinius/Unrolled`).
   `Packing/OpeningAdapter` transports a standard `MLIOPCS` to the contextual opening contract
   through a zero-round projection, preserving completeness and round-by-round security.
   `ArkLibTest/ProofSystem/RingSwitching/Packing/RingSwitch/{UnequalRankSuffix,Quirky}` instantiate full protocols

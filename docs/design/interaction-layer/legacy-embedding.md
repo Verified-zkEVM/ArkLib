@@ -13,20 +13,20 @@ forms between the layers. Nothing here changes the legacy layer. The embedding r
 | `Prover` | `embedProver`, which turns a legacy prover into a focal strategy slot for slot. Also `legacySampler`, the public-coin sampler indexed by legacy challenge rounds. |
 | `Verifier` | `embedVerifier` and `embedReduction`. The verifier decides on the decoded transcript. |
 | `OracleReduction` | `embedOracleProver` and `embedOracleVerifier` on the oracle tree, for both legacy oracle-output representations. `OracleMap.ofLegacySimulation` turns a legacy output-oracle simulation into an oracle map. |
-| `Execution` | The common observation, the execution correspondence and its logged form. |
+| `Execution` | The common outcome, the execution correspondence and its logged form. |
 | `OracleExecution` | The execution correspondence on the oracle tree: transport of oracle-tree strategies to the plain tree, the transcript read off a run, and `oracleFinalize`. |
 | `Security` | The completeness, soundness and knowledge-soundness transfers, the legacy transcript prefix of a full prefix, and the round-by-round transfers. |
 | `OracleSecurity` | The completeness, soundness and round-by-round transfers for the embedded oracle verifier on the oracle tree. |
 | `OracleKnowledge` | The straight-line knowledge-soundness transfers for the embedded oracle verifier on the oracle tree, with the logged form of the oracle execution correspondence. |
 
-## The common observation
+## The common outcome
 
-An interaction-layer run of a plain tree produces an `Observation`: the runtime path, the
+An interaction-layer run of a plain tree produces an `Outcome`: the runtime path, the
 prover's output and the verdict `Option T`. A legacy run produces a value of `OptionT`, where
 rejection is missing mass. The two are compared through
 
 ```lean
-finalize : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut →
+finalize : Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut →
   LegacyResult pSpec StmtOut WitOut
 -- LegacyResult = Option ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut)
 ```
@@ -44,9 +44,9 @@ form is `plainChallengeImpl chImpl`.
 - `finalize_observeWith_counterpartFirst` is a program equality. In the counterpart-first
   schedule, the finalized interaction-layer run of an embedded reduction is the legacy run after
   reindexing. It holds for every legacy prover.
-- `simulateQ_finalize_observe` gives the same program equality in the default schedule. It
+- `simulateQ_finalize_runOutcome` gives the same program equality in the default schedule. It
   assumes `PureChallengeSlots`: every `receiveChallenge` is `pure`.
-- `experiment_finalize_observe_evalDistEq` and `evalDist_experiment_finalize_observe` hold for
+- `experiment_finalize_runOutcome_evalDistEq` and `evalDist_experiment_finalize_runOutcome` hold for
   every prover. They state the equality in distribution and as measures, under any measurable
   structure. The proof moves challenge draws past the prover's effects, which works because
   `plainChallengeImpl` is stateless.
@@ -95,11 +95,11 @@ verifier `V` and a legacy straight-line extractor `E`, the following are equival
 
 - `knowledgeSoundnessWith ((embedVerifier V).classicalModel init impl
   (plainChallengeImpl challengeQueryImpl)) (relProblem relIn) (relProblem relOut)
-  (knowledgeJudgement relOut) (classicalStraightline (fun _ => WitIn) (embedVerifier V) init
+  (knowledgeJudgement relOut) (classicalStraightLine (fun _ => WitIn) (embedVerifier V) init
   impl (plainChallengeImpl challengeQueryImpl) (fun _ o => o.2)) (liftExtractor E) ε`
 - `V.knowledgeSoundnessWith init impl relIn relOut E ε`
 
-The observation and witness types carry the discrete measurable structure. The prover's output
+The outcome and witness types carry the discrete measurable structure. The prover's output
 family is `fun _ => StmtOut × WitOut`. `knowledgeJudgement relOut` judges the verifier's
 statement with the prover's output witness, as the legacy bad event does, and the extractor
 reads that witness. `liftExtractor E` runs `E` on the decoded transcript, at the constant
@@ -123,7 +123,7 @@ the interleaving could tell the two executions apart, and a transfer would need 
 ### Round-by-round soundness and knowledge soundness
 
 The interaction layer states round-by-round notions over full prefixes `(sp, hist)`: a cursor
-spine `sp` into `protocol pSpec` with the runtime moves `hist : PrefixMoves plainSig sp`. The
+spine `sp` into `protocol pSpec` with the runtime moves `hist : PartialTranscriptAt plainSig sp`. The
 legacy layer states them over transcript prefixes `Transcript j pSpec`.
 
 `legacyPrefix sp hist : (j : Fin (n + 1)) × Transcript j pSpec` is the legacy transcript prefix
@@ -216,10 +216,10 @@ On the runtime path `tr` of an actual run:
 
 - `viewChallenges_toView`: the challenges in the verifier's view are
   `(oracleDecode pSpec tr).challenges`.
-- `pathMessages_payloads`: the data of the message oracles are
+- `pathMessages_oracleMessages`: the data of the message oracles are
   `(oracleDecode pSpec tr).messages`.
 - `simulateQ_embedOracleVerifier_decide`: the routed decision, answered from the input data and
-  the path's payloads, is legacy `verify` on the decoded challenges under
+  the path's oracle messages, is legacy `verify` on the decoded challenges under
   `simOracle2 oSpec oStmt (oracleDecode pSpec tr).messages`. The ambient queries go to any
   implementation in a lawful monad: the identity, a stateful implementation, or a logging one.
 - `embedOracleVerifier_outputMap_f`: the output data are
@@ -228,7 +228,7 @@ On the runtime path `tr` of an actual run:
 The common result is
 
 ```lean
-oracleFinalize : Observation oracleSig (oracleProtocol pSpec)
+oracleFinalize : Outcome oracleSig (oracleProtocol pSpec)
     (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (StmtOut × (∀ i, OStmtOut i)) →
   LegacyResult pSpec (StmtOut × (∀ i, OStmtOut i)) WitOut
 ```
@@ -238,7 +238,7 @@ statement and output oracle data, as legacy `OracleReduction.run` does. The veri
 data come from its output map, so both legacy output-oracle representations are covered.
 
 - `oracleFinalize_observeWith_counterpartFirst` is the program equality for every legacy oracle
-  reduction `R`: the finalized counterpart-first oracle observation of
+  reduction `R`: the finalized counterpart-first oracle outcome of
   `embedOracleVerifier R.verifier` against `embedOracleProver R.prover stmt oStmt wit` is
   `(R.run stmt oStmt wit).run`.
 - `simulateQ_oracleFinalize_run` gives the same equality for the default run
@@ -250,7 +250,7 @@ data come from its output map, so both legacy output-oracle representations are 
 - `oracleObserveWith_embed`, `simulateQ_embedOracleVerifier_run` and
   `experiment_embedOracleVerifier_run` compare an oracle run against any oracle-tree prover with
   the plain run of `embedVerifier V.toVerifier` against the transported prover. The oracle
-  observation is the plain observation with its path read back by `toOracleObservation`.
+  outcome is the plain outcome with its path read back by `toOracleOutcome`.
 
 ### Security transfers
 
@@ -273,7 +273,7 @@ notions are defined through `V.toVerifier`.
 ### Straight-line knowledge soundness
 
 `OracleKnowledge` states the straight-line transfers for `embedOracleVerifier V`, in the classical
-straight-line oracle interface `OracleVerifier.classicalStraightline`, with the judgement
+straight-line oracle interface `OracleVerifier.classicalStraightLine`, with the judgement
 `oracleKnowledgeJudgement relOut`: the verifier's output statement and output oracle data, with the
 prover's output witness. The oracle extraction game logs the decision before its input-oracle and
 message queries are answered, and gives the extractor the ambient part of that log.
@@ -297,7 +297,7 @@ message queries are answered, and gives the extractor the ambient part of that l
   and an explicit extraction failure stays in the bad event, in both layers.
   `oracleKnowledgeSoundness_iff` is the existential form.
 
-The observation-marginal obligation is the core's `OracleVerifier.classicalStraightline_marginal`.
+The outcome-marginal obligation is the core's `OracleVerifier.classicalStraightLine_marginal`.
 
 ### Output-oracle simulations
 
@@ -333,9 +333,9 @@ unlogged correspondence applies unchanged (`runEq_ambientLogged_prover`).
 hypotheses only. They fix an instantiation of the core notion: the prover's output family is
 `fun _ => StmtOut × WitOut`, the judgement is `knowledgeJudgement relOut` (the verifier's
 statement with the prover's output witness), the extractor reads that witness, and the
-observation and witness types carry the discrete measurable structure. The access budget is `0`,
+outcome and witness types carry the discrete measurable structure. The access budget is `0`,
 which the classical straight-line interface meets. The qualification of entry 6 does not arise,
-because `classicalStraightline_marginal` gives marginal preservation for every extractor.
+because `classicalStraightLine_marginal` gives marginal preservation for every extractor.
 
 ### 15. Round-by-round transfers into the interaction layer assume all-state terminal certificates
 

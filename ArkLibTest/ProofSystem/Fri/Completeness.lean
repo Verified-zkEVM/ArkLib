@@ -63,20 +63,20 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Pro
 
 example (l : ℕ) (δ : ℝ≥0) :
     (Fri.Spec.reduction (ω := ω) k s d hdom l).completeness init impl
-      (Fri.Spec.inputRelation k s d hdom δ) (Fri.Spec.outputRelation k s d hdom 0)
+      (Fri.Spec.inputRelation k s d δ) (Fri.Spec.outputRelation k s d 0)
       (Fri.Spec.completenessError s δ l) :=
   Fri.Spec.reduction_completeness s d hdom l δ init impl
 
 example (l : ℕ) :
     (Fri.Spec.reduction (ω := ω) k s d hdom l).perfectCompleteness init impl
-      (Fri.Spec.inputRelation k s d hdom 0) (Fri.Spec.outputRelation k s d hdom 0) :=
+      (Fri.Spec.inputRelation k s d 0) (Fri.Spec.outputRelation k s d 0) :=
   Fri.Spec.perfect_completeness s d hdom l init impl
 
 -- The sharper contract keeps the supplied word and witness fixed without a proximity premise.
 example (l : ℕ) (f : Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)) 0)
     (p₀ : Fri.Spec.Witness F s d 0) :
     (Fri.Spec.reduction (ω := ω) k s d hdom l).completeness init impl
-      (Fri.Spec.honestFoldRelation s d f p₀ 0) (Fri.Spec.outputRelation k s d hdom 0)
+      (Fri.Spec.honestFoldRelation s d f p₀ 0) (Fri.Spec.outputRelation k s d 0)
       (1 - (((Fri.Spec.cleanFirstQueries ω (s 0).val
         (fun z ↦ f (Fri.Spec.initialQuery z))
         (fun z ↦ p₀.val.eval (ω z))).card : ℝ≥0) / 2 ^ n) ^ l) :=
@@ -85,7 +85,7 @@ example (l : ℕ) (f : Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)) 0)
 -- With no queries, even a noisy input has completeness error zero.
 example (δ : ℝ≥0) :
     (Fri.Spec.reduction (ω := ω) k s d hdom 0).perfectCompleteness init impl
-      (Fri.Spec.inputRelation k s d hdom δ) (Fri.Spec.outputRelation k s d hdom 0) :=
+      (Fri.Spec.inputRelation k s d δ) (Fri.Spec.outputRelation k s d 0) :=
   Fri.Spec.perfect_completeness_zero_queries s d hdom δ init impl
 
 end FullContract
@@ -101,7 +101,7 @@ variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Pro
 -- Zero non-final folds still includes the final fold and its first-block error amplification.
 example (l : ℕ) (δ : ℝ≥0) :
     (Fri.Spec.reduction (ω := ω) 0 s d hdom l).completeness init impl
-      (Fri.Spec.inputRelation 0 s d hdom δ) (Fri.Spec.outputRelation 0 s d hdom 0)
+      (Fri.Spec.inputRelation 0 s d δ) (Fri.Spec.outputRelation 0 s d 0)
       (Fri.Spec.completenessError s δ l) :=
   Fri.Spec.reduction_completeness s d hdom l δ init impl
 
@@ -110,10 +110,8 @@ example (hs : ∑ i, (s i).val = n) (l : ℕ) :
     (Fri.Spec.reduction (ω := ω) 0 s 1
       (((Nat.mul_one _).trans (congrArg (fun m : ℕ ↦ 2 ^ m) hs)).le) l).perfectCompleteness
       init impl
-      (Fri.Spec.inputRelation 0 s 1 (by
-        exact ((Nat.mul_one _).trans (congrArg (fun m : ℕ ↦ 2 ^ m) hs)).le) 0)
-      (Fri.Spec.outputRelation 0 s 1 (by
-        exact ((Nat.mul_one _).trans (congrArg (fun m : ℕ ↦ 2 ^ m) hs)).le) 0) :=
+      (Fri.Spec.inputRelation 0 s 1 0)
+      (Fri.Spec.outputRelation 0 s 1 0) :=
   Fri.Spec.perfect_completeness s 1 (by
     exact ((Nat.mul_one _).trans (congrArg (fun m : ℕ ↦ 2 ^ m) hs)).le) l init impl
 

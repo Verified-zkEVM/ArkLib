@@ -341,7 +341,8 @@ lemma Reduction.support_run_pure_verifier
       simp only [ChallengeIdx, Challenge, Verifier.run, hf, OptionT.run_pure, liftM_pure,
         support_pure, Set.mem_singleton_iff] at hstmtOutOpt
       subst stmtOutOpt
-      simp only [Option.elim_some, Option.getM_some, OptionT.run_pure] at hy
+      simp only [Option.elim_some, Option.getM_some, OptionT.run_pure, pure_bind,
+        support_pure, Set.mem_singleton_iff] at hy
       injection hy with hpair
       have htd : td = proverResult.1 := congrArg Prod.fst (congrArg Prod.fst hpair)
       have hvOut : vOut = f stmt proverResult.1 := congrArg Prod.snd hpair

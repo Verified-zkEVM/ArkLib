@@ -933,8 +933,7 @@ def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
 
   TODO: upstream this as a more general construction in VCVio -/
 @[reducible, inline, specialize, simp]
-def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec.Challenge i)] :
+def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n} :
     QueryImpl (srVerifierMessageOracle Statement pSpec)
       (StateT (QueryImpl (srVerifierMessageOracle Statement pSpec) Id) ProbComp) :=
   fun | ⟨i, t⟩ => fun f => pure (f ⟨i, t⟩, f)

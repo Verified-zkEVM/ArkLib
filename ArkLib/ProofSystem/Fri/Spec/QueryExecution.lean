@@ -22,7 +22,7 @@ namespace Fri.Spec.QueryRound
 open Domain OracleSpec OracleComp ProtocolSpec Finset
 open scoped ProbabilityTheory
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) {l : ℕ}
 
