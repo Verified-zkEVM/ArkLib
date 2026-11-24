@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Interaction.Core.Oracle.SentOracles
 import ArkLib.Interaction.Core.Security.RoundByRound
 
 /-! Partial transcripts. A partial transcript is a structural cursor spine decorated with full
@@ -47,8 +48,8 @@ example : sentPrefix true ≠ sentPrefix false := by
   intro h
   cases h
 
--- Prefix 3, restated: on every completed path the send has an oracle, which the run's oracle
--- messages answer.
+-- Prefix 3, additional check: on every completed path the send has an oracle, which the run's
+-- oracle messages answer.
 /-- Every completed path of `mixed` has the sent oracle. -/
 def sentSlot : (p : Path mixed) → OracleMessageIndex mixed p
   | ⟨⟨⟩, _, ⟨⟩⟩ => .inl ⟨⟩
@@ -56,7 +57,20 @@ def sentSlot : (p : Path mixed) → OracleMessageIndex mixed p
 example (message : Bool) (choice : Fin 3) :
     oracleMessages mixed ⟨message, choice, ⟨⟩⟩ (sentSlot _) = message := rfl
 
--- Prefix 4, restated: a decision at the root is a decision on the empty prefix of
+-- Prefix 3 and 4, availability on `mixed` itself: the root oracle node is not sent at the empty
+-- partial transcript, and it is sent once the Boolean has been sent.
+/-- The root oracle node of `mixed` is not sent before any move. -/
+theorem root_not_sent_empty :
+    ¬ (PartialTranscript.empty : PartialTranscript oracleSig mixed).IsSent (.inl ⟨⟩) := by
+  rintro ⟨i, _⟩
+  exact i.elim
+
+/-- After the Boolean `message` is sent, the root oracle node of `mixed` is sent. -/
+theorem root_sent_after_send (message : Bool) :
+    PartialTranscript.IsSent (s := mixed) (some ⟨message, none⟩) (.inl ⟨⟩) :=
+  ⟨.inl ⟨⟩, rfl⟩
+
+-- Prefix 4, additional check: a decision at the root is a decision on the empty prefix of
 -- `mixed = (.pure ⟨⟩).append (fun _ => mixed)`, which has no oracle.
 example : (FreeM.pure ⟨⟩ : OracleProtocol).append (fun _ => mixed) = mixed := rfl
 

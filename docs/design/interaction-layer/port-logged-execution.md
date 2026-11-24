@@ -97,7 +97,7 @@ first move stays in that move's entry.
 | L178, setup, send, reception and decision entry groups | excluded by P1 | P1 excludes the separate effectful verifier reception group `[1]`. It now runs in the final decision together with `[2]`. |
 | L178, queries by move for the remaining allowed groups | ported | [queriesByMoveLaws] keeps explicit setup, the moves' entries and the decision entry, with full-log and ordinary erasure. The reception action that P1 excludes is identified separately above. |
 | L194, explicit rejection | ported | [accessTerminal] keeps the actual transcript, arbitrary private output, prover log, decision source log and world history with `.ok none`. |
-| L198, explicit fault 17 | ported | [accessTerminal] keeps those same observations with `.error 17`, distinct from rejection. |
+| L198, explicit fault 17 | removed | The old verifier returned `.fault 17` itself, as in TerminalRun L66. A core verdict is an `Option`, so a verifier cannot return a fault. Label 17 survives only as a handler failure, in [faults]. |
 | L201, closing audit of the run by moves | ported | `map_fst_runWithQueriesByMove` and `toLog_runWithQueriesByMove` in [queriesByMoveLaws] keep the ordinary outcome, including its closed optional verdict and output oracles. |
 | L202, closing audit of the decision in the run by moves | ported | [queriesByMoveLaws] keeps the same closed optional verdict under log projection. [optionalClosing] keeps the optional verdict through the labelled final-decision presentation. |
 
@@ -145,7 +145,7 @@ oracle-access tests.
 | `route_cost`, L96 | ported | The exact double-read export/cost fixture and bound are ported in the oracle-access tests ([access]). |
 | `program_cost`, L117 | ported | The authored double-read suffix and its cost bound are ported in the oracle-access tests ([access]). |
 | L130, routed weighted cost at most 5 | ported | The exact routed cost-five bound is ported in the oracle-access tests ([access]). |
-| `routed_available`, L149 | ported | [sentOracles] provides the proof that an oracle was sent (`IsSent`), `availableMap` and `liftQuery_node`. [routedAvailable] proves that the oracles of the exact routed program were sent at its produced decision step. |
+| `routed_available`, L149 | ported | [sentOracles] provides the proof that an oracle was sent (`IsSent`), `availableMap` and `liftQuery_node`. [routedAvailable] applies the produced decision entry's permission to the exact routed program. |
 | L165, actual raw log old/old/fresh and claim 4 | ported | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests ([access]). |
 | `future_rejected`, L184, typed exclusion of a future move | ported | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests ([access]). |
 | `future_rejected`, L184, proof of what was sent, from the partial transcript | ported | [sentOracles] defines `IsSent` using only oracle occurrences that were already sent. [joinEntryIsSent] excludes the future move at the actual join. |
@@ -155,7 +155,7 @@ oracle-access tests.
 | L252, partial transcript of the actual decision entry | ported | [decisionEntryBefore] reads the complete actual oracle message partial transcript from the produced decision entry. |
 | L255, membership of the join entry | ported | [joinEntryMem] proves that the selected actual join entry is one of the run's entries. `QueriesByMove.mem_withDecision` in [queriesByMove] is the general selection law. |
 | L257, membership of the decision entry | ported | [decisionEntryMem] and `QueriesByMove.decision_mem_withDecision` in [queriesByMove] prove membership in the produced execution. |
-| L266, the decision entry's partial transcript shows the oracle was sent, and cost 5 | ported | [decisionEntryIsSent] shows that the oracles in the actual decision entry's bundle were sent. [availableCost] couples the proof that an oracle was sent to cost five for the exact doubled-export route. |
+| L266, the decision entry's partial transcript shows the oracle was sent, and cost 5 | ported | [decisionEntryIsSent] shows that the oracles in the actual decision entry's bundle were sent. [availableCost] pairs that permission for the exact doubled-export route with its cost-five bound. |
 | L277, old node name survives inclusion from the join to the end | ported | [joinEntryNode] uses `SentOracleMessageIndex.node_lift` for the actual produced partial transcripts. `firstMovesLe_node` and `availableMap_node` in [sentOracles] give the general laws. |
 | L286, no budget makes the fresh oracle sent at the actual join | ported | [joinEntryIsSent] excludes the fresh oracle occurrence independently of any cost budget. [decisionEntryIsSent] identifies that occurrence at the decision entry. |
 | L300, raw log of the run by moves is old/old/fresh | ported | [queriesByMoveSourceLog] keeps the exact old/old/fresh log, private output 3 and verdict 4. [queriesByMoveLaws] proves that the full log agrees for every prover. |
@@ -188,7 +188,8 @@ links those laws next to the concrete permission and cost assertions.
 | `informed_native_history`, L235 | excluded by P1 | The same former order, dummy request before reveal, is excluded under P1. [bitInformed] is extra coverage. |
 | `native_import_budget`, L244 | ported | Import-cost reflection is ported in the oracle-access tests ([access]). |
 | `fixed_native_resource_bounds`, L258 | ported | [sentOracles] supplies `IsSent` at each partial transcript. The access tests keep the combined access, cost, history and half-bound conjunction. |
-| `informed_cost_does_not_give_half`, L289 | ported | Charge seven and success one for the passive schedule are ported together in the oracle-access tests ([access]). |
+| `informed_cost_does_not_give_half`, L289, charge and success | ported | Charge seven and success one for the passive schedule are ported together in the oracle-access tests ([access]). |
+| `informed_cost_does_not_give_half`, L289, query order | excluded by P1 | The old history has the prefix verifier's dummy request before both reveals. P1 excludes that order, as for L182 and L235. The passive port has reveal, dummy request, reveal. |
 
 ## Erasure, closing and open interface obligations
 
@@ -263,8 +264,8 @@ entries use [queriesByMove] and [queriesByMoveLaws]. Typed access and whole-run 
 [optionalClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L247
 [access]: port-oracle-access.md
 [access-runtime]: port-oracle-access.md#runtimequerybounds-17-assertions
-[accessTerminal]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L133
-[routedAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L286
+[accessTerminal]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L140
+[routedAvailable]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L295
 [availableCost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L83
 
 [queriesByMoveLaws]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean

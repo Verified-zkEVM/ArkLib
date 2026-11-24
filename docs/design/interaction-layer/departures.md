@@ -117,7 +117,8 @@ The [oracle-access port table](port-oracle-access.md) also closes DecorationExam
 the arbitrary-tree decoration test and the independent-universe node and path-family tests. Its
 PhasedRun and QueryBounds rows cite the parent's produced assertions directly. These cover
 membership of the join and decision entries, node names, and the agreement between the queries by
-move and the logged run. The doubled-export fixture adds a proof that the oracles were sent at the
-decision entry, jointly with its cost-five bound. These observations are ported. P1 still excludes
+move and the logged run. The doubled-export fixture applies the decision entry's permission to its
+routed program, jointly with its cost-five bound, and checks the actual ordered decision queries
+separately. These observations are ported. P1 still excludes
 intermediate verifier effects and the moves they were assigned to. No additional departure is
 introduced.

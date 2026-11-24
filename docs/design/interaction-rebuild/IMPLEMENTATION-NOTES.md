@@ -397,8 +397,11 @@ of rows directly to the parent's `LoggedExecutionTests` assertions. The first gr
 PhasedRun querier, setup and partial-transcript rows. The second group holds the QueryBounds rows
 on membership of the join and decision entries and on concrete partial transcripts. It also holds
 the QueryBounds rows on node names and on the agreement of the queries by move with the logged
-run. P1 excludes intermediate verifier actions and the entries they were assigned to. `RoutedAccessTests.routed_available`
-additionally proves that the oracles of the exact composed doubled-export execution were sent at its
-decision entry. `QueryCostTests.routed_available_and_cost` combines that proof with cost five for
-the same routed program. The oracle-message splitting checks remain. The parent's large-query
+run. P1 excludes intermediate verifier actions and the entries they were assigned to.
+`RoutedAccessTests.raw_available` proves that every query in the completed bundle of the composed
+doubled-export execution has a matching node at its decision entry.
+`RoutedAccessTests.routed_available` applies that permission to the routed program, and
+`QueryCostTests.routed_available_and_cost` pairs it with cost five for the same program.
+`RoutedAccessTests.loggedSummary_eq` and `RoutedAccessTests.composed_decisionQueries` check the
+actual ordered decision queries. The oracle-message splitting checks remain. The parent's large-query
 full-log limitation in entry 18 is unchanged.

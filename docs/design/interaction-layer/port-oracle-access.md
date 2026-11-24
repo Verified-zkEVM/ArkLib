@@ -1,7 +1,9 @@
 # Oracle access tests: port table
 
-This table covers all 89 assertions in the seven old-layer test files below. Eight modules in the
-interaction layer port them. `QueryCost.lean` is the eighth: it collects the cost and query-profile
+This table covers all 89 assertions in the seven old-layer test files below, in 90 rows: 75 ported,
+6 excluded by P1, 1 excluded by P2, 8 removed and none open. RuntimeQueryBounds row 17 has two
+rows, one for its charge and success and one for its query order. Eight modules in the interaction
+layer port the assertions. `QueryCost.lean` is the eighth: it collects the cost and query-profile
 assertions from `QueryBounds`, `RuntimeQueryBounds` and `PhasedRun` instead of porting an eighth
 old file. Row numbers follow the old declaration order, including the universe canaries. Helper
 definitions and the diagnostic axiom-print commands are not counted as assertions.
@@ -11,11 +13,18 @@ RuntimeQueryBounds rows. The [parent port table][parent-port-table] lists the sa
 
 The two approved premises are:
 
-- **P1 (passive verifier):** verifiers send public-coin challenges only, and bundle queries
-  happen in the final decision. A challenge cannot be computed from an input or from a previously
-  sent oracle. Challenge distributions may still depend on earlier public challenges and prover
-  messages.
-- **P2 (fixed shape):** neither a challenge nor an oracle message selects the protocol's subtree.
+- **P1 (passive verifier):** P1 restricts execution. The verifier's bundle queries happen only in
+  the final decision. Each challenge comes from the supplied challenge implementation, which answers
+  a `challengeSpec` query indexed by the challenge node. That index records only the challenge's
+  structural location: the query carries no input and no sent oracle message. The runtime that
+  answers it may have ambient state. Fresh independent public coins are an additional assumption on
+  the chosen interpretation, and the types do not impose them. For example,
+  [WARP §3.2](https://eprint.iacr.org/2025/753) specifies a uniformly random verifier message in
+  each round.
+- **P2 (fixed shape):** neither a challenge nor an oracle message directly selects the protocol's
+  subtree. Only the prover's public messages select the continuation. A prover can choose those
+  messages after seeing a challenge, so a challenge can still affect the continuation through the
+  prover.
 
 Each row has one of four statuses:
 
@@ -36,7 +45,7 @@ A result that the parent already proves is linked directly instead of being copi
 | <a id="p4"></a>[4][fp4] | Final oracle message | ported: [run][p-accept], [lookup][p-payload], [actual_partial_transcripts][p-prefixes]. |
 | <a id="p5"></a>[5][fp5] | Closing, log, groups | excluded by P1: P1 excludes reception effect 1 as a separate verifier group. The [closure/log][p-close] and [decision outcomes][p-decision] tests keep the outputs and histories of the run. [log erasure and setup/log laws][laws-api] keep the remaining groups and closing. |
 | <a id="p6"></a>[6][fp6] | Explicit rejection | ported: [decision outcomes][p-decision]. |
-| <a id="p7"></a>[7][fp7] | Fault 17, not rejection | ported: [decision outcomes][p-decision]. |
+| <a id="p7"></a>[7][fp7] | Fault 17, not rejection | removed: the old verifier returned `.fault 17` itself. A core verdict is an `Option`, so a verifier cannot return a fault. [answerAll_rejects][p-total] shows that mode 1 returns `.ok none` when the handler answers every request. |
 
 The parent's queries by move supply the entry data: queriers, partial transcripts, membership and
 the ordered query groups. `OracleVerifier.executeWith` runs the interaction and the final decision.
@@ -60,16 +69,23 @@ effect 2. The remaining observations by move are ported through `toLog_runWithQu
 closing audits at L201 and L202 have those same exact targets in the
 [parent port table][parent-phase-audits].
 
-Rows 6–7 use the same closing prover and final-decision interpreter. The new test first runs the
-prover and captures the completed transcript, the private output and the prover query log. It then
-calls `OracleVerifier.decideCatching` on that transcript and the input data. The ambient handler
-returns fault 17 as `Except.error 17`. Rejection is `Except.ok none`, and acceptance is
-`Except.ok (some (message, old + message))`. All three outcomes keep the same transcript, an
-arbitrary hidden private output, the prover log, the decision's log of answered queries and the
-history `[9, 0, 1, 2]`. The unanswered failing request adds no entry to the log of answered
-queries. The sent answer is read before that failure, and acceptance closes with the same run's
-input and message. No fault is encoded as an accepted value, and `OracleVerifier.decide` is
-unchanged.
+Row 6 uses the closing prover and the final-decision interpreter. The test first runs the prover
+and captures the completed transcript, the private output and the prover query log. It then calls
+`OracleVerifier.decideCatching` on that transcript and the input data. Rejection is
+`Except.ok none`, and acceptance is `Except.ok (some (message, old + message))`. Both keep the same
+transcript, an arbitrary hidden private output, the prover log, the decision's log of answered
+queries and the history `[9, 0, 1, 2]`. Acceptance closes with the same run's input and message.
+
+Row 7 is removed. The old verifier's terminal action returned `.fault 17` itself. In the port,
+mode 1 requests tag 17, and the ambient handler `decisionHandler` throws 17. When the handler
+answers every request, [answerAll_rejects][p-total] shows that mode 1 returns `.ok none` and that
+the history records request 17 after `[9, 0, 1, 2]`.
+
+**Handler failure.** The first conjunct of [decision_outcomes][p-decision] checks that a handler
+failure keeps its label 17, the transcript, the private output, the prover log and the queries
+answered before the failure. The failed request has no answer, so it adds no entry to the log of
+answered queries. This check is additional coverage: no old PhasedRun assertion runs a failing
+handler. No fault is encoded as an accepted value, and `OracleVerifier.decide` is unchanged.
 
 ## Prefix: 8 assertions
 
@@ -77,18 +93,19 @@ unchanged.
 |---|---|---|
 | [1][fx1] | Shared structural cursor | ported: [shared spine][x-cursor]. |
 | [2][fx2] | Different partial transcripts | ported: [distinct full moves][x-distinct]. |
-| [3][fx3] | The crossed send gives a sent oracle | ported: [crossed-send query][x-query]; `SentOracleMessageIndex`, `SentOracleMessageIndex.node` and `IsSent` in [SentOracles][sent-api] identify the crossed oracle. |
-| [4][fx4] | The root has no sent oracle for that send | ported: [empty partial transcript has no sent oracle][x-no-sent]; `SentOracleMessageIndex` at `.here` is empty in [SentOracles][sent-api]. |
+| [3][fx3] | The crossed send gives a sent oracle | ported: [root_sent_after_send][x-root-sent] shows that the root oracle node of `mixed` is sent after the Boolean is sent, for either Boolean. The [crossed-send query][x-query] reads the answer from that oracle message. |
+| [4][fx4] | The root has no sent oracle for that send | ported: [root_not_sent_empty][x-root-empty] shows that the root oracle node of `mixed` is not sent at `PartialTranscript.empty`. |
 | [5][fx5] | A send of an empty oracle message type permits a root partial transcript | ported: [root moves][x-empty-root]. |
 | [6][fx6] | No realization crosses an empty send | ported: [crossed moves][x-empty-moves]. |
 | [7][fx7] | Prefix length two | ported: [length][x-length], [completion][x-complete]. |
 | [8][fx8] | The first hidden realization is true | ported: [oracle message in the partial transcript][x-payload]. |
 
-Rows 3–4 use the parent's `PartialTranscript` interface in [SentOracles][sent-api].
+Rows 3–4 use the parent's `PartialTranscript` interface in [SentOracles][sent-api] on the original
+`mixed` protocol. `IsSent` says that some sent oracle message has a given node name.
 `SentOracleMessageIndex` at an empty partial transcript is empty, while crossing an oracle send
-adds the sent oracle message for that node. `IsSent` says that some sent oracle message has a given
-node name, and `IsSent.mono` keeps that true when the partial transcript is extended. The
-[prefix append identity][x-prefix] identifies the boundary immediately after the send, and the
+adds the sent oracle message for that node. `IsSent.mono` keeps `IsSent` true when the partial
+transcript is extended. The crossed-send query runs on a standalone prefix protocol: the
+[prefix append identity][x-prefix] identifies it as `mixed` up to the send, and the
 [crossed-send query][x-query] reads its own oracle message without choosing the future public
 message. [Completed-path lookup][x-sent] checks that oracle message for every later choice. [AccessExample 3][a-unsent] and [4][a-sent] check the typed access boundary.
 
@@ -99,16 +116,16 @@ message. [Completed-path lookup][x-sent] checks that oracle message for every la
 | <a id="q1"></a>[1][fq1] | Per-query cost | ported: [route_cost][c-route]. |
 | <a id="q2"></a>[2][fq2] | Source cost five | ported: [program_cost][c-program]. |
 | <a id="q3"></a>[3][fq3] | Routed cost five | ported: [routed_cost][c-routed]. |
-| <a id="q4"></a>[4][fq4] | Queried oracles were sent | ported: [routed_available][q-available] proves that every oracle the routed program queries was sent at the produced decision entry. |
-| <a id="q5"></a>[5][fq5] | Old/old/fresh log | ported: [logged run][q-log]. |
+| <a id="q4"></a>[4][fq4] | Queried oracles were sent | ported: [raw_available][q-raw-available] proves that every query in the completed bundle has a matching node at the produced decision entry. [routed_available][q-available] applies that permission to the routed program. [loggedSummary_eq][q-log] and [composed_decisionQueries][q-decision-queries] check the actual ordered queries separately. |
+| <a id="q5"></a>[5][fq5] | Old/old/fresh log | ported: [loggedSummary_eq][q-log]. |
 | <a id="q6"></a>[6][fq6] | Future exclusion | ported: [exclusion][q-future] for every prefix program; [joinEntry_isSent][q-join-sent] excludes the node of the future oracle at the produced join entry. |
 | <a id="q7"></a>[7][fq7] | Old/fresh identities | ported: [typed identity][q-repeat], [joinEntry_node][q-join-node] and [decisionEntry_isSent][q-decision-sent]. |
-| <a id="q8"></a>[8][fq8] | Closing keeps the log | ported: [closed run log][q-log]. |
+| <a id="q8"></a>[8][fq8] | Closing keeps the log | ported: [loggedSummary_eq][q-log]. |
 | <a id="q9"></a>[9][fq9] | Produced join partial transcript | ported: [joinEntry_before][q-join-before]. |
 | <a id="q10"></a>[10][fq10] | Decision-entry partial transcript | ported: [decisionEntry_before][q-decision-before]. |
 | <a id="q11"></a>[11][fq11] | Join membership | ported: [joinEntry_mem][q-join-member]. |
 | <a id="q12"></a>[12][fq12] | Decision-entry membership | ported: [decisionEntry_mem][q-decision-member]. |
-| <a id="q13"></a>[13][fq13] | Sent oracles and cost | ported: [routed_available_and_cost][q-available-cost] proves the same routed program at the produced decision entry, with cost five. |
+| <a id="q13"></a>[13][fq13] | Sent oracles and cost | ported: [routed_available_and_cost][q-available-cost] applies the decision entry's permission to the routed program and proves its structural cost bound of five. [composed_decisionQueries][q-decision-queries] checks the actual ordered queries of the same queries-by-move result. |
 | <a id="q14"></a>[14][fq14] | Node-name inclusion | ported: [joinEntry_node][q-join-node]; `availableMap_node`, `liftQuery_node` and `sentOracleMessageMap_query` in [SentOracles][sent-api] keep node names, query arguments and routing. |
 | <a id="q15"></a>[15][fq15] | Join exclusion | ported: [joinEntry_isSent][q-join-sent] excludes the future oracle regardless of budget; [exclusion][q-future] proves the typed program law. |
 | <a id="q16"></a>[16][fq16] | Queries by move | ported: [queries_by_move_source_log_contract][q-step-source] and `simulateQ_toLog_runWithQueriesByMove` in [QueriesByMoveLaws][laws-api]. |
@@ -129,11 +146,17 @@ keep its partial transcript and membership. They add no duplicate assertions or 
 `toLog_runWithQueriesByMove` and `simulateQ_toLog_runWithQueriesByMove` relate entries and log for
 every prover, including this branch's composed verifier.
 
-The additional [routed_available][q-available] and [joint proof][q-available-cost] cover this
-branch's exact doubled-export program. `composedQueriesByMove a b` comes from `composed.runWithQueriesByMove`.
-`rawAvailable` matches each raw query's node name, computed from the completed transcript, with an
-oracle that was sent at the decision entry of that execution. This ties the proof that an oracle was
-sent to the same program as the cost-five bound. The [run transcript][q-run],
+Rows 4 and 13 use `composedQueriesByMove a b`, which comes from `composed.runWithQueriesByMove`.
+`rawAvailable` matches a raw query's node name, computed from the completed transcript, with an
+oracle that was sent at the decision entry of that execution. That entry's partial transcript is
+the whole transcript, so [raw_available][q-raw-available] holds for every query in the completed
+bundle, not only for the queries the program makes. [routed_available][q-available] applies this
+permission to the routed program, and [routed_available_and_cost][q-available-cost] pairs it with
+the cost-five bound. The actual ordered queries are checked separately. [loggedSummary_eq][q-log]
+checks them on the logged run. [composed_decisionQueries][q-decision-queries] checks the
+`decisionQueries` field of the same queries-by-move result: two reads of the prefix oracle with
+answer `a`, then one read of the suffix oracle with answer `b`. The `decision` entry's own `queries`
+field holds only the ambient projection. The [run transcript][q-run],
 [split oracle messages][q-split], [prefix oracle message][q-prefix-payload] and
 [suffix oracle message][q-suffix-payload] stay as additional checks.
 
@@ -157,7 +180,8 @@ sent to the same program as the cost-five bound. The [run transcript][q-run],
 | <a id="r14"></a>[14][fr14] | Logged informed order | excluded by P1: P1 excludes the dummy-before-reveal order; [passive log][p-informed-log]. |
 | <a id="r15"></a>[15][fr15] | Run import cost | ported: [import_budget][c-import]. |
 | <a id="r16"></a>[16][fr16] | Joint half bound | ported: [joint][c-joint] with the input node-name and inclusion laws in [SentOracles][sent-api]. |
-| <a id="r17"></a>[17][fr17] | Charge 7, success 1 | excluded by P1: P1 excludes the dummy-before-reveal order; [passive charge and success][c-informed]. |
+| <a id="r17"></a>[17][fr17] | Charge 7, success 1 | ported: [charge seven and success one][c-informed] for the passive schedule, and the [answer outcome][r-informed-answers]. |
+| [17][fr17] | Dummy-before-reveal order | excluded by P1: the old history has the prefix verifier's dummy request before both reveals. P1 excludes that order, as for rows 10 and 14. The passive [trace][c-informed] has reveal, dummy request, reveal. |
 
 Rows 1, 2, 5, 8 and 16 use the input case of the parent's `queryNode`, `availableMap_node` and
 `liftNode` in [SentOracles][sent-api]. The prefix has no sent oracle: its export reads only its
@@ -182,8 +206,8 @@ equality for every such prover. The exact target is the stronger
 [open-program split law][run-append]. No two-prover specialization counts as the all-prover port.
 P1 separately excludes the old effectful-prefix order.
 
-For rows 10, 14 and 17, the informed prover reveals at the seam before the passive prefix's dummy
-request. The ambient order is `[true ↦ hidden, false ↦ false, true ↦ hidden]`. The old order was
+For rows 10 and 14 and the order part of row 17, the informed prover reveals at the seam before
+the passive prefix's dummy request. The ambient order is `[true ↦ hidden, false ↦ false, true ↦ hidden]`. The old order was
 `[false ↦ false, true ↦ hidden, true ↦ hidden]`. Both have final state `(hidden, 3)` and charge
 seven. The old dummy-before-reveal order needs a non-passive prefix verifier, so P1 excludes it. It
 is not an open question about which steps are allowed. The extra passive history does not port the
@@ -197,6 +221,19 @@ parent's node names for inputs and the inclusion laws described above. The row-1
 conjunction keeps charge seven and [success one][r-informed-success], with its different order
 stated explicitly, and its [answer outcome][r-informed-answers]. Neither theorem derives
 arbitrary-prover security from access and cost certificates alone.
+
+These fixtures measure three different quantities, with different interfaces and prices. The
+doubled export's routed suffix has a completed path of cost five, which excludes a bound of four
+(QueryBounds row 17). In the hidden-bit runtime, both runs import one coin, and their ambient
+histories cost four for a fixed guess and seven for the informed prover. The success event
+compares the exported oracle answer with the accepted target. The half bound holds for the fixed
+guess because of that prover's behavior. It is not a soundness premise, and these fixture bounds
+are not a general resource contract.
+
+[routed_suffix_budget][c-suffix-routed] transfers the suffix bound through the route by hand,
+because PR #1476 is not on the base yet. Once it merges, the proof will use
+`OracleMap.withAmbient_worstCaseCost`, and the checks of the actual substitution and the per-query
+prices stay.
 
 ## AccessExample: 18 assertions
 
@@ -292,8 +329,8 @@ visible in the alias's domain, as in the parent `OracleProtocol`; it is an actua
 | [2][fm2] | Arbitrary tree universe | ported: [tree canary][m-tree]. |
 | [3][fm3] | Arbitrary branch-path universe | ported: [branch canary][m-branch]. |
 | [4][fm4] | Arbitrary execution-path universe | ported: [execution canary][m-execution]. |
-| [5][fm5] | Distinct hidden oracle messages give distinct paths | ported: [inequality][m-distinct]. |
-| [6][fm6] | Equal public choices give equal paths | ported: [projection equality][m-shared]. |
+| [5][fm5] | Distinct hidden oracle messages give distinct full transcripts | ported: [inequality][m-distinct]. |
+| [6][fm6] | Equal public choices give equal structural paths | ported: [path equality][m-shared] checks that the two full transcripts have equal structural paths. |
 | [7][fm7] | False branch keeps the public choice only | ported: [false path][m-false]. |
 | [8][fm8] | True branch erases the Fin 3 oracle message | ported: [true path][m-true]. |
 | [9][fm9] | Complete runtime message | ported: [full transcript][m-runtime]. |
@@ -453,17 +490,17 @@ without them. No added local or global `attribute [...]` transparency command an
 [a-large-query]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/AccessTyping.lean#L202
 [d-protocol]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L23
 [d-decoration]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L45
-[d-root]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L117
-[d-false-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L126
-[d-true-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L130
-[d-false-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L134
-[d-true-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L138
-[d-false-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L141
-[d-true-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L145
+[d-root]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L118
+[d-false-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L127
+[d-true-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L131
+[d-false-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L135
+[d-true-pos]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L139
+[d-false-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L142
+[d-true-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L146
 [d-query]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L91
-[d-false-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L98
-[d-true-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L105
-[d-oracle-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L112
+[d-false-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L99
+[d-true-interface]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L106
+[d-oracle-actor]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L113
 [m-position]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L23
 [m-tree]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L27
 [m-branch]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L31
@@ -475,31 +512,25 @@ without them. No added local or global `attribute [...]` transparency command an
 [m-true]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L72
 [m-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L77
 [m-view]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/MixedTranscripts.lean#L81
-[x-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L37
-[x-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L40
+[x-cursor]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L39
+[x-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L42
 [x-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L54
-[x-no-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L61
-[x-empty-root]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L69
-[x-empty-moves]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L74
-[x-length]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L88
-[x-complete]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L90
-[x-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L93
+[x-empty-root]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L85
+[x-empty-moves]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L90
+[x-length]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L104
+[x-complete]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L106
+[x-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L109
 [p-accept]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L90
 [p-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L93
-[p-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L102
-[q-route]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L136
-[q-future]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L173
-[q-log]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L240
-[q-log-summary]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L232
+[q-future]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L174
+[q-log]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L243
+[q-log-summary]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L235
 [q-repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L143
-[q-fresh]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L149
-[q-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L153
-[q-untyped]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L167
-[q-run]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L208
-[q-split]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L217
-[q-prefix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L221
-[q-suffix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L225
-[q-concrete-log]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L247
+[q-run]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L209
+[q-split]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L218
+[q-prefix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L222
+[q-suffix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L227
+[q-concrete-log]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L250
 [c-route]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L48
 [c-program]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L69
 [c-routed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L78
@@ -510,11 +541,8 @@ without them. No added local or global `attribute [...]` transparency command an
 [c-import]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L220
 [c-joint]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L230
 [c-informed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L261
-[c-prover-log]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L293
-[c-joint-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L83
 [c-lower]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L116
 [c-input-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L166
-[c-count]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L297
 [r-export]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L45
 [r-decide]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L60
 [r-access]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L84
@@ -528,30 +556,30 @@ without them. No added local or global `attribute [...]` transparency command an
 [r-map]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L51
 [r-pre]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L54
 [r-output]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L70
-[p-order]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L542
 [p-close]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L223
-[p-parent-reject]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L219
 [p-guess-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L759
 [p-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L769
 [p-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L792
 [p-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L803
-[p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L354
-[run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L122
-[oracle-position]: ../../../ArkLib/Interaction/Core/Signature.lean#L45
-[oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L57
+[p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L355
+[run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
+[oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L58
 [bundle-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L132
-[logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L336
+[logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L338
 
 [universes]:
     ../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe
 
-[x-query]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L108
+[x-query]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L124
+[x-root-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L69
+[x-root-empty]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L63
 
-[x-prefix]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L100
+[x-prefix]: ../../../ArkLibTest/Interaction/Core/Oracle/PartialTranscripts.lean#L116
 
-[d-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L149
+[d-distinct]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L150
 
-[p-decision]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L133
+[p-decision]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L140
+[p-total]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenSendRun.lean#L161
 
 [parent-port-table]: port-logged-execution.md
 [parent-phase-audits]: port-logged-execution.md#phasedrunlean
@@ -560,7 +588,7 @@ without them. No added local or global `attribute [...]` transparency command an
 [step-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
 [sent-api]: ../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean
 [p-step-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L925
-[p-prefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L944
+[p-prefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L945
 [p-setup-step]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L971
 [q-join-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1073
 [q-decision-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1078
@@ -574,6 +602,8 @@ without them. No added local or global `attribute [...]` transparency command an
 
 [d-node]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L33
 
-[q-available]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L286
+[q-available]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L295
+[q-raw-available]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L277
+[q-decision-queries]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L263
 
 [q-available-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L83

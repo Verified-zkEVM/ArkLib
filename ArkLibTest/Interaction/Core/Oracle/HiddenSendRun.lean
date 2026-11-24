@@ -108,9 +108,11 @@ namespace Interaction.Core.HiddenSendRunClosingTests
 
 open Interaction.Core.LoggedExecutionTests OracleSpec
 
-/-- Execute the actual closing prover before interpreting its final decision with labelled
-failure. Retain its transcript, private output, prover log, decision log and ambient history. -/
-def decisionObserved (mode old message hidden : Nat) :
+/-- Execute the actual closing prover, then interpret its final decision under `handler`, which
+may fail with a label. Retain the transcript, private output, prover log, decision log and ambient
+history. -/
+def closingRun (handler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))))
+    (mode old message hidden : Nat) :
     (Transcript oracleSig pairSend × Nat × Except Nat (Option (Nat × Nat)) ×
       QueryLog ambient × List (String × Nat)) × List Nat :=
   (do
@@ -121,15 +123,20 @@ def decisionObserved (mode old message hidden : Nat) :
         (sampler oracleSig pairSend (fun c => liftM (full.query (.inr c))))))
     let p := Transcript.path tr
     let data : (pathBundle inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
-    let (verdict, log) ← (decisionVerifier mode).decideCatching decisionHandler () p
+    let (verdict, log) ← (decisionVerifier mode).decideCatching handler () p
       (toView pairSend tr) data
     pure (tr, out, verdict.map (Option.map fun t =>
       (t, ((decisionVerifier mode).outputMap () p (toView pairSend tr)).f data ())),
       proveLog.fst, describePair p log) : StateM (List Nat) _).run []
 
-/-- Fault 17, rejection and acceptance retain the same actual transcript, private output and
-answered-query logs. Failure is returned by the handler and is neither rejection nor acceptance.
-The failed request has no answer, so it adds no query-answer entry. -/
+/-- The closing run under `decisionHandler`, which throws on requests 17 and 23. -/
+def decisionObserved (mode old message hidden : Nat) :=
+  closingRun decisionHandler mode old message hidden
+
+/-- Under handler failure, the run keeps the label 17, the transcript, the private output, the
+prover log and the queries answered before the failure. The failed request has no answer, so it
+adds no entry to the log of answered queries. Rejection and acceptance keep the same observations.
+The verifier itself returns only an optional verdict: label 17 comes from `decisionHandler`. -/
 theorem decision_outcomes (old message hidden : Nat) :
     decisionObserved 1 old message hidden =
       ((⟨(message, hidden), ⟨⟩⟩, hidden, .error 17,
@@ -144,5 +151,15 @@ theorem decision_outcomes (old message hidden : Nat) :
         [⟨9, (9 : Nat)⟩, ⟨0, (0 : Nat)⟩],
         [("tag", 1), ("tag", 2), ("sent", message)]), [9, 0, 1, 2]) := by
   exact ⟨rfl, rfl, rfl⟩
+
+/-- A handler that answers every request, including 17, and records it. -/
+def answerAll : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun tag => do
+  modify (· ++ [tag]); pure tag
+
+/-- When the handler answers every request, mode 1 rejects: the verifier cannot return a fault
+itself. The history records request 17 after the queries answered before it. -/
+theorem answerAll_rejects (old message hidden : Nat) :
+    (closingRun answerAll 1 old message hidden).1.2.2.1 = .ok none ∧
+      (closingRun answerAll 1 old message hidden).2 = [9, 0, 1, 2, 17] := ⟨rfl, rfl⟩
 
 end Interaction.Core.HiddenSendRunClosingTests

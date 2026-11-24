@@ -253,11 +253,17 @@ example : loggedSummary.{0} 1 2 =
         ⟨.inr suffixSlot, (2 : Nat)⟩]) :=
   loggedSummary_eq 1 2
 
-
 /-- The composed verifier's queries by move for the same tag-answering execution. -/
 def composedQueriesByMove (a b : Nat) :
     OracleVerifier.QueriesByMove composed.{0, 0, 0, 0} (fun _ => Nat) :=
   simulateQ tagHandler (composed.runWithQueriesByMove () noData (prover a b))
+
+/-- The queries-by-move result records the same raw decision queries as the logged run: two reads
+of the prefix oracle, then one read of the suffix oracle. -/
+theorem composed_decisionQueries (a b : Nat) :
+    (composedQueriesByMove a b).decisionQueries =
+      [⟨.inr prefixSlot, a⟩, ⟨.inr prefixSlot, a⟩, ⟨.inr suffixSlot, b⟩] := by
+  kernel_rfl
 
 /-- A raw query has its node name among the nodes of the available bundle at the decision entry. -/
 def rawAvailable (a b : Nat) (q : rawBundle.spec.Domain) : Prop :=
