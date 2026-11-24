@@ -25,7 +25,7 @@ The unique-witness lemma records the resulting zero-error collapse.
 @[expose] public section
 
 open OracleComp OracleSpec ProtocolSpec
-open scoped NNReal ProbabilityTheory
+open scoped NNReal ENNReal ProbabilityTheory
 
 /-- For every fixed instance–witness pair in the relation, every possible first honest prover
 message occurs with probability at most `μ`. Intuitively, when `0 < μ < 1`, the first prover
@@ -95,7 +95,8 @@ abbrev HonestVerifierSimulator (StmtIn : Type) (pSpec : ProtocolSpec n) :=
 interactive proof with a supplied simulator.
 
 For each relation member `(stmt, wit)`, the honest and simulated verifier views have total
-variation distance at most `error stmt`. A uniform bound is expressed by `error := fun _ => zIP`.
+variation distance at most `error stmt`. The error is in `ℝ≥0∞`, like the soundness errors.
+A uniform bound is expressed by `error := fun _ => zIP`.
 This is denoted `z_IP(𝕩)` in **[snarg-book, Definition 13.1.7]**.
 The simulator receives only the statement. Discrepancies in the statement and transcript both
 contribute to the distance. The views are unconditional and contain no verifier decision.
@@ -104,9 +105,10 @@ def honestVerifierZeroKnowledgeWithSimulator
     (impl : QueryImpl oSpec ProbComp)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (simulator : HonestVerifierSimulator StmtIn pSpec)
-    (relation : Set (StmtIn × WitIn)) (error : StmtIn → ℝ) : Prop :=
+    (relation : Set (StmtIn × WitIn)) (error : StmtIn → ℝ≥0∞) : Prop :=
   ∀ stmt wit, (stmt, wit) ∈ relation →
-    discreteTVDist (honestVerifierView impl prover stmt wit) (simulator stmt) ≤ error stmt
+    ENNReal.ofReal (discreteTVDist (honestVerifierView impl prover stmt wit) (simulator stmt)) ≤
+      error stmt
 
 /-- Existential honest-verifier zero knowledge. With unique witnesses and an inhabited witness
 type, classical choice supplies a simulator with error zero for any prover
@@ -114,7 +116,7 @@ type, classical choice supplies a simulator with error zero for any prover
 def honestVerifierZeroKnowledge
     (impl : QueryImpl oSpec ProbComp)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (relation : Set (StmtIn × WitIn)) (error : StmtIn → ℝ) : Prop :=
+    (relation : Set (StmtIn × WitIn)) (error : StmtIn → ℝ≥0∞) : Prop :=
   ∃ simulator, honestVerifierZeroKnowledgeWithSimulator impl prover simulator relation error
 
 /-- For a relation with unique witnesses, a simulator can choose a witness classically and run
@@ -130,18 +132,19 @@ theorem honestVerifierZeroKnowledge_of_uniqueWitness [Inhabited WitIn]
     (if h : ∃ wit, (stmt, wit) ∈ relation then h.choose else default), ?_⟩
   intro stmt wit hMem
   have h : ∃ wit, (stmt, wit) ∈ relation := ⟨wit, hMem⟩
-  change discreteTVDist (honestVerifierView impl prover stmt wit)
+  change ENNReal.ofReal (discreteTVDist (honestVerifierView impl prover stmt wit)
     (honestVerifierView impl prover stmt (if h : ∃ wit, (stmt, wit) ∈ relation
-      then h.choose else default)) ≤ 0
-  rw [dite_eq_left h, hUnique stmt _ _ h.choose_spec hMem, discreteTVDist.self]
+      then h.choose else default))) ≤ 0
+  rw [dite_eq_left h, hUnique stmt _ _ h.choose_spec hMem, discreteTVDist.self,
+    ENNReal.ofReal_zero]
 
 /-- **[CO25, Definition 7.3; snarg-book, Definition 13.1.7]** The size-dependent HVZK
-error envelope in the extended nonnegative reals. It is zero with no valid instances and
-`⊤` for unbounded errors. For nonnegative errors, an attained maximum agrees with the paper.
+error envelope. It is zero with no valid instances and `⊤` for unbounded errors. An attained
+maximum agrees with the paper.
 This mathematical supremum is noncomputable. -/
 noncomputable def honestVerifierErrorEnvelope (relation : Set (StmtIn × WitIn)) (size : StmtIn → ℕ)
-    (error : StmtIn → ℝ) (n : ℕ) : ENNReal :=
-  sSup {e | ∃ x w, (x, w) ∈ relation ∧ size x ≤ n ∧ e = ENNReal.ofReal (error x)}
+    (error : StmtIn → ℝ≥0∞) (n : ℕ) : ℝ≥0∞ :=
+  sSup {e | ∃ x w, (x, w) ∈ relation ∧ size x ≤ n ∧ e = error x}
 
 end Interactive
 

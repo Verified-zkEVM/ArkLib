@@ -31,7 +31,7 @@ and do not import either protocol representation.
 @[expose] public section
 
 open OracleComp OracleSpec
-open scoped NNReal ProbabilityTheory
+open scoped NNReal ENNReal ProbabilityTheory
 
 namespace Reduction
 
@@ -274,31 +274,32 @@ variable {Statement Witness : Type}
 Adaptive statistical zero knowledge for a supplied simulator family and every public security
 parameter, instance-size bound, and public-query budget. The sampled oracle models `D(λ,n)`.
 Each adversary chooses a valid instance–witness pair of size at most `n`, and both stages share
-the public-query budget. Efficiency of the supplied simulator requires a separate resource bound. -/
+the public-query budget. The error is in `ℝ≥0∞`, like the soundness errors. Efficiency of the
+supplied simulator requires a separate resource bound. -/
 def adaptiveNARGZeroKnowledgeWithSimulator
     (simulator : ∀ securityParameter sizeBound,
       NARGZKSimulator (publicSpec securityParameter sizeBound) Statement
         (NARGString securityParameter sizeBound) (Program securityParameter sizeBound))
-    (error : ℕ → ℕ → ℕ → ℝ) : Prop :=
+    (error : ℕ → ℕ → ℕ → ℝ≥0∞) : Prop :=
   ∀ securityParameter sizeBound t (Output : Type)
     (adversary : NARGZKAdversary (publicSpec securityParameter sizeBound) Statement Witness
       (NARGString securityParameter sizeBound) Output
       (fun x w => (x, w) ∈ relation ∧ statementSize x ≤ sizeBound)),
     adversary.HasAggregateQueryBound (fun _ => True) t →
-      discreteTVDist
+      ENNReal.ofReal (discreteTVDist
         (adaptiveNARGZKRealExp (sampleOracle securityParameter sizeBound)
           (oracleImpl securityParameter sizeBound) (prover securityParameter sizeBound)
           adversary)
         (adaptiveNARGZKSimExp (sampleOracle securityParameter sizeBound)
           (oracleImpl securityParameter sizeBound) (programImpl securityParameter sizeBound)
-          (simulator securityParameter sizeBound) adversary) ≤
+          (simulator securityParameter sizeBound) adversary)) ≤
         error securityParameter sizeBound t
 
 /-- Existential adaptive NARG zero knowledge. A single simulator family works for every public
 parameter, budget, output type, and adversary. For a relation with unique witnesses, an inhabited
 witness type, and a no-op program, classical choice gives error zero for any prover
 (`adaptiveNARGZeroKnowledge_of_uniqueWitness`). -/
-def adaptiveNARGZeroKnowledge (error : ℕ → ℕ → ℕ → ℝ) : Prop :=
+def adaptiveNARGZeroKnowledge (error : ℕ → ℕ → ℕ → ℝ≥0∞) : Prop :=
   ∃ simulator, adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl
     programImpl prover relation statementSize simulator error
 
@@ -330,7 +331,7 @@ theorem adaptiveNARGZeroKnowledge_of_uniqueWitness [Inhabited Witness]
     have hWitness : witness xw.1.1 = xw.1.2 := by
       simpa only [witness, dite_eq_left h] using hUnique _ _ _ h.choose_spec xw.property.1
     simp [simulator, hWitness, simulateQ_map, hNoop]
-  rw [hExp, discreteTVDist.self]
+  rw [hExp, discreteTVDist.self, ENNReal.ofReal_zero]
 
 variable {publicSpec sampleOracle oracleImpl programImpl prover relation statementSize}
 
@@ -339,7 +340,7 @@ and retains its programming instructions. -/
 theorem adaptiveNARGZeroKnowledgeWithSimulator.map {Encoded : ℕ → ℕ → Type}
     {simulator : ∀ l n, NARGZKSimulator (publicSpec l n) Statement
       (NARGString l n) (Program l n)}
-    (encode : ∀ l n, NARGString l n → Encoded l n) {error : ℕ → ℕ → ℕ → ℝ}
+    (encode : ∀ l n, NARGString l n → Encoded l n) {error : ℕ → ℕ → ℕ → ℝ≥0∞}
     (h : adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl programImpl
       prover relation statementSize simulator error) :
     adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl programImpl
@@ -362,7 +363,7 @@ theorem adaptiveNARGZeroKnowledgeWithSimulator.map {Encoded : ℕ → ℕ → Ty
 /-- Pure NARG-string encoding preserves existential zero knowledge with the same error and
 aggregate public-query budget. -/
 theorem adaptiveNARGZeroKnowledge.map {Encoded : ℕ → ℕ → Type}
-    (encode : ∀ l n, NARGString l n → Encoded l n) {error : ℕ → ℕ → ℕ → ℝ}
+    (encode : ∀ l n, NARGString l n → Encoded l n) {error : ℕ → ℕ → ℕ → ℝ≥0∞}
     (h : adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl prover
       relation statementSize error) :
     adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl
