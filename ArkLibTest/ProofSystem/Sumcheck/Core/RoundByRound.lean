@@ -56,7 +56,7 @@ theorem false_claim_bound {Out : Transcript oracleSig (protocol F deg n) → Typ
       (n : ℝ≥0∞) * deg / Fintype.card F := by
   let : MeasurableSpace (Outcome oracleSig (protocol F deg n) Out
       (fun _ => Spec.StatementRound F n (Fin.last n) × (∀ i, Spec.OracleStatement F n deg i))) := ⊤
-  have h := legacyVerifier_soundness_rounds F deg n D amb init impl Out (stmt, oStmt) trivial
+  have h := verifier_soundness_rounds_of_legacy F deg n D amb init impl Out (stmt, oStmt) trivial
     (by simpa only [langProblem_language] using hfalse) P
   rw [soundnessEvent_eq] at h
   refine h.trans (le_of_eq ?_)

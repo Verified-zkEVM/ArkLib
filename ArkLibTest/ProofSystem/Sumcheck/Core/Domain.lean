@@ -38,7 +38,8 @@ run_cmd
   for decl in [``Sumcheck.Core.sum_domain_embedding, ``Sumcheck.Core.sum_domain_list,
       ``Sumcheck.Core.roundSum, ``Sumcheck.Core.projectedRoundPolynomial,
       ``Sumcheck.Core.projectedRoundPolynomial_embedding, ``Sumcheck.Core.sum_evalExcept_indices,
-      ``Sumcheck.Core.sum_projectedRoundPolynomial, ``Sumcheck.Core.roundSum_succ] do
+      ``Sumcheck.Core.sum_projectedRoundPolynomial, ``Sumcheck.Core.roundSum_succ,
+      ``Sumcheck.Core.roundSuffix_eq_spec] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

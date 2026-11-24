@@ -9,8 +9,8 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Interpreted
 
 /-! # Execution under message interpretation
 
-Interpretation changes the message representation and retains every prover move, public draw,
-and the private output at the leaf.
+Interpretation changes the message representation and retains every ambient prover effect,
+every challenge draw and the private value at the leaf.
 
 * `transportFocal` interprets the messages of a prover and maps its dependent output.
   `transportProver` is its instance at a constant output type.

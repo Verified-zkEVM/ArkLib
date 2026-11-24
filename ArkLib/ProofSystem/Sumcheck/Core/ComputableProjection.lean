@@ -6,12 +6,15 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.Domain
-public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
-public import CompPoly.Multivariate.FinSuccEquiv
-public import CompPoly.Multivariate.Eval
-public import CompPoly.Univariate.ToPoly.RingHom
+public import ArkLib.ProofSystem.Sumcheck.Impl.IndexedProjection
 
-/-! # Computable honest projections over indexed domains -/
+/-! # Computable honest projections over indexed domains
+
+`Sumcheck.Impl.IndexedProjection` computes the honest round message on CompPoly's carriers.
+This module relates that computation to the indexed projection `projectedRoundPolynomial` of
+`Sumcheck.Core`, for every domain map, including one with repeated points. It does not import
+`Sumcheck.Spec`.
+-/
 
 @[expose] public section
 
@@ -21,57 +24,27 @@ open CPoly.CMvPolynomial
 variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   {n d deg : ℕ}
 
-/-- The mathematical interpretation retains every individual degree bound. -/
-def toPolynomial (poly : CMvPolynomial n R) (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
+/-- The mathematical interpretation retains every individual degree bound. It is
+`Impl.Computable.toRestrictDegree`. -/
+abbrev toPolynomial (poly : CMvPolynomial n R) (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
     R⦃≤ deg⦄[X Fin n] :=
-  ⟨CPoly.fromCMvPolynomial poly, by
-    apply (MvPolynomial.mem_restrictDegree (Fin n) _ deg).mpr
-    intro mon hmon j
-    apply MvPolynomial.degreeOf_le_iff.mp _ mon hmon
-    rw [← congrFun (CPoly.degreeOf_equiv (S := R) (p := poly)) j]
-    exact hpoly j⟩
+  Impl.Computable.toRestrictDegree poly hpoly
 
-/-- Compute the honest projection by enumerating suffix indices, including repeated points. -/
-def projectedPolynomial (D : Fin d → R) (i : Fin (n + 1))
-    (c : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R) : CPolynomial R :=
-  ∑ x : Fin (n - i) → Fin d,
-    CPolynomial.mapRingHom (evalHom (roundSuffix i c (D ∘ x))) (finSuccEquivNth i poly)
-
-/-- Computational projection interprets to the mathematical indexed polynomial. -/
-theorem projectedPolynomial_toPoly (D : Fin d → R) (i : Fin (n + 1))
+/-- The computed enumeration interprets to the indexed honest projection of `Sumcheck.Core`. -/
+theorem indexedRoundPolynomial_toPoly (D : Fin d → R) (i : Fin (n + 1))
     (c : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R)
     (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
-    (projectedPolynomial D i c poly).toPoly =
+    (Impl.Computable.indexedRoundPolynomial D i c poly).toPoly =
       (projectedRoundPolynomial D i c (toPolynomial poly hpoly)).val := by
-  classical
-  have heval (v : Fin n → R) : evalHom v =
-      (MvPolynomial.eval v).comp (CPoly.polyRingEquiv (n := n) (R := R)).toRingHom := by
-    ext p
-    simp [eval_equiv, CPoly.coe_polyRingEquiv]
-  unfold projectedPolynomial projectedRoundPolynomial
-  rw [CPolynomial.toPoly_sum]
-  apply Finset.sum_congr rfl
-  intro x _
-  rw [CPolynomial.toPoly_mapRingHom, heval, ← Polynomial.map_map]
-  rw [CPoly.CMvPolynomial.finSuccEquivNth_apply, map_polyRingEquiv_toPoly_finSuccEquivNth]
+  rw [Impl.Computable.indexedRoundPolynomial_toPoly]
   rfl
 
-/-- The computed honest message has the required global degree cap. -/
-theorem projectedPolynomial_degree_le (D : Fin d → R) (i : Fin (n + 1))
-    (c : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R)
-    (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
-    (projectedPolynomial D i c poly).degree ≤ (deg : WithBot ℕ) := by
-  rw [CPolynomial.degree_toPoly, projectedPolynomial_toPoly D i c poly hpoly]
-  exact Polynomial.mem_degreeLE.mp (projectedRoundPolynomial D i c
-    (toPolynomial poly hpoly)).property
-
-/-- Package the actual coefficient array as a bounded message. -/
-def projectedMessage (D : Fin d → R) : {n : ℕ} → (i : Fin n) →
-    (Fin i.castSucc → R) → (poly : CMvPolynomial n R) →
-    (∀ j, poly.degreeOf j ≤ deg) → Impl.Representation.Message R deg
-  | 0, i, _, _, _ => i.elim0
-  | _ + 1, i, c, poly, hpoly =>
-    ⟨projectedPolynomial D i c poly, projectedPolynomial_degree_le D i c poly hpoly⟩
+/-- The computed honest message for the indexed domain `D`. It is
+`Impl.Computable.indexedMessage`. -/
+abbrev projectedMessage (D : Fin d → R) {n : ℕ} (i : Fin n) (c : Fin i.castSucc → R)
+    (poly : CMvPolynomial n R) (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
+    Impl.Representation.Message R deg :=
+  Impl.Computable.indexedMessage D i c poly hpoly
 
 /-- Interpreting the computed array gives exactly the indexed honest message. -/
 theorem projectedMessage_toMessage (D : Fin d → R) (i : Fin n)
@@ -84,7 +57,7 @@ theorem projectedMessage_toMessage (D : Fin d → R) (i : Fin n)
   | succ n =>
     apply Subtype.ext
     rw [Impl.Representation.toMessage_val]
-    exact projectedPolynomial_toPoly D i c poly hpoly
+    exact indexedRoundPolynomial_toPoly D i c poly hpoly
 
 /-- Runtime Horner evaluation answers exactly the mathematical honest projection. -/
 theorem projectedMessage_evaluate (D : Fin d → R) (i : Fin n)

@@ -441,6 +441,30 @@ theorem actual_nonuniform_game_bound :
     knowledge (fun _ _ w => w) closedOutputLaw errors bounded adversary 2 queryBound
   rwa [budget_value] at general
 
+/-- A private coin chooses between the two-query adversary and a selection with no queries. -/
+def coinAdversary (coin : Bool) :
+    OracleComp (oracleSpec Stmt Unit rounds) (Stmt × Messages Unit rounds × Nat) :=
+  if coin then adversary else pure ⟨stmt 0, messages, 6⟩
+
+/-- Every coin gives at most two queries. -/
+theorem coinAdversary_queryBound (coin : Bool) : IsTotalQueryBound (coinAdversary coin) 2 := by
+  cases coin
+  · trivial
+  · exact queryBound
+
+-- The per-round bound averaged over private coins: for every coin sampler, including one that
+-- can fail, the closed game keeps the error `7/16`.
+example (coins : OptionT ProbComp Bool) :
+    Pr{let result ← (coins >>= fun coin => OptionT.lift
+        ((simulateQ randomOracle (closedVerificationGame verifier (coinAdversary coin))).run' ∅))}[
+      True ∧ (∃ claim, result.2.2.1 = some claim ∧ oracleRout result.1 result.2.1 claim
+        result.2.2.2) ∧
+      ¬ Rin result.1 (knowledge.extractAlong result.1 result.2.1 result.2.2.2)] ≤ 7 / 16 := by
+  have general := stateRestoration_oracle_knowledge_soundness_nonuniform_privateCoins verifier
+    oracleRout knowledge (fun _ _ w => w) closedOutputLaw errors bounded coins coinAdversary 2
+    coinAdversary_queryBound
+  rwa [budget_value] at general
+
 -- Row 12 (StateRestorationBudget L292): the bad event is reachable: on `path 0 1` the claim is
 -- accepted and related to witness 6, and extraction from input 0 fails.
 example : ∃ claim, closedVerdict verifier (stmt 0) (path 0 1) = some claim ∧
@@ -682,6 +706,69 @@ example :
   constructor
   · simpa only [stages.run_programAlong] using actual_nonuniform_game_bound
   · exact extractionProgram_costAtMost
+
+/-! #### The full extractor contract with a charged conversion -/
+
+/-- The conversion adds one to the adversary's witness with one charged addition. -/
+def plusOne : BudgetedProgram (fun w : Nat => w + 1) (Unit → Nat) :=
+  ⟨addCountProgram fun w : Nat => (w, 1), 1, addCountProgram_realizes _,
+    addCountProgram_costAtMost_one _⟩
+
+/-- The output relation reads the converted witness `w + 1`. -/
+def shiftedRout (z : Stmt) (tr : Transcript oracleSig (protocol rounds))
+    (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
+  oracleRout z tr claim (w + 1)
+
+/-- The full extraction program: the charged conversion, then the stage programs. -/
+abbrev convertedProgram (z : Stmt) (tr : Transcript oracleSig (protocol rounds)) :
+    BudgetedProgram (measured.extractAlong z tr ∘ fun w : Nat => w + 1) (Unit → Nat) :=
+  measured.extractionProgram (readOut := fun _ _ w => w + 1) (fun _ _ => plusOne) z tr
+
+/-- The full contract on the fixture: the closed game has error `7/16` for the failure of the
+composite program, which returns the extraction at `w + 1` and costs at most three additions. -/
+theorem converted_game_bound :
+    Pr{let result ← (simulateQ randomOracle (closedVerificationGame verifier adversary)).run' ∅}[
+      True ∧ (∃ claim, result.2.2.1 = some claim ∧ shiftedRout result.1 result.2.1 claim
+        result.2.2.2) ∧
+      ¬ Rin result.1 ((convertedProgram result.1 result.2.1).program.run result.2.2.2)] ≤
+      7 / 16 ∧
+    ∀ z, True → ∀ tr,
+      (∀ w, (convertedProgram z tr).program.run w = measured.extractAlong z tr (w + 1)) ∧
+      (convertedProgram z tr).program.CostAtMost 3 := by
+  have h := measured.stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut
+    verifier shiftedRout (fun _ _ w => w + 1) (fun _ _ => plusOne)
+    (fun z tr claim w => closedOutputLaw z tr claim (w + 1)) errors bounded (fun _ => 1)
+    (fun _ => 0) (fun _ => 1) (fun _ => 0) (fun _ => 0) (fun _ _ _ => le_rfl)
+    (fun z _ => stages_protocolBudgetAtMost z) adversary 2 queryBound
+  rw [budget_value] at h
+  exact ⟨h.1, fun z hz tr => ⟨(h.2 z hz tr).1, (h.2 z hz tr).2.mono fun _ => by simp [rounds]⟩⟩
+
+/-- The extracted witness and the recorded count of the full extraction program. -/
+def convertedObservation (z : Stmt) (tr : Transcript oracleSig (protocol rounds)) (w : Nat) :
+    Nat × Nat :=
+  let program := (convertedProgram z tr).program
+  (simulateQ ((program.answer (program.view w)).withAddCost program.cost)
+    (program.program (program.view w))).runAdd.run.map id (fun count => count ())
+
+/-- Every run records the conversion and the two message additions. -/
+theorem convertedObservation_cost (z : Stmt) (tr : Transcript oracleSig (protocol rounds))
+    (w : Nat) : (convertedObservation z tr w).2 = 3 := by
+  rcases tr with ⟨m₁, ⟨c₁, ⟨m₂, ⟨c₂, ⟨⟩⟩⟩⟩⟩
+  kernel_rfl
+
+/-- Witness six on `path 0 1` converts to seven and extracts `7 + 7 + 5 = 19`. -/
+theorem convertedObservation_path : convertedObservation (stmt 0) (path 0 1) 6 = (19, 3) := rfl
+
+/-- Checks the full extraction run and the charges of the conversion and both message stages. -/
+def checkConvertedObservation : IO Unit := do
+  let observed := convertedObservation (stmt 0) (path 0 1) 6
+  unless observed == (19, 3) do
+    throw (IO.userError s!"Unexpected full extraction result or instruction count: {observed}")
+  IO.println "Full extraction returns witness 19 with three charged additions."
+
+/-- info: Full extraction returns witness 19 with three charged additions. -/
+#guard_msgs in
+#eval checkConvertedObservation
 
 end Measured
 
@@ -971,6 +1058,7 @@ end PublicSelection
 
 end Interaction.Core.StateRestorationBudgetTests
 
+open Interaction.Core.MeasuredKnowledgeStateFunction in
 run_cmd do
   for decl in [``KnowledgeStateFunction.MeasuredStages.programAlong_budget_le_protocol_zero,
       ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.observation,
@@ -979,7 +1067,16 @@ run_cmd do
       ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.run_selectedProver,
       ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.game_eval_run,
       ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.measured_game_bound,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.program_run_game_bound] do
+      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.program_run_game_bound,
+      ``StateRestoration.roundCost_prependQuery,
+      ``StateRestoration.stateRestoration_knowledge_soundness_nonuniform_privateCoins,
+      ``StateRestoration.stateRestoration_oracle_knowledge_soundness_nonuniform_privateCoins,
+      ``MeasuredKnowledgeStateFunction.run_extractionProgram,
+      ``stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut,
+      ``Interaction.Core.StateRestorationBudgetTests.coinAdversary_queryBound,
+      ``Interaction.Core.StateRestorationBudgetTests.converted_game_bound,
+      ``Interaction.Core.StateRestorationBudgetTests.convertedObservation_cost,
+      ``Interaction.Core.StateRestorationBudgetTests.convertedObservation_path] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

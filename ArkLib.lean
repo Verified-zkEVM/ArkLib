@@ -1169,6 +1169,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Tree
 public import ArkLib.ProofSystem.Sumcheck.Core.Types
 public import ArkLib.ProofSystem.Sumcheck.Domain
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+public import ArkLib.ProofSystem.Sumcheck.Impl.IndexedProjection
 public import ArkLib.ProofSystem.Sumcheck.Impl.OracleProver
 public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 public import ArkLib.ProofSystem.Sumcheck.Impl.Representation

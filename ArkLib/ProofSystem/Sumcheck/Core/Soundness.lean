@@ -7,11 +7,39 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 
-/-! # Native Sumcheck soundness over indexed domains
+/-! # Interaction-layer Sumcheck soundness over indexed domains
 
-The verifier counts each domain index, including repeated evaluation points. A false current
-sum becomes true only at an agreement point of unequal degree-bounded polynomials. The core
-round-by-round implication bounds the actual run of every prover by `n * (deg / |R|)`.
+Every theorem here concerns the interaction-layer verifier `indexedVerifier`. The compatibility
+`verifier` of `Execution` has separate, transferred results in `LegacySoundness`,
+`RoundByRound` and `Knowledge`.
+
+The success event is that the run returns a claim satisfying the final evaluation relation: the
+retained input polynomial evaluated at the returned challenges equals the returned target.
+Soundness bounds the probability of this event from a false input claim. A message can pass
+every sum check and still yield a returned claim that fails the final relation, so a returned
+claim alone is not the success event.
+
+The argument is the sum-check analysis of [LFKN92], as presented in [Thaler2023], §4.1
+(Proposition 4.1, with Remark 4.1 for sums over a finite subset in place of `{0, 1}`). The proof
+first checks the remaining sum. A false claim can pass a sum check only when the sent polynomial
+differs from the honest one, and the next claim is then true only at an agreement point of two
+distinct degree-bounded polynomials. The specialization here differs from the textbook statement
+as follows:
+
+* the domain is a map `D : Fin d → R`, so repeated points count with multiplicity;
+* the message type `R⦃≤ deg⦄[X]` enforces the degree bound, so the verifier makes no degree check;
+* the output relation `indexedOutputProblem` performs the final evaluation check;
+* the error denominator is the size of the uniformly sampled challenge type `R`, which is a finite
+  commutative semiring with `IsDomain`.
+
+The length `d` of the indexed sum changes the verifier's queries, one per domain index in each
+attempted sum check, but not the error `n * (deg / |R|)`.
+
+## References
+
+* [Lund, C., Fortnow, L., Karloff, H., and Nisan, N., *Algebraic methods for interactive
+    proof systems*][LFKN92]
+* [Thaler, J., *Proofs, Arguments, and Zero-Knowledge*][Thaler2023]
 -/
 
 @[expose] public section
@@ -25,42 +53,37 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] [IsDomai
   [Fintype R] {deg n d : ℕ} (D : Fin d → R) {ι σ : Type} (ambient : OracleSpec ι)
   (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
-/-- Native soundness of the actual Sumcheck run against every prover, with one error per round. -/
-theorem verifier_soundness :
+/-- Soundness of `indexedVerifier` against every prover, with the error written as one
+`deg / |R|` per round. `indexedVerifier_soundness` states the same bound as
+`n * (deg / |R|)`. -/
+theorem indexedVerifier_soundness_nsmul :
     (indexedVerifier R deg n D ambient).soundness init impl
       (indexedDraw (R := R) (deg := deg) n)
       (indexedInputProblem D) (indexedOutputProblem (R := R) (deg := deg) (n := n))
       (n • (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) := by
   simpa only [nsmul_eq_mul] using indexedVerifier_soundness D ambient init impl
 
-/-- The full-run error is `n * (deg / |R|)`, without any distinctness hypothesis on the domain. -/
-theorem verifier_soundness_rounds :
-    (indexedVerifier R deg n D ambient).soundness init impl
-      (indexedDraw (R := R) (deg := deg) n)
-      (indexedInputProblem D) (indexedOutputProblem (R := R) (deg := deg) (n := n))
-      ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
-  indexedVerifier_soundness D ambient init impl
-
-/-- A list domain retains all occurrences of each point in the actual verifier run. -/
-theorem verifier_soundness_list (domain : List R) :
+/-- Soundness of `indexedVerifier` over a list domain, which keeps every occurrence of each
+point. -/
+theorem indexedVerifier_soundness_list (domain : List R) :
     (indexedVerifier R deg n domain.get ambient).soundness init impl
       (indexedDraw (R := R) (deg := deg) n)
       (indexedInputProblem domain.get) (indexedOutputProblem (R := R) (deg := deg) (n := n))
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
   indexedVerifier_soundness domain.get ambient init impl
 
-/-- The injective-domain corollary uses exactly the same verifier and proof in the interaction
-layer. -/
-theorem verifier_soundness_injective (embedding : Fin d ↪ R) :
+/-- Soundness of `indexedVerifier` over an injective domain: the same verifier and proof. -/
+theorem indexedVerifier_soundness_injective (embedding : Fin d ↪ R) :
     (indexedVerifier R deg n (⇑embedding) ambient).soundness init impl
       (indexedDraw (R := R) (deg := deg) n)
       (indexedInputProblem (⇑embedding)) (indexedOutputProblem (R := R) (deg := deg) (n := n))
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
   indexedVerifier_soundness (⇑embedding) ambient init impl
 
-/-- The interaction layer's bound is a probability statement about the accepted verdict of the
-actual run. -/
-theorem verifier_run_soundness
+/-- The `indexedVerifier` bound as a probability on the actual run: from a false input claim, the
+run returns a claim satisfying the final evaluation relation with probability at most
+`n * (deg / |R|)`, for every prover. -/
+theorem indexedVerifier_run_soundness
     {Out : Transcript oracleSig (protocol R deg n) → Type}
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ()))
@@ -72,7 +95,7 @@ theorem verifier_run_soundness
   have h := ((indexedVerifier R deg n D ambient).soundness_iff_soundnessUsing init impl
     (indexedDraw (R := R) (deg := deg) n) (indexedInputProblem D)
     (indexedOutputProblem (R := R) (deg := deg) (n := n)) _).mp
-      (verifier_soundness_rounds D ambient init impl)
+      (indexedVerifier_soundness D ambient init impl)
   have bound := h Out (stmt, data) trivial
     (by simpa [indexedInputProblem, Problem.language] using hfalse) prover
   simpa [indexedOutputProblem, Problem.language] using bound
@@ -83,9 +106,9 @@ def randomizedProver {ι : Type} (ambient : OracleSpec ι) {R : Type} [CommSemir
     (finish : R → Out) : Prover oracleSig ambient (protocol R deg 1) (fun _ => Out) :=
   commit >>= fun msg => committedProver ambient msg finish
 
-/-- A committed message satisfies the interaction layer's one-round bound over every indexed
-domain. -/
-theorem committed_soundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R → Out)
+/-- One round of `indexedVerifier` against a committed message, over every indexed domain. -/
+theorem indexedVerifier_committed_soundness {Out : Type}
+    (msg : R⦃≤ deg⦄[X]) (finish : R → Out)
     (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ())) :
     Pr{let obs ← (experiment init impl (indexedDraw (R := R) (deg := deg) 1)
@@ -93,11 +116,13 @@ theorem committed_soundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R �
         ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   simpa only [Nat.cast_one, one_mul] using
-    verifier_run_soundness D ambient init impl stmt data hfalse (committedProver ambient msg finish)
+    indexedVerifier_run_soundness D ambient init impl stmt data hfalse
+      (committedProver ambient msg finish)
 
-/-- An ambient randomized commitment satisfies the same actual-run bound in the interaction layer.
-The commitment may fail and may change shared state before the fresh challenge is drawn. -/
-theorem randomized_soundness {Out : Type} (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
+/-- One round of `indexedVerifier` against an ambient randomized commitment. The commitment may
+fail and may change shared state before the fresh challenge is drawn. -/
+theorem indexedVerifier_randomized_soundness {Out : Type}
+    (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
     (finish : R → Out) (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ())) :
     Pr{let obs ← (experiment init impl (indexedDraw (R := R) (deg := deg) 1)
@@ -106,11 +131,13 @@ theorem randomized_soundness {Out : Type} (commit : OracleComp ambient (R⦃≤ 
         ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   simpa only [Nat.cast_one, one_mul] using
-    verifier_run_soundness D ambient init impl stmt data hfalse
+    indexedVerifier_run_soundness D ambient init impl stmt data hfalse
       (randomizedProver ambient commit finish)
 
-/-- The committed-message bound also holds for the measure of valid accepted outputs. -/
-theorem committed_measureSoundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finish : R → Out)
+/-- The committed-message bound for `indexedVerifier`, stated for the measure of the success
+event. -/
+theorem indexedVerifier_committed_measureSoundness {Out : Type}
+    (msg : R⦃≤ deg⦄[X]) (finish : R → Out)
     (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ())) :
     letI : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
@@ -122,21 +149,24 @@ theorem committed_measureSoundness {Out : Type} (msg : R⦃≤ deg⦄[X]) (finis
   let : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
     (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) := ⊤
   rw [← prEvent_eq_evalDist_of_discrete]
-  exact committed_soundness D ambient init impl msg finish stmt data hfalse
+  exact indexedVerifier_committed_soundness D ambient init impl msg finish stmt data hfalse
 
-/-- A randomized commitment has the same measure bound, including ambient failure and state. -/
-theorem randomized_measureSoundness {Out : Type} (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
+/-- The randomized-commitment bound for `indexedVerifier`, stated for the measure of the success
+event, including ambient failure and state. -/
+theorem indexedVerifier_randomized_measureSoundness {Out : Type}
+    (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
     (finish : R → Out) (stmt : RoundStatement R 1 0) (data : ∀ i, PolynomialData R 1 deg i)
     (hfalse : ¬ indexedRelation D 0 stmt (data ())) :
     letI : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
       (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) := ⊤
     𝒟[experiment init impl (indexedDraw (R := R) (deg := deg) 1)
-      ((indexedVerifier R deg 1 D ambient).run stmt data (randomizedProver ambient commit finish))]
+      ((indexedVerifier R deg 1 D ambient).run stmt data
+        (randomizedProver ambient commit finish))]
       {obs | ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target} ≤
         (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   let : MeasurableSpace (Outcome oracleSig (protocol R deg 1) (fun _ => Out)
     (fun _ => RoundStatement R 1 (Fin.last 1) × (∀ i, PolynomialData R 1 deg i))) := ⊤
   rw [← prEvent_eq_evalDist_of_discrete]
-  exact randomized_soundness D ambient init impl commit finish stmt data hfalse
+  exact indexedVerifier_randomized_soundness D ambient init impl commit finish stmt data hfalse
 
 end Sumcheck.Core

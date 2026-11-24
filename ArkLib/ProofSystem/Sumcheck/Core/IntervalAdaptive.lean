@@ -33,8 +33,9 @@ theorem protocol_challengeRange : ∀ (k : ℕ) (c : ChallengeNode oracleSig (pr
 abbrev IntervalMemory (R : Type) (n : ℕ) (stop : Fin (n + 1)) :=
   (k : ℕ) × IntervalClaim R n stop k
 
-/-- Answer every actual draw with the supplied current-statement challenge program and update
-shared memory with the honest successor claim. -/
+/-- The honest completeness handler. It answers each draw with the supplied challenge program at
+the current claim. It then uses the input polynomial `p` to compute the honest successor claim and
+stores it, so the next challenge callback receives that claim. -/
 noncomputable def intervalAdaptiveDraw (D : Fin d → R) (p : R⦃≤ deg⦄[X Fin n])
     {stop : Fin (n + 1)} (count : ℕ)
     (challenges : (i : Fin n) → RoundStatement R n i.castSucc → ProbComp R) :

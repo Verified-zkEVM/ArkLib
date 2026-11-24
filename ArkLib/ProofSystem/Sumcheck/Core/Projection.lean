@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import PolyFun.PFunctor.Free.Cost.Loops
 
 /-! # Projected round oracles over indexed domains
 
@@ -68,8 +69,31 @@ theorem simulateQ_projectedQuery (i : Fin n) (c : Fin i.castSucc → R)
     simp only [projectedRoundPolynomial, Polynomial.eval_finsetSum, MvPolynomial.eval_evalExcept]
     rfl
 
+/-- A projected evaluation at round `i` makes at most `d ^ (n - 1 - i)` queries to the original
+polynomial. It makes one query for each assignment of domain indices to the suffix: one query for
+an empty suffix, even when `d = 0`, and none for an empty domain with a nonempty suffix. The bound
+charges each query one unit and counts no enumeration or arithmetic work. -/
+theorem projectedQuery_isChargeBound (i : Fin n) (c : Fin i.castSucc → R) (r : R) :
+    (projectedQuery (deg := deg) D i c r).IsChargeBound (fun _ => (1 : ℕ))
+      (d ^ (n - 1 - i)) := by
+  cases n with
+  | zero => exact i.elim0
+  | succ n =>
+    have hmap := isChargeBound_mapM (c := fun _ => (1 : ℕ)) (B := fun _ => 1)
+      (xs := (Finset.univ : Finset (Fin (n + 1 - 1 - i) → Fin d)).toList)
+      (f := fun x => projectionInput (deg := deg) (Fin.insertNth i r (roundSuffix i c (D ∘ x))))
+      (fun _ _ => (isChargeBound_liftObj_iff _).2 (zero_add _).le)
+    unfold projectedQuery
+    refine (hmap.bind (f := fun values => pure values.sum) (B₂ := 0)
+      fun _ => isChargeBound_pure _).mono ?_
+    simp
+
 /-- The interaction-layer projected oracle map, including its concrete realization and query
-implementation. -/
+implementation. Its query implementation `impl` is `projectedQuery`, which reads the original
+polynomial once per suffix assignment, `d ^ (n - 1 - i)` times in all
+(`projectedQuery_isChargeBound`). This count covers oracle reads only. Pricing the map through
+`OracleMap.withAmbient_worstCaseCost` (#1476) is follow-up work, and enumeration and arithmetic
+costs are out of scope here. -/
 noncomputable def projectedMap (i : Fin n) (c : Fin i.castSucc → R) :
     OracleMap (polynomialFamily R n deg) (roundFamily R deg) where
   f data _ := projectedRoundPolynomial D i c (data ())

@@ -466,7 +466,10 @@ theorem simulate_roundProver {m : Type → Type} [Monad m] [LawfulMonad m] (impl
 variable [DecidableEq R] [SampleableType R] (n : ℕ) {d : ℕ} (D : Fin d ↪ R) (ambient : OracleSpec ι)
 
 /-- Round `i` of an `n`-round statement on its own: the legacy round check, with the projection of
-the multivariate input to the univariate round polynomial as output oracle. -/
+the multivariate input to the univariate round polynomial as output oracle. The output map is the
+injective-domain compatibility map `projectionMap` over `D : Fin d ↪ R`. The indexed-domain
+construction, which keeps repeated domain points, is `projectedMap` in `Sumcheck.Core.Projection`.
+-/
 noncomputable def projectedVerifier (i : Fin n) :
     OracleVerifier ambient (round R deg) (Spec.StatementRound R n i.castSucc)
       (fun _ => Spec.StatementRound R n i.succ) (Spec.polynomialFamily R n deg)
@@ -499,9 +502,12 @@ theorem run_projectedVerifier_roundProver (i : Fin n)
   rfl
 
 omit [SampleableType R] in
-/-- The honest standalone round accepts every challenge `chal` on a claim in the round-`i`
-relation. The accepted statement has target `q.eval chal` for the projected round polynomial `q`,
-which is the output oracle, and is in the round-`(i + 1)` relation with the original input. -/
+/-- Assume a true starting claim: `stmt` is in the round-`i` relation with the input `x`. Let the
+transcript carry the honest projected round polynomial `q` of `x`. Then the check accepts at every
+challenge `chal` with target `q.eval chal`, `q` is the output oracle, and the accepted statement
+is in the round-`(i + 1)` relation with `x`. An accepted verdict alone does not give these
+conclusions. With zero input over `ZMod 17`, domain `{0, 1}`, target `2` and message `1`, the
+check accepts with target `1` at challenge `3`, while the projected output oracle is zero. -/
 theorem projectedVerifier_relation (i : Fin n)
     (stmt : Spec.StatementRound R n i.castSucc) (x : ∀ j, Spec.OracleStatement R n deg j)
     (h : ((stmt, x), ()) ∈ Spec.relationRound R n deg D i.castSucc) (chal : R) :
