@@ -141,23 +141,23 @@ theorem multiplierEval_eq_aeval_affineShift (L P : K[X]) (x u v : K)
   · simp [affineShift, multiplierEval]
   · fin_cases i <;> simp [affineShift, multiplierEval]
 
-/-- Let `Q` have coefficients in `R`, and let `ψ` send the variables into an `R`-algebra `S`.
+/-- Let `R` have coefficients in `A`, and let `ψ` send the variables into an `A`-algebra `B`.
 
 Let `p` divide the images of `Z` and `X`.
 
-If every monomial of `Q` has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
-theorem pow_dvd_aeval_of_affineWeight_le {R S : Type*} [CommSemiring R] [CommSemiring S]
-    [Algebra R S] {ψ : AffineVar → S} {p : S} {m : ℕ}
-    (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) {Q : MvPolynomial AffineVar R}
-    (hQ : ∀ e ∈ Q.support, m ≤ e none + e (some 0)) :
-    p ^ m ∣ MvPolynomial.aeval ψ Q := by
+If every monomial of `R` has degree at least `m` in `Z, X`, then `p ^ m` divides the image. -/
+theorem pow_dvd_aeval_of_affineWeight_le {A B : Type*} [CommSemiring A] [CommSemiring B]
+    [Algebra A B] {ψ : AffineVar → B} {p : B} {m : ℕ}
+    (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) {R : MvPolynomial AffineVar A}
+    (hR : ∀ e ∈ R.support, m ≤ e none + e (some 0)) :
+    p ^ m ∣ MvPolynomial.aeval ψ R := by
   classical
-  conv_rhs => rw [Q.as_sum, map_sum]
+  conv_rhs => rw [R.as_sum, map_sum]
   refine Finset.dvd_sum fun e he ↦ ?_
   rw [MvPolynomial.aeval_monomial, Finsupp.prod_fintype _ _ (by simp)]
   simp only [Fintype.prod_option, Fin.prod_univ_two]
   refine Dvd.dvd.mul_left ?_ _
-  refine (pow_dvd_pow p (hQ e he)).trans ?_
+  refine (pow_dvd_pow p (hR e he)).trans ?_
   rw [pow_add, ← mul_assoc]
   exact Dvd.dvd.mul_right (mul_dvd_mul (pow_dvd_pow_of_dvd hz _) (pow_dvd_pow_of_dvd hx _)) _
 
