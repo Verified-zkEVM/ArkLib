@@ -213,7 +213,7 @@ The Lean statements differ from the papers in the following ways.
 | Game-036 | [`ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean:36`][r111], `terminalObservation` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L368`][r112], `verdict`. The passive decision uses the input and transcript bundle. Its result is Option of the path-indexed statement, rather than an arbitrary result `Out z p`. |
 | Game-048 | [`ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean:48`][r113], `verificationGame` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L396`][r114], `verificationGame`. Records the completed transcript and passive decision; verificationGame_eval_run and run_scriptedProver_of_mem_support supply actual interpreted party correspondence. |
 | Game-068 | [`ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean:68`][r115], `verificationGame_eq` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L419`][r116], `verificationGame_eq`. The verdict equation is definitional for the passive game; a separate run theorem proves its execution interpretation. |
-| Game-092 | [`ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean:92`][r117], `extractInputWitness` | retired (bundled terminal-witness equivalence adapter) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L266`][r118], `extractAlong`. readOut explicitly transports the adversary witness; extractLeaf and extractRoot provide endpoint maps, without requiring bijections. |
+| Game-092 | [`ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean:92`][r117], `extractInputWitness` | retired (bundled terminal-witness equivalence adapter) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L345`][r118], `extractAlong`. readOut explicitly transports the adversary witness; extractLeaf and extractRoot provide endpoint maps, without requiring bijections. |
 | Game-102 | [`ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean:102`][r119], `stateRestoration_knowledge_soundness` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L1039`][r120], `stateRestoration_knowledge_soundness`. Same adaptive Q-query bound. The optional final decision and one-way outputLaw replace the arbitrary result and iff law as detailed above. P2 excludes challenge-selected output families. |
 
 ## ArkLib/Interaction/Oracle/Security/StateRestorationOracle.lean
@@ -255,11 +255,11 @@ The Lean statements differ from the papers in the following ways.
 
 | ID | Exact frozen declaration | Status | Exact target and correspondence |
 | --- | --- | --- | --- |
-| Resources-040 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:40`][r161], `RoundExtractor.MeasuredStages.ProtocolBudgetAtMost` | equivalent | [`ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L276`][r162], `ProtocolBudgetAtMost`. Adds explicit root/leaf bounds to the message/challenge bounds; zero-cost endpoint programs embed the frozen stages. |
-| Resources-052 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:52`][r163], `RoundExtractor.MeasuredStages.BudgetAtMost.protocolBudgetAtMost` | equivalent | [`ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L289`][r164], `BudgetAtMost.protocolBudgetAtMost`. A common step bound supplies equal message/challenge bounds and retains the endpoint bounds. |
+| Resources-040 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:40`][r161], `RoundExtractor.MeasuredStages.ProtocolBudgetAtMost` | equivalent | [`ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L290`][r162], `ProtocolBudgetAtMost`. Adds explicit root/leaf bounds to the message/challenge bounds; zero-cost endpoint programs embed the frozen stages. |
+| Resources-052 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:52`][r163], `RoundExtractor.MeasuredStages.BudgetAtMost.protocolBudgetAtMost` | equivalent | [`ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L303`][r164], `BudgetAtMost.protocolBudgetAtMost`. A common step bound supplies equal message/challenge bounds and retains the endpoint bounds. |
 | Resources-065 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:65`][r165], `RoundExtractor.MeasuredStages.programAlong_budget_le_protocol` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L396`][r166], `programAlong_budget_le_protocol`. Bounds leafBound + rounds.length • (messageBound + challengeBound) + rootBound. programAlong_budget_le_protocol_zero proves the zero-endpoint specialization recovering the frozen bound. |
 | Resources-093 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:93`][r167], `RoundExtractor.MeasuredStages.programAlong_costAtMost_protocol_paired` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L423`][r168], `programAlong_costAtMost_protocol`. Same every-execution-path CostAtMost consequence with explicit endpoints; zero specialization recovers the frozen bound. |
-| Resources-107 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:107`][r169], `MeasuredKnowledgeCertificate.run_programAlong_terminalWitness` | equivalent | [`ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L172`][r170], `run_programAlong`. Instantiate its witness with readOut stmt tr w. The program returns extractAlong on that witness, including endpoint conversions. |
+| Resources-107 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:107`][r169], `MeasuredKnowledgeCertificate.run_programAlong_terminalWitness` | equivalent | [`ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L177`][r170], `run_programAlong`. Instantiate its witness with readOut stmt tr w. The program returns extractAlong on that witness, including endpoint conversions. |
 | Resources-125 | [`ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean:125`][r171], `MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L506`][r172], `MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform`. Retains Q * max + sum, all admissible inputs/transcripts/witnesses and actual program results. Root/leaf budgets are explicit and may be zero; instruction accounting has the same limitations. The budget begins after `readOut`: the cost conjunct charges the stage programs on the converted witness, not the conversion, and every bound is per statement. `stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut` charges a program realizing `readOut` as well. |
 
 ## ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean
@@ -456,7 +456,7 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r115]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean#L68
 [r116]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L419
 [r117]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean#L92
-[r118]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L266
+[r118]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L345
 [r119]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationGame.lean#L102
 [r120]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L1039
 [r121]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationOracle.lean#L32
@@ -500,15 +500,15 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r159]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationBudget.lean#L232
 [r160]: ../../../ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L255
 [r161]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean#L40
-[r162]: ../../../ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L276
+[r162]: ../../../ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L290
 [r163]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean#L52
-[r164]: ../../../ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L289
+[r164]: ../../../ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L303
 [r165]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean#L65
 [r166]: ../../../ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L396
 [r167]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean#L93
 [r168]: ../../../ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L423
 [r169]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean#L107
-[r170]: ../../../ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L172
+[r170]: ../../../ArkLib/Interaction/Core/Security/MeasuredExtraction.lean#L177
 [r171]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean#L125
 [r172]: ../../../ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L506
 
