@@ -11,12 +11,29 @@ public import ArkLib.Interaction.Core.Security.KnowledgeComposition.Extraction
 # Composing round-by-round knowledge bounds
 
 Statement-indexed witness maps transport knowledge certificates across a deterministic middle
-claim. Plain and oracle acceptance decompositions retain the ambient state at the seam.
+claim. This file ships three kinds of composition result:
+
+* Relation-level composition for any signature lens: `rbrKnowledgeSoundness_append_prefix` and
+  `rbrKnowledgeSoundness_append_of_mid_prefix`, with node-indexed corollaries
+  `rbrKnowledgeSoundness_append` and `rbrKnowledgeSoundness_append_of_mid`. The oracle form
+  `rbrKnowledgeSoundness_append_view` takes draws that read only the verifier's view and chooses
+  the suffix draw from the first stage's view.
+* Plain verifier composition: `Verifier.rbrKnowledgeSoundness_append_prefix` and
+  `Verifier.rbrKnowledgeSoundness_append_of_pure_prefix`, with node-indexed corollaries. They take
+  the two components' standalone verifier knowledge theorems and an identified middle claim:
+  every supported accepted prefix result equals `mid stmt tr₁`.
+* An oracle acceptance decomposition, not a standalone oracle-verifier composition theorem.
+  `OracleVerifier.validAcceptance_append` splits a positive composite acceptance into supported
+  accepted prefix and suffix decisions on the routed bundle data, with the prefix's final ambient
+  state as the suffix's initial state. A client composes relation-level certificates with it.
+
+The plain acceptance decomposition `Verifier.validAcceptance_append` also retains the ambient
+state at the seam.
 -/
 
 @[expose] public section
 
-universe uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂ uA u
+universe uS uW uK uO uM uO₂ uS' uW' uT uI dI wI wJ wK uW₂ uA u q
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -89,7 +106,7 @@ def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → Transcript l s �
 
 end restrict
 
-variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 section restrictBounds
 
@@ -196,7 +213,7 @@ end security
 
 end KnowledgeStateFunction
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 section security
 
@@ -337,6 +354,40 @@ theorem rbrKnowledgeSoundness_append_of_mid {draw₁ : QueryImpl (challengeSpec 
       midWitness outWitness hadm glue hout)
 
 end security
+
+section view
+
+variable {s₁ : OracleProtocol.{0, q}} {s₂ : Path s₁ → OracleProtocol.{0, q}} {S : Type uS}
+  {Win : S → Type uW} {Wmid : S → Transcript oracleSig s₁ → Type uM}
+  {W : S → Transcript oracleSig (s₁.append s₂) → Type uO}
+  {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
+  {validMid : (stmt : S) → (tr : Transcript oracleSig s₁) → Wmid stmt tr → Prop}
+  {validOutput : (stmt : S) → (tr : Transcript oracleSig (s₁.append s₂)) → W stmt tr → Prop}
+
+/-- Round-by-round knowledge soundness composes for oracle protocols whose challenges read only
+the verifier's view. The prefix draw reads the view of each prefix, and the suffix draw is chosen
+from the shape path and the first stage's view (`combineViewPrefixDraw`). The errors, the state
+functions and the seam keep the full prefix, oracle messages included. -/
+theorem rbrKnowledgeSoundness_append_view {admissible₂ : Transcript oracleSig s₁ → S → Prop}
+    {relMid : (tr₁ : Transcript oracleSig s₁) → (stmt : S) → Wmid stmt tr₁ → Prop}
+    {draw₁ : PrefixDraw viewSig ProbComp s₁}
+    {draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig ProbComp (s₂ p)}
+    {ε₁ : PrefixError oracleSig s₁}
+    {ε₂ : (tr₁ : Transcript oracleSig s₁) → PrefixError oracleSig (s₂ tr₁.path)}
+    (h₁ : rbrKnowledgeSoundness.{_, _, uK} oracleSig s₁ admissible relIn validMid
+      (PrefixDraw.ofView draw₁) ε₁)
+    (h₂ : ∀ tr₁, rbrKnowledgeSoundness.{_, _, uK} oracleSig (s₂ tr₁.path) (admissible₂ tr₁)
+      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)
+      (PrefixDraw.ofView (draw₂ tr₁.path (toView s₁ tr₁))) (ε₂ tr₁))
+    (hadm : ∀ tr₁ stmt, admissible stmt → admissible₂ tr₁ stmt)
+    (glue : ∀ tr₁ stmt w, admissible stmt → relMid tr₁ stmt w → validMid stmt tr₁ w) :
+    rbrKnowledgeSoundness.{_, _, uK} oracleSig (s₁.append s₂) admissible relIn validOutput
+      (PrefixDraw.ofView (combineViewPrefixDraw s₁ s₂ draw₁ draw₂))
+      (combinePrefixDraw (m := fun _ => ℝ≥0∞) oracleSig s₁ s₂ ε₁ ε₂) := by
+  rw [ofView_combineViewPrefixDraw]
+  exact rbrKnowledgeSoundness_append_prefix oracleSig h₁ h₂ hadm glue
+
+end view
 
 /-- A positive composite acceptance decomposes into two supported accepted decisions, with
 exactly the same ambient state at their boundary. -/
@@ -640,21 +691,22 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
       V₁ V₂ impl mid decision midWitness outWitness h₁ h₂ hadm glue hout)
 
 /-- Positive oracle acceptance decomposes into supported accepted middle and final results.
-The suffix uses the prefix's final ambient state and the actual routed bundle data. -/
-theorem OracleVerifier.validAcceptance_append {ι σ : Type} {I : Type uI} {S : Type uS}
+The suffix uses the prefix's final ambient state and the actual routed bundle data. The input
+bundle's query indices and data have their own universes. -/
+theorem OracleVerifier.validAcceptance_append {ι σ : Type} {S : Type uS}
     {ambient : OracleSpec ι} {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {A : I → Type} {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
+    {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
     {K : (p : Path s₁) → Path (s₂ p) → Type}
     {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A}
+    {inputs : OracleBundle.{0, uI, dI}}
     {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
       OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : V₁.OutputCompatibility V₂) (impl : QueryImpl ambient (StateT σ ProbComp))
-    (stmt : S × (∀ i, A i)) (tr : Transcript oracleSig (s₁.append s₂))
+    (stmt : S × inputs.Data) (tr : Transcript oracleSig (s₁.append s₂))
     (langOut : OracleVerifier.Output (splitFamily U)
       (fun p => C (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2)
       tr.path → Prop)

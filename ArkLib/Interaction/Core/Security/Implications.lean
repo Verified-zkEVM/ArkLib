@@ -18,24 +18,46 @@ also when the prefix before the node is random, and also when a possibly failing
 the node together with its prefix. The union bound over the challenge nodes of a path therefore
 bounds soundness by the supremum, over shape paths, of the sum of the node errors along the path.
 
-An escape (`EscapeAlong`), a flip (`ReceiverPrefix.Flips`) and a bad challenge of knowledge
-extraction (`BadChallengeFrom` and `BadChallengeAlong` in `KnowledgeComposition/Extraction.lean`)
-are the same kind of event: a receiver move such that the state is false at the full prefix before
-the move and true at the prefix after it. A flip is this event at one receiver prefix and one move.
-An escape is this event at some receiver move of a completed transcript. A bad challenge is this
-event along a transcript for a knowledge state function, evaluated at each prefix on the witness
-that extraction computes backwards from the output witness.
+An escape (`EscapeAlong`) and a flip (`ReceiverPrefix.Flips`) are the same kind of event: a
+receiver move such that the state is false at the full prefix before the move and true at the
+prefix after it. A flip is this event at one receiver prefix and one move. An escape is this event
+at some receiver move of a completed transcript.
 
 The protocol-tree bounds apply to any signature lens and any lawful monad with distribution
 semantics. Challenges may depend on the full prefix; node-indexed fresh draws are a specialization.
-The classical stateful wrappers use the same bound. An oracle verifier's acceptance is its decision
-on the input data and the run's oracle messages, with its output read through its output oracle
-map.
+At `oracleSig` the full prefix contains the oracle messages, so the generic prefix-dependent run
+can read oracle messages that a passive oracle verifier reaches only through bundle queries in its
+final decision.
+
+`prEvent_runPrefixChallenges_soundness` bounds `runPrefixChallenges` followed by an explicit final
+continuation. It takes as a premise that positive probability of the final event implies the
+state certificate's acceptance predicate. The plain and oracle verifier theorems that conclude
+`soundnessUsing` or `soundnessWith` use the ordinary runner with node-indexed draws and prove that
+link from the verifier's final decision. The classical stateful wrappers use the same bound. An
+oracle verifier's acceptance is its decision on the input data and the run's oracle messages, with
+its output read through its output oracle map.
+
+## Relation to the public-coin bound
+
+Chiesa and Yogev [ChiesaYogev2024, Definition 31.1.2 and Claim 31.1.3] define round-by-round
+soundness of a public-coin IOP by a local flip condition and bound its soundness error by the sum
+of the round errors. Chiesa, Manohar and Spooner [CMS19, Definition 8.4] state the local condition
+at each fixed prefix. The bound here charges only the challenge nodes on a shape path and takes the
+supremum over paths, so different public branches may contain different challenges. Each draw may
+follow any prescribed law, and the run may lose mass in a subprobability monad. With a
+rank-indexed error, `iSup_sum_challengeNodesOn_le_rank_sum` recovers the classical finite sum when
+the ranks are distinct along each path and lie in a fixed range.
+
+## References
+
+* [Chiesa, A. and Yogev, E., *Building Cryptographic Proofs from Hash Functions*][ChiesaYogev2024]
+* [Chiesa, A., Manohar, P., and Spooner, N., *Succinct Arguments in the Quantum Random Oracle
+    Model*][CMS19]
 -/
 
 @[expose] public section
 
-universe v uS uI wI wJ uι uκ uA u
+universe v uS uI dI wJ uι uκ uA u
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -604,7 +626,9 @@ theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMo
           (le_of_eq (sum_challengeNodesOn_receiver hown ε path.1 path.2).symm)
 
 /-- A full-prefix state certificate bounds soundness with prefix-dependent challenge programs.
-The final continuation may fail; valid acceptance is required only when its event has mass. -/
+The final continuation `k` is explicit and may fail. The premise `final` requires the
+certificate's acceptance predicate only when the final event has positive probability; the plain
+and oracle verifier theorems below prove this link from the final decision. -/
 theorem prEvent_runPrefixChallenges_soundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι β : Type} {spec : OracleSpec ι} {s : FreeM P PUnit} {S : Type uS}
@@ -891,13 +915,14 @@ the end of the run. -/
 theorem OracleVerifier.soundnessUsing_of_localSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι}
-  {s : OracleProtocol} {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+  {s : OracleProtocol} {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : m σ}
   {H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ m)}
-  {input : StatementProblem (S × (∀ i, A i))} {output : PathProblem s (OracleVerifier.Output T B)}
+  {input : StatementProblem (S × inputs.Data)}
+  {output : PathProblem s (OracleVerifier.Output T B)}
   {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (F : StateFunction oracleSig s _ (input.admissible ()) (input.language ())
       (fun stmt tr => ∃ st, V.validAcceptanceUsing (fun q => H (.inl q))
@@ -951,13 +976,14 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
 theorem OracleVerifier.soundnessUsing_of_rbrSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι}
-  {s : OracleProtocol} {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+  {s : OracleProtocol} {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : m σ}
   {H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ m)}
-  {input : StatementProblem (S × (∀ i, A i))} {output : PathProblem s (OracleVerifier.Output T B)}
+  {input : StatementProblem (S × inputs.Data)}
+  {output : PathProblem s (OracleVerifier.Output T B)}
   {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
   {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (fresh : FreshChallengesAt H draw)
@@ -986,13 +1012,13 @@ theorem OracleVerifier.soundnessUsing_of_rbrSoundness
 in any lawful distribution monad, with its actual bundle answers and output oracle map. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
-    {input : StatementProblem (S × (∀ i, A i))}
+    {input : StatementProblem (S × inputs.Data)}
     {output : PathProblem s (OracleVerifier.Output T B)}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
@@ -1037,13 +1063,13 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
 /-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
-    {input : StatementProblem (S × (∀ i, A i))}
+    {input : StatementProblem (S × inputs.Data)}
     {output : PathProblem s (OracleVerifier.Output T B)}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
@@ -1057,13 +1083,13 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
 /-- Uniform local errors and a path length bound give soundness error `k • e`. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
-    {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
-    {input : StatementProblem (S × (∀ i, A i))}
+    {input : StatementProblem (S × inputs.Data)}
     {output : PathProblem s (OracleVerifier.Output T B)}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
@@ -1079,13 +1105,14 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type 
 
 section OracleVerifier
 
-variable {ι σ : Type} {I : Type uI} {S : Type uS} {ambient : OracleSpec ι}
-  {s : OracleProtocol} {T : Path s → Type} {A : I → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleFamily.{uI, 0, wI} I A}
+variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+  {s : OracleProtocol} {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
   {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : ProbComp σ}
   {impl : QueryImpl ambient (StateT σ ProbComp)}
-  {input : StatementProblem (S × (∀ i, A i))} {output : PathProblem s (OracleVerifier.Output T B)}
+  {input : StatementProblem (S × inputs.Data)}
+  {output : PathProblem s (OracleVerifier.Output T B)}
   {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
   {ε : ChallengeNode oracleSig s → ℝ≥0∞}
 

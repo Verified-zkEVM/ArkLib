@@ -418,8 +418,10 @@ Agreement accepts general `OracleBundle.{u, uI, dI}` inputs, with independent qu
 universes. Family-shaped inputs specialize this API through `OracleBundle.ofFamily`.
 Round-by-round knowledge agreement and transport retain `Win stmt`, `W stmt tr`, and relations
 `relOut stmt tr output witness`, with independent witness universes. They also preserve the
-parent's full-prefix challenge distributions and local errors. Sumcheck's compatibility theorem
-uses `rbrKnowledgeSoundnessOfNodes`, the parent specialization that ignores prefix history.
+parent's challenge draws, which read the verifier's view of each prefix (`PrefixDraw viewSig`),
+and its full-prefix local errors. Sumcheck's compatibility theorem uses
+`rbrKnowledgeSoundnessOfNodes`, the parent specialization that ignores prefix history, and
+rewrites it to the view form with `rbrKnowledgeSoundnessOfNodes_iff`.
 
 | Reviewed contract | Status | Evidence |
 |---|---|---|

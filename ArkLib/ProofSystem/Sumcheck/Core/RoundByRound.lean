@@ -64,14 +64,14 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
       (challengeQueryImpl oracleSig (protocol R deg n))
       (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) := by
   let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
-  unfold OracleVerifier.rbrKnowledgeSoundnessOfNodes
-  rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
+  rw [OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff, challengeQueryImpl_eq_legacy,
+    ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrKnowledgeSoundness_iff]
   have hk := embedOracleVerifier_rbrKnowledgeSoundness.{uK} init impl
     (Spec.oracleVerifier R deg D n ambient) _ _ _ (fun _ _ K =>
       KnowledgeTerminalCertificate.of_guarded (Spec.oracleVerifierGuardedForm R deg D n ambient) K)
     (Spec.oracleVerifier_rbrKnowledgeSoundness R deg D n ambient)
-  unfold OracleVerifier.rbrKnowledgeSoundnessOfNodes at hk
+  rw [OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff] at hk
   have hc := OracleVerifier.rbrKnowledgeSoundness_cast
     (T := fun _ => Spec.StatementRound R n (Fin.last n))
     (inputs := family (Spec.OracleStatement R n deg))
@@ -80,7 +80,7 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) impl (fun _ => True)
     (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
     (fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
-    (PrefixDraw.ofNodes oracleSig (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
+    (PrefixDraw.ofNodesView (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
     (PrefixError.ofNodes oracleSig
       (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)))
   have hsource := hc.mpr (by simpa only [cast_eq] using hk)
@@ -89,7 +89,7 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (outputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
     (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
   rw [hcast] at hsource
-  simp only [OracleVerifier.prefixDraw_ofNodes_cast,
+  simp only [OracleVerifier.prefixDraw_ofNodesView_cast,
     OracleVerifier.prefixError_ofNodes_cast] at hsource
   dsimp only [legacyVerifier]
   convert hsource using 1 <;> rfl
