@@ -83,12 +83,19 @@ def sampleAt {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
   (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
     draw (spineChallenge l sp h)
 
-/-- A challenge action at each receiver prefix, with access to all earlier moves. -/
+/-- A challenge action at each receiver prefix, with access to all earlier moves.
+
+The history is the full prefix at the signature `l`. At `oracleSig` it contains every oracle
+message in full, so a draw can read oracle messages that a passive oracle verifier reaches only
+through bundle queries in its final decision. State functions, the generic counterpart and
+extraction use this full history. An oracle-verifier API that exposes a prefix draw should index it
+by the `viewSig` prefix, or require it to factor through that view. -/
 abbrev PrefixDraw (m : Type u → Type vDraw) (s : FreeM P PUnit.{u + 1}) :=
   ∀ {a next}, (sp : Cursor.Spine s (.liftBind a next)) → owner l a = .receiver →
     PartialTranscriptAt l sp → m (Move l a)
 
-/-- Challenge programs may depend on the entire full prefix, including erased challenges. -/
+/-- Challenge programs may depend on the entire full prefix, including erased challenges and
+oracle messages, and may issue queries to the supplied specification `spec`. -/
 abbrev PrefixChallengePrograms {ι : Type uι} (spec : OracleSpec.{uι, uQ} ι)
     (s : FreeM P PUnit.{u + 1}) := PrefixDraw l (OracleComp spec) s
 
@@ -111,7 +118,8 @@ theorem prefixSampleAt_ofNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P roleP
     (history : PartialTranscriptAt l sp) :
     prefixSampleAt l (PrefixDraw.ofNodes l draw) sp h history = sampleAt l draw sp h := rfl
 
-/-- The passive counterpart whose next draw can depend on the full prefix. -/
+/-- The passive counterpart whose next draw can depend on the full prefix. It passes each
+actual sender move, an oracle message included, to the later draws. -/
 def prefixSampler {m : Type u → Type u} [Monad m] :
     (s : FreeM P PUnit.{u + 1}) → PrefixDraw l m s →
     Counterpart l m s (fun _ => PUnit.{u + 1})
@@ -387,10 +395,10 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
       {v | ∃ t, v = some t ∧ event (t, (V.outputMap stmt.1 p view).f pathData)}
 
 /-- Classical acceptance quantifies over the possible ambient states at the end of the run. -/
-theorem validAcceptance_iff_validAcceptanceUsing {I : Type uI} {A : I → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A} (V : OracleVerifier ambient s S T inputs outputs)
+theorem validAcceptance_iff_validAcceptanceUsing
+    (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (stmt : S × (∀ i, A i)) (tr : Transcript oracleSig s)
+    (stmt : S × inputs.Data) (tr : Transcript oracleSig s)
     (event : (p : Path s) → OracleVerifier.Output T B p → Prop) :
     V.validAcceptance impl stmt tr (event tr.path) ↔
       ∃ state : σ, V.validAcceptanceUsing impl (fun x => x.run' state)
