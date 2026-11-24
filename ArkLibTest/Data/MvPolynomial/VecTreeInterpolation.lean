@@ -53,7 +53,7 @@ theorem tree_isStructured : tree.IsStructured fun _ ch => Function.Injective ch 
 second, vanishing at the six leaves. -/
 example (p : MvPolynomial (Fin 2) (ZMod 5)) (h0 : p.degreeOf 0 < 3) (h1 : p.degreeOf 1 < 2)
     (hv : ∀ path, eval (tree.leaf path) p = 0) : p = 0 :=
-  VecTree.eq_zero_of_vanishes (k := k) k_pos tree tree_isStructured p
+  VecTree.eq_zero_of_vanishes (k := k) tree tree_isStructured p
     (fun i => by fin_cases i <;> assumption) hv
 
 /-- The nested tree of the challenge tree has `3 * 2 = 6` leaves. -/

@@ -126,11 +126,12 @@ variable [CommRing F] [IsDomain F]
 /-- **Interpolation on a challenge tree.** A polynomial whose individual degree in the variable of
 round `i` is below the number `k i` of branches of that round is zero if it vanishes at every leaf
 of a challenge tree whose siblings are distinct at every node. -/
-theorem eq_zero_of_vanishes {n : ℕ} {k : Fin n → ℕ} (hk : ∀ i, 0 < k i)
+theorem eq_zero_of_vanishes {n : ℕ} {k : Fin n → ℕ}
     (t : VecTree (fun _ : Fin n => F) k)
     (ht : t.IsStructured fun _ ch => Function.Injective ch) (p : MvPolynomial (Fin n) F)
     (hDegree : ∀ i, p.degreeOf i < k i)
     (hVanishes : ∀ path, MvPolynomial.eval (t.leaf path) p = 0) : p = 0 :=
+  have hk : ∀ i, 0 < k i := fun i => (Nat.zero_le _).trans_lt (hDegree i)
   NestedEvaluationTree.eq_zero_of_vanishes_comp hk (toNested hk t) p id
     (fun _ => (Nat.zero_add _).symm) hDegree (isDistinct_toNested hk t ht)
     ((vanishes_toNested hk t _).2 hVanishes)
