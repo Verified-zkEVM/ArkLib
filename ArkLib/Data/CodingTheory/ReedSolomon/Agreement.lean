@@ -33,6 +33,9 @@ Reed–Solomon statements must supply their strict message-degree hypotheses sep
   including one with repeated points.
 * `commonPolynomialAgreementSet_eq_inter` identifies the common set with an intersection.
 * `card_inter_commonPolynomialAgreementSet_le` bounds common agreement of distinct polynomial pairs.
+* `card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet` is the Johnson bound for
+  polynomial pairs with large common agreement.
+* `le_floor_johnson_of_mul_le` turns the integer Johnson count into the rounded-down real bound.
 
 These are exact finite sets, with no decoding threshold, probability convention, or
 mutual-correlated-agreement hypothesis.

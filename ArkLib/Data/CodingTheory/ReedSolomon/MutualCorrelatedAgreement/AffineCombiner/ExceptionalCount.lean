@@ -60,6 +60,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 * `ReedSolomon.exists_factorRoots_finset_card_le`: the count for one irreducible factor.
 * `ReedSolomon.exists_interpolantRoots_finset_card_le`: outside few challenges, every root of
   the interpolant with `A` agreements is good.
+* `ReedSolomon.exists_finset_card_le_forall_isAffinePersistent_of_interpolant`: outside few
+  challenges, every exceptional candidate is persistent.
 * `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant`: outside a given set and
   at most `D² + 4 d² M² D³ (n / (A - B))²` more challenges, no candidate is exceptional.
 
@@ -302,19 +304,6 @@ private theorem aeval_affineChartTarget_frobenius {E : Type*} [Field E] (domain 
     Algebra.algebraMap_self, RingHom.id_apply, Matrix.cons_val_zero, Matrix.cons_val_one,
     Matrix.cons_val_fin_one, hfr, Polynomial.leval_apply, eval_affineMultiplier]
   ring
-
-/-- The Frobenius roots of `(φ α, φ β)` determine `(α, β)`. -/
-private theorem injective_frobeniusPair {E : Type*} [Field E] (φ : F →+* E) (p : ℕ)
-    [ExpChar E p] [PerfectRing E p] (r : ℕ) :
-    Function.Injective fun c : F × F ↦
-      ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
-        (iterateFrobeniusEquiv E p r).symm (φ c.2)] := by
-  intro x y hxy
-  have h0 := congrFun hxy 0
-  have h1 := congrFun hxy 1
-  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
-    EmbeddingLike.apply_eq_iff_eq] at h0 h1
-  exact Prod.ext (φ.injective h0) (φ.injective h1)
 
 variable [DecidableEq F] [Fintype ι]
 
