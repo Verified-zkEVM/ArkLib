@@ -41,6 +41,7 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general bundle API | equivalent: `OracleBundle` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+| 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
 The [bundle and node universe port table](port-bundle-universes.md) records the frozen
@@ -119,3 +120,15 @@ the passive schedule. There is no separate step executor. Instrumented strategie
 share `OracleVerifier.executeWith`. Erasure follows from a general law about running
 instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
 verifier actions and move assignments that P1 excludes.
+
+## Knowledge composition and measured extraction
+
+The [assertion disposition record](knowledge-composition-disposition.md) maps the frozen
+production laws and acceptance assertions to the composition and measured-extraction port. It
+records the public prover selector required by P2, the explicit zero root and leaf budgets that
+recover the frozen bound, and VCVio's small-carrier restriction on measured programs. Pure
+backward maps accept large leaf and seam witnesses directly. The shared full-prefix sampler
+retains earlier public challenges and prover messages in both distributions and local errors.
+Oracle verifiers draw from the verifier view, which erases oracle messages; their errors keep the
+full prefix. P1 retires only challenge selection that depends on oracle messages and effectful
+receiver actions. The inventory marks the already constant KC-065 schedule equivalent.
