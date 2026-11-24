@@ -12,11 +12,22 @@ public import VCVio.OracleComp.EvalDist
 # Finite heterogeneous stage composition
 
 A finite chain of passive oracle verifiers composes into one passive oracle verifier through
-`OracleVerifier.append`. The first stage has a fixed protocol. The path of the stages before a
-later stage selects it. That path records the prover's public messages and nothing else.
-Challenges and oracle messages never select a later stage, and neither does an earlier verdict.
-The statement types and oracle families at the stage boundaries may all differ, and may depend on
-the same paths.
+right-associated `OracleVerifier.append`: the first stage is appended to the composed rest.
+The first stage has a fixed protocol. The path of the stages before a later stage selects it.
+That path records the prover's public messages and nothing else, so only those messages directly
+select a later stage. Challenges, oracle messages and earlier verdicts do not select it directly.
+A prover can choose its messages after seeing a challenge, so a challenge can still affect the
+choice of a later stage through the prover. The statement types and oracle families at the stage
+boundaries may all differ, and may depend on the same paths.
+
+The structural restrictions on a stage are these: every bundle query happens in the final
+decision, and each challenge comes from a draw program indexed by the challenge node,
+`(c : ChallengeNode oracleSig s) → OracleComp ambient _`. A draw program reads neither the input
+oracles nor the oracle messages. The types do not make the challenges public-coin. A draw runs in
+`OracleComp ambient`, the interface the prover also uses, so under a stateful interpretation of
+`ambient` a draw can return a value that the prover wrote. A client that needs public-coin
+challenges, for example uniformly random verifier messages, states that as a separate condition on
+the draws and on the interpretation of `ambient`.
 
 The composed execution runs the interactions of all stages, then folds the decisions. Each
 stage's decision receives the statement that the previous decision accepted, and a rejection makes
@@ -30,8 +41,9 @@ A chain is given in two parts. `StageChain` is the plan: the protocols, verifier
 stages. `StageChain.Compatibility` is the evidence: at every boundary, an
 `OracleVerifier.OutputCompatibility` certificate between the stage's verifier and the composed
 verifier of the stages after it. `StageChain.verifier` builds the composed verifier from both, by
-recursion on the plan. The certificates are general, so output maps may read the input statement;
-`OutputCompatibility.ofStatement` gives one when the intermediate statement is public.
+recursion on the plan. The certificates are general, so output maps may read the input statement.
+`OutputCompatibility.ofStatement` gives a certificate from a function of the input statement, the
+composed path and the view that every accepted intermediate statement equals.
 `StageChain.StatementFree` is the special case in which no output map reads its input statement.
 `StageChain.compose` computes the evidence from the plan instead of storing it in the plan's
 constructors. The inductive type then does not refer to the verifier computed from it.
@@ -47,7 +59,8 @@ output data unchanged.
 The invariant laws `StageChain.decideWith_accepts_of_deterministic`,
 `StageChain.decideWith_accepts_of_onSupport` and `StageChain.decideWith_accepts_of_almostSurely`
 derive a property of the composed decision from one hypothesis per stage boundary. They concern
-the fold of the decisions after all interactions.
+the fold of the decisions after all interactions. The almost-sure law reads probabilities from the
+`OracleSpec.AnswerMeasure` instance on `ambient`, which is a chosen measure on the ambient answers.
 -/
 
 @[expose] public section
@@ -193,7 +206,9 @@ theorem lowerOutputs_outputData
 end Adapters
 
 /-- Reading the inputs through an oracle map runs as the original verifier on the mapped input
-data. -/
+data. The equality holds after the decision's bundle queries are answered from the supplied data.
+It does not count the source queries that the map issues for each routed query; a bound on those
+is a separate statement. -/
 theorem comapInputs_run {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : OracleProtocol.{u}}
     {S : Type uS} {T : Path s → Type u} {I : Type uI} {A : I → Type u} {I' : Type uI'}
     {A' : I' → Type u} {inputs : OracleFamily.{uI, u, wI} I A}
@@ -338,6 +353,8 @@ the input oracle family `inputs`.
 `nil` is the empty chain. `cons s V draw rest` runs the protocol `s`, whose challenges are answered
 by `draw`, and then, at each path `p` of `s`, the chain `rest p`. The verifier `V` accepts a
 statement of type `T p` with the oracle family `middle p`, which are the inputs of `rest p`.
+The draw is any program over `ambient` indexed by the challenge node. Public-coin sampling is not
+part of this type; a client that needs it states it separately.
 Statement types and index types live in the computation universe `u`, and every oracle family of
 the chain has its queries in one universe `w`. `StageChain.Compatibility` gives the evidence that
 composes the verifiers. -/
@@ -730,9 +747,16 @@ def AcceptsAlmostSurely [ambient.AnswerMeasure] {S : Type u} {I : Type u} {A : I
 
 /-- The almost-sure chain law. Suppose every stage decision accepts a statement in its boundary
 event almost surely. Then the composed decision, the fold of the stage decisions after all
-interactions, accepts a statement in the final event almost surely. The ambient oracles carry an
-answer measure. The boundary events carry the discrete measurable structures, and the entry
-event `pre` gives the structure of the input statement type. -/
+interactions, accepts a statement in the final event almost surely. The boundary events carry the
+discrete measurable structures, and the entry event `pre` gives the structure of the input
+statement type.
+
+Probabilities are taken under the `OracleSpec.AnswerMeasure` instance on `ambient`: each ambient
+query is answered independently from the measure that instance chooses for it. The law can hold
+when the support law fails, because a rejection can lie in the structural support of a decision
+and still have probability zero under the chosen measure. It describes a stateless ambient
+interpretation. A persistent runtime with private state needs its own compatibility statement or
+invariant relating it to the chosen measure. -/
 theorem decideWith_accepts_of_almostSurely [ambient.AnswerMeasure] {S : Type u} {I : Type u}
     {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
     (c : StageChain ambient S inputs) → (e : c.Compatibility) → (pre : DiscreteEvent S) →

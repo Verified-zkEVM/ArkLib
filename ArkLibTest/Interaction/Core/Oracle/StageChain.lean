@@ -30,7 +30,8 @@ The chains above have output maps that do not read their input statements, which
 statement, with the general compatibility certificates. Another composes stages whose oracle
 families have their queries in different universes. Another derives a property of a three-stage
 decision from one hypothesis per stage boundary. The section on message selection composes two
-stages in which a message of the first selects the second.
+stages in which a message of the first selects the second. The last section applies the
+almost-sure law to a decision that queries an ambient `Bool`, under a chosen answer measure.
 -/
 
 open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
@@ -740,5 +741,109 @@ theorem sumStages_support (stmt : Nat) (h : 1 ≤ stmt) (a b : Nat)
     ∀ r ∈ support ((sumStages.verifier sumMaps.compatibility).decideWith stmt ⟨a, b, ⟨⟩⟩ v data),
       ∃ out, r = some out ∧ 1 + a + b ≤ out :=
   StageChain.decideWith_accepts_of_onSupport sumStages _ _ sumBounds sumSupportSteps stmt h _ v data
+
+/-! ## Almost-sure acceptance with an ambient query
+
+A one-stage chain whose decision queries an ambient `Bool` and rejects on `false`. Under the answer
+measure `alwaysTrue`, which answers every ambient query with `true`, the composed decision accepts
+with probability one by `StageChain.decideWith_accepts_of_almostSurely`. The support law does not
+apply to the same chain: every ambient answer is possible, so the rejection `none` is a possible
+result of the stage decision and of the composed decision. `alwaysTrue` answers each query
+independently and keeps no state. A persistent runtime with private state is not described by it,
+and needs its own compatibility statement or invariant relating it to the chosen measure. -/
+
+/-- One ambient query, answered by a `Bool`. -/
+abbrev coinAmbient : OracleSpec Unit := Unit →ₒ Bool
+
+/-- The answer measure that answers every ambient query with `true`. -/
+@[reducible] noncomputable def alwaysTrue : coinAmbient.AnswerMeasure :=
+  @PFunctor.AnswerMeasure.mk coinAmbient.toPFunctor (fun _ => ⊤)
+    (fun _ => @MeasureTheory.Measure.dirac Bool ⊤ true)
+    (fun _ => @MeasureTheory.Measure.dirac.isProbabilityMeasure Bool ⊤ true)
+
+/-- Query the ambient bit; accept the input statement on `true` and reject on `false`. -/
+def coinVerifier :
+    OracleVerifier coinAmbient done Unit (fun _ => Unit) inputs (fun _ => inputs) where
+  decide _ p _ := OptionT.mk do
+    let b : Bool ← liftM ((coinAmbient + (pathBundle inputs done p).spec).query (.inl ()))
+    pure (if b then some () else none)
+  outputMap _ _ _ := OracleMap.fst _ _
+
+/-- The coin stage alone, closed by the empty chain. -/
+def coinStages : StageChain coinAmbient Unit inputs :=
+  .cons done coinVerifier (fun c => c.val.elim) fun _ => .nil inputs
+
+/-- The coin stage's output map does not read its input statement. -/
+def coinMaps : coinStages.StatementFree :=
+  ⟨coinVerifier.outputMap (), fun _ => rfl, fun _ => ⟨⟩⟩
+
+/-- The coin decision queries the ambient bit and accepts exactly on `true`. -/
+theorem coinVerifier_decideWith (stmt : Unit) (p : Path done) (v : View done p)
+    (data : (pathBundle inputs done p).Data) :
+    coinVerifier.decideWith stmt p v data =
+      (liftM (coinAmbient.query ()) >>= fun b => pure (if b then some () else none) :
+        OracleComp coinAmbient (Option Unit)) := by
+  simp [OracleVerifier.decideWith, coinVerifier]
+
+/-- Rejection is a possible result of the coin decision. -/
+theorem coinVerifier_none_mem_support (stmt : Unit) (p : Path done) (v : View done p)
+    (data : (pathBundle inputs done p).Data) :
+    none ∈ support (coinVerifier.decideWith stmt p v data) := by
+  rw [coinVerifier_decideWith, mem_support_bind_iff]
+  exact ⟨false, mem_support_query _ _, by simp⟩
+
+/-- The trivial event on `Unit`. -/
+def unitEvent : StageChain.DiscreteEvent Unit := ⟨inferInstance, inferInstance, fun _ => True⟩
+
+/-- The boundary event after the coin stage: acceptance. -/
+def coinEvents : coinStages.Boundaries StageChain.DiscreteEvent :=
+  ⟨fun _ => unitEvent, fun _ => ⟨⟩⟩
+
+section AlwaysTrue
+
+attribute [local instance] alwaysTrue
+
+/-- Under `alwaysTrue`, the coin decision accepts with probability one. -/
+theorem coinSteps : coinStages.AcceptsAlmostSurely unitEvent.holds coinEvents := by
+  refine ⟨fun stmt _ p v data => ?_, fun _ => trivial⟩
+  change 𝒟[coinVerifier.decideWith stmt p v data] {r | ∃ mid, r = some mid ∧ True} = 1
+  rw [coinVerifier_decideWith]
+  refine OracleComp.evalDist_bind_apply_eq_one_of_ae _ _ MeasurableSet.of_discrete ?_
+  rw [MeasureTheory.ae_iff]
+  erw [OracleComp.evalDist_liftM_query_apply _ MeasurableSet.of_discrete]
+  change (@MeasureTheory.Measure.dirac Bool ⊤ true) _ = 0
+  rw [@MeasureTheory.Measure.dirac_apply' Bool ⊤ _ true MeasurableSpace.measurableSet_top,
+    Set.indicator_of_notMem]
+  simp only [Set.mem_ofPred_eq, ite_true, evalDist_pure, not_not]
+  exact MeasureTheory.Measure.dirac_apply_of_mem ⟨(), rfl, trivial⟩
+
+/-- Under `alwaysTrue`, the composed decision accepts with probability one. -/
+theorem coinStages_almostSurely (p : Path coinStages.protocol) (v : View _ p)
+    (data : (pathBundle inputs coinStages.protocol p).Data) :
+    letI := (StageChain.Boundaries.final coinStages unitEvent coinEvents p).measurableSpace
+    𝒟[(coinStages.verifier coinMaps.compatibility).decideWith () p v data]
+      {r | ∃ out, r = some out ∧
+        (StageChain.Boundaries.final coinStages unitEvent coinEvents p).holds out} = 1 :=
+  StageChain.decideWith_accepts_of_almostSurely coinStages coinMaps.compatibility unitEvent
+    coinEvents coinSteps () trivial p v data
+
+end AlwaysTrue
+
+/-- The support law's hypothesis fails for the coin stage: rejection is a possible result. -/
+theorem coinStages_not_acceptsOnSupport (b : coinStages.Boundaries (· → Prop)) :
+    ¬ coinStages.AcceptsOnSupport (fun _ => True) b := fun h => by
+  obtain ⟨_, h, _⟩ := h.1 () trivial ⟨⟩ ⟨⟨⟩, rfl⟩ (fun _ => 3, fun i => i.elim) none
+    (coinVerifier_none_mem_support _ _ _ _)
+  cases h
+
+/-- Rejection is also a possible result of the composed decision. -/
+theorem coinStages_none_mem_support (p : Path coinStages.protocol) (v : View _ p)
+    (data : (pathBundle inputs coinStages.protocol p).Data) :
+    none ∈ support ((coinStages.verifier coinMaps.compatibility).decideWith () p v data) := by
+  have h : (coinStages.verifier coinMaps.compatibility).decideWith () p v data = _ :=
+    StageChain.decideWith_one done coinVerifier (fun c => c.val.elim) coinMaps.compatibility.1
+      coinMaps.compatibility.2 () p v data
+  rw [h]
+  exact coinVerifier_none_mem_support _ _ _ _
 
 end Interaction.Core.StageChainTests

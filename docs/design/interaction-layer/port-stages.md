@@ -15,10 +15,20 @@ those two files themselves.
 
 The two approved premises are:
 
-- **P1 (passive verifier):** verifiers send public-coin challenges only, and bundle queries
-  happen in the final decision. A challenge cannot be computed from an input or from a previously
-  sent oracle.
-- **P2 (fixed shape):** neither a challenge nor an oracle message selects the protocol's subtree.
+- **P1 (passive verifier):** bundle queries happen only in the final decision, and a program
+  indexed by the challenge node supplies each challenge. In a chain, that program is a stage's
+  `draw : (c : ChallengeNode oracleSig s) → OracleComp ambient _`. It cannot read an input or a
+  previously sent oracle. This is the structural restriction that the core enforces.
+  Public-coin sampling is a separate condition that a client states when it needs it. For example,
+  [WARP §3.2](https://eprint.iacr.org/2025/753) specifies a uniformly random verifier message in
+  each round. The types do not impose it: a draw runs in `OracleComp ambient`, the interface the
+  prover also uses. Under a stateful interpretation of `ambient`, a draw can return a bit that the
+  prover wrote earlier, so the condition concerns both the draws and the interpretation of
+  `ambient`.
+- **P2 (fixed shape):** neither a challenge nor an oracle message directly selects the protocol's
+  subtree. Only the prover's public messages select the continuation. A prover can choose those
+  messages after seeing a challenge, so a challenge can still affect the continuation through the
+  prover.
 
 Each row has one of four statuses:
 
@@ -30,8 +40,14 @@ Each row has one of four statuses:
   that the mechanism carried has its own row.
 - **open:** the row names an interface that the parent branch is missing.
 
+`StageChain` is the right-associated passive composition API: a chain appends its first stage to
+the composed rest. The old-layer executor could skip later interactions after a rejection. A
+chain runs every interaction and then folds the decisions. `StageChain.run_cons` unfolds one
+append, and `OracleVerifier.run_append` splits that append into its interactions and decisions.
+
 One row is open: the split of an ordered execution at an arbitrary stage (`Composition.lean`
-L258). It needs a reassociation law for `OracleVerifier.append`.
+L258). It needs a reassociation law for `OracleVerifier.append`, with the ingredients listed in
+that row.
 
 ## Universes
 
@@ -55,8 +71,14 @@ canary.
   - The recovery laws keep the decision and the output data on the same data ([liftInputsDecide],
     [liftInputsData], [liftOutputsData], [lowerOutputsData]). The adapters are instances of
     `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs` ([comapInputs], [mapOutputs],
-    [comapInputsDecide]). Reading the inputs through an oracle map keeps the run
-    ([comapInputsRun]).
+    [comapInputsDecide]). Reading the inputs through an oracle map gives the same run after the
+    decision's bundle queries are answered from the supplied data ([comapInputsRun]). This
+    equality does not bound the queries that the map issues for each routed query. Two maps with
+    the same answers can charge differently. In the answer-only fixture, `repeated` issues two
+    source queries for each routed query and `identity` issues one, and both give the same
+    answers ([claimRow3]). A client that needs a charge bound proves it separately, for
+    example with `OracleMap.withAmbient_worstCaseCost` from #1476 in the universes it supports.
+    The stage API does not depend on the resource contracts of #1528.
   - The binary `OracleVerifier.append` keeps independent query universes for its input, middle
     and output families. So do the binary decision laws ([appendReject] to [appendMeasure]).
   - The canary [wideStages] reads inputs with queries in `Type` and exports a family with queries
@@ -104,13 +126,13 @@ The old-layer ordered execution decides each stage before the next stage's inter
 a rejection skips the later stages. P1 excludes that schedule. A passive decision runs after the
 whole interaction, and its bundle queries happen in the final decision. The port is the chain
 `twoStages` in the core test `StageChain.lean`. Both interactions run first, and then the decisions
-fold. The accepted history is therefore `[0, 2, 1, 3]`, and a rejecting first decision still runs
-the second stage's interaction. `StageChain.run_cons` identifies the chain's run with the binary
+fold. The accepted history is therefore `[0, 2, 1, 3]`. The second stage's interaction runs before
+the first decision, including when that decision rejects. `StageChain.run_cons` identifies the chain's run with the binary
 composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5], [compSummary],
 [compRow13]), which states the same rows. Additional coverage:
 
-- a third stage with a sampled challenge, whose interaction also runs after a rejection
-  ([threeAccept], [threeReject]);
+- a third stage with a sampled challenge, whose interaction also runs before the first decision,
+  including when that decision rejects ([threeAccept], [threeReject]);
 - a second stage selected by the first stage's prover message ([shapeTrue], [shapeFalse]).
 
 | Old-layer assertion | Status | Where it is ported, or what remains |
@@ -142,7 +164,8 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 | L129, hidden data does not change the public result | excluded by P1 | P1, as for L116. [execRow6] keeps the invariance for every pair of hidden values, at the draw 18. |
 | L141, negative test: an oracle-node verifier cannot receive the oracle message | ported | [execRow7]: a decision that reads the hidden coordinate of a sent oracle does not elaborate, because the view gives oracle moves the type `PUnit`. |
 | L149, positive counterpart: a query reaches the observable coordinate | ported | [execRow8]. |
-| L159, negative test: a verifier before the second send cannot query the second oracle | ported | [execRow9Neg]: the prefix decision's bundle does not name the second sent oracle, so the query does not elaborate. [execRow9Pos]: the composed decision can name it. |
+| L159, negative test: the verifier action at the receive node before the second send cannot query the second oracle | excluded by P1 | P1 removes verifier actions at protocol nodes, so the core has no action at that receive node to test. The next row checks the same restriction at decision time. |
+| L159, the same restriction at decision time: a decision cannot query an oracle sent after its own path | ported | [execRow9Neg]: the prefix decision's bundle does not name the second sent oracle, so the query does not elaborate. [execRow9Pos]: the composed decision can name it. |
 | L165, `executeStrategies_eq_run` erasure equation | removed | Removed mechanism: conversion of oracle strategies to plain counterparts on the type tree (`Verifier.toCounterpart`, `TypeTree.ExecutionPath.ofTypeTreePath`). [execRow10] states the oracle verifier's run of the same strategies by definition. It is the paired run against the sampler followed by the decision. |
 | L44 and L47, access after each oracle send | removed | Removed mechanism: per-node access (`Access.extend`). A decision's bundle depends only on its path ([pathBundle]). Record D6 removes per-node access once verifiers are passive. |
 | L180 to L182, axioms of `accessAt_comp`, `AccessDecoration.restrict_build`, `Verifier.decorate_access` | removed | Removed mechanism: per-node access decorations. |
@@ -154,7 +177,7 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 | L295, history `[10, 11, 12, 14, 15, 16, 17]` | excluded by P1 | P1 excludes prefix verifier events 11 and 12 before the prover's response. [execRow19] keeps the seven events, each once, as `[10, 14, 15, 11, 12, 16, 17]`. |
 | L298, private output `hidden + 14` | ported | [execRow19] and [execRow19All]: the private output keeps the ambient answer 14 read after the challenge. |
 | L300, abort gives `none` | excluded by P1 and P2 | P2 excludes the `none` challenge that selects a branch without a second send. P1 excludes the abort, which ends the execution before the remaining interaction. [execRow22] keeps the `none` verdict, for every draw and hidden value, through a rejecting prefix decision that runs after the whole interaction. |
-| L303, abort history `[10, 11, 12, 14, 17]` | excluded by P1 and P2 | P1 excludes abort on rejection. The old-layer run stops at the abort and runs the abort branch's final action 17 instead of the remaining interaction. Under P1 every interaction runs before any decision, so the prefix verifier events 11 and 12 follow the prover's events. P2 excludes the abort branch without a second send, so the suffix send's event 15 runs on the fixed protocol. The port keeps the six old-layer events, each once, and the `none` verdict. [execRow22] gives `[10, 14, 15, 11, 12, 17]` for every draw and hidden value. Event 17 is no longer an abort action. The rejecting prefix decision records it once as its last query ([execFirstVerifier]). The skipped suffix decision records neither 16 nor its own 17. |
+| L303, abort history `[10, 11, 12, 14, 17]` | excluded by P1 and P2 | P1 excludes abort on rejection. The old-layer run stops at the abort and runs the abort branch's final action 17 instead of the remaining interaction. Under P1 every interaction runs before any decision, so the prefix verifier events 11 and 12 follow the prover's events. P2 excludes the abort branch without a second send. The port keeps the five old-layer events, each once, and the `none` verdict, with two changes. It adds event 15, the suffix send, which runs on the fixed protocol. It records event 17 in the rejecting prefix decision, as that decision's last query ([execFirstVerifier]), instead of as an abort action. [execRow22] gives `[10, 14, 15, 11, 12, 17]` for every draw and hidden value. The skipped suffix decision records neither 16 nor its own 17. |
 | L305, abort private output `hidden + 14` | ported | [execRow22]. |
 | L352, completed prefix then next send: `[40, 41]` | ported | [execRow25]. |
 | L354, appended: `[41, 40]` | ported | [execRow26]. The appended completed decision is an end decision, so event 40 follows the next prover's event 41, as in the old-layer run. |
@@ -193,8 +216,8 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 | L171, `run_succ_of_reject` | excluded by P1 | P1 excludes skipping the later interactions after a rejection. [rejectCons] keeps the rejection: a rejecting first decision makes the chain reject and skips the later decisions. [appendReject] states it for the binary append. The later interactions have run ([stagesRow13], [threeReject]). |
 | L182, `run_preserves` | excluded by P1 | P1 excludes the invariant over whole stage runs, which include each stage's interaction. [chainAccept] keeps the chain statement over the decisions. Its hypotheses are one deterministic acceptance per stage, with the predicate at that stage's boundary ([deterministicSteps]). From them, the composed decision accepts a statement with the final predicate. The predicates may differ in type at every boundary and may depend on the paths up to it ([boundaries]). The law concerns the fold of the decisions after all interactions. It is proved by induction on the chain from the binary law [appendAccept]. [sumAccepts] applies it to three stages ([sumStages], [sumSteps]). |
 | L203, `run_preserves_support` | excluded by P1 | P1, as for L182. [chainSupport] keeps the chain statement over the support of the decisions, from one hypothesis per stage ([supportSteps]), by induction from [appendSupport]. [sumSupport] applies it to the three stages. |
-| L230, `run_preserves_measure` | excluded by P1 | P1, as for L182. [chainMeasure] keeps the almost-sure chain statement over the decisions, from one hypothesis per stage ([measureSteps]), by induction from [appendMeasure]. It uses the old-layer assumptions: an answer measure on the ambient oracles and measurable, discrete statement spaces. Each boundary event carries the discrete measurable structure of its statement type ([discreteEvent]). |
-| L258, `run_append` | open | Missing parent interface: a reassociation law for `OracleVerifier.append`. It relates `(V₁.append V₂ c₁₂).append V₃ c` to the append of `V₁` with the appends of `V₂` and `V₃`. The interface also includes the transport of paths and views along protocol associativity and the agreement of `prefixRoute` and `suffixRoute` on both sides. It also includes the reassociation of the compatibility certificates and their output maps. The split of a chain at an arbitrary stage needs this law and the concatenation of chains. The protocol part exists at the PolyFun pin `d3ec3a41`: `PFunctor.FreeM.append_assoc` (`PolyFun/PFunctor/Free/Path.lean` L727), with the inverse laws `Path.split_append` and `Path.append_split`. The concatenation pattern is `Chain.then` with `Chain.toTypeTree_then` (`PolyFun/Interaction/Basic/Chain/Append.lean` L94). [runCons] gives only the split after the first stage. |
+| L230, `run_preserves_measure` | excluded by P1 | P1, as for L182. [chainMeasure] keeps the almost-sure chain statement over the decisions, from one hypothesis per stage ([measureSteps]), by induction from [appendMeasure]. It uses the old-layer assumptions: an answer measure on the ambient oracles and measurable, discrete statement spaces. Each boundary event carries the discrete measurable structure of its statement type ([discreteEvent]). Probabilities come from the chosen `OracleSpec.AnswerMeasure` instance on the ambient oracles. [coinAlmostSurely] applies the law to a one-stage decision that queries an ambient `Bool` and rejects on `false`, under the answer measure `alwaysTrue`, which puts all mass on `true`. The same decision can reject on its structural support ([coinRejectSupport]), so the support law does not apply ([coinNotOnSupport]). A persistent runtime with private state needs its own compatibility statement or invariant relating it to the chosen measure. |
+| L258, `run_append` | open | Missing parent interface: a reassociation law for `OracleVerifier.append`. It relates `(V₁.append V₂ c₁₂).append V₃ c` to the append of `V₁` with the appends of `V₂` and `V₃`. The interface also includes the transport of paths and views along protocol associativity and the agreement of `prefixRoute` and `suffixRoute` on both sides. It also includes the reassociation of the compatibility certificates and their output maps. The split of a chain at an arbitrary stage needs this law and the concatenation of chains. It also needs the prover continuation retained at the cut. The protocol part exists at the PolyFun pin `713d8857`: `PFunctor.FreeM.append_assoc` (`PolyFun/PFunctor/Free/Path.lean` L727), with the inverse laws `Path.split_append` (L766) and `Path.append_split` (L777). The concatenation pattern is `Chain.then` with `Chain.toTypeTree_then` (`PolyFun/Interaction/Basic/Chain/Append.lean` L94). [runCons] gives only the split after the first stage. |
 
 [logged]: port-logged-execution.md
 [full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L589
@@ -262,74 +285,77 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 [compSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L208
 [compRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L260
 [compRow14]: ../../../ArkLibTest/Interaction/Core/Oracle/HeterogeneousAppend.lean#L269
-[threeVerifierCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L141
-[threeRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L176
-[threeAccept]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L184
-[threeReject]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L193
-[twoRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L259
-[summaryTwoWithTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L267
-[stagesRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L292
-[stagesRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L296
-[stagesRow9]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L302
-[stagesRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L307
-[stagesRow11]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L312
-[stagesRow12]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L318
-[stagesRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L323
-[stagesRow13Fixed]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L338
-[shapeTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L433
-[shapeFalse]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L437
-[echoVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L454
-[echoEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L476
-[echoOutput]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L486
-[echoNotFree]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L495
-[echoCheckEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L525
-[echoCheckRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L541
-[wideStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L601
-[wideDecide]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L609
-[wideNarrow]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L619
-[wideNarrowRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L651
-[sumStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L679
-[sumSteps]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L700
-[sumAccepts]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L714
-[sumSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L737
-[liftQueries]: ../../../ArkLib/Interaction/Core/StageChain.lean#L64
-[comapInputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L107
-[mapOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L115
-[comapInputsDecide]: ../../../ArkLib/Interaction/Core/StageChain.lean#L124
-[comapInputsRun]: ../../../ArkLib/Interaction/Core/StageChain.lean#L197
-[liftInputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L153
-[liftOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L158
-[lowerOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L163
-[liftInputsDecide]: ../../../ArkLib/Interaction/Core/StageChain.lean#L169
-[liftInputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L176
-[liftOutputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L182
-[lowerOutputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L188
-[appendReject]: ../../../ArkLib/Interaction/Core/StageChain.lean#L266
-[appendAccept]: ../../../ArkLib/Interaction/Core/StageChain.lean#L274
-[appendSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L287
-[appendMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L308
-[stages]: ../../../ArkLib/Interaction/Core/StageChain.lean#L344
-[compose]: ../../../ArkLib/Interaction/Core/StageChain.lean#L416
-[compatibility]: ../../../ArkLib/Interaction/Core/StageChain.lean#L428
-[stagesVerifier]: ../../../ArkLib/Interaction/Core/StageChain.lean#L434
-[stagesRun]: ../../../ArkLib/Interaction/Core/StageChain.lean#L457
-[statementFree]: ../../../ArkLib/Interaction/Core/StageChain.lean#L470
-[statementFreeCertify]: ../../../ArkLib/Interaction/Core/StageChain.lean#L492
-[verifierCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L533
-[drawCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L539
-[runCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L548
-[rejectCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L558
-[decideWithNil]: ../../../ArkLib/Interaction/Core/StageChain.lean#L568
-[outputDataNil]: ../../../ArkLib/Interaction/Core/StageChain.lean#L579
-[decideWithOne]: ../../../ArkLib/Interaction/Core/StageChain.lean#L589
-[boundaries]: ../../../ArkLib/Interaction/Core/StageChain.lean#L618
-[deterministicSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L639
-[supportSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L651
-[measureSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L721
-[discreteEvent]: ../../../ArkLib/Interaction/Core/StageChain.lean#L710
-[chainAccept]: ../../../ArkLib/Interaction/Core/StageChain.lean#L663
-[chainSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L686
-[chainMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L736
+[threeVerifierCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L142
+[threeRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L177
+[threeAccept]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L185
+[threeReject]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L194
+[twoRunCons]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L260
+[summaryTwoWithTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L268
+[stagesRow7]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L293
+[stagesRow8]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L297
+[stagesRow9]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L303
+[stagesRow10]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L308
+[stagesRow11]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L313
+[stagesRow12]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L319
+[stagesRow13]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L324
+[stagesRow13Fixed]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L339
+[shapeTrue]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L434
+[shapeFalse]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L438
+[echoVerifier]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L455
+[echoEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L477
+[echoOutput]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L487
+[echoNotFree]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L496
+[echoCheckEvidence]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L526
+[echoCheckRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L542
+[wideStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L602
+[wideDecide]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L610
+[wideNarrow]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L620
+[wideNarrowRows]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L652
+[sumStages]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L680
+[sumSteps]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L701
+[sumAccepts]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L715
+[sumSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L738
+[coinAlmostSurely]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L821
+[coinNotOnSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L833
+[coinRejectSupport]: ../../../ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L840
+[liftQueries]: ../../../ArkLib/Interaction/Core/StageChain.lean#L77
+[comapInputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L120
+[mapOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L128
+[comapInputsDecide]: ../../../ArkLib/Interaction/Core/StageChain.lean#L137
+[comapInputsRun]: ../../../ArkLib/Interaction/Core/StageChain.lean#L212
+[liftInputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L166
+[liftOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L171
+[lowerOutputs]: ../../../ArkLib/Interaction/Core/StageChain.lean#L176
+[liftInputsDecide]: ../../../ArkLib/Interaction/Core/StageChain.lean#L182
+[liftInputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L189
+[liftOutputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L195
+[lowerOutputsData]: ../../../ArkLib/Interaction/Core/StageChain.lean#L201
+[appendReject]: ../../../ArkLib/Interaction/Core/StageChain.lean#L281
+[appendAccept]: ../../../ArkLib/Interaction/Core/StageChain.lean#L289
+[appendSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L302
+[appendMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L323
+[stages]: ../../../ArkLib/Interaction/Core/StageChain.lean#L361
+[compose]: ../../../ArkLib/Interaction/Core/StageChain.lean#L433
+[compatibility]: ../../../ArkLib/Interaction/Core/StageChain.lean#L445
+[stagesVerifier]: ../../../ArkLib/Interaction/Core/StageChain.lean#L451
+[stagesRun]: ../../../ArkLib/Interaction/Core/StageChain.lean#L474
+[statementFree]: ../../../ArkLib/Interaction/Core/StageChain.lean#L487
+[statementFreeCertify]: ../../../ArkLib/Interaction/Core/StageChain.lean#L509
+[verifierCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L550
+[drawCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L556
+[runCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L565
+[rejectCons]: ../../../ArkLib/Interaction/Core/StageChain.lean#L575
+[decideWithNil]: ../../../ArkLib/Interaction/Core/StageChain.lean#L585
+[outputDataNil]: ../../../ArkLib/Interaction/Core/StageChain.lean#L596
+[decideWithOne]: ../../../ArkLib/Interaction/Core/StageChain.lean#L606
+[boundaries]: ../../../ArkLib/Interaction/Core/StageChain.lean#L635
+[deterministicSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L656
+[supportSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L668
+[measureSteps]: ../../../ArkLib/Interaction/Core/StageChain.lean#L738
+[discreteEvent]: ../../../ArkLib/Interaction/Core/StageChain.lean#L727
+[chainAccept]: ../../../ArkLib/Interaction/Core/StageChain.lean#L680
+[chainSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L703
+[chainMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L760
 [appendDecide]: ../../../ArkLib/Interaction/Core/Composition.lean#L471
 [pathBundle]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L486
 [oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L554
