@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u q dI uA v uι uS uI uJ uK uV uX uY dX dY wI wJ wK
+universe u q dI uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -58,6 +58,32 @@ def TranscriptAt.split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     TranscriptAt l (s₂ (Transcript.path z.1)) (Transcript.path z.2) from
       (⟨z.1, rfl⟩, ⟨z.2, rfl⟩))
 
+/-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
+transcripts and their own views. -/
+theorem TranscriptAt.split_append {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) {X : Sort*}
+    (G : (p : Path s₁) → (q : Path (s₂ p)) → TranscriptAt l s₁ p → TranscriptAt l (s₂ p) q → X)
+    (tr₁ : Transcript l s₁) (tr₂ : Transcript l (s₂ tr₁.path)) :
+    G (Path.split s₁ s₂ (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))).1
+      (Path.split s₁ s₂ (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))).2
+      (TranscriptAt.split l s₁ s₂ _ ⟨Transcript.append s₁ s₂ tr₁ tr₂, rfl⟩).1
+      (TranscriptAt.split l s₁ s₂ _ ⟨Transcript.append s₁ s₂ tr₁ tr₂, rfl⟩).2 =
+    G tr₁.path tr₂.path ⟨tr₁, rfl⟩ ⟨tr₂, rfl⟩ := by
+  have key : ∀ (tr : Transcript l (s₁.append s₂)),
+      G (Path.split s₁ s₂ tr.path).1
+        (Path.split s₁ s₂ tr.path).2
+        (TranscriptAt.split l s₁ s₂ _ ⟨tr, rfl⟩).1 (TranscriptAt.split l s₁ s₂ _ ⟨tr, rfl⟩).2 =
+      G (Transcript.path (Transcript.split s₁ s₂ tr).1)
+        (Transcript.path (Transcript.split s₁ s₂ tr).2)
+        ⟨(Transcript.split s₁ s₂ tr).1, rfl⟩ ⟨(Transcript.split s₁ s₂ tr).2, rfl⟩ := by
+    intro tr
+    simp only [TranscriptAt.split]
+    generalize project_split l s₁ s₂ tr = h
+    generalize Path.split s₁ s₂ tr.path = w at h ⊢
+    subst h
+    rfl
+  rw [key, Transcript.split_append]
+
 /-- Split the oracle verifier's public view. -/
 abbrev View.split := TranscriptAt.split viewSig
 
@@ -72,7 +98,7 @@ abbrev splitFamily {P : PFunctor.{uA, u}} {s₁ : FreeM P PUnit.{u + 1}}
     (p : Path (s₁.append s₂)) : Type uV :=
   U (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
 
-/-- Plain terminal decisions fold after both interactions have finished. The prefix's output type
+/-- Plain final decisions fold after both interactions have finished. The prefix's output type
 may depend on the prefix path, and the composite's output at an appended path is the suffix's
 output at the split path. -/
 def Verifier.append {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
@@ -148,6 +174,34 @@ def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
       (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
 
+section draws
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+  {m : Type u → Type v} {m' : Type u → Type w}
+
+/-- Restricting draws to the prefix commutes with transforming every draw. -/
+theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (c : ChallengeNode l s₁) →
+    prefixDraw l s₁ s₂ (fun c => f (draw c)) c = f (prefixDraw l s₁ s₂ draw c)
+  | .pure _, _, _, c => c.val.elim
+  | .liftBind _ _, _, _, ⟨.inl _, _⟩ => rfl
+  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
+    prefixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
+
+/-- Restricting draws to a suffix commutes with transforming every draw. -/
+theorem suffixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+    suffixDraw l s₁ s₂ (fun c => f (draw c)) p c = f (suffixDraw l s₁ s₂ draw p c)
+  | .pure _, _, _, ⟨⟩, _ => rfl
+  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
+    suffixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
+end draws
+
 /-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
 theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
     (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
@@ -208,6 +262,7 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerNode, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, plainSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]
@@ -236,6 +291,7 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   | liftBind a next ih =>
     cases a <;>
       simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerNode, rootDraw,
         FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
         owner, oracleSig, Choice, Move, Choice.map, combineDraw,
         LawfulApplicative.map_pure, Functor.map_map]
@@ -264,6 +320,15 @@ theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
     sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
       (prefixDraw oracleSig s₁ s₂ draw) (suffixDraw oracleSig s₁ s₂ draw) := by
   rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
+
+/-- The sampler of an appended plain protocol is the append of its restricted samplers. -/
+theorem plainSampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
+      m (challengeSpec plainSig (s₁.append s₂) c)) :
+    sampler plainSig (s₁.append s₂) draw = appendSampler s₁ s₂
+      (prefixDraw plainSig s₁ s₂ draw) (suffixDraw plainSig s₁ s₂ draw) := by
+  rw [appendSampler_eq, combineDraw_prefixDraw_suffixDraw]
 
 /-- Composed execution preserves seam effects in their actual order. -/
 theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
