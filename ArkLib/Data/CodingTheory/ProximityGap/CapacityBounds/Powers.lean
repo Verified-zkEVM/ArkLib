@@ -238,7 +238,7 @@ private theorem powers_middle_bound_nonneg (n q k : ℕ) (δmin η : ℝ)
   positivity
 
 private theorem powers_power_difference_pos_of_module_code
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
     (C : ModuleCode ι F A) (k : ℕ) (δmin η : NNReal)
@@ -1074,7 +1074,7 @@ private theorem linear_mca_error_powers_bad_seed_card_le
   exact hfin
 
 private theorem univariate_powers_generator_code_eq_rs
-    {F : Type} [Field F] [Fintype F] (k : ℕ) :
+    {F : Type} [Field F] (k : ℕ) :
     LinearCode.fromColGenMat (CoreDefinitions.M_G (CoreDefinitions.univariatePowersGenerator F k)) =
       ReedSolomon.code (Function.Embedding.refl F) (k + 1) := by
   simpa [CoreDefinitions.M_G, CoreDefinitions.univariatePowersGenerator,

@@ -105,7 +105,7 @@ open scoped NNReal ENNReal ProbabilityTheory
 open Probability
 
 
-variable {ι F : Type} [Fintype ι] [Field F] [Fintype F] [DecidableEq F]
+variable {ι F : Type} [Fintype ι] [Field F] [DecidableEq F]
 
 /-- Linear encoder obtained by adjoining the scalar constraint coordinate. -/
 def constrainedEncoder {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F))
@@ -264,7 +264,7 @@ def ConstrainedMCAEvent {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v 
       (∀ i : Fin 2, ∑ j, M i j * v j = ![μ₁, μ₂] i) ∧
       (∀ i : Fin 2, ∀ j ∈ S, ![f₁, f₂] i j = enc (M i) j)
 
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- **Per-instance equivalence (constraint-pinned).** Under `hNoWit` (the instance
 admits no relaxed-relation witness), the toy γ-event is equivalent, for every `γ`,
 to `ConstrainedMCAEvent` — the toy event augmented with the (under `hNoWit`
@@ -299,7 +299,7 @@ theorem gammaEvent_iff_constrainedMCAEvent {k : ℕ}
   · rintro ⟨S, hScard, ⟨m, hconstr, hagree⟩, _⟩
     exact ⟨m, hconstr, S, hScard, hagree⟩
 
-omit [Fintype F] [DecidableEq F] in
+omit [DecidableEq F] in
 /-- **Probability form of the equality**: the toy γ-round transition probability
 equals the probability of the constraint-pinned MCA event of the constrained code. -/
 theorem gammaEvent_prob_eq_constrainedMCAEvent {k : ℕ}

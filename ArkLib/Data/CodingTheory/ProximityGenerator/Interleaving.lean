@@ -105,7 +105,7 @@ variable {ι F A κ ℓ : Type} [Fintype ι] [Field F] [AddCommMonoid A] [Module
 /-- **The MCA event is an integer-threshold event.** The size condition `|T| ≥ |ι| · (1 - δ)` of
 `IsMCA` holds exactly when `⌈|ι| · (1 - δ)⌉₊ ≤ |T|`, so `IsMCA G C x U δ` is
 `Code.IsProjectionBad G C ⌈|ι| · (1 - δ)⌉₊ x U`. For `δ ≥ 1` the threshold is `0`. -/
-theorem isMCA_iff_isProjectionBad {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F)
+theorem isMCA_iff_isProjectionBad {S : Type} (G : Generator S ℓ F)
     (C : ModuleCode ι F A) (x : S) (U : ℓ → ι → A) (δ : ℝ) :
     IsMCA G C x U δ ↔ IsProjectionBad G C ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ x U := by
   simp only [IsMCA, IsProjectionBad, ge_iff_le, Nat.ceil_le]
@@ -121,7 +121,7 @@ The bound `hs` is the hypothesis of that lemma;
 it is automatic for infinite `F`. The generator and the radius are arbitrary: a seed keeps its
 witness set `T`, so the size clause of `IsMCA` carries over unchanged at every real `δ`. For
 empty `s`, any `V` works. -/
-theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type} [Nonempty S] [Fintype S]
+theorem exists_forall_isMCA_of_forall_isMCA_interleaved {S : Type}
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) (U : ℓ → ι → κ → A) (s : Finset S)
     (hs : (s.card : ℕ∞) ≤ ENat.card F) (hbad : ∀ x ∈ s, IsMCA G (C^⋈κ) x U δ) :
     ∃ V : ℓ → ι → A, ∀ x ∈ s, IsMCA G C x V δ := by
@@ -144,11 +144,12 @@ every generator with finitely many seeds when `F` is infinite.
 Edge cases: an empty `κ` needs no separate argument; there `C ^⋈ κ` has no bad seeds and the left
 side is `0`. Radii outside `[0, 1]` need no separate argument either, because `IsMCA` is defined at
 every real radius. -/
-theorem mcaError_moduleInterleavedCode_le_of_card_le {S : Type} [Nonempty S] [Fintype S]
+theorem mcaError_moduleInterleavedCode_le_of_card_le {S : Type}
     [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
     (hS : ENat.card S ≤ ENat.card F) :
     mcaError G (C^⋈κ) δ ≤ mcaError G C δ := by
   classical
+  let _ : Fintype S := Fintype.ofFinite S
   refine iSup_le fun U ↦ ?_
   let s := Finset.univ.filter fun x ↦ IsMCA G (C^⋈κ) x U δ
   have hs : (s.card : ℕ∞) ≤ ENat.card F :=
@@ -175,8 +176,8 @@ generator, the seed space or the radius, and `κ` need not be finite.
 
 The hypothesis `Nonempty κ` is necessary. For empty `κ`, every word projects into `C ^⋈ κ`, so
 the right side is `0`, while the left side can be positive. -/
-theorem mcaError_le_mcaError_moduleInterleavedCode [Nonempty κ] {S : Type} [Nonempty S]
-    [Fintype S] [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) :
+theorem mcaError_le_mcaError_moduleInterleavedCode [Nonempty κ] {S : Type}
+    [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError G C δ ≤ mcaError G (C^⋈κ) δ := by
   refine iSup_le fun U ↦ ?_
   refine le_trans (prEvent_mono _ _ _ fun x hx ↦ ?_)
@@ -203,8 +204,8 @@ code `C`, every nonempty row index `κ` and every real radius `δ`,
 The proof combines `mcaError_moduleInterleavedCode_le_of_card_le`, which needs `hS`, with
 `mcaError_le_mcaError_moduleInterleavedCode`, which needs `Nonempty κ`. The affine-line case with
 `κ = Fin t` is `ProximityGap.mcaError_interleaved_eq`. -/
-theorem mcaError_moduleInterleavedCode_eq_of_card_le [Nonempty κ] {S : Type} [Nonempty S]
-    [Fintype S] [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
+theorem mcaError_moduleInterleavedCode_eq_of_card_le [Nonempty κ] {S : Type}
+    [SampleableType S] (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
     (hS : ENat.card S ≤ ENat.card F) :
     mcaError G (C^⋈κ) δ = mcaError G C δ :=
   le_antisymm (mcaError_moduleInterleavedCode_le_of_card_le G C δ hS)
@@ -224,7 +225,7 @@ witness set `T`. -/
 lemma card_le_card_filter_isMCA_rowCombination
     {ι F A κ ℓ : Type} [Fintype ι] [Field F] [Fintype F]
     [AddCommMonoid A] [Module F A] [Fintype κ] [Fintype ℓ]
-    {S : Type} [Nonempty S] [Fintype S]
+    {S : Type}
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ)
     (U : ℓ → ι → κ → A) (x : S) (hx : IsMCA G (C^⋈κ) x U δ) :
     Fintype.card F ^ (Fintype.card κ - 1) * (Fintype.card F - 1) ≤
@@ -265,7 +266,7 @@ combination of at least `q ^ (s - 1) * (q - 1)` of them, so double counting give
 theorem mcaError_moduleInterleavedCode_le_fieldWeighted
     {ι F A κ ℓ : Type} [Fintype ι] [Field F] [Fintype F] [AddCommMonoid A] [Module F A]
     [Fintype κ] [Fintype ℓ]
-    {S : Type} [Fintype S] [SampleableType S]
+    {S : Type} [SampleableType S]
     (G : Generator S ℓ F) (C : ModuleCode ι F A) (δ : ℝ) :
     mcaError G (C^⋈κ) δ ≤
       (((Fintype.card F : ENNReal) ^ Fintype.card κ - 1) /

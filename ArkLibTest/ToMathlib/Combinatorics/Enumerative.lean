@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.ToMathlib.Combinatorics.Enumerative.Descents
 import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
@@ -107,3 +108,29 @@ example : dimensionSensitiveIncidenceProduct 10 5 3 1 1 ≤
 example : (1 : ℚ) / 2 ≤ 1 := by
   simpa using natCastRatio_le_div_of_scaled_lower_bound (K := ℚ) 1 1 2 1 2
     (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+
+/-- The tuple `(2, 0, 1)` descends only at position `0`. -/
+example : Tuple.descents ![2, 0, 1] = ({0} : Finset (Fin 3)) := by
+  decide
+
+/-- The tuple `(0, 2, 1, 3)` descends only at position `1`. -/
+example : Tuple.descents ![0, 2, 1, 3] = ({1} : Finset (Fin 4)) := by
+  decide
+
+/-- At most `C(4, 2) = 6` embeddings `Fin 2 ↪ Fin 4` have no descent. -/
+example : #{c : Fin 2 ↪ Fin 4 | #(Tuple.descents c) < 1} ≤ 6 :=
+  (Tuple.card_filter_card_descents_lt_le 2 1).trans_eq (by decide)
+
+/-- Exactly `C(4, 2) = 6` embeddings `Fin 2 ↪ Fin 4` have no descent, so the bound above is tight.
+The `Fintype` instance on embeddings does not reduce under `decide`, so the proof counts
+injective functions instead. -/
+example : #{c : Fin 2 ↪ Fin 4 | #(Tuple.descents c) < 1} = 6 := by
+  rw [← card_map ⟨fun c : Fin 2 ↪ Fin 4 => (c : Fin 2 → Fin 4), DFunLike.coe_injective⟩]
+  convert (by decide : #{f : Fin 2 → Fin 4 | Function.Injective f ∧ #(Tuple.descents f) < 1} = 6)
+  ext f
+  simp only [mem_map, mem_filter, mem_univ, true_and, Function.Embedding.coeFn_mk]
+  exact ⟨fun ⟨c, hc, hcf⟩ => hcf ▸ ⟨c.injective, hc⟩, fun ⟨hf, hd⟩ => ⟨⟨f, hf⟩, hd, rfl⟩⟩
+
+/-- At most `C(4, 2) * 2 ^ 2 = 24` embeddings `Fin 2 ↪ Fin 4` have fewer than two descents. -/
+example : #{c : Fin 2 ↪ Fin 4 | #(Tuple.descents c) < 2} ≤ 24 :=
+  (Tuple.card_filter_card_descents_lt_le 2 2).trans_eq (by decide)

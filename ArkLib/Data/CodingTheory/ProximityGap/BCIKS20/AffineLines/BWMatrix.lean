@@ -28,7 +28,7 @@ section CoreResults
 variable {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
          {F : Type u} [Field F] [DecidableEq F]
 
-def BW_homMatrix {R : Type*} [CommRing R] {ι : Type*} [Fintype ι]
+def BW_homMatrix {R : Type*} [CommRing R] {ι : Type*}
     (e k : ℕ) (ωs : ι → R) (f : ι → R) :
     Matrix ι (Fin ((e + 1) + (e + k))) R :=
   Matrix.of fun i j =>
@@ -38,7 +38,7 @@ def BW_homMatrix {R : Type*} [CommRing R] {ι : Type*} [Fintype ι]
       - (ωs i) ^ (j.1 - (e + 1))
 
 open Polynomial in
-theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge {F : Type u} [Field F] {ι : Type*} [Fintype ι]
+theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge {F : Type u} [Field F] {ι : Type*}
     (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F) (i : ι)
     (j : Fin ((e + 1) + (e + k))) (hj : e + 1 ≤ j.1) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
@@ -52,7 +52,7 @@ theorem BW_homMatrix_entry_natDegree_eq_zero_of_ge {F : Type u} [Field F] {ι : 
   simp [BW_homMatrix, hle]
 
 open Polynomial in
-theorem BW_homMatrix_entry_natDegree_le_one {F : Type u} [Field F] {ι : Type*} [Fintype ι] (e k : ℕ)
+theorem BW_homMatrix_entry_natDegree_le_one {F : Type u} [Field F] {ι : Type*} (e k : ℕ)
     (ωs : ι → F) (f0 f1 : ι → F) (i : ι)
     (j : Fin ((e + 1) + (e + k))) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
@@ -66,7 +66,7 @@ theorem BW_homMatrix_entry_natDegree_le_one {F : Type u} [Field F] {ι : Type*} 
     exact zero_le_one
 
 open Polynomial in
-theorem BW_homMatrix_map_evalRingHom {F : Type u} [Field F] {ι : Type*} [Fintype ι]
+theorem BW_homMatrix_map_evalRingHom {F : Type u} [Field F] {ι : Type*}
     (e k : ℕ) (ωs f0 f1 : ι → F) (z : F) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
           (fun i => Polynomial.C (f0 i) + Polynomial.X * Polynomial.C (f1 i))).map
@@ -81,7 +81,7 @@ theorem BW_homMatrix_map_evalRingHom {F : Type u} [Field F] {ι : Type*} [Fintyp
   · simp [BW_homMatrix, hje]
 
 open scoped BigOperators in
-theorem BW_homMatrix_mulVec_eq_zero_iff {R : Type*} [CommRing R] {ι : Type*} [Fintype ι] (e k : ℕ)
+theorem BW_homMatrix_mulVec_eq_zero_iff {R : Type*} [CommRing R] {ι : Type*} (e k : ℕ)
     (ωs : ι → R) (f : ι → R)
     (a : Fin (e + 1) → R) (b : Fin (e + k) → R) :
     Matrix.mulVec (BW_homMatrix (ι := ι) e k ωs f) (Fin.append a b) = 0 ↔
@@ -128,7 +128,7 @@ private theorem natDegree_det_le_sum_of_natDegree_le {R : Type*} [CommRing R] {n
 open Polynomial in
 /-- An entry of the Berlekamp–Welch matrix over `F[X]` has natural degree at most one in the
 first `e + 1` columns and zero in the others. -/
-private theorem BW_homMatrix_entry_natDegree_le_ite {F : Type u} [Field F] {ι : Type*} [Fintype ι]
+private theorem BW_homMatrix_entry_natDegree_le_ite {F : Type u} [Field F] {ι : Type*}
     (e k : ℕ) (ωs f0 f1 : ι → F) (i : ι) (j : Fin ((e + 1) + (e + k))) :
     (BW_homMatrix (ι := ι) e k (fun i => (Polynomial.C (ωs i) : F[X]))
         (fun i => Polynomial.C (f0 i) + Polynomial.X * Polynomial.C (f1 i)) i j).natDegree ≤
@@ -147,7 +147,7 @@ open scoped BigOperators in
 open Polynomial in
 open Matrix in
 theorem BW_homMatrix_det_submatrix_natDegree_le_e_add_one {F : Type u} [Field F] {ι : Type*}
-    [Fintype ι] (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
+    (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
     (r : Fin ((e + 1) + (e + k)) → ι) :
     (Matrix.det
         (Matrix.submatrix
@@ -164,7 +164,7 @@ open scoped BigOperators in
 open Polynomial in
 open Matrix in
 theorem BW_homMatrix_det_updateCol_natDegree_le_e_add_one
-    {F : Type u} [Field F] {ι : Type*} [Fintype ι]
+    {F : Type u} [Field F] {ι : Type*}
     (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
     (r : Fin ((e + 1) + (e + k)) → ι)
     (i0 : Fin ((e + 1) + (e + k)))
@@ -203,7 +203,7 @@ theorem Fin_sum_ite_lt_and_ne_eq_e (e k : ℕ) (j : Fin ((e + 1) + (e + k))) (hj
 open scoped BigOperators in
 open Polynomial in
 open Matrix in
-theorem BW_homMatrix_det_updateCol_natDegree_le_of_lt {F : Type u} [Field F] {ι : Type*} [Fintype ι]
+theorem BW_homMatrix_det_updateCol_natDegree_le_of_lt {F : Type u} [Field F] {ι : Type*}
     (e k : ℕ) (ωs : ι → F) (f0 f1 : ι → F)
     (r : Fin ((e + 1) + (e + k)) → ι)
     (i0 : Fin ((e + 1) + (e + k)))

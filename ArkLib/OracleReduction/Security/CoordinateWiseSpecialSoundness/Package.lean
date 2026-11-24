@@ -104,7 +104,6 @@ right factor's certificate is passed **named** (`L₂.isCWSS` directly, not its 
 closure), since the composed extractor contains `E₂`. -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
     (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
     (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hseam : L₁.relOut = L₂.relIn := by rfl) :

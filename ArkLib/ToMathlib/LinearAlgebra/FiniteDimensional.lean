@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 public import Mathlib.LinearAlgebra.Projection
 
 /-!
@@ -33,6 +34,8 @@ public import Mathlib.LinearAlgebra.Projection
   sum of the ranks of its components.
 * `LinearMap.exists_ne_zero_of_sum_finrank_range_lt` — if the source dimension exceeds the sum of
   the ranks of a finite family of linear maps, some nonzero vector lies in all their kernels.
+* `linearIndependent_of_span_le_of_card_le` — a family whose span contains the span of a linearly
+  independent family with at least as many members is linearly independent.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
@@ -229,3 +232,15 @@ theorem LinearMap.exists_ne_zero_of_sum_finrank_range_lt {K V ι : Type*} [Divis
   obtain ⟨v, hv0, hv⟩ := LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt
     ((LinearMap.finrank_range_pi_le_sum φ).trans_lt hsurplus)
   exact ⟨v, hv0, fun i => congrFun hv i⟩
+
+/-- A family whose span contains the span of a linearly independent family with at least as many
+members is linearly independent. -/
+theorem linearIndependent_of_span_le_of_card_le {K V : Type*} [DivisionRing K] [AddCommGroup V]
+    [Module K V] {ι ι' : Type*} [Fintype ι] [Fintype ι'] {u : ι → V} {u' : ι' → V}
+    (hu' : LinearIndependent K u')
+    (hle : Submodule.span K (Set.range u') ≤ Submodule.span K (Set.range u))
+    (hcard : Fintype.card ι ≤ Fintype.card ι') : LinearIndependent K u := by
+  have : Module.Finite K (Submodule.span K (Set.range u)) :=
+    Module.Finite.span_of_finite K (Set.finite_range u)
+  exact linearIndependent_iff_card_le_finrank_span.2 <| hcard.trans <|
+    (linearIndependent_iff_card_le_finrank_span.1 hu').trans (Submodule.finrank_mono hle)

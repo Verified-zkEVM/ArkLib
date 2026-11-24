@@ -122,12 +122,12 @@ lemma sup_eq_of_le_of_reach {α β : Type} [SemilatticeSup β] [OrderBot β] {s 
 
 /-- Evaluating a bivariate polynomial in the first variable `X` on a set of points. This results in
 a set of univariate polynomials in `Y`. -/
-def evalSetX [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset (Polynomial F) :=
+def evalSetX [DecidableEq F] (f : F[X][Y]) (P : Finset F) : Finset (Polynomial F) :=
   P.image (fun a => evalX a f)
 
 /-- Evaluating a bivariate polynomial in the second variable `Y` on a set of points resulting
 in a set of univariate polynomials in `X`. -/
-def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset (Polynomial F) :=
+def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) : Finset (Polynomial F) :=
   P.image (fun a => evalY a f)
 
 /-- The bivariate quotient polynomial. -/
