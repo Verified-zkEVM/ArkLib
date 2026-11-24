@@ -681,6 +681,7 @@ public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 public import ArkLib.Data.MvPolynomial.Split
+public import ArkLib.Data.MvPolynomial.VecTreeInterpolation
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
@@ -799,6 +800,7 @@ public import ArkLib.Interaction.Core.OracleVerifier
 public import ArkLib.Interaction.Core.Protocol
 public import ArkLib.Interaction.Core.Reduction
 public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.Interaction.Core.Security.CompositionSoundness
 public import ArkLib.Interaction.Core.Security.Knowledge
 public import ArkLib.Interaction.Core.Security.RoundByRound
 public import ArkLib.Interaction.Core.Security.Soundness
