@@ -19,6 +19,9 @@ The main case counts a nonempty set: the root `0` along the challenge `0`, with 
 The targets `∑ⱼ aⱼ xⱼ ^ (j + 3)` lie outside the reconstruction degree, so no other challenge
 shares all six agreements.
 
+A Reed–Solomon case over `𝔽₇` calls the affine count directly.
+Its bound `9` is below the `49` challenges.
+
 ## References
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
@@ -26,6 +29,7 @@ shares all six agreements.
 -/
 
 open ReedSolomon Polynomial
+open scoped Finset
 
 instance : Fact (Nat.Prime 7) := ⟨by decide⟩
 
@@ -185,6 +189,35 @@ example : ¬ SeparatesDegree [] (fun i : Fin 3 ↦ leval (positions i)) 2 2 := b
     fin_cases hi <;> simp [positions])
   exact mul_ne_zero X_ne_zero (by simpa using X_sub_C_ne_zero (1 : K)) this
 
+/-- The positions `0, 1, …, 5` of `𝔽₇`. -/
+private def domain7 : Fin 6 ↪ ZMod 7 :=
+  ⟨fun i ↦ (i.val : ZMod 7), fun i j h ↦ by
+    have h' := (ZMod.natCast_eq_natCast_iff' _ _ 7).mp h
+    rw [Nat.mod_eq_of_lt (by omega), Nat.mod_eq_of_lt (by omega)] at h'
+    exact Fin.ext h'⟩
+
+-- Six positions of `𝔽₇`, `d = 1`, `B = 2`, `A = 6`, `h = 1` and no Frobenius power give
+-- `1 · (6 · 2 / 4)² = 9` challenges, fewer than the `49` challenges in `𝔽₇²`.
+example (f g : Fin 6 → ZMod 7) (R : MvPolynomial AffineVar K)
+    (hR : R.weightedTotalDegree affineYZWeight ≤ 1) :
+    ∃ ex : Finset (ZMod 7 × ZMod 7), (#ex : ℚ) ≤ 9 ∧
+      ∀ c ∉ ex, ∀ P : (ZMod 7)[X], P.degree ≤ 1 →
+        multiplierEval (affineMultiplier (algebraMap (ZMod 7) K c.1)
+            (algebraMap (ZMod 7) K c.2)) (P.map (algebraMap (ZMod 7) K)) R = 0 →
+        multiplierEval (affineMultiplier (algebraMap (ZMod 7) K c.1)
+            (algebraMap (ZMod 7) K c.2)) (P.map (algebraMap (ZMod 7) K))
+            (MvPolynomial.pderiv none R) ≠ 0 →
+        6 ≤ #(polynomialAgreementSet domain7
+          (combinedWord domain7 f g (affineMultiplier c.1 c.2)) P) →
+        IsAffinePersistent domain7 f g 1 2 c.1 c.2 P := by
+  obtain ⟨ex, hex, hgood⟩ := exists_affineNonpersistent_finset_card_le domain7 f g
+    (algebraMap (ZMod 7) K) 7 0 R (d := 1) (h := 1) (A := 6) (B := 2) le_rfl (by norm_num)
+    (by norm_num) (by simp) hR
+  refine ⟨ex, ?_, fun c hc P hP hroot hsep hA ↦ hgood c hc P hP (by simpa using hroot)
+    (by simpa using hsep) hA⟩
+  norm_num at hex
+  exact_mod_cast hex
+
 /-- info: 'ReedSolomon.mem_chartExcluded' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
@@ -229,3 +262,13 @@ example : ¬ SeparatesDegree [] (fun i : Fin 3 ↦ leval (positions i)) 2 2 := b
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.isAffinePersistent_of_mem_chartExcluded
+
+/-- info: 'ReedSolomon.injective_frobeniusPair' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.injective_frobeniusPair
+
+/-- info: 'ReedSolomon.exists_affineNonpersistent_finset_card_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.exists_affineNonpersistent_finset_card_le

@@ -303,19 +303,6 @@ private theorem aeval_affineChartTarget_frobenius {E : Type*} [Field E] (domain 
     Matrix.cons_val_fin_one, hfr, Polynomial.leval_apply, eval_affineMultiplier]
   ring
 
-/-- The Frobenius roots of `(φ α, φ β)` determine `(α, β)`. -/
-private theorem injective_frobeniusPair {E : Type*} [Field E] (φ : F →+* E) (p : ℕ)
-    [ExpChar E p] [PerfectRing E p] (r : ℕ) :
-    Function.Injective fun c : F × F ↦
-      ![(iterateFrobeniusEquiv E p r).symm (φ c.1),
-        (iterateFrobeniusEquiv E p r).symm (φ c.2)] := by
-  intro x y hxy
-  have h0 := congrFun hxy 0
-  have h1 := congrFun hxy 1
-  simp only [Matrix.cons_val_zero, Matrix.cons_val_one, Matrix.cons_val_fin_one,
-    EmbeddingLike.apply_eq_iff_eq] at h0 h1
-  exact Prod.ext (φ.injective h0) (φ.injective h1)
-
 variable [DecidableEq F] [Fintype ι]
 
 /-- The agreement set of `P` along `α + β X`, read through `φ`. -/

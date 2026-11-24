@@ -125,19 +125,20 @@ private theorem weightedTotalDegree_regularQ :
   exact Submodule.sub_mem _ (MvPolynomial.X_mem_restrictWeightedDegree _ 1 _ (by simp))
     (MvPolynomial.X_mem_restrictWeightedDegree _ 1 _ (by simp))
 
--- Six positions, `d = 2`, `B = 5`, `e = 1`, `A = 6` and `D = M = 1` give `1 + 24³ = 13825`.
+-- Six positions, `d = 2`, `B = 2`, `e = 1`, `A = 6` and `D = M = 1` give `1 + 6³ = 217`.
+-- That is fewer than the `7³ = 343` challenges.
 -- Outside those challenges, every root with six agreements has an excluded chart point.
-example (u v : Fin 6 → K) : ∃ Ex : Finset (Fin 3 → ZMod 7), (#Ex : ℝ) ≤ 13825 ∧
+example (u v : Fin 6 → K) : ∃ Ex : Finset (Fin 3 → ZMod 7), (#Ex : ℝ) ≤ 217 ∧
     ∀ γ ∉ Ex, ∀ P : K[X], multiplierEval (quadraticMultiplier γ) P regularQ = 0 →
       P.degree ≤ 2 →
       6 ≤ {i | leval (positions i) P =
         u i + leval (positions i) (quadraticMultiplier γ) * v i}.ncard →
       ∃ (r : ℕ) (R : MvPolynomial AffineVar K) (c : K),
         chartPoint c (7 ^ r) (frobeniusCoordinates r γ) P ∈ chartExcluded c quadraticFamily R
-          (7 ^ r) 2 5 1 [] (fun i ↦ leval (positions i)) (quadraticTarget u v r) := by
+          (7 ^ r) 2 2 1 [] (fun i ↦ leval (positions i)) (quadraticTarget u v r) := by
   obtain ⟨Ex, hEx, hgood⟩ := exists_interpolantRoots_finset_card_le (κ := Fin 3) 7
-    regularQ_ne_zero (d := 2) (A := 6) (B := 5) (e := 1) (D := 1) (M := 1) (by norm_num)
-    (by norm_num) le_rfl (by simp) weightedTotalDegree_regularQ
+    regularQ_ne_zero (d := 2) (A := 6) (B := 2) (e := 1) (D := 1) (M := 1) (by norm_num)
+    (by norm_num) (by norm_num) (by simp) weightedTotalDegree_regularQ
     ((MvPolynomial.degreeOf_le_weightedTotalDegree affineYZWeight none (by simp) _).trans
       weightedTotalDegree_regularQ)
     quadraticMultiplier quadraticMultiplier_injective (fun _ ↦ quadraticFamily)
@@ -146,7 +147,7 @@ example (u v : Fin 6 → K) : ∃ Ex : Finset (Fin 3 → ZMod 7), (#Ex : ℝ) �
     (aeval_quadraticTarget u v) (separatesDegree_leval positions_injective (by norm_num))
     (fun γ P ↦ ∃ (r : ℕ) (R : MvPolynomial AffineVar K) (c : K),
       chartPoint c (7 ^ r) (frobeniusCoordinates r γ) P ∈ chartExcluded c quadraticFamily R
-        (7 ^ r) 2 5 1 [] (fun i ↦ leval (positions i)) (quadraticTarget u v r))
+        (7 ^ r) 2 2 1 [] (fun i ↦ leval (positions i)) (quadraticTarget u v r))
     (fun r R c _ _ _ _ _ hex ↦ ⟨r, R, c, hex⟩)
   refine ⟨Ex, ?_, fun γ hγ P hroot hP hA ↦ hgood γ hγ P hroot hP (by simp) hA⟩
   norm_num at hEx
