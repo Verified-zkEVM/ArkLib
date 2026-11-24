@@ -16,7 +16,7 @@ result carrier, `Reduction.run`'s (`OracleReduction/Execution.lean:162`):
 -- intended, not existing
 abbrev LegacyResult := Option ((FullTranscript pSpec × StmtOut × WitOut) × StmtOut)
 
-def finalize (r : (tr : PathAlong l (embed pSpec)) × (StmtOut × WitOut) × Option StmtOut) :
+def finalize (r : (tr : Transcript l (embed pSpec)) × (StmtOut × WitOut) × Option StmtOut) :
     LegacyResult :=
   match r with
   | ⟨tr, outP, some stmtOut⟩ => some ((decodeTranscript tr, outP), stmtOut)

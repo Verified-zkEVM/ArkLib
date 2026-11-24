@@ -786,6 +786,11 @@ public import ArkLib.Interaction.Core.Legacy.Prover
 public import ArkLib.Interaction.Core.Legacy.Security
 public import ArkLib.Interaction.Core.Legacy.Verifier
 public import ArkLib.Interaction.Core.LegacyAppend
+public import ArkLib.Interaction.Core.Oracle.LoggedExecution
+public import ArkLib.Interaction.Core.Oracle.QueriesByMove
+public import ArkLib.Interaction.Core.Oracle.QueriesByMoveLaws
+public import ArkLib.Interaction.Core.Oracle.Routing
+public import ArkLib.Interaction.Core.Oracle.SentOracles
 public import ArkLib.Interaction.Core.OracleVerifier
 public import ArkLib.Interaction.Core.Protocol
 public import ArkLib.Interaction.Core.Reduction
@@ -794,6 +799,7 @@ public import ArkLib.Interaction.Core.Security.Knowledge
 public import ArkLib.Interaction.Core.Security.RoundByRound
 public import ArkLib.Interaction.Core.Security.Soundness
 public import ArkLib.Interaction.Core.Signature
+public import ArkLib.Interaction.Core.Transcript
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim
 public import ArkLib.Interaction.Oracle.Composition
