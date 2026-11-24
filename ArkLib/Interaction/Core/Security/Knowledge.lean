@@ -6,7 +6,6 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Security.Soundness
-public import ArkLib.Interaction.Core.Oracle.QueriesByMove
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
@@ -71,11 +70,11 @@ def Verifier.runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s :
   let full := ambient + challengeSpec plainSig s
   let ⟨⟨tr, out, _⟩, proveLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging
     (TwoParty.Lens.run s
-      (prover.simulate (fun q => liftM (full.query (.inl q))))
-      (sampler plainSig s (fun c => liftM (full.query (.inr c)))))).run
+      (prover.simulate ((QueryImpl.id' full).restrictLeft))
+      (sampler plainSig s ((QueryImpl.id' full).restrictRight)))).run
   let ⟨verdict, verifyLog⟩ ← (simulateQ
     (QueryImpl.withLogging
-      ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full)))
+      (((QueryImpl.id' full).restrictLeft) : QueryImpl ambient (OracleComp full)))
     (V.decide stmt (Transcript.path tr) (toPlainView s tr)).run).run
   pure (⟨tr, out, verdict⟩, proveLog.fst, verifyLog)
 
@@ -98,7 +97,7 @@ theorem Verifier.runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec 
     intro a
     rw [bind_logged _ _ (fun verdict =>
       pure (⟨a.1.1, a.1.2.1, verdict⟩ : Outcome plainSig s Out T))]
-  rw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
+  erw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
     (fun result : (tr : Transcript plainSig s) × Out tr × PUnit => do
     let verdict ← simulateQ
       ((fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))) :
@@ -334,7 +333,8 @@ decision before routing: ambient queries and queries to the input and message or
 The decision log records input queries, so it is returned by the run: the input index and the
 oracle-node query type lie in `Type`. Input statements and bundle data are arguments and
 may lie in any universe. `runWithAmbientLog` logs only ambient queries and has no such
-restriction. -/
+restriction. Like `run` and `runWithQueriesByMove`, it executes through `executeWith`, and it logs
+the interaction and the decision directly with `withLogging`. -/
 def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle.{0, 0, dI}}
@@ -346,7 +346,19 @@ def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OraclePr
       ((obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
         QueryLog (ambient +
           (pathBundle inputs s (Transcript.path obs.1)).spec)) :=
-  QueriesByMove.toLog <$> V.runWithQueriesByMove stmt data prover
+  let full := ambient + challengeSpec oracleSig s
+  let toFull : QueryImpl ambient (OracleComp full) := (QueryImpl.id' full).restrictLeft
+  V.executeWith stmt data (m := OracleComp full)
+    (ITrace := QueryLog ambient)
+    (DTrace := fun p => QueryLog (ambient + (pathBundle inputs s p).spec))
+    (fun action => (fun z => (z.1, z.2.fst)) <$>
+      (simulateQ (QueryImpl.id' full).withLogging action).run)
+    (prover.simulate toFull)
+    (sampler oracleSig s ((QueryImpl.id' full).restrictRight))
+    (fun p view pathData => (simulateQ (QueryImpl.addLift
+      toFull
+      ((pathBundle inputs s p).answer pathData)).withLogging
+      (V.decide stmt p view).run).run)
 
 /-- The full logged specialization retains the original interaction and decision equations. -/
 theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
@@ -371,8 +383,9 @@ theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : O
     ((pathBundle inputs s p).answer pathData)
   let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
-    proveLog.fst, verifyLog⟩) :=
-  V.runWithQueriesByMove_toLog stmt data prover
+    proveLog.fst, verifyLog⟩) := by
+  simp only [runWithLog, executeWith, bind_map_left]
+  rfl
 
 /-- The ambient part of the decision log is the log of an ambient-only logger, which the oracle
 extraction interfaces receive; `map_runWithLog_eq_runWithAmbientLog` names the right side. -/
@@ -437,7 +450,8 @@ theorem map_fst_runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {
 /-- Execute an oracle verifier, logging the prover's ambient queries and the decision's ambient
 queries. The decision's bundle queries are answered from the input data and the path's oracle
 messages and are not logged, so the result holds only ambient logs. The input statement, the
-input index and the input and output query types are arguments and may lie in any universe. -/
+input index and the input and output query types are arguments and may lie in any universe. It
+executes through `executeWith` and logs both phases directly with `withLogging`. -/
 def runWithAmbientLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
@@ -448,7 +462,17 @@ def runWithAmbientLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     OracleComp (ambient + challengeSpec oracleSig s)
       (Outcome oracleSig s Out (OracleVerifier.Output T B) × QueryLog ambient ×
         QueryLog ambient) :=
-  AmbientQueriesByMove.toLog <$> V.runWithAmbientQueriesByMove stmt data prover
+  let full := ambient + challengeSpec oracleSig s
+  let toFull : QueryImpl ambient (OracleComp full) := (QueryImpl.id' full).restrictLeft
+  (fun r => (r.1, r.2.1, r.2.2)) <$> V.executeWith stmt data (m := OracleComp full)
+    (ITrace := QueryLog ambient) (DTrace := fun _ => QueryLog ambient)
+    (fun action => (fun z => (z.1, z.2.fst)) <$>
+      (simulateQ (QueryImpl.id' full).withLogging action).run)
+    (prover.simulate toFull) (sampler oracleSig s ((QueryImpl.id' full).restrictRight))
+    (fun p view pathData => (simulateQ
+      (QueryImpl.addLift toFull.withLogging ((pathBundle inputs s p).answer pathData) :
+        QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
+      (V.decide stmt p view).run).run)
 
 /-- The ambient logged specialization retains the original interaction and decision equation. -/
 theorem runWithAmbientLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
@@ -459,20 +483,21 @@ theorem runWithAmbientLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     V.runWithAmbientLog stmt data prover = (
-let full := ambient + challengeSpec oracleSig s
-  let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
-  (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
-    (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
-  let tr := x.1.1
-  let p := Transcript.path tr
-  let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
-  (simulateQ (QueryImpl.addLift toFull.withLogging
-      ((pathBundle inputs s p).answer pathData) :
-        QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
-    (V.decide stmt p (toView s tr)).run).run >>= fun y =>
-  pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)⟩,
-    x.2.fst, y.2)) :=
-  V.runWithAmbientQueriesByMove_toLog stmt data prover
+      let full := ambient + challengeSpec oracleSig s
+      let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+      (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
+        (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
+      let tr := x.1.1
+      let p := Transcript.path tr
+      let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
+      (simulateQ (QueryImpl.addLift toFull.withLogging
+          ((pathBundle inputs s p).answer pathData) :
+            QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
+        (V.decide stmt p (toView s tr)).run).run >>= fun y =>
+      pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)⟩,
+        x.2.fst, y.2)) := by
+  simp only [runWithAmbientLog, executeWith, _root_.map_bind, bind_map_left]
+  rfl
 
 /-- With small input universes, the ambient-log run is the full-log run with the decision log
 restricted to its ambient entries. -/
@@ -509,8 +534,8 @@ end OracleVerifier
 
 namespace Extractor
 
-/-- Straight-line extraction from an oracle protocol sees the full payload-bearing transcript.
-The output witness type `Wout tr` is indexed by that transcript `tr`. -/
+/-- Straight-line extraction from an oracle protocol sees the full transcript, oracle messages
+included. The output witness type `Wout tr` is indexed by that transcript `tr`. -/
 abbrev OracleStraightLine {ι : Type} {S : Type uS} (ambient : OracleSpec ι)
     (s : OracleProtocol.{0, q})
     (Witness : S → Type) (Wout : Transcript oracleSig s → Type) :=

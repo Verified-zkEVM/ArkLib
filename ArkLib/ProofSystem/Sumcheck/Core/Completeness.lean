@@ -41,7 +41,6 @@ section Fold
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {State : ℕ → Type}
 
-attribute [local implicit_reducible] FreeM.replicate
 
 /-- The decoded transcript of one more round is the first round followed by the rest. -/
 theorem decodeTranscript_foldTranscript_succ (msg : (k : ℕ) → State (k + 1) → R⦃≤ deg⦄[X])
@@ -148,27 +147,6 @@ end Honest
 
 /-! ## Uniform challenges -/
 
-section Uniform
-
-attribute [local implicit_reducible] FreeM.replicate Node.position challengeSpec
-
-/-- Every challenge of the protocol is a ring element, so it can be sampled uniformly. Oracle
-nodes are not challenge nodes, and each challenge node of one more round is the first round's
-challenge or a challenge of the remaining rounds. -/
-@[instance_reducible]
-def challengeSampleable (R : Type) [CommSemiring R] [SampleableType R] (deg : ℕ) :
-    (k : ℕ) → (c : ChallengeNode oracleSig (protocol R deg k)) →
-      SampleableType (challengeSpec oracleSig (protocol R deg k) c)
-  | 0, ⟨n, _⟩ => nomatch n
-  | _ + 1, ⟨.inl _, h⟩ => nomatch h
-  | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => inferInstanceAs (SampleableType R)
-  | k + 1, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => challengeSampleable R deg k ⟨c, h⟩
-
-instance (R : Type) [CommSemiring R] [SampleableType R] (deg k : ℕ) :
-    ∀ c, SampleableType (challengeSpec oracleSig (protocol R deg k) c) :=
-  challengeSampleable R deg k
-
-end Uniform
 
 /-! ## Completeness -/
 
@@ -233,7 +211,8 @@ theorem perfectCompleteness_uniform {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) :
     letI : MeasurableSpace (HonestOutcome R deg n) := ⊤
     completeness ((verifier R deg n D ambient).classicalModel init impl
-        (challengeQueryImpl oracleSig (protocol R deg n)))
+        (@Interaction.Core.challengeQueryImpl _ oracleSig (protocol R deg n)
+          (challengeSampleable R deg n)))
       (relationProblem R deg n D 0) (relationProblem R deg n D (Fin.last n))
       (judgement R deg n D) (fun x _ => honestProver D x.1 x.2) 0 :=
   perfectCompleteness D ambient init impl _

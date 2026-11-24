@@ -19,9 +19,14 @@ Each row has one of four statuses:
 - **removed:** the row names a mechanism that no longer exists.
 - **open:** the row names an interface that the parent branch is missing.
 
-The oracle-access tests ([access]) hold the access and cost fixtures cited below. This branch
-provides the sent-oracle and queries-by-move interfaces that those fixtures use. Removing an API name does
-not by itself remove the mathematical assertions it carried.
+The access and cost fixtures cited below are in the oracle-access tests. Those tests and their port
+table, `port-oracle-access.md`, arrive with #1478 and are not on `main` yet. Each row that rests on
+them says that its evidence is pending in #1478. This branch provides the sent-oracle and
+queries-by-move interfaces that those fixtures use. Removing an API name does not by itself remove
+the mathematical assertions it carried.
+
+The tables have 88 rows: 74 ported, 11 excluded by P1, 3 removed and none open. Evidence for 20 of
+the ported rows is pending in #1478.
 
 This table covers the eight old-layer files that this branch's tests cite. `ExecutionExample.lean`
 and `CoreRunExample.lean` supply fixtures to those files. This slice does not claim their other
@@ -33,8 +38,8 @@ obligations directly, without inferring them from a trace equality.
 
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
-| L29, complete trace | excluded by P1 | P1 excludes three verifier tags: 0 after the public receive, 5 after the first oracle receive, and 2 before a challenge derived from an input or an oracle. It also excludes the querier assignments that go with them. [full] keeps all six action tags in a passive client, but **not** this former assignment of queriers. |
-| L29, six-action coverage | ported | [full] checks `[0, 1, 5, 2, 4, 3]` across a public send, an oracle send, challenge service, challenge continuation and the final decision, with private output `(777, hidden)` and verdict 37. The draw is independent of the bundles. |
+| L29, complete trace | excluded by P1 | P1 excludes three verifier tags: 0 after the public receive, 5 after the first oracle receive, and 2 before a challenge derived from an input or an oracle. It also excludes the querier assignments that go with them. [full] keeps all six tags in a passive client, but **not** this former assignment of queriers. |
+| L29, six-tag trace | ported | [full] checks the six-tag trace `[0, 1, 5, 2, 4, 3]` across a public send, an oracle send, one challenge draw, the challenge continuation and the final decision. Tags 5 and 2 both come from that one draw. It also checks private output `(777, hidden)` and verdict 37. The draw is independent of the bundles. |
 | L64, ordered source requests and repeats | ported | [source] keeps first 11, input 7, second 19, second 19 in that order. |
 | L64, first request between sends | excluded by P1 | P1 excludes the verifier's request to the first message before the second send. [source] is extra coverage of the final decision. |
 | L75, source log of the one-send accepting run | ported | [accepted] includes exactly one sent-oracle request, answered 11. Computing exported data adds no query. |
@@ -45,25 +50,34 @@ obligations directly, without inferring them from a trace equality.
 
 ## TerminalRun/Examples.lean
 
-Every outcome below comes from the same actual prover, followed by the same final-decision
-interpreter ([decideCatching]). The interpreter runs in `ExceptT Nat` over the persistent stateful
-history. The state that holds the log of answered queries sits below the exception transformer.
-Because a failed request has no answer, it adds no entry to that log, and every earlier answered
-request stays in it. The private output comes from the completed interaction before the decision
-is interpreted. It is never rebuilt from a constant or from the fault label.
+Every outcome below comes from the same actual prover. The test adapter `decisionObserved` then
+interprets the final decision with [decideCatching] at the completed transcript's path, view and
+bundle data. The adapter runs in `ExceptT Nat` over the persistent stateful history. The state that
+holds the log of answered queries sits below the exception transformer. Because a failed request has
+no answer, it adds no entry to that log, and every earlier answered request stays in it. The private
+output comes from the completed interaction before the decision is interpreted. It is never rebuilt
+from a constant or from the fault label.
+
+The fault labels come from the handler: `decisionHandler` fails on requests 17 and 23. A core
+verdict is an `Option`, so the verifier itself cannot return a fault. [totalFaults] checks that
+modes 1 and 2 reject under a total handler.
+
+The adapter and the ordinary erasure law have different scopes. [erasure] and [audit] cover the
+ordinary logged run `runWithLog`. No theorem relates [decideCatching] to the ordinary logged
+decision at the same path, view and bundle data.
 
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
-| L57, fault history `[9, 0, 1, 2]` | ported | [faults], first conjunct. |
-| L60, private output and sent-answer log on failure | ported | [faults], first and second conjuncts, for arbitrary old input, message and hidden output. |
-| L66, fault label 17 | ported | [faults], first conjunct returns `.error 17`. |
-| L68, distinct fault label 23 | ported | [faults], second conjunct returns `.error 23`. |
+| L57, fault history `[9, 0, 1, 2]` | ported | Under handler failure: [faults], first conjunct. |
+| L60, private output and sent-answer log on failure | ported | Under handler failure: [faults], first and second conjuncts, for arbitrary old input, message and hidden output. |
+| L66, fault label 17 | removed | The old verifier returned `.fault 17` itself. A core verdict is an `Option`, so a verifier cannot return a fault. [totalFaults] shows that mode 1 rejects under a total handler. Label 17 survives only as a handler failure, in [faults]. |
+| L68, distinct fault label 23 | removed | The old verifier returned `.fault 23` itself. A core verdict is an `Option`, so a verifier cannot return a fault. [totalFaults] shows that mode 2 rejects under a total handler. Label 23 survives only as a handler failure, in [faults]. |
 | L71, rejection and sent-answer log | ported | [faults], third conjunct returns `.ok none` and keeps the same private output and log. |
 | L77, input 7/message 11 closes to 18 | ported | [closing], first conjunct. |
 | L82, input 13/message 19 closes to 32 | ported | [closing], second conjunct. [faults] proves the stronger closing equation for arbitrary input and message. |
-| L86, erasure audit of the final decision | ported | [erasure] and [audit] for the ordinary rejecting and accepting run. |
+| L86, erasure audit of the final decision | ported | [erasure] and [audit] for the ordinary rejecting and accepting run. They do not cover [decideCatching]. |
 | Former effectful reception boundary | excluded by P1 | P1 excludes effect 1 as a separate verifier reception move. [faults] keeps the chronological history with that effect in the final decision. |
-| L87, closing an optional final verdict | ported | [optionalClosing] proves that embedding any optional verdict with `Except.ok` and then closing with the completed transcript's output map and bundle equals closing first and then embedding. This holds for `none` and for every accepted statement. |
+| L87, closing an optional final verdict | ported | [faults], fourth conjunct, checks the closed output `.ok (some (message, old + message))` of an actual accepting run, and [closing] checks two more. [optionalClosing] is only an equation about `Except.map`: for the closing map of any completed transcript, `Except.ok` of an optional verdict mapped by `Option.map` equals `Except.ok` of the closed verdict. It mentions no actual run. |
 
 The [oracle bundle port table](port-oracle-bundles.md) numbers these rows TR1–TR7 and
 links them here.
@@ -100,9 +114,9 @@ first move stays in that move's entry.
 | L178, setup, send, reception and decision entry groups | excluded by P1 | P1 excludes the separate effectful verifier reception group `[1]`. It now runs in the final decision together with `[2]`. |
 | L178, queries by move for the remaining allowed groups | ported | [queriesByMoveLaws] keeps explicit setup, the moves' entries and the decision entry, with full-log and ordinary erasure. The reception action that P1 excludes is identified separately above. |
 | L194, explicit rejection | ported | [faults], third conjunct. |
-| L198, explicit fault 17 | ported | [faults], first conjunct. Rejection is a different constructor. |
+| L198, explicit fault 17 | removed | The old verifier returned `.fault 17` itself, as in TerminalRun L66. A core verdict is an `Option`, so a verifier cannot return a fault. Label 17 survives only as a handler failure, in [faults]. |
 | L201, closing audit of the run by moves | ported | `map_fst_runWithQueriesByMove` and `toLog_runWithQueriesByMove` in [queriesByMoveLaws] keep the ordinary outcome, including its closed optional verdict and output oracles. |
-| L202, closing audit of the decision in the run by moves | ported | [queriesByMoveLaws] keeps the same closed optional verdict under log projection. [optionalClosing] keeps the optional verdict through the labelled final-decision presentation. |
+| L202, closing audit of the decision in the run by moves | ported | [queriesByMoveLaws] keeps the closed optional verdict of the actual run under log projection. [optionalClosing] adds only an equation about `Except.map` and mentions no actual run. |
 
 ## SourceRoutingExample.lean
 
@@ -143,29 +157,29 @@ bundles of longer partial transcripts, and keeps node names and typed query rout
 connects the family of sent oracles to the same transcript's `pathBundle`.
 `OracleVerifier.prefixRoute_oracleMessages` connects the append route, whose outputs use
 `splitOutputs`, to that prefix's inputs and oracle messages. [joinEntryNode], [joinEntryIsSent] and
-[decisionEntryIsSent] exercise the node names on actual produced entries. Typed access and cost certificates remain in the
-oracle-access tests.
+[decisionEntryIsSent] exercise the node names on actual produced entries. Typed access and cost
+certificates are in the oracle-access tests, pending in #1478.
 
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
-| `route_cost`, L96 | ported | The exact double-read export/cost fixture and bound are ported in the oracle-access tests ([access]). |
-| `program_cost`, L117 | ported | The authored double-read suffix and its cost bound are ported in the oracle-access tests ([access]). |
-| L130, routed weighted cost at most 5 | ported | The exact routed cost-five bound is ported in the oracle-access tests ([access]). |
-| `routed_available`, L149 | ported | [sentOracles] provides the proof that an oracle was sent (`IsSent`), `availableMap` and `liftQuery_node`. The access tests supply the routed program certificate. |
-| L165, actual raw log old/old/fresh and claim 4 | ported | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests ([access]). |
-| `future_rejected`, L184, typed exclusion of a future move | ported | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests ([access]). |
+| `route_cost`, L96 | ported | The exact double-read export/cost fixture and bound are ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `program_cost`, L117 | ported | The authored double-read suffix and its cost bound are ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| L130, routed weighted cost at most 5 | ported | The exact routed cost-five bound is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `routed_available`, L149 | ported | [sentOracles] provides the proof that an oracle was sent (`IsSent`), `availableMap` and `liftQuery_node`. The routed program certificate comes from the access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| L165, actual raw log old/old/fresh and claim 4 | ported | The exact composed logged execution, including the old/old/fresh log, closure and private output, is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `future_rejected`, L184, typed exclusion of a future move | ported | Typed exclusion for every prefix program, without a budget restriction, is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
 | `future_rejected`, L184, proof of what was sent, from the partial transcript | ported | [sentOracles] defines `IsSent` using only oracle occurrences that were already sent. [joinEntryIsSent] excludes the future move at the actual join. |
 | L209, old node name stable, old distinct from fresh | ported | `liftQuery_node` in [sentOracles] preserves node names and query arguments. [joinEntryNode] and [decisionEntryIsSent] check stability and distinctness on produced entries. |
-| L225, closed execution keeps old/old/fresh and private output | ported | The exact composed logged execution, closure and private output are ported in the oracle-access tests ([access]). |
+| L225, closed execution keeps old/old/fresh and private output | ported | The exact composed logged execution, closure and private output are ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
 | L251, partial transcript of the actual join entry | ported | [joinEntryBefore] reads the partial transcript of the first suffix prover move's entry from the produced execution. P1 excludes the former verifier decision at this seam, not the seam's partial transcript. |
 | L252, partial transcript of the actual decision entry | ported | [decisionEntryBefore] reads the complete actual oracle message partial transcript from the produced decision entry. |
 | L255, membership of the join entry | ported | [joinEntryMem] proves that the selected actual join entry is one of the run's entries. `QueriesByMove.mem_withDecision` in [queriesByMove] is the general selection law. |
 | L257, membership of the decision entry | ported | [decisionEntryMem] and `QueriesByMove.decision_mem_withDecision` in [queriesByMove] prove membership in the produced execution. |
-| L266, the decision entry's partial transcript shows the oracle was sent, and cost 5 | ported | [decisionEntryIsSent] shows that the oracles in the actual decision entry's bundle were sent. [sentOracles] supplies inclusion and routing. The access tests keep the cost-five certificate. |
+| L266, the decision entry's partial transcript shows the oracle was sent, and cost 5 | ported | [decisionEntryIsSent] shows that the oracles in the actual decision entry's bundle were sent. [sentOracles] supplies inclusion and routing. The cost-five certificate comes from the access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
 | L277, old node name survives inclusion from the join to the end | ported | [joinEntryNode] uses `SentOracleMessageIndex.node_lift` for the actual produced partial transcripts. `firstMovesLe_node` and `availableMap_node` in [sentOracles] give the general laws. |
 | L286, no budget makes the fresh oracle sent at the actual join | ported | [joinEntryIsSent] excludes the fresh oracle occurrence independently of any cost budget. [decisionEntryIsSent] identifies that occurrence at the decision entry. |
 | L300, raw log of the run by moves is old/old/fresh | ported | [queriesByMoveSourceLog] keeps the exact old/old/fresh log, private output 3 and verdict 4. [queriesByMoveLaws] proves that the full log agrees for every prover. |
-| L320, routed cost cannot be bounded by 4 | ported | The inhabited cost-five witness that excludes a bound of four is ported in the oracle-access tests ([access]). |
+| L320, routed cost cannot be bounded by 4 | ported | The inhabited cost-five witness that excludes a bound of four is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
 
 ## RuntimeQueryBounds.lean
 
@@ -176,24 +190,25 @@ difference explicitly and does not hide it by dropping answers or summing costs.
 
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
-| `exported_certificate`, L47 | ported | [sentOracles] supplies the family of sent oracle messages at a partial transcript and the `IsSent` predicate. The access tests supply export access and cost two. |
+| `exported_certificate`, L47 | ported | [sentOracles] supplies the family of sent oracle messages at a partial transcript and the `IsSent` predicate. Export access and cost two come from the access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
 | `source_name`, L57 | ported | `queryNode`, `liftQuery_node` and `sentOracleMessageMap_query` in [sentOracles] give a node name to the same sent oracle occurrence and route it without changing the query argument. |
-| `first_returns_exported`, L61 | ported | The exact decision and output-map/data equations are ported in the oracle-access tests ([access]). |
-| `suffixAction_eq`, L72 | ported | The exact suffix decision equation is ported in the oracle-access tests ([access]). |
-| `suffix_access`, L87 | ported | [sentOracles] supplies `IsSent` and partial-transcript inclusion. The access tests supply typed suffix access. |
-| `suffix_budget`, L102 | ported | The suffix cost certificate is ported in the oracle-access tests ([access]). |
-| `routed_suffix_budget`, L124 | ported | The routed suffix cost certificate is ported in the oracle-access tests ([access]). |
-| `routed_suffix_access`, L145 | ported | [sentOracles] supplies `IsSent`, typed query inclusion and its node-name and routing law. The access tests supply typed routed access. |
+| `first_returns_exported`, L61 | ported | The exact decision and output-map/data equations are ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `suffixAction_eq`, L72 | ported | The exact suffix decision equation is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `suffix_access`, L87 | ported | [sentOracles] supplies `IsSent` and partial-transcript inclusion. Typed suffix access comes from the access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `suffix_budget`, L102 | ported | The suffix cost certificate is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `routed_suffix_budget`, L124 | ported | The routed suffix cost certificate is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `routed_suffix_access`, L145 | ported | [sentOracles] supplies `IsSent`, typed query inclusion and its node-name and routing law. Typed routed access comes from the access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
 | `actual_history`, L167 | ported | [bitPlain] keeps the two ambient requests and charge 4. Its full trace additionally keeps the challenge. |
 | `informed_actual_history`, L182 | excluded by P1 | P1 excludes the prefix verifier's dummy request before the prover's reveal at the seam. [bitInformed] checks reveal, dummy request, reveal and charge 7 as extra passive coverage. |
-| `setup_budget`, L197 | ported | The imported setup cost theorem is ported in the oracle-access tests ([access]). |
-| `native_split_history`, L207, passive schedule | ported | The all-prover charged runtime and history observation of [appendLaw] is ported in the oracle-access tests ([access]). |
+| `setup_budget`, L197 | ported | The imported setup cost theorem is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `native_split_history`, L207, passive schedule | ported | `OracleVerifier.run_append` ([appendLaw]) proves the narrower passive law: both interactions run first, then the decisions. The old lemma split the runtime execution of every prover. [bitSplit] instantiates the passive law on the hidden-bit fixture. |
 | `native_split_history`, L207, effectful prefix order | excluded by P1 | P1 excludes the prefix verifier's dummy request before the prover's suffix interaction. |
 | `native_actual_history`, L227 | ported | [bitLog] keeps the actual chronological ambient history, answers, final state and charge 4. |
 | `informed_native_history`, L235 | excluded by P1 | The same former order, dummy request before reveal, is excluded under P1. [bitInformed] is extra coverage. |
-| `native_import_budget`, L244 | ported | Import-cost reflection is ported in the oracle-access tests ([access]). |
-| `fixed_native_resource_bounds`, L258 | ported | [sentOracles] supplies `IsSent` at each partial transcript. The access tests keep the combined access, cost, history and half-bound conjunction. |
-| `informed_cost_does_not_give_half`, L289 | ported | Charge seven and success one for the passive schedule are ported together in the oracle-access tests ([access]). |
+| `native_import_budget`, L244 | ported | Import-cost reflection is ported in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `fixed_native_resource_bounds`, L258 | ported | [sentOracles] supplies `IsSent` at each partial transcript. The combined access, cost, history and half-bound conjunction comes from the access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `informed_cost_does_not_give_half`, L289, charge and success | ported | Charge seven and success one for the passive schedule are ported together in the oracle-access tests. Pending in #1478, in the tests that `port-oracle-access.md` lists. |
+| `informed_cost_does_not_give_half`, L289, query order | excluded by P1 | The old history has the prefix verifier's dummy request before both reveals. P1 excludes that order, as for L182 and L235. The passive port has reveal, dummy request, reveal. |
 
 ## Erasure, closing and open interface obligations
 
@@ -202,23 +217,31 @@ runtime corollaries combine this law with oracle simulation and runtime-trace er
 [substitution] proves routing for an arbitrary ambient interpreter. `OracleMap.simulate_withAmbient`
 specializes it with `QueryImpl.id' ambient`.
 
-[decideCatching] interprets final decisions with labelled failures and keeps the log of answered
-queries. Its handler has type `QueryImpl ambient (ExceptT ε m)` and it requires only `[Monad m]`.
+[decideCatching] interprets a final decision at a supplied path, view and bundle data, with
+labelled failures, and keeps the log of answered queries. It prepends each answer and reverses the
+log once at the end. Its handler has type `QueryImpl ambient (ExceptT ε m)` and it requires only `[Monad m]`.
 Its input-statement and output-query universes match the full-decision-log interface.
 [optionalClosing] states the optional-closing correspondence for the output map and bundle of
 any completed transcript, with independent input-index, input-query and output-query universes.
 
-The obligations about the queries by move are ported under the passive schedule. R1 replaces the
-separate step executor with writer-instrumented strategies run by `TwoParty.Lens.run`.
-`OracleVerifier.executeWith` supplies the single interaction-and-decision sequence for the
-ordinary run, the queries by move and the ambient queries by move. Both aggregate log APIs are
-projections of these logs. Erasure follows from the general `MoveInstrumentation.run_mapMovesWith`
+The obligations about the queries by move are ported under the passive schedule. The runner
+instruments both strategies before calling `TwoParty.Lens.run`. `OracleVerifier.executeWith`
+supplies the single interaction-and-decision sequence for the ordinary run, both aggregate logged
+runs, the queries by move and the ambient queries by move. The aggregate logged runs `runWithLog`
+and `runWithAmbientLog` log directly with `withLogging` and build no partial transcripts.
+`toLog_runWithQueriesByMove` and `toLog_runWithAmbientQueriesByMove` in [queriesByMoveLaws] prove
+that forgetting the move boundaries gives them. Erasure follows from the general `MoveInstrumentation.run_mapMovesWith`
 law and from the writer and monad laws. The law is added next to its use because the pinned PolyFun
 lacks it. No row about the queries by move changes status.
 
 [queriesByMoveLaws] supplies ordinary, full-log and ambient-log erasure, ordered per-entry
 concatenation and agreement under interpreters. [sentOracles] supplies the `IsSent` predicate and
-inclusion. [movedQuery] checks the distinguishing case: identical transcripts, outputs and
+inclusion. Its general laws are weaker than the concrete checks:
+`runWithQueriesByMove_before_le` proves that the partial transcript of each recorded entry extends
+to the completed transcript, and `isSent_at_decision` carries the proof that an oracle was sent
+along that extension. Neither law fixes an entry's exact partial transcript. The concrete tests
+[queriesByMoveContract], [actualPartialTranscripts] and [movedQuery] check the exact partial
+transcript of each entry in their fixtures. [movedQuery] checks the distinguishing case: identical transcripts, outputs and
 aggregate logs, with a query at different actual partial transcripts. These facts do not restore
 verifier queries at intermediate boundaries. P1 excludes those actions and their original move
 assignments, as the rows marked excluded by P1 say.
@@ -231,7 +254,7 @@ small universes. [liftedQueriesByMove] executes an actual `Nat` oracle node with
 `Type 1`. Its decision reads the sent oracle message, and the test checks the partial transcript
 at the produced decision entry.
 
-Ports held in the oracle-access tests:
+Ports pending in #1478, in the oracle-access tests that `port-oracle-access.md` lists:
 
 - Four tests cover QueryBounds `route_cost`, `program_cost`, L130, L165, L225 and L320:
   - the exact double-read export/cost fixture;
@@ -242,63 +265,63 @@ Ports held in the oracle-access tests:
   expressible parts of `routed_available`, `future_rejected`, L209, L266, L277, L286 and L300.
 - The following tests cover the expressible parts of RuntimeQueryBounds `exported_certificate`,
   `source_name`, `first_returns_exported`, `suffixAction_eq`, `suffix_access`, `suffix_budget`,
-  `routed_suffix_budget`, `routed_suffix_access`, `setup_budget`, `native_split_history` and
-  `native_import_budget`:
+  `routed_suffix_budget`, `routed_suffix_access`, `setup_budget` and `native_import_budget`:
   - exact decisions and output-map/data equations;
   - typed source and routed access;
   - export cost two, suffix cost bounds and setup cost;
-  - import-cost reflection and charged passive runtime histories.
+  - import-cost reflection.
 - The combined expressible access, cost, history and half-bound conjunction and the
   charge-seven/success-one assertion cover the corresponding parts of
-  `fixed_native_resource_bounds` and `informed_cost_does_not_give_half`.
+  `fixed_native_resource_bounds` and of the charge-and-success row of
+  `informed_cost_does_not_give_half`.
 
-[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L221
-[closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L235
-[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L587
-[moveSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L539
-[source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L398
-[accepted]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L156
-[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L168
-[runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L274
-[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L429
-[countDirect]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L432
-[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L704
-[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L713
-[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L745
-[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L759
-[bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L792
-[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L769
-[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L785
-[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L854
-[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L402
+[faults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L224
+[totalFaults]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L251
+[closing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L238
+[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L603
+[moveSummary]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L556
+[source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L417
+[accepted]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L154
+[rejected]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L166
+[runtime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L294
+[countSetup]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L448
+[countDirect]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L451
+[append]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L719
+[repeat]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L728
+[raw]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L760
+[bitLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L774
+[bitPlain]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L807
+[bitInformed]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L784
+[bitSplit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L800
+[audit]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L869
+[erasure]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L419
 [runtimeErasure]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L49
-[decideCatching]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L73
-[rawHidden]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L83
-[notHidden]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L88
-[routePassive]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L178
-[routeWhole]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L275
+[decideCatching]: ../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean#L78
+[rawHidden]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L84
+[notHidden]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L89
+[routePassive]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L179
+[routeWhole]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L277
 [oracleMessages]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L100
-[appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L122
-[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L336
-[sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L255
-[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L315
-[optionalClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L247
-[access]: oracle-access-tests.md
+[appendLaw]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
+[substitution]: ../../../ArkLib/Interaction/Core/Composition.lean#L502
+[sourceClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L257
+[unitRuntime]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L334
+[optionalClosing]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L267
 
 [queriesByMoveLaws]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean
 [sentOracles]: ../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean
-[queriesByMoveContract]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L924
-[actualPartialTranscripts]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L943
-[joinEntryBefore]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1071
-[decisionEntryBefore]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1077
-[joinEntryMem]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1064
-[decisionEntryMem]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1067
-[joinEntryNode]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1096
-[joinEntryIsSent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1103
-[decisionEntryIsSent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1114
-[queriesByMoveSourceLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1124
-[movedQuery]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1016
+[queriesByMoveContract]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L944
+[actualPartialTranscripts]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L963
+[joinEntryBefore]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1090
+[decisionEntryBefore]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1096
+[joinEntryMem]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1083
+[decisionEntryMem]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1086
+[joinEntryNode]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1115
+[joinEntryIsSent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1122
+[decisionEntryIsSent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1133
+[queriesByMoveSourceLog]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1143
+[movedQuery]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1036
 
 [queriesByMove]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
 
-[liftedQueriesByMove]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1199
+[liftedQueriesByMove]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1211

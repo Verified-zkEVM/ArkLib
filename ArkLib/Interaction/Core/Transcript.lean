@@ -111,7 +111,9 @@ abbrev TranscriptAt (l : PFunctor.Lens P rolePoly.{u}) (s : FreeM P α) (p : Pat
   {tr : Transcript l s // tr.path = p}
 
 /-- A transcript that may stop before the leaf: the moves already made along the protocol `s`,
-presented by the signature lens `l`. -/
+presented by the signature lens `l`. The value itself chooses where it stops. In contrast,
+`PartialTranscriptAt` in `Security/RoundByRound.lean` stores the moves along a fixed cursor
+given in its type. -/
 def PartialTranscript (l : PFunctor.Lens P rolePoly.{u}) : (s : FreeM P α) → Type u
   | .pure _ => Option PEmpty
   | .liftBind a next => Option ((x : Move l a) × PartialTranscript l (next (l.toFunB a x)))

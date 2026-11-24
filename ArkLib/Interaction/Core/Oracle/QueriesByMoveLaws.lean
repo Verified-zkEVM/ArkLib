@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
+public import ArkLib.Interaction.Core.Oracle.QueriesByMove
 
 /-!
 # Laws of the queries by move
@@ -15,8 +16,8 @@ querier and the queries made there. This file shows that these queries by move f
 existing logged runs. Forgetting the move boundaries gives `runWithLog`, and forgetting all logs
 gives `run`. The same holds for the ambient queries by move, for a run with a separate prover
 setup entry, and under any lawful interpreter. These laws mention `runWithLog`, which
-`Security/Knowledge.lean` defines on top of `QueriesByMove.lean`. They cannot live in
-`QueriesByMove.lean` without an import cycle.
+`Security/Knowledge.lean` defines. Both runners execute through `OracleVerifier.executeWith`, so
+the projection laws combine `runWithQueriesByMove_toLog` with `runWithLog_eq`.
 -/
 
 @[expose] public section
@@ -37,7 +38,8 @@ variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol
 theorem toLog_runWithQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     QueriesByMove.toLog <$> V.runWithQueriesByMove stmt data prover =
-      V.runWithLog stmt data prover := rfl
+      V.runWithLog stmt data prover :=
+  (V.runWithQueriesByMove_toLog stmt data prover).trans (V.runWithLog_eq stmt data prover).symm
 
 /-- Forgetting all the queries by move gives exactly the ordinary run. -/
 theorem map_fst_runWithQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
@@ -62,7 +64,7 @@ def runWithProverSetup (V : OracleVerifier ambient s S T inputs outputs) (stmt :
     (data : inputs.Data) (setup : OracleComp ambient (Prover oracleSig ambient s Out)) :
     OracleComp (ambient + challengeSpec oracleSig s) (QueriesByMove V Out) := do
   let (prover, queries) ← simulateQ
-    (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup.withQueryLog
+    ((QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft) setup.withQueryLog
   let result ← V.runWithQueriesByMove stmt data prover
   pure (result.withProverSetup queries)
 
@@ -92,7 +94,7 @@ theorem map_fst_runWithProverSetup (V : OracleVerifier ambient s S T inputs outp
         (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup
       V.run stmt data prover) := by
   let lift : QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)) :=
-    fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
+    (QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft
   trans simulateQ lift setup.withQueryLog >>= fun r => V.run stmt data r.1
   · simp only [runWithProverSetup, _root_.map_bind, LawfulApplicative.map_pure]
     refine bind_congr fun r => ?_
@@ -102,6 +104,7 @@ theorem map_fst_runWithProverSetup (V : OracleVerifier ambient s S T inputs outp
     have erased : Prod.fst <$> setup.withQueryLog = setup :=
       loggingOracle.fst_map_run_simulateQ setup
     rw [erased]
+    rfl
 
 /-- Interpreting the queries by move of a run commutes with forgetting it to the full query logs.
 This includes stateful runtimes. -/
@@ -142,7 +145,9 @@ logged run. -/
 theorem toLog_runWithAmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     AmbientQueriesByMove.toLog <$> V.runWithAmbientQueriesByMove stmt data prover =
-      V.runWithAmbientLog stmt data prover := rfl
+      V.runWithAmbientLog stmt data prover :=
+  (V.runWithAmbientQueriesByMove_toLog stmt data prover).trans
+    (V.runWithAmbientLog_eq stmt data prover).symm
 
 /-- Forgetting the ambient queries by move gives the ordinary run, with independent bundle-query
 universes. -/
