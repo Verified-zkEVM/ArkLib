@@ -32,10 +32,10 @@ def answered {deg : ℕ}
       (fun _ => Spec.StatementRound F 1 (Fin.last 1)) (Spec.polynomialFamily F 1 deg)
       (fun _ => Spec.polynomialFamily F 1 deg)) (target : F) (msg : F⦃≤ deg⦄[X]) (r : F) :=
   V.decideWith (claim target) _ (toView _ (tr1 msg r))
-    (((fun _ => poly0 deg), (payloads _ (tr1 msg r))))
+    (((fun _ => poly0 deg), (oracleMessages _ (tr1 msg r))))
 
 /-- Both decisions give the legacy fold's verdict on this completed round, as open ambient
-programs. This exercises the public bridge on the actual message and input resources. -/
+programs. This exercises the public bridge on the actual message and input oracles. -/
 theorem answered_pair {deg : ℕ} (target : F) (msg : F⦃≤ deg⦄[X]) (r : F) :
     answered (verifier F deg 1 D₁ ambient) target msg r =
         pure (legacyVerdict F deg 1 D₁ ambient (claim target) (decodeTranscript 1 (tr1 msg r))) ∧
@@ -93,7 +93,7 @@ theorem linear_sent_target (r : F) :
 /-- In both full runs, acceptance of the cheating constant message produces a false final
 relation on the retained zero input. The test reads the verdict returned by each run itself. -/
 theorem run_false_relation :
-    let read := fun obs : Obs1 (R := F) (deg := 0) F => obs.2.2.map fun out =>
+    let read := fun obs : Outcome1 (R := F) (deg := 0) F => obs.2.2.map fun out =>
       ((out, ()) ∈ Spec.relationRound F 1 0 D₁ (Fin.last 1))
     let prover := oneRound ambient (msgOne 0) id 0
     read <$> (verifier F 0 1 D₁ ambient).run (claim 1) (fun _ => poly0 0) prover =
@@ -109,7 +109,7 @@ theorem run_false_relation :
           liftM ((ambient + challengeSpec oracleSig (protocol F 0 1)).query (.inr c))) from ⟨h, h⟩
   rw [run_oneRound, Functor.map_map]
   refine congrArg (· <$> _) (funext fun chals => ?_)
-  dsimp [read, obs1]
+  dsimp [read, outcome1]
   rw [verdict_pass ambient D₁ (claim 1) (msgOne 0) _ (by simp [msgOne, claim])]
   simp only [msgOne, Polynomial.eval_one, Option.map_some]
   congr 1

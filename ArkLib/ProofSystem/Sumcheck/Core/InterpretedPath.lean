@@ -34,14 +34,14 @@ theorem shape_unique : ∀ (k : ℕ) (p : Path (protocol R M evaluate k)), p = s
   | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => by rw [shape_unique k p]; rfl
 
 /-- The head message of a completed interpreted transcript. -/
-def message {k : ℕ} (tr : PathAlong oracleSig (protocol R M evaluate (k + 1))) : M := tr.1
+def message {k : ℕ} (tr : Transcript oracleSig (protocol R M evaluate (k + 1))) : M := tr.1
 
 /-- The head public challenge of a completed interpreted transcript. -/
-def challenge {k : ℕ} (tr : PathAlong oracleSig (protocol R M evaluate (k + 1))) : R := tr.2.1
+def challenge {k : ℕ} (tr : Transcript oracleSig (protocol R M evaluate (k + 1))) : R := tr.2.1
 
 /-- The suffix of a completed interpreted transcript. -/
-def tail {k : ℕ} (tr : PathAlong oracleSig (protocol R M evaluate (k + 1))) :
-    PathAlong oracleSig (protocol R M evaluate k) := tr.2.2
+def tail {k : ℕ} (tr : Transcript oracleSig (protocol R M evaluate (k + 1))) :
+    Transcript oracleSig (protocol R M evaluate k) := tr.2.2
 
 /-- The shape path of the remaining rounds. -/
 def tailPath {k : ℕ} : Path (protocol R M evaluate (k + 1)) → Path (protocol R M evaluate k)
@@ -49,19 +49,19 @@ def tailPath {k : ℕ} : Path (protocol R M evaluate (k + 1)) → Path (protocol
 
 /-- A query to the first message's evaluation interface. -/
 def headQuery {k : ℕ} : (p : Path (protocol R M evaluate (k + 1))) → R →
-    OracleComp (oracles (protocol R M evaluate (k + 1)) p) R
+    OracleComp (oracleMessageSpec (protocol R M evaluate (k + 1)) p) R
   | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩, r =>
       (OracleMap.embedding
-        (pathFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)
+        (oracleMessageFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)
         (fun _ : PUnit.{1} => Sum.inl PUnit.unit)).impl ⟨PUnit.unit, r⟩
 
 /-- A lifted query to the remaining messages. -/
 def tailLift {k : ℕ} (p : Path (protocol R M evaluate (k + 1))) :
-    QueryImpl (oracles (protocol R M evaluate k) (tailPath p))
-      (OracleComp (oracles (protocol R M evaluate (k + 1)) p)) := by
+    QueryImpl (oracleMessageSpec (protocol R M evaluate k) (tailPath p))
+      (OracleComp (oracleMessageSpec (protocol R M evaluate (k + 1)) p)) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, p⟩⟩
   exact (OracleMap.embedding
-    (pathFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩) Sum.inr).impl
+    (oracleMessageFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩) Sum.inr).impl
 
 /-- The challenge read from a verifier view. -/
 def viewChallenge {k : ℕ} {p : Path (protocol R M evaluate (k + 1))}
@@ -74,18 +74,18 @@ def tailView {k : ℕ} {p : Path (protocol R M evaluate (k + 1))}
   ⟨v.1.2.2, (shape_unique k _).trans (shape_unique k _).symm⟩
 
 /-- Answering the head query uses exactly the supplied message interpretation. -/
-theorem simulate_head {k : ℕ} (tr : PathAlong oracleSig (protocol R M evaluate (k + 1)))
-    (r : R) : simulateQ (payloadImpl _ tr) (headQuery (projectPathAlong oracleSig _ tr) r) =
+theorem simulate_head {k : ℕ} (tr : Transcript oracleSig (protocol R M evaluate (k + 1)))
+    (r : R) : simulateQ (oracleMessageImpl _ tr) (headQuery tr.path r) =
       evaluate (message tr) r := by
   rcases tr with ⟨msg, r, tail⟩
   rfl
 
-/-- Answering lifted suffix queries uses exactly the suffix's payloads. -/
-theorem simulate_tail {k : ℕ} (tr : PathAlong oracleSig (protocol R M evaluate (k + 1)))
-    {α : Type} (program : OracleComp (oracles (protocol R M evaluate k)
-      (tailPath (projectPathAlong oracleSig _ tr))) α) :
-    simulateQ (payloadImpl _ tr) (simulateQ (tailLift (projectPathAlong oracleSig _ tr)) program) =
-      simulateQ (payloadImpl _ (tail tr)) program := by
+/-- Answering lifted suffix queries uses exactly the suffix's oracle messages. -/
+theorem simulate_tail {k : ℕ} (tr : Transcript oracleSig (protocol R M evaluate (k + 1)))
+    {α : Type} (program : OracleComp (oracleMessageSpec (protocol R M evaluate k)
+      (tailPath tr.path)) α) :
+    simulateQ (oracleMessageImpl _ tr) (simulateQ (tailLift tr.path) program) =
+      simulateQ (oracleMessageImpl _ (tail tr)) program := by
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
   rcases tr with ⟨msg, r, tail⟩
   rfl

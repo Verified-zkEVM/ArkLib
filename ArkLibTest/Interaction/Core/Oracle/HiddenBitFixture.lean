@@ -43,26 +43,26 @@ def falseData : ∀ _ : Unit, Bool := fun _ => false
 /-- The challenge, then the guess. -/
 abbrev bitCombined : OracleProtocol := bitFirst.append (fun _ => bitSecond)
 
-/-- The prefix decision resources. -/
-abbrev firstResources := pathResources bits bitFirst ⟨⟨⟩, ⟨⟩⟩
+/-- The bundle of the prefix decision. -/
+abbrev firstBundle := pathBundle bits bitFirst ⟨⟨⟩, ⟨⟩⟩
 
 /-- The prefix decision makes the dummy request; the prefix exports its input. -/
 def bitPrefix : OracleVerifier bitAmbient bitFirst Unit (fun _ => Unit) bits (fun _ => bits) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let _ ← liftM ((bitAmbient + firstResources.spec).query (.inl false))
+      let _ ← liftM ((bitAmbient + firstBundle.spec).query (.inl false))
       pure ()
   outputMap _ p _ := OracleMap.fst _ _
 
-/-- The suffix decision resources after `guess`. -/
-abbrev secondResources (guess : Bool) := pathResources bits bitSecond ⟨guess, ⟨⟩⟩
+/-- The bundle of the suffix decision after `guess`. -/
+abbrev secondBundle (guess : Bool) := pathBundle bits bitSecond ⟨guess, ⟨⟩⟩
 
 /-- Export `guess ^^ pad`, reading the pad from the exported input. -/
-def xorMap (guess : Bool) : OracleMap (secondResources guess) bits where
+def xorMap (guess : Bool) : OracleMap (secondBundle guess) bits where
   f x _ := guess ^^ (show Bool from x.1 ())
   impl _ := do
-    let pad : Bool ← (OracleMap.fst bits (pathFamily bitSecond ⟨guess, ⟨⟩⟩)).impl ⟨(), ()⟩
+    let pad : Bool ← (OracleMap.fst bits (oracleMessageFamily bitSecond ⟨guess, ⟨⟩⟩)).impl ⟨(), ()⟩
     pure (guess ^^ pad)
   law _ _ := rfl
 
@@ -71,9 +71,9 @@ def bitSuffix : OracleVerifier bitAmbient bitSecond Unit (fun _ => Bool) bits (f
   decide _ p _ := by
     rcases p with ⟨guess, ⟨⟩⟩
     exact do
-      let pad : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query
+      let pad : Bool ← liftM ((bitAmbient + (secondBundle guess).spec).query
         (.inr (.inl ⟨(), ()⟩)))
-      let hidden : Bool ← liftM ((bitAmbient + (secondResources guess).spec).query (.inl true))
+      let hidden : Bool ← liftM ((bitAmbient + (secondBundle guess).spec).query (.inl true))
       pure (hidden ^^ pad)
   outputMap _ p _ := by
     rcases p with ⟨guess, ⟨⟩⟩

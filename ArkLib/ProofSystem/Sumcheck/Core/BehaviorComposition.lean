@@ -18,13 +18,13 @@ open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Intera
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ}
   {ι : Type} (ambient : OracleSpec ι) (D : Fin d → R)
 
-/-- Resource interpretation of the public interval decision gives its transcript verdict. -/
+/-- Answering the bundle queries of the public interval decision gives its transcript verdict. -/
 theorem decideWith_behaviorIntervalVerifier (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, (Fin n → R) → R)
-    (tr : PathAlong oracleSig (protocol R deg count)) :
+    (tr : Transcript oracleSig (protocol R deg count)) :
     (behaviorIntervalVerifier (n := n) (deg := deg) D ambient start count bound).decideWith
       stmt _ (toView _ tr)
-      (data, payloads _ tr) = pure (intervalVerdict D count
+      (data, oracleMessages _ tr) = pure (intervalVerdict D count
         (intervalInitial start count bound stmt) tr) :=
   Interpreted.simulate_verifier (QueryImpl.id' ambient) _ _ _ _ _ _
 
@@ -38,26 +38,27 @@ noncomputable def behaviorPublicIntervalCompatibility (start count : ℕ)
   outputMap _ _ _ := OracleMap.fst _ _
   agrees _ _ _ _ _ _ := rfl
 
-/-- The public suffix receives exactly the input behavior and its own message payloads. -/
+/-- The public suffix receives exactly the input behavior and its own oracle messages. -/
 theorem suffixRoute_behaviorPublicInterval (start count : ℕ) (bound : start + (count + 1) ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, (Fin n → R) → R)
-    (msg : R⦃≤ deg⦄[X]) (r : R) (tail : PathAlong oracleSig (protocol R deg count)) :
+    (msg : R⦃≤ deg⦄[X]) (r : R) (tail : Transcript oracleSig (protocol R deg count)) :
     (OracleVerifier.suffixRoute (s₂ := fun _ => protocol R deg count)
       (behaviorIntervalVerifier (n := n) (deg := deg) D ambient start 1 (by omega)) stmt _
-      (toView _ (consTranscript msg r tail))).f (data, payloads _ (consTranscript msg r tail)) =
-        (data, payloads _ tail) := by
+      (toView _ (consTranscript msg r tail))).f
+        (data, oracleMessages _ (consTranscript msg r tail)) =
+        (data, oracleMessages _ tail) := by
   apply Prod.ext <;> rfl
 
 /-- Appending the public interval interfaces composes their actual decisions. -/
 theorem decideWith_append_behaviorPublicInterval (start count : ℕ) (bound : start + (count + 1) ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, (Fin n → R) → R)
-    (tr : PathAlong oracleSig (protocol R deg (count + 1))) :
+    (tr : Transcript oracleSig (protocol R deg (count + 1))) :
     ((behaviorIntervalVerifier (n := n) (deg := deg) D ambient start 1 (by omega)).append
       (fun _ => behaviorIntervalVerifier (n := n) (deg := deg) D ambient
         (1 + start) count (by omega))
       (behaviorPublicIntervalCompatibility ambient D start count bound)).decideWith
         stmt _ (toView _ tr)
-        (data, payloads _ tr) = pure
+        (data, oracleMessages _ tr) = pure
       ((intervalVerdict D 1 (intervalInitial start 1 (by omega) stmt)
         (roundTranscript (Interpreted.message tr) (Interpreted.challenge tr))).bind fun mid =>
           intervalVerdict D count (intervalInitial (1 + start) count (by omega) mid)
@@ -80,7 +81,7 @@ theorem decideWith_append_behaviorPublicInterval (start count : ℕ) (bound : st
 The comparison preserves the entire transcript, private prover output and original oracle. -/
 theorem run_append_behaviorIntervalVerifier (start count : ℕ) (bound : start + (count + 1) ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, (Fin n → R) → R)
-    {Out : PathAlong oracleSig (protocol R deg (count + 1)) → Type}
+    {Out : Transcript oracleSig (protocol R deg (count + 1)) → Type}
     (prover : Prover oracleSig ambient (protocol R deg (count + 1)) Out) :
     ((behaviorIntervalVerifier (n := n) (deg := deg) D ambient start 1 (by omega)).append
       (fun _ => behaviorIntervalVerifier (n := n) (deg := deg) D ambient
@@ -90,7 +91,7 @@ theorem run_append_behaviorIntervalVerifier (start count : ℕ) (bound : start +
         (t.1.transport (show (⟨count + 1 + start, by omega⟩ : Fin (n + 1)) =
           ⟨count + (1 + start), by omega⟩ from Fin.ext (by
             change count + 1 + start = count + (1 + start); omega)), t.2))⟩ :
-              Observation oracleSig (protocol R deg (count + 1)) Out
+              Outcome oracleSig (protocol R deg (count + 1)) Out
                 (fun _ => RoundStatement R n ⟨count + (1 + start), by omega⟩ ×
                   (∀ _ : Unit, (Fin n → R) → R)))) <$>
         (behaviorIntervalVerifier (n := n) (deg := deg) D ambient start (count + 1) bound).run
@@ -114,7 +115,7 @@ theorem run_append_behaviorIntervalVerifier (start count : ℕ) (bound : start +
     intervalVerdict, consTranscript, OracleVerifier.Output, splitFamily] using
     congrArg (fun decision => (pure ⟨⟨msg, r, tail⟩, out, decision⟩ :
     OracleComp (ambient + challengeSpec oracleSig (protocol R deg (count + 1)))
-      (Observation oracleSig (protocol R deg (count + 1)) Out
+      (Outcome oracleSig (protocol R deg (count + 1)) Out
         (fun _ => RoundStatement R n ⟨count + (1 + start), by omega⟩ ×
           (∀ _ : Unit, (Fin n → R) → R))))) hm.symm
 

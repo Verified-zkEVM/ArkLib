@@ -120,13 +120,13 @@ theorem roundVerdict_intervalCheck {stop : Fin (n + 1)} (k : ℕ)
 
 /-- The transcript verdict for an interval claim. -/
 noncomputable def intervalVerdict {stop : Fin (n + 1)} (k : ℕ)
-    (st : IntervalClaim R n stop k) (tr : PathAlong oracleSig (protocol R deg k)) :
+    (st : IntervalClaim R n stop k) (tr : Transcript oracleSig (protocol R deg k)) :
     Option (RoundStatement R n stop) := foldVerdict (intervalCheck D)
       IntervalClaim.finish k st tr
 
 /-- Endpoint transport commutes with every transcript verdict. -/
 theorem intervalVerdict_transport {stop stop' : Fin (n + 1)} (h : stop = stop') (k : ℕ)
-    (st : IntervalClaim R n stop k) (tr : PathAlong oracleSig (protocol R deg k)) :
+    (st : IntervalClaim R n stop k) (tr : Transcript oracleSig (protocol R deg k)) :
     (intervalVerdict D k st tr).map (RoundStatement.transport h) =
       intervalVerdict D k (st.transport h) tr := by
   subst stop'
@@ -138,7 +138,7 @@ theorem intervalVerdict_transport {stop stop' : Fin (n + 1)} (h : stop = stop') 
 with the endpoint identified by associativity. -/
 theorem intervalVerdict_succ_public (start count : ℕ) (bound : start + (count + 1) ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (msg : R⦃≤ deg⦄[X]) (r : R)
-    (tail : PathAlong oracleSig (protocol R deg count)) :
+    (tail : Transcript oracleSig (protocol R deg count)) :
     (intervalVerdict D (count + 1) (intervalInitial start (count + 1) bound stmt)
       (consTranscript msg r tail)).map
         (RoundStatement.transport (show (⟨count + 1 + start, by omega⟩ : Fin (n + 1)) =
@@ -180,9 +180,9 @@ theorem simulateQ_intervalVerifier_decide {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] [LawfulMonad m] (impl : QueryImpl ambient m)
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ i, PolynomialData R n deg i)
-    (tr : PathAlong oracleSig (protocol R deg count)) :
-    simulateQ (QueryImpl.addLift impl ((pathResources (polynomialFamily R n deg)
-      (protocol R deg count) (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
+    (tr : Transcript oracleSig (protocol R deg count)) :
+    simulateQ (QueryImpl.addLift impl ((pathBundle (polynomialFamily R n deg)
+      (protocol R deg count) tr.path).answer (data, oracleMessages _ tr)))
       ((intervalVerifier R deg n D ambient start count bound).decide stmt _ (toView _ tr)).run =
       (pure (intervalVerdict D count (intervalInitial start count bound stmt) tr) : m _) :=
   Interpreted.simulate_verifier impl _ _ _ _ _ _
@@ -191,7 +191,7 @@ theorem simulateQ_intervalVerifier_decide {ι : Type} {ambient : OracleSpec ι}
 theorem intervalVerifier_run {ι : Type} (ambient : OracleSpec ι)
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ i, PolynomialData R n deg i)
-    {Out : PathAlong oracleSig (protocol R deg count) → Type}
+    {Out : Transcript oracleSig (protocol R deg count) → Type}
     (prover : Prover oracleSig ambient (protocol R deg count) Out) :
     (intervalVerifier R deg n D ambient start count bound).run stmt data prover =
       (foldVerifier R deg ambient (polynomialFamily R n deg) (intervalCheck D)

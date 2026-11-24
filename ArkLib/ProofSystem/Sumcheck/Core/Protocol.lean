@@ -14,9 +14,9 @@ The generic fold sends a message from its current state, receives a public chall
 that state. Every definition here is generic in the message carrier `M` and its evaluation
 `eval : M → R → R`. The polynomial Sumcheck tree `protocol R deg` is the instance at polynomial
 evaluation, and executable carriers use the same fold. Its closed execution laws retain the
-entire challenge sequence and terminal output. The tree, fold and explicit challenge handlers are
-executable. Mathematical honest messages are supplied separately by `IntervalCompleteness`;
-legacy comparison clients use `LegacyProtocol`.
+entire challenge sequence and the output at the leaf. The tree, fold and explicit challenge
+handlers are executable. `IntervalCompleteness` supplies the mathematical honest messages
+separately; legacy comparison clients use `LegacyProtocol`.
 -/
 
 @[expose] public section
@@ -39,7 +39,7 @@ section Fold
 variable {m : Type → Type} [Monad m]
 
 /-- One round with every slot `pure`: send `msg`, then continue with the received challenge. -/
-def consProver {k : ℕ} {Out : PathAlong oracleSig (protocolOn R M eval (k + 1)) → Type}
+def consProver {k : ℕ} {Out : Transcript oracleSig (protocolOn R M eval (k + 1)) → Type}
     (msg : M)
     (next : (chal : R) → Focal oracleSig m (protocolOn R M eval k)
       (fun tail => Out (consTranscript msg chal tail))) :
@@ -83,7 +83,7 @@ variable {State : ℕ → Type}
 /-- The transcript produced by a fold of pure rounds on the given challenges. -/
 def foldTranscript (msg : (k : ℕ) → State (k + 1) → M)
     (next : (k : ℕ) → State (k + 1) → R → State k) :
-    (k : ℕ) → State k → (Fin k → R) → PathAlong oracleSig (protocolOn R M eval k)
+    (k : ℕ) → State k → (Fin k → R) → Transcript oracleSig (protocolOn R M eval k)
   | 0, _, _ => ⟨⟩
   | k + 1, st, chals => consTranscript (msg k st) (chals 0)
       (foldTranscript msg next k (next k st (chals 0)) (Fin.tail chals))
@@ -131,10 +131,10 @@ theorem samplerEnd_succ {m : Type → Type} [Monad m] (k : ℕ)
         m ((_ : M) → m ((_ : R) ×
           PureEnd oracleSig m .counterpart (protocolOn R M eval k) (fun _ => PUnit)))) := rfl
 
-/-- Running one round against the sampler: the prover's message slot, its challenge-response
-slot, the draw at the head challenge node, then the remaining rounds. -/
+/-- Running one round against the sampler: the prover's message move, its challenge-response
+move, the draw at the head challenge node, then the remaining rounds. -/
 theorem run_succ {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
-    {Out : PathAlong oracleSig (protocolOn R M eval (k + 1)) → Type}
+    {Out : Transcript oracleSig (protocolOn R M eval (k + 1)) → Type}
     (P : Focal oracleSig m (protocolOn R M eval (k + 1)) Out)
     (draw : (c : ChallengeNode oracleSig (protocolOn R M eval (k + 1))) →
       m (challengeSpec oracleSig _ c)) :
@@ -154,7 +154,7 @@ theorem run_succ {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
 
 /-- Running one pure round draws its challenge and then runs the remaining rounds. -/
 theorem run_consProver {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
-    {Out : PathAlong oracleSig (protocolOn R M eval (k + 1)) → Type}
+    {Out : Transcript oracleSig (protocolOn R M eval (k + 1)) → Type}
     (msg : M)
     (next : (chal : R) → Focal oracleSig m (protocolOn R M eval k)
       (fun tail => Out (consTranscript msg chal tail)))

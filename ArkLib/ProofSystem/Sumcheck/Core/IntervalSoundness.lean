@@ -45,10 +45,10 @@ theorem interval_validAcceptance {ι σ : Type} {ambient : OracleSpec ι}
     (impl : QueryImpl ambient (StateT σ ProbComp)) (start count : ℕ)
     (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩ × (∀ i, PolynomialData R n deg i))
-    (tr : PathAlong oracleSig (protocol R deg count)) :
+    (tr : Transcript oracleSig (protocol R deg count)) :
     (intervalVerifier R deg n D ambient start count bound).validAcceptance impl stmt tr
         ((intervalOutputProblem D ⟨count + start, by omega⟩ count).language
-          (projectPathAlong oracleSig _ tr)) →
+          tr.path) →
       ∃ t, intervalVerdict D count (intervalInitial start count bound stmt.1) tr = some t ∧
         indexedRelation D _ t (stmt.2 ()) := by
   unfold OracleVerifier.validAcceptance
@@ -72,7 +72,7 @@ noncomputable def intervalStateFunction {ι σ : Type} {ambient : OracleSpec ι}
         (intervalVerifier R deg (count + start) D ambient start count (by omega)).validAcceptance
           impl stmt tr
         ((intervalOutputProblem D (Fin.last (count + start)) count).language
-          (projectPathAlong oracleSig _ tr))) where
+          tr.path)) where
   toFun sp history stmt := foldPrefix (indexedGood D (stmt.2 ())) (fun _ => indexedNext D)
     count (some (intervalInitial start count (by omega) stmt.1 :
       IndexedClaim R (count + start) count)) sp history
@@ -149,7 +149,7 @@ theorem intervalVerifier_soundness_injective [IsDomain R] [Fintype R] [Sampleabl
 identifying its endpoint with `n`. -/
 theorem intervalVerifier_full_run {ι : Type} (ambient : OracleSpec ι)
     (stmt : RoundStatement R n 0) (data : ∀ i, PolynomialData R n deg i)
-    {Out : PathAlong oracleSig (protocol R deg n) → Type}
+    {Out : Transcript oracleSig (protocol R deg n) → Type}
     (prover : Prover oracleSig ambient (protocol R deg n) Out) :
     (intervalVerifier R deg n D ambient 0 n (by omega)).run stmt data prover =
       (indexedVerifier R deg n D ambient).run stmt data prover := by

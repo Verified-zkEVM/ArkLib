@@ -34,7 +34,7 @@ def roundVerdict {S T : Type} (evaluate : M → R → R)
 /-- The verdict of all interpreted messages, in chronological order. -/
 def verdict {State : ℕ → Type} {T : Type} (evaluate : M → R → R)
     (checks : RoundChecks R State) (finish : State 0 → T) :
-    (k : ℕ) → State k → PathAlong oracleSig (protocol R M evaluate k) → Option T
+    (k : ℕ) → State k → Transcript oracleSig (protocol R M evaluate k) → Option T
   | 0, st, _ => some (finish st)
   | k + 1, st, tr => (roundVerdict evaluate (checks k) st (message tr) (challenge tr)).bind
       fun mid => verdict evaluate checks finish k mid (tail tr)
@@ -43,7 +43,7 @@ def verdict {State : ℕ → Type} {T : Type} (evaluate : M → R → R)
 def decision {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
     (finish : State 0 → T) : (k : ℕ) → State k → (p : Path (protocol R M evaluate k)) →
       View (protocol R M evaluate k) p →
-      OracleComp (oracles (protocol R M evaluate k) p) (Option T)
+      OracleComp (oracleMessageSpec (protocol R M evaluate k) p) (Option T)
   | 0, st, _, _ => pure (some (finish st))
   | k + 1, st, p, v => do
       let mid ← simulateQ (headQuery p) (checks k st (viewChallenge v)).run
@@ -54,8 +54,8 @@ def decision {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
 /-- Answering the interaction-layer decision computes the verdict for every interpreted carrier. -/
 theorem simulate_decision {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
     (finish : State 0 → T) : ∀ (k : ℕ) (st : State k)
-    (tr : PathAlong oracleSig (protocol R M evaluate k)),
-    simulateQ (payloadImpl _ tr) (decision checks finish k st _ (toView _ tr)) =
+    (tr : Transcript oracleSig (protocol R M evaluate k)),
+    simulateQ (oracleMessageImpl _ tr) (decision checks finish k st _ (toView _ tr)) =
       verdict evaluate checks finish k st tr := by
   intro k
   induction k with
@@ -64,9 +64,9 @@ theorem simulate_decision {State : ℕ → Type} {T : Type} (checks : RoundCheck
     intro st tr
     rcases tr with ⟨msg, r, rest⟩
     rw [decision, simulateQ_bind]
-    have hh : simulateQ (payloadImpl (protocol R M evaluate (k + 1)) (⟨msg, r, rest⟩ :
-        PathAlong oracleSig (protocol R M evaluate (k + 1))))
-        (simulateQ (headQuery (projectPathAlong oracleSig _ ⟨msg, r, rest⟩))
+    have hh : simulateQ (oracleMessageImpl (protocol R M evaluate (k + 1)) (⟨msg, r, rest⟩ :
+        Transcript oracleSig (protocol R M evaluate (k + 1))))
+        (simulateQ (headQuery (Transcript.path (l := oracleSig) (s := _) ⟨msg, r, rest⟩))
           (checks k st r).run) = roundVerdict evaluate (checks k) st msg r :=
       QueryImpl.simulateQ_simulateQ_eq_of_apply (fun x => simulate_head _ x) _
     change (simulateQ _ (simulateQ _ (checks k st r).run) >>= _) = _
@@ -74,9 +74,11 @@ theorem simulate_decision {State : ℕ → Type} {T : Type} (checks : RoundCheck
     cases h : roundVerdict evaluate (checks k) st msg r with
     | none => simp [verdict, h, message, challenge]; rfl
     | some mid =>
-      change simulateQ _ (simulateQ (tailLift (projectPathAlong oracleSig _ ⟨msg, r, rest⟩)) _) = _
-      rw [simulate_tail (⟨msg, r, rest⟩ : PathAlong oracleSig (protocol R M evaluate (k + 1)))]
-      change simulateQ (payloadImpl _ rest) (decision checks finish k mid _ (toView _ rest)) = _
+      change simulateQ _ (simulateQ
+        (tailLift (Transcript.path (l := oracleSig) (s := _) ⟨msg, r, rest⟩)) _) = _
+      rw [simulate_tail (⟨msg, r, rest⟩ : Transcript oracleSig (protocol R M evaluate (k + 1)))]
+      change simulateQ (oracleMessageImpl _ rest)
+        (decision checks finish k mid _ (toView _ rest)) = _
       rw [ih]
       simp [verdict, h, message, challenge, tail]
 
@@ -90,14 +92,14 @@ def verifier {ι : Type} (ambient : OracleSpec ι) {I : Type uI} {A : I → Type
     (decision checks finish k st p v))
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- The interpreted verifier's final decision is pure once its resources are answered. -/
+/-- The interpreted verifier's final decision is pure once its bundle queries are answered. -/
 theorem simulate_verifier {ι : Type} {ambient : OracleSpec ι} {I : Type uI} {A : I → Type}
     {inputs : OracleFamily.{uI, 0, wI} I A} {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) (st : State k)
-    (data : ∀ i, A i) (tr : PathAlong oracleSig (protocol R M evaluate k)) :
-    simulateQ (QueryImpl.addLift impl ((pathResources inputs _
-      (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
+    (data : ∀ i, A i) (tr : Transcript oracleSig (protocol R M evaluate k)) :
+    simulateQ (QueryImpl.addLift impl ((pathBundle inputs _
+      tr.path).answer (data, oracleMessages _ tr)))
       ((verifier ambient inputs checks finish k).decide st _ (toView _ tr)).run =
       (pure (verdict evaluate checks finish k st tr) : m _) := by
   change simulateQ _ (simulateQ (pathLift ambient inputs _) _) = _
@@ -109,7 +111,7 @@ any evaluated message carrier. -/
 theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I → Type}
     (inputs : OracleFamily.{0, 0, wI} I A) {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) (st : State k)
-    (data : ∀ i, A i) {Out : PathAlong oracleSig (protocol R M evaluate k) → Type}
+    (data : ∀ i, A i) {Out : Transcript oracleSig (protocol R M evaluate k) → Type}
     (prover : Prover oracleSig ambient (protocol R M evaluate k) Out) :
     (verifier ambient inputs checks finish k).run st data prover = (do
       let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (protocol R M evaluate k)
@@ -118,7 +120,7 @@ theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I →
         (sampler oracleSig _ (fun c => liftM
           ((ambient + challengeSpec oracleSig (protocol R M evaluate k)).query (.inr c))))
       pure (⟨tr, out, (verdict evaluate checks finish k st tr).map (fun t => (t, data))⟩ :
-        Observation oracleSig _ Out (fun _ => T × (∀ i, A i)))) := by
+        Outcome oracleSig _ Out (fun _ => T × (∀ i, A i)))) := by
   rw [OracleVerifier.run_eq]
   refine bind_congr fun result => ?_
   rcases result with ⟨tr, out, u⟩

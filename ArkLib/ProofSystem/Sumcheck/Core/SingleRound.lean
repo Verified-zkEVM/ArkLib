@@ -48,14 +48,14 @@ theorem roundPath_eq (p : Path (round R deg)) : p = roundPath R deg := by
 variable {R deg}
 
 /-- The full transcript of a round with the given message and challenge. -/
-def roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) : PathAlong oracleSig (round R deg) :=
+def roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) : Transcript oracleSig (round R deg) :=
   ⟨msg, ⟨chal, ⟨⟩⟩⟩
 
 /-- The round polynomial recorded in a round transcript. -/
-def roundMessage (tr : PathAlong oracleSig (round R deg)) : R⦃≤ deg⦄[X] := tr.1
+def roundMessage (tr : Transcript oracleSig (round R deg)) : R⦃≤ deg⦄[X] := tr.1
 
 /-- The challenge recorded in a round transcript. -/
-def roundChallenge (tr : PathAlong oracleSig (round R deg)) : R := tr.2.1
+def roundChallenge (tr : Transcript oracleSig (round R deg)) : R := tr.2.1
 
 /-- The message of a round transcript is the message it was built from. -/
 @[simp] theorem roundMessage_roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
@@ -66,21 +66,21 @@ def roundChallenge (tr : PathAlong oracleSig (round R deg)) : R := tr.2.1
     roundChallenge (roundTranscript msg chal) = chal := rfl
 
 /-- A round transcript is determined by its message and challenge. -/
-theorem roundTranscript_eta (tr : PathAlong oracleSig (round R deg)) :
+theorem roundTranscript_eta (tr : Transcript oracleSig (round R deg)) :
     roundTranscript (roundMessage tr) (roundChallenge tr) = tr := by
   rcases tr with ⟨msg, ⟨chal, ⟨⟩⟩⟩
   rfl
 
 /-- Every round transcript projects to the unique shape path, whatever its moves. -/
 theorem project_roundTranscript (msg : R⦃≤ deg⦄[X]) (chal : R) :
-    projectPathAlong oracleSig (round R deg) (roundTranscript msg chal) = roundPath R deg :=
+    Transcript.path (roundTranscript msg chal) = roundPath R deg :=
   roundPath_eq R deg _
 
 /-- The verifier view of a round records the challenge and erases the message. -/
 def viewChallenge {p : Path (round R deg)} (v : View (round R deg) p) : R := v.1.2.1
 
 /-- The challenge in the view of a transcript is the transcript's challenge. -/
-@[simp] theorem viewChallenge_toView (tr : PathAlong oracleSig (round R deg)) :
+@[simp] theorem viewChallenge_toView (tr : Transcript oracleSig (round R deg)) :
     viewChallenge (toView (round R deg) tr) = roundChallenge tr := rfl
 
 /-- The challenge node of a round, named by shape branches alone. -/
@@ -90,26 +90,26 @@ def roundChallengeNode : ChallengeNode oracleSig (round R deg) := ⟨.inr ⟨⟨
 
 The slot at the challenge node and the leaf are `pure`. The only possibly effectful slot is the
 first one, which is also `pure` here. -/
-def roundProver {m : Type → Type} [Monad m] {Out : PathAlong oracleSig (round R deg) → Type}
+def roundProver {m : Type → Type} [Monad m] {Out : Transcript oracleSig (round R deg) → Type}
     (msg : R⦃≤ deg⦄[X]) (next : (chal : R) → Out (roundTranscript msg chal)) :
     Focal oracleSig m (round R deg) Out :=
   pure ⟨msg, pure fun chal => pure (next chal)⟩
 
 /-- Projection of a round followed by a suffix erases the round's two private branches. -/
 @[simp] theorem project_append_round {s : OracleProtocol} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig s) :
-    projectPathAlong oracleSig ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩ =
-      ⟨⟨⟩, ⟨⟨⟩, projectPathAlong oracleSig s tail⟩⟩ := rfl
+    (tail : Transcript oracleSig s) :
+    Transcript.path (l := oracleSig) (s := ((round R deg).append fun _ => s)) ⟨msg, ⟨chal, tail⟩⟩ =
+      ⟨⟨⟩, ⟨⟨⟩, tail.path⟩⟩ := rfl
 
 section Run
 
 
 /-- Splitting the shape of a round followed by a suffix recovers the suffix shape. -/
 theorem split_round_suffix {s : OracleProtocol} (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig s) :
+    (tail : Transcript oracleSig s) :
     (Path.split (round R deg) (fun _ => s)
-      (projectPathAlong oracleSig _ ⟨msg, ⟨chal, tail⟩⟩)).2 =
-        projectPathAlong oracleSig s tail := rfl
+      (Transcript.path (l := oracleSig) (s := _) ⟨msg, ⟨chal, tail⟩⟩)).2 =
+        tail.path := rfl
 
 /-- The sampler of a round has a pure slot at the message node and draws at the challenge node. -/
 theorem samplerEnd_round {m : Type → Type} [Monad m]
@@ -120,7 +120,7 @@ theorem samplerEnd_round {m : Type → Type} [Monad m]
 
 /-- Running the honest round against the sampler draws once and records the honest message. -/
 theorem run_roundProver {m : Type → Type} [Monad m] [LawfulMonad m]
-    {Out : PathAlong oracleSig (round R deg) → Type}
+    {Out : Transcript oracleSig (round R deg) → Type}
     (msg : R⦃≤ deg⦄[X]) (next : (chal : R) → Out (roundTranscript msg chal))
     (draw : (c : ChallengeNode oracleSig (round R deg)) → m (challengeSpec oracleSig _ c)) :
     Interaction.TwoParty.Lens.run (round R deg) (roundProver msg next)
@@ -138,7 +138,7 @@ theorem run_roundProver {m : Type → Type} [Monad m] [LawfulMonad m]
   erw [LawfulMonad.pure_bind]
   simp only [sampler, samplerEnd, roundChallengeNode,
     PureEnd.toStrategy, PureEnd.mapOutput]
-  let result (chal : R) : (tr : PathAlong oracleSig _) × Out tr × PUnit :=
+  let result (chal : R) : (tr : Transcript oracleSig _) × Out tr × PUnit :=
     ⟨⟨msg, ⟨chal, ⟨⟩⟩⟩, next chal, ⟨⟩⟩
   refine Eq.trans (b := (draw roundChallengeNode >>= fun chal => pure (result chal))) ?_ ?_
   · refine bind_congr fun (chal : R) => ?_
@@ -153,12 +153,13 @@ section Routing
 variable {s : OracleProtocol}
 
 /-- The view of a round followed by `s` splits into the round's view and the view of `s`. -/
-theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : PathAlong oracleSig s) :
+theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : Transcript oracleSig s) :
     View.split (round R deg) (fun _ => s) _
         (toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩) =
       (toView (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩, toView s tail) := by
-  have h := splitFiber_val viewSig (round R deg) (fun _ => s) _
-    (show Fiber viewSig _ _ from toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)
+  have h := TranscriptAt.split_val viewSig (round R deg) (fun _ => s) _
+    (show TranscriptAt viewSig _ _ from
+      toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)
   exact Prod.ext (Subtype.ext h.1) (Subtype.ext (eq_of_heq h.2))
 
 
@@ -166,22 +167,22 @@ variable {I : Type uI} {A : I → Type}
   (inputs : Interaction.Oracle.OracleFamily.{uI, 0, wI} I A)
 
 /-- The first round of a transcript of a round followed by `s`. -/
-def appendHead (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :
-    PathAlong oracleSig (round R deg) :=
+def appendHead (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :
+    Transcript oracleSig (round R deg) :=
   ⟨tr.1, ⟨tr.2.1, ⟨⟩⟩⟩
 
 /-- The transcript of `s` after the first round. -/
-def appendTail (tr : PathAlong oracleSig ((round R deg).append fun _ => s)) :
-    PathAlong oracleSig s :=
+def appendTail (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :
+    Transcript oracleSig s :=
   tr.2.2
 
 /-- The first round of a run of a round followed by `s` sees the inputs and its own message. -/
 theorem prefixRoute_round (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
-    (tail : PathAlong oracleSig s) :
+    (tail : Transcript oracleSig s) :
     (OracleVerifier.prefixRoute (inputs := inputs) (s₁ := round R deg) (s₂ := fun _ => s)
-        (projectPathAlong oracleSig _ ⟨msg, ⟨chal, tail⟩⟩)).f
-        ((x, payloads ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)) =
-      (x, payloads (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩) := by
+        (Transcript.path (l := oracleSig) (s := _) ⟨msg, ⟨chal, tail⟩⟩)).f
+        ((x, oracleMessages ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)) =
+      (x, oracleMessages (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩) := by
   refine Prod.ext ?_ ?_
   · rfl
   · funext i

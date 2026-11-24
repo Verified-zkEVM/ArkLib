@@ -43,10 +43,10 @@ def emptyFamily : OracleFamily.{0, 0, 0} PEmpty.{1} (fun i => PEmpty.elim i) :=
 @[instance_reducible] def tree : OracleProtocol :=
   .liftBind (.oracle (Nat → Nat) OracleInterface.instFunction) (fun _ => .pure ⟨⟩)
 
-def first : PathAlong oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
-def second : PathAlong oracleSig tree := ⟨fun n => 2 * n, ⟨⟩⟩
+def first : Transcript oracleSig tree := ⟨fun n => n + 5, ⟨⟩⟩
+def second : Transcript oracleSig tree := ⟨fun n => 2 * n, ⟨⟩⟩
 
-example : projectPathAlong oracleSig tree first = projectPathAlong oracleSig tree second := rfl
+example : first.path = second.path := rfl
 example : (toView tree first).val = (toView tree second).val := rfl
 
 /-- The decision can name an evaluation query but receives no function payload. -/
@@ -58,10 +58,10 @@ def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamil
       let n : Nat ← pathLift noAmbient emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, (3 : Nat)⟩
       pure n
   outputMap _ p _ :=
-    (OracleMap.embedding (pathFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+    (OracleMap.embedding (oracleMessageFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
-example : payloadImpl tree first ⟨.inl ⟨⟩, (3 : Nat)⟩ = (8 : Nat) := rfl
-example : payloadImpl tree second ⟨.inl ⟨⟩, (3 : Nat)⟩ = (6 : Nat) := rfl
+example : oracleMessageImpl tree first ⟨.inl ⟨⟩, (3 : Nat)⟩ = (8 : Nat) := rfl
+example : oracleMessageImpl tree second ⟨.inl ⟨⟩, (3 : Nat)⟩ = (6 : Nat) := rfl
 
 run_cmd do
   let answer : Nat := simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
@@ -74,11 +74,11 @@ namespace Interaction.Core.OracleTests
 
 /-- The small oracle protocol with no rounds. -/
 abbrev emptyTree : OracleProtocol.{0, 0} := .pure ⟨⟩
-/-- The resources of the protocol with no rounds and no input oracles: both parts are empty. -/
-abbrev emptyResources := pathResources emptyFamily emptyTree ⟨⟩
+/-- The oracle bundle of the protocol with no rounds and no input oracles: both parts are empty. -/
+abbrev emptyBundle := pathBundle emptyFamily emptyTree ⟨⟩
 
-/-- The empty pair of input data and path payloads. -/
-def emptyData : emptyResources.Data := (fun i => i.elim, fun i => i.elim)
+/-- The empty pair of input data and path oracle messages. -/
+def emptyData : emptyBundle.Data := (fun i => i.elim, fun i => i.elim)
 
 /-- The prefix can return a statement obtained from an ambient query. -/
 def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => Bool)
@@ -86,7 +86,7 @@ def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => B
   decide _ p _ := by
     cases p
     exact do
-      let bit : Bool ← liftM (((Unit →ₒ Bool) + emptyResources.spec).query (.inl ()))
+      let bit : Bool ← liftM (((Unit →ₒ Bool) + emptyBundle.spec).query (.inl ()))
       pure bit
   outputMap _ _ _ :=
     { f := fun _ i => i.elim
@@ -102,8 +102,8 @@ def constantSuffix : OracleVerifier (Unit →ₒ Bool) emptyTree Bool (fun _ => 
       impl := fun _ => pure (if bit then (1 : Nat) else (0 : Nat))
       law := fun _ _ => rfl }
 
-/-- With no resource data or public moves, one output map cannot expose both ambient answers. -/
-example (output : OracleMap emptyResources functions) :
+/-- With no bundle data or public moves, one output map cannot expose both ambient answers. -/
+example (output : OracleMap emptyBundle functions) :
     ¬ ∀ bit, output.f emptyData ⟨⟩ 0 =
       ((constantSuffix.outputMap bit ⟨⟩ ⟨⟨⟩, rfl⟩).f emptyData) ⟨⟩ 0 := by
   intro h
@@ -119,8 +119,9 @@ run_cmd do
   for decl in [``Interaction.Core.plain_challenge_shape,
       ``Interaction.Core.oracle_payload_shape, ``Interaction.Core.Reduction.run,
       ``Interaction.Core.OracleMap.comp, ``Interaction.Core.OracleMap.simulate_eq,
-      ``Interaction.Core.oracles_split_append, ``Interaction.Core.oracles_append_split,
-      ``Interaction.Core.payloads_append, ``Interaction.Core.payloadImpl_append,
+      ``Interaction.Core.oracleMessageFamily_split_append,
+      ``Interaction.Core.oracleMessageFamily_append_split,
+      ``Interaction.Core.oracleMessages_append, ``Interaction.Core.oracleMessageImpl_append,
       ``Interaction.Core.OracleVerifier.run] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do

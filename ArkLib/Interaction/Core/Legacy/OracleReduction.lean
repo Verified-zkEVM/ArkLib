@@ -178,7 +178,7 @@ abbrev viewSpec (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.M
 
 /-- The verifier's views of a run are its per-round views. -/
 def viewEquiv (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
-    PathAlong viewSig (oracleProtocol pSpec) ≃ FullTranscript (viewSpec pSpec) :=
+    Transcript viewSig (oracleProtocol pSpec) ≃ FullTranscript (viewSpec pSpec) :=
   chainEquiv (pSpec := viewSpec pSpec) viewSig (oracleRound pSpec) (fun _ => Equiv.refl _)
 
 /-- The challenge in the view of a challenge round. -/
@@ -188,7 +188,7 @@ def viewChallenge (j : Fin n) : (d : Direction) → (hd : pSpec.dir j = d) → d
   | .P_to_V, _, h, _ => nomatch h
 
 /-- The challenges in a verifier view. -/
-def viewChallenges (v : PathAlong viewSig (oracleProtocol pSpec)) : pSpec.Challenges :=
+def viewChallenges (v : Transcript viewSig (oracleProtocol pSpec)) : pSpec.Challenges :=
   fun i => viewChallenge i.1 _ rfl i.2 (viewEquiv pSpec v i.1)
 
 
@@ -210,11 +210,11 @@ theorem lt_of_challenge {j : Fin n} (hd : pSpec.dir j = .V_to_P) (i : pSpec.Mess
 
 /-- Read message `i` at the node of round `j`, or from the rest of the path. -/
 def readMsgNode (j : Fin n) (rest : OracleProtocol.{0})
-    (recur : (p : Path rest) → (∀ o, OracleData rest p o) → (i : pSpec.MessageIdx) →
+    (recur : (p : Path rest) → (∀ o, OracleMessage rest p o) → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i) :
     (d : Direction) → (hd : pSpec.dir j = d) →
     (p : Path (FreeM.liftBind (oraclePos pSpec j d hd) (fun _ => rest))) →
-    (∀ o, OracleData _ p o) → (i : pSpec.MessageIdx) → j.val ≤ i.1.val → pSpec.Message i
+    (∀ o, OracleMessage _ p o) → (i : pSpec.MessageIdx) → j.val ≤ i.1.val → pSpec.Message i
   | .P_to_V, _, ⟨_, p⟩, x, i, hi =>
     if hij : i.1.val = j.val then cast (congrArg pSpec.«Type» (Fin.ext hij).symm) (x (.inl ⟨⟩))
     else recur p (fun o => x (.inr o)) i (by omega)
@@ -223,29 +223,30 @@ def readMsgNode (j : Fin n) (rest : OracleProtocol.{0})
 /-- Query message `i` at the node of round `j`, or in the rest of the path. -/
 def queryMsgNode (j : Fin n) (rest : OracleProtocol.{0})
     (recur : (p : Path rest) → (i : pSpec.MessageIdx) → j.val < i.1.val →
-      (q : (Oₘ i).Query) → OracleComp (pathFamily rest p).spec ((Oₘ i).Response q)) :
+      (q : (Oₘ i).Query) → OracleComp (oracleMessageFamily rest p).spec ((Oₘ i).Response q)) :
     (d : Direction) → (hd : pSpec.dir j = d) →
     (p : Path (FreeM.liftBind (oraclePos pSpec j d hd) (fun _ => rest))) →
     (i : pSpec.MessageIdx) → j.val ≤ i.1.val → (q : (Oₘ i).Query) →
-    OracleComp (pathFamily _ p).spec ((Oₘ i).Response q)
+    OracleComp (oracleMessageFamily _ p).spec ((Oₘ i).Response q)
   | .P_to_V, hd, ⟨b, p⟩, i, hi, q =>
     if hij : i.1.val = j.val then
       match i, (Subtype.ext (Fin.ext hij) : i = ⟨j, hd⟩), q with
       | _, rfl, q => (OracleMap.embedding
-          (pathFamily (FreeM.liftBind (oraclePos pSpec j .P_to_V hd) (fun _ => rest)) ⟨b, p⟩)
+          (oracleMessageFamily (FreeM.liftBind (oraclePos pSpec j .P_to_V hd) (fun _ => rest))
+            ⟨b, p⟩)
           (fun _ : PUnit.{1} => Sum.inl PUnit.unit)).impl ⟨PUnit.unit, q⟩
     else simulateQ (liftRight _ _) (recur p i (by omega) q)
   | .V_to_P, hd, ⟨_, p⟩, i, hi, q => recur p i (lt_of_challenge hd i hi) q
 
 theorem queryMsgNode_law (j : Fin n) (rest : OracleProtocol.{0})
-    (read : (p : Path rest) → (∀ o, OracleData rest p o) → (i : pSpec.MessageIdx) →
+    (read : (p : Path rest) → (∀ o, OracleMessage rest p o) → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i)
     (query : (p : Path rest) → (i : pSpec.MessageIdx) → j.val < i.1.val →
-      (q : (Oₘ i).Query) → OracleComp (pathFamily rest p).spec ((Oₘ i).Response q))
-    (law : ∀ p x i hi q, simulateQ ((pathFamily rest p).behaviorOfRealizations x)
+      (q : (Oₘ i).Query) → OracleComp (oracleMessageFamily rest p).spec ((Oₘ i).Response q))
+    (law : ∀ p x i hi q, simulateQ ((oracleMessageFamily rest p).behaviorOfRealizations x)
       (query p i hi q) = (Oₘ i).answer (read p x i hi) q) :
     ∀ (d : Direction) (hd : pSpec.dir j = d) p x i hi q,
-      simulateQ ((pathFamily _ p).behaviorOfRealizations x)
+      simulateQ ((oracleMessageFamily _ p).behaviorOfRealizations x)
           (queryMsgNode j rest query d hd p i hi q) =
         (Oₘ i).answer (readMsgNode j rest read d hd p x i hi) q
   | .P_to_V, hd, ⟨b, p⟩, x, i, hi, q => by
@@ -257,13 +258,13 @@ theorem queryMsgNode_law (j : Fin n) (rest : OracleProtocol.{0})
       rfl
     · simp only [queryMsgNode, readMsgNode, hij, ↓reduceDIte]
       exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
-        (impl := (pathFamily rest p).behaviorOfRealizations (fun o => x (.inr o)))
+        (impl := (oracleMessageFamily rest p).behaviorOfRealizations (fun o => x (.inr o)))
         (fun _ => rfl) _).trans (law p _ i _ q)
   | .V_to_P, hd, ⟨_, p⟩, x, i, hi, q => law p x i _ q
 
 /-- Read message `i` from the oracle data of a path through the tree from round `k`. -/
 def readMsg : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec k m h)) →
-    (∀ o, OracleData _ p o) → (i : pSpec.MessageIdx) → k ≤ i.1.val → pSpec.Message i
+    (∀ o, OracleMessage _ p o) → (i : pSpec.MessageIdx) → k ≤ i.1.val → pSpec.Message i
   | k, 0, h, _, _, i, hi => absurd i.1.isLt (by omega)
   | k, m + 1, h, p, x, i, hi =>
     readMsgNode ⟨k, by omega⟩ (oracleSuffix pSpec (k + 1) m (by omega))
@@ -272,16 +273,16 @@ def readMsg : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec 
 /-- Query message `i` in the oracle family of a path through the tree from round `k`. -/
 def queryMsg : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec k m h)) →
     (i : pSpec.MessageIdx) → k ≤ i.1.val → (q : (Oₘ i).Query) →
-    OracleComp (pathFamily _ p).spec ((Oₘ i).Response q)
+    OracleComp (oracleMessageFamily _ p).spec ((Oₘ i).Response q)
   | k, 0, h, _, i, hi, _ => absurd i.1.isLt (by omega)
   | k, m + 1, h, p, i, hi, q =>
     queryMsgNode ⟨k, by omega⟩ (oracleSuffix pSpec (k + 1) m (by omega))
       (fun p i hi q => queryMsg (k + 1) m (by omega) p i hi q) _ rfl p i hi q
 
 theorem queryMsg_law : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuffix pSpec k m h)) →
-    (x : ∀ o, OracleData _ p o) → (i : pSpec.MessageIdx) → (hi : k ≤ i.1.val) →
+    (x : ∀ o, OracleMessage _ p o) → (i : pSpec.MessageIdx) → (hi : k ≤ i.1.val) →
     (q : (Oₘ i).Query) →
-    simulateQ ((pathFamily _ p).behaviorOfRealizations x) (queryMsg k m h p i hi q) =
+    simulateQ ((oracleMessageFamily _ p).behaviorOfRealizations x) (queryMsg k m h p i hi q) =
       (Oₘ i).answer (readMsg k m h p x i hi) q
   | k, 0, h, _, _, i, hi, _ => absurd i.1.isLt (by omega)
   | k, m + 1, h, p, x, i, hi, q =>
@@ -289,7 +290,7 @@ theorem queryMsg_law : (k m : ℕ) → (h : k + m = n) → (p : Path (oracleSuff
       (fun p x i hi q => queryMsg_law (k + 1) m (by omega) p x i hi q) _ rfl p x i hi q
 
 /-- The legacy messages held by the oracle data of a completed path. -/
-def pathMessages (p : Path (oracleProtocol pSpec)) (x : ∀ o, OracleData _ p o) :
+def pathMessages (p : Path (oracleProtocol pSpec)) (x : ∀ o, OracleMessage _ p o) :
     pSpec.Messages :=
   fun i => readMsg 0 n _ p x i (Nat.zero_le _)
 
@@ -303,40 +304,40 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
 abbrev family {I : Type} (T : I → Type) [O : ∀ i, OracleInterface.{0, 0} (T i)] :
     OracleFamily.{0, 0, 0} I T := ⟨O⟩
 
-/-- Route legacy input-statement and message queries to the oracle resources of a path. -/
-def resourceImpl (p : Path (oracleProtocol pSpec)) :
+/-- Route legacy input-statement and message queries to the oracle bundle of a path. -/
+def pathBundleImpl (p : Path (oracleProtocol pSpec)) :
     QueryImpl ([OStmtIn]ₒ + [pSpec.Message]ₒ)
-      (OracleComp (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec) :=
+      (OracleComp (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec) :=
   QueryImpl.add
-    (OracleMap.fst (family OStmtIn) (pathFamily (oracleProtocol pSpec) p)).impl
+    (OracleMap.fst (family OStmtIn) (oracleMessageFamily (oracleProtocol pSpec) p)).impl
     (fun q => simulateQ
-      (OracleMap.snd (family OStmtIn) (pathFamily (oracleProtocol pSpec) p)).impl
+      (OracleMap.snd (family OStmtIn) (oracleMessageFamily (oracleProtocol pSpec) p)).impl
       (queryMsg 0 n _ p q.1 (Nat.zero_le _) q.2))
 
 /-- Routing answers each legacy query from the statement data and the path's messages. -/
-theorem resourceImpl_law (p : Path (oracleProtocol pSpec))
-    (r : (pathResources (family OStmtIn) (oracleProtocol pSpec) p).Data)
+theorem pathBundleImpl_law (p : Path (oracleProtocol pSpec))
+    (r : (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).Data)
     (q : ([OStmtIn]ₒ + [pSpec.Message]ₒ).Domain) :
-    simulateQ ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r)
-        (resourceImpl p q) =
+    simulateQ ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r)
+        (pathBundleImpl p q) =
       QueryImpl.add (OracleInterface.simOracle0 OStmtIn r.1)
         (OracleInterface.simOracle0 pSpec.Message (pathMessages p r.2)) q := by
   rcases q with q | q
   · rfl
   · exact (QueryImpl.simulateQ_simulateQ_eq_of_apply
-      (impl := (pathFamily _ p).behaviorOfRealizations r.2)
+      (impl := (oracleMessageFamily _ p).behaviorOfRealizations r.2)
       (fun _ => rfl) _).trans (queryMsg_law 0 n _ p _ q.1 _ q.2)
 
 /-- Route all legacy decision queries, passing shared-oracle queries through. -/
 def decisionImpl (p : Path (oracleProtocol pSpec)) :
     QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))
-      (OracleComp (oSpec + (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec)) :=
+      (OracleComp (oSpec + (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec)) :=
   QueryImpl.add
     (QueryImpl.id' (oSpec +
-      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictLeft
+      (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictLeft
     (fun q => simulateQ (QueryImpl.id' (oSpec +
-      (pathResources (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictRight
-      (resourceImpl p q))
+      (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictRight
+      (pathBundleImpl p q))
 
 /-- The output map of a legacy output-oracle simulation, for the challenges of a run. Its data
 map is the legacy materialization on the input data and the path's messages, and its queries
@@ -344,12 +345,13 @@ follow legacy `simulateOutputQuery`, routed to the input and path oracles. -/
 def _root_.Interaction.Core.OracleMap.ofLegacySimulation [∀ t, Inhabited (oSpec.Range t)]
     (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
-    OracleMap (pathResources (family OStmtIn) (oracleProtocol pSpec) p)
-      (Resources.ofFamily (family OStmtOut)) where
+    OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
+      (OracleBundle.ofFamily (family OStmtOut)) where
   f r := S.materializeOutput challenges r.1 (pathMessages p r.2)
-  impl q := simulateQ (resourceImpl p) (simulateQ dropAmbient (S.simulateOutputQuery challenges q))
+  impl q :=
+    simulateQ (pathBundleImpl p) (simulateQ dropAmbient (S.simulateOutputQuery challenges q))
   law r q := by
-    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (resourceImpl_law p r)]
+    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (pathBundleImpl_law p r)]
     exact simulateQ_dropAmbient_of_eq_pure _ _ _
       (S.simulateOutputQuery_eq challenges _ _ q)
 
@@ -359,9 +361,9 @@ the input data and the path's messages. -/
 theorem simulateQ_ofLegacySimulation_impl [∀ t, Inhabited (oSpec.Range t)]
     (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec))
-    (r : (pathResources (family OStmtIn) (oracleProtocol pSpec) p).Data)
+    (r : (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).Data)
     (q : [OStmtOut]ₒ.Domain) :
-    (pure (simulateQ ((pathResources (family OStmtIn) (oracleProtocol pSpec) p).answer r)
+    (pure (simulateQ ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r)
         ((OracleMap.ofLegacySimulation S challenges p).impl q)) : OracleComp oSpec _) =
       simulateQ (OracleInterface.simOracle2 (T₁ := OStmtIn) (T₂ := pSpec.Message) oSpec
         r.1 (pathMessages p r.2))
@@ -374,8 +376,8 @@ its output-oracle semantics read as a simulation. -/
 def legacyOutputMap [∀ t, Inhabited (oSpec.Range t)]
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
-    OracleMap (pathResources (family OStmtIn) (oracleProtocol pSpec) p)
-      (Resources.ofFamily (family OStmtOut)) :=
+    OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
+      (OracleBundle.ofFamily (family OStmtOut)) :=
   OracleMap.ofLegacySimulation ⟨V.materializeOutput, V.simulateOutputQuery,
     V.simulateOutputQuery_eq⟩ challenges p
 

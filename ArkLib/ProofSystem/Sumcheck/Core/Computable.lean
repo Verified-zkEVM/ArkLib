@@ -27,7 +27,7 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
   with `Sumcheck.Impl.Computable.projectedMessage`. Everything a runtime evaluates is computable;
   `scripts/SumcheckRuntime.lean` runs them.
 * `run_eq_interpret` relates the run over any carrier `M` to the run at the polynomial carrier:
-  after renaming the challenge queries (`renameQueries`) and mapping the observation, it is the
+  after renaming the challenge queries (`renameQueries`) and mapping the outcome, it is the
   run of the interpreted prover `Interpreted.transportFocal f n g P`, whose messages are read
   through `f : M → R⦃≤ deg⦄[X]`. `Computable.interpretProver` is this interpretation through
   `toMessage`; it is used only in proofs.
@@ -99,13 +99,13 @@ private theorem support_renameQueries {ι α : Type} (ambient : OracleSpec ι) (
   | query_bind q next ih =>
     simp [hquery, ih]
 
-/-- Map an observation of `protocolOn` to another carrier: the transcript by `f`, the prover
+/-- Map an outcome of `protocolOn` to another carrier: the transcript by `f`, the prover
 output by `g`, and the oracle part of the verdict by `dmap`. -/
-def mapObservation (f : M → M') (k : ℕ) {Out : PathAlong oracleSig (protocolOn R M eval k) → Type}
-    {Out' : PathAlong oracleSig (protocolOn R M' eval' k) → Type}
+def mapOutcome (f : M → M') (k : ℕ) {Out : Transcript oracleSig (protocolOn R M eval k) → Type}
+    {Out' : Transcript oracleSig (protocolOn R M' eval' k) → Type}
     (g : ∀ tr, Out tr → Out' (Interpreted.mapTranscript f k tr)) {T B B' : Type} (dmap : B → B')
-    (obs : Observation oracleSig (protocolOn R M eval k) Out (fun _ => T × B)) :
-    Observation oracleSig (protocolOn R M' eval' k) Out' (fun _ => T × B') :=
+    (obs : Outcome oracleSig (protocolOn R M eval k) Out (fun _ => T × B)) :
+    Outcome oracleSig (protocolOn R M' eval' k) Out' (fun _ => T × B') :=
   ⟨Interpreted.mapTranscript f k obs.1, g obs.1 obs.2.1, obs.2.2.map fun v => (v.1, dmap v.2)⟩
 
 /-- An experiment on a renamed program is the experiment on the original program with the
@@ -153,9 +153,9 @@ omit [SampleableType R] in
 decoded transcript of the mapped run. -/
 theorem simulateQ_decideOn {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (stmt : Spec.StatementRound R n 0)
-    (data : ∀ i, A i) (tr : PathAlong oracleSig (protocolOn R M eval n)) :
-    simulateQ (QueryImpl.addLift amb ((pathResources inputs (protocolOn R M eval n)
-        (projectPathAlong oracleSig _ tr)).answer (data, payloads _ tr)))
+    (data : ∀ i, A i) (tr : Transcript oracleSig (protocolOn R M eval n)) :
+    simulateQ (QueryImpl.addLift amb ((pathBundle inputs (protocolOn R M eval n)
+        tr.path).answer (data, oracleMessages _ tr)))
       ((verifierOn R deg n D ambient M eval inputs).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n (polyTranscript f n tr))) :
         OracleComp spec' _) := by
@@ -182,12 +182,12 @@ omit [SampleableType R] in
 the sampler, then return the legacy verdict of the decoded transcript of the mapped run, with
 the input data as output oracle. -/
 theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig (protocolOn R M eval n) → Type}
+    {Out : Transcript oracleSig (protocolOn R M eval n) → Type}
     (P : Prover oracleSig ambient (protocolOn R M eval n) Out) :
     (verifierOn R deg n D ambient M eval inputs).run stmt data P =
       (fun x => (⟨x.1, x.2.1, (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (polyTranscript f n x.1))).map fun t => (t, data)⟩ :
-          Observation oracleSig (protocolOn R M eval n) Out
+          Outcome oracleSig (protocolOn R M eval n) Out
             (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, A i))) <$>
         Interaction.TwoParty.Lens.run (protocolOn R M eval n)
           (P.simulate fun q => liftM
@@ -202,17 +202,17 @@ theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
   rfl
 
 omit [SampleableType R] in
-/-- A run over the carrier `M`, with its queries renamed and its observation mapped, is the run
+/-- A run over the carrier `M`, with its queries renamed and its outcome mapped, is the run
 of the interpreted prover against the verifier at the polynomial carrier. Messages are mapped by
 `f`, the prover output by `g` and the output oracle data by `dmap`. -/
 theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily.{0, 0, wI'} I A')
     (dmap : (∀ i, A i) → ∀ i, A' i) (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig (protocolOn R M eval n) → Type}
-    {Out' : PathAlong oracleSig (protocol R deg n) → Type}
+    {Out : Transcript oracleSig (protocolOn R M eval n) → Type}
+    {Out' : Transcript oracleSig (protocol R deg n) → Type}
     (g : ∀ tr, Out tr → Out' (polyTranscript f n tr))
     (P : Prover oracleSig ambient (protocolOn R M eval n) Out) :
     simulateQ (renameQueries (M' := R⦃≤ deg⦄[X]) (eval' := fun p x => p.val.eval x) ambient n)
-        (mapObservation f n g dmap <$>
+        (mapOutcome f n g dmap <$>
           (verifierOn R deg n D ambient M eval inputs).run stmt data P) =
       (verifierOn R deg n D ambient _ (fun p x => p.val.eval x) inputs').run stmt (dmap data)
         (Interpreted.transportFocal f n g P) := by
@@ -237,7 +237,7 @@ theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily.{0, 0, wI'} I
     funext fun c => simulateQ_spec_query _ _
   rw [hP, hd]
   refine congrArg (· <$> _) (funext fun x => ?_)
-  simp only [mapObservation, Interpreted.mapTranscript_id, Option.map_map]
+  simp only [mapOutcome, Interpreted.mapTranscript_id, Option.map_map]
   rfl
 
 end RunVerifierOn
@@ -273,12 +273,12 @@ variable {R M N : Type} {eval : M → R → R} {evalN : N → R → R}
 
 /-- The passive interpreted verifier is a map of the prover-sampler run. -/
 theorem run_interpreted (k : ℕ) (st : State k) (data : ∀ i, A i)
-    {Out : PathAlong oracleSig (protocolOn R M eval k) → Type}
+    {Out : Transcript oracleSig (protocolOn R M eval k) → Type}
     (P : Prover oracleSig ambient (protocolOn R M eval k) Out) :
     (Interpreted.verifier ambient inputs checks finish k).run st data P =
       (fun x => (⟨x.1, x.2.1,
         (Interpreted.verdict eval checks finish k st x.1).map (fun t => (t, data))⟩ :
-        Observation oracleSig _ Out (fun _ => T × (∀ i, A i)))) <$>
+        Outcome oracleSig _ Out (fun _ => T × (∀ i, A i)))) <$>
         Interaction.TwoParty.Lens.run (protocolOn R M eval k)
           (P.simulate fun q => liftM
             ((ambient + challengeSpec oracleSig (protocolOn R M eval k)).query (.inl q)))
@@ -293,12 +293,12 @@ include hf in
 /-- Interpreting messages and retained data preserves the whole passive verifier run,
 including every private effect and dependent prover output. -/
 theorem run_interpreted_eq (k : ℕ) (st : State k) (dmap : (∀ i, A i) → ∀ i, B i)
-    (data : ∀ i, A i) {Out : PathAlong oracleSig (protocolOn R M eval k) → Type}
-    {Out' : PathAlong oracleSig (protocolOn R N evalN k) → Type}
+    (data : ∀ i, A i) {Out : Transcript oracleSig (protocolOn R M eval k) → Type}
+    {Out' : Transcript oracleSig (protocolOn R N evalN k) → Type}
     (g : ∀ tr, Out tr → Out' (Interpreted.mapTranscript f k tr))
     (P : Prover oracleSig ambient (protocolOn R M eval k) Out) :
     simulateQ (renameQueries (M' := N) (eval' := evalN) ambient k)
-      (mapObservation f k g dmap <$>
+      (mapOutcome f k g dmap <$>
         (Interpreted.verifier ambient inputs checks finish k).run st data P) =
       (Interpreted.verifier ambient outputs checks finish k).run st (dmap data)
         (Interpreted.transportFocal f k g P) := by
@@ -318,7 +318,7 @@ theorem run_interpreted_eq (k : ℕ) (st : State k) (dmap : (∀ i, A i) → ∀
     funext fun c => simulateQ_spec_query _ _
   rw [hP, hd]
   refine congrArg (· <$> _) (funext fun x => ?_)
-  simp only [mapObservation, Option.map_map, Interpreted.verdict_transport checks finish f hf]
+  simp only [mapOutcome, Option.map_map, Interpreted.verdict_transport checks finish f hf]
   rfl
 
 end InterpretedTransport
@@ -386,15 +386,15 @@ section Observe
 
 variable (R : Type) [CommSemiring R] (deg n : ℕ)
 
-/-- The observation of a computable Sumcheck run with prover output `Out`. -/
-abbrev Obs (Out : PathAlong oracleSig (protocol R deg n) → Type) :=
-  Observation oracleSig (protocol R deg n) Out
+/-- The outcome of a computable Sumcheck run with prover output `Out`. -/
+abbrev RunOutcome (Out : Transcript oracleSig (protocol R deg n) → Type) :=
+  Outcome oracleSig (protocol R deg n) Out
     (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ _ : Unit, Input R deg n)
 
 variable {R deg n} in
 /-- Read a run's verdict: the accepted statement, and the output oracle evaluated at the accepted
 challenges, computed from the CompPoly data. -/
-def observe {Out : PathAlong oracleSig (protocol R deg n) → Type} (obs : Obs R deg n Out) :
+def observe {Out : Transcript oracleSig (protocol R deg n) → Type} (obs : RunOutcome R deg n Out) :
     Option (Spec.StatementRound R n (Fin.last n) × R) :=
   obs.2.2.map fun v => (v.1, (v.2 ()).val.eval v.1.challenges)
 
@@ -448,7 +448,8 @@ def finishState (st : RoundState R n 0) : HonestOutput R deg n :=
   ((⟨st.statement.target, fun j => st.statement.challenges (Fin.cast (by
       have := st.round_add; simp only [Fin.val_last]; omega) j)⟩, fun _ => x), ())
 
-/-- The computable honest prover from a state with `k` rounds remaining. Every slot is `pure`. -/
+/-- The computable honest prover from a state with `k` rounds remaining. Every prover move is
+`pure`. -/
 def honestFrom {m : Type → Type} [Monad m] (k : ℕ) (st : RoundState R n k) :
     Focal oracleSig m (protocol R deg k) (fun _ => HonestOutput R deg n) :=
   foldRounds (honestMessage D x) (nextState D x) (finishState x) k st
@@ -473,8 +474,8 @@ def honestOutputMap (o : HonestOutput R deg n) : Core.HonestOutput R deg n :=
 message is read through `toMessage`, every effect is kept, and the output is mapped by `g`. It
 is used only in proofs. -/
 noncomputable def interpretProver {m : Type → Type} [Functor m] {k : ℕ}
-    {Out : PathAlong oracleSig (protocol R deg k) → Type}
-    {Out' : PathAlong oracleSig (Core.protocol R deg k) → Type}
+    {Out : Transcript oracleSig (protocol R deg k) → Type}
+    {Out' : Transcript oracleSig (Core.protocol R deg k) → Type}
     (g : ∀ tr, Out tr → Out' (polyTranscript (toMessage R deg) k tr))
     (P : Focal oracleSig m (protocol R deg k) Out) :
     Focal oracleSig m (Core.protocol R deg k) Out' :=
@@ -533,15 +534,15 @@ def relationProblem {Ctx : Type} (i : Fin (n + 1)) :
   rel _ x _ := ((x.1, interpretInput R deg n x.2), ()) ∈ Spec.relationRound R n deg D i
   rel_admissible _ _ _ _ := trivial
 
-/-- The observation of a computable Sumcheck run with the honest prover's output type. -/
-abbrev HonestObservation := Obs R deg n (fun _ => HonestOutput R deg n)
+/-- The outcome of a computable Sumcheck run with the honest prover's output type. -/
+abbrev HonestOutcome := RunOutcome R deg n (fun _ => HonestOutput R deg n)
 
 /-- Judge a computable Sumcheck run by the verifier verdict and the statement in the prover
 output. -/
 def judgement :
-    OutputJudgement (HonestObservation R deg n)
+    OutputJudgement (HonestOutcome R deg n)
       (relationProblem (Ctx := Path (protocol R deg n)) R deg n D (Fin.last n)) :=
-  { context := fun obs => projectPathAlong oracleSig _ obs.1
+  { context := fun obs => Transcript.path obs.1
     verdict := fun obs => obs.2.2
     proverStatement := fun obs => obs.2.1.1
     witness := fun _ _ _ => () }
@@ -568,7 +569,7 @@ theorem support_completeness (stmt : Spec.StatementRound R n 0)
   rw [hp] at hrun
   change _ = (Core.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
     (Core.honestProver D stmt (interpretInput R deg n data)) at hrun
-  have hm : mapObservation (toMessage R deg) n (fun _ => honestOutputMap)
+  have hm : mapOutcome (toMessage R deg) n (fun _ => honestOutputMap)
       (interpretInput R deg n) obs ∈ support
         ((Core.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
           (Core.honestProver D stmt (interpretInput R deg n data))) := by
@@ -577,7 +578,7 @@ theorem support_completeness (stmt : Spec.StatementRound R n 0)
   rw [Core.run_verifier_honestProver, _root_.support_map] at hm
   obtain ⟨chals, -, heq⟩ := hm
   have hgood : (Core.judgement R deg n D).honest
-      (mapObservation (toMessage R deg) n (fun _ => honestOutputMap)
+      (mapOutcome (toMessage R deg) n (fun _ => honestOutputMap)
         (interpretInput R deg n) obs) := by
     rw [← heq]
     obtain ⟨hv, hout, hrel⟩ := Core.honest_full_interval D ambient stmt
@@ -604,11 +605,11 @@ the interpreted experiment is supported by the original run. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig (protocol R deg n)) ProbComp) :
-    letI : MeasurableSpace (HonestObservation R deg n) := ⊤
+    letI : MeasurableSpace (HonestOutcome R deg n) := ⊤
     completeness ((verifier R deg n D ambient).classicalModel init impl challenges)
       (relationProblem R deg n D 0) (relationProblem R deg n D (Fin.last n))
       (judgement R deg n D) (fun x _ => honestProver D x.1 x.2) 0 := by
-  let : MeasurableSpace (HonestObservation R deg n) := ⊤
+  let : MeasurableSpace (HonestOutcome R deg n) := ⊤
   refine ⟨MeasurableSpace.measurableSet_top, fun x _ hx => ?_⟩
   change 1 - 0 ≤ 𝒟[experiment init impl challenges
     ((verifier R deg n D ambient).run x.1 x.2 (honestProver D x.1 x.2))] _
@@ -646,13 +647,13 @@ def intervalVerifier (start count : ℕ) (bound : start + count ≤ n) :
 theorem interval_run_eq_interpret [BEq R] [LawfulBEq R]
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, Input R deg n)
-    {Out : PathAlong oracleSig (protocol R deg count) → Type}
-    {Out' : PathAlong oracleSig (Core.protocol R deg count) → Type}
+    {Out : Transcript oracleSig (protocol R deg count) → Type}
+    {Out' : Transcript oracleSig (Core.protocol R deg count) → Type}
     (g : ∀ tr, Out tr → Out' (polyTranscript (toMessage R deg) count tr))
     (P : Prover oracleSig ambient (protocol R deg count) Out) :
     simulateQ (renameQueries (M' := R⦃≤ deg⦄[X])
       (eval' := fun p x => p.val.eval x) ambient count)
-      (mapObservation (toMessage R deg) count g (interpretInput R deg n) <$>
+      (mapOutcome (toMessage R deg) count g (interpretInput R deg n) <$>
         (intervalVerifier D ambient start count bound).run stmt data P) =
       (Core.intervalVerifier R deg n D ambient start count bound).run stmt
         (interpretInput R deg n data) (Interpreted.transportFocal (toMessage R deg) count g P) := by
@@ -684,7 +685,7 @@ theorem interval_support_completeness (start count : ℕ) (bound : start + count
   have hd : interpretInput R deg n data =
       fun _ => toPolynomial (data ()).val (data ()).property := rfl
   rw [hd] at hrun
-  have hm : mapObservation (toMessage R deg) count (fun _ => id)
+  have hm : mapOutcome (toMessage R deg) count (fun _ => id)
       (interpretInput R deg n) obs ∈ support
       ((Core.intervalVerifier R deg n D ambient start count bound).run stmt
         (fun _ => toPolynomial (data ()).val (data ()).property)
@@ -695,7 +696,7 @@ theorem interval_support_completeness (start count : ℕ) (bound : start + count
   rw [intervalVerifier_honest_run D _ ambient start count bound stmt htrue,
     _root_.support_map] at hm
   obtain ⟨chals, -, heq⟩ := hm
-  have hv := congrArg (fun (x : Observation oracleSig (Core.protocol R deg count)
+  have hv := congrArg (fun (x : Outcome oracleSig (Core.protocol R deg count)
       (fun _ => RoundStatement R n ⟨count + start, by omega⟩)
       (fun _ => RoundStatement R n ⟨count + start, by omega⟩ ×
         (∀ j, PolynomialData R n deg j))) => x.2.2) heq.symm
@@ -754,7 +755,7 @@ theorem interval_soundness [SampleableType R] [Fintype R] [IsDomain R]
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (start count : ℕ) (finish : start + count = n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, Input R deg n)
-    {Out : PathAlong oracleSig (protocol R deg count) → Type}
+    {Out : Transcript oracleSig (protocol R deg count) → Type}
     (P : Prover oracleSig ambient (protocol R deg count) Out)
     (hfalse : ¬ indexedRelation D _ stmt (toPolynomial (data ()).val (data ()).property)) :
     Pr{let obs ← (experiment init impl
@@ -763,14 +764,15 @@ theorem interval_soundness [SampleableType R] [Fintype R] [IsDomain R]
         ∃ t, obs.2.2 = some t ∧
           indexedRelation D _ t.1 (toPolynomial (t.2 ()).val (t.2 ()).property)] ≤
       (count : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
-  let Out' : PathAlong oracleSig (Core.protocol R deg count) → Type := fun _ => Σ tr, Out tr
+  let Out' : Transcript oracleSig (Core.protocol R deg count) → Type := fun _ => Σ tr, Out tr
   have hb := execute_soundness D ambient init impl start count finish stmt
     (interpretInput R deg n data)
     (Interpreted.transportFocal (evaluateN := evaluate R deg) id count
       (Out' := fun _ => Σ tr, Out tr) (fun tr o => ⟨tr, o⟩) P)
     (by simpa [interpretInput, toPolynomial, Sumcheck.Impl.Computable.toOracleStatement]
       using hfalse)
-  rw [executeExperiment_eq_native, prEvent_map, Interpreted.transportProver_transportFocal] at hb
+  rw [executeExperiment_eq_intervalVerifier, prEvent_map,
+    Interpreted.transportProver_transportFocal] at hb
   have hrun := interval_run_eq_interpret D ambient start count finish.le stmt data
     (Out' := Out') (fun tr o => ⟨tr, o⟩) P
   have hch : Interpreted.transportDraw (N := R⦃≤ deg⦄[X])
@@ -781,7 +783,7 @@ theorem interval_soundness [SampleableType R] [Fintype R] [IsDomain R]
   have he := experiment_renameQueries (M := Message R deg) (eval := evaluate R deg)
     (M' := R⦃≤ deg⦄[X]) (eval' := fun p x => p.val.eval x) count init impl
     (indexedDraw (R := R) (deg := deg) count)
-    (mapObservation (toMessage R deg) count (Out' := Out') (fun tr o => ⟨tr, o⟩)
+    (mapOutcome (toMessage R deg) count (Out' := Out') (fun tr o => ⟨tr, o⟩)
       (interpretInput R deg n) <$>
         (intervalVerifier D ambient start count finish.le).run stmt data P)
   rw [he, hch, experiment_map, prEvent_map] at hb
@@ -831,7 +833,7 @@ theorem interval_soundness_list (domain : List R) [SampleableType R] [Fintype R]
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (start count : ℕ) (finish : start + count = n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, Input R deg n)
-    {Out : PathAlong oracleSig (protocol R deg count) → Type}
+    {Out : Transcript oracleSig (protocol R deg count) → Type}
     (P : Prover oracleSig ambient (protocol R deg count) Out)
     (hfalse : ¬ indexedRelation domain.get _ stmt (toPolynomial (data ()).val (data ()).property)) :
     Pr{let obs ← (experiment init impl
@@ -849,7 +851,7 @@ theorem interval_soundness_injective (embedding : Fin d ↪ R)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (start count : ℕ) (finish : start + count = n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, Input R deg n)
-    {Out : PathAlong oracleSig (protocol R deg count) → Type}
+    {Out : Transcript oracleSig (protocol R deg count) → Type}
     (P : Prover oracleSig ambient (protocol R deg count) Out)
     (hfalse : ¬ indexedRelation (⇑embedding) _ stmt
       (toPolynomial (data ()).val (data ()).property)) :
@@ -873,26 +875,26 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
 Every private output, prover effect and original computational input is retained. -/
 theorem full_run_interval (stmt : Spec.StatementRound R n 0)
     (data : ∀ _ : Unit, Input R deg n)
-    {Out : PathAlong oracleSig (protocol R deg n) → Type}
+    {Out : Transcript oracleSig (protocol R deg n) → Type}
     (P : Prover oracleSig ambient (protocol R deg n) Out) :
-    nativeObservation <$> (verifier R deg n D ambient).run stmt data P =
-      (intervalVerifier (⇑D) ambient 0 n (by omega)).run (nativeStatement stmt) data P := by
+    outcomeOfSpec <$> (verifier R deg n D ambient).run stmt data P =
+      (intervalVerifier (⇑D) ambient 0 n (by omega)).run (RoundStatement.ofSpec stmt) data P := by
   have hc := run_verifierOn D (ambient := ambient) (inputFamily R deg n)
     (evaluate_eq R deg) stmt data P
   change (verifier R deg n D ambient).run stmt data P = _ at hc
   rw [hc]
   change _ = (Interpreted.verifier ambient (inputFamily R deg n) (intervalCheck (⇑D))
-    IntervalClaim.finish n).run (intervalInitial 0 n (by omega) (nativeStatement stmt)) data P
+    IntervalClaim.finish n).run (intervalInitial 0 n (by omega) (RoundStatement.ofSpec stmt)) data P
   rw [run_interpreted, Functor.map_map]
   refine congrArg (· <$> _) (funext fun x => ?_)
-  have he := legacyVerdict_native D ambient stmt (polyTranscript (toMessage R deg) n x.1)
+  have he := legacyVerdict_map_ofSpec D ambient stmt (polyTranscript (toMessage R deg) n x.1)
   have ht := Interpreted.verdict_transport
     (evaluateN := fun (p : R⦃≤ deg⦄[X]) r => p.val.eval r)
     (intervalCheck (⇑D)) IntervalClaim.finish
     (toMessage R deg) (fun q r => (evaluate_eq R deg q r).symm) n
-    (intervalInitial 0 n (by omega) (nativeStatement stmt)) x.1
+    (intervalInitial 0 n (by omega) (RoundStatement.ofSpec stmt)) x.1
   have hv := he.trans ht
-  simp only [nativeObservation, Option.map_map]
+  simp only [outcomeOfSpec, Option.map_map]
   rw [← hv]
   simp only [Option.map_map]
   rfl
@@ -919,19 +921,19 @@ prover and every prover output type. Challenges are sampled uniformly. The proof
 `interval_soundness` at endpoints `0, n` through `full_run_interval`, preserving the transcript,
 private output and original computational input. -/
 theorem soundness [Fintype R] [IsDomain R] :
-    ∀ Out : PathAlong oracleSig (protocol R deg n) → Type,
-      letI : MeasurableSpace (Obs R deg n Out) := ⊤
+    ∀ Out : Transcript oracleSig (protocol R deg n) → Type,
+      letI : MeasurableSpace (RunOutcome R deg n Out) := ⊤
       Interaction.Core.soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init
           impl (challengeQueryImpl oracleSig (protocol R deg n)))
         (Legacy.langProblem (language R deg n D 0))
         (Legacy.langProblem (language R deg n D (Fin.last n)))
-        (fun obs => projectPathAlong oracleSig _ obs.1) (fun obs => obs.2.2)
+        (fun obs => Transcript.path obs.1) (fun obs => obs.2.2)
         ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx, (deg : ℝ≥0) / Fintype.card R : ℝ≥0) :
           ℝ≥0∞) := by
   intro Out
-  let : MeasurableSpace (Obs R deg n Out) := ⊤
+  let : MeasurableSpace (RunOutcome R deg n Out) := ⊤
   rintro ⟨stmt, data⟩ - hnot P
-  have hfalse : ¬ indexedRelation (⇑D) 0 (nativeStatement stmt)
+  have hfalse : ¬ indexedRelation (⇑D) 0 (RoundStatement.ofSpec stmt)
       (toPolynomial (data ()).val (data ()).property) := by
     intro h
     apply hnot
@@ -940,7 +942,7 @@ theorem soundness [Fintype R] [IsDomain R] :
     apply (Set.mem_language_iff _ _).mpr
     exact ⟨(), (indexedRelation_embedding D 0 stmt _).mp h⟩
   have hC := interval_soundness (⇑D) ambient init impl 0 n (by omega)
-    (nativeStatement stmt) data P hfalse
+    (RoundStatement.ofSpec stmt) data P hfalse
   rw [← full_run_interval D ambient stmt data P, experiment_map, prEvent_map] at hC
   have herror : (n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) =
       ((∑ _ : (Spec.pSpec R deg n).ChallengeIdx,
@@ -951,7 +953,7 @@ theorem soundness [Fintype R] [IsDomain R] :
   rw [prEvent_eq_evalDist_of_discrete] at hC
   refine le_trans (measure_mono fun obs hobs => ?_) hC
   obtain ⟨t, ht, hlang⟩ := hobs
-  refine ⟨(nativeStatement t.1, t.2), ?_, ?_⟩
+  refine ⟨(RoundStatement.ofSpec t.1, t.2), ?_, ?_⟩
   · change Option.map _ obs.2.2 = _
     change obs.2.2 = some t at ht
     rw [ht]

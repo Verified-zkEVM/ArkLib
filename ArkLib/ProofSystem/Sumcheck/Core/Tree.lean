@@ -10,7 +10,7 @@ public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedPath
 
 /-! # The fixed Sumcheck tree
 
-The full run has one polynomial message and one public challenge per variable. Messages and
+The full run has one polynomial message and one challenge per variable. Messages and
 challenges do not select shape. The sampler leaves the challenge distribution to its handler.
 -/
 
@@ -36,45 +36,45 @@ variable {R deg}
 
 /-- Splitting one round from a replicated protocol recovers the remaining shape path. -/
 theorem split_protocol_succ_suffix {k : ℕ} (msg : R⦃≤ deg⦄[X]) (r : R)
-    (tail : PathAlong oracleSig (protocol R deg k)) :
+    (tail : Transcript oracleSig (protocol R deg k)) :
     (Path.split (protocol R deg 1) (fun _ => protocol R deg k)
-      (projectPathAlong oracleSig (protocol R deg (k + 1)) ⟨msg, r, tail⟩)).2 =
-        projectPathAlong oracleSig (protocol R deg k) tail := split_round_suffix msg r tail
+      (Transcript.path (l := oracleSig) (s := (protocol R deg (k + 1))) ⟨msg, r, tail⟩)).2 =
+        tail.path := split_round_suffix msg r tail
 
 /-- Every full transcript projects to the unique shape path, whatever its messages and
 challenges. -/
-theorem project_eq_shape {n : ℕ} (tr : PathAlong oracleSig (protocol R deg n)) :
-    projectPathAlong oracleSig (protocol R deg n) tr = Interpreted.shape n :=
+theorem project_eq_shape {n : ℕ} (tr : Transcript oracleSig (protocol R deg n)) :
+    tr.path = Interpreted.shape n :=
   Interpreted.shape_unique n _
 
 omit [CommSemiring R] in
 /-- Prepend one round to a transcript of the remaining rounds, at any message carrier. -/
 def consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M) (chal : R)
-    (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
-    PathAlong oracleSig (Interpreted.protocol R M eval (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
+    (tail : Transcript oracleSig (Interpreted.protocol R M eval n)) :
+    Transcript oracleSig (Interpreted.protocol R M eval (n + 1)) := ⟨msg, ⟨chal, tail⟩⟩
 
 omit [CommSemiring R] in
 /-- The head message of a prepended round is its message. -/
 @[simp] theorem message_consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M)
-    (chal : R) (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
+    (chal : R) (tail : Transcript oracleSig (Interpreted.protocol R M eval n)) :
     Interpreted.message (consTranscript msg chal tail) = msg := rfl
 
 omit [CommSemiring R] in
 /-- The head challenge of a prepended round is its challenge. -/
 @[simp] theorem challenge_consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M)
-    (chal : R) (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
+    (chal : R) (tail : Transcript oracleSig (Interpreted.protocol R M eval n)) :
     Interpreted.challenge (consTranscript msg chal tail) = chal := rfl
 
 omit [CommSemiring R] in
 /-- The tail of a prepended round is the given transcript. -/
 @[simp] theorem tail_consTranscript {M : Type} {eval : M → R → R} {n : ℕ} (msg : M)
-    (chal : R) (tail : PathAlong oracleSig (Interpreted.protocol R M eval n)) :
+    (chal : R) (tail : Transcript oracleSig (Interpreted.protocol R M eval n)) :
     Interpreted.tail (consTranscript msg chal tail) = tail := rfl
 
 omit [CommSemiring R] in
 /-- A transcript is determined by its first round and its tail. -/
 theorem consTranscript_eta {M : Type} {eval : M → R → R} {n : ℕ}
-    (tr : PathAlong oracleSig (Interpreted.protocol R M eval (n + 1))) :
+    (tr : Transcript oracleSig (Interpreted.protocol R M eval (n + 1))) :
     consTranscript (Interpreted.message tr) (Interpreted.challenge tr) (Interpreted.tail tr) = tr :=
   rfl
 

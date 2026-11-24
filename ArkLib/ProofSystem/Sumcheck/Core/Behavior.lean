@@ -78,7 +78,7 @@ data retained, without assuming that those answers have a polynomial realization
 theorem behaviorIntervalVerifier_run (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι)
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (evaluate : (Fin n → R) → R)
-    {Out : PathAlong oracleSig (protocol R deg count) → Type}
+    {Out : Transcript oracleSig (protocol R deg count) → Type}
     (prover : Prover oracleSig ambient (protocol R deg count) Out) :
     (behaviorIntervalVerifier (deg := deg) D ambient start count bound).run stmt
       (fun _ => evaluate) prover =
@@ -96,7 +96,7 @@ theorem behaviorIntervalVerifier_run_one (D : Fin d → R) {ι : Type} (ambient 
       (fun r => (⟨roundTranscript msg r, finish r,
         (intervalVerdict D 1 (intervalInitial start 1 bound stmt) (roundTranscript msg r)).map
           (fun t => (t, fun _ => evaluate))⟩ :
-          Observation oracleSig (protocol R deg 1) (fun _ => Out)
+          Outcome oracleSig (protocol R deg 1) (fun _ => Out)
             (fun _ => RoundStatement R n ⟨1 + start, by omega⟩ ×
               (∀ _ : Unit, (Fin n → R) → R)))) <$>
         (liftM ((ambient + challengeSpec oracleSig (protocol R deg 1)).query
@@ -108,7 +108,7 @@ theorem behaviorIntervalVerifier_run_one (D : Fin d → R) {ι : Type} (ambient 
         liftM ((ambient + challengeSpec oracleSig (protocol R deg 1)).query (.inr c))))
     pure (⟨tr, out, (intervalVerdict D 1 (intervalInitial start 1 bound stmt) tr).map
       (fun t => (t, fun _ => evaluate))⟩ :
-          Observation oracleSig (protocol R deg 1) (fun _ => Out)
+          Outcome oracleSig (protocol R deg 1) (fun _ => Out)
         (fun _ => RoundStatement R n ⟨1 + start, by omega⟩ ×
           (∀ _ : Unit, (Fin n → R) → R)))) = _
   rw [run_roundProver]
@@ -117,7 +117,7 @@ theorem behaviorIntervalVerifier_run_one (D : Fin d → R) {ι : Type} (ambient 
   rfl
 
 /-- An empty actual run retains arbitrary original behavior, accepts, and executes the prover's
-terminal effects and private output. -/
+effects and private output at the leaf. -/
 theorem behaviorIntervalVerifier_run_zero (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι)
     (start : ℕ) (bound : start + 0 ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (evaluate : (Fin n → R) → R)
@@ -126,7 +126,7 @@ theorem behaviorIntervalVerifier_run_zero (D : Fin d → R) {ι : Type} (ambient
       (Out := fun _ => Out) stmt (fun _ => evaluate) prover =
       (fun out => (⟨PUnit.unit, out,
         some ((intervalInitial start 0 bound stmt).finish, fun _ => evaluate)⟩ :
-          Observation oracleSig (protocol R deg 0) (fun _ => Out)
+          Outcome oracleSig (protocol R deg 0) (fun _ => Out)
             (fun _ => RoundStatement R n ⟨0 + start, by omega⟩ ×
               (∀ _ : Unit, (Fin n → R) → R)))) <$>
         simulateQ (fun q => liftM
@@ -136,7 +136,7 @@ theorem behaviorIntervalVerifier_run_zero (D : Fin d → R) {ι : Type} (ambient
     let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (OutP := fun _ => Out) (OutC := fun _ => PUnit)
       (.pure PUnit.unit) (simulateQ _ prover) (pure PUnit.unit)
     pure (⟨tr, out, some ((intervalInitial start 0 bound stmt).finish, fun _ => evaluate)⟩ :
-      Observation oracleSig (protocol R deg 0) (fun _ => Out)
+      Outcome oracleSig (protocol R deg 0) (fun _ => Out)
         (fun _ => RoundStatement R n ⟨0 + start, by omega⟩ ×
           (∀ _ : Unit, (Fin n → R) → R)))) = _
   erw [run_done]

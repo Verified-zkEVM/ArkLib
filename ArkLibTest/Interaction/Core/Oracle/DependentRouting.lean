@@ -71,23 +71,23 @@ def exportInput : OracleVerifier ambient done Unit (fun _ => Unit) inputFamily
   decide _ _ _ := pure ()
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- The resources visible to the suffix at a completed suffix path. -/
-abbrev suffixResources (p : Path suffix) := pathResources inputFamily suffix p
+/-- The bundle visible to the suffix at a completed suffix path. -/
+abbrev suffixBundle (p : Path suffix) := pathBundle inputFamily suffix p
 
 /-- Query the exported input through its interface. -/
 def queryInput (p : Path suffix) :
-    OptionT (OracleComp (ambient + (suffixResources p).spec)) Nat :=
-  liftM ((ambient + (suffixResources p).spec).query (.inr (.inl ⟨(), ()⟩)))
+    OptionT (OracleComp (ambient + (suffixBundle p).spec)) Nat :=
+  liftM ((ambient + (suffixBundle p).spec).query (.inr (.inl ⟨(), ()⟩)))
 
 /-- Route the final unit query to the input, which answers the input value. -/
-def finalMap : (p : Path suffix) → OracleMap (suffixResources p) (finalFamily p)
+def finalMap : (p : Path suffix) → OracleMap (suffixBundle p) (finalFamily p)
   | ⟨true, ⟨⟩⟩ =>
     (OracleMap.embedding inputFamily (fun _ : Unit => ())).comp
-      (OracleMap.fst inputFamily (pathFamily suffix ⟨true, ⟨⟩⟩))
+      (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨true, ⟨⟩⟩))
   | ⟨false, ⟨⟩⟩ =>
     { f := fun x _ => (x.1 (), x.1 ())
       impl := fun q =>
-        (OracleMap.fst inputFamily (pathFamily suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
+        (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
       law := fun _ _ => rfl }
 
 /-- The suffix checks the announced Boolean against one input query. It returns `()` after a
@@ -139,8 +139,8 @@ def noQueries : QueryImpl (ambient + challengeSpec oracleSig combined) Id
 private result, and the read-out of the accepted claim. -/
 def observed (input : Nat) : Bool × Nat × Option (Nat × Nat) :=
   let obs := simulateQ noQueries (composite.run () (fun _ => input) (prover input))
-  ((projectPathAlong oracleSig combined obs.1).1, obs.2.1,
-    obs.2.2.map (readClaim (projectPathAlong oracleSig combined obs.1)))
+  ((Transcript.path obs.1).1, obs.2.1,
+    obs.2.2.map (readClaim (Transcript.path obs.1)))
 
 /-- Zero selects the unit statement and the input itself as the final oracle. -/
 example : observed 0 = (true, 13, some (0, 0)) := rfl

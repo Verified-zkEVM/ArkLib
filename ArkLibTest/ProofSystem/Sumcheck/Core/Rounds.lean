@@ -78,7 +78,7 @@ theorem run_honest_eval (stmt : Spec.StatementRound R n 0) (p : Spec.OracleState
       (fun chals => (⟨honestTranscript D stmt (fun _ => p) chals,
         honestOutput D stmt (fun _ => p) chals,
         some (⟨MvPolynomial.eval chals p.val, chals⟩, fun _ => p)⟩ :
-          Observation oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
+          Outcome oracleSig (protocol R deg n) (fun _ => HonestOutput R deg n)
             (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)))
               <$>
         drawChallenges n (fun c =>
@@ -189,9 +189,9 @@ abbrev drawOf (n : ℕ) :=
   fun c : ChallengeNode oracleSig (protocol K 1 n) =>
     (QueryImpl.id' (ambient + challengeSpec oracleSig (protocol K 1 n))).restrictRight c
 
-/-- The observation of a three-round run on the claim `t` about `p3`. -/
-abbrev Obs (n : ℕ) :=
-  Observation oracleSig (protocol K 1 n) (fun _ => HonestOutput K 1 n)
+/-- The outcome of a three-round run on the claim `t` about `p3`. -/
+abbrev RunOutcome (n : ℕ) :=
+  Outcome oracleSig (protocol K 1 n) (fun _ => HonestOutput K 1 n)
     (fun _ => Spec.StatementRound K n (Fin.last n) × ∀ i, Spec.OracleStatement K n 1 i)
 
 /-! ## Three rounds -/
@@ -206,7 +206,7 @@ theorem run_three :
         (honestProver D₂ ⟨11, Fin.elim0⟩ fun _ => p3) =
       (fun chals => (⟨honestTranscript D₂ ⟨11, Fin.elim0⟩ (fun _ => p3) chals,
         honestOutput D₂ ⟨11, Fin.elim0⟩ (fun _ => p3) chals,
-        some (⟨MvPolynomial.eval chals p3.val, chals⟩, fun _ => p3)⟩ : Obs 3)) <$> (do
+        some (⟨MvPolynomial.eval chals p3.val, chals⟩, fun _ => p3)⟩ : RunOutcome 3)) <$> (do
           let c₀ : K ← drawOf 3 (headNode 2)
           let c₁ : K ← tailDraw (drawOf 3) (headNode 1)
           let c₂ : K ← tailDraw (tailDraw (drawOf 3)) (headNode 0)
@@ -233,7 +233,7 @@ theorem run_three_wrong :
     (verifier K 1 3 D₂ ambient).run ⟨12, Fin.elim0⟩ (fun _ => p3)
         (honestProver D₂ ⟨12, Fin.elim0⟩ fun _ => p3) =
       (fun chals => (⟨honestTranscript D₂ ⟨12, Fin.elim0⟩ (fun _ => p3) chals,
-        honestOutput D₂ ⟨12, Fin.elim0⟩ (fun _ => p3) chals, none⟩ : Obs 3)) <$> (do
+        honestOutput D₂ ⟨12, Fin.elim0⟩ (fun _ => p3) chals, none⟩ : RunOutcome 3)) <$> (do
           let c₀ : K ← drawOf 3 (headNode 2)
           let c₁ : K ← tailDraw (drawOf 3) (headNode 1)
           let c₂ : K ← tailDraw (tailDraw (drawOf 3)) (headNode 0)
@@ -268,7 +268,7 @@ theorem run_two :
         (honestProver D₂ ⟨10, Fin.elim0⟩ fun _ => p2) =
       (fun chals => (⟨honestTranscript D₂ ⟨10, Fin.elim0⟩ (fun _ => p2) chals,
         honestOutput D₂ ⟨10, Fin.elim0⟩ (fun _ => p2) chals,
-        some (⟨MvPolynomial.eval chals p2.val, chals⟩, fun _ => p2)⟩ : Obs 2)) <$> (do
+        some (⟨MvPolynomial.eval chals p2.val, chals⟩, fun _ => p2)⟩ : RunOutcome 2)) <$> (do
           let c₀ : K ← drawOf 2 (headNode 1)
           let c₁ : K ← tailDraw (drawOf 2) (headNode 0)
           pure ![c₀, c₁]) := by
@@ -411,7 +411,8 @@ theorem run_two_bilinear :
         (honestProver D₂ ⟨1, Fin.elim0⟩ fun _ => bilinear) =
       (fun chals => (⟨honestTranscript D₂ ⟨1, Fin.elim0⟩ (fun _ => bilinear) chals,
         honestOutput D₂ ⟨1, Fin.elim0⟩ (fun _ => bilinear) chals,
-        some (⟨MvPolynomial.eval chals bilinear.val, chals⟩, fun _ => bilinear)⟩ : Obs 2)) <$> (do
+        some (⟨MvPolynomial.eval chals bilinear.val, chals⟩, fun _ => bilinear)⟩ :
+          RunOutcome 2)) <$> (do
           let c₀ : K ← drawOf 2 (headNode 1)
           let c₁ : K ← tailDraw (drawOf 2) (headNode 0)
           pure ![c₀, c₁]) := by
