@@ -25,9 +25,6 @@ universe v v' uκ uρ
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
--- Reduce the shape projection when the oracle message family descends to a child.
-attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
-  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
 /-- The indices of the oracle messages on a completed shape path, one per oracle node. -/
 @[implicit_reducible]
@@ -176,7 +173,9 @@ def id (R : OracleBundle.{u, uX, dX}) : OracleMap R R where
   impl q := liftM (R.spec.query q)
   law _ _ := rfl
 
-/-- Keep the left side of a sum bundle. -/
+/-- Keep the left side of a sum bundle. Inlining erases the unused bundle interpreters when a
+computable verifier specializes this projection to a mathematical oracle family. -/
+@[macro_inline]
 def fst (R : OracleBundle.{u, uX, dX}) (R' : OracleBundle.{u, uY, dY}) :
     OracleMap (R.sum R') R where
   f x := x.1
@@ -195,8 +194,8 @@ def par (h : OracleMap In Mid) (g : OracleMap Out Other) :
     OracleMap (In.sum Out) (Mid.sum Other) where
   f x := (h.f x.1, g.f x.2)
   impl
-    | .inl q => simulateQ (fun r => liftM ((In.spec + Out.spec).query (.inl r))) (h.impl q)
-    | .inr q => simulateQ (fun r => liftM ((In.spec + Out.spec).query (.inr r))) (g.impl q)
+    | .inl q => simulateQ (fst In Out).impl (h.impl q)
+    | .inr q => simulateQ (snd In Out).impl (g.impl q)
   law x q := by
     cases q with
     | inl q =>
@@ -349,8 +348,9 @@ def oracleMessageFamily_split : (s₁ : OracleProtocol.{u, q}) →
     { f := fun x => sumData (fun i => i.elim) x
       impl := fun
         | ⟨.inl i, _⟩ => i.elim
-        | ⟨.inr i, q⟩ => (liftM ((oracleMessageFamily (s₂ ⟨⟩) p₂).spec.query ⟨i, q⟩) :
-        OracleComp (oracleMessageFamily (s₂ ⟨⟩) p₂).spec _)
+        | ⟨.inr i, q⟩ => (OracleMap.embedding (oracleMessageFamily (s₂ ⟨⟩) p₂)
+            (fun j : PEmpty.{u + 1} ⊕ OracleMessageIndex (s₂ ⟨⟩) p₂ =>
+              match j with | .inl e => e.elim | .inr j => j)).impl ⟨.inr i, q⟩
       law := fun _ q => by
         rcases q with ⟨i | i, q⟩
         · exact i.elim
@@ -619,12 +619,12 @@ def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   Sigma.fst <$> V.executeWith stmt data
     (ITrace := PUnit) (DTrace := fun _ => PUnit)
     (fun action => (fun result => (result, PUnit.unit)) <$> action)
-    (prover.simulate (fun r => liftM ((ambient + challengeSpec oracleSig s).query (.inl r))))
-    (sampler oracleSig s (fun c =>
-      liftM ((ambient + challengeSpec oracleSig s).query (.inr c))))
+    (prover.simulate (QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec oracleSig s))))
+    (sampler oracleSig s (QueryImpl.ofLift (challengeSpec oracleSig s)
+      (OracleComp (ambient + challengeSpec oracleSig s))))
     (fun p view pathData => (fun verdict => (verdict, PUnit.unit)) <$>
       simulateQ (QueryImpl.addLift
-        ((fun r => liftM ((ambient + challengeSpec oracleSig s).query (.inl r))) :
+        ((QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec oracleSig s))) :
           QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
         ((pathBundle inputs s p).answer pathData)) (V.decide stmt p view).run)
 
@@ -654,7 +654,10 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (V.decide stmt p view).run
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩
 ) := by
-  simp [OracleVerifier.run, OracleVerifier.executeWith, _root_.map_bind, bind_map_left]
+  unfold OracleVerifier.run OracleVerifier.executeWith
+  unfold QueryImpl.ofLift
+  simp only [_root_.map_bind, bind_map_left]
+  rfl
 
 /-- A run is the interaction, then the decision answered from the input and the run's oracle
 messages, with its ambient queries sent to the ambient part of the run's oracle. The input is any

@@ -190,7 +190,7 @@ def forwardQueries (p : Path oracleDone) :
     OracleMap (pathBundle typeQueryInputs oracleDone p) (OracleBundle.ofFamily bigQueryOracles)
     where
   f x _ := x.1 ()
-  impl _ := liftM ((pathBundle typeQueryInputs oracleDone p).spec.query (.inl ⟨(), Nat⟩))
+  impl _ := (OracleMap.fst typeQueryInputs (oracleMessageFamily oracleDone p)).impl ⟨(), Nat⟩
   law _ _ := rfl
 
 /-- An oracle verifier whose input queries lie in `Type 1` and whose output queries lie in
@@ -222,8 +222,8 @@ def typeQuerySuffix : OracleVerifier smallAmbient oracleDone Nat (fun _ => Nat)
         (.inr (.inl ⟨(), Type⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ => liftM
-        ((pathBundle bigQueryOracles oracleDone p).spec.query (.inl ⟨(), Type⟩))
+      impl := fun _ =>
+        (OracleMap.fst bigQueryOracles (oracleMessageFamily oracleDone p)).impl ⟨(), Type⟩
       law := fun _ _ => rfl }
 
 /-- The composite output map ignores the intermediate statement, so any certificate holds. -/
@@ -272,13 +272,11 @@ def typeQueryProtocol : OracleProtocol.{0, 1} :=
 /-- Query the payload through its interface and return its answer. -/
 def nodeQueryVerifier : OracleVerifier smallAmbient typeQueryProtocol Unit (fun _ => Nat)
     typeQueryInputs (fun _ => smallOutputs) where
-  decide _ p _ := liftM
-    ((smallAmbient + (pathBundle typeQueryInputs typeQueryProtocol p).spec).query
-      (.inr (.inr ⟨.inl ⟨⟩, Bool⟩)))
+  decide _ p _ := pathLift smallAmbient typeQueryInputs (s := typeQueryProtocol) p ⟨.inl ⟨⟩, Bool⟩
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ => liftM
-        ((pathBundle typeQueryInputs typeQueryProtocol p).spec.query (.inl ⟨(), Bool⟩))
+      impl := fun _ =>
+        (OracleMap.fst typeQueryInputs (oracleMessageFamily typeQueryProtocol p)).impl ⟨(), Bool⟩
       law := fun _ _ => rfl }
 
 /-- The prover sends a natural-number oracle payload and terminates. -/

@@ -266,27 +266,27 @@ The Lean statements differ from the papers in the following ways.
 
 | ID (entry 20 row) | Exact frozen assertion | Status | Exact target and correspondence |
 | --- | --- | --- | --- |
-| SRT-087 (1) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:87`][r173], `inputLaw` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L300`][r174], `inputLaw`. Every input and witness has exactly the original root relation. |
-| SRT-089 (2) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:89`][r175], `outputLaw` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L962`][r176], `selectedPlainOutputLaw_iff`. An authored selector replaces the challenge-selected carrier; retains the leaf-state iff for every selector, input, transcript and witness. |
-| SRT-096 (3) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:96`][r177], `preserving` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L313`][r178], `preserving`. Retains the sender preservation laws at every input and message; the state-function structure contains the remaining trivial sender obligations. |
-| SRT-105 (4) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:105`][r179], `badChallenge_iff` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L323`][r180], `badChallenge_iff`. Retains the full equivalence on both Boolean challenges. |
-| SRT-113 (5) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:113`][r181], `bounded` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L339`][r182], `bounded`. Retains the exact local error 1/2 at every prefix. |
-| SRT-146 (6) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:146`][r183], `example` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L366`][r184], `example (extraction)`. Witness six and message seven extract thirteen on every challenge; the selector does not affect extraction. |
-| SRT-150 (7) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:150`][r185], `example` | premise-required (P1) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L996`][r186], `selected_fresh`. The complete selected interaction has the uniform challenge marginal for every input, authored selector and oracle message; external draws replace the authored verifier freshness predicate. |
-| SRT-156 (8) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:156`][r187], `actual_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L938`][r188], `selected_actual_game_bound`. Retains the always-returning plain verifier, challenge-based relation and error 1/2 in both exact authored carriers. |
-| SRT-175 (9) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:175`][r189], `nativeResult_eq` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L783`][r190], `replayResult_eq`. Returns the value seven on both challenges, in the authored Fin 8/Fin 9 carriers. plainScriptedRun_eq proves actual party replay. |
-| SRT-182 (10) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:182`][r191], `#eval evalWithAnswerFn` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L807`][r192], `#eval replayResult true true`. Retains (7, true, 7); the universal replay theorem covers both selectors independently. |
-| SRT-183 (11) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:183`][r193], `#eval evalWithAnswerFn` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L811`][r194], `#eval replayResult false false`. Retains (7, false, 7), separately from rejecting oracle replay. |
-| SRT-184 (12) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:184`][r195], `#eval extractInputWitness inputState extractor terminalWitness 0` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L371`][r196], `#eval knowledge.extractAlong`. Retains the evaluated extraction thirteen. |
-| SRT-215 (13) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:215`][r197], `oracleObservation_true` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L826`][r198], `selectedVerdict`. For every input and message, true returns the exact selected statement and original Fin 8 output oracle. |
-| SRT-219 (14) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:219`][r199], `oracleObservation_false` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L826`][r200], `selectedVerdict`. For every input and message, false rejects; only the statement-carrier selector changes. |
-| SRT-223 (15) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:223`][r201], `oracleOutputLaw` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L851`][r202], `selectedOracleOutputLaw`. Retains the complete leaf-state iff at every input, transcript and supplied witness. The output oracle remains Fin 8. |
-| SRT-245 (16) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:245`][r203], `actual_oracle_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1004`][r204], `selected_actual_oracle_game_bound`. Retains the zero-query closed-game bound 1/2 in both authored carriers, derived from the general selectedGame_bound. |
-| SRT-258 (17) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:258`][r205], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1060`][r206], `example (no related rejecting claim)`. False excludes every claim satisfying any relation, which implies the frozen assertion for each witness. |
-| SRT-264 (18) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:264`][r207], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L815`][r208], `#eval oracleReplayResult false true`. Actual selected oracle replay retains some (7, 7) on true; oracleReplayResult_eq proves the quantified law. |
-| SRT-266 (19) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:266`][r209], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L819`][r210], `#eval oracleReplayResult true false`. Actual selected oracle replay retains none on false. |
-| SRT-274 (20) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:274`][r211], `actual_coin_oracle_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1012`][r212], `selected_actual_coin_game_bound`. Retains both original coin-selected adversaries, their fixed-coin bounds and error 1/2. |
-| SRT-291 (21) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:291`][r213], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1026`][r214], `example (failed coins)`. Retains probability zero when the private coin computation fails. |
+| SRT-087 (1) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:87`][r173], `inputLaw` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L299`][r174], `inputLaw`. Every input and witness has exactly the original root relation. |
+| SRT-089 (2) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:89`][r175], `outputLaw` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L963`][r176], `selectedPlainOutputLaw_iff`. An authored selector replaces the challenge-selected carrier; retains the leaf-state iff for every selector, input, transcript and witness. |
+| SRT-096 (3) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:96`][r177], `preserving` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L312`][r178], `preserving`. Retains the sender preservation laws at every input and message; the state-function structure contains the remaining trivial sender obligations. |
+| SRT-105 (4) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:105`][r179], `badChallenge_iff` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L322`][r180], `badChallenge_iff`. Retains the full equivalence on both Boolean challenges. |
+| SRT-113 (5) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:113`][r181], `bounded` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L338`][r182], `bounded`. Retains the exact local error 1/2 at every prefix. |
+| SRT-146 (6) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:146`][r183], `example` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L365`][r184], `example (extraction)`. Witness six and message seven extract thirteen on every challenge; the selector does not affect extraction. |
+| SRT-150 (7) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:150`][r185], `example` | premise-required (P1) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L997`][r186], `selected_fresh`. The complete selected interaction has the uniform challenge marginal for every input, authored selector and oracle message; external draws replace the authored verifier freshness predicate. |
+| SRT-156 (8) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:156`][r187], `actual_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L939`][r188], `selected_actual_game_bound`. Retains the always-returning plain verifier, challenge-based relation and error 1/2 in both exact authored carriers. |
+| SRT-175 (9) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:175`][r189], `nativeResult_eq` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L782`][r190], `replayResult_eq`. Returns the value seven on both challenges, in the authored Fin 8/Fin 9 carriers. plainScriptedRun_eq proves actual party replay. |
+| SRT-182 (10) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:182`][r191], `#eval evalWithAnswerFn` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L806`][r192], `#eval replayResult true true`. Retains (7, true, 7); the universal replay theorem covers both selectors independently. |
+| SRT-183 (11) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:183`][r193], `#eval evalWithAnswerFn` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L810`][r194], `#eval replayResult false false`. Retains (7, false, 7), separately from rejecting oracle replay. |
+| SRT-184 (12) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:184`][r195], `#eval extractInputWitness inputState extractor terminalWitness 0` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L370`][r196], `#eval knowledge.extractAlong`. Retains the evaluated extraction thirteen. |
+| SRT-215 (13) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:215`][r197], `oracleObservation_true` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L825`][r198], `selectedVerdict`. For every input and message, true returns the exact selected statement and original Fin 8 output oracle. |
+| SRT-219 (14) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:219`][r199], `oracleObservation_false` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L825`][r200], `selectedVerdict`. For every input and message, false rejects; only the statement-carrier selector changes. |
+| SRT-223 (15) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:223`][r201], `oracleOutputLaw` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L850`][r202], `selectedOracleOutputLaw`. Retains the complete leaf-state iff at every input, transcript and supplied witness. The output oracle remains Fin 8. |
+| SRT-245 (16) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:245`][r203], `actual_oracle_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1005`][r204], `selected_actual_oracle_game_bound`. Retains the zero-query closed-game bound 1/2 in both authored carriers, derived from the general selectedGame_bound. |
+| SRT-258 (17) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:258`][r205], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1061`][r206], `example (no related rejecting claim)`. False excludes every claim satisfying any relation, which implies the frozen assertion for each witness. |
+| SRT-264 (18) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:264`][r207], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L814`][r208], `#eval oracleReplayResult false true`. Actual selected oracle replay retains some (7, 7) on true; oracleReplayResult_eq proves the quantified law. |
+| SRT-266 (19) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:266`][r209], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L818`][r210], `#eval oracleReplayResult true false`. Actual selected oracle replay retains none on false. |
+| SRT-274 (20) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:274`][r211], `actual_coin_oracle_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1013`][r212], `selected_actual_coin_game_bound`. Retains both original coin-selected adversaries, their fixed-coin bounds and error 1/2. |
+| SRT-291 (21) | [`ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean:291`][r213], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1027`][r214], `example (failed coins)`. Retains probability zero when the private coin computation fails. |
 
 ## ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean
 
@@ -295,17 +295,17 @@ The Lean statements differ from the papers in the following ways.
 | SRBT-091 (1) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:91`][r215], `preserving` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L294`][r216], `preserving`. Retains all sender preservation laws at every input and prefix. |
 | SRBT-104 (2) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:104`][r217], `bounded` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L326`][r218], `bounded`. Retains distinct challenge alphabets and local errors 1/8 and 1/16. |
 | SRBT-176 (3) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:176`][r219], `inputLaw` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L378`][r220], `inputLaw`. Retains the root relation for every input and witness. |
-| SRBT-182 (4) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:182`][r221], `observation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L841`][r222], `PublicSelection.observation`. For every input, two messages and two challenges, retains the acceptance disjunction and second message; an authored Boolean selects Fin 8/Fin 9. |
-| SRBT-198 (5) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:198`][r223], `outputLaw` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L869`][r224], `PublicSelection.outputLaw`. Retains the complete leaf-state iff and every witness under each authored selector; output oracles remain Fin 8. |
+| SRBT-182 (4) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:182`][r221], `observation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L840`][r222], `PublicSelection.observation`. For every input, two messages and two challenges, retains the acceptance disjunction and second message; an authored Boolean selects Fin 8/Fin 9. |
+| SRBT-198 (5) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:198`][r223], `outputLaw` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L868`][r224], `PublicSelection.outputLaw`. Retains the complete leaf-state iff and every witness under each authored selector; output oracles remain Fin 8. |
 | SRBT-235 (6) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:235`][r225], `queryBound` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L150`][r226], `queryBound`. The adversary still queries the later salted key twice before completion; bound two is unchanged. |
 | SRBT-242 (7) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:242`][r227], `example` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L413`][r228], `example (extraction)`. Retains extracted value eighteen on every pair of challenges. The extra Core #eval at line 418 checks one instance. |
 | SRBT-246 (8) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:246`][r229], `max_errors` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L159`][r230], `max_errors`. Retains maximum error 1/8. |
 | SRBT-253 (9) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:253`][r231], `sum_errors` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L168`][r232], `sum_errors`. Retains sum 3/16. |
-| SRBT-261 (10) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:261`][r233], `actual_nonuniform_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L900`][r234], `PublicSelection.actual_nonuniform_game_bound`. Retains the same adaptive adversary and error 7/16 in both authored carriers. restoredExecution_charge at line 179 retains the original complete-path round charge. |
+| SRBT-261 (10) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:261`][r233], `actual_nonuniform_game_bound` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L899`][r234], `PublicSelection.actual_nonuniform_game_bound`. Retains the same adaptive adversary and error 7/16 in both authored carriers. restoredExecution_charge at line 179 retains the original complete-path round charge. |
 | SRBT-284 (11) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:284`][r235], `example` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L203`][r236], `example (strict improvement)`. Retains the strict comparison against the coarser uniform bound. |
-| SRBT-292 (12) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:292`][r237], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1032`][r238], `example (reachable bad execution)`. For each authored selector the accepting claim is related to witness six, extraction returns eighteen and the input relation fails. |
-| SRBT-305 (13a) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:305`][r239], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1046`][r240], `#eval closedVerdict (selectedTranscript false 5 0 7 1)`. Retains some (7, 7) at challenges (0, 1). |
-| SRBT-308 (13b) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:308`][r241], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1051`][r242], `#eval closedVerdict (selectedTranscript true 5 1 7 1)`. Retains none at challenges (1, 1). This source line was mislabeled as extraction evaluation in entry 20's row 14. |
+| SRBT-292 (12) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:292`][r237], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1035`][r238], `example (reachable bad execution)`. For each authored selector the accepting claim is related to witness six, extraction returns eighteen and the input relation fails. |
+| SRBT-305 (13a) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:305`][r239], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1049`][r240], `#eval closedVerdict (selectedTranscript false 5 0 7 1)`. Retains some (7, 7) at challenges (0, 1). |
+| SRBT-308 (13b) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:308`][r241], `#eval closedTerminalObservation` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1054`][r242], `#eval closedVerdict (selectedTranscript true 5 1 7 1)`. Retains none at challenges (1, 1). This source line was mislabeled as extraction evaluation in entry 20's row 14. |
 | SRBT-315 (stage 1) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:315`][r243], `firstMessageStage` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L487`][r244], `stages`. The first message stage uses the same charged addCountProgram on the actual message. Explicit root and leaf programs are uncharged. |
 | SRBT-320 (stage 2) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:320`][r245], `firstChallengeStage` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L487`][r246], `stages`. The first challenge stage remains the uncharged identity. |
 | SRBT-325 (stage 3) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:325`][r247], `secondMessageStage` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L487`][r248], `stages`. The second message stage uses the same charged addition on its actual message. |
@@ -328,8 +328,8 @@ The Lean statements differ from the papers in the following ways.
 | SRBT-461 (certificate) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:461`][r281], `measuredCertificate` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L669`][r282], `measured`. Packages the same state function, local bounds and measured stages; the parent state-function record includes sender preservation. |
 | SRBT-470 (29) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:470`][r283], `example` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L675`][r284], `example (underlying state function)`. The measured object's underlying state function is the named knowledge state function. |
 | SRBT-473 (30) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:473`][r285], `example` | equivalent | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L678`][r286], `example (measured witness bridge)`. The library run_programAlong bridge returns the game's input witness, for every input/transcript/witness. |
-| SRBT-482 (31) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:482`][r287], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1002`][r288], `PublicSelection.measured_game_bound`. The packaged theorem retains the selected closed-game bound, all input/path/witness quantifiers and cost two. |
-| SRBT-502 (32) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:502`][r289], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1022`][r290], `PublicSelection.program_run_game_bound`. The failure event uses the actual program result and retains error 7/16 and cost two. |
+| SRBT-482 (31) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:482`][r287], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1003`][r288], `PublicSelection.measured_game_bound`. The packaged theorem retains the selected closed-game bound, all input/path/witness quantifiers and cost two. |
+| SRBT-502 (32) | [`ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean:502`][r289], `example` | premise-required (P2) | [`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1025`][r290], `PublicSelection.program_run_game_bound`. The failure event uses the actual program result and retains error 7/16 and cost two. |
 
 ## Verification
 
@@ -513,47 +513,47 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r172]: ../../../ArkLib/Interaction/Core/Security/StateRestorationBudget.lean#L506
 
 [r173]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L87
-[r174]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L300
+[r174]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L299
 [r175]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L89
-[r176]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L962
+[r176]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L963
 [r177]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L96
-[r178]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L313
+[r178]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L312
 [r179]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L105
-[r180]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L323
+[r180]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L322
 [r181]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L113
-[r182]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L339
+[r182]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L338
 [r183]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L146
-[r184]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L366
+[r184]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L365
 [r185]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L150
-[r186]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L996
+[r186]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L997
 [r187]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L156
-[r188]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L938
+[r188]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L939
 [r189]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L175
-[r190]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L783
+[r190]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L782
 [r191]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L182
-[r192]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L807
+[r192]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L806
 [r193]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L183
-[r194]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L811
+[r194]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L810
 [r195]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L184
-[r196]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L371
+[r196]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L370
 [r197]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L215
-[r198]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L826
+[r198]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L825
 [r199]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L219
-[r200]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L826
+[r200]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L825
 [r201]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L223
-[r202]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L851
+[r202]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L850
 [r203]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L245
-[r204]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1004
+[r204]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1005
 [r205]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L258
-[r206]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1060
+[r206]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1061
 [r207]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L264
-[r208]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L815
+[r208]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L814
 [r209]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L266
-[r210]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L819
+[r210]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L818
 [r211]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L274
-[r212]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1012
+[r212]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1013
 [r213]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestoration.lean#L291
-[r214]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1026
+[r214]: ../../../ArkLibTest/Interaction/Core/Security/StateRestoration.lean#L1027
 [r215]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L91
 [r216]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L294
 [r217]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L104
@@ -561,9 +561,9 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r219]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L176
 [r220]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L378
 [r221]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L182
-[r222]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L841
+[r222]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L840
 [r223]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L198
-[r224]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L869
+[r224]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L868
 [r225]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L235
 [r226]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L150
 [r227]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L242
@@ -573,15 +573,15 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r231]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L253
 [r232]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L168
 [r233]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L261
-[r234]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L900
+[r234]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L899
 [r235]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L284
 [r236]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L203
 [r237]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L292
-[r238]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1032
+[r238]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1035
 [r239]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L305
-[r240]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1046
+[r240]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1049
 [r241]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L308
-[r242]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1051
+[r242]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1054
 [r243]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L315
 [r244]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L487
 [r245]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L320
@@ -627,9 +627,9 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r285]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L473
 [r286]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L678
 [r287]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L482
-[r288]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1002
+[r288]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1003
 [r289]: ../../../ArkLibTest/Interaction/Oracle/Security/StateRestorationBudget.lean#L502
-[r290]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1022
+[r290]: ../../../ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean#L1025
 
 [r291]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L508
 
