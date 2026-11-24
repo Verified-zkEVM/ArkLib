@@ -58,11 +58,12 @@ abbrev prefixBundle := pathBundle inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
 def exportMap : OracleMap prefixBundle exported where
   f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let a : Nat ← liftM (prefixBundle.spec.query (.inl ⟨false, ()⟩))
-    let b : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let a : Nat ←
+      (OracleMap.fst inputs (oracleMessageFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨false, ()⟩
+    let b : Nat ←
+      (OracleMap.snd inputs (oracleMessageFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (a + b)
   law x q := by
-    simp only [simulateQ_bind]
     rfl
 
 /-- Interpret the raw bundle signature, recording visible input, hidden input and sent-slot
@@ -99,7 +100,7 @@ def prefixVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 10))
-      let n : Nat ← liftM ((ambient + prefixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let n : Nat ← pathLift ambient inputs (s := firstProtocol) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
       pure n
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -118,7 +119,7 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × 
     exact OptionT.mk do
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 30))
       let e : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let m : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let m : Nat ← pathLift ambient exported (s := secondProtocol) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 40))
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
@@ -197,11 +198,12 @@ abbrev closingBundle := pathBundle exported closingSuffix ⟨⟨⟩, ⟨⟨⟩, 
 def closingMap : OracleMap closingBundle exported where
   f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
   impl _ := do
-    let old : Nat ← liftM (closingBundle.spec.query (.inl ⟨⟨⟩, ()⟩))
-    let fresh : Nat ← liftM (closingBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let old : Nat ← (OracleMap.fst exported
+      (oracleMessageFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨⟨⟩, ()⟩
+    let fresh : Nat ← (OracleMap.snd exported
+      (oracleMessageFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (old + fresh)
   law _ _ := by
-    simp only [simulateQ_bind]
     rfl
 
 /-- The suffix decides from its export and its fresh pair after the whole interaction. -/
@@ -212,8 +214,8 @@ def closingVerifier : OracleVerifier ambient closingSuffix Nat (fun _ => Nat) ex
     exact do
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 30))
       let old : Nat ← liftM ((ambient + closingBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let fresh : Nat ← liftM ((ambient + closingBundle.spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let fresh : Nat ← pathLift ambient exported (s := closingSuffix)
+        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 40))
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 60))
       pure (old + fresh)
