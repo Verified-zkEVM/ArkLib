@@ -407,7 +407,8 @@ plain verifier composition theorems.
 | `BadChallengeFrom`, `BadChallengeAlong` | Follow the actual suffix extraction of the supplied output witness. `extraction_failure_implies_badChallengeAlong` identifies a receiver transition without choosing a different witness. |
 | `rbrKnowledgeSoundness` and both verifier wrappers | Pass the output universe through to the certificate. Both lift operations raise only `uK`, keeping the output and input carriers. Legacy wrappers specialize to their original small output families. |
 | `rbrKnowledgeSoundness_append`, `_of_mid` | Compose local errors and dependent middle relations on every prefix transcript, including false middle claims. `_of_mid` accepts explicit input and output witness maps. |
-| Plain/oracle `simulateQ_append_run`, `support_append`, `validAcceptance_append` | Decompose the two decisions with the same intermediate ambient state and, for oracle verifiers, actual routed suffix data. The support laws work in any lawful monad with lawful support. |
+| Plain/oracle `simulateQ_append_run`, `support_append`, `validAcceptance_append` | Decompose the two decisions with the same intermediate ambient state and, for oracle verifiers, actual routed suffix data. The support laws work in any lawful monad with lawful support. The oracle law takes an `OracleBundle` input with an independent data universe. |
+| `PrefixDraw.ofView`, `combineViewPrefixDraw`, `rbrKnowledgeSoundness_append_view` | Oracle verifiers draw challenges from the verifier view (`viewSig`), and the suffix draw is chosen from the first stage's view. Errors, states, carriers and backward maps keep the full prefix. |
 | `Verifier.rbrKnowledgeSoundness_append`, `_of_pure` | Compose standalone plain verifier hypotheses. The supported prefix result must equal the named middle statement; `_of_pure` derives that law for a pure prefix decision. |
 
 The plain verifier proof conditions suffix states on possible prefix acceptance. The suffix has
@@ -415,25 +416,30 @@ its own output relation. No theorem identifies two independently existential acc
 with composite acceptance. `TranscriptAt.split_pair` and `Verifier.append_decide_transcript` expose the
 transports in the decision fold; heterogeneous equality identifies outputs at equal paths.
 
-The oracle fixture instead uses `rbrKnowledgeSoundness_append` and `_of_mid` with
-`composed_validAcceptance_iff` as an explicit relation-level bridge. It does not instantiate a
-generic standalone oracle verifier composition theorem. The plain `indexed_composed` client does
-instantiate the standalone plain verifier theorem. The disposition record keeps these claims
-separate.
+The oracle fixture instead uses `rbrKnowledgeSoundness_append`, `_of_mid` and
+`rbrKnowledgeSoundness_append_view` with `composed_validAcceptance_iff` as an explicit
+relation-level bridge. It does not instantiate a generic standalone oracle verifier composition
+theorem. The plain `indexed_composed` client (two empty protocols) and `challenge_composed` (one
+uniform challenge that selects the middle claim) do instantiate the standalone plain verifier
+theorem. The disposition record keeps these claims separate.
 
 ### Full-prefix distributions and local errors
 
 The shared `PrefixDraw` and `PrefixError` interfaces index draws and errors by the same receiver
-cursor and full history. The public `rbrKnowledgeSoundness` predicate and both verifier forms use
-these interfaces. `combinePrefixDraw` retains the first error before the seam. After the seam,
+cursor and full history. The public `rbrKnowledgeSoundness` predicate and the plain verifier form
+use these interfaces. The oracle verifier form takes a `PrefixDraw viewSig` and applies it to the
+prefix with oracle messages erased (`PrefixDraw.ofView`); its error keeps the full prefix. `combinePrefixDraw` retains the first error before the seam. After the seam,
 it selects the second error family by the complete first transcript and evaluates it at the
 second prefix history. `appendPrefixSampler_eq_combinePrefixDraw` proves the matching sampler law.
 
 The `_prefix` composition theorems accept these families. The node-indexed predicates end in
 `OfNodes`; the established node composition theorems follow from the general laws by ignoring
 history. There is one local-bound and composition proof development. P1 removes only challenge
-selection that depends on oracle messages and effectful receiver actions. Earlier public challenges and
-prover messages may select later distributions and local errors. The fixed two-bit zero-error
+selection that depends on oracle messages and effectful receiver actions. Earlier public challenges
+and prover messages may select later distributions and local errors. Fresh uniform draws are a
+separate premise of the public-coin specialization. Regressions in `PrefixKnowledge.lean` send
+different oracle bits with equal verifier views and check that the view draws, including the
+suffix draw of a two-stage composition, do not separate them. The fixed two-bit zero-error
 certificate in `ArkLibTest/Interaction/Core/Security/PrefixKnowledge.lean` checks this distinction
 without inserting a prover message. The inventory records the corrected schedule correspondences,
 including KC-065 as equivalent because its frozen schedule was already constant.
@@ -454,11 +460,15 @@ charges do not directly replace it: the stage programs depend on the statement a
 moves, and the root and leaf budgets require separate accounting. Instruction budgets leave pure
 work, views, handlers, carrier identification and intermediate witness sizes uncharged. The zero
 program exists for every state function; the ordered and unbounded-depth tests use named charged
-programs to test actual instruction cost as well as budgets.
+programs to test actual instruction cost as well as budgets. An empty-protocol test charges
+both the leaf and the root and checks their order against the general bound. Zero stages give
+every state function a measured certificate with zero declared cost, so an operation-count
+result names its stage programs and prices. Measured append and a uniform game-extractor
+contract are follow-up work.
 
 The measured API retains these small carriers because of pinned VCVio declarations:
 
-| Restricted carrier | Forcing declaration at VCVio `fc54dd3d7691d6f5db7dc829e321a727f095bc2d` |
+| Restricted carrier | Forcing declaration at VCVio `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db` |
 | --- | --- |
 | Input witnesses `Win stmt : Type` and root-stage result | `OracleComp.BudgetedProgram {Input Result : Type}` in `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156`; the root program realizes `extractRoot`. |
 | Intermediate witnesses and `StageInput : Type` | The same `BudgetedProgram` input/result binders force each step's dependent input pair and result to be small. |
@@ -470,7 +480,8 @@ lifting, extraction, extraction failure, append and restriction laws accept
 `P : PFunctor.{uA, u}` and a lens to `rolePoly.{u}`, with leaves `PUnit.{u + 1}`.
 The move, statement and witness universes are independent; branches and leaves share the move
 universe. KC-318 and KC-322 now send the frozen oracle message `m : ULift.{1} Nat`, retain
-`ULift.{2} (Fin (m.down + 1))` witnesses and prove extraction returns six.
+`ULift.{2} (Fin (m.down + 1))` witnesses and prove extraction returns six. The measured code
+takes `P : PFunctor.{uA, 0}`, so its positions also have their own universe.
 
 Probability bounds use the small-move instance of this general certificate. Pinned VCVio's
 `ProbComp : Type → Type` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forces `sampleAt` to return

@@ -22,6 +22,15 @@ The round-by-round error of a state function is a bound on the probability of a 
 every receiver prefix (`KnowledgeStateFunction.LocallyBounded`), which is exactly
 `rbrKnowledgeSoundness`.
 
+A bad challenge of knowledge extraction (`BadChallengeFrom`, `BadChallengeAlong`, and the local
+`badChallenge`), an escape (`EscapeAlong`) and a flip (`ReceiverPrefix.Flips`) in
+`Implications.lean` are the same kind of event: a receiver move such that the state is false at
+the full prefix before the move and true at the prefix after it. A flip is this event at one
+receiver prefix and one move. An escape is this event at some receiver move of a completed
+transcript. A bad challenge is this event along a transcript for a knowledge state function,
+evaluated at each prefix on the witness that extraction computes backwards from the output
+witness.
+
 `KnowledgeStateFunction.append` composes a state function on a prefix protocol with a family of
 state functions on the suffixes, one for each completed prefix transcript, so suffix witness
 carriers may read prefix oracle messages. The intermediate witness type is a family over prefix
@@ -33,7 +42,12 @@ Extraction along an appended transcript is suffix extraction followed by prefix 
 (`extractAlong_append`), the state at the leaf is the suffix state at its leaf
 (`toFun_leafWitness_append`), and the composite is locally bounded by the prefix and suffix
 errors combined along the protocol with `combinePrefixDraw`, which also combines the draws
-(`LocallyBounded.append`).
+(`LocallyBounded.append`). `combinePrefixDraw` chooses the suffix draw from the full first
+transcript; state functions and the plain verifier use it. An oracle verifier's draws read only
+its view: `combineViewPrefixDraw` combines draws over `viewSig` and chooses the suffix draw from
+the shape path and the first stage's view. Reading it through `PrefixDraw.ofView` gives
+`combinePrefixDraw` with that choice (`ofView_combineViewPrefixDraw`), and
+`appendViewPrefixSampler_eq_combineViewPrefixDraw` identifies the appended counterpart.
 
 `KnowledgeStateFunction.guard` restricts a state function to admissible statements and
 `KnowledgeStateFunction.comap` changes its statement type; both keep the local bound. The
@@ -208,6 +222,71 @@ theorem combinePrefixError_ofNodes
         (ih (l.toFunB a x) (fun p => s₂ ⟨l.toFunB a x, p⟩)
           (fun c => ε₁ ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩)
           (fun p => ε₂ ⟨l.toFunB a x, p⟩))
+
+/-! ### Oracle-verifier draws through the view -/
+
+section View
+
+universe q
+
+/-- Combine view draws for an oracle verifier. The suffix draw is chosen from the shape path and
+the verifier's view of the first stage, so oracle messages of the first stage cannot select it. -/
+def combineViewPrefixDraw {m : Type u → Type v} (s₁ : OracleProtocol.{u, q})
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) (draw₁ : PrefixDraw viewSig m s₁)
+    (draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig m (s₂ p)) :
+    PrefixDraw viewSig m (s₁.append s₂) :=
+  combinePrefixDraw viewSig s₁ s₂ draw₁ (fun tr => draw₂ tr.path ⟨tr, rfl⟩)
+
+/-- Reading a combined view draw through the view is the full-prefix combination of the view
+draws, with the suffix draw chosen from the first stage's view. -/
+theorem ofView_combineViewPrefixDraw {m : Type u → Type v} (s₁ : OracleProtocol.{u, q})
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) (draw₁ : PrefixDraw viewSig m s₁)
+    (draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig m (s₂ p)) :
+    (PrefixDraw.ofView (combineViewPrefixDraw s₁ s₂ draw₁ draw₂) :
+      PrefixDraw oracleSig m (s₁.append s₂)) =
+      (fun {a next} => combinePrefixDraw oracleSig s₁ s₂ (PrefixDraw.ofView draw₁)
+        (fun tr₁ => PrefixDraw.ofView (draw₂ tr₁.path (toView s₁ tr₁)))
+        (a := a) (next := next)) := by
+  induction s₁ using FreeM.rec with
+  | pure _ => rfl
+  | liftBind a next ih =>
+    funext a' next' sp h history
+    cases sp with
+    | root => rfl
+    | down b tail =>
+      rcases history with ⟨⟨x, rfl⟩, history⟩
+      have key := congrArg (fun d : PrefixDraw oracleSig m _ => d tail h history)
+        (ih (oracleSig.toFunB a x) (fun p => s₂ ⟨oracleSig.toFunB a x, p⟩)
+          (fun sp h history => draw₁ (.down (oracleSig.toFunB a x) sp) h
+            ⟨⟨eraseOracle.map a x, eraseOracle.branch a x⟩, history⟩)
+          (fun p v => draw₂ ⟨oracleSig.toFunB a x, p⟩
+            ⟨⟨eraseOracle.map a x, (congrArg (fun b => Transcript viewSig (next b))
+              (eraseOracle.branch a x)).mpr v.1⟩, by
+                obtain ⟨tr, rfl⟩ := v
+                cases a <;> rfl⟩))
+      cases a <;> exact key
+
+/-- Append oracle-verifier samplers. Each stage draws from the verifier's view, and the suffix
+sampler is chosen from the shape path and the first stage's view. -/
+def appendViewPrefixSampler {m : Type u → Type u} [Monad m] (s₁ : OracleProtocol.{u, q})
+    (s₂ : Path s₁ → OracleProtocol.{u, q}) (draw₁ : PrefixDraw viewSig m s₁)
+    (draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig m (s₂ p)) :
+    Counterpart oracleSig m (s₁.append s₂) (fun _ => PUnit.{u + 1}) :=
+  appendPrefixSampler oracleSig s₁ s₂ (PrefixDraw.ofView draw₁)
+    (fun tr₁ => PrefixDraw.ofView (draw₂ tr₁.path (toView s₁ tr₁)))
+
+/-- Appending view samplers is sampling with the combined view draw read through the view. -/
+theorem appendViewPrefixSampler_eq_combineViewPrefixDraw {m : Type u → Type u} [Monad m]
+    [LawfulMonad m] (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+    (draw₁ : PrefixDraw viewSig m s₁)
+    (draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig m (s₂ p)) :
+    appendViewPrefixSampler s₁ s₂ draw₁ draw₂ =
+      prefixSampler oracleSig (s₁.append s₂)
+        (PrefixDraw.ofView (combineViewPrefixDraw s₁ s₂ draw₁ draw₂)) := by
+  rw [appendViewPrefixSampler, appendPrefixSampler_eq_combinePrefixDraw,
+    ofView_combineViewPrefixDraw]
+
+end View
 
 namespace KnowledgeStateFunction
 
@@ -1130,7 +1209,7 @@ theorem toFun_leafWitness_append :
   intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
   exact toFun_leafWitness_appendAux F₁.withRootWitness F₂ seam
 
-variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 variable {s : FreeM P PUnit.{1}} {Win : S → Type uW}
   {W : S → Transcript l s → Type uO} {admissible : S → Prop}
@@ -1164,7 +1243,7 @@ abbrev LocallyBoundedOfNodes (draw : QueryImpl (challengeSpec l s) ProbComp)
 
 end KnowledgeStateFunction
 
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- Round-by-round knowledge soundness is the existence of a locally bounded knowledge state
 function. -/

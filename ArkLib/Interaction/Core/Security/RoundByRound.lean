@@ -15,8 +15,44 @@ Full moves decorate PolyFun cursor spines, so states and extractors can inspect 
 messages as well as public messages and challenges. Soundness states are false at false roots,
 remain false across sender moves and rule out valid acceptance at a false leaf. Knowledge states
 carry intermediate witnesses and extract them backwards. Both error bounds quantify each fixed
-prefix before drawing one fresh challenge. Knowledge draws and their local errors may depend
-on the entire earlier history; node-indexed draws and errors are specializations.
+prefix before drawing one challenge. Generic knowledge draws and their local errors may depend on
+the entire earlier history; node-indexed draws and errors are specializations.
+
+## Oracle verifiers
+
+`OracleVerifier.rbrKnowledgeSoundness` takes a draw over `viewSig` and reads it through
+`PrefixDraw.ofView`, which erases oracle messages from the history before the draw receives it.
+Its state function, witness carriers, backward maps and error keep the full prefix. A view draw
+may still depend on earlier public messages and challenges, and an effectful draw may use its
+ambient handler. A public-coin reading also needs every draw to be a fresh uniform sample; no
+definition here assumes that. Node-indexed oracle draws factor through the view
+(`OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff`).
+
+## Knowledge states and the literature
+
+`KnowledgeStateFunction` and `rbrKnowledgeSoundness` generalize the knowledge-state formulation of
+round-by-round knowledge soundness in [BCFW25] (Definitions 4.1 and 4.2) and [ABF26]
+(Appendix A.1):
+
+* The local event puts the existential over the witness after the challenge inside the event on
+  the sampled challenge. A challenge is bad if some witness makes the state true after it while
+  the step map's image of that witness makes the state false before it.
+* The root and leaf laws transport valid witnesses in one direction: a true root state extracts a
+  valid input witness, and a valid output witness gives a true leaf state.
+* The step map may change witnesses across prover moves as well as across challenges.
+* Both papers also bound extraction time. The backward maps here are total functions with no
+  computational restriction; `MeasuredExtraction.lean` attaches stage programs and budgets.
+
+[ACFY24] (Section 3.1) calls its own variant without a time bound round-by-round soundness.
+
+## References
+
+* [Bünz, B., Chiesa, A., Fenzi, G., and Wang, W., *Linear time accumulation
+    schemes*][BCFW25]
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26]
+* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
+    with Super-Fast Verification*][ACFY24]
 -/
 
 @[expose] public section
@@ -68,6 +104,22 @@ def PartialTranscriptAt.downCases {a : P.A} {next : P.B a → FreeM P PUnit.{u +
     motive b tail history := by
   rcases history with ⟨⟨x, rfl⟩, history⟩
   exact h x tail history
+
+/-- Present every move of a full prefix through a move map into another signature lens, at the
+same cursor. Each move keeps its source branch, so the cursor is unchanged.
+
+This is the prefix counterpart of `Transcript.mapMoves`. It belongs next to PolyFun's cursor and
+move-map operations (`PolyFun.PFunctor.Free.Cursor` and `PolyFun.PFunctor.Free.Path.MapMoves`)
+and should move there with them. -/
+def PartialTranscriptAt.mapMoves {l' : PFunctor.Lens P rolePoly.{u}}
+    (g : PathAlong.MoveMap l l') :
+    {s t : FreeM P PUnit.{u + 1}} → (sp : Cursor.Spine s t) →
+    PartialTranscriptAt l sp → PartialTranscriptAt l' sp
+  | _, _, .root _, _ => ⟨⟩
+  | _, _, .down (a := a) _ tail, history =>
+    (⟨⟨g.map a history.1.1, (g.branch a history.1.1).trans history.1.2⟩,
+      PartialTranscriptAt.mapMoves g tail history.2⟩ :
+      {y : Move l' a // l'.toFunB a y = _} × PartialTranscriptAt l' tail)
 
 /-- The structural node reached by a cursor ending at an interaction node. -/
 def spineNode {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
@@ -130,6 +182,60 @@ theorem prefixSampleAt_ofNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P roleP
     {a next} (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
     (history : PartialTranscriptAt l sp) :
     prefixSampleAt l (PrefixDraw.ofNodes l draw) sp h history = sampleAt l draw sp h := rfl
+
+section View
+
+/-- The view signature gives every oracle position the owner it has in the oracle signature. -/
+@[simp] theorem owner_viewSig (a : OraclePos.{u, q}) : owner viewSig a = owner oracleSig a := by
+  cases a <;> rfl
+
+/-- At a receiver position, the verifier's view records the whole move. -/
+theorem move_viewSig_of_receiver {a : OraclePos.{u, q}} (h : owner oracleSig a = .receiver) :
+    Move viewSig a = Move oracleSig a := by
+  cases a with
+  | challenge => rfl
+  | message => nomatch h
+  | oracle => nomatch h
+
+/-- An oracle-verifier draw that reads only the verifier's view of the prefix. The full history
+passes through `eraseOracle` before the draw receives it, so two histories that differ only in
+oracle messages give the same draw. A view draw may still read earlier public messages and
+challenges, and an effectful draw may still use its ambient handler; this restriction says nothing
+about the challenge distribution. -/
+def PrefixDraw.ofView {m : Type u → Type vDraw} {s : OracleProtocol.{u, q}}
+    (draw : PrefixDraw viewSig m s) : PrefixDraw oracleSig m s :=
+  fun sp h history => cast (congrArg m (move_viewSig_of_receiver h))
+    (draw sp ((owner_viewSig _).trans h) (PartialTranscriptAt.mapMoves oracleSig eraseOracle sp
+      history))
+
+/-- The draw at an oracle prefix is the view draw at the erased prefix. -/
+theorem prefixSampleAt_ofView {m : Type u → Type vDraw} {s : OracleProtocol.{u, q}}
+    (draw : PrefixDraw viewSig m s) {a next} (sp : Cursor.Spine s (.liftBind a next))
+    (h : owner oracleSig a = .receiver) (history : PartialTranscriptAt oracleSig sp) :
+    prefixSampleAt oracleSig (PrefixDraw.ofView draw) sp h history =
+      cast (congrArg m (move_viewSig_of_receiver h))
+        (draw sp ((owner_viewSig _).trans h)
+          (PartialTranscriptAt.mapMoves oracleSig eraseOracle sp history)) := rfl
+
+/-- A node-indexed oracle draw as a view draw. It ignores the history. -/
+def PrefixDraw.ofNodesView {m : Type u → Type vDraw} [Functor m] {s : OracleProtocol.{u, q}}
+    (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c)) :
+    PrefixDraw viewSig m s :=
+  fun sp h _ => cast (congrArg m (move_viewSig_of_receiver
+      ((owner_viewSig _).symm.trans h)).symm)
+    ((fun x => Eq.mp (congrArg (Move oracleSig) (spineNode_position sp)) x) <$>
+      draw (spineChallenge oracleSig sp ((owner_viewSig _).symm.trans h)))
+
+/-- A node-indexed oracle draw factors through the verifier's view. -/
+theorem PrefixDraw.ofView_ofNodesView {m : Type u → Type vDraw} [Functor m]
+    {s : OracleProtocol.{u, q}}
+    (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c)) :
+    (PrefixDraw.ofView (PrefixDraw.ofNodesView draw) : PrefixDraw oracleSig m s) =
+      (fun {a next} => PrefixDraw.ofNodes oracleSig draw (a := a) (next := next)) := by
+  funext a next sp h history
+  simp only [PrefixDraw.ofView, PrefixDraw.ofNodesView, PrefixDraw.ofNodes, cast_cast, cast_eq]
+
+end View
 
 /-- The passive counterpart whose next draw can depend on the full prefix. -/
 def prefixSampler {m : Type u → Type u} [Monad m] :
@@ -496,9 +602,11 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (fun stmt tr => V.validAcceptance impl stmt tr
       (output.language tr.path)) draw ε
 
-/-- Worst-case-per-prefix oracle knowledge with access to the full prefix, oracle messages
-included. The output witness type `W stmt tr` and the output relation are indexed by the input
-statement, including its oracle data, and the completed transcript. -/
+/-- Worst-case-per-prefix oracle knowledge. The challenge draw reads only the verifier's view
+of each prefix (`PrefixDraw.ofView`): public messages, challenges and a marker for each oracle
+message. The state function, its witness carriers and backward maps, and the error read the full
+prefix, oracle messages included. The output witness type `W stmt tr` and the output relation are
+indexed by the input statement, including its oracle data, and the completed transcript. -/
 abbrev rbrKnowledgeSoundness {Win : (S × inputs.Data) → Type uW}
     {W : (S × inputs.Data) → Transcript oracleSig s → Type uO}
     (V : OracleVerifier ambient s S T inputs outputs)
@@ -506,12 +614,14 @@ abbrev rbrKnowledgeSoundness {Win : (S × inputs.Data) → Type uW}
     (admissible : S × inputs.Data → Prop) (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
     (relOut : (stmt : S × inputs.Data) → (tr : Transcript oracleSig s) →
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
-    (draw : PrefixDraw oracleSig ProbComp s)
+    (draw : PrefixDraw viewSig ProbComp s)
     (ε : PrefixError oracleSig s) : Prop :=
   Core.rbrKnowledgeSoundness.{max uS dI, uW, uK, uO} oracleSig s admissible relIn
-    (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) draw ε
+    (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit))
+    (PrefixDraw.ofView draw) ε
 
-/-- Node-indexed knowledge soundness is the shared prefix predicate ignoring history. -/
+/-- Node-indexed knowledge soundness is the shared prefix predicate ignoring history. A node
+draw factors through the verifier's view (`rbrKnowledgeSoundnessOfNodes_iff`). -/
 abbrev rbrKnowledgeSoundnessOfNodes {Win : (S × inputs.Data) → Type uW}
     {W : (S × inputs.Data) → Transcript oracleSig s → Type uO}
     (V : OracleVerifier ambient s S T inputs outputs)
@@ -521,8 +631,25 @@ abbrev rbrKnowledgeSoundnessOfNodes {Win : (S × inputs.Data) → Type uW}
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
-  rbrKnowledgeSoundness.{uS, uW, uK, uO} V impl admissible relIn relOut
+  Core.rbrKnowledgeSoundness.{max uS dI, uW, uK, uO} oracleSig s admissible relIn
+    (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit))
     (PrefixDraw.ofNodes oracleSig draw) (PrefixError.ofNodes oracleSig ε)
+
+/-- Node-indexed oracle knowledge is view-restricted knowledge at the node draw read through
+the view. -/
+theorem rbrKnowledgeSoundnessOfNodes_iff {Win : (S × inputs.Data) → Type uW}
+    {W : (S × inputs.Data) → Transcript oracleSig s → Type uO}
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (admissible : S × inputs.Data → Prop) (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
+    (relOut : (stmt : S × inputs.Data) → (tr : Transcript oracleSig s) →
+      OracleVerifier.Output T B tr.path → W stmt tr → Prop)
+    (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (ε : ChallengeNode oracleSig s → ℝ≥0∞) :
+    rbrKnowledgeSoundnessOfNodes.{uS, uW, uK, uO} V impl admissible relIn relOut draw ε ↔
+      rbrKnowledgeSoundness.{uS, uW, uK, uO} V impl admissible relIn relOut
+        (PrefixDraw.ofNodesView draw) (PrefixError.ofNodes oracleSig ε) := by
+  rw [rbrKnowledgeSoundness, PrefixDraw.ofView_ofNodesView]
 
 end OracleVerifier
 

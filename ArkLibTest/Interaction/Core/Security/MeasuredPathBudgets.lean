@@ -274,6 +274,49 @@ example :
   change ¬ (0 : Int) + 0 ≤ (1 : Nat) • (-1 : Int)
   decide
 
+/-- On the empty protocol, the leaf map doubles and the root map increments. -/
+def endpointState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) Unit
+    (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) (fun _ _ => True) (fun _ _ _ => True) where
+  Witness _ {_} _ _ := Nat
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w + 1
+  extractStep _ {_ _} sp := nomatch sp
+  extractLeaf _ _ _ w := w + w
+  root _ _ _ _ := trivial
+  send sp := nomatch sp
+  leaf _ _ _ _ _ := trivial
+
+/-- Both endpoints request one addition. -/
+def endpointStages : endpointState.MeasuredStages Nat where
+  root _ := ⟨addProgram (fun w => (w, 1)), 1, addProgram_realizes _,
+    addProgram_costAtMost_one _⟩
+  step _ _ _ sp := nomatch sp
+  leaf _ _ _ := ⟨addProgram (fun w => (w, w)), 1, addProgram_realizes _,
+    addProgram_costAtMost_one _⟩
+
+/-- The endpoint stages have root bound one, step bound zero and leaf bound one. -/
+theorem endpointStages_budgetAtMost : endpointStages.BudgetAtMost 1 0 1 :=
+  ⟨fun _ => le_rfl, fun _ _ _ sp => (nomatch sp), fun _ _ _ => le_rfl⟩
+
+/-- The general bound charges the leaf, no step and the root on the empty transcript. -/
+theorem endpoint_budget_le : (endpointStages.programAlong () ⟨⟩).budget ≤ 2 :=
+  endpointStages.programAlong_budget_le endpointStages_budgetAtMost () ⟨⟩
+
+/-- The budget is exactly the two endpoint charges. -/
+example : (endpointStages.programAlong () ⟨⟩).budget = 2 := rfl
+
+/-- Every execution path of the endpoint program costs at most two additions. -/
+example : (endpointStages.programAlong () ⟨⟩).program.CostAtMost 2 :=
+  endpointStages.programAlong_costAtMost endpointStages_budgetAtMost () ⟨⟩
+
+/-- The leaf runs first and the root second, and both additions are recorded. -/
+example (w : Nat) :
+    recorded (endpointStages.programAlong () ⟨⟩).program w = (w + w + 1, 2) := rfl
+
+/-- Running the root before the leaf would give eight, rather than seven. -/
+example : (recorded (endpointStages.programAlong () ⟨⟩).program 3).1 ≠ (3 + 1) + (3 + 1) := by
+  decide
+
 /-- Three unit messages. -/
 def orderedProtocol : Protocol.{0} :=
   .liftBind (.message Unit) fun _ => .liftBind (.message Unit) fun _ =>
@@ -347,7 +390,8 @@ run_cmd do
       ``Interaction.Core.KnowledgeStateFunction.MeasuredStages.programAlong_costAtMost_nsmul,
       ``Interaction.Core.KnowledgeStateFunction.MeasuredStages.run_programAlong,
       ``Interaction.Core.MeasuredPathBudgetsTests.no_global_budget_of_stage_bound,
-      ``Interaction.Core.MeasuredPathBudgetsTests.no_global_cost_bound_of_stage_bound] do
+      ``Interaction.Core.MeasuredPathBudgetsTests.no_global_cost_bound_of_stage_bound,
+      ``Interaction.Core.MeasuredPathBudgetsTests.endpoint_budget_le] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

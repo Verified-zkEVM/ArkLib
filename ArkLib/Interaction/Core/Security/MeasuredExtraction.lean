@@ -46,6 +46,11 @@ The budget along a transcript depends on the transcript, not only on the protoco
 number of moves of a transcript through an unbounded protocol is unbounded, so a stage bound alone
 gives no global bound.
 
+`programAlong` composes the stages of one state function along one transcript, and its bound
+charges the leaf, each backward step and the root. Two pieces are not here: a measured append
+constructor, which needs a realization and a charge for its witness conversions, and a uniform
+extractor contract for a security game, which also needs a depth or size envelope.
+
 `MeasuredKnowledgeStateFunction` fixes natural-number count profiles over a finite resource-kind
 type, with pointwise addition and order. An empty `Kind` records no resources, and a scalar count
 uses `Unit → Nat`.
@@ -53,12 +58,12 @@ uses `Unit → Nat`.
 
 @[expose] public section
 
-universe uS
+universe uS uA
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
 
-variable {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 namespace KnowledgeStateFunction
 
@@ -238,7 +243,16 @@ end MeasuredStages
 end KnowledgeStateFunction
 
 /-- A knowledge state function with a budgeted program for every extraction stage, charging
-natural-number counts indexed by the finite type `Kind`. -/
+natural-number counts indexed by the finite type `Kind`.
+
+This structure alone does not bound extraction time. Every knowledge state function has the
+zero-instruction stages `MeasuredStages.zero`. For example, ordinary round-by-round soundness of
+the input relation's language gives a node-indexed certificate, assuming a default input witness
+at each statement and that valid output witnesses imply the acceptance predicate; its root map
+uses classical choice, and with zero stages it is a measured certificate whose declared
+instruction cost is zero on every transcript. An operation-count result names the stage programs
+and the price of each instruction. Stage selection, uncharged host computations and carrier
+conversions stay outside that cost. -/
 structure MeasuredKnowledgeStateFunction (Kind : Type) [Finite Kind] (l : PFunctor.Lens P rolePoly)
     (s : FreeM P PUnit.{1}) (S : Type uS) (W : S → Transcript l s → Type) (Win : S → Type)
     (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)

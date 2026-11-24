@@ -613,6 +613,25 @@ theorem composed_rbrKnowledgeSoundness :
   rbrKnowledgeSoundness_append oracleSig first_rbrKnowledgeSoundness second_rbrKnowledgeSoundness
     (fun _ _ h => h) (fun tr₁ stmt _ _ h => (firstVerifier_validAcceptance_iff stmt tr₁).2 h)
 
+/-- The appended verifier is round-by-round knowledge sound when its challenges read only the
+verifier view. The prefix draw reads the first-stage view, and the suffix draw is chosen from the
+shape path and the first-stage view. -/
+theorem composed_rbrKnowledgeSoundness_view :
+    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0, 0} composed impl
+      (fun _ => True) (fun _ (_ : Nat) => False)
+      (fun _ tr z (_ : OutWitness tr) => z.1 = true)
+      (combineViewPrefixDraw firstProtocol suffix (PrefixDraw.ofNodesView firstDraw)
+        (fun p _ => PrefixDraw.ofNodesView (secondDraw p)))
+      (combinePrefixDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix
+        (PrefixError.ofNodes oracleSig fun _ => 1)
+        (fun _ => PrefixError.ofNodes oracleSig fun _ => 1)) :=
+  rbrKnowledgeSoundness_append_view
+    ((OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff ..).1 first_rbrKnowledgeSoundness)
+    (fun tr₁ => by
+      rw [PrefixDraw.ofView_ofNodesView]
+      exact second_rbrKnowledgeSoundness tr₁)
+    (fun _ _ h => h) (fun tr₁ stmt _ _ h => (firstVerifier_validAcceptance_iff stmt tr₁).2 h)
+
 /-- The suffix state function over the suffix statement, a Boolean claim, after the prefix
 transcript `tr₁`; its witness carriers read the prefix oracle message. -/
 def suffixState (tr₁ : Transcript oracleSig firstProtocol) :
@@ -732,6 +751,78 @@ theorem indexed_composed :
     exact Nat.le_of_lt_succ w.isLt
   · exact fun _ _ _ _ _ _ _ h => h
 
+/-- One Boolean challenge. -/
+abbrev challengeProtocol : Protocol := .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
+
+/-- The middle claim after the challenge `c`: one after `true` and zero after `false`. -/
+def bitClaim (c : Bool) : Nat := cond c 1 0
+
+/-- A verifier that reads the challenge from its view and returns `bitClaim` of it. -/
+def challengeVerifier :
+    Verifier OracleSpec.emptySpec challengeProtocol Unit (fun _ => Nat) where
+  decide _ _ v := pure (bitClaim v.1.1)
+
+/-- The challenge is uniform. -/
+def challengeDraw : QueryImpl (challengeSpec plainSig challengeProtocol) ProbComp
+  | ⟨.inl _, _⟩ => ($ᵗ Bool : ProbComp Bool)
+  | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
+
+/-- The prefix output witnesses after the challenge `c` lie in `Fin (bitClaim c + 1)`, the
+witness carrier of the suffix at the middle claim. The state is true everywhere. -/
+def challengeCertificate : KnowledgeStateFunction plainSig challengeProtocol Unit
+    (fun _ tr => Fin (bitClaim tr.1 + 1)) (fun _ => Unit) (fun _ => True) (fun _ _ => True)
+    (fun stmt tr _ => challengeVerifier.validAcceptance impl stmt tr
+      (fun t => t = bitClaim tr.1)) where
+  Witness _ {_} sp history := match sp, history with
+    | .root _, _ => Unit
+    | .down _ _, history => Fin (bitClaim history.1.1 + 1)
+  toFun _ {_} _ _ _ := True
+  extractRoot _ w := w
+  extractStep _ {_ _} sp _ _ _ := by
+    cases sp with
+    | root => exact ()
+    | down _ tail => cases tail
+  extractLeaf _ sp history w := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      exact w
+  root _ _ _ _ := trivial
+  send _ _ _ _ _ _ _ := trivial
+  leaf _ _ _ _ _ := trivial
+
+/-- The challenge verifier is round-by-round knowledge sound with error zero. -/
+theorem challenge_standalone :
+    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} challengeVerifier impl (fun _ => True)
+      (fun _ (_ : Unit) => True)
+      (fun _ tr t (_ : Fin (bitClaim tr.1 + 1)) => t = bitClaim tr.1)
+      challengeDraw (fun _ => 0) :=
+  ⟨challengeCertificate, fun _ _ a _ _ _ _ => by
+    let : MeasurableSpace (Move plainSig a) := ⊤
+    simp [challengeCertificate]⟩
+
+/-- Verifier composition with an actual challenge. The challenge selects the middle claim, and
+the suffix witness carrier `Fin (n + 1)` at that claim is the prefix output witness carrier. -/
+theorem challenge_composed :
+    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0}
+      (challengeVerifier.append (fun _ => indexedVerifier)) impl
+      (fun _ => True) (fun _ (_ : Unit) => True)
+      (fun _ tr _ (w : Fin (bitClaim tr.1 + 1)) => w.val ≤ bitClaim tr.1)
+      (combineDraw plainSig challengeProtocol (fun _ => indexedProtocol) challengeDraw
+        (fun _ => indexedDraw))
+      (combineDraw (m := fun _ => ℝ≥0∞) plainSig challengeProtocol
+        (fun _ => indexedProtocol) (fun _ => 0) (fun _ _ => 0)) := by
+  apply Verifier.rbrKnowledgeSoundness_append_of_pure challengeVerifier
+    (fun _ => indexedVerifier) impl (fun _ tr => bitClaim tr.1) (fun _ _ => rfl)
+    (fun _ _ w => w) (fun _ _ _ w => w) challenge_standalone (fun _ => indexed_standalone)
+  · exact fun _ _ _ => trivial
+  · exact fun _ _ _ _ => rfl
+  · exact fun _ _ _ _ _ _ _ h => h
+
+/-- The composite draw samples the only challenge uniformly. -/
+example : combineDraw plainSig challengeProtocol (fun _ => indexedProtocol) challengeDraw
+    (fun _ => indexedDraw) ⟨.inl ⟨⟩, rfl⟩ = ($ᵗ Bool : ProbComp Bool) := rfl
+
 /-- A shared counter for checking the ambient state at a composition boundary. -/
 abbrev counterSpec : OracleSpec Unit := Unit →ₒ Nat
 
@@ -830,7 +921,12 @@ run_cmd do
       ``Interaction.Core.KnowledgeCompositionTests.composite_leafWitness,
       ``Interaction.Core.KnowledgeCompositionTests.composite_leaf_iff,
       ``Interaction.Core.KnowledgeCompositionTests.compositeState_extractAlong,
-      ``Interaction.Core.KnowledgeCompositionTests.composed_rbrKnowledgeSoundness] do
+      ``Interaction.Core.KnowledgeCompositionTests.composed_rbrKnowledgeSoundness,
+      ``Interaction.Core.rbrKnowledgeSoundness_append_view,
+      ``Interaction.Core.OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff,
+      ``Interaction.Core.KnowledgeCompositionTests.composed_rbrKnowledgeSoundness_view,
+      ``Interaction.Core.KnowledgeCompositionTests.challenge_standalone,
+      ``Interaction.Core.KnowledgeCompositionTests.challenge_composed] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
