@@ -280,7 +280,8 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-The folding conclusion of Theorem 5.2 is open.
+The folding conclusion of Theorem 5.2 is open, and so are the interleaved equal-degree and
+linear-claim conclusions of its proof.
 The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
 The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
 `ReedSolomon.affineMcaError_le` covers it.
