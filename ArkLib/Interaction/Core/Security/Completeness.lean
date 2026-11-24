@@ -40,6 +40,14 @@ structure AdversaryModel (S Obs : Type*) [MeasurableSpace Obs] where
 abbrev PathProblem {P : PFunctor.{uA, u}} (s : FreeM P PUnit.{u + 1}) (T : Path s → Type v) :=
   Problem (⟨T⟩ : ClaimFamily (Path s))
 
+/-- The path problem that judges a claim at every shape path by one statement problem. -/
+abbrev StatementProblem.toPathProblem {P : PFunctor.{uA, u}} {S : Type v}
+    (s : FreeM P PUnit.{u + 1}) (problem : StatementProblem S) : PathProblem s (fun _ => S) where
+  Witness _ claim := problem.Witness () claim
+  admissible _ claim := problem.admissible () claim
+  rel _ claim wit := problem.rel () claim wit
+  rel_admissible _ claim wit h := problem.rel_admissible () claim wit h
+
 /-- The accepted claim and witness used to judge a completed outcome.
 
 The claim type may depend on a public context read from the outcome, such as the shape path
