@@ -9,7 +9,6 @@ module
 public import ArkLib.ProofSystem.Fri.Spec.HonestExecution
 public import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 public import ArkLib.ProofSystem.Fri.Spec.QueryCompleteness
-public import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # Completeness of polynomial FRI query checks
@@ -25,7 +24,7 @@ namespace Fri.Spec.QueryRound
 open Domain OracleSpec OracleComp ProtocolSpec Finset
 open scoped NNReal ENNReal ProbabilityTheory
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+)
 
@@ -247,9 +246,8 @@ theorem verifyQueries_completeness (d : ℕ+) (hs : (∑ j, (s j).val) ≤ n)
       simp [e₀, initialQuery, CosetFftDomain.subdomain_zero_eq_self]
     have hdist_eq : Code.relHammingDist (f ∘ e₀)
         ((fun x ↦ p₀.val.eval x.val) ∘ e₀) =
-        Code.relHammingDist f (fun x ↦ p₀.val.eval x.val) := by
-      unfold Code.relHammingDist
-      rw [hammingDist_comp_equiv, Fintype.card_congr e₀]
+        Code.relHammingDist f (fun x ↦ p₀.val.eval x.val) :=
+      Code.relHammingDist_comp_equiv e₀ _ _
     rw [← hdist_eq] at hdist
     simpa [Function.comp_def, he₀, initialQuery] using hdist
   exact one_sub_completenessError_le_prob_uniform_queries ω s

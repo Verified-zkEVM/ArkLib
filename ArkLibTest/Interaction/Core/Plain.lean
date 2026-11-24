@@ -15,14 +15,14 @@ namespace Interaction.Core.Tests
 def done : Protocol := .pure ⟨⟩
 def coin : Protocol := .liftBind (.challenge Bool) (fun _ => done)
 
-example : projectPathAlong plainSig coin ⟨true, ⟨⟩⟩ =
-    projectPathAlong plainSig coin ⟨false, ⟨⟩⟩ := rfl
+example : Transcript.path (l := plainSig) (s := coin) ⟨true, ⟨⟩⟩ =
+    Transcript.path (l := plainSig) (s := coin) ⟨false, ⟨⟩⟩ := rfl
 
 def branching : Protocol :=
   .liftBind (.message Bool) (fun (b : Bool) => if b = true then coin else done)
 
-example : projectPathAlong plainSig branching ⟨false, ⟨⟩⟩ ≠
-    projectPathAlong plainSig branching ⟨true, ⟨true, ⟨⟩⟩⟩ := by
+example : Transcript.path (l := plainSig) (s := branching) ⟨false, ⟨⟩⟩ ≠
+    Transcript.path (l := plainSig) (s := branching) ⟨true, ⟨true, ⟨⟩⟩⟩ := by
   intro h
   have := congrArg Sigma.fst h
   exact Bool.false_ne_true this

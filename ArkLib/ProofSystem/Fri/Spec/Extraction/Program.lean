@@ -32,7 +32,7 @@ and `Extraction/ClosedCost.lean`.
 
 namespace Fri.Spec.Extractor
 open Domain OracleComp OracleSpec CompPoly
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 

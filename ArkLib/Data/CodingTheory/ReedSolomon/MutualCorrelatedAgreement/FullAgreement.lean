@@ -70,6 +70,7 @@ variable {F ι ℓ S : Type} [Field F] [Fintype ι] [Fintype ℓ]
 
 noncomputable local instance : DecidableEq F := Classical.decEq _
 
+omit [Fintype S] [Nonempty S] in
 open Classical in
 /-- Absence of the MCA bad event supplies constituent polynomials and equality of full
 agreement sets. The threshold is large enough for polynomial uniqueness; witnesses may

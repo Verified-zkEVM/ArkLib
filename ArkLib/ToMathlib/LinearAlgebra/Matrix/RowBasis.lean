@@ -26,6 +26,10 @@ ring `R` that embeds into a field `K` by an injective ring homomorphism `φ`. It
 maps a vector `v` to `φ ∘ v`, which reduces both kernel conditions to kernel conditions over `K`.
 Over `K`, the vectors orthogonal to `φ ∘ v` form a subspace, so if they contain the selected rows
 they contain their span, which is the full row space.
+
+`Matrix.mulVec_injective_iff_exists_det_submatrix_ne_zero` uses the selection to characterise full
+column rank: `A.mulVec` is injective exactly when some square submatrix with all columns has
+nonzero determinant.
 -/
 
 @[expose] public section
@@ -129,5 +133,25 @@ theorem exists_rows_submatrix_mulVec_eq_zero_iff {R m n : Type*} [Semiring R] [F
   · intro h
     funext i
     exact congrFun h (rows i)
+
+/-- A matrix over a field with finitely many rows has injective `mulVec` exactly when, for some
+choice of as many rows as there are columns, the square submatrix has nonzero determinant. -/
+theorem mulVec_injective_iff_exists_det_submatrix_ne_zero {m n : Type*} [Finite m] [Fintype n]
+    [DecidableEq n] (A : Matrix m n K) :
+    Function.Injective A.mulVec ↔ ∃ rows : n → m, (A.submatrix rows id).det ≠ 0 := by
+  constructor
+  · intro h
+    have hrank : A.rank = Fintype.card n := by
+      rw [Matrix.rank, LinearMap.finrank_range_of_inj (by rwa [coe_mulVecLin]),
+        Module.finrank_fintype_fun_eq_card]
+    obtain ⟨rows, hli, -⟩ := A.exists_rows_linearIndependent_span_eq
+    let e : n ≃ Fin A.rank := Fintype.equivFinOfCardEq hrank.symm
+    refine ⟨rows ∘ e, ?_⟩
+    have hrows : LinearIndependent K (A.submatrix (rows ∘ e) id).row := hli.comp e e.injective
+    exact ((isUnit_iff_isUnit_det _).1 (linearIndependent_row_iff_isUnit.1 hrows)).ne_zero
+  · rintro ⟨rows, hdet⟩ v w hvw
+    refine mulVec_injective_iff_isUnit.2 ((isUnit_iff_isUnit_det _).2 hdet.isUnit) ?_
+    funext i
+    exact congrFun hvw (rows i)
 
 end Matrix

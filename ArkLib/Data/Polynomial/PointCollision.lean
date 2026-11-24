@@ -29,6 +29,7 @@ gives the probability form, which is in
 
 ## Main statements
 
+* `Polynomial.card_le_of_eval_eq`: two distinct polynomials agree on at most `d` points.
 * `Polynomial.card_le_of_evalTuple_eq`: two distinct tuples collide on at most `d ^ |ι|` point
   tuples.
 * `Polynomial.card_le_of_not_injOn_evalTuple`: at most `choose |S| 2 * d ^ |ι|` point tuples fail
@@ -89,6 +90,20 @@ end Semiring
 section Domain
 
 variable {R ι κ : Type*} [CommRing R] [IsDomain R] [Fintype ι]
+
+/-- **Collisions of two polynomials.**
+
+Two distinct polynomials of natural degree at most `d` agree on at most `d` points.
+
+Every agreement point is a root of their nonzero difference. -/
+theorem card_le_of_eval_eq {p q : R[X]} (hpq : p ≠ q) {d : ℕ} (hp : p.natDegree ≤ d)
+    (hq : q.natDegree ≤ d) (T : Finset R) (hT : ∀ a ∈ T, p.eval a = q.eval a) : T.card ≤ d := by
+  classical
+  have h0 : p - q ≠ 0 := sub_ne_zero.mpr hpq
+  calc T.card ≤ (p - q).roots.toFinset.card :=
+        Finset.card_le_card fun a ha => by simp [mem_roots h0, hT a ha]
+    _ ≤ d := (Multiset.toFinset_card_le _).trans <| (card_roots' _).trans <|
+        (natDegree_sub_le _ _).trans (max_le hp hq)
 
 /-- **Collisions of one pair.** Two distinct polynomial tuples whose coordinates have natural
 degree at most `d` have equal evaluations on at most `d ^ |ι|` point tuples `x : ι → R`.

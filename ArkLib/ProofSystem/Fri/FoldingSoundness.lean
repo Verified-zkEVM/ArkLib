@@ -111,7 +111,7 @@ def FoldingAgreementFailure (domain : SmoothCosetFftDomain n F)
       ∀ i x, x ∈ T → domain i ^ (2 ^ k) = domain.subdomain k x → u i = f i
 
 /-- The folding bad event is contained in the existing MCA event for the coefficient words. -/
-theorem isMCA_of_foldingAgreementFailure [Fintype F]
+theorem isMCA_of_foldingAgreementFailure
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
     (θ : ℝ) (α : F) (h : FoldingAgreementFailure domain f k d θ α) :
     IsMCA (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ)) (code (domain.subdomain k) d) α
@@ -129,7 +129,7 @@ theorem isMCA_of_foldingAgreementFailure [Fintype F]
 
 /-- FRI's single-fold soundness error is bounded by ArkLib's MCA error value. The bound is
 uniform over all agreement sets and does not depend on the prover's next message. -/
-theorem foldingAgreementFailure_prob_le [Fintype F] [SampleableType F]
+theorem foldingAgreementFailure_prob_le [SampleableType F]
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (θ : ℝ) :
     Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤
       mcaError (fun α (j : Fin (2 ^ k)) ↦ α ^ (j : ℕ))
@@ -142,7 +142,7 @@ theorem foldingAgreementFailure_prob_le [Fintype F] [SampleableType F]
 
 /-- The folding bound stated using the existing named powers generator, whose parameter is
 the largest exponent (one less than the number of coefficient words). -/
-theorem foldingAgreementFailure_prob_le_powers [Fintype F] [SampleableType F]
+theorem foldingAgreementFailure_prob_le_powers [SampleableType F]
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F) (θ : ℝ) :
     Pr{let α ←$ᵗ F}[FoldingAgreementFailure domain f k d θ α] ≤
       mcaError (univariatePowersGenerator F (2 ^ k - 1))
@@ -160,7 +160,7 @@ theorem foldingAgreementFailure_prob_le_powers [Fintype F] [SampleableType F]
   rwa [heq _ (by positivity)] at h
 
 /-- Any existing certified MCA bound for powers instantiates the FRI folding error. -/
-theorem foldingAgreementFailure_prob_le_of_isMCAGenerator [Fintype F] [SampleableType F]
+theorem foldingAgreementFailure_prob_le_of_isMCAGenerator [SampleableType F]
     (domain : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
     (ε : unitInterval → ℝ≥0)
     (hMCA : IsMCAGenerator (univariatePowersGenerator F (2 ^ k - 1)) ε

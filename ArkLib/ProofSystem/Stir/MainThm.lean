@@ -150,8 +150,8 @@ instance {ι : Type} : OracleInterface (OracleStatement ι F ()) := OracleInterf
   of degree less than `degree` over domain `φ`, within error `err`.
 -/
 def stirRelation
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [DecidableEq F]
+    {ι : Type} [Fintype ι]
     (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
   {input | δᵣ(input.1.2 (), ReedSolomon.code φ degree) ≤ err}
 
@@ -162,8 +162,8 @@ def stirRelation
   which is the case the soundness statements of [ACFY24stir] cover (`δ₀ ≤ Δ(f, RS)` in Lemma 5.4).
   Completeness is stated with `stirRelation degree φ 0`, the codewords. -/
 def stirOpenRelation
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [DecidableEq F]
+    {ι : Type} [Fintype ι]
     (degree : ℕ) (φ : ι ↪ F) (err : ℝ≥0) : Set ((Unit × ∀ i, (OracleStatement ι F i)) × Unit) :=
   {input | δᵣ(input.1.2 (), ReedSolomon.code φ degree) < err}
 

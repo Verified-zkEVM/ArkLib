@@ -101,7 +101,7 @@ def powers_bad_seed_embedding
 open scoped BigOperators in
 noncomputable def powers_bad_witness_of_is_mca
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F]
     {A : Type} [AddCommMonoid A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ)
     (U : Fin (k + 1) → ι → A) (x : F) (δ : ℝ)
@@ -125,7 +125,7 @@ noncomputable def powers_bad_witness_of_is_mca
 open scoped BigOperators in
 noncomputable def powers_bad_witness_of_bad_seed_subtype
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F]
+    {F : Type} [Field F]
     {A : Type} [AddCommMonoid A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ) (U : Fin (k + 1) → ι → A)
     (δ : ℝ) (B : Finset F)

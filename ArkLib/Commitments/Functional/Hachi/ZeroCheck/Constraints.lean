@@ -299,13 +299,13 @@ This is the Hachi range-polynomial specialization of
 extra `s` levels below the window are the challenge rounds that `H_α` consumes
 (`hAlpha_eq_zero_of_evaluationTree`), which is why the same tree serves both identities. -/
 theorem hZero_eq_zero_of_evaluationTree {k s : ℕ} (hk : 2 ≤ k) (φF : ZMod q →+* F) (b : ℕ)
-    (w : LiftedWitness Φ μ n) (tree : NestedEvaluationTree F k (m₀ + s))
+    (w : LiftedWitness Φ μ n) (tree : NestedEvaluationTree F (m₀ + s) fun _ => k)
     (hDistinct : tree.IsDistinct)
     (hVanishes : CMlPolynomialEval.PolynomialVanishes tree (hZero Φ m₀ φF b w)
       (Fin.castAdd s)) :
     hZero Φ m₀ φF b w = 0 :=
-  CMlPolynomialEval.eq_zero_of_polynomialVanishes_castAdd hk tree (hZero Φ m₀ φF b w)
-    hDistinct hVanishes
+  CMlPolynomialEval.eq_zero_of_polynomialVanishes_castAdd (fun _ => by omega) tree
+    (hZero Φ m₀ φF b w) (fun _ => hk) hDistinct hVanishes
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **The same transcript tree determines `H_α`.** `H_α` reads the *last* `m₁` levels of the tree,
@@ -320,12 +320,12 @@ protocol supplies — `pSpecNestedZeroCheck` is one run of `m₀ + m₁` challen
 only `k ^ m + k ^ m₁` of them, but there is no second run to draw them from. -/
 theorem hAlpha_eq_zero_of_evaluationTree {k m : ℕ} (hk : 2 ≤ k) (φF : ZMod q →+* F) (b : ℕ)
     (s : RlinStatement Φ n μ) (α : F) (w : LiftedWitness Φ μ n)
-    (tree : NestedEvaluationTree F k (m + m₁)) (hDistinct : tree.IsDistinct)
+    (tree : NestedEvaluationTree F (m + m₁) fun _ => k) (hDistinct : tree.IsDistinct)
     (hVanishes : CMlPolynomialEval.PolynomialVanishes tree (hAlpha Φ m₁ φF b s α w)
       (Fin.natAdd m)) :
     hAlpha Φ m₁ φF b s α w = 0 :=
-  CMlPolynomialEval.eq_zero_of_polynomialVanishes_natAdd hk tree (hAlpha Φ m₁ φF b s α w)
-    hDistinct hVanishes
+  CMlPolynomialEval.eq_zero_of_polynomialVanishes_natAdd (fun _ => by omega) tree
+    (hAlpha Φ m₁ φF b s α w) (fun _ => hk) hDistinct hVanishes
 
 /-- The computable multilinear extension of the table `w̃` itself, the committed object the
 final-evaluation step opens. -/

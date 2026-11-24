@@ -20,7 +20,7 @@ verifier with an honest prover.
 
 @[expose] public section
 
-universe u uA
+universe u uA uι uS uW
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp
@@ -28,7 +28,7 @@ open PFunctor FreeM TwoParty.Lens OracleComp
 /-- The prover uses only the shared oracle interface, and cannot query the challenge service. -/
 abbrev Prover {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : FreeM P PUnit.{u + 1})
-    (Out : PathAlong l s → Type u) := Focal l (OracleComp ambient) s Out
+    (Out : Transcript l s → Type u) := Focal l (OracleComp ambient) s Out
 
 /-- Interpret each prover slot through an oracle handler, node by node and at the leaf.
 
@@ -37,7 +37,7 @@ leaf equations are available to importing modules. -/
 def Prover.simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
     (impl : QueryImpl ambient m) : {s : FreeM P PUnit.{u + 1}} →
-    {Out : PathAlong l s → Type u} → Prover l ambient s Out → Focal l m s Out
+    {Out : Transcript l s → Type u} → Prover l ambient s Out → Focal l m s Out
   | .pure _, _, p => simulateQ impl p
   | .liftBind a _, _, p =>
     Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$> simulateQ impl p
@@ -46,7 +46,7 @@ def Prover.simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
 theorem Prover.simulate_done {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
     (impl : QueryImpl ambient m)
-    {Out : PathAlong l (Pure.pure (f := FreeM P) PUnit.unit) → Type u}
+    {Out : Transcript l (Pure.pure (f := FreeM P) PUnit.unit) → Type u}
     (p : Prover l ambient (Pure.pure (f := FreeM P) PUnit.unit) Out) :
     Prover.simulate impl p = (simulateQ impl p : m (Out ⟨⟩)) := rfl
 
@@ -54,7 +54,7 @@ theorem Prover.simulate_done {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePol
 theorem Prover.simulate_node {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
     (impl : QueryImpl ambient m) (a : P.A) (rest : P.B a → FreeM P PUnit.{u + 1})
-    {Out : PathAlong l (.liftBind a rest) → Type u}
+    {Out : Transcript l (.liftBind a rest) → Type u}
     (p : Prover l ambient (.liftBind a rest) Out) :
     Prover.simulate impl p =
       Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$>
@@ -179,7 +179,7 @@ theorem toCounterpart_publicCoinOracleSampler {m : Type u → Type u} [Monad m] 
 /-- Replay follows recorded plain challenges and executes no draw, even a failing one. -/
 theorem replay_publicCoinSampler {m : Type u → Type u} [Monad m] [LawfulMonad m]
     (s : Protocol.{u}) (draw : (c : ChallengeNode plainSig s) → m (challengeSpec plainSig s c))
-    (tr : PathAlong plainSig s) :
+    (tr : Transcript plainSig s) :
     (publicCoinSampler plainSig s draw).replay tr = pure ⟨⟩ := by
   induction s using FreeM.rec with
   | pure a => rfl
@@ -193,7 +193,7 @@ theorem replay_publicCoinSampler {m : Type u → Type u} [Monad m] [LawfulMonad 
 theorem replay_publicCoinOracleSampler {m : Type u → Type u} [Monad m] [LawfulMonad m]
     (s : OracleProtocol.{u})
     (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c))
-    (tr : PathAlong oracleSig s) :
+    (tr : Transcript oracleSig s) :
     (publicCoinSampler oracleSig s draw).replay tr = pure ⟨⟩ := by
   induction s using FreeM.rec with
   | pure a => rfl
@@ -204,15 +204,21 @@ theorem replay_publicCoinOracleSampler {m : Type u → Type u} [Monad m] [Lawful
     | challenge C => exact ih ⟨⟩ _ tr
     | oracle X I => exact (LawfulMonad.pure_bind _ _).trans (ih ⟨⟩ _ tr)
 
-/-- A plain verifier's only operation is its terminal decision. -/
-structure Verifier {ι : Type u} (ambient : OracleSpec.{u, u} ι)
-    (s : Protocol.{u}) (StmtIn StmtOut : Type u) where
-  /-- Decide from the public transcript after every interaction slot has run. -/
-  decide : StmtIn → (p : Path s) → PlainView s p → OptionT (OracleComp ambient) StmtOut
+/-- A plain verifier's only operation is its terminal decision.
 
-/-- An honest reduction with separately retained prover and verifier outputs. -/
+The output statement type `StmtOut p` may depend on the public shape path `p` of the run. A
+verifier with one output type `T` uses the constant family `fun _ => T`.
+-/
+structure Verifier {ι : Type uι} (ambient : OracleSpec.{uι, u} ι)
+    (s : Protocol.{u}) (StmtIn : Type uS) (StmtOut : Path s → Type u) where
+  /-- Decide from the public transcript after every interaction slot has run. -/
+  decide : StmtIn → (p : Path s) → PlainView s p → OptionT (OracleComp ambient) (StmtOut p)
+
+/-- An honest reduction with separately retained prover and verifier outputs. The verifier's
+output statement type is indexed by the shape path. -/
 structure Reduction {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol.{u})
-    (StmtIn WitIn StmtOut : Type u) (Out : PathAlong plainSig s → Type u) where
+    (StmtIn : Type uS) (WitIn : Type uW) (StmtOut : Path s → Type u)
+    (Out : Transcript plainSig s → Type u) where
   /-- Honest focal strategy, including its terminal action. -/
   prover : StmtIn → WitIn → Prover plainSig ambient s Out
   /-- Passive terminal decision. -/
