@@ -21,12 +21,29 @@ has an unbounded and a query-bounded form; `isSrChallengeMove` counts only queri
 for verifier messages.
 Query-bounded knowledge soundness fixes one extractor before all natural-number budgets.
 The extractor may use randomness and both query logs and has no prover handle; no deterministic
-or running-time claim is made. Each verifier-message query contains a salt chosen by the prover.
-The prover's final output selects which salt is used in transcript reconstruction. The salt is
-separate game data: verification and input relations use only the original statement.
-This is the single-salt instance of the paper's salted state-restoration experiment.
+or running-time claim is made.
 The final lemmas preserve these bounds when custom or extra sampling interfaces are compiled
 into the prover's private coins, without changing the extractor's public logs.
+
+## Salt
+
+Each verifier-message query contains a salt chosen by the prover: the key of every SR query is
+the statement–salt pair `(x, τ) : StmtIn × Salt` together with the prover-message prefix.
+The prover's final output selects which salt is used in transcript reconstruction. The salt is
+separate game data: verification and input relations use only the original statement.
+This is the salted game of
+[CO25, Definition 3.12] with salt sizes `δ = (δ₁, 0, …, 0)`, a salt only before the first round,
+which is the case the duplex-sponge Fiat–Shamir transformation needs. Per-round salts, as in
+[snarg-book, Definition 13.2.1] and general CO25, need no new definition: they are the unsalted
+game (`Salt := Unit`) for a protocol whose prover messages also carry a salt.
+
+## Eager sampling of the SR table
+
+The `init` argument samples the whole verifier-message table up front, as a function
+`QueryImpl (srVerifierMessageOracle (StmtIn × Salt) pSpec) Id`. Sampling a uniform table eagerly
+requires a finite domain, so instantiations that sample it uniformly (and, in the same way, a
+random oracle on statements) assume `VCVCompatible StmtIn`, that is, a finite statement type.
+Lazy sampling of the table would remove that assumption.
 
 ## References
 
