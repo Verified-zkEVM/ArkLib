@@ -12,11 +12,15 @@ public import ArkLib.Interaction.Core.LegacyAppend
 /-!
 # Sumcheck verification and execution in the interaction layer
 
-The verifier of the replicated Sumcheck protocol is the passive sampler, which requests one ring
-challenge per round as a query to the challenge oracle, followed by the legacy decision fold
-`Spec.oracleVerifierProgram` applied to the completed run. The verifier does not choose the
-challenge distribution: the requests are uniform when the challenge oracle is interpreted with
-`challengeQueryImpl`, as in `perfectCompleteness_uniform`.
+This file defines the compatibility `verifier`, which runs the legacy decision fold over an
+injective domain `D : Fin d ↪ R`. The native verifier over an indexed domain `D : Fin d → R` is
+`indexedVerifier` in `Indexed`, and the run-level soundness theorems in `Soundness` concern it.
+
+The compatibility verifier of the replicated Sumcheck protocol is the passive sampler, which
+requests one ring challenge per round as a query to the challenge oracle, followed by the legacy
+decision fold `Spec.oracleVerifierProgram` applied to the completed run. The verifier does not
+choose the challenge distribution: the requests are uniform when the challenge oracle is interpreted
+with `challengeQueryImpl`, as in `perfectCompleteness_uniform`.
 
 The decision reads the challenges from the verifier view and answers each legacy message query
 through `route`, which sends it to the oracle node of its round. The output oracle is the input
@@ -81,6 +85,13 @@ def decodeTranscript (k : ℕ) (tr : Transcript oracleSig (protocol R deg k)) :
 
 end Decode
 
+/-- Decoding one more round prepends that round's message and challenge. -/
+@[simp] theorem decodeTranscript_succ (R : Type) [CommSemiring R] (deg : ℕ)
+    {n : ℕ} (msg : R⦃≤ deg⦄[X]) (chal : R)
+    (tail : Transcript oracleSig (protocol R deg n)) :
+    decodeTranscript (n + 1) (consTranscript msg chal tail) =
+      roundFullTranscript msg chal ++ₜ decodeTranscript n tail := rfl
+
 /-! ## Routing message queries -/
 
 section Route
@@ -97,13 +108,6 @@ def roundRoute (k : ℕ) (p : Path (protocol R deg k)) :
     obtain rfl := Unique.eq_default i
     exact liftM
       ((oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inl ⟨⟩, q⟩)
-
-/-- Lift the queries of the remaining rounds to a replicated protocol with one more round. -/
-def tailLift (k : ℕ) (p : Path (protocol R deg k)) :
-    QueryImpl (oracleMessageSpec (protocol R deg k) p)
-      (OracleComp (oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
-  fun q => liftM
-    ((oracleMessageSpec (protocol R deg (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query ⟨.inr q.1, q.2⟩)
 
 /-- Route legacy message queries to the oracle nodes of a completed shape path. -/
 def route : (k : ℕ) → (p : Path (protocol R deg k)) →
@@ -272,13 +276,6 @@ section Verifier
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
 
-/-- The input and output oracle: the multivariate polynomial with evaluation queries.
-
-It is noncomputable because the legacy evaluation interface of multivariate polynomials is. Only
-its types enter the verifier, which stays executable. -/
-noncomputable def polyFamily : OracleFamily Unit (Spec.OracleStatement R n deg) :=
-  ⟨fun _ => inferInstance⟩
-
 /-- The legacy check of round `i`, retyped to query only that round's message. -/
 def roundCheck (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (chals : (Spec.SingleRound.pSpec R deg).Challenges) :
@@ -303,13 +300,6 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
       (OracleComp.liftComp (legacyProgram R deg n D ambient stmt chals)
         (ambient + ([Spec.OracleStatement R n deg]ₒ + [(Spec.pSpec R deg n).Message]ₒ))) :=
   rfl
-
-/-- Lift path-oracle queries into the decision's query interface. -/
-def decisionLift (p : Path (protocol R deg n)) :
-    QueryImpl (oracleMessageSpec (protocol R deg n) p)
-      (OracleComp (ambient + (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec)) :=
-  fun q => liftM ((ambient +
-    (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
 
 /-- The Sumcheck oracle verifier: the legacy decision fold on the view's challenges, with every
 message query routed to its oracle node. The output oracle is the input polynomial. -/

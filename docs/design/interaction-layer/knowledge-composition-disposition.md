@@ -371,7 +371,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 
 | ID | Forcing parent declarations | Status | Exact target and limitation |
 | --- | --- | --- | --- |
-| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L69`][r247], `challengeSpec` (`Core/Protocol.lean:69–71`) | unresolved (large-move probability: `ProbComp` and shared challenge/message universe) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L143`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; `ProbComp` cannot sample these moves at `u > 0`. Measured specializations also require small stage inputs through `BudgetedProgram`, as recorded above. |
+| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Core/Protocol.lean:69–71`) | unresolved (large-move probability: `ProbComp` and shared challenge/message universe) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L143`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; `ProbComp` cannot sample these moves at `u > 0`. Measured specializations also require small stage inputs through `BudgetedProgram`, as recorded above. |
 
 [r1]: ../../../ArkLib/Interaction/Oracle/Security/Knowledge.lean#L37
 [r2]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L370
@@ -619,7 +619,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r244]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredPathBudgets.lean#L384
 [r245]: ../../../ArkLibTest/Interaction/Oracle/Security/MeasuredPathBudgets.lean#L191
 [r246]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredPathBudgets.lean#L370
-[r247]: ../../../ArkLib/Interaction/Core/Protocol.lean#L69
+[r247]: ../../../ArkLib/Interaction/Core/Protocol.lean#L70
 [r248]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L143
 [r249]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L212
 [r250]: ../../../ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L234

@@ -186,10 +186,10 @@ The Lean statements differ from the papers in the following ways.
 
 | ID | Exact frozen declaration | Status | Exact target and correspondence |
 | --- | --- | --- | --- |
-| Replay-037 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:37`][r73], `ChallengePrograms` | premise-required (P1) | [`ArkLib/Interaction/Core/Reduction.lean#L159`][r74], `sampler`. Draws from the supplied draw program replace recursive challenge-program authoring data. |
+| Replay-037 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:37`][r73], `ChallengePrograms` | premise-required (P1) | [`ArkLib/Interaction/Core/Reduction.lean#L176`][r74], `sampler`. Draws from the supplied draw program replace recursive challenge-program authoring data. |
 | Replay-043 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:43`][r75], `ambientQueries` | retired (ambient challenge-query lifting adapter) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L580`][r76], `OracleVerifier.run`. The runner injects challenge queries directly; the effectful verifier-fragment signature is removed. |
 | Replay-048 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:48`][r77], `sourceQueries` | retired (source-only terminal lifting adapter) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L517`][r78], `OracleVerifier.decideWith`. Answering bundle queries is part of the final decision fold. |
-| Replay-054 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:54`][r79], `challengeFragment` | retired (effectful challenge fragment) | [`ArkLib/Interaction/Core/Reduction.lean#L159`][r80], `sampler`. A passive verifier uses the external sampler rather than an authored receive/send fragment. |
+| Replay-054 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:54`][r79], `challengeFragment` | retired (effectful challenge fragment) | [`ArkLib/Interaction/Core/Reduction.lean#L176`][r80], `sampler`. A passive verifier uses the external sampler rather than an authored receive/send fragment. |
 | Replay-067 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:67`][r81], `challengeVerifier` | premise-required (P1) | [`ArkLib/Interaction/Core/OracleVerifier.lean#L580`][r82], `OracleVerifier.run`. The final decision and output map replace the fragment completed by a source-only terminal. |
 | Replay-081 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:81`][r83], `messageProver` | equivalent | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L477`][r84], `scriptedProver`. Same deterministic selected sends without oracle queries; the obsolete Unit continuation output becomes PUnit. |
 | Replay-090 | [`ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean:90`][r85], `scriptedProver` | retired (duplicated path in prover output) | [`ArkLib/Interaction/Core/Security/StateRestoration.lean#L477`][r86], `scriptedProver`. The runner already returns the transcript; the scripted prover returns PUnit. run_scriptedProver identifies the returned transcript. |
@@ -412,13 +412,13 @@ No whole-library or site build is part of this branch's acceptance checks.
 [r71]: ../../../ArkLib/Interaction/Oracle/Security/StateRestoration.lean#L474
 [r72]: ../../../ArkLib/Interaction/Core/Security/StateRestoration.lean#L996
 [r73]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L37
-[r74]: ../../../ArkLib/Interaction/Core/Reduction.lean#L159
+[r74]: ../../../ArkLib/Interaction/Core/Reduction.lean#L176
 [r75]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L43
 [r76]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L580
 [r77]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L48
 [r78]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L517
 [r79]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L54
-[r80]: ../../../ArkLib/Interaction/Core/Reduction.lean#L159
+[r80]: ../../../ArkLib/Interaction/Core/Reduction.lean#L176
 [r81]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L67
 [r82]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L580
 [r83]: ../../../ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean#L81
