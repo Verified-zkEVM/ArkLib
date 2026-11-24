@@ -60,6 +60,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 * `ReedSolomon.exists_factorRoots_finset_card_le`: the count for one irreducible factor.
 * `ReedSolomon.exists_interpolantRoots_finset_card_le`: outside few challenges, every root of
   the interpolant with `A` agreements is good.
+* `ReedSolomon.exists_finset_card_le_forall_isAffinePersistent_of_interpolant`: outside few
+  challenges, every exceptional candidate is persistent.
 * `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant`: outside a given set and
   at most `D² + 4 d² M² D³ (n / (A - B))²` more challenges, no candidate is exceptional.
 
