@@ -376,6 +376,14 @@ theorem knowledgeSoundness_of_with
   (knowledgeSoundness_iff_exists_with init impl relIn relOut verifier knowledgeError).mpr
     ⟨extractor, h⟩
 
+/-- Increasing the allowed error preserves soundness. -/
+theorem soundness_error_mono {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε ε' : ℝ≥0}
+    (hε : ε ≤ ε') (h : verifier.soundness init impl langIn langOut ε) :
+    verifier.soundness init impl langIn langOut ε' :=
+  fun WitIn WitOut witIn prover stmtIn hstmt =>
+    (h WitIn WitOut witIn prover stmtIn hstmt).trans (by exact_mod_cast hε)
+
 /-- Increasing the allowed error preserves knowledge soundness. -/
 theorem knowledgeSoundness_error_mono
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}

@@ -431,7 +431,7 @@ def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp
     relOut := nestedRoundRel Φ m₀ m₁ bound bDig K φF b count
     isCWSS := by have h := aux.1.isCWSS; rw [aux.2.1, aux.2.2] at h; exact h }
 
-omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
 /-- The loop's input relation is the round-`0` relation (used when composing after the
 sumcheck bridge) — definitional, by the re-pinning in `roundsChain`. -/
 theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -441,7 +441,7 @@ theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT �
       nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0 :=
   rfl
 
-omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [DecidableEq F] [SampleableType F] in
 /-- The loop's output relation is the round-`count` relation (used when composing with the
 final-evaluation step) — definitional, by the re-pinning in `roundsChain`. -/
 theorem roundsChain_relOut (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

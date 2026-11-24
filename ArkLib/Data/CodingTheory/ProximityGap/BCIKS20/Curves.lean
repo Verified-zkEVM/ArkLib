@@ -145,9 +145,12 @@ theorem exists_curve_exactPowerAgreement_johnson_budget
       have hc := ReedSolomon.HiddenDerivative.two_mul_johnsonExceptionCount_le_bciks
         hDpos hDn hthreshold hb hbeta (by simpa using hbRate)
       have hh := mul_le_mul_of_nonneg_left hc (Nat.cast_nonneg k)
+      have h2 := mul_le_mul_of_nonneg_left
+        (ReedSolomon.HiddenDerivative.johnsonSuccExceptionCount_le_two_mul
+          (n := Fintype.card ι) (A := A) (eta := eta) hDpos (by omega)) (Nat.cast_nonneg (α := ℝ) k)
       dsimp [B]
       push_cast
-      nlinarith only [hE, hh]
+      nlinarith only [hE, hh, h2]
   obtain ⟨E, hE, hgood⟩ := hexact
   refine ⟨E, hE.trans ?_, hgood⟩
   have hq : (Fintype.card F : ℝ) ≠ 0 := by exact_mod_cast Fintype.card_ne_zero

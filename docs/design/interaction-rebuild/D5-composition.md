@@ -7,7 +7,7 @@ ArkLib PR A (commit 4, reduction composition).
 ## Decision
 
 Only trees are appended: `FreeM.append s₁ s₂` with `s₂ : Path s₁ → FreeM P PUnit` (record D0). A
-suffix participant after a prefix transcript `tr₁` lives on `s₂ (projectPathAlong l s₁ tr₁)`; it
+suffix participant after a prefix transcript `tr₁` lives on `s₂ tr₁.path`; it
 may depend on all of `tr₁` and on its own intermediate output.
 
 **The prefix's leaf action builds the suffix strategy.** A prefix strategy whose output at `tr₁`
@@ -77,9 +77,9 @@ def Verifier.append (V₁ : Verifier s₁ S₁ S₂) (V₂ : (p : Path s₁) →
 
 The views split along the same path split, so the prefix decision, the suffix decision and the
 routing map (record D6) are all indexed by `p₁` and `p₂`, with no cast between oracle families.
-`View.split` is built from `PathAlong.split` on the view transcript and the fibre equation. The
-suffix part of the view transcript lies over `s₂ (projectPathAlong viewSig s₁ v₁)`, which equals
-`s₂ p₁` only by the prefix's fibre equation, so `View.split` transports that transcript along the
+`View.split` is built from `Transcript.split` on the view transcript and the `TranscriptAt`
+equation. The suffix part of the view transcript lies over `s₂ v₁.path`, which equals
+`s₂ p₁` only by the prefix's path equation, so `View.split` transports that transcript along the
 equation. The transport is on a view transcript, inside `View.split` and its lemmas, never on an
 `OracleComp` index.
 

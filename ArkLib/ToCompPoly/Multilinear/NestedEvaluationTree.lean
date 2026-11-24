@@ -13,25 +13,25 @@ public import ArkLib.ToCompPoly.Multilinear.Basic
 
   This file is the CompPoly-facing view of `NestedEvaluationTree.eq_zero_of_vanishes_comp`
   (`ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`): a computable multilinear polynomial that
-  vanishes at every leaf of a sibling-distinct complete `k`-ary evaluation tree — read through a
-  window of consecutive tree levels — is the zero evaluation table.
+  vanishes at every leaf of a sibling-distinct complete evaluation tree — read through a window of
+  consecutive tree levels — is the zero evaluation table.
 
   Everything public here is stated for CompPoly's computable `CMlPolynomialEval` representation;
   Mathlib's `MvPolynomial` appears only inside the proofs, through
   `CMlPolynomialEval.eval_eq_MvPolynomial_MLE`.
 
-  A `CMlPolynomialEval` is multilinear by construction, so `k = 2` (two distinct labels per node)
-  always suffices; the statements allow any `2 ≤ k` so that a *uniformly* wider tree still certifies
-  a multilinear polynomial. Note `NestedEvaluationTree` fixes one arity for every level, so this
-  does not let a tree mix a `k = 2` round with a higher-degree round of the same protocol ([NOZ26]
-  Lemma 9's `2 * d`, Lemma 11's `deg H + 1`); that would need per-level arity.
+  A `CMlPolynomialEval` is multilinear by construction, so two distinct labels per node of the
+  levels it reads always suffice; the statements allow any `2 ≤ k (f i)` there, and any positive
+  arity on the levels outside the window.  The arities may differ from level to level, so one tree
+  can mix a binary round with a higher-degree round of the same protocol ([NOZ26] Lemma 9's
+  `2 * d`, Lemma 11's `deg H + 1`).
 -/
 
 @[expose] public section
 
 namespace CompPoly.CMlPolynomialEval
 
-variable {F : Type*} {k m n r : ℕ}
+variable {F : Type*} {m n r : ℕ}
 
 /-- A computable multilinear polynomial in `r` variables vanishes at every leaf point of `tree`,
 each leaf point being read through the window `f` of tree levels.
@@ -39,7 +39,7 @@ each leaf point being read through the window `f` of tree levels.
 The two windows used in practice are `f = Fin.castAdd` (the polynomial reads the first levels of
 the tree) and `f = Fin.natAdd` (it reads the last levels), which is what lets a single transcript
 tree certify two polynomials in disjoint variable blocks. -/
-def PolynomialVanishes [CommRing F] (tree : NestedEvaluationTree F k n)
+def PolynomialVanishes [CommRing F] {k : Fin n → ℕ} (tree : NestedEvaluationTree F n k)
     (p : CMlPolynomialEval F r) (f : Fin r → Fin n) : Prop :=
   tree.Vanishes fun x => CMlPolynomialEval.eval p (Vector.ofFn (x ∘ f))
 
@@ -49,17 +49,19 @@ variable [Field F]
 
 /-- **Nested-tree zero test for computable multilinear polynomials.**
 
-If a `CMlPolynomialEval F r` evaluates to zero at every leaf of a complete `k`-ary tree of depth
-`n` whose sibling labels are distinct at every node, read through the window of `r` consecutive
-levels starting at level `m`, then the computable polynomial is the zero evaluation table. Later
-labels may depend on the earlier path, and levels outside the window are skipped.
+If a `CMlPolynomialEval F r` evaluates to zero at every leaf of a complete tree of depth `n` with
+`k i` labels at level `i`, whose sibling labels are distinct at every node, read through the window
+of `r` consecutive levels starting at level `m`, then the computable polynomial is the zero
+evaluation table. The levels it reads need at least two labels and every other level at least one.
+Later labels may depend on the earlier path, and levels outside the window are skipped.
 
 The statement uses only CompPoly's computable representation and evaluator. The proof transports
 the table to its Mathlib multilinear extension with `eval_eq_MvPolynomial_MLE`, applies the
 algebraic tree lemma `NestedEvaluationTree.eq_zero_of_vanishes_comp`, and transports the resulting
 zero identity back to the table. -/
-theorem eq_zero_of_polynomialVanishes_comp (hk : 2 ≤ k) (m : ℕ) (tree : NestedEvaluationTree F k n)
-    (p : CMlPolynomialEval F r) (f : Fin r → Fin n) (hf : ∀ i, (f i).val = m + i.val)
+theorem eq_zero_of_polynomialVanishes_comp {k : Fin n → ℕ} (hk : ∀ i, 0 < k i)
+    (m : ℕ) (tree : NestedEvaluationTree F n k) (p : CMlPolynomialEval F r) (f : Fin r → Fin n)
+    (hf : ∀ i, (f i).val = m + i.val) (hk2 : ∀ i, 2 ≤ k (f i))
     (hDistinct : tree.IsDistinct) (hVanishes : PolynomialVanishes tree p f) : p = 0 := by
   let evals : (Fin r → Fin 2) → F := fun x => p.get (finFunctionFinEquiv x)
   have hp : Vector.ofFn (fun i => evals (finFunctionFinEquiv.symm i)) = p := by
@@ -79,9 +81,9 @@ theorem eq_zero_of_polynomialVanishes_comp (hk : 2 ≤ k) (m : ℕ) (tree : Nest
       funext fun x => (heval (x ∘ f)).symm]
     exact hVanishes
   have hMvZero : MvPolynomial.MLE evals = 0 :=
-    NestedEvaluationTree.eq_zero_of_vanishes_comp (by omega) tree (MvPolynomial.MLE evals) f hf
-      (fun i => lt_of_le_of_lt (MvPolynomial.MLE_degreeOf evals i) (by omega)) hDistinct
-      hMvVanishes
+    NestedEvaluationTree.eq_zero_of_vanishes_comp hk tree (MvPolynomial.MLE evals) f hf
+      (fun i => lt_of_le_of_lt (MvPolynomial.MLE_degreeOf evals i) (by have := hk2 i; omega))
+      hDistinct hMvVanishes
   rw [MvPolynomial.MLE_eq_zero_iff] at hMvZero
   apply Vector.ext
   intro i hi
@@ -94,19 +96,20 @@ theorem eq_zero_of_polynomialVanishes_comp (hk : 2 ≤ k) (m : ℕ) (tree : Nest
   simpa only [Vector.getElem_zero] using h
 
 /-- The zero test when the polynomial reads the **first** `r` levels of the tree. -/
-theorem eq_zero_of_polynomialVanishes_castAdd (hk : 2 ≤ k) {s : ℕ}
-    (tree : NestedEvaluationTree F k (r + s)) (p : CMlPolynomialEval F r)
-    (hDistinct : tree.IsDistinct) (hVanishes : PolynomialVanishes tree p (Fin.castAdd s)) :
-    p = 0 :=
+theorem eq_zero_of_polynomialVanishes_castAdd {s : ℕ} {k : Fin (r + s) → ℕ}
+    (hk : ∀ i, 0 < k i) (tree : NestedEvaluationTree F (r + s) k) (p : CMlPolynomialEval F r)
+    (hk2 : ∀ i, 2 ≤ k (Fin.castAdd s i)) (hDistinct : tree.IsDistinct)
+    (hVanishes : PolynomialVanishes tree p (Fin.castAdd s)) : p = 0 :=
   eq_zero_of_polynomialVanishes_comp hk 0 tree p (Fin.castAdd s)
-    (fun i => (Nat.zero_add i.val).symm) hDistinct hVanishes
+    (fun i => (Nat.zero_add i.val).symm) hk2 hDistinct hVanishes
 
 /-- The zero test when the polynomial reads the **last** `r` levels of the tree. -/
-theorem eq_zero_of_polynomialVanishes_natAdd (hk : 2 ≤ k)
-    (tree : NestedEvaluationTree F k (m + r)) (p : CMlPolynomialEval F r)
-    (hDistinct : tree.IsDistinct) (hVanishes : PolynomialVanishes tree p (Fin.natAdd m)) :
-    p = 0 :=
-  eq_zero_of_polynomialVanishes_comp hk m tree p (Fin.natAdd m) (fun _ => rfl) hDistinct hVanishes
+theorem eq_zero_of_polynomialVanishes_natAdd {k : Fin (m + r) → ℕ} (hk : ∀ i, 0 < k i)
+    (tree : NestedEvaluationTree F (m + r) k) (p : CMlPolynomialEval F r)
+    (hk2 : ∀ i, 2 ≤ k (Fin.natAdd m i)) (hDistinct : tree.IsDistinct)
+    (hVanishes : PolynomialVanishes tree p (Fin.natAdd m)) : p = 0 :=
+  eq_zero_of_polynomialVanishes_comp hk m tree p (Fin.natAdd m) (fun _ => rfl) hk2 hDistinct
+    hVanishes
 
 end ZeroTest
 

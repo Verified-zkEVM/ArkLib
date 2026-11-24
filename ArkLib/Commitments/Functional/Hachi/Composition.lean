@@ -198,7 +198,6 @@ Every factor carries its verdict/guard maps as data (`Verifier.PureForm` /
 `Classical.choice` at any seam. -/
 def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q)
-    [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ b))
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
@@ -214,20 +213,6 @@ def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
       (LiftedWitness 𝓜(q, α) μ₀ n₀)
       (coreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F ++ₚ
         roundsSpec F b m₀ ++ₚ pSpecFinalEval F) :=
-  haveI : ∀ i, SampleableType
-      ((((!p[] : ProtocolSpec 0) ++ₚ
-        pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r)).Challenge i) :=
-    ProtocolSpec.instSampleableTypeChallengeAppend
-      (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
-      (h₂ := CoordinateWise.SingleRound.instSampleableTypeChallengePSpec)
-  haveI i₀ := coreSpecSampleable (q := q) (α := α) (dRows := dRows) (r := r)
-    ω m₀ m₁ K.TCom F
-  haveI : ∀ i, SampleableType
-      (((coreSpec (q := q) (α := α) (dRows := dRows) (r := r)
-        ω m₀ m₁ K.TCom F) ++ₚ
-        roundsSpec F b m₀).Challenge i) :=
-    ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₀)
-      (h₂ := roundsSpecSampleable F b m₀)
   have hb1 : 1 < b := hdig.one_lt
   let bridge := bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
     (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
@@ -249,7 +234,7 @@ def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (bridge ▷ quadEval) ▷ rlin ▷ lift ▷ batch ▷ zeroCheck ▷ sumcheckBridge
   (core ▷ rounds) ▷ finalEval
 
-omit [NeZero q] in
+omit [NeZero q] [SampleableType F] in
 /-- **Escape-threaded coordinate-wise special soundness of one Hachi evaluation iteration.** The
 composed verifier of rows 1–9 is CWSS over the endpoint relations `relPolyEval` and
 `relWEvalClaim`, at the composed extraction algorithm `(iteration …).extractor`, with
@@ -257,7 +242,6 @@ composed verifier of rows 1–9 is CWSS over the endpoint relations `relPolyEval
 theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q)
-    [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ b))
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
@@ -288,7 +272,6 @@ reduced witness against the reduced claim itself, so nothing is left to reduce. 
 `(evaluation …).isCWSS`; the end-piece factor is escape-free, so it adds no disjunct. -/
 def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q)
-    [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ b))
     [BEq K.TCom] [LawfulBEq K.TCom]
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
@@ -305,20 +288,6 @@ def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)
       ((coreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F ++ₚ
           roundsSpec F b m₀ ++ₚ pSpecFinalEval F) ++ₚ
         pSpecEndPiece (LiftedWitness 𝓜(q, α) μ₀ n₀)) :=
-  haveI i₀ := coreSpecSampleable (q := q) (α := α) (dRows := dRows) (r := r)
-    ω m₀ m₁ K.TCom F
-  haveI i₁ : ∀ i, SampleableType
-      (((coreSpec (q := q) (α := α) (dRows := dRows) (r := r)
-        ω m₀ m₁ K.TCom F) ++ₚ
-        roundsSpec F b m₀).Challenge i) :=
-    ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₀)
-      (h₂ := roundsSpecSampleable F b m₀)
-  haveI : ∀ i, SampleableType
-      ((((coreSpec (q := q) (α := α) (dRows := dRows) (r := r)
-          ω m₀ m₁ K.TCom F) ++ₚ
-          roundsSpec F b m₀) ++ₚ pSpecFinalEval F).Challenge i) :=
-    ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
-      (h₂ := instSampleableTypeChallengePSpecFinalEval)
   let iter := iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
     hq5 hκ K pp φF hd hb hdig hcov hn
   let closing := endPiece 𝓜(q, α) m₀ γ b b init impl K φF
