@@ -13,9 +13,9 @@ public import ArkLib.NonInteractiveArgument.ZeroKnowledge
 # Adapters from legacy OracleReduction interfaces to NARG
 
 These adapters expose a legacy one-message verifier or prover through the protocol-independent
-NARG interfaces. Experiment and predicate equivalences preserve the public oracle state,
-query budget, and named extractor. Private-coin transport lemmas for the legacy games are
-included here. The core NARG modules do not import this adapter.
+NARG interfaces. The experiment equivalences preserve the public oracle state and the named
+extractor. Private-coin transport lemmas for the legacy games are included here. The core NARG
+modules do not import this adapter.
 -/
 
 @[expose] public section
@@ -193,112 +193,6 @@ theorem adaptiveNARGKnowledgeSoundnessExp_liftComp
     QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftComp_left,
     StateT.run'_bind', StateT.run'_pure']
   simp [QueryLog.publicQueries, QueryLog.fst, QueryLog.inl]
-
-namespace NARG
-
-/-- Embed a verifier that needs no private coins into the probabilistic interface. -/
-def Verifier.ofPublic {ι : Type} {publicSpec : OracleSpec ι}
-    {Statement NARGString : Type}
-    (V : NonInteractiveVerifier NARGString publicSpec Statement Bool) :
-    Verifier publicSpec Statement NARGString where
-  verify x proof := (V.liftOracles).verify x (Fin.cons proof (fun i => i.elim0))
-
-section
-
-variable {ι : Type} {publicSpec : OracleSpec ι} {σ Statement Witness NARGString : Type}
-  (init : ProbComp σ) (impl : QueryImpl publicSpec (StateT σ ProbComp))
-
-/-- Embedding a public-only verifier preserves its soundness experiment exactly. -/
-theorem soundnessExperiment_ofPublic
-    (V : NonInteractiveVerifier NARGString publicSpec Statement Bool)
-    (P : Prover publicSpec Statement NARGString) :
-    soundnessExperiment init impl (Verifier.ofPublic V) P =
-      adaptiveNARGSoundnessExp init impl V P := by
-  rw [soundnessExperiment_eq, adaptiveNARGSoundnessExp_eq_option]
-  rfl
-
-/-- Embedding a public-only verifier preserves the knowledge-soundness experiment with a
-standalone extractor, including both public-query logs. -/
-theorem knowledgeSoundnessExperiment_ofPublic
-    (V : NonInteractiveVerifier NARGString publicSpec Statement Bool)
-    (E : Extractor publicSpec Statement Witness NARGString)
-    (P : Prover publicSpec Statement NARGString) :
-    knowledgeSoundnessExperiment init impl (Verifier.ofPublic V) E P =
-      adaptiveNARGKnowledgeSoundnessExp init impl V (liftNARGExtractor E) P := by
-  simp only [knowledgeSoundnessExperiment_eq, adaptiveNARGKnowledgeSoundnessExp_eq]
-  simp only [Verifier.ofPublic, _root_.Verifier.liftOracles, OptionT.run_mk]
-  have hlog (x : Statement) (π : NARGString) :=
-    withQueryLog_liftComp_left_of_query (oSpec := publicSpec) (spec₂ := unifSpec) (fun _ => rfl)
-      (V.verify x (Fin.cons π (fun i => i.elim0))).run
-  simp only [show ∀ x π,
-    (liftComp (V.verify x (Fin.cons π (fun i => i.elim0))).run
-      (publicSpec + unifSpec)).withQueryLog =
-      liftComp (runVerifierWithLog V x π) (publicSpec + unifSpec) >>= fun result =>
-        pure (result.1, QueryLog.inl result.2) from hlog]
-  simp only [bind_assoc, pure_bind, QueryLog.publicQueries, QueryLog.fst_inl]
-  have hE (x : Statement) (π : NARGString) (logP logV : QueryLog publicSpec) :
-      simulateQ (impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp))
-        (liftNARGExtractor E x π logP logV).run = StateT.lift (E x π logP logV).run := by
-    simp only [liftNARGExtractor, OptionT.run_mk, QueryImpl.addLift_def,
-      QueryImpl.simulateQ_add_liftComp_right, simulateQ_liftTarget, simulateQ_id']
-    rfl
-  simp only [simulateQ_bind, simulateQ_pure, bind_assoc, pure_bind, hE]
-
-end
-
-/-- Adding private verifier randomness commutes with an instance-size acceptance guard. -/
-theorem Verifier.ofPublic_restrictSize {ι Statement String : Type} {spec : OracleSpec ι}
-    (V : NonInteractiveVerifier String spec Statement Bool) (size : Statement → ℕ) (n : ℕ) :
-    Verifier.ofPublic (V.restrictSize size n) = (Verifier.ofPublic V).restrictSize size n := by
-  apply Verifier.ext
-  funext x proof
-  apply OptionT.ext
-  simp [Verifier.ofPublic, _root_.Verifier.liftOracles, _root_.Verifier.restrictSize,
-    Verifier.restrictSize, OptionT.run_map]
-
-section Families
-
-variable {ι State String : ℕ → ℕ → Type} {Statement Witness : Type}
-  (spec : ∀ sec n, OracleSpec (ι sec n))
-  (init : ∀ sec n, ProbComp (State sec n))
-  (impl : ∀ sec n, QueryImpl (spec sec n) (StateT (State sec n) ProbComp))
-  (V : ∀ sec n, NonInteractiveVerifier (String sec n) (spec sec n) Statement Bool)
-
-/-- Parameterized ordinary soundness is the generic bounded adaptive contract, with the
-instance-size condition enforced by the verifier. Both sides count the same public queries. -/
-theorem adaptiveSoundness_ofPublic_iff (language : Set Statement) (size : Statement → ℕ)
-    (error : ℕ → ℕ → ℕ → ENNReal) :
-    adaptiveSoundness spec init impl (fun sec n => Verifier.ofPublic (V sec n))
-      language size error ↔
-    ∀ sec n t, ((V sec n).restrictSize size n).adaptiveNARGSoundnessQueryBounded
-      (init sec n) (impl sec n) language {true} (fun _ => True) t (error sec n t) := by
-  unfold adaptiveSoundness AdaptiveGame.Bounded
-    _root_.Verifier.adaptiveNARGSoundnessQueryBounded
-  have hEvent : nargSoundFailEvent language {true} = soundnessFailureEvent language := rfl
-  simp only [← soundnessExperiment_ofPublic, Verifier.ofPublic_restrictSize,
-    hEvent, soundnessExperiment_restrictSize_failureProb_eq]
-
-/-- The ordinary existential contract fixes the same standalone extractor family before all
-budgets and adversaries as the generic named-extractor contracts on the right. -/
-theorem adaptiveKnowledgeSoundness_ofPublic_iff
-    (relation : Set (Statement × Witness)) (size : Statement → ℕ)
-    (error : ℕ → ℕ → ℕ → ENNReal) :
-    adaptiveKnowledgeSoundness spec init impl (fun sec n => Verifier.ofPublic (V sec n))
-      relation size error ↔
-    ∃ E : ∀ sec n, Extractor (spec sec n) Statement Witness (String sec n),
-      ∀ sec n t, _root_.Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
-          (init sec n) (impl sec n)
-          ((V sec n).restrictSize size n) relation {true}
-          (liftNARGExtractor (E sec n)) (fun _ => True) t (error sec n t) := by
-  unfold adaptiveKnowledgeSoundness adaptiveKnowledgeSoundnessWithExtractor AdaptiveGame.Bounded
-    _root_.Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
-  have hEvent : nargKSFailEvent relation {true} = knowledgeSoundnessFailureEvent relation := rfl
-  simp only [← knowledgeSoundnessExperiment_ofPublic, Verifier.ofPublic_restrictSize,
-    hEvent, knowledgeSoundnessExperiment_restrictSize_failureProb_eq]
-
-end Families
-
-end NARG
 
 namespace Reduction
 

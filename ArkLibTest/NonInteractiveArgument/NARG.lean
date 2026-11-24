@@ -3,15 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Yuxi Zheng, Chung Thai Nguyen, Michele Orrù
 -/
-import ArkLib.NonInteractiveArgument.NARG
+import ArkLib.InteractiveProof.Soundness
 import VCVio.OracleComp.RunIO
 
 /-!
 # NARG security boundaries
 
-A verifier can draw private coins despite an empty public oracle interface. Neither its draws
-nor the prover's private draws enter the extractor's logs. Rejection and missing extraction
-remain distinct outcomes.
+The prover and the extractor can draw private coins despite an empty public oracle interface.
+The prover's draws do not enter the extractor's logs. Rejection and missing extraction remain
+distinct outcomes. A statement-size bound is part of the failure event, and a family statement
+quantifies over its parameters itself.
 -/
 
 open OracleComp OracleSpec
@@ -26,84 +27,52 @@ def coinProver : NARG.Prover []ₒ Unit Unit :=
     let _ ← samplePrivateUniform (publicSpec := []ₒ) Bool
     pure ((), ()) : OracleComp ([]ₒ + unifSpec) (Unit × Unit))
 
-def coinVerifier : NARG.Verifier []ₒ Unit Unit where
-  verify _ _ := do
-    let accepted ← liftM (samplePrivateUniform (publicSpec := []ₒ) Bool)
-    pure accepted
+def acceptingVerifier : NonInteractiveVerifier Unit []ₒ Unit Bool where
+  verify _ _ := pure true
 
+-- The extractor samples its own coin and succeeds only on two empty logs.
 def checkHiddenCoins : NARG.Extractor []ₒ Unit Unit Unit := fun _ _ logP logV =>
-  if logP.isEmpty && logV.isEmpty then pure () else failure
-
--- Both parties sample a real private coin; the extractor still receives two empty logs.
-example :
-    NARG.knowledgeSoundnessExperiment (pure ()) emptyImpl
-      coinVerifier checkHiddenCoins coinProver = (do
-        let _ ← sampleUniform Bool
-        let accepted ← sampleUniform Bool
-        pure ((), some (), some accepted)) := by
-  have hE : checkHiddenCoins = fun _ _ _ _ => pure () := by
-    funext x π logP logV
-    cases logP with
-    | cons entry _ => nomatch entry.1
-    | nil =>
-      cases logV with
-      | cons entry _ => nomatch entry.1
-      | nil => rfl
-  rw [hE]
-  simp only [NARG.knowledgeSoundnessExperiment_eq, coinProver, coinVerifier]
-  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self, OptionT.liftM_def,
-    OptionT.run_lift, simulateQ_bind, simulateQ_pure, OptionT.run_pure, bind_assoc, pure_bind,
-    StateT.run'_bind', StateT.run'_pure']
-  rfl
+  if logP.isEmpty && logV.isEmpty then do
+    let _ ← OptionT.lift (samplePrivateUniform (publicSpec := []ₒ) Bool)
+    pure ()
+  else failure
 
 -- Verifier rejection never creates a knowledge failure, even with no extracted witness.
-example : ¬ NARG.knowledgeSoundnessFailureEvent (∅ : Set (Unit × Unit))
-    ((), none, some false) := by
-  simp [NARG.knowledgeSoundnessFailureEvent, nargKSFailEvent]
+example : ¬ nargKSFailEvent (∅ : Set (Unit × Unit)) {true} ((), none, some false) := by
+  simp [nargKSFailEvent]
 
-/-- Execute both parties' private sampling and check that extraction sees neither coin log. -/
+/-- Execute the prover's and extractor's private sampling and check that extraction sees no
+prover coin in its logs. -/
 def checkRuntime : IO Unit := do
   let (_, witness, accepted) ← OracleComp.runIO <|
-    NARG.knowledgeSoundnessExperiment (pure ()) emptyImpl
-      coinVerifier checkHiddenCoins coinProver
-  unless witness == some () && accepted.isSome do
+    adaptiveNARGKnowledgeSoundnessExp (pure ()) emptyImpl
+      acceptingVerifier checkHiddenCoins coinProver
+  unless witness == some () && accepted == some true do
     throw (IO.userError "NARG execution exposed private draws or lost the verifier result")
 
 end NARGSecurityTest
 
 namespace NARGParameterizedSecurityTest
 
--- The upper boundary is included, whereas the immediately larger false statement is excluded.
-example : NARG.soundnessFailureEventSizeBounded id 3 (∅ : Set ℕ) (some (3, true)) := by
-  simp [NARG.soundnessFailureEventSizeBounded, NARG.soundnessFailureEvent, nargSoundFailEvent]
+-- A size bound `size x ≤ n` enters the event through the input language: the upper boundary is
+-- included, whereas the immediately larger false statement is excluded.
+example : nargSoundFailEvent {x : ℕ | x ≤ 3 → x ∈ (∅ : Set ℕ)} {true} (some (3, true)) := by
+  simp [nargSoundFailEvent]
 
-example : ¬ NARG.soundnessFailureEventSizeBounded id 3 (∅ : Set ℕ) (some (4, true)) := by
-  simp [NARG.soundnessFailureEventSizeBounded]
+example : ¬ nargSoundFailEvent {x : ℕ | x ≤ 3 → x ∈ (∅ : Set ℕ)} {true} (some (4, true)) := by
+  simp [nargSoundFailEvent]
 
 -- Neither rejection nor a missing verifier result becomes a false-acceptance event.
-example : ¬ NARG.soundnessFailureEventSizeBounded id 3 (∅ : Set ℕ) (some (3, false)) := by
-  simp [NARG.soundnessFailureEventSizeBounded, NARG.soundnessFailureEvent, nargSoundFailEvent]
+example : ¬ nargSoundFailEvent {x : ℕ | x ≤ 3 → x ∈ (∅ : Set ℕ)} {true} (some (3, false)) := by
+  simp [nargSoundFailEvent]
 
-example : ¬ NARG.soundnessFailureEventSizeBounded id 3 (∅ : Set ℕ) none := by
-  simp [NARG.soundnessFailureEventSizeBounded]
+example : ¬ nargSoundFailEvent {x : ℕ | x ≤ 3 → x ∈ (∅ : Set ℕ)} {true} none := by
+  simp [nargSoundFailEvent]
 
--- Making oversized pairs valid would miss this case: the whole event must be excluded even
--- when extraction returns no witness.
-example : ¬ NARG.knowledgeSoundnessFailureEventSizeBounded id 3 (Set.univ : Set (ℕ × Unit))
-    (4, none, some true) := by
-  simp [NARG.knowledgeSoundnessFailureEventSizeBounded]
-
-example : NARG.knowledgeSoundnessFailureEventSizeBounded id 3 (Set.univ : Set (ℕ × Unit))
-    (3, none, some true) := by
-  simp [NARG.knowledgeSoundnessFailureEventSizeBounded]
-
-example : ¬ NARG.knowledgeSoundnessFailureEventSizeBounded id 3 (∅ : Set (ℕ × Unit))
-    (3, none, some false) := by
-  simp [NARG.knowledgeSoundnessFailureEventSizeBounded,
-    NARG.knowledgeSoundnessFailureEvent, nargKSFailEvent]
-
-example : ¬ NARG.knowledgeSoundnessFailureEventSizeBounded id 3 (∅ : Set (ℕ × Unit))
-    (3, none, none) := by simp [NARG.knowledgeSoundnessFailureEventSizeBounded]
+-- For knowledge soundness, the size-restricted verifier rejects an oversized statement, so the
+-- event is excluded even when extraction returns no witness.
+example : ¬ nargKSFailEvent (Set.univ : Set (ℕ × Unit)) {true} (4, none, some false) := by
+  simp [nargKSFailEvent]
 
 -- Query indices depend on the security parameter; answers and stored state depend on n.
 def publicSpec (securityParam instanceBound : ℕ) : OracleSpec (Fin (securityParam + 1)) :=
@@ -118,41 +87,39 @@ def oracleImpl (securityParam instanceBound : ℕ) :
 
 -- The NARG-string type also varies with both public parameters.
 def verifier (securityParam instanceBound : ℕ) :
-    NARG.Verifier (publicSpec securityParam instanceBound) ℕ
-      (Fin (securityParam + instanceBound + 1)) where
+    NonInteractiveVerifier (Fin (securityParam + instanceBound + 1))
+      (publicSpec securityParam instanceBound) ℕ Bool where
   verify _ _ := pure false
 
 def extractor (securityParam instanceBound : ℕ) :
     NARG.Extractor (publicSpec securityParam instanceBound) ℕ Unit
       (Fin (securityParam + instanceBound + 1)) := fun _ _ _ _ => pure ()
 
--- A fixed-configuration probability bound supplies the whole parameterized definition.
+-- A family statement quantifies over the parameters and the budget itself. A fixed-configuration
+-- probability bound on the experiment supplies each instance of the predicate.
 example (language : Set ℕ) (error : ℕ → ℕ → ℕ → ENNReal)
     (h : ∀ sec n t (P : NARG.Prover (publicSpec sec n) ℕ (Fin (sec + n + 1))),
       P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
-      Pr{let out ← (NARG.soundnessExperiment (sampleOracle sec n) (oracleImpl sec n)
-        (verifier sec n) P)}[NARG.soundnessFailureEvent language out] ≤ error sec n t) :
-    NARG.adaptiveSoundness publicSpec sampleOracle oracleImpl verifier language id error := by
-  intro sec n t P hP
-  refine (prEvent_mono _ _ _ ?_).trans (h sec n t P hP)
-  intro out hout
-  cases out with
-  | none => exact False.elim hout
-  | some out => exact hout.2
+      Pr{let out ← (adaptiveNARGSoundnessExp (sampleOracle sec n) (oracleImpl sec n)
+        (verifier sec n) P)}[nargSoundFailEvent {x | x ≤ n → x ∈ language} {true} out] ≤
+        error sec n t) :
+    ∀ sec n t, (verifier sec n).adaptiveNARGSoundnessQueryBounded (sampleOracle sec n)
+      (oracleImpl sec n) {x | x ≤ n → x ∈ language} {true} (fun _ => True) t (error sec n t) :=
+  fun sec n t => (Verifier.adaptiveNARGSoundnessQueryBounded_iff ..).2 (h sec n t)
 
--- The named extractor is one family, fixed before all budgets and adversaries.
+-- The named extractor family is fixed before all budgets and adversaries.
 example (relation : Set (ℕ × Unit)) (error : ℕ → ℕ → ℕ → ENNReal)
     (h : ∀ sec n t (P : NARG.Prover (publicSpec sec n) ℕ (Fin (sec + n + 1))),
       P.IsQueryBoundP (publicQuerySelector fun _ => True) t →
-      Pr{let out ←
-        (NARG.knowledgeSoundnessExperiment (sampleOracle sec n) (oracleImpl sec n)
-          (verifier sec n) (extractor sec n) P)}[NARG.knowledgeSoundnessFailureEvent relation out] ≤
+      Pr{let out ← (adaptiveNARGKnowledgeSoundnessExp (sampleOracle sec n) (oracleImpl sec n)
+        (verifier sec n) (extractor sec n) P)}[nargKSFailEvent relation {true} out] ≤
         error sec n t) :
-    NARG.adaptiveKnowledgeSoundness publicSpec sampleOracle oracleImpl verifier
-      relation id error := by
-  refine ⟨extractor, ?_⟩
-  intro sec n t P hP
-  exact (prEvent_mono _ _ _ fun _ hout => hout.2).trans (h sec n t P hP)
+    ∃ E : ∀ sec n, NARG.Extractor (publicSpec sec n) ℕ Unit (Fin (sec + n + 1)),
+      ∀ sec n t, (verifier sec n).adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
+        (sampleOracle sec n) (oracleImpl sec n) relation {true} (E sec n) (fun _ => True) t
+        (error sec n t) :=
+  ⟨extractor, fun sec n t =>
+    (Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff ..).2 (h sec n t)⟩
 
 end NARGParameterizedSecurityTest
 

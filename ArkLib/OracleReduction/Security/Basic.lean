@@ -304,8 +304,8 @@ def Straightline.withCoins (E : Straightline oSpec StmtIn WitIn WitOut pSpec) :
     StraightlineWithCoins oSpec StmtIn WitIn WitOut pSpec :=
   fun x wOut tr logP logV => OptionT.mk (liftComp (E x wOut tr logP logV).run (oSpec + unifSpec))
 
-/-- A straight-line extractor that makes no shared-oracle queries, such as `NARG.Extractor` and
-`IP.SRExtractor`, is a straight-line extractor with coins. -/
+/-- A straight-line extractor that makes no shared-oracle queries, such as `IP.SRExtractor`, is a
+straight-line extractor with coins. -/
 def StraightlineWithCoins.ofProbComp
     (E : StmtIn → WitOut → FullTranscript pSpec → QueryLog oSpec → QueryLog oSpec →
       OptionT ProbComp WitIn) :
@@ -515,11 +515,12 @@ def relationKSFailEvent {StmtIn WitIn StmtOut WitOut : Type}
   | (x, some witIn, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut ∧ (x, witIn) ∉ relIn
   | (_, none, some stmtOut, witOut) => (stmtOut, witOut) ∈ relOut
   | _ => False
-/-! ## Adaptive NARG security
+/-! ## Adaptive NARG experiments
 
 The prover chooses a statement and NARG string, using public oracles and private randomness.
-Each notion has one experiment. Unbounded and query-bounded predicates differ only in which
-provers they quantify over; private draws are excluded from public-query budgets.
+Each notion has one experiment. The predicates, such as `Verifier.adaptiveNARGSoundness`, are in
+`ArkLib.InteractiveProof.Soundness`, where each is the adaptive interactive predicate at the
+one-message protocol and a theorem restates it on these experiments.
 
 The KS extractor is straight-line: it receives the statement, NARG string, and both
 public-query logs, but no prover handle. It queries the public oracles through the game's
@@ -609,75 +610,6 @@ theorem adaptiveNARGKnowledgeSoundnessExp_eq
   simp only [adaptiveNARGKnowledgeSoundnessExp, AdaptiveGame.runWithExtractor,
     AdaptiveGame.execute, simulateQ_bind, simulateQ_pure, pure_bind, bind_assoc]
 
-namespace Verifier
-
-variable {ι : Type} {oSpec : OracleSpec ι}
-  {σ StmtIn Proof StmtOut WitIn : Type}
-  (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-  (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
-
-/-- **[CO25, Definition 3.5, adapted]** Adaptive soundness against every prover, with private
-sampling available. The error is independent of any query budget. -/
-def adaptiveNARGSoundness (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (error : ENNReal) : Prop :=
-  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
-    Pr{let out ← adaptiveNARGSoundnessExp init impl verifier P}[
-      nargSoundFailEvent langIn langOut out] ≤ error
-
-/-- **[CO25, Definition 3.5]** Adaptive soundness for a public-query selector and budget.
-The predicate excludes private draws from the budget; it does not truncate the experiment. -/
-def adaptiveNARGSoundnessQueryBounded (langIn : Set StmtIn) (langOut : Set StmtOut)
-    (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
-    (t : ℕ) (error : ENNReal) : Prop :=
-  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
-    P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t →
-      Pr{let out ← adaptiveNARGSoundnessExp init impl verifier P}[
-        nargSoundFailEvent langIn langOut out] ≤ error
-
-/-- Adaptive knowledge soundness for a supplied extractor, without a prover-query bound. -/
-def adaptiveNARGKnowledgeSoundnessWithExtractor
-    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
-      OptionT (OracleComp (oSpec + unifSpec)) WitIn) (error : ENNReal) : Prop :=
-  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
-    Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl
-          verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
-
-/-- Adaptive knowledge soundness with one extractor for all provers.
-The existential quantifier imposes no computability or resource bound. A classical witness
-selector can ignore the logs and return a witness for any true statement. See
-`Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for the
-fixed-statement interactive game. -/
-def adaptiveNARGKnowledgeSoundness
-    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut) (error : ENNReal) : Prop :=
-  ∃ extractor, adaptiveNARGKnowledgeSoundnessWithExtractor init impl verifier
-    relIn langOut extractor error
-
-/-- **[CO25, Definition 3.6, adapted]** Knowledge soundness for a supplied straight-line extractor
-and a public-query budget. The extractor receives both public logs, excluding private draws. -/
-def adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
-    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
-      OptionT (OracleComp (oSpec + unifSpec)) WitIn)
-    (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
-    (t : ℕ) (error : ENNReal) : Prop :=
-  ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
-    P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t →
-      Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl
-            verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
-
-/-- One straight-line extractor for all public-query budgets. The extractor is chosen before
-both the budget and the prover; private sampling is available in every execution.
-The budgets restrict the prover. As in `adaptiveNARGKnowledgeSoundness`, the existential
-extractor can select a witness by classical choice. -/
-def adaptiveNARGKnowledgeSoundnessQueryBounded
-    (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
-    (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
-    (error : ℕ → ENNReal) : Prop :=
-  ∃ extractor, ∀ t, adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
-    init impl verifier relIn langOut extractor queryBoundSelector t (error t)
-
-end Verifier
 end AdaptiveNARG
 
 end Soundness

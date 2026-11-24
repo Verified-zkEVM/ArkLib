@@ -5,7 +5,7 @@ Authors: Quang Dao, Chung Thai Nguyen, Alexander Hicks, Michele Orrù, Yuxi Zhen
 -/
 module
 
-public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.InteractiveProof.Soundness
 public import ArkLib.OracleReduction.ProtocolSpec.DeriveTranscript
 public import VCVio.OracleComp.QueryTracking.QueryLog
 
@@ -732,7 +732,8 @@ theorem soundnessQueryBounded_iff_adaptiveNARGSoundnessQueryBounded
     (toNARGVerifier V).adaptiveNARGSoundnessQueryBounded init
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       (Prod.fst ⁻¹' langIn) langOut counts t error := by
-  unfold soundnessQueryBounded Verifier.adaptiveNARGSoundnessQueryBounded AdaptiveGame.Bounded
+  rw [Verifier.adaptiveNARGSoundnessQueryBounded_iff]
+  unfold soundnessQueryBounded AdaptiveGame.Bounded
   simp only [← soundnessFailureProb_toNARG, soundnessFailureProb]
 end Verifier.StateRestoration
 
@@ -898,8 +899,8 @@ theorem knowledgeSoundnessQueryBoundedWithExtractor_iff_adaptiveNARGKnowledgeSou
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       {a | (a.1.1, a.2) ∈ relIn} relOut
       (toNARGExtractor E) counts t error := by
-  unfold knowledgeSoundnessQueryBoundedWithExtractor
-    Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor AdaptiveGame.Bounded
+  rw [Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff]
+  unfold knowledgeSoundnessQueryBoundedWithExtractor AdaptiveGame.Bounded
   simp only [← knowledgeSoundnessFailureProb_toNARG, knowledgeSoundnessFailureProb]
 
 /-- The same derived NARG characterization holds for unbounded SR adversaries. -/
@@ -913,7 +914,8 @@ theorem knowledgeSoundnessWithExtractor_iff_adaptiveNARGKnowledgeSoundness
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       {a | (a.1.1, a.2) ∈ relIn} relOut
       (toNARGExtractor E) error := by
-  unfold knowledgeSoundnessWithExtractor Verifier.adaptiveNARGKnowledgeSoundnessWithExtractor
+  rw [Verifier.adaptiveNARGKnowledgeSoundnessWithExtractor_iff]
+  unfold knowledgeSoundnessWithExtractor
   simp only [knowledgeSoundnessFailureProb_toNARG]
 end Verifier.StateRestoration
 
@@ -932,7 +934,8 @@ theorem soundness_iff_adaptiveNARGSoundness
     (toNARGVerifier V).adaptiveNARGSoundness init
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       (Prod.fst ⁻¹' langIn) langOut error := by
-  unfold soundness Verifier.adaptiveNARGSoundness
+  rw [Verifier.adaptiveNARGSoundness_iff]
+  unfold soundness
   simp only [soundnessFailureProb_toNARG]
 
 end Verifier.StateRestoration
