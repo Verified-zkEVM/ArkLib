@@ -53,8 +53,7 @@ def adaptiveBadEvent (out : Option (Bool × Bool)) : Prop :=
   nargSoundFailEvent (∅ : Set Bool) {true} out
 
 def adaptiveExperiment : ProbComp (Option (Bool × Bool)) :=
-  bitVerifier.adaptiveSoundnessExp (WitOut := Bool) bitInit bitImpl
-    (QueryImpl.id' unifSpec) adaptiveBitProver
+  bitVerifier.adaptiveSoundnessExp (WitOut := Bool) bitInit bitImpl adaptiveBitProver
 
 abbrev oneMessage : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Bool]⟩
 
@@ -178,8 +177,10 @@ private def privateSampler : QueryImpl coinSpec ProbComp := fun _ => pure false
 private def checkPublicLogs : Verifier.AdaptiveExtractor coinSpec coinSpec Bool Bool Bool (!p[]) :=
   fun _ _ _ trP trV => pure (trP.map (·.2) == [false] && trV.map (·.2) == [true])
 
-example : bitVerifier.adaptiveKnowledgeSoundnessExp (pure false) togglingOracle privateSampler
-    bitImpl checkPublicLogs mixedProver = pure (false, some true, some false, false) := rfl
+-- A prover with a custom coin sampler runs as a uniform-coin prover after compilation.
+example : bitVerifier.adaptiveKnowledgeSoundnessExp (pure false) togglingOracle bitImpl
+    checkPublicLogs (mixedProver.normalizePrivateCoins privateSampler) =
+      pure (false, some true, some false, false) := rfl
 
 example : mixedProver.IsQueryBound (publicQuerySelector (fun _ => True)) 1 := by
   let spec := mixedSpec + [(!p[] : ProtocolSpec 0).Challenge]ₒ
@@ -193,12 +194,12 @@ example : mixedProver.IsQueryBound (publicQuerySelector (fun _ => True)) 1 := by
 
 -- The usual fixed-statement error bound also holds for all constant adaptive choosers.
 theorem constant_chooser_bound :
-    bitVerifier.adaptiveSoundness bitInit bitImpl (QueryImpl.id' unifSpec) (∅ : Set Bool) {true}
+    bitVerifier.adaptiveSoundness bitInit bitImpl (∅ : Set Bool) {true}
       (fun WitOut A => ∃ (Aux : Type) (stmt : Bool) (aux : Aux)
         (P : Prover coinSpec Bool Aux Bool WitOut (!p[])),
         A = AdaptiveProver.fixed stmt aux P) (1 / 2) := by
   simpa using (bitVerifier.soundness_iff_adaptiveSoundness_fixed bitInit bitImpl
-    (QueryImpl.id' unifSpec) (∅ : Set Bool) {true} (1 / 2)).mp nonadaptive_bound
+    (∅ : Set Bool) {true} (1 / 2)).mp nonadaptive_bound
 
 end AdaptiveSoundnessTest
 

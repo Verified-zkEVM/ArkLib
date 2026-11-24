@@ -25,9 +25,11 @@ open OracleComp OracleSpec
 
 /-! ## Private sampling and public query interfaces
 
-The security games append `unifSpec` for private samples. The helpers below select that slot,
-exclude it from public budgets and logs, and compile custom samplers to uniform draws.
-The preservation lemmas below keep execution, public logs, and query budgets unchanged.
+The security games append `unifSpec` for the malicious prover's private coins and answer it
+uniformly. The helpers below select that slot and exclude it from public budgets and logs.
+`normalizePrivateCoins` compiles an adversary that uses any other sampler into a uniform-coin
+adversary. The preservation lemmas below show that the compiled adversary has the same execution,
+public logs, and query budgets, so security against uniform-coin adversaries covers it.
 -/
 
 /-- Sample uniformly using the ambient monad's sampling capability. -/

@@ -18,7 +18,7 @@ def legacySRProver :
     OracleComp ([]ₒ + srVerifierMessageOracle (Unit × Unit) (default : ProtocolSpec 0))
     ((Unit × Unit) × (default : ProtocolSpec 0).Messages) := pure (((), ()), default)
 
-def embeddedSRProver : Prover.StateRestoration.Soundness []ₒ unifSpec Unit
+def embeddedSRProver : Prover.StateRestoration.Soundness []ₒ Unit
     (default : ProtocolSpec 0) (Salt := Unit) := liftComp legacySRProver _
 
 /-- The extractor has private randomness without acquiring the SR challenge interface. -/
@@ -107,7 +107,7 @@ def verifier : Verifier ambient Unit ℕ pSpec where
     let challenge : Fin 7 := tr 0
     if challenge == 5 then pure value else failure
 
-def prover : Prover.StateRestoration.KnowledgeSoundness ambient unifSpec Unit ℕ pSpec
+def prover : Prover.StateRestoration.KnowledgeSoundness ambient Unit ℕ pSpec
     (Salt := Bool) := do
   let _ ← samplePrivateUniform (publicSpec := publicSpec) (Fin 7)
   return (((), true), fun i => isEmptyElim i, 11)
@@ -126,11 +126,11 @@ def extractor : Extractor.StateRestoration ambient Unit ℕ ℕ pSpec (Salt := B
 def checkRuntime : IO Unit := do
   let (_, originalWitness, originalOut, outputWitness) ← OracleComp.runIO <|
     Verifier.StateRestoration.knowledgeSoundnessExperiment (pure table) impl
-      (QueryImpl.id' unifSpec) extractor verifier prover
+      extractor verifier prover
   let (statement, witness, out) ← OracleComp.runIO <|
     adaptiveNARGKnowledgeSoundnessExp (pure table)
       (impl + srChallengeQueryImpl' (Statement := Unit × Bool) (pSpec := pSpec))
-      (QueryImpl.id' unifSpec) (impl.addLift (QueryImpl.id' unifSpec))
+      (impl.addLift (QueryImpl.id' unifSpec))
       (Verifier.StateRestoration.toNARGKnowledgeVerifier verifier)
       (Verifier.StateRestoration.toNARGExtractor extractor) prover
   unless originalWitness == some 9 && originalOut == some 9 && outputWitness == 11 &&

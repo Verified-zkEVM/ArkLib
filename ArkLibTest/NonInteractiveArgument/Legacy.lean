@@ -49,13 +49,13 @@ end AdaptiveAccess
 def checkRuntime : IO Unit := do
   let (_, witness, accepted) ← OracleComp.runIO <|
     adaptiveNARGKnowledgeSoundnessExp (pure 0) AdaptiveAccess.publicImpl
-      (QueryImpl.id' unifSpec) ((QueryImpl.id' unifSpec).liftTarget (StateT ℕ ProbComp))
+      ((QueryImpl.id' unifSpec).liftTarget (StateT ℕ ProbComp))
       AdaptiveAccess.verifier AdaptiveAccess.standalone AdaptiveAccess.prover
   unless witness == some 1 && accepted == some () do
     throw (IO.userError "adaptive KS exposed private draws in the extractor's public logs")
   let (_, witness, _) ← OracleComp.runIO <|
     adaptiveNARGKnowledgeSoundnessExp (pure 0) AdaptiveAccess.publicImpl
-      (QueryImpl.id' unifSpec) (AdaptiveAccess.publicImpl.addLift (QueryImpl.id' unifSpec))
+      (AdaptiveAccess.publicImpl.addLift (QueryImpl.id' unifSpec))
       AdaptiveAccess.verifier AdaptiveAccess.shared AdaptiveAccess.prover
   unless witness == some 3 do
     throw (IO.userError "explicit shared-oracle extraction did not continue the verifier state")

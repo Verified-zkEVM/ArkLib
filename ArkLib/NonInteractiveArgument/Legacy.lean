@@ -27,37 +27,100 @@ open scoped NNReal ProbabilityTheory
 
 open OracleComp OracleSpec
 
-/-- Execute the prover with private sampling, then verify using only public queries. -/
+/-- Execute the prover with uniform private coins, then verify using only public queries. -/
 theorem adaptiveNARGSoundnessExp_eq
-    {ι κ : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
-    {σ StmtIn Proof StmtOut : Type}
+    {ι : Type} {oSpec : OracleSpec ι} {σ StmtIn Proof StmtOut : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (privateImpl : QueryImpl privateSpec ProbComp)
     (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
-    (P : OracleComp (oSpec + privateSpec) (StmtIn × Proof)) :
-    adaptiveNARGSoundnessExp init impl privateImpl verifier P = (do
+    (P : OracleComp (oSpec + unifSpec) (StmtIn × Proof)) :
+    adaptiveNARGSoundnessExp init impl verifier P = (do
       (do
-        let ⟨x, π⟩ ← simulateQ (impl.addLift privateImpl : QueryImpl _ (StateT σ ProbComp)) P
+        let ⟨x, π⟩ ← simulateQ
+          (impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp)) P
         let output ← simulateQ impl (verifier.verify x (Fin.cons π (fun i => i.elim0))).run
         return output.map (x, ·)).run' (← init)) := by
   simp only [adaptiveNARGSoundnessExp, AdaptiveGame.run, simulateQ_bind, simulateQ_pure,
     QueryImpl.addLift_def, QueryImpl.liftTarget_self, QueryImpl.simulateQ_add_liftComp_left]
 
-/-- A standalone extractor can run after the public-oracle state is discarded. -/
-theorem adaptiveNARGKnowledgeSoundnessExp_liftTarget
+/-- A prover with a custom private sampler is a uniform-coin prover: compiling the sampler
+gives the soundness experiment in which the original prover samples with `sampler`. -/
+theorem adaptiveNARGSoundnessExp_normalizePrivateCoins
+    {ι κ : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
+    {σ StmtIn Proof StmtOut : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (sampler : QueryImpl privateSpec ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (P : OracleComp (oSpec + privateSpec) (StmtIn × Proof)) :
+    adaptiveNARGSoundnessExp init impl verifier (normalizePrivateCoins sampler P) = (do
+      (do
+        let ⟨x, π⟩ ← simulateQ (impl.addLift sampler : QueryImpl _ (StateT σ ProbComp)) P
+        let output ← simulateQ impl (verifier.verify x (Fin.cons π (fun i => i.elim0))).run
+        return output.map (x, ·)).run' (← init)) := by
+  rw [adaptiveNARGSoundnessExp_eq, simulateQ_normalizePrivateCoins]
+
+private theorem adaptiveNARGKnowledgeSoundnessExp_publicLog
+    {ι κ κE : Type} {oSpec : OracleSpec ι} {spec : OracleSpec κ}
+    {extractorSpec : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (H : QueryImpl (oSpec + spec) (StateT σ ProbComp))
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) WitIn)
+    (Q : OracleComp (oSpec + spec) (StmtIn × Proof)) :
+    AdaptiveGame.runWithExtractor init H extractorImpl Q.withQueryLog
+      (fun a => liftComp (runVerifierWithLog verifier a.1.1 a.1.2) _)
+      (fun a v => extractor a.1.1 a.1.2 a.2.publicQueries v.2)
+      (fun a v wit => (a.1.1, wit, v.1)) =
+    AdaptiveGame.runWithExtractor init H extractorImpl
+      ((fun r => (r.1, r.2.publicQueries)) <$> Q.withQueryLog)
+      (fun a => liftComp (runVerifierWithLog verifier a.1.1 a.1.2) _)
+      (fun a v => extractor a.1.1 a.1.2 a.2 v.2)
+      (fun a v wit => (a.1.1, wit, v.1)) := by
+  simp only [AdaptiveGame.runWithExtractor, AdaptiveGame.execute, simulateQ_bind, simulateQ_pure,
+    bind_assoc, pure_bind, bind_map_left]
+
+/-- A prover with a custom private sampler is a uniform-coin prover for knowledge soundness:
+compiling the sampler gives the extraction experiment in which the original prover samples with
+`sampler`. The extractor receives the same public query log. -/
+theorem adaptiveNARGKnowledgeSoundnessExp_normalizePrivateCoins
     {ι κ κE : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
     {extractorSpec : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (privateImpl : QueryImpl privateSpec ProbComp)
-    (extractorImpl : QueryImpl extractorSpec ProbComp)
+    (sampler : QueryImpl privateSpec ProbComp)
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
     (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
       OptionT (OracleComp extractorSpec) WitIn)
     (P : OracleComp (oSpec + privateSpec) (StmtIn × Proof)) :
-    adaptiveNARGKnowledgeSoundnessExp init impl privateImpl
+    adaptiveNARGKnowledgeSoundnessExp init impl extractorImpl verifier extractor
+        (normalizePrivateCoins sampler P) =
+      AdaptiveGame.runWithExtractor init (impl.addLift sampler) extractorImpl P.withQueryLog
+        (fun a => liftComp (runVerifierWithLog verifier a.1.1 a.1.2) _)
+        (fun a v => extractor a.1.1 a.1.2 a.2.publicQueries v.2)
+        (fun a v wit => (a.1.1, wit, v.1)) := by
+  rw [adaptiveNARGKnowledgeSoundnessExp, adaptiveNARGKnowledgeSoundnessExp_publicLog,
+    adaptiveNARGKnowledgeSoundnessExp_publicLog, publicQueries_withQueryLog_normalizePrivateCoins]
+  simp only [AdaptiveGame.runWithExtractor, AdaptiveGame.execute, simulateQ_bind,
+    simulateQ_pure]
+  simp only [simulateQ_normalizePrivateCoins]
+  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+    QueryImpl.simulateQ_add_liftComp_left]
+
+/-- A standalone extractor can run after the public-oracle state is discarded. -/
+theorem adaptiveNARGKnowledgeSoundnessExp_liftTarget
+    {ι κE : Type} {oSpec : OracleSpec ι}
+    {extractorSpec : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (extractorImpl : QueryImpl extractorSpec ProbComp)
+    (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
+    (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
+      OptionT (OracleComp extractorSpec) WitIn)
+    (P : OracleComp (oSpec + unifSpec) (StmtIn × Proof)) :
+    adaptiveNARGKnowledgeSoundnessExp init impl
       (extractorImpl.liftTarget (StateT σ ProbComp)) verifier extractor P = (do
       let ⟨x, π, tr, stmtOut, trV⟩ ←
-        (simulateQ (impl.addLift privateImpl : QueryImpl _ (StateT σ ProbComp)) (do
+        (simulateQ (impl.addLift (QueryImpl.id' unifSpec) :
+            QueryImpl _ (StateT σ ProbComp)) (do
           let ⟨⟨x, π⟩, tr⟩ ← P.withQueryLog
           let ⟨stmtOut, trV⟩ ← liftComp (runVerifierWithLog verifier x π) _
           return (x, π, tr, stmtOut, trV))).run' (← init)
@@ -73,7 +136,7 @@ theorem adaptiveNARGSoundnessExp_liftComp
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
     (P : OracleComp oSpec (StmtIn × Proof)) :
-    adaptiveNARGSoundnessExp init impl (QueryImpl.id' unifSpec) verifier
+    adaptiveNARGSoundnessExp init impl verifier
       (liftCompLeft P) = (do
       (simulateQ impl (do
         let ⟨x, π⟩ ← P
@@ -108,7 +171,7 @@ theorem adaptiveNARGKnowledgeSoundnessExp_liftComp
     (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
       OptionT (OracleComp extractorSpec) WitIn)
     (P : OracleComp oSpec (StmtIn × Proof)) :
-    adaptiveNARGKnowledgeSoundnessExp init impl (QueryImpl.id' unifSpec)
+    adaptiveNARGKnowledgeSoundnessExp init impl
       (extractorImpl.liftTarget (StateT σ ProbComp)) verifier extractor
       (liftCompLeft P) = (do
       let ⟨x, π, tr, stmtOut, trV⟩ ←
@@ -129,19 +192,18 @@ theorem adaptiveNARGKnowledgeSoundnessExp_liftComp
 
 /-- Interpreting a standalone extractor beforehand preserves the KS experiment. -/
 theorem adaptiveNARGKnowledgeSoundnessExp_simulateExtractor
-    {ι κ κE : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
+    {ι κE : Type} {oSpec : OracleSpec ι}
     {extractorSpec : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (privateImpl : QueryImpl privateSpec ProbComp)
     (extractorImpl : QueryImpl extractorSpec ProbComp)
     (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
     (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
       OptionT (OracleComp extractorSpec) WitIn)
-    (P : OracleComp (oSpec + privateSpec) (StmtIn × Proof)) :
-    adaptiveNARGKnowledgeSoundnessExp init impl privateImpl
+    (P : OracleComp (oSpec + unifSpec) (StmtIn × Proof)) :
+    adaptiveNARGKnowledgeSoundnessExp init impl
       ((QueryImpl.id' unifSpec).liftTarget (StateT σ ProbComp)) verifier
       (fun x π tr trV => OptionT.mk (simulateQ extractorImpl (extractor x π tr trV).run)) P =
-    adaptiveNARGKnowledgeSoundnessExp init impl privateImpl
+    adaptiveNARGKnowledgeSoundnessExp init impl
       (extractorImpl.liftTarget (StateT σ ProbComp)) verifier extractor P := by
   rw [adaptiveNARGKnowledgeSoundnessExp_liftTarget,
     adaptiveNARGKnowledgeSoundnessExp_liftTarget]
@@ -166,7 +228,7 @@ theorem soundnessExperiment_ofPublic
     (V : NonInteractiveVerifier NARGString publicSpec Statement Bool)
     (P : Prover publicSpec Statement NARGString) :
     soundnessExperiment init impl (Verifier.ofPublic V) P =
-      adaptiveNARGSoundnessExp init impl (QueryImpl.id' unifSpec) V P := by
+      adaptiveNARGSoundnessExp init impl V P := by
   rw [soundnessExperiment_eq, adaptiveNARGSoundnessExp_eq_option]
   rfl
 
@@ -177,7 +239,7 @@ theorem knowledgeSoundnessExperiment_ofPublic
     (E : Extractor publicSpec Statement Witness NARGString)
     (P : Prover publicSpec Statement NARGString) :
     knowledgeSoundnessExperiment init impl (Verifier.ofPublic V) E P =
-      adaptiveNARGKnowledgeSoundnessExp init impl (QueryImpl.id' unifSpec)
+      adaptiveNARGKnowledgeSoundnessExp init impl
         privateExtractorImpl V E P := by
   simp only [knowledgeSoundnessExperiment_eq, adaptiveNARGKnowledgeSoundnessExp_eq]
   simp only [Verifier.ofPublic, _root_.Verifier.liftOracles, OptionT.run_mk]

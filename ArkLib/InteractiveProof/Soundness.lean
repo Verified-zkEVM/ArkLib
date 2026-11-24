@@ -52,10 +52,10 @@ def fixed {Aux : Type} (stmt : Stmt) (aux : Aux)
     (P : Prover spec Stmt Aux Out WitOut pSpec) : AdaptiveProver spec Stmt Out WitOut pSpec :=
   ⟨Aux, pure (stmt, aux), P⟩
 
-/-- Run a public-oracle adversary in a game with an additional private-oracle interface. -/
-instance coeAddPrivateOracles {κ : Type} {privateSpec : OracleSpec κ} :
+/-- Run a public-oracle adversary in a game that also offers private uniform coins. -/
+instance coeAddPrivateOracles :
     CoeTail (AdaptiveProver spec Stmt Out WitOut pSpec)
-      (AdaptiveProver (spec + privateSpec) Stmt Out WitOut pSpec) where
+      (AdaptiveProver (spec + unifSpec) Stmt Out WitOut pSpec) where
   coe A := {
     Aux := A.Aux
     choose := liftCompLeft A.choose
@@ -83,34 +83,33 @@ end AdaptiveProver
 
 namespace Verifier
 
-variable {ι κ κE σ Stmt Out Wit WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+variable {ι κE σ Stmt Out Wit WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   [∀ i, SampleableType (pSpec.Challenge i)]
-  {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ} {extractorSpec : OracleSpec κE}
+  {oSpec : OracleSpec ι} {extractorSpec : OracleSpec κE}
   (V : Verifier oSpec Stmt Out pSpec)
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-  (privateImpl : QueryImpl privateSpec ProbComp)
 
 /-- Initialize the shared oracle, choose the statement, and run the public-coin interaction.
-The prover can sample through `privateSpec`, while the verifier queries `oSpec`. -/
-def adaptiveSoundnessExp (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+The prover can sample through `unifSpec`, while the verifier queries `oSpec`. -/
+def adaptiveSoundnessExp (P : AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec) :
     ProbComp (Option (Stmt × Out)) :=
   AdaptiveGame.run init
-    (impl + privateImpl + challengeQueryImpl) P.run
+    (impl + QueryImpl.id' unifSpec + challengeQueryImpl) P.run
     (fun (x, tr, _) => liftCompLeft (liftCompLeft (V.run x tr).run))
     (fun a out => out.map (a.1, ·))
 
 /-- Interactive adaptive soundness with an explicit adversary-admissibility condition. -/
 def adaptiveSoundness (langIn : Set Stmt) (langOut : Set Out)
     (admissible : (WitOut : Type) →
-      AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec → Prop)
+      AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec → Prop)
     (error : ENNReal) : Prop :=
   ∀ WitOut, AdaptiveGame.Bounded (admissible WitOut)
-    (V.adaptiveSoundnessExp init impl privateImpl) (nargSoundFailEvent langIn langOut) error
+    (V.adaptiveSoundnessExp init impl) (nargSoundFailEvent langIn langOut) error
 
 /-- Adaptive soundness at a public-query budget shared by the chooser and prover. -/
 def adaptiveSoundnessQueryBounded (langIn : Set Stmt) (langOut : Set Out)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) : Prop :=
-  V.adaptiveSoundness init impl privateImpl langIn langOut
+  V.adaptiveSoundness init impl langIn langOut
     (fun _ P => P.IsQueryBound (publicQuerySelector counts) t) error
 
 /-- A named extractor sees the chosen statement, output witness, transcript, and public query
@@ -125,10 +124,10 @@ from both phases, the verifier's public log, and the full transcript. -/
 def adaptiveKnowledgeSoundnessExp
     (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (extract : AdaptiveExtractor oSpec extractorSpec Stmt Wit WitOut pSpec)
-    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+    (P : AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec) :
     ProbComp (Stmt × Option Wit × Option Out × WitOut) :=
   AdaptiveGame.runWithExtractor init
-    (impl + privateImpl + challengeQueryImpl)
+    (impl + QueryImpl.id' unifSpec + challengeQueryImpl)
     extractorImpl P.run.withQueryLog
     (fun ((x, tr, _), _) => liftCompLeft (liftCompLeft (V.run x tr).run.withQueryLog))
     (fun ((x, tr, wOut), logP) (_, logV) => extract x wOut tr logP.fst.publicQueries logV)
@@ -139,10 +138,10 @@ def adaptiveKnowledgeSoundnessWithExtractor
     (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
     (extract : AdaptiveExtractor oSpec extractorSpec Stmt Wit WitOut pSpec)
-    (admissible : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec → Prop)
+    (admissible : AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec → Prop)
     (error : ENNReal) : Prop :=
   AdaptiveGame.Bounded admissible
-    (V.adaptiveKnowledgeSoundnessExp init impl privateImpl extractorImpl extract)
+    (V.adaptiveKnowledgeSoundnessExp init impl extractorImpl extract)
     (relationKSFailEvent relIn relOut) error
 
 /-- Bound extraction failure for one named extractor and a public-query budget. -/
@@ -151,7 +150,7 @@ def adaptiveKnowledgeSoundnessQueryBoundedWithExtractor
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
     (extract : AdaptiveExtractor oSpec extractorSpec Stmt Wit WitOut pSpec)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) : Prop :=
-  V.adaptiveKnowledgeSoundnessWithExtractor init impl privateImpl extractorImpl
+  V.adaptiveKnowledgeSoundnessWithExtractor init impl extractorImpl
     relIn relOut extract (fun P => P.IsQueryBound (publicQuerySelector counts) t) error
 
 /-- One extractor for all query budgets, chosen before the budget and adversary.
@@ -163,7 +162,7 @@ def adaptiveKnowledgeSoundnessQueryBounded
     (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
     (counts : ι → Prop) [DecidablePred counts] (error : ℕ → ENNReal) : Prop :=
-  ∃ extract, ∀ t, V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl privateImpl
+  ∃ extract, ∀ t, V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl
     extractorImpl relIn relOut extract counts t (error t)
 
 end Verifier
@@ -173,7 +172,8 @@ section FixedProver
 variable {ι κ Stmt Aux Out WitOut : Type} {src : OracleSpec ι} {dst : OracleSpec κ}
   {n : ℕ} {pSpec : ProtocolSpec n}
 
-private def mapProverOracles (route : QueryImpl src (OracleComp dst))
+/-- Route a prover's oracle queries through `route`, leaving its messages and state unchanged. -/
+def mapProverOracles (route : QueryImpl src (OracleComp dst))
     (P : Prover src Stmt Aux Out WitOut pSpec) : Prover dst Stmt Aux Out WitOut pSpec where
   PrvState := P.PrvState
   input := P.input
@@ -181,7 +181,9 @@ private def mapProverOracles (route : QueryImpl src (OracleComp dst))
   receiveChallenge i s := simulateQ route (P.receiveChallenge i s)
   output s := simulateQ route (P.output s)
 
-private theorem simulateQ_run_mapProverOracles {m : Type → Type} [Monad m] [LawfulMonad m]
+/-- Interpreting a routed prover equals interpreting the original prover with the composed
+handler. -/
+theorem simulateQ_run_mapProverOracles {m : Type → Type} [Monad m] [LawfulMonad m]
     (route : QueryImpl src (OracleComp dst)) (impl : QueryImpl src m) (impl' : QueryImpl dst m)
     (challenges : QueryImpl [pSpec.Challenge]ₒ m)
     (hRoute : ∀ q, simulateQ impl' (route q) = impl q)
@@ -211,22 +213,303 @@ private theorem simulateQ_run_mapProverOracles {m : Type → Type} [Monad m] [La
 
 end FixedProver
 
+section PrivateCoins
+
+namespace AdaptiveProver
+
+variable {ι κ Stmt Out WitOut : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
+  {n : ℕ} {pSpec : ProtocolSpec n}
+
+/-- The oracles of a uniform-coin adversary run. -/
+local notation "RunSpec" => (oSpec + unifSpec) + [pSpec.Challenge]ₒ
+
+/-- Compile an adversary's custom private sampler to uniform private coins. Each private
+request runs `sampler` on `unifSpec`; public queries pass through unchanged. -/
+def normalizePrivateCoins (sampler : QueryImpl privateSpec ProbComp)
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+    AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec where
+  Aux := P.Aux
+  choose := OracleComp.normalizePrivateCoins sampler P.choose
+  prover := mapProverOracles (privateCoinsImpl sampler) P.prover
+
+/-- Forward the public and private-coin queries of a run to the left summand. -/
+private def runLeft : QueryImpl (oSpec + unifSpec) (OracleComp RunSpec) :=
+  fun q => liftM ((RunSpec).query (.inl q))
+
+/-- Forward the verifier messages of a run to the right summand. -/
+private def runRight : QueryImpl [pSpec.Challenge]ₒ (OracleComp RunSpec) :=
+  fun q => liftM ((RunSpec).query (.inr q))
+
+/-- Route a whole adversary run: compile private requests with `sampler`, and forward public
+queries and verifier messages unchanged. -/
+def privateCoinsRunImpl (sampler : QueryImpl privateSpec ProbComp) :
+    QueryImpl ((oSpec + privateSpec) + [pSpec.Challenge]ₒ) (OracleComp RunSpec) :=
+  (fun q => liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+      (privateCoinsImpl (publicSpec := oSpec) sampler q) :
+      QueryImpl (oSpec + privateSpec) (OracleComp RunSpec)) +
+    (fun q => liftM ((RunSpec).query (.inr q)) :
+      QueryImpl [pSpec.Challenge]ₒ (OracleComp RunSpec))
+
+private theorem runLeft_add_runRight :
+    (runLeft (oSpec := oSpec) (pSpec := pSpec) + runRight (oSpec := oSpec) (pSpec := pSpec)) =
+      QueryImpl.id' RunSpec := by
+  funext q
+  rcases q with q | q <;> rfl
+
+private theorem simulateQ_runLeft {α : Type} (x : OracleComp (oSpec + unifSpec) α) :
+    simulateQ (runLeft (pSpec := pSpec)) x =
+      liftCompLeft (extraSpec := [pSpec.Challenge]ₒ) x := by
+  rw [← QueryImpl.simulateQ_add_liftComp_left _ (runRight (oSpec := oSpec) (pSpec := pSpec)) x,
+    runLeft_add_runRight, simulateQ_id']
+  rfl
+
+/-- The compiled adversary runs the original adversary with private requests compiled. -/
+theorem run_normalizePrivateCoins (sampler : QueryImpl privateSpec ProbComp)
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+    (P.normalizePrivateCoins sampler).run = simulateQ (privateCoinsRunImpl sampler) P.run := by
+  have hProver (stmt : Stmt) (aux : P.Aux) :
+      (mapProverOracles (privateCoinsImpl sampler) P.prover).run stmt aux =
+        simulateQ (privateCoinsRunImpl sampler) (P.prover.run stmt aux) := by
+    have h := simulateQ_run_mapProverOracles (m := OracleComp RunSpec)
+      (privateCoinsImpl (publicSpec := oSpec) sampler)
+      (fun q => liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+        (privateCoinsImpl (publicSpec := oSpec) sampler q))
+      runLeft runRight (fun _ => simulateQ_runLeft _) P.prover stmt aux
+    rw [runLeft_add_runRight, simulateQ_id'] at h
+    rw [h]
+    rfl
+  have hChoose :
+      liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+          (OracleComp.normalizePrivateCoins sampler P.choose) =
+        simulateQ (privateCoinsRunImpl sampler)
+          (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ) P.choose) := by
+    rw [OracleComp.normalizePrivateCoins, ← simulateQ_runLeft, ← QueryImpl.simulateQ_compose,
+      privateCoinsRunImpl, liftCompLeft, QueryImpl.simulateQ_add_liftComp_left]
+    congr 1
+  simp only [liftCompLeft] at hChoose
+  simp only [run, normalizePrivateCoins]
+  rw [hChoose]
+  simp only [simulateQ_bind, simulateQ_pure, hProver]
+
+/-- Running a program rewritten by `privateCoinsRunImpl sampler` with uniform coins equals
+running the original program with `sampler`. -/
+theorem simulateQ_privateCoinsRunImpl {σ α : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (sampler : QueryImpl privateSpec ProbComp)
+    (challenges : QueryImpl [pSpec.Challenge]ₒ (StateT σ ProbComp))
+    (x : OracleComp ((oSpec + privateSpec) + [pSpec.Challenge]ₒ) α) :
+    simulateQ ((impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp)) +
+        challenges) (simulateQ (privateCoinsRunImpl sampler) x) =
+      simulateQ ((impl.addLift sampler : QueryImpl _ (StateT σ ProbComp)) + challenges) x := by
+  rw [← QueryImpl.simulateQ_compose]
+  congr 1
+  funext q
+  rcases q with q | q
+  · have h := simulateQ_normalizePrivateCoins impl sampler
+      (liftM ((oSpec + privateSpec).query q) : OracleComp (oSpec + privateSpec) _)
+    simp only [OracleComp.normalizePrivateCoins, simulateQ_spec_query] at h
+    have hLeft : ((impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp)) +
+        challenges) ∘ₛ runLeft (pSpec := pSpec) =
+        (impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp)) := by
+      funext t
+      rw [QueryImpl.apply_compose, runLeft, simulateQ_spec_query, QueryImpl.add_apply_inl]
+    rw [QueryImpl.apply_compose]
+    change simulateQ _ (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+      (privateCoinsImpl (publicSpec := oSpec) sampler q)) = _
+    rw [← simulateQ_runLeft, ← QueryImpl.simulateQ_compose, hLeft, h]
+    rfl
+  · rw [QueryImpl.apply_compose]
+    change simulateQ _ (liftM ((RunSpec).query (.inr q))) = _
+    rw [simulateQ_spec_query, QueryImpl.add_apply_inr]
+    rfl
+
+/-- Compiling a custom sampler leaves the interpreted adversary run unchanged: running the
+compiled adversary with uniform coins equals running the original with `sampler`. -/
+theorem simulateQ_run_normalizePrivateCoins {σ : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (sampler : QueryImpl privateSpec ProbComp)
+    (challenges : QueryImpl [pSpec.Challenge]ₒ (StateT σ ProbComp))
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+    simulateQ ((impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp)) +
+        challenges) (P.normalizePrivateCoins sampler).run =
+      simulateQ ((impl.addLift sampler : QueryImpl _ (StateT σ ProbComp)) + challenges)
+        P.run := by
+  rw [run_normalizePrivateCoins, simulateQ_privateCoinsRunImpl]
+
+/-- Compiling a custom sampler keeps the adversary's log of `oSpec` queries: the compiled run
+logs the same public queries as the original run. -/
+theorem publicLog_withQueryLog_run_normalizePrivateCoins
+    (sampler : QueryImpl privateSpec ProbComp)
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+    (fun z => (z.1, z.2.fst.fst)) <$> (P.normalizePrivateCoins sampler).run.withQueryLog =
+      simulateQ (privateCoinsRunImpl sampler)
+        ((fun z => (z.1, z.2.fst.fst)) <$> P.run.withQueryLog) := by
+  rw [run_normalizePrivateCoins]
+  refine withQueryLog_simulateQ_project _ (fun l => l.fst.fst) (fun l => l.fst.fst) rfl rfl
+    (fun _ _ => by simp only [QueryLog.fst_append])
+    (fun _ _ => by simp only [QueryLog.fst_append]) ?_ P.run
+  rintro ((q | q) | q)
+  · change (fun z => (z.1, z.2.fst.fst)) <$>
+        (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+          (liftM ((oSpec + unifSpec).query (.inl q)) :
+            OracleComp (oSpec + unifSpec) _)).withQueryLog = _
+    rw [← simulateQ_runLeft, simulateQ_spec_query]
+    simp [runLeft, privateCoinsRunImpl, privateCoinsImpl, withQueryLog_query, QueryLog.fst]
+    rfl
+  · change (fun z => (z.1, z.2.fst.fst)) <$>
+        (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+          (liftComp (sampler q) (oSpec + unifSpec))).withQueryLog = _
+    rw [liftCompLeft, withQueryLog_liftComp_left]
+    simp only [Functor.map_map, QueryLog.fst_inl]
+    have h := congrArg (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ))
+      (fst_withQueryLog_liftComp_right (publicSpec := oSpec) (sampler q))
+    simp only [liftCompLeft, liftComp_map] at h
+    refine Eq.trans ?_ (h.trans ?_)
+    · rfl
+    · simp [privateCoinsRunImpl, privateCoinsImpl, QueryLog.fst, liftCompLeft]
+  · change (fun z => (z.1, z.2.fst.fst)) <$>
+        (liftM ((RunSpec).query (.inr q)) : OracleComp RunSpec _).withQueryLog = _
+    simp [privateCoinsRunImpl, withQueryLog_query, QueryLog.fst]
+
+/-- Compiling a custom sampler preserves every budget on selected public queries. -/
+theorem IsQueryBound.normalizePrivateCoins (sampler : QueryImpl privateSpec ProbComp)
+    (counts : ι → Prop) [DecidablePred counts]
+    {P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec} {t : ℕ}
+    (h : P.IsQueryBound (publicQuerySelector counts) t) :
+    (P.normalizePrivateCoins sampler).IsQueryBound (publicQuerySelector counts) t := by
+  unfold IsQueryBound at h ⊢
+  rw [run_normalizePrivateCoins]
+  apply h.simulateQ_of_step
+  · intro q hq
+    rcases q with (q | q) | q
+    · change (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+        (liftM ((oSpec + unifSpec).query (.inl q)) : OracleComp (oSpec + unifSpec) _)).IsQueryBoundP
+        _ 1
+      rw [← simulateQ_runLeft, simulateQ_spec_query]
+      simp [runLeft, publicQuerySelector, isQueryBoundP_query_iff]
+    · exact hq.elim
+    · exact hq.elim
+  · intro q hq
+    rcases q with (q | q) | q
+    · change (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+        (liftM ((oSpec + unifSpec).query (.inl q)) : OracleComp (oSpec + unifSpec) _)).IsQueryBoundP
+        _ 0
+      rw [← simulateQ_runLeft, simulateQ_spec_query]
+      simpa [runLeft, publicQuerySelector, isQueryBoundP_query_iff] using hq
+    · change (liftCompLeft (extraSpec := [pSpec.Challenge]ₒ)
+        (privateCoinsImpl (publicSpec := oSpec) sampler (.inr q))).IsQueryBoundP
+        (publicQuerySelector (publicQuerySelector (κ := ℕ) counts)) 0
+      rw [← simulateQ_runLeft]
+      refine (isQueryBoundP_lift_private counts (sampler q)).simulateQ_of_step ?_ ?_ <;>
+        intro u hu <;> rcases u with u | u <;>
+        simp_all [runLeft, publicQuerySelector, isQueryBoundP_query_iff]
+    · change (liftM ((RunSpec).query (.inr q)) : OracleComp RunSpec _).IsQueryBoundP _ 0
+      simp [publicQuerySelector, isQueryBoundP_query_iff]
+
+end AdaptiveProver
+
 namespace Verifier
 
-variable {ι κ σ Stmt Out : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
+variable {ι κ σ Stmt Out WitOut : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   (V : Verifier oSpec Stmt Out pSpec)
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-  (privateImpl : QueryImpl privateSpec ProbComp)
+
+/-- An adversary with a custom private sampler is a uniform-coin adversary: its compiled
+form has the same soundness experiment, interpreted with `sampler`. -/
+theorem adaptiveSoundnessExp_normalizePrivateCoins (sampler : QueryImpl privateSpec ProbComp)
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+    V.adaptiveSoundnessExp init impl (P.normalizePrivateCoins sampler) =
+      AdaptiveGame.run init (impl + sampler + challengeQueryImpl) P.run
+        (fun (x, tr, _) => liftCompLeft (liftCompLeft (V.run x tr).run))
+        (fun a out => out.map (a.1, ·)) := by
+  have h := AdaptiveProver.simulateQ_run_normalizePrivateCoins impl sampler
+    ((challengeQueryImpl (pSpec := pSpec)).liftTarget (StateT σ ProbComp)) P
+  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self] at h
+  simp only [adaptiveSoundnessExp, AdaptiveGame.run, QueryImpl.add_lift_right,
+    simulateQ_bind, simulateQ_pure, h, liftCompLeft, QueryImpl.simulateQ_add_liftComp_left]
+
+/-- A query-bounded soundness guarantee for uniform-coin adversaries also bounds adversaries
+that use any private sampler, with the same public-query budget. -/
+theorem adaptiveSoundnessQueryBounded.apply_sampler {langIn : Set Stmt} {langOut : Set Out}
+    {counts : ι → Prop} [DecidablePred counts] {t : ℕ} {error : ENNReal}
+    (h : V.adaptiveSoundnessQueryBounded init impl langIn langOut counts t error)
+    (sampler : QueryImpl privateSpec ProbComp)
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec)
+    (hP : P.IsQueryBound (publicQuerySelector counts) t) :
+    Pr{let out ← AdaptiveGame.run init (impl + sampler + challengeQueryImpl) P.run
+        (fun (x, tr, _) => liftCompLeft (liftCompLeft (V.run x tr).run))
+        (fun a out => out.map (a.1, ·))}[nargSoundFailEvent langIn langOut out] ≤ error := by
+  rw [← adaptiveSoundnessExp_normalizePrivateCoins]
+  exact h WitOut _ (AdaptiveProver.IsQueryBound.normalizePrivateCoins sampler counts hP)
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+private theorem runWithExtractor_publicLog {κ' κE Wit : Type} {spec : OracleSpec κ'}
+    {extractorSpec : OracleSpec κE}
+    (H : QueryImpl ((oSpec + spec) + [pSpec.Challenge]ₒ) (StateT σ ProbComp))
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+    (extract : AdaptiveExtractor oSpec extractorSpec Stmt Wit WitOut pSpec)
+    (Q : OracleComp ((oSpec + spec) + [pSpec.Challenge]ₒ) (Stmt × FullTranscript pSpec × WitOut))
+    (verify : Stmt × FullTranscript pSpec × WitOut →
+      OracleComp ((oSpec + spec) + [pSpec.Challenge]ₒ) (Option Out × QueryLog oSpec)) :
+    AdaptiveGame.runWithExtractor init H extractorImpl Q.withQueryLog
+      (fun a => verify a.1)
+      (fun ((x, tr, wOut), logP) (_, logV) => extract x wOut tr logP.fst.publicQueries logV)
+      (fun ((x, _, wOut), _) (out, _) wIn => (x, wIn, out, wOut)) =
+    AdaptiveGame.runWithExtractor init H extractorImpl
+      ((fun z => (z.1, z.2.fst.fst)) <$> Q.withQueryLog)
+      (fun a => verify a.1)
+      (fun ((x, tr, wOut), logP) (_, logV) => extract x wOut tr logP logV)
+      (fun ((x, _, wOut), _) (out, _) wIn => (x, wIn, out, wOut)) := by
+  simp only [AdaptiveGame.runWithExtractor, AdaptiveGame.execute, simulateQ_bind, simulateQ_pure,
+    bind_assoc, pure_bind, bind_map_left]
+
+/-- An adversary with a custom private sampler is a uniform-coin adversary for knowledge
+soundness: its compiled form has the same extraction experiment, interpreted with `sampler`.
+The extractor receives the same public query log. -/
+theorem adaptiveKnowledgeSoundnessExp_normalizePrivateCoins {κE Wit : Type}
+    {extractorSpec : OracleSpec κE}
+    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
+    (extract : AdaptiveExtractor oSpec extractorSpec Stmt Wit WitOut pSpec)
+    (sampler : QueryImpl privateSpec ProbComp)
+    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec) :
+    V.adaptiveKnowledgeSoundnessExp init impl extractorImpl extract
+        (P.normalizePrivateCoins sampler) =
+      AdaptiveGame.runWithExtractor init (impl + sampler + challengeQueryImpl) extractorImpl
+        P.run.withQueryLog
+        (fun ((x, tr, _), _) => liftCompLeft (liftCompLeft (V.run x tr).run.withQueryLog))
+        (fun ((x, tr, wOut), logP) (_, logV) => extract x wOut tr logP.fst.publicQueries logV)
+        (fun ((x, _, wOut), _) (out, _) wIn => (x, wIn, out, wOut)) := by
+  have h : ∀ {α : Type} (x : OracleComp ((oSpec + privateSpec) + [pSpec.Challenge]ₒ) α), _ :=
+    fun x => AdaptiveProver.simulateQ_privateCoinsRunImpl impl sampler
+      ((challengeQueryImpl (pSpec := pSpec)).liftTarget (StateT σ ProbComp)) x
+  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self] at h
+  unfold adaptiveKnowledgeSoundnessExp
+  rw [runWithExtractor_publicLog (verify := fun a =>
+      liftCompLeft (liftCompLeft (V.run a.1 a.2.1).run.withQueryLog)),
+    runWithExtractor_publicLog (verify := fun a =>
+      liftCompLeft (liftCompLeft (V.run a.1 a.2.1).run.withQueryLog)),
+    AdaptiveProver.publicLog_withQueryLog_run_normalizePrivateCoins]
+  simp only [AdaptiveGame.runWithExtractor, AdaptiveGame.execute, QueryImpl.add_lift_right,
+    simulateQ_bind, simulateQ_pure, h, liftCompLeft, QueryImpl.simulateQ_add_liftComp_left]
+
+end Verifier
+
+end PrivateCoins
+
+namespace Verifier
+
+variable {ι σ Stmt Out : Type} {oSpec : OracleSpec ι}
+  {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
+  (V : Verifier oSpec Stmt Out pSpec)
+  (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- A constant chooser makes the same execution as the fixed-statement reduction game. -/
 theorem adaptiveSoundnessExp_fixed {Aux WitOut : Type} (stmt : Stmt) (aux : Aux)
-    (P : Prover (oSpec + privateSpec) Stmt Aux Out WitOut pSpec) :
-    V.adaptiveSoundnessExp init impl privateImpl (AdaptiveProver.fixed stmt aux P) =
+    (P : Prover (oSpec + unifSpec) Stmt Aux Out WitOut pSpec) :
+    V.adaptiveSoundnessExp init impl (AdaptiveProver.fixed stmt aux P) =
       (fun out : Option ((FullTranscript pSpec × Out × WitOut) × Out) =>
         out.map (fun result => (stmt, result.2))) <$>
         (do StateT.run' (simulateQ
-          (impl + privateImpl + challengeQueryImpl)
+          (impl + QueryImpl.id' unifSpec + challengeQueryImpl)
           ((Reduction.mk P V.liftOracles).run stmt aux).run) (← init)) := by
   rw [Reduction.run_run_eq_bind]
   simp only [adaptiveSoundnessExp, AdaptiveGame.run, AdaptiveProver.run, AdaptiveProver.fixed,
@@ -246,26 +529,26 @@ prover uses the public oracles. -/
 theorem soundness_iff_adaptiveSoundness_fixed (langIn : Set Stmt) (langOut : Set Out)
     (error : ℝ≥0) :
     V.soundness init impl langIn langOut error ↔
-      V.adaptiveSoundness init impl privateImpl langIn langOut
+      V.adaptiveSoundness init impl langIn langOut
         (fun WitOut A => ∃ (Aux : Type) (stmt : Stmt) (aux : Aux)
           (P : Prover oSpec Stmt Aux Out WitOut pSpec),
           A = AdaptiveProver.fixed stmt aux P) error := by
-  let combined := impl + privateImpl
+  let combined := impl + QueryImpl.id' unifSpec
   let challenges : QueryImpl [pSpec.Challenge]ₒ (StateT σ ProbComp) :=
     challengeQueryImpl.liftTarget _
   have hEvent (stmt : Stmt) {Aux WitOut : Type} (aux : Aux)
       (P : Prover oSpec Stmt Aux Out WitOut pSpec) :
       let A := AdaptiveProver.fixed stmt aux P
-      Pr{let out ← V.adaptiveSoundnessExp (WitOut := WitOut) init impl privateImpl A}[
+      Pr{let out ← V.adaptiveSoundnessExp (WitOut := WitOut) init impl A}[
         nargSoundFailEvent langIn langOut out] =
       Pr{let ⟨_, stmtOut⟩ ← OptionT.mk do
         StateT.run' (simulateQ (impl + challengeQueryImpl)
           ((Reduction.mk P V).run stmt aux).run) (← init)}[stmt ∉ langIn ∧ stmtOut ∈ langOut] := by
     dsimp only
     let fixed := AdaptiveProver.fixed stmt aux P
-    let A : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut pSpec := fixed
-    let lifted : Prover (oSpec + privateSpec) Stmt Aux Out WitOut pSpec :=
-      mapProverOracles (fun q => query (spec := oSpec + privateSpec) (.inl q)) P
+    let A : AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec := fixed
+    let lifted : Prover (oSpec + unifSpec) Stmt Aux Out WitOut pSpec :=
+      mapProverOracles (fun q => query (spec := oSpec + unifSpec) (.inl q)) P
     have hFixed : A = AdaptiveProver.fixed stmt aux lifted := by
       simp [A, fixed, AdaptiveProver.fixed, liftCompLeft]
       rfl
@@ -281,7 +564,7 @@ theorem soundness_iff_adaptiveSoundness_fixed (langIn : Set Stmt) (langOut : Set
       simp only [simulateQ_bind, hRun, Verifier.run, Verifier.liftOracles, OptionT.run_mk,
         QueryImpl.simulateQ_add_liftComp_left, simulateQ_pure]
       simp only [combined, QueryImpl.add_lift_right, QueryImpl.simulateQ_add_liftComp_left]
-    change Pr{let out ← V.adaptiveSoundnessExp init impl privateImpl A}[
+    change Pr{let out ← V.adaptiveSoundnessExp init impl A}[
       nargSoundFailEvent langIn langOut out] = _
     rw [hFixed, adaptiveSoundnessExp_fixed, prEvent_map, OptionT.prEvent_mk]
     simp only [combined, QueryImpl.add_lift_right] at hReduction ⊢
@@ -374,16 +657,16 @@ end AdaptiveProver
 
 namespace Verifier
 
-variable {ι κ σ Stmt Proof Out : Type} {oSpec : OracleSpec ι}
-  {privateSpec : OracleSpec κ} [Inhabited Out]
+variable {ι σ Stmt Proof Out : Type} {oSpec : OracleSpec ι}
+  [Inhabited Out]
   (V : NonInteractiveVerifier Proof oSpec Stmt Out)
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- The one-message interactive game on an embedded NARG adversary is the NARG experiment. -/
-theorem adaptiveSoundnessExp_ofNARG (privateImpl : QueryImpl privateSpec ProbComp)
-    (P : OracleComp (oSpec + privateSpec) (Stmt × Proof)) :
-    V.adaptiveSoundnessExp init impl privateImpl (AdaptiveProver.ofNARG P) =
-      adaptiveNARGSoundnessExp init impl privateImpl V P := by
+theorem adaptiveSoundnessExp_ofNARG
+    (P : OracleComp (oSpec + unifSpec) (Stmt × Proof)) :
+    V.adaptiveSoundnessExp init impl (AdaptiveProver.ofNARG P) =
+      adaptiveNARGSoundnessExp init impl V P := by
   simp only [adaptiveSoundnessExp, adaptiveNARGSoundnessExp, AdaptiveGame.run,
     AdaptiveProver.run_ofNARG, liftCompLeft, bind_map_left, simulateQ_bind, simulateQ_pure]
   simp only [QueryImpl.addLift_def, QueryImpl.add_lift_right, QueryImpl.liftTarget_self]
@@ -394,7 +677,7 @@ at the same budget. -/
 theorem adaptiveNARGSoundnessQueryBounded_of_adaptiveSoundnessQueryBounded
     (langIn : Set Stmt) (langOut : Set Out) (counts : ι → Prop) [DecidablePred counts]
     (t : ℕ) (error : ENNReal)
-    (h : V.adaptiveSoundnessQueryBounded init impl (QueryImpl.id' unifSpec)
+    (h : V.adaptiveSoundnessQueryBounded init impl
       langIn langOut counts t error) :
     V.adaptiveNARGSoundnessQueryBounded init impl langIn langOut counts t error := by
   intro P hP
@@ -406,17 +689,16 @@ end Verifier
 
 namespace Verifier
 
-variable {ι κ σ Stmt Out Wit WitOut : Type} {oSpec : OracleSpec ι} {privateSpec : OracleSpec κ}
+variable {ι σ Stmt Out Wit WitOut : Type} {oSpec : OracleSpec ι}
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   (V : Verifier oSpec Stmt Out pSpec)
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-  (privateImpl : QueryImpl privateSpec ProbComp)
 
 /-- Embed a public-oracle extractor into the combined legacy interface, exposing only public
 queries from the legacy logs. -/
 def AdaptiveExtractor.forCombinedOracles
     (extract : AdaptiveExtractor oSpec oSpec Stmt Wit WitOut pSpec) :
-    Extractor.Straightline (oSpec + privateSpec) Stmt Wit WitOut pSpec :=
+    Extractor.Straightline (oSpec + unifSpec) Stmt Wit WitOut pSpec :=
   fun x wOut tr logP logV =>
     OptionT.mk (liftCompLeft (extract x wOut tr logP.publicQueries logV.publicQueries).run)
 
@@ -426,10 +708,10 @@ theorem adaptiveKnowledgeSoundness_fixed_probability
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
     (extract : Extractor.Straightline oSpec Stmt Wit WitOut pSpec)
     {Aux : Type} (stmt : Stmt) (aux : Aux)
-    (P : Prover (oSpec + privateSpec) Stmt Aux Out WitOut pSpec) :
-    Pr{let out ← (V.adaptiveKnowledgeSoundnessExp init impl privateImpl impl extract
+    (P : Prover (oSpec + unifSpec) Stmt Aux Out WitOut pSpec) :
+    Pr{let out ← (V.adaptiveKnowledgeSoundnessExp init impl impl extract
       (AdaptiveProver.fixed stmt aux P))}[relationKSFailEvent relIn relOut out] =
-    let pImpl := impl + privateImpl + challengeQueryImpl (pSpec := pSpec)
+    let pImpl := impl + QueryImpl.id' unifSpec + challengeQueryImpl (pSpec := pSpec)
     let exec := do
       let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩
         ← (Reduction.mk P V.liftOracles).runWithLog stmt aux
@@ -447,7 +729,7 @@ theorem adaptiveKnowledgeSoundness_fixed_probability
     rfl
   have hV (tr : FullTranscript pSpec) :
       (simulateQ loggingOracle
-        ((V.liftOracles (targetSpec := oSpec + privateSpec)).run stmt tr)).run =
+        ((V.liftOracles (targetSpec := oSpec + unifSpec)).run stmt tr)).run =
         (fun a => (a.1, QueryLog.inl a.2)) <$>
           liftCompLeft (V.run stmt tr).run.withQueryLog := by
     change (liftCompLeft (V.run stmt tr).run).withQueryLog = _
@@ -486,24 +768,24 @@ constant choosers, using the same extractor. -/
 theorem knowledgeSoundnessWith_iff_adaptiveKnowledgeSoundnessWithExtractor_fixed
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
     (extract : Extractor.Straightline oSpec Stmt Wit WitOut pSpec) (error : ℝ≥0) :
-    V.liftOracles.knowledgeSoundnessWith init (impl + privateImpl) relIn relOut
+    V.liftOracles.knowledgeSoundnessWith init (impl + QueryImpl.id' unifSpec) relIn relOut
       (AdaptiveExtractor.forCombinedOracles extract) error ↔
-      V.adaptiveKnowledgeSoundnessWithExtractor init impl privateImpl impl relIn relOut extract
+      V.adaptiveKnowledgeSoundnessWithExtractor init impl impl relIn relOut extract
         (fun A => ∃ (Aux : Type) (stmt : Stmt) (aux : Aux)
-          (P : Prover (oSpec + privateSpec) Stmt Aux Out WitOut pSpec),
+          (P : Prover (oSpec + unifSpec) Stmt Aux Out WitOut pSpec),
           A = AdaptiveProver.fixed stmt aux P)
         error := by
   constructor
   · intro h A hA
     obtain ⟨Aux, stmt, aux, P, rfl⟩ := hA
-    refine (adaptiveKnowledgeSoundness_fixed_probability V init impl privateImpl relIn relOut
+    refine (adaptiveKnowledgeSoundness_fixed_probability V init impl relIn relOut
       extract stmt aux P).le.trans ?_
     simpa only [← monadLift_liftM_OptionT, ← liftComp_eq_liftM, liftCompLeft,
       OptionT.run_bind, OptionT.run_monadLift, OptionT.lift, OptionT.run_mk,
       monadLift_self, map_eq_pure_bind, QueryImpl.addLift_def, QueryImpl.add_lift_right,
       QueryImpl.liftTarget_self] using h Aux stmt aux P
   · intro h Aux stmt aux P
-    have hBound := (adaptiveKnowledgeSoundness_fixed_probability V init impl privateImpl
+    have hBound := (adaptiveKnowledgeSoundness_fixed_probability V init impl
       relIn relOut extract stmt aux P).ge.trans (h _ ⟨Aux, stmt, aux, P, rfl⟩)
     simpa only [← monadLift_liftM_OptionT, ← liftComp_eq_liftM, liftCompLeft,
       OptionT.run_bind, OptionT.run_monadLift, OptionT.lift, OptionT.run_mk,
@@ -584,18 +866,16 @@ theorem isQueryBound_toNARG (P : AdaptiveProver spec Stmt Out WitOut
 end AdaptiveProver
 
 namespace Verifier
-variable {ι κ σ Stmt Proof Out WitOut : Type} {oSpec : OracleSpec ι}
-  {privateSpec : OracleSpec κ}
+variable {ι σ Stmt Proof Out WitOut : Type} {oSpec : OracleSpec ι}
   (V : NonInteractiveVerifier Proof oSpec Stmt Out)
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-  (privateImpl : QueryImpl privateSpec ProbComp)
 
 /-- Flattening a one-message adversary leaves the soundness experiment unchanged. -/
 theorem adaptiveSoundnessExp_toNARG
-    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out WitOut
+    (P : AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut
       (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
-    adaptiveNARGSoundnessExp init impl privateImpl V P.toNARG =
-      V.adaptiveSoundnessExp init impl privateImpl P := by
+    adaptiveNARGSoundnessExp init impl V P.toNARG =
+      V.adaptiveSoundnessExp init impl P := by
   have h := AdaptiveProver.lift_toNARG P
   have heq (tr : FullTranscript (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
       Fin.cons (tr 0) (fun i => i.elim0) = tr := by
@@ -607,7 +887,7 @@ theorem adaptiveSoundnessExp_toNARG
   congr 1
   funext s
   simp only [QueryImpl.addLift_def, QueryImpl.add_lift_right, QueryImpl.liftTarget_self]
-  rw [← QueryImpl.simulateQ_add_liftComp_left (impl + privateImpl.liftTarget _)
+  rw [← QueryImpl.simulateQ_add_liftComp_left (impl + (QueryImpl.id' unifSpec).liftTarget _)
     (QueryImpl.liftTarget (StateT σ ProbComp) (challengeQueryImpl (pSpec :=
       (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1))))]
   simp only [liftComp_bind, liftComp_pure]
@@ -617,8 +897,8 @@ theorem adaptiveSoundnessExp_toNARG
 end Verifier
 
 namespace Verifier
-variable {ι κ κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
-  {privateSpec : OracleSpec κ} {extractorSpec : OracleSpec κE} [Inhabited Out]
+variable {ι κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
+  {extractorSpec : OracleSpec κE} [Inhabited Out]
   (V : NonInteractiveVerifier Proof oSpec Stmt Out)
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
@@ -626,7 +906,7 @@ variable {ι κ κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
 theorem adaptiveSoundnessQueryBounded_iff_adaptiveNARGSoundnessQueryBounded
     (langIn : Set Stmt) (langOut : Set Out)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) :
-    V.adaptiveSoundnessQueryBounded init impl (QueryImpl.id' unifSpec)
+    V.adaptiveSoundnessQueryBounded init impl
       langIn langOut counts t error ↔
     V.adaptiveNARGSoundnessQueryBounded init impl langIn langOut counts t error := by
   refine ⟨adaptiveNARGSoundnessQueryBounded_of_adaptiveSoundnessQueryBounded V init impl
@@ -645,15 +925,14 @@ def AdaptiveExtractor.ofNARG
 
 /-- The embedded NARG experiment has the same logs and extraction result, with a unit witness. -/
 theorem adaptiveKnowledgeSoundnessExp_ofNARG
-    (privateImpl : QueryImpl privateSpec ProbComp)
     (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
       OptionT (OracleComp extractorSpec) Wit)
-    (P : OracleComp (oSpec + privateSpec) (Stmt × Proof)) :
-    V.adaptiveKnowledgeSoundnessExp init impl privateImpl extractorImpl
+    (P : OracleComp (oSpec + unifSpec) (Stmt × Proof)) :
+    V.adaptiveKnowledgeSoundnessExp init impl extractorImpl
       (AdaptiveExtractor.ofNARG E) (AdaptiveProver.ofNARG P) =
       (fun a => (a.1, a.2.1, a.2.2, ())) <$>
-        adaptiveNARGKnowledgeSoundnessExp init impl privateImpl extractorImpl V E P := by
+        adaptiveNARGKnowledgeSoundnessExp init impl extractorImpl V E P := by
   simp only [adaptiveKnowledgeSoundnessExp, AdaptiveProver.run_ofNARG,
     withQueryLog_map, withQueryLog_liftComp_left, AdaptiveGame.runWithExtractor,
     AdaptiveGame.execute, adaptiveNARGKnowledgeSoundnessExp,
@@ -667,23 +946,22 @@ theorem adaptiveKnowledgeSoundnessExp_ofNARG
 end Verifier
 
 namespace Verifier
-variable {ι κ κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
-  {privateSpec : OracleSpec κ} {extractorSpec : OracleSpec κE}
+variable {ι κE σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
+  {extractorSpec : OracleSpec κE}
   (V : NonInteractiveVerifier Proof oSpec Stmt Out)
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- Flattening preserves the one-message knowledge experiment for the supplied extractor. -/
 theorem adaptiveKnowledgeSoundnessExp_toNARG
-    (privateImpl : QueryImpl privateSpec ProbComp)
     (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
       OptionT (OracleComp extractorSpec) Wit)
-    (P : AdaptiveProver (oSpec + privateSpec) Stmt Out Unit
+    (P : AdaptiveProver (oSpec + unifSpec) Stmt Out Unit
       (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
-    V.adaptiveKnowledgeSoundnessExp init impl privateImpl extractorImpl
+    V.adaptiveKnowledgeSoundnessExp init impl extractorImpl
       (AdaptiveExtractor.ofNARG E) P =
       (fun a => (a.1, a.2.1, a.2.2, ())) <$>
-        adaptiveNARGKnowledgeSoundnessExp init impl privateImpl extractorImpl V E P.toNARG := by
+        adaptiveNARGKnowledgeSoundnessExp init impl extractorImpl V E P.toNARG := by
   have heq (tr : FullTranscript (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)) :
       Fin.cons (tr 0) (fun i => i.elim0) = tr := by
     funext i
@@ -694,7 +972,7 @@ theorem adaptiveKnowledgeSoundnessExp_toNARG
     AdaptiveGame.runWithExtractor, AdaptiveGame.execute, simulateQ_bind, simulateQ_pure,
     pure_bind, bind_assoc, map_bind]
   simp only [QueryImpl.addLift_def, QueryImpl.add_lift_right, QueryImpl.liftTarget_self]
-  rw [← QueryImpl.simulateQ_add_liftComp_left (impl + privateImpl.liftTarget _)
+  rw [← QueryImpl.simulateQ_add_liftComp_left (impl + (QueryImpl.id' unifSpec).liftTarget _)
     (QueryImpl.liftTarget (StateT σ ProbComp) (challengeQueryImpl (pSpec :=
       (⟨!v[.P_to_V], !v[Proof]⟩ : ProtocolSpec 1)))) P.toNARG.withQueryLog]
   rw [AdaptiveProver.lift_toNARG_withQueryLog]
@@ -726,7 +1004,7 @@ theorem adaptiveKnowledgeSoundnessQueryBoundedWithExtractor_iff_adaptiveNARGKnow
     (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
       OptionT (OracleComp extractorSpec) Wit)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) :
-    V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl (QueryImpl.id' unifSpec)
+    V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl
       extractorImpl relIn (langOut ×ˢ Set.univ) (AdaptiveExtractor.ofNARG E) counts t error ↔
     V.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor init impl extractorImpl
       relIn langOut E counts t error := by
@@ -745,7 +1023,7 @@ theorem adaptiveKnowledgeSoundness_iff_adaptiveNARGKnowledgeSoundness
     (relIn : Set (Stmt × Wit)) (langOut : Set Out)
     (E : Stmt → Proof → QueryLog oSpec → QueryLog oSpec →
       OptionT (OracleComp extractorSpec) Wit) (error : ENNReal) :
-    V.adaptiveKnowledgeSoundnessWithExtractor init impl (QueryImpl.id' unifSpec)
+    V.adaptiveKnowledgeSoundnessWithExtractor init impl
       extractorImpl relIn (langOut ×ˢ Set.univ) (AdaptiveExtractor.ofNARG E)
       (fun _ => True) error ↔
     V.adaptiveNARGKnowledgeSoundnessWithExtractor init impl extractorImpl
@@ -769,7 +1047,7 @@ theorem adaptiveSoundness_iff_adaptiveNARGSoundness
     (V : NonInteractiveVerifier Proof oSpec Stmt Out)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (langIn : Set Stmt) (langOut : Set Out) (error : ENNReal) :
-    V.adaptiveSoundness init impl (QueryImpl.id' unifSpec)
+    V.adaptiveSoundness init impl
       langIn langOut (fun _ _ => True) error ↔
     V.adaptiveNARGSoundness init impl langIn langOut error := by
   constructor
