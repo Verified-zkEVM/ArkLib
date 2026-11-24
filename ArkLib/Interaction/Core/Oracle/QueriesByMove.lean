@@ -145,7 +145,8 @@ theorem run_mapMovesWith [LawfulMonad m] [LawfulMonad n] [LawfulMonad k]
 end Strategies
 
 /-- Map each entry of a list-valued writer to a list, and concatenate the results. This is a monad
-morphism. -/
+morphism. PolyFun's `WriterT.mapOutputHom` would need a `[Monoid M]` instance, and Lean does not
+find `Monoid (List _)` with these imports, so this file keeps its own version. -/
 def writerMap {m : Type u → Type u} [Monad m] [LawfulMonad m] {A B : Type u}
     (f : A → List B) : WriterT (List A) m →ᵐ WriterT (List B) m where
   toFun _ p := WriterT.mk ((fun r => (r.1, r.2.flatMap f)) <$> p.run)
@@ -479,19 +480,19 @@ def runWithAmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs
 theorem runWithAmbientQueriesByMove_toLog (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     AmbientQueriesByMove.toLog <$> V.runWithAmbientQueriesByMove stmt data prover = (
-let full := ambient + challengeSpec oracleSig s
-  let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
-  (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
-    (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
-  let tr := x.1.1
-  let p := Transcript.path tr
-  let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
-  (simulateQ (QueryImpl.addLift toFull.withLogging
-      ((pathBundle inputs s p).answer pathData) :
-        QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
-    (V.decide stmt p (toView s tr)).run).run >>= fun y =>
-  pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)⟩,
-    x.2.fst, y.2)) := by
+      let full := ambient + challengeSpec oracleSig s
+      let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+      (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
+        (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
+      let tr := x.1.1
+      let p := Transcript.path tr
+      let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
+      (simulateQ (QueryImpl.addLift toFull.withLogging
+          ((pathBundle inputs s p).answer pathData) :
+            QueryImpl _ (WriterT (QueryLog ambient) (OracleComp full)))
+        (V.decide stmt p (toView s tr)).run).run >>= fun y =>
+      pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)⟩,
+        x.2.fst, y.2)) := by
   simp only [runWithAmbientQueriesByMove, executeWith, Functor.map_map,
     _root_.map_bind]
   have id_logging {α : Type} (p : OracleComp (ambient + challengeSpec oracleSig s) α) :
