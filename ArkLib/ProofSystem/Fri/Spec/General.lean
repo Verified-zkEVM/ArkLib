@@ -29,11 +29,9 @@ open OracleSpec OracleComp ProtocolSpec NNReal Domain
 
 namespace Spec
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n : ℕ}
 variable (k : ℕ) (s : Fin (k + 1) → ℕ+) (d : ℕ+)
-variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
-variable (l : ℕ)
 variable {ω : SmoothCosetFftDomain n F}
 
 /-- The initial word is within relative Hamming distance `δ` of its polynomial witness. -/
@@ -41,14 +39,17 @@ def inputRelation (δ : ℝ≥0) :
     Set ((Statement (k := k) F 0 × (∀ j, OracleStatement (k := k) s ω 0 j)) ×
       Witness F s d (0 : Fin (k + 2))) :=
   match k with
-  | 0 => FinalFoldPhase.inputRelation s (ω := ω) d (round_bound dom_size_cond) δ
-  | .succ _ => FoldPhase.inputRelation s (ω := ω) d 0 (round_bound dom_size_cond) δ
+  | 0 => FinalFoldPhase.inputRelation s (ω := ω) d δ
+  | .succ _ => FoldPhase.inputRelation s (ω := ω) d 0 δ
 
 /-- The final polynomial's evaluations are within distance `δ` of the final witness. -/
 def outputRelation (δ : ℝ≥0) :
     Set ((FinalStatement F k × ∀ j, FinalOracleStatement s ω j) ×
       Witness F s d (Fin.last (k + 1))) :=
-  QueryRound.outputRelation s (ω := ω) d (round_bound dom_size_cond) δ
+  QueryRound.outputRelation s (ω := ω) d δ
+
+variable (dom_size_cond : (2 ^ (∑ i, (s i).1)) * d ≤ 2 ^ n)
+variable (l : ℕ)
 
 /-- The sequence of non-final folding rounds. -/
 @[reducible]

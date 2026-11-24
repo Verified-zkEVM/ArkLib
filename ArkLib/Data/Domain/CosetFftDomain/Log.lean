@@ -60,6 +60,7 @@ def logAux (ω : D)
 /-- Finds a preimage of `x` under the mapping `ω`. -/
 def log (ω : D) (x : ω) : Fin (2 ^ n) := logAux ω x (2 ^ n)
 
+omit [Field F] [CosetFftDomainClass D (Fin (2 ^ n)) F] in
 /-- Evaluating `ω` at the index found by `log` recovers `x`. -/
 @[simp]
 lemma log_right_inverse' {ω : D} {x : ω} :

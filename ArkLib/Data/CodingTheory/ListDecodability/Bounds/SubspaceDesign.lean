@@ -256,7 +256,7 @@ mirrors [CZ25]'s own derivation of its Corollary 2.21 from its Theorem 1.3.
 Note this is generic in the *dominating value* `t`, not in the profile: the profile stays pinned,
 for the reason spelled out on `subspaceDesign_lambda_le`. -/
 theorem subspaceDesign_lambda_le_of_profile_le
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
@@ -334,7 +334,7 @@ Non-negativity of `R` is *proved* rather than hypothesised (`LinearCode.alphabet
 `ℚ≥0`). `1/η ≤ s` keeps the instantiation point inside [CZ25]'s range `L ≤ s`; it is the hypothesis
 the abstract statement omits and its only instantiation carries as `1/η < s`. -/
 theorem subspaceDesign_lambda_le_of_eta
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)

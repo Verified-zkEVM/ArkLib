@@ -38,7 +38,7 @@ Closed forms for the field-operation coordinates are in `Extraction/ClosedCost.l
 namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec CompPoly
 open scoped NNReal
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -102,7 +102,7 @@ theorem knowledgeSoundnessWithResources_extract
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundnessWithResources init impl
-      (inputRelation k s d hdom δ) (outputRelation k s d hdom δ)
+      (inputRelation k s d δ) (outputRelation k s d δ)
       (Extractor.extract s d (round_bound hdom) l)
       (soundnessError (ω := ω) s d l θ δ)
       (Extractor.measuredProgram s d l (round_bound hdom))
