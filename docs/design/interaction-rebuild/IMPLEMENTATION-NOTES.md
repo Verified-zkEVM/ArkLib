@@ -382,3 +382,33 @@ the partial transcripts of the queries differ. P1 excludes intermediate effectfu
 actions and their former query groups. It does not exclude prover moves or their partial
 transcripts. The [port table](../interaction-layer/port-logged-execution.md) records these
 qualifications separately.
+
+## 21. Round-by-round soundness implies soundness for lawful distribution monads
+
+The probability-free escape theory is polymorphic in protocol positions and moves. Only the
+probability bounds require small moves. `Security/RoundByRound.lean` defines the shared full-prefix
+interface `PrefixDraw`, its oracle-program form `PrefixChallengePrograms`, `prefixSampleAt`,
+and `prefixSampler` with its execution laws. Node-indexed draws embed through
+`PrefixDraw.ofNodes`, which ignores history and agrees with `sampleAt`.
+
+`Security/Implications.lean` bounds actual flip events at full prefixes. Its passive sampler
+retains history-dependent challenge programs, and an exact equation identifies its execution
+with the ordinary Core runner. Encoded event marginals transport prefix-indexed challenge models
+into that bound. That bound takes an explicit final continuation and a premise linking positive
+probability of the final event to the certificate's acceptance predicate. The plain and oracle
+verifier implications give the corresponding bound for node-indexed draws and prove that link
+from the final decision. A prefix draw reads the full prefix, oracle messages included, which a
+passive oracle verifier reaches only through bundle queries in its final decision.
+All forms allow missing probability mass in any lawful distribution monad. The oracle soundness
+and acceptance predicates take an `OracleBundle` input, as `OracleVerifier.run` does.
+
+`soundnessUsing` interprets the whole computation. Exact specialization laws retain the
+classical initial state distribution and the existential ambient state of `validAcceptance` at the
+end of the run.
+The generic and classical implications share their run-to-decision and acceptance proof.
+The path supremum is bounded by arbitrary finite rank-indexed sums, as well as the existing
+all-node sum and uniform-error corollaries.
+
+The [disposition record](../interaction-layer/soundness-implication-disposition.md) gives the
+source-to-target inventory, the freshness argument, failure tests, and limits of the correspondence.
+Inherited universe constraints remain in [entry 18](#18-run-outputs-are-tied-to-the-monad-universe).

@@ -20,7 +20,7 @@ prefix before drawing one fresh challenge; their indices contain only shape choi
 
 @[expose] public section
 
-universe uS uW uK uI wI wJ uA dI q
+universe uS uW uK uI wI wJ uA u vDraw uι uQ dI q
 
 namespace Interaction.Core
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -29,19 +29,19 @@ open scoped ENNReal
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
   Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
 
-variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 /-- The partial transcript at a round position `sp`: the full moves made so far along the cursor,
 including the oracle messages the verifier's view erases. -/
 @[implicit_reducible]
-def PartialTranscriptAt : {s t : FreeM P PUnit} → Cursor.Spine s t → Type
+def PartialTranscriptAt : {s t : FreeM P PUnit.{u + 1}} → Cursor.Spine s t → Type u
   | _, _, .root _ => PUnit
   | _, _, .down (a := a) b tail =>
     {x : Move l a // l.toFunB a x = b} × PartialTranscriptAt tail
 
 /-- Extend a full prefix by one move using cursor composition. -/
-def PartialTranscriptAt.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → (sp : Cursor.Spine s (.liftBind a next)) →
+def PartialTranscriptAt.snoc {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → (sp : Cursor.Spine s (.liftBind a next)) →
     PartialTranscriptAt l sp → (x : Move l a) →
     PartialTranscriptAt l (sp.comp (.down (l.toFunB a x) (.root _)))
   | _, .root _, _, x => ⟨⟨x, rfl⟩, ⟨⟩⟩
@@ -50,7 +50,7 @@ def PartialTranscriptAt.snoc {a : P.A} {next : P.B a → FreeM P PUnit} :
     exact ⟨⟨y, h⟩, PartialTranscriptAt.snoc tail rest x⟩
 
 /-- A full prefix at a leaf is a completed transcript. -/
-def PartialTranscriptAt.complete : {s : FreeM P PUnit} →
+def PartialTranscriptAt.complete : {s : FreeM P PUnit.{u + 1}} →
     (sp : Cursor.Spine s (.pure PUnit.unit)) → PartialTranscriptAt l sp → Transcript l s
   | _, .root _, _ => ⟨⟩
   | _, .down b tail, history => by
@@ -58,33 +58,155 @@ def PartialTranscriptAt.complete : {s : FreeM P PUnit} →
     exact ⟨x, h.symm ▸ PartialTranscriptAt.complete tail rest⟩
 
 /-- The structural node reached by a cursor ending at an interaction node. -/
-def spineNode {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → Cursor.Spine s (.liftBind a next) → Node s
+def spineNode {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → Cursor.Spine s (.liftBind a next) → Node s
   | _, .root _ => .inl ⟨⟩
   | _, .down b tail => .inr ⟨b, spineNode tail⟩
 
 /-- Node lookup preserves the position at the end of the cursor. -/
-theorem spineNode_position {a : P.A} {next : P.B a → FreeM P PUnit} :
-    {s : FreeM P PUnit} → (sp : Cursor.Spine s (.liftBind a next)) →
+theorem spineNode_position {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} :
+    {s : FreeM P PUnit.{u + 1}} → (sp : Cursor.Spine s (.liftBind a next)) →
     Node.position _ (spineNode sp) = a
   | _, .root _ => rfl
   | _, .down _ tail => spineNode_position tail
 
 /-- A receiver cursor identifies its challenge without using any full runtime move. -/
-def spineChallenge {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
+def spineChallenge {s : FreeM P PUnit.{u + 1}} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ChallengeNode l s :=
   ⟨spineNode sp, (congrArg (owner l) (spineNode_position sp)).trans h⟩
 
 /-- Draw a fresh move at the receiver position selected by a structural prefix. -/
-def sampleAt {s : FreeM P PUnit} {a : P.A} {next : P.B a → FreeM P PUnit}
+def sampleAt {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
+    {s : FreeM P PUnit.{1}} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (draw : QueryImpl (challengeSpec l s) ProbComp)
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ProbComp (Move l a) :=
   (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
     draw (spineChallenge l sp h)
 
+/-- A challenge action at each receiver prefix, with access to all earlier moves.
+
+The history is the full prefix at the signature `l`. At `oracleSig` it contains every oracle
+message in full, so a draw can read oracle messages that a passive oracle verifier reaches only
+through bundle queries in its final decision. State functions, the generic counterpart and
+extraction use this full history. An oracle-verifier API that exposes a prefix draw should index it
+by the `viewSig` prefix, or require it to factor through that view. -/
+abbrev PrefixDraw (m : Type u → Type vDraw) (s : FreeM P PUnit.{u + 1}) :=
+  ∀ {a next}, (sp : Cursor.Spine s (.liftBind a next)) → owner l a = .receiver →
+    PartialTranscriptAt l sp → m (Move l a)
+
+/-- Challenge programs may depend on the entire full prefix, including erased challenges and
+oracle messages, and may issue queries to the supplied specification `spec`. -/
+abbrev PrefixChallengePrograms {ι : Type uι} (spec : OracleSpec.{uι, uQ} ι)
+    (s : FreeM P PUnit.{u + 1}) := PrefixDraw l (OracleComp spec) s
+
+/-- Draw at one receiver prefix using its complete history. -/
+abbrev prefixSampleAt {m : Type u → Type vDraw} {s : FreeM P PUnit.{u + 1}}
+    (draw : PrefixDraw l m s) {a next} (sp : Cursor.Spine s (.liftBind a next))
+    (h : owner l a = .receiver) (history : PartialTranscriptAt l sp) : m (Move l a) :=
+  draw sp h history
+
+/-- A node-indexed draw is the prefix draw that ignores the full history. -/
+def PrefixDraw.ofNodes {m : Type u → Type vDraw} [Functor m] {s : FreeM P PUnit.{u + 1}}
+    (draw : (c : ChallengeNode l s) → m (challengeSpec l s c)) : PrefixDraw l m s :=
+  fun sp h _ => (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
+    draw (spineChallenge l sp h)
+
+/-- Ignoring history recovers node-indexed sampling at the same receiver cursor. -/
+theorem prefixSampleAt_ofNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
+    {s : FreeM P PUnit.{1}} (draw : QueryImpl (challengeSpec l s) ProbComp)
+    {a next} (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
+    (history : PartialTranscriptAt l sp) :
+    prefixSampleAt l (PrefixDraw.ofNodes l draw) sp h history = sampleAt l draw sp h := rfl
+
+/-- The passive counterpart whose next draw can depend on the full prefix. It passes each
+actual sender move, an oracle message included, to the later draws. -/
+def prefixSampler {m : Type u → Type u} [Monad m] :
+    (s : FreeM P PUnit.{u + 1}) → PrefixDraw l m s →
+    Counterpart l m s (fun _ => PUnit.{u + 1})
+  | .pure _, _ => pure ⟨⟩
+  | .liftBind a next, d =>
+    samplerNode (owner l a) (fun h => d (.root _) h ⟨⟩) (fun x =>
+      prefixSampler (next (l.toFunB a x))
+        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩))
+
+private theorem cast_prefixSampler {m : Type u → Type u} [Monad m]
+    {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} {r : TwoParty.Role}
+    (h : owner l a = r) (d : PrefixDraw l m (.liftBind a next)) :
+    cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
+      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit.{u + 1})))) h)
+      (prefixSampler l (.liftBind a next) d) =
+    samplerNode r (fun hr => d (.root _) (h.trans hr) ⟨⟩) (fun x =>
+      prefixSampler l (next (l.toFunB a x))
+        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)) := by
+  cases h
+  rfl
+
+/-- Execute a focal strategy with passive challenges selected from its full prefix. -/
+def runPrefixChallenges {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    (s : FreeM P PUnit.{u + 1}) {Out : Transcript l s → Type u}
+    (p : Focal l (OracleComp spec) s Out) (d : PrefixChallengePrograms l spec s) :
+    OracleComp spec ((tr : Transcript l s) × Out tr × PUnit.{u + 1}) :=
+  TwoParty.Lens.run s p (prefixSampler l s d)
+
+/-- Prefix-dependent execution is the ordinary focal-first Core runner with its passive
+counterpart. It does not restart or replay the focal strategy. -/
+theorem runPrefixChallenges_eq_run {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    (s : FreeM P PUnit.{u + 1}) :
+    ∀ {Out : Transcript l s → Type u} (p : Focal l (OracleComp spec) s Out)
+      (d : PrefixChallengePrograms l spec s),
+      runPrefixChallenges l s p d = TwoParty.Lens.run s p (prefixSampler l s d) :=
+  fun _ _ => rfl
+
+/-- At a leaf, the focal strategy's output action runs before the sampler's pure final action. -/
+theorem runPrefixChallenges_done {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    {Out : Transcript l (.pure PUnit.unit) → Type u} (p : OracleComp spec (Out ⟨⟩))
+    (d : PrefixChallengePrograms l spec (.pure PUnit.unit)) :
+    runPrefixChallenges l (.pure PUnit.unit) p d = (do
+      let out ← p
+      pure ⟨⟨⟩, out, ⟨⟩⟩) := by
+  simp only [runPrefixChallenges, prefixSampler, FreeM.pure_eq_pure, run_done,
+    LawfulMonad.pure_bind]
+
+/-- At a sender node, the focal strategy supplies the move before the passive sampler observes
+it. -/
+theorem runPrefixChallenges_sender {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    {Out : Transcript l (.liftBind a next) → Type u} (h : owner l a = .sender)
+    (p : Focal l (OracleComp spec) (.liftBind a next) Out)
+    (d : PrefixChallengePrograms l spec (.liftBind a next)) :
+    runPrefixChallenges l (.liftBind a next) p d = (do
+      let v ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
+        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
+          (fun tr => Out ⟨x, tr⟩)))) h) p
+      let r ← runPrefixChallenges l (next (l.toFunB a v.1)) v.2
+        (fun sp h history => d (.down (l.toFunB a v.1) sp) h ⟨⟨v.1, rfl⟩, history⟩)
+      pure ⟨⟨v.1, r.1⟩, r.2.1, r.2.2⟩) := by
+  rw [runPrefixChallenges, run_node, step_sender (owner l a) h, cast_prefixSampler l h]
+  simp only [samplerNode, LawfulMonad.pure_bind]
+  rfl
+
+/-- At a receiver node, the focal strategy supplies its continuation before the
+history-selected challenge is drawn. -/
+theorem runPrefixChallenges_receiver {ι : Type u} {spec : OracleSpec.{u, u} ι}
+    {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+    {Out : Transcript l (.liftBind a next) → Type u} (h : owner l a = .receiver)
+    (p : Focal l (OracleComp spec) (.liftBind a next) Out)
+    (d : PrefixChallengePrograms l spec (.liftBind a next)) :
+    runPrefixChallenges l (.liftBind a next) p d = (do
+      let f ← cast (congrArg (fun r => OracleComp spec (Choice .focal r (Move l a)
+        (fun x => Focal l (OracleComp spec) (next (l.toFunB a x))
+          (fun tr => Out ⟨x, tr⟩)))) h) p
+      let x ← d (.root _) h ⟨⟩
+      let r ← runPrefixChallenges l (next (l.toFunB a x)) (f x)
+        (fun sp h history => d (.down (l.toFunB a x) sp) h ⟨⟨x, rfl⟩, history⟩)
+      pure ⟨⟨x, r.1⟩, r.2.1, r.2.2⟩) := by
+  rw [runPrefixChallenges, run_node, step_receiver (owner l a) h, cast_prefixSampler l h]
+  simp only [samplerNode, bind_map_left]
+  rfl
+
 /-- A state predicate on every full prefix, with root, sender and leaf obligations. The
 statement may lie in any universe. -/
-structure StateFunction (s : FreeM P PUnit) (S : Type uS)
+structure StateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
     (admissible language : S → Prop) (accepts : S → Transcript l s → Prop) where
   toFun : ∀ {t}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → S → Prop
   root : ∀ stmt, admissible stmt → toFun (.root s) ⟨⟩ stmt → language stmt
@@ -94,6 +216,8 @@ structure StateFunction (s : FreeM P PUnit) (S : Type uS)
         (PartialTranscriptAt.snoc l sp history x) stmt
   leaf : ∀ (sp : Cursor.Spine s (.pure ⟨⟩)) history stmt,
     ¬ toFun sp history stmt → ¬ accepts stmt (PartialTranscriptAt.complete l sp history)
+
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
 def rbrSoundness {S : Type uS} (s : FreeM P PUnit)
@@ -205,6 +329,20 @@ def Verifier.validAcceptance {ι σ : Type} {S : Type uS} {ambient : OracleSpec 
     (V.decide stmt (Transcript.path tr) (toPlainView s tr)).run).run' state :
       ProbComp (Option (T tr.path)))] {v | ∃ t, v = some t ∧ event t}
 
+/-- Classical acceptance quantifies over the possible ambient states at the end of the run. -/
+theorem Verifier.validAcceptance_iff_validAcceptanceUsing {ι σ : Type} {S : Type uS}
+    {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type} (V : Verifier ambient s S T)
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (stmt : S) (tr : Transcript plainSig s)
+    (event : (p : Path s) → T p → Prop) :
+    V.validAcceptance impl stmt tr (event tr.path) ↔
+      ∃ state : σ, V.validAcceptanceUsing impl (fun x => x.run' state)
+        event stmt tr := by
+  unfold Verifier.validAcceptance Verifier.validAcceptanceUsing
+  dsimp only
+  let : MeasurableSpace (Option (T tr.path)) := ⊤
+  exact exists_congr fun state => by rw [prEvent_eq_evalDist_of_discrete]
+
 /-- The plain verifier's default round-by-round soundness form. The output language is indexed
 by the shape path and judged at the transcript's path. -/
 abbrev Verifier.rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
@@ -255,6 +393,20 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
         ((pathBundle inputs s p).answer pathData)
   ∃ state : σ, 0 < 𝒟[(simulateQ handler (V.decide stmt.1 p view).run).run' state]
       {v | ∃ t, v = some t ∧ event (t, (V.outputMap stmt.1 p view).f pathData)}
+
+/-- Classical acceptance quantifies over the possible ambient states at the end of the run. -/
+theorem validAcceptance_iff_validAcceptanceUsing
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (stmt : S × inputs.Data) (tr : Transcript oracleSig s)
+    (event : (p : Path s) → OracleVerifier.Output T B p → Prop) :
+    V.validAcceptance impl stmt tr (event tr.path) ↔
+      ∃ state : σ, V.validAcceptanceUsing impl (fun x => x.run' state)
+        event stmt tr := by
+  unfold validAcceptance validAcceptanceUsing
+  dsimp only
+  let : MeasurableSpace (Option (T tr.path)) := ⊤
+  exact exists_congr fun state => by rw [prEvent_eq_evalDist_of_discrete]
 
 /-- Worst-case-per-prefix oracle soundness with the full input admissibility boundary. The
 output language is indexed by the shape path and judged at the transcript's path. -/
