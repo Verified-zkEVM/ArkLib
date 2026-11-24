@@ -35,7 +35,10 @@ Polynomial evaluation uses Mathlib's noncomputable representations. -/
 noncomputable def polyFamily (R : Type) [CommSemiring R] (deg n : ℕ) :
     OracleFamily Unit (PolynomialData R n deg) := ⟨fun _ => inferInstance⟩
 
-/-- Assign all variables except the round's free coordinate. -/
+/-- Assign all variables except the round's free coordinate: the challenges drawn so far,
+followed by a point of the remaining domain. This is the interaction layer's only definition.
+The frozen legacy `Spec.SingleRound.roundSuffix` is equal to it by `rfl`
+(`roundSuffix_eq_spec` in `DomainEquivalence`). -/
 def roundSuffix {R : Type} {n : ℕ} (i : Fin n) (challenges : Fin i.castSucc → R)
     (x : Fin (n - 1 - i) → R) : Fin (n - 1) → R :=
   Fin.append challenges x ∘ Fin.cast (by have := i.isLt; simp; omega)

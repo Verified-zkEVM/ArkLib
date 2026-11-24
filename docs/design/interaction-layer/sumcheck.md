@@ -1,27 +1,43 @@
 # Sumcheck in the interaction layer
 
-`Sumcheck.Core.Soundness` proves full-run soundness in the interaction layer over an arbitrary
-finite indexed domain `D : Fin d → R`. The verifier sums over indices. In particular, the constant polynomial
-one has sum two over `[0, 0]`; neither the verifier nor its proof deduplicates the list.
+The Sumcheck core has two verifiers. `indexedVerifier` in `Indexed` is the interaction-layer
+verifier over an arbitrary finite indexed domain `D : Fin d → R`. The compatibility `verifier` in
+`Execution` runs the legacy decision fold with routed message queries over an injective domain
+`D : Fin d ↪ R`. Public theorems about `indexedVerifier` start with `indexedVerifier_`. Results
+about the compatibility `verifier` start with `verifier_`, and those transferred from the legacy
+soundness theorem end in `_of_legacy`.
+
+`Sumcheck.Core.Soundness` proves full-run soundness of `indexedVerifier`. The verifier sums over
+indices. In particular, the constant polynomial one has sum two over `[0, 0]`; neither the
+verifier nor its proof deduplicates the list.
+
+The argument is the sum-check analysis of [LFKN92](https://lance.fortnow.com/papers/files/ip.pdf),
+as presented in [Thaler, §4.1](https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf#page=37)
+(Proposition 4.1 for the Boolean domain, Remark 4.1 for a finite subset). The specialization
+differs as follows. `D : Fin d → R` counts repeated points with multiplicity. The message type
+`R⦃≤ deg⦄[X]` enforces the degree bound, so the verifier makes no degree check. The output
+relation `indexedOutputProblem` performs the final evaluation check. The error denominator is the
+size of the uniformly sampled challenge type `R`.
 
 The proof first bounds a false-to-true transition of the remaining-sum relation at each fresh
 challenge. `indexedVerifier_rbrSoundness` packages these bounds as a core state function.
 `indexedVerifier_soundness` then applies the parent stack's
 `OracleVerifier.soundness_of_rbrSoundness_uniform`, using exactly one challenge per round.
-For every ambient-effectful prover and every output family, the probability of a valid accepted
-output from a false input is at most `n * (deg / |R|)`. The ring assumptions are a finite
+For every ambient-effectful prover and every output family, the probability that the run
+returns a claim satisfying the final evaluation relation, from a false input claim, is at most
+`n * (deg / |R|)`. The ring assumptions are a finite
 commutative semiring with `IsDomain`; the domain map need not be injective or nonempty.
 
 ## Modules and ownership
 
 | Module | Contents |
 |---|---|
-| `Types` | Interaction layer round statements, polynomial oracle data and prefix/suffix coordinates. |
-| `SingleRound`, `Tree` | The oracle-message/challenge round, the fixed full-run tree, transcript access and sampling. |
+| `Types` | Interaction layer round statements, polynomial oracle data and prefix/suffix coordinates. `roundSuffix` is the interaction layer's only suffix definition; `roundSuffix_eq_spec` shows it is the frozen `Spec.SingleRound.roundSuffix`. |
+| `SingleRound`, `Tree` | The oracle-message/challenge round, the fixed full-run tree, transcript access and sampling. `Tree` owns the decision lift `decisionLift` and its answer law `simulateQ_decisionLift_monad`, which both verifiers use. |
 | `Domain` | Indexed remaining sums, honest projected polynomials, the successor identity and final evaluation relation. |
 | `Indexed` | The interaction layer indexed verifier, its actual-run equation, the state function and interaction layer local-to-global soundness proof. |
-| `Soundness` | Full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
-| `DomainEquivalence` | Separate agreement checks with the injective legacy `Spec` representation. |
+| `Soundness` | `indexedVerifier` full-run, arbitrary-list and injective corollaries; actual-run committed and randomized bounds in probability and measure form. |
+| `DomainEquivalence` | Agreement of the honest projected polynomials and sum relations with the injective legacy `Spec` representation. It is not a verifier bridge. |
 | `Protocol`, `Execution`, `Completeness` | Compatibility honest prover and decision, closed-form runs and direct completeness. |
 | `LegacyEquivalence`, `LegacySoundness`, `LegacyCompleteness` | Separate execution and security comparisons with embedded legacy Sumcheck. |
 | `Knowledge`, `RoundByRound` | Compatibility knowledge and round-by-round transfers. |
@@ -29,7 +45,8 @@ commutative semiring with `IsDomain`; the domain map need not be injective or no
 The interaction layer import graph is `Soundness → Indexed → Domain / Tree → Types`. It does
 not import `Sumcheck.Spec`, the compatibility execution or a legacy security transfer. `DomainEquivalence`
 and `LegacyEquivalence` check agreement separately. The compatibility `verifier` keeps its old
-name; the interaction layer verifier is `indexedVerifier`.
+name; the interaction layer verifier is `indexedVerifier`. The two verifiers share `decisionLift`
+in `Tree` and `roundSuffix` in `Types`, which do not depend on the legacy modules.
 
 ## The interaction layer verifier and its bound
 
@@ -49,26 +66,40 @@ their agreement points, whose uniform mass is at most `deg / |R|`.
 |---|---|
 | `indexed_round_soundness` | One false-to-true indexed round, including the sum check. |
 | `indexedVerifier_rbrSoundness` | Every full execution prefix, with local error `deg / |R|`. |
-| `verifier_soundness`, `verifier_soundness_rounds` | The actual full run, for every prover, with `n` times that error. |
-| `verifier_soundness_list` | `D = domain.get` for any list, retaining repetitions. |
-| `verifier_soundness_injective` | The same interaction layer bound for an embedding. |
-| `verifier_run_soundness` | Probability that the actual run returns a verdict satisfying the final evaluation relation. |
-| `committed_soundness`, `committed_measureSoundness` | An arbitrary polynomial committed before the one-round challenge. |
-| `randomized_soundness`, `randomized_measureSoundness` | An ambient, possibly failing commitment before the fresh challenge, including shared state. |
+| `indexedVerifier_soundness`, `indexedVerifier_soundness_nsmul` | The actual full run, for every prover, with `n` times that error. |
+| `indexedVerifier_soundness_list` | `D = domain.get` for any list, retaining repetitions. |
+| `indexedVerifier_soundness_injective` | The same interaction layer bound for an embedding. |
+| `indexedVerifier_run_soundness` | Probability that the actual run returns a claim satisfying the final evaluation relation. |
+| `indexedVerifier_committed_soundness`, `indexedVerifier_committed_measureSoundness` | An arbitrary polynomial committed before the one-round challenge. |
+| `indexedVerifier_randomized_soundness`, `indexedVerifier_randomized_measureSoundness` | An ambient, possibly failing commitment before the fresh challenge, including shared state. |
 
-These bounds concern valid accepted outputs. They do not assert that every accepted verdict is
-valid. A dishonest message can pass a sum check while the retained input polynomial fails the
-final relation. Tests retain this distinction.
+These bounds concern returned claims that satisfy the final evaluation relation. They do not
+assert that every returned claim is valid. A dishonest message can pass a sum check while the
+retained input polynomial fails the final relation. Tests retain this distinction.
+
+The final decision of `indexedVerifier` queries the oracle messages in a fixed order. Each
+attempted sum check queries the round message once per domain index, in index order and
+including repeats. A successful check adds one query at the challenge. A rejection ends the
+decision's queries, although every interaction round has already run. The soundness bound
+certifies neither a query charge nor an execution cost. #1488 and #1487 must preserve this order
+when they share the decision code.
 
 ## Equivalence with the legacy Sumcheck
+
+Every result in this section concerns the compatibility `verifier`, not `indexedVerifier`.
+`DomainEquivalence` relates only the honest projected polynomials and sum relations of the two
+representations over an injective domain. No theorem relates `indexedVerifier` to the legacy
+verifier. A closed-verdict bridge would compare the two decisions after interpreting the
+messages. A security transfer would also need the corresponding relations, output maps and
+challenge draws, and a comparison of open query traces would need a program law.
 
 The equivalence runs through three correspondences:
 
 - **Tree and transcripts.** `protocol_eq` identifies `protocol R deg n` with the oracle tree of
   `Spec.pSpec R deg n`, and `oracleDecode_eq_decodeTranscript` identifies the two transcript
   decodings.
-- **Decision.** `decide_eq_legacy`: on every completed run, the decision of the Sumcheck verifier
-  and that of the embedded legacy verifier `legacyVerifier` are the same `OracleComp` program,
+- **Decision.** `decide_eq_legacy`: on every completed run, the decision of the compatibility
+  `verifier` and that of the embedded legacy verifier `legacyVerifier` are the same `OracleComp` program,
   before any query is answered, so they make the same queries in the same order.
   `outputMap_eq_legacy` says both keep the input polynomial as output oracle, and
   `verifier_agrees` packages the two as `OracleVerifier.Agrees`. `runWithLog_eq_legacy` follows:
@@ -81,14 +112,17 @@ The equivalence runs through three correspondences:
 
 The main results are:
 
-- `run_eq_legacy`: for every prover, the reindexed and finalized Sumcheck run is the reindexed and
-  finalized run of the embedded legacy verifier, as a program. It includes every ambient query of
+- `run_eq_legacy`: the reindexed and finalized run of the compatibility `verifier` is the
+  reindexed and finalized run of the embedded legacy verifier, as a program. It covers every
+  prover whose output is a final statement, its oracle data and a witness of some type `WitOut`.
+  It assumes inhabited ambient response types, which the embedding requires. It includes every ambient query of
   the prover and the decision, and keeps the decoded transcript, the prover's output and the
   accepted statement apart.
-- `run_legacyProver`: against the embedded legacy honest prover, that program is the legacy run
-  `OracleReduction.run`. The legacy honest prover's challenge slots are `pure`
-  (`legacyProver_pureChallengeSlots`), which is the hypothesis of the program-equality exchange
-  between challenge sampling and the prover's challenge step.
+- `run_legacyProver`: for the embedded legacy honest prover `legacyProver`, with `Unit`
+  witnesses and inhabited ambient response types, that program is the legacy run
+  `OracleReduction.run`. It requires the legacy honest prover's challenge slots to be `pure`,
+  which `legacyProver_pureChallengeSlots` proves. That is the hypothesis of the program-equality
+  exchange between challenge sampling and the prover's challenge step.
 
 `OracleVerifier.Agrees` in `ArkLib/Interaction/Core/Security/Agreement.lean` collects what
 decision agreement gives: equal runs and logged runs, and equal completeness, soundness, knowledge
@@ -99,13 +133,17 @@ purity of challenge slots under appending is in `Core/Legacy/PureSlots.lean`.
 
 ## Compatibility security and completeness
 
-The compatibility knowledge theorems retain the legacy relations and injective domain:
-`verifier_knowledgeSoundness` quantifies over legacy-compatible output statements and witnesses;
-`verifier_rbrKnowledgeSoundness` quantifies over all provers with `Unit` witnesses.
-`verifier_rbrSoundness` is the separate compatibility round-by-round transfer.
-The interaction layer round-by-round theorem is `indexedVerifier_rbrSoundness`.
-`legacyVerifier_soundness` in `LegacySoundness` and its rounds form preserve the old transfer as a
-comparison check. The interaction layer security statements do not use them.
+The compatibility knowledge theorems concern the compatibility `verifier` and retain the legacy
+relations and injective domain. `verifier_knowledgeSoundness` quantifies over legacy-compatible
+output statements and witnesses. `verifier_rbrKnowledgeSoundness` is a local certificate with
+`Unit` input and output witnesses: it quantifies over statements, receiver prefixes, histories
+and challenges, not over provers. The claim about every prover belongs to the run soundness
+theorems `verifier_soundness_of_legacy` and `indexedVerifier_soundness`.
+`verifier_rbrSoundness` is the separate compatibility round-by-round transfer, also a local
+certificate. The interaction layer round-by-round theorem is `indexedVerifier_rbrSoundness`.
+`verifier_soundness_of_legacy` in `LegacySoundness` and its rounds form
+`verifier_soundness_rounds_of_legacy` preserve the old transfer for the compatibility `verifier`
+as a comparison check. The interaction layer security statements do not use them.
 
 `perfectCompleteness` proves completeness directly for the compatibility honest prover and
 every challenge implementation. `legacyProver_perfectCompleteness` concerns the embedded legacy
@@ -122,7 +160,12 @@ exact-probability, adaptive-message, effect-order, routing and axiom checks. Com
 import the comparison modules explicitly. Interaction layer tests add arbitrary maps and lists,
 committed and randomized actual runs, and an actual final decision with constant message one and target
 two over `[0, 0]`. `IndexedSoundnessTest.repeated_run` checks the complete accepting program
-on that repeated domain, including the transcript and retained input oracle. `Domain` also checks the repeated-point sum, its deduplicated contrast and a
+on that repeated domain, including the transcript and retained input oracle.
+`IndexedSoundnessTest.exact_success_probability` runs `indexedVerifier` over `ZMod 5` with
+domain `[0, 0]`, input polynomial zero, target two and committed message `X + 1`. The sum check
+passes at every challenge, and `verdict_at_zero` shows the run returns a claim at challenge zero
+that fails the final relation (`claim_at_zero_false`). Only challenge `-1` gives a valid final
+claim (`success_iff`), so the success event has probability exactly `1/5`. `Domain` also checks the repeated-point sum, its deduplicated contrast and a
 two-coordinate indexed sum. Axiom checks permit only `propext`, `Classical.choice` and `Quot.sound`.
 
 `Rounds` keeps the two- and three-round examples, including the bilinear input and challenge
@@ -139,14 +182,17 @@ The production inventory that follows lists every source declaration separately.
 Unqualified target declarations are in `Sumcheck.Core`; test namespaces follow their file names.
 The source prefix for the test tables is `ArkLibTest/ProofSystem/Sumcheck/Interaction/`.
 Production rows use their complete source paths.
-Each row has exactly one status:
+Each row has exactly one migration disposition. The dispositions record how each frozen
+assertion maps to the interaction layer. The frozen `Sumcheck.Interaction` modules and their
+tests still ship unchanged.
 
 - **equivalent**: the target preserves the source assertion's scope.
-- **premise-required (P1)**: the source changes because the passive verifier sends only public
-  coins and makes every bundle query in the final decision.
+- **premise-required (P1)**: the source changes because the passive verifier sends only
+  challenges and makes every bundle query in the final decision.
 - **premise-required (P2)**: the source changes because challenges and oracle messages never
   select shape.
-- **retired**: the row names the removed mechanism, rather than claiming a narrower equivalent.
+- **retired**: the interaction layer does not port the row's mechanism, rather than claiming a
+  narrower equivalent. This is a migration disposition: the frozen source still ships.
 - **child-owned (#1488)**: the child owns interval endpoints `start`, `count` and
   `start + count = n`, including its `intervalVerifier` built from `foldVerifier`.
 - **unresolved**: the row names a missing parent interface. A carrier fact cannot close a
@@ -226,9 +272,9 @@ above close those rows; interval completeness and projection executions remain w
 | `Protocol.lean` #3, L101 `abort_response` | T/Effects.lean: `EffectsTest.bad_first_rounds`, `EffectsTest.runWithLog_wrong` | premise-required (P1) |
 | `Protocol.lean` #4, L107 example | T/Effects.lean: `EffectsTest.bad_first_rounds`, `EffectsTest.runWithLog_wrong` | premise-required (P1) |
 | `Protocol.lean` #5, L113 example | T/Effects.lean: `EffectsTest.target_seven_not_final` | equivalent |
-| `Protocol.lean` #6, L144 example | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; interaction layer axiom checks | premise-required (P2) |
+| `Protocol.lean` #6, L144 example | C/Soundness.lean: `indexedVerifier_run_soundness`; C/Indexed.lean: `indexedVerifier_soundness`; interaction layer axiom checks | premise-required (P2) |
 | `Protocol.lean` #7, L171 example | #1488: `Sumcheck.Core.intervalVerifier`, appended first-round and remaining intervals | child-owned (#1488) |
-| `Protocol.lean` #8, L196 `#print axioms execute_soundness` | C/Soundness.lean: `verifier_run_soundness`, `verifier_soundness_rounds`; interaction layer axiom checks | premise-required (P2) |
+| `Protocol.lean` #8, L196 `#print axioms execute_soundness` | C/Soundness.lean: `indexedVerifier_run_soundness`; C/Indexed.lean: `indexedVerifier_soundness`; interaction layer axiom checks | premise-required (P2) |
 | `Protocol.lean` #9, L197 `#print axioms execute_support_completeness` | C/Completeness.lean: `perfectCompleteness`; T/Completeness.lean: axiom checks | premise-required (P2) |
 | `Protocol.lean` #10, L198 `#print axioms execute_perfectCompleteness` | C/Completeness.lean: `perfectCompleteness`; T/Completeness.lean: axiom checks | premise-required (P2) |
 
@@ -236,7 +282,7 @@ above close those rows; interval completeness and projection executions remain w
 
 | Exact source | Exact target | Status |
 |---|---|---|
-| `RoundByRound.lean` #1, L22 example | C/Indexed.lean: `indexedVerifier_rbrSoundness`; C/Soundness.lean: `verifier_run_soundness` | premise-required (P2) |
+| `RoundByRound.lean` #1, L22 example | C/Indexed.lean: `indexedVerifier_rbrSoundness`; C/Soundness.lean: `indexedVerifier_run_soundness` | premise-required (P2) |
 
 ### Sequential
 
@@ -266,7 +312,7 @@ above close those rows; interval completeness and projection executions remain w
 |---|---|---|
 | `Soundness.lean` #1, L29 example | T/SingleRound.lean:253, collision-zero example | equivalent |
 | `Soundness.lean` #2, L35 example | T/SingleRound.lean:266, collision-one example | equivalent |
-| `Soundness.lean` #3, L41 example | C/Soundness.lean: `committed_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
+| `Soundness.lean` #3, L41 example | C/Soundness.lean: `indexedVerifier_committed_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
 | `Soundness.lean` #4, L49 example | T/SingleRound.lean:277, rejection at the collision challenge | equivalent |
 | `Soundness.lean` #5, L66 `rejection_probability` | T/Soundness.lean: `SoundnessTest.rejection_probability` | equivalent |
 | `Soundness.lean` #6, L77 `exact_repair_probability` | T/Soundness.lean: `SoundnessTest.exact_repair_probability` | equivalent |
@@ -288,10 +334,10 @@ above close those rows; interval completeness and projection executions remain w
 | `Soundness.lean` #22, L164 `#print axioms fresh_bound_lt_one` | T/Soundness.lean: `SoundnessTest.fresh_bound_lt_one` axiom check | equivalent |
 | `Soundness.lean` #23, L165 `#print axioms empty_domain_rejection` | T/Soundness.lean: `SoundnessTest.empty_domain_rejection` axiom check | equivalent |
 | `Soundness.lean` #24, L169 `#print axioms executeCommitted_eq` | T/SingleRound.lean: `SingleRoundTest.run_oneRound`; C/Indexed.lean: `indexedVerifier_run` | equivalent |
-| `Soundness.lean` #25, L170 `#print axioms executeCommitted_soundness` | C/Soundness.lean: `committed_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
-| `Soundness.lean` #26, L171 `#print axioms executeRandomCommitment_soundness` | C/Soundness.lean: `randomized_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
-| `Soundness.lean` #27, L172 `#print axioms executeCommitted_measureSoundness` | C/Soundness.lean: `committed_measureSoundness`; interaction layer axiom check | equivalent |
-| `Soundness.lean` #28, L173 `#print axioms executeRandomCommitment_measureSoundness` | C/Soundness.lean: `randomized_measureSoundness`; interaction layer axiom check | equivalent |
+| `Soundness.lean` #25, L170 `#print axioms executeCommitted_soundness` | C/Soundness.lean: `indexedVerifier_committed_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
+| `Soundness.lean` #26, L171 `#print axioms executeRandomCommitment_soundness` | C/Soundness.lean: `indexedVerifier_randomized_soundness`; T/Soundness.lean: interaction layer arbitrary-list client and axiom check | equivalent |
+| `Soundness.lean` #27, L172 `#print axioms executeCommitted_measureSoundness` | C/Soundness.lean: `indexedVerifier_committed_measureSoundness`; interaction layer axiom check | equivalent |
+| `Soundness.lean` #28, L173 `#print axioms executeRandomCommitment_measureSoundness` | C/Soundness.lean: `indexedVerifier_randomized_measureSoundness`; interaction layer axiom check | equivalent |
 
 ### SourceRouting
 
@@ -742,7 +788,7 @@ neither the old nor the new total-mass equation asserts a positive probability o
 | `Sumcheck.Interaction.SingleRound.committedRun_rejects`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:110` | C/Indexed.lean: `Sumcheck.Core.indexedRoundResult_rejects`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
 | `Sumcheck.Interaction.SingleRound.prEvent_eq_evalDist_map_unifSpec` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:118` | `prEvent_eq_evalDist_map` | retired (monad-specific probability wrapper) |
 | `Sumcheck.Interaction.SingleRound.prEvent_bind_le_of_forall_le_unifSpec` (private), `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:123` | `prEvent_bind_le_of_forall_le` | retired (monad-specific probability wrapper) |
-| `Sumcheck.Interaction.SingleRound.executeCommitted_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:131` | C/Soundness.lean: `Sumcheck.Core.committed_soundness`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
-| `Sumcheck.Interaction.SingleRound.executeRandomCommitment_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:158` | C/Soundness.lean: `Sumcheck.Core.randomized_soundness`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
-| `Sumcheck.Interaction.SingleRound.executeCommitted_measureSoundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:169` | C/Soundness.lean: `Sumcheck.Core.committed_measureSoundness` | equivalent |
-| `Sumcheck.Interaction.SingleRound.executeRandomCommitment_measureSoundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:179` | C/Soundness.lean: `Sumcheck.Core.randomized_measureSoundness` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCommitted_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:131` | C/Soundness.lean: `Sumcheck.Core.indexedVerifier_committed_soundness`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeRandomCommitment_soundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:158` | C/Soundness.lean: `Sumcheck.Core.indexedVerifier_randomized_soundness`; C/Domain.lean: `Sumcheck.Core.sum_domain_list` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeCommitted_measureSoundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:169` | C/Soundness.lean: `Sumcheck.Core.indexedVerifier_committed_measureSoundness` | equivalent |
+| `Sumcheck.Interaction.SingleRound.executeRandomCommitment_measureSoundness`, `ArkLib/ProofSystem/Sumcheck/Interaction/Soundness.lean:179` | C/Soundness.lean: `Sumcheck.Core.indexedVerifier_randomized_measureSoundness` | equivalent |

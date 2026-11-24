@@ -15,38 +15,45 @@ public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
 /-!
 # The interaction-layer Sumcheck is the embedded legacy Sumcheck
 
-This file proves that the interaction-layer Sumcheck verifier and the embedding
+This file proves that the compatibility `verifier` of `Execution` and the embedding
 `embedOracleVerifier` of the legacy oracle verifier `Spec.oracleVerifier` produce equal programs
 at the common outcome: the legacy result `LegacyResult`, after reindexing the challenges to
-the legacy challenge oracle and decoding the transcript.
+the legacy challenge oracle and decoding the transcript. The compatibility `verifier` runs the
+legacy decision fold with routed message queries over an injective domain. Nothing here concerns
+the interaction-layer `indexedVerifier`; `DomainEquivalence` relates only its honest projected
+polynomials and sum relations to the legacy ones.
 
 The proof runs through three correspondences.
 
 * **Tree and transcripts.** The Sumcheck tree `protocol R deg n` is the oracle tree of the legacy
   protocol specification (`protocol_eq`), and decoding a transcript of the oracle tree is
   `decodeTranscript` (`oracleDecode_eq_decodeTranscript`).
-* **Decision.** On every completed run, the decision of the Sumcheck verifier and the decision of
-  the embedded legacy verifier, read on the Sumcheck tree (`legacyVerifier`), are the same program
-  before any query is answered (`decide_eq_legacy`). Both run the legacy decision fold, and
-  `route` sends each legacy message query to the node that the embedding's routing `queryMsg`
-  selects on the legacy oracle tree (`route_heq_queryMsg`). Hence the two verifiers make the same
-  queries in the same order, and their logged runs are equal (`runWithLog_eq_legacy`).
+* **Decision.** On every completed run, the decision of the compatibility `verifier` and the
+  decision of the embedded legacy verifier, read on the Sumcheck tree (`legacyVerifier`), are the
+  same program before any query is answered (`decide_eq_legacy`). Both run the legacy decision
+  fold, and `route` sends each legacy message query to the node that the embedding's routing
+  `queryMsg` selects on the legacy oracle tree (`route_heq_queryMsg`). Hence the two verifiers make
+  the same queries in the same order, and their logged runs are equal (`runWithLog_eq_legacy`).
 * **Challenges.** The uniform challenge oracle of the Sumcheck tree is the reindexed uniform legacy
   challenge oracle (`challengeQueryImpl_eq_legacy`).
 
 The main results are:
 
-* `run_eq_legacy`: for every prover, the reindexed and finalized run of the Sumcheck verifier is
-  the reindexed and finalized run of the embedded legacy verifier against the same prover. The
-  result keeps the decoded transcript, the prover's output and the accepted statement separately.
-* `run_legacyProver`: against the embedded legacy honest prover, that program is the legacy run
-  `OracleReduction.run`. The legacy honest prover's challenge slots are `pure`
-  (`legacyProver_pureChallengeSlots`), so the exchange of challenge sampling and the prover's
-  challenge step holds as program equality.
+* `run_eq_legacy`: the reindexed and finalized run of `verifier` is the reindexed and finalized
+  run of the embedded legacy verifier against the same prover. It covers every prover whose
+  output is a final statement, its oracle data and a witness of some type `WitOut`. It assumes
+  inhabited ambient response types, which the embedding requires. The result keeps the decoded
+  transcript, the prover's output and the accepted statement separately.
+* `run_legacyProver`: for the embedded legacy honest prover `legacyProver`, with `Unit` witnesses
+  and inhabited ambient response types, that program is the legacy run `OracleReduction.run`.
+  The premise is that the legacy honest prover's challenge slots are `pure`, which
+  `legacyProver_pureChallengeSlots` proves, so the exchange of challenge sampling and the
+  prover's challenge step holds as program equality.
 * `verifier_agrees`: the two verifiers agree in the sense of `OracleVerifier.Agrees`. With the
   transport lemmas of `OracleVerifier` along `protocol_eq`, this carries every security notion of
-  the classical model from the embedded legacy verifier to the Sumcheck verifier. The transfers
-  themselves are in `LegacyCompleteness`, `Soundness`, `Knowledge` and `RoundByRound`.
+  the classical model from the embedded legacy verifier to the compatibility `verifier`. The
+  transfers themselves are in `LegacyCompleteness`, `LegacySoundness`, `Knowledge` and
+  `RoundByRound`.
 * `decide_ambient_trace`: once the input and path oracles are answered from the run's data, both
   decisions are `pure` of the legacy verdict in every lawful monad, so they make no ambient query.
 -/
@@ -318,8 +325,8 @@ noncomputable def legacyVerifier : OracleVerifier ambient (protocol R deg n)
 variable {R deg n D ambient}
 
 omit [SampleableType R] in
-/-- On corresponding transcripts, the decision of the Sumcheck verifier and the decision of the
-embedded legacy verifier are the same program before any query is answered: both run the legacy
+/-- On corresponding transcripts, the decision of the compatibility `verifier` and the decision of
+the embedded legacy verifier are the same program before any query is answered: both run the legacy
 decision fold on the same challenges, and each message query goes to the same oracle node. -/
 theorem decide_heq_embed (stmt : Spec.StatementRound R n 0)
     (tr : Transcript oracleSig (protocol R deg n))
@@ -355,9 +362,9 @@ theorem decide_heq_embed (stmt : Spec.StatementRound R n 0)
     (route_heq_queryMsg n _ _ hp i q)
 
 omit [SampleableType R] in
-/-- **Decision correspondence.** On every completed run, the decision of the Sumcheck verifier is
-the decision of the embedded legacy verifier read on the Sumcheck tree, as a program before any
-query is answered. -/
+/-- **Decision correspondence.** On every completed run, the decision of the compatibility
+`verifier` is the decision of the embedded legacy verifier read on the Sumcheck tree, as a program
+before any query is answered. -/
 theorem decide_eq_legacy (stmt : Spec.StatementRound R n 0)
     (tr : Transcript oracleSig (protocol R deg n)) :
     (verifier R deg n D ambient).decide stmt _ (toView _ tr) =
@@ -383,8 +390,8 @@ theorem decide_eq_legacy (stmt : Spec.StatementRound R n 0)
   exact eq_of_heq ((decide_heq_embed stmt tr _ htr).trans hc'.symm)
 
 omit [SampleableType R] in
-/-- On every completed run, the Sumcheck verifier and the embedded legacy verifier keep the same
-output data: the input polynomial. -/
+/-- On every completed run, the compatibility `verifier` and the embedded legacy verifier keep the
+same output data: the input polynomial. -/
 theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : Transcript oracleSig (protocol R deg n)) :
     ((verifier R deg n D ambient).outputMap stmt _ (toView _ tr)).f
@@ -417,16 +424,17 @@ theorem outputMap_eq_legacy (stmt : Spec.StatementRound R n 0)
 variable (R deg n D ambient)
 
 omit [SampleableType R] in
-/-- **Agreement.** The Sumcheck verifier agrees with the embedded legacy verifier, so every
+/-- **Agreement.** The compatibility `verifier` agrees with the embedded legacy verifier, so every
 security notion of the classical model transfers between them. -/
 theorem verifier_agrees :
     OracleVerifier.Agrees (verifier R deg n D ambient) (legacyVerifier R deg n D ambient) :=
   OracleVerifier.Agrees.of_decide_eq decide_eq_legacy outputMap_eq_legacy
 
 omit [SampleableType R] in
-/-- **Query trace.** For every prover, the logged run of the Sumcheck verifier is the logged run of
-the embedded legacy verifier read on the Sumcheck tree. The log records the decision's queries
-before they are answered, so the two verifiers make the same queries in the same order. -/
+/-- **Query trace.** For every prover, the logged run of the compatibility `verifier` is the logged
+run of the embedded legacy verifier read on the Sumcheck tree. The log records the decision's
+queries before they are answered. Hence the two verifiers make the same queries in the same
+order. -/
 theorem runWithLog_eq_legacy (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i)
     {Out : Transcript oracleSig (protocol R deg n) → Type}
@@ -519,10 +527,11 @@ def finalize {WitOut : Type}
 variable (R deg n)
 
 omit [SampleableType R] in
-/-- **Program equality.** For every prover, the Sumcheck run, with challenges reindexed to the
-legacy challenge oracle and read as a legacy result, is the same program as the run of the embedded
-legacy verifier against the same prover. The program includes every ambient query of the prover
-and of the decision. -/
+/-- **Program equality.** The run of the compatibility `verifier`, with challenges reindexed to
+the legacy challenge oracle and read as a legacy result, is the same program as the run of the
+embedded legacy verifier against the same prover. The theorem covers every prover whose output is
+a final statement, its oracle data and a witness of type `WitOut`. It assumes inhabited ambient
+response types. The program includes every ambient query of the prover and of the decision. -/
 theorem run_eq_legacy {WitOut : Type} (stmt : Spec.StatementRound R n 0)
     (oStmt : ∀ i, Spec.OracleStatement R n deg i)
     (p : Prover oracleSig ambient (protocol R deg n) (fun _ =>
@@ -606,8 +615,10 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι) [∀ t, Inhabited (ambient.Range t)]
 
 omit [SampleableType R] in
-/-- **Honest run.** Against the embedded legacy honest prover, the reindexed and finalized Sumcheck
-run is the legacy run of `Spec.oracleReduction`, as a program. -/
+/-- **Honest run.** Against the embedded legacy honest prover `legacyProver`, with inhabited
+ambient response types, the reindexed and finalized run of the compatibility `verifier` is the
+legacy run of `Spec.oracleReduction`, as a program. The proof uses that the legacy honest
+prover's challenge slots are `pure` (`legacyProver_pureChallengeSlots`). -/
 theorem run_legacyProver (stmt : Spec.StatementRound R n 0)
     (oStmt : ∀ i, Spec.OracleStatement R n deg i) :
     simulateQ (challengeReindex R deg n ambient)

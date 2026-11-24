@@ -12,11 +12,15 @@ public import ArkLib.Interaction.Core.LegacyAppend
 /-!
 # Sumcheck verification and execution in the interaction layer
 
-The verifier of the replicated Sumcheck protocol is the passive sampler, which requests one ring
-challenge per round as a query to the challenge oracle, followed by the legacy decision fold
-`Spec.oracleVerifierProgram` applied to the completed run. The verifier does not choose the
-challenge distribution: the requests are uniform when the challenge oracle is interpreted with
-`challengeQueryImpl`, as in `perfectCompleteness_uniform`.
+This file defines the compatibility `verifier`, which runs the legacy decision fold over an
+injective domain `D : Fin d ↪ R`. The native verifier over an indexed domain `D : Fin d → R` is
+`indexedVerifier` in `Indexed`, and the run-level soundness theorems in `Soundness` concern it.
+
+The compatibility verifier of the replicated Sumcheck protocol is the passive sampler, which
+requests one ring challenge per round as a query to the challenge oracle, followed by the legacy
+decision fold `Spec.oracleVerifierProgram` applied to the completed run. The verifier does not
+choose the challenge distribution: the requests are uniform when the challenge oracle is interpreted
+with `challengeQueryImpl`, as in `perfectCompleteness_uniform`.
 
 The decision reads the challenges from the verifier view and answers each legacy message query
 through `route`, which sends it to the oracle node of its round. The output oracle is the input
@@ -297,13 +301,6 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
         (ambient + ([Spec.OracleStatement R n deg]ₒ + [(Spec.pSpec R deg n).Message]ₒ))) :=
   rfl
 
-/-- Lift path-oracle queries into the decision's query interface. -/
-def decisionLift (p : Path (protocol R deg n)) :
-    QueryImpl (oracleMessageSpec (protocol R deg n) p)
-      (OracleComp (ambient + (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec)) :=
-  fun q => liftM ((ambient +
-    (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec).query (.inr (.inr q)))
-
 /-- The Sumcheck oracle verifier: the legacy decision fold on the view's challenges, with every
 message query routed to its oracle node. The output oracle is the input polynomial. -/
 def verifier : OracleVerifier ambient (protocol R deg n) (Spec.StatementRound R n 0)
@@ -346,27 +343,6 @@ section Run
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ}
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι}
-
-omit [DecidableEq R] [SampleableType R] in
-/-- Lifted decision queries answered from the actual data, with ambient queries answered in any
-lawful monad, are a pure computation of the path oracles. -/
-theorem simulateQ_decisionLift_monad {m : Type → Type} [Monad m] [LawfulMonad m]
-    (amb : QueryImpl ambient m) (p : Path (protocol R deg n))
-    (data : ∀ i, Spec.OracleStatement R n deg i)
-    (pl : ∀ i, OracleMessage (protocol R deg n) p i) {α : Type}
-    (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift amb ((pathBundle (polyFamily R deg n) (protocol R deg n)
-      p).answer (data, pl)))
-      (simulateQ (decisionLift R deg n ambient p) oa) =
-      (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        m α) := by
-  refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl).liftTarget m)
-    (fun t => ?_) oa).trans ?_
-  · simp only [QueryImpl.addLift_def]
-    exact QueryImpl.simulateQ_add_query_right _ _ _
-  · rw [simulateQ_liftTarget]
-    rfl
 
 omit [DecidableEq R] [SampleableType R] in
 /-- Lifted path-oracle queries are answered from the path's oracle messages, without ambient

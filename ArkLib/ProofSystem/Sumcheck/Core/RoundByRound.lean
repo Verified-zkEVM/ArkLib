@@ -11,8 +11,15 @@ public import ArkLib.Interaction.Core.Legacy.OracleSecurity
 /-!
 # Round-by-round soundness of Sumcheck in the interaction layer
 
-The interaction-layer Sumcheck verifier is round-by-round knowledge sound and round-by-round sound
-for the Sumcheck relations, with error `deg / |R|` at every challenge node, against every prover.
+The compatibility `verifier` of `Execution` over an injective domain is round-by-round knowledge
+sound and round-by-round sound for the Sumcheck relations, with error `deg / |R|` at every
+challenge node. Both statements are local certificates: each provides a state function and
+bounds, for every statement, every receiver prefix and its history, the probability over the
+challenge that the state flips. Neither quantifies over provers. The bound for every prover's
+actual run is a soundness theorem: `verifier_soundness_of_legacy` for this verifier and
+`indexedVerifier_soundness` for the interaction-layer `indexedVerifier`, whose own round-by-round
+theorem is `indexedVerifier_rbrSoundness`.
+
 Both results are transferred from the legacy `Spec.oracleVerifier_rbrKnowledgeSoundness` (and,
 for soundness, its legacy consequence `Verifier.rbrSoundness_of_rbrKnowledgeSoundness`) through
 the equivalence of `LegacyEquivalence` and the round-by-round transfers
@@ -45,8 +52,11 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
 include init in
-/-- Round-by-round knowledge soundness of the interaction-layer Sumcheck verifier, with error
-`deg / |R|` at every challenge node. -/
+/-- Round-by-round knowledge soundness of the compatibility `verifier`, with error `deg / |R|` at
+every challenge node. This is a local certificate with `Unit` input and output witnesses: a
+knowledge state function and, for every statement, every receiver prefix and its history, a
+bound on the probability over the challenge that extraction fails. It does not quantify over
+provers. -/
 theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (verifier R deg n D ambient).rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0} impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
@@ -85,8 +95,10 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
   convert hsource using 1 <;> rfl
 
 include init in
-/-- Round-by-round soundness of the interaction-layer Sumcheck verifier, with error `deg / |R|`
-at every challenge node. -/
+/-- Round-by-round soundness of the compatibility `verifier`, with error `deg / |R|` at every
+challenge node. This is a local certificate: a state function and, for every false statement,
+every receiver prefix and its history, a bound on the probability over the challenge that the
+state flips to true. It does not quantify over provers. -/
 theorem verifier_rbrSoundness [Fintype R] [IsDomain R] :
     (verifier R deg n D ambient).rbrSoundness impl
       (langProblem (Spec.relationRound R n deg D 0).language)
