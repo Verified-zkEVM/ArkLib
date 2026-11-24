@@ -140,14 +140,14 @@ example : soundnessError (ω := domain) schedule 1 1 (1 / 4) (1 / 4) < 1 := by
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction (ω := domain) 0 schedule 1 domain_bound 1).perfectCompleteness init impl
-      (inputRelation 0 schedule 1 domain_bound 0)
-      (outputRelation 0 schedule 1 domain_bound 0) :=
+      (inputRelation 0 schedule 1 0)
+      (outputRelation 0 schedule 1 0) :=
   perfect_completeness schedule 1 domain_bound 1 init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction (ω := domain) 0 schedule 1 domain_bound 1).verifier.knowledgeSoundnessWith
-      init impl (inputRelation 0 schedule 1 domain_bound (1 / 4))
-      (outputRelation 0 schedule 1 domain_bound (1 / 4))
+      init impl (inputRelation 0 schedule 1 (1 / 4))
+      (outputRelation 0 schedule 1 (1 / 4))
       (Extractor.extract schedule 1 (round_bound domain_bound) 1) (55 / 68) := by
   have h := knowledge_soundness_with (ω := domain) schedule 1 1 domain_bound
     (1 / 4) (1 / 4) rate_bound init impl
@@ -155,8 +155,8 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reduction (ω := domain) 0 schedule 1 domain_bound 1).verifier.knowledgeSoundness
-      init impl (inputRelation 0 schedule 1 domain_bound (1 / 4))
-      (outputRelation 0 schedule 1 domain_bound (1 / 4))
+      init impl (inputRelation 0 schedule 1 (1 / 4))
+      (outputRelation 0 schedule 1 (1 / 4))
       (55 / 68) := by
   simpa only [NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat, error_eq] using
     knowledge_soundness (ω := domain) schedule 1 1 domain_bound

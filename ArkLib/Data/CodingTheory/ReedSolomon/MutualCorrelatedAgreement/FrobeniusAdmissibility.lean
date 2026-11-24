@@ -241,7 +241,10 @@ theorem admissibleFrobeniusPairs_card_le_degreeOf [Infinite E]
           frobeniusInitialGraph center (p ^ e) (R.1.map iota) (R.2.map iota) := by
       funext j
       cases j with
-      | none => rfl
+      -- Not `rfl`: the kernel would compare the two graph maps argument by argument,
+      -- which does not finish under leanchecker/Comparator replay. Ascribing `X = X`
+      -- makes it reduce each side to `X`.
+      | none => exact (rfl : (Polynomial.X : E[X]) = Polynomial.X)
       | some j =>
           have : j = 0 := Subsingleton.elim _ _
           subst j
