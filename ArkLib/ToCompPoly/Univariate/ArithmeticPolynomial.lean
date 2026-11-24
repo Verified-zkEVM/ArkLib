@@ -10,7 +10,7 @@ public import CompPoly.Univariate.Basic
 
 import all CompPoly.Univariate.Basic
 import all CompPoly.Univariate.Raw.Core
--- `mulRaw` uses `CPolynomial.Raw.mulRawFast_eq_ofFn`, which is private in this module.
+-- `mulRawFast_eq_ofFn` below unfolds the body of `CPolynomial.Raw.mulRawFast`.
 import all CompPoly.Univariate.Raw.Ops
 
 /-!
@@ -146,6 +146,20 @@ def negRaw (p : CPolynomial.Raw F) :
 
 end AddGroup
 
+/-- For a nonempty `p`, `mulRawFast p q` is the array of its window sums. The proof unfolds the
+loop of `mulRawFast`, so a change to that loop breaks it and flags `mulRaw` below for review. -/
+private theorem mulRawFast_eq_ofFn {R : Type} [Semiring R] {p : CPolynomial.Raw R}
+    (q : CPolynomial.Raw R) (hp : p.size ≠ 0) :
+    CPolynomial.Raw.mulRawFast p q = Array.ofFn fun k : Fin (q.size + p.size - 1) ↦
+      (min (k.val + 1) p.size - (k.val + 1 - q.size)).fold (fun t _ s ↦
+        s + p.getD (k.val + 1 - q.size + t) 0 *
+          q.getD (k.val - (k.val + 1 - q.size + t)) 0) 0 := by
+  simp only [CPolynomial.Raw.mulRawFast, hp, ↓reduceIte]
+  rw [Nat.fold_push_eq_append_ofFn, Array.emptyWithCapacity_eq, Array.empty_append]
+  congr! 3 with k
+  funext t _ s
+  rw [Array.getElem_eq_getD 0, Array.getElem_eq_getD 0]
+
 section Semiring
 variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
 
@@ -163,8 +177,7 @@ def mulRaw (p q : CPolynomial.Raw F) :
       let lo := k.val + 1 - q.size
       convolutionEntry p q k.val lo (min (k.val + 1) p.size - lo)
     pure ⟨r.val, by
-      rw [r.property, CPolynomial.Raw.mulRaw_eq_mulRawFast,
-        CPolynomial.Raw.mulRawFast_eq_ofFn q hp]
+      rw [r.property, CPolynomial.Raw.mulRaw_eq_mulRawFast, mulRawFast_eq_ofFn q hp]
       simp only [Array.getD_eq_getD_getElem?]⟩
 
 /-- Multiply canonical polynomials and charge the final trim. -/

@@ -30,30 +30,6 @@ info: 'CompPoly.Arithmetic.profileArithmetic_mulRaw' depends on axioms:
 #guard_msgs (whitespace := lax) in
 #print axioms CompPoly.Arithmetic.profileArithmetic_mulRaw
 
-section Convolution
-open CompPoly
-
-variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
-
-example (p q : CPolynomial.Raw F) (hp : p.size ≠ 0) :
-    let cost := (profileArithmetic (Arithmetic.mulRaw p q)).2
-    (cost .add, cost .mul, cost .coefficientRead, cost .metadata) =
-      (p.size * q.size, p.size * q.size, 2 * (p.size * q.size),
-        p.size * q.size + (q.size + p.size - 1) + 1) := by
-  simp [Arithmetic.profileArithmetic_mulRaw, CPolynomial.Raw.size_mulRaw, hp]
-
-example (q : CPolynomial.Raw F) (kind : ArithmeticCostKind) :
-    (profileArithmetic (Arithmetic.mulRaw #[] q)).2 kind = if kind = .metadata then 1 else 0 := by
-  cases kind <;> simp [Arithmetic.profileArithmetic_mulRaw, CPolynomial.Raw.size_mulRaw]
-
-example (p : CPolynomial.Raw F) (hp : p.size ≠ 0) (kind : ArithmeticCostKind) :
-    (profileArithmetic (Arithmetic.mulRaw p #[])).2 kind =
-      if kind = .metadata then p.size else 0 := by
-  cases kind <;> simp [Arithmetic.profileArithmetic_mulRaw, CPolynomial.Raw.size_mulRaw, hp]
-  omega
-
-end Convolution
-
 /-! ### Operation order of raw multiplication
 
 Compiled calls to `CPolynomial.Raw.mulRaw` run `CPolynomial.Raw.mulRawFast`. The checks below

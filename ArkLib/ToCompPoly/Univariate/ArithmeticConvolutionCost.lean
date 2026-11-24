@@ -74,12 +74,12 @@ theorem profileArithmetic_mulRaw (p q : CPolynomial.Raw F) :
     (profileArithmetic (mulRaw p q)).2 =
       fun kind ↦ if kind = .add ∨ kind = .mul then p.size * q.size
         else if kind = .coefficientRead then 2 * (p.size * q.size)
-        else if kind = .metadata then p.size * q.size + (CPolynomial.Raw.mulRaw p q).size + 1
+        else if kind = .metadata then
+          p.size * q.size + (if p.size = 0 then 0 else q.size + p.size - 1) + 1
         else 0 := by
   funext kind
   by_cases hp : p.size = 0
-  · cases kind <;> simp [mulRaw, hp, CPolynomial.Raw.size_mulRaw,
-      arithmeticCost, ArithmeticOp.costKind]
+  · cases kind <;> simp [mulRaw, hp, arithmeticCost, ArithmeticOp.costKind]
   have h : ((List.finRange (q.size + p.size - 1)).map
       (fun k ↦ min (k.val + 1) p.size - (k.val + 1 - q.size))).sum = p.size * q.size := by
     rw [← Fin.sum_univ_def]
@@ -90,7 +90,7 @@ theorem profileArithmetic_mulRaw (p q : CPolynomial.Raw F) :
       _ = p.size * q.size := sum_convolutionWindows p.size q.size
   cases kind <;>
     simp [mulRaw, hp, profileArithmetic_certifiedOfFn, profileArithmetic_convolutionEntry,
-      CPolynomial.Raw.size_mulRaw, List.sum_map_mul_left, h, Nat.add_assoc]
+      List.sum_map_mul_left, h, Nat.add_assoc]
 
 /-- A convolution with at most one left coefficient has linear primitive bounds. -/
 theorem profileArithmetic_mulRaw_le_of_size_le_one (p q : CPolynomial.Raw F) (hp : p.size ≤ 1)
@@ -100,8 +100,7 @@ theorem profileArithmetic_mulRaw_le_of_size_le_one (p q : CPolynomial.Raw F) (hp
       else if kind = .coefficientRead then 3 * q.size + 1
       else if kind = .metadata then 2 * q.size + 4 else 0 := by
   have hm := Nat.mul_le_mul_right q.size hp
-  have hs := CPolynomial.Raw.size_mulRaw_le p q
-  cases kind <;> simp [profileArithmetic_mulRaw] <;> omega
+  by_cases h0 : p.size = 0 <;> cases kind <;> simp [profileArithmetic_mulRaw, h0] <;> omega
 
 /-- A convolution with at most two left coefficients has linear primitive bounds. -/
 theorem profileArithmetic_mulRaw_le_of_size_le_two (p q : CPolynomial.Raw F) (hp : p.size ≤ 2)
@@ -112,8 +111,7 @@ theorem profileArithmetic_mulRaw_le_of_size_le_two (p q : CPolynomial.Raw F) (hp
       else if kind = .coefficientRead then 6 * q.size + 4
       else if kind = .metadata then 4 * q.size + 8 else 0 := by
   have hm := Nat.mul_le_mul_right q.size hp
-  have hs := CPolynomial.Raw.size_mulRaw_le p q
-  cases kind <;> simp [profileArithmetic_mulRaw] <;> omega
+  by_cases h0 : p.size = 0 <;> cases kind <;> simp [profileArithmetic_mulRaw, h0] <;> omega
 
 end Semiring
 end CompPoly.Arithmetic
