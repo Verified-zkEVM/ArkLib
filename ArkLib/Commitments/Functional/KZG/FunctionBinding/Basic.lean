@@ -111,8 +111,8 @@ def mapFunctionBindingToArsdh {L : ℕ} (hn : 1 ≤ n)
     -- val.1 = τ, val.2 = (srs, cm, queryOf, responseOf, accepts, proofs)
 
 /-- Abbreviation for a function binding adversary for KZG. -/
-abbrev KzgFunctionBindingAdversary (p : ℕ) [Fact (Nat.Prime p)] (G₁ G₂ : Type) [Group G₁]
-    [PrimeOrderWith G₁ p] [Group G₂] [PrimeOrderWith G₂ p] (n : ℕ) {ι : Type}
+abbrev KzgFunctionBindingAdversary (p : ℕ) [Fact (Nat.Prime p)] (G₁ G₂ : Type)
+    (n : ℕ) {ι : Type}
     (oSpec : OracleSpec ι) (L : ℕ) (AuxState : Type) :=
   Commitment.FunctionBindingAdversary oSpec (Fin (n + 1) → ZMod p) G₁ AuxState L
     ⟨!v[.P_to_V], !v[G₁]⟩ (Vector G₁ (n + 1) × Vector G₂ 2)
@@ -513,7 +513,7 @@ lemma function_binding_cond_le_arsdh_cond {n L : ℕ} {AuxState : Type}
   exact function_binding_cond_ext_output_maps_to_arsdh (pairing := pairing) hn hp hpair
     adversary hgame hFBcond
 
-omit [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] in
+omit [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)] [PrimeOrderWith G₂ p] in
 /-- Transition 3: dragging the map into the probability event -/
 lemma map_instance_drag {n L : ℕ} {AuxState : Type}
     (hn : 1 ≤ n) (adversary : KzgFunctionBindingAdversary p G₁ G₂ n unifSpec L AuxState)

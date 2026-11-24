@@ -84,6 +84,7 @@ theorem psi_summand_coeff_eq_zero_of_ne_mod (α κ : ℕ) (h2 : (2 : ZMod q) ≠
       omega),
       neg_zero]
 
+omit [NeZero q] in
 /-- **Main combinatorial bound (at most two contributions per position).** For `p < d`, the
 `p`-th coefficient of `ψ(a)` is `± c₁ ± c₂` where `c₁`, `c₂` are coefficients of the (at most two)
 entries of `a` whose index matches `p`'s residue class mod `d/2k` (`j₁ := p mod d/2k` from the
@@ -167,6 +168,7 @@ theorem coeff_psi_abs_le_two_vecCInfNorm (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0)
       ZMod.valMinAbs_zero]
     exact Nat.zero_le _
 
+omit [NeZero q] in
 /-- **Hachi [NOZ26, §3, Lemma 6]: `‖ψ(a)‖∞ ≤ 2β`.** If every entry of the vector
 `a : (R_q^H)^{d/k}` has centered coefficient `ℓ∞`-norm at most `β` (i.e. `‖a‖∞ ≤ β` in the
 `mod± q` convention of [NOZ26, §2.1]), then the packed ring element `ψ(a) ∈ R_q` satisfies

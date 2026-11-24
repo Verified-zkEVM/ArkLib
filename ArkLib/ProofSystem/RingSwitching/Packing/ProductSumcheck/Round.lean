@@ -22,6 +22,7 @@ is computed from the C-valued product of the public multiplier and transported w
 
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck.Round
+open Sumcheck.Structured (Multiplier)
 open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial
 open CoordinateWise.ScalarRound ProbabilityTheory
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}

@@ -19,7 +19,7 @@ reindexed legacy challenge implementation `plainChallengeImpl challengeQueryImpl
 interaction-layer notions of the embedded reduction are equivalent to the legacy notions.
 
 * Completeness: the embedded honest parties are judged by the honest-output judgement whose
-  prover statement and witness are the honest prover's outputs. An accepted observation is
+  prover statement and witness are the honest prover's outputs. An accepted outcome is
   honest exactly when the legacy result is accepted with agreeing statements in the output
   relation.
 * Soundness: every interaction-layer prover is translated into a legacy prover with the same
@@ -56,30 +56,37 @@ compare the legacy probability of an event with the interaction-layer measure of
 
 @[expose] public section
 
+universe uK
+
 namespace Interaction.Core.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec MeasureTheory
+open Interaction.Oracle (Problem ClaimFamily)
 open scoped ENNReal NNReal
 
 variable {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
 
 /-! ### Statement problems of legacy relations and languages -/
 
-/-- The statement problem of a legacy relation. Every statement is admissible. -/
-abbrev relProblem {S W : Type} (rel : Set (S × W)) : StatementProblem S where
+/-- The problem of a legacy relation, with the same statement type in every public context. Every
+statement is admissible. -/
+abbrev relProblem {Ctx S W : Type} (rel : Set (S × W)) :
+    Problem (⟨fun _ : Ctx => S⟩ : ClaimFamily Ctx) where
   Witness _ _ := W
   admissible _ _ := True
   rel _ s w := (s, w) ∈ rel
   rel_admissible _ _ _ _ := trivial
 
-/-- The statement problem of a legacy language, with trivial witnesses. -/
-abbrev langProblem {S : Type} (lang : Set S) : StatementProblem S where
+/-- The problem of a legacy language, with the same statement type in every public context and
+trivial witnesses. -/
+abbrev langProblem {Ctx S : Type} (lang : Set S) :
+    Problem (⟨fun _ : Ctx => S⟩ : ClaimFamily Ctx) where
   Witness _ _ := Unit
   admissible _ _ := True
   rel _ s _ := s ∈ lang
   rel_admissible _ _ _ _ := trivial
 
-@[simp] theorem langProblem_language {S : Type} (lang : Set S) (s : S) :
-    (langProblem lang).language () s ↔ s ∈ lang :=
+@[simp] theorem langProblem_language {Ctx S : Type} (lang : Set S) {ctx : Ctx} (s : S) :
+    (langProblem lang).language ctx s ↔ s ∈ lang :=
   ⟨fun ⟨_, h⟩ => h, fun h => ⟨⟨⟩, h⟩⟩
 
 /-! ### Events of the legacy result -/
@@ -89,32 +96,33 @@ section Events
 variable {StmtOut WitOut σ : Type}
 
 /-- An event of the legacy result, read through `OptionT`, has the probability of the event
-"accepted, and the legacy event holds" on the finalized observation. -/
+"accepted, and the legacy event holds" on the finalized outcome. -/
 theorem prEvent_mk_finalize
-    (x : ProbComp (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut))
+    (x : ProbComp
+      (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)))
     (q : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut → Prop) :
     Pr{let r ← OptionT.mk (finalize <$> x)}[q r] =
       letI : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+        (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
       𝒟[x] {obs | (finalize obs).elim False q} := by
   let : MeasurableSpace
-    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+    (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
   rw [OptionT.prEvent_mk, prEvent_map]
   exact prEvent_eq_evalDist x _ measurable_from_top
 
 /-- An event of the legacy run, read through `OptionT`, has the interaction-layer measure of
-the event "accepted, and the legacy event holds" on the embedded reduction's observation. -/
+the event "accepted, and the legacy event holds" on the embedded reduction's outcome. -/
 theorem prEvent_legacy_run {StmtIn WitIn : Type} (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn) (wit : WitIn)
     (q : (FullTranscript pSpec × StmtOut × WitOut) × StmtOut → Prop) :
     Pr{let r ← OptionT.mk (experiment init impl chImpl (R.run stmt wit).run)}[q r] =
       letI : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+        (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
       𝒟[experiment init impl (plainChallengeImpl chImpl)
-        ((embedReduction R).observe stmt wit)] {obs | (finalize obs).elim False q} := by
+        ((embedReduction R).runOutcome stmt wit)] {obs | (finalize obs).elim False q} := by
   rw [← prEvent_mk_finalize, ← experiment_map, OptionT.prEvent_mk, OptionT.prEvent_mk]
-  exact ((experiment_finalize_observe_evalDistEq init impl chImpl R stmt wit).prEvent_eq _).symm
+  exact ((experiment_finalize_runOutcome_evalDistEq init impl chImpl R stmt wit).prEvent_eq _).symm
 
 end Events
 
@@ -134,15 +142,16 @@ theorem completeness_iff (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ
         (relProblem relIn) (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
         (fun _ w => w) ε ↔
       R.completeness init impl relIn relOut ε := by
-  have hset : {obs : Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut |
-      (OutputJudgement.ofObservation (relProblem relOut) (fun _ o => o.1)
+  have hset :
+      {obs : Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut) |
+      (OutputJudgement.ofOutcome (relProblem relOut) (fun _ o => o.1)
         (fun obs _ _ => obs.2.1.2)).honest obs} =
       {obs | (finalize obs).elim False fun r => (r.2, r.1.2.2) ∈ relOut ∧ r.1.2.1 = r.2} := by
     ext ⟨tr, out, v⟩
     cases v with
-    | none => simp [OutputJudgement.honest, OutputJudgement.ofObservation, finalize]
+    | none => simp [OutputJudgement.honest, OutputJudgement.ofOutcome, finalize]
     | some t =>
-      simp only [OutputJudgement.honest, OutputJudgement.ofObservation, finalize, relProblem,
+      simp only [OutputJudgement.honest, OutputJudgement.ofOutcome, finalize, relProblem,
         Option.some.injEq, exists_prop, exists_eq_left', Set.mem_ofPred_eq, Option.map_some,
         Option.elim_some]
       exact and_comm
@@ -168,7 +177,7 @@ section MapOutput
 /-- Interpreting the slots commutes with PolyFun's `Strategy.mapOutput`. -/
 theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}} {κ : Type}
     {spec : OracleSpec κ} {M : Type → Type} [Monad M] [LawfulMonad M] (F : QueryImpl spec M) :
-    (s : FreeM P PUnit.{1}) → {Out Out' : PathAlong l s → Type} → (f : ∀ tr, Out tr → Out' tr) →
+    (s : FreeM P PUnit.{1}) → {Out Out' : Transcript l s → Type} → (f : ∀ tr, Out tr → Out' tr) →
     (p : Core.Prover l spec s Out) →
     Prover.simulate F (Strategy.mapOutput f p) = Strategy.mapOutput f (Prover.simulate F p)
   | .pure _, _, _, f, p => simulateQ_map F p (f ⟨⟩)
@@ -182,10 +191,10 @@ theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{
     exact congrArg (fun g => Choice.map .focal (owner l a) g c)
       (funext fun x => funext fun q => simulate_mapOutput F _ (fun tr => f ⟨x, tr⟩) q)
 
-/-- The verifier's run of a strategy with mapped outputs maps the outputs of its observation. It
+/-- The verifier's run of a strategy with mapped outputs maps the outputs of its outcome. It
 is PolyFun's `runWith_mapOutput_mapOutput` with the identity map on the sampler. -/
-theorem verifier_run_mapOutput {S T : Type} {s : Protocol.{0}}
-    (V : Core.Verifier oSpec s S T) (stmt : S) {Out Out' : PathAlong plainSig s → Type}
+theorem verifier_run_mapOutput {S : Type} {s : Protocol.{0}} {T : Path s → Type}
+    (V : Core.Verifier oSpec s S T) (stmt : S) {Out Out' : Transcript plainSig s → Type}
     (f : ∀ tr, Out tr → Out' tr) (p : Core.Prover plainSig oSpec s Out) :
     V.run stmt (Strategy.mapOutput f p) =
       (fun obs => ⟨obs.1, f obs.1 obs.2.1, obs.2.2⟩) <$> V.run stmt p := by
@@ -295,13 +304,14 @@ section Soundness
 
 variable {StmtIn StmtOut σ : Type}
 
-/-- The accepted-in-language event is the legacy event on the finalized observation. -/
-theorem setOf_accept_eq {Out : PathAlong plainSig (protocol pSpec) → Type} {WitOut : Type}
+/-- The accepted-in-language event is the legacy event on the finalized outcome. -/
+theorem setOf_accept_eq {Out : Transcript plainSig (protocol pSpec) → Type} {WitOut : Type}
     (langOut : Set StmtOut) (g : ∀ tr, Out tr → StmtOut × WitOut) :
-    {obs : Observation plainSig (protocol pSpec) Out StmtOut |
-        ∃ t, obs.2.2 = some t ∧ (langProblem langOut).language () t} =
+    {obs : Outcome plainSig (protocol pSpec) Out (fun _ => StmtOut) |
+        ∃ t, obs.2.2 = some t ∧
+          (langProblem langOut).language (Transcript.path obs.1) t} =
       (fun obs => (⟨obs.1, g obs.1 obs.2.1, obs.2.2⟩ :
-        Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut)) ⁻¹'
+        Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut))) ⁻¹'
         {obs | (finalize obs).elim False fun r => r.2 ∈ langOut} := by
   ext ⟨tr, out, v⟩
   cases v <;> simp [finalize]
@@ -341,8 +351,8 @@ theorem soundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : ProbCo
       refine (prEvent_legacy_run init impl ProtocolSpec.challengeQueryImpl
         ⟨translate p', V⟩ stmt ⟨⟩ _).trans ?_
       let : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × PUnit) StmtOut) := ⊤
-      let : MeasurableSpace (Observation plainSig (protocol pSpec) Out StmtOut) := ⊤
+        (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × PUnit) (fun _ => StmtOut)) := ⊤
+      let : MeasurableSpace (Outcome plainSig (protocol pSpec) Out (fun _ => StmtOut)) := ⊤
       change 𝒟[experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         ((embedVerifier V).run stmt (embedProver (translate p') stmt ⟨⟩))] _ = _
       rw [embedProver_translate]
@@ -427,19 +437,19 @@ theorem challengeMoveInvariant_extractor {κ : Type} {chal : OracleSpec κ}
 
 /-- The interaction-layer view of a legacy straight-line extractor. -/
 def liftExtractor (E : _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) :
-    Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+    Core.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
       (fun _ => WitOut) :=
   fun stmt tr w pl vl => E stmt w (decode pSpec tr) pl vl
 
 /-- The legacy view of an interaction-layer straight-line extractor on the plain tree. -/
 def lowerExtractor
-    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+    (E : Core.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
       (fun _ => WitOut)) :
     _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=
   fun stmt w tr pl vl => E stmt ((transcriptEquiv pSpec).symm tr) w pl vl
 
 @[simp] theorem liftExtractor_lowerExtractor
-    (E : Core.Extractor.Straightline oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+    (E : Core.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
       (fun _ => WitOut)) :
     liftExtractor (lowerExtractor E) = E := by
   funext stmt tr w pl vl
@@ -489,9 +499,10 @@ theorem runEq_knowledgeTail {σ κ₁ κ₂ : Type} {chal₁ : OracleSpec κ₁}
 /-- The output judgement of a legacy relation: the verifier's verdict with the prover's output
 witness. -/
 def knowledgeJudgement (relOut : Set (StmtOut × WitOut)) :
-    OutputJudgement (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut)
-      StmtOut (relProblem relOut) :=
-  OutputJudgement.ofObservation (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
+    OutputJudgement
+      (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut))
+      (relProblem relOut : PathProblem (protocol pSpec) (fun _ => StmtOut)) :=
+  OutputJudgement.ofOutcome (relProblem relOut) (fun _ o => o.1) (fun obs _ _ => obs.2.1.2)
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
@@ -507,14 +518,14 @@ theorem prEvent_legacy_knowledge [MeasurableSpace WitIn] (init : ProbComp σ)
         (ambientLogged (P.run stmt aux) >>= knowledgeTail [pSpec.Challenge]ₒ V E stmt))}[
         (∀ w ∈ r.2.1, (r.1, w) ∉ relIn) ∧ (r.2.2.1, r.2.2.2) ∈ relOut] =
       letI : MeasurableSpace
-        (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+        (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
       𝒟[experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (extractionGame (embedVerifier V) (fun _ o => o.2) (liftExtractor E) stmt
           (embedProver P stmt aux))]
         {z | (knowledgeJudgement relOut).valid z.1 ∧
           ∀ wit ∈ z.2, ¬ (relProblem relIn).rel () stmt wit} := by
   let : MeasurableSpace
-    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+    (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
   have hrun : experiment init impl (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       ((fun z => z.1.2.2.map fun t => (stmt, z.2, t, z.1.2.1.2)) <$>
         extractionGame (embedVerifier V) (fun _ o => o.2) (liftExtractor E) stmt
@@ -525,8 +536,8 @@ theorem prEvent_legacy_knowledge [MeasurableSpace WitIn] (init : ProbComp σ)
     rw [extractionGame_embed]
     exact RunEq.bind (runEq_ambientLogged_prover impl _ P stmt aux)
       (runEq_knowledgeTail impl _ _ V E stmt)
-  have hmeas : MeasurableSet {z : Observation plainSig (protocol pSpec)
-      (fun _ => StmtOut × WitOut) StmtOut × Option WitIn |
+  have hmeas : MeasurableSet {z : Outcome plainSig (protocol pSpec)
+      (fun _ => StmtOut × WitOut) (fun _ => StmtOut) × Option WitIn |
       (knowledgeJudgement relOut).valid z.1 ∧
         ∀ wit ∈ z.2, ¬ (relProblem relIn).rel () stmt wit} :=
     show MeasurableSet (Prod.fst ⁻¹' {obs | (knowledgeJudgement relOut).valid obs} ∩
@@ -538,7 +549,7 @@ theorem prEvent_legacy_knowledge [MeasurableSpace WitIn] (init : ProbComp σ)
   congr 1
   congr 1
   funext ⟨⟨tr, out, v⟩, ex⟩
-  cases v <;> simp [knowledgeJudgement, OutputJudgement.valid, OutputJudgement.ofObservation,
+  cases v <;> simp [knowledgeJudgement, OutputJudgement.valid, OutputJudgement.ofOutcome,
     relProblem, and_comm]
 
 /-- **Knowledge-soundness transfer.** A legacy straight-line extractor certifies knowledge
@@ -557,18 +568,18 @@ theorem knowledgeSoundnessWith_iff (init : ProbComp σ)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (E : _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) (ε : ℝ≥0) :
     letI : MeasurableSpace
-      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+      (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundnessWith
         ((embedVerifier V).classicalModel init impl
           (plainChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut) (knowledgeJudgement relOut)
-        (classicalStraightline (fun _ => WitIn) (embedVerifier V) init impl
+        (classicalStraightLine (fun _ => WitIn) (embedVerifier V) init impl
           (plainChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2))
         (liftExtractor E) ε ↔
       V.knowledgeSoundnessWith init impl relIn relOut E ε := by
   let : MeasurableSpace
-    (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+    (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
   let : MeasurableSpace WitIn := ⊤
   have hW : ∀ s : Set WitIn, MeasurableSet s := fun _ => MeasurableSpace.measurableSet_top
   constructor
@@ -578,7 +589,7 @@ theorem knowledgeSoundnessWith_iff (init : ProbComp σ)
     exact le_of_eq_of_le (prEvent_legacy_knowledge init impl V E relIn relOut stmt aux P hW)
       (h stmt trivial (embedProver P stmt aux)).2.2
   · intro h stmt _ adv
-    refine ⟨classicalStraightline_marginal _ _ _ _ _ _ _ stmt adv, le_rfl, ?_⟩
+    refine ⟨classicalStraightLine_marginal _ _ _ _ _ _ _ stmt adv, le_rfl, ?_⟩
     have h' := h PUnit stmt ⟨⟩ (translate adv)
     dsimp only at h'
     rw [legacy_exec_run] at h'
@@ -594,13 +605,13 @@ theorem knowledgeSoundness_iff (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut)) (ε : ℝ≥0) :
     letI : MeasurableSpace
-      (Observation plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) StmtOut) := ⊤
+      (Outcome plainSig (protocol pSpec) (fun _ => StmtOut × WitOut) (fun _ => StmtOut)) := ⊤
     letI : MeasurableSpace WitIn := ⊤
     knowledgeSoundness
         ((embedVerifier V).classicalModel init impl
           (plainChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut) (knowledgeJudgement relOut)
-        (classicalStraightline (fun _ => WitIn) (embedVerifier V) init impl
+        (classicalStraightLine (fun _ => WitIn) (embedVerifier V) init impl
           (plainChallengeImpl ProtocolSpec.challengeQueryImpl) (fun _ o => o.2)) ε ↔
       V.knowledgeSoundness init impl relIn relOut ε := by
   constructor
@@ -621,24 +632,25 @@ variable (L : Layout pSpec)
 /-- The legacy transcript prefix of a full prefix of a layout's tree from round `k`, after the
 transcript `pre` of the rounds before `k`. Each recorded move is the legacy payload of its
 round. -/
-def prefixFrom : (k m : ℕ) → (h : k + m = n) → Transcript ⟨k, by omega⟩ pSpec →
+def prefixFrom : (k m : ℕ) → (h : k + m = n) → ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec →
     {t : FreeM L.P PUnit.{1}} → (sp : Cursor.Spine (L.tree k m h) t) →
-    PrefixMoves L.l sp → (j : Fin (n + 1)) × Transcript j pSpec
+    PartialTranscriptAt L.l sp → (j : Fin (n + 1)) × ProtocolSpec.Transcript j pSpec
   | k, 0, _, pre, _, .root _, _ => ⟨⟨k, by omega⟩, pre⟩
   | k, _ + 1, _, pre, _, .root _, _ => ⟨⟨k, by omega⟩, pre⟩
   | k, m + 1, _, pre, _, .down _ tail, hist =>
     prefixFrom (k + 1) m (by omega)
-      (Transcript.concat (m := ⟨k, by omega⟩) (L.move _ hist.1.1) pre) tail hist.2
+      (ProtocolSpec.Transcript.concat (m := ⟨k, by omega⟩) (L.move _ hist.1.1) pre) tail hist.2
 
 /-- A terminal full prefix is the decoded completed transcript. -/
 theorem prefixFrom_complete : (k m : ℕ) → (h : k + m = n) →
-    (pre : Transcript ⟨k, by omega⟩ pSpec) →
-    (sp : Cursor.Spine (L.tree k m h) (.pure ⟨⟩)) → (hist : PrefixMoves L.l sp) →
+    (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec) →
+    (sp : Cursor.Spine (L.tree k m h) (.pure ⟨⟩)) → (hist : PartialTranscriptAt L.l sp) →
     L.prefixFrom k m h pre sp hist =
-      ⟨Fin.last n, decodeFrom L.l L.pos L.move k m h pre (PrefixMoves.complete L.l sp hist)⟩
+      ⟨Fin.last n, decodeFrom L.l L.pos L.move k m h pre (PartialTranscriptAt.complete L.l sp hist)⟩
   | k, 0, h, pre, .root _, _ => by
-    change (⟨⟨k, by omega⟩, pre⟩ : (j : Fin (n + 1)) × Transcript j pSpec) = _
-    refine Sigma.ext (Fin.ext (by simp; omega)) (Transcript.heq_ext (by simp; omega) ?_)
+    change (⟨⟨k, by omega⟩, pre⟩ : (j : Fin (n + 1)) × ProtocolSpec.Transcript j pSpec) = _
+    refine Sigma.ext (Fin.ext (by simp; omega))
+      (ProtocolSpec.Transcript.heq_ext (by simp; omega) ?_)
     intro i _ _
     rfl
   | k, m + 1, h, pre, .down _ tail, hist => by
@@ -661,14 +673,15 @@ theorem draw_root (src : (i : pSpec.ChallengeIdx) → ProbComp (pSpec.Challenge 
 prefix `tr` before round `j`, and a move `x` extends it by the payload of `x`. At a challenge
 node, the node's legacy challenge index is `j`, and the node's draw is the legacy draw of round
 `j` up to the payload equivalence. -/
-theorem prefixFrom_step : (k m : ℕ) → (h : k + m = n) → (pre : Transcript ⟨k, by omega⟩ pSpec) →
+theorem prefixFrom_step : (k m : ℕ) → (h : k + m = n) →
+    (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec) →
     {a : L.P.A} → {next : L.P.B a → FreeM L.P PUnit.{1}} →
     (sp : Cursor.Spine (L.tree k m h) (.liftBind a next)) →
-    (hist : PrefixMoves L.l sp) →
-    ∃ (j : Fin n) (ha : a = L.pos j) (tr : Transcript j.castSucc pSpec),
+    (hist : PartialTranscriptAt L.l sp) →
+    ∃ (j : Fin n) (ha : a = L.pos j) (tr : ProtocolSpec.Transcript j.castSucc pSpec),
       L.prefixFrom k m h pre sp hist = ⟨j.castSucc, tr⟩ ∧
       (∀ x, L.prefixFrom k m h pre (sp.comp (.down (L.l.toFunB a x) (.root _)))
-          (PrefixMoves.snoc L.l sp hist x) =
+          (PartialTranscriptAt.snoc L.l sp hist x) =
         ⟨j.succ, tr.concat (L.move j (cast (congrArg (Move L.l) ha) x))⟩) ∧
       ∀ hc : owner L.l a = .receiver, ∃ hd : pSpec.dir j = .V_to_P,
         L.challengeRound k m h (spineChallenge L.l sp hc) = ⟨j, hd⟩ ∧
@@ -685,7 +698,7 @@ theorem prefixFrom_step : (k m : ℕ) → (h : k + m = n) → (pre : Transcript 
 
 /-- The legacy transcript prefix of a full prefix of a layout's tree, with its round. -/
 def legacyPrefix {t : FreeM L.P PUnit.{1}} (sp : Cursor.Spine L.protocol t)
-    (hist : PrefixMoves L.l sp) : (j : Fin (n + 1)) × Transcript j pSpec :=
+    (hist : PartialTranscriptAt L.l sp) : (j : Fin (n + 1)) × ProtocolSpec.Transcript j pSpec :=
   L.prefixFrom 0 n (Nat.zero_add n) default sp hist
 
 /-- The empty full prefix is the empty legacy transcript. -/
@@ -697,13 +710,13 @@ theorem legacyPrefix_root_fst : (L.legacyPrefix (.root _) ⟨⟩).1 = 0 := by
 
 /-- A terminal full prefix is the decoded full transcript. -/
 theorem legacyPrefix_complete (sp : Cursor.Spine L.protocol (.pure ⟨⟩))
-    (hist : PrefixMoves L.l sp) :
-    L.legacyPrefix sp hist = ⟨Fin.last n, L.decode (PrefixMoves.complete L.l sp hist)⟩ :=
+    (hist : PartialTranscriptAt L.l sp) :
+    L.legacyPrefix sp hist = ⟨Fin.last n, L.decode (PartialTranscriptAt.complete L.l sp hist)⟩ :=
   L.prefixFrom_complete 0 n _ default sp hist
 
 /-- A full prefix ending at a node is a legacy prefix before the last round. -/
 theorem legacyPrefix_val_lt {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
-    (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PrefixMoves L.l sp) :
+    (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PartialTranscriptAt L.l sp) :
     (L.legacyPrefix sp hist).1.val < n := by
   obtain ⟨j, -, tr, h1, -⟩ := L.prefixFrom_step 0 n _ default sp hist
   unfold legacyPrefix
@@ -712,10 +725,10 @@ theorem legacyPrefix_val_lt {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
 
 /-- One move advances the legacy round by one. -/
 theorem legacyPrefix_snoc_fst {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
-    (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PrefixMoves L.l sp)
+    (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PartialTranscriptAt L.l sp)
     (x : Move L.l a) :
     (L.legacyPrefix (sp.comp (.down (L.l.toFunB a x) (.root _)))
-      (PrefixMoves.snoc L.l sp hist x)).1 =
+      (PartialTranscriptAt.snoc L.l sp hist x)).1 =
         (⟨(L.legacyPrefix sp hist).1.val, L.legacyPrefix_val_lt sp hist⟩ : Fin n).succ := by
   obtain ⟨j, rfl, tr, h1, h2, -⟩ := L.prefixFrom_step 0 n _ default sp hist
   apply Fin.ext
@@ -726,7 +739,8 @@ theorem legacyPrefix_snoc_fst {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1
 
 /-- A terminal full prefix is not a legacy prefix before the last round. -/
 theorem legacyPrefix_complete_ne (sp : Cursor.Spine L.protocol (.pure ⟨⟩))
-    (hist : PrefixMoves L.l sp) {j : Fin n} {tr : Transcript j.castSucc pSpec} :
+    (hist : PartialTranscriptAt L.l sp) {j : Fin n}
+      {tr : ProtocolSpec.Transcript j.castSucc pSpec} :
     L.legacyPrefix sp hist ≠ ⟨j.castSucc, tr⟩ := fun hpre => by
   have := congrArg (fun p => p.1.val) hpre
   rw [legacyPrefix_complete] at this
@@ -747,22 +761,24 @@ end Layout
 /-- Legacy backwards extraction respects equal rounds, transcripts and witnesses. -/
 theorem extractMid_heq {StmtIn WitIn WitOut : Type} {WitMid : Fin (n + 1) → Type}
     (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmt : StmtIn) {j j' : Fin n} (hj : j = j') {T : Transcript j.succ pSpec}
-    {T' : Transcript j'.succ pSpec} (hT : HEq T T') {w : WitMid j.succ} {w' : WitMid j'.succ}
+    (stmt : StmtIn) {j j' : Fin n} (hj : j = j') {T : ProtocolSpec.Transcript j.succ pSpec}
+    {T' : ProtocolSpec.Transcript j'.succ pSpec} (hT : HEq T T') {w : WitMid j.succ}
+      {w' : WitMid j'.succ}
     (hw : HEq w w') : HEq (E.extractMid j stmt T w) (E.extractMid j' stmt T' w') := by
   subst hj
   obtain rfl := eq_of_heq hT
   obtain rfl := eq_of_heq hw
   rfl
 
-theorem heq_snd_of_eq {p : (j : Fin (n + 1)) × Transcript j pSpec} {j : Fin (n + 1)}
-    {tr : Transcript j pSpec} (h : p = ⟨j, tr⟩) : HEq p.2 tr := by
+theorem heq_snd_of_eq {p : (j : Fin (n + 1)) × ProtocolSpec.Transcript j pSpec} {j : Fin (n + 1)}
+    {tr : ProtocolSpec.Transcript j pSpec} (h : p = ⟨j, tr⟩) : HEq p.2 tr := by
   subst h
   rfl
 
 /-- The legacy transcript prefix of a full prefix of the plain tree. -/
 abbrev legacyPrefix {t : Protocol.{0}} (sp : Cursor.Spine (protocol pSpec) t)
-    (hist : PrefixMoves plainSig sp) : (j : Fin (n + 1)) × Transcript j pSpec :=
+    (hist : PartialTranscriptAt plainSig sp) : (j : Fin (n + 1)) × ProtocolSpec.Transcript j
+      pSpec :=
   (plainLayout pSpec).legacyPrefix sp hist
 
 /-- The empty full prefix of the plain tree is the empty legacy transcript. -/
@@ -783,7 +799,7 @@ predicate. The plain verifier's and the oracle verifier's valid acceptance both 
 legacy verifiers. -/
 def Layout.AcceptanceAgrees (L : Layout pSpec) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
-    (acc : (StmtOut → Prop) → StmtIn → PathAlong L.l L.protocol → Prop) : Prop :=
+    (acc : (StmtOut → Prop) → StmtIn → Transcript L.l L.protocol → Prop) : Prop :=
   ∀ p stmt tr, acc p stmt tr ↔
     ∃ st t, some t ∈ support ((simulateQ impl (V.verify stmt (L.decode tr)).run).run' st) ∧ p t
 
@@ -792,7 +808,7 @@ the legacy verifier, run from that state on the decoded transcript. -/
 theorem validAcceptance_embed_iff (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (plainLayout pSpec).AcceptanceAgrees impl V
-      (fun p => (embedVerifier V).validAcceptance impl p) := by
+      (fun p stmt tr => (embedVerifier V).validAcceptance impl stmt tr p) := by
   intro p stmt tr
   let : MeasurableSpace (Option StmtOut) := ⊤
   refine exists_congr fun st => ?_
@@ -950,7 +966,7 @@ section RoundByRound
 
 variable (L : Layout pSpec) {StmtIn StmtOut σ : Type} {init : ProbComp σ}
   {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : _root_.Verifier oSpec StmtIn StmtOut pSpec}
-  {acc : (StmtOut → Prop) → StmtIn → PathAlong L.l L.protocol → Prop}
+  {acc : (StmtOut → Prop) → StmtIn → Transcript L.l L.protocol → Prop}
 
 /-- The interaction-layer state function of a legacy state function: a full prefix is in the
 state when its legacy transcript prefix is.
@@ -987,7 +1003,7 @@ def legacyStateFunction (hacc : L.AcceptanceAgrees impl V acc) {langIn : Set Stm
       ((langProblem langIn).language ()) (acc ((langProblem langOut).language ()))) :
     V.StateFunction init impl langIn langOut where
   toFun j stmt tr := ∀ (t : FreeM L.P PUnit.{1}) (sp : Cursor.Spine L.protocol t)
-    (hist : PrefixMoves L.l sp), L.legacyPrefix sp hist = ⟨j, tr⟩ → F.toFun sp hist stmt
+    (hist : PartialTranscriptAt L.l sp), L.legacyPrefix sp hist = ⟨j, tr⟩ → F.toFun sp hist stmt
   toFun_empty stmt h :=
     (langProblem_language _ _).mp (F.root stmt trivial (h _ (.root _) ⟨⟩ L.legacyPrefix_root))
   toFun_next m hdir stmt tr hnot msg hyp := by
@@ -1029,7 +1045,8 @@ the legacy error of its round. -/
 theorem rbrSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V acc) (langIn : Set StmtIn)
     (langOut : Set StmtOut) (ε : pSpec.ChallengeIdx → ℝ≥0)
     (S : V.StateFunction init impl langIn langOut) (hS : StateTerminalCertificate S)
-    (h : ∀ stmtIn ∉ langIn, ∀ i : pSpec.ChallengeIdx, ∀ tr : Transcript i.1.castSucc pSpec,
+    (h : ∀ stmtIn ∉ langIn, ∀ i : pSpec.ChallengeIdx, ∀ tr : ProtocolSpec.Transcript i.1.castSucc
+      pSpec,
       Pr{let c ← $ᵗ (pSpec.Challenge i)}[
         ¬ S i.1.castSucc stmtIn tr ∧ S i.1.succ stmtIn (tr.concat c)] ≤ ε i) :
     Core.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
@@ -1123,18 +1140,19 @@ section RoundByRoundKnowledge
 variable (L : Layout pSpec) {StmtIn WitIn StmtOut WitOut σ : Type} {WitMid : Fin (n + 1) → Type}
   {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   {V : _root_.Verifier oSpec StmtIn StmtOut pSpec}
-  {acc : (StmtOut → Prop) → StmtIn → PathAlong L.l L.protocol → Prop}
+  {acc : (StmtOut → Prop) → StmtIn → Transcript L.l L.protocol → Prop}
 
 /-- The legacy backwards extraction across the move `x` after the full prefix `sp`. -/
 def embedExtractStep (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
     {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
-    (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PrefixMoves L.l sp)
+    (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PartialTranscriptAt L.l sp)
     (stmt : StmtIn) (x : Move L.l a)
     (w : WitMid (L.legacyPrefix (sp.comp (.down (L.l.toFunB a x) (.root _)))
-      (PrefixMoves.snoc L.l sp hist x)).1) : WitMid (L.legacyPrefix sp hist).1 :=
+      (PartialTranscriptAt.snoc L.l sp hist x)).1) : WitMid (L.legacyPrefix sp hist).1 :=
   cast (congrArg WitMid (Fin.ext rfl))
     (E.extractMid ⟨_, L.legacyPrefix_val_lt sp hist⟩ stmt
-      (cast (congrArg (fun j => Transcript j pSpec) (L.legacyPrefix_snoc_fst sp hist x))
+      (cast (congrArg (fun j => ProtocolSpec.Transcript j pSpec)
+        (L.legacyPrefix_snoc_fst sp hist x))
         (L.legacyPrefix _ _).2)
       (cast (congrArg WitMid (L.legacyPrefix_snoc_fst sp hist x)) w))
 
@@ -1145,10 +1163,10 @@ theorem embedExtractStep_congr {relIn : Set (StmtIn × WitIn)} {relOut : Set (St
     (K : V.KnowledgeStateFunction init impl relIn relOut E) (j : Fin n)
     {next : L.P.B (L.pos j) → FreeM L.P PUnit.{1}}
     (sp : Cursor.Spine L.protocol (.liftBind (L.pos j) next))
-    (hist : PrefixMoves L.l sp) (tr : Transcript j.castSucc pSpec)
+    (hist : PartialTranscriptAt L.l sp) (tr : ProtocolSpec.Transcript j.castSucc pSpec)
     (h1 : L.legacyPrefix sp hist = ⟨j.castSucc, tr⟩)
     (h2 : ∀ x, L.legacyPrefix (sp.comp (.down (L.l.toFunB _ x) (.root _)))
-      (PrefixMoves.snoc L.l sp hist x) = ⟨j.succ, tr.concat (L.move j x)⟩)
+      (PartialTranscriptAt.snoc L.l sp hist x) = ⟨j.succ, tr.concat (L.move j x)⟩)
     (stmt : StmtIn) (x : Move L.l (L.pos j)) (w) :
     (K.toFun _ stmt (L.legacyPrefix _ _).2 w ↔
       K.toFun j.succ stmt (tr.concat (L.move j x))
@@ -1182,7 +1200,7 @@ def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
   extractStep sp hist stmt x w := L.embedExtractStep E sp hist stmt x w
   extractLeaf sp hist stmt wo :=
     cast (congrArg WitMid (congrArg Sigma.fst (L.legacyPrefix_complete sp hist)).symm)
-      (E.extractOut stmt (L.decode (PrefixMoves.complete L.l sp hist)) wo)
+      (E.extractOut stmt (L.decode (PartialTranscriptAt.complete L.l sp hist)) wo)
   root stmt _ wit h := K.toFun_empty stmt _ ((K.toFun_congr L.legacyPrefix_root_fst stmt
     (heq_snd_of_eq L.legacyPrefix_root) (cast_heq _ _).symm).mp h)
   send sp hist stmt hown x wit h := by
@@ -1221,17 +1239,20 @@ extractor and knowledge state function with an all-state terminal certificate, o
 whose acceptance agrees with the legacy verifier. The interaction-layer knowledge state function
 is `embedKnowledgeStateFunction`: the witness at a full prefix is the legacy intermediate witness
 at its legacy transcript prefix, and the extraction functions are the legacy extractor's,
-reindexed. -/
+reindexed. The conclusion holds for intermediate witnesses in every universe `uK`, by
+`rbrKnowledgeSoundness.lift`. -/
 theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V acc)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     {K : V.KnowledgeStateFunction init impl relIn relOut E} (hK : KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
-    Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
+  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, 1, uK}
   refine ⟨L.embedKnowledgeStateFunction hacc K hK, fun stmt _ a next sp hc hist => ?_⟩
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
   obtain ⟨hd, hcr, hmap⟩ := hch hc
@@ -1254,7 +1275,8 @@ theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V ac
 
 /-- **Round-by-round knowledge soundness, legacy to interaction layer**, on any layout whose
 acceptance agrees with the legacy verifier, when every legacy knowledge state function has an
-all-state terminal certificate. The certificate hypothesis holds by
+all-state terminal certificate. The conclusion holds for intermediate witnesses in every universe
+`uK`. The certificate hypothesis holds by
 `KnowledgeTerminalCertificate.of_support_init`, `KnowledgeTerminalCertificate.of_stateIndependent`,
 or `KnowledgeTerminalCertificate.of_guarded`. -/
 theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
@@ -1264,7 +1286,8 @@ theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
@@ -1360,7 +1383,7 @@ knowledge sound verifier embeds as a round-by-round knowledge sound verifier und
 reindexed legacy challenge implementation, with the legacy error of each challenge node's round.
 The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
 hypothesis `hcert` plays the role it plays in `embedVerifier_rbrSoundness`, for knowledge state
-functions. -/
+functions. The conclusion holds for intermediate witnesses in every universe `uK`. -/
 theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -1369,7 +1392,8 @@ theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn)
       (fun _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrKnowledgeSoundness_of_legacy (validAcceptance_embed_iff V impl) relIn
@@ -1393,7 +1417,8 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
 /-- Round-by-round knowledge soundness of the embedded verifier, under the reindexed legacy
 challenge implementation and with the legacy error of each node's round, is legacy
 round-by-round knowledge soundness, when every legacy knowledge state function has an all-state
-terminal certificate and the input witness type is inhabited. -/
+terminal certificate and the input witness type is inhabited. The equivalence holds for
+intermediate witnesses in every universe `uK`. -/
 theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -1401,7 +1426,7 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (hcert : ∀ (M : Fin (n + 1) → Type)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
-    (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
+    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
         (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔

@@ -135,19 +135,19 @@ theorem eval_permutationPolynomials (D : EvaluationDomain F n)
 
 /-- The public-input polynomial is negative input on reserved rows and zero elsewhere.
 It uses Mathlib's noncomputable interpolation. -/
-noncomputable def publicInputPolynomial (D : EvaluationDomain F n) (hrows : ℓ ≤ n)
+noncomputable def publicInputPolynomial (D : EvaluationDomain F n)
     (x : Fin ℓ → F) : degreeLT F n :=
-  D.interpolate (ConstraintSystem.publicInputTerm hrows x)
+  D.interpolate (ConstraintSystem.publicInputTerm x)
 
 @[simp]
-theorem eval_publicInputPolynomial (D : EvaluationDomain F n) (hrows : ℓ ≤ n)
+theorem eval_publicInputPolynomial (D : EvaluationDomain F n)
     (x : Fin ℓ → F) (i : Fin n) :
-    (publicInputPolynomial D hrows x).val.eval (D.node i) =
-      ConstraintSystem.publicInputTerm hrows x i := D.eval_interpolate _ i
+    (publicInputPolynomial D x).val.eval (D.node i) =
+      ConstraintSystem.publicInputTerm x i := D.eval_interpolate _ i
 
 /-- The public-input polynomial is the negative sum of public values times row indicators. -/
 theorem publicInputPolynomial_eq_sum (D : EvaluationDomain F n) (hrows : ℓ ≤ n) (x : Fin ℓ → F) :
-    publicInputPolynomial D hrows x = -∑ j : Fin ℓ, x j • D.lagrange (Fin.castLE hrows j) := by
+    publicInputPolynomial D x = -∑ j : Fin ℓ, x j • D.lagrange (Fin.castLE hrows j) := by
   symm
   apply D.interpolate_unique
   intro i
@@ -228,7 +228,7 @@ noncomputable def preparedGatePolynomial (D : EvaluationDomain F (ℓ + n))
     (cs : ConstraintSystem F m n) (hℓ : ℓ ≤ m) (x : Fin ℓ → F)
     (a : Fin 3 → degreeLT F (ℓ + n)) : F[X] :=
   gatePolynomial (selectorPolynomials D (cs.prepare hℓ (fun _ => 0))) a
-    (publicInputPolynomial D (Nat.le_add_right ℓ n) x)
+    (publicInputPolynomial D x)
 
 /-- Clearing public constants and adding the public polynomial restores the original rows. -/
 theorem eval_preparedGatePolynomial (D : EvaluationDomain F (ℓ + n))
