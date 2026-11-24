@@ -8,7 +8,11 @@ canonical_url: https://eprint.iacr.org/2026/1983
 source_metadata: ../sources/DBKVBGLZT26/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Heterogeneous.lean
+  - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Layout.lean
+  - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean
+  - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean
+  - ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean
+  - ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean
 ---
 
 # DBKVBGLZT26
@@ -25,41 +29,73 @@ layer is milestone M0 ([#1472](https://github.com/Verified-zkEVM/ArkLib/issues/1
 
 - **Corollary 10.11 (heterogeneous-coordinate CWSS accounting).** A round samples a tuple over
   sets `X_{i,u}` and needs `k_{i,u}` distinct values at coordinate `u`. ArkLib renders the star
-  condition as `CoordinateWise.IsHeteroSpecialSoundFamily`, the per-round data as
-  `HeteroCWSSStructure` with its shape `HeteroCWSSStructure.toShape` (arity
-  `1 + ∑ u, (k i u - 1)`), and the two quantities of the corollary as
-  `HeteroCWSSStructure.treeSize` and `HeteroCWSSStructure.errorBound`.
+  condition as `CoordinateWise.IsBlockSpecialSoundFamily`, one star with an alphabet and a
+  threshold per coordinate as `CoordinateWise.Block`, and the two quantities of the corollary as
+  `Block.arity` (`1 + ∑ u, (k u - 1)`) and `Block.error` (`∑ u, (k u - 1) / |X u|`).
+- **Definition 10.12 and Lemma 10.14 (nested and mixed stages).** A round has a
+  `CoordinateWise.Layout`, a sequence of blocks: a flat round is one block, a nested round is one
+  coordinate per block (`Layout.nested`), and plain `k`-special soundness is one block with one
+  coordinate (`Layout.single`). `Layout.IsTree` is the tree condition: the children of block `b`
+  below every prefix form a star of that block. `BlockCWSSStructure` gives every challenge round a
+  layout, with the tree shape `BlockCWSSStructure.toShape`, the leaf count `treeSize` and the
+  error sum `knowledgeError`.
+- **Lemma 10.13 (interpolation on a nested tree).** `MvPolynomial.NestedEvaluationTree` has an
+  arity per level, and `Rewinding.VecTree.toNested` and `Rewinding.VecTree.eq_zero_of_vanishes`
+  read the challenge tree of a VCVio rewinding finder as such a tree and give its zero test.
+  `Layout.isTree_iff_vecTree` reads a tree of a layout as a structured `Rewinding.VecTree`.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Heterogeneous.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Heterogeneous.lean)
-  is the heterogeneous variant of the coordinate-wise structure of [`FMN24`](FMN24.md). The
-  homogeneous structure embeds as `CWSSStructure.toHetero` with the same shape.
-- Tests: `ArkLibTest/OracleReduction/CoordinateWiseHeterogeneous.lean`.
+- [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Layout.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Layout.lean)
+  defines blocks and layouts, with the special layouts and their arities.
+- [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean)
+  defines the structure with a layout per round, and maps the homogeneous structure of
+  [`FMN24`](FMN24.md) into it with the same tree shape (`CWSSStructure.toBlock_toShape`).
+- [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean)
+  is the only file that imports the VCVio rewinding finder.
+- [`ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`](../../../ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean)
+  and
+  [`ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean`](../../../ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean)
+  hold the interpolation lemma and its bridge to the finders.
+- Tests: `ArkLibTest/OracleReduction/CoordinateWiseLayout.lean`,
+  `ArkLibTest/Data/MvPolynomial/VecTreeInterpolation.lean`.
 
 ## Version Notes
 
-- Definition and theorem numbers refer to the 178-page PDF of ePrint 2026/1983 retrieved on
-  2026-11-05. Issue #1378 cites the revision of 2026-10-11, in which checkpoint structure and
-  checkpoint extraction are numbered Definition 10.15 and Theorem 10.16; in the retrieved PDF they
-  are Definition 10.16 and Theorem 10.17, and Definition 10.15 is the extraction experiment.
+- Definition and theorem numbers refer to the revision of 22 November 2026 (179-page PDF of ePrint
+  2026/1983). Definition 10.15 is the extraction experiment, Definition 10.16 the checkpoint
+  structure and Theorem 10.17 checkpoint extraction. Issue #1378 cites the revision of 2026-10-11,
+  in which the last two are numbered Definition 10.15 and Theorem 10.16.
+- In this revision, Lemma 10.14 (ii) and Theorem 10.17 are stated for oracle keys that hold the
+  statement and the prover messages only, which is what `fsChallengeOracle` does. The earlier
+  hypothesis that the key encodes the earlier challenges is gone. Two facts replace it: the
+  transcript prefix is reconstructed from the entries of earlier stages, and two runs on tables that
+  differ at one address agree up to the first query to it.
 
 ## Known Divergences From ArkLib
 
-- The heterogeneous structure is a sibling of `CWSSStructure`, not a generalization of it, because
-  `CWSSStructure` is used in about thirty modules. The homogeneous structure is the special case
-  (`CWSSStructure.toHetero_toShape`).
-- A parameter `k i u` of `0` or `1` asks for no sibling at that coordinate. The paper requires
-  `k ≥ 2`.
+- `BlockCWSSStructure` is a temporary name. It coexists with `CWSSStructure` while the consumers
+  of the latter move over. Then it takes the name `CWSSStructure`, and today's structure becomes
+  `HomogeneousCWSSStructure`. The star family carries the temporary name
+  `IsBlockSpecialSoundFamily` for the same reason.
+- A threshold `k u` of `0` or `1` asks for no sibling at that coordinate. The paper requires
+  `k ≥ 2`. `Block.Admissible` states `1 ≤ k u ≤ |X u|`, the range in which a star can exist.
+- `Block.error` and `BlockCWSSStructure.knowledgeError` are sums. They are the failure probability
+  of the search for siblings in each coordinate fibre of a uniformly sampled center, not a
+  collision probability of independent samples. They get that meaning from the block finder, which
+  is not in ArkLib yet.
 
 ## Open Formalization Gaps
 
-- The knowledge error and expected tree size of Corollary 10.11 as statements about an extractor.
-  `errorBound` and `treeSize` are the quantities only; bounding a knowledge error by them needs
-  the rewinding engine of [#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410).
-- Nested interpolation trees with unequal arities per level (Definition 10.12, Lemma 10.13), mixed
-  trees (Lemma 10.14), and checkpoint extraction (Definitions 10.15 and 10.16, Theorem 10.17).
-  Everything after Corollary 10.11 is open.
+- The knowledge error and expected tree size of Corollary 10.11 and Lemma 10.14 (i) as statements
+  about an extractor. This needs the block star step and the multi-round block finder in VCVio, and
+  the legacy rewinding instance of
+  [#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410).
+- The bridge from `Layout.nested` to `Rewinding.VecTree.toNested`: the points of a nested layout
+  are `Fin 1 → A b`, so the tree is transported along a round-wise equivalence first.
+- Mixed trees with a Fiat–Shamir factor, and checkpoint extraction (Definitions 10.15 and 10.16,
+  Theorem 10.17). Everything after the interpolation lemma is open; the design is tracked in
+  [#1472](https://github.com/Verified-zkEVM/ArkLib/issues/1472).
 
 ## Source Access
 

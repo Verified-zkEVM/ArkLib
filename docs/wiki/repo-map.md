@@ -754,6 +754,11 @@ home_page/            site assets and assembled website root
   events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
+  `Security/CoordinateWiseSpecialSoundness/Layout.lean` defines the blocks and layouts of one vector
+  challenge (a star per block, a nested tree across blocks). `BlockStructure.lean` defines
+  `BlockCWSSStructure`, a layout per round, and maps `CWSSStructure` into it with the same tree
+  shape. `LayoutVecTree.lean` is the only file that imports the VCVio rewinding finder: it reads a
+  tree of a layout as a structured `Rewinding.VecTree`.
 - `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
   an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
   equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
