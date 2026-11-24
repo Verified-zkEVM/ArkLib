@@ -350,6 +350,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBoun
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CertificateWitnesses
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.ListDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotArithmetic
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotClosedForm
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
