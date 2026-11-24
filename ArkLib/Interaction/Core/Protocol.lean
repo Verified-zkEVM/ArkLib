@@ -32,6 +32,7 @@ abbrev OracleProtocol (Result : Type u := PUnit.{u + 1}) := FreeM OraclePoly.{u,
 
 /-- The oracle verifier's view of a run: the transcripts at `viewSig` that follow the shape
 path `p`. -/
+@[reducible]
 def View (s : OracleProtocol.{u, q}) (p : Path s) : Type u :=
   TranscriptAt viewSig s p
 

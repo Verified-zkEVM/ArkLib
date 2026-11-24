@@ -200,8 +200,9 @@ theorem verifier_run_mapOutput {S : Type} {s : Protocol.{0}} {T : Path s → Typ
       (fun obs => ⟨obs.1, f obs.1 obs.2.1, obs.2.2⟩) <$> V.run stmt p := by
   have h := runWith_mapOutput_mapOutput (m := OracleComp (oSpec + challengeSpec plainSig s))
     .focalFirst s f (fun _ x => x)
-    (p.simulate (fun q => liftM ((oSpec + challengeSpec plainSig s).query (.inl q))))
-    (sampler plainSig s (fun c => liftM ((oSpec + challengeSpec plainSig s).query (.inr c))))
+    (p.simulate (QueryImpl.ofLift oSpec (OracleComp (oSpec + challengeSpec plainSig s))))
+    (sampler plainSig s (QueryImpl.ofLift (challengeSpec plainSig s)
+      (OracleComp (oSpec + challengeSpec plainSig s))))
   rw [Strategy.mapOutput_id] at h
   simp only [Core.Verifier.run, simulate_mapOutput, TwoParty.Lens.run, h, bind_assoc,
     LawfulMonad.pure_bind, _root_.map_bind]
@@ -473,6 +474,8 @@ theorem extractionGame_embed (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
         knowledgeTail (challengeSpec plainSig (protocol pSpec)) V E stmt := by
   simp only [extractionGame, Core.Verifier.runWithLog, ambientLogged, _root_.map_bind,
     bind_map_left, bind_assoc]
+  unfold QueryImpl.restrictLeft QueryImpl.restrictRight
+  simp only [QueryImpl.id'_apply]
   refine bind_congr fun a => ?_
   rcases a with ⟨⟨tr, out, ⟨⟩⟩, pl⟩
   simp only [knowledgeTail, run_withLogging_inl, embedVerifier_decide,
@@ -1185,20 +1188,21 @@ theorem embedExtractStep_congr {relIn : Set (StmtIn × WitIn)} {relOut : Set (St
 
 /-- The interaction-layer knowledge state function of a legacy knowledge state function: the
 witness at a full prefix is the legacy intermediate witness at its legacy transcript prefix, and
-extraction is the legacy extractor's, at the constant output witness family `fun _ => WitOut`.
+extraction is the legacy extractor's, at the constant output witness family `fun _ _ => WitOut`.
 The all-state terminal certificate `hK` plays the role that `hS` plays in `embedStateFunction`. -/
 def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     (K : V.KnowledgeStateFunction init impl relIn relOut E) (hK : KnowledgeTerminalCertificate K) :
-    KnowledgeStateFunction L.l L.protocol StmtIn (fun _ => WitOut) WitIn (fun _ => True)
+    KnowledgeStateFunction L.l L.protocol StmtIn (fun _ _ => WitOut) (fun _ => WitIn) (fun _ =>
+      True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr) where
-  Witness sp hist := WitMid (L.legacyPrefix sp hist).1
-  toFun sp hist stmt w := K.toFun (L.legacyPrefix sp hist).1 stmt (L.legacyPrefix sp hist).2 w
+  Witness _ {_} sp hist := WitMid (L.legacyPrefix sp hist).1
+  toFun stmt {_} sp hist w := K.toFun (L.legacyPrefix sp hist).1 stmt (L.legacyPrefix sp hist).2 w
   extractRoot stmt w := E.extractIn stmt (cast (congrArg WitMid L.legacyPrefix_root_fst) w)
-  extractStep sp hist stmt x w := L.embedExtractStep E sp hist stmt x w
-  extractLeaf sp hist stmt wo :=
+  extractStep stmt {_ _} sp hist x w := L.embedExtractStep E sp hist stmt x w
+  extractLeaf stmt sp hist wo :=
     cast (congrArg WitMid (congrArg Sigma.fst (L.legacyPrefix_complete sp hist)).symm)
       (E.extractOut stmt (L.decode (PartialTranscriptAt.complete L.l sp hist)) wo)
   root stmt _ wit h := K.toFun_empty stmt _ ((K.toFun_congr L.legacyPrefix_root_fst stmt
@@ -1217,13 +1221,15 @@ def embedKnowledgeStateFunction (hacc : L.AcceptanceAgrees impl V acc)
 makes the knowledge state true. -/
 def languageStateFunction (hacc : L.AcceptanceAgrees impl V acc) {relIn : Set (StmtIn × WitIn)}
     {relOut : Set (StmtOut × WitOut)}
-    (F : KnowledgeStateFunction L.l L.protocol StmtIn (fun _ => WitOut) WitIn (fun _ => True)
+    (F : KnowledgeStateFunction.{0, 0, uK} L.l L.protocol StmtIn (fun _ _ => WitOut)
+    (fun _ => WitIn) (fun _ =>
+      True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)) :
     StateFunction L.l L.protocol StmtIn
       ((langProblem relIn.language).admissible ()) ((langProblem relIn.language).language ())
       (acc ((langProblem relOut.language).language ())) where
-  toFun sp hist stmt := ∃ w, F.toFun sp hist stmt w
+  toFun sp hist stmt := ∃ w, F.toFun stmt sp hist w
   root stmt _ := fun ⟨w, hw⟩ => (langProblem_language _ _).mpr
     ((Set.mem_language_iff _ _).mpr ⟨_, F.root stmt trivial w hw⟩)
   send sp hist stmt hown hnot x := fun ⟨w, hw⟩ => hnot ⟨_, F.send sp hist stmt hown x w hw⟩
@@ -1247,13 +1253,14 @@ theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V ac
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     {K : V.KnowledgeStateFunction init impl relIn relOut E} (hK : KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
-    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
+    Core.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
-  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, 1, uK}
+  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, 0, 1, uK}
   refine ⟨L.embedKnowledgeStateFunction hacc K hK, fun stmt _ a next sp hc hist => ?_⟩
+  rw [prefixSampleAt_ofNodes]
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
   obtain ⟨hd, hcr, hmap⟩ := hch hc
   have hbound := h stmt ⟨j, hd⟩ tr
@@ -1286,7 +1293,7 @@ theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.rbrKnowledgeSoundness.{0, 0, uK} L.l L.protocol (fun _ => True)
+    Core.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
@@ -1305,7 +1312,7 @@ knowledge soundness with a chosen extractor. That last step needs `Nonempty WitI
 theorem legacy_rbrKnowledgeSoundness [Nonempty WitIn] (hacc : L.AcceptanceAgrees impl V acc)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : Core.rbrKnowledgeSoundness L.l L.protocol (fun _ => True)
+    (h : Core.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
@@ -1392,9 +1399,9 @@ theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
+    Core.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
-      (fun _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun _ _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrKnowledgeSoundness_of_legacy (validAcceptance_embed_iff V impl) relIn
     relOut ε hcert h
@@ -1406,8 +1413,9 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : (embedVerifier V).rbrKnowledgeSoundness impl (fun _ => True)
-      (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
+    (h : Core.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl
+    (fun _ => True)
+      (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c))) :
     V.rbrKnowledgeSoundness init impl relIn relOut ε :=
@@ -1426,8 +1434,8 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (hcert : ∀ (M : Fin (n + 1) → Type)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
-    Core.Verifier.rbrKnowledgeSoundness.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
-        (fun stmt w => (stmt, w) ∈ relIn) (fun _ t w => (t, w) ∈ relOut)
+    Core.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
+        (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔
       V.rbrKnowledgeSoundness init impl relIn relOut ε :=
