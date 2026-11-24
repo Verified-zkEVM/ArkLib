@@ -68,7 +68,7 @@ abbrev msgChalPath : Path (oracleProtocol msgChal) :=
   msgChalRun.path
 
 /-- Input oracle `5` beside the run's message. -/
-def msgChalData : (pathResources (family InStmt) (oracleProtocol msgChal) msgChalPath).Data :=
+def msgChalData : (pathBundle (family InStmt) (oracleProtocol msgChal) msgChalPath).Data :=
   (fun _ => (5 : Nat), oracleMessages _ msgChalRun)
 
 def nineChallenges : msgChal.Challenges := fun _ => (9 : Nat)
@@ -84,11 +84,11 @@ example : (legacyOutputMap sumVerifier nineChallenges msgChalPath).f msgChalData
     (18 : Nat) := rfl
 
 /-- Queries agree with the materialized data in both cases. -/
-example : simulateQ ((pathResources (family InStmt) _ msgChalPath).answer msgChalData)
+example : simulateQ ((pathBundle (family InStmt) _ msgChalPath).answer msgChalData)
     ((legacyOutputMap sumVerifier nineChallenges msgChalPath).impl ⟨(), ()⟩) =
     (18 : Nat) :=
   (legacyOutputMap sumVerifier nineChallenges msgChalPath).law msgChalData ⟨(), ()⟩
-example : simulateQ ((pathResources (family InStmt) _ msgChalPath).answer msgChalData)
+example : simulateQ ((pathBundle (family InStmt) _ msgChalPath).answer msgChalData)
     ((legacyOutputMap copyVerifier nineChallenges msgChalPath).impl ⟨false, ()⟩) =
     (4 : Nat) :=
   (legacyOutputMap copyVerifier nineChallenges msgChalPath).law msgChalData ⟨false, ()⟩
@@ -107,11 +107,11 @@ example (stmt : Unit) (view : View (oracleProtocol msgChal) msgChalPath) :
 example {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
     (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
     (p : Path (oracleProtocol (ToyProblem.SimplifiedIOR.pSpec (F := F))))
-    (r : (pathResources (family (ToyProblem.Spec.OracleStatement ι A))
+    (r : (pathBundle (family (ToyProblem.Spec.OracleStatement ι A))
       (oracleProtocol (ToyProblem.SimplifiedIOR.pSpec (F := F))) p).Data)
     (q : [ToyProblem.SimplifiedIOR.OutputOracleStatement ι A]ₒ.Domain) :
     (pure (simulateQ
-        ((pathResources (family (ToyProblem.Spec.OracleStatement ι A)) _ p).answer r)
+        ((pathBundle (family (ToyProblem.Spec.OracleStatement ι A)) _ p).answer r)
         ((OracleMap.ofLegacySimulation ToyProblem.SimplifiedIOR.outputSimulation challenges p).impl
           q)) : OracleComp []ₒ _) =
       simulateQ (OracleInterface.simOracle2 (T₁ := ToyProblem.Spec.OracleStatement ι A)

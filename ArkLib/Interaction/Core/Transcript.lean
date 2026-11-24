@@ -16,6 +16,9 @@ With `plainSig` the transcript has every message and challenge. With `oracleSig`
 every oracle message. With `viewSig` it is the verifier's view, which keeps a marker in place of
 each oracle message.
 
+A `PartialTranscript` records a run that has not reached the leaf: the moves made so far, in
+order, presented by the same signature lens.
+
 A transcript determines the *path* of the protocol tree that the run followed: the branch
 choices made by messages that select the next subprotocol. Challenges and oracle messages never
 select a branch, so the path omits them.
@@ -106,5 +109,37 @@ end Transcript
 /-- The transcripts of `s` that follow the path `p`. -/
 abbrev TranscriptAt (l : PFunctor.Lens P rolePoly.{u}) (s : FreeM P α) (p : Path s) :=
   {tr : Transcript l s // tr.path = p}
+
+/-- A transcript that may stop before the leaf: the moves already made along the protocol `s`,
+presented by the signature lens `l`. -/
+def PartialTranscript (l : PFunctor.Lens P rolePoly.{u}) : (s : FreeM P α) → Type u
+  | .pure _ => Option PEmpty
+  | .liftBind a next => Option ((x : Move l a) × PartialTranscript l (next (l.toFunB a x)))
+
+namespace PartialTranscript
+
+variable {l : PFunctor.Lens P rolePoly.{u}}
+
+/-- The empty partial transcript, with no moves made yet. -/
+def empty {s : FreeM P α} : PartialTranscript l s := by cases s <;> exact none
+
+/-- The partial transcript that starts with move `x` and continues with the partial transcript
+`tail` of the rest of the protocol. -/
+def cons {a : P.A} {next : P.B a → FreeM P α} (x : Move l a)
+    (tail : PartialTranscript l (next (l.toFunB a x))) :
+    PartialTranscript l (.liftBind a next) := some ⟨x, tail⟩
+
+/-- The number of moves already made. -/
+def length : {s : FreeM P α} → PartialTranscript l s → Nat
+  | .pure _, _ => 0
+  | .liftBind _ _, none => 0
+  | .liftBind _ _, some ⟨_, tail⟩ => tail.length + 1
+
+/-- A completed transcript as a partial transcript. It keeps every move. -/
+def ofTranscript : (s : FreeM P α) → Transcript l s → PartialTranscript l s
+  | .pure _, _ => none
+  | .liftBind _ next, ⟨x, tr⟩ => .cons x (ofTranscript (next (l.toFunB _ x)) tr)
+
+end PartialTranscript
 
 end Interaction.Core
