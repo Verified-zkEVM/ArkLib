@@ -18,20 +18,18 @@ Its degree is exactly `qᵏ⁻¹` when `c ≠ 0`.
 It is additive in `c`, and it is additive as a function on every `L`-algebra.
 Both facts hold because `x ↦ x^q` is additive on every algebra over `K`.
 
-A family `c` of elements of `L` gives the `K`-linear map `x ↦ (Tr(cᵢ x))ᵢ`.
-For a basis `c`, this map is a bijection onto `K^ι`.
+A basis `b` of `L` over `K` gives the `K`-linear equivalence `x ↦ (Tr(bᵢ x))ᵢ` onto `K^ι`.
 Its coordinates are those in the trace-dual basis.
 That basis exists since the trace form is nondegenerate.
 
 The exponent `k - 1` uses subtraction in `ℕ`.
 The trace polynomial is noncomputable, as polynomial arithmetic over a field is.
-The coordinate map and equivalence are noncomputable, as `Algebra.trace` is.
+The equivalence is noncomputable, as `Algebra.trace` is.
 
 ## Main definitions
 
 * `FiniteField.tracePolynomial`: the polynomial `∑_{j < k} c^{qʲ} X^{qʲ}`.
-* `FiniteField.traceCoordinateMap`: the `K`-linear map `x ↦ (Tr(cᵢ x))ᵢ`.
-* `FiniteField.traceCoordinateEquiv`: the same map for a basis, as a linear equivalence.
+* `FiniteField.traceCoordinateEquiv`: for a basis `b`, the linear equivalence `x ↦ (Tr(bᵢ x))ᵢ`.
 
 ## Main statements
 
@@ -43,11 +41,7 @@ The coordinate map and equivalence are noncomputable, as `Algebra.trace` is.
 * `FiniteField.coeff_tracePolynomial`: the coefficient of `X^{qʲ}` is `c^{qʲ}`.
 * `FiniteField.natDegree_tracePolynomial_le` and `FiniteField.natDegree_tracePolynomial`:
   the degree is at most `qᵏ⁻¹`, with equality for `c ≠ 0`.
-* `FiniteField.traceCoordinateMap_apply` and `FiniteField.traceCoordinateEquiv_apply`:
-  the coordinates are traces.
-* `FiniteField.traceCoordinateMap_bijective`: a basis gives a bijection.
-* `FiniteField.exists_bijective_traceCoordinateMap`: such a bijection exists with `k`
-  coordinates.
+* `FiniteField.traceCoordinateEquiv_apply`: the coordinates are traces.
 -/
 
 @[expose] public section
@@ -134,19 +128,6 @@ section Coordinates
 
 variable (K : Type*) {L : Type*} [Field K] [Field L] [Algebra K L] {ι : Type*}
 
-/-- The `K`-linear map `x ↦ (Tr(cᵢ x))ᵢ` from `L` to `K^ι`. -/
-noncomputable def traceCoordinateMap (c : ι → L) : L →ₗ[K] (ι → K) :=
-  LinearMap.pi fun i ↦ (Algebra.trace K L).comp (LinearMap.mulLeft K (c i))
-
-variable {K}
-
-/-- The `i`-th trace coordinate of `x` is the trace of `cᵢ x`. -/
-@[simp]
-theorem traceCoordinateMap_apply (c : ι → L) (x : L) (i : ι) :
-    traceCoordinateMap K c x i = Algebra.trace K L (c i * x) :=
-  rfl
-
-variable (K) in
 /-- Coordinates in the trace-dual basis of `b`, computed by tracing against `b`. -/
 noncomputable def traceCoordinateEquiv [Finite K] [Finite ι] (b : Module.Basis ι K L) :
     L ≃ₗ[K] (ι → K) := by
@@ -156,28 +137,13 @@ noncomputable def traceCoordinateEquiv [Finite K] [Finite ι] (b : Module.Basis 
   letI : Finite L := Module.finite_of_finite K
   exact ((Algebra.traceForm K L).dualBasis (traceForm_nondegenerate K L) b).equivFun
 
+variable {K}
+
 /-- The `i`-th coordinate of `x` is the trace of `bᵢ x`. -/
 @[simp]
 theorem traceCoordinateEquiv_apply [Finite K] [Finite ι] (b : Module.Basis ι K L) (x : L)
     (i : ι) : traceCoordinateEquiv K b x i = Algebra.trace K L (b i * x) := by
   simp [traceCoordinateEquiv, LinearMap.BilinForm.dualBasis_repr_apply, mul_comm]
-
-/-- Traces against a basis give a bijection from the extension field to the coordinate space. -/
-theorem traceCoordinateMap_bijective [Finite K] [Finite ι] (b : Module.Basis ι K L) :
-    Function.Bijective (traceCoordinateMap K b) := by
-  have h : ⇑(traceCoordinateMap K b) = traceCoordinateEquiv K b := by
-    funext x i
-    simp
-  rw [h]
-  exact (traceCoordinateEquiv K b).bijective
-
-variable (K L) in
-/-- Let `L` be a finite field of degree `k` over `K`.
-Some `k` elements `cᵢ ∈ L` make `x ↦ (Tr(cᵢ x))ᵢ` a bijection from `L` onto `Kᵏ`. -/
-theorem exists_bijective_traceCoordinateMap [Finite L] :
-    ∃ c : Fin (Module.finrank K L) → L, Function.Bijective (traceCoordinateMap K c) :=
-  have : Finite K := .of_injective _ (algebraMap K L).injective
-  ⟨_, traceCoordinateMap_bijective (Module.finBasis K L)⟩
 
 end Coordinates
 

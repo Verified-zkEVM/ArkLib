@@ -155,6 +155,12 @@ example : (2 : ℤ) ^ 2 ∣ MvPolynomial.aeval (fun w : AffineVar ↦ w.elim (2 
     subst he
     simp
 
+-- The named argument `R` still selects the polynomial, as before the generalization.
+example {K : Type*} [Field K] (ψ : AffineVar → K[X]) (p : K[X]) (R : MvPolynomial AffineVar K)
+    (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) (hR : ∀ e ∈ R.support, 2 ≤ e none + e (some 0)) :
+    p ^ 2 ∣ MvPolynomial.aeval ψ R :=
+  pow_dvd_aeval_of_affineWeight_le (R := R) hz hx hR
+
 -- The bound `A ≤ n` is needed: an empty domain meets the surplus condition at `M = 0`,
 -- while `M = 0` caps the `Z`-degree at zero.
 open Polynomial.SymbolicInterpolation in
