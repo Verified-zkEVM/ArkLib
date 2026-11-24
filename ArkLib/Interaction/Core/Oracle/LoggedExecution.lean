@@ -69,7 +69,12 @@ theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
 /-- Run the verifier's decision in a monad with labelled failures, and log every query that got
 an answer before a failure. The failing query has no answer and adds no log entry. The state
 transformer sits below the exception transformer. Rejection and failure therefore stay distinct,
-and both keep the completed query log. -/
+and both keep the completed query log. Each answer is prepended to the log, and the log is
+reversed once at the end, so it stays in query order at linear cost.
+
+The interpreter takes a path, a view and bundle data as arguments and does not run the
+interaction. No erasure law relates it to `runWithLog`. The erasure laws above cover the ordinary
+logged run only. -/
 def decideCatching {ε : Type} {m : Type → Type v} [Monad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl ambient (ExceptT ε m)) (stmt : S) (p : Path s)
@@ -84,9 +89,9 @@ def decideCatching {ε : Type} {m : Type → Type v} [Monad m]
       match result with
       | .error e => pure (.error e)
       | .ok a =>
-        modify (· ++ [⟨q, a⟩])
+        modify (⟨q, a⟩ :: ·)
         pure (.ok a)
-  ((simulateQ logged (V.decide stmt p view).run).run).run []
+  (fun r => (r.1, r.2.reverse)) <$> ((simulateQ logged (V.decide stmt p view).run).run).run []
 
 end OracleVerifier
 end Interaction.Core

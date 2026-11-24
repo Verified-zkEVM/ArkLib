@@ -524,7 +524,11 @@ def OracleVerifier.decideWith {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
     ((pathBundle inputs s p).answer data)) (V.decide stmt p v).run
 
 /-- The shared execution mechanism: run PolyFun's interaction once through the supplied monad
-layer, then interpret one terminal decision and close its output from the same transcript. -/
+layer, then interpret one terminal decision and close its output from the same transcript.
+
+The `decision` callback receives the raw bundle data of the path. An interpreter must use that
+data only to answer the decision's queries, for example through `(pathBundle inputs s p).answer`.
+Reading the oracle messages directly would bypass the decision's queries. -/
 def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
