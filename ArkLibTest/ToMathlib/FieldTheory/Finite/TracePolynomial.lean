@@ -36,8 +36,8 @@ example : (tracePolynomial (ZMod 2) (1 : GaloisField 2 2)).eval 1 = 0 := by
   rw [show (2 : ZMod 2) = 0 from rfl, map_zero]
 
 -- A basis of `F₄` over `F₂` gives the bijection `x ↦ (Tr(b₀ x), Tr(b₁ x))` onto `F₂²`.
-example : Function.Bijective (traceCoordinateMap (ZMod 2) b) :=
-  traceCoordinateMap_bijective b
+example : Function.Bijective (traceCoordinateEquiv (ZMod 2) b) :=
+  (traceCoordinateEquiv (ZMod 2) b).bijective
 
 -- Two elements of `F₄` with equal trace coordinates are equal.
 example (x y : GaloisField 2 2)
@@ -89,16 +89,6 @@ example (j : Fin 2) :
 #guard_msgs (whitespace := lax) in
 #print axioms FiniteField.natDegree_tracePolynomial
 
-/-- info: 'FiniteField.traceCoordinateMap_bijective' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms FiniteField.traceCoordinateMap_bijective
-
-/-- info: 'FiniteField.exists_bijective_traceCoordinateMap' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms FiniteField.exists_bijective_traceCoordinateMap
-
 /-- info: 'FiniteField.coeff_tracePolynomial' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
@@ -108,11 +98,6 @@ example (j : Fin 2) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms FiniteField.natDegree_tracePolynomial_le
-
-/-- info: 'FiniteField.traceCoordinateMap_apply' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms FiniteField.traceCoordinateMap_apply
 
 /-- info: 'FiniteField.traceCoordinateEquiv_apply' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

@@ -35,13 +35,12 @@ if necessary, and give each block a distinct challenge `γ`.
 On that block set `f = -γ g`.
 Since `g` vanishes only on the first set, the zero candidate agrees on that set and the block.
 Each full block thus gives exactly `A` agreements and no witness of loss at most `s`.
-Proposition 6.1 asserts these facts, and the error bound is their consequence.
+Proposition 6.1 states the agreement bound for `g` and the error bound.
+The exceptionality of each full block comes from its proof.
 
 ## Main definitions
 
 * `ReedSolomon.exactZeroChallenges`: the challenges whose combined word has exactly `A` zeros.
-
-The set is noncomputable because it is phrased through the constant polynomial `C α`.
 
 ## Main statements
 

@@ -11,7 +11,8 @@ import
 # Acceptance cases for the interpolation parameters
 
 A Reed–Solomon case at `e = 1` checks the exact finite budgets.
-A Reed–Muller case checks the constants of Theorem 7.1 in [CWYZ26].
+A Reed–Muller example checks the constants of Theorem 7.1 in [CWYZ26] at one parameter choice.
+The paper does not work this example.
 It has `q₀ = 2⁸`, `k = 2`, `n = q₀^k = 2¹⁶`, `e = q₀^(k-1) = 2⁸`, Reed–Muller degree `64`,
 so `ρ = 1/4` and the univariate degree is `ρ n = 2¹⁴`, and `η = 1/4`.
 
