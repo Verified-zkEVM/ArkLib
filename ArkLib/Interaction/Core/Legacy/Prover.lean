@@ -73,7 +73,7 @@ abbrev tree (k m : ℕ) (h : k + m = n) : FreeM L.P PUnit.{1} := chain L.pos k m
 abbrev protocol : FreeM L.P PUnit.{1} := L.tree 0 n (Nat.zero_add n)
 
 /-- Read the legacy full transcript off a completed run. -/
-abbrev decode (tr : PathAlong L.l L.protocol) : FullTranscript pSpec :=
+abbrev decode (tr : Transcript L.l L.protocol) : FullTranscript pSpec :=
   chainEquiv L.l L.pos L.move tr
 
 /-- A sender node is a message round. -/

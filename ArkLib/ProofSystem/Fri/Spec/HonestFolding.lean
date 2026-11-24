@@ -28,7 +28,7 @@ namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
@@ -52,7 +52,7 @@ theorem reductionFold_run_honest
 namespace FoldPhase
 
 /-- Uniform sampling of the field challenge of a non-final fold. -/
-noncomputable instance instSampleableTypeChallenge (i : Fin k) :
+noncomputable instance instSampleableTypeChallenge [Finite F] (i : Fin k) :
     ∀ j, SampleableType ((pSpec (ω := ω) s i).Challenge j) :=
   fun _ ↦ SampleableType.ofFintype _
 
@@ -180,7 +180,7 @@ theorem foldOracleReduction_run_support_honest
   exact ⟨β, by rw [hout, Option.map_some]⟩
 
 /-- Each non-final fold preserves histories generated from a fixed word and witness. -/
-theorem foldOracleReduction_perfectCompleteness_honest
+theorem foldOracleReduction_perfectCompleteness_honest [Finite F]
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0) (i : Fin k)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (foldOracleReduction s d i).perfectCompleteness init impl
@@ -195,17 +195,17 @@ theorem foldOracleReduction_perfectCompleteness_honest
 end FoldPhase
 
 /-- Uniform challenge sampling for the sequence of non-final folds. -/
-noncomputable instance instSampleableTypeChallengePSpecFold :
+noncomputable instance instSampleableTypeChallengePSpecFold [Finite F] :
     ∀ j, SampleableType ((pSpecFold k (ω := ω) s).Challenge j) :=
   ProtocolSpec.instSampleableTypeChallengeSeqCompose
 
 /-- Uniform challenge sampling for all polynomial-folding commitments. -/
-noncomputable instance instSampleableTypeChallengeFold :
+noncomputable instance instSampleableTypeChallengeFold [Finite F] :
     ∀ j, SampleableType ((pSpecFold k (ω := ω) s ++ₚ FinalFoldPhase.pSpec F).Challenge j) :=
   ProtocolSpec.instSampleableTypeChallengeAppend
 
 /-- The non-final folding chain preserves a fixed input's exact honest history. -/
-theorem nonfinal_perfectCompleteness_honest
+theorem nonfinal_perfectCompleteness_honest [Finite F]
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (OracleReduction.seqCompose (Statement F) (OracleStatement s ω)
@@ -221,7 +221,7 @@ theorem nonfinal_perfectCompleteness_honest
       s d f p₀ i (pure st) impl)
 
 /-- Every folding stage preserves the history generated from the supplied word and witness. -/
-theorem reductionFold_perfectCompleteness_honest
+theorem reductionFold_perfectCompleteness_honest [Finite F]
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reductionFold k s d).perfectCompleteness init impl
@@ -236,11 +236,11 @@ theorem reductionFold_perfectCompleteness_honest
       s d (pure st) impl f p₀)
 
 /-- The folding phase preserves proximity to the supplied initial polynomial witness. -/
-theorem reductionFold_perfectCompleteness
+theorem reductionFold_perfectCompleteness [Finite F]
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n) (δ : ℝ≥0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (reductionFold k s d).perfectCompleteness init impl
-      (inputRelation k s d hdom δ) (foldCompletenessRelation s d (ω := ω) δ) := by
+      (inputRelation k s d δ) (foldCompletenessRelation s d (ω := ω) δ) := by
   intro stmt p hIn
   have hdist : (Code.relHammingDist (stmt.2 0) (fun x ↦ p.val.eval x.val) : ℝ≥0) ≤ δ := by
     cases k <;> exact hIn

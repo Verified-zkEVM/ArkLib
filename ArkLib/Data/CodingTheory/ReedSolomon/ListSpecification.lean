@@ -37,7 +37,7 @@ abbrev MessagePolynomial (F : Type*) [Semiring F] (messageDim : ℕ) :=
   Polynomial.degreeLT F messageDim
 
 /-- A finite, duplicate-free list decoder for degree-bounded messages. -/
-abbrev Decoder (F : Type*) [Semiring F] (index : Type*) [Fintype index]
+abbrev Decoder (F : Type*) [Semiring F] (index : Type*)
     (messageDim : ℕ) :=
   Finset.Enumeration (index → F) (MessagePolynomial F messageDim)
 

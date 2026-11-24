@@ -1,0 +1,92 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.Interaction.Core.Security.Knowledge
+public import VCVio.OracleComp.Runtime
+
+/-!
+# Logged execution of passive oracle verifiers
+
+`OracleVerifier.runWithLog` records the prover's ambient queries and every query of the decision
+before routing. The decision log holds ambient queries and queries to the input and message
+oracles, in order and with repeats. Forgetting both logs gives `OracleVerifier.run` exactly.
+
+Logging after substitution, VCVio's `OracleComp.withQueryLog_simulateQ`, records the target
+queries each handler program makes, in order. A persistent `OracleRuntime` executes the logged run
+directly as `runtime.run (V.runWithLog stmt data prover)`.
+-/
+
+@[expose] public section
+
+universe v dI uS wJ
+
+namespace Interaction.Core
+open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
+
+namespace OracleVerifier
+variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+  {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, dI}}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {Out : Transcript oracleSig s → Type}
+
+/-- Interpreting a logged run in any lawful monad commutes with erasing both logs. -/
+theorem simulateQ_runWithLog_erase {m : Type → Type v} [Monad m] [LawfulMonad m]
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    Sigma.fst <$> simulateQ handler (V.runWithLog stmt data prover) =
+      simulateQ handler (V.run stmt data prover) := by
+  rw [← simulateQ_map, map_fst_runWithLog]
+
+/-- Running the logged run in a persistent runtime and erasing the logs and the trace gives the
+ordinary stateful execution of the run. This composes VCVio's `runFrom_eraseTrace` with
+`map_fst_runWithLog`. -/
+theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec κ}
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (runtime : OracleRuntime Import (ambient + challengeSpec oracleSig s)) (stmt : S)
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    (fun result => (result.output.1, result.state)) <$>
+        runtime.run (V.runWithLog stmt data prover) =
+      runtime.setup >>= fun state => runtime.handler.runState state (V.run stmt data prover) := by
+  rw [OracleRuntime.run_eq, _root_.map_bind]
+  refine bind_congr fun state => ?_
+  have erased := runtime.runFrom_eraseTrace state (V.runWithLog stmt data prover)
+  have paired := congrArg (fun program =>
+    (fun result => (result.1.1, result.2)) <$> program) erased
+  have logged := congrArg (runtime.handler.runState state) (V.map_fst_runWithLog stmt data prover)
+  calc
+    _ = (fun result => (result.1.1, result.2)) <$>
+        runtime.handler.runState state (V.runWithLog stmt data prover) := by
+      simpa only [Functor.map_map] using paired
+    _ = _ := by
+      simpa [QueryImpl.Stateful.runState, monad_norm] using logged
+
+/-- Run the verifier's decision in a monad with labelled failures, and log every query that got
+an answer before a failure. The failing query has no answer and adds no log entry. The state
+transformer sits below the exception transformer. Rejection and failure therefore stay distinct,
+and both keep the completed query log. -/
+def decideCatching {ε : Type} {m : Type → Type v} [Monad m]
+    (V : OracleVerifier ambient s S T inputs outputs)
+    (handler : QueryImpl ambient (ExceptT ε m)) (stmt : S) (p : Path s)
+    (view : View s p) (data : (pathBundle inputs s p).Data) :
+    m (Except ε (Option (T p)) × QueryLog (ambient + (pathBundle inputs s p).spec)) :=
+  let spec := ambient + (pathBundle inputs s p).spec
+  let answer : QueryImpl spec (ExceptT ε m) :=
+    QueryImpl.addLift handler ((pathBundle inputs s p).answer data)
+  let logged : QueryImpl spec (ExceptT ε (StateT (QueryLog spec) m)) := fun q =>
+    ExceptT.mk do
+      let result ← liftM (answer q).run
+      match result with
+      | .error e => pure (.error e)
+      | .ok a =>
+        modify (· ++ [⟨q, a⟩])
+        pure (.ok a)
+  ((simulateQ logged (V.decide stmt p view).run).run).run []
+
+end OracleVerifier
+end Interaction.Core
