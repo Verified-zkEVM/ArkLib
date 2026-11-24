@@ -11,8 +11,15 @@ public import ArkLib.Interaction.Core.Legacy.OracleSecurity
 /-!
 # Round-by-round soundness of Sumcheck in the interaction layer
 
-The interaction-layer Sumcheck verifier is round-by-round knowledge sound and round-by-round sound
-for the Sumcheck relations, with error `deg / |R|` at every challenge node, against every prover.
+The compatibility `verifier` of `Execution` over an injective domain is round-by-round knowledge
+sound and round-by-round sound for the Sumcheck relations, with error `deg / |R|` at every
+challenge node. Both statements are local certificates: each provides a state function and
+bounds, for every statement, every receiver prefix and its history, the probability over the
+challenge that the state flips. Neither quantifies over provers. The bound for every prover's
+actual run is a soundness theorem: `verifier_soundness_of_legacy` for this verifier and
+`indexedVerifier_soundness` for the interaction-layer `indexedVerifier`, whose own round-by-round
+theorem is `indexedVerifier_rbrSoundness`.
+
 Both results are transferred from the legacy `Spec.oracleVerifier_rbrKnowledgeSoundness` (and,
 for soundness, its legacy consequence `Verifier.rbrSoundness_of_rbrKnowledgeSoundness`) through
 the equivalence of `LegacyEquivalence` and the round-by-round transfers
@@ -45,8 +52,11 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
 include init in
-/-- Round-by-round knowledge soundness of the interaction-layer Sumcheck verifier, with error
-`deg / |R|` at every challenge node. -/
+/-- Round-by-round knowledge soundness of the compatibility `verifier`, with error `deg / |R|` at
+every challenge node. This is a local certificate with `Unit` input and output witnesses: a
+knowledge state function and, for every statement, every receiver prefix and its history, a
+bound on the probability over the challenge that extraction fails. It does not quantify over
+provers. -/
 theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (verifier R deg n D ambient).rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0} impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
@@ -54,14 +64,14 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
       (challengeQueryImpl oracleSig (protocol R deg n))
       (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) := by
   let : ∀ t, Inhabited (ambient.Range t) := fun t => ⟨supportedAnswer init impl t⟩
-  unfold OracleVerifier.rbrKnowledgeSoundnessOfNodes
-  rw [challengeQueryImpl_eq_legacy, ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
+  rw [OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff, challengeQueryImpl_eq_legacy,
+    ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrKnowledgeSoundness_iff]
   have hk := embedOracleVerifier_rbrKnowledgeSoundness.{uK} init impl
     (Spec.oracleVerifier R deg D n ambient) _ _ _ (fun _ _ K =>
       KnowledgeTerminalCertificate.of_guarded (Spec.oracleVerifierGuardedForm R deg D n ambient) K)
     (Spec.oracleVerifier_rbrKnowledgeSoundness R deg D n ambient)
-  unfold OracleVerifier.rbrKnowledgeSoundnessOfNodes at hk
+  rw [OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff] at hk
   have hc := OracleVerifier.rbrKnowledgeSoundness_cast
     (T := fun _ => Spec.StatementRound R n (Fin.last n))
     (inputs := family (Spec.OracleStatement R n deg))
@@ -70,7 +80,7 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)) impl (fun _ => True)
     (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
     (fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
-    (PrefixDraw.ofNodes oracleSig (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
+    (PrefixDraw.ofNodesView (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
     (PrefixError.ofNodes oracleSig
       (fun _ => (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)))
   have hsource := hc.mpr (by simpa only [cast_eq] using hk)
@@ -79,14 +89,16 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
     (outputs := family (Spec.OracleStatement R n deg)) (protocol_eq R deg n).symm
     (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
   rw [hcast] at hsource
-  simp only [OracleVerifier.prefixDraw_ofNodes_cast,
+  simp only [OracleVerifier.prefixDraw_ofNodesView_cast,
     OracleVerifier.prefixError_ofNodes_cast] at hsource
   dsimp only [legacyVerifier]
   convert hsource using 1 <;> rfl
 
 include init in
-/-- Round-by-round soundness of the interaction-layer Sumcheck verifier, with error `deg / |R|`
-at every challenge node. -/
+/-- Round-by-round soundness of the compatibility `verifier`, with error `deg / |R|` at every
+challenge node. This is a local certificate: a state function and, for every false statement,
+every receiver prefix and its history, a bound on the probability over the challenge that the
+state flips to true. It does not quantify over provers. -/
 theorem verifier_rbrSoundness [Fintype R] [IsDomain R] :
     (verifier R deg n D ambient).rbrSoundness impl
       (langProblem (Spec.relationRound R n deg D 0).language)

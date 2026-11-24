@@ -43,7 +43,7 @@ example {σ : Type} {Win : (S × (∀ i, A i)) → Type 6}
     (adm : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
     (relOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig s) →
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
-    (draw : PrefixDraw oracleSig ProbComp s) (ε : PrefixError oracleSig s) :
+    (draw : PrefixDraw viewSig ProbComp s) (ε : PrefixError oracleSig s) :
     V.rbrKnowledgeSoundness.{2, 6, 1, 7} impl adm relIn relOut draw ε ↔
       V'.rbrKnowledgeSoundness.{2, 6, 1, 7} impl adm relIn relOut draw ε :=
   h.rbrKnowledgeSoundness_iff impl adm relIn relOut draw ε

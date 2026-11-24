@@ -165,5 +165,6 @@ records the public prover selector required by P2, the explicit zero root and le
 recover the frozen bound, and VCVio's small-carrier restriction on measured programs. Pure
 backward maps accept large leaf and seam witnesses directly. The shared full-prefix sampler
 retains earlier public challenges and prover messages in both distributions and local errors.
-P1 retires only challenge selection that depends on oracle messages and effectful receiver
-actions. The inventory marks the already constant KC-065 schedule equivalent.
+Oracle verifiers draw from the verifier view, which erases oracle messages; their errors keep the
+full prefix. P1 retires only challenge selection that depends on oracle messages and effectful
+receiver actions. The inventory marks the already constant KC-065 schedule equivalent.

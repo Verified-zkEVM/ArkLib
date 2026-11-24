@@ -10,7 +10,27 @@ public import ArkLib.Interaction.Core.Security.Implications
 
 /-! # Sumcheck verification over indexed domains
 
-Every occurrence of a domain point contributes to the sum, including repeated points.
+This file defines the interaction-layer Sumcheck verifier `indexedVerifier` and proves its
+round-by-round soundness (`indexedVerifier_rbrSoundness`) and soundness
+(`indexedVerifier_soundness`). Every occurrence of a domain point contributes to the sum,
+including repeated points.
+
+The final decision runs after the interaction. In each round whose claim has not been rejected,
+it queries the round message once per domain index, in index order and including repeated
+points, and compares the sum with the current target. When the sum check succeeds, it queries the
+message once more, at the round's challenge. When a sum check fails, the decision makes no further
+queries, but every interaction round has already run. The soundness bound certifies neither a
+query charge nor an execution cost.
+
+The soundness proof follows the sum-check analysis of [LFKN92] in the form of [Thaler2023], §4.1
+(Proposition 4.1 and Remark 4.1). `Soundness` states the public corollaries and describes how
+this setting specializes the textbook statement.
+
+## References
+
+* [Lund, C., Fortnow, L., Karloff, H., and Nisan, N., *Algebraic methods for interactive
+    proof systems*][LFKN92]
+* [Thaler, J., *Proofs, Arguments, and Zero-Knowledge*][Thaler2023]
 -/
 
 @[expose] public section
@@ -52,34 +72,13 @@ def indexedDecision (k : ℕ) : Option (IndexedClaim R n k) →
   | none, _, _ => pure none
   | some st, p, v => foldDecision (intervalCheck D) IntervalClaim.finish k st p v
 
-/-- Lift the round-message queries into the queries of the final decision: the ambient oracle
-and the path's oracle bundle. -/
-def indexedDecisionLift {ι : Type} (ambient : OracleSpec ι) (p : Path (protocol R deg n)) :
-    QueryImpl (oracleMessageSpec (protocol R deg n) p)
-      (OracleComp (ambient + (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec)) :=
-  pathLift ambient (polyFamily R deg n) p
-
-omit [DecidableEq R] in
-/-- Answering the lifted message queries is a pure computation of the transcript's oracle
-messages. -/
-theorem simulateQ_indexedDecisionLift_monad {ι : Type} {ambient : OracleSpec ι}
-    {m : Type → Type} [Monad m] [LawfulMonad m]
-    (impl : QueryImpl ambient m) (p : Path (protocol R deg n))
-    (data : ∀ i, PolynomialData R n deg i) (pl : ∀ i, OracleMessage (protocol R deg n) p i)
-    {α : Type} (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily R deg n) (protocol R deg n)
-      p).answer (data, pl))) (simulateQ (indexedDecisionLift ambient p) oa) =
-      (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        m α) :=
-  simulateQ_pathLift impl p data pl oa
-
 /-- The passive Sumcheck verifier counts all domain indices in its final decision. -/
 def indexedVerifier (R : Type) [CommSemiring R] [DecidableEq R] (deg n : ℕ)
     {d : ℕ} (D : Fin d → R) {ι : Type} (ambient : OracleSpec ι) :
     OracleVerifier ambient (protocol R deg n) (RoundStatement R n 0)
       (fun _ => RoundStatement R n (Fin.last n)) (polyFamily R deg n)
       (fun _ => polyFamily R deg n) where
-  decide stmt p v := OptionT.mk (simulateQ (indexedDecisionLift ambient p)
+  decide stmt p v := OptionT.mk (simulateQ (decisionLift R deg n ambient p)
     (indexedDecision D n (some (IndexedClaim.initial stmt)) p v))
   outputMap _ p _ :=
     { f := fun x => x.1
@@ -329,8 +328,8 @@ theorem simulateQ_indexedVerifier_decide {ι : Type} {ambient : OracleSpec ι}
       tr.path).answer (data, oracleMessages _ tr)))
       ((indexedVerifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (indexedVerdict D n (some (IndexedClaim.initial stmt)) tr) : m _) := by
-  change simulateQ _ (simulateQ (indexedDecisionLift ambient _) _) = _
-  rw [simulateQ_indexedDecisionLift_monad]
+  change simulateQ _ (simulateQ (decisionLift R deg n ambient _) _) = _
+  rw [simulateQ_decisionLift_monad]
   exact congrArg pure (simulateQ_indexedDecision D n _ tr)
 
 /-- The actual core run records its transcript and applies the indexed verdict to its oracle
@@ -471,8 +470,10 @@ theorem card_challengeNodesOn_protocol : ∀ (k : ℕ) (path : Path (protocol R 
     refine (Finset.card_cons _).trans ?_
     exact congrArg (· + 1) ((Finset.card_map _).trans (ih path))
 
-/-- The actual indexed verifier run is sound with error `n * (deg / |R|)` over arbitrary domains.
-The quantification includes every ambient-effectful prover and every prover output family. -/
+/-- Soundness of `indexedVerifier` over arbitrary domains, with error `n * (deg / |R|)`. From a
+false input claim, the actual run returns a claim satisfying the final evaluation relation with
+at most this probability. The quantification includes every ambient-effectful prover and every
+prover output family. -/
 theorem indexedVerifier_soundness [IsDomain R] [Fintype R] [SampleableType R]
     {ι σ : Type} (ambient : OracleSpec ι) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) :

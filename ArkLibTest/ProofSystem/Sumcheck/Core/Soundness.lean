@@ -97,7 +97,7 @@ theorem oneRound_soundness {Out : Transcript oracleSig (protocol R deg 1) → Ty
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
   let : MeasurableSpace (Outcome oracleSig (protocol R deg 1) Out
       (fun _ => Spec.StatementRound R 1 (Fin.last 1) × (∀ i, Spec.OracleStatement R 1 deg i))) := ⊤
-  have h := legacyVerifier_soundness_rounds R deg 1 D amb init impl Out (stmt, oStmt) trivial
+  have h := verifier_soundness_rounds_of_legacy R deg 1 D amb init impl Out (stmt, oStmt) trivial
     (by simpa only [langProblem_language] using hfalse) P
   rw [Nat.cast_one, one_mul] at h
   rw [← soundnessEvent_eq]
@@ -373,7 +373,8 @@ run_cmd do
       ``Sumcheck.Core.SoundnessTest.adaptive, ``Sumcheck.Core.SoundnessTest.adaptive_endpoints,
       ``Sumcheck.Core.SoundnessTest.adaptive_hits, ``Sumcheck.Core.SingleRoundTest.poly0,
       ``Sumcheck.Core.CompletenessTest.polyX, ``Sumcheck.Core.SoundnessTest.polyXK,
-      ``Sumcheck.Core.legacyVerifier_soundness, ``Sumcheck.Core.legacyVerifier_soundness_rounds,
+      ``Sumcheck.Core.verifier_soundness_of_legacy,
+      ``Sumcheck.Core.verifier_soundness_rounds_of_legacy,
       ``Sumcheck.Core.card_challengeIdx] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
@@ -393,7 +394,7 @@ example (D : Fin d → R) :
     (indexedVerifier R deg n D ambient).soundness init impl (indexedDraw (R := R) (deg := deg) n)
       (indexedInputProblem D) (indexedOutputProblem (R := R) (deg := deg) (n := n))
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
-  verifier_soundness_rounds D ambient init impl
+  indexedVerifier_soundness D ambient init impl
 
 /-- List domains, including repeated points, use the actual native run's soundness theorem. -/
 example (domain : List R) :
@@ -401,7 +402,7 @@ example (domain : List R) :
       (indexedDraw (R := R) (deg := deg) n) (indexedInputProblem domain.get)
       (indexedOutputProblem (R := R) (deg := deg) (n := n))
       ((n : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞)) :=
-  verifier_soundness_list ambient init impl domain
+  indexedVerifier_soundness_list ambient init impl domain
 
 /-- A committed message is bounded on the actual native run over any list, with repetitions. -/
 example (domain : List R) (msg : R⦃≤ deg⦄[X]) (stmt : RoundStatement R 1 0)
@@ -412,7 +413,8 @@ example (domain : List R) (msg : R⦃≤ deg⦄[X]) (stmt : RoundStatement R 1 0
         (committedProver ambient msg (fun r => r))))}[
       ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) :=
-  Sumcheck.Core.committed_soundness domain.get ambient init impl msg (fun r => r) stmt data hfalse
+  indexedVerifier_committed_soundness domain.get ambient init impl msg (fun r => r) stmt data
+    hfalse
 
 /-- An ambient randomized commitment is also bounded before the receiver samples its challenge. -/
 example (domain : List R) (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
@@ -423,7 +425,8 @@ example (domain : List R) (commit : OracleComp ambient (R⦃≤ deg⦄[X]))
         (randomizedProver ambient commit (fun r => r))))}[
       ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] ≤
       (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) :=
-  randomized_soundness domain.get ambient init impl commit (fun r => r) stmt data hfalse
+  indexedVerifier_randomized_soundness domain.get ambient init impl commit (fun r => r) stmt data
+    hfalse
 
 /-- The constant round message one has degree zero. -/
 noncomputable def oneMessage : (ZMod 5)⦃≤ 0⦄[X] := ⟨1, Polynomial.mem_degreeLE.mpr (by simp)⟩
@@ -483,17 +486,105 @@ theorem repeated_run {ι : Type} (amb : OracleSpec ι) :
     Interpreted.challenge, roundTranscript, oneMessage, IndexedClaim.initial,
     IntervalClaim.next, IntervalClaim.index, IntervalClaim.finish]
 
+/-! ## A passed sum check with a false returned claim over `ZMod 5`
+
+The input polynomial is zero, the domain is `[0, 0]`, the target is two and the prover commits to
+`X + 1`. The message sums to two over the domain, so the sum check passes at every challenge and
+the run returns the claim `r + 1` at challenge `r`. That claim satisfies the final evaluation
+relation only at `r = -1`, so the success event of `indexedVerifier_run_soundness` has probability
+exactly `1/5`. A returned claim alone is not the success event. -/
+
+/-- The round message `X + 1`. -/
+noncomputable def shiftMessage : (ZMod 5)⦃≤ 1⦄[X] :=
+  ⟨Polynomial.X + 1, Polynomial.mem_degreeLE.mpr (by compute_degree!)⟩
+
+/-- The zero input polynomial in one variable. -/
+noncomputable def zeroInput : (ZMod 5)⦃≤ 1⦄[X Fin 1] := ⟨0, Submodule.zero_mem _⟩
+
+/-- The message `X + 1` sums to the target two over the domain `[0, 0]`. -/
+theorem shiftMessage_sum :
+    (([0, 0] : List (ZMod 5)).map (fun x => shiftMessage.val.eval x)).sum = 2 := by
+  simp only [shiftMessage, List.map_cons, List.map_nil, Polynomial.eval_add, Polynomial.eval_X,
+    Polynomial.eval_one, List.sum_cons, List.sum_nil]
+  decide
+
+/-- At challenge zero, the actual run returns the claim that the input polynomial is one at
+zero. -/
+theorem verdict_at_zero {ι : Type} (amb : OracleSpec ι) :
+    indexedExecute ([0, 0] : List (ZMod 5)).get amb (QueryImpl.id' amb) (pure 0)
+        (fun _ => zeroInput) shiftMessage 2 =
+      pure ⟨roundTranscript shiftMessage 0, (shiftMessage.val.eval 0, 0),
+        some (⟨1, Fin.snoc Fin.elim0 0⟩, fun _ => zeroInput)⟩ := by
+  rw [indexedExecuteAt_list_accepted amb _ _ _ _ _ shiftMessage_sum]
+  simp [shiftMessage]
+
+/-- The claim returned at challenge zero fails the final evaluation relation. -/
+theorem claim_at_zero_false :
+    MvPolynomial.eval (Fin.snoc Fin.elim0 0 : Fin 1 → ZMod 5) zeroInput.val ≠ 1 := by
+  simp [zeroInput]
+
+/-- The one-round outcome at challenge `r` satisfies the final evaluation relation exactly when
+`r = -1`. -/
+theorem success_iff (r : ZMod 5) :
+    (∃ t, (indexedRoundResult ([0, 0] : List (ZMod 5)).get (fun _ => zeroInput) shiftMessage 2
+        r).2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target) ↔ r = -1 := by
+  have hsum : (∑ a : Fin ([0, 0] : List (ZMod 5)).length,
+      shiftMessage.val.eval (([0, 0] : List (ZMod 5)).get a)) = 2 := by
+    exact (sum_domain_list _ (fun x => shiftMessage.val.eval x)).trans shiftMessage_sum
+  simp only [indexedRoundResult, hsum, ite_true, Option.some.injEq, exists_eq_left']
+  simp only [zeroInput, shiftMessage, map_zero, Polynomial.eval_add, Polynomial.eval_X,
+    Polynomial.eval_one]
+  constructor
+  · intro h; linear_combination -h
+  · intro h; rw [h]; ring
+
+/-- In an experiment with uniform challenges, the one-round challenge query is a uniform
+sample. -/
+theorem experiment_challenge {ι : Type} (amb : OracleSpec ι) {α : Type}
+    (impl : QueryImpl amb (StateT Unit ProbComp)) (f : ZMod 5 → α) :
+    experiment (pure ()) impl (indexedDraw (R := ZMod 5) (deg := 1) 1)
+        (f <$> (liftM ((amb + challengeSpec oracleSig (protocol (ZMod 5) 1 1)).query
+          (.inr (roundChallengeNode (R := ZMod 5) (deg := 1)))))) =
+      f <$> ($ᵗ ZMod 5 : ProbComp (ZMod 5)) := by
+  rw [experiment, LawfulMonad.pure_bind, simulateQ_map]
+  erw [simulateQ_spec_query, StateT.run'_eq, StateT.run_map, Functor.map_map]
+
+/-- On the false claim that zero sums to two over `[0, 0]`, the committed message `X + 1` makes
+the actual run return a claim satisfying the final evaluation relation with probability exactly
+`1/5`. -/
+theorem exact_success_probability {ι : Type} (amb : OracleSpec ι)
+    (impl : QueryImpl amb (StateT Unit ProbComp)) :
+    Pr{let obs ← (experiment (pure ()) impl (indexedDraw (R := ZMod 5) (deg := 1) 1)
+      ((indexedVerifier (ZMod 5) 1 1 ([0, 0] : List (ZMod 5)).get amb).run ⟨2, Fin.elim0⟩
+        (fun _ => zeroInput)
+        (committedProver amb shiftMessage (fun r => (shiftMessage.val.eval r, r)))))}[
+      ∃ t, obs.2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] = 1 / 5 := by
+  rw [indexedVerifier_run_one, experiment_challenge]
+  change Pr{let r ← ($ᵗ ZMod 5 : ProbComp (ZMod 5))}[
+    ∃ t, (indexedRoundResult ([0, 0] : List (ZMod 5)).get (fun _ => zeroInput) shiftMessage 2
+      r).2.2 = some t ∧ (t.2 ()).val.eval t.1.challenges = t.1.target] = _
+  rw [prEvent_congr _ _ _ success_iff, SampleableType.prEvent_uniformSample_eq_singleton, ZMod.card]
+  norm_num
 
 run_cmd
   for decl in [``Sumcheck.Core.indexed_round_soundness,
       ``Sumcheck.Core.indexedVerifier_rbrSoundness,
-      ``Sumcheck.Core.indexedVerifier_soundness, ``Sumcheck.Core.verifier_soundness,
-      ``Sumcheck.Core.verifier_soundness_rounds, ``Sumcheck.Core.verifier_soundness_list,
-      ``Sumcheck.Core.verifier_soundness_injective, ``Sumcheck.Core.verifier_run_soundness,
-      ``Sumcheck.Core.committed_soundness, ``Sumcheck.Core.randomized_soundness,
+      ``Sumcheck.Core.indexedVerifier_soundness,
+      ``Sumcheck.Core.indexedVerifier_soundness_nsmul,
+      ``Sumcheck.Core.indexedVerifier_soundness_list,
+      ``Sumcheck.Core.indexedVerifier_soundness_injective,
+      ``Sumcheck.Core.indexedVerifier_run_soundness,
+      ``Sumcheck.Core.indexedVerifier_committed_soundness,
+      ``Sumcheck.Core.indexedVerifier_randomized_soundness,
       ``Sumcheck.Core.indexedVerifier_run, ``Sumcheck.Core.IndexedSoundnessTest.repeated_run,
-      ``Sumcheck.Core.committed_measureSoundness,
-      ``Sumcheck.Core.randomized_measureSoundness] do
+      ``Sumcheck.Core.indexedVerifier_committed_measureSoundness,
+      ``Sumcheck.Core.indexedVerifier_randomized_measureSoundness,
+      ``Sumcheck.Core.IndexedSoundnessTest.shiftMessage_sum,
+      ``Sumcheck.Core.IndexedSoundnessTest.verdict_at_zero,
+      ``Sumcheck.Core.IndexedSoundnessTest.claim_at_zero_false,
+      ``Sumcheck.Core.IndexedSoundnessTest.success_iff,
+      ``Sumcheck.Core.IndexedSoundnessTest.experiment_challenge,
+      ``Sumcheck.Core.IndexedSoundnessTest.exact_success_probability] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

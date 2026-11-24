@@ -95,4 +95,30 @@ instance (R : Type) [CommSemiring R] [SampleableType R] (deg k : ℕ) :
 
 end Uniform
 
+variable (R deg)
+open OracleComp OracleSpec Interaction.Oracle
+
+/-- Lift the round-message queries into the queries of the final decision: the ambient oracle
+and the path's oracle bundle. This is the path lift `pathLift` with the input polynomial family.
+The interaction-layer `indexedVerifier` and the compatibility `verifier` both use this lift. -/
+def decisionLift (n : ℕ) {ι : Type} (ambient : OracleSpec ι) (p : Path (protocol R deg n)) :
+    QueryImpl (oracleMessageSpec (protocol R deg n) p)
+      (OracleComp (ambient + (pathBundle (polyFamily R deg n) (protocol R deg n) p).spec)) :=
+  pathLift ambient (polyFamily R deg n) p
+
+variable {R deg}
+
+/-- Answering the lifted message queries from the run's data, with ambient queries answered in
+any lawful monad, is a pure computation of the transcript's oracle messages. -/
+theorem simulateQ_decisionLift_monad {n : ℕ} {ι : Type} {ambient : OracleSpec ι}
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (impl : QueryImpl ambient m) (p : Path (protocol R deg n))
+    (data : ∀ i, PolynomialData R n deg i) (pl : ∀ i, OracleMessage (protocol R deg n) p i)
+    {α : Type} (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
+    simulateQ (QueryImpl.addLift impl ((pathBundle (polyFamily R deg n) (protocol R deg n)
+      p).answer (data, pl))) (simulateQ (decisionLift R deg n ambient p) oa) =
+      (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
+        m α) :=
+  simulateQ_pathLift impl p data pl oa
+
 end Sumcheck.Core

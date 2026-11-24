@@ -17,7 +17,7 @@ open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleCo
 open Interaction.Oracle
 open scoped ENNReal
 
-universe uS uI wI wJ
+universe uS uI wI wJ dI
 
 -- These ordinary imports expose both classical specialization laws for each verifier form.
 #check Verifier.soundness_iff_soundnessUsing
@@ -92,6 +92,23 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
     (h : V.rbrSoundness impl input output draw fun _ => e) :
     V.soundness init impl draw input output (k • e) :=
   OracleVerifier.soundness_of_rbrSoundness_uniform h (fun _ => le_rfl) hcount
+
+-- The oracle implication takes any input bundle, as `OracleVerifier.run` does; the oracle-family
+-- examples above use the coercion from a family to its bundle.
+example {ι σ : Type} {S : Type uS}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
+    (input : StatementProblem (S × inputs.Data))
+    (output : PathProblem s (OracleVerifier.Output T B))
+    (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
+    (ε : ChallengeNode oracleSig s → ℝ≥0∞)
+    (h : V.rbrSoundness impl input output draw ε) :
+    V.soundness init impl draw input output (∑' c, ε c) :=
+  OracleVerifier.soundness_of_rbrSoundness_tsum h
 
 -- The oracle conclusion is the model soundness of the classical oracle model, with acceptance read
 -- from the verdict and the output oracle data of the outcome.
@@ -374,7 +391,7 @@ example {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
 namespace AdaptiveChallenges
 
 /-- Two erased Boolean challenges have one fixed shape path. -/
-def protocol : Protocol := .liftBind (.challenge Bool) (fun _ =>
+abbrev protocol : Protocol := .liftBind (.challenge Bool) (fun _ =>
   .liftBind (.challenge Bool) (fun _ => .pure ⟨⟩))
 
 /-- The first challenge comes from the ambient service. -/
@@ -396,7 +413,106 @@ theorem execution : runPrefixChallenges plainSig protocol prover draws =
         pure ⟨⟨x, !x, ⟨⟩⟩, (), ⟨⟩⟩) := by
   rfl
 
+/-- The ambient service answers with a uniform bit. -/
+def uniformBit : QueryImpl ambient ProbComp := fun _ => $ᵗ Bool
+
+/-- Whether two challenges are equal. -/
+def same (x y : Bool) : Bool := x == y
+
+/-- Accept a true statement or two equal challenges. -/
+def agree (stmt : Bool) (tr : Transcript plainSig protocol) : Bool :=
+  stmt || same tr.1 tr.2.1
+
+/-- The state is true at a true statement, and at a leaf whose two challenges are equal. -/
+def state : StateFunction plainSig protocol Bool (fun _ => True) (· = true)
+    (fun stmt tr => agree stmt tr = true) where
+  toFun {_} sp history stmt := match sp, history with
+    | .root _, _ => stmt = true
+    | .down _ (.root _), _ => stmt = true
+    | .down _ (.down _ _), history => (stmt || same history.1.1 history.2.1.1) = true
+  root _ _ h := h
+  send sp _ _ h := by
+    cases sp with
+    | root => exact nomatch h
+    | down _ tail =>
+      cases tail with
+      | root => exact nomatch h
+      | down _ tail => cases tail
+  leaf sp history stmt h := by
+    cases sp with
+    | down _ tail =>
+      cases tail with
+      | down _ tail =>
+        cases tail
+        rcases history with ⟨⟨x, _⟩, ⟨y, _⟩, ⟨⟩⟩
+        exact h
+
+/-- On the adaptive experiment, `prEvent_runPrefixChallenges_soundness` with zero node errors
+shows that a false statement is never accepted: the second draw always differs from the first. -/
+theorem soundness :
+    Pr{let y ← simulateQ uniformBit (runPrefixChallenges plainSig protocol prover draws >>=
+      fun r => pure (agree false r.1))}[y = true] = 0 := by
+  refine le_antisymm ((prEvent_runPrefixChallenges_soundness plainSig state uniformBit
+    (· = true) (fun _ => 0) draws (fun tr _ => pure (agree false tr)) false trivial
+    Bool.false_ne_true ?_ ?_ prover).trans (by simp)) zero_le
+  · intro a next sp h history
+    refine le_of_eq (prEvent_eq_zero_of_forall_mem_support _ _ fun x hx hflip => ?_)
+    cases sp with
+    | root => exact hflip.1 hflip.2
+    | down b tail =>
+      cases tail with
+      | root =>
+        rcases history with ⟨⟨y, _⟩, ⟨⟩⟩
+        have hx' : x ∈ support (simulateQ uniformBit (pure (!y) : OracleComp ambient Bool)) := hx
+        simp only [simulateQ_pure, support_pure, Set.mem_singleton_iff] at hx'
+        subst hx'
+        cases y <;> exact Bool.false_ne_true hflip.2
+      | down _ tail => cases tail
+  · intro tr _ hpos
+    by_contra hne
+    simp [hne] at hpos
+
 end AdaptiveChallenges
+
+/-! ### A full-prefix draw reads oracle messages
+
+The generic prefix runner passes each sender move, an oracle message included, to later draws.
+Two executions whose prefixes have the same `viewSig` projection can therefore receive different
+challenges. An oracle-verifier API that exposes a prefix draw restricts it to the view.
+-/
+
+namespace OracleMessageDraw
+
+/-- A Boolean oracle message, then a Boolean challenge. -/
+abbrev protocol : OracleProtocol.{0, 0} :=
+  .liftBind (.oracle Bool OracleInterface.instDefault) fun _ =>
+    .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
+
+/-- The draw makes no queries; the specification is only the draw's query interface. -/
+abbrev spec : OracleSpec Unit := Unit →ₒ Bool
+
+/-- The full-prefix draw sends the oracle bit as the challenge. -/
+def copyOracle : PrefixChallengePrograms oracleSig spec protocol
+  | _, _, .root _, h, _ => nomatch h
+  | _, _, .down _ (.root _), _, history => pure history.1.1
+  | _, _, .down _ (.down _ tail), _, _ => nomatch tail
+
+/-- The prover sends the oracle bit `b`, then observes the challenge. -/
+def prover (b : Bool) : Prover oracleSig spec protocol (fun _ => Unit) :=
+  pure ⟨b, pure fun _ => pure ()⟩
+
+/-- The generic run returns the oracle bit as the challenge. -/
+theorem execution (b : Bool) :
+    runPrefixChallenges oracleSig protocol (prover b) copyOracle = pure ⟨⟨b, b, ⟨⟩⟩, (), ⟨⟩⟩ :=
+  rfl
+
+/-- The verifier's view erases the oracle bit, so runs with the same challenge have equal views.
+-/
+theorem view_eq (x : Bool) :
+    (toView protocol ⟨true, x, ⟨⟩⟩).val = (toView protocol ⟨false, x, ⟨⟩⟩).val :=
+  rfl
+
+end OracleMessageDraw
 
 -- Disposition S4: models and their result types may vary with the authored prefix.
 example {α : Type} (author : OptionT ProbComp α) {Result : α → Type}
@@ -477,6 +593,24 @@ theorem optional_soundness :
   simpa only [one_nsmul] using
     Verifier.soundnessWith_of_rbrSoundness_uniform optionalHandler_fresh optional_rbrSoundness
       (fun _ => le_rfl) coin_card
+
+/-- The actual optional run with a prover that reads the counter before and after the challenge:
+the counter reads may fail, and the challenge is the uniform draw. -/
+theorem optional_counting_run (stmt : Bool) :
+    simulateQ optionalHandler (optionalVerifier.run stmt countingProver) = (do
+      let _ ← optionalAmbient ()
+      let b ← (OptionT.lift ($ᵗ Bool : ProbComp Bool) : OptionT ProbComp Bool)
+      let n ← optionalAmbient ()
+      pure ⟨⟨b, ⟨⟩⟩, n, if (stmt || b) = true then some 0 else none⟩ :
+        OptionT ProbComp (Outcome plainSig coin (fun _ => Nat) (fun _ => Nat))) := by
+  rfl
+
+/-- `optional_soundness` bounds the acceptance probability of that run on a false statement. -/
+theorem optional_counting_bound :
+    Pr{let obs ← simulateQ optionalHandler (optionalVerifier.run false countingProver)}[
+      ∃ t, obs.2.2 = some t ∧ anyOutput.language (Transcript.path obs.1) t] ≤ 1 / 2 :=
+  optional_soundness (fun _ => Nat) false trivial (fun ⟨_, h⟩ => Bool.false_ne_true h)
+    countingProver
 
 /-- The oracle implication also accepts a handler in the optional distribution monad.
 Its challenge premise is discharged by the separate lifted draw. -/
@@ -578,6 +712,11 @@ run_cmd do
       ``Interaction.Core.prEvent_runPrefixChallenges_soundness,
       ``Interaction.Core.flip_random_model_le,
       ``Interaction.Core.ImplicationsTests.AdaptiveChallenges.execution,
+      ``Interaction.Core.ImplicationsTests.AdaptiveChallenges.soundness,
+      ``Interaction.Core.ImplicationsTests.OracleMessageDraw.execution,
+      ``Interaction.Core.ImplicationsTests.OracleMessageDraw.view_eq,
+      ``Interaction.Core.ImplicationsTests.optional_counting_run,
+      ``Interaction.Core.ImplicationsTests.optional_counting_bound,
       ``Interaction.Core.prEvent_run_le,
       ``Interaction.Core.prEvent_run_state_le,
       ``Interaction.Core.prEvent_run_state_le_of_local,

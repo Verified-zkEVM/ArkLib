@@ -11,12 +11,15 @@ public import ArkLib.Interaction.Core.Legacy.OracleSecurity
 /-!
 # Legacy Sumcheck soundness regression checks
 
-These comparison checks retain the transferred security results. Native security is proved in
-`Soundness` over indexed domains and does not import this module.
+These comparison checks retain the transferred security results for the compatibility
+`verifier`, which runs the legacy decision fold with routed message queries. The
+interaction-layer `indexedVerifier` has its own soundness proof in `Soundness`, over indexed
+domains, which does not import this module.
 
-The legacy-compatible Sumcheck verifier is sound for the Sumcheck languages, against every prover
-and every prover output type, with error the sum over the challenges of `deg / |R|`, the error of
-the legacy knowledge soundness.
+`verifier_soundness_of_legacy` states that the compatibility `verifier` is sound for the
+Sumcheck languages over an injective domain, against every prover and every prover output type,
+with error the sum over the challenges of `deg / |R|`, the error of the legacy knowledge
+soundness.
 
 The legacy Sumcheck states round-by-round knowledge soundness; round-by-round soundness follows by
 `Verifier.rbrSoundness_of_rbrKnowledgeSoundness`, and soundness by the guarded implication
@@ -37,10 +40,10 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
-/-- Soundness of the interaction-layer Sumcheck verifier: a statement outside the round-`0`
-language is accepted into the final language with probability at most `deg / |R|` per challenge,
-for every prover. -/
-theorem legacyVerifier_soundness [Fintype R] [IsDomain R] :
+/-- Soundness of the compatibility `verifier`, transferred from the legacy verifier: a statement
+outside the round-`0` language is accepted into the final language with probability at most
+`deg / |R|` per challenge, for every prover. -/
+theorem verifier_soundness_of_legacy [Fintype R] [IsDomain R] :
     ∀ Out : Transcript oracleSig (protocol R deg n) → Type,
       letI : MeasurableSpace (Outcome oracleSig (protocol R deg n) Out
         (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
@@ -113,8 +116,9 @@ theorem card_challengeIdx : Fintype.card (Spec.pSpec R deg n).ChallengeIdx = n :
         rw [Fin.splitSum_embedSum] }
   exact (Fintype.card_congr e).trans (Fintype.card_fin n)
 
-/-- Soundness of the interaction-layer Sumcheck verifier with error `n * (deg / |R|)`. -/
-theorem legacyVerifier_soundness_rounds [Fintype R] [IsDomain R] :
+/-- Soundness of the compatibility `verifier`, transferred from the legacy verifier, with error
+`n * (deg / |R|)`. -/
+theorem verifier_soundness_rounds_of_legacy [Fintype R] [IsDomain R] :
     ∀ Out : Transcript oracleSig (protocol R deg n) → Type,
       letI : MeasurableSpace (Outcome oracleSig (protocol R deg n) Out
         (fun _ => Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i))) :=
@@ -125,7 +129,7 @@ theorem legacyVerifier_soundness_rounds [Fintype R] [IsDomain R] :
         (langProblem (Spec.relationRound R n deg D (Fin.last n)).language)
         (fun obs => Transcript.path obs.1) (fun obs => obs.2.2)
         ((n * ((deg : ℝ≥0) / Fintype.card R) : ℝ≥0) : ℝ≥0∞) := by
-  have h := legacyVerifier_soundness R deg n D ambient init impl
+  have h := verifier_soundness_of_legacy R deg n D ambient init impl
   rwa [Finset.sum_const, Finset.card_univ, card_challengeIdx, nsmul_eq_mul] at h
 
 end Sumcheck.Core

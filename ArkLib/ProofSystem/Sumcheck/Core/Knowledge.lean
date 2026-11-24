@@ -11,12 +11,12 @@ public import ArkLib.Interaction.Core.Legacy.OracleKnowledge
 /-!
 # Knowledge soundness of Sumcheck in the interaction layer
 
-The interaction-layer Sumcheck verifier is knowledge sound for the Sumcheck relations, against
-every prover, with the legacy error: the sum over the challenges of `deg / |R|`. The result is
-transferred from the legacy `Spec.oracleVerifier_knowledgeSoundness` through the equivalence of
-`LegacyEquivalence` and the oracle knowledge transfer `oracleKnowledgeSoundness_iff`, with no
-loss. The model samples challenges uniformly and the straight-line extractor reads the prover's
-output witness.
+The compatibility `verifier` of `Execution` over an injective domain is knowledge sound for the
+Sumcheck relations, against every prover, with the legacy error: the sum over the challenges of
+`deg / |R|`. The result is transferred from the legacy `Spec.oracleVerifier_knowledgeSoundness`
+through the equivalence of `LegacyEquivalence` and the oracle knowledge transfer
+`oracleKnowledgeSoundness_iff`, with no loss. The model samples challenges uniformly and the
+straight-line extractor reads the prover's output witness.
 -/
 
 @[expose] public section
@@ -30,8 +30,8 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
 
-/-- Knowledge soundness of the interaction-layer Sumcheck verifier, with the error of the legacy
-Sumcheck: `deg / |R|` for each challenge. -/
+/-- Knowledge soundness of the compatibility `verifier`, with the error of the legacy Sumcheck:
+`deg / |R|` for each challenge. -/
 theorem verifier_knowledgeSoundness [Fintype R] [IsDomain R] :
     letI : MeasurableSpace (Outcome oracleSig (protocol R deg n)
       (fun _ => (Spec.StatementRound R n (Fin.last n) × (∀ i, Spec.OracleStatement R n deg i)) ×
