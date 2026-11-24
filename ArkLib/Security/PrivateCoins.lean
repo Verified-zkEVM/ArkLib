@@ -94,6 +94,30 @@ def liftCompLeft {κ' : Type} {extraSpec : OracleSpec κ'}
     (p : OracleComp publicSpec α) : OracleComp (publicSpec + extraSpec) α :=
   liftComp p (publicSpec + extraSpec)
 
+/-- Widen the public interface of a computation with private coins: public queries go to the
+left summand of `publicSpec + extraSpec`, and private coins stay private. -/
+def liftPublicLeft {κ' : Type} {extraSpec : OracleSpec κ'}
+    (p : OracleComp (publicSpec + unifSpec) α) :
+    OracleComp ((publicSpec + extraSpec) + unifSpec) α :=
+  simulateQ (fun
+    | .inl q => liftM (((publicSpec + extraSpec) + unifSpec).query (.inl (.inl q)))
+    | .inr q => liftM (((publicSpec + extraSpec) + unifSpec).query (.inr q)) :
+      QueryImpl (publicSpec + unifSpec) (OracleComp ((publicSpec + extraSpec) + unifSpec))) p
+
+/-- Running a widened computation ignores the handler of the added public oracles. -/
+@[simp] theorem simulateQ_liftPublicLeft {κ' : Type} {extraSpec : OracleSpec κ'}
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    (publicImpl : QueryImpl publicSpec m) (extraImpl : QueryImpl extraSpec m)
+    (coins : QueryImpl unifSpec m) (p : OracleComp (publicSpec + unifSpec) α) :
+    simulateQ ((publicImpl + extraImpl) + coins) (liftPublicLeft (extraSpec := extraSpec) p) =
+      simulateQ (publicImpl + coins) p := by
+  rw [liftPublicLeft, ← QueryImpl.simulateQ_compose]
+  congr 1
+  funext q
+  rcases q with q | q <;>
+    simp only [QueryImpl.apply_compose, simulateQ_spec_query, QueryImpl.add_apply_inl,
+      QueryImpl.add_apply_inr]
+
 /-- Sample privately even when the public oracle specification also contains `unifSpec`.
 The explicit routing here prevents a structural `HasQuery` instance from choosing that public
 slot. -/

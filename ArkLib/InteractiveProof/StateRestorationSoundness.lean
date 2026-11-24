@@ -753,16 +753,18 @@ variable [DecidableEq StmtIn] [DecidableEq Salt]
   [∀ i, DecidableEq (pSpec.Message i)] [∀ i, Inhabited (pSpec.Challenge i)]
 
 /-- Recover the transcript from the verifier's challenge log, without issuing queries.
-Only the ambient verifier log is passed to the original named SR extractor. -/
+Only the ambient verifier log is passed to the original named SR extractor. The NARG extractor
+may also query the verifier-message oracles, but this one never does. -/
 def toNARGExtractor
     (E : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec (Salt := Salt)) :
     (StmtIn × Salt) → (pSpec.Messages × WitOut) →
       QueryLog (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec) →
       QueryLog (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec) →
-      OptionT (OracleComp (oSpec + unifSpec)) WitIn :=
-  fun x proof logP logV => E x.1 x.2 proof.2
+      OptionT (OracleComp ((oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec) + unifSpec))
+        WitIn :=
+  fun x proof logP logV => OptionT.mk <| liftPublicLeft (E x.1 x.2 proof.2
     (FullTranscript.ofMessagesChallenges proof.1 (proof.1.challengesOfLog x logV.snd))
-    logP logV.fst
+    logP logV.fst).run
 
 omit [DecidableEq StmtIn] [DecidableEq Salt] [∀ i, DecidableEq (pSpec.Message i)]
     [∀ i, Inhabited (pSpec.Challenge i)] in
@@ -803,11 +805,12 @@ private theorem toNARGExtractor_canonLog
     (cs : pSpec.ChallengesUpTo ⟨n, Nat.lt_succ_self n⟩)
     (logP : QueryLog (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec))
     (logV : QueryLog oSpec) :
-    toNARGExtractor E x proof logP
-      (QueryLog.inr (canonChalLog x proof.1 ⟨n, Nat.lt_succ_self n⟩ cs) ++ QueryLog.inl logV) =
-      E x.1 x.2 proof.2
+    (toNARGExtractor E x proof logP
+      (QueryLog.inr (canonChalLog x proof.1 ⟨n, Nat.lt_succ_self n⟩ cs) ++
+        QueryLog.inl logV)).run =
+      liftPublicLeft (E x.1 x.2 proof.2
         (FullTranscript.ofMessagesChallenges proof.1
-          (fun r => cs ⟨⟨r.1.1, r.1.2⟩, r.2⟩)) logP logV := by
+          (fun r => cs ⟨⟨r.1.1, r.1.2⟩, r.2⟩)) logP logV).run := by
   simp [toNARGExtractor, QueryLog.snd_append, QueryLog.fst_append,
     Messages.challengesOfLog_canonChalLog]
 
@@ -826,7 +829,6 @@ theorem knowledgeSoundnessExperiment_toNARG
     (fun a => (a.1.1, a.2)) <$>
       adaptiveNARGKnowledgeSoundnessExp init
         (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
-        (impl.addLift (QueryImpl.id' unifSpec))
         (toNARGKnowledgeVerifier V) (toNARGExtractor E) P := by
   have hDerive (x : StmtIn × Salt) (messages : pSpec.Messages) :
       messages.deriveTranscriptSR (oSpec := oSpec) x = (do
@@ -840,7 +842,8 @@ theorem knowledgeSoundnessExperiment_toNARG
     liftComp_bind, liftComp_pure,
     bind_assoc, pure_bind, simulateQ_bind, simulateQ_pure,
     toNARGExtractor_canonLog, map_bind, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
-    simulateQ_add_liftComp_sum_left, simulateQ_add_add_liftComp_left]
+    simulateQ_add_liftComp_sum_left, simulateQ_add_add_liftComp_left,
+    simulateQ_liftPublicLeft]
   simp [hDerive, QueryImpl.simulateQ_add_liftM_left,
     StateT.run'_eq, map_bind]
 end Verifier.StateRestoration
@@ -865,7 +868,6 @@ theorem knowledgeSoundnessFailureProb_toNARG
     knowledgeSoundnessFailureProb init impl E relIn relOut V P =
     Pr{let out ← (adaptiveNARGKnowledgeSoundnessExp init
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
-      (impl.addLift (QueryImpl.id' unifSpec))
       (toNARGKnowledgeVerifier V) (toNARGExtractor E) P)}[
         nargKSFailEvent {a | (a.1.1, a.2) ∈ relIn} relOut out] := by
   have h := congrArg (fun p => Pr{let out ← p}[nargKSFailEvent relIn relOut out])
@@ -894,7 +896,7 @@ theorem knowledgeSoundnessQueryBoundedWithExtractor_iff_adaptiveNARGKnowledgeSou
     knowledgeSoundnessQueryBoundedWithExtractor init impl relIn relOut V E counts t error ↔
     (toNARGKnowledgeVerifier V).adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor init
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
-      (impl.addLift (QueryImpl.id' unifSpec)) {a | (a.1.1, a.2) ∈ relIn} relOut
+      {a | (a.1.1, a.2) ∈ relIn} relOut
       (toNARGExtractor E) counts t error := by
   unfold knowledgeSoundnessQueryBoundedWithExtractor
     Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor AdaptiveGame.Bounded
@@ -909,7 +911,7 @@ theorem knowledgeSoundnessWithExtractor_iff_adaptiveNARGKnowledgeSoundness
     knowledgeSoundnessWithExtractor init impl relIn relOut V E error ↔
     (toNARGKnowledgeVerifier V).adaptiveNARGKnowledgeSoundnessWithExtractor init
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
-      (impl.addLift (QueryImpl.id' unifSpec)) {a | (a.1.1, a.2) ∈ relIn} relOut
+      {a | (a.1.1, a.2) ∈ relIn} relOut
       (toNARGExtractor E) error := by
   unfold knowledgeSoundnessWithExtractor Verifier.adaptiveNARGKnowledgeSoundnessWithExtractor
   simp only [knowledgeSoundnessFailureProb_toNARG]

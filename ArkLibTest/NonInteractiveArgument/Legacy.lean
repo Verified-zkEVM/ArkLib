@@ -31,12 +31,12 @@ def verifier : NonInteractiveVerifier Unit publicSpec Unit Unit where
     let _ ← liftM (publicSpec.query ())
     return ()
 
--- The standalone extractor's type grants sampling only, independently of the prover's access.
+-- An extractor without public queries lifts to the shared extractor type.
 def standalone : Unit → Unit → QueryLog publicSpec → QueryLog publicSpec →
     OptionT ProbComp (Fin 7) := fun _ _ trP trV =>
   if trP.length == 1 && trV.length == 1 then pure 1 else failure
 
--- Public query access is a separate, explicit choice of extractor interface and handler.
+-- A straight-line extractor queries the public oracles in the state the verifier leaves.
 def shared : Unit → Unit → QueryLog publicSpec → QueryLog publicSpec →
     OptionT (OracleComp (publicSpec + unifSpec)) (Fin 7) := fun _ _ trP trV => do
   if trP.length == 1 && trV.length == 1 then
@@ -49,16 +49,14 @@ end AdaptiveAccess
 def checkRuntime : IO Unit := do
   let (_, witness, accepted) ← OracleComp.runIO <|
     adaptiveNARGKnowledgeSoundnessExp (pure 0) AdaptiveAccess.publicImpl
-      ((QueryImpl.id' unifSpec).liftTarget (StateT ℕ ProbComp))
-      AdaptiveAccess.verifier AdaptiveAccess.standalone AdaptiveAccess.prover
+      AdaptiveAccess.verifier (liftNARGExtractor AdaptiveAccess.standalone) AdaptiveAccess.prover
   unless witness == some 1 && accepted == some () do
     throw (IO.userError "adaptive KS exposed private draws in the extractor's public logs")
   let (_, witness, _) ← OracleComp.runIO <|
     adaptiveNARGKnowledgeSoundnessExp (pure 0) AdaptiveAccess.publicImpl
-      (AdaptiveAccess.publicImpl.addLift (QueryImpl.id' unifSpec))
       AdaptiveAccess.verifier AdaptiveAccess.shared AdaptiveAccess.prover
   unless witness == some 3 do
-    throw (IO.userError "explicit shared-oracle extraction did not continue the verifier state")
+    throw (IO.userError "shared-oracle extraction did not continue the verifier state")
 
 end LegacyNARGCoinsTest
 

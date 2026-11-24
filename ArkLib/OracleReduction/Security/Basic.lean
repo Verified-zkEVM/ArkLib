@@ -283,6 +283,57 @@ def Straightline :=
   QueryLog oSpec → -- verifier's query log
   OptionT (OracleComp oSpec) WitIn -- input witness
 
+/-- A straight-line extractor with private coins. Like `Straightline`, it runs once, after the
+execution, and never receives the prover. It sees the input statement, the output witness, the
+transcript and both public query logs, and it queries the shared oracles `oSpec` through the
+game's handler, in the shared state that the execution leaves. It also samples private coins
+through `unifSpec`, which the game answers uniformly. A deterministic extractor is the case that
+never samples. -/
+abbrev StraightlineWithCoins :=
+  StmtIn → -- input statement
+  WitOut → -- output witness
+  FullTranscript pSpec → -- reduction transcript
+  QueryLog oSpec → -- prover's public query log
+  QueryLog oSpec → -- verifier's query log
+  OptionT (OracleComp (oSpec + unifSpec)) WitIn -- input witness
+
+variable {oSpec StmtIn WitIn WitOut pSpec}
+
+/-- A straight-line extractor that samples no coins is a straight-line extractor with coins. -/
+def Straightline.withCoins (E : Straightline oSpec StmtIn WitIn WitOut pSpec) :
+    StraightlineWithCoins oSpec StmtIn WitIn WitOut pSpec :=
+  fun x wOut tr logP logV => OptionT.mk (liftComp (E x wOut tr logP logV).run (oSpec + unifSpec))
+
+/-- A straight-line extractor that makes no shared-oracle queries, such as `NARG.Extractor` and
+`IP.SRExtractor`, is a straight-line extractor with coins. -/
+def StraightlineWithCoins.ofProbComp
+    (E : StmtIn → WitOut → FullTranscript pSpec → QueryLog oSpec → QueryLog oSpec →
+      OptionT ProbComp WitIn) :
+    StraightlineWithCoins oSpec StmtIn WitIn WitOut pSpec :=
+  fun x wOut tr logP logV => OptionT.mk (liftComp (E x wOut tr logP logV).run (oSpec + unifSpec))
+
+/-- In the game, a lifted coin-free extractor runs exactly as the original extractor on `impl`. -/
+@[simp] theorem Straightline.simulateQ_withCoins {σ : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (E : Straightline oSpec StmtIn WitIn WitOut pSpec) (x : StmtIn) (wOut : WitOut)
+    (tr : FullTranscript pSpec) (logP logV : QueryLog oSpec) :
+    simulateQ (impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp))
+      (E.withCoins x wOut tr logP logV).run = simulateQ impl (E x wOut tr logP logV).run := by
+  simp only [withCoins, OptionT.run_mk, QueryImpl.addLift_def,
+    QueryImpl.simulateQ_add_liftComp_left, QueryImpl.liftTarget_self]
+
+/-- In the game, a lifted extractor without shared-oracle queries runs on its own coins and
+leaves the shared state unchanged. -/
+@[simp] theorem StraightlineWithCoins.simulateQ_ofProbComp {σ : Type}
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (E : StmtIn → WitOut → FullTranscript pSpec → QueryLog oSpec → QueryLog oSpec →
+      OptionT ProbComp WitIn) (x : StmtIn) (wOut : WitOut)
+    (tr : FullTranscript pSpec) (logP logV : QueryLog oSpec) :
+    simulateQ (impl.addLift (QueryImpl.id' unifSpec) : QueryImpl _ (StateT σ ProbComp))
+      (ofProbComp E x wOut tr logP logV).run = liftM (E x wOut tr logP logV).run := by
+  simp only [ofProbComp, OptionT.run_mk, QueryImpl.addLift_def,
+    QueryImpl.simulateQ_add_liftComp_right, simulateQ_liftTarget, simulateQ_id']
+
 end Extractor
 
 namespace Verifier
@@ -470,11 +521,10 @@ The prover chooses a statement and NARG string, using public oracles and private
 Each notion has one experiment. Unbounded and query-bounded predicates differ only in which
 provers they quantify over; private draws are excluded from public-query budgets.
 
-The KS extractor receives the statement, NARG string, and both public-query logs. Its
-`extractorSpec` and handler specify its oracle permissions independently of the prover's
-private sampler. A lifted `ProbComp` handler gives standalone extraction; an explicitly shared
-handler can provide public-oracle access in the state left by verification. Neither the
-extractor nor its handler receives a prover handle. No running-time bound is imposed here.
+The KS extractor is straight-line: it receives the statement, NARG string, and both
+public-query logs, but no prover handle. It queries the public oracles through the game's
+handler, in the state left by verification, and samples private coins through `unifSpec`,
+which the game answers uniformly. No running-time bound is imposed here.
 -/
 section AdaptiveNARG
 
@@ -518,21 +568,21 @@ theorem adaptiveNARGSoundnessExp_eq_option
       (Fin.cons a.2 (fun i => i.elim0))).run (oSpec + unifSpec)))
     (fun a out => (a.1, out))
 
-/-- **[CO25, Definition 3.6, adapted]** Run the prover, verifier, and non-rewinding extractor.
+/-- **[CO25, Definition 3.6, adapted]** Run the prover, verifier, and straight-line extractor.
 The extractor receives separate public-query logs; private prover samples are excluded.
-`extractorImpl` explicitly controls whether extraction can use the public-oracle state.
-It does not receive the prover or its private samples. Extractor failure is retained as `none`. -/
+It queries the public oracles through `impl` in the state left by verification, and its private
+coins are uniform. It does not receive the prover or its private samples. Extractor failure is
+retained as `none`. -/
 def adaptiveNARGKnowledgeSoundnessExp
-    {ι κE : Type} {oSpec : OracleSpec ι}
-    {extractorSpec : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
+    {ι : Type} {oSpec : OracleSpec ι} {σ StmtIn Proof StmtOut WitIn : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
     (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
-      OptionT (OracleComp extractorSpec) WitIn)
+      OptionT (OracleComp (oSpec + unifSpec)) WitIn)
     (P : OracleComp (oSpec + unifSpec) (StmtIn × Proof)) :
     ProbComp (StmtIn × Option WitIn × Option StmtOut) :=
-  AdaptiveGame.runWithExtractor init (impl.addLift (QueryImpl.id' unifSpec)) extractorImpl
+  AdaptiveGame.runWithExtractor init (impl.addLift (QueryImpl.id' unifSpec))
+    (impl.addLift (QueryImpl.id' unifSpec))
     P.withQueryLog
     (fun a => liftComp (runVerifierWithLog verifier a.1.1 a.1.2) _)
     (fun a v => extractor a.1.1 a.1.2 a.2.publicQueries v.2)
@@ -540,15 +590,13 @@ def adaptiveNARGKnowledgeSoundnessExp
 
 /-- The adaptive NARG knowledge experiment in its logged prover/verifier form. -/
 theorem adaptiveNARGKnowledgeSoundnessExp_eq
-    {ι κE : Type} {oSpec : OracleSpec ι}
-    {extractorSpec : OracleSpec κE} {σ StmtIn Proof StmtOut WitIn : Type}
+    {ι : Type} {oSpec : OracleSpec ι} {σ StmtIn Proof StmtOut WitIn : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
     (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
     (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
-      OptionT (OracleComp extractorSpec) WitIn)
+      OptionT (OracleComp (oSpec + unifSpec)) WitIn)
     (P : OracleComp (oSpec + unifSpec) (StmtIn × Proof)) :
-    adaptiveNARGKnowledgeSoundnessExp init impl extractorImpl verifier extractor P = (do
+    adaptiveNARGKnowledgeSoundnessExp init impl verifier extractor P = (do
   StateT.run' (do
     let ⟨x, π, proverLog, stmtOut, trV⟩ ←
       simulateQ (impl.addLift (QueryImpl.id' unifSpec)) (do
@@ -556,17 +604,16 @@ theorem adaptiveNARGKnowledgeSoundnessExp_eq
         let ⟨stmtOut, trV⟩ ← liftComp (runVerifierWithLog verifier x π) _
         return (x, π, proverLog, stmtOut, trV))
     let trP := proverLog.publicQueries
-    let witIn ← simulateQ extractorImpl (extractor x π trP trV).run
+    let witIn ← simulateQ (impl.addLift (QueryImpl.id' unifSpec)) (extractor x π trP trV).run
     return (x, witIn, stmtOut)) (← init)) := by
   simp only [adaptiveNARGKnowledgeSoundnessExp, AdaptiveGame.runWithExtractor,
     AdaptiveGame.execute, simulateQ_bind, simulateQ_pure, pure_bind, bind_assoc]
 
 namespace Verifier
 
-variable {ι κE : Type} {oSpec : OracleSpec ι} {extractorSpec : OracleSpec κE}
+variable {ι : Type} {oSpec : OracleSpec ι}
   {σ StmtIn Proof StmtOut WitIn : Type}
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-  (extractorImpl : QueryImpl extractorSpec (StateT σ ProbComp))
   (verifier : NonInteractiveVerifier Proof oSpec StmtIn StmtOut)
 
 /-- **[CO25, Definition 3.5, adapted]** Adaptive soundness against every prover, with private
@@ -591,36 +638,35 @@ def adaptiveNARGSoundnessQueryBounded (langIn : Set StmtIn) (langOut : Set StmtO
 def adaptiveNARGKnowledgeSoundnessWithExtractor
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
     (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
-      OptionT (OracleComp extractorSpec) WitIn) (error : ENNReal) : Prop :=
+      OptionT (OracleComp (oSpec + unifSpec)) WitIn) (error : ENNReal) : Prop :=
   ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
     Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl
-          extractorImpl verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
+          verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
 
-/-- Adaptive knowledge soundness with one extractor for all provers. Extractor oracle permissions
-are supplied through `extractorImpl`; private prover sampling does not grant additional access.
+/-- Adaptive knowledge soundness with one extractor for all provers.
 The existential quantifier imposes no computability or resource bound. A classical witness
 selector can ignore the logs and return a witness for any true statement. See
 `Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for the
 fixed-statement interactive game. -/
 def adaptiveNARGKnowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut) (error : ENNReal) : Prop :=
-  ∃ extractor, adaptiveNARGKnowledgeSoundnessWithExtractor init impl extractorImpl verifier
+  ∃ extractor, adaptiveNARGKnowledgeSoundnessWithExtractor init impl verifier
     relIn langOut extractor error
 
-/-- **[CO25, Definition 3.6, adapted]** Knowledge soundness for a supplied non-rewinding extractor
+/-- **[CO25, Definition 3.6, adapted]** Knowledge soundness for a supplied straight-line extractor
 and a public-query budget. The extractor receives both public logs, excluding private draws. -/
 def adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
     (relIn : Set (StmtIn × WitIn)) (langOut : Set StmtOut)
     (extractor : StmtIn → Proof → QueryLog oSpec → QueryLog oSpec →
-      OptionT (OracleComp extractorSpec) WitIn)
+      OptionT (OracleComp (oSpec + unifSpec)) WitIn)
     (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
     (t : ℕ) (error : ENNReal) : Prop :=
   ∀ P : OracleComp (oSpec + unifSpec) (StmtIn × Proof),
     P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t →
       Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl
-            extractorImpl verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
+            verifier extractor P}[nargKSFailEvent relIn langOut out] ≤ error
 
-/-- One non-rewinding extractor for all public-query budgets. The extractor is chosen before
+/-- One straight-line extractor for all public-query budgets. The extractor is chosen before
 both the budget and the prover; private sampling is available in every execution.
 The budgets restrict the prover. As in `adaptiveNARGKnowledgeSoundness`, the existential
 extractor can select a witness by classical choice. -/
@@ -629,7 +675,7 @@ def adaptiveNARGKnowledgeSoundnessQueryBounded
     (queryBoundSelector : ι → Prop) [DecidablePred queryBoundSelector]
     (error : ℕ → ENNReal) : Prop :=
   ∃ extractor, ∀ t, adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
-    init impl extractorImpl verifier relIn langOut extractor queryBoundSelector t (error t)
+    init impl verifier relIn langOut extractor queryBoundSelector t (error t)
 
 end Verifier
 end AdaptiveNARG

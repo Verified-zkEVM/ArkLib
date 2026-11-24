@@ -130,7 +130,6 @@ def checkRuntime : IO Unit := do
   let (statement, witness, out) ← OracleComp.runIO <|
     adaptiveNARGKnowledgeSoundnessExp (pure table)
       (impl + srChallengeQueryImpl' (Statement := Unit × Bool) (pSpec := pSpec))
-      (impl.addLift (QueryImpl.id' unifSpec))
       (Verifier.StateRestoration.toNARGKnowledgeVerifier verifier)
       (Verifier.StateRestoration.toNARGExtractor extractor) prover
   unless originalWitness == some 9 && originalOut == some 9 && outputWitness == 11 &&

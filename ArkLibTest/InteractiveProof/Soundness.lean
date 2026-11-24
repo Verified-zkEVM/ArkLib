@@ -174,11 +174,11 @@ private def togglingOracle : QueryImpl coinSpec (StateT Bool ProbComp) := fun _ 
 
 private def privateSampler : QueryImpl coinSpec ProbComp := fun _ => pure false
 
-private def checkPublicLogs : Verifier.AdaptiveExtractor coinSpec coinSpec Bool Bool Bool (!p[]) :=
+private def checkPublicLogs : Extractor.StraightlineWithCoins coinSpec Bool Bool Bool (!p[]) :=
   fun _ _ _ trP trV => pure (trP.map (·.2) == [false] && trV.map (·.2) == [true])
 
 -- A prover with a custom coin sampler runs as a uniform-coin prover after compilation.
-example : bitVerifier.adaptiveKnowledgeSoundnessExp (pure false) togglingOracle bitImpl
+example : bitVerifier.adaptiveKnowledgeSoundnessExp (pure false) togglingOracle
     checkPublicLogs (mixedProver.normalizePrivateCoins privateSampler) =
       pure (false, some true, some false, false) := rfl
 
