@@ -85,7 +85,7 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLib/Interaction/Oracle/PhasedRun.lean` | premise-required (P1) | [`Core/Oracle/QueriesByMove.lean`](../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean), [`Core/Oracle/LoggedExecution.lean`](../../../ArkLib/Interaction/Core/Oracle/LoggedExecution.lean) | [port-logged-execution.md](port-logged-execution.md), section PhasedRun.lean; `port-oracle-access.md` (#1478), section PhasedRun |
 | `ArkLib/Interaction/Oracle/Prefix.lean` | ported (all 8 Prefix test rows) | `PartialTranscript` and `IsSent.mono` in [`Core/Oracle/SentOracles.lean`](../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean) | `port-oracle-access.md` (#1478), section Prefix |
 | `ArkLib/Interaction/Oracle/Protocol.lean` | ported | `OracleProtocol` in [`Core/Protocol.lean`](../../../ArkLib/Interaction/Core/Protocol.lean). Ownership comes from the signature instead of a role decoration | `port-oracle-access.md` (#1478), sections DecorationExample and MixedExample |
-| `ArkLib/Interaction/Oracle/Resource.lean` | unresolved: `OracleModel.satisfies_guarantee` has no core counterpart. From its test: 21 ported, 7 retired | `OracleBundle` in [`Core/OracleVerifier.lean`](../../../ArkLib/Interaction/Core/OracleVerifier.lean); `ArkLib/Interaction/Core/Oracle/BundleOps.lean` (#1476). Named contexts and property-symbol languages are retired | `port-oracle-bundles.md` (#1476), sections ResourceExample and Representation changes; [sumcheck.md](sumcheck.md), Remaining work |
+| `ArkLib/Interaction/Oracle/Resource.lean` | retired: `OracleModel.satisfies_guarantee` has no core counterpart, and no ported client needs one (see [the resolved degree guarantee](#resolved-the-degree-guarantee)). From its test: 21 ported, 7 retired | `OracleBundle` in [`Core/OracleVerifier.lean`](../../../ArkLib/Interaction/Core/OracleVerifier.lean); `ArkLib/Interaction/Core/Oracle/BundleOps.lean` (#1476). Named contexts and property-symbol languages are retired | `port-oracle-bundles.md` (#1476), sections ResourceExample and Representation changes; [sumcheck.md](sumcheck.md), Remaining work |
 | `ArkLib/Interaction/Oracle/RunSources.lean` | ported (all 12 RunSourcesExample rows) | `pathBundle` in [`Core/OracleVerifier.lean`](../../../ArkLib/Interaction/Core/OracleVerifier.lean); `ArkLib/Interaction/Core/Oracle/BundleOps.lean` (#1476) | `port-oracle-bundles.md` (#1476), section RunSourcesExample |
 | `ArkLib/Interaction/Oracle/Runtime.lean` | ported | A persistent runtime is any lawful interpreter of the logged run: `simulateQ_toLog_runWithQueriesByMove` in [`Core/Oracle/QueriesByMoveLaws.lean`](../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean) | [port-logged-execution.md](port-logged-execution.md), sections RuntimeExample.lean and Persistent-runtime tests |
 | `ArkLib/Interaction/Oracle/RuntimeSoundness.lean` | premise-required (P1): the informed prover's reveal now precedes the dummy request | [`Core/Security/CompositionSoundness.lean`](../../../ArkLib/Interaction/Core/Security/CompositionSoundness.lean) | PR #1485; the port comments in [the core runtime soundness test](../../../ArkLibTest/Interaction/Core/Security/RuntimeSoundness.lean) |
@@ -115,7 +115,7 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLib/Interaction/Oracle/WorldSegments.lean` | retired | None: world segments exist only for mid-run verifier queries. Per-move logs come from [`Core/Oracle/QueriesByMove.lean`](../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean) | No module ledger and no old test imports it directly. [D6](../interaction-rebuild/D6-oracle-access.md), Alternatives ("world segments") |
 | `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryCompleteness.lean` | ported: 5 ported | `C/IntervalCompleteness` | [sumcheck.md](sumcheck.md), production inventory |
 | `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean` | premise-required: 7 ported, 6 premise-required | `C/Behavior`, `C/FoldComposition`, `C/Interval`, `C/IntervalCompleteness` | [sumcheck.md](sumcheck.md), production inventory |
-| `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean` | unresolved: `degreeModel` (L40) and `degreeGuarantee` (L53). Also 20 ported, 4 premise-required, 1 retired | `C/Domain`, `C/Indexed` | [sumcheck.md](sumcheck.md), production inventory and Remaining work |
+| `ArkLib/ProofSystem/Sumcheck/Interaction/Closing.lean` | premise-required: 20 ported, 4 premise-required, 3 retired (including `degreeModel` (L40) and `degreeGuarantee` (L53), see [the resolved degree guarantee](#resolved-the-degree-guarantee)) | `C/Domain`, `C/Indexed` | [sumcheck.md](sumcheck.md), production inventory and Remaining work |
 | `ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean` | premise-required: 10 premise-required, 4 retired | `C/BehaviorComposition`, `C/Indexed` | [sumcheck.md](sumcheck.md), production inventory |
 | `ArkLib/ProofSystem/Sumcheck/Interaction/Computable.lean` | premise-required: 2 ported, 5 premise-required | `C/Domain`, `C/InterpretedExecution`, `C/Types` | [sumcheck.md](sumcheck.md), production inventory |
 | `ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean` | premise-required: 5 premise-required | `C/ComputableInterval` | [sumcheck.md](sumcheck.md), production inventory |
@@ -195,8 +195,9 @@ runtime mass as a fault: it keeps missing mass distinct from rejection, as row T
 
 ## Unresolved rows and options
 
-Five items stay open. The first three are restrictions of the core port that the ledgers record
-without tying them to one old declaration. The last two are old declarations with no core target.
+Four items stay open. The first three are restrictions of the core port that the ledgers record
+without tying them to one old declaration. The fourth is an old declaration with no core target.
+A fifth item, the degree guarantee, is resolved; the last subsection records why.
 
 **1. The full-log runner cannot return large query indices.**
 [departures.md](departures.md) lists this as an unresolved entry 18, and `port-oracle-access.md`
@@ -264,22 +265,20 @@ split after the first stage. Options:
 
 Decision: open.
 
-**5. `degreeModel` and `degreeGuarantee`.**
-Old `Sumcheck/Interaction/Closing.lean` lines 40 and 53 use the generic
-`OracleModel.satisfies_guarantee` interface of old `Oracle/Resource.lean`, which has no core
-counterpart. [sumcheck.md](sumcheck.md) and [departures.md](departures.md) (entry 22) record it as
-a separate gap. `port-oracle-bundles.md` (#1476) retires the property-symbol languages of
-`Resource.lean` and uses carrier refinements for actual bounds instead: its rows R23 and R24 keep
-the true and false degree facts about the same polynomial. What is missing is a core interface
-that promises a property of every admissible realization of an oracle bundle. Options:
+### Resolved: the degree guarantee
 
-- implement a core counterpart of `OracleModel.satisfies_guarantee` over `OracleBundle`;
-- accept carrier refinements as the replacement and document it in sumcheck.md;
-- retire both declarations, citing the degree bound carried by the message type
-  `R⦃≤ deg⦄[X]` (whether every client of the two declarations is covered by that bound is not
-  verified).
-
-Decision: open.
+Old `Sumcheck/Interaction/Closing.lean` lines 40 and 53 define `degreeModel` and
+`degreeGuarantee` through the generic `OracleModel.satisfies_guarantee` interface of old
+`Oracle/Resource.lean`. Their only client is `message_degree` (line 56), which states
+`p.val.degree ≤ deg` for a message `p`. `Sumcheck.Core.message_degree` in
+[`Core/Indexed.lean`](../../../ArkLib/ProofSystem/Sumcheck/Core/Indexed.lean) proves the same
+statement directly from the bound that the message type `R⦃≤ deg⦄[X]` carries, and the old
+sumcheck clients' degree facts use it. `port-oracle-bundles.md` (#1476) removes the
+property-symbol languages of `Resource.lean` and keeps degree facts as carrier guarantees in its
+rows R23 and R24. The two declarations are therefore retired, and the core gets no counterpart of
+`OracleModel.satisfies_guarantee`. [sumcheck.md](sumcheck.md), [departures.md](departures.md) and
+[IMPLEMENTATION-NOTES.md](../interaction-rebuild/IMPLEMENTATION-NOTES.md) record the same
+disposition.
 
 ## The deletion step
 
