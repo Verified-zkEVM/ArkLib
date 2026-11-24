@@ -29,7 +29,7 @@ open PFunctor FreeM TwoParty.Lens OracleComp
 /-- The prover uses only the shared oracle interface, and cannot query the challenge service. -/
 abbrev Prover {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
     {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : FreeM P PUnit.{u + 1})
-    (Out : PathAlong l s → Type u) := Focal l (OracleComp ambient) s Out
+    (Out : Transcript l s → Type u) := Focal l (OracleComp ambient) s Out
 
 /-- Interpret each prover slot through an oracle handler, node by node and at the leaf.
 
@@ -38,7 +38,7 @@ leaf equations are available to importing modules. -/
 def Prover.simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
     (impl : QueryImpl ambient m) : {s : FreeM P PUnit.{u + 1}} →
-    {Out : PathAlong l s → Type u} → Prover l ambient s Out → Focal l m s Out
+    {Out : Transcript l s → Type u} → Prover l ambient s Out → Focal l m s Out
   | .pure _, _, p => simulateQ impl p
   | .liftBind a _, _, p =>
     Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$> simulateQ impl p
@@ -47,7 +47,7 @@ def Prover.simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
 theorem Prover.simulate_done {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
     (impl : QueryImpl ambient m)
-    {Out : PathAlong l (Pure.pure (f := FreeM P) PUnit.unit) → Type u}
+    {Out : Transcript l (Pure.pure (f := FreeM P) PUnit.unit) → Type u}
     (p : Prover l ambient (Pure.pure (f := FreeM P) PUnit.unit) Out) :
     Prover.simulate impl p = (simulateQ impl p : m (Out ⟨⟩)) := rfl
 
@@ -55,7 +55,7 @@ theorem Prover.simulate_done {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePol
 theorem Prover.simulate_node {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m]
     (impl : QueryImpl ambient m) (a : P.A) (rest : P.B a → FreeM P PUnit.{u + 1})
-    {Out : PathAlong l (.liftBind a rest) → Type u}
+    {Out : Transcript l (.liftBind a rest) → Type u}
     (p : Prover l ambient (.liftBind a rest) Out) :
     Prover.simulate impl p =
       Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$>
@@ -66,7 +66,7 @@ theorem Prover.simulate_simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rol
     {κ κ' : Type u} {spec : OracleSpec.{u, u} κ} {spec' : OracleSpec.{u, u} κ'}
     {n : Type u → Type u} [Monad n] [LawfulMonad n]
     (F : QueryImpl spec' n) (G : QueryImpl spec (OracleComp spec')) :
-    (s : FreeM P PUnit.{u + 1}) → {Out : PathAlong l s → Type u} →
+    (s : FreeM P PUnit.{u + 1}) → {Out : Transcript l s → Type u} →
     (p : Prover l spec s Out) →
     Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
   | .pure _, _, p => by
@@ -263,7 +263,7 @@ theorem toCounterpart_publicCoinOracleSampler {m : Type u → Type u} [Monad m] 
 /-- Replay follows recorded plain challenges and executes no draw, even a failing one. -/
 theorem replay_publicCoinSampler {m : Type u → Type u} [Monad m] [LawfulMonad m]
     (s : Protocol.{u}) (draw : (c : ChallengeNode plainSig s) → m (challengeSpec plainSig s c))
-    (tr : PathAlong plainSig s) :
+    (tr : Transcript plainSig s) :
     (publicCoinSampler plainSig s draw).replay tr = pure ⟨⟩ := by
   induction s using FreeM.rec with
   | pure a => rfl
@@ -277,7 +277,7 @@ theorem replay_publicCoinSampler {m : Type u → Type u} [Monad m] [LawfulMonad 
 theorem replay_publicCoinOracleSampler {m : Type u → Type u} [Monad m] [LawfulMonad m]
     (s : OracleProtocol.{u})
     (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c))
-    (tr : PathAlong oracleSig s) :
+    (tr : Transcript oracleSig s) :
     (publicCoinSampler oracleSig s draw).replay tr = pure ⟨⟩ := by
   induction s using FreeM.rec with
   | pure a => rfl
@@ -302,7 +302,7 @@ structure Verifier {ι : Type uι} (ambient : OracleSpec.{uι, u} ι)
 output statement type is indexed by the shape path. -/
 structure Reduction {ι : Type u} (ambient : OracleSpec.{u, u} ι) (s : Protocol.{u})
     (StmtIn : Type uS) (WitIn : Type uW) (StmtOut : Path s → Type u)
-    (Out : PathAlong plainSig s → Type u) where
+    (Out : Transcript plainSig s → Type u) where
   /-- Honest focal strategy, including its terminal action. -/
   prover : StmtIn → WitIn → Prover plainSig ambient s Out
   /-- Passive terminal decision. -/
