@@ -64,7 +64,7 @@ def runWithProverSetup (V : OracleVerifier ambient s S T inputs outputs) (stmt :
     (data : inputs.Data) (setup : OracleComp ambient (Prover oracleSig ambient s Out)) :
     OracleComp (ambient + challengeSpec oracleSig s) (QueriesByMove V Out) := do
   let (prover, queries) ← simulateQ
-    (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup.withQueryLog
+    ((QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft) setup.withQueryLog
   let result ← V.runWithQueriesByMove stmt data prover
   pure (result.withProverSetup queries)
 
@@ -94,7 +94,7 @@ theorem map_fst_runWithProverSetup (V : OracleVerifier ambient s S T inputs outp
         (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup
       V.run stmt data prover) := by
   let lift : QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)) :=
-    fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))
+    (QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft
   trans simulateQ lift setup.withQueryLog >>= fun r => V.run stmt data r.1
   · simp only [runWithProverSetup, _root_.map_bind, LawfulApplicative.map_pure]
     refine bind_congr fun r => ?_
@@ -104,6 +104,7 @@ theorem map_fst_runWithProverSetup (V : OracleVerifier ambient s S T inputs outp
     have erased : Prod.fst <$> setup.withQueryLog = setup :=
       loggingOracle.fst_map_run_simulateQ setup
     rw [erased]
+    rfl
 
 /-- Interpreting the queries by move of a run commutes with forgetting it to the full query logs.
 This includes stateful runtimes. -/

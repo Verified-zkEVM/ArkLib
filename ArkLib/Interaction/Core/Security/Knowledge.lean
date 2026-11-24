@@ -70,11 +70,11 @@ def Verifier.runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s :
   let full := ambient + challengeSpec plainSig s
   let ⟨⟨tr, out, _⟩, proveLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging
     (TwoParty.Lens.run s
-      (prover.simulate (fun q => liftM (full.query (.inl q))))
-      (sampler plainSig s (fun c => liftM (full.query (.inr c)))))).run
+      (prover.simulate ((QueryImpl.id' full).restrictLeft))
+      (sampler plainSig s ((QueryImpl.id' full).restrictRight)))).run
   let ⟨verdict, verifyLog⟩ ← (simulateQ
     (QueryImpl.withLogging
-      ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full)))
+      (((QueryImpl.id' full).restrictLeft) : QueryImpl ambient (OracleComp full)))
     (V.decide stmt (Transcript.path tr) (toPlainView s tr)).run).run
   pure (⟨tr, out, verdict⟩, proveLog.fst, verifyLog)
 
@@ -97,7 +97,7 @@ theorem Verifier.runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec 
     intro a
     rw [bind_logged _ _ (fun verdict =>
       pure (⟨a.1.1, a.1.2.1, verdict⟩ : Outcome plainSig s Out T))]
-  rw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
+  erw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
     (fun result : (tr : Transcript plainSig s) × Out tr × PUnit => do
     let verdict ← simulateQ
       ((fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))) :
@@ -532,8 +532,8 @@ end OracleVerifier
 
 namespace Extractor
 
-/-- Straight-line extraction from an oracle protocol sees the full payload-bearing transcript.
-The output witness type `Wout tr` is indexed by that transcript `tr`. -/
+/-- Straight-line extraction from an oracle protocol sees the full transcript, oracle messages
+included. The output witness type `Wout tr` is indexed by that transcript `tr`. -/
 abbrev OracleStraightLine {ι : Type} {S : Type uS} (ambient : OracleSpec ι)
     (s : OracleProtocol.{0, q})
     (Witness : S → Type) (Wout : Transcript oracleSig s → Type) :=

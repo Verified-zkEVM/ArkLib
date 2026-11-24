@@ -89,11 +89,18 @@ srcDir = "scripts"
 root = "HachiRuntime"
 allowNonModules = true
 
-# Compiled checks for CompPoly-backed messages through the shared native Sumcheck executor.
+# Compiled checks for CompPoly-backed messages through the computable interaction-core Sumcheck.
 [[lean_exe]]
 name = "sumcheck-runtime"
 srcDir = "scripts"
 root = "SumcheckRuntime"
+allowNonModules = true
+
+# The same fixtures as a library, so the compile-time test in ArkLibTest can import them.
+[[lean_lib]]
+name = "SumcheckRuntime"
+srcDir = "scripts"
+roots = ["SumcheckRuntime"]
 allowNonModules = true
 
 # Compiled edge cases and exact instruction counts for the named measured FRI extractor.

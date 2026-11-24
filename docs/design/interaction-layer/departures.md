@@ -39,8 +39,11 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 | 19 | Writer instrumentation of the core runner (`TwoParty.Lens.run`) produces one entry per move, with the partial transcript, the querier and the queries. Erasing the entries gives the aggregate logs exactly. The code is in `Oracle/QueriesByMove.lean`, `Oracle/QueriesByMoveLaws.lean` and `Oracle/SentOracles.lean` | ported |
 | 19 | P1 excludes intermediate verifier queries and the moves they were assigned to; prover moves and their partial transcripts remain | excluded by P1 |
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general bundle API | equivalent: `OracleBundle` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
+| 18 | Agreement preserves path-dependent output statements, oracle indices, carriers and interfaces, general bundle inputs, and statement-dependent RBR knowledge relations | equivalent: F7 and 3A use the unchanged owner interfaces; see the [Agreement inventory](sumcheck.md#agreement-universes-and-parent-limits) |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
 | 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+| 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
+| 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
 The [bundle and node universe port table](port-bundle-universes.md) records the frozen
 R26, R27 and decoration canaries closed by entry 18.
@@ -59,6 +62,57 @@ are in [`legacy-embedding.md`](legacy-embedding.md#departures).
 Entries 15 and 16 are the two hypotheses that a client of the round-by-round transfers must
 check. Entry 15 applies to the direction into the interaction layer, and entry 16 to the
 direction out of it.
+
+## Sumcheck: entry 22
+
+Entry 22 covers Sumcheck in the interaction layer. Its two departures are described in
+[`sumcheck.md`](sumcheck.md#departures).
+
+| Entry | Departure |
+| --- | --- |
+| [22](sumcheck.md#the-transferred-completeness-is-in-its-own-module) | The transferred completeness is in its own module, `LegacyCompleteness`. |
+| [22](sumcheck.md#full-run-and-interval-verifier-interfaces) | Full-run verifiers keep their interface; interval verifiers add arbitrary endpoints and public interval composition. |
+
+The second departure distinguishes the unchanged full-run interface from the arbitrary interval
+interface. The [exact-row disposition](sumcheck.md#migration-disposition) now names
+interaction-layer interval, projection and append targets. The generic
+`OracleModel.satisfies_guarantee` interface has no Core counterpart and is tracked as a separate
+gap. Both full-run and suffix soundness use the generic round-by-round-to-soundness implication
+over indexed domains, including lists with repetitions.
+
+Entry [21](../interaction-rebuild/IMPLEMENTATION-NOTES.md#21-round-by-round-soundness-implies-soundness-for-lawful-distribution-monads)
+records the generic soundness implication. The
+[soundness disposition record](soundness-implication-disposition.md) compares every ported frozen
+statement and test, explains prefix-indexed freshness, and links the classical specialization laws.
+The implication applies to lawful distribution monads, including optional computations.
+
+The interval implementation retains arbitrary `start` and `count` rather than replacing them
+with the full run. Its boundary, projection and composition equations preserve original behavior
+and prover outputs. P1 and P2 explain changed decision timing and public abort shape.
+
+## Sumcheck ports: entry 23
+
+| Entry | Departure |
+| --- | --- |
+| [23](../interaction-rebuild/IMPLEMENTATION-NOTES.md#23-sumcheck-ports) | Sumcheck ports: arbitrary interval completeness, interaction-layer suffix soundness, public interval append, projected behavior, generic message interpretation and routing over `Nat`. |
+
+## Computable Sumcheck: entry 24
+
+This entry is in
+[`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime).
+
+| Entry | Departure |
+| --- | --- |
+| [24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime) | Computable Sumcheck runtime: the run correspondence renames challenge queries, inputs are CompPoly polynomials, and runtime rows 3, 4 and 6 require P1/P2; row 7 checks the zero-round interval verifier, and the new row 8 checks one CompPoly interval round after a challenge prefix. |
+
+## Interaction-layer migration: entry 20
+
+Entry 18 records the core's universe constraints, entry 26 knowledge composition, and entry 20
+state restoration. Under approved premise P2, challenges and oracle messages never select shape.
+
+| Entry | Status and scope |
+| --- | --- |
+| [20](../interaction-rebuild/IMPLEMENTATION-NOTES.md#20-state-restoration-under-p2-authored-output-selection) | Premise-required: frozen challenge-selected output carriers are retired by P2. A prover-authored Boolean selects the exact `Fin 8`/`Fin 9` statement carriers instead. The [state-restoration disposition record](state-restoration-disposition.md) classifies each frozen production declaration and fixture assertion, including equivalent laws, P1/P2 restrictions and retired mechanisms. It gives the proved support-to-replay bridge and the zero-root/zero-leaf budget specialization. Frozen output oracles stay `Fin 8`; additional fixtures exercise path-dependent output oracle families. Unmeasured restoration predicates and bounds have independent input, intermediate and output witness universes; deterministic verdicts and shared extraction laws accept general move universes. Round samplers, probabilistic outputs and measured stage programs retain the exact small-carrier constraints recorded in entry 20. |
 
 ## The oracle correspondence gap and its resolution
 
@@ -112,3 +166,15 @@ the passive schedule. There is no separate step executor. Instrumented strategie
 share `OracleVerifier.executeWith`. Erasure follows from a general law about running
 instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
 verifier actions and move assignments that P1 excludes.
+
+## Knowledge composition and measured extraction
+
+The [assertion disposition record](knowledge-composition-disposition.md) maps the frozen
+production laws and acceptance assertions to the composition and measured-extraction port. It
+records the public prover selector required by P2, the explicit zero root and leaf budgets that
+recover the frozen bound, and VCVio's small-carrier restriction on measured programs. Pure
+backward maps accept large leaf and seam witnesses directly. The shared full-prefix sampler
+retains earlier public challenges and prover messages in both distributions and local errors.
+Oracle verifiers draw from the verifier view, which erases oracle messages; their errors keep the
+full prefix. P1 retires only challenge selection that depends on oracle messages and effectful
+receiver actions. The inventory marks the already constant KC-065 schedule equivalent.
