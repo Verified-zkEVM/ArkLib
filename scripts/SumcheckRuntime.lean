@@ -200,6 +200,36 @@ def quadraticZeroObserve : Option (F × F × F × F) × List Entry :=
         (intervalHonestProver (⇑three) quadratic quadratic_degree 0
           (Sumcheck.Core.intervalInitial 2 0 (by decide) ⟨16, ![4, 4]⟩)))).run []
 
+/-- The repeated domain `[0, 0]` as an indexed domain: each point counts once per index. -/
+def zeroZero : Fin 2 → F := fun _ => 0
+
+/-- The constant-one polynomial in three variables has degree zero in every variable. -/
+theorem one_degree : ∀ j, (1 : CPoly.CMvPolynomial 3 F).degreeOf j ≤ 0 := by
+  intro j
+  rw [congrFun (CPoly.degreeOf_equiv (S := F) (p := (1 : CPoly.CMvPolynomial 3 F))) j,
+    CPoly.map_one]
+  simp
+
+/-- The input of the interval runs: the constant-one polynomial in three variables. -/
+def oneInput : Input F 0 3 := ⟨1, one_degree⟩
+
+/-- The statement after the prefix `[7]` with incoming target `target`. -/
+def afterPrefix (target : F) : Sumcheck.Core.RoundStatement F 3 ⟨1, by decide⟩ :=
+  ⟨target, ![7]⟩
+
+/-- Run `Computable.intervalVerifier` for one round from start `1` on the constant-one input over
+`[0, 0]`, against the computable honest interval prover, and answer the draw with `3`. Read the
+endpoint target, both prefix entries and the retained input at the prefix extended by `0`. -/
+def intervalObserve (target : F) : Option (F × F × F × F) × List Entry :=
+  (simulateQ (QueryImpl.add record (draw 3 1))
+    ((fun obs => obs.2.2.map fun v =>
+      (v.1.target, v.1.challenges ⟨0, by decide⟩, v.1.challenges ⟨1, by decide⟩,
+        (v.2 ()).val.eval (Fin.snoc v.1.challenges 0))) <$>
+      (intervalVerifier zeroZero events 1 1 (by decide)).run (afterPrefix target)
+        (fun _ => oneInput)
+        (intervalHonestProver zeroZero 1 one_degree 1
+          (Sumcheck.Core.intervalInitial 1 1 (by decide) (afterPrefix target))))).run []
+
 /-- The total sum `117`, first-round value `109`, and final value `101`, reduced modulo `17`,
 are calculated independently of the projection implementation. -/
 def quadraticChecks : IO Unit := do
@@ -215,6 +245,9 @@ def quadraticChecks : IO Unit := do
     fun _ => quadraticZeroObserve == (some (16, 4, 4, 16), [])
   check "zero-round prover output retains the computational input"
     fun _ => quadraticZeroProverObserve == ((16, 4, 4, 16), [])
+  check "one interval round after prefix [7] accepts target 4 and rejects target 3 after one draw"
+    fun _ => intervalObserve 4 == (some (2, 7, 3, 1), [.inr 0]) &&
+      intervalObserve 3 == (none, [.inr 0])
 
 end SumcheckRuntime
 

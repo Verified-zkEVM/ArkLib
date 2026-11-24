@@ -158,6 +158,12 @@ The interval proofs retain the parent's full-run statements. `IntervalTest.nonze
 `nonzero_rejects`, `zero_count` and `zero_run` instantiate boundary execution at `Nat` with a
 repeated domain and explicit deterministic draws. `RoutingTest` also uses `Nat`; its algebraic
 export and routing laws require only a commutative semiring.
+`Sumcheck.Core.ComputableTest.suffix_soundness_one_seventeenth` applies `interval_soundness` to the
+actual computable suffix run over `ZMod 17` with two variables, start one, one round, degree one
+and domain `[0, 0]`. The original polynomial is zero, the incoming target is two, and the prover
+sends `X + 1` and outputs the challenge it receives. `shiftStart_false` proves the starting claim
+false, `shift_sum` shows that the sum check passes, and `shift_endpoint_iff` shows that the
+endpoint relation holds only at challenge `-1`. The bound is `1/17`.
 `ComputableIntervalTest.computedRun` executes the coefficient-array honest prover after
 prefix `![7]`, with a repeated domain and deterministic challenge `3`, and checks
 `some (0, 7, 3, 29)`. `ComputableIntervalTest.oneRun` runs the same fixture on the constant-one
@@ -256,7 +262,9 @@ the individual degree bound. `toOracleStatement` reads an input as the mathemati
 - **Executable definitions.** `Computable.protocol`, `Computable.verifier`, `Computable.observe`
   and the honest prover `Computable.honestProver` are computable. The honest prover computes each
   round message with `Impl.Computable.projectedMessage` and updates the target by Horner
-  evaluation.
+  evaluation. `foldRounds` computes each message once and passes it to both the send and the
+  successor function, so the update evaluates the message already sent instead of projecting
+  again.
 - **Run correspondence.** `run_eq_interpret` holds at every message carrier `M` with a reading
   `f : M → R⦃≤ deg⦄[X]` that agrees with `eval`. Renaming the challenge queries of a run of
   `verifierOn` at `M` (`renameQueries`) and mapping its outcome gives the run of
@@ -272,7 +280,8 @@ the individual degree bound. `toOracleStatement` reads an input as the mathemati
   (`projectedMessage_toMessage`, `projectedMessage_evaluate`).
 - **Security.** `Computable.support_completeness` accepts a true output on every supported
   honest run, before any oracle distribution is chosen. `Computable.perfectCompleteness` follows
-  for every challenge implementation. `Computable.soundness` holds for uniform challenges, with
+  for a stateful ambient handler and every `ProbComp` challenge handler indexed by challenge
+  node. `Computable.soundness` holds for uniform challenges, with
   the error of `indexedVerifier_soundness_nsmul`. The relations and languages are those of
   `Spec.relationRound` on the interpreted input; the proofs transport the mathematical core
   results through `run_eq_interpret`.
@@ -293,9 +302,12 @@ events `.inl i` and challenge draws `.inr j` in execution order.
 | 5 | Direct evaluation of the quadratic and its first projected message. | Cube sum `15`, value `16` at `(4, 4)`, first message `7` at `4`. |
 | 6 | The computable honest prover on the quadratic over `{0, 1, 2}`, challenges `4`. | Verdict `(16, 4, 4, 16)`, log `[c0, c1]`. |
 | 7 | The zero-round interval verifier from the final round state `⟨16, ![4, 4]⟩`. | Verifier verdict `some (16, 4, 4, 16)`, empty trace. The prover-only outcome remains an additional check. |
+| 8 | `Computable.intervalVerifier` for one round on the constant-one input in three variables over the domain `[0, 0]`, after the prefix `[7]`, challenge `3`. | Target `4`: verdict `some (2, 7, 3, 1)`, log `[c0]`. Target `3`: rejection, log `[c0]`. |
 
-Rows 3, 4 and 6 require P1/P2; row 7 preserves the frozen verifier assertion
-([entry 24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime)).
+Row 1 is a compile-time check. The executable emits eight checks: rows 2 to 8 and the separate
+zero-round prover check. Rows 3, 4 and 6 require P1/P2; row 7 preserves the frozen verifier
+assertion ([entry 24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime)).
+Row 8 is new.
 
 ## Tests
 
@@ -320,7 +332,7 @@ two-coordinate indexed sum. Axiom checks permit only `propext`, `Classical.choic
 | `Soundness` | Soundness against any one-round prover; a soundness bound over `ZMod 17`; exact probabilities over `ZMod 5`; the adaptive message's endpoint and hit facts; the exclusion of `X ^ 2` from the degree-one carrier. |
 | `RoundByRound` | Clients of the round-by-round, knowledge and completeness transfers. |
 | `Rounds` | Two- and three-round runs: challenge draws in round order, the accepted claim, a wrong target that still runs every round and rejects. Two honest rounds on the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` with the challenges `3` and then `5`: exactly two challenge queries, in round order, and the accepted claim `⟨14, ![3, 5]⟩` with the input polynomial as output oracle. The honest messages on that input, `5 + 8 X` and `1 + 2 c + 3 X + 4 c X`, their sums, and the first-round relation transport. |
-| `Computable` | The honest message is the CompPoly projection; the interpreted honest prover; the run correspondence; the challenge transport round trip and uniformity; support completeness without an oracle distribution, and completeness and soundness over `ZMod 5`; computability of the executable definitions and axiom guards. |
+| `Computable` | The honest message is the CompPoly projection; the interpreted honest prover; the run correspondence; the challenge transport round trip and uniformity; support completeness without an oracle distribution, and completeness and soundness over `ZMod 5`; the suffix soundness bound `1/17` over `ZMod 17` from a proved false starting claim, with a private output that depends on the challenge; the equality of `Spec.polynomialFamily` and `Core.polynomialFamily` by `rfl`; computability of the executable definitions and axiom guards. |
 | `Effects` | A prover with ambient effects before each message and after the last challenge: the run executes them in protocol order, and a recording handler observes the order. An accepted claim that is not in the final relation. A claim whose first check fails still runs both rounds and rejects, and the decision log holds only the first round's check queries (`decide_log_badFirst` for every completed run whose first message fails its check, at every round count; `runWithLog_wrong` for the logged execution of that prover). The round message's oracle interface. |
 
 ## Historical full-run limitations
@@ -788,8 +800,21 @@ checks of the prover output; they do not replace the verifier assertion.
 `Computable.intervalVerifier` retains the CompPoly input itself. Its
 `interval_run_eq_interpret` is the exact oracle-program bridge to the parent's mathematical
 `intervalVerifier`, including dependent private outputs. `interval_support_completeness`,
-`interval_perfectCompleteness` and `interval_measureCompleteness` accept every bounded interval;
-`interval_soundness` has the suffix endpoint and error `count * (deg / |R|)`. List and injective
+`interval_perfectCompleteness` and `interval_measureCompleteness` accept every interval with
+`start + count ≤ n`, under one stateful handler for the ambient and challenge queries.
+`interval_soundness` has the suffix endpoint `start + count = n` and error
+`count * (deg / |R|)`: with fresh uniform challenges, it bounds the probability of an accepted
+output that satisfies the endpoint relation. The bound is the per-round agreement bound with the
+final evaluation check of Thaler, *Proofs, Arguments, and Zero-Knowledge*, Proposition 4.1, for
+the protocol of Lund, Fortnow, Karloff and Nisan (1992).
+
+`interval_run_eq_interpret` transports the prover's dependent output through a map `g` that the
+caller chooses. A caller keeps the original transcript and its private output by mapping them to a
+sigma pair, as `interval_soundness` does. `full_run_interval` and
+`verifier_run_eq_indexedVerifier` keep the transcript and private output directly and convert the
+verdict's statement. All of these equalities compare runs after the verifier's bundle queries are
+answered. A statement about the raw decision queries, their order or their charges needs its own
+law. The LogUp port of #1341 and resource bounds based on routing need such a law. List and injective
 corollaries preserve the parent's domain specializations. The proofs reuse the parent's
 interval invariants and security bounds. The parent’s more general original-data executor
 contracts remain the targets of the frozen production rows below; these computational-input

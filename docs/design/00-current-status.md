@@ -190,8 +190,10 @@ mathematical polynomial interpretation.
 
 `sumcheck-runtime` runs this computable core instance with fixed test challenges. It checks
 private memory and effect order, including both challenge draws after a failed first check,
-the honest quadratic run, and zero rounds from a final round state with no draws. The seven
-migration rows and their expected values are listed in
+the honest quadratic run, zero rounds from a final round state with no draws, and one round of
+the CompPoly interval verifier after a challenge prefix. The executable emits eight checks, and
+the degree bound of the quadratic input is a compile-time proof. The eight runtime rows and their
+expected values are listed in
 [`interaction-layer/sumcheck.md`](interaction-layer/sumcheck.md#runtime-checks).
 
 `Impl/Projection` constructs each honest round message directly from a CompPoly multivariate

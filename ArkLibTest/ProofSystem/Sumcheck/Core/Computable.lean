@@ -12,8 +12,9 @@ import SumcheckRuntime
 
 The computable protocol, verifier, verdict reader and honest prover are executable; the
 interpreted computable honest prover is the interaction-layer honest prover; completeness and
-soundness hold at a concrete field, with uniform challenges for soundness. The compiled runs are
-in `scripts/SumcheckRuntime.lean`.
+soundness hold at a concrete field, with uniform challenges for soundness. A suffix soundness
+bound of `1/17` over `ZMod 17` comes with a proved false starting claim. The compiled runs are in
+`scripts/SumcheckRuntime.lean`.
 -/
 
 namespace Sumcheck.Core.ComputableTest
@@ -135,6 +136,92 @@ theorem zero_prover_output :
   change ((16, 4, 4, SumcheckRuntime.quadratic.eval ![4, 4]), []) = _
   rw [quadratic_final_value]
 
+/-- The compatibility verifier's input family `Spec.polynomialFamily` and the family
+`Core.polynomialFamily` of the indexed and interval verifiers are equal by `rfl`. -/
+theorem spec_polynomialFamily_eq (R : Type) [CommSemiring R] (n deg : ℕ) :
+    Sumcheck.Spec.polynomialFamily R n deg = Sumcheck.Core.polynomialFamily R n deg := rfl
+
+/-! ## A suffix soundness bound below one over `ZMod 17`
+
+The actual computable suffix run has two variables, start one, one round, degree one and the
+repeated domain `[0, 0]`. The original polynomial is zero and the incoming target is two, so the
+starting claim is false. The prover sends `X + 1` and outputs the challenge it receives, so its
+private output type depends on the transcript. The message sums to two over `[0, 0]`, so the sum
+check passes at every challenge `r` and the run returns the endpoint claim `r + 1`. That claim is
+true only at `r = -1`, and `interval_soundness` bounds the probability by `1/17`. -/
+
+section SuffixSoundness
+
+open SumcheckRuntime (zeroZero affine original)
+
+/-- The false starting claim: after the prefix `[0]`, the zero polynomial has remaining sum two
+over `[0, 0]`. -/
+def shiftStart : RoundStatement SumcheckRuntime.F 2 ⟨1, by decide⟩ := ⟨2, ![0]⟩
+
+/-- The private output records the actual challenge, so its type depends on the transcript. -/
+abbrev ChallengeOut (tr : Transcript oracleSig (Computable.protocol SumcheckRuntime.F 1 1)) :
+    Type := {r : SumcheckRuntime.F // Interpreted.challenge tr = r}
+
+/-- The prover sends `X + 1` and outputs the challenge it receives. -/
+def shiftProver {ι : Type} (ambient : OracleSpec ι) :
+    Prover oracleSig ambient (Computable.protocol SumcheckRuntime.F 1 1) ChallengeOut :=
+  consProver (affine 1 1) fun chal => (pure ⟨chal, rfl⟩ : OracleComp ambient _)
+
+/-- The starting claim is false: the zero polynomial sums to zero, not two. -/
+theorem shiftStart_false :
+    ¬ indexedRelation zeroZero _ shiftStart
+      (Computable.toPolynomial (original ()).val (original ()).property) := by
+  simp only [indexedRelation, roundSum, Nat.reduceAdd, Fin.mk_one, Fin.isValue,
+    Fin.coe_ofNat_eq_mod, Nat.reduceMod, Nat.add_one_sub_one, shiftStart, Fin.cast_refl,
+    CompTriple.comp_eq, Computable.toPolynomial, Impl.Computable.toRestrictDegree, original,
+    CPoly.map_zero, map_zero, Finset.sum_const_zero]
+  decide
+
+/-- The message `X + 1` sums to the target two over `[0, 0]`, so the sum check passes. -/
+theorem shift_sum :
+    (∑ a : Fin 2, evaluate SumcheckRuntime.F 1 (affine 1 1) (zeroZero a)) = 2 := by
+  decide +kernel
+
+/-- Horner evaluation of the message `X + 1` at every challenge `r` gives `r + 1`. -/
+theorem shift_eval :
+    ∀ r : SumcheckRuntime.F, evaluate SumcheckRuntime.F 1 (affine 1 1) r = r + 1 := by
+  decide +kernel
+
+/-- The endpoint claim after challenge `r` is true for the zero polynomial exactly when
+`r = -1`. -/
+theorem shift_endpoint_iff (r : SumcheckRuntime.F) :
+    indexedRelation zeroZero (Fin.last 2)
+      ⟨evaluate SumcheckRuntime.F 1 (affine 1 1) r, Fin.snoc shiftStart.challenges r⟩
+      (Computable.toPolynomial (original ()).val (original ()).property) ↔ r = -1 := by
+  rw [indexedRelation_last, shift_eval]
+  simp only [Nat.reduceAdd, Fin.reduceLast, Fin.coe_ofNat_eq_mod, Nat.reduceMod, Fin.mk_one,
+    Fin.isValue, Computable.toPolynomial, Impl.Computable.toRestrictDegree, original,
+    CPoly.map_zero, map_zero]
+  constructor
+  · intro h; linear_combination -h
+  · intro h; rw [h]; ring
+
+/-- From the false claim, the actual computable suffix run with uniform challenges returns a
+true endpoint claim with probability at most `1/17`, for a prover whose private output type
+depends on the challenge. -/
+theorem suffix_soundness_one_seventeenth {ι : Type} (ambient : OracleSpec ι) {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp)) :
+    Pr{let obs ← (experiment init impl
+      (@challengeQueryImpl _ oracleSig (Computable.protocol SumcheckRuntime.F 1 1)
+        (Interpreted.challengeSampleable SumcheckRuntime.F _ _ 1))
+      ((Computable.intervalVerifier zeroZero ambient 1 1 (by decide)).run shiftStart original
+        (shiftProver ambient)))}[
+        ∃ t, obs.2.2 = some t ∧
+          indexedRelation zeroZero _ t.1
+            (Computable.toPolynomial (t.2 ()).val (t.2 ()).property)] ≤ 1 / 17 := by
+  have h := Computable.interval_soundness zeroZero ambient init impl 1 1 rfl shiftStart original
+    (shiftProver ambient) shiftStart_false
+  refine h.trans (le_of_eq ?_)
+  rw [ZMod.card, Nat.cast_one, one_mul, Nat.cast_one, ENNReal.coe_div (by norm_num)]
+  norm_num
+
+end SuffixSoundness
+
 end Sumcheck.Core.ComputableTest
 
 namespace Sumcheck.Core.ComputableTest.Universes
@@ -199,7 +286,11 @@ run_cmd do
       ``Sumcheck.Core.Computable.interval_measureCompleteness,
       ``Sumcheck.Core.Computable.interval_soundness,
       ``Sumcheck.Core.verifier_run_full_interval, ``Sumcheck.Core.Computable.full_run_interval,
-      ``Sumcheck.Core.ComputableTest.zero_interval_verdict] do
+      ``Sumcheck.Core.ComputableTest.zero_interval_verdict,
+      ``Sumcheck.Core.ComputableTest.spec_polynomialFamily_eq,
+      ``Sumcheck.Core.ComputableTest.shiftStart_false, ``Sumcheck.Core.ComputableTest.shift_sum,
+      ``Sumcheck.Core.ComputableTest.shift_eval, ``Sumcheck.Core.ComputableTest.shift_endpoint_iff,
+      ``Sumcheck.Core.ComputableTest.suffix_soundness_one_seventeenth] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

@@ -30,7 +30,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
   round messages and the honest multivariate prover in the computable interaction-core Sumcheck,
   including continuation effects, rejection after every round has run, evaluation of the original
-  input and zero remaining rounds.
+  input, zero remaining rounds and one interval round after a challenge prefix. It emits eight
+  checks; the degree bound of its quadratic input is a compile-time proof.
 - **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
   nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
   lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`

@@ -507,12 +507,15 @@ round runs and draws its challenge, and the verdict is the legacy verdict of the
 transcript, with the input polynomial as output oracle. -/
 theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
     (msg : (k : ℕ) → State (k + 1) → R⦃≤ deg⦄[X])
-    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) (st : State n)
+    (next : (k : ℕ) → State (k + 1) → R⦃≤ deg⦄[X] → R → State k) (finish : State 0 → Out)
+    (st : State n)
     (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStatement R n deg i) :
     (verifier R deg n D ambient).run stmt oStmt (foldRounds msg next finish n st) =
-      (fun chals => (⟨foldTranscript msg next n st chals, finish (foldState next n st chals),
+      (fun chals => (⟨foldTranscript msg (fun k st => next k st (msg k st)) n st chals,
+        finish (foldState (fun k st => next k st (msg k st)) n st chals),
         (legacyVerdict R deg n D ambient stmt
-          (decodeTranscript n (foldTranscript msg next n st chals))).map fun t => (t, oStmt)⟩ :
+          (decodeTranscript n (foldTranscript msg (fun k st => next k st (msg k st)) n st
+            chals))).map fun t => (t, oStmt)⟩ :
           Outcome oracleSig (protocol R deg n) (fun _ => Out)
             (fun _ =>
               Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>

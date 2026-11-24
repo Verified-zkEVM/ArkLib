@@ -29,7 +29,7 @@ variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (amb : OracleSpec �
 /-- The one-round prover that commits to `q` and outputs `finish c` on the challenge `c`. -/
 def oneRound {Out : Type} (q : R⦃≤ deg⦄[X]) (finish : R → Out) (c₀ : R) :
     Prover oracleSig amb (protocol R deg 1) (fun _ => Out) :=
-  foldRounds (State := fun _ => R) (fun _ _ => q) (fun _ _ c => c) finish 1 c₀
+  foldRounds (State := fun _ => R) (fun _ _ => q) (fun _ _ _ c => c) finish 1 c₀
 
 /-- The one-round transcript of the message `q` and the challenge `c`. -/
 def tr1 (q : R⦃≤ deg⦄[X]) (c : R) : Transcript oracleSig (protocol R deg 1) :=

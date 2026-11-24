@@ -199,7 +199,9 @@ def outcomeOfSpec {s : OracleProtocol} {Out : Transcript oracleSig s → Type}
   ⟨obs.1, obs.2.1, obs.2.2.map (fun t => (RoundStatement.ofSpec t.1, t.2))⟩
 
 /-- Every compatibility run is the interaction-layer indexed run after converting the verdict
-statement. -/
+statement. The equality keeps the transcript and private output directly. It compares runs after
+the verifier's bundle queries are answered. A statement about the raw decision queries, their
+order or their charges needs its own law. -/
 theorem verifier_run_eq_indexedVerifier [DecidableEq R] [SampleableType R]
     (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
     (stmt : Spec.StatementRound R n 0) (data : ∀ i, PolynomialData R n deg i)

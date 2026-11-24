@@ -242,15 +242,17 @@ theorem run_transport {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
   rw [run_transportFocal, transportDraw_draw]
   rfl
 
-/-- Interpreting a fold of pure rounds maps its messages and its output. -/
+/-- Interpreting a fold of pure rounds maps its messages and its output. The interpreted fold's
+successor receives the interpreted message, so it reads the original message `msg k st`. -/
 theorem transportFocal_foldRounds {m : Type → Type} [Monad m] [LawfulMonad m]
     {State : ℕ → Type} {Out Out' : Type} (interpret : M → N) (o : Out → Out')
     (msg : (k : ℕ) → State (k + 1) → M)
-    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) :
+    (next : (k : ℕ) → State (k + 1) → M → R → State k) (finish : State 0 → Out) :
     (k : ℕ) → (st : State k) →
     transportFocal (evaluateN := evaluateN) interpret k (fun _ => o)
         (foldRounds (m := m) (eval := evaluate) msg next finish k st) =
-      foldRounds (fun k st => interpret (msg k st)) next (fun st => o (finish st)) k st
+      foldRounds (fun k st => interpret (msg k st)) (fun k st _ => next k st (msg k st))
+        (fun st => o (finish st)) k st
   | 0, st => LawfulApplicative.map_pure (f := m) o (finish st)
   | k + 1, st => by
     refine (LawfulApplicative.map_pure _ _).trans ?_

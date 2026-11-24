@@ -37,7 +37,7 @@ noncomputable def intervalNext (k : ℕ) (st : IntervalClaim R n stop (k + 1)) (
 noncomputable def intervalProver {m : Type → Type} [Monad m] (k : ℕ)
     (st : IntervalClaim R n stop k) :
     Focal oracleSig m (protocol R deg k) (fun _ => RoundStatement R n stop) :=
-  foldRounds (intervalMessage D p) (intervalNext D p) IntervalClaim.finish k st
+  foldRounds (intervalMessage D p) (fun k st _ => intervalNext D p k st) IntervalClaim.finish k st
 
 /-- Every honest round accepts and preserves the indexed remaining-sum claim. -/
 theorem interval_honest_step (k : ℕ) (st : IntervalClaim R n stop (k + 1))
