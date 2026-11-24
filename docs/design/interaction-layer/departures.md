@@ -103,7 +103,7 @@ This entry is in
 
 | Entry | Departure |
 | --- | --- |
-| [24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime) | Computable Sumcheck runtime: the run correspondence renames challenge queries, inputs are CompPoly polynomials, and runtime rows 3, 4 and 6 require P1/P2; row 7 checks the zero-round interval verifier. |
+| [24](../interaction-rebuild/IMPLEMENTATION-NOTES.md#24-computable-sumcheck-runtime) | Computable Sumcheck runtime: the run correspondence renames challenge queries, inputs are CompPoly polynomials, and runtime rows 3, 4 and 6 require P1/P2; row 7 checks the zero-round interval verifier, and the new row 8 checks one CompPoly interval round after a challenge prefix. |
 
 ## Interaction-layer migration: entry 20
 

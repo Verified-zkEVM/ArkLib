@@ -50,37 +50,45 @@ variable {State State' : ℕ → Type} {Out : Type}
 
 /-- A dependent fold of pure rounds over the number of remaining rounds.
 
-At `k + 1` remaining rounds the state determines the message, and each challenge determines the
-state for the remaining `k` rounds. After the last round `finish` produces the pure output. -/
+At `k + 1` remaining rounds the state determines the message `q := msg k st`. The fold computes
+`q` once, sends it, and passes it with each challenge to `next`, which returns the state for the
+remaining `k` rounds. A successor that needs the message, such as one that evaluates it at the
+challenge, reads `q` instead of recomputing it. After the last round `finish` produces the pure
+output. -/
 def foldRounds (msg : (k : ℕ) → State (k + 1) → M)
-    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) :
+    (next : (k : ℕ) → State (k + 1) → M → R → State k) (finish : State 0 → Out) :
     (k : ℕ) → State k → Focal oracleSig m (protocolOn R M eval k) (fun _ => Out)
   | 0, st => (pure (finish st) : m Out)
-  | k + 1, st => consProver (msg k st) fun chal => foldRounds msg next finish k (next k st chal)
+  | k + 1, st =>
+    let q := msg k st
+    consProver q fun chal => foldRounds msg next finish k (next k st q chal)
 
 /-- Folds whose states correspond under `φ`, with the same messages, transitions and outputs,
-are the same prover. -/
+are the same prover. The transitions need to agree only on the message that the fold sends. -/
 theorem foldRounds_map (msg : (k : ℕ) → State (k + 1) → M)
-    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out)
-    (msg' : (k : ℕ) → State' (k + 1) → M) (next' : (k : ℕ) → State' (k + 1) → R → State' k)
+    (next : (k : ℕ) → State (k + 1) → M → R → State k) (finish : State 0 → Out)
+    (msg' : (k : ℕ) → State' (k + 1) → M)
+    (next' : (k : ℕ) → State' (k + 1) → M → R → State' k)
     (finish' : State' 0 → Out) (φ : (k : ℕ) → State k → State' k)
     (hmsg : ∀ k st, msg' k (φ (k + 1) st) = msg k st)
-    (hnext : ∀ k st chal, next' k (φ (k + 1) st) chal = φ k (next k st chal))
+    (hnext : ∀ k st chal,
+      next' k (φ (k + 1) st) (msg k st) chal = φ k (next k st (msg k st) chal))
     (hfinish : ∀ st, finish' (φ 0 st) = finish st) :
     (k : ℕ) → (st : State k) →
     foldRounds (m := m) (eval := eval) msg' next' finish' k (φ k st) =
       foldRounds msg next finish k st
   | 0, st => congrArg (pure (f := m)) (hfinish st)
   | k + 1, st => by
-    rw [foldRounds, foldRounds]
-    simp only [hmsg, hnext, foldRounds_map msg next finish msg' next' finish' φ hmsg hnext
-      hfinish k]
+    simp only [foldRounds, hmsg, hnext, foldRounds_map msg next finish msg' next' finish' φ hmsg
+      hnext hfinish k]
 
 end Fold
 
 variable {State : ℕ → Type}
 
-/-- The transcript produced by a fold of pure rounds on the given challenges. -/
+/-- The transcript produced by a fold of pure rounds on the given challenges. Here `next` is
+the state step after the message is known; for a fold `foldRounds msg next` it is
+`fun k st => next k st (msg k st)`. -/
 def foldTranscript (msg : (k : ℕ) → State (k + 1) → M)
     (next : (k : ℕ) → State (k + 1) → R → State k) :
     (k : ℕ) → State k → (Fin k → R) → Transcript oracleSig (protocolOn R M eval k)
@@ -175,14 +183,15 @@ theorem run_consProver {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
 pure functions of the drawn challenges. -/
 theorem run_foldRounds {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type}
     (msg : (k : ℕ) → State (k + 1) → M)
-    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) (k : ℕ)
+    (next : (k : ℕ) → State (k + 1) → M → R → State k) (finish : State 0 → Out) (k : ℕ)
     (st : State k)
     (draw : (c : ChallengeNode oracleSig (protocolOn R M eval k)) →
       m (challengeSpec oracleSig _ c)) :
     Interaction.TwoParty.Lens.run (protocolOn R M eval k) (foldRounds msg next finish k st)
         (sampler oracleSig (protocolOn R M eval k) draw) =
-      (fun chals => ⟨foldTranscript msg next k st chals,
-        finish (foldState next k st chals), ⟨⟩⟩) <$> drawChallenges k draw := by
+      (fun chals => ⟨foldTranscript msg (fun k st => next k st (msg k st)) k st chals,
+        finish (foldState (fun k st => next k st (msg k st)) k st chals), ⟨⟩⟩) <$>
+        drawChallenges k draw := by
   induction k with
   | zero =>
     refine (run_done (l := oracleSig) (OutP := fun _ => Out) (OutC := fun _ => PUnit)
@@ -203,7 +212,7 @@ theorem run_foldRounds {m : Type → Type} [Monad m] [LawfulMonad m] {Out : Type
 theorem simulate_foldRounds {ι : Type} {ambient : OracleSpec ι} {m : Type → Type} [Monad m]
     [LawfulMonad m] (impl : QueryImpl ambient m) {Out : Type}
     (msg : (k : ℕ) → State (k + 1) → M)
-    (next : (k : ℕ) → State (k + 1) → R → State k) (finish : State 0 → Out) (k : ℕ)
+    (next : (k : ℕ) → State (k + 1) → M → R → State k) (finish : State 0 → Out) (k : ℕ)
     (st : State k) :
     Prover.simulate impl (foldRounds (m := OracleComp ambient) (eval := eval)
         msg next finish k st) =

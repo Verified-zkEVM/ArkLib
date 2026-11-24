@@ -40,7 +40,8 @@ noncomputable def badFirst {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X]) :
 noncomputable def badFirstProver {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X])
     (stmt : Spec.StatementRound F 2 0) (oStmt : ∀ i, Spec.OracleStatement F 2 1 i) :
     Prover oracleSig ambient (protocol F 1 2) (fun _ => HonestOutput F 1 2) :=
-  foldRounds (badFirst D bad) (nextState (badFirst D bad)) finishState 2 (initState stmt oStmt)
+  foldRounds (badFirst D bad) (fun k st _ => nextState (badFirst D bad) k st) finishState 2
+    (initState stmt oStmt)
 
 /-- A first message whose sum over `D` misses the target: the execution still draws both
 challenges and records both rounds, and the verdict rejects. -/

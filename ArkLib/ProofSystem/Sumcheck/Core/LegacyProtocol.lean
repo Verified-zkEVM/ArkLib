@@ -78,7 +78,8 @@ def initState (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStat
 noncomputable def honestProver {m : Type → Type} [Monad m]
     (stmt : Spec.StatementRound R n 0) (oStmt : ∀ i, Spec.OracleStatement R n deg i) :
     Focal oracleSig m (protocol R deg n) (fun _ => HonestOutput R deg n) :=
-  foldRounds (honestMessage D) (nextState (honestMessage D)) finishState n (initState stmt oStmt)
+  foldRounds (honestMessage D) (fun k st _ => nextState (honestMessage D) k st) finishState n
+    (initState stmt oStmt)
 
 /-- The honest transcript on the given challenges. -/
 noncomputable def honestTranscript (stmt : Spec.StatementRound R n 0)

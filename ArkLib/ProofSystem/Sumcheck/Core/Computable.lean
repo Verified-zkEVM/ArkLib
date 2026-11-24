@@ -33,12 +33,34 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
   `toMessage`; it is used only in proofs.
 * `Computable.interpretProver_honestProver` identifies the interpreted computable honest prover
   with `Sumcheck.Core.honestProver` on the interpreted input.
+* `Computable.intervalVerifier` runs the rounds `start, ..., start + count - 1` on CompPoly
+  messages and inputs. Completeness holds for every `start + count ≤ n`
+  (`interval_perfectCompleteness`), under a joint stateful handler for the ambient and challenge
+  queries. Soundness holds for suffixes, `start + count = n` (`interval_soundness`): with fresh
+  uniform challenges, the experiment counts accepted outputs that satisfy the endpoint relation,
+  and their probability is at most `count * (deg / |R|)`.
 * `Computable.support_completeness` and `Computable.perfectCompleteness` specialize
   interaction-layer interval honesty at endpoints `0, n`, preserving the honest prover's output
-  statement.
+  statement. Full-run completeness takes a stateful ambient handler and a separate `ProbComp`
+  challenge handler indexed by challenge node.
   `Computable.soundness` specializes `interval_soundness` through `full_run_interval` and keeps
   its original sum error. Challenge implementations move between carriers by
   `Interpreted.transportDraw`, which keeps uniform sampling.
+* The bound is the per-round agreement bound with the final evaluation check of
+  [Thaler2023], Proposition 4.1, for the protocol of [LFKN92]. The CompPoly results transport
+  the mathematical bound through the evaluation and run equalities.
+* `interval_run_eq_interpret` transports the prover's dependent output through a map `g` that
+  the caller chooses; a sigma pair keeps the original transcript with its private output.
+  `full_run_interval` and `verifier_run_eq_indexedVerifier` keep the transcript and private
+  output directly and convert the verdict's statement. These equalities compare runs after the
+  verifier's bundle queries are answered. A statement about the raw decision queries, their
+  order or their charges needs its own law.
+
+## References
+
+* [Lund, C., Fortnow, L., Karloff, H., and Nisan, N., *Algebraic methods for interactive
+    proof systems*][LFKN92]
+* [Thaler, J., *Proofs, Arguments, and Zero-Knowledge*][Thaler2023]
 -/
 
 @[expose] public section
@@ -432,16 +454,17 @@ variable [DecidableEq R] [Nontrivial R] {d : ℕ} (D : Fin d ↪ R) (x : Input R
 def honestMessage (k : ℕ) (st : RoundState R n (k + 1)) : Message R deg :=
   Sumcheck.Impl.Computable.projectedMessage D st.index st.statement.challenges x.val x.property
 
-/-- The statement update: the new target is the round message at the challenge, by Horner
-evaluation, and the challenge is appended to the history. -/
-def nextState (k : ℕ) (st : RoundState R n (k + 1)) (chal : R) : RoundState R n k where
+/-- The statement update: the new target is the sent round message `q` at the challenge, by
+Horner evaluation, and the challenge is appended to the history. `foldRounds` passes the message
+it has already sent, so each round computes its projection once. -/
+def nextState (k : ℕ) (st : RoundState R n (k + 1)) (q : Message R deg) (chal : R) :
+    RoundState R n k where
   round := st.index.succ
   round_add := by
     have := st.round_add
     change st.round.val + 1 + k = n
     omega
-  statement := ⟨evaluate R deg (honestMessage D x k st) chal,
-    Fin.snoc st.statement.challenges chal⟩
+  statement := ⟨evaluate R deg q chal, Fin.snoc st.statement.challenges chal⟩
 
 /-- Read the output from the state after the last round; the output oracle is the input. -/
 def finishState (st : RoundState R n 0) : HonestOutput R deg n :=
@@ -452,7 +475,7 @@ def finishState (st : RoundState R n 0) : HonestOutput R deg n :=
 `pure`. -/
 def honestFrom {m : Type → Type} [Monad m] (k : ℕ) (st : RoundState R n k) :
     Focal oracleSig m (protocol R deg k) (fun _ => HonestOutput R deg n) :=
-  foldRounds (honestMessage D x) (nextState D x) (finishState x) k st
+  foldRounds (honestMessage D x) nextState (finishState x) k st
 
 /-- The computable honest Sumcheck prover on the input statement and polynomial. -/
 def honestProver {m : Type → Type} [Monad m] (stmt : Spec.StatementRound R n 0)
@@ -492,13 +515,15 @@ on the interpreted input. -/
 theorem interpretProver_honestFrom {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
     (st : RoundState R n k) :
     interpretProver (fun _ => honestOutputMap) (honestFrom (m := m) D x k st) =
-      foldRounds (Core.honestMessage D) (Core.nextState (Core.honestMessage D)) Core.finishState
-        k (liftState x st) := by
+      foldRounds (Core.honestMessage D) (fun k st _ => Core.nextState (Core.honestMessage D) k st)
+        Core.finishState k (liftState x st) := by
   refine (Interpreted.transportFocal_foldRounds _ _ _ _ _ k st).trans
-    (foldRounds_map (fun k st => toMessage R deg (honestMessage D x k st)) (nextState D x)
+    (foldRounds_map (fun k st => toMessage R deg (honestMessage D x k st))
+      (fun k st _ => nextState k st (honestMessage D x k st))
       (fun st => honestOutputMap (finishState x st)) (Core.honestMessage D)
-      (Core.nextState (Core.honestMessage D)) Core.finishState (fun _ st => liftState x st)
-      (fun k st => ?_) (fun k st chal => ?_) (fun st => rfl) k st).symm
+      (fun k st _ => Core.nextState (Core.honestMessage D) k st) Core.finishState
+      (fun _ st => liftState x st) (fun k st => ?_) (fun k st chal => ?_) (fun st => rfl) k
+      st).symm
   · exact (Sumcheck.Impl.Computable.projectedMessage_toMessage D _ _ x.val x.property).symm
   · change (⟨_, _, ⟨(Core.honestMessage D k (liftState x st)).val.eval chal, _⟩, _⟩ :
         Core.RoundState R deg n k) = ⟨_, _, ⟨evaluate R deg (honestMessage D x k st) chal, _⟩, _⟩
@@ -597,11 +622,15 @@ theorem support_completeness (stmt : Spec.StatementRound R n 0)
 
 /-- Perfect completeness of the computable Sumcheck.
 
-For every ambient state, ambient oracle implementation and challenge implementation, the
-computable honest prover on an input whose interpretation is in the round-`0` relation is
-accepted with probability one; the accepted statement is the prover's output statement and lies
-in the final relation. This follows from `support_completeness`, since every result supported by
-the interpreted experiment is supported by the original run. -/
+The statement quantifies over every initial ambient state, stateful ambient oracle
+implementation and challenge implementation. Under each of them, the verifier accepts the
+computable honest prover with probability one on an input whose interpretation is in the
+round-`0` relation. The accepted statement is the prover's output statement and lies in the final
+relation. The challenge implementation is a separate `ProbComp`
+handler indexed by challenge node, so it does not read the ambient state. The interval result
+`interval_perfectCompleteness` allows a joint stateful handler instead. This follows from
+`support_completeness`, since every result supported by the interpreted experiment is supported by
+the original run. -/
 theorem perfectCompleteness {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig (protocol R deg n)) ProbComp) :
@@ -643,7 +672,12 @@ def intervalVerifier (start count : ℕ) (bound : start + count ≤ n) :
     IntervalClaim.finish count).decide (intervalInitial start count bound stmt)
   outputMap _ _ _ := OracleMap.fst _ _
 
-/-- Reading computational messages and inputs gives the parent's actual interval run. -/
+/-- Reading computational messages and inputs gives the parent's actual interval run.
+
+The prover's dependent output moves through the caller's map `g`. A caller that needs the
+original transcript and its private output maps them to a sigma pair, as `interval_soundness`
+does. The equality compares runs after the verifier's bundle queries are answered. A statement
+about the raw decision queries, their order or their charges needs its own law. -/
 theorem interval_run_eq_interpret [BEq R] [LawfulBEq R]
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, Input R deg n)
@@ -712,8 +746,9 @@ theorem interval_support_completeness (start count : ℕ) (bound : start + count
     rw [hstmt]
     exact ht
 
-/-- Honest intervals accept a true endpoint with probability one under any shared-state
-handler, including adaptive challenge handlers. -/
+/-- Honest intervals accept a true endpoint with probability one for every
+`start + count ≤ n`. One stateful handler answers both the ambient and the challenge queries, so
+the challenges may depend on the shared state and on earlier answers. -/
 theorem interval_perfectCompleteness {σ : Type} (init : ProbComp σ)
     (start count : ℕ) (bound : start + count ≤ n)
     (impl : QueryImpl (ambient + challengeSpec oracleSig (protocol R deg count))
@@ -750,7 +785,13 @@ theorem interval_measureCompleteness {σ : Type} (init : ProbComp σ)
 
 omit [Nontrivial R] in
 /-- A false computational input reaches a true suffix output with probability at most
-`count * (deg / |R|)`, for every dependent private output and arbitrary prover. -/
+`count * (deg / |R|)`, for every dependent private output and arbitrary prover.
+
+The interval is a suffix, `start + count = n`. The experiment draws fresh uniform challenges and
+counts accepted outputs that satisfy the endpoint relation on the retained input. The bound is the
+per-round agreement bound with the final evaluation check of [Thaler2023], Proposition 4.1. The
+proof transports `execute_soundness` through `interval_run_eq_interpret`, mapping the private
+output to a sigma pair with its transcript. -/
 theorem interval_soundness [SampleableType R] [Fintype R] [IsDomain R]
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (start count : ℕ) (finish : start + count = n)
@@ -872,7 +913,10 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
 
 /-- The full CompPoly run is the interaction-layer zero-start interval after converting its verdict.
-Every private output, prover effect and original computational input is retained. -/
+Every private output, prover effect and original computational input is retained: the equality
+keeps the transcript and private output directly and converts only the verdict's statement. It
+compares runs after the verifier's bundle queries are answered. A statement about the raw
+decision queries, their order or their charges needs its own law. -/
 theorem full_run_interval (stmt : Spec.StatementRound R n 0)
     (data : ∀ _ : Unit, Input R deg n)
     {Out : Transcript oracleSig (protocol R deg n) → Type}

@@ -25,17 +25,18 @@ def intervalHonestMessage (k : ℕ) (st : IntervalClaim R n stop (k + 1)) :
     Impl.Representation.Message R deg :=
   projectedMessage D st.index st.statement.challenges poly hpoly
 
-/-- The computed successor stores the actual challenge and the computed message's value at it. -/
-def intervalHonestNext (k : ℕ) (st : IntervalClaim R n stop (k + 1)) (r : R) :
-    IntervalClaim R n stop k :=
-  st.next (Impl.Representation.evaluate R deg (intervalHonestMessage D poly hpoly k st) r) r
+/-- The computed successor stores the actual challenge and the sent message's value at it.
+`foldRounds` passes the message it has already sent, so each round computes its projection
+once. -/
+def intervalHonestNext (k : ℕ) (st : IntervalClaim R n stop (k + 1))
+    (q : Impl.Representation.Message R deg) (r : R) : IntervalClaim R n stop k :=
+  st.next (Impl.Representation.evaluate R deg q r) r
 
 /-- Send computed projections and store each actual challenge in the continuation. -/
 def intervalHonestProver {m : Type → Type} [Monad m] (k : ℕ) (st : IntervalClaim R n stop k) :
     Focal oracleSig m (Interpreted.protocol R (Impl.Representation.Message R deg)
       (Impl.Representation.evaluate R deg) k) (fun _ => RoundStatement R n stop) :=
-  foldRounds (intervalHonestMessage D poly hpoly) (intervalHonestNext D poly hpoly)
-    IntervalClaim.finish k st
+  foldRounds (intervalHonestMessage D poly hpoly) intervalHonestNext IntervalClaim.finish k st
 
 /-- Interpreting the whole computed honest prover gives exactly the honest polynomial fold. -/
 theorem interpret_intervalHonestProver {m : Type → Type} [Monad m] [LawfulMonad m]
@@ -45,7 +46,8 @@ theorem interpret_intervalHonestProver {m : Type → Type} [Monad m] [LawfulMona
       intervalProver D (toPolynomial poly hpoly) (m := m) k st := by
   refine (Interpreted.transportFocal_foldRounds _ id _ _ _ k st).trans ?_
   refine foldRounds_map (intervalMessage D (toPolynomial poly hpoly))
-    (intervalNext D (toPolynomial poly hpoly)) IntervalClaim.finish _ _ _ (fun _ st => st)
+    (fun k st _ => intervalNext D (toPolynomial poly hpoly) k st) IntervalClaim.finish _ _ _
+    (fun _ st => st)
     (fun k st => projectedMessage_toMessage D _ _ poly hpoly) (fun k st r => ?_)
     (fun _ => rfl) k st
   exact congrArg (fun v => st.next v r) (projectedMessage_evaluate D _ _ poly hpoly r)

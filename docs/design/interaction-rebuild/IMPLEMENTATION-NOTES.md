@@ -830,6 +830,10 @@ rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4 and 6 are premise-required und
   - Row 7 runs the zero-round interval verifier from the final round state. Its optional verdict
     is `some (16, 4, 4, 16)` and its trace is empty. The prover-only outcome is an additional
     check.
+  - Row 8 is new. It runs `Computable.intervalVerifier` for one round after the prefix `[7]` on
+    the constant-one input. Target `4` gives `some (2, 7, 3, 1)` and target `3` gives rejection,
+    both after the one draw `[c0]`. The executable emits eight checks: rows 2 to 8 and the
+    prover-only outcome. Row 1 is a compile-time proof.
 
 **Why.** The interaction core has one protocol per message carrier and a passive verifier, and
 names challenges by node occurrences. The restated rows check the same values and effect order

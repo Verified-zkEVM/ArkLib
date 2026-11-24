@@ -71,8 +71,8 @@ example {d : ℕ} (D : Fin d ↪ F) (n : ℕ) (stmt : Spec.StatementRound F (n +
     (oStmt : ∀ i, Spec.OracleStatement F (n + 1) 1 i) {m : Type → Type} [Monad m] :
     honestProver (m := m) D stmt oStmt =
       pure ⟨honestMessage D n (initState stmt oStmt), pure fun chal =>
-        foldRounds (honestMessage D) (nextState (honestMessage D)) finishState n
-          (nextState (honestMessage D) n (initState stmt oStmt) chal)⟩ := rfl
+        foldRounds (honestMessage D) (fun k st _ => nextState (honestMessage D) k st)
+          finishState n (nextState (honestMessage D) n (initState stmt oStmt) chal)⟩ := rfl
 
 /-- The honest message is the legacy projected round polynomial. -/
 example {d : ℕ} (D : Fin d ↪ F) (n : ℕ) (stmt : Spec.StatementRound F (n + 1) 0)
