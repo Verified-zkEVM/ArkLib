@@ -125,7 +125,7 @@ theorem exists_isScalarExceptional_zero_iff_isProjectionBad (domain : ι ↪ F)
 /-- If `⌈n (1 - δ)⌉₊ = A`, scalar exceptionality at loss zero is
 `CoreDefinitions.IsMCA` for the affine-line generator, `code domain (d + 1)`, and radius `δ`,
 where `n = |ι|`. -/
-theorem exists_isScalarExceptional_zero_iff_isMCA [Fintype F] (domain : ι ↪ F)
+theorem exists_isScalarExceptional_zero_iff_isMCA (domain : ι ↪ F)
     (f g : ι → F) (d A : ℕ) (α : F) (δ : ℝ)
     (hδ : ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ = A) :
     (∃ P, IsScalarExceptional domain f g d A 0 α P) ↔

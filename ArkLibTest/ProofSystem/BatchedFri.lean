@@ -142,9 +142,9 @@ example {σ : Type}
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := domain) schedule 1 (AffineSpaceGenerator (ZMod 17) 1)).soundness init impl
       (BatchingRound.inputRelation schedule 1 1 (1 / 8)).language
-      (BatchingRound.outputRelation schedule 1 (by decide) (1 / 8)).language
+      (BatchingRound.outputRelation schedule 1 (1 / 8)).language
       (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17)) := by
-  apply soundness_affineSpace schedule 1 1 (by decide) (1 / 8)
+  apply soundness_affineSpace schedule 1 1 (1 / 8)
   exact toyParameters.1
 
 -- The composite API accepts the same concrete domain, schedule, and radius.
@@ -153,7 +153,7 @@ example {σ : Type} (init : ProbComp σ)
     (batchedFRIreduction (ω := domain) 0 schedule 1 (by decide) 1 1
       (AffineSpaceGenerator (ZMod 17) 1)).verifier.soundness
       init impl (BatchingRound.inputRelation schedule 1 1 (1 / 8)).language
-      (Fri.Spec.outputRelation 0 schedule 1 (by decide) (1 / 8)).language
+      (Fri.Spec.outputRelation 0 schedule 1 (1 / 8)).language
       (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) +
         Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   exact batchedFRI_soundness_affineSpace schedule 1 (by decide) 1 1 (1 / 2) (1 / 8)
@@ -180,7 +180,7 @@ example {σ : Type} (init : ProbComp σ)
     (batchedFRIreduction (ω := domain) 0 schedule 1 (by decide) 1 3
       (univariatePowersGenerator (ZMod 17) 3)).verifier.soundness
       init impl (BatchingRound.inputRelation schedule 1 3 (1 / 8)).language
-      (Fri.Spec.outputRelation 0 schedule 1 (by decide) (1 / 8)).language
+      (Fri.Spec.outputRelation 0 schedule 1 (1 / 8)).language
       (3 * ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) +
         Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   exact batchedFRI_soundness_powers schedule 1 (by decide) 1 3 (1 / 2) (1 / 8)
@@ -206,7 +206,7 @@ example {σ : Type} (init : ProbComp σ)
     (batchedFRIreduction (ω := domain) 0 schedule 1 (by decide) 1 3
       (multilinearBatchGenerator (ZMod 17) 2)).verifier.soundness
       init impl (BatchingRound.inputRelation schedule 1 3 (1 / 8)).language
-      (Fri.Spec.outputRelation 0 schedule 1 (by decide) (1 / 8)).language
+      (Fri.Spec.outputRelation 0 schedule 1 (1 / 8)).language
       (2 * (4 / 17) + Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   simpa only [ZMod.card, Nat.cast_ofNat, Nat.reducePow, Nat.reduceSub,
     NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat,

@@ -133,6 +133,7 @@ theorem outputs_guarded_subsingleton
       (result := none) (by rw [hV₁ stmt tr]; simp [hc]) out).mp hout
     contradiction
 
+omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- A guarded verifier accepts a transcript whose verdict lies in the language, **provided its guard
 passes**: `pure_accepting_of_mem` fed the passing branch of `IsGuardedWith`. -/
 theorem guarded_accepting_of_mem
@@ -163,6 +164,7 @@ section GuardedAppend
 
 open ProtocolSpec.ChallengeTree
 
+omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **The guarded-left composition of tree special soundness**, at the witness-only extractor. The
 left factor may reject at runtime; its guard data `(check₁, out₁)` is explicit, because the composed
 extractor `Extractor.TreeBased.append out₁ E₁ E₂` names the verdict map.
@@ -260,6 +262,7 @@ theorem append_treeSpecialSoundWith_guardedLeft
   exact h₁ stmt tree.appendSplit.fst
     (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hpreAcc _ hpreValid
 
+omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **The escape-threaded guarded-left composition of tree special soundness**, at the witness-only
 extractor and the UNCHANGED `ChallengeTree.EscapeEvent.append` (taken at the guard's output map
 `out₁`, which `IsGuardedWith` leaves unconstrained on rejected prefixes — harmless, since escape
@@ -367,6 +370,7 @@ theorem append_treeSpecialSoundWithEscape_guardedLeft
             (hcheck p₁), hrel₂⟩
       exact hext₁ _ hpreValid
 
+omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **Guarded binary CWSS append at the witness-only extractor, plain form.** The CWSS-shape wrapper
 of `append_treeSpecialSoundWith_guardedLeft`, transported across `CWSSStructure.toShape_append` by
 `treeSpecialSoundWith_congr`.
@@ -392,6 +396,7 @@ theorem append_coordinateWiseSpecialSoundWith_of_guardedLeft
     (append_treeSpecialSoundWith_guardedLeft init impl V₁ V₂
       (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) check₁ out₁ hV₁ harity₂ E₁ E₂ h₁ h₂)
 
+omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- **Guarded binary CWSS append at the witness-only extractor, escape-threaded form** — the
 CWSS-shape wrapper of `append_treeSpecialSoundWithEscape_guardedLeft`, and the development's
 fundamental guarded obligation, of which the plain form above is the never-firing corollary. Both
@@ -494,7 +499,6 @@ certificate is `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft`, 
 hypothesis is discharged by `CWSSStructure.toShape_arity_pos` — every CWSS shape branches. -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
     (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
     (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hseam : L₁.relOut = L₂.relIn := by rfl) :
@@ -521,7 +525,6 @@ scoped infixr:65 " ▷ᵍ " => GCWSSPackage.append
 /-- **Pure ▷ guarded** (canonical): lift the left factor with `CWSSPackage.toGuarded`. -/
 def CWSSPackage.appendGuarded {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
     (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
     (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
@@ -531,7 +534,6 @@ def CWSSPackage.appendGuarded {StmtA WitA StmtB WitB StmtC WitC : Type}
 /-- **Guarded ▷ pure** (canonical): lift the right factor with `CWSSPackage.toGuarded`. -/
 def GCWSSPackage.appendPure {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
     (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
     (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :

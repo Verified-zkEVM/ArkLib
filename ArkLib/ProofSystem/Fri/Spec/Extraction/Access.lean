@@ -52,7 +52,7 @@ abbrev CostKind := ArithmeticCostKind ⊕ AccessCostKind
 /-- The product of all extractor access and arithmetic counts. -/
 abbrev Cost := CostKind → ℕ
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+)
 
@@ -142,7 +142,7 @@ namespace Fri.Spec.Extractor
 
 open Domain OracleComp OracleSpec CompPoly
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (o : ∀ j, FinalOracleStatement s ω j)
 variable (α : FinalStatement F k)

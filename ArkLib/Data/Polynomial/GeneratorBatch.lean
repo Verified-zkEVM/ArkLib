@@ -94,7 +94,7 @@ theorem prob_zeroOn_generatorBatch_le_of_pointwise {F S : Type} [Field F]
 /-- A zero-evading generator batches any fixed false family with error at most its
 zero-evasion error. -/
 theorem prob_zeroOn_generatorBatch_le {F S : Type} [Field F]
-    [Fintype S] [Nonempty S] [SampleableType S] {k : ℕ}
+    [SampleableType S] {k : ℕ}
     (G : CoreDefinitions.Generator S (Fin k) F) {ε : unitInterval}
     (hG : CoreDefinitions.IsZeroEvadingGenerator G ε)
     {H : Finset F} {f : Fin k → F[X]} (hf : ¬ ∀ i, ZeroOn H (f i)) :

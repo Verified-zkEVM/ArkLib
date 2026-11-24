@@ -27,12 +27,12 @@ namespace Fri.Spec.FinalFoldPhase
 open Domain OracleComp OracleSpec ProtocolSpec Finset
 open scoped NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
 
 /-- Uniform sampling of the field challenge of the final fold. -/
-noncomputable instance instSampleableTypeChallenge :
+noncomputable instance instSampleableTypeChallenge [Finite F] :
     ∀ j, SampleableType ((pSpec F).Challenge j) :=
   fun _ ↦ SampleableType.ofFintype _
 
@@ -216,7 +216,7 @@ variable {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
 
 /-- The final fold is perfectly complete for every honest history, including noisy input. -/
-theorem finalFoldOracleReduction_perfectCompleteness
+theorem finalFoldOracleReduction_perfectCompleteness [Finite F]
     (f : OracleStatement s ω (0 : Fin (k + 1)) 0) (p₀ : Witness F s d 0) :
     (finalFoldOracleReduction s d).perfectCompleteness init impl
       (honestFoldRelation s d f p₀ (Fin.last k)) (honestOutputRelation s d f p₀) := by
