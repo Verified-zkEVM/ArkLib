@@ -788,6 +788,7 @@ public import ArkLib.Interaction.Core.LegacyAppend
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
 public import ArkLib.Interaction.Core.Oracle.QueriesByMove
 public import ArkLib.Interaction.Core.Oracle.QueriesByMoveLaws
+public import ArkLib.Interaction.Core.Oracle.Reassociation
 public import ArkLib.Interaction.Core.Oracle.Routing
 public import ArkLib.Interaction.Core.Oracle.SentOracles
 public import ArkLib.Interaction.Core.OracleVerifier

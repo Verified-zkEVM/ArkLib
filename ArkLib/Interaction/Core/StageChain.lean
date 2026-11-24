@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Oracle.Routing
+public import ArkLib.Interaction.Core.Oracle.Reassociation
 public import VCVio.OracleComp.EvalDist
 
 /-!
@@ -36,6 +36,10 @@ core run `OracleVerifier.run` of the composed verifier, with the challenge queri
 stages' draws. `StageChain.run_cons` states that it is the run of the binary append of the first
 stage and the composed rest. `OracleVerifier.run_append` splits that run into the two interactions
 and the two decisions.
+`StageChain.then` concatenates two chains. `StageChain.decideOn_then` and
+`StageChain.outputOn_then` split a chain at any stage: on every run, the composed verifier of a
+concatenation decides and exports output data as the append of the composed verifiers of its two
+parts.
 
 A chain is given in two parts. `StageChain` is the plan: the protocols, verifiers and draws of the
 stages. `StageChain.Compatibility` is the evidence: at every boundary, an
@@ -791,6 +795,395 @@ theorem decideWith_accepts_of_almostSurely [ambient.AnswerMeasure] {S : Type u} 
         (e.1 (Path.split s _ p).1) (b.1 (Path.split s _ p).1) (b.2 (Path.split s _ p).1)
         (h.2 (Path.split s _ p).1) mid hmid (Path.split s _ p).2 (View.split s _ p v).2
         ((OracleVerifier.suffixRoute V stmt p v).f data)
+
+/-! ## Splitting a chain at any stage
+
+`StageChain.then` concatenates a chain `c` with a suffix `k`, which gives a chain at every leaf of
+`c`. `StageChain.protocol_then` states that the composed protocol of the concatenation is the
+append of the composed protocol of `c` and the composed protocols of the suffix chains.
+`StageChain.decideOn_then` and `StageChain.outputOn_then` split the composed verifier of the
+concatenation: on a run, it decides and exports output data as the append of the composed
+verifier of `c` and the composed verifiers of the suffix chains. The concatenation and the two
+parts carry their own compatibility evidence. The certificate at the boundary between `c` and the
+suffix is new in the concatenation. The evidence of the concatenation is not built from the
+evidence of the parts. -/
+
+section Then
+
+attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
+  Displayed.LocalMap.toHom Displayed.LocalMap.toHomFun
+
+/-- A chain to run after the chain `c`, given at every leaf of `c`. With no stages it is a chain
+from the input statement type and the inputs. With a first stage it is a suffix of the remaining
+stages at each path of that stage. `suffixAt` reads the chain at a leaf path, and `Suffix.ofFun`
+builds a suffix from a chain at every leaf path. -/
+def Suffix {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
+    StageChain ambient S inputs → Type (max (u + 1) (w + 1))
+  | .nil (S := S) inputs => StageChain ambient S inputs
+  | .cons s _ _ rest => (p : Path s) → (rest p).Suffix
+
+/-- The chain of a suffix at a leaf path of `c`. It starts from the composed output statement type
+and the composed output family of `c` at that path. -/
+def suffixAt {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → c.Suffix → (p : Path c.protocol) →
+      StageChain ambient (c.Out p) (c.outputs p)
+  | .nil _, k, _ => k
+  | .cons s _ _ rest, k, p =>
+    (rest (Path.split s (fun p => (rest p).protocol) p).1).suffixAt
+      (k (Path.split s (fun p => (rest p).protocol) p).1)
+      (Path.split s (fun p => (rest p).protocol) p).2
+
+/-- Concatenation: the stages of `c`, followed at each leaf by the chain of the suffix there. -/
+def «then» {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → c.Suffix → StageChain ambient S inputs
+  | .nil _, k => k
+  | .cons s V draw rest, k => .cons s V draw fun p => (rest p).then (k p)
+
+/-- The composed protocol of a concatenation is the composed protocol of the prefix chain,
+followed at each leaf by the composed protocol of the suffix there. -/
+theorem protocol_then {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → (k : c.Suffix) →
+      (c.then k).protocol = c.protocol.append fun p => (c.suffixAt k p).protocol
+  | .nil _, _ => rfl
+  | .cons s _ _ rest, k =>
+    (congrArg s.append (funext fun p => protocol_then (rest p) (k p))).trans
+      (append_append_split s (fun p => (rest p).protocol)
+        fun p q => ((rest p).suffixAt (k p) q).protocol).symm
+
+/-- Concatenating after no stages gives the suffix. -/
+@[simp] theorem nil_then {S : Type u} {I : Type u} {A : I → Type u}
+    (inputs : OracleFamily.{u, u, w} I A) (k : (nil (ambient := ambient) (S := S) inputs).Suffix) :
+    (nil inputs).then k = k := rfl
+
+/-- The suffix with no stages at every leaf. -/
+def Suffix.nil {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → c.Suffix
+  | .nil inputs => StageChain.nil inputs
+  | .cons _ _ _ rest => fun p => Suffix.nil (rest p)
+
+/-- Concatenating no stages at every leaf gives the chain. -/
+@[simp] theorem then_suffixNil {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → c.then (Suffix.nil c) = c
+  | .nil _ => rfl
+  | .cons s V draw rest => congrArg (cons s V draw) (funext fun p => then_suffixNil (rest p))
+
+/-- The suffix with no stages has no stages at every leaf. -/
+@[simp] theorem suffixAt_suffixNil {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → (p : Path c.protocol) →
+      c.suffixAt (Suffix.nil c) p = .nil (c.outputs p)
+  | .nil _, _ => rfl
+  | .cons _ _ _ rest, _ => suffixAt_suffixNil (rest _) _
+
+
+/-- The decision of a composed verifier does not depend on the compatibility evidence. -/
+theorem decide_verifier {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → (e e' : c.Compatibility) →
+      (c.verifier e).decide = (c.verifier e').decide
+  | .nil _, _, _ => rfl
+  | .cons _ V _ rest, e, e' =>
+    OracleVerifier.append_decide_congr V e.2 e'.2 fun p => decide_verifier (rest p) (e.1 p) (e'.1 p)
+
+/-- The decision of a concatenation on a run, packaged with its statement type, and the equality of
+that statement type with the suffix's. This is the induction behind `decideOn_then`. -/
+theorem then_decideOn_sigma {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → (k : c.Suffix) →
+    (tr₁ : Transcript oracleSig c.protocol) →
+    (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol) →
+    (tr : Transcript oracleSig (c.then k).protocol) →
+    HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂) →
+    (c.then k).Out tr.path = (c.suffixAt k tr₁.path).Out tr₂.path ∧
+    ∀ (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
+      (ek : (c.suffixAt k tr₁.path).Compatibility) (stmt : S) (data : ∀ i, A i),
+      (⟨_, ((c.then k).verifier e).decideOn stmt data tr⟩ :
+        (β : Type u) × OracleComp ambient (Option β)) =
+      ⟨_, (c.verifier e₁).decideOn stmt data tr₁ >>= fun
+        | none => pure none
+        | some mid => ((c.suffixAt k tr₁.path).verifier ek).decideOn mid
+            ((c.verifier e₁).outputOn stmt data tr₁) tr₂⟩
+  | .nil _, k, tr₁, tr₂, tr, h => by
+    obtain rfl : tr = tr₂ := eq_of_heq h
+    refine ⟨rfl, fun e e₁ ek stmt data => congrArg (Sigma.mk _) ?_⟩
+    refine (congrFun (congrFun (congrFun (OracleVerifier.decideOn_eq_of_decide_eq
+      (decide_verifier k e ek)) stmt) data) tr).trans ?_
+    have h0 : ((nil (ambient := ambient) (S := S) _).verifier e₁).decideOn stmt data tr₁ =
+        pure (some stmt) := decideWith_nil _ _ _ _ _ _
+    rw [h0]
+    symm
+    exact LawfulMonad.pure_bind (m := OracleComp ambient) (some stmt) _
+  | .cons s V draw rest, k, tr₁, tr₂, tr, h => by
+    obtain ⟨trA, trB, rfl⟩ : ∃ a b, tr₁ = Transcript.append s (fun p => (rest p).protocol) a b :=
+      ⟨_, _, (Transcript.append_split _ _ tr₁).symm⟩
+    obtain ⟨trA', trC, rfl⟩ :
+        ∃ a b, tr = Transcript.append s (fun p => ((rest p).then (k p)).protocol) a b :=
+      ⟨_, _, (Transcript.append_split _ _ tr).symm⟩
+    have hz := Transcript.split_path_append s (fun p => (rest p).protocol) trA trB
+    obtain ⟨tr₂', htr₂⟩ : ∃ x : Transcript oracleSig
+        ((rest trA.path).suffixAt (k trA.path) trB.path).protocol, HEq tr₂ x :=
+      ⟨_, (cast_heq (congrArg (fun z : (p : Path s) × Path (rest p).protocol =>
+        Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol) hz) tr₂).symm⟩
+    have hTA := Transcript.append_append_heq s (fun p => (rest p).protocol)
+      (fun p q => ((rest p).suffixAt (k p) q).protocol) trA trB tr₂ tr₂' htr₂
+    obtain ⟨hA, hC⟩ := Transcript.eq_and_heq_of_append_heq
+      (funext fun p => protocol_then (rest p) (k p)) (h.trans hTA)
+    subst trA'
+    obtain ⟨ihOut, ih⟩ := then_decideOn_sigma (rest trA.path) (k trA.path) trB tr₂' trC hC
+    have hX : (⟨Path.split s (fun p => (rest p).protocol)
+        (Transcript.append s (fun p => (rest p).protocol) trA trB).path, tr₂⟩ :
+        (z : (p : Path s) × Path (rest p).protocol) ×
+          Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol) =
+        ⟨⟨trA.path, trB.path⟩, tr₂'⟩ :=
+      Sigma.ext hz htr₂
+    have hOutR := congrArg (fun X : (z : (p : Path s) × Path (rest p).protocol) ×
+        Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol =>
+      ((rest X.1.1).suffixAt (k X.1.1) X.1.2).Out X.2.path) hX
+    have hOutL := congrArg (fun z : (p : Path s) × Path ((rest p).then (k p)).protocol =>
+      ((rest z.1).then (k z.1)).Out z.2)
+      (Transcript.split_path_append s (fun p => ((rest p).then (k p)).protocol) trA trC)
+    refine ⟨hOutL.trans (ihOut.trans hOutR.symm), fun e e₁ ek stmt data => ?_⟩
+    obtain ⟨ek', hek⟩ : ∃ x : ((rest trA.path).suffixAt (k trA.path) trB.path).Compatibility,
+        HEq ek x :=
+      ⟨_, (cast_heq (congrArg (fun z : (p : Path s) × Path (rest p).protocol =>
+        ((rest z.1).suffixAt (k z.1) z.2).Compatibility) hz) ek).symm⟩
+    have hct := OracleVerifier.append_decideOn_bind
+      (Y := fun p q => Transcript oracleSig ((rest p).suffixAt (k p) q).protocol ×
+        ((rest p).suffixAt (k p) q).Compatibility)
+      (Z := fun p q y => ((rest p).suffixAt (k p) q).Out y.1.path)
+      V (fun p => (rest p).verifier (e₁.1 p)) e₁.2
+      (fun p q y mid d => (((rest p).suffixAt (k p) q).verifier y.2).decideOn mid d y.1)
+      stmt data trA trB (tr₂, ek) (tr₂', ek')
+      (heq_prod_mk (Y₁ := fun z : (p : Path s) × Path (rest p).protocol =>
+          Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol)
+        (Y₂ := fun z : (p : Path s) × Path (rest p).protocol =>
+          ((rest z.1).suffixAt (k z.1) z.2).Compatibility) hz htr₂ hek)
+    have hl := OracleVerifier.append_decideOn_sigma V
+      (fun p => ((rest p).then (k p)).verifier (e.1 p)) e.2 stmt data trA trC
+    refine hl.trans (Eq.trans ?_ (Eq.trans hct.symm ?_))
+    · refine sigma_bind_congr ihOut _ fun o => ?_
+      cases o with
+      | none => exact sigma_pure_none ihOut
+      | some m =>
+        refine (ih (e.1 trA.path) (e₁.1 trA.path) ek' m (V.outputOn stmt data trA)).trans ?_
+        refine congrArg (Sigma.mk _) (congrArg (_ >>= ·) (funext fun o' => ?_))
+        cases o' <;> rfl
+    · refine congrArg (Sigma.mk _) (congrArg (_ >>= ·) (funext fun o => ?_))
+      cases o <;> rfl
+
+
+/-- On a run that the composed verifier accepts, the composed output data does not depend on the
+compatibility evidence. -/
+theorem outputOn_eq_of_accepts {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → (e e' : c.Compatibility) → (stmt : S) →
+    (data : ∀ i, A i) → (tr : Transcript oracleSig c.protocol) →
+    (∃ out, some out ∈ support ((c.verifier e).decideOn stmt data tr)) →
+    (c.verifier e).outputOn stmt data tr = (c.verifier e').outputOn stmt data tr
+  | .nil _, _, _, _, _, _, _ => rfl
+  | .cons s V _ rest, e, e', stmt, data, tr, hacc => by
+    obtain ⟨trA, trB, rfl⟩ : ∃ a b, tr = Transcript.append s (fun p => (rest p).protocol) a b :=
+      ⟨_, _, (Transcript.append_split _ _ tr).symm⟩
+    obtain ⟨out, hout⟩ := hacc
+    obtain ⟨out', -, hout'⟩ := exists_mem_support_of_sigma_eq
+      (OracleVerifier.append_decideOn_sigma V (fun p => (rest p).verifier (e.1 p)) e.2 stmt data
+        trA trB) hout
+    rw [mem_support_bind_iff] at hout'
+    obtain ⟨o, ho, hout'⟩ := hout'
+    cases o with
+    | none => simp at hout'
+    | some m =>
+      exact eq_of_heq (((OracleVerifier.append_outputOn V _ e.2 stmt data trA trB m ho).trans
+        (heq_of_eq (outputOn_eq_of_accepts (rest trA.path) (e.1 _) (e'.1 _) m
+          (V.outputOn stmt data trA) trB ⟨out', hout'⟩))).trans
+        (OracleVerifier.append_outputOn V _ e'.2 stmt data trA trB m ho).symm)
+
+/-- The output data of a concatenation on a run, once the prefix chain accepts `mid` and the
+suffix chain accepts from `mid`, is the output data of the suffix chain. This is the statement
+behind `outputOn_then`. -/
+theorem then_outputOn_heq {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) → (k : c.Suffix) →
+    (tr₁ : Transcript oracleSig c.protocol) →
+    (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol) →
+    (tr : Transcript oracleSig (c.then k).protocol) →
+    HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂) →
+    ∀ (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
+      (ek : (c.suffixAt k tr₁.path).Compatibility) (stmt : S) (data : ∀ i, A i)
+      (mid : c.Out tr₁.path), some mid ∈ support ((c.verifier e₁).decideOn stmt data tr₁) →
+      (∃ out, some out ∈ support (((c.suffixAt k tr₁.path).verifier ek).decideOn mid
+        ((c.verifier e₁).outputOn stmt data tr₁) tr₂)) →
+      HEq (((c.then k).verifier e).outputOn stmt data tr)
+        (((c.suffixAt k tr₁.path).verifier ek).outputOn mid
+          ((c.verifier e₁).outputOn stmt data tr₁) tr₂)
+  | .nil _, k, tr₁, tr₂, tr, h => by
+    obtain rfl : tr = tr₂ := eq_of_heq h
+    intro e e₁ ek stmt data mid hmid hacc
+    have h0 : ((nil (ambient := ambient) (S := S) _).verifier e₁).decideOn stmt data tr₁ =
+        pure (some stmt) := decideWith_nil _ _ _ _ _ _
+    rw [h0] at hmid
+    obtain rfl : mid = stmt := Option.some.inj (eq_of_mem_support_pure hmid)
+    exact heq_of_eq (outputOn_eq_of_accepts k ek e _ _ _ hacc).symm
+  | .cons s V _ rest, k, tr₁, tr₂, tr, h => by
+    intro e e₁ ek stmt data mid hmid hacc
+    obtain ⟨trA, trB, rfl⟩ : ∃ a b, tr₁ = Transcript.append s (fun p => (rest p).protocol) a b :=
+      ⟨_, _, (Transcript.append_split _ _ tr₁).symm⟩
+    obtain ⟨trA', trC, rfl⟩ :
+        ∃ a b, tr = Transcript.append s (fun p => ((rest p).then (k p)).protocol) a b :=
+      ⟨_, _, (Transcript.append_split _ _ tr).symm⟩
+    have hz := Transcript.split_path_append s (fun p => (rest p).protocol) trA trB
+    obtain ⟨tr₂', htr₂⟩ : ∃ x : Transcript oracleSig
+        ((rest trA.path).suffixAt (k trA.path) trB.path).protocol, HEq tr₂ x :=
+      ⟨_, (cast_heq (congrArg (fun z : (p : Path s) × Path (rest p).protocol =>
+        Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol) hz) tr₂).symm⟩
+    have hTA := Transcript.append_append_heq s (fun p => (rest p).protocol)
+      (fun p q => ((rest p).suffixAt (k p) q).protocol) trA trB tr₂ tr₂' htr₂
+    obtain ⟨hA, hC⟩ := Transcript.eq_and_heq_of_append_heq
+      (funext fun p => protocol_then (rest p) (k p)) (h.trans hTA)
+    subst trA'
+    obtain ⟨ek', hek⟩ : ∃ x : ((rest trA.path).suffixAt (k trA.path) trB.path).Compatibility,
+        HEq ek x :=
+      ⟨_, (cast_heq (congrArg (fun z : (p : Path s) × Path (rest p).protocol =>
+        ((rest z.1).suffixAt (k z.1) z.2).Compatibility) hz) ek).symm⟩
+    obtain ⟨mid', hmid', hsupp⟩ := exists_mem_support_of_sigma_eq
+      (OracleVerifier.append_decideOn_sigma V (fun p => (rest p).verifier (e₁.1 p)) e₁.2 stmt
+        data trA trB) hmid
+    rw [mem_support_bind_iff] at hsupp
+    obtain ⟨o, ho, hsupp⟩ := hsupp
+    cases o with
+    | none => simp at hsupp
+    | some m =>
+      have hd := OracleVerifier.append_outputOn V (fun p => (rest p).verifier (e₁.1 p)) e₁.2
+        stmt data trA trB m ho
+      have hX : (⟨Path.split s (fun p => (rest p).protocol)
+          (Transcript.append s (fun p => (rest p).protocol) trA trB).path,
+          (tr₂, ek, mid, ((cons s V _ rest).verifier e₁).outputOn stmt data
+            (Transcript.append s (fun p => (rest p).protocol) trA trB))⟩ :
+          (z : (p : Path s) × Path (rest p).protocol) ×
+            Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol ×
+            ((rest z.1).suffixAt (k z.1) z.2).Compatibility × (rest z.1).Out z.2 ×
+            (∀ j, (rest z.1).OutData z.2 j)) =
+          ⟨⟨trA.path, trB.path⟩, (tr₂', ek', mid',
+            ((rest trA.path).verifier (e₁.1 _)).outputOn m (V.outputOn stmt data trA) trB)⟩ :=
+        Sigma.ext hz (heq_tuple4
+          (Y₁ := fun z : (p : Path s) × Path (rest p).protocol =>
+            Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol)
+          (Y₂ := fun z : (p : Path s) × Path (rest p).protocol =>
+            ((rest z.1).suffixAt (k z.1) z.2).Compatibility)
+          (Y₃ := fun z : (p : Path s) × Path (rest p).protocol => (rest z.1).Out z.2)
+          (Y₄ := fun z : (p : Path s) × Path (rest p).protocol =>
+            ∀ j, (rest z.1).OutData z.2 j) hz htr₂ hek hmid' hd)
+      have hacc' := (congrArg (fun X : (z : (p : Path s) × Path (rest p).protocol) ×
+            Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol ×
+            ((rest z.1).suffixAt (k z.1) z.2).Compatibility × (rest z.1).Out z.2 ×
+            (∀ j, (rest z.1).OutData z.2 j) =>
+          ∃ out, some out ∈ support ((((rest X.1.1).suffixAt (k X.1.1) X.1.2).verifier
+            X.2.2.1).decideOn X.2.2.2.1 X.2.2.2.2 X.2.1)) hX).mp hacc
+      refine (OracleVerifier.append_outputOn V (fun p => ((rest p).then (k p)).verifier (e.1 p))
+        e.2 stmt data trA trC m ho).trans ((then_outputOn_heq (rest trA.path) (k trA.path) trB
+          tr₂' trC hC (e.1 _) (e₁.1 _) ek' m (V.outputOn stmt data trA) mid' hsupp hacc').trans ?_)
+      exact (congr_arg_heq (fun X : (z : (p : Path s) × Path (rest p).protocol) ×
+            Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol ×
+            ((rest z.1).suffixAt (k z.1) z.2).Compatibility × (rest z.1).Out z.2 ×
+            (∀ j, (rest z.1).OutData z.2 j) =>
+          (((rest X.1.1).suffixAt (k X.1.1) X.1.2).verifier X.2.2.1).outputOn X.2.2.2.1
+            X.2.2.2.2 X.2.1) hX).symm
+
+
+/-- The suffix that runs the chain `k p` at each leaf path `p` of `c`. -/
+def Suffix.ofFun {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) →
+      ((p : Path c.protocol) → StageChain ambient (c.Out p) (c.outputs p)) → c.Suffix
+  | .nil _, k => k ⟨⟩
+  | .cons s _ _ rest, k => fun p₁ => Suffix.ofFun (rest p₁) fun p₂ =>
+    cast (congrArg (fun z : (p : Path s) × Path (rest p).protocol =>
+        StageChain ambient ((rest z.1).Out z.2) ((rest z.1).outputs z.2))
+      (Path.split_append s (fun p => (rest p).protocol) p₁ p₂))
+      (k (Path.append s (fun p => (rest p).protocol) p₁ p₂))
+
+/-- The suffix built from a chain at every leaf path gives back that chain at each leaf path. -/
+@[simp] theorem suffixAt_ofFun {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} :
+    (c : StageChain ambient S inputs) →
+    (k : (p : Path c.protocol) → StageChain ambient (c.Out p) (c.outputs p)) →
+    (p : Path c.protocol) → c.suffixAt (Suffix.ofFun c k) p = k p
+  | .nil _, _, ⟨⟩ => rfl
+  | .cons s _ _ rest, k, p =>
+    (suffixAt_ofFun (rest _) _ _).trans
+      (eq_of_heq ((cast_heq _ _).trans
+        (congr_arg_heq k (Path.append_split s (fun p => (rest p).protocol) p))))
+
+/-- The final decision type of a concatenation on a run is the final decision type of the suffix
+chain on the suffix part of the run. -/
+theorem Out_then {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} (c : StageChain ambient S inputs) (k : c.Suffix)
+    (tr₁ : Transcript oracleSig c.protocol)
+    (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol)
+    (tr : Transcript oracleSig (c.then k).protocol)
+    (h : HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂)) :
+    (c.then k).Out tr.path = (c.suffixAt k tr₁.path).Out tr₂.path :=
+  (then_decideOn_sigma c k tr₁ tr₂ tr h).1
+
+/-- Split a stage chain at any stage, for the final decision. The composed verifier of the
+concatenation `c.then k` decides on a run `tr` as the append of the composed verifier of `c` and
+the composed verifiers of the suffix chains decides on the corresponding run of the appended
+protocol. The hypothesis `h` transports `tr` along `protocol_then`. The concatenation and the two
+parts carry their own compatibility evidence, and the decision does not depend on it. -/
+theorem decideOn_then {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} (c : StageChain ambient S inputs) (k : c.Suffix)
+    (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
+    (ek : (p : Path c.protocol) → (c.suffixAt k p).Compatibility)
+    (compatible : OracleVerifier.OutputCompatibility (c.verifier e₁)
+      fun p => (c.suffixAt k p).verifier (ek p))
+    (stmt : S) (data : ∀ i, A i) (tr₁ : Transcript oracleSig c.protocol)
+    (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol)
+    (tr : Transcript oracleSig (c.then k).protocol)
+    (h : HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂)) :
+    HEq (((c.then k).verifier e).decideOn stmt data tr)
+      (((c.verifier e₁).append (fun p => (c.suffixAt k p).verifier (ek p)) compatible).decideOn
+        stmt data (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂)) := by
+  have hl := (then_decideOn_sigma c k tr₁ tr₂ tr h).2 e e₁ (ek tr₁.path) stmt data
+  have hr := OracleVerifier.append_decideOn_sigma (c.verifier e₁)
+    (fun p => (c.suffixAt k p).verifier (ek p)) compatible stmt data tr₁ tr₂
+  refine (Sigma.mk.inj_iff.mp (hl.trans (Eq.trans ?_ hr.symm))).2
+  refine congrArg (Sigma.mk _) (congrArg (_ >>= ·) (funext fun o => ?_))
+  cases o <;> rfl
+
+/-- Split a stage chain at any stage, for the output data. On a run that the concatenation
+accepts, the composed verifier of `c.then k` exports the same output data as the append of the
+composed verifier of `c` and the composed verifiers of the suffix chains on the corresponding run
+of the appended protocol. -/
+theorem outputOn_then {S : Type u} {I : Type u} {A : I → Type u}
+    {inputs : OracleFamily.{u, u, w} I A} (c : StageChain ambient S inputs) (k : c.Suffix)
+    (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
+    (ek : (p : Path c.protocol) → (c.suffixAt k p).Compatibility)
+    (compatible : OracleVerifier.OutputCompatibility (c.verifier e₁)
+      fun p => (c.suffixAt k p).verifier (ek p))
+    (stmt : S) (data : ∀ i, A i) (tr₁ : Transcript oracleSig c.protocol)
+    (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol)
+    (tr : Transcript oracleSig (c.then k).protocol)
+    (h : HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂))
+    (hacc : ∃ out, some out ∈ support (((c.then k).verifier e).decideOn stmt data tr)) :
+    HEq (((c.then k).verifier e).outputOn stmt data tr)
+      (((c.verifier e₁).append (fun p => (c.suffixAt k p).verifier (ek p)) compatible).outputOn
+        stmt data (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂)) := by
+  obtain ⟨out, hout⟩ := hacc
+  obtain ⟨out', -, hout'⟩ := exists_mem_support_of_sigma_eq
+    ((then_decideOn_sigma c k tr₁ tr₂ tr h).2 e e₁ (ek tr₁.path) stmt data) hout
+  rw [mem_support_bind_iff] at hout'
+  obtain ⟨o, ho, hout'⟩ := hout'
+  cases o with
+  | none => simp at hout'
+  | some mid =>
+    exact (then_outputOn_heq c k tr₁ tr₂ tr h e e₁ (ek tr₁.path) stmt data mid ho
+      ⟨out', hout'⟩).trans (OracleVerifier.append_outputOn (c.verifier e₁)
+        (fun p => (c.suffixAt k p).verifier (ek p)) compatible stmt data tr₁ tr₂ mid ho).symm
+
+
+end Then
 
 end StageChain
 

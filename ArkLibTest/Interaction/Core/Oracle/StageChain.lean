@@ -845,4 +845,116 @@ theorem coinStages_none_mem_support (p : Path coinStages.protocol) (v : View _ p
   rw [h]
   exact coinVerifier_none_mem_support _ _ _ _
 
+/-! ## A split after the second stage
+
+The three stages are the concatenation of the first two stages with the third stage at every leaf.
+`StageChain.decideOn_then` and `StageChain.outputOn_then` split the composed verifier of the
+three stages after the second stage, not after the first. On one run, the composed verifier of
+the three stages and the append of the composed verifiers of the two parts give the same decision
+and the same output data, and both are evaluated below. -/
+
+/-- The third stage at every leaf of the first two stages. -/
+def thirdAfterTwo (accept : Bool) : (twoStages accept).Suffix := fun _ _ => thirdStages
+
+/-- Concatenating the third stage after the first two gives the three stages. -/
+theorem twoStages_then (accept : Bool) :
+    (twoStages accept).then (thirdAfterTwo accept) = stages accept := rfl
+
+/-- The certificate for appending the composed third stage to the composed first two stages. -/
+def splitCompatible (accept : Bool) :
+    OracleVerifier.OutputCompatibility ((twoStages accept).verifier (twoMaps accept).compatibility)
+      fun p => ((twoStages accept).suffixAt (thirdAfterTwo accept) p).verifier
+        thirdMaps.compatibility :=
+  OracleVerifier.OutputCompatibility.ofStatementFree _ _ _ (twoMaps accept).outputMap_eq
+    (fun _ => StageChain.StatementFree.map thirdStages thirdMaps)
+    fun _ => thirdMaps.outputMap_eq
+
+/-- The append of the composed verifier of the first two stages and that of the third stage. -/
+abbrev splitVerifier (accept : Bool) :=
+  ((twoStages accept).verifier (twoMaps accept).compatibility).append
+    (fun p => ((twoStages accept).suffixAt (thirdAfterTwo accept) p).verifier
+      thirdMaps.compatibility)
+    (splitCompatible accept)
+
+/-- A run of the first two stages: the Boolean choice `true`, then the number `m`. -/
+def twoRun (m : Nat) : Transcript oracleSig (twoStages true).protocol := ⟨true, m, ⟨⟩⟩
+
+/-- A run of the third stage: the challenge 9, then the response `r`. -/
+def thirdRun (r : Nat) : Transcript oracleSig thirdStages.protocol := ⟨(9 : Nat), r, ⟨⟩⟩
+
+/-- The same run of the three stages. -/
+def threeRun (m r : Nat) : Transcript oracleSig (stages true).protocol :=
+  ⟨true, m, (9 : Nat), r, ⟨⟩⟩
+
+/-- The run of the three stages is the append of the runs of the two parts, transported along
+`StageChain.protocol_then`. -/
+theorem threeRun_heq (m r : Nat) :
+    HEq (threeRun m r) (Transcript.append (twoStages true).protocol
+      (fun p => ((twoStages true).suffixAt (thirdAfterTwo true) p).protocol) (twoRun m)
+      (thirdRun r)) :=
+  (Transcript.append_append_heq (l := oracleSig) branchProtocol
+    (fun _ => (.pure ⟨⟩ : OracleProtocol)) (fun _ _ => thirdStages.protocol) ⟨true, m, ⟨⟩⟩ ⟨⟩
+    (thirdRun r) (thirdRun r) HEq.rfl).symm
+
+-- The split after the second stage: the decision of the three stages on the run.
+example := StageChain.decideOn_then (twoStages true) (thirdAfterTwo true)
+  (stagesMaps true).compatibility (twoMaps true).compatibility (fun _ => thirdMaps.compatibility)
+  (splitCompatible true) () (fun _ => 7) (twoRun 7) (thirdRun 10) (threeRun 7 10)
+  (threeRun_heq 7 10)
+
+-- The split after the second stage: the output data of the three stages on an accepted run.
+example (hacc : ∃ out, some out ∈ support
+    (((stages true).verifier (stagesMaps true).compatibility).decideOn () (fun _ => 7)
+      (threeRun 7 10))) :=
+  StageChain.outputOn_then (twoStages true) (thirdAfterTwo true) (stagesMaps true).compatibility
+    (twoMaps true).compatibility (fun _ => thirdMaps.compatibility) (splitCompatible true) ()
+    (fun _ => 7) (twoRun 7) (thirdRun 10) (threeRun 7 10) (threeRun_heq 7 10) hacc
+
+-- Both sides accept the run with the response 10. The first decision reads the input 7, the
+-- second adds the message 7 to the exported 18, and the third adds the response 10 and reads the
+-- parity of 18. The decisions log 1, 3 and 6.
+example : (simulateQ logger (((stages true).verifier (stagesMaps true).compatibility).decideOn ()
+    (fun _ => 7) (threeRun 7 10))).run [] = (some (true, 35), [1, 3, 6]) := rfl
+
+example : (simulateQ logger ((splitVerifier true).decideOn () (fun _ => 7)
+    (Transcript.append _ _ (twoRun 7) (thirdRun 10)))).run [] = (some (true, 35), [1, 3, 6]) :=
+  rfl
+
+-- Both sides export the negated parity oracle, `false`.
+example : ((stages true).verifier (stagesMaps true).compatibility).outputOn () (fun _ => 7)
+    (threeRun 7 10) () = false := rfl
+
+example : (splitVerifier true).outputOn () (fun _ => 7)
+    (Transcript.append _ _ (twoRun 7) (thirdRun 10)) () = false := rfl
+
+-- Both sides reject the response 11, which is not the challenge plus 1. All three decisions run.
+example : (simulateQ logger (((stages true).verifier (stagesMaps true).compatibility).decideOn ()
+    (fun _ => 7) (threeRun 7 11))).run [] = (none, [1, 3, 6]) := rfl
+
+example : (simulateQ logger ((splitVerifier true).decideOn () (fun _ => 7)
+    (Transcript.append _ _ (twoRun 7) (thirdRun 11)))).run [] = (none, [1, 3, 6]) := rfl
+
+/-! The concatenation, the split laws and the reassociation laws use only the permitted kernel
+axioms. -/
+run_cmd do
+  for decl in [``Interaction.Core.StageChain.then,
+      ``Interaction.Core.StageChain.protocol_then,
+      ``Interaction.Core.StageChain.suffixAt_ofFun,
+      ``Interaction.Core.StageChain.Out_then,
+      ``Interaction.Core.StageChain.decideOn_then,
+      ``Interaction.Core.StageChain.outputOn_then,
+      ``Interaction.Core.OracleVerifier.append_decideOn,
+      ``Interaction.Core.OracleVerifier.append_outputOn,
+      ``Interaction.Core.OracleVerifier.append_append_decideOn,
+      ``Interaction.Core.OracleVerifier.append_append_outputOn,
+      ``Interaction.Core.StageChainTests.threeRun_heq] do
+    for ax in ← Lean.collectAxioms decl do
+      unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
+        throwError "unexpected axiom {ax} in {decl}"
+
+#print axioms StageChain.decideOn_then
+#print axioms StageChain.outputOn_then
+#print axioms OracleVerifier.append_append_decideOn
+#print axioms OracleVerifier.append_append_outputOn
+
 end Interaction.Core.StageChainTests
