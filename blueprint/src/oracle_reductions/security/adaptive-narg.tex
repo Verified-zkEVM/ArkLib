@@ -47,9 +47,9 @@ Write \(\OracleFamily\) for the public oracles specified by the NARG's model. Fo
   \end{equation*}
   The annotated arrows record public query--answer logs. No running-time requirement is imposed.
   In Lean, this is adaptive knowledge soundness of the one-message interactive protocol; a theorem restates it on the experiment above.
+  The Lean predicate takes the extractor as an argument. Without a resource bound, the existential form reduces to soundness: a classical witness selector returns a witness for every true statement.
   \lean{Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor,
-    Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff,
-    Verifier.adaptiveNARGKnowledgeSoundnessQueryBounded, NARG.Extractor,
+    Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff, NARG.Extractor,
     adaptiveNARGKnowledgeSoundnessExp, nargKSFailEvent}
   \uses{def:oracle_run, def:counted_queries}
   \leanok

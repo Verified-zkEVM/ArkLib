@@ -146,17 +146,6 @@ def adaptiveKnowledgeSoundnessQueryBoundedWithExtractor
   V.adaptiveKnowledgeSoundnessWithExtractor init impl
     relIn relOut extract (fun P => P.IsQueryBound (publicQuerySelector counts) t) error
 
-/-- One extractor for all query budgets, chosen before the budget and adversary.
-The query bound constrains the adversary, not the extractor; no computability or efficiency
-requirement is imposed on extraction. Classical witness selection can therefore recover an
-input witness whenever one exists. See `Verifier.knowledgeSoundness_iff_relationSoundness`
-for the analogous collapse to relation soundness in the ordinary interactive game. -/
-def adaptiveKnowledgeSoundnessQueryBounded
-    (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
-    (counts : ι → Prop) [DecidablePred counts] (error : ℕ → ENNReal) : Prop :=
-  ∃ extract, ∀ t, V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl
-    relIn relOut extract counts t (error t)
-
 end Verifier
 
 section FixedProver
@@ -996,24 +985,6 @@ abbrev adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) : Prop :=
   V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl relIn (langOut ×ˢ Set.univ)
     (Extractor.StraightlineWithCoins.ofNARG E) counts t error
-
-/-- Adaptive knowledge soundness with one extractor for all provers.
-The existential quantifier imposes no computability or resource bound. A classical witness
-selector can ignore the logs and return a witness for any true statement. See
-`Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for the
-fixed-statement interactive game. -/
-def adaptiveNARGKnowledgeSoundness
-    (relIn : Set (Stmt × Wit)) (langOut : Set Out) (error : ENNReal) : Prop :=
-  ∃ E, V.adaptiveNARGKnowledgeSoundnessWithExtractor init impl relIn langOut E error
-
-/-- One straight-line extractor for all public-query budgets. The extractor is chosen before
-both the budget and the prover. As in `adaptiveNARGKnowledgeSoundness`, the existential
-extractor can select a witness by classical choice. -/
-def adaptiveNARGKnowledgeSoundnessQueryBounded
-    (relIn : Set (Stmt × Wit)) (langOut : Set Out)
-    (counts : ι → Prop) [DecidablePred counts] (error : ℕ → ENNReal) : Prop :=
-  ∃ E, ∀ t, V.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor init impl
-    relIn langOut E counts t (error t)
 
 /-- With no output statement, the verifier never accepts, so false acceptance has
 probability zero. -/

@@ -19,7 +19,7 @@ This file defines SR prover and extractor types, soundness experiments, and secu
 adapted from [snarg-book, Definitions 13.2.1–13.2.3] and [CO25, Definitions 3.12–3.14]. Each notion
 has an unbounded and a query-bounded form; `isSrChallengeMove` counts only queries
 for verifier messages.
-Query-bounded knowledge soundness fixes one extractor before all natural-number budgets.
+Knowledge soundness names its extractor, which is fixed before all natural-number budgets.
 The extractor may use randomness and both query logs and has no prover handle; no deterministic
 or running-time claim is made.
 The final lemmas preserve these bounds when custom or extra sampling interfaces are compiled
@@ -333,21 +333,6 @@ def knowledgeSoundnessWithExtractor
     knowledgeSoundnessFailureProb (Salt := Salt) init impl extractor relIn relOut verifier P
       ≤ error
 
-/-- SR knowledge soundness with error `ε`:
-`∃ E, ∀ P, Pr[valid verifier output ∧ extraction failure] ≤ ε`, with no query bound.
-The non-rewinding extractor `E` is fixed before the prover. Failure `w_in = ⊥` is included
-in the event defined by `knowledgeSoundnessFailureProb`. The extractor is unrestricted:
-classical choice can recover a witness from any true statement, ignoring the transcript and logs.
-See `Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for
-fixed-statement interaction. -/
-def knowledgeSoundness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (srKnowledgeSoundnessError : ENNReal) : Prop :=
-  ∃ extractor, knowledgeSoundnessWithExtractor (Salt := Salt) init impl relIn relOut verifier
-    extractor
-    srKnowledgeSoundnessError
-
 /-- For the fixed extractor `E` and budget `t`, require
 `Pr[valid verifier output ∧ extraction failure] ≤ error` for every prover making at most
 `t` queries selected by `queryBoundSelector`. Private samples are excluded from the budget. -/
@@ -361,20 +346,6 @@ def knowledgeSoundnessQueryBoundedWithExtractor
     (fun P => P.IsQueryBoundP (publicQuerySelector queryBoundSelector) t)
     (knowledgeSoundnessExperiment (Salt := Salt) init impl extractor verifier)
     (relationKSFailEvent relIn relOut) error
-
-/-- One non-rewinding extractor for all query budgets:
-`∃ E, ∀ t, ∀ P with ≤ t selected queries, Pr[valid output ∧ extraction failure] ≤ error t`.
-The extractor is fixed before both the budget and prover; `queryBoundSelector` chooses which
-non-private prover queries count. As in `knowledgeSoundness`, the extractor may use classical
-choice to recover a witness from the input statement. -/
-def knowledgeSoundnessQueryBounded
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (queryBoundSelector : (oSpec + srVerifierMessageOracle (StmtIn × Salt) pSpec).Domain → Prop)
-    [DecidablePred queryBoundSelector] (error : ℕ → ENNReal) : Prop :=
-  ∃ extractor, ∀ t, knowledgeSoundnessQueryBoundedWithExtractor (Salt := Salt) init impl relIn
-    relOut verifier
-    extractor queryBoundSelector t (error t)
 
 end StateRestoration
 end Verifier
@@ -1103,15 +1074,6 @@ def srKnowledgeSoundnessWithExtractor (relation : Set (Statement × Witness)) (s
       (_root_.Verifier.StateRestoration.isSrChallengeMove (Salt := Salt s n) (oSpec := []ₒ))) t →
     srKnowledgeSoundnessFailureProb (init s n) relation ((V s n).restrictSize size n)
       (E s n) P ≤ error s n t
-
-/-- **[snarg-book, state-restoration knowledge soundness]** One non-rewinding extractor
-family satisfies `srKnowledgeSoundnessWithExtractor`. With no resource bound on the
-extractor, classical witness selection gives an extractor from soundness for the relation's
-language. See `Verifier.knowledgeSoundness_iff_relationSoundness` for this argument in the
-ordinary interactive game. -/
-def srKnowledgeSoundness (relation : Set (Statement × Witness)) (size : Statement → ℕ)
-    (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
-  ∃ E, srKnowledgeSoundnessWithExtractor init V relation size E error
 
 end Families
 

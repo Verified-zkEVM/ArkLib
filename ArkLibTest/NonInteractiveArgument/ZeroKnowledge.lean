@@ -46,10 +46,9 @@ def simulator (securityParameter sizeBound : ℕ) :
 
 -- Arbitrary adversaries observe the same NARG string and oracle in both experiments.
 -- Both public parameters are chosen after the simulator family, as are all query budgets.
-example : adaptiveNARGZeroKnowledge
-    publicSpec sampleOracle oracleImpl programImpl prover Set.univ id
+example : adaptiveNARGZeroKnowledgeWithSimulator
+    publicSpec sampleOracle oracleImpl programImpl prover Set.univ id simulator
     (fun _ _ _ => 0) := by
-  refine ⟨simulator, ?_⟩
   intro securityParameter sizeBound t Output adversary _hQueries
   simp [adaptiveNARGZKRealExp, adaptiveNARGZKSimExp, prover, simulator, programImpl]
 
