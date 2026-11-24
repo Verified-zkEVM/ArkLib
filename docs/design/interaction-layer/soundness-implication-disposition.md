@@ -7,8 +7,10 @@ Source links identify the frozen declaration or assertion, including its file an
 
 The approved premises are:
 
-- **P1 (passivity):** verifiers send only public-coin challenges and make all bundle queries
-  in the final decision.
+- **P1 (passivity):** verifiers send only challenges and make all bundle queries in the final
+  decision. P1 restricts the verifier; it fixes no challenge distribution. Each theorem states its
+  sampling premise separately: `FreshChallenges`, `FreshChallengesAt`, a supplied draw, or a flip
+  bound at each full prefix. The public-coin reading needs fresh uniform draws in addition to P1.
 - **P2 (shape):** challenges and oracle messages never select the next subtree.
 
 Each row has exactly one status:
@@ -18,9 +20,17 @@ Each row has exactly one status:
 - **retired (mechanism):** the named mechanism has been removed; the row identifies its replacement.
 - **unresolved (interface):** the named parent interface is missing. This record has no such rows.
 
-The table links point to declarations, not just modules. The failure assertion begins at frozen
-line 38; the actual-run assertion begins at line 45, after the line-44 local option. These are the
-assertions referred to as lines 37 and 44 in the review brief.
+The table links point to declarations, not just modules.
+
+Two kinds of target theorem appear below:
+
+- **Adaptive bound.** [prEvent_runPrefixChallenges_soundness][prefix-sound] bounds
+  `runPrefixChallenges` followed by an explicit final continuation. Its premise `final` states
+  that positive probability of the final event implies the state certificate's acceptance
+  predicate. The caller proves this link.
+- **Verifier methods.** The plain and oracle theorems that conclude `soundnessUsing` or
+  `soundnessWith` use the ordinary runners `Verifier.run` and `OracleVerifier.run` with
+  node-indexed draws. They prove the link from the verifier's final decision.
 
 ## Soundness.lean
 
@@ -50,20 +60,22 @@ Frozen source: `ArkLibTest/Interaction/Oracle/Security/Soundness.lean`. Every as
 The target fixture has an empty-response service, a Core sender prover that queries it before
 sending, and a verifier that accepts every completed transcript. The frozen uniform-service
 summand is unused by either failure assertion; the fixture isolates the empty-response service.
-The frozen empty input-access handler disappears with its threaded verifier-access mechanism;
+The frozen empty input-access handler disappears with its threaded verifier-access mechanism.
 Under P1, Core answers bundle queries only in the final decision.
 
 | Row | Exact frozen assertion | Exact target and declaration | Status |
 | --- | --- | --- | --- |
-| T1 | [Soundness.lean:38][source-test-action], anonymous `simulateQ handler prover = failure` assertion | [Implications.lean: `EmptyResponse.interpreted_action`][test-action] | equivalent: interpreting the prover action yields `OptionT` failure before any move. |
-| T2 | [Soundness.lean:45][source-test-run], anonymous actual executor `Pr[True] = 0` assertion | [Implications.lean: `EmptyResponse.run_mass`][test-run] | equivalent: the actual Core verifier run has no successful outcome, even though its final decision accepts. This also excludes converting failure into returned rejection. |
-| T3 | [Soundness.lean:54][source-test-sound], `#check executeStrategies_soundness` | [Implications.lean: general plain soundness example][test-sound] and [oracle example][test-oracle] | premise-required (P1/P2): the ordinary-import consumers check both passive verifier forms, as in S2. |
-| T4 | [Soundness.lean:55][source-test-uniform], `#check executeStrategies_soundness_uniform` | [Implications.lean: general plain uniform example][test-uniform] and [oracle uniform example][test-oracle-uniform] | premise-required (P1/P2): the ordinary-import consumers check both forms, as in S3. |
-| T5 | [Soundness.lean:57][source-test-escape], `#check OrdinaryState.exists_verifier_escape` | [Implications.lean: general escape example][test-escape] | premise-required (P1/P2): the ordinary-import consumer checks R1. |
-| T6 | [Soundness.lean:58][source-test-prefix], `#check LocalSoundness.random_prefix` | [Implications.lean: prefix-dependent model example][test-model] and [raw-node example][test-prefix] | equivalent: the author remains optional and can select the node and full prefix. |
+| T1 | [Soundness.lean:41][source-test-action], anonymous `simulateQ handler prover = failure` assertion | [Implications.lean: `EmptyResponse.interpreted_action`][test-action] | equivalent: interpreting the prover action yields `OptionT` failure before any move. |
+| T2 | [Soundness.lean:48][source-test-run], anonymous actual executor `Pr[True] = 0` assertion | [Implications.lean: `EmptyResponse.run_mass`][test-run] | equivalent: the actual Core verifier run has no successful outcome, even though its final decision accepts. This also excludes converting failure into returned rejection. |
+| T3 | [Soundness.lean:57][source-test-sound], `#check executeStrategies_soundness` | [Implications.lean: general plain soundness example][test-sound] and [oracle example][test-oracle] | premise-required (P1/P2): the ordinary-import consumers check both passive verifier forms, as in S2. |
+| T4 | [Soundness.lean:58][source-test-uniform], `#check executeStrategies_soundness_uniform` | [Implications.lean: general plain uniform example][test-uniform] and [oracle uniform example][test-oracle-uniform] | premise-required (P1/P2): the ordinary-import consumers check both forms, as in S3. |
+| T5 | [Soundness.lean:60][source-test-escape], `#check OrdinaryState.exists_verifier_escape` | [Implications.lean: general escape example][test-escape] | premise-required (P1/P2): the ordinary-import consumer checks R1. |
+| T6 | [Soundness.lean:61][source-test-prefix], `#check LocalSoundness.random_prefix` | [Implications.lean: prefix-dependent model example][test-model] and [raw-node example][test-prefix] | equivalent: the author remains optional and can select the node and full prefix. |
 
 The [half-mass test][half-mass] remains additional coverage. The [optional soundness theorem][optional]
-instantiates the generic implication in `OptionT ProbComp`; neither replaces T1 or T2.
+instantiates the generic implication in `OptionT ProbComp`. The [optional run test][optional-run]
+runs that verifier against a prover that reads the counter before the challenge and applies the
+optional soundness theorem to the run. None of these replaces T1 or T2.
 
 ## Prefix-indexed freshness and supported continuations
 
@@ -82,11 +94,12 @@ and a pure continuation for each sampled move. P2 fixes the structural successor
 challenge or oracle message. It does **not** fix the next sampler: two histories at the same shape
 node can choose different challenge programs. For example, after a Boolean challenge `x`, a second
 challenge can be deterministically `!x` without changing shape. The [adaptive execution test][adaptive]
-checks this case.
+checks this case, and the [adaptive bound test][adaptive-sound] applies
+`prEvent_runPrefixChallenges_soundness` to the same run with zero node errors.
 
 The shared interface in `Security/RoundByRound.lean` uses `PrefixChallengePrograms`, indexed by
-the structural spine
-**and the full history**, and retains every erased challenge and oracle message in `PartialTranscriptAt`.
+the structural spine **and the full history**, and retains every erased challenge and oracle
+message in `PartialTranscriptAt`.
 At a sender, the passive continuation observes the sent value. At a receiver, the draw at that
 history selects the move and hence its pure continuation. Recursing this construction yields
 `prefixSampler`. `runPrefixChallenges` directly applies the ordinary Core focal-first runner to
@@ -94,12 +107,22 @@ that counterpart; [runPrefixChallenges_eq_run][prefix-run] is definitional. Its 
 equations follow from the owner's execution laws. Query effects can still fail in the prover's
 actions or in the final decision. No draw restarts the prover or an ambient handler.
 
+The generic run can read oracle messages that P1's verifier reaches only through bundle queries
+in the final decision. A challenge program sees the full prefix, oracle messages included, and can
+issue queries from its supplied specification. The generic run serves state certificates and
+extraction; it is not an oracle-verifier interface. An oracle-verifier API that exposes a prefix
+draw must take the `viewSig` prefix or require the draw to factor through that view; #1482 adds
+this restriction. The [oracle-message test][oracle-draw] has a Boolean oracle message followed by
+a Boolean challenge. Its generic draw returns the oracle bit as the challenge, and the
+[view test][oracle-view] shows that the two runs' views agree.
+
 Supported-continuation freshness says nothing about a prefix after an unsupported challenge.
-When extending a frozen certificate to all Core prefixes, set its state to true outside the
-supported-prefix set. That set is closed under arbitrary sender moves and supported challenge
-moves. The new state cannot flip there, preserves the sender and leaf obligations, and agrees
-with the old state on actual runs. A challenge from a supported prefix to an unsupported one has
-probability zero. This completion does not add an off-support freshness premise.
+The completion below is a prose argument; no Lean lemma states it. When extending a frozen
+certificate to all Core prefixes, set its state to true outside the supported-prefix set.
+That set is closed under arbitrary sender moves and supported challenge moves. The new state
+cannot flip there, preserves the sender and leaf obligations, and agrees with the old state on
+actual runs. A challenge from a supported prefix to an unsupported one has probability zero.
+This completion does not add an off-support freshness premise.
 
 [prEvent_runPrefixChallenges_le][prefix-bound] consumes the transported actual flip bound at
 each matching history. [prEvent_runPrefixChallenges_soundness][prefix-sound] derives the acceptance
@@ -110,6 +133,15 @@ Apply the encoded transport separately at each supported prefix and recursively 
 continuations; the completion above handles the remaining prefixes. This derives structural-node
 **error bounds**, while keeping prefix-dependent samplers and model distributions. It does not
 derive raw node-indexed sampler equality from P1/P2.
+
+Lean proves the following steps: the encoded transport at one prefix
+([ReceiverPrefix.flip_le_of_encoded_marginals][encoded]), the no-escape argument
+([escapeAlong_of_accepts][escape-general]) and the execution bounds
+([prEvent_runPrefixChallenges_le][prefix-bound] and
+[prEvent_runPrefixChallenges_soundness][prefix-sound]). The following steps are prose: the
+correspondence between frozen supported continuations and Core prefixes, the completion of the
+frozen state outside the supported-prefix set, and the probability-zero step for a challenge that
+leaves that set. The port does not state the frozen certificate in Lean.
 
 `FreshChallenges` is stronger than frozen encoded freshness because it fixes raw marginals at
 all histories reaching a node. It remains a convenient specialization. The [raw-marginal
@@ -160,48 +192,52 @@ by this implication. This record adds no second inventory of those constraints.
 [source-schedule]: ../../../ArkLib/Interaction/Oracle/Security/RoundByRound.lean#L111
 [source-model]: ../../../ArkLib/Interaction/Oracle/Security/RoundByRound.lean#L140
 [source-fresh]: ../../../ArkLib/Interaction/Oracle/Security/RoundByRound.lean#L168
-[source-test-action]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L38
-[source-test-run]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L45
-[source-test-sound]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L54
-[source-test-uniform]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L55
-[source-test-escape]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L57
-[source-test-prefix]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L58
+[source-test-action]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L41
+[source-test-run]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L48
+[source-test-sound]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L57
+[source-test-uniform]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L58
+[source-test-escape]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L60
+[source-test-prefix]: ../../../ArkLibTest/Interaction/Oracle/Security/Soundness.lean#L61
 [universes]: ../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe
-[state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L321
-[prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L535
-[prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L606
-[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L271
-[escape-general]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L78
-[rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L644
-[plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L680
-[oracle-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L888
-[plain-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L766
-[oracle-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L984
-[plain-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L871
-[oracle-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1113
-[random-prefix]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L205
-[random-model]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L189
-[encoded]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L170
-[escape]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L109
-[action-marginals]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L293
-[action-at]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L283
-[plain-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L161
-[oracle-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L201
-[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L482
-[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L580
-[fresh]: ../../../ArkLib/Interaction/Core/Execution.lean#L56
-[fresh-state]: ../../../ArkLib/Interaction/Core/Execution.lean#L76
-[half-mass]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L503
-[optional]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L474
-[adaptive]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L393
-[test-action]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L536
-[test-run]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L549
+[state-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L345
+[prefix-bound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L559
+[prefix-sound]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L632
+[prefix-run]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L279
+[escape-general]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L100
+[rank-sum]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L670
+[plain-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L706
+[oracle-local]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L915
+[plain-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L793
+[oracle-with]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1013
+[plain-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L898
+[oracle-uniform]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L1143
+[random-prefix]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L229
+[random-model]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L213
+[encoded]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L194
+[escape]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L132
+[action-marginals]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L317
+[action-at]: ../../../ArkLib/Interaction/Core/Security/Implications.lean#L307
+[plain-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L165
+[oracle-bridge]: ../../../ArkLib/Interaction/Core/Security/Soundness.lean#L206
+[plain-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L490
+[oracle-acc]: ../../../ArkLib/Interaction/Core/Security/RoundByRound.lean#L588
+[fresh]: ../../../ArkLib/Interaction/Core/Execution.lean#L57
+[fresh-state]: ../../../ArkLib/Interaction/Core/Execution.lean#L77
+[half-mass]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L638
+[optional]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L591
+[adaptive]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L411
+[test-action]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L671
+[test-run]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L684
 [test-bridges]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L23
-[test-rank]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L360
+[test-rank]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L378
 [test-sound]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L39
 [test-oracle]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L65
 [test-uniform]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L53
 [test-oracle-uniform]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L82
-[test-escape]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L115
-[test-prefix]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L133
-[test-model]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L401
+[test-escape]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L132
+[test-prefix]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L150
+[test-model]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L518
+[oracle-draw]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L505
+[oracle-view]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L511
+[adaptive-sound]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L452
+[optional-run]: ../../../ArkLibTest/Interaction/Core/Security/Implications.lean#L599

@@ -529,9 +529,13 @@ and `prefixSampler` with its execution laws. Node-indexed draws embed through
 `Security/Implications.lean` bounds actual flip events at full prefixes. Its passive sampler
 retains history-dependent challenge programs, and an exact equation identifies its execution
 with the ordinary Core runner. Encoded event marginals transport prefix-indexed challenge models
-into that bound. The plain and oracle verifier implications give the corresponding bound for
-structural draws.
-All forms allow missing probability mass in any lawful distribution monad.
+into that bound. That bound takes an explicit final continuation and a premise linking positive
+probability of the final event to the certificate's acceptance predicate. The plain and oracle
+verifier implications give the corresponding bound for node-indexed draws and prove that link
+from the final decision. A prefix draw reads the full prefix, oracle messages included, which a
+passive oracle verifier reaches only through bundle queries in its final decision.
+All forms allow missing probability mass in any lawful distribution monad. The oracle soundness
+and acceptance predicates take an `OracleBundle` input, as `OracleVerifier.run` does.
 
 `soundnessUsing` interprets the whole computation. Exact specialization laws retain the
 classical initial state distribution and the existential ambient state of `validAcceptance` at the
