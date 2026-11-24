@@ -25,7 +25,9 @@ The ambient index, bundle-query indices, responses, results and cost carrier are
 `Type` by the pinned VCVio cost API. Only backing-data universes are independent here. Lifting
 this open restriction requires generalizing VCVio's `CostModel`, `costDist`,
 `WorstCaseCostBound` and `WorstCaseCostBound.simulateQ`, with their cost-writer helpers. Query
-indices and the cost carrier are not restricted by the protocol semantics.
+indices and the cost carrier are not restricted by the protocol semantics. A caller at a larger
+universe can already prove a structural bound with PolyFun's universe-polymorphic completed-path
+transfer `PFunctor.FreeM.Path.charge_liftM_le_of_forall`.
 -/
 
 @[expose] public section
@@ -38,7 +40,10 @@ open OracleComp OracleSpec Oracle
 /-- A weighted bound on a decision over the output bundle transfers to the same decision routed
 through an oracle map. Ambient queries are charged at most their original cost. The program
 implementing each output query, charged at the target cost of the input queries it makes, fits
-the original charge of that output query. -/
+the original charge of that output query.
+
+As with `WorstCaseCostBound` itself, the bound covers completed paths only. A query with an empty
+response type ends no completed path, so the bound says nothing about its charge. -/
 theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}
     {In : OracleBundle.{0, 0, dX}} {Out : OracleBundle.{0, 0, dY}}
     [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMonoid ω]

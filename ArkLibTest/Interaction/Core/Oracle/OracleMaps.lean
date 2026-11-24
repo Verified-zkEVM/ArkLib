@@ -188,6 +188,11 @@ def tensor : OracleMap both (singletonFamily pairInterface) where
 example : simulateQ (both.behaviorOfRealizations (sumData (env true 2) answers))
     (tensor.impl ⟨⟨⟩, (true, false)⟩) = ((2 : Fin 3), (2 : Nat)) := rfl
 
+-- SourceExample S8, through the library tensor: `OracleBundle.tensor` answers the same paired
+-- query on the same data with the same pair.
+example : ((OracleBundle.ofFamily dependent).tensor (OracleBundle.ofFamily numbers)).answer
+    (env true 2, answers) (⟨true, ()⟩, ⟨false, ()⟩) = ((2 : Fin 3), (2 : Nat)) := rfl
+
 /-- A family of function oracles indexed by a bit. -/
 def functions : OracleFamily Bool (fun _ => Bool → Nat) :=
   ⟨fun _ => OracleInterface.instFunction⟩
