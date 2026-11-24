@@ -17,7 +17,7 @@ public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaims
 
 /-!
-# The affine MCA error of Reed–Solomon codes
+# The affine, equal-degree and linear-claim MCA errors of Reed–Solomon codes
 
 Exceptional challenges split into persistent and nonpersistent ones.
 The persistent challenges are counted through rational pairs.
@@ -42,6 +42,11 @@ The counting bounds have no sampler assumptions.
   `ReedSolomon.affineMcaError_le_of_interpolation`: the bound for any interpolation parameters.
 * `ReedSolomon.exists_affineExceptional_finset_card_le` and `ReedSolomon.affineMcaError_le`:
   the bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)` at the threshold `⌈(√ρ + η) n⌉`.
+* `ReedSolomon.equalDegreeMcaError_le`: the equal-degree bound
+  `(4 / η + ℓ₀) / q + 2¹⁴ n² / (ρ³ η¹⁰ q²)` at the same threshold.
+  Here `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the rounded-down Johnson bound.
+* `ReedSolomon.linearClaimMcaError_le`: the linear-claim bound
+  `(4 / η + 2 ℓ₀) / q + 2¹⁴ n² / (ρ³ η¹⁰ q²)` at the same threshold.
 
 ## References
 

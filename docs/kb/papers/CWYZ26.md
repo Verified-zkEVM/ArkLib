@@ -48,6 +48,7 @@ related_modules:
   - ArkLib/ToMathlib/FieldTheory/Finite/Extension.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaims.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsSampling.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsExact.lean
   - ArkLib/ToMathlib/Finset/AffineZeros.lean
 ---
 
