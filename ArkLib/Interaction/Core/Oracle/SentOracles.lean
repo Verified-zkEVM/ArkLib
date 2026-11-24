@@ -26,6 +26,16 @@ stems with a `Sent` prefix: `SentOracleMessageIndex`, `SentOracleMessage`,
 they depend on: a partial transcript instead of a path. `oracleMessagesToSent` identifies the
 core's `oracleMessageFamily` of a completed transcript with the sent oracle messages of the same
 transcript.
+
+This file is a general utility for reasoning about oracle access partway through a run. Under P1
+the core verifier queries bundles only in its final decision, so the current tests use only the
+basic pieces (`IsSent`, `SentOracleMessageIndex.node_lift`, `liftQuery_node`,
+`sentOracleMessageMap`). The general routing and inclusion laws (`availableMap`, `liftQuery_index`,
+`liftQuery_response`, `oracleMessagesToSent`, `toPathBundle`, `firstMovesLe`,
+`QueriesAt.availableData`, `isSent_at_decision` and `runWithAmbientQueriesByMove_before_le`) have
+no caller yet. They are kept for later clients that query sent oracles before the end of a run,
+such as a round-by-round extractor that reads the oracles sent so far, or a verifier or sampler
+with oracle access before its final decision.
 -/
 
 @[expose] public section
