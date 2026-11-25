@@ -491,9 +491,8 @@ namespace OracleVerifier
 /-- Every entry in the queries by move of a run has a partial transcript that is below the whole
 transcript of the run. -/
 theorem runWithQueriesByMove_before_le {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily (J p) (B p)}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
     (prover : Prover oracleSig ambient s Out) {r : QueriesByMove V Out}
@@ -514,9 +513,8 @@ theorem runWithQueriesByMove_before_le {ι : Type} {S : Type} {ambient : OracleS
 
 /-- An oracle message sent before an entry of the run is still sent at the decision. -/
 theorem isSent_at_decision {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily (J p) (B p)}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
     (prover : Prover oracleSig ambient s Out) {r : QueriesByMove V Out}
@@ -529,9 +527,8 @@ theorem isSent_at_decision {ι : Type} {S : Type} {ambient : OracleSpec ι}
 /-- The ambient queries by move also give every entry a partial transcript that is below the whole
 transcript, with bundle queries in `Type`. -/
 theorem runWithAmbientQueriesByMove_before_le {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily (J p) (B p)}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
     (prover : Prover oracleSig ambient s Out) {r : AmbientQueriesByMove V Out}

@@ -936,7 +936,8 @@ def finishSelected (z : Stmt)
     (answers : QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id)
     (r : (_ : Transcript oracleSig selectedProtocol) × PUnit.{1} × PUnit.{1}) :
     Outcome oracleSig selectedProtocol (fun _ => PUnit.{1})
-      (OracleVerifier.Output (fun p => SelectedValue p.1) (fun _ (_ : PUnit.{1}) => Fin 8)) :=
+      (OracleVerifier.Output (fun p => SelectedValue p.1)
+        fun p => OracleBundle.ofFamily (selectedFamily p.1)) :=
   let p := Transcript.path r.1
   let view := toView selectedProtocol r.1
   let pathData : (pathBundle emptyFamily selectedProtocol p).Data :=

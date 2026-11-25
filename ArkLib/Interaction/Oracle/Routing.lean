@@ -86,12 +86,8 @@ variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
   {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
+  {middle : Path s₁ → OracleBundle}
+  {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
 
 /-- In an appended run, the prefix decision's bundle consists of the inputs and the prefix oracle
 messages: every prefix-slot query routed by `prefixRoute` is answered as
@@ -117,7 +113,7 @@ theorem prefixRoute_oracleMessages (data : inputs.Data) (tr₁ : Transcript orac
 by the prefix decision on the data `prefixRoute` selects. Only if the prefix accepts, the suffix
 decision follows, on the data `suffixRoute` selects. The output data is the composite output map
 on the inputs and all oracle messages of the same run. Ambient and challenge queries keep their
-order. Intermediate and final statements and oracle families may depend on their public paths. -/
+order. Intermediate and final statements and oracle bundles may depend on their public paths. -/
 theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂) (stmt : S) (data : inputs.Data)

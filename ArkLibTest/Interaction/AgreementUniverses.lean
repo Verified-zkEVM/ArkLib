@@ -19,9 +19,8 @@ namespace Interaction.AgreementUniversesTests
 
 variable {ι : Type} {S : Type} {I : Type}
   {ambient : OracleSpec ι} {s s' : OracleProtocol.{0, 0}} {A : I → Type}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : Path s → OracleBundle}
   {V V' : OracleVerifier ambient s S T inputs outputs}
 
 example (h : Agrees V V') (stmt : S) (data : ∀ i, A i)
@@ -30,7 +29,7 @@ example (h : Agrees V V') (stmt : S) (data : ∀ i, A i)
 
 example {σ : Type} (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × (∀ i, A i)))
-    (output : PathProblem s (OracleVerifier.Output T B))
+    (output : PathProblem s (OracleVerifier.Output T outputs))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ENNReal) :
     V.rbrSoundness impl input output draw ε ↔ V'.rbrSoundness impl input output draw ε :=
@@ -41,7 +40,7 @@ example {σ : Type} {Win : (S × (∀ i, A i)) → Type}
     (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbComp))
     (adm : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
     (relOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig s) →
-      OracleVerifier.Output T B tr.path → W stmt tr → Prop)
+      OracleVerifier.Output T outputs tr.path → W stmt tr → Prop)
     (draw : PrefixDraw viewSig ProbComp s) (ε : PrefixError oracleSig s) :
     V.rbrKnowledgeSoundness impl adm relIn relOut draw ε ↔
       V'.rbrKnowledgeSoundness impl adm relIn relOut draw ε :=

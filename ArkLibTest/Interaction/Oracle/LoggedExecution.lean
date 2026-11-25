@@ -266,9 +266,8 @@ alone and mentions no actual run. An absent verdict stays a rejection and create
 `decision_outcomes` checks the closed output of actual runs. -/
 theorem close_optional_ok {ε : Type v} {ι : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (tr : Transcript oracleSig s) (outcome : Option (T tr.path)) :
     let p := tr.path
@@ -908,7 +907,7 @@ example (input : Nat) : loggedObserved input = observed input := by
     simulateQ noQueries (composite.run () (fun _ => input) (prover input)) at h
   dsimp only [loggedObserved, observed]
   exact congrArg (fun (obs : Outcome oracleSig combined (fun _ => Nat)
-    (OracleVerifier.Output finalStmt finalData)) =>
+    (OracleVerifier.Output finalStmt fun p => OracleBundle.ofFamily (finalFamily p))) =>
       ((Transcript.path obs.1).1, obs.2.1,
     obs.2.2.map (readClaim (Transcript.path obs.1)))) h
 
@@ -919,9 +918,8 @@ universe v
 
 /-- Log erasure holds in a lawful target monad with any result universe. -/
 example {ι I : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-    {T : FreeM.Path s → Type} {A : I → Type} {J : FreeM.Path s → Type}
-    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleFamily.{0, 0, 0} I A}
-    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {T : FreeM.Path s → Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+    {outputs : FreeM.Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
@@ -1162,9 +1160,9 @@ end Interaction.LoggedExecutionTests
 
 /-- Forgetting the ambient queries by move recovers the parent verifier's run. -/
 example {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T J : FreeM.Path s → Type}
-    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {s : OracleProtocol.{0, 0}} {T : FreeM.Path s → Type}
+    {inputs : OracleBundle}
+    {outputs : FreeM.Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :

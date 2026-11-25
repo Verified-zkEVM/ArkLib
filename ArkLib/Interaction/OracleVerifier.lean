@@ -352,32 +352,30 @@ abbrev pathBundle (inputs : OracleBundle)
     (s : OracleProtocol.{0, 0}) (p : Path s) :=
   OracleBundle.sum inputs (OracleBundle.ofFamily (oracleMessageFamily s p))
 
-/-- A passive oracle verifier. The output statement type `T p` and the output oracle family
+/-- A passive oracle verifier. The output statement type `T p` and the output oracle bundle
 `outputs p` are indexed by the public shape path `p` of the run, so a public message may change
-both. A verifier with one output type and family uses constant families. -/
+both. A verifier with one output type and bundle uses constant functions of the path. -/
 structure OracleVerifier {ι : Type} (ambient : OracleSpec ι)
     (s : OracleProtocol.{0, 0}) (S : Type) (T : Path s → Type)
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    (inputs : OracleBundle)
-    (outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)) where
+    (inputs : OracleBundle) (outputs : Path s → OracleBundle) where
   /-- The decision has query access to inputs and path oracle messages, never their raw values. -/
   decide : S → (p : Path s) → View s p →
     OptionT (OracleComp (ambient + (pathBundle inputs s p).spec)) (T p)
   /-- The output interface may use the public statement and verifier view. -/
   outputMap : S → (p : Path s) → View s p →
-    OracleMap (pathBundle inputs s p) (OracleBundle.ofFamily (outputs p))
+    OracleMap (pathBundle inputs s p) (outputs p)
 
 /-- The output statement paired with the concrete output oracle data, at each shape path. -/
 abbrev OracleVerifier.Output {s : OracleProtocol.{0, 0}} (T : Path s → Type)
-    {J : Path s → Type} (B : (p : Path s) → J p → Type) (p : Path s) : Type :=
-  T p × (∀ j, B p j)
+    (outputs : Path s → OracleBundle) (p : Path s) : Type :=
+  T p × (outputs p).Data
 
 /-- Lift the queries to the oracle nodes of a completed path into the query interface of a
-decision on that path. Compiler inlining keeps the input family, which only fixes the query
+decision on that path. Compiler inlining keeps the input bundle, which only fixes the query
 interface, out of execution. -/
 @[macro_inline]
-def pathLift {ι : Type} {I : Type} (ambient : OracleSpec ι) {A : I → Type}
-    (inputs : OracleFamily.{0, 0, 0} I A) {s : OracleProtocol.{0, 0}} (p : Path s) :
+def pathLift {ι : Type} (ambient : OracleSpec ι)
+    (inputs : OracleBundle) {s : OracleProtocol.{0, 0}} (p : Path s) :
     QueryImpl (oracleMessageSpec s p) (OracleComp (ambient + (pathBundle inputs s p).spec)) :=
   fun q => liftM ((ambient + (pathBundle inputs s p).spec).query
     (.inr (.inr q)))
@@ -385,10 +383,10 @@ def pathLift {ι : Type} {I : Type} (ambient : OracleSpec ι) {A : I → Type}
 /-- Lifted path-oracle queries, answered from input data and path oracle messages with ambient
 queries answered in any lawful monad, are a pure computation of the path oracle messages: they
 make no ambient query. -/
-theorem simulateQ_pathLift {ι : Type} {I : Type}
-    {ambient : OracleSpec ι} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} {m : Type → Type v} [Monad m] [LawfulMonad m]
-    (amb : QueryImpl ambient m) {s : OracleProtocol.{0, 0}} (p : Path s) (x : ∀ i, A i)
+theorem simulateQ_pathLift {ι : Type}
+    {ambient : OracleSpec ι}
+    {inputs : OracleBundle} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    (amb : QueryImpl ambient m) {s : OracleProtocol.{0, 0}} (p : Path s) (x : inputs.Data)
     (pl : ∀ i, OracleMessage s p i) {α : Type} (oa : OracleComp (oracleMessageSpec s p) α) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs s p).answer (x, pl)))
         (simulateQ (pathLift ambient inputs p) oa) =
@@ -408,9 +406,7 @@ return on that data and view.
 -/
 def OracleVerifier.decideWith {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
     (data : (pathBundle inputs s p).Data) :
     OracleComp ambient (Option (T p)) :=
@@ -422,9 +418,7 @@ together under the ambient handler. -/
 theorem OracleVerifier.simulateQ_decideWith {ι : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
     {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
     (stmt : S) (p : Path s) (v : View s p)
@@ -449,9 +443,7 @@ data only to answer the decision's queries, for example through `(pathBundle inp
 Reading the oracle messages directly would bypass the decision's queries. -/
 def OracleVerifier.executeWith {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} {m : Type → Type} [Monad m]
     {ITrace : Type} {DTrace : Path s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -461,7 +453,7 @@ def OracleVerifier.executeWith {ι : Type} {ambient : OracleSpec ι}
     (decision : (p : Path s) → View s p → (pathBundle inputs s p).Data →
       OracleComp (ambient + challengeSpec oracleSig s) (Option (T p) × DTrace p)) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      ((obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) ×
+      ((obs : Outcome oracleSig s Out (OracleVerifier.Output T outputs)) ×
         ITrace × DTrace (Transcript.path obs.1)) := do
   let ⟨⟨tr, out, _⟩, trace⟩ ← interpret (TwoParty.Lens.run s prover coins)
   let p := Transcript.path tr
@@ -475,14 +467,12 @@ def OracleVerifier.executeWith {ι : Type} {ambient : OracleSpec ι}
 actual run. -/
 def OracleVerifier.run {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      (Outcome oracleSig s Out (OracleVerifier.Output T B)) :=
+      (Outcome oracleSig s Out (OracleVerifier.Output T outputs)) :=
   Sigma.fst <$> V.executeWith stmt data
     (ITrace := PUnit) (DTrace := fun _ => PUnit)
     (fun action => (fun result => (result, PUnit.unit)) <$> action)
@@ -499,9 +489,7 @@ def OracleVerifier.run {ι : Type} {ambient : OracleSpec ι}
 functor and monad laws of the shared mechanism. -/
 theorem OracleVerifier.run_eq {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
@@ -531,9 +519,7 @@ messages, with its ambient queries sent to the ambient part of the run's oracle.
 oracle bundle, as in `OracleVerifier.run_eq`. -/
 theorem OracleVerifier.run_eq_decideWith {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (x : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :

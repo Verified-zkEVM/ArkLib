@@ -353,16 +353,13 @@ example {ι : Type} {I : Type} {J : Type}
         QueryImpl (ambient + outputs.spec) m) program :=
   OracleMap.simulate_withAmbient_addLift handler route data program
 
-/-- Split execution uses input indices, statements and output oracle indices in `Type`. Both
-output families may depend on their paths. -/
+/-- Split execution uses input indices, statements and output oracle bundles in `Type`. Both
+output bundles may depend on their paths. -/
 example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-    {K : (p : Path s₁) → Path (s₂ p) → Type}
-    {C : (p : Path s₁) → (q : Path (s₂ p)) → K p q → Type}
-    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, 0} (K p q) (C p q)}
+    {middle : Path s₁ → OracleBundle}
+    {outputs : (p : Path s₁) → Path (s₂ p) → OracleBundle}
     {ambient : OracleSpec Nat}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))

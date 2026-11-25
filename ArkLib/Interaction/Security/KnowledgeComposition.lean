@@ -695,19 +695,14 @@ The suffix uses the prefix's final ambient state and the actual routed bundle da
 theorem OracleVerifier.validAcceptance_append {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι} {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-    {K : (p : Path s₁) → Path (s₂ p) → Type}
-    {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
     {inputs : OracleBundle}
-    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-    {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-      OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
+    {middle : Path s₁ → OracleBundle}
+    {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : V₁.OutputCompatibility V₂) (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × inputs.Data) (tr : Transcript oracleSig (s₁.append s₂))
-    (langOut : OracleVerifier.Output (splitFamily U)
-      (fun p => C (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2)
+    (langOut : OracleVerifier.Output (splitFamily U) (OracleVerifier.splitOutputs outputs)
       tr.path → Prop)
     (h : (V₁.append V₂ compatible).validAcceptance impl stmt tr langOut) :
     let p := tr.path

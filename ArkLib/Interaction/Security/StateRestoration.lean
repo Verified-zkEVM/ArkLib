@@ -356,10 +356,8 @@ theorem sampleAt_keySpine : {rounds : List Round} → (key : Key Input Salt roun
 section Outcome
 
 variable {s : OracleProtocol.{0, 0}} {I : Type} {S : Type} {A : I → Type}
-  {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : Path s → OracleBundle}
 
 /-- The decision of a verifier with no ambient oracle on a completed transcript. Bundle queries
 are answered from the input data and the transcript's oracle messages. -/
@@ -373,7 +371,7 @@ def verdict (V : OracleVerifier []ₒ s S T inputs outputs)
 def closedVerdict (V : OracleVerifier []ₒ s S T inputs outputs)
     (stmt : S × (∀ i, A i)) (tr : Transcript oracleSig s) :
     Option (T tr.path ×
-      (∀ j, B tr.path j)) :=
+      ((outputs tr.path).Data)) :=
   (verdict V stmt tr).map fun t =>
     (t, (V.outputMap stmt.1 tr.path (toView _ tr)).f
       (stmt.2, oracleMessages _ tr))
@@ -383,10 +381,8 @@ end Outcome
 section Verifier
 
 variable {rounds : List Round} {I S : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {J : Path (protocol rounds) → Type}
-  {B : (p : Path (protocol rounds)) → J p → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path (protocol rounds) → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : Path (protocol rounds) → OracleBundle}
 
 /-- The state-restoration game: the adversary queries the oracle and selects a statement, messages
 and salts and an output witness; completion reads the challenges from the same oracle; the
@@ -407,7 +403,7 @@ def closedVerificationGame (V : OracleVerifier []ₒ (protocol rounds) S T input
       ((S × (∀ i, A i)) × Messages Salt rounds × W)) :
     OracleComp (oracleSpec (S × (∀ i, A i)) Salt rounds)
       ((S × (∀ i, A i)) × (tr : Transcript oracleSig (protocol rounds)) ×
-        Option (OracleVerifier.Output T B tr.path) × W) :=
+        Option (OracleVerifier.Output T outputs tr.path) × W) :=
   do
   let (stmt, messages, witness) ← adversary
   let tr ← complete rounds stmt messages
@@ -431,7 +427,7 @@ theorem closedVerificationGame_eq (V : OracleVerifier []ₒ (protocol rounds) S 
     closedVerificationGame V adversary =
       (fun r => (⟨r.1, r.2.1, closedVerdict V r.1 r.2.1, r.2.2⟩ :
         (S × (∀ i, A i)) × (tr : Transcript oracleSig (protocol rounds)) ×
-          Option (OracleVerifier.Output T B tr.path) × W)) <$>
+          Option (OracleVerifier.Output T outputs tr.path) × W)) <$>
         restoredExecution rounds adversary := by
   simp only [closedVerificationGame, restoredExecution, _root_.map_bind, LawfulApplicative.map_pure]
 
@@ -653,10 +649,8 @@ theorem evalWithAnswerFn_run_scriptedProver {κ : Type} {spec : OracleSpec κ}
 section Verifier
 
 variable {rounds : List Round} {I : Type} {S : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {J : Path (protocol rounds) → Type}
-  {B : (p : Path (protocol rounds)) → J p → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path (protocol rounds) → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : Path (protocol rounds) → OracleBundle}
 
 /-- Running the scripted prover with the passive verifier, every challenge read from a transcript
 that carries the prover's messages, returns that transcript and the closed verdict on it. -/
@@ -682,10 +676,8 @@ end Verifier
 section Verifier
 
 variable {rounds : List Round} {I S : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {J : Path (protocol rounds) → Type}
-  {B : (p : Path (protocol rounds)) → J p → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path (protocol rounds) → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : Path (protocol rounds) → OracleBundle}
 
 /-- Every supported completion can be replayed by the actual parties with its recorded
 challenges, returning the completed transcript and its closed verdict. -/
@@ -970,11 +962,9 @@ end Knowledge
 section Games
 
 variable {rounds : List Round} {I S Salt W : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {J : Path (protocol rounds) → Type}
-  {B : (p : Path (protocol rounds)) → J p → Type}
-  {Win : S × (∀ i, A i) → Type}
+  {T : Path (protocol rounds) → Type} {Win : S × (∀ i, A i) → Type}
   {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {outputs : Path (protocol rounds) → OracleBundle}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
   {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) →
@@ -1022,7 +1012,7 @@ theorem stateRestoration_oracle_knowledge_soundness
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
-      OracleVerifier.Output T B tr.path → W → Prop)
+      OracleVerifier.Output T outputs tr.path → W → Prop)
     (F : KnowledgeStateFunction oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
@@ -1086,7 +1076,7 @@ theorem stateRestoration_oracle_knowledge_soundness_privateCoins
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
-      OracleVerifier.Output T B tr.path → W → Prop)
+      OracleVerifier.Output T outputs tr.path → W → Prop)
     (F : KnowledgeStateFunction oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)

@@ -729,7 +729,7 @@ theorem selectedScriptedRun_eq (b c : Bool) :
 
 /-- The exact dependent result type of a selected party run. -/
 abbrev SelectedRunResult := Outcome oracleSig selectedProtocol (fun _ => PUnit.{1})
-  (OracleVerifier.Output SelectedOutput (fun _ (_ : PUnit.{1}) => Fin 8))
+  (OracleVerifier.Output SelectedOutput fun p => OracleBundle.ofFamily (selectedFamily p.1))
 
 /-- The plain replay keeps the frozen message and challenge values, with a real dependent output. -/
 def replayResult (b c : Bool) : OracleComp []ₒ (Nat × Bool × Nat) :=

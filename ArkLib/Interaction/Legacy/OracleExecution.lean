@@ -634,9 +634,8 @@ theorem simulateQ_oracleChallengeReindex_run
   rfl
 
 variable {I S : Type} {T : Path (oracleProtocol pSpec) → Type} {A : I → Type}
-  {J : Path (oracleProtocol pSpec) → Type} {B : (p : Path (oracleProtocol pSpec)) → J p → Type}
   {inputs : OracleFamily I A}
-  {outputs : (p : Path (oracleProtocol pSpec)) → OracleFamily (J p) (B p)}
+  {outputs : Path (oracleProtocol pSpec) → OracleBundle}
 
 /-- Run an oracle verifier on the oracle tree of a legacy protocol under `order`, in the legacy
 query monad. The prover runs against the legacy sampler; the decision and the output map read
@@ -646,7 +645,8 @@ def oracleObserveWith (order : Schedule)
     (data : ∀ i, A i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
     (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (Outcome oracleSig (oracleProtocol pSpec) Out (Interaction.OracleVerifier.Output T B)) := do
+      (Outcome oracleSig (oracleProtocol pSpec) Out
+        (Interaction.OracleVerifier.Output T outputs)) := do
   let r ← runWith order (oracleProtocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (oracleLegacySampler pSpec (challengeOracle oSpec pSpec))
   let pp := Transcript.path r.1

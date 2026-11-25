@@ -643,8 +643,8 @@ message representation or original-oracle behavior quantified by the correspondi
 ## Agreement universes and parent limits
 
 `Interaction.OracleVerifier.Agrees` and every law in `Security/Agreement.lean` accept
-path-dependent output statements `T p`, oracle indices `J p`, carriers `B p j` and interfaces
-`outputs p`. Outcomes and output problems use `OracleVerifier.Output T B`. The decision and
+path-dependent output statements `T p` and output oracle bundles `outputs p`. Outcomes and
+output problems use `OracleVerifier.Output T outputs`. The decision and
 output-map cast laws retain the verifier owner's independent ambient and output-index universes;
 ordinary runs retain its move/response universe `u`. `cast_const` identifies the general
 transport with ordinary equality substitution for constant output families. Ordinary substitution

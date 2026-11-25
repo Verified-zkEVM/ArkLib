@@ -537,11 +537,8 @@ variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
   {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
+  {middle : Path s₁ → OracleBundle}
+  {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
 
 /-- Reassociate inputs and both sets of messages into the prefix bundle and the suffix messages. -/
 def splitPathBundle (p : Path (s₁.append s₂)) :
@@ -570,13 +567,11 @@ def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (OracleMap.id (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
       (splitPathBundle (inputs := inputs) p)
 
-/-- The output oracle family of an appended oracle protocol: at a path of the appended tree, the
-suffix's output family at the split path. -/
+/-- The output oracle bundle of an appended oracle protocol: at a path of the appended tree, the
+suffix's output bundle at the split path. -/
 abbrev splitOutputs
-    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂))
-    (p : Path (s₁.append s₂)) :
-    OracleFamily.{0, 0, 0} (splitFamily K p)
-      (C (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2) :=
+    (outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle)
+    (p : Path (s₁.append s₂)) : OracleBundle :=
   outputs (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
 
 /-- A composite output map must represent every intermediate statement the prefix can accept.
@@ -590,8 +585,7 @@ structure OutputCompatibility (V₁ : OracleVerifier ambient s₁ S T inputs mid
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p)) where
   /-- The composite output map, which sees only the statement, the path and the view. -/
   outputMap : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p →
-    OracleMap (pathBundle inputs (s₁.append s₂) p)
-      (OracleBundle.ofFamily (splitOutputs outputs p))
+    OracleMap (pathBundle inputs (s₁.append s₂) p) (splitOutputs outputs p)
   /-- On every accepted intermediate statement it agrees with the suffix's map after routing. -/
   agrees : ∀ stmt p v data mid,
     some mid ∈ support (V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
@@ -616,7 +610,7 @@ def OutputCompatibility.ofStatement (V₁ : OracleVerifier ambient s₁ S T inpu
     rfl
 
 /-- Fold passive decisions at the end, routing all suffix bundle queries through the prefix.
-The composite's output statement and output oracle family at an appended path are the suffix's
+The composite's output statement and output oracle bundle at an appended path are the suffix's
 at the split path. -/
 def append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))

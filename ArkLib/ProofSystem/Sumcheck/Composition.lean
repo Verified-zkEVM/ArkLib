@@ -330,7 +330,7 @@ theorem simulateQ_foldLift {κ : Type} {spec' : OracleSpec κ}
         ((x, pl)))) (simulateQ (foldLift ambient inputs p) oa) =
       (pure (simulateQ ((oracleMessageFamily s p).behaviorOfRealizations pl) oa) :
         OracleComp spec' α) :=
-  simulateQ_pathLift amb p x pl oa
+  simulateQ_pathLift (inputs := inputs) amb p x pl oa
 
 /-- On any completed run, the fold verifier returns the legacy fold's verdict on the decoded
 transcript, without ambient effects. -/

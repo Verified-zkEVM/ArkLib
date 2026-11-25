@@ -512,9 +512,8 @@ abbrev Verifier.rbrKnowledgeSoundnessOfNodes {ι σ : Type} {S : Type} {Win : S 
 
 namespace OracleVerifier
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle}
+  {outputs : Path s → OracleBundle}
 
 /-- Oracle acceptance from a possible ambient state at the end of the run, with actual input and
 path oracle messages. The event is a predicate on the output statement and oracle data at the
@@ -522,7 +521,7 @@ transcript's shape path. -/
 def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × inputs.Data) (tr : Transcript oracleSig s)
-    (event : OracleVerifier.Output T B tr.path → Prop) : Prop :=
+    (event : OracleVerifier.Output T outputs tr.path → Prop) : Prop :=
   let p := Transcript.path tr
   let view := toView s tr
   let pathData : (pathBundle inputs s p).Data := (stmt.2, oracleMessages s tr)
@@ -537,7 +536,7 @@ def validAcceptance (V : OracleVerifier ambient s S T inputs outputs)
 theorem validAcceptance_iff_support (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × inputs.Data) (tr : Transcript oracleSig s)
-    (langOut : OracleVerifier.Output T B tr.path → Prop) :
+    (langOut : OracleVerifier.Output T outputs tr.path → Prop) :
     V.validAcceptance impl stmt tr langOut ↔
       ∃ state t final, (some t, final) ∈ support
         ((simulateQ impl (V.decideWith stmt.1 tr.path
@@ -559,7 +558,7 @@ theorem validAcceptance_iff_validAcceptanceUsing
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (stmt : S × inputs.Data) (tr : Transcript oracleSig s)
-    (event : (p : Path s) → OracleVerifier.Output T B p → Prop) :
+    (event : (p : Path s) → OracleVerifier.Output T outputs p → Prop) :
     V.validAcceptance impl stmt tr (event tr.path) ↔
       ∃ state : σ, V.validAcceptanceUsing impl (fun x => x.run' state)
         event stmt tr := by
@@ -573,7 +572,7 @@ output language is indexed by the shape path and judged at the transcript's path
 abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × inputs.Data))
-    (output : PathProblem s (OracleVerifier.Output T B))
+    (output : PathProblem s (OracleVerifier.Output T outputs))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Interaction.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
@@ -591,7 +590,7 @@ abbrev rbrKnowledgeSoundness {Win : (S × inputs.Data) → Type}
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × inputs.Data → Prop) (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
     (relOut : (stmt : S × inputs.Data) → (tr : Transcript oracleSig s) →
-      OracleVerifier.Output T B tr.path → W stmt tr → Prop)
+      OracleVerifier.Output T outputs tr.path → W stmt tr → Prop)
     (draw : PrefixDraw viewSig ProbComp s)
     (ε : PrefixError oracleSig s) : Prop :=
   Interaction.rbrKnowledgeSoundness oracleSig s admissible relIn
@@ -606,7 +605,7 @@ abbrev rbrKnowledgeSoundnessOfNodes {Win : (S × inputs.Data) → Type}
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × inputs.Data → Prop) (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
     (relOut : (stmt : S × inputs.Data) → (tr : Transcript oracleSig s) →
-      OracleVerifier.Output T B tr.path → W stmt tr → Prop)
+      OracleVerifier.Output T outputs tr.path → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
   Interaction.rbrKnowledgeSoundness oracleSig s admissible relIn
@@ -621,7 +620,7 @@ theorem rbrKnowledgeSoundnessOfNodes_iff {Win : (S × inputs.Data) → Type}
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (admissible : S × inputs.Data → Prop) (relIn : (stmt : S × inputs.Data) → Win stmt → Prop)
     (relOut : (stmt : S × inputs.Data) → (tr : Transcript oracleSig s) →
-      OracleVerifier.Output T B tr.path → W stmt tr → Prop)
+      OracleVerifier.Output T outputs tr.path → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) :
     rbrKnowledgeSoundnessOfNodes V impl admissible relIn relOut draw ε ↔
