@@ -382,13 +382,15 @@ decision from one hypothesis per boundary. A one-stage decision that queries an 
 and rejects on `false` accepts almost surely under the answer measure `alwaysTrue`, although its
 support contains the rejection.
 
-The split of a composition at an arbitrary middle stage is not ported. The protocol part exists:
-PolyFun's `PFunctor.FreeM.append_assoc`, with the inverse laws of `Path.append` and `Path.split`,
-and the concatenation `Chain.then` with `Chain.toTypeTree_then`. The missing part is a
-reassociation law for `OracleVerifier.append`. It must transport paths and views along the
-protocol associativity, reconcile `prefixRoute` and `suffixRoute`, and reassociate the
-compatibility certificates. The split also needs the prover continuation retained at the cut.
-The split after the first stage is `StageChain.run_cons`.
+The split of a composition at an arbitrary middle stage is ported on completed runs.
+`StageChain.then` concatenates two chains, following PolyFun's `Chain.then` and
+`PFunctor.FreeM.append_assoc`. `StageChain.decideOn_then` and `StageChain.outputOn_then` split the
+composed verifier of a concatenation at the cut, and `OracleVerifier.append_append_decideOn` and
+`OracleVerifier.append_append_outputOn` in `Core/Oracle/Reassociation.lean` reassociate
+`OracleVerifier.append`. The laws are `HEq`s on runs, because the two associations have different
+protocols and a certificate's output map agrees with the composite output map only on accepted
+intermediate statements. They do not transport the prover of a concatenation to the appended
+protocol. A chain's run still unfolds one append at a time through `StageChain.run_cons`.
 
 ### Output witnesses are indexed by the transcript
 
