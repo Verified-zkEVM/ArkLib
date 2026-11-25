@@ -587,8 +587,9 @@ security proofs do not use a legacy fold-to-sequential bridge.
 | LegacyVerifier #12, #13 | Keep the legacy RBR knowledge guards. Core transfers remain guarded in `Core/RoundByRound.lean`. |
 
 The original kept `ArkLibTest/ProofSystem/Sumcheck/LegacyVerifier.lean` is outside D7's editable
-paths. Its frozen import still needs retargeting when D9 removes the frozen providers. None of
-the new Core tests imports it.
+paths. The deletion of the frozen Sumcheck layer retargeted it from the frozen `legacyTranscript`
+to `Sumcheck.Core.simpleLegacyTranscript`, which has the same definition. None of the new Core
+tests imports it.
 
 ### Supporting declarations added by D7
 
@@ -597,7 +598,7 @@ above rather than adding independent security claims.
 
 | Module | Declarations and purpose |
 |---|---|
-| `Spec/PolynomialInterface` | `Spec.polynomialFamily`; the plain alias `Interaction.MultivariateRound.polynomialFamily` remains only until D9. Existing Core and `Impl/Projection` clients use the neutral name. |
+| `Spec/PolynomialInterface` | `Spec.polynomialFamily`. The deletion of the frozen Sumcheck layer removed the plain alias `Interaction.MultivariateRound.polynomialFamily`. Core and `Impl/Projection` clients use the neutral name. |
 | `LegacyProjection` | `messageFamily`, `projectionMap`, `projectionMap_f`, `simulateQ_projectionMap`: the univariate output interface and lawful projection. |
 | `Interaction/Core/OracleVerifier` | `Interaction.Core.pathLift`, `Interaction.Core.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.run_eq_decideWith` expresses a run through `decideWith` for any input bundle, at the protocol query universe of `OracleVerifier.run_eq`, using the shared owner lemma `OracleVerifier.simulateQ_decideWith` in reverse. |
 | `Interaction/Core/Composition` | `Interaction.Core.TranscriptAt.split_val`: the split of a transcript at a path carries the transcripts of `Transcript.split`. |

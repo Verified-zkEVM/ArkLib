@@ -413,6 +413,8 @@ before the deletion. The ledgers then keep their evidence after the files are go
    LogUp port needs a law about raw decision queries, their order and their charges.
 4. Delete the frozen Sumcheck layer: the 19 modules, the 12 tests, the alias, the Sumcheck
    blueprint citations and the Sumcheck workflow globs. Retarget `LegacyVerifier.lean`.
+   Done: the PR "chore(sumcheck): delete the frozen Sumcheck interaction layer" carries out this
+   step and retargets `LegacyVerifier.lean` to `Sumcheck.Core.simpleLegacyTranscript`.
 5. Delete the generic layer: the 42 modules, the 32 tests, the remaining blueprint citations and
    the old part of `MeasuredExtraction.lean`. Fix the prose and the links listed above.
 6. Clean PolyFun and VCVio: PolyFun P-clean and VCVio R-clean.
