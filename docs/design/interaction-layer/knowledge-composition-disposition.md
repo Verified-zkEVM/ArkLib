@@ -146,24 +146,28 @@ that valid output witnesses imply acceptance, and it uses classical choice for t
 operation-count result therefore names the stage programs and their prices. Stage selection,
 uncharged host computations and carrier conversions remain outside that cost.
 
-Instruction budgets leave pure code, views, handlers, carrier identification and witness size
+Instruction budgets leave pure code, views, answers, carrier identification and witness size
 uncharged. Ordered-program and unbounded-depth assertions retain actual instrumented charges,
 not just declared budgets. Zero-stage assertions deliberately show that the budget contract
 alone gives no total running-time bound.
 
-At the previous VCVio pin `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`,
-`OracleComp.BudgetedProgram` in `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixed
-`Input` and `Result` to `Type`, and the underlying `OracleComp.MeasuredProgram` at line 66 also
-fixed `ω`, `View` and `Op` to `Type`. The measured programs now live in PolyFun as
-`PFunctor.FreeM.MeasuredProgram` and `PFunctor.FreeM.BudgetedProgram`
-(`PolyFun/PFunctor/Free/Cost/Measured.lean`), with independent input, result and cost universes.
-ArkLib's measured stages still take `ω : Type` and `Type`-valued witness families. This keeps
-small `Win stmt` at root results, small intermediate witnesses and `StageInput` at step
-inputs/results, and small `W stmt tr` at leaf inputs. `MeasuredStages.programAlong` and
-`MeasuredKnowledgeStateFunction` retain those restrictions, and lifting them is follow-up work.
-The statement universe remains independent, and the measured code takes `P : PFunctor.{uA, 0}`, so
-positions have their own universe. These restrictions apply only to measured programs, not pure
-backward maps. The VCVio pin is `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3`.
+The binders of `MeasuredStages` keep small `Win stmt` at root results, small intermediate
+witnesses and `StageInput` at step inputs/results, small `W stmt tr` at leaf inputs, and a small
+cost type `ω`. `MeasuredStages.programAlong` and `MeasuredKnowledgeStateFunction` retain those
+restrictions, and lifting them is follow-up work. The pinned measured-program declarations do not
+fix these carriers to `Type`. At the previous VCVio pin `f8d7f8ef`, VCVio's
+`OracleComp.BudgetedProgram` and `OracleComp.MeasuredProgram` did. The programs now live in
+PolyFun. `PFunctor.FreeM.BudgetedProgram` in `PolyFun/PFunctor/Free/Cost/Measured.lean:194`
+takes its input, result and cost type in independent universes. The underlying
+`PFunctor.FreeM.MeasuredProgram` at line 52 puts `View` and `Op` in the universe of the result.
+`BudgetedProgram.comp` at line 221 puts the intermediate result in the universe of the final
+result. `BudgetedProgram.ofFun` at line 210 puts the input in the universe of the result.
+VCVio's bridge `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:51` states the oracle-cost
+lemmas for `Type` inputs, results and cost types. The statement universe remains independent, and
+the measured code takes `P : PFunctor.{uA, 0}`, so positions have their own universe. These
+restrictions apply only to measured programs, not pure backward maps. The PolyFun pin is
+`713d8857e49d20927c1447b3ba7397acc5537319`, and the VCVio pin is
+`f1a4a8ecef2e76b3af3dbe5205c604066dba85e3`.
 
 ## ArkLib/Interaction/Oracle/Security/Knowledge.lean
 
@@ -361,9 +365,8 @@ above.
 The extractor design page (`docs/design/03a-extractor-efficiency.md`) and the status pages are
 not part of this branch. Follow-up work updates them to name the Core and frozen APIs, keeps the
 older straight-line contract and the FRI certificate separate from this backward-stage port, and
-records that no security game yet links to this extractor. The planned VCVio-to-PolyFun
-measured-program repin should include `MeasuredExtraction.lean`, its tests and #1483's measured
-restoration consumer.
+records that no security game yet links to this extractor. The VCVio-to-PolyFun measured-program
+repin covers `MeasuredExtraction.lean`, its tests and #1483's measured restoration consumer.
 
 The required checks are the targeted reverse-dependency build and guards relative to
 `feat/interaction-migrate-core`. They check Core consumers, source restrictions, frozen paths,
