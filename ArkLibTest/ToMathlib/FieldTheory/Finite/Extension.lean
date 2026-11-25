@@ -5,16 +5,16 @@ Authors: Thomas Coratger
 -/
 
 import ArkLib.ToMathlib.FieldTheory.Finite.Extension
-import Mathlib.Algebra.Field.ZMod
 
-/-! # Acceptance cases for finite extensions with a basis of any size -/
+/-! # Acceptance cases for the basis of a finite-field extension -/
 
--- The prime field `𝔽₂` has an extension with a basis of size `3`.
-example : ∃ (E : Type) (_ : Field E) (_ : Finite E) (_ : Algebra (ZMod 2) E),
-    Nonempty (Module.Basis (Fin 3) (ZMod 2) E) :=
-  FiniteField.exists_basis_fin (ZMod 2) (by norm_num)
+-- Over any finite field, the field and module instances of the extension are found,
+-- and the basis gives it `q³` elements.
+example (K : Type) [Field K] [Fintype K] [Fintype (FiniteField.Extension K (ringChar K) 3)] :
+    Fintype.card (FiniteField.Extension K (ringChar K) 3) = Fintype.card K ^ 3 := by
+  rw [Module.card_fintype (FiniteField.Extension.finBasis K 3), Fintype.card_fin]
 
-/-- info: 'FiniteField.exists_basis_fin' depends on axioms:
+/-- info: 'FiniteField.Extension.finBasis' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms FiniteField.exists_basis_fin
+#print axioms FiniteField.Extension.finBasis

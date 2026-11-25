@@ -7,7 +7,7 @@ Authors: Thomas Coratger
 import ArkLib.ToMathlib.RingTheory.Henselian
 import Mathlib.RingTheory.AdicCompletion.Completeness
 
-/-! # Acceptance cases for Hensel's lemma without monicity -/
+/-! # Acceptance cases for Hensel's lemma without monicity, with uniqueness -/
 
 open PowerSeries
 
@@ -28,6 +28,21 @@ example : ∃ a : PowerSeries ℤ,
     refine IsUnit.map _ (isUnit_iff_constantCoeff.mpr ?_)
     simp
 
+-- The lift of `1` is unique, whatever the root found by the Newton iteration.
+example (a b : PowerSeries ℤ)
+    (ha : (Polynomial.C X * Polynomial.X ^ 2 - Polynomial.X + 1 :
+      Polynomial (PowerSeries ℤ)).IsRoot a) (ha₁ : a - 1 ∈ Ideal.span {X})
+    (hb : (Polynomial.C X * Polynomial.X ^ 2 - Polynomial.X + 1 :
+      Polynomial (PowerSeries ℤ)).IsRoot b) (hb₁ : b - 1 ∈ Ideal.span {X}) : a = b := by
+  refine Polynomial.eq_of_isRoot_of_sub_mem (IsAdicComplete.le_jacobson _) _ ?_ ha ha₁ hb hb₁
+  have : (Polynomial.derivative (Polynomial.C X * Polynomial.X ^ 2 - Polynomial.X + 1 :
+      Polynomial (PowerSeries ℤ))).eval 1 = -1 + 2 * X := by
+    simp [Polynomial.derivative_mul]
+    ring
+  rw [this]
+  refine IsUnit.map _ (isUnit_iff_constantCoeff.mpr ?_)
+  simp
+
 -- The lemma recovers the Henselian property of adically complete rings.
 example {R : Type*} [CommRing R] (I : Ideal R) [IsAdicComplete I R] : HenselianRing R I :=
   ⟨IsAdicComplete.le_jacobson I,
@@ -39,3 +54,17 @@ info: 'IsAdicComplete.exists_isRoot_sub_mem' depends on axioms: [propext, Classi
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms IsAdicComplete.exists_isRoot_sub_mem
+
+/--
+info: 'Polynomial.eq_of_isRoot_of_sub_mem' depends on axioms: [propext, Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Polynomial.eq_of_isRoot_of_sub_mem
+
+/--
+info: 'IsAdicComplete.existsUnique_isRoot_sub_mem' depends on axioms: [propext, Classical.choice,
+ Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms IsAdicComplete.existsUnique_isRoot_sub_mem

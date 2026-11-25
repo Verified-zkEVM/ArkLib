@@ -168,9 +168,11 @@ continue from that final state, and two sequential regions must agree with one s
 
 Implemented: VCVio's `OracleRuntime` and `RunResult` (`VCVio.OracleComp.Runtime`) pair the output,
 final state and ordered surface query log; `OracleRuntime.resume` continues from the final state and
-appends the log. ArkLib runs interaction-layer reductions through them with
-`Interaction.Oracle.executeWithRuntime` and `Interaction.Oracle.executeStrategiesWithRuntime`
-(`ArkLib/Interaction/Oracle/Runtime.lean`), with phased forms in `PhasedRun.lean`.
+appends the log. A persistent runtime executes the interaction core's logged run directly as
+`runtime.run (V.runWithLog stmt data prover)`. `simulateQ_toLog_runWithQueriesByMove` in
+`ArkLib/Interaction/Oracle/QueriesByMoveLaws.lean` proves that interpreting the run's queries
+by move commutes with forgetting them to the full query logs, for every interpreter, stateful
+runtimes included. The deleted old layer had separate runtime and phased runners.
 
 #### One terminal failure boundary
 
@@ -179,9 +181,11 @@ rejection and explicit model faults are returned values. The desired bridge mate
 mass only when a caller supplies the named fault value; otherwise the caller proves the program
 has full mass before decoding a terminal outcome.
 
-Implemented: `Interaction.Oracle.Terminal.observe` (`ArkLib/Interaction/Oracle/TerminalMeasure.lean`)
-maps VCVio's `evalDistWithFailure` through a named fault. `observe_accept` and `observe_reject`
-keep the original mass, and `observe_namedFault` adds exactly the missing mass to the named fault.
+The interaction core keeps missing runtime mass separate from rejection: a core verdict is an
+`Option`, and `OracleVerifier.decideCatching` in `ArkLib/Interaction/Oracle/LoggedExecution.lean`
+keeps the label of a handler failure. The deleted old layer decoded missing mass as a named fault
+through `Terminal.observe`; the [migration list](interaction-layer/migration-list.md) records its
+retirement.
 
 #### Certified query-trace transducers
 
@@ -193,7 +197,7 @@ transducer carrier.
 
 VCVio contains concrete conditioned arguments and random-oracle programming tools, but the reusable
 finite-partition and query-before-program interfaces remain incomplete. The
-state-restoration theorems in `ArkLib/Interaction/Oracle/Security/` were proved without them, so
+state-restoration theorems in `ArkLib/Interaction/Security/` were proved without them, so
 add only the general lemmas that a later client, such as a salted Fiat–Shamir bridge, demands.
 
 #### Error-bearing cost-aware reductions

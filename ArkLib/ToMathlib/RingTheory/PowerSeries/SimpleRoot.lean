@@ -17,8 +17,7 @@ Let `Φ` be a polynomial with power series coefficients over a commutative ring 
 Reducing every coefficient to its constant term gives a polynomial over `R`.
 A simple root `a` of the reduction lifts to a unique power series root with constant term `a`.
 
-Existence is Hensel's lemma in the `X`-adically complete ring of power series.
-Uniqueness holds because `Φ(F) - Φ(E)` is `F - E` times a unit for two such roots.
+This is Hensel's lemma, with uniqueness, in the `X`-adically complete ring of power series.
 
 ## Main statements
 
@@ -47,23 +46,18 @@ theorem existsUnique_constantCoeff_eq_and_eval_eq_zero (Φ : Polynomial (PowerSe
     (h₀ : (Φ.map constantCoeff).eval a = 0)
     (h₁ : IsUnit ((Φ.map constantCoeff).derivative.eval a)) :
     ∃! E : PowerSeries R, constantCoeff E = a ∧ Φ.eval E = 0 := by
-  have hunit : ∀ E : PowerSeries R, constantCoeff E = a →
-      IsUnit (Φ.derivative.eval E) := fun E hE ↦ by
-    rw [isUnit_iff_constantCoeff, ← Polynomial.eval_map_apply, hE, ← Polynomial.derivative_map]
+  have hmem : ∀ E : PowerSeries R, E - C a ∈ Ideal.span {X} ↔ constantCoeff E = a := fun E ↦ by
+    rw [Ideal.mem_span_singleton, X_dvd_iff, map_sub, constantCoeff_C, sub_eq_zero]
+  have hunit : IsUnit (Φ.derivative.eval (C a)) := by
+    rw [isUnit_iff_constantCoeff, ← Polynomial.eval_map_apply, constantCoeff_C,
+      ← Polynomial.derivative_map]
     exact h₁
-  obtain ⟨E, hE, hEa⟩ := IsAdicComplete.exists_isRoot_sub_mem (I := Ideal.span {X}) Φ (C a)
-    (by rw [Ideal.mem_span_singleton, X_dvd_iff, ← Polynomial.eval_map_apply, constantCoeff_C, h₀])
-    ((hunit _ (constantCoeff_C a)).map _)
-  rw [Ideal.mem_span_singleton, X_dvd_iff, map_sub, constantCoeff_C, sub_eq_zero] at hEa
-  refine ⟨E, ⟨hEa, hE⟩, fun F ⟨hFa, hF⟩ ↦ ?_⟩
-  obtain ⟨c, hc⟩ := Polynomial.exists_mul_sq_add_linear_part_eq_eval_add Φ E (F - E)
-  rw [add_sub_cancel, hF, hE.eq_zero, add_zero] at hc
-  have hu : IsUnit (c * (F - E) + Φ.derivative.eval E) := by
-    rw [isUnit_iff_constantCoeff, map_add, map_mul, map_sub, hFa, hEa, sub_self, mul_zero,
-      zero_add, ← isUnit_iff_constantCoeff]
-    exact hunit E hEa
-  rw [← sub_eq_zero, ← hu.mul_right_eq_zero]
-  linear_combination hc
+  obtain ⟨E, ⟨hE, hEa⟩, huniq⟩ :=
+    IsAdicComplete.existsUnique_isRoot_sub_mem (I := Ideal.span {X}) Φ (C a)
+      (by rw [Ideal.mem_span_singleton, X_dvd_iff, ← Polynomial.eval_map_apply, constantCoeff_C,
+        h₀])
+      (hunit.map _)
+  exact ⟨E, ⟨(hmem E).mp hEa, hE⟩, fun F ⟨hFa, hF⟩ ↦ huniq F ⟨hF, (hmem F).mpr hFa⟩⟩
 
 /-- A truncation of a root is a root up to its length.
 

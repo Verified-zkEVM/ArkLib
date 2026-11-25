@@ -31,22 +31,6 @@ open CompPoly Finset
 
 variable {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι]
 
-namespace LinearClaimInstance
-
-/-- The instance fields as a product that can be enumerated over finite `ι` and `F`. -/
-def equivProd (ι F : Type*) (d : ℕ) :
-    LinearClaimInstance ι F d ≃
-      (ι → F) × (ι → F) × (Fin (d + 1) → F) × F × F × (F → F) where
-  toFun w := (w.f, w.g, w.v, w.γ₀, w.γ₁, w.message)
-  invFun := fun ⟨f, g, v, γ₀, γ₁, message⟩ ↦ ⟨f, g, v, γ₀, γ₁, message⟩
-  left_inv := by intro w; cases w; rfl
-  right_inv := by rintro ⟨f, g, v, γ₀, γ₁, message⟩; rfl
-
-instance [DecidableEq ι] [Fintype F] (d : ℕ) : Fintype (LinearClaimInstance ι F d) :=
-  Fintype.ofEquiv _ (equivProd ι F d).symm
-
-end LinearClaimInstance
-
 namespace Computable
 
 /-- Evaluate the weighted sum of the first `d + 1` coefficients of a computable polynomial. -/
@@ -88,10 +72,10 @@ theorem isLinearClaimExceptional_iff (domain : ι ↪ F) {d : ℕ} (w : LinearCl
         θ α β P.val.toPoly := by
   rw [IsLinearClaimExceptional, ReedSolomon.IsLinearClaimExceptional,
     card_eval_eq_card_polynomialAgreementSet]
-  simp only [degree_toPoly_le P, true_and, linearClaim_eq_toPoly]
+  simp only [CPolynomial.degree_toPoly_le P, true_and, linearClaim_eq_toPoly]
   simp only [← CPolynomial.toPoly_inj (p := P.val), toPoly_equalDegreePolynomial,
     CPolynomial.toPoly_mul, CPolynomial.toPoly_add, CPolynomial.C_toPoly, CPolynomial.X_toPoly,
-    lostPositions_eq_filter]
+    lostPositions_eq_filter, HasCorrectLinearClaims, and_imp]
   exact and_congr_right fun _ ↦ and_congr_right fun _ ↦
     CPolynomial.forall₂_degreeLT_toPoly_iff d d fun U V ↦
       P.val.toPoly = V + ReedSolomon.affineMultiplier α β * (U + Polynomial.C θ * V) →
@@ -123,7 +107,7 @@ theorem ofReal_linearClaimMcaErrorRat (domain : ι ↪ F) (d A s : ℕ) :
       (w.message c.1) c.1 c.2.1 c.2.2 P) fun w c ↦ by
         rw [decide_eq_true_eq]
         simp_rw [Computable.isLinearClaimExceptional_iff]
-        exact Computable.exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1]
+        exact CPolynomial.exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1]
   simp only [linearClaimMcaError, Fintype.card_prod, Nat.cast_mul, pow_succ, pow_zero, one_mul,
     mul_assoc]
 
