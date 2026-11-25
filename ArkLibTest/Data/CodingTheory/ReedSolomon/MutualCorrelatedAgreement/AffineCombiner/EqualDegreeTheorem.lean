@@ -132,3 +132,8 @@ example : linearClaimMcaError largeDomain 16 90 1 < (1 : ENNReal) / 2 ^ 60 := by
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.linearClaimMcaError_le
+
+/-- info: 'ReedSolomon.linearClaimMcaError_le_johnson' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.linearClaimMcaError_le_johnson

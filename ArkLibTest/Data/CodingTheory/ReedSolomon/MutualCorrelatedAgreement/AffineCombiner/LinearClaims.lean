@@ -56,6 +56,14 @@ example :
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
 
+-- With the excluded challenges and the false pairs in one Johnson list, the term is `ℓ₀/q = 2/5`.
+example :
+    linearClaimMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 2 / 5 := by
+  have h := linearClaimMcaError_le_affineMcaError_add_johnson fullDomain (d := 1) (A := 4)
+    (by simp [ZMod.card])
+  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
+  exact h
+
 -- With honest announcements `c_F = ⟨coef(X F), v⟩`, `c_G = ⟨coef(X G), v⟩`, the derived message
 -- is the honest claim `⟨coef(X(F + θ G)), v⟩`.
 example {F : Type*} [Field F] {d : ℕ} (v : Fin (d + 1) → F) (F₀ G₀ : F[X]) (θ : F) :
@@ -136,6 +144,11 @@ example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι] (
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.linearClaimMcaError_le_affineMcaError_add
+
+/-- info: 'ReedSolomon.linearClaimMcaError_le_affineMcaError_add_johnson' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.linearClaimMcaError_le_affineMcaError_add_johnson
 
 /-- info: 'ReedSolomon.card_filter_linearClaimResidual_eq_zero_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
