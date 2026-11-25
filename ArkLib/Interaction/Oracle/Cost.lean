@@ -21,20 +21,14 @@ the routed program. This is VCVio's `WorstCaseCostBound.simulateQ` for the handl
 Query multiplicities of a recorded run are counted with VCVio's `QueryLog.countQ`, which adds
 over appended logs (`QueryLog.countQ_append`).
 
-The ambient index, bundle-query indices, responses, results and cost carrier are restricted to
-`Type`. Only backing-data universes are independent here. ArkLib accepts this restriction as an
-upstream limit: VCVio's `CostModel`, `costDist`, `WorstCaseCostBound` and
-`WorstCaseCostBound.simulateQ` required `Type` until VCVio PR #1220
-(https://github.com/Verified-zkEVM/VCVio/pull/1220) generalized their universes. The pinned
-VCVio includes that PR, and generalizing this wrapper is follow-up work. Query indices and the
-cost carrier are not restricted by the protocol semantics. A caller at a larger universe can
-already prove a structural bound with PolyFun's universe-polymorphic completed-path transfer
-`PFunctor.FreeM.Path.charge_liftM_le_of_forall`.
+The ambient index, the bundle-query indices, the responses, the results and the cost carrier
+have independent universes, as in VCVio's `WorstCaseCostBound.simulateQ`. The responses and the
+results share one universe because `simulateQ` folds into a monad over the response universe.
 -/
 
 @[expose] public section
 
-universe dX dY
+universe uι uX uY u w dX dY
 
 namespace Interaction
 open OracleComp OracleSpec Oracle
@@ -45,13 +39,10 @@ implementing each output query, charged at the target cost of the input queries 
 the original charge of that output query.
 
 As with `WorstCaseCostBound` itself, the bound covers completed paths only. A query with an empty
-response type ends no completed path, so the bound says nothing about its charge.
-
-The indices, responses and cost carrier lie in `Type` because VCVio's cost API required it before
-VCVio PR #1220. The pinned VCVio includes that PR, and generalizing this theorem is follow-up
-work; the module docstring has the details. -/
-theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}
-    {In : OracleBundle.{0, 0, dX}} {Out : OracleBundle.{0, 0, dY}}
+response type ends no completed path, so the bound says nothing about its charge. -/
+theorem OracleMap.withAmbient_worstCaseCost {ι : Type uι} {α : Type u} {ω : Type w}
+    {ambient : OracleSpec.{uι, u} ι}
+    {In : OracleBundle.{u, uX, dX}} {Out : OracleBundle.{u, uY, dY}}
     [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMonoid ω]
     (route : OracleMap In Out) {program : OracleComp (ambient + Out.spec) α}
     {sourceCost : CostModel (ambient + Out.spec) ω}
@@ -65,10 +56,7 @@ theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleS
   rcases q with q | q
   · change WorstCaseCostBound
       (liftM ((ambient + In.spec).query (.inl q)) : OracleComp (ambient + In.spec) _) targetCost _
-    rw [worstCaseCostBound_iff_support_bound]
-    intro z hz
-    exact ((worstCaseCostBound_iff_support_bound _ _ _).mp
-      (worstCaseCostBound_query (.inl q) targetCost) z hz).trans (hambient q)
+    exact (worstCaseCostBound_query (.inl q) targetCost).mono (hambient q)
   · exact (hroute q).simulateQ _ fun r => worstCaseCostBound_query (.inr r) targetCost
 
 end Interaction

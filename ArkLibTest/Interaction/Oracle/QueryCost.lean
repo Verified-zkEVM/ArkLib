@@ -184,10 +184,9 @@ theorem suffix_budget (p : Path bitSecond) (v : View bitSecond p) :
 
 -- RuntimeQueryBounds 7, restated: the route is `suffixRoute … withAmbient`. On every composed
 -- path and view, the routed suffix decision costs at most 5. The fixture's oracle-node query
--- universe is fixed to `0` because `OracleMap.withAmbient_worstCaseCost` keeps its indices in
--- `Type`.
+-- universe is a universe parameter of the theorem.
 /-- Routing preserves the suffix decision's weighted cost bound of five. -/
-theorem routed_suffix_budget (p : Path bitCombined.{0}) (v : View bitCombined p) :
+theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
     WorstCaseCostBound (routedSuffix p v) (bitRawCost p) 5 := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
   refine OracleMap.withAmbient_worstCaseCost
@@ -200,6 +199,11 @@ theorem routed_suffix_budget (p : Path bitCombined.{0}) (v : View bitCombined p)
     exact worstCaseCostBound_query
       (spec := (pathBundle bits bitCombined (combinedPath guess)).spec) (.inl ⟨(), ()⟩) _
   · exact i.elim
+
+/-- The routed cost bound holds with the oracle-node query indices in `Type 1`. -/
+example (p : Path bitCombined.{1}) (v : View bitCombined p) :
+    WorstCaseCostBound (routedSuffix p v) (bitRawCost p) 5 :=
+  routed_suffix_budget p v
 
 -- RuntimeQueryBounds 11: the runtime setup samples the hidden bit once.
 /-- Runtime setup makes exactly one coin query and costs at most one. -/
