@@ -114,7 +114,7 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (do
     have h1 : B ^ 2 ≤ (d + 1) ^ 2 := Nat.pow_le_pow_left (not_lt.mp h) 2
     have h2 : (d + 1) ^ 2 ≤ n * (d + 1) := by rw [sq]; exact Nat.mul_le_mul_right _ hdn
     omega
-  obtain ⟨Q, hQ⟩ := exists_isAffineInterpolant domain f g hsurplus
+  obtain ⟨Q, hQ, -⟩ := exists_isAffineInterpolant domain f g hsurplus
   set Pset : Finset (F × F) := {c | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
     IsAffinePersistent domain f g d B c.1 c.2 P}
   have hPset : ∀ c ∉ Pset, ∀ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P →

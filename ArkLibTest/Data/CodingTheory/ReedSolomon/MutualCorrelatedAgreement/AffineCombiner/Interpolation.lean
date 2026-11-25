@@ -24,13 +24,32 @@ A quadratic multiplier over `𝔽₁₁` checks the interpolation beyond affine 
 
 open ReedSolomon Polynomial
 
-/-- The parameters feed the interpolation: an interpolant exists at those budgets. -/
+/-- The interpolation parameters give an interpolant with positive degree in `Z`. -/
 example {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain : ι ↪ F)
     (f g : ι → F) {d e : ℕ} {η : ℝ} (h : AffineParams d (Fintype.card ι) e η) :
     ∃ Q, IsMultiplierInterpolant domain f g e d (affineThreshold d (Fintype.card ι) η)
       (affineMultiplicity η) (affineYZBudget d (Fintype.card ι) η)
-      (affineRootBudget d (Fintype.card ι) e η) Q :=
-  exists_isMultiplierInterpolant domain f g h.surplus
+      (affineRootBudget d (Fintype.card ι) e η) Q ∧ 0 < Q.degreeOf none :=
+  (exists_isMultiplierInterpolant domain f g h.surplus).imp fun _ h' ↦ ⟨h'.1, h'.2 h.threshold_le⟩
+
+private instance : Fact (Nat.Prime 101) := ⟨by decide⟩
+
+/-- The first 100 elements of `F₁₀₁` as an evaluation domain. -/
+private def domain100 : Fin 100 ↪ ZMod 101 :=
+  ⟨fun i ↦ (i : ℕ), fun i j hij ↦ Fin.ext (by
+    have h := congrArg ZMod.val hij
+    rwa [ZMod.val_natCast, ZMod.val_natCast, Nat.mod_eq_of_lt (by omega),
+      Nat.mod_eq_of_lt (by omega)] at h)⟩
+
+-- The budgets at `d = 16`, `n = 100`, and `η = 1/2` give a positive degree at most 19.
+open Polynomial.SymbolicInterpolation in
+example (f g : Fin 100 → ZMod 101) :
+    ∃ Q, IsMultiplierInterpolant domain100 f g 1 16 90 4 42 19 Q ∧
+      0 < Q.degreeOf none ∧ Q.degreeOf none ≤ 19 := by
+  obtain ⟨Q, hQ, hpos⟩ := exists_isMultiplierInterpolant domain100 f g
+    (e := 1) (d := 16) (A := 90) (m := 4) (D := 42) (M := 19)
+    (by norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])
+  exact ⟨Q, hQ, hpos (by decide), hQ.rootDegree_le⟩
 
 -- The 146 unknowns exceed the truncated count 145, but not the full constraint count 150.
 open Polynomial.SymbolicInterpolation in
@@ -54,16 +73,19 @@ example : Fintype.card (ZMod 11) * (constraintSupport 1 (1 + 1)).card = 22 ∧
   norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ]
 
 open Polynomial.SymbolicInterpolation in
-/-- An interpolant for multipliers of degree at most two exists at these budgets over `𝔽₁₁`. -/
+/-- With quadratic multipliers the constructed interpolant has positive degree in `Z`. -/
 private theorem exists_quadraticInterpolant (f g : ZMod 11 → ZMod 11) :
-    ∃ Q, IsMultiplierInterpolant (Function.Embedding.refl (ZMod 11)) f g 2 1 10 1 1 1 Q :=
-  exists_isMultiplierInterpolant _ f g <| by
-    norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ]
+    ∃ Q, IsMultiplierInterpolant (Function.Embedding.refl (ZMod 11)) f g 2 1 10 1 1 1 Q ∧
+      0 < Q.degreeOf none :=
+  (exists_isMultiplierInterpolant _ f g (by
+    norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])).imp
+    fun _ h ↦ ⟨h.1, h.2 (by norm_num [ZMod.card])⟩
 
--- In particular one exists for `f = -X²` and `g = 1`, so the next example is not vacuous.
+-- The next example uses an interpolant for `f = -X²` and `g = 1`.
 example : ∃ Q, IsMultiplierInterpolant (Function.Embedding.refl (ZMod 11))
-    (fun x ↦ -x ^ 2) 1 2 1 10 1 1 1 Q :=
-  exists_quadraticInterpolant _ _
+    (fun x ↦ -x ^ 2) 1 2 1 10 1 1 1 Q := by
+  obtain ⟨Q, hQ, _⟩ := exists_quadraticInterpolant (fun x ↦ -x ^ 2) 1
+  exact ⟨Q, hQ⟩
 
 /-- The candidate `0` agrees with `f + X² g` everywhere when `f = -X²` and `g = 1`. -/
 private theorem agree_neg_sq : 10 ≤ (polynomialAgreementSet (Function.Embedding.refl (ZMod 11))
@@ -124,3 +146,34 @@ example (P : (ZMod 11)[X]) (hP : P.natDegree ≤ 1) (Q : MvPolynomial AffineVar 
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.map_multiplierEval
+
+-- The `m`-th power factor holds over `ℤ`, outside polynomial targets:
+-- with `Z ↦ 2` and `X ↦ 6`, the monomial `Z X` evaluates to a multiple of `2²`.
+example : (2 : ℤ) ^ 2 ∣ MvPolynomial.aeval (fun w : AffineVar ↦ w.elim (2 : ℤ) ![6, 1])
+    (MvPolynomial.monomial (Finsupp.single none 1 + Finsupp.single (some 0) 1) (1 : ℤ)) :=
+  pow_dvd_aeval_of_affineWeight_le (by simp) (by simp) fun e he ↦ by
+    simp only [MvPolynomial.support_monomial, one_ne_zero, ite_false, Finset.mem_singleton] at he
+    subst he
+    simp
+
+-- The named argument `R` still selects the polynomial, as before the generalization.
+example {K : Type*} [Field K] (ψ : AffineVar → K[X]) (p : K[X]) (R : MvPolynomial AffineVar K)
+    (hz : p ∣ ψ none) (hx : p ∣ ψ (some 0)) (hR : ∀ e ∈ R.support, 2 ≤ e none + e (some 0)) :
+    p ^ 2 ∣ MvPolynomial.aeval ψ R :=
+  pow_dvd_aeval_of_affineWeight_le (R := R) hz hx hR
+
+-- The bound `A ≤ n` is needed: an empty domain meets the surplus condition at `M = 0`,
+-- while `M = 0` caps the `Z`-degree at zero.
+open Polynomial.SymbolicInterpolation in
+example {F : Type*} [Field F] [DecidableEq F] (domain : Empty ↪ F) (f g : Empty → F) :
+    Fintype.card Empty * (constraintSupport 1 (0 + 1)).card <
+      (monomialSupport 0 (1 * 1 - 0) (0 + 1) (0 + 1)).card ∧
+    ¬ ∃ Q, IsMultiplierInterpolant domain f g 1 0 1 1 0 0 Q ∧ 0 < Q.degreeOf none := by
+  refine ⟨by norm_num [card_monomialSupport], fun ⟨Q, hQ, hpos⟩ ↦ ?_⟩
+  have := hQ.rootDegree_le
+  omega
+
+/-- info: 'ReedSolomon.pow_dvd_aeval_of_affineWeight_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.pow_dvd_aeval_of_affineWeight_le
