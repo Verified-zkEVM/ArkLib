@@ -781,6 +781,7 @@ public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.Composition
 public import ArkLib.Interaction.Execution
 public import ArkLib.Interaction.Legacy.Execution
+public import ArkLib.Interaction.Legacy.LiftContext
 public import ArkLib.Interaction.Legacy.OracleAppend
 public import ArkLib.Interaction.Legacy.OracleExecution
 public import ArkLib.Interaction.Legacy.OracleKnowledge
