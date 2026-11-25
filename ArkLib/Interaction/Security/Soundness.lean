@@ -19,6 +19,8 @@ uses discrete outcomes, so every event is measurable.
 
 @[expose] public section
 
+universe v v'
+
 namespace Interaction
 open PFunctor FreeM OracleComp Oracle
 open scoped ENNReal
@@ -39,7 +41,7 @@ def soundness {S Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} [MeasurableSpace O
 
 /-- Soundness of a plain run interpreted in an arbitrary distribution monad.
 Ambient failure contributes no mass to the accepting event. -/
-def Verifier.soundnessUsing {m : Type → Type} [Monad m] [EvalDistSemantics m]
+def Verifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T)
@@ -52,7 +54,7 @@ def Verifier.soundnessUsing {m : Type → Type} [Monad m] [EvalDistSemantics m]
         ∃ t, obs.2.2 = some t ∧ output.language (Transcript.path obs.1) t] ≤ ε
 
 /-- Interpret the whole run with a query handler. -/
-abbrev Verifier.soundnessWith {m : Type → Type} [Monad m] [EvalDistSemantics m]
+abbrev Verifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T)
@@ -61,7 +63,7 @@ abbrev Verifier.soundnessWith {m : Type → Type} [Monad m] [EvalDistSemantics m
   V.soundnessUsing (simulateQ handler) input output ε
 
 /-- A plain decision has positive probability of accepting an output in the language. -/
-def Verifier.validAcceptanceUsing {m : Type → Type} {n : Type → Type}
+def Verifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type v'}
     [Monad m] [Monad n] [EvalDistSemantics n]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
@@ -73,7 +75,7 @@ def Verifier.validAcceptanceUsing {m : Type → Type} {n : Type → Type}
         ∃ t, v = some t ∧ langOut tr.path t]
 
 /-- Interpret the decision without an additional execution map. -/
-def Verifier.validAcceptanceWith {m : Type → Type} [Monad m] [EvalDistSemantics m]
+def Verifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T) (impl : QueryImpl ambient m)
@@ -84,7 +86,7 @@ def Verifier.validAcceptanceWith {m : Type → Type} [Monad m] [EvalDistSemantic
 /-- Soundness of an oracle run interpreted in an arbitrary distribution monad, with the output
 oracle data read from the verifier's output map. The input is any oracle bundle, as in
 `OracleVerifier.run`; an oracle family enters through its coercion to a bundle. -/
-def OracleVerifier.soundnessUsing {m : Type → Type} [Monad m] [EvalDistSemantics m]
+def OracleVerifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
@@ -101,7 +103,7 @@ def OracleVerifier.soundnessUsing {m : Type → Type} [Monad m] [EvalDistSemanti
         ∃ t, obs.2.2 = some t ∧ output.language (Transcript.path obs.1) t] ≤ ε
 
 /-- Interpret the whole run with a query handler. -/
-abbrev OracleVerifier.soundnessWith {m : Type → Type} [Monad m] [EvalDistSemantics m]
+abbrev OracleVerifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
@@ -115,7 +117,7 @@ abbrev OracleVerifier.soundnessWith {m : Type → Type} [Monad m] [EvalDistSeman
 
 /-- An oracle decision has positive probability of accepting an output in the language,
 using the input data and the transcript's oracle messages to answer bundle queries. -/
-def OracleVerifier.validAcceptanceUsing {m : Type → Type} {n : Type → Type}
+def OracleVerifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type v'}
     [Monad m] [Monad n] [EvalDistSemantics n]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
@@ -135,7 +137,7 @@ def OracleVerifier.validAcceptanceUsing {m : Type → Type} {n : Type → Type}
     ∃ t, v = some t ∧ langOut p (t, (V.outputMap stmt.1 p view).f pathData)]
 
 /-- Interpret the decision without an additional execution map. -/
-def OracleVerifier.validAcceptanceWith {m : Type → Type} [Monad m] [EvalDistSemantics m]
+def OracleVerifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}

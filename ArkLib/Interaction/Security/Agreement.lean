@@ -29,6 +29,8 @@ also gives equal decision logs (`runWithLog_eq_of_decide_eq`).
 
 @[expose] public section
 
+universe vDraw
+
 namespace Interaction.OracleVerifier
 open scoped ENNReal
 open PFunctor FreeM TwoParty.Lens Oracle OracleComp OracleSpec
@@ -313,7 +315,7 @@ theorem eqRec_const (e : s' = s) (x : ℝ≥0∞) :
   subst e; rfl
 
 /-- Lifting a node-indexed draw to full prefixes commutes with tree transport. -/
-theorem prefixDraw_ofNodes_cast {m : Type → Type} [Functor m] (e : s' = s)
+theorem prefixDraw_ofNodes_cast {m : Type → Type vDraw} [Functor m] (e : s' = s)
     (draw : QueryImpl (challengeSpec oracleSig s') m) :
     @Eq (PrefixDraw oracleSig m s)
       (fun {a next} => e ▸ (@PrefixDraw.ofNodes _ oracleSig m _ s' draw a next))
@@ -321,7 +323,7 @@ theorem prefixDraw_ofNodes_cast {m : Type → Type} [Functor m] (e : s' = s)
   subst e; rfl
 
 /-- Reading a node-indexed draw through the verifier's view commutes with tree transport. -/
-theorem prefixDraw_ofNodesView_cast {m : Type → Type} [Functor m] (e : s' = s)
+theorem prefixDraw_ofNodesView_cast {m : Type → Type vDraw} [Functor m] (e : s' = s)
     (draw : QueryImpl (challengeSpec oracleSig s') m) :
     @Eq (PrefixDraw viewSig m s)
       (fun {a next} => e ▸ (PrefixDraw.ofNodesView (s := s') draw (a := a) (next := next)))

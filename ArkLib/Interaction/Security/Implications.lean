@@ -57,7 +57,7 @@ the ranks are distinct along each path and lie in a fixed range.
 
 @[expose] public section
 
-universe uA
+universe uA v
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -192,7 +192,7 @@ theorem flip_random_history_le {α : Type} {s : FreeM P PUnit}
 /-- Encoded event marginals transport a full-prefix model's local bound to the actual move.
 The model's sample and encoding may both depend on the full prefix. -/
 theorem ReceiverPrefix.flip_le_of_encoded_marginals
-    {m : Type → Type} [Monad m] [EvalDistSemantics m] {s : FreeM P PUnit}
+    {m : Type → Type v} [Monad m] [EvalDistSemantics m] {s : FreeM P PUnit}
     (G : ∀ {t : FreeM P PUnit}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
     (pfx : ReceiverPrefix l s) (action : m (Move l pfx.pos))
     {Result : Type} (sample : ProbComp Result) (encode : Move l pfx.pos → Result)
@@ -290,21 +290,21 @@ private theorem sampleAt_root {a : P.A} {next : P.B a → FreeM P PUnit}
     sampleAt l draw (.root _) h = (draw ⟨.inl ⟨⟩, h⟩ : ProbComp (Move l a)) :=
   LawfulFunctor.id_map _
 
-private theorem prEvent_state_map {m : Type → Type} [Monad m] [LawfulMonad m]
+private theorem prEvent_state_map {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m] {α β σ : Type}
     (c : StateT σ m α) (f : α → β) (st : σ) (event : β → Prop) :
     Pr{let x ← (f <$> c).run' st}[event x] =
       Pr{let x ← c.run' st}[event (f x)] := by
   rw [StateT.run'_map', prEvent_map]
 
-private theorem prEvent_state_run' {m : Type → Type} [Monad m] [LawfulMonad m]
+private theorem prEvent_state_run' {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m] {α σ : Type}
     (c : StateT σ m α) (st : σ) (event : α → Prop) :
     Pr{let x ← c.run' st}[event x] = Pr{let x ← c.run st}[event x.1] := by
   rw [StateT.run'_eq, prEvent_map]
 
 /-- Interpret a challenge at a cursor and transport its move to the cursor's position. -/
-def challengeActionAt {m : Type → Type} [Monad m] {ι : Type} {spec : OracleSpec ι}
+def challengeActionAt {m : Type → Type v} [Monad m] {ι : Type} {spec : OracleSpec ι}
     {σ : Type} {t : FreeM P PUnit} (H : QueryImpl spec (StateT σ m))
     (d : (c : ChallengeNode l t) → OracleComp spec (challengeSpec l t c))
     {a : P.A} {next : P.B a → FreeM P PUnit}
@@ -314,7 +314,7 @@ def challengeActionAt {m : Type → Type} [Monad m] {ι : Type} {spec : OracleSp
     simulateQ H (d (spineChallenge l sp h))
 
 /-- Raw event marginals are preserved by transporting the move to a cursor. -/
-theorem challengeActionAt_marginals {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem challengeActionAt_marginals {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ : Type} {spec : OracleSpec ι} {t : FreeM P PUnit}
     (H : QueryImpl spec (StateT σ m))
@@ -332,7 +332,7 @@ theorem challengeActionAt_marginals {m : Type → Type} [Monad m] [LawfulMonad m
       (prEvent_map (draw (spineChallenge l sp h)) _ event).symm)
 
 /-- The root cursor does not change the type of the interpreted move. -/
-private theorem challengeActionAt_root {m : Type → Type} [Monad m] [LawfulMonad m]
+private theorem challengeActionAt_root {m : Type → Type v} [Monad m] [LawfulMonad m]
     {ι σ : Type} {spec : OracleSpec ι} {a : P.A} {next : P.B a → FreeM P PUnit}
     (H : QueryImpl spec (StateT σ m))
     (d : (c : ChallengeNode l (.liftBind a next)) →
@@ -342,7 +342,7 @@ private theorem challengeActionAt_root {m : Type → Type} [Monad m] [LawfulMona
 
 /-- A run whose continuation accepts only after an escape accepts with probability at most the
 supremum, over shape paths, of the summed node errors along the path. -/
-theorem prEvent_run_state_le_of_local {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem prEvent_run_state_le_of_local {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec (StateT σ m)) (ev : β → Prop) (t : FreeM P PUnit) :
@@ -441,7 +441,7 @@ theorem prEvent_run_state_le_of_local {m : Type → Type} [Monad m] [LawfulMonad
           (le_of_eq (sum_challengeNodesOn_receiver hown ε path.1 path.2).symm)
 
 /-- Fresh raw challenge marginals and local model bounds give the actual flip bound. -/
-theorem prEvent_run_state_le {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem prEvent_run_state_le {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec (StateT σ m)) (ev : β → Prop) (t : FreeM P PUnit) :
@@ -483,7 +483,7 @@ theorem prEvent_run_state_le {m : Type → Type} [Monad m] [LawfulMonad m]
 /-- For any lawful monad with distribution semantics, fresh challenge marginals and local flip
 bounds bound acceptance by the supremum of the sums of node errors along shape paths.
 The author and the final continuation may fail. No attachment or losslessness is required. -/
-theorem prEvent_run_le {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem prEvent_run_le {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec m) (ev : β → Prop) (t : FreeM P PUnit)
@@ -526,14 +526,14 @@ private theorem exists_map_some_iff {T U : Type} (f : T → U) (L : U → Prop) 
   cases v <;> simp
 
 /-- Lifting an ambient handler threads an unused state through the entire computation. -/
-private theorem simulateQ_stateLift_run' {m : Type → Type} [Monad m] [LawfulMonad m]
+private theorem simulateQ_stateLift_run' {m : Type → Type v} [Monad m] [LawfulMonad m]
     {ι : Type} {σ α : Type} {spec : OracleSpec.{0, 0} ι} (H : QueryImpl spec m)
     (c : OracleComp spec α) (st : σ) :
     (simulateQ (H.liftTarget (StateT σ m)) c).run' st = simulateQ H c := by
   rw [simulateQ_liftTarget, StateT.liftM_def, StateT.run'_lift']
 
 /-- Deterministic bundle answers commute with an unused state lift. -/
-private theorem stateLift_addLift {m : Type → Type} [Monad m] [LawfulMonad m]
+private theorem stateLift_addLift {m : Type → Type v} [Monad m] [LawfulMonad m]
     {ι : Type} {κ : Type} {σ : Type}
     {spec : OracleSpec.{0, 0} ι} {bundle : OracleSpec.{0, 0} κ}
     (H : QueryImpl spec m) (answer : QueryImpl bundle Id) :
@@ -556,7 +556,7 @@ variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 /-- Actual prefix-dependent flip bounds control the full passive execution in any lawful
 subprobability monad. Each draw is evaluated at its matching history. -/
-theorem prEvent_runPrefixChallenges_le {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem prEvent_runPrefixChallenges_le {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m] {ι β : Type} {spec : OracleSpec ι}
     (H : QueryImpl spec m) (ev : β → Prop) (s : FreeM P PUnit) :
     ∀ {Out : Transcript l s → Type}
@@ -629,7 +629,7 @@ theorem prEvent_runPrefixChallenges_le {m : Type → Type} [Monad m] [LawfulMona
 The final continuation `k` is explicit and may fail. The premise `final` requires the
 certificate's acceptance predicate only when the final event has positive probability; the plain
 and oracle verifier theorems below prove this link from the final decision. -/
-theorem prEvent_runPrefixChallenges_soundness {m : Type → Type}
+theorem prEvent_runPrefixChallenges_soundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι β : Type} {spec : OracleSpec ι} {s : FreeM P PUnit} {S : Type}
     {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
@@ -704,7 +704,7 @@ section Plain
 /-- Stateful interpretation preserves the initial distribution and all possible ambient states at
 the end of the run. -/
 theorem Verifier.soundnessUsing_of_localSoundness
-    {m : Type → Type} [Monad m] [LawfulMonad m]
+    {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : m σ}
@@ -758,7 +758,7 @@ theorem Verifier.soundnessUsing_of_localSoundness
 
 /-- Fresh challenge marginals specialize the bound on actual flip events. -/
 theorem Verifier.soundnessUsing_of_rbrSoundness
-    {m : Type → Type} [Monad m] [LawfulMonad m]
+    {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : m σ}
@@ -790,7 +790,7 @@ theorem Verifier.soundnessUsing_of_rbrSoundness
 
 /-- Fresh challenge marginals turn round-by-round soundness into soundness of the plain run
 in any lawful distribution monad, including monads with missing probability mass. -/
-theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type} {V : Verifier ambient s S T}
@@ -830,7 +830,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type} [Monad m] [La
   simpa only [hlift, LawfulMonad.pure_bind] using bound
 
 /-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
-theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type} {V : Verifier ambient s S T}
@@ -846,7 +846,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type} [Monad m
     (iSup_sum_challengeNodesOn_le_tsum ε)
 
 /-- Uniform local errors and a path length bound give soundness error `k • e`. -/
-theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type} {V : Verifier ambient s S T}
@@ -913,7 +913,7 @@ end Plain
 /-- Stateful interpretation preserves the initial distribution and all possible ambient states at
 the end of the run. -/
 theorem OracleVerifier.soundnessUsing_of_localSoundness
-    {m : Type → Type} [Monad m] [LawfulMonad m]
+    {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
   {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
@@ -975,7 +975,7 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
 
 /-- Fresh challenge marginals specialize the bound on actual flip events. -/
 theorem OracleVerifier.soundnessUsing_of_rbrSoundness
-    {m : Type → Type} [Monad m] [LawfulMonad m]
+    {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
   {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
@@ -1011,7 +1011,7 @@ theorem OracleVerifier.soundnessUsing_of_rbrSoundness
 
 /-- Fresh challenge marginals turn round-by-round soundness into soundness of the oracle run
 in any lawful distribution monad, with its actual bundle answers and output oracle map. -/
-theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type}
+theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
@@ -1062,7 +1062,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type}
   simpa only [hlift, LawfulMonad.pure_bind] using bound
 
 /-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
-theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type}
+theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
@@ -1082,7 +1082,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type}
     (iSup_sum_challengeNodesOn_le_tsum ε)
 
 /-- Uniform local errors and a path length bound give soundness error `k • e`. -/
-theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type}
+theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}

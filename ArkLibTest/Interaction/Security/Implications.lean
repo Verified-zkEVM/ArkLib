@@ -523,6 +523,20 @@ def optionalAmbient : QueryImpl counter (OptionT ProbComp) := fun _ =>
     let b ← ($ᵗ Bool : ProbComp Bool)
     pure (if b then some 0 else none)
 
+/-- Generic implication allows a target monad whose result universe is above its data. -/
+example {m : Type → Type 1} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
+    [LawfulEvalDistSemantics m]
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
+    {T : Path s → Type}
+    (V : Verifier ambient s S T) (H : QueryImpl (ambient + challengeSpec plainSig s) m)
+    (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
+    (input : StatementProblem S) (output : PathProblem s T)
+    (ε : ChallengeNode plainSig s → ℝ≥0∞) (fresh : FreshChallenges H draw)
+    (h : rbrSoundness plainSig s (input.admissible ()) (input.language ())
+      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
+    V.soundnessWith H input output (∑' c, ε c) :=
+  Verifier.soundnessWith_of_rbrSoundness_tsum fresh h
+
 /-- The optional handler keeps the challenge draw separate from ambient failure. -/
 def optionalHandler : QueryImpl (counter + challengeSpec plainSig coin) (OptionT ProbComp) :=
   QueryImpl.addLift optionalAmbient draw

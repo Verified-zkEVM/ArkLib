@@ -31,10 +31,11 @@ definition here assumes that. Node-indexed oracle draws factor through the view
 ## Data lies in `Type`
 
 Moves, statements, witness carriers and output carriers lie in `Type`, as the universe policy of
-record D2 (`docs/design/interaction-rebuild/D2-ownership-and-universes.md`) requires. Only the
-position universe of the move functor stays general. `sampleAt` and the probability bounds built
-on it, such as `KnowledgeStateFunction.BoundedAt` and `KnowledgeStateFunction.LocallyBounded`,
-draw moves in `ProbComp`.
+record D2 (`docs/design/interaction-rebuild/D2-ownership-and-universes.md`) requires. Two
+universes stay general: the position universe of the move functor, and the result universe
+`vDraw` of the monad in which a `PrefixDraw` draws its moves. `sampleAt` and the probability
+bounds built on it, such as `KnowledgeStateFunction.BoundedAt` and
+`KnowledgeStateFunction.LocallyBounded`, draw moves in `ProbComp`.
 
 ## Knowledge states and the literature
 
@@ -65,7 +66,7 @@ round-by-round knowledge soundness in [BCFW25] (Definitions 4.1 and 4.2) and [AB
 
 @[expose] public section
 
-universe uA
+universe uA vDraw
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -160,7 +161,7 @@ message in full, so a draw can read oracle messages that a passive oracle verifi
 through bundle queries in its final decision. State functions, the generic counterpart and
 extraction use this full history. An oracle-verifier API that exposes a prefix draw should index it
 by the `viewSig` prefix, or require it to factor through that view. -/
-abbrev PrefixDraw (m : Type → Type) (s : FreeM P PUnit.{1}) :=
+abbrev PrefixDraw (m : Type → Type vDraw) (s : FreeM P PUnit.{1}) :=
   ∀ {a next}, (sp : Cursor.Spine s (.liftBind a next)) → owner l a = .receiver →
     PartialTranscriptAt l sp → m (Move l a)
 
@@ -178,13 +179,13 @@ abbrev PrefixChallengePrograms {ι : Type} (spec : OracleSpec.{0, 0} ι)
     (s : FreeM P PUnit.{1}) := PrefixDraw l (OracleComp spec) s
 
 /-- Draw at one receiver prefix using its complete history. -/
-abbrev prefixSampleAt {m : Type → Type} {s : FreeM P PUnit.{1}}
+abbrev prefixSampleAt {m : Type → Type vDraw} {s : FreeM P PUnit.{1}}
     (draw : PrefixDraw l m s) {a next} (sp : Cursor.Spine s (.liftBind a next))
     (h : owner l a = .receiver) (history : PartialTranscriptAt l sp) : m (Move l a) :=
   draw sp h history
 
 /-- A node-indexed draw is the prefix draw that ignores the full history. -/
-def PrefixDraw.ofNodes {m : Type → Type} [Functor m] {s : FreeM P PUnit.{1}}
+def PrefixDraw.ofNodes {m : Type → Type vDraw} [Functor m] {s : FreeM P PUnit.{1}}
     (draw : (c : ChallengeNode l s) → m (challengeSpec l s c)) : PrefixDraw l m s :=
   fun sp h _ => (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
     draw (spineChallenge l sp h)
@@ -215,14 +216,14 @@ passes through `eraseOracle` before the draw receives it, so two histories that 
 oracle messages give the same draw. A view draw may still read earlier public messages and
 challenges, and an effectful draw may still use its ambient handler; this restriction says nothing
 about the challenge distribution. -/
-def PrefixDraw.ofView {m : Type → Type} {s : OracleProtocol.{0, 0}}
+def PrefixDraw.ofView {m : Type → Type vDraw} {s : OracleProtocol.{0, 0}}
     (draw : PrefixDraw viewSig m s) : PrefixDraw oracleSig m s :=
   fun sp h history => cast (congrArg m (move_viewSig_of_receiver h))
     (draw sp ((owner_viewSig _).trans h) (PartialTranscriptAt.mapMoves oracleSig eraseOracle sp
       history))
 
 /-- The draw at an oracle prefix is the view draw at the erased prefix. -/
-theorem prefixSampleAt_ofView {m : Type → Type} {s : OracleProtocol.{0, 0}}
+theorem prefixSampleAt_ofView {m : Type → Type vDraw} {s : OracleProtocol.{0, 0}}
     (draw : PrefixDraw viewSig m s) {a next} (sp : Cursor.Spine s (.liftBind a next))
     (h : owner oracleSig a = .receiver) (history : PartialTranscriptAt oracleSig sp) :
     prefixSampleAt oracleSig (PrefixDraw.ofView draw) sp h history =
@@ -231,7 +232,7 @@ theorem prefixSampleAt_ofView {m : Type → Type} {s : OracleProtocol.{0, 0}}
           (PartialTranscriptAt.mapMoves oracleSig eraseOracle sp history)) := rfl
 
 /-- A node-indexed oracle draw as a view draw. It ignores the history. -/
-def PrefixDraw.ofNodesView {m : Type → Type} [Functor m] {s : OracleProtocol.{0, 0}}
+def PrefixDraw.ofNodesView {m : Type → Type vDraw} [Functor m] {s : OracleProtocol.{0, 0}}
     (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c)) :
     PrefixDraw viewSig m s :=
   fun sp h _ => cast (congrArg m (move_viewSig_of_receiver
@@ -240,7 +241,7 @@ def PrefixDraw.ofNodesView {m : Type → Type} [Functor m] {s : OracleProtocol.{
       draw (spineChallenge oracleSig sp ((owner_viewSig _).symm.trans h)))
 
 /-- A node-indexed oracle draw factors through the verifier's view. -/
-theorem PrefixDraw.ofView_ofNodesView {m : Type → Type} [Functor m]
+theorem PrefixDraw.ofView_ofNodesView {m : Type → Type vDraw} [Functor m]
     {s : OracleProtocol.{0, 0}}
     (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c)) :
     (PrefixDraw.ofView (PrefixDraw.ofNodesView draw) : PrefixDraw oracleSig m s) =

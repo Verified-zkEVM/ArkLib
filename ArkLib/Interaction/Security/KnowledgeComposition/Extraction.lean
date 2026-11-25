@@ -59,7 +59,7 @@ function of the prefix statement and transcript.
 
 @[expose] public section
 
-universe uA
+universe uA v
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -126,7 +126,7 @@ def PartialTranscriptAt.completeWith {s : FreeM P PUnit.{1}} : {t : FreeM P PUni
 
 /-- Combine prefix actions. The suffix family is selected by the full first transcript;
 errors use this same combinator with a constant result family. -/
-def combinePrefixDraw {m : Type → Type} :
+def combinePrefixDraw {m : Type → Type v} :
     (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     PrefixDraw l m s₁ →
     ((tr₁ : Transcript l s₁) → PrefixDraw l m (s₂ tr₁.path)) →
@@ -178,7 +178,7 @@ theorem appendPrefixSampler_eq_combinePrefixDraw {m : Type → Type} [Monad m] [
       (fun tr => draw₂ ⟨x, tr⟩)
 
 /-- Combining node draws through the full-prefix interface recovers the node combination. -/
-theorem combinePrefixDraw_ofNodes {m : Type → Type} [Functor m]
+theorem combinePrefixDraw_ofNodes {m : Type → Type v} [Functor m]
     (s₁ : FreeM P PUnit.{1}) (s₂ : Path s₁ → FreeM P PUnit.{1})
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
@@ -230,7 +230,7 @@ section View
 
 /-- Combine view draws for an oracle verifier. The suffix draw is chosen from the shape path and
 the verifier's view of the first stage, so oracle messages of the first stage cannot select it. -/
-def combineViewPrefixDraw {m : Type → Type} (s₁ : OracleProtocol.{0, 0})
+def combineViewPrefixDraw {m : Type → Type v} (s₁ : OracleProtocol.{0, 0})
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) (draw₁ : PrefixDraw viewSig m s₁)
     (draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig m (s₂ p)) :
     PrefixDraw viewSig m (s₁.append s₂) :=
@@ -238,7 +238,7 @@ def combineViewPrefixDraw {m : Type → Type} (s₁ : OracleProtocol.{0, 0})
 
 /-- Reading a combined view draw through the view is the full-prefix combination of the view
 draws, with the suffix draw chosen from the first stage's view. -/
-theorem ofView_combineViewPrefixDraw {m : Type → Type} (s₁ : OracleProtocol.{0, 0})
+theorem ofView_combineViewPrefixDraw {m : Type → Type v} (s₁ : OracleProtocol.{0, 0})
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) (draw₁ : PrefixDraw viewSig m s₁)
     (draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig m (s₂ p)) :
     (PrefixDraw.ofView (combineViewPrefixDraw s₁ s₂ draw₁ draw₂) :
