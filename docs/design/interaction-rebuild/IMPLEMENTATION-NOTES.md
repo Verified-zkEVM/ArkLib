@@ -198,7 +198,8 @@ returns only responses.
 **Equivalent: independent input data.** `OracleVerifier`, `pathBundle`, `decideWith`, `run`,
 append, the ambient-log runner and the security wrappers accept general
 `OracleBundle.{u, uI, dI}` inputs. Their data is `inputs.Data : Type dI`; only responses lie in
-`Type u`. The R26 and R27 canaries retain the exact named query and realization carriers with
+`Type u`. The R26 and R27 canaries in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`
+keep the exact named query and realization carriers with
 response universe `e` independent of realization universe `a`. No encoding or lift of a
 realization is needed. `OracleBundle.ofFamily` remains the specialization for existing
 `OracleFamily` clients. Its `OracleInterface` uses `ReaderM`, which still ties that
@@ -272,9 +273,10 @@ family with queries in `Type 1` to an output family with queries in `Type 0`. A 
 function with intermediate witnesses in `Type 1` and the input witness `Unit` certifies
 round-by-round knowledge for the core definition and both verifier wrappers. The same module
 now constructs an actual oracle node carrying `OracleInterface.{0, 1} Nat`, runs a verifier
-that queries its payload, and checks the returned value by `rfl`. Its R26/R27 bundle
-constructors quantify independently over `a` and `e`, and an R26 verifier and run consume
-the original realization family directly.
+that queries its oracle message, and checks the returned value by `rfl`. The R26/R27 bundle
+constructors in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`
+quantify independently over `a` and `e`. `viewVerifier`, its identity-view specialization
+`namedVerifier` and a shared run example consume the original realization family directly.
 
 
 ## Changes that keep to the records

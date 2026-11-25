@@ -201,7 +201,7 @@ maps. The VCVio pin is `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`.
 | KCO-131 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:131`][r47], `executeStrategies_withOutput` | premise-required (P1) | [`ArkLib/Interaction/Core/Security/KnowledgeComposition.lean#L696`][r48], `OracleVerifier.validAcceptance_append`. Acceptance uses the actual final output bundle. |
 | KCO-163 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:163`][r49], `toCounterpartWith_output` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L662`][r50], `OracleVerifier.simulateQ_append_run`. The passive decision fold preserves returned outputs and the routed bundle. |
 | KCO-191 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:191`][r51], `closedMiddle` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L64`][r52], `firstVerifier`. The decision and output map return the claim and export together. |
-| KCO-202 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:202`][r53], `closedMiddle_oracles` | equivalent | [`ArkLib/Interaction/Core/OracleVerifier.lean#L164`][r54], `OracleMap.simulate_eq`. An output map’s simulation law identifies exported behavior with its pure data map. KC-093 specializes this to every prefix oracle message. |
+| KCO-202 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:202`][r53], `closedMiddle_oracles` | equivalent | [`ArkLib/Interaction/Core/OracleVerifier.lean#L168`][r54], `OracleMap.simulate_eq`. An output map’s simulation law identifies exported behavior with its pure data map. KC-093 specializes this to every prefix oracle message. |
 | KCO-216 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:216`][r55], `run_withLeaf_closedMiddle` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L662`][r56], `OracleVerifier.simulateQ_append_run`. Final decisions replace effectful verifier fragments. |
 | KCO-249 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:249`][r57], `executeStrategies_appendExported_withLeaf_close` | premise-required (P1) | [`ArkLib/Interaction/Core/Composition.lean#L662`][r58], `OracleVerifier.simulateQ_append_run`. The actual prefix output bundle is routed before the suffix decision. |
 | KCO-342 | [`ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean:342`][r59], `append` | equivalent | [`ArkLib/Interaction/Core/Security/KnowledgeComposition/Extraction.lean#L909`][r60], `append`. Certificate composition with an explicit seam. |
@@ -284,9 +284,9 @@ maps. The VCVio pin is `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`.
 | KC-274 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:274`][r173], `#eval truePath extraction` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L479`][r174], `compositeState.extractAlong stmt₀ truePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit)`. Guarded executable result six. |
 | KC-276 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:276`][r175], `#eval falsePath extraction` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L484`][r176], `compositeState.extractAlong stmt₀ falsePath (⟨⟨6, by decide⟩, ()⟩ : Fin 8 × Unit)`. Guarded executable result six. |
 | KC-308 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:308`][r177], `example: terminal witness value` | equivalent | [`ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L489`][r178], `example`. Following assertions identify the entire witness by HEq and per-shape equality, and prove exact leaf relation equivalence. |
-| KC-316 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:316`][r179], `largeState` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L555`][r180], `largeTypeCertificate`. Large input, intermediate, seam and output carriers are supported directly. The general API has independent witness universes. |
-| KC-318 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:318`][r181], `largeExtractor: higher-universe oracle payload` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L632`][r182], `largePayloadCertificate`. The general pure certificate receives ULift.{1} Nat in Type 1. For the sent message m, its output and post-message carriers are ULift.{2} (Fin (m.down + 1)), retaining the full dependence on the message; the backward map returns the finite witness value as ULift.{2} Nat. |
-| KC-322 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:322`][r183], `example: large oracle-message extraction` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L655`][r184], `largePayload_extractAlong`. The ordinary-import client sends the Type 1 oracle message seven, supplies witness six in ULift.{2} (Fin 8), and proves that pure extraction returns six. |
+| KC-316 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:316`][r179], `largeState` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L492`][r180], `largeTypeCertificate`. Large input, intermediate, seam and output carriers are supported directly. The general API has independent witness universes. |
+| KC-318 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:318`][r181], `largeExtractor: higher-universe oracle payload` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L569`][r182], `largePayloadCertificate`. The general pure certificate receives ULift.{1} Nat in Type 1. For the sent message m, its output and post-message carriers are ULift.{2} (Fin (m.down + 1)), retaining the full dependence on the message; the backward map returns the finite witness value as ULift.{2} Nat. |
+| KC-322 | [`ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean:322`][r183], `example: large oracle-message extraction` | equivalent | [`ArkLibTest/Interaction/Core/UniverseCanary.lean#L592`][r184], `largePayload_extractAlong`. The ordinary-import client sends the Type 1 oracle message seven, supplies witness six in ULift.{2} (Fin 8), and proves that pure extraction returns six. |
 
 ## ArkLibTest/OracleReduction/MeasuredExtraction.lean
 
@@ -426,7 +426,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r51]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L191
 [r52]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L64
 [r53]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L202
-[r54]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L164
+[r54]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L168
 [r55]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L216
 [r56]: ../../../ArkLib/Interaction/Core/Composition.lean#L662
 [r57]: ../../../ArkLib/Interaction/Oracle/Security/KnowledgeComposition.lean#L249
@@ -552,11 +552,11 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 [r177]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L308
 [r178]: ../../../ArkLibTest/Interaction/Core/Security/KnowledgeComposition.lean#L489
 [r179]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L316
-[r180]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L555
+[r180]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L492
 [r181]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L318
-[r182]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L632
+[r182]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L569
 [r183]: ../../../ArkLibTest/Interaction/Oracle/Security/KnowledgeComposition.lean#L322
-[r184]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L655
+[r184]: ../../../ArkLibTest/Interaction/Core/UniverseCanary.lean#L592
 [r185]: ../../../ArkLibTest/OracleReduction/MeasuredExtraction.lean#L86
 [r186]: ../../../ArkLibTest/Interaction/Core/Security/MeasuredExtraction.lean#L74
 [r187]: ../../../ArkLibTest/OracleReduction/MeasuredExtraction.lean#L91

@@ -788,6 +788,8 @@ public import ArkLib.Interaction.Core.Legacy.PureSlots
 public import ArkLib.Interaction.Core.Legacy.Security
 public import ArkLib.Interaction.Core.Legacy.Verifier
 public import ArkLib.Interaction.Core.LegacyAppend
+public import ArkLib.Interaction.Core.Oracle.BundleOps
+public import ArkLib.Interaction.Core.Oracle.Cost
 public import ArkLib.Interaction.Core.Oracle.LoggedExecution
 public import ArkLib.Interaction.Core.Oracle.QueriesByMove
 public import ArkLib.Interaction.Core.Oracle.QueriesByMoveLaws

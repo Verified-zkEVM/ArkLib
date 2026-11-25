@@ -98,7 +98,11 @@ theorem sumData_eta {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Ty
 /-- An oracle bundle: a query specification and the concrete data that answers it. The query
 indices and the data may lie in any universe; only the responses lie in `Type u`, the universe of
 the computations that receive them. The universe parameters of `OracleBundle.{u, uX, dX}` are
-those of the responses, the query indices and the data, in this order. -/
+those of the responses, the query indices and the data, in this order.
+
+For fixed `Index` and `Data`, the specification and answer function are equivalent to VCVio's
+`OracleContext Index (fun α => Data → α)`. The reader function allows independent data and response
+universes. -/
 structure OracleBundle : Type (max (uX + 1) (u + 1) (dX + 1)) where
   /-- The query indices. -/
   Index : Type uX
