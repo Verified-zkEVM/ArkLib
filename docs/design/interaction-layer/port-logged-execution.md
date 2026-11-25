@@ -79,6 +79,9 @@ decision at the same path, view and bundle data.
 | Former effectful reception boundary | excluded by P1 | P1 excludes effect 1 as a separate verifier reception move. [faults] keeps the chronological history with that effect in the final decision. |
 | L87, closing an optional final verdict | ported | [faults], fourth conjunct, checks the closed output `.ok (some (message, old + message))` of an actual accepting run, and [closing] checks two more. [optionalClosing] is only an equation about `Except.map`: for the closing map of any completed transcript, `Except.ok` of an optional verdict mapped by `Option.map` equals `Except.ok` of the closed verdict. It mentions no actual run. |
 
+The [oracle bundle port table](port-oracle-bundles.md) numbers these rows TR1–TR7 and
+links them here.
+
 The old reception action 1 now belongs to the final decision. Running it between the send and the
 decision is excluded by P1. The chronological history above is preserved, but that does not claim
 that the former reception move boundary is preserved.
@@ -126,6 +129,9 @@ first move stays in that move's entry.
 | L162, SR2, hidden input never queried | ported | [notHidden] proves that request label 1 does not occur in that same raw execution. The handler would record it even if its answer were discarded. |
 | L167, SR3, ordinary whole-prover theorem instantiation | ported | [routeWhole] instantiates [appendLaw] on the actual whole prover and input data. |
 | L174, composed routing audit | ported | [audit] and the axiom audit beside [routeWhole] include [appendLaw] and [substitution]. |
+
+The [oracle bundle port table](port-oracle-bundles.md) numbers these rows SR1–SR4 and
+links them here. It also links an added worst-case cost check on the same export map.
 
 ## Persistent-runtime tests
 

@@ -45,8 +45,9 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 | 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
-The [bundle and node universe port table](port-bundle-universes.md) records the frozen
-R26, R27 and decoration canaries closed by entry 18.
+The [oracle-bundle and oracle-node universe port table](port-bundle-universes.md) records
+the old-layer R26, R27 and decoration canaries closed by entry 18. The R26/R27 definitions occur
+once, in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`.
 
 ## Legacy embedding: entries 14–16
 
