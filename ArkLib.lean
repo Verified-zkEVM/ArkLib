@@ -1,6 +1,5 @@
 module
 
-public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
 public import ArkLib.Commitments.Functional.BitZ.Bitification
 public import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
