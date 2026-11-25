@@ -137,7 +137,7 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation (f g : (Fin k �
   have hcardL : Fintype.card L = q₀ ^ k := by
     rw [Module.card_fintype b, Fintype.card_fin]
   -- The interpolant on `L ⊆ E`, for multipliers of degree `e` and candidates of degree `d e`.
-  obtain ⟨Q, hQ⟩ := ReedSolomon.exists_isMultiplierInterpolant
+  obtain ⟨Q, hQ, -⟩ := ReedSolomon.exists_isMultiplierInterpolant
     (ReedSolomon.algebraMapDomain L E)
     (fun x ↦ algebraMap F E (f (traceCoordinateEquiv K₀ b x)))
     (fun x ↦ algebraMap F E (g (traceCoordinateEquiv K₀ b x))) (e := e) (d := d * e) (A := A)

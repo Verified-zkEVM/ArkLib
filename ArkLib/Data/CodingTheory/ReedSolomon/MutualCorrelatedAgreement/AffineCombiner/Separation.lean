@@ -271,8 +271,7 @@ theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι �
     {d A s : ℕ} (hdA : d + s + 1 < A) (hAn : A ≤ Fintype.card ι) :
     ∃ f g : ι → F,
       (∀ G : F[X], G.degree ≤ d → #(polynomialAgreementSet domain g G) < A - s) ∧
-      (∀ α : F, #(polynomialAgreementSet domain (combinedWord domain f g (C α)) 0) = A →
-        IsScalarExceptional domain f g d A s α 0) ∧
+      (∀ α ∈ exactZeroChallenges f g A, IsScalarExceptional domain f g d A s α 0) ∧
       1 + (Fintype.card ι - A) / (s + 1) ≤ #(exactZeroChallenges f g A) := by
   classical
   set n := Fintype.card ι
@@ -378,8 +377,8 @@ theorem exists_words_forall_isScalarExceptional_zero [Fintype F] (domain : ι �
             have := mem_range.mp hx; have := mem_Ico.mp hx'; omega), card_range, Nat.card_Ico]
           rw [add_mul]
           omega
-  refine ⟨f, g, hfar, fun α hα ↦ isScalarExceptional_of_forall_card_lt domain hfar
-    (by simp) hα.ge, ?_⟩
+  refine ⟨f, g, hfar, fun α hα ↦ isScalarExceptional_of_forall_card_lt domain hfar (by simp)
+    ((mem_exactZeroChallenges_iff_card_polynomialAgreementSet domain f g A α).mp hα).ge, ?_⟩
   rw [← card_range k]
   refine card_le_card_of_injOn γ (fun j hj ↦ ?_) (hγ.mono ?_)
   · exact (mem_exactZeroChallenges_iff_card_polynomialAgreementSet domain f g A _).mpr

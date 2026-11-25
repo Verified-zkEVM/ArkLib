@@ -3,7 +3,7 @@
 The rebuild replaces the current interaction layer (`ArkLib/Interaction/`) with a new
 interaction layer built on one protocol tree and a lens signature. The generic theory lives
 in PolyFun under `PolyFun/Interaction/TwoParty/Lens/`; the ArkLib specialization lives under
-`ArkLib/Interaction/Core/`. The legacy layer (`ArkLib/OracleReduction/`) stays in place for the
+`ArkLib/Interaction/`. The legacy layer (`ArkLib/OracleReduction/`) stays in place for the
 protocols that still use it.
 
 The first milestone has three parts: an embedding of the legacy layer into the interaction
@@ -70,6 +70,6 @@ before P; D1–D7 before A; D8 before B's execution theorem and before C.
 - **Legacy layer:** `ArkLib/OracleReduction/`, with fixed-length `ProtocolSpec n`.
 - **Current interaction layer:** the frozen code under `ArkLib/Interaction/` and
   `ArkLib/ProofSystem/Sumcheck/Interaction/`, which the rebuild replaces.
-- **Interaction layer:** the rebuilt layer under `ArkLib/Interaction/Core/`.
+- **Interaction layer:** the rebuilt layer under `ArkLib/Interaction/`.
 - **Focal party / counterpart:** the two participants of a PolyFun two-party run. In ArkLib the
   prover is focal and the verifier's sampler is the counterpart.

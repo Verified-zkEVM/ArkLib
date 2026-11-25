@@ -34,14 +34,11 @@ On the grid `𝔽_{q₀}^k` of `n = q₀^k` points, Reed–Muller codes use `e =
 ## Main statements
 
 * `ReedSolomon.exists_isMultiplierInterpolant`: an interpolant exists under the surplus
-  condition.
+  condition, with positive `Z`-degree when `A` is at most the domain size.
 * `ReedSolomon.exists_isAffineInterpolant`: the case `e = 1`.
 * `ReedSolomon.IsMultiplierInterpolant.vanish_affineMultiplier`: at `e = 1` the interpolant
   vanishes along every agreeing line `α + β X`.
 * `ReedSolomon.multiplierEval_eq_aeval_affineShift`: the evaluation factors through a shift.
-
-* `ReedSolomon.exists_isMultiplierInterpolant_degreeOf_none_pos`: positive `Z`-degree when
-  `A ≤ n`.
 
 ## References
 
@@ -285,7 +282,6 @@ private theorem exists_affineShift_support_le (domain : ι ↪ F) (f g : ι → 
     MvPolynomial.lcoeff_apply, affineExponent_coords, Pi.zero_apply] at h0
   exact (MvPolynomial.mem_support_iff.mp hw) h0
 
-
 /-- Multiplicity along the received lines gives vanishing on an agreeing candidate. -/
 private theorem multiplierEval_eq_zero_of_affineShift_support_le (domain : ι ↪ F)
     (f g : ι → F) {e d A m : ℕ} {Q : MvPolynomial AffineVar F}
@@ -313,8 +309,8 @@ Otherwise `Q` is a polynomial in `X` over `F[Y]` with `n` roots of multiplicity 
 private theorem degreeOf_none_pos_of_affineShift_support_le (domain : ι ↪ F) (f g : ι → F)
     {e d A m : ℕ} (hAn : A ≤ Fintype.card ι) {Q : MvPolynomial AffineVar F} (hQ : Q ≠ 0)
     (hlt : Q.weightedTotalDegree (multiplierWeight e d) < m * A)
-    (hmult : ∀ i, ∀ e ∈ (affineShift (domain i) (f i) (g i) Q).support,
-      m ≤ e none + e (some 0)) :
+    (hmult : ∀ i, ∀ w ∈ (affineShift (domain i) (f i) (g i) Q).support,
+      m ≤ w none + w (some 0)) :
     0 < Q.degreeOf none := by
   by_contra h0
   -- `Q` is free of `Z`, so it is a polynomial `Q₀` in `X` and `Y`.
@@ -370,36 +366,28 @@ The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m 
 The bound `m A - e D` uses natural-number subtraction, so the support is empty when `e D ≥ m A`.
 At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
 Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
-No positive lower bound on the resulting `Z`-degree is asserted. -/
+If the threshold `A` is at most the domain size `n`, the interpolant involves `Z`. -/
 theorem exists_isMultiplierInterpolant (domain : ι ↪ F) (f g : ι → F) {e d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - e * D) (M + 1) (D + 1)).card) :
-    ∃ Q, IsMultiplierInterpolant domain f g e d A m D M Q := by
-  obtain ⟨Q, hQ0, hlt, hyz, hM, hmult⟩ := exists_affineShift_support_le domain f g hsurplus
-  exact ⟨Q, hQ0, hlt, hyz, hM,
-    multiplierEval_eq_zero_of_affineShift_support_le domain f g hlt hmult⟩
-
-open Polynomial.SymbolicInterpolation in
-/-- If the threshold is at most the domain size, the constructed interpolant involves `Z`. -/
-theorem exists_isMultiplierInterpolant_degreeOf_none_pos (domain : ι ↪ F) (f g : ι → F)
-    {e d A m D M : ℕ} (hAn : A ≤ Fintype.card ι)
-    (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
-      (monomialSupport d (m * A - e * D) (M + 1) (D + 1)).card) :
-    ∃ Q, IsMultiplierInterpolant domain f g e d A m D M Q ∧ 0 < Q.degreeOf none := by
+    ∃ Q, IsMultiplierInterpolant domain f g e d A m D M Q ∧
+      (A ≤ Fintype.card ι → 0 < Q.degreeOf none) := by
   obtain ⟨Q, hQ0, hlt, hyz, hM, hmult⟩ := exists_affineShift_support_le domain f g hsurplus
   exact ⟨Q, ⟨hQ0, hlt, hyz, hM, multiplierEval_eq_zero_of_affineShift_support_le domain f g hlt
-    hmult⟩, degreeOf_none_pos_of_affineShift_support_le domain f g hAn hQ0 hlt hmult⟩
+    hmult⟩, fun hAn ↦ degreeOf_none_pos_of_affineShift_support_le domain f g hAn hQ0 hlt hmult⟩
 
 open Polynomial.SymbolicInterpolation in
 /-- An interpolant for the lines `α + β X` exists when its monomials outnumber the constraints.
 
 The monomials are `Z^j X^i Y^t` with `j ≤ M`, `j + t ≤ D`, and `i + d j < m A - D`.
 At each domain point, constraints have indices `(s, r, t)` with `s + r < m` and `s + t ≤ D`.
-Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction. -/
+Their number is `∑_{s < m} (m - s)(D + 1 - s)`, with natural-number subtraction.
+If the threshold `A` is at most the domain size `n`, the interpolant involves `Z`. -/
 theorem exists_isAffineInterpolant (domain : ι ↪ F) (f g : ι → F) {d A m D M : ℕ}
     (hsurplus : Fintype.card ι * (constraintSupport m (D + 1)).card <
       (monomialSupport d (m * A - D) (M + 1) (D + 1)).card) :
-    ∃ Q, IsMultiplierInterpolant domain f g 1 d A m D M Q :=
+    ∃ Q, IsMultiplierInterpolant domain f g 1 d A m D M Q ∧
+      (A ≤ Fintype.card ι → 0 < Q.degreeOf none) :=
   exists_isMultiplierInterpolant domain f g (by rwa [one_mul])
 
 end ReedSolomon
