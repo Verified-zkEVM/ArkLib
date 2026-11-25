@@ -178,10 +178,6 @@ entry says so, the specification is not claimed to be executable.
 
 ## In progress
 
-- **Solicited proofs.** One coding-theory declaration, a correlated-agreement lower bound, is
-  stated faithfully and left open for contributors. It is the only admitted statement in the
-  library, and nothing else depends on it
-  ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).
 - **Rewinding knowledge soundness.** A shared rewinding engine with legacy-layer and
   interaction-layer instances
   ([#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410)).

@@ -893,10 +893,13 @@ public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.OracleReduction.Security.ChallengePresampling
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.BlockStructure
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedScalar
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Layout
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.LayoutVecTree
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound

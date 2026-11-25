@@ -137,7 +137,7 @@ theorem exists_affineExceptional_finset_card_map_le_of_interpolation {K E : Type
   -- The persistent challenges are counted directly in `K²`.
   set Pset : Finset (K × K) := {c | ∃ P, IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
     IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P}
-  have hpers := card_isAffineExceptional_persistent_map_le domain f g φ (A := A) hdB hJ
+  have hpers := card_isAffineExceptional_persistent_map_le domain f g φ (A := A) hdB.le hJ
   refine ⟨Pset ∪ Ex₁, ?_, fun c hc P hP ↦ ?_⟩
   · calc (#(Pset ∪ Ex₁) : ℝ) ≤ #Pset + #Ex₁ := by exact_mod_cast Finset.card_union_le _ _
       _ ≤ _ := by linarith

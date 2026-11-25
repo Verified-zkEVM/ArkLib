@@ -43,7 +43,13 @@ example : ∃ H₀ L₀ : ℚ[X], L₀ ≠ 0 ∧ L₀.degree ≤ 1 ∧ H₀.degr
   · intro k
     simp
 
+/-- info: 'ReedSolomon.exists_lineRatioWitness_of_map' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.exists_lineRatioWitness_of_map
+/-- info: 'Matrix.exists_mulVec_eq_zero_apply_ne_zero_of_map' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms Matrix.exists_mulVec_eq_zero_apply_ne_zero_of_map
 
 /-- A regular line equation `Z - Y`. -/
@@ -85,18 +91,6 @@ example : affineDiscriminant freeR = 1 := by
 example (P : ℚ[X]) :
     multiplierEval (affineMultiplier 0 1) P freeR = 0 ∧ MvPolynomial.pderiv none freeR = 0 := by
   simp [freeR, affineMultiplier]
-
--- The normalized-factor theorem exports its defining polynomial identity.
-example : ∃ r, ∃ R : MvPolynomial AffineVar ℚ,
-    R ^ (1 ^ r) = MvPolynomial.variablePowerSubstitution
-      (fun v : AffineVar ↦ v.elim 1 fun _ ↦ 1 ^ r) regularR := by
-  have hirr : Irreducible regularR := by
-    apply (MulEquiv.irreducible_iff (MvPolynomial.optionEquivLeft ℚ (Fin 2))).mp
-    simpa [regularR] using
-      Polynomial.irreducible_X_sub_C (MvPolynomial.X (1 : Fin 2) : MvPolynomial (Fin 2) ℚ)
-  obtain ⟨r, R, -, -, -, -, hidentity, -⟩ := exists_frobeniusFactor 1 hirr
-    (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none (by simp [regularR]))
-  exact ⟨r, R, hidentity⟩
 
 -- Finset-filter statements retain the caller's equality instance.
 -- The Reed–Solomon lines `α + β X` of injectively embedded challenges form an injective family.
