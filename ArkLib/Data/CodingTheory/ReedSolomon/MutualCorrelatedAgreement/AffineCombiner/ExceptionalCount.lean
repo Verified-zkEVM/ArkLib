@@ -60,6 +60,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
 * `ReedSolomon.exists_factorRoots_finset_card_le`: the count for one irreducible factor.
 * `ReedSolomon.exists_interpolantRoots_finset_card_le`: outside few challenges, every root of
   the interpolant with `A` agreements is good.
+* `ReedSolomon.exists_finset_card_le_forall_isAffinePersistent_of_interpolant`: outside few
+  challenges, every exceptional candidate is persistent.
 * `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant`: outside a given set and
   at most `D² + 4 d² M² D³ (n / (A - B))²` more challenges, no candidate is exceptional.
 
@@ -369,6 +371,28 @@ private theorem exists_affinePersistent_of_map {E : Type*} [Field E] [IsAlgClose
   have := congrArg (Polynomial.map φ) (hQ.vanish_affineMultiplier c.1 c.2 P hP.1 hP.2.1)
   rwa [map_multiplierEval, map_affineMultiplier, Polynomial.map_zero] at this
 
+/-- Outside few challenges, every exceptional candidate is persistent.
+
+Let `n` be the domain size and assume `1 ≤ d ≤ B < A ≤ n`.
+Let `Q` be an interpolant at `e = 1` with budgets `m, D, M`.
+At most `D² + 4 d² M² D³ (n / (A - B))²` challenges are excluded, with `A - B` in `ℕ`.
+At agreement loss one, outside them, every exceptional candidate is persistent at `B`. -/
+theorem exists_finset_card_le_forall_isAffinePersistent_of_interpolant [Finite F]
+    (domain : ι ↪ F) (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
+    (hQ : IsMultiplierInterpolant domain f g 1 d A m D M Q) (hd : 1 ≤ d) (hdB : d ≤ B)
+    (hBA : B < A) (hAn : A ≤ Fintype.card ι) :
+    ∃ Ex : Finset (F × F), (#Ex : ℝ) ≤
+        D ^ 2 + 4 * d ^ 2 * M ^ 2 * D ^ 3 * ((Fintype.card ι : ℝ) / (A - B : ℕ)) ^ 2 ∧
+      ∀ c ∉ Ex, ∀ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P →
+        IsAffinePersistent domain f g d B c.1 c.2 P := by
+  obtain ⟨Ex, hEx, hgood⟩ := exists_affinePersistent_of_map
+    (algebraMap F (AlgebraicClosure F)) (ringExpChar (AlgebraicClosure F)) domain f g hQ hd hdB
+    hBA hAn
+  have hAB : A - B - 1 + 1 = A - B := by omega
+  rw [hAB, Fintype.card_fin] at hEx
+  refine ⟨Ex, hEx.trans_eq ?_, hgood⟩
+  ring
+
 /-- Outside few challenges, no candidate is exceptional.
 
 Assume `1 ≤ d ≤ B < A ≤ n` and an interpolant with budgets `m, D, M`.
@@ -385,18 +409,13 @@ theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domai
         4 * d ^ 2 * M ^ 2 * D ^ 3 * ((Fintype.card ι : ℝ) / (A - B : ℕ)) ^ 2 ∧
       ∀ c ∉ Ex, ∀ P, ¬ IsAffineExceptional domain f g d A 1 c.1 c.2 P := by
   classical
-  obtain ⟨Ex, hEx, hgood⟩ := exists_affinePersistent_of_map
-    (algebraMap F (AlgebraicClosure F)) (ringExpChar (AlgebraicClosure F)) domain f g hQ hd hdB
-    hBA hAn
+  obtain ⟨Ex, hEx, hgood⟩ :=
+    exists_finset_card_le_forall_isAffinePersistent_of_interpolant domain f g hQ hd hdB hBA hAn
   refine ⟨Pset ∪ Ex, ?_, fun c hc P hP ↦
     hPset c (fun h ↦ hc (Finset.mem_union_left _ h)) P hP
       (hgood c (fun h ↦ hc (Finset.mem_union_right _ h)) P hP)⟩
-  have hAB : A - B - 1 + 1 = A - B := by omega
-  rw [hAB, Fintype.card_fin] at hEx
-  calc (#(Pset ∪ Ex) : ℝ) ≤ #Pset + #Ex := by exact_mod_cast Finset.card_union_le _ _
-    _ ≤ #Pset + (D ^ 2 + (2 * d * M * ((Fintype.card ι : ℝ) / (A - B : ℕ))) ^ 2 * D ^ (2 + 1)) :=
-        add_le_add le_rfl hEx
-    _ = _ := by ring
+  have hUnion : (#(Pset ∪ Ex) : ℝ) ≤ #Pset + #Ex := by exact_mod_cast Finset.card_union_le _ _
+  linarith
 
 end Count
 
