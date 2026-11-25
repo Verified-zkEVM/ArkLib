@@ -80,11 +80,6 @@ example [DecidableEq (ZMod 2)] [DecidableEq (GaloisField 2 2)]
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.card_polynomialAgreementSet_traceSubstitution
 
-/-- info: 'ReedMuller.traceSubstitution_map_affineMultiplier' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.traceSubstitution_map_affineMultiplier
-
 /-- info: 'ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in

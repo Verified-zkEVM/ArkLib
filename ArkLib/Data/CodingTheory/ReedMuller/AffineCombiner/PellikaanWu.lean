@@ -44,9 +44,8 @@ The [paper page](../../../../../docs/kb/papers/CWYZ26.md) records the correspond
 
 * `ReedMuller.map_polynomialAgreementSet_traceSubstitution` and
   `ReedMuller.card_polynomialAgreementSet_traceSubstitution`: agreement sets correspond.
-* `ReedMuller.traceSubstitution_map_affineMultiplier`: the substituted multiplier.
-* `ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le`: its degree is at most
-  `q₀ᵏ⁻¹`.
+* `ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le`: the substituted multiplier
+  `L̃_α` has degree at most `q₀ᵏ⁻¹`.
 * `ReedMuller.traceSubstitution_map_affineMultiplier_injective`: distinct coefficient vectors
   give distinct substituted multipliers.
 
@@ -66,26 +65,13 @@ namespace ReedMuller
 variable {K₀ L F F' : Type*} [Field K₀] [Fintype K₀] [Field L] [Algebra K₀ L] [Field F]
   [Field F'] [Algebra L F'] [Algebra F F'] {k : ℕ}
 
-/-- Let `b` be a basis of `L` over `K₀` with `k` elements, and `F, L ⊆ F'`.
-The affine multiplier `α₀ + α₁ X₁ + ⋯ + αₖ Xₖ` over `F` substitutes to `α₀ + ∑ αᵢ T_{bᵢ}` over `F'`.
-Here `T_c` is the trace polynomial of `c`. -/
-theorem traceSubstitution_map_affineMultiplier (b : Module.Basis (Fin k) K₀ L)
-    (α : Fin (k + 1) → F) :
-    traceSubstitution b ((affineMultiplier α).map (algebraMap F F')) =
-      C (algebraMap F F' (α 0)) +
-        ∑ i, C (algebraMap F F' (α i.succ)) * (tracePolynomial K₀ (b i)).map (algebraMap L F') := by
-  simp [affineMultiplier]
-
 /-- Let `b` be a basis of `L` over `K₀` with `k` elements, `q₀ = |K₀|` and `F, L ⊆ F'`.
 The substituted affine multiplier has degree at most `q₀ᵏ⁻¹`. -/
 theorem natDegree_traceSubstitution_map_affineMultiplier_le (b : Module.Basis (Fin k) K₀ L)
     (α : Fin (k + 1) → F) :
     (traceSubstitution b ((affineMultiplier α).map (algebraMap F F'))).natDegree ≤
       Fintype.card K₀ ^ (k - 1) := by
-  have h : (affineMultiplier α).map (algebraMap F F') =
-      affineMultiplier fun i ↦ algebraMap F F' (α i) := by
-    simp [affineMultiplier]
-  rw [h]
+  rw [map_affineMultiplier]
   exact (natDegree_traceSubstitution_le b _).trans
     ((Nat.mul_le_mul_right _ (totalDegree_affineMultiplier_le _)).trans_eq (one_mul _))
 

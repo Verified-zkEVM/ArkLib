@@ -64,6 +64,7 @@ The multiplier, combined word, agreement set and loss use noncomputable polynomi
   its coefficients.
 * `ReedMuller.affineMultiplier_injective`, `ReedMuller.affineMultiplier_zero`,
   `ReedMuller.affineMultiplier_sub` and `ReedMuller.affineMultiplier_smul`: linearity in `α`.
+* `ReedMuller.map_affineMultiplier`: base change of the multiplier.
 * `ReedMuller.totalDegree_affineMultiplier_le` and
   `ReedMuller.succ_eq_zero_of_totalDegree_affineMultiplier_eq_zero`: its total degree.
 * `ReedMuller.combinedWord_apply`, `ReedMuller.mem_agreementSet` and
@@ -149,6 +150,11 @@ theorem affineMultiplier_smul (c : F) (α : Fin (k + 1) → F) :
     affineMultiplier (c • α) = C c * affineMultiplier α := by
   simp only [affineMultiplier, Pi.smul_apply, smul_eq_mul, map_mul, mul_add, mul_sum]
   ring_nf
+
+/-- A ring homomorphism `φ` maps the multiplier of `α` to the multiplier of `φ ∘ α`. -/
+theorem map_affineMultiplier {F' : Type*} [Field F'] (φ : F →+* F')
+    (α : Fin (k + 1) → F) : (affineMultiplier α).map φ = affineMultiplier (φ ∘ α) := by
+  simp [affineMultiplier]
 
 /-- A multiplier of total degree zero has no linear part. -/
 theorem succ_eq_zero_of_totalDegree_affineMultiplier_eq_zero {α : Fin (k + 1) → F}
