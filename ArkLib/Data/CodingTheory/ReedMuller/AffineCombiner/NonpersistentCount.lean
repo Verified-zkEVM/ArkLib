@@ -144,10 +144,10 @@ theorem isAffinePersistent_of_mem_chartExcluded (b : Module.Basis (Fin k) K₀ L
     rw [← hj, ← iterateFrobeniusEquiv_def, RingEquiv.symm_apply_apply]
   -- The identities descend to `F`.
   obtain ⟨H₀, σ₀, hσ₀, hH₀, h₀⟩ := exists_affineRatioWitness_of_map φ
-    (fun x : U ↦ gridPoint F (ψ x)) (fun x ↦ g (ψ x)) d hσ
-    ((MvPolynomial.totalDegree_sub _ _).trans (max_le hH' hPmap)) fun x ↦ by
+    (fun x : U ↦ gridPoint F (ψ x)) (fun x ↦ g (ψ x)) hσ fun x ↦ by
       rw [algebraMap_comp_gridPoint]
       exact hexpl x x.2
+  replace hH₀ := hH₀.trans ((MvPolynomial.totalDegree_sub _ _).trans (max_le hH' hPmap))
   set T := U.map ψ.toEquiv.toEmbedding
   have hT : B + Fintype.card K₀ ^ (k - 1) ≤ #T := by rwa [card_map]
   have hagree : T ⊆ agreementSet (combinedWord f g (affineMultiplier α)) P := by
