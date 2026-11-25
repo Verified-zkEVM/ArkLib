@@ -371,7 +371,12 @@ private theorem exists_affinePersistent_of_map {E : Type*} [Field E] [IsAlgClose
   have := congrArg (Polynomial.map φ) (hQ.vanish_affineMultiplier c.1 c.2 P hP.1 hP.2.1)
   rwa [map_multiplierEval, map_affineMultiplier, Polynomial.map_zero] at this
 
-/-- Outside the counted challenges, every exceptional candidate is persistent. -/
+/-- Outside few challenges, every exceptional candidate is persistent.
+
+Let `n` be the domain size and assume `1 ≤ d ≤ B < A ≤ n`.
+Let `Q` be an interpolant at `e = 1` with budgets `m, D, M`.
+At most `D² + 4 d² M² D³ (n / (A - B))²` challenges are excluded, with `A - B` in `ℕ`.
+At agreement loss one, outside them, every exceptional candidate is persistent at `B`. -/
 theorem exists_finset_card_le_forall_isAffinePersistent_of_interpolant [Finite F]
     (domain : ι ↪ F) (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
     (hQ : IsMultiplierInterpolant domain f g 1 d A m D M Q) (hd : 1 ≤ d) (hdB : d ≤ B)

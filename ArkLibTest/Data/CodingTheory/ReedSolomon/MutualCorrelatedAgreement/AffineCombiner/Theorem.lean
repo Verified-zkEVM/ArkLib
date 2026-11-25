@@ -81,7 +81,8 @@ example (f g : Fin 100 → GaloisField 2 128) :
         (embed₆₄ c.1) (embed₆₄ c.2) P := by
   have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
     simpa using sqrt_degreeFraction
-  obtain ⟨S, hS, hgood⟩ := exists_affineExceptional_finset_card_map_le wideDomain f g embed₆₄
+  obtain ⟨S, hS, hgood⟩ := exists_affineExceptional_finset_card_map_le wideDomain f g
+    ⟨embed₆₄, embed₆₄.injective⟩
     (d := 16) (η := 1 / 2) (by norm_num) (by simp) (by norm_num) (by rw [hsqrt]; norm_num)
     (by simp; norm_num)
   have hA : ⌈((2 : ℝ) / 5 + 1 / 2) * ((100 : ℕ) : ℝ)⌉₊ = 90 := by norm_num
