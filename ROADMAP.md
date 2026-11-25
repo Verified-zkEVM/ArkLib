@@ -18,15 +18,16 @@ The legacy layer is sorry-free and reasonably stable. Every protocol and commitm
 [Complete](#complete) is formalized in it, with sequential composition, context lifting
 (`liftContext`, in [`OracleReduction/LiftContext/`](ArkLib/OracleReduction/LiftContext/)) and
 the [legacy security notions](#framework). The interaction layer is not yet ready to replace it:
-it has generic execution, composition and security theory, and one protocol, Sum-check
-([`ProofSystem/Sumcheck/`](ArkLib/ProofSystem/Sumcheck/)).
+it has generic execution, composition, context lifting and security theory, and one protocol,
+Sum-check ([`ProofSystem/Sumcheck/`](ArkLib/ProofSystem/Sumcheck/)).
 
 Developing the interaction layer is now the project's priority. The migration has three stages.
 
 1. **Feature parity.** Give the interaction layer every framework feature that the legacy
-   protocols use. For example, lifting a reduction into a larger context
-   (`OracleReduction/LiftContext/`) has no interaction-layer counterpart yet. The
-   [design roadmap](docs/design/05-roadmap.md) sequences this work.
+   protocols use. Context lifting now has a counterpart
+   ([`Interaction/LiftContext.lean`](ArkLib/Interaction/LiftContext.lean); see
+   [lift-context.md](docs/design/interaction-layer/lift-context.md)). The
+   [design roadmap](docs/design/05-roadmap.md) sequences the remaining work.
 2. **Port protocols one at a time, each with a proved equivalence.** For each ported protocol,
    prove a theorem that relates the legacy protocol, embedded into the interaction layer, to the
    interaction-layer protocol, so that the port is checked to be faithful. Sum-check is the first

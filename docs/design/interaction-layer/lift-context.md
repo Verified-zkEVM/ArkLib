@@ -67,9 +67,10 @@ Three differences from the legacy shapes follow from the core's types.
 
 - `Verifier.liftContext lens V` decides with `V` on `lens.proj stmt` and maps an accepted
   inner statement through `lens.lift stmt p`. It makes no other query.
-- `Prover.liftContext lens P stmt wit` runs `P (lens.proj stmt) (lens.wit.proj stmt wit)` and
-  maps its output through `lens.wit.lift stmt wit tr`. It is a `Strategy.mapOutput`, so every
-  node slot is the inner prover's slot.
+- `Prover.liftContext proj wit P stmt w` runs `P (proj stmt) (wit.proj stmt w)` and maps its
+  output through `wit.lift stmt w tr`. It takes only the statement projection, not a whole
+  statement lens, because the prover never sees output statements. It is a `Strategy.mapOutput`, so every node slot is the inner
+  prover's slot.
 - `Reduction.liftContext` pairs the two.
 - `OracleVerifier.liftContext lens V` runs the inner decision with its bundle queries routed
   through `(lens.projOracle stmt).par (OracleMap.id messages)` and maps an accepted inner
@@ -87,9 +88,15 @@ The lifted run against any prover is a post-map of the inner run on the projecte
     V.run (lens.proj stmt) prover
 ```
 
-The reduction law also maps the prover output through the witness lens. The oracle law has the
-same form, with the input data projected through `lens.projOracle` and the output data built by
-`lens.liftOracle`. Its proof uses `OracleMap.simulate_withAmbient`.
+This is `Verifier.liftContext_run`. The reduction law `Reduction.liftContext_runOutcome` also
+maps the prover output through the witness lens. It follows from `Verifier.run_mapOutput`:
+running a verifier against a prover with a mapped output maps the prover output of the outcome.
+That lemma rests on `run_mapOutput_focal`, the same fact for `TwoParty.Lens.run` on a focal
+strategy.
+
+The oracle laws `OracleVerifier.liftContext_run` and `OracleVerifier.run_mapOutput` have the same
+form, with the input data projected through `lens.projOracle` and the output data built by
+`lens.liftOracle`. Their proofs use `OracleMap.simulate_withAmbient`.
 
 These laws hold for every prover, not only for lifted ones. A soundness adversary against the
 lifted verifier is therefore already an adversary against the inner verifier on the projected
@@ -140,11 +147,18 @@ Both round-by-round transfers keep the inner draw and the inner error unchanged.
 ## Legacy correspondence
 
 `ArkLib/Interaction/Legacy/LiftContext.lean` relates the two layers for plain reductions.
-Embedding a legacy verifier lifted along a legacy statement lens is the core lift of the
-embedded verifier (`embedVerifier_liftContext`). Embedding a legacy prover lifted along a legacy
-context lens is the core lift of the embedded prover (`embedProver_liftContext`). Both are
-equalities of the embedded objects, so lifting then embedding equals embedding then lifting on
-every run.
+`StatementLens.ofLegacy` and `ContextLens.ofLegacy` turn legacy lenses into core lenses with
+constant output families. Then:
+
+- `Legacy.embedVerifier_liftContext`: embedding a legacy verifier lifted along a legacy
+  statement lens gives the core lift of the embedded verifier.
+- `Legacy.embedProver_liftContext`: embedding a legacy prover lifted along a legacy context lens
+  gives the core lift of the embedded prover. The proof goes round by round
+  (`Legacy.roundSlot_liftContext`, `Legacy.embedFrom_liftContext`).
+- `Legacy.embedReduction_liftContext`: the same for reductions.
+
+All three are equalities of the embedded objects, so lifting then embedding equals embedding
+then lifting on every run.
 
 ## Not covered
 
@@ -157,3 +171,7 @@ every run.
   `OracleVerifier.liftContext` needs an `OracleMap` from a legacy `ExecutableLens`, built with
   `OracleMap.ofLegacySimulation`, and a commuting lemma for the embedded decision's query
   routing. It is left for a follow-up.
+- **Output index families outside universe `u`.** `OracleVerifier.Output` requires the output
+  oracle index family `J : Path s → Type u`, so `OracleStatementLens` fixes both output index
+  families in universe `u`. Generalizing this is a change to the core's oracle verifier, not to
+  the lens.
