@@ -63,7 +63,7 @@ or P2, removed and open. This list uses one vocabulary:
   - **P2 (shape):** neither a challenge nor an oracle message selects the subtree.
 - **moved-upstream:** the content is generic theory that now lives in PolyFun (pin
   `713d8857e49d20927c1447b3ba7397acc5537319`) or VCVio (pin
-  `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`).
+  `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3`).
 - **unresolved:** a parent interface is missing. The row names it, and
   [Unresolved rows and options](#unresolved-rows-and-options) lists the choices.
 
@@ -204,10 +204,11 @@ runtime mass as a fault: it keeps missing mass distinct from rejection, as row T
 ## Unresolved rows and options
 
 The three items below are restrictions of the core port that the ledgers record without tying
-them to one old declaration. Each comes from a pinned upstream library, and ArkLib accepts each as
-an upstream limit: the code site documents it, and ArkLib picks up the upstream fix through a later
-VCVio pin bump. Two further items, `run_append` and the degree guarantee, are resolved; the last
-two subsections record why.
+them to one old declaration. Each came from a pinned upstream library, and ArkLib accepts each as
+an upstream limit: the code site documents it. The VCVio pin `f1a4a8ec` now includes the upstream
+change behind each item (VCVio PRs #1220 and #1236). ArkLib has not adopted them yet, and each limit
+stays until a follow-up change lifts it. Two further items, `run_append` and the degree guarantee,
+are resolved; the last two subsections record why.
 
 **1. The full-log runner cannot return large query indices.**
 [departures.md](departures.md) lists this as entry 18, and `port-oracle-access.md`
@@ -225,13 +226,15 @@ universe is large enough. Options:
 Decision: accepted as an upstream limit. The ambient-log runners `runWithAmbientLog` and
 `runWithAmbientQueriesByMove` are the workaround for large indices, and the docstring of
 `runWithLog` in `Interaction/Security/Knowledge.lean` says so. VCVio PR
-[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which aims to
-lift the limit.
+[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst` and a
+universe-general `pathLogResult`, and the current pin includes them. Lifting the limit means
+rebuilding `runWithLog` on `subst` and reproving its laws, which is follow-up work.
 
 **2. PROB-031: probability bounds use small moves only.**
 Row PROB-031 of [knowledge-composition-disposition.md](knowledge-composition-disposition.md)
-records it. Pinned VCVio defines `ProbComp : Type → Type` (`VCVio/OracleComp/ProbComp/Basic.lean`,
-line 31), and `challengeSpec` (`Interaction/Protocol.lean`, lines 69–71) returns a move in the universe
+records it. VCVio at the previous pin `f8d7f8ef` defined `ProbComp : Type → Type`
+(`VCVio/OracleComp/ProbComp/Basic.lean`, line 31), and `challengeSpec`
+(`Interaction/Protocol.lean`, lines 69–71) returns a move in the universe
 that challenges share with public and oracle messages. As a result, `sampleAt`, `BoundedAt`,
 `LocallyBounded` and the round-by-round probability bounds use the small-move instance. What is
 missing is a universe-polymorphic `ProbComp`, or a challenge universe separate from the message
@@ -244,16 +247,18 @@ universe. Options:
 
 Decision: accepted as an upstream limit. The module docstring of `Interaction/Security/RoundByRound.lean`
 documents it. VCVio PR [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes
-`ProbComp` universe-polymorphic.
+`ProbComp` universe-polymorphic, and the current pin includes it. `sampleAt` and the bounds stated
+with `𝒟[·]` can now take large moves. Bounds stated with `Pr{}` stay small because VCVio's `Pr{}`
+still requires `Type`. Generalizing them is follow-up work.
 
 **3. VCVio cost universes.**
 `port-oracle-bundles.md` (#1476), section Cost universes, records it.
 `OracleMap.withAmbient_worstCaseCost` in `ArkLib/Interaction/Oracle/Cost.lean` (#1476) keeps
 the ambient index, both bundle-query indices, the responses and the cost carrier `ω` in `Type`.
-The restriction comes from VCVio `VCVio/OracleComp/QueryTracking/CostModel.lean` (variables at
-line 63, `CostModel` at line 86, `WorstCaseCostBound` at line 217) and `CostModel/Simulation.lean`
-(variables at line 32). What is missing is a VCVio cost API with explicit query-index,
-response and cost universes. Options:
+At the previous pin `f8d7f8ef` the restriction came from VCVio
+`VCVio/OracleComp/QueryTracking/CostModel.lean` (variables at line 63, `CostModel` at line 86,
+`WorstCaseCostBound` at line 217) and `CostModel/Simulation.lean` (variables at line 32). What
+was missing is a VCVio cost API with explicit query-index, response and cost universes. Options:
 
 - implement the generalization in VCVio (PR R-clean is the natural place) and rebase the ArkLib
   wrapper on it;
@@ -263,7 +268,9 @@ response and cost universes. Options:
 Decision: accepted as an upstream limit. The module docstring of `Interaction/Oracle/Cost.lean`, which
 holds `OracleMap.withAmbient_worstCaseCost`, documents it. VCVio PR
 [#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the universes of the cost
-API.
+API, and the current pin includes it. The wrapper can now take those universes, with results kept
+in the response universe as `simulateQ` requires. The change is about ten lines and is follow-up
+work.
 
 ### Resolved: `run_append`
 

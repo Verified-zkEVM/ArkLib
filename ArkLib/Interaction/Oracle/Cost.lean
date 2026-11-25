@@ -22,14 +22,14 @@ Query multiplicities of a recorded run are counted with VCVio's `QueryLog.countQ
 over appended logs (`QueryLog.countQ_append`).
 
 The ambient index, bundle-query indices, responses, results and cost carrier are restricted to
-`Type` by the pinned VCVio cost API. Only backing-data universes are independent here. ArkLib
-accepts this restriction as an upstream limit. Lifting it requires generalizing VCVio's
-`CostModel`, `costDist`, `WorstCaseCostBound` and `WorstCaseCostBound.simulateQ`, with their
-cost-writer helpers. VCVio PR #1220 (https://github.com/Verified-zkEVM/VCVio/pull/1220)
-generalizes the universes of this cost API, and ArkLib picks it up through a later VCVio pin
-bump. Query indices and the cost carrier are not restricted by the protocol semantics. A caller
-at a larger universe can already prove a structural bound with PolyFun's universe-polymorphic
-completed-path transfer `PFunctor.FreeM.Path.charge_liftM_le_of_forall`.
+`Type`. Only backing-data universes are independent here. ArkLib accepts this restriction as an
+upstream limit: VCVio's `CostModel`, `costDist`, `WorstCaseCostBound` and
+`WorstCaseCostBound.simulateQ` required `Type` until VCVio PR #1220
+(https://github.com/Verified-zkEVM/VCVio/pull/1220) generalized their universes. The pinned
+VCVio includes that PR, and generalizing this wrapper is follow-up work. Query indices and the
+cost carrier are not restricted by the protocol semantics. A caller at a larger universe can
+already prove a structural bound with PolyFun's universe-polymorphic completed-path transfer
+`PFunctor.FreeM.Path.charge_liftM_le_of_forall`.
 -/
 
 @[expose] public section
@@ -47,9 +47,9 @@ the original charge of that output query.
 As with `WorstCaseCostBound` itself, the bound covers completed paths only. A query with an empty
 response type ends no completed path, so the bound says nothing about its charge.
 
-The indices, responses and cost carrier lie in `Type` because the pinned VCVio cost API requires
-it. ArkLib accepts this as an upstream limit until a VCVio pin bump brings in VCVio PR #1220; the
-module docstring has the details. -/
+The indices, responses and cost carrier lie in `Type` because VCVio's cost API required it before
+VCVio PR #1220. The pinned VCVio includes that PR, and generalizing this theorem is follow-up
+work; the module docstring has the details. -/
 theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}
     {In : OracleBundle.{0, 0, dX}} {Out : OracleBundle.{0, 0, dY}}
     [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMonoid ω]

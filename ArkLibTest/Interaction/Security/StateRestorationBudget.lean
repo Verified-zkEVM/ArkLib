@@ -602,7 +602,7 @@ theorem extractionProgram_run (z : Stmt) (m₁ c₁ m₂ : Fin 8) (c₂ : Fin 16
 def extractionObservation (z : Stmt) (tr : Transcript oracleSig (protocol rounds)) (w : Nat) :
     Nat × Nat :=
   let program := (stages.programAlong z tr).program
-  (simulateQ ((program.answer (program.view w)).withAddCost program.cost)
+  (simulateQ ((program.queryImpl (program.view w)).withAddCost program.cost)
     (program.program (program.view w))).runAdd.run.map id (fun count => count ())
 
 -- Row 24 (StateRestorationBudget L410, extractionObservation_cost).
@@ -636,12 +636,12 @@ theorem extractionProgram_writer (z : Stmt) (m₁ : Fin 8) (tr : Transcript orac
         (⟨m₁, w⟩ : knowledge.StageInput z start ⟨⟩))
     let full := stages.programFrom z start ⟨⟩ ⟨m₁, tr⟩
     ∀ view : suffix.program.View,
-      simulateQ ((full.program.answer view).withAddCost full.program.cost)
+      simulateQ ((full.program.queryImpl view).withAddCost full.program.cost)
           (full.program.program view) =
         (do
-          let w ← simulateQ ((suffix.program.answer view).withAddCost suffix.program.cost)
+          let w ← simulateQ ((suffix.program.queryImpl view).withAddCost suffix.program.cost)
             (suffix.program.program view)
-          simulateQ ((first.answer (first.view w)).withAddCost first.cost)
+          simulateQ ((first.queryImpl (first.view w)).withAddCost first.cost)
             (first.program (first.view w))) := by
   intro suffix first full view
   exact MeasuredProgram.simulateQ_withAddCost_comp first suffix.program view
@@ -747,7 +747,7 @@ theorem converted_game_bound :
 def convertedObservation (z : Stmt) (tr : Transcript oracleSig (protocol rounds)) (w : Nat) :
     Nat × Nat :=
   let program := (convertedProgram z tr).program
-  (simulateQ ((program.answer (program.view w)).withAddCost program.cost)
+  (simulateQ ((program.queryImpl (program.view w)).withAddCost program.cost)
     (program.program (program.view w))).runAdd.run.map id (fun count => count ())
 
 /-- Every run records the conversion and the two message additions. -/

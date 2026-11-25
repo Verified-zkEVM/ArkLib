@@ -21,7 +21,8 @@ public import ToMathlib.Algebra.MvPolynomial.SchwartzZippel
   oracle's behavior for a given underlying element of the type.
 
   `OracleInterface` is used to restrict the verifier's access to the input oracle statements and the
-  prover's messages in an interactive oracle reduction (see `Basic.lean`).
+  prover's messages in an interactive oracle reduction. Both the interaction layer
+  (`ArkLib.Interaction`) and the legacy layer (`ArkLib.OracleReduction`) use it.
 
   We define `OracleInterface` instances for common types:
 

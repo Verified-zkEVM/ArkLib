@@ -10,7 +10,7 @@ ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
   Interaction/
     Core/             interaction layer: protocols as PolyFun trees, execution, security
-  Relation/           claims, witness relations, and oracle data families
+  Relation/           claims, witness relations, oracle interfaces and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
@@ -64,7 +64,12 @@ home_page/            site assets and assembled website root
   Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
-  admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
+  admissibility boundary, and oracle data families; it depends on no protocol tree.
+  `Relation/OracleInterface.lean` defines the `OracleInterface` class and its instances for
+  polynomials and vectors, and `Relation/Prelude.lean` holds generic preliminaries
+  (`VCVCompatible`, `Sampleable`, `Set.language`). Both layers import these files. The legacy
+  layer keeps its own preliminaries, `Direction` and `acceptRejectOracleRel`, in
+  `OracleReduction/Prelude.lean`.
   `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
   evaluation-query interface, shared by the specification and the computational handler.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
@@ -784,9 +789,10 @@ home_page/            site assets and assembled website root
   (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
 - Measured extraction lives in `Security/Resources.lean`. Its game-independent core is
-  `OracleComp.MeasuredProgram` in
+  `PFunctor.FreeM.MeasuredProgram` in
+  `PolyFun.PFunctor.Free.Cost.Measured`, with oracle-cost lemmas in
   `VCVio.OracleComp.QueryTracking.MeasuredProgram`:
-  an uncharged input view, an instruction program, deterministic handlers and declared charges.
+  an uncharged input view, an instruction program, deterministic answers and declared charges.
   `Realizes` is output equality; `CostAtMost` bounds every permitted completed instruction path.
   `BudgetedProgram f` bundles both proofs, and `ofFun` realizes every function with zero budget.
   These facts do not certify host computation time or operational identity with arbitrary code.

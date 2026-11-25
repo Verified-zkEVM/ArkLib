@@ -127,7 +127,7 @@ example (v : View combined combinedPath) : ¬ WorstCaseCostBound (routedSuffix v
       let fresh : Nat ← liftM ((ambient + rawBundle.spec).query (.inr suffixSlot))
       pure (left + right + fresh)) (0 : Nat) rawCost _ middle
   rw [routedSuffix_eq] at certificate
-  exact absurd (certificate _ member) (by decide)
+  exact absurd ((worstCaseCostBound_iff_support_bound _ _ _).1 certificate _ member) (by decide)
 
 end Interaction.QueryCostTests
 
@@ -190,7 +190,7 @@ theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
   refine OracleMap.withAmbient_worstCaseCost
     (In := pathBundle bits bitCombined (combinedPath guess)) (Out := secondBundle guess)
     (OracleVerifier.suffixRoute bitPrefix () (combinedPath guess) v)
-    (suffix_budget _ _) (fun _ => le_rfl) ?_
+    (suffix_budget.{0} _ (View.split bitFirst (fun _ => bitSecond) _ v).2) (fun _ => le_rfl) ?_
   rintro (⟨i, q⟩ | ⟨i, q⟩)
   · cases i
     cases q

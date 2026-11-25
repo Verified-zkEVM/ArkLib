@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Relation.OracleInterface
 public import ArkLib.Interaction.OracleVerifier
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.MvPolynomial.EvalExcept

@@ -360,7 +360,8 @@ coupling entries are therefore closed by the parent, as recorded in
 
 The remaining item is the large-query result interface of the full-log runner. ArkLib accepts it
 as an upstream limit (departures entry 18); [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236)
-adds `OracleComp.subst`, which aims to lift it.
+adds `OracleComp.subst`, which can lift it. The VCVio pin includes it since the `f1a4a8ec` bump,
+and adopting it is follow-up work.
 [OracleVerifier.runWithLog][logged-runner] returns bundle-query entries through a small
 computation monad. Returning large query indices in that complete heterogeneous log needs a parent
 logging interface with a sufficiently large result universe. `runWithAmbientLog` and
