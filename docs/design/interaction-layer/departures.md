@@ -45,8 +45,9 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 | 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 
-The [bundle and node universe port table](port-bundle-universes.md) records the frozen
-R26, R27 and decoration canaries closed by entry 18.
+The [oracle-bundle and oracle-node universe port table](port-bundle-universes.md) records
+the old-layer R26, R27 and decoration canaries closed by entry 18. The R26/R27 definitions occur
+once, in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`.
 
 ## Legacy embedding: entries 14–16
 
@@ -176,6 +177,20 @@ routed program, jointly with its cost-five bound, and checks the actual ordered 
 separately. These observations are ported. P1 still excludes
 intermediate verifier effects and the moves they were assigned to. No additional departure is
 introduced.
+
+## Stage composition and oracle execution acceptance clients
+
+The [stage and execution port table](port-stages.md) lists each old-layer
+assertion of the claim, composition, core-run, execution and dependent-reduction clients. It also
+lists each replaced ordered-execution law. Each row gives the assertion's exact port, the premise
+that excludes part of it, or the removed mechanism it belonged to. The old-layer ordered execution
+decided each stage before the next one and skipped the later stages after a rejection. The port
+composes passive stages with right-associated appends, runs every interaction before the
+decisions, and selects later stages by the prover's public messages only. The table also records
+the universe placement of stage chains. Its one open row, the split of a chain at an arbitrary
+stage, remains a migration obligation. Protocol associativity exists in PolyFun. The missing
+interface is a reassociation law for `OracleVerifier.append` with its path, view, routing and
+certificate transport, and the prover continuation retained at the cut.
 
 ## Knowledge composition and measured extraction
 
