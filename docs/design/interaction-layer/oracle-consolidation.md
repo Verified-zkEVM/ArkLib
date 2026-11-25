@@ -614,9 +614,8 @@ alongside `s`. The only technical motive for separating `interface` from `Oracle
 universe ledger was avoiding an extra query universe parameter `q` on `OraclePos : Type (max (u + 1)
 (q + 1))`. After universe migration step 5, `X : Type` and `OracleInterface X : Type 1` both yield
 `OraclePos : Type 1` with zero universe parameters (`OracleConsolidation.lean:467`), removing that
-motive entirely. Whether `OraclePos.oracle` keeps two arguments `(X : Type) (interface :
-OracleInterface X)` or takes one `(B : OracleBundle)` is an independent ergonomic choice recorded in
-Section 6; either keeps `Γ` empty.
+motive entirely. Section 6 records the decision to keep the two arguments `(X : Type) (interface :
+OracleInterface X)` rather than one `(B : OracleBundle)`. Either form keeps `Γ` empty.
 
 **Record D6 alignment (`docs/design/interaction-rebuild/D6-oracle-access.md`).** Design D preserves
 every semantic property of D6. Passive verifiers still query only after the run, oracle messages on
@@ -660,7 +659,7 @@ each in Part 3 of [`prototypes/OracleConsolidation.lean`](prototypes/OracleConso
 
 - **Keep in VCVio:** `OracleSpec`, `PFunctor` bridges (`toPFunctor`, `ofPFunctor`), `QueryImpl`,
   `QueryImpl.add`, `QueryImpl.compose`, `QueryImpl.comapLens`, and `OracleComp.mapLens`.
-- **Propose upstream to VCVio:**
+- **Possible upstream VCVio proposals, deferred (section 6):**
   1. A `Type`-monomorphic alias for `[]ₒ` (`emptySpec.{0, 0}`), already noted in
      `docs/design/interaction-rebuild/D2-ownership-and-universes.md:168`.
   2. Documenting or deprecating `OracleContext`
@@ -720,8 +719,8 @@ land in the order 2, 3, 4, 5, then 1 as part of step 5.
      `ArkLib/Relation/OracleInterface.lean` with `spec : OracleSpec Query` and `answer : Message →
      (q : Query) → spec q`. Drop imports of `VCVio.OracleComp.OracleContext` and
      `SimSemantics.ReaderT.Basic`. Update `instProd` to use `QueryImpl.add`, remove dead
-     `OracleInterface.toOracleImpl` and `OracleInterface.spec` (now a struct field), and fix or
-     remove the duplicate `instTensorForall` (`OracleInterface.lean:176-180`). Mechanically update
+     `OracleInterface.toOracleImpl` and `OracleInterface.spec` (now a struct field), and
+     delete the duplicate `instTensorForall` (`OracleInterface.lean:176-180`). Mechanically update
      all remaining `toOC` sites.
    - **Files touched (35 files total after step 4 removes `StageChain.lean`'s `liftQueries`):**
      - `ArkLib/Relation/OracleInterface.lean`
@@ -742,8 +741,8 @@ land in the order 2, 3, 4, 5, then 1 as part of step 5.
    consolidated constructors.**
    - **Changes:** Move `OracleBundle`, `OracleBundle.sum`, `OracleBundle.ofSpec`,
      `OracleBundle.tensor`, `OracleBundle.Lens`, `OracleBundle.Equiv`, and `OracleMap` (bundle-level
-     operations) to `ArkLib/Relation/OracleBundle.lean` (renaming `OracleBundle.Index` to `Query` if
-     approved, or keeping `Index`). Add `OracleBundle.Behavior`, `toInterface`, `of`, `ofInst`,
+     operations) to `ArkLib/Relation/OracleBundle.lean` (renaming `OracleBundle.Index` to `Query`,
+     section 6). Add `OracleBundle.Behavior`, `toInterface`, `of`, `ofInst`,
      `empty`, `indexed`, `ofIndexed`, `OracleMap.emptyLeft`, `OracleMap.reindex`,
      `OracleBundle.Lens.toOracleMap`, and `OracleBundle.indexedSumEquiv`. Keep `OracleFamily`,
      `OracleBundle.ofFamily`, and `CoeOut` intact as temporary bridges. Update
@@ -753,7 +752,7 @@ land in the order 2, 3, 4, 5, then 1 as part of step 5.
    - **Files touched (~8 files):** `ArkLib/Relation/OracleBundle.lean` (new),
      `ArkLib/Relation/Basic.lean`, `ArkLib/Interaction/OracleVerifier.lean`,
      `ArkLib/Interaction/Oracle/BundleOps.lean`, `ArkLib/Interaction/Oracle/SentOracles.lean`, plus
-     3 test files if `Index` is renamed to `Query` (`BundleFamilies.lean`, `OracleMaps.lean`,
+     3 test files for the rename of `Index` to `Query` (`BundleFamilies.lean`, `OracleMaps.lean`,
      `RoutedAccess.lean`).
    - **Why it compiles standalone:** Additive relocation; every existing `OracleFamily`,
      `OracleBundle`, and `OracleVerifier` caller continues to compile unchanged.
@@ -817,33 +816,37 @@ land in the order 2, 3, 4, 5, then 1 as part of step 5.
    - **Why it compiles standalone:** Zero remaining callers reference `OracleFamily` or
      `OracleBundle.ofFamily`. Universe migration step 6 then runs cleanly on the consolidated API.
 
-## 6. Open questions for the maintainer
+## 6. Decisions
 
-1. **Arguments of `OraclePos.oracle`.** Once `OracleBundle` moves to
-   `ArkLib/Relation/OracleBundle.lean` (PR 2), `OraclePos.oracle` can either keep two arguments
-   `oracle (X : Type) (interface : OracleInterface X)` (matching `message (X : Type)` and `challenge
-   (C : Type)`, with zero edits to 15 files matching on `OraclePos`) or take one argument `oracle (B
-   : OracleBundle)` (eliminating `OracleBundle.of X I` inside `oracleMessageBundle`). Design D
-   defaults to keeping `(X : Type) (interface : OracleInterface X)` unless the maintainer prefers
-   `oracle (B : OracleBundle)`.
-2. **Fate of `OracleBundle.Lens` and `OracleBundle.Equiv`.** After universe migration step 4 deletes
-   `OracleBundle.liftResponse`, `OracleBundle.Lens` and `OracleBundle.Equiv` in
-   `ArkLib/Interaction/Oracle/BundleOps.lean` have zero production callers (only
-   `ArkLibTest/Interaction/Oracle/OracleMaps.lean` tests them). One-way routing is covered by
-   `OracleMap` and VCVio's `QueryImpl.comapLens`, while `OracleBundle.Equiv` remains useful for
-   symmetric structural isomorphisms like `indexedSumEquiv`. Decide whether to keep `Lens` and
-   `Equiv` in `ArkLib/Relation/OracleBundle.lean` or retire them after step 4.
-3. **Merging PR 1 into universe migration step 5.** Resolved on 2026-11-25: PR 1 is part of step 5
-   (section 5).
-4. **Renaming `OracleBundle.Index` to `OracleBundle.Query`.** Calling the field `Query` aligns
-   `OracleBundle.Query` with `OracleInterface.Query` and removes the historical collision with
-   `OracleFamily.Index` (slot index vs query index), touching 6 files (`OracleVerifier.lean`,
-   `BundleOps.lean`, `SentOracles.lean`, `BundleFamilies.lean`, `OracleMaps.lean`,
-   `RoutedAccess.lean`). Decide whether to rename or keep `Index`.
-5. **Cleanup of `OracleInterface.instTensorForall`.** `ArkLib/Relation/OracleInterface.lean:176-180`
-   duplicates `instProdForall` (`192-196`) verbatim and has zero callers. Decide whether to delete
-   `instTensorForall` in PR 1 or repair it to use `(i : ι) → (O i).Query` and `∀ i, (O i).Response
-   (q i)`.
-6. **Upstream VCVio proposals.** Decide whether to open upstream VCVio PRs for (a) a `Type`-level
-   `[]ₒ` alias and (b) deprecating or clarifying the docstring of `OracleContext` once ArkLib PR 1
-   removes its last caller.
+The maintainer settled these questions on 2026-11-25.
+
+1. **`OraclePos.oracle` keeps two arguments, `(X : Type) (interface : OracleInterface X)`.**
+   - The BCS compiler commits to each oracle node's data, and `Commitment.Scheme`
+     (`ArkLib/Commitments/Functional/Basic.lean`) takes an `OracleInterface Data`. With two
+     arguments the compiler reads the data type and its interface from the node directly.
+   - The form matches `message (X : Type)` and `challenge (C : Type)`, and the files that match on
+     `OraclePos` need no edits.
+   - A single bundle argument would mainly remove the reducible wrapper `OracleBundle.of X I` inside
+     `oracleMessageBundle`.
+   - What this gives up: one node cannot send a behavior-only oracle (`ofSpec`) or a tensor of
+     oracles. No protocol does so today. Changing it later touches `Signature.lean` and the files
+     that match on `.oracle`.
+2. **`OracleBundle.Lens` and `OracleBundle.Equiv` both stay and move to
+   `ArkLib/Relation/OracleBundle.lean` in PR 2.** `Equiv` is a pair of inverse lenses
+   (`toLens`, `invLens`), so `Lens` cannot be deleted while `Equiv` stays, and PR 2 states
+   `indexedSumEquiv` with `Equiv`. New routing code uses `OracleMap`. PR 2 adds
+   `OracleBundle.Lens.toOracleMap` so that a lens can be used where an oracle map is expected.
+3. **PR 1 is part of universe step 5** (section 5).
+4. **PR 2 renames `OracleBundle.Index` to `OracleBundle.Query`.** The field is the type of queries,
+   which matches `OracleInterface.Query`. PR 2 also adds `indexed` and `ofIndexed`, whose index type
+   selects an oracle, so keeping the name `Index` would give it two meanings in one file. VCVio
+   names this type `Domain`, but ArkLib follows its own `OracleInterface.Query`. The rename touches
+   6 files (`OracleVerifier.lean`, `BundleOps.lean`, `SentOracles.lean`, `BundleFamilies.lean`,
+   `OracleMaps.lean`, `RoutedAccess.lean`), and PR 2 already moves the definition.
+5. **PR 1 deletes `OracleInterface.instTensorForall`.** It duplicates `instProdForall` verbatim
+   (`ArkLib/Relation/OracleInterface.lean:176-180` and `192-196`) and has no callers. A dependent
+   tensor of interfaces is written when a client needs one.
+6. **No upstream VCVio PRs for now.** The `Type`-level `[]ₒ` alias saves a few universe pins, which
+   does not justify a cross-repository PR while steps 5 and 6 still change the same code. ArkLib
+   defines it locally. The `OracleContext` docstring or deprecation waits until step 5 has landed
+   and shown that ArkLib does not need `OracleContext` again.
