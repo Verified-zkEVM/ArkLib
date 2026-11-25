@@ -47,7 +47,8 @@ The bound is `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
 Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
-The threshold is `A = ⌈(√ρ + η) n⌉` and `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. -/
+The threshold is `A = ⌈(√ρ + η) n⌉` and `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`.
+This is the `t = 1` case of the `t`-row bound in `FoldingRound`, proved here directly. -/
 theorem equalDegreeMcaError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : ℝ}
     (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))

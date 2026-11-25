@@ -31,6 +31,7 @@ This is the first inequality of (5.4) for `t` rows.
 The proof of Theorem 5.2 of [CWYZ26] uses it in every folding round.
 For `t = 1`, `interleavedEqualDegreeMcaError_one` identifies the error with
 `equalDegreeMcaError`. The one-row reduction is proved in `EqualDegree`.
+Both reductions count exceptional triples with the shared bound in `ToMathlib/Finset/TripleCount`.
 The paper packs the rows into an extension of degree `t`.
 The direct tuple count gives the paper’s bound with no factor of `t`.
 The explicit bound `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)` follows from the bound (5.7).
@@ -186,9 +187,8 @@ theorem interleavedEqualDegreeMcaError_anti_threshold (t : ℕ) {d A A' s : ℕ}
 
 end Error
 
-omit [Fintype ι] in
 /-- The shared agreement set is the interleaved affine one for the rows `(g r, f r + θ g r)`. -/
-theorem interleavedEqualDegreeAgreementSet_eq_interleavedAgreementSet [Fintype ι]
+theorem interleavedEqualDegreeAgreementSet_eq_interleavedAgreementSet
     (domain : ι ↪ F) (f g : Fin t → ι → F) (θ α β : F) (P : Fin t → F[X]) :
     interleavedEqualDegreeAgreementSet domain f g θ α β P =
       interleavedAgreementSet domain g (fun r i ↦ f r i + θ * g r i) α β P := by
@@ -371,39 +371,30 @@ theorem interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add [Fintype
   classical
   refine iSup_le fun w ↦ ?_
   obtain ⟨f, g⟩ := w
-  set q : ℝ := (Fintype.card F : ℝ) with hq_def
+  set q : ℝ := (Fintype.card F : ℝ)
   set n : ℕ := Fintype.card ι
   set ℓ₀ := ⌊(n : ℝ) * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d)⌋₊
   set E := (interleavedAffineMcaError domain t d A 1).toReal
   have hE : interleavedAffineMcaError domain t d A 1 ≠ ⊤ :=
     ne_top_of_le_ne_top ENNReal.one_ne_top (interleavedAffineMcaError_le_one domain t d A 1)
   have hq : 0 < q := by positivity
-  -- The challenges `θ` for which some pair of tuples of degree `d` explains a candidate.
+  -- Exceptional triples are interleaved affine exceptional, or their `θ` is bad.
   set B := badInterleavedEqualDegreeChallenges domain f g d (A - 1)
-  set X₁ : Finset (F × F × F) := {c | ∃ P, IsInterleavedAffineExceptional domain g
-    (fun r i ↦ f r i + c.1 * g r i) d A 1 c.2.1 c.2.2 P}
-  set X₂ : Finset (F × F × F) := {c | c.1 ∈ B}
-  have hsub : ({c | ∃ P, IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2
-      P} : Finset (F × F × F)) ⊆ X₁ ∪ X₂ := by
-    intro c hc
-    obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hc).2
+  have hp (c : F × F × F)
+      (hc : ∃ P, IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P) :
+      (∃ P, IsInterleavedAffineExceptional domain g (fun r i ↦ f r i + c.1 * g r i) d A 1
+        c.2.1 c.2.2 P) ∨ c.1 ∈ B := by
+    obtain ⟨P, hP⟩ := hc
     rcases hP.isInterleavedAffineExceptional_or_exists with h | h
-    · exact Finset.mem_union_left _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, h⟩)
-    · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-        (mem_badInterleavedEqualDegreeChallenges ..).mpr h⟩)
-  have hX₁ : (#X₁ : ℝ) ≤ q ^ 3 * E := by
-    refine card_filter_triples_le_mul _ E fun θ ↦ ?_
+    · exact Or.inl ⟨P, h⟩
+    · exact Or.inr ((mem_badInterleavedEqualDegreeChallenges ..).mpr h)
+  -- For each `θ`, the interleaved affine error bounds the exceptional pairs `(α, β)`.
+  have ha (θ : F) : (#{x : F × F | ∃ P, IsInterleavedAffineExceptional domain g
+      (fun r i ↦ f r i + θ * g r i) d A 1 x.1 x.2 P} : ℝ) ≤ q ^ 2 * E := by
     have hcount := (ENNReal.ofReal_le_iff_le_toReal hE).mp
       (le_interleavedAffineMcaError domain d A 1 g (fun r i ↦ f r i + θ * g r i))
     rw [div_le_iff₀ (by positivity)] at hcount
     simpa [mul_comm] using hcount
-  have hX₂ : (#X₂ : ℝ) = #B * q ^ 2 := by
-    have : X₂ = B ×ˢ (Finset.univ : Finset (F × F)) := by
-      ext c
-      simp [X₂]
-    rw [this, Finset.card_product, Finset.card_univ, Fintype.card_prod]
-    push_cast
-    ring
   -- The Johnson bound on the bad values of `θ`.
   have hA1 : 1 ≤ A := by
     rcases A with _ | A
@@ -417,16 +408,11 @@ theorem interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add [Fintype
   have hcount : (#{c : F × F × F | ∃ P,
         IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤
         E + (ℓ₀ : ℝ) / q := by
+    have key := Finset.card_filter_triples_le_of_imp_or B hp ha
     rw [div_le_iff₀ (by positivity)]
-    calc (#{c : F × F × F | ∃ P,
-          IsInterleavedEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ)
-        ≤ #(X₁ ∪ X₂) := by exact_mod_cast Finset.card_le_card hsub
-      _ ≤ #X₁ + #X₂ := by exact_mod_cast Finset.card_union_le _ _
-      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by
-          rw [hX₂]
-          gcongr
-      _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by
-          field_simp
+    calc _ ≤ q ^ 3 * E + #B * q ^ 2 := key
+      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by gcongr
+      _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by field_simp
   calc _ ≤ ENNReal.ofReal (E + (ℓ₀ : ℝ) / q) := ENNReal.ofReal_le_ofReal hcount
     _ = _ := by
       rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity), ENNReal.ofReal_toReal hE]

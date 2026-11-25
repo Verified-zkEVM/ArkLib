@@ -55,12 +55,13 @@ example (W : Fin (2 ^ 2) → (ZMod 5)[X]) :
   simp [foldPolynomials, foldRoundPolynomials, evenRows, oddRows, affineMultiplier]
   ring_nf
 
--- Two rounds with `θ = 1`, `α = 2`, `β = 0` on the words `f k = k`.
+-- Two rounds on the words `f k = k`, with `(θ, α, β) = (1, 2, 0)` and then `(0, 1, 0)`.
 -- The first round gives `f₁ + 2 (f₀ + f₁) = 3` and `f₃ + 2 (f₂ + f₃) = 3 + 2 · 5 = 3` in `𝔽₅`.
--- The second round gives `3 + 2 (3 + 3) = 0`.
-example : foldWords fullDomain 2 ![(1, 2, 0), (1, 2, 0)] (fun k _ ↦ (k : ZMod 5)) = 0 := by
+-- The second round gives `3 + 1 · (3 + 0 · 3) = 1`.
+-- Swapping even and odd rows, pairing `(k, k + 2)`, or reversing the rounds gives 4, 2 or 2.
+example : foldWords fullDomain 2 ![(1, 2, 0), (0, 1, 0)] (fun k _ ↦ (k : ZMod 5)) = 1 := by
   funext x
-  simp only [Nat.reducePow, Pi.zero_apply]
+  simp only [Nat.reducePow]
   revert x
   decide
 
@@ -251,3 +252,21 @@ example : #{c : Fin 2 → Fin 2 | c 0 = 0 ∨ Fin.tail c 0 = 0} ≤ 1 * 2 + 2 :=
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Fin.card_filter_or_tail_le
+
+/-- info: 'ReedSolomon.foldRows_zero' depends on axioms: [propext] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.foldRows_zero
+
+/-- info: 'ReedSolomon.foldRows_succ' depends on axioms: [propext] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.foldRows_succ
+
+/-- info: 'ReedSolomon.Computable.toPoly_foldRoundPolynomials' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.Computable.toPoly_foldRoundPolynomials
+
+/-- info: 'ReedSolomon.Computable.toPoly_foldPolynomials' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.Computable.toPoly_foldPolynomials

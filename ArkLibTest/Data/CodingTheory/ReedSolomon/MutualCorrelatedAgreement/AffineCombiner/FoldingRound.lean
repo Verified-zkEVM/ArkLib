@@ -19,11 +19,6 @@ private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 /-- The whole field `F₅` as the evaluation domain. -/
 private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
 
--- With one row, the interleaved equal-degree error is the equal-degree error.
-example (d A s : ℕ) :
-    interleavedEqualDegreeMcaError fullDomain 1 d A s = equalDegreeMcaError fullDomain d A s :=
-  interleavedEqualDegreeMcaError_one fullDomain d A s
-
 /-- The rows `f = (x², 0)`. -/
 private def squareRows : Fin 2 → ZMod 5 → ZMod 5 := ![fun x ↦ x ^ 2, 0]
 
@@ -207,11 +202,6 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.card_inter_interleavedCommonAgreementSet_le
 
-/-- info: 'ReedSolomon.affineThreshold_johnson' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.affineThreshold_johnson
-
 /-- info: 'ReedSolomon.mem_interleavedEqualDegreeAgreementSet' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
@@ -237,17 +227,7 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.interleavedEqualDegreeMcaError_anti_threshold
 
-/-- info: 'ReedSolomon.equalDegreeMcaError_le_affineMcaError_add' depends on axioms:
+/-- info: 'ReedSolomon.IsInterleavedEqualDegreeExceptional.anti_threshold' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.equalDegreeMcaError_le_affineMcaError_add
-
-/-- info: 'ReedSolomon.card_badEqualDegreeChallenges_mul_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.card_badEqualDegreeChallenges_mul_le
-
-/-- info: 'ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq' depends on
-axioms: [propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq
+#print axioms ReedSolomon.IsInterleavedEqualDegreeExceptional.anti_threshold
