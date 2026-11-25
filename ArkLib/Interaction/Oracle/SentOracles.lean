@@ -501,7 +501,7 @@ theorem runWithQueriesByMove_before_le {ι : Type} {S : Type u} {ambient : Oracl
     (entry : QueriesAt ambient s) (hp : entry ∈ r.withDecision) :
     Nonempty (PartialTranscript.Le entry.before
       (PartialTranscript.ofTranscript s r.outcome.1)) := by
-  simp only [runWithQueriesByMove, executeWith, _root_.map_bind, LawfulApplicative.map_pure,
+  simp only [runWithQueriesByMove, executeWith_eq, _root_.map_bind, LawfulApplicative.map_pure,
     mem_support_bind_iff, mem_support_pure_iff] at hr
   obtain ⟨entries, hi, decision, _, heq⟩ := hr
   subst r
@@ -539,8 +539,8 @@ theorem runWithAmbientQueriesByMove_before_le {ι : Type} {S : Type u} {ambient 
     (entry : QueriesAt ambient s) (hp : entry ∈ r.withDecision) :
     Nonempty (PartialTranscript.Le entry.before
       (PartialTranscript.ofTranscript s r.outcome.1)) := by
-  simp only [runWithAmbientQueriesByMove, executeWith, _root_.map_bind, LawfulApplicative.map_pure,
-    mem_support_bind_iff, mem_support_pure_iff] at hr
+  simp only [runWithAmbientQueriesByMove, executeWith_eq, _root_.map_bind,
+    LawfulApplicative.map_pure, mem_support_bind_iff, mem_support_pure_iff] at hr
   obtain ⟨entries, hi, decision, _, heq⟩ := hr
   subst r
   simp only [AmbientQueriesByMove.withDecision, List.mem_append, List.mem_singleton] at hp

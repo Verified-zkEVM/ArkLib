@@ -288,8 +288,6 @@ end Interaction.QueryCostTests
 namespace Interaction.QueryCostTests
 open Interaction.HiddenSendRunTests
 
--- The full-log runner keeps input indices and input query types in `Type`; output query types
--- remain independent. See implementation note 18 in the interaction rebuild design notes.
 /-- The prover's ambient log of the logged run, with arbitrary output query universe. -/
 def proverLog.{qJ} (payload hidden : Nat) (bit : Bool) : QueryLog HiddenSendRunTests.ambient :=
   ((simulateQ (logger bit) ((verifier.{0, 0, 0, qJ} true).runWithLog () noData
@@ -308,5 +306,43 @@ example (payload hidden : Nat) (bit : Bool) :
     (proverLog.{wJ} payload hidden bit).countQ (· = 9) = 2 := by
   rw [proverLog_eq, QueryLog.countQ_append]
   rfl
+
+/-! The full-log runner takes input indices in any universe. With an input index in `Type 1`, the
+decision log lies in `Type 1`. `simulateQ` interprets only computations with results in `Type`,
+so the run below first maps the logs to small data. -/
+
+/-- With an input index in `Type 1`, the decision log lies in `Type 1`. -/
+example (p : Path phased) : Type 1 :=
+  QueryLog (ambient + (pathBundle (noInputs : OracleFamily.{1, 0, 0} _ _) phased p).spec)
+
+/-- The verdict, the prover's ambient tags and, for each decision query, whether it is ambient,
+from the full-log run with an input index in `Type 1`. -/
+def largeIndexLog (payload hidden : Nat) (bit : Bool) :
+    (Option Nat × List Nat × List Bool) × List Nat :=
+  (simulateQ (logger bit) (PFunctor.FreeM.map
+    (fun z => (z.1.2.2.map Prod.fst, z.2.1.map (·.1), z.2.2.map (·.1.isLeft)))
+    ((verifier.{1, 0, 0, 0} true).runWithLog () noData (prover payload hidden)))).run []
+
+/-- The decision log of the run holds the ambient queries 2 and 3, the read of the sent oracle
+message, then the ambient queries 6 and 7. -/
+theorem largeIndexLog_eq (payload hidden : Nat) (bit : Bool) :
+    largeIndexLog payload hidden bit =
+      ((some payload, [9, 9, 1, 4, 5], [true, true, false, true, true]),
+        [9, 9, 1, 4, 5, 2, 3, 6, 7]) := by
+  kernel_rfl
+
+/-- Forgetting both logs of the run with an input index in `Type 1` gives the plain run. -/
+example (payload hidden : Nat) :
+    PFunctor.FreeM.map Sigma.fst
+        ((verifier.{1, 0, 0, 0} true).runWithLog () noData (prover payload hidden)) =
+      (verifier.{1, 0, 0, 0} true).run () noData (prover payload hidden) :=
+  OracleVerifier.freeM_map_fst_runWithLog _ _ _ _
+
+/-- Keeping the ambient entries of its decision log gives the ambient-log run. -/
+example (payload hidden : Nat) :
+    PFunctor.FreeM.map (fun z => (z.1, z.2.1, QueryLog.fst z.2.2))
+        ((verifier.{1, 0, 0, 0} true).runWithLog () noData (prover payload hidden)) =
+      (verifier.{1, 0, 0, 0} true).runWithAmbientLog () noData (prover payload hidden) :=
+  OracleVerifier.freeM_map_runWithLog_eq_runWithAmbientLog _ _ _ _
 
 end Interaction.QueryCostTests

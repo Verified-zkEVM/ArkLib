@@ -587,8 +587,41 @@ layer, then interpret the final decision and close its output from the same tran
 
 The `decision` callback receives the raw bundle data of the path. An interpreter must use that
 data only to answer the decision's queries, for example through `(pathBundle inputs s p).answer`.
-Reading the oracle messages directly would bypass the decision's queries. -/
+Reading the oracle messages directly would bypass the decision's queries.
+
+The decision trace `DTrace p` may lie in a universe larger than the answers. A full decision log,
+whose entries hold input and oracle-node query indices, needs this. The definition therefore binds
+with `PFunctor.FreeM.bind`, which crosses universes. `executeWith_eq` restates it as a `do` block
+when the decision trace lies in the answer universe. -/
 def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleBundle.{u, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type u} {m : Type u → Type u} [Monad m]
+    {ITrace : Type u} {DTrace : Path s → Type w}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (interpret : {A : Type u} → m A →
+      OracleComp (ambient + challengeSpec oracleSig s) (A × ITrace))
+    (prover : Focal oracleSig m s Out) (coins : Counterpart oracleSig m s (fun _ => PUnit))
+    (decision : (p : Path s) → View s p → (pathBundle inputs s p).Data →
+      OracleComp (ambient + challengeSpec oracleSig s) (Option (T p) × DTrace p)) :
+    OracleComp (ambient + challengeSpec oracleSig s)
+      ((obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) ×
+        ITrace × DTrace (Transcript.path obs.1)) :=
+  PFunctor.FreeM.bind (interpret (TwoParty.Lens.run s prover coins)) fun
+    | ⟨⟨tr, out, _⟩, trace⟩ =>
+      let p := Transcript.path tr
+      let view := toView s tr
+      let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
+      PFunctor.FreeM.bind (decision p view pathData) fun
+        | (verdict, decisionTrace) =>
+          PFunctor.FreeM.pure ⟨⟨tr, out, verdict.map fun t =>
+            (t, (V.outputMap stmt p view).f pathData)⟩, trace, decisionTrace⟩
+
+/-- With the decision trace in the answer universe, the shared execution mechanism is the
+interaction followed by the decision in the computation monad. -/
+theorem OracleVerifier.executeWith_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
     {inputs : OracleBundle.{u, uI, dI}}
@@ -601,16 +634,42 @@ def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (prover : Focal oracleSig m s Out) (coins : Counterpart oracleSig m s (fun _ => PUnit))
     (decision : (p : Path s) → View s p → (pathBundle inputs s p).Data →
       OracleComp (ambient + challengeSpec oracleSig s) (Option (T p) × DTrace p)) :
-    OracleComp (ambient + challengeSpec oracleSig s)
-      ((obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) ×
-        ITrace × DTrace (Transcript.path obs.1)) := do
-  let ⟨⟨tr, out, _⟩, trace⟩ ← interpret (TwoParty.Lens.run s prover coins)
-  let p := Transcript.path tr
-  let view := toView s tr
-  let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
-  let (verdict, decisionTrace) ← decision p view pathData
-  pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
-    trace, decisionTrace⟩
+    V.executeWith stmt data interpret prover coins decision = (do
+      let ⟨⟨tr, out, _⟩, trace⟩ ← interpret (TwoParty.Lens.run s prover coins)
+      let p := Transcript.path tr
+      let view := toView s tr
+      let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
+      let (verdict, decisionTrace) ← decision p view pathData
+      pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
+        trace, decisionTrace⟩) :=
+  rfl
+
+/-- Mapping the decision trace of an execution is executing with the mapped decision. The two
+traces may lie in different universes. -/
+theorem OracleVerifier.map_executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
+    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
+    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
+    {inputs : OracleBundle.{u, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type u} {m : Type u → Type u} [Monad m]
+    {ITrace : Type u} {DTrace : Path s → Type w} {DTrace' : Path s → Type v'}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (interpret : {A : Type u} → m A →
+      OracleComp (ambient + challengeSpec oracleSig s) (A × ITrace))
+    (prover : Focal oracleSig m s Out) (coins : Counterpart oracleSig m s (fun _ => PUnit))
+    (decision : (p : Path s) → View s p → (pathBundle inputs s p).Data →
+      OracleComp (ambient + challengeSpec oracleSig s) (Option (T p) × DTrace p))
+    (g : (p : Path s) → DTrace p → DTrace' p) :
+    PFunctor.FreeM.map (fun r => ⟨r.1, r.2.1, g _ r.2.2⟩)
+        (V.executeWith stmt data interpret prover coins decision) =
+      V.executeWith stmt data interpret prover coins fun p view pathData =>
+        PFunctor.FreeM.map (fun z => (z.1, g p z.2)) (decision p view pathData) := by
+  unfold OracleVerifier.executeWith
+  rw [PFunctor.FreeM.map_bind]
+  refine congrArg (PFunctor.FreeM.bind _) (funext fun ⟨⟨tr, out, _⟩, trace⟩ => ?_)
+  dsimp only
+  rw [PFunctor.FreeM.map_bind, ← PFunctor.FreeM.bind_pure_comp, PFunctor.FreeM.bind_assoc]
+  rfl
 
 /-- Interpret the decision's bundle queries using the input and the oracle messages of the
 actual run. -/
@@ -662,7 +721,8 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (V.decide stmt p view).run
   pure ⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩
 ) := by
-  unfold OracleVerifier.run OracleVerifier.executeWith
+  unfold OracleVerifier.run
+  rw [OracleVerifier.executeWith_eq]
   unfold QueryImpl.ofLift
   simp only [_root_.map_bind, bind_map_left]
   rfl

@@ -23,7 +23,7 @@ For general measurable spaces, the error is an upper bound on the outer measure 
 
 @[expose] public section
 
-universe uS uI uR wI wJ dI q
+universe u v w uS uI uR wI wJ dI q
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec MeasureTheory
@@ -325,25 +325,101 @@ theorem map_fst_run_addLift_withLogging {ι ι' α : Type} {κ : Type uR} {ambie
       have hl' : (liftM (beh r) : OracleComp full _) = pure (beh r) := rfl
       simp [QueryImpl.addLift_def, hl, hl', ← ih]
 
+/-- The logged path run of a query followed by a continuation answers the query, then prepends
+the query and its answer to the continuation's log. -/
+theorem map_pathLogResult_withPath_queryBind {ι : Type u} {spec : OracleSpec.{u, v} ι}
+    {β : Type w} (t : spec.Domain) (k : spec.Range t → OracleComp spec β) :
+    FreeM.map (pathLogResult (queryBind t k)) (FreeM.withPath (queryBind t k)) =
+      queryBind t fun x =>
+        FreeM.map (fun r => (r.1, (⟨t, x⟩ : (t : spec.Domain) × spec.Range t) :: r.2))
+          (FreeM.map (pathLogResult (k x)) (FreeM.withPath (k x))) := by
+  change queryBind t (fun x => FreeM.map (pathLogResult (queryBind t k))
+    (FreeM.map (fun path => (⟨x, path⟩ : FreeM.Path (queryBind t k))) (FreeM.withPath (k x)))) = _
+  refine congrArg (queryBind t) (funext fun x => ?_)
+  rw [← FreeM.comp_map, ← FreeM.comp_map]
+  rfl
+
+/-- Logging every query of a routed program through its path, then keeping the ambient entries,
+is logging only its ambient queries. The routed query indices may lie in any universe, so the
+full log may be larger than the answers. Answers to the routed queries come from pure
+behaviors. -/
+theorem map_subst_pathLogResult_addLift_fst {ι ι' β : Type} {κ : Type uR}
+    {ambient : OracleSpec ι} {R : OracleSpec.{uR, 0} κ} {full : OracleSpec ι'}
+    (lift : QueryImpl ambient (OracleComp full)) (beh : QueryImpl R Id)
+    (oa : OracleComp (ambient + R) β) :
+    FreeM.map (fun z => (z.1, QueryLog.fst z.2))
+      (OracleComp.subst (QueryImpl.addLift lift beh)
+        (FreeM.map (pathLogResult oa) (FreeM.withPath oa))) =
+      (simulateQ (QueryImpl.addLift lift.withLogging beh :
+        QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full))) oa).run := by
+  induction oa with
+  | pure x => rfl
+  | queryBind a k ih =>
+    rw [map_pathLogResult_withPath_queryBind, subst_queryBind, FreeM.map_bind]
+    rcases a with q | r
+    · have h : ∀ x, FreeM.map (fun z : β × QueryLog (ambient + R) => (z.1, QueryLog.fst z.2))
+          (subst (QueryImpl.addLift lift beh) (FreeM.map
+            (fun r => (r.1,
+              (⟨.inl q, x⟩ : (t : (ambient + R).Domain) × (ambient + R).Range t) :: r.2))
+            (FreeM.map (pathLogResult (k x)) (FreeM.withPath (k x))))) =
+          FreeM.map (fun z : β × QueryLog ambient =>
+              (z.1, (⟨q, x⟩ : (t : ambient.Domain) × ambient.Range t) :: z.2))
+            (simulateQ (QueryImpl.addLift lift.withLogging beh :
+              QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full)))
+                (k x)).run := by
+        intro x
+        rw [← ih x]
+        simp only [subst_freeM_map, ← FreeM.comp_map]
+        rfl
+      refine (congrArg (FreeM.bind _) (funext h)).trans ?_
+      change (QueryImpl.addLift lift beh (.inl q) >>= fun x =>
+        (fun z : β × QueryLog ambient =>
+              (z.1, (⟨q, x⟩ : (t : ambient.Domain) × ambient.Range t) :: z.2)) <$>
+            (simulateQ (QueryImpl.addLift lift.withLogging beh :
+              QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full))) (k x)).run) =
+        (simulateQ (QueryImpl.addLift lift.withLogging beh :
+          QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full)))
+            (liftM ((ambient + R).query (.inl q)) >>= k)).run
+      simp [QueryImpl.addLift_def, WriterT.run_liftM, WriterT.run_tell, QueryImpl.withLogging_apply,
+        Functor.map_map]
+    · have h : ∀ x, FreeM.map (fun z : β × QueryLog (ambient + R) => (z.1, QueryLog.fst z.2))
+          (subst (QueryImpl.addLift lift beh) (FreeM.map
+            (fun r' => (r'.1,
+              (⟨.inr r, x⟩ : (t : (ambient + R).Domain) × (ambient + R).Range t) :: r'.2))
+            (FreeM.map (pathLogResult (k x)) (FreeM.withPath (k x))))) =
+          (simulateQ (QueryImpl.addLift lift.withLogging beh :
+              QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full)))
+                (k x)).run := by
+        intro x
+        rw [← ih x]
+        simp only [subst_freeM_map, ← FreeM.comp_map]
+        rfl
+      refine (congrArg (FreeM.bind _) (funext h)).trans ?_
+      have hl : ((liftM (beh r) : WriterT (QueryLog ambient) (OracleComp full) _).run) =
+          pure (beh r, ∅) := rfl
+      change (simulateQ (QueryImpl.addLift lift.withLogging beh :
+          QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full))) (k (beh r))).run =
+        (simulateQ (QueryImpl.addLift lift.withLogging beh :
+          QueryImpl (ambient + R) (WriterT (QueryLog ambient) (OracleComp full)))
+            (liftM ((ambient + R).query (.inr r)) >>= k)).run
+      simp [QueryImpl.addLift_def, hl]
+
 namespace OracleVerifier
 
 /-- Execute an oracle verifier, logging the prover's ambient queries and every query of the
 decision before routing: ambient queries and queries to the input and message oracles.
 
-The decision log records input queries, so it is returned by the run: the input index and the
-oracle-node query type lie in `Type`. Input statements and bundle data are arguments and
-may lie in any universe. `runWithAmbientLog` logs only ambient queries and has no such
-restriction. Like `run` and `runWithQueriesByMove`, it executes through `executeWith`, and it logs
-the interaction and the decision directly with `withLogging`.
+The input index and the oracle-node query types may lie in any universe, and so may the input
+statement and bundle data. The decision log then lies in a universe larger than the answers. The
+runner therefore logs the decision through its intrinsic path: `pathLogResult` erases the path to
+the verdict and the log, and `OracleComp.subst` routes the logged program to the run's oracle.
+Like `run` and `runWithQueriesByMove`, it executes through `executeWith`. With small input
+indices and query types, `runWithLog_eq` restates it with `withLogging`.
 
-The restriction to `Type` is an accepted upstream limit: VCVio had no logging interface that
-returns large query indices through the small computation monad. For large input or oracle-node
-query types, use `runWithAmbientLog` or `runWithAmbientQueriesByMove`. VCVio PR #1236
-(https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which can lift the
-limit. The pinned VCVio includes it, and rebuilding this runner on it is follow-up work. -/
-def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+`runWithAmbientLog` logs only ambient queries. -/
+def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, 0, dI}}
+    {inputs : OracleBundle.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -361,13 +437,13 @@ def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OraclePr
       (simulateQ (QueryImpl.id' full).withLogging action).run)
     (prover.simulate toFull)
     (sampler oracleSig s ((QueryImpl.id' full).restrictRight))
-    (fun p view pathData => (simulateQ (QueryImpl.addLift
-      toFull
-      ((pathBundle inputs s p).answer pathData)).withLogging
-      (V.decide stmt p view).run).run)
+    (fun p view pathData =>
+      OracleComp.subst (QueryImpl.addLift toFull ((pathBundle inputs s p).answer pathData))
+        (PFunctor.FreeM.map (pathLogResult (V.decide stmt p view).run)
+          (PFunctor.FreeM.withPath (V.decide stmt p view).run)))
 
 /-- The full logged specialization retains the original interaction and decision equations. -/
-theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle.{0, 0, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
@@ -390,12 +466,12 @@ theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : O
   let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
     proveLog.fst, verifyLog⟩) := by
-  simp only [runWithLog, executeWith, bind_map_left]
+  simp only [runWithLog, executeWith_eq, bind_map_left, subst_map_pathLogResult_withPath]
   rfl
 
 /-- The ambient part of the decision log is the log of an ambient-only logger, which the oracle
 extraction interfaces receive; `map_runWithLog_eq_runWithAmbientLog` names the right side. -/
-theorem runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+theorem runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle.{0, 0, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
@@ -422,7 +498,8 @@ theorem runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : 
   simp
 
 /-- Forgetting both logs preserves the entire oracle run. -/
-theorem map_fst_runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+theorem map_fst_runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle.{0, 0, dI}}
     {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
@@ -502,7 +579,7 @@ theorem runWithAmbientLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
         (V.decide stmt p (toView s tr)).run).run >>= fun y =>
       pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)⟩,
         x.2.fst, y.2)) := by
-  simp only [runWithAmbientLog, executeWith, _root_.map_bind, bind_map_left]
+  simp only [runWithAmbientLog, executeWith_eq, _root_.map_bind, bind_map_left]
   rfl
 
 /-- With small input universes, the ambient-log run is the full-log run with the decision log
@@ -535,6 +612,42 @@ theorem map_fst_runWithAmbientLog {ι : Type} {S : Type uS}
     rw [← simulateQ_id' (TwoParty.Lens.run s _ _),
       ← QueryImpl.fst_map_run_withLogging (QueryImpl.id' (ambient + challengeSpec oracleSig s))]
   rw [bind_map_left]
+
+/-- The ambient-log run is the full-log run with the decision log restricted to its ambient
+entries, at any input index and oracle-node query universes. With small ones,
+`map_runWithLog_eq_runWithAmbientLog` states it with `<$>`. -/
+theorem freeM_map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type uS}
+    {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (prover : Prover oracleSig ambient s Out) :
+    FreeM.map (fun z => (z.1, z.2.1, QueryLog.fst z.2.2)) (V.runWithLog stmt data prover) =
+      V.runWithAmbientLog stmt data prover := by
+  unfold runWithLog runWithAmbientLog
+  dsimp only
+  simp only [← map_subst_pathLogResult_addLift_fst]
+  rw [← map_executeWith (g := fun _ => QueryLog.fst)]
+  change _ = FreeM.map _ (FreeM.map _ _)
+  rw [← FreeM.comp_map]
+  rfl
+
+/-- Forgetting both logs preserves the entire oracle run, at any input index and oracle-node
+query universes. With small ones, `map_fst_runWithLog` states it with `<$>`. -/
+theorem freeM_map_fst_runWithLog {ι : Type} {S : Type uS}
+    {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type}
+    (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
+    (prover : Prover oracleSig ambient s Out) :
+    FreeM.map Sigma.fst (V.runWithLog stmt data prover) = V.run stmt data prover := by
+  rw [← V.map_fst_runWithAmbientLog stmt data prover,
+    ← V.freeM_map_runWithLog_eq_runWithAmbientLog stmt data prover]
+  change _ = FreeM.map Prod.fst (FreeM.map _ _)
+  rw [← FreeM.comp_map]
+  rfl
 
 end OracleVerifier
 

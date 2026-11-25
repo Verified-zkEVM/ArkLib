@@ -229,8 +229,8 @@ example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath
       (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inr (.inl ⟨⟩)) = b := rfl
 
--- The full decision log fixes input indices and queries to `Type`; output queries stay
--- independent. See interaction rebuild implementation note 18.
+-- `simulateQ` returns the full decision log only when it lies in `Type`, so this summary fixes
+-- input indices and queries to `Type`; output queries stay independent.
 /-- Private output, verdict and every raw decision query of the composed logged run. -/
 def loggedSummary.{qJ} (a b : Nat) :
     Nat × Option Nat × QueryLog (ambient + rawBundle.spec) :=

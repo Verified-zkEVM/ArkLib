@@ -385,7 +385,7 @@ theorem runWithQueriesByMove_toLog (V : OracleVerifier ambient s S T inputs outp
   let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
     proveLog.fst, verifyLog⟩) := by
-  simp only [runWithQueriesByMove, executeWith, Functor.map_map, _root_.map_bind]
+  simp only [runWithQueriesByMove, executeWith_eq, Functor.map_map, _root_.map_bind]
   have id_logging {α : Type} (p : OracleComp (ambient + challengeSpec oracleSig s) α) :
       (simulateQ (QueryImpl.id' (ambient + challengeSpec oracleSig s)).withLogging p).run =
         p.withQueryLog := rfl
@@ -493,7 +493,7 @@ theorem runWithAmbientQueriesByMove_toLog (V : OracleVerifier ambient s S T inpu
         (V.decide stmt p (toView s tr)).run).run >>= fun y =>
       pure (⟨tr, x.1.2.1, y.1.map fun t => (t, (V.outputMap stmt p (toView s tr)).f pathData)⟩,
         x.2.fst, y.2)) := by
-  simp only [runWithAmbientQueriesByMove, executeWith, Functor.map_map,
+  simp only [runWithAmbientQueriesByMove, executeWith_eq, Functor.map_map,
     _root_.map_bind]
   have id_logging {α : Type} (p : OracleComp (ambient + challengeSpec oracleSig s) α) :
       (simulateQ (QueryImpl.id' (ambient + challengeSpec oracleSig s)).withLogging p).run =

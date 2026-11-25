@@ -101,13 +101,8 @@ variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProto
 
 /-- Verifiers whose decisions on every completed run are the same program, and whose output data
 agree, have equal logged runs: the same outcome, prover log and decision log before
-routing. `OracleVerifier.runWithLog` in `Security/Knowledge.lean` requires small input
-indices and input queries because its full decision log is a run output. -/
-theorem runWithLog_eq_of_decide_eq {s : OracleProtocol.{0, 0}}
-    {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
-    {inputs : OracleBundle.{0, 0, dI}}
-    {V V' : OracleVerifier ambient s S T inputs outputs}
+routing. -/
+theorem runWithLog_eq_of_decide_eq
     (hd : ∀ (stmt : S) (tr : Transcript oracleSig s),
       V.decide stmt _ (toView s tr) = V'.decide stmt _ (toView s tr))
     (ho : ∀ (stmt : S) (data : inputs.Data) (tr : Transcript oracleSig s),
@@ -116,8 +111,9 @@ theorem runWithLog_eq_of_decide_eq {s : OracleProtocol.{0, 0}}
     (stmt : S) (data : inputs.Data) {Out : Transcript oracleSig s → Type}
     (p : Prover oracleSig ambient s Out) :
     V.runWithLog stmt data p = V'.runWithLog stmt data p := by
-  simp only [runWithLog_eq]
-  refine bind_congr fun r => ?_
+  unfold runWithLog executeWith
+  refine congrArg (FreeM.bind _) (funext fun ⟨⟨tr, out, _⟩, trace⟩ => ?_)
+  dsimp only
   rw [hd, ho]
 
 /-- Agreeing verifiers accept validly at the same statements and transcripts. -/

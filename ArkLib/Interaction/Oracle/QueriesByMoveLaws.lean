@@ -127,7 +127,7 @@ theorem toAmbient_runWithQueriesByMove (V : OracleVerifier ambient s S T inputs 
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     QueriesByMove.toAmbient <$> V.runWithQueriesByMove stmt data prover =
       V.runWithAmbientQueriesByMove stmt data prover := by
-  simp only [runWithQueriesByMove, runWithAmbientQueriesByMove, executeWith, Functor.map_map,
+  simp only [runWithQueriesByMove, runWithAmbientQueriesByMove, executeWith_eq, Functor.map_map,
     _root_.map_bind]
   refine bind_congr fun r => ?_
   rw [← map_run_withLogging_addLift_fst, bind_map_left]
