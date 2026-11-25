@@ -519,8 +519,8 @@ def relationKSFailEvent {StmtIn WitIn StmtOut WitOut : Type}
 
 The prover chooses a statement and NARG string, using public oracles and private randomness.
 Each notion has one experiment. The predicates, such as `Verifier.adaptiveNARGSoundness`, are in
-`ArkLib.InteractiveProof.Soundness`, where each is the adaptive interactive predicate at the
-one-message protocol and a theorem restates it on these experiments.
+`ArkLib.InteractiveProof.Soundness`. Each is stated on these experiments, and a theorem there
+proves it equal to the adaptive interactive predicate at the one-message protocol.
 
 The KS extractor is straight-line: it receives the statement, NARG string, and both
 public-query logs, but no prover handle. It queries the public oracles through the game's

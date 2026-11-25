@@ -952,11 +952,12 @@ theorem relationKSFailEvent_unit {Stmt Wit Out : Type}
 
 /-! ## NARG security
 
-Adaptive NARG soundness and knowledge soundness are the adaptive interactive predicates at the
-one-message protocol `⟨!v[.P_to_V], !v[Proof]⟩`. The theorems `adaptiveNARGSoundness_iff` and
-the others restate each predicate in the form of [CO25, Definitions 3.5 and 3.6]: the adversary
-outputs a statement and a NARG string `(x, π)`, and the bound is on `adaptiveNARGSoundnessExp`
-or `adaptiveNARGKnowledgeSoundnessExp`.
+Adaptive NARG soundness and knowledge soundness are stated in the form of [CO25, Definitions 3.5
+and 3.6]: the adversary outputs a statement and a NARG string `(x, π)`, and the bound is on
+`adaptiveNARGSoundnessExp` or `adaptiveNARGKnowledgeSoundnessExp`. The theorems
+`adaptiveNARGSoundness_iff_adaptiveSoundness` and the others prove that each predicate is the
+adaptive interactive predicate at the one-message protocol `⟨!v[.P_to_V], !v[Proof]⟩`. Lemmas
+proved for the adaptive game reach the NARG predicates through these theorems.
 
 There are no separate definitions for families over a security parameter `λ` and an instance
 bound `n`. A theorem quantifies over `λ`, `n`, and the query budget itself, and a statement-size
@@ -968,34 +969,51 @@ variable {ι σ Stmt Proof Out Wit : Type} {oSpec : OracleSpec ι}
   (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- **[CO25, Definition 3.5, adapted]** Adaptive NARG soundness against every adversary, with
-private coins available. It is adaptive soundness of the one-message protocol;
-`adaptiveNARGSoundness_iff` states it on `adaptiveNARGSoundnessExp`. -/
-abbrev adaptiveNARGSoundness (langIn : Set Stmt) (langOut : Set Out) (error : ENNReal) : Prop :=
-  V.adaptiveSoundness init impl langIn langOut (fun _ _ => True) error
+private coins available: for every adversary that outputs a statement and a NARG string, the
+verifier accepts a false statement with probability at most `error`.
+`adaptiveNARGSoundness_iff_adaptiveSoundness` proves that it is adaptive soundness of the
+one-message protocol. -/
+def adaptiveNARGSoundness (langIn : Set Stmt) (langOut : Set Out) (error : ENNReal) : Prop :=
+  ∀ P : NARG.Prover oSpec Stmt Proof,
+    Pr{let out ← adaptiveNARGSoundnessExp init impl V P}[
+      nargSoundFailEvent langIn langOut out] ≤ error
 
-/-- **[CO25, Definition 3.5]** Adaptive NARG soundness for a public-query selector and budget.
-The budget excludes private draws; it does not truncate the experiment.
-`adaptiveNARGSoundnessQueryBounded_iff` states it on `adaptiveNARGSoundnessExp`. -/
-abbrev adaptiveNARGSoundnessQueryBounded (langIn : Set Stmt) (langOut : Set Out)
+/-- **[CO25, Definition 3.5]** Adaptive NARG soundness for a public-query selector and budget:
+for every adversary that makes at most `t` selected queries and outputs a statement and a NARG
+string, the verifier accepts a false statement with probability at most `error`. The budget
+excludes private draws; it does not truncate the experiment.
+`adaptiveNARGSoundnessQueryBounded_iff_adaptiveSoundnessQueryBounded` proves that it is
+query-bounded adaptive soundness of the one-message protocol. -/
+def adaptiveNARGSoundnessQueryBounded (langIn : Set Stmt) (langOut : Set Out)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) : Prop :=
-  V.adaptiveSoundnessQueryBounded init impl langIn langOut counts t error
+  ∀ P : NARG.Prover oSpec Stmt Proof, P.IsQueryBoundP (publicQuerySelector counts) t →
+    Pr{let out ← adaptiveNARGSoundnessExp init impl V P}[
+      nargSoundFailEvent langIn langOut out] ≤ error
 
 /-- **[CO25, Definition 3.6, adapted]** Adaptive NARG knowledge soundness for a named
-straight-line extractor, without a query budget. The extractor runs after the verifier in the
-same public-oracle state and receives both public logs, excluding private draws. -/
-abbrev adaptiveNARGKnowledgeSoundnessWithExtractor
+straight-line extractor, without a query budget: for every adversary that outputs a statement
+and a NARG string, the verifier accepts while the extractor fails with probability at most
+`error`. The extractor runs after the verifier in the same public-oracle state and receives both
+public logs, excluding private draws.
+`adaptiveNARGKnowledgeSoundnessWithExtractor_iff_adaptiveKnowledgeSoundnessWithExtractor` proves
+that it is adaptive knowledge soundness of the one-message protocol. -/
+def adaptiveNARGKnowledgeSoundnessWithExtractor
     (relIn : Set (Stmt × Wit)) (langOut : Set Out) (E : NARG.Extractor oSpec Stmt Wit Proof)
     (error : ENNReal) : Prop :=
-  V.adaptiveKnowledgeSoundnessWithExtractor init impl relIn (langOut ×ˢ Set.univ)
-    (Extractor.StraightlineWithCoins.ofNARG E) (fun _ => True) error
+  ∀ P : NARG.Prover oSpec Stmt Proof,
+    Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl V E P}[
+      nargKSFailEvent relIn langOut out] ≤ error
 
 /-- **[CO25, Definition 3.6, adapted]** Adaptive NARG knowledge soundness for a named
-straight-line extractor and a public-query budget. -/
-abbrev adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
+straight-line extractor and a public-query budget. The budget restricts the adversary, not the
+extractor. `adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff_adaptive` proves that it
+is query-bounded adaptive knowledge soundness of the one-message protocol. -/
+def adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
     (relIn : Set (Stmt × Wit)) (langOut : Set Out) (E : NARG.Extractor oSpec Stmt Wit Proof)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) : Prop :=
-  V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl relIn (langOut ×ˢ Set.univ)
-    (Extractor.StraightlineWithCoins.ofNARG E) counts t error
+  ∀ P : NARG.Prover oSpec Stmt Proof, P.IsQueryBoundP (publicQuerySelector counts) t →
+    Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl V E P}[
+      nargKSFailEvent relIn langOut out] ≤ error
 
 /-- Adaptive knowledge soundness with one extractor for all provers.
 The existential quantifier imposes no computability or resource bound. A classical witness
@@ -1038,14 +1056,14 @@ private theorem prEvent_nargKSFailEvent_of_isEmpty [IsEmpty Out]
     · cases w <;> exact h
     · exact isEmptyElim y
 
-/-- **[CO25, Definition 3.5]** Adaptive NARG soundness in the paper's form: for every adversary
-that outputs a statement and a NARG string, the verifier accepts a false statement with
-probability at most `error`. -/
-theorem adaptiveNARGSoundness_iff (langIn : Set Stmt) (langOut : Set Out) (error : ENNReal) :
+/-- Adaptive NARG soundness is adaptive soundness of the one-message protocol, against every
+adaptive prover. -/
+theorem adaptiveNARGSoundness_iff_adaptiveSoundness (langIn : Set Stmt) (langOut : Set Out)
+    (error : ENNReal) :
     V.adaptiveNARGSoundness init impl langIn langOut error ↔
-      ∀ P : NARG.Prover oSpec Stmt Proof,
-        Pr{let out ← adaptiveNARGSoundnessExp init impl V P}[
-          nargSoundFailEvent langIn langOut out] ≤ error := by
+      V.adaptiveSoundness init impl langIn langOut (fun _ _ => True) error := by
+  rw [Iff.comm]
+  unfold adaptiveNARGSoundness
   constructor
   · intro h P
     rcases isEmpty_or_nonempty Out with hOut | hOut
@@ -1056,13 +1074,15 @@ theorem adaptiveNARGSoundness_iff (langIn : Set Stmt) (langOut : Set Out) (error
   · intro h WitOut P _
     simpa only [adaptiveSoundnessExp_toNARG] using h P.toNARG
 
-/-- **[CO25, Definition 3.5]** Query-bounded adaptive NARG soundness in the paper's form. -/
-theorem adaptiveNARGSoundnessQueryBounded_iff (langIn : Set Stmt) (langOut : Set Out)
+/-- Query-bounded adaptive NARG soundness is query-bounded adaptive soundness of the one-message
+protocol, with the same query selector and budget. -/
+theorem adaptiveNARGSoundnessQueryBounded_iff_adaptiveSoundnessQueryBounded
+    (langIn : Set Stmt) (langOut : Set Out)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) :
     V.adaptiveNARGSoundnessQueryBounded init impl langIn langOut counts t error ↔
-      ∀ P : NARG.Prover oSpec Stmt Proof, P.IsQueryBoundP (publicQuerySelector counts) t →
-        Pr{let out ← adaptiveNARGSoundnessExp init impl V P}[
-          nargSoundFailEvent langIn langOut out] ≤ error := by
+      V.adaptiveSoundnessQueryBounded init impl langIn langOut counts t error := by
+  rw [Iff.comm]
+  unfold adaptiveNARGSoundnessQueryBounded
   constructor
   · intro h P hP
     rcases isEmpty_or_nonempty Out with hOut | hOut
@@ -1074,16 +1094,16 @@ theorem adaptiveNARGSoundnessQueryBounded_iff (langIn : Set Stmt) (langOut : Set
   · intro h WitOut P hP
     simpa only [adaptiveSoundnessExp_toNARG] using h P.toNARG (P.isQueryBound_toNARG _ _ hP)
 
-/-- **[CO25, Definition 3.6, adapted]** Adaptive NARG knowledge soundness in the paper's form:
-for every adversary that outputs a statement and a NARG string, the verifier accepts while the
-named extractor fails with probability at most `error`. -/
-theorem adaptiveNARGKnowledgeSoundnessWithExtractor_iff
+/-- Adaptive NARG knowledge soundness is adaptive knowledge soundness of the one-message
+protocol, for the NARG extractor viewed as a straight-line extractor with coins. -/
+theorem adaptiveNARGKnowledgeSoundnessWithExtractor_iff_adaptiveKnowledgeSoundnessWithExtractor
     (relIn : Set (Stmt × Wit)) (langOut : Set Out) (E : NARG.Extractor oSpec Stmt Wit Proof)
     (error : ENNReal) :
     V.adaptiveNARGKnowledgeSoundnessWithExtractor init impl relIn langOut E error ↔
-      ∀ P : NARG.Prover oSpec Stmt Proof,
-        Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl V E P}[
-          nargKSFailEvent relIn langOut out] ≤ error := by
+      V.adaptiveKnowledgeSoundnessWithExtractor init impl relIn (langOut ×ˢ Set.univ)
+        (Extractor.StraightlineWithCoins.ofNARG E) (fun _ => True) error := by
+  rw [Iff.comm]
+  unfold adaptiveNARGKnowledgeSoundnessWithExtractor
   constructor
   · intro h P
     rcases isEmpty_or_nonempty Out with hOut | hOut
@@ -1096,16 +1116,17 @@ theorem adaptiveNARGKnowledgeSoundnessWithExtractor_iff
     simpa only [adaptiveKnowledgeSoundnessExp_toNARG, prEvent_map, relationKSFailEvent_unit]
       using h P.toNARG
 
-/-- **[CO25, Definition 3.6]** Query-bounded adaptive NARG knowledge soundness in the paper's
-form. The budget restricts the adversary, not the extractor. -/
-theorem adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff
+/-- Query-bounded adaptive NARG knowledge soundness is query-bounded adaptive knowledge soundness
+of the one-message protocol, with the same query selector and budget. -/
+theorem adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff_adaptive
     (relIn : Set (Stmt × Wit)) (langOut : Set Out) (E : NARG.Extractor oSpec Stmt Wit Proof)
     (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) :
     V.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor init impl
         relIn langOut E counts t error ↔
-      ∀ P : NARG.Prover oSpec Stmt Proof, P.IsQueryBoundP (publicQuerySelector counts) t →
-        Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl V E P}[
-          nargKSFailEvent relIn langOut out] ≤ error := by
+      V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl relIn (langOut ×ˢ Set.univ)
+        (Extractor.StraightlineWithCoins.ofNARG E) counts t error := by
+  rw [Iff.comm]
+  unfold adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
   constructor
   · intro h P hP
     rcases isEmpty_or_nonempty Out with hOut | hOut

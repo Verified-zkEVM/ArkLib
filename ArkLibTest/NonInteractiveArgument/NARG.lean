@@ -105,7 +105,7 @@ example (language : Set ℕ) (error : ℕ → ℕ → ℕ → ENNReal)
         error sec n t) :
     ∀ sec n t, (verifier sec n).adaptiveNARGSoundnessQueryBounded (sampleOracle sec n)
       (oracleImpl sec n) {x | x ≤ n → x ∈ language} {true} (fun _ => True) t (error sec n t) :=
-  fun sec n t => (Verifier.adaptiveNARGSoundnessQueryBounded_iff ..).2 (h sec n t)
+  fun sec n t => h sec n t
 
 -- The named extractor family is fixed before all budgets and adversaries.
 example (relation : Set (ℕ × Unit)) (error : ℕ → ℕ → ℕ → ENNReal)
@@ -118,8 +118,7 @@ example (relation : Set (ℕ × Unit)) (error : ℕ → ℕ → ℕ → ENNReal)
       ∀ sec n t, (verifier sec n).adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
         (sampleOracle sec n) (oracleImpl sec n) relation {true} (E sec n) (fun _ => True) t
         (error sec n t) :=
-  ⟨extractor, fun sec n t =>
-    (Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff ..).2 (h sec n t)⟩
+  ⟨extractor, fun sec n t => h sec n t⟩
 
 end NARGParameterizedSecurityTest
 

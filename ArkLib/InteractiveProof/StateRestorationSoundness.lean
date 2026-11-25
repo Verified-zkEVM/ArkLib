@@ -749,7 +749,7 @@ theorem soundnessQueryBounded_iff_adaptiveNARGSoundnessQueryBounded
     (toNARGVerifier V).adaptiveNARGSoundnessQueryBounded init
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       (Prod.fst ⁻¹' langIn) langOut counts t error := by
-  rw [Verifier.adaptiveNARGSoundnessQueryBounded_iff]
+  unfold Verifier.adaptiveNARGSoundnessQueryBounded
   unfold soundnessQueryBounded AdaptiveGame.Bounded
   simp only [← soundnessFailureProb_toNARG, soundnessFailureProb]
 end Verifier.StateRestoration
@@ -916,7 +916,7 @@ theorem knowledgeSoundnessQueryBoundedWithExtractor_iff_adaptiveNARGKnowledgeSou
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       {a | (a.1.1, a.2) ∈ relIn} relOut
       (toNARGExtractor E) counts t error := by
-  rw [Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff]
+  unfold Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
   unfold knowledgeSoundnessQueryBoundedWithExtractor AdaptiveGame.Bounded
   simp only [← knowledgeSoundnessFailureProb_toNARG, knowledgeSoundnessFailureProb]
 
@@ -931,7 +931,7 @@ theorem knowledgeSoundnessWithExtractor_iff_adaptiveNARGKnowledgeSoundness
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       {a | (a.1.1, a.2) ∈ relIn} relOut
       (toNARGExtractor E) error := by
-  rw [Verifier.adaptiveNARGKnowledgeSoundnessWithExtractor_iff]
+  unfold Verifier.adaptiveNARGKnowledgeSoundnessWithExtractor
   unfold knowledgeSoundnessWithExtractor
   simp only [knowledgeSoundnessFailureProb_toNARG]
 end Verifier.StateRestoration
@@ -951,7 +951,7 @@ theorem soundness_iff_adaptiveNARGSoundness
     (toNARGVerifier V).adaptiveNARGSoundness init
       (impl + srChallengeQueryImpl' (Statement := StmtIn × Salt) (pSpec := pSpec))
       (Prod.fst ⁻¹' langIn) langOut error := by
-  rw [Verifier.adaptiveNARGSoundness_iff]
+  unfold Verifier.adaptiveNARGSoundness
   unfold soundness
   simp only [soundnessFailureProb_toNARG]
 

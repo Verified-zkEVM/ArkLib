@@ -18,8 +18,9 @@ In the adaptive security games, the adversary chooses the statement and argument
 oracle state is shared, and private samples are excluded from query budgets and extractor logs.
 This module defines the failure events and the adversary and extractor types. The experiments
 are in `ArkLib.OracleReduction.Security.Basic`. The security predicates, such as
-`Verifier.adaptiveNARGSoundness`, are in `ArkLib.InteractiveProof.Soundness`: each is the
-adaptive interactive predicate at the one-message protocol `⟨!v[.P_to_V], !v[Proof]⟩`. The games
+`Verifier.adaptiveNARGSoundness`, are in `ArkLib.InteractiveProof.Soundness`. Each is stated on
+these experiments, and a theorem there proves it equal to the adaptive interactive predicate at
+the one-message protocol `⟨!v[.P_to_V], !v[Proof]⟩`. The games
 impose no running-time bound. The interfaces depend only on oracle computations.
 
 ## References

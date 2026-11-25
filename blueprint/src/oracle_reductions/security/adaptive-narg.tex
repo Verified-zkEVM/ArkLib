@@ -18,9 +18,9 @@ Write \(\OracleFamily\) for the public oracles specified by the NARG's model. Fo
   \end{array}\right]\le\NARGSoundnessError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound).
   \end{equation*}
 
-  In Lean, this is adaptive soundness of the one-message interactive protocol; a theorem restates it on the experiment above.
+  In Lean, this definition is stated on the experiment above, and a theorem proves it equal to adaptive soundness of the one-message interactive protocol.
   \lean{Verifier.adaptiveNARGSoundnessQueryBounded,
-    Verifier.adaptiveNARGSoundnessQueryBounded_iff, NARG.Prover,
+    Verifier.adaptiveNARGSoundnessQueryBounded_iff_adaptiveSoundnessQueryBounded, NARG.Prover,
     adaptiveNARGSoundnessExp, nargSoundFailEvent}
   \uses{def:oracle_run, def:counted_queries}
   \leanok
@@ -46,9 +46,9 @@ Write \(\OracleFamily\) for the public oracles specified by the NARG's model. Fo
     \end{array}\right]\le\NARGKnowledgeSoundnessError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound).
   \end{equation*}
   The annotated arrows record public query--answer logs. No running-time requirement is imposed.
-  In Lean, this is adaptive knowledge soundness of the one-message interactive protocol; a theorem restates it on the experiment above.
+  In Lean, this definition is stated on the experiment above, and a theorem proves it equal to adaptive knowledge soundness of the one-message interactive protocol.
   \lean{Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor,
-    Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff,
+    Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff_adaptive,
     Verifier.adaptiveNARGKnowledgeSoundnessQueryBounded, NARG.Extractor,
     adaptiveNARGKnowledgeSoundnessExp, nargKSFailEvent}
   \uses{def:oracle_run, def:counted_queries}
