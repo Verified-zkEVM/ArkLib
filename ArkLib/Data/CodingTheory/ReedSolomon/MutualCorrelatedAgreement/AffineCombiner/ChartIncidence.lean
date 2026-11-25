@@ -480,50 +480,50 @@ theorem isAffinePersistent_of_mem_chartExcluded [IsAlgClosed E] (domain : ι ↪
 
 /-- Outside the counted challenges, a regular root with enough agreements is persistent. -/
 theorem exists_affineNonpersistent_finset_card_le [Finite F] [IsAlgClosed E] (domain : ι ↪ F)
-    (f g : ι → F) (φ : F →+* E) (p e : ℕ) [ExpChar E p] (R : MvPolynomial AffineVar E)
+    (f g : ι → F) (φ : F →+* E) (p r : ℕ) [ExpChar E p] (R : MvPolynomial AffineVar E)
     {d h A B : ℕ} (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A) (hAn : A ≤ Fintype.card ι)
     (hR : R.weightedTotalDegree affineYZWeight ≤ h) :
     ∃ ex : Finset (F × F),
-      (#ex : ℚ) ≤ h * (((Fintype.card ι * (2 * p ^ e * d * h) : ℕ) : ℚ) / ((A - B : ℕ) : ℚ)) ^ 2 ∧
+      (#ex : ℚ) ≤ h * (((Fintype.card ι * (2 * p ^ r * d * h) : ℕ) : ℚ) / ((A - B : ℕ) : ℚ)) ^ 2 ∧
       ∀ c ∉ ex, ∀ P : Polynomial F, P.degree ≤ d →
-        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ c.1))
-            ((iterateFrobeniusEquiv E p e).symm (φ c.2)))
-            (Polynomial.expand E (p ^ e) (P.map φ)) R = 0 →
-        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p e).symm (φ c.1))
-            ((iterateFrobeniusEquiv E p e).symm (φ c.2)))
-            (Polynomial.expand E (p ^ e) (P.map φ)) (pderiv none R) ≠ 0 →
+        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p r).symm (φ c.1))
+            ((iterateFrobeniusEquiv E p r).symm (φ c.2)))
+            (Polynomial.expand E (p ^ r) (P.map φ)) R = 0 →
+        multiplierEval (affineMultiplier ((iterateFrobeniusEquiv E p r).symm (φ c.1))
+            ((iterateFrobeniusEquiv E p r).symm (φ c.2)))
+            (Polynomial.expand E (p ^ r) (P.map φ)) (pderiv none R) ≠ 0 →
         A ≤ #(polynomialAgreementSet domain
           (combinedWord domain f g (affineMultiplier c.1 c.2)) P) →
         IsAffinePersistent domain f g d B c.1 c.2 P := by
   classical
-  set fr := (iterateFrobeniusEquiv E p e).symm
+  set fr := (iterateFrobeniusEquiv E p r).symm
   obtain ⟨ex, hex, hgood⟩ := exists_chartExcluded_finset_card_le (κ := Fin 2) (ι := ι)
-    affineFamily R p e (d := d) (h := h) (A := A) (B := B) (e := 1) hd (by omega) (by omega) hAn
-    hR [] (fun i ↦ Polynomial.leval (φ (domain i))) (affineChartTarget domain f g φ (p ^ e))
+    affineFamily R p r (d := d) (h := h) (A := A) (B := B) (e := 1) hd (by omega) (by omega) hAn
+    hR [] (fun i ↦ Polynomial.leval (φ (domain i))) (affineChartTarget domain f g φ (p ^ r))
     (fun i ↦ totalDegree_affineChartTarget_le domain f g φ _ i)
     (separatesDegree_leval (φ.injective.comp domain.injective) (by omega))
-    (fun c : F × F ↦ ![fr (φ c.1), fr (φ c.2)]) (injective_frobeniusPair φ p e)
+    (fun c : F × F ↦ ![fr (φ c.1), fr (φ c.2)]) (injective_frobeniusPair φ p r)
   refine ⟨ex, ?_, fun c hc P hP hroot hsep hA ↦ ?_⟩
   · have hAB : A - B - 1 + 1 = A - B := by omega
     simpa [hAB] using hex
   · have hroot' : multiplierEval (familyMultiplier affineFamily ![fr (φ c.1), fr (φ c.2)])
-        (Polynomial.expand E (p ^ e) (P.map φ)) R = 0 := by
+        (Polynomial.expand E (p ^ r) (P.map φ)) R = 0 := by
       rwa [familyMultiplier_affineFamily]
     have hsep' : multiplierEval (familyMultiplier affineFamily ![fr (φ c.1), fr (φ c.2)])
-        (Polynomial.expand E (p ^ e) (P.map φ)) (pderiv none R) ≠ 0 := by
+        (Polynomial.expand E (p ^ r) (P.map φ)) (pderiv none R) ≠ 0 := by
       rwa [familyMultiplier_affineFamily]
     have hA' : A ≤ {i | Polynomial.leval (φ (domain i)) (P.map φ) =
-        aeval ![fr (φ c.1), fr (φ c.2)] (affineChartTarget domain f g φ (p ^ e) i)}.ncard := by
+        aeval ![fr (φ c.1), fr (φ c.2)] (affineChartTarget domain f g φ (p ^ r) i)}.ncard := by
       refine hA.trans_eq ?_
       rw [← Set.ncard_coe_finset]
       congr 1
       ext i
       simp only [Finset.mem_coe, Set.mem_ofPred_eq, Polynomial.leval_apply]
-      exact (eval_map_eq_aeval_affineChartTarget_iff domain f g φ p e c.1 c.2 P i).symm
+      exact (eval_map_eq_aeval_affineChartTarget_iff domain f g φ p r c.1 c.2 P i).symm
     obtain ⟨x, hx, hexc⟩ := hgood c hc (P.map φ) (Polynomial.degree_map_le.trans hP) hroot'
       hsep' (by simp) hA'
     rw [familyMultiplier_affineFamily] at hx
-    exact isAffinePersistent_of_mem_chartExcluded domain f g φ x R p e hP hroot hx hexc
+    exact isAffinePersistent_of_mem_chartExcluded domain f g φ x R p r hP hroot hx hexc
 
 
 end Affine
