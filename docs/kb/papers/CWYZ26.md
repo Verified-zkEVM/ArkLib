@@ -42,6 +42,10 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/NonpersistentCount.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Theorem.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/TaylorSeries.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Interleaved.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/InterleavedSampling.lean
+  - ArkLib/ToMathlib/Algebra/Polynomial/Pack.lean
+  - ArkLib/ToMathlib/FieldTheory/Finite/Extension.lean
 ---
 
 # CWYZ26
@@ -123,6 +127,9 @@ challenges in `K`, the counts use `q = |K|`.
 | Appendix A, "The bound", numerics for general `k` | `ReedSolomon.affineCount_numerics_le` | `D² + (2dMv)^(k+1) D^(k+2) + 2n^(k+1)/η ≤ 2^(6k+8) n^(k+1)/(ρ^(k+2) η^(4k+6))` for `k ≥ 1`. Theorem 1.1 uses the case `k = 1`. |
 | Theorem 7.1, bound (7.2) | `ReedMuller.exists_affineExceptional_finset_card_le`, `ReedMuller.affineMcaError_le` | The error at `A = ⌈(√ρ + η) n⌉` and loss `q₀^(k-1)` is at most `4/(η qᵏ) + 2^(6k+8) n^(k+1)/(ρ^(k+2) η^(4k+6) q^(k+1))`, with the paper's constant. Hypotheses: `1 ≤ d` for `ρ > 0`, `0 < η < 1 - √ρ` and `4/ρ ≤ q₀ η²`. `ρ < 1` is derived, and `k ≥ 1` is not assumed, since at `k = 0` the bound exceeds one. |
 | Theorem 1.1 for base-field challenges, used in the proof of Theorem 5.2 | `ReedSolomon.exists_affineExceptional_finset_card_map_le` | Words over a finite field `E`, challenges from a finite type `K` through `φ : K ↪ E` (a subfield is the main example), and the same hypotheses. At most `4 \|K\| / η + 2¹⁴ n² / (ρ³ η¹⁰)` challenges in `K²` are exceptional. The domain lies in `E`, and no bound `n ≤ \|K\|` is needed. |
+| Proof of Theorem 5.2, interleaved agreement and error | `ReedSolomon.interleavedAgreementSet`, `ReedSolomon.interleavedAgreementLoss`, `ReedSolomon.IsInterleavedAffineExceptional`, `ReedSolomon.interleavedAffineMcaError`, `ReedSolomon.interleavedAffineMcaError_eq_iSup_prob` | `t` rows share one challenge and one set of lost points. A point is lost once if any row's witness fails there. At `t = 1` every definition equals its affine-combiner counterpart. |
+| Proof of Theorem 5.2, packing rows into `F_{q^t}` | `Polynomial.pack`, `Polynomial.degree_pack_le_iff`, `Polynomial.pack_injective`, `FiniteField.Extension.finBasis`, `ReedSolomon.IsInterleavedAffineExceptional.pack` | Rows are packed along a basis of the extension. An exceptional tuple packs to an exceptional word over the extension, with the same `d`, `A` and loss. |
+| Proof of Theorem 5.2, bound (5.7) | `ReedSolomon.exists_interleavedAffineExceptional_finset_card_le`, `ReedSolomon.interleavedAffineMcaError_le` | Under the Theorem 1.1 hypotheses, the interleaved error is at most `4/(ηq) + 2¹⁴n²/(ρ³η¹⁰q²)`, with no factor of `t`. |
 
 ## Port Ledger
 
@@ -143,7 +150,7 @@ A unit is deferred when the port plan postpones it.
 | 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficients and polynomial roots done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); existence, uniqueness and the coefficient formula for power series formalized in [#1519](https://github.com/Verified-zkEVM/ArkLib/pull/1519) |
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | The nonpersistent count for one factor, through an incidence bound on a hypersurface in three chart coordinates. The hypersurface takes the place of the cover of dimension at most two. The proof of the incidence bound inducts on dimension over the agreement cuts, in place of the agreement-hyperplane induction. The sum over factors is part of the unit 9 count | 2, 6, 7 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), except the floored Johnson factor of (4.13), which is open |
-| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | base-field counts formalized; packing, the interleaved bound and folding open |
+| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | base-field counts, packing and interleaved bound (5.7) formalized; folding open |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | formalized through Theorem 7.1 in [#1547](https://github.com/Verified-zkEVM/ArkLib/pull/1547) |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
@@ -273,7 +280,8 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-The base-field count is available. Packing, the interleaved bound, and folding remain open.
+The folding conclusion of Theorem 5.2 is open, and so are the interleaved equal-degree and
+linear-claim conclusions of its proof.
 The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
 The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
 `ReedSolomon.affineMcaError_le` covers it.
