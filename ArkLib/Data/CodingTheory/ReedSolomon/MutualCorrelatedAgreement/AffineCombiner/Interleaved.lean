@@ -305,10 +305,12 @@ theorem exists_interleavedAffineExceptional_finset_card_le [Fintype F] (domain :
       ⟨fun r ↦ r.elim0, by simp [interleavedAgreementLoss]⟩⟩
     rw [Finset.card_empty, Nat.cast_zero]
     exact add_nonneg (div_nonneg (by positivity) hη.le) (by positivity)
-  · obtain ⟨E, _, _, _, ⟨b⟩⟩ := FiniteField.exists_basis_fin F ht.ne'
+  · have : NeZero t := ⟨ht.ne'⟩
+    let E := FiniteField.Extension F (ringChar F) t
+    let b := FiniteField.Extension.finBasis F t
     obtain ⟨S, hS, hgood⟩ := exists_affineExceptional_finset_card_map_le
       (domain.trans ⟨algebraMap F E, (algebraMap F E).injective⟩) (fun i ↦ ∑ r, f r i • b r)
-      (fun i ↦ ∑ r, g r i • b r) (algebraMap F E) hd hdn hη hη1 hn
+      (fun i ↦ ∑ r, g r i • b r) ⟨algebraMap F E, (algebraMap F E).injective⟩ hd hdn hη hη1 hn
     exact ⟨S, hS, fun c hc P hP ↦ hgood c hc _ (hP.pack b)⟩
 
 /-- With one point of shared loss, the error is at most `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.

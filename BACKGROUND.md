@@ -23,9 +23,9 @@ ArkLib has two layers for protocols, and this page uses fixed names for them:
 
 - the **legacy layer**, [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/), which describes a
   protocol by a fixed list of rounds (`ProtocolSpec`);
-- the **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), which describes a
-  protocol as an interaction tree over PolyFun's polynomial functors and is meant to replace the
-  legacy layer.
+- the **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), which
+  describes a protocol as an interaction tree over PolyFun's polynomial functors and is meant to
+  replace the legacy layer.
 
 Citation keys such as [BCS16] refer to [Section 8](#8-references). Where the repository has a
 knowledge-base page for a paper, the reference links to it.
@@ -525,7 +525,7 @@ SNARKs. Formal statements of the transformation are a direct way to rule out thi
 ### 4.3 Where the pieces sit
 
 ```text
-IOR (legacy: OracleReduction; interaction layer: Oracle.Reduction)
+IOR (legacy: OracleReduction; interaction layer: Interaction.OracleVerifier and a prover)
   |  generalized BCS: commitments + opening arguments per query
   v
 interactive reduction (legacy: Reduction)
@@ -1197,7 +1197,7 @@ for oracle reductions are defined through this map (Section 6.4).
 ### 6.2 What 𝓕 means: oracle interfaces
 
 The class of oracles is not fixed. Each message type carries an instance of
-`OracleInterface` ([`OracleReduction/OracleInterface.lean`](ArkLib/OracleReduction/OracleInterface.lean)),
+`OracleInterface` ([`Relation/OracleInterface.lean`](ArkLib/Relation/OracleInterface.lean)),
 which declares a query type `Query` and, for each query $q$, a response type `Response q`, together
 with an answer function. In the notation of WHIR's Definition 7.1, the message type plays the role
 of an oracle set $\mathcal{O}_{i,j}$, `Query` the role of $\mathcal{W}_{i,j}$, and the answer
@@ -1409,75 +1409,59 @@ matter for a given paper's theorem must be checked case by case.
 
 ### 6.5 The interaction layer
 
-The interaction layer keeps the same mathematical object, up to how output claims are represented
-(see below), and changes how protocols are described and executed. Its design is in [docs/design/](docs/design/README.md); the points that matter for
-comparison with the literature are these.
+The interaction layer keeps the same mathematical object and changes how protocols are described
+and executed. Its code is in `ArkLib/Interaction/` and its design is in
+[docs/design/](docs/design/README.md); the points that matter for comparison with the literature
+are these.
 
-**Protocols are trees.** An `Oracle.TypeTree`
-([`Interaction/Oracle/TypeTree.lean`](ArkLib/Interaction/Oracle/TypeTree.lean)) is a free monad over
-PolyFun's polynomial functors with two kinds of node: a `public` node carries a move that selects
-the continuation, and an `oracle` node carries a message that the verifier never sees in full. An
-`Oracle.Protocol` ([`Interaction/Oracle/Protocol.lean`](ArkLib/Interaction/Oracle/Protocol.lean))
-decorates public nodes with roles and oracle nodes with an `OracleInterface`; oracle messages are
-always sent by the prover. Because the continuation may depend on earlier public moves, the number
-of remaining rounds and their message types can depend on the transcript so far. Plain reductions
-([`Interaction/Reduction.lean`](ArkLib/Interaction/Reduction.lean)) also let the tree depend on the
-input statement, and sequential composition (`Reduction.then`) lets the suffix depend on the whole
+**Protocols are trees.** A protocol (`Interaction/Protocol.lean`) is a PolyFun free-monad
+tree with trivial leaves. A signature (`Interaction/Signature.lean`) assigns each node its
+role and its kind: a public message selects the continuation, while a challenge or an oracle
+message has a single continuation and is still recorded in the full transcript. Oracle positions
+carry their query interface. Because the continuation may depend on earlier public messages, the
+number of remaining rounds and their message types can depend on the transcript so far.
+Sequential composition (`Interaction/Composition.lean`) lets the suffix depend on the
 prefix. A fixed `ProtocolSpec` cannot express such protocols directly.
 
-**The verifier runs during the interaction, without seeing oracle payloads.** The legacy
-`OracleVerifier` already sees messages only through queries, but it runs once, after the
-interaction. In the interaction layer the verifier is a strategy on the structural tree that runs
-alongside the prover: at an oracle node it receives query access to the new message, never the
-message itself ([`Interaction/Oracle/Execution.lean`](ArkLib/Interaction/Oracle/Execution.lean)). Oracle access is
-an accumulated signature that grows as messages arrive
-([`Interaction/Oracle/Access.lean`](ArkLib/Interaction/Oracle/Access.lean)). This is the IOP
-access discipline enforced by typing rather than by convention.
+**The verifier is passive and sees oracle messages only through queries.** A prover is a PolyFun
+strategy, and a sampler draws the challenges (`Interaction/Reduction.lean`). An oracle
+verifier (`Interaction/OracleVerifier.lean`) decides once, after the interaction, from the
+verifier view: the transcript with oracle payloads erased (`viewSig`). Its decision has query
+access to the input oracles and the oracle messages of the completed path, never their raw
+values. Rejection is a returned verdict (`none`), distinct from a failure of the ambient oracle
+computation (`Interaction/Execution.lean`). This is the IOP access discipline enforced by
+typing rather than by convention.
 
-**Output claims have three representations.** Virtual oracles
-([`Interaction/Oracle/Virtual.lean`](ArkLib/Interaction/Oracle/Virtual.lean)) are query programs
-interpreted against the available oracles. A claim
-([`Interaction/Oracle/Claim.lean`](ArkLib/Interaction/Oracle/Claim.lean)) pairs a public statement
-with an oracle component in one of three forms:
+**Output oracles are maps with a law.** An `OracleBundle` pairs a query specification with
+concrete data that answers it. An oracle verifier's output is an `OracleMap` from the input
+bundle and the path's oracle messages to the output oracles: concrete output data for the next
+honest prover, a simulation of each output query by input queries, and a law stating that the
+two agree on all input data. This covers both [BCGGRS19]'s virtual oracles and Arc's oracle
+selection. A query interface does not force the answers to be, for example, the evaluations of a
+polynomial of bounded degree. Any such restriction must be stated, for example as an
+admissibility predicate on the inputs of a security notion. This is the interaction-layer
+counterpart of the guarantee-transport obligation in Section 6.4: in the legacy layer a refined
+message type imposes the promise on every prover, while here it must be stated.
 
-- an `OpenClaim` carries query programs over a source signature;
-- a `ClosedClaim` carries arbitrary deterministic oracle behavior, a `QueryImpl` into `Id` for each
-  output oracle;
-- a `ConcreteClaim` carries realizations, values of the declared realization types interpreted
-  through their interfaces.
-
-Open claims are the general form of both [BCGGRS19]'s virtual oracles and Arc's oracle selection.
-Relations are stated at the closed-claim boundary through a `Problem`, whose claim-dependent witness
-relation must imply an explicit `admissible` predicate (`rel_admissible`). A closed claim need not
-come from a concrete realization, and a query signature does not force a behavior to be, for
-example, the evaluation of a polynomial of bounded degree. At the closed-claim relation boundary,
-admissibility or a representation/guarantee theorem must express any restriction such as
-bounded-degree polynomial behavior; the query interface alone does not impose it. This is the
-interaction-layer counterpart of the guarantee-transport obligation in Section 6.4: in the legacy
-layer a refined message type imposes the promise on every prover, while here it must be stated.
-
-**Security notions.** RBR soundness
-([`Security/RoundByRound.lean`](ArkLib/Interaction/Oracle/Security/RoundByRound.lean)) is stated
-over every prefix of the tree, including prefixes that an honest run reaches with probability
-zero, relative to a `ChallengeModel` that describes each verifier challenge as a fresh sampling
-program. The local bounds are statements about that model, not about the verifier's code. The
-theorem `executeStrategies_soundness`
-([`Security/Soundness.lean`](ArkLib/Interaction/Oracle/Security/Soundness.lean)) connects the two:
-given an `OrdinaryState` certificate, local bounds, a `ChallengeSchedule` that ranks the challenge
-rounds, and a `FreshVerifier` proof relating the verifier's actual moves under the given handler to
-the challenge model, it bounds every probabilistic prover strategy by the sum of the local errors.
-Knowledge uses a `KnowledgeCertificate` with named backward witness maps
-([`Security/Knowledge.lean`](ArkLib/Interaction/Oracle/Security/Knowledge.lean)), the analogue of
-the legacy `KnowledgeStateFunction` and of WARP's witness-indexed state (Section 3.2). Its fresh
-challenge programs likewise need a correspondence with the actual verifier where they are used.
-[`Security/StateRestoration.lean`](ArkLib/Interaction/Oracle/Security/StateRestoration.lean)
-states `restored_extraction_bound` for one specified game: fixed-round public-coin protocols with
-salts, run against a cached random oracle with restoration. Its premises are prover preservation and
-local bounds for the backward maps, an explicit map for the adversary's terminal witness, and a
-total query bound $Q$ on the adversary. Its conclusion bounds by $(Q + k) \cdot \varepsilon$, for
-$k$ rounds, the probability that the input lies in the target set and the terminal witness is valid
-while the extracted input witness is not. It is a theorem about that game, not about every
-interaction protocol or every restoration interface.
+**Security notions.** Round-by-round soundness and knowledge
+(`Interaction/Security/RoundByRound.lean`) are stated over every prefix of the tree,
+including prefixes that an honest run reaches with probability zero. Each local bound fixes a
+prefix and then draws one challenge; the draw may depend on the whole earlier history.
+`Interaction/Security/Implications.lean` proves that round-by-round soundness implies
+soundness, with error the supremum over shape paths of the sum of the challenge-node errors along
+the path. Knowledge uses a `KnowledgeStateFunction` with named backward witness maps, the
+analogue of the legacy `KnowledgeStateFunction`, which generalizes WARP's knowledge-state
+formulation [BCFW25] (Section 3.2).
+`Interaction/Security/KnowledgeComposition.lean` composes these bounds across a
+deterministic middle claim. `Interaction/Security/StateRestoration.lean` states
+`Interaction.StateRestoration.stateRestoration_knowledge_soundness` for one specified game:
+fixed-round public-coin protocols with salts, run against a cached random oracle with
+restoration. Its premises are local bounds for the knowledge state function, an explicit map
+`readOut` for the adversary's terminal witness, and a total query bound $Q$ on the adversary. Its
+conclusion bounds by $(Q + k) \cdot \varepsilon$, for $k$ rounds, the probability that the input
+is admissible, the verifier accepts with a valid output witness, and the extracted input witness
+is not valid. It is a theorem about that game, not about every interaction protocol or every
+restoration interface.
 
 **Extractor efficiency is a separate obligation.** The core certificate names backward witness
 maps but imposes neither computability nor a cost bound. Cryptographic knowledge claims must attach

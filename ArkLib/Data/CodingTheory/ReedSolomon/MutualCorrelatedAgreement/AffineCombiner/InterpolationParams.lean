@@ -513,7 +513,9 @@ Read `D` as the `(Y, Z)`-degree budget and `v` as `n / (A - B - e + 1)`.
 Read `dM` as the degree times the `Z`-degree budget.
 Assume `a, b ≥ 1`, `0 ≤ D ≤ 9 b a² / 2`, `0 ≤ v ≤ 2 a` and `0 ≤ dM ≤ 3 a n`.
 Then `D² + (2 dM v)ᵏ⁺¹ Dᵏ⁺² + 2 nᵏ⁺¹ a ≤ 2⁶ᵏ⁺⁸ nᵏ⁺¹ bᵏ⁺² a⁴ᵏ⁺⁶`.
-Reed–Solomon codes use `k = 1`, and Reed–Muller codes in `k` variables use `k`. -/
+Reed–Solomon codes use `k = 1`, and Reed–Muller codes in `k` variables use `k`.
+The slack is small at the extreme point for `k = 1`.
+There `n = a = b = 1`, `D = 9/2`, `v = 2` and `dM = 3`, and the left side is `13144.25 ≤ 2¹⁴`. -/
 theorem affineCount_numerics_le {k : ℕ} (hk : 1 ≤ k) {n a b D v dM : ℝ} (hn : 1 ≤ n)
     (ha : 1 ≤ a) (hb : 1 ≤ b) (hD0 : 0 ≤ D) (hD : D ≤ 9 / 2 * b * a ^ 2) (hv0 : 0 ≤ v)
     (hv : v ≤ 2 * a) (hdM0 : 0 ≤ dM) (hdM : dM ≤ 3 * a * n) :

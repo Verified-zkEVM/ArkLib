@@ -8,30 +8,33 @@ module
 public import Mathlib.FieldTheory.Finite.Extension
 
 /-!
-# Finite extensions of finite fields with a basis of any size
+# A basis of the degree-`t` extension of a finite field
 
 Every finite field has a finite extension of each positive degree.
-So it has an extension with a basis of any positive size over the base field.
+That extension has a basis indexed by `Fin t` over the base field.
 Packing tuples along such a basis turns `t` rows over the base field into one row.
 
-## Main statements
+The characteristic of a finite field is prime, as an instance.
+So the extension at the characteristic gets its field instances by instance search.
 
-* `FiniteField.exists_basis_fin`: a finite field has a finite extension with a basis of any
-  positive size.
+## Main definitions
+
+* `FiniteField.Extension.finBasis`: a basis of the degree-`t` extension, indexed by `Fin t`.
 -/
 
 @[expose] public section
 
 namespace FiniteField
 
-/-- A finite field `K` has a finite extension with a basis of size `t`, for every `t ≠ 0`. -/
-theorem exists_basis_fin (K : Type*) [Field K] [Finite K] {t : ℕ} (ht : t ≠ 0) :
-    ∃ (E : Type) (_ : Field E) (_ : Finite E) (_ : Algebra K E),
-      Nonempty (Module.Basis (Fin t) K E) := by
-  obtain ⟨p, hp⟩ := CharP.exists K
-  have : Fact p.Prime := ⟨CharP.char_is_prime K p⟩
-  have : NeZero t := ⟨ht⟩
-  exact ⟨Extension K p t, inferInstance, inferInstance, inferInstance,
-    ⟨Module.finBasisOfFinrankEq K _ (finrank_extension K p t)⟩⟩
+variable (K : Type*) [Field K] [Finite K]
+
+/-- The characteristic of a finite field is prime. -/
+instance fact_prime_ringChar : Fact (ringChar K).Prime :=
+  ⟨CharP.char_is_prime K _⟩
+
+/-- A basis of the degree-`t` extension of a finite field `K`, indexed by `Fin t`. -/
+noncomputable def Extension.finBasis (t : ℕ) [NeZero t] :
+    Module.Basis (Fin t) K (Extension K (ringChar K) t) :=
+  Module.finBasisOfFinrankEq K _ (finrank_extension K (ringChar K) t)
 
 end FiniteField

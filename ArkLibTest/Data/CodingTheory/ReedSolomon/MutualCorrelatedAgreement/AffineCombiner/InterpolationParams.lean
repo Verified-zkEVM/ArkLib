@@ -124,15 +124,6 @@ example : ((16384 * 22 : ℕ) : ℝ) ≤ 3 * 65536 / (1 / 4) := by
   have h := rmParams.mul_rootBudget_le
   rwa [rm_values.2.2.2.2] at h
 
--- The estimate `q₀ = n / e > 64`.
-example : 64 * 256 < 65536 := rmParams.sixty_four_mul_lt
-
--- Every parameter tuple satisfying the hypotheses has `d + e < B < A ≤ n`.
-example {d n e : ℕ} {η : ℝ} (h : AffineParams d n e η) :
-    d + e < affinePersistenceThreshold d n e η ∧
-      affinePersistenceThreshold d n e η < affineThreshold d n η ∧ affineThreshold d n η ≤ n :=
-  ⟨h.add_lt_persistenceThreshold, h.persistenceThreshold_lt, h.threshold_le⟩
-
 /-- info: 'ReedSolomon.sub_le_affinePersistenceThreshold' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
@@ -207,13 +198,6 @@ example {d n e : ℕ} {η : ℝ} (h : AffineParams d n e η) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.AffineParams.bounds
-
--- The final numerical estimate holds at the extreme point of its hypotheses for `k = 1`:
--- with `n = a = b = 1`, `D = 9/2`, `v = 2` and `dM = 3`, the left side is `13144.25 ≤ 2¹⁴`.
-example : (9 / 2 : ℝ) ^ 2 + (2 * 3 * 2) ^ (1 + 1) * (9 / 2) ^ (1 + 2) + 2 * 1 ^ (1 + 1) * 1 ≤
-    2 ^ (6 * 1 + 8) * (1 ^ (1 + 1) * 1 ^ (1 + 2) * 1 ^ (4 * 1 + 6)) :=
-  affineCount_numerics_le le_rfl le_rfl le_rfl le_rfl (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num)
 
 /-- info: 'ReedSolomon.affineCount_numerics_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

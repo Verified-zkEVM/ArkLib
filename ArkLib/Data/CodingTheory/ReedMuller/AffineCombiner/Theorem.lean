@@ -8,7 +8,7 @@ module
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.NonpersistentCount
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterpolationParams
-import Mathlib.FieldTheory.Finite.Extension
+import ArkLib.ToMathlib.FieldTheory.Finite.Extension
 
 /-!
 # The affine MCA error of Reed–Muller codes
@@ -124,20 +124,17 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation (f g : (Fin k �
     omega
   have : NeZero k := ⟨hk⟩
   -- A degree-`k` extension `L` of `K₀`, embedded in the algebraic closure `E` of `F`.
-  set p := ringChar K₀
-  have : Fact p.Prime := ⟨CharP.char_is_prime K₀ p⟩
-  let L := FiniteField.Extension K₀ p k
+  let L := FiniteField.Extension K₀ (ringChar K₀) k
   let : Fintype L := Fintype.ofFinite L
   let E := AlgebraicClosure F
   let ι : L →ₐ[K₀] E := IsAlgClosed.lift
   let : Algebra L E := ι.toRingHom.toAlgebra
   have : IsScalarTower K₀ L E := IsScalarTower.of_algHom ι
-  let b : Module.Basis (Fin k) K₀ L :=
-    Module.finBasisOfFinrankEq K₀ L (FiniteField.finrank_extension K₀ p k)
+  let b : Module.Basis (Fin k) K₀ L := FiniteField.Extension.finBasis K₀ k
   have hcardL : Fintype.card L = q₀ ^ k := by
     rw [Module.card_fintype b, Fintype.card_fin]
   -- The interpolant on `L ⊆ E`, for multipliers of degree `e` and candidates of degree `d e`.
-  obtain ⟨Q, hQ⟩ := ReedSolomon.exists_isMultiplierInterpolant
+  obtain ⟨Q, hQ, -⟩ := ReedSolomon.exists_isMultiplierInterpolant
     (ReedSolomon.algebraMapDomain L E)
     (fun x ↦ algebraMap F E (f (traceCoordinateEquiv K₀ b x)))
     (fun x ↦ algebraMap F E (g (traceCoordinateEquiv K₀ b x))) (e := e) (d := d * e) (A := A)
