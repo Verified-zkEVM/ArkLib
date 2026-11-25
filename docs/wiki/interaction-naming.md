@@ -163,6 +163,9 @@ messages for unvisited branches or assert that arbitrary structural paths are in
 
 ## Sumcheck oracle roles
 
+This section and the next two describe the deleted Sumcheck interaction layer. `Sumcheck.Core`
+in `ArkLib/ProofSystem/Sumcheck/Core/` replaces it.
+
 The single-round verifier checks the sent polynomial and evaluates it for the next target. Its
 `outputOracle` instead retains the input oracle. This distinction allows a dishonest message to
 pass the local sum check while the closed output relation fails; it is essential for soundness.
@@ -195,7 +198,7 @@ Verifier execution and completeness keep the commutative-semiring generality.
 
 ## Consecutive multivariate rounds
 
-`MultivariateRound.polynomialFamily` declares the persistent multivariate evaluation interface.
+`Spec.polynomialFamily` declares the persistent multivariate evaluation interface.
 Its `outputOracle` retains the supplied input behavior, while each round's newly sent univariate
 polynomial supplies the sum check and next target. The two-round executor passes the first actual
 closed claim to the second and skips the second after rejection. Sampled equations preserve the

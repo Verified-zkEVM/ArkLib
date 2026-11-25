@@ -25,7 +25,7 @@ rev = "f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db"
 [[require]]
 name = "CompPoly"
 git = "https://github.com/Verified-zkEVM/CompPoly"
-rev = "1a9ad0ef08aaeb187d51e41cad0be79b5b8faf6f"
+rev = "c72a765272497b4c52201be11be47af5718c7488"
 
 [[lean_lib]]
 name = "ArkLibLintPlugin"
@@ -89,11 +89,18 @@ srcDir = "scripts"
 root = "HachiRuntime"
 allowNonModules = true
 
-# Compiled checks for CompPoly-backed messages through the shared native Sumcheck executor.
+# Compiled checks for CompPoly-backed messages through the computable interaction-core Sumcheck.
 [[lean_exe]]
 name = "sumcheck-runtime"
 srcDir = "scripts"
 root = "SumcheckRuntime"
+allowNonModules = true
+
+# The same fixtures as a library, so the compile-time test in ArkLibTest can import them.
+[[lean_lib]]
+name = "SumcheckRuntime"
+srcDir = "scripts"
+roots = ["SumcheckRuntime"]
 allowNonModules = true
 
 # Compiled edge cases and exact instruction counts for the named measured FRI extractor.

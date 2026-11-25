@@ -128,7 +128,7 @@ include them. Production modules must not import tests.
 
 Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
 branch. It compiles all tracked modules under `ArkLib/Interaction/`, `ArkLibTest/Interaction/`,
-`ArkLib/ProofSystem/Sumcheck/Interaction/` and `ArkLibTest/ProofSystem/Sumcheck/Interaction/` with
+`ArkLib/ProofSystem/Sumcheck/Core/` and `ArkLibTest/ProofSystem/Sumcheck/Core/` with
 the existing build-time source-policy plugin and rejects every warning in those modules,
 including admissions. This is early feedback, not a replacement for `lake test` or the full
 validation/axiom gate before merging to `main`. The semantic acceptance requirements live in
@@ -345,7 +345,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | --- | --- | --- |
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
-| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
+| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | Eight checks of CompPoly messages and honest multivariate execution. They cover private effects in order, a failed check that rejects after both challenge draws, the retained original oracle, zero remaining rounds with a separate prover check, and one interval round after a challenge prefix. The degree bound of the quadratic input is a compile-time proof. |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated

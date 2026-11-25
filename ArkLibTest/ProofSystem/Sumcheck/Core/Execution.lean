@@ -26,8 +26,7 @@ variable {ι : Type} (ambient : OracleSpec ι)
 challenge node. They are uniform when interpreted with `challengeQueryImpl`. -/
 abbrev drawOf (n : ℕ) :=
   fun c : ChallengeNode oracleSig (protocol F 1 n) =>
-    (liftM ((ambient + challengeSpec oracleSig (protocol F 1 n)).query (.inr c)) :
-      OracleComp (ambient + challengeSpec oracleSig (protocol F 1 n)) _)
+    (QueryImpl.id' (ambient + challengeSpec oracleSig (protocol F 1 n))).restrictRight c
 
 /-! ## A bad round followed by good rounds -/
 
@@ -41,7 +40,8 @@ noncomputable def badFirst {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X]) :
 noncomputable def badFirstProver {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X])
     (stmt : Spec.StatementRound F 2 0) (oStmt : ∀ i, Spec.OracleStatement F 2 1 i) :
     Prover oracleSig ambient (protocol F 1 2) (fun _ => HonestOutput F 1 2) :=
-  foldRounds (badFirst D bad) (nextState (badFirst D bad)) finishState 2 (initState stmt oStmt)
+  foldRounds (badFirst D bad) (fun k st _ => nextState (badFirst D bad) k st) finishState 2
+    (initState stmt oStmt)
 
 /-- A first message whose sum over `D` misses the target: the execution still draws both
 challenges and records both rounds, and the verdict rejects. -/
@@ -67,12 +67,12 @@ theorem run_badFirstProver {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X])
 /-- The run records both rounds of the bad prover, with the drawn challenges in order. -/
 example {d : ℕ} (D : Fin d ↪ F) (bad : F⦃≤ 1⦄[X]) (stmt : Spec.StatementRound F 2 0)
     (oStmt : ∀ i, Spec.OracleStatement F 2 1 i) (chals : Fin 2 → F) :
-    let tr := foldTranscript (badFirst D bad) (nextState (badFirst D bad)) 2
-      (initState stmt oStmt) chals
-    headMessage tr = bad ∧ headChallenge tr = chals 0 ∧
-      headMessage (tailTranscript tr) =
+    let tr : Transcript oracleSig (protocol F 1 2) :=
+      foldTranscript (badFirst D bad) (nextState (badFirst D bad)) 2 (initState stmt oStmt) chals
+    Interpreted.message tr = bad ∧ Interpreted.challenge tr = chals 0 ∧
+      Interpreted.message (Interpreted.tail tr) =
         honestMessage D 0 (nextState (badFirst D bad) 1 (initState stmt oStmt) (chals 0)) ∧
-      headChallenge (tailTranscript tr) = chals 1 :=
+      Interpreted.challenge (Interpreted.tail tr) = chals 1 :=
   ⟨rfl, rfl, rfl, rfl⟩
 
 /-- The evaluation domain `{0, 1}`. -/
@@ -152,8 +152,11 @@ example (tr₁ tr₂ : Transcript oracleSig (protocol F 1 2))
     (h : transcriptChallenges 2 tr₁ = transcriptChallenges 2 tr₂) :
     viewChallenges (toView (protocol F 1 2) tr₁) =
       viewChallenges (toView (protocol F 1 2) tr₂) := by
-  unfold viewChallenges
-  rw [viewChallengeList_toView, viewChallengeList_toView, h]
+  have h₁ := viewChallengeList_toView 2 tr₁
+  have h₂ := viewChallengeList_toView 2 tr₂
+  unfold viewChallengeList at h₁ h₂
+  unfold viewChallenges viewChallengesOn
+  rw [h₁, h₂, h]
 
 /-- The decoded challenges are those recorded in the view, whatever the messages. -/
 example (tr : Transcript oracleSig (protocol F 1 3)) :
