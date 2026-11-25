@@ -129,9 +129,7 @@ theorem existsUnique_powerSeries_root (R : MvPolynomial AffineVar K) (t₀ α β
     (hz : eval (fun v ↦ v.elim z ![t₀, α + β * t₀]) R = 0)
     (hS : eval (fun v ↦ v.elim z ![t₀, α + β * t₀]) (pderiv none R) ≠ 0) :
     ∃! E : PowerSeries K, PowerSeries.constantCoeff E = 0 ∧
-      aeval (fun v ↦ v.elim (PowerSeries.C z + E)
-        ![PowerSeries.C t₀ + PowerSeries.X,
-          PowerSeries.C (α + β * t₀) + PowerSeries.C β * PowerSeries.X]) R = 0 := by
+      (affineSeriesEquation t₀ α β R).eval (PowerSeries.C z + E) = 0 := by
   obtain ⟨F, ⟨hF0, hF⟩, huniq⟩ :=
     PowerSeries.existsUnique_constantCoeff_eq_and_eval_eq_zero (affineSeriesEquation t₀ α β R) z
       (by rw [eval_map_constantCoeff_affineSeriesEquation]; exact hz)
@@ -139,11 +137,8 @@ theorem existsUnique_powerSeries_root (R : MvPolynomial AffineVar K) (t₀ α β
         rw [Polynomial.derivative_map, derivative_affineSeriesEquation,
           eval_map_constantCoeff_affineSeriesEquation]
         exact hS.isUnit)
-  refine ⟨F - PowerSeries.C z, ⟨by simp [hF0], ?_⟩, fun E ⟨hE0, hE⟩ ↦ ?_⟩
-  · rw [add_sub_cancel, ← eval_affineSeriesEquation]
-    exact hF
-  · have := huniq (PowerSeries.C z + E) ⟨by simp [hE0], by rwa [eval_affineSeriesEquation]⟩
-    rw [← this, add_sub_cancel_left]
+  refine ⟨F - PowerSeries.C z, ⟨by simp [hF0], by rwa [add_sub_cancel]⟩, fun E ⟨hE0, hE⟩ ↦ ?_⟩
+  rw [← huniq (PowerSeries.C z + E) ⟨by simp [hE0], hE⟩, add_sub_cancel_left]
 
 /-- The Taylor expansion at `t₀` of `R(X, α + β X, P)` substitutes the expansion of `P`. -/
 theorem coe_taylor_multiplierEval_affineMultiplier (t₀ α β : K) (P : Polynomial K)
@@ -192,8 +187,7 @@ theorem coe_taylor_eq_C_add_of_multiplierEval_eq_zero (R : MvPolynomial AffineVa
   have hroot := coe_taylor_multiplierEval_affineMultiplier t₀ α β P R
   rw [hP, map_zero, Polynomial.coe_zero] at hroot
   have := (existsUnique_powerSeries_root R t₀ α β z hz hS).unique
-    ⟨h0, by rw [add_sub_cancel]; exact hroot.symm⟩
-    ⟨hE0, by rwa [← eval_affineSeriesEquation]⟩
+    ⟨h0, by rw [add_sub_cancel, eval_affineSeriesEquation]; exact hroot.symm⟩ ⟨hE0, hE⟩
   rw [← this, add_sub_cancel]
 
 /-- The coefficients of the power series root are the chart coefficients.

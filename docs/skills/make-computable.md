@@ -36,10 +36,10 @@ extraction inside an `Exists.choose`. State the claim that way, not as a securit
 **Measured extraction is where cost becomes part of the statement.** A `MeasuredProgram` runs over a
 declared instruction set with a charge per instruction, and a `BudgetedProgram f ω` packages a
 program that realizes `f` with a proved bound on every execution path
-(`VCVio.OracleComp.QueryTracking.MeasuredProgram`).
+(`PFunctor.FreeM.MeasuredProgram` in `PolyFun.PFunctor.Free.Cost.Measured`).
 Knowledge soundness with resources
 ([`ArkLib/OracleReduction/Security/Resources.lean`](../../ArkLib/OracleReduction/Security/Resources.lean)
-in the legacy layer, and `Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`
+in the legacy layer, and `Interaction/Security/{MeasuredExtraction,StateRestorationBudget}.lean`
 in the interaction layer)
 takes such a program for the extractor. Only a **named** program with a meaningful instruction set
 says anything: `BudgetedProgram.ofFun f` realizes any `f` with budget zero because it requests no

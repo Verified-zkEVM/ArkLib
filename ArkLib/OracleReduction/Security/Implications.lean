@@ -15,7 +15,7 @@ public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 This file identifies round-by-round knowledge soundness with soundness of the induced languages,
 and characterizes exactly when this holds without input witnesses. It also proves the equivalence
 between special soundness and its canonical coordinate-wise form. State-restoration security is
-developed natively in `Interaction.Oracle.Security.StateRestoration`. The guarded bridges from
+developed in the interaction core, in `Interaction.StateRestoration`. The guarded bridges from
 round-by-round security to ordinary security live in `Security.GuardedSoundness` and
 `Security.GuardedBridges`.
 -/

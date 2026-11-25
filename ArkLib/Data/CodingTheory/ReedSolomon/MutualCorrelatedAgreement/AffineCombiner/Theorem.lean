@@ -121,7 +121,7 @@ theorem exists_affineExceptional_finset_card_map_le_of_interpolation {K E : Type
     have h1 : B ^ 2 ≤ (d + 1) ^ 2 := Nat.pow_le_pow_left (not_lt.mp h) 2
     have h2 : (d + 1) ^ 2 ≤ n * (d + 1) := by rw [sq]; exact Nat.mul_le_mul_right _ hdn
     omega
-  obtain ⟨Q, hQ⟩ := exists_isAffineInterpolant domain f g hsurplus
+  obtain ⟨Q, hQ, -⟩ := exists_isAffineInterpolant domain f g hsurplus
   -- The nonpersistent challenges are counted in `E²`; their preimage in `K²` is no larger.
   obtain ⟨Ex₀, hcard, hgood⟩ := exists_finset_card_le_forall_isAffinePersistent_of_interpolant
     domain f g hQ hd (by omega) hBA hAn
