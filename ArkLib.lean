@@ -792,6 +792,7 @@ public import ArkLib.Interaction.Legacy.PureSlots
 public import ArkLib.Interaction.Legacy.Security
 public import ArkLib.Interaction.Legacy.Verifier
 public import ArkLib.Interaction.LegacyAppend
+public import ArkLib.Interaction.LiftContext
 public import ArkLib.Interaction.Oracle.BundleOps
 public import ArkLib.Interaction.Oracle.Cost
 public import ArkLib.Interaction.Oracle.LoggedExecution
