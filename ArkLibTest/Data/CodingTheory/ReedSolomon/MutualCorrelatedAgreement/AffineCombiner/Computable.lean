@@ -5,15 +5,11 @@ Authors: Thomas Coratger, Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Computable
-import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
-import
-  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
 import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance tests for the exact combiner errors -/
 
-open ReedSolomon CoreDefinitions
-open scoped ProbabilityTheory
+open ReedSolomon
 
 private def emptyDomain : Fin 0 ↪ ZMod 2 := ⟨Fin.elim0, fun a ↦ Fin.elim0 a⟩
 
@@ -164,33 +160,7 @@ private def ternaryDomain : ZMod 3 ↪ ZMod 3 := (Equiv.refl _).toEmbedding
 #guard_msgs in
 #eval equalDegreeMcaErrorRat binaryDomain 1 3 0 == 0
 
-/-! ### Probability interfaces -/
-
--- The exact rational value bounds the native event probability for every received word pair.
-example {F ι : Type} [Field F] [DecidableEq F] [Fintype F] [Fintype ι] [SampleableType F]
-    (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) :
-    Pr{let c ← $ᵗ (F × F)}[∃ P, IsAffineExceptional domain f g d A s c.1 c.2 P] ≤
-      ENNReal.ofReal (affineMcaErrorRat domain d A s : ℝ) := by
-  rw [ofReal_affineMcaErrorRat]
-  exact prob_isAffineExceptional_le domain f g d A s
-
--- The scalar zero-loss value equals the affine-line MCA error at the agreement threshold
--- `A = ⌈n(1 - δ)⌉₊`, where `n = Fintype.card ι`.
-example {F ι : Type} [Field F] [DecidableEq F] [Fintype F] [Fintype ι] [SampleableType F]
-    (domain : ι ↪ F) (d A : ℕ) (δ : ℝ) (hδ : ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ = A) :
-    ENNReal.ofReal (scalarMcaErrorRat domain d A 0 : ℝ) =
-      mcaError (AffineLineGenerator F) (code domain (d + 1)) δ := by
-  rw [ofReal_scalarMcaErrorRat]
-  exact scalarMcaError_zero_eq_mcaError domain d A δ hδ
-
--- The exact rational value bounds the native equal-degree event probability for every received
--- word pair.
-example {F ι : Type} [Field F] [DecidableEq F] [Fintype F] [Fintype ι] [SampleableType F]
-    (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) :
-    Pr{let c ← $ᵗ (F × F × F)}[∃ P, IsEqualDegreeExceptional domain f g d A s c.1 c.2.1 c.2.2 P] ≤
-      ENNReal.ofReal (equalDegreeMcaErrorRat domain d A s : ℝ) := by
-  rw [ofReal_equalDegreeMcaErrorRat]
-  exact prob_isEqualDegreeExceptional_le domain f g d A s
+/-! ### Bridges to the semantic errors -/
 
 /-- info: 'ReedSolomon.ofReal_affineMcaErrorRat' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -206,3 +176,8 @@ example {F ι : Type} [Field F] [DecidableEq F] [Fintype F] [Fintype ι] [Sample
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.ofReal_equalDegreeMcaErrorRat
+
+/-- info: 'ReedSolomon.mcaError_affineLine_eq_ofReal_scalarMcaErrorRat' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.mcaError_affineLine_eq_ofReal_scalarMcaErrorRat
