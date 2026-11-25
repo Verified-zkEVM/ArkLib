@@ -62,7 +62,7 @@ does not by itself prove a theorem about the other.
 
 - The **legacy layer**, [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/), is the original
   formalization, in which an IOR is an `OracleReduction`.
-- The **interaction layer**, [`ArkLib/Interaction/Core/`](ArkLib/Interaction/Core/), represents
+- The **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), represents
   a protocol as an interaction tree, built on the polynomial functors and interaction trees of
   [PolyFun](https://github.com/Verified-zkEVM/PolyFun). It avoids the legacy layer's limitations
   and can express more protocols, in particular protocols whose shape depends on earlier
@@ -93,7 +93,7 @@ deprecation periods.
 Around the core:
 
 - [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/) and
-  [`ArkLib/Interaction/Core/`](ArkLib/Interaction/Core/)
+  [`ArkLib/Interaction/`](ArkLib/Interaction/)
   hold the [two layers](#two-layers).
 - [`ArkLib/ProofSystem/`](ArkLib/ProofSystem/) holds protocols and reusable protocol components.
 - [`ArkLib/Commitments/`](ArkLib/Commitments/) holds commitment schemes and opening arguments.

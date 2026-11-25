@@ -2,7 +2,7 @@
 
 ArkLib has two layers for interactive oracle reductions: the legacy layer
 ([`ArkLib/OracleReduction/`](../../ArkLib/OracleReduction/)) and the interaction layer
-([`ArkLib/Interaction/Core/`](../../ArkLib/Interaction/Core/)), which is meant to replace it. The legacy
+([`ArkLib/Interaction/`](../../ArkLib/Interaction/)), which is meant to replace it. The legacy
 layer is sorry-free and carries the formalized protocols, but its representation has limits that
 the interaction layer removes. This page lists them, each with the source that shows it and what
 the interaction layer does instead. One limitation, a verifier that acts only after the
@@ -19,10 +19,10 @@ also holds the migration plan.
   step index only. The number of steps, who speaks, and the message and challenge types cannot
   depend on earlier messages or challenges, so dependent protocols cannot be expressed directly.
   In the interaction layer a protocol is a PolyFun free-monad tree
-  (`Interaction/Core/Protocol.lean`), and the rest of the tree, including its roles, may depend
+  (`Interaction/Protocol.lean`), and the rest of the tree, including its roles, may depend
   on the public messages so far. Challenges and oracle messages are recorded in the full
   transcript but have a single continuation, so they do not select the next branch
-  (`Interaction/Core/Signature.lean`). Sequential composition (`Interaction/Core/Composition.lean`)
+  (`Interaction/Signature.lean`). Sequential composition (`Interaction/Composition.lean`)
   appends a suffix that may depend on the prefix path.
 - **Provers are round-indexed state machines.** A legacy prover has one state type per round
   (`PrvState : Fin (n + 1) → Type`) and round-indexed `sendMessage` and `receiveChallenge`
@@ -30,7 +30,7 @@ also holds the migration plan.
   states between them with dependent casts (`dcast`, in `Composition/Sequential/Append/Basic.lean`);
   reductions over protocol specs that are equal but not definitionally equal are related by the
   cast lemmas in `OracleReduction/Cast.lean` and `ProtocolSpec/Cast.lean`. In the interaction layer
-  a prover is a PolyFun focal strategy on the tree (`Prover`, in `Interaction/Core/Reduction.lean`)
+  a prover is a PolyFun focal strategy on the tree (`Prover`, in `Interaction/Reduction.lean`)
   whose continuation keeps its private memory, and composition avoids concatenating round-indexed
   prover-state families. The legacy receiver's effectful computation returns a pure
   challenge-to-state function, so challenge-dependent effects must be deferred to a later action.
@@ -41,7 +41,7 @@ also holds the migration plan.
   execution (`ProtocolSpec.challengeQueryImpl`). The verifier cannot stop the protocol early. The
   interaction core keeps this limitation: its verifiers are passive. A sampler draws each
   challenge, and the verifier decides once, from the completed transcript
-  (`Interaction/Core/Reduction.lean`, `Interaction/Core/OracleVerifier.lean`). The challenge draws
+  (`Interaction/Reduction.lean`, `Interaction/OracleVerifier.lean`). The challenge draws
   may still depend on the earlier public messages and challenges. The deleted generic layer let
   the verifier act at each of its nodes; the
   [migration list](interaction-layer/migration-list.md) records which of its results needed the
@@ -52,15 +52,15 @@ also holds the migration plan.
   concrete value (`materializeOutput`), even when the verifier defines it only through queries to
   other oracles. In the interaction layer an oracle verifier's decision sees its input oracles and
   the oracle messages only through queries, and its output is an `OracleMap`
-  (`Interaction/Core/OracleVerifier.lean`): concrete output data, a simulation of each output query
+  (`Interaction/OracleVerifier.lean`): concrete output data, a simulation of each output query
   by input queries, and a law that the two agree. The next stage of a composition queries the
-  routed bundle (`Interaction/Core/Oracle/Routing.lean`).
+  routed bundle (`Interaction/Oracle/Routing.lean`).
 - **The default verifier result has one explicit failure case.** A legacy verifier returns
   `OptionT`, whose `none` does not distinguish rejection from different reported faults. Missing
   probability mass in the underlying computation is a separate phenomenon. The interaction core
   also returns an `Option` verdict, but keeps rejection separate from a failure of the ambient
-  oracle computation (`Interaction/Core/Execution.lean`).
-  `OracleVerifier.decideCatching` (`Interaction/Core/Oracle/LoggedExecution.lean`) runs a decision
+  oracle computation (`Interaction/Execution.lean`).
+  `OracleVerifier.decideCatching` (`Interaction/Oracle/LoggedExecution.lean`) runs a decision
   under a handler with labelled failures and keeps the label of a failure apart from rejection.
   The deleted generic layer had a `Terminal` result with named fault cases; the core does not.
 - **Composition needs a bound from every oracle state.** A legacy security game draws the shared
@@ -73,6 +73,6 @@ also holds the migration plan.
   layer proves composition from a suffix bound averaged over the actual distribution of the
   boundary, which includes the ambient state the prefix leaves
   (`Verifier.append_soundness_weighted_ae` and `OracleVerifier.append_soundness_weighted_ae`, in
-  `Interaction/Core/Security/CompositionSoundness.lean`). Its runtime results
+  `Interaction/Security/CompositionSoundness.lean`). Its runtime results
   (`OracleVerifier.append_soundness_runtime`) transport such a bound to a run inside one
   persistent `OracleRuntime`. The client must prove the averaged suffix bound.

@@ -268,7 +268,7 @@ The thirteen family and protocol definitions in these clients use ordinary defin
 transparency and carry no `@[instance_reducible]` attribute. The `functions` and `polynomials`
 families use ordinary definition transparency as well. The exact remaining attributes are:
 
-| File under `Core/Oracle/` | Attribute | Declarations |
+| File under `Interaction/Oracle/` | Attribute | Declarations |
 | --- | --- | --- |
 | `OracleMaps` | `reducible` | `taggedInterface`, `pairInterface` |
 | `BundleFamilies` | `reducible` | `countInterface`, `mixedInterface`, `evaluation` |

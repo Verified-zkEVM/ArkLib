@@ -293,8 +293,8 @@ entries use [queriesByMove] and [queriesByMoveLaws]. Typed access and whole-run 
 [routedAvailable]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L295
 [availableCost]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L84
 
-[queriesByMoveLaws]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean
-[sentOracles]: ../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean
+[queriesByMoveLaws]: ../../../ArkLib/Interaction/Oracle/QueriesByMoveLaws.lean
+[sentOracles]: ../../../ArkLib/Interaction/Oracle/SentOracles.lean
 [queriesByMoveContract]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L944
 [actualPartialTranscripts]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L963
 [joinEntryBefore]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1090
@@ -307,6 +307,6 @@ entries use [queriesByMove] and [queriesByMoveLaws]. Typed access and whole-run 
 [queriesByMoveSourceLog]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1143
 [movedQuery]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1036
 
-[queriesByMove]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
+[queriesByMove]: ../../../ArkLib/Interaction/Oracle/QueriesByMove.lean
 
 [liftedQueriesByMove]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1211

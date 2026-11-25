@@ -23,7 +23,7 @@ ArkLib has two layers for protocols, and this page uses fixed names for them:
 
 - the **legacy layer**, [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/), which describes a
   protocol by a fixed list of rounds (`ProtocolSpec`);
-- the **interaction layer**, [`ArkLib/Interaction/Core/`](ArkLib/Interaction/Core/), which
+- the **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), which
   describes a protocol as an interaction tree over PolyFun's polynomial functors and is meant to
   replace the legacy layer.
 
@@ -525,7 +525,7 @@ SNARKs. Formal statements of the transformation are a direct way to rule out thi
 ### 4.3 Where the pieces sit
 
 ```text
-IOR (legacy: OracleReduction; interaction layer: Interaction.Core.OracleVerifier and a prover)
+IOR (legacy: OracleReduction; interaction layer: Interaction.OracleVerifier and a prover)
   |  generalized BCS: commitments + opening arguments per query
   v
 interactive reduction (legacy: Reduction)
@@ -1410,26 +1410,26 @@ matter for a given paper's theorem must be checked case by case.
 ### 6.5 The interaction layer
 
 The interaction layer keeps the same mathematical object and changes how protocols are described
-and executed. Its code is in `ArkLib/Interaction/Core/` and its design is in
+and executed. Its code is in `ArkLib/Interaction/` and its design is in
 [docs/design/](docs/design/README.md); the points that matter for comparison with the literature
 are these.
 
-**Protocols are trees.** A protocol (`Interaction/Core/Protocol.lean`) is a PolyFun free-monad
-tree with trivial leaves. A signature (`Interaction/Core/Signature.lean`) assigns each node its
+**Protocols are trees.** A protocol (`Interaction/Protocol.lean`) is a PolyFun free-monad
+tree with trivial leaves. A signature (`Interaction/Signature.lean`) assigns each node its
 role and its kind: a public message selects the continuation, while a challenge or an oracle
 message has a single continuation and is still recorded in the full transcript. Oracle positions
 carry their query interface. Because the continuation may depend on earlier public messages, the
 number of remaining rounds and their message types can depend on the transcript so far.
-Sequential composition (`Interaction/Core/Composition.lean`) lets the suffix depend on the
+Sequential composition (`Interaction/Composition.lean`) lets the suffix depend on the
 prefix. A fixed `ProtocolSpec` cannot express such protocols directly.
 
 **The verifier is passive and sees oracle messages only through queries.** A prover is a PolyFun
-strategy, and a sampler draws the challenges (`Interaction/Core/Reduction.lean`). An oracle
-verifier (`Interaction/Core/OracleVerifier.lean`) decides once, after the interaction, from the
+strategy, and a sampler draws the challenges (`Interaction/Reduction.lean`). An oracle
+verifier (`Interaction/OracleVerifier.lean`) decides once, after the interaction, from the
 verifier view: the transcript with oracle payloads erased (`viewSig`). Its decision has query
 access to the input oracles and the oracle messages of the completed path, never their raw
 values. Rejection is a returned verdict (`none`), distinct from a failure of the ambient oracle
-computation (`Interaction/Core/Execution.lean`). This is the IOP access discipline enforced by
+computation (`Interaction/Execution.lean`). This is the IOP access discipline enforced by
 typing rather than by convention.
 
 **Output oracles are maps with a law.** An `OracleBundle` pairs a query specification with
@@ -1444,17 +1444,17 @@ counterpart of the guarantee-transport obligation in Section 6.4: in the legacy 
 message type imposes the promise on every prover, while here it must be stated.
 
 **Security notions.** Round-by-round soundness and knowledge
-(`Interaction/Core/Security/RoundByRound.lean`) are stated over every prefix of the tree,
+(`Interaction/Security/RoundByRound.lean`) are stated over every prefix of the tree,
 including prefixes that an honest run reaches with probability zero. Each local bound fixes a
 prefix and then draws one challenge; the draw may depend on the whole earlier history.
-`Interaction/Core/Security/Implications.lean` proves that round-by-round soundness implies
+`Interaction/Security/Implications.lean` proves that round-by-round soundness implies
 soundness, with error the supremum over shape paths of the sum of the challenge-node errors along
 the path. Knowledge uses a `KnowledgeStateFunction` with named backward witness maps, the
 analogue of the legacy `KnowledgeStateFunction`, which generalizes WARP's knowledge-state
 formulation [BCFW25] (Section 3.2).
-`Interaction/Core/Security/KnowledgeComposition.lean` composes these bounds across a
-deterministic middle claim. `Interaction/Core/Security/StateRestoration.lean` states
-`Interaction.Core.StateRestoration.stateRestoration_knowledge_soundness` for one specified game:
+`Interaction/Security/KnowledgeComposition.lean` composes these bounds across a
+deterministic middle claim. `Interaction/Security/StateRestoration.lean` states
+`Interaction.StateRestoration.stateRestoration_knowledge_soundness` for one specified game:
 fixed-round public-coin protocols with salts, run against a cached random oracle with
 restoration. Its premises are local bounds for the knowledge state function, an explicit map
 `readOut` for the adversary's terminal witness, and a total query bound $Q$ on the adversary. Its

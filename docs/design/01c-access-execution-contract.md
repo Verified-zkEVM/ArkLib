@@ -7,7 +7,7 @@ The [naming contract](01b-type-tree-rename-cutover.md) and
 [core claim design](02-oracle-reduction-core.md) remain in force. The accumulated-access layer
 (`Oracle/Access`) and the single-run execution layer (`Oracle/Execution`, `Oracle/Protocol`) of
 the deleted old layer satisfied this contract. The interaction core under
-`ArkLib/Interaction/Core/` replaces them with passive oracle verifiers, which query oracles only
+`ArkLib/Interaction/` replaces them with passive oracle verifiers, which query oracles only
 in the final decision; the [migration list](interaction-layer/migration-list.md) maps each
 deleted module to its core counterpart.
 

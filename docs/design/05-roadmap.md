@@ -1,7 +1,7 @@
 # Interaction framework roadmap
 
 **Last reviewed:** 2026-11-04. This page lists the remaining design and implementation work for
-ArkLib's interaction layer (`ArkLib/Interaction/Core/`). The
+ArkLib's interaction layer (`ArkLib/Interaction/`). The
 [current-status page](00-current-status.md) records what has landed and the supported dependency
 versions. Protocol-level status, including the legacy-layer protocol developments, is on the
 public [roadmap](../../ROADMAP.md), which also states the

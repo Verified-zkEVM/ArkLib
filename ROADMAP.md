@@ -9,7 +9,7 @@ layer; this page does not repeat it.
 ## Priority: replace the legacy layer
 
 ArkLib has two layers: the legacy layer (`ArkLib/OracleReduction/`) and the interaction layer,
-whose core (`ArkLib/Interaction/Core/`) is meant to replace it.
+whose core (`ArkLib/Interaction/`) is meant to replace it.
 [README.md](README.md#two-layers) gives an overview, and
 [Limitations of the legacy layer](docs/design/legacy-layer-limitations.md) explains why the
 replacement is needed.
@@ -19,7 +19,7 @@ The legacy layer is sorry-free and reasonably stable. Every protocol and commitm
 (`liftContext`, in [`OracleReduction/LiftContext/`](ArkLib/OracleReduction/LiftContext/)) and
 the [legacy security notions](#framework). The interaction layer is not yet ready to replace it:
 it has generic execution, composition and security theory, and one protocol, Sum-check
-([`ProofSystem/Sumcheck/Core/`](ArkLib/ProofSystem/Sumcheck/Core/)).
+([`ProofSystem/Sumcheck/`](ArkLib/ProofSystem/Sumcheck/)).
 
 Developing the interaction layer is now the project's priority. The migration has three stages.
 
@@ -31,12 +31,12 @@ Developing the interaction layer is now the project's priority. The migration ha
    prove a theorem that relates the legacy protocol, embedded into the interaction layer, to the
    interaction-layer protocol, so that the port is checked to be faithful. Sum-check is the first
    instance
-   ([`Sumcheck/Core/LegacyEquivalence.lean`](ArkLib/ProofSystem/Sumcheck/Core/LegacyEquivalence.lean)).
-   `Sumcheck.Core.run_eq_legacy` shows that the run of the interaction-layer compatibility
+   ([`Sumcheck/LegacyEquivalence.lean`](ArkLib/ProofSystem/Sumcheck/LegacyEquivalence.lean)).
+   `Sumcheck.run_eq_legacy` shows that the run of the interaction-layer compatibility
    verifier is the run of the embedded legacy verifier, as a program, and
-   `Sumcheck.Core.verifier_agrees` carries completeness, soundness, knowledge soundness and
+   `Sumcheck.verifier_agrees` carries completeness, soundness, knowledge soundness and
    round-by-round soundness across that equality. No theorem relates the interaction-layer
-   `indexedVerifier` to the legacy verifier. `ArkLib/Interaction/Core/Legacy/` embeds individual
+   `indexedVerifier` to the legacy verifier. `ArkLib/Interaction/Legacy/` embeds individual
    legacy protocols, provers, verifiers and oracle verifiers into the core, but no general
    embedding of the legacy `OracleReduction` layer into the core exists yet. Spartan and Plonk
    are complete in the legacy layer (below); their interaction-layer versions are not yet written.
@@ -65,11 +65,11 @@ entry says so, the specification is not claimed to be executable.
   `Sumcheck.Spec.oracleVerifier_knowledgeSoundness`, with the sum of those errors. The reduction
   `Sumcheck.Spec.oracleReduction` is noncomputable; `Sumcheck.Impl.Computable.generalOracleProver`
   computes the same messages and outputs as its honest prover. In the interaction layer
-  ([`Sumcheck/Core/`](ArkLib/ProofSystem/Sumcheck/Core/)):
-  `Sumcheck.Core.perfectCompleteness`, `Sumcheck.Core.indexedVerifier_soundness` with error
-  `n * (deg / |R|)`, and `Sumcheck.Core.indexedVerifier_rbrSoundness` with error `deg / |R|` per
+  ([`Sumcheck/`](ArkLib/ProofSystem/Sumcheck/)):
+  `Sumcheck.perfectCompleteness`, `Sumcheck.indexedVerifier_soundness` with error
+  `n * (deg / |R|)`, and `Sumcheck.indexedVerifier_rbrSoundness` with error `deg / |R|` per
   challenge, with a CompPoly-backed computable verifier and honest prover,
-  `Sumcheck.Core.Computable.verifier` and `Sumcheck.Core.Computable.honestProver`.
+  `Sumcheck.Computable.verifier` and `Sumcheck.Computable.honestProver`.
 - **FRI** ([`ProofSystem/Fri/`](ArkLib/ProofSystem/Fri/)): perfect and noisy-input completeness,
   soundness, round-by-round soundness, and knowledge soundness for a named straightline
   extractor: `Fri.Spec.perfect_completeness`, `Fri.Spec.soundness` and
@@ -148,7 +148,7 @@ entry says so, the specification is not claimed to be executable.
   zero tests.
 - **Fiat-Shamir**: the basic transform and its completeness under fixed tables and a lazy random
   oracle ([`OracleReduction/FiatShamir/`](ArkLib/OracleReduction/FiatShamir/)).
-- **Interaction layer** ([`ArkLib/Interaction/Core/`](ArkLib/Interaction/Core/)): execution,
+- **Interaction layer** ([`ArkLib/Interaction/`](ArkLib/Interaction/)): execution,
   soundness, round-by-round soundness, knowledge state functions and their composition, and
   state-restoration knowledge soundness for fixed-round public-coin protocols with error
   `(Q + k) * error`. No concrete protocol consumes the knowledge state functions yet, and
@@ -160,7 +160,7 @@ entry says so, the specification is not claimed to be executable.
   budgets (`VCVio.OracleComp.QueryTracking.MeasuredProgram`), their
   [knowledge-soundness adapter](ArkLib/OracleReduction/Security/Resources.lean), and native measured
   stages for knowledge state functions and state restoration
-  (`Interaction/Core/Security/{MeasuredExtraction,StateRestorationBudget}.lean`).
+  (`Interaction/Security/{MeasuredExtraction,StateRestorationBudget}.lean`).
   Composition (`MeasuredStages.programAlong`) preserves the named extractor and sums its stage
   budgets. The
   [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states their accounting scope.

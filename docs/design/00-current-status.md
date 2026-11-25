@@ -1,7 +1,7 @@
 # Current status
 
 **Last reviewed:** 2026-11-04. **Scope:** the supported dependency baseline, what the interaction
-layer (`ArkLib/Interaction/Core/`) provides on `main`, and the legacy-layer results that
+layer (`ArkLib/Interaction/`) provides on `main`, and the legacy-layer results that
 bear on it. The
 [README](../../README.md#two-layers) gives an overview of the two layers,
 [Limitations of the legacy layer](legacy-layer-limitations.md) explains why the
@@ -100,7 +100,7 @@ commutativity assumption). It must not restore the legacy unrestricted compositi
 | Error-bearing and cost-bearing reduction package | incomplete | `ReductionWithCost` handles cost; later clients still need explicit additive/substitution error transport |
 
 A core verdict is an `Option`: `none` is rejection. `OracleVerifier.decideCatching` in
-`Interaction/Core/Oracle/LoggedExecution.lean` keeps the label of a handler failure. The core keeps
+`Interaction/Oracle/LoggedExecution.lean` keeps the label of a handler failure. The core keeps
 missing runtime mass separate from rejection. PolyFun supplies the failure-to-return mass observed by
 ArkLib.
 
@@ -110,18 +110,20 @@ temporary adapter with an upstream issue and a deletion test.
 
 ### ArkLib
 
-The interaction layer is the interaction core under `ArkLib/Interaction/Core/` (namespace
-`Interaction.Core`), with acceptance clients under `ArkLibTest/Interaction/Core/`. Its Sumcheck
-client lives under `ArkLib/ProofSystem/Sumcheck/Core/`, with acceptance clients under
-`ArkLibTest/ProofSystem/Sumcheck/Core/`. Naming follows
+The interaction layer is the interaction core under `ArkLib/Interaction/` (namespace
+`Interaction`), with acceptance clients under `ArkLibTest/Interaction/`. Its Sumcheck
+client lives under `ArkLib/ProofSystem/Sumcheck/`, with acceptance clients under
+`ArkLibTest/ProofSystem/Sumcheck/`. Naming follows
 [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md).
 
-The old generic layer under `ArkLib/Interaction/Oracle/`, with `Interaction/Reduction.lean` and
-`Interaction/CompositionSoundness.lean`, has been deleted. The
+The old generic layer has been deleted. At commit `8472a86f` it consisted of
+`ArkLib/Interaction/Oracle/`, `Interaction/Reduction.lean` and
+`Interaction/CompositionSoundness.lean`, beside the core's former `Core/` directory. Some of those
+paths now hold core modules. The
 [migration list](interaction-layer/migration-list.md) maps every deleted module and test to its
 core counterpart or records why it was retired.
 
-| Area | Modules under `Interaction/Core/` | Landed in |
+| Area | Modules under `Interaction/` | Landed in |
 |---|---|---|
 | Signatures, protocol trees, transcripts and outcomes | `Signature`, `Protocol`, `Transcript` | #1473, #1564 |
 | Provers, passive verifiers and plain execution | `Reduction`, `Execution`, `OracleVerifier` | #1473 |
@@ -137,7 +139,7 @@ core counterpart or records why it was retired.
 | Agreeing oracle verifiers | `Security/Agreement` | #1484 |
 | Embedding of legacy reductions and security transfers | `Legacy/*`, `LegacyAppend`; see [legacy-embedding.md](interaction-layer/legacy-embedding.md) | #1480, #1481 |
 
-Sumcheck on the interaction layer is `Sumcheck.Core`. The frozen Sumcheck interaction layer under
+Sumcheck on the interaction layer is the Sumcheck core. The frozen Sumcheck interaction layer under
 `ArkLib/ProofSystem/Sumcheck/Interaction/` has been deleted; its last version is at commit
 [`7cd7828303`](https://github.com/Verified-zkEVM/ArkLib/tree/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/).
 [`interaction-layer/sumcheck.md`](interaction-layer/sumcheck.md) lists the core modules, gives the
@@ -167,9 +169,9 @@ challenges, over a finite commutative semiring with `IsDomain`. Sumcheck has a `
 since its polynomial is an input oracle. Its knowledge-soundness theorems in `Knowledge` and
 `RoundByRound` are transfers from the legacy layer.
 
-`Sumcheck.Core` now owns a protocol and verifier generic in the message carrier and its
+The Sumcheck core now owns a protocol and verifier generic in the message carrier and its
 evaluation operation (`protocolOn`, `verifierOn`). The existing polynomial names remain their
-Mathlib instances. `Sumcheck.Core.Computable` specializes the same definitions to bounded
+Mathlib instances. `Sumcheck.Computable` specializes the same definitions to bounded
 CompPoly coefficient arrays, Horner evaluation and CompPoly multivariate input data.
 `run_eq_interpret` relates complete runs through the proof-only message interpretation and
 challenge-query renaming, preserving private continuations and effects. Its `perfectCompleteness`
@@ -192,7 +194,7 @@ correspondence covers arbitrary individual degree bounds and finite domains. `in
 the original CompPoly polynomial directly; its equality to the mathematical oracle behavior is a
 separate theorem.
 
-`Sumcheck.Core.Computable.honestProver` uses this construction in ordinary prover continuations.
+`Sumcheck.Computable.honestProver` uses this construction in ordinary prover continuations.
 `interpretProver_honestProver` identifies it with the mathematical core honest prover; the run
 correspondence transfers support completeness and perfect completeness on true inputs. The
 compiled client evaluates the retained CompPoly input directly.
@@ -234,7 +236,7 @@ keep some indices in `Type`; ArkLib accepts both restrictions as upstream limits
 
 The deleted Sumcheck interaction layer applied the old composition theorem in
 [`Sumcheck/Interaction/Composition`](https://github.com/Verified-zkEVM/ArkLib/blob/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean).
-`Sumcheck.Core` does not use it. `FoldComposition` and `BehaviorComposition` prove append
+The Sumcheck core does not use it. `FoldComposition` and `BehaviorComposition` prove append
 equations for its folds and public intervals, and its soundness proofs go through round-by-round
 soundness.
 
@@ -244,8 +246,8 @@ arbitrary claims. This does not relate the legacy-layer and interaction-layer se
 
 ### Interaction-layer security
 
-The security modules live under `ArkLib/Interaction/Core/Security/`, with acceptance clients
-under `ArkLibTest/Interaction/Core/Security/`. The disposition records in
+The security modules live under `ArkLib/Interaction/Security/`, with acceptance clients
+under `ArkLibTest/Interaction/Security/`. The disposition records in
 [`interaction-layer/`](interaction-layer/migration-list.md) map every result of the deleted
 old-layer security modules to these modules.
 
@@ -264,7 +266,7 @@ old-layer security modules to these modules.
 run's path turns the round-by-round state from false to true. `Implications` bounds soundness by
 the supremum, over shape paths, of the sum of the node errors along the path. The bounds apply to
 any lawful monad with distribution semantics, and the run may lose mass in a subprobability monad.
-`Sumcheck.Core.indexedVerifier_soundness` applies `OracleVerifier.soundness_of_rbrSoundness_uniform`.
+`Sumcheck.indexedVerifier_soundness` applies `OracleVerifier.soundness_of_rbrSoundness_uniform`.
 
 **Knowledge state functions.** A `KnowledgeStateFunction` carries intermediate witnesses and names,
 at every move, a backward map from a witness after the move to a witness before it.
@@ -338,7 +340,7 @@ ring switching, Spartan, Plonk, Hachi and others) use this layer; their status i
   Fiat–Shamir skeleton (#1368) were removed; state restoration now exists only in the interaction layer.
 
 These legacy results do not relate the legacy-layer and interaction-layer security games. For
-Sumcheck, `Sumcheck.Core.LegacyEquivalence` relates the compatibility verifier to the embedded legacy
+Sumcheck, `Sumcheck.LegacyEquivalence` relates the compatibility verifier to the embedded legacy
 verifier and transfers security notions along that equivalence.
 
 The preserved `archive/oracle-reduction-v2-pre-split` branch contains the earlier interaction-layer

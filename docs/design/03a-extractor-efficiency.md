@@ -88,13 +88,13 @@ notion needs its own statement of what its unbounded form means, with its actual
 | Terminal knowledge soundness | `Extractor.Straightline` | Relation soundness, by the collapse above | Complete execution of the named extractor in its declared access model |
 | Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; the backward witness maps of an interaction-layer `KnowledgeStateFunction` | The legacy notion coincides with round-by-round soundness of the induced languages when input-witness types are inhabited; interaction-layer certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
 | Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event; with a classical selector, the input statement lies in the language of the input relation | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
-| State-restoration knowledge soundness | The backward maps of an interaction-layer `KnowledgeStateFunction`, applied along the restored path | The bound of `Interaction.Core.StateRestoration.stateRestoration_knowledge_soundness` for that named extractor; nothing about its cost | Extraction together with replay and simulation of the restoration oracle; the measured wrapper adds declared stage accounting, not a replay or running-time bound |
+| State-restoration knowledge soundness | The backward maps of an interaction-layer `KnowledgeStateFunction`, applied along the restored path | The bound of `Interaction.StateRestoration.stateRestoration_knowledge_soundness` for that named extractor; nothing about its cost | Extraction together with replay and simulation of the restoration oracle; the measured wrapper adds declared stage accounting, not a replay or running-time bound |
 
 **Round-by-round knowledge soundness.** The legacy existential notion `rbrKnowledgeSoundness`
 admits a round-by-round extractor built directly by classical choice, so it carries no efficiency
 content. Bare interaction-layer knowledge state functions assert no extraction efficiency;
-`Interaction.Core.MeasuredKnowledgeStateFunction` adds an operation-count budget for each stage,
-under the scope limits stated in `Interaction/Core/Security/MeasuredExtraction.lean`.
+`Interaction.MeasuredKnowledgeStateFunction` adds an operation-count budget for each stage,
+under the scope limits stated in `Interaction/Security/MeasuredExtraction.lean`.
 `MeasuredStages.programAlong` composes these named programs along a completed transcript.
 `programAlong_budget_le` bounds their sum by the leaf bound, the step bound once per move and the
 root bound under `BudgetAtMost`;
@@ -249,7 +249,7 @@ is independent of the proposed execution backend and family-level claims.
 ### State-restoration resource contract
 
 `MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform` in
-`Interaction/Core/Security/StateRestorationBudget.lean` keeps the original game and extractor.
+`Interaction/Security/StateRestorationBudget.lean` keeps the original game and extractor.
 For every admissible input and completed transcript, it also proves:
 
 - for **every** adversary witness, running the composed stage program on the witness converted by
@@ -293,7 +293,7 @@ for that layer's extractor shape. The generic core lives in
 and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
 certificate remains proposed. Interaction-layer games consume the same measured programs through
-their own adapter: `ArkLib/Interaction/Core/Security/MeasuredExtraction.lean` defines
+their own adapter: `ArkLib/Interaction/Security/MeasuredExtraction.lean` defines
 `KnowledgeStateFunction.MeasuredStages` and `MeasuredKnowledgeStateFunction`, and
 `StateRestorationBudget.lean` supplies the
 [state-restoration resource contract](#state-restoration-resource-contract).
