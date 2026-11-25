@@ -223,37 +223,32 @@ Neither P1 nor P2 excludes any part of these contracts.
 
 ## Remaining interface restrictions
 
-[Implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md) states:
-“Its input query index and oracle-node query type must remain in `Type`.” This applies to
-`OracleVerifier.runWithLog`, whose returned full log records bundle queries. It does not
-restrict R26/R27, which use general `OracleBundle` as inputs to `OracleVerifier.run`.
-`OracleBundle.ofFamily` keeps the shared `OracleInterface` specialization, with its `ReaderM`
-coupling. That specialization no longer restricts general verifier inputs. The shared interface
-is unchanged. The source sum, tensor, lifting and raw-routing canaries also keep all their
-old-layer universe instantiations.
+Implementation note 18 in
+[IMPLEMENTATION-NOTES.md](../interaction-rebuild/IMPLEMENTATION-NOTES.md) kept the input query
+index and the oracle-node query type of `OracleVerifier.runWithLog` in `Type`, because its
+returned full log records bundle queries. The runner now logs the decision through its path with
+`OracleComp.subst`, and both may lie in any universe. R26/R27 were never restricted: they use
+general `OracleBundle` inputs to `OracleVerifier.run`. `OracleBundle.ofFamily` keeps the shared
+`OracleInterface` specialization, with its `ReaderM` coupling. That specialization no longer
+restricts general verifier inputs. The shared interface is unchanged. The source sum, tensor,
+lifting and raw-routing canaries also keep all their old-layer universe instantiations.
 
 ## Cost universes
 
-[`OracleMap.withAmbient_worstCaseCost`][cost] has independent backing-data universes `dX`, `dY`.
-Its ambient index, both bundle-query indices, response/result types and cost carrier `ω` remain
-in `Type`. This was a restriction of the VCVio cost API at the previous pin
-`f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`, and ArkLib accepts it as an upstream limit.
-[VCVio#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the cost API universes,
-and the current pin `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3` includes it. ArkLib has not yet
-generalized the wrapper. It is separate from
-`OracleInterface` and from the runner's requirement that returned values match its monad universe.
-Protocol semantics do not force query indices and costs to universe zero.
+[`OracleMap.withAmbient_worstCaseCost`][cost] takes its ambient index in `uι`, its bundle-query
+indices in `uX` and `uY`, its backing data in `dX` and `dY`, its responses and results in `u`, and
+its cost carrier `ω` in `w`. The responses and the results share one universe because `simulateQ`
+folds into a monad over the response universe; this is the runner's requirement that returned
+values match its monad universe, not a restriction of the cost API.
 
-At the previous pin, lifting the limit needed these changes. VCVio#1220 made the VCVio ones:
-
-- Generalize `VCVio/OracleComp/QueryTracking/CostModel.lean`: the variables at line 63, `CostModel`
-  at line 86, `costDist`, and `WorstCaseCostBound` at line 217. Query-index, response/result and
-  cost universes must be explicit, with any necessary relation stated instead of fixing zero.
-- Generalize the corresponding cost-writer helpers and their simulation/support laws.
-- Generalize `CostModel/Simulation.lean`'s variables at line 32 and
-  `WorstCaseCostBound.simulateQ` to those universes.
-- Then generalize this branch's wrapper using the upstream theorem. It needs no separate cost
-  semantics and no local proof of the upstream simulation law.
+At the previous VCVio pin `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db` the VCVio cost API had a
+single universe, so the wrapper kept all of these in `Type`, and ArkLib accepted that as an
+upstream limit. [VCVio#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalized the
+cost API universes (`CostModel.lean`, its cost-writer helpers and `WorstCaseCostBound.simulateQ`
+in `CostModel/Simulation.lean`). The pin `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3` includes it,
+and the wrapper now applies `WorstCaseCostBound.simulateQ` and `WorstCaseCostBound.mono` at
+independent universes. `routed_suffix_budget` in `ArkLibTest/Interaction/Oracle/QueryCost.lean`
+holds at every oracle-node query universe, and a test applies it with queries in `Type 1`.
 
 [cost]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/Oracle/Cost.lean#L47
 

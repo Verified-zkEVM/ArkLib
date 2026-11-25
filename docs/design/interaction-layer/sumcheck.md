@@ -675,7 +675,7 @@ The remaining restrictions come from these parent interfaces:
 
 | New API | Parent interface | Required restriction |
 |---|---|---|
-| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Bundle-query indices and oracle-node queries are small because the full log is a small run output. Input data and output queries remain independent. |
+| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | None beyond the runner contract: the full-log runner logs the decision through its path with `OracleComp.subst`, so bundle-query indices and oracle-node queries may lie in any universe. Input data and output queries remain independent. |
 | `Agrees.run_eq` and `run_cast` | `OracleVerifier.run` in `Interaction/OracleVerifier.lean` | Ambient and output indices share the move/response universe `u`. Output statements and oracle data are values in `Type u`; node and output queries remain independent. |
 | Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightLine`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. Input data and queries remain independent. Pure RBR witness carriers retain the owner's independent universes. |
 | Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem` in `Interaction/Legacy/Security.lean` | The parent convenience adapter fixes claims to `Type 0`; the tree adapter accepts larger claims. The underlying `Problem` and classical security interfaces already accept larger claims. |

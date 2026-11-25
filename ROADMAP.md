@@ -151,7 +151,9 @@ entry says so, the specification is not claimed to be executable.
 - **Interaction layer** ([`ArkLib/Interaction/`](ArkLib/Interaction/)): execution,
   soundness, round-by-round soundness, knowledge state functions and their composition, and
   state-restoration knowledge soundness for fixed-round public-coin protocols with error
-  `(Q + k) * error`. No concrete protocol consumes the knowledge state functions yet, and
+  `(Q + k) * error`. The round-by-round bounds take challenge moves in any universe, and the
+  full-log runner and the cost transfer take query indices in any universe. No concrete protocol
+  consumes the knowledge state functions yet, and
   randomized state restoration is in progress (below). The old generic layer
   (`ArkLib/Interaction/Oracle/`) has been deleted; the
   [migration list](docs/design/interaction-layer/migration-list.md) records its replacements. The

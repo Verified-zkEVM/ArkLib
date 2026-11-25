@@ -62,7 +62,7 @@ interfaces, if record D1's open point puts them there) may remain in the generic
 | Input statement `S`, honest input witness `W` and input oracle index `I` in the security wrappers | independent | Arguments of the run |
 | Intermediate witnesses of a knowledge state function | independent | The extractors are plain functions, not runner computations |
 | Input oracle index and query types of the extraction games and models | independent | `runWithAmbientLog` returns only ambient logs |
-| Input query index and oracle-node query type of the full-log `OracleVerifier.runWithLog` | `Type` (unresolved) | The returned log records bundle queries |
+| Input query index and oracle-node query type of the full-log `OracleVerifier.runWithLog` | independent | The runner logs the decision through its path with `OracleComp.subst`, so the returned log may be larger than the answers |
 
 The plain polynomial lies in `PFunctor.{u+1, u}`, and the oracle polynomial lies in
 `PFunctor.{max (u+1) (q+1), u}`. The ambient monad is not enlarged because a position contains
@@ -71,9 +71,9 @@ a type: positions are never values of the monad.
 Every component that is not a run output takes its own universe as far as the definitions allow,
 and only run outputs and oracle responses are tied to `u`. A prover's ambient index is also tied:
 `OracleComp ambient : Type u → Type (max uι u)` is the prover's monad and the runner needs
-`Type u → Type u`. The remaining unresolved restriction is the full-log runner: it returns
-bundle query indices,
-which must lie in `Type` for a small computation to return their log. Input bundle data has
+`Type u → Type u`. The full-log runner returns bundle query indices in any universe: it logs the
+decision through its path with VCVio's `pathLogResult` and routes it with `OracleComp.subst`, so
+its log need not lie in the answer universe. Input bundle data has
 its own universe through the general `OracleBundle` input API. `OracleBundle.ofFamily` specializes
 that API for `OracleFamily`; only this specialization retains `OracleInterface`'s shared
 realization/response universe. Oracle nodes have an independent query universe `q`, with

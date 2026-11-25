@@ -154,8 +154,8 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 
 ## 18. Run outputs are tied to the monad universe
 
-**Status: equivalent for independent input data and query universes; an accepted upstream limit
-for the full-log oracle runner's large-query interface.** Record D2's ledger puts moves and participant
+**Status: equivalent for independent input data and query universes, including the full-log
+oracle runner's large-query interface.** Record D2's ledger puts moves and participant
 outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
 component that is not a run output its own universe as far as the definitions allow: the ambient
 index of a verifier, the input bundle's index and data, the output oracle index `J p` of an
@@ -224,22 +224,22 @@ available; Sumcheck specializes them through `rbrKnowledgeSoundnessOfNodes`. The
 marks both reviewed contracts equivalent and records the ordinary-import universe clients.
 Neither P1 nor P2 retires an Agreement output or witness contract.
 
-**Accepted upstream limit: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the
-decision's full query log, which records bundle queries. Its input query index and oracle-node
-query type must remain in `Type`. A large-query full-log API needs a parent logging interface
-whose log can be returned by the small computation monad. VCVio
-[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which can
-lift this limit. The VCVio pin includes it since the `f1a4a8ec` bump, and rebuilding `runWithLog` on
-it is follow-up work. Input data has its independent universe
-even in this API, because the log never stores realizations. Only this full-log API keeps the
-restriction, for clients that need the bundle queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
+**Resolved upstream limit: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the
+decision's full query log, which records bundle queries. Until ArkLib adopted VCVio
+[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236), its input query index and oracle-node
+query type had to remain in `Type`, because the small computation monad returned the log. The
+runner now logs the decision through its intrinsic path with `pathLogResult` and routes the
+logged program with `OracleComp.subst`, so both may lie in any universe. `executeWith` takes the
+decision trace in its own universe for this. Input data has its independent universe, because
+the log never stores realizations. Extraction does not use the full log. `OracleVerifier.runWithAmbientLog` puts the logger on the
 ambient handler before adding the pure bundle handler, so its result holds only two ambient
 logs, and it takes the input statement, the input index and the input and output query types in
 any universe, including input data and oracle-node queries.
-`map_runWithLog_eq_runWithAmbientLog` proves that, at small input universes, it is
-the full-log run with the decision log restricted to its ambient entries, and
-`map_fst_runWithAmbientLog` proves at the general signature that forgetting both logs gives
-`OracleVerifier.run`. The oracle extraction game, the classical oracle extraction models and their
+`freeM_map_runWithLog_eq_runWithAmbientLog` proves at any universes that it is the full-log run
+with the decision log restricted to its ambient entries, and `freeM_map_fst_runWithLog` that
+forgetting both logs of the full-log run gives `OracleVerifier.run`. With small input universes,
+`map_runWithLog_eq_runWithAmbientLog` states the first with `<$>`. `map_fst_runWithAmbientLog`
+proves at the general signature that forgetting both ambient logs gives `OracleVerifier.run`. The oracle extraction game, the classical oracle extraction models and their
 marginal lemmas run on it at the general signature. `Extractor.OracleStraightLine` and
 `Extractor.OracleTranscriptOnly` take a statement in any universe and have no input-family
 parameter, so they never had the restriction.
@@ -264,8 +264,7 @@ universe of their conclusions: they lift that certificate and hold for every `uK
 interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted
 witnesses returned by the extraction games are values of the runner and stay in `Type`. The
 restrictions that remain are the retained runner contracts above (ambient index and experiment state
-in `Type`, output data, output index and extracted witnesses in `Type`) and the large-query
-full-log interface, which ArkLib accepts as an upstream limit. Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
+in `Type`, output data, output index and extracted witnesses in `Type`). Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
 
 `ArkLibTest/Interaction/UniverseCanary.lean` instantiates the independent universes against
 `Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
@@ -628,14 +627,15 @@ universe. KC-318 and KC-322 now send the frozen oracle message `m : ULift.{1} Na
 `ULift.{2} (Fin (m.down + 1))` witnesses and prove extraction returns six. The measured code
 takes `P : PFunctor.{uA, 0}`, so its positions also have their own universe.
 
-Probability bounds use the small-move instance of this general certificate. VCVio's
-`ProbComp : Type → Type` at the previous pin `f8d7f8ef` (`VCVio/OracleComp/ProbComp/Basic.lean:31`)
-forced `sampleAt` to return a small move. The current pin makes `ProbComp` universe-polymorphic,
-and ArkLib has not yet generalized `sampleAt`. `challengeSpec` (`Interaction/Protocol.lean:69–71`)
-returns `Move l`, whose universe is
-shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
-remaining probabilistic limitation. It does not restrict pure backward maps or large output
-and seam witnesses in the verifier wrappers.
+Probability bounds take moves in any universe. VCVio's `ProbComp : Type → Type` at the previous
+pin `f8d7f8ef` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forced `sampleAt` to return a small
+move, because `challengeSpec` (`Interaction/Protocol.lean:69–71`) returns `Move l`, whose universe
+is shared by challenges and public/oracle messages. The current pin makes `ProbComp`
+universe-polymorphic, and `sampleAt`, `rbrSoundness`, `rbrKnowledgeSoundness`, `BoundedAt` and
+`LocallyBounded` now take large moves. Statements written with `Pr{}`, the plain and oracle
+verifier wrappers and `challengeQueryImpl` keep moves in `Type`; the disposition record's
+PROB-031 and the module docstring of `Security/RoundByRound.lean` give the reasons. None of these
+restricts pure backward maps or large output and seam witnesses in the verifier wrappers.
 
 ### Acceptance evidence
 
@@ -801,7 +801,7 @@ universes.
 ## 21. Round-by-round soundness implies soundness for lawful distribution monads
 
 The probability-free escape theory is polymorphic in protocol positions and moves. Only the
-probability bounds require small moves. `Security/RoundByRound.lean` defines the shared full-prefix
+probability bounds stated with `Pr{}` require small moves. `Security/RoundByRound.lean` defines the shared full-prefix
 interface `PrefixDraw`, its oracle-program form `PrefixChallengePrograms`, `prefixSampleAt`,
 and `prefixSampler` with its execution laws. Node-indexed draws embed through
 `PrefixDraw.ofNodes`, which ignores history and agrees with `sampleAt`.

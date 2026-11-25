@@ -231,8 +231,10 @@ prover's ambient queries and every query of the decision, and forgetting both lo
 move, and `Oracle/QueriesByMoveLaws.lean` proves that erasing the entries gives the aggregate logs.
 `OracleMap.withAmbient_worstCaseCost` in `Oracle/Cost.lean` transfers a weighted cost bound through
 an oracle map with VCVio's `WorstCaseCostBound.simulateQ`. The full-log runner and the cost lemma
-keep some indices in `Type`; ArkLib accepts both restrictions as upstream limits, which the
-[migration list](interaction-layer/migration-list.md#unresolved-rows-and-options) records.
+take their query indices in any universe. The runner logs the decision with VCVio's
+`OracleComp.subst` and `pathLogResult`, and the
+[migration list](interaction-layer/migration-list.md#resolved-upstream-limits) records how ArkLib
+lifted these former upstream limits.
 
 The deleted Sumcheck interaction layer applied the old composition theorem in
 [`Sumcheck/Interaction/Composition`](https://github.com/Verified-zkEVM/ArkLib/blob/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean).
@@ -302,8 +304,9 @@ own the remaining client and resource-closure work.
 state restoration. The `privateCoins` forms are the only randomized-adversary state-restoration
 results; coin sampling interleaved with oracle queries is not covered. No protocol under
 `ArkLib/ProofSystem/` instantiates the interaction-layer knowledge or state-restoration
-certificates yet; their clients are the acceptance examples. Probability bounds use small moves
-only, an upstream limit of VCVio's `ProbComp` that the module docstring of
+certificates yet; their clients are the acceptance examples. The round-by-round probability bounds
+take moves in any universe; statements written with `Pr{}`, the plain and oracle verifier wrappers
+and `challengeQueryImpl` keep moves in `Type`, as the module docstring of
 `Security/RoundByRound.lean` records. The [design roadmap](05-roadmap.md) lists this work.
 
 ## Legacy oracle-reduction layer

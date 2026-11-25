@@ -79,7 +79,8 @@ canary.
     the same answers can charge differently. In the answer-only fixture, `repeated` issues two
     source queries for each routed query and `identity` issues one, and both give the same
     answers ([claimRow3]). A client that needs a charge bound proves it separately, for
-    example with `OracleMap.withAmbient_worstCaseCost` from #1476 in the universes it supports.
+    example with `OracleMap.withAmbient_worstCaseCost` from #1476, which takes query indices in any
+    universe.
     The stage API does not depend on the resource contracts of #1528.
   - The binary `OracleVerifier.append` keeps independent query universes for its input, middle
     and output families. So do the binary decision laws ([appendReject] to [appendMeasure]).

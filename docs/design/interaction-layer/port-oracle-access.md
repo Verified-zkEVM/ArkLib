@@ -358,17 +358,17 @@ separates response, bundle-query and data universes without changing the shared
 coupling entries are therefore closed by the parent, as recorded in
 [implementation note 18][universes].
 
-The remaining item is the large-query result interface of the full-log runner. ArkLib accepts it
-as an upstream limit (departures entry 18); [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236)
-adds `OracleComp.subst`, which can lift it. The VCVio pin includes it since the `f1a4a8ec` bump,
-and adopting it is follow-up work.
-[OracleVerifier.runWithLog][logged-runner] returns bundle-query entries through a small
-computation monad. Returning large query indices in that complete heterogeneous log needs a parent
-logging interface with a sufficiently large result universe. `runWithAmbientLog` and
-`runWithAmbientQueriesByMove` keep independent input-data, input-query and node-query universes by
-returning only ambient decision queries. The full-log [loggedSummary][q-log-summary] keeps the
-strongest supported output-query universe. P1 and P2 impose no universe restrictions. Run outputs
-continue to follow the parent monad's value universe, as documented in note 18.
+The large-query result interface of the full-log runner, this port's last open item, is now
+resolved (departures entry 18). [OracleVerifier.runWithLog][logged-runner] logs the decision
+through its path with VCVio's `pathLogResult` and routes it with `OracleComp.subst`
+([VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236)). Its complete log may therefore
+record large query indices, and its input index and node-query universes are independent.
+`runWithAmbientLog` and `runWithAmbientQueriesByMove` keep their independent input-data,
+input-query and node-query universes. The full-log [loggedSummary][q-log-summary] keeps the
+strongest supported output-query universe, and `largeIndexLog_eq` in
+`ArkLibTest/Interaction/Oracle/QueryCost.lean` runs the full-log runner with an input index in
+`Type 1`. P1 and P2 impose no universe restrictions. Run outputs continue to follow the parent
+monad's value universe, as documented in note 18.
 
 ## Definition-site transparency
 

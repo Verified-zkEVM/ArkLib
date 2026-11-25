@@ -369,13 +369,15 @@ The required checks are the targeted reverse-dependency build and guards relativ
 `feat/interaction-migrate-core`. They check Core consumers, source restrictions, frozen paths,
 imports and documentation. They do not claim a whole-library build or validation.
 
-## Remaining probabilistic move restriction
+## Probabilistic move universes
 
-This restriction affects sampling and probability bounds, not the frozen pure extraction assertions.
+This row concerns sampling and probability bounds, not the frozen pure extraction assertions. It was
+an accepted upstream limit until ArkLib adopted the universe-polymorphic `ProbComp` of the
+`f1a4a8ec` VCVio pin.
 
 | ID | Forcing parent declarations | Status | Exact target and limitation |
 | --- | --- | --- | --- |
-| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Interaction/Protocol.lean:69–71`) | accepted upstream limit (large-move probability: `ProbComp` and shared challenge/message universe; [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic; the pin includes it since `f1a4a8ec`, and ArkLib has not adopted it yet) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; At the previous pin `ProbComp` could not sample these moves at `u > 0`. Measured specializations also keep small stage inputs, as recorded above. |
+| PROB-031 | [`ProbComp : Type → Type`, previous VCVio pin `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Interaction/Protocol.lean:69–71`) | equivalent for bounds stated with `𝒟[·]`; statements written with `Pr{}` keep moves in `Type` | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic. `sampleAt`, `rbrSoundness`, `rbrKnowledgeSoundness`, `BoundedAt`, `LocallyBounded`, their node-indexed forms and the knowledge-composition lemmas built on them now take moves in any universe; `typeCoin_rbrSoundness` and `typeCoin_locallyBounded` in `ArkLibTest/Interaction/Security.lean` check a challenge move in `Type 1`. Three groups keep moves in `Type`. Statements written with `Pr{}` keep them because VCVio's `Pr{}` needs results in `Type`: the `Security/Implications.lean` flip, run and soundness lemmas, `FreshChallenges` and the `CompositionSoundness` seam. The plain and oracle verifier wrappers keep them because `Verifier.validAcceptance_iff_support` uses VCVio support lemmas that need results in the answer universe of the uniform oracle. `challengeQueryImpl` keeps them because `SampleableType` is a class on `Type`. Measured specializations also keep small stage inputs, as recorded above. |
 
 [r1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Oracle/Security/Knowledge.lean#L37
 [r2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/Security/RoundByRound.lean#L368
