@@ -37,6 +37,8 @@ The weighted-degree bounds for `pderiv` are in `ArkLib.Data.MvPolynomial.Weighte
   derivative lowers the degree in its own variable by at least one and does not raise any
   individual degree.
 * `MvPolynomial.coeff_pderiv_sub_single_one`: the coefficient identity behind the exact results.
+* `MvPolynomial.pderiv_polynomial_aeval_X_of_ne`: a univariate polynomial in `X j` has zero
+  derivative in every other variable.
 * `MvPolynomial.pderiv_ne_zero_of_natCast_ne_zero` and
   `MvPolynomial.degreeOf_pderiv_eq_sub_one_of_natCast_ne_zero`: nonvanishing and exact degree loss
   under the cast hypothesis `(degreeOf i p : R) ≠ 0`.
@@ -194,6 +196,13 @@ theorem degreeOf_iterate_pderiv_le (i j : σ) (a : ℕ) (p : MvPolynomial σ R) 
   | succ a ih =>
       rw [Function.iterate_succ_apply']
       exact (degreeOf_pderiv_le i j _).trans ih
+
+/-- A univariate polynomial in `X j` has zero partial derivative in another variable `X i`. -/
+theorem pderiv_polynomial_aeval_X_of_ne {A : Type*} [CommSemiring A] [Algebra R A] {i j : σ}
+    (hij : i ≠ j) (p : Polynomial R) :
+    pderiv i (Polynomial.aeval (X j : MvPolynomial σ A) p) = 0 := by
+  exact (((pderiv i : Derivation A (MvPolynomial σ A) (MvPolynomial σ A)).restrictScalars
+    R).map_aeval p (X j)).trans (by simp [pderiv_X_of_ne hij.symm])
 
 /-- A polynomial that does not depend on `X i` has zero partial derivative in `X i`. -/
 theorem pderiv_eq_zero_of_degreeOf_eq_zero {i : σ} {p : MvPolynomial σ R}
