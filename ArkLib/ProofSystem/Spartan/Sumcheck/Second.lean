@@ -68,14 +68,14 @@ def lens : OracleStatement.ExecutableLens
     (Sumcheck.Spec.OracleStatement R pp.ℓ_n 2) where
   projStmt s := ⟨s.c, Fin.elim0⟩
   materializeInput s o _ := polynomial pp s o
-  simulateInput s q := queryPolynomial pp s q.2
+  simulateInput s := ⟨fun q => queryPolynomial pp s q.2⟩
   simulateInput_eq s o q := by
     change simulateQ (simOracle0 (OracleStatement (R := R) pp) o)
       (queryPolynomial pp s q.2) = eval q.2 (polynomial pp s o).val
     exact queryPolynomial_realizes pp s o q.2
   liftStmt s out := ⟨s, out.challenges, out.target⟩
   materializeOutput o _ := o
-  simulateOutput q := liftM (OracleSpec.query q)
+  simulateOutput.toFun q := liftM (OracleSpec.query q)
   simulateOutput_eq _ _ _ := rfl
 
 variable [Nontrivial R]
@@ -129,7 +129,8 @@ def queryImpl (s : Batching.Statement (R := R) pp) :
     QueryImpl (oSpec + ([Sumcheck.Spec.OracleStatement R pp.ℓ_n 2]ₒ +
       [(Sumcheck.Spec.pSpec R 2 pp.ℓ_n).Message]ₒ))
       (OracleComp (oSpec + ([OracleStatement (R := R) pp]ₒ +
-        [(Sumcheck.Spec.pSpec R 2 pp.ℓ_n).Message]ₒ)))
+        [(Sumcheck.Spec.pSpec R 2 pp.ℓ_n).Message]ₒ))) where
+  toFun
   | .inl q => liftM (OracleSpec.query
       (spec := oSpec + ([OracleStatement (R := R) pp]ₒ +
         [(Sumcheck.Spec.pSpec R 2 pp.ℓ_n).Message]ₒ)) (Sum.inl q))
@@ -145,7 +146,7 @@ omit [Nontrivial R] [SampleableType R] in
 theorem queryImpl_eq (s : Batching.Statement (R := R) pp) :
     queryImpl pp oSpec s = OracleVerifier.liftContextQueryImpl (oSpec := oSpec)
       (pSpec := Sumcheck.Spec.pSpec R 2 pp.ℓ_n) (lens pp) s := by
-  funext q
+  ext q : 1
   rcases q with q | q
   · rfl
   · rcases q with q | q <;> rfl

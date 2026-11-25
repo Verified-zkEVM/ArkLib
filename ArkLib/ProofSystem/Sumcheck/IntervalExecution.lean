@@ -56,8 +56,8 @@ theorem intervalVerifier_run_zero {ι : Type} (ambient : OracleSpec ι)
           Outcome oracleSig (protocol R deg 0) (fun _ => Out)
             (fun _ => RoundStatement R n ⟨0 + start, by omega⟩ ×
               (∀ i, PolynomialData R n deg i)))) <$>
-        simulateQ (fun q => liftM
-          ((ambient + challengeSpec oracleSig (protocol R deg 0)).query (.inl q))) prover := by
+        simulateQ ⟨fun q => liftM
+          ((ambient + challengeSpec oracleSig (protocol R deg 0)).query (.inl q))⟩ prover := by
   rw [intervalVerifier_run, Interpreted.verifier_run]
   change (do
     let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (OutP := fun _ => Out) (OutC := fun _ => PUnit)

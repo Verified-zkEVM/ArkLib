@@ -46,7 +46,8 @@ def prover (setup : List Nat) (message hidden : Nat) :
   pure ⟨(message, hidden), pure hidden⟩
 
 /-- Log each ambient event without assuming effect commutativity; `pairSend` has no challenges. -/
-def logger : QueryImpl (ambient + challengeSpec oracleSig pairSend) (StateM (List Nat))
+def logger : QueryImpl (ambient + challengeSpec oracleSig pairSend) (StateM (List Nat)) where
+  toFun
   | .inl tag => modify (· ++ [tag])
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim

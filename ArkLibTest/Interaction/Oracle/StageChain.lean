@@ -71,7 +71,7 @@ abbrev responseBundle (p : Path responseProtocol) :=
 /-- Export the negation of the `Bool` input oracle. -/
 def negate (p : Path responseProtocol) : OracleMap (responseBundle p) booleans where
   f x _ := !(show Bool from x.1 ())
-  impl _ := do
+  impl.toFun _ := do
     let b : Bool ← liftM ((responseBundle p).spec.query (.inl ⟨(), ()⟩))
     pure !b
   law _ _ := by
@@ -158,7 +158,8 @@ def prover (answer hidden : Nat) : Prover oracleSig ambient threeProtocol
       pure (close (responseProver memory)))
 
 /-- Log each ambient event. -/
-def logger : QueryImpl ambient (StateM (List Nat))
+def logger : QueryImpl ambient (StateM (List Nat)) where
+  toFun
   | tag => modify (· ++ [tag])
 
 /-- The composed run of the three stages under the logger. -/
@@ -448,7 +449,7 @@ statement. -/
 /-- The scalar oracle with data `n`, whose one query answers `n`, from any bundle. -/
 def statementOracle (n : Nat) (R : OracleBundle.{0, uX, dX}) : OracleMap R inputs where
   f _ _ := n
-  impl _ := pure n
+  impl.toFun _ := pure n
   law _ _ := rfl
 
 /-- Accept the input statement and export it as a scalar oracle. -/
@@ -555,7 +556,7 @@ wide family and exports the small `booleans`, which enters the chain lifted and 
 def wideInterface : OracleInterface.{0, 1} Bool where
   Query := ULift.{1} Unit
   toOC.spec := ULift.{1} Unit →ₒ Bool
-  toOC.impl _ := read
+  toOC.impl.toFun _ := read
 
 /-- One Boolean oracle whose query lies in `Type 1`. -/
 def wideBooleans : OracleFamily.{0, 0, 1} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
@@ -564,7 +565,7 @@ def wideBooleans : OracleFamily.{0, 0, 1} Unit (fun _ => Bool) := ⟨fun _ => wi
 def wideParity (messages : OracleBundle.{0, uX, dX}) :
     OracleMap (OracleBundle.sum inputs messages) wideBooleans where
   f x _ := (show Nat from x.1 ()) % 2 == 0
-  impl _ := do
+  impl.toFun _ := do
     let value : Nat ← liftM ((OracleBundle.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (value % 2 == 0)
   law _ _ := by
@@ -591,7 +592,7 @@ def narrowVerifier :
     pure (some (b && stmt))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ => liftM ((pathBundle wideBooleans done p).spec.query (.inl ⟨(), ⟨()⟩⟩))
+      impl := ⟨fun _ => liftM ((pathBundle wideBooleans done p).spec.query (.inl ⟨(), ⟨()⟩⟩))⟩
       law := fun _ _ => rfl }
 
 /-- The small input family with its query lifted to `Type 1`. -/

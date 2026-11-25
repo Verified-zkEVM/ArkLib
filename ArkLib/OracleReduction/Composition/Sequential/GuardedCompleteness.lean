@@ -85,7 +85,7 @@ theorem completeness_iff_of_guarded_verifier
       if G.check stmt q.1.1 then pure (q.1, G.out stmt q.1.1) else failure) := by
     apply OptionT.ext
     simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
-      PFunctor.Handler.liftTarget_self, bind_pure_comp, simulateQ_map, StateT.run'_eq,
+      QueryImpl.liftTarget_self, bind_pure_comp, simulateQ_map, StateT.run'_eq,
       StateT.run_map, Functor.map_map, OptionT.mk_bind, OptionT.run_bind,
       OptionT.run_monadLift, monadLift_self, OptionT.run_mk, Option.elimM_map,
       Option.elim_some, liftM_bind, bind_assoc]

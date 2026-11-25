@@ -51,7 +51,8 @@ section Trace
 variable {R : Type} [Semiring R] [Sub R] [Inv R] [DecidableEq R]
 
 /-- Record each requested addition and multiplication. -/
-def fieldOpLog : QueryImpl (ArithmeticSpec R) (StateM (List (FieldOp R)))
+def fieldOpLog : QueryImpl (ArithmeticSpec R) (StateM (List (FieldOp R))) where
+  toFun
   | .add a b => do modify (· ++ [.add a b]); pure ⟨a + b, rfl⟩
   | .mul a b => do modify (· ++ [.mul a b]); pure ⟨a * b, rfl⟩
   | op => pure (arithmeticAnswer op)

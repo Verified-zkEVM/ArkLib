@@ -29,7 +29,7 @@ variable {R : Type} [CommSemiring R] {n d deg : ℕ}
 /-- The evaluation interface whose data is an arbitrary total function, with no polynomial
 realization assumption. -/
 def evaluationFamily (R : Type) (X : Type) : OracleFamily Unit (fun _ => X → R) where
-  interface _ := { Query := X, toOC := { spec := X →ₒ R, impl x := do return (← read) x } }
+  interface _ := { Query := X, toOC := { spec := X →ₒ R, impl.toFun x := do return (← read) x } }
 
 /-- The remaining indexed sum of arbitrary original evaluation behavior. -/
 noncomputable def behaviorRoundSum (D : Fin d → R) (i : Fin (n + 1)) (c : Fin i → R)
@@ -139,8 +139,8 @@ theorem behaviorIntervalVerifier_run_zero (D : Fin d → R) {ι : Type} (ambient
           Outcome oracleSig (protocol R deg 0) (fun _ => Out)
             (fun _ => RoundStatement R n ⟨0 + start, by omega⟩ ×
               (∀ _ : Unit, (Fin n → R) → R)))) <$>
-        simulateQ (fun q => liftM
-          ((ambient + challengeSpec oracleSig (protocol R deg 0)).query (.inl q))) prover := by
+        simulateQ ⟨fun q => liftM
+          ((ambient + challengeSpec oracleSig (protocol R deg 0)).query (.inl q))⟩ prover := by
   rw [behaviorIntervalVerifier_run, Interpreted.verifier_run]
   change (do
     let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (OutP := fun _ => Out) (OutC := fun _ => PUnit)

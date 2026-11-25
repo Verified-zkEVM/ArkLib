@@ -204,9 +204,10 @@ theorem LocallyBoundedOfNodes.append
     (h₂ : ∀ tr₁, (F₂ tr₁).LocallyBoundedOfNodes (draw₂ tr₁.path)
       (ε₂ tr₁.path))
     (hadm : ∀ tr₁ stmt, admissible stmt → admissible₂ tr₁ stmt) :
-    (append F₁ F₂ seam).LocallyBoundedOfNodes (combineDraw l s₁ s₂ draw₁ draw₂)
+    (append F₁ F₂ seam).LocallyBoundedOfNodes ⟨combineDraw l s₁ s₂ draw₁ fun p => draw₂ p⟩
       (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
-  simpa only [combinePrefixDraw_ofNodes, combinePrefixError_ofNodes] using
+  simpa only [combinePrefixDraw_ofNodes (draw₂ := fun p => draw₂ p),
+    combinePrefixError_ofNodes] using
     (LocallyBounded.append seam h₁ h₂ hadm)
 
 end security
@@ -309,8 +310,10 @@ theorem rbrKnowledgeSoundness_append {draw₁ : QueryImpl (challengeSpec l s₁)
     (hadm : ∀ tr₁ stmt, admissible stmt → admissible₂ tr₁ stmt)
     (glue : ∀ tr₁ stmt w, admissible stmt → relMid tr₁ stmt w → validMid stmt tr₁ w) :
     rbrKnowledgeSoundnessOfNodes.{_, _, uK} l (s₁.append s₂) admissible relIn validOutput
-      (combineDraw l s₁ s₂ draw₁ draw₂) (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
-  simpa only [combinePrefixDraw_ofNodes, combinePrefixError_ofNodes] using
+      ⟨combineDraw l s₁ s₂ draw₁ fun p => draw₂ p⟩
+      (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
+  simpa only [combinePrefixDraw_ofNodes (draw₂ := fun p => draw₂ p),
+    combinePrefixError_ofNodes] using
     (rbrKnowledgeSoundness_append_prefix l (draw₁ := PrefixDraw.ofNodes l draw₁)
       (draw₂ := fun tr => PrefixDraw.ofNodes l (draw₂ tr.path))
       (ε₁ := PrefixError.ofNodes l ε₁)
@@ -344,9 +347,10 @@ theorem rbrKnowledgeSoundness_append_of_mid {draw₁ : QueryImpl (challengeSpec 
     (hout : ∀ stmt tr₁ tr₂ w, validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w →
       validOutput₂ tr₁ (mid stmt tr₁) tr₂ (outWitness stmt tr₁ tr₂ w)) :
     rbrKnowledgeSoundnessOfNodes.{_, _, uK} l (s₁.append s₂) admissible relIn validOutput
-      (combineDraw l s₁ s₂ draw₁ draw₂)
+      ⟨combineDraw l s₁ s₂ draw₁ fun p => draw₂ p⟩
       (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
-  simpa only [combinePrefixDraw_ofNodes, combinePrefixError_ofNodes] using
+  simpa only [combinePrefixDraw_ofNodes (draw₂ := fun p => draw₂ p),
+    combinePrefixError_ofNodes] using
     (rbrKnowledgeSoundness_append_of_mid_prefix l (draw₁ := PrefixDraw.ofNodes l draw₁)
       (draw₂ := fun tr => PrefixDraw.ofNodes l (draw₂ tr.path))
       (ε₁ := PrefixError.ofNodes l ε₁)
@@ -623,9 +627,10 @@ theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambi
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
     Verifier.rbrKnowledgeSoundnessOfNodes.{uS, uW, uK, uO} (V₁.append V₂)
     impl admissible relIn relOut
-      (combineDraw plainSig s₁ s₂ draw₁ draw₂)
+      ⟨combineDraw plainSig s₁ s₂ draw₁ fun p => draw₂ p⟩
       (combineDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
-  simpa only [combinePrefixDraw_ofNodes, combinePrefixError_ofNodes] using
+  simpa only [combinePrefixDraw_ofNodes (draw₂ := fun p => draw₂ p),
+    combinePrefixError_ofNodes] using
     (Verifier.rbrKnowledgeSoundness_append_prefix (draw₁ := PrefixDraw.ofNodes plainSig draw₁)
       (draw₂ := fun tr => PrefixDraw.ofNodes plainSig (draw₂ tr.path))
       (ε₁ := PrefixError.ofNodes plainSig ε₁)
@@ -680,9 +685,10 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
     Verifier.rbrKnowledgeSoundnessOfNodes.{uS, uW, uK, uO} (V₁.append V₂)
     impl admissible relIn relOut
-      (combineDraw plainSig s₁ s₂ draw₁ draw₂)
+      ⟨combineDraw plainSig s₁ s₂ draw₁ fun p => draw₂ p⟩
       (combineDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
-  simpa only [combinePrefixDraw_ofNodes, combinePrefixError_ofNodes] using
+  simpa only [combinePrefixDraw_ofNodes (draw₂ := fun p => draw₂ p),
+    combinePrefixError_ofNodes] using
     (Verifier.rbrKnowledgeSoundness_append_of_pure_prefix
     (draw₁ := PrefixDraw.ofNodes plainSig draw₁)
       (draw₂ := fun tr => PrefixDraw.ofNodes plainSig (draw₂ tr.path))

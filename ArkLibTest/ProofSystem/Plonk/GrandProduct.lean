@@ -45,10 +45,12 @@ private def wires (c : Fin 3) : GeneratorBatch.Poly F 2 :=
 
 private def publicInput : GeneratorBatch.Poly F 2 := ⟨0, by simp⟩
 
-private def noQueries : QueryImpl []ₒ Id := fun q => nomatch q
+private def noQueries : QueryImpl []ₒ Id where
+  toFun q := nomatch q
 
 private def grandProductChallenges : QueryImpl
-    ([]ₒ + [(GrandProduct.pSpec F 2).Challenge]ₒ'challengeOracleInterface) Id
+    ([]ₒ + [(GrandProduct.pSpec F 2).Challenge]ₒ'challengeOracleInterface) Id where
+  toFun
   | .inl q => nomatch q
   | .inr ⟨⟨0, _⟩, _⟩ => (1, 4)
   | .inr ⟨⟨1, h⟩, _⟩ => nomatch h
@@ -64,7 +66,8 @@ private def grandProductVerified :=
       circuit cosets publicInput []ₒ).toVerifier.verify ((), wires) grandProductRun.1).run).run
 
 private def batchChallenges : QueryImpl
-    ([]ₒ + [(Batch.pSpec F).Challenge]ₒ'challengeOracleInterface) Id
+    ([]ₒ + [(Batch.pSpec F).Challenge]ₒ'challengeOracleInterface) Id where
+  toFun
   | .inl q => nomatch q
   | .inr ⟨⟨0, _⟩, _⟩ => pure (3 : F)
 
@@ -91,7 +94,8 @@ private def batchVirtualQuery (z : F) : F :=
       batchRun.1.challenges ⟨.inr (), z⟩)).run
 
 private def quotientChallenges : QueryImpl
-    ([]ₒ + [(Quotient.pSpec 16 primitive (by decide)).Challenge]ₒ'challengeOracleInterface) Id
+    ([]ₒ + [(Quotient.pSpec 16 primitive (by decide)).Challenge]ₒ'challengeOracleInterface) Id where
+  toFun
   | .inl q => nomatch q
   | .inr ⟨⟨0, h⟩, _⟩ => nomatch h
   | .inr ⟨⟨1, _⟩, _⟩ => pure (5 : F)

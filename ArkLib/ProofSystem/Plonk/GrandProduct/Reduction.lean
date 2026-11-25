@@ -145,10 +145,10 @@ def outputSimulation : OracleOutputSimulation oSpec (OStmtIn F n) (OStmtOut F n)
     (pSpec F n) where
   materializeOutput chals a messages :=
     outputOracles ω hω hn cs L pi a (chals ⟨0, rfl⟩) (messages ⟨1, rfl⟩)
-  simulateOutputQuery chals
+  simulateOutputQuery chals := ⟨fun
     | ⟨.inl c, z⟩ => queryWire oSpec c z
     | ⟨.inr (.inl _), z⟩ => queryAccumulator oSpec z
-    | ⟨.inr (.inr j), z⟩ => queryResidual ω hω hn cs L pi oSpec (chals ⟨0, rfl⟩) j z
+    | ⟨.inr (.inr j), z⟩ => queryResidual ω hω hn cs L pi oSpec (chals ⟨0, rfl⟩) j z⟩
   simulateOutputQuery_eq chals a messages
     | ⟨.inl c, z⟩ => simulateQ_queryWire oSpec a messages c z
     | ⟨.inr (.inl _), z⟩ => simulateQ_queryAccumulator oSpec a messages z

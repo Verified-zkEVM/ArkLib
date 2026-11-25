@@ -43,7 +43,8 @@ def accept : Verifier ambient done Unit (fun _ => Unit) where
     pure ()
 
 def traceHandler : QueryImpl (ambient + challengeSpec plainSig (done.append (fun _ => done)))
-    (StateM (List Nat))
+    (StateM (List Nat)) where
+  toFun
   | .inl n => do
     modify (· ++ [n])
     pure ⟨⟩
@@ -79,7 +80,8 @@ def oracleProver : Prover oracleSig noAmbient
   pure ⟨fun n => n + 5, pure ⟨⟩⟩
 
 def oracleHandler : QueryImpl
-    (noAmbient + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
+    (noAmbient + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id where
+  toFun
   | .inl i => i.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim
@@ -155,12 +157,14 @@ def secondMessage : Transcript oracleSig tree := ⟨fun n => 7 * n, ⟨⟩⟩
 def twoStageProver : Prover oracleSig labels twoStages (fun _ => PUnit) :=
   pure ⟨firstMessage.1, pure ⟨secondMessage.1, pure ⟨⟩⟩⟩
 
-def labelHandler : QueryImpl labels (StateM (List Nat)) := fun n => do
-  modify (· ++ [n])
-  pure n
+def labelHandler : QueryImpl labels (StateM (List Nat)) where
+  toFun n := do
+    modify (· ++ [n])
+    pure n
 
 def twoStageHandler : QueryImpl (labels + challengeSpec oracleSig twoStages)
-    (StateM (List Nat))
+    (StateM (List Nat)) where
+  toFun
   | .inl n => labelHandler n
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
@@ -214,7 +218,8 @@ def unitProver : Prover oracleSig (Unit →ₒ Bool) (emptyTree.append (fun _ =>
     (fun _ => PUnit) := pure ⟨⟩
 
 def bitHandler : QueryImpl
-    ((Unit →ₒ Bool) + challengeSpec oracleSig (emptyTree.append (fun _ => emptyTree))) Id
+    ((Unit →ₒ Bool) + challengeSpec oracleSig (emptyTree.append (fun _ => emptyTree))) Id where
+  toFun
   | .inl _ => true
   | .inr ⟨n, _⟩ => n.elim
 

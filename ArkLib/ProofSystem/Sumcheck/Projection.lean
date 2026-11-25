@@ -97,7 +97,7 @@ costs are out of scope here. -/
 noncomputable def projectedMap (i : Fin n) (c : Fin i.castSucc → R) :
     OracleMap (polynomialFamily R n deg) (roundFamily R deg) where
   f data _ := projectedRoundPolynomial D i c (data ())
-  impl q := projectedQuery D i c q.2
+  impl.toFun q := projectedQuery D i c q.2
   law data q := simulateQ_projectedQuery D i c data q.2
 
 /-- Concrete data exported by the projection is the honest round polynomial. -/
@@ -116,24 +116,25 @@ theorem projectedMap_sum (i : Fin n) (stmt : RoundStatement R n i.castSucc)
 /-- The projected input handler answers by running the projection's actual query implementation
 against the original input handler. -/
 noncomputable def projectedInput (i : Fin n) (c : Fin i.castSucc → R)
-    (data : ∀ j, PolynomialData R n deg j) : QueryImpl (R →ₒ R) Id := fun r =>
-  simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data)
-    ((projectedMap (deg := deg) D i c).impl ⟨(), r⟩)
+    (data : ∀ j, PolynomialData R n deg j) : QueryImpl (R →ₒ R) Id where
+  toFun r :=
+    simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data)
+      ((projectedMap (deg := deg) D i c).impl ⟨(), r⟩)
 
 /-- The derived handler agrees at every query with honest projected polynomial evaluation. -/
 theorem projectedInput_eq (i : Fin n) (c : Fin i.castSucc → R)
     (data : ∀ j, PolynomialData R n deg j) :
-    projectedInput D i c data = fun r =>
-      (pure ((projectedRoundPolynomial D i c (data ())).val.eval r) : Id R) :=
-  funext (simulateQ_projectedQuery D i c data)
+    projectedInput D i c data = ⟨fun r =>
+      (pure ((projectedRoundPolynomial D i c (data ())).val.eval r) : Id R)⟩ :=
+  QueryImpl.ext (simulateQ_projectedQuery D i c data)
 
 /-- Simulating any standalone oracle program through the derived handler is identical to
 answering from the projected polynomial. This includes every standalone verifier decision. -/
 theorem simulateQ_projectedInput {α : Type} (i : Fin n) (c : Fin i.castSucc → R)
     (data : ∀ j, PolynomialData R n deg j) (program : OracleComp (R →ₒ R) α) :
     simulateQ (projectedInput D i c data) program =
-      simulateQ (fun r => (pure ((projectedRoundPolynomial D i c (data ())).val.eval r) :
-        Id R)) program := by
+      simulateQ ⟨fun r => (pure ((projectedRoundPolynomial D i c (data ())).val.eval r) :
+        Id R)⟩ program := by
   rw [projectedInput_eq]
 
 section Execute
@@ -198,7 +199,7 @@ theorem projectedExecute_closed {ι : Type} (ambient : OracleSpec ι)
       projectedExecute D ambient impl challenge i stmt data
         (projectedRoundPolynomial D i stmt.challenges (data ())) =
       (fun r => some ((projectedRoundPolynomial D i stmt.challenges (data ())).val.eval r,
-        r, projectedInput D i stmt.challenges data)) <$> challenge := by
+        r, ⇑(projectedInput D i stmt.challenges data))) <$> challenge := by
   rw [projectedExecute_honest_eq D ambient impl challenge i stmt data h, Functor.map_map]
   congr 1
   funext r

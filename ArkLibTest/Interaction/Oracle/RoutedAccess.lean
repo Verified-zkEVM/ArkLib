@@ -61,7 +61,7 @@ abbrev rawBundle := pathBundle none' combined combinedPath
 /-- Export twice the prefix message, reading the same prefix oracle twice. -/
 def view : OracleMap prefixBundle exported where
   f x _ := (show Nat from x.2 (.inl ⟨⟩)) + (show Nat from x.2 (.inl ⟨⟩))
-  impl _ := do
+  impl.toFun _ := do
     let left : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     let right : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
     pure (left + right)
@@ -86,7 +86,7 @@ def suffixProgram : OracleComp (ambient + suffixBundle.spec) Nat := do
 /-- The empty output map. -/
 def noOutput (In : OracleBundle.{0, uI, uD}) : OracleMap In none' where
   f _ i := i.elim
-  impl q := q.1.elim
+  impl.toFun q := q.1.elim
   law _ q := q.1.elim
 
 /-- The suffix decision runs `suffixProgram`; it has no output oracles. -/
@@ -191,7 +191,8 @@ example {α : Type} (program : OracleComp (ambient + prefixBundle.spec) α) :
   future_rejected program
 
 /-- Answer each ambient tag with itself; there are no challenges. -/
-def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id
+def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id where
+  toFun
   | .inl n => pure n
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h

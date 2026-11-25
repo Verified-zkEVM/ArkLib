@@ -36,12 +36,14 @@ abbrev IntervalMemory (R : Type) (n : ℕ) (stop : Fin (n + 1)) :=
 /-- The honest completeness handler. It answers each draw with the supplied challenge program at
 the current claim. It then uses the input polynomial `p` to compute the honest successor claim and
 stores it, so the next challenge callback receives that claim. -/
+@[simps]
 noncomputable def intervalAdaptiveDraw (D : Fin d → R) (p : R⦃≤ deg⦄[X Fin n])
     {stop : Fin (n + 1)} (count : ℕ)
     (challenges : (i : Fin n) → RoundStatement R n i.castSucc → ProbComp R) :
     QueryImpl (challengeSpec oracleSig (protocol R deg count))
-      (StateT (IntervalMemory R n stop) ProbComp) := fun c memory =>
-  match memory with
+      (StateT (IntervalMemory R n stop) ProbComp) where
+  toFun c memory :=
+    match memory with
   | ⟨0, _⟩ => pure (cast (protocol_challengeRange count c).symm 0, memory)
   | ⟨k + 1, st⟩ => do
       let r ← challenges st.index st.statement

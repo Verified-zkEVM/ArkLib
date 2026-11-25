@@ -28,7 +28,7 @@ variable {R M : Type} {evaluate : M → R → R}
 /-- Interpreting a check uses the message's supplied evaluation function. -/
 def roundVerdict {S T : Type} (evaluate : M → R → R)
     (check : S → R → OptionT (OracleComp (R →ₒ R)) T) (stmt : S) (msg : M) (r : R) :
-    Option T := simulateQ (r := Id) (fun (x : R) => (pure (evaluate msg x) : Id R))
+    Option T := simulateQ (r := Id) ⟨fun (x : R) => (pure (evaluate msg x) : Id R)⟩
       (check stmt r).run
 
 /-- The verdict of all interpreted messages, in chronological order. -/
@@ -46,7 +46,7 @@ def decision {State : ℕ → Type} {T : Type} (checks : RoundChecks R State)
       OracleComp (oracleMessageSpec (protocol R M evaluate k) p) (Option T)
   | 0, st, _, _ => pure (some (finish st))
   | k + 1, st, p, v => do
-      let mid ← simulateQ (headQuery p) (checks k st (viewChallenge v)).run
+      let mid ← simulateQ ⟨headQuery p⟩ (checks k st (viewChallenge v)).run
       match mid with
       | none => return none
       | some mid => simulateQ (tailLift p) (decision checks finish k mid (tailPath p) (tailView v))
@@ -66,7 +66,7 @@ theorem simulate_decision {State : ℕ → Type} {T : Type} (checks : RoundCheck
     rw [decision, simulateQ_bind]
     have hh : simulateQ (oracleMessageImpl (protocol R M evaluate (k + 1)) (⟨msg, r, rest⟩ :
         Transcript oracleSig (protocol R M evaluate (k + 1))))
-        (simulateQ (headQuery (Transcript.path (l := oracleSig) (s := _) ⟨msg, r, rest⟩))
+        (simulateQ ⟨headQuery (Transcript.path (l := oracleSig) (s := _) ⟨msg, r, rest⟩)⟩
           (checks k st r).run) = roundVerdict evaluate (checks k) st msg r :=
       QueryImpl.simulateQ_simulateQ_eq_of_apply (fun x => simulate_head _ x) _
     change (simulateQ _ (simulateQ _ (checks k st r).run) >>= _) = _
@@ -115,8 +115,8 @@ theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I →
     (prover : Prover oracleSig ambient (protocol R M evaluate k) Out) :
     (verifier ambient inputs checks finish k).run st data prover = (do
       let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (protocol R M evaluate k)
-        (prover.simulate (fun q => liftM
-          ((ambient + challengeSpec oracleSig (protocol R M evaluate k)).query (.inl q))))
+        (prover.simulate ⟨fun q => liftM
+          ((ambient + challengeSpec oracleSig (protocol R M evaluate k)).query (.inl q))⟩)
         (sampler oracleSig _ (fun c => liftM
           ((ambient + challengeSpec oracleSig (protocol R M evaluate k)).query (.inr c))))
       pure (⟨tr, out, (verdict evaluate checks finish k st tr).map (fun t => (t, data))⟩ :

@@ -111,10 +111,12 @@ theorem simulateQ_queryRetained (f : ∀ i, OStmtIn F n i)
       pure (OracleInterface.answer (f q.1) q.2) := rfl
 
 /-- Reindex the component's input queries into the retained residual family. -/
+@[simps]
 def componentQueryImpl : QueryImpl
     (oSpec + ([GeneratorBatch.OStmtIn F (GrandProduct.residualDegree n + 1) 3]ₒ +
       [(pSpec F).Message]ₒ))
-    (OracleComp (oSpec + ([OStmtIn F n]ₒ + [(pSpec F).Message]ₒ)))
+    (OracleComp (oSpec + ([OStmtIn F n]ₒ + [(pSpec F).Message]ₒ))) where
+  toFun
   | .inl q => liftM (OracleSpec.query
       (spec := oSpec + ([OStmtIn F n]ₒ + [(pSpec F).Message]ₒ)) (.inl q))
   | .inr (.inl ⟨j, z⟩) => queryRetained oSpec ⟨.inr (.inr j), z⟩
@@ -158,9 +160,9 @@ theorem simulateQ_queryBatch (f : ∀ i, OStmtIn F n i)
 /-- Evaluation-only implementation of the retained and batched output oracles. -/
 def outputSimulation : OracleOutputSimulation oSpec (OStmtIn F n) (OStmtOut F n) (pSpec F) where
   materializeOutput chals f _ := outputOracles f (chals ⟨0, rfl⟩)
-  simulateOutputQuery chals
+  simulateOutputQuery chals := ⟨fun
     | ⟨.inl i, q⟩ => queryRetained oSpec ⟨i, q⟩
-    | ⟨.inr _, z⟩ => queryBatch (n := n) oSpec (chals ⟨0, rfl⟩) z
+    | ⟨.inr _, z⟩ => queryBatch (n := n) oSpec (chals ⟨0, rfl⟩) z⟩
   simulateOutputQuery_eq chals f messages
     | ⟨.inl i, q⟩ => simulateQ_queryRetained oSpec f messages ⟨i, q⟩
     | ⟨.inr _, z⟩ => simulateQ_queryBatch oSpec f messages (chals ⟨0, rfl⟩) z

@@ -24,14 +24,14 @@ theorem indexedDraw_eq_interpreted [SampleableType R] (k : ℕ) :
     indexedDraw (R := R) (deg := deg) k =
       Interpreted.draw (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) ($ᵗ R) k := by
   induction k with
-  | zero => funext ⟨node, _⟩; cases node
+  | zero => ext ⟨node, _⟩ : 1; cases node
   | succ k ih =>
-    funext ⟨node, h⟩
+    ext ⟨node, h⟩ : 1
     rcases node with ⟨⟩ | ⟨⟨⟩, node⟩
     · cases h
     · rcases node with ⟨⟩ | ⟨⟨⟩, node⟩
       · rfl
-      · exact congrFun ih ⟨node, h⟩
+      · exact QueryImpl.congr_fun ih ⟨node, h⟩
 
 omit [CommSemiring R] [DecidableEq R] in
 /-- Lifting the explicit challenge action lifts the whole fixed-shape draw family. -/
@@ -74,7 +74,7 @@ theorem interval_closed_execute [SampleableType R] (D : Fin d → R)
       QueryImpl.addLift (r := StateT σ ProbComp) impl
         (Interpreted.draw (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r)
           (liftM ($ᵗ R) : StateT σ ProbComp R) count) := by
-    funext q
+    ext q : 1
     rcases q with a | c
     · rfl
     · exact congrFun (interpretedDraw_lift

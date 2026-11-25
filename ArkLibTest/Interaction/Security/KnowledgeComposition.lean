@@ -142,7 +142,8 @@ def prover (choice : Bool) : Prover oracleSig OracleSpec.emptySpec combined (fun
 
 /-- Answers the only challenge of the composite with `b`. -/
 def handler (b : Bool) :
-    QueryImpl (OracleSpec.emptySpec + challengeSpec oracleSig combined) Id
+    QueryImpl (OracleSpec.emptySpec + challengeSpec oracleSig combined) Id where
+  toFun
   | .inl i => i.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, _⟩ => (pure b : Id Bool)
@@ -184,7 +185,8 @@ suffix, which has no challenge.
 -/
 
 /-- The prefix draws `true`. -/
-def firstDraw : QueryImpl (challengeSpec oracleSig firstProtocol) ProbComp
+def firstDraw : QueryImpl (challengeSpec oracleSig firstProtocol) ProbComp where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inl _⟩, _⟩ => (pure true : ProbComp Bool)
   | ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, h⟩ => nomatch h
@@ -196,9 +198,9 @@ def secondDraw (p : Path firstProtocol) :
   rcases p with ⟨_, _, choice, ⟨⟩⟩
   cases choice
   all_goals
-    exact fun c => match c with
+    exact ⟨fun c => match c with
       | ⟨.inl _, h⟩ => nomatch h
-      | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
+      | ⟨.inr ⟨_, n⟩, _⟩ => n.elim⟩
 
 /-- The prefix prover over `ProbComp`. -/
 def firstProbProver (choice : Bool) : Focal oracleSig ProbComp firstProtocol (fun _ => Nat) :=
@@ -238,10 +240,10 @@ example (p : Path firstProtocol) : (fun z => (secondMessage p.2.2.1 z.1, z.2.1))
 -- Disposition KC-249.
 /-- Appending the samplers samples the composite with the combined draw. -/
 theorem appendSampler_eq_combineDraw :
-    appendSampler firstProtocol suffix firstDraw secondDraw =
+    appendSampler firstProtocol suffix firstDraw (fun p => secondDraw p) =
       sampler oracleSig combined (combineDraw oracleSig firstProtocol suffix firstDraw
-        secondDraw) :=
-  appendOracleSampler_eq firstProtocol suffix firstDraw secondDraw
+        fun p => secondDraw p) :=
+  appendOracleSampler_eq firstProtocol suffix firstDraw fun p => secondDraw p
 
 /-! ### State functions -/
 
@@ -249,7 +251,8 @@ theorem appendSampler_eq_combineDraw :
 abbrev Stmt := Unit × (∀ i, NoData i)
 
 /-- Ambient queries have no answer. -/
-def impl : QueryImpl OracleSpec.emptySpec (StateT Unit ProbComp) := fun i => i.elim
+def impl : QueryImpl OracleSpec.emptySpec (StateT Unit ProbComp) where
+  toFun i := i.elim
 
 /-- The prefix accepts with a true claim exactly when the challenge is true. -/
 theorem firstVerifier_validAcceptance_iff (stmt : Stmt) (tr : Transcript oracleSig firstProtocol) :
@@ -588,7 +591,7 @@ theorem second_rbrKnowledgeSoundness (tr₁ : Transcript oracleSig firstProtocol
 -- Disposition KC-135.
 /-- The composite state function is locally bounded by the combined errors. -/
 example : compositeState.LocallyBoundedOfNodes
-    (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
+    ⟨combineDraw oracleSig firstProtocol suffix firstDraw fun p => secondDraw p⟩
     (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
       (fun _ _ => 1)) :=
   KnowledgeStateFunction.LocallyBoundedOfNodes.append suffixRoot_extract_validMid
@@ -607,7 +610,7 @@ theorem composed_rbrKnowledgeSoundness :
     (fun _ => True) (fun
     _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
-      (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
+      ⟨combineDraw oracleSig firstProtocol suffix firstDraw fun p => secondDraw p⟩
       (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
         (fun _ _ => 1)) :=
   rbrKnowledgeSoundness_append oracleSig first_rbrKnowledgeSoundness second_rbrKnowledgeSoundness
@@ -686,7 +689,7 @@ example :
     (fun _ => True) (fun
     _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
-      (combineDraw oracleSig firstProtocol suffix firstDraw secondDraw)
+      ⟨combineDraw oracleSig firstProtocol suffix firstDraw fun p => secondDraw p⟩
       (combineDraw (m := fun _ => ℝ≥0∞) oracleSig firstProtocol suffix (fun _ => 1)
         (fun _ _ => 1)) :=
   rbrKnowledgeSoundness_append_of_mid oracleSig (T := fun _ => Bool)
@@ -708,8 +711,8 @@ def indexedVerifier : Verifier OracleSpec.emptySpec indexedProtocol Nat (fun _ =
   decide n _ _ := pure n
 
 /-- The empty protocol has no challenge. -/
-def indexedDraw : QueryImpl (challengeSpec plainSig indexedProtocol) ProbComp :=
-  fun c => c.val.elim
+def indexedDraw : QueryImpl (challengeSpec plainSig indexedProtocol) ProbComp where
+  toFun c := c.val.elim
 
 /-- A standalone knowledge state function at statement `n`, with witness type `Fin (n + 1)`. -/
 def indexedCertificate : KnowledgeStateFunction plainSig indexedProtocol Nat
@@ -739,8 +742,8 @@ theorem indexed_composed :
       (indexedVerifier.append (fun _ => indexedVerifier)) impl
     (fun _ => True) (fun n (_ : Fin (n + 1)) => True)
     (fun n _ _ (w : Fin (n + 1)) => w.val ≤ n)
-    (combineDraw plainSig indexedProtocol (fun _ => indexedProtocol) indexedDraw
-      (fun _ => indexedDraw))
+    ⟨combineDraw plainSig indexedProtocol (fun _ => indexedProtocol) indexedDraw
+      (fun _ => indexedDraw)⟩
     (combineDraw (m := fun _ => ℝ≥0∞) plainSig indexedProtocol (fun _ => indexedProtocol)
       (fun _ => 0) (fun _ _ => 0)) := by
   apply Verifier.rbrKnowledgeSoundness_append_of_pure indexedVerifier (fun _ => indexedVerifier)
@@ -763,7 +766,8 @@ def challengeVerifier :
   decide _ _ v := pure (bitClaim v.1.1)
 
 /-- The challenge is uniform. -/
-def challengeDraw : QueryImpl (challengeSpec plainSig challengeProtocol) ProbComp
+def challengeDraw : QueryImpl (challengeSpec plainSig challengeProtocol) ProbComp where
+  toFun
   | ⟨.inl _, _⟩ => ($ᵗ Bool : ProbComp Bool)
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
@@ -808,8 +812,8 @@ theorem challenge_composed :
       (challengeVerifier.append (fun _ => indexedVerifier)) impl
       (fun _ => True) (fun _ (_ : Unit) => True)
       (fun _ tr _ (w : Fin (bitClaim tr.1 + 1)) => w.val ≤ bitClaim tr.1)
-      (combineDraw plainSig challengeProtocol (fun _ => indexedProtocol) challengeDraw
-        (fun _ => indexedDraw))
+      ⟨combineDraw plainSig challengeProtocol (fun _ => indexedProtocol) challengeDraw
+        (fun _ => indexedDraw)⟩
       (combineDraw (m := fun _ => ℝ≥0∞) plainSig challengeProtocol
         (fun _ => indexedProtocol) (fun _ => 0) (fun _ _ => 0)) := by
   apply Verifier.rbrKnowledgeSoundness_append_of_pure challengeVerifier
@@ -827,10 +831,11 @@ example : combineDraw plainSig challengeProtocol (fun _ => indexedProtocol) chal
 abbrev counterSpec : OracleSpec Unit := Unit →ₒ Nat
 
 /-- Each counter read returns its old value and increments the state. -/
-def counterHandler : QueryImpl counterSpec (StateT Nat ProbComp) := fun _ => do
-  let n ← get
-  set (n + 1)
-  pure n
+def counterHandler : QueryImpl counterSpec (StateT Nat ProbComp) where
+  toFun _ := do
+    let n ← get
+    set (n + 1)
+    pure n
 
 /-- The prefix returns the counter value that it reads. -/
 def counterFirst : Verifier counterSpec indexedProtocol Unit (fun _ => Nat) where
@@ -870,10 +875,11 @@ example : ∃ mid between,
 abbrev largeSpec : OracleSpec.{1, 0} PEmpty.{2} := fun _ => PUnit
 
 /-- A counter implementation in a monad whose result universe is larger than its input universe. -/
-def largeCounterHandler : QueryImpl counterSpec (StateT Nat (OracleComp largeSpec)) := fun _ => do
-  let n ← get
-  set (n + 1)
-  pure n
+def largeCounterHandler : QueryImpl counterSpec (StateT Nat (OracleComp largeSpec)) where
+  toFun _ := do
+    let n ← get
+    set (n + 1)
+    pure n
 
 /-- The decision-fold law permits an independently larger target monad universe. -/
 example : ((simulateQ largeCounterHandler

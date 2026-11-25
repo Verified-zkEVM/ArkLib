@@ -109,10 +109,12 @@ variable (M : Type) (eval : M → R → R)
 
 /-- Route the round message's queries to the first oracle node of a replicated protocol over the
 message carrier `M`. -/
+@[simps]
 def roundRouteOn (k : ℕ) (p : Path (protocolOn R M eval k)) :
     QueryImpl [(Spec.SingleRound.pSpec R deg).Message]ₒ
-      (OracleComp (oracleMessageSpec (protocolOn R M eval (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) :=
-  fun ⟨i, q⟩ => by
+      (OracleComp (oracleMessageSpec (protocolOn R M eval (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)) where
+  toFun
+  | ⟨i, q⟩ => by
     obtain rfl := Unique.eq_default i
     exact Interpreted.headQuery ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ q
 
@@ -121,11 +123,11 @@ carrier `M`. The legacy and node queries are both evaluation points in `R`. -/
 def routeOn : (k : ℕ) → (p : Path (protocolOn R M eval k)) →
     QueryImpl [(Spec.pSpec R deg k).Message]ₒ
       (OracleComp (oracleMessageSpec (protocolOn R M eval k) p))
-  | 0, _ => fun q => q.1.1.elim0
+  | 0, _ => ⟨fun q => q.1.1.elim0⟩
   | k + 1, ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ => Legacy.appendRoute (roundRouteOn R deg M eval k p)
-      (fun q => simulateQ
+      ⟨fun q => simulateQ
         (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocolOn R M eval (k + 1))))
-        (routeOn k p q))
+        (routeOn k p q)⟩
 
 /-- Route the round message's queries to the first oracle node of a replicated protocol. -/
 def roundRoute (k : ℕ) (p : Path (protocol R deg k)) :
@@ -160,9 +162,9 @@ theorem routeOn_succ_sumEquiv (k : ℕ) (p : Path (protocolOn R M eval k))
       ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
     routeOn R deg M eval (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
       Legacy.routePart (roundRouteOn R deg M eval k p)
-        (fun q => simulateQ
+        ⟨fun q => simulateQ
           (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocolOn R M eval (k + 1))))
-          (routeOn R deg M eval k p q))
+          (routeOn R deg M eval k p q)⟩
         s q :=
   Legacy.appendRoute_sumEquiv _ _ s q
 
@@ -207,9 +209,9 @@ theorem route_succ_sumEquiv (k : ℕ) (p : Path (protocol R deg k))
       ((Spec.SingleRound.pSpec R deg ++ₚ Spec.pSpec R deg k).Message (MessageIdx.sumEquiv s))) :
     route R deg (k + 1) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩ ⟨MessageIdx.sumEquiv s, q⟩ =
       Legacy.routePart (roundRoute R deg k p)
-        (fun q => simulateQ
+        ⟨fun q => simulateQ
           (Interpreted.tailLift (⟨⟨⟩, ⟨⟨⟩, p⟩⟩ : Path (protocol R deg (k + 1))))
-          (route R deg k p q))
+          (route R deg k p q)⟩
         s q :=
   routeOn_succ_sumEquiv k p s q
 

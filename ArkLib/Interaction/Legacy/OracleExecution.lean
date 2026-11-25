@@ -548,16 +548,18 @@ theorem simulateQ_decisionImpl {m : Type → Type} [Monad m] [LawfulMonad m]
         ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r)) q).trans ?_
       rw [simulateQ_spec_query]
     · simp only [QueryImpl.addLift_def, OracleInterface.simOracle2, QueryImpl.liftTarget_self]
-      change simulateQ _ (simulateQ (fun t => liftM
+      change simulateQ _ (simulateQ ⟨fun t => liftM
           ((oSpec + (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec).query
-            (.inr t))) (pathBundleImpl p q)) = _
+            (.inr t))⟩ (pathBundleImpl p q)) = _
       rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
         (impl := ((pathBundle (family OStmtIn) (oracleProtocol pSpec) p).answer r).liftTarget m)
           (fun t => QueryImpl.simulateQ_add_query_right _ _ t),
         simulateQ_liftTarget, pathBundleImpl_law]
       change pure _ = simulateQ amb (pure _)
       rw [simulateQ_pure]
-  rw [QueryImpl.simulateQ_simulateQ_eq_of_apply key x]
+  rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
+    (impl := ⟨fun t => simulateQ amb (OracleInterface.simOracle2 (T₁ := OStmtIn)
+      (T₂ := pSpec.Message) oSpec r.1 (pathMessages p r.2) t)⟩) key x]
   exact (QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) x).symm
 
 end Decision
@@ -610,16 +612,16 @@ theorem simulateQ_oracleChallengeReindex_run
     {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
     (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     simulateQ (oracleChallengeReindex oSpec pSpec) (TwoParty.Lens.run (oracleProtocol pSpec)
-      (p.simulate (fun q => liftM
-        ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q))))
+      (p.simulate ⟨fun q => liftM
+        ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q))⟩)
       (sampler oracleSig (oracleProtocol pSpec) (fun c =>
         liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inr c))))) =
       runWith .focalFirst (oracleProtocol pSpec) (p.simulate (liftShared oSpec pSpec))
         (oracleLegacySampler pSpec (challengeOracle oSpec pSpec)) := by
-  have hl : (fun q => simulateQ (oracleChallengeReindex oSpec pSpec)
-      (liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q)))) =
-      liftShared oSpec pSpec :=
-    funext fun q => QueryImpl.simulateQ_add_liftM_query_left _ _ q
+  have hl : (⟨fun q => simulateQ (oracleChallengeReindex oSpec pSpec)
+      (liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q)))⟩ :
+        QueryImpl oSpec _) = liftShared oSpec pSpec :=
+    QueryImpl.ext fun q => QueryImpl.simulateQ_add_liftM_query_left _ _ q
   have hr : (fun c => simulateQ (oracleChallengeReindex oSpec pSpec)
       (nodeMove 0 n _ c <$> liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query
         (.inr (toOracleNode 0 n _ c))))) =

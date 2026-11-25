@@ -96,8 +96,8 @@ theorem oracleExtractionGame_embed
           (stmt, oStmt) adv =
       ((fun z => ((oracleDecode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (oracleProtocol pSpec)
-          (adv.simulate (fun q =>
-            liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q))))
+          (adv.simulate ⟨fun q =>
+            liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q))⟩)
           (sampler oracleSig (oracleProtocol pSpec) (fun c =>
             liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query
               (.inr c)))))) >>=
@@ -141,16 +141,16 @@ theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ Prob
       ((fun z : ((_ : Transcript oracleSig (oracleProtocol pSpec)) × X × PUnit) × QueryLog oSpec =>
           ((oracleDecode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (oracleProtocol pSpec)
-          (p.simulate (fun q =>
-            liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q))))
+          (p.simulate ⟨fun q =>
+            liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q))⟩)
           (sampler oracleSig (oracleProtocol pSpec) (fun c =>
             liftM ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query
               (.inr c))))))
       ((fun z : ((_ : Transcript plainSig (protocol pSpec)) × X × PUnit) × QueryLog oSpec =>
           ((decode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (protocol pSpec)
-          (Interaction.Prover.simulate (fun q =>
-              liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q)))
+          (Interaction.Prover.simulate ⟨fun q =>
+              liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q))⟩
             (toPlainFrom .focal 0 n (Nat.zero_add n) p :
               Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => X)))
           (sampler plainSig (protocol pSpec) (fun c =>

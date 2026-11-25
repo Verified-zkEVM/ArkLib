@@ -160,7 +160,8 @@ def comp (g : OracleMap Mid Out) (h : OracleMap In Mid) : OracleMap In Out where
   impl := QueryImpl.compose h.impl g.impl
   law x q := by
     rw [QueryImpl.apply_compose, ← QueryImpl.simulateQ_compose]
-    have he : QueryImpl.compose (In.answer x) h.impl = Mid.answer (h.f x) := funext (h.law x)
+    have he : QueryImpl.compose (In.answer x) h.impl = Mid.answer (h.f x) :=
+      QueryImpl.ext (h.law x)
     rw [he]
     exact g.law (h.f x) q
 
@@ -174,7 +175,7 @@ theorem simulate_eq (h : OracleMap In Out) (x : In.Data)
 /-- The identity map of an oracle bundle. -/
 def id (R : OracleBundle.{u, uX, dX}) : OracleMap R R where
   f x := x
-  impl q := liftM (R.spec.query q)
+  impl.toFun q := liftM (R.spec.query q)
   law _ _ := rfl
 
 /-- Keep the left side of a sum bundle. Inlining erases the unused bundle interpreters when a
@@ -183,21 +184,21 @@ computable verifier specializes this projection to a mathematical oracle family.
 def fst (R : OracleBundle.{u, uX, dX}) (R' : OracleBundle.{u, uY, dY}) :
     OracleMap (R.sum R') R where
   f x := x.1
-  impl q := liftM ((R.spec + R'.spec).query (.inl q))
+  impl.toFun q := liftM ((R.spec + R'.spec).query (.inl q))
   law _ _ := rfl
 
 /-- Keep the right side of a sum bundle. -/
 def snd (R : OracleBundle.{u, uX, dX}) (R' : OracleBundle.{u, uY, dY}) :
     OracleMap (R.sum R') R' where
   f x := x.2
-  impl q := liftM ((R.spec + R'.spec).query (.inr q))
+  impl.toFun q := liftM ((R.spec + R'.spec).query (.inr q))
   law _ _ := rfl
 
 /-- Apply two oracle maps to the two sides of a sum bundle. -/
 def par (h : OracleMap In Mid) (g : OracleMap Out Other) :
     OracleMap (In.sum Out) (Mid.sum Other) where
   f x := (h.f x.1, g.f x.2)
-  impl
+  impl.toFun
     | .inl q => simulateQ (fst In Out).impl (h.impl q)
     | .inr q => simulateQ (snd In Out).impl (g.impl q)
   law x q := by
@@ -213,7 +214,7 @@ def par (h : OracleMap In Mid) (g : OracleMap Out Other) :
 def sumAssocSymm (R₁ : OracleBundle.{u, uX, dX}) (R₂ : OracleBundle.{u, uY, dY})
     (R₃ : OracleBundle.{u, uZ, dZ}) : OracleMap (R₁.sum (R₂.sum R₃)) ((R₁.sum R₂).sum R₃) where
   f x := ((x.1, x.2.1), x.2.2)
-  impl
+  impl.toFun
     | .inl (.inl q) => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inl q))
     | .inl (.inr q) => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inr (.inl q)))
     | .inr q => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inr (.inr q)))
@@ -223,7 +224,7 @@ def sumAssocSymm (R₁ : OracleBundle.{u, uX, dX}) (R₂ : OracleBundle.{u, uY, 
 def sumAssoc (R₁ : OracleBundle.{u, uX, dX}) (R₂ : OracleBundle.{u, uY, dY})
     (R₃ : OracleBundle.{u, uZ, dZ}) : OracleMap ((R₁.sum R₂).sum R₃) (R₁.sum (R₂.sum R₃)) where
   f x := (x.1.1, (x.1.2, x.2))
-  impl
+  impl.toFun
     | .inl q => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inl (.inl q)))
     | .inr (.inl q) => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inl (.inr q)))
     | .inr (.inr q) => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inr q))
@@ -239,14 +240,14 @@ variable {I : Type uI} {J : Type uJ} {K : Type uK} {A : I → Type u} {B : J →
 def embedding (In : OracleFamily.{uI, u, wI} I A) (rename : J → I) :
     OracleMap In (In.reindex rename) where
   f x j := x (rename j)
-  impl q := liftM (In.spec.query ⟨rename q.1, q.2⟩)
+  impl.toFun q := liftM (In.spec.query ⟨rename q.1, q.2⟩)
   law _ _ := rfl
 
 /-- View a family of disjoint data as a sum bundle, with its data split into a pair. -/
 def ofSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
     OracleMap (sumFamily a b) (OracleBundle.sum a b) where
   f x := (fun i => x (.inl i), fun j => x (.inr j))
-  impl
+  impl.toFun
     | .inl q => liftM ((sumFamily a b).spec.query ⟨.inl q.1, q.2⟩)
     | .inr q => liftM ((sumFamily a b).spec.query ⟨.inr q.1, q.2⟩)
   law x q := by rcases q with q | q <;> rfl
@@ -255,7 +256,7 @@ def ofSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J
 def toSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
     OracleMap (OracleBundle.sum a b) (sumFamily a b) where
   f x := sumData x.1 x.2
-  impl
+  impl.toFun
     | ⟨.inl i, q⟩ => liftM ((OracleBundle.sum a b).spec.query (.inl ⟨i, q⟩))
     | ⟨.inr j, q⟩ => liftM ((OracleBundle.sum a b).spec.query (.inr ⟨j, q⟩))
   law x q := by rcases q with ⟨i | j, q⟩ <;> rfl
@@ -283,7 +284,7 @@ def sum (h : OracleMap In Mid) (g : OracleMap Out Other) :
 theorem sum_impl_inl (h : OracleMap In Mid) (g : OracleMap Out Other)
     (j : J) (q : (Mid.interface j).Query) :
     (h.sum g).impl ⟨.inl j, q⟩ = simulateQ
-      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inl r.1, r.2⟩)) (h.impl ⟨j, q⟩) := by
+      ⟨fun r => liftM ((sumFamily In Out).spec.query ⟨.inl r.1, r.2⟩)⟩ (h.impl ⟨j, q⟩) := by
   simp only [sum, comp, QueryImpl.apply_compose, toSumFamily, par]
   erw [simulateQ_spec_query]
   simp only [QueryImpl.apply_compose]
@@ -293,7 +294,7 @@ theorem sum_impl_inl (h : OracleMap In Mid) (g : OracleMap Out Other)
 theorem sum_impl_inr (h : OracleMap In Mid) (g : OracleMap Out Other)
     (j : L) (q : (Other.interface j).Query) :
     (h.sum g).impl ⟨.inr j, q⟩ = simulateQ
-      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inr r.1, r.2⟩)) (g.impl ⟨j, q⟩) := by
+      ⟨fun r => liftM ((sumFamily In Out).spec.query ⟨.inr r.1, r.2⟩)⟩ (g.impl ⟨j, q⟩) := by
   simp only [sum, comp, QueryImpl.apply_compose, toSumFamily, par]
   erw [simulateQ_spec_query]
   simp only [QueryImpl.apply_compose]
@@ -350,7 +351,7 @@ def oracleMessageFamily_split : (s₁ : OracleProtocol.{u, q}) →
       (sumFamily (oracleMessageFamily s₁ p₁) (oracleMessageFamily (s₂ p₁) p₂))
   | .pure _, s₂, ⟨⟩, p₂ =>
     { f := fun x => sumData (fun i => i.elim) x
-      impl := fun
+      impl.toFun := fun
         | ⟨.inl i, _⟩ => i.elim
         | ⟨.inr i, q⟩ => (OracleMap.embedding (oracleMessageFamily (s₂ ⟨⟩) p₂)
             (fun j : PEmpty.{u + 1} ⊕ OracleMessageIndex (s₂ ⟨⟩) p₂ =>
@@ -484,7 +485,7 @@ theorem oracleMessageImpl_append (s₁ : OracleProtocol.{u, q})
     (oracleMessages_append s₁ s₂ tr₁ tr₂)
   refine h.trans ?_
   refine Sigma.ext rfl (heq_of_eq ?_)
-  exact (funext ((oracleMessageFamily_append s₁ s₂ _ _).law _)).symm
+  exact (QueryImpl.ext ((oracleMessageFamily_append s₁ s₂ _ _).law _)).symm
 
 /-- The bundle a decision at path `p` may query: the input bundle and the path
 oracle messages. Input data may lie in a universe independent of responses and moves. Input queries
@@ -516,11 +517,11 @@ abbrev OracleVerifier.Output {s : OracleProtocol.{u, q}} (T : Path s → Type u)
 /-- Lift the queries to the oracle nodes of a completed path into the query interface of a
 decision on that path. Compiler inlining keeps the input family, which only fixes the query
 interface, out of execution. -/
-@[macro_inline]
+@[macro_inline, simps]
 def pathLift {ι : Type uι} {I : Type uI} (ambient : OracleSpec.{uι, u} ι) {A : I → Type u}
     (inputs : OracleFamily.{uI, u, wI} I A) {s : OracleProtocol.{u}} (p : Path s) :
-    QueryImpl (oracleMessageSpec s p) (OracleComp (ambient + (pathBundle inputs s p).spec)) :=
-  fun q => liftM ((ambient + (pathBundle inputs s p).spec).query
+    QueryImpl (oracleMessageSpec s p) (OracleComp (ambient + (pathBundle inputs s p).spec)) where
+  toFun q := liftM ((ambient + (pathBundle inputs s p).spec).query
     (.inr (.inr q)))
 
 /-- Lifted path-oracle queries, answered from input data and path oracle messages with ambient
@@ -648,7 +649,7 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     (prover : Prover oracleSig ambient s Out) :
     V.run stmt data prover = (do
   let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
-    (prover.simulate (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))))
+    (prover.simulate ⟨fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))⟩)
     (sampler oracleSig s (fun c =>
       liftM ((ambient + challengeSpec oracleSig s).query (.inr c))))
   let p := Transcript.path tr
@@ -656,7 +657,7 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
   let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
   let verdict ← simulateQ
     (QueryImpl.addLift
-      ((fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) :
+      (⟨fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))⟩ :
         QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
       ((pathBundle inputs s p).answer pathData))
     (V.decide stmt p view).run
@@ -680,10 +681,10 @@ theorem OracleVerifier.run_eq_decideWith {ι : Type u} {ambient : OracleSpec.{u,
     (prover : Prover oracleSig ambient s Out) :
     V.run stmt x prover = (do
       let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
-        (prover.simulate fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q)))
+        (prover.simulate ⟨fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))⟩)
         (sampler oracleSig s fun c => liftM ((ambient + challengeSpec oracleSig s).query (.inr c)))
       let verdict ← simulateQ
-        (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q)) :
+        (⟨fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))⟩ :
           QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
         (V.decideWith stmt _ (toView s tr) (x, oracleMessages s tr))
       pure ⟨tr, out, verdict.map fun t =>
@@ -708,9 +709,9 @@ theorem simulateQ_bundleAnswer {m : Type u → Type v} [Monad m] [LawfulMonad m]
     (H : QueryImpl (ambient + chal) m) (answer : QueryImpl bundle Id)
     (program : OracleComp (ambient + bundle) α) :
     simulateQ H (simulateQ (QueryImpl.addLift
-      ((fun q => liftM ((ambient + chal).query (.inl q))) :
+      (⟨fun q => liftM ((ambient + chal).query (.inl q))⟩ :
         QueryImpl ambient (OracleComp (ambient + chal))) answer) program) =
-      simulateQ (QueryImpl.addLift (fun q => H (.inl q)) answer) program := by
+      simulateQ (QueryImpl.addLift ⟨fun q => H (.inl q)⟩ answer) program := by
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
   rcases q with q | q
   · simp
@@ -723,7 +724,7 @@ theorem simulateQ_addLift_bundleAnswer {m : Type u → Type v} [Monad m] [Lawful
     (program : OracleComp (ambient + bundle) α) :
     simulateQ (impl.addLift draw : QueryImpl (ambient + chal) m)
       (simulateQ (QueryImpl.addLift
-        ((fun q => liftM ((ambient + chal).query (.inl q))) :
+        (⟨fun q => liftM ((ambient + chal).query (.inl q))⟩ :
           QueryImpl ambient (OracleComp (ambient + chal))) answer) program) =
       simulateQ (impl.addLift answer : QueryImpl (ambient + bundle) m) program := by
   simpa using simulateQ_bundleAnswer (impl.addLift draw : QueryImpl (ambient + chal) m)

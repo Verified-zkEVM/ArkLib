@@ -26,7 +26,8 @@ abbrev challengeRound : ProtocolSpec 1 := ⟨!v[.V_to_P], fun _ => Bool⟩
 instance : ∀ i, SampleableType (challengeRound.Challenge i) :=
   fun _ => inferInstanceAs (SampleableType Bool)
 
-def impl : QueryImpl oracle (StateT Unit ProbComp) := fun q => nomatch q
+def impl : QueryImpl oracle (StateT Unit ProbComp) where
+  toFun q := nomatch q
 
 def verifier : Verifier oracle Unit Unit challengeRound := ⟨fun _ _ => pure ()⟩
 

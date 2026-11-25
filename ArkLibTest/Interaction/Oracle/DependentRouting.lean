@@ -28,14 +28,14 @@ abbrev ambient : OracleSpec Empty := Empty →ₒ Nat
 def natInterface : OracleInterface Nat where
   Query := Unit
   toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := read
+  toOC.impl.toFun _ := read
 
 /-- A pair answers the unit query with its first component. -/
 @[reducible]
 def pairInterface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := do return (← read).1
+  toOC.impl.toFun _ := do return (← read).1
 
 /-- One natural-number input oracle. -/
 @[instance_reducible]
@@ -86,8 +86,8 @@ def finalMap : (p : Path suffix) → OracleMap (suffixBundle p) (finalFamily p)
       (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨true, ⟨⟩⟩))
   | ⟨false, ⟨⟩⟩ =>
     { f := fun x _ => (x.1 (), x.1 ())
-      impl := fun q =>
-        (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
+      impl := ⟨fun q =>
+        (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩⟩
       law := fun _ _ => rfl }
 
 /-- The suffix checks the announced Boolean against one input query. It returns `()` after a
@@ -130,7 +130,8 @@ def readClaim : (p : Path suffix) → finalStmt p × (∀ j, finalData p j) → 
 
 /-- The composed run never queries an oracle: the ambient spec is empty and there are no
 challenges. -/
-def noQueries : QueryImpl (ambient + challengeSpec oracleSig combined) Id
+def noQueries : QueryImpl (ambient + challengeSpec oracleSig combined) Id where
+  toFun
   | .inl e => e.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, c⟩, _⟩ => c.elim

@@ -141,10 +141,11 @@ abbrev oracleSpec (Input Salt : Type) (rounds : List Round) :
 variable {Input Salt W : Type}
 
 /-- Route a key of the remaining rounds through the retained first message and salt. -/
+@[simps]
 def prependQuery {round : Round} {rounds : List Round} (message : round.Message) (salt : Salt) :
     QueryImpl (oracleSpec Input Salt rounds)
-      (OracleComp (oracleSpec Input Salt (round :: rounds))) :=
-  fun key => liftM ((oracleSpec Input Salt (round :: rounds)).query (Key.later message salt key))
+      (OracleComp (oracleSpec Input Salt (round :: rounds))) where
+  toFun key := liftM ((oracleSpec Input Salt (round :: rounds)).query (Key.later message salt key))
 
 /-- Complete the selected messages to a transcript, reading every challenge from the oracle. -/
 def complete : (rounds : List Round) → Input → Messages Salt rounds →
@@ -167,7 +168,7 @@ theorem complete_queryBound (rounds : List Round) (z : Input) (messages : Messag
       refine ⟨by omega, fun challenge => ?_⟩
       have h := (ih messages).simulateQ_of_step_le (step := 1)
         (fun key => show IsTotalQueryBound
-          (prependQuery (Input := Input) message salt key) 1 from by
+          (prependQuery (Input := Input) (rounds := rounds) message salt key) 1 from by
             change IsTotalQueryBound
               (liftM ((oracleSpec Input Salt (round :: rounds)).query
                 (Key.later message salt key)) >>= pure) 1
@@ -367,7 +368,7 @@ variable {s : OracleProtocol.{u}} {I : Type uI} {S : Type uS} {A : I → Type u}
 are answered from the input data and the transcript's oracle messages. -/
 def verdict (V : OracleVerifier []ₒ s S T inputs outputs)
     (stmt : S × (∀ i, A i)) (tr : Transcript oracleSig s) : Option (T tr.path) :=
-  evalWithAnswerFn (fun q => PEmpty.elim q)
+  evalWithAnswerFn ⟨fun q => PEmpty.elim q⟩
     (V.decideWith stmt.1 tr.path (toView _ tr)
       (stmt.2, oracleMessages _ tr))
 
@@ -485,15 +486,18 @@ def scriptedProver {ι : Type} {ambient : OracleSpec ι} :
 shape does not depend on moves, so the round is the node's depth. -/
 def recordedChallenges : (rounds : List Round) → Transcript oracleSig (protocol rounds) →
     QueryImpl (challengeSpec oracleSig (protocol rounds)) Id
-  | [], _, ⟨n, _⟩ => n.elim
-  | _ :: _, _, ⟨.inl _, h⟩ => nomatch h
-  | _ :: _, ⟨_, ⟨c, _⟩⟩, ⟨.inr ⟨_, .inl _⟩, _⟩ => c
-  | _ :: rounds, ⟨_, ⟨_, tr⟩⟩, ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, h⟩ => recordedChallenges rounds tr ⟨n, h⟩
+  | [], _ => ⟨fun | ⟨n, _⟩ => n.elim⟩
+  | _ :: rounds, ⟨_, ⟨c, tr⟩⟩ => ⟨fun
+    | ⟨.inl _, h⟩ => nomatch h
+    | ⟨.inr ⟨_, .inl _⟩, _⟩ => c
+    | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, h⟩ => recordedChallenges rounds tr ⟨n, h⟩⟩
 
 /-- The answers of a run without ambient oracle: every challenge is read from the recorded
 transcript. -/
+@[simps]
 def recordedAnswers (rounds : List Round) (tr : Transcript oracleSig (protocol rounds)) :
-    QueryImpl ([]ₒ + challengeSpec oracleSig (protocol rounds)) Id
+    QueryImpl ([]ₒ + challengeSpec oracleSig (protocol rounds)) Id where
+  toFun
   | .inl q => PEmpty.elim q
   | .inr c => recordedChallenges rounds tr c
 
@@ -674,7 +678,7 @@ theorem run_scriptedProver (V : OracleVerifier []ₒ (protocol rounds) S T input
   simp only [evalWithAnswerFn_simulateQ, evalWithAnswerFn_pure, closedVerdict,
     verdict, OracleVerifier.decideWith]
   congr 4
-  funext q
+  ext q : 1
   rcases q with q | q
   · exact q.elim
   · rfl

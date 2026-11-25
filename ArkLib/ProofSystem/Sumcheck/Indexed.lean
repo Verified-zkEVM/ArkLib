@@ -336,8 +336,8 @@ theorem indexedVerifier_run {ι : Type} (ambient : OracleSpec ι)
     (prover : Prover oracleSig ambient (protocol R deg n) Out) :
     (indexedVerifier R deg n D ambient).run stmt data prover = (do
       let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (protocol R deg n)
-        (prover.simulate (fun q =>
-          liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inl q))))
+        (prover.simulate ⟨fun q =>
+          liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inl q))⟩)
         (sampler oracleSig (protocol R deg n) (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))))
       pure ⟨tr, out, (indexedVerdict D n (some (IndexedClaim.initial stmt)) tr).map
@@ -530,14 +530,16 @@ theorem indexedVerifier_run_one {ι : Type} (ambient : OracleSpec ι)
   split <;> rename_i h <;> simp only [h, ite_true, ite_false] <;> rfl
 
 /-- Answer the unique one-round challenge with a supplied computation. -/
+@[simps]
 def indexedRoundDraw {m : Type → Type} (challenge : m R) :
-    QueryImpl (challengeSpec oracleSig (protocol R deg 1)) m := by
-  rintro ⟨pos, h⟩
-  rcases pos with ⟨⟩ | ⟨⟨⟩, pos⟩
-  · cases h
-  · rcases pos with ⟨⟩ | ⟨⟨⟩, pos⟩
-    · exact challenge
-    · cases pos
+    QueryImpl (challengeSpec oracleSig (protocol R deg 1)) m where
+  toFun := by
+    rintro ⟨pos, h⟩
+    rcases pos with ⟨⟩ | ⟨⟨⟩, pos⟩
+    · cases h
+    · rcases pos with ⟨⟩ | ⟨⟨⟩, pos⟩
+      · exact challenge
+      · cases pos
 
 /-- Execute the actual indexed verifier with any challenge program, including a fixed value. -/
 noncomputable def indexedExecute {ι : Type} (ambient : OracleSpec ι) {m : Type → Type} [Monad m]

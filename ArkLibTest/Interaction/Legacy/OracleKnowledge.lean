@@ -147,13 +147,13 @@ def constChallenge (b : Bool) : (i : twoWay.ChallengeIdx) → twoWay.Challenge i
 /-- Shared answers `7` and constant challenges, on the oracle tree. -/
 def oracleAnswers (b : Bool) :
     QueryImpl (shared + challengeSpec oracleSig (oracleProtocol twoWay)) Id :=
-  QueryImpl.add (fun _ => (7 : Nat)) fun c =>
+  QueryImpl.add ⟨fun _ => (7 : Nat)⟩ ⟨fun c =>
     (oracleChallengeMove 0 3 (Nat.zero_add 3) c).symm
-      (constChallenge b (oracleChallengeRound 0 3 (Nat.zero_add 3) c))
+      (constChallenge b (oracleChallengeRound 0 3 (Nat.zero_add 3) c))⟩
 
 /-- Shared answers `7` and constant challenges, for the legacy challenge oracle. -/
 def legacyAnswers (b : Bool) : QueryImpl (shared + [twoWay.Challenge]ₒ) Id :=
-  QueryImpl.add (fun _ => (7 : Nat)) (fun q => constChallenge b q.1)
+  QueryImpl.add ⟨fun _ => (7 : Nat)⟩ ⟨fun q => constChallenge b q.1⟩
 
 /-- The verdict, the verifier's output oracles, and the extracted witness of an oracle
 extraction game. -/

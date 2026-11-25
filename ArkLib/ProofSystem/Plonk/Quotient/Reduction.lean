@@ -52,11 +52,11 @@ def statementLens : OracleStatement.ExecutableLens (F × F) (F × F) Unit Unit
     (QuotientZeroTest.OStmtIn F (GrandProduct.residualDegree n)) QuotientZeroTest.OStmtOut where
   projStmt _ := ()
   materializeInput _ f _ := f (.inr ())
-  simulateInput _ q := OracleSpec.query (spec := [Batch.OStmtOut F n]ₒ) ⟨.inr (), q.2⟩
+  simulateInput _ := ⟨fun q => OracleSpec.query (spec := [Batch.OStmtOut F n]ₒ) ⟨.inr (), q.2⟩⟩
   simulateInput_eq _ _ _ := rfl
   liftStmt s _ := s
   materializeOutput f _ := f
-  simulateOutput q := liftM (OracleSpec.query (spec := [Batch.OStmtOut F n]ₒ) q)
+  simulateOutput.toFun q := liftM (OracleSpec.query (spec := [Batch.OStmtOut F n]ₒ) q)
   simulateOutput_eq _ _ _ := rfl
 
 /-- Both inner and outer stages have unique witnesses. -/

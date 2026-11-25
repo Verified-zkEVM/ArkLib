@@ -489,13 +489,16 @@ def splitOracleMessages : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ �
         (splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p))
 
 /-- Preserve ambient queries while routing bundle queries through an oracle map. -/
+@[simps -isSimp]
 def OracleMap.withAmbient {ι : Type uι}
     (ambient : OracleSpec.{uι, u} ι) {In : OracleBundle.{u, uX, dX}}
     {Out : OracleBundle.{u, uY, dY}}
-    (route : OracleMap In Out) : QueryImpl (ambient + Out.spec) (OracleComp (ambient + In.spec))
+    (route : OracleMap In Out) : QueryImpl (ambient + Out.spec)
+      (OracleComp (ambient + In.spec)) where
+  toFun
   | .inl q => liftM ((ambient + In.spec).query (.inl q))
   | .inr q => simulateQ
-    (fun r => liftM ((ambient + In.spec).query (.inr r))) (route.impl q)
+    ⟨fun r => liftM ((ambient + In.spec).query (.inr r))⟩ (route.impl q)
 
 /-- Routing through a map and answering from data agrees with answering from the mapped data,
 for any interpretation of the ambient queries. -/
@@ -514,6 +517,7 @@ theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
   · simp [OracleMap.withAmbient]
   · simp only [OracleMap.withAmbient, QueryImpl.addLift_def]
     rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
+      (so := ⟨fun r => liftM ((ambient + In.spec).query (.inr r))⟩)
       (impl := (In.answer x).liftTarget m)
       (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
     rfl

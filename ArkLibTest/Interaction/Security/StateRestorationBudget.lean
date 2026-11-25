@@ -29,7 +29,7 @@ namespace Interaction.StateRestorationBudgetTests
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
+  toOC := { spec := fun _ => Fin 8, impl := ⟨fun _ => do return (← read)⟩ }
 
 /-- The first round: a `Fin 8` oracle message and a `Fin 8` challenge. -/
 def firstRound : Round where
@@ -920,7 +920,8 @@ def selectedProver (b : Bool) (ms : Messages Unit rounds) :
 
 /-- All full-protocol challenge queries are answered from the original recorded suffix. -/
 def selectedAnswers (tr : Transcript oracleSig (protocol rounds)) :
-    QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id
+    QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id where
+  toFun
   | .inl q => q.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, n⟩, h⟩ => recordedChallenges rounds tr ⟨n, h⟩
@@ -930,8 +931,8 @@ theorem selectedInteraction_eq (b : Bool) (ms : Messages Unit rounds)
     (tr : Transcript oracleSig (protocol rounds)) (carried : MatchesMessages rounds ms tr) :
     evalWithAnswerFn (selectedAnswers tr)
       (TwoParty.Lens.run selectedProtocol
-        ((selectedProver b ms).simulate (fun q =>
-          liftM (([]ₒ + challengeSpec oracleSig selectedProtocol).query (.inl q))))
+        ((selectedProver b ms).simulate ⟨fun q =>
+          liftM (([]ₒ + challengeSpec oracleSig selectedProtocol).query (.inl q))⟩)
         (sampler oracleSig selectedProtocol (fun c =>
           liftM (([]ₒ + challengeSpec oracleSig selectedProtocol).query (.inr c))))) =
       ⟨⟨b, tr⟩, ⟨⟩, ⟨⟩⟩ := by
@@ -967,7 +968,7 @@ theorem finishSelected_eq (z : Stmt)
   simp only [finishSelected, evalWithAnswerFn_simulateQ, closedVerdict,
     verdict, OracleVerifier.decideWith]
   congr 4
-  funext q
+  ext q : 1
   rcases q with q | q
   · exact q.elim
   · rfl

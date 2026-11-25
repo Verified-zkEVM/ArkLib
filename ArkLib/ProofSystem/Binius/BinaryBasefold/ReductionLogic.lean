@@ -219,7 +219,7 @@ noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : IsCommitmentRound 
   materializeOutput := fun _ oStmt messages =>
     snocOracle 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (h_destIdx := by rfl) oStmt (messages ⟨0, by rfl⟩)
-  simulateOutputQuery := fun _ q => by
+  simulateOutputQuery _ := ⟨fun q => by
     rcases q with ⟨j, x⟩
     by_cases hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc
     · exact liftM <| OracleSpec.query
@@ -240,7 +240,7 @@ noncomputable def commitOutputSimulation (i : Fin ℓ) (hCR : IsCommitmentRound 
               [(pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message]ₒ)).Domain from
           Sum.inr (Sum.inr ⟨⟨0, by rfl⟩, cast (by
             change ↥(sDomain 𝔽q β h_ℓ_add_R_rate _) = ↥(sDomain 𝔽q β h_ℓ_add_R_rate _)
-            rw [h_eq]) x⟩))
+            rw [h_eq]) x⟩))⟩
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rcases q with ⟨j, x⟩

@@ -34,7 +34,8 @@ local instance : VerifierOnly rightSpec := { verifier_first' := rfl }
 local instance : VerifierOnly (leftSpec ++ₚ rightSpec) := { verifier_first' := rfl }
 
 /-- The ambient query has no simulated effect and always returns `false`. -/
-def pureImpl : QueryImpl oracleSpec (StateT Unit ProbComp) := fun _ => pure false
+def pureImpl : QueryImpl oracleSpec (StateT Unit ProbComp) where
+  toFun _ := pure false
 
 /-- The raw counterexample factors after this ambient simulation, including its full result. -/
 theorem simulated_factorization :
@@ -54,7 +55,7 @@ theorem simulated_factorization :
     liftM_pure, pure_bind]
   dsimp only [id]
   simp only [pure_bind, bind_assoc, simulateQ_bind, simulateQ_pure]
-  simp only [QueryImpl.addLift_def, PFunctor.Handler.liftTarget_self,
+  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self,
     QueryImpl.simulateQ_add_liftM_left, QueryImpl.simulateQ_add_liftM_right]
   simp only [HasQuery.instOfMonadLift_query, getChallenge,
     simulateQ_spec_query, pureImpl]
@@ -70,7 +71,7 @@ theorem simulated_factorization :
         let c ← (liftM ($ᵗ Bool) : StateT Unit ProbComp Bool)
         pure (FullTranscript.append (pSpec₁ := leftSpec) (pSpec₂ := rightSpec)
           default (fun i => match i with | ⟨0, _⟩ => c), (), ()))
-  simp only [QueryImpl.addLift_def, PFunctor.Handler.liftTarget_self,
+  simp only [QueryImpl.addLift_def, QueryImpl.liftTarget_self,
     QueryImpl.simulateQ_add_liftM_left, simulateQ_bind, simulateQ_pure,
     HasQuery.instOfMonadLift_query, simulateQ_spec_query, pureImpl, pure_bind]
   congr 1

@@ -100,7 +100,7 @@ theorem Verifier.runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec 
   erw [bind_logged (QueryImpl.id' (ambient + challengeSpec plainSig s)) _
     (fun result : (tr : Transcript plainSig s) × Out tr × PUnit => do
     let verdict ← simulateQ
-      ((fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))) :
+      (⟨fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))⟩ :
         QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig s)))
       (V.decide stmt (Transcript.path result.1) (toPlainView s result.1)).run
     pure (⟨result.1, result.2.1, verdict⟩ : Outcome plainSig s Out T))]
@@ -378,14 +378,14 @@ theorem runWithLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : O
   let full := ambient + challengeSpec oracleSig s
   let ⟨⟨tr, out, _⟩, proveLog⟩ ← (simulateQ (QueryImpl.id' full).withLogging
     (TwoParty.Lens.run s
-      (prover.simulate (fun q => liftM (full.query (.inl q))))
+      (prover.simulate ⟨fun q => liftM (full.query (.inl q))⟩)
       (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run
   let p := Transcript.path tr
   let view := toView s tr
   let pathData : (pathBundle inputs s p).Data := (data, oracleMessages s tr)
   let handler : QueryImpl (ambient + (pathBundle inputs s p).spec)
       (OracleComp full) := QueryImpl.addLift
-    ((fun q => liftM (full.query (.inl q))) : QueryImpl ambient (OracleComp full))
+    (⟨fun q => liftM (full.query (.inl q))⟩ : QueryImpl ambient (OracleComp full))
     ((pathBundle inputs s p).answer pathData)
   let ⟨verdict, verifyLog⟩ ← (simulateQ handler.withLogging (V.decide stmt p view).run).run
   pure ⟨⟨tr, out, verdict.map fun t => (t, (V.outputMap stmt p view).f pathData)⟩,
@@ -403,7 +403,7 @@ theorem runWithLog_fst {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : 
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     let full := ambient + challengeSpec oracleSig s
-    let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+    let toFull : QueryImpl ambient (OracleComp full) := ⟨fun q => liftM (full.query (.inl q))⟩
     (fun z => (z.1, z.2.1, z.2.2.fst)) <$> V.runWithLog stmt data prover =
       (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
         (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
@@ -442,7 +442,7 @@ theorem map_fst_runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {
   rw [bind_logged (QueryImpl.id' (ambient + challengeSpec oracleSig s)) _
     (fun result : (tr : Transcript oracleSig s) × Out tr × PUnit => do
       let verdict ← simulateQ (QueryImpl.addLift
-        ((fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) :
+        (⟨fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))⟩ :
           QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)))
         ((pathBundle inputs s (Transcript.path result.1)).answer
           (data, oracleMessages s result.1)))
@@ -490,7 +490,7 @@ theorem runWithAmbientLog_eq {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     (prover : Prover oracleSig ambient s Out) :
     V.runWithAmbientLog stmt data prover = (
       let full := ambient + challengeSpec oracleSig s
-      let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+      let toFull : QueryImpl ambient (OracleComp full) := ⟨fun q => liftM (full.query (.inl q))⟩
       (simulateQ (QueryImpl.id' full).withLogging (TwoParty.Lens.run s (prover.simulate toFull)
         (sampler oracleSig s (fun c => liftM (full.query (.inr c)))))).run >>= fun x =>
       let tr := x.1.1

@@ -63,11 +63,13 @@ def verifier.{uI, uJ, wI, wJ} (accept : Bool) :
       pure (if accept then some sent else none)
   outputMap _ _ _ :=
     { f := fun _ i => i.elim
-      impl := fun q => q.1.elim
+      impl := ⟨fun q => q.1.elim⟩
       law := fun _ q => q.1.elim }
 
 /-- Record each ambient tag and answer the challenge with `bit`. -/
-def logger (bit : Bool) : QueryImpl (ambient + challengeSpec oracleSig phased) (StateM (List Nat))
+def logger (bit : Bool) :
+    QueryImpl (ambient + challengeSpec oracleSig phased) (StateM (List Nat)) where
+  toFun
   | .inl n => modify (· ++ [n])
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, _⟩ => pure bit
@@ -119,7 +121,7 @@ def closingRun (handler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))))
     let full := ambient + challengeSpec oracleSig pairSend
     let ⟨⟨tr, out, _⟩, proveLog⟩ ← simulateQ (logger pairChallenges)
       (OracleComp.withQueryLog (spec := full) (TwoParty.Lens.run pairSend
-        ((pairProver [9] message hidden).simulate (fun q => liftM (full.query (.inl q))))
+        ((pairProver [9] message hidden).simulate ⟨fun q => liftM (full.query (.inl q))⟩)
         (sampler oracleSig pairSend (fun c => liftM (full.query (.inr c))))))
     let p := Transcript.path tr
     let data : (pathBundle inputs pairSend p).Data := (fun _ => old, oracleMessages pairSend tr)
@@ -153,8 +155,9 @@ theorem decision_outcomes (old message hidden : Nat) :
   exact ⟨rfl, rfl, rfl⟩
 
 /-- A handler that answers every request, including 17, and records it. -/
-def answerAll : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun tag => do
-  modify (· ++ [tag]); pure tag
+def answerAll : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) where
+  toFun tag := do
+    modify (· ++ [tag]); pure tag
 
 /-- When the handler answers every request, mode 1 rejects: the verifier cannot return a fault
 itself. The history records request 17 after the queries answered before it. -/

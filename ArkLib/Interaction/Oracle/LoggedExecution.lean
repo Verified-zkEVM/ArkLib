@@ -83,14 +83,14 @@ def decideCatching {ε : Type} {m : Type → Type v} [Monad m]
   let spec := ambient + (pathBundle inputs s p).spec
   let answer : QueryImpl spec (ExceptT ε m) :=
     QueryImpl.addLift handler ((pathBundle inputs s p).answer data)
-  let logged : QueryImpl spec (ExceptT ε (StateT (QueryLog spec) m)) := fun q =>
+  let logged : QueryImpl spec (ExceptT ε (StateT (QueryLog spec) m)) := ⟨fun q =>
     ExceptT.mk do
       let result ← liftM (answer q).run
       match result with
       | .error e => pure (.error e)
       | .ok a =>
         modify (⟨q, a⟩ :: ·)
-        pure (.ok a)
+        pure (.ok a)⟩
   (fun r => (r.1, r.2.reverse)) <$> ((simulateQ logged (V.decide stmt p view).run).run).run []
 
 end OracleVerifier

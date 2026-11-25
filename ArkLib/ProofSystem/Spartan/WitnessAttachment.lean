@@ -35,7 +35,7 @@ def sourceMatrixInterface (i : R1CS.MatrixIdx) :
     OracleInterface (R1CS.OracleStatement R sz i) where
   Query := (Fin (pp).ℓ_m → R) × (Fin (pp).ℓ_n → R)
   toOC.spec := fun _ => R
-  toOC.impl point := do
+  toOC.impl.toFun point := do
     return matrixEval (R1CS.embedMatrix R sz (pp).toSizeR1CS (← read)) point.1 point.2
 
 /-- The named source interface fixes the layout used by every forwarded matrix query. -/
@@ -69,13 +69,13 @@ variable {ι : Type} (oSpec : OracleSpec ι)
 def outputSimulation : OracleOutputSimulation oSpec (R1CS.OracleStatement R sz)
     (OracleStatement (R := R) pp) (pSpec (R := R) sz) where
   materializeOutput _ matrices messages := attachedOracles sz matrices (messages ⟨0, rfl⟩)
-  simulateOutputQuery _ q := match q with
+  simulateOutputQuery _ := ⟨fun q => match q with
     | ⟨.inl i, point⟩ => liftM <| OracleSpec.query
         (spec := oSpec + ([R1CS.OracleStatement R sz]ₒ + [(pSpec (R := R) sz).Message]ₒ))
         (Sum.inr (Sum.inl ⟨i, point⟩))
     | ⟨.inr _, point⟩ => liftM <| OracleSpec.query
         (spec := oSpec + ([R1CS.OracleStatement R sz]ₒ + [(pSpec (R := R) sz).Message]ₒ))
-        (Sum.inr (Sum.inr ⟨⟨0, rfl⟩, point⟩))
+        (Sum.inr (Sum.inr ⟨⟨0, rfl⟩, point⟩))⟩
   simulateOutputQuery_eq _ matrices messages q := by
     rcases q with ⟨i, point⟩
     cases i <;> rfl

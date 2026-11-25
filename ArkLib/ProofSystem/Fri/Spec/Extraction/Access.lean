@@ -84,8 +84,10 @@ def instructionCost (op : ArithmeticOp F ⊕ AccessOp s ω) : Cost :=
     | .inr a => a.costKind s) then 1 else 0
 
 /-- Read one immutable input or its degree metadata and certify the result. -/
+@[simps]
 def accessAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k) :
-    QueryImpl (AccessSpec s o α) Id
+    QueryImpl (AccessSpec s o α) Id where
+  toFun
   | .wordRead i x => ⟨committedWord s o i x, rfl⟩
   | .domainRead z => ⟨ω z, rfl⟩
   | .challengeRead i => ⟨α i, rfl⟩
@@ -93,8 +95,10 @@ def accessAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F
   | .polynomialDegreeRead p => ⟨p.natDegree, rfl⟩
 
 /-- Execute a certified arithmetic or immutable-input instruction. -/
+@[simps]
 def instructionAnswer (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k) :
-    QueryImpl (InstructionSpec s o α) Id
+    QueryImpl (InstructionSpec s o α) Id where
+  toFun
   | .inl op => arithmeticAnswer op
   | .inr op => accessAnswer s o α op
 
@@ -219,7 +223,8 @@ theorem profile_liftComp_arithmetic {A : Type} (p : OracleComp (ArithmeticSpec F
     (arithmeticAnswer.withAddCost (f ∘ arithmeticCost))]
   · rw [QueryImpl.withAddCost_eq_withChargeW, QueryImpl.withAddCost_eq_withChargeW]
     exact congrArg AddWriterT.runAdd
-      (PFunctor.Handler.mapOutputHom_liftM_withChargeW f arithmeticAnswer arithmeticCost p).symm
+      (PFunctor.Handler.mapOutputHom_liftM_withChargeW f arithmeticAnswer.toHandler
+        arithmeticCost p).symm
   · intro op
     simp only [QueryImpl.withAddCost_apply]
     congr 3

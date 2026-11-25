@@ -23,9 +23,10 @@ namespace GuardedBridgesRegression
 abbrev oracle : OracleSpec Bool := Bool →ₒ Bool
 
 /-- Queries can toggle the ambient bit, and return its current value. -/
-def impl : QueryImpl oracle (StateT Bool ProbComp) := fun write => do
-  if write then modify (!·)
-  get
+def impl : QueryImpl oracle (StateT Bool ProbComp) where
+  toFun write := do
+    if write then modify (!·)
+    get
 
 abbrev mixed : ProtocolSpec 2 := ⟨!v[.P_to_V, .V_to_P], fun _ => Bool⟩
 

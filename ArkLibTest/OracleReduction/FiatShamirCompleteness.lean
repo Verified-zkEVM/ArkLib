@@ -45,11 +45,13 @@ def reduction : Reduction []ₒ Unit Unit Unit Unit spec where
   verifier := ⟨fun _ tr => if (show Bool from tr 0) = (default : Bool) then failure else pure ()⟩
 
 /-- There are no base queries or state effects. -/
-def impl : QueryImpl []ₒ (StateT Unit ProbComp) := fun q => nomatch q
+def impl : QueryImpl []ₒ (StateT Unit ProbComp) where
+  toFun q := nomatch q
 
 /-- The old initialization always answered with the default Boolean. -/
-def defaultTable : QueryImpl (srChallengeOracle Unit spec) Id :=
-  fun ⟨⟨⟨0, _⟩, _⟩, _⟩ => (default : Bool)
+def defaultTable : QueryImpl (srChallengeOracle Unit spec) Id where
+  toFun
+  | ⟨⟨⟨0, _⟩, _⟩, _⟩ => (default : Bool)
 
 /-- The transcript of the single challenge round. -/
 def transcript (b : Bool) : spec.FullTranscript := fun | ⟨0, _⟩ => b

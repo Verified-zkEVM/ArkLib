@@ -116,7 +116,7 @@ instance (priority := 10000) instAddSaltMessage
   fun i => {
     Query := (Oₘ i).Query
     toOC.spec := (Oₘ i).Response
-    toOC.impl q := ReaderT.mk fun msg =>
+    toOC.impl.toFun q := ReaderT.mk fun msg =>
       ((Oₘ i).toOC.impl q).run
         (((addSalt_Message (pSpec := pSpec) (Salt := Salt) i) ▸ msg).1)
   }
@@ -189,8 +189,8 @@ def Verifier.addSalt (V : Verifier oSpec StmtIn StmtOut pSpec) :
 
 def addSaltQueryImpl :
     QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))
-      (OracleComp (oSpec + ([OStmtIn]ₒ + [(pSpec.addSalt Salt).Message]ₒ))) :=
-  fun q => liftM <| OracleSpec.query
+      (OracleComp (oSpec + ([OStmtIn]ₒ + [(pSpec.addSalt Salt).Message]ₒ))) where
+  toFun q := liftM <| OracleSpec.query
     (show (oSpec + ([OStmtIn]ₒ + [(pSpec.addSalt Salt).Message]ₒ)).Domain from q)
 
 private theorem simulateAddSaltQueryImpl
@@ -241,10 +241,10 @@ def addSaltOutputSimulation
     V.materializeOutput
       (Challenges.removeSalt (pSpec := pSpec) (Salt := Salt) challenges) oStmt
       (Messages.removeSalt (pSpec := pSpec) (Salt := Salt) messages)
-  simulateOutputQuery := fun challenges q =>
+  simulateOutputQuery challenges := ⟨fun q =>
     simulateQ (addSaltQueryImpl (OStmtIn := OStmtIn) (Salt := Salt))
       (V.simulateOutputQuery
-        (Challenges.removeSalt (pSpec := pSpec) (Salt := Salt) challenges) q)
+        (Challenges.removeSalt (pSpec := pSpec) (Salt := Salt) challenges) q)⟩
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rw [simulateAddSaltQueryImplComp]

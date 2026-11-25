@@ -57,9 +57,10 @@ def draw {deg : ℕ} (x : F) (k : ℕ) :
     return x) k
 
 /-- Answer the prover's events from a fixed table, logging each event. -/
-def record : QueryImpl events (StateM (List Entry)) := fun i => do
-  modify fun log => log ++ [.inl i]
-  return ![7, 3, 5, 11] i
+def record : QueryImpl events (StateM (List Entry)) where
+  toFun i := do
+    modify fun log => log ++ [.inl i]
+    return ![7, 3, 5, 11] i
 
 /-- The second round sends a message built from both private samples and the first challenge;
 its sample is drawn after that challenge, and a last event runs after the second challenge. -/

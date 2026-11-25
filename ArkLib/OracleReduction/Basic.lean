@@ -392,7 +392,7 @@ def simulateOutputQuery (challenges : pSpec.Challenges) :
       (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))) :=
   match verifier.outputOracle with
     | Sum.inr simulation => simulation.simulateOutputQuery challenges
-    | Sum.inl output => fun q => match h : output.embed q.1 with
+    | Sum.inl output => ⟨fun q => match h : output.embed q.1 with
       | Sum.inl j => by
           have hType : OStmtOut q.1 = OStmtIn j := by
             simpa only [h] using output.hEq q.1
@@ -410,7 +410,7 @@ def simulateOutputQuery (challenges : pSpec.Challenges) :
           exact queryAlongHEq (Oₛₒ q.1) (Oₘ j) hType hi
             (fun t : (Oₘ j).Query =>
               ((QueryImpl.id' [pSpec.Message]ₒ).liftTarget
-                (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)))) ⟨j, t⟩) q.2
+                (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)))) ⟨j, t⟩) q.2⟩
 
 private theorem simulateQueryAlongHEq {A B : Type}
     (OA : OracleInterface A) (OB : OracleInterface B)

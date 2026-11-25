@@ -98,9 +98,9 @@ def composed : Reduction ambient composedTree Unit Bool (fun _ => Nat) (fun _ =>
 /-- No challenges and no ambient queries: evaluate a run in `Option`. -/
 def evaluate {α : Type} (program : OracleComp (ambient + challengeSpec plainSig composedTree) α) :
     Option α :=
-  simulateQ (fun q => match q with
+  simulateQ (⟨fun q => match q with
     | .inl q => q.elim
-    | .inr c => nomatch c : QueryImpl (ambient + challengeSpec plainSig composedTree) Option)
+    | .inr c => nomatch c⟩ : QueryImpl (ambient + challengeSpec plainSig composedTree) Option)
     program
 
 /-- The path, the prover's statement and the verifier's verdict of one honest run. -/

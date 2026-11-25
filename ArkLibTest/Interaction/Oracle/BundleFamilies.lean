@@ -37,7 +37,7 @@ abbrev Carrier (r : Bool) : Type := Fin (if r then 5 else 3)
 @[reducible] def countInterface (r : Bool) : OracleInterface (Carrier r) where
   Query := Bool
   toOC.spec := fun _ => Nat
-  toOC.impl query := do return (← read).val + (if query then 1 else 0)
+  toOC.impl.toFun query := do return (← read).val + (if query then 1 else 0)
 
 /-- Both indices have the same query interface and different carrier types. -/
 def model : OracleFamily Bool Carrier := ⟨countInterface⟩
@@ -170,11 +170,11 @@ and answers a `Bool`. -/
   | false =>
     { Query := Bool
       toOC.spec := fun _ => Nat
-      toOC.impl _ := do return (← read).val }
+      toOC.impl.toFun _ := do return (← read).val }
   | true =>
     { Query := Fin 2
       toOC.spec := fun _ => Bool
-      toOC.impl query := do return decide (query.val < (← read).val) }
+      toOC.impl.toFun query := do return decide (query.val < (← read).val) }
 
 /-- Query and response types vary with the index. -/
 def mixedModel : OracleFamily Bool Carrier := ⟨mixedInterface⟩
@@ -198,7 +198,7 @@ abbrev LowDegree := {p : Polynomial Nat // p.natDegree < 2}
 @[reducible] def evaluation : OracleInterface LowDegree where
   Query := Nat
   toOC.spec := fun _ => Nat
-  toOC.impl point := do return (← read).val.eval point
+  toOC.impl.toFun point := do return (← read).val.eval point
 
 /-- One polynomial oracle. -/
 def polynomials : OracleFamily Unit (fun _ => LowDegree) :=
@@ -273,7 +273,7 @@ def viewBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q
   Index := (x : Visible) × Query (name (select x))
   spec query := Response (name (select query.1)) query.2
   Data := (x : Index) → Realization (name x)
-  answer data query := answer _ (data (select query.1)) query.2
+  answer data := ⟨fun query => answer _ (data (select query.1)) query.2⟩
 
 /-- The whole named context is the identity view (R26). -/
 abbrev namedBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
@@ -310,7 +310,7 @@ def viewVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n
         (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query (.inr (.inl ⟨x, query⟩)))
   outputMap _ _ _ :=
     { f := fun _ x => x.elim
-      impl := fun query => query.1.elim
+      impl := ⟨fun query => query.1.elim⟩
       law := fun _ query => query.1.elim }
 
 /-- The R26 verifier is the identity-view specialization of the R27 verifier. -/

@@ -60,7 +60,7 @@ theorem simulated_run (stmt : ℕ) (s : σ) :
         pure ((fun _ => c, stmt + c.val, ()), s)) := by
   rw [Prover.run_of_verifier_first]
   simp only [stage, liftComp_pure, pure_bind, liftM_pure,
-    bind_pure_comp, QueryImpl.addLift_def, PFunctor.Handler.liftTarget_self]
+    bind_pure_comp, QueryImpl.addLift_def, QueryImpl.liftTarget_self]
   change (fun c : Fin 4 =>
     ((fun i : Fin 1 => match i with | ⟨0, _⟩ => c, stmt + c.val, ()), s)) <$>
     ($ᵗ (Fin 4)) = _

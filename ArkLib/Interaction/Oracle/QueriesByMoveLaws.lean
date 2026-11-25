@@ -74,7 +74,7 @@ theorem toLog_runWithProverSetup (V : OracleVerifier ambient s S T inputs output
     (data : inputs.Data) (setup : OracleComp ambient (Prover oracleSig ambient s Out)) :
     QueriesByMove.toLog <$> V.runWithProverSetup stmt data setup = (do
       let (prover, queries) ← simulateQ
-        (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup.withQueryLog
+        ⟨fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))⟩ setup.withQueryLog
       (fun z => (⟨z.1, queries ++ z.2.1, z.2.2⟩ :
         (obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
           QueryLog (ambient + (pathBundle inputs s (Transcript.path obs.1)).spec)))
@@ -91,7 +91,7 @@ theorem map_fst_runWithProverSetup (V : OracleVerifier ambient s S T inputs outp
     (data : inputs.Data) (setup : OracleComp ambient (Prover oracleSig ambient s Out)) :
     QueriesByMove.outcome <$> V.runWithProverSetup stmt data setup = (do
       let prover ← simulateQ
-        (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup
+        ⟨fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))⟩ setup
       V.run stmt data prover) := by
   let lift : QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig s)) :=
     (QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft

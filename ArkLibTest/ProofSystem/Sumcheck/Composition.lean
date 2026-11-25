@@ -89,7 +89,8 @@ theorem round_range (c : ChallengeNode oracleSig (round K 1)) :
 -- Migration rows: Sumcheck Interaction/Projection #7, #8, ProjectionTransport #2.
 
 /-- A handler that answers every challenge with `3`. The ambient oracle is never queried. -/
-def answerThree : QueryImpl (ambient + challengeSpec oracleSig (round K 1)) Id
+def answerThree : QueryImpl (ambient + challengeSpec oracleSig (round K 1)) Id where
+  toFun
   | .inl _ => pure ()
   | .inr c => pure (cast (round_range c).symm (3 : K))
 

@@ -84,7 +84,7 @@ def _root_.Interaction.Oracle.OracleFamily.liftQueries {I : Type uI} {A : I → 
     { Query := ULift.{w'} (F.interface i).Query
       toOC :=
         { spec := fun q => (F.interface i).toOC.spec q.down
-          impl := fun q => (F.interface i).toOC.impl q.down } }
+          impl := ⟨fun q => (F.interface i).toOC.impl q.down⟩ } }
 
 namespace OracleMap
 
@@ -95,7 +95,7 @@ def lowerQueries (F : OracleFamily.{uI, u, wI} I A) :
     OracleMap (OracleBundle.ofFamily (F.liftQueries.{u, w', uI, wI}))
       (OracleBundle.ofFamily F) where
   f x := x
-  impl q := liftM ((F.liftQueries.{u, w', uI, wI}).spec.query ⟨q.1, ULift.up q.2⟩)
+  impl.toFun q := liftM ((F.liftQueries.{u, w', uI, wI}).spec.query ⟨q.1, ULift.up q.2⟩)
   law _ _ := rfl
 
 /-- Answer the lifted queries of a family by the original queries. -/
@@ -103,7 +103,7 @@ def liftQueries (F : OracleFamily.{uI, u, wI} I A) :
     OracleMap (OracleBundle.ofFamily F)
       (OracleBundle.ofFamily (F.liftQueries.{u, w', uI, wI})) where
   f x := x
-  impl q := liftM (F.spec.query ⟨q.1, q.2.down⟩)
+  impl.toFun q := liftM (F.spec.query ⟨q.1, q.2.down⟩)
   law _ _ := rfl
 
 end OracleMap
@@ -470,7 +470,7 @@ def draw {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u,
 def challengeImpl {S : Type u} {I : Type u} {A : I → Type u} {inputs : OracleFamily.{u, u, w} I A}
     (c : StageChain ambient S inputs) :
     QueryImpl (ambient + challengeSpec oracleSig c.protocol) (OracleComp ambient) :=
-  QueryImpl.id' ambient + c.draw
+  QueryImpl.id' ambient + (⟨c.draw⟩ : QueryImpl (challengeSpec oracleSig c.protocol) _)
 
 /-- Run every stage's interaction against a prover of the composed protocol, then fold the
 decisions. The verdict is the composed accepted statement with the composed output data, or
@@ -571,7 +571,8 @@ theorem run_cons (stmt : S) (data : ∀ i, A i)
     (prover : Prover oracleSig ambient (s.append fun p => (rest p).protocol) Out) :
     (cons s V draw₁ rest).run ⟨e, compatible⟩ stmt data prover =
       simulateQ (QueryImpl.id' ambient +
-          combineDraw oracleSig s (fun p => (rest p).protocol) draw₁ fun p => (rest p).draw)
+          (⟨combineDraw oracleSig s (fun p => (rest p).protocol) draw₁ fun p => (rest p).draw⟩ :
+            QueryImpl (challengeSpec oracleSig (s.append fun p => (rest p).protocol)) _))
         ((V.append (fun p => (rest p).verifier (e p)) compatible).run stmt data prover) := rfl
 
 /-- A rejecting first decision makes the composed decision reject. The interactions of the

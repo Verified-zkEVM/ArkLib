@@ -440,7 +440,8 @@ def roundOf : ChallengeNode oracleSig (protocol K 1 2) → ℕ
 /-- A handler that records the round of each challenge node it is asked for and answers `3` in
 the first round and `5` in the second. The ambient oracle is never queried. -/
 def recordChallenges :
-    QueryImpl (ambient + challengeSpec oracleSig (protocol K 1 2)) (StateM (List ℕ))
+    QueryImpl (ambient + challengeSpec oracleSig (protocol K 1 2)) (StateM (List ℕ)) where
+  toFun
   | .inl _ => pure ()
   | .inr c => do
       modify (· ++ [roundOf c])

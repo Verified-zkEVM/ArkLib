@@ -57,10 +57,12 @@ private def reduction := Assembly.Circuit.oracleReduction 16 primitive (by decid
 private def initialStatement : Unit × ∀ i, SendWitness.OStmtIn i :=
   ((), fun i => Fin.elim0 i)
 
-private def noQueries : QueryImpl []ₒ Id := fun q => nomatch q
+private def noQueries : QueryImpl []ₒ Id where
+  toFun q := nomatch q
 
 private def challenges : QueryImpl
-    ([]ₒ + [(Assembly.pSpec 16 primitive (by decide)).Challenge]ₒ'challengeOracleInterface) Id
+    ([]ₒ + [(Assembly.pSpec 16 primitive (by decide)).Challenge]ₒ'challengeOracleInterface) Id where
+  toFun
   | .inl q => nomatch q
   | .inr ⟨⟨⟨0, _⟩, h⟩, _⟩ => nomatch h
   | .inr ⟨⟨⟨1, _⟩, _⟩, _⟩ => (1, 4)

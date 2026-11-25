@@ -49,7 +49,7 @@ def constChallenge (b : Bool) : (i : twoWay.ChallengeIdx) → twoWay.Challenge i
 
 /-- Answer legacy challenge queries with a constant, in `Id`. -/
 def legacyAnswers (b : Bool) : QueryImpl ([]ₒ + [twoWay.Challenge]ₒ) Id :=
-  QueryImpl.add (fun q => q.elim) (fun q => constChallenge b q.1)
+  QueryImpl.add ⟨fun q => q.elim⟩ ⟨fun q => constChallenge b q.1⟩
 
 /-- The program equality in the counterpart-first schedule. -/
 example (stmt wit : Nat) :
@@ -86,9 +86,9 @@ example : outputs (simulateQ (legacyAnswers false) (counterReduction.run 2 3).ru
 reindexing of challenge nodes. -/
 def coreAnswers (b : Bool) :
     QueryImpl ([]ₒ + challengeSpec plainSig (protocol twoWay)) Id :=
-  QueryImpl.add (fun q => q.elim) fun c =>
+  QueryImpl.add ⟨fun q => q.elim⟩ ⟨fun c =>
     (challengeMove 0 3 (Nat.zero_add 3) c).symm
-      (constChallenge b (challengeRound 0 3 (Nat.zero_add 3) c))
+      (constChallenge b (challengeRound 0 3 (Nat.zero_add 3) c))⟩
 
 /-- The interaction-layer execution under the default schedule computes the same outputs. -/
 example : outputs (simulateQ (coreAnswers true)
@@ -126,7 +126,7 @@ def terminalReduction : _root_.Reduction counterSpec Nat Nat Nat Nat (n := 0) !p
 /-- Answer the shared oracle with `a`. There are no challenges. -/
 def terminalAnswers (a : Nat) :
     QueryImpl (counterSpec + challengeSpec plainSig (protocol (n := 0) !p[])) Id :=
-  QueryImpl.add (fun _ => a) (fun c => c.val.elim)
+  QueryImpl.add ⟨fun _ => a⟩ ⟨fun c => c.val.elim⟩
 
 def terminalOutputs (r : LegacyResult (n := 0) !p[] Nat Nat) : Option ((Nat × Nat) × Nat) :=
   r.map fun x => (x.1.2, x.2)

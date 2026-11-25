@@ -45,7 +45,7 @@ variable {ι κ : Type} {oSpec : OracleSpec ι} {spec : OracleSpec κ}
 /-- Answer each shared-oracle query with a default value, and keep the other queries. -/
 def dropAmbient [∀ t, Inhabited (oSpec.Range t)] :
     QueryImpl (oSpec + spec) (OracleComp spec) :=
-  QueryImpl.add (fun _ => pure default) (QueryImpl.id' spec)
+  QueryImpl.add ⟨fun _ => pure default⟩ (QueryImpl.id' spec)
 
 /-- If a computation simulates to `pure x` while its shared-oracle queries are passed through,
 then it reaches no shared-oracle query, so dropping them leaves the value `x`. -/
@@ -54,10 +54,10 @@ theorem simulateQ_dropAmbient_of_eq_pure [∀ t, Inhabited (oSpec.Range t)]
     (h : simulateQ (QueryImpl.addLift (QueryImpl.id oSpec) g :
       QueryImpl (oSpec + spec) (OracleComp oSpec)) oa = pure x) :
     simulateQ g (simulateQ dropAmbient oa) = x := by
-  let fallback : QueryImpl oSpec Id := fun _ => default
+  let fallback : QueryImpl oSpec Id := ⟨fun _ => default⟩
   have routed : QueryImpl.compose g dropAmbient =
       QueryImpl.compose fallback (QueryImpl.addLift (QueryImpl.id oSpec) g) := by
-    funext t
+    ext t : 1
     cases t <;>
       simp [QueryImpl.compose, dropAmbient, QueryImpl.addLift_def, QueryImpl.add, fallback] <;> rfl
   rw [← QueryImpl.simulateQ_compose, routed, QueryImpl.simulateQ_compose, h]
@@ -310,9 +310,9 @@ def pathBundleImpl (p : Path (oracleProtocol pSpec)) :
       (OracleComp (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec) :=
   QueryImpl.add
     (OracleMap.fst (family OStmtIn) (oracleMessageFamily (oracleProtocol pSpec) p)).impl
-    (fun q => simulateQ
+    ⟨fun q => simulateQ
       (OracleMap.snd (family OStmtIn) (oracleMessageFamily (oracleProtocol pSpec) p)).impl
-      (queryMsg 0 n _ p q.1 (Nat.zero_le _) q.2))
+      (queryMsg 0 n _ p q.1 (Nat.zero_le _) q.2)⟩
 
 /-- Routing answers each legacy query from the statement data and the path's messages. -/
 theorem pathBundleImpl_law (p : Path (oracleProtocol pSpec))
@@ -335,9 +335,9 @@ def decisionImpl (p : Path (oracleProtocol pSpec)) :
   QueryImpl.add
     (QueryImpl.id' (oSpec +
       (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictLeft
-    (fun q => simulateQ (QueryImpl.id' (oSpec +
+    ⟨fun q => simulateQ (QueryImpl.id' (oSpec +
       (pathBundle (family OStmtIn) (oracleProtocol pSpec) p).spec)).restrictRight
-      (pathBundleImpl p q))
+      (pathBundleImpl p q)⟩
 
 /-- The output map of a legacy output-oracle simulation, for the challenges of a run. Its data
 map is the legacy materialization on the input data and the path's messages, and its queries
@@ -348,7 +348,7 @@ def _root_.Interaction.OracleMap.ofLegacySimulation [∀ t, Inhabited (oSpec.Ran
     OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
       (OracleBundle.ofFamily (family OStmtOut)) where
   f r := S.materializeOutput challenges r.1 (pathMessages p r.2)
-  impl q :=
+  impl.toFun q :=
     simulateQ (pathBundleImpl p) (simulateQ dropAmbient (S.simulateOutputQuery challenges q))
   law r q := by
     rw [QueryImpl.simulateQ_simulateQ_eq_of_apply (pathBundleImpl_law p r)]

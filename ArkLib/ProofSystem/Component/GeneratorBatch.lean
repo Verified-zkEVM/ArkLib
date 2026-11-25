@@ -30,7 +30,7 @@ variable (S : Type)
 instance (d : ℕ) : OracleInterface (Poly F d) where
   Query := F
   toOC.spec := fun _ => F
-  toOC.impl z := do return CompPoly.CPolynomial.evalHorner z (← read).val
+  toOC.impl.toFun z := do return CompPoly.CPolynomial.evalHorner z (← read).val
 
 /-- One verifier challenge, with no prover messages. -/
 @[reducible] def pSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[S]⟩
@@ -104,7 +104,7 @@ theorem simulateQ_queryBatch (f : ∀ i, OStmtIn F d k i)
 def outputSimulation : OracleOutputSimulation oSpec (OStmtIn F d k)
     (QuotientZeroTest.OStmtIn F d) (pSpec S) where
   materializeOutput chals f _ _ := batch hd f (G (chals ⟨0, rfl⟩))
-  simulateOutputQuery chals q := queryBatch F S d k G oSpec (chals ⟨0, rfl⟩) q.2
+  simulateOutputQuery chals := ⟨fun q => queryBatch F S d k G oSpec (chals ⟨0, rfl⟩) q.2⟩
   simulateOutputQuery_eq chals f messages q := by
     rcases q with ⟨u, z⟩
     change simulateQ (OracleInterface.simOracle2 oSpec f messages)

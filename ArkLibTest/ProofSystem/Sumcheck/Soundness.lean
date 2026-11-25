@@ -304,8 +304,9 @@ theorem adaptive_hits (r : F) : (adaptive r).val.eval r = 0 := by
 
 open Classical in
 /-- The challenge implementation that answers the challenge of a one-round run with `r`. -/
-def fixedAt (r : F) : QueryImpl (challengeSpec oracleSig (protocol F 2 1)) ProbComp := fun c =>
-  if h : c = headNode 0 then
+def fixedAt (r : F) : QueryImpl (challengeSpec oracleSig (protocol F 2 1)) ProbComp where
+  toFun c :=
+    if h : c = headNode 0 then
     h ▸ (pure r : ProbComp ((challengeSpec oracleSig (protocol F 2 1)).Range (headNode 0)))
   else @challengeQueryImpl _ oracleSig (protocol F 2 1) (challengeSampleable F 2 1) c
 

@@ -53,11 +53,11 @@ def sumVerifier : _root_.OracleVerifier []ₒ Unit InStmt Unit OutSum msgChal wh
   outputOracle := .inr {
     materializeOutput ch o msgs _ :=
       (show Nat from o ()) + (show Nat from msgs ⟨0, rfl⟩) + (show Nat from ch ⟨1, rfl⟩)
-    simulateOutputQuery ch _ := do
+    simulateOutputQuery ch := ⟨fun _ => do
       let a ← query (spec := []ₒ + ([InStmt]ₒ + [msgChal.Message]ₒ)) (.inr (.inl ⟨(), ()⟩))
       let b ← query (spec := []ₒ + ([InStmt]ₒ + [msgChal.Message]ₒ))
         (.inr (.inr ⟨⟨0, rfl⟩, ()⟩))
-      pure ((show Nat from a) + (show Nat from b) + (show Nat from ch ⟨1, rfl⟩))
+      pure ((show Nat from a) + (show Nat from b) + (show Nat from ch ⟨1, rfl⟩))⟩
     simulateOutputQuery_eq _ _ _ _ := rfl }
 
 /-- A run: message `4`, challenge `9`. -/

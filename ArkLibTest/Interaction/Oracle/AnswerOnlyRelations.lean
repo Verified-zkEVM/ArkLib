@@ -23,7 +23,7 @@ namespace Interaction.AnswerOnlyRelationsTests
 def tagged : OracleFamily Unit (fun _ => Nat × Bool) where
   interface := fun _ =>
     { Query := Unit
-      toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
+      toOC := { spec := fun _ => Nat, impl := ⟨fun _ value => value.1⟩ } }
 
 -- ClaimExample 1, restated: the old-layer row compares two closed claims. A closed claim is a
 -- statement with the behavior of the realizations: the unobservable tag vanishes.
@@ -83,7 +83,7 @@ theorem language_congr (s : Nat) (x y : ∀ i, tagged.Realization i)
 /-- A program that queries twice answers as the identity. -/
 def repeated : OracleMap tagged tagged where
   f := id
-  impl q := do
+  impl.toFun q := do
     let _ ← liftM (tagged.spec.query q)
     liftM (tagged.spec.query q)
   law x q := by
@@ -116,7 +116,7 @@ example (x : ∀ i, tagged.Realization i) {α : Type} (program : OracleComp tagg
 example {I : Type} {A : I → Type} {In : OracleFamily I A} (view : OracleMap In tagged)
     (impl : QueryImpl In.spec Id) (q : tagged.spec.Domain) :
     simulateQ impl ((repeated.comp view).impl q) =
-      simulateQ (fun r => simulateQ impl (view.impl r)) (repeated.impl q) := by
+      simulateQ ⟨fun r => simulateQ impl (view.impl r)⟩ (repeated.impl q) := by
   change simulateQ impl (simulateQ view.impl (repeated.impl q)) = _
   rw [← QueryImpl.simulateQ_compose]
   rfl
@@ -133,7 +133,8 @@ example {I : Type} {A : I → Type} {In : OracleFamily I A} (a b : OracleMap In 
       simulateQ (In.behaviorOfRealizations x) (b.impl q))
     (s : Nat) (x : ∀ i, A i) :
     answerProblem.language () (s, a.f x) ↔ answerProblem.language () (s, b.f x) := by
-  exact language_congr s _ _ (funext fun q => (a.law x q).symm.trans ((ho x q).trans (b.law x q)))
+  exact language_congr s _ _
+    (QueryImpl.ext fun q => (a.law x q).symm.trans ((ho x q).trans (b.law x q)))
 
 -- ClaimExample 4, at full strength. Take an arbitrary source specification, an arbitrary virtual
 -- program `view` for the tagged queries and an arbitrary deterministic source handler. Closing the
@@ -144,7 +145,7 @@ example {I : Type} {spec : OracleSpec I} (view : QueryImpl tagged.spec (OracleCo
         Nat × tagged.Behavior) =
       (7, QueryImpl.compose (QueryImpl.compose impl view) repeated.impl) := by
   congr 1
-  funext q
+  ext q : 1
   exact (QueryImpl.simulateQ_compose impl view (repeated.impl q)).symm
 
 -- ClaimExample 5, at full strength. Take an arbitrary source specification and two claims made of

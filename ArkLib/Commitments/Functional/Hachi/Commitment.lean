@@ -68,7 +68,7 @@ instance multilinearEvalOracleInterface {n : ℕ} :
   Query := Vector (Rq 𝓜(q, α)) n
   toOC :=
     { spec := Vector (Rq 𝓜(q, α)) n →ₒ Rq 𝓜(q, α)
-      impl := fun p => do return CMlPolynomial.eval (← read) p }
+      impl.toFun p := do return CMlPolynomial.eval (← read) p }
 
 -- `b > 1` is the gadget base used for **all** decompositions. Faithful to Hachi [NOZ26] §2.1/§4.1,
 -- every coefficient is written in `δ := ⌈log_b q⌉ = Nat.clog b q` base-`b` digits — a single `δ`

@@ -28,7 +28,9 @@ variable {Stmt₁ Stmt₂ Stmt₃ : Type} {m n : ℕ} {pSpec₁ : ProtocolSpec m
   [∀ i, SampleableType (pSpec₂.Challenge i)]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
-private def emptyChallengeImpl : QueryImpl ([]ₒ + [pSpec₁.Challenge]ₒ) ProbComp
+@[simps]
+private def emptyChallengeImpl : QueryImpl ([]ₒ + [pSpec₁.Challenge]ₒ) ProbComp where
+  toFun
   | .inl t => isEmptyElim t
   | .inr t => challengeQueryImpl t
 
@@ -38,7 +40,7 @@ private theorem simulateQ_empty_challenges {α : Type}
       liftM (simulateQ emptyChallengeImpl oa) := by
   rw [← simulateQ_liftTarget]
   congr 1
-  funext t
+  ext t : 1
   cases t with
   | inl t => exact isEmptyElim t
   | inr t => rfl

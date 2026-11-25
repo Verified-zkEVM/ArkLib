@@ -55,7 +55,7 @@ def lens : OracleStatement.ExecutableLens
     (Sumcheck.Spec.OracleStatement R pp.ℓ_m 3) where
   projStmt _ := ⟨0, Fin.elim0⟩
   materializeInput s o _ := polynomial pp s o
-  simulateInput s q := VirtualOracle.first pp s.2 s.1 q.2
+  simulateInput s := ⟨fun q => VirtualOracle.first pp s.2 s.1 q.2⟩
   simulateInput_eq s o q := by
     change simulateQ (simOracle0 (OracleStatement (R := R) pp) o)
       (VirtualOracle.first pp s.2 s.1 q.2) = eval q.2 (polynomial pp s o).val
@@ -63,7 +63,7 @@ def lens : OracleStatement.ExecutableLens
     exact VirtualOracle.firstVirtual_realizes pp s.2 s.1 q.2 o
   liftStmt s out := ⟨s.2, s.1, out.challenges, out.target⟩
   materializeOutput o _ := o
-  simulateOutput q := liftM (OracleSpec.query q)
+  simulateOutput.toFun q := liftM (OracleSpec.query q)
   simulateOutput_eq _ _ _ := rfl
 
 section
@@ -85,7 +85,7 @@ def verifierQueryImpl (s : Statement (R := R) pp) : QueryImpl
       [(Sumcheck.Spec.pSpec R 3 pp.ℓ_m).Message]ₒ))) :=
   QueryImpl.addLift (QueryImpl.id' oSpec)
     (QueryImpl.addLift
-      ((fun q => VirtualOracle.first pp s.2 s.1 q.2) :
+      (⟨fun q => VirtualOracle.first pp s.2 s.1 q.2⟩ :
         QueryImpl [Sumcheck.Spec.OracleStatement R pp.ℓ_m 3]ₒ
           (OracleComp [OracleStatement (R := R) pp]ₒ))
       (QueryImpl.id' [(Sumcheck.Spec.pSpec R 3 pp.ℓ_m).Message]ₒ) :

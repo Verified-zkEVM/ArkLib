@@ -62,8 +62,8 @@ def routeAlong (f : QueryImpl [p₁.Message]ₒ (OracleComp spec))
 /-- Route the message queries of an appended spec to the handlers of its two halves. -/
 def appendRoute (f : QueryImpl [p₁.Message]ₒ (OracleComp spec))
     (g : QueryImpl [p₂.Message]ₒ (OracleComp spec)) :
-    QueryImpl [(p₁ ++ₚ p₂).Message]ₒ (OracleComp spec) :=
-  fun q => routeAlong f g (MessageIdx.sumEquiv.apply_symm_apply q.1) q.2
+    QueryImpl [(p₁ ++ₚ p₂).Message]ₒ (OracleComp spec) where
+  toFun q := routeAlong f g (MessageIdx.sumEquiv.apply_symm_apply q.1) q.2
 
 /-- A query named by its half is routed to the handler of that half. -/
 theorem appendRoute_sumEquiv (f : QueryImpl [p₁.Message]ₒ (OracleComp spec))

@@ -23,7 +23,7 @@ namespace Interaction.StateRestorationTests
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
+  toOC := { spec := fun _ => Fin 8, impl := ⟨fun _ => do return (← read)⟩ }
 
 /-- One round: a `Fin 8` oracle message, then a uniform `Bool` challenge. -/
 def round : Round where
@@ -210,12 +210,12 @@ theorem constantReplayResult_eq (c : Bool) : constantReplayResult c = pure (7, c
 -- Row 10 (StateRestoration L182): the plain replay on true.
 /-- info: (7, true, 7) -/
 #guard_msgs in
-#eval evalWithAnswerFn (fun q : PEmpty.{1} => q.elim) (constantReplayResult true)
+#eval evalWithAnswerFn ⟨fun q : PEmpty.{1} => q.elim⟩ (constantReplayResult true)
 
 -- Row 11 (StateRestoration L183): the plain replay on false.
 /-- info: (7, false, 7) -/
 #guard_msgs in
-#eval evalWithAnswerFn (fun q : PEmpty.{1} => q.elim) (constantReplayResult false)
+#eval evalWithAnswerFn ⟨fun q : PEmpty.{1} => q.elim⟩ (constantReplayResult false)
 
 /-- Against every answer table, the run with the challenge of the game's transcript returns the
 game's transcript and verdict: the game's challenge is the table's answer at `key`. -/
@@ -670,7 +670,7 @@ def selectedMessage : (b : Bool) → Fin 8 → SelectedValue b
 /-- A value in the nine-element carrier answers its unit query with itself. -/
 @[instance_reducible] def wideInterface : OracleInterface (Fin 9) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 9, impl := fun _ => do return (← read) }
+  toOC := { spec := fun _ => Fin 9, impl := ⟨fun _ => do return (← read)⟩ }
 
 /-- The output oracle carrier and interface follow the authored Boolean too. -/
 @[instance_reducible] def varyingFamily :
@@ -699,10 +699,10 @@ def varyingMap (b : Bool) (p : Path (protocol rounds)) :
   cases b
   · exact
       { f := fun x _ => selectedMessage false (x.2 (.inl ⟨⟩))
-        impl := fun _ => do
+        impl := ⟨fun _ => do
           let m ← (OracleMap.snd emptyFamily (oracleMessageFamily (protocol rounds)
             ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
-          pure (selectedMessage false m)
+          pure (selectedMessage false m)⟩
         law := fun _ _ => rfl }
   · exact (OracleMap.embedding (oracleMessageFamily (protocol rounds)
       ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
@@ -749,7 +749,8 @@ def selectedProver (b : Bool) : Prover oracleSig []ₒ selectedProtocol (fun _ =
   pure ⟨b, scriptedProver rounds messages⟩
 
 /-- Replay the recorded challenge after the authored selector. -/
-def selectedAnswers (c : Bool) : QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id
+def selectedAnswers (c : Bool) : QueryImpl ([]ₒ + challengeSpec oracleSig selectedProtocol) Id where
+  toFun
   | .inl q => q.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, n⟩, h⟩ => recordedChallenges rounds (path 7 c) ⟨n, h⟩
@@ -804,11 +805,11 @@ theorem oracleReplayResult_eq (b c : Bool) :
 
 /-- info: (7, true, 7) -/
 #guard_msgs in
-#eval evalWithAnswerFn (fun q : PEmpty.{1} => q.elim) (replayResult true true)
+#eval evalWithAnswerFn ⟨fun q : PEmpty.{1} => q.elim⟩ (replayResult true true)
 
 /-- info: (7, false, 7) -/
 #guard_msgs in
-#eval evalWithAnswerFn (fun q : PEmpty.{1} => q.elim) (replayResult false false)
+#eval evalWithAnswerFn ⟨fun q : PEmpty.{1} => q.elim⟩ (replayResult false false)
 
 /-- info: (7, true, some (7, 7)) -/
 #guard_msgs in
@@ -985,7 +986,8 @@ theorem selectedPlainOutputLaw_iff (b : Bool) (z : Stmt)
     exact related
 
 /-- Each selected protocol draws the original uniform challenge after its authored prefix. -/
-def selectedDraw : QueryImpl (challengeSpec oracleSig selectedProtocol) ProbComp
+def selectedDraw : QueryImpl (challengeSpec oracleSig selectedProtocol) ProbComp where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, h⟩ => uniformDraw rounds ⟨n, h⟩
 

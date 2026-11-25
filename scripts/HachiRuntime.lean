@@ -324,7 +324,8 @@ def opening :=
 
 /-- Answer every uniform query with the largest index — a fixed, total oracle standing in for
 the sampling one. -/
-def unifIdImpl : QueryImpl unifSpec Id := fun n => Fin.last n
+def unifIdImpl : QueryImpl unifSpec Id where
+  toFun n := Fin.last n
 
 /-- The deterministic challenge oracle: every challenge is the `default` of its type. The
 `Id`-valued counterpart of `challengeQueryImpl`, and the reason the run is reproducible.
@@ -332,8 +333,8 @@ Legitimate because completeness here has error `0` — the honest prover is acce
 challenge, so a fixed one is as good as a sampled one. -/
 def defaultChallengeImpl {n : ℕ} {pSpec : ProtocolSpec n}
     [∀ i, Inhabited (pSpec.Challenge i)] :
-    QueryImpl ([pSpec.Challenge]ₒ'challengeOracleInterface) Id :=
-  fun q => (default : pSpec.Challenge q.1)
+    QueryImpl ([pSpec.Challenge]ₒ'challengeOracleInterface) Id where
+  toFun q := (default : pSpec.Challenge q.1)
 
 /-- **The honest run**: the verifier's verdict on the honest prover's transcript. `none` would
 mean the computation failed; `some false` would mean the verifier rejected. -/

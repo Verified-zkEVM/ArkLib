@@ -284,7 +284,7 @@ private theorem simulateQ_heq_of_apply {κ : Type} {spec : OracleSpec κ} {X : T
     (g : QueryImpl spec (OracleComp (T x'))) (h : ∀ q, HEq (f q) (g q)) {α : Type}
     (oa : OracleComp spec α) : HEq (simulateQ f oa) (simulateQ g oa) := by
   subst hx
-  obtain rfl : f = g := funext fun q => eq_of_heq (h q)
+  obtain rfl : f = g := QueryImpl.ext fun q => eq_of_heq (h q)
   rfl
 
 end Simulate

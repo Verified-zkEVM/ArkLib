@@ -18,7 +18,7 @@ namespace Interaction.OracleTests
 
 def doubled : OracleMap functions functions where
   f x _ n := 2 * x ⟨⟩ n
-  impl q := do
+  impl.toFun q := do
     let n : Nat ← liftM (functions.spec.query q)
     pure (2 * n)
   law x q := by
@@ -90,7 +90,7 @@ def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => B
       pure bit
   outputMap _ _ _ :=
     { f := fun _ i => i.elim
-      impl := fun q => q.1.elim
+      impl := ⟨fun q => q.1.elim⟩
       law := fun _ q => q.1.elim }
 
 /-- The suffix can lawfully expose its input statement as a constant oracle. -/
@@ -99,7 +99,7 @@ def constantSuffix : OracleVerifier (Unit →ₒ Bool) emptyTree Bool (fun _ => 
   decide _ _ _ := pure ()
   outputMap bit _ _ :=
     { f := fun _ _ _ => if bit then 1 else 0
-      impl := fun _ => pure (if bit then (1 : Nat) else (0 : Nat))
+      impl := ⟨fun _ => pure (if bit then (1 : Nat) else (0 : Nat))⟩
       law := fun _ _ => rfl }
 
 /-- With no bundle data or public moves, one output map cannot expose both ambient answers. -/

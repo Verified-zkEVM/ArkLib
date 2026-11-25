@@ -86,8 +86,8 @@ def renameQueries {ι : Type} (ambient : OracleSpec ι) (k : ℕ) :
       (OracleComp (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))) :=
   QueryImpl.add
     ((QueryImpl.id' (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))).restrictLeft)
-    (Interpreted.transportDraw k
-      ((QueryImpl.id' (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))).restrictRight))
+    ⟨Interpreted.transportDraw k
+      (QueryImpl.id' (ambient + challengeSpec oracleSig (protocolOn R M' eval' k))).restrictRight⟩
 
 /-- Renaming challenge nodes preserves every supported result. -/
 private theorem support_renameQueries {ι α : Type} (ambient : OracleSpec ι) (k : ℕ)
@@ -137,7 +137,7 @@ theorem experiment_renameQueries {ι σ α : Type} {ambient : OracleSpec ι} (k 
     (challenges : QueryImpl (challengeSpec oracleSig (protocolOn R M' eval' k)) ProbComp)
     (program : OracleComp (ambient + challengeSpec oracleSig (protocolOn R M eval k)) α) :
     experiment init impl challenges (simulateQ (renameQueries ambient k) program) =
-      experiment init impl (Interpreted.transportDraw k challenges) program := by
+      experiment init impl ⟨Interpreted.transportDraw k challenges⟩ program := by
   simp only [experiment]
   refine bind_congr fun st => congrArg (StateT.run' · st) ?_
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) program
@@ -212,8 +212,8 @@ theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
           Outcome oracleSig (protocolOn R M eval n) Out
             (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, A i))) <$>
         Interaction.TwoParty.Lens.run (protocolOn R M eval n)
-          (P.simulate fun q => liftM
-            ((ambient + challengeSpec oracleSig (protocolOn R M eval n)).query (.inl q)))
+          (P.simulate ⟨fun q => liftM
+            ((ambient + challengeSpec oracleSig (protocolOn R M eval n)).query (.inl q))⟩)
           (sampler oracleSig _ fun c => liftM
             ((ambient + challengeSpec oracleSig (protocolOn R M eval n)).query (.inr c))) := by
   rw [OracleVerifier.run_eq]
@@ -302,8 +302,8 @@ theorem run_interpreted (k : ℕ) (st : State k) (data : ∀ i, A i)
         (Interpreted.verdict eval checks finish k st x.1).map (fun t => (t, data))⟩ :
         Outcome oracleSig _ Out (fun _ => T × (∀ i, A i)))) <$>
         Interaction.TwoParty.Lens.run (protocolOn R M eval k)
-          (P.simulate fun q => liftM
-            ((ambient + challengeSpec oracleSig (protocolOn R M eval k)).query (.inl q)))
+          (P.simulate ⟨fun q => liftM
+            ((ambient + challengeSpec oracleSig (protocolOn R M eval k)).query (.inl q))⟩)
           (sampler oracleSig _ fun c => liftM
             ((ambient + challengeSpec oracleSig (protocolOn R M eval k)).query (.inr c))) := by
   rw [Interpreted.verifier_run, map_eq_bind_pure_comp]
@@ -372,7 +372,7 @@ abbrev Input := {p : CMvPolynomial n R // ∀ j, p.degreeOf j ≤ deg}
 def inputFamily : OracleFamily Unit (fun _ => Input R deg n) :=
   ⟨fun _ => { Query := Fin n → R
               toOC.spec := (Fin n → R) →ₒ R
-              toOC.impl point := do return (← read).val.eval point }⟩
+              toOC.impl.toFun point := do return (← read).val.eval point }⟩
 
 /-- The mathematical polynomial of a computable input. -/
 def interpretInput [BEq R] [LawfulBEq R] (data : ∀ _ : Unit, Input R deg n) :
@@ -818,10 +818,11 @@ theorem interval_soundness [SampleableType R] [Fintype R] [IsDomain R]
     Interpreted.transportProver_transportFocal] at hb
   have hrun := interval_run_eq_interpret D ambient start count finish.le stmt data
     (Out' := Out') (fun tr o => ⟨tr, o⟩) P
-  have hch : Interpreted.transportDraw (N := R⦃≤ deg⦄[X])
-      (evaluateN := fun p x => p.val.eval x) count (indexedDraw (R := R) (deg := deg) count) =
+  have hch : (⟨Interpreted.transportDraw (N := R⦃≤ deg⦄[X])
+      (evaluateN := fun p x => p.val.eval x) count (indexedDraw (R := R) (deg := deg) count)⟩ :
+        QueryImpl (challengeSpec oracleSig (protocol R deg count)) ProbComp) =
       challengeQueryImpl oracleSig (protocol R deg count) :=
-    funext (transportDraw_challengeQueryImpl R deg _ _ count)
+    QueryImpl.ext (transportDraw_challengeQueryImpl R deg _ _ count)
   rw [← hrun] at hb
   have he := experiment_renameQueries (M := Message R deg) (eval := evaluate R deg)
     (M' := R⦃≤ deg⦄[X]) (eval' := fun p x => p.val.eval x) count init impl

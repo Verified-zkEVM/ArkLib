@@ -126,7 +126,7 @@ theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     {Out : Transcript oracleSig (s₁.append s₂) → Type u}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :
     let full := ambient + challengeSpec oracleSig (s₁.append s₂)
-    let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+    let toFull : QueryImpl ambient (OracleComp full) := ⟨fun q => liftM (full.query (.inl q))⟩
     let draw : (c : ChallengeNode oracleSig (s₁.append s₂)) →
         OracleComp full (challengeSpec oracleSig (s₁.append s₂) c) :=
       fun c => liftM (full.query (.inr c))

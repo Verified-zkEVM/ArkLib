@@ -61,7 +61,7 @@ theorem verdict_transport {State : ℕ → Type} {T : Type} (checks : RoundCheck
         roundVerdict evaluate (checks k) st msg r := by
       unfold roundVerdict
       congr 1
-      exact funext fun x => heval msg x
+      exact QueryImpl.ext fun x => heval msg x
     simp only [verdict, mapTranscript, message, challenge, tail, hh]
     cases roundVerdict evaluate (checks k) st msg r with
     | none => rfl
@@ -72,10 +72,11 @@ theorem verdict_transport {State : ℕ → Type} {T : Type} (checks : RoundCheck
 /-- Supply the same explicit draw at every public challenge node. -/
 def draw {m : Type → Type} (next : m R) : (k : ℕ) →
     QueryImpl (challengeSpec oracleSig (protocol R M evaluate k)) m
-  | 0, ⟨node, _⟩ => nomatch node
-  | _ + 1, ⟨.inl _, h⟩ => nomatch h
-  | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => next
-  | k + 1, ⟨.inr ⟨_, .inr ⟨_, node⟩⟩, h⟩ => draw next k ⟨node, h⟩
+  | 0 => ⟨fun | ⟨node, _⟩ => nomatch node⟩
+  | k + 1 => ⟨fun
+    | ⟨.inl _, h⟩ => nomatch h
+    | ⟨.inr ⟨_, .inl _⟩, _⟩ => next
+    | ⟨.inr ⟨_, .inr ⟨_, node⟩⟩, h⟩ => draw next k ⟨node, h⟩⟩
 
 /-- Move a challenge implementation between message carriers. The challenge nodes do not depend
 on the carrier, and every challenge is a ring element. -/

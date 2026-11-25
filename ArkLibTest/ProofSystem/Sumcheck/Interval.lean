@@ -131,7 +131,7 @@ def initial : RoundStatement ℕ 3 1 := ⟨0, ![7]⟩
 
 /-- A deterministic one-round handler answers with `3` and never samples uniformly. -/
 def oneHandler : QueryImpl (ambient + challengeSpec oracleSig (protocol ℕ 0 1)) Id :=
-  QueryImpl.addLift (fun _ => (pure () : Id Unit)) (indexedRoundDraw (deg := 0) (pure 3 : Id ℕ))
+  QueryImpl.addLift ⟨fun _ => (pure () : Id Unit)⟩ (indexedRoundDraw (deg := 0) (pure 3 : Id ℕ))
 
 /-- The nonzero-start transcript accepts and appends its challenge to the earlier prefix. -/
 theorem nonzero_verdict :

@@ -208,10 +208,11 @@ namespace Stateful
 /-- Each ambient query returns the old counter and increments the shared state. -/
 abbrev counterSpec : OracleSpec Unit := Unit →ₒ ℕ
 
-def counterImpl : QueryImpl counterSpec (StateT ℕ ProbComp) := fun _ => do
-  let n ← get
-  set (n + 1)
-  pure n
+def counterImpl : QueryImpl counterSpec (StateT ℕ ProbComp) where
+  toFun _ := do
+    let n ← get
+    set (n + 1)
+    pure n
 
 /-- The first stage preserves the statement without querying the counter. -/
 def first : Verifier counterSpec Bool Bool protocol := ⟨fun stmt _ => pure stmt⟩

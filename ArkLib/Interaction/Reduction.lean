@@ -85,13 +85,14 @@ theorem Prover.simulate_simulate {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rol
     (F : QueryImpl spec' n) (G : QueryImpl spec (OracleComp spec')) :
     (s : FreeM P PUnit.{u + 1}) → {Out : Transcript l s → Type u} →
     (p : Prover l spec s Out) →
-    Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
+    Prover.simulate F (Prover.simulate G p) = Prover.simulate ⟨fun q => simulateQ F (G q)⟩ p
   | .pure _, _, p => by
     rw [Prover.simulate_done, Prover.simulate_done, Prover.simulate_done]
     exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p
   | .liftBind a rest, _, p => by
     rw [Prover.simulate_node, Prover.simulate_node, Prover.simulate_node, simulateQ_map,
-      Functor.map_map, QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) p]
+      Functor.map_map, QueryImpl.simulateQ_simulateQ_eq_of_apply
+        (impl := ⟨fun q => simulateQ F (G q)⟩) (fun _ => rfl) p]
     refine congrArg (· <$> _) (funext fun v => ?_)
     refine (congrFun (Choice.map_comp _ _ _ _) v).trans ?_
     exact congrArg (fun f => Choice.map .focal (owner l a) f v)

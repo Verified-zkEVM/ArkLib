@@ -803,8 +803,10 @@ def prefixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) :
       (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
   (((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictLeft) :
     QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂)))) +
-  prefixDraw (m := OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) plainSig s₁ s₂
-    ((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictRight)
+  (⟨prefixDraw plainSig s₁ s₂
+    (QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictRight⟩ :
+    QueryImpl (challengeSpec plainSig s₁)
+      (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))))
 
 /-- Answer the queries of a standalone suffix run from the run interface of the appended
 protocol. -/
@@ -813,8 +815,10 @@ def suffixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) (p : Pat
       (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
   (((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictLeft) :
     QueryImpl ambient (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂)))) +
-  suffixDraw (m := OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) plainSig s₁ s₂
-    ((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictRight) p
+  (⟨suffixDraw plainSig s₁ s₂
+    (QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictRight p⟩ :
+    QueryImpl (challengeSpec plainSig (s₂ p))
+      (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))))
 
 /-- The run of `V₁.append V₂` with the prefix decision taken at the boundary: the standalone
 run of `V₁` against the split prover, then the standalone run of `V₂.onAccept` on the prefix
@@ -868,7 +872,7 @@ theorem simulateQ_prefixQueries {s₁ : Protocol} {s₂ : Path s₁ → Protocol
     (t : (ambient + challengeSpec plainSig s₁).Domain) :
     simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp))
       (prefixQueries s₁ s₂ t) =
-      (QueryImpl.addLift impl (prefixDraw plainSig s₁ s₂ ch) :
+      (QueryImpl.addLift impl ⟨prefixDraw plainSig s₁ s₂ ch⟩ :
         QueryImpl _ (StateT σ ProbComp)) t := by
   rcases t with q | c
   · simp only [prefixQueries, QueryImpl.add_apply_inl, QueryImpl.restrictLeft,
@@ -889,7 +893,7 @@ theorem simulateQ_suffixQueries {s₁ : Protocol} {s₂ : Path s₁ → Protocol
     (t : (ambient + challengeSpec plainSig (s₂ p)).Domain) :
     simulateQ (QueryImpl.addLift impl ch : QueryImpl _ (StateT σ ProbComp))
       (suffixQueries s₁ s₂ p t) =
-      (QueryImpl.addLift impl (suffixDraw plainSig s₁ s₂ ch p) :
+      (QueryImpl.addLift impl ⟨suffixDraw plainSig s₁ s₂ ch p⟩ :
         QueryImpl _ (StateT σ ProbComp)) t := by
   rcases t with q | c
   · simp only [suffixQueries, QueryImpl.add_apply_inl, QueryImpl.restrictLeft,
@@ -911,7 +915,7 @@ theorem Verifier.append_run_eq {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
     let full := ambient + challengeSpec plainSig (s₁.append s₂)
-    let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+    let toFull : QueryImpl ambient (OracleComp full) := ⟨fun q => liftM (full.query (.inl q))⟩
     let draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
         OracleComp full (challengeSpec plainSig (s₁.append s₂) c) :=
       fun c => liftM (full.query (.inr c))
@@ -958,7 +962,7 @@ theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → P
     (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) T (fun _ => U))
     (stmt : S) (prover : Prover plainSig ambient (s₁.append s₂) Out) :
     let full := ambient + challengeSpec plainSig (s₁.append s₂)
-    let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))
+    let toFull : QueryImpl ambient (OracleComp full) := ⟨fun q => liftM (full.query (.inl q))⟩
     let draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
         OracleComp full (challengeSpec plainSig (s₁.append s₂) c) :=
       fun c => liftM (full.query (.inr c))
@@ -975,11 +979,11 @@ theorem Verifier.boundaryDecidedRun_eq {s₁ : Protocol} {s₂ : Path s₁ → P
   intro full toFull draw
   have routeAmbient (t : Protocol) :
       QueryImpl.ofLift ambient (OracleComp (ambient + challengeSpec plainSig t)) =
-        (fun q => liftM ((ambient + challengeSpec plainSig t).query (.inl q))) := rfl
+        ⟨fun q => liftM ((ambient + challengeSpec plainSig t).query (.inl q))⟩ := rfl
   have routeChallenge (t : Protocol) :
       QueryImpl.ofLift (challengeSpec plainSig t)
           (OracleComp (ambient + challengeSpec plainSig t)) =
-        (fun c => liftM ((ambient + challengeSpec plainSig t).query (.inr c))) := rfl
+        ⟨fun c => liftM ((ambient + challengeSpec plainSig t).query (.inr c))⟩ := rfl
   simp only [Verifier.boundaryDecidedRun, Verifier.run, routeAmbient, routeChallenge,
     simulateQ_bind, simulateQ_pure, bind_assoc]
   unfold prefixQueries suffixQueries QueryImpl.restrictLeft QueryImpl.restrictRight
@@ -1063,15 +1067,15 @@ theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s
         experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
       (fun obs => obs.2.2) <$>
         experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
-    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hprefix : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
-    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hadmissible : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
-        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        ⟨suffixDraw plainSig s₁ s₂ challenges p⟩) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ := by
@@ -1132,15 +1136,15 @@ theorem Verifier.append_soundness_of_standalone_of_evalDistEq {s₁ : Protocol}
     (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
     (hreorder : experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
       experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
-    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hprefix : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
-    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hadmissible : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
-        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        ⟨suffixDraw plainSig s₁ s₂ challenges p⟩) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
@@ -1159,15 +1163,15 @@ theorem Verifier.append_soundness_of_standalone_of_pure {s₁ : Protocol}
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
     (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
     (hpure : ∀ p v, ∃ r, (V₁.decide stmt p v).run = pure r)
-    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hprefix : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
-    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hadmissible : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
-        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        ⟨suffixDraw plainSig s₁ s₂ challenges p⟩) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
@@ -1187,16 +1191,16 @@ theorem Verifier.append_soundness_of_standalone_of_stateless {s₁ : Protocol}
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
     (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
     (hprefix : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
-      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+      ⟨prefixDraw plainSig s₁ s₂ challenges⟩ (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
         o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
     (hadmissible : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
-      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+      ⟨prefixDraw plainSig s₁ s₂ challenges⟩ (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
         o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
         (g.liftTarget (StateT σ ProbComp))
-        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        ⟨suffixDraw plainSig s₁ s₂ challenges p⟩) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init (g.liftTarget (StateT σ ProbComp)) challenges
       ((V₁.append V₂).run stmt prover))}[∃ u, obs.2.2 = some u ∧ output.language () u] ≤
@@ -1239,14 +1243,14 @@ theorem Verifier.append_soundness_of_soundness {s₁ : Protocol} {s₂ : Path s�
             experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
           (fun obs => obs.2.2) <$>
             experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
-    (hprefix : V₁.soundness init impl (prefixDraw plainSig s₁ s₂ challenges) input
+    (hprefix : V₁.soundness init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩ input
       (middle.toPathProblem s₁) ε₁)
     (hadmissible : ∀ stmt, input.admissible () stmt → ¬ input.language () stmt →
       ∀ (Out : Transcript plainSig s₁ → Type) (prover : Prover plainSig ambient s₁ Out),
-        Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+        Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
           (V₁.run stmt prover))}[∃ t, o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
-      (suffixDraw plainSig s₁ s₂ challenges p) middle (output.toPathProblem (s₂ p)) ε₂) :
+      ⟨suffixDraw plainSig s₁ s₂ challenges p⟩ middle (output.toPathProblem (s₂ p)) ε₂) :
     (V₁.append V₂).soundness init impl challenges input
       (output.toPathProblem (s₁.append s₂)) (ε₁ + δ + ε₂) := by
   intro Out stmt hadm hfalse prover
@@ -1300,12 +1304,12 @@ theorem Verifier.append_soundness_of_soundness_of_admissible {s₁ : Protocol}
             experiment init impl challenges ((V₁.append V₂).run stmt prover) =ᵈ
           (fun obs => obs.2.2) <$>
             experiment init impl challenges (Verifier.boundaryDecidedRun V₁ V₂ stmt prover))
-    (hprefix : V₁.soundness init impl (prefixDraw plainSig s₁ s₂ challenges) input
+    (hprefix : V₁.soundness init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩ input
       (middle.toPathProblem s₁) ε₁)
     (haccept : ∀ stmt, input.admissible () stmt → ∀ p v t,
       some t ∈ support (V₁.decide stmt p v).run → middle.admissible () t)
     (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
-      (suffixDraw plainSig s₁ s₂ challenges p) middle (output.toPathProblem (s₂ p)) ε₂) :
+      ⟨suffixDraw plainSig s₁ s₂ challenges p⟩ middle (output.toPathProblem (s₂ p)) ε₂) :
     (V₁.append V₂).soundness init impl challenges input
       (output.toPathProblem (s₁.append s₂)) (ε₁ + ε₂) := by
   have h := Verifier.append_soundness_of_soundness V₁ V₂ init impl challenges input middle output
@@ -1325,14 +1329,14 @@ theorem Verifier.append_soundness_of_soundness_of_pure {s₁ : Protocol}
     (input : StatementProblem S) (middle : StatementProblem T) (output : StatementProblem U)
     (ε₁ δ ε₂ : ℝ≥0∞)
     (hpure : ∀ stmt p v, ∃ r, (V₁.decide stmt p v).run = pure r)
-    (hprefix : V₁.soundness init impl (prefixDraw plainSig s₁ s₂ challenges) input
+    (hprefix : V₁.soundness init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩ input
       (middle.toPathProblem s₁) ε₁)
     (hadmissible : ∀ stmt, input.admissible () stmt → ¬ input.language () stmt →
       ∀ (Out : Transcript plainSig s₁ → Type) (prover : Prover plainSig ambient s₁ Out),
-        Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+        Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
           (V₁.run stmt prover))}[∃ t, o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state, (V₂ p).soundness (pure state) impl
-      (suffixDraw plainSig s₁ s₂ challenges p) middle (output.toPathProblem (s₂ p)) ε₂) :
+      ⟨suffixDraw plainSig s₁ s₂ challenges p⟩ middle (output.toPathProblem (s₂ p)) ε₂) :
     (V₁.append V₂).soundness init impl challenges input
       (output.toPathProblem (s₁.append s₂)) (ε₁ + δ + ε₂) :=
   Verifier.append_soundness_of_soundness V₁ V₂ init impl challenges input middle output
@@ -1351,14 +1355,14 @@ theorem Verifier.append_soundness_of_soundness_of_stateless {s₁ : Protocol}
     (input : StatementProblem S) (middle : StatementProblem T) (output : StatementProblem U)
     (ε₁ δ ε₂ : ℝ≥0∞)
     (hprefix : V₁.soundness init (g.liftTarget (StateT σ ProbComp))
-      (prefixDraw plainSig s₁ s₂ challenges) input (middle.toPathProblem s₁) ε₁)
+      ⟨prefixDraw plainSig s₁ s₂ challenges⟩ input (middle.toPathProblem s₁) ε₁)
     (hadmissible : ∀ stmt, input.admissible () stmt → ¬ input.language () stmt →
       ∀ (Out : Transcript plainSig s₁ → Type) (prover : Prover plainSig ambient s₁ Out),
         Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
-          (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt prover))}[∃ t,
+          ⟨prefixDraw plainSig s₁ s₂ challenges⟩ (V₁.run stmt prover))}[∃ t,
             o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state, (V₂ p).soundness (pure state) (g.liftTarget (StateT σ ProbComp))
-      (suffixDraw plainSig s₁ s₂ challenges p) middle (output.toPathProblem (s₂ p)) ε₂) :
+      ⟨suffixDraw plainSig s₁ s₂ challenges p⟩ middle (output.toPathProblem (s₂ p)) ε₂) :
     (V₁.append V₂).soundness init (g.liftTarget (StateT σ ProbComp)) challenges input
       (output.toPathProblem (s₁.append s₂)) (ε₁ + δ + ε₂) :=
   Verifier.append_soundness_of_soundness V₁ V₂ init _ challenges input middle output
