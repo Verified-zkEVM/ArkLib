@@ -154,8 +154,10 @@ alone gives no total running-time bound.
 The binders of `MeasuredStages` keep small `Win stmt` at root results, small intermediate
 witnesses and `StageInput` at step inputs/results, small `W stmt tr` at leaf inputs, and a small
 cost type `ω`. `MeasuredStages.programAlong` and `MeasuredKnowledgeStateFunction` retain those
-restrictions. The pinned measured-program declarations do not fix these carriers to `Type`.
-PolyFun's `PFunctor.FreeM.BudgetedProgram` in `PolyFun/PFunctor/Free/Cost/Measured.lean:194`
+restrictions, and lifting them is follow-up work. The pinned measured-program declarations do not
+fix these carriers to `Type`. At the previous VCVio pin `f8d7f8ef`, VCVio's
+`OracleComp.BudgetedProgram` and `OracleComp.MeasuredProgram` did. The programs now live in
+PolyFun. `PFunctor.FreeM.BudgetedProgram` in `PolyFun/PFunctor/Free/Cost/Measured.lean:194`
 takes its input, result and cost type in independent universes. The underlying
 `PFunctor.FreeM.MeasuredProgram` at line 52 puts `View` and `Op` in the universe of the result.
 `BudgetedProgram.comp` at line 221 puts the intermediate result in the universe of the final
@@ -165,7 +167,7 @@ lemmas for `Type` inputs, results and cost types. The statement universe remains
 the measured code takes `P : PFunctor.{uA, 0}`, so positions have their own universe. These
 restrictions apply only to measured programs, not pure backward maps. The PolyFun pin is
 `713d8857e49d20927c1447b3ba7397acc5537319`, and the VCVio pin is
-`7e6e986584a72d47fc26bc1f938eab120f0b296d`.
+`f1a4a8ecef2e76b3af3dbe5205c604066dba85e3`.
 
 ## ArkLib/Interaction/Oracle/Security/Knowledge.lean
 
@@ -376,7 +378,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 
 | ID | Forcing parent declarations | Status | Exact target and limitation |
 | --- | --- | --- | --- |
-| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Core/Protocol.lean:69–71`) | accepted upstream limit (large-move probability: `ProbComp` and shared challenge/message universe; [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; `ProbComp` cannot sample these moves at `u > 0`. Measured specializations also require small stage inputs through `MeasuredStages`, as recorded above. |
+| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Interaction/Protocol.lean:69–71`) | accepted upstream limit (large-move probability: `ProbComp` and shared challenge/message universe; [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic; the pin includes it since `f1a4a8ec`, and ArkLib has not adopted it yet) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; At the previous pin `ProbComp` could not sample these moves at `u > 0`. Measured specializations also keep small stage inputs, as recorded above. |
 
 [r1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Oracle/Security/Knowledge.lean#L37
 [r2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/Security/RoundByRound.lean#L368

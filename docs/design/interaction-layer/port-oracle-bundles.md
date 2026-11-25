@@ -234,12 +234,28 @@ old-layer universe instantiations.
 
 ## Cost universes
 
-[`OracleMap.withAmbient_worstCaseCost`][cost] has independent backing-data universes `dX`
-and `dY`. Its ambient and bundle-query indices, response and result types, and cost carrier
-still use `Type`. [VCVio #1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes
-the upstream cost API. ArkLib can generalize this wrapper using VCVio's
-`WorstCaseCostBound.simulateQ`. The runner's requirement that returned values match its monad
-universe is separate from this wrapper's cost universes.
+[`OracleMap.withAmbient_worstCaseCost`][cost] has independent backing-data universes `dX`, `dY`.
+Its ambient index, both bundle-query indices, response/result types and cost carrier `ω` remain
+in `Type`. This was a restriction of the VCVio cost API at the previous pin
+`f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`, and ArkLib accepts it as an upstream limit.
+[VCVio#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the cost API universes,
+and the current pin `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3` includes it. ArkLib has not yet
+generalized the wrapper. It is separate from
+`OracleInterface` and from the runner's requirement that returned values match its monad universe.
+Protocol semantics do not force query indices and costs to universe zero.
+
+At the previous pin, lifting the limit needed these changes. VCVio#1220 made the VCVio ones:
+
+- Generalize `VCVio/OracleComp/QueryTracking/CostModel.lean`: the variables at line 63, `CostModel`
+  at line 86, `costDist`, and `WorstCaseCostBound` at line 217. Query-index, response/result and
+  cost universes must be explicit, with any necessary relation stated instead of fixing zero.
+- Generalize the corresponding cost-writer helpers and their simulation/support laws.
+- Generalize `CostModel/Simulation.lean`'s variables at line 32 and
+  `WorstCaseCostBound.simulateQ` to those universes.
+- Then generalize this branch's wrapper using the upstream theorem. It needs no separate cost
+  semantics and no local proof of the upstream simulation law.
+
+[cost]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/Oracle/Cost.lean#L47
 
 ## Definition-site fixture transparency
 

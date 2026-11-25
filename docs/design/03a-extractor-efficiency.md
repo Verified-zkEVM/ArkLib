@@ -289,10 +289,10 @@ from a proved correspondence to a standard machine, which neither route supplies
 
 A measured program is independent of any game: it contains an input view, a charged instruction
 program, deterministic answers, and charges. Each security layer supplies its resource contract
-for that layer's extractor shape. PolyFun owns the game-independent programs in `PolyFun.PFunctor.Free.Cost.Measured`.
-VCVio supplies the oracle-cost lemmas in `VCVio.OracleComp.QueryTracking.MeasuredProgram`.
-The legacy game conjunctions and erasure lemmas live in
-`ArkLib/OracleReduction/Security/Resources.lean`. The FRI
+for that layer's extractor shape. PolyFun owns the game-independent programs in
+`PolyFun.PFunctor.Free.Cost.Measured`. VCVio supplies the oracle-cost lemmas in
+`VCVio.OracleComp.QueryTracking.MeasuredProgram`. The legacy game conjunctions and erasure lemmas
+live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
 certificate remains proposed. Interaction-layer games consume the same measured programs through
 their own adapter: `ArkLib/Interaction/Security/MeasuredExtraction.lean` defines
@@ -304,8 +304,8 @@ same `KnowledgeStateFunction.extractAlong` on each completed transcript and outp
 above, rather than being additional execution-time guarantees.
 
 CompPoly owns polynomial algorithms and their generic semantic and size facts. PolyFun owns
-measured programs and their composition. VCVio supplies oracle-cost instrumentation. ArkLib hosts arithmetic
-instrumentation adapters under `ArkLib/ToCompPoly/Univariate/` and owns the protocol-specific
+measured programs and their composition. VCVio supplies oracle-cost instrumentation. ArkLib
+hosts arithmetic instrumentation adapters under `ArkLib/ToCompPoly/Univariate/` and owns the protocol-specific
 extraction/game connections. Extract shared cross-library adapters into an appropriate owner when
 a demonstrated API need calls for them; their current location is not a permanent ownership rule.
 The deeper execution backend proposed for PolyFun remains later work; these operation profiles
