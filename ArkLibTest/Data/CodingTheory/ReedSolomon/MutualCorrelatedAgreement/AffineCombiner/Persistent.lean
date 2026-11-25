@@ -145,14 +145,19 @@ private noncomputable def embed₄ : GaloisField 2 2 →+* GaloisField 2 4 :=
 private noncomputable def domain₄ : GaloisField 2 2 ↪ GaloisField 2 4 :=
   ⟨embed₄, embed₄.injective⟩
 
+/-- The challenge embedding `𝔽₄ ↪ 𝔽₁₆`, kept apart from the evaluation domain `domain₄`. -/
+private noncomputable def challenge₄ : GaloisField 2 2 ↪ GaloisField 2 4 :=
+  ⟨embed₄, embed₄.injective⟩
+
 -- Challenges from `𝔽₄ ⊂ 𝔽₁₆` with polynomial witnesses: at most `4 choose 2 = 6` of the
 -- `|𝔽₄|² = 16` challenges are exceptional.
 open Classical in
 example (f g : GaloisField 2 2 → GaloisField 2 4) (F₀ G₀ : (GaloisField 2 4)[X])
     (hF : F₀.degree ≤ 1) (hG : G₀.degree < 1) :
     #{c : GaloisField 2 2 × GaloisField 2 2 | IsAffineExceptional domain₄ f g 1 3 1
-      (embed₄ c.1) (embed₄ c.2) (F₀ + affineMultiplier (embed₄ c.1) (embed₄ c.2) * G₀)} ≤ 6 := by
-  refine (card_isAffineExceptional_add_mul_map_le domain₄ f g domain₄ (d := 1) (A := 3) F₀ G₀
+      (challenge₄ c.1) (challenge₄ c.2)
+      (F₀ + affineMultiplier (challenge₄ c.1) (challenge₄ c.2) * G₀)} ≤ 6 := by
+  refine (card_isAffineExceptional_add_mul_map_le domain₄ f g challenge₄ (d := 1) (A := 3) F₀ G₀
     hF hG).trans ?_
   rw [card_galoisField_2_2]
   decide
@@ -164,9 +169,9 @@ example (f g : GaloisField 2 2 → GaloisField 2 4) (F₀ G₀ : RatFunc (Galois
     #{c : GaloisField 2 2 × GaloisField 2 2 | ∃ P : (GaloisField 2 4)[X],
       algebraMap (GaloisField 2 4)[X] (RatFunc (GaloisField 2 4)) P =
           F₀ + algebraMap (GaloisField 2 4)[X] (RatFunc (GaloisField 2 4))
-            (affineMultiplier (embed₄ c.1) (embed₄ c.2)) * G₀ ∧
-        IsAffineExceptional domain₄ f g 1 3 1 (embed₄ c.1) (embed₄ c.2) P} ≤ 6 := by
-  refine (card_isAffineExceptional_ratFunc_map_le domain₄ f g domain₄ (d := 1) (A := 3) F₀
+            (affineMultiplier (challenge₄ c.1) (challenge₄ c.2)) * G₀ ∧
+        IsAffineExceptional domain₄ f g 1 3 1 (challenge₄ c.1) (challenge₄ c.2) P} ≤ 6 := by
+  refine (card_isAffineExceptional_ratFunc_map_le domain₄ f g challenge₄ (d := 1) (A := 3) F₀
     G₀).trans ?_
   rw [card_galoisField_2_2]
   decide
@@ -176,12 +181,27 @@ example (f g : GaloisField 2 2 → GaloisField 2 4) (F₀ G₀ : RatFunc (Galois
 open Classical in
 example (f g : GaloisField 2 2 → GaloisField 2 4) :
     (#{c : GaloisField 2 2 × GaloisField 2 2 | ∃ P,
-      IsAffineExceptional domain₄ f g 0 3 1 (embed₄ c.1) (embed₄ c.2) P ∧
-        IsAffinePersistent domain₄ f g 0 3 (embed₄ c.1) (embed₄ c.2) P} : ℝ) ≤ 48 / 5 := by
-  have h := card_isAffineExceptional_persistent_map_le domain₄ f g domain₄ (d := 0) (A := 3)
+      IsAffineExceptional domain₄ f g 0 3 1 (challenge₄ c.1) (challenge₄ c.2) P ∧
+        IsAffinePersistent domain₄ f g 0 3 (challenge₄ c.1) (challenge₄ c.2) P} : ℝ) ≤ 48 / 5 := by
+  have h := card_isAffineExceptional_persistent_map_le domain₄ f g challenge₄ (d := 0) (A := 3)
     (B := 3) (by decide) (by rw [card_galoisField_2_2]; decide)
   norm_num [card_galoisField_2_2, Nat.choose] at h
   exact h
+
+/-- Two challenges in `𝔽₅`, indexed by a type that is not a field. -/
+private def challenge₂ : Fin 2 ↪ ZMod 5 := ⟨fun i ↦ (i : ℕ), by decide⟩
+
+-- The challenge type only needs to be finite. A rational pair that is not a low-degree
+-- polynomial pair is polynomial for at most `|Fin 2| = 2` of the `4` challenges in `Fin 2 × Fin 2`.
+open Classical in
+example (F₀ G₀ : RatFunc (ZMod 5))
+    (h : ¬ ∃ F₁ G₁ : (ZMod 5)[X], algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) F₁ = F₀ ∧
+      algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) G₁ = G₀ ∧ F₁.degree ≤ 1 ∧ G₁.degree < 1) :
+    #{c : Fin 2 × Fin 2 | ∃ P : (ZMod 5)[X], P.degree ≤ 1 ∧
+      algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) P =
+        F₀ + algebraMap (ZMod 5)[X] (RatFunc (ZMod 5))
+          (affineMultiplier (challenge₂ c.1) (challenge₂ c.2)) * G₀} ≤ 2 :=
+  card_ratFunc_combination_map_le challenge₂ F₀ G₀ h
 
 /-- info: 'ReedSolomon.card_ratFunc_combination_map_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
