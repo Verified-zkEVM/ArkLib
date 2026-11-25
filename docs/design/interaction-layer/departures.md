@@ -193,3 +193,13 @@ retains earlier public challenges and prover messages in both distributions and 
 Oracle verifiers draw from the verifier view, which erases oracle messages; their errors keep the
 full prefix. P1 retires only challenge selection that depends on oracle messages and effectful
 receiver actions. The inventory marks the already constant KC-065 schedule equivalent.
+
+## Oracle-access acceptance tests
+
+The [oracle-access port table](port-oracle-access.md) closes DecorationExample row 2 with
+the arbitrary-tree decoration test and the independent-universe node and path-family tests. Its
+PhasedRun and QueryBounds rows cite the parent's produced assertions directly. These cover
+membership of the join and decision entries, node names, and the agreement between the queries by
+move and the logged run. The doubled-export fixture applies the decision entry's permission to its
+routed program, jointly with its cost-five bound, and checks the actual ordered decision queries
+separately. P1 excludes intermediate verifier effects and the moves they were assigned to.
