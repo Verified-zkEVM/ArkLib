@@ -48,18 +48,10 @@ example (α β : ZMod 5) :
   linear_combination β * h6
 
 -- At `d = 1`, `A = 4` on `F₅`, the Johnson quotient is `5 · 2 / (9 - 5) = 5 / 2`.
--- So `ℓ₀ = 2`, and the paper's additive term `2ℓ₀/q` is `4 / 5`.
-example :
-    linearClaimMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 4 / 5 := by
-  have h := linearClaimMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
-    (by simp [ZMod.card])
-  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
-  exact h
-
--- With the excluded challenges and the false pairs in one Johnson list, the term is `ℓ₀/q = 2/5`.
+-- So `ℓ₀ = 2`, and the additive term `ℓ₀/q` is `2 / 5`. The paper's `2ℓ₀/q` is `4 / 5`.
 example :
     linearClaimMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 2 / 5 := by
-  have h := linearClaimMcaError_le_affineMcaError_add_johnson fullDomain (d := 1) (A := 4)
+  have h := linearClaimMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
     (by simp [ZMod.card])
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
   exact h
@@ -118,12 +110,12 @@ private theorem paper_johnson_floor :
   norm_num
 
 -- At the paper's parameters `n = 2²⁰`, `d = 2¹⁸`, `A = 576717`, and `q = 2¹²⁸`:
--- linear claims add `2ℓ₀/q = 10 · 2⁻¹²⁸` to the affine error.
--- That is `5 · 2⁻¹²⁸` more than the equal-degree combiner.
+-- linear claims add `ℓ₀/q = 5 · 2⁻¹²⁸` to the affine error, as the equal-degree combiner does.
+-- The paper's term `2ℓ₀/q` is `10 · 2⁻¹²⁸`.
 example {F ι : Type*} [Field F] [DecidableEq F] [Fintype F] [Fintype ι] (domain : ι ↪ F)
     (hn : Fintype.card ι = 2 ^ 20) (hq : Fintype.card F = 2 ^ 128) :
     linearClaimMcaError domain (2 ^ 18) 576717 1 ≤
-      affineMcaError domain (2 ^ 18) 576717 1 + ENNReal.ofReal (2 * 5 / 2 ^ 128) := by
+      affineMcaError domain (2 ^ 18) 576717 1 + ENNReal.ofReal (5 / 2 ^ 128) := by
   have hJ : Fintype.card ι * 2 ^ 18 < (576717 - 1) ^ 2 := by
     rw [hn]
     norm_num
@@ -144,11 +136,6 @@ example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι] (
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.linearClaimMcaError_le_affineMcaError_add
-
-/-- info: 'ReedSolomon.linearClaimMcaError_le_affineMcaError_add_johnson' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.linearClaimMcaError_le_affineMcaError_add_johnson
 
 /-- info: 'ReedSolomon.card_filter_linearClaimResidual_eq_zero_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

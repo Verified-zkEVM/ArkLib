@@ -36,9 +36,8 @@ See the [paper page](../../../../../../docs/kb/papers/CWYZ26.md) for the corresp
   honest claims, valid at any degree.
 * `ReedSolomon.linearClaimMcaError`: the worst-case exceptional-event probability.
   Its exact rational evaluator is in the sibling `LinearClaimsExact` module.
-* `ReedSolomon.linearClaimMcaError_le_affineMcaError_add_johnson`: the error is at most the
+* `ReedSolomon.linearClaimMcaError_le_affineMcaError_add`: the error is at most the
   affine error plus `ℓ₀/q`, where `ℓ₀` is the Johnson list bound.
-* `ReedSolomon.linearClaimMcaError_le_affineMcaError_add`: the weaker bound with `2ℓ₀/q`.
 
 ## References
 
@@ -264,7 +263,7 @@ Each bad first challenge gives a pair of degree at most `d` whose second polynom
 degree exactly `d`, and distinct challenges give distinct pairs.
 The listed pairs with a false claim have both degrees below `d`.
 Both kinds have `A - 1` common agreements, so one Johnson list bounds them together. -/
-theorem linearClaimMcaError_le_affineMcaError_add_johnson [Fintype F] (domain : ι ↪ F) {d A : ℕ}
+theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hJ : Fintype.card ι * d < (A - 1) ^ 2) :
     linearClaimMcaError domain d A 1 ≤ affineMcaError domain d A 1 +
       ENNReal.ofReal
@@ -300,41 +299,13 @@ theorem linearClaimMcaError_le_affineMcaError_add_johnson [Fintype F] (domain : 
     exact (hS.prod hS).subset fun p hp ↦ ⟨hp.1, hp.2.1⟩
   set T := hfin.toFinset
   set B := badEqualDegreeChallenges domain f g d (A - 1)
-  have hB : ∀ θ ∈ B, ∃ U V : F[X], U.degree ≤ d ∧ V.degree = d ∧
-      U.coeff d + θ * V.coeff d = 0 ∧
-      A - 1 ≤ #(commonPolynomialAgreementSet domain f g U V) := fun θ hθ ↦ by
-    simpa [B, badEqualDegreeChallenges] using hθ
-  choose! U V hU hV hlead hUV using hB
-  let bPair (θ : F) := (U θ, V θ)
-  have hinj : Set.InjOn bPair B := by
-    intro θ hθ θ' hθ' heq
-    obtain ⟨h₁, h₂⟩ := Prod.mk.inj heq
-    have hcoeff : (V θ).coeff d ≠ 0 := by
-      rw [← natDegree_eq_of_degree_eq_some (hV θ hθ)]
-      exact leadingCoeff_ne_zero.mpr fun hzero ↦ by simpa [hzero] using hV θ hθ
-    have h := (hlead θ hθ).trans (hlead θ' hθ').symm
-    rw [h₁, h₂] at h
-    exact mul_right_cancel₀ (h₂ ▸ hcoeff) (add_left_cancel h)
-  have hdisjoint : Disjoint (B.image bPair) T := by
-    refine Finset.disjoint_left.mpr fun p hp hpT ↦ ?_
-    obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp hp
-    have hlt := (hfin.mem_toFinset.mp hpT).2.1
-    change (V θ).degree < d at hlt
-    exact (ne_of_lt hlt) (hV θ hθ)
+  -- The bad first challenges and the listed pairs fit one Johnson list.
   have hsum : (((#T + #B : ℕ) : ℝ)) ≤ ℓ₀ := by
-    have hj := card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet domain f g
-      (d := d) (L := A - 1) (B.image bPair ∪ T) (fun p hp ↦ ?_) (fun p hp ↦ ?_)
-    · rw [Finset.card_union_of_disjoint hdisjoint, Finset.card_image_of_injOn hinj, add_comm] at hj
-      exact hfloor _ hj
-    · rcases Finset.mem_union.mp hp with h | h
-      · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp h
-        exact ⟨hU θ hθ, (hV θ hθ).le⟩
-      · obtain ⟨h₁, h₂, -⟩ := hfin.mem_toFinset.mp h
-        exact ⟨h₁.le, h₂.le⟩
-    · rcases Finset.mem_union.mp hp with h | h
-      · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp h
-        exact hUV θ hθ
-      · exact (hfin.mem_toFinset.mp h).2.2
+    refine hfloor _ ?_
+    rw [add_comm]
+    refine card_badEqualDegreeChallenges_add_card_mul_le domain f g d (A - 1) T fun p hp ↦ ?_
+    obtain ⟨h₁, h₂, h₃⟩ := hfin.mem_toFinset.mp hp
+    exact ⟨h₁.le, h₂, h₃⟩
   set X₃ : Finset (F × F × F) := {c | ∃ p ∈ T,
     ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg c.1) c.1 p.1 p.2 ∧
       linearClaimResidual v γ₀ γ₁ (msg c.1) c.1 p.1 p.2 c.2.1 c.2.2 = 0}
@@ -398,21 +369,5 @@ theorem linearClaimMcaError_le_affineMcaError_add_johnson [Fintype F] (domain : 
         ENNReal.ofReal_le_ofReal hcount
     _ = _ := by
       rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity), ENNReal.ofReal_toReal hE]
-
-/-- At loss one, the linear-claim error is at most the affine error plus `2ℓ₀/q`.
-
-Here `n = |ι|` is the domain size, and `q = |F|` is the field size.
-The rounded-down Johnson bound is `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`.
-Assume `nd < (A - 1)²`.
-This follows from `linearClaimMcaError_le_affineMcaError_add_johnson`, since `ℓ₀ ≤ 2ℓ₀`. -/
-theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F) {d A : ℕ}
-    (hJ : Fintype.card ι * d < (A - 1) ^ 2) :
-    linearClaimMcaError domain d A 1 ≤ affineMcaError domain d A 1 +
-      ENNReal.ofReal
-        (2 * ((⌊(Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) /
-          (((A : ℝ) - 1) ^ 2 - Fintype.card ι * d)⌋₊ : ℕ) : ℝ) / Fintype.card F) := by
-  refine (linearClaimMcaError_le_affineMcaError_add_johnson domain hJ).trans ?_
-  gcongr
-  exact le_mul_of_one_le_left (by positivity) one_le_two
 
 end ReedSolomon
