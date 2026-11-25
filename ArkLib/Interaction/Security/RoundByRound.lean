@@ -28,15 +28,27 @@ ambient handler. A public-coin reading also needs every draw to be a fresh unifo
 definition here assumes that. Node-indexed oracle draws factor through the view
 (`OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff`).
 
-## Probability bounds use small moves
+## Move universes
 
-`sampleAt` and the probability bounds built on it, such as `KnowledgeStateFunction.BoundedAt` and
-`KnowledgeStateFunction.LocallyBounded`, take protocols whose moves lie in `Type`, and
-`challengeSpec` returns a move in the universe that challenges share with public and oracle
-messages. ArkLib accepts this restriction as an upstream limit: VCVio defined
-`ProbComp : Type → Type` until VCVio PR #1236 (https://github.com/Verified-zkEVM/VCVio/pull/1236).
-The pinned VCVio includes that PR, and generalizing these bounds to large moves is follow-up work.
-The limit does not restrict pure backward maps or output and seam witnesses.
+`sampleAt`, `rbrSoundness`, `rbrKnowledgeSoundness` and the local bounds built on them, such as
+`KnowledgeStateFunction.BoundedAt` and `KnowledgeStateFunction.LocallyBounded`, take protocols
+whose moves lie in any universe. They measure a challenge with `𝒟[·]`, and VCVio defines
+`ProbComp` at every universe since VCVio PR #1236
+(https://github.com/Verified-zkEVM/VCVio/pull/1236).
+
+Some declarations still take moves in `Type`:
+
+* Statements written with `Pr{}`, such as the flip lemmas and `Verifier.soundness_of_rbrSoundness`
+  in `Security.Implications` and `FreshChallenges` in `Interaction.Execution`, need it because
+  VCVio's `Pr{}` measures events of computations with results in `Type`.
+* The plain and oracle verifier wrappers `Verifier.rbrSoundness`,
+  `Verifier.rbrKnowledgeSoundness` and their `OracleVerifier` versions need it because
+  `Verifier.validAcceptance_iff_support` reads acceptance through VCVio's support lemmas, which
+  need the result in the universe of the uniform oracle's responses.
+* `challengeQueryImpl` in `Security.Completeness` needs it because `SampleableType` is a class on
+  `Type`.
+
+The restriction does not affect pure backward maps or output and seam witnesses.
 
 ## Knowledge states and the literature
 
@@ -148,8 +160,8 @@ def spineChallenge {s : FreeM P PUnit.{u + 1}} {a : P.A} {next : P.B a → FreeM
   ⟨spineNode sp, (congrArg (owner l) (spineNode_position sp)).trans h⟩
 
 /-- Draw a fresh move at the receiver position selected by a structural prefix. -/
-def sampleAt {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
-    {s : FreeM P PUnit.{1}} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+def sampleAt {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
+    {s : FreeM P PUnit.{u + 1}} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
     (draw : QueryImpl (challengeSpec l s) ProbComp)
     (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver) : ProbComp (Move l a) :=
   (fun x => Eq.mp (congrArg (Move l) (spineNode_position sp)) x) <$>
@@ -192,8 +204,8 @@ def PrefixDraw.ofNodes {m : Type u → Type vDraw} [Functor m] {s : FreeM P PUni
     draw (spineChallenge l sp h)
 
 /-- Ignoring history recovers node-indexed sampling at the same receiver cursor. -/
-theorem prefixSampleAt_ofNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
-    {s : FreeM P PUnit.{1}} (draw : QueryImpl (challengeSpec l s) ProbComp)
+theorem prefixSampleAt_ofNodes {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
+    {s : FreeM P PUnit.{u + 1}} (draw : QueryImpl (challengeSpec l s) ProbComp)
     {a next} (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
     (history : PartialTranscriptAt l sp) :
     prefixSampleAt l (PrefixDraw.ofNodes l draw) sp h history = sampleAt l draw sp h := rfl
@@ -352,13 +364,13 @@ structure StateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
     ¬ toFun sp history stmt → ¬ accepts stmt (PartialTranscriptAt.complete l sp history)
 
 /-- Worst-case-per-prefix round-by-round soundness; there is no adversary-model argument. -/
-def rbrSoundness {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
-    {S : Type uS} (s : FreeM P PUnit.{1})
+def rbrSoundness {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} (s : FreeM P PUnit.{u + 1})
     (admissible language : S → Prop) (accepts : S → Transcript l s → Prop)
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞) : Prop :=
   ∃ F : StateFunction l s S admissible language accepts,
     ∀ stmt, admissible stmt → ¬ language stmt →
-    ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{1})
+    ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
       (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
@@ -402,15 +414,15 @@ structure KnowledgeStateFunction (s : FreeM P PUnit.{u + 1}) (S : Type uS)
 
 /-- At each receiver prefix, the history-selected challenge defeats backwards extraction with
 probability at most that prefix's error, uniformly over later witnesses. -/
-def rbrKnowledgeSoundness {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
-    {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{1})
+def rbrKnowledgeSoundness {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{u + 1})
     {W : S → Transcript l s → Type uO} (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop)
     (draw : PrefixDraw l ProbComp s) (ε : PrefixError l s) : Prop :=
   ∃ F : KnowledgeStateFunction.{uS, uW, uK, uO} l s S W Win admissible relIn validOutput,
     ∀ stmt, admissible stmt →
-    ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{1})
+    ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1})
       (sp : Cursor.Spine s (.liftBind a next)) (h : owner l a = .receiver)
       (history : PartialTranscriptAt l sp),
       letI : MeasurableSpace (Move l a) := ⊤
@@ -420,8 +432,8 @@ def rbrKnowledgeSoundness {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
           (PartialTranscriptAt.snoc l sp history x) wit} ≤ ε sp h history
 
 /-- Knowledge soundness for node-indexed draws and errors, as a prefix specialization. -/
-abbrev rbrKnowledgeSoundnessOfNodes {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
-    {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{1})
+abbrev rbrKnowledgeSoundnessOfNodes {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} {Win : S → Type uW} (s : FreeM P PUnit.{u + 1})
     {W : S → Transcript l s → Type uO} (admissible : S → Prop)
     (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop)
@@ -449,8 +461,8 @@ def KnowledgeStateFunction.lift.{v} {s : FreeM P PUnit.{u + 1}} {S : Type uS}
 
 /-- Round-by-round knowledge soundness with intermediate witnesses in a universe `uK` implies
 it with intermediate witnesses in any larger universe, at the same error. -/
-theorem rbrKnowledgeSoundness.lift.{v} {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
-    {S : Type uS} {Win : S → Type uW} {s : FreeM P PUnit.{1}}
+theorem rbrKnowledgeSoundness.lift.{v} {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
+    {S : Type uS} {Win : S → Type uW} {s : FreeM P PUnit.{u + 1}}
     {W : S → Transcript l s → Type uO} {admissible : S → Prop}
     {relIn : (stmt : S) → Win stmt → Prop}
     {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}

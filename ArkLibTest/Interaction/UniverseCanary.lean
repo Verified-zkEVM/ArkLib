@@ -341,7 +341,7 @@ def anyOutput : PathProblem done (fun _ => Unit) where
 def plainAmbientTrue : QueryImpl smallAmbient (StateT Unit ProbComp) := fun _ => pure true
 
 /-- The plain protocol with no rounds samples no challenges. -/
-def noPlainChallenges : QueryImpl (challengeSpec plainSig done) ProbComp := fun c => c.val.elim
+def noPlainChallenges : QueryImpl (challengeSpec plainSig done.{0}) ProbComp := fun c => c.val.elim
 
 /-- The reduction with an input statement in `Type 2` and an input witness in `Type 1` has an
 exported completeness statement, which holds with error one. -/
@@ -422,7 +422,7 @@ def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rol
 
 /-- Round-by-round knowledge with intermediate witnesses in `Type 1`, a small input witness and an
 input statement in `Type 2`. -/
-example : rbrKnowledgeSoundnessOfNodes.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
+example : rbrKnowledgeSoundnessOfNodes.{2, 0, 1} plainSig done.{0} (fun (_ : Type 1) => True)
     (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) (fun c => c.val.elim) (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
@@ -485,7 +485,7 @@ example : rbrKnowledgeSoundnessOfNodes.{2, 2, 3} plainSig done
     (fun (_ : Type 1 × Nat) => True)
     (fun stmt (_ : ULift.{2} (Fin (stmt.2 + 1))) => True)
     (fun stmt _ (_ : Fin (stmt.2 + 1)) => True) noPlainChallenges (fun _ => 0) :=
-  rbrKnowledgeSoundness.lift.{2, 2, 1, 0, 1, 3} plainSig
+  rbrKnowledgeSoundness.lift.{2, 2, 1, 0, 1, 0, 3} plainSig
     ⟨indexedLargeCertificate, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- Pure backward maps accept types themselves as output, seam and input witnesses. -/

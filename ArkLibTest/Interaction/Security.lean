@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.Interaction.Security.RoundByRound
+import ArkLib.Interaction.Security.KnowledgeComposition
 import ArkLibTest.Interaction.Oracle
 import VCVio.OracleComp.Constructions.SampleableType.Measure
 
@@ -207,7 +208,7 @@ example : rbrKnowledgeSoundnessOfNodes.{0, 0, 0} plainSig coin (fun _ => True)
 example : rbrKnowledgeSoundnessOfNodes.{0, 0, v} plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
-  apply rbrKnowledgeSoundness.lift.{0, 0, 0, 0, 1, v}
+  apply rbrKnowledgeSoundness.lift.{0, 0, 0, 0, 1, 0, v}
   refine ⟨knowledgeState, ?_⟩
   intro stmt _ a next sp h history
   simp [knowledgeState]
@@ -747,6 +748,85 @@ run_cmd do
   unless obs.2.2 == none && extracted.isNone do
     throwError "the rejecting branch accepted or extracted"
 
+/-! ### A challenge in `Type 1`
+
+The challenge move is itself a type, so the protocol is a `Protocol.{1}` and its challenge draw is
+a `ProbComp` in `Type 1`. The draw always returns `Bool`. A false statement is accepted only on
+the empty challenge, which the draw never returns, so the soundness error is zero.
+-/
+
+abbrev typeCoin : Protocol.{1} := .liftBind (.challenge Type) (fun _ => .pure ⟨⟩)
+
+/-- Always draw the challenge `Bool`. -/
+def typeDraw : QueryImpl (challengeSpec plainSig typeCoin) ProbComp
+  | ⟨.inl _, _⟩ => (pure Bool : ProbComp Type)
+  | ⟨.inr ⟨_, i⟩, _⟩ => i.elim
+
+/-- The root draw is `pure Bool` in `Type 1`. -/
+theorem typeDraw_sampleAt_root (h) :
+    sampleAt plainSig typeDraw (.root typeCoin) h = (pure Bool : ProbComp Type) :=
+  LawfulFunctor.id_map _
+
+/-- True statements stay true; a false statement becomes true on the empty challenge. -/
+def typeState : StateFunction plainSig typeCoin Bool (fun _ => True) (· = true)
+    (fun stmt tr => stmt = true ∨ tr.1 = PEmpty) where
+  toFun sp history stmt := match sp, history with
+    | .root _, _ => stmt = true
+    | .down _ _, history => stmt = true ∨ history.1.1 = PEmpty
+  root _ _ h := h
+  send sp _ _ ho := by
+    cases sp with
+    | root => cases ho
+    | down _ tail => cases tail
+  leaf sp history stmt h := by
+    cases sp with
+    | down _ tail =>
+      cases tail
+      rcases history with ⟨⟨x, rfl⟩, ⟨⟩⟩
+      exact h
+
+/-- Round-by-round soundness with a challenge move in `Type 1` and error zero. -/
+theorem typeCoin_rbrSoundness :
+    rbrSoundness plainSig typeCoin (fun _ => True) (· = true)
+      (fun stmt tr => stmt = true ∨ tr.1 = PEmpty) typeDraw (fun _ => 0) := by
+  refine ⟨typeState, ?_⟩
+  intro stmt _ _ a next sp h history
+  cases sp with
+  | down _ tail => cases tail
+  | root =>
+    let : MeasurableSpace (TwoParty.Lens.Move plainSig (PlainPos.challenge Type)) := ⊤
+    rw [typeDraw_sampleAt_root, evalDist_pure,
+      Measure.dirac_apply' _ MeasurableSpace.measurableSet_top]
+    refine le_of_eq (Set.indicator_of_notMem ?_ _)
+    rintro ⟨hstmt, hx⟩
+    rcases hx with hx | hx
+    · exact hstmt hx
+    · exact (cast hx true).elim
+
+/-- A constant knowledge state with a challenge move in `Type 1`. -/
+def typeKnowledgeState : KnowledgeStateFunction plainSig typeCoin Bool (fun _ _ => Unit)
+    (fun _ => Unit) (fun _ => True) (fun stmt _ => stmt = true) (fun stmt _ _ => stmt = true) where
+  Witness _ {_} _ _ := Unit
+  toFun stmt {_} _ _ _ := stmt = true
+  extractRoot _ _ := ()
+  extractStep _ {_ _} _ _ _ _ := ()
+  extractLeaf _ _ _ _ := ()
+  root _ _ _ h := h
+  send _ _ _ _ _ _ h := h
+  leaf _ _ _ _ h := h
+
+/-- The constant knowledge state is locally bounded with error zero at the `Type 1` draw. -/
+theorem typeCoin_locallyBounded :
+    typeKnowledgeState.LocallyBoundedOfNodes typeDraw (fun _ => 0) := by
+  intro stmt _ a next sp h history
+  simp [KnowledgeStateFunction.badChallenge, typeKnowledgeState]
+
+/-- Round-by-round knowledge soundness with a challenge move in `Type 1`. -/
+example : rbrKnowledgeSoundnessOfNodes.{0, 0, 0} plainSig typeCoin (fun _ => True)
+    (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
+    typeDraw (fun _ => 0) :=
+  ⟨typeKnowledgeState, typeCoin_locallyBounded⟩
+
 end Interaction.SecurityTests
 
 run_cmd do
@@ -767,7 +847,9 @@ run_cmd do
       ``Interaction.SecurityTests.payload_rbrKnowledgeSoundness,
       ``Interaction.SecurityTests.payloadKnowledge_extract,
       ``Interaction.SecurityTests.payload_extractionGame,
-      ``Interaction.SecurityTests.bad_eq_zero] do
+      ``Interaction.SecurityTests.bad_eq_zero,
+      ``Interaction.SecurityTests.typeCoin_rbrSoundness,
+      ``Interaction.SecurityTests.typeCoin_locallyBounded] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

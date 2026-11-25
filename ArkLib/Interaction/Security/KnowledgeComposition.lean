@@ -106,11 +106,11 @@ def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → Transcript l s �
 
 end restrict
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly}
 
 section restrictBounds
 
-variable {s : FreeM P PUnit.{1}} {Win : S → Type uW}
+variable {s : FreeM P PUnit.{u + 1}} {Win : S → Type uW}
   {W : S → Transcript l s → Type uO} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
@@ -154,7 +154,7 @@ end restrictBounds
 
 section security
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
+variable {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}}
   {Wmid : S → Transcript l s₁ → Type uM}
     {W : S → Transcript l (s₁.append s₂) → Type uO} {Win : S → Type uW}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -213,11 +213,11 @@ end security
 
 end KnowledgeStateFunction
 
-variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
 
 section security
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {S : Type uS}
+variable {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}} {S : Type uS}
     {Win : S → Type uW}
   {Wmid : S → Transcript l s₁ → Type uM} {W : S → Transcript l (s₁.append s₂) → Type uO}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}

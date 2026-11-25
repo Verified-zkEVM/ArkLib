@@ -1297,9 +1297,9 @@ theorem toFun_leafWitness_append :
   intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
   exact toFun_leafWitness_appendAux F₁.withRootWitness F₂ seam
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
+variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly}
 
-variable {s : FreeM P PUnit.{1}} {Win : S → Type uW}
+variable {s : FreeM P PUnit.{u + 1}} {Win : S → Type uW}
   {W : S → Transcript l s → Type uO} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
@@ -1309,7 +1309,7 @@ variable {s : FreeM P PUnit.{1}} {Win : S → Type uW}
 error at that same full prefix. -/
 def BoundedAt (draw : PrefixDraw l ProbComp s) (ε : PrefixError l s)
     (stmt : S) : Prop :=
-  ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{1}) (sp : Cursor.Spine s (.liftBind a next))
+  ∀ (a : P.A) (next : P.B a → FreeM P PUnit.{u + 1}) (sp : Cursor.Spine s (.liftBind a next))
     (h : owner l a = .receiver) (history : PartialTranscriptAt l sp),
     letI : MeasurableSpace (Move l a) := ⊤
     𝒟[prefixSampleAt l draw sp h history] (F.badChallenge sp history stmt) ≤ ε sp h history
@@ -1331,11 +1331,11 @@ abbrev LocallyBoundedOfNodes (draw : QueryImpl (challengeSpec l s) ProbComp)
 
 end KnowledgeStateFunction
 
-variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly)
 
 /-- Round-by-round knowledge soundness is the existence of a locally bounded knowledge state
 function. -/
-theorem rbrKnowledgeSoundness_iff_exists_locallyBounded {s : FreeM P PUnit.{1}} {S : Type uS}
+theorem rbrKnowledgeSoundness_iff_exists_locallyBounded {s : FreeM P PUnit.{u + 1}} {S : Type uS}
     {Win : S → Type uW}
     {W : S → Transcript l s → Type uO} {admissible : S → Prop}
       {relIn : (stmt : S) → Win stmt → Prop}
@@ -1351,7 +1351,7 @@ variable {l} {S : Type uS}
 
 /-- A bound survives restriction below a first move by prepending that actual move to both
 the draw history and the error history. -/
-theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S → Type uW}
+theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}} {Win : S → Type uW}
     {W : S → Transcript l (.liftBind a next) → Type uO} {admissible : S → Prop}
       {relIn : (stmt : S) →
       Win stmt → Prop}
@@ -1368,7 +1368,7 @@ theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S 
 /-- Bounds compose along the composite: prefix challenges keep the prefix bound and suffix
 challenges keep the bound of the suffix state function at their prefix transcript. -/
 theorem BoundedAt.appendAux :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {s₁ : FreeM P PUnit.{u + 1}} → {s₂ : Path s₁ → FreeM P PUnit.{u + 1}} →
     {Wmid : S → Transcript l s₁ → Type uM} → {W : S → Transcript l (s₁.append s₂) → Type uO} →
     {Win : S → Type uK} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
@@ -1423,7 +1423,7 @@ theorem BoundedAt.appendAux :
 
 /-- The same composition law with an independent input-witness universe. -/
 theorem BoundedAt.append :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
+    {s₁ : FreeM P PUnit.{u + 1}} → {s₂ : Path s₁ → FreeM P PUnit.{u + 1}} →
     {Wmid : S → Transcript l s₁ → Type uM} → {W : S → Transcript l (s₁.append s₂) → Type uO} →
     {Win : S → Type uW} →
     {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
