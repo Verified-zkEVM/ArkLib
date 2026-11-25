@@ -269,7 +269,7 @@ variable {Name : Type} {Query : Name → Type} {Realization : Name → Type}
 def viewBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index) :
     OracleBundle where
-  Index := (x : Visible) × Query (name (select x))
+  Query := (x : Visible) × Query (name (select x))
   spec query := Response (name (select query.1)) query.2
   Data := (x : Index) → Realization (name x)
   answer data query := answer _ (data (select query.1)) query.2
@@ -282,13 +282,13 @@ abbrev namedBundle (answer : ∀ n, Realization n → (q : Query n) → Response
 /-- R26 keeps its exact query and data carriers. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type} (name : Index → Name) :
-    (namedBundle answer name).Index = ((x : Index) × Query (name x)) ∧
+    (namedBundle answer name).Query = ((x : Index) × Query (name x)) ∧
       (namedBundle answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
 
 /-- R27 keeps the original context's data when the visible index has a distinct carrier. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index) :
-    (viewBundle answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
+    (viewBundle answer name select).Query = ((x : Visible) × Query (name (select x))) ∧
       (viewBundle answer name select).Data = ((x : Index) → Realization (name x)) :=
   ⟨rfl, rfl⟩
 

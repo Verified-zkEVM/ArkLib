@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Oracle.BundleOps
+import ArkLib.Interaction.OracleVerifier
+import ArkLib.Relation.OracleBundle
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!

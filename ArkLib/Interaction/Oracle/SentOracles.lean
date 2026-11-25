@@ -117,7 +117,7 @@ def availableBundle (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
 /-- The name of a bundle query: an input index, or the node of a sent oracle. -/
 def queryNode (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     (h : PartialTranscript oracleSig s) :
-    (h.availableBundle inputs).Index → inputs.Index ⊕ Node s
+    (h.availableBundle inputs).Query → inputs.Query ⊕ Node s
   | .inl i => .inl i
   | .inr ⟨i, _⟩ => .inr (SentOracleMessageIndex.node h i)
 
@@ -287,13 +287,13 @@ def availableMap (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
 longer one. -/
 def liftNode (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     {h k : PartialTranscript oracleSig s} (e : Le h k) :
-    inputs.Index ⊕ SentOracleMessageIndex h → inputs.Index ⊕ SentOracleMessageIndex k :=
+    inputs.Query ⊕ SentOracleMessageIndex h → inputs.Query ⊕ SentOracleMessageIndex k :=
   Sum.map id (SentOracleMessageIndex.lift e)
 
 /-- Including an input or a sent oracle message keeps its name in the original protocol. -/
 theorem availableMap_node (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     {h k : PartialTranscript oracleSig s} (e : Le h k)
-    (i : inputs.Index ⊕ SentOracleMessageIndex h) :
+    (i : inputs.Query ⊕ SentOracleMessageIndex h) :
     Sum.map id (SentOracleMessageIndex.node k) (liftNode inputs e i) =
       Sum.map id (SentOracleMessageIndex.node h) i := by
   cases i with

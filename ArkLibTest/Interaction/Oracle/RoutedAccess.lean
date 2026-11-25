@@ -265,7 +265,7 @@ theorem composed_decisionQueries (a b : Nat) :
 
 /-- A raw query has its node name among the nodes of the available bundle at the decision entry. -/
 def rawAvailable (a b : Nat) (q : rawBundle.spec.Domain) : Prop :=
-  ∃ i : ((composedQueriesByMove a b).decision.availableContext none').Index,
+  ∃ i : ((composedQueriesByMove a b).decision.availableContext none').Query,
     PartialTranscript.queryNode none' (composedQueriesByMove a b).decision.before i =
       PartialTranscript.queryNode none'
         (PartialTranscript.ofTranscript (l := oracleSig) combined ⟨a, b, ⟨⟩⟩) q

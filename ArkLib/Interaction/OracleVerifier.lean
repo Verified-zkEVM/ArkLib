@@ -6,6 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Execution
+public import ArkLib.Relation.OracleBundle
 public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 
 /-!
@@ -95,148 +96,11 @@ theorem sumData_eta {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Ty
   funext k
   cases k <;> rfl
 
-/-- A query specification and the concrete data that answers it, all in `Type`.
-
-For fixed `Index` and `Data`, the specification and answer function are equivalent to VCVio's
-`OracleContext Index (fun α => Data → α)`. -/
-structure OracleBundle : Type 1 where
-  /-- The query indices. -/
-  Index : Type
-  /-- The queries and their response types. -/
-  spec : OracleSpec.{0, 0} Index
-  /-- The concrete data. -/
-  Data : Type
-  /-- How concrete data answers each query. -/
-  answer : Data → QueryImpl spec Id
-
-/-- The oracle bundle of an oracle family: queries through its interfaces, answered from concrete
-realizations in `Type`.
--/
-@[reducible] def OracleBundle.ofFamily {I : Type} {A : I → Type}
-    (F : OracleFamily.{0, 0, 0} I A) : OracleBundle where
-  Index := (i : I) × (F.interface i).Query
-  spec := F.spec
-  Data := ∀ i, A i
-  answer := F.behaviorOfRealizations
-
-attribute [coe] OracleBundle.ofFamily
-
-/-- An oracle family is used as an oracle bundle through its interfaces. -/
-instance {I : Type} {A : I → Type} :
-    CoeOut (OracleFamily.{0, 0, 0} I A) OracleBundle :=
-  ⟨OracleBundle.ofFamily⟩
-
-/-- A sum bundle: each query goes to one side and is answered from that side's data.
-Their data stays a pair. -/
-@[reducible] def OracleBundle.sum (R : OracleBundle) (R' : OracleBundle) :
-    OracleBundle where
-  Index := R.Index ⊕ R'.Index
-  spec := R.spec + R'.spec
-  Data := R.Data × R'.Data
-  answer x := R.answer x.1 + R'.answer x.2
-
-/-- A concrete oracle map and its query-by-query implementation agree on all input data. -/
-structure OracleMap (In : OracleBundle) (Out : OracleBundle) where
-  /-- Concrete output data, available to a subsequent honest prover. -/
-  f : In.Data → Out.Data
-  /-- Output queries are simulated using only input oracle queries. -/
-  impl : QueryImpl Out.spec (OracleComp In.spec)
-  /-- Simulation answers exactly as the materialized output data. -/
-  law : ∀ x q, simulateQ (In.answer x) (impl q) = Out.answer (f x) q
-
 namespace OracleMap
-
-section OracleBundle
-variable {In : OracleBundle} {Mid : OracleBundle}
-  {Out : OracleBundle} {Other : OracleBundle}
-
-/-- Compose concrete data maps and substitute query implementations. -/
-def comp (g : OracleMap Mid Out) (h : OracleMap In Mid) : OracleMap In Out where
-  f := g.f ∘ h.f
-  impl := QueryImpl.compose h.impl g.impl
-  law x q := by
-    rw [QueryImpl.apply_compose, ← QueryImpl.simulateQ_compose]
-    have he : QueryImpl.compose (In.answer x) h.impl = Mid.answer (h.f x) := funext (h.law x)
-    rw [he]
-    exact g.law (h.f x) q
-
-/-- Routing every query through a map agrees with materializing its output first. -/
-theorem simulate_eq (h : OracleMap In Out) (x : In.Data)
-    {α : Type} (program : OracleComp Out.spec α) :
-    simulateQ (In.answer x) (simulateQ h.impl program) =
-      simulateQ (Out.answer (h.f x)) program :=
-  QueryImpl.simulateQ_simulateQ_eq_of_apply (h.law x) program
-
-/-- The identity map of an oracle bundle. -/
-def id (R : OracleBundle) : OracleMap R R where
-  f x := x
-  impl q := liftM (R.spec.query q)
-  law _ _ := rfl
-
-/-- Keep the left side of a sum bundle. Inlining erases the unused bundle interpreters when a
-computable verifier specializes this projection to a mathematical oracle family. -/
-@[macro_inline]
-def fst (R : OracleBundle) (R' : OracleBundle) :
-    OracleMap (R.sum R') R where
-  f x := x.1
-  impl q := liftM ((R.spec + R'.spec).query (.inl q))
-  law _ _ := rfl
-
-/-- Keep the right side of a sum bundle. -/
-def snd (R : OracleBundle) (R' : OracleBundle) :
-    OracleMap (R.sum R') R' where
-  f x := x.2
-  impl q := liftM ((R.spec + R'.spec).query (.inr q))
-  law _ _ := rfl
-
-/-- Apply two oracle maps to the two sides of a sum bundle. -/
-def par (h : OracleMap In Mid) (g : OracleMap Out Other) :
-    OracleMap (In.sum Out) (Mid.sum Other) where
-  f x := (h.f x.1, g.f x.2)
-  impl
-    | .inl q => simulateQ (fst In Out).impl (h.impl q)
-    | .inr q => simulateQ (snd In Out).impl (g.impl q)
-  law x q := by
-    cases q with
-    | inl q =>
-      exact (QueryImpl.simulateQ_simulateQ_eq_of_apply (impl := In.answer x.1)
-        (fun _ => rfl) (h.impl q)).trans (h.law _ _)
-    | inr q =>
-      exact (QueryImpl.simulateQ_simulateQ_eq_of_apply (impl := Out.answer x.2)
-        (fun _ => rfl) (g.impl q)).trans (g.law _ _)
-
-/-- Regroup a sum bundle to the left without changing its data or answers. -/
-def sumAssocSymm (R₁ : OracleBundle) (R₂ : OracleBundle)
-    (R₃ : OracleBundle) : OracleMap (R₁.sum (R₂.sum R₃)) ((R₁.sum R₂).sum R₃) where
-  f x := ((x.1, x.2.1), x.2.2)
-  impl
-    | .inl (.inl q) => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inl q))
-    | .inl (.inr q) => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inr (.inl q)))
-    | .inr q => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inr (.inr q)))
-  law x q := by rcases q with (q | q) | q <;> rfl
-
-/-- Regroup a sum bundle to the right without changing its data or answers. -/
-def sumAssoc (R₁ : OracleBundle) (R₂ : OracleBundle)
-    (R₃ : OracleBundle) : OracleMap ((R₁.sum R₂).sum R₃) (R₁.sum (R₂.sum R₃)) where
-  f x := (x.1.1, (x.1.2, x.2))
-  impl
-    | .inl q => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inl (.inl q)))
-    | .inr (.inl q) => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inl (.inr q)))
-    | .inr (.inr q) => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inr q))
-  law x q := by rcases q with q | (q | q) <;> rfl
-
-end OracleBundle
 
 section Families
 variable {I : Type} {J : Type} {K : Type} {A : I → Type} {B : J → Type}
   {C : K → Type}
-
-/-- Embeddings are oracle maps that retain or rename existing input slots. -/
-def embedding (In : OracleFamily.{0, 0, 0} I A) (rename : J → I) :
-    OracleMap In (In.reindex rename) where
-  f x j := x (rename j)
-  impl q := liftM (In.spec.query ⟨rename q.1, q.2⟩)
-  law _ _ := rfl
 
 /-- View a family of disjoint data as a sum bundle, with its data split into a pair. -/
 def ofSumFamily (a : OracleFamily.{0, 0, 0} I A) (b : OracleFamily.{0, 0, 0} J B) :

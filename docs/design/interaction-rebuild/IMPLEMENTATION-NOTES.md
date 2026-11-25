@@ -187,7 +187,7 @@ universe remains independent, without a linter suppression or source-policy exce
 
 **Bundle data in `Type`.** A decision reads `pathBundle inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
-(`OracleBundle.sum`). Since step 4, both query index types and all bundle data lie in `Type`.
+(`OracleBundle.sum`). Since step 4, both query types and all bundle data lie in `Type`.
 `OracleBundle.ofFamily` takes an `OracleFamily.{0, 0, 0}`. Step 4 did not change the definitions
 of `OracleFamily` and `OracleInterface`. The oracle-message families (`oracleMessageFamily`,
 `splitOracleMessages`) keep the node-query universe of `OracleProtocol.{u, q}`, and the verifier
@@ -211,7 +211,7 @@ marks both reviewed contracts equivalent and records the ordinary-import clients
 Neither P1 nor P2 retires an Agreement output or witness contract.
 
 **Retired limit of the full-log runner.** `OracleVerifier.runWithLog` returns the decision's
-full query log, which records bundle queries, so it needs the bundle query indices in `Type`.
+full query log, which records bundle queries, so it needs the bundle query types in `Type`.
 Since step 4 every bundle has them there, so the runner accepts every oracle verifier and no
 large-query logging interface from VCVio is needed. Extraction does not use the full-log runner.
 `OracleVerifier.runWithAmbientLog` puts the logger on the ambient handler before adding the pure
