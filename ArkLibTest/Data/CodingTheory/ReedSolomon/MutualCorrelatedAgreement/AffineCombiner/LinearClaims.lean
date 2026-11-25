@@ -47,13 +47,6 @@ example (α β : ZMod 5) :
   have h6 : (6 : ZMod 5) = 1 := by decide
   linear_combination β * h6
 
--- The honest combination identity holds with no degree bound on the witnesses.
-example {F : Type*} [Field F] (v : Fin 3 → F) (F₀ G₀ : F[X]) (θ α β : F) :
-    linearClaim v (G₀ + affineMultiplier α β * (F₀ + C θ * G₀)) =
-      linearClaim v G₀ + α * (linearClaim v F₀ + θ * linearClaim v G₀) +
-        β * linearClaim v (X * (F₀ + C θ * G₀)) :=
-  linearClaim_add_affineMultiplier_mul v F₀ G₀ θ α β
-
 -- At `d = 1`, `A = 4` on `F₅`, the Johnson quotient is `5 · 2 / (9 - 5) = 5 / 2`.
 -- So `ℓ₀ = 2`, and the paper's additive term `2ℓ₀/q` is `4 / 5`.
 example :
@@ -80,7 +73,7 @@ example : ∃ P, IsLinearClaimExceptional fullDomain 0 0 1 5 1 ![1, 0] 1 1 0 0 (
       ext i
       simp [equalDegreeWord]
     rw [this, Finset.card_univ, ZMod.card]
-  · intro F₀ G₀ _ hG _ _ h₁ _
+  · intro F₀ G₀ _ hG _ ⟨_, h₁, _⟩
     have hG0 : G₀ = C (G₀.coeff 0) := eq_C_of_degree_le_zero (Order.le_of_lt_succ hG)
     have hc : G₀.coeff 0 = 1 := by simpa [linearClaim, Fin.sum_univ_two] using h₁
     have : {i ∈ polynomialAgreementSet fullDomain (equalDegreeWord fullDomain 0 0 0 (-1) 0) 0 |
@@ -105,8 +98,8 @@ example (v : Fin 2 → ZMod 5) (θ α β : ZMod 5) :
     have := natDegree_le_of_degree_le hdeg
     omega
   subst hP
-  have := hexc 0 0 (by simp) (by simp) (by simp) (by simp [linearClaim]) (by simp [linearClaim])
-    (by simp [linearClaim])
+  have := hexc 0 0 (by simp) (by simp) (by simp)
+    ⟨by simp [linearClaim], by simp [linearClaim], by simp [linearClaim]⟩
   simp at this
 
 -- The paper's worked case: `n = 2²⁰`, `d = 2¹⁸`, `A = 576717` gives `ℓ₀ = ⌊5.714…⌋ = 5`.

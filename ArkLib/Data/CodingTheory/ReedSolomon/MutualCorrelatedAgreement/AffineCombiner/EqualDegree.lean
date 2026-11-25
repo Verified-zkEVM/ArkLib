@@ -6,6 +6,7 @@ Authors: Thomas Coratger
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
+public import ArkLib.ToMathlib.Finset.TripleCount
 
 /-!
 # Equal-degree combiners
@@ -23,7 +24,9 @@ It can fail the strict degree bounds only if `U` has degree exactly `d`.
 Such a pair fixes `θ` by its leading coefficients.
 The Johnson bound limits the number of these bad challenges.
 This is the first inequality of (5.4) in Theorem 5.1 of [CWYZ26].
-The second inequality is in `Theorem`, and the linear-claims assertion is in `LinearClaims`.
+The second inequality is in `EqualDegreeTheorem`, and the linear-claims assertion is in
+`LinearClaims`.
+Both proofs count exceptional triples with the shared bound in `ToMathlib/Finset/TripleCount`.
 The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
 The error is a mathematical supremum with classical decidability for polynomial witnesses.
@@ -45,7 +48,7 @@ nonnegative rational by finite searches.
 * `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add`: the reduction with loss `ℓ₀/q`.
 * `ReedSolomon.equalDegreeMcaError_le_one`: the error is at most one.
 * `ReedSolomon.card_badEqualDegreeChallenges_mul_le`: the integer count of bad `θ` values.
-* `ReedSolomon.card_filter_isAffineExceptional_le_mul_affineMcaError`: the affine triple count.
+* `ReedSolomon.card_filter_isAffineExceptional_le_mul_affineMcaError`: the affine pair count.
 
 ## References
 
@@ -223,38 +226,17 @@ theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f 
     exact hL θ hθ
 
 open Classical in
-omit [Field F] [DecidableEq F] in
-/-- A uniform count on the last two coordinates bounds the count over triples. -/
-theorem card_filter_triples_le_mul [Fintype F] (p : F × F × F → Prop) (error : ℝ)
-    (h : ∀ θ, (#{c : F × F | p (θ, c.1, c.2)} : ℝ) ≤
-      (Fintype.card F : ℝ) ^ 2 * error) :
-    (#{c : F × F × F | p c} : ℝ) ≤ (Fintype.card F : ℝ) ^ 3 * error := by
-  have hsum : #{c : F × F × F | p c} = ∑ θ : F, #{c : F × F | p (θ, c.1, c.2)} := by
-    rw [Finset.card_filter, Fintype.sum_prod_type]
-    simp only [Finset.card_filter]
-  rw [hsum, Nat.cast_sum]
-  calc (∑ θ : F, (#{c : F × F | p (θ, c.1, c.2)} : ℝ))
-      ≤ ∑ _θ : F, (Fintype.card F : ℝ) ^ 2 * error := Finset.sum_le_sum fun θ _ ↦ h θ
-    _ = _ := by
-      rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul]
-      ring
+/-- For one word pair, the affine error bounds the exceptional challenge pairs.
 
-open Classical in
-/-- The affine error bounds the triples whose last two challenges are affine exceptional.
-
-Fix a word pair `(f, g)`.
-At most `q³ ε` triples `(θ, α, β)` make some candidate affine exceptional for `(g, f + θ g)`.
+At most `q² ε` pairs `(α, β)` make some candidate affine exceptional for `(f, g)`.
 Here `q` is the field size and `ε` is the affine error with the same parameters. -/
 theorem card_filter_isAffineExceptional_le_mul_affineMcaError [Fintype F] (domain : ι ↪ F)
     (d A s : ℕ) (f g : ι → F) :
-    (#{c : F × F × F | ∃ P,
-      IsAffineExceptional domain g (fun i ↦ f i + c.1 * g i) d A s c.2.1 c.2.2 P} : ℝ) ≤
-      (Fintype.card F : ℝ) ^ 3 * (affineMcaError domain d A s).toReal := by
+    (#{x : F × F | ∃ P, IsAffineExceptional domain f g d A s x.1 x.2 P} : ℝ) ≤
+      (Fintype.card F : ℝ) ^ 2 * (affineMcaError domain d A s).toReal := by
   have hE : affineMcaError domain d A s ≠ ⊤ :=
     ne_top_of_le_ne_top ENNReal.one_ne_top (affineMcaError_le_one domain d A s)
-  refine card_filter_triples_le_mul _ _ fun θ ↦ ?_
-  have := (ENNReal.ofReal_le_iff_le_toReal hE).mp
-    (le_affineMcaError domain d A s g (fun i ↦ f i + θ * g i))
+  have := (ENNReal.ofReal_le_iff_le_toReal hE).mp (le_affineMcaError domain d A s f g)
   rw [div_le_iff₀ (by positivity)] at this
   simpa [mul_comm] using this
 
@@ -277,33 +259,13 @@ theorem equalDegreeMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
   have hE : affineMcaError domain d A 1 ≠ ⊤ :=
     ne_top_of_le_ne_top ENNReal.one_ne_top (affineMcaError_le_one domain d A 1)
   have hq : 0 < q := by positivity
-  -- The challenges `θ` for which some pair of degree `d` explains a candidate.
+  -- Exceptional triples are affine exceptional, or their `θ` is bad.
   set B := badEqualDegreeChallenges domain f g d (A - 1)
-  set X₁ : Finset (F × F × F) := {c | ∃ P,
-    IsAffineExceptional domain g (fun i ↦ f i + c.1 * g i) d A 1 c.2.1 c.2.2 P}
-  set X₂ : Finset (F × F × F) := {c | c.1 ∈ B}
-  have hsub : ({c | ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} :
-      Finset (F × F × F)) ⊆ X₁ ∪ X₂ := by
-    intro c hc
-    obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hc).2
-    rcases hP.isAffineExceptional_or_exists_degree_eq with h | h
-    · exact Finset.mem_union_left _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, h⟩)
-    · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-        by simpa [B, badEqualDegreeChallenges] using h⟩)
-  have hX₁ : (#X₁ : ℝ) ≤ q ^ 3 * E :=
-    card_filter_isAffineExceptional_le_mul_affineMcaError domain d A 1 f g
-  have hX₂ : (#X₂ : ℝ) = #B * q ^ 2 := by
-    have : X₂ = B ×ˢ (Finset.univ : Finset (F × F)) := by
-      ext c
-      simp [X₂]
-    rw [this, Finset.card_product, Finset.card_univ, Fintype.card_prod]
-    push_cast
-    ring
-  -- The Johnson bound on the bad values of `θ`.
   have hA1 : 1 ≤ A := by
     rcases A with _ | A
     · simp at hJ
     · omega
+  -- The Johnson bound on the bad values of `θ`.
   have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) := by
     have h := le_floor_johnson_of_mul_le hJ
       (card_badEqualDegreeChallenges_mul_le domain f g d (A - 1))
@@ -313,15 +275,21 @@ theorem equalDegreeMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
       (#{c : F × F × F | ∃ P,
         IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤
         E + (ℓ₀ : ℝ) / q := by
+    have hp (c : F × F × F)
+        (hc : ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P) :
+        (∃ P, IsAffineExceptional domain g (fun i ↦ f i + c.1 * g i) d A 1 c.2.1 c.2.2 P) ∨
+          c.1 ∈ B := by
+      obtain ⟨P, hP⟩ := hc
+      rcases hP.isAffineExceptional_or_exists_degree_eq with h | h
+      · exact Or.inl ⟨P, h⟩
+      · exact Or.inr (by simpa [B, badEqualDegreeChallenges] using h)
+    have key := Finset.card_filter_triples_le_of_imp_or B hp fun θ ↦
+      card_filter_isAffineExceptional_le_mul_affineMcaError domain d A 1 g
+        (fun i ↦ f i + θ * g i)
     rw [div_le_iff₀ (by positivity)]
-    calc (#{c : F × F × F | ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ)
-        ≤ #(X₁ ∪ X₂) := by exact_mod_cast Finset.card_le_card hsub
-      _ ≤ #X₁ + #X₂ := by exact_mod_cast Finset.card_union_le _ _
-      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by
-          rw [hX₂]
-          gcongr
-      _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by
-          field_simp
+    calc _ ≤ q ^ 3 * E + #B * q ^ 2 := key
+      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by gcongr
+      _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by field_simp
   calc _ ≤ ENNReal.ofReal (E + (ℓ₀ : ℝ) / q) :=
           ENNReal.ofReal_le_ofReal hcount
     _ = _ := by

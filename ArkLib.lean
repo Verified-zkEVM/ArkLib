@@ -435,6 +435,8 @@ public import
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
 public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeTheorem
+public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ExceptionalCount
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FrobeniusFactor
@@ -1199,6 +1201,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomial
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
+public import ArkLib.ToCompPoly.Univariate.DegreeLT
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Size
 public import ArkLib.ToMathlib.Algebra.CharP.NatCast
@@ -1237,6 +1240,7 @@ public import ArkLib.ToMathlib.Finset.AffineZeros
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement
 public import ArkLib.ToMathlib.Finset.ToListWithProof
+public import ArkLib.ToMathlib.Finset.TripleCount
 public import ArkLib.ToMathlib.Finsupp.Weight
 public import ArkLib.ToMathlib.Fintype.CardEmbedding
 public import ArkLib.ToMathlib.GroupTheory.ElementaryAbelian

@@ -50,6 +50,8 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsSampling.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsExact.lean
   - ArkLib/ToMathlib/Finset/AffineZeros.lean
+  - ArkLib/ToMathlib/Finset/TripleCount.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeTheorem.lean
 ---
 
 # CWYZ26
@@ -104,7 +106,7 @@ challenges in `K`, the counts use `q = |K|`.
 | Lemma 4.1, without the numerics | `ReedSolomon.exists_factorRoots_finset_card_le`, `ReedSolomon.exists_interpolantRoots_finset_card_le`, `ReedSolomon.exists_finset_card_le_forall_isAffinePersistent_of_interpolant`, `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolant` | Generic over an algebraically closed `E` and a finite challenge type with injective multipliers. For each Frobenius exponent, the Frobenius root of each multiplier is assumed to be a family multiplier in chart coordinates. Each code supplies the step from an excluded chart point to its own persistence. The bound is `D² + (2 d M n / (A - B - e + 1))^(card κ) D^(card κ + 1)`, which covers the excluded and nonpersistent parts of Lemma 4.1. Reed–Solomon adds its persistent set and gets `D² + 4 d² M² D³ (n / (A - B))²` beyond it. Under `1 ≤ d ≤ B < A ≤ n`, outside that many challenges every exceptional candidate is persistent. |
 | Theorem 4.10 | `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation`, `ReedSolomon.affineMcaError_le_of_interpolation`, `ReedSolomon.exists_affineExceptional_finset_card_map_le_of_interpolation` | For `1 ≤ d < n`, `0 < η < 1 - √ρ`, and budgets satisfying the full-constraint surplus described above, with `n (d + 1) < B²`. For `M ≥ 1` given by (4.1), that hypothesis is equivalent to (4.5). `AffineParams.surplus` establishes it for the paper's parameter choice. The paper's `M ≥ 1` and formula for `M` are not needed. The Johnson factor is the real number `n (B - d - 1) / (B² - n (d + 1))`, not its floor. The mapped count uses `q = \|K\|`. |
 | Theorem 1.1 | `ReedSolomon.exists_affineExceptional_finset_card_le`, `ReedSolomon.affineMcaError_le` | The paper's hypotheses `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`, and its bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`. |
-| Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. |
+| Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add`, `Finset.card_filter_triples_le_of_imp_or` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. The triple count outside the bad first challenges is shared with (5.5). |
 | Proposition 6.3 | `ReedSolomon.le_scalarMcaError_of_addSubgroup` | In characteristic two, let the domain be an additive subgroup of size `n = 2^k ≥ 16`. For `d = n/4`, `A ≤ 9n/16`, and `s < 3n/16`, the scalar error is at least `(n - 8)/q`. |
 | Section 7, bound (7.1) on a hyperplane | `ReedMuller.card_grid_inter_hyperplane_le` | A hyperplane `a · x = b` with `a ≠ 0` contains at most `n / q₀` points of the grid `K₀ᵏ`. The proof applies the grid Schwartz–Zippel bound at total degree one. |
 | Section 7, after (7.1), affinely independent points | `ReedMuller.exists_subset_card_eq_forall_add_dotProduct_eq_zero`, `ReedMuller.eq_zero_of_forall_mem_add_dotProduct_eq_zero` | More than `n / q₀` grid points contain `k + 1` points on which only the zero affine form vanishes. This is the form Lemma A.1 uses. |
@@ -136,7 +138,7 @@ challenges in `K`, the counts use `q = |K|`.
 | Proof of Theorem 5.2, bound (5.7) | `ReedSolomon.exists_interleavedAffineExceptional_finset_card_le`, `ReedSolomon.interleavedAffineMcaError_le` | Under the Theorem 1.1 hypotheses, the interleaved error is at most `4/(ηq) + 2¹⁴n²/(ρ³η¹⁰q²)`, with no factor of `t`. |
 | Theorem 5.1, second inequality of (5.4) | `ReedSolomon.equalDegreeMcaError_le` | Under the Theorem 1.1 hypotheses at `A = ⌈(√ρ + η) n⌉`, the error is at most `(4/η + ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)`. The condition `nd < (A - 1)²` follows from them, as in the paper. |
 | Theorem 5.1, (5.3), the claim holds for honest messages | `ReedSolomon.linearClaim`, `ReedSolomon.linearClaim_add_affineMultiplier_mul` | The combination identity holds for all polynomials, with no degree bound. |
-| Theorem 5.1, first inequality of (5.5) | `ReedSolomon.LinearClaimInstance`, `ReedSolomon.IsLinearClaimExceptional`, `ReedSolomon.linearClaimMcaError`, `ReedSolomon.linearClaimMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the linear-claim error is at most the affine error plus `2ℓ₀/q`. The prover message is any function of `θ`, so every deterministic prover is covered. |
+| Theorem 5.1, first inequality of (5.5) | `ReedSolomon.LinearClaimInstance`, `ReedSolomon.IsLinearClaimExceptional`, `ReedSolomon.linearClaimMcaError`, `ReedSolomon.HasCorrectLinearClaims`, `ReedSolomon.linearClaimMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the linear-claim error is at most the affine error plus `2ℓ₀/q`. The prover message is any function of `θ`, so every deterministic prover is covered. |
 | Theorem 5.1, second inequality of (5.5) | `ReedSolomon.linearClaimMcaError_le` | The hypotheses of the second inequality of (5.4), with bound `(4/η + 2ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)`. |
 | Theorem 5.1, sampling form of (5.5) | `ReedSolomon.linearClaimMcaError_eq_iSup_prob`, `ReedSolomon.prob_isLinearClaimExceptional_le` | Native uniform sampling of `(θ, α, β)`. |
 
@@ -205,6 +207,8 @@ Unit 10 applies the equal-degree guarantee in each folding round.
   combines the content and irreducible-factor counts.
 - [`AffineCombiner/Theorem.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean)
   proves the finite interpolation bound and the explicit bound of Theorem 1.1.
+- [`AffineCombiner/EqualDegreeTheorem.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeTheorem.lean)
+  proves the explicit equal-degree and linear-claim bounds of Theorem 5.1.
 
 - [`AffineCombiner/EqualDegree.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean)
   defines the equal-degree error and proves its reduction to the affine error with the rounded Johnson bound.

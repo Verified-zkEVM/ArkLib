@@ -544,7 +544,6 @@ theorem affineCount_numerics_le {k : ℕ} (hk : 1 ≤ k) {n a b D v dM : ℝ} (h
   have hc := constant_le hk
   nlinarith
 
-
 /-- At the threshold `A = ⌈(√ρ + η) n⌉`, the Johnson condition `n d < (A - 1)²` holds.
 
 Here `1 ≤ d < n`, `ρ = d / n`, `0 < η`, and `n η² ≥ 4 / ρ`; the subtraction is in `ℕ`.

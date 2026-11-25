@@ -28,6 +28,7 @@ See the [paper page](../../../../../../docs/kb/papers/CWYZ26.md) for the corresp
 
 * `ReedSolomon.LinearClaimInstance`: words, public weights, claims, and the prover's
   message as a function of the first challenge.
+* `ReedSolomon.HasCorrectLinearClaims`: the three claims of a witness pair are correct.
 * `ReedSolomon.linearClaim_add_affineMultiplier_mul`: the combination identity for
   honest claims, valid at any degree.
 * `ReedSolomon.linearClaimMcaError`: the worst-case exceptional-event probability.
@@ -73,12 +74,35 @@ structure LinearClaimInstance (ι F : Type*) (d : ℕ) where
   /-- The prover's message after the first challenge. -/
   message : F → F
 
+namespace LinearClaimInstance
+
+/-- The instance fields as a product that can be enumerated over finite `ι` and `F`. -/
+def equivProd (ι F : Type*) (d : ℕ) :
+    LinearClaimInstance ι F d ≃
+      (ι → F) × (ι → F) × (Fin (d + 1) → F) × F × F × (F → F) where
+  toFun w := (w.f, w.g, w.v, w.γ₀, w.γ₁, w.message)
+  invFun := fun ⟨f, g, v, γ₀, γ₁, message⟩ ↦ ⟨f, g, v, γ₀, γ₁, message⟩
+  left_inv := by intro w; cases w; rfl
+  right_inv := by rintro ⟨f, g, v, γ₀, γ₁, message⟩; rfl
+
+instance [DecidableEq ι] [Fintype F] (d : ℕ) : Fintype (LinearClaimInstance ι F d) :=
+  Fintype.ofEquiv _ (equivProd ι F d).symm
+
+end LinearClaimInstance
+
+/-- The three claims of a witness pair `F₀, G₀` hold for the challenge `θ` and message `c`.
+
+They are `⟨coef(F₀), v⟩ = γ₀`, `⟨coef(G₀), v⟩ = γ₁`, and `⟨coef(X(F₀ + θG₀)), v⟩ = c`. -/
+def HasCorrectLinearClaims {d : ℕ} (v : Fin (d + 1) → F) (γ₀ γ₁ c θ : F) (F₀ G₀ : F[X]) : Prop :=
+  linearClaim v F₀ = γ₀ ∧ linearClaim v G₀ = γ₁ ∧ linearClaim v (X * (F₀ + C θ * G₀)) = c
+
 /-- `P` is exceptional for the linear-claim combiner at `(θ, α, β)` with prover message `c`.
 
 `P` has degree at most `d` and agrees with `g + (α + β x)(f + θ g)` on at least `A` points.
 It satisfies the combined claim `⟨coef(P), v⟩ = γ₁ + α(γ₀ + θ γ₁) + β c`.
 Consider pairs `F₀, G₀` of degrees below `d` with `P = G₀ + (α + βX)(F₀ + θG₀)`.
-Assume `⟨coef(F₀), v⟩ = γ₀`, `⟨coef(G₀), v⟩ = γ₁`, and `⟨coef(X(F₀ + θG₀)), v⟩ = c`.
+Assume their claims are correct: `⟨coef(F₀), v⟩ = γ₀`, `⟨coef(G₀), v⟩ = γ₁`,
+and `⟨coef(X(F₀ + θG₀)), v⟩ = c`.
 Every such pair loses more than `s` of these points. -/
 def IsLinearClaimExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (v : Fin (d + 1) → F)
     (γ₀ γ₁ c θ α β : F) (P : F[X]) : Prop :=
@@ -87,8 +111,7 @@ def IsLinearClaimExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) 
     linearClaim v P = γ₁ + α * (γ₀ + θ * γ₁) + β * c ∧
     ∀ F₀ G₀ : F[X], F₀.degree < d → G₀.degree < d →
       P = G₀ + affineMultiplier α β * (F₀ + C θ * G₀) →
-      linearClaim v F₀ = γ₀ → linearClaim v G₀ = γ₁ →
-      linearClaim v (X * (F₀ + C θ * G₀)) = c →
+      HasCorrectLinearClaims v γ₀ γ₁ c θ F₀ G₀ →
       s < #{i ∈ polynomialAgreementSet domain (equalDegreeWord domain f g θ α β) P |
         F₀.eval (domain i) ≠ f i ∨ G₀.eval (domain i) ≠ g i}
 
@@ -162,12 +185,6 @@ theorem linearClaim_add_affineMultiplier_mul {d : ℕ} (v : Fin (d + 1) → F) (
   rw [this]
   simp
 
-/-- The three claims of a witness pair `F₀, G₀` hold for the challenge `θ` and message `c`.
-
-They are `⟨coef(F₀), v⟩ = γ₀`, `⟨coef(G₀), v⟩ = γ₁`, and `⟨coef(X(F₀ + θG₀)), v⟩ = c`. -/
-def HasCorrectLinearClaims {d : ℕ} (v : Fin (d + 1) → F) (γ₀ γ₁ c θ : F) (F₀ G₀ : F[X]) : Prop :=
-  linearClaim v F₀ = γ₀ ∧ linearClaim v G₀ = γ₁ ∧ linearClaim v (X * (F₀ + C θ * G₀)) = c
-
 /-- The residual `ΔG + α(ΔF + θ ΔG) + β ΔX` of the combined claim for a witness pair.
 
 Here `ΔF = ⟨coef(F₀), v⟩ - γ₀` and `ΔG = ⟨coef(G₀), v⟩ - γ₁`.
@@ -220,14 +237,14 @@ theorem IsLinearClaimExceptional.isEqualDegreeExceptional_or_exists {domain : ι
     by_contra hno
     push Not at hno
     exact heq ⟨hP, hA, hno⟩
-  refine ⟨F₀, G₀, hF, hG, hPeq, ?_, fun ⟨h₁, h₂, h₃⟩ ↦ ?_, ?_⟩
+  refine ⟨F₀, G₀, hF, hG, hPeq, ?_, fun hcorr ↦ ?_, ?_⟩
   · classical
     refine (Nat.sub_le_sub_left hloss A).trans ((Nat.sub_le_sub_right hA _).trans
       ((Finset.le_card_sdiff _ _).trans (Finset.card_le_card fun i hi ↦ ?_)))
     obtain ⟨hiP, hiL⟩ := Finset.mem_sdiff.mp hi
     simp only [Finset.mem_filter, hiP, true_and, not_or, not_not] at hiL
     exact (mem_commonPolynomialAgreementSet _ _ _ _ _ _).mpr hiL
-  · have := hexc F₀ G₀ hF hG hPeq h₁ h₂ h₃
+  · have := hexc F₀ G₀ hF hG hPeq hcorr
     omega
   · rw [hPeq, linearClaim_add_affineMultiplier_mul] at hclaim
     unfold linearClaimResidual
@@ -278,84 +295,66 @@ theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
       (fun p hp ↦ ?_) (fun p hp ↦ (hfin.mem_toFinset.mp hp).2.2))
     obtain ⟨h₁, h₂, -⟩ := hfin.mem_toFinset.mp hp
     exact ⟨h₁.le, h₂.le⟩
-  -- The exceptional triples split into three sets.
+  -- An exceptional triple is affine exceptional, has a bad `θ`, or has a listed false pair.
   set B := badEqualDegreeChallenges domain f g d (A - 1)
-  set X₁ : Finset (F × F × F) := {c | ∃ P,
-    IsAffineExceptional domain g (fun i ↦ f i + c.1 * g i) d A 1 c.2.1 c.2.2 P}
-  set X₂ : Finset (F × F × F) := {c | c.1 ∈ B}
   set X₃ : Finset (F × F × F) := {c | ∃ p ∈ T,
     ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg c.1) c.1 p.1 p.2 ∧
       linearClaimResidual v γ₀ γ₁ (msg c.1) c.1 p.1 p.2 c.2.1 c.2.2 = 0}
-  have hsub : ({c | ∃ P, IsLinearClaimExceptional domain f g d A 1 v γ₀ γ₁ (msg c.1)
-      c.1 c.2.1 c.2.2 P} : Finset (F × F × F)) ⊆ X₁ ∪ X₂ ∪ X₃ := by
-    intro c hc
-    obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hc).2
+  have hp (c : F × F × F) (hc : ∃ P, IsLinearClaimExceptional domain f g d A 1 v γ₀ γ₁
+      (msg c.1) c.1 c.2.1 c.2.2 P) :
+      ((∃ P, IsAffineExceptional domain g (fun i ↦ f i + c.1 * g i) d A 1 c.2.1 c.2.2 P) ∨
+        c ∈ X₃) ∨ c.1 ∈ B := by
+    obtain ⟨P, hP⟩ := hc
     rcases hP.isEqualDegreeExceptional_or_exists with h | ⟨F₀, G₀, hF, hG, -, hL, hbad, hres⟩
     · rcases h.isAffineExceptional_or_exists_degree_eq with h | h
-      · exact Finset.mem_union_left _ (Finset.mem_union_left _
-          (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, h⟩))
-      · exact Finset.mem_union_left _ (Finset.mem_union_right _
-          (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-            by simpa [B, badEqualDegreeChallenges] using h⟩))
-    · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, (F₀, G₀),
-        hfin.mem_toFinset.mpr ⟨hF, hG, hL⟩, hbad, hres⟩)
-  have hX₁ : (#X₁ : ℝ) ≤ q ^ 3 * E :=
-    card_filter_isAffineExceptional_le_mul_affineMcaError domain d A 1 f g
-  have hX₂ : (#X₂ : ℝ) = #B * q ^ 2 := by
-    have : X₂ = B ×ˢ (Finset.univ : Finset (F × F)) := by
-      ext c
-      simp [X₂]
-    rw [this, Finset.card_product, Finset.card_univ, Fintype.card_prod]
-    push_cast
-    ring
-  have hX₃ : (#X₃ : ℝ) ≤ #T * q ^ 2 := by
-    have hsum : #X₃ = ∑ θ : F, #{x : F × F | ∃ p ∈ T,
-        ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2 ∧
-          linearClaimResidual v γ₀ γ₁ (msg θ) θ p.1 p.2 x.1 x.2 = 0} := by
-      rw [Finset.card_filter, Fintype.sum_prod_type]
-      simp only [Finset.card_filter]
-    have hθ : ∀ θ : F, #{x : F × F | ∃ p ∈ T,
-        ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2 ∧
-          linearClaimResidual v γ₀ γ₁ (msg θ) θ p.1 p.2 x.1 x.2 = 0} ≤
-        #T * Fintype.card F := fun θ ↦ by
-      calc _ ≤ #(T.biUnion fun p ↦ ({x : F × F |
-            ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2 ∧
-              linearClaimResidual v γ₀ γ₁ (msg θ) θ p.1 p.2 x.1 x.2 = 0} : Finset (F × F))) := by
-            refine Finset.card_le_card fun x hx ↦ ?_
-            obtain ⟨p, hp, hx⟩ := (Finset.mem_filter.mp hx).2
-            exact Finset.mem_biUnion.mpr ⟨p, hp, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hx⟩⟩
-        _ ≤ ∑ p ∈ T, #({x : F × F |
-            ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2 ∧
-              linearClaimResidual v γ₀ γ₁ (msg θ) θ p.1 p.2 x.1 x.2 = 0} : Finset (F × F)) :=
-            Finset.card_biUnion_le
-        _ ≤ ∑ _p ∈ T, Fintype.card F := Finset.sum_le_sum fun p _ ↦ by
-            by_cases hp : HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2
-            · simp [hp]
-            · refine (Finset.card_le_card fun x hx ↦ ?_).trans
-                (card_filter_linearClaimResidual_eq_zero_le v hp)
-              exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hx).2.2⟩
-        _ = #T * Fintype.card F := by rw [Finset.sum_const, smul_eq_mul]
-    have h : #X₃ ≤ #T * Fintype.card F * Fintype.card F := by
-      rw [hsum]
-      calc _ ≤ ∑ _θ : F, #T * Fintype.card F := Finset.sum_le_sum fun θ _ ↦ hθ θ
-        _ = _ := by rw [Finset.sum_const, Finset.card_univ, smul_eq_mul, mul_comm]
-    calc (#X₃ : ℝ) ≤ ((#T * Fintype.card F * Fintype.card F : ℕ) : ℝ) := by exact_mod_cast h
-      _ = _ := by push_cast; ring
+      · exact Or.inl (Or.inl ⟨P, h⟩)
+      · exact Or.inr (by simpa [B, badEqualDegreeChallenges] using h)
+    · exact Or.inl (Or.inr (Finset.mem_filter.mpr ⟨Finset.mem_univ _, (F₀, G₀),
+        hfin.mem_toFinset.mpr ⟨hF, hG, hL⟩, hbad, hres⟩))
+  -- For each `θ`, each listed pair with a false claim adds at most `q` pairs `(α, β)`.
+  have hX₃ (θ : F) : #{x : F × F | (θ, x.1, x.2) ∈ X₃} ≤ #T * Fintype.card F := by
+    calc _ ≤ #(T.biUnion fun p ↦ ({x : F × F |
+          ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2 ∧
+            linearClaimResidual v γ₀ γ₁ (msg θ) θ p.1 p.2 x.1 x.2 = 0} : Finset (F × F))) := by
+          refine Finset.card_le_card fun x hx ↦ ?_
+          obtain ⟨p, hp, hx⟩ := (Finset.mem_filter.mp (Finset.mem_filter.mp hx).2).2
+          exact Finset.mem_biUnion.mpr ⟨p, hp, Finset.mem_filter.mpr ⟨Finset.mem_univ _, hx⟩⟩
+      _ ≤ ∑ p ∈ T, #({x : F × F |
+          ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2 ∧
+            linearClaimResidual v γ₀ γ₁ (msg θ) θ p.1 p.2 x.1 x.2 = 0} : Finset (F × F)) :=
+          Finset.card_biUnion_le
+      _ ≤ ∑ _p ∈ T, Fintype.card F := Finset.sum_le_sum fun p _ ↦ by
+          by_cases hp : HasCorrectLinearClaims v γ₀ γ₁ (msg θ) θ p.1 p.2
+          · simp [hp]
+          · refine (Finset.card_le_card fun x hx ↦ ?_).trans
+              (card_filter_linearClaimResidual_eq_zero_le v hp)
+            exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (Finset.mem_filter.mp hx).2.2⟩
+      _ = #T * Fintype.card F := by rw [Finset.sum_const, smul_eq_mul]
+  -- For each `θ`, at most `q² (E + #T / q)` pairs are affine exceptional or in `X₃`.
+  have ha (θ : F) : (#{x : F × F |
+      (∃ P, IsAffineExceptional domain g (fun i ↦ f i + θ * g i) d A 1 x.1 x.2 P) ∨
+        (θ, x.1, x.2) ∈ X₃} : ℝ) ≤ q ^ 2 * (E + #T / q) := by
+    rw [Finset.filter_or]
+    calc _ ≤ (#({x : F × F | ∃ P, IsAffineExceptional domain g (fun i ↦ f i + θ * g i) d A 1
+          x.1 x.2 P} : Finset (F × F)) : ℝ) + #({x : F × F | (θ, x.1, x.2) ∈ X₃} :
+            Finset (F × F)) := by exact_mod_cast Finset.card_union_le _ _
+      _ ≤ q ^ 2 * E + #T * q := by
+          gcongr
+          · exact card_filter_isAffineExceptional_le_mul_affineMcaError domain d A 1 g _
+          · have h : ((#{x : F × F | (θ, x.1, x.2) ∈ X₃} : ℕ) : ℝ) ≤
+                ((#T * Fintype.card F : ℕ) : ℝ) := by exact_mod_cast hX₃ θ
+            rw [Nat.cast_mul] at h
+            exact h
+      _ = q ^ 2 * (E + #T / q) := by field_simp
   have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) :=
     hfloor _ (card_badEqualDegreeChallenges_mul_le domain f g d (A - 1))
   have hcount : (#{c : F × F × F | ∃ P, IsLinearClaimExceptional domain f g d A 1 v γ₀ γ₁
       (msg c.1) c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤ E + 2 * (ℓ₀ : ℝ) / q := by
+    have key := Finset.card_filter_triples_le_of_imp_or B hp ha
     rw [div_le_iff₀ (by positivity)]
-    calc (#{c : F × F × F | ∃ P, IsLinearClaimExceptional domain f g d A 1 v γ₀ γ₁
-          (msg c.1) c.1 c.2.1 c.2.2 P} : ℝ)
-        ≤ #(X₁ ∪ X₂ ∪ X₃) := by exact_mod_cast Finset.card_le_card hsub
-      _ ≤ #X₁ + #X₂ + #X₃ := by
-          exact_mod_cast (Finset.card_union_le _ _).trans
-            (Nat.add_le_add_right (Finset.card_union_le _ _) _)
-      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 + (ℓ₀ : ℝ) * q ^ 2 := by
-          rw [hX₂]
-          gcongr
-          exact hX₃.trans (by gcongr)
+    calc _ ≤ q ^ 3 * (E + #T / q) + #B * q ^ 2 := key
+      _ = q ^ 3 * E + #T * q ^ 2 + #B * q ^ 2 := by field_simp
+      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 + (ℓ₀ : ℝ) * q ^ 2 := by gcongr
       _ = (E + 2 * (ℓ₀ : ℝ) / q) * q ^ 3 := by
           field_simp
           ring

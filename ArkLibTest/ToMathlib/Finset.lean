@@ -6,10 +6,11 @@ Authors: Quang Dao, Thomas Coratger
 
 import ArkLib.ToMathlib.Finset.AffineZeros
 import ArkLib.ToMathlib.Finset.LineAgreement
+import ArkLib.ToMathlib.Finset.TripleCount
 import Mathlib.Algebra.Field.ZMod
 
 /-!
-# Acceptance tests for line agreement and zeros of affine functions
+# Acceptance tests for line agreement, zeros of affine functions and triple counts
 -/
 
 open scoped Finset
@@ -40,3 +41,39 @@ example : #{x : ZMod 5 × ZMod 5 | 0 + x.1 * 1 + x.2 * 0 = 0} = Fintype.card (ZM
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Finset.card_filter_add_mul_add_mul_eq_zero_le
+
+-- Over `𝔽₂`, each first coordinate allows the `2 = 2² · (1/2)` pairs with equal entries.
+-- The triple count `2³ · (1/2) = 4` is then attained.
+example : #{c : ZMod 2 × ZMod 2 × ZMod 2 | c.2.1 = c.2.2} = 4 ∧
+    (#{c : ZMod 2 × ZMod 2 × ZMod 2 | c.2.1 = c.2.2} : ℝ) ≤ 2 ^ 3 * (1 / 2) := by
+  refine ⟨by decide, ?_⟩
+  have h := Finset.card_filter_triples_le_mul (fun c : ZMod 2 × ZMod 2 × ZMod 2 ↦ c.2.1 = c.2.2)
+    (1 / 2) fun θ ↦ by
+      have : #{x : ZMod 2 × ZMod 2 | x.1 = x.2} = 2 := by decide
+      simp only [this, ZMod.card]
+      norm_num
+  simpa [ZMod.card] using h
+
+-- Adding the first coordinate `0` as a set `B` adds `#B · 2² = 4` triples to the bound.
+-- The six triples with first coordinate `0` or equal last entries stay below `4 + 4 = 8`.
+example : #{c : ZMod 2 × ZMod 2 × ZMod 2 | c.1 = 0 ∨ c.2.1 = c.2.2} = 6 ∧
+    (#{c : ZMod 2 × ZMod 2 × ZMod 2 | c.1 = 0 ∨ c.2.1 = c.2.2} : ℝ) ≤
+      2 ^ 3 * (1 / 2) + 1 * 2 ^ 2 := by
+  refine ⟨by decide, ?_⟩
+  have h := Finset.card_filter_triples_le_of_imp_or (p := fun c : ZMod 2 × ZMod 2 × ZMod 2 ↦
+      c.1 = 0 ∨ c.2.1 = c.2.2) (a := fun c ↦ c.2.1 = c.2.2) {0} (E := 1 / 2)
+    (fun c hc ↦ hc.symm.imp_right Finset.mem_singleton.mpr) fun θ ↦ by
+      have : #{x : ZMod 2 × ZMod 2 | x.1 = x.2} = 2 := by decide
+      simp only [this, ZMod.card]
+      norm_num
+  simpa [ZMod.card] using h
+
+/-- info: 'Finset.card_filter_triples_le_mul' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Finset.card_filter_triples_le_mul
+
+/-- info: 'Finset.card_filter_triples_le_of_imp_or' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Finset.card_filter_triples_le_of_imp_or
