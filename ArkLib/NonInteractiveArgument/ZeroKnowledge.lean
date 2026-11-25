@@ -16,8 +16,8 @@ public import VCVio.OracleComp.QueryTracking.QueryBound
 Both adversarial stages share one sampled public oracle. The simulator sees the original oracle
 and returns a proof and a program; only the second stage sees the programmed oracle. Private
 coins are neither counted as public queries nor programmed. A named simulator family is fixed
-before all budgets and adversaries. The predicate names its simulator: without a computational
-bound, an existential form collapses, as the unique-witness lemma shows.
+before all budgets and adversaries. The existential form imposes no computational bound, and
+the unique-witness lemma records its zero-error collapse.
 
 The Reduction namespace is retained for existing callers; the definitions use only OracleComp
 and do not import either protocol representation.
@@ -295,17 +295,24 @@ def adaptiveNARGZeroKnowledgeWithSimulator
           (simulator securityParameter sizeBound) adversary)) ≤
         error securityParameter sizeBound t
 
+/-- Existential adaptive NARG zero knowledge. A single simulator family works for every public
+parameter, budget, output type, and adversary. For a relation with unique witnesses, an inhabited
+witness type, and a no-op program, classical choice gives error zero for any prover
+(`adaptiveNARGZeroKnowledge_of_uniqueWitness`). -/
+def adaptiveNARGZeroKnowledge (error : ℕ → ℕ → ℕ → ℝ≥0∞) : Prop :=
+  ∃ simulator, adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl
+    programImpl prover relation statementSize simulator error
+
 /-- For a relation with unique witnesses and a no-op oracle program, a simulator can choose
 the witness classically and run the honest prover. This gives error zero even when the NARG
-string reveals the witness. This is why the library defines no existential form "there exists a
-simulator": without a bound on the simulator, it holds trivially here. -/
+string reveals the witness. -/
 theorem adaptiveNARGZeroKnowledge_of_uniqueWitness [Inhabited Witness]
     (noop : ∀ l n, Program l n)
     (hNoop : ∀ l n realization,
       programImpl l n realization (noop l n) = oracleImpl l n realization)
     (hUnique : ∀ stmt wit wit', (stmt, wit) ∈ relation → (stmt, wit') ∈ relation → wit = wit') :
-    ∃ simulator, adaptiveNARGZeroKnowledgeWithSimulator publicSpec sampleOracle oracleImpl
-      programImpl prover relation statementSize simulator (fun _ _ _ => 0) := by
+    adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl prover
+      relation statementSize (fun _ _ _ => 0) := by
   classical
   let witness : Statement → Witness := fun stmt =>
     if h : ∃ wit, (stmt, wit) ∈ relation then h.choose else default
@@ -352,6 +359,18 @@ theorem adaptiveNARGZeroKnowledgeWithSimulator.map {Encoded : ℕ → ℕ → Ty
   have bound := h l n t Output reduced hr
   simpa [adaptiveNARGZKRealExp, adaptiveNARGZKSimExp, reduced, simulateQ_map,
     bind_map_left] using bound
+
+/-- Pure NARG-string encoding preserves existential zero knowledge with the same error and
+aggregate public-query budget. -/
+theorem adaptiveNARGZeroKnowledge.map {Encoded : ℕ → ℕ → Type}
+    (encode : ∀ l n, NARGString l n → Encoded l n) {error : ℕ → ℕ → ℕ → ℝ≥0∞}
+    (h : adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl prover
+      relation statementSize error) :
+    adaptiveNARGZeroKnowledge publicSpec sampleOracle oracleImpl programImpl
+      (fun l n stmt wit => encode l n <$> prover l n stmt wit)
+      relation statementSize error := by
+  obtain ⟨simulator, hSimulator⟩ := h
+  exact ⟨_, hSimulator.map encode⟩
 
 end Parameterized
 

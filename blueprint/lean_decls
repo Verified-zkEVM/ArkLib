@@ -139,6 +139,7 @@ IP.SRExtractor
 IP.SRProver
 IP.Verifier
 IP.srGame
+IP.srKnowledgeSoundness
 IP.srKnowledgeSoundnessFailureProb
 IP.srKnowledgeSoundnessWithExtractor
 IP.srSoundness
@@ -309,6 +310,7 @@ Reduction.NARGZKAdversary.HasAggregateQueryBound
 Reduction.Simulator
 Reduction.adaptiveNARGZKRealExp
 Reduction.adaptiveNARGZKSimExp
+Reduction.adaptiveNARGZeroKnowledge
 Reduction.adaptiveNARGZeroKnowledgeWithSimulator
 Reduction.adaptiveNARGZeroKnowledge_of_uniqueWitness
 Reduction.append
@@ -318,6 +320,7 @@ Reduction.completeness
 Reduction.fiatShamir
 Reduction.honestVerifierErrorEnvelope
 Reduction.honestVerifierView
+Reduction.honestVerifierZeroKnowledge
 Reduction.honestVerifierZeroKnowledgeWithSimulator
 Reduction.honestVerifierZeroKnowledge_of_uniqueWitness
 Reduction.liftContext
@@ -409,6 +412,7 @@ Verifier.KnowledgeStateFunction.liftContext
 Verifier.StateFunction
 Verifier.StateFunction.liftContext
 Verifier.StateRestoration.isSrChallengeMove
+Verifier.adaptiveNARGKnowledgeSoundnessQueryBounded
 Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
 Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff
 Verifier.adaptiveNARGSoundnessQueryBounded

@@ -13,8 +13,8 @@ public import VCVio.OracleComp.Constructions.SampleableType.Measure
 # Honest-verifier zero knowledge for public-coin interactive proofs
 
 These definitions use the legacy prover and transcript representation. A supplied simulator
-is compared with the honest verifier view. The predicate names its simulator: without a
-computational bound, an existential form collapses, as the unique-witness lemma shows.
+is compared with the honest verifier view; existential simulation has no computational bound.
+The unique-witness lemma records the resulting zero-error collapse.
 
 ## References
 
@@ -110,17 +110,23 @@ def honestVerifierZeroKnowledgeWithSimulator
     ENNReal.ofReal (discreteTVDist (honestVerifierView impl prover stmt wit) (simulator stmt)) ≤
       error stmt
 
+/-- Existential honest-verifier zero knowledge. With unique witnesses and an inhabited witness
+type, classical choice supplies a simulator with error zero for any prover
+(`honestVerifierZeroKnowledge_of_uniqueWitness`). -/
+def honestVerifierZeroKnowledge
+    (impl : QueryImpl oSpec ProbComp)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (relation : Set (StmtIn × WitIn)) (error : StmtIn → ℝ≥0∞) : Prop :=
+  ∃ simulator, honestVerifierZeroKnowledgeWithSimulator impl prover simulator relation error
+
 /-- For a relation with unique witnesses, a simulator can choose a witness classically and run
-the honest prover, giving error zero for every prover. This is why the library defines no
-existential form "there exists a simulator": without a bound on the simulator, it holds
-trivially here. -/
+the honest prover, giving error zero for every prover. -/
 theorem honestVerifierZeroKnowledge_of_uniqueWitness [Inhabited WitIn]
     (impl : QueryImpl oSpec ProbComp)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (relation : Set (StmtIn × WitIn))
     (hUnique : ∀ stmt wit wit', (stmt, wit) ∈ relation → (stmt, wit') ∈ relation → wit = wit') :
-    ∃ simulator, honestVerifierZeroKnowledgeWithSimulator impl prover simulator relation
-      (fun _ => 0) := by
+    honestVerifierZeroKnowledge impl prover relation (fun _ => 0) := by
   classical
   refine ⟨fun stmt => honestVerifierView impl prover stmt
     (if h : ∃ wit, (stmt, wit) ∈ relation then h.choose else default), ?_⟩
