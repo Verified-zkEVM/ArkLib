@@ -201,7 +201,7 @@ separate results under `ArkLib/Interaction/`.
 
 ## Further reading
 
-- [Oracle interfaces](../../../ArkLib/OracleReduction/OracleInterface.lean): how
+- [Oracle interfaces](../../../ArkLib/Relation/OracleInterface.lean): how
   concrete data becomes query access.
 - [Vector IORs](../../../ArkLib/OracleReduction/VectorIOR.lean): the vector-message
   specialization.

@@ -11,10 +11,11 @@ public import ArkLib.ToMathlib.LinearAlgebra.Matrix.KernelDescent
 /-!
 # Persistence witnesses on a grid over the base field
 
-Take `H` and `σ ≠ 0` over an extension field, with `deg H ≤ d`.
+Take `H` and `σ ≠ 0` over an extension field.
 Suppose `H(x) = L_σ(x) v` at finitely many base-field points `x` of `Fᵏ`.
 These identities are linear in the coefficients of `H` and in `σ`.
-A kernel argument gives `H₀` and `σ₀ ≠ 0` over the base field with the same bounds and identities.
+A kernel argument gives `H₀` and `σ₀ ≠ 0` over the base field with the same identities.
+The total degree of `H₀` is at most that of `H`.
 
 The multiplier `L_σ` may vanish at an agreement point.
 If `σ` has a nonzero linear part, its zeros on the grid `K₀ᵏ` lie on a hyperplane.
@@ -104,18 +105,19 @@ variable {F : Type*} [Field F] {k : ℕ}
 
 /-- Identities `H(x) = L_σ(x) v` at finitely many base-field points descend along `φ : F → E`.
 
-Here `H` has total degree at most `d` and `L_σ = σ₀ + σ₁ X₁ + ⋯ + σₖ Xₖ` with `σ ≠ 0`.
+Here `L_σ = σ₀ + σ₁ X₁ + ⋯ + σₖ Xₖ` with `σ ≠ 0`.
 
 Each identity holds at the image under `φ` of a point of `Fᵏ` and a value in `F`.
 
-The descended `H₀` over `F` has total degree at most `d`, and `σ₀ ∈ F^{k+1}` is nonzero.
+The descended `H₀` over `F` has total degree at most that of `H`, and `σ₀ ∈ F^{k+1}` is nonzero.
 
 The identities do not assert that `L_σ(x) ≠ 0` at every point. -/
 theorem exists_affineRatioWitness_of_map {E : Type*} [Field E] (φ : F →+* E) {κ : Type*}
-    [Finite κ] (pts : κ → Fin k → F) (vals : κ → F) (d : ℕ) {H : MvPolynomial (Fin k) E}
-    {σ : Fin (k + 1) → E} (hσ : σ ≠ 0) (hH : H.totalDegree ≤ d)
+    [Finite κ] (pts : κ → Fin k → F) (vals : κ → F) {H : MvPolynomial (Fin k) E}
+    {σ : Fin (k + 1) → E} (hσ : σ ≠ 0)
     (h : ∀ j, eval (φ ∘ pts j) H = eval (φ ∘ pts j) (affineMultiplier σ) * φ (vals j)) :
-    ∃ H₀ : MvPolynomial (Fin k) F, ∃ σ₀ : Fin (k + 1) → F, σ₀ ≠ 0 ∧ H₀.totalDegree ≤ d ∧
+    ∃ H₀ : MvPolynomial (Fin k) F, ∃ σ₀ : Fin (k + 1) → F, σ₀ ≠ 0 ∧
+      H₀.totalDegree ≤ H.totalDegree ∧
       ∀ j, eval (pts j) H₀ = eval (pts j) (affineMultiplier σ₀) * vals j := by
   -- The coefficients of `H` and the vector `σ` form a kernel vector of the mapped matrix.
   set c : H.support ⊕ Fin (k + 1) → E := Sum.elim (fun m ↦ H.coeff m) σ
@@ -128,7 +130,7 @@ theorem exists_affineRatioWitness_of_map {E : Type*} [Field E] (φ : F →+* E) 
   obtain ⟨c', hc', hi'⟩ := exists_mulVec_eq_zero_apply_ne_zero_of_map φ _ hc (j := .inr i) hi
   refine ⟨affineRatioNumerator c', fun i ↦ c' (.inr i), Function.ne_iff.mpr ⟨i, hi'⟩,
     totalDegree_affineRatioNumerator_le (fun m hm ↦ ?_) c', fun j ↦ ?_⟩
-  · exact (le_totalDegree hm).trans hH
+  · exact le_totalDegree hm
   · have := congrFun hc' j
     rw [mulVec_affineRatioMatrix] at this
     exact sub_eq_zero.mp this

@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolation
-public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
+public import ArkLib.ToCompPoly.Univariate.ArithmeticConvolutionCost
 
 /-!
 # Profiles of cached Lagrange interpolation
@@ -64,32 +64,7 @@ theorem profileArithmetic_certifiedFoldr_le {A B : Type} (f : A → B → B)
     cases kind <;>
       simp [arithmeticCost, ArithmeticOp.costKind, Nat.add_mul] at ih hs ⊢ <;> omega
 
-@[simp]
-private theorem profileArithmetic_mulRawFrom_zero (p q : CPolynomial.Raw F)
-    (i : ℕ) (acc : CPolynomial.Raw F) (t : ℕ) (kind : ArithmeticCostKind)
-    (ha : kind ≠ .add) (hm : kind ≠ .mul) (hc : kind ≠ .coefficientRead)
-    (ht : kind ≠ .metadata) :
-    (profileArithmetic (mulRawFrom p q i acc t)).2 kind = 0 := by
-  induction t generalizing i acc with
-  | zero => simp [mulRawFrom, arithmeticCost, ArithmeticOp.costKind, ht]
-  | succ t ih =>
-    simp [mulRawFrom, profileArithmetic_bind, profileArithmetic_smulRaw,
-      profileArithmetic_addRaw, ih,
-      arithmeticCost, ArithmeticOp.costKind, ha, hm, hc, ht]
-
 end Operations
-
-section Semiring
-variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
-
-@[simp]
-private theorem profileArithmetic_mulRaw_zero (p q : CPolynomial.Raw F)
-    (kind : ArithmeticCostKind) (ha : kind ≠ .add) (hm : kind ≠ .mul)
-    (hc : kind ≠ .coefficientRead) (ht : kind ≠ .metadata) :
-    (profileArithmetic (mulRaw p q)).2 kind = 0 := by
-  simp [mulRaw, ha, hm, hc, ht]
-
-end Semiring
 
 section Field
 variable {F : Type} [Field F] [DecidableEq F]
@@ -99,7 +74,7 @@ private theorem profileArithmetic_basisDivisor_inv (x y : F) :
   have htrim (p : CPolynomial.Raw F) : (profileArithmetic (trimRaw p)).2 .inv = 0 :=
     profileArithmetic_trimRaw_zero p .inv (by decide) (by decide) (by decide)
   simp [basisDivisor, profileArithmetic_constant, profileArithmetic_subPolynomial,
-    profileArithmetic_mulPolynomial,
+    profileArithmetic_mulPolynomial, profileArithmetic_mulRaw,
     profileArithmetic_negRaw, profileArithmetic_addRaw, htrim,
     arithmeticCost, ArithmeticOp.costKind]
 
@@ -109,7 +84,7 @@ private theorem profileArithmetic_basisListRaw_inv (nodes : Array F) {m : ℕ}
   simp only [basisListRaw, profileArithmetic_bind_certified, profileArithmetic_pure, add_zero]
   apply (profileArithmetic_certifiedFoldr_of_constant _ _ _ _ .inv 1 ?_).trans (by simp)
   intro j acc
-  simp [profileArithmetic_basisDivisor_inv,
+  simp [profileArithmetic_basisDivisor_inv, profileArithmetic_mulRaw,
     arithmeticCost, ArithmeticOp.costKind]
 
 private theorem profileArithmetic_basis_inv (nodes : Array F) {m : ℕ} (i : Fin m) :
@@ -128,7 +103,7 @@ theorem profileArithmetic_interpolate_inv (nodes values : Array F) (m : ℕ) :
     profileArithmetic_canonicalRaw, Pi.add_apply, htrim, add_zero]
   apply (profileArithmetic_certifiedFoldr_of_constant _ _ _ _ .inv (m - 1) ?_).trans (by simp)
   intro i acc
-  simp [profileArithmetic_basis_inv, profileArithmetic_addRaw,
+  simp [profileArithmetic_basis_inv, profileArithmetic_addRaw, profileArithmetic_mulRaw,
     arithmeticCost, ArithmeticOp.costKind]
 
 private theorem profileArithmetic_basisDivisor_cache (x y : F)
@@ -136,7 +111,7 @@ private theorem profileArithmetic_basisDivisor_cache (x y : F)
     (profileArithmetic (basisDivisor x y)).2 kind = 0 := by
   rcases hk with rfl | rfl <;>
     simp [basisDivisor, profileArithmetic_constant, profileArithmetic_subPolynomial,
-    profileArithmetic_mulPolynomial,
+      profileArithmetic_mulPolynomial, profileArithmetic_mulRaw,
       profileArithmetic_negRaw, profileArithmetic_addRaw, arithmeticCost, ArithmeticOp.costKind]
 
 private theorem profileArithmetic_basisListRaw_cache (nodes : Array F) {m : ℕ}
@@ -150,7 +125,8 @@ private theorem profileArithmetic_basisListRaw_cache (nodes : Array F) {m : ℕ}
     (if kind = .nodeRead then 2 else 0) ?_).trans (by simp [hm])
   intro j acc
   rcases hk with rfl | rfl <;>
-    simp [profileArithmetic_basisDivisor_cache, arithmeticCost, ArithmeticOp.costKind]
+    simp [profileArithmetic_basisDivisor_cache, profileArithmetic_mulRaw,
+      arithmeticCost, ArithmeticOp.costKind]
 
 private theorem profileArithmetic_basis_cache (nodes : Array F) {m : ℕ} (i : Fin m)
     (kind : ArithmeticCostKind) (hk : kind = .nodeRead ∨ kind = .valueRead) :
@@ -173,8 +149,8 @@ private theorem profileArithmetic_interpolate_cache (nodes values : Array F) (m 
     (if kind = .nodeRead then (m - 1) * 2 else 1) ?_).trans (by simp [hm])
   intro i acc
   rcases hk with rfl | rfl <;>
-    simp [profileArithmetic_basis_cache, profileArithmetic_addRaw, arithmeticCost,
-      ArithmeticOp.costKind]
+    simp [profileArithmetic_basis_cache, profileArithmetic_addRaw, profileArithmetic_mulRaw,
+      arithmeticCost, ArithmeticOp.costKind]
 
 /-- Each Lagrange factor reads its two cached nodes once. -/
 theorem profileArithmetic_interpolate_nodeRead (nodes values : Array F) (m : ℕ) :
