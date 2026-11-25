@@ -6,19 +6,19 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.OracleReduction.Security.Basic
-public import VCVio.OracleComp.QueryTracking.MeasuredProgram
+public import PolyFun.PFunctor.Free.Cost.Measured
 
 /-!
 # Knowledge soundness with measured extraction
 
 `knowledgeSoundnessWith` bounds the error of one named extractor but says nothing about its cost.
-A measured program (`OracleComp.MeasuredProgram`) supplies a declared instruction count for a
+A measured program (`PFunctor.FreeM.MeasuredProgram`) supplies a declared instruction count for a
 function with the same returned value as a deterministic straightline extractor. The contract adds
 two claims to the game: the extractor returns that value purely, without querying `oSpec`, and every
 execution path of the named program costs at most a budget. The agreement is extensional; it does
 not identify the extractor's implementation trace with the program's trace.
 
-The contract certifies the program's declared instructions only; `OracleComp.MeasuredProgram`
+The contract certifies the program's declared instructions only; `PFunctor.FreeM.MeasuredProgram`
 lists what is uncharged. Every deterministic extractor that makes no `oSpec` query has a measured
 program with budget zero, so an existential statement over measured programs adds nothing to
 `knowledgeSoundnessWith`. Only a named program with a stated instruction set is evidence.
@@ -51,10 +51,10 @@ abbrev Input (oSpec : OracleSpec ι) (StmtIn WitOut : Type) (pSpec : ProtocolSpe
 extractor's inputs that returns an optional input witness. -/
 abbrev MeasuredProgram (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type)
     (pSpec : ProtocolSpec n) (ω : Type) : Type 1 :=
-  OracleComp.MeasuredProgram (Input oSpec StmtIn WitOut pSpec) (Option WitIn) ω
+  PFunctor.FreeM.MeasuredProgram (Input oSpec StmtIn WitOut pSpec) (Option WitIn) ω
 
 /-- The extractor returns the handlers' execution of the program on its view, without querying
-`oSpec`. This lifts `OracleComp.MeasuredProgram.Realizes` from a value-returning function to
+`oSpec`. This lifts `PFunctor.FreeM.MeasuredProgram.Realizes` from a value-returning function to
 the extractor's computation by requiring it to return that value purely. -/
 def MeasuredProgram.RealizesExtractor {ω : Type}
     (M : MeasuredProgram oSpec StmtIn WitIn WitOut pSpec ω)
