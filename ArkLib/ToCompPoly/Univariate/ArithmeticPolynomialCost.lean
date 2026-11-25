@@ -115,7 +115,7 @@ end AddGroup
 section Semiring
 variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
 
-/-- Canonical multiplication adds a trim to its padded convolution profile. -/
+/-- Canonical multiplication adds a trim to its raw convolution profile. -/
 theorem profileArithmetic_mulPolynomial (p q : CPolynomial F) :
     (profileArithmetic (mulPolynomial p q)).2 =
       (profileArithmetic (mulRaw p.val q.val)).2 +
