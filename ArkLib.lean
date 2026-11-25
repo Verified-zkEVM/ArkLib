@@ -1,6 +1,5 @@
 module
 
-public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
 public import ArkLib.Commitments.Functional.BitZ.Bitification
 public import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
@@ -647,7 +646,6 @@ public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
-public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.Poseidon2
 public import ArkLib.Data.Lattices.CyclotomicRing.Core
 public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic

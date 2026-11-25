@@ -13,7 +13,6 @@ ArkLib/
   Relation/           claims, witness relations, oracle interfaces and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
-  AGM/                algebraic group model representations
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
   ToCompPoly/         local additions not upstreamed to CompPoly
@@ -240,8 +239,6 @@ home_page/            site assets and assembled website root
   corollaries over an explicit adversary class. The
   partial-fraction identity for Lagrange interpolants lives in
   `ArkLib/ToMathlib/LinearAlgebra/LagrangePartialFraction.lean`.
-- `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
-  scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
   BitZ: `ExponentLift` for the bit inner product in an exponent, `CrtVariant` for its relaxation
   by a second grand product modulo `ℓ₁`, `Round1` for the honest first message, its bounds and the
