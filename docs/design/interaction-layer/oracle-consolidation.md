@@ -591,9 +591,10 @@ commitment is therefore an encoding map, a proximity reduction, and BCS on the v
    all read answers as a function of the data and would need restating relative to a cache.
 2. After compilation a possibly cheating prover supplies the answers. A monadic answer can
    describe an honest opening but not an adversary. The security content (binding, straight-line
-   extraction from the query trace, state-restoration soundness in
-   `ArkLib/Interaction/Security/StateRestoration.lean`) is a theorem relating the compiled run to
-   the ideal run, not a field type.
+   extraction from the query trace, state-restoration soundness) is a theorem relating the
+   compiled run to the ideal run, not a field type. The current draft of state-restoration
+   soundness, `ArkLib/Interaction/Security/StateRestoration.lean`, has not been reviewed and may
+   change.
 3. By the test above, the handler varies across uses (ideal read, recording, checked opening) and
    the data's semantics does not. `decide` is already generic in its handler through `simulateQ`,
    so no interface change is needed, and the existing instances keep their pure answers.
