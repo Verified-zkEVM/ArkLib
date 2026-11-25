@@ -41,6 +41,12 @@ Developing the interaction layer is now the project's priority. The migration ha
    embedding of the legacy `OracleReduction` layer into the core exists yet. Spartan and Plonk
    are complete in the legacy layer (below); their interaction-layer versions are not yet written.
 3. **Delete the legacy layer.** Once the protocols are ported, delete the legacy layer as a whole.
+   The interaction layer's core does not import the legacy layer: `OracleInterface` and the
+   generic preliminaries that both layers use live in [`ArkLib/Relation/`](ArkLib/Relation/).
+   The modules under `ArkLib/Interaction/` and `ProofSystem/Sumcheck/` that still import
+   `ArkLib/OracleReduction/` compare the two layers by design: the legacy embeddings in
+   `Interaction/Legacy/` and `Interaction/LegacyAppend.lean`, and Sum-check's compatibility
+   modules, which [the Sum-check design page](docs/design/interaction-layer/sumcheck.md) lists.
 
 Until the port is complete, ArkLib makes no backward-compatibility guarantees and does not
 promise deprecation periods; see the [compatibility policy](CONTRIBUTING.md#compatibility-policy).

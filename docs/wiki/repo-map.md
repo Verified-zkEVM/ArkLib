@@ -10,7 +10,7 @@ ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
   Interaction/
     Core/             interaction layer: protocols as PolyFun trees, execution, security
-  Relation/           claims, witness relations, and oracle data families
+  Relation/           claims, witness relations, oracle interfaces and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
   AGM/                algebraic group model representations
@@ -64,7 +64,12 @@ home_page/            site assets and assembled website root
   Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
   round and optional-run factorization lemmas live in `Execution.lean`.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
-  admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
+  admissibility boundary, and oracle data families; it depends on no protocol tree.
+  `Relation/OracleInterface.lean` defines the `OracleInterface` class and its instances for
+  polynomials and vectors, and `Relation/Prelude.lean` holds generic preliminaries
+  (`VCVCompatible`, `Sampleable`, `Set.language`). Both layers import these files. The legacy
+  layer keeps its own preliminaries, `Direction` and `acceptRejectOracleRel`, in
+  `OracleReduction/Prelude.lean`.
   `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
   evaluation-query interface, shared by the specification and the computational handler.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
