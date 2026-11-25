@@ -98,7 +98,11 @@ theorem sumData_eta {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Ty
 /-- An oracle bundle: a query specification and the concrete data that answers it. The query
 indices and the data may lie in any universe; only the responses lie in `Type u`, the universe of
 the computations that receive them. The universe parameters of `OracleBundle.{u, uX, dX}` are
-those of the responses, the query indices and the data, in this order. -/
+those of the responses, the query indices and the data, in this order.
+
+For fixed `Index` and `Data`, the specification and answer function are equivalent to VCVio's
+`OracleContext Index (fun α => Data → α)`. The reader function allows independent data and response
+universes. -/
 structure OracleBundle : Type (max (uX + 1) (u + 1) (dX + 1)) where
   /-- The query indices. -/
   Index : Type uX
@@ -579,7 +583,11 @@ theorem OracleVerifier.simulateQ_decideWith {ι : Type uι}
     simp
 
 /-- The shared execution mechanism: run PolyFun's interaction once through the supplied monad
-layer, then interpret the final decision and close its output from the same transcript. -/
+layer, then interpret the final decision and close its output from the same transcript.
+
+The `decision` callback receives the raw bundle data of the path. An interpreter must use that
+data only to answer the decision's queries, for example through `(pathBundle inputs s p).answer`.
+Reading the oracle messages directly would bypass the decision's queries. -/
 def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
     {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
     {J : Path s → Type u} {B : (p : Path s) → J p → Type u}

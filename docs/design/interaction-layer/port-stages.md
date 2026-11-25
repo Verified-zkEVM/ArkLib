@@ -222,7 +222,7 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 | L258, `run_append` | ported | [splitDecide] and [splitOutput]: the composed verifier of the concatenation `c.then k` ([then]) decides on every run as the append of the composed verifier of `c` and the composed verifiers of the suffix chains. On an accepted run it exports the same output data. A hypothesis `HEq` transports the run along [protocolThen]. The concatenation carries its own compatibility evidence, because the certificate at the cut is new in the concatenation. [appendDecideOn] and [appendOutputOn] split an appended verifier on an appended run, and [reassocDecide] and [reassocOutput] reassociate `OracleVerifier.append` on runs. The laws are `HEq`s because the two associations have different protocols. They are stated on runs, not as an equation of verifiers, because a certificate's output map agrees with the composite output map only on accepted intermediate statements. [splitTest] splits the three stages after the second stage ([splitApply]). Both sides accept the response 10 with `(true, 35)` and the decision log 1, 3, 6 ([splitAccept]), export the same output data ([splitOutputs]), and reject the response 11 ([splitReject]). These laws concern the decisions and the output data on a completed run. The prover of the concatenation is not transported to the appended protocol; a chain's run still unfolds one append at a time through [runCons] and [runAppend]. |
 
 [logged]: port-logged-execution.md
-[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L589
+[full]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L606
 [closeMap]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L84
 [claimRow1]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L30
 [claimAnswerProblem]: ../../../ArkLibTest/Interaction/Core/Oracle/AnswerOnlyRelations.lean#L42
@@ -372,6 +372,6 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 [chainSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L707
 [chainMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L764
 [appendDecide]: ../../../ArkLib/Interaction/Core/Composition.lean#L471
-[pathBundle]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L486
-[oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L554
+[pathBundle]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L492
+[oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L617
 [runAppend]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
