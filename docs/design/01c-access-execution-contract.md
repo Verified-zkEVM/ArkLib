@@ -5,8 +5,11 @@ This specifies the access and execution contract established by the
 [roadmap](05-roadmap.md).
 The [naming contract](01b-type-tree-rename-cutover.md) and
 [core claim design](02-oracle-reduction-core.md) remain in force. The accumulated-access layer
-(`Oracle/Access`) and the single-run execution layer (`Oracle/Execution`, `Oracle/Protocol`)
-satisfy this contract.
+(`Oracle/Access`) and the single-run execution layer (`Oracle/Execution`, `Oracle/Protocol`) of
+the deleted old layer satisfied this contract. The interaction core under
+`ArkLib/Interaction/Core/` replaces them with passive oracle verifiers, which query oracles only
+in the final decision; the [migration list](interaction-layer/migration-list.md) maps each
+deleted module to its core counterpart.
 
 ## Access: signatures are not executions
 
@@ -36,7 +39,8 @@ a non-faithful interface must not silently become a projection to its underlying
 
 Signature extension uses disjoint query slots. Equal query/response types do not make two
 resources identical. The access layer's sum tags only route queries; stable identity, sharing,
-aliasing, and ideal guarantees belong to `NamedContext` and `OracleModel` in `Oracle/Resource`.
+aliasing, and ideal guarantees belonged to `NamedContext` and `OracleModel` in the deleted
+`Oracle/Resource`; the core retires both and reads ownership from the signature.
 
 ### Required access tests
 

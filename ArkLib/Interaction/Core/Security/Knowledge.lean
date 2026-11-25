@@ -334,7 +334,13 @@ The decision log records input queries, so it is returned by the run: the input 
 oracle-node query type lie in `Type`. Input statements and bundle data are arguments and
 may lie in any universe. `runWithAmbientLog` logs only ambient queries and has no such
 restriction. Like `run` and `runWithQueriesByMove`, it executes through `executeWith`, and it logs
-the interaction and the decision directly with `withLogging`. -/
+the interaction and the decision directly with `withLogging`.
+
+The restriction to `Type` is an accepted upstream limit: VCVio has no logging interface that
+returns large query indices through the small computation monad. For large input or oracle-node
+query types, use `runWithAmbientLog` or `runWithAmbientQueriesByMove`. VCVio PR #1236
+(https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which aims to lift
+the limit, and ArkLib picks it up through a later VCVio pin bump. -/
 def runWithLog {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle.{0, 0, dI}}

@@ -30,9 +30,10 @@ These entries are in
 
 These entries are also in
 [`interaction-rebuild/IMPLEMENTATION-NOTES.md`](../interaction-rebuild/IMPLEMENTATION-NOTES.md).
-The status is one of equivalent, premise-required, retired or unresolved. The rows for entry 19 use
-the plainer names ported, excluded by P1 or P2, removed and open for the same four statuses. The
-[port table](port-logged-execution.md) explains them.
+The status is one of equivalent, premise-required, retired, unresolved or accepted upstream limit.
+An accepted upstream limit comes from a pinned dependency and is documented at its code site. The
+rows for entry 19 use the plainer names ported, excluded by P1 or P2, removed and open for the
+first four statuses. The [port table](port-logged-execution.md) explains them.
 
 | Entry | Departure | Status |
 | --- | --- | --- |
@@ -41,7 +42,7 @@ the plainer names ported, excluded by P1 or P2, removed and open for the same fo
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general bundle API | equivalent: `OracleBundle` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Agreement preserves path-dependent output statements, oracle indices, carriers and interfaces, general bundle inputs, and statement-dependent RBR knowledge relations | equivalent: F7 and 3A use the unchanged owner interfaces; see the [Agreement inventory](sumcheck.md#agreement-universes-and-parent-limits) |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
-| 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | unresolved: a parent logging interface that returns large query indices through the small computation monad is missing |
+| 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | accepted upstream limit: VCVio has no logging interface that returns large query indices through the small computation monad. `runWithAmbientLog` and `runWithAmbientQueriesByMove` are the workaround. [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which aims to lift the limit; ArkLib picks it up through a later VCVio pin bump |
 | 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
 

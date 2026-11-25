@@ -232,11 +232,13 @@ coupling. That specialization no longer restricts general verifier inputs. The s
 is unchanged. The source sum, tensor, lifting and raw-routing canaries also keep all their
 old-layer universe instantiations.
 
-## Open cost universes
+## Cost universes
 
 [`OracleMap.withAmbient_worstCaseCost`][cost] has independent backing-data universes `dX`, `dY`.
 Its ambient index, both bundle-query indices, response/result types and cost carrier `ω` remain
-in `Type`. This is an open restriction of the pinned VCVio cost API. It is separate from
+in `Type`. This is a restriction of the pinned VCVio cost API, and ArkLib accepts it as an
+upstream limit. [VCVio#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the
+cost API universes, and ArkLib picks that up through a later VCVio pin bump. It is separate from
 `OracleInterface` and from the runner's requirement that returned values match its monad universe.
 Protocol semantics do not force query indices and costs to universe zero.
 
@@ -251,7 +253,7 @@ The required changes belong in VCVio, pinned here at `f8d7f8ef52b9afaf4e6d897804
 - Then generalize this branch's wrapper using the upstream theorem. It needs no separate cost
   semantics and no local proof of the upstream simulation law.
 
-[cost]: ../../../ArkLib/Interaction/Core/Oracle/Cost.lean#L47
+[cost]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/Oracle/Cost.lean#L47
 
 ## Definition-site fixture transparency
 
@@ -274,139 +276,139 @@ families use ordinary definition transparency as well. The exact remaining attri
 
 ## Assertion links
 
-[fs1a]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L32
-[ns1a]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L47
-[fs1b]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L33
-[ns1b]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L48
-[fs2]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L46
-[ns2]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L68
-[fs3]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L54
-[ns3]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L91
-[fs4]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L58
-[ns4]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L97
-[fs5a]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L87
-[ns5a]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L138
-[fs5b]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L88
-[ns5b]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L140
-[fs6a]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L91
-[ns6a]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L152
-[fs6b]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L94
-[ns6b]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L156
-[fs7]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L98
-[ns7]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L163
-[fs8]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L101
-[ns8]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L188
-[ns8t]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L193
-[fs9]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L105
-[ns9]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L202
-[fs10]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L113
-[ns10]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L210
-[fs11]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L116
-[ns11]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L227
-[fs12]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L119
-[ns12]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L240
-[fs13]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L123
-[ns13]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L245
-[fs14]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L127
-[ns14]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L258
-[fs15]: ../../../ArkLibTest/Interaction/Oracle/SourceExample.lean#L131
-[ns15]: ../../../ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L264
-[fr1]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L54
-[fr2]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L56
-[fr3]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L66
-[fr4]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L91
-[nr4]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L73
-[fr5]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L93
-[fr6]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L105
-[nr6]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L86
-[fr7]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L108
-[nr7]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L91
-[fr8]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L109
-[nr8]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L96
-[fr9]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L112
-[nr9]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L234
-[fr10]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L117
-[nr10]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L239
-[fr11]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L122
-[nr11]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L242
-[fr12]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L130
-[nr12]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L250
-[fr13]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L133
-[nr13]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L254
-[fr14]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L134
-[fr15]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L137
-[fr16]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L166
-[nr16]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L109
-[fr17]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L175
-[nr17]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L120
-[fr18]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L179
-[nr18]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L129
-[fr19]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L184
-[nr19]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L137
-[fr20]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L198
-[nr20]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L164
-[fr21]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L227
-[nr21]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L191
-[fr22a]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L253
-[nr22a]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L212
-[fr22b]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L257
-[nr22b]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L218
-[fr23]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L261
-[nr23]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L230
-[fr24]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L265
-[nr24]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L258
-[fr25]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L269
-[fr26]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L278
-[nr26]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L279
-[fr27]: ../../../ArkLibTest/Interaction/Oracle/ResourceExample.lean#L284
-[nr27]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L270
-[frs1]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L49
-[nrs1]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L61
-[frs2]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L53
-[nrs2]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L68
-[frs3]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L60
-[nrs3]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L86
-[frs4]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L129
-[nrs4]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L132
-[frs5]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L143
-[nrs5]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L278
-[frs6a]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L153
-[nrs6a]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L293
-[frs6b]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L157
-[nrs6b]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L297
-[frs7]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L162
-[nrs7]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L144
-[frs8]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L169
-[nrs8]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L153
-[frs9]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L200
-[nrs9]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L192
-[frs10]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L209
-[nrs10]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L230
-[frs11]: ../../../ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L221
-[nrs11]: ../../../ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L248
-[fsr1]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L140
-[fsr2]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L162
-[fsr3]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L167
-[fsr4]: ../../../ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L174
+[fs1a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L32
+[ns1a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L47
+[fs1b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L33
+[ns1b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L48
+[fs2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L46
+[ns2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L68
+[fs3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L54
+[ns3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L91
+[fs4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L58
+[ns4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L97
+[fs5a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L87
+[ns5a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L138
+[fs5b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L88
+[ns5b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L140
+[fs6a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L91
+[ns6a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L152
+[fs6b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L94
+[ns6b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L156
+[fs7]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L98
+[ns7]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L163
+[fs8]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L101
+[ns8]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L188
+[ns8t]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L193
+[fs9]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L105
+[ns9]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L202
+[fs10]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L113
+[ns10]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L210
+[fs11]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L116
+[ns11]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L227
+[fs12]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L119
+[ns12]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L240
+[fs13]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L123
+[ns13]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L245
+[fs14]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L127
+[ns14]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L258
+[fs15]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceExample.lean#L131
+[ns15]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean#L264
+[fr1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L54
+[fr2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L56
+[fr3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L66
+[fr4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L91
+[nr4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L73
+[fr5]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L93
+[fr6]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L105
+[nr6]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L86
+[fr7]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L108
+[nr7]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L91
+[fr8]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L109
+[nr8]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L96
+[fr9]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L112
+[nr9]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L234
+[fr10]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L117
+[nr10]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L239
+[fr11]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L122
+[nr11]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L242
+[fr12]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L130
+[nr12]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L250
+[fr13]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L133
+[nr13]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L254
+[fr14]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L134
+[fr15]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L137
+[fr16]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L166
+[nr16]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L109
+[fr17]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L175
+[nr17]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L120
+[fr18]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L179
+[nr18]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L129
+[fr19]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L184
+[nr19]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L137
+[fr20]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L198
+[nr20]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L164
+[fr21]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L227
+[nr21]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L191
+[fr22a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L253
+[nr22a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L212
+[fr22b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L257
+[nr22b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L218
+[fr23]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L261
+[nr23]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L230
+[fr24]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L265
+[nr24]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L258
+[fr25]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L269
+[fr26]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L278
+[nr26]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L279
+[fr27]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/ResourceExample.lean#L284
+[nr27]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L270
+[frs1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L49
+[nrs1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L61
+[frs2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L53
+[nrs2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L68
+[frs3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L60
+[nrs3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L86
+[frs4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L129
+[nrs4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L132
+[frs5]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L143
+[nrs5]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L278
+[frs6a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L153
+[nrs6a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L293
+[frs6b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L157
+[nrs6b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L297
+[frs7]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L162
+[nrs7]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L144
+[frs8]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L169
+[nrs8]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L153
+[frs9]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L200
+[nrs9]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L192
+[frs10]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L209
+[nrs10]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L230
+[frs11]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/RunSourcesExample.lean#L221
+[nrs11]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/RunBundles.lean#L248
+[fsr1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L140
+[fsr2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L162
+[fsr3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L167
+[fsr4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/SourceRoutingExample.lean#L174
 [lsr]: port-logged-execution.md#sourceroutingexamplelean
-[nsrc]: ../../../ArkLibTest/Interaction/Core/Oracle/ExportCost.lean#L33
-[ftr1]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L57
-[ftr2]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L60
-[ftr3a]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L66
-[ftr3b]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L68
-[ftr4]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L71
-[ftr5a]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L77
-[ftr5b]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L82
-[ftr6]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L86
-[ftr7]: ../../../ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L87
+[nsrc]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/ExportCost.lean#L33
+[ftr1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L57
+[ftr2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L60
+[ftr3a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L66
+[ftr3b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L68
+[ftr4]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L71
+[ftr5a]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L77
+[ftr5b]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L82
+[ftr6]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L86
+[ftr7]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean#L87
 [ltr]: port-logged-execution.md#terminalrunexampleslean
-[fv1]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L32
-[nv1]: ../../../ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L37
-[fv2]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L62
-[nv2]: ../../../ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L90
-[fv3]: ../../../ArkLibTest/Interaction/Oracle/Virtual.lean#L66
-[nv3]: ../../../ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L98
+[fv1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/Virtual.lean#L32
+[nv1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L37
+[fv2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/Virtual.lean#L62
+[nv2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L90
+[fv3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Oracle/Virtual.lean#L66
+[nv3]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/DerivedOracles.lean#L98
 
-[legacy]: ../../../ArkLibTest/Interaction/Core/Legacy/OracleReduction.lean#L107
+[legacy]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Legacy/OracleReduction.lean#L107
 
-[bundleRuns]: ../../../ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L330
+[bundleRuns]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean#L330

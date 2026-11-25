@@ -154,8 +154,8 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 
 ## 18. Run outputs are tied to the monad universe
 
-**Status: equivalent for independent input data and query universes; unresolved for the
-full-log oracle runner's large-query interface.** Record D2's ledger puts moves and participant
+**Status: equivalent for independent input data and query universes; an accepted upstream limit
+for the full-log oracle runner's large-query interface.** Record D2's ledger puts moves and participant
 outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
 component that is not a run output its own universe as far as the definitions allow: the ambient
 index of a verifier, the input bundle's index and data, the output oracle index `J p` of an
@@ -224,10 +224,12 @@ available; Sumcheck specializes them through `rbrKnowledgeSoundnessOfNodes`. The
 marks both reviewed contracts equivalent and records the ordinary-import universe clients.
 Neither P1 nor P2 retires an Agreement output or witness contract.
 
-**Unresolved: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the decision's
-full query log, which records bundle queries. Its input query index and oracle-node query
-type must remain in `Type`. A large-query full-log API needs a parent logging interface whose
-log can be returned by the small computation monad. Input data has its independent universe
+**Accepted upstream limit: the full-log oracle runner.** `OracleVerifier.runWithLog` returns the
+decision's full query log, which records bundle queries. Its input query index and oracle-node
+query type must remain in `Type`. A large-query full-log API needs a parent logging interface
+whose log can be returned by the small computation monad. VCVio
+[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which aims to
+lift this limit; ArkLib picks it up through a later VCVio pin bump. Input data has its independent universe
 even in this API, because the log never stores realizations. Only this full-log API keeps the
 restriction, for clients that need the bundle queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
 ambient handler before adding the pure bundle handler, so its result holds only two ambient
@@ -261,8 +263,8 @@ universe of their conclusions: they lift that certificate and hold for every `uK
 interaction-to-legacy theorems drop the witnesses and hold for every `uK` as well. Extracted
 witnesses returned by the extraction games are values of the runner and stay in `Type`. The
 restrictions that remain are the retained runner contracts above (ambient index and experiment state
-in `Type`, output data, output index and extracted witnesses in `Type`) and the unresolved
-large-query full-log interface. Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
+in `Type`, output data, output index and extracted witnesses in `Type`) and the large-query
+full-log interface, which ArkLib accepts as an upstream limit. Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
 
 `ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes against
 `Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,

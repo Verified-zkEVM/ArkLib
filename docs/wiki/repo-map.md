@@ -8,8 +8,8 @@ Many developments are paper-scoped and spread across several modules.
 ```text
 ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
-  Interaction/        typed prover, verifier, and reduction foundations
-    Core/             rebuilt interaction core on PolyFun trees (staged migration)
+  Interaction/
+    Core/             interaction layer: protocols as PolyFun trees, execution, security
   Relation/           claims, witness relations, and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
@@ -29,15 +29,11 @@ home_page/            site assets and assembled website root
 
 ## Conceptual Layering
 
-- `ArkLib/Interaction/` is the interaction layer, which is meant to replace the legacy layer
-  ([README](../../README.md#two-layers)). Its `Reduction.lean` module
-  is independent of oracle, probability, and legacy protocol semantics.
-  `CompositionSoundness.lean` adds an exact append execution law and quantitative
-  soundness under lawful distribution semantics, with an explicit admissibility-error variant.
-  It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
-- `ArkLib/Interaction/Core/` is the rebuilt interaction core. It is being introduced in stages
-  beside the existing interaction modules, which stay frozen until their clients move; Core
-  imports none of them. Protocols are PolyFun `FreeM` trees whose roles come from the
+- `ArkLib/Interaction/Core/` is the interaction layer, which is meant to replace the legacy layer
+  ([README](../../README.md#two-layers)). The old generic interaction layer
+  (`ArkLib/Interaction/Oracle/`, `Reduction.lean`, `CompositionSoundness.lean`) has been deleted;
+  the [migration list](../design/interaction-layer/migration-list.md) records the replacement of
+  each module. Protocols are PolyFun `FreeM` trees whose roles come from the
   `plainSig` and `oracleSig` lenses (`Signature.lean`); `Protocol.lean` owns paths, views and
   nodes. `Reduction.lean` defines provers, verifiers, reductions and the public-coin sampler;
   `OracleVerifier.lean` adds oracle verifiers with routed input and message oracles;
@@ -60,27 +56,6 @@ home_page/            site assets and assembled website root
   transfers remain available. [The Sumcheck design page](../design/interaction-layer/sumcheck.md)
   gives exact ownership and migration dispositions. Tests live in
   `ArkLibTest/ProofSystem/Sumcheck/Core/`.
-- The descriptions below cover the frozen interaction modules outside `Core/`.
-- `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
-  structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
-  role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
-- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready prover strategies.
-  `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
-  input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
-  execution law for reduction clients. `Access.lean` supplies the common virtual-view preservation
-  law when a new message extends the available oracle signature.
-- `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
-  Its explicit interface handoffs are not a substitute for a direct strategy execution theorem.
-- `Interaction/Oracle/Security/` holds interaction-layer security. `RoundByRound.lean` defines
-  ordinary round-by-round soundness on execution prefixes; `Soundness.lean` bounds the actual executor by the
-  sum of the local challenge errors (`count * error` in the uniform case). `Knowledge.lean` defines
-  witness-indexed knowledge certificates (`RoundExtractor`, `KnowledgeCertificate`);
-  `KnowledgeAppend.lean` and `KnowledgeComposition.lean` compose them along dependent append.
-  The `StateRestoration*.lean` modules prove state-restoration knowledge soundness for fixed-round
-  public-coin protocols with bound `(Q + rounds.length) * error`, with variants for oracle outputs
-  (`StateRestorationOracle`), pre-sampled private coins (`StateRestorationCoins`) and per-round
-  errors (`StateRestorationBudget`). The measured forms are described under measured extraction
-  below.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
   `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
@@ -100,9 +75,8 @@ home_page/            site assets and assembled website root
 ## Where To Start By Task
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
-- Changing typed interaction or dependent reduction foundations: start in `ArkLib/Interaction/`.
-  New interaction-layer work goes in `ArkLib/Interaction/Core/`; the modules beside it are frozen
-  during the staged migration.
+- Changing typed interaction or dependent reduction foundations: start in
+  `ArkLib/Interaction/Core/`.
 - Changing legacy reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
@@ -817,22 +791,23 @@ home_page/            site assets and assembled website root
   These facts do not certify host computation time or operational identity with arbitrary code.
   The legacy `RealizesExtractor` identifies the same extractor's monadic result with that run;
   `knowledgeSoundnessWithResources` adds its game and raw count profile `Kind → ℕ`.
-  Native `Interaction/Oracle/Security/KnowledgeResources.lean` defines `RoundExtractor.stageMap`,
-  per-node `MeasuredStages` and `BudgetAtMost`. Generic stages remain weighted; public
-  `MeasuredKnowledgeCertificate Kind` and legacy count contracts require `[Finite Kind]` and
+  In the interaction core, `Interaction/Core/Security/MeasuredExtraction.lean` defines
+  `stageMap`, per-node `MeasuredStages` and `BudgetAtMost`. Generic stages remain weighted;
+  `MeasuredKnowledgeStateFunction Kind` and legacy count contracts require `[Finite Kind]` and
   standard profiles `Kind → ℕ`. Pricing coordinates is a separate justified valuation step.
-  `KnowledgeResources/Composition.lean` composes named programs on a supplied typed path:
-  `programAlong` returns the same `extractWitness`, and `programAlong_budget_le` bounds its
-  budget by `path.length • bound` under a common local bound.
-  `StateRestorationResources.lean` supplies the
+  `MeasuredStages.programAlong` composes the stage programs along a completed transcript and
+  returns the same extracted witness, and `programAlong_budget_le` bounds its budget by the
+  root bound, the step bounds along the transcript and the leaf bound.
+  `Interaction/Core/Security/StateRestorationBudget.lean` supplies the
   [role-specific resource contract](../design/03a-extractor-efficiency.md#state-restoration-resource-contract),
-  including the all-witness identity to the game's `extractInputWitness`. The
+  including the identity, for every adversary witness, between the composed stage program and
+  the extracted input witness. The
   [common accounting boundary](../design/03a-extractor-efficiency.md#proof-and-accounting-boundary)
   applies to every count certificate, and the
   [native composition priorities](../design/05-roadmap.md#native-resource-composition) record
   the remaining client and resource-closure proofs.
   Acceptance clients are `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and
-  `ArkLibTest/Interaction/Oracle/Security/{StateRestorationBudget,MeasuredPathBudgets}.lean`.
+  `ArkLibTest/Interaction/Core/Security/{MeasuredExtraction,StateRestorationBudget,MeasuredPathBudgets}.lean`.
   `VCVio.OracleComp.QueryTracking.DeterminedCost`
   turns the handler's recorded-cost bound into an all-path bound when every permitted response
   equals the handler's answer.

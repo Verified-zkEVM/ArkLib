@@ -8,6 +8,15 @@ transcripts, and soundness. The probability contracts below distinguish existing
 proposed world-backed theorems. [Current status](00-current-status.md) owns the theorem inventory;
 the [roadmap](05-roadmap.md) owns implementation stages and dependencies.
 
+**The deleted old layer.** Most modules this chapter names, such as `CoreRun`, `LoggedRun`,
+`TerminalRun`, `PhasedRun` and `Oracle/RuntimeSoundness`, belonged to the old generic interaction
+layer, which has been deleted. The interaction core under `ArkLib/Interaction/Core/` replaces it.
+Its oracle verifiers are passive: they query oracles only in the final decision.
+`Oracle/LoggedExecution.lean` and `Oracle/QueriesByMove.lean` hold its logged execution, and
+`Security/` holds its security results. The [migration list](interaction-layer/migration-list.md)
+maps every deleted module to its core counterpart or records why it was retired. The requirements
+below still apply; the old module names record how the old layer met them.
+
 ## 1. Worlds
 
 A world Γ is a VCVio `OracleRuntime`: a stateful query handler with an explicit initialization
@@ -37,14 +46,14 @@ that the run occurred merely by having the right fields. Supported experiments s
 runner's evaluation measure, and statements about particular results use executor equations or
 `GeneratedBy`/support membership as provenance evidence.
 
-The current layers are:
+The old layer had these run layers:
 
 | Layer | Paired observations | Source |
 |---|---|---|
-| `CoreRun` | Concrete execution path, input behavior, private prover output, optional verifier claim | [`CoreRun.lean`](../../ArkLib/Interaction/Oracle/CoreRun.lean) |
-| `LoggedRun` | Core run and verifier source-query answers in order | [`LoggedRun.lean`](../../ArkLib/Interaction/Oracle/LoggedRun.lean) |
-| `TerminalRun` | Logged result with explicit accept, reject, or fault, and the same input behavior | [`TerminalRun.lean`](../../ArkLib/Interaction/Oracle/TerminalRun.lean) |
-| `PhasedRun` | Input behavior, setup log, source observations, and world-query regions at concrete action boundaries | [`PhasedRun.lean`](../../ArkLib/Interaction/Oracle/PhasedRun.lean) |
+| `CoreRun` | Concrete execution path, input behavior, private prover output, optional verifier claim | `CoreRun.lean` |
+| `LoggedRun` | Core run and verifier source-query answers in order | `LoggedRun.lean` |
+| `TerminalRun` | Logged result with explicit accept, reject, or fault, and the same input behavior | `TerminalRun.lean` |
+| `PhasedRun` | Input behavior, setup log, source observations, and world-query regions at concrete action boundaries | `PhasedRun.lean` |
 | VCVio `RunResult` | Runner output, residual world state, and ordered surface-query log | `VCVio.OracleComp.Runtime` |
 
 `executeStrategiesCore` executes ordinary prover and restricted verifier strategies directly.
@@ -95,7 +104,7 @@ from acceptance and short-circuits on rejection or fault. Legacy protocols using
 optional-claim convention means rejection, never a returned fault.
 
 Evaluation measures can also have missing mass, representing failure to return. This differs
-from an explicit returned fault. [`Terminal.observe`](../../ArkLib/Interaction/Oracle/TerminalMeasure.lean)
+from an explicit returned fault. `Terminal.observe`
 uses VCVio's failure-to-return boundary and requires the caller to name the fault assigned to
 missing mass. Its proved laws preserve accepted and rejected mass exactly. The named fault
 receives its original returned mass plus the missing mass; the observation has total mass one.
@@ -295,7 +304,7 @@ State restoration is a separate security layer for compiled protocols. The adver
 cached challenge oracle on purported prefixes; repeated keys receive the same answer. Completion
 re-derives each challenge of the selected path from that same oracle.
 
-The implementation in `Interaction.Oracle.Security.StateRestoration` uses `Key Input Salt rounds`.
+The implementation in `Interaction.Core.StateRestoration` uses `Key Input Salt rounds`.
 A key's depth identifies its round. It contains the input and the prover-message/salt prefix
 through that round, without earlier verifier responses. `oracleSpec Input Salt rounds` gives
 that key its response type `key.Challenge`, the addressed round's challenge alphabet.
@@ -306,16 +315,17 @@ extractors receive the state-restoration trace; rewinding extractors additionall
 black-box access. Bridges from round-by-round security, special soundness, and to Fiat–Shamir must
 state their entropy, salt, replay, budget, and loss assumptions.
 
-Implemented in `ArkLib/Interaction/Oracle/Security/`: the bridge from interaction-layer round-by-round
-knowledge to state-restoration knowledge soundness, for fixed-round public-coin protocols with
-uniform challenge samplers. Restoration keys contain the input, prover-message prefix and salt
+Implemented in `ArkLib/Interaction/Core/Security/`: the bridge from interaction-layer
+round-by-round knowledge to state-restoration knowledge soundness, for fixed-round public-coin
+protocols with uniform challenge samplers. Restoration keys contain the input, prover-message prefix and salt
 prefix, and the adversary makes at most `Q` cached oracle queries.
 
-- `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness`: if every
-  round extractor is prover-preserving and locally bounded by `error`, the named backward extractor
-  fails on a valid output with probability at most `(Q + rounds.length) * error`.
-- `stateRestoration_oracle_knowledge_soundness`: the same bound when the verifier returns an open
-  oracle claim and the output relation observes its closed behavior.
+- `Interaction.Core.StateRestoration.stateRestoration_knowledge_soundness`: if the knowledge
+  state function preserves validity across prover messages and is locally bounded by `error`, the
+  named backward extractor fails on a valid output with probability at most
+  `(Q + rounds.length) * error`.
+- `stateRestoration_oracle_knowledge_soundness`: the same bound for the closed-oracle game, in
+  which rejection is unsuccessful.
 - `stateRestoration_knowledge_soundness_privateCoins` and
   `stateRestoration_oracle_knowledge_soundness_privateCoins`: the same bound when the adversary's
   private coins are sampled before the cached game.
@@ -337,13 +347,13 @@ Knowledge soundness with an efficient extractor also needs a certificate for the
 named in its game. The [extractor efficiency contracts](03a-extractor-efficiency.md)
 separate measured operations, complete execution, and security-parameter families. The
 unbounded-game contract and measured-operation contract are implemented. FRI has a measured
-extraction certificate, and interaction-layer knowledge certificates have measured stages. The Toy decoding
+extraction certificate, and interaction-layer knowledge state functions have measured stages. The Toy decoding
 certificate and complete execution bounds remain proposed. The legacy existential game alone imposes
 no time bound, and neither do the
 round-by-round, special-soundness and state-restoration notions. The measured contracts are not
 exceptions: legacy `knowledgeSoundnessWithResources` and interaction-layer
-`MeasuredKnowledgeCertificate` add declared instruction budgets, not running-time guarantees.
-Native `programAlong` composes those budgets on a supplied path. The state-restoration wrapper
+`MeasuredKnowledgeStateFunction` add declared instruction budgets, not running-time guarantees.
+Native `programAlong` composes those budgets along a supplied transcript. The state-restoration wrapper
 also identifies the measured return with the game's extractor; its complete statement and
 role-specific budget are recorded in the
 [resource contract](03a-extractor-efficiency.md#state-restoration-resource-contract).
