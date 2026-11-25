@@ -369,6 +369,8 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Basic
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.PellikaanWu
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.PersistenceDescent
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Persistent
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Probability
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.RationalPair
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Separation
