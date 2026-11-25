@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u q dI uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
+universe u q dI uA v w uI uV uX uY dX dY wJ wK
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -134,9 +134,9 @@ abbrev splitFamily {P : PFunctor.{uA, u}} {s₁ : FreeM P PUnit.{u + 1}}
 /-- Plain final decisions fold after both interactions have finished. The prefix's output type
 may depend on the prefix path, and the composite's output at an appended path is the suffix's
 output at the split path. -/
-def Verifier.append {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
-    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS} {T : Path s₁ → Type u}
-    {U : (p : Path s₁) → Path (s₂ p) → Type u}
+def Verifier.append {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+    {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}} {S : Type} {T : Path s₁ → Type}
+    {U : (p : Path s₁) → Path (s₂ p) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p)) :
     Verifier ambient (s₁.append s₂) S (splitFamily U) where
   decide stmt p v := do
@@ -146,9 +146,9 @@ def Verifier.append {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
     (V₂ z.1).decide mid z.2 views.2
 
 /-- The exact end-decided fold, including skipping the second decision on rejection. -/
-theorem Verifier.append_decide {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
-    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS} {T : Path s₁ → Type u}
-    {U : (p : Path s₁) → Path (s₂ p) → Type u}
+theorem Verifier.append_decide {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+    {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}} {S : Type} {T : Path s₁ → Type}
+    {U : (p : Path s₁) → Path (s₂ p) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (stmt : S) (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) :
     (V₁.append V₂).decide stmt p v = (do
@@ -157,10 +157,10 @@ theorem Verifier.append_decide {ι : Type uι} {ambient : OracleSpec.{uι, u} ι
         (PlainView.split s₁ s₂ p v).2) := rfl
 
 /-- On an appended full transcript, plain decisions use exactly the two component transcripts. -/
-theorem Verifier.append_decide_transcript {ι : Type uι}
-    {ambient : OracleSpec.{uι, u} ι}
-    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
-    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+theorem Verifier.append_decide_transcript {ι : Type}
+    {ambient : OracleSpec.{0, 0} ι}
+    {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}} {S : Type}
+    {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (stmt : S) (tr₁ : Transcript plainSig s₁)
     (tr₂ : Transcript plainSig (s₂ tr₁.path)) :
@@ -183,10 +183,10 @@ theorem Verifier.append_decide_transcript {ι : Type uι}
   exact (Sigma.mk.inj_iff.mp (congrArg fold h)).2
 
 /-- Simulating an appended decision threads the prefix's final state into the suffix. -/
-theorem Verifier.simulateQ_append_run {ι : Type uι} {σ : Type u} {ambient : OracleSpec.{uι, u} ι}
-    {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
-    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+theorem Verifier.simulateQ_append_run {ι : Type} {σ : Type} {ambient : OracleSpec ι}
+    {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}} {S : Type}
+    {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ m)) (stmt : S)
     (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state : σ) :
@@ -204,10 +204,10 @@ theorem Verifier.simulateQ_append_run {ι : Type uι} {σ : Type u} {ambient : O
 
 /-- An accepted composite result has a supported accepted middle result and one shared
 intermediate ambient state. -/
-theorem Verifier.support_append {ι : Type uι} {σ : Type u} {ambient : OracleSpec.{uι, u} ι}
-    {m : Type u → Type v} [Monad m] [LawfulMonad m] [MonadAttach m] [LawfulMonadAttach m]
-    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
-    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+theorem Verifier.support_append {ι : Type} {σ : Type} {ambient : OracleSpec ι}
+    {m : Type → Type v} [Monad m] [LawfulMonad m] [MonadAttach m] [LawfulMonadAttach m]
+    {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}} {S : Type}
+    {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ m)) (stmt : S)
     (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state final : σ)
@@ -231,9 +231,9 @@ theorem Verifier.support_append {ι : Type uι} {σ : Type u} {ambient : OracleS
 abbrev Prover.append := @Focal.compFlat
 
 /-- The sampler of a concatenation, with its pure prefix end, uses counterpart append. -/
-def appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-    {m : Type u → Type u} [Monad m]
-    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+def appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+    {m : Type → Type} [Monad m]
+    (s₁ : FreeM P PUnit.{1}) (s₂ : Path s₁ → FreeM P PUnit.{1})
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
     Counterpart l m (s₁.append s₂) (fun _ => PUnit) :=
@@ -241,9 +241,9 @@ def appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
     (fun tr _ => sampler l _ (draw₂ (Transcript.path tr)))
 
 /-- Combine challenge implementations using only the canonical prefix path. -/
-def combineDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type v} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+def combineDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+    {m : Type → Type v} :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     ((c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
     ((p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) →
     (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)
@@ -255,9 +255,9 @@ def combineDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
       (fun p => draw₂ ⟨b, p⟩) ⟨c, h⟩
 
 /-- Restrict challenge draws of an appended protocol to the challenge nodes of its prefix. -/
-def prefixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type v} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+def prefixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+    {m : Type → Type v} :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
     (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)
   | .pure _, _, _, c => c.val.elim
@@ -268,9 +268,9 @@ def prefixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 
 /-- Restrict challenge draws of an appended protocol to the challenge nodes of the suffix at a
 completed prefix path. -/
-def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type v} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+def suffixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+    {m : Type → Type v} :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
     (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)
   | .pure _, _, draw, ⟨⟩, c => draw c
@@ -279,12 +279,12 @@ def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
       (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
 
 section draws
-variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-  {m : Type u → Type v} {m' : Type u → Type w}
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+  {m : Type → Type v} {m' : Type → Type w}
 
 /-- Restricting draws to the prefix commutes with transforming every draw. -/
-theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+theorem prefixDraw_comp (f : ∀ {α : Type}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
     (c : ChallengeNode l s₁) →
     prefixDraw l s₁ s₂ (fun c => f (draw c)) c = f (prefixDraw l s₁ s₂ draw c)
@@ -295,8 +295,8 @@ theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
       (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
 
 /-- Restricting draws to a suffix commutes with transforming every draw. -/
-theorem suffixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+theorem suffixDraw_comp (f : ∀ {α : Type}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
     (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
     suffixDraw l s₁ s₂ (fun c => f (draw c)) p c = f (suffixDraw l s₁ s₂ draw p c)
@@ -307,9 +307,9 @@ theorem suffixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
 end draws
 
 /-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
-theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
-    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, 0}}
+    (l : PFunctor.Lens P rolePoly.{0}) {m : Type → Type v} :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
     combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw
   | .pure _, _, _ => rfl
@@ -321,9 +321,9 @@ theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
         (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩)) ⟨c, h⟩
 
 /-- Restricting combined challenge draws to the prefix recovers the prefix draws. -/
-@[simp] theorem prefixDraw_combineDraw {P : PFunctor.{uA, u}}
-    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+@[simp] theorem prefixDraw_combineDraw {P : PFunctor.{uA, 0}}
+    (l : PFunctor.Lens P rolePoly.{0}) {m : Type → Type v} :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
         m (challengeSpec l (s₂ p) c)) →
@@ -339,9 +339,9 @@ theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
         (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩) (fun p => draw₂ ⟨b, p⟩)) ⟨c, h⟩
 
 /-- Restricting combined challenge draws to each suffix recovers that suffix's draws. -/
-@[simp] theorem suffixDraw_combineDraw {P : PFunctor.{uA, u}}
-    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+@[simp] theorem suffixDraw_combineDraw {P : PFunctor.{uA, 0}}
+    (l : PFunctor.Lens P rolePoly.{0}) {m : Type → Type v} :
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
         m (challengeSpec l (s₂ p) c)) →
@@ -354,8 +354,8 @@ theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
         (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩) (fun p => draw₂ ⟨b, p⟩)) p) c
 
 /-- Appending samplers equals sampling the appended tree with the combined implementation. -/
-theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
+theorem appendSampler_eq {m : Type → Type} [Monad m] [LawfulMonad m]
+    (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol.{0})
     (draw₁ : (c : ChallengeNode plainSig s₁) → m (challengeSpec plainSig s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode plainSig (s₂ p)) →
       m (challengeSpec plainSig (s₂ p) c)) :
@@ -384,8 +384,8 @@ theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
         (fun p => draw₂ ⟨PUnit.unit, p⟩)
 
 /-- Appending samplers equals sampling the appended tree with the combined implementation. -/
-theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+theorem appendOracleSampler_eq {m : Type → Type} [Monad m] [LawfulMonad m]
+    (s₁ : OracleProtocol.{0, 0}) (s₂ : Path s₁ → OracleProtocol.{0, 0})
     (draw₁ : (c : ChallengeNode oracleSig s₁) → m (challengeSpec oracleSig s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode oracleSig (s₂ p)) →
       m (challengeSpec oracleSig (s₂ p) c)) :
@@ -419,8 +419,8 @@ theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
         (fun p => draw₂ ⟨PUnit.unit, p⟩)
 
 /-- The sampler of an appended oracle protocol is the append of its restricted samplers. -/
-theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u})
+theorem sampler_append_eq {m : Type → Type} [Monad m] [LawfulMonad m]
+    (s₁ : OracleProtocol.{0, 0}) (s₂ : Path s₁ → OracleProtocol.{0, 0})
     (draw : (c : ChallengeNode oracleSig (s₁.append s₂)) →
       m (challengeSpec oracleSig (s₁.append s₂) c)) :
     sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
@@ -428,8 +428,8 @@ theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
 
 /-- The sampler of an appended plain protocol is the append of its restricted samplers. -/
-theorem plainSampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
+theorem plainSampler_append_eq {m : Type → Type} [Monad m] [LawfulMonad m]
+    (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol.{0})
     (draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
       m (challengeSpec plainSig (s₁.append s₂) c)) :
     sampler plainSig (s₁.append s₂) draw = appendSampler s₁ s₂
@@ -437,10 +437,10 @@ theorem plainSampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
   rw [appendSampler_eq, combineDraw_prefixDraw_suffixDraw]
 
 /-- Composed execution preserves seam effects in their actual order. -/
-theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-    {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}}
-    {Mid : Transcript l s₁ → Type u} {Out : Transcript l (s₁.append s₂) → Type u}
+theorem run_appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
+    {Mid : Transcript l s₁ → Type} {Out : Transcript l (s₁.append s₂) → Type}
     (p : Focal l m s₁ Mid)
     (f : (tr : Transcript l s₁) → Mid tr → m (Focal l m
       (s₂ tr.path) (fun tail => Out (Transcript.append s₁ s₂ tr tail))))
@@ -456,10 +456,10 @@ theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{
   run_compFlat_appendFlat p f (samplerEnd l s₁ draw₁) _
 
 /-- An arbitrary composed prover splits with its actual continuation and private memory. -/
-theorem run_splitSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-    {m : Type u → Type u} [Monad m] [LawfulMonad m]
-    {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}}
-    {Out : Transcript l (s₁.append s₂) → Type u}
+theorem run_splitSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+    {m : Type → Type} [Monad m] [LawfulMonad m]
+    {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
+    {Out : Transcript l (s₁.append s₂) → Type}
     (p : Focal l m (s₁.append s₂) Out)
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
@@ -489,9 +489,9 @@ def splitOracleMessages : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ �
         (splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p))
 
 /-- Preserve ambient queries while routing bundle queries through an oracle map. -/
-def OracleMap.withAmbient {ι : Type uι}
-    (ambient : OracleSpec.{uι, u} ι) {In : OracleBundle.{u, uX, dX}}
-    {Out : OracleBundle.{u, uY, dY}}
+def OracleMap.withAmbient {ι : Type}
+    (ambient : OracleSpec ι) {In : OracleBundle.{0, uX, dX}}
+    {Out : OracleBundle.{0, uY, dY}}
     (route : OracleMap In Out) : QueryImpl (ambient + Out.spec) (OracleComp (ambient + In.spec))
   | .inl q => liftM ((ambient + In.spec).query (.inl q))
   | .inr q => simulateQ
@@ -499,11 +499,11 @@ def OracleMap.withAmbient {ι : Type uι}
 
 /-- Routing through a map and answering from data agrees with answering from the mapped data,
 for any interpretation of the ambient queries. -/
-theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
-    {ambient : OracleSpec.{uι, u} ι} {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {In : OracleBundle.{u, uX, dX}} {Out : OracleBundle.{u, uY, dY}}
+theorem OracleMap.simulate_withAmbient_addLift {ι : Type}
+    {ambient : OracleSpec ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {In : OracleBundle.{0, uX, dX}} {Out : OracleBundle.{0, uY, dY}}
     (lift : QueryImpl ambient m) (route : OracleMap In Out) (x : In.Data)
-    {α : Type u} (program : OracleComp (ambient + Out.spec) α) :
+    {α : Type} (program : OracleComp (ambient + Out.spec) α) :
     simulateQ (QueryImpl.addLift lift (In.answer x) :
         QueryImpl (ambient + In.spec) m)
         (simulateQ (route.withAmbient ambient) program) =
@@ -519,10 +519,10 @@ theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
     rfl
 
 /-- Routing through a map and answering from data agrees with answering from the mapped data. -/
-theorem OracleMap.simulate_withAmbient {ι : Type uι}
-    {ambient : OracleSpec.{uι, u} ι} {In : OracleBundle.{u, uX, dX}}
-    {Out : OracleBundle.{u, uY, dY}}
-    (route : OracleMap In Out) (x : In.Data) {α : Type u}
+theorem OracleMap.simulate_withAmbient {ι : Type}
+    {ambient : OracleSpec ι} {In : OracleBundle.{0, uX, dX}}
+    {Out : OracleBundle.{0, uY, dY}}
+    (route : OracleMap In Out) (x : In.Data) {α : Type}
     (program : OracleComp (ambient + Out.spec) α) :
     simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.answer x) :
         QueryImpl (ambient + In.spec) (OracleComp ambient))
@@ -533,15 +533,15 @@ theorem OracleMap.simulate_withAmbient {ι : Type uι}
   OracleMap.simulate_withAmbient_addLift (QueryImpl.id' ambient) route x program
 
 namespace OracleVerifier
-variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
-  {inputs : OracleBundle.{u, uI, dI}}
-  {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
-  {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
-  {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
-  {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type uK}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂)}
+variable {ι : Type} {ambient : OracleSpec ι}
+  {inputs : OracleBundle.{0, uI, dI}}
+  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
+  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {K : (p : Path s₁) → Path (s₂ p) → Type}
+  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
 
 /-- Reassociate inputs and both sets of messages into the prefix bundle and the suffix messages. -/
 def splitPathBundle (p : Path (s₁.append s₂)) :
@@ -573,9 +573,9 @@ def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
 /-- The output oracle family of an appended oracle protocol: at a path of the appended tree, the
 suffix's output family at the split path. -/
 abbrev splitOutputs
-    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂))
+    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂))
     (p : Path (s₁.append s₂)) :
-    OracleFamily.{uK, u, wK} (splitFamily K p)
+    OracleFamily.{0, 0, wK} (splitFamily K p)
       (C (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2) :=
   outputs (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
 
@@ -659,7 +659,7 @@ theorem append_decideWith (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     | some mid => exact OracleMap.simulate_withAmbient (suffixRoute V₁ stmt p v) data _
 
 /-- Oracle decision composition threads one ambient state through both routed decisions. -/
-theorem simulateQ_append_run {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+theorem simulateQ_append_run {σ : Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂) (impl : QueryImpl ambient (StateT σ m))
@@ -680,7 +680,7 @@ theorem simulateQ_append_run {σ : Type u} {m : Type u → Type v} [Monad m] [La
 
 /-- Accepted oracle composition decomposes into supported accepted decisions at the same
 intermediate ambient state and the routed suffix data. -/
-theorem support_append {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+theorem support_append {σ : Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
     [MonadAttach m] [LawfulMonadAttach m]
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))

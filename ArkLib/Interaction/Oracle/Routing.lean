@@ -24,7 +24,7 @@ the prefix transcript alone.
 
 @[expose] public section
 
-universe u q dI uι uI uJ uK uS wI wJ wK
+universe u q dI uI wJ wK
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -84,16 +84,16 @@ theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{u, q})
   rw [oracleMessageFamily_split_append]
 
 namespace OracleVerifier
-variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-  {inputs : OracleBundle.{u, uI, dI}}
-  {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
-  {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
-  {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
-  {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type u}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
+variable {ι : Type} {ambient : OracleSpec ι}
+  {inputs : OracleBundle.{0, uI, dI}}
+  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
+  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {K : (p : Path s₁) → Path (s₂ p) → Type}
+  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    OracleFamily.{u, u, wK} (K p₁ p₂) (C p₁ p₂)}
+    OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
 
 /-- In an appended run, the prefix decision's bundle consists of the inputs and the prefix oracle
 messages: every prefix-slot query routed by `prefixRoute` is answered as
@@ -123,7 +123,7 @@ order. Intermediate and final statements and oracle families may depend on their
 theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂) (stmt : S) (data : inputs.Data)
-    {Out : Transcript oracleSig (s₁.append s₂) → Type u}
+    {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :
     let full := ambient + challengeSpec oracleSig (s₁.append s₂)
     let toFull : QueryImpl ambient (OracleComp full) := fun q => liftM (full.query (.inl q))

@@ -26,20 +26,20 @@ composes the two handlers (`Prover.simulate_simulate`).
 
 @[expose] public section
 
-universe u uA v uS uW uι
+universe uA v
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp
 
 /-- A completed interaction, including a possibly rejecting verifier verdict. The verdict's type
 is the output statement type at the shape path of the transcript. -/
-abbrev Outcome {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    (s : FreeM P PUnit.{u + 1}) (Out : Transcript l s → Type u) (StmtOut : Path s → Type u) :=
+abbrev Outcome {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+    (s : FreeM P PUnit.{1}) (Out : Transcript l s → Type) (StmtOut : Path s → Type) :=
   (tr : Transcript l s) × Out tr × Option (StmtOut tr.path)
 
 /-- Run the interaction against an arbitrary focal strategy, and decide at its end. -/
-def Verifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {S : Type uS} {T : Path s → Type u} {Out : Transcript plainSig s → Type u}
+def Verifier.run {ι : Type} {ambient : OracleSpec ι}
+    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out) :
     OracleComp (ambient + challengeSpec plainSig s) (Outcome plainSig s Out T) := do
   let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
@@ -55,7 +55,7 @@ def Verifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 these marginals hold after every history, independently of the earlier actions. Missing mass in
 ambient actions is permitted; a challenge has exactly the mass of its specified draw. -/
 def FreshChallenges {m : Type → Type v} [Monad m] [EvalDistSemantics m]
-    {ι : Type uι} {ambient : OracleSpec.{uι, 0} ι} {P : PFunctor.{uA, 0}}
+    {ι : Type} {ambient : OracleSpec ι} {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
     (handler : QueryImpl (ambient + challengeSpec l s) m)
     (draw : QueryImpl (challengeSpec l s) ProbComp) : Prop :=
@@ -65,7 +65,7 @@ def FreshChallenges {m : Type → Type v} [Monad m] [EvalDistSemantics m]
 /-- A stateful challenge has the prescribed event marginals from every current state.
 The challenge may change the state; only its move distribution is fixed. -/
 def FreshChallengesAt {m : Type → Type v} [Monad m] [EvalDistSemantics m]
-    {ι : Type uι} {σ : Type} {ambient : OracleSpec.{uι, 0} ι}
+    {ι : Type} {σ : Type} {ambient : OracleSpec ι}
     {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
     (handler : QueryImpl (ambient + challengeSpec l s) (StateT σ m))
@@ -74,8 +74,8 @@ def FreshChallengesAt {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     Pr{let x ← (handler (.inr c)).run' st}[event x] = Pr{let x ← draw c}[event x]
 
 /-- Lifting a separate challenge draw into the ambient state gives fresh challenge marginals. -/
-theorem freshChallengesAt_addLift {ι : Type uι} {σ : Type}
-    {ambient : OracleSpec.{uι, 0} ι} {P : PFunctor.{uA, 0}}
+theorem freshChallengesAt_addLift {ι : Type} {σ : Type}
+    {ambient : OracleSpec ι} {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit}
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec l s) ProbComp) :
@@ -86,8 +86,8 @@ theorem freshChallengesAt_addLift {ι : Type uι} {σ : Type}
     StateT.liftM_def, StateT.run'_lift']
 
 /-- Every possible verdict of a run is a possible verdict of the decision on its transcript. -/
-theorem Verifier.verdict_mem_support_run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {S : Type uS} {T : Path s → Type u} {Out : Transcript plainSig s → Type u}
+theorem Verifier.verdict_mem_support_run {ι : Type} {ambient : OracleSpec ι}
+    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out)
     {obs : Outcome plainSig s Out T} (h : obs ∈ support (V.run stmt p)) :
     obs.2.2 ∈ support
@@ -97,17 +97,17 @@ theorem Verifier.verdict_mem_support_run {ι : Type u} {ambient : OracleSpec.{u,
   simpa only [mem_support_liftComp_iff] using hv
 
 /-- Execute the honest prover and the final decision, retaining explicit rejection. -/
-def Reduction.runOutcome {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {S : Type uS} {W : Type uW} {T : Path s → Type u}
-    {Out : Transcript plainSig s → Type u}
+def Reduction.runOutcome {ι : Type} {ambient : OracleSpec ι}
+    {s : Protocol.{0}} {S : Type} {W : Type} {T : Path s → Type}
+    {Out : Transcript plainSig s → Type}
     (R : Reduction ambient s S W T Out) (stmt : S) (wit : W) :
     OracleComp (ambient + challengeSpec plainSig s) (Outcome plainSig s Out T) :=
   R.verifier.run stmt (R.prover stmt wit)
 
 /-- The accepting-result presentation of the same execution. -/
-def Reduction.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {S : Type uS} {W : Type uW} {T : Path s → Type u}
-    {Out : Transcript plainSig s → Type u}
+def Reduction.run {ι : Type} {ambient : OracleSpec ι}
+    {s : Protocol.{0}} {S : Type} {W : Type} {T : Path s → Type}
+    {Out : Transcript plainSig s → Type}
     (R : Reduction ambient s S W T Out) (stmt : S) (wit : W) :
     OptionT (OracleComp (ambient + challengeSpec plainSig s))
       ((tr : Transcript plainSig s) × Out tr × T tr.path) :=
@@ -119,11 +119,11 @@ def Reduction.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
 section Simulate
 
-variable {κ κ' : Type u} {spec : OracleSpec.{u, u} κ} {spec' : OracleSpec.{u, u} κ'}
-  {n : Type u → Type u} [Monad n] [LawfulMonad n]
+variable {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
+  {n : Type → Type} [Monad n] [LawfulMonad n]
 
 /-- Simulation interprets both slots and the continuation of a local exchange. -/
-theorem simulateQ_step {X : Type u} {A B : X → Type u} {R : Type u}
+theorem simulateQ_step {X : Type} {A B : X → Type} {R : Type}
     (F : QueryImpl spec n) (role : TwoParty.Role) (order : Schedule)
     (p : OracleComp spec (Choice .focal role X A))
     (c : OracleComp spec (Choice .counterpart role X B))
@@ -136,9 +136,9 @@ theorem simulateQ_step {X : Type u} {A B : X → Type u} {R : Type u}
 /-- Simulating a run against a sampler, under either schedule, simulates every prover slot and
 every challenge draw, for any ownership lens. The law holds for arbitrary challenge draws; it
 assumes nothing about their distribution. -/
-theorem simulateQ_runWith_sampler {P : PFunctor.{uA, u}}
-    {l : PFunctor.Lens P rolePoly.{u}} (F : QueryImpl spec n) (order : Schedule) :
-    (s : FreeM P PUnit.{u + 1}) → {Out : Transcript l s → Type u} →
+theorem simulateQ_runWith_sampler {P : PFunctor.{uA, 0}}
+    {l : PFunctor.Lens P rolePoly.{0}} (F : QueryImpl spec n) (order : Schedule) :
+    (s : FreeM P PUnit.{1}) → {Out : Transcript l s → Type} →
     (p : Prover l spec s Out) →
     (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) →
     simulateQ F (runWith order s p (sampler l s draw)) =
@@ -163,16 +163,16 @@ end Simulate
 
 section SplitSimulation
 
-variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-  {ι κ : Type u} {ambient : OracleSpec.{u, u} ι} {spec : OracleSpec.{u, u} κ}
-  {n : Type u → Type u}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+  {ι κ : Type} {ambient : OracleSpec ι} {spec : OracleSpec κ}
+  {n : Type → Type}
   [Monad n] [LawfulMonad n]
 
 /-- Interpreting a run against a sampler interprets every prover slot and every challenge
 draw. -/
 theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
-    (ιm : QueryImpl ambient (OracleComp spec)) (s : FreeM P PUnit.{u + 1})
-    {Out : Transcript l s → Type u} (k : Prover l ambient s Out)
+    (ιm : QueryImpl ambient (OracleComp spec)) (s : FreeM P PUnit.{1})
+    {Out : Transcript l s → Type} (k : Prover l ambient s Out)
     (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) :
     simulateQ h (TwoParty.Lens.run s (k.simulate ιm) (sampler l s draw)) =
       TwoParty.Lens.run s (k.simulate fun q => simulateQ h (ιm q))
@@ -183,7 +183,7 @@ theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
 /-- Splitting the first slot of a simulated prover simulates the split slot and then the
 returned strategy. -/
 theorem splitSlot_simulate (ιm : QueryImpl ambient n) :
-    (s : FreeM P PUnit.{u + 1}) → {Out : Transcript l s → Type u} →
+    (s : FreeM P PUnit.{1}) → {Out : Transcript l s → Type} →
     (prover : Prover l ambient s Out) →
     Strategy.splitSlot (prover.simulate ιm) =
       (fun k => Prover.simulate ιm k) <$> simulateQ ιm (Strategy.splitSlot prover)
@@ -198,8 +198,8 @@ theorem splitSlot_simulate (ιm : QueryImpl ambient n) :
 /-- Splitting a simulated prover at the seam simulates the split prover and then each
 returned continuation. -/
 theorem splitPrefix_simulate (ιm : QueryImpl ambient n) :
-    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
-    {Out : Transcript l (s₁.append s₂) → Type u} →
+    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
+    {Out : Transcript l (s₁.append s₂) → Type} →
     (prover : Prover l ambient (s₁.append s₂) Out) →
     Focal.splitPrefix (prover.simulate ιm) =
       Strategy.mapOutput (fun _ k => Prover.simulate ιm k)
@@ -219,16 +219,16 @@ theorem splitPrefix_simulate (ιm : QueryImpl ambient n) :
 end SplitSimulation
 
 /-- On an accepted statement, the guarded run is the run. -/
-theorem Verifier.onAccept_run_some {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {T : Type uS} {U : Path s → Type u}
-    {Out : Transcript plainSig s → Type u}
+theorem Verifier.onAccept_run_some {ι : Type} {ambient : OracleSpec ι}
+    {s : Protocol.{0}} {T : Type} {U : Path s → Type}
+    {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s T U) (t : T) (prover : Prover plainSig ambient s Out) :
     V.onAccept.run (some t) prover = V.run t prover := rfl
 
 /-- On a rejected statement, the guarded run interacts and rejects. -/
-theorem Verifier.onAccept_run_none {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {T : Type uS} {U : Path s → Type u}
-    {Out : Transcript plainSig s → Type u}
+theorem Verifier.onAccept_run_none {ι : Type} {ambient : OracleSpec ι}
+    {s : Protocol.{0}} {T : Type} {U : Path s → Type}
+    {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s T U) (prover : Prover plainSig ambient s Out) :
     V.onAccept.run none prover =
       (fun r => ⟨r.1, r.2.1, none⟩) <$> TwoParty.Lens.run s

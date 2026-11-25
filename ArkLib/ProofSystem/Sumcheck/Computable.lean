@@ -65,7 +65,7 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
 
 @[expose] public section
 
-universe uI wI wI'
+universe wI wI'
 
 namespace Sumcheck
 open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
@@ -163,8 +163,8 @@ end Transport
 section VerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ} {d : ℕ}
-  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type uI}
-  {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
+  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type}
+  {A : I → Type} (inputs : OracleFamily.{0, 0, wI} I A)
 
 
 variable {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
