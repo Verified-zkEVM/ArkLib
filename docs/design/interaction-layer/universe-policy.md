@@ -69,7 +69,7 @@ All 8 `ULift`s in the core are inside the adapters.
 The scan is a short meta program: for each constant, open its type with
 `forallTelescopeReducing`, collect the level parameters of every binder type with
 `collectLevelParams`, and report the constant's level parameters that were not collected. The
-CI linter of migration step 8 is this program with an allowlist.
+CI linter of migration step 7 is this program with an allowlist.
 
 ## The three failures
 

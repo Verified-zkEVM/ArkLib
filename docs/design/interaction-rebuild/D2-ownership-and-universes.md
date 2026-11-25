@@ -139,18 +139,24 @@ clients check `owner` on every ArkLib position kind.
 
 The code follows the earlier ledger until these steps land. Each is one PR or part of one.
 
+The steps run from the consumers to the foundations. A monomorphic definition can use a
+polymorphic one at `Type`, so each step compiles on its own. The reverse order cannot: once
+`OracleInterface` or `Protocol` loses a universe, every polymorphic user breaks at once. Until the
+vocabulary step, the changed files pin the foundations at `0`, and that step removes the pins.
+Each step also updates the tests and client annotations that name the declarations it changes.
+
 1. This record and [implementation note 18](IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe).
-2. `Relation/`: `OracleInterface` and `Relation` at `Type`.
-3. Signatures and protocols: drop `u` and `q`; leaves become `Unit`.
+2. Security definitions: drop the statement and witness universes and both `.lift` lemmas; keep
+   the adversary universe.
+3. Execution, reductions, oracle verifiers, composition and stage chains.
 4. Oracle bundles, families, routing, sent oracles and reassociation; delete the universe
    adapters (`liftQueries`, `lowerQueries`, `liftResponse`, `liftInputs`, `liftOutputs`).
-5. Execution, reductions, oracle verifiers, composition and stage chains.
-6. Security definitions: drop the statement and witness universes and both `.lift` lemmas; keep
-   the adversary universe.
-7. Tests and clients: replace `UniverseCanary.lean` with a policy test (generic code at a large
-   polynomial, an `AdversaryModel` with `Adv : Type 1`), drop client pins, add the `[]ₒ` alias,
-   and update the port tables and disposition records that describe universes.
-8. CI: a linter that checks the rule on `Interaction/` and `Relation/`, allowing only the
+5. Vocabulary: `OracleInterface` and `Relation` in `Relation/`, signatures and protocols at
+   `Type`; leaves become `Unit`; add the `Type` alias for `[]ₒ`.
+6. Tests and clients: replace `UniverseCanary.lean` with a policy test (generic code at a large
+   polynomial, an `AdversaryModel` with `Adv : Type 1`), drop the remaining pins, and update the
+   port tables and disposition records that describe universes.
+7. CI: a linter that checks the rule on `Interaction/` and `Relation/`, allowing only the
    adversary universe and the generic files.
 
 ## Open points
