@@ -68,28 +68,34 @@ def weightedQueries : OracleMap source scalarFamily where
   law _ _ := rfl
 
 /-- The downstream map consumes the derived scalar and the suffix oracle. -/
-def withSuffix : OracleMap (sumFamily scalarFamily (suffix.reindex id)) scalarFamily where
-  f x _ := 10 * (show Nat from x (.inl ())) + (show Nat from x (.inr ()))
+def withSuffix : OracleMap
+    ((OracleBundle.ofFamily scalarFamily).sum (OracleBundle.ofFamily (suffix.reindex id)))
+    scalarFamily where
+  f x _ := 10 * (show Nat from x.1 ()) + (show Nat from x.2 ())
   impl _ := do
-    let x : Nat ← liftM ((sumFamily scalarFamily (suffix.reindex id)).spec.query ⟨.inl (), ()⟩)
-    let y : Nat ← liftM ((sumFamily scalarFamily (suffix.reindex id)).spec.query ⟨.inr (), ()⟩)
+    let x : Nat ← liftM (((OracleBundle.ofFamily scalarFamily).sum
+      (OracleBundle.ofFamily (suffix.reindex id))).spec.query (.inl ⟨(), ()⟩))
+    let y : Nat ← liftM (((OracleBundle.ofFamily scalarFamily).sum
+      (OracleBundle.ofFamily (suffix.reindex id))).spec.query (.inr ⟨(), ()⟩))
     pure (10 * x + y)
   law _ _ := rfl
 
 /-- Substitute the derived scalar, and pass the suffix oracle through unchanged. -/
-def substituted : OracleMap (sumFamily source suffix) scalarFamily :=
-  withSuffix.comp (weightedQueries.sum (OracleMap.embedding suffix id))
+def substituted :
+    OracleMap ((OracleBundle.ofFamily source).sum (OracleBundle.ofFamily suffix)) scalarFamily :=
+  withSuffix.comp (weightedQueries.par (OracleMap.embedding suffix id))
 
 /-- Source oracle `false` holds 3, oracle `true` holds 7, and the suffix holds 5. -/
-def data : ∀ k, (sumFamily source suffix).Realization k :=
-  sumData (fun bit => if bit then 7 else 3) (fun _ => 5)
+def data : ((OracleBundle.ofFamily source).sum (OracleBundle.ofFamily suffix)).Data :=
+  (fun bit => if bit then 7 else 3, fun _ => 5)
 
 -- Virtual V2, restated: the old-layer `substWithSuffix` becomes `OracleMap.comp` with
--- `OracleMap.sum` of the derived map and the identity embedding of the suffix; the map also
+-- `OracleMap.par` of the derived map and the identity embedding of the suffix; the map also
 -- supplies the materialized data. Both the simulated query and the data give
 -- `10 * (2 * 3 + 7) + 5 = 135`. Not weaker.
-example : simulateQ ((sumFamily source suffix).behaviorOfRealizations data)
-    (substituted.impl ⟨(), ()⟩) = (135 : Nat) := rfl
+example :
+    simulateQ (((OracleBundle.ofFamily source).sum (OracleBundle.ofFamily suffix)).answer data)
+      (substituted.impl ⟨(), ()⟩) = (135 : Nat) := rfl
 
 example : substituted.f data () = 135 := rfl
 

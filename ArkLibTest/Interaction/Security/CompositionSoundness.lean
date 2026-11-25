@@ -445,7 +445,7 @@ def exportMap (sample : Fin 3) (p : Path first) :
     OracleMap (pathBundle nats first p) nats where
   f x _ := (show Nat from x.1 ()) + sample.val
   impl _ := do
-    let value : Nat ← (OracleMap.fst nats (oracleMessageFamily first p)).impl ⟨(), ()⟩
+    let value : Nat ← (OracleMap.fst nats (oracleMessageBundle first p)).impl ⟨(), ()⟩
     pure (value + sample.val)
   law _ _ := rfl
 

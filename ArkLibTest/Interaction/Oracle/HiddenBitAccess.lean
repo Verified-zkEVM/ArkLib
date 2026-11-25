@@ -122,7 +122,7 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
     AllQueriesSatisfy (routedSuffix p v) (rawAllowed p) := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
   refine (suffix_access _ _).simulateQ fun q allowed => ?_
-  rcases q with request | (⟨i, q⟩ | ⟨i, q⟩)
+  rcases q with request | (⟨i, q⟩ | i)
   · exact (allQueriesSatisfy_query_iff _ _).mpr allowed
   · cases i
     cases q

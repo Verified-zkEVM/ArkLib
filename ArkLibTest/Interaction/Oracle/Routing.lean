@@ -56,12 +56,12 @@ abbrev prefixBundle := pathBundle inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export input slot `false` plus the observable coordinate of the prefix message. -/
 def exportMap : OracleMap prefixBundle exported where
-  f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
+  f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2.1).1
   impl _ := do
     let a : Nat ←
-      (OracleMap.fst inputs (oracleMessageFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨false, ()⟩
+      (OracleMap.fst inputs (oracleMessageBundle firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨false, ()⟩
     let b : Nat ←
-      (OracleMap.snd inputs (oracleMessageFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+      (OracleMap.snd inputs (oracleMessageBundle firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl (.inl ())
     pure (a + b)
   law x q := by
     rfl
@@ -100,7 +100,7 @@ def prefixVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 10))
-      let n : Nat ← pathLift ambient inputs (s := firstProtocol) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let n : Nat ← pathLift ambient inputs (s := firstProtocol) ⟨⟨⟩, ⟨⟩⟩ (.inl ())
       pure n
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -119,7 +119,7 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × 
     exact OptionT.mk do
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 30))
       let e : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let m : Nat ← pathLift ambient exported (s := secondProtocol) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let m : Nat ← pathLift ambient exported (s := secondProtocol) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 40))
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
@@ -196,12 +196,12 @@ abbrev closingBundle := pathBundle exported closingSuffix ⟨⟨⟩, ⟨⟨⟩, 
 
 /-- The final export adds the prefix export to the fresh observable coordinate. -/
 def closingMap : OracleMap closingBundle exported where
-  f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
+  f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2.1).1
   impl _ := do
     let old : Nat ← (OracleMap.fst exported
-      (oracleMessageFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨⟨⟩, ()⟩
+      (oracleMessageBundle closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨⟨⟩, ()⟩
     let fresh : Nat ← (OracleMap.snd exported
-      (oracleMessageFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+      (oracleMessageBundle closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl (.inl ())
     pure (old + fresh)
   law _ _ := by
     rfl
@@ -215,7 +215,7 @@ def closingVerifier : OracleVerifier ambient closingSuffix Nat (fun _ => Nat) ex
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 30))
       let old : Nat ← liftM ((ambient + closingBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
       let fresh : Nat ← pathLift ambient exported (s := closingSuffix)
-        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 40))
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 60))
       pure (old + fresh)

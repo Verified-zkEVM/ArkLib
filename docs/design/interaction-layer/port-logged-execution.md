@@ -150,7 +150,7 @@ The old-layer file is named `NativeRuntime.lean`. This heading describes what it
 
 [sentOracles] identifies the oracle messages sent at a partial transcript, includes them in the
 bundles of longer partial transcripts, and keeps node names and typed query routing. Its `toPathBundle_data` law
-connects the family of sent oracles to the same transcript's `pathBundle`.
+connects the bundle of sent oracles to the same transcript's `pathBundle`.
 `OracleVerifier.prefixRoute_oracleMessages` connects the append route, whose outputs use
 `splitOutputs`, to that prefix's inputs and oracle messages. [joinEntryNode], [joinEntryIsSent] and
 [decisionEntryIsSent] exercise the node names on actual produced entries. The [oracle-access

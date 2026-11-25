@@ -59,10 +59,10 @@ abbrev rawBundle := pathBundle none' combined combinedPath
 
 /-- Export twice the prefix message, reading the same prefix oracle twice. -/
 def view : OracleMap prefixBundle exported where
-  f x _ := (show Nat from x.2 (.inl ⟨⟩)) + (show Nat from x.2 (.inl ⟨⟩))
+  f x _ := (show Nat from x.2.1) + (show Nat from x.2.1)
   impl _ := do
-    let left : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
-    let right : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let left : Nat ← liftM (prefixBundle.spec.query (.inr (.inl ())))
+    let right : Nat ← liftM (prefixBundle.spec.query (.inr (.inl ())))
     pure (left + right)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -79,7 +79,7 @@ def prefixVerifier :
 /-- The suffix decision program: read the export, then the suffix's own oracle, and add. -/
 def suffixProgram : OracleComp (ambient + suffixBundle.spec) Nat := do
   let old : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
-  let fresh : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+  let fresh : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr (.inl ()))))
   pure (old + fresh)
 
 /-- The empty output map. -/
@@ -115,10 +115,10 @@ def prover (a b : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
       pure ⟨second, pure (first + second)⟩))
 
 /-- The query to the prefix oracle in the composed bundle. -/
-abbrev prefixSlot : rawBundle.spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
+abbrev prefixSlot : rawBundle.spec.Domain := (.inr (.inl ()))
 
 /-- The query to the suffix oracle in the composed bundle. -/
-abbrev suffixSlot : rawBundle.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
+abbrev suffixSlot : rawBundle.spec.Domain := (.inr (.inr (.inl ())))
 
 /-- The prefix and suffix queries name distinct sent oracles. -/
 theorem prefixSlot_ne_suffixSlot : prefixSlot ≠ suffixSlot := by
@@ -146,7 +146,7 @@ example (v : View combined combinedPath) :
       pure (left + right)) := rfl
 
 example (v : View combined combinedPath) :
-    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inr ⟨.inl ⟨⟩, ()⟩) =
+    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inr (.inl ())) =
       (liftM (rawBundle.spec.query suffixSlot) : OracleComp rawBundle.spec Nat) := rfl
 
 example : prefixSlot ≠ suffixSlot := prefixSlot_ne_suffixSlot
@@ -166,14 +166,14 @@ example :
 
 example : True := by
   fail_if_success
-    have _ : prefixBundle.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
+    have _ : prefixBundle.spec.Domain := (.inr (.inr (.inl ())))
   trivial
 
 /-- Routing any prefix decision excludes the suffix oracle query. -/
 theorem future_rejected {α : Type} (program : OracleComp (ambient + prefixBundle.spec) α) :
     AllQueriesSatisfy (simulateQ prefixRoute program) (· ≠ .inr suffixSlot) := by
   refine (allQueriesSatisfy_of_forall (fun _ => True.intro) program).simulateQ fun q _ => ?_
-  rcases q with q | (⟨i, q⟩ | ⟨⟨⟩ | i, q⟩)
+  rcases q with q | (⟨i, q⟩ | (q | i))
   · exact (allQueriesSatisfy_query_iff _ _).mpr Sum.inl_ne_inr
   · exact i.elim
   · cases q
@@ -218,15 +218,15 @@ example (a b : Nat) :=
   splitOracleMessages_oracleMessages single (fun _ => single)
     (⟨a, ⟨⟩⟩ : Transcript oracleSig single) (⟨b, ⟨⟩⟩ : Transcript oracleSig single)
 
-example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
+example (a b : Nat) : ((splitOracleMessages single (fun _ => single) combinedPath).f
     (oracleMessages combined
-      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
-    (.inl (.inl ⟨⟩)) = a := rfl
+      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))).1.1 = a :=
+  rfl
 
-example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
+example (a b : Nat) : ((splitOracleMessages single (fun _ => single) combinedPath).f
     (oracleMessages combined
-      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
-    (.inr (.inl ⟨⟩)) = b := rfl
+      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))).2.1 = b :=
+  rfl
 
 -- The full decision log takes its data in `Type`. See interaction rebuild implementation note 18.
 /-- Private output, verdict and every raw decision query of the composed logged run. -/

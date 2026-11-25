@@ -83,11 +83,11 @@ def queryInput (p : Path suffix) :
 def finalMap : (p : Path suffix) → OracleMap (suffixBundle p) (finalFamily p)
   | ⟨true, ⟨⟩⟩ =>
     (OracleMap.embedding inputFamily (fun _ : Unit => ())).comp
-      (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨true, ⟨⟩⟩))
+      (OracleMap.fst inputFamily (oracleMessageBundle suffix ⟨true, ⟨⟩⟩))
   | ⟨false, ⟨⟩⟩ =>
     { f := fun x _ => (x.1 (), x.1 ())
       impl := fun q =>
-        (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
+        (OracleMap.fst inputFamily (oracleMessageBundle suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
       law := fun _ _ => rfl }
 
 /-- The suffix checks the announced Boolean against one input query. It returns `()` after a

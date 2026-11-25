@@ -106,7 +106,7 @@ def forwardQueries (p : Path oracleDone) :
     OracleMap (pathBundle typeQueryInputs oracleDone p) (OracleBundle.ofFamily bigQueryOracles)
     where
   f x _ := x.1 ()
-  impl _ := (OracleMap.fst typeQueryInputs (oracleMessageFamily oracleDone p)).impl ⟨(), ()⟩
+  impl _ := (OracleMap.fst typeQueryInputs (oracleMessageBundle oracleDone p)).impl ⟨(), ()⟩
   law _ _ := rfl
 
 /-- An oracle verifier with unit input queries and Boolean output queries, all at `Type`. -/
@@ -137,7 +137,7 @@ def typeQuerySuffix : OracleVerifier smallAmbient oracleDone Nat (fun _ => Nat)
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
       impl := fun _ =>
-        (OracleMap.fst bigQueryOracles (oracleMessageFamily oracleDone p)).impl ⟨(), true⟩
+        (OracleMap.fst bigQueryOracles (oracleMessageBundle oracleDone p)).impl ⟨(), true⟩
       law := fun _ _ => rfl }
 
 /-- The composite output map ignores the intermediate statement, so any certificate holds. -/

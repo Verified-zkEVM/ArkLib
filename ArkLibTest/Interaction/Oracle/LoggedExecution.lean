@@ -83,10 +83,10 @@ abbrev pairBundle := pathBundle inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 
 /-- Close to the input plus the observable coordinate of the sent pair. -/
 def closeMap : OracleMap pairBundle exported where
-  f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
+  f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2.1).1
   impl _ := do
-    let a : Nat ← (OracleMap.fst inputs (oracleMessageFamily pairSend ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
-    let b : Nat ← (OracleMap.snd inputs (oracleMessageFamily pairSend ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+    let a : Nat ← (OracleMap.fst inputs (oracleMessageBundle pairSend ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
+    let b : Nat ← (OracleMap.snd inputs (oracleMessageBundle pairSend ⟨⟨⟩, ⟨⟩⟩)).impl (.inl ())
     pure (a + b)
   law _ _ := rfl
 
@@ -97,7 +97,7 @@ def pairVerifier (accept : Bool) :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
       let _ ← liftM ((ambient + pairBundle.spec).query (.inl 1))
-      let sent : Nat ← pathLift ambient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let sent : Nat ← pathLift ambient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ (.inl ())
       let _ ← liftM ((ambient + pairBundle.spec).query (.inl 2))
       pure (if accept then some sent else none)
   outputMap _ p _ := by
@@ -124,8 +124,8 @@ def describePair (p : FreeM.Path pairSend) :
   exact List.map fun
     | ⟨.inl n, _⟩ => ("tag", n)
     | ⟨.inr (.inl ⟨_, _⟩), a⟩ => ("input", show Nat from a)
-    | ⟨.inr (.inr ⟨.inl _, _⟩), a⟩ => ("sent", show Nat from a)
-    | ⟨.inr (.inr ⟨.inr n, _⟩), _⟩ => n.elim
+    | ⟨.inr (.inr (.inl _)), a⟩ => ("sent", show Nat from a)
+    | ⟨.inr (.inr (.inr n)), _⟩ => n.elim
 
 /-- The logged run under the tag logger. -/
 def observed (accept : Bool) (old message hidden : Nat) (setup : List Nat) :=
@@ -179,7 +179,7 @@ def decisionVerifier (mode : Nat) :
     exact OptionT.mk do
       let _ ← liftM ((ambient + pairBundle.spec).query (.inl 1))
       let _ ← liftM ((ambient + pairBundle.spec).query (.inl 2))
-      let sent : Nat ← pathLift ambient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let sent : Nat ← pathLift ambient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ (.inl ())
       if mode = 1 then
         let _ ← liftM ((ambient + pairBundle.spec).query (.inl 17))
         pure none
@@ -313,7 +313,7 @@ def unitVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((unitAmbient + pairBundle.spec).query (.inl 1))
-      let sent : Nat ← pathLift unitAmbient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let sent : Nat ← pathLift unitAmbient inputs (s := pairSend) ⟨⟨⟩, ⟨⟩⟩ (.inl ())
       let _ ← liftM ((unitAmbient + pairBundle.spec).query (.inl 2))
       pure sent
   outputMap _ p _ := by
@@ -367,11 +367,11 @@ def readInput : OracleComp (ambient + twiceBundle.spec) Nat :=
 
 /-- Read the first scalar message oracle. -/
 def readFirst : OracleComp (ambient + twiceBundle.spec) Nat :=
-  pathLift ambient inputs (s := sendTwice) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+  pathLift ambient inputs (s := sendTwice) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
 
 /-- Read the second scalar message oracle. -/
 def readSecond : OracleComp (ambient + twiceBundle.spec) Nat :=
-  pathLift ambient inputs (s := sendTwice) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inr (.inl ⟨⟩), ()⟩
+  pathLift ambient inputs (s := sendTwice) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inr (.inl ()))
 
 /-- A verifier on `sendTwice` running a fixed decision program; its outputs are its inputs. -/
 def twiceVerifier (program : Decision) :
@@ -395,9 +395,9 @@ def describeTwice (p : FreeM.Path sendTwice) :
   exact List.map fun
     | ⟨.inl n, _⟩ => ("tag", n)
     | ⟨.inr (.inl ⟨_, _⟩), a⟩ => ("input", show Nat from a)
-    | ⟨.inr (.inr ⟨.inl _, _⟩), a⟩ => ("first", show Nat from a)
-    | ⟨.inr (.inr ⟨.inr (.inl _), _⟩), a⟩ => ("second", show Nat from a)
-    | ⟨.inr (.inr ⟨.inr (.inr n), _⟩), _⟩ => n.elim
+    | ⟨.inr (.inr (.inl _)), a⟩ => ("first", show Nat from a)
+    | ⟨.inr (.inr (.inr (.inl _))), a⟩ => ("second", show Nat from a)
+    | ⟨.inr (.inr (.inr (.inr n))), _⟩ => n.elim
 
 /-- The decision reads the first message, the input, then the second message twice. -/
 def readAll : Decision := do
@@ -483,7 +483,7 @@ def mixedVerifier :
       for t in [2, 3] do
         let _ ← liftM (OracleSpec.query (spec :=
           ambient + (pathBundle inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
-      let sent : Nat ← pathLift ambient inputs (s := mixed) ⟨b, c, ⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let sent : Nat ← pathLift ambient inputs (s := mixed) ⟨b, c, ⟨⟩, ⟨⟩⟩ (.inl ())
       for t in [6, 7] do
         let _ ← liftM (OracleSpec.query (spec :=
           ambient + (pathBundle inputs mixed ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
@@ -583,7 +583,7 @@ def scheduleVerifier : OracleVerifier ambient schedule Unit (fun _ => Nat) input
     exact do
       let _ ← liftM (ambient.query 3)
       let last : Nat ← pathLift ambient inputs (s := schedule)
-        ⟨b, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩⟩⟩ ⟨.inr (.inl ⟨⟩), ()⟩
+        ⟨b, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩⟩⟩ (.inr (.inl ()))
       pure (if (show Bool from b) then last + (show Nat from view.val.2.2.1) else 0)
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -623,18 +623,18 @@ abbrev prefixBundle := pathBundle inputs single ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export the input plus the prefix message. -/
 def sumExport : OracleMap prefixBundle exported where
-  f x _ := (show Nat from x.1 ()) + (show Nat from x.2 (.inl ⟨⟩))
+  f x _ := (show Nat from x.1 ()) + (show Nat from x.2.1)
   impl _ := do
-    let a : Nat ← (OracleMap.fst inputs (oracleMessageFamily single ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
-    let b : Nat ← (OracleMap.snd inputs (oracleMessageFamily single ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+    let a : Nat ← (OracleMap.fst inputs (oracleMessageBundle single ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
+    let b : Nat ← (OracleMap.snd inputs (oracleMessageBundle single ⟨⟨⟩, ⟨⟩⟩)).impl (.inl ())
     pure (a + b)
   law _ _ := rfl
 
 /-- Export the prefix message. -/
 def messageExport : OracleMap prefixBundle exported :=
-  (OracleMap.embedding (oracleMessageFamily single ⟨⟨⟩, ⟨⟩⟩)
-    (fun _ : Unit => Sum.inl PUnit.unit)).comp
-    (OracleMap.snd inputs (oracleMessageFamily single ⟨⟨⟩, ⟨⟩⟩))
+  { f := fun x _ => x.2.1
+    impl := fun q => liftM (prefixBundle.spec.query (.inr (.inl q.2)))
+    law := fun _ _ => rfl }
 
 /-- A prefix verifier with a fixed decision program and export. -/
 def prefixVerifier (program : OptionT (OracleComp (ambient + prefixBundle.spec)) Nat)
@@ -649,7 +649,7 @@ def prefixVerifier (program : OptionT (OracleComp (ambient + prefixBundle.spec))
 
 /-- The prefix decision reads its message. -/
 def readPrefix : OptionT (OracleComp (ambient + prefixBundle.spec)) Nat :=
-  liftM (pathLift ambient inputs (s := single) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩)
+  liftM (pathLift ambient inputs (s := single) ⟨⟨⟩, ⟨⟩⟩ (.inl ()))
 
 /-- The suffix bundle on the only path of `single`. -/
 abbrev suffixBundle := pathBundle exported single ⟨⟨⟩, ⟨⟩⟩
@@ -663,7 +663,7 @@ def suffixVerifier :
     exact do
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 3))
       let e : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
-      let m : Nat ← pathLift ambient exported (s := single) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let m : Nat ← pathLift ambient exported (s := single) ⟨⟨⟩, ⟨⟩⟩ (.inl ())
       pure (stmt + e + m)
   outputMap _ p _ := OracleMap.fst _ _
 
@@ -701,9 +701,9 @@ def describeAppend (p : FreeM.Path pair) :
   exact List.map fun
     | ⟨.inl n, _⟩ => ("tag", n)
     | ⟨.inr (.inl ⟨_, _⟩), a⟩ => ("input", show Nat from a)
-    | ⟨.inr (.inr ⟨.inl _, _⟩), a⟩ => ("prefix", show Nat from a)
-    | ⟨.inr (.inr ⟨.inr (.inl _), _⟩), a⟩ => ("suffix", show Nat from a)
-    | ⟨.inr (.inr ⟨.inr (.inr n), _⟩), _⟩ => n.elim
+    | ⟨.inr (.inr (.inl _)), a⟩ => ("prefix", show Nat from a)
+    | ⟨.inr (.inr (.inr (.inl _))), a⟩ => ("suffix", show Nat from a)
+    | ⟨.inr (.inr (.inr (.inr n))), _⟩ => n.elim
 
 /-- Private output, claim with output data, decision log, final count and full trace. -/
 def appendSummary
@@ -752,8 +752,8 @@ def answerPrefix : QueryImpl prefixBundle.spec Id :=
 def nameEntry : (z : (i : prefixBundle.spec.Domain) × prefixBundle.spec.Range i) →
     String × Nat
   | ⟨.inl ⟨_, _⟩, a⟩ => ("input", show Nat from a)
-  | ⟨.inr ⟨.inl _, _⟩, a⟩ => ("prefix", show Nat from a)
-  | ⟨.inr ⟨.inr n, _⟩, _⟩ => n.elim
+  | ⟨.inr (.inl _), a⟩ => ("prefix", show Nat from a)
+  | ⟨.inr (.inr n), _⟩ => n.elim
 
 /-! Logging after substitution records both raw requests and answers of one exported query. -/
 example : (fun z => (z.1, z.2.map nameEntry)) (simulateQ answerPrefix
@@ -1054,9 +1054,9 @@ def twoOracleVerifier :
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact do
-      let a : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
-      let b : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
-      let c : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inr (.inl ⟨⟩), ()⟩
+      let a : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
+      let b : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
+      let c : Nat ← pathLift ambient inputs (s := twoOracles) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inr (.inl ()))
       pure (a + b + c)
   outputMap _ _ _ := OracleMap.fst _ _
 
@@ -1141,8 +1141,8 @@ theorem decisionEntry_isSent :
 verdict. -/
 theorem queries_by_move_source_log_contract :
     twoOracleQueriesByMove.decisionQueries.snd =
-      [⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩, ⟨.inr ⟨.inl ⟨⟩, ()⟩, (1 : Nat)⟩,
-        ⟨.inr ⟨.inr (.inl ⟨⟩), ()⟩, (2 : Nat)⟩] ∧
+      [⟨.inr (.inl ()), (1 : Nat)⟩, ⟨.inr (.inl ()), (1 : Nat)⟩,
+        ⟨.inr (.inr (.inl ())), (2 : Nat)⟩] ∧
     twoOracleQueriesByMove.outcome.2.1 = 3 ∧
       twoOracleQueriesByMove.outcome.2.2.map (·.1) = some 4 := by
   constructor

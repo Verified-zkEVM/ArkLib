@@ -420,7 +420,7 @@ theorem verifier_outputMap (stmt : Spec.StatementRound R n 0) (p : Path (protoco
     (v : View (protocol R deg n) p) :
     (verifier R deg n D ambient).outputMap stmt p v =
       OracleMap.fst (OracleBundle.ofFamily (Spec.polynomialFamily R n deg))
-        (OracleBundle.ofFamily (oracleMessageFamily (protocol R deg n) p)) :=
+        (oracleMessageBundle (protocol R deg n) p) :=
   rfl
 
 omit [SampleableType R] in
@@ -450,12 +450,12 @@ effects. -/
 theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (p : Path (protocol R deg n))
     (data : ∀ i, Spec.OracleStatement R n deg i)
-    (pl : ∀ i, OracleMessage (protocol R deg n) p i) {α : Type}
+    (pl : (oracleMessageBundle (protocol R deg n) p).Data) {α : Type}
     (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
     simulateQ (QueryImpl.addLift amb ((Spec.polynomialFamily R n deg).behaviorOfRealizations data +
-        (oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl))
+        (oracleMessageBundle (protocol R deg n) p).answer pl))
       (simulateQ (decisionLift R deg n ambient p) oa) =
-      (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
+      (pure (simulateQ ((oracleMessageBundle (protocol R deg n) p).answer pl) oa) :
         OracleComp spec' α) :=
   simulateQ_pathLift (inputs := Spec.polynomialFamily R n deg) amb p data pl oa
 
@@ -465,9 +465,7 @@ theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : Transcript oracleSig (protocol R deg n)) :
     simulateQ (QueryImpl.addLift amb ((Spec.polynomialFamily R n deg).behaviorOfRealizations data +
-        (oracleMessageFamily (protocol R deg n)
-          tr.path).behaviorOfRealizations
-          (oracleMessages _ tr)))
+        (oracleMessageBundle (protocol R deg n) tr.path).answer (oracleMessages _ tr)))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) :
         OracleComp spec' _) := by

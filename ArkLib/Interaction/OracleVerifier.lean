@@ -12,14 +12,14 @@ public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 /-!
 # Passive oracle verification
 
-Completed shape paths determine the available oracle family. Its concrete data comes from the
+Completed shape paths determine the available oracle bundle. Its concrete data comes from the
 same full transcript, while the decision sees only the verifier view and query access. Output
 oracles are one map containing concrete data, query simulation and their agreement law.
 -/
 
 @[expose] public section
 
-universe u q uI uJ w
+universe u q
 
 universe v v'
 
@@ -44,246 +44,103 @@ def OracleMessage : (s : OracleProtocol.{u, q}) → (p : Path s) → OracleMessa
   | .liftBind (.oracle X _) next, ⟨x, p⟩ =>
     Sum.elim (fun _ => X) (OracleMessage (next x) p)
 
-/-- Independent families of concrete data, with disjoint query access. -/
+/-- The oracle messages on a completed path as one oracle bundle. Each oracle node adds its
+message, with its query interface, on the left of the bundle of the rest of the path. A path with
+no oracle node gives the empty bundle. -/
 @[implicit_reducible]
-def sumFamily {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
-    (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
-    OracleFamily (I ⊕ J) (Sum.elim A B) :=
-  ⟨fun | .inl i => a.interface i | .inr j => b.interface j⟩
-
-/-- The family consisting of one oracle message. -/
-@[implicit_reducible]
-def singletonFamily {X : Type u} (I : OracleInterface.{u, q} X) :
-    OracleFamily.{u, u, q} PUnit (fun _ => X) := ⟨fun _ => I⟩
-
-/-- The family of oracle messages at a completed path, with their query interfaces. -/
-@[implicit_reducible]
-def oracleMessageFamily : (s : OracleProtocol.{u, q}) → (p : Path s) →
-    OracleFamily (OracleMessageIndex s p) (OracleMessage s p)
-  | .pure _, _ => ⟨fun i => i.elim⟩
-  | .liftBind (.message _) next, ⟨x, p⟩ => oracleMessageFamily (next x) p
-  | .liftBind (.challenge _) next, ⟨x, p⟩ => oracleMessageFamily (next x) p
-  | .liftBind (.oracle _ I) next, ⟨x, p⟩ =>
-    sumFamily (singletonFamily I) (oracleMessageFamily (next x) p)
+def oracleMessageBundle : (s : OracleProtocol.{0, 0}) → Path s → OracleBundle
+  | .pure _, _ => OracleBundle.empty
+  | .liftBind (.message _) next, ⟨x, p⟩ => oracleMessageBundle (next x) p
+  | .liftBind (.challenge _) next, ⟨x, p⟩ => oracleMessageBundle (next x) p
+  | .liftBind (.oracle X I) next, ⟨x, p⟩ =>
+    (OracleBundle.of X I).sum (oracleMessageBundle (next x) p)
 
 /-- The query specification of the oracle messages on a completed path. -/
-abbrev oracleMessageSpec (s : OracleProtocol.{u, q}) (p : Path s) := (oracleMessageFamily s p).spec
+abbrev oracleMessageSpec (s : OracleProtocol.{0, 0}) (p : Path s) := (oracleMessageBundle s p).spec
 
-/-- Read the oracle messages from exactly the full transcript that produced this shape. -/
-def oracleMessages : (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig s) →
-    (i : OracleMessageIndex s tr.path) → OracleMessage s tr.path i
-  | .pure _, _, i => i.elim
-  | .liftBind (.message _) next, ⟨x, tr⟩, i => oracleMessages (next x) tr i
-  | .liftBind (.challenge _) next, ⟨_, tr⟩, i => oracleMessages (next ⟨⟩) tr i
-  | .liftBind (.oracle _ _) _, ⟨x, _⟩, .inl _ => x
-  | .liftBind (.oracle _ _) next, ⟨_, tr⟩, .inr i => oracleMessages (next ⟨⟩) tr i
+/-- Read the oracle messages from exactly the full transcript that produced this shape, as a
+nested pair in the order of the oracle nodes. -/
+def oracleMessages : (s : OracleProtocol.{0, 0}) → (tr : Transcript oracleSig s) →
+    (oracleMessageBundle s tr.path).Data
+  | .pure _, _ => ()
+  | .liftBind (.message _) next, ⟨x, tr⟩ => oracleMessages (next x) tr
+  | .liftBind (.challenge _) next, ⟨_, tr⟩ => oracleMessages (next ⟨⟩) tr
+  | .liftBind (.oracle _ _) next, ⟨x, tr⟩ => (x, oracleMessages (next ⟨⟩) tr)
 
 /-- The sole oracle message handler used by execution; it answers from the completed run. -/
-def oracleMessageImpl (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+def oracleMessageImpl (s : OracleProtocol.{0, 0}) (tr : Transcript oracleSig s) :
     QueryImpl (oracleMessageSpec s tr.path) Id :=
-  (oracleMessageFamily s tr.path).behaviorOfRealizations (oracleMessages s tr)
-
-/-- Pair the data of two disjoint families. -/
-def sumData {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
-    (a : ∀ i, A i) (b : ∀ j, B j) : ∀ k, Sum.elim A B k
-  | .inl i => a i
-  | .inr j => b j
-
-/-- Reassembling disjoint data from its two restrictions is the identity. -/
-theorem sumData_eta {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Type u}
-    (x : ∀ k, Sum.elim A B k) :
-    sumData (fun i => x (.inl i)) (fun j => x (.inr j)) = x := by
-  funext k
-  cases k <;> rfl
-
-namespace OracleMap
-
-section Families
-variable {I : Type} {J : Type} {K : Type} {A : I → Type} {B : J → Type}
-  {C : K → Type}
-
-/-- View a family of disjoint data as a sum bundle, with its data split into a pair. -/
-def ofSumFamily (a : OracleFamily.{0, 0, 0} I A) (b : OracleFamily.{0, 0, 0} J B) :
-    OracleMap (sumFamily a b) (OracleBundle.sum a b) where
-  f x := (fun i => x (.inl i), fun j => x (.inr j))
-  impl
-    | .inl q => liftM ((sumFamily a b).spec.query ⟨.inl q.1, q.2⟩)
-    | .inr q => liftM ((sumFamily a b).spec.query ⟨.inr q.1, q.2⟩)
-  law x q := by rcases q with q | q <;> rfl
-
-/-- Combine a sum bundle into a family, the inverse representation of `ofSumFamily`. -/
-def toSumFamily (a : OracleFamily.{0, 0, 0} I A) (b : OracleFamily.{0, 0, 0} J B) :
-    OracleMap (OracleBundle.sum a b) (sumFamily a b) where
-  f x := sumData x.1 x.2
-  impl
-    | ⟨.inl i, q⟩ => liftM ((OracleBundle.sum a b).spec.query (.inl ⟨i, q⟩))
-    | ⟨.inr j, q⟩ => liftM ((OracleBundle.sum a b).spec.query (.inr ⟨j, q⟩))
-  law x q := by rcases q with ⟨i | j, q⟩ <;> rfl
-
-/-- Splitting and recombining a family recovers its concrete data. -/
-theorem toSumFamily_ofSumFamily (a : OracleFamily.{0, 0, 0} I A)
-    (b : OracleFamily.{0, 0, 0} J B) (x : (OracleBundle.ofFamily (sumFamily a b)).Data) :
-    (toSumFamily a b).f ((ofSumFamily a b).f x) = x := sumData_eta x
-
-/-- Combining and splitting a sum bundle recovers both data components. -/
-theorem ofSumFamily_toSumFamily (a : OracleFamily.{0, 0, 0} I A)
-    (b : OracleFamily.{0, 0, 0} J B) (x : (OracleBundle.sum a b).Data) :
-    (ofSumFamily a b).f ((toSumFamily a b).f x) = x := rfl
-
-variable {L : Type} {D : L → Type} {In : OracleFamily.{0, 0, 0} I A}
-  {Mid : OracleFamily.{0, 0, 0} J B} {Out : OracleFamily.{0, 0, 0} K C}
-  {Other : OracleFamily.{0, 0, 0} L D}
-
-/-- Apply two oracle maps to the two parts of a family of disjoint data. -/
-def sum (h : OracleMap In Mid) (g : OracleMap Out Other) :
-    OracleMap (sumFamily In Out) (sumFamily Mid Other) :=
-  (toSumFamily Mid Other).comp ((h.par g).comp (ofSumFamily In Out))
-
-/-- A left-family query follows its component map and retains the left source occurrence. -/
-theorem sum_impl_inl (h : OracleMap In Mid) (g : OracleMap Out Other)
-    (j : J) (q : (Mid.interface j).Query) :
-    (h.sum g).impl ⟨.inl j, q⟩ = simulateQ
-      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inl r.1, r.2⟩)) (h.impl ⟨j, q⟩) := by
-  simp only [sum, comp, QueryImpl.apply_compose, toSumFamily, par]
-  erw [simulateQ_spec_query]
-  simp only [QueryImpl.apply_compose]
-  exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) _
-
-/-- A right-family query follows its component map and retains the right source occurrence. -/
-theorem sum_impl_inr (h : OracleMap In Mid) (g : OracleMap Out Other)
-    (j : L) (q : (Other.interface j).Query) :
-    (h.sum g).impl ⟨.inr j, q⟩ = simulateQ
-      (fun r => liftM ((sumFamily In Out).spec.query ⟨.inr r.1, r.2⟩)) (g.impl ⟨j, q⟩) := by
-  simp only [sum, comp, QueryImpl.apply_compose, toSumFamily, par]
-  erw [simulateQ_spec_query]
-  simp only [QueryImpl.apply_compose]
-  exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) _
-
-/-- Reassociate family data through the bundle reassociation and representation bridges. -/
-def familySumAssoc (In : OracleFamily.{0, 0, 0} I A) (Mid : OracleFamily.{0, 0, 0} J B)
-    (Out : OracleFamily.{0, 0, 0} K C) :
-    OracleMap (sumFamily (sumFamily In Mid) Out) (sumFamily In (sumFamily Mid Out)) :=
-  (toSumFamily In (sumFamily Mid Out)).comp
-    (((OracleMap.id In).par (toSumFamily Mid Out)).comp
-      ((sumAssoc In Mid Out).comp
-        (((ofSumFamily In Mid).par (OracleMap.id Out)).comp
-          (ofSumFamily (sumFamily In Mid) Out))))
-
-/-- Inverse family reassociation through the bundle reassociation and representation bridges. -/
-def familySumAssocSymm (In : OracleFamily.{0, 0, 0} I A) (Mid : OracleFamily.{0, 0, 0} J B)
-    (Out : OracleFamily.{0, 0, 0} K C) :
-    OracleMap (sumFamily In (sumFamily Mid Out)) (sumFamily (sumFamily In Mid) Out) :=
-  (toSumFamily (sumFamily In Mid) Out).comp
-    (((toSumFamily In Mid).par (OracleMap.id Out)).comp
-      ((sumAssocSymm In Mid Out).comp
-        (((OracleMap.id In).par (ofSumFamily Mid Out)).comp
-          (ofSumFamily In (sumFamily Mid Out)))))
-
-end Families
-
-end OracleMap
+  (oracleMessageBundle s tr.path).answer (oracleMessages s tr)
 
 /-- Route the oracle messages of an appended path into its two completed component paths. -/
-def oracleMessageFamily_append : (s₁ : OracleProtocol.{0, 0}) →
+def oracleMessageBundle_append : (s₁ : OracleProtocol.{0, 0}) →
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    OracleMap (sumFamily (oracleMessageFamily s₁ p₁) (oracleMessageFamily (s₂ p₁) p₂))
-      (oracleMessageFamily (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
-  | .pure _, s₂, ⟨⟩, p₂ =>
-    OracleMap.embedding (sumFamily (oracleMessageFamily (.pure PUnit.unit) ⟨⟩)
-      (oracleMessageFamily (s₂ ⟨⟩) p₂)) Sum.inr
+    OracleMap ((oracleMessageBundle s₁ p₁).sum (oracleMessageBundle (s₂ p₁) p₂))
+      (oracleMessageBundle (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
+  | .pure _, _, ⟨⟩, _ => OracleMap.snd OracleBundle.empty _
   | .liftBind (.message _) next, s₂, ⟨x, p₁⟩, p₂ =>
-    oracleMessageFamily_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
+    oracleMessageBundle_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
   | .liftBind (.challenge _) next, s₂, ⟨x, p₁⟩, p₂ =>
-    oracleMessageFamily_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
-  | .liftBind (.oracle _ I) next, s₂, ⟨x, p₁⟩, p₂ =>
-    ((OracleMap.embedding (singletonFamily I) id).sum
-      (oracleMessageFamily_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂)).comp
-      (OracleMap.familySumAssoc (singletonFamily I) (oracleMessageFamily (next x) p₁)
-        (oracleMessageFamily (s₂ ⟨x, p₁⟩) p₂))
+    oracleMessageBundle_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
+  | .liftBind (.oracle X I) next, s₂, ⟨x, p₁⟩, p₂ =>
+    ((OracleMap.id (OracleBundle.of X I)).par
+      (oracleMessageBundle_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂)).comp
+      (OracleMap.sumAssoc (OracleBundle.of X I)
+        (oracleMessageBundle (next x) p₁) (oracleMessageBundle (s₂ ⟨x, p₁⟩) p₂))
 
 /-- Route either component's oracle queries into the completed appended path. -/
-def oracleMessageFamily_split : (s₁ : OracleProtocol.{0, 0}) →
+def oracleMessageBundle_split : (s₁ : OracleProtocol.{0, 0}) →
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    OracleMap (oracleMessageFamily (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
-      (sumFamily (oracleMessageFamily s₁ p₁) (oracleMessageFamily (s₂ p₁) p₂))
-  | .pure _, s₂, ⟨⟩, p₂ =>
-    { f := fun x => sumData (fun i => i.elim) x
-      impl := fun
-        | ⟨.inl i, _⟩ => i.elim
-        | ⟨.inr i, q⟩ => (OracleMap.embedding (oracleMessageFamily (s₂ ⟨⟩) p₂)
-            (fun j : PEmpty.{1} ⊕ OracleMessageIndex (s₂ ⟨⟩) p₂ =>
-              match j with | .inl e => e.elim | .inr j => j)).impl ⟨.inr i, q⟩
-      law := fun _ q => by
-        rcases q with ⟨i | i, q⟩
-        · exact i.elim
-        · rfl }
+    OracleMap (oracleMessageBundle (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
+      ((oracleMessageBundle s₁ p₁).sum (oracleMessageBundle (s₂ p₁) p₂))
+  | .pure _, _, ⟨⟩, _ => OracleMap.emptyLeft _
   | .liftBind (.message _) next, s₂, ⟨x, p₁⟩, p₂ =>
-    oracleMessageFamily_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
+    oracleMessageBundle_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
   | .liftBind (.challenge _) next, s₂, ⟨x, p₁⟩, p₂ =>
-    oracleMessageFamily_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
-  | .liftBind (.oracle _ I) next, s₂, ⟨x, p₁⟩, p₂ =>
-    (OracleMap.familySumAssocSymm (singletonFamily I) (oracleMessageFamily (next x) p₁)
-      (oracleMessageFamily (s₂ ⟨x, p₁⟩) p₂)).comp
-      ((OracleMap.embedding (singletonFamily I) id).sum
-        (oracleMessageFamily_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂))
+    oracleMessageBundle_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
+  | .liftBind (.oracle X I) next, s₂, ⟨x, p₁⟩, p₂ =>
+    (OracleMap.sumAssocSymm (OracleBundle.of X I)
+      (oracleMessageBundle (next x) p₁) (oracleMessageBundle (s₂ ⟨x, p₁⟩) p₂)).comp
+      ((OracleMap.id (OracleBundle.of X I)).par
+        (oracleMessageBundle_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂))
 
-/-- Materializing the append route and then splitting it recovers both component families. -/
-theorem oracleMessageFamily_split_append : (s₁ : OracleProtocol.{0, 0}) →
+/-- Materializing the append route and then splitting it recovers both component bundles. -/
+theorem oracleMessageBundle_split_append : (s₁ : OracleProtocol.{0, 0}) →
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    (x : ∀ i,
-      (sumFamily (oracleMessageFamily s₁ p₁) (oracleMessageFamily (s₂ p₁) p₂)).Realization i) →
-    (oracleMessageFamily_split s₁ s₂ p₁ p₂).f ((oracleMessageFamily_append s₁ s₂ p₁ p₂).f x) = x
-  | .pure _, _, ⟨⟩, _, _ => by
-    funext i
-    rcases i with i | i
-    · exact i.elim
-    · rfl
+    (x : ((oracleMessageBundle s₁ p₁).sum (oracleMessageBundle (s₂ p₁) p₂)).Data) →
+    (oracleMessageBundle_split s₁ s₂ p₁ p₂).f ((oracleMessageBundle_append s₁ s₂ p₁ p₂).f x) = x
+  | .pure _, _, ⟨⟩, _, ⟨⟨⟩, _⟩ => rfl
   | .liftBind (.message _) next, s₂, ⟨x, p₁⟩, p₂, data =>
-    oracleMessageFamily_split_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
+    oracleMessageBundle_split_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
   | .liftBind (.challenge _) next, s₂, ⟨x, p₁⟩, p₂, data =>
-    oracleMessageFamily_split_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
-  | .liftBind (.oracle _ _) next, s₂, ⟨x, p₁⟩, p₂, data => by
-    have ih := oracleMessageFamily_split_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
-      (sumData (fun i => data (.inl (.inr i))) (fun i => data (.inr i)))
-    funext i
-    rcases i with (i | i) | i
-    · rfl
-    · exact congrFun ih (.inl i)
-    · exact congrFun ih (.inr i)
+    oracleMessageBundle_split_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
+  | .liftBind (.oracle _ _) next, s₂, ⟨x, p₁⟩, p₂, ⟨⟨a, b⟩, c⟩ => by
+    have ih := oracleMessageBundle_split_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ (b, c)
+    change ((a, ((oracleMessageBundle_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f
+        ((oracleMessageBundle_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f (b, c))).1),
+      ((oracleMessageBundle_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f
+        ((oracleMessageBundle_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f (b, c))).2) =
+      ((a, b), c)
+    rw [ih]
 
-/-- Splitting and recombining an appended family preserves every concrete oracle message. -/
-theorem oracleMessageFamily_append_split : (s₁ : OracleProtocol.{0, 0}) →
+/-- Splitting and recombining an appended bundle preserves every concrete oracle message. -/
+theorem oracleMessageBundle_append_split : (s₁ : OracleProtocol.{0, 0}) →
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    (x : ∀ i, OracleMessage (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂) i) →
-    (oracleMessageFamily_append s₁ s₂ p₁ p₂).f ((oracleMessageFamily_split s₁ s₂ p₁ p₂).f x) = x
+    (x : (oracleMessageBundle (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂)).Data) →
+    (oracleMessageBundle_append s₁ s₂ p₁ p₂).f ((oracleMessageBundle_split s₁ s₂ p₁ p₂).f x) = x
   | .pure _, _, ⟨⟩, _, _ => rfl
   | .liftBind (.message _) next, s₂, ⟨x, p₁⟩, p₂, data =>
-    oracleMessageFamily_append_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
+    oracleMessageBundle_append_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
   | .liftBind (.challenge _) next, s₂, ⟨x, p₁⟩, p₂, data =>
-    oracleMessageFamily_append_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
-  | .liftBind (.oracle _ _) next, s₂, ⟨x, p₁⟩, p₂, data => by
-    have ih := oracleMessageFamily_append_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂
-      (fun i => data (.inr i))
-    funext i
-    cases i with
-    | inl i => rfl
-    | inr i =>
-      change (oracleMessageFamily_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f
-        (sumData
-          (fun j => (oracleMessageFamily_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f
-            (fun k => data (.inr k)) (.inl j))
-          (fun j => (oracleMessageFamily_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f
-            (fun k => data (.inr k)) (.inr j))) i = data (.inr i)
-      exact (congrArg (fun d =>
-        (oracleMessageFamily_append (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f d i)
-        (sumData_eta ((oracleMessageFamily_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂).f
-          (fun k => data (.inr k))))).trans (congrFun ih i)
+    oracleMessageBundle_append_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data
+  | .liftBind (.oracle _ _) next, s₂, ⟨x, p₁⟩, p₂, data =>
+    Prod.ext rfl (oracleMessageBundle_append_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data.2)
 
 /-- A completed shape paired with the oracle messages at its oracle nodes. -/
 abbrev PathWithOracleMessages (s : OracleProtocol.{0, 0}) :=
-  (p : Path s) × (∀ i, OracleMessage s p i)
+  (p : Path s) × (oracleMessageBundle s p).Data
 
 /-- Prepend one full move to a materialized path. -/
 def PathWithOracleMessages.prepend : (a : OraclePos.{0, 0}) →
@@ -292,9 +149,9 @@ def PathWithOracleMessages.prepend : (a : OraclePos.{0, 0}) →
       PathWithOracleMessages (.liftBind a next)
   | .message _, _, x, ⟨p, data⟩ => ⟨⟨x, p⟩, data⟩
   | .challenge _, _, _, ⟨p, data⟩ => ⟨⟨⟨⟩, p⟩, data⟩
-  | .oracle _ _, _, x, ⟨p, data⟩ => ⟨⟨⟨⟩, p⟩, sumData (fun _ => x) data⟩
+  | .oracle _ _, _, x, ⟨p, data⟩ => ⟨⟨⟨⟩, p⟩, (x, data)⟩
 
-/-- Appending full transcripts materializes exactly the two routed oracle message families. -/
+/-- Appending full transcripts materializes exactly the two routed oracle message bundles. -/
 theorem oracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (tr₁ : Transcript oracleSig s₁) →
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
@@ -302,8 +159,8 @@ theorem oracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
       oracleMessages (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
         PathWithOracleMessages (s₁.append s₂)) =
       ⟨Path.append s₁ s₂ tr₁.path tr₂.path,
-        (oracleMessageFamily_append s₁ s₂ tr₁.path tr₂.path).f
-          (sumData (oracleMessages s₁ tr₁) (oracleMessages _ tr₂))⟩
+        (oracleMessageBundle_append s₁ s₂ tr₁.path tr₂.path).f
+          (oracleMessages s₁ tr₁, oracleMessages _ tr₂)⟩
   | .pure _, _, ⟨⟩, _ => rfl
   | .liftBind (.message _) next, s₂, ⟨x, tr₁⟩, tr₂ =>
     congrArg (PathWithOracleMessages.prepend (.message _) (fun b =>
@@ -313,16 +170,10 @@ theorem oracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
     congrArg (PathWithOracleMessages.prepend (.challenge _) (fun b =>
       (next b).append (fun p => s₂ ⟨b, p⟩)) x)
       (oracleMessages_append (next ⟨⟩) (fun p => s₂ ⟨⟨⟩, p⟩) tr₁ tr₂)
-  | .liftBind (.oracle _ I) next, s₂, ⟨x, tr₁⟩, tr₂ => by
-    have h := congrArg (PathWithOracleMessages.prepend (.oracle _ I) (fun b =>
+  | .liftBind (.oracle _ I) next, s₂, ⟨x, tr₁⟩, tr₂ =>
+    congrArg (PathWithOracleMessages.prepend (.oracle _ I) (fun b =>
       (next b).append (fun p => s₂ ⟨b, p⟩)) x)
       (oracleMessages_append (next ⟨⟩) (fun p => s₂ ⟨⟨⟩, p⟩) tr₁ tr₂)
-    refine Eq.trans ?_ (Eq.trans h ?_)
-    · refine Sigma.ext (by rfl) ?_
-      apply heq_of_eq
-      funext i
-      cases i <;> rfl
-    · rfl
 
 /-- The appended transcript's handler agrees with routing into its component handlers. -/
 theorem oracleMessageImpl_append (s₁ : OracleProtocol.{0, 0})
@@ -333,24 +184,23 @@ theorem oracleMessageImpl_append (s₁ : OracleProtocol.{0, 0})
       (p : Path (s₁.append s₂)) × QueryImpl (oracleMessageSpec (s₁.append s₂) p) Id) =
     ⟨Path.append s₁ s₂ tr₁.path tr₂.path,
       QueryImpl.compose
-        ((sumFamily (oracleMessageFamily s₁ tr₁.path)
-          (oracleMessageFamily _ tr₂.path)).behaviorOfRealizations
-            (sumData (oracleMessages s₁ tr₁) (oracleMessages _ tr₂)))
-        (oracleMessageFamily_append s₁ s₂ tr₁.path tr₂.path).impl⟩ := by
+        (((oracleMessageBundle s₁ tr₁.path).sum (oracleMessageBundle _ tr₂.path)).answer
+          (oracleMessages s₁ tr₁, oracleMessages _ tr₂))
+        (oracleMessageBundle_append s₁ s₂ tr₁.path tr₂.path).impl⟩ := by
   have h := congrArg
     (fun d : PathWithOracleMessages (s₁.append s₂) =>
-      (⟨d.1, (oracleMessageFamily (s₁.append s₂) d.1).behaviorOfRealizations d.2⟩ :
+      (⟨d.1, (oracleMessageBundle (s₁.append s₂) d.1).answer d.2⟩ :
         (p : Path (s₁.append s₂)) × QueryImpl (oracleMessageSpec (s₁.append s₂) p) Id))
     (oracleMessages_append s₁ s₂ tr₁ tr₂)
   refine h.trans ?_
   refine Sigma.ext rfl (heq_of_eq ?_)
-  exact (funext ((oracleMessageFamily_append s₁ s₂ _ _).law _)).symm
+  exact (funext ((oracleMessageBundle_append s₁ s₂ _ _).law _)).symm
 
 /-- The bundle a decision at path `p` may query: the input bundle and the path
 oracle messages. -/
 abbrev pathBundle (inputs : OracleBundle)
-    (s : OracleProtocol.{0, 0}) (p : Path s) :=
-  OracleBundle.sum inputs (OracleBundle.ofFamily (oracleMessageFamily s p))
+    (s : OracleProtocol.{0, 0}) (p : Path s) : OracleBundle :=
+  inputs.sum (oracleMessageBundle s p)
 
 /-- A passive oracle verifier. The output statement type `T p` and the output oracle bundle
 `outputs p` are indexed by the public shape path `p` of the run, so a public message may change
@@ -387,12 +237,13 @@ theorem simulateQ_pathLift {ι : Type}
     {ambient : OracleSpec ι}
     {inputs : OracleBundle} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (amb : QueryImpl ambient m) {s : OracleProtocol.{0, 0}} (p : Path s) (x : inputs.Data)
-    (pl : ∀ i, OracleMessage s p i) {α : Type} (oa : OracleComp (oracleMessageSpec s p) α) :
+    (pl : (oracleMessageBundle s p).Data) {α : Type}
+    (oa : OracleComp (oracleMessageSpec s p) α) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs s p).answer (x, pl)))
         (simulateQ (pathLift ambient inputs p) oa) =
-      (pure (simulateQ ((oracleMessageFamily s p).behaviorOfRealizations pl) oa) : m α) := by
+      (pure (simulateQ ((oracleMessageBundle s p).answer pl) oa) : m α) := by
   refine (QueryImpl.simulateQ_simulateQ_eq_of_apply
-    (impl := ((oracleMessageFamily s p).behaviorOfRealizations pl).liftTarget m)
+    (impl := ((oracleMessageBundle s p).answer pl).liftTarget m)
     (fun t => ?_) oa).trans ?_
   · simp only [QueryImpl.addLift_def]
     exact QueryImpl.simulateQ_add_query_right _ _ _

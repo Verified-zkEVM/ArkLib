@@ -66,8 +66,9 @@ def firstVerifier : OracleVerifier OracleSpec.emptySpec firstProtocol
     (fun _ => exportFamily) where
   decide _ _ v := pure (show Bool from v.val.2.1)
   outputMap _ p _ :=
-    (OracleMap.embedding (oracleMessageFamily firstProtocol p) (fun _ => .inl ⟨⟩)).comp
-      (OracleMap.snd _ _)
+    { f := fun x _ => x.2.1
+      impl := fun q => liftM ((pathBundle noInputs firstProtocol p).spec.query (.inr (.inl q.2)))
+      law := fun _ _ => rfl }
 
 /-- The suffix verifier accepts its input statement and passes the export through. -/
 def secondVerifier (p : Path firstProtocol) : OracleVerifier

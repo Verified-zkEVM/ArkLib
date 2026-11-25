@@ -11,11 +11,11 @@ import Mathlib.Algebra.Polynomial.Eval.Defs
 /-!
 # Named bundles and oracle families with dependent carriers
 
-Oracle family indices name the oracles. A sum of families keeps two same-interface oracles with
-different carrier types apart. An embedding along a non-injective renaming makes two output
-indices share one realization; an embedding along `Bool.not` transports a carrier to the renamed
-index. Query and response types may vary with the index, and a carrier subtype states a degree
-bound that holds of every realization.
+Oracle family indices name the oracles. A sum bundle of two families keeps two same-interface
+oracles with different carrier types apart. An embedding along a non-injective renaming makes two
+output indices share one realization; an embedding along `Bool.not` transports a carrier to the
+renamed index. Query and response types may vary with the index, and a carrier subtype states a
+degree bound that holds of every realization.
 
 Named bundles keep distinct response and realization carriers in `Type`. A view restricts the
 visible queries while retaining the whole context's data. Both forms are used directly as verifier
@@ -48,8 +48,8 @@ abbrev left := model.reindex (fun _ : PUnit => false)
 /-- The family holding only index `true`. -/
 abbrev right := model.reindex (fun _ : PUnit => true)
 
-/-- The disjoint sum of the two single-index families. -/
-abbrev pair := sumFamily left right
+/-- The sum bundle of the two single-index families. -/
+abbrev pair := (OracleBundle.ofFamily left).sum (OracleBundle.ofFamily right)
 
 /-- A concrete realization in the three-valued carrier. -/
 def smallRealization : Fin 3 := ⟨2, by decide⟩
@@ -57,20 +57,20 @@ def smallRealization : Fin 3 := ⟨2, by decide⟩
 /-- A concrete realization in the five-valued carrier. -/
 def largeRealization : Fin 5 := ⟨4, by decide⟩
 
-/-- Data for the disjoint sum, of a different carrier type on each side. -/
-def pairEnv : ∀ k, pair.Realization k :=
-  sumData (fun _ => smallRealization) (fun _ => largeRealization)
+/-- Data for the sum, of a different carrier type on each side. -/
+def pairEnv : pair.Data :=
+  (fun _ => smallRealization, fun _ => largeRealization)
 
 /-- Query both sides. -/
 def readPair : OracleComp pair.spec (Nat × Nat) := do
-  let x : Nat ← liftM (pair.spec.query ⟨.inl ⟨⟩, true⟩)
-  let y : Nat ← liftM (pair.spec.query ⟨.inr ⟨⟩, false⟩)
+  let x : Nat ← liftM (pair.spec.query (.inl ⟨⟨⟩, true⟩))
+  let y : Nat ← liftM (pair.spec.query (.inr ⟨⟨⟩, false⟩))
   return (x, y)
 
--- ResourceExample R4, restated: the old-layer disjoint union of two named contexts becomes
--- `sumFamily` of two single-index families with carriers `Fin 3` and `Fin 5`, queried by index.
--- Not weaker.
-example : simulateQ (pair.behaviorOfRealizations pairEnv) readPair = (3, 4) := rfl
+-- ResourceExample R4, restated: the old-layer disjoint union of two named contexts becomes the
+-- `OracleBundle.sum` of two single-index families with carriers `Fin 3` and `Fin 5`, queried by
+-- side. Not weaker.
+example : simulateQ (pair.answer pairEnv) readPair = (3, 4) := rfl
 
 /-- Two output indices, both reading the one realization of `left`. -/
 def aliases := OracleMap.embedding left (fun _ : Bool => PUnit.unit)
@@ -129,23 +129,21 @@ example : simulateQ ((model.reindex Bool.not).behaviorOfRealizations (inclusion.
 example : ∀ i, (model.reindex (fun i : PEmpty => i.elim)).Realization i := fun i => i.elim
 
 /-- Apply the identity embedding to each side of the sum. -/
-def sumOfSides := (OracleMap.embedding left id).sum (OracleMap.embedding right id)
+def sumOfSides := (OracleMap.embedding left id).par (OracleMap.embedding right id)
 
 -- ResourceExample R19, restated: the old-layer correspondence between a disjoint union and the
 -- sum of its interpreted sources becomes the sum of the two side maps. Routing `readPair` through
 -- it keeps R4's answers. Reassociating with the empty family on the right does too.
-example : simulateQ (pair.behaviorOfRealizations pairEnv)
+example : simulateQ (pair.answer pairEnv)
     (simulateQ sumOfSides.impl readPair) = (3, 4) := rfl
 
 /-- The empty family. -/
 abbrev noIndices := model.reindex (fun i : PEmpty => i.elim)
 
-example : simulateQ ((sumFamily (sumFamily left right) noIndices).behaviorOfRealizations
-      (sumData pairEnv (fun i => i.elim)))
-    (simulateQ (OracleMap.familySumAssoc left right noIndices).impl
-      (simulateQ (OracleMap.familySumAssocSymm left right noIndices).impl
-        (simulateQ (OracleMap.embedding (sumFamily (sumFamily left right) noIndices) Sum.inl).impl
-          readPair))) = (3, 4) := rfl
+example : simulateQ ((pair.sum noIndices).answer (pairEnv, fun i => i.elim))
+    (simulateQ (OracleMap.sumAssoc left right noIndices).impl
+      (simulateQ (OracleMap.sumAssocSymm left right noIndices).impl
+        (simulateQ (OracleMap.fst pair noIndices).impl readPair))) = (3, 4) := rfl
 
 /-- One output index for `left` itself and two aliases of it. -/
 def shared := OracleMap.embedding left (Sum.elim id (fun _ : Bool => PUnit.unit))

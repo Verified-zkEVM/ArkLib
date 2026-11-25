@@ -164,7 +164,7 @@ and the data is the output map's value there. -/
 def Compatible (V : OracleVerifier ambient s InnerIn InnerOut inputsI outputsI)
     (stmt : InnerIn × inputsI.Data) (p : Path s) (t : OracleVerifier.Output InnerOut outputsI p) :
     Prop :=
-  ∃ (v : View s p) (msgs : ∀ i, OracleMessage s p i),
+  ∃ (v : View s p) (msgs : (oracleMessageBundle s p).Data),
     some t.1 ∈ support (V.decideWith stmt.1 p v (stmt.2, msgs)) ∧
       t.2 = (V.outputMap stmt.1 p v).f (stmt.2, msgs)
 

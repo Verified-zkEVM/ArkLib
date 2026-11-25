@@ -182,7 +182,7 @@ abbrev SplitRun (inputs : OracleBundle) (s₁ : OracleProtocol.{0, 0})
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) :=
   (z : (p : Path s₁) × Path (s₂ p)) × (View s₁ z.1 × View (s₂ z.1) z.2) ×
     ((pathBundle inputs s₁ z.1).Data ×
-      (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data)
+      (oracleMessageBundle (s₂ z.1) z.2).Data)
 
 /-- In an appended run, the split path, views and bundle data are those of the two parts. -/
 theorem splitRun_append (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
@@ -196,12 +196,12 @@ theorem splitRun_append (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
         ((data, oracleMessages s₁ tr₁), oracleMessages _ tr₂))⟩ := by
   refine sigma_extend' (B := fun z : (p : Path s₁) × Path (s₂ p) =>
     (pathBundle inputs s₁ z.1).Data ×
-      (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data)
+      (oracleMessageBundle (s₂ z.1) z.2).Data)
     (toView_split_append s₁ s₂ tr₁ tr₂) ?_
   exact congrArg (fun z : SplitOracleMessages s₁ s₂ =>
-      (⟨z.1, ((data, fun i => z.2 (.inl i)), fun j => z.2 (.inr j))⟩ :
+      (⟨z.1, ((data, z.2.1), z.2.2)⟩ :
         (z : (p : Path s₁) × Path (s₂ p)) × (pathBundle inputs s₁ z.1).Data ×
-          (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data))
+          (oracleMessageBundle (s₂ z.1) z.2).Data))
     (splitOracleMessages_oracleMessages s₁ s₂ tr₁ tr₂)
 
 /-- The decision of an appended verifier on an appended run, followed by a continuation `k` that
@@ -238,7 +238,7 @@ theorem append_decideOn_bind {Y : (p₁ : Path s₁) → Path (s₂ p₁) → Ty
     (splitRun_append (inputs := inputs) data tr₁ tr₂) hy
   have h2 := congrArg (fun Ξ : (z : (p : Path s₁) × Path (s₂ p)) ×
       ((View s₁ z.1 × View (s₂ z.1) z.2) × ((pathBundle inputs s₁ z.1).Data ×
-        (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data)) × Y z.1 z.2 =>
+        (oracleMessageBundle (s₂ z.1) z.2).Data)) × Y z.1 z.2 =>
     (⟨Z Ξ.1.1 Ξ.1.2 Ξ.2.2, V₁.decideWith stmt Ξ.1.1 Ξ.2.1.1.1 Ξ.2.1.2.1 >>= fun
       | none => pure none
       | some mid => (V₂ Ξ.1.1).decideWith mid Ξ.1.2 Ξ.2.1.1.2

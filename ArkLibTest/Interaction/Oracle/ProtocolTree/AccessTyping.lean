@@ -8,7 +8,7 @@ import ArkLib.Interaction.OracleVerifier
 import PolyFun.PFunctor.Free.Cursor
 
 /-! Oracle access as typing. A decision on a completed path queries the input family and the
-oracle family of that path, `pathBundle inputs s p`. A public bit selects message types. An
+oracle messages of that path, `pathBundle inputs s p`. A public bit selects message types. An
 oracle exists only on paths that cross its send. Input oracles and oracle messages with the same
 signature stay distinct, and a non-faithful interface hides representation data. -/
 
@@ -65,22 +65,22 @@ example : IsEmpty (OracleMessageIndex before ⟨true, ⟨⟩⟩) := inferInstanc
 example : True := by
   fail_if_success
     have _ : (pathBundle inputs before ⟨false, ⟨⟩⟩).spec.Domain :=
-      (.inr ⟨.inl ⟨⟩, ()⟩)
+      (.inr (.inl ()))
   trivial
 
 -- AccessExample 4, restated: the same query constructor typechecks for a decision on a completed
 -- path through the send.
 /-- A decision on the completed `false` path can query the sent message. -/
 example : (pathBundle inputs accessTree
-    leftPath.path).spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
+    leftPath.path).spec.Domain := (.inr (.inl ()))
 
 -- AccessExample 5, restated: the response type of the `false`-branch message.
 example : (oracleMessageSpec accessTree leftPath.path).Range
-    ⟨.inl ⟨⟩, ()⟩ = Bool := rfl
+    (.inl ()) = Bool := rfl
 
 -- AccessExample 6, restated: the response type of the `true`-branch message.
 example : (oracleMessageSpec accessTree finPath.path).Range
-    ⟨.inl ⟨⟩, ()⟩ = Fin 3 := rfl
+    (.inl ()) = Fin 3 := rfl
 
 -- AccessExample 7, restated: after the send, the decision's bundle index is the input oracle
 -- and the one sent oracle.
@@ -106,7 +106,7 @@ example : leftPath ≠ rightPath := by
   intro h
   cases h
 
--- AccessExample 10, restated: equal paths give the same oracle family, by `rfl`.
+-- AccessExample 10, restated: equal paths give the same oracle message spec, by `rfl`.
 example : leftPath.path =
     rightPath.path := rfl
 
@@ -135,12 +135,12 @@ example : (Unit ⊕ OracleMessageIndex terminalTree terminalPath) = (Unit ⊕ (P
 
 -- AccessExample 12, restated: the terminal send answers `Nat`, through the non-faithful
 -- interface.
-example : (oracleMessageSpec terminalTree terminalPath).Range ⟨.inl ⟨⟩, ()⟩ = Nat := rfl
+example : (oracleMessageSpec terminalTree terminalPath).Range (.inl ()) = Nat := rfl
 
 /-- Read the input oracle and the sent oracle. Both have the same signature `Unit → Nat`. -/
 def derivedQuery : OracleComp terminalBundle.spec Nat := do
   let old : Nat ← liftM (terminalBundle.spec.query (.inl ⟨(), ()⟩))
-  let fresh : Nat ← liftM (terminalBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+  let fresh : Nat ← liftM (terminalBundle.spec.query (.inr (.inl ())))
   pure (old + fresh)
 
 -- AccessExample 13, restated: input behaviour is the input data 7, and the message is the sent
@@ -155,7 +155,7 @@ example (visible hidden₁ hidden₂ : Nat) :
     oracleMessageImpl terminalTree ⟨(visible, hidden₁), ⟨⟩⟩ =
       oracleMessageImpl terminalTree ⟨(visible, hidden₂), ⟨⟩⟩ := by
   funext q
-  rcases q with ⟨i | i, q⟩
+  rcases q with q | i
   · rfl
   · exact i.elim
 
@@ -181,7 +181,7 @@ def twoSends : OracleProtocol :=
 -- AccessExample 16, restated: after the second send the decision can query the second oracle.
 /-- Query the second sent oracle. -/
 def secondQuery : OracleComp (oracleMessageSpec twoSends ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) Nat :=
-  liftM ((oracleMessageSpec twoSends ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).query ⟨.inr (.inl ⟨⟩), ()⟩)
+  liftM ((oracleMessageSpec twoSends ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).query (.inr (.inl ())))
 
 /-- It is answered from the second oracle message. -/
 example (first second : Nat × Nat) :
