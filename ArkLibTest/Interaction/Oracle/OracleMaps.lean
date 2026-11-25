@@ -78,8 +78,8 @@ example : dependent.behaviorOfRealizations (twist.f (env true 2)) ⟨false, ()�
 /-- Only the first coordinate of a tagged realization is queryable. -/
 @[reducible] def taggedInterface (b : Bool) : OracleInterface (Carrier b × Nat) where
   Query := Unit
-  toOC.spec := fun _ => Carrier b
-  toOC.impl _ := do return (← read).1
+  spec := fun _ => Carrier b
+  answer m _ := m.1
 
 /-- Realizations carry a private tag. -/
 def tagged : OracleFamily Bool (fun b => Carrier b × Nat) :=
@@ -165,10 +165,8 @@ example : simulateQ (numbers.behaviorOfRealizations answers)
 /-- A pair interface: one query selects an oracle of each component and returns both answers. -/
 @[reducible] def pairInterface : OracleInterface ((∀ b, Carrier b) × (∀ _ : Bool, Nat)) where
   Query := Bool × Bool
-  toOC.spec := fun q => Carrier q.1 × Nat
-  toOC.impl q := do
-    let x ← read
-    return (x.1 q.1, x.2 q.2)
+  spec := fun q => Carrier q.1 × Nat
+  answer x q := (x.1 q.1, x.2 q.2)
 
 /-- The bundle whose data the pair interface packages. -/
 abbrev both := (OracleBundle.ofFamily dependent).sum (OracleBundle.ofFamily numbers)

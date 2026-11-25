@@ -23,7 +23,8 @@ namespace Interaction.AnswerOnlyRelationsTests
 def tagged : OracleFamily Unit (fun _ => Nat × Bool) where
   interface := fun _ =>
     { Query := Unit
-      toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
+      spec := fun _ => Nat
+      answer := fun value _ => value.1 }
 
 -- ClaimExample 1, restated: the old-layer row compares two closed claims. A closed claim is a
 -- statement with the behavior of the realizations: the unobservable tag vanishes.

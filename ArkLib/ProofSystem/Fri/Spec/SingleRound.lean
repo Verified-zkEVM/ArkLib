@@ -173,23 +173,23 @@ instance finalOracleStatementInterface :
   ∀ j, OracleInterface (FinalOracleStatement s ω j) := fun j ↦
   { Query :=
       if j = k + 1 then Unit else (ω.subdomain (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset
-    toOC.spec := fun _ ↦ if j = k + 1 then CompPoly.CPolynomial F else F
-    toOC.impl := fun q ↦ do
+    spec := fun _ ↦ if j = k + 1 then CompPoly.CPolynomial F else F
+    answer := fun stmt q ↦
       if h : j = k + 1 then
-        let st : CompPoly.CPolynomial F := cast (by simp [FinalOracleStatement, h]) (← read)
-        return cast (by simp [h]) st
+        let st : CompPoly.CPolynomial F := cast (by simp [FinalOracleStatement, h]) stmt
+        cast (by simp [h]) st
       else
         let st : (ω.subdomain (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset
           → F :=
           cast (by {
             simp [FinalOracleStatement, h]
             rfl
-          }) (← read)
+          }) stmt
         let pt : (ω.subdomain (∑ j' ∈ finRangeTo _ j.1, s j')).toFinset :=
           cast (by {
-            simp [Domain, h]
+            simp [h]
           }) q
-        return cast (by simp [h]) (st pt) }
+        cast (by simp [h]) (st pt) }
 
 @[simp]
 lemma range_lem₁ {i : Fin (k + 1)} (q) :
@@ -577,62 +577,46 @@ def finalFoldVerifier :
         subst j
         unfold instOracleInterfaceMessagePSpec finalOracleStatementInterface
         simp only [Fin.val_last, finRangeTo, ↓reduceDIte,
-          cast_cast, bind_pure_comp, Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Message]
+          cast_cast, Fin.vcons_fin_zero, Nat.reduceAdd, Fin.isValue, Message]
         congr 1
         case e_1 =>
           simp only [FinalOracleStatement, Fin.val_last, ↓reduceIte, Fin.isValue, Fin.vcons_one]
         case e_2 => simp only [↓reduceIte]
         case e_3 =>
-          simp only [FinalOracleStatement, Fin.val_last, finRangeTo, Fin.isValue]
-          congr 1
-          case e_1 => simp
-          case e_2 => simp
-          case e_3 =>
-            refine Function.hfunext (by simp) ?_
-            intro q q' hq
-            simp
-          case e_4 =>
-            refine Function.hfunext (by simp) ?_
-            intro q q' hq
-            refine Function.hfunext (by simp) ?_
-            intro st st' hst
-            simp only [Functor.map]
-            exact (cast_heq _ st).trans hst
+          refine Function.hfunext (by simp) ?_
+          intro q q' hq
+          simp
+        case e_4 =>
+          refine Function.hfunext (by simp) ?_
+          intro st st' hst
+          refine Function.hfunext (by simp) ?_
+          intro q q' hq
+          exact (cast_heq _ st).trans hst
       · simp only
         unfold instOracleInterfaceOracleStatement finalOracleStatementInterface
-        simp only [finRangeTo, cast_cast, bind_pure_comp, Fin.val_last]
+        simp only [finRangeTo, cast_cast, Fin.val_last]
         congr 1
         case e_1 =>
           simp only [FinalOracleStatement, h, ↓reduceIte, finRangeTo]
           rfl
         case e_2 => simp only [h, ↓reduceIte]
         case e_3 =>
-          simp only [h, FinalOracleStatement, finRangeTo, ↓reduceDIte]
-          congr 1
-          case e_1 => simp [h]
-          case e_2 =>
-            congr 1
-            simp [h]
-            rfl
-          case e_3 =>
-            refine Function.hfunext (by simp [h]) ?_
-            intro q q' hq
-            simp [h]
-          case e_4 =>
-            refine Function.hfunext (by simp [h]) ?_
-            intro q q' hq
-            refine Function.hfunext (by
-              simp [h]
-              rfl) ?_
-            intro st st' hst
-            simp only [Functor.map, Pure.pure]
-            have hstCast : cast (type_eq_of_heq hst) st ≍ st' :=
-              (cast_heq _ st).trans hst
-            have hqCast : cast (type_eq_of_heq hq) q ≍ q' :=
-              (cast_heq _ q).trans hq
-            apply HEq.trans (cast_heq _ _)
-            apply HEq.trans (heq_of_eq (congr_heq hstCast hqCast))
-            rfl }
+          refine Function.hfunext (by simp [h]) ?_
+          intro q q' hq
+          simp [h]
+        case e_4 =>
+          refine Function.hfunext (ite_eq_right h) ?_
+          intro st st' hst
+          refine Function.hfunext (by simp [h]) ?_
+          intro q q' hq
+          rw [dite_eq_right h]
+          have hstCast : cast (type_eq_of_heq hst) st ≍ st' :=
+            (cast_heq _ st).trans hst
+          have hqCast : cast (type_eq_of_heq hq) q ≍ q' :=
+            (cast_heq _ q).trans hq
+          apply HEq.trans (cast_heq _ _)
+          apply HEq.trans (heq_of_eq (congr_heq hstCast hqCast))
+          rfl }
 
 /-- The oracle reduction that is the final folding round of the FRI protocol. -/
 def finalFoldOracleReduction :

@@ -369,8 +369,8 @@ abbrev Input := {p : CMvPolynomial n R // ∀ j, p.degreeOf j ≤ deg}
 /-- The input oracle over computable polynomials, answered by evaluation at a point. -/
 def inputFamily : OracleFamily Unit (fun _ => Input R deg n) :=
   ⟨fun _ => { Query := Fin n → R
-              toOC.spec := (Fin n → R) →ₒ R
-              toOC.impl point := do return (← read).val.eval point }⟩
+              spec := (Fin n → R) →ₒ R
+              answer p point := p.val.eval point }⟩
 
 /-- The mathematical polynomial of a computable input. -/
 def interpretInput [BEq R] [LawfulBEq R] (data : ∀ _ : Unit, Input R deg n) :

@@ -54,8 +54,8 @@ variable [DecidableEq F]
 /-- Degree-bounded polynomial oracles expose only evaluation queries. -/
 instance (d : ℕ) : OracleInterface (Poly F d) where
   Query := F
-  toOC.spec := fun _ => F
-  toOC.impl z := do return eval (← read) z
+  spec := fun _ => F
+  answer poly z := eval poly z
 
 variable (D : Domain F) (d : ℕ)
 

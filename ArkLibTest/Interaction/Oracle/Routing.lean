@@ -32,8 +32,8 @@ def inputData (hidden : Nat) : ∀ _ : Bool, Nat
 /-- Only the first coordinate of a sent pair is observable. -/
 @[reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  spec := fun _ => Nat
+  answer m _ := m.1
 
 /-- The prefix sends one pair oracle. -/
 @[instance_reducible] def firstProtocol : OracleProtocol :=

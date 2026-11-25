@@ -29,7 +29,8 @@ namespace Interaction.StateRestorationBudgetTests
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
+  spec := fun _ => Fin 8
+  answer m _ := m
 
 /-- The first round: a `Fin 8` oracle message and a `Fin 8` challenge. -/
 def firstRound : Round where
