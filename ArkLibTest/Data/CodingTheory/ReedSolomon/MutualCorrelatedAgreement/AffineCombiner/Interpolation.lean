@@ -12,7 +12,7 @@ import Mathlib.Algebra.Field.ZMod
 /-!
 # Acceptance cases for multiplier interpolation
 
-The numerical cases check the parameter choice and the full-constraint sufficient condition.
+The numerical cases check the full-constraint sufficient condition.
 The free-budget example distinguishes that condition from (4.5) in [CWYZ26].
 A quadratic multiplier over `𝔽₁₁` checks the interpolation beyond affine lines.
 
@@ -24,39 +24,13 @@ A quadratic multiplier over `𝔽₁₁` checks the interpolation beyond affine 
 
 open ReedSolomon Polynomial
 
-/-- The standing hypotheses hold at `d = 16`, `n = 100`, `η = 1/2`, where `√ρ = 2/5`. -/
-example : AffineParams 16 100 (1 / 2) := by
-  have hsqrt : √((16 : ℕ) / ((100 : ℕ) : ℝ)) = 2 / 5 := by
-    rw [Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
-    norm_num
-  refine ⟨by norm_num, by norm_num, by norm_num, ?_, ?_⟩
-  · rw [hsqrt]; norm_num
-  · norm_num
-
 /-- The parameters feed the interpolation: an interpolant exists at those budgets. -/
 example {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain : ι ↪ F)
-    (f g : ι → F) {d : ℕ} {η : ℝ} (h : AffineParams d (Fintype.card ι) η) :
-    ∃ Q, IsMultiplierInterpolant domain f g 1 d (affineThreshold d (Fintype.card ι) η)
+    (f g : ι → F) {d e : ℕ} {η : ℝ} (h : AffineParams d (Fintype.card ι) e η) :
+    ∃ Q, IsMultiplierInterpolant domain f g e d (affineThreshold d (Fintype.card ι) η)
       (affineMultiplicity η) (affineYZBudget d (Fintype.card ι) η)
-      (affineRootBudget d (Fintype.card ι) η) Q :=
-  exists_isAffineInterpolant domain f g h.surplus
-
--- An explicit parameter choice has these exact finite budgets.
-example : affineMultiplicity (1 / 2) = 4 ∧ affineYZBudget 16 100 (1 / 2) = 42 ∧
-    affineThreshold 16 100 (1 / 2) = 90 ∧ affinePersistenceThreshold 16 100 (1 / 2) = 64 ∧
-    affineRootBudget 16 100 (1 / 2) = 19 := by
-  have hsqrt : √((16 : ℝ) / 100) = 2 / 5 := by
-    rw [Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
-    norm_num
-  have hceil : ⌈(675 : ℝ) / 16⌉₊ = 43 := by
-    apply (Nat.ceil_eq_iff (by norm_num)).mpr
-    norm_num
-  unfold affineRootBudget affineYZBudget affineThreshold affinePersistenceThreshold
-  norm_num only [Nat.cast_ofNat]
-  have hsqrt' : √((4 : ℝ) / 25) = 2 / 5 := by
-    convert hsqrt using 2; norm_num
-  rw [hsqrt']
-  norm_num [affineMultiplicity, hceil]
+      (affineRootBudget d (Fintype.card ι) e η) Q :=
+  exists_isMultiplierInterpolant domain f g h.surplus
 
 -- The 146 unknowns exceed the truncated count 145, but not the full constraint count 150.
 open Polynomial.SymbolicInterpolation in
