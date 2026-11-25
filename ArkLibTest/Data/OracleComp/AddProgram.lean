@@ -8,6 +8,7 @@ import VCVio.OracleComp.QueryTracking.MeasuredProgram
 /-! A shared measured program for one charged addition on a view of the input. -/
 
 open OracleComp OracleSpec
+open PFunctor.FreeM (MeasuredProgram)
 
 namespace AddProgramTest
 
@@ -35,10 +36,10 @@ theorem addProgram_realizes {Input : Type} (view : Input → ℕ × ℕ) :
 /-- The program costs at most one addition on every input. -/
 theorem addProgram_costAtMost_one {Input : Type} (view : Input → ℕ × ℕ) :
     (addProgram view).CostAtMost 1 :=
-  MeasuredProgram.costAtMost_of_forall_eq_answer _ 1 (fun _ _ u => Subtype.ext u.2)
+  MeasuredProgram.costAtMost_of_runAdd_le _ 1 (fun _ _ u => Subtype.ext u.2)
     (fun _ => le_rfl)
 
-/-- The same addition instruction program and handlers, charged in a single count coordinate. -/
+/-- The same addition instruction program and answers, charged in a single count coordinate. -/
 def addCountProgram {Input : Type} (view : Input → ℕ × ℕ) :
     MeasuredProgram Input ℕ (Unit → Nat) :=
   { addProgram view with cost := fun _ _ => 1 }
@@ -51,7 +52,7 @@ theorem addCountProgram_realizes {Input : Type} (view : Input → ℕ × ℕ) :
 /-- The unchanged instruction program records at most one addition in its count coordinate. -/
 theorem addCountProgram_costAtMost_one {Input : Type} (view : Input → ℕ × ℕ) :
     (addCountProgram view).CostAtMost 1 :=
-  MeasuredProgram.costAtMost_of_forall_eq_answer _ 1 (fun _ _ u => Subtype.ext u.2)
+  MeasuredProgram.costAtMost_of_runAdd_le _ 1 (fun _ _ u => Subtype.ext u.2)
     (fun _ _ => le_rfl)
 
 end AddProgramTest

@@ -6,7 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.MvPolynomial.Multilinear
-public import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Relation.OracleInterface
 
 /-!
 # Packed commitment relations
