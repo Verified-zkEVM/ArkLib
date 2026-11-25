@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Security.KnowledgeComposition
-public import VCVio.OracleComp.QueryTracking.MeasuredProgram.Composition
+public import PolyFun.PFunctor.Free.Cost.Measured
 
 /-!
 # Knowledge state functions with measured extraction
@@ -15,8 +15,8 @@ A knowledge state function extracts backwards in three kinds of stage: the leaf 
 output witness into a leaf witness, the step map at an interaction node turns a move and the
 witness after it into the witness before it (`KnowledgeStateFunction.stageMap`), and the root map
 returns an input witness. `KnowledgeStateFunction.MeasuredStages` names a budgeted instruction
-program (`OracleComp.BudgetedProgram`) for every stage, indexed by the statement and the full
-transcript prefix. `MeasuredStages.programAlong` composes these programs along a completed
+program (`PFunctor.FreeM.BudgetedProgram`) for every stage, indexed by the statement and the
+full transcript prefix. `MeasuredStages.programAlong` composes these programs along a completed
 transcript; it realizes `KnowledgeStateFunction.extractAlong` on output witnesses at that
 transcript, whose type depends on it, and its budget is the sum of the stage budgets along that
 transcript.
@@ -34,8 +34,8 @@ by node kind: message and oracle-message steps by one bound, challenge steps by 
 ## Scope
 
 Each budget bounds the declared instructions of one stage under the accounting of
-`OracleComp.MeasuredProgram`, which lists what is uncharged. Every map has a budgeted program with
-budget zero (`MeasuredStages.zero`), so only a named program with a stated instruction set is
+`PFunctor.FreeM.MeasuredProgram`, which lists what is uncharged. Every map has a budgeted program
+with budget zero (`MeasuredStages.zero`), so only a named program with a stated instruction set is
 evidence. In addition:
 
 * Stages are indexed by the statement and the actual earlier moves, including oracle messages, so

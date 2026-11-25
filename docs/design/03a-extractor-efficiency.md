@@ -289,7 +289,7 @@ from a proved correspondence to a standard machine, which neither route supplies
 A measured program is independent of any game: it contains an input view, a charged instruction
 program, deterministic handlers, and charges. Each security layer supplies its resource contract
 for that layer's extractor shape. The generic core lives in
-`VCVio.OracleComp.QueryTracking.MeasuredProgram`, which imports no game. The legacy game conjunctions
+`PolyFun.PFunctor.Free.Cost.Measured`, which imports no game. The legacy game conjunctions
 and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
 certificate remains proposed. Interaction-layer games consume the same measured programs through
@@ -302,9 +302,9 @@ same `KnowledgeStateFunction.extractAlong` on each completed transcript and outp
 above, rather than being additional execution-time guarantees.
 
 CompPoly owns polynomial algorithms and their generic semantic and size facts. VCVio owns generic
-cost instrumentation, measured programs and their composition. ArkLib currently hosts arithmetic
-instrumentation adapters under `ArkLib/ToCompPoly/Univariate/` and owns the protocol-specific
-extraction/game connections. Extract shared cross-library adapters into an appropriate owner when
+cost instrumentation, and PolyFun owns measured programs and their composition. ArkLib currently
+hosts arithmetic instrumentation adapters under `ArkLib/ToCompPoly/Univariate/` and owns the
+protocol-specific extraction/game connections. Extract shared cross-library adapters into an appropriate owner when
 a demonstrated API need calls for them; their current location is not a permanent ownership rule.
 The deeper execution backend proposed for PolyFun remains later work; these operation profiles
 do not establish its adequacy or a full running-time bound.

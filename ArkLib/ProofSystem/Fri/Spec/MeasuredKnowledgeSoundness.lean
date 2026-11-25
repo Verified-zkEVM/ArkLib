@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.Fri.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.ClosedCost
 public import ArkLib.OracleReduction.Security.Resources
+public import VCVio.OracleComp.QueryTracking.MeasuredProgram
 
 /-!
 # Knowledge soundness of FRI with measured extraction
@@ -77,7 +78,7 @@ theorem measuredProgram_realizesExtractor (hs : (∑ j, (s j).val) ≤ n) :
 /-- Every execution path of the measured program stays within `extractorProfileBound`. -/
 theorem measuredProgram_costAtMost (hs : (∑ j, (s j).val) ≤ n) :
     (measuredProgram (ω := ω) s d l hs).CostAtMost (extractorProfileBound n s d) :=
-  OracleComp.MeasuredProgram.costAtMost_of_forall_eq_answer _ _
+  PFunctor.FreeM.MeasuredProgram.costAtMost_of_runAdd_le _ _
     (fun v ↦ eq_instructionAnswer s v.1 v.2)
     (fun v ↦ by
       change (simulateQ (QueryImpl.withAddCost (instructionAnswer s v.1 v.2) (instructionCost s))
