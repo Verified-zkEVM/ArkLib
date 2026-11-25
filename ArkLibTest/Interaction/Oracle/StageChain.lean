@@ -550,8 +550,8 @@ All query and data carriers are in `Type`. -/
 @[reducible]
 def wideInterface : OracleInterface.{0, 0} Bool where
   Query := Unit
-  toOC.spec := Unit →ₒ Bool
-  toOC.impl _ := read
+  spec := Unit →ₒ Bool
+  answer m _ := m
 
 /-- One Boolean oracle whose query lies in `Type`. -/
 def wideBooleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩

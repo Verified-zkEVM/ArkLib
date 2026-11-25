@@ -22,7 +22,6 @@ noncomputable local instance : SampleableType (ZMod 5) := SampleableType.ofFinty
 example : answer (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5)) (fun _ => (0 : ZMod 5)) =
     answer (0 : MvPolynomial (Fin 1) (ZMod 5)) (fun _ => (0 : ZMod 5)) := by
   simp only [RandomEvaluation.answer_eq_eval, eval_X, map_zero]
-  rfl
 
 /-- The same false identity fails at a nonzero point. -/
 example : answer (X (0 : Fin 1) : MvPolynomial (Fin 1) (ZMod 5)) (fun _ => (1 : ZMod 5)) ≠

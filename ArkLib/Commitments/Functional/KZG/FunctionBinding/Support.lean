@@ -53,8 +53,8 @@ open Commitment
 local instance functionBindingSupportOracleInterface :
     OracleInterface (Fin (n + 1) → ZMod p) where
   Query := ZMod p
-  toOC.spec := ZMod p →ₒ ZMod p
-  toOC.impl z := do return (CPolynomial.ofFn (← read)).eval z
+  spec := ZMod p →ₒ ZMod p
+  answer coeffs z := (CPolynomial.ofFn coeffs).eval z
 
 open scoped NNReal
 

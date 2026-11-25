@@ -71,8 +71,8 @@ with the sent value or rejects. The output data closes to `input + sent.1`. -/
 /-- Only the first coordinate of a sent pair is observable. -/
 @[reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  spec := fun _ => Nat
+  answer m _ := match m with | (sent, _) => sent
 
 /-- The prover sends one pair oracle. -/
 @[instance_reducible] def pairSend : OracleProtocol :=

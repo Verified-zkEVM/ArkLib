@@ -24,8 +24,8 @@ namespace Interaction.RunBundlesTests
 /-- Only the first coordinate of a sent pair can be queried. -/
 @[reducible] def interface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  spec := fun _ => Nat
+  answer m _ := m.1
 
 /-- One scalar input oracle. -/
 def inputs : OracleFamily PUnit (fun _ => Nat) :=

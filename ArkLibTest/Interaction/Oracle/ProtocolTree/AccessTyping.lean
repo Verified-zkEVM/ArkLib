@@ -116,8 +116,8 @@ example : oracleMessageSpec accessTree leftPath.path =
 /-- Only the first coordinate of a sent pair is observable. -/
 @[instance_reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  spec := fun _ => Nat
+  answer m _ := m.1
 
 /-- One pair send followed by the leaf. -/
 def terminalTree : OracleProtocol :=
@@ -194,8 +194,7 @@ example (Messages : Type) (interface : OracleInterface.{0, 0} Messages)
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
   let latest : OracleBundle :=
-    ⟨interface.Query, interface.toOC.spec, Messages,
-      fun message query => (interface.toOC.impl query).run message⟩
+    ⟨interface.Query, interface.spec, Messages, interface.answer⟩
   (prior.sum latest).spec.toPFunctor
 
 /-- Extend a bundle with query carriers in `Type`. -/
@@ -205,8 +204,7 @@ example (Messages : Type) (interface : OracleInterface.{0, 0} Messages)
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
   let latest : OracleBundle :=
-    ⟨interface.Query, interface.toOC.spec, Messages,
-      fun message query => (interface.toOC.impl query).run message⟩
+    ⟨interface.Query, interface.spec, Messages, interface.answer⟩
   (prior.sum latest).spec.toPFunctor
 
 end Interaction.AccessTypingTests

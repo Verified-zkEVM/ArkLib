@@ -36,8 +36,8 @@ abbrev Carrier (r : Bool) : Type := Fin (if r then 5 else 3)
 /-- A `Bool` query reads the realization's value, plus one when the query is `true`. -/
 @[reducible] def countInterface (r : Bool) : OracleInterface (Carrier r) where
   Query := Bool
-  toOC.spec := fun _ => Nat
-  toOC.impl query := do return (← read).val + (if query then 1 else 0)
+  spec := fun _ => Nat
+  answer m query := m.val + (if query then 1 else 0)
 
 /-- Both indices have the same query interface and different carrier types. -/
 def model : OracleFamily Bool Carrier := ⟨countInterface⟩
@@ -169,12 +169,12 @@ and answers a `Bool`. -/
 @[reducible] def mixedInterface : (r : Bool) → OracleInterface (Carrier r)
   | false =>
     { Query := Bool
-      toOC.spec := fun _ => Nat
-      toOC.impl _ := do return (← read).val }
+      spec := fun _ => Nat
+      answer m _ := m.val }
   | true =>
     { Query := Fin 2
-      toOC.spec := fun _ => Bool
-      toOC.impl query := do return decide (query.val < (← read).val) }
+      spec := fun _ => Bool
+      answer m query := decide (query.val < m.val) }
 
 /-- Query and response types vary with the index. -/
 def mixedModel : OracleFamily Bool Carrier := ⟨mixedInterface⟩
@@ -197,8 +197,8 @@ abbrev LowDegree := {p : Polynomial Nat // p.natDegree < 2}
 /-- Evaluation is the only query. -/
 @[reducible] def evaluation : OracleInterface LowDegree where
   Query := Nat
-  toOC.spec := fun _ => Nat
-  toOC.impl point := do return (← read).val.eval point
+  spec := fun _ => Nat
+  answer m point := m.val.eval point
 
 /-- One polynomial oracle. -/
 def polynomials : OracleFamily Unit (fun _ => LowDegree) :=

@@ -227,10 +227,10 @@ Neither P1 nor P2 excludes any part of these contracts.
 “Its input query index and oracle-node query type must remain in `Type`.” This applies to
 `OracleVerifier.runWithLog`, whose returned full log records bundle queries. It does not
 restrict R26/R27, which use general `OracleBundle` as inputs to `OracleVerifier.run`.
-`OracleBundle.ofFamily` keeps the shared `OracleInterface` specialization, with its `ReaderM`
-coupling. That specialization no longer restricts general verifier inputs. The shared interface
-is unchanged. The source sum, tensor, lifting and raw-routing canaries also keep all their
-old-layer universe instantiations.
+`OracleBundle.ofFamily` keeps the shared `OracleInterface` specialization, whose response types
+lie in the universe of the data. That specialization no longer restricts general verifier inputs.
+The shared interface is unchanged. The source sum, tensor, lifting and raw-routing canaries also
+keep all their old-layer universe instantiations.
 
 ## Cost universes
 

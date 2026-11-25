@@ -27,15 +27,15 @@ abbrev ambient : OracleSpec Empty := Empty →ₒ Nat
 @[reducible]
 def natInterface : OracleInterface Nat where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := read
+  spec := Unit →ₒ Nat
+  answer m _ := m
 
 /-- A pair answers the unit query with its first component. -/
 @[reducible]
 def pairInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := do return (← read).1
+  spec := Unit →ₒ Nat
+  answer m _ := m.1
 
 /-- One natural-number input oracle. -/
 @[instance_reducible]

@@ -23,7 +23,8 @@ namespace Interaction.StateRestorationTests
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
+  spec := fun _ => Fin 8
+  answer m _ := m
 
 /-- One round: a `Fin 8` oracle message, then a uniform `Bool` challenge. -/
 def round : Round where
@@ -630,7 +631,8 @@ def selectedMessage : (b : Bool) → Fin 8 → SelectedValue b
 /-- A value in the nine-element carrier answers its unit query with itself. -/
 @[instance_reducible] def wideInterface : OracleInterface (Fin 9) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 9, impl := fun _ => do return (← read) }
+  spec := fun _ => Fin 9
+  answer m _ := m
 
 /-- The output oracle carrier and interface follow the authored Boolean too. -/
 @[instance_reducible] def varyingFamily :

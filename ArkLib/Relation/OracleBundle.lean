@@ -58,15 +58,16 @@ instance search try every bundle whose data type unifies with the goal. -/
 @[reducible]
 def toInterface (B : OracleBundle) : OracleInterface B.Data where
   Query := B.Query
-  toOC := ⟨B.spec, fun q => ReaderT.mk fun m => B.answer m q⟩
+  spec := B.spec
+  answer := B.answer
 
 /-- Package a data type and an explicit interface for it as an oracle bundle. -/
 @[reducible]
 def of (Data : Type) (I : OracleInterface.{0, 0} Data) : OracleBundle where
   Query := I.Query
-  spec := I.toOC.spec
+  spec := I.spec
   Data := Data
-  answer m q := (I.toOC.impl q).run m
+  answer := I.answer
 
 /-- Package a data type with the interface that instance search finds for it. -/
 @[reducible]

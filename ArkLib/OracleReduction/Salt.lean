@@ -115,10 +115,9 @@ instance (priority := 10000) instAddSaltMessage
     ∀ i, OracleInterface ((pSpec.addSalt Salt).Message i) :=
   fun i => {
     Query := (Oₘ i).Query
-    toOC.spec := (Oₘ i).Response
-    toOC.impl q := ReaderT.mk fun msg =>
-      ((Oₘ i).toOC.impl q).run
-        (((addSalt_Message (pSpec := pSpec) (Salt := Salt) i) ▸ msg).1)
+    spec := (Oₘ i).Response
+    answer msg q :=
+      (Oₘ i).answer (((addSalt_Message (pSpec := pSpec) (Salt := Salt) i) ▸ msg).1) q
   }
 
 @[simp]

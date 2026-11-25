@@ -23,8 +23,8 @@ abbrev smallAmbient : OracleSpec.{0, 0} Unit := Unit →ₒ Bool
 @[reducible]
 def natInterface : OracleInterface Nat where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := read
+  spec := Unit →ₒ Nat
+  answer m _ := m
 
 /-- Input oracles indexed by Boolean values with natural-number data. -/
 @[instance_reducible]
@@ -83,15 +83,15 @@ example : observation.2.2.map (fun out => (out.1, out.2 ())) = some (3, 3) := rf
 @[reducible]
 def typeQueries : OracleInterface.{0, 1} Nat where
   Query := Type
-  toOC.spec := Type →ₒ Nat
-  toOC.impl _ := read
+  spec := Type →ₒ Nat
+  answer m _ := m
 
 /-- A natural number answers every Boolean query with itself. -/
 @[reducible]
 def bigTypeQueries : OracleInterface.{0, 0} Nat where
   Query := Bool
-  toOC.spec := Bool →ₒ Nat
-  toOC.impl _ := read
+  spec := Bool →ₒ Nat
+  answer m _ := m
 
 /-- One input oracle with unit queries and natural-number data and responses. -/
 @[instance_reducible]

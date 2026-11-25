@@ -62,13 +62,12 @@ variable {innerRows outerRows dRows m r : Nat} {ω : ℕ}
 /-- The **multilinear evaluation oracle** on a committed `n`-variable multilinear polynomial: a
 query is an evaluation point `x : Vector (Rq 𝓜(q,α)) n` and the answer is `f x`. This is the
 `OracleInterface` that makes `CMlPolynomial (Rq 𝓜(q,α)) n` the `Data` of a functional commitment
-(`Commitment.Scheme`); `toOC` follows `OracleContext.ofFunction`. -/
+(`Commitment.Scheme`). -/
 instance multilinearEvalOracleInterface {n : ℕ} :
     OracleInterface (CMlPolynomial (Rq 𝓜(q, α)) n) where
   Query := Vector (Rq 𝓜(q, α)) n
-  toOC :=
-    { spec := Vector (Rq 𝓜(q, α)) n →ₒ Rq 𝓜(q, α)
-      impl := fun p => do return CMlPolynomial.eval (← read) p }
+  spec := Vector (Rq 𝓜(q, α)) n →ₒ Rq 𝓜(q, α)
+  answer f p := CMlPolynomial.eval f p
 
 -- `b > 1` is the gadget base used for **all** decompositions. Faithful to Hachi [NOZ26] §2.1/§4.1,
 -- every coefficient is written in `δ := ⌈log_b q⌉ = Nat.clog b q` base-`b` digits — a single `δ`
