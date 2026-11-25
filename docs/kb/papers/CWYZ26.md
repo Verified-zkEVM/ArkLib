@@ -27,6 +27,11 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/SubspaceSeparation.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/Grid.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Basic.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Probability.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Separation.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/RationalPair.lean
 ---
 
 # CWYZ26
@@ -59,7 +64,7 @@ The embedding already implies `n ≤ q`.
 | Paper statement | Lean interface | Scope |
 | --- | --- | --- |
 | Section 1.1, Definition 3.1, and the definition of `ε_sc` at the start of Section 6 | `ReedSolomon.combinedWord`, `ReedSolomon.affineMultiplier`, `ReedSolomon.agreementLoss`, `ReedSolomon.IsLossWitness`, `ReedSolomon.IsAffineExceptional`, `ReedSolomon.IsScalarExceptional`, `ReedSolomon.affineMcaError`, `ReedSolomon.scalarMcaError` | The errors are suprema over received word pairs of the uniform probability that some candidate is exceptional. Definition 3.1 is the affine predicate at loss `s = 1`. Section 1.1 defines the affine error. Section 6 defines the scalar error with a uniform scalar challenge `α` and witness degrees at most `d`. |
-| Proposition 6.1, error lower bound | `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt` | For `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A)/(s + 1)⌋)/q`. The proof constructs words using a vanishing polynomial and blocks of size `s + 1`. The constructed words and the proposition's global agreement claim have no separate Lean statement. The probability `Pr_{α←F_q}[|S_α(0)| = A]` in (6.1), and both inequalities through it, have no Lean statement. |
+| Proposition 6.1, error lower bound | `ReedSolomon.le_scalarMcaError_of_degree_add_loss_add_one_lt` | For `d + s + 1 < A ≤ n`, the scalar error is at least `(1 + ⌊(n - A)/(s + 1)⌋)/q`. The proof constructs words using a vanishing polynomial and blocks of size `s + 1`. The constructed words and the proposition's global agreement claim have no separate Lean statement. The probability `Pr_{α←F_q}[\|S_α(0)\| = A]` in (6.1), and both inequalities through it, have no Lean statement. |
 | Proposition 6.2 | `ReedSolomon.le_affineMcaError_zero_loss`, `ReedSolomon.le_affineMcaError_zero_loss_div_two` | For `d + 1 < A ≤ n`, the affine error at loss zero is at least `(n - A + 1)(q - 1)/q²`, hence at least `(n - A + 1)/(2q)`. |
 | Lemma 4.4 | `ReedSolomon.card_isAffineExceptional_add_mul_le`, `ReedSolomon.card_ratFunc_combination_le`, `ReedSolomon.card_isAffineExceptional_ratFunc_le` | At loss one, a polynomial pair within the witness degree bounds gives at most `n choose 2` exceptional challenges. A rational pair outside those bounds has at most `q` compatible challenges, even without requiring exceptionality. Every rational pair gives at most `max q (n choose 2)` exceptional challenges. |
 | Lemma 4.5 | `ReedSolomon.affinePersistenceSet`, `ReedSolomon.IsAffinePersistent`, `ReedSolomon.card_isAffineExceptional_persistent_le` | The real count is at most `n (B - d - 1)/(B² - n(d + 1)) · max q (n choose 2)` under `d + 1 < B` and `n(d + 1) < B²`. It covers all persistent exceptional challenges at loss one. The paper first removes its excluded set `E`. |
@@ -78,11 +83,18 @@ The embedding already implies `n ≤ q`.
 | Theorem 1.1 | `ReedSolomon.exists_affineExceptional_finset_card_le`, `ReedSolomon.affineMcaError_le` | The paper's hypotheses `1 ≤ d < n`, `0 < η < 1 - √ρ` and `4 / ρ ≤ n η²`, and its bound `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`. The crude estimates give a constant below `9824`. |
 | Theorem 5.1, first inequality of (5.4) | `ReedSolomon.equalDegreeWord`, `ReedSolomon.IsEqualDegreeExceptional`, `ReedSolomon.equalDegreeMcaError`, `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the error is at most the affine error plus `ℓ₀/q`, with the rounded-down Johnson bound `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`. The linear-claims assertion is not included. |
 | Proposition 6.3 | `ReedSolomon.le_scalarMcaError_of_addSubgroup` | In characteristic two, let the domain be an additive subgroup of size `n = 2^k ≥ 16`. For `d = n/4`, `A ≤ 9n/16`, and `s < 3n/16`, the scalar error is at least `(n - 8)/q`. |
+| Section 7, bound (7.1) on a hyperplane | `ReedMuller.card_grid_inter_hyperplane_le` | A hyperplane `a · x = b` with `a ≠ 0` contains at most `n / q₀` points of the grid `K₀ᵏ`. The proof applies the grid Schwartz–Zippel bound at total degree one. |
+| Section 7, after (7.1), affinely independent points | `ReedMuller.exists_subset_card_eq_forall_add_dotProduct_eq_zero`, `ReedMuller.eq_zero_of_forall_mem_add_dotProduct_eq_zero` | More than `n / q₀` grid points contain `k + 1` points on which only the zero affine form vanishes. This is the form Lemma A.1 uses. |
+| Schwartz–Zippel on the grid | `ReedMuller.card_grid_eval_eq_zero_le` | A nonzero polynomial of total degree `D` has at most `D q₀ᵏ⁻¹` zeros on the grid. |
+| Section 7, the Reed–Muller error `εRM` | `ReedMuller.affineMultiplier`, `ReedMuller.combinedWord`, `ReedMuller.agreementSet`, `ReedMuller.agreementLoss`, `ReedMuller.IsAffineExceptional`, `ReedMuller.affineMcaError`, `ReedMuller.affineMcaError_eq_iSup_prob` | Words on the grid `K₀ᵏ`, challenges `α ∈ F^{k+1}` and the multiplier `α₀ + Σ αᵢXᵢ`. The second witness is admissible when it is zero or has total degree below `d`. |
+| Section 7, the exponent `k` cannot be improved | `ReedMuller.le_affineMcaError_of_add_two_le` | For `1 ≤ k`, `d + 2 ≤ q₀` and `A ≤ n`, the error at loss `n / q₀` is at least `q⁻ᵏ`. The paper derives `d ≤ q₀ - 2` from Theorem 7.1. |
+| Lemma A.1 | `ReedMuller.card_isAffineExceptional_add_mul_le`, `ReedMuller.card_fractionRing_combination_le`, `ReedMuller.card_isAffineExceptional_fractionRing_le` | At loss `n / q₀`, a polynomial pair obeying the witness degree bounds has at most `n choose (k + 1)` exceptional challenges. A rational pair outside those bounds has at most `q` compatible challenges. Every rational pair has at most `max q (n choose (k + 1))` exceptional challenges. |
 
 ## Port Ledger
 
 The units describe the port plan, including results without Lean declarations.
 A unit is done when its declarations are on `main`.
+A result described as formalized is available in the corresponding branch of the stack.
 A part of a unit is open when no Lean statement covers it.
 A unit is deferred when the port plan postpones it.
 
@@ -98,7 +110,7 @@ A unit is deferred when the port plan postpones it.
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | The nonpersistent count for one factor, through an incidence bound on a hypersurface in three chart coordinates. The hypersurface takes the place of the cover of dimension at most two. The proof of the incidence bound inducts on dimension over the agreement cuts, in place of the agreement-hyperplane induction. The sum over factors is part of the unit 9 count | 2, 6, 7 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), except the floored Johnson factor of (4.13), which is open |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
-| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | deferred |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), the lower bound and Lemma A.1 formalized; Pellikaan–Wu reduction, the persistent and nonpersistent counts and Theorem 7.1 open |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
 The quotient is real, and the floor rounds down.
@@ -224,7 +236,8 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-Units 10 and 11 are deferred, so Theorem 5.2, Theorem 7.1 and Appendix A have no formalization.
+Unit 10 is deferred, so Theorem 5.2 has no formalization.
+The Reed–Muller port has open parts in the Pellikaan–Wu reduction, the persistent and nonpersistent counts and Theorem 7.1.
 The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
 The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
 `ReedSolomon.affineMcaError_le` covers it.
