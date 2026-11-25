@@ -479,25 +479,6 @@ def child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {S : Type} {Win : S →
   send sp history := F.send (.down _ sp) ⟨⟨x, rfl⟩, history⟩
   leaf sp history := F.leaf (.down _ sp) ⟨⟨x, rfl⟩, history⟩
 
-/-- Keep the same prefix witnesses and extraction maps, with the root witness itself as the
-input witness and a vacuous input relation. -/
-def withRootWitness {s : FreeM P PUnit.{1}} {S : Type} {Win : S → Type}
-    {W : S → Transcript l s → Type} {admissible : S → Prop}
-    {relIn : (stmt : S) → Win stmt → Prop}
-    {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
-    (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput) :
-    KnowledgeStateFunction l s S W
-      (fun stmt => F.Witness stmt (.root s) ⟨⟩) (fun _ => False) (fun _ _ => True)
-      validOutput where
-  Witness := F.Witness
-  toFun := F.toFun
-  extractRoot _ w := w
-  extractStep := F.extractStep
-  extractLeaf := F.extractLeaf
-  root _ _ _ _ := trivial
-  send := F.send
-  leaf := F.leaf
-
 /-! ### Sequential composition -/
 
 variable {S : Type}
@@ -521,7 +502,7 @@ def appendWitness : {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P
 
 /-- The composite state on the witness types `appendWitness`: the prefix state before the seam and
 the suffix state after it. -/
-def appendToFunAux :
+def appendToFun :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -549,33 +530,13 @@ def appendToFunAux :
         appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) stmt (.down b tail) history
           →
           Prop)
-      (fun x tail history => appendToFunAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+      (fun x tail history => appendToFun (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
         (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
         (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
         (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
         (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
         (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) tail history)
       b tail history
-
-/-- The public form of `appendToFunAux`, applied to `F₁.withRootWitness`. -/
-def appendToFun :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    ∀ {t} (sp : Cursor.Spine (s₁.append s₂) t) (history : PartialTranscriptAt l sp) (stmt : S),
-      appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) stmt sp history → Prop := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂
-  exact appendToFunAux F₁.withRootWitness F₂
 
 /-- Input extraction of the composite: through the prefix leaf and the suffix input extraction
 when the prefix is a leaf, and the prefix input extraction otherwise. -/
@@ -601,7 +562,7 @@ def appendExtractRoot :
 
 /-- Backward extraction of the composite: the prefix step, entering the suffix through
 `appendExtractRoot` where a move reaches the seam, and the suffix step after it. -/
-def appendExtractStepAux :
+def appendExtractStep :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -646,7 +607,7 @@ def appendExtractStepAux :
           (sp.comp (.down (l.toFunB a' y) (.root (next' (l.toFunB a' y)))))
           (PartialTranscriptAt.snoc l sp history y) →
         appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) stmt sp history)
-      (fun x tail history => appendExtractStepAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+      (fun x tail history => appendExtractStep (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
         (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
         (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
         (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
@@ -654,32 +615,8 @@ def appendExtractStepAux :
         (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) tail history)
       b tail history
 
-/-- The public form of `appendExtractStepAux`, applied to `F₁.withRootWitness`. -/
-def appendExtractStep :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    ∀ {a' : P.A} {next' : P.B a' → FreeM P PUnit.{1}}
-      (sp : Cursor.Spine (s₁.append s₂) (.liftBind a' next')) (history : PartialTranscriptAt l sp),
-      (stmt : S) → (y : Move l a') →
-      appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) stmt
-        (sp.comp (.down (l.toFunB a' y) (.root _))) (PartialTranscriptAt.snoc l sp history y) →
-      appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) stmt sp history := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂
-  exact appendExtractStepAux F₁.withRootWitness F₂
-
 /-- Leaf extraction of the composite, which is the suffix leaf extraction. -/
-def appendExtractLeafAux :
+def appendExtractLeaf :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -705,34 +642,13 @@ def appendExtractLeafAux :
       (motive := fun b tail history => (stmt : S) →
         W stmt (PartialTranscriptAt.complete l (.down b tail) history) →
         appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) stmt (.down b tail) history)
-      (fun x tail history => appendExtractLeafAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+      (fun x tail history => appendExtractLeaf (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
         (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
         (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
         (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
         (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
         (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) tail history)
       b tail history
-
-/-- The public form of `appendExtractLeafAux`, applied to `F₁.withRootWitness`. -/
-def appendExtractLeaf :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    ∀ (sp : Cursor.Spine (s₁.append s₂) (.pure ⟨⟩)) (history : PartialTranscriptAt l sp) (stmt : S),
-      W stmt (PartialTranscriptAt.complete l sp history) →
-      appendWitness (s₂ := s₂) F₁.Witness (fun tr => (F₂ tr).Witness) stmt sp history := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂
-  exact appendExtractLeafAux F₁.withRootWitness F₂
 
 /-- The composite root state implies the prefix root state at a witness with the same input
 extraction. -/
@@ -760,7 +676,7 @@ theorem appendToFun_root :
   | .liftBind _ _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, w, h => ⟨w, rfl, h⟩
 
 /-- The composite state is preserved backwards across sender moves. -/
-theorem appendToFun_sendAux :
+theorem appendToFun_send :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -799,7 +715,7 @@ theorem appendToFun_sendAux :
   | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂,
       seam, _, _, .down _ tail, history, stmt, ho, y, w, h => by
     rcases history with ⟨⟨x, rfl⟩, history⟩
-    exact appendToFun_sendAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+    exact appendToFun_send (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
           (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
@@ -807,35 +723,8 @@ theorem appendToFun_sendAux :
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩) tail history stmt ho y w
           h
 
-/-- The public form of `appendToFun_sendAux`, applied to `F₁.withRootWitness`. -/
-theorem appendToFun_send :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    (∀ tr₁ stmt w, (F₂ tr₁).toFun stmt (.root _) ⟨⟩ w →
-      validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
-    ∀ {a' : P.A} {next' : P.B a' → FreeM P PUnit.{1}}
-      (sp : Cursor.Spine (s₁.append s₂) (.liftBind a' next'))
-      (history : PartialTranscriptAt l sp) stmt,
-      owner l a' = .sender → ∀ y w,
-      appendToFun F₁ F₂ (sp.comp (.down (l.toFunB a' y) (.root _)))
-        (PartialTranscriptAt.snoc l sp history y) stmt w →
-      appendToFun F₁ F₂ sp history stmt (appendExtractStep F₁ F₂ sp history stmt y w) := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
-  exact appendToFun_sendAux F₁.withRootWitness F₂ seam
-
 /-- Accepted suffix outputs give the composite state at the leaf. -/
-theorem appendToFun_leafAux :
+theorem appendToFun_leaf :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -859,35 +748,12 @@ theorem appendToFun_leafAux :
   | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
       .down _ tail, history, stmt, w, h => by
     rcases history with ⟨⟨x, rfl⟩, history⟩
-    exact appendToFun_leafAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+    exact appendToFun_leaf (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
           (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩) tail history stmt w h
-
-/-- The public form of `appendToFun_leafAux`, applied to `F₁.withRootWitness`. -/
-theorem appendToFun_leaf :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    (∀ tr₁ stmt w, (F₂ tr₁).toFun stmt (.root _) ⟨⟩ w →
-      validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
-    ∀ (sp : Cursor.Spine (s₁.append s₂) (.pure ⟨⟩)) (history : PartialTranscriptAt l sp) stmt w,
-      validOutput stmt (PartialTranscriptAt.complete l sp history) w →
-      appendToFun F₁ F₂ sp history stmt (appendExtractLeaf F₁ F₂ sp history stmt w) := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
-  exact appendToFun_leafAux F₁.withRootWitness F₂ seam
 
 
 section append
@@ -1157,7 +1023,7 @@ theorem extractFrom_append_down_family {a : P.A} {cont : P.B a → FreeM P PUnit
 
 /-- Backward extraction along an appended transcript runs the suffix extraction and then the
 prefix extraction from its input witness. -/
-theorem extractAlong_appendAux :
+theorem extractAlong_append :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -1194,7 +1060,7 @@ theorem extractAlong_appendAux :
           (congrArg (W stmt) (PartialTranscriptAt.completeWith_root l _).symm)
           (congrArg (fun tr => W stmt ⟨x, tr⟩)
             (PartialTranscriptAt.completeWith_root l _).symm))).trans
-        (extractAlong_appendAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+        (extractAlong_append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
           (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
@@ -1206,37 +1072,9 @@ theorem extractAlong_appendAux :
           (congrArg (fun tr => Wmid stmt ⟨x, tr⟩)
             (PartialTranscriptAt.completeWith_root l tr₁).symm)).symm)
 
-/-- The public form of `extractAlong_appendAux`, applied to `F₁.withRootWitness`. -/
-theorem extractAlong_append :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun stmt (.root _) ⟨⟩ w →
-      validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
-    ∀ (stmt : S) (tr₁ : Transcript l s₁) (tr₂ : Transcript l (s₂ tr₁.path))
-      (w : W stmt (Transcript.append s₁ s₂ tr₁ tr₂)),
-      (append (s₂ := s₂) F₁ F₂ seam).extractAlong stmt (Transcript.append s₁ s₂ tr₁ tr₂) w =
-        F₁.extractAlong stmt tr₁ ((F₂ tr₁).extractAlong stmt tr₂ w) := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
-    stmt tr₁ tr₂ w
-  have h := extractAlong_appendAux F₁.withRootWitness F₂ seam stmt tr₁ tr₂ w
-  cases s₁ using FreeM.rec with
-  | pure x => exact congrArg (F₁.extractRoot stmt) h
-  | liftBind a next ih => exact congrArg (F₁.extractRoot stmt) h
-
 /-- At a completed composite transcript, the composite state on the leaf witness is the
 suffix state on its own leaf witness. -/
-theorem toFun_leafWitness_appendAux :
+theorem toFun_leafWitness_append :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -1262,39 +1100,12 @@ theorem toFun_leafWitness_appendAux :
   | .pure _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _, _ => Iff.rfl
   | .liftBind a _, s₂, Wmid, W, _, _, _, validMid, admissible₂, relMid, validOutput, F₁, F₂, seam,
       stmt, ⟨x, tr₁⟩, tr₂, w =>
-    toFun_leafWitness_appendAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+    toFun_leafWitness_append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
           (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
           (validOutput := fun stmt tr w => validOutput stmt ⟨x, tr⟩ w)
           (F₁.child x) (fun tr => F₂ ⟨x, tr⟩) (fun tr => seam ⟨x, tr⟩) stmt tr₁ tr₂ w
-
-/-- The public form of `toFun_leafWitness_appendAux`, applied to `F₁.withRootWitness`. -/
-theorem toFun_leafWitness_append :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun stmt (.root _) ⟨⟩ w →
-      validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
-    ∀ (stmt : S) (tr₁ : Transcript l s₁) (tr₂ : Transcript l (s₂ tr₁.path))
-      (w : W stmt (Transcript.append s₁ s₂ tr₁ tr₂)),
-      (append (s₂ := s₂) F₁ F₂ seam).toFun
-          stmt (completeSpine l (Transcript.append s₁ s₂ tr₁ tr₂)) (completeMoves l _)
-          ((append (s₂ := s₂) F₁ F₂ seam).leafWitness stmt _ w) ↔
-        (F₂ tr₁).toFun stmt (completeSpine l tr₂) (completeMoves l tr₂)
-          ((F₂ tr₁).leafWitness stmt tr₂ w) := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
-  exact toFun_leafWitness_appendAux F₁.withRootWitness F₂ seam
 
 variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
@@ -1366,7 +1177,7 @@ theorem BoundedAt.child {a : P.A} {next : P.B a → FreeM P PUnit.{1}} {Win : S 
 
 /-- Bounds compose along the composite: prefix challenges keep the prefix bound and suffix
 challenges keep the bound of the suffix state function at their prefix transcript. -/
-theorem BoundedAt.appendAux :
+theorem BoundedAt.append :
     {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
     {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
     {Win : S → Type} →
@@ -1410,7 +1221,7 @@ theorem BoundedAt.appendAux :
       exact ⟨_, hbad, hw₁⟩
     | down _ tail =>
       rcases history with ⟨⟨x, rfl⟩, history⟩
-      exact BoundedAt.appendAux (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
+      exact BoundedAt.append (s₂ := fun p => s₂ ⟨l.toFunB a x, p⟩)
           (Wmid := fun stmt tr => Wmid stmt ⟨x, tr⟩) (W := fun stmt tr => W stmt ⟨x, tr⟩)
           (validMid := fun stmt tr w => validMid stmt ⟨x, tr⟩ w)
           (admissible₂ := fun tr => admissible₂ ⟨x, tr⟩) (relMid := fun tr => relMid ⟨x, tr⟩)
@@ -1419,35 +1230,6 @@ theorem BoundedAt.appendAux :
         (fun sp ho history => draw₁ (.down _ sp) ho ⟨⟨x, rfl⟩, history⟩) (fun tr => draw₂ ⟨x, tr⟩)
         (fun sp ho history => ε₁ (.down _ sp) ho ⟨⟨x, rfl⟩, history⟩) (fun tr => ε₂ ⟨x, tr⟩) stmt
         (h₁.child x) (fun tr => h₂ ⟨x, tr⟩) a' next' tail ho history
-
-/-- The public form of `BoundedAt.appendAux`, applied to `F₁.withRootWitness`. -/
-theorem BoundedAt.append :
-    {s₁ : FreeM P PUnit.{1}} → {s₂ : Path s₁ → FreeM P PUnit.{1}} →
-    {Wmid : S → Transcript l s₁ → Type} → {W : S → Transcript l (s₁.append s₂) → Type} →
-    {Win : S → Type} →
-    {admissible : S → Prop} → {relIn : (stmt : S) → Win stmt → Prop} →
-    {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop} →
-    {admissible₂ : Transcript l s₁ → S → Prop} →
-    {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop} →
-    (F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid) →
-    (F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
-      S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
-        (admissible₂ tr₁)
-      (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)) →
-    (seam : ∀ tr₁ stmt w, (F₂ tr₁).toFun stmt (.root _) ⟨⟩ w →
-      validMid stmt tr₁ ((F₂ tr₁).extractRoot stmt w)) →
-    ∀ (draw₁ : PrefixDraw l ProbComp s₁)
-      (draw₂ : (tr₁ : Transcript l s₁) → PrefixDraw l ProbComp (s₂ tr₁.path))
-      (ε₁ : PrefixError l s₁)
-      (ε₂ : (tr₁ : Transcript l s₁) → PrefixError l (s₂ tr₁.path))
-      (stmt : S), F₁.BoundedAt draw₁ ε₁ stmt →
-      (∀ tr₁, (F₂ tr₁).BoundedAt (draw₂ tr₁)
-        (ε₂ tr₁) stmt) →
-      (append (s₂ := s₂) F₁ F₂ seam).BoundedAt (combinePrefixDraw l s₁ s₂ draw₁ draw₂)
-        (combinePrefixDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) stmt := by
-  intro s₁ s₂ Wmid W Win admissible relIn validMid admissible₂ relMid validOutput F₁ F₂ seam
-  exact BoundedAt.appendAux F₁.withRootWitness F₂ seam
 
 end KnowledgeStateFunction
 

@@ -254,16 +254,19 @@ values of the runner monad lie in `Type` in every file of `Interaction/Security/
 bundle and family arguments are pinned at `0` until the vocabulary step removes their universes.
 `AdversaryModel` keeps one universe `w` for its adversaries, and an `ExtractionInterface` over a
 model takes its extractors in the same universe. The generic round-by-round definitions keep
-the position universe `uA` of `P : PFunctor.{uA, 0}`. Generic monads keep their result universe,
-which the monad argument determines: `soundnessWith`, `validAcceptanceWith` and the implication
-lemmas take `m : Type → Type v`, and `PrefixDraw` takes `m : Type → Type vDraw`. Step 2 deleted `KnowledgeStateFunction.lift`,
-`rbrKnowledgeSoundness.lift`, the explicit witness universe that `rbrKnowledgeSoundness` and its
-verifier and oracle-verifier forms passed to the existential, and the legacy adapter
-`treeRelationProblem`, which duplicated `relProblem` once claims lie in `Type`. The
-legacy-to-interaction theorems therefore return their certificate without lifting it. Extracted
-witnesses returned by the extraction games are values of the runner and stay in `Type`. Neither
-P1 nor P2 retires any of these contracts; both premises concern scheduling and shape rather than
-universes.
+the position universe `uA` of `P : PFunctor.{uA, 0}`. Generic monads keep their result
+universe, which the monad argument determines: `soundnessWith`, `validAcceptanceWith` and the
+implication lemmas take `m : Type → Type v`, and `PrefixDraw` takes `m : Type → Type vDraw`.
+Step 2 deleted `KnowledgeStateFunction.lift`, `rbrKnowledgeSoundness.lift`, the explicit witness
+universe that `rbrKnowledgeSoundness` and its verifier and oracle-verifier forms passed to the
+existential, and the legacy adapter `treeRelationProblem`, which duplicated `relProblem` once
+claims lie in `Type`. The legacy-to-interaction theorems therefore return their certificate
+without lifting it. Step 2 also deleted `KnowledgeStateFunction.withRootWitness`, which moved an
+input witness into the universe of the intermediate witnesses. The composition laws in
+`KnowledgeComposition/Extraction.lean` and the completion laws in `StateRestoration.lean` each
+have one form now, with no `...Aux` duplicate. Extracted witnesses returned by the extraction
+games are values of the runner and stay in `Type`. Neither P1 nor P2 retires any of these
+contracts; both premises concern scheduling and shape rather than universes.
 
 `ArkLibTest/Interaction/UniverseCanary.lean` instantiates the independent universes against
 `Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
@@ -537,7 +540,7 @@ plain verifier composition theorems.
 | --- | --- |
 | `KnowledgeStateFunction` | `Win stmt`, `Witness stmt sp history` and `W stmt tr` retain the input statement. Statements and all witnesses lie in `Type`. |
 | `extractFrom`, `extractAlong`, `leafWitness` | Pure backward maps take the output witness directly. The root map returns `Win stmt`; no output or seam carrier is encoded. |
-| `child`, `withRootWitness`, `extractFromMaps` | Restrict to a first move, expose the actual root witness internally and factor extraction through its computational fields. |
+| `child`, `extractFromMaps` | Restrict to a first move and factor extraction through its computational fields. |
 | `append` and its extraction/state laws | The prefix's output family `Wmid stmt tr₁` is the suffix's input family. The seam states that the suffix root extractor returns a valid prefix witness. |
 | `guard`, `condition`, `comap` and their local bounds | Restrict states to admissible inputs, conjoin a statement predicate, or pull back statements and map dependent input/output witnesses. |
 | `BadChallengeFrom`, `BadChallengeAlong` | Follow the actual suffix extraction of the supplied output witness. `extraction_failure_implies_badChallengeAlong` identifies a receiver transition without choosing a different witness. |

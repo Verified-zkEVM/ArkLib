@@ -748,7 +748,7 @@ variable {S W : Type} {Win : S → Type} {admissible : S → Prop}
 /-- A completion key whose challenge fails preservation on the witness extracted from the
 actual remaining transcript and the supplied output witness. Later keys restrict the same state
 function below the earlier recorded moves, preserving the suffix extraction. -/
-def badChallengeOnCompletionAux {Salt : Type} :
+def BadChallengeOnCompletion {Salt : Type} :
     {rounds : List Round} → {Wout : S → Transcript oracleSig (protocol rounds) → Type} →
     {Win : S → Type} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
@@ -771,26 +771,12 @@ def badChallengeOnCompletionAux {Salt : Type} :
         (G.child challenge).toFun z (.root _) ⟨⟩ after
   | _ :: _, _, _, _, _, _, F, z, (message, salt, messages), table, w, .inr (m, s, key) =>
     m = message ∧ s = salt ∧
-      badChallengeOnCompletionAux ((F.child message).child (table (Key.here z message salt))) z
+      BadChallengeOnCompletion ((F.child message).child (table (Key.here z message salt))) z
         messages (fun q => table (Key.later message salt q)) w key
-
-/-- The public form of `badChallengeOnCompletionAux`, applied to `F.withRootWitness`. -/
-def BadChallengeOnCompletion {Salt : Type} :
-    {rounds : List Round} → {Wout : S → Transcript oracleSig (protocol rounds) → Type} →
-    {Win : S → Type} → {admissible : S → Prop} →
-    {relIn : (stmt : S) → Win stmt → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) →
-      Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction oracleSig (protocol rounds)
-      S Wout Win admissible relIn validOutput) →
-    (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
-    Wout z (completedPath rounds z messages table) → Key S Salt rounds → Prop := by
-  intro rounds Wout Win admissible relIn validOutput F
-  exact badChallengeOnCompletionAux F.withRootWitness
 
 /-- A witness-preserving bad transition on a completed transcript belongs to one of the actual
 completion keys. This only locates the generic bad transition; it does not repeat extraction. -/
-theorem badChallengeAlong_completionAux {Salt : Type} :
+theorem badChallengeAlong_completion {Salt : Type} :
     {rounds : List Round} → {Wout : S → Transcript oracleSig (protocol rounds) → Type} →
     {Win : S → Type} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
@@ -809,28 +795,11 @@ theorem badChallengeAlong_completionAux {Salt : Type} :
     rcases ((F.child message).badChallengeAlong_liftBind z
       (table (Key.here z message salt)) _ w).mp bad with bad | bad
     · exact ⟨Key.here z message salt, List.mem_cons_self, rfl, bad.2⟩
-    · obtain ⟨key, hkey, hb⟩ := badChallengeAlong_completionAux
+    · obtain ⟨key, hkey, hb⟩ := badChallengeAlong_completion
         ((F.child message).child (table (Key.here z message salt))) z messages
         (fun q => table (Key.later message salt q)) w bad
       exact ⟨Key.later message salt key,
         List.mem_cons_of_mem _ (List.mem_map.mpr ⟨key, hkey, rfl⟩), rfl, rfl, hb⟩
-
-/-- The public form of `badChallengeAlong_completionAux`, applied to `F.withRootWitness`. -/
-theorem badChallengeAlong_completion {Salt : Type} :
-    {rounds : List Round} → {Wout : S → Transcript oracleSig (protocol rounds) → Type} →
-    {Win : S → Type} → {admissible : S → Prop} →
-    {relIn : (stmt : S) → Win stmt → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) →
-      Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction oracleSig (protocol rounds)
-      S Wout Win admissible relIn validOutput) →
-    (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
-    (w : Wout z (completedPath rounds z messages table)) →
-    F.BadChallengeAlong z (completedPath rounds z messages table) w →
-    ∃ key ∈ completionKeys rounds z messages, BadChallengeOnCompletion F z messages table w
-    key := by
-  intro rounds Wout Win admissible relIn validOutput F
-  exact badChallengeAlong_completionAux F.withRootWitness
 
 /-- Extraction failure on a valid completed transcript identifies a completion key together with
 the failing transition on the actual suffix-extracted witness. The arbitrary-protocol extraction
@@ -856,7 +825,7 @@ theorem exists_badChallenge_of_extraction_failure {Salt : Type} {rounds : List R
 
 /-- Forgetting the named suffix witness of a bad completion key gives the bad-challenge event
 used by the local probability bound. -/
-theorem BadChallengeOnCompletion.mem_badChallengeAux {Salt : Type} :
+theorem BadChallengeOnCompletion.mem_badChallenge {Salt : Type} :
     {rounds : List Round} → {Wout : S → Transcript oracleSig (protocol rounds) → Type} →
     {Win : S → Type} → {admissible : S → Prop} →
     {relIn : (stmt : S) → Win stmt → Prop} →
@@ -875,7 +844,7 @@ theorem BadChallengeOnCompletion.mem_badChallengeAux {Salt : Type} :
       .inr (_, _, key), hkey, ⟨rfl, rfl, hb⟩ => by
     have hk : key ∈ completionKeys rounds z messages := by
       simpa [completionKeys, Key.here, Key.later] using hkey
-    have ih := BadChallengeOnCompletion.mem_badChallengeAux
+    have ih := BadChallengeOnCompletion.mem_badChallenge
       ((F.child message).child (table (Key.here z message salt))) z messages
       (fun q => table (Key.later message salt q)) w key hk hb
     have hz := completionKeys_input rounds z messages key hk
@@ -890,23 +859,6 @@ variable {Salt : Type} {rounds : List Round}
   {Wout : S → Transcript oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) →
     Wout stmt tr → Prop}
-
-/-- The public form of `BadChallengeOnCompletion.mem_badChallengeAux`,
-applied to `F.withRootWitness`. -/
-theorem BadChallengeOnCompletion.mem_badChallenge {Salt : Type} :
-    {rounds : List Round} → {Wout : S → Transcript oracleSig (protocol rounds) → Type} →
-    {Win : S → Type} → {admissible : S → Prop} →
-    {relIn : (stmt : S) → Win stmt → Prop} →
-    {validOutput : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) →
-      Wout stmt tr → Prop} →
-    (F : KnowledgeStateFunction oracleSig (protocol rounds)
-      S Wout Win admissible relIn validOutput) →
-    (z : S) → (messages : Messages Salt rounds) → (table : Table S Salt rounds) →
-    (w : Wout z (completedPath rounds z messages table)) → (key : Key S Salt rounds) →
-    key ∈ completionKeys rounds z messages → BadChallengeOnCompletion F z messages table w key →
-    table key ∈ F.badChallenge (keySpine key) (keyHistory key table) z := by
-  intro rounds Wout Win admissible relIn validOutput F
-  exact BadChallengeOnCompletion.mem_badChallengeAux F.withRootWitness
 
 /-- An admissible key whose answer is a bad challenge at the key's prefix. -/
 def badKey
