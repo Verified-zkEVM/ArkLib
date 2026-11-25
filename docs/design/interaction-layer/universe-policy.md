@@ -15,6 +15,7 @@ error with `#guard_msgs` and checks with `lake env lean` from a built worktree.
 | Data: moves, challenges, query and response types, oracle indices, statements, witnesses, transcripts, costs | `Type` | none |
 | Descriptions of data: positions, protocols, oracle interfaces, families and bundles, problem bundles | `Type 1` | none |
 | Adversaries and extractors | `Type w` | one, determined by the model argument |
+| Effects: the result universe of a generic monad `m : Type → Type v` | `Type v` | one, determined by the monad argument; the input universe stays `Type` |
 | Generic polynomial machinery | PolyFun's universes | determined by `P` |
 
 **Rule.** Every universe parameter occurs in the type of some argument.

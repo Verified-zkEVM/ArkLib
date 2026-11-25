@@ -51,12 +51,13 @@ not allowed.
 | Data: moves, messages, challenges, oracle payloads, query and response types, oracle indices, statements, input, intermediate and output witnesses, transcripts, logs, costs, experiment state | `Type` | none |
 | Descriptions of data: positions (`PlainPos`, `OraclePos`), protocols (`Protocol`, `OracleProtocol`), `OracleInterface X`, oracle families and bundles, problem bundles (`Problem`, `ClaimFamily`, `ConstraintSystem`) | `Type 1` | none; forced, because a description names a type |
 | Adversaries and extractors: `AdversaryModel.Adv`, `ExtractionInterface.Ext` | `Type w` | one; the model argument determines it |
+| Effects: the result universe of a generic monad `m : Type → Type v` | `Type v` | one; the monad argument determines it. The monad's input universe stays `Type` |
 | Generic polynomial machinery: declarations over an arbitrary `P : PFunctor` | PolyFun's universes | determined by `P` |
 | Upstream libraries (Mathlib, VCVio, PolyFun) | their own | ArkLib instantiates them at `Type` |
 
-The runner is `m : Type → Type`, and positions are never its values, so the description universe
-`Type 1` never meets the monad. Each upstream constant whose universes no argument determines
-(for example `[]ₒ`) gets one ArkLib alias at `Type`.
+The runner takes its values in `Type` (`m : Type → Type v`), and positions are never its values,
+so the description universe `Type 1` never meets the monad. Each upstream constant whose universes
+no argument determines (for example `[]ₒ`) gets one ArkLib alias at `Type`.
 
 [`universe-policy.md`](../interaction-layer/universe-policy.md) gives the measurements, the
 Lean experiments, the options compared, and the workarounds for what the policy rules out.

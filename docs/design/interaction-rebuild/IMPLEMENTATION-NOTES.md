@@ -254,7 +254,9 @@ values of the runner monad lie in `Type` in every file of `Interaction/Security/
 bundle and family arguments are pinned at `0` until the vocabulary step removes their universes.
 `AdversaryModel` keeps one universe `w` for its adversaries, and an `ExtractionInterface` over a
 model takes its extractors in the same universe. The generic round-by-round definitions keep
-the position universe `uA` of `P : PFunctor.{uA, 0}`. Step 2 deleted `KnowledgeStateFunction.lift`,
+the position universe `uA` of `P : PFunctor.{uA, 0}`. Generic monads keep their result universe,
+which the monad argument determines: `soundnessWith`, `validAcceptanceWith` and the implication
+lemmas take `m : Type → Type v`, and `PrefixDraw` takes `m : Type → Type vDraw`. Step 2 deleted `KnowledgeStateFunction.lift`,
 `rbrKnowledgeSoundness.lift`, the explicit witness universe that `rbrKnowledgeSoundness` and its
 verifier and oracle-verifier forms passed to the existential, and the legacy adapter
 `treeRelationProblem`, which duplicated `relProblem` once claims lie in `Type`. The
