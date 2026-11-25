@@ -40,8 +40,6 @@ embedding's dropped ambient queries with `supportedAnswer`, an answer that `impl
 
 @[expose] public section
 
-universe uK
-
 namespace Sumcheck
 open scoped ENNReal NNReal
 open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
@@ -58,7 +56,7 @@ knowledge state function and, for every statement, every receiver prefix and its
 bound on the probability over the challenge that extraction fails. It does not quantify over
 provers. -/
 theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
-    (verifier R deg n D ambient).rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0} impl (fun _ => True)
+    (verifier R deg n D ambient).rbrKnowledgeSoundnessOfNodes impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ Spec.relationRound R n deg D 0)
       (fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n))
       (challengeQueryImpl oracleSig (protocol R deg n))
@@ -67,7 +65,7 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
   rw [OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff, challengeQueryImpl_eq_legacy,
     ← OracleVerifier.eqRec_const (protocol_eq R deg n).symm,
     (verifier_agrees R deg n D ambient).rbrKnowledgeSoundness_iff]
-  have hk := embedOracleVerifier_rbrKnowledgeSoundness.{uK} init impl
+  have hk := embedOracleVerifier_rbrKnowledgeSoundness init impl
     (Spec.oracleVerifier R deg D n ambient) _ _ _ (fun _ _ K =>
       KnowledgeTerminalCertificate.of_guarded (Spec.oracleVerifierGuardedForm R deg D n ambient) K)
     (Spec.oracleVerifier_rbrKnowledgeSoundness R deg D n ambient)

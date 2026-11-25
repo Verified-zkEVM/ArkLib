@@ -37,8 +37,6 @@ implementation `oracleChallengeImpl challengeQueryImpl`.
 
 noncomputable section
 
-universe uS uI wI wJ
-
 namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle MeasureTheory
 open scoped ENNReal NNReal
@@ -321,18 +319,9 @@ theorem oracleKnowledgeSoundness_iff (init : ProbComp σ)
 /-! ### Transport along a tree equality -/
 
 section TreeTransport
-variable {κ J T WIn WOut : Type} {S : Type uS} {I : Type uI}
+variable {κ J T WIn WOut : Type} {S : Type} {I : Type}
   {ambient : OracleSpec κ} {s s' : OracleProtocol} {A : I → Type} {B : J → Type}
-  {inputs : OracleFamily.{uI, 0, wI} I A} {outputs : OracleFamily.{0, 0, wJ} J B}
-
-/-- A relation adapter with an independent claim universe, for tree transport. The legacy
-`relProblem` adapter fixes its claim universe to zero. -/
-abbrev treeRelationProblem {Ctx : Type} {X : Type uS} {W : Type}
-    (rel : Set (X × W)) : Problem (⟨fun _ : Ctx => X⟩ : ClaimFamily Ctx) where
-  Witness _ _ := W
-  admissible _ _ := True
-  rel _ x w := (x, w) ∈ rel
-  rel_admissible _ _ _ _ := trivial
+  {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily.{0, 0, 0} J B}
 
 /-- The output judgement of a legacy relation on any oracle tree: the output statement and its
 output witness are read from the prover's output, and the verdict from the verifier's output.
@@ -354,7 +343,7 @@ theorem knowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (f
       (fun _ => T × (∀ j, B j))) := ⊤
     letI : MeasurableSpace WIn := ⊤
     knowledgeSoundness ((e ▸ V).classicalModel init impl (e ▸ draw))
-      (treeRelationProblem relIn) (relProblem relOut) (knowledgeJudgementOn s relOut)
+      (relProblem relIn) (relProblem relOut) (knowledgeJudgementOn s relOut)
       ((e ▸ V).classicalStraightLine (fun _ => WIn) init impl (e ▸ draw)
         (fun _ (o : (T × (∀ j, B j)) × WOut) => o.2))
       ε) ↔
@@ -362,7 +351,7 @@ theorem knowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (f
       (fun _ => T × (∀ j, B j))) := ⊤
     letI : MeasurableSpace WIn := ⊤
     knowledgeSoundness (V.classicalModel init impl draw)
-      (treeRelationProblem relIn) (relProblem relOut) (knowledgeJudgementOn s' relOut)
+      (relProblem relIn) (relProblem relOut) (knowledgeJudgementOn s' relOut)
       (V.classicalStraightLine (fun _ => WIn) init impl draw
         (fun _ (o : (T × (∀ j, B j)) × WOut) => o.2)) ε) := by
   subst e; exact Iff.rfl
@@ -380,12 +369,12 @@ theorem completeness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ =
     (letI : MeasurableSpace (Outcome oracleSig s (fun _ => (T × (∀ j, B j)) × WOut)
       (fun _ => T × (∀ j, B j))) := ⊤
     completeness ((e ▸ V).classicalModel init impl (e ▸ draw))
-      (treeRelationProblem relIn) (relProblem relOut) (knowledgeJudgementOn s relOut)
+      (relProblem relIn) (relProblem relOut) (knowledgeJudgementOn s relOut)
       (fun stmt wit => e ▸ honest stmt wit) ε) ↔
     (letI : MeasurableSpace (Outcome oracleSig s' (fun _ => (T × (∀ j, B j)) × WOut)
       (fun _ => T × (∀ j, B j))) := ⊤
     completeness (V.classicalModel init impl draw)
-      (treeRelationProblem relIn) (relProblem relOut) (knowledgeJudgementOn s' relOut)
+      (relProblem relIn) (relProblem relOut) (knowledgeJudgementOn s' relOut)
         honest ε) := by
   subst e; exact Iff.rfl
 
