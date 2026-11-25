@@ -42,9 +42,13 @@ first four statuses. The [port table](port-logged-execution.md) explains them.
 | 18 | Input data, input queries and oracle-node queries have independent universes; families specialize the general bundle API | equivalent: `OracleBundle` inputs remove the realization/response coupling, and `OracleProtocol.{u, q}` separates node queries from moves |
 | 18 | Agreement preserves path-dependent output statements, oracle indices, carriers and interfaces, general bundle inputs, and statement-dependent RBR knowledge relations | equivalent: F7 and 3A use the unchanged owner interfaces; see the [Agreement inventory](sumcheck.md#agreement-universes-and-parent-limits) |
 | 18 | Run outputs and a prover's ambient index remain in the monad universe `u` | equivalent: the retained D2 runner contract is `m : Type u → Type u`; neither P1 nor P2 changes this contract |
-| 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | accepted upstream limit: VCVio had no logging interface that returns large query indices through the small computation monad. `runWithAmbientLog` and `runWithAmbientQueriesByMove` are the workaround. [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which can lift the limit. The VCVio pin includes it since the `f1a4a8ec` bump, and adopting it is follow-up work |
+| 18 | The full-log runner returns only small bundle-query logs; ambient-log execution supports arbitrary bundle-query universes | accepted upstream limit: VCVio had no logging interface that returns large query indices through the small computation monad. `runWithAmbientLog` and `runWithAmbientQueriesByMove` are the workaround. [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which can lift the limit. The VCVio pin includes it since the `f1a4a8ec` bump. Under record D2's universe policy, bundle-query indices lie in `Type`, so the limit disappears with the migration |
 | 26 | Full-prefix knowledge composition with independent witness carriers and measured root, step and leaf maps | equivalent; node-indexed bounds specialize full-prefix bounds, see the knowledge inventory below |
 | 21 | Round-by-round soundness implies soundness for lawful distribution monads, with prefix-indexed freshness | equivalent; see the soundness disposition record below |
+
+Record D2's [universe policy](../interaction-rebuild/D2-ownership-and-universes.md#universe-policy)
+supersedes the entry-18 rows. They describe the code until its
+[migration](../interaction-rebuild/D2-ownership-and-universes.md#migration) lands.
 
 The [oracle-bundle and oracle-node universe port table](port-bundle-universes.md) records
 the old-layer R26, R27 and decoration canaries closed by entry 18. The R26/R27 definitions occur

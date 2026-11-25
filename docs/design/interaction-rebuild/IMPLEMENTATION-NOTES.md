@@ -154,8 +154,18 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 
 ## 18. Run outputs are tied to the monad universe
 
-**Status: equivalent for independent input data and query universes; an accepted upstream limit
-for the full-log oracle runner's large-query interface.** Record D2's ledger puts moves and participant
+**Superseded by record D2's [universe policy](D2-ownership-and-universes.md#universe-policy)
+(2026-11-25); migration pending.** Under the policy, data lies in `Type`, descriptions of data in
+`Type 1`, adversaries in one universe that the model argument determines, and generic polynomial
+code in PolyFun's universes. The independent universes, adapters, `.lift` lemmas and the
+full-log limit described below then disappear, and this entry is retired with the last
+[migration step](D2-ownership-and-universes.md#migration). Until then, the rest of this entry
+describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
+records the reasons.
+
+**Status of the current code: equivalent for independent input data and query universes; an
+accepted upstream limit for the full-log oracle runner's large-query interface.** Record D2's
+earlier ledger puts moves and participant
 outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
 component that is not a run output its own universe as far as the definitions allow: the ambient
 index of a verifier, the input bundle's index and data, the output oracle index `J p` of an
