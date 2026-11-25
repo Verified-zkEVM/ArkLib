@@ -24,7 +24,7 @@ The degree bound on `P` is supplied by exceptionality, rather than the persisten
 Write `n` for the domain size and `q` for the field size.
 For candidates of degree at most `d`, distinct rational pairs have persistence sets with
 at most `d + 1` common points.
-Under `d + 1 < B` and `n (d + 1) < B²`, the Johnson bound limits the number of pairs.
+Under `d + 1 ≤ B` and `n (d + 1) < B²`, the Johnson bound limits the number of pairs.
 Each pair accounts for at most `max q (n choose 2)` exceptional challenges with agreement loss one.
 
 The count is stated for challenges drawn from a finite type `K` through an injective map
@@ -168,13 +168,13 @@ private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι
 open Classical in
 /-- Let `φ : K ↪ E` be an injective map from a finite type, such as a subfield.
 Let `n = |ι|` and `q = |K|`.
-Assume `d + 1 < B` and `n (d + 1) < B²`, and set `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+Assume `d + 1 ≤ B` and `n (d + 1) < B²`, and set `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
 Count the challenges `(α, β) ∈ K²` for which `(φ α, φ β)` has a persistent exceptional candidate.
 The agreement loss is one.
 There are at most `ℓ · max q (n choose 2)` such challenges.
 The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
 theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Fintype K] [Field E]
-    [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K ↪ E) {d A B : ℕ} (hdB : d + 1 < B)
+    [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K ↪ E) {d A B : ℕ} (hdB : d + 1 ≤ B)
     (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
     (#{c : K × K | ∃ P, IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
         IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P} : ℝ) ≤
@@ -196,7 +196,7 @@ theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Fintype K] [Fi
   set π : K × K → RatFunc E × RatFunc E := fun c ↦
     persistentPair (φ c.1) (φ c.2) (P c) (H c) (L c)
   have h := card_le_of_fiber_card_le_of_inter_card_le C π
-    (fun c ↦ affinePersistenceSet domain f g (φ c.1) (φ c.2) (P c) (H c) (L c)) (M := M) hdB.le
+    (fun c ↦ affinePersistenceSet domain f g (φ c.1) (φ c.2) (P c) (H c) (L c)) (M := M) hdB
     (by rw [← sq]; exact hJ) (fun c hc ↦ (hdata c hc).2.2.2.2) (fun c hc c' hc' hne ↦
       card_inter_affinePersistenceSet_le (hdata c hc).1.1 (hdata c' hc').1.1 (hdata c hc).2.1
         (hdata c' hc').2.1 (hdata c hc).2.2.1 (hdata c' hc').2.2.1 (hdata c hc).2.2.2.1

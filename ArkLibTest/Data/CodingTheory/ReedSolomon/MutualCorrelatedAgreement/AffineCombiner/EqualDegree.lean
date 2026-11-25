@@ -37,4 +37,7 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq
 
+/-- info: 'ReedSolomon.equalDegreeMcaError_eq_iSup_prob' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.equalDegreeMcaError_eq_iSup_prob

@@ -9,6 +9,8 @@ public import ArkLib.Data.Probability.MaxEventProbability
 public import ArkLib.ToCompPoly.Univariate.DegreeLT
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegree
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
 
 /-!
 # Computable combiner errors
@@ -31,6 +33,8 @@ witnesses.
 The theorems `ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
 `ReedSolomon.ofReal_equalDegreeMcaErrorRat` prove that `ENNReal.ofReal` of the real cast of each
 rational value is the semantic error.
+`ReedSolomon.mcaError_affineLine_eq_ofReal_scalarMcaErrorRat` computes the affine-line
+`CoreDefinitions.mcaError` of `code domain (d + 1)` from the scalar error at loss zero.
 
 Five executable definitions in `ReedSolomon.Computable` reuse the names of their semantic
 counterparts in `ReedSolomon`: `affineMultiplier`, `combinedWord`, `IsAffineExceptional`,
@@ -86,6 +90,8 @@ second witness again for each first witness.
 * `ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
   `ReedSolomon.ofReal_equalDegreeMcaErrorRat`: `ENNReal.ofReal` of the real cast of each rational
   value is its semantic error.
+* `ReedSolomon.mcaError_affineLine_eq_ofReal_scalarMcaErrorRat`: the affine-line MCA error at
+  radius `δ` is the computed scalar error at loss zero and threshold `⌈n(1 - δ)⌉₊`.
 
 ## References
 
@@ -417,5 +423,15 @@ theorem ofReal_equalDegreeMcaErrorRat (domain : ι ↪ F) (d A s : ℕ) :
         (Computable.exists_isEqualDegreeExceptional_iff domain w.1 w.2 d A s c.1 c.2.1 c.2.2)]
   simp only [equalDegreeMcaError, Fintype.card_prod, Nat.cast_mul, pow_succ, pow_zero, one_mul,
     mul_assoc]
+
+/-- The affine-line MCA error of `code domain (d + 1)` at radius `δ` is `ENNReal.ofReal` of the
+real cast of the computed scalar error at loss zero and threshold `A = ⌈n(1 - δ)⌉₊`,
+where `n = |ι|`. -/
+theorem mcaError_affineLine_eq_ofReal_scalarMcaErrorRat {F ι : Type} [Field F] [DecidableEq F]
+    [Fintype F] [Fintype ι] [SampleableType F] (domain : ι ↪ F) (d A : ℕ) (δ : ℝ)
+    (hδ : ⌈(Fintype.card ι : ℝ) * (1 - δ)⌉₊ = A) :
+    CoreDefinitions.mcaError (CoreDefinitions.AffineLineGenerator F) (code domain (d + 1)) δ =
+      ENNReal.ofReal (scalarMcaErrorRat domain d A 0 : ℝ) := by
+  rw [ofReal_scalarMcaErrorRat, scalarMcaError_zero_eq_mcaError domain d A δ hδ]
 
 end ReedSolomon
