@@ -20,13 +20,8 @@ Favor composable proofs that reuse existing Mathlib and ArkLib lemmas over new d
 
 A deferred gap is a working-branch state, not a mergeable one: `main` carries no admitted proof
 debt, so a branch with a remaining `sorry` cannot merge (see
-[Review and Merge Readiness](../../CONTRIBUTING.md#review-and-merge-readiness)). The one exception
-is a *solicited proof*: a true, faithfully stated external result whose research-sized proof is
-left open for contributors. It enters the axiom baseline's `solicited` list only after maintainer
-review, with a tracking issue linked from its docstring, and nothing outside that list may depend
-on it ([issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352),
-[`scripts/README.md`](../../scripts/README.md)). Propose that route to the user; do not take it
-yourself.
+[Review and Merge Readiness](../../CONTRIBUTING.md#review-and-merge-readiness)). An external result whose proof
+is out of reach stays open as an issue; it does not merge as a `sorry`.
 
 ## Paper-driven targets: fix the statement before proving it
 
@@ -122,7 +117,7 @@ the rating and placement decisions are what keep the result maintainable.
 ### 4. Prove everything rated below 6
 
 - Prove every gap rated 1–5. Leave 6+ as documented `sorry`s for the summary in step 6; the
-  branch cannot merge until they are proved or accepted as solicited proofs.
+  branch cannot merge until they are proved.
 - Reuse first: search Mathlib and ArkLib for an existing lemma before writing anything. Use
   `exact?`, `apply?`, `rw?`, `simp?`, and `loogle`/`Loogle`-style name searches. A one-line
   `exact foo` beats a ten-line bespoke proof.
@@ -155,7 +150,7 @@ the rating and placement decisions are what keep the result maintainable.
     (proved / deferred),
   - for deferred gaps (rated 6+): why, and what the blocker is (missing API, deep math, design
     decision) so the user can plan the follow-up, and whether any is a faithful external result
-    that could be proposed as a solicited proof,
+    whose proof could be tracked as an issue,
   - any cleanups made in step 5.
 - Follow the Maintenance Rule in [`README.md`](README.md): tell the user how this skill could be
   improved — a recurring rating heuristic, a placement rule worth codifying, a proof tactic that

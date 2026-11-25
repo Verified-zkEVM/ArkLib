@@ -899,8 +899,7 @@ home_page/            site assets and assembled website root
   `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
   radius, and the repetition count, so they apply at production sizes without evaluation. Turning
   such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
-  `Data/CodingTheory/ProximityGap/CapacityBounds`, all proven except ABF26 Theorem 4.16 (a
-  solicited proof, [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)),
+  `Data/CodingTheory/ProximityGap/CapacityBounds`, all proven and
   deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
   any production shape.
 - Batched FRI takes a proximity generator `G : S → Fin (m + 1) → F`. Its single
