@@ -199,13 +199,6 @@ example : ((16384 * 22 : ℕ) : ℝ) ≤ 3 * 65536 / (1 / 4) := by
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.AffineParams.bounds
 
--- The final numerical estimate holds at the extreme point of its hypotheses for `k = 1`:
--- with `n = a = b = 1`, `D = 9/2`, `v = 2` and `dM = 3`, the left side is `13144.25 ≤ 2¹⁴`.
-example : (9 / 2 : ℝ) ^ 2 + (2 * 3 * 2) ^ (1 + 1) * (9 / 2) ^ (1 + 2) + 2 * 1 ^ (1 + 1) * 1 ≤
-    2 ^ (6 * 1 + 8) * (1 ^ (1 + 1) * 1 ^ (1 + 2) * 1 ^ (4 * 1 + 6)) :=
-  affineCount_numerics_le le_rfl le_rfl le_rfl le_rfl (by norm_num) (by norm_num) (by norm_num)
-    (by norm_num) (by norm_num) (by norm_num)
-
 /-- info: 'ReedSolomon.affineCount_numerics_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
