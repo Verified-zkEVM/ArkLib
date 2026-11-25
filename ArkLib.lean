@@ -795,6 +795,7 @@ public import ArkLib.Interaction.LegacyAppend
 public import ArkLib.Interaction.LiftContext
 public import ArkLib.Interaction.Oracle.BundleOps
 public import ArkLib.Interaction.Oracle.Cost
+public import ArkLib.Interaction.Oracle.LiftContext
 public import ArkLib.Interaction.Oracle.LoggedExecution
 public import ArkLib.Interaction.Oracle.QueriesByMove
 public import ArkLib.Interaction.Oracle.QueriesByMoveLaws
