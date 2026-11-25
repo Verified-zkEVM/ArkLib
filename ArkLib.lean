@@ -811,6 +811,7 @@ public import ArkLib.Interaction.Core.Security.Soundness
 public import ArkLib.Interaction.Core.Security.StateRestoration
 public import ArkLib.Interaction.Core.Security.StateRestorationBudget
 public import ArkLib.Interaction.Core.Signature
+public import ArkLib.Interaction.Core.StageChain
 public import ArkLib.Interaction.Core.Transcript
 public import ArkLib.Interaction.Oracle.Access
 public import ArkLib.Interaction.Oracle.Claim

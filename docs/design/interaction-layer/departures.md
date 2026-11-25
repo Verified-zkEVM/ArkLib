@@ -168,6 +168,20 @@ share `OracleVerifier.executeWith`. Erasure follows from a general law about run
 instrumented strategies and from the writer laws. The rows excluded by P1 name the intermediate
 verifier actions and move assignments that P1 excludes.
 
+## Stage composition and oracle execution acceptance clients
+
+The [stage and execution port table](port-stages.md) lists each old-layer
+assertion of the claim, composition, core-run, execution and dependent-reduction clients. It also
+lists each replaced ordered-execution law. Each row gives the assertion's exact port, the premise
+that excludes part of it, or the removed mechanism it belonged to. The old-layer ordered execution
+decided each stage before the next one and skipped the later stages after a rejection. The port
+composes passive stages with right-associated appends, runs every interaction before the
+decisions, and selects later stages by the prover's public messages only. The table also records
+the universe placement of stage chains. Its one open row, the split of a chain at an arbitrary
+stage, remains a migration obligation. Protocol associativity exists in PolyFun. The missing
+interface is a reassociation law for `OracleVerifier.append` with its path, view, routing and
+certificate transport, and the prover continuation retained at the cut.
+
 ## Knowledge composition and measured extraction
 
 The [assertion disposition record](knowledge-composition-disposition.md) maps the frozen
