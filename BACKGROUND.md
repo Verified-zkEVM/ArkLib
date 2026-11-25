@@ -1124,8 +1124,9 @@ None of this is formalized yet.
   (`CommitmentScheme.hidingGame`, `CommitmentScheme.bindingExperiment`, `TrapdoorExtractor`).
   [`Commitments/Ordinary/SimpleRO.lean`](ArkLib/Commitments/Ordinary/SimpleRO.lean) is a hash
   commitment with the random oracle sampled as a function.
-- **Group models.** [`ArkLib/AGM/`](ArkLib/AGM/) defines `AGM.GroupRepresentation`, the
-  representation an algebraic adversary reports with each group element.
+- **Group models.** VCVio defines generic and algebraic group adversaries
+  (`VCVio/CryptoFoundations/GroupModel/`). The representation an algebraic adversary reports with
+  each group element is `GroupModel.AlgebraicPoint`.
 - **Hash-based building blocks.** VCVio has collision resistance
   (`VCVio/CryptoFoundations/HardnessAssumptions/CollisionResistance.lean`) and Merkle-tree
   extractability in the random oracle model (`VCVio/CryptoFoundations/MerkleTree/`).

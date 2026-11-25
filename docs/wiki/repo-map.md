@@ -237,8 +237,6 @@ home_page/            site assets and assembled website root
   t-SDH success of its reduction, and `KZG.CommitmentScheme.function_binding_reduces_to_arsdh`
   does the same for function binding and ARSDH. Shared CPolynomial/Polynomial division bridge
   lemmas live under `ArkLib/ToCompPoly/`.
-- `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
-  scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
   BitZ: `ExponentLift` for the bit inner product in an exponent, `CrtVariant` for its relaxation
   by a second grand product modulo `ℓ₁`, `Round1` for the honest first message, its bounds and the
