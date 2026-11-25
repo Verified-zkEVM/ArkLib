@@ -8,7 +8,6 @@ import ArkLib.Relation.Basic
 import ArkLib.Interaction.OracleVerifier
 import ArkLib.Interaction.Oracle.BundleOps
 import ArkLib.Interaction.Composition
-import VCVio.OracleComp.MapLens
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -365,99 +364,6 @@ theorem simulate_withAmbient {ι : Type} {ambient : OracleSpec ι} {In Out : Ora
 
 end OracleMap
 
-/-- A pure single-query lens between bundles with a coherent backward data map. -/
-structure OracleBundle.Lens (R S : OracleBundle) : Type where
-  route : PFunctor.Lens R.spec.toPFunctor S.spec.toPFunctor
-  pullData : S.Data → R.Data
-  commutes : ∀ data query,
-    R.answer (pullData data) query = route.toFunB query (S.answer data (route.toFunA query))
-
-namespace OracleBundle.Lens
-
-/-- Pull back pure answers along a bundle lens (VCVio's `QueryImpl.comapLens` at `Id`). -/
-def pullAnswer {R S : OracleBundle} (l : Lens R S) (ans : QueryImpl S.spec Id) :
-    QueryImpl R.spec Id :=
-  ans.comapLens l.route
-
-def id (R : OracleBundle) : Lens R R where
-  route := PFunctor.Lens.id R.spec.toPFunctor
-  pullData data := data
-  commutes _ _ := rfl
-
-def comp {R S T : OracleBundle} (g : Lens S T) (f : Lens R S) : Lens R T where
-  route := PFunctor.Lens.comp g.route f.route
-  pullData := f.pullData ∘ g.pullData
-  commutes data query := by
-    change R.answer (f.pullData (g.pullData data)) query =
-      f.route.toFunB query
-        (g.route.toFunB (f.route.toFunA query)
-          (T.answer data (g.route.toFunA (f.route.toFunA query))))
-    rw [f.commutes, g.commutes]
-
-/-- Contravariant embedding of a single-query pure lens into `OracleMap`. -/
-def toOracleMap {R S : OracleBundle} (l : Lens R S) : OracleMap S R where
-  f := l.pullData
-  impl := (QueryImpl.id' S.spec).comapLens l.route
-  law data q := by
-    change simulateQ (S.answer data) (l.route.toFunB q <$> liftM (S.spec.query (l.route.toFunA q))) =
-      R.answer (l.pullData data) q
-    rw [simulateQ_map, l.commutes]
-    rfl
-
-/-- Bundle projection lens corresponding to `OracleMap.fst`. -/
-def fstLens (R S : OracleBundle) : Lens R (R.sum S) where
-  route := ⟨Sum.inl, fun _ a => a⟩
-  pullData x := x.1
-  commutes _ _ := rfl
-
-end OracleBundle.Lens
-
-/-- Reversible coherent single-query equivalence between bundles. -/
-structure OracleBundle.Equiv (R S : OracleBundle) : Type where
-  toLens : OracleBundle.Lens R S
-  invLens : OracleBundle.Lens S R
-  left_inv : invLens.comp toLens = OracleBundle.Lens.id R
-  right_inv : toLens.comp invLens = OracleBundle.Lens.id S
-
-/-- Sum of two indexed bundles is equivalent (not definitionally equal) to the indexed bundle of
-their `Sum.elim`. -/
-def OracleBundle.indexedSumEquiv {I J : Type} (F : I → OracleBundle) (G : J → OracleBundle) :
-    OracleBundle.Equiv ((OracleBundle.indexed F).sum (OracleBundle.indexed G))
-      (OracleBundle.indexed (Sum.elim F G)) where
-  toLens :=
-    { route :=
-        { toFunA
-            | .inl ⟨i, q⟩ => ⟨.inl i, q⟩
-            | .inr ⟨j, q⟩ => ⟨.inr j, q⟩
-          toFunB
-            | .inl ⟨_, _⟩, a => a
-            | .inr ⟨_, _⟩, a => a }
-      pullData x := (fun i => x (.inl i), fun j => x (.inr j))
-      commutes x q := by rcases q with ⟨i, q⟩ | ⟨j, q⟩ <;> rfl }
-  invLens :=
-    { route :=
-        { toFunA
-            | ⟨.inl i, q⟩ => .inl ⟨i, q⟩
-            | ⟨.inr j, q⟩ => .inr ⟨j, q⟩
-          toFunB
-            | ⟨.inl _, _⟩, a => a
-            | ⟨.inr _, _⟩, a => a }
-      pullData x
-        | .inl i => x.1 i
-        | .inr j => x.2 j
-      commutes x q := by rcases q with ⟨i | j, q⟩ <;> rfl }
-  left_inv := by
-    simp only [OracleBundle.Lens.comp, OracleBundle.Lens.id]
-    congr 1
-    · refine PFunctor.Lens.ext _ _ (fun q => by rcases q with ⟨_, _⟩ | ⟨_, _⟩ <;> rfl)
-        (fun q => by rcases q with ⟨_, _⟩ | ⟨_, _⟩ <;> rfl)
-  right_inv := by
-    simp only [OracleBundle.Lens.comp, OracleBundle.Lens.id]
-    congr 1
-    · refine PFunctor.Lens.ext _ _ (fun q => by rcases q with ⟨_ | _, _⟩ <;> rfl)
-        (fun q => by rcases q with ⟨_ | _, _⟩ <;> rfl)
-    · funext x k; rcases k with i | j <;> rfl
-
 /-! ### Minimal oracle protocol tree, path bundle, and passive verifier (all at `Type` / `Type 1`) -/
 
 open Interaction.TwoParty.Lens
@@ -812,12 +718,6 @@ example {I : Type} (A : I → Type) (O : ∀ i, Consolidated.OracleInterface (A 
 example {I : Type} (spec : OracleSpec I) :
     (Consolidated.OracleBundle.ofSpec spec).answer = id := rfl
 
--- `Lens.fstLens.toOracleMap.impl` reduces definitionally to `OracleMap.fst.impl` because
--- `FreeM.map id (liftBind a pure)` reduces to `liftBind a (pure ∘ id) = liftBind a pure`.
-example (R S : Consolidated.OracleBundle) :
-    (Consolidated.OracleBundle.Lens.fstLens R S).toOracleMap.impl =
-      (Consolidated.OracleMap.fst R S).impl := rfl
-
 end RflChecks
 
 /-! ### 2.8 Failures and non-definitional equalities recorded via `#guard_msgs` -/
@@ -885,7 +785,8 @@ of type
 def sigmaDotFails (B : SigmaBundle) := B.spec
 
 -- Failure 4 (Family sum vs bundle sum): `(indexed F).sum (indexed G)` is not definitionally equal
--- to `indexed (Sum.elim F G)`; they are bridged by `OracleBundle.indexedSumEquiv`.
+-- to `indexed (Sum.elim F G)`. The two data types are equivalent, as `sumData_eta` shows for the
+-- current families, and Design D adds no isomorphism structure for them.
 /--
 error: Type mismatch
   rfl
@@ -901,8 +802,8 @@ example {I J : Type} (F : I → Consolidated.OracleBundle) (G : J → Consolidat
       (Consolidated.OracleBundle.indexed (Sum.elim F G)).Data :=
   rfl
 
--- Failure 5 (`Lens.toOracleMap` vs arbitrary `OracleMap`): `OracleMap` can make 0 or ≥ 2 queries,
--- so `Lens.toOracleMap` is strictly smaller than `OracleMap` (not surjective).
+-- Failure 5 (single-query lenses vs `OracleMap`): an `OracleMap` can make 0 or ≥ 2 queries per
+-- routed query, so a single-query lens (the shape of VCVio's `SubSpec`) cannot express it.
 def doubleQueryMap (R : Consolidated.OracleBundle) :
     Consolidated.OracleMap R
       (Consolidated.OracleBundle.ofSpec

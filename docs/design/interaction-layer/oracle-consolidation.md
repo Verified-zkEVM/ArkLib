@@ -91,7 +91,7 @@ It belongs to the legacy `OracleReduction/` layer and retires with that layer. F
 | `OracleMap.ofImpl` | `ArkLib/Interaction/Oracle/BundleOps.lean:38` | 1 / 1 | 2 | Builds an `OracleMap` into `OracleBundle.ofSpec spec`. Used only in `BundleOps.lean` and `DerivedOracles.lean:29`. |
 | `OracleBundle.tensor` | `ArkLib/Interaction/Oracle/BundleOps.lean:46` | 1 / 1 | 9 | Product of queries and answers via `PFunctor.tensor`. Used only in `BundleOps.lean` and `ArkLibTest/Interaction/Oracle/OracleMaps.lean`. |
 | `OracleBundle.liftResponse` | `ArkLib/Interaction/Oracle/BundleOps.lean:60` | 1 / 1 | 13 | Response-universe adapter. Scheduled for deletion in universe migration step 4. |
-| `OracleBundle.Lens` / `Equiv` | `ArkLib/Interaction/Oracle/BundleOps.lean:73,141` | 1 / 1 | 24 / 11 | Single-query polynomial lens paired with `pullData`. Only production instance is `OracleBundle.Equiv.liftResponse` (`BundleOps.lean:168`); only test user is `OracleMaps.lean`. |
+| `OracleBundle.Lens` / `Equiv` | `ArkLib/Interaction/Oracle/BundleOps.lean:73,141` | 1 / 1 | 24 / 11 | Single-query polynomial lens paired with `pullData`. Only production instance is `OracleBundle.Equiv.liftResponse` (`BundleOps.lean:168`); only test user is `OracleMaps.lean`. Step 4 deleted both, so neither type has a user outside `BundleOps.lean`. |
 | `OracleMap.id` / `comp` / `fst` / `snd` / `par` / `sumAssoc` / `sumAssocSymm` | `ArkLib/Interaction/OracleVerifier.lean:158-231` | 14 / 17 | 84 | Core bundle-level `OracleMap` combinators (`fst` carries `@[macro_inline]`). |
 | `OracleMap.withAmbient` | `ArkLib/Interaction/Composition.lean:492` | 3 / 5 | 18 | Lifts an `OracleMap` past `ambient` queries. Used in `Composition.lean`, `StageChain.lean`, `Oracle/Cost.lean`, and 5 interaction tests. |
 | `OracleMap.embedding` | `ArkLib/Interaction/OracleVerifier.lean:239` | 5 / 13 | 43 | Slot-renaming map `In → In.reindex rename` on `OracleFamily`. |
@@ -147,19 +147,19 @@ its interface. `OracleFamily` adds no expressiveness beyond an indexed function 
 
 Every claim in the tables below is checked in
 [`prototypes/OracleConsolidation.lean`](prototypes/OracleConsolidation.lean). References cite the
-flattened `Consolidated.OracleInterface` (`OracleConsolidation.lean:49`) and four-field
-`Consolidated.OracleBundle` (`OracleConsolidation.lean:162`).
+flattened `Consolidated.OracleInterface` (`OracleConsolidation.lean:48`) and four-field
+`Consolidated.OracleBundle` (`OracleConsolidation.lean:161`).
 
 ### Equivalences holding by `rfl` in both directions
 
 | Relationship | Lean statement | Status | Prototype citation |
 |---|---|---|---|
-| Flattened interface vs VCVio `OracleContext` | `Consolidated.OracleInterface X ≃ (Query : Type) × OracleContext.{0, 0, 0} Query (ReaderM X)` | `rfl` both ways | `OracleConsolidation.lean:736` |
-| Four-field `OracleBundle` vs Sigma of `OracleInterface` | `Consolidated.OracleBundle ≃ (Data : Type) × Consolidated.OracleInterface Data` | `rfl` both ways | `OracleConsolidation.lean:746` |
-| Current `OracleInterface.{0, 0} X` vs flattened | `_root_.OracleInterface.{0, 0} X ≃ Consolidated.OracleInterface X` | `rfl` both ways | `OracleConsolidation.lean:755` |
-| Current `OracleBundle.{0, 0, 0}` vs consolidated | `Interaction.OracleBundle.{0, 0, 0} ≃ Consolidated.OracleBundle` | `rfl` both ways | `OracleConsolidation.lean:764` |
-| Current `OracleFamily.{0, 0, 0} I A` vs Pi of interfaces | `OracleFamily.{0, 0, 0} I A ≃ ((i : I) → Consolidated.OracleInterface (A i))` | `rfl` both ways | `OracleConsolidation.lean:773` |
-| Total space of `OracleFamily` vs indexed bundles | `((I : Type) × (A : I → Type) × OracleFamily.{0, 0, 0} I A) ≃ ((I : Type) × (I → Consolidated.OracleBundle))` | `rfl` both ways | `OracleConsolidation.lean:783` |
+| Flattened interface vs VCVio `OracleContext` | `Consolidated.OracleInterface X ≃ (Query : Type) × OracleContext.{0, 0, 0} Query (ReaderM X)` | `rfl` both ways | `OracleConsolidation.lean:642` |
+| Four-field `OracleBundle` vs Sigma of `OracleInterface` | `Consolidated.OracleBundle ≃ (Data : Type) × Consolidated.OracleInterface Data` | `rfl` both ways | `OracleConsolidation.lean:652` |
+| Current `OracleInterface.{0, 0} X` vs flattened | `_root_.OracleInterface.{0, 0} X ≃ Consolidated.OracleInterface X` | `rfl` both ways | `OracleConsolidation.lean:661` |
+| Current `OracleBundle.{0, 0, 0}` vs consolidated | `Interaction.OracleBundle.{0, 0, 0} ≃ Consolidated.OracleBundle` | `rfl` both ways | `OracleConsolidation.lean:670` |
+| Current `OracleFamily.{0, 0, 0} I A` vs Pi of interfaces | `OracleFamily.{0, 0, 0} I A ≃ ((i : I) → Consolidated.OracleInterface (A i))` | `rfl` both ways | `OracleConsolidation.lean:679` |
+| Total space of `OracleFamily` vs indexed bundles | `((I : Type) × (A : I → Type) × OracleFamily.{0, 0, 0} I A) ≃ ((I : Type) × (I → Consolidated.OracleBundle))` | `rfl` both ways | `OracleConsolidation.lean:689` |
 
 Both round-trips hold by `rfl` because `ReaderT`, `Id`, `QueryImpl`, and structure eta all reduce
 definitionally when the argument order matches.
@@ -179,25 +179,22 @@ OracleBundle.ofIndexed A O = OracleBundle.of (∀ i, A i) (instProdForall A)
 
 -- Behavior-only bundle has identity answering:
 (OracleBundle.ofSpec spec).answer = id
-
--- Projection lens embeds to `OracleMap.fst.impl` definitionally (`FreeM.map id` reduces):
-(OracleBundle.Lens.fstLens R S).toOracleMap.impl = (OracleMap.fst R S).impl
 ```
 
-Each equation is checked by `rfl` at `OracleConsolidation.lean:796-819`.
+Each equation is checked by `rfl` at `OracleConsolidation.lean:702-719`.
 
 ### Relationships that need a proof or fail
 
 | Statement or operation | Result | Reason and prototype citation |
 |---|---|---|
-| `C₁.add C₂` for `C₁ : OracleContext Q₁ (ReaderM D₁)` and `C₂ : OracleContext Q₂ (ReaderM D₂)` | **Fails to typecheck** | `OracleContext.add` (`.lake/packages/VCVio/VCVio/OracleComp/OracleContext.lean:54`) fixes one monad `m` for both summands and cannot unify `ReaderM D₁` with `ReaderM D₂` (`OracleConsolidation.lean:839`). |
-| `(fun q => (C₁.impl.addReaderT C₂.impl q).run x) = (fun q => (C₁.impl q).run x.1) + (fun q => (C₂.impl q).run x.2)` | **Fails `rfl`; needs proof** | `QueryImpl.addReaderT` pattern-matches `q` inside `ReaderT` rather than outside; proving equality requires `funext q; cases q <;> rfl` (`OracleConsolidation.lean:856-872`). |
-| `B.spec` on `abbrev SigmaBundle := (Data : Type) × OracleInterface Data` | **Fails to typecheck** | Lean resolves dot notation on `Sigma`, not on the abbreviation; `Sigma.spec` does not exist (`OracleConsolidation.lean:876-885`). |
-| `((indexed F).sum (indexed G)).Data = (indexed (Sum.elim F G)).Data` | **Fails `rfl`; needs `Equiv`** | Left side is `(∀ i, (F i).Data) × (∀ j, (G j).Data)`; right side is `∀ k, (Sum.elim F G k).Data`. Bridged only up to `OracleBundle.indexedSumEquiv` (`OracleConsolidation.lean:424,899`) and `sumData_eta` (`ArkLib/Interaction/OracleVerifier.lean:92`). |
-| `OracleBundle.ofFamily : OracleFamily I A → OracleBundle` | **Not an equivalence** | Forgets the slot decomposition `I`; its image always has `Data = ∀ i, A i` and `Query = (i : I) × Q i`, missing `OracleBundle.ofSpec`, `OracleBundle.sum`, `OracleBundle.tensor`, and unindexed single oracles (`OracleConsolidation.lean:207-238`). |
-| `OracleBundle.Lens.toOracleMap : Lens R S → OracleMap S R` | **Contravariant injection, not an equivalence** | Every pure single-query lens embeds contravariantly into `OracleMap` via VCVio's `QueryImpl.comapLens`, but `OracleMap` also expresses 0-query constants and multi-query adaptive simulations such as `doubleQueryMap` (`OracleConsolidation.lean:398,906`). |
-| `instance : BadInterface (Polynomial R)` with `answer : Message → QueryImpl spec Id` | **Fails typeclass synthesis** | `Id` is semireducible in Lean 4, exposing `Semiring (Id ((ofFn fun x => R).Range point))` when elaborating `p.eval point` (`OracleConsolidation.lean:929-948`). |
-| `rw` on `simulateQ` over 2-field `structure NestedBundle where Data : Type; interface : OracleInterface Data` | **Fails `.implicit` transparency check** | Unfolding `In.spec` exposes primitive projection `In.interface.2 : OracleSpec In.interface.1` while `@simulateQ`'s implicit index holds the semireducible class projection `OracleInterface.Query In.Data` (`OracleConsolidation.lean:952-1019`). |
+| `C₁.add C₂` for `C₁ : OracleContext Q₁ (ReaderM D₁)` and `C₂ : OracleContext Q₂ (ReaderM D₂)` | **Fails to typecheck** | `OracleContext.add` (`.lake/packages/VCVio/VCVio/OracleComp/OracleContext.lean:54`) fixes one monad `m` for both summands and cannot unify `ReaderM D₁` with `ReaderM D₂` (`OracleConsolidation.lean:739`). |
+| `(fun q => (C₁.impl.addReaderT C₂.impl q).run x) = (fun q => (C₁.impl q).run x.1) + (fun q => (C₂.impl q).run x.2)` | **Fails `rfl`; needs proof** | `QueryImpl.addReaderT` pattern-matches `q` inside `ReaderT` rather than outside; proving equality requires `funext q; cases q <;> rfl` (`OracleConsolidation.lean:756-772`). |
+| `B.spec` on `abbrev SigmaBundle := (Data : Type) × OracleInterface Data` | **Fails to typecheck** | Lean resolves dot notation on `Sigma`, not on the abbreviation; `Sigma.spec` does not exist (`OracleConsolidation.lean:776-785`). |
+| `((indexed F).sum (indexed G)).Data = (indexed (Sum.elim F G)).Data` | **Fails `rfl`; needs a proof** | Left side is `(∀ i, (F i).Data) × (∀ j, (G j).Data)`; right side is `∀ k, (Sum.elim F G k).Data`. The two are equivalent, as `sumData_eta` (`ArkLib/Interaction/OracleVerifier.lean:92`) shows for the current families (`OracleConsolidation.lean:800`). Design D adds no isomorphism structure for this (section 6). |
+| `OracleBundle.ofFamily : OracleFamily I A → OracleBundle` | **Not an equivalence** | Forgets the slot decomposition `I`; its image always has `Data = ∀ i, A i` and `Query = (i : I) × Q i`, missing `OracleBundle.ofSpec`, `OracleBundle.sum`, `OracleBundle.tensor`, and unindexed single oracles (`OracleConsolidation.lean:206-237`). |
+| Current `OracleBundle.Lens R S` as an `OracleMap S R` | **Strict special case** | A lens routes each query to exactly one query and pulls the answer back purely, so it gives an `OracleMap` through VCVio's `QueryImpl.comapLens`. An `OracleMap` also expresses 0-query constants and multi-query adaptive simulations such as `doubleQueryMap` (`OracleConsolidation.lean:807`). |
+| `instance : BadInterface (Polynomial R)` with `answer : Message → QueryImpl spec Id` | **Fails typeclass synthesis** | `Id` is semireducible in Lean 4, exposing `Semiring (Id ((ofFn fun x => R).Range point))` when elaborating `p.eval point` (`OracleConsolidation.lean:830-849`). |
+| `rw` on `simulateQ` over 2-field `structure NestedBundle where Data : Type; interface : OracleInterface Data` | **Fails `.implicit` transparency check** | Unfolding `In.spec` exposes primitive projection `In.interface.2 : OracleSpec In.interface.1` while `@simulateQ`'s implicit index holds the semireducible class projection `OracleInterface.Query In.Data` (`OracleConsolidation.lean:853-920`). |
 
 ## 3. Design options
 
@@ -266,12 +263,12 @@ def OracleBundle.sum (R S : OracleBundle) : OracleBundle :=
 ```
 
 **Operations and users.** Every `B.Data`, `B.spec`, `B.answer`, `R.sum S`, and `R.tensor S` call
-breaks dot notation (`OracleConsolidation.lean:885`) and becomes prefix calls or `.1` / `.2.1` /
+breaks dot notation (`OracleConsolidation.lean:785`) and becomes prefix calls or `.1` / `.2.1` /
 `.2.2` projections. Every `simulateQ (B.answer x)` call must unpack `ReaderM` via `fun q =>
 (B.2.2.impl q).run x`. `OracleContext.add` cannot implement `OracleBundle.sum` because `ReaderM
-R.Data` and `ReaderM S.Data` are distinct monads (`OracleConsolidation.lean:839`). Using
+R.Data` and `ReaderM S.Data` are distinct monads (`OracleConsolidation.lean:739`). Using
 `QueryImpl.addReaderT` breaks definitional equality `(R.sum S).answer x = R.answer x.1 + S.answer
-x.2` (`OracleConsolidation.lean:856`). Every `OracleMap.fst` / `snd` / `par` / `sumAssoc` law loses
+x.2` (`OracleConsolidation.lean:756`). Every `OracleMap.fst` / `snd` / `par` / `sumAssoc` law loses
 `rfl` and requires `funext` and `cases`.
 
 **Costs and risks.**
@@ -366,19 +363,19 @@ Two Lean 4 implementation details discovered during prototyping shape Design D's
 1. **`OracleInterface.answer` uses `Message → (q : Query) → spec q`, not `Message → QueryImpl spec
    Id`.** Because `Id` is semireducible in Lean 4, typing the class field as `QueryImpl spec Id`
    puts `Id` in the expected return type of instance bodies and causes `Polynomial.eval` to fail
-   `Semiring (Id ...)` synthesis (`OracleConsolidation.lean:929-948`). Using `(q : Query) → spec q`
+   `Semiring (Id ...)` synthesis (`OracleConsolidation.lean:830-849`). Using `(q : Query) → spec q`
    keeps `Polynomial.eval` elaborating cleanly while still unifying with `QueryImpl spec Id` by
-   `rfl` (`OracleConsolidation.lean:62,189`).
+   `rfl` (`OracleConsolidation.lean:61,188`).
 2. **`OracleBundle` keeps four flat fields rather than nesting `interface : OracleInterface Data`.**
    A two-field structure `{ Data : Type; interface : OracleInterface Data }` is `rfl`-equivalent to
    the four-field structure, but defining `B.Query := B.interface.Query` and `B.spec :=
    B.interface.spec` routes `B.spec` through the semireducible class projection
    `OracleInterface.Query`. When `simp` unfolds `B.spec` to the primitive projection `In.interface.2
    : OracleSpec In.interface.1`, subsequent `rw` steps fail Lean 4's `.implicit` transparency check
-   against `OracleSpec (OracleInterface.Query In.Data)` (`OracleConsolidation.lean:952-1019`).
+   against `OracleSpec (OracleInterface.Query In.Data)` (`OracleConsolidation.lean:853-920`).
    Keeping four direct structure fields eliminates that mismatch completely while preserving a
    two-way `rfl` equivalence with `(Data : Type) × OracleInterface Data`
-   (`OracleConsolidation.lean:746`).
+   (`OracleConsolidation.lean:652`).
 
 **Operations and users.**
 - Every `OracleInterface` instance simplifies from `toOC.spec := ...; toOC.impl q := do return (←
@@ -386,7 +383,7 @@ Two Lean 4 implementation details discovered during prototyping shape Design D's
 - `OracleInterface.instProd` uses `QueryImpl.add` directly (`Oα.answerImpl x.1 + Oβ.answerImpl
   x.2`), deleting its dependence on `QueryImpl.addReaderT` and making `OracleBundle.of (α × β)
   instProd = (OracleBundle.of α Oα).sum (OracleBundle.of β Oβ)` hold by `rfl`
-  (`OracleConsolidation.lean:799`).
+  (`OracleConsolidation.lean:705`).
 - `OracleInterface.spec` becomes the structure projection itself, cleaning up
   `RandomQuery.lean:225,235` and `OracleInterface.lean:85,249,268`.
 - `OracleBundle` and `OracleMap` move to `ArkLib/Relation/OracleBundle.lean` (tree-independent,
@@ -397,7 +394,7 @@ Two Lean 4 implementation details discovered during prototyping shape Design D's
   `Sumcheck` gain the same simplifications as Design C: symmetric `OracleBundle` inputs and outputs,
   no `{J}` / `{B}`, no `ofFamily` / `ofSumFamily` / `toSumFamily` / `sumData` / `sumData_eta` /
   `familySumAssoc`, and first-class derived `OracleBundle.ofSpec` outputs
-  (`OracleConsolidation.lean:1134-1206`).
+  (`OracleConsolidation.lean:1035-1107`).
 - `SentOracles.lean` replaces `sentOracleMessageFamily` with `sentOracleMessageBundle` built from
   `OracleBundle.empty` and `OracleBundle.sum`, eliminating `erw [OracleMap.sum_impl_inr]`
   (`SentOracles.lean:258`) in favor of `rfl` on `OracleMap.par`. `SentOracleMessageIndex` and
@@ -453,7 +450,7 @@ executability constraints checked in
    `StageChain`, `LoggedExecution`, `QueriesByMove*`, `Reassociation`, `Routing`, and all 10
    `Security/` files. It eliminates `OracleBundle.ofFamily` coercions at every stage seam and lets
    behavior-only outputs (`OracleBundle.ofSpec`) compose across stages
-   (`OracleConsolidation.lean:1134-1206`).
+   (`OracleConsolidation.lean:1035-1107`).
 3. **Flattening `OracleInterface` finishes the cleanup at low marginal cost.** Only 35 files across
    the entire repository mention `toOC` after step 4 removes `StageChain.lean`'s `liftQueries`, and
    zero files use positional `OracleInterface.mk`. Removing `toOC` closes both long-standing TODOs
@@ -480,7 +477,7 @@ executability constraints checked in
   `oracleMessageBundle` produces nested binary sum queries (`Q₁ ⊕ (Q₂ ⊕ Empty)`) and tuple data (`X₁
   × (X₂ × Unit)`) rather than `(i : PUnit ⊕ ...) × Q i`. This removes `PUnit` noise from every
   oracle-message query and replaces 25-line `sumData_eta` proofs with one-line `Prod.ext` proofs
-  (`OracleConsolidation.lean:554-582`), at the cost of updating concrete query patterns in
+  (`OracleConsolidation.lean:460-488`), at the cost of updating concrete query patterns in
   `Sumcheck/Execution.lean`, `Legacy/OracleReduction.lean`, and interaction tests.
 - **No global `OracleInterface B.Data` instance.** Users passing a bundle's data into a
   typeclass-driven legacy helper must supply `B.toInterface` explicitly. Registering `instance (B :
@@ -613,7 +610,7 @@ protocol append and path operation would have to thread and split a second tree-
 alongside `s`. The only technical motive for separating `interface` from `OraclePos` under the old
 universe ledger was avoiding an extra query universe parameter `q` on `OraclePos : Type (max (u + 1)
 (q + 1))`. After universe migration step 5, `X : Type` and `OracleInterface X : Type 1` both yield
-`OraclePos : Type 1` with zero universe parameters (`OracleConsolidation.lean:467`), removing that
+`OraclePos : Type 1` with zero universe parameters (`OracleConsolidation.lean:373`), removing that
 motive entirely. Section 6 records the decision to keep the two arguments `(X : Type) (interface :
 OracleInterface X)` rather than one `(B : OracleBundle)`. Either form keeps `Γ` empty.
 
@@ -623,7 +620,7 @@ a completed path still depend only on the public shape path `p`, `OracleMap` kee
 without ambient queries, and sequential composition routes suffix queries through `prefixRoute` and
 `suffixRoute`. Replacing `oracleMessageFamily` and `OracleVerifier.outputs` with `OracleBundle`
 removes the legacy family representation leak from D6's core equations
-(`OracleConsolidation.lean:503-726`).
+(`OracleConsolidation.lean:409-632`).
 
 ### Instance search, reducibility, transparency, and compiler erasure
 
@@ -634,25 +631,25 @@ each in Part 3 of [`prototypes/OracleConsolidation.lean`](prototypes/OracleConso
    (`.lake/packages/VCVio/VCVio/OracleComp/OracleSpec.lean:44`), and `OracleBundle.Query`, `spec`,
    `Data`, `answer` are direct structure fields on a four-field structure, avoiding the `.implicit`
    transparency mismatch exhibited by a two-field nested bundle
-   (`OracleConsolidation.lean:952-1019`).
+   (`OracleConsolidation.lean:853-920`).
 2. **`OracleInterface.answer` avoids `Id` in its field type**, preventing `Semiring (Id ...)`
-   synthesis failure in polynomial instances (`OracleConsolidation.lean:929-948`).
+   synthesis failure in polynomial instances (`OracleConsolidation.lean:830-849`).
 3. **`OracleInterface.toOracleSpec` (`[v]ₒ`) stays semireducible**, preserving `[v]ₒ` as a stable
    head for `HasQuery` / `MonadLiftT` matching and keeping `simulateQ_simOracle2_liftM_query_snd`
-   provable by `rfl` (`OracleConsolidation.lean:1035`) and `OracleReduction/Basic.lean:515`'s `erw`
+   provable by `rfl` (`OracleConsolidation.lean:936`) and `OracleReduction/Basic.lean:515`'s `erw`
    pattern working identically.
 4. **Class projections (`OracleInterface.Query`) remain non-reducible in `synthInstance`** on both
-   current and consolidated `OracleInterface` (`OracleConsolidation.lean:1027`).
+   current and consolidated `OracleInterface` (`OracleConsolidation.lean:928`).
    `OracleInterface.lean:311-313`'s explicit `Fintype` instance on `Query (R⦃≤ d⦄[X σ])` therefore
    stays needed and intact. Concrete flat bundles such as `OracleBundle.ofSpec (ZMod 7 →ₒ ZMod 7)`
-   synthesize `Fintype` and `DecidableEq` directly (`OracleConsolidation.lean:1029-1030`).
+   synthesize `Fintype` and `DecidableEq` directly (`OracleConsolidation.lean:930-931`).
 5. **Core bundle combinators stay `@[reducible]`** (`of`, `ofInst`, `empty`, `sum`, `tensor`,
    `ofSpec`, `indexed`, `ofIndexed`) and `oracleMessageBundle` stays `@[implicit_reducible]`,
    matching today's unfolding discipline for `QueryImpl.add`, `simulateQ`, and `pathBundle`.
 6. **Compiler erasure via `@[macro_inline]` stays intact.** `OracleMap.fst`
-   (`OracleConsolidation.lean:274`) and `pathLift` (`OracleConsolidation.lean:609`) remain
+   (`OracleConsolidation.lean:273`) and `pathLift` (`OracleConsolidation.lean:515`) remain
    `@[macro_inline]`. Defining `computableMvPolyVerifier` against the `noncomputable` bundle
-   `mathMvPolyBundle` compiles without `noncomputable` (`OracleConsolidation.lean:1049-1071`),
+   `mathMvPolyBundle` compiles without `noncomputable` (`OracleConsolidation.lean:950-972`),
    matching `Sumcheck/Execution.lean:402-417`.
 
 ### Boundary with upstream VCVio
@@ -740,11 +737,11 @@ land in the order 2, 3, 4, 5, then 1 as part of step 5.
 2. **PR 2: Relocate `OracleBundle` and `OracleMap` to `ArkLib/Relation/OracleBundle.lean` and add
    consolidated constructors.**
    - **Changes:** Move `OracleBundle`, `OracleBundle.sum`, `OracleBundle.ofSpec`,
-     `OracleBundle.tensor`, `OracleBundle.Lens`, `OracleBundle.Equiv`, and `OracleMap` (bundle-level
-     operations) to `ArkLib/Relation/OracleBundle.lean` (renaming `OracleBundle.Index` to `Query`,
-     section 6). Add `OracleBundle.Behavior`, `toInterface`, `of`, `ofInst`,
-     `empty`, `indexed`, `ofIndexed`, `OracleMap.emptyLeft`, `OracleMap.reindex`,
-     `OracleBundle.Lens.toOracleMap`, and `OracleBundle.indexedSumEquiv`. Keep `OracleFamily`,
+     `OracleBundle.tensor` and `OracleMap` (bundle-level operations) to
+     `ArkLib/Relation/OracleBundle.lean`, renaming `OracleBundle.Index` to `Query` (section 6).
+     Add `OracleBundle.Behavior`, `toInterface`, `of`, `ofInst`, `empty`, `indexed`, `ofIndexed`,
+     `OracleMap.emptyLeft` and `OracleMap.reindex`. Delete `OracleBundle.Lens` and
+     `OracleBundle.Equiv` (section 6). Keep `OracleFamily`,
      `OracleBundle.ofFamily`, and `CoeOut` intact as temporary bridges. Update
      `ArkLib/Interaction/OracleVerifier.lean` and `ArkLib/Interaction/Oracle/BundleOps.lean` to
      import `ArkLib.Relation.OracleBundle` (retiring `BundleOps.lean` or keeping it as a thin
@@ -784,7 +781,7 @@ land in the order 2, 3, 4, 5, then 1 as part of step 5.
      does not cover it yet.
    - **Changes:** Replace `oracleMessageFamily`, `oracleMessages`, `oracleMessageImpl`,
      `oracleMessageFamily_append`, `oracleMessageFamily_split`, and `splitOracleMessages` with the
-     direct `OracleBundle.empty` / `OracleBundle.sum` versions (`OracleConsolidation.lean:503-601`).
+     direct `OracleBundle.empty` / `OracleBundle.sum` versions (`OracleConsolidation.lean:409-507`).
      Update `SentOracles.lean` to use `sentOracleMessageBundle` and `OracleMap.par`. Simplify
      `splitPathBundle` (`Composition.lean:547`) by dropping `ofSumFamily`. Update
      `Oracle/Routing.lean`, `Oracle/Reassociation.lean`, `Interaction/Legacy/OracleReduction.lean` &
@@ -831,11 +828,18 @@ The maintainer settled these questions on 2026-11-25.
    - What this gives up: one node cannot send a behavior-only oracle (`ofSpec`) or a tensor of
      oracles. No protocol does so today. Changing it later touches `Signature.lean` and the files
      that match on `.oracle`.
-2. **`OracleBundle.Lens` and `OracleBundle.Equiv` both stay and move to
-   `ArkLib/Relation/OracleBundle.lean` in PR 2.** `Equiv` is a pair of inverse lenses
-   (`toLens`, `invLens`), so `Lens` cannot be deleted while `Equiv` stays, and PR 2 states
-   `indexedSumEquiv` with `Equiv`. New routing code uses `OracleMap`. PR 2 adds
-   `OracleBundle.Lens.toOracleMap` so that a lens can be used where an oracle map is expected.
+2. **PR 2 deletes `OracleBundle.Lens` and `OracleBundle.Equiv`, and `OracleMap` is the only
+   morphism between bundles.**
+   - A lens is a strict special case of an oracle map in the opposite direction: it routes each
+     query to exactly one query and pulls the answer back with a pure function. It was built for
+     the universe adapter `liftResponse`, which step 4 deleted, and has had no user outside
+     `BundleOps.lean` since.
+   - An `Equiv` is a pair of inverse lenses. Nothing uses it either. Its one planned use,
+     `indexedSumEquiv` between `(indexed F).sum (indexed G)` and `indexed (Sum.elim F G)`, has no
+     client, and PR 4 reassociates sums with oracle maps.
+   - If a client later needs an isomorphism of bundles, it states one as two oracle maps with
+     round-trip lemmas on answers. Composing oracle maps nests `simulateQ`, so those lemmas are
+     theorems rather than `rfl`, which is the one convenience the lens form had.
 3. **PR 1 is part of universe step 5** (section 5).
 4. **PR 2 renames `OracleBundle.Index` to `OracleBundle.Query`.** The field is the type of queries,
    which matches `OracleInterface.Query`. PR 2 also adds `indexed` and `ofIndexed`, whose index type
