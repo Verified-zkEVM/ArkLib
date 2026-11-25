@@ -26,6 +26,7 @@ Default checks:
   - lake exe fri-extractor-runtime
   - fail on non-`sorry` warnings under ArkLib/
   - ./scripts/test-retiredsweep.sh and lake exe retiredsweep --require-empty
+  - ./scripts/test-universe-rule.sh and lake exe universe-rule
   - ./scripts/check-imports.sh
   - ./scripts/test-build-timing-report.sh
   - uv run --no-project --python 3.12 python ./scripts/check-docs-integrity.py
@@ -103,6 +104,11 @@ echo ""
 echo "# Checking native probability retirement"
 ./scripts/test-retiredsweep.sh
 lake exe retiredsweep --require-empty
+
+echo ""
+echo "# Checking the universe rule on Interaction and Relation"
+./scripts/test-universe-rule.sh
+lake exe universe-rule
 
 echo ""
 echo "# Running Lean-native source-policy gate"

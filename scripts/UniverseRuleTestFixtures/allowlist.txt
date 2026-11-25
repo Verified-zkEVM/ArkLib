@@ -1,0 +1,2 @@
+# Fixture allowlist for scripts/test-universe-rule.sh.
+UniverseRuleTestFixtures.Pass UniverseRuleTestFixtures.Pass.AdversaryModel w # adversary

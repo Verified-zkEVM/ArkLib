@@ -73,6 +73,14 @@ srcDir = "scripts"
 root = "RetiredProbabilitySweep"
 supportInterpreter = true
 
+# Universe rule of record D2 on `ArkLib.Interaction` and `ArkLib.Relation`, with the allowlist
+# `scripts/universe_rule_allowlist.txt`; see scripts/UniverseRule.lean.
+[[lean_exe]]
+name = "universe-rule"
+srcDir = "scripts"
+root = "UniverseRule"
+supportInterpreter = true
+
 # Compiled code-generation and execution checks for the toy-problem launch cone. Classic, like
 # ArkLibTest: compiling the honest path needs definition bodies a module importer never loads.
 [[lean_exe]]
@@ -141,4 +149,12 @@ name = "RetiredProbabilityTestFixtures"
 srcDir = "scripts"
 roots = []
 globs = ["RetiredProbabilityTestFixtures.+"]
+allowNonModules = true
+
+# Fixtures for the universe-rule checker (scripts/test-universe-rule.sh).
+[[lean_lib]]
+name = "UniverseRuleTestFixtures"
+srcDir = "scripts"
+roots = []
+globs = ["UniverseRuleTestFixtures.+"]
 allowNonModules = true
