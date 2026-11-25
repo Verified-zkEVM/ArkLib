@@ -55,7 +55,7 @@ instance : DecidableEq (Key Stmt Unit rounds) :=
 
 /-- On challenge `true` read the oracle message and return it, on `false` reject. The output
 oracle is the sent message. -/
-def verifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat (fun _ => Fin 8)
+def verifier : OracleVerifier.{0, 0, 0} []ₒ (protocol rounds) Nat (fun _ => Fin 8)
     emptyFamily
     (fun _ => outputFamily) where
   decide _ p v := by
@@ -172,7 +172,7 @@ theorem constantOracleReplayResult_eq (c : Bool) :
 #eval constantOracleReplayResult false
 
 /-- The plain verifier always reads and returns the sent oracle message, on either challenge. -/
-def constantPlainVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat (fun
+def constantPlainVerifier : OracleVerifier.{0, 0, 0} []ₒ (protocol rounds) Nat (fun
     _ => Fin 8) emptyFamily
     (fun _ => outputFamily) where
   decide _ p _ := by
@@ -675,26 +675,26 @@ def selectedMap (_b : Bool) (p : Path (protocol rounds)) :
     ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
 
 /-- The suffix of the plain verifier at a fixed authored selector. -/
-def plainSuffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat
+def plainSuffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0} []ₒ (protocol rounds) Nat
     (fun _ => SelectedValue b) emptyFamily (fun _ => selectedFamily b) where
   decide _ p _ := readSelected b p
   outputMap _ p _ := selectedMap b p
 
 /-- The suffix of the rejecting verifier at a fixed authored selector. -/
-def oracleSuffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat
+def oracleSuffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0} []ₒ (protocol rounds) Nat
     (fun _ => SelectedValue b) emptyFamily (fun _ => selectedFamily b) where
   decide _ p v := if (show Bool from v.1.2.1) then readSelected b p else failure
   outputMap _ p _ := selectedMap b p
 
 /-- The plain verifier has an authored statement carrier and the original output oracle. -/
-def plainVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ selectedProtocol Nat
+def plainVerifier : OracleVerifier.{0, 0, 0} []ₒ selectedProtocol Nat
     SelectedOutput emptyFamily
     (fun p => selectedFamily p.1) where
   decide _ p _ := readSelected p.1 p.2
   outputMap _ p _ := selectedMap p.1 p.2
 
 /-- The oracle verifier rejects false challenges independently of the authored shape branch. -/
-def selectedVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ selectedProtocol Nat
+def selectedVerifier : OracleVerifier.{0, 0, 0} []ₒ selectedProtocol Nat
     SelectedOutput emptyFamily
     (fun p => selectedFamily p.1) where
   decide _ p v := if (show Bool from v.1.2.2.1) then readSelected p.1 p.2 else failure
@@ -992,7 +992,7 @@ example (b : Bool) :
   simp [failure_bind]
 
 /-- Additional coverage allows the output oracle's carrier and interface to vary by public path. -/
-def varyingVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ selectedProtocol Nat SelectedOutput
+def varyingVerifier : OracleVerifier.{0, 0, 0} []ₒ selectedProtocol Nat SelectedOutput
     emptyFamily (fun p => varyingFamily p.1) where
   decide _ p _ := readSelected p.1 p.2
   outputMap _ p _ := varyingMap p.1 p.2

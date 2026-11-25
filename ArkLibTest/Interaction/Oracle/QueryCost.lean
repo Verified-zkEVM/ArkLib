@@ -188,7 +188,7 @@ theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
   refine OracleMap.withAmbient_worstCaseCost
     (In := pathBundle bits bitCombined (combinedPath guess)) (Out := secondBundle guess)
     (OracleVerifier.suffixRoute bitPrefix () (combinedPath guess) v)
-    (suffix_budget.{0} _ (View.split bitFirst (fun _ => bitSecond) _ v).2) (fun _ => le_rfl) ?_
+    (suffix_budget _ (View.split bitFirst (fun _ => bitSecond) _ v).2) (fun _ => le_rfl) ?_
   rintro (⟨i, q⟩ | ⟨i, q⟩)
   · cases i
     cases q

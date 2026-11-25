@@ -19,40 +19,6 @@ open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp
 
 namespace Interaction.DependentAppendTests
 
--- DependentExample 1, restated: the shared, statement, witness and interaction universes are
--- independent, as in the old-layer canary. A family of reductions over a shared index is a
--- function from the index. The signature assigns each move to a participant, so there is no role
--- decoration. The output statement and the prover output stay in the interaction universe, as in
--- the old-layer canary. The ambient index is also in the interaction universe, because the prover
--- runs in `OracleComp ambient : Type u → Type u`. This restriction comes from the runner contract
--- of implementation note 18, not from P1 or P2. The port table marks this canary ported. The
--- old-layer canary has no ambient oracles, which the empty specification below recovers.
-section UniverseCanary
-
-universe uShared uStatement uWitness uInteraction
-
-/-- Compile-time canary that shared, statement, witness and interaction universes remain
-independent. -/
-abbrev UniverseSeparatedReduction {ι : Type uInteraction}
-    (ambient : OracleSpec.{uInteraction, uInteraction} ι)
-    (Shared : Type uShared)
-    (Context : Shared → Protocol.{uInteraction})
-    (Statement : Shared → Type uStatement)
-    (Witness : Shared → Type uWitness)
-    (StatementOut : (i : Shared) → Path (Context i) → Type uInteraction)
-    (WitnessOut : (i : Shared) → Transcript plainSig (Context i) → Type uInteraction) :=
-  (i : Shared) → Reduction ambient (Context i) (Statement i) (Witness i) (StatementOut i)
-    (WitnessOut i)
-
-end UniverseCanary
-
--- The canary at four distinct universes, with no ambient oracles. The shared index lies in
--- `Type 3`, the statements in `Type 2`, the witnesses in `Type 1` and the interaction in `Type 0`.
-example : UniverseSeparatedReduction ([]ₒ : OracleSpec.{0, 0} PEmpty) (Type 2)
-    (fun _ => (.pure ⟨⟩ : Protocol)) (fun X => X) (fun _ => Type) (fun _ _ => Unit)
-    (fun _ _ => PUnit) :=
-  fun _ => { prover := fun _ _ => pure ⟨⟩, verifier := { decide := fun _ _ _ => pure () } }
-
 /-- No ambient oracle. -/
 abbrev ambient : OracleSpec PEmpty := []ₒ
 

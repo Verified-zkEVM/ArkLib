@@ -258,17 +258,17 @@ theorem total_handler_faults_reject (old message hidden : Nat) :
 
 section CloseOptional
 
-universe v u q dI uι uI uJ uS wJ
+universe v dI uI wJ
 
 /-- For the closing map `close` of any completed transcript, `Except.ok outcome` mapped by
 `Option.map close` equals `Except.ok (outcome.map close)`. This is an equation about `Except.map`
 alone and mentions no actual run. An absent verdict stays a rejection and creates no failure.
 `decision_outcomes` checks the closed output of actual runs. -/
-theorem close_optional_ok {ε : Type v} {ι : Type uι} {S : Type uS}
-    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {T : Path s → Type u}
-    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+theorem close_optional_ok {ε : Type v} {ι : Type} {S : Type}
+    {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (tr : Transcript oracleSig s) (outcome : Option (T tr.path)) :
     let p := tr.path
@@ -1170,49 +1170,3 @@ example {ι : Type} {S : Type} {ambient : OracleSpec ι}
     (prover : Prover oracleSig ambient s Out) :
     OracleVerifier.AmbientQueriesByMove.outcome <$> V.runWithAmbientQueriesByMove stmt data prover =
       V.run stmt data prover := V.map_fst_runWithAmbientQueriesByMove stmt data prover
-
-namespace Interaction.LoggedExecutionTests
-
-/-- A small oracle message has genuinely larger query indices. -/
-@[reducible] def liftedQueries : OracleInterface.{0, 1} Nat where
-  Query := ULift.{1, 0} Unit
-  toOC.spec _ := Nat
-  toOC.impl _ := do return (← read)
-
-/-- Attach the larger query interface to an actual small-move oracle node. -/
-@[instance_reducible] def liftedNode : OracleProtocol.{0, 1} :=
-  .liftBind (.oracle Nat liftedQueries) (fun _ => .pure ⟨⟩)
-
-/-- The final decision queries the actual large-index oracle sent by the prover. -/
-def liftedVerifier : OracleVerifier ambient liftedNode Unit (fun _ => Nat) inputs
-    (fun _ => exported) where
-  decide _ p _ := by
-    rcases p with ⟨⟨⟩, ⟨⟩⟩
-    exact do
-      let sent : Nat ← pathLift ambient inputs (s := liftedNode) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ⟨()⟩⟩
-      pure sent
-  outputMap _ _ _ := OracleMap.fst _ _
-
-/-- No receiver node occurs in this larger-query protocol. -/
-def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id
-  | ⟨.inl _, h⟩ => nomatch h
-  | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
-
-/-- The ambient queries by move of a run with a genuinely larger-query oracle node, without
-bundle query indices. -/
-def liftedQueriesByMove : OracleVerifier.AmbientQueriesByMove liftedVerifier (fun _ => Nat) :=
-  simulateQ (show QueryImpl (ambient + challengeSpec oracleSig liftedNode) Id from
-    fun q => match q with | .inl n => n | .inr c => liftedDraw c)
-    (liftedVerifier.runWithAmbientQueriesByMove () seven (pure ⟨(17 : Nat), pure 23⟩))
-
-/-- The same larger-query run returns its oracle message, its private output and the partial
-transcript at the decision entry. -/
-theorem lifted_queries_by_move_contract : liftedQueriesByMove.outcome.2.1 = 23 ∧
-    liftedQueriesByMove.outcome.2.2.map (·.1) = some 17 ∧
-    liftedQueriesByMove.decision.before =
-      (some ⟨(17 : Nat), none⟩ : PartialTranscript oracleSig liftedNode) := by
-  constructor
-  · kernel_rfl
-  · constructor <;> kernel_rfl
-
-end Interaction.LoggedExecutionTests

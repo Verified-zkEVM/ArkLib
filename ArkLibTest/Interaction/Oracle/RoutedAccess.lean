@@ -199,7 +199,7 @@ def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id
 
 /-- The composed run under `tagHandler`, with independent input index and query universes. -/
 def observed.{vI, qI, qJ} (a b : Nat) :=
-  simulateQ tagHandler (composed.{vI, qI, 0, qJ}.run () noData (prover a b))
+  simulateQ tagHandler (composed.{vI, qI, qJ}.run () noData (prover a b))
 
 -- Additional oracle message checks beside the produced partial-transcript assertions in
 -- LoggedExecution. For all tags `a` and `b`, the composed
@@ -254,7 +254,7 @@ example : loggedSummary 1 2 =
 
 /-- The composed verifier's queries by move for the same tag-answering execution. -/
 def composedQueriesByMove (a b : Nat) :
-    OracleVerifier.QueriesByMove composed.{0, 0, 0, 0} (fun _ => Nat) :=
+    OracleVerifier.QueriesByMove composed.{0, 0, 0} (fun _ => Nat) :=
   simulateQ tagHandler (composed.runWithQueriesByMove () noData (prover a b))
 
 /-- The queries-by-move result records the same raw decision queries as the logged run: two reads

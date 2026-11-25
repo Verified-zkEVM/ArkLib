@@ -61,7 +61,7 @@ abbrev suffix : Path firstProtocol → OracleProtocol := fun p => secondProtocol
 abbrev combined : OracleProtocol := firstProtocol.append suffix
 
 /-- The prefix verifier returns the challenge from its view and exports the sent oracle. -/
-def firstVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} OracleSpec.emptySpec firstProtocol
+def firstVerifier : OracleVerifier.{0, 0, 0} OracleSpec.emptySpec firstProtocol
     Unit (fun _ => Bool) noInputs
     (fun _ => exportFamily) where
   decide _ _ v := pure (show Bool from v.val.2.1)
@@ -70,7 +70,7 @@ def firstVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} OracleSpec.emptySpec fi
       (OracleMap.snd _ _)
 
 /-- The suffix verifier accepts its input statement and passes the export through. -/
-def secondVerifier (p : Path firstProtocol) : OracleVerifier.{0, 0, 0, 0, 0, 0, 0}
+def secondVerifier (p : Path firstProtocol) : OracleVerifier.{0, 0, 0}
     OracleSpec.emptySpec (suffix p)
     Bool (fun _ => Bool)
     exportFamily

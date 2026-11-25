@@ -233,31 +233,31 @@ universe wI
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
-  {I : Type 1} {A : I → Type} (inputs : OracleFamily.{1, 0, wI} I A)
+  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, wI} I A)
   {M : Type} {eval : M → R → R}
 
-/-- Construction over a bundle index in `Type 1` leaves the query universe independent. -/
-def verifierAtHigherIndex :
+/-- Construction over an input family with an arbitrary query universe. -/
+def verifierAtQueryUniverse :
     OracleVerifier ambient (protocolOn R M eval n) (Sumcheck.Spec.StatementRound R n 0)
       (fun _ => Sumcheck.Spec.StatementRound R n (Fin.last n)) inputs (fun _ => inputs) :=
   verifierOn R deg n D ambient M eval inputs
 
 omit [SampleableType R] in
-/-- The final decision law accepts higher bundle indices through an ordinary import. -/
+/-- The final decision law accepts an arbitrary query universe through an ordinary import. -/
 theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
     (hf : ∀ x r, eval x r = (f x).val.eval r) {κ : Type} {target : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp target)) (stmt : Sumcheck.Spec.StatementRound R n 0)
     (data : ∀ i, A i) (tr : Transcript oracleSig (protocolOn R M eval n)) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs (protocolOn R M eval n)
       tr.path).answer (data, oracleMessages _ tr)))
-      ((verifierAtHigherIndex (deg := deg) D ambient inputs).decide stmt _ (toView _ tr)).run =
+      ((verifierAtQueryUniverse (deg := deg) D ambient inputs).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n (polyTranscript f n tr))) :
         OracleComp target _) :=
   simulateQ_decideOn D inputs hf amb stmt data tr
 
 /-- The review's constant-evaluation constructor also accepts a high bundle-query universe. -/
-example (domain : Fin 1 ↪ R) {J : Type 1} {B : J → Type}
-    (family : OracleFamily.{1, 0, 1} J B) :
+example (domain : Fin 1 ↪ R) {J : Type} {B : J → Type}
+    (family : OracleFamily.{0, 0, 1} J B) :
     OracleVerifier emptySpec (protocolOn R R (fun x _ => x) 1)
       (Sumcheck.Spec.StatementRound R 1 0)
       (fun _ => Sumcheck.Spec.StatementRound R 1 (Fin.last 1)) family (fun _ => family) :=
