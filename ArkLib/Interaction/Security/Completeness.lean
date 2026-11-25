@@ -144,7 +144,7 @@ noncomputable def OracleVerifier.classicalModel {ι σ : Type}
     {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]

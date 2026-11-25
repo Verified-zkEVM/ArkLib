@@ -19,8 +19,6 @@ below abbreviates that instance, so the generic laws `Interpreted.simulate_decis
 
 @[expose] public section
 
-universe wI
-
 namespace Sumcheck
 open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
@@ -55,7 +53,7 @@ abbrev foldDecision {State : ℕ → Type} {T : Type}
 
 /-- A passive verifier that retains its input oracle and checks all messages at the end. -/
 abbrev foldVerifier (R : Type) [CommSemiring R] (deg : ℕ) {ι : Type} (ambient : OracleSpec ι)
-    {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, wI} I A)
+    {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
     {State : ℕ → Type} {T : Type} (V : RoundChecks R State) (finish : State 0 → T) (k : ℕ) :
     OracleVerifier ambient (protocol R deg k) (State k) (fun _ => T) inputs
       (fun _ => inputs) :=

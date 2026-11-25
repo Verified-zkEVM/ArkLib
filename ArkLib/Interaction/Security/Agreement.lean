@@ -41,7 +41,7 @@ section Agree
 variable {ι : Type} {S : Type} {ambient : OracleSpec.{0, 0} ι}
   {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Two oracle verifiers on the same tree agree on every completed run: their decisions, with the
@@ -77,7 +77,7 @@ end Agree
 section Run
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V V' : OracleVerifier ambient s S T inputs outputs}
 
@@ -95,7 +95,7 @@ end Run
 section Classical
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V V' : OracleVerifier ambient s S T inputs outputs}
 
@@ -106,7 +106,7 @@ indices and input queries because its full decision log is a run output. -/
 theorem runWithLog_eq_of_decide_eq {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {V V' : OracleVerifier ambient s S T inputs outputs}
     (hd : ∀ (stmt : S) (tr : Transcript oracleSig s),
       V.decide stmt _ (toView s tr) = V'.decide stmt _ (toView s tr))
@@ -253,7 +253,7 @@ section Cast
 variable {ι : Type} {S : Type} {ambient : OracleSpec.{0, 0} ι}
   {s s' : OracleProtocol.{0, 0}} {T : Path s → Type}
   {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Transport a verifier to an equal tree, reindexing its output statements, oracle indices,
@@ -343,7 +343,7 @@ section RunCast
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι}
   {s s' : OracleProtocol.{0, 0}} {T : Path s → Type}
   {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Transporting a verifier and a challenge reindexing along a tree equality, and the prover back,
@@ -371,7 +371,7 @@ section ClassicalCast
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
   {s s' : OracleProtocol.{0, 0}} {T : Path s → Type}
   {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Challenge oracles on equal trees are equal when they agree on corresponding nodes. -/

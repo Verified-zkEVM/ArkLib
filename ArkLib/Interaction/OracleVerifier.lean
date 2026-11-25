@@ -18,7 +18,7 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 @[expose] public section
 
-universe u q dI uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
+universe u q uI uJ w
 
 universe v v'
 
@@ -95,29 +95,22 @@ theorem sumData_eta {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Ty
   funext k
   cases k <;> rfl
 
-/-- An oracle bundle: a query specification and the concrete data that answers it. The query
-indices and the data may lie in any universe; only the responses lie in `Type u`, the universe of
-the computations that receive them. The universe parameters of `OracleBundle.{u, uX, dX}` are
-those of the responses, the query indices and the data, in this order.
-
-For fixed `Index` and `Data`, the specification and answer function are equivalent to VCVio's
-`OracleContext Index (fun α => Data → α)`. The reader function allows independent data and response
-universes. -/
-structure OracleBundle : Type (max (uX + 1) (u + 1) (dX + 1)) where
+/-- A query specification and the concrete data that answers it, all in `Type`. -/
+structure OracleBundle : Type 1 where
   /-- The query indices. -/
-  Index : Type uX
+  Index : Type
   /-- The queries and their response types. -/
-  spec : OracleSpec.{uX, u} Index
+  spec : OracleSpec.{0, 0} Index
   /-- The concrete data. -/
-  Data : Type dX
+  Data : Type
   /-- How concrete data answers each query. -/
   answer : Data → QueryImpl spec Id
 
 /-- The oracle bundle of an oracle family: queries through its interfaces, answered from concrete
-realizations. The query universe `wI` of the interfaces is independent of the response universe.
+realizations in `Type`.
 -/
-@[reducible] def OracleBundle.ofFamily {I : Type uI} {A : I → Type u}
-    (F : OracleFamily.{uI, u, wI} I A) : OracleBundle.{u, max uI wI, max uI u} where
+@[reducible] def OracleBundle.ofFamily {I : Type} {A : I → Type}
+    (F : OracleFamily.{0, 0, 0} I A) : OracleBundle where
   Index := (i : I) × (F.interface i).Query
   spec := F.spec
   Data := ∀ i, A i
@@ -126,21 +119,21 @@ realizations. The query universe `wI` of the interfaces is independent of the re
 attribute [coe] OracleBundle.ofFamily
 
 /-- An oracle family is used as an oracle bundle through its interfaces. -/
-instance {I : Type uI} {A : I → Type u} :
-    CoeOut (OracleFamily.{uI, u, wI} I A) OracleBundle.{u, max uI wI, max uI u} :=
+instance {I : Type} {A : I → Type} :
+    CoeOut (OracleFamily.{0, 0, 0} I A) OracleBundle :=
   ⟨OracleBundle.ofFamily⟩
 
-/-- A sum bundle: each query goes to one side and is answered from that side's data. The
-two sides keep their own index and data universes, and their data stays a pair. -/
-@[reducible] def OracleBundle.sum (R : OracleBundle.{u, uX, dX}) (R' : OracleBundle.{u, uY, dY}) :
-    OracleBundle.{u, max uX uY, max dX dY} where
+/-- A sum bundle: each query goes to one side and is answered from that side's data.
+Their data stays a pair. -/
+@[reducible] def OracleBundle.sum (R : OracleBundle) (R' : OracleBundle) :
+    OracleBundle where
   Index := R.Index ⊕ R'.Index
   spec := R.spec + R'.spec
   Data := R.Data × R'.Data
   answer x := R.answer x.1 + R'.answer x.2
 
 /-- A concrete oracle map and its query-by-query implementation agree on all input data. -/
-structure OracleMap (In : OracleBundle.{u, uX, dX}) (Out : OracleBundle.{u, uY, dY}) where
+structure OracleMap (In : OracleBundle) (Out : OracleBundle) where
   /-- Concrete output data, available to a subsequent honest prover. -/
   f : In.Data → Out.Data
   /-- Output queries are simulated using only input oracle queries. -/
@@ -151,8 +144,8 @@ structure OracleMap (In : OracleBundle.{u, uX, dX}) (Out : OracleBundle.{u, uY, 
 namespace OracleMap
 
 section OracleBundle
-variable {In : OracleBundle.{u, uX, dX}} {Mid : OracleBundle.{u, uY, dY}}
-  {Out : OracleBundle.{u, uZ, dZ}} {Other : OracleBundle.{u, uW, dW}}
+variable {In : OracleBundle} {Mid : OracleBundle}
+  {Out : OracleBundle} {Other : OracleBundle}
 
 /-- Compose concrete data maps and substitute query implementations. -/
 def comp (g : OracleMap Mid Out) (h : OracleMap In Mid) : OracleMap In Out where
@@ -166,13 +159,13 @@ def comp (g : OracleMap Mid Out) (h : OracleMap In Mid) : OracleMap In Out where
 
 /-- Routing every query through a map agrees with materializing its output first. -/
 theorem simulate_eq (h : OracleMap In Out) (x : In.Data)
-    {α : Type u} (program : OracleComp Out.spec α) :
+    {α : Type} (program : OracleComp Out.spec α) :
     simulateQ (In.answer x) (simulateQ h.impl program) =
       simulateQ (Out.answer (h.f x)) program :=
   QueryImpl.simulateQ_simulateQ_eq_of_apply (h.law x) program
 
 /-- The identity map of an oracle bundle. -/
-def id (R : OracleBundle.{u, uX, dX}) : OracleMap R R where
+def id (R : OracleBundle) : OracleMap R R where
   f x := x
   impl q := liftM (R.spec.query q)
   law _ _ := rfl
@@ -180,14 +173,14 @@ def id (R : OracleBundle.{u, uX, dX}) : OracleMap R R where
 /-- Keep the left side of a sum bundle. Inlining erases the unused bundle interpreters when a
 computable verifier specializes this projection to a mathematical oracle family. -/
 @[macro_inline]
-def fst (R : OracleBundle.{u, uX, dX}) (R' : OracleBundle.{u, uY, dY}) :
+def fst (R : OracleBundle) (R' : OracleBundle) :
     OracleMap (R.sum R') R where
   f x := x.1
   impl q := liftM ((R.spec + R'.spec).query (.inl q))
   law _ _ := rfl
 
 /-- Keep the right side of a sum bundle. -/
-def snd (R : OracleBundle.{u, uX, dX}) (R' : OracleBundle.{u, uY, dY}) :
+def snd (R : OracleBundle) (R' : OracleBundle) :
     OracleMap (R.sum R') R' where
   f x := x.2
   impl q := liftM ((R.spec + R'.spec).query (.inr q))
@@ -210,8 +203,8 @@ def par (h : OracleMap In Mid) (g : OracleMap Out Other) :
         (fun _ => rfl) (g.impl q)).trans (g.law _ _)
 
 /-- Regroup a sum bundle to the left without changing its data or answers. -/
-def sumAssocSymm (R₁ : OracleBundle.{u, uX, dX}) (R₂ : OracleBundle.{u, uY, dY})
-    (R₃ : OracleBundle.{u, uZ, dZ}) : OracleMap (R₁.sum (R₂.sum R₃)) ((R₁.sum R₂).sum R₃) where
+def sumAssocSymm (R₁ : OracleBundle) (R₂ : OracleBundle)
+    (R₃ : OracleBundle) : OracleMap (R₁.sum (R₂.sum R₃)) ((R₁.sum R₂).sum R₃) where
   f x := ((x.1, x.2.1), x.2.2)
   impl
     | .inl (.inl q) => liftM ((R₁.spec + (R₂.spec + R₃.spec)).query (.inl q))
@@ -220,8 +213,8 @@ def sumAssocSymm (R₁ : OracleBundle.{u, uX, dX}) (R₂ : OracleBundle.{u, uY, 
   law x q := by rcases q with (q | q) | q <;> rfl
 
 /-- Regroup a sum bundle to the right without changing its data or answers. -/
-def sumAssoc (R₁ : OracleBundle.{u, uX, dX}) (R₂ : OracleBundle.{u, uY, dY})
-    (R₃ : OracleBundle.{u, uZ, dZ}) : OracleMap ((R₁.sum R₂).sum R₃) (R₁.sum (R₂.sum R₃)) where
+def sumAssoc (R₁ : OracleBundle) (R₂ : OracleBundle)
+    (R₃ : OracleBundle) : OracleMap ((R₁.sum R₂).sum R₃) (R₁.sum (R₂.sum R₃)) where
   f x := (x.1.1, (x.1.2, x.2))
   impl
     | .inl q => liftM (((R₁.spec + R₂.spec) + R₃.spec).query (.inl (.inl q)))
@@ -232,18 +225,18 @@ def sumAssoc (R₁ : OracleBundle.{u, uX, dX}) (R₂ : OracleBundle.{u, uY, dY})
 end OracleBundle
 
 section Families
-variable {I : Type uI} {J : Type uJ} {K : Type uK} {A : I → Type u} {B : J → Type u}
-  {C : K → Type u}
+variable {I : Type} {J : Type} {K : Type} {A : I → Type} {B : J → Type}
+  {C : K → Type}
 
 /-- Embeddings are oracle maps that retain or rename existing input slots. -/
-def embedding (In : OracleFamily.{uI, u, wI} I A) (rename : J → I) :
+def embedding (In : OracleFamily.{0, 0, 0} I A) (rename : J → I) :
     OracleMap In (In.reindex rename) where
   f x j := x (rename j)
   impl q := liftM (In.spec.query ⟨rename q.1, q.2⟩)
   law _ _ := rfl
 
 /-- View a family of disjoint data as a sum bundle, with its data split into a pair. -/
-def ofSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
+def ofSumFamily (a : OracleFamily.{0, 0, 0} I A) (b : OracleFamily.{0, 0, 0} J B) :
     OracleMap (sumFamily a b) (OracleBundle.sum a b) where
   f x := (fun i => x (.inl i), fun j => x (.inr j))
   impl
@@ -252,7 +245,7 @@ def ofSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J
   law x q := by rcases q with q | q <;> rfl
 
 /-- Combine a sum bundle into a family, the inverse representation of `ofSumFamily`. -/
-def toSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J B) :
+def toSumFamily (a : OracleFamily.{0, 0, 0} I A) (b : OracleFamily.{0, 0, 0} J B) :
     OracleMap (OracleBundle.sum a b) (sumFamily a b) where
   f x := sumData x.1 x.2
   impl
@@ -261,18 +254,18 @@ def toSumFamily (a : OracleFamily.{uI, u, w} I A) (b : OracleFamily.{uJ, u, w} J
   law x q := by rcases q with ⟨i | j, q⟩ <;> rfl
 
 /-- Splitting and recombining a family recovers its concrete data. -/
-theorem toSumFamily_ofSumFamily (a : OracleFamily.{uI, u, w} I A)
-    (b : OracleFamily.{uJ, u, w} J B) (x : (OracleBundle.ofFamily (sumFamily a b)).Data) :
+theorem toSumFamily_ofSumFamily (a : OracleFamily.{0, 0, 0} I A)
+    (b : OracleFamily.{0, 0, 0} J B) (x : (OracleBundle.ofFamily (sumFamily a b)).Data) :
     (toSumFamily a b).f ((ofSumFamily a b).f x) = x := sumData_eta x
 
 /-- Combining and splitting a sum bundle recovers both data components. -/
-theorem ofSumFamily_toSumFamily (a : OracleFamily.{uI, u, w} I A)
-    (b : OracleFamily.{uJ, u, w} J B) (x : (OracleBundle.sum a b).Data) :
+theorem ofSumFamily_toSumFamily (a : OracleFamily.{0, 0, 0} I A)
+    (b : OracleFamily.{0, 0, 0} J B) (x : (OracleBundle.sum a b).Data) :
     (ofSumFamily a b).f ((toSumFamily a b).f x) = x := rfl
 
-variable {L : Type uL} {D : L → Type u} {In : OracleFamily.{uI, u, w} I A}
-  {Mid : OracleFamily.{uJ, u, wJ} J B} {Out : OracleFamily.{uK, u, w} K C}
-  {Other : OracleFamily.{uL, u, wJ} L D}
+variable {L : Type} {D : L → Type} {In : OracleFamily.{0, 0, 0} I A}
+  {Mid : OracleFamily.{0, 0, 0} J B} {Out : OracleFamily.{0, 0, 0} K C}
+  {Other : OracleFamily.{0, 0, 0} L D}
 
 /-- Apply two oracle maps to the two parts of a family of disjoint data. -/
 def sum (h : OracleMap In Mid) (g : OracleMap Out Other) :
@@ -300,8 +293,8 @@ theorem sum_impl_inr (h : OracleMap In Mid) (g : OracleMap Out Other)
   exact QueryImpl.simulateQ_simulateQ_eq_of_apply (fun _ => rfl) _
 
 /-- Reassociate family data through the bundle reassociation and representation bridges. -/
-def familySumAssoc (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u, w} J B)
-    (Out : OracleFamily.{uK, u, w} K C) :
+def familySumAssoc (In : OracleFamily.{0, 0, 0} I A) (Mid : OracleFamily.{0, 0, 0} J B)
+    (Out : OracleFamily.{0, 0, 0} K C) :
     OracleMap (sumFamily (sumFamily In Mid) Out) (sumFamily In (sumFamily Mid Out)) :=
   (toSumFamily In (sumFamily Mid Out)).comp
     (((OracleMap.id In).par (toSumFamily Mid Out)).comp
@@ -310,8 +303,8 @@ def familySumAssoc (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u
           (ofSumFamily (sumFamily In Mid) Out))))
 
 /-- Inverse family reassociation through the bundle reassociation and representation bridges. -/
-def familySumAssocSymm (In : OracleFamily.{uI, u, w} I A) (Mid : OracleFamily.{uJ, u, w} J B)
-    (Out : OracleFamily.{uK, u, w} K C) :
+def familySumAssocSymm (In : OracleFamily.{0, 0, 0} I A) (Mid : OracleFamily.{0, 0, 0} J B)
+    (Out : OracleFamily.{0, 0, 0} K C) :
     OracleMap (sumFamily In (sumFamily Mid Out)) (sumFamily (sumFamily In Mid) Out) :=
   (toSumFamily (sumFamily In Mid) Out).comp
     (((toSumFamily In Mid).par (OracleMap.id Out)).comp
@@ -324,8 +317,8 @@ end Families
 end OracleMap
 
 /-- Route the oracle messages of an appended path into its two completed component paths. -/
-def oracleMessageFamily_append : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) →
+def oracleMessageFamily_append : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleMap (sumFamily (oracleMessageFamily s₁ p₁) (oracleMessageFamily (s₂ p₁) p₂))
       (oracleMessageFamily (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
@@ -343,8 +336,8 @@ def oracleMessageFamily_append : (s₁ : OracleProtocol.{u, q}) →
         (oracleMessageFamily (s₂ ⟨x, p₁⟩) p₂))
 
 /-- Route either component's oracle queries into the completed appended path. -/
-def oracleMessageFamily_split : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) →
+def oracleMessageFamily_split : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleMap (oracleMessageFamily (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
       (sumFamily (oracleMessageFamily s₁ p₁) (oracleMessageFamily (s₂ p₁) p₂))
@@ -353,7 +346,7 @@ def oracleMessageFamily_split : (s₁ : OracleProtocol.{u, q}) →
       impl := fun
         | ⟨.inl i, _⟩ => i.elim
         | ⟨.inr i, q⟩ => (OracleMap.embedding (oracleMessageFamily (s₂ ⟨⟩) p₂)
-            (fun j : PEmpty.{u + 1} ⊕ OracleMessageIndex (s₂ ⟨⟩) p₂ =>
+            (fun j : PEmpty.{1} ⊕ OracleMessageIndex (s₂ ⟨⟩) p₂ =>
               match j with | .inl e => e.elim | .inr j => j)).impl ⟨.inr i, q⟩
       law := fun _ q => by
         rcases q with ⟨i | i, q⟩
@@ -370,8 +363,8 @@ def oracleMessageFamily_split : (s₁ : OracleProtocol.{u, q}) →
         (oracleMessageFamily_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂))
 
 /-- Materializing the append route and then splitting it recovers both component families. -/
-theorem oracleMessageFamily_split_append : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem oracleMessageFamily_split_append : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : ∀ i,
       (sumFamily (oracleMessageFamily s₁ p₁) (oracleMessageFamily (s₂ p₁) p₂)).Realization i) →
     (oracleMessageFamily_split s₁ s₂ p₁ p₂).f ((oracleMessageFamily_append s₁ s₂ p₁ p₂).f x) = x
@@ -394,8 +387,8 @@ theorem oracleMessageFamily_split_append : (s₁ : OracleProtocol.{u, q}) →
     · exact congrFun ih (.inr i)
 
 /-- Splitting and recombining an appended family preserves every concrete oracle message. -/
-theorem oracleMessageFamily_append_split : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem oracleMessageFamily_append_split : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : ∀ i, OracleMessage (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂) i) →
     (oracleMessageFamily_append s₁ s₂ p₁ p₂).f ((oracleMessageFamily_split s₁ s₂ p₁ p₂).f x) = x
   | .pure _, _, ⟨⟩, _, _ => rfl
@@ -422,11 +415,11 @@ theorem oracleMessageFamily_append_split : (s₁ : OracleProtocol.{u, q}) →
           (fun k => data (.inr k))))).trans (congrFun ih i)
 
 /-- A completed shape paired with the oracle messages at its oracle nodes. -/
-abbrev PathWithOracleMessages (s : OracleProtocol.{u, q}) :=
+abbrev PathWithOracleMessages (s : OracleProtocol.{0, 0}) :=
   (p : Path s) × (∀ i, OracleMessage s p i)
 
 /-- Prepend one full move to a materialized path. -/
-def PathWithOracleMessages.prepend : (a : OraclePos.{u, q}) →
+def PathWithOracleMessages.prepend : (a : OraclePos.{0, 0}) →
     (next : OraclePoly.B a → OracleProtocol) →
     (x : Move oracleSig a) → PathWithOracleMessages (next (oracleSig.toFunB a x)) →
       PathWithOracleMessages (.liftBind a next)
@@ -435,8 +428,8 @@ def PathWithOracleMessages.prepend : (a : OraclePos.{u, q}) →
   | .oracle _ _, _, x, ⟨p, data⟩ => ⟨⟨⟨⟩, p⟩, sumData (fun _ => x) data⟩
 
 /-- Appending full transcripts materializes exactly the two routed oracle message families. -/
-theorem oracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : Transcript oracleSig s₁) →
+theorem oracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (tr₁ : Transcript oracleSig s₁) →
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
     (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
       oracleMessages (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
@@ -465,8 +458,8 @@ theorem oracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
     · rfl
 
 /-- The appended transcript's handler agrees with routing into its component handlers. -/
-theorem oracleMessageImpl_append (s₁ : OracleProtocol.{u, q})
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) (tr₁ : Transcript oracleSig s₁)
+theorem oracleMessageImpl_append (s₁ : OracleProtocol.{0, 0})
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
       oracleMessageImpl (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
@@ -487,10 +480,9 @@ theorem oracleMessageImpl_append (s₁ : OracleProtocol.{u, q})
   exact (funext ((oracleMessageFamily_append s₁ s₂ _ _).law _)).symm
 
 /-- The bundle a decision at path `p` may query: the input bundle and the path
-oracle messages. Input data may lie in a universe independent of responses and moves. Input queries
-and oracle-node queries also have independent universes. -/
-abbrev pathBundle (inputs : OracleBundle.{u, uI, dI})
-    (s : OracleProtocol.{u, q}) (p : Path s) :=
+oracle messages. -/
+abbrev pathBundle (inputs : OracleBundle)
+    (s : OracleProtocol.{0, 0}) (p : Path s) :=
   OracleBundle.sum inputs (OracleBundle.ofFamily (oracleMessageFamily s p))
 
 /-- A passive oracle verifier. The output statement type `T p` and the output oracle family
@@ -499,8 +491,8 @@ both. A verifier with one output type and family uses constant families. -/
 structure OracleVerifier {ι : Type} (ambient : OracleSpec ι)
     (s : OracleProtocol.{0, 0}) (S : Type) (T : Path s → Type)
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    (inputs : OracleBundle.{0, uI, dI})
-    (outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)) where
+    (inputs : OracleBundle)
+    (outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)) where
   /-- The decision has query access to inputs and path oracle messages, never their raw values. -/
   decide : S → (p : Path s) → View s p →
     OptionT (OracleComp (ambient + (pathBundle inputs s p).spec)) (T p)
@@ -518,7 +510,7 @@ decision on that path. Compiler inlining keeps the input family, which only fixe
 interface, out of execution. -/
 @[macro_inline]
 def pathLift {ι : Type} {I : Type} (ambient : OracleSpec ι) {A : I → Type}
-    (inputs : OracleFamily.{0, 0, wI} I A) {s : OracleProtocol.{0, 0}} (p : Path s) :
+    (inputs : OracleFamily.{0, 0, 0} I A) {s : OracleProtocol.{0, 0}} (p : Path s) :
     QueryImpl (oracleMessageSpec s p) (OracleComp (ambient + (pathBundle inputs s p).spec)) :=
   fun q => liftM ((ambient + (pathBundle inputs s p).spec).query
     (.inr (.inr q)))
@@ -528,7 +520,7 @@ queries answered in any lawful monad, are a pure computation of the path oracle 
 make no ambient query. -/
 theorem simulateQ_pathLift {ι : Type} {I : Type}
     {ambient : OracleSpec ι} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, wI} I A} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {inputs : OracleFamily.{0, 0, 0} I A} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (amb : QueryImpl ambient m) {s : OracleProtocol.{0, 0}} (p : Path s) (x : ∀ i, A i)
     (pl : ∀ i, OracleMessage s p i) {α : Type} (oa : OracleComp (oracleMessageSpec s p) α) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs s p).answer (x, pl)))
@@ -550,8 +542,8 @@ return on that data and view.
 def OracleVerifier.decideWith {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
     (data : (pathBundle inputs s p).Data) :
     OracleComp ambient (Option (T p)) :=
@@ -564,8 +556,8 @@ theorem OracleVerifier.simulateQ_decideWith {ι : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
     {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
     (stmt : S) (p : Path s) (v : View s p)
@@ -591,8 +583,8 @@ Reading the oracle messages directly would bypass the decision's queries. -/
 def OracleVerifier.executeWith {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type} {m : Type → Type} [Monad m]
     {ITrace : Type} {DTrace : Path s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -617,8 +609,8 @@ actual run. -/
 def OracleVerifier.run {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
@@ -641,8 +633,8 @@ functor and monad laws of the shared mechanism. -/
 theorem OracleVerifier.run_eq {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
@@ -673,8 +665,8 @@ oracle bundle, as in `OracleVerifier.run_eq`. -/
 theorem OracleVerifier.run_eq_decideWith {ι : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (x : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :

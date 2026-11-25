@@ -7,16 +7,10 @@ Authors: Quang Dao
 import ArkLib.Interaction.Composition
 
 /-!
-# Oracle bundles, families and queries in their own universes
+# Oracle bundles at `Type` and independent oracle-node queries
 
-Statements, witnesses, ambient oracle indices, output oracle indices, moves and run outputs lie
-in `Type`. Input oracle indices, input and output oracle query types and the query types of
-oracle nodes keep their own universes until the later migration steps of record D2. The instances
-below put an input oracle index in `Type 1`, input oracle queries in `Type 1` and output oracle
-queries in `Type 2`, with data and responses in `Type 0`. They typecheck against
-`OracleVerifier`, the oracle append, the oracle routing laws and oracle runs. A run returns the
-output oracle data `∀ j, B p j`. The security definitions take their data in `Type`, so this file
-does not instantiate them.
+Bundle routing, append and runs use data in `Type`. The final examples retain the independent
+oracle-node query universe until the vocabulary migration.
 -/
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp
 
@@ -32,9 +26,9 @@ def natInterface : OracleInterface Nat where
   toOC.spec := Unit →ₒ Nat
   toOC.impl _ := read
 
-/-- Input oracles indexed by types (`Type 1`) with natural-number data (`Type 0`). -/
+/-- Input oracles indexed by Boolean values with natural-number data. -/
 @[instance_reducible]
-def bigInputs : OracleFamily.{1, 0, 0} Type (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def bigInputs : OracleFamily.{0, 0, 0} Bool (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
 /-- The protocol with no rounds. -/
 abbrev done : Protocol := .pure ⟨⟩
@@ -42,30 +36,29 @@ abbrev done : Protocol := .pure ⟨⟩
 /-- The oracle protocol with no rounds. -/
 abbrev oracleDone : OracleProtocol.{0, 0} := .pure ⟨⟩
 
-/-- Routing through an oracle map with a large input index agrees with materialized data. -/
-theorem embedding_simulate_eq (x : Type → Nat) {α : Type}
-    (program : OracleComp (bigInputs.reindex (fun X : Type => X)).spec α) :
+/-- Routing through an oracle map agrees with materialized data. -/
+theorem embedding_simulate_eq (x : Bool → Nat) {α : Type}
+    (program : OracleComp (bigInputs.reindex (fun X : Bool => X)).spec α) :
     simulateQ (bigInputs.behaviorOfRealizations x)
-        (simulateQ (OracleMap.embedding bigInputs (fun X : Type => X)).impl program) =
-      simulateQ ((bigInputs.reindex (fun X : Type => X)).behaviorOfRealizations
-        ((OracleMap.embedding bigInputs (fun X : Type => X)).f x)) program :=
-  OracleMap.simulate_eq (OracleMap.embedding bigInputs (fun X : Type => X)) x program
+        (simulateQ (OracleMap.embedding bigInputs (fun X : Bool => X)).impl program) =
+      simulateQ ((bigInputs.reindex (fun X : Bool => X)).behaviorOfRealizations
+        ((OracleMap.embedding bigInputs (fun X : Bool => X)).f x)) program :=
+  OracleMap.simulate_eq (OracleMap.embedding bigInputs (fun X : Bool => X)) x program
 
-/-! ### An oracle run with a large input index -/
+/-! ### An oracle run at `Type` -/
 
 /-- One natural-number output oracle with an index in `Type 0`, as a run requires. -/
 @[instance_reducible]
 def smallOutputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
-/-- An oracle verifier that a prover can run against. Its ambient index, output index and
-statement are in `Type 0`, while its input oracle index stays in `Type 1`. -/
+/-- An oracle verifier with all indices, data and statements in `Type`. -/
 def runnable : OracleVerifier smallAmbient oracleDone Unit (fun _ => Nat) bigInputs
     (fun _ => smallOutputs) where
   decide _ p _ := by
     cases p
     exact liftM ((smallAmbient + (pathBundle bigInputs oracleDone ⟨⟩).spec).query
-      (.inr (.inl ⟨Bool, ()⟩)))
-  outputMap _ _ _ := (OracleMap.embedding bigInputs (fun _ : Unit => Bool)).comp
+      (.inr (.inl ⟨true, ()⟩)))
+  outputMap _ _ _ := (OracleMap.embedding bigInputs (fun _ : Unit => true)).comp
     (OracleMap.fst _ _)
 
 /-- The ambient oracle answers `true`; the protocol has no challenges. -/
@@ -76,14 +69,14 @@ def handler : QueryImpl (smallAmbient + challengeSpec oracleSig oracleDone) Id
 /-- The prover of the protocol with no rounds. -/
 def idle : Prover oracleSig smallAmbient oracleDone (fun _ => PUnit) := pure ⟨⟩
 
-/-- The run on input data that is `3` at every type. -/
+/-- The run on input data that is `3` at every index. -/
 def observation := simulateQ handler (runnable.run () (fun _ => 3) idle)
 
-/-- The run answers the input query at index `Bool` from the data, and the output oracle at `()`
-is the input oracle at `Bool`. -/
+/-- The run answers the input query at index `true` from the data, and the output oracle at `()`
+is the input oracle at `true`. -/
 example : observation.2.2.map (fun out => (out.1, out.2 ())) = some (3, 3) := rfl
 
-/-! ### Input and output query types in their own universes -/
+/-! ### Distinct input and output query types -/
 
 /-- A natural number answers every query `X : Type` with itself. The query type `Type` lies in
 `Type 1`, while the data and the responses lie in `Type 0`. -/
@@ -93,61 +86,58 @@ def typeQueries : OracleInterface.{0, 1} Nat where
   toOC.spec := Type →ₒ Nat
   toOC.impl _ := read
 
-/-- A natural number answers every query `X : Type 1` with itself; the query type lies in
-`Type 2`. -/
+/-- A natural number answers every Boolean query with itself. -/
 @[reducible]
-def bigTypeQueries : OracleInterface.{0, 2} Nat where
-  Query := Type 1
-  toOC.spec := Type 1 →ₒ Nat
+def bigTypeQueries : OracleInterface.{0, 0} Nat where
+  Query := Bool
+  toOC.spec := Bool →ₒ Nat
   toOC.impl _ := read
 
-/-- One input oracle whose queries are types, with natural-number data and responses. -/
+/-- One input oracle with unit queries and natural-number data and responses. -/
 @[instance_reducible]
-def typeQueryInputs : OracleFamily.{0, 0, 1} Unit (fun _ => Nat) := ⟨fun _ => typeQueries⟩
+def typeQueryInputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
-/-- One oracle whose queries lie in `Type 1`, a query universe different from the inputs'. -/
+/-- One oracle with Boolean queries, distinct from the input's unit queries. -/
 @[instance_reducible]
-def bigQueryOracles : OracleFamily.{0, 0, 2} Unit (fun _ => Nat) := ⟨fun _ => bigTypeQueries⟩
+def bigQueryOracles : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) := ⟨fun _ => bigTypeQueries⟩
 
-/-- The output oracle answers each query by asking the input oracle at `Nat`. -/
+/-- The output oracle answers each query by asking the input oracle at `()`. -/
 def forwardQueries (p : Path oracleDone) :
     OracleMap (pathBundle typeQueryInputs oracleDone p) (OracleBundle.ofFamily bigQueryOracles)
     where
   f x _ := x.1 ()
-  impl _ := (OracleMap.fst typeQueryInputs (oracleMessageFamily oracleDone p)).impl ⟨(), Nat⟩
+  impl _ := (OracleMap.fst typeQueryInputs (oracleMessageFamily oracleDone p)).impl ⟨(), ()⟩
   law _ _ := rfl
 
-/-- An oracle verifier whose input queries lie in `Type 1` and whose output queries lie in
-`Type 2`, while its moves, its result and all oracle responses lie in `Type 0`. It queries its
-input at the type `Bool`. -/
+/-- An oracle verifier with unit input queries and Boolean output queries, all at `Type`. -/
 def typeQueryVerifier : OracleVerifier smallAmbient oracleDone Unit (fun _ => Nat)
     typeQueryInputs (fun _ => bigQueryOracles) where
   decide _ p _ := by
     cases p
     exact liftM ((smallAmbient + (pathBundle typeQueryInputs oracleDone ⟨⟩).spec).query
-      (.inr (.inl ⟨(), Bool⟩)))
+      (.inr (.inl ⟨(), ()⟩)))
   outputMap _ p _ := forwardQueries p
 
-/-- The run answers the input query at the type `Bool` from the data `5`, and the output oracle
-answers a query in `Type 1` with the same value. -/
+/-- The run answers the unit input query from the data `5`, and the output oracle
+answers a Boolean query with the same value. -/
 example :
     (simulateQ handler (typeQueryVerifier.run () (fun _ => 5) idle)).2.2.map
-      (fun out => (out.1, bigQueryOracles.behaviorOfRealizations out.2 ⟨(), Type⟩)) =
+      (fun out => (out.1, bigQueryOracles.behaviorOfRealizations out.2 ⟨(), true⟩)) =
       some ((5, 5) : Nat × Nat) := rfl
 
-/-- A suffix whose input oracle has queries in `Type 2` and whose output oracle has queries in
-`Type 0`. It adds one to its input statement after querying its input at the type `Type`. -/
+/-- A suffix with Boolean input queries and unit output queries.
+It adds the input oracle answer to its statement. -/
 def typeQuerySuffix : OracleVerifier smallAmbient oracleDone Nat (fun _ => Nat)
     bigQueryOracles (fun _ => smallOutputs) where
   decide n p _ := by
     cases p
     exact (fun m => n + m) <$> liftM
       ((smallAmbient + (pathBundle bigQueryOracles oracleDone ⟨⟩).spec).query
-        (.inr (.inl ⟨(), Type⟩)))
+        (.inr (.inl ⟨(), true⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
       impl := fun _ =>
-        (OracleMap.fst bigQueryOracles (oracleMessageFamily oracleDone p)).impl ⟨(), Type⟩
+        (OracleMap.fst bigQueryOracles (oracleMessageFamily oracleDone p)).impl ⟨(), true⟩
       law := fun _ _ => rfl }
 
 /-- The composite output map ignores the intermediate statement, so any certificate holds. -/
@@ -159,10 +149,10 @@ def typeQueryCompatible :
       (OracleVerifier.suffixRoute typeQueryVerifier stmt p v)
   agrees _ _ _ _ _ _ := rfl
 
-/-- Oracle append whose input, middle and output query types lie in three different universes. -/
+/-- Oracle append with unit input, Boolean middle and unit output query types. -/
 def typeQueryAppend := typeQueryVerifier.append (fun _ => typeQuerySuffix) typeQueryCompatible
 
-/-- The oracle routing law when the input, middle and output query universes differ. -/
+/-- The oracle routing law with distinct query carriers at stage boundaries. -/
 theorem typeQueryAppend_decideWith (stmt : Unit)
     (p : Path (oracleDone.append (fun _ => oracleDone)))
     (v : View (oracleDone.append (fun _ => oracleDone)) p)

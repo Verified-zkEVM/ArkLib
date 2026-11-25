@@ -258,7 +258,7 @@ theorem total_handler_faults_reject (old message hidden : Nat) :
 
 section CloseOptional
 
-universe v dI uI wJ
+universe v
 
 /-- For the closing map `close` of any completed transcript, `Except.ok outcome` mapped by
 `Option.map close` equals `Except.ok (outcome.map close)`. This is an equation about `Except.map`
@@ -267,8 +267,8 @@ alone and mentions no actual run. An absent verdict stays a rejection and create
 theorem close_optional_ok {ε : Type v} {ι : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (tr : Transcript oracleSig s) (outcome : Option (T tr.path)) :
     let p := tr.path
@@ -1163,7 +1163,7 @@ end Interaction.LoggedExecutionTests
 /-- Forgetting the ambient queries by move recovers the parent verifier's run. -/
 example {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T J : FreeM.Path s → Type}
-    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)

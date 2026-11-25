@@ -29,14 +29,14 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 section UnequalUniverses
 
 variable (clientAmbient : OracleSpec Unit) {I : Type} {A : I → Type}
-  (inputs : OracleFamily.{0, 0, 1} I A)
-  {J : Type} {B : J → Type} (outputs : OracleFamily.{0, 0, 1} J B)
+  (inputs : OracleFamily.{0, 0, 0} I A)
+  {J : Type} {B : J → Type} (outputs : OracleFamily.{0, 0, 0} J B)
   (check : ℕ → (Spec.SingleRound.pSpec ℕ 1).Challenges →
     OptionT (OracleComp [(Spec.SingleRound.pSpec ℕ 1).Message]ₒ) ℕ)
   (out : ℕ → (p : Path (round ℕ 1)) → View (round ℕ 1) p →
     OracleMap (pathBundle inputs (round ℕ 1) p) (OracleBundle.ofFamily outputs))
 
-/-- Input bundle queries in `Type 1` pass through the round verifier. -/
+/-- Input bundle queries in `Type` pass through the round verifier. -/
 def largeQueryVerifier :
     OracleVerifier clientAmbient (round ℕ 1) ℕ (fun _ => ℕ) inputs
       (fun _ => outputs) :=

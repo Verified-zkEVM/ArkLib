@@ -229,21 +229,20 @@ namespace Sumcheck.ComputableTest.Universes
 open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec Sumcheck
 
-universe wI
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, wI} I A)
+  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
   {M : Type} {eval : M → R → R}
 
-/-- Construction over an input family with an arbitrary query universe. -/
+/-- Construction over an input family with queries in `Type`. -/
 def verifierAtQueryUniverse :
     OracleVerifier ambient (protocolOn R M eval n) (Sumcheck.Spec.StatementRound R n 0)
       (fun _ => Sumcheck.Spec.StatementRound R n (Fin.last n)) inputs (fun _ => inputs) :=
   verifierOn R deg n D ambient M eval inputs
 
 omit [SampleableType R] in
-/-- The final decision law accepts an arbitrary query universe through an ordinary import. -/
+/-- The final decision law accepts queries in `Type` through an ordinary import. -/
 theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
     (hf : ∀ x r, eval x r = (f x).val.eval r) {κ : Type} {target : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp target)) (stmt : Sumcheck.Spec.StatementRound R n 0)
@@ -255,9 +254,9 @@ theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
         OracleComp target _) :=
   simulateQ_decideOn D inputs hf amb stmt data tr
 
-/-- The review's constant-evaluation constructor also accepts a high bundle-query universe. -/
+/-- The review's constant-evaluation constructor also accepts bundle queries in `Type`. -/
 example (domain : Fin 1 ↪ R) {J : Type} {B : J → Type}
-    (family : OracleFamily.{0, 0, 1} J B) :
+    (family : OracleFamily.{0, 0, 0} J B) :
     OracleVerifier emptySpec (protocolOn R R (fun x _ => x) 1)
       (Sumcheck.Spec.StatementRound R 1 0)
       (fun _ => Sumcheck.Spec.StatementRound R 1 (Fin.last 1)) family (fun _ => family) :=

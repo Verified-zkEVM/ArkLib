@@ -24,19 +24,17 @@ the prefix transcript alone.
 
 @[expose] public section
 
-universe u q dI uI wJ wK
-
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 /-- Component paths of an appended protocol with data for both component oracle families. -/
-abbrev SplitOracleMessages (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q}) :=
+abbrev SplitOracleMessages (s₁ : OracleProtocol.{0, 0}) (s₂ : Path s₁ → OracleProtocol.{0, 0}) :=
   (z : (p : Path s₁) × Path (s₂ p)) ×
     (∀ i, (sumFamily (oracleMessageFamily s₁ z.1) (oracleMessageFamily (s₂ z.1) z.2)).Realization i)
 
 /-- Splitting the oracles of an appended path recovers the routed component data. -/
-theorem splitOracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem splitOracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : ∀ i, OracleMessage (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂) i) →
     (⟨Path.split s₁ s₂ (Path.append s₁ s₂ p₁ p₂),
       (splitOracleMessages s₁ s₂ (Path.append s₁ s₂ p₁ p₂)).f x⟩ : SplitOracleMessages s₁ s₂) =
@@ -66,8 +64,8 @@ theorem splitOracleMessages_append : (s₁ : OracleProtocol.{u, q}) →
 
 /-- In an appended run, the oracle messages routed to either component are that component's
 own. -/
-theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{u, q})
-    (s₂ : Path s₁ → OracleProtocol.{u, q})
+theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{0, 0})
+    (s₂ : Path s₁ → OracleProtocol.{0, 0})
     (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨Path.split s₁ s₂
@@ -85,15 +83,15 @@ theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{u, q})
 
 namespace OracleVerifier
 variable {ι : Type} {ambient : OracleSpec ι}
-  {inputs : OracleBundle.{0, uI, dI}}
+  {inputs : OracleBundle}
   {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {K : (p : Path s₁) → Path (s₂ p) → Type}
   {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
   {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-    OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
+    OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
 
 /-- In an appended run, the prefix decision's bundle consists of the inputs and the prefix oracle
 messages: every prefix-slot query routed by `prefixRoute` is answered as

@@ -58,32 +58,15 @@ The ports follow the universe policy of record D2: data lies in `Type`.
 - `StageChain` ([stages]) puts every statement type, oracle index type and oracle data type of a
   chain in `Type`, which is the old-layer `ExecutionInterface.{u}` at `u = 0`. It takes
   `ambient : OracleSpec ι` with `ι : Type`.
-- Inside a chain, the oracle families have their query types in one universe `w`, because a
-  recursive occurrence of an inductive type keeps the type's universe parameters. This is a
-  choice of representation, not a consequence of P1 or P2. It does not restrict the families at a
-  chain's boundaries.
-  - `OracleFamily.liftQueries` ([liftQueries]) gives a family with query universe `wI` its queries
-    in `max wI w'`, as `ULift` of the original queries, with the same data and answers.
-  - `OracleVerifier.liftInputs` ([liftInputs]) and `OracleVerifier.liftOutputs` ([liftOutputs])
-    adapt a stage verifier with families in other query universes. `OracleVerifier.lowerOutputs`
-    ([lowerOutputs]) recovers the original family of a chain's output.
-  - The recovery laws keep the decision and the output data on the same data ([liftInputsDecide],
-    [liftInputsData], [liftOutputsData], [lowerOutputsData]). The adapters are instances of
-    `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs` ([comapInputs], [mapOutputs],
-    [comapInputsDecide]). Reading the inputs through an oracle map gives the same run after the
-    decision's bundle queries are answered from the supplied data ([comapInputsRun]). This
-    equality does not bound the queries that the map issues for each routed query. Two maps with
-    the same answers can charge differently. In the answer-only fixture, `repeated` issues two
-    source queries for each routed query and `identity` issues one, and both give the same
-    answers ([claimRow3]). A client that needs a charge bound proves it separately, for
-    example with `OracleMap.withAmbient_worstCaseCost` from #1476 in the universes it supports.
-    The stage API does not depend on the resource contracts of #1528.
-  - The binary `OracleVerifier.append` keeps independent query universes for its input, middle
-    and output families. So do the binary decision laws ([appendReject] to [appendMeasure]).
-  - The canary [wideStages] reads inputs with queries in `Type` and exports a family with queries
-    in `Type 1`. [wideDecide] states that the chain decides as the original stage on the original
-    data. [wideNarrow] continues to a stage that exports a family with queries in `Type`, which
-    leaves the chain through `lowerOutputs` ([wideNarrowRows]).
+- Step 4 of the universe migration puts every chain's queries in `Type` and removes
+  `OracleFamily.liftQueries`, `OracleMap.liftQueries`, `OracleMap.lowerQueries`,
+  `OracleVerifier.liftInputs`, `OracleVerifier.liftOutputs`, `OracleVerifier.lowerOutputs`
+  and their recovery laws. Binary append and its decision laws also use queries in `Type`.
+  `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs` remain general maps
+  ([comapInputs], [mapOutputs], [comapInputsDecide]). Reading inputs through a map gives the
+  same run after answering bundle queries from the supplied data ([comapInputsRun]); it does
+  not bound the queries the map issues. The parity and two-stage execution examples in
+  `ArkLibTest/Interaction/Oracle/StageChain.lean` remain at `Type`.
 - The old-layer private state lies in `u`. In the port it is part of the prover's output, whose
   family lies in `Type` ([stagesRun]).
 - The dependent-reduction canary ([depCanary]) kept the shared, statement, witness and

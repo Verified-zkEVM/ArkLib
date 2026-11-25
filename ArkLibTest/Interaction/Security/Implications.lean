@@ -97,7 +97,7 @@ example {ι σ : Type} {I : Type} {S : Type}
 example {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))

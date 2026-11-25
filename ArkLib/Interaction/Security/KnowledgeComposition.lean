@@ -698,7 +698,7 @@ theorem OracleVerifier.validAcceptance_append {ι σ : Type} {S : Type}
     {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
     {K : (p : Path s₁) → Path (s₂ p) → Type}
     {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
       OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
