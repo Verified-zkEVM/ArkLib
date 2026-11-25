@@ -915,14 +915,13 @@ example (input : Nat) : loggedObserved input = observed input := by
 end Interaction.DependentRoutingTests
 
 
-universe uS wJ v
+universe v
 
-/-- Log erasure permits large input statements and output query types in a lawful target monad.
-The input queries stay small because the decision log returns them. -/
-example {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+/-- Log erasure holds in a lawful target monad with any result universe. -/
+example {ι I : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : FreeM.Path s → Type} {A : I → Type} {J : FreeM.Path s → Type}
     {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleFamily.{0, 0, 0} I A}
-    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
@@ -1161,13 +1160,11 @@ example : OracleVerifier.QueriesByMove.toLog <$>
 
 end Interaction.LoggedExecutionTests
 
-universe uQuery uInput uData
-
-/-- The ambient queries by move keep the parent verifier's independent bundle universes. -/
-example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, uQuery}} {T J : FreeM.Path s → Type}
-    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleBundle.{0, uInput, uData}}
-    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+/-- Forgetting the ambient queries by move recovers the parent verifier's run. -/
+example {ι : Type} {S : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {T J : FreeM.Path s → Type}
+    {B : (p : FreeM.Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {outputs : (p : FreeM.Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :

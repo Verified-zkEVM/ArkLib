@@ -60,7 +60,7 @@ def certificate : KnowledgeStateFunction plainSig twoBits Unit (fun _ _ => Unit)
         exact h
 
 /-- The full-prefix knowledge predicate certifies zero error at both receiver nodes. -/
-theorem zero_error : rbrKnowledgeSoundness.{0, 0, 0} plainSig twoBits (fun (_ : Unit) => True)
+theorem zero_error : rbrKnowledgeSoundness plainSig twoBits (fun (_ : Unit) => True)
     (fun _ (_ : Unit) => False) (fun _ tr (_ : Unit) => tr.2.1 = tr.1)
     draw (fun _ _ _ => 0) := by
   refine ⟨certificate, ?_⟩

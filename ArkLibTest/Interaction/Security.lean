@@ -13,8 +13,6 @@ import VCVio.OracleComp.Constructions.SampleableType.Measure
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp MeasureTheory
 open scoped ENNReal
 
-universe v
-
 namespace Interaction.SecurityTests
 
 @[instance_reducible] def problem : StatementProblem Bool where
@@ -196,18 +194,9 @@ def knowledgeState : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit)
   send _ _ _ _ _ _ h := h
   leaf _ _ _ _ h := h
 
-example : rbrKnowledgeSoundnessOfNodes.{0, 0, 0} plainSig coin (fun _ => True)
+example : rbrKnowledgeSoundnessOfNodes plainSig coin (fun _ => True)
     (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
     draw (fun _ => 0) := by
-  refine ⟨knowledgeState, ?_⟩
-  intro stmt _ a next sp h history
-  simp [knowledgeState]
-
-/-- The same bound holds with the intermediate witnesses lifted to any universe `v`. -/
-example : rbrKnowledgeSoundnessOfNodes.{0, 0, v} plainSig coin (fun _ => True)
-    (fun stmt (_ : Unit) => stmt = true) (fun stmt _ (_ : Unit) => stmt = true)
-    draw (fun _ => 0) := by
-  apply rbrKnowledgeSoundness.lift.{0, 0, 0, 0, 1, v}
   refine ⟨knowledgeState, ?_⟩
   intro stmt _ a next sp h history
   simp [knowledgeState]
@@ -227,7 +216,7 @@ def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ _ => Unit) 
 
 /-- The promise excludes `false`, so its accepted runs need no witness. -/
 example (err : ChallengeNode plainSig zero → ℝ≥0∞) :
-    rbrKnowledgeSoundnessOfNodes.{0, 0, 0} plainSig zero (· = true) (fun b (_ : Unit) => b = true)
+    rbrKnowledgeSoundnessOfNodes plainSig zero (· = true) (fun b (_ : Unit) => b = true)
       (fun (_ : Bool) _ (_ : Unit) => True) (fun c => c.val.elim) err :=
   ⟨promisedState, fun _ _ _ _ sp => nomatch sp⟩
 
@@ -386,7 +375,7 @@ def coinKnowledge : KnowledgeStateFunction plainSig coin Bool (fun _ _ => Unit) 
 
 /-- Backwards extraction fails exactly when a false statement meets a true challenge. -/
 theorem coin_rbrKnowledgeSoundness :
-    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} coinVerifier tick (fun _ => True)
+    Verifier.rbrKnowledgeSoundnessOfNodes coinVerifier tick (fun _ => True)
       (fun b (_ : Unit) => b = true)
       (fun _ _ (_ : Nat) (_ : Unit) => True) draw (fun _ => 1 / 2) := by
   refine ⟨coinKnowledge, ?_⟩
@@ -406,7 +395,7 @@ theorem coin_rbrKnowledgeSoundness :
 /-- No knowledge state function achieves an error below one half. -/
 theorem coin_not_rbrKnowledgeSoundness (ε : ChallengeNode plainSig coin → ℝ≥0∞)
     (hε : ε onlyChallenge < 1 / 2) :
-    ¬ Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} coinVerifier tick (fun _ => True)
+    ¬ Verifier.rbrKnowledgeSoundnessOfNodes coinVerifier tick (fun _ => True)
       (fun b (_ : Unit) => b = true)
       (fun _ _ (_ : Nat) (_ : Unit) => True) draw ε := by
   rintro ⟨F, hF⟩
@@ -522,7 +511,7 @@ example (w : Fin 8) :
 every challenge implementation. -/
 theorem payload_rbrKnowledgeSoundness
     (draw : QueryImpl (challengeSpec plainSig payloadMsg) ProbComp) :
-    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} payloadVerifier tick (fun _ => True)
+    Verifier.rbrKnowledgeSoundnessOfNodes payloadVerifier tick (fun _ => True)
       (fun stmt (w : Nat) => w ≤ stmt)
       (fun _ tr (_ : Nat) (_ : BoundedIndex tr) => True) draw (fun _ => 0) := by
   refine ⟨payloadKnowledge, ?_⟩

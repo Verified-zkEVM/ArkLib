@@ -229,25 +229,24 @@ example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath
       (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inr (.inl ⟨⟩)) = b := rfl
 
--- The full decision log fixes input indices and queries to `Type`; output queries stay
--- independent. See interaction rebuild implementation note 18.
+-- The full decision log takes its data in `Type`. See interaction rebuild implementation note 18.
 /-- Private output, verdict and every raw decision query of the composed logged run. -/
-def loggedSummary.{qJ} (a b : Nat) :
+def loggedSummary (a b : Nat) :
     Nat × Option Nat × QueryLog (ambient + rawBundle.spec) :=
   let result := simulateQ tagHandler
-    (composed.{0, 0, 0, qJ}.runWithLog () noData (prover a b))
+    (composed.runWithLog () noData (prover a b))
   (result.1.2.1, result.1.2.2.map Prod.fst, result.2.2)
 
 /-- One exported query expands into two separately recorded prefix reads, then the suffix read.
 The same run keeps the private sum and accepts with the doubled prefix plus the suffix. -/
 theorem loggedSummary_eq (a b : Nat) :
-    loggedSummary.{wJ} a b =
+    loggedSummary a b =
       (a + b, some (a + a + b),
         [⟨.inr prefixSlot, a⟩, ⟨.inr prefixSlot, a⟩, ⟨.inr suffixSlot, b⟩]) := by
   kernel_rfl
 
 /-- Prefix value one and suffix value two recover the concrete repeated-read outcome. -/
-example : loggedSummary.{0} 1 2 =
+example : loggedSummary 1 2 =
     (3, some 4,
       [⟨.inr prefixSlot, (1 : Nat)⟩, ⟨.inr prefixSlot, (1 : Nat)⟩,
         ⟨.inr suffixSlot, (2 : Nat)⟩]) :=
