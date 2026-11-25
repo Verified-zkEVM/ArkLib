@@ -18,8 +18,8 @@ index. Query and response types may vary with the index, and a carrier subtype s
 bound that holds of every realization.
 
 Named bundles keep distinct response and realization carriers in `Type`. A view restricts the
-visible
-queries while retaining the whole context's data. Both forms are used directly as verifier inputs.
+visible queries while retaining the whole context's data. Both forms are used directly as verifier
+inputs.
 
 The polynomial fixture is noncomputable because Mathlib's `Polynomial` is; it is used only for
 the evaluation and degree proofs.
