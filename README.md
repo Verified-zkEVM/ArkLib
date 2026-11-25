@@ -99,7 +99,6 @@ Around the core:
 - [`ArkLib/Commitments/`](ArkLib/Commitments/) holds commitment schemes and opening arguments.
 - [`ArkLib/Data/`](ArkLib/Data/) holds supporting mathematics: coding theory, proximity gaps,
   polynomials and probability.
-- [`ArkLib/AGM/`](ArkLib/AGM/) holds algebraic group model representations.
 - [`ArkLib/ToCompPoly/`](ArkLib/ToCompPoly/) and [`ArkLib/ToMathlib/`](ArkLib/ToMathlib/) hold
   local bridges to, and extensions of, ArkLib's dependencies.
 - [`ArkLibTest/`](ArkLibTest/) holds compile-time acceptance tests.
