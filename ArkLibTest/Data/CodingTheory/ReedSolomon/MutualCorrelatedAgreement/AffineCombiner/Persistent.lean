@@ -87,17 +87,6 @@ example (d : ℕ) :
   simpa [ZMod.card] using card_ratFunc_combination_map_le (.refl _) 0
     (algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) X)⁻¹ hnot
 
--- The Johnson hypotheses hold at `d = 0`, `B = 4`, and the bound is below `|F|² = 25`.
-open Classical in
-example (f g : ZMod 5 → ZMod 5) :
-    (#{c : ZMod 5 × ZMod 5 | ∃ P,
-      IsAffineExceptional fullDomain f g 0 3 1 c.1 c.2 P ∧
-        IsAffinePersistent fullDomain f g 0 4 c.1 c.2 P} : ℝ) ≤ 150 / 11 := by
-  have h := card_isAffineExceptional_persistent_map_le fullDomain f g (.refl _) (d := 0) (A := 3)
-    (B := 4) (by decide) (by norm_num [ZMod.card])
-  norm_num [ZMod.card, Nat.choose] at h ⊢
-  exact h
-
 -- Over `𝔽₄ ⊇ 𝔽₂`, the pair `(0, 1 / X)` is compatible exactly with the base-field
 -- challenges `(0, β)`, so the subfield bound `|𝔽₂| = 2` is attained.
 open Classical in

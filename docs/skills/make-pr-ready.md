@@ -167,8 +167,7 @@ declaration that the branch adds or changes:
 
 1. Follow [`fix-lean-warnings.md`](fix-lean-warnings.md) for each changed `.lean` file. Fix the
    source, and do not add a linter suppression. A deprecation warning gives the new name. Use it.
-2. Compare the admissions and `scripts/axiom_baseline.json` with the base. Include the
-   uncommitted changes in that comparison:
+2. Compare the admissions with the base. Include the uncommitted changes in that comparison:
 
    ```bash
    uv run --no-project --python 3.12 python scripts/source-trust-audit.py --base-ref "${pr_base:?set pr_base in this shell}"
@@ -177,11 +176,9 @@ declaration that the branch adds or changes:
 
    Examine each new obligation, not the net count. A new declaration can depend only on
    `propext`, `Classical.choice`, and `Quot.sound`. Reject custom axioms, `sorryAx`, and
-   native-compiler trust. Existing debt does not permit new debt.
-3. The baseline has an empty `sorry` list. Its admitted entries are reviewed solicited proofs,
-   each linked to a tracking issue. Remove a proved entry from `solicited` in the same pull
-   request. A new entry requires maintainer review. No declaration outside `solicited` may
-   depend on an entry. See [`scripts/README.md`](../../scripts/README.md).
+   native-compiler trust.
+3. `main` has no admitted proofs, and the axiom sweep has no allowlist. Remove every `sorry`
+   before merging. See [`scripts/README.md`](../../scripts/README.md).
 
 ### 4. Check the citations
 

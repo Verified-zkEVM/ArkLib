@@ -742,6 +742,11 @@ home_page/            site assets and assembled website root
   events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
+  `Security/CoordinateWiseSpecialSoundness/Layout.lean` defines the blocks and layouts of one vector
+  challenge (a star per block, a nested tree across blocks). `BlockStructure.lean` defines
+  `BlockCWSSStructure`, a layout per round, and maps `CWSSStructure` into it with the same tree
+  shape. `LayoutVecTree.lean` is the only file of this folder that imports the VCVio rewinding
+  finder: it reads a tree of a layout as a structured `Rewinding.VecTree`.
 - `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
   an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
   equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
@@ -885,19 +890,17 @@ home_page/            site assets and assembled website root
   [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
-  domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
-  interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
-  reference points, and `Codegen.lean` enforces compiler-IR availability. The simplified IOR
+  domain-generic protocol and extraction theorems. `Impl/IRS.lean` supplies the computable
+  interleaved Reed--Solomon extractor, and `Impl/FRS.lean` contains neutral KoalaBear folded-RS
+  reference points. `Codegen.lean` enforces compiler-IR availability. The simplified IOR
   (`SimplifiedIOR`) is an `OracleReduction` with a query-by-query virtual output oracle and
   exact named interleaved-RS straightline and RBR extractors. The compiled small-parameter
-  checks run with
-  `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
-  radius, and the repetition count, so they apply at production sizes without evaluation. Turning
-  such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
-  `Data/CodingTheory/ProximityGap/CapacityBounds`, all proven except ABF26 Theorem 4.16 (a
-  solicited proof, [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)),
-  deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
-  any production shape.
+  checks run with `lake exe toyproblem-runtime`. The security theorems themselves are parametric
+  in the code, the radius, and the repetition count, so they apply at production sizes without
+  evaluation. Turning
+  such a theorem into a *numeric* error value also needs the MCA/CA capacity bounds in
+  `Data/CodingTheory/ProximityGap/CapacityBounds`. Those are all proven and deliberately outside
+  the toy-problem import cone. No numeric error value is proven in-tree at any production shape.
 - Batched FRI takes a proximity generator `G : S → Fin (m + 1) → F`. Its single
   uniformly sampled seed selects the coefficients of the virtual output word. Compose
   `BatchingRound.batchOracleReduction s d m G` directly with `Fri.Spec.reduction`, as
