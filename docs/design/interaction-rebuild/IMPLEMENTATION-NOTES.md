@@ -159,11 +159,13 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 in `Type 1`, adversaries in one universe that the model argument determines, and generic
 polynomial code in PolyFun's universes. Step 2 removed the security definitions' independent
 universes and both `.lift` lemmas. Step 3 removed the independent statement, witness and index
-universes of execution, reductions, oracle verifiers, composition and stage chains. Step 4 makes `OracleBundle : Type 1`, with all query indices, responses and backing data in
-`Type`, and removes the query- and response-universe adapters. It also removes the large-query
-full-log limit described historically below. The remaining vocabulary universes are handled by
-later [migration steps](D2-ownership-and-universes.md#migration).
-[`universe-policy.md`](../interaction-layer/universe-policy.md) records the reasons.
+universes of execution, reductions, oracle verifiers, composition and stage chains. Step 4 made
+`OracleBundle : Type 1`, with its query indices, responses and data in `Type`, and removed the
+adapters that changed a query or response universe. That also retired the full-log limit below.
+The universes of the oracle vocabulary disappear in later steps, and this entry is retired with
+the last [migration step](D2-ownership-and-universes.md#migration). Until then, the rest of this
+entry describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
+records the reasons.
 
 **Retained runner contract.** Run outputs lie in `Type`: the output statement `StmtOut p`, the
 output oracle data `B p j` returned by a run, the output index `J p`, prover outputs, extracted
@@ -183,13 +185,16 @@ the universe canary constructs and reads a natural-number leaf. Exposing that pa
 lets the pinned universe linter distinguish the move universe in the alias's type; the query
 universe remains independent, without a linter suppression or source-policy exception.
 
-**Bundle data at `Type`.** Decisions read `pathBundle inputs s p`, the disjoint sum of the
-input specification and the path's specification, with data kept as a pair (`OracleBundle.sum`).
-Step 4 puts both query carriers and all backing data in `Type`. `OracleBundle.ofFamily` uses
-`OracleFamily.{0, 0, 0}`; the family and interface definitions themselves remain unchanged.
-The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` still checks the exact named
-and visible query carriers, whole-context data, verifiers and shared run at `Type`. Its
-independent universe assertions are retired under the policy adopted in #1580.
+**Bundle data in `Type`.** A decision reads `pathBundle inputs s p`, the disjoint sum of the
+input specification and the path's specification, with their data kept as a pair
+(`OracleBundle.sum`). Since step 4, both query index types and all bundle data lie in `Type`.
+`OracleBundle.ofFamily` takes an `OracleFamily.{0, 0, 0}`. Step 4 did not change the definitions
+of `OracleFamily` and `OracleInterface`. The oracle-message families (`oracleMessageFamily`,
+`splitOracleMessages`) keep the node-query universe of `OracleProtocol.{u, q}`, and the verifier
+APIs pin it at `0`. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` still
+checks the named and visible query carriers, the whole-context data, the verifiers and the shared
+run, now in `Type`. Its assertions of independent universes are retired under the policy adopted
+in #1580.
 
 **Equivalent: Agreement output and witness families (F7 and 3A).** `Security/Agreement.lean`
 now preserves path-dependent `T p`, `J p`, `B p j` and `outputs p` in every agreement and tree
@@ -205,9 +210,10 @@ available; Sumcheck specializes them through `rbrKnowledgeSoundnessOfNodes`. The
 marks both reviewed contracts equivalent and records the ordinary-import clients.
 Neither P1 nor P2 retires an Agreement output or witness contract.
 
-**Retired large-log limit.** Step 4 removed the independent bundle query universes, so
-`OracleVerifier.runWithLog` can return every bundle query in its `Type`-valued log. The earlier
-requirement for an upstream large-query logging interface no longer applies.
+**Retired limit of the full-log runner.** `OracleVerifier.runWithLog` returns the decision's
+full query log, which records bundle queries, so it needs the bundle query indices in `Type`.
+Since step 4 every bundle has them there, so the runner accepts every oracle verifier and no
+large-query logging interface from VCVio is needed. Extraction does not use the full-log runner.
 `OracleVerifier.runWithAmbientLog` puts the logger on the ambient handler before adding the pure
 bundle handler, so its result holds only two ambient logs. `map_runWithLog_eq_runWithAmbientLog`
 proves that it is the full-log run with the decision log restricted to its ambient entries, and
@@ -228,8 +234,9 @@ result universe `v`.
 **Security wrappers.** The security definitions now take their data in `Type`, as step 2 of the
 [policy migration](D2-ownership-and-universes.md#migration). Statements, input, intermediate and
 output witnesses, problem claims and witnesses, input oracle data and query indices, and the
-values of the runner monad lie in `Type` in every file of `Interaction/Security/`. The protocol,
-and family arguments are pinned at `0`; bundles have no universe parameters since step 4.
+values of the runner monad lie in `Type` in every file of `Interaction/Security/`. The protocol
+and family arguments are pinned at `0` until the vocabulary step removes their universes. Bundles
+have had no universe parameters since step 4.
 `AdversaryModel` keeps one universe `w` for its adversaries, and an `ExtractionInterface` over a
 model takes its extractors in the same universe. The generic round-by-round definitions keep
 the position universe `uA` of `P : PFunctor.{uA, 0}`. Generic monads keep their result
@@ -246,10 +253,11 @@ have one form now, with no `...Aux` duplicate. Extracted witnesses returned by t
 games are values of the runner and stay in `Type`. Neither P1 nor P2 retires any of these
 contracts; both premises concern scheduling and shape rather than universes.
 
-`ArkLibTest/Interaction/UniverseCanary.lean` checks bundle routing, append and runs at `Type`
-after step 4. It retains the independent oracle-node protocol examples for the vocabulary step.
-The R26/R27 constructors and their verifier/run examples in
-`ArkLibTest/Interaction/Oracle/BundleFamilies.lean` also use `Type`.
+`ArkLibTest/Interaction/UniverseCanary.lean` checks oracle maps, the oracle append, the routing
+law `append_decideWith` and two oracle runs with all bundle data in `Type`. It keeps an oracle
+node carrying `OracleInterface.{0, 1} Nat`, whose queries are types, until the vocabulary step.
+The R26/R27 constructors in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` and their
+verifier and run examples also work in `Type`.
 
 ## Changes that keep to the records
 
@@ -296,10 +304,12 @@ through the passive append `OracleVerifier.append` (record D5).
   equals that function's result. `StageChain.StatementFree c` is the special case in which no
   output map reads its input statement. `StageChain.StatementFree.certify` builds its evidence with
   `OutputCompatibility.ofStatementFree`.
-- Step 4 puts every chain's query types in `Type` and deletes the universe adapters and their
-  recovery laws. The general maps `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs`
-  remain. `comapInputs_run` gives the same run after bundle queries are answered from supplied
-  data; it does not bound the source queries issued by routing.
+- A chain's oracle families have their queries in `Type`. Step 4 deleted the universe adapters
+  (`OracleFamily.liftQueries`, `OracleVerifier.liftInputs`, `OracleVerifier.liftOutputs`,
+  `OracleVerifier.lowerOutputs`) and their recovery laws. The general maps
+  `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs` remain. `comapInputs_run` gives
+  the same run after the bundle queries are answered from the supplied data. It does not bound
+  the source queries that the routing issues, which needs a separate statement.
 - `StageChain.protocol`, `StageChain.draw` and `StageChain.run` are the composed protocol, the combined draws
   and the core run `OracleVerifier.run` of the composed verifier with the challenges answered by
   the draws. `StageChain.verifier_cons` and `StageChain.draw_cons` state that a chain with a first stage

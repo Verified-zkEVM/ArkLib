@@ -53,7 +53,6 @@ composed path and the view that every accepted intermediate statement equals.
 constructors. The inductive type then does not refer to the verifier computed from it.
 
 Every oracle family of a chain has its query indices, responses and data in `Type`.
-Step 4 of the universe migration removed the adapters between query universes.
 
 The invariant laws `StageChain.decideWith_accepts_of_deterministic`,
 `StageChain.decideWith_accepts_of_onSupport` and `StageChain.decideWith_accepts_of_almostSurely`

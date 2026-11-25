@@ -95,7 +95,10 @@ theorem sumData_eta {I : Type uI} {J : Type uJ} {A : I → Type u} {B : J → Ty
   funext k
   cases k <;> rfl
 
-/-- A query specification and the concrete data that answers it, all in `Type`. -/
+/-- A query specification and the concrete data that answers it, all in `Type`.
+
+For fixed `Index` and `Data`, the specification and answer function are equivalent to VCVio's
+`OracleContext Index (fun α => Data → α)`. -/
 structure OracleBundle : Type 1 where
   /-- The query indices. -/
   Index : Type
