@@ -1,8 +1,13 @@
 # Typed interaction names
 
-The typed interaction API names describe the mathematical data and its interpretation. The source
-layer lives in [`Source.lean`](../../ArkLib/Interaction/Oracle/Source.lean); named contexts and their
-models live in [`Resource.lean`](../../ArkLib/Interaction/Oracle/Resource.lean).
+The typed interaction API names describe the mathematical data and its interpretation. The
+naming conventions in the first section still apply. Most later sections name declarations of the
+old generic interaction layer: its source layer in `Oracle/Source.lean`, its named contexts and
+models in `Oracle/Resource.lean`, and the rest of `ArkLib/Interaction/Oracle/`. That layer has
+been deleted, and these sections stay as a record of its names. The interaction core under
+`ArkLib/Interaction/Core/` replaces it, and the
+[migration list](../design/interaction-layer/migration-list.md) maps each deleted module to its
+core counterpart.
 
 ## Public names and explanations
 
@@ -365,7 +370,9 @@ For virtual oracles, rename old `mapSource` uses to `substSource` before renamin
 (previously `Context`) in the plain reduction API. The legacy `Reduction` API outside
 `Interaction` is unchanged. File and import paths remain unchanged.
 
-After migration, run `lake build` and `lake test`. The
-[source examples](../../ArkLibTest/Interaction/Oracle/SourceExample.lean) distinguish query sums
-from paired queries; the [context examples](../../ArkLibTest/Interaction/Oracle/ResourceExample.lean)
-exercise disjointness, aliasing, dependent interpretation, and promise preservation.
+After migration, run `lake build` and `lake test`. The deleted source examples
+(`ArkLibTest/Interaction/Oracle/SourceExample.lean`) distinguished query sums from paired queries,
+and the deleted context examples (`ArkLibTest/Interaction/Oracle/ResourceExample.lean`) exercised
+disjointness, aliasing, dependent interpretation, and promise preservation. Their core ports are
+`ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean` and
+`ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`.

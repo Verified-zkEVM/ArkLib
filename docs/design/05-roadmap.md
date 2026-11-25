@@ -1,7 +1,7 @@
 # Interaction framework roadmap
 
 **Last reviewed:** 2026-11-04. This page lists the remaining design and implementation work for
-ArkLib's interaction layer (`ArkLib/Interaction/`). The
+ArkLib's interaction layer (`ArkLib/Interaction/Core/`). The
 [current-status page](00-current-status.md) records what has landed and the supported dependency
 versions. Protocol-level status, including the legacy-layer protocol developments, is on the
 public [roadmap](../../ROADMAP.md), which also states the
@@ -45,10 +45,10 @@ port a protocol.
    The computable general prover alone makes no efficiency claim. Extend the single-round
    legacy correspondence to relate the complete legacy-layer and interaction-layer security games;
    do not treat the interaction-layer result as silently proving the legacy declarations.
-2. **An interaction-layer knowledge client.** Instantiate `KnowledgeCertificate` for a protocol with a
-   nontrivial witness, for example a committed or hidden polynomial. State the witness relation
-   explicitly and connect the certificate to the actual verifier through
-   `SamplesChallenges` or `FreshVerifier`.
+2. **An interaction-layer knowledge client.** Instantiate `KnowledgeStateFunction` for a protocol
+   with a nontrivial witness, for example a committed or hidden polynomial. State the witness
+   relation explicitly and prove `OracleVerifier.rbrKnowledgeSoundness` for the actual verifier,
+   with challenge draws that read only the verifier view.
 3. **FRI slice.** Use a derived virtual oracle view and prove a two-way bridge to the established
    legacy presentation.
 4. **Spartan-like slice.** Use a fresh prover message and prove the corresponding two-way bridge.
@@ -101,7 +101,8 @@ The milestone legend is fixed across the efficiency chapters:
 ### Native resource composition
 
 Before scaling E3, instantiate a production native measured certificate and prove resource closure
-under protocol append and `changeInputState`. Retain the named composed extractor and instruction
+under protocol append and under a change of input statement (the deleted generic layer's
+`changeInputState`). Retain the named composed extractor and instruction
 budget under the [knowledge-composition interface](03-adversarial-oracle-execution.md#6-extractors-and-knowledge-composition).
 The existing per-path fold and role/depth theorems do not establish that closure. Complete
 execution additionally needs intermediate-size and conversion-cost bounds.

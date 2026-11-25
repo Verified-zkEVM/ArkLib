@@ -28,6 +28,16 @@ ambient handler. A public-coin reading also needs every draw to be a fresh unifo
 definition here assumes that. Node-indexed oracle draws factor through the view
 (`OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff`).
 
+## Probability bounds use small moves
+
+`sampleAt` and the probability bounds built on it, such as `KnowledgeStateFunction.BoundedAt` and
+`KnowledgeStateFunction.LocallyBounded`, take protocols whose moves lie in `Type`. Pinned VCVio
+defines `ProbComp : Type → Type`, and `challengeSpec` returns a move in the universe that
+challenges share with public and oracle messages. ArkLib accepts this restriction as an upstream
+limit. VCVio PR #1236 (https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp`
+universe-polymorphic, and ArkLib picks it up through a later VCVio pin bump. The limit does not
+restrict pure backward maps or output and seam witnesses.
+
 ## Knowledge states and the literature
 
 `KnowledgeStateFunction` and `rbrKnowledgeSoundness` generalize the knowledge-state formulation of

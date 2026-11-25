@@ -86,17 +86,18 @@ notion needs its own statement of what its unbounded form means, with its actual
 | Notion | Extractor in ArkLib | Content without a cost bound | Additional obligation for efficient extraction |
 |---|---|---|---|
 | Terminal knowledge soundness | `Extractor.Straightline` | Relation soundness, by the collapse above | Complete execution of the named extractor in its declared access model |
-| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; interaction-layer `RoundExtractor` backward witness maps | The legacy notion coincides with round-by-round soundness of the induced languages when input-witness types are inhabited; interaction-layer certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
+| Round-by-round knowledge soundness | Legacy `Extractor.RoundByRound`; the backward witness maps of an interaction-layer `KnowledgeStateFunction` | The legacy notion coincides with round-by-round soundness of the induced languages when input-witness types are inhabited; interaction-layer certificates retain their local obligations | Execution of each stage on its available prefix, intermediate witness sizes, and their composition |
 | Special soundness and CWSS | `Extractor.TreeBased`, from the statement, a transcript tree and its leaf witnesses | Each structured accepting tree with valid leaf witnesses yields an input witness, or exhibits an escape event; with a classical selector, the input statement lies in the language of the input relation | Tree processing; a knowledge corollary also bounds obtaining the tree and producing any escape |
-| State-restoration knowledge soundness | Interaction-layer `RoundExtractor` of a `KnowledgeCertificate`, applied backward along the restored path | The bound of `Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness` for that named extractor; nothing about its cost | Extraction together with replay and simulation of the restoration oracle; the measured wrapper adds declared stage accounting, not a replay or running-time bound |
+| State-restoration knowledge soundness | The backward maps of an interaction-layer `KnowledgeStateFunction`, applied along the restored path | The bound of `Interaction.Core.StateRestoration.stateRestoration_knowledge_soundness` for that named extractor; nothing about its cost | Extraction together with replay and simulation of the restoration oracle; the measured wrapper adds declared stage accounting, not a replay or running-time bound |
 
 **Round-by-round knowledge soundness.** The legacy existential notion `rbrKnowledgeSoundness`
 admits a round-by-round extractor built directly by classical choice, so it carries no efficiency
-content. Bare interaction-layer knowledge certificates assert no extraction efficiency;
-`Interaction.Oracle.Security.MeasuredKnowledgeCertificate` adds an operation-count budget for each
-stage, under the scope limits stated in `KnowledgeResources.lean`.
-`MeasuredStages.programAlong` composes these named programs on a typed execution path.
-`programAlong_budget_le` bounds their sum by `path.length • bound` under `BudgetAtMost bound`;
+content. Bare interaction-layer knowledge state functions assert no extraction efficiency;
+`Interaction.Core.MeasuredKnowledgeStateFunction` adds an operation-count budget for each stage,
+under the scope limits stated in `Interaction/Core/Security/MeasuredExtraction.lean`.
+`MeasuredStages.programAlong` composes these named programs along a completed transcript.
+`programAlong_budget_le` bounds their sum by the leaf bound, the step bound once per move and the
+root bound under `BudgetAtMost`;
 a per-stage bound alone supplies no uniform total on an unbounded-depth tree. For
 inhabited input-witness types, the legacy notion coincides with round-by-round soundness of the
 languages of the input and output relations, as proved in
@@ -247,23 +248,23 @@ is independent of the proposed execution backend and family-level claims.
 
 ### State-restoration resource contract
 
-`MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform` in
-`Interaction/Oracle/Security/StateRestorationResources.lean` keeps the original game and extractor.
-For each allowed statement `z` and every supplied completed path, it also proves:
+`MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform` in
+`Interaction/Core/Security/StateRestorationBudget.lean` keeps the original game and extractor.
+For every admissible input and completed transcript, it also proves:
 
-- for **every** terminal witness, running the composed program on its `terminalWitness`-converted
-  input returns exactly the game's `extractInputWitness`;
-- the composed program satisfies `CostAtMost (r • (messageBound z + challengeBound z))`, where
-  `r = rounds.length`. This covers every view and permitted instruction path of that program.
+- for **every** adversary witness, running the composed stage program on the witness converted by
+  `readOut` returns exactly the extracted input witness;
+- the composed program costs at most the protocol budget on every execution path. The budget is
+  built from the per-statement bounds `rootBound`, `messageBound`, `challengeBound` and
+  `leafBound`.
 
-`MeasuredStages.ProtocolBudgetAtMost` supplies separate message/challenge bounds uniformly over
-the prefixes at fixed `z`. `run_programAlong_terminalWitness` is the return-identity bridge.
-`length_executionPath_protocol` proves two nodes per round, and
+The theorem does not charge `readOut`.
+`stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut` also charges a program that
+realizes `readOut`. `MeasuredStages.ProtocolBudgetAtMost` supplies separate message and challenge
+bounds over the prefixes at a fixed statement, and
 `MeasuredStages.BudgetAtMost.protocolBudgetAtMost` turns one common stage bound into equal message
-and challenge bounds. The two-round acceptance fixture obtains its tight count two from one
-charged message stage and one zero-charge challenge stage per round. `_nonuniform` refers to the
-round-error schedule. Statement-indexed bounds assert neither a growth rate nor one uniform
-executable implementation.
+and challenge bounds. `_nonuniform` refers to the round-error schedule. Statement-indexed bounds
+assert neither a growth rate nor one uniform executable implementation.
 
 Native contracts and path composition are implemented on `main` and validated by
 acceptance fixtures; no production protocol yet instantiates the native measured certificate.
@@ -292,14 +293,12 @@ for that layer's extractor shape. The generic core lives in
 and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
 certificate remains proposed. Interaction-layer games consume the same measured programs through
-their own adapter: `ArkLib/Interaction/Oracle/Security/KnowledgeResources.lean` defines
-`RoundExtractor.MeasuredStages` and `MeasuredKnowledgeCertificate`, and
-`StateRestorationResources.lean` supplies the
-[state-restoration resource contract](#state-restoration-resource-contract). Native path
-composition lives in
-[`KnowledgeResources/Composition.lean`](../../ArkLib/Interaction/Oracle/Security/KnowledgeResources/Composition.lean):
-`MeasuredStages.programAlong` returns a budgeted program for the same `extractWitness` on each
-typed path and terminal witness. Its accounting boundary and the role/depth bounds are stated
+their own adapter: `ArkLib/Interaction/Core/Security/MeasuredExtraction.lean` defines
+`KnowledgeStateFunction.MeasuredStages` and `MeasuredKnowledgeStateFunction`, and
+`StateRestorationBudget.lean` supplies the
+[state-restoration resource contract](#state-restoration-resource-contract).
+`MeasuredStages.programAlong` in `MeasuredExtraction.lean` returns a budgeted program for the
+same `KnowledgeStateFunction.extractAlong` on each completed transcript and output witness. Its accounting boundary and the role/depth bounds are stated
 above, rather than being additional execution-time guarantees.
 
 CompPoly owns polynomial algorithms and their generic semantic and size facts. VCVio owns generic
@@ -444,7 +443,7 @@ derive its actual constants and degree from the measured implementation. Do not 
 `O(enc_C + ecor_C)` performance for a different decoder without matching its cost conventions.
 
 The Toy round-by-round extractor is currently the legacy `Extractor.RoundByRound`, whereas
-`MeasuredStages.programAlong` consumes interaction-layer `RoundExtractor` maps. Before using that
+`MeasuredStages.programAlong` consumes the maps of an interaction-layer `KnowledgeStateFunction`. Before using that
 composition theorem, add a legacy stage-resource contract or port the Toy client to the native
 layer with a proved correspondence of the games and extractors. Neither prerequisite is supplied
 by the generic measured-program core.

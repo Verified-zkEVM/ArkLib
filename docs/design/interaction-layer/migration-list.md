@@ -24,10 +24,11 @@ The old layer is these files:
 The legacy `ArkLib/OracleReduction` layer and `ArkLib/Interaction/Core/Legacy` are not part of the
 old interaction layer. Both stay, and this list does not cover them.
 
-Four open PRs carry ledgers and core tests that this list cites: #1476 (`port-oracle-bundles.md`),
+Four PRs carry ledgers and core tests that this list cites: #1476 (`port-oracle-bundles.md`),
 #1477 (`port-stages.md`), #1478 (`port-oracle-access.md`) and #1567 (a revision of
-`port-logged-execution.md`). None of them is on this branch. This list therefore names their ledgers
-and code as backticked paths with the PR number. Every ledger path is under
+`port-logged-execution.md`). All four are merged, and so is #1570, which ports the split of a
+stage chain at an arbitrary stage. This list was written before they merged, so it names their
+ledgers and code as backticked paths with the PR number. Every ledger path is under
 `docs/design/interaction-layer/`, and every core test path is under `ArkLibTest/Interaction/Core/`
 unless it says otherwise. PR #1485, which ported composition soundness, is merged and has no
 ledger. Its rows are labelled in its core tests.
@@ -195,12 +196,14 @@ runtime mass as a fault: it keeps missing mass distinct from rejection, as row T
 
 ## Unresolved rows and options
 
-Four items stay open. The first three are restrictions of the core port that the ledgers record
-without tying them to one old declaration. The fourth is an old declaration with no core target.
-A fifth item, the degree guarantee, is resolved; the last subsection records why.
+The first three items are restrictions of the core port that the ledgers record without tying
+them to one old declaration. Each comes from a pinned upstream library, and ArkLib accepts each as
+an upstream limit: the code site documents it, and ArkLib picks up the upstream fix through a later
+VCVio pin bump. The fourth item is an old declaration with no core target and stays open. A fifth
+item, the degree guarantee, is resolved; the last subsection records why.
 
 **1. The full-log runner cannot return large query indices.**
-[departures.md](departures.md) lists this as an unresolved entry 18, and `port-oracle-access.md`
+[departures.md](departures.md) lists this as entry 18, and `port-oracle-access.md`
 (#1478) lists it as its only open item. `OracleVerifier.runWithLog` returns bundle-query entries
 through a small computation monad. Its complete log therefore cannot record large query indices.
 `runWithAmbientLog` and `runWithAmbientQueriesByMove` keep independent universes because they
@@ -212,7 +215,11 @@ universe is large enough. Options:
   ambient-log runners for large indices;
 - retire the full-log runner in favor of the ambient-log runners.
 
-Decision: open.
+Decision: accepted as an upstream limit. The ambient-log runners `runWithAmbientLog` and
+`runWithAmbientQueriesByMove` are the workaround for large indices, and the docstring of
+`runWithLog` in `Core/Security/Knowledge.lean` says so. VCVio PR
+[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which aims to
+lift the limit.
 
 **2. PROB-031: probability bounds use small moves only.**
 Row PROB-031 of [knowledge-composition-disposition.md](knowledge-composition-disposition.md)
@@ -228,7 +235,9 @@ universe. Options:
 - accept the restriction as an upstream limit and document it in the security modules;
 - retire large-move probability bounds as out of scope.
 
-Decision: open.
+Decision: accepted as an upstream limit. The module docstring of `Core/Security/RoundByRound.lean`
+documents it. VCVio PR [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes
+`ProbComp` universe-polymorphic.
 
 **3. VCVio cost universes.**
 `port-oracle-bundles.md` (#1476), section Open cost universes, records it.
@@ -244,7 +253,10 @@ response and cost universes. Options:
 - accept the restriction as an upstream limit and document it at the wrapper;
 - retire universe-polymorphic cost bounds as out of scope.
 
-Decision: open.
+Decision: accepted as an upstream limit. The module docstring of `Core/Oracle/Cost.lean`, which
+holds `OracleMap.withAmbient_worstCaseCost`, documents it. VCVio PR
+[#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the universes of the cost
+API.
 
 **4. `run_append`: splitting an ordered execution at an arbitrary stage.**
 Old `Oracle/Composition.lean` L258 has no core target. `port-stages.md` (#1477) records the
@@ -421,4 +433,8 @@ before the deletion. The ledgers then keep their evidence after the files are go
    step and retargets `LegacyVerifier.lean` to `Sumcheck.Core.simpleLegacyTranscript`.
 5. Delete the generic layer: the 42 modules, the 32 tests, the remaining blueprint citations and
    the old part of `MeasuredExtraction.lean`. Fix the prose and the links listed above.
+   Done: the PR "chore(interaction)!: delete the old generic interaction layer" carries out this
+   step. It also drops the `AddProgram` import of `MeasuredExtraction.lean`, because the `Search`
+   section uses nothing from it. The ledgers' reference-style links and `#L` links still need
+   permalinks at the last main commit before the deletion.
 6. Clean PolyFun and VCVio: PolyFun P-clean and VCVio R-clean.

@@ -62,8 +62,8 @@ does not by itself prove a theorem about the other.
 
 - The **legacy layer**, [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/), is the original
   formalization, in which an IOR is an `OracleReduction`.
-- The **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), represents a protocol
-  as an interaction tree, built on the polynomial functors and interaction trees of
+- The **interaction layer**, [`ArkLib/Interaction/Core/`](ArkLib/Interaction/Core/), represents
+  a protocol as an interaction tree, built on the polynomial functors and interaction trees of
   [PolyFun](https://github.com/Verified-zkEVM/PolyFun). It avoids the legacy layer's limitations
   and can express more protocols, in particular protocols whose shape depends on earlier
   messages. It is meant to replace the legacy layer.
@@ -74,9 +74,10 @@ interaction layer's implemented interfaces and remaining gaps, and the
 [design documents](docs/design/README.md) specify it.
 
 The legacy layer has structural limits that the interaction layer removes: the protocol shape is
-fixed in advance, provers are round-indexed state machines composed with casts, the verifier acts
-only after the interaction, oracles must be concrete data, the verifier's result has a single
-failure case, and composition needs a bound from every oracle state.
+fixed in advance, provers are round-indexed state machines composed with casts, oracles must be
+concrete data, and composition needs a bound from every oracle state. Two limits remain in part:
+the interaction layer's verifier also decides only after the interaction, and its verdict is also
+an `Option`, though rejection stays separate from a failure of the oracle computation.
 [Limitations of the legacy layer](docs/design/legacy-layer-limitations.md) explains each one and
 what the interaction layer does instead.
 
@@ -91,7 +92,8 @@ deprecation periods.
 
 Around the core:
 
-- [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/) and [`ArkLib/Interaction/`](ArkLib/Interaction/)
+- [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/) and
+  [`ArkLib/Interaction/Core/`](ArkLib/Interaction/Core/)
   hold the [two layers](#two-layers).
 - [`ArkLib/ProofSystem/`](ArkLib/ProofSystem/) holds protocols and reusable protocol components.
 - [`ArkLib/Commitments/`](ArkLib/Commitments/) holds commitment schemes and opening arguments.

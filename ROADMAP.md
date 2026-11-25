@@ -8,8 +8,8 @@ layer; this page does not repeat it.
 
 ## Priority: replace the legacy layer
 
-ArkLib has two layers: the legacy layer (`ArkLib/OracleReduction/`) and the interaction layer
-(`ArkLib/Interaction/`), which is meant to replace it.
+ArkLib has two layers: the legacy layer (`ArkLib/OracleReduction/`) and the interaction layer,
+whose core (`ArkLib/Interaction/Core/`) is meant to replace it.
 [README.md](README.md#two-layers) gives an overview, and
 [Limitations of the legacy layer](docs/design/legacy-layer-limitations.md) explains why the
 replacement is needed.
@@ -36,8 +36,10 @@ Developing the interaction layer is now the project's priority. The migration ha
    verifier is the run of the embedded legacy verifier, as a program, and
    `Sumcheck.Core.verifier_agrees` carries completeness, soundness, knowledge soundness and
    round-by-round soundness across that equality. No theorem relates the interaction-layer
-   `indexedVerifier` to the legacy verifier. Spartan and Plonk are complete in the legacy layer
-   (below); their interaction-layer versions are not yet written.
+   `indexedVerifier` to the legacy verifier. `ArkLib/Interaction/Core/Legacy/` embeds individual
+   legacy protocols, provers, verifiers and oracle verifiers into the core, but no general
+   embedding of the legacy `OracleReduction` layer into the core exists yet. Spartan and Plonk
+   are complete in the legacy layer (below); their interaction-layer versions are not yet written.
 3. **Delete the legacy layer.** Once the protocols are ported, delete the legacy layer as a whole.
 
 Until the port is complete, ArkLib makes no backward-compatibility guarantees and does not
@@ -146,19 +148,21 @@ entry says so, the specification is not claimed to be executable.
   zero tests.
 - **Fiat-Shamir**: the basic transform and its completeness under fixed tables and a lazy random
   oracle ([`OracleReduction/FiatShamir/`](ArkLib/OracleReduction/FiatShamir/)).
-- **Interaction layer** ([`ArkLib/Interaction/`](ArkLib/Interaction/)): execution,
-  soundness, round-by-round soundness, generic knowledge certificates and their composition, and
+- **Interaction layer** ([`ArkLib/Interaction/Core/`](ArkLib/Interaction/Core/)): execution,
+  soundness, round-by-round soundness, knowledge state functions and their composition, and
   state-restoration knowledge soundness for fixed-round public-coin protocols with error
-  `(Q + k) * error`. No concrete protocol consumes the knowledge certificates yet, and randomized
-  state restoration is in progress (below). The
+  `(Q + k) * error`. No concrete protocol consumes the knowledge state functions yet, and
+  randomized state restoration is in progress (below). The old generic layer
+  (`ArkLib/Interaction/Oracle/`) has been deleted; the
+  [migration list](docs/design/interaction-layer/migration-list.md) records its replacements. The
   [interaction-layer status page](docs/design/00-current-status.md) has the details.
 - **Measured extraction**: VCVio's game-independent measured programs and declared instruction
   budgets (`VCVio.OracleComp.QueryTracking.MeasuredProgram`), their
   [knowledge-soundness adapter](ArkLib/OracleReduction/Security/Resources.lean), and native measured
-  stages for knowledge and state-restoration certificates
-  (`Interaction/Oracle/Security/{KnowledgeResources,StateRestorationResources}.lean`).
-  [Composition along typed paths](ArkLib/Interaction/Oracle/Security/KnowledgeResources/Composition.lean)
-  preserves the named extractor and sums its stage budgets. The
+  stages for knowledge state functions and state restoration
+  (`Interaction/Core/Security/{MeasuredExtraction,StateRestorationBudget}.lean`).
+  Composition (`MeasuredStages.programAlong`) preserves the named extractor and sums its stage
+  budgets. The
   [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states their accounting scope.
 - **Commitment games**: binding and extractability experiments that keep the oracle state left by
   setup ([`Commitments/Functional/Basic.lean`](ArkLib/Commitments/Functional/Basic.lean)).
