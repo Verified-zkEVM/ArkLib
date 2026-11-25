@@ -32,7 +32,6 @@ Start with [`README.md`](README.md) for the project overview.
 - `ArkLib/OracleReduction/` - the legacy layer: IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
 - `ArkLib/Commitments/` - commitments and opening arguments.
-- `ArkLib/AGM/` - algebraic group model representations.
 - `ArkLib/ToCompPoly/` - bridges to CompPoly's computable representations.
 - `ArkLib/ToMathlib/` - local extensions intended for Mathlib.
 - `docs/design/` - normative architecture of the interaction layer.

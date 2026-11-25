@@ -173,8 +173,6 @@ entry says so, the specification is not claimed to be executable.
   [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states their accounting scope.
 - **Commitment games**: binding and extractability experiments that keep the oracle state left by
   setup ([`Commitments/Functional/Basic.lean`](ArkLib/Commitments/Functional/Basic.lean)).
-- **Algebraic group model**: group representations for algebraic adversaries
-  ([`ArkLib/AGM/`](ArkLib/AGM/)).
 
 ## In progress
 
