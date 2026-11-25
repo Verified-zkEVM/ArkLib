@@ -17,8 +17,9 @@ public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 and proves their correspondence with the mathematical specification. It also supplies direct
 computational evaluation of the original polynomial.
 
-The native verifier is in `Sumcheck.Interaction.Computable`; the honest strategy and completeness
-proofs are in `Sumcheck.Interaction.ComputableCompleteness`.
+The executable verifier and honest prover, with their completeness proofs, are in
+`Sumcheck.Computable` (`Sumcheck/Computable.lean`). The computable honest interval provers and
+their completeness proofs are in `Sumcheck/ComputableInterval.lean`.
 
 The general construction enumerates the remaining summation domain. Optimized multilinear
 algorithms and their cost guarantees remain future work.

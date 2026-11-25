@@ -27,9 +27,11 @@ at most `d + 1` common points.
 Under `d + 1 < B` and `n (d + 1) < B²`, the Johnson bound limits the number of pairs.
 Each pair accounts for at most `max q (n choose 2)` exceptional challenges with agreement loss one.
 
-The count also holds for challenges drawn from a subfield `K` through an embedding `K →+* E`.
+The count is stated for challenges drawn from a finite type `K` through an injective map
+`φ : K ↪ E`, so from any finite subset of `E`.
+Subfields are the main example, and the identity embedding gives the single-field count.
 Then `q` is `|K|`, while words and candidates stay over `E`.
-This subfield form serves the interleaved count of Theorem 5.2 of [CWYZ26].
+This form serves the interleaved count of Theorem 5.2 of [CWYZ26].
 
 The count formalizes Lemma 4.5 of [CWYZ26].
 It bounds all persistent exceptional challenges, including any excluded challenges from the
@@ -45,8 +47,7 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the stateme
 
 * `ReedSolomon.mem_affinePersistenceSet`: membership in the persistence set.
 * `ReedSolomon.card_isAffineExceptional_persistent_map_le`: the persistent exceptional count for
-  challenges from a subfield.
-* `ReedSolomon.card_isAffineExceptional_persistent_le`: the persistent exceptional count.
+  challenges from a finite subset of `E`.
 
 ## References
 
@@ -165,14 +166,15 @@ private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι
       · exact (natDegree_mul_le).trans (by omega)
 
 open Classical in
-/-- Let `φ : K →+* E` be a field embedding, `n = |ι|` and `q = |K|`.
+/-- Let `φ : K ↪ E` be an injective map from a finite type, such as a subfield.
+Let `n = |ι|` and `q = |K|`.
 Assume `d + 1 < B` and `n (d + 1) < B²`, and set `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
 Count the challenges `(α, β) ∈ K²` for which `(φ α, φ β)` has a persistent exceptional candidate.
 The agreement loss is one.
 There are at most `ℓ · max q (n choose 2)` such challenges.
 The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
-theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Field K] [Fintype K] [Field E]
-    [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K →+* E) {d A B : ℕ} (hdB : d + 1 < B)
+theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Fintype K] [Field E]
+    [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K ↪ E) {d A B : ℕ} (hdB : d + 1 < B)
     (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
     (#{c : K × K | ∃ P, IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
         IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P} : ℝ) ≤
@@ -208,18 +210,5 @@ theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Field K] [Fint
     simp only [π, persistentPair]
     ring
   convert h using 2 <;> push_cast [M] <;> ring
-
-open Classical in
-/-- If `d + 1 < B` and `n (d + 1) < B²`, the number of challenges with a persistent
-exceptional candidate at agreement loss one is at most `ℓ · max q (n choose 2)`, where
-`n = |ι|`, `q = |F|`, and `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
-The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
-theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
-    {d A B : ℕ} (hdB : d + 1 < B) (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
-    (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
-        IsAffinePersistent domain f g d B c.1 c.2 P} : ℝ) ≤
-      (Fintype.card ι : ℝ) * ((B : ℝ) - d - 1) / ((B : ℝ) ^ 2 - Fintype.card ι * (d + 1)) *
-        max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) :=
-  card_isAffineExceptional_persistent_map_le domain f g (RingHom.id F) hdB hJ
 
 end ReedSolomon

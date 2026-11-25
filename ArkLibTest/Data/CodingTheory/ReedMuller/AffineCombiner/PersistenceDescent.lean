@@ -20,10 +20,11 @@ private noncomputable def σE : Fin 3 → GaloisField 3 2 := ![0, 1, 0]
 -- The identities descend to a nonzero `σ₀` and `H₀` of total degree at most one over `F₃`.
 example : ∃ H₀ : MvPolynomial (Fin 2) (ZMod 3), ∃ σ₀ : Fin 3 → ZMod 3, σ₀ ≠ 0 ∧
     H₀.totalDegree ≤ 1 ∧ ∀ z : Fin 2 → ZMod 3, eval z H₀ = eval z (affineMultiplier σ₀) * 1 := by
-  refine exists_affineRatioWitness_of_map (algebraMap (ZMod 3) (GaloisField 3 2)) id
-    (fun _ ↦ 1) 1 (H := X 0) (σ := σE) (fun h ↦ ?_) (by simp) fun z ↦ ?_
-  · simpa [σE] using congrFun h 1
-  · simp [σE, Fin.sum_univ_two]
+  have hσ : σE ≠ 0 := fun h ↦ by simpa [σE] using congrFun h 1
+  obtain ⟨H₀, σ₀, hσ₀, hd, hz⟩ := exists_affineRatioWitness_of_map
+    (algebraMap (ZMod 3) (GaloisField 3 2)) id (fun _ ↦ 1) (H := X 0) hσ fun z ↦ by
+      simp [σE, Fin.sum_univ_two]
+  exact ⟨H₀, σ₀, hσ₀, hd.trans (by simp), hz⟩
 
 /-- The multiplier `L = X₁` in two variables over `F₃`. -/
 private def σX : Fin 3 → ZMod 3 := ![0, 1, 0]

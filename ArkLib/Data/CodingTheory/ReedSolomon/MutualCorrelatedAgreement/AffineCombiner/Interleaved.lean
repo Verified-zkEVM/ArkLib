@@ -308,7 +308,7 @@ theorem exists_interleavedAffineExceptional_finset_card_le [Fintype F] (domain :
   · obtain ⟨E, _, _, _, ⟨b⟩⟩ := FiniteField.exists_basis_fin F ht.ne'
     obtain ⟨S, hS, hgood⟩ := exists_affineExceptional_finset_card_map_le
       (domain.trans ⟨algebraMap F E, (algebraMap F E).injective⟩) (fun i ↦ ∑ r, f r i • b r)
-      (fun i ↦ ∑ r, g r i • b r) (algebraMap F E) hd hdn hη hη1 hn
+      (fun i ↦ ∑ r, g r i • b r) ⟨algebraMap F E, (algebraMap F E).injective⟩ hd hdn hη hη1 hn
     exact ⟨S, hS, fun c hc P hP ↦ hgood c hc _ (hP.pack b)⟩
 
 /-- With one point of shared loss, the error is at most `4 / (η q) + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.

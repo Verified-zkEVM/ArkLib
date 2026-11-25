@@ -84,7 +84,7 @@ example (d : ℕ) :
     have hpoly := RatFunc.algebraMap_injective (ZMod 5) hmul
     have := congrArg (Polynomial.eval (0 : ZMod 5)) hpoly
     norm_num at this
-  simpa [ZMod.card] using card_ratFunc_combination_le 0
+  simpa [ZMod.card] using card_ratFunc_combination_map_le (.refl _) 0
     (algebraMap (ZMod 5)[X] (RatFunc (ZMod 5)) X)⁻¹ hnot
 
 -- The Johnson hypotheses hold at `d = 0`, `B = 4`, and the bound is below `|F|² = 25`.
@@ -93,8 +93,8 @@ example (f g : ZMod 5 → ZMod 5) :
     (#{c : ZMod 5 × ZMod 5 | ∃ P,
       IsAffineExceptional fullDomain f g 0 3 1 c.1 c.2 P ∧
         IsAffinePersistent fullDomain f g 0 4 c.1 c.2 P} : ℝ) ≤ 150 / 11 := by
-  have h := card_isAffineExceptional_persistent_le fullDomain f g (d := 0) (A := 3) (B := 4)
-    (by decide) (by norm_num [ZMod.card])
+  have h := card_isAffineExceptional_persistent_map_le fullDomain f g (.refl _) (d := 0) (A := 3)
+    (B := 4) (by decide) (by norm_num [ZMod.card])
   norm_num [ZMod.card, Nat.choose] at h ⊢
   exact h
 
@@ -118,7 +118,8 @@ example (d : ℕ) :
     norm_num at this
   refine le_antisymm ?_ ?_
   · simpa [ZMod.card] using
-      card_ratFunc_combination_map_le (algebraMap (ZMod 2) E) 0 (ι X)⁻¹ hnot
+      card_ratFunc_combination_map_le ⟨algebraMap (ZMod 2) E, (algebraMap (ZMod 2) E).injective⟩ 0
+        (ι X)⁻¹ hnot
   · refine (card_le_card (s := {(0, 0), (0, 1)}) fun c hc ↦ ?_).trans' (by decide)
     refine mem_filter.mpr ⟨mem_univ _, C (algebraMap (ZMod 2) E c.2),
       degree_C_le.trans (by exact_mod_cast Nat.zero_le d), ?_⟩
@@ -151,7 +152,7 @@ example (f g : GaloisField 2 2 → GaloisField 2 4) (F₀ G₀ : (GaloisField 2 
     (hF : F₀.degree ≤ 1) (hG : G₀.degree < 1) :
     #{c : GaloisField 2 2 × GaloisField 2 2 | IsAffineExceptional domain₄ f g 1 3 1
       (embed₄ c.1) (embed₄ c.2) (F₀ + affineMultiplier (embed₄ c.1) (embed₄ c.2) * G₀)} ≤ 6 := by
-  refine (card_isAffineExceptional_add_mul_map_le domain₄ f g embed₄ (d := 1) (A := 3) F₀ G₀
+  refine (card_isAffineExceptional_add_mul_map_le domain₄ f g domain₄ (d := 1) (A := 3) F₀ G₀
     hF hG).trans ?_
   rw [card_galoisField_2_2]
   decide
@@ -165,7 +166,7 @@ example (f g : GaloisField 2 2 → GaloisField 2 4) (F₀ G₀ : RatFunc (Galois
           F₀ + algebraMap (GaloisField 2 4)[X] (RatFunc (GaloisField 2 4))
             (affineMultiplier (embed₄ c.1) (embed₄ c.2)) * G₀ ∧
         IsAffineExceptional domain₄ f g 1 3 1 (embed₄ c.1) (embed₄ c.2) P} ≤ 6 := by
-  refine (card_isAffineExceptional_ratFunc_map_le domain₄ f g embed₄ (d := 1) (A := 3) F₀
+  refine (card_isAffineExceptional_ratFunc_map_le domain₄ f g domain₄ (d := 1) (A := 3) F₀
     G₀).trans ?_
   rw [card_galoisField_2_2]
   decide
@@ -177,25 +178,15 @@ example (f g : GaloisField 2 2 → GaloisField 2 4) :
     (#{c : GaloisField 2 2 × GaloisField 2 2 | ∃ P,
       IsAffineExceptional domain₄ f g 0 3 1 (embed₄ c.1) (embed₄ c.2) P ∧
         IsAffinePersistent domain₄ f g 0 3 (embed₄ c.1) (embed₄ c.2) P} : ℝ) ≤ 48 / 5 := by
-  have h := card_isAffineExceptional_persistent_map_le domain₄ f g embed₄ (d := 0) (A := 3)
+  have h := card_isAffineExceptional_persistent_map_le domain₄ f g domain₄ (d := 0) (A := 3)
     (B := 3) (by decide) (by rw [card_galoisField_2_2]; decide)
   norm_num [card_galoisField_2_2, Nat.choose] at h
   exact h
-
-/-- info: 'ReedSolomon.card_ratFunc_combination_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.card_ratFunc_combination_le
 
 /-- info: 'ReedSolomon.card_ratFunc_combination_map_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.card_ratFunc_combination_map_le
-
-/-- info: 'ReedSolomon.card_isAffineExceptional_persistent_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.card_isAffineExceptional_persistent_le
 
 /-- info: 'ReedSolomon.card_isAffineExceptional_persistent_map_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

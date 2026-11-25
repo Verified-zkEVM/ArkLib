@@ -7,12 +7,14 @@ Authors: Johan Commelin, Thomas Coratger
 module
 
 public import Mathlib.RingTheory.Henselian
+public import Mathlib.Tactic.LinearCombination
 
 /-!
 # Hensel's lemma without monicity in adically complete rings
 
 In an `I`-adically complete ring, a simple root modulo `I` lifts to a root.
 The polynomial need not be monic.
+The lift is unique as soon as `I` lies in the Jacobson radical.
 
 Newton's iteration `b ↦ b - f(b) / f'(b)` converges `I`-adically to the root.
 The proof adapts Johan Commelin's proof in `Mathlib.RingTheory.Henselian`,
@@ -22,11 +24,37 @@ The lemma is intended for upstreaming to Mathlib.
 ## Main statements
 
 * `IsAdicComplete.exists_isRoot_sub_mem`: a simple root modulo `I` lifts to a root.
+* `Polynomial.eq_of_isRoot_of_sub_mem`: two such roots are equal when `I` lies in the
+  Jacobson radical.
+* `IsAdicComplete.existsUnique_isRoot_sub_mem`: the lift is unique.
 -/
 
 @[expose] public section
 
 open Polynomial
+
+/-- Let `I` lie in the Jacobson radical of `R`, and let `f` be a polynomial over `R`.
+
+Suppose `f'(a₀)` is a unit modulo `I`.
+Then `f` has at most one root `a` with `a - a₀ ∈ I`. -/
+theorem Polynomial.eq_of_isRoot_of_sub_mem {R : Type*} [CommRing R] {I : Ideal R}
+    (hI : I ≤ Ring.jacobson R) (f : R[X]) {a₀ a b : R}
+    (h₂ : IsUnit (Ideal.Quotient.mk I (f.derivative.eval a₀)))
+    (ha : f.IsRoot a) (ha₀ : a - a₀ ∈ I) (hb : f.IsRoot b) (hb₀ : b - a₀ ∈ I) : a = b := by
+  have := isLocalHom_of_le_jacobson hI
+  obtain ⟨c, hc⟩ := exists_mul_sq_add_linear_part_eq_eval_add f b (a - b)
+  rw [add_sub_cancel, ha.eq_zero, hb.eq_zero, add_zero] at hc
+  -- The factor next to `a - b` is congruent to `f'(a₀)` modulo `I`, hence a unit.
+  have hu : IsUnit (c * (a - b) + f.derivative.eval b) := by
+    refine IsUnit.of_map (Ideal.Quotient.mk I) _ ?_
+    convert h₂ using 1
+    rw [Ideal.Quotient.eq]
+    have hab : a - b ∈ I := by simpa using I.sub_mem ha₀ hb₀
+    have hb' := SModEq.sub_mem.mp ((SModEq.sub_mem.mpr hb₀).eval f.derivative)
+    convert I.add_mem (I.mul_mem_left c hab) hb' using 1
+    ring
+  rw [← sub_eq_zero, ← hu.mul_right_eq_zero]
+  linear_combination hc
 
 namespace IsAdicComplete
 
@@ -113,5 +141,16 @@ theorem exists_isRoot_sub_mem (f : R[X]) (a₀ : R) (h₁ : f.eval a₀ ∈ I)
     refine ha.symm.trans (SModEq.rfl.add ?_)
     rw [SModEq.zero, Ideal.neg_mem_iff]
     exact Ideal.mul_mem_right _ _ h₁
+
+/-- Let `R` be `I`-adically complete and `f` a polynomial over `R`, not necessarily monic.
+
+If `f(a₀) ∈ I` and `f'(a₀)` is a unit modulo `I`, then `f` has exactly one root `a` with
+`a - a₀ ∈ I`. -/
+theorem existsUnique_isRoot_sub_mem (f : R[X]) (a₀ : R) (h₁ : f.eval a₀ ∈ I)
+    (h₂ : IsUnit (Ideal.Quotient.mk I (f.derivative.eval a₀))) :
+    ∃! a : R, f.IsRoot a ∧ a - a₀ ∈ I := by
+  obtain ⟨a, ha, ha₀⟩ := exists_isRoot_sub_mem f a₀ h₁ h₂
+  exact ⟨a, ⟨ha, ha₀⟩, fun b ⟨hb, hb₀⟩ ↦
+    eq_of_isRoot_of_sub_mem (le_jacobson I) f h₂ hb hb₀ ha ha₀⟩
 
 end IsAdicComplete

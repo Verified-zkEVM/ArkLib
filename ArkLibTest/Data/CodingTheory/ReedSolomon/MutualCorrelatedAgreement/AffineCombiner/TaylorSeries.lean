@@ -27,8 +27,8 @@ example (t₀ α β : ℚ) (E : PowerSeries ℚ) (hE0 : PowerSeries.constantCoef
     (hE : (affineSeriesEquation t₀ α β lineR).eval (PowerSeries.C (α + β * t₀) + E) = 0) :
     E = PowerSeries.C β * PowerSeries.X :=
   (existsUnique_powerSeries_root lineR t₀ α β (α + β * t₀) (by simp [lineR])
-    (by simp [lineR])).unique ⟨hE0, by rwa [← eval_affineSeriesEquation]⟩
-    ⟨by simp, by simp [lineR]⟩
+    (by simp [lineR])).unique ⟨hE0, hE⟩
+    ⟨by simp, by rw [eval_affineSeriesEquation]; simp [lineR]⟩
 
 -- The chart coefficient `c₁` of `Z - Y` is the slope `β`.
 example (t₀ α β : ℚ) :
@@ -80,19 +80,15 @@ example (E : PowerSeries ℚ) (hE0 : PowerSeries.constantCoeff E = 0)
 
 -- `Z² - (1 + X)` has a series root at `z = 1`, since `R_Z = 2 ≠ 0` there.
 example : ∃! E : PowerSeries ℚ, PowerSeries.constantCoeff E = 0 ∧
-    aeval (fun v ↦ v.elim (PowerSeries.C 1 + E)
-      ![PowerSeries.C 0 + PowerSeries.X,
-        PowerSeries.C (1 + 1 * 0) + PowerSeries.C 1 * PowerSeries.X]) sqrtR = 0 :=
+    (affineSeriesEquation 0 1 1 sqrtR).eval (PowerSeries.C 1 + E) = 0 :=
   existsUnique_powerSeries_root sqrtR 0 1 1 1 (by simp [sqrtR]) (by simp [sqrtR, pderiv_X])
 
 -- Without `R_Z ≠ 0`, uniqueness fails: `Z² - X²` at the origin has the roots `±W`.
 example : ¬ ∃! E : PowerSeries ℚ, PowerSeries.constantCoeff E = 0 ∧
-    aeval (fun v ↦ v.elim (PowerSeries.C 0 + E)
-      ![PowerSeries.C 0 + PowerSeries.X,
-        PowerSeries.C (0 + 0 * 0) + PowerSeries.C 0 * PowerSeries.X]) singularR = 0 := by
+    (affineSeriesEquation 0 0 0 singularR).eval (PowerSeries.C 0 + E) = 0 := by
   rintro ⟨E, -, huniq⟩
-  have h₁ := huniq PowerSeries.X ⟨by simp, by simp [singularR]⟩
-  have h₂ := huniq (-PowerSeries.X) ⟨by simp, by simp [singularR]⟩
+  have h₁ := huniq PowerSeries.X ⟨by simp, by rw [eval_affineSeriesEquation]; simp [singularR]⟩
+  have h₂ := huniq (-PowerSeries.X) ⟨by simp, by rw [eval_affineSeriesEquation]; simp [singularR]⟩
   have h := congrArg (PowerSeries.coeff 1) (h₁.trans h₂.symm)
   norm_num at h
 

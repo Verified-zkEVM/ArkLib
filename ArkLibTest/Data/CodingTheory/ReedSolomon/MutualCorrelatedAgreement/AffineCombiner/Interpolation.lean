@@ -30,7 +30,7 @@ example {F : Type*} [Field F] [DecidableEq F] {ι : Type*} [Fintype ι] (domain 
     ∃ Q, IsMultiplierInterpolant domain f g e d (affineThreshold d (Fintype.card ι) η)
       (affineMultiplicity η) (affineYZBudget d (Fintype.card ι) η)
       (affineRootBudget d (Fintype.card ι) e η) Q ∧ 0 < Q.degreeOf none :=
-  exists_isMultiplierInterpolant_degreeOf_none_pos domain f g h.threshold_le h.surplus
+  (exists_isMultiplierInterpolant domain f g h.surplus).imp fun _ h' ↦ ⟨h'.1, h'.2 h.threshold_le⟩
 
 private instance : Fact (Nat.Prime 101) := ⟨by decide⟩
 
@@ -46,10 +46,10 @@ open Polynomial.SymbolicInterpolation in
 example (f g : Fin 100 → ZMod 101) :
     ∃ Q, IsMultiplierInterpolant domain100 f g 1 16 90 4 42 19 Q ∧
       0 < Q.degreeOf none ∧ Q.degreeOf none ≤ 19 := by
-  obtain ⟨Q, hQ, hpos⟩ := exists_isMultiplierInterpolant_degreeOf_none_pos domain100 f g
-    (e := 1) (d := 16) (A := 90) (m := 4) (D := 42) (M := 19) (by decide)
+  obtain ⟨Q, hQ, hpos⟩ := exists_isMultiplierInterpolant domain100 f g
+    (e := 1) (d := 16) (A := 90) (m := 4) (D := 42) (M := 19)
     (by norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])
-  exact ⟨Q, hQ, hpos, hQ.rootDegree_le⟩
+  exact ⟨Q, hQ, hpos (by decide), hQ.rootDegree_le⟩
 
 -- The 146 unknowns exceed the truncated count 145, but not the full constraint count 150.
 open Polynomial.SymbolicInterpolation in
@@ -77,8 +77,9 @@ open Polynomial.SymbolicInterpolation in
 private theorem exists_quadraticInterpolant (f g : ZMod 11 → ZMod 11) :
     ∃ Q, IsMultiplierInterpolant (Function.Embedding.refl (ZMod 11)) f g 2 1 10 1 1 1 Q ∧
       0 < Q.degreeOf none :=
-  exists_isMultiplierInterpolant_degreeOf_none_pos _ f g (by norm_num [ZMod.card]) (by
-    norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])
+  (exists_isMultiplierInterpolant _ f g (by
+    norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])).imp
+    fun _ h ↦ ⟨h.1, h.2 (by norm_num [ZMod.card])⟩
 
 -- The next example uses an interpolant for `f = -X²` and `g = 1`.
 example : ∃ Q, IsMultiplierInterpolant (Function.Embedding.refl (ZMod 11))
@@ -171,11 +172,6 @@ example {F : Type*} [Field F] [DecidableEq F] (domain : Empty ↪ F) (f g : Empt
   refine ⟨by norm_num [card_monomialSupport], fun ⟨Q, hQ, hpos⟩ ↦ ?_⟩
   have := hQ.rootDegree_le
   omega
-
-/-- info: 'ReedSolomon.exists_isMultiplierInterpolant_degreeOf_none_pos' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.exists_isMultiplierInterpolant_degreeOf_none_pos
 
 /-- info: 'ReedSolomon.pow_dvd_aeval_of_affineWeight_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

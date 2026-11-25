@@ -54,7 +54,7 @@ private noncomputable def regularR : MvPolynomial AffineVar ℚ :=
 example (a b c : ℚ) :
     chartPolynomial c affineFamily regularR 1 1 (chartPoint c 1 ![a, b] (C a + C b * X)) =
       C a + C b * X := by
-  refine chartPolynomial_point c affineFamily regularR (p := 1) (e := 0) (by simp) ?_ ?_ ?_
+  refine chartPolynomial_point c affineFamily regularR (p := 1) (r := 0) (by simp) ?_ ?_ ?_
   · simpa [add_comm] using (degree_linear_le (a := b) (b := a))
   · simp [regularR, affineMultiplier]
   · simp [regularR]
@@ -87,16 +87,16 @@ example (P : ℚ[X]) :
   simp [freeR, affineMultiplier]
 
 -- The normalized-factor theorem exports its defining polynomial identity.
-example : ∃ e, ∃ R : MvPolynomial AffineVar ℚ,
-    R ^ (1 ^ e) = MvPolynomial.variablePowerSubstitution
-      (fun v : AffineVar ↦ v.elim 1 fun _ ↦ 1 ^ e) regularR := by
+example : ∃ r, ∃ R : MvPolynomial AffineVar ℚ,
+    R ^ (1 ^ r) = MvPolynomial.variablePowerSubstitution
+      (fun v : AffineVar ↦ v.elim 1 fun _ ↦ 1 ^ r) regularR := by
   have hirr : Irreducible regularR := by
     apply (MulEquiv.irreducible_iff (MvPolynomial.optionEquivLeft ℚ (Fin 2))).mp
     simpa [regularR] using
       Polynomial.irreducible_X_sub_C (MvPolynomial.X (1 : Fin 2) : MvPolynomial (Fin 2) ℚ)
-  obtain ⟨e, R, -, -, -, -, hidentity, -⟩ := exists_frobeniusFactor 1 hirr
+  obtain ⟨r, R, -, -, -, -, hidentity, -⟩ := exists_frobeniusFactor 1 hirr
     (MvPolynomial.degreeOf_pos_of_pderiv_ne_zero none (by simp [regularR]))
-  exact ⟨e, R, hidentity⟩
+  exact ⟨r, R, hidentity⟩
 
 -- Finset-filter statements retain the caller's equality instance.
 -- The Reed–Solomon lines `α + β X` of injectively embedded challenges form an injective family.
@@ -141,10 +141,10 @@ example {E : Type*} [Field E] [Fintype E] [DecidableEq E] {R : MvPolynomial Affi
 
 -- For a line, the multiplier with `s`-th-rooted coefficients is the line with `s`-th-rooted
 -- coefficients.
-example {E : Type*} [Field E] (p e : ℕ) [ExpChar E p] [PerfectRing E p] (α β : E) :
-    (affineMultiplier α β).map ((iterateFrobeniusEquiv E p e).symm : E →+* E) =
-      affineMultiplier ((iterateFrobeniusEquiv E p e).symm α)
-        ((iterateFrobeniusEquiv E p e).symm β) := by
+example {E : Type*} [Field E] (p r : ℕ) [ExpChar E p] [PerfectRing E p] (α β : E) :
+    (affineMultiplier α β).map ((iterateFrobeniusEquiv E p r).symm : E →+* E) =
+      affineMultiplier ((iterateFrobeniusEquiv E p r).symm α)
+        ((iterateFrobeniusEquiv E p r).symm β) := by
   simp
 
 -- In characteristic two, Z² - Y normalizes to Z - Y after squaring X and Y.
@@ -182,29 +182,29 @@ private theorem pderiv_inseparableQ : MvPolynomial.pderiv none inseparableQ = 0 
   simp [inseparableQ, smul_eq_mul, CharTwo.two_eq_zero]
 
 -- The factorization API must use a positive characteristic-two exponent here.
-example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2),
-    0 < e ∧ MvPolynomial.pderiv none R ≠ 0 ∧
-      R ^ (2 ^ e) = MvPolynomial.variablePowerSubstitution
-        (fun v : AffineVar ↦ v.elim 1 fun _ ↦ 2 ^ e) inseparableQ := by
-  obtain ⟨e, R, -, hder, -, -, hidentity, -⟩ := exists_frobeniusFactor 2
+example : ∃ r, ∃ R : MvPolynomial AffineVar (ZMod 2),
+    0 < r ∧ MvPolynomial.pderiv none R ≠ 0 ∧
+      R ^ (2 ^ r) = MvPolynomial.variablePowerSubstitution
+        (fun v : AffineVar ↦ v.elim 1 fun _ ↦ 2 ^ r) inseparableQ := by
+  obtain ⟨r, R, -, hder, -, -, hidentity, -⟩ := exists_frobeniusFactor 2
     irreducible_inseparableQ (by rw [degreeOf_inseparableQ_none]; norm_num)
-  have he : 0 < e := by
+  have hr : 0 < r := by
     by_contra h
-    have he0 : e = 0 := Nat.eq_zero_of_not_pos h
-    have hRQ : R = inseparableQ := by simpa [he0, inseparableQ] using hidentity
+    have hr0 : r = 0 := Nat.eq_zero_of_not_pos h
+    have hRQ : R = inseparableQ := by simpa [hr0, inseparableQ] using hidentity
     apply hder
     rw [hRQ]
     exact pderiv_inseparableQ
-  exact ⟨e, R, he, hder, hidentity⟩
+  exact ⟨r, R, hr, hder, hidentity⟩
 
 -- Frobenius transport along the quadratic multiplier `X²`: the root `X` of `Y - Z²` along `X²`
--- gives the root `X^(2^e)` of the normalized factor along `X²`.
-example : ∃ e, ∃ R : MvPolynomial AffineVar (ZMod 2), Irreducible R ∧
-    multiplierEval (X ^ 2) (expand (ZMod 2) (2 ^ e) X) R = 0 := by
-  obtain ⟨e, R, hirr, -, -, -, -, hroot⟩ := exists_frobeniusFactor 2
+-- gives the root `X^(2^r)` of the normalized factor along `X²`.
+example : ∃ r, ∃ R : MvPolynomial AffineVar (ZMod 2), Irreducible R ∧
+    multiplierEval (X ^ 2) (expand (ZMod 2) (2 ^ r) X) R = 0 := by
+  obtain ⟨r, R, hirr, -, -, -, -, hroot⟩ := exists_frobeniusFactor 2
     irreducible_inseparableQ (by rw [degreeOf_inseparableQ_none]; norm_num)
   have h := hroot (X ^ 2) X (by simp [inseparableQ])
-  exact ⟨e, R, hirr, by simpa using h⟩
+  exact ⟨r, R, hirr, by simpa using h⟩
 
 /-- info: 'ReedSolomon.multiplierEval_eq_nested' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

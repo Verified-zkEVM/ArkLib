@@ -52,9 +52,10 @@ open Polynomial.SymbolicInterpolation in
 /-- At `A = 25` and `m = D = M = 1`, the monomials outnumber the constraints on `𝔽₂₅`. -/
 private theorem exists_interpolant (f g : (Fin 2 → ZMod 5) → F25) :
     ∃ Q, IsInterpolant f g 25 1 1 1 Q :=
-  ReedSolomon.exists_isMultiplierInterpolant _ _ _ (by
+  (ReedSolomon.exists_isMultiplierInterpolant _ _ _ (by
     simp only [ZMod.card, card_F25]
-    norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])
+    norm_num [card_monomialSupport, card_constraintSupport, Finset.sum_range_succ])).imp
+    fun _ h ↦ h.1
 
 /-- With `f = 0` and `g = 1`, the candidate `X₀` agrees with `f + L_α g` everywhere.
 Here `α = (0, 1, 0)`, so `L_α = X₀`. -/
