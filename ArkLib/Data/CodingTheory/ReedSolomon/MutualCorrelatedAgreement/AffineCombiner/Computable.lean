@@ -6,7 +6,7 @@ Authors: Thomas Coratger, Alexander Hicks
 module
 
 public import ArkLib.Data.Probability.MaxEventProbability
-public import CompPoly.Univariate.ToPoly.Degree
+public import ArkLib.ToCompPoly.Univariate.DegreeLT
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegree
 
@@ -155,23 +155,6 @@ theorem lostPositions_combinedWord (domain : ι ↪ F) (f g : ι → F) (L P F�
       agreementLoss domain f g L.toPoly P.toPoly F₀.toPoly G₀.toPoly := by
   rw [lostPositions_eq_filter, combinedWord_eq_combinedWord_toPoly, agreementLoss]
 
-omit [DecidableEq F] [Fintype ι] in
-/-- A candidate in `degreeLT (d + 1)` converts to a polynomial of degree at most `d`. -/
-private theorem degree_toPoly_le [BEq F] [LawfulBEq F] {d : ℕ}
-    (P : ↥(CPolynomial.degreeLT (R := F) (d + 1))) :
-    P.val.toPoly.degree ≤ d :=
-  Polynomial.degree_lt_succ_iff.mp <|
-    Polynomial.mem_degreeLT.mp (CPolynomial.degreeLT_toPoly.mp P.property)
-
-omit [DecidableEq F] [Fintype ι] in
-/-- Suppose that every polynomial that satisfies `Q` has degree at most `d`. Then some candidate in
-`degreeLT (d + 1)` satisfies `Q` after conversion exactly when some polynomial satisfies `Q`. -/
-private theorem exists_degreeLT_succ_toPoly_iff_of_degree_le [BEq F] [LawfulBEq F] (d : ℕ)
-    (Q : Polynomial F → Prop) (hQ : ∀ p, Q p → p.degree ≤ d) :
-    (∃ p : ↥(CPolynomial.degreeLT (R := F) (d + 1)), Q p.val.toPoly) ↔ ∃ p, Q p :=
-  CPolynomial.exists_degreeLT_toPoly_iff_of_degree_lt (d + 1) Q fun p hp ↦
-    Polynomial.degree_lt_succ_iff.mpr (hQ p hp)
-
 /-- Suppose that `P` has degree at most `d`, and that `L G₀` has degree at most `d` for every `G₀`
 that satisfies `S`. Then two statements are equivalent. The first says that no witness pair
 `(F₀, G₀)` with `deg F₀ ≤ d` and `S G₀` is a loss witness for `P`. The second says that every
@@ -219,14 +202,14 @@ theorem isAffineExceptional_iff (domain : ι ↪ F) (f g : ι → F) (d A s : �
     IsAffineExceptional domain f g d A s α β P ↔
       ReedSolomon.IsAffineExceptional domain f g d A s α β P.val.toPoly := by
   rw [IsAffineExceptional, ReedSolomon.IsAffineExceptional,
-    forall_not_isLossWitness_iff (degree_toPoly_le P) fun G₀ hG₀ ↦
+    forall_not_isLossWitness_iff (CPolynomial.degree_toPoly_le P) fun G₀ hG₀ ↦
       (Polynomial.degree_mul_le _ _).trans <|
         (add_le_add_left (degree_affineMultiplier_le α β) _).trans <|
           (add_comm (1 : WithBot ℕ) _).trans_le (Nat.WithBot.add_one_le_of_lt hG₀)]
   simp only [lostPositions_combinedWord, CPolynomial.toPoly_sub, CPolynomial.toPoly_mul,
     toPoly_affineMultiplier]
   simp only [card_eval_eq_card_polynomialAgreementSet, combinedWord_eq_combinedWord_toPoly,
-    toPoly_affineMultiplier, degree_toPoly_le P, true_and]
+    toPoly_affineMultiplier, CPolynomial.degree_toPoly_le P, true_and]
   exact and_congr_right fun _ ↦ CPolynomial.forall_degreeLT_toPoly_iff d fun G₀ ↦
     s < (agreementLoss domain f g (ReedSolomon.affineMultiplier α β) P.val.toPoly
       (P.val.toPoly - ReedSolomon.affineMultiplier α β * G₀) G₀).card
@@ -257,13 +240,13 @@ theorem isScalarExceptional_iff (domain : ι ↪ F) (f g : ι → F) (d A s : �
     IsScalarExceptional domain f g d A s α P ↔
       ReedSolomon.IsScalarExceptional domain f g d A s α P.val.toPoly := by
   rw [IsScalarExceptional, ReedSolomon.IsScalarExceptional,
-    forall_not_isLossWitness_iff (degree_toPoly_le P) fun G₀ hG₀ ↦ by
+    forall_not_isLossWitness_iff (CPolynomial.degree_toPoly_le P) fun G₀ hG₀ ↦ by
       rw [← Polynomial.smul_eq_C_mul]
       exact (Polynomial.degree_smul_le α G₀).trans hG₀]
   simp only [lostPositions_combinedWord, CPolynomial.toPoly_sub, CPolynomial.toPoly_mul,
     CPolynomial.C_toPoly]
   simp only [card_eval_eq_card_polynomialAgreementSet, combinedWord_eq_combinedWord_toPoly,
-    CPolynomial.C_toPoly, degree_toPoly_le P, true_and]
+    CPolynomial.C_toPoly, CPolynomial.degree_toPoly_le P, true_and]
   refine and_congr_right fun _ ↦ ?_
   simpa only [Polynomial.degree_lt_succ_iff] using
     CPolynomial.forall_degreeLT_toPoly_iff (d + 1) fun G₀ ↦
@@ -277,7 +260,7 @@ theorem exists_isAffineExceptional_iff (domain : ι ↪ F) (f g : ι → F) (d A
       IsAffineExceptional domain f g d A s α β P) ↔
       ∃ P, ReedSolomon.IsAffineExceptional domain f g d A s α β P := by
   simp_rw [isAffineExceptional_iff]
-  exact exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1
+  exact CPolynomial.exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1
 
 /-- Some candidate of degree at most `d` satisfies the computable scalar predicate exactly when
 some polynomial satisfies `ReedSolomon.IsScalarExceptional`. -/
@@ -286,9 +269,20 @@ theorem exists_isScalarExceptional_iff (domain : ι ↪ F) (f g : ι → F) (d A
       IsScalarExceptional domain f g d A s α P) ↔
       ∃ P, ReedSolomon.IsScalarExceptional domain f g d A s α P := by
   simp_rw [isScalarExceptional_iff]
-  exact exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1
+  exact CPolynomial.exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1
 
 /-! ### Equal-degree combiner -/
+
+/-- Combine two polynomials at the equal-degree challenge `(θ, α, β)`. -/
+def equalDegreePolynomial (θ α β : F) (U V : CPolynomial F) : CPolynomial F :=
+  V + affineMultiplier α β * (U + CPolynomial.C θ * V)
+
+/-- Conversion preserves the equal-degree combination. -/
+@[simp]
+theorem toPoly_equalDegreePolynomial (θ α β : F) (U V : CPolynomial F) :
+    (equalDegreePolynomial θ α β U V).toPoly =
+      V.toPoly + ReedSolomon.affineMultiplier α β * (U.toPoly + Polynomial.C θ * V.toPoly) := by
+  simp [equalDegreePolynomial, CPolynomial.toPoly_add, CPolynomial.toPoly_mul]
 
 /-- `P` is exceptional for the equal-degree challenge `(θ, α, β)` at threshold `A` and loss `s`.
 
@@ -301,7 +295,7 @@ def IsEqualDegreeExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) 
     (P : ↥(CPolynomial.degreeLT (R := F) (d + 1))) : Prop :=
   A ≤ #{i : ι | P.val.eval (domain i) = equalDegreeWord domain f g θ α β i} ∧
     ∀ F₀ G₀ : ↥(CPolynomial.degreeLT (R := F) d),
-      P.val = G₀.val + affineMultiplier α β * (F₀.val + CPolynomial.C θ * G₀.val) →
+      P.val = equalDegreePolynomial θ α β F₀.val G₀.val →
         s < (lostPositions domain f g (equalDegreeWord domain f g θ α β)
           P.val F₀.val G₀.val).card
 
@@ -318,16 +312,9 @@ theorem isEqualDegreeExceptional_iff (domain : ι ↪ F) (f g : ι → F) (d A s
       ReedSolomon.IsEqualDegreeExceptional domain f g d A s θ α β P.val.toPoly := by
   rw [IsEqualDegreeExceptional, ReedSolomon.IsEqualDegreeExceptional,
     card_eval_eq_card_polynomialAgreementSet]
-  simp only [degree_toPoly_le P, true_and]
-  have heq (F₀ G₀ : CPolynomial F) :
-      (P.val = G₀ + affineMultiplier α β * (F₀ + CPolynomial.C θ * G₀)) ↔
-      P.val.toPoly = G₀.toPoly + ReedSolomon.affineMultiplier α β *
-        (F₀.toPoly + Polynomial.C θ * G₀.toPoly) := by
-    simpa only [CPolynomial.toPoly_add, CPolynomial.toPoly_mul, toPoly_affineMultiplier,
-      CPolynomial.C_toPoly] using
-        (CPolynomial.toPoly_inj (p := P.val)
-          (q := G₀ + affineMultiplier α β * (F₀ + CPolynomial.C θ * G₀))).symm
-  simp_rw [heq, lostPositions_eq_filter]
+  simp only [CPolynomial.degree_toPoly_le P, true_and]
+  simp_rw [← CPolynomial.toPoly_inj (p := P.val), toPoly_equalDegreePolynomial,
+    lostPositions_eq_filter]
   refine and_congr_right fun _ ↦ ?_
   exact CPolynomial.forall₂_degreeLT_toPoly_iff d d
     (fun F₀ G₀ ↦ P.val.toPoly = G₀ + ReedSolomon.affineMultiplier α β *
@@ -343,7 +330,7 @@ theorem exists_isEqualDegreeExceptional_iff (domain : ι ↪ F) (f g : ι → F)
       IsEqualDegreeExceptional domain f g d A s θ α β P) ↔
       ∃ P, ReedSolomon.IsEqualDegreeExceptional domain f g d A s θ α β P := by
   simp_rw [isEqualDegreeExceptional_iff]
-  exact exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1
+  exact CPolynomial.exists_degreeLT_succ_toPoly_iff_of_degree_le d _ fun _ hP ↦ hP.1
 
 end ReedSolomon.Computable
 

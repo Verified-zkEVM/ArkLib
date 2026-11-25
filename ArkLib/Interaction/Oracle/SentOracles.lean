@@ -40,7 +40,7 @@ with oracle access before its final decision.
 
 @[expose] public section
 
-universe u q uI dI
+universe u q
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -110,12 +110,12 @@ def IsSent {s : OracleProtocol.{u, q}} (h : PartialTranscript oracleSig s) (n : 
 
 /-- The oracle bundle available at a partial transcript: the inputs, and exactly the oracle messages
 already sent. -/
-def availableBundle (inputs : OracleBundle.{u, uI, dI}) {s : OracleProtocol.{u, q}}
+def availableBundle (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     (h : PartialTranscript oracleSig s) :=
   inputs.sum (OracleBundle.ofFamily h.sentOracleMessageFamily)
 
 /-- The name of a bundle query: an input index, or the node of a sent oracle. -/
-def queryNode (inputs : OracleBundle.{u, uI, dI}) {s : OracleProtocol.{u, q}}
+def queryNode (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     (h : PartialTranscript oracleSig s) :
     (h.availableBundle inputs).Index → inputs.Index ⊕ Node s
   | .inl i => .inl i
@@ -123,16 +123,16 @@ def queryNode (inputs : OracleBundle.{u, uI, dI}) {s : OracleProtocol.{u, q}}
 
 /-- `Le h k` says that the partial transcript `k` continues `h` and keeps every earlier move of
 `h`. -/
-inductive Le : {s : OracleProtocol.{u, q}} → PartialTranscript oracleSig s →
-    PartialTranscript oracleSig s → Type (max (u + 1) (q + 1)) where
+inductive Le : {s : OracleProtocol.{0, 0}} → PartialTranscript oracleSig s →
+    PartialTranscript oracleSig s → Type 1 where
   | empty {s} (h : PartialTranscript oracleSig s) : Le (.empty : PartialTranscript oracleSig s) h
-  | cons {a : OraclePos.{u, q}} {next : OraclePoly.B a → OracleProtocol}
+  | cons {a : OraclePos.{0, 0}} {next : OraclePoly.B a → OracleProtocol}
       (x : Move oracleSig a) {h k : PartialTranscript oracleSig (next (oracleSig.toFunB a x))}
       (tail : Le h k) : Le (.cons x h) (.cons x k)
 
 /-- Every partial transcript is below itself, with its concrete challenge and oracle message
 values. -/
-def Le.refl : {s : OracleProtocol.{u, q}} → (h : PartialTranscript oracleSig s) → Le h h
+def Le.refl : {s : OracleProtocol.{0, 0}} → (h : PartialTranscript oracleSig s) → Le h h
   | .pure _, none => .empty _
   | .pure _, some impossible => impossible.elim
   | .liftBind _ _, none => .empty _
@@ -142,7 +142,7 @@ namespace SentOracleMessageIndex
 
 /-- Include the oracle messages sent in the shorter partial transcript among those sent in the
 longer one. -/
-def lift : {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s} →
+def lift : {s : OracleProtocol.{0, 0}} → {h k : PartialTranscript oracleSig s} →
     Le h k → SentOracleMessageIndex h → SentOracleMessageIndex k
   | s, _, _, .empty _, i => by cases s <;> exact PEmpty.elim i
   | _, _, _, @Le.cons (.message _) next x h k tail, i =>
@@ -154,34 +154,34 @@ def lift : {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s}
     .inr (lift (h := h) (k := k) tail i)
 
 /-- Including a sent oracle message keeps its node name. -/
-theorem node_lift : {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s} →
+theorem node_lift : {s : OracleProtocol.{0, 0}} → {h k : PartialTranscript oracleSig s} →
     (e : Le h k) → (i : SentOracleMessageIndex h) → node k (lift e i) = node h i
   | s, _, _, .empty _, i => by cases s <;> exact PEmpty.elim i
   | _, _, _, @Le.cons (.message X) next x h k tail, i =>
     congrArg (fun n : Node (next x) =>
-      (Sum.inr ⟨x, n⟩ : Node (P := OraclePoly.{u, q}) (.liftBind (.message X) next)))
+      (Sum.inr ⟨x, n⟩ : Node (P := OraclePoly.{0, 0}) (.liftBind (.message X) next)))
       (node_lift tail i)
   | _, _, _, @Le.cons (.challenge C) next _ h k tail, i =>
     congrArg (fun n : Node (next ⟨⟩) =>
-      (Sum.inr ⟨⟨⟩, n⟩ : Node (P := OraclePoly.{u, q}) (.liftBind (.challenge C) next)))
+      (Sum.inr ⟨⟨⟩, n⟩ : Node (P := OraclePoly.{0, 0}) (.liftBind (.challenge C) next)))
       (node_lift tail i)
   | _, _, _, @Le.cons (.oracle _ _) _ _ _ _ _, .inl _ => rfl
   | _, _, _, @Le.cons (.oracle X I) next _ h k tail, .inr i =>
     congrArg (fun n : Node (next ⟨⟩) =>
-      (Sum.inr ⟨⟨⟩, n⟩ : Node (P := OraclePoly.{u, q}) (.liftBind (.oracle X I) next)))
+      (Sum.inr ⟨⟨⟩, n⟩ : Node (P := OraclePoly.{0, 0}) (.liftBind (.oracle X I) next)))
       (node_lift tail i)
 
 end SentOracleMessageIndex
 
 /-- Extending a partial transcript does not remove a sent oracle message. -/
-theorem IsSent.mono {s : OracleProtocol.{u, q}} {h k : PartialTranscript oracleSig s} (e : Le h k)
+theorem IsSent.mono {s : OracleProtocol.{0, 0}} {h k : PartialTranscript oracleSig s} (e : Le h k)
     {n : Node s} (sent : h.IsSent n) : k.IsSent n := by
   obtain ⟨i, rfl⟩ := sent
   exact ⟨SentOracleMessageIndex.lift e i, SentOracleMessageIndex.node_lift e i⟩
 
 /-- Include a query to an earlier sent oracle message in the longer partial transcript, keeping its
 query argument. -/
-def liftQuery : {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s} →
+def liftQuery : {s : OracleProtocol.{0, 0}} → {h k : PartialTranscript oracleSig s} →
     Le h k → (sentOracleMessageFamily h).spec.Domain → (sentOracleMessageFamily k).spec.Domain
   | s, _, _, .empty _, r => by cases s <;> exact PEmpty.elim r.1
   | _, _, _, @Le.cons (.message _) next x h k tail, r =>
@@ -195,7 +195,7 @@ def liftQuery : {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleS
 
 /-- Including a query uses the same inclusion of sent oracle messages as for the available
 bundle. -/
-theorem liftQuery_index : {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s} →
+theorem liftQuery_index : {s : OracleProtocol.{0, 0}} → {h k : PartialTranscript oracleSig s} →
     (e : Le h k) → (r : (sentOracleMessageFamily h).spec.Domain) →
     (liftQuery e r).1 = SentOracleMessageIndex.lift e r.1
   | s, _, _, .empty _, r => by cases s <;> exact PEmpty.elim r.1
@@ -206,14 +206,14 @@ theorem liftQuery_index : {s : OracleProtocol.{u, q}} → {h k : PartialTranscri
     congrArg Sum.inr (liftQuery_index tail ⟨i, r⟩)
 
 /-- An included query names exactly the node of the earlier sent oracle message. -/
-theorem liftQuery_node {s : OracleProtocol.{u, q}} {h k : PartialTranscript oracleSig s}
+theorem liftQuery_node {s : OracleProtocol.{0, 0}} {h k : PartialTranscript oracleSig s}
     (e : Le h k) (r : (sentOracleMessageFamily h).spec.Domain) :
     SentOracleMessageIndex.node k (liftQuery e r).1 = SentOracleMessageIndex.node h r.1 := by
   rw [liftQuery_index, SentOracleMessageIndex.node_lift]
 
 /-- Including a query keeps the response type as well as the query argument. -/
 theorem liftQuery_response :
-    {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s} →
+    {s : OracleProtocol.{0, 0}} → {h k : PartialTranscript oracleSig s} →
     (e : Le h k) → (r : (sentOracleMessageFamily h).spec.Domain) →
     (sentOracleMessageFamily h).spec r = (sentOracleMessageFamily k).spec (liftQuery e r)
   | s, _, _, .empty _, r => by cases s <;> exact PEmpty.elim r.1
@@ -225,7 +225,7 @@ theorem liftQuery_response :
 
 /-- Restrict the sent oracle message family of the longer partial transcript to that of the shorter
 one. -/
-def sentOracleMessageMap : {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s} →
+def sentOracleMessageMap : {s : OracleProtocol.{0, 0}} → {h k : PartialTranscript oracleSig s} →
     Le h k → OracleMap (sentOracleMessageFamily k) (sentOracleMessageFamily h)
   | s, _, _, .empty _ => by
     cases s <;> exact
@@ -243,7 +243,7 @@ def sentOracleMessageMap : {s : OracleProtocol.{u, q}} → {h k : PartialTranscr
 /-- The restriction answers each query by querying the included sent oracle message with the same
 argument. -/
 theorem sentOracleMessageMap_query :
-    {s : OracleProtocol.{u, q}} → {h k : PartialTranscript oracleSig s} →
+    {s : OracleProtocol.{0, 0}} → {h k : PartialTranscript oracleSig s} →
     (e : Le h k) → (r : (sentOracleMessageFamily h).spec.Domain) →
     HEq ((sentOracleMessageMap e).impl r)
       (liftM ((sentOracleMessageFamily k).spec.query (liftQuery e r)) :
@@ -261,7 +261,7 @@ theorem sentOracleMessageMap_query :
         (OracleComp (sumFamily (singletonFamily I) (sentOracleMessageFamily k)).spec) :=
       (OracleMap.embedding (sumFamily (singletonFamily I) (sentOracleMessageFamily k))
         Sum.inr).impl
-    have lift_heq {α β : Type u} (eq : α = β)
+    have lift_heq {α β : Type} (eq : α = β)
         {p : OracleComp (sentOracleMessageFamily k).spec α}
         {p' : OracleComp (sentOracleMessageFamily k).spec β}
         (same : HEq p p') : HEq (simulateQ handler p) (simulateQ handler p') := by
@@ -278,20 +278,20 @@ theorem sentOracleMessageMap_query :
 
 /-- Route queries to the bundle available at the shorter partial transcript through the bundle
 available at the longer one. -/
-def availableMap (inputs : OracleBundle.{u, uI, dI}) {s : OracleProtocol.{u, q}}
+def availableMap (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     {h k : PartialTranscript oracleSig s} (e : Le h k) :
     OracleMap (k.availableBundle inputs) (h.availableBundle inputs) :=
   (OracleMap.id inputs).par (sentOracleMessageMap e)
 
 /-- Include an input or a sent oracle message of the shorter partial transcript among those of the
 longer one. -/
-def liftNode (inputs : OracleBundle.{u, uI, dI}) {s : OracleProtocol.{u, q}}
+def liftNode (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     {h k : PartialTranscript oracleSig s} (e : Le h k) :
     inputs.Index ⊕ SentOracleMessageIndex h → inputs.Index ⊕ SentOracleMessageIndex k :=
   Sum.map id (SentOracleMessageIndex.lift e)
 
 /-- Including an input or a sent oracle message keeps its name in the original protocol. -/
-theorem availableMap_node (inputs : OracleBundle.{u, uI, dI}) {s : OracleProtocol.{u, q}}
+theorem availableMap_node (inputs : OracleBundle) {s : OracleProtocol.{0, 0}}
     {h k : PartialTranscript oracleSig s} (e : Le h k)
     (i : inputs.Index ⊕ SentOracleMessageIndex h) :
     Sum.map id (SentOracleMessageIndex.node k) (liftNode inputs e i) =
@@ -302,7 +302,7 @@ theorem availableMap_node (inputs : OracleBundle.{u, uI, dI}) {s : OracleProtoco
 
 /-- Identify the sent oracle messages of a completed transcript with the oracle message family on
 the path that the verifier uses. -/
-def oracleMessagesToSent : (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig s) →
+def oracleMessagesToSent : (s : OracleProtocol.{0, 0}) → (tr : Transcript oracleSig s) →
     OracleMap (oracleMessageFamily s tr.path) (sentOracleMessageFamily (ofTranscript s tr))
   | .pure _, _ =>
     { f := fun _ i => i.elim
@@ -316,7 +316,7 @@ def oracleMessagesToSent : (s : OracleProtocol.{u, q}) → (tr : Transcript orac
 
 /-- This identification reads exactly the oracle messages of the same transcript. -/
 theorem oracleMessagesToSent_data :
-    (s : OracleProtocol.{u, q}) → (tr : Transcript oracleSig s) →
+    (s : OracleProtocol.{0, 0}) → (tr : Transcript oracleSig s) →
     (oracleMessagesToSent s tr).f (oracleMessages s tr) = sentOracleMessages (ofTranscript s tr)
   | .pure _, _ => by funext i; exact i.elim
   | .liftBind (.message _) next, ⟨x, tr⟩ => oracleMessagesToSent_data (next x) tr
@@ -329,23 +329,23 @@ theorem oracleMessagesToSent_data :
 
 /-- Route the verifier's bundle along the completed path to the bundle available at the
 completed transcript. -/
-def toPathBundle (inputs : OracleBundle.{u, uI, dI})
-    (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+def toPathBundle (inputs : OracleBundle)
+    (s : OracleProtocol.{0, 0}) (tr : Transcript oracleSig s) :
     OracleMap (pathBundle inputs s tr.path)
       ((ofTranscript s tr).availableBundle inputs) :=
   (OracleMap.id inputs).par (oracleMessagesToSent s tr)
 
 /-- Routing from `pathBundle` keeps the inputs and exactly the oracle messages that were sent. -/
-theorem toPathBundle_data (inputs : OracleBundle.{u, uI, dI}) (input : inputs.Data)
-    (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+theorem toPathBundle_data (inputs : OracleBundle) (input : inputs.Data)
+    (s : OracleProtocol.{0, 0}) (tr : Transcript oracleSig s) :
     (toPathBundle inputs s tr).f (input, oracleMessages s tr) =
       (input, sentOracleMessages (ofTranscript s tr)) := by
   exact congrArg (input, ·) (oracleMessagesToSent_data s tr)
 
 /-- The partial transcript of the appended protocol `s₁.append s₂` that ends at the seam: it
 holds every move of `tr₁` and no move of the second protocol. -/
-def firstMoves : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : Transcript oracleSig s₁) →
+def firstMoves : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (tr₁ : Transcript oracleSig s₁) →
     PartialTranscript oracleSig (s₁.append s₂)
   | .pure _, _, _ => .empty
   | .liftBind a next, s₂, ⟨x, tr⟩ =>
@@ -353,8 +353,8 @@ def firstMoves : (s₁ : OracleProtocol.{u, q}) →
       (fun p => s₂ ⟨oracleSig.toFunB a x, p⟩) tr)
 
 /-- The first moves of the appended run are below its whole transcript. -/
-def firstMovesLe : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) → (tr₁ : Transcript oracleSig s₁) →
+def firstMovesLe : (s₁ : OracleProtocol.{0, 0}) →
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (tr₁ : Transcript oracleSig s₁) →
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
     Le (firstMoves s₁ s₂ tr₁)
       (ofTranscript (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂))
@@ -364,8 +364,8 @@ def firstMovesLe : (s₁ : OracleProtocol.{u, q}) →
       (fun p => s₂ ⟨oracleSig.toFunB a x, p⟩) tr₁ tr₂)
 
 /-- A sent oracle message at the seam keeps its node name at the end of the appended run. -/
-theorem firstMovesLe_node (s₁ : OracleProtocol.{u, q})
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) (tr₁ : Transcript oracleSig s₁)
+theorem firstMovesLe_node (s₁ : OracleProtocol.{0, 0})
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path))
     (i : SentOracleMessageIndex (firstMoves s₁ s₂ tr₁)) :
     SentOracleMessageIndex.node (ofTranscript _ (Transcript.append s₁ s₂ tr₁ tr₂))
@@ -377,7 +377,7 @@ theorem firstMovesLe_node (s₁ : OracleProtocol.{u, q})
 for each action (the prover's, then the sampler's), followed by the entries of the continuation.
 This is a property of the exchange in the writer layer. -/
 theorem mem_support_logMove {ι : Type} {spec : OracleSpec ι}
-    {root s : OracleProtocol.{0, q}} {X R : Type} {A B : X → Type}
+    {root s : OracleProtocol.{0, 0}} {X R : Type} {A B : X → Type}
     (env : PartialTranscript oracleSig s → PartialTranscript oracleSig root)
     (role : TwoParty.Role)
     (p : OracleComp spec (Choice .focal role X A))
@@ -402,8 +402,8 @@ theorem mem_support_logMove {ι : Type} {spec : OracleSpec ι}
 is below the whole transcript of the run, as embedded by `env`. The embedding `env` places the
 partial transcripts of the rest of the protocol inside the root protocol. -/
 theorem mapMovesWith_before_le {ι : Type} {spec : OracleSpec ι}
-    {root : OracleProtocol.{0, q}} :
-    (s : OracleProtocol.{0, q}) → {OutP OutC : Transcript oracleSig s → Type} →
+    {root : OracleProtocol.{0, 0}} :
+    (s : OracleProtocol.{0, 0}) → {OutP OutC : Transcript oracleSig s → Type} →
     (env : PartialTranscript oracleSig s → PartialTranscript oracleSig root) →
     (preserves : ∀ h k, Le h k → Nonempty (Le (env h) (env k))) →
     (p : Focal oracleSig (OracleComp spec) s OutP) →
@@ -451,7 +451,7 @@ theorem mapMovesWith_before_le {ι : Type} {spec : OracleSpec ι}
 /-- At the root, every entry logged by `runLoggingMoves` has a partial transcript that is below the
 whole transcript of the run. -/
 theorem runLoggingMoves_before_le {ι : Type} {spec : OracleSpec ι}
-    (s : OracleProtocol.{0, q}) {OutP OutC : Transcript oracleSig s → Type}
+    (s : OracleProtocol.{0, 0}) {OutP OutC : Transcript oracleSig s → Type}
     (p : Focal oracleSig (OracleComp spec) s OutP)
     (c : Counterpart oracleSig (OracleComp spec) s OutC)
     {r : ((tr : Transcript oracleSig s) × OutP tr × OutC tr) × List (QueriesAt spec s)}
@@ -465,21 +465,21 @@ end PartialTranscript
 namespace QueriesAt
 
 /-- The bundle available at this entry: the one available at its partial transcript. -/
-abbrev availableContext {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, q}}
-    (entry : QueriesAt spec s) (inputs : OracleBundle.{0, uI, dI}) :=
+abbrev availableContext {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    (entry : QueriesAt spec s) (inputs : OracleBundle) :=
   entry.before.availableBundle inputs
 
 /-- The input data and the oracle messages already sent give data for this entry's available
 bundle. -/
-def availableData {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, q}}
-    (entry : QueriesAt spec s) (inputs : OracleBundle.{0, uI, dI}) (input : inputs.Data) :
+def availableData {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    (entry : QueriesAt spec s) (inputs : OracleBundle) (input : inputs.Data) :
     (entry.availableContext inputs).Data :=
   (input, PartialTranscript.sentOracleMessages entry.before)
 
 /-- Include an earlier entry's available bundle in that of a later entry whose partial
 transcript continues the earlier one. -/
-def availableMap {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, q}}
-    (entry later : QueriesAt spec s) (inputs : OracleBundle.{0, uI, dI})
+def availableMap {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    (entry later : QueriesAt spec s) (inputs : OracleBundle)
     (e : PartialTranscript.Le entry.before later.before) :
     OracleMap (later.availableContext inputs) (entry.availableContext inputs) :=
   PartialTranscript.availableMap inputs e
@@ -490,9 +490,9 @@ namespace OracleVerifier
 
 /-- Every entry in the queries by move of a run has a partial transcript that is below the whole
 transcript of the run. -/
-theorem runWithQueriesByMove_before_le {ι : Type} {S : Type u} {ambient : OracleSpec ι}
+theorem runWithQueriesByMove_before_le {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, dI}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
@@ -513,9 +513,9 @@ theorem runWithQueriesByMove_before_le {ι : Type} {S : Type u} {ambient : Oracl
   · exact ⟨PartialTranscript.Le.refl _⟩
 
 /-- An oracle message sent before an entry of the run is still sent at the decision. -/
-theorem isSent_at_decision {ι : Type} {S : Type u} {ambient : OracleSpec ι}
+theorem isSent_at_decision {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, dI}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)
@@ -527,10 +527,10 @@ theorem isSent_at_decision {ι : Type} {S : Type u} {ambient : OracleSpec ι}
   exact sent.mono e
 
 /-- The ambient queries by move also give every entry a partial transcript that is below the whole
-transcript, for arbitrary bundle-query universes. -/
-theorem runWithAmbientQueriesByMove_before_le {ι : Type} {S : Type u} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
+transcript, with bundle queries in `Type`. -/
+theorem runWithAmbientQueriesByMove_before_le {ι : Type} {S : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (input : inputs.Data)

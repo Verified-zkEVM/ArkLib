@@ -187,24 +187,24 @@ def secondQuery : OracleComp (oracleMessageSpec twoSends ⟨⟨⟩, ⟨⟨⟩, �
 example (first second : Nat × Nat) :
     simulateQ (oracleMessageImpl twoSends ⟨first, second, ⟨⟩⟩) secondQuery = second.1 := rfl
 
-/-- Message and response types may lie above the query type when extending a bundle. -/
-example (Messages : Type 1) (interface : OracleInterface.{1, 0} Messages)
-    (initial : PFunctor.{0, 1}) : PFunctor.{0, 1} :=
-  let prior : OracleBundle.{1, 0, 1} :=
+/-- Extend a bundle with message and response carriers in `Type`. -/
+example (Messages : Type) (interface : OracleInterface.{0, 0} Messages)
+    (initial : PFunctor.{0, 0}) : PFunctor.{0, 0} :=
+  let prior : OracleBundle :=
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
-  let latest : OracleBundle.{1, 0, 1} :=
+  let latest : OracleBundle :=
     ⟨interface.Query, interface.toOC.spec, Messages,
       fun message query => (interface.toOC.impl query).run message⟩
   (prior.sum latest).spec.toPFunctor
 
-/-- Query types may lie above the message and response types when extending a bundle. -/
-example (Messages : Type) (interface : OracleInterface.{0, 1} Messages)
-    (initial : PFunctor.{1, 0}) : PFunctor.{1, 0} :=
-  let prior : OracleBundle.{0, 1, 1} :=
+/-- Extend a bundle with query carriers in `Type`. -/
+example (Messages : Type) (interface : OracleInterface.{0, 0} Messages)
+    (initial : PFunctor.{0, 0}) : PFunctor.{0, 0} :=
+  let prior : OracleBundle :=
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
-  let latest : OracleBundle.{0, 1, 0} :=
+  let latest : OracleBundle :=
     ⟨interface.Query, interface.toOC.spec, Messages,
       fun message query => (interface.toOC.impl query).run message⟩
   (prior.sum latest).spec.toPFunctor

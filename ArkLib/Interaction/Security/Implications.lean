@@ -57,7 +57,7 @@ the ranks are distinct along each path and lie in a fixed range.
 
 @[expose] public section
 
-universe v uS uI dI wJ uι uκ uA u
+universe uA v
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
@@ -65,10 +65,10 @@ open scoped ENNReal
 
 section Escape
 
-variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 /-- The challenge nodes met along a shape path. -/
-def challengeNodesOn : (s : FreeM P PUnit.{u + 1}) → Path s → Finset (ChallengeNode l s)
+def challengeNodesOn : (s : FreeM P PUnit.{1}) → Path s → Finset (ChallengeNode l s)
   | .pure _, _ => ∅
   | .liftBind a next, ⟨b, p⟩ =>
     let rest := (challengeNodesOn (next b) p).map
@@ -85,8 +85,8 @@ def challengeNodesOn : (s : FreeM P PUnit.{u + 1}) → Path s → Finset (Challe
     | .sender => rest
 
 /-- Some receiver node on the transcript turns the state from false to true. -/
-def EscapeAlong : (s : FreeM P PUnit.{u + 1}) →
-    (∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop) →
+def EscapeAlong : (s : FreeM P PUnit.{1}) →
+    (∀ {t : FreeM P PUnit.{1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop) →
     Transcript l s → Prop
   | .pure _, _, _ => False
   | .liftBind a next, G, ⟨x, tr⟩ =>
@@ -97,8 +97,8 @@ def EscapeAlong : (s : FreeM P PUnit.{u + 1}) →
 
 /-- A family false at the root, kept false by sender moves and false only at rejected leaves,
 escapes along every accepted transcript. -/
-theorem escapeAlong_of_accepts (s : FreeM P PUnit.{u + 1}) :
-    ∀ (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
+theorem escapeAlong_of_accepts (s : FreeM P PUnit.{1}) :
+    ∀ (G : ∀ {t : FreeM P PUnit.{1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
       (accepts : Transcript l s → Prop),
       (∀ {a next} (sp : Cursor.Spine s (.liftBind a next)) history, owner l a = .sender →
         ¬ G sp history → ∀ x,
@@ -129,7 +129,7 @@ theorem escapeAlong_of_accepts (s : FreeM P PUnit.{u + 1}) :
 
 /-- On an accepted transcript of a false admissible statement, some challenge node on the path
 turns the state from false to true. -/
-theorem StateFunction.escapeAlong {s : FreeM P PUnit.{u + 1}} {S : Type uS}
+theorem StateFunction.escapeAlong {s : FreeM P PUnit.{1}} {S : Type}
     {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (F : StateFunction l s S admissible language accepts) {stmt : S}
     (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : Transcript l s}
@@ -140,11 +140,11 @@ theorem StateFunction.escapeAlong {s : FreeM P PUnit.{u + 1}} {S : Type uS}
     (fun sp history hG => F.leaf sp history stmt hG) (fun h => hlang (F.root stmt hadm h)) tr hacc
 
 /-- A receiver node reached by a structural cursor, with the full moves before it. -/
-structure ReceiverPrefix (s : FreeM P PUnit.{u + 1}) where
+structure ReceiverPrefix (s : FreeM P PUnit.{1}) where
   /-- The position at the node. -/
   pos : P.A
   /-- The subtrees after the node. -/
-  next : P.B pos → FreeM P PUnit.{u + 1}
+  next : P.B pos → FreeM P PUnit.{1}
   /-- The structural cursor from the root to the node. -/
   spine : Cursor.Spine s (.liftBind pos next)
   /-- The receiver owns the node. -/
@@ -153,13 +153,13 @@ structure ReceiverPrefix (s : FreeM P PUnit.{u + 1}) where
   history : PartialTranscriptAt l spine
 
 /-- The challenge node at which a receiver prefix ends. -/
-abbrev ReceiverPrefix.node {s : FreeM P PUnit.{u + 1}} (pfx : ReceiverPrefix l s) :
+abbrev ReceiverPrefix.node {s : FreeM P PUnit.{1}} (pfx : ReceiverPrefix l s) :
     ChallengeNode l s :=
   spineChallenge l pfx.spine pfx.receiver
 
 /-- A fresh move at the end of a receiver prefix turns the state from false to true. -/
-abbrev ReceiverPrefix.Flips {s : FreeM P PUnit.{u + 1}}
-    (G : ∀ {t : FreeM P PUnit.{u + 1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
+abbrev ReceiverPrefix.Flips {s : FreeM P PUnit.{1}}
+    (G : ∀ {t : FreeM P PUnit.{1}}, (sp : Cursor.Spine s t) → PartialTranscriptAt l sp → Prop)
     (pfx : ReceiverPrefix l s) (x : Move l pfx.pos) : Prop :=
   ¬ G pfx.spine pfx.history ∧
     G (pfx.spine.comp (.down (l.toFunB pfx.pos x) (.root _)))
@@ -253,10 +253,10 @@ end Escape
 
 section Run
 
-variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
 
 /-- The node errors along a path through a sender node are those of the subpath. -/
-private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (h : owner l a = .sender) (ε : ChallengeNode l (.liftBind a next) → ℝ≥0∞) (b : P.B a)
     (path : Path (next b)) :
     ∑ c ∈ challengeNodesOn l (.liftBind a next) ⟨b, path⟩, ε c =
@@ -269,7 +269,7 @@ private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P 
 
 /-- The node errors along a path through a receiver node are the node's error plus those of
 the subpath. -/
-private theorem sum_challengeNodesOn_receiver {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
+private theorem sum_challengeNodesOn_receiver {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
     (h : owner l a = .receiver) (ε : ChallengeNode l (.liftBind a next) → ℝ≥0∞) (b : P.B a)
     (path : Path (next b)) :
     ∑ c ∈ challengeNodesOn l (.liftBind a next) ⟨b, path⟩, ε c =
@@ -527,15 +527,15 @@ private theorem exists_map_some_iff {T U : Type} (f : T → U) (L : U → Prop) 
 
 /-- Lifting an ambient handler threads an unused state through the entire computation. -/
 private theorem simulateQ_stateLift_run' {m : Type → Type v} [Monad m] [LawfulMonad m]
-    {ι : Type uι} {σ α : Type} {spec : OracleSpec.{uι, 0} ι} (H : QueryImpl spec m)
+    {ι : Type} {σ α : Type} {spec : OracleSpec.{0, 0} ι} (H : QueryImpl spec m)
     (c : OracleComp spec α) (st : σ) :
     (simulateQ (H.liftTarget (StateT σ m)) c).run' st = simulateQ H c := by
   rw [simulateQ_liftTarget, StateT.liftM_def, StateT.run'_lift']
 
 /-- Deterministic bundle answers commute with an unused state lift. -/
 private theorem stateLift_addLift {m : Type → Type v} [Monad m] [LawfulMonad m]
-    {ι : Type uι} {κ : Type uκ} {σ : Type}
-    {spec : OracleSpec.{uι, 0} ι} {bundle : OracleSpec.{uκ, 0} κ}
+    {ι : Type} {κ : Type} {σ : Type}
+    {spec : OracleSpec.{0, 0} ι} {bundle : OracleSpec.{0, 0} κ}
     (H : QueryImpl spec m) (answer : QueryImpl bundle Id) :
     ((H.liftTarget (StateT σ m)).addLift answer : QueryImpl (spec + bundle) (StateT σ m)) =
       (H.addLift answer : QueryImpl (spec + bundle) m).liftTarget (StateT σ m) := by
@@ -631,7 +631,7 @@ certificate's acceptance predicate only when the final event has positive probab
 and oracle verifier theorems below prove this link from the final decision. -/
 theorem prEvent_runPrefixChallenges_soundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι β : Type} {spec : OracleSpec ι} {s : FreeM P PUnit} {S : Type uS}
+    {ι β : Type} {spec : OracleSpec ι} {s : FreeM P PUnit} {S : Type}
     {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (F : StateFunction l s S admissible language accepts)
     (H : QueryImpl spec m) (ev : β → Prop) (ε : ChallengeNode l s → ℝ≥0∞)
@@ -657,8 +657,8 @@ end PrefixExecution
 
 section PathBounds
 
-variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-  {s : FreeM P PUnit.{u + 1}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+  {s : FreeM P PUnit.{1}}
 
 /-- The path supremum of summed node errors is at most the sum of all node errors. -/
 theorem iSup_sum_challengeNodesOn_le_tsum (ε : ChallengeNode l s → ℝ≥0∞) :
@@ -706,7 +706,7 @@ the end of the run. -/
 theorem Verifier.soundnessUsing_of_localSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : m σ}
     {H : QueryImpl (ambient + challengeSpec plainSig s) (StateT σ m)}
     {input : StatementProblem S} {output : PathProblem s T}
@@ -760,7 +760,7 @@ theorem Verifier.soundnessUsing_of_localSoundness
 theorem Verifier.soundnessUsing_of_rbrSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+    {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : m σ}
     {H : QueryImpl (ambient + challengeSpec plainSig s) (StateT σ m)}
     {input : StatementProblem S} {output : PathProblem s T}
@@ -792,7 +792,7 @@ theorem Verifier.soundnessUsing_of_rbrSoundness
 in any lawful distribution monad, including monads with missing probability mass. -/
 theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type} {V : Verifier ambient s S T}
     {H : QueryImpl (ambient + challengeSpec plainSig s) m}
     {input : StatementProblem S} {output : PathProblem s T}
@@ -832,7 +832,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [
 /-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
 theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type} {V : Verifier ambient s S T}
     {H : QueryImpl (ambient + challengeSpec plainSig s) m}
     {input : StatementProblem S} {output : PathProblem s T}
@@ -848,7 +848,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v} [Monad
 /-- Uniform local errors and a path length bound give soundness error `k • e`. -/
 theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type} {V : Verifier ambient s S T}
     {H : QueryImpl (ambient + challengeSpec plainSig s) m}
     {input : StatementProblem S} {output : PathProblem s T}
@@ -866,7 +866,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v} [Mo
 
 /-- Round-by-round soundness implies soundness for every initial state distribution. The error is
 the supremum, over shape paths, of the sum of the node errors along the path. -/
-theorem Verifier.soundness_of_rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+theorem Verifier.soundness_of_rbrSoundness {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : ProbComp σ}
     {impl : QueryImpl ambient (StateT σ ProbComp)}
     {input : StatementProblem S} {output : PathProblem s T}
@@ -882,7 +882,7 @@ theorem Verifier.soundness_of_rbrSoundness {ι σ : Type} {S : Type uS} {ambient
     QueryImpl.add_apply_inl, QueryImpl.liftTarget_self] using h
 
 /-- Round-by-round soundness implies soundness with the sum of all node errors. -/
-theorem Verifier.soundness_of_rbrSoundness_tsum {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+theorem Verifier.soundness_of_rbrSoundness_tsum {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : ProbComp σ}
     {impl : QueryImpl ambient (StateT σ ProbComp)}
     {input : StatementProblem S} {output : PathProblem s T}
@@ -895,7 +895,7 @@ theorem Verifier.soundness_of_rbrSoundness_tsum {ι σ : Type} {S : Type uS} {am
 
 /-- If every node error is at most `e` and every shape path meets at most `k` challenge nodes,
 round-by-round soundness implies soundness with error `k • e`. -/
-theorem Verifier.soundness_of_rbrSoundness_uniform {ι σ : Type} {S : Type uS}
+theorem Verifier.soundness_of_rbrSoundness_uniform {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι}
     {s : Protocol} {T : Path s → Type} {V : Verifier ambient s S T} {init : ProbComp σ}
     {impl : QueryImpl ambient (StateT σ ProbComp)}
@@ -915,10 +915,10 @@ the end of the run. -/
 theorem OracleVerifier.soundnessUsing_of_localSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
-  {s : OracleProtocol} {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
+  {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : m σ}
   {H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ m)}
   {input : StatementProblem (S × inputs.Data)}
@@ -977,10 +977,10 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
 theorem OracleVerifier.soundnessUsing_of_rbrSoundness
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
-  {s : OracleProtocol} {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
+  {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : m σ}
   {H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ m)}
   {input : StatementProblem (S × inputs.Data)}
@@ -1013,10 +1013,10 @@ theorem OracleVerifier.soundnessUsing_of_rbrSoundness
 in any lawful distribution monad, with its actual bundle answers and output oracle map. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
     {input : StatementProblem (S × inputs.Data)}
@@ -1064,10 +1064,10 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
 /-- Fresh round-by-round soundness bounds soundness by the sum of all node errors. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
     {input : StatementProblem (S × inputs.Data)}
@@ -1084,10 +1084,10 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
 /-- Uniform local errors and a path length bound give soundness error `k • e`. -/
 theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
-    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
     {input : StatementProblem (S × inputs.Data)}
@@ -1106,10 +1106,10 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type 
 
 section OracleVerifier
 
-variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
-  {s : OracleProtocol} {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
+  {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : ProbComp σ}
   {impl : QueryImpl ambient (StateT σ ProbComp)}
   {input : StatementProblem (S × inputs.Data)}

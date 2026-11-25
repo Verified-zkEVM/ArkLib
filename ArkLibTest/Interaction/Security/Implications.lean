@@ -17,7 +17,6 @@ open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp Me
 open Interaction.Oracle
 open scoped ENNReal
 
-universe uS uI wI wJ dI
 
 -- These ordinary imports expose both classical specialization laws for each verifier form.
 #check Verifier.soundness_iff_soundnessUsing
@@ -36,7 +35,7 @@ open Interaction.SecurityTests
 /-! ### The general statements -/
 
 -- Disposition S2: soundness-implication-disposition.md#soundnesslean.
-example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+example {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -50,7 +49,7 @@ example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
   ⟨Verifier.soundness_of_rbrSoundness h, Verifier.soundness_of_rbrSoundness_tsum h⟩
 
 -- Disposition S3: soundness-implication-disposition.md#soundnesslean.
-example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+example {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -62,11 +61,11 @@ example {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
   Verifier.soundness_of_rbrSoundness_uniform h (fun _ => le_rfl) hcount
 
 -- Disposition S2, oracle form: soundness-implication-disposition.md#soundnesslean.
-example {ι σ : Type} {I : Type uI} {S : Type uS}
+example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleFamily.{0, 0, 0} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
@@ -79,11 +78,11 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
   ⟨OracleVerifier.soundness_of_rbrSoundness h, OracleVerifier.soundness_of_rbrSoundness_tsum h⟩
 
 -- Disposition S3, oracle form: soundness-implication-disposition.md#soundnesslean.
-example {ι σ : Type} {I : Type uI} {S : Type uS}
+example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleFamily.{0, 0, 0} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
@@ -95,11 +94,11 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
 
 -- The oracle implication takes any input bundle, as `OracleVerifier.run` does; the oracle-family
 -- examples above use the coercion from a family to its bundle.
-example {ι σ : Type} {S : Type uS}
+example {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × inputs.Data))
@@ -112,11 +111,11 @@ example {ι σ : Type} {S : Type uS}
 
 -- The oracle conclusion is the model soundness of the classical oracle model, with acceptance read
 -- from the verdict and the output oracle data of the outcome.
-example {ι σ : Type} {I : Type uI} {S : Type uS}
+example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
     {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleFamily.{0, 0, 0} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
@@ -129,7 +128,7 @@ example {ι σ : Type} {I : Type uI} {S : Type uS}
   Iff.rfl
 
 -- Disposition R1: soundness-implication-disposition.md#roundbyroundlean.
-example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type}
     {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (F : StateFunction l s S admissible language accepts) (stmt : S)
     (hadm : admissible stmt) (hlang : ¬ language stmt) (tr : Transcript l s)
@@ -137,17 +136,8 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
     EscapeAlong l s (fun sp history => F.toFun sp history stmt) tr :=
   F.escapeAlong l hadm hlang hacc
 
--- Pure escape certificates accept a move universe strictly above Type.
-example {s : Protocol.{1}} {S : Type uS}
-    {admissible language : S → Prop} {accepts : S → Transcript plainSig s → Prop}
-    (F : StateFunction plainSig s S admissible language accepts) {stmt : S}
-    (hadm : admissible stmt) (hlang : ¬ language stmt) {tr : Transcript plainSig s}
-    (hacc : accepts stmt tr) :
-    EscapeAlong plainSig s (fun sp history => F.toFun sp history stmt) tr :=
-  F.escapeAlong plainSig hadm hlang hacc
-
 -- Disposition S4: soundness-implication-disposition.md#soundnesslean.
-example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type}
     {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
     (F : StateFunction l s S admissible language accepts) (stmt : S)
@@ -167,7 +157,7 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit}
     hselect
 
 -- Disposition S4 also covers a fixed receiver node and a nonfailing prefix author.
-example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type uS}
+example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {s : FreeM P PUnit} {S : Type}
     {admissible language : S → Prop} {accepts : S → Transcript l s → Prop}
     (draw : QueryImpl (challengeSpec l s) ProbComp) (ε : ChallengeNode l s → ℝ≥0∞)
     (F : StateFunction l s S admissible language accepts) (stmt : S)
@@ -533,10 +523,10 @@ def optionalAmbient : QueryImpl counter (OptionT ProbComp) := fun _ =>
     let b ← ($ᵗ Bool : ProbComp Bool)
     pure (if b then some 0 else none)
 
-/-- Generic implication keeps the target monad's result universe independent of run outputs. -/
+/-- Generic implication allows a target monad whose result universe is above its data. -/
 example {m : Type → Type 1} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
     [LawfulEvalDistSemantics m]
-    {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : Protocol}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
     {T : Path s → Type}
     (V : Verifier ambient s S T) (H : QueryImpl (ambient + challengeSpec plainSig s) m)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
@@ -614,11 +604,11 @@ theorem optional_counting_bound :
 
 /-- The oracle implication also accepts a handler in the optional distribution monad.
 Its challenge premise is discharged by the separate lifted draw. -/
-example {ι : Type} {I : Type uI} {S : Type uS}
+example {ι : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
     {A : I → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleFamily.{0, 0, 0} I A}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (OptionT ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)

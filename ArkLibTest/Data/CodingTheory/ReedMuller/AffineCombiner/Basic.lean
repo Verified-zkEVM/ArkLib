@@ -162,3 +162,8 @@ example {K₀ F : Type*} [Field K₀] [Fintype K₀] [Field F] [Fintype F] [Deci
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.not_isAffineExceptional_of_eval
+
+/-- info: 'ReedMuller.map_affineMultiplier' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.map_affineMultiplier

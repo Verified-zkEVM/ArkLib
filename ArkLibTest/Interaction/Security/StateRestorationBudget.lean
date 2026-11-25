@@ -81,7 +81,7 @@ abbrev shape : Path (protocol rounds) := ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨
 
 /-- Accept when either challenge is `0`, reading the second oracle message as the claim. The
 output oracle is the second message. -/
-def verifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat (fun _ => Fin 8)
+def verifier : OracleVerifier []ₒ (protocol rounds) Nat (fun _ => Fin 8)
     emptyFamily
     (fun _ => outputFamily) where
   decide _ p v :=
@@ -223,7 +223,7 @@ def valid (_ : Stmt) (tr : Transcript oracleSig (protocol rounds)) (w : Nat) : P
 after the first challenge `c₁` a witness is known when `c₁` is `0`; after the second challenge a
 witness is known when a challenge is `0` and it is at most the second message. Extraction adds the
 message at each message step and copies the witness otherwise. -/
-def knowledge : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol rounds) Stmt
+def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
     (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) Rin valid where
   Witness _ {_} _ _ := Nat
   toFun z {_} sp history w := match sp, history with
@@ -772,24 +772,15 @@ def checkConvertedObservation : IO Unit := do
 
 end Measured
 
-/-! ### Dependent-output games with a public selector -/
-
-/-- Per-round bounds accept an output carrier in `Type 1` with small intermediate witnesses. -/
-def largeOutputKnowledge :
-    KnowledgeStateFunction.{0, 0, 0, 1, 1, 0} oracleSig (protocol rounds) Stmt
-      (fun _ _ => ULift.{1} Nat) (fun _ => Nat) (fun _ => True)
-      (fun z w => ∃ v, Rin z v ∧ v = w) (fun z tr w => valid z tr w.down) :=
-  knowledge.comap id (fun _ w => w) (fun _ _ (w : ULift.{1} Nat) => w.down)
-    (fun _ _ _ h => h)
-
-/-- A large read-out witness does not change the adaptive adversary's per-round error bound. -/
+/-- The adaptive adversary's error is bounded by its query budget and the per-round errors. -/
 example :
     Pr{let r ← (simulateQ randomOracle (restoredExecution rounds adversary)).run' ∅}[
-      True ∧ valid r.1 r.2.1 r.2.2 ∧
-        ¬ (∃ v, Rin r.1 v ∧ v = largeOutputKnowledge.extractAlong r.1 r.2.1 ⟨r.2.2⟩)] ≤
+      True ∧ valid r.1 r.2.1 r.2.2 ∧ ¬ Rin r.1 (knowledge.extractAlong r.1 r.2.1 r.2.2)] ≤
       2 * Finset.univ.sup errors + ∑ j, errors j :=
-  restoredExecution_knowledge_soundness_nonuniform largeOutputKnowledge errors
-    (fun z hz => bounded z hz) (fun _ _ w => ⟨w⟩) adversary 2 queryBound
+  restoredExecution_knowledge_soundness_nonuniform knowledge errors
+    (fun z hz => bounded z hz) (fun _ _ w => w) adversary 2 queryBound
+
+/-! ### Dependent-output games with a public selector -/
 
 namespace PublicSelection
 open Interaction.StateRestorationTests
@@ -812,7 +803,7 @@ def selectedMap (_b : Bool) (p : Path (protocol rounds)) :
     (fun _ => .inr (.inl ⟨⟩))).comp (OracleMap.snd _ _)
 
 /-- Carrier selection is fixed by the authored bit; acceptance still reads both challenges. -/
-def suffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (protocol rounds) Nat
+def suffixVerifier (b : Bool) : OracleVerifier []ₒ (protocol rounds) Nat
     (fun _ => SelectedValue b) emptyFamily (fun _ => selectedFamily b) where
   decide _ p v :=
     if (show Fin 8 from v.1.2.1) = 0 ∨ (show Fin 16 from v.1.2.2.2.1) = 0 then
@@ -820,7 +811,7 @@ def suffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ (prot
   outputMap _ p _ := selectedMap b p
 
 /-- The full verifier has a path-dependent statement and the original output oracle. -/
-def verifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} []ₒ selectedProtocol Nat (fun p =>
+def verifier : OracleVerifier []ₒ selectedProtocol Nat (fun p =>
     SelectedValue p.1)
     emptyFamily (fun p => selectedFamily p.1) where
   decide _ p v :=

@@ -65,8 +65,6 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
 
 @[expose] public section
 
-universe uI wI wI'
-
 namespace Sumcheck
 open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec MeasureTheory
@@ -163,8 +161,8 @@ end Transport
 section VerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ} {d : ℕ}
-  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type uI}
-  {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
+  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type}
+  {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
 
 
 variable {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
@@ -194,7 +192,7 @@ section RunVerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n d : ℕ}
   (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R}
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, wI} I A)
+  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
   {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
 
 include hf
@@ -227,7 +225,7 @@ omit [SampleableType R] in
 /-- A run over the carrier `M`, with its queries renamed and its outcome mapped, is the run
 of the interpreted prover against the verifier at the polynomial carrier. Messages are mapped by
 `f`, the prover output by `g` and the output oracle data by `dmap`. -/
-theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily.{0, 0, wI'} I A')
+theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily.{0, 0, 0} I A')
     (dmap : (∀ i, A i) → ∀ i, A' i) (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
     {Out : Transcript oracleSig (protocolOn R M eval n) → Type}
     {Out' : Transcript oracleSig (protocol R deg n) → Type}

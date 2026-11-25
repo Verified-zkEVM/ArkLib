@@ -23,7 +23,6 @@ open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty
 open Interaction.LoggedExecutionTests (inputs)
 open Interaction.DependentRoutingTests (done)
 
-universe uX dX
 
 namespace Interaction.HeterogeneousAppendTests
 
@@ -35,7 +34,7 @@ def booleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Export the scalar input plus 11, next to any message bundle. -/
-def addEleven (messages : OracleBundle.{0, uX, dX}) :
+def addEleven (messages : OracleBundle) :
     OracleMap (OracleBundle.sum inputs messages) inputs where
   f x _ := (show Nat from x.1 ()) + 11
   impl _ := do
@@ -46,7 +45,7 @@ def addEleven (messages : OracleBundle.{0, uX, dX}) :
     rfl
 
 /-- Export the parity of the scalar input, next to any message bundle. -/
-def isEven (messages : OracleBundle.{0, uX, dX}) :
+def isEven (messages : OracleBundle) :
     OracleMap (OracleBundle.sum inputs messages) booleans where
   f x _ := (show Nat from x.1 ()) % 2 == 0
   impl _ := do

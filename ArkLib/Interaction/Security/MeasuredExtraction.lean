@@ -63,7 +63,7 @@ uses `Unit → Nat`.
 
 @[expose] public section
 
-universe uS uA
+universe uA
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens
@@ -72,7 +72,7 @@ variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 namespace KnowledgeStateFunction
 
-variable {s : FreeM P PUnit.{1}} {S : Type uS} {Win : S → Type} {W : S → Transcript l s → Type}
+variable {s : FreeM P PUnit.{1}} {S : Type} {Win : S → Type} {W : S → Transcript l s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
   (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
@@ -259,7 +259,7 @@ instruction cost is zero on every transcript. An operation-count result names th
 and the price of each instruction. Stage selection, uncharged host computations and carrier
 conversions stay outside that cost. -/
 structure MeasuredKnowledgeStateFunction (Kind : Type) [Finite Kind] (l : PFunctor.Lens P rolePoly)
-    (s : FreeM P PUnit.{1}) (S : Type uS) (W : S → Transcript l s → Type) (Win : S → Type)
+    (s : FreeM P PUnit.{1}) (S : Type) (W : S → Transcript l s → Type) (Win : S → Type)
     (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop)
     extends KnowledgeStateFunction l s S W Win admissible relIn validOutput where
@@ -273,14 +273,15 @@ end Interaction
 namespace Interaction.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens
 
-variable {s : OracleProtocol} {S : Type uS} {Win : S → Type} {W : S → Transcript oracleSig s → Type}
+variable {s : OracleProtocol.{0, 0}} {S : Type} {Win : S → Type}
+  {W : S → Transcript oracleSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → W stmt tr → Prop}
   {F : KnowledgeStateFunction oracleSig s S W Win admissible relIn validOutput} {ω : Type}
 
 /-- The step bound at a node: `challengeBound` at a challenge, `messageBound` at a message or an
 oracle message. -/
-def stepBound (messageBound challengeBound : ω) : OraclePos → ω
+def stepBound (messageBound challengeBound : ω) : OraclePos.{0, 0} → ω
   | .challenge _ => challengeBound
   | _ => messageBound
 
@@ -292,7 +293,7 @@ structure ProtocolBudgetAtMost [AddCommMonoid ω] [Preorder ω] (stages : Measur
   /-- The root budget is bounded. -/
   root : (stages.root stmt).budget ≤ rootBound
   /-- Every step budget is bounded by the bound of its node's kind. -/
-  step : ∀ {a : OraclePos} {next : OraclePoly.B a → OracleProtocol}
+  step : ∀ {a : OraclePos} {next : OraclePoly.B a → OracleProtocol.{0, 0}}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PartialTranscriptAt oracleSig sp),
     (stages.step stmt sp history).budget ≤ stepBound messageBound challengeBound a
   /-- Every leaf budget is bounded. -/

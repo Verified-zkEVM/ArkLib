@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
+import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
 import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 import ArkLib.ToMathlib.MvPolynomial.OptionRoots
@@ -1071,3 +1072,15 @@ example :
       omega)
     S hS hA
   norm_num [S] at hbound ⊢
+
+/-- Uncurrying the constant-coefficient polynomial `X 0 + 1` renames it to `X (inl 0) + 1`. -/
+example : (MvPolynomial.sumAlgEquiv ℚ (Fin 1) (Fin 2)).symm
+    (MvPolynomial.map (algebraMap ℚ (MvPolynomial (Fin 2) ℚ)) (MvPolynomial.X 0 + 1)) =
+      MvPolynomial.X (Sum.inl 0) + 1 := by
+  rw [MvPolynomial.sumAlgEquiv_symm_map_algebraMap]
+  simp
+
+/-- info: 'MvPolynomial.sumAlgEquiv_symm_map_algebraMap' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms MvPolynomial.sumAlgEquiv_symm_map_algebraMap

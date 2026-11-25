@@ -18,7 +18,6 @@ never reaches the suffix oracle. Both routed reads of the export name the same p
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
-universe uI uD wI wJ
 
 namespace Interaction.RoutedAccessTests
 
@@ -84,7 +83,7 @@ def suffixProgram : OracleComp (ambient + suffixBundle.spec) Nat := do
   pure (old + fresh)
 
 /-- The empty output map. -/
-def noOutput (In : OracleBundle.{0, uI, uD}) : OracleMap In none' where
+def noOutput (In : OracleBundle) : OracleMap In none' where
   f _ i := i.elim
   impl q := q.1.elim
   law _ q := q.1.elim
@@ -197,9 +196,9 @@ def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
-/-- The composed run under `tagHandler`, with independent input index and query universes. -/
-def observed.{vI, qI, qJ} (a b : Nat) :=
-  simulateQ tagHandler (composed.{vI, qI, 0, qJ}.run () noData (prover a b))
+/-- The composed run under `tagHandler`, with input indices and queries in `Type`. -/
+def observed (a b : Nat) :=
+  simulateQ tagHandler (composed.run () noData (prover a b))
 
 -- Additional oracle message checks beside the produced partial-transcript assertions in
 -- LoggedExecution. For all tags `a` and `b`, the composed
@@ -207,8 +206,8 @@ def observed.{vI, qI, qJ} (a b : Nat) :=
 -- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`. Splitting its oracle messages gives
 -- the prefix oracle message `a` (row 9) and the suffix oracle message `b` (row 10).
 example (a b : Nat) :
-    ((observed.{uI, wI, wJ} a b).1, (observed.{uI, wI, wJ} a b).2.1,
-      (observed.{uI, wI, wJ} a b).2.2.map Prod.fst) =
+    ((observed a b).1, (observed a b).2.1,
+      (observed a b).2.2.map Prod.fst) =
     (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩, a + b,
       some (a + a + b)) := by
   unfold observed composed
@@ -229,25 +228,24 @@ example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath
       (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
     (.inr (.inl ⟨⟩)) = b := rfl
 
--- The full decision log fixes input indices and queries to `Type`; output queries stay
--- independent. See interaction rebuild implementation note 18.
+-- The full decision log takes its data in `Type`. See interaction rebuild implementation note 18.
 /-- Private output, verdict and every raw decision query of the composed logged run. -/
-def loggedSummary.{qJ} (a b : Nat) :
+def loggedSummary (a b : Nat) :
     Nat × Option Nat × QueryLog (ambient + rawBundle.spec) :=
   let result := simulateQ tagHandler
-    (composed.{0, 0, 0, qJ}.runWithLog () noData (prover a b))
+    (composed.runWithLog () noData (prover a b))
   (result.1.2.1, result.1.2.2.map Prod.fst, result.2.2)
 
 /-- One exported query expands into two separately recorded prefix reads, then the suffix read.
 The same run keeps the private sum and accepts with the doubled prefix plus the suffix. -/
 theorem loggedSummary_eq (a b : Nat) :
-    loggedSummary.{wJ} a b =
+    loggedSummary a b =
       (a + b, some (a + a + b),
         [⟨.inr prefixSlot, a⟩, ⟨.inr prefixSlot, a⟩, ⟨.inr suffixSlot, b⟩]) := by
   kernel_rfl
 
 /-- Prefix value one and suffix value two recover the concrete repeated-read outcome. -/
-example : loggedSummary.{0} 1 2 =
+example : loggedSummary 1 2 =
     (3, some 4,
       [⟨.inr prefixSlot, (1 : Nat)⟩, ⟨.inr prefixSlot, (1 : Nat)⟩,
         ⟨.inr suffixSlot, (2 : Nat)⟩]) :=
@@ -255,7 +253,7 @@ example : loggedSummary.{0} 1 2 =
 
 /-- The composed verifier's queries by move for the same tag-answering execution. -/
 def composedQueriesByMove (a b : Nat) :
-    OracleVerifier.QueriesByMove composed.{0, 0, 0, 0} (fun _ => Nat) :=
+    OracleVerifier.QueriesByMove composed (fun _ => Nat) :=
   simulateQ tagHandler (composed.runWithQueriesByMove () noData (prover a b))
 
 /-- The queries-by-move result records the same raw decision queries as the logged run: two reads

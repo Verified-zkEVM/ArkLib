@@ -31,7 +31,7 @@ the log is named for what it holds: the queries that one querier made at one par
 
 @[expose] public section
 
-universe u q uA vC uS uI dI wJ
+universe u q uA vC
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -252,9 +252,9 @@ theorem concatQueries_fst {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
 
 namespace OracleVerifier
 
-variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- The queries of a completed run by move: the entries of the prover and the sampler, and the full
@@ -396,13 +396,13 @@ theorem runWithQueriesByMove_toLog (V : OracleVerifier ambient s S T inputs outp
 
 section AmbientQueriesByMove
 
-variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
-/-- The ambient queries by move let the input oracles and the oracle nodes have independent query
-universes. It returns only ambient requests and challenge draws, whose indices are small. -/
+/-- The ambient queries by move let the input oracles have an independent query universe. It
+returns only ambient requests and challenge draws, whose indices are small. -/
 structure AmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (Out : Transcript oracleSig s → Type) where
   /-- The ordinary completed outcome, including output oracles and rejection. -/

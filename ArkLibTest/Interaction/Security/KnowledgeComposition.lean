@@ -61,7 +61,7 @@ abbrev suffix : Path firstProtocol → OracleProtocol := fun p => secondProtocol
 abbrev combined : OracleProtocol := firstProtocol.append suffix
 
 /-- The prefix verifier returns the challenge from its view and exports the sent oracle. -/
-def firstVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} OracleSpec.emptySpec firstProtocol
+def firstVerifier : OracleVerifier OracleSpec.emptySpec firstProtocol
     Unit (fun _ => Bool) noInputs
     (fun _ => exportFamily) where
   decide _ _ v := pure (show Bool from v.val.2.1)
@@ -70,7 +70,7 @@ def firstVerifier : OracleVerifier.{0, 0, 0, 0, 0, 0, 0} OracleSpec.emptySpec fi
       (OracleMap.snd _ _)
 
 /-- The suffix verifier accepts its input statement and passes the export through. -/
-def secondVerifier (p : Path firstProtocol) : OracleVerifier.{0, 0, 0, 0, 0, 0, 0}
+def secondVerifier (p : Path firstProtocol) : OracleVerifier
     OracleSpec.emptySpec (suffix p)
     Bool (fun _ => Bool)
     exportFamily
@@ -563,7 +563,7 @@ example (n : Move oracleSig (.oracle Nat OracleInterface.instDefault))
 -- Disposition KC-068.
 /-- The prefix verifier is round-by-round knowledge sound with error one. -/
 theorem first_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0, 0, 0, 0} firstVerifier impl
+    OracleVerifier.rbrKnowledgeSoundnessOfNodes firstVerifier impl
     (fun _ => True)
     (fun _ (_ : Nat) => False)
       (fun _ tr z (_ : MidWitness tr) => z.1 = true) firstDraw (fun _ => 1) :=
@@ -574,7 +574,7 @@ theorem first_rbrKnowledgeSoundness :
 -- Disposition KC-120, KC-131.
 /-- Every suffix state function is locally bounded with error one. -/
 theorem second_rbrKnowledgeSoundness (tr₁ : Transcript oracleSig firstProtocol) :
-    rbrKnowledgeSoundnessOfNodes.{0, 0, 0} oracleSig (suffix
+    rbrKnowledgeSoundnessOfNodes oracleSig (suffix
     (Transcript.path
     tr₁))
       (fun _ => True) (relMid tr₁)
@@ -603,7 +603,7 @@ example : compositeState.LocallyBoundedOfNodes
 -- Disposition KC-135, KC-303.
 /-- The appended verifier is round-by-round knowledge sound with the combined errors. -/
 theorem composed_rbrKnowledgeSoundness :
-    OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0, 0, 0, 0} composed impl
+    OracleVerifier.rbrKnowledgeSoundnessOfNodes composed impl
     (fun _ => True) (fun
     _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
@@ -617,7 +617,7 @@ theorem composed_rbrKnowledgeSoundness :
 verifier view. The prefix draw reads the first-stage view, and the suffix draw is chosen from the
 shape path and the first-stage view. -/
 theorem composed_rbrKnowledgeSoundness_view :
-    OracleVerifier.rbrKnowledgeSoundness.{0, 0, 0, 0, 0, 0, 0} composed impl
+    OracleVerifier.rbrKnowledgeSoundness composed impl
       (fun _ => True) (fun _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
       (combineViewPrefixDraw firstProtocol suffix (PrefixDraw.ofNodesView firstDraw)
@@ -682,7 +682,7 @@ def suffixState (tr₁ : Transcript oracleSig firstProtocol) :
 -- Disposition KC-135.
 /-- The appended verifier is knowledge sound from a suffix stated over its own statement. -/
 example :
-    OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0, 0, 0, 0} composed impl
+    OracleVerifier.rbrKnowledgeSoundnessOfNodes composed impl
     (fun _ => True) (fun
     _ (_ : Nat) => False)
       (fun _ tr z (_ : OutWitness tr) => z.1 = true)
@@ -725,7 +725,7 @@ def indexedCertificate : KnowledgeStateFunction plainSig indexedProtocol Nat
   leaf _ _ _ _ _ := trivial
 
 /-- The standalone verifier theorem quantifies statement-indexed input and output witnesses. -/
-theorem indexed_standalone : Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} indexedVerifier impl
+theorem indexed_standalone : Verifier.rbrKnowledgeSoundnessOfNodes indexedVerifier impl
     (fun
     _ => True)
     (fun n (_ : Fin (n + 1)) => True) (fun n _ _ (w : Fin (n + 1)) => w.val ≤ n)
@@ -735,7 +735,7 @@ theorem indexed_standalone : Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} ind
 /-- Verifier composition uses the suffix's standalone theorem at its own statement and witness
 family. Both witness maps are identities in the carrier selected by the statement. -/
 theorem indexed_composed :
-    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0}
+    Verifier.rbrKnowledgeSoundnessOfNodes
       (indexedVerifier.append (fun _ => indexedVerifier)) impl
     (fun _ => True) (fun n (_ : Fin (n + 1)) => True)
     (fun n _ _ (w : Fin (n + 1)) => w.val ≤ n)
@@ -793,7 +793,7 @@ def challengeCertificate : KnowledgeStateFunction plainSig challengeProtocol Uni
 
 /-- The challenge verifier is round-by-round knowledge sound with error zero. -/
 theorem challenge_standalone :
-    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0} challengeVerifier impl (fun _ => True)
+    Verifier.rbrKnowledgeSoundnessOfNodes challengeVerifier impl (fun _ => True)
       (fun _ (_ : Unit) => True)
       (fun _ tr t (_ : Fin (bitClaim tr.1 + 1)) => t = bitClaim tr.1)
       challengeDraw (fun _ => 0) :=
@@ -804,7 +804,7 @@ theorem challenge_standalone :
 /-- Verifier composition with an actual challenge. The challenge selects the middle claim, and
 the suffix witness carrier `Fin (n + 1)` at that claim is the prefix output witness carrier. -/
 theorem challenge_composed :
-    Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, 0}
+    Verifier.rbrKnowledgeSoundnessOfNodes
       (challengeVerifier.append (fun _ => indexedVerifier)) impl
       (fun _ => True) (fun _ (_ : Unit) => True)
       (fun _ tr _ (w : Fin (bitClaim tr.1 + 1)) => w.val ≤ bitClaim tr.1)

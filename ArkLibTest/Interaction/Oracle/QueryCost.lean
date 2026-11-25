@@ -19,8 +19,6 @@ appended logs. -/
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
-universe wJ
-
 /-! ## The doubled export: `RoutedAccess.lean`
 
 The prefix exports twice its message, reading the prefix oracle twice. The suffix decision reads
@@ -190,7 +188,7 @@ theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
   refine OracleMap.withAmbient_worstCaseCost
     (In := pathBundle bits bitCombined (combinedPath guess)) (Out := secondBundle guess)
     (OracleVerifier.suffixRoute bitPrefix () (combinedPath guess) v)
-    (suffix_budget.{0} _ (View.split bitFirst (fun _ => bitSecond) _ v).2) (fun _ => le_rfl) ?_
+    (suffix_budget _ (View.split bitFirst (fun _ => bitSecond) _ v).2) (fun _ => le_rfl) ?_
   rintro (⟨i, q⟩ | ⟨i, q⟩)
   · cases i
     cases q
@@ -281,11 +279,11 @@ end Interaction.QueryCostTests
 namespace Interaction.QueryCostTests
 open Interaction.HiddenSendRunTests
 
--- The full-log runner keeps input indices and input query types in `Type`; output query types
--- remain independent. See implementation note 18 in the interaction rebuild design notes.
-/-- The prover's ambient log of the logged run, with arbitrary output query universe. -/
-def proverLog.{qJ} (payload hidden : Nat) (bit : Bool) : QueryLog HiddenSendRunTests.ambient :=
-  ((simulateQ (logger bit) ((verifier.{0, 0, 0, qJ} true).runWithLog () noData
+-- The full-log runner takes its data in `Type`. See implementation note 18 in the interaction
+-- rebuild design notes.
+/-- The prover's ambient log of the logged run. -/
+def proverLog (payload hidden : Nat) (bit : Bool) : QueryLog HiddenSendRunTests.ambient :=
+  ((simulateQ (logger bit) ((verifier true).runWithLog () noData
     (prover payload hidden))).run []).1.2.1
 
 -- PhasedRun 3, restated: per-move profiles are removed, and the query profile is
@@ -294,11 +292,11 @@ def proverLog.{qJ} (payload hidden : Nat) (bit : Bool) : QueryLog HiddenSendRunT
 -- `2 + 0` over the two segments.
 /-- The prover log contains the two setup queries followed by its three interaction queries. -/
 theorem proverLog_eq (payload hidden : Nat) (bit : Bool) :
-    proverLog.{wJ} payload hidden bit = [⟨9, ()⟩, ⟨9, ()⟩] ++ [⟨1, ()⟩, ⟨4, ()⟩, ⟨5, ()⟩] := by
+    proverLog payload hidden bit = [⟨9, ()⟩, ⟨9, ()⟩] ++ [⟨1, ()⟩, ⟨4, ()⟩, ⟨5, ()⟩] := by
   kernel_rfl
 
 example (payload hidden : Nat) (bit : Bool) :
-    (proverLog.{wJ} payload hidden bit).countQ (· = 9) = 2 := by
+    (proverLog payload hidden bit).countQ (· = 9) = 2 := by
   rw [proverLog_eq, QueryLog.countQ_append]
   rfl
 

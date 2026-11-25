@@ -336,13 +336,14 @@ example : observed 7 = (false, 29, some (7, 7)) := by
 
 end Interaction.DependentRoutingTests
 
-universe uι uI uJ v wI wJ wK
+universe v
 
-/-- Ambient routing permits independent index universes and a larger lawful target monad. -/
-example {ι : Type uι} {I : Type uI} {J : Type uJ}
-    {ambient : OracleSpec.{uι, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
+/-- Ambient routing permits distinct family indices and a larger lawful target
+monad. -/
+example {ι : Type} {I : Type} {J : Type}
+    {ambient : OracleSpec.{0, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
     {A : I → Type} {B : J → Type}
-    {inputs : OracleFamily.{uI, 0, wI} I A} {outputs : OracleFamily.{uJ, 0, wJ} J B}
+    {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily.{0, 0, 0} J B}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : ∀ i, A i)
     {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
     simulateQ (QueryImpl.addLift handler (inputs.behaviorOfRealizations data) :
@@ -352,16 +353,16 @@ example {ι : Type uι} {I : Type uI} {J : Type uJ}
         QueryImpl (ambient + outputs.spec) m) program :=
   OracleMap.simulate_withAmbient_addLift handler route data program
 
-/-- Split execution accepts large input statements and oracle indices while its final outputs
-remain in the run universe. Both output families may depend on their paths. -/
+/-- Split execution uses input indices, statements and output oracle indices in `Type`. Both
+output families may depend on their paths. -/
 example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
-    {I : Type 1} {A : I → Type} {inputs : OracleFamily.{1, 0, wI} I A} {S : Type 3}
+    {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {J : Path s₁ → Type 2} {B : (p : Path s₁) → J p → Type}
-    {middle : (p : Path s₁) → OracleFamily.{2, 0, wJ} (J p) (B p)}
+    {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
+    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {K : (p : Path s₁) → Path (s₂ p) → Type}
     {C : (p : Path s₁) → (q : Path (s₂ p)) → K p q → Type}
-    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, wK} (K p q) (C p q)}
+    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, 0} (K p q) (C p q)}
     {ambient : OracleSpec Nat}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
@@ -371,14 +372,13 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
   OracleVerifier.run_append V₁ V₂ compatible stmt data prover
 
 
-universe u uX uY dX dY
 
-/-- Ambient routing permits independent bundle index and data universes. -/
-example {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
-    {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {inputs : OracleBundle.{u, uX, dX}} {outputs : OracleBundle.{u, uY, dY}}
+/-- Ambient routing preserves distinct bundle indices and data. -/
+example {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+    {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {inputs : OracleBundle} {outputs : OracleBundle}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)
-    {α : Type u} (program : OracleComp (ambient + outputs.spec) α) :
+    {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
     simulateQ (QueryImpl.addLift handler (inputs.answer data) :
         QueryImpl (ambient + inputs.spec) m)
         (simulateQ (route.withAmbient ambient) program) =

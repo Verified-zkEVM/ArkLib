@@ -43,8 +43,6 @@ message representation and its runtime instance belong to `Computable`.
 
 @[expose] public section
 
-universe uI uJ uK uS uι wI wJ wK
-
 namespace Sumcheck
 open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec
@@ -53,7 +51,7 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 
 section InputRoute
 
-variable {s : OracleProtocol} {I : Type uI} {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
+variable {s : OracleProtocol} {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
 
 /-- The input oracles of a path's bundle, as an oracle map. -/
 abbrev inputRoute (p : Path s) : OracleMap (pathBundle inputs s p) inputs :=
@@ -65,8 +63,8 @@ end InputRoute
 
 section Check
 
-variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type uι} (ambient : OracleSpec.{uι, 0} ι)
-  {I : Type uI} {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
+variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec.{0, 0} ι)
+  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
 
 
 /-- Route the legacy round message's queries to the oracle node of a round, then lift them with the
@@ -84,8 +82,8 @@ def roundChallenges {p : Path (round R deg)} (v : View (round R deg) p) :
     (Spec.SingleRound.pSpec R deg).Challenges :=
   fun j => roundChallengeFn (deg := deg) (viewChallenge v) j.1 j.2
 
-variable {S : Type uS} {T : Type} {J : Type uJ} {B : J → Type}
-  {outputs : OracleFamily.{uJ, 0, wJ} J B}
+variable {S : Type} {T : Type} {J : Type} {B : J → Type}
+  {outputs : OracleFamily.{0, 0, 0} J B}
 
 /-- A single round verified by `check` on the round message and challenge. The output oracle is
 `out` applied to the input data and the round's oracle message. -/
@@ -146,8 +144,8 @@ def checkVerdict
     (check stmt (roundFullTranscript (roundMessage tr) (roundChallenge tr)).challenges).run
 
 variable {ι : Type} (ambient : OracleSpec ι)
-  (inputs : OracleFamily.{uI, 0, wI} I A) {J : Type} {B : J → Type}
-  {outputs : OracleFamily.{0, 0, wJ} J B}
+  (inputs : OracleFamily.{0, 0, 0} I A) {J : Type} {B : J → Type}
+  {outputs : OracleFamily.{0, 0, 0} J B}
 
 /-- The run of a single round: the interaction, then the verdict of the check on the completed
 round, with the output oracle mapped from the input data and the round's oracle messages. -/
@@ -188,11 +186,11 @@ end SplitView
 
 section Append
 
-variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type uι} (ambient : OracleSpec.{uι, 0} ι)
-  {I : Type uI} {A : I → Type} (inputs : OracleFamily.{uI, 0, wI} I A)
-  {J : Type uJ} {B : J → Type} {middle : OracleFamily.{uJ, 0, wJ} J B}
-  {K : Type uK} {C : K → Type} {outputs : OracleFamily.{uK, 0, wK} K C}
-  {s : OracleProtocol} {S : Type uS} {T U : Type}
+variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec.{0, 0} ι)
+  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  {J : Type} {B : J → Type} {middle : OracleFamily.{0, 0, 0} J B}
+  {K : Type} {C : K → Type} {outputs : OracleFamily.{0, 0, 0} K C}
+  {s : OracleProtocol} {S : Type} {T U : Type}
 
 
 
@@ -243,8 +241,8 @@ theorem decideWith_append_checkVerifier (stmt : S) (x : ∀ i, A i)
   rfl
 
 variable {ι : Type} (ambient : OracleSpec ι)
-  (inputs : OracleFamily.{uI, 0, wI} I A) {K : Type} {C : K → Type}
-  {outputs : OracleFamily.{0, 0, wK} K C}
+  (inputs : OracleFamily.{0, 0, 0} I A) {K : Type} {C : K → Type}
+  {outputs : OracleFamily.{0, 0, 0} K C}
   (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
     OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
   (out : S → (p : Path (round R deg)) → View (round R deg) p →

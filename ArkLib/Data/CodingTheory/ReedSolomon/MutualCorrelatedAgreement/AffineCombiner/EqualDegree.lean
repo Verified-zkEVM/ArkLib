@@ -6,32 +6,33 @@ Authors: Thomas Coratger
 module
 
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
-public import ArkLib.Data.Finset.PairwiseIntersection
+public import ArkLib.ToMathlib.Finset.TripleCount
 
 /-!
 # Equal-degree combiners
 
-The combiner maps received words `f, g` to `g + (α + β x)(f + θ g)` using three independent
-uniform challenges.
+The combiner maps received words `f, g` to `g + (α + β x)(f + θ g)`.
+It uses three independent uniform challenges.
 Both witnesses have degree below `d`, while the output has degree at most `d`.
-For one point of agreement loss, its error is at most the affine error plus `ℓ₀/q`, with
-`ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`, domain size `n`, and field size `q`.
+For one point of agreement loss, its error is at most the affine error plus `ℓ₀/q`.
+Here `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`, `n` is the domain size, and `q` the field size.
 The bound assumes `nd < (A - 1)²`.
-When `A ≤ n`, this implies `d + 1 < A`; when `A > n`, the error is zero.
 
 For fixed `θ`, the affine combiner on `(g, f + θ g)` supplies witnesses `U, V`.
 The pair `(V - θ U, U)` explains the same agreements with the same loss.
 It can fail the strict degree bounds only if `U` has degree exactly `d`.
-Such a pair fixes `θ` by its leading coefficients, and the Johnson bound limits the number
-of these bad challenges.
+Such a pair fixes `θ` by its leading coefficients.
+The Johnson bound limits the number of these bad challenges.
 This is the first inequality of (5.4) in Theorem 5.1 of [CWYZ26].
-The second inequality and the linear-claims assertions are separate.
+The second inequality is in `EqualDegreeTheorem`, and the linear-claims assertion is in
+`LinearClaims`.
+Both proofs count exceptional triples with the shared bound in `ToMathlib/Finset/TripleCount`.
 The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the correspondence.
 
 The error is a mathematical supremum with classical decidability for polynomial witnesses.
 Its counting definition requires no sampler.
-`ReedSolomon.equalDegreeMcaError_eq_iSup_prob` in `AffineCombiner.EqualDegreeSampling` identifies
-the error with native uniform probabilities.
+The sampling module identifies it with native uniform probabilities.
+
 `ReedSolomon.equalDegreeMcaErrorRat` in `AffineCombiner.Computable` computes this error as an exact
 nonnegative rational by finite searches.
 
@@ -44,10 +45,10 @@ nonnegative rational by finite searches.
 
 ## Main statements
 
-* `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add`: the reduction with the
-  rounded Johnson bound.
+* `ReedSolomon.equalDegreeMcaError_le_affineMcaError_add`: the reduction with loss `ℓ₀/q`.
 * `ReedSolomon.equalDegreeMcaError_le_one`: the error is at most one.
 * `ReedSolomon.card_badEqualDegreeChallenges_mul_le`: the integer count of bad `θ` values.
+* `ReedSolomon.card_filter_isAffineExceptional_le_mul_affineMcaError`: the affine pair count.
 
 ## References
 
@@ -206,22 +207,43 @@ theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f 
       L ≤ #(commonPolynomialAgreementSet domain f g F₀ G₀) := fun θ hθ ↦ by
     simpa [T, badEqualDegreeChallenges] using hθ
   choose! F₀ G₀ hF hG hc hL using hT
-  refine Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le T
-    (fun θ ↦ commonPolynomialAgreementSet domain f g (F₀ θ) (G₀ θ)) L d hL ?_
-  intro θ hθ θ' hθ' hne
-  refine card_inter_commonPolynomialAgreementSet_le domain f g (hF θ hθ) (hG θ hθ).le
-    (hF θ' hθ') (hG θ' hθ').le fun heq ↦ hne ?_
-  obtain ⟨h₁, h₂⟩ := Prod.mk.inj heq
-  have hlead : (G₀ θ).coeff d ≠ 0 := by
-    rw [← (natDegree_eq_of_degree_eq_some (hG θ hθ))]
-    exact leadingCoeff_ne_zero.mpr fun h0 ↦ by simpa [h0] using hG θ hθ
-  have := (hc θ hθ).trans (hc θ' hθ').symm
-  rw [h₁, h₂] at this
-  exact mul_right_cancel₀ (h₂ ▸ hlead) (add_left_cancel this)
+  -- The leading coefficient of `G₀` is nonzero, so the pair fixes `θ`.
+  have hinj : Set.InjOn (fun θ ↦ (F₀ θ, G₀ θ)) T := by
+    intro θ hθ θ' hθ' heq
+    obtain ⟨h₁, h₂⟩ := Prod.mk.inj heq
+    have hlead : (G₀ θ).coeff d ≠ 0 := by
+      rw [← (natDegree_eq_of_degree_eq_some (hG θ hθ))]
+      exact leadingCoeff_ne_zero.mpr fun h0 ↦ by simpa [h0] using hG θ hθ
+    have := (hc θ hθ).trans (hc θ' hθ').symm
+    rw [h₁, h₂] at this
+    exact mul_right_cancel₀ (h₂ ▸ hlead) (add_left_cancel this)
+  rw [← Finset.card_image_of_injOn hinj]
+  refine card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet domain f g _
+    (fun p hp ↦ ?_) (fun p hp ↦ ?_)
+  · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp hp
+    exact ⟨hF θ hθ, (hG θ hθ).le⟩
+  · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp hp
+    exact hL θ hθ
+
+open Classical in
+/-- For one word pair, the affine error bounds the exceptional challenge pairs.
+
+At most `q² ε` pairs `(α, β)` make some candidate affine exceptional for `(f, g)`.
+Here `q` is the field size and `ε` is the affine error with the same parameters. -/
+theorem card_filter_isAffineExceptional_le_mul_affineMcaError [Fintype F] (domain : ι ↪ F)
+    (d A s : ℕ) (f g : ι → F) :
+    (#{x : F × F | ∃ P, IsAffineExceptional domain f g d A s x.1 x.2 P} : ℝ) ≤
+      (Fintype.card F : ℝ) ^ 2 * (affineMcaError domain d A s).toReal := by
+  have hE : affineMcaError domain d A s ≠ ⊤ :=
+    ne_top_of_le_ne_top ENNReal.one_ne_top (affineMcaError_le_one domain d A s)
+  have := (ENNReal.ofReal_le_iff_le_toReal hE).mp (le_affineMcaError domain d A s f g)
+  rw [div_le_iff₀ (by positivity)] at this
+  simpa [mul_comm] using this
 
 /-- If `nd < (A - 1)²`, the equal-degree error at agreement loss one is
 at most the affine error plus `ℓ₀/q`, where `n = |ι|`, `q = |F|`, and
-`ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the rounded-down Johnson bound. -/
+`ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the rounded-down Johnson bound.
+This is the `t = 1` case of the `t`-row bound in `FoldingRound`, proved here directly. -/
 theorem equalDegreeMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hJ : Fintype.card ι * d < (A - 1) ^ 2) :
     equalDegreeMcaError domain d A 1 ≤ affineMcaError domain d A 1 +
@@ -229,107 +251,50 @@ theorem equalDegreeMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
         (((⌊(Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) /
           (((A : ℝ) - 1) ^ 2 - Fintype.card ι * d)⌋₊ : ℕ) : ℝ) / Fintype.card F) := by
   classical
-  by_cases hAn : A ≤ Fintype.card ι
-  · have hdA : d + 1 < A := by
-      rcases Nat.eq_zero_or_pos d with rfl | hd
-      · have : A - 1 ≠ 0 := fun h ↦ by simp [h] at hJ
-        omega
-      · by_contra h
-        have : (A - 1) ^ 2 ≤ Fintype.card ι * d := by
-          rw [sq]
-          exact Nat.mul_le_mul (by omega) (by omega)
-        omega
-    refine iSup_le fun w ↦ ?_
-    obtain ⟨f, g⟩ := w
-    set q : ℝ := (Fintype.card F : ℝ) with hq_def
-    set n : ℕ := Fintype.card ι
-    set ℓ₀ := ⌊(n : ℝ) * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d)⌋₊
-    set E := (affineMcaError domain d A 1).toReal
-    have hE : affineMcaError domain d A 1 ≠ ⊤ :=
-      ne_top_of_le_ne_top ENNReal.one_ne_top (affineMcaError_le_one domain d A 1)
-    have hq : 0 < q := by positivity
-    -- The challenges `θ` for which some pair of degree `d` explains a candidate.
-    set B := badEqualDegreeChallenges domain f g d (A - 1) with hB_def
-    set X₁ : Finset (F × F × F) := {c | ∃ P,
-      IsAffineExceptional domain g (fun i ↦ f i + c.1 * g i) d A 1 c.2.1 c.2.2 P}
-    set X₂ : Finset (F × F × F) := {c | c.1 ∈ B}
-    have hsub : ({c | ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} :
-        Finset (F × F × F)) ⊆ X₁ ∪ X₂ := by
-      intro c hc
-      obtain ⟨P, hP⟩ := (Finset.mem_filter.mp hc).2
+  refine iSup_le fun w ↦ ?_
+  obtain ⟨f, g⟩ := w
+  set q : ℝ := (Fintype.card F : ℝ)
+  set n : ℕ := Fintype.card ι
+  set ℓ₀ := ⌊(n : ℝ) * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d)⌋₊
+  set E := (affineMcaError domain d A 1).toReal
+  have hE : affineMcaError domain d A 1 ≠ ⊤ :=
+    ne_top_of_le_ne_top ENNReal.one_ne_top (affineMcaError_le_one domain d A 1)
+  have hq : 0 < q := by positivity
+  -- Exceptional triples are affine exceptional, or their `θ` is bad.
+  set B := badEqualDegreeChallenges domain f g d (A - 1)
+  have hA1 : 1 ≤ A := by
+    rcases A with _ | A
+    · simp at hJ
+    · omega
+  -- The Johnson bound on the bad values of `θ`.
+  have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) := by
+    have h := le_floor_johnson_of_mul_le hJ
+      (card_badEqualDegreeChallenges_mul_le domain f g d (A - 1))
+    rw [Nat.cast_sub hA1, Nat.cast_one] at h
+    exact Nat.cast_le.mpr h
+  have hcount :
+      (#{c : F × F × F | ∃ P,
+        IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤
+        E + (ℓ₀ : ℝ) / q := by
+    have hp (c : F × F × F)
+        (hc : ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P) :
+        (∃ P, IsAffineExceptional domain g (fun i ↦ f i + c.1 * g i) d A 1 c.2.1 c.2.2 P) ∨
+          c.1 ∈ B := by
+      obtain ⟨P, hP⟩ := hc
       rcases hP.isAffineExceptional_or_exists_degree_eq with h | h
-      · exact Finset.mem_union_left _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _, P, h⟩)
-      · exact Finset.mem_union_right _ (Finset.mem_filter.mpr ⟨Finset.mem_univ _,
-          by simpa [B, badEqualDegreeChallenges] using h⟩)
-    have hX₁ : (#X₁ : ℝ) ≤ q ^ 3 * E := by
-      have hsum : #X₁ = ∑ θ : F, #{c : F × F | ∃ P,
-          IsAffineExceptional domain g (fun i ↦ f i + θ * g i) d A 1 c.1 c.2 P} := by
-        rw [Finset.card_filter, Fintype.sum_prod_type]
-        simp only [Finset.card_filter]
-      rw [hsum, Nat.cast_sum]
-      calc (∑ θ : F, (#{c : F × F | ∃ P,
-            IsAffineExceptional domain g (fun i ↦ f i + θ * g i) d A 1 c.1 c.2 P} : ℝ))
-          ≤ ∑ _θ : F, q ^ 2 * E := Finset.sum_le_sum fun θ _ ↦ by
-            have := (ENNReal.ofReal_le_iff_le_toReal hE).mp
-              (le_affineMcaError domain d A 1 g (fun i ↦ f i + θ * g i))
-            rw [div_le_iff₀ (by positivity)] at this
-            linarith
-        _ = q ^ 3 * E := by
-            rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, ← hq_def]
-            ring
-    have hX₂ : (#X₂ : ℝ) = #B * q ^ 2 := by
-      have : X₂ = B ×ˢ (Finset.univ : Finset (F × F)) := by
-        ext c
-        simp [X₂]
-      rw [this, Finset.card_product, Finset.card_univ, Fintype.card_prod]
-      push_cast
-      ring
-    -- The Johnson bound on the bad values of `θ`.
-    have hA1 : 1 ≤ A := by omega
-    have hden_nat : n * d ≤ (A - 1) * (A - 1) := by rw [← sq]; exact hJ.le
-    have hden : (0 : ℝ) < ((A : ℝ) - 1) ^ 2 - n * d := by
-      have : ((n * d : ℕ) : ℝ) < (((A - 1) ^ 2 : ℕ) : ℝ) := by exact_mod_cast hJ
-      push_cast [hA1] at this
-      linarith
-    have hB : (#B : ℝ) ≤ n * ((A : ℝ) - 1 - d) / (((A : ℝ) - 1) ^ 2 - n * d) := by
-      rw [le_div_iff₀ hden]
-      have h := card_badEqualDegreeChallenges_mul_le domain f g d (A - 1)
-      have h' : ((#B * ((A - 1) * (A - 1) - n * d) : ℕ) : ℝ) ≤ ((n * (A - 1 - d) : ℕ) : ℝ) := by
-        exact_mod_cast h
-      push_cast [hA1, hden_nat, show d ≤ A - 1 by omega] at h'
-      linarith
-    have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) := by
-      dsimp only [ℓ₀]
-      exact_mod_cast Nat.le_floor hB
-    have hcount :
-        (#{c : F × F × F | ∃ P,
-          IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤
-          E + (ℓ₀ : ℝ) / q := by
-      rw [div_le_iff₀ (by positivity)]
-      calc (#{c : F × F × F | ∃ P, IsEqualDegreeExceptional domain f g d A 1 c.1 c.2.1 c.2.2 P} : ℝ)
-          ≤ #(X₁ ∪ X₂) := by exact_mod_cast Finset.card_le_card hsub
-        _ ≤ #X₁ + #X₂ := by exact_mod_cast Finset.card_union_le _ _
-        _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by
-            rw [hX₂]
-            gcongr
-        _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by
-            field_simp
-    calc _ ≤ ENNReal.ofReal (E + (ℓ₀ : ℝ) / q) :=
-            ENNReal.ofReal_le_ofReal hcount
-      _ = _ := by
-        rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity)]
-        rw [ENNReal.ofReal_toReal hE]
-  · have hz : equalDegreeMcaError domain d A 1 = 0 := by
-      refine le_antisymm (iSup_le fun w ↦ ?_) bot_le
-      rw [nonpos_iff_eq_zero, ENNReal.ofReal_eq_zero]
-      apply div_nonpos_of_nonpos_of_nonneg _ (by positivity)
-      norm_cast
-      rw [Nat.le_zero, Finset.card_eq_zero, Finset.filter_eq_empty_iff]
-      rintro c - ⟨P, -, hP, -⟩
-      have := Finset.card_le_univ (polynomialAgreementSet domain
-        (equalDegreeWord domain w.1 w.2 c.1 c.2.1 c.2.2) P)
-      omega
-    rw [hz]
-    exact zero_le
+      · exact Or.inl ⟨P, h⟩
+      · exact Or.inr (by simpa [B, badEqualDegreeChallenges] using h)
+    have key := Finset.card_filter_triples_le_of_imp_or B hp fun θ ↦
+      card_filter_isAffineExceptional_le_mul_affineMcaError domain d A 1 g
+        (fun i ↦ f i + θ * g i)
+    rw [div_le_iff₀ (by positivity)]
+    calc _ ≤ q ^ 3 * E + #B * q ^ 2 := key
+      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by gcongr
+      _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by field_simp
+  calc _ ≤ ENNReal.ofReal (E + (ℓ₀ : ℝ) / q) :=
+          ENNReal.ofReal_le_ofReal hcount
+    _ = _ := by
+      rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity)]
+      rw [ENNReal.ofReal_toReal hE]
 
 end ReedSolomon

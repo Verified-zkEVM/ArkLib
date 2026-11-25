@@ -6,23 +6,22 @@ Authors: Quang Dao
 import ArkLib.Interaction.Security.Agreement
 import ArkLib.Interaction.Legacy.OracleKnowledge
 
-/-! # Agreement clients with unequal input and query universes
+/-! # Agreement clients
 
-Statements, input indices, input queries and output queries occupy `Type 2`, `Type 1`,
-`Type 3` and `Type 4`, respectively; oracle-node queries occupy `Type 5`. Output families depend
-on the shape path. Knowledge witnesses depend on the statement and transcript, in `Type 6` and
-`Type 7`. The last section also checks the general move, ambient and output-index universes.
+Agreement transports runs and security statements between verifiers with the same decisions and
+outputs. Output families depend on the shape path, and knowledge witnesses depend on the statement
+and transcript. The security definitions take their data in `Type`, so every argument here does.
 -/
 
 open PFunctor FreeM Interaction Interaction.OracleVerifier Interaction.Oracle OracleComp
 
 namespace Interaction.AgreementUniversesTests
 
-variable {ι : Type} {S : Type 2} {I : Type 1}
-  {ambient : OracleSpec ι} {s s' : OracleProtocol.{0, 5}} {A : I → Type}
+variable {ι : Type} {S : Type} {I : Type}
+  {ambient : OracleSpec ι} {s s' : OracleProtocol.{0, 0}} {A : I → Type}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleFamily.{1, 0, 3} I A}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 4} (J p) (B p)}
+  {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V V' : OracleVerifier ambient s S T inputs outputs}
 
 example (h : Agrees V V') (stmt : S) (data : ∀ i, A i)
@@ -37,15 +36,15 @@ example {σ : Type} (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbC
     V.rbrSoundness impl input output draw ε ↔ V'.rbrSoundness impl input output draw ε :=
   h.rbrSoundness_iff impl input output draw ε
 
-example {σ : Type} {Win : (S × (∀ i, A i)) → Type 6}
-    {W : (S × (∀ i, A i)) → Transcript oracleSig s → Type 7}
+example {σ : Type} {Win : (S × (∀ i, A i)) → Type}
+    {W : (S × (∀ i, A i)) → Transcript oracleSig s → Type}
     (h : Agrees V V') (impl : QueryImpl ambient (StateT σ ProbComp))
     (adm : S × (∀ i, A i) → Prop) (relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop)
     (relOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig s) →
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
     (draw : PrefixDraw viewSig ProbComp s) (ε : PrefixError oracleSig s) :
-    V.rbrKnowledgeSoundness.{2, 6, 1, 7} impl adm relIn relOut draw ε ↔
-      V'.rbrKnowledgeSoundness.{2, 6, 1, 7} impl adm relIn relOut draw ε :=
+    V.rbrKnowledgeSoundness impl adm relIn relOut draw ε ↔
+      V'.rbrKnowledgeSoundness impl adm relIn relOut draw ε :=
   h.rbrKnowledgeSoundness_iff impl adm relIn relOut draw ε
 
 -- These applications specialize the Cast APIs before any tree equality is supplied.
@@ -53,29 +52,26 @@ example {σ : Type} {Win : (S × (∀ i, A i)) → Type 6}
   (inputs := inputs) (outputs := outputs)
 
 section KnowledgeCast
-variable {Win : (S × (∀ i, A i)) → Type 6}
-  {W : (S × (∀ i, A i)) → Transcript oracleSig s → Type 7}
+variable {Win : (S × (∀ i, A i)) → Type}
+  {W : (S × (∀ i, A i)) → Transcript oracleSig s → Type}
 
 #check OracleVerifier.rbrKnowledgeSoundness_cast (S := S) (T := T) (ambient := ambient)
   (inputs := inputs) (outputs := outputs) (Win := Win) (W := W)
 end KnowledgeCast
 section LegacyOutputs
-variable {J T : Type} {B : J → Type} {outputs : OracleFamily.{0, 0, 4} J B}
+variable {J T : Type} {B : J → Type} {outputs : OracleFamily.{0, 0, 0} J B}
 
--- These legacy relation adapters retain the original large output-query specialization.
+-- These legacy relation adapters transport completeness and knowledge soundness along a tree
+-- equality.
 #check Legacy.completeness_cast (S := S) (inputs := inputs) (outputs := outputs)
 #check Legacy.knowledgeSoundness_cast (S := S) (inputs := inputs) (outputs := outputs)
 end LegacyOutputs
 
-section General
+section Bundles
 
-variable {ι : Type 2} {S : Type 3} {s s' : OracleProtocol.{1, 4}}
-  {ambient : OracleSpec.{2, 1} ι} {T : Path s → Type 1} {J : Path s → Type 5}
-  {B : (p : Path s) → J p → Type 1} {inputs : OracleBundle.{1, 6, 7}}
-  {outputs : (p : Path s) → OracleFamily.{5, 1, 8} (J p) (B p)}
-  {V V' : OracleVerifier ambient s S T inputs outputs}
+variable {inputs : OracleBundle} {V V' : OracleVerifier ambient s S T inputs outputs}
 
--- Agreement and decision/output transport retain independent ambient and output-index universes.
+-- Agreement follows from equal decisions and outputs on every transcript.
 example
     (hd : ∀ (stmt : S) (tr : Transcript oracleSig s),
       V.decide stmt _ (toView s tr) = V'.decide stmt _ (toView s tr))
@@ -89,15 +85,6 @@ example
 #check OracleVerifier.simulateQ_decide_cast (S := S) (T := T) (ambient := ambient)
   (inputs := inputs) (outputs := outputs)
 
--- Ordinary runs keep general moves and independent input data, node queries and output queries.
-example {ι : Type 1} {ambient : OracleSpec ι} {J : Path s → Type 1}
-    {B : (p : Path s) → J p → Type 1}
-    {outputs : (p : Path s) → OracleFamily.{1, 1, 8} (J p) (B p)}
-    {V V' : OracleVerifier ambient s S T inputs outputs}
-    (h : Agrees V V') (stmt : S) (data : inputs.Data)
-    {Out : Transcript oracleSig s → Type 1} (p : Prover oracleSig ambient s Out) :
-    V.run stmt data p = V'.run stmt data p := h.run_eq stmt data p
-
-end General
+end Bundles
 
 end Interaction.AgreementUniversesTests

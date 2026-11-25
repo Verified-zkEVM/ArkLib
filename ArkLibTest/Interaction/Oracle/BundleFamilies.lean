@@ -17,7 +17,8 @@ indices share one realization; an embedding along `Bool.not` transports a carrie
 index. Query and response types may vary with the index, and a carrier subtype states a degree
 bound that holds of every realization.
 
-Named bundles keep response and realization universes independent. A view restricts the visible
+Named bundles keep distinct response and realization carriers in `Type`. A view restricts the
+visible
 queries while retaining the whole context's data. Both forms are used directly as verifier inputs.
 
 The polynomial fixture is noncomputable because Mathlib's `Polynomial` is; it is used only for
@@ -28,7 +29,6 @@ open Interaction Interaction.Oracle OracleComp
 
 namespace Interaction.BundleFamiliesTests
 
-universe i q a s h
 
 /-- The carrier at index `r`: three values for `false`, five for `true`. -/
 abbrev Carrier (r : Bool) : Type := Fin (if r then 5 else 3)
@@ -257,19 +257,18 @@ example : (false : model.Index) ≠ true := by decide
 /-- The polynomial cannot have natural degree strictly below zero. -/
 example : ¬ linearRealization.val.natDegree < 0 := Nat.not_lt_zero _
 
-/-! ### R26 and R27 with independent realization and response universes -/
+/-! ### R26 and R27 named and visible contexts at `Type` -/
 
 section IndependentRealizations
 
-universe e
 
-variable {Name : Type i} {Query : Name → Type q} {Realization : Name → Type a}
-  {Response : (n : Name) → Query n → Type e}
+variable {Name : Type} {Query : Name → Type} {Realization : Name → Type}
+  {Response : (n : Name) → Query n → Type}
 
 /-- A view bundle queries selected named oracles while retaining the whole context's data (R27). -/
 def viewBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
-    OracleBundle.{e, max h q, max s a} where
+    {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index) :
+    OracleBundle where
   Index := (x : Visible) × Query (name (select x))
   spec query := Response (name (select query.1)) query.2
   Data := (x : Index) → Realization (name x)
@@ -277,104 +276,109 @@ def viewBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q
 
 /-- The whole named context is the identity view (R26). -/
 abbrev namedBundle (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) : OracleBundle.{e, max s q, max s a} :=
+    {Index : Type} (name : Index → Name) : OracleBundle :=
   viewBundle answer name id
 
-/-- R26 keeps its exact query and data carriers without identifying `a` with `e`. -/
+/-- R26 keeps its exact query and data carriers. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) :
+    {Index : Type} (name : Index → Name) :
     (namedBundle answer name).Index = ((x : Index) × Query (name x)) ∧
       (namedBundle answer name).Data = ((x : Index) → Realization (name x)) := ⟨rfl, rfl⟩
 
-/-- R27 keeps the original context's data when the visible index has its own universe. -/
+/-- R27 keeps the original context's data when the visible index has a distinct carrier. -/
 example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index) :
+    {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index) :
     (viewBundle answer name select).Index = ((x : Visible) × Query (name (select x))) ∧
       (viewBundle answer name select).Data = ((x : Index) → Realization (name x)) :=
   ⟨rfl, rfl⟩
 
 /-- No output oracles are needed to test the verifier's input-bundle boundary. -/
-def noOutputs : OracleFamily.{e, e, e} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
+def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
 
-/-- A verifier consumes an R27-shaped view, with independent realization `a` and response `e`.
-Its decision reads the selected query from the whole context's unencoded data. -/
-def viewVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index)
+/-- A verifier consumes an R27-shaped view at `Type`.
+Its decision reads the selected query from the whole
+context's unencoded data. -/
+def viewVerifier {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index)
     (x : Visible) (query : Query (name (select x))) :
-    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
-      PUnit.{e + 1} (fun _ => Response (name (select x)) query)
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+      PUnit (fun _ => Response (name (select x)) query)
       (viewBundle answer name select) (fun _ => noOutputs) where
   decide _ p _ := liftM
-    (((PEmpty.{e + 1} →ₒ PUnit.{e + 1}) +
+    (((PEmpty →ₒ PUnit) +
       (pathBundle (viewBundle answer name select)
-        (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query (.inr (.inl ⟨x, query⟩)))
+        (.pure ⟨⟩ : OracleProtocol.{0, 0}) p).spec).query (.inr (.inl ⟨x, query⟩)))
   outputMap _ _ _ :=
     { f := fun _ x => x.elim
       impl := fun query => query.1.elim
       law := fun _ query => query.1.elim }
 
 /-- The R26 verifier is the identity-view specialization of the R27 verifier. -/
-abbrev namedVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x)) :
-    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
-      PUnit.{e + 1} (fun _ => Response (name x) query) (namedBundle answer name)
+abbrev namedVerifier {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type} (name : Index → Name) (x : Index) (query : Query (name x)) :
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+      PUnit (fun _ => Response (name x) query) (namedBundle answer name)
       (fun _ => noOutputs) :=
   viewVerifier answer name id x query
 
-/-- The run also accepts the unencoded realization family at the independent universe `a`. -/
-example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x))
+/-- The run also accepts the unencoded realization family at `Type`. -/
+example {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type} (name : Index → Name) (x : Index) (query : Query (name x))
     (data : (x : Index) → Realization (name x)) :=
-  (namedVerifier answer name x query).run (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩)
+  (namedVerifier answer name x query).run (Out := fun _ => PUnit) ⟨⟩ data (pure ⟨⟩)
 
 /-- Both R26 and R27 are verifier inputs with the same original realization family. The view
 changes only which queries are visible, without encoding or restricting the backing data. -/
-example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
-    {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index)
+example {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+    {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index)
     (x : Visible) (query : Query (name (select x)))
     (data : (x : Index) → Realization (name x)) :=
   ((namedVerifier answer name (select x) query).run
-      (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩),
+      (Out := fun _ => PUnit) ⟨⟩ data (pure ⟨⟩),
     (viewVerifier answer name select x query).run
-      (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩))
+      (Out := fun _ => PUnit) ⟨⟩ data (pure ⟨⟩))
 
 end IndependentRealizations
 
 section Universes
 
-variable {Name : Type i} {Realization : Name → Type a} {Index : Type s} {View : Type h}
+variable {Name : Type} {Realization : Name → Type} {Index : Type} {View : Type}
 
--- OracleFamily specializes the independent bundle contracts through OracleBundle.ofFamily.
-/-- A bundle of selected oracles keeps the independent context, query and data-index universes. -/
-example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
-    OracleBundle.{a, max s q, max s a} := OracleBundle.ofFamily (C.reindex name)
+-- OracleFamily specializes the bundle contracts through OracleBundle.ofFamily.
+/-- A bundle of selected oracles keeps the context, query and data-index carriers at `Type`. -/
+example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name) :
+    OracleBundle := OracleBundle.ofFamily (C.reindex name)
 
-/-- Selecting interfaces preserves the context's query indices and their query universe. -/
-example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
-    OracleSpec.{max s q, a} ((x : Index) × (C.interface (name x)).Query) :=
+/-- Selecting interfaces preserves the context's query indices. -/
+example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name) :
+    OracleSpec.{0, 0} ((x : Index) × (C.interface (name x)).Query) :=
   (C.reindex name).spec
 
-/-- Context data answers all selected queries without restricting the context index universe. -/
-example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name) :
+/-- Context data answers all selected queries. -/
+example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name) :
     (∀ x, Realization (name x)) → QueryImpl (C.reindex name).spec Id :=
   (C.reindex name).behaviorOfRealizations
 
 -- The family specialization keeps the original context when routing through a view.
 /-- An arbitrary view changes query indices without changing the original context data. -/
-example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
+example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x)) :
     QueryImpl (C.reindex (name ∘ view)).spec Id :=
   (C.reindex (name ∘ view)).behaviorOfRealizations
     ((OracleMap.embedding (C.reindex name) view).f data)
 
-/-- View queries keep the selected name's dependent query carrier at the independent universe. -/
-example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
+/-- View queries keep the selected name's dependent query carrier. -/
+example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name)
     (view : View → Index) :
-    OracleSpec.{max h q, a} ((x : View) × (C.interface (name (view x))).Query) :=
+    OracleSpec.{0, 0} ((x : View) × (C.interface (name (view x))).Query) :=
   (C.reindex (name ∘ view)).spec
 
 /-- Routing through a view answers from the original context at the selected index. -/
-example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
+example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x))
     (x : View) (query : (C.interface (name (view x))).Query) :
     (C.reindex (name ∘ view)).behaviorOfRealizations

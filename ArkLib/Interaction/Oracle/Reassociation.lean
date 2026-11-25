@@ -36,7 +36,7 @@ client rewrites a decision or output data on a run, which these laws state direc
 
 @[expose] public section
 
-universe u q w uS uI uJ uK uY dI wJ wK uA v z uL wL
+universe u q w uY uA v z
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -151,10 +151,10 @@ namespace OracleVerifier
 
 section Transcripts
 
-variable {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : OracleProtocol.{u, q}} {S : Type uS}
-  {T : Path s → Type u} {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-  {inputs : OracleBundle.{u, uI, dI}}
-  {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
+  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- The decision on a completed transcript: at its path and view, with the bundle queries answered
 from the input data and the transcript's oracle messages. -/
@@ -170,20 +170,20 @@ def outputOn (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data 
 
 end Transcripts
 
-variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-  {inputs : OracleBundle.{u, uI, dI}}
-  {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
-  {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
-  {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
-  {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type uK}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂)}
+variable {ι : Type} {ambient : OracleSpec ι}
+  {inputs : OracleBundle}
+  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
+  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {K : (p : Path s₁) → Path (s₂ p) → Type}
+  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
 
 /-- The split path of an appended run with the split views, the prefix bundle data and the suffix
 oracle messages. -/
-abbrev SplitRun (inputs : OracleBundle.{u, uI, dI}) (s₁ : OracleProtocol.{u, q})
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) :=
+abbrev SplitRun (inputs : OracleBundle) (s₁ : OracleProtocol.{0, 0})
+    (s₂ : Path s₁ → OracleProtocol.{0, 0}) :=
   (z : (p : Path s₁) × Path (s₂ p)) × (View s₁ z.1 × View (s₂ z.1) z.2) ×
     ((pathBundle inputs s₁ z.1).Data ×
       (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data)
@@ -214,7 +214,7 @@ decision, the suffix decision and the continuation in sequence. The continuation
 value `y` at the split path, given again as `y'` at the pair of paths; this lets the chain laws
 carry the suffix transcript and evidence through the equation. -/
 theorem append_decideOn_bind {Y : (p₁ : Path s₁) → Path (s₂ p₁) → Type uY}
-    {Z : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Y p₁ p₂ → Type u}
+    {Z : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Y p₁ p₂ → Type}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂)
@@ -230,7 +230,7 @@ theorem append_decideOn_bind {Y : (p₁ : Path s₁) → Path (s₂ p₁) → Ty
         | none => pure none
         | some out => k _ _ y out
           ((V₁.append V₂ compatible).outputOn stmt data (Transcript.append s₁ s₂ tr₁ tr₂))⟩ :
-      (β : Type u) × OracleComp ambient (Option β)) =
+      (β : Type) × OracleComp ambient (Option β)) =
     ⟨Z _ _ y', V₁.decideOn stmt data tr₁ >>= fun
       | none => pure none
       | some mid => (V₂ tr₁.path).decideOn mid (V₁.outputOn stmt data tr₁) tr₂ >>= fun
@@ -249,7 +249,7 @@ theorem append_decideOn_bind {Y : (p₁ : Path s₁) → Path (s₂ p₁) → Ty
         | none => pure none
         | some out => k Ξ.1.1 Ξ.1.2 Ξ.2.2 out (((V₂ Ξ.1.1).outputMap mid Ξ.1.2 Ξ.2.1.1.2).f
             ((V₁.outputMap stmt Ξ.1.1 Ξ.2.1.1.1).f Ξ.2.1.2.1, Ξ.2.1.2.2))⟩ :
-      (β : Type u) × OracleComp ambient (Option β))) hΞ
+      (β : Type) × OracleComp ambient (Option β))) hΞ
   refine Eq.trans ?_ (h2.trans ?_)
   rotate_left
   · refine congrArg (Sigma.mk _) ?_
@@ -274,7 +274,7 @@ theorem append_decideOn_bind {Y : (p₁ : Path s₁) → Path (s₂ p₁) → Ty
 
 /-- Binding a computation to a continuation that returns every result unchanged is the
 computation. -/
-theorem bind_eq_self_of_forall {α : Type u} (x : OracleComp ambient α)
+theorem bind_eq_self_of_forall {α : Type} (x : OracleComp ambient α)
     {f : α → OracleComp ambient α} (hf : ∀ a, f a = pure a) : x >>= f = x := by
   rw [funext hf, _root_.bind_pure]
 
@@ -284,7 +284,7 @@ theorem append_decideOn_sigma (V₁ : OracleVerifier ambient s₁ S T inputs mid
     (compatible : OutputCompatibility V₁ V₂) (stmt : S) (data : inputs.Data)
     (tr₁ : Transcript oracleSig s₁) (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨_, (V₁.append V₂ compatible).decideOn stmt data (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
-      (β : Type u) × OracleComp ambient (Option β)) =
+      (β : Type) × OracleComp ambient (Option β)) =
     ⟨U tr₁.path tr₂.path, V₁.decideOn stmt data tr₁ >>= fun
       | none => pure none
       | some mid => (V₂ tr₁.path).decideOn mid (V₁.outputOn stmt data tr₁) tr₂⟩ := by
@@ -465,10 +465,10 @@ end Helpers
 
 namespace OracleVerifier
 
-variable {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : OracleProtocol.{u, q}} {S : Type uS}
-  {T : Path s → Type u} {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-  {inputs : OracleBundle.{u, uI, dI}}
-  {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
+  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Verifiers with the same decision function decide alike on every run. -/
 theorem decideOn_eq_of_decide_eq {V V' : OracleVerifier ambient s S T inputs outputs}
@@ -480,15 +480,15 @@ end OracleVerifier
 
 /-- The decision of an appended verifier depends on the suffix verifiers only through their
 decision functions. -/
-theorem OracleVerifier.append_decide_congr {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
-    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
-    {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
-    {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-    {K : (p : Path s₁) → Path (s₂ p) → Type uK}
-    {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
-    {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂)}
+theorem OracleVerifier.append_decide_congr {ι : Type} {ambient : OracleSpec ι}
+    {inputs : OracleBundle}
+    {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+    {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
+    {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
+    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {K : (p : Path s₁) → Path (s₂ p) → Type}
+    {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
+    {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     {V₂ V₂' : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p)}
     (compatible : OracleVerifier.OutputCompatibility V₁ V₂)
@@ -505,21 +505,21 @@ namespace OracleVerifier
 
 section Reassociation
 
-variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-  {inputs : OracleBundle.{u, uI, dI}}
-  {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}}
-  {s₃ : (p₁ : Path s₁) → Path (s₂ p₁) → OracleProtocol.{u, q}} {S : Type uS}
-  {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
-  {W : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type u}
-  {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
-  {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type uK}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂)}
-  {L : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type uL}
-  {D : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (p₃ : Path (s₃ p₁ p₂)) → L p₁ p₂ p₃ → Type u}
+variable {ι : Type} {ambient : OracleSpec ι}
+  {inputs : OracleBundle}
+  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+  {s₃ : (p₁ : Path s₁) → Path (s₂ p₁) → OracleProtocol.{0, 0}} {S : Type}
+  {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
+  {W : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type}
+  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {K : (p : Path s₁) → Path (s₂ p) → Type}
+  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
+  {L : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type}
+  {D : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (p₃ : Path (s₃ p₁ p₂)) → L p₁ p₂ p₃ → Type}
   {finals : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (p₃ : Path (s₃ p₁ p₂)) →
-    OracleFamily.{uL, u, wL} (L p₁ p₂ p₃) (D p₁ p₂ p₃)}
+    OracleFamily.{0, 0, 0} (L p₁ p₂ p₃) (D p₁ p₂ p₃)}
   (V₁ : OracleVerifier ambient s₁ S T inputs middle)
   (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
   (V₃ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
@@ -542,7 +542,7 @@ theorem append_append_decideOn_sigma_left (stmt : S) (data : inputs.Data)
         (Transcript.append (s₁.append s₂)
           (fun P => s₃ (Path.split s₁ s₂ P).1 (Path.split s₁ s₂ P).2)
           (Transcript.append s₁ s₂ tr₁ tr₂) tr₃)⟩ :
-      (β : Type u) × OracleComp ambient (Option β)) =
+      (β : Type) × OracleComp ambient (Option β)) =
     ⟨W tr₁.path tr₂.path tr₃'.path, V₁.decideOn stmt data tr₁ >>= fun
       | none => pure none
       | some m => (V₂ tr₁.path).decideOn m (V₁.outputOn stmt data tr₁) tr₂ >>= fun
@@ -566,7 +566,7 @@ theorem append_append_decideOn_sigma_right (stmt : S) (data : inputs.Data)
     (⟨_, (V₁.append (fun p => (V₂ p).append (V₃ p) (c₂₃ p)) cR).decideOn stmt data
         (Transcript.append s₁ (fun p => (s₂ p).append (s₃ p)) tr₁
           (Transcript.append (s₂ tr₁.path) (s₃ tr₁.path) tr₂ tr₃'))⟩ :
-      (β : Type u) × OracleComp ambient (Option β)) =
+      (β : Type) × OracleComp ambient (Option β)) =
     ⟨W tr₁.path tr₂.path tr₃'.path, V₁.decideOn stmt data tr₁ >>= fun
       | none => pure none
       | some m => (V₂ tr₁.path).decideOn m (V₁.outputOn stmt data tr₁) tr₂ >>= fun

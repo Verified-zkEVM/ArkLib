@@ -44,10 +44,10 @@ def prover (payload hidden : Nat) : Prover oracleSig ambient phased (fun _ => Na
 
 /-- The decision records 2 and 3, reads the sent oracle, records 6 and 7, then accepts with the
 sent value or rejects. -/
-def verifier.{uI, uJ, wI, wJ} (accept : Bool) :
+def verifier (accept : Bool) :
     OracleVerifier ambient phased Unit (fun _ => Nat)
-      (noInputs : OracleFamily.{uI, 0, wI} _ _)
-      (fun _ => (noInputs : OracleFamily.{uJ, 0, wJ} _ _)) where
+      (noInputs : OracleFamily.{0, 0, 0} _ _)
+      (fun _ => (noInputs : OracleFamily.{0, 0, 0} _ _)) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -74,20 +74,19 @@ def logger (bit : Bool) : QueryImpl (ambient + challengeSpec oracleSig phased) (
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inr ⟨_, .inr ⟨_, n⟩⟩⟩, _⟩ => n.elim
 
-universe uI wI wJ
 
-/-- Full transcript, private output, verdict and ambient history of one run. The empty input
-index and the input and output query universes are independent. -/
-def summary.{vI, qI, qJ} (accept : Bool) (payload hidden : Nat) (bit : Bool) :
+/-- Full transcript, private output, verdict and ambient history of one run. All indices and data
+lie in `Type`. -/
+def summary (accept : Bool) (payload hidden : Nat) (bit : Bool) :
     Transcript oracleSig phased × Nat × Option Nat × List Nat :=
-  let z := (simulateQ (logger bit) ((verifier.{vI, 0, qI, qJ} accept).run () noData
+  let z := (simulateQ (logger bit) ((verifier accept).run () noData
     (prover payload hidden))).run []
   (z.1.1, z.1.2.1, z.1.2.2.map Prod.fst, z.2)
 
 -- PhasedRun 4: for every oracle message `payload`, private output and challenge, the run's full
 -- transcript is `⟨true, bit, payload⟩`. Its oracle message family returns `payload`, and its
 -- verifier view erases it. The decision reads the oracle message and accepts with it.
-example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} true payload hidden bit =
+example (payload hidden : Nat) (bit : Bool) : summary true payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, some payload, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
 example (payload : Nat) (bit : Bool) :
@@ -99,7 +98,7 @@ example (payload : Nat) (bit : Bool) :
 -- PhasedRun 6: the passive decision returns `none`, the final rejection. For every oracle
 -- message, private output and challenge, the run keeps the transcript, the private output and the
 -- full ambient history.
-example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} false payload hidden bit =
+example (payload hidden : Nat) (bit : Bool) : summary false payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, none, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
 end Interaction.HiddenSendRunTests

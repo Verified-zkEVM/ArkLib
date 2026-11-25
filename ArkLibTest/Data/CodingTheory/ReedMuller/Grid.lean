@@ -102,3 +102,7 @@ example (z : Fin 2 → ZMod 2) (P : MvPolynomial (Fin 2) (ZMod 2)) :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.eq_zero_of_forall_eval_gridPoint_eq_zero
+
+/-- info: 'ReedMuller.algebraMap_comp_gridPoint' depends on axioms: [propext, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.algebraMap_comp_gridPoint
