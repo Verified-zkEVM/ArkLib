@@ -198,3 +198,8 @@ example : ((16384 * 22 : ℕ) : ℝ) ≤ 3 * 65536 / (1 / 4) := by
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.AffineParams.bounds
+
+/-- info: 'ReedSolomon.affineCount_numerics_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.affineCount_numerics_le

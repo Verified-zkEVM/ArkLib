@@ -29,7 +29,7 @@ The error is the worst case, over word pairs, of the fraction of exceptional vec
 The definitions follow Section 7 of [CWYZ26].
 There the error is `εRM(k, q₀, ρ, A, s, q)`, and `d` stands for `ρ q₀`.
 The case `G₀ = 0` is the paper's convention `deg 0 = -∞`.
-These files do not prove Theorem 7.1 itself.
+The sibling theorem module proves Theorem 7.1.
 
 The paper uses `1 ≤ A ≤ n` and `d ≥ 1`.
 The definitions also cover boundary values.
