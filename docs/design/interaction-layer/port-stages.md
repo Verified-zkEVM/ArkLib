@@ -357,6 +357,6 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 [chainSupport]: ../../../ArkLib/Interaction/Core/StageChain.lean#L703
 [chainMeasure]: ../../../ArkLib/Interaction/Core/StageChain.lean#L760
 [appendDecide]: ../../../ArkLib/Interaction/Core/Composition.lean#L471
-[pathBundle]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L490
-[oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L558
+[pathBundle]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L492
+[oracleRun]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L617
 [runAppend]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
