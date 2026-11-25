@@ -18,10 +18,10 @@ Turn a pile of `sorry`s and proof obligations into:
 
 Favor composable proofs that reuse existing Mathlib and ArkLib lemmas over new definitions.
 
-A deferred gap is a working-branch state, not a mergeable one: `main` carries no admitted proof
-debt, so a branch with a remaining `sorry` cannot merge (see
-[Review and Merge Readiness](../../CONTRIBUTING.md#review-and-merge-readiness)). An external result whose proof
-is out of reach stays open as an issue; it does not merge as a `sorry`.
+A deferred gap may sit on a working branch but cannot merge. `main` has no admitted proofs, so
+a branch with a remaining `sorry` cannot merge (see
+[Review and Merge Readiness](../../CONTRIBUTING.md#review-and-merge-readiness)). Track an external
+result whose proof is out of reach in an issue. Do not merge it as a `sorry`.
 
 ## Paper-driven targets: fix the statement before proving it
 
@@ -149,8 +149,8 @@ the rating and placement decisions are what keep the result maintainable.
   - for each gap: its chosen home, whether it became a named lemma or stayed inline, and its status
     (proved / deferred),
   - for deferred gaps (rated 6+): why, and what the blocker is (missing API, deep math, design
-    decision) so the user can plan the follow-up, and whether any is a faithful external result
-    whose proof could be tracked as an issue,
+    decision), so the user can plan the follow-up. Also say whether any is a faithful external
+    result whose proof could be tracked as an issue,
   - any cleanups made in step 5.
 - Follow the Maintenance Rule in [`README.md`](README.md): tell the user how this skill could be
   improved — a recurring rating heuristic, a placement rule worth codifying, a proof tactic that

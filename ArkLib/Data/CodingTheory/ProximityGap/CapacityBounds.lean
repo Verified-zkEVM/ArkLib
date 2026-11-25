@@ -63,11 +63,11 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 
 ### Lower bounds near capacity
 
-- `exists_rs_epsCa_large_near_capacity_of_prime` — ABF26 Theorem 4.16 [KKH26 Prop 3]: for every
-  large `K` and every prime `p ≡ 1 (mod 2^K)` with `p ≥ n^{c+2}`, `n = 2^K`, a smooth RS code
-  over `ZMod p` of length `n` for which `ε_ca` at distance `1 - ρ - slack` is at least `n^c / p`,
-  with the `slack` pinned to `Θ(1/log₂ n)` via explicit uniform constants (Lean lacks a generic
-  `Θ` notation).
+- `exists_rs_epsCa_large_near_capacity_of_prime` — ABF26 Theorem 4.16 [KKH26 Prop 3]. Take any
+  large `K`, set `n = 2^K`, and take any prime `p ≡ 1 (mod 2^K)` with `p ≥ n^{c+2}`. Then there
+  is a smooth RS code over `ZMod p` of length `n` whose `ε_ca` at distance `1 - ρ - slack` is at
+  least `n^c / p`. Explicit uniform constants pin `slack` to `Θ(1/log₂ n)`, since Lean has no
+  generic `Θ` notation.
 - `exists_rs_epsCa_large_near_capacity_of_primes` — the source's family statement, with
   `|F| = Θ(n^β)`, given primes `p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]` for one `β > max(c+2, 12/5)`
   and infinitely many `K`. ArkLib does not prove that supply of primes: it is a prime number

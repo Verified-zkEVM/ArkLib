@@ -41,9 +41,9 @@ beyond `propext`, `Classical.choice` and `Quot.sound`. That covers `sorryAx` and
 trust: `native_decide`-style tactics mint per-declaration
 `…._native.<tactic>.ax_<number>_<number>` axioms, which the report records under their
 owning declaration. There is no allowlist. A result that still needs a `sorry` starts as an
-issue and merges once it is proved. Exit codes are a contract with CI — `1` is a taint
-verdict, anything else an infrastructure failure — which is why `main` traps uncaught
-exceptions into `2`.
+issue and merges once it is proved. CI relies on the exit codes: `1` means a
+taint verdict and anything else an infrastructure failure. That is why `main` turns uncaught
+exceptions into exit code `2`.
 
 `scripts/test-axiomsweep.sh` exercises all of this against the `AxiomSweepTestFixtures`
 library, whose fixtures carry synthetic taint of each shape this file reasons about.
