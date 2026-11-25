@@ -154,8 +154,8 @@ The interpolation multiplicity is `m`, the `(Y, Z)`-degree budget is `D`, and th
 budget is `M`.
 Set `B = ⌈(√ρ + η/2)n⌉ - 1` and assume `n(d + 1) < B²`.
 The real Johnson factor is `J = n(B - d - 1)/(B² - n(d + 1))`, without a floor.
-The bound is `#Ex ≤ J max q (n choose 2) + K`, where
-`K = D² + 4d²M²D³(n/(A - B))²`.
+The bound is `#Ex ≤ J max q (n choose 2) + N`, where
+`N = D² + 4d²M²D³(n/(A - B))²`.
 
 The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
@@ -183,7 +183,7 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (do
     hη1 hsurplus hJ
 
 /-- The affine error at loss one and threshold `A = ⌈(√ρ + η)n⌉` is at most
-`ENNReal.ofReal ((J max q (n choose 2) + K)/q²)`.
+`ENNReal.ofReal ((J max q (n choose 2) + N)/q²)`.
 
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, `ρ = d/n`, and
 `0 < η < 1 - √ρ`.
@@ -191,7 +191,7 @@ The interpolation multiplicity is `m`, the `(Y, Z)`-degree budget is `D`, and th
 budget is `M`.
 Set `B = ⌈(√ρ + η/2)n⌉ - 1` and assume `n(d + 1) < B²`.
 The real Johnson factor is `J = n(B - d - 1)/(B² - n(d + 1))`, without a floor, and
-`K = D² + 4d²M²D³(n/(A - B))²`.
+`N = D² + 4d²M²D³(n/(A - B))²`.
 
 The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
@@ -300,9 +300,9 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
     {d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
     (hn : 4 / ((d : ℝ) / Fintype.card ι) ≤ Fintype.card ι * η ^ 2) :
-    ∃ E : Finset (F × F), (E.card : ℝ) ≤ 4 * Fintype.card F / η +
+    ∃ Ex : Finset (F × F), (Ex.card : ℝ) ≤ 4 * Fintype.card F / η +
         2 ^ 14 * (Fintype.card ι : ℝ) ^ 2 / (((d : ℝ) / Fintype.card ι) ^ 3 * η ^ 10) ∧
-      ∀ c ∉ E, ∀ P, ¬ IsAffineExceptional domain f g d
+      ∀ c ∉ Ex, ∀ P, ¬ IsAffineExceptional domain f g d
         ⌈(√((d : ℝ) / Fintype.card ι) + η) * Fintype.card ι⌉₊ 1 c.1 c.2 P :=
   exists_affineExceptional_finset_card_map_le domain f g (.refl F) hd hdn hη hη1 hn
 
