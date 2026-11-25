@@ -314,19 +314,19 @@ Its conversion to an ordinary counterpart is the runner's sampler, and replaying
 recorded challenges without executing any draw.
 -/
 def publicCoinSampler {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    {m : Type u → Type u} [Monad m] :
+    {m : Type u → Type u} :
     (s : FreeM P PUnit.{u + 1}) →
     ((c : ChallengeNode l s) → m (challengeSpec l s c)) →
     PublicCoinCounterpart l m s (fun _ => PUnit.{u + 1})
-  | .pure _, _ => pure ⟨⟩
+  | .pure _, _ => ⟨⟩
   | .liftBind a next, draw =>
     match h : owner l a with
     | .sender => by
       simpa only [PublicCoinCounterpart, StrategyOver, contexts, publicCoinSyntax, h] using
-        (pure fun x => publicCoinSampler l (next (l.toFunB a x))
+        (fun x => publicCoinSampler l (next (l.toFunB a x))
             (fun c => draw ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩) :
-          m ((x : Move l a) → PublicCoinCounterpart l m (next (l.toFunB a x))
-            (fun _ => PUnit)))
+          (x : Move l a) → PublicCoinCounterpart l m (next (l.toFunB a x))
+            (fun _ => PUnit))
     | .receiver => by
       simpa only [PublicCoinCounterpart, StrategyOver, contexts, publicCoinSyntax, h] using
         ((draw ⟨.inl ⟨⟩, h⟩, fun x => publicCoinSampler l (next (l.toFunB a x))
@@ -345,7 +345,7 @@ theorem toCounterpart_publicCoinSampler {m : Type u → Type u} [Monad m] [Lawfu
     | message X =>
       refine Eq.trans (b := pure fun x => (publicCoinSampler plainSig (next x)
         (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)).toCounterpart)
-        (LawfulMonad.pure_bind _ _) ?_
+        rfl ?_
       refine Eq.trans ?_ (LawfulApplicative.map_pure _ _).symm
       congr 1
       funext x
@@ -372,7 +372,7 @@ theorem toCounterpart_publicCoinOracleSampler {m : Type u → Type u} [Monad m] 
     | message X =>
       refine Eq.trans (b := pure fun x => (publicCoinSampler oracleSig (next x)
         (fun c => draw ⟨.inr ⟨x, c.val⟩, c.property⟩)).toCounterpart)
-        (LawfulMonad.pure_bind _ _) ?_
+        rfl ?_
       refine Eq.trans ?_ (LawfulApplicative.map_pure _ _).symm
       congr 1
       funext x
@@ -389,39 +389,26 @@ theorem toCounterpart_publicCoinOracleSampler {m : Type u → Type u} [Monad m] 
     | oracle X I =>
       refine Eq.trans (b := pure fun _ => (publicCoinSampler oracleSig (next ⟨⟩)
         (fun c => draw ⟨.inr ⟨⟨⟩, c.val⟩, c.property⟩)).toCounterpart)
-        (LawfulMonad.pure_bind _ _) ?_
+        rfl ?_
       refine Eq.trans ?_ (LawfulApplicative.map_pure _ _).symm
       congr 1
       funext x
       exact ih ⟨⟩ _
 
-/-- Replay follows recorded plain challenges and executes no draw, even a failing one. -/
-theorem replay_publicCoinSampler {m : Type u → Type u} [Monad m] [LawfulMonad m]
+/-- Replay follows recorded plain challenges to the trivial output. It is pure, so it executes no
+draw. -/
+theorem replay_publicCoinSampler {m : Type u → Type u}
     (s : Protocol.{u}) (draw : (c : ChallengeNode plainSig s) → m (challengeSpec plainSig s c))
     (tr : Transcript plainSig s) :
-    (publicCoinSampler plainSig s draw).replay tr = pure ⟨⟩ := by
-  induction s using FreeM.rec with
-  | pure a => rfl
-  | liftBind a next ih =>
-    rcases tr with ⟨x, tr⟩
-    cases a with
-    | message X => exact (LawfulMonad.pure_bind _ _).trans (ih x _ tr)
-    | challenge C => exact ih ⟨⟩ _ tr
+    (publicCoinSampler plainSig s draw).replay tr = PUnit.unit := rfl
 
-/-- Replay follows recorded oracle-protocol challenges and executes no draw. -/
-theorem replay_publicCoinOracleSampler {m : Type u → Type u} [Monad m] [LawfulMonad m]
+/-- Replay follows recorded oracle-protocol challenges to the trivial output. It is pure, so it
+executes no draw. -/
+theorem replay_publicCoinOracleSampler {m : Type u → Type u}
     (s : OracleProtocol.{u})
     (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c))
     (tr : Transcript oracleSig s) :
-    (publicCoinSampler oracleSig s draw).replay tr = pure ⟨⟩ := by
-  induction s using FreeM.rec with
-  | pure a => rfl
-  | liftBind a next ih =>
-    rcases tr with ⟨x, tr⟩
-    cases a with
-    | message X => exact (LawfulMonad.pure_bind _ _).trans (ih x _ tr)
-    | challenge C => exact ih ⟨⟩ _ tr
-    | oracle X I => exact (LawfulMonad.pure_bind _ _).trans (ih ⟨⟩ _ tr)
+    (publicCoinSampler oracleSig s draw).replay tr = PUnit.unit := rfl
 
 /-- A plain verifier's only operation is its final decision.
 
