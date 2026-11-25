@@ -665,20 +665,19 @@ rewrites it to the view form with `rbrKnowledgeSoundnessOfNodes_iff`.
 | F7: path-dependent outputs throughout Agreement | equivalent | `Agrees`, all agreement consequences and every `*_cast` law reindex the statement and oracle families together. No constant-output replacement remains. |
 | 3A: statement-dependent knowledge witnesses and relations | equivalent | `Agrees.rbrKnowledgeSoundness_iff` and `rbrKnowledgeSoundness_cast` use the unchanged owner's argument shapes. Sumcheck passes `fun _ _ t w => (t, w) ∈ Spec.relationRound R n deg D (Fin.last n)`. |
 
-`ArkLibTest/Interaction/AgreementUniverses.lean` imports the public API with statement,
-input-index, input-query, output-query and oracle-node-query universes 2, 1, 3, 4 and 5. Its
-knowledge client uses statement-dependent input witnesses in `Type 6` and
-statement-and-transcript-dependent output witnesses in `Type 7`. Output families depend on the
-shape path. Further clients exercise general move, ambient-index and output-index universes.
+`ArkLibTest/Interaction/AgreementUniverses.lean` imports the public API. Its knowledge client
+uses statement-dependent input witnesses and statement-and-transcript-dependent output witnesses.
+Output families depend on the shape path. Since step 2 of the
+[universe policy](../interaction-rebuild/D2-ownership-and-universes.md#migration) migration, the
+security definitions and these clients take their data in `Type`.
 
 The remaining restrictions come from these parent interfaces:
 
 | New API | Parent interface | Required restriction |
 |---|---|---|
-| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Bundle-query indices and oracle-node queries are small because the full log is a small run output. Input data and output queries remain independent. |
+| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Bundle-query indices and oracle-node queries are small because the full log is a small run output. |
 | `Agrees.run_eq` and `run_cast` | `OracleVerifier.run` in `Interaction/OracleVerifier.lean` | Ambient and output indices share the move/response universe `u`. Output statements and oracle data are values in `Type u`; node and output queries remain independent. |
-| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightLine`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. Input data and queries remain independent. Pure RBR witness carriers retain the owner's independent universes. |
-| Legacy tree relation adapter `treeRelationProblem` | `Legacy.relProblem` in `Interaction/Legacy/Security.lean` | The parent convenience adapter fixes claims to `Type 0`; the tree adapter accepts larger claims. The underlying `Problem` and classical security interfaces already accept larger claims. |
+| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightLine`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. The security definitions take all their data in `Type`. |
 
 ## Production declaration inventory
 
