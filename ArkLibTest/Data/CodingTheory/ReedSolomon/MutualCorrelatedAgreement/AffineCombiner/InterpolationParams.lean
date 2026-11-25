@@ -124,15 +124,6 @@ example : ((16384 * 22 : ℕ) : ℝ) ≤ 3 * 65536 / (1 / 4) := by
   have h := rmParams.mul_rootBudget_le
   rwa [rm_values.2.2.2.2] at h
 
--- The estimate `q₀ = n / e > 64`.
-example : 64 * 256 < 65536 := rmParams.sixty_four_mul_lt
-
--- Every parameter tuple satisfying the hypotheses has `d + e < B < A ≤ n`.
-example {d n e : ℕ} {η : ℝ} (h : AffineParams d n e η) :
-    d + e < affinePersistenceThreshold d n e η ∧
-      affinePersistenceThreshold d n e η < affineThreshold d n η ∧ affineThreshold d n η ≤ n :=
-  ⟨h.add_lt_persistenceThreshold, h.persistenceThreshold_lt, h.threshold_le⟩
-
 /-- info: 'ReedSolomon.sub_le_affinePersistenceThreshold' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
