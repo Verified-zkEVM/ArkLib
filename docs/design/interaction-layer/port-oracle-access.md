@@ -564,7 +564,7 @@ without them. No added local or global `attribute [...]` transparency command an
 [p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L355
 [run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
 [oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L58
-[bundle-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L136
+[bundle-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L135
 [logged-runner]: ../../../ArkLib/Interaction/Core/Security/Knowledge.lean#L338
 
 [universes]:
