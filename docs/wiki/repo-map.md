@@ -64,12 +64,6 @@ home_page/            site assets and assembled website root
 - `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
   structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
   role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
-- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full interaction-layer sum-check tree,
-  restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
-  in ordinary strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
-  `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
-  `ProtocolCompleteness.lean` defines the honest strategy and proves support-level and
-  probability-one completeness.
 - `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready prover strategies.
   `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
   input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
@@ -86,7 +80,7 @@ home_page/            site assets and assembled website root
   public-coin protocols with bound `(Q + rounds.length) * error`, with variants for oracle outputs
   (`StateRestorationOracle`), pre-sampled private coins (`StateRestorationCoins`) and per-round
   errors (`StateRestorationBudget`). The measured forms are described under measured extraction
-  below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the interaction-layer Sumcheck client.
+  below.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
   `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy

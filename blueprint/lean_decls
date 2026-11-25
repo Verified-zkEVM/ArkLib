@@ -360,8 +360,8 @@ Spartan.sum_challengeError
 Spartan.totalError
 Statement.Lens
 Statement.Lens.IsSound
-Sumcheck.Interaction.Native.execute_perfectCompleteness
-Sumcheck.Interaction.Native.execute_soundness
+Sumcheck.Core.intervalVerifier_perfectCompleteness
+Sumcheck.Core.intervalVerifier_soundness
 Sumcheck.Spec.SingleRound.Simple.oracleReduction
 Sumcheck.Spec.SingleRound.Simple.oracleReduction_perfectCompleteness
 Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness

@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
+import ArkLib.Interaction.Core.Oracle.Cost
 import ArkLibTest.Interaction.Core.Oracle.HiddenSendRun
 import ArkLibTest.Interaction.Core.Oracle.RoutedAccess
 import ArkLibTest.Interaction.Core.Oracle.HiddenBitAccess
@@ -186,13 +187,15 @@ theorem suffix_budget (p : Path bitSecond) (v : View bitSecond p) :
 theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
     WorstCaseCostBound (routedSuffix p v) (bitRawCost p) 5 := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
-  refine (suffix_budget _ _).simulateQ _ fun q => ?_
-  rcases q with request | (⟨i, q⟩ | ⟨i, q⟩)
-  · exact worstCaseCostBound_query (.inl request) (bitRawCost _)
+  refine OracleMap.withAmbient_worstCaseCost
+    (In := pathBundle bits bitCombined (combinedPath guess)) (Out := secondBundle guess)
+    (OracleVerifier.suffixRoute bitPrefix () (combinedPath guess) v)
+    (suffix_budget _ _) (fun _ => le_rfl) ?_
+  rintro (⟨i, q⟩ | ⟨i, q⟩)
   · cases i
     cases q
-    exact (routeSuffix_export guess v).symm ▸
-      worstCaseCostBound_query (.inr (.inl ⟨(), ()⟩)) (bitRawCost (combinedPath guess))
+    exact worstCaseCostBound_query
+      (spec := (pathBundle bits bitCombined (combinedPath guess)).spec) (.inl ⟨(), ()⟩) _
   · exact i.elim
 
 -- RuntimeQueryBounds 11: the runtime setup samples the hidden bit once.

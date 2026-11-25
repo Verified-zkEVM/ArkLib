@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
+import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -26,7 +26,7 @@ namespace Sumcheck.LegacyVerifierTest
 
 open Polynomial OracleComp OracleSpec
 open Spec.SingleRound
-open Interaction.SingleRound (legacyTranscript)
+open Sumcheck.Core (simpleLegacyTranscript)
 
 noncomputable section
 
@@ -53,14 +53,14 @@ theorem message_sum_passes :
 /-- Direct execution returns the sent evaluation and preserves the zero input oracle. -/
 theorem verifier_returns_sent_target (r : F) :
     ((Simple.verifier F 0 domain []ₒ).verify
-      (1, fun _ ↦ inputPoly) (legacyTranscript F 0 sentPoly r)).run =
+      (1, fun _ ↦ inputPoly) (simpleLegacyTranscript F 0 sentPoly r)).run =
       pure (some ((1, r), fun _ : Unit ↦ inputPoly)) := by
   simp [Simple.verifier, sentPoly]
 
 /-- Oracle execution gives the same result for every field challenge. -/
 theorem oracleVerifier_returns_sent_target (r : F) :
     ((Simple.oracleVerifier F 0 domain []ₒ).toVerifier.verify
-      (1, fun _ ↦ inputPoly) (legacyTranscript F 0 sentPoly r)).run =
+      (1, fun _ ↦ inputPoly) (simpleLegacyTranscript F 0 sentPoly r)).run =
       pure (some ((1, r), fun _ : Unit ↦ inputPoly)) := by
   rw [Simple.oracleVerifier_eq_verifier]
   exact verifier_returns_sent_target r
@@ -69,7 +69,7 @@ theorem oracleVerifier_returns_sent_target (r : F) :
 theorem actual_execution_output_relation_false (r : F) :
     (Option.map (fun out ↦ (out, ()) ∈ Simple.outputRelation F 0)) <$>
       ((Simple.oracleVerifier F 0 domain []ₒ).toVerifier.verify
-        (1, fun _ ↦ inputPoly) (legacyTranscript F 0 sentPoly r)).run =
+        (1, fun _ ↦ inputPoly) (simpleLegacyTranscript F 0 sentPoly r)).run =
       pure (some False) := by
   rw [oracleVerifier_returns_sent_target]
   simp [Simple.outputRelation, inputPoly, show (0 : F) ≠ 1 by decide]
@@ -77,14 +77,14 @@ theorem actual_execution_output_relation_false (r : F) :
 /-- A failed message sum still causes rejection. -/
 theorem inconsistent_sum_rejected (r : F) :
     ((Simple.oracleVerifier F 0 domain []ₒ).toVerifier.verify
-      (0, fun _ ↦ inputPoly) (legacyTranscript F 0 sentPoly r)).run = pure none := by
+      (0, fun _ ↦ inputPoly) (simpleLegacyTranscript F 0 sentPoly r)).run = pure none := by
   rw [Simple.oracleVerifier_eq_verifier]
   simp [Simple.verifier, sentPoly, domain, show (1 : F) ≠ 0 by decide]
 
 /-- The honest zero input and message still return the valid zero target. -/
 theorem honest_zero_accepted (r : F) :
     ((Simple.oracleVerifier F 0 domain []ₒ).toVerifier.verify
-      (0, fun _ ↦ inputPoly) (legacyTranscript F 0 inputPoly r)).run =
+      (0, fun _ ↦ inputPoly) (simpleLegacyTranscript F 0 inputPoly r)).run =
       pure (some ((0, r), fun _ : Unit ↦ inputPoly)) := by
   rw [Simple.oracleVerifier_eq_verifier]
   simp [Simple.verifier, inputPoly]
@@ -100,7 +100,7 @@ private def linearSentPoly : F⦃≤ 1⦄[X] :=
 /-- A nonconstant message must be evaluated at the supplied challenge. -/
 theorem verifier_returns_linear_sent_target (r : F) :
     ((Simple.verifier F 1 domain []ₒ).verify
-      (1, fun _ ↦ linearInputPoly) (legacyTranscript F 1 linearSentPoly r)).run =
+      (1, fun _ ↦ linearInputPoly) (simpleLegacyTranscript F 1 linearSentPoly r)).run =
       pure (some ((r + 1, r), fun _ : Unit ↦ linearInputPoly)) := by
   have hdomain (i : Fin 1) : domain i = 0 := rfl
   simp [Simple.verifier, linearSentPoly, hdomain]
@@ -108,7 +108,7 @@ theorem verifier_returns_linear_sent_target (r : F) :
 /-- Oracle routing preserves both the nonconstant message and its evaluation point. -/
 theorem oracleVerifier_returns_linear_sent_target (r : F) :
     ((Simple.oracleVerifier F 1 domain []ₒ).toVerifier.verify
-      (1, fun _ ↦ linearInputPoly) (legacyTranscript F 1 linearSentPoly r)).run =
+      (1, fun _ ↦ linearInputPoly) (simpleLegacyTranscript F 1 linearSentPoly r)).run =
       pure (some ((r + 1, r), fun _ : Unit ↦ linearInputPoly)) := by
   rw [Simple.oracleVerifier_eq_verifier]
   exact verifier_returns_linear_sent_target r

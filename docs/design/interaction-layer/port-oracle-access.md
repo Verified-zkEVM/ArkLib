@@ -230,10 +230,9 @@ compares the exported oracle answer with the accepted target. The half bound hol
 guess because of that prover's behavior. It is not a soundness premise, and these fixture bounds
 are not a general resource contract.
 
-[routed_suffix_budget][c-suffix-routed] transfers the suffix bound through the route by hand,
-because PR #1476 is not on the base yet. Once it merges, the proof will use
-`OracleMap.withAmbient_worstCaseCost`, and the checks of the actual substitution and the per-query
-prices stay.
+[routed_suffix_budget][c-suffix-routed] uses `OracleMap.withAmbient_worstCaseCost` to transfer
+the suffix decision's bound through the route. Each routed bundle query costs at most the
+corresponding source query's charge.
 
 ## AccessExample: 18 assertions
 
@@ -531,18 +530,18 @@ without them. No added local or global `attribute [...]` transparency command an
 [q-prefix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L222
 [q-suffix-payload]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L227
 [q-concrete-log]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L250
-[c-route]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L48
-[c-program]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L69
-[c-routed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L78
-[c-suffix]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L173
-[c-suffix-routed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L186
-[c-setup]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L200
-[c-history]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L206
-[c-import]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L220
-[c-joint]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L230
-[c-informed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L261
-[c-lower]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L116
-[c-input-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L166
+[c-route]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L49
+[c-program]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L70
+[c-routed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L79
+[c-suffix]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L174
+[c-suffix-routed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L187
+[c-setup]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L203
+[c-history]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L209
+[c-import]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L223
+[c-joint]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L233
+[c-informed]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L264
+[c-lower]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L117
+[c-input-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L167
 [r-export]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L45
 [r-decide]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L60
 [r-access]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L84
@@ -556,12 +555,12 @@ without them. No added local or global `attribute [...]` transparency command an
 [r-map]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L51
 [r-pre]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L54
 [r-output]: ../../../ArkLibTest/Interaction/Core/Oracle/HiddenBitAccess.lean#L70
-[p-close]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L229
-[p-guess-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L783
-[p-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L793
-[p-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L816
-[p-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L827
-[p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L355
+[p-close]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L239
+[p-guess-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L774
+[p-informed-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L784
+[p-guess-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L807
+[p-informed-split]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L818
+[p-general-split]: ../../../ArkLibTest/Interaction/Core/Oracle/Routing.lean#L357
 [run-append]: ../../../ArkLib/Interaction/Core/Oracle/Routing.lean#L123
 [oracle-signature]: ../../../ArkLib/Interaction/Core/Signature.lean#L58
 [bundle-sum]: ../../../ArkLib/Interaction/Core/OracleVerifier.lean#L135
@@ -587,17 +586,17 @@ without them. No added local or global `attribute [...]` transparency command an
 [laws-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean
 [step-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
 [sent-api]: ../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean
-[p-step-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L954
-[p-prefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L974
-[p-setup-step]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1000
-[q-join-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1102
-[q-decision-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1107
-[q-join-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1094
-[q-decision-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1097
-[q-join-node]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1127
-[q-join-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1133
-[q-decision-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1144
-[q-step-source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1155
+[p-step-log]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L945
+[p-prefixes]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L965
+[p-setup-step]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L991
+[q-join-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1092
+[q-decision-before]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1097
+[q-join-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1084
+[q-decision-member]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1087
+[q-join-node]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1117
+[q-join-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1123
+[q-decision-sent]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1134
+[q-step-source]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1145
 [d-node-run]: ../../../ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L1213
 
 [d-node]: ../../../ArkLibTest/Interaction/Core/Oracle/ProtocolTree/PositionsAndOwners.lean#L33
@@ -606,4 +605,4 @@ without them. No added local or global `attribute [...]` transparency command an
 [q-raw-available]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L277
 [q-decision-queries]: ../../../ArkLibTest/Interaction/Core/Oracle/RoutedAccess.lean#L263
 
-[q-available-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L83
+[q-available-cost]: ../../../ArkLibTest/Interaction/Core/Oracle/QueryCost.lean#L84

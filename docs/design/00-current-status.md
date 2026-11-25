@@ -109,9 +109,9 @@ temporary adapter with an upstream issue and a deletion test.
 
 ### ArkLib
 
-The interaction layer lives under `ArkLib/Interaction/` and
-`ArkLib/ProofSystem/Sumcheck/Interaction/`, with acceptance clients under `ArkLibTest/Interaction/`
-and `ArkLibTest/ProofSystem/Sumcheck/`.
+The interaction layer lives under `ArkLib/Interaction/`, with acceptance clients under
+`ArkLibTest/Interaction/`. Its Sumcheck client lives under `ArkLib/ProofSystem/Sumcheck/Core/`, with
+acceptance clients under `ArkLibTest/ProofSystem/Sumcheck/Core/`.
 Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md).
 
 | Area | Modules | Implementation |
@@ -139,44 +139,35 @@ Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md
 | Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
 | Fixed-prover, reachable, and averaged bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
 
-Sumcheck on the interaction layer:
+Sumcheck on the interaction layer is `Sumcheck.Core`. The frozen Sumcheck interaction layer under
+`ArkLib/ProofSystem/Sumcheck/Interaction/` has been deleted; its last version is at commit
+[`7cd7828303`](https://github.com/Verified-zkEVM/ArkLib/tree/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/).
+[`interaction-layer/sumcheck.md`](interaction-layer/sumcheck.md) lists the core modules, gives the
+exact scope of each theorem and maps every deleted declaration to its core counterpart.
 
 | Result | Evidence | Landed in |
 |---|---|---|
-| One-round honest completeness through closing | `SingleRound`, `Closing` | #872 |
-| Legacy correspondence | `legacy_input_iff`, `legacy_output_iff`, `legacy_verifier_correspondence` | #874, #1244 |
-| Round relations via multivariate projection | `Projection`, `ProjectionTransport` | #879 |
-| One-round reduction soundness, error `deg` over the field size | `executeCommitted_soundness`, `executeRandomCommitment_soundness` and measure forms | #881 |
-| Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
-| Arbitrary consecutive rounds, honest completeness | `executeRoundsSampled_perfectCompleteness`, `executeRounds_uniform_perfectCompleteness` and measure forms | #892 |
-| Actual multivariate round soundness | `MultivariateRound.executeCore_sampled_soundness` in `MultivariateSoundness` | #1214 |
-| Full-protocol soundness | `Native.execute_soundness` in `ProtocolSoundness` | #1214 |
-| Honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | #1214 |
-| Computable round messages and verifier | `Impl/Representation`, `Interaction/Computable` | #1242 |
-| Soundness for computable-message strategies | `Computable.execute_soundness` in `ComputableSoundness` | #1242 |
+| Protocol, compatibility verifier and direct honest completeness | `protocol`, `verifier`, `perfectCompleteness` in `Protocol`, `Execution`, `Completeness` | #1474 |
+| Full-run soundness of the indexed verifier, error `n * deg` over the size of `R` | `indexedVerifier_soundness` in `Indexed`; `indexedVerifier_run_soundness` and its list and injective forms in `Soundness` | #1484 |
+| Round-by-round soundness, error `deg` over the size of `R` at every challenge | `indexedVerifier_rbrSoundness` in `Indexed` | #1484 |
+| One-round soundness for a committed or randomized message | `indexedVerifier_committed_soundness`, `indexedVerifier_randomized_soundness` and measure forms in `Soundness` | #1484 |
+| Equivalence with the embedded legacy verifier, and transfer of legacy security | `run_eq_legacy`, `verifier_agrees` in `LegacyEquivalence`; `LegacySoundness`, `Knowledge`, `RoundByRound` | #1484 |
+| Single-round legacy correspondence | `simpleLegacyVerifier_correspondence` in `LegacyEquivalence` | #1484 |
+| Interval verifiers: completeness for every bounded interval, soundness for suffixes | `intervalVerifier_perfectCompleteness` in `IntervalCompleteness`; `intervalVerifier_soundness` in `IntervalSoundness`; `intervalRoundExecute_soundness` in `IntervalRoundSoundness` | #1488 |
+| Computable instance at CompPoly messages and inputs | `Computable.verifier`, `Computable.honestProver`, `Computable.perfectCompleteness`, `Computable.interval_soundness` in `Computable` | #1487 |
 | Computable honest messages and original oracle | `Impl/Projection` | #1243 |
-| Completeness for the computable honest prover | `Computable.execute_support_completeness`, `Computable.execute_perfectCompleteness` in `ComputableCompleteness` | #1243 |
-| Round-by-round soundness, error `count * deg` over the field size | `Native.roundByRound_soundness` in `RoundByRound` | #1261 |
 
-`Sumcheck/Interaction/Protocol` defines one oracle interaction tree. Each round receives a
-univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
-The prover is the ordinary `Interaction.Oracle.Prover.Strategy`: its continuations retain private
-memory and may perform effects after receiving the challenge. There is no separate private-state
-kernel in the security statement. `Native.execute` passes those strategies directly to
-`executeStrategiesCore`, then closes the actual run. A prover strategy is not repackaged as a
-reduction witness. The reduction entry point `executeCore` performs prover setup and delegates to
-the same strategy entry point. Both paths use `executeStrategies` and the same paired resources.
-
-The verifier queries the sent polynomial for its sum check and next target. It exports the
-original polynomial oracle through a virtual view, retaining the accumulated access to earlier
-messages. At the last leaf, the output relation says that this retained oracle evaluated at the
-full challenge vector equals the final target. This is a relation on the output, not a final
-verifier query. From a false initial claim over an oracle realized by a polynomial of individual
-degree at most `deg`, soundness bounds the probability of a non-rejected true output by
-`count * deg / |F|` for fresh uniform challenges. The honest strategy sends the projected
-round polynomials. From a true initial claim, every supported execution returns a true output;
-probabilistic completeness is one for any `ProbComp` challenge, whose oracle specification is
-normalized. Support preservation alone makes no assertion about total successful mass.
+`indexedVerifier` is a passive verifier over an arbitrary finite indexed domain. Each round sends
+a degree-bounded polynomial as an oracle message and draws a challenge. The prover is an ordinary
+strategy whose continuations keep private memory and may perform effects after each challenge.
+The verifier queries each sent polynomial for its sum check and next target, and its output oracle
+is the original input polynomial. The output relation says that this polynomial, evaluated at the
+full challenge vector, equals the final target; it is a relation on the output, not a final
+verifier query. From a false input claim, soundness bounds by `n * (deg / |R|)` the probability
+that the run returns a claim satisfying that relation, for every prover and fresh uniform
+challenges, over a finite commutative semiring with `IsDomain`. Sumcheck has a `Unit` witness,
+since its polynomial is an input oracle. Its knowledge-soundness theorems in `Knowledge` and
+`RoundByRound` are transfers from the legacy layer.
 
 `Sumcheck.Core` now owns a protocol and verifier generic in the message carrier and its
 evaluation operation (`protocolOn`, `verifierOn`). The existing polynomial names remain their
@@ -211,18 +202,9 @@ compiled client evaluates the retained CompPoly input directly.
 This is a computable finite-enumeration prover; it makes no efficiency claim. Optimized multilinear
 algorithms remain separate work.
 
-`Native.roundByRound_soundness` re-derives the full-protocol bound `count * deg / |F|` from the
-generic round-by-round theorem described [below](#interaction-layer-security). Its scalar state
-reconstructs the current claim from each concrete prefix; a failed sum check produces
-public abort, and a successful one uses a fresh challenge. The theorem keeps the arbitrary
-effectful prover and allows the ambient interpreter to lose mass. Sumcheck has a
-`Unit` witness, since its polynomial is an input oracle, so it has no separate
-knowledge-soundness theorem.
-
-`Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
-reductions across explicit interfaces. Those execution results do not by themselves establish
-soundness for arbitrary strategies on a composed interaction tree. The Sumcheck theorem
-follows the actual full-tree execution directly.
+`Oracle/Composition` executes sequences of separate reductions across explicit interfaces. Those
+execution results do not by themselves establish soundness for arbitrary strategies on a composed
+interaction tree.
 
 `Interaction/CompositionSoundness` proves composition for arbitrary strategies on a plain
 appended tree. Its exact execution equation extracts the actual suffix strategy and preserves
@@ -293,13 +275,11 @@ A supported probability-zero branch violates the pointwise suffix bound, exercis
 almost-everywhere premise. True midpoint claims need not satisfy the suffix assumptions; they
 have already been charged.
 
-`Sumcheck/Interaction/Composition` proves that the existing Sumcheck execution equals its
-first round followed by the remaining rounds through `appendExported`. It uses the same whole
-prover, including the actual continuation returned after a challenge or abort. Honest full-protocol
-completeness now follows through this execution equation, with its exported statements unchanged.
-The soundness proof also applies the generic oracle composition theorem at each round, recovering
-`count * deg / |F|` under the existing hypotheses. The previous separate induction is retired.
-The final original-polynomial equality remains an output oracle relation, with no added query.
+The deleted Sumcheck interaction layer applied this composition theorem in
+[`Sumcheck/Interaction/Composition`](https://github.com/Verified-zkEVM/ArkLib/blob/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean).
+`Sumcheck.Core` does not use it. `FoldComposition` and `BehaviorComposition` prove append
+equations for its folds and public intervals, and its soundness proofs go through round-by-round
+soundness.
 
 The soundness theorem uses total deterministic source handlers and lawful probability semantics
 for the ambient computation. `Oracle/RuntimeSoundness` proves composition
@@ -395,7 +375,8 @@ the probability that the actual interpreted execution ends in a successful outpu
 the local errors along the challenge schedule; `executeStrategies_soundness_uniform` gives
 `count * error`. The prover is an arbitrary strategy. The ambient interpreter uses lawful
 subprobability semantics, so a prover that fails to return only lowers the success mass.
-Sumcheck instantiates this theorem (`Native.roundByRound_soundness`, above).
+`Sumcheck.Core` does not use this theorem. `indexedVerifier_soundness` applies the core theorem
+`OracleVerifier.soundness_of_rbrSoundness_uniform` instead.
 
 **Knowledge certificates.** A `RoundExtractor` names, at every authored node, a backward map from a
 witness of the knowledge state after a move or oracle message to a witness of the state before it.
@@ -478,8 +459,9 @@ ring switching, Spartan, Plonk, Hachi and others) use this layer; their status i
 - **Retired.** The legacy state-restoration definitions (#1409) and the duplex-sponge
   Fiat–Shamir skeleton (#1368) were removed; state restoration now exists only in the interaction layer.
 
-These legacy results do not relate the legacy-layer and interaction-layer security games. The single-round
-Sumcheck correspondence above identifies verifier outputs, not security notions.
+These legacy results do not relate the legacy-layer and interaction-layer security games. For
+Sumcheck, `Sumcheck.Core.LegacyEquivalence` relates the compatibility verifier to the embedded legacy
+verifier and transfers security notions along that equivalence.
 
 The preserved `archive/oracle-reduction-v2-pre-split` branch contains the earlier interaction-layer
 prototype and protocol ports (FRI, Spartan, Fiat–Shamir, BCS, boundary transport, security
