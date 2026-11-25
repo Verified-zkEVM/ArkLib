@@ -5,19 +5,19 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Completeness
-public import ArkLib.ProofSystem.Sumcheck.Core.DomainEquivalence
-public import ArkLib.ProofSystem.Sumcheck.Core.LegacySoundness
-public import ArkLib.ProofSystem.Sumcheck.Core.ComputableSoundness
+public import ArkLib.ProofSystem.Sumcheck.Completeness
+public import ArkLib.ProofSystem.Sumcheck.DomainEquivalence
+public import ArkLib.ProofSystem.Sumcheck.LegacySoundness
+public import ArkLib.ProofSystem.Sumcheck.ComputableSoundness
 public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 
 /-!
 # Computable Sumcheck
 
 The interaction-layer Sumcheck at an executable message carrier, with its security transported
-from `Sumcheck.Core`.
+from the Sumcheck core.
 
-The protocol, the verifier and the honest prover of `Sumcheck.Core` are generic in the message
+The protocol, the verifier and the honest prover of the Sumcheck core are generic in the message
 carrier `M` and its evaluation `eval : M → R → R` (`protocolOn`, `verifierOn`). This file
 instantiates them at the CompPoly coefficient arrays `Sumcheck.Impl.Representation.Message`,
 whose evaluation queries are answered by Horner evaluation, and at CompPoly multivariate inputs.
@@ -32,7 +32,7 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
   through `f : M → R⦃≤ deg⦄[X]`. `Computable.interpretProver` is this interpretation through
   `toMessage`; it is used only in proofs.
 * `Computable.interpretProver_honestProver` identifies the interpreted computable honest prover
-  with `Sumcheck.Core.honestProver` on the interpreted input.
+  with `Sumcheck.honestProver` on the interpreted input.
 * `Computable.intervalVerifier` runs the rounds `start, ..., start + count - 1` on CompPoly
   messages and inputs. Completeness holds for every `start + count ≤ n`
   (`interval_perfectCompleteness`), under a joint stateful handler for the ambient and challenge
@@ -67,8 +67,8 @@ whose evaluation queries are answered by Horner evaluation, and at CompPoly mult
 
 universe uI wI wI'
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec MeasureTheory
 open scoped ENNReal NNReal
 
@@ -490,24 +490,24 @@ section Interpret
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n : ℕ}
 
 /-- Read a computable prover output as the output of the interaction-layer honest prover. -/
-def honestOutputMap (o : HonestOutput R deg n) : Core.HonestOutput R deg n :=
+def honestOutputMap (o : HonestOutput R deg n) : Sumcheck.HonestOutput R deg n :=
   ((o.1.1, interpretInput R deg n o.1.2), o.2)
 
-/-- Read a prover of the computable protocol as a prover of `Sumcheck.Core.protocol`: every
+/-- Read a prover of the computable protocol as a prover of `Sumcheck.protocol`: every
 message is read through `toMessage`, every effect is kept, and the output is mapped by `g`. It
 is used only in proofs. -/
 noncomputable def interpretProver {m : Type → Type} [Functor m] {k : ℕ}
     {Out : Transcript oracleSig (protocol R deg k) → Type}
-    {Out' : Transcript oracleSig (Core.protocol R deg k) → Type}
+    {Out' : Transcript oracleSig (Sumcheck.protocol R deg k) → Type}
     (g : ∀ tr, Out tr → Out' (polyTranscript (toMessage R deg) k tr))
     (P : Focal oracleSig m (protocol R deg k) Out) :
-    Focal oracleSig m (Core.protocol R deg k) Out' :=
+    Focal oracleSig m (Sumcheck.protocol R deg k) Out' :=
   Interpreted.transportFocal (toMessage R deg) k g P
 
 variable [Nontrivial R] {d : ℕ} (D : Fin d ↪ R) (x : Input R deg n)
 
 /-- The interaction-layer state of a computable state, with the interpreted input polynomial. -/
-def liftState {k : ℕ} (st : RoundState R n k) : Core.RoundState R deg n k :=
+def liftState {k : ℕ} (st : RoundState R n k) : Sumcheck.RoundState R deg n k :=
   ⟨st.round, st.round_add, st.statement, toOracleStatement x.val x.property⟩
 
 /-- Interpreting the computable honest prover gives the interaction-layer fold of honest rounds
@@ -515,20 +515,22 @@ on the interpreted input. -/
 theorem interpretProver_honestFrom {m : Type → Type} [Monad m] [LawfulMonad m] (k : ℕ)
     (st : RoundState R n k) :
     interpretProver (fun _ => honestOutputMap) (honestFrom (m := m) D x k st) =
-      foldRounds (Core.honestMessage D) (fun k st _ => Core.nextState (Core.honestMessage D) k st)
-        Core.finishState k (liftState x st) := by
+      foldRounds (Sumcheck.honestMessage D)
+        (fun k st _ => Sumcheck.nextState (Sumcheck.honestMessage D) k st)
+        Sumcheck.finishState k (liftState x st) := by
   refine (Interpreted.transportFocal_foldRounds _ _ _ _ _ k st).trans
     (foldRounds_map (fun k st => toMessage R deg (honestMessage D x k st))
       (fun k st _ => nextState k st (honestMessage D x k st))
-      (fun st => honestOutputMap (finishState x st)) (Core.honestMessage D)
-      (fun k st _ => Core.nextState (Core.honestMessage D) k st) Core.finishState
+      (fun st => honestOutputMap (finishState x st)) (Sumcheck.honestMessage D)
+      (fun k st _ => Sumcheck.nextState (Sumcheck.honestMessage D) k st) Sumcheck.finishState
       (fun _ st => liftState x st) (fun k st => ?_) (fun k st chal => ?_) (fun st => rfl) k
       st).symm
   · exact (Sumcheck.Impl.Computable.projectedMessage_toMessage D _ _ x.val x.property).symm
-  · change (⟨_, _, ⟨(Core.honestMessage D k (liftState x st)).val.eval chal, _⟩, _⟩ :
-        Core.RoundState R deg n k) = ⟨_, _, ⟨evaluate R deg (honestMessage D x k st) chal, _⟩, _⟩
+  · change (⟨_, _, ⟨(Sumcheck.honestMessage D k (liftState x st)).val.eval chal, _⟩, _⟩ :
+        Sumcheck.RoundState R deg n k) =
+          ⟨_, _, ⟨evaluate R deg (honestMessage D x k st) chal, _⟩, _⟩
     have h : evaluate R deg (honestMessage D x k st) chal =
-        (Core.honestMessage D k (liftState x st)).val.eval chal :=
+        (Sumcheck.honestMessage D k (liftState x st)).val.eval chal :=
       Sumcheck.Impl.Computable.projectedMessage_evaluate D _ _ x.val x.property chal
     simp only [h]
     rfl
@@ -538,7 +540,7 @@ interpreted input. -/
 theorem interpretProver_honestProver {m : Type → Type} [Monad m] [LawfulMonad m]
     (stmt : Spec.StatementRound R n 0) (data : ∀ _ : Unit, Input R deg n) :
     interpretProver (fun _ => honestOutputMap) (honestProver (m := m) D stmt data) =
-      Core.honestProver D stmt (interpretInput R deg n data) :=
+      Sumcheck.honestProver D stmt (interpretInput R deg n data) :=
   interpretProver_honestFrom D (data ()) n ⟨0, Nat.zero_add n, stmt⟩
 
 end Interpret
@@ -584,31 +586,31 @@ theorem support_completeness (stmt : Spec.StatementRound R n 0)
   intro obs hobs
   have hrun := run_eq_interpret D (ambient := ambient) (inputFamily R deg n)
     (evaluate_eq R deg) (Spec.polynomialFamily R n deg) (interpretInput R deg n) stmt data
-    (Out' := fun _ => Core.HonestOutput R deg n) (fun _ => honestOutputMap)
+    (Out' := fun _ => Sumcheck.HonestOutput R deg n) (fun _ => honestOutputMap)
     (honestProver D stmt data)
   have hp := interpretProver_honestProver (m := OracleComp ambient) D stmt data
   change Interpreted.transportFocal (toMessage R deg) n
-    (Out' := fun _ => Core.HonestOutput R deg n)
+    (Out' := fun _ => Sumcheck.HonestOutput R deg n)
     (fun _ => honestOutputMap)
     (honestProver D stmt data) = _ at hp
   rw [hp] at hrun
-  change _ = (Core.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
-    (Core.honestProver D stmt (interpretInput R deg n data)) at hrun
+  change _ = (Sumcheck.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
+    (Sumcheck.honestProver D stmt (interpretInput R deg n data)) at hrun
   have hm : mapOutcome (toMessage R deg) n (fun _ => honestOutputMap)
       (interpretInput R deg n) obs ∈ support
-        ((Core.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
-          (Core.honestProver D stmt (interpretInput R deg n data))) := by
+        ((Sumcheck.verifier R deg n D ambient).run stmt (interpretInput R deg n data)
+          (Sumcheck.honestProver D stmt (interpretInput R deg n data))) := by
     rw [← hrun, support_renameQueries, _root_.support_map]
     exact ⟨obs, hobs, rfl⟩
-  rw [Core.run_verifier_honestProver, _root_.support_map] at hm
+  rw [Sumcheck.run_verifier_honestProver, _root_.support_map] at hm
   obtain ⟨chals, -, heq⟩ := hm
-  have hgood : (Core.judgement R deg n D).honest
+  have hgood : (Sumcheck.judgement R deg n D).honest
       (mapOutcome (toMessage R deg) n (fun _ => honestOutputMap)
         (interpretInput R deg n) obs) := by
     rw [← heq]
-    obtain ⟨hv, hout, hrel⟩ := Core.honest_full_interval D ambient stmt
+    obtain ⟨hv, hout, hrel⟩ := Sumcheck.honest_full_interval D ambient stmt
       (interpretInput R deg n data) hx chals
-    refine ⟨(Core.honestOutput D stmt (interpretInput R deg n data) chals).1, ?_, rfl, hrel⟩
+    refine ⟨(Sumcheck.honestOutput D stmt (interpretInput R deg n data) chals).1, ?_, rfl, hrel⟩
     change Option.map _ (legacyVerdict R deg n D ambient stmt _) = _
     rw [hv, Option.map_some]
     exact congrArg some (Prod.ext rfl hout.symm)
@@ -682,14 +684,14 @@ theorem interval_run_eq_interpret [BEq R] [LawfulBEq R]
     (start count : ℕ) (bound : start + count ≤ n)
     (stmt : RoundStatement R n ⟨start, by omega⟩) (data : ∀ _ : Unit, Input R deg n)
     {Out : Transcript oracleSig (protocol R deg count) → Type}
-    {Out' : Transcript oracleSig (Core.protocol R deg count) → Type}
+    {Out' : Transcript oracleSig (Sumcheck.protocol R deg count) → Type}
     (g : ∀ tr, Out tr → Out' (polyTranscript (toMessage R deg) count tr))
     (P : Prover oracleSig ambient (protocol R deg count) Out) :
     simulateQ (renameQueries (M' := R⦃≤ deg⦄[X])
       (eval' := fun p x => p.val.eval x) ambient count)
       (mapOutcome (toMessage R deg) count g (interpretInput R deg n) <$>
         (intervalVerifier D ambient start count bound).run stmt data P) =
-      (Core.intervalVerifier R deg n D ambient start count bound).run stmt
+      (Sumcheck.intervalVerifier R deg n D ambient start count bound).run stmt
         (interpretInput R deg n data) (Interpreted.transportFocal (toMessage R deg) count g P) := by
   have h := run_interpreted_eq (inputFamily R deg n) (polynomialFamily R n deg)
     (intervalCheck D) IntervalClaim.finish (toMessage R deg)
@@ -713,7 +715,7 @@ theorem interval_support_completeness (start count : ℕ) (bound : start + count
     (Out' := fun _ => RoundStatement R n ⟨count + start, by omega⟩) (fun _ => id)
     (intervalHonestProver D (data ()).val (data ()).property count
       (intervalInitial start count bound stmt))
-  change _ = (Core.intervalVerifier R deg n D ambient start count bound).run stmt
+  change _ = (Sumcheck.intervalVerifier R deg n D ambient start count bound).run stmt
     (interpretInput R deg n data) (Interpreted.transportProver (toMessage R deg) count _) at hrun
   rw [interpret_intervalHonestProver] at hrun
   have hd : interpretInput R deg n data =
@@ -721,7 +723,7 @@ theorem interval_support_completeness (start count : ℕ) (bound : start + count
   rw [hd] at hrun
   have hm : mapOutcome (toMessage R deg) count (fun _ => id)
       (interpretInput R deg n) obs ∈ support
-      ((Core.intervalVerifier R deg n D ambient start count bound).run stmt
+      ((Sumcheck.intervalVerifier R deg n D ambient start count bound).run stmt
         (fun _ => toPolynomial (data ()).val (data ()).property)
         (intervalProver D (toPolynomial (data ()).val (data ()).property) count
           (intervalInitial start count bound stmt))) := by
@@ -730,7 +732,7 @@ theorem interval_support_completeness (start count : ℕ) (bound : start + count
   rw [intervalVerifier_honest_run D _ ambient start count bound stmt htrue,
     _root_.support_map] at hm
   obtain ⟨chals, -, heq⟩ := hm
-  have hv := congrArg (fun (x : Outcome oracleSig (Core.protocol R deg count)
+  have hv := congrArg (fun (x : Outcome oracleSig (Sumcheck.protocol R deg count)
       (fun _ => RoundStatement R n ⟨count + start, by omega⟩)
       (fun _ => RoundStatement R n ⟨count + start, by omega⟩ ×
         (∀ j, PolynomialData R n deg j))) => x.2.2) heq.symm
@@ -805,7 +807,7 @@ theorem interval_soundness [SampleableType R] [Fintype R] [IsDomain R]
         ∃ t, obs.2.2 = some t ∧
           indexedRelation D _ t.1 (toPolynomial (t.2 ()).val (t.2 ()).property)] ≤
       (count : ℝ≥0∞) * (((deg : ℝ≥0) / Fintype.card R : ℝ≥0) : ℝ≥0∞) := by
-  let Out' : Transcript oracleSig (Core.protocol R deg count) → Type := fun _ => Σ tr, Out tr
+  let Out' : Transcript oracleSig (Sumcheck.protocol R deg count) → Type := fun _ => Σ tr, Out tr
   have hb := execute_soundness D ambient init impl start count finish stmt
     (interpretInput R deg n data)
     (Interpreted.transportFocal (evaluateN := evaluate R deg) id count
@@ -967,7 +969,7 @@ private output and original computational input. -/
 theorem soundness [Fintype R] [IsDomain R] :
     ∀ Out : Transcript oracleSig (protocol R deg n) → Type,
       letI : MeasurableSpace (RunOutcome R deg n Out) := ⊤
-      Interaction.Core.soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init
+      Interaction.soundness ((verifier R deg n D ambient).classicalModel (Out := Out) init
           impl (challengeQueryImpl oracleSig (protocol R deg n)))
         (Legacy.langProblem (language R deg n D 0))
         (Legacy.langProblem (language R deg n D (Fin.last n)))
@@ -1013,4 +1015,4 @@ end Soundness
 
 end Computable
 
-end Sumcheck.Core
+end Sumcheck

@@ -3,12 +3,12 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
+import ArkLib.ProofSystem.Sumcheck.InterpretedExecution
 
 /-! # Executable interpreted messages and effect-preserving transport -/
 
-namespace Sumcheck.Core.InterpretedTest
-open PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle OracleComp
+namespace Sumcheck.InterpretedTest
+open PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle OracleComp
   OracleSpec Interpreted
 
 /-- A coefficient-pair message evaluated directly over the natural numbers. -/
@@ -55,17 +55,17 @@ example :
   rfl
 
 run_cmd
-  for decl in [``Sumcheck.Core.Interpreted.run_transport,
-      ``Sumcheck.Core.Interpreted.run_transportFocal,
-      ``Sumcheck.Core.Interpreted.simulate_transportFocal,
-      ``Sumcheck.Core.Interpreted.transportFocal_foldRounds,
-      ``Sumcheck.Core.Interpreted.transportProver_transportFocal,
-      ``Sumcheck.Core.Interpreted.transportDraw_draw,
-      ``Sumcheck.Core.Interpreted.execute_eq_verifier,
-      ``Sumcheck.Core.Interpreted.execute_transport,
-      ``Sumcheck.Core.Interpreted.verifier_run] do
+  for decl in [``Sumcheck.Interpreted.run_transport,
+      ``Sumcheck.Interpreted.run_transportFocal,
+      ``Sumcheck.Interpreted.simulate_transportFocal,
+      ``Sumcheck.Interpreted.transportFocal_foldRounds,
+      ``Sumcheck.Interpreted.transportProver_transportFocal,
+      ``Sumcheck.Interpreted.transportDraw_draw,
+      ``Sumcheck.Interpreted.execute_eq_verifier,
+      ``Sumcheck.Interpreted.execute_transport,
+      ``Sumcheck.Interpreted.verifier_run] do
     for ax in ← Lean.collectAxioms decl do
       unless ax == ``propext || ax == ``Classical.choice || ax == ``Quot.sound do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.InterpretedTest
+end Sumcheck.InterpretedTest

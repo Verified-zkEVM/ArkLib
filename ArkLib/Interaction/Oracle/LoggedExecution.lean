@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.Knowledge
+public import ArkLib.Interaction.Security.Knowledge
 public import VCVio.OracleComp.Runtime
 
 /-!
@@ -24,7 +24,7 @@ directly as `runtime.run (V.runWithLog stmt data prover)`.
 
 universe v dI uS wJ
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace OracleVerifier
@@ -94,4 +94,4 @@ def decideCatching {ε : Type} {m : Type → Type v} [Monad m]
   (fun r => (r.1, r.2.reverse)) <$> ((simulateQ logged (V.decide stmt p view).run).run).run []
 
 end OracleVerifier
-end Interaction.Core
+end Interaction

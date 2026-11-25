@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.Routing
-import ArkLib.Interaction.Core.Oracle.SentOracles
-import ArkLibTest.Interaction.Core.Support
+import ArkLib.Interaction.Oracle.Routing
+import ArkLib.Interaction.Oracle.SentOracles
+import ArkLibTest.Interaction.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 
 /-! Routed oracle access in a composition. The prefix receives one oracle and exports a view that
@@ -15,12 +15,12 @@ fresh oracle. Availability is typing. The routed suffix decision is a program ov
 the oracles of the completed composed path. The prefix decision, routed into the composed run,
 never reaches the suffix oracle. Both routed reads of the export name the same prefix oracle. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
 universe uI uD wI wJ
 
-namespace Interaction.Core.RoutedAccessTests
+namespace Interaction.RoutedAccessTests
 
 /-- Ambient queries carry tags. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
@@ -300,4 +300,4 @@ theorem routed_available (a b : Nat) (v : View combined combinedPath) :
   | inl _ => trivial
   | inr q => exact raw_available a b q
 
-end Interaction.Core.RoutedAccessTests
+end Interaction.RoutedAccessTests

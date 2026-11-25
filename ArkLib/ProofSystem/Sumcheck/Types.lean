@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.OracleReduction.OracleInterface
-public import ArkLib.Interaction.Core.OracleVerifier
+public import ArkLib.Interaction.OracleVerifier
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.MvPolynomial.EvalExcept
 public import ArkLib.Data.Fin.Basic
@@ -15,8 +15,8 @@ public import ArkLib.Data.Fin.Basic
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial Interaction.Core Interaction.Oracle
+namespace Sumcheck
+open Polynomial MvPolynomial Interaction Interaction.Oracle
 
 /-- A Sumcheck claim after fixing the first `i` variables. -/
 structure RoundStatement (R : Type) (n : ℕ) (i : Fin (n + 1)) where
@@ -43,4 +43,4 @@ def roundSuffix {R : Type} {n : ℕ} (i : Fin n) (challenges : Fin i.castSucc �
     (x : Fin (n - 1 - i) → R) : Fin (n - 1) → R :=
   Fin.append challenges x ∘ Fin.cast (by have := i.isLt; simp; omega)
 
-end Sumcheck.Core
+end Sumcheck

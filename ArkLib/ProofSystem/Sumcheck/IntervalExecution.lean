@@ -5,14 +5,14 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import ArkLib.ProofSystem.Sumcheck.Indexed
 
 /-! # Boundary execution equations for Sumcheck intervals -/
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ} (D : Fin d → R)
 
@@ -72,4 +72,4 @@ theorem intervalVerifier_run_zero {ι : Type} (ambient : OracleSpec ι)
   simp only [LawfulMonad.bind_assoc, LawfulMonad.pure_bind]
   rfl
 
-end Sumcheck.Core
+end Sumcheck

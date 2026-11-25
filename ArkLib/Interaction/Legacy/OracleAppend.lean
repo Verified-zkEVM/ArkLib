@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.OracleExecution
-public import ArkLib.Interaction.Core.LegacyAppend
+public import ArkLib.Interaction.Legacy.OracleExecution
+public import ArkLib.Interaction.LegacyAppend
 
 /-!
 # Oracle trees of appended legacy specifications
@@ -32,7 +32,7 @@ statements relate dependent moves, paths and programs heterogeneously.
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens Oracle OracleComp OracleSpec ProtocolSpec
 
 /-! ## Chains -/
@@ -450,4 +450,4 @@ theorem oracleChallengeImpl_heq (chImpl : QueryImpl [p.Challenge]ₒ ProbComp)
 
 end ChallengeImpl
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

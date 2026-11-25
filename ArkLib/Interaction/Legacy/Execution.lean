@@ -5,9 +5,9 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.OracleReduction
-public import ArkLib.Interaction.Core.Execution
-public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.Interaction.Legacy.OracleReduction
+public import ArkLib.Interaction.Execution
+public import ArkLib.Interaction.Security.Completeness
 public import ArkLib.OracleReduction.Execution
 
 /-!
@@ -20,7 +20,7 @@ left summand, and the sampler draws each challenge from the legacy challenge ora
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec
 
 variable {ι : Type} {oSpec : OracleSpec ι} {n : ℕ} {pSpec : ProtocolSpec n}
@@ -142,7 +142,7 @@ theorem runWith_roundSlot {β Out : Type}
     (D : Direction) (hD : pSpec.dir j = D)
     (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
     (q : (x : Move plainSig (plainPos D (pSpec.«Type» j))) → P.PrvState j.succ →
-      Core.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
+      Interaction.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
     (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →
       OracleComp (oSpec + [pSpec.Challenge]ₒ)
         (challengeSpec plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest) c))
@@ -210,9 +210,10 @@ variable {StmtIn WitIn StmtOut WitOut : Type}
 
 /-- Run an embedded interaction under `order`, in the legacy query monad, against a prover on the
 plain tree, then decide. The challenge oracle is the legacy `[pSpec.Challenge]ₒ`. -/
-def observeWith (order : Schedule) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
+def observeWith (order : Schedule)
+    (V : Interaction.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) {Out : Transcript plainSig (protocol pSpec) → Type}
-    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
       (Outcome plainSig (protocol pSpec) Out StmtOutAt) := do
   let r ← runWith order (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
@@ -397,7 +398,7 @@ abbrev challengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
 /-- The prover-sampler run of the interaction layer, with its queries reindexed, is the
 focal-first run against the legacy sampler. -/
 theorem simulateQ_challengeReindex_run {Out : Transcript plainSig (protocol pSpec) → Type}
-    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (TwoParty.Lens.run (protocol pSpec)
       (p.simulate (fun q => liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query
         (.inl q))))
@@ -418,11 +419,11 @@ theorem simulateQ_challengeReindex_run {Out : Transcript plainSig (protocol pSpe
 
 /-- The run of the interaction layer, with its challenges answered by the legacy challenge
 oracle, is the focal-first outcome. -/
-theorem simulateQ_verifier_run (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
+theorem simulateQ_verifier_run (V : Interaction.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) {Out : Transcript plainSig (protocol pSpec) → Type}
-    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (V.run stmt p) = observeWith .focalFirst V stmt p := by
-  rw [Core.Verifier.run, observeWith, simulateQ_bind]
+  rw [Interaction.Verifier.run, observeWith, simulateQ_bind]
   erw [simulateQ_challengeReindex_run]
   refine bind_congr fun r => ?_
   rcases r with ⟨tr, out, u⟩
@@ -542,9 +543,9 @@ theorem experiment_evalDistEq {κ : Type} {ambient : OracleSpec ι} {chal : Orac
 /-- The two schedules of the legacy outcome agree in distribution, for every prover. -/
 theorem distEqFrom_observeWith (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
-    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
+    (V : Interaction.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
     {Out : Transcript plainSig (protocol pSpec) → Type}
-    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) :
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) Out) :
     DistEqFrom impl chImpl (observeWith .focalFirst V stmt p)
       (observeWith .counterpartFirst V stmt p) :=
   DistEqFrom.bind (distEqFrom_runWith impl chImpl _ _ _ fun _ =>
@@ -555,9 +556,9 @@ reindexed challenge implementation has the distribution of the legacy-indexed ou
 the counterpart-first schedule. -/
 theorem experiment_verifier_run_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
-    (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
+    (V : Interaction.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt) (stmt : StmtIn)
     {Out : Transcript plainSig (protocol pSpec) → Type}
-    (p : Core.Prover plainSig oSpec (protocol pSpec) Out) {β : Type}
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) Out) {β : Type}
     (f : Outcome plainSig (protocol pSpec) Out StmtOutAt → β) :
     experiment init impl (plainChallengeImpl chImpl) (f <$> V.run stmt p) =ᵈ
       experiment init impl chImpl (f <$> observeWith .counterpartFirst V stmt p) := by
@@ -611,7 +612,7 @@ theorem pureObservers_roundSlot {Out : Type}
     (j : Fin n) (D : Direction) (hD : pSpec.dir j = D)
     (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
     (q : (x : Move plainSig (plainPos D (pSpec.«Type» j))) → P.PrvState j.succ →
-      Core.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
+      Interaction.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
     (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →
       OracleComp (oSpec + [pSpec.Challenge]ₒ)
         (challengeSpec plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest) c))
@@ -673,7 +674,7 @@ theorem pureObservers_embedFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut Wi
 pure, the default and counterpart-first schedules of the embedded execution are the same
 program. -/
 theorem observeWith_focalFirst_eq (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (hP : PureChallengeSlots P) (V : Core.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
+    (hP : PureChallengeSlots P) (V : Interaction.Verifier oSpec (protocol pSpec) StmtIn StmtOutAt)
     (stmt : StmtIn) (wit : WitIn) :
     observeWith .focalFirst V stmt (embedProver P stmt wit) =
       observeWith .counterpartFirst V stmt (embedProver P stmt wit) := by
@@ -691,7 +692,7 @@ theorem simulateQ_finalize_runOutcome (R : _root_.Reduction oSpec StmtIn WitIn S
     (hP : PureChallengeSlots R.prover) (stmt : StmtIn) (wit : WitIn) :
     simulateQ (challengeReindex oSpec pSpec) (finalize <$> (embedReduction R).runOutcome stmt wit) =
       (R.run stmt wit).run := by
-  rw [simulateQ_map, Core.Reduction.runOutcome, simulateQ_verifier_run, ←
+  rw [simulateQ_map, Interaction.Reduction.runOutcome, simulateQ_verifier_run, ←
     finalize_observeWith_counterpartFirst]
   exact congrArg _ (observeWith_focalFirst_eq R.prover hP _ stmt wit)
 
@@ -879,4 +880,4 @@ theorem runEq_ambientLogged_prover (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 end LoggedProver
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

@@ -4,21 +4,21 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Security.StateRestoration
-import ArkLibTest.Interaction.Core.Oracle
-import ArkLibTest.Interaction.Core.Support
+import ArkLib.Interaction.Security.StateRestoration
+import ArkLibTest.Interaction.Oracle
+import ArkLibTest.Interaction.Support
 import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-! A one-round state-restoration client: the prover sends an oracle in `Fin 8`, the verifier draws
 a `Bool`. On challenge `true` the verifier reads the sent oracle message and returns it as the
 claim, with the message as its output oracle; on `false` it rejects. The input domain is `Nat`. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
-open Interaction.Core.StateRestoration
-open Interaction.Core.OracleTests (emptyFamily)
+open Interaction.StateRestoration
+open Interaction.OracleTests (emptyFamily)
 
-namespace Interaction.Core.StateRestorationTests
+namespace Interaction.StateRestorationTests
 
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
@@ -1066,7 +1066,7 @@ example (b : Bool) (z : Stmt) (m : Fin 8)
   erw [selectedVerdict]
   simp
 
-end Interaction.Core.StateRestorationTests
+end Interaction.StateRestorationTests
 
 section GeneralMoveUniverses
 
@@ -1095,20 +1095,20 @@ example (F : KnowledgeStateFunction.{uS, uW, uK, uO, uA, u} l (.liftBind a next)
 end GeneralMoveUniverses
 
 run_cmd do
-  for decl in [``Interaction.Core.StateRestoration.complete_support_matches,
-      ``Interaction.Core.StateRestoration.run_scriptedProver_of_mem_support,
-      ``Interaction.Core.StateRestorationTests.plainScriptedRun_eq,
-      ``Interaction.Core.StateRestorationTests.selectedScriptedRun_eq,
-      ``Interaction.Core.StateRestorationTests.replayResult_eq,
-      ``Interaction.Core.StateRestorationTests.oracleReplayResult_eq,
-      ``Interaction.Core.StateRestorationTests.selectedOracleOutputLaw,
-      ``Interaction.Core.StateRestorationTests.selectedPlainOutputLaw_iff,
-      ``Interaction.Core.StateRestorationTests.selected_fresh,
-      ``Interaction.Core.StateRestorationTests.selectedGame_bound,
-      ``Interaction.Core.StateRestorationTests.selected_actual_game_bound,
-      ``Interaction.Core.StateRestorationTests.selected_actual_oracle_game_bound,
-      ``Interaction.Core.StateRestorationTests.selected_actual_coin_game_bound,
-      ``Interaction.Core.StateRestorationTests.selectedGame_eval_run] do
+  for decl in [``Interaction.StateRestoration.complete_support_matches,
+      ``Interaction.StateRestoration.run_scriptedProver_of_mem_support,
+      ``Interaction.StateRestorationTests.plainScriptedRun_eq,
+      ``Interaction.StateRestorationTests.selectedScriptedRun_eq,
+      ``Interaction.StateRestorationTests.replayResult_eq,
+      ``Interaction.StateRestorationTests.oracleReplayResult_eq,
+      ``Interaction.StateRestorationTests.selectedOracleOutputLaw,
+      ``Interaction.StateRestorationTests.selectedPlainOutputLaw_iff,
+      ``Interaction.StateRestorationTests.selected_fresh,
+      ``Interaction.StateRestorationTests.selectedGame_bound,
+      ``Interaction.StateRestorationTests.selected_actual_game_bound,
+      ``Interaction.StateRestorationTests.selected_actual_oracle_game_bound,
+      ``Interaction.StateRestorationTests.selected_actual_coin_game_bound,
+      ``Interaction.StateRestorationTests.selectedGame_eval_run] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

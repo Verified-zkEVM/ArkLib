@@ -5,16 +5,16 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.ComputableProjection
-public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
+public import ArkLib.ProofSystem.Sumcheck.ComputableProjection
+public import ArkLib.ProofSystem.Sumcheck.InterpretedExecution
+public import ArkLib.ProofSystem.Sumcheck.IntervalCompleteness
 
 /-! # Computable honest interval provers and their execution -/
 
 @[expose] public section
 
-namespace Sumcheck.Core.Computable
-open CPoly Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck.Computable
+open CPoly Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
   {n d deg : ℕ} (D : Fin d → R) (poly : CMvPolynomial n R)
@@ -114,4 +114,4 @@ theorem execute_perfectCompleteness {Data : Type} (next : ProbComp R) (k : ℕ)
   exact prEvent_eq_one_of_forall_mem_support _ _
     (execute_supportCompleteness D poly hpoly next k st data h)
 
-end Sumcheck.Core.Computable
+end Sumcheck.Computable

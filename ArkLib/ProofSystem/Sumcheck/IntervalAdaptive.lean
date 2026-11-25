@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
+public import ArkLib.ProofSystem.Sumcheck.IntervalCompleteness
 
 /-! # Statement-dependent challenge programs for honest intervals
 
@@ -15,8 +15,8 @@ the current round, target and complete prefix, with no finite-sampling assumptio
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ}
 
@@ -66,4 +66,4 @@ theorem intervalVerifier_adaptive_perfectCompleteness (D : Fin d → R)
       ∃ t, result.2.2 = some (t, fun _ => p) ∧ indexedRelation D _ t p] = 1 :=
   intervalVerifier_perfectCompleteness D p ambient _ start count bound _ stmt h
 
-end Sumcheck.Core
+end Sumcheck

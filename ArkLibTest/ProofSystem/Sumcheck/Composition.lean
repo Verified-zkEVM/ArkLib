@@ -3,13 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLibTest.ProofSystem.Sumcheck.Core.Rounds
-import ArkLib.ProofSystem.Sumcheck.Core.Composition
+import ArkLibTest.ProofSystem.Sumcheck.Rounds
+import ArkLib.ProofSystem.Sumcheck.Composition
 
 /-!
 # Single Sumcheck rounds as composable oracle verifiers
 
-Instances of `Sumcheck.Core.Composition` on the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` over
+Instances of `Sumcheck.Composition` on the bilinear input `1 + 2 X₀ + 3 X₁ + 4 X₀ X₁` over
 `ZMod 17`, which sums to `1` over `{0, 1}²`.
 
 * The round-`0` projection map sends the input to the honest first message `5 + 8 X`, and answers
@@ -21,10 +21,10 @@ Instances of `Sumcheck.Core.Composition` on the bilinear input `1 + 2 X₀ + 3 X
   Sumcheck verifier against every composed prover.
 -/
 
-namespace Sumcheck.Core.CompositionTest
+namespace Sumcheck.CompositionTest
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec Sumcheck.Core.RoundsTest
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec Sumcheck.RoundsTest
 
 section UnequalUniverses
 
@@ -139,9 +139,9 @@ theorem run_append_bilinear {Mid : Transcript oracleSig (round K 1) → Type}
         (fun _ => legacyFoldVerifier K 1 ambient (Spec.polynomialFamily K 2 1) 1
           (Spec.StatementRound K 2 ∘ Fin.succ) fun i => roundCheck K 1 2 D₂ ambient i.succ)
         (legacyFoldCompatibility K 1 ambient _ 1 _ _)).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
-        (Interaction.Core.Prover.append (s₂ := fun _ => protocol K 1 1) (Out := Out) p f) =
+        (Interaction.Prover.append (s₂ := fun _ => protocol K 1 1) (Out := Out) p f) =
       (verifier K 1 2 D₂ ambient).run ⟨1, Fin.elim0⟩ (fun _ => bilinear)
-        (Interaction.Core.Prover.append (s₂ := fun _ => protocol K 1 1) (Out := Out) p f) :=
+        (Interaction.Prover.append (s₂ := fun _ => protocol K 1 1) (Out := Out) p f) :=
   run_append_verifier D₂ 1 ⟨1, Fin.elim0⟩ (fun _ => bilinear) p f
 
 /-- The relation is checked on the verdict returned by this same standalone projected run. -/
@@ -163,19 +163,19 @@ theorem run_projected_relation :
 end
 
 run_cmd
-  for decl in [``Sumcheck.Core.CompositionTest.projection_bilinear,
-      ``Sumcheck.Core.CompositionTest.projection_answer,
-      ``Sumcheck.Core.CompositionTest.projected_verdict,
-      ``Sumcheck.Core.CompositionTest.round_range,
-      ``Sumcheck.Core.CompositionTest.run_projected_bilinear,
-      ``Sumcheck.Core.CompositionTest.projected_relation,
-      ``Sumcheck.Core.CompositionTest.run_projected_relation,
-      ``Sumcheck.Core.CompositionTest.run_append_bilinear,
-      ``Sumcheck.Core.projectionMap, ``Sumcheck.Core.simulateQ_projectionMap,
-      ``Sumcheck.Core.run_projectedVerifier_roundProver,
-      ``Sumcheck.Core.projectedVerifier_relation, ``Sumcheck.Core.run_append_verifier] do
+  for decl in [``Sumcheck.CompositionTest.projection_bilinear,
+      ``Sumcheck.CompositionTest.projection_answer,
+      ``Sumcheck.CompositionTest.projected_verdict,
+      ``Sumcheck.CompositionTest.round_range,
+      ``Sumcheck.CompositionTest.run_projected_bilinear,
+      ``Sumcheck.CompositionTest.projected_relation,
+      ``Sumcheck.CompositionTest.run_projected_relation,
+      ``Sumcheck.CompositionTest.run_append_bilinear,
+      ``Sumcheck.projectionMap, ``Sumcheck.simulateQ_projectionMap,
+      ``Sumcheck.run_projectedVerifier_roundProver,
+      ``Sumcheck.projectedVerifier_relation, ``Sumcheck.run_append_verifier] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.CompositionTest
+end Sumcheck.CompositionTest

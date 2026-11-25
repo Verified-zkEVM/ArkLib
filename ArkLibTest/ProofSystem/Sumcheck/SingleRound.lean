@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.Soundness
-import ArkLibTest.ProofSystem.Sumcheck.Core.Completeness
+import ArkLib.ProofSystem.Sumcheck.Soundness
+import ArkLibTest.ProofSystem.Sumcheck.Completeness
 
 /-!
 # One round of Sumcheck in the interaction layer
@@ -14,9 +14,9 @@ the verdict, the output relation on accepted runs, rejection, and the distributi
 a uniform challenge. The input polynomial, not the sent message, decides the output relation.
 -/
 
-namespace Sumcheck.Core.SingleRoundTest
+namespace Sumcheck.SingleRoundTest
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec MeasureTheory
 open scoped ENNReal NNReal
 
@@ -162,7 +162,7 @@ end Support
 
 noncomputable section
 
-open Sumcheck.Core.CompletenessTest
+open Sumcheck.CompletenessTest
 
 /-- An oracle-capable ambient context, unused by these provers. -/
 abbrev ambient : OracleSpec Unit := Unit →ₒ Unit
@@ -295,16 +295,16 @@ example (q : F⦃≤ 1⦄[X]) : q.val.degree ≤ 1 := mem_degreeLE.mp q.property
 
 end
 
-end Sumcheck.Core.SingleRoundTest
+end Sumcheck.SingleRoundTest
 
 -- Migration rows: Sumcheck Interaction/SingleRound #5, #6, Closing #6–#8, Soundness #24.
 run_cmd do
-  for decl in [``Sumcheck.Core.SingleRoundTest.verdict_pass,
-      ``Sumcheck.Core.SingleRoundTest.verdict_fail, ``Sumcheck.Core.SingleRoundTest.run_oneRound,
-      ``Sumcheck.Core.SingleRoundTest.experiment_drawOne,
-      ``Sumcheck.Core.SingleRoundTest.outcome_oneRound,
-      ``Sumcheck.Core.SingleRoundTest.relationLast_iff,
-      ``Sumcheck.Core.SingleRoundTest.msgX_sum] do
+  for decl in [``Sumcheck.SingleRoundTest.verdict_pass,
+      ``Sumcheck.SingleRoundTest.verdict_fail, ``Sumcheck.SingleRoundTest.run_oneRound,
+      ``Sumcheck.SingleRoundTest.experiment_drawOne,
+      ``Sumcheck.SingleRoundTest.outcome_oneRound,
+      ``Sumcheck.SingleRoundTest.relationLast_iff,
+      ``Sumcheck.SingleRoundTest.msgX_sum] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

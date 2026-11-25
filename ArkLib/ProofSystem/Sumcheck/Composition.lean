@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Execution
-public import ArkLib.ProofSystem.Sumcheck.Core.LegacyProjection
+public import ArkLib.ProofSystem.Sumcheck.Execution
+public import ArkLib.ProofSystem.Sumcheck.LegacyProjection
 
 /-!
 # Sumcheck rounds as composable oracle verifiers
@@ -45,8 +45,8 @@ message representation and its runtime instance belong to `Computable`.
 
 universe uI uJ uK uS uι wI wJ wK
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec
 
 /-! ## The input route -/
@@ -70,13 +70,13 @@ variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type uι} (ambient : Orac
 
 
 /-- Route the legacy round message's queries to the oracle node of a round, then lift them with the
-shared `Interaction.Core.pathLift`. -/
+shared `Interaction.pathLift`. -/
 def checkRoute : (p : Path (round R deg)) →
     QueryImpl [(Spec.SingleRound.pSpec R deg).Message]ₒ
       (OracleComp (ambient + (pathBundle inputs (round R deg) p).spec))
   | ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ => fun ⟨i, q⟩ => by
     obtain rfl := Unique.eq_default i
-    exact Interaction.Core.pathLift ambient inputs (s := round R deg) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
+    exact Interaction.pathLift ambient inputs (s := round R deg) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
       ⟨.inl ⟨⟩, q⟩
 
 /-- The legacy challenges of a round view. -/
@@ -432,9 +432,9 @@ theorem run_append_verifier [DecidableEq R] [SampleableType R] {d : ℕ} (D : Fi
           (Spec.StatementRound R (k + 1) ∘ Fin.succ)
           fun i => roundCheck R deg (k + 1) D ambient i.succ)
         (legacyFoldCompatibility R deg ambient _ k _ _)).run stmt x
-        (Interaction.Core.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) =
+        (Interaction.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) =
       (verifier R deg (k + 1) D ambient).run stmt x
-        (Interaction.Core.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) :=
+        (Interaction.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) :=
   run_append_legacyFoldVerifier k (Spec.StatementRound R (k + 1))
     (roundCheck R deg (k + 1) D ambient)
     stmt x _
@@ -468,7 +468,7 @@ variable [DecidableEq R] [SampleableType R] (n : ℕ) {d : ℕ} (D : Fin d ↪ R
 /-- Round `i` of an `n`-round statement on its own: the legacy round check, with the projection of
 the multivariate input to the univariate round polynomial as output oracle. The output map is the
 injective-domain compatibility map `projectionMap` over `D : Fin d ↪ R`. The indexed-domain
-construction, which keeps repeated domain points, is `projectedMap` in `Sumcheck.Core.Projection`.
+construction, which keeps repeated domain points, is `projectedMap` in `Sumcheck.Projection`.
 -/
 noncomputable def projectedVerifier (i : Fin n) :
     OracleVerifier ambient (round R deg) (Spec.StatementRound R n i.castSucc)
@@ -530,4 +530,4 @@ theorem projectedVerifier_relation (i : Fin n)
 
 end Projected
 
-end Sumcheck.Core
+end Sumcheck

@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Composition
-import ArkLib.Interaction.Core.Security.Knowledge
-import ArkLib.Interaction.Core.Security.KnowledgeComposition
+import ArkLib.Interaction.Composition
+import ArkLib.Interaction.Security.Knowledge
+import ArkLib.Interaction.Security.KnowledgeComposition
 
 /-!
 # Components that are not run outputs live in their own universes
@@ -23,11 +23,11 @@ oracle data `∀ j, B p j`. The run's output index is in `Type 0`. The final pur
 sends an oracle message in `Type 1`, with a witness carrier in `Type 2` that depends on it.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp MeasureTheory
 
 universe v
 
-namespace Interaction.Core.UniverseCanaryTests
+namespace Interaction.UniverseCanaryTests
 
 /-- Ambient oracles indexed by types, answering in `Bool`: the index lies in `Type 1`. -/
 abbrev bigAmbient : OracleSpec.{1, 0} Type := Type →ₒ Bool
@@ -598,4 +598,4 @@ example :
     ((largePayloadCertificate.lift.{0, 2, 2, 2, 2, 1, 3}).extractAlong ()
       ⟨(⟨7⟩ : ULift.{1} Nat), ⟨⟩⟩ (⟨⟨6, by decide⟩⟩ : ULift.{2} (Fin 8))).down = 6 := rfl
 
-end Interaction.Core.UniverseCanaryTests
+end Interaction.UniverseCanaryTests

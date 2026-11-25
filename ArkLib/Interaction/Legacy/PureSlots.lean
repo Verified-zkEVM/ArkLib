@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.Execution
+public import ArkLib.Interaction.Legacy.Execution
 public import ArkLib.OracleReduction.Composition.Sequential.General
 public import ArkLib.OracleReduction.LiftContext.Reduction
 
@@ -25,7 +25,7 @@ composition operations of legacy provers preserve it:
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open OracleComp OracleSpec ProtocolSpec
 
 variable {ι : Type} {oSpec : OracleSpec ι}
@@ -138,4 +138,4 @@ theorem pureChallengeSlots_seqCompose : ∀ {k : ℕ} (Stmt Wit : Fin (k + 1) �
       (pureChallengeSlots_seqCompose (Stmt ∘ Fin.succ) (Wit ∘ Fin.succ) (fun i => P i.succ)
         (fun i => hO i.succ) (fun i => hP i.succ))
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

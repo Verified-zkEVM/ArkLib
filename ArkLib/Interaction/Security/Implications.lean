@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.RoundByRound
-public import ArkLib.Interaction.Core.Security.Soundness
+public import ArkLib.Interaction.Security.RoundByRound
+public import ArkLib.Interaction.Security.Soundness
 public import VCVio.EvalDist.ProbabilityBounds
 
 /-!
@@ -59,7 +59,7 @@ the ranks are distinct along each path and lie in a fixed range.
 
 universe v uS uI dI wJ uι uκ uA u
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
@@ -767,7 +767,7 @@ theorem Verifier.soundnessUsing_of_rbrSoundness
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     (fresh : FreshChallengesAt H draw)
-    (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness plainSig s (input.admissible ()) (input.language ())
       (fun stmt tr => ∃ st, V.validAcceptanceUsing (fun q => H (.inl q))
         (fun x => x.run' st) output.language stmt tr) draw ε) :
     V.soundnessUsing (fun c => do (simulateQ H c).run' (← init)) input output
@@ -799,7 +799,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
-    (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness plainSig s (input.admissible ()) (input.language ())
       (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output
       (⨆ path : Path s, ∑ c ∈ challengeNodesOn plainSig s path, ε c) := by
@@ -822,7 +822,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness {m : Type → Type v} [Monad m] [
           ∃ t, v = some t ∧ output.language tr.path t]) ↔ _
     simp only [simulateQ_stateLift_run', exists_const]
     rfl
-  have h' : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+  have h' : Interaction.rbrSoundness plainSig s (input.admissible ()) (input.language ())
       (fun stmt tr => ∃ st : Unit, V.validAcceptanceUsing (fun q => H' (.inl q))
         (fun x => x.run' st) output.language stmt tr) draw ε := by
     simpa only [hacc] using h
@@ -839,7 +839,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v} [Monad
     {draw : QueryImpl (challengeSpec plainSig s) ProbComp}
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
-    (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness plainSig s (input.admissible ()) (input.language ())
       (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output (∑' c, ε c) := fun Out stmt hadm hlang p =>
   (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
@@ -856,7 +856,7 @@ theorem Verifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type v} [Mo
     {ε : ChallengeNode plainSig s → ℝ≥0∞}
     {e : ℝ≥0∞} {k : ℕ}
     (fresh : FreshChallenges H draw)
-    (h : Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness plainSig s (input.admissible ()) (input.language ())
       (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε)
     (hε : ∀ c, ε c ≤ e)
     (hcount : ∀ path, (challengeNodesOn plainSig s path).card ≤ k) :
@@ -988,7 +988,7 @@ theorem OracleVerifier.soundnessUsing_of_rbrSoundness
   {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
   {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (fresh : FreshChallengesAt H draw)
-    (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
       (fun stmt tr => ∃ st, V.validAcceptanceUsing (fun q => H (.inl q))
         (fun x => x.run' st) output.language stmt tr) draw ε) :
     V.soundnessUsing (fun c => do (simulateQ H c).run' (← init)) input output
@@ -1024,7 +1024,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
-    (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
       (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output
       (⨆ path : Path s, ∑ c ∈ challengeNodesOn oracleSig s path, ε c) := by
@@ -1054,7 +1054,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
             (t, (V.outputMap stmt.1 tr.path (toView s tr)).f
               (stmt.2, oracleMessages s tr))]) ↔ _
     simp only [stateLift_addLift, simulateQ_stateLift_run', exists_const]
-  have h' : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+  have h' : Interaction.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
       (fun stmt tr => ∃ st : Unit, V.validAcceptanceUsing (fun q => H' (.inl q))
         (fun x => x.run' st) output.language stmt tr) draw ε := by
     simpa only [hacc] using h
@@ -1075,7 +1075,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (fresh : FreshChallenges H draw)
-    (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
       (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
     V.soundnessWith H input output (∑' c, ε c) := fun Out stmt hadm hlang p =>
   (soundnessWith_of_rbrSoundness fresh h Out stmt hadm hlang p).trans
@@ -1096,7 +1096,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type 
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     {e : ℝ≥0∞} {k : ℕ}
     (fresh : FreshChallenges H draw)
-    (h : Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+    (h : Interaction.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
       (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε)
     (hε : ∀ c, ε c ≤ e)
     (hcount : ∀ path, (challengeNodesOn oracleSig s path).card ≤ k) :
@@ -1150,4 +1150,4 @@ theorem OracleVerifier.soundness_of_rbrSoundness_uniform {e : ℝ≥0∞} {k : �
 
 end OracleVerifier
 
-end Interaction.Core
+end Interaction

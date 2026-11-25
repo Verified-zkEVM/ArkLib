@@ -5,9 +5,9 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.StateRestoration
+public import ArkLib.Interaction.Security.StateRestoration
 public import VCVio.OracleComp.QueryTracking.CostModel
-public import ArkLib.Interaction.Core.Security.MeasuredExtraction
+public import ArkLib.Interaction.Security.MeasuredExtraction
 
 /-!
 # Per-round errors in the state-restoration experiment
@@ -50,7 +50,7 @@ correspondence.
 
 universe uK uW uO wI wJ uS uI
 
-namespace Interaction.Core.StateRestoration
+namespace Interaction.StateRestoration
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
 
 /-- Local errors indexed by round, in protocol order. -/
@@ -350,13 +350,13 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform_privateCoins
 
 end Games
 
-end Interaction.Core.StateRestoration
+end Interaction.StateRestoration
 
 /-! ### Measured extraction along the rounds -/
 
-namespace Interaction.Core.KnowledgeStateFunction.MeasuredStages
+namespace Interaction.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens OracleComp
-open Interaction.Core.StateRestoration
+open Interaction.StateRestoration
 
 variable {s : OracleProtocol} {S : Type uS} {Win : S → Type} {W : S → Transcript oracleSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -433,11 +433,11 @@ theorem programAlong_costAtMost_protocol {rounds : List Round}
       (leafBound + rounds.length • (messageBound + challengeBound) + rootBound) :=
   (stages.programAlong stmt tr).costAtMost.mono (programAlong_budget_le_protocol stages h tr)
 
-end Interaction.Core.KnowledgeStateFunction.MeasuredStages
+end Interaction.KnowledgeStateFunction.MeasuredStages
 
-namespace Interaction.Core.MeasuredKnowledgeStateFunction
+namespace Interaction.MeasuredKnowledgeStateFunction
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
-open Interaction.Core.StateRestoration
+open Interaction.StateRestoration
 
 section ReadOut
 
@@ -587,4 +587,4 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut
   · exact MeasuredProgram.CostAtMost.comp (laws z hz tr).2
       ((readOutProgram z tr).costAtMost.mono (readOutBudget z hz tr))
 
-end Interaction.Core.MeasuredKnowledgeStateFunction
+end Interaction.MeasuredKnowledgeStateFunction

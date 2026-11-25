@@ -4,13 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Execution
+import ArkLib.Interaction.Execution
 
 /-! Acceptance examples for shape independence, recorded challenges and terminal effects. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens
 
-namespace Interaction.Core.Tests
+namespace Interaction.Tests
 
 def done : Protocol := .pure ⟨⟩
 def coin : Protocol := .liftBind (.challenge Bool) (fun _ => done)
@@ -93,17 +93,17 @@ run_cmd do
   unless (ChallengeNode.appendEquiv plainSig coin (fun _ => coin) secondChallenge).isRight do
     throwError "the second challenge of two coins must belong to the suffix"
 
-end Interaction.Core.Tests
+end Interaction.Tests
 
 run_cmd do
-  for decl in [``Interaction.Core.toCounterpart_publicCoinSampler,
-      ``Interaction.Core.toCounterpart_publicCoinOracleSampler,
-      ``Interaction.Core.replay_publicCoinSampler,
-      ``Interaction.Core.replay_publicCoinOracleSampler,
-      ``Interaction.Core.Node.appendJoin_appendSplit,
-      ``Interaction.Core.Node.appendSplit_appendJoin,
-      ``Interaction.Core.Node.position_appendEquiv,
-      ``Interaction.Core.ChallengeNode.appendEquiv] do
+  for decl in [``Interaction.toCounterpart_publicCoinSampler,
+      ``Interaction.toCounterpart_publicCoinOracleSampler,
+      ``Interaction.replay_publicCoinSampler,
+      ``Interaction.replay_publicCoinOracleSampler,
+      ``Interaction.Node.appendJoin_appendSplit,
+      ``Interaction.Node.appendSplit_appendJoin,
+      ``Interaction.Node.position_appendEquiv,
+      ``Interaction.ChallengeNode.appendEquiv] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

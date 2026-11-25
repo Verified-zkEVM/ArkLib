@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Execution
-public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.ProofSystem.Sumcheck.Execution
+public import ArkLib.Interaction.Security.Completeness
 
 /-!
 # Perfect completeness of Sumcheck in the interaction layer
@@ -30,8 +30,8 @@ implementation and challenge implementation, since the honest run accepts on eve
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec MeasureTheory
 open scoped ENNReal
 
@@ -211,7 +211,7 @@ theorem perfectCompleteness_uniform {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) :
     letI : MeasurableSpace (HonestOutcome R deg n) := ⊤
     completeness ((verifier R deg n D ambient).classicalModel init impl
-        (@Interaction.Core.challengeQueryImpl _ oracleSig (protocol R deg n)
+        (@Interaction.challengeQueryImpl _ oracleSig (protocol R deg n)
           (challengeSampleable R deg n)))
       (relationProblem R deg n D 0) (relationProblem R deg n D (Fin.last n))
       (judgement R deg n D) (fun x _ => honestProver D x.1 x.2) 0 :=
@@ -219,4 +219,4 @@ theorem perfectCompleteness_uniform {σ : Type} (init : ProbComp σ)
 
 end Completeness
 
-end Sumcheck.Core
+end Sumcheck

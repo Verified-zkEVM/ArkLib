@@ -5,14 +5,14 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
+public import ArkLib.ProofSystem.Sumcheck.Protocol
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
 /-! # Compatibility of honest round strategies with legacy statements -/
 
 @[expose] public section
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
 variable {R : Type} [CommSemiring R] {deg : ℕ}
 
 section Honest
@@ -113,4 +113,4 @@ theorem simulate_honestProver {ι : Type} {ambient : OracleSpec ι} {m : Type �
 
 end Honest
 
-end Sumcheck.Core
+end Sumcheck

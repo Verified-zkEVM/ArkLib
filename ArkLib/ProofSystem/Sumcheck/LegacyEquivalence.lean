@@ -5,12 +5,12 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Completeness
-public import ArkLib.Interaction.Core.Legacy.OracleAppend
-public import ArkLib.Interaction.Core.Legacy.OracleKnowledge
-public import ArkLib.Interaction.Core.Legacy.PureSlots
-public import ArkLib.Interaction.Core.Security.Agreement
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import ArkLib.ProofSystem.Sumcheck.Completeness
+public import ArkLib.Interaction.Legacy.OracleAppend
+public import ArkLib.Interaction.Legacy.OracleKnowledge
+public import ArkLib.Interaction.Legacy.PureSlots
+public import ArkLib.Interaction.Security.Agreement
+public import ArkLib.ProofSystem.Sumcheck.Indexed
 
 /-!
 # The interaction-layer Sumcheck is the embedded legacy Sumcheck
@@ -60,13 +60,13 @@ The main results are:
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open scoped ENNReal NNReal
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec Interaction.Legacy
 
 /-- Transporting a constant language problem changes only its context type. -/
-@[simp] theorem _root_.Interaction.Core.OracleVerifier.langProblem_cast
+@[simp] theorem _root_.Interaction.OracleVerifier.langProblem_cast
     {s s' : OracleProtocol} {T : Type} (e : s' = s) (L : Set T) :
     (e ▸ (langProblem (Ctx := Path s') L)) = langProblem (Ctx := Path s) L := by
   subst e
@@ -299,11 +299,11 @@ private abbrev decisionSpec (x : Σ s : OracleProtocol.{0}, Path s) :=
   ambient + (pathBundle (Spec.polynomialFamily R n deg) x.1 x.2).spec
 
 /-- Lift path-oracle queries into the decision's query interface, on any oracle tree: the shared
-`Interaction.Core.pathLift` at the polynomial input family, packaged over a sigma so that the
+`Interaction.pathLift` at the polynomial input family, packaged over a sigma so that the
 transport proof below can move along the tree. -/
 private def pathLift (x : Σ s : OracleProtocol.{0}, Path s) :
     QueryImpl (oracleMessageFamily x.1 x.2).spec (OracleComp (decisionSpec R deg n ambient x)) :=
-  Interaction.Core.pathLift ambient (Spec.polynomialFamily R n deg) x.2
+  Interaction.pathLift ambient (Spec.polynomialFamily R n deg) x.2
 
 variable {R deg n ambient}
 
@@ -317,7 +317,7 @@ private theorem decisionImpl_message (p : Path (oracleProtocol (Spec.pSpec R deg
         (queryMsg (pSpec := Spec.pSpec R deg n) 0 _ _ p q.1 (Nat.zero_le _) q.2) := by
   change simulateQ _ (simulateQ _ _) = _
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) _
-  simp [pathLift, Interaction.Core.pathLift]
+  simp [pathLift, Interaction.pathLift]
   rfl
 
 variable (R deg n ambient) [∀ t, Inhabited (ambient.Range t)]
@@ -748,4 +748,4 @@ theorem simpleLegacyVerifier_correspondence [DecidableEq R]
 
 end SimpleCompatibility
 
-end Sumcheck.Core
+end Sumcheck

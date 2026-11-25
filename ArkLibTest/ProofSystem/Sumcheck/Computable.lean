@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.Computable
+import ArkLib.ProofSystem.Sumcheck.Computable
 import Mathlib.Algebra.Field.ZMod
 import SumcheckRuntime
 
@@ -17,11 +17,11 @@ bound of `1/17` over `ZMod 17` comes with a proved false starting claim. The com
 `scripts/SumcheckRuntime.lean`.
 -/
 
-namespace Sumcheck.Core.ComputableTest
+namespace Sumcheck.ComputableTest
 
 open scoped ENNReal NNReal
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec Sumcheck.Core.Computable Sumcheck.Impl.Representation
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec Sumcheck.Computable Sumcheck.Impl.Representation
 
 /-- The test field `ZMod 5`. -/
 abbrev F := ZMod 5
@@ -46,46 +46,46 @@ example {k : ℕ} (x : Computable.Input F 2 3) (st : Computable.RoundState F 3 (
 example (stmt : Sumcheck.Spec.StatementRound F 3 0) (data : ∀ _ : Unit, Computable.Input F 2 3) :
     Computable.interpretProver (fun _ => Computable.honestOutputMap)
         (Computable.honestProver (m := OracleComp ambient) D₂ stmt data) =
-      Sumcheck.Core.honestProver D₂ stmt (Computable.interpretInput F 2 3 data) :=
+      Sumcheck.honestProver D₂ stmt (Computable.interpretInput F 2 3 data) :=
   interpretProver_honestProver D₂ stmt data
 
 /-- A computable run, renamed and mapped, is the interaction-layer run of the interpreted
-prover against `Sumcheck.Core.verifier`. -/
+prover against `Sumcheck.verifier`. -/
 example (stmt : Sumcheck.Spec.StatementRound F 3 0) (data : ∀ _ : Unit, Computable.Input F 2 3)
     {Out : Transcript oracleSig (Computable.protocol F 2 3) → Type}
     (P : Prover oracleSig ambient (Computable.protocol F 2 3) Out) :
-    simulateQ (Sumcheck.Core.renameQueries (M' := F⦃≤ 2⦄[X])
+    simulateQ (Sumcheck.renameQueries (M' := F⦃≤ 2⦄[X])
         (eval' := fun p x => p.val.eval x) ambient 3)
-        (Sumcheck.Core.mapOutcome (toMessage F 2) 3 (Out' := fun _ => Σ tr, Out tr)
+        (Sumcheck.mapOutcome (toMessage F 2) 3 (Out' := fun _ => Σ tr, Out tr)
           (fun tr o => ⟨tr, o⟩) (Computable.interpretInput F 2 3) <$>
             (Computable.verifier F 2 3 D₂ ambient).run stmt data P) =
-      (Sumcheck.Core.verifier F 2 3 D₂ ambient).run stmt (Computable.interpretInput F 2 3 data)
+      (Sumcheck.verifier F 2 3 D₂ ambient).run stmt (Computable.interpretInput F 2 3 data)
         (Computable.interpretProver (Out' := fun _ => Σ tr, Out tr) (fun tr o => ⟨tr, o⟩) P) :=
-  Sumcheck.Core.run_eq_interpret D₂ (Computable.inputFamily F 2 3) (evaluate_eq F 2)
+  Sumcheck.run_eq_interpret D₂ (Computable.inputFamily F 2 3) (evaluate_eq F 2)
     (Sumcheck.Spec.polynomialFamily F 3 2) (Computable.interpretInput F 2 3) stmt data _ P
 
 /-- Transporting challenges to the polynomial carrier and back returns them. -/
 example (challenges : QueryImpl (challengeSpec oracleSig (Computable.protocol F 2 3)) ProbComp) :
-    Sumcheck.Core.Interpreted.transportDraw (N := F⦃≤ 2⦄[X])
+    Sumcheck.Interpreted.transportDraw (N := F⦃≤ 2⦄[X])
         (evaluateN := fun p x => p.val.eval x) 3
-        (Sumcheck.Core.Interpreted.transportDraw 3 challenges) = challenges :=
-  Sumcheck.Core.Interpreted.transportDraw_transportDraw 3 challenges
+        (Sumcheck.Interpreted.transportDraw 3 challenges) = challenges :=
+  Sumcheck.Interpreted.transportDraw_transportDraw 3 challenges
 
 /-- Uniform challenges at the polynomial carrier transport to uniform computable challenges. -/
-example : Sumcheck.Core.Interpreted.transportDraw (N := F⦃≤ 2⦄[X])
+example : Sumcheck.Interpreted.transportDraw (N := F⦃≤ 2⦄[X])
       (evaluateN := fun p x => p.val.eval x) 3
-      (@challengeQueryImpl _ oracleSig (Sumcheck.Core.protocol F 2 3)
-        (Sumcheck.Core.challengeSampleable F 2 3)) =
+      (@challengeQueryImpl _ oracleSig (Sumcheck.protocol F 2 3)
+        (Sumcheck.challengeSampleable F 2 3)) =
     @challengeQueryImpl _ oracleSig (Computable.protocol F 2 3)
-          (Sumcheck.Core.Interpreted.challengeSampleable F _ _ 3) :=
-  funext (Sumcheck.Core.transportDraw_challengeQueryImpl F 2 _ _ 3)
+          (Sumcheck.Interpreted.challengeSampleable F _ _ 3) :=
+  funext (Sumcheck.transportDraw_challengeQueryImpl F 2 _ _ 3)
 
 /-- Perfect completeness of the computable Sumcheck with uniform challenges. -/
 example :
     letI : MeasurableSpace (Computable.HonestOutcome F 2 3) := ⊤
     completeness ((Computable.verifier F 2 3 D₂ ambient).classicalModel init impl
         (@challengeQueryImpl _ oracleSig (Computable.protocol F 2 3)
-          (Sumcheck.Core.Interpreted.challengeSampleable F _ _ 3)))
+          (Sumcheck.Interpreted.challengeSampleable F _ _ 3)))
       (Computable.relationProblem F 2 3 D₂ 0) (Computable.relationProblem F 2 3 D₂ (Fin.last 3))
       (Computable.judgement F 2 3 D₂) (fun x _ => Computable.honestProver D₂ x.1 x.2) 0 :=
   Computable.perfectCompleteness D₂ ambient init impl _
@@ -103,10 +103,10 @@ example (stmt : Sumcheck.Spec.StatementRound F 3 0) (data : ∀ _ : Unit, Comput
 /-- Soundness of the computable Sumcheck with uniform challenges, for every prover output. -/
 example (Out : Transcript oracleSig (Computable.protocol F 2 3) → Type) :
     letI : MeasurableSpace (Computable.RunOutcome F 2 3 Out) := ⊤
-    Interaction.Core.soundness
+    Interaction.soundness
       ((Computable.verifier F 2 3 D₂ ambient).classicalModel (Out := Out) init impl
         (@challengeQueryImpl _ oracleSig (Computable.protocol F 2 3)
-          (Sumcheck.Core.Interpreted.challengeSampleable F _ _ 3)))
+          (Sumcheck.Interpreted.challengeSampleable F _ _ 3)))
       (Legacy.langProblem (Computable.language F 2 3 D₂ 0))
       (Legacy.langProblem (Computable.language F 2 3 D₂ (Fin.last 3)))
       (fun obs => Transcript.path obs.1) (fun obs => obs.2.2)
@@ -137,9 +137,9 @@ theorem zero_prover_output :
   rw [quadratic_final_value]
 
 /-- The compatibility verifier's input family `Spec.polynomialFamily` and the family
-`Core.polynomialFamily` of the indexed and interval verifiers are equal by `rfl`. -/
+`Sumcheck.polynomialFamily` of the indexed and interval verifiers are equal by `rfl`. -/
 theorem spec_polynomialFamily_eq (R : Type) [CommSemiring R] (n deg : ℕ) :
-    Sumcheck.Spec.polynomialFamily R n deg = Sumcheck.Core.polynomialFamily R n deg := rfl
+    Sumcheck.Spec.polynomialFamily R n deg = Sumcheck.polynomialFamily R n deg := rfl
 
 /-! ## A suffix soundness bound below one over `ZMod 17`
 
@@ -222,12 +222,12 @@ theorem suffix_soundness_one_seventeenth {ι : Type} (ambient : OracleSpec ι) {
 
 end SuffixSoundness
 
-end Sumcheck.Core.ComputableTest
+end Sumcheck.ComputableTest
 
-namespace Sumcheck.Core.ComputableTest.Universes
+namespace Sumcheck.ComputableTest.Universes
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec Sumcheck.Core
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec Sumcheck
 
 universe wI
 
@@ -263,34 +263,34 @@ example (domain : Fin 1 ↪ R) {J : Type 1} {B : J → Type}
       (fun _ => Sumcheck.Spec.StatementRound R 1 (Fin.last 1)) family (fun _ => family) :=
   verifierOn R 1 1 domain emptySpec R (fun x _ => x) family
 
-end Sumcheck.Core.ComputableTest.Universes
+end Sumcheck.ComputableTest.Universes
 
 /-! The executable definitions are computable, and the theorems use only the standard axioms. -/
 
 run_cmd do
   let env ← Lean.getEnv
-  for decl in [``Sumcheck.Core.Computable.verifier, ``Sumcheck.Core.Computable.observe,
-      ``Sumcheck.Core.Computable.honestProver, ``Sumcheck.Core.Computable.honestFrom,
-      ``Sumcheck.Core.Computable.honestMessage, ``Sumcheck.Core.Computable.nextState,
-      ``Sumcheck.Core.verifierOn, ``Interaction.Core.sampler] do
+  for decl in [``Sumcheck.Computable.verifier, ``Sumcheck.Computable.observe,
+      ``Sumcheck.Computable.honestProver, ``Sumcheck.Computable.honestFrom,
+      ``Sumcheck.Computable.honestMessage, ``Sumcheck.Computable.nextState,
+      ``Sumcheck.verifierOn, ``Interaction.sampler] do
     if Lean.isNoncomputable env decl then
       throwError "{decl} is noncomputable"
-  for decl in [``Sumcheck.Core.run_eq_interpret, ``Sumcheck.Core.experiment_renameQueries,
-      ``Sumcheck.Core.transportDraw_challengeQueryImpl,
-      ``Sumcheck.Core.Computable.interpretProver_honestProver,
-      ``Sumcheck.Core.Computable.support_completeness,
-      ``Sumcheck.Core.Computable.perfectCompleteness, ``Sumcheck.Core.Computable.soundness,
-      ``Sumcheck.Core.Computable.interval_run_eq_interpret,
-      ``Sumcheck.Core.Computable.interval_support_completeness,
-      ``Sumcheck.Core.Computable.interval_perfectCompleteness,
-      ``Sumcheck.Core.Computable.interval_measureCompleteness,
-      ``Sumcheck.Core.Computable.interval_soundness,
-      ``Sumcheck.Core.verifier_run_full_interval, ``Sumcheck.Core.Computable.full_run_interval,
-      ``Sumcheck.Core.ComputableTest.zero_interval_verdict,
-      ``Sumcheck.Core.ComputableTest.spec_polynomialFamily_eq,
-      ``Sumcheck.Core.ComputableTest.shiftStart_false, ``Sumcheck.Core.ComputableTest.shift_sum,
-      ``Sumcheck.Core.ComputableTest.shift_eval, ``Sumcheck.Core.ComputableTest.shift_endpoint_iff,
-      ``Sumcheck.Core.ComputableTest.suffix_soundness_one_seventeenth] do
+  for decl in [``Sumcheck.run_eq_interpret, ``Sumcheck.experiment_renameQueries,
+      ``Sumcheck.transportDraw_challengeQueryImpl,
+      ``Sumcheck.Computable.interpretProver_honestProver,
+      ``Sumcheck.Computable.support_completeness,
+      ``Sumcheck.Computable.perfectCompleteness, ``Sumcheck.Computable.soundness,
+      ``Sumcheck.Computable.interval_run_eq_interpret,
+      ``Sumcheck.Computable.interval_support_completeness,
+      ``Sumcheck.Computable.interval_perfectCompleteness,
+      ``Sumcheck.Computable.interval_measureCompleteness,
+      ``Sumcheck.Computable.interval_soundness,
+      ``Sumcheck.verifier_run_full_interval, ``Sumcheck.Computable.full_run_interval,
+      ``Sumcheck.ComputableTest.zero_interval_verdict,
+      ``Sumcheck.ComputableTest.spec_polynomialFamily_eq,
+      ``Sumcheck.ComputableTest.shiftStart_false, ``Sumcheck.ComputableTest.shift_sum,
+      ``Sumcheck.ComputableTest.shift_eval, ``Sumcheck.ComputableTest.shift_endpoint_iff,
+      ``Sumcheck.ComputableTest.suffix_soundness_one_seventeenth] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

@@ -3,25 +3,25 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.BehaviorComposition
-import ArkLib.ProofSystem.Sumcheck.Core.ComputableSoundness
-import ArkLib.ProofSystem.Sumcheck.Core.IntervalRoundSoundness
-import ArkLib.ProofSystem.Sumcheck.Core.IntervalExecution
-import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
-import ArkLib.ProofSystem.Sumcheck.Core.IntervalSoundness
-import ArkLib.ProofSystem.Sumcheck.Core.FoldComposition
-import ArkLib.ProofSystem.Sumcheck.Core.Projection
-import ArkLib.ProofSystem.Sumcheck.Core.IntervalAdaptive
-import ArkLib.ProofSystem.Sumcheck.Core.Behavior
-import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
-import ArkLibTest.ProofSystem.Sumcheck.Core.Effects
+import ArkLib.ProofSystem.Sumcheck.BehaviorComposition
+import ArkLib.ProofSystem.Sumcheck.ComputableSoundness
+import ArkLib.ProofSystem.Sumcheck.IntervalRoundSoundness
+import ArkLib.ProofSystem.Sumcheck.IntervalExecution
+import ArkLib.ProofSystem.Sumcheck.IntervalCompleteness
+import ArkLib.ProofSystem.Sumcheck.IntervalSoundness
+import ArkLib.ProofSystem.Sumcheck.FoldComposition
+import ArkLib.ProofSystem.Sumcheck.Projection
+import ArkLib.ProofSystem.Sumcheck.IntervalAdaptive
+import ArkLib.ProofSystem.Sumcheck.Behavior
+import ArkLib.ProofSystem.Sumcheck.InterpretedExecution
+import ArkLibTest.ProofSystem.Sumcheck.Effects
 
 /-! # Interaction-layer interval boundary and security regressions -/
 
 /-! ## Public interval append on the effect fixture -/
 
-namespace Sumcheck.Core.EffectsTest
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck.EffectsTest
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 
 noncomputable section
@@ -106,10 +106,10 @@ theorem public_append_record :
 
 end
 
-end Sumcheck.Core.EffectsTest
+end Sumcheck.EffectsTest
 
-namespace Sumcheck.Core.IntervalTest
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck.IntervalTest
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 
 noncomputable section
@@ -211,38 +211,38 @@ example {R : Type} [CommSemiring R] [DecidableEq R] [IsDomain R] [Fintype R]
 end
 
 run_cmd
-  for decl in [``Sumcheck.Core.intervalVerifier, ``Sumcheck.Core.intervalVerifier_rbrSoundness,
-      ``Sumcheck.Core.intervalVerifier_soundness, ``Sumcheck.Core.intervalVerifier_soundness_list,
-      ``Sumcheck.Core.intervalVerifier_soundness_injective,
-      ``Sumcheck.Core.intervalVerifier_supportCompleteness,
-      ``Sumcheck.Core.intervalVerifier_perfectCompleteness,
-      ``Sumcheck.Core.Computable.interpret_intervalHonestProver,
-      ``Sumcheck.Core.Computable.execute_perfectCompleteness,
-      ``Sumcheck.Core.Computable.execute_soundness,
-      ``Sumcheck.Core.intervalRoundExecute_soundness,
-      ``Sumcheck.Core.intervalRoundExecute_measureSoundness,
-      ``Sumcheck.Core.run_append_behaviorIntervalVerifier,
-      ``Sumcheck.Core.intervalVerifier_full_run, ``Sumcheck.Core.run_append_intervalVerifier,
-      ``Sumcheck.Core.run_append_public_intervalVerifier,
-      ``Sumcheck.Core.intervalVerifier_measureCompleteness,
-      ``Sumcheck.Core.intervalVerifier_adaptive_perfectCompleteness,
-      ``Sumcheck.Core.intervalVerifier_evaluation,
-      ``Sumcheck.Core.behaviorRoundRelation_last,
-      ``Sumcheck.Core.behaviorIntervalVerifier_run_zero,
-      ``Sumcheck.Core.Interpreted.run_transport,
-      ``Sumcheck.Core.projectedMap, ``Sumcheck.Core.simulateQ_projectedQuery,
-      ``Sumcheck.Core.projectedQuery_isChargeBound, ``OracleVerifier.run_eq_decideWith,
+  for decl in [``Sumcheck.intervalVerifier, ``Sumcheck.intervalVerifier_rbrSoundness,
+      ``Sumcheck.intervalVerifier_soundness, ``Sumcheck.intervalVerifier_soundness_list,
+      ``Sumcheck.intervalVerifier_soundness_injective,
+      ``Sumcheck.intervalVerifier_supportCompleteness,
+      ``Sumcheck.intervalVerifier_perfectCompleteness,
+      ``Sumcheck.Computable.interpret_intervalHonestProver,
+      ``Sumcheck.Computable.execute_perfectCompleteness,
+      ``Sumcheck.Computable.execute_soundness,
+      ``Sumcheck.intervalRoundExecute_soundness,
+      ``Sumcheck.intervalRoundExecute_measureSoundness,
+      ``Sumcheck.run_append_behaviorIntervalVerifier,
+      ``Sumcheck.intervalVerifier_full_run, ``Sumcheck.run_append_intervalVerifier,
+      ``Sumcheck.run_append_public_intervalVerifier,
+      ``Sumcheck.intervalVerifier_measureCompleteness,
+      ``Sumcheck.intervalVerifier_adaptive_perfectCompleteness,
+      ``Sumcheck.intervalVerifier_evaluation,
+      ``Sumcheck.behaviorRoundRelation_last,
+      ``Sumcheck.behaviorIntervalVerifier_run_zero,
+      ``Sumcheck.Interpreted.run_transport,
+      ``Sumcheck.projectedMap, ``Sumcheck.simulateQ_projectedQuery,
+      ``Sumcheck.projectedQuery_isChargeBound, ``OracleVerifier.run_eq_decideWith,
       ``Sumcheck.Impl.Computable.indexedRoundPolynomial_toPoly,
-      ``Sumcheck.Core.Computable.indexedRoundPolynomial_toPoly,
-      ``Sumcheck.Core.Computable.projectedMessage_evaluate,
-      ``Sumcheck.Core.projectedExecute_honest_eq, ``Sumcheck.Core.projectedExecute_closed,
-      ``Sumcheck.Core.projectedExecute_related, ``Sumcheck.Core.simulateQ_projectedInput,
-      ``Sumcheck.Core.IntervalTest.nonzero_run,
-      ``Sumcheck.Core.IntervalTest.nonzero_rejects, ``Sumcheck.Core.IntervalTest.zero_run,
-      ``Sumcheck.Core.IntervalTest.repeated_projectedMap,
-      ``Sumcheck.Core.EffectsTest.public_append_record] do
+      ``Sumcheck.Computable.indexedRoundPolynomial_toPoly,
+      ``Sumcheck.Computable.projectedMessage_evaluate,
+      ``Sumcheck.projectedExecute_honest_eq, ``Sumcheck.projectedExecute_closed,
+      ``Sumcheck.projectedExecute_related, ``Sumcheck.simulateQ_projectedInput,
+      ``Sumcheck.IntervalTest.nonzero_run,
+      ``Sumcheck.IntervalTest.nonzero_rejects, ``Sumcheck.IntervalTest.zero_run,
+      ``Sumcheck.IntervalTest.repeated_projectedMap,
+      ``Sumcheck.EffectsTest.public_append_record] do
     for ax in ← Lean.collectAxioms decl do
       unless ax == ``propext || ax == ``Classical.choice || ax == ``Quot.sound do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.IntervalTest
+end Sumcheck.IntervalTest

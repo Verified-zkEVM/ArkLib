@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Interval
+public import ArkLib.ProofSystem.Sumcheck.Interval
 public import VCVio.OracleComp.EvalDist.Measure
 
 /-! # Completeness of arbitrary Sumcheck intervals
@@ -16,8 +16,8 @@ challenge handlers may depend on the reached statement and all previous challeng
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle
   OracleComp OracleSpec
 
@@ -225,4 +225,4 @@ theorem intervalVerifier_perfectCompleteness_injective (embedding : Fin d ↪ R)
       ∃ t, result.2.2 = some (t, fun _ => p) ∧ indexedRelation (⇑embedding) _ t p] = 1 :=
   intervalVerifier_perfectCompleteness (⇑embedding) p ambient init start count bound impl stmt h
 
-end Sumcheck.Core
+end Sumcheck

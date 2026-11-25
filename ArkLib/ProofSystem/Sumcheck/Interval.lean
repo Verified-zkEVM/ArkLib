@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Domain
-public import ArkLib.ProofSystem.Sumcheck.Core.Fold
+public import ArkLib.ProofSystem.Sumcheck.IndexedDomain
+public import ArkLib.ProofSystem.Sumcheck.Fold
 
 /-! # Sumcheck verifiers between arbitrary endpoints
 
@@ -16,8 +16,8 @@ Every domain index contributes to each sum check, including repeated points.
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle
   OracleComp OracleSpec
 
@@ -197,4 +197,4 @@ theorem intervalVerifier_run {ι : Type} (ambient : OracleSpec ι)
       (foldVerifier R deg ambient (polynomialFamily R n deg) (intervalCheck D)
         IntervalClaim.finish count).run (intervalInitial start count bound stmt) data prover := rfl
 
-end Sumcheck.Core
+end Sumcheck

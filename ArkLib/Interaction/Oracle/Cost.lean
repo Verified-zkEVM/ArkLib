@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Composition
+public import ArkLib.Interaction.Composition
 public import VCVio.OracleComp.QueryTracking.CostModel.Simulation
 
 /-!
@@ -36,7 +36,7 @@ completed-path transfer `PFunctor.FreeM.Path.charge_liftM_le_of_forall`.
 
 universe dX dY
 
-namespace Interaction.Core
+namespace Interaction
 open OracleComp OracleSpec Oracle
 
 /-- A weighted bound on a decision over the output bundle transfers to the same decision routed
@@ -71,4 +71,4 @@ theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleS
       (worstCaseCostBound_query (.inl q) targetCost) z hz).trans (hambient q)
   · exact (hroute q).simulateQ _ fun r => worstCaseCostBound_query (.inr r) targetCost
 
-end Interaction.Core
+end Interaction

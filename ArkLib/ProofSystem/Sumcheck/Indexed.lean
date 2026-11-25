@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Interval
-public import ArkLib.Interaction.Core.Security.Implications
+public import ArkLib.ProofSystem.Sumcheck.Interval
+public import ArkLib.Interaction.Security.Implications
 
 /-! # Sumcheck verification over indexed domains
 
@@ -35,9 +35,9 @@ this setting specializes the textbook statement.
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open scoped ENNReal NNReal
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle
   OracleComp OracleSpec
 
@@ -838,4 +838,4 @@ theorem indexedExecute_univariate_measureCompleteness {ι : Type} (ambient : Ora
   rw [← prEvent_eq_evalDist_map]
   exact indexedExecute_univariate_perfectCompleteness ambient impl challenge domain p target h
 
-end Sumcheck.Core
+end Sumcheck

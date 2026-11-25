@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Interpreted
+public import ArkLib.ProofSystem.Sumcheck.Interpreted
 
 /-! # Execution under message interpretation
 
@@ -23,8 +23,8 @@ every challenge draw and the private value at the leaf.
 
 @[expose] public section
 
-namespace Sumcheck.Core.Interpreted
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck.Interpreted
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 
 variable {R M N : Type} {evaluate : M → R → R} {evaluateN : N → R → R}
@@ -349,4 +349,4 @@ theorem execute_input_eq {m : Type → Type} [Monad m] {Out Data : Type} {State 
   rw [h]
 
 
-end Sumcheck.Core.Interpreted
+end Sumcheck.Interpreted

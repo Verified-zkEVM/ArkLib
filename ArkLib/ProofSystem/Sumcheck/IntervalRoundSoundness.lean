@@ -5,17 +5,17 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalExecution
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import ArkLib.ProofSystem.Sumcheck.IntervalExecution
+public import ArkLib.ProofSystem.Sumcheck.Indexed
 public import VCVio.OracleComp.EvalDist.Measure
 
 /-! # Soundness of one interval round at an arbitrary variable -/
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open scoped ENNReal NNReal
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ} (D : Fin d → R)
 
@@ -101,4 +101,4 @@ theorem intervalRoundExecute_measureSoundness [IsDomain R] [Fintype R] [Sampleab
   rw [← prEvent_eq_evalDist_map]
   exact intervalRoundExecute_soundness D i stmt data q hfalse
 
-end Sumcheck.Core
+end Sumcheck

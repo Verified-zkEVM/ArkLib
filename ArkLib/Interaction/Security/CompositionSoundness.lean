@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Oracle.Routing
-public import ArkLib.Interaction.Core.Security.Soundness
+public import ArkLib.Interaction.Oracle.Routing
+public import ArkLib.Interaction.Security.Soundness
 public import VCVio.EvalDist.ProbabilityBounds
 public import VCVio.EvalDist.Monad.Disagreement.Measure
 public import VCVio.OracleComp.Runtime
@@ -60,7 +60,7 @@ unchanged.
 
 universe u uA uS uI dI wJ
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
@@ -1070,7 +1070,7 @@ theorem Verifier.append_soundness_of_standalone {s₁ : Protocol} {s₂ : Path s
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
-      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+      Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
@@ -1139,7 +1139,7 @@ theorem Verifier.append_soundness_of_standalone_of_evalDistEq {s₁ : Protocol}
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
-      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+      Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
@@ -1166,7 +1166,7 @@ theorem Verifier.append_soundness_of_standalone_of_pure {s₁ : Protocol}
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
-      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+      Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
@@ -1194,7 +1194,7 @@ theorem Verifier.append_soundness_of_standalone_of_stateless {s₁ : Protocol}
         o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
-      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
+      Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
         (g.liftTarget (StateT σ ProbComp))
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
@@ -1368,4 +1368,4 @@ theorem Verifier.append_soundness_of_soundness_of_stateless {s₁ : Protocol}
 
 end standalone
 
-end Interaction.Core
+end Interaction

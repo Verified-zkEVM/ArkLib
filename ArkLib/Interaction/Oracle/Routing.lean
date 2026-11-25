@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Composition
+public import ArkLib.Interaction.Composition
 
 /-!
 # Routing an appended oracle run
@@ -26,7 +26,7 @@ the prefix transcript alone.
 
 universe u q dI uι uI uJ uK uS wI wJ wK
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 /-- Component paths of an appended protocol with data for both component oracle families. -/
@@ -178,4 +178,4 @@ theorem run_append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
       (data, oracleMessages _ (Transcript.append s₁ s₂ tr₁ tr₂))]
 
 end OracleVerifier
-end Interaction.Core
+end Interaction

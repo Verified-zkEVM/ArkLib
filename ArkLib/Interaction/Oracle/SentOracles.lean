@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Oracle.QueriesByMoveLaws
-public import ArkLib.Interaction.Core.Oracle.Routing
+public import ArkLib.Interaction.Oracle.QueriesByMoveLaws
+public import ArkLib.Interaction.Oracle.Routing
 
 /-!
 # Sent oracle messages at a partial transcript
@@ -18,7 +18,7 @@ name does not depend on later moves. When a longer partial transcript continues 
 includes the shorter one's sent oracle messages, and it keeps their node names and their query
 behavior.
 
-The core (`Core/OracleVerifier.lean`) names the oracle messages of a completed path with
+The core (`Interaction/OracleVerifier.lean`) names the oracle messages of a completed path with
 `OracleMessageIndex`, `OracleMessage`, `oracleMessageFamily` and `oracleMessages`. A partial
 transcript has the same data for the messages sent so far. This file therefore uses the same
 stems with a `Sent` prefix: `SentOracleMessageIndex`, `SentOracleMessage`,
@@ -42,7 +42,7 @@ with oracle access before its final decision.
 
 universe u q uI dI
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace PartialTranscript
@@ -551,4 +551,4 @@ theorem runWithAmbientQueriesByMove_before_le {ι : Type} {S : Type u} {ambient 
   · exact ⟨PartialTranscript.Le.refl _⟩
 
 end OracleVerifier
-end Interaction.Core
+end Interaction

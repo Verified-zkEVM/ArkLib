@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
-public import ArkLib.Interaction.Core.Legacy.OracleSecurity
+public import ArkLib.ProofSystem.Sumcheck.LegacyEquivalence
+public import ArkLib.Interaction.Legacy.OracleSecurity
 
 /-!
 # Round-by-round soundness of Sumcheck in the interaction layer
@@ -42,10 +42,10 @@ embedding's dropped ambient queries with `supportedAnswer`, an answer that `impl
 
 universe uK
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open scoped ENNReal NNReal
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec Interaction.Legacy
 
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
@@ -135,4 +135,4 @@ theorem verifier_rbrSoundness [Fintype R] [IsDomain R] :
   dsimp only [legacyVerifier]
   convert hsource using 1 <;> rfl
 
-end Sumcheck.Core
+end Sumcheck

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.RoundByRound
+public import ArkLib.Interaction.Security.RoundByRound
 
 /-!
 # Agreeing oracle verifiers
@@ -31,7 +31,7 @@ also gives equal decision logs (`runWithLog_eq_of_decide_eq`).
 
 universe u vDraw q dI uι uJ uK uS uI uW uO wJ
 
-namespace Interaction.Core.OracleVerifier
+namespace Interaction.OracleVerifier
 open scoped ENNReal
 open PFunctor FreeM TwoParty.Lens Oracle OracleComp OracleSpec
 
@@ -179,9 +179,9 @@ theorem Agrees.soundness_iff (h : Agrees V V') {Out : Transcript oracleSig s →
     (verdict : (obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) →
       Option (OracleVerifier.Output T B (Transcript.path obs.1)))
     (ε : ℝ≥0∞) :
-    Core.soundness (V.classicalModel init impl draw) input output
+    Interaction.soundness (V.classicalModel init impl draw) input output
         (fun obs => Transcript.path obs.1) verdict ε ↔
-      Core.soundness (V'.classicalModel init impl draw) input output
+      Interaction.soundness (V'.classicalModel init impl draw) input output
         (fun obs => Transcript.path obs.1) verdict ε := by
   rw [h.classicalModel_eq]
 
@@ -391,12 +391,12 @@ theorem soundness_cast (e : s' = s)
     (ε : ℝ≥0∞) :
     (∀ Out : Transcript oracleSig s → Type,
       letI : MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B)) := ⊤
-      Core.soundness ((V.cast e).classicalModel (Out := Out) init impl (e ▸ draw)) input output
-        (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε) ↔
+      Interaction.soundness ((V.cast e).classicalModel (Out := Out) init impl (e ▸ draw))
+        input output (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε) ↔
     (∀ Out : Transcript oracleSig s' → Type,
       letI : MeasurableSpace (Outcome oracleSig s' Out
         (fun p => OracleVerifier.Output T B (e ▸ p))) := ⊤
-      Core.soundness (V.classicalModel (Out := Out) init impl draw) input
+      Interaction.soundness (V.classicalModel (Out := Out) init impl draw) input
         (_root_.cast (by subst e; rfl) output :
         PathProblem s' (fun p => OracleVerifier.Output T B (e ▸ p)))
         (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε) := by
@@ -439,4 +439,4 @@ theorem rbrKnowledgeSoundness_cast (e : s' = s)
 
 end ClassicalCast
 
-end Interaction.Core.OracleVerifier
+end Interaction.OracleVerifier

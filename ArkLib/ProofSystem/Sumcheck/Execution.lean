@@ -5,10 +5,10 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedExecution
-public import ArkLib.ProofSystem.Sumcheck.Core.LegacyProtocol
+public import ArkLib.ProofSystem.Sumcheck.InterpretedExecution
+public import ArkLib.ProofSystem.Sumcheck.LegacyProtocol
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
-public import ArkLib.Interaction.Core.LegacyAppend
+public import ArkLib.Interaction.LegacyAppend
 public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
 
 /-!
@@ -49,8 +49,8 @@ The main results are:
 
 universe uI wI
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec
 
 /-! ## Decoding -/
@@ -512,7 +512,7 @@ theorem run_verifier_foldRounds {State : ℕ → Type} {Out : Type}
               Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i))) <$>
         drawChallenges n (fun c =>
           liftM ((ambient + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
-  rw [Interaction.Core.OracleVerifier.run_eq]
+  rw [Interaction.OracleVerifier.run_eq]
   rw [simulate_foldRounds, run_foldRounds, _root_.bind_map_left, map_eq_bind_pure_comp]
   refine bind_congr fun chals => ?_
   simp only [simulateQ_decide]
@@ -699,4 +699,4 @@ theorem legacyVerdict_eq_none {k : ℕ} (stmt : Spec.StatementRound R (k + 1) 0)
 
 end Reject
 
-end Sumcheck.Core
+end Sumcheck

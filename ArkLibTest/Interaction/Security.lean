@@ -4,18 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Security.RoundByRound
-import ArkLibTest.Interaction.Core.Oracle
+import ArkLib.Interaction.Security.RoundByRound
+import ArkLibTest.Interaction.Oracle
 import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-! Nonvacuous model examples and fixed-prefix bounds on a protocol with a challenge. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp MeasureTheory
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp MeasureTheory
 open scoped ENNReal
 
 universe v
 
-namespace Interaction.Core.SecurityTests
+namespace Interaction.SecurityTests
 
 @[instance_reducible] def problem : StatementProblem Bool where
   Witness _ _ := Unit
@@ -132,7 +132,7 @@ example : readState.validAcceptance stateImpl () ⟨⟩ (· = true) := by
   change 0 < 𝒟[(pure (some true) : ProbComp (Option Bool))] {v | ∃ t, v = some t ∧ t = true}
   simp
 
-open Interaction.Core.OracleTests
+open Interaction.OracleTests
 
 def oracleProver : Prover oracleSig OracleSpec.emptySpec tree (fun _ => Nat) :=
   pure ⟨fun n => n + 5, pure 7⟩
@@ -747,27 +747,27 @@ run_cmd do
   unless obs.2.2 == none && extracted.isNone do
     throwError "the rejecting branch accepted or extracted"
 
-end Interaction.Core.SecurityTests
+end Interaction.SecurityTests
 
 run_cmd do
-  for decl in [``Interaction.Core.completeness, ``Interaction.Core.soundness,
-      ``Interaction.Core.knowledgeSoundnessWith, ``Interaction.Core.classicalStraightLine,
-      ``Interaction.Core.classicalTranscriptOnly, ``Interaction.Core.Verifier.runWithLog_fst,
-      ``Interaction.Core.OracleVerifier.classicalStraightLine, ``Interaction.Core.rbrSoundness,
-      ``Interaction.Core.rbrKnowledgeSoundness, ``Interaction.Core.Verifier.verdict_mem_support_run,
-      ``Interaction.Core.mem_support_extractionGame,
-      ``Interaction.Core.map_run_withLogging_addLift_fst,
-      ``Interaction.Core.OracleVerifier.runWithLog_fst,
-      ``Interaction.Core.classicalStraightLine_marginal,
-      ``Interaction.Core.classicalTranscriptOnly_marginal,
-      ``Interaction.Core.SecurityTests.coin_rbrSoundness,
-      ``Interaction.Core.SecurityTests.coin_not_rbrSoundness,
-      ``Interaction.Core.SecurityTests.coin_rbrKnowledgeSoundness,
-      ``Interaction.Core.SecurityTests.coin_not_rbrKnowledgeSoundness,
-      ``Interaction.Core.SecurityTests.payload_rbrKnowledgeSoundness,
-      ``Interaction.Core.SecurityTests.payloadKnowledge_extract,
-      ``Interaction.Core.SecurityTests.payload_extractionGame,
-      ``Interaction.Core.SecurityTests.bad_eq_zero] do
+  for decl in [``Interaction.completeness, ``Interaction.soundness,
+      ``Interaction.knowledgeSoundnessWith, ``Interaction.classicalStraightLine,
+      ``Interaction.classicalTranscriptOnly, ``Interaction.Verifier.runWithLog_fst,
+      ``Interaction.OracleVerifier.classicalStraightLine, ``Interaction.rbrSoundness,
+      ``Interaction.rbrKnowledgeSoundness, ``Interaction.Verifier.verdict_mem_support_run,
+      ``Interaction.mem_support_extractionGame,
+      ``Interaction.map_run_withLogging_addLift_fst,
+      ``Interaction.OracleVerifier.runWithLog_fst,
+      ``Interaction.classicalStraightLine_marginal,
+      ``Interaction.classicalTranscriptOnly_marginal,
+      ``Interaction.SecurityTests.coin_rbrSoundness,
+      ``Interaction.SecurityTests.coin_not_rbrSoundness,
+      ``Interaction.SecurityTests.coin_rbrKnowledgeSoundness,
+      ``Interaction.SecurityTests.coin_not_rbrKnowledgeSoundness,
+      ``Interaction.SecurityTests.payload_rbrKnowledgeSoundness,
+      ``Interaction.SecurityTests.payloadKnowledge_extract,
+      ``Interaction.SecurityTests.payload_extractionGame,
+      ``Interaction.SecurityTests.bad_eq_zero] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

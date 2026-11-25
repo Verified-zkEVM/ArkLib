@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.LegacyProtocol
+import ArkLib.ProofSystem.Sumcheck.LegacyProtocol
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -13,9 +13,9 @@ Challenges never select shape, zero rounds is the leaf, the honest prover's slot
 honest runs have the stated closed form.
 -/
 
-namespace Sumcheck.Core.ProtocolTest
+namespace Sumcheck.ProtocolTest
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
 
 abbrev F := ZMod 5
 
@@ -106,13 +106,13 @@ example {d : ℕ} (D : Fin d ↪ F) (stmt : Spec.StatementRound F 2 0)
     (honestOutput D stmt oStmt chals).1.1.challenges j = chals j := by
   fin_cases j <;> rfl
 
-end Sumcheck.Core.ProtocolTest
+end Sumcheck.ProtocolTest
 
 run_cmd do
-  for decl in [``Sumcheck.Core.project_eq_shape, ``Sumcheck.Core.run_roundProver,
-      ``Sumcheck.Core.run_consProver, ``Sumcheck.Core.run_foldRounds,
-      ``Sumcheck.Core.simulate_foldRounds, ``Sumcheck.Core.run_honestProver,
-      ``Sumcheck.Core.simulate_honestProver, ``Interaction.Core.Prover.simulate_node] do
+  for decl in [``Sumcheck.project_eq_shape, ``Sumcheck.run_roundProver,
+      ``Sumcheck.run_consProver, ``Sumcheck.run_foldRounds,
+      ``Sumcheck.simulate_foldRounds, ``Sumcheck.run_honestProver,
+      ``Sumcheck.simulate_honestProver, ``Interaction.Prover.simulate_node] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

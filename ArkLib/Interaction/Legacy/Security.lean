@@ -5,9 +5,9 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.Execution
-public import ArkLib.Interaction.Core.Security.Knowledge
-public import ArkLib.Interaction.Core.Security.RoundByRound
+public import ArkLib.Interaction.Legacy.Execution
+public import ArkLib.Interaction.Security.Knowledge
+public import ArkLib.Interaction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
 
@@ -58,7 +58,7 @@ compare the legacy probability of an event with the interaction-layer measure of
 
 universe uK
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec MeasureTheory
 open Interaction.Oracle (Problem ClaimFamily)
 open scoped ENNReal NNReal
@@ -178,7 +178,7 @@ section MapOutput
 theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}} {κ : Type}
     {spec : OracleSpec κ} {M : Type → Type} [Monad M] [LawfulMonad M] (F : QueryImpl spec M) :
     (s : FreeM P PUnit.{1}) → {Out Out' : Transcript l s → Type} → (f : ∀ tr, Out tr → Out' tr) →
-    (p : Core.Prover l spec s Out) →
+    (p : Interaction.Prover l spec s Out) →
     Prover.simulate F (Strategy.mapOutput f p) = Strategy.mapOutput f (Prover.simulate F p)
   | .pure _, _, _, f, p => simulateQ_map F p (f ⟨⟩)
   | .liftBind a rest, _, _, f, p => by
@@ -194,8 +194,8 @@ theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{
 /-- The verifier's run of a strategy with mapped outputs maps the outputs of its outcome. It
 is PolyFun's `runWith_mapOutput_mapOutput` with the identity map on the sampler. -/
 theorem verifier_run_mapOutput {S : Type} {s : Protocol.{0}} {T : Path s → Type}
-    (V : Core.Verifier oSpec s S T) (stmt : S) {Out Out' : Transcript plainSig s → Type}
-    (f : ∀ tr, Out tr → Out' tr) (p : Core.Prover plainSig oSpec s Out) :
+    (V : Interaction.Verifier oSpec s S T) (stmt : S) {Out Out' : Transcript plainSig s → Type}
+    (f : ∀ tr, Out tr → Out' tr) (p : Interaction.Prover plainSig oSpec s Out) :
     V.run stmt (Strategy.mapOutput f p) =
       (fun obs => ⟨obs.1, f obs.1 obs.2.1, obs.2.2⟩) <$> V.run stmt p := by
   have h := runWith_mapOutput_mapOutput (m := OracleComp (oSpec + challengeSpec plainSig s))
@@ -204,7 +204,7 @@ theorem verifier_run_mapOutput {S : Type} {s : Protocol.{0}} {T : Path s → Typ
     (sampler plainSig s (QueryImpl.ofLift (challengeSpec plainSig s)
       (OracleComp (oSpec + challengeSpec plainSig s))))
   rw [Strategy.mapOutput_id] at h
-  simp only [Core.Verifier.run, simulate_mapOutput, TwoParty.Lens.run, h, bind_assoc,
+  simp only [Interaction.Verifier.run, simulate_mapOutput, TwoParty.Lens.run, h, bind_assoc,
     LawfulMonad.pure_bind, _root_.map_bind]
   refine bind_congr fun r => ?_
   simp
@@ -220,7 +220,7 @@ variable (oSpec pSpec) in
 tree. -/
 def TranslState (Out : Type) (i : Fin (n + 1)) : Type :=
   Σ' (m : ℕ) (h : i.1 + m = n),
-    Core.Prover plainSig oSpec (suffix pSpec i.1 m h) (fun _ => Out)
+    Interaction.Prover plainSig oSpec (suffix pSpec i.1 m h) (fun _ => Out)
 
 /-- View the slot of round `j` at the node of direction `D`. -/
 def toSlot (j : Fin n) {A : Type} : (D : Direction) → pSpec.dir j = D →
@@ -232,7 +232,7 @@ def toSlot (j : Fin n) {A : Type} : (D : Direction) → pSpec.dir j = D →
 
 /-- The first slot of a remaining strategy, continuing in the translated state. -/
 def nextSlot {Out : Type} (j : Fin n) (m : ℕ) (h : j.1 + (m + 1) = n)
-    (q : Core.Prover plainSig oSpec (suffix pSpec j.1 (m + 1) h) (fun _ => Out)) :
+    (q : Interaction.Prover plainSig oSpec (suffix pSpec j.1 (m + 1) h) (fun _ => Out)) :
     OracleComp oSpec (Choice .focal (owner plainSig (plainRound pSpec j))
       (Move plainSig (plainRound pSpec j)) (fun _ => TranslState oSpec pSpec Out j.succ)) :=
   Choice.map .focal _ (fun _ next => ⟨m, by simp only [Fin.val_succ]; omega, next⟩) <$> q
@@ -240,7 +240,7 @@ def nextSlot {Out : Type} (j : Fin n) (m : ℕ) (h : j.1 + (m + 1) = n)
 /-- The legacy prover that plays a plain-tree strategy slot for slot and outputs the strategy's
 output. Its private input is trivial. -/
 def translate {StmtIn StmtOut WitOut : Type}
-    (p : Core.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut)) :
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut)) :
     _root_.Prover oSpec StmtIn PUnit StmtOut WitOut pSpec where
   PrvState := TranslState oSpec pSpec (StmtOut × WitOut)
   input _ := ⟨n, Nat.zero_add n, p⟩
@@ -257,9 +257,10 @@ def translate {StmtIn StmtOut WitOut : Type}
 variable {StmtIn StmtOut WitOut : Type}
 
 theorem roundSlot_translate
-    (p : Core.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut))
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut))
     (j : Fin n) (D : Direction) (hD : pSpec.dir j = D) (m : ℕ) (h : j.1 + (m + 1) = n)
-    (q : Core.Prover plainSig oSpec (suffix pSpec j.1 (m + 1) h) (fun _ => StmtOut × WitOut)) :
+    (q : Interaction.Prover plainSig oSpec (suffix pSpec j.1 (m + 1) h)
+      (fun _ => StmtOut × WitOut)) :
     roundSlot (translate (StmtIn := StmtIn) p) j D hD ⟨m + 1, h, q⟩ =
       toSlot j D hD (nextSlot j m h q) := by
   cases D with
@@ -272,9 +273,9 @@ theorem roundSlot_translate
 
 /-- The embedded translated prover from round `k` is the remaining strategy. -/
 theorem embedFrom_translate
-    (p : Core.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut)) :
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut)) :
     (m k : ℕ) → (h : k + m = n) →
-    (q : Core.Prover plainSig oSpec (suffix pSpec k m h) (fun _ => StmtOut × WitOut)) →
+    (q : Interaction.Prover plainSig oSpec (suffix pSpec k m h) (fun _ => StmtOut × WitOut)) →
     embedFrom (translate (StmtIn := StmtIn) p) k m h ⟨m, h, q⟩ = q
   | 0, k, h, q => by
     subst h
@@ -293,7 +294,7 @@ theorem embedFrom_translate
 
 /-- Translating an interaction-layer prover and embedding it back gives the same prover. -/
 theorem embedProver_translate
-    (p : Core.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut))
+    (p : Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut))
     (stmt : StmtIn) : embedProver (translate p) stmt ⟨⟩ = p :=
   embedFrom_translate p n 0 (Nat.zero_add n) p
 
@@ -438,19 +439,19 @@ theorem challengeMoveInvariant_extractor {κ : Type} {chal : OracleSpec κ}
 
 /-- The interaction-layer view of a legacy straight-line extractor. -/
 def liftExtractor (E : _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) :
-    Core.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+    Interaction.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
       (fun _ => WitOut) :=
   fun stmt tr w pl vl => E stmt w (decode pSpec tr) pl vl
 
 /-- The legacy view of an interaction-layer straight-line extractor on the plain tree. -/
 def lowerExtractor
-    (E : Core.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+    (E : Interaction.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
       (fun _ => WitOut)) :
     _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=
   fun stmt w tr pl vl => E stmt ((transcriptEquiv pSpec).symm tr) w pl vl
 
 @[simp] theorem liftExtractor_lowerExtractor
-    (E : Core.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
+    (E : Interaction.Extractor.StraightLine oSpec (protocol pSpec) (fun _ : StmtIn => WitIn)
       (fun _ => WitOut)) :
     liftExtractor (lowerExtractor E) = E := by
   funext stmt tr w pl vl
@@ -462,7 +463,7 @@ lifted legacy extractor, read as a legacy result, is the decoded logged prover-s
 followed by `knowledgeTail`. -/
 theorem extractionGame_embed (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (E : _root_.Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) (stmt : StmtIn)
-    (adv : Core.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut)) :
+    (adv : Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut)) :
     (fun z => z.1.2.2.map fun t => (stmt, z.2, t, z.1.2.1.2)) <$>
         extractionGame (embedVerifier V) (fun _ o => o.2) (liftExtractor E) stmt adv =
       ((fun z => ((decode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
@@ -472,7 +473,7 @@ theorem extractionGame_embed (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
           (sampler plainSig (protocol pSpec) (fun c =>
             liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))))) >>=
         knowledgeTail (challengeSpec plainSig (protocol pSpec)) V E stmt := by
-  simp only [extractionGame, Core.Verifier.runWithLog, ambientLogged, _root_.map_bind,
+  simp only [extractionGame, Interaction.Verifier.runWithLog, ambientLogged, _root_.map_bind,
     bind_map_left, bind_assoc]
   unfold QueryImpl.restrictLeft QueryImpl.restrictRight
   simp only [QueryImpl.id'_apply]
@@ -1052,7 +1053,7 @@ theorem rbrSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V acc) (langI
       pSpec,
       Pr{let c ← $ᵗ (pSpec.Challenge i)}[
         ¬ S i.1.castSucc stmtIn tr ∧ S i.1.succ stmtIn (tr.concat c)] ≤ ε i) :
-    Core.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
+    Interaction.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
       ((langProblem langIn).language ()) (acc ((langProblem langOut).language ()))
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
@@ -1083,7 +1084,7 @@ theorem rbrSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc) (langIn : 
     (langOut : Set StmtOut) (ε : pSpec.ChallengeIdx → ℝ≥0)
     (hcert : ∀ S : V.StateFunction init impl langIn langOut, StateTerminalCertificate S)
     (h : V.rbrSoundness init impl langIn langOut ε) :
-    Core.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
+    Interaction.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
       ((langProblem langIn).language ()) (acc ((langProblem langOut).language ()))
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
@@ -1095,7 +1096,7 @@ agrees with the legacy verifier. No hypothesis on `init` is needed: an interacti
 terminal obligation covers every ambient state, hence every state drawn by `init`. -/
 theorem legacy_rbrSoundness (hacc : L.AcceptanceAgrees impl V acc) (langIn : Set StmtIn)
     (langOut : Set StmtOut) (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : Core.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
+    (h : Interaction.rbrSoundness L.l L.protocol ((langProblem langIn).admissible ())
       ((langProblem langIn).language ()) (acc ((langProblem langOut).language ()))
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c))) :
@@ -1253,12 +1254,12 @@ theorem rbrKnowledgeSoundness_of_legacyWith (hacc : L.AcceptanceAgrees impl V ac
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     {K : V.KnowledgeStateFunction init impl relIn relOut E} (hK : KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
-    Core.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
+    Interaction.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (L.challengeRound 0 n (Nat.zero_add n) c)) := by
-  apply Core.rbrKnowledgeSoundness.lift.{0, 0, 0, 0, 1, uK}
+  apply Interaction.rbrKnowledgeSoundness.lift.{0, 0, 0, 0, 1, uK}
   refine ⟨L.embedKnowledgeStateFunction hacc K hK, fun stmt _ a next sp hc hist => ?_⟩
   rw [prefixSampleAt_ofNodes]
   obtain ⟨j, rfl, tr, h1, h2, hch⟩ := L.prefixFrom_step 0 n _ default sp hist
@@ -1293,7 +1294,7 @@ theorem rbrKnowledgeSoundness_of_legacy (hacc : L.AcceptanceAgrees impl V acc)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
+    Interaction.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
@@ -1312,7 +1313,7 @@ knowledge soundness with a chosen extractor. That last step needs `Nonempty WitI
 theorem legacy_rbrKnowledgeSoundness [Nonempty WitIn] (hacc : L.AcceptanceAgrees impl V acc)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : Core.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
+    (h : Interaction.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} L.l L.protocol (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn)
       (fun stmt tr wit => acc (fun t => (t, wit) ∈ relOut) stmt tr)
       (L.challengeImpl ProtocolSpec.challengeQueryImpl)
@@ -1399,8 +1400,8 @@ theorem embedVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
-      (fun stmt w => (stmt, w) ∈ relIn)
+    Interaction.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl
+      (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn)
       (fun _ _ t w => (t, w) ∈ relOut) (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
       (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) :=
   (plainLayout pSpec).rbrKnowledgeSoundness_of_legacy (validAcceptance_embed_iff V impl) relIn
@@ -1413,7 +1414,7 @@ theorem rbrKnowledgeSoundness_of_embedVerifier [Nonempty WitIn] (init : ProbComp
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : Core.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl
+    (h : Interaction.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl
     (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
@@ -1434,8 +1435,8 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
     (hcert : ∀ (M : Fin (n + 1) → Type)
       (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M)
       (K : V.KnowledgeStateFunction init impl relIn relOut E), KnowledgeTerminalCertificate K) :
-    Core.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl (fun _ => True)
-        (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
+    Interaction.Verifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK} (embedVerifier V) impl
+        (fun _ => True) (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
         (plainChallengeImpl ProtocolSpec.challengeQueryImpl)
         (fun c => ε (challengeRound 0 n (Nat.zero_add n) c)) ↔
       V.rbrKnowledgeSoundness init impl relIn relOut ε :=
@@ -1444,4 +1445,4 @@ theorem rbrKnowledgeSoundness_iff [Nonempty WitIn] (init : ProbComp σ)
 
 end Plain
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

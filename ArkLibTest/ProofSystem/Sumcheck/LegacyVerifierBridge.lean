@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
-import ArkLibTest.ProofSystem.Sumcheck.Core.SingleRound
-import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
+import ArkLibTest.ProofSystem.Sumcheck.SingleRound
+import ArkLib.ProofSystem.Sumcheck.LegacyEquivalence
 
 /-!
 # Legacy verifier regressions through the interaction-core bridge
@@ -16,9 +16,9 @@ All challenges are arbitrary elements of `ZMod 5`, so evaluating a nonconstant m
 wrong point is observable. The final relation reads the retained input, rather than the message.
 -/
 
-namespace Sumcheck.Core.LegacyVerifierTest
+namespace Sumcheck.LegacyVerifierBridgeTest
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec SingleRoundTest
 
 noncomputable section
@@ -120,14 +120,14 @@ theorem run_false_relation :
 end
 
 run_cmd
-  for decl in [``Sumcheck.Core.LegacyVerifierTest.answered_pair,
-      ``Sumcheck.Core.LegacyVerifierTest.sent_target,
-      ``Sumcheck.Core.LegacyVerifierTest.inconsistent_sum_rejected,
-      ``Sumcheck.Core.LegacyVerifierTest.honest_zero_accepted,
-      ``Sumcheck.Core.LegacyVerifierTest.linear_sent_target,
-      ``Sumcheck.Core.LegacyVerifierTest.run_false_relation] do
+  for decl in [``Sumcheck.LegacyVerifierBridgeTest.answered_pair,
+      ``Sumcheck.LegacyVerifierBridgeTest.sent_target,
+      ``Sumcheck.LegacyVerifierBridgeTest.inconsistent_sum_rejected,
+      ``Sumcheck.LegacyVerifierBridgeTest.honest_zero_accepted,
+      ``Sumcheck.LegacyVerifierBridgeTest.linear_sent_target,
+      ``Sumcheck.LegacyVerifierBridgeTest.run_false_relation] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.LegacyVerifierTest
+end Sumcheck.LegacyVerifierBridgeTest

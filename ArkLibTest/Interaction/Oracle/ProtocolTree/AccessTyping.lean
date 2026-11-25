@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLib.Interaction.OracleVerifier
 import PolyFun.PFunctor.Free.Cursor
 
 /-! Oracle access as typing. A decision on a completed path queries the input family and the
@@ -12,9 +12,9 @@ oracle family of that path, `pathBundle inputs s p`. A public bit selects messag
 oracle exists only on paths that cross its send. Input oracles and oracle messages with the same
 signature stay distinct, and a non-faithful interface hides representation data. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp OracleSpec
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp OracleSpec
 
-namespace Interaction.Core.AccessTypingTests
+namespace Interaction.AccessTypingTests
 
 /-- One scalar input oracle. -/
 def inputs : OracleFamily Unit (fun _ => Nat) :=
@@ -209,4 +209,4 @@ example (Messages : Type) (interface : OracleInterface.{0, 1} Messages)
       fun message query => (interface.toOC.impl query).run message⟩
   (prior.sum latest).spec.toPFunctor
 
-end Interaction.Core.AccessTypingTests
+end Interaction.AccessTypingTests

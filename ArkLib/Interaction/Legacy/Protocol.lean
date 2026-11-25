@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Protocol
+public import ArkLib.Interaction.Protocol
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 
 /-!
@@ -27,7 +27,7 @@ Every construction is by recursion on the number of remaining rounds, starting a
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens ProtocolSpec
 
 variable {n : ℕ}
@@ -214,4 +214,4 @@ abbrev oracleDecode (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSp
     (tr : Transcript oracleSig (oracleProtocol pSpec)) : FullTranscript pSpec :=
   oracleTranscriptEquiv pSpec tr
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

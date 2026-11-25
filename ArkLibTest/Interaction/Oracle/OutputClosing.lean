@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
+import ArkLibTest.Interaction.Oracle.LoggedExecution
 
 /-!
 # Closing the verifier's output with the same run's data
@@ -15,11 +15,11 @@ output data is the input plus the sent coordinate, materialized from the input a
 messages of the same run. A stateful logger exposes the exact effect order.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
-open Interaction.Core.LoggedExecutionTests (inputs exported seven pairSend pairBundle closeMap)
+open Interaction.LoggedExecutionTests (inputs exported seven pairSend pairBundle closeMap)
 
-namespace Interaction.Core.OutputClosingTests
+namespace Interaction.OutputClosingTests
 
 /-- Observable ambient events. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
@@ -101,4 +101,4 @@ run_cmd do
     unless summary false [] 19 hidden == (hidden, none, [0, 1, 2]) do
       throwError "the rejected run is wrong: {summary false [] 19 hidden}"
 
-end Interaction.Core.OutputClosingTests
+end Interaction.OutputClosingTests

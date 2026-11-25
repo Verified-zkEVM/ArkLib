@@ -3,16 +3,16 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Legacy.Verifier
+import ArkLib.Interaction.Legacy.Verifier
 
 /-! Acceptance examples for the embedded legacy prover and verifier: each legacy prover
 function fills the matching slot of the interaction-layer prover, and the embedded verifier
 decides with legacy `verify` on the decoded transcript. -/
 
-open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction Interaction.TwoParty.Lens
   ProtocolSpec
 
-namespace Interaction.Core.Legacy.Tests
+namespace Interaction.Legacy.Tests
 
 /-- A message, a challenge, then a second message. -/
 def twoWay : ProtocolSpec 3 := ⟨!v[.P_to_V, .V_to_P, .P_to_V], !v[Nat, Bool, Nat]⟩
@@ -61,4 +61,4 @@ example (stmt : Nat) (p : Path (protocol twoWay)) (v : PlainView (protocol twoWa
 /-- The embedded reduction pairs the two embeddings. -/
 example : (embedReduction ⟨counterProver, lastIfTrue⟩).verifier = embedVerifier lastIfTrue := rfl
 
-end Interaction.Core.Legacy.Tests
+end Interaction.Legacy.Tests

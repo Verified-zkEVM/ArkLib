@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Composition
-public import ArkLib.Interaction.Core.Security.RoundByRound
+public import ArkLib.Interaction.Composition
+public import ArkLib.Interaction.Security.RoundByRound
 
 /-!
 # Composing knowledge state functions
@@ -61,7 +61,7 @@ function of the prefix statement and transcript.
 
 universe v uS uW uK uO uM uO₂ uS' uW' uT uI wI wJ wK uW₂ uA u
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
@@ -1452,4 +1452,4 @@ theorem BoundedAt.append :
 
 end KnowledgeStateFunction
 
-end Interaction.Core
+end Interaction

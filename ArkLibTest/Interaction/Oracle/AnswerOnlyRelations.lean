@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLib.Interaction.OracleVerifier
 
 /-!
 # Relations over concrete oracle data that observe only answers
@@ -15,9 +15,9 @@ input. Oracle maps substitute: routing through a composite map and closing with 
 closing the outer map with the evaluated inner map.
 -/
 
-open PFunctor Interaction.Core Interaction.Oracle OracleComp
+open PFunctor Interaction Interaction.Oracle OracleComp
 
-namespace Interaction.Core.AnswerOnlyRelationsTests
+namespace Interaction.AnswerOnlyRelationsTests
 
 /-- A concrete representation carries an unobservable Boolean tag. -/
 def tagged : OracleFamily Unit (fun _ => Nat × Bool) where
@@ -159,4 +159,4 @@ example {I : Type} {spec : OracleSpec I} (a b : Nat × QueryImpl tagged.spec (Or
       closedProblem.language () (b.1, QueryImpl.compose impl b.2) := by
   rw [hs, ho impl]
 
-end Interaction.Core.AnswerOnlyRelationsTests
+end Interaction.AnswerOnlyRelationsTests

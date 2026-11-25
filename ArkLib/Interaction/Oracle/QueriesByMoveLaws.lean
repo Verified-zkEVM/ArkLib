@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Oracle.LoggedExecution
-public import ArkLib.Interaction.Core.Oracle.QueriesByMove
+public import ArkLib.Interaction.Oracle.LoggedExecution
+public import ArkLib.Interaction.Oracle.QueriesByMove
 
 /-!
 # Laws of the queries by move
@@ -24,7 +24,7 @@ the projection laws combine `runWithQueriesByMove_toLog` with `runWithLog_eq`.
 
 universe u q uS uI dI wJ
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace OracleVerifier
@@ -173,4 +173,4 @@ end AmbientQueriesByMove
 
 end OracleVerifier
 
-end Interaction.Core
+end Interaction

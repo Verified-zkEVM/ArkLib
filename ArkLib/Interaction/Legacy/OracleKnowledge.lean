@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.OracleExecution
-public import ArkLib.Interaction.Core.Legacy.Security
+public import ArkLib.Interaction.Legacy.OracleExecution
+public import ArkLib.Interaction.Legacy.Security
 
 /-!
 # Straight-line knowledge soundness for embedded legacy oracle verifiers
@@ -39,7 +39,7 @@ noncomputable section
 
 universe uS uI wI wJ
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle MeasureTheory
 open scoped ENNReal NNReal
 
@@ -56,20 +56,20 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0
 the transcript decoded from the oracle tree, and the same two shared-oracle logs. -/
 def liftOracleExtractor
     (E : _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec) :
-    Core.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
+    Interaction.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
       (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut) :=
   fun stmt tr w pl vl => E stmt w (oracleDecode pSpec tr) pl vl
 
 /-- The legacy view of an interaction-layer straight-line extractor on the oracle tree. -/
 def lowerOracleExtractor
-    (E : Core.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
+    (E : Interaction.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
       (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut)) :
     _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec :=
   fun stmt w T pl vl => E stmt ((oracleTranscriptEquiv pSpec).symm T) w pl vl
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₛᵢ Oₛₒ in
 @[simp] theorem liftOracleExtractor_lowerOracleExtractor
-    (E : Core.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
+    (E : Interaction.Extractor.OracleStraightLine oSpec (oracleProtocol pSpec)
       (fun _ : StmtIn × (∀ i, OStmtIn i) => WitIn) (fun _ => WitOut)) :
     liftOracleExtractor (lowerOracleExtractor E) = E := by
   funext stmt tr w pl vl
@@ -89,7 +89,7 @@ theorem oracleExtractionGame_embed
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (E : _root_.Extractor.Straightline oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec)
     (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i)
-    (adv : Core.Prover oracleSig oSpec (oracleProtocol pSpec)
+    (adv : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut)) :
     (fun z => z.1.2.2.map fun t => ((stmt, oStmt), z.2, t, z.1.2.1.2)) <$>
         (embedOracleVerifier V).extractionGame (fun _ o => o.2) (liftOracleExtractor E)
@@ -112,12 +112,12 @@ theorem oracleExtractionGame_embed
         | some t => (fun ex => some ((stmt, oStmt), ex, t, y.1.2.1.2)) <$>
             liftComp (E (stmt, oStmt) y.1.2.1.2 (oracleDecode pSpec y.1.1) y.2.1 y.2.2).run
               (oSpec + challengeSpec oracleSig (oracleProtocol pSpec)) := by
-    rw [Core.OracleVerifier.extractionGame]
+    rw [Interaction.OracleVerifier.extractionGame]
     refine (_root_.map_bind _ _ _).trans (bind_congr fun x => ?_)
     rcases x with ⟨⟨tr, out, _ | v⟩, pl, vl⟩ <;> simp [liftOracleExtractor]
-  have hlog := Core.OracleVerifier.runWithLog_fst (embedOracleVerifier V) stmt oStmt adv
+  have hlog := Interaction.OracleVerifier.runWithLog_fst (embedOracleVerifier V) stmt oStmt adv
   dsimp only at hlog
-  rw [hF, ← Core.OracleVerifier.map_runWithLog_eq_runWithAmbientLog, hlog]
+  rw [hF, ← Interaction.OracleVerifier.map_runWithLog_eq_runWithAmbientLog, hlog]
   simp only [ambientLogged, bind_map_left, bind_assoc]
   refine bind_congr fun x => ?_
   rw [simulateQ_embedOracleVerifier_decide, run_withLogging_inl, embedOracleVerifier_outputMap_f]
@@ -135,7 +135,7 @@ transported prover on the plain tree, including the transcript, prover output, s
 final shared state. -/
 theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ ProbComp))
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) {X : Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) (fun _ => X)) :
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) (fun _ => X)) :
     RunEq (expHandler impl (oracleChallengeImpl chImpl))
       (expHandler impl (plainChallengeImpl chImpl))
       ((fun z : ((_ : Transcript oracleSig (oracleProtocol pSpec)) × X × PUnit) × QueryLog oSpec =>
@@ -149,10 +149,10 @@ theorem runEq_ambientLogged_oracleProver (impl : QueryImpl oSpec (StateT σ Prob
       ((fun z : ((_ : Transcript plainSig (protocol pSpec)) × X × PUnit) × QueryLog oSpec =>
           ((decode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (protocol pSpec)
-          (Core.Prover.simulate (fun q =>
+          (Interaction.Prover.simulate (fun q =>
               liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q)))
             (toPlainFrom .focal 0 n (Nat.zero_add n) p :
-              Core.Prover plainSig oSpec (protocol pSpec) (fun _ => X)))
+              Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => X)))
           (sampler plainSig (protocol pSpec) (fun c =>
             liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))))) :=
   RunEq.of_eq fun st => by
@@ -189,7 +189,7 @@ theorem prEvent_legacy_oracleKnowledge [MeasurableSpace WitIn] {Aux : Type}
     (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (aux : Aux)
     (P : _root_.Prover oSpec (StmtIn × ∀ i, OStmtIn i) Aux (StmtOut × ∀ i, OStmtOut i) WitOut
       pSpec)
-    (adv : Core.Prover oracleSig oSpec (oracleProtocol pSpec)
+    (adv : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut))
     (hadv : toPlainFrom .focal 0 n (Nat.zero_add n) adv = embedProver P (stmt, oStmt) aux)
     (hW : ∀ s : Set WitIn, MeasurableSet s) :
@@ -279,7 +279,8 @@ theorem oracleKnowledgeSoundnessWith_iff (init : ProbComp σ)
         (toPlainFrom_embedOracleProver P stmt.1 stmt.2 aux) hW)
       (h stmt trivial (embedOracleProver P stmt.1 stmt.2 aux)).2.2
   · intro h stmt _ adv
-    refine ⟨Core.OracleVerifier.classicalStraightLine_marginal _ _ _ _ _ _ _ stmt adv, le_rfl, ?_⟩
+    refine ⟨Interaction.OracleVerifier.classicalStraightLine_marginal _ _ _ _ _ _ _ stmt adv,
+      le_rfl, ?_⟩
     have h' := h PUnit stmt ⟨⟩ (translate (toPlainFrom .focal 0 n (Nat.zero_add n) adv))
     dsimp only at h'
     rw [legacy_exec_run] at h'
@@ -390,4 +391,4 @@ theorem completeness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ =
 
 end TreeTransport
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

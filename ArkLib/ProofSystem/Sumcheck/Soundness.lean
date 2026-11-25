@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import ArkLib.ProofSystem.Sumcheck.Indexed
 
 /-! # Interaction-layer Sumcheck soundness over indexed domains
 
@@ -44,8 +44,8 @@ attempted sum check, but not the error `n * (deg / |R|)`.
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 open scoped ENNReal NNReal
 
@@ -169,4 +169,4 @@ theorem indexedVerifier_randomized_measureSoundness {Out : Type}
   rw [← prEvent_eq_evalDist_of_discrete]
   exact indexedVerifier_randomized_soundness D ambient init impl commit finish stmt data hfalse
 
-end Sumcheck.Core
+end Sumcheck

@@ -4,19 +4,19 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.Cost
-import ArkLibTest.Interaction.Core.Oracle.HiddenSendRun
-import ArkLibTest.Interaction.Core.Oracle.RoutedAccess
-import ArkLibTest.Interaction.Core.Oracle.HiddenBitAccess
+import ArkLib.Interaction.Oracle.Cost
+import ArkLibTest.Interaction.Oracle.HiddenSendRun
+import ArkLibTest.Interaction.Oracle.RoutedAccess
+import ArkLibTest.Interaction.Oracle.HiddenBitAccess
 import VCVio.OracleComp.QueryTracking.CostModel.Simulation
-import ArkLibTest.Interaction.Core.Support
+import ArkLibTest.Interaction.Support
 
 /-! Weighted query cost of routed decisions and query counts of logged runs. A cost bound of a
 decision transfers through its route with VCVio's `WorstCaseCostBound.simulateQ` once every routed
 query is bounded by its source charge. Query profiles are `QueryLog.countQ`, additive over
 appended logs. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
 universe wJ
@@ -26,8 +26,8 @@ universe wJ
 The prefix exports twice its message, reading the prefix oracle twice. The suffix decision reads
 the export and its own oracle. Ambient queries cost 1 throughout. -/
 
-namespace Interaction.Core.QueryCostTests
-open Interaction.Core.RoutedAccessTests
+namespace Interaction.QueryCostTests
+open Interaction.RoutedAccessTests
 
 /-- Raw charges on the composed bundle: 1 for the prefix oracle, 3 for the suffix oracle. -/
 def rawCost : CostModel (ambient + rawBundle.spec) Nat := ⟨fun q => match q with
@@ -129,15 +129,15 @@ example (v : View combined combinedPath) : ¬ WorstCaseCostBound (routedSuffix v
   rw [routedSuffix_eq] at certificate
   exact absurd (certificate _ member) (by decide)
 
-end Interaction.Core.QueryCostTests
+end Interaction.QueryCostTests
 
 /-! ## The hidden-bit composition: `HiddenBitAccess.lean`
 
 A reveal request costs 3 and a dummy request 1; each input or export query costs 2; the runtime's
 import, one coin, costs 1. -/
 
-namespace Interaction.Core.QueryCostTests
-open Interaction.Core.HiddenBitFixture Interaction.Core.HiddenBitAccessTests
+namespace Interaction.QueryCostTests
+open Interaction.HiddenBitFixture Interaction.HiddenBitAccessTests
 
 /-- Charges on the prefix bundle: 2 per input query. -/
 def inputCost : CostModel firstBundle.spec Nat := ⟨fun _ => 2⟩
@@ -274,12 +274,12 @@ theorem informed_cost_does_not_give_half (secret : Nat) :
   rw [OracleVerifier.run_append]
   kernel_rfl
 
-end Interaction.Core.QueryCostTests
+end Interaction.QueryCostTests
 
 /-! ## Query profiles: `HiddenSendRun.lean` -/
 
-namespace Interaction.Core.QueryCostTests
-open Interaction.Core.HiddenSendRunTests
+namespace Interaction.QueryCostTests
+open Interaction.HiddenSendRunTests
 
 -- The full-log runner keeps input indices and input query types in `Type`; output query types
 -- remain independent. See implementation note 18 in the interaction rebuild design notes.
@@ -302,4 +302,4 @@ example (payload hidden : Nat) (bit : Bool) :
   rw [proverLog_eq, QueryLog.countQ_append]
   rfl
 
-end Interaction.Core.QueryCostTests
+end Interaction.QueryCostTests

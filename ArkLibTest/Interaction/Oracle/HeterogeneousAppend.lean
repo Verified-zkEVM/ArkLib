@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.Routing
-import ArkLibTest.Interaction.Core.Oracle.OutputClosing
+import ArkLib.Interaction.Oracle.Routing
+import ArkLibTest.Interaction.Oracle.OutputClosing
 
 /-!
 # Heterogeneous composed oracle execution
@@ -18,14 +18,14 @@ oracle; the final output map exports its parity. A stateful logger detects reord
 or skipped effects.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
-open Interaction.Core.LoggedExecutionTests (inputs)
-open Interaction.Core.DependentRoutingTests (done)
+open Interaction.LoggedExecutionTests (inputs)
+open Interaction.DependentRoutingTests (done)
 
 universe uX dX
 
-namespace Interaction.Core.HeterogeneousAppendTests
+namespace Interaction.HeterogeneousAppendTests
 
 /-- Tagged ambient events. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
@@ -281,4 +281,4 @@ run_cmd do
     unless summary false 7 hidden == (none, (hidden + 1, hidden + 2), [0, 2, 1]) do
       throwError "the rejected run is wrong: {summary false 7 hidden}"
 
-end Interaction.Core.HeterogeneousAppendTests
+end Interaction.HeterogeneousAppendTests

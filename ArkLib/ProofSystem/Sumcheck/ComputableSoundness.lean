@@ -5,15 +5,15 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.ComputableInterval
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalSoundness
+public import ArkLib.ProofSystem.Sumcheck.ComputableInterval
+public import ArkLib.ProofSystem.Sumcheck.IntervalSoundness
 
 /-! # Interaction-layer suffix soundness for computable message carriers -/
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 open scoped ENNReal NNReal
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ}
@@ -81,10 +81,10 @@ theorem interval_closed_execute [SampleableType R] (D : Fin d → R)
         (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r) ($ᵗ R) count) c
   rw [hh, h]
 
-end Sumcheck.Core
+end Sumcheck
 
-namespace Sumcheck.Core.Computable
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck.Computable
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 open scoped ENNReal NNReal
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n d : ℕ}
@@ -149,4 +149,4 @@ theorem execute_soundness [BEq R] [LawfulBEq R] [IsDomain R] [Fintype R] (D : Fi
     (Interpreted.transportProver (Impl.Representation.toMessage R deg) count prover)
   simpa [intervalOutputProblem, Problem.language] using bound
 
-end Sumcheck.Core.Computable
+end Sumcheck.Computable

@@ -4,18 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
-import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
+import ArkLib.Interaction.OracleVerifier
+import ArkLibTest.Interaction.Oracle.LoggedExecution
 
 /-! One run of a public message, a challenge and a hidden oracle send. The full transcript of the
 run keeps the hidden oracle message. The oracle message family returns it, and the verifier view
 erases it. A rejecting decision returns an explicit `none` that keeps the transcript, the private
 output and the ambient history. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
 
-namespace Interaction.Core.HiddenSendRunTests
+namespace Interaction.HiddenSendRunTests
 
 /-- Ambient events carry tags and need no meaningful response. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
@@ -102,11 +102,11 @@ example (payload : Nat) (bit : Bool) :
 example (payload hidden : Nat) (bit : Bool) : summary.{uI, wI, wJ} false payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, none, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
-end Interaction.Core.HiddenSendRunTests
+end Interaction.HiddenSendRunTests
 
-namespace Interaction.Core.HiddenSendRunClosingTests
+namespace Interaction.HiddenSendRunClosingTests
 
-open Interaction.Core.LoggedExecutionTests OracleSpec
+open Interaction.LoggedExecutionTests OracleSpec
 
 /-- Execute the actual closing prover, then interpret its final decision under `handler`, which
 may fail with a label. Retain the transcript, private output, prover log, decision log and ambient
@@ -162,4 +162,4 @@ theorem answerAll_rejects (old message hidden : Nat) :
     (closingRun answerAll 1 old message hidden).1.2.2.1 = .ok none ∧
       (closingRun answerAll 1 old message hidden).2 = [9, 0, 1, 2, 17] := ⟨rfl, rfl⟩
 
-end Interaction.Core.HiddenSendRunClosingTests
+end Interaction.HiddenSendRunClosingTests

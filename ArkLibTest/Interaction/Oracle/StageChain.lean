@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.StageChain
-import ArkLibTest.Interaction.Core.Oracle.HeterogeneousAppend
+import ArkLib.Interaction.StageChain
+import ArkLibTest.Interaction.Oracle.HeterogeneousAppend
 
 /-!
 # Passive composition of heterogeneous oracle stages
@@ -34,12 +34,12 @@ stages in which a message of the first selects the second. The last section appl
 almost-sure law to a decision that queries an ambient `Bool`, under a chosen answer measure.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
-  OracleComp Interaction.Core.HeterogeneousAppendTests
-open Interaction.Core.LoggedExecutionTests (inputs)
-open Interaction.Core.DependentRoutingTests (done)
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
+  OracleComp Interaction.HeterogeneousAppendTests
+open Interaction.LoggedExecutionTests (inputs)
+open Interaction.DependentRoutingTests (done)
 
-namespace Interaction.Core.StageChainTests
+namespace Interaction.StageChainTests
 
 universe uX dX
 
@@ -937,17 +937,17 @@ example : (simulateQ logger ((splitVerifier true).decideOn () (fun _ => 7)
 /-! The concatenation, the split laws and the reassociation laws use only the permitted kernel
 axioms. -/
 run_cmd do
-  for decl in [``Interaction.Core.StageChain.then,
-      ``Interaction.Core.StageChain.protocol_then,
-      ``Interaction.Core.StageChain.suffixAt_ofFun,
-      ``Interaction.Core.StageChain.Out_then,
-      ``Interaction.Core.StageChain.decideOn_then,
-      ``Interaction.Core.StageChain.outputOn_then,
-      ``Interaction.Core.OracleVerifier.append_decideOn,
-      ``Interaction.Core.OracleVerifier.append_outputOn,
-      ``Interaction.Core.OracleVerifier.append_append_decideOn,
-      ``Interaction.Core.OracleVerifier.append_append_outputOn,
-      ``Interaction.Core.StageChainTests.threeRun_heq] do
+  for decl in [``Interaction.StageChain.then,
+      ``Interaction.StageChain.protocol_then,
+      ``Interaction.StageChain.suffixAt_ofFun,
+      ``Interaction.StageChain.Out_then,
+      ``Interaction.StageChain.decideOn_then,
+      ``Interaction.StageChain.outputOn_then,
+      ``Interaction.OracleVerifier.append_decideOn,
+      ``Interaction.OracleVerifier.append_outputOn,
+      ``Interaction.OracleVerifier.append_append_decideOn,
+      ``Interaction.OracleVerifier.append_append_outputOn,
+      ``Interaction.StageChainTests.threeRun_heq] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
@@ -957,4 +957,4 @@ run_cmd do
 #print axioms OracleVerifier.append_append_decideOn
 #print axioms OracleVerifier.append_append_outputOn
 
-end Interaction.Core.StageChainTests
+end Interaction.StageChainTests

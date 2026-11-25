@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Transcript
+public import ArkLib.Interaction.Transcript
 
 /-!
 # Protocol trees and outcomes
@@ -20,7 +20,7 @@ and never contain erased moves.
 
 universe u q uA
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens
 
 /-- A plain protocol is authored directly over the plain polynomial. -/
@@ -179,4 +179,4 @@ theorem oracle_payload_shape (X : Type u) (I : OracleInterface.{u, q} X)
     Transcript.path (l := oracleSig) (s := (.liftBind (.oracle X I) (fun _ => s))) ⟨x, tr⟩ =
       Transcript.path (l := oracleSig) (s := (.liftBind (.oracle X I) (fun _ => s))) ⟨y, tr⟩ := rfl
 
-end Interaction.Core
+end Interaction

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Protocol
+public import ArkLib.Interaction.Protocol
 public import VCVio.OracleComp.SimSemantics.Append
 public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 
@@ -23,7 +23,7 @@ verifier with an honest prover.
 
 universe u v uA uι uS uW
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp
 
 /-- The prover uses only the shared oracle interface, and cannot query the challenge service. -/
@@ -453,4 +453,4 @@ def Verifier.onAccept {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
     | none => failure
     | some t => V.decide t p v
 
-end Interaction.Core
+end Interaction

@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
-public import ArkLib.Interaction.Core.Legacy.OracleKnowledge
+public import ArkLib.ProofSystem.Sumcheck.LegacyEquivalence
+public import ArkLib.Interaction.Legacy.OracleKnowledge
 
 /-!
 # Knowledge soundness of Sumcheck in the interaction layer
@@ -21,10 +21,10 @@ straight-line extractor reads the prover's output witness.
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open scoped ENNReal NNReal
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec Interaction.Legacy
 
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
@@ -58,4 +58,4 @@ theorem verifier_knowledgeSoundness [Fintype R] [IsDomain R] :
     ((oracleKnowledgeSoundness_iff init impl (Spec.oracleVerifier R deg D n ambient) _ _ _).mpr
       (Spec.oracleVerifier_knowledgeSoundness R deg D n ambient))
 
-end Sumcheck.Core
+end Sumcheck

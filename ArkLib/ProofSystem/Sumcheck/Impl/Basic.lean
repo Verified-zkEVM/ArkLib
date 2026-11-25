@@ -18,8 +18,8 @@ and proves their correspondence with the mathematical specification. It also sup
 computational evaluation of the original polynomial.
 
 The executable verifier and honest prover, with their completeness proofs, are in
-`Sumcheck.Core.Computable` (`Core/Computable.lean`). The computable honest interval provers and
-their completeness proofs are in `Core/ComputableInterval.lean`.
+`Sumcheck.Computable` (`Sumcheck/Computable.lean`). The computable honest interval provers and
+their completeness proofs are in `Sumcheck/ComputableInterval.lean`.
 
 The general construction enumerates the remaining summation domain. Optimized multilinear
 algorithms and their cost guarantees remain future work.

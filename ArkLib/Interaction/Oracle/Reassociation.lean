@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Oracle.Routing
+public import ArkLib.Interaction.Oracle.Routing
 public import VCVio.OracleComp.EvalDist
 
 /-!
@@ -38,7 +38,7 @@ client rewrites a decision or output data on a run, which these laws state direc
 
 universe u q w uS uI uJ uK uY dI wJ wK uA v z uL wL
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
@@ -659,4 +659,4 @@ end Reassociation
 
 end OracleVerifier
 
-end Interaction.Core
+end Interaction

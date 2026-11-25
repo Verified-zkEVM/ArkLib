@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Security.Agreement
-import ArkLib.Interaction.Core.Legacy.OracleKnowledge
+import ArkLib.Interaction.Security.Agreement
+import ArkLib.Interaction.Legacy.OracleKnowledge
 
 /-! # Agreement clients with unequal input and query universes
 
@@ -14,9 +14,9 @@ on the shape path. Knowledge witnesses depend on the statement and transcript, i
 `Type 7`. The last section also checks the general move, ambient and output-index universes.
 -/
 
-open PFunctor FreeM Interaction.Core Interaction.Core.OracleVerifier Interaction.Oracle OracleComp
+open PFunctor FreeM Interaction Interaction.OracleVerifier Interaction.Oracle OracleComp
 
-namespace Interaction.Core.AgreementUniversesTests
+namespace Interaction.AgreementUniversesTests
 
 variable {ι : Type} {S : Type 2} {I : Type 1}
   {ambient : OracleSpec ι} {s s' : OracleProtocol.{0, 5}} {A : I → Type}
@@ -100,4 +100,4 @@ example {ι : Type 1} {ambient : OracleSpec ι} {J : Path s → Type 1}
 
 end General
 
-end Interaction.Core.AgreementUniversesTests
+end Interaction.AgreementUniversesTests

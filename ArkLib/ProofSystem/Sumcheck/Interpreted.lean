@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedPath
-public import ArkLib.ProofSystem.Sumcheck.Core.Protocol
+public import ArkLib.ProofSystem.Sumcheck.InterpretedPath
+public import ArkLib.ProofSystem.Sumcheck.Protocol
 
 /-! # Passive Sumcheck with interpreted message carriers
 
@@ -19,8 +19,8 @@ nor public challenges choose the subsequent shape.
 
 universe uI wI
 
-namespace Sumcheck.Core.Interpreted
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck.Interpreted
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 
 variable {R M : Type} {evaluate : M → R → R}
@@ -128,4 +128,4 @@ theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I →
   rw [simulate_verifier]
   rfl
 
-end Sumcheck.Core.Interpreted
+end Sumcheck.Interpreted

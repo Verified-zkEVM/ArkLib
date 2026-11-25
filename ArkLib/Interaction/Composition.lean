@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.OracleVerifier
+public import ArkLib.Interaction.OracleVerifier
 public import PolyFun.Interaction.TwoParty.Lens.Compose
 
 /-!
@@ -23,7 +23,7 @@ may depend on ambient queries.
 
 universe u q dI uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 
@@ -705,4 +705,4 @@ theorem support_append {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMo
   · exact ⟨mid, between, hmid, hout⟩
 
 end OracleVerifier
-end Interaction.Core
+end Interaction

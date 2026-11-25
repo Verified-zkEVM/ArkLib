@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.KnowledgeComposition
+public import ArkLib.Interaction.Security.KnowledgeComposition
 public import VCVio.OracleComp.QueryTracking.MeasuredProgram.Composition
 
 /-!
@@ -65,7 +65,7 @@ uses `Unit → Nat`.
 
 universe uS uA
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp
 
 variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
@@ -266,11 +266,11 @@ structure MeasuredKnowledgeStateFunction (Kind : Type) [Finite Kind] (l : PFunct
   /-- A measured program and budget for each extraction stage. -/
   stages : toKnowledgeStateFunction.MeasuredStages (Kind → Nat)
 
-end Interaction.Core
+end Interaction
 
 /-! ### Budgets by node kind on oracle protocols -/
 
-namespace Interaction.Core.KnowledgeStateFunction.MeasuredStages
+namespace Interaction.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens
 
 variable {s : OracleProtocol} {S : Type uS} {Win : S → Type} {W : S → Transcript oracleSig s → Type}
@@ -309,4 +309,4 @@ theorem BudgetAtMost.protocolBudgetAtMost [AddCommMonoid ω] [Preorder ω]
     cases a <;> exact h.step stmt sp history
   leaf := h.leaf stmt
 
-end Interaction.Core.KnowledgeStateFunction.MeasuredStages
+end Interaction.KnowledgeStateFunction.MeasuredStages

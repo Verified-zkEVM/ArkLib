@@ -3,14 +3,14 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.Computable
+import ArkLib.ProofSystem.Sumcheck.Computable
 import Mathlib.Algebra.Field.ZMod
 
 /-!
 # Compiled computable Sumcheck checks
 
 The sent polynomials are CompPoly coefficient arrays and the input polynomial is a CompPoly
-multivariate polynomial. These checks run `Sumcheck.Core.Computable.verifier` against ordinary
+multivariate polynomial. These checks run `Sumcheck.Computable.verifier` against ordinary
 provers and observe their effects, the challenge draws, rejection, and the output oracle data. The
 challenge handlers answer a fixed value; they are deterministic test fixtures, not randomness
 generators.
@@ -18,8 +18,8 @@ generators.
 
 namespace SumcheckRuntime
 
-open OracleComp OracleSpec PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
-open Sumcheck.Core.Computable
+open OracleComp OracleSpec PFunctor FreeM Interaction Interaction.TwoParty.Lens
+open Sumcheck.Computable
 
 /-- The test field `ZMod 17`. -/
 abbrev F := ZMod 17
@@ -49,10 +49,10 @@ def event (i : Fin 4) : OracleComp events F := liftM (events.query i)
 abbrev Entry := Fin 4 ⊕ ℕ
 
 /-- Answer every challenge with `x` through the library challenge implementation
-`Sumcheck.Core.Interpreted.draw`, logging the draw with its position among the draws. -/
+`Sumcheck.Interpreted.draw`, logging the draw with its position among the draws. -/
 def draw {deg : ℕ} (x : F) (k : ℕ) :
     QueryImpl (challengeSpec oracleSig (protocol F deg k)) (StateM (List Entry)) :=
-  Sumcheck.Core.Interpreted.draw (do
+  Sumcheck.Interpreted.draw (do
     modify fun log => log ++ [.inr (log.countP Sum.isRight)]
     return x) k
 
@@ -198,7 +198,7 @@ def quadraticZeroObserve : Option (F × F × F × F) × List Entry :=
       (intervalVerifier (⇑three) events 2 0 (by decide)).run ⟨16, ![4, 4]⟩
         (fun _ => quadraticInput)
         (intervalHonestProver (⇑three) quadratic quadratic_degree 0
-          (Sumcheck.Core.intervalInitial 2 0 (by decide) ⟨16, ![4, 4]⟩)))).run []
+          (Sumcheck.intervalInitial 2 0 (by decide) ⟨16, ![4, 4]⟩)))).run []
 
 /-- The repeated domain `[0, 0]` as an indexed domain: each point counts once per index. -/
 def zeroZero : Fin 2 → F := fun _ => 0
@@ -214,7 +214,7 @@ theorem one_degree : ∀ j, (1 : CPoly.CMvPolynomial 3 F).degreeOf j ≤ 0 := by
 def oneInput : Input F 0 3 := ⟨1, one_degree⟩
 
 /-- The statement after the prefix `[7]` with incoming target `target`. -/
-def afterPrefix (target : F) : Sumcheck.Core.RoundStatement F 3 ⟨1, by decide⟩ :=
+def afterPrefix (target : F) : Sumcheck.RoundStatement F 3 ⟨1, by decide⟩ :=
   ⟨target, ![7]⟩
 
 /-- Run `Computable.intervalVerifier` for one round from start `1` on the constant-one input over
@@ -228,7 +228,7 @@ def intervalObserve (target : F) : Option (F × F × F × F) × List Entry :=
       (intervalVerifier zeroZero events 1 1 (by decide)).run (afterPrefix target)
         (fun _ => oneInput)
         (intervalHonestProver zeroZero 1 one_degree 1
-          (Sumcheck.Core.intervalInitial 1 1 (by decide) (afterPrefix target))))).run []
+          (Sumcheck.intervalInitial 1 1 (by decide) (afterPrefix target))))).run []
 
 /-- The total sum `117`, first-round value `109`, and final value `101`, reduced modulo `17`,
 are calculated independently of the projection implementation. -/

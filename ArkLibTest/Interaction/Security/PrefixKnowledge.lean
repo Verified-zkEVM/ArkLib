@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Security.KnowledgeComposition
-import ArkLibTest.Interaction.Core.Support
+import ArkLib.Interaction.Security.KnowledgeComposition
+import ArkLibTest.Interaction.Support
 
 /-!
 # Knowledge certificates with history-dependent challenges
@@ -14,10 +14,10 @@ The certificate has unit witnesses, identity backward maps and zero local errors
 leaf predicate compares both bits and its earlier predicates are false.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp MeasureTheory
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp MeasureTheory
 open scoped ENNReal
 
-namespace Interaction.Core.PrefixKnowledgeTests
+namespace Interaction.PrefixKnowledgeTests
 
 /-- Two Boolean challenges, with no public prover messages. -/
 abbrev twoBits : Protocol :=
@@ -156,22 +156,22 @@ example (d₁ : PrefixDraw viewSig ProbComp oracleBit) (b : Bool) :
     combinePrefixDraw oracleSig oracleBit (fun _ => challengeBit) (PrefixDraw.ofView d₁)
       leakySuffixDraw (.down ⟨⟩ (.root _)) rfl ⟨⟨b, rfl⟩, ⟨⟩⟩ = pure b := rfl
 
-end Interaction.Core.PrefixKnowledgeTests
+end Interaction.PrefixKnowledgeTests
 
 run_cmd do
-  for decl in [``Interaction.Core.PrefixKnowledgeTests.zero_error,
-      ``Interaction.Core.appendPrefixSampler_eq_combinePrefixDraw,
-      ``Interaction.Core.combinePrefixDraw_ofNodes,
-      ``Interaction.Core.combinePrefixError_ofNodes,
-      ``Interaction.Core.rbrKnowledgeSoundness_append_prefix,
-      ``Interaction.Core.rbrKnowledgeSoundness_append_of_mid_prefix,
-      ``Interaction.Core.Verifier.rbrKnowledgeSoundness_append_prefix,
-      ``Interaction.Core.Verifier.rbrKnowledgeSoundness_append_of_pure_prefix,
-      ``Interaction.Core.PrefixDraw.ofView_ofNodesView,
-      ``Interaction.Core.ofView_combineViewPrefixDraw,
-      ``Interaction.Core.appendViewPrefixSampler_eq_combineViewPrefixDraw,
-      ``Interaction.Core.PrefixKnowledgeTests.ofView_oracleBit_eq,
-      ``Interaction.Core.PrefixKnowledgeTests.combineView_oracleBit_eq] do
+  for decl in [``Interaction.PrefixKnowledgeTests.zero_error,
+      ``Interaction.appendPrefixSampler_eq_combinePrefixDraw,
+      ``Interaction.combinePrefixDraw_ofNodes,
+      ``Interaction.combinePrefixError_ofNodes,
+      ``Interaction.rbrKnowledgeSoundness_append_prefix,
+      ``Interaction.rbrKnowledgeSoundness_append_of_mid_prefix,
+      ``Interaction.Verifier.rbrKnowledgeSoundness_append_prefix,
+      ``Interaction.Verifier.rbrKnowledgeSoundness_append_of_pure_prefix,
+      ``Interaction.PrefixDraw.ofView_ofNodesView,
+      ``Interaction.ofView_combineViewPrefixDraw,
+      ``Interaction.appendViewPrefixSampler_eq_combineViewPrefixDraw,
+      ``Interaction.PrefixKnowledgeTests.ofView_oracleBit_eq,
+      ``Interaction.PrefixKnowledgeTests.combineView_oracleBit_eq] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

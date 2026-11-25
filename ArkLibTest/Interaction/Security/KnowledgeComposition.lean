@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Security.KnowledgeComposition
-import ArkLibTest.Interaction.Core.Support
+import ArkLib.Interaction.Security.KnowledgeComposition
+import ArkLibTest.Interaction.Support
 
 /-!
 # Knowledge composition across an oracle seam
@@ -16,13 +16,13 @@ carriers depend on the prefix oracle message. The tests extract on both challeng
 shapes, identify leaf relations and close the exported oracle with data from the same execution.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp MeasureTheory
 open scoped ENNReal
 
 -- Disposition IDs refer to docs/design/interaction-layer/knowledge-composition-disposition.md.
 
-namespace Interaction.Core.KnowledgeCompositionTests
+namespace Interaction.KnowledgeCompositionTests
 
 /-- The carriers of no input oracles. -/
 abbrev NoData : PEmpty.{1} → Type := fun i => i.elim
@@ -901,32 +901,32 @@ def emptyState : KnowledgeStateFunction plainSig
   send _ _ _ _ _ _ h := h
   leaf _ _ _ w _ := w.elim
 
-end Interaction.Core.KnowledgeCompositionTests
+end Interaction.KnowledgeCompositionTests
 
 run_cmd do
-  for decl in [``Interaction.Core.KnowledgeStateFunction.extractAlong_append,
-      ``Interaction.Core.KnowledgeStateFunction.toFun_leafWitness_append,
-      ``Interaction.Core.KnowledgeStateFunction.LocallyBounded.append,
-      ``Interaction.Core.rbrKnowledgeSoundness_append,
-      ``Interaction.Core.rbrKnowledgeSoundness_append_of_mid,
-      ``Interaction.Core.KnowledgeStateFunction.extraction_failure_implies_badChallengeAlong,
-      ``Interaction.Core.Verifier.validAcceptance_append,
-      ``Interaction.Core.OracleVerifier.validAcceptance_append,
-      ``Interaction.Core.Verifier.rbrKnowledgeSoundness_append,
-      ``Interaction.Core.Verifier.rbrKnowledgeSoundness_append_of_pure,
-      ``Interaction.Core.KnowledgeCompositionTests.indexed_standalone,
-      ``Interaction.Core.KnowledgeCompositionTests.indexed_composed,
-      ``Interaction.Core.KnowledgeCompositionTests.observed_eq,
-      ``Interaction.Core.KnowledgeCompositionTests.composed_export_eq,
-      ``Interaction.Core.KnowledgeCompositionTests.composite_leafWitness,
-      ``Interaction.Core.KnowledgeCompositionTests.composite_leaf_iff,
-      ``Interaction.Core.KnowledgeCompositionTests.compositeState_extractAlong,
-      ``Interaction.Core.KnowledgeCompositionTests.composed_rbrKnowledgeSoundness,
-      ``Interaction.Core.rbrKnowledgeSoundness_append_view,
-      ``Interaction.Core.OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff,
-      ``Interaction.Core.KnowledgeCompositionTests.composed_rbrKnowledgeSoundness_view,
-      ``Interaction.Core.KnowledgeCompositionTests.challenge_standalone,
-      ``Interaction.Core.KnowledgeCompositionTests.challenge_composed] do
+  for decl in [``Interaction.KnowledgeStateFunction.extractAlong_append,
+      ``Interaction.KnowledgeStateFunction.toFun_leafWitness_append,
+      ``Interaction.KnowledgeStateFunction.LocallyBounded.append,
+      ``Interaction.rbrKnowledgeSoundness_append,
+      ``Interaction.rbrKnowledgeSoundness_append_of_mid,
+      ``Interaction.KnowledgeStateFunction.extraction_failure_implies_badChallengeAlong,
+      ``Interaction.Verifier.validAcceptance_append,
+      ``Interaction.OracleVerifier.validAcceptance_append,
+      ``Interaction.Verifier.rbrKnowledgeSoundness_append,
+      ``Interaction.Verifier.rbrKnowledgeSoundness_append_of_pure,
+      ``Interaction.KnowledgeCompositionTests.indexed_standalone,
+      ``Interaction.KnowledgeCompositionTests.indexed_composed,
+      ``Interaction.KnowledgeCompositionTests.observed_eq,
+      ``Interaction.KnowledgeCompositionTests.composed_export_eq,
+      ``Interaction.KnowledgeCompositionTests.composite_leafWitness,
+      ``Interaction.KnowledgeCompositionTests.composite_leaf_iff,
+      ``Interaction.KnowledgeCompositionTests.compositeState_extractAlong,
+      ``Interaction.KnowledgeCompositionTests.composed_rbrKnowledgeSoundness,
+      ``Interaction.rbrKnowledgeSoundness_append_view,
+      ``Interaction.OracleVerifier.rbrKnowledgeSoundnessOfNodes_iff,
+      ``Interaction.KnowledgeCompositionTests.composed_rbrKnowledgeSoundness_view,
+      ``Interaction.KnowledgeCompositionTests.challenge_standalone,
+      ``Interaction.KnowledgeCompositionTests.challenge_composed] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

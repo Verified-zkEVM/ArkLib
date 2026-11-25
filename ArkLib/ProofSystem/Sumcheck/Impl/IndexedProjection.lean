@@ -23,8 +23,8 @@ arbitrary finite domains. It is a direct enumeration and makes no running-time c
 This module owns the enumeration and the proofs that every client shares: interpretation as a sum
 of restrictions, the degree bound and the bounded message. `projectedRoundPolynomial` in
 `Sumcheck.Impl.Projection` specializes it to an injective domain and relates it to
-`Sumcheck.Spec`. `Sumcheck.Core.Computable.indexedRoundPolynomial_toPoly` relates it to the
-indexed projection of `Sumcheck.Core`. This module imports neither of those layers.
+`Sumcheck.Spec`. `Sumcheck.Computable.indexedRoundPolynomial_toPoly` relates it to the
+indexed projection of the Sumcheck core. This module imports neither of those layers.
 -/
 
 @[expose] public section

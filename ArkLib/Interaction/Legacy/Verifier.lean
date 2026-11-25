@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.Prover
+public import ArkLib.Interaction.Legacy.Prover
 
 /-!
 # Legacy verifiers and reductions on protocol trees
@@ -21,7 +21,7 @@ output keeps the legacy output statement and witness.
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
@@ -29,7 +29,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
 
 /-- The embedded verifier decides by calling legacy `verify` on the decoded transcript. -/
 def embedVerifier (V : _root_.Verifier oSpec StmtIn StmtOut pSpec) :
-    Core.Verifier oSpec (protocol pSpec) StmtIn (fun _ => StmtOut) where
+    Interaction.Verifier oSpec (protocol pSpec) StmtIn (fun _ => StmtOut) where
   decide stmt _ view := V.verify stmt (decode pSpec view.val)
 
 @[simp] theorem embedVerifier_decide (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
@@ -38,9 +38,9 @@ def embedVerifier (V : _root_.Verifier oSpec StmtIn StmtOut pSpec) :
 
 /-- The embedded reduction. -/
 def embedReduction (R : _root_.Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-    Core.Reduction oSpec (protocol pSpec) StmtIn WitIn (fun _ => StmtOut)
+    Interaction.Reduction oSpec (protocol pSpec) StmtIn WitIn (fun _ => StmtOut)
       (fun _ => StmtOut × WitOut) where
   prover := embedProver R.prover
   verifier := embedVerifier R.verifier
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

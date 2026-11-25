@@ -3,17 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Legacy.Execution
+import ArkLib.Interaction.Legacy.Execution
 
 /-! Acceptance examples for the execution correspondence: the finalized interaction-layer run
 of an embedded legacy reduction against the legacy run, on protocols with every direction, zero
 rounds and consecutive rounds of one owner; with an accepting and a rejecting run; and with
 shared-oracle queries at the terminal boundary of the empty protocol. -/
 
-open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction Interaction.TwoParty.Lens
   ProtocolSpec
 
-namespace Interaction.Core.Legacy.ExecutionTests
+namespace Interaction.Legacy.ExecutionTests
 
 /-! ### A message, a challenge and a message -/
 
@@ -202,4 +202,4 @@ example {σ : Type} [MeasurableSpace (LegacyResult mixed Nat Nat)] (init : ProbC
       𝒟[experiment init impl chImpl (mixedReduction.run stmt ()).run] :=
   evalDist_experiment_finalize_runOutcome init impl chImpl mixedReduction stmt ()
 
-end Interaction.Core.Legacy.ExecutionTests
+end Interaction.Legacy.ExecutionTests

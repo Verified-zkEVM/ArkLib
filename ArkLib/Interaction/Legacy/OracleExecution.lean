@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.Execution
+public import ArkLib.Interaction.Legacy.Execution
 
 /-!
 # Execution of embedded legacy oracle reductions
@@ -40,7 +40,7 @@ embedded oracle verifier on the oracle tree to legacy oracle reduction runs.
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
@@ -198,7 +198,7 @@ theorem map_toPlainChoice (agent : Participant) (j : Fin n) (D : Direction)
 theorem toPlainFrom_simulate {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
     (F : QueryImpl spec (OracleComp spec')) :
     (k m : ℕ) → (h : k + m = n) → {Out : Transcript oracleSig (oracleSuffix pSpec k m h) → Type} →
-    (p : Core.Prover oracleSig spec (oracleSuffix pSpec k m h) Out) →
+    (p : Interaction.Prover oracleSig spec (oracleSuffix pSpec k m h) Out) →
     toPlainFrom .focal k m h (Prover.simulate F p) =
       Prover.simulate F (toPlainFrom .focal k m h p)
   | _, 0, _, _, _ => rfl
@@ -594,7 +594,7 @@ with the runtime path read back on the oracle tree. -/
 theorem runWith_oracleLegacySampler {κ : Type} {spec : OracleSpec κ}
     (F : QueryImpl oSpec (OracleComp spec)) (order : Schedule)
     {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out)
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out)
     (src : (i : pSpec.ChallengeIdx) → OracleComp spec (pSpec.Challenge i)) :
     runWith order (oracleProtocol pSpec) (p.simulate F) (oracleLegacySampler pSpec src) =
       (fun r : (tr : Transcript plainSig (protocol pSpec)) × Out (toOraclePath 0 n _ tr) × PUnit =>
@@ -608,7 +608,7 @@ theorem runWith_oracleLegacySampler {κ : Type} {spec : OracleSpec κ}
 run against the legacy sampler. -/
 theorem simulateQ_oracleChallengeReindex_run
     {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     simulateQ (oracleChallengeReindex oSpec pSpec) (TwoParty.Lens.run (oracleProtocol pSpec)
       (p.simulate (fun q => liftM
         ((oSpec + challengeSpec oracleSig (oracleProtocol pSpec)).query (.inl q))))
@@ -640,13 +640,13 @@ variable {I S : Type} {T : Path (oracleProtocol pSpec) → Type} {A : I → Type
 
 /-- Run an oracle verifier on the oracle tree of a legacy protocol under `order`, in the legacy
 query monad. The prover runs against the legacy sampler; the decision and the output map read
-the input data and the oracle messages of the actual run, as in `Core.OracleVerifier.run`. -/
+the input data and the oracle messages of the actual run, as in `Interaction.OracleVerifier.run`. -/
 def oracleObserveWith (order : Schedule)
-    (V : Core.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
+    (V : Interaction.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
-      (Outcome oracleSig (oracleProtocol pSpec) Out (Core.OracleVerifier.Output T B)) := do
+      (Outcome oracleSig (oracleProtocol pSpec) Out (Interaction.OracleVerifier.Output T B)) := do
   let r ← runWith order (oracleProtocol pSpec) (p.simulate (liftShared oSpec pSpec))
     (oracleLegacySampler pSpec (challengeOracle oSpec pSpec))
   let pp := Transcript.path r.1
@@ -662,12 +662,12 @@ def oracleObserveWith (order : Schedule)
 protocol's oracle tree, with its challenges answered by the legacy challenge oracle, is the
 focal-first oracle outcome. -/
 theorem simulateQ_oracleVerifier_run
-    (V : Core.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
+    (V : Interaction.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
     (data : ∀ i, A i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     simulateQ (oracleChallengeReindex oSpec pSpec) (V.run stmt data p) =
       oracleObserveWith .focalFirst V stmt data p := by
-  rw [Core.OracleVerifier.run_eq, oracleObserveWith, simulateQ_bind,
+  rw [Interaction.OracleVerifier.run_eq, oracleObserveWith, simulateQ_bind,
     simulateQ_oracleChallengeReindex_run]
   refine bind_congr fun r => ?_
   rcases r with ⟨tr, out, u⟩
@@ -762,7 +762,7 @@ read back on the oracle tree. -/
 theorem oracleObserveWith_embed (order : Schedule)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     oracleObserveWith order (embedOracleVerifier V) stmt oStmt p =
       toOracleOutcome <$> observeWith order (embedVerifier V.toVerifier) (stmt, oStmt)
         (toPlainFrom .focal 0 n (Nat.zero_add n) p) := by
@@ -851,7 +851,7 @@ plain verifier, against the transported prover, with the path read back on the o
 theorem simulateQ_embedOracleVerifier_run
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     simulateQ (oracleChallengeReindex oSpec pSpec) ((embedOracleVerifier V).run stmt oStmt p) =
       toOracleOutcome <$> simulateQ (challengeReindex oSpec pSpec)
         ((embedVerifier V.toVerifier).run (stmt, oStmt)
@@ -868,7 +868,7 @@ theorem experiment_embedOracleVerifier_run (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
     (f : Outcome oracleSig (oracleProtocol pSpec) Out
       (fun _ => StmtOut × (∀ i, OStmtOut i)) → β) :
     experiment init impl (oracleChallengeImpl chImpl)
@@ -889,7 +889,7 @@ theorem distEqFrom_oracleObserveWith (impl : QueryImpl oSpec (StateT σ ProbComp
     (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     DistEqFrom impl chImpl (oracleObserveWith .focalFirst (embedOracleVerifier V) stmt oStmt p)
       (oracleObserveWith .counterpartFirst (embedOracleVerifier V) stmt oStmt p) := by
   rw [oracleObserveWith_embed, oracleObserveWith_embed]
@@ -902,7 +902,7 @@ theorem experiment_oracleVerifier_run_evalDistEq (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) {β : Type}
     (f : Outcome oracleSig (oracleProtocol pSpec) Out
       (fun _ => StmtOut × (∀ i, OStmtOut i)) → β) :
     experiment init impl (oracleChallengeImpl chImpl)
@@ -944,4 +944,4 @@ theorem evalDist_experiment_oracleFinalize_run {WitIn WitOut : Type}
 
 end Embedded
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

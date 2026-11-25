@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLibTest.ProofSystem.Sumcheck.Core.RoundByRound
+import ArkLibTest.ProofSystem.Sumcheck.RoundByRound
 
 /-!
 # Prover effects in the Sumcheck execution
@@ -19,10 +19,10 @@ challenge. A prover that samples its private memory instead is bounded by the tr
 soundness error `2 / 17`.
 -/
 
-namespace Sumcheck.Core.EffectsTest
+namespace Sumcheck.EffectsTest
 
-open Polynomial PFunctor Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec MeasureTheory Sumcheck.Core.SoundnessTest
+open Polynomial PFunctor Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec MeasureTheory Sumcheck.SoundnessTest
 open scoped ENNReal NNReal
 
 /-! ## Support -/
@@ -67,7 +67,7 @@ theorem run_verifier_eq {Out : Transcript oracleSig (protocol R deg n) → Type}
             (.inl q)))
           (sampler oracleSig (protocol R deg n) fun c =>
             liftM ((amb + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
-  rw [Interaction.Core.OracleVerifier.run_eq]
+  rw [Interaction.OracleVerifier.run_eq]
   rw [map_eq_bind_pure_comp]
   refine bind_congr fun x => ?_
   simp only [simulateQ_decide]
@@ -538,16 +538,16 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl unifSpec (StateT σ P
 end
 
 run_cmd
-  for decl in [``Interaction.Core.Prover.simulate_joinSlot,
-      ``Sumcheck.Core.EffectsTest.eval_affine, ``Sumcheck.Core.EffectsTest.answer_affine,
-      ``Sumcheck.Core.EffectsTest.route_affine, ``Sumcheck.Core.EffectsTest.run_verifier_eq,
-      ``Sumcheck.Core.EffectsTest.two_rounds, ``Sumcheck.Core.EffectsTest.bad_first_rounds,
-      ``Sumcheck.Core.EffectsTest.range_eq, ``Sumcheck.Core.EffectsTest.decide_log_badFirst,
-      ``Sumcheck.Core.EffectsTest.mem_support_adaptive,
-      ``Sumcheck.Core.EffectsTest.runWithLog_wrong,
-      ``Sumcheck.Core.EffectsTest.target_seven_not_final] do
+  for decl in [``Interaction.Prover.simulate_joinSlot,
+      ``Sumcheck.EffectsTest.eval_affine, ``Sumcheck.EffectsTest.answer_affine,
+      ``Sumcheck.EffectsTest.route_affine, ``Sumcheck.EffectsTest.run_verifier_eq,
+      ``Sumcheck.EffectsTest.two_rounds, ``Sumcheck.EffectsTest.bad_first_rounds,
+      ``Sumcheck.EffectsTest.range_eq, ``Sumcheck.EffectsTest.decide_log_badFirst,
+      ``Sumcheck.EffectsTest.mem_support_adaptive,
+      ``Sumcheck.EffectsTest.runWithLog_wrong,
+      ``Sumcheck.EffectsTest.target_seven_not_final] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.EffectsTest
+end Sumcheck.EffectsTest

@@ -21,7 +21,7 @@ Ownership is determined by the signature into PolyFun's role polynomial.
 
 universe u q
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor
 open TwoParty.Lens
 
@@ -97,4 +97,4 @@ def eraseOracle : FreeM.PathAlong.MoveMap oracleSig.{u, q} viewSig where
 @[simp] theorem owner_oracle_payload (X : Type u) (I : OracleInterface.{u, q} X) :
     owner oracleSig (.oracle X I) = .sender := rfl
 
-end Interaction.Core
+end Interaction

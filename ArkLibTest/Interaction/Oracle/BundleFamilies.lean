@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLib.Interaction.OracleVerifier
 import Mathlib.Algebra.Polynomial.Degree.Operations
 import Mathlib.Algebra.Polynomial.Eval.Defs
 
@@ -24,9 +24,9 @@ The polynomial fixture is noncomputable because Mathlib's `Polynomial` is; it is
 the evaluation and degree proofs.
 -/
 
-open Interaction.Core Interaction.Oracle OracleComp
+open Interaction Interaction.Oracle OracleComp
 
-namespace Interaction.Core.BundleFamiliesTests
+namespace Interaction.BundleFamiliesTests
 
 universe i q a s h
 
@@ -383,4 +383,4 @@ example (C : OracleFamily.{i, a, q} Name Realization) (name : Index → Name)
 
 end Universes
 
-end Interaction.Core.BundleFamiliesTests
+end Interaction.BundleFamiliesTests

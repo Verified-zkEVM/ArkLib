@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.OracleVerifier
+public import ArkLib.Interaction.OracleVerifier
 public import PolyFun.PFunctor.Lens.Basic
 
 /-!
@@ -24,7 +24,7 @@ backing datum.
 
 universe v u w v' u' w' v'' u'' w''
 
-namespace Interaction.Core
+namespace Interaction
 
 /-- Realize a specification by any pure handler, without a representability requirement. -/
 def OracleBundle.ofSpec {I : Type u} (spec : OracleSpec.{u, v} I) :
@@ -174,4 +174,4 @@ def liftResponse (R : OracleBundle.{v, u, w}) :
 
 end OracleBundle.Equiv
 
-end Interaction.Core
+end Interaction

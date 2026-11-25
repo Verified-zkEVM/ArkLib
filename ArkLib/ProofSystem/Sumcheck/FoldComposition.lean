@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Interval
+public import ArkLib.ProofSystem.Sumcheck.Interval
 
 /-! # Composition of interaction-layer passive round checks
 
@@ -15,8 +15,8 @@ prover. All interactions run before the decisions, including after a rejected pr
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec ι)
@@ -220,4 +220,4 @@ theorem run_append_public_intervalVerifier (start count : ℕ) (bound : start + 
 
 end PublicIntervals
 
-end Sumcheck.Core
+end Sumcheck

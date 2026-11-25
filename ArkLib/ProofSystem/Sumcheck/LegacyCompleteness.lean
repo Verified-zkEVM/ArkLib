@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
-public import ArkLib.Interaction.Core.Legacy.OracleSecurity
+public import ArkLib.ProofSystem.Sumcheck.LegacyEquivalence
+public import ArkLib.Interaction.Legacy.OracleSecurity
 
 /-!
 # Perfect completeness of the embedded legacy honest Sumcheck prover
@@ -25,10 +25,10 @@ file concerns the legacy honest prover and judges the output witness as well.
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open scoped ENNReal NNReal
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec Interaction.Legacy
 
 variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n : ℕ)
   {d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
@@ -57,4 +57,4 @@ theorem legacyProver_perfectCompleteness :
   exact (oracleCompleteness_iff init impl (Spec.oracleReduction R deg D n ambient) _ _ _).mpr
     (Spec.oracleReduction_perfectCompleteness R deg D n ambient)
 
-end Sumcheck.Core
+end Sumcheck

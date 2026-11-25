@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Security.CompositionSoundness
+import ArkLib.Interaction.Security.CompositionSoundness
 import VCVio.OracleComp.Constructions.SampleableType
 import VCVio.OracleComp.EvalDist.Measure
 import VCVio.OracleComp.Constructions.SampleableType.Measure
@@ -29,10 +29,10 @@ export, makes a fresh ambient query, and may reject. The bound charges a true mi
 from the remaining branch's `1/2` error, giving `3/4`.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp OracleSpec
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp OracleSpec
 open scoped ENNReal
 
-namespace Interaction.Core.CompositionSoundnessTests
+namespace Interaction.CompositionSoundnessTests
 
 noncomputable section
 
@@ -145,9 +145,9 @@ theorem two_guesses
 
 end
 
-end Interaction.Core.CompositionSoundnessTests
+end Interaction.CompositionSoundnessTests
 
-namespace Interaction.Core.CompositionSoundnessTests.Weighted
+namespace Interaction.CompositionSoundnessTests.Weighted
 
 open MeasureTheory
 
@@ -386,9 +386,9 @@ theorem weighted_success_after_final_query :
 
 end
 
-end Interaction.Core.CompositionSoundnessTests.Weighted
+end Interaction.CompositionSoundnessTests.Weighted
 
-namespace Interaction.Core.CompositionSoundnessTests.OracleExample
+namespace Interaction.CompositionSoundnessTests.OracleExample
 
 open MeasureTheory Interaction.Oracle
 open Weighted (branchSpec branchMeasure)
@@ -688,9 +688,9 @@ theorem weighted_success :
 
 end
 
-end Interaction.Core.CompositionSoundnessTests.OracleExample
+end Interaction.CompositionSoundnessTests.OracleExample
 
-namespace Interaction.Core.CompositionSoundnessTests.Standalone
+namespace Interaction.CompositionSoundnessTests.Standalone
 
 /-!
 The standalone corollary with each named discharge of its reordering hypothesis, for arbitrary
@@ -718,7 +718,7 @@ theorem append_soundness_of_pure_decide
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
-      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
+      Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
@@ -744,7 +744,7 @@ theorem append_soundness_of_stateless
         o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
-      Core.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
+      Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
         (g.liftTarget (StateT σ ProbComp))
         (suffixDraw plainSig s₁ s₂ challenges p)) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
@@ -755,4 +755,4 @@ theorem append_soundness_of_stateless
     ε₁ δ ε₂ ((Verifier.boundaryDecidedRun_evalDistEq_of_stateless V₁ V₂ stmt prover init g
       challenges).map _) hprefix hadmissible hsuffix
 
-end Interaction.Core.CompositionSoundnessTests.Standalone
+end Interaction.CompositionSoundnessTests.Standalone

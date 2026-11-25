@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.Protocol
-public import ArkLib.Interaction.Core.Reduction
+public import ArkLib.Interaction.Legacy.Protocol
+public import ArkLib.Interaction.Reduction
 public import ArkLib.OracleReduction.Basic
 
 /-!
@@ -27,7 +27,7 @@ challenge oracle `[pSpec.Challenge]ₒ`.
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec
 
 variable {n : ℕ} {pSpec : ProtocolSpec n}
@@ -175,7 +175,7 @@ def roundSlot (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (j : F
 /-- The embedded prover from round `k`, started in the legacy state before round `k`. -/
 def embedFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
     (k m : ℕ) → (h : k + m = n) → P.PrvState ⟨k, by omega⟩ →
-    Core.Prover plainSig oSpec (suffix pSpec k m h) (fun _ => StmtOut × WitOut)
+    Interaction.Prover plainSig oSpec (suffix pSpec k m h) (fun _ => StmtOut × WitOut)
   | k, 0, h, st => P.output (cast (congrArg P.PrvState (Fin.ext h)) st)
   | k, m + 1, h, st =>
     Choice.map .focal _ (fun _ st' => embedFrom P (k + 1) m (by omega) st') <$>
@@ -184,9 +184,9 @@ def embedFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
 /-- The embedded honest prover. -/
 def embedProver (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn)
     (wit : WitIn) :
-    Core.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut) :=
+    Interaction.Prover plainSig oSpec (protocol pSpec) (fun _ => StmtOut × WitOut) :=
   embedFrom P 0 n (Nat.zero_add n) (P.input (stmt, wit))
 
 end Prover
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

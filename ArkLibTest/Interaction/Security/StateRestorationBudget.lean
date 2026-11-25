@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Security.StateRestorationBudget
-import ArkLibTest.Interaction.Core.Security.StateRestoration
-import ArkLibTest.Interaction.Core.Oracle
+import ArkLib.Interaction.Security.StateRestorationBudget
+import ArkLibTest.Interaction.Security.StateRestoration
+import ArkLibTest.Interaction.Oracle
 import ArkLibTest.Data.OracleComp.AddProgram
 
 /-! A two-round state-restoration client with round errors `1/8` and `1/16`. Each round sends a
@@ -19,12 +19,12 @@ A knowledge state function extracts by adding both messages to the output witnes
 stages are measured by one charged addition each and its challenge stages are uncharged, so every
 extraction costs two additions. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec AddProgramTest
-open Interaction.Core.StateRestoration
-open Interaction.Core.OracleTests (emptyFamily)
+open Interaction.StateRestoration
+open Interaction.OracleTests (emptyFamily)
 
-namespace Interaction.Core.StateRestorationBudgetTests
+namespace Interaction.StateRestorationBudgetTests
 
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
@@ -792,7 +792,7 @@ example :
     (fun z hz => bounded z hz) (fun _ _ w => ⟨w⟩) adversary 2 queryBound
 
 namespace PublicSelection
-open Interaction.Core.StateRestorationTests
+open Interaction.StateRestorationTests
   (SelectedValue selectedValue selectedMessage selectedFamily)
 
 /-- A prover-authored selector precedes the original two restoration rounds. -/
@@ -1056,27 +1056,27 @@ example (b : Bool) : ∃ claim,
 
 end PublicSelection
 
-end Interaction.Core.StateRestorationBudgetTests
+end Interaction.StateRestorationBudgetTests
 
-open Interaction.Core.MeasuredKnowledgeStateFunction in
+open Interaction.MeasuredKnowledgeStateFunction in
 run_cmd do
   for decl in [``KnowledgeStateFunction.MeasuredStages.programAlong_budget_le_protocol_zero,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.observation,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.outputLaw,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.actual_nonuniform_game_bound,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.run_selectedProver,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.game_eval_run,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.measured_game_bound,
-      ``Interaction.Core.StateRestorationBudgetTests.PublicSelection.program_run_game_bound,
+      ``Interaction.StateRestorationBudgetTests.PublicSelection.observation,
+      ``Interaction.StateRestorationBudgetTests.PublicSelection.outputLaw,
+      ``Interaction.StateRestorationBudgetTests.PublicSelection.actual_nonuniform_game_bound,
+      ``Interaction.StateRestorationBudgetTests.PublicSelection.run_selectedProver,
+      ``Interaction.StateRestorationBudgetTests.PublicSelection.game_eval_run,
+      ``Interaction.StateRestorationBudgetTests.PublicSelection.measured_game_bound,
+      ``Interaction.StateRestorationBudgetTests.PublicSelection.program_run_game_bound,
       ``StateRestoration.roundCost_prependQuery,
       ``StateRestoration.stateRestoration_knowledge_soundness_nonuniform_privateCoins,
       ``StateRestoration.stateRestoration_oracle_knowledge_soundness_nonuniform_privateCoins,
       ``MeasuredKnowledgeStateFunction.run_extractionProgram,
       ``stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut,
-      ``Interaction.Core.StateRestorationBudgetTests.coinAdversary_queryBound,
-      ``Interaction.Core.StateRestorationBudgetTests.converted_game_bound,
-      ``Interaction.Core.StateRestorationBudgetTests.convertedObservation_cost,
-      ``Interaction.Core.StateRestorationBudgetTests.convertedObservation_path] do
+      ``Interaction.StateRestorationBudgetTests.coinAdversary_queryBound,
+      ``Interaction.StateRestorationBudgetTests.converted_game_bound,
+      ``Interaction.StateRestorationBudgetTests.convertedObservation_cost,
+      ``Interaction.StateRestorationBudgetTests.convertedObservation_path] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

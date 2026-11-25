@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLibTest.ProofSystem.Sumcheck.Core.RoundByRound
+import ArkLibTest.ProofSystem.Sumcheck.RoundByRound
 
 /-!
 # Several Sumcheck rounds in the interaction layer
@@ -16,9 +16,9 @@ challenges `3` and then `5`, the run makes exactly two challenge queries, in rou
 accepts the claim `⟨14, ![3, 5]⟩` with the input polynomial as output oracle.
 -/
 
-namespace Sumcheck.Core.RoundsTest
+namespace Sumcheck.RoundsTest
 
-open Polynomial PFunctor Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+open Polynomial PFunctor Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec
 open scoped ENNReal NNReal
 
@@ -464,17 +464,17 @@ example : ((⟨14, ![3, 5]⟩, fun _ => bilinear), ()) ∈
 end
 
 run_cmd
-  for decl in [``Sumcheck.Core.RoundsTest.run_honest_eval, ``Sumcheck.Core.RoundsTest.run_three,
-      ``Sumcheck.Core.RoundsTest.run_three_wrong, ``Sumcheck.Core.RoundsTest.run_two,
-      ``Sumcheck.Core.RoundsTest.firstRound_relation,
-      ``Sumcheck.Core.RoundsTest.run_two_bilinear, ``Sumcheck.Core.RoundsTest.range_eq,
-      ``Sumcheck.Core.RoundsTest.relationLast_iff_eval, ``Sumcheck.Core.RoundsTest.bilinear,
-      ``Sumcheck.Core.RoundsTest.bilinear_relation, ``Sumcheck.Core.RoundsTest.domain_points,
-      ``Sumcheck.Core.RoundsTest.suffix_points, ``Sumcheck.Core.RoundsTest.projected_eval,
-      ``Sumcheck.Core.RoundsTest.projected_sum, ``Sumcheck.Core.RoundsTest.second_eval,
-      ``Sumcheck.Core.RoundsTest.second_sum] do
+  for decl in [``Sumcheck.RoundsTest.run_honest_eval, ``Sumcheck.RoundsTest.run_three,
+      ``Sumcheck.RoundsTest.run_three_wrong, ``Sumcheck.RoundsTest.run_two,
+      ``Sumcheck.RoundsTest.firstRound_relation,
+      ``Sumcheck.RoundsTest.run_two_bilinear, ``Sumcheck.RoundsTest.range_eq,
+      ``Sumcheck.RoundsTest.relationLast_iff_eval, ``Sumcheck.RoundsTest.bilinear,
+      ``Sumcheck.RoundsTest.bilinear_relation, ``Sumcheck.RoundsTest.domain_points,
+      ``Sumcheck.RoundsTest.suffix_points, ``Sumcheck.RoundsTest.projected_eval,
+      ``Sumcheck.RoundsTest.projected_sum, ``Sumcheck.RoundsTest.second_eval,
+      ``Sumcheck.RoundsTest.second_sum] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.RoundsTest
+end Sumcheck.RoundsTest

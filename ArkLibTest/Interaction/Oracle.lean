@@ -4,14 +4,14 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLib.Interaction.OracleVerifier
 
 /-! Query-only decisions and agreement of embedded and virtual output oracles. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle
 open OracleComp
 
-namespace Interaction.Core.OracleTests
+namespace Interaction.OracleTests
 
 @[instance_reducible] def functions : OracleFamily PUnit (fun _ => Nat → Nat) :=
   singletonFamily OracleInterface.instFunction
@@ -68,9 +68,9 @@ run_cmd do
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩)
   unless answer == 16 do throwError "virtual routing disagrees with materialized output"
 
-end Interaction.Core.OracleTests
+end Interaction.OracleTests
 
-namespace Interaction.Core.OracleTests
+namespace Interaction.OracleTests
 
 /-- The small oracle protocol with no rounds. -/
 abbrev emptyTree : OracleProtocol.{0, 0} := .pure ⟨⟩
@@ -113,16 +113,16 @@ example (output : OracleMap emptyBundle functions) :
   change output.f emptyData ⟨⟩ 0 = 1 at h₁
   exact Nat.zero_ne_one (h₀.symm.trans h₁)
 
-end Interaction.Core.OracleTests
+end Interaction.OracleTests
 
 run_cmd do
-  for decl in [``Interaction.Core.plain_challenge_shape,
-      ``Interaction.Core.oracle_payload_shape, ``Interaction.Core.Reduction.run,
-      ``Interaction.Core.OracleMap.comp, ``Interaction.Core.OracleMap.simulate_eq,
-      ``Interaction.Core.oracleMessageFamily_split_append,
-      ``Interaction.Core.oracleMessageFamily_append_split,
-      ``Interaction.Core.oracleMessages_append, ``Interaction.Core.oracleMessageImpl_append,
-      ``Interaction.Core.OracleVerifier.run] do
+  for decl in [``Interaction.plain_challenge_shape,
+      ``Interaction.oracle_payload_shape, ``Interaction.Reduction.run,
+      ``Interaction.OracleMap.comp, ``Interaction.OracleMap.simulate_eq,
+      ``Interaction.oracleMessageFamily_split_append,
+      ``Interaction.oracleMessageFamily_append_split,
+      ``Interaction.oracleMessages_append, ``Interaction.oracleMessageImpl_append,
+      ``Interaction.OracleVerifier.run] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

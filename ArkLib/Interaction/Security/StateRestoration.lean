@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.KnowledgeComposition
+public import ArkLib.Interaction.Security.KnowledgeComposition
 public import VCVio.OracleComp.QueryTracking.RandomOracle.FreshQuery
 
 /-!
@@ -51,7 +51,7 @@ correspondence.
 
 universe uK uW uO u wI wJ uS uI uJ
 
-namespace Interaction.Core.StateRestoration
+namespace Interaction.StateRestoration
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
 
 /-- One round: an oracle message with its query interface, then a uniform public challenge. -/
@@ -1164,4 +1164,4 @@ theorem stateRestoration_oracle_knowledge_soundness_privateCoins
 
 end Games
 
-end Interaction.Core.StateRestoration
+end Interaction.StateRestoration

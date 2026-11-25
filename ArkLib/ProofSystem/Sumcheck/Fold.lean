@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Interpreted
+public import ArkLib.ProofSystem.Sumcheck.Interpreted
 
 /-! # Passive folds of round checks
 
@@ -21,8 +21,8 @@ below abbreviates that instance, so the generic laws `Interpreted.simulate_decis
 
 universe uI wI
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 
 variable {R : Type} [CommSemiring R] {deg : ℕ}
@@ -62,4 +62,4 @@ abbrev foldVerifier (R : Type) [CommSemiring R] (deg : ℕ) {ι : Type} (ambient
   Interpreted.verifier (evaluate := fun (q : R⦃≤ deg⦄[X]) r => q.val.eval r)
     ambient inputs V finish k
 
-end Sumcheck.Core
+end Sumcheck

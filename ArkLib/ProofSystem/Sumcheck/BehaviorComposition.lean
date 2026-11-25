@@ -5,15 +5,15 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.FoldComposition
-public import ArkLib.ProofSystem.Sumcheck.Core.Behavior
+public import ArkLib.ProofSystem.Sumcheck.FoldComposition
+public import ArkLib.ProofSystem.Sumcheck.Behavior
 
 /-! # Public interval composition with arbitrary retained behavior -/
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ}
   {ι : Type} (ambient : OracleSpec ι) (D : Fin d → R)
@@ -119,4 +119,4 @@ theorem run_append_behaviorIntervalVerifier (start count : ℕ) (bound : start +
         (fun _ => RoundStatement R n ⟨count + (1 + start), by omega⟩ ×
           (∀ _ : Unit, (Fin n → R) → R))))) hm.symm
 
-end Sumcheck.Core
+end Sumcheck

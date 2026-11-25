@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Oracle.Reassociation
+public import ArkLib.Interaction.Oracle.Reassociation
 public import VCVio.OracleComp.EvalDist
 
 /-!
@@ -71,7 +71,7 @@ the fold of the decisions after all interactions. The almost-sure law reads prob
 
 universe u w w' uι uI uI' uJ uS wI wI' wJ wK
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 /-! ## Query universes -/
@@ -1187,4 +1187,4 @@ end Then
 
 end StageChain
 
-end Interaction.Core
+end Interaction

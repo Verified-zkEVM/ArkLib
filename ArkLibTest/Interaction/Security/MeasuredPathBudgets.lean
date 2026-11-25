@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Quang Dao
 -/
-import ArkLib.Interaction.Core.Security.MeasuredExtraction
+import ArkLib.Interaction.Security.MeasuredExtraction
 import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
@@ -18,11 +18,11 @@ Its result is checked against arithmetic alternatives that swap or omit the maps
 counts two declared additions; it does not count all host-language arithmetic.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core OracleComp AddProgramTest
+open PFunctor PFunctor.FreeM Interaction OracleComp AddProgramTest
 
 -- Disposition IDs refer to docs/design/interaction-layer/knowledge-composition-disposition.md.
 
-namespace Interaction.Core.MeasuredPathBudgetsTests
+namespace Interaction.MeasuredPathBudgetsTests
 
 /-- Runs a measured program with its handlers and records its additive cost. -/
 def recorded {A B : Type} (program : MeasuredProgram A B Nat) (input : A) : B × Nat :=
@@ -383,15 +383,15 @@ def checkOrderedObservation : IO Unit := do
 #guard_msgs in
 #eval recorded (deepStages.programAlong () (deepPath 4)).program 0
 
-end Interaction.Core.MeasuredPathBudgetsTests
+end Interaction.MeasuredPathBudgetsTests
 
 run_cmd do
-  for decl in [``Interaction.Core.KnowledgeStateFunction.MeasuredStages.programAlong_budget_le,
-      ``Interaction.Core.KnowledgeStateFunction.MeasuredStages.programAlong_costAtMost_nsmul,
-      ``Interaction.Core.KnowledgeStateFunction.MeasuredStages.run_programAlong,
-      ``Interaction.Core.MeasuredPathBudgetsTests.no_global_budget_of_stage_bound,
-      ``Interaction.Core.MeasuredPathBudgetsTests.no_global_cost_bound_of_stage_bound,
-      ``Interaction.Core.MeasuredPathBudgetsTests.endpoint_budget_le] do
+  for decl in [``Interaction.KnowledgeStateFunction.MeasuredStages.programAlong_budget_le,
+      ``Interaction.KnowledgeStateFunction.MeasuredStages.programAlong_costAtMost_nsmul,
+      ``Interaction.KnowledgeStateFunction.MeasuredStages.run_programAlong,
+      ``Interaction.MeasuredPathBudgetsTests.no_global_budget_of_stage_bound,
+      ``Interaction.MeasuredPathBudgetsTests.no_global_cost_bound_of_stage_bound,
+      ``Interaction.MeasuredPathBudgetsTests.endpoint_budget_le] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

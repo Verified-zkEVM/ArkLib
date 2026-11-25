@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.Soundness
+public import ArkLib.Interaction.Security.Soundness
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
@@ -25,7 +25,7 @@ For general measurable spaces, the error is an upper bound on the outer measure 
 
 universe uS uI uR wI wJ dI q
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec MeasureTheory
 open scoped ENNReal
 
@@ -197,7 +197,7 @@ noncomputable def classicalStraightLine {ι σ : Type} {S : Type uS} {ambient : 
     (readOut : ∀ tr, Out tr → Wout tr) :
     ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
   Ext := Extractor.StraightLine ambient s Witness Wout
-  experiment E stmt adv := 𝒟[Core.experiment init impl challenges
+  experiment E stmt adv := 𝒟[Interaction.experiment init impl challenges
     (extractionGame V readOut E stmt adv)]
   cost _ _ _ := 0
 
@@ -242,12 +242,12 @@ theorem classicalStraightLine_marginal {ι σ : Type} {S : Type uS} {ambient : O
     (stmt : S) (adv : Prover plainSig ambient s Out) :
     ((classicalStraightLine Witness V init impl challenges readOut).experiment E stmt adv).map
       Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv := by
-  change (𝒟[Core.experiment init impl challenges
+  change (𝒟[Interaction.experiment init impl challenges
     (extractionGame V readOut E stmt adv)]).map Prod.fst =
-      𝒟[Core.experiment init impl challenges (V.run stmt adv)]
+      𝒟[Interaction.experiment init impl challenges (V.run stmt adv)]
   rw [← evalDist_map _ measurable_fst]
   refine EvalDistEq.evalDist_eq ?_
-  simp only [Core.experiment, _root_.map_bind]
+  simp only [Interaction.experiment, _root_.map_bind]
   refine EvalDistEq.bind_right (m := ProbComp) _ fun st => ?_
   have hgame : Prod.fst <$> extractionGame V readOut E stmt adv =
       V.runWithLog stmt adv >>= fun y => (fun _ => y.1) <$> (match y.1.2.2 with
@@ -601,7 +601,7 @@ noncomputable def classicalStraightLine (Witness : (S × inputs.Data) → Type)
     (readOut : ∀ tr, Out tr → Wout tr) :
     ExtractionInterface (V.classicalModel (Out := Out) init impl challenges) Witness where
   Ext := Extractor.OracleStraightLine ambient s Witness Wout
-  experiment E stmt adv := 𝒟[Core.experiment init impl challenges
+  experiment E stmt adv := 𝒟[Interaction.experiment init impl challenges
     (V.extractionGame readOut E stmt adv)]
   cost _ _ _ := 0
 
@@ -631,12 +631,12 @@ theorem classicalStraightLine_marginal (Witness : (S × inputs.Data) → Type)
     (stmt : S × inputs.Data) (adv : Prover oracleSig ambient s Out) :
     ((V.classicalStraightLine Witness init impl challenges readOut).experiment E stmt adv).map
       Prod.fst = (V.classicalModel init impl challenges).outcome stmt adv := by
-  change (𝒟[Core.experiment init impl challenges
+  change (𝒟[Interaction.experiment init impl challenges
     (V.extractionGame readOut E stmt adv)]).map Prod.fst =
-      𝒟[Core.experiment init impl challenges (V.run stmt.1 stmt.2 adv)]
+      𝒟[Interaction.experiment init impl challenges (V.run stmt.1 stmt.2 adv)]
   rw [← evalDist_map _ measurable_fst]
   refine EvalDistEq.evalDist_eq ?_
-  simp only [Core.experiment, _root_.map_bind]
+  simp only [Interaction.experiment, _root_.map_bind]
   refine EvalDistEq.bind_right (m := ProbComp) _ fun st => ?_
   have hgame : Prod.fst <$> V.extractionGame readOut E stmt adv =
       V.runWithAmbientLog stmt.1 stmt.2 adv >>= fun y => (fun _ => y.1) <$> (match y.1.2.2 with
@@ -673,4 +673,4 @@ theorem classicalTranscriptOnly_marginal (Witness : (S × inputs.Data) → Type)
 
 end OracleVerifier
 
-end Interaction.Core
+end Interaction

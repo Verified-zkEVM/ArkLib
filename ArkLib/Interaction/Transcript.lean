@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Signature
+public import ArkLib.Interaction.Signature
 
 /-!
 # Transcripts
@@ -32,7 +32,7 @@ the boundary for generic PolyFun constructions, which should use them instead of
 
 universe u v w uA
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens
 
 variable {P : PFunctor.{uA, u}} {α : Type v} {β : Type w}
@@ -144,4 +144,4 @@ def ofTranscript : (s : FreeM P α) → Transcript l s → PartialTranscript l s
 
 end PartialTranscript
 
-end Interaction.Core
+end Interaction

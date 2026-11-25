@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.MessageTree
+public import ArkLib.ProofSystem.Sumcheck.MessageTree
 
 /-! # Paths, views and query lifts of interpreted message trees
 
@@ -17,8 +17,8 @@ polynomial evaluation.
 
 @[expose] public section
 
-namespace Sumcheck.Core.Interpreted
-open PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck.Interpreted
+open PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 
 variable {R M : Type} {evaluate : M → R → R}
@@ -90,4 +90,4 @@ theorem simulate_tail {k : ℕ} (tr : Transcript oracleSig (protocol R M evaluat
   rcases tr with ⟨msg, r, tail⟩
   rfl
 
-end Sumcheck.Core.Interpreted
+end Sumcheck.Interpreted

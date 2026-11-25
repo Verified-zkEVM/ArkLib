@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Composition
+import ArkLib.Interaction.Composition
 
 /-!
 # A public message may change the final claim type
@@ -16,9 +16,9 @@ family: on `true` the statement is `()` and the final oracle is the input itself
 statement is the input value and the final oracle is a pair answering its first component.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle OracleComp
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp
 
-namespace Interaction.Core.DependentRoutingTests
+namespace Interaction.DependentRoutingTests
 
 /-- No ambient oracle is ever queried. -/
 abbrev ambient : OracleSpec Empty := Empty →ₒ Nat
@@ -165,4 +165,4 @@ run_cmd do
   unless observed 0 == (true, 13, some (0, 0)) do throwError "the true branch routes wrongly"
   unless observed 7 == (false, 29, some (7, 7)) do throwError "the false branch routes wrongly"
 
-end Interaction.Core.DependentRoutingTests
+end Interaction.DependentRoutingTests

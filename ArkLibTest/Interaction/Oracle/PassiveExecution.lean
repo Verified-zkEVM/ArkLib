@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLibTest.Interaction.Core.Oracle.LoggedExecution
+import ArkLibTest.Interaction.Oracle.LoggedExecution
 
 /-!
 # Oracle execution with a passive verifier
@@ -19,14 +19,14 @@ It also checks the typing facts that keep oracle messages and later oracles out 
 reach.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
-open Interaction.Core.LoggedExecutionTests (ambient inputs seven firstInterface pairSend)
-open Interaction.Core.DependentRoutingTests (done)
+open Interaction.LoggedExecutionTests (ambient inputs seven firstInterface pairSend)
+open Interaction.DependentRoutingTests (done)
 
 universe uX dX
 
-namespace Interaction.Core.PassiveExecutionTests
+namespace Interaction.PassiveExecutionTests
 
 /-- No output oracles. -/
 def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun i => i.elim) :=
@@ -173,11 +173,11 @@ run_cmd do
     unless (observed hidden).1.2.2.map Prod.fst == some 37 do
       throwError "the verdict is wrong"
 
-end Interaction.Core.PassiveExecutionTests
+end Interaction.PassiveExecutionTests
 
-namespace Interaction.Core.PassiveExecutionTests.Append
+namespace Interaction.PassiveExecutionTests.Append
 
-open Interaction.Core.PassiveExecutionTests
+open Interaction.PassiveExecutionTests
 
 /-! ## Appended oracle verifiers
 
@@ -507,13 +507,13 @@ example (hidden : Nat) : (observedPublic hidden).1.2.2.map Prod.fst = some 59 :=
   rw [OracleVerifier.run_append]
   rfl
 
-end Interaction.Core.PassiveExecutionTests.Append
+end Interaction.PassiveExecutionTests.Append
 
 -- ExecutionExample 16 and 18: the oracle execution and composition laws stay axiom-clean.
 run_cmd do
-  for decl in [``Interaction.Core.OracleVerifier.run, ``Interaction.Core.Reduction.run,
-      ``Interaction.Core.OracleVerifier.run_append, ``Interaction.Core.run_splitSampler,
-      ``Interaction.Core.run_appendSampler] do
+  for decl in [``Interaction.OracleVerifier.run, ``Interaction.Reduction.run,
+      ``Interaction.OracleVerifier.run_append, ``Interaction.run_splitSampler,
+      ``Interaction.run_appendSampler] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

@@ -4,13 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.LoggedExecution
-import ArkLib.Interaction.Core.Oracle.SentOracles
-import ArkLib.Interaction.Core.Oracle.Routing
-import ArkLibTest.Interaction.Core.Oracle.DependentRouting
+import ArkLib.Interaction.Oracle.LoggedExecution
+import ArkLib.Interaction.Oracle.SentOracles
+import ArkLib.Interaction.Oracle.Routing
+import ArkLibTest.Interaction.Oracle.DependentRouting
 import VCVio.OracleComp.Runtime
-import ArkLibTest.Interaction.Core.Support
-import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
+import ArkLibTest.Interaction.Support
+import ArkLibTest.Interaction.Oracle.HiddenBitFixture
 
 /-! Logged and runtime execution of passive oracle verifiers. The decision log records ambient
 queries and queries to the input and message oracles, in order and with repeats, before routing.
@@ -18,10 +18,10 @@ A persistent runtime executes the logged run once as `runtime.run (V.runWithLog 
 the final state and the ordered surface trace of queries and answers. A composed verifier logs the
 raw input and message queries that its routes make. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
-namespace Interaction.Core.LoggedExecutionTests
+namespace Interaction.LoggedExecutionTests
 
 /-- Ambient queries carry tags. Loggers answer a tag with itself; counters answer with the
 updated count. -/
@@ -765,9 +765,9 @@ example : (fun z => (z.1, z.2.map nameEntry)) (simulateQ answerPrefix
 
 /-! ## The hidden-bit runtime
 
-The fixture is `ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture`. -/
+The fixture is `ArkLibTest.Interaction.Oracle.HiddenBitFixture`. -/
 
-open Interaction.Core.HiddenBitFixture
+open Interaction.HiddenBitFixture
 
 /-! The logged guessing run retains the actual ambient history and charge, with the
 challenge recorded separately in the full surface trace. -/
@@ -864,28 +864,28 @@ example (guess : Bool) (secret : Nat) :
   OracleVerifier.runtime_runWithLog_erase bitVerifier bitRuntime () falseData
     (guessProver guess secret)
 
-end Interaction.Core.LoggedExecutionTests
+end Interaction.LoggedExecutionTests
 
 /-! The erasure laws, runtime erasure, recoverable final decision, logging after substitution
 and the laws of the queries by move and sent oracles use only the permitted kernel axioms. -/
 run_cmd do
-  for decl in [``Interaction.Core.OracleVerifier.runWithLog_fst,
-      ``Interaction.Core.OracleVerifier.map_fst_runWithLog,
-      ``Interaction.Core.OracleVerifier.decideCatching,
-      ``Interaction.Core.LoggedExecutionTests.close_optional_ok,
-      ``Interaction.Core.OracleVerifier.runtime_runWithLog_erase,
-      ``Interaction.Core.OracleVerifier.simulateQ_runWithLog_erase,
-      ``Interaction.Core.OracleVerifier.map_fst_runWithQueriesByMove,
-      ``Interaction.Core.OracleVerifier.toLog_runWithQueriesByMove,
-      ``Interaction.Core.OracleVerifier.runWithQueriesByMove_before_le,
-      ``Interaction.Core.PartialTranscript.sentOracleMessageMap_query,
-      ``Interaction.Core.PartialTranscript.availableMap_node,
+  for decl in [``Interaction.OracleVerifier.runWithLog_fst,
+      ``Interaction.OracleVerifier.map_fst_runWithLog,
+      ``Interaction.OracleVerifier.decideCatching,
+      ``Interaction.LoggedExecutionTests.close_optional_ok,
+      ``Interaction.OracleVerifier.runtime_runWithLog_erase,
+      ``Interaction.OracleVerifier.simulateQ_runWithLog_erase,
+      ``Interaction.OracleVerifier.map_fst_runWithQueriesByMove,
+      ``Interaction.OracleVerifier.toLog_runWithQueriesByMove,
+      ``Interaction.OracleVerifier.runWithQueriesByMove_before_le,
+      ``Interaction.PartialTranscript.sentOracleMessageMap_query,
+      ``Interaction.PartialTranscript.availableMap_node,
       ``OracleComp.withQueryLog_simulateQ] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-namespace Interaction.Core.DependentRoutingTests
+namespace Interaction.DependentRoutingTests
 
 /-- Observe the logged run with the statement and output oracle selected by its public Boolean.
 The dependent claim is read through that selected oracle interface. -/
@@ -912,7 +912,7 @@ example (input : Nat) : loggedObserved input = observed input := by
       ((Transcript.path obs.1).1, obs.2.1,
     obs.2.2.map (readClaim (Transcript.path obs.1)))) h
 
-end Interaction.Core.DependentRoutingTests
+end Interaction.DependentRoutingTests
 
 
 universe uS wJ v
@@ -931,7 +931,7 @@ example {ι I : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtoco
       simulateQ handler (V.run stmt data prover) :=
   OracleVerifier.simulateQ_runWithLog_erase V handler stmt data prover
 
-namespace Interaction.Core.LoggedExecutionTests
+namespace Interaction.LoggedExecutionTests
 
 /-- Read the queries by move from the same stateful scheduling fixture as the aggregate test. -/
 def queriesByMoveSummary :=
@@ -1159,7 +1159,7 @@ example : OracleVerifier.QueriesByMove.toLog <$>
     twoOracleVerifier.runWithLog () seven twoOracleProver :=
   twoOracleVerifier.toLog_runWithQueriesByMove () seven twoOracleProver
 
-end Interaction.Core.LoggedExecutionTests
+end Interaction.LoggedExecutionTests
 
 universe uQuery uInput uData
 
@@ -1174,7 +1174,7 @@ example {ι : Type} {S : Type uS} {ambient : OracleSpec ι}
     OracleVerifier.AmbientQueriesByMove.outcome <$> V.runWithAmbientQueriesByMove stmt data prover =
       V.run stmt data prover := V.map_fst_runWithAmbientQueriesByMove stmt data prover
 
-namespace Interaction.Core.LoggedExecutionTests
+namespace Interaction.LoggedExecutionTests
 
 /-- A small oracle message has genuinely larger query indices. -/
 @[reducible] def liftedQueries : OracleInterface.{0, 1} Nat where
@@ -1218,4 +1218,4 @@ theorem lifted_queries_by_move_contract : liftedQueriesByMove.outcome.2.1 = 23 �
   · kernel_rfl
   · constructor <;> kernel_rfl
 
-end Interaction.Core.LoggedExecutionTests
+end Interaction.LoggedExecutionTests

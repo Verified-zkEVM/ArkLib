@@ -5,14 +5,14 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Types
+public import ArkLib.ProofSystem.Sumcheck.Types
 
 /-! # Fixed message trees with explicit evaluation interfaces -/
 
 @[expose] public section
 
-namespace Sumcheck.Core.Interpreted
-open PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck.Interpreted
+open PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec
 
 /-- Evaluation access to an arbitrary message representation. -/
@@ -43,4 +43,4 @@ def challengeSampleable (R M : Type) [SampleableType R] (evaluate : M → R → 
   | _ + 1, ⟨.inr ⟨_, .inl _⟩, _⟩ => inferInstanceAs (SampleableType R)
   | k + 1, ⟨.inr ⟨_, .inr ⟨_, c⟩⟩, h⟩ => challengeSampleable R M evaluate k ⟨c, h⟩
 
-end Sumcheck.Core.Interpreted
+end Sumcheck.Interpreted

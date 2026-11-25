@@ -4,23 +4,23 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
-import ArkLibTest.Interaction.Core.Support
+import ArkLibTest.Interaction.Oracle.HiddenBitFixture
+import ArkLibTest.Interaction.Support
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 import VCVio.OracleComp.EvalDist.AnswerMeasure
 
 /-! Access certificates for the hidden-bit composition of
-`ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture`. The prefix exports its input oracle and its
+`ArkLibTest.Interaction.Oracle.HiddenBitFixture`. The prefix exports its input oracle and its
 decision makes one dummy request. The suffix decision reads the export as a pad and reveals the
 hidden bit. Oracle access is typing. The export is a map over the prefix bundle, which on the
 only prefix path consists of the inputs alone. The suffix decision routed by `suffixRoute` queries
 only the reveal request and the input oracle of the composed bundle. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
-open Interaction.Core.HiddenBitFixture
+open Interaction.HiddenBitFixture
 
-namespace Interaction.Core.HiddenBitAccessTests
+namespace Interaction.HiddenBitAccessTests
 
 /-- The only path of the prefix. -/
 abbrev firstPath : Path bitFirst := ⟨⟨⟩, ⟨⟩⟩
@@ -193,4 +193,4 @@ theorem informed_success (secret : Nat) :
   simp only [Option.map_some, eq_self, prEvent_true_eq_evalDist_apply_univ,
     OracleComp.evalDist_apply_univ_eq_one]
 
-end Interaction.Core.HiddenBitAccessTests
+end Interaction.HiddenBitAccessTests

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.KnowledgeComposition.Extraction
+public import ArkLib.Interaction.Security.KnowledgeComposition.Extraction
 
 /-!
 # Composing round-by-round knowledge bounds
@@ -35,7 +35,7 @@ state at the seam.
 
 universe uS uW uK uO uM uO₂ uS' uW' uT uI dI wI wJ wK uW₂ uA u q
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
@@ -497,7 +497,7 @@ theorem Verifier.rbrKnowledgeSoundness_append_prefix {ι σ : Type} {S : Type uS
     exact ⟨(Verifier.validAcceptance_iff_support ..).mpr ⟨state, _, between, hp, rfl⟩,
       (Verifier.validAcceptance_iff_support ..).mpr
         ⟨between, out, final, hs, hout stmt tr₁ tr₂ out original w he ho⟩⟩
-  apply Core.rbrKnowledgeSoundness_append_prefix plainSig h₁
+  apply Interaction.rbrKnowledgeSoundness_append_prefix plainSig h₁
     (admissible₂ := fun tr₁ stmt => admissible₂ tr₁ (mid stmt tr₁))
     (relMid := fun tr₁ stmt w => gate tr₁ stmt ∧
       ∃ v, relMid tr₁ (mid stmt tr₁) v ∧ midWitness stmt tr₁ v = w)
@@ -742,4 +742,4 @@ theorem OracleVerifier.validAcceptance_append {ι σ : Type} {S : Type uS}
   rw [he] at ho
   exact ⟨state, mid, between, out, final, hp, hs, ho⟩
 
-end Interaction.Core
+end Interaction

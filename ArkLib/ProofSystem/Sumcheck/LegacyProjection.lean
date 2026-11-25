@@ -5,15 +5,15 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
 
 /-! # Compatibility of projected round oracles with the Sumcheck specification -/
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
 /-! ## The projection map -/
@@ -55,4 +55,4 @@ theorem simulateQ_projectionMap (i : Fin n) (stmt : Spec.StatementRound R n i.ca
 
 end Projection
 
-end Sumcheck.Core
+end Sumcheck

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalExecution
+public import ArkLib.ProofSystem.Sumcheck.IntervalExecution
 
 /-! # Retained arbitrary input behavior at interval boundaries
 
@@ -20,8 +20,8 @@ of the four nonzero challenges.
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 
 variable {R : Type} [CommSemiring R] {n d deg : ℕ}
@@ -154,4 +154,4 @@ theorem behaviorIntervalVerifier_run_zero (D : Fin d → R) {ι : Type} (ambient
   simp only [LawfulMonad.bind_assoc, LawfulMonad.pure_bind]
   rfl
 
-end Sumcheck.Core
+end Sumcheck

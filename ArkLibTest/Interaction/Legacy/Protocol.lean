@@ -3,13 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Legacy.Protocol
+import ArkLib.Interaction.Legacy.Protocol
 
 /-! Acceptance examples for the legacy protocol tree and the transcript equivalence. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens ProtocolSpec
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens ProtocolSpec
 
-namespace Interaction.Core.Legacy.Tests
+namespace Interaction.Legacy.Tests
 
 /-- Two prover messages, two challenges, then one more message: every direction, with
 consecutive rounds of the same owner. -/
@@ -60,4 +60,4 @@ example : oracleProtocol mixed =
 example : oracleDecode mixed ⟨(3 : Nat), ⟨true, ⟨false, ⟨(7 : Nat), ⟨(), ⟨⟩⟩⟩⟩⟩⟩ =
     decode mixed mixedPath := rfl
 
-end Interaction.Core.Legacy.Tests
+end Interaction.Legacy.Tests

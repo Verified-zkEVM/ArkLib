@@ -3,9 +3,9 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLibTest.ProofSystem.Sumcheck.Core.Effects
-import ArkLibTest.ProofSystem.Sumcheck.Core.Rounds
-import ArkLib.ProofSystem.Sumcheck.Core.Composition
+import ArkLibTest.ProofSystem.Sumcheck.Effects
+import ArkLibTest.ProofSystem.Sumcheck.Rounds
+import ArkLib.ProofSystem.Sumcheck.Composition
 
 /-!
 # Two Sumcheck rounds through an exported oracle
@@ -29,9 +29,9 @@ The affine messages and their oracle answers, the source routing rows #1 and #2,
 `Effects`.
 -/
 
-namespace Sumcheck.Core.RoutingTest
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec Sumcheck.Core.EffectsTest
+namespace Sumcheck.RoutingTest
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec Sumcheck.EffectsTest
 
 noncomputable section
 
@@ -511,19 +511,19 @@ theorem accepted_relation (r s : K)
 end
 
 run_cmd
-  for decl in [``Sumcheck.Core.RoutingTest.exportPoly, ``Sumcheck.Core.RoutingTest.eval_exportPoly,
-      ``Sumcheck.Core.RoutingTest.exportMap, ``Sumcheck.Core.RoutingTest.firstVerifier,
-      ``Sumcheck.Core.RoutingTest.compatible, ``Sumcheck.Core.RoutingTest.routed,
-      ``Sumcheck.Core.RoutingTest.run_wholeProver, ``Sumcheck.Core.RoutingTest.checkVerdict_first,
-      ``Sumcheck.Core.RoutingTest.compatible_output, ``Sumcheck.Core.RoutingTest.run_routed,
-      ``Sumcheck.Core.RoutingTest.secondVerdict, ``Sumcheck.Core.RoutingTest.routedVerdict_accepted,
-      ``Sumcheck.Core.RoutingTest.routedVerdict_prefix,
-      ``Sumcheck.Core.RoutingTest.routedVerdict_suffix,
-      ``Sumcheck.Core.RoutingTest.summary_routed, ``Sumcheck.Core.RoutingTest.accepted,
-      ``Sumcheck.Core.RoutingTest.prefix_rejected, ``Sumcheck.Core.RoutingTest.suffix_rejected,
-      ``Sumcheck.Core.RoutingTest.accepted_relation] do
+  for decl in [``Sumcheck.RoutingTest.exportPoly, ``Sumcheck.RoutingTest.eval_exportPoly,
+      ``Sumcheck.RoutingTest.exportMap, ``Sumcheck.RoutingTest.firstVerifier,
+      ``Sumcheck.RoutingTest.compatible, ``Sumcheck.RoutingTest.routed,
+      ``Sumcheck.RoutingTest.run_wholeProver, ``Sumcheck.RoutingTest.checkVerdict_first,
+      ``Sumcheck.RoutingTest.compatible_output, ``Sumcheck.RoutingTest.run_routed,
+      ``Sumcheck.RoutingTest.secondVerdict, ``Sumcheck.RoutingTest.routedVerdict_accepted,
+      ``Sumcheck.RoutingTest.routedVerdict_prefix,
+      ``Sumcheck.RoutingTest.routedVerdict_suffix,
+      ``Sumcheck.RoutingTest.summary_routed, ``Sumcheck.RoutingTest.accepted,
+      ``Sumcheck.RoutingTest.prefix_rejected, ``Sumcheck.RoutingTest.suffix_rejected,
+      ``Sumcheck.RoutingTest.accepted_relation] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.RoutingTest
+end Sumcheck.RoutingTest

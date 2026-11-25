@@ -3,17 +3,17 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Legacy.OracleKnowledge
+import ArkLib.Interaction.Legacy.OracleKnowledge
 
 /-! Acceptance examples for the straight-line knowledge-soundness transfer of embedded legacy
 oracle verifiers. The prover and the decision both query a shared oracle; the decision also reads
 the input oracle and a message through its oracle interface. The extractor reads both
 shared-oracle logs, so its witness records which queries each log holds. -/
 
-open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction Interaction.TwoParty.Lens
   ProtocolSpec
 
-namespace Interaction.Core.Legacy.OracleKnowledgeTests
+namespace Interaction.Legacy.OracleKnowledgeTests
 
 /-- A message, a challenge, then a second message. -/
 def twoWay : ProtocolSpec 3 := ⟨!v[.P_to_V, .V_to_P, .P_to_V], !v[Nat, Bool, Nat]⟩
@@ -195,4 +195,4 @@ example : legacyOutputs (simulateQ (legacyAnswers false)
     none := by
   decide
 
-end Interaction.Core.Legacy.OracleKnowledgeTests
+end Interaction.Legacy.OracleKnowledgeTests

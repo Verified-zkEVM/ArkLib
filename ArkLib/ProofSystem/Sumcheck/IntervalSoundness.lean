@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import ArkLib.ProofSystem.Sumcheck.Indexed
 
 /-! # Interaction-layer suffix Sumcheck soundness
 
@@ -35,9 +35,9 @@ claim in its output relation.
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open scoped ENNReal NNReal
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] {deg n d : ℕ} (D : Fin d → R)
@@ -176,4 +176,4 @@ theorem intervalVerifier_full_run {ι : Type} (ambient : OracleSpec ι)
   erw [intervalVerifier_run, Interpreted.verifier_run]
   rfl
 
-end Sumcheck.Core
+end Sumcheck

@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import ArkLib.ProofSystem.Sumcheck.IntervalCompleteness
+public import ArkLib.ProofSystem.Sumcheck.Indexed
 public import PolyFun.PFunctor.Free.Cost.Loops
 
 /-! # Projected round oracles over indexed domains
@@ -17,8 +17,8 @@ domain indices. Its oracle-map law identifies those answers with the honest roun
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
   Interaction.Oracle OracleComp OracleSpec
 
 variable {R : Type} [CommSemiring R] {deg n d : ℕ} (D : Fin d → R)
@@ -242,4 +242,4 @@ theorem projectedExecute_related {ι : Type} (ambient : OracleSpec ι)
 
 end Execute
 
-end Sumcheck.Core
+end Sumcheck

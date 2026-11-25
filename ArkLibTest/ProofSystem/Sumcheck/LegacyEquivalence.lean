@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
-import ArkLibTest.ProofSystem.Sumcheck.Core.Execution
+import ArkLib.ProofSystem.Sumcheck.LegacyEquivalence
+import ArkLibTest.ProofSystem.Sumcheck.Execution
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -16,10 +16,10 @@ both decisions reject without an ambient query; with zero rounds the embedded le
 accepts the input claim at once.
 -/
 
-namespace Sumcheck.Core.LegacyEquivalenceTest
+namespace Sumcheck.LegacyEquivalenceTest
 
-open Polynomial PFunctor Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec Interaction.Core.Legacy
+open Polynomial PFunctor Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec Interaction.Legacy
 
 /-! ## The embedded legacy prover generates the transcript -/
 
@@ -183,16 +183,16 @@ example {ι : Type} (amb : OracleSpec ι) [∀ t, Inhabited (amb.Range t)] {d : 
   rw [← run_eq_legacy, run_verifier_honestProver]
   rfl
 
-end Sumcheck.Core.LegacyEquivalenceTest
+end Sumcheck.LegacyEquivalenceTest
 
 run_cmd do
-  for decl in [``Sumcheck.Core.protocol_eq, ``Sumcheck.Core.oracleDecode_eq_decodeTranscript,
-      ``Sumcheck.Core.verifier_agrees, ``Sumcheck.Core.challengeQueryImpl_eq_legacy,
-      ``Sumcheck.Core.run_eq_legacy, ``Sumcheck.Core.legacyProver_pureChallengeSlots,
-      ``Sumcheck.Core.run_legacyProver, ``Sumcheck.Core.decide_ambient_trace,
-      ``Sumcheck.Core.LegacyEquivalenceTest.legacy_prover_run,
-      ``Sumcheck.Core.LegacyEquivalenceTest.embedded_prover_generates,
-      ``Sumcheck.Core.LegacyEquivalenceTest.legacy_run_badFirst] do
+  for decl in [``Sumcheck.protocol_eq, ``Sumcheck.oracleDecode_eq_decodeTranscript,
+      ``Sumcheck.verifier_agrees, ``Sumcheck.challengeQueryImpl_eq_legacy,
+      ``Sumcheck.run_eq_legacy, ``Sumcheck.legacyProver_pureChallengeSlots,
+      ``Sumcheck.run_legacyProver, ``Sumcheck.decide_ambient_trace,
+      ``Sumcheck.LegacyEquivalenceTest.legacy_prover_run,
+      ``Sumcheck.LegacyEquivalenceTest.embedded_prover_generates,
+      ``Sumcheck.LegacyEquivalenceTest.legacy_run_badFirst] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

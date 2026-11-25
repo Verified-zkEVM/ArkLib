@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.Completeness
+import ArkLib.ProofSystem.Sumcheck.Completeness
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -15,9 +15,9 @@ every challenge. On the explicit polynomial `X₀` with target `1`, the run acce
 expected final target, challenge history and output oracle.
 -/
 
-namespace Sumcheck.Core.CompletenessTest
+namespace Sumcheck.CompletenessTest
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp OracleSpec
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens OracleComp OracleSpec
 open scoped ENNReal
 
 abbrev F := ZMod 5
@@ -161,15 +161,15 @@ example :
   exact le_of_eq_of_le (tsub_zero 1).symm
     ((perfectCompleteness_uniform D₂ ambient init impl).2 (stmtX, fun _ => polyX) () relation_X)
 
-end Sumcheck.Core.CompletenessTest
+end Sumcheck.CompletenessTest
 
 run_cmd do
-  for decl in [``Sumcheck.Core.verdict_foldTranscript, ``Sumcheck.Core.honestRel_step,
-      ``Sumcheck.Core.legacyVerdict_honestTranscript, ``Sumcheck.Core.perfectCompleteness,
-      ``Sumcheck.Core.perfectCompleteness_uniform,
-      ``Sumcheck.Core.CompletenessTest.relation_X, ``Sumcheck.Core.CompletenessTest.honestOutput_X,
-      ``Sumcheck.Core.CompletenessTest.legacyVerdict_honest_X,
-      ``Sumcheck.Core.CompletenessTest.run_honest_X] do
+  for decl in [``Sumcheck.verdict_foldTranscript, ``Sumcheck.honestRel_step,
+      ``Sumcheck.legacyVerdict_honestTranscript, ``Sumcheck.perfectCompleteness,
+      ``Sumcheck.perfectCompleteness_uniform,
+      ``Sumcheck.CompletenessTest.relation_X, ``Sumcheck.CompletenessTest.honestOutput_X,
+      ``Sumcheck.CompletenessTest.legacyVerdict_honest_X,
+      ``Sumcheck.CompletenessTest.run_honest_X] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

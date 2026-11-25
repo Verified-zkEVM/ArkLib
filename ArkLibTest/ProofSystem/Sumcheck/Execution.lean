@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.Execution
+import ArkLib.ProofSystem.Sumcheck.Execution
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -13,9 +13,9 @@ Every round runs even after a failed check, zero rounds accepts at once, an hone
 satisfied claim accepts, and challenges never select shape.
 -/
 
-namespace Sumcheck.Core.ExecutionTest
+namespace Sumcheck.ExecutionTest
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp OracleSpec
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens OracleComp OracleSpec
   ProtocolSpec
 
 abbrev F := ZMod 5
@@ -163,16 +163,16 @@ example (tr : Transcript oracleSig (protocol F 1 3)) :
     (decodeTranscript 3 tr).challenges = viewChallenges (toView (protocol F 1 3) tr) :=
   (viewChallenges_toView 3 tr).symm
 
-end Sumcheck.Core.ExecutionTest
+end Sumcheck.ExecutionTest
 
 run_cmd do
-  for decl in [``Sumcheck.Core.simulateQ_route, ``Sumcheck.Core.viewChallenges_toView,
-      ``Sumcheck.Core.simulateQ_decide, ``Sumcheck.Core.simulateQ_legacy_verify,
-      ``Sumcheck.Core.run_verifier_foldRounds, ``Sumcheck.Core.run_verifier_honestProver,
-      ``Sumcheck.Core.simulateQ_oracleVerifierProgram_succ, ``Sumcheck.Core.roundCheck_eq_none,
-      ``Sumcheck.Core.roundCheck_eq_some, ``Sumcheck.Core.legacyVerdict_eq_none,
-      ``Sumcheck.Core.ExecutionTest.run_badFirstProver,
-      ``Sumcheck.Core.ExecutionTest.run_honest_one] do
+  for decl in [``Sumcheck.simulateQ_route, ``Sumcheck.viewChallenges_toView,
+      ``Sumcheck.simulateQ_decide, ``Sumcheck.simulateQ_legacy_verify,
+      ``Sumcheck.run_verifier_foldRounds, ``Sumcheck.run_verifier_honestProver,
+      ``Sumcheck.simulateQ_oracleVerifierProgram_succ, ``Sumcheck.roundCheck_eq_none,
+      ``Sumcheck.roundCheck_eq_some, ``Sumcheck.legacyVerdict_eq_none,
+      ``Sumcheck.ExecutionTest.run_badFirstProver,
+      ``Sumcheck.ExecutionTest.run_honest_one] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

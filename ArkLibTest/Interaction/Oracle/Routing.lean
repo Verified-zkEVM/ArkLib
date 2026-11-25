@@ -4,18 +4,18 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.Routing
-import ArkLibTest.Interaction.Core.Oracle.DependentRouting
+import ArkLib.Interaction.Oracle.Routing
+import ArkLibTest.Interaction.Oracle.DependentRouting
 
 /-! The prefix exports `input false + sent.1` and hides input slot `true`. The suffix samples a
 challenge, sends one oracle, and sees only the export and its own message. The composed run keeps
 the prover's private memory and ambient order, and its output data is the export of the same run.
 A prefix-slot query routed by `prefixRoute` is answered from the prefix oracle message. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
 
-namespace Interaction.Core.RoutingTests
+namespace Interaction.RoutingTests
 
 /-- Ambient queries carry tags; the trace handler records each tag and answers with it. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
@@ -308,19 +308,19 @@ example (hidden secret : Nat) :
     (inputData hidden)
     (prefixTranscript secret) suffixTranscript
 
-end Interaction.Core.RoutingTests
+end Interaction.RoutingTests
 
 /-! SourceRoutingExample SR4: the routing declarations stay axiom-clean. -/
 run_cmd do
-  for decl in [``Interaction.Core.OracleVerifier.run_append,
-      ``Interaction.Core.OracleVerifier.prefixRoute_oracleMessages,
-      ``Interaction.Core.splitOracleMessages_oracleMessages, ``Interaction.Core.sampler_append_eq,
-      ``Interaction.Core.OracleMap.simulate_withAmbient_addLift] do
+  for decl in [``Interaction.OracleVerifier.run_append,
+      ``Interaction.OracleVerifier.prefixRoute_oracleMessages,
+      ``Interaction.splitOracleMessages_oracleMessages, ``Interaction.sampler_append_eq,
+      ``Interaction.OracleMap.simulate_withAmbient_addLift] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-namespace Interaction.Core.DependentRoutingTests
+namespace Interaction.DependentRoutingTests
 
 /-- The zero branch of the split-run law retains the unit statement and scalar oracle. -/
 example : observed 0 = (true, 13, some (0, 0)) := by
@@ -334,7 +334,7 @@ example : observed 7 = (false, 29, some (7, 7)) := by
   rw [OracleVerifier.run_append]
   rfl
 
-end Interaction.Core.DependentRoutingTests
+end Interaction.DependentRoutingTests
 
 universe uι uI uJ v wI wJ wK
 

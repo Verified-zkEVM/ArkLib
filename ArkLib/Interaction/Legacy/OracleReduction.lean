@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.Verifier
-public import ArkLib.Interaction.Core.OracleVerifier
+public import ArkLib.Interaction.Legacy.Verifier
+public import ArkLib.Interaction.OracleVerifier
 
 /-!
 # Legacy oracle reductions on oracle trees
@@ -33,7 +33,7 @@ so such statements need no separate inhabitance assumption.
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle
 
 /-! ### Removing unreachable ambient queries -/
@@ -161,7 +161,7 @@ def oracleRoundSlot (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) 
 /-- The embedded prover on the oracle tree from round `k`. -/
 def embedOracleFrom (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
     (k m : ℕ) → (h : k + m = n) → P.PrvState ⟨k, by omega⟩ →
-    Core.Prover oracleSig oSpec (oracleSuffix pSpec k m h) (fun _ => StmtOut × WitOut)
+    Interaction.Prover oracleSig oSpec (oracleSuffix pSpec k m h) (fun _ => StmtOut × WitOut)
   | k, 0, h, st => P.output (cast (congrArg P.PrvState (Fin.ext h)) st)
   | k, m + 1, h, st =>
     Choice.map .focal _ (fun _ st' => embedOracleFrom P (k + 1) m (by omega) st') <$>
@@ -342,7 +342,7 @@ def decisionImpl (p : Path (oracleProtocol pSpec)) :
 /-- The output map of a legacy output-oracle simulation, for the challenges of a run. Its data
 map is the legacy materialization on the input data and the path's messages, and its queries
 follow legacy `simulateOutputQuery`, routed to the input and path oracles. -/
-def _root_.Interaction.Core.OracleMap.ofLegacySimulation [∀ t, Inhabited (oSpec.Range t)]
+def _root_.Interaction.OracleMap.ofLegacySimulation [∀ t, Inhabited (oSpec.Range t)]
     (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
     OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
@@ -385,8 +385,8 @@ def legacyOutputMap [∀ t, Inhabited (oSpec.Range t)]
 view, and outputs the legacy output oracles. -/
 def embedOracleVerifier [∀ t, Inhabited (oSpec.Range t)]
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-    Core.OracleVerifier oSpec (oracleProtocol pSpec) StmtIn (fun _ => StmtOut) (family OStmtIn)
-      (fun _ => family OStmtOut) where
+    Interaction.OracleVerifier oSpec (oracleProtocol pSpec) StmtIn (fun _ => StmtOut)
+      (family OStmtIn) (fun _ => family OStmtOut) where
   decide stmt p view :=
     OptionT.mk (simulateQ (decisionImpl p) (V.verify stmt (viewChallenges view.val)).run)
   outputMap _ p view := legacyOutputMap V (viewChallenges view.val) p
@@ -396,10 +396,10 @@ witness. Its output keeps the legacy output statement, output oracle data and wi
 def embedOracleProver {WitIn WitOut : Type}
     (P : OracleProver oSpec StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut pSpec)
     (stmt : StmtIn) (oStmt : ∀ i, OStmtIn i) (wit : WitIn) :
-    Core.Prover oracleSig oSpec (oracleProtocol pSpec)
+    Interaction.Prover oracleSig oSpec (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) :=
   embedOracleFrom P 0 n (Nat.zero_add n) (P.input ((stmt, oStmt), wit))
 
 end Verifier
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

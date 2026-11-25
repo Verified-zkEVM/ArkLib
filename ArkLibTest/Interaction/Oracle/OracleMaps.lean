@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.BundleOps
+import ArkLib.Interaction.Oracle.BundleOps
 
 /-!
 # Oracle families and oracle maps: dependent answers, routing and hidden data
@@ -15,9 +15,9 @@ renaming gives two indices to one realization. A pair interface answers both of 
 an unqueried coordinate of a realization is not observable.
 -/
 
-open Interaction.Core Interaction.Oracle OracleComp
+open Interaction Interaction.Oracle OracleComp
 
-namespace Interaction.Core.OracleMapsTests
+namespace Interaction.OracleMapsTests
 
 universe u v w u' v' w'
 
@@ -267,4 +267,4 @@ example : ((OracleBundle.Equiv.liftResponse.{0, 0, 0, 2}
 
 end Universes
 
-end Interaction.Core.OracleMapsTests
+end Interaction.OracleMapsTests

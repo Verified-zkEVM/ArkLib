@@ -4,16 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.SentOracles
-import ArkLib.Interaction.Core.Security.RoundByRound
+import ArkLib.Interaction.Oracle.SentOracles
+import ArkLib.Interaction.Security.RoundByRound
 
 /-! Partial transcripts. A partial transcript is a structural cursor spine decorated with full
 moves, `PartialTranscriptAt oracleSig sp`. Hidden oracle messages stay in it, while the spine
 records only branch choices. The type of oracle indices depends on the completed path. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp
 
-namespace Interaction.Core.PartialTranscriptsTests
+namespace Interaction.PartialTranscriptsTests
 
 -- Prefix fixture: the old layer's public node is re-authored as a prover message.
 /-- One hidden `Bool` oracle message followed by a public `Fin 3` message. -/
@@ -124,4 +124,4 @@ def prefixQuery : OracleComp (oracleMessageSpec oraclePrefix ⟨⟨⟩, ⟨⟩�
 theorem crossed_send_answer (message : Bool) :
     simulateQ (oracleMessageImpl oraclePrefix ⟨message, ⟨⟩⟩) prefixQuery = message := rfl
 
-end Interaction.Core.PartialTranscriptsTests
+end Interaction.PartialTranscriptsTests

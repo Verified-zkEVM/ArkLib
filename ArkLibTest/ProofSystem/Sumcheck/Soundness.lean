@@ -3,8 +3,8 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.LegacySoundness
-import ArkLibTest.ProofSystem.Sumcheck.Core.SingleRound
+import ArkLib.ProofSystem.Sumcheck.LegacySoundness
+import ArkLibTest.ProofSystem.Sumcheck.SingleRound
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -14,11 +14,11 @@ Exact probabilities of one-round runs against committed provers, and instances o
 transferred soundness theorem: committed, randomized and adaptive provers on false claims.
 -/
 
-namespace Sumcheck.Core.SoundnessTest
+namespace Sumcheck.SoundnessTest
 
-open Polynomial PFunctor Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec MeasureTheory Interaction.Core.Legacy
-  Sumcheck.Core.SingleRoundTest
+open Polynomial PFunctor Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec MeasureTheory Interaction.Legacy
+  Sumcheck.SingleRoundTest
 open scoped ENNReal NNReal
 
 noncomputable section
@@ -187,7 +187,7 @@ example {σ Out : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT �
 
 section Exact
 
-open Sumcheck.Core.CompletenessTest
+open Sumcheck.CompletenessTest
 
 /-- Five is prime. -/
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
@@ -356,32 +356,32 @@ end Exact
 
 end
 
-end Sumcheck.Core.SoundnessTest
+end Sumcheck.SoundnessTest
 
 -- Migration rows: Sumcheck Interaction/Soundness #13, #14, #15, #16, #17–#23, #25–#28.
 run_cmd do
-  for decl in [``Sumcheck.Core.SoundnessTest.oneRound_soundness,
-      ``Sumcheck.Core.SoundnessTest.committed_soundness,
-      ``Sumcheck.Core.SoundnessTest.randomCommitment_soundness,
-      ``Sumcheck.Core.SoundnessTest.rejection_one,
-      ``Sumcheck.Core.SoundnessTest.rejection_probability,
-      ``Sumcheck.Core.SoundnessTest.exact_repair_probability,
-      ``Sumcheck.Core.SoundnessTest.empty_domain_rejection,
-      ``Sumcheck.Core.SoundnessTest.challenge_first_probability,
-      ``Sumcheck.Core.SoundnessTest.fresh_bound_lt_one,
-      ``Sumcheck.Core.SoundnessTest.excludes_quadratic,
-      ``Sumcheck.Core.SoundnessTest.adaptive, ``Sumcheck.Core.SoundnessTest.adaptive_endpoints,
-      ``Sumcheck.Core.SoundnessTest.adaptive_hits, ``Sumcheck.Core.SingleRoundTest.poly0,
-      ``Sumcheck.Core.CompletenessTest.polyX, ``Sumcheck.Core.SoundnessTest.polyXK,
-      ``Sumcheck.Core.verifier_soundness_of_legacy,
-      ``Sumcheck.Core.verifier_soundness_rounds_of_legacy,
-      ``Sumcheck.Core.card_challengeIdx] do
+  for decl in [``Sumcheck.SoundnessTest.oneRound_soundness,
+      ``Sumcheck.SoundnessTest.committed_soundness,
+      ``Sumcheck.SoundnessTest.randomCommitment_soundness,
+      ``Sumcheck.SoundnessTest.rejection_one,
+      ``Sumcheck.SoundnessTest.rejection_probability,
+      ``Sumcheck.SoundnessTest.exact_repair_probability,
+      ``Sumcheck.SoundnessTest.empty_domain_rejection,
+      ``Sumcheck.SoundnessTest.challenge_first_probability,
+      ``Sumcheck.SoundnessTest.fresh_bound_lt_one,
+      ``Sumcheck.SoundnessTest.excludes_quadratic,
+      ``Sumcheck.SoundnessTest.adaptive, ``Sumcheck.SoundnessTest.adaptive_endpoints,
+      ``Sumcheck.SoundnessTest.adaptive_hits, ``Sumcheck.SingleRoundTest.poly0,
+      ``Sumcheck.CompletenessTest.polyX, ``Sumcheck.SoundnessTest.polyXK,
+      ``Sumcheck.verifier_soundness_of_legacy,
+      ``Sumcheck.verifier_soundness_rounds_of_legacy,
+      ``Sumcheck.card_challengeIdx] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-namespace Sumcheck.Core.IndexedSoundnessTest
-open Polynomial MvPolynomial PFunctor FreeM Interaction.Core Interaction.Oracle
+namespace Sumcheck.IndexedSoundnessTest
+open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.Oracle
   OracleComp OracleSpec
 open scoped ENNReal NNReal
 
@@ -569,34 +569,34 @@ theorem exact_success_probability {ι : Type} (amb : OracleSpec ι)
   norm_num
 
 run_cmd
-  for decl in [``Sumcheck.Core.indexed_round_soundness,
-      ``Sumcheck.Core.indexedVerifier_rbrSoundness,
-      ``Sumcheck.Core.indexedVerifier_soundness,
-      ``Sumcheck.Core.indexedVerifier_soundness_nsmul,
-      ``Sumcheck.Core.indexedVerifier_soundness_list,
-      ``Sumcheck.Core.indexedVerifier_soundness_injective,
-      ``Sumcheck.Core.indexedVerifier_run_soundness,
-      ``Sumcheck.Core.indexedVerifier_committed_soundness,
-      ``Sumcheck.Core.indexedVerifier_randomized_soundness,
-      ``Sumcheck.Core.indexedVerifier_run, ``Sumcheck.Core.IndexedSoundnessTest.repeated_run,
-      ``Sumcheck.Core.indexedVerifier_committed_measureSoundness,
-      ``Sumcheck.Core.indexedVerifier_randomized_measureSoundness,
-      ``Sumcheck.Core.IndexedSoundnessTest.shiftMessage_sum,
-      ``Sumcheck.Core.IndexedSoundnessTest.verdict_at_zero,
-      ``Sumcheck.Core.IndexedSoundnessTest.claim_at_zero_false,
-      ``Sumcheck.Core.IndexedSoundnessTest.success_iff,
-      ``Sumcheck.Core.IndexedSoundnessTest.experiment_challenge,
-      ``Sumcheck.Core.IndexedSoundnessTest.exact_success_probability] do
+  for decl in [``Sumcheck.indexed_round_soundness,
+      ``Sumcheck.indexedVerifier_rbrSoundness,
+      ``Sumcheck.indexedVerifier_soundness,
+      ``Sumcheck.indexedVerifier_soundness_nsmul,
+      ``Sumcheck.indexedVerifier_soundness_list,
+      ``Sumcheck.indexedVerifier_soundness_injective,
+      ``Sumcheck.indexedVerifier_run_soundness,
+      ``Sumcheck.indexedVerifier_committed_soundness,
+      ``Sumcheck.indexedVerifier_randomized_soundness,
+      ``Sumcheck.indexedVerifier_run, ``Sumcheck.IndexedSoundnessTest.repeated_run,
+      ``Sumcheck.indexedVerifier_committed_measureSoundness,
+      ``Sumcheck.indexedVerifier_randomized_measureSoundness,
+      ``Sumcheck.IndexedSoundnessTest.shiftMessage_sum,
+      ``Sumcheck.IndexedSoundnessTest.verdict_at_zero,
+      ``Sumcheck.IndexedSoundnessTest.claim_at_zero_false,
+      ``Sumcheck.IndexedSoundnessTest.success_iff,
+      ``Sumcheck.IndexedSoundnessTest.experiment_challenge,
+      ``Sumcheck.IndexedSoundnessTest.exact_success_probability] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.IndexedSoundnessTest
+end Sumcheck.IndexedSoundnessTest
 
 -- The separate Simple-protocol checks do not require finite or sampleable semirings.
 run_cmd
-  for decl in [``Sumcheck.Core.simpleLegacyProver_run,
-      ``Sumcheck.Core.simpleLegacyVerifier_correspondence] do
+  for decl in [``Sumcheck.simpleLegacyProver_run,
+      ``Sumcheck.simpleLegacyVerifier_correspondence] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.SingleRound
-public import ArkLib.ProofSystem.Sumcheck.Core.InterpretedPath
+public import ArkLib.ProofSystem.Sumcheck.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.InterpretedPath
 
 /-! # The fixed Sumcheck tree
 
@@ -16,9 +16,9 @@ challenges do not select shape. The sampler leaves the challenge distribution to
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
 
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
@@ -121,4 +121,4 @@ theorem simulateQ_decisionLift_monad {n : ℕ} {ι : Type} {ambient : OracleSpec
         m α) :=
   simulateQ_pathLift impl p data pl oa
 
-end Sumcheck.Core
+end Sumcheck

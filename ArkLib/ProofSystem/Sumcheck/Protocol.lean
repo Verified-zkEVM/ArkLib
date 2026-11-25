@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Tree
+public import ArkLib.ProofSystem.Sumcheck.Tree
 public import PolyFun.PFunctor.Free.Replicate
 
 /-! # Folds of Sumcheck prover rounds
@@ -21,8 +21,8 @@ separately; legacy comparison clients use `LegacyProtocol`.
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens
+namespace Sumcheck
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens
 /-- The fixed Sumcheck tree over an arbitrary evaluation carrier. -/
 @[reducible]
 def protocolOn (R M : Type) (eval : M → R → R) (n : ℕ) : OracleProtocol :=
@@ -231,4 +231,4 @@ theorem simulate_foldRounds {ι : Type} {ambient : OracleSpec ι} {m : Type → 
 
 end Run
 
-end Sumcheck.Core
+end Sumcheck

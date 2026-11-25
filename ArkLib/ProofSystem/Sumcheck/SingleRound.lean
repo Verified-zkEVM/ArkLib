@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Composition
-public import ArkLib.ProofSystem.Sumcheck.Core.Types
+public import ArkLib.Interaction.Composition
+public import ArkLib.ProofSystem.Sumcheck.Types
 
 /-!
 # One Sumcheck round in the interaction layer
@@ -25,9 +25,9 @@ the challenge only by choosing its pure continuation, as the legacy `receiveChal
 
 universe uI wI
 
-namespace Sumcheck.Core
+namespace Sumcheck
 
-open Polynomial PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
+open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
 
 variable (R : Type) [CommSemiring R] (deg : ℕ)
 
@@ -192,4 +192,4 @@ theorem prefixRoute_round (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
 
 end Routing
 
-end Sumcheck.Core
+end Sumcheck

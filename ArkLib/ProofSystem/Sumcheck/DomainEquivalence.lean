@@ -5,17 +5,17 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Domain
-public import ArkLib.ProofSystem.Sumcheck.Core.Execution
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalSoundness
-public import ArkLib.ProofSystem.Sumcheck.Core.IntervalCompleteness
+public import ArkLib.ProofSystem.Sumcheck.IndexedDomain
+public import ArkLib.ProofSystem.Sumcheck.Execution
+public import ArkLib.ProofSystem.Sumcheck.IntervalSoundness
+public import ArkLib.ProofSystem.Sumcheck.IntervalCompleteness
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
 /-! # Indexed-domain compatibility with the injective Sumcheck specification
 
-For an injective domain `D : Fin d ↪ R`, this file relates the indexed definitions of `Domain` to
-the finite-set definitions of `Spec.SingleRound`: the honest projected polynomials
-(`projectedRoundPolynomial_embedding`) and the remaining-sum relations
+For an injective domain `D : Fin d ↪ R`, this file relates the indexed definitions of
+`IndexedDomain` to the finite-set definitions of `Spec.SingleRound`: the honest projected
+polynomials (`projectedRoundPolynomial_embedding`) and the remaining-sum relations
 (`indexedRelation_embedding`). It also compares the verifiers after converting statements
 fieldwise with `RoundStatement.ofSpec`. `legacyVerdict_map_ofSpec` equates the closed full-run
 verdicts, `verifier_run_eq_indexedVerifier` and `verifier_run_full_interval` show that every
@@ -27,8 +27,8 @@ proof in `Soundness` does not import this file.
 
 @[expose] public section
 
-namespace Sumcheck.Core
-open Polynomial MvPolynomial Finset PFunctor FreeM Interaction.Core
+namespace Sumcheck
+open Polynomial MvPolynomial Finset PFunctor FreeM Interaction
   Interaction.TwoParty.Lens Interaction.Oracle OracleComp OracleSpec ProtocolSpec
 /-- The interaction layer's suffix assignment `roundSuffix` is the frozen legacy
 `Spec.SingleRound.roundSuffix`, by definition. -/
@@ -329,4 +329,4 @@ theorem honest_full_interval [DecidableEq R] [SampleableType R]
   rw [hd]
   exact hr
 
-end Sumcheck.Core
+end Sumcheck

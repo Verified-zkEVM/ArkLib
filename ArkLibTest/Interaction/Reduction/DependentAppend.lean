@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Composition
+import ArkLib.Interaction.Composition
 
 /-!
 # A dependent composed plain reduction
@@ -15,9 +15,9 @@ selects a `Fin 3` suffix message. Both branches execute through one composed red
 intermediate statements and the prover's private witness.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp
 
-namespace Interaction.Core.DependentAppendTests
+namespace Interaction.DependentAppendTests
 
 -- DependentExample 1, restated: the shared, statement, witness and interaction universes are
 -- independent, as in the old-layer canary. A family of reductions over a shared index is a
@@ -166,4 +166,4 @@ def disagreeing : Reduction ambient observedTree Unit Bool (fun _ => Bool)
 example (bit : Bool) : disagreeing.runOutcome () bit = pure ⟨⟨bit, ⟨⟩⟩, (true, 8), some false⟩ := by
   cases bit <;> rfl
 
-end Interaction.Core.DependentAppendTests
+end Interaction.DependentAppendTests

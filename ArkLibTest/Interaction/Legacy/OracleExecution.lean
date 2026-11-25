@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Legacy.OracleSecurity
+import ArkLib.Interaction.Legacy.OracleSecurity
 
 /-! Acceptance examples for the execution correspondence of embedded legacy oracle reductions:
 the finalized run of the embedded oracle verifier against the embedded oracle prover, on the
@@ -11,10 +11,10 @@ oracle tree, against the legacy oracle reduction's run. The verifier reads the i
 message through its oracle interface. The examples cover an accepting and a rejecting run,
 prover and verifier outputs that differ, and both legacy output-oracle representations. -/
 
-open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction Interaction.TwoParty.Lens
   ProtocolSpec
 
-namespace Interaction.Core.Legacy.OracleExecutionTests
+namespace Interaction.Legacy.OracleExecutionTests
 
 /-- A message, a challenge, then a second message. -/
 def twoWay : ProtocolSpec 3 := ⟨!v[.P_to_V, .V_to_P, .P_to_V], !v[Nat, Bool, Nat]⟩
@@ -214,7 +214,7 @@ example {σ : Type} [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbCom
     (Out : Transcript oracleSig (oracleProtocol twoWay) → Type) :
     letI : MeasurableSpace (Outcome oracleSig (oracleProtocol twoWay) Out
       (fun _ => Nat × ∀ i, OutSum i)) := ⊤
-    Core.soundness ((embedOracleVerifier sumVerifier).classicalModel (Out := Out) init impl
+    Interaction.soundness ((embedOracleVerifier sumVerifier).classicalModel (Out := Out) init impl
         (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
       (langProblem langIn) (langProblem langOut)
       (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε :=
@@ -231,4 +231,4 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
   embedOracleVerifier_rbrSoundness init impl sumVerifier langIn langOut ε
     (StateTerminalCertificate.of_support_init hinit) h
 
-end Interaction.Core.Legacy.OracleExecutionTests
+end Interaction.Legacy.OracleExecutionTests

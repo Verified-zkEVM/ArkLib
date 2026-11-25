@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.BundleOps
+import ArkLib.Interaction.Oracle.BundleOps
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
@@ -15,9 +15,9 @@ separate suffix oracle keeps both source routes and the suffix answer. Reindexin
 family does not identify independently supplied realizations.
 -/
 
-open Interaction.Core Interaction.Oracle OracleComp OracleSpec
+open Interaction Interaction.Oracle OracleComp OracleSpec
 
-namespace Interaction.Core.DerivedOraclesTests
+namespace Interaction.DerivedOraclesTests
 
 section ToyProblem
 
@@ -100,4 +100,4 @@ example :
     let behavior := repeated.behaviorOfRealizations (fun bit => (if bit then 7 else 3 : Nat))
     (behavior ⟨false, ()⟩, behavior ⟨true, ()⟩) = ((3 : Nat), (7 : Nat)) := rfl
 
-end Interaction.Core.DerivedOraclesTests
+end Interaction.DerivedOraclesTests

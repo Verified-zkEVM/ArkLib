@@ -4,9 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Security.CompositionSoundness
-import ArkLibTest.Interaction.Core.Support
-import ArkLibTest.Interaction.Core.Oracle.HiddenBitFixture
+import ArkLib.Interaction.Security.CompositionSoundness
+import ArkLibTest.Interaction.Support
+import ArkLibTest.Interaction.Oracle.HiddenBitFixture
 import VCVio.OracleComp.EvalDist.AnswerMeasure
 import VCVio.OracleComp.QueryTracking.CostModel.Simulation
 import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
@@ -40,13 +40,13 @@ port table records the same disposition for the shared rows:
 https://github.com/Verified-zkEVM/ArkLib/blob/b898b53fd23acd06a8f262a48178db800cf0ba6f/docs/design/interaction-layer/port-oracle-access.md#L176-L192
 -/
 
-open PFunctor Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec MeasureTheory
 open scoped ENNReal
 
-namespace Interaction.Core.RuntimeSoundnessTests
+namespace Interaction.RuntimeSoundnessTests
 
-open Interaction.Core.HiddenBitFixture
+open Interaction.HiddenBitFixture
 
 noncomputable section
 
@@ -658,4 +658,4 @@ theorem informed_cost_does_not_give_half (secret : Nat) :
 
 end
 
-end Interaction.Core.RuntimeSoundnessTests
+end Interaction.RuntimeSoundnessTests

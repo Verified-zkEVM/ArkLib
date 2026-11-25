@@ -5,8 +5,8 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Legacy.OracleExecution
-public import ArkLib.Interaction.Core.Legacy.Security
+public import ArkLib.Interaction.Legacy.OracleExecution
+public import ArkLib.Interaction.Legacy.Security
 
 /-!
 # Security transfers for embedded legacy oracle reductions
@@ -33,7 +33,7 @@ universe uK
 
 noncomputable section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle MeasureTheory
 open scoped ENNReal NNReal
 
@@ -93,7 +93,7 @@ theorem evalDist_experiment_embedOracleVerifier_run (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) (stmt : StmtIn)
     (oStmt : ∀ i, OStmtIn i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
-    (p : Core.Prover oracleSig oSpec (oracleProtocol pSpec) Out)
+    (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out)
     (E : Set (Outcome oracleSig (oracleProtocol pSpec) Out
       (fun _ => StmtOut × (∀ i, OStmtOut i)))) :
     letI : MeasurableSpace
@@ -135,7 +135,7 @@ theorem oracleCompleteness_iff (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut)) (ε : ℝ≥0) :
     letI : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec)
       (fun _ => (StmtOut × (∀ i, OStmtOut i)) × WitOut) (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
-    Core.completeness ((embedOracleVerifier R.verifier).classicalModel init impl
+    Interaction.completeness ((embedOracleVerifier R.verifier).classicalModel init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (relProblem relIn) (relProblem relOut)
         (OutputJudgement.ofOutcome (relProblem relOut) (fun _ o => o.1)
@@ -192,7 +192,7 @@ theorem oracleSoundness_iff [∀ i, SampleableType (pSpec.Challenge i)] (init : 
     (∀ Out : Transcript oracleSig (oracleProtocol pSpec) → Type,
       letI : MeasurableSpace (Outcome oracleSig (oracleProtocol pSpec) Out
         (fun _ => StmtOut × (∀ i, OStmtOut i))) := ⊤
-      Core.soundness ((embedOracleVerifier V).classicalModel (Out := Out) init impl
+      Interaction.soundness ((embedOracleVerifier V).classicalModel (Out := Out) init impl
           (oracleChallengeImpl ProtocolSpec.challengeQueryImpl))
         (langProblem langIn) (langProblem langOut)
         (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε) ↔
@@ -278,7 +278,7 @@ theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E),
       KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Core.OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0, 0, 0, 0}
+    Interaction.OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0, 0, 0, 0}
     (embedOracleVerifier V) impl
       (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
@@ -295,7 +295,7 @@ theorem rbrKnowledgeSoundness_of_embedOracleVerifier [Nonempty WitIn] (init : Pr
     (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
     (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : Core.OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0, 0, 0, 0}
+    (h : Interaction.OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0, 0, 0, 0}
       (embedOracleVerifier V) impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
@@ -306,4 +306,4 @@ theorem rbrKnowledgeSoundness_of_embedOracleVerifier [Nonempty WitIn] (init : Pr
 
 end RoundByRound
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

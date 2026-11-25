@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Execution
+public import ArkLib.Interaction.Execution
 public import VCVio.OracleComp.SimSemantics.QueryImpl.Compose
 
 /-!
@@ -22,7 +22,7 @@ universe u q dI uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
 
 universe v v' uκ uρ
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 
@@ -731,4 +731,4 @@ theorem simulateQ_addLift_bundleAnswer {m : Type u → Type v} [Monad m] [Lawful
 
 end BundleAnswers
 
-end Interaction.Core
+end Interaction

@@ -5,14 +5,14 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.DomainEquivalence
-public import ArkLib.ProofSystem.Sumcheck.Core.Indexed
+public import ArkLib.ProofSystem.Sumcheck.DomainEquivalence
+public import ArkLib.ProofSystem.Sumcheck.Indexed
 
 /-! # Multiplicity of indexed Sumcheck domains -/
 
 @[expose] public section
 
-namespace Sumcheck.Core.DomainTest
+namespace Sumcheck.IndexedDomainTest
 open Polynomial Finset
 
 /-- The constant polynomial one has indexed sum two over the list of two zeroes. -/
@@ -35,18 +35,18 @@ example : (∑ x ∈ univ.map zeroDomain, (1 : ℕ[X]).eval x) = 1 := by
   simp
 
 run_cmd
-  for decl in [``Sumcheck.Core.sum_domain_embedding, ``Sumcheck.Core.sum_domain_list,
-      ``Sumcheck.Core.roundSum, ``Sumcheck.Core.projectedRoundPolynomial,
-      ``Sumcheck.Core.projectedRoundPolynomial_embedding, ``Sumcheck.Core.sum_evalExcept_indices,
-      ``Sumcheck.Core.sum_projectedRoundPolynomial, ``Sumcheck.Core.roundSum_succ,
-      ``Sumcheck.Core.roundSuffix_eq_spec] do
+  for decl in [``Sumcheck.sum_domain_embedding, ``Sumcheck.sum_domain_list,
+      ``Sumcheck.roundSum, ``Sumcheck.projectedRoundPolynomial,
+      ``Sumcheck.projectedRoundPolynomial_embedding, ``Sumcheck.sum_evalExcept_indices,
+      ``Sumcheck.sum_projectedRoundPolynomial, ``Sumcheck.roundSum_succ,
+      ``Sumcheck.roundSuffix_eq_spec] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.DomainTest
+end Sumcheck.IndexedDomainTest
 
-namespace Sumcheck.Core.DomainTest
+namespace Sumcheck.IndexedDomainTest
 open Polynomial MvPolynomial
 
 /-- Repeating zero twice makes the initial sum of the constant-one input equal to two. -/
@@ -67,15 +67,15 @@ example : roundSum ([0, 0] : List ℕ).get (0 : Fin 3) Fin.elim0
   simp [roundSum]
 
 run_cmd
-  for decl in [``Sumcheck.Core.indexedRelation, ``Sumcheck.Core.indexedRelation_last] do
+  for decl in [``Sumcheck.indexedRelation, ``Sumcheck.indexedRelation_last] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.DomainTest
+end Sumcheck.IndexedDomainTest
 
-namespace Sumcheck.Core.DomainExecutionTest
-open Polynomial PFunctor FreeM Interaction.Core Interaction.Oracle OracleComp
+namespace Sumcheck.IndexedDomainExecutionTest
+open Polynomial PFunctor FreeM Interaction Interaction.Oracle OracleComp
 
 /-- The general deterministic list equation needs no sampling, finiteness or distinctness. -/
 example {R : Type} [CommSemiring R] [DecidableEq R] {deg : ℕ} {ι : Type}
@@ -160,21 +160,21 @@ example {ι : Type} (ambient : OracleSpec ι) (impl : QueryImpl ambient ProbComp
     (by simp [natOne])
 
 run_cmd
-  for decl in [``Sumcheck.Core.indexedVerifier_run_one, ``Sumcheck.Core.indexedExecute_eq,
-      ``Sumcheck.Core.indexedExecuteAt_eq, ``Sumcheck.Core.indexedExecuteAt_list_eq,
-      ``Sumcheck.Core.indexedExecuteAt_univariate_honest,
-      ``Sumcheck.Core.indexedRoundResult_rejects, ``Sumcheck.Core.indexedExecute_failure,
-      ``Sumcheck.Core.indexedRoundResult_true_iff, ``Sumcheck.Core.univariateData_eval,
-      ``Sumcheck.Core.indexedExecute_univariate_honest_eq,
-      ``Sumcheck.Core.indexedExecute_univariate_complete,
-      ``Sumcheck.Core.message_degree,
-      ``Sumcheck.Core.indexedExecute_univariate_degree_complete,
-      ``Sumcheck.Core.indexedExecute_univariate_support,
-      ``Sumcheck.Core.indexedExecute_univariate_perfectCompleteness,
-      ``Sumcheck.Core.indexedExecute_univariate_measureCompleteness,
-      ``Sumcheck.Core.simulateQ_indexedSumQueries_monad] do
+  for decl in [``Sumcheck.indexedVerifier_run_one, ``Sumcheck.indexedExecute_eq,
+      ``Sumcheck.indexedExecuteAt_eq, ``Sumcheck.indexedExecuteAt_list_eq,
+      ``Sumcheck.indexedExecuteAt_univariate_honest,
+      ``Sumcheck.indexedRoundResult_rejects, ``Sumcheck.indexedExecute_failure,
+      ``Sumcheck.indexedRoundResult_true_iff, ``Sumcheck.univariateData_eval,
+      ``Sumcheck.indexedExecute_univariate_honest_eq,
+      ``Sumcheck.indexedExecute_univariate_complete,
+      ``Sumcheck.message_degree,
+      ``Sumcheck.indexedExecute_univariate_degree_complete,
+      ``Sumcheck.indexedExecute_univariate_support,
+      ``Sumcheck.indexedExecute_univariate_perfectCompleteness,
+      ``Sumcheck.indexedExecute_univariate_measureCompleteness,
+      ``Sumcheck.simulateQ_indexedSumQueries_monad] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"
 
-end Sumcheck.Core.DomainExecutionTest
+end Sumcheck.IndexedDomainExecutionTest

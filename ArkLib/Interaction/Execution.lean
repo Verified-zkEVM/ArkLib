@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Reduction
+public import ArkLib.Interaction.Reduction
 public import VCVio.EvalDist.ProbabilityNotation
 public import VCVio.OracleComp.EvalDist
 public import ToMathlib.Control.StateT
@@ -28,7 +28,7 @@ composes the two handlers (`Prover.simulate_simulate`).
 
 universe u uA v uS uW uι
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp
 
 /-- A completed interaction, including a possibly rejecting verifier verdict. The verdict's type
@@ -239,4 +239,4 @@ theorem Verifier.onAccept_run_none {ι : Type u} {ambient : OracleSpec.{u, u} ι
   refine bind_congr fun r => ?_
   simp
 
-end Interaction.Core
+end Interaction

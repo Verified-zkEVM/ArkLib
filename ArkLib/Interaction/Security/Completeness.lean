@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.OracleVerifier
+public import ArkLib.Interaction.OracleVerifier
 public import VCVio.OracleComp.Constructions.SampleableType.Basic
 public import VCVio.OracleComp.SimSemantics.StateT.Measure
 
@@ -23,7 +23,7 @@ output witness. The relation objects retain their explicit admissibility boundar
 
 universe u uA v uS uW uI wI wJ dI q
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
@@ -173,8 +173,8 @@ abbrev Reduction.completeness {ι σ : Type} {S : Type uS} {W : Type uW} {ambien
       obs.2.2 = some t → output.Witness (Transcript.path obs.1) t)
     (witness : ∀ stmt, input.Witness () stmt → W) (ε : ℝ≥0∞) : Prop :=
   letI : MeasurableSpace (Outcome plainSig s Out T) := ⊤
-  Core.completeness (R.verifier.classicalModel init impl challenges) input output
+  Interaction.completeness (R.verifier.classicalModel init impl challenges) input output
     (OutputJudgement.ofOutcome output readStatement readWitness)
     (fun stmt w => R.prover stmt (witness stmt w)) ε
 
-end Interaction.Core
+end Interaction

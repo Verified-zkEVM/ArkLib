@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Security.Implications
-import ArkLibTest.Interaction.Core.Security
+import ArkLib.Interaction.Security.Implications
+import ArkLibTest.Interaction.Security
 
 /-!
 Round-by-round soundness implies soundness: the general statements for plain and oracle
@@ -13,7 +13,7 @@ verifiers, the averaged-prefix bound with a node chosen by a possibly failing au
 one-challenge coin protocol, and a two-challenge protocol bounded through the uniform corollary.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp MeasureTheory
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp MeasureTheory
 open Interaction.Oracle
 open scoped ENNReal
 
@@ -29,9 +29,9 @@ universe uS uI wI wJ dI
 #check prEvent_runPrefixChallenges_le
 #check prEvent_runPrefixChallenges_soundness
 
-namespace Interaction.Core.ImplicationsTests
+namespace Interaction.ImplicationsTests
 
-open Interaction.Core.SecurityTests
+open Interaction.SecurityTests
 
 /-! ### The general statements -/
 
@@ -698,48 +698,48 @@ theorem run_mass :
 
 end EmptyResponse
 
-end Interaction.Core.ImplicationsTests
+end Interaction.ImplicationsTests
 
 run_cmd do
-  for name in [``Interaction.Core.Verifier.soundness_of_rbrSoundness,
-      ``Interaction.Core.Verifier.soundness_of_rbrSoundness_tsum,
-      ``Interaction.Core.Verifier.soundness_of_rbrSoundness_uniform,
-      ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness,
-      ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness_tsum,
-      ``Interaction.Core.OracleVerifier.soundness_of_rbrSoundness_uniform,
-      ``Interaction.Core.runPrefixChallenges_eq_run,
-      ``Interaction.Core.prEvent_runPrefixChallenges_le,
-      ``Interaction.Core.prEvent_runPrefixChallenges_soundness,
-      ``Interaction.Core.flip_random_model_le,
-      ``Interaction.Core.ImplicationsTests.AdaptiveChallenges.execution,
-      ``Interaction.Core.ImplicationsTests.AdaptiveChallenges.soundness,
-      ``Interaction.Core.ImplicationsTests.OracleMessageDraw.execution,
-      ``Interaction.Core.ImplicationsTests.OracleMessageDraw.view_eq,
-      ``Interaction.Core.ImplicationsTests.optional_counting_run,
-      ``Interaction.Core.ImplicationsTests.optional_counting_bound,
-      ``Interaction.Core.prEvent_run_le,
-      ``Interaction.Core.prEvent_run_state_le,
-      ``Interaction.Core.prEvent_run_state_le_of_local,
-      ``Interaction.Core.ReceiverPrefix.flip_le_of_encoded_marginals,
-      ``Interaction.Core.iSup_sum_challengeNodesOn_le_rank_sum,
-      ``Interaction.Core.Verifier.soundnessUsing_of_localSoundness,
-      ``Interaction.Core.OracleVerifier.soundnessUsing_of_localSoundness,
-      ``Interaction.Core.Verifier.soundness_iff_soundnessUsing,
-      ``Interaction.Core.OracleVerifier.soundness_iff_soundnessUsing,
-      ``Interaction.Core.Verifier.validAcceptance_iff_validAcceptanceUsing,
-      ``Interaction.Core.OracleVerifier.validAcceptance_iff_validAcceptanceUsing,
-      ``Interaction.Core.Verifier.soundnessWith_of_rbrSoundness,
-      ``Interaction.Core.OracleVerifier.soundnessWith_of_rbrSoundness,
-      ``Interaction.Core.ImplicationsTests.optional_soundness,
-      ``Interaction.Core.ImplicationsTests.optionalAmbient_mass,
-      ``Interaction.Core.ImplicationsTests.EmptyResponse.interpreted_action,
-      ``Interaction.Core.ImplicationsTests.EmptyResponse.run_mass,
-      ``Interaction.Core.simulateQ_addLift_bundleAnswer,
-      ``Interaction.Core.StateFunction.escapeAlong,
-      ``Interaction.Core.flip_random_prefix_le,
-      ``Interaction.Core.flip_random_history_le,
-      ``Interaction.Core.ImplicationsTests.afterBit_node_ne,
-      ``Interaction.Core.ImplicationsTests.two_rbrSoundness] do
+  for name in [``Interaction.Verifier.soundness_of_rbrSoundness,
+      ``Interaction.Verifier.soundness_of_rbrSoundness_tsum,
+      ``Interaction.Verifier.soundness_of_rbrSoundness_uniform,
+      ``Interaction.OracleVerifier.soundness_of_rbrSoundness,
+      ``Interaction.OracleVerifier.soundness_of_rbrSoundness_tsum,
+      ``Interaction.OracleVerifier.soundness_of_rbrSoundness_uniform,
+      ``Interaction.runPrefixChallenges_eq_run,
+      ``Interaction.prEvent_runPrefixChallenges_le,
+      ``Interaction.prEvent_runPrefixChallenges_soundness,
+      ``Interaction.flip_random_model_le,
+      ``Interaction.ImplicationsTests.AdaptiveChallenges.execution,
+      ``Interaction.ImplicationsTests.AdaptiveChallenges.soundness,
+      ``Interaction.ImplicationsTests.OracleMessageDraw.execution,
+      ``Interaction.ImplicationsTests.OracleMessageDraw.view_eq,
+      ``Interaction.ImplicationsTests.optional_counting_run,
+      ``Interaction.ImplicationsTests.optional_counting_bound,
+      ``Interaction.prEvent_run_le,
+      ``Interaction.prEvent_run_state_le,
+      ``Interaction.prEvent_run_state_le_of_local,
+      ``Interaction.ReceiverPrefix.flip_le_of_encoded_marginals,
+      ``Interaction.iSup_sum_challengeNodesOn_le_rank_sum,
+      ``Interaction.Verifier.soundnessUsing_of_localSoundness,
+      ``Interaction.OracleVerifier.soundnessUsing_of_localSoundness,
+      ``Interaction.Verifier.soundness_iff_soundnessUsing,
+      ``Interaction.OracleVerifier.soundness_iff_soundnessUsing,
+      ``Interaction.Verifier.validAcceptance_iff_validAcceptanceUsing,
+      ``Interaction.OracleVerifier.validAcceptance_iff_validAcceptanceUsing,
+      ``Interaction.Verifier.soundnessWith_of_rbrSoundness,
+      ``Interaction.OracleVerifier.soundnessWith_of_rbrSoundness,
+      ``Interaction.ImplicationsTests.optional_soundness,
+      ``Interaction.ImplicationsTests.optionalAmbient_mass,
+      ``Interaction.ImplicationsTests.EmptyResponse.interpreted_action,
+      ``Interaction.ImplicationsTests.EmptyResponse.run_mass,
+      ``Interaction.simulateQ_addLift_bundleAnswer,
+      ``Interaction.StateFunction.escapeAlong,
+      ``Interaction.flip_random_prefix_le,
+      ``Interaction.flip_random_history_le,
+      ``Interaction.ImplicationsTests.afterBit_node_ne,
+      ``Interaction.ImplicationsTests.two_rbrSoundness] do
     let axioms ← Lean.collectAxioms name
     for ax in axioms do
       unless ax == ``propext || ax == ``Classical.choice || ax == ``Quot.sound do

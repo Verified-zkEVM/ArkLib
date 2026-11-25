@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.LoggedExecution
-import ArkLib.Interaction.Core.Oracle.Routing
+import ArkLib.Interaction.Oracle.LoggedExecution
+import ArkLib.Interaction.Oracle.Routing
 import VCVio.OracleComp.Runtime
 
 /-! # The hidden-bit runtime fixture
@@ -17,10 +17,10 @@ The runtime samples a hidden bit once at setup and counts ambient queries. The a
 hidden bit and claims `hidden ^^ pad`, and its output data is `guess ^^ pad`. A request `true`
 costs 3 and a request `false` costs 1. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
-namespace Interaction.Core.HiddenBitFixture
+namespace Interaction.HiddenBitFixture
 
 /-- `false` requests a dummy answer; `true` reveals the hidden bit. -/
 abbrev bitAmbient : OracleSpec Bool := Bool →ₒ Bool
@@ -133,4 +133,4 @@ abbrev bitFull := bitAmbient + challengeSpec oracleSig bitCombined
 /-- The challenge query in the surface trace. -/
 def challengeEntry : bitFull.Domain := .inr ⟨.inl ⟨⟩, rfl⟩
 
-end Interaction.Core.HiddenBitFixture
+end Interaction.HiddenBitFixture

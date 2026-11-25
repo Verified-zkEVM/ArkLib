@@ -3,11 +3,11 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.LegacySoundness
-import ArkLibTest.ProofSystem.Sumcheck.Core.Soundness
-import ArkLib.ProofSystem.Sumcheck.Core.RoundByRound
-import ArkLib.ProofSystem.Sumcheck.Core.Knowledge
-import ArkLib.ProofSystem.Sumcheck.Core.LegacyCompleteness
+import ArkLib.ProofSystem.Sumcheck.LegacySoundness
+import ArkLibTest.ProofSystem.Sumcheck.Soundness
+import ArkLib.ProofSystem.Sumcheck.RoundByRound
+import ArkLib.ProofSystem.Sumcheck.Knowledge
+import ArkLib.ProofSystem.Sumcheck.LegacyCompleteness
 
 /-!
 # Round-by-round and knowledge soundness of Sumcheck in the interaction layer
@@ -17,11 +17,11 @@ bounds every prover's success on a false claim by `n * deg / |F|`; the knowledge
 completeness of the embedded legacy prover hold at concrete parameters.
 -/
 
-namespace Sumcheck.Core.RoundByRoundTest
+namespace Sumcheck.RoundByRoundTest
 
-open Polynomial PFunctor Interaction.Core Interaction.TwoParty.Lens Interaction.Oracle
-  OracleComp OracleSpec ProtocolSpec MeasureTheory Interaction.Core.Legacy
-  Sumcheck.Core.SoundnessTest
+open Polynomial PFunctor Interaction Interaction.TwoParty.Lens Interaction.Oracle
+  OracleComp OracleSpec ProtocolSpec MeasureTheory Interaction.Legacy
+  Sumcheck.SoundnessTest
 open scoped ENNReal NNReal
 
 noncomputable section
@@ -69,7 +69,7 @@ end Universal
 
 section Concrete
 
-open Sumcheck.Core.CompletenessTest Sumcheck.Core.SingleRoundTest
+open Sumcheck.CompletenessTest Sumcheck.SingleRoundTest
 
 /-- Five is prime. -/
 instance : Fact (Nat.Prime 5) := ⟨by decide⟩
@@ -116,14 +116,14 @@ end Concrete
 
 end
 
-end Sumcheck.Core.RoundByRoundTest
+end Sumcheck.RoundByRoundTest
 
 -- Migration row: Sumcheck Interaction/RoundByRound #1 (audit).
 run_cmd do
-  for decl in [``Sumcheck.Core.RoundByRoundTest.false_claim_bound,
-      ``Sumcheck.Core.verifier_rbrSoundness, ``Sumcheck.Core.verifier_rbrKnowledgeSoundness,
-      ``Sumcheck.Core.verifier_knowledgeSoundness,
-      ``Sumcheck.Core.legacyProver_perfectCompleteness] do
+  for decl in [``Sumcheck.RoundByRoundTest.false_claim_bound,
+      ``Sumcheck.verifier_rbrSoundness, ``Sumcheck.verifier_rbrKnowledgeSoundness,
+      ``Sumcheck.verifier_knowledgeSoundness,
+      ``Sumcheck.legacyProver_perfectCompleteness] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

@@ -4,15 +4,15 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Composition
-import ArkLibTest.Interaction.Core.Oracle
+import ArkLib.Interaction.Composition
+import ArkLibTest.Interaction.Oracle
 
 /-! Terminal rejection never prevents the suffix interaction or its leaf effects. Composed oracle
 decisions route suffix queries as materialized execution answers them. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens OracleComp
 
-namespace Interaction.Core.CompositionTests
+namespace Interaction.CompositionTests
 
 abbrev done : Protocol := .pure ⟨⟩
 abbrev ambient : OracleSpec Nat := Nat →ₒ PUnit
@@ -56,7 +56,7 @@ run_cmd do
     throwError "suffix or terminal effects were skipped or reordered: {trace}"
   unless obs.2.2 == none do throwError "prefix rejection was lost"
 
-open Interaction.Core.OracleTests
+open Interaction.OracleTests
 
 /-- A suffix computes a virtual output from an embedded prefix oracle. -/
 def virtualSuffix : OracleVerifier noAmbient emptyTree Nat (fun _ => Unit) functions
@@ -270,16 +270,16 @@ example {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly) {m : Type → Type 
     combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw :=
   combineDraw_prefixDraw_suffixDraw l s₁ s₂ draw
 
-end Interaction.Core.CompositionTests
+end Interaction.CompositionTests
 
 run_cmd do
-  for decl in [``Interaction.Core.appendSampler_eq, ``Interaction.Core.appendOracleSampler_eq,
-      ``Interaction.Core.prefixDraw_combineDraw, ``Interaction.Core.suffixDraw_combineDraw,
-      ``Interaction.Core.combineDraw_prefixDraw_suffixDraw,
-      ``Interaction.Core.run_appendSampler, ``Interaction.Core.run_splitSampler,
-      ``Interaction.Core.OracleVerifier.append,
-      ``Interaction.Core.OracleVerifier.append_decideWith,
-      ``Interaction.Core.OracleMap.simulate_withAmbient] do
+  for decl in [``Interaction.appendSampler_eq, ``Interaction.appendOracleSampler_eq,
+      ``Interaction.prefixDraw_combineDraw, ``Interaction.suffixDraw_combineDraw,
+      ``Interaction.combineDraw_prefixDraw_suffixDraw,
+      ``Interaction.run_appendSampler, ``Interaction.run_splitSampler,
+      ``Interaction.OracleVerifier.append,
+      ``Interaction.OracleVerifier.append_decideWith,
+      ``Interaction.OracleMap.simulate_withAmbient] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

@@ -3,13 +3,13 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.ProofSystem.Sumcheck.Core.ComputableSoundness
+import ArkLib.ProofSystem.Sumcheck.ComputableSoundness
 import CompPoly.Multivariate.VarsDegrees
 
 /-! # Runtime evidence for computed interval messages -/
 
-namespace Sumcheck.Core.ComputableIntervalTest
-open PFunctor FreeM Interaction.Core Interaction.TwoParty.Lens OracleComp
+namespace Sumcheck.ComputableIntervalTest
+open PFunctor FreeM Interaction Interaction.TwoParty.Lens OracleComp
 
 /-- The computed zero polynomial has degree zero in every coordinate. -/
 theorem zero_degree (j : Fin 3) : (0 : CPoly.CMvPolynomial 3 ℕ).degreeOf j ≤ 0 := by
@@ -86,4 +86,4 @@ example : oneRun = some (2, 7, 3, 29) := by
 
 #eval oneRun
 
-end Sumcheck.Core.ComputableIntervalTest
+end Sumcheck.ComputableIntervalTest

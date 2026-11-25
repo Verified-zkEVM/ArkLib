@@ -4,16 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.OracleVerifier
+import ArkLib.Interaction.OracleVerifier
 import PolyFun.PFunctor.Free.Cursor
 
 /-! Positions and owners on a branch-dependent oracle protocol. A public bit selects a `Bool`
 oracle node or a `Fin 3` oracle node, each followed by its own public future. Each oracle node
 carries its interface in its position, and its owner comes from the signature. -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.TwoParty.Lens
 
-namespace Interaction.Core.PositionsAndOwnersTests
+namespace Interaction.PositionsAndOwnersTests
 
 section UniverseCanary
 
@@ -152,4 +152,4 @@ theorem future_positions_ne :
   intro equal
   cases equal
 
-end Interaction.Core.PositionsAndOwnersTests
+end Interaction.PositionsAndOwnersTests

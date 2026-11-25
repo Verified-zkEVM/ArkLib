@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Oracle.Cost
-import ArkLibTest.Interaction.Core.Oracle.Routing
+import ArkLib.Interaction.Oracle.Cost
+import ArkLibTest.Interaction.Oracle.Routing
 
 /-!
 # The worst-case cost of one exported oracle query
@@ -18,10 +18,10 @@ routing through the map. A second program also makes an ambient query, which the
 less than the source. A last example shows that the bound covers completed paths only.
 -/
 
-open Interaction.Core OracleComp
-open Interaction.Core.RoutingTests (prefixBundle exported exportMap)
+open Interaction OracleComp
+open Interaction.RoutingTests (prefixBundle exported exportMap)
 
-namespace Interaction.Core.ExportCostTests
+namespace Interaction.ExportCostTests
 
 /-- Each query costs one unit. -/
 def unitCost {ι : Type} (spec : OracleSpec ι) : CostModel spec Nat := ⟨fun _ => 1⟩
@@ -86,10 +86,10 @@ example : WorstCaseCostBound ((Unit →ₒ Empty).query () : OracleComp (Unit �
   intro z hz
   exact z.1.elim
 
-end Interaction.Core.ExportCostTests
+end Interaction.ExportCostTests
 
 run_cmd do
-  for decl in [``Interaction.Core.OracleMap.withAmbient_worstCaseCost] do
+  for decl in [``Interaction.OracleMap.withAmbient_worstCaseCost] do
     for ax in ← Lean.collectAxioms decl do
       unless [``propext, ``Classical.choice, ``Quot.sound].contains ax do
         throwError "unexpected axiom {ax} in {decl}"

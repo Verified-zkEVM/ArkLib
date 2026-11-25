@@ -26,7 +26,7 @@ interaction-layer protocol is related to a legacy protocol built by appending.
 
 @[expose] public section
 
-namespace Interaction.Core.Legacy
+namespace Interaction.Legacy
 open OracleComp OracleSpec ProtocolSpec
 
 /-! ## Routing an appended message spec -/
@@ -123,4 +123,4 @@ theorem challenges_append_snd {m k : ℕ} {p₁ : ProtocolSpec m} {p₂ : Protoc
   exact (FullTranscript.snd_apply_heq _ _).symm.trans
     (heq_of_eq (congrFun (FullTranscript.append_snd A B) i.1))
 
-end Interaction.Core.Legacy
+end Interaction.Legacy

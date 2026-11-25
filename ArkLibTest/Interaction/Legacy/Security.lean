@@ -3,22 +3,22 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
-import ArkLib.Interaction.Core.Legacy.Security
-import ArkLibTest.Interaction.Core.Legacy.Execution
+import ArkLib.Interaction.Legacy.Security
+import ArkLibTest.Interaction.Legacy.Execution
 
 /-! Acceptance examples for the security transfers: completeness, soundness and knowledge
 soundness of an embedded legacy reduction, adversarial interaction-layer provers passed
 through the soundness and knowledge-soundness transfers, and the legacy transcript prefix of a
 full prefix with the round-by-round transfers. -/
 
-open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction.Core Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM OracleComp OracleSpec Interaction Interaction.TwoParty.Lens
   ProtocolSpec MeasureTheory
 open scoped NNReal
 
 universe v
 
-namespace Interaction.Core.Legacy.SecurityTests
-open Interaction.Core.Legacy.ExecutionTests
+namespace Interaction.Legacy.SecurityTests
+open Interaction.Legacy.ExecutionTests
 
 /-! ### Completeness -/
 
@@ -36,7 +36,7 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
 /-- A cheating prover written directly in the interaction layer: it sends `42`, answers the
 challenge `true` with `7`, and claims an unrelated output `true`. It is not the embedding of any
 honest legacy prover. -/
-def cheat : Core.Prover plainSig []ₒ (protocol twoWay) (fun _ => Bool) :=
+def cheat : Interaction.Prover plainSig []ₒ (protocol twoWay) (fun _ => Bool) :=
   pure ⟨(42 : Nat), pure fun (b : Bool) => pure ⟨(bif b then 7 else 0 : Nat), pure true⟩⟩
 
 /-- The legacy prover translated from the cheating prover, after its outputs are replaced by
@@ -94,7 +94,7 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (init : ProbComp Unit)
 
 /-- A cheating prover with outputs: it sends `42`, answers the challenge `true` with `7`, and
 outputs the statement `0` with the witness `5`. -/
-def cheatK : Core.Prover plainSig []ₒ (protocol twoWay) (fun _ => Nat × Nat) :=
+def cheatK : Interaction.Prover plainSig []ₒ (protocol twoWay) (fun _ => Nat × Nat) :=
   pure ⟨(42 : Nat), pure fun (b : Bool) =>
     pure ⟨(bif b then 7 else 0 : Nat), pure ((0, 5) : Nat × Nat)⟩⟩
 
@@ -276,4 +276,4 @@ example [∀ i, SampleableType (twoWay.Challenge i)] (impl : QueryImpl []ₒ (St
   StateTerminalCertificate.of_stateIndependent (fun stmt tr _ _ => by
     rw [guarded_run' lastIfTrueGuarded, guarded_run' lastIfTrueGuarded]) S
 
-end Interaction.Core.Legacy.SecurityTests
+end Interaction.Legacy.SecurityTests

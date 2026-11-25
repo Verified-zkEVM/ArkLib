@@ -5,20 +5,20 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Domain
+public import ArkLib.ProofSystem.Sumcheck.IndexedDomain
 public import ArkLib.ProofSystem.Sumcheck.Impl.IndexedProjection
 
 /-! # Computable honest projections over indexed domains
 
 `Sumcheck.Impl.IndexedProjection` computes the honest round message on CompPoly's carriers.
-This module relates that computation to the indexed projection `projectedRoundPolynomial` of
-`Sumcheck.Core`, for every domain map, including one with repeated points. It does not import
+This module relates that computation to the indexed projection `projectedRoundPolynomial` of the
+Sumcheck core, for every domain map, including one with repeated points. It does not import
 `Sumcheck.Spec`.
 -/
 
 @[expose] public section
 
-namespace Sumcheck.Core.Computable
+namespace Sumcheck.Computable
 open CPoly CompPoly Finset Polynomial MvPolynomial
 open CPoly.CMvPolynomial
 variable {R : Type} [CommSemiring R] [BEq R] [LawfulBEq R] [Nontrivial R]
@@ -30,7 +30,7 @@ abbrev toPolynomial (poly : CMvPolynomial n R) (hpoly : ∀ j, poly.degreeOf j �
     R⦃≤ deg⦄[X Fin n] :=
   Impl.Computable.toRestrictDegree poly hpoly
 
-/-- The computed enumeration interprets to the indexed honest projection of `Sumcheck.Core`. -/
+/-- The computed enumeration interprets to the indexed honest projection of the Sumcheck core. -/
 theorem indexedRoundPolynomial_toPoly (D : Fin d → R) (i : Fin (n + 1))
     (c : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R)
     (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
@@ -67,4 +67,4 @@ theorem projectedMessage_evaluate (D : Fin d → R) (i : Fin n)
       (projectedRoundPolynomial D i c (toPolynomial poly hpoly)).val.eval r := by
   rw [Impl.Representation.evaluate_eq, projectedMessage_toMessage]
 
-end Sumcheck.Core.Computable
+end Sumcheck.Computable

@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.OracleVerifier
+public import ArkLib.Interaction.OracleVerifier
 public import VCVio.OracleComp.QueryTracking.LoggingOracle.Core
 
 /-!
@@ -17,8 +17,8 @@ sampler each query at their moves. The verifier makes its queries once, in its d
 last move. The decision and a separate prover setup are not moves. For that reason an entry of
 the log is named for what it holds: the queries that one querier made at one partial transcript.
 
-* `PartialTranscript oracleSig s` (from `Core/Transcript.lean`) is the partial transcript at one
-  point: the moves already made, including challenges and oracle messages.
+* `PartialTranscript oracleSig s` (from `Interaction/Transcript.lean`) is the partial transcript at
+  one point: the moves already made, including challenges and oracle messages.
 * `Querier` says who queries. The runner takes the querier from the participant whose action it
   executes. The passive verifier's decision is a separate querier at the end.
 * `QueriesAt` is one entry: a partial transcript, the querier that made queries there, and its
@@ -33,7 +33,7 @@ the log is named for what it holds: the queries that one querier made at one par
 
 universe u q uA vC uS uI dI wJ
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 /-- The party that makes the queries of an entry. The constructor fixes the party. -/
@@ -506,4 +506,4 @@ theorem runWithAmbientQueriesByMove_toLog (V : OracleVerifier ambient s S T inpu
 end AmbientQueriesByMove
 
 end OracleVerifier
-end Interaction.Core
+end Interaction

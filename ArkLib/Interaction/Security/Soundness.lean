@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.Completeness
+public import ArkLib.Interaction.Security.Completeness
 
 /-!
 # Soundness
@@ -21,7 +21,7 @@ uses discrete outcomes, so every event is measurable.
 
 universe v v' uS uI dI wJ
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM OracleComp Oracle
 open scoped ENNReal
 
@@ -158,7 +158,7 @@ abbrev Verifier.soundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
     (input : StatementProblem S) (output : PathProblem s T) (ε : ℝ≥0∞) : Prop :=
   ∀ Out : Transcript plainSig s → Type,
   letI : MeasurableSpace (Outcome plainSig s Out T) := ⊤
-  Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
+  Interaction.soundness (V.classicalModel (Out := Out) init impl challenges) input output
     (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε
 
 /-- Classical soundness specializes the whole-computation experiment interface. -/
@@ -170,7 +170,7 @@ theorem Verifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type uS} {ambi
     (input : StatementProblem S) (output : PathProblem s T) (ε : ℝ≥0∞) :
     V.soundness init impl challenges input output ε ↔
       V.soundnessUsing (experiment init impl challenges) input output ε := by
-  unfold Verifier.soundness Verifier.soundnessUsing Core.soundness
+  unfold Verifier.soundness Verifier.soundnessUsing Interaction.soundness
   apply forall_congr'
   intro Out
   let : MeasurableSpace (Outcome plainSig s Out T) := ⊤
@@ -199,7 +199,7 @@ abbrev OracleVerifier.soundness {ι σ : Type} {S : Type uS} {ambient : OracleSp
     (ε : ℝ≥0∞) : Prop :=
   ∀ Out : Transcript oracleSig s → Type,
   letI : MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B)) := ⊤
-  Core.soundness (V.classicalModel (Out := Out) init impl challenges) input output
+  Interaction.soundness (V.classicalModel (Out := Out) init impl challenges) input output
     (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε
 
 /-- Classical soundness specializes the whole-computation experiment interface. -/
@@ -215,7 +215,7 @@ theorem OracleVerifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type uS}
     (output : PathProblem s (OracleVerifier.Output T B)) (ε : ℝ≥0∞) :
     V.soundness init impl challenges input output ε ↔
       V.soundnessUsing (experiment init impl challenges) input output ε := by
-  unfold OracleVerifier.soundness OracleVerifier.soundnessUsing Core.soundness
+  unfold OracleVerifier.soundness OracleVerifier.soundnessUsing Interaction.soundness
   apply forall_congr'
   intro Out
   let : MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B)) := ⊤
@@ -230,4 +230,4 @@ theorem OracleVerifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type uS}
   rw [prEvent_eq_evalDist_of_discrete]
   rfl
 
-end Interaction.Core
+end Interaction

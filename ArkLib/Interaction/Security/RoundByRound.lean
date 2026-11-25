@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Interaction.Core.Security.Knowledge
+public import ArkLib.Interaction.Security.Knowledge
 public import PolyFun.PFunctor.Free.Cursor
 
 /-!
@@ -69,7 +69,7 @@ round-by-round knowledge soundness in [BCFW25] (Definitions 4.1 and 4.2) and [AB
 
 universe uS uW uK uO uI wI wJ uA u vDraw uι uQ dI q
 
-namespace Interaction.Core
+namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
@@ -516,7 +516,7 @@ abbrev Verifier.rbrSoundness {ι σ : Type} {S : Type uS} {ambient : OracleSpec 
     (input : StatementProblem S) (output : PathProblem s T)
     (draw : QueryImpl (challengeSpec plainSig s) ProbComp)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) : Prop :=
-  Core.rbrSoundness plainSig s (input.admissible ()) (input.language ())
+  Interaction.rbrSoundness plainSig s (input.admissible ()) (input.language ())
     (fun stmt tr => V.validAcceptance impl stmt tr
       (output.language tr.path)) draw ε
 
@@ -531,7 +531,7 @@ abbrev Verifier.rbrKnowledgeSoundness {ι σ : Type} {S : Type uS} {Win : S → 
     stmt tr → Prop)
     (draw : PrefixDraw plainSig ProbComp s)
     (ε : PrefixError plainSig s) : Prop :=
-  Core.rbrKnowledgeSoundness.{uS, uW, uK, uO} plainSig s admissible relIn
+  Interaction.rbrKnowledgeSoundness.{uS, uW, uK, uO} plainSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit)) draw ε
 
 /-- Node-indexed knowledge soundness is the shared prefix predicate ignoring history. -/
@@ -614,7 +614,7 @@ abbrev rbrSoundness (V : OracleVerifier ambient s S T inputs outputs)
     (output : PathProblem s (OracleVerifier.Output T B))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
-  Core.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
+  Interaction.rbrSoundness oracleSig s (input.admissible ()) (input.language ())
     (fun stmt tr => V.validAcceptance impl stmt tr
       (output.language tr.path)) draw ε
 
@@ -632,7 +632,7 @@ abbrev rbrKnowledgeSoundness {Win : (S × inputs.Data) → Type uW}
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
     (draw : PrefixDraw viewSig ProbComp s)
     (ε : PrefixError oracleSig s) : Prop :=
-  Core.rbrKnowledgeSoundness.{max uS dI, uW, uK, uO} oracleSig s admissible relIn
+  Interaction.rbrKnowledgeSoundness.{max uS dI, uW, uK, uO} oracleSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit))
     (PrefixDraw.ofView draw) ε
 
@@ -647,7 +647,7 @@ abbrev rbrKnowledgeSoundnessOfNodes {Win : (S × inputs.Data) → Type uW}
       OracleVerifier.Output T B tr.path → W stmt tr → Prop)
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞) : Prop :=
-  Core.rbrKnowledgeSoundness.{max uS dI, uW, uK, uO} oracleSig s admissible relIn
+  Interaction.rbrKnowledgeSoundness.{max uS dI, uW, uK, uO} oracleSig s admissible relIn
     (fun stmt tr wit => V.validAcceptance impl stmt tr (fun t => relOut stmt tr t wit))
     (PrefixDraw.ofNodes oracleSig draw) (PrefixError.ofNodes oracleSig ε)
 
@@ -669,4 +669,4 @@ theorem rbrKnowledgeSoundnessOfNodes_iff {Win : (S × inputs.Data) → Type uW}
 
 end OracleVerifier
 
-end Interaction.Core
+end Interaction

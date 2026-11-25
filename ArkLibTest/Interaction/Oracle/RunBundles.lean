@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Core.Composition
+import ArkLib.Interaction.Composition
 
 /-!
 # The decision bundle of a completed run: distinct oracles and hidden coordinates
@@ -16,10 +16,10 @@ message. For an appended protocol whose suffix shape is selected by a prefix mes
 run's bundle answers every component oracle as the two component runs do.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core Interaction.Oracle Interaction.TwoParty.Lens
+open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp
 
-namespace Interaction.Core.RunBundlesTests
+namespace Interaction.RunBundlesTests
 
 /-- Only the first coordinate of a sent pair can be queried. -/
 @[reducible] def interface : OracleInterface (Nat × Nat) where
@@ -302,4 +302,4 @@ example (branch : Bool) (message : Nat × Nat) :
         (.inr ⟨⟨branch, message, ⟨⟩⟩, receiverSuffixRoot ⟨branch, message, ⟨⟩⟩⟩))) = .sender := by
   cases branch <;> rfl
 
-end Interaction.Core.RunBundlesTests
+end Interaction.RunBundlesTests

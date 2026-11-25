@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Quang Dao
 -/
-import ArkLib.Interaction.Core.Security.MeasuredExtraction
+import ArkLib.Interaction.Security.MeasuredExtraction
 import ArkLibTest.Data.OracleComp.AddProgram
 
 /-!
@@ -16,11 +16,11 @@ carrier. Measured state functions fix natural-number count profiles over a finit
 every state function has zero-instruction stages.
 -/
 
-open PFunctor PFunctor.FreeM Interaction.Core OracleComp AddProgramTest
+open PFunctor PFunctor.FreeM Interaction OracleComp AddProgramTest
 
 -- Disposition IDs refer to docs/design/interaction-layer/knowledge-composition-disposition.md.
 
-namespace Interaction.Core.MeasuredExtractionTests
+namespace Interaction.MeasuredExtractionTests
 
 /-- One public message in `Fin 8`. -/
 abbrev oneRound : Protocol.{0} := .liftBind (.message (Fin 8)) fun _ => .pure ⟨⟩
@@ -229,4 +229,4 @@ example (F : KnowledgeStateFunction plainSig s S W Win admissible relIn validOut
 
 end ZeroStageAccounting
 
-end Interaction.Core.MeasuredExtractionTests
+end Interaction.MeasuredExtractionTests

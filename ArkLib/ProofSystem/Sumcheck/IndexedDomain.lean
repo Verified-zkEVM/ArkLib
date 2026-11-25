@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.ProofSystem.Sumcheck.Core.Types
+public import ArkLib.ProofSystem.Sumcheck.Types
 
 /-! # Indexed evaluation domains for Sumcheck
 
@@ -16,7 +16,7 @@ noncomputable polynomial representations.
 
 @[expose] public section
 
-namespace Sumcheck.Core
+namespace Sumcheck
 open Polynomial MvPolynomial Finset
 
 variable {R : Type} [CommSemiring R] {d n deg : ℕ}
@@ -158,4 +158,4 @@ def behaviorInputRelation (domain : List R) (target : R) (evaluate : R → R) : 
 def behaviorOutputRelation {X : Type} (target : R) (point : X) (evaluate : X → R) : Prop :=
   evaluate point = target
 
-end Sumcheck.Core
+end Sumcheck
