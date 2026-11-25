@@ -71,3 +71,34 @@ example : #{z : Fin 2 → ZMod 3 | eval (gridPoint (ZMod 3) z) (X 0) = 0} = 3 :=
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.card_filter_gridPoint
+
+-- The degree bound is needed: `X₀² - X₀` has degree `2 = q₀` in `X₀`, vanishes on the grid
+-- `F₂¹`, and is nonzero.
+example (z : Fin 1 → ZMod 2) :
+    eval (gridPoint (ZMod 2) z) (X 0 ^ 2 - X 0 : MvPolynomial (Fin 1) (ZMod 2)) = 0 := by
+  simp only [eval_sub, eval_pow, eval_X, gridPoint_apply, Algebra.algebraMap_self,
+    RingHom.id_apply]
+  generalize z 0 = a
+  revert a
+  decide
+
+-- Below that degree, vanishing on the grid `F₂²` forces a polynomial over `F₄` to be zero.
+example (P : MvPolynomial (Fin 2) (GaloisField 2 2)) (hP : ∀ i, P.degreeOf i < 2)
+    (h : ∀ z : Fin 2 → ZMod 2, eval (gridPoint (GaloisField 2 2) z) P = 0) : P = 0 :=
+  eq_zero_of_forall_eval_gridPoint_eq_zero (by simpa [ZMod.card] using hP) h
+
+-- Evaluation at grid points commutes with mapping `F₂[X₀, X₁]` into `F₄[X₀, X₁]`.
+example (z : Fin 2 → ZMod 2) (P : MvPolynomial (Fin 2) (ZMod 2)) :
+    eval (gridPoint (GaloisField 2 2) z) (P.map (algebraMap (ZMod 2) (GaloisField 2 2))) =
+      algebraMap (ZMod 2) (GaloisField 2 2) (eval (gridPoint (ZMod 2) z) P) :=
+  eval_gridPoint_map _ z P
+
+/-- info: 'ReedMuller.eval_gridPoint_map' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.eval_gridPoint_map
+
+/-- info: 'ReedMuller.eq_zero_of_forall_eval_gridPoint_eq_zero' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedMuller.eq_zero_of_forall_eval_gridPoint_eq_zero

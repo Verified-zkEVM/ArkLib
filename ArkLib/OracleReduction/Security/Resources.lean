@@ -18,10 +18,11 @@ two claims to the game: the extractor returns that value purely, without queryin
 execution path of the named program costs at most a budget. The agreement is extensional; it does
 not identify the extractor's implementation trace with the program's trace.
 
-The contract certifies the program's declared instructions only; `PFunctor.FreeM.MeasuredProgram`
-lists what is uncharged. Every deterministic extractor that makes no `oSpec` query has a measured
-program with budget zero, so an existential statement over measured programs adds nothing to
-`knowledgeSoundnessWith`. Only a named program with a stated instruction set is evidence.
+The contract certifies the program's declared instructions only. The docstring of
+`PFunctor.FreeM.MeasuredProgram` lists what is uncharged. Every deterministic
+extractor that makes no `oSpec` query has a measured program with budget zero, so an existential
+statement over measured programs adds nothing to `knowledgeSoundnessWith`. Only a named program
+with a stated instruction set is evidence.
 
 These operation-count security contracts use finite pointwise natural-number profiles. Standard
 addition and order are fixed by the definitions. Generic measured programs also support signed,
@@ -53,9 +54,10 @@ abbrev MeasuredProgram (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type)
     (pSpec : ProtocolSpec n) (ω : Type) : Type 1 :=
   PFunctor.FreeM.MeasuredProgram (Input oSpec StmtIn WitOut pSpec) (Option WitIn) ω
 
-/-- The extractor returns the handlers' execution of the program on its view, without querying
-`oSpec`. This lifts `PFunctor.FreeM.MeasuredProgram.Realizes` from a value-returning function to
-the extractor's computation by requiring it to return that value purely. -/
+/-- The extractor returns the run of the program, with its deterministic answers, on its view,
+without querying `oSpec`. This lifts `PFunctor.FreeM.MeasuredProgram.Realizes` from a
+value-returning function to the extractor's computation by requiring it to return that value
+purely. -/
 def MeasuredProgram.RealizesExtractor {ω : Type}
     (M : MeasuredProgram oSpec StmtIn WitIn WitOut pSpec ω)
     (extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec) : Prop :=
@@ -73,8 +75,8 @@ namespace Verifier
 /-- Knowledge soundness of a named extractor together with an operation-count bound for a measured
 program returning the same result. The budget bounds the program's declared instruction charges
 only; see the module documentation for what is uncharged.
-The program uses deterministic handlers, agrees with the extractor's pure return, and has a fixed
-pointwise natural-number budget. -/
+The program answers its operations deterministically, agrees with the extractor's pure return,
+and has a fixed pointwise natural-number budget. -/
 def knowledgeSoundnessWithResources {Kind : Type}
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)

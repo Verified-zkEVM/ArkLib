@@ -368,10 +368,12 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Basic
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.PellikaanWu
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Probability
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.RationalPair
 public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Separation
 public import ArkLib.Data.CodingTheory.ReedMuller.Grid
+public import ArkLib.Data.CodingTheory.ReedMuller.PellikaanWu
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
@@ -853,7 +855,6 @@ public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
 public import ArkLib.OracleReduction.LiftContext.Reduction
 public import ArkLib.OracleReduction.LogicStep
-public import ArkLib.OracleReduction.OracleInterface
 public import ArkLib.OracleReduction.Prelude
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
@@ -1166,6 +1167,8 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 public import ArkLib.Relation.Basic
+public import ArkLib.Relation.OracleInterface
+public import ArkLib.Relation.Prelude
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Univariate.Arithmetic
@@ -1209,6 +1212,7 @@ public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
 public import ArkLib.ToMathlib.Combinatorics.SetFamily.GenericZeroPattern
 public import ArkLib.ToMathlib.Combinatorics.SetFamily.IntersectingSubmodular
 public import ArkLib.ToMathlib.Control.MonadLift
+public import ArkLib.ToMathlib.FieldTheory.Finite.TracePolynomial
 public import ArkLib.ToMathlib.FieldTheory.Kummer
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement

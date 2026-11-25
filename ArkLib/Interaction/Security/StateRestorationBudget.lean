@@ -111,8 +111,7 @@ theorem queryBound_round_cost {Input Salt A : Type} {rounds : List Round}
       rw [isTotalQueryBound_query_bind_iff] at bounded
       apply (worstCaseCostBound_query_bind_iff _ _ _ _).mpr
       intro response result supported
-      have tail := (worstCaseCostBound_iff_support_bound _ _ _).mp
-        (ih response (Q - 1) (bounded.2 response)) result supported
+      have tail := (worstCaseCostBound_iff_support_bound ..).1 (ih _ _ (bounded.2 _)) _ supported
       calc
         keyError errors key + Multiplicative.toAdd result.2 ≤
             Finset.univ.sup errors + (Q - 1 : Nat) * Finset.univ.sup errors :=

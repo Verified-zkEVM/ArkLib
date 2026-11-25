@@ -598,7 +598,7 @@ bounds. It does not assume an arbitrary root or leaf program has budget zero.
 The cursor induction counts full moves, including oracle messages. PolyFun's node-dependent
 charges do not directly replace it: the stage programs depend on the statement and full earlier
 moves, and the root and leaf budgets require separate accounting. Instruction budgets leave pure
-work, views, handlers, carrier identification and intermediate witness sizes uncharged. The zero
+work, views, answers, carrier identification and intermediate witness sizes uncharged. The zero
 program exists for every state function; the ordered and unbounded-depth tests use named charged
 programs to test actual instruction cost as well as budgets. An empty-protocol test charges
 both the leaf and the root and checks their order against the general bound. Zero stages give
@@ -606,18 +606,18 @@ every state function a measured certificate with zero declared cost, so an opera
 result names its stage programs and prices. Measured append and a uniform game-extractor
 contract are follow-up work.
 
-The measured API retains these small carriers. At the previous VCVio pin the declarations below
-forced them. At the current pin `f1a4a8ec` the measured programs live in PolyFun
-(`PolyFun/PFunctor/Free/Cost/Measured.lean`) with independent input, result and cost universes.
-ArkLib's own `Type` binders in `MeasuredExtraction.lean` now keep the carriers small, and lifting
-them is follow-up work.
+The measured API retains these small carriers through the binders of `MeasuredStages`. These
+restrictions also apply to `programAlong` and `MeasuredKnowledgeStateFunction`, and lifting them
+is follow-up work. At the previous VCVio pin `f8d7f8ef`, VCVio's `OracleComp.BudgetedProgram` and
+`OracleComp.MeasuredProgram` forced the carriers to `Type`. The pinned PolyFun declarations below
+do not:
 
-| Restricted carrier | Forcing declaration at VCVio `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db` |
+| Restricted carrier | Pinned declaration at PolyFun `713d8857e49d20927c1447b3ba7397acc5537319` |
 | --- | --- |
-| Input witnesses `Win stmt : Type` and root-stage result | `OracleComp.BudgetedProgram {Input Result : Type}` in `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156`; the root program realizes `extractRoot`. |
-| Intermediate witnesses and `StageInput : Type` | The same `BudgetedProgram` input/result binders force each step's dependent input pair and result to be small. |
-| Output witnesses `W stmt tr : Type` | The same `BudgetedProgram` input binder forces the leaf program's argument to be small. This restriction also applies to `programAlong` and `MeasuredKnowledgeStateFunction`. |
-| Cost type `ω : Type`, instruction names and views | `OracleComp.MeasuredProgram (Input Result ω : Type)` at line 66, with fields `View : Type` and `Op : Type`; `BudgetedProgram` bundles this program. |
+| Input witnesses `Win stmt : Type` and root-stage result | `PFunctor.FreeM.BudgetedProgram {Input : Type uI} {Result : Type u} (f : Input → Result) (ω : Type w)` in `PolyFun/PFunctor/Free/Cost/Measured.lean:194` takes independent universes. The root program realizes `extractRoot`. |
+| Intermediate witnesses and `StageInput : Type` | `BudgetedProgram.comp` at line 221 takes `Mid Result : Type u`. `programAlong` composes the stages, so it puts the intermediate witnesses and the root result in one universe. `BudgetedProgram.contramap` at line 216 takes the new input in any universe. |
+| Output witnesses `W stmt tr : Type` | The `BudgetedProgram` input binder takes any universe. `BudgetedProgram.ofFun` at line 210, which `MeasuredStages.zero` uses, puts its input in the universe of its result. |
+| Cost type `ω : Type`, instruction names and views | `PFunctor.FreeM.MeasuredProgram (Input : Type uI) (Result : Type u) (ω : Type w)` at line 52, with fields `View : Type u` and `Op : Type u`. `BudgetedProgram` bundles this program. VCVio's bridge `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:51` at VCVio `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3` states the oracle-cost lemmas for `Input Result ω : Type`. |
 
 The statement universe remains arbitrary. The pure `PartialTranscriptAt`, `KnowledgeStateFunction`,
 lifting, extraction, extraction failure, append and restriction laws accept
@@ -753,18 +753,17 @@ so their restrictions remain:
 - `ProbComp : Type → Type` in `VCVio/OracleComp/ProbComp/Basic.lean:31` keeps random
   outputs small in the restoration games and bounds. It does not restrict `readOut`
   or the certificate's input, intermediate or output witness universes.
-- `OracleComp.BudgetedProgram {Input Result : Type}` in
-  `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixes root results, step
-  inputs/results and leaf inputs to `Type`. `KnowledgeStateFunction.MeasuredStages`
-  (`Interaction/Security/MeasuredExtraction.lean:99`) applies this interface to the actual extraction
-  maps. Its restoration budget theorems and the packaged measured game theorem retain
-  small input, intermediate and output witnesses. `OracleComp.MeasuredProgram` at line 66
-  also fixes the cost carrier `ω` to `Type`.
+- `KnowledgeStateFunction.MeasuredStages` (`Interaction/Security/MeasuredExtraction.lean:104`)
+  fixes root results, step inputs/results, leaf inputs and the cost carrier `ω` to `Type`. At the
+  previous pin, VCVio's `OracleComp.BudgetedProgram {Input Result : Type}` forced this. It now
+  applies PolyFun's `PFunctor.FreeM.BudgetedProgram`
+  (`PolyFun/PFunctor/Free/Cost/Measured.lean:194`), which takes its input, result and cost
+  carrier in independent universes. The restoration budget theorems and the packaged measured game theorem
+  retain small input, intermediate and output witnesses.
 
-The VCVio-to-PolyFun program repin (VCVio#1220, adopted with the `f1a4a8ec` bump) covers the
-measured restoration test (`ArkLibTest/Interaction/Security/StateRestorationBudget.lean`) and the
-local straight-line branch. It keeps the finite count profile `Kind → ℕ` and the named realization
-evidence
+The measured restoration test (`ArkLibTest/Interaction/Security/StateRestorationBudget.lean`)
+runs PolyFun's measured programs through VCVio's bridge. It keeps the finite count profile
+`Kind → ℕ` and the named realization evidence
 (`BudgetedProgram.realizes`, `run_programAlong`, `run_extractionProgram`).
 
 ### Frozen-source dispositions

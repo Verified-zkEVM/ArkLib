@@ -32,6 +32,9 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Probability.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/Separation.lean
   - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/RationalPair.lean
+  - ArkLib/ToMathlib/FieldTheory/Finite/TracePolynomial.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/PellikaanWu.lean
+  - ArkLib/Data/CodingTheory/ReedMuller/AffineCombiner/PellikaanWu.lean
 ---
 
 # CWYZ26
@@ -89,6 +92,10 @@ The embedding already implies `n ≤ q`.
 | Section 7, the Reed–Muller error `εRM` | `ReedMuller.affineMultiplier`, `ReedMuller.combinedWord`, `ReedMuller.agreementSet`, `ReedMuller.agreementLoss`, `ReedMuller.IsAffineExceptional`, `ReedMuller.affineMcaError`, `ReedMuller.affineMcaError_eq_iSup_prob` | Words on the grid `K₀ᵏ`, challenges `α ∈ F^{k+1}` and the multiplier `α₀ + Σ αᵢXᵢ`. The second witness is admissible when it is zero or has total degree below `d`. |
 | Section 7, the exponent `k` cannot be improved | `ReedMuller.le_affineMcaError_of_add_two_le` | For `1 ≤ k`, `d + 2 ≤ q₀` and `A ≤ n`, the error at loss `n / q₀` is at least `q⁻ᵏ`. The paper derives `d ≤ q₀ - 2` from Theorem 7.1. |
 | Lemma A.1 | `ReedMuller.card_isAffineExceptional_add_mul_le`, `ReedMuller.card_fractionRing_combination_le`, `ReedMuller.card_isAffineExceptional_fractionRing_le` | At loss `n / q₀`, a polynomial pair obeying the witness degree bounds has at most `n choose (k + 1)` exceptional challenges. A rational pair outside those bounds has at most `q` compatible challenges. Every rational pair has at most `max q (n choose (k + 1))` exceptional challenges. |
+| Appendix A, trace polynomials `ψᵢ(X) = Tr(γᵢX)` | `FiniteField.tracePolynomial`, `FiniteField.eval_tracePolynomial`, `FiniteField.natDegree_tracePolynomial`, `FiniteField.aeval_tracePolynomial_add` | Each `ψᵢ` is a polynomial of degree exactly `n/q₀ = q₀^(k-1)` when `γᵢ ≠ 0`. The API also proves additivity on algebras over `F_n`. |
+| Appendix A, the bijection `ψ : F_n → F_q₀ᵏ` | `FiniteField.traceCoordinateEquiv`, `FiniteField.traceCoordinateEquiv_apply` | The map takes traces against the supplied basis `γ` and returns coordinates in its trace-dual basis. |
+| Appendix A, the substitution `P ↦ P̃` | `ReedMuller.traceSubstitution`, `ReedMuller.natDegree_traceSubstitution_le`, `ReedMuller.eval_traceSubstitution`, `ReedMuller.injOn_traceSubstitution`, `ReedMuller.injOn_traceSubstitution_totalDegree_lt` | `deg P̃ ≤ deg P · q₀^(k-1)`, which is `ρn` at `deg P = d`. `P̃(x) = P(ψ x)`. The substitution is injective on polynomials of degree below `q₀` in each variable, which contains the paper's total-degree case (`injOn_traceSubstitution_totalDegree_lt`). |
+| Appendix A, agreement and the multiplier `L̃_α` | `ReedMuller.card_polynomialAgreementSet_traceSubstitution`, `ReedMuller.natDegree_traceSubstitution_map_affineMultiplier_le`, `ReedMuller.traceSubstitution_map_affineMultiplier_injective` | `P` and `P̃` have the same number of agreements. `L̃_α` has degree at most `n/q₀`, and distinct `α` give distinct `L̃_α`. Words and polynomials over `F_q` are mapped into a common field `F'`. |
 
 ## Port Ledger
 
@@ -110,7 +117,7 @@ A unit is deferred when the port plan postpones it.
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | The nonpersistent count for one factor, through an incidence bound on a hypersurface in three chart coordinates. The hypersurface takes the place of the cover of dimension at most two. The proof of the incidence bound inducts on dimension over the agreement cuts, in place of the agreement-hyperplane induction. The sum over factors is part of the unit 9 count | 2, 6, 7 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), except the floored Johnson factor of (4.13), which is open |
 | 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | deferred |
-| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | definitions, bound (7.1), the lower bound and Lemma A.1 formalized; Pellikaan–Wu reduction, the persistent and nonpersistent counts and Theorem 7.1 open |
+| 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | grid estimates, lower bound, Lemma A.1 and Pellikaan–Wu reduction formalized; the persistent and nonpersistent counts and Theorem 7.1 open |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
 The quotient is real, and the floor rounds down.
@@ -237,7 +244,7 @@ Both arguments are complete.
 ## Open Formalization Gaps
 
 Unit 10 is deferred, so Theorem 5.2 has no formalization.
-The Reed–Muller port has open parts in the Pellikaan–Wu reduction, the persistent and nonpersistent counts and Theorem 7.1.
+The Reed–Muller port has open parts in the persistent and nonpersistent counts and Theorem 7.1.
 The linear-claims bound (5.5) of Theorem 5.1 has no Lean statement.
 The second inequality of (5.4) is Theorem 1.1 with `ℓ₀/q` added to both sides, so
 `ReedSolomon.affineMcaError_le` covers it.

@@ -1197,7 +1197,7 @@ for oracle reductions are defined through this map (Section 6.4).
 ### 6.2 What 𝓕 means: oracle interfaces
 
 The class of oracles is not fixed. Each message type carries an instance of
-`OracleInterface` ([`OracleReduction/OracleInterface.lean`](ArkLib/OracleReduction/OracleInterface.lean)),
+`OracleInterface` ([`Relation/OracleInterface.lean`](ArkLib/Relation/OracleInterface.lean)),
 which declares a query type `Query` and, for each query $q$, a response type `Response q`, together
 with an answer function. In the notation of WHIR's Definition 7.1, the message type plays the role
 of an oracle set $\mathcal{O}_{i,j}$, `Query` the role of $\mathcal{W}_{i,j}$, and the answer
