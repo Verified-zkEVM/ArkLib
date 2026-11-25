@@ -89,7 +89,7 @@ example (a : Fin 3 → ZMod 5) (c : ZMod 5) :
     chartPolynomial c quadraticFamily regularR 1 2
         (chartPoint c 1 a (familyMultiplier quadraticFamily a)) =
       familyMultiplier quadraticFamily a :=
-  chartPolynomial_point c quadraticFamily regularR (p := 5) (e := 0) (by simp)
+  chartPolynomial_point c quadraticFamily regularR (p := 5) (r := 0) (by simp)
     (degree_familyMultiplier_quadraticFamily_le a) (multiplierEval_regularR a)
     (eval_multiplierEval_pderiv_regularR _ _ c)
 
@@ -98,7 +98,7 @@ example (a : Fin 3 → ZMod 5) (c : ZMod 5) :
 example (a₀ a₂ c : ZMod 2) :
     chartPolynomial c quadraticFamily regularR 2 1
         (chartPoint c 2 ![a₀, 0, a₂] (C a₀ + C a₂ * X)) = C a₀ + C a₂ * X := by
-  refine chartPolynomial_point c quadraticFamily regularR (p := 2) (e := 1) (by norm_num)
+  refine chartPolynomial_point c quadraticFamily regularR (p := 2) (r := 1) (by norm_num)
     ?_ ?_ (eval_multiplierEval_pderiv_regularR _ _ c)
   · compute_degree!
   · simp [regularR, familyMultiplier_quadraticFamily]
@@ -116,7 +116,7 @@ example (a : Fin 3 → ZMod 5) (c : ZMod 5) :
       (chartFunctionalCut c quadraticFamily regularR 1 2 3 (lcoeff (ZMod 5) 1)) = a 1 := by
   rw [aeval_chartFunctionalCut c quadraticFamily regularR (by norm_num) _ _
       (by simp [chartSeparant_regularR]),
-    chartPolynomial_point c quadraticFamily regularR (p := 5) (e := 0) (by simp)
+    chartPolynomial_point c quadraticFamily regularR (p := 5) (r := 0) (by simp)
       (degree_familyMultiplier_quadraticFamily_le a) (multiplierEval_regularR a)
       (eval_multiplierEval_pderiv_regularR _ _ c), chartSeparant_regularR, map_one, one_pow,
     one_mul, familyMultiplier_quadraticFamily]
@@ -129,7 +129,7 @@ example (a : Fin 3 → ZMod 5) (c : ZMod 5) :
         a 1 = 0 := by
   rw [chartFunctionalCut_eq_zero_iff c quadraticFamily regularR (by norm_num) _ _
       (by simp [chartSeparant_regularR]),
-    chartPolynomial_point c quadraticFamily regularR (p := 5) (e := 0) (by simp)
+    chartPolynomial_point c quadraticFamily regularR (p := 5) (r := 0) (by simp)
       (degree_familyMultiplier_quadraticFamily_le a) (multiplierEval_regularR a)
       (eval_multiplierEval_pderiv_regularR _ _ c), familyMultiplier_quadraticFamily]
   simp
@@ -142,7 +142,7 @@ example (a : Fin 3 → ZMod 5) (c t : ZMod 5) :
         (MvPolynomial.C t)) = a 1 - t := by
   rw [aeval_chartAgreementCut c quadraticFamily regularR (by norm_num) _ _ _
       (by simp [chartSeparant_regularR]),
-    chartPolynomial_point c quadraticFamily regularR (p := 5) (e := 0) (by simp)
+    chartPolynomial_point c quadraticFamily regularR (p := 5) (r := 0) (by simp)
       (degree_familyMultiplier_quadraticFamily_le a) (multiplierEval_regularR a)
       (eval_multiplierEval_pderiv_regularR _ _ c), chartSeparant_regularR, map_one, one_pow,
     one_mul, familyMultiplier_quadraticFamily]
@@ -156,7 +156,7 @@ example (a : Fin 3 → ZMod 5) (c : ZMod 5) :
         (MvPolynomial.X (.inr 2))) = 0 ↔ a 1 = a 2 := by
   rw [chartAgreementCut_eq_zero_iff c quadraticFamily regularR (by norm_num) _ _ _
       (by simp [chartSeparant_regularR]),
-    chartPolynomial_point c quadraticFamily regularR (p := 5) (e := 0) (by simp)
+    chartPolynomial_point c quadraticFamily regularR (p := 5) (r := 0) (by simp)
       (degree_familyMultiplier_quadraticFamily_le a) (multiplierEval_regularR a)
       (eval_multiplierEval_pderiv_regularR _ _ c), familyMultiplier_quadraticFamily]
   simp [chartPoint]
@@ -284,16 +284,6 @@ example (a b : ZMod 5) : familyMultiplier affineFamily ![a, b] = C a + C b * X :
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.chartFunctionalCut_eq_zero_iff
 
-/-- info: 'ReedSolomon.aeval_affineChartCut' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.aeval_affineChartCut
-
-/-- info: 'ReedSolomon.affineChartCut_eq_zero_iff' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.affineChartCut_eq_zero_iff
-
 /-- info: 'ReedSolomon.chartPolynomial_point' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
@@ -333,11 +323,6 @@ example (a b : ZMod 5) : familyMultiplier affineFamily ![a, b] = C a + C b * X :
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.totalDegree_chartFunctionalCut_le
-
-/-- info: 'ReedSolomon.totalDegree_affineChartCut_le' depends on axioms:
-[propext, Classical.choice, Quot.sound] -/
-#guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.totalDegree_affineChartCut_le
 
 /-- info: 'ReedSolomon.familyMultiplier_apply' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

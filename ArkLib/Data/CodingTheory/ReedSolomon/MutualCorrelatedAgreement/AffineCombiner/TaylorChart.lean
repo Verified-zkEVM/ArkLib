@@ -58,7 +58,6 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   the chart point of a root.
 * `ReedSolomon.chartFunctionalCut`: the cleared cut of a linear functional.
 * `ReedSolomon.chartAgreementCut`: the functional cut minus a cleared target.
-* `ReedSolomon.affineChartCut`: the Reed–Solomon agreement cut.
 
 ## Main statements
 
@@ -80,17 +79,14 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   cut of `Λ` is `S ^ τ` times `Λ` of the reconstruction.
 * `ReedSolomon.aeval_chartAgreementCut` and `ReedSolomon.chartAgreementCut_eq_zero_iff`: the
   agreement cut says `Λ` of the reconstruction is the target value.
-* `ReedSolomon.aeval_affineChartCut` and `ReedSolomon.affineChartCut_eq_zero_iff`: the
-  Reed–Solomon cut says the reconstruction takes a value.
-* `ReedSolomon.chartPolynomial_point`: recover `P` when `expand (p^e) P` is a regular root.
+* `ReedSolomon.chartPolynomial_point`: recover `P` when `expand (p^r) P` is a regular root.
 * `ReedSolomon.totalDegree_aeval_chartSubstitution_le`,
   `ReedSolomon.totalDegree_chartEquation_le`, `ReedSolomon.totalDegree_chartSeparant_le` and
   `ReedSolomon.chartSeparant_eq_zero`: the chart does not raise the `(Y, Z)`-degree.
 * `ReedSolomon.totalDegree_chartNumerator_le`,
   `ReedSolomon.totalDegree_chartNumerator_le_of_pos`,
-  `ReedSolomon.totalDegree_chartFunctionalCut_le`,
-  `ReedSolomon.totalDegree_chartAgreementCut_le` and
-  `ReedSolomon.totalDegree_affineChartCut_le`: the joint degree bounds.
+  `ReedSolomon.totalDegree_chartFunctionalCut_le` and
+  `ReedSolomon.totalDegree_chartAgreementCut_le`: the joint degree bounds.
 
 ## References
 
@@ -183,16 +179,6 @@ noncomputable def chartAgreementCut (c : E) (θ : κ → Polynomial E)
     (R : MvPolynomial AffineVar E) (s d τ : ℕ) (Λ : Polynomial E →ₗ[E] E)
     (T : MvPolynomial (ChartVar κ) E) : MvPolynomial (ChartVar κ) E :=
   chartFunctionalCut c θ R s d τ Λ - T * chartSeparant c θ R ^ τ
-
-/-- The Reed–Solomon agreement cut at `x`, with target `u + (a ^ s + x b ^ s) v`.
-
-Here `(y₀, a, b)` is the chart point and `S` its chart separant.
-When `S ≠ 0` and `2 s d - 1 ≤ τ`, the cut vanishes iff the reconstruction hits the target at `x`.
-The subtraction `2 s d - 1` is natural-number subtraction. -/
-noncomputable def affineChartCut (c : E) (R : MvPolynomial AffineVar E) (s d τ : ℕ) (x u v : E) :
-    MvPolynomial (ChartVar (Fin 2)) E :=
-  chartAgreementCut c affineFamily R s d τ (Polynomial.leval x)
-    (C u + (X (.inr 0) ^ s + C x * X (.inr 1) ^ s) * C v)
 
 /-! ### Flattening and evaluation -/
 
@@ -459,38 +445,12 @@ theorem chartAgreementCut_eq_zero_iff (c : E) (θ : κ → Polynomial E)
   rw [aeval_chartAgreementCut c θ R hτ Λ T pt hS, mul_eq_zero,
     or_iff_right (pow_ne_zero _ hS), sub_eq_zero]
 
-/-- The Reed–Solomon cut at `pt` is `S ^ τ` times the discrepancy of the reconstruction.
-
-Here `pt = (y₀, a, b)` and `S` is its chart separant, assumed nonzero.
-The exponent satisfies `2 s d - 1 ≤ τ`, with natural-number subtraction. -/
-theorem aeval_affineChartCut (c : E) (R : MvPolynomial AffineVar E) {s d τ : ℕ}
-    (hτ : 2 * s * d - 1 ≤ τ) (x u v : E) (pt : ChartVar (Fin 2) → E)
-    (hS : aeval pt (chartSeparant c affineFamily R) ≠ 0) :
-    aeval pt (affineChartCut c R s d τ x u v) = aeval pt (chartSeparant c affineFamily R) ^ τ *
-      ((chartPolynomial c affineFamily R s d pt).eval x -
-        (u + (pt (.inr 0) ^ s + x * pt (.inr 1) ^ s) * v)) := by
-  rw [affineChartCut, aeval_chartAgreementCut c affineFamily R hτ _ _ pt hS]
-  simp
-
-/-- The Reed–Solomon cut vanishes iff the reconstruction is `u + (a ^ s + x b ^ s) v` at `x`.
-
-Here the chart separant at `pt = (y₀, a, b)` is nonzero.
-The exponent satisfies `2 s d - 1 ≤ τ`, with natural-number subtraction. -/
-theorem affineChartCut_eq_zero_iff (c : E) (R : MvPolynomial AffineVar E) {s d τ : ℕ}
-    (hτ : 2 * s * d - 1 ≤ τ) (x u v : E) (pt : ChartVar (Fin 2) → E)
-    (hS : aeval pt (chartSeparant c affineFamily R) ≠ 0) :
-    aeval pt (affineChartCut c R s d τ x u v) = 0 ↔
-      (chartPolynomial c affineFamily R s d pt).eval x =
-        u + (pt (.inr 0) ^ s + x * pt (.inr 1) ^ s) * v := by
-  rw [affineChartCut, chartAgreementCut_eq_zero_iff c affineFamily R hτ _ _ pt hS]
-  simp
-
-/-- Let `s = p ^ e`, where `p` is the exponential characteristic, and `L = ∑ⱼ aⱼ θⱼ`.
+/-- Let `s = p ^ r`, where `p` is the exponential characteristic, and `L = ∑ⱼ aⱼ θⱼ`.
 Let `expand s P` be a root of `R(X, L(X), Z)` with `R_Z ≠ 0` at `c`.
 
 If `deg P ≤ d`, the reconstruction at the point of the root is `P`. -/
 theorem chartPolynomial_point (c : E) (θ : κ → Polynomial E) (R : MvPolynomial AffineVar E)
-    {p e s d : ℕ} [ExpChar E p] (hs : s = p ^ e) {a : κ → E} {P : Polynomial E}
+    {p r s d : ℕ} [ExpChar E p] (hs : s = p ^ r) {a : κ → E} {P : Polynomial E}
     (hP : P.degree ≤ d)
     (hroot : multiplierEval (familyMultiplier θ a) (Polynomial.expand E s P) R = 0)
     (hsep : (multiplierEval (familyMultiplier θ a) (Polynomial.expand E s P)
@@ -729,21 +689,5 @@ theorem totalDegree_chartAgreementCut_le (c : E) (θ : κ → Polynomial E)
     (Nat.mul_le_mul_left _ (totalDegree_chartSeparant_le c θ hR))
   have := two_mul_sub_one_mul_sub_one_add_le (s := s) (d := d) (a := s) hh (by nlinarith)
   omega
-
-/-- For positive `s` and `d`, the Reed–Solomon cut with `τ = 2 s d - 1` has degree `≤ 2 s d h`.
-
-Here `h` bounds the `(Y, Z)`-degree of `R`. -/
-theorem totalDegree_affineChartCut_le (c : E) {R : MvPolynomial AffineVar E} {s d h : ℕ}
-    (hR : R.weightedTotalDegree affineYZWeight ≤ h) (hd : 1 ≤ d) (hs : 1 ≤ s) (x u v : E) :
-    (affineChartCut c R s d (2 * s * d - 1) x u v).totalDegree ≤ 2 * s * d * h := by
-  refine totalDegree_chartAgreementCut_le c affineFamily hR hd hs _ ?_
-  refine (totalDegree_add _ _).trans (max_le (by simp) ?_)
-  refine (totalDegree_mul _ _).trans ?_
-  rw [totalDegree_C, Nat.add_zero]
-  refine (totalDegree_add _ _).trans (max_le ?_ ?_)
-  · exact (totalDegree_pow _ _).trans (by simp [totalDegree_X])
-  · refine (totalDegree_mul _ _).trans ?_
-    rw [totalDegree_C, zero_add]
-    exact (totalDegree_pow _ _).trans (by simp [totalDegree_X])
 
 end ReedSolomon
