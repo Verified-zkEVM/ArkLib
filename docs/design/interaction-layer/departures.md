@@ -48,7 +48,7 @@ first four statuses. The [port table](port-logged-execution.md) explains them.
 
 The [oracle-bundle and oracle-node universe port table](port-bundle-universes.md) records
 the old-layer R26, R27 and decoration canaries closed by entry 18. The R26/R27 definitions occur
-once, in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`.
+once, in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`.
 
 ## Legacy embedding: entries 14–16
 
@@ -147,10 +147,10 @@ path data and output maps rather than a run.
 - `OracleMap.ofLegacySimulation` turns a legacy output-oracle simulation into an oracle map, and
   `legacyOutputMap` is defined through it.
 
-The test `ArkLibTest/Interaction/Core/Legacy/OracleExecution.lean` runs the embedded oracle
+The test `ArkLibTest/Interaction/Legacy/OracleExecution.lean` runs the embedded oracle
 parties on accepting and rejecting challenges, with distinct prover and verifier outputs, for both
 legacy output-oracle representations. The test
-`ArkLibTest/Interaction/Core/Legacy/OracleKnowledge.lean` instantiates the knowledge transfers for
+`ArkLibTest/Interaction/Legacy/OracleKnowledge.lean` instantiates the knowledge transfers for
 a decision that queries the shared oracle, the input oracle and a message, with an extractor that
 reads both shared-oracle logs. It runs the oracle extraction game and the legacy knowledge program
 to the same witness.

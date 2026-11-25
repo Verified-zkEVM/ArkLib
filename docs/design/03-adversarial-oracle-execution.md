@@ -10,7 +10,7 @@ the [roadmap](05-roadmap.md) owns implementation stages and dependencies.
 
 **The deleted old layer.** Most modules this chapter names, such as `CoreRun`, `LoggedRun`,
 `TerminalRun`, `PhasedRun` and `Oracle/RuntimeSoundness`, belonged to the old generic interaction
-layer, which has been deleted. The interaction core under `ArkLib/Interaction/Core/` replaces it.
+layer, which has been deleted. The interaction core under `ArkLib/Interaction/` replaces it.
 Its oracle verifiers are passive: they query oracles only in the final decision.
 `Oracle/LoggedExecution.lean` and `Oracle/QueriesByMove.lean` hold its logged execution, and
 `Security/` holds its security results. The [migration list](interaction-layer/migration-list.md)
@@ -304,7 +304,7 @@ State restoration is a separate security layer for compiled protocols. The adver
 cached challenge oracle on purported prefixes; repeated keys receive the same answer. Completion
 re-derives each challenge of the selected path from that same oracle.
 
-The implementation in `Interaction.Core.StateRestoration` uses `Key Input Salt rounds`.
+The implementation in `Interaction.StateRestoration` uses `Key Input Salt rounds`.
 A key's depth identifies its round. It contains the input and the prover-message/salt prefix
 through that round, without earlier verifier responses. `oracleSpec Input Salt rounds` gives
 that key its response type `key.Challenge`, the addressed round's challenge alphabet.
@@ -315,12 +315,12 @@ extractors receive the state-restoration trace; rewinding extractors additionall
 black-box access. Bridges from round-by-round security, special soundness, and to Fiat–Shamir must
 state their entropy, salt, replay, budget, and loss assumptions.
 
-Implemented in `ArkLib/Interaction/Core/Security/`: the bridge from interaction-layer
+Implemented in `ArkLib/Interaction/Security/`: the bridge from interaction-layer
 round-by-round knowledge to state-restoration knowledge soundness, for fixed-round public-coin
 protocols with uniform challenge samplers. Restoration keys contain the input, prover-message prefix and salt
 prefix, and the adversary makes at most `Q` cached oracle queries.
 
-- `Interaction.Core.StateRestoration.stateRestoration_knowledge_soundness`: if the knowledge
+- `Interaction.StateRestoration.stateRestoration_knowledge_soundness`: if the knowledge
   state function preserves validity across prover messages and is locally bounded by `error`, the
   named backward extractor fails on a valid output with probability at most
   `(Q + rounds.length) * error`.

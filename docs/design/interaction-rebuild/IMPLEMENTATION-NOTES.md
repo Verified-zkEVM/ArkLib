@@ -1,6 +1,6 @@
 # Implementation notes for the interaction core
 
-These notes record where `ArkLib/Interaction/Core/` departs from the design records in this
+These notes record where `ArkLib/Interaction/` departs from the design records in this
 directory. The records themselves are unchanged. Each entry states what the record said, what the
 code does and why. Entries 1–8 were identified by the review of the first implementation; entries
 9–12 were introduced while addressing that review, and entry 13 by core additions that the oracle
@@ -125,7 +125,7 @@ fixes the owner.
 ## 12. Path-fiber splitting stays in ArkLib
 
 Record D5 splits paths and views at the seam with PolyFun's path operations, reached through
-`Transcript.split` and `Transcript.append` (`Core/Transcript.lean`, where `TranscriptAt` is also
+`Transcript.split` and `Transcript.append` (`Interaction/Transcript.lean`, where `TranscriptAt` is also
 defined). `project_split` and `TranscriptAt.split` in `Composition.lean` are generic in the
 polynomial and the lens but remain in ArkLib, marked as candidates for PolyFun; `project_split` is
 derived from `Transcript.path_append`, `Transcript.append_split` and `Transcript.split_append`,
@@ -198,7 +198,7 @@ returns only responses.
 **Equivalent: independent input data.** `OracleVerifier`, `pathBundle`, `decideWith`, `run`,
 append, the ambient-log runner and the security wrappers accept general
 `OracleBundle.{u, uI, dI}` inputs. Their data is `inputs.Data : Type dI`; only responses lie in
-`Type u`. The R26 and R27 canaries in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`
+`Type u`. The R26 and R27 canaries in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
 keep the exact named query and realization carriers with
 response universe `e` independent of realization universe `a`. No encoding or lift of a
 realization is needed. `OracleBundle.ofFamily` remains the specialization for existing
@@ -266,7 +266,7 @@ restrictions that remain are the retained runner contracts above (ambient index 
 in `Type`, output data, output index and extracted witnesses in `Type`) and the large-query
 full-log interface, which ArkLib accepts as an upstream limit. Neither P1 nor P2 retires any of these universe contracts; both premises concern scheduling and shape rather than universes.
 
-`ArkLibTest/Interaction/Core/UniverseCanary.lean` instantiates the independent universes against
+`ArkLibTest/Interaction/UniverseCanary.lean` instantiates the independent universes against
 `Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
 `OracleMap.simulate_eq`, two oracle runs, the classical security models, the oracle extraction
 game and the classical extraction models with their marginal laws. One input interface is an
@@ -276,7 +276,7 @@ function with intermediate witnesses in `Type 1` and the input witness `Unit` ce
 round-by-round knowledge for the core definition and both verifier wrappers. The same module
 now constructs an actual oracle node carrying `OracleInterface.{0, 1} Nat`, runs a verifier
 that queries its oracle message, and checks the returned value by `rfl`. The R26/R27 bundle
-constructors in `ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`
+constructors in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
 quantify independently over `a` and `e`. `viewVerifier`, its identity-view specialization
 `namedVerifier` and a shared run example consume the original realization family directly.
 
@@ -297,14 +297,14 @@ definitions take output problems over the path context (`PathProblem s T`), with
 predicates typed at the transcript's path (`validAcceptance impl stmt tr (event : T p → Prop)`).
 Constant families `fun _ => T` recover every earlier user; the legacy embedding and the sumcheck
 core use them, so their statements are unchanged. Record D6 is updated accordingly, and
-`ArkLibTest/Interaction/Core/Oracle/DependentRouting.lean` ports the frozen layer's dependent
+`ArkLibTest/Interaction/Oracle/DependentRouting.lean` ports the frozen layer's dependent
 routing example.
 
 ### Finite heterogeneous stage composition
 
 The interaction layer had no replacement for the old-layer ordered execution of a finite family of
 closed stages (`ExecutionInterface`, `ClosedStage`, `OrderedExecution.run` in
-`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/Core/StageChain.lean` adds the
+`ArkLib/Interaction/Oracle/Composition.lean`). `ArkLib/Interaction/StageChain.lean` adds the
 right-associated passive composition API: a chain appends its first stage to the composed rest
 through the passive append `OracleVerifier.append` (record D5).
 
@@ -373,7 +373,7 @@ client that needs public-coin sampling states it as a separate condition.
 
 The old-layer executor decided each stage before the next one started, so a rejection skipped the
 later interactions. It also selected each stage's protocol by the statement the previous stage had
-accepted. P1 and P2 exclude both. `ArkLibTest/Interaction/Core/Oracle/StageChain.lean` ports
+accepted. P1 and P2 exclude both. `ArkLibTest/Interaction/Oracle/StageChain.lean` ports
 the old-layer two-stage tests with the history `[0, 2, 1, 3]` and the rejection history
 `[0, 2, 1]`. It runs three stages with a sampled challenge, with history
 `[0, 2, 4, 5, 1, 3, 6]`, or `[0, 2, 4, 5, 1]` when the first decision rejects. It selects a second
@@ -388,7 +388,7 @@ The split of a composition at an arbitrary middle stage is ported on completed r
 `StageChain.then` concatenates two chains, following PolyFun's `Chain.then` and
 `PFunctor.FreeM.append_assoc`. `StageChain.decideOn_then` and `StageChain.outputOn_then` split the
 composed verifier of a concatenation at the cut, and `OracleVerifier.append_append_decideOn` and
-`OracleVerifier.append_append_outputOn` in `Core/Oracle/Reassociation.lean` reassociate
+`OracleVerifier.append_append_outputOn` in `Interaction/Oracle/Reassociation.lean` reassociate
 `OracleVerifier.append`. The laws are `HEq`s on runs, because the two associations have different
 protocols and a certificate's output map agrees with the composite output map only on accepted
 intermediate statements. They do not transport the prover of a concatenation to the appended
@@ -434,7 +434,7 @@ at the use site. The legacy round-by-round transfers in `Legacy/Security.lean` a
 `liftOracleExtractor` use `fun _ => WitOut` and only reorder the transcript and witness arguments.
 Relations, errors and extractor behavior are as before.
 
-The tests in `ArkLibTest/Interaction/Core/Security.lean` use the carrier `Fin (payload + 1)`
+The tests in `ArkLibTest/Interaction/Security.lean` use the carrier `Fin (payload + 1)`
 directly. In `payloadKnowledge` it is the leaf witness, and the input relation follows from its
 bound together with the acceptance equality `payload = stmt`; `payloadKnowledge_extract` gives
 the extraction equation for every payload. In `payload_extractionGame` a prover outputs
@@ -454,7 +454,7 @@ interaction, the final decision and the output closing in sequence. The ordinary
 queries by move and the ambient queries by move all specialize it, and the ordinary runner's
 universes stay as wide as before. `Oracle/QueriesByMoveLaws.lean` supplies the erasure and
 interpreter laws. Each executed participant action records an entry (`QueriesAt`): the actual
-earlier moves (the partial transcript, `PartialTranscript` in `Core/Transcript.lean`), the querier
+earlier moves (the partial transcript, `PartialTranscript` in `Interaction/Transcript.lean`), the querier
 and the ordered query/answer log. The querier comes from the participant action that the entry
 logs. The final verifier decision is its own decision entry. `runWithProverSetup` also keeps a
 separately run prover setup as an entry.
@@ -490,7 +490,7 @@ checks these universe parameters directly. `firstMovesLe_node` keeps node names 
 appended protocol to its final partial transcript. The append route still uses
 `prefixRoute_oracleMessages` and `splitOutputs`.
 
-The test file `ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean` keeps the aggregate tests.
+The test file `ArkLibTest/Interaction/Oracle/LoggedExecution.lean` keeps the aggregate tests.
 It adds per-entry runtime observations, membership of the actual join and decision entries, proofs
 that oracles were sent, and exclusion of future moves. Its distinguishing test moves one ambient
 request across a fixed public message. The ordinary outcomes and aggregate logs stay equal, while
@@ -579,7 +579,7 @@ and prover messages may select later distributions and local errors. Fresh unifo
 separate premise of the public-coin specialization. Regressions in `PrefixKnowledge.lean` send
 different oracle bits with equal verifier views and check that the view draws, including the
 suffix draw of a two-stage composition, do not separate them. The fixed two-bit zero-error
-certificate in `ArkLibTest/Interaction/Core/Security/PrefixKnowledge.lean` checks this distinction
+certificate in `ArkLibTest/Interaction/Security/PrefixKnowledge.lean` checks this distinction
 without inserting a prover message. The inventory records the corrected schedule correspondences,
 including KC-065 as equivalent because its frozen schedule was already constant.
 
@@ -624,7 +624,7 @@ takes `P : PFunctor.{uA, 0}`, so its positions also have their own universe.
 
 Probability bounds use the small-move instance of this general certificate. Pinned VCVio's
 `ProbComp : Type → Type` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forces `sampleAt` to return
-a small move. `challengeSpec` (`Core/Protocol.lean:69–71`) returns `Move l`, whose universe is
+a small move. `challengeSpec` (`Interaction/Protocol.lean:69–71`) returns `Move l`, whose universe is
 shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
 remaining probabilistic limitation. It does not restrict pure backward maps or large output
 and seam witnesses in the verifier wrappers.
@@ -745,13 +745,13 @@ The remaining small carriers follow these exact declarations at VCVio pin
 - `OracleComp.BudgetedProgram {Input Result : Type}` in
   `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixes root results, step
   inputs/results and leaf inputs to `Type`. `KnowledgeStateFunction.MeasuredStages`
-  (`Core/Security/MeasuredExtraction.lean:99`) applies this interface to the actual extraction
+  (`Interaction/Security/MeasuredExtraction.lean:99`) applies this interface to the actual extraction
   maps. Its restoration budget theorems and the packaged measured game theorem retain
   small input, intermediate and output witnesses. `OracleComp.MeasuredProgram` at line 66
   also fixes the cost carrier `ω` to `Type`.
 
 The planned VCVio-to-PolyFun program repin includes the measured restoration test
-(`ArkLibTest/Interaction/Core/Security/StateRestorationBudget.lean`) and the local straight-line
+(`ArkLibTest/Interaction/Security/StateRestorationBudget.lean`) and the local straight-line
 branch. It keeps the finite count profile `Kind → ℕ` and the named realization evidence
 (`BudgetedProgram.realizes`, `run_programAlong`, `run_extractionProgram`).
 
@@ -821,7 +821,7 @@ Inherited universe constraints remain in [entry 18](#18-run-outputs-are-tied-to-
 ### 22. Sumcheck domain multiplicity and routing laws
 
 
-`Sumcheck.Core.Soundness` now proves full-run soundness in the interaction layer for every map
+`Sumcheck.Soundness` now proves full-run soundness in the interaction layer for every map
 `D : Fin d → R`, with indexed sums that retain repeated points. `Indexed` proves the local
 false-to-true bound and constructs the round-by-round state function. It applies #1486's
 `OracleVerifier.soundness_of_rbrSoundness_uniform` and counts one challenge per round to obtain
@@ -830,7 +830,7 @@ and injective corollaries, plus committed and possibly failing randomized one-ro
 probability and measure form. These interaction layer security theorems do not use the legacy
 embedding.
 
-`Types`, `Tree` and `Domain` define the interaction layer statements, fixed protocol and
+`Types`, `Tree` and `IndexedDomain` define the interaction layer statements, fixed protocol and
 indexed arithmetic.
 `DomainEquivalence` keeps the separate injective comparison with `Spec`; `LegacySoundness` keeps
 the previous transferred bound as a comparison check. The arithmetic holds for commutative
@@ -846,11 +846,11 @@ The generic `OracleModel.satisfies_guarantee` interface has no Core counterpart.
 rows that used it, `degreeModel` and `degreeGuarantee`, are retired: their only client,
 `message_degree`, reads the bound from the message type.
 
-`Interaction.Core.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
-`Interaction/Core/Reduction.lean`. It now covers every protocol tree, lens, dependent prover
+`Interaction.Prover.simulate_joinSlot` belongs beside `Prover.simulate` in
+`Interaction/Reduction.lean`. It now covers every protocol tree, lens, dependent prover
 output family and lawful target monad, including trees that are a single leaf. The Sumcheck tests use this law.
 `decodeTranscript_succ` is a simplification equation beside `decodeTranscript` in
-`Sumcheck/Core/Execution.lean`. The four local transparency attributes added by the Sumcheck
+`Sumcheck/Execution.lean`. The four local transparency attributes added by the Sumcheck
 migration have been removed.
 
 The affine message construction, evaluation law and oracle-answer law in `Effects` now quantify
@@ -865,7 +865,7 @@ soundness statements.
 **Plan.** The frozen assertions quantify over interval endpoints, projected input behavior and
 composition through exported oracles. This entry follows the parent's entries through 22.
 
-**Code.** `Sumcheck/Core/Fold.lean` implements passive interaction-layer checks. `Interval`
+**Code.** `Sumcheck/Fold.lean` implements passive interaction-layer checks. `Interval`
 specializes those checks to every `start + count ≤ n`. `IntervalCompleteness` proves support,
 perfect and measure completeness for that full range. `IntervalAdaptive` supplies current-statement
 challenge callbacks through an actual shared-state handler. `IntervalSoundness` proves
@@ -890,7 +890,7 @@ arbitrary original evaluation behavior. `IntervalRoundSoundness` proves the actu
 probability and measure bounds at every variable position, including intermediate endpoints.
 `Impl/IndexedProjection` computes indexed CompPoly projections, retaining repeated domain points.
 `Impl/Projection` specializes it to injective domains, and `ComputableProjection` connects it to
-the indexed projection of `Domain`.
+the indexed projection of `IndexedDomain`.
 `ComputableInterval` constructs the honest computational strategy and proves its interpretation,
 actual execution equality and completeness. `ComputableSoundness` transfers the interaction-layer
 suffix bound to every computational-message prover with shared ambient state. `Interpreted` and
@@ -924,8 +924,8 @@ noncomputable; the generic interface and deterministic execution use computable 
 `execute_eq_native`, the frozen `ComputableCompleteness` and `ComputableSoundness`, and the seven
 rows of `scripts/SumcheckRuntime.lean`. Rows 3, 4 and 6 are premise-required under P1/P2; row 7 now checks the verifier.
 
-**Code.** `Sumcheck.Core.Computable` instantiates the carrier-generic protocol and verifier of
-`Sumcheck.Core` (open question OQ17) at CompPoly messages and CompPoly multivariate inputs; see
+**Code.** `Sumcheck.Computable` instantiates the carrier-generic protocol and verifier of
+the Sumcheck core (open question OQ17) at CompPoly messages and CompPoly multivariate inputs; see
 [`sumcheck.md`](../interaction-layer/sumcheck.md#the-computable-instance).
 
 - `run_eq_interpret` replaces `execute_eq_native`. It equates the runs only after the challenge
@@ -964,7 +964,7 @@ under those rules.
 ## 25. Routing owners and transparency
 
 **Code.** Forwarding subexpressions in the interaction layer and Sumcheck Core, including their
-tests, use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.embedding`, `Interaction.Core.pathLift`
+tests, use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.embedding`, `Interaction.pathLift`
 and VCVio's `QueryImpl.id'` restrictions (or `QueryImpl.ofLift` for universe-polymorphic sums).
 Coverage includes prover-setup injection, carrier-changing `renameQueries`, routing exports and
 path reads, the independent-query-universe verifier, and state-restoration oracle message reads

@@ -1,0 +1,708 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Quang Dao
+-/
+module
+
+public import ArkLib.Interaction.OracleVerifier
+public import PolyFun.Interaction.TwoParty.Lens.Compose
+
+/-!
+# Sequential interaction
+
+Prover composition constructs the suffix in the prefix leaf action. Samplers combine without
+running decisions at the seam. Decisions fold only after the whole interaction. Oracle routing
+uses the prefix output map, and the composed decision equals the prefix decision followed by the
+suffix decision on routed data. Closure of output maps requires an explicit compatibility
+certificate for the intermediate statements the prefix decision can accept, because that decision
+may depend on ambient queries.
+-/
+
+@[expose] public section
+
+universe u q dI uA v w uι uS uI uJ uK uV uX uY dX dY wI wJ wK
+
+namespace Interaction
+open PFunctor FreeM TwoParty.Lens OracleComp Oracle
+
+
+-- `project_split` and `TranscriptAt.split` are generic in the polynomial and the lens; they are
+-- candidates for PolyFun's path ledger, with `View.split` and `PlainView.split` remaining here.
+
+/-- Projection commutes with the prefix decomposition of a full transcript. -/
+theorem project_split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (tr : Transcript l (s₁.append s₂)) :
+    (let z := Transcript.split s₁ s₂ tr
+     (⟨Transcript.path z.1, Transcript.path z.2⟩ :
+       (p : Path s₁) × Path (s₂ p))) =
+      Path.split s₁ s₂ tr.path := by
+  let z := Transcript.split s₁ s₂ tr
+  have h := congrArg (Path.split s₁ s₂)
+    (Transcript.path_append s₁ s₂ z.1 z.2)
+  simpa only [z, Transcript.append_split, Path.split_append] using h.symm
+
+/-- Split views along the shape split. Only the view transcripts are transported. -/
+def TranscriptAt.split {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (p : Path (s₁.append s₂)) (v : TranscriptAt l (s₁.append s₂) p) :
+    TranscriptAt l s₁ (Path.split s₁ s₂ p).1 ×
+      TranscriptAt l (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2 := by
+  rcases v with ⟨tr, rfl⟩
+  let z := Transcript.split s₁ s₂ tr
+  have h := project_split l s₁ s₂ tr
+  exact h ▸ (show TranscriptAt l s₁ (Transcript.path z.1) ×
+    TranscriptAt l (s₂ (Transcript.path z.1)) (Transcript.path z.2) from
+      (⟨z.1, rfl⟩, ⟨z.2, rfl⟩))
+
+/-- Splitting a transcript at a path of an appended shape splits the transcript itself, whatever
+the proof that the transcript has that path.
+
+`TranscriptAt.split` transports along a shape equality, so the split of a transcript at a path
+built from a concrete transcript does not reduce. The transcripts it carries are those of
+`Transcript.split`. -/
+theorem TranscriptAt.split_val {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (p : Path (s₁.append s₂)) (v : TranscriptAt l (s₁.append s₂) p) :
+    (TranscriptAt.split l s₁ s₂ p v).1.1 = (Transcript.split s₁ s₂ v.1).1 ∧
+      HEq (TranscriptAt.split l s₁ s₂ p v).2.1 (Transcript.split s₁ s₂ v.1).2 := by
+  rcases v with ⟨tr, rfl⟩
+  unfold TranscriptAt.split
+  dsimp only
+  generalize project_split l s₁ s₂ tr = h
+  revert h
+  generalize Path.split s₁ s₂ tr.path = q
+  rintro rfl
+  exact ⟨rfl, HEq.rfl⟩
+
+/-- Splitting a view and its shape gives the two full transcripts with their shape certificates. -/
+theorem TranscriptAt.split_pair {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (p : Path (s₁.append s₂)) (v : TranscriptAt l (s₁.append s₂) p) :
+    (⟨Path.split s₁ s₂ p, TranscriptAt.split l s₁ s₂ p v⟩ :
+      (ps : (p₁ : Path s₁) × Path (s₂ p₁)) ×
+        TranscriptAt l s₁ ps.1 × TranscriptAt l (s₂ ps.1) ps.2) =
+      let z := Transcript.split s₁ s₂ v.val
+      ⟨⟨Transcript.path z.1, Transcript.path z.2⟩, ⟨z.1, rfl⟩, ⟨z.2, rfl⟩⟩ := by
+  rcases v with ⟨tr, rfl⟩
+  dsimp only [TranscriptAt.split]
+  apply Sigma.ext (project_split l s₁ s₂ tr).symm
+  exact eqRec_heq (φ := fun ps : (p₁ : Path s₁) × Path (s₂ p₁) =>
+    TranscriptAt l s₁ ps.1 × TranscriptAt l (s₂ ps.1) ps.2) (project_split l s₁ s₂ tr) _
+
+/-- Splitting the transcript of an appended run, with its view, returns the prefix and suffix
+transcripts and their own views. -/
+theorem TranscriptAt.split_append {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) {X : Sort*}
+    (G : (p : Path s₁) → (q : Path (s₂ p)) → TranscriptAt l s₁ p → TranscriptAt l (s₂ p) q → X)
+    (tr₁ : Transcript l s₁) (tr₂ : Transcript l (s₂ tr₁.path)) :
+    G (Path.split s₁ s₂ (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))).1
+      (Path.split s₁ s₂ (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))).2
+      (TranscriptAt.split l s₁ s₂ _ ⟨Transcript.append s₁ s₂ tr₁ tr₂, rfl⟩).1
+      (TranscriptAt.split l s₁ s₂ _ ⟨Transcript.append s₁ s₂ tr₁ tr₂, rfl⟩).2 =
+    G tr₁.path tr₂.path ⟨tr₁, rfl⟩ ⟨tr₂, rfl⟩ := by
+  have key : ∀ (tr : Transcript l (s₁.append s₂)),
+      G (Path.split s₁ s₂ tr.path).1
+        (Path.split s₁ s₂ tr.path).2
+        (TranscriptAt.split l s₁ s₂ _ ⟨tr, rfl⟩).1 (TranscriptAt.split l s₁ s₂ _ ⟨tr, rfl⟩).2 =
+      G (Transcript.path (Transcript.split s₁ s₂ tr).1)
+        (Transcript.path (Transcript.split s₁ s₂ tr).2)
+        ⟨(Transcript.split s₁ s₂ tr).1, rfl⟩ ⟨(Transcript.split s₁ s₂ tr).2, rfl⟩ := by
+    intro tr
+    simp only [TranscriptAt.split]
+    generalize project_split l s₁ s₂ tr = h
+    generalize Path.split s₁ s₂ tr.path = w at h ⊢
+    subst h
+    rfl
+  rw [key, Transcript.split_append]
+
+/-- Split the oracle verifier's public view. -/
+abbrev View.split := TranscriptAt.split viewSig
+
+/-- Split a plain public transcript. -/
+abbrev PlainView.split := TranscriptAt.split plainSig
+
+/-- The output family of an appended protocol: at a path of the appended tree, the suffix's
+output at the split path. PolyFun's `Path.LiftAppend` is the same family by `liftAppend_split`;
+the split form lets a composed decision return the suffix's output without a transport. -/
+abbrev splitFamily {P : PFunctor.{uA, u}} {s₁ : FreeM P PUnit.{u + 1}}
+    {s₂ : Path s₁ → FreeM P PUnit.{u + 1}} (U : (p : Path s₁) → Path (s₂ p) → Type uV)
+    (p : Path (s₁.append s₂)) : Type uV :=
+  U (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
+
+/-- Plain final decisions fold after both interactions have finished. The prefix's output type
+may depend on the prefix path, and the composite's output at an appended path is the suffix's
+output at the split path. -/
+def Verifier.append {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS} {T : Path s₁ → Type u}
+    {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p)) :
+    Verifier ambient (s₁.append s₂) S (splitFamily U) where
+  decide stmt p v := do
+    let z := Path.split s₁ s₂ p
+    let views := PlainView.split s₁ s₂ p v
+    let mid ← V₁.decide stmt z.1 views.1
+    (V₂ z.1).decide mid z.2 views.2
+
+/-- The exact end-decided fold, including skipping the second decision on rejection. -/
+theorem Verifier.append_decide {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS} {T : Path s₁ → Type u}
+    {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
+    (stmt : S) (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) :
+    (V₁.append V₂).decide stmt p v = (do
+      let mid ← V₁.decide stmt (Path.split s₁ s₂ p).1 (PlainView.split s₁ s₂ p v).1
+      (V₂ (Path.split s₁ s₂ p).1).decide mid (Path.split s₁ s₂ p).2
+        (PlainView.split s₁ s₂ p v).2) := rfl
+
+/-- On an appended full transcript, plain decisions use exactly the two component transcripts. -/
+theorem Verifier.append_decide_transcript {ι : Type uι}
+    {ambient : OracleSpec.{uι, u} ι}
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
+    (stmt : S) (tr₁ : Transcript plainSig s₁)
+    (tr₂ : Transcript plainSig (s₂ tr₁.path)) :
+    (V₁.append V₂).decide stmt
+        (Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂))
+        (toPlainView _ (Transcript.append s₁ s₂ tr₁ tr₂)) ≍ (do
+      let mid ← V₁.decide stmt tr₁.path (toPlainView s₁ tr₁)
+      (V₂ tr₁.path).decide mid tr₂.path
+        (toPlainView _ tr₂)) := by
+  let fold := fun z : (ps : (p₁ : Path s₁) × Path (s₂ p₁)) ×
+      TranscriptAt plainSig s₁ ps.1 × TranscriptAt plainSig (s₂ ps.1) ps.2 =>
+    (⟨z.1, (do
+    let mid ← V₁.decide stmt z.1.1 z.2.1
+    (V₂ z.1.1).decide mid z.1.2 z.2.2)⟩ :
+      (ps : (p₁ : Path s₁) × Path (s₂ p₁)) × OptionT (OracleComp ambient) (U ps.1 ps.2))
+  have h := TranscriptAt.split_pair plainSig s₁ s₂ _
+    (toPlainView _ (Transcript.append s₁ s₂ tr₁ tr₂))
+  dsimp only [toPlainView] at h
+  rw [Transcript.split_append] at h
+  exact (Sigma.mk.inj_iff.mp (congrArg fold h)).2
+
+/-- Simulating an appended decision threads the prefix's final state into the suffix. -/
+theorem Verifier.simulateQ_append_run {ι : Type uι} {σ : Type u} {ambient : OracleSpec.{uι, u} ι}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
+    (impl : QueryImpl ambient (StateT σ m)) (stmt : S)
+    (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state : σ) :
+    (simulateQ impl ((V₁.append V₂).decide stmt p v).run).run state =
+      (simulateQ impl (V₁.decide stmt (Path.split s₁ s₂ p).1
+        (PlainView.split s₁ s₂ p v).1).run).run state >>= fun
+        | (none, state') => pure (none, state')
+        | (some mid, state') => (simulateQ impl
+            ((V₂ (Path.split s₁ s₂ p).1).decide mid (Path.split s₁ s₂ p).2
+              (PlainView.split s₁ s₂ p v).2).run).run state' := by
+  simp only [Verifier.append, OptionT.run_bind, Option.elimM, simulateQ_bind, StateT.run_bind]
+  congr 1
+  funext result
+  rcases result with ⟨_ | mid, state'⟩ <;> simp
+
+/-- An accepted composite result has a supported accepted middle result and one shared
+intermediate ambient state. -/
+theorem Verifier.support_append {ι : Type uι} {σ : Type u} {ambient : OracleSpec.{uι, u} ι}
+    {m : Type u → Type v} [Monad m] [LawfulMonad m] [MonadAttach m] [LawfulMonadAttach m]
+    {s₁ : Protocol.{u}} {s₂ : Path s₁ → Protocol.{u}} {S : Type uS}
+    {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+    (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
+    (impl : QueryImpl ambient (StateT σ m)) (stmt : S)
+    (p : Path (s₁.append s₂)) (v : PlainView (s₁.append s₂) p) (state final : σ)
+    (out : splitFamily U p)
+    (h : (some out, final) ∈ MonadAttach.support
+      ((simulateQ impl ((V₁.append V₂).decide stmt p v).run).run state)) :
+    ∃ mid between,
+      (some mid, between) ∈ MonadAttach.support
+        ((simulateQ impl (V₁.decide stmt (Path.split s₁ s₂ p).1
+          (PlainView.split s₁ s₂ p v).1).run).run state) ∧
+      (some out, final) ∈ MonadAttach.support
+        ((simulateQ impl ((V₂ (Path.split s₁ s₂ p).1).decide mid
+          (Path.split s₁ s₂ p).2 (PlainView.split s₁ s₂ p v).2).run).run between) := by
+  rw [Verifier.simulateQ_append_run] at h
+  obtain ⟨⟨_ | mid, between⟩, hmid, hout⟩ := LawfulMonadAttach.canReturn_bind_imp' h
+  · have hn := LawfulMonadAttach.eq_of_canReturn_pure hout
+    cases congrArg Prod.fst hn
+  · exact ⟨mid, between, hmid, hout⟩
+
+/-- Provers compose using PolyFun's effectful suffix constructor in the leaf action. -/
+abbrev Prover.append := @Focal.compFlat
+
+/-- The sampler of a concatenation, with its pure prefix end, uses counterpart append. -/
+def appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+    {m : Type u → Type u} [Monad m]
+    (s₁ : FreeM P PUnit.{u + 1}) (s₂ : Path s₁ → FreeM P PUnit.{u + 1})
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    Counterpart l m (s₁.append s₂) (fun _ => PUnit) :=
+  Counterpart.appendFlat (samplerEnd l s₁ draw₁)
+    (fun tr _ => sampler l _ (draw₂ (Transcript.path tr)))
+
+/-- Combine challenge implementations using only the canonical prefix path. -/
+def combineDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    ((c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
+    ((p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) →
+    (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)
+  | .pure _, _, _, draw₂, c => draw₂ ⟨⟩ c
+  | .liftBind _ _, _, draw₁, _, ⟨.inl x, h⟩ => draw₁ ⟨.inl x, h⟩
+  | .liftBind _ next, s₂, draw₁, draw₂, ⟨.inr ⟨b, c⟩, h⟩ =>
+    combineDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩)
+      (fun p => draw₂ ⟨b, p⟩) ⟨c, h⟩
+
+/-- Restrict challenge draws of an appended protocol to the challenge nodes of its prefix. -/
+def prefixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)
+  | .pure _, _, _, c => c.val.elim
+  | .liftBind _ _, _, draw, ⟨.inl x, h⟩ => draw ⟨.inl x, h⟩
+  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
+    prefixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
+
+/-- Restrict challenge draws of an appended protocol to the challenge nodes of the suffix at a
+completed prefix path. -/
+def suffixDraw {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+    {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)
+  | .pure _, _, draw, ⟨⟩, c => draw c
+  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
+    suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
+
+section draws
+variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+  {m : Type u → Type v} {m' : Type u → Type w}
+
+/-- Restricting draws to the prefix commutes with transforming every draw. -/
+theorem prefixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (c : ChallengeNode l s₁) →
+    prefixDraw l s₁ s₂ (fun c => f (draw c)) c = f (prefixDraw l s₁ s₂ draw c)
+  | .pure _, _, _, c => c.val.elim
+  | .liftBind _ _, _, _, ⟨.inl _, _⟩ => rfl
+  | .liftBind _ next, s₂, draw, ⟨.inr ⟨b, c⟩, h⟩ =>
+    prefixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) ⟨c, h⟩
+
+/-- Restricting draws to a suffix commutes with transforming every draw. -/
+theorem suffixDraw_comp (f : ∀ {α : Type u}, m α → m' α) :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+    suffixDraw l s₁ s₂ (fun c => f (draw c)) p c = f (suffixDraw l s₁ s₂ draw p c)
+  | .pure _, _, _, ⟨⟩, _ => rfl
+  | .liftBind _ next, s₂, draw, ⟨b, p⟩, c =>
+    suffixDraw_comp f (next b) (fun p => s₂ ⟨b, p⟩)
+      (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
+end draws
+
+/-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
+theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, u}}
+    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
+    combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw
+  | .pure _, _, _ => rfl
+  | .liftBind _ next, s₂, draw => by
+    funext c
+    rcases c with ⟨x | ⟨b, c⟩, h⟩
+    · rfl
+    · exact congrFun (combineDraw_prefixDraw_suffixDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+        (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩)) ⟨c, h⟩
+
+/-- Restricting combined challenge draws to the prefix recovers the prefix draws. -/
+@[simp] theorem prefixDraw_combineDraw {P : PFunctor.{uA, u}}
+    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+        m (challengeSpec l (s₂ p) c)) →
+    prefixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₁
+  | .pure _, _, _, _ => by
+    funext c
+    exact c.val.elim
+  | .liftBind _ next, s₂, draw₁, draw₂ => by
+    funext c
+    rcases c with ⟨x | ⟨b, c⟩, h⟩
+    · rfl
+    · exact congrFun (prefixDraw_combineDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩) (fun p => draw₂ ⟨b, p⟩)) ⟨c, h⟩
+
+/-- Restricting combined challenge draws to each suffix recovers that suffix's draws. -/
+@[simp] theorem suffixDraw_combineDraw {P : PFunctor.{uA, u}}
+    (l : PFunctor.Lens P rolePoly.{u}) {m : Type u → Type v} :
+    (s₁ : FreeM P PUnit.{u + 1}) → (s₂ : Path s₁ → FreeM P PUnit.{u + 1}) →
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
+        m (challengeSpec l (s₂ p) c)) →
+    suffixDraw l s₁ s₂ (combineDraw l s₁ s₂ draw₁ draw₂) = draw₂
+  | .pure _, _, _, _ => rfl
+  | .liftBind _ next, s₂, draw₁, draw₂ => by
+    funext ⟨b, p⟩ c
+    exact congrFun (congrFun
+      (suffixDraw_combineDraw l (next b) (fun p => s₂ ⟨b, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨b, c.val⟩, c.property⟩) (fun p => draw₂ ⟨b, p⟩)) p) c
+
+/-- Appending samplers equals sampling the appended tree with the combined implementation. -/
+theorem appendSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
+    (draw₁ : (c : ChallengeNode plainSig s₁) → m (challengeSpec plainSig s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode plainSig (s₂ p)) →
+      m (challengeSpec plainSig (s₂ p) c)) :
+    appendSampler s₁ s₂ draw₁ draw₂ = sampler plainSig (s₁.append s₂)
+      (combineDraw plainSig s₁ s₂ draw₁ draw₂) := by
+  induction s₁ using FreeM.rec with
+  | pure a => rfl
+  | liftBind a next ih =>
+    cases a <;>
+      simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerNode, rootDraw,
+        FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
+        owner, plainSig, Choice, Move, Choice.map, combineDraw,
+        LawfulApplicative.map_pure]
+    · congr 1
+      funext x
+      exact ih x (fun p => s₂ ⟨x, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨x, c.val⟩, c.property⟩)
+        (fun p => draw₂ ⟨x, p⟩)
+    · erw [Functor.map_map, Functor.map_map]
+      congr 1
+      funext x
+      congr 1
+      exact ih PUnit.unit (fun p => s₂ ⟨PUnit.unit, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨PUnit.unit, c.val⟩, c.property⟩)
+        (fun p => draw₂ ⟨PUnit.unit, p⟩)
+
+/-- Appending samplers equals sampling the appended tree with the combined implementation. -/
+theorem appendOracleSampler_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+    (draw₁ : (c : ChallengeNode oracleSig s₁) → m (challengeSpec oracleSig s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode oracleSig (s₂ p)) →
+      m (challengeSpec oracleSig (s₂ p) c)) :
+    appendSampler s₁ s₂ draw₁ draw₂ = sampler oracleSig (s₁.append s₂)
+      (combineDraw oracleSig s₁ s₂ draw₁ draw₂) := by
+  induction s₁ using FreeM.rec with
+  | pure a => rfl
+  | liftBind a next ih =>
+    cases a <;>
+      simp only [appendSampler, Counterpart.appendFlat, sampler, samplerEnd,
+        samplerNode, rootDraw,
+        FreeM.append_liftBind, PureEnd.graft, PureEnd.toStrategy, PureEnd.mapOutput,
+        owner, oracleSig, Choice, Move, Choice.map, combineDraw,
+        LawfulApplicative.map_pure]
+    · congr 1
+      funext x
+      exact ih x (fun p => s₂ ⟨x, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨x, c.val⟩, c.property⟩)
+        (fun p => draw₂ ⟨x, p⟩)
+    · erw [Functor.map_map, Functor.map_map]
+      congr 1
+      funext x
+      congr 1
+      exact ih PUnit.unit (fun p => s₂ ⟨PUnit.unit, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨PUnit.unit, c.val⟩, c.property⟩)
+        (fun p => draw₂ ⟨PUnit.unit, p⟩)
+    · congr 1
+      funext x
+      exact ih PUnit.unit (fun p => s₂ ⟨PUnit.unit, p⟩)
+        (fun c => draw₁ ⟨.inr ⟨PUnit.unit, c.val⟩, c.property⟩)
+        (fun p => draw₂ ⟨PUnit.unit, p⟩)
+
+/-- The sampler of an appended oracle protocol is the append of its restricted samplers. -/
+theorem sampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : OracleProtocol.{u}) (s₂ : Path s₁ → OracleProtocol.{u})
+    (draw : (c : ChallengeNode oracleSig (s₁.append s₂)) →
+      m (challengeSpec oracleSig (s₁.append s₂) c)) :
+    sampler oracleSig (s₁.append s₂) draw = appendSampler s₁ s₂
+      (prefixDraw oracleSig s₁ s₂ draw) (suffixDraw oracleSig s₁ s₂ draw) := by
+  rw [appendOracleSampler_eq, combineDraw_prefixDraw_suffixDraw]
+
+/-- The sampler of an appended plain protocol is the append of its restricted samplers. -/
+theorem plainSampler_append_eq {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    (s₁ : Protocol.{u}) (s₂ : Path s₁ → Protocol.{u})
+    (draw : (c : ChallengeNode plainSig (s₁.append s₂)) →
+      m (challengeSpec plainSig (s₁.append s₂) c)) :
+    sampler plainSig (s₁.append s₂) draw = appendSampler s₁ s₂
+      (prefixDraw plainSig s₁ s₂ draw) (suffixDraw plainSig s₁ s₂ draw) := by
+  rw [appendSampler_eq, combineDraw_prefixDraw_suffixDraw]
+
+/-- Composed execution preserves seam effects in their actual order. -/
+theorem run_appendSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+    {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}}
+    {Mid : Transcript l s₁ → Type u} {Out : Transcript l (s₁.append s₂) → Type u}
+    (p : Focal l m s₁ Mid)
+    (f : (tr : Transcript l s₁) → Mid tr → m (Focal l m
+      (s₂ tr.path) (fun tail => Out (Transcript.append s₁ s₂ tr tail))))
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    TwoParty.Lens.run (s₁.append s₂) (Prover.append p f) (appendSampler s₁ s₂ draw₁ draw₂) =
+      (do
+        let ⟨tr, mid, _⟩ ← TwoParty.Lens.run s₁ p (sampler l s₁ draw₁)
+        let next ← f tr mid
+        let ⟨tail, out, terminal⟩ ← TwoParty.Lens.run _ next
+          (sampler l _ (draw₂ (Transcript.path tr)))
+        pure ⟨Transcript.append s₁ s₂ tr tail, out, terminal⟩) :=
+  run_compFlat_appendFlat p f (samplerEnd l s₁ draw₁) _
+
+/-- An arbitrary composed prover splits with its actual continuation and private memory. -/
+theorem run_splitSampler {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
+    {m : Type u → Type u} [Monad m] [LawfulMonad m]
+    {s₁ : FreeM P PUnit.{u + 1}} {s₂ : Path s₁ → FreeM P PUnit.{u + 1}}
+    {Out : Transcript l (s₁.append s₂) → Type u}
+    (p : Focal l m (s₁.append s₂) Out)
+    (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
+    (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) → m (challengeSpec l (s₂ p) c)) :
+    TwoParty.Lens.run (s₁.append s₂) p (appendSampler s₁ s₂ draw₁ draw₂) = (do
+      let ⟨tr, next, _⟩ ← TwoParty.Lens.run s₁ (Focal.splitPrefix p) (sampler l s₁ draw₁)
+      let ⟨tail, out, terminal⟩ ← TwoParty.Lens.run _ next
+        (sampler l _ (draw₂ (Transcript.path tr)))
+      pure ⟨Transcript.append s₁ s₂ tr tail, out, terminal⟩) :=
+  run_appendFlat_splitPrefix p (samplerEnd l s₁ draw₁) _
+
+/-- Split the oracle messages of an arbitrary completed appended path. -/
+def splitOracleMessages : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
+    (p : Path (s₁.append s₂)) →
+    OracleMap (oracleMessageFamily (s₁.append s₂) p)
+      (sumFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1)
+        (oracleMessageFamily (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2))
+  | .pure _, s₂, p => oracleMessageFamily_split (.pure ⟨⟩) s₂ ⟨⟩ p
+  | .liftBind (.message _) next, s₂, ⟨x, p⟩ =>
+    splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p
+  | .liftBind (.challenge _) next, s₂, ⟨x, p⟩ =>
+    splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p
+  | .liftBind (.oracle _ I) next, s₂, ⟨x, p⟩ =>
+    (OracleMap.familySumAssocSymm (singletonFamily I)
+      (oracleMessageFamily (next x) (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).1)
+      (oracleMessageFamily _ (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).2)).comp
+      ((OracleMap.embedding (singletonFamily I) id).sum
+        (splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p))
+
+/-- Preserve ambient queries while routing bundle queries through an oracle map. -/
+def OracleMap.withAmbient {ι : Type uι}
+    (ambient : OracleSpec.{uι, u} ι) {In : OracleBundle.{u, uX, dX}}
+    {Out : OracleBundle.{u, uY, dY}}
+    (route : OracleMap In Out) : QueryImpl (ambient + Out.spec) (OracleComp (ambient + In.spec))
+  | .inl q => liftM ((ambient + In.spec).query (.inl q))
+  | .inr q => simulateQ
+    (fun r => liftM ((ambient + In.spec).query (.inr r))) (route.impl q)
+
+/-- Routing through a map and answering from data agrees with answering from the mapped data,
+for any interpretation of the ambient queries. -/
+theorem OracleMap.simulate_withAmbient_addLift {ι : Type uι}
+    {ambient : OracleSpec.{uι, u} ι} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    {In : OracleBundle.{u, uX, dX}} {Out : OracleBundle.{u, uY, dY}}
+    (lift : QueryImpl ambient m) (route : OracleMap In Out) (x : In.Data)
+    {α : Type u} (program : OracleComp (ambient + Out.spec) α) :
+    simulateQ (QueryImpl.addLift lift (In.answer x) :
+        QueryImpl (ambient + In.spec) m)
+        (simulateQ (route.withAmbient ambient) program) =
+      simulateQ (QueryImpl.addLift lift (Out.answer (route.f x)) :
+        QueryImpl (ambient + Out.spec) m) program := by
+  refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun q => ?_) program
+  rcases q with q | q
+  · simp [OracleMap.withAmbient]
+  · simp only [OracleMap.withAmbient, QueryImpl.addLift_def]
+    rw [QueryImpl.simulateQ_simulateQ_eq_of_apply
+      (impl := (In.answer x).liftTarget m)
+      (fun r => QueryImpl.simulateQ_add_query_right _ _ r), simulateQ_liftTarget, route.law]
+    rfl
+
+/-- Routing through a map and answering from data agrees with answering from the mapped data. -/
+theorem OracleMap.simulate_withAmbient {ι : Type uι}
+    {ambient : OracleSpec.{uι, u} ι} {In : OracleBundle.{u, uX, dX}}
+    {Out : OracleBundle.{u, uY, dY}}
+    (route : OracleMap In Out) (x : In.Data) {α : Type u}
+    (program : OracleComp (ambient + Out.spec) α) :
+    simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.answer x) :
+        QueryImpl (ambient + In.spec) (OracleComp ambient))
+        (simulateQ (route.withAmbient ambient) program) =
+      simulateQ (QueryImpl.addLift (QueryImpl.id' ambient)
+        (Out.answer (route.f x)) :
+        QueryImpl (ambient + Out.spec) (OracleComp ambient)) program :=
+  OracleMap.simulate_withAmbient_addLift (QueryImpl.id' ambient) route x program
+
+namespace OracleVerifier
+variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
+  {inputs : OracleBundle.{u, uI, dI}}
+  {s₁ : OracleProtocol.{u, q}} {s₂ : Path s₁ → OracleProtocol.{u, q}} {S : Type uS}
+  {T : Path s₁ → Type u} {U : (p : Path s₁) → Path (s₂ p) → Type u}
+  {J : Path s₁ → Type uJ} {B : (p : Path s₁) → J p → Type u}
+  {middle : (p : Path s₁) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+  {K : (p : Path s₁) → Path (s₂ p) → Type uK}
+  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type u}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂)}
+
+/-- Reassociate inputs and both sets of messages into the prefix bundle and the suffix messages. -/
+def splitPathBundle (p : Path (s₁.append s₂)) :
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (OracleBundle.sum (pathBundle inputs s₁ (Path.split s₁ s₂ p).1)
+        (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))) :=
+  (OracleMap.sumAssocSymm inputs
+    (OracleBundle.ofFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1))
+    (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))).comp
+    ((OracleMap.id inputs).par
+      ((OracleMap.ofSumFamily _ _).comp (splitOracleMessages s₁ s₂ p)))
+
+/-- Prefix decisions see the original inputs and only prefix messages. -/
+def prefixRoute (p : Path (s₁.append s₂)) :
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (pathBundle inputs s₁ (Path.split s₁ s₂ p).1) :=
+  (OracleMap.fst _ _).comp (splitPathBundle (inputs := inputs) p)
+
+/-- Suffix input queries use the prefix map at the prefix path; suffix message queries retain
+their own slots. -/
+def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p) :
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (pathBundle (middle (Path.split s₁ s₂ p).1) _ (Path.split s₁ s₂ p).2) :=
+  ((V₁.outputMap stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).par
+    (OracleMap.id (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
+      (splitPathBundle (inputs := inputs) p)
+
+/-- The output oracle family of an appended oracle protocol: at a path of the appended tree, the
+suffix's output family at the split path. -/
+abbrev splitOutputs
+    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{uK, u, wK} (K p₁ p₂) (C p₁ p₂))
+    (p : Path (s₁.append s₂)) :
+    OracleFamily.{uK, u, wK} (splitFamily K p)
+      (C (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2) :=
+  outputs (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
+
+/-- A composite output map must represent every intermediate statement the prefix can accept.
+
+The condition concerns the actual prefix decision on the same view, with its bundle queries
+answered from the routed input data and every ambient answer allowed. Statements the prefix cannot
+return impose no condition. The condition is still needed because the prefix decision can query
+ambient oracles, whereas output maps cannot.
+-/
+structure OutputCompatibility (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p)) where
+  /-- The composite output map, which sees only the statement, the path and the view. -/
+  outputMap : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p →
+    OracleMap (pathBundle inputs (s₁.append s₂) p)
+      (OracleBundle.ofFamily (splitOutputs outputs p))
+  /-- On every accepted intermediate statement it agrees with the suffix's map after routing. -/
+  agrees : ∀ stmt p v data mid,
+    some mid ∈ support (V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
+      ((prefixRoute (inputs := inputs) p).f data)) →
+    (outputMap stmt p v).f data =
+      ((V₂ (Path.split s₁ s₂ p).1).outputMap mid (Path.split s₁ s₂ p).2
+        (View.split s₁ s₂ p v).2).f ((suffixRoute V₁ stmt p v).f data)
+
+/-- Compatibility from a public intermediate statement that every accepted prefix result equals. -/
+def OutputCompatibility.ofStatement (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
+    (mid : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p → T (Path.split s₁ s₂ p).1)
+    (accepted : ∀ stmt p v data t,
+      some t ∈ support (V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
+        ((prefixRoute (inputs := inputs) p).f data)) → t = mid stmt p v) :
+    OutputCompatibility V₁ V₂ where
+  outputMap stmt p v :=
+    ((V₂ (Path.split s₁ s₂ p).1).outputMap (mid stmt p v) (Path.split s₁ s₂ p).2
+      (View.split s₁ s₂ p v).2).comp (suffixRoute V₁ stmt p v)
+  agrees stmt p v data t h := by
+    rw [accepted stmt p v data t h]
+    rfl
+
+/-- Fold passive decisions at the end, routing all suffix bundle queries through the prefix.
+The composite's output statement and output oracle family at an appended path are the suffix's
+at the split path. -/
+def append (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
+    (compatible : OutputCompatibility V₁ V₂) :
+    OracleVerifier ambient (s₁.append s₂) S (splitFamily U) inputs
+      (splitOutputs outputs) where
+  decide stmt p v := OptionT.mk do
+    let z := Path.split s₁ s₂ p
+    let views := View.split s₁ s₂ p v
+    let mid ← simulateQ ((prefixRoute (inputs := inputs) p).withAmbient ambient)
+      (V₁.decide stmt z.1 views.1).run
+    match mid with
+    | none => pure none
+    | some mid => do
+      simulateQ ((suffixRoute V₁ stmt p v).withAmbient ambient)
+        ((V₂ z.1).decide mid z.2 views.2).run
+  outputMap := compatible.outputMap
+
+/-- The composed decision is the prefix decision followed by the suffix decision on routed data.
+
+Ambient queries keep their order: those of the prefix decision precede those of the suffix.
+-/
+theorem append_decideWith (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
+    (compatible : OutputCompatibility V₁ V₂) (stmt : S) (p : Path (s₁.append s₂))
+    (v : View (s₁.append s₂) p)
+    (data : (pathBundle inputs (s₁.append s₂) p).Data) :
+    (V₁.append V₂ compatible).decideWith stmt p v data =
+      V₁.decideWith stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1
+          ((prefixRoute (inputs := inputs) p).f data) >>= fun
+        | none => pure none
+        | some mid => (V₂ (Path.split s₁ s₂ p).1).decideWith mid (Path.split s₁ s₂ p).2
+            (View.split s₁ s₂ p v).2 ((suffixRoute V₁ stmt p v).f data) := by
+  simp only [decideWith, append, OptionT.run_mk, simulateQ_bind]
+  congr 1
+  · exact OracleMap.simulate_withAmbient (prefixRoute (inputs := inputs) p) data _
+  · funext mid
+    cases mid with
+    | none => simp
+    | some mid => exact OracleMap.simulate_withAmbient (suffixRoute V₁ stmt p v) data _
+
+/-- Oracle decision composition threads one ambient state through both routed decisions. -/
+theorem simulateQ_append_run {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
+    (compatible : OutputCompatibility V₁ V₂) (impl : QueryImpl ambient (StateT σ m))
+    (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p)
+    (data : (pathBundle inputs (s₁.append s₂) p).Data) (state : σ) :
+    (simulateQ impl ((V₁.append V₂ compatible).decideWith stmt p v data)).run state =
+      (simulateQ impl (V₁.decideWith stmt (Path.split s₁ s₂ p).1
+        (View.split s₁ s₂ p v).1 ((prefixRoute (inputs := inputs) p).f data))).run state >>= fun
+        | (none, state') => pure (none, state')
+        | (some mid, state') => (simulateQ impl
+            ((V₂ (Path.split s₁ s₂ p).1).decideWith mid (Path.split s₁ s₂ p).2
+              (View.split s₁ s₂ p v).2 ((suffixRoute V₁ stmt p v).f data))).run state' := by
+  rw [append_decideWith]
+  simp only [simulateQ_bind, StateT.run_bind]
+  congr 1
+  funext result
+  rcases result with ⟨_ | mid, state'⟩ <;> simp
+
+/-- Accepted oracle composition decomposes into supported accepted decisions at the same
+intermediate ambient state and the routed suffix data. -/
+theorem support_append {σ : Type u} {m : Type u → Type v} [Monad m] [LawfulMonad m]
+    [MonadAttach m] [LawfulMonadAttach m]
+    (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
+    (compatible : OutputCompatibility V₁ V₂) (impl : QueryImpl ambient (StateT σ m))
+    (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p)
+    (data : (pathBundle inputs (s₁.append s₂) p).Data)
+    (state final : σ) (out : splitFamily U p)
+    (h : (some out, final) ∈ MonadAttach.support
+      ((simulateQ impl ((V₁.append V₂ compatible).decideWith stmt p v data)).run state)) :
+    ∃ mid between,
+      (some mid, between) ∈ MonadAttach.support
+        ((simulateQ impl (V₁.decideWith stmt (Path.split s₁ s₂ p).1
+          (View.split s₁ s₂ p v).1 ((prefixRoute (inputs := inputs) p).f data))).run state) ∧
+      (some out, final) ∈ MonadAttach.support
+        ((simulateQ impl ((V₂ (Path.split s₁ s₂ p).1).decideWith mid
+          (Path.split s₁ s₂ p).2 (View.split s₁ s₂ p v).2
+          ((suffixRoute V₁ stmt p v).f data))).run between) := by
+  rw [simulateQ_append_run] at h
+  obtain ⟨⟨_ | mid, between⟩, hmid, hout⟩ := LawfulMonadAttach.canReturn_bind_imp' h
+  · have hn := LawfulMonadAttach.eq_of_canReturn_pure hout
+    cases congrArg Prod.fst hn
+  · exact ⟨mid, between, hmid, hout⟩
+
+end OracleVerifier
+end Interaction

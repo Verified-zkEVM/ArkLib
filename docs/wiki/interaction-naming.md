@@ -5,7 +5,7 @@ naming conventions in the first section still apply. Most later sections name de
 old generic interaction layer: its source layer in `Oracle/Source.lean`, its named contexts and
 models in `Oracle/Resource.lean`, and the rest of `ArkLib/Interaction/Oracle/`. That layer has
 been deleted, and these sections stay as a record of its names. The interaction core under
-`ArkLib/Interaction/Core/` replaces it, and the
+`ArkLib/Interaction/` replaces it, and the
 [migration list](../design/interaction-layer/migration-list.md) maps each deleted module to its
 core counterpart.
 
@@ -168,8 +168,8 @@ messages for unvisited branches or assert that arbitrary structural paths are in
 
 ## Sumcheck oracle roles
 
-This section and the next two describe the deleted Sumcheck interaction layer. `Sumcheck.Core`
-in `ArkLib/ProofSystem/Sumcheck/Core/` replaces it.
+This section and the next two describe the deleted Sumcheck interaction layer. The
+Sumcheck core in `ArkLib/ProofSystem/Sumcheck/` replaces it.
 
 The single-round verifier checks the sent polynomial and evaluates it for the next target. Its
 `outputOracle` instead retains the input oracle. This distinction allows a dishonest message to
@@ -374,5 +374,5 @@ After migration, run `lake build` and `lake test`. The deleted source examples
 (`ArkLibTest/Interaction/Oracle/SourceExample.lean`) distinguished query sums from paired queries,
 and the deleted context examples (`ArkLibTest/Interaction/Oracle/ResourceExample.lean`) exercised
 disjointness, aliasing, dependent interpretation, and promise preservation. Their core ports are
-`ArkLibTest/Interaction/Core/Oracle/OracleMaps.lean` and
-`ArkLibTest/Interaction/Core/Oracle/BundleFamilies.lean`.
+`ArkLibTest/Interaction/Oracle/OracleMaps.lean` and
+`ArkLibTest/Interaction/Oracle/BundleFamilies.lean`.

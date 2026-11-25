@@ -108,7 +108,7 @@ actions. It does not retire dependence on earlier public challenges or prover me
 visibility restriction is separate from the fresh uniform draw premise of the public-coin
 specialization: a view draw may still depend on earlier public challenges and prover messages.
 The fixed two-challenge Boolean regression in
-[`PrefixKnowledge.lean`](../../../ArkLibTest/Interaction/Core/Security/PrefixKnowledge.lean)
+[`PrefixKnowledge.lean`](../../../ArkLibTest/Interaction/Security/PrefixKnowledge.lean)
 samples the second bit as the complement of the first, uses unit witnesses and identity backward
 maps, and proves zero error with false root/intermediate predicates and equality of the bits at the
 leaf. It sends no prover message. A second assertion checks different suffix errors for first
@@ -371,7 +371,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 
 | ID | Forcing parent declarations | Status | Exact target and limitation |
 | --- | --- | --- | --- |
-| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Core/Protocol.lean:69–71`) | accepted upstream limit (large-move probability: `ProbComp` and shared challenge/message universe; [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; `ProbComp` cannot sample these moves at `u > 0`. Measured specializations also require small stage inputs through `BudgetedProgram`, as recorded above. |
+| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Interaction/Protocol.lean:69–71`) | accepted upstream limit (large-move probability: `ProbComp` and shared challenge/message universe; [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; `ProbComp` cannot sample these moves at `u > 0`. Measured specializations also require small stage inputs through `BudgetedProgram`, as recorded above. |
 
 [r1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Oracle/Security/Knowledge.lean#L37
 [r2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/Security/RoundByRound.lean#L368

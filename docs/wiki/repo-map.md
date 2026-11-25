@@ -29,9 +29,10 @@ home_page/            site assets and assembled website root
 
 ## Conceptual Layering
 
-- `ArkLib/Interaction/Core/` is the interaction layer, which is meant to replace the legacy layer
+- `ArkLib/Interaction/` is the interaction layer, which is meant to replace the legacy layer
   ([README](../../README.md#two-layers)). The old generic interaction layer
-  (`ArkLib/Interaction/Oracle/`, `Reduction.lean`, `CompositionSoundness.lean`) has been deleted;
+  (`ArkLib/Interaction/Oracle/`, `Reduction.lean`, `CompositionSoundness.lean` at commit
+  `8472a86f`, some of whose paths the core now reuses) has been deleted;
   the [migration list](../design/interaction-layer/migration-list.md) records the replacement of
   each module. Protocols are PolyFun `FreeM` trees whose roles come from the
   `plainSig` and `oracleSig` lenses (`Signature.lean`); `Protocol.lean` owns paths, views and
@@ -46,16 +47,16 @@ home_page/            site assets and assembled website root
   trees. `Legacy/` embeds legacy protocol specifications
   ([legacy embedding](../design/interaction-layer/legacy-embedding.md)), including the oracle
   tree of appended specifications (`Legacy/OracleAppend.lean`) and pure challenge slots
-  (`Legacy/PureSlots.lean`). Its acceptance tests live in `ArkLibTest/Interaction/Core/`.
-- `ProofSystem/Sumcheck/Core/` contains native Sumcheck statements and arithmetic (`Types`,
-  `Domain`), its fixed protocol (`Tree`), and its indexed verifier and round-by-round proof
+  (`Legacy/PureSlots.lean`). Its acceptance tests live in `ArkLibTest/Interaction/`.
+- `ProofSystem/Sumcheck/` contains native Sumcheck statements and arithmetic (`Types`,
+  `IndexedDomain`), its fixed protocol (`Tree`), and its indexed verifier and round-by-round proof
   (`Indexed`). `Soundness` derives full-run bounds over arbitrary maps and lists, including
   repeated points, through the core soundness implication. `DomainEquivalence` and
   `LegacyEquivalence` check legacy agreement separately; `LegacySoundness` retains the old
   transferred bound for comparison. The compatibility honest prover, completeness and knowledge
   transfers remain available. [The Sumcheck design page](../design/interaction-layer/sumcheck.md)
   gives exact ownership and migration dispositions. Tests live in
-  `ArkLibTest/ProofSystem/Sumcheck/Core/`.
+  `ArkLibTest/ProofSystem/Sumcheck/`.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
   `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
@@ -76,7 +77,7 @@ home_page/            site assets and assembled website root
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
 - Changing typed interaction or dependent reduction foundations: start in
-  `ArkLib/Interaction/Core/`.
+  `ArkLib/Interaction/`.
 - Changing legacy reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
@@ -791,14 +792,14 @@ home_page/            site assets and assembled website root
   These facts do not certify host computation time or operational identity with arbitrary code.
   The legacy `RealizesExtractor` identifies the same extractor's monadic result with that run;
   `knowledgeSoundnessWithResources` adds its game and raw count profile `Kind → ℕ`.
-  In the interaction core, `Interaction/Core/Security/MeasuredExtraction.lean` defines
+  In the interaction core, `Interaction/Security/MeasuredExtraction.lean` defines
   `stageMap`, per-node `MeasuredStages` and `BudgetAtMost`. Generic stages remain weighted;
   `MeasuredKnowledgeStateFunction Kind` and legacy count contracts require `[Finite Kind]` and
   standard profiles `Kind → ℕ`. Pricing coordinates is a separate justified valuation step.
   `MeasuredStages.programAlong` composes the stage programs along a completed transcript and
   returns the same extracted witness, and `programAlong_budget_le` bounds its budget by the
   root bound, the step bounds along the transcript and the leaf bound.
-  `Interaction/Core/Security/StateRestorationBudget.lean` supplies the
+  `Interaction/Security/StateRestorationBudget.lean` supplies the
   [role-specific resource contract](../design/03a-extractor-efficiency.md#state-restoration-resource-contract),
   including the identity, for every adversary witness, between the composed stage program and
   the extracted input witness. The
@@ -807,7 +808,7 @@ home_page/            site assets and assembled website root
   [native composition priorities](../design/05-roadmap.md#native-resource-composition) record
   the remaining client and resource-closure proofs.
   Acceptance clients are `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and
-  `ArkLibTest/Interaction/Core/Security/{MeasuredExtraction,StateRestorationBudget,MeasuredPathBudgets}.lean`.
+  `ArkLibTest/Interaction/Security/{MeasuredExtraction,StateRestorationBudget,MeasuredPathBudgets}.lean`.
   `VCVio.OracleComp.QueryTracking.DeterminedCost`
   turns the handler's recorded-cost bound into an all-path bound when every permitted response
   equals the handler's answer.
@@ -1055,7 +1056,7 @@ home_page/            site assets and assembled website root
 `ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
 `lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
 the generated `ArkLib.lean` umbrella and production modules must not import them.
-`ArkLibTest/Interaction/Core/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
+`ArkLibTest/Interaction/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
 challenges and the public-coin sampler), `Oracle.lean` (query-only decisions and output
 oracles), `Composition.lean` (routed composed oracle queries) and `Security.lean`
 (classical-model and round-by-round security).

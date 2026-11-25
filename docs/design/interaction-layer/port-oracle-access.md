@@ -372,7 +372,7 @@ continue to follow the parent monad's value universe, as documented in note 18.
 ## Definition-site transparency
 
 The only definition-site attribute this branch keeps is `@[instance_reducible]` on
-`Interaction.Core.AccessTypingTests.firstInterface`. It declares a value of the class
+`Interaction.AccessTypingTests.firstInterface`. It declares a value of the class
 `OracleInterface`, and ordinary semireducibility triggers Lean's class-definition transparency
 warning. The attribute gives this declaration the expected instance transparency, with no command
 modifying another declaration. It replaces the former `@[reducible]` with a narrower choice. All 18
@@ -585,9 +585,9 @@ without them. No added local or global `attribute [...]` transparency command an
 [parent-port-table]: port-logged-execution.md
 [parent-phase-audits]: port-logged-execution.md#phasedrunlean
 
-[laws-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMoveLaws.lean
-[step-api]: ../../../ArkLib/Interaction/Core/Oracle/QueriesByMove.lean
-[sent-api]: ../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean
+[laws-api]: ../../../ArkLib/Interaction/Oracle/QueriesByMoveLaws.lean
+[step-api]: ../../../ArkLib/Interaction/Oracle/QueriesByMove.lean
+[sent-api]: ../../../ArkLib/Interaction/Oracle/SentOracles.lean
 [p-step-log]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L945
 [p-prefixes]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L965
 [p-setup-step]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/LoggedExecution.lean#L991

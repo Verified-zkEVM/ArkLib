@@ -9,9 +9,9 @@ schematic descriptions unless linked to an implemented declaration.
 premises belong to [the execution chapter](03-adversarial-oracle-execution.md).
 
 **The deleted old layer.** The claim layer this chapter describes (`Oracle/Claim`, `Oracle/CoreRun`,
-`Oracle/Composition`, `Oracle/Sequential`, `Oracle/SourceRouting` and `Interaction/Reduction.lean`)
-belonged to the old generic interaction layer, which has been deleted. The interaction core under
-`ArkLib/Interaction/Core/` replaces it. The core removes open and closed claims: a verdict is a
+`Oracle/Composition`, `Oracle/Sequential`, `Oracle/SourceRouting` and `Interaction/Reduction.lean`
+at commit `8472a86f`) belonged to the old generic interaction layer, which has been deleted. The interaction core under
+`ArkLib/Interaction/` replaces it. The core removes open and closed claims: a verdict is a
 statement with concrete data, and oracle verifiers are passive, so they query oracles only in the
 final decision. `Composition.lean`, `StageChain.lean` and `Oracle/Routing.lean` hold its
 composition, and `Security/CompositionSoundness.lean` its composition soundness. The

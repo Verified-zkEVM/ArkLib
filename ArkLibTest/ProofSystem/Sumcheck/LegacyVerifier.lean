@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.ProofSystem.Sumcheck.Core.LegacyEquivalence
+import ArkLib.ProofSystem.Sumcheck.LegacyEquivalence
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -26,7 +26,7 @@ namespace Sumcheck.LegacyVerifierTest
 
 open Polynomial OracleComp OracleSpec
 open Spec.SingleRound
-open Sumcheck.Core (simpleLegacyTranscript)
+open Sumcheck (simpleLegacyTranscript)
 
 noncomputable section
 

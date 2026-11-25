@@ -1,6 +1,6 @@
 # Embedding the legacy layer into the interaction layer
 
-The modules under `ArkLib/Interaction/Core/Legacy/` embed legacy protocol specifications,
+The modules under `ArkLib/Interaction/Legacy/` embed legacy protocol specifications,
 provers, verifiers and oracle verifiers into the interaction layer. They also relate the two
 executions and transfer completeness, soundness, knowledge soundness and their round-by-round
 forms between the layers. Nothing here changes the legacy layer. The embedding reads legacy definitions and reuses their meaning.
@@ -195,7 +195,7 @@ Each certificate holds for every state function in three cases:
 `Layout.rbrSoundness_of_legacyWith` and `Layout.rbrKnowledgeSoundness_of_legacyWith` take one
 certified state function, or one certified extractor and knowledge state function, with its
 bound. The existential transfers take a certificate for every state function. The test
-`ArkLibTest/Interaction/Core/Legacy/Security.lean` instantiates them for a guarded verifier with
+`ArkLibTest/Interaction/Legacy/Security.lean` instantiates them for a guarded verifier with
 `σ = Bool` and `init := pure false`, which does not produce the state `true`.
 
 ## Oracle reductions
