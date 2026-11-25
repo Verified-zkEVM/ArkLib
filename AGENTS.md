@@ -15,18 +15,13 @@ Start with [`README.md`](README.md) for the project overview.
 4. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
 5. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
    `./scripts/validate.sh --site`.
-6. When you change proofs or admissions, or anything that must stay axiom-clean, run
+6. When you change proofs, or anything that must stay axiom-clean, run
    `./scripts/validate.sh --axioms`. It first certifies the sweep tool against its fixture matrix
-   (`./scripts/test-axiomsweep.sh`). Then it runs the regression gate.
+   (`./scripts/test-axiomsweep.sh`). Then it runs the zero-debt gate.
 
-   You can open a PR with unfinished proofs. No new `sorry`/`admit` or additional `sorryAx` debt
-   may merge into `main`. `scripts/axiom_baseline.json` has an empty `sorry` list. Its only
-   admitted entries are reviewed *solicited proofs* (issue #1352). Each one must link its issue,
-   and no declaration outside the solicited list may depend on it.
-
-   Refresh the baseline with `lake exe axiomsweep --update-baseline` only for verified closures or
-   renames. Never refresh it to authorize new debt. Native-compiler trust is never allowlistable.
-   See [`scripts/README.md`](scripts/README.md) for the rules.
+   You can open a PR with unfinished proofs, but nothing that depends on `sorryAx` may merge into
+   `main`. A result whose proof is still open is tracked as an issue and merges once it is
+   proved. The gate has no allowlist. See [`scripts/README.md`](scripts/README.md).
 
 ## Where To Work
 
@@ -61,8 +56,8 @@ Start with [`README.md`](README.md) for the project overview.
   [`docs/wiki/module-system.md`](docs/wiki/module-system.md).
 - Edit source, not derived output such as `.lake/`, `blueprint/web/`, `blueprint/print/`,
   `dependency_graphs/`, or `home_page/docs/`.
-- `main` carries no admitted proof debt. The only admitted statements are the reviewed solicited
-  proofs listed in `scripts/axiom_baseline.json`. Any other `sorry` in a diff is new.
+- `main` carries no admitted proof debt: no declaration under `ArkLib/` depends on `sorryAx`.
+  Any `sorry` in a diff is new.
 - New declarations may depend only on a subset of `propext`, `Classical.choice`, and `Quot.sound`.
   Do not add custom axioms or native-compiler trust dependencies.
 - Do not raise elaboration budgets: `set_option maxHeartbeats`, `maxRecDepth` and

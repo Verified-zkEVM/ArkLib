@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.OracleReduction.Prelude
-public import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Relation.OracleInterface
 
 /-!
 # Protocol Specifications for (Oracle) Reductions

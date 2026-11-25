@@ -194,7 +194,7 @@ Evaluating the generic `mcaError` would require executable code membership and r
 For the affine-line generator and `ReedSolomon.code domain (d + 1)`, the scalar evaluator computes
 `mcaError` exactly from the matching integer threshold. Let `n` be the domain size and
 `A = ⌈n(1 - δ)⌉₊`.
-By `ReedSolomon.scalarMcaError_zero_eq_mcaError` and `ReedSolomon.ofReal_scalarMcaErrorRat`,
+`ReedSolomon.mcaError_affineLine_eq_ofReal_scalarMcaErrorRat` states that
 `mcaError (AffineLineGenerator F) (ReedSolomon.code domain (d + 1)) δ` equals
 `ENNReal.ofReal` of the real cast of `scalarMcaErrorRat domain d A 0`.
 

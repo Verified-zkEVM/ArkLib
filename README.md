@@ -62,8 +62,8 @@ does not by itself prove a theorem about the other.
 
 - The **legacy layer**, [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/), is the original
   formalization, in which an IOR is an `OracleReduction`.
-- The **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), represents a protocol
-  as an interaction tree, built on the polynomial functors and interaction trees of
+- The **interaction layer**, [`ArkLib/Interaction/`](ArkLib/Interaction/), represents
+  a protocol as an interaction tree, built on the polynomial functors and interaction trees of
   [PolyFun](https://github.com/Verified-zkEVM/PolyFun). It avoids the legacy layer's limitations
   and can express more protocols, in particular protocols whose shape depends on earlier
   messages. It is meant to replace the legacy layer.
@@ -74,9 +74,10 @@ interaction layer's implemented interfaces and remaining gaps, and the
 [design documents](docs/design/README.md) specify it.
 
 The legacy layer has structural limits that the interaction layer removes: the protocol shape is
-fixed in advance, provers are round-indexed state machines composed with casts, the verifier acts
-only after the interaction, oracles must be concrete data, the verifier's result has a single
-failure case, and composition needs a bound from every oracle state.
+fixed in advance, provers are round-indexed state machines composed with casts, oracles must be
+concrete data, and composition needs a bound from every oracle state. Two limits remain in part:
+the interaction layer's verifier also decides only after the interaction, and its verdict is also
+an `Option`, though rejection stays separate from a failure of the oracle computation.
 [Limitations of the legacy layer](docs/design/legacy-layer-limitations.md) explains each one and
 what the interaction layer does instead.
 
@@ -91,7 +92,8 @@ deprecation periods.
 
 Around the core:
 
-- [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/) and [`ArkLib/Interaction/`](ArkLib/Interaction/)
+- [`ArkLib/OracleReduction/`](ArkLib/OracleReduction/) and
+  [`ArkLib/Interaction/`](ArkLib/Interaction/)
   hold the [two layers](#two-layers).
 - [`ArkLib/ProofSystem/`](ArkLib/ProofSystem/) holds protocols and reusable protocol components.
 - [`ArkLib/InteractiveProof/`](ArkLib/InteractiveProof/) holds public-coin interactive-proof
@@ -165,12 +167,9 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) for the
 style and naming, and [AGENTS.md](AGENTS.md) for the one-screen guide to the repository. Open
 tasks are in the [issue tracker](https://github.com/Verified-zkEVM/ArkLib/issues).
 
-No admitted proof may merge into `main`. The only admitted statements in the library are
-*solicited proofs*: true, faithfully stated external results whose research-sized proofs are open
-for contributors. They are listed in
-[`scripts/axiom_baseline.json`](scripts/axiom_baseline.json) and tracked in
-[issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352); no other declaration may
-depend on them.
+No admitted proof may merge into `main`: every declaration in the library depends only on
+`propext`, `Classical.choice` and `Quot.sound`. A result whose proof is still open is tracked as
+an issue until it is proved.
 
 To discuss larger contributions, open an issue or contact
 [the maintainers](mailto:qvd@andrew.cmu.edu).

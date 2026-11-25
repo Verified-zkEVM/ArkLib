@@ -8,9 +8,9 @@ Many developments are paper-scoped and spread across several modules.
 ```text
 ArkLib/
   Data/               foundational math, coding theory, polynomials, probability, etc.
-  Interaction/        typed prover, verifier, and reduction foundations
-    Core/             rebuilt interaction core on PolyFun trees (staged migration)
-  Relation/           claims, witness relations, and oracle data families
+  Interaction/
+    Core/             interaction layer: protocols as PolyFun trees, execution, security
+  Relation/           claims, witness relations, oracle interfaces and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   InteractiveProof/   honest protocols and public-coin security
   NonInteractiveArgument/  honest arguments, adaptive games, and Fiat–Shamir
@@ -33,49 +33,33 @@ home_page/            site assets and assembled website root
 ## Conceptual Layering
 
 - `ArkLib/Interaction/` is the interaction layer, which is meant to replace the legacy layer
-  ([README](../../README.md#two-layers)). Its `Reduction.lean` module
-  is independent of oracle, probability, and legacy protocol semantics.
-  `CompositionSoundness.lean` adds an exact append execution law and quantitative
-  soundness under lawful distribution semantics, with an explicit admissibility-error variant.
-  It quantifies over ordinary whole-tree prover strategies and uses the existing paired runner.
-- `ArkLib/Interaction/Core/` is the rebuilt interaction core. It is being introduced in stages
-  beside the existing interaction modules, which stay frozen until their clients move; Core
-  imports none of them. Protocols are PolyFun `FreeM` trees whose roles come from the
+  ([README](../../README.md#two-layers)). The old generic interaction layer
+  (`ArkLib/Interaction/Oracle/`, `Reduction.lean`, `CompositionSoundness.lean` at commit
+  `8472a86f`, some of whose paths the core now reuses) has been deleted;
+  the [migration list](../design/interaction-layer/migration-list.md) records the replacement of
+  each module. Protocols are PolyFun `FreeM` trees whose roles come from the
   `plainSig` and `oracleSig` lenses (`Signature.lean`); `Protocol.lean` owns paths, views and
   nodes. `Reduction.lean` defines provers, verifiers, reductions and the public-coin sampler;
   `OracleVerifier.lean` adds oracle verifiers with routed input and message oracles;
   `Execution.lean` runs a verifier against an arbitrary prover and keeps rejection as a returned
   verdict. `Composition.lean` appends verifiers, provers and oracle routes. `Security/` holds
   completeness and soundness over adversary models, classical straight-line and transcript-only
-  extraction, and round-by-round soundness and knowledge on cursor prefixes. Its acceptance
-  tests live in `ArkLibTest/Interaction/Core/`.
-- The descriptions below cover the frozen interaction modules outside `Core/`.
-- `ArkLib/Interaction/Oracle/` refines generic type trees with public/oracle positions, keeps
-  structural `BranchPath` separate from concrete `ExecutionPath` messages, and adds position-typed
-  role/interface decorations plus the minimal decorated `Oracle.Protocol` bundle.
-- `ProofSystem/Sumcheck/Interaction/Protocol.lean` defines the full interaction-layer sum-check tree,
-  restricted verifier, and direct execution through `executeStrategiesCore`. Prover memory lives
-  in ordinary strategy continuations. `ProtocolSoundness.lean` proves the final output oracle relation bound;
-  `MultivariateSoundness.lean` supplies the one-round polynomial projection bound.
-  `ProtocolCompleteness.lean` defines the honest strategy and proves support-level and
-  probability-one completeness.
-- `Interaction/Oracle/CoreRun.lean` offers `executeStrategiesCore` for ready prover strategies.
-  `executeCore` runs reduction setup and delegates to that entry point. Both retain the actual
-  input behavior, path and outputs for closing; `executeCore_eq_execute` preserves the existing
-  execution law for reduction clients. `Access.lean` supplies the common virtual-view preservation
-  law when a new message extends the available oracle signature.
-- `Interaction/Oracle/Composition.lean` supplies a separate sequential execution combinator.
-  Its explicit interface handoffs are not a substitute for a direct strategy execution theorem.
-- `Interaction/Oracle/Security/` holds interaction-layer security. `RoundByRound.lean` defines
-  ordinary round-by-round soundness on execution prefixes; `Soundness.lean` bounds the actual executor by the
-  sum of the local challenge errors (`count * error` in the uniform case). `Knowledge.lean` defines
-  witness-indexed knowledge certificates (`RoundExtractor`, `KnowledgeCertificate`);
-  `KnowledgeAppend.lean` and `KnowledgeComposition.lean` compose them along dependent append.
-  The `StateRestoration*.lean` modules prove state-restoration knowledge soundness for fixed-round
-  public-coin protocols with bound `(Q + rounds.length) * error`, with variants for oracle outputs
-  (`StateRestorationOracle`), pre-sampled private coins (`StateRestorationCoins`) and per-round
-  errors (`StateRestorationBudget`). The measured forms are described under measured extraction
-  below. `ProofSystem/Sumcheck/Interaction/RoundByRound.lean` is the interaction-layer Sumcheck client.
+  extraction, and round-by-round soundness and knowledge on cursor prefixes;
+  `Security/Agreement.lean` transfers runs, logged runs and every security notion between two
+  oracle verifiers whose decisions and output maps agree, and along an equality of protocol
+  trees. `Legacy/` embeds legacy protocol specifications
+  ([legacy embedding](../design/interaction-layer/legacy-embedding.md)), including the oracle
+  tree of appended specifications (`Legacy/OracleAppend.lean`) and pure challenge slots
+  (`Legacy/PureSlots.lean`). Its acceptance tests live in `ArkLibTest/Interaction/`.
+- `ProofSystem/Sumcheck/` contains native Sumcheck statements and arithmetic (`Types`,
+  `IndexedDomain`), its fixed protocol (`Tree`), and its indexed verifier and round-by-round proof
+  (`Indexed`). `Soundness` derives full-run bounds over arbitrary maps and lists, including
+  repeated points, through the core soundness implication. `DomainEquivalence` and
+  `LegacyEquivalence` check legacy agreement separately; `LegacySoundness` retains the old
+  transferred bound for comparison. The compatibility honest prover, completeness and knowledge
+  transfers remain available. [The Sumcheck design page](../design/interaction-layer/sumcheck.md)
+  gives exact ownership and migration dispositions. Tests live in
+  `ArkLibTest/ProofSystem/Sumcheck/`.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
   layer while protocol clients migrate. Core transcript operations live in `ProtocolSpec/Basic.lean`.
   Message and challenge prefix lemmas live in `ProtocolSpec/PrefixLemmas.lean`. Round and
@@ -107,7 +91,12 @@ home_page/            site assets and assembled website root
   Shared private-coin tests live in `ArkLibTest/Security/PrivateCoins.lean`, and interactive-proof
   clients, including SR sampling tests, live in `ArkLibTest/InteractiveProof/`.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
-  admissibility boundary, and oracle data families; it depends on no protocol tree. Likewise
+  admissibility boundary, and oracle data families; it depends on no protocol tree.
+  `Relation/OracleInterface.lean` defines the `OracleInterface` class and its instances for
+  polynomials and vectors, and `Relation/Prelude.lean` holds generic preliminaries
+  (`VCVCompatible`, `Sampleable`, `Set.language`). Both layers import these files. The legacy
+  layer keeps its own preliminaries, `Direction` and `acceptRejectOracleRel`, in
+  `OracleReduction/Prelude.lean`.
   `ProofSystem/Sumcheck/Spec/PolynomialInterface.lean` owns the sum-check polynomial's
   evaluation-query interface, shared by the specification and the computational handler.
 - `ArkLib/Data/`, `ArkLib/ToMathlib/`, and `ArkLib/ToCompPoly/` support the
@@ -119,9 +108,8 @@ home_page/            site assets and assembled website root
 ## Where To Start By Task
 
 - Extending foundational math or coding theory: start in `ArkLib/Data/`.
-- Changing typed interaction or dependent reduction foundations: start in `ArkLib/Interaction/`.
-  New interaction-layer work goes in `ArkLib/Interaction/Core/`; the modules beside it are frozen
-  during the staged migration.
+- Changing typed interaction or dependent reduction foundations: start in
+  `ArkLib/Interaction/`.
 - Changing legacy reduction or security abstractions: start in `ArkLib/OracleReduction/`.
 - Working on protocol statements or proofs: start in `ArkLib/ProofSystem/`.
 - Updating commitment interfaces or concrete schemes: start in `ArkLib/Commitments/`
@@ -781,6 +769,11 @@ home_page/            site assets and assembled website root
   events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
+  `Security/CoordinateWiseSpecialSoundness/Layout.lean` defines the blocks and layouts of one vector
+  challenge (a star per block, a nested tree across blocks). `BlockStructure.lean` defines
+  `BlockCWSSStructure`, a layout per round, and maps `CWSSStructure` into it with the same tree
+  shape. `LayoutVecTree.lean` is the only file of this folder that imports the VCVio rewinding
+  finder: it reads a tree of a layout as a structured `Rewinding.VecTree`.
 - `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
   an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
   equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
@@ -828,30 +821,32 @@ home_page/            site assets and assembled website root
   (`Verifier.GuardedForm.soundness_of_rbrSoundness`,
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
 - Measured extraction lives in `Security/Resources.lean`. Its game-independent core is
-  `OracleComp.MeasuredProgram` in
+  `PFunctor.FreeM.MeasuredProgram` in
+  `PolyFun.PFunctor.Free.Cost.Measured`, with oracle-cost lemmas in
   `VCVio.OracleComp.QueryTracking.MeasuredProgram`:
-  an uncharged input view, an instruction program, deterministic handlers and declared charges.
+  an uncharged input view, an instruction program, deterministic answers and declared charges.
   `Realizes` is output equality; `CostAtMost` bounds every permitted completed instruction path.
   `BudgetedProgram f` bundles both proofs, and `ofFun` realizes every function with zero budget.
   These facts do not certify host computation time or operational identity with arbitrary code.
   The legacy `RealizesExtractor` identifies the same extractor's monadic result with that run;
   `knowledgeSoundnessWithResources` adds its game and raw count profile `Kind → ℕ`.
-  Native `Interaction/Oracle/Security/KnowledgeResources.lean` defines `RoundExtractor.stageMap`,
-  per-node `MeasuredStages` and `BudgetAtMost`. Generic stages remain weighted; public
-  `MeasuredKnowledgeCertificate Kind` and legacy count contracts require `[Finite Kind]` and
+  In the interaction core, `Interaction/Security/MeasuredExtraction.lean` defines
+  `stageMap`, per-node `MeasuredStages` and `BudgetAtMost`. Generic stages remain weighted;
+  `MeasuredKnowledgeStateFunction Kind` and legacy count contracts require `[Finite Kind]` and
   standard profiles `Kind → ℕ`. Pricing coordinates is a separate justified valuation step.
-  `KnowledgeResources/Composition.lean` composes named programs on a supplied typed path:
-  `programAlong` returns the same `extractWitness`, and `programAlong_budget_le` bounds its
-  budget by `path.length • bound` under a common local bound.
-  `StateRestorationResources.lean` supplies the
+  `MeasuredStages.programAlong` composes the stage programs along a completed transcript and
+  returns the same extracted witness, and `programAlong_budget_le` bounds its budget by the
+  root bound, the step bounds along the transcript and the leaf bound.
+  `Interaction/Security/StateRestorationBudget.lean` supplies the
   [role-specific resource contract](../design/03a-extractor-efficiency.md#state-restoration-resource-contract),
-  including the all-witness identity to the game's `extractInputWitness`. The
+  including the identity, for every adversary witness, between the composed stage program and
+  the extracted input witness. The
   [common accounting boundary](../design/03a-extractor-efficiency.md#proof-and-accounting-boundary)
   applies to every count certificate, and the
   [native composition priorities](../design/05-roadmap.md#native-resource-composition) record
   the remaining client and resource-closure proofs.
   Acceptance clients are `ArkLibTest/OracleReduction/MeasuredExtraction.lean` and
-  `ArkLibTest/Interaction/Oracle/Security/{StateRestorationBudget,MeasuredPathBudgets}.lean`.
+  `ArkLibTest/Interaction/Security/{MeasuredExtraction,StateRestorationBudget,MeasuredPathBudgets}.lean`.
   `VCVio.OracleComp.QueryTracking.DeterminedCost`
   turns the handler's recorded-cost bound into an all-path bound when every permitted response
   equals the handler's answer.
@@ -922,19 +917,17 @@ home_page/            site assets and assembled website root
   [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
-  domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
-  interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
-  reference points, and `Codegen.lean` enforces compiler-IR availability. The simplified IOR
+  domain-generic protocol and extraction theorems. `Impl/IRS.lean` supplies the computable
+  interleaved Reed--Solomon extractor, and `Impl/FRS.lean` contains neutral KoalaBear folded-RS
+  reference points. `Codegen.lean` enforces compiler-IR availability. The simplified IOR
   (`SimplifiedIOR`) is an `OracleReduction` with a query-by-query virtual output oracle and
   exact named interleaved-RS straightline and RBR extractors. The compiled small-parameter
-  checks run with
-  `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
-  radius, and the repetition count, so they apply at production sizes without evaluation. Turning
-  such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
-  `Data/CodingTheory/ProximityGap/CapacityBounds`, all proven except ABF26 Theorem 4.16 (a
-  solicited proof, [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)),
-  deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
-  any production shape.
+  checks run with `lake exe toyproblem-runtime`. The security theorems themselves are parametric
+  in the code, the radius, and the repetition count, so they apply at production sizes without
+  evaluation. Turning
+  such a theorem into a *numeric* error value also needs the MCA/CA capacity bounds in
+  `Data/CodingTheory/ProximityGap/CapacityBounds`. Those are all proven and deliberately outside
+  the toy-problem import cone. No numeric error value is proven in-tree at any production shape.
 - Batched FRI takes a proximity generator `G : S → Fin (m + 1) → F`. Its single
   uniformly sampled seed selects the coefficients of the virtual output word. Compose
   `BatchingRound.batchOracleReduction s d m G` directly with `Fri.Spec.reduction`, as
@@ -1099,7 +1092,7 @@ home_page/            site assets and assembled website root
 `ArkLibTest/` mirrors production module paths for compile-time examples and regression tests.
 `lake test` builds all test modules; the default validation wrapper runs it. Tests stay outside
 the generated `ArkLib.lean` umbrella and production modules must not import them.
-`ArkLibTest/Interaction/Core/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
+`ArkLibTest/Interaction/` holds the rebuilt core's tests: `Plain.lean` (shapes, recorded
 challenges and the public-coin sampler), `Oracle.lean` (query-only decisions and output
 oracles), `Composition.lean` (routed composed oracle queries) and `Security.lean`
 (classical-model and round-by-round security).

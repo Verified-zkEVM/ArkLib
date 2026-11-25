@@ -128,7 +128,7 @@ include them. Production modules must not import tests.
 
 Typed Interaction PRs also have a focused hosted check, including when stacked on a feature
 branch. It compiles all tracked modules under `ArkLib/Interaction/`, `ArkLibTest/Interaction/`,
-`ArkLib/ProofSystem/Sumcheck/Interaction/` and `ArkLibTest/ProofSystem/Sumcheck/Interaction/` with
+`ArkLib/ProofSystem/Sumcheck/` and `ArkLibTest/ProofSystem/Sumcheck/` with
 the existing build-time source-policy plugin and rejects every warning in those modules,
 including admissions. This is early feedback, not a replacement for `lake test` or the full
 validation/axiom gate before merging to `main`. The semantic acceptance requirements live in
@@ -167,38 +167,17 @@ If the task is specifically Lean warning cleanup, follow
 ./scripts/validate.sh --axioms
 ```
 
-This first runs `./scripts/test-axiomsweep.sh` — the executable fixture matrix under
-`scripts/AxiomSweepTestFixtures/` that certifies the sweep tool itself (gate directions,
-the native-trust floor, and the exit-code contract) — and then
-`lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
-declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
-against the committed baseline `scripts/axiom_baseline.json`. It fails on *new* `sorryAx`
-or non-standard-axiom taint, while reporting closed gaps without blocking cleanup.
+This first runs `./scripts/test-axiomsweep.sh`, the executable fixture matrix under
+`scripts/AxiomSweepTestFixtures/` that certifies the sweep tool itself (gate directions and the
+exit-code contract). Then it runs `lake exe axiomsweep --check`, a kernel-level sweep of every
+`ArkLib.*` declaration's axiom dependencies (the `#print axioms` information, library-wide). The
+check fails if any declaration depends on `sorryAx` or on an axiom beyond `propext`,
+`Classical.choice` and `Quot.sound`. That includes native-compiler trust (`Lean.ofReduceBool`,
+`Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms that
+`native_decide`-style tactics mint). There is no baseline or allowlist.
 
-A PR may be opened with unfinished proofs, but merging into `main` must not introduce new
-`sorry`/`admit` or additional admitted proof debt. Compare the source and baseline diffs against
-the canonical base; a baseline edit cannot make new debt mergeable, and closing another gap does
-not offset a new admission. Refresh the baseline only for verified closures or renames of
-existing debt, and commit that reviewed bookkeeping in the same PR:
-
-```bash
-lake exe axiomsweep --update-baseline
-```
-
-The baseline's `sorry` and `nonstandard` lists are empty. Its `solicited` list holds the only
-admitted statements: true external results, each with a tracking issue linked from its docstring,
-whose proofs are left open for contributors
-([issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)). The sweep rejects a
-solicited entry that no longer depends on `sorryAx`, depends on another nonstandard axiom, lacks
-its issue link, or has a dependent outside the solicited list, and `--update-baseline` preserves
-the list. Adding an entry needs maintainer review; see
-[`scripts/README.md`](../../scripts/README.md) for the exact rules.
-
-Native-compiler trust
-(`Lean.ofReduceBool`, `Lean.trustCompiler`, and the per-declaration
-`…._native.<tactic>.ax_<n>_<n>` axioms that `native_decide`-style tactics mint) is held to
-a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
-while such taint is present — remove the dependency instead.
+A PR may be opened with unfinished proofs, but it must be `sorry`-free before it merges into
+`main`. A result whose proof is still open is tracked as an issue and merges once it is proved.
 
 CI enforces both the fixture matrix and the library regression check (see `ci.yml`).
 It also runs `scripts/source-trust-audit.py` over every tracked Lean file under `ArkLib/` and `ArkLibTest/`.
@@ -345,7 +324,7 @@ it gives the expected answer — are checked by compiled executables under `scri
 | --- | --- | --- |
 | `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
 | `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
-| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | CompPoly messages and honest multivariate execution, including private effects, public abort and the retained original oracle |
+| `sumcheck-runtime` | `scripts/SumcheckRuntime.lean` | Eight checks of CompPoly messages and honest multivariate execution. They cover private effects in order, a failed check that rejects after both challenge draws, the retained original oracle, zero remaining rounds with a separate prover check, and one interval round after a challenge prefix. The degree bound of the quadratic input is a compile-time proof. |
 | `fri-extractor-runtime` | `scripts/FriExtractorRuntime.lean` | measured FRI extraction, input guards, raw interpolation corner cases, and exact small instruction counts |
 
 **Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated

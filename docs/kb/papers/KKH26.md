@@ -68,13 +68,12 @@ the paper's `τ` is ArkLib's `c`, and the paper's own `c` is `H₂(ρ)`.
 - `exists_rs_epsCa_large_near_capacity_of_primes`: the family statement
   `NearCapacityCaLowerBound c ρ`, given `NearCapacityPrimeSupply c`.
 
-`exists_rs_epsCa_large_near_capacity` in
-[CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean) is
-[ABF26] Theorem 4.17; it applies `exists_rs_epsCa_large_near_capacity_of_primes`.
+ArkLib states [ABF26] Theorem 4.17 as `exists_rs_epsCa_large_near_capacity_of_prime`, and as the
+family statement `exists_rs_epsCa_large_near_capacity_of_primes` given the prime supply.
 
 | Proposition 3 | `exists_rs_epsCa_large_near_capacity_of_prime` / `NearCapacityCaLowerBound` |
 |---|---|
-| `τ ≥ 1` | `c : ℝ≥0`; only `exists_rs_epsCa_large_near_capacity` assumes `0 < c` |
+| `τ ≥ 1` | `c : ℝ≥0`; neither statement assumes `0 < c` |
 | `ρ = 1 − δ ∈ (0,1)` | `0 < ρ < 1/2` |
 | `≳ n^{τ−o(1)}` close points | `ε_ca ≥ n^c / \|F\|`, exactly |
 | `β > max{τ+1, 12/5}`, `p = Θ(n^β)` | per prime: `p ≥ n^{c+2}`; family: one `β > max(c+2, 12/5)` with `Kq_lo·n^β ≤ \|F\| ≤ Kq_hi·n^β` |
@@ -111,7 +110,7 @@ Theorem 1 (p. 3) states the distance as `δ* = δ + o(1/log n)`; Proposition 3 (
 of Proposition 3's bound, without its constant.
 
 The module docstring of `CapacityBounds.lean` numbers the near-capacity theorem 4.16, as the
-2026-04-08 [ABF26] PDF does; the comment at its admit and the audit ledger use 4.17.
+2026-04-08 [ABF26] PDF does; the audit ledger uses 4.17.
 
 ## Known Divergences From ArkLib
 
@@ -137,11 +136,13 @@ the codewords that agree with the centre there are `u − v_S(X^m)` and `−p_{S
 
 ## Open Formalization Gaps
 
-- The prime supply. `exists_rs_epsCa_large_near_capacity` admits `NearCapacityPrimeSupply c`:
+- The prime supply. `exists_rs_epsCa_large_near_capacity_of_primes` takes `NearCapacityPrimeSupply c`
+  as a hypothesis:
   for one `β > max(c+2, 12/5)` and infinitely many `K`, a prime `p ≡ 1 (mod 2^K)` with
   `n^β ≤ p ≤ 2n^β`. The paper takes it from Thorner and Zaman's prime number theorem in
-  arithmetic progressions for smooth moduli (p. 3; Appendix A step 2, p. 14). The other
-  declarations above are proved.
+  arithmetic progressions for smooth moduli (p. 3; Appendix A step 2, p. 14). ArkLib does not
+  formalize it, since no proof system in ArkLib needs it. The other declarations above are
+  proved.
 - Theorem 1, Item 1 over prime fields: `exists_rs_asymptotic_Lambda_lower_bound` takes the
   existence of smooth domains of every size `2^K` as its `supply` hypothesis, and its conclusion
   lets the field be any finite field, not only a prime field. Over prime fields, `supply` can be

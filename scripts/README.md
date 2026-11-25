@@ -14,10 +14,10 @@ This directory contains various utility scripts for the ArkLib project.
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Check whether `ArkLib.lean` is up to date with all tracked source modules
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
-- **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
-  committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
+- **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting and
+  the zero-debt gate; see "Axiom Sweep" below
 - **`test-axiomsweep.sh`** - Executable fixture matrix certifying the axiomsweep tool itself
-  (gate directions, native-trust floor, exit-code contract), against the synthetic-taint
+  (gate directions, exit-code contract), against the synthetic-taint
   fixtures in `AxiomSweepTestFixtures/`
 - **`source-trust-audit.py`** - Deterministic source-token inventory for constructs outside
   the environment sweep's visibility, with optional Git-ref comparison
@@ -28,9 +28,10 @@ This directory contains various utility scripts for the ArkLib project.
 - **`FriExtractorRuntime.lean`** (`lake exe fri-extractor-runtime`) - Compiled checks of the
   measured FRI extractor, immutable-input guards, and exact arithmetic and word-read counts.
 - **`SumcheckRuntime.lean`** (`lake exe sumcheck-runtime`) - Compiled checks of CompPoly-backed
-  round messages and the honest multivariate prover in the shared interaction-layer Sumcheck
-  executor, including continuation effects, abort, original-oracle evaluation and zero remaining
-  rounds.
+  round messages and the honest multivariate prover in the computable interaction-core Sumcheck,
+  including continuation effects, rejection after every round has run, evaluation of the original
+  input, zero remaining rounds and one interval round after a challenge prefix. It emits eight
+  checks; the degree bound of its quadratic input is a compile-time proof.
 - **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
   nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
   lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`
@@ -181,51 +182,23 @@ git -C .lake/packages/VCVio submodule update --init --recursive
 ```
 
 ```bash
-# Summary: total declarations, sorryAx-tainted, solicited, non-standard-axiom-tainted
+# Summary: total declarations, sorryAx-tainted, non-standard-axiom-tainted
 lake exe axiomsweep
 
 # Full per-declaration report (name, module, kind, line, axioms)
 lake exe axiomsweep --out /tmp/axiom-report.json
 
-# Regression gate: enforce taint and solicited-proof rules
+# Zero-debt gate
 lake exe axiomsweep --check
-
-# Refresh after verified closures or renames of existing debt;
-# commit the reviewed bookkeeping in the same PR
-lake exe axiomsweep --update-baseline
 ```
 
-The committed baseline records pre-existing `sorryAx` debt. New taint fails `--check`, while
-removed debt is reported without blocking cleanup. A PR may be opened with unfinished proofs,
-but no new proof admissions or additional admitted debt may merge into `main`; refreshing the
-baseline cannot authorize them. Review source admissions and baseline changes against the
-canonical base, and refresh only for verified closures or renames of existing debt.
-Native-compiler trust (`Lean.ofReduceBool`,
-`Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms
-minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
-regardless of the baseline, and `--update-baseline` refuses to write while it is present.
-CI and `./scripts/validate.sh --axioms` both run the check enforcing.
-
-A **solicited proof** is a true, faithfully stated external result whose research-sized proof
-is intentionally left open for contributors. Reviewed entries live in the baseline's
-`solicited` array as `{ "name": "...", "issue": "https://..." }`; a missing array means empty.
-Entries are added only after review, never to excuse false statements. They are excluded
-from the baseline's `sorry` list and counted separately in the summary. Their actual axioms
-remain visible in the per-declaration report.
-
-Both `--check` and `--update-baseline` enforce five conditions:
-
-1. Every listed declaration exists in the swept environment.
-2. It still depends on `sorryAx`; remove the entry in the same PR that proves it.
-3. It depends on no non-standard axiom other than `sorryAx`.
-4. Its docstring contains the entry's issue URL.
-5. No reportable declaration outside the solicited list depends on it, directly or
-   transitively. Solicited declarations may depend on one another.
-
-Thus solicited results remain leaves with respect to the rest of the library. The sweep
-uses its existing dependency closure, including cycle repair, to enforce this rule.
-`--update-baseline` preserves the hand-reviewed solicited list unchanged and refuses to
-write if any condition fails. The native-trust floor and new-taint checks still apply.
+`--check` fails if any swept declaration depends on `sorryAx` or on an axiom beyond `propext`,
+`Classical.choice` and `Quot.sound`. That includes native-compiler trust (`Lean.ofReduceBool`,
+`Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms minted by
+`native_decide`-style tactics). There is no baseline or allowlist. A PR may be opened with
+unfinished proofs, but it must be `sorry`-free before it merges into `main`. A result whose
+proof is still open is tracked as an issue and merges once it is proved. CI and
+`./scripts/validate.sh --axioms` both run the check enforcing.
 
 The tool itself is certified by `./scripts/test-axiomsweep.sh`, which builds the isolated
 `AxiomSweepTestFixtures` library (deliberate synthetic taint of every shape the sweep

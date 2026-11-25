@@ -24,8 +24,14 @@ The degree bound on `P` is supplied by exceptionality, rather than the persisten
 Write `n` for the domain size and `q` for the field size.
 For candidates of degree at most `d`, distinct rational pairs have persistence sets with
 at most `d + 1` common points.
-Under `d + 1 < B` and `n (d + 1) < B²`, the Johnson bound limits the number of pairs.
+Under `d + 1 ≤ B` and `n (d + 1) < B²`, the Johnson bound limits the number of pairs.
 Each pair accounts for at most `max q (n choose 2)` exceptional challenges with agreement loss one.
+
+The count is stated for challenges drawn from a finite type `K` through an injective map
+`φ : K ↪ E`, so from any finite subset of `E`.
+Subfields are the main example, and the identity embedding gives the single-field count.
+Then `q` is `|K|`, while words and candidates stay over `E`.
+This form serves the interleaved count of Theorem 5.2 of [CWYZ26].
 
 The count formalizes Lemma 4.5 of [CWYZ26].
 It bounds all persistent exceptional challenges, including any excluded challenges from the
@@ -40,7 +46,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the stateme
 ## Main statements
 
 * `ReedSolomon.mem_affinePersistenceSet`: membership in the persistence set.
-* `ReedSolomon.card_isAffineExceptional_persistent_le`: the persistent exceptional count.
+* `ReedSolomon.card_isAffineExceptional_persistent_map_le`: the persistent exceptional count for
+  challenges from a finite subset of `E`.
 
 ## References
 
@@ -159,71 +166,49 @@ private theorem card_inter_affinePersistenceSet_le {domain : ι ↪ F} {f g : ι
       · exact (natDegree_mul_le).trans (by omega)
 
 open Classical in
-/-- If `d + 1 < B` and `n (d + 1) < B²`, the number of challenges with a persistent
-exceptional candidate at agreement loss one is at most `ℓ · max q (n choose 2)`, where
-`n = |ι|`, `q = |F|`, and `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+/-- Let `φ : K ↪ E` be an injective map from a finite type, such as a subfield.
+Let `n = |ι|` and `q = |K|`.
+Assume `d + 1 ≤ B` and `n (d + 1) < B²`, and set `ℓ = n (B - d - 1) / (B² - n (d + 1))`.
+Count the challenges `(α, β) ∈ K²` for which `(φ α, φ β)` has a persistent exceptional candidate.
+The agreement loss is one.
+There are at most `ℓ · max q (n choose 2)` such challenges.
 The count is cast to `ℝ`, and the arithmetic defining `ℓ` is real arithmetic. -/
-theorem card_isAffineExceptional_persistent_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
-    {d A B : ℕ} (hdB : d + 1 < B) (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
-    (#{c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
-        IsAffinePersistent domain f g d B c.1 c.2 P} : ℝ) ≤
+theorem card_isAffineExceptional_persistent_map_le {K E : Type*} [Fintype K] [Field E]
+    [DecidableEq E] (domain : ι ↪ E) (f g : ι → E) (φ : K ↪ E) {d A B : ℕ} (hdB : d + 1 ≤ B)
+    (hJ : Fintype.card ι * (d + 1) < B ^ 2) :
+    (#{c : K × K | ∃ P, IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
+        IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P} : ℝ) ≤
       (Fintype.card ι : ℝ) * ((B : ℝ) - d - 1) / ((B : ℝ) ^ 2 - Fintype.card ι * (d + 1)) *
-        max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) := by
-  set C : Finset (F × F) := {c : F × F | ∃ P, IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧
-    IsAffinePersistent domain f g d B c.1 c.2 P}
-  set M := max (Fintype.card F) ((Fintype.card ι).choose 2)
-  have hdata : ∀ c : F × F, ∃ P H L : F[X], c ∈ C →
-      IsAffineExceptional domain f g d A 1 c.1 c.2 P ∧ L ≠ 0 ∧ L.degree ≤ 1 ∧ H.degree ≤ d ∧
-        B ≤ #(affinePersistenceSet domain f g c.1 c.2 P H L) := by
+        max (Fintype.card K : ℝ) ((Fintype.card ι).choose 2) := by
+  set C : Finset (K × K) := {c : K × K | ∃ P,
+    IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
+      IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P}
+  set M := max (Fintype.card K) ((Fintype.card ι).choose 2)
+  have hdata : ∀ c : K × K, ∃ P H L : E[X], c ∈ C →
+      IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧ L ≠ 0 ∧ L.degree ≤ 1 ∧
+        H.degree ≤ d ∧ B ≤ #(affinePersistenceSet domain f g (φ c.1) (φ c.2) P H L) := by
     intro c
     by_cases hc : c ∈ C
     · obtain ⟨P, hex, H, L, hL, hLd, hH, hB⟩ := (mem_filter.mp hc).2
       exact ⟨P, H, L, fun _ ↦ ⟨hex, hL, hLd, hH, hB⟩⟩
     · exact ⟨0, 0, 0, fun h ↦ absurd h hc⟩
   choose P H L hdata using hdata
-  set π : F × F → RatFunc F × RatFunc F := fun c ↦ persistentPair c.1 c.2 (P c) (H c) (L c)
-  set T := C.image π
-  -- Each rational pair accounts for at most `M` challenges.
-  have hfiber : ∀ p ∈ T, #{c ∈ C | π c = p} ≤ M := by
-    intro p _
-    refine (card_le_card fun c hc ↦ ?_).trans
-      (card_isAffineExceptional_ratFunc_le domain f g (d := d) (A := A) p.1 p.2)
-    rw [mem_filter] at hc ⊢
-    refine ⟨mem_univ _, P c, ?_, (hdata c hc.1).1⟩
-    rw [← hc.2]
+  set π : K × K → RatFunc E × RatFunc E := fun c ↦
+    persistentPair (φ c.1) (φ c.2) (P c) (H c) (L c)
+  have h := card_le_of_fiber_card_le_of_inter_card_le C π
+    (fun c ↦ affinePersistenceSet domain f g (φ c.1) (φ c.2) (P c) (H c) (L c)) (M := M) hdB
+    (by rw [← sq]; exact hJ) (fun c hc ↦ (hdata c hc).2.2.2.2) (fun c hc c' hc' hne ↦
+      card_inter_affinePersistenceSet_le (hdata c hc).1.1 (hdata c' hc').1.1 (hdata c hc).2.1
+        (hdata c' hc').2.1 (hdata c hc).2.2.1 (hdata c' hc').2.2.1 (hdata c hc).2.2.2.1
+        (hdata c' hc').2.2.2.1 hne) fun c hc ↦ by
+    -- Each rational pair accounts for at most `M` challenges.
+    refine (card_le_card fun c' hc' ↦ ?_).trans
+      (card_isAffineExceptional_ratFunc_map_le domain f g φ (d := d) (A := A) (π c).1 (π c).2)
+    rw [mem_filter] at hc' ⊢
+    refine ⟨mem_univ _, P c', ?_, (hdata c' hc'.1).1⟩
+    rw [← hc'.2]
     simp only [π, persistentPair]
     ring
-  have hCT : #C ≤ M * #T := card_le_mul_card_image C M hfiber
-  -- Distinct rational pairs have almost disjoint persistence sets.
-  have hrep : ∀ p ∈ T, ∃ c ∈ C, π c = p := fun p hp ↦ mem_image.mp hp
-  choose! rep hrepC hrepπ using hrep
-  have hJT := card_mul_sq_sub_card_mul_le_of_inter_card_le T
-    (fun p ↦ affinePersistenceSet domain f g (rep p).1 (rep p).2
-      (P (rep p)) (H (rep p)) (L (rep p)))
-    B (d + 1) (fun p hp ↦ (hdata _ (hrepC p hp)).2.2.2.2) fun p hp p' hp' hne ↦ by
-      have h₀ := hdata _ (hrepC p hp)
-      have h₁ := hdata _ (hrepC p' hp')
-      refine card_inter_affinePersistenceSet_le h₀.1.1 h₁.1.1 h₀.2.1 h₁.2.1 h₀.2.2.1 h₁.2.2.1
-        h₀.2.2.2.1 h₁.2.2.2.1 fun h ↦ hne ?_
-      rw [← hrepπ p hp, ← hrepπ p' hp']
-      exact h
-  -- Real arithmetic.
-  have hBB : Fintype.card ι * (d + 1) ≤ B * B := by rw [← sq]; exact hJ.le
-  have hden : (0 : ℝ) < (B : ℝ) ^ 2 - Fintype.card ι * (d + 1) := by
-    rw [sub_pos]
-    exact_mod_cast hJ
-  have hT : (#T : ℝ) ≤ (Fintype.card ι : ℝ) * ((B : ℝ) - d - 1) /
-      ((B : ℝ) ^ 2 - Fintype.card ι * (d + 1)) := by
-    rw [le_div_iff₀ hden]
-    have hJT' : ((#T * (B * B - Fintype.card ι * (d + 1)) : ℕ) : ℝ) ≤
-        ((Fintype.card ι * (B - (d + 1)) : ℕ) : ℝ) := by exact_mod_cast hJT
-    push_cast [Nat.cast_sub hBB, Nat.cast_sub hdB.le] at hJT'
-    linear_combination hJT'
-  calc (#C : ℝ) ≤ (#T : ℝ) * (M : ℝ) := by
-        rw [mul_comm]; exact_mod_cast hCT
-    _ ≤ _ := by
-        rw [show (M : ℝ) = max (Fintype.card F : ℝ) ((Fintype.card ι).choose 2) by
-          simp [M]]
-        exact mul_le_mul_of_nonneg_right hT (by positivity)
+  convert h using 2 <;> push_cast [M] <;> ring
 
 end ReedSolomon

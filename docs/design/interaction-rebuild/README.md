@@ -3,7 +3,7 @@
 The rebuild replaces the current interaction layer (`ArkLib/Interaction/`) with a new
 interaction layer built on one protocol tree and a lens signature. The generic theory lives
 in PolyFun under `PolyFun/Interaction/TwoParty/Lens/`; the ArkLib specialization lives under
-`ArkLib/Interaction/Core/`. The legacy layer (`ArkLib/OracleReduction/`) stays in place for the
+`ArkLib/Interaction/`. The legacy layer (`ArkLib/OracleReduction/`) stays in place for the
 protocols that still use it.
 
 The first milestone has three parts: an embedding of the legacy layer into the interaction
@@ -53,7 +53,7 @@ complete when C merges.
 |---|---|---|---|
 | [D0](D0-tree-and-transcripts.md) | One protocol tree `FreeM P PUnit`, the lens signature into `rolePoly`, and the two transcript types `Path` and `PathAlong` (`Transcript` in the core) | P | Proposed: awaiting maintainer approval |
 | [D1](D1-signatures-and-shape.md) | Plain and oracle positions, their signatures, and the rule that challenges and oracle payloads cannot select shape | A | Proposed: awaiting maintainer approval |
-| [D2](D2-ownership-and-universes.md) | Ownership read from the signature, the universe ledger, and role-free metadata | P, A | Proposed: awaiting maintainer approval |
+| [D2](D2-ownership-and-universes.md) | Ownership read from the signature, the universe policy, and role-free metadata | P, A | Proposed: awaiting maintainer approval; universe policy adopted 2026-11-25, migration pending |
 | [D3](D3-transcript-indexed-state.md) | Which data is indexed by the full transcript, the verifier view (`TranscriptAt viewSig s p`, over the shape path), or the shape path | P, A | Proposed: awaiting maintainer approval |
 | [D4](D4-paired-run-and-passive-verifier.md) | Uniform effect slots, the two run schedules and their exchange, the legacy slot correspondence, zero rounds, swap, and the passive verifier | P, A, B | Proposed: awaiting maintainer approval |
 | [D5](D5-composition.md) | Sequential composition, its run laws, prefix decomposition, the end-decided composed verifier, and iteration | P, A | Proposed: awaiting maintainer approval |
@@ -70,6 +70,6 @@ before P; D1–D7 before A; D8 before B's execution theorem and before C.
 - **Legacy layer:** `ArkLib/OracleReduction/`, with fixed-length `ProtocolSpec n`.
 - **Current interaction layer:** the frozen code under `ArkLib/Interaction/` and
   `ArkLib/ProofSystem/Sumcheck/Interaction/`, which the rebuild replaces.
-- **Interaction layer:** the rebuilt layer under `ArkLib/Interaction/Core/`.
+- **Interaction layer:** the rebuilt layer under `ArkLib/Interaction/`.
 - **Focal party / counterpart:** the two participants of a PolyFun two-party run. In ArkLib the
   prover is focal and the verifier's sampler is the counterpart.

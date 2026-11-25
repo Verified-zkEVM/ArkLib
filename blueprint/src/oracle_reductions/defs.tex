@@ -1035,11 +1035,11 @@ commits to one transcript.
     all), and runs the verifier on the completed path. In the closed-oracle variant, the
     verifier returns either a rejection or an oracle claim, whose behavior is observed through the
     accumulated oracle handler of the same path.
-    \lean{Interaction.Oracle.Security.StateRestoration.Key,
-      Interaction.Oracle.Security.StateRestoration.oracleSpec,
-      Interaction.Oracle.Security.StateRestoration.restoredExecution,
-      Interaction.Oracle.Security.StateRestoration.verificationGame,
-      Interaction.Oracle.Security.StateRestoration.closedVerificationGame}
+    \lean{Interaction.StateRestoration.Key,
+      Interaction.StateRestoration.oracleSpec,
+      Interaction.StateRestoration.restoredExecution,
+      Interaction.StateRestoration.verificationGame,
+      Interaction.StateRestoration.closedVerificationGame}
     \leanok
 \end{definition}
 
@@ -1055,11 +1055,10 @@ commits to one transcript.
     backward image is invalid is at most \(\epsilon_j\). A \emph{knowledge certificate} bundles
     such an extractor with these two properties; a \emph{measured} certificate adds a budgeted
     program for each extraction stage.
-    \lean{Interaction.Oracle.Security.RoundExtractor,
-      Interaction.Oracle.Security.RoundExtractor.IsProverPreserving,
-      Interaction.Oracle.Security.RoundExtractor.IsLocallyBounded,
-      Interaction.Oracle.Security.KnowledgeCertificate,
-      Interaction.Oracle.Security.MeasuredKnowledgeCertificate}
+    \lean{Interaction.KnowledgeStateFunction,
+      Interaction.KnowledgeStateFunction.LocallyBounded,
+      Interaction.rbrKnowledgeSoundness,
+      Interaction.MeasuredKnowledgeStateFunction}
     \leanok
     \uses{def:sr_experiment}
 \end{definition}
@@ -1083,10 +1082,10 @@ commits to one transcript.
     The extractor is the named backward map, not an existentially chosen witness. The same bound
     holds for the closed-oracle variant, where a rejection is never a valid output, and, with
     private coins of the adversary sampled before the game, for both variants.
-    \lean{Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness,
-      Interaction.Oracle.Security.StateRestoration.stateRestoration_oracle_knowledge_soundness,
-      Interaction.Oracle.Security.StateRestoration.stateRestoration_knowledge_soundness_privateCoins,
-      Interaction.Oracle.Security.StateRestoration.stateRestoration_oracle_knowledge_soundness_privateCoins}
+    \lean{Interaction.StateRestoration.stateRestoration_knowledge_soundness,
+      Interaction.StateRestoration.stateRestoration_oracle_knowledge_soundness,
+      Interaction.StateRestoration.stateRestoration_knowledge_soundness_privateCoins,
+      Interaction.StateRestoration.stateRestoration_oracle_knowledge_soundness_privateCoins}
     \leanok
     \uses{def:sr_experiment, def:interaction_knowledge_certificate}
 \end{theorem}
@@ -1109,8 +1108,8 @@ commits to one transcript.
     For a measured knowledge certificate whose challenge schedule has these errors and whose stage
     budgets are at most \(B\) on every input in \(Z\), the same bound holds together with the stage
     budget \(B\) for the same named extractor.
-    \lean{Interaction.Oracle.Security.StateRestoration.stateRestoration_oracle_knowledge_soundness_nonuniform,
-      Interaction.Oracle.Security.MeasuredKnowledgeCertificate.stateRestoration_oracle_knowledge_soundness_nonuniform}
+    \lean{Interaction.StateRestoration.stateRestoration_oracle_knowledge_soundness_nonuniform,
+      Interaction.MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform}
     \leanok
     \uses{thm:sr_knowledge_soundness}
 \end{theorem}

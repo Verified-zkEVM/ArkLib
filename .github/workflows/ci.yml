@@ -263,14 +263,14 @@ jobs:
             bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime sumcheck-runtime fri-extractor-runtime lint-style'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
-      # directions, native-trust floor, exit-code contract), independent of any
-      # taint verdict about the library.
+      # directions, exit-code contract), independent of any taint verdict about the
+      # library.
       - name: Test the axiom sweep tool
         run: ./scripts/test-axiomsweep.sh
 
-      # Enforcing regression gate. Intentional sorry debt remains possible by refreshing
-      # and reviewing scripts/axiom_baseline.json; native/compiler trust cannot be baselined.
-      - name: Check the library axiom baseline
+      # Enforcing zero-debt gate: no declaration may depend on sorryAx or on an axiom
+      # beyond propext, Classical.choice and Quot.sound. There is no allowlist.
+      - name: Check the library axioms
         run: lake exe axiomsweep --check
 
       - name: Time validation wrapper
