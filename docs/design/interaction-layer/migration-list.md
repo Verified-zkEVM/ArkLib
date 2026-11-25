@@ -76,7 +76,7 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLib/Interaction/Reduction.lean` | retired (from its test: 6 ported, 2 retired) | [`Core/Reduction.lean`](../../../ArkLib/Interaction/Core/Reduction.lean) and [`Core/Composition.lean`](../../../ArkLib/Interaction/Core/Composition.lean) | `port-stages.md` (#1477), section Reduction/DependentExample.lean |
 | `ArkLib/Interaction/Oracle/Access.lean` | retired | None: per-node access has no replacement. Passive replacements are `pathBundle` in [`Core/OracleVerifier.lean`](../../../ArkLib/Interaction/Core/OracleVerifier.lean) and `IsSent`, `SentOracleMessageIndex` in [`Core/Oracle/SentOracles.lean`](../../../ArkLib/Interaction/Core/Oracle/SentOracles.lean) | [D6](../interaction-rebuild/D6-oracle-access.md), Consequences; `port-oracle-access.md` (#1478), section AccessExample (15 ported, 3 retired) |
 | `ArkLib/Interaction/Oracle/Claim.lean` | retired (from its test: 6 ported, 1 retired) | Open and closed claims are removed: a verdict is a statement with concrete data. `Problem` and its admissibility already live in `ArkLib/Relation/Basic.lean` | `port-stages.md` (#1477), section ClaimExample.lean; [D7](../interaction-rebuild/D7-security-definitions.md) for admissibility |
-| `ArkLib/Interaction/Oracle/Composition.lean` | unresolved: `run_append` (L258). Also 2 ported, 8 premise-required (P1, two of them also P2), 4 retired | `OracleVerifier.append` and `run_append` in [`Core/Composition.lean`](../../../ArkLib/Interaction/Core/Composition.lean); `ArkLib/Interaction/Core/StageChain.lean` (#1477) | `port-stages.md` (#1477), section Oracle/Composition.lean |
+| `ArkLib/Interaction/Oracle/Composition.lean` | premise-required: 3 ported, 8 premise-required (P1, two of them also P2), 4 retired | `OracleVerifier.append` and `run_append` in [`Core/Composition.lean`](../../../ArkLib/Interaction/Core/Composition.lean); `ArkLib/Interaction/Core/StageChain.lean` (#1477); the split at an arbitrary stage (L258) in `StageChain.decideOn_then`, `StageChain.outputOn_then` and [`Core/Oracle/Reassociation.lean`](../../../ArkLib/Interaction/Core/Oracle/Reassociation.lean) | `port-stages.md` (#1477), section Oracle/Composition.lean |
 | `ArkLib/Interaction/Oracle/CompositionSoundness.lean` | ported | [`Core/Security/CompositionSoundness.lean`](../../../ArkLib/Interaction/Core/Security/CompositionSoundness.lean) | PR #1485; "Oracle example row" comments in [the core test](../../../ArkLibTest/Interaction/Core/Security/CompositionSoundness.lean) |
 | `ArkLib/Interaction/Oracle/CoreRun.lean` | premise-required (P1), from its test: 7 ported, 1 P1, 2 retired | `OracleVerifier.run` and the output map in [`Core/OracleVerifier.lean`](../../../ArkLib/Interaction/Core/OracleVerifier.lean) | `port-stages.md` (#1477), section CoreRunExample.lean |
 | `ArkLib/Interaction/Oracle/Execution.lean` | premise-required (P1, P2), from its test: 12 ported, 10 P1, 3 P1 and P2, 4 retired | [`Core/Execution.lean`](../../../ArkLib/Interaction/Core/Execution.lean) and [`Core/OracleVerifier.lean`](../../../ArkLib/Interaction/Core/OracleVerifier.lean); the per-node `localSyntax` is retired | `port-stages.md` (#1477), section ExecutionExample.lean; [D6](../interaction-rebuild/D6-oracle-access.md), Why |
@@ -196,11 +196,11 @@ runtime mass as a fault: it keeps missing mass distinct from rejection, as row T
 
 ## Unresolved rows and options
 
-The first three items are restrictions of the core port that the ledgers record without tying
+The three items below are restrictions of the core port that the ledgers record without tying
 them to one old declaration. Each comes from a pinned upstream library, and ArkLib accepts each as
 an upstream limit: the code site documents it, and ArkLib picks up the upstream fix through a later
-VCVio pin bump. The fourth item is an old declaration with no core target and stays open. A fifth
-item, the degree guarantee, is resolved; the last subsection records why.
+VCVio pin bump. Two further items, `run_append` and the degree guarantee, are resolved; the last
+two subsections record why.
 
 **1. The full-log runner cannot return large query indices.**
 [departures.md](departures.md) lists this as entry 18, and `port-oracle-access.md`
@@ -240,7 +240,7 @@ documents it. VCVio PR [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236
 `ProbComp` universe-polymorphic.
 
 **3. VCVio cost universes.**
-`port-oracle-bundles.md` (#1476), section Open cost universes, records it.
+`port-oracle-bundles.md` (#1476), section Cost universes, records it.
 `OracleMap.withAmbient_worstCaseCost` in `ArkLib/Interaction/Core/Oracle/Cost.lean` (#1476) keeps
 the ambient index, both bundle-query indices, the responses and the cost carrier `ω` in `Type`.
 The restriction comes from VCVio `VCVio/OracleComp/QueryTracking/CostModel.lean` (variables at
@@ -258,24 +258,20 @@ holds `OracleMap.withAmbient_worstCaseCost`, documents it. VCVio PR
 [#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the universes of the cost
 API.
 
-**4. `run_append`: splitting an ordered execution at an arbitrary stage.**
-Old `Oracle/Composition.lean` L258 has no core target. `port-stages.md` (#1477) records the
-missing parent interface: a reassociation law for `OracleVerifier.append`, which relates
-`(V₁.append V₂ c₁₂).append V₃ c` to the append of `V₁` with the append of `V₂` and `V₃`. The law
-needs the transport of paths and views along protocol associativity, agreement of
-`prefixRoute` and `suffixRoute` on both sides, reassociation of the compatibility certificates
-and their output maps, chain concatenation, and the prover continuation kept at the cut. The
-protocol part exists at the PolyFun pin as `PFunctor.FreeM.append_assoc`
-(`PolyFun/PFunctor/Free/Path.lean`, line 727), `Path.split_append` (line 766),
-`Path.append_split` (line 777) and `Chain.then` with `Chain.toTypeTree_then`
-(`PolyFun/Interaction/Basic/Chain/Append.lean`, line 94). `StageChain.run_cons` gives only the
-split after the first stage. Options:
+### Resolved: `run_append`
 
-- implement the reassociation law for `OracleVerifier.append` and the chain split;
-- accept the first-stage split as the supported interface and document the restriction;
-- retire the arbitrary-stage split.
-
-Decision: open.
+Old `Oracle/Composition.lean` L258 splits an ordered execution at an arbitrary stage.
+`port-stages.md` records it as ported. `StageChain.then` concatenates two chains, and
+`StageChain.decideOn_then` and `StageChain.outputOn_then` in
+[`Core/StageChain.lean`](../../../ArkLib/Interaction/Core/StageChain.lean) split the composed
+verifier of a concatenation at the cut. `OracleVerifier.append_append_decideOn` and
+`OracleVerifier.append_append_outputOn` in
+[`Core/Oracle/Reassociation.lean`](../../../ArkLib/Interaction/Core/Oracle/Reassociation.lean)
+reassociate `OracleVerifier.append`. The laws are `HEq`s on completed runs: the two associations
+have different protocols, and a certificate's output map agrees with the composite output map
+only on accepted intermediate statements. They do not transport the prover of a concatenation to
+the appended protocol. A chain's run still unfolds one append at a time through
+`StageChain.run_cons` and `OracleVerifier.run_append`.
 
 ### Resolved: the degree guarantee
 
@@ -435,6 +431,7 @@ before the deletion. The ledgers then keep their evidence after the files are go
    the old part of `MeasuredExtraction.lean`. Fix the prose and the links listed above.
    Done: the PR "chore(interaction)!: delete the old generic interaction layer" carries out this
    step. It also drops the `AddProgram` import of `MeasuredExtraction.lean`, because the `Search`
-   section uses nothing from it. The ledgers' reference-style links and `#L` links still need
-   permalinks at the last main commit before the deletion.
+   section uses nothing from it. It converts the ledgers' links into deleted files and
+   their `#L` links into permalinks at commit `8472a86f` (#1570), the last main commit before the
+   deletion.
 6. Clean PolyFun and VCVio: PolyFun P-clean and VCVio R-clean.

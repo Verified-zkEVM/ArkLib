@@ -384,13 +384,15 @@ decision from one hypothesis per boundary. A one-stage decision that queries an 
 and rejects on `false` accepts almost surely under the answer measure `alwaysTrue`, although its
 support contains the rejection.
 
-The split of a composition at an arbitrary middle stage is not ported. The protocol part exists:
-PolyFun's `PFunctor.FreeM.append_assoc`, with the inverse laws of `Path.append` and `Path.split`,
-and the concatenation `Chain.then` with `Chain.toTypeTree_then`. The missing part is a
-reassociation law for `OracleVerifier.append`. It must transport paths and views along the
-protocol associativity, reconcile `prefixRoute` and `suffixRoute`, and reassociate the
-compatibility certificates. The split also needs the prover continuation retained at the cut.
-The split after the first stage is `StageChain.run_cons`.
+The split of a composition at an arbitrary middle stage is ported on completed runs.
+`StageChain.then` concatenates two chains, following PolyFun's `Chain.then` and
+`PFunctor.FreeM.append_assoc`. `StageChain.decideOn_then` and `StageChain.outputOn_then` split the
+composed verifier of a concatenation at the cut, and `OracleVerifier.append_append_decideOn` and
+`OracleVerifier.append_append_outputOn` in `Core/Oracle/Reassociation.lean` reassociate
+`OracleVerifier.append`. The laws are `HEq`s on runs, because the two associations have different
+protocols and a certificate's output map agrees with the composite output map only on accepted
+intermediate statements. They do not transport the prover of a concatenation to the appended
+protocol. A chain's run still unfolds one append at a time through `StageChain.run_cons`.
 
 ### Output witnesses are indexed by the transcript
 
@@ -496,6 +498,29 @@ the partial transcripts of the queries differ. P1 excludes intermediate effectfu
 actions and their former query groups. It does not exclude prover moves or their partial
 transcripts. The [port table](../interaction-layer/port-logged-execution.md) records these
 qualifications separately.
+
+### Oracle-access tests after the parent merge
+
+DecorationExample row 2 is ported. The old alias is the oracle decoration of an arbitrary tree
+at independent message and query universes. Oracle positions carry their interfaces, so
+`UniverseOracleDecoration` reads the decoration of an arbitrary `OracleProtocol.{uProtocol, uQuery}`
+tree off the tree, as its path family. `universeNode` additionally attaches an arbitrary
+`OracleInterface.{0, 1} Nat` to an actual small protocol node, and the path-family assertion keeps
+its query type.
+
+The [oracle-access port table](../interaction-layer/port-oracle-access.md) now links two groups
+of rows directly to the parent's `LoggedExecutionTests` assertions. The first group holds the
+PhasedRun querier, setup and partial-transcript rows. The second group holds the QueryBounds rows
+on membership of the join and decision entries and on concrete partial transcripts. It also holds
+the QueryBounds rows on node names and on the agreement of the queries by move with the logged
+run. P1 excludes intermediate verifier actions and the entries they were assigned to.
+`RoutedAccessTests.raw_available` proves that every query in the completed bundle of the composed
+doubled-export execution has a matching node at its decision entry.
+`RoutedAccessTests.routed_available` applies that permission to the routed program, and
+`QueryCostTests.routed_available_and_cost` pairs it with cost five for the same program.
+`RoutedAccessTests.loggedSummary_eq` and `RoutedAccessTests.composed_decisionQueries` check the
+actual ordered decision queries. The oracle-message splitting checks remain. The parent's large-query
+full-log limitation in entry 18 is unchanged.
 
 ## 26. Knowledge composition and measured extraction
 

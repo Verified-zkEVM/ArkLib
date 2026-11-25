@@ -178,10 +178,11 @@ that excludes part of it, or the removed mechanism it belonged to. The old-layer
 decided each stage before the next one and skipped the later stages after a rejection. The port
 composes passive stages with right-associated appends, runs every interaction before the
 decisions, and selects later stages by the prover's public messages only. The table also records
-the universe placement of stage chains. Its one open row, the split of a chain at an arbitrary
-stage, remains a migration obligation. Protocol associativity exists in PolyFun. The missing
-interface is a reassociation law for `OracleVerifier.append` with its path, view, routing and
-certificate transport, and the prover continuation retained at the cut.
+the universe placement of stage chains. The split of a chain at an arbitrary stage is ported on
+completed runs: `StageChain.decideOn_then` and `StageChain.outputOn_then` split the decisions and
+output data of a concatenation, and `OracleVerifier.append_append_decideOn` and
+`OracleVerifier.append_append_outputOn` reassociate `OracleVerifier.append`. These laws do not
+transport the prover of the concatenation to the appended protocol.
 
 ## Knowledge composition and measured extraction
 
@@ -194,3 +195,13 @@ retains earlier public challenges and prover messages in both distributions and 
 Oracle verifiers draw from the verifier view, which erases oracle messages; their errors keep the
 full prefix. P1 retires only challenge selection that depends on oracle messages and effectful
 receiver actions. The inventory marks the already constant KC-065 schedule equivalent.
+
+## Oracle-access acceptance tests
+
+The [oracle-access port table](port-oracle-access.md) closes DecorationExample row 2 with
+the arbitrary-tree decoration test and the independent-universe node and path-family tests. Its
+PhasedRun and QueryBounds rows cite the parent's produced assertions directly. These cover
+membership of the join and decision entries, node names, and the agreement between the queries by
+move and the logged run. The doubled-export fixture applies the decision entry's permission to its
+routed program, jointly with its cost-five bound, and checks the actual ordered decision queries
+separately. P1 excludes intermediate verifier effects and the moves they were assigned to.
