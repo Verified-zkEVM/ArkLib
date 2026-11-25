@@ -151,15 +151,19 @@ uncharged. Ordered-program and unbounded-depth assertions retain actual instrume
 not just declared budgets. Zero-stage assertions deliberately show that the budget contract
 alone gives no total running-time bound.
 
-Pinned VCVio `OracleComp.BudgetedProgram` in
-`VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixes `Input` and `Result` to `Type`.
-This forces small `Win stmt` at root results, small intermediate witnesses and `StageInput` at
-step inputs/results, and small `W stmt tr` at leaf inputs. `MeasuredStages.programAlong` and
-`MeasuredKnowledgeStateFunction` retain those restrictions. The underlying
-`OracleComp.MeasuredProgram` at line 66 also fixes `ω`, `View` and `Op` to `Type`. The statement
-universe remains independent, and the measured code takes `P : PFunctor.{uA, 0}`, so positions
-have their own universe. These restrictions apply only to measured programs, not pure backward
-maps. The VCVio pin is `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`.
+At the previous VCVio pin `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`,
+`OracleComp.BudgetedProgram` in `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:156` fixed
+`Input` and `Result` to `Type`, and the underlying `OracleComp.MeasuredProgram` at line 66 also
+fixed `ω`, `View` and `Op` to `Type`. The measured programs now live in PolyFun as
+`PFunctor.FreeM.MeasuredProgram` and `PFunctor.FreeM.BudgetedProgram`
+(`PolyFun/PFunctor/Free/Cost/Measured.lean`), with independent input, result and cost universes.
+ArkLib's measured stages still take `ω : Type` and `Type`-valued witness families. This keeps
+small `Win stmt` at root results, small intermediate witnesses and `StageInput` at step
+inputs/results, and small `W stmt tr` at leaf inputs. `MeasuredStages.programAlong` and
+`MeasuredKnowledgeStateFunction` retain those restrictions, and lifting them is follow-up work.
+The statement universe remains independent, and the measured code takes `P : PFunctor.{uA, 0}`, so
+positions have their own universe. These restrictions apply only to measured programs, not pure
+backward maps. The VCVio pin is `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3`.
 
 ## ArkLib/Interaction/Oracle/Security/Knowledge.lean
 
@@ -371,7 +375,7 @@ This restriction affects sampling and probability bounds, not the frozen pure ex
 
 | ID | Forcing parent declarations | Status | Exact target and limitation |
 | --- | --- | --- | --- |
-| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Interaction/Protocol.lean:69–71`) | accepted upstream limit (large-move probability: `ProbComp` and shared challenge/message universe; [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; `ProbComp` cannot sample these moves at `u > 0`. Measured specializations also require small stage inputs through `BudgetedProgram`, as recorded above. |
+| PROB-031 | [`ProbComp : Type → Type`, pinned VCVio `Basic.lean:31`](https://github.com/Verified-zkEVM/VCVio/blob/f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db/VCVio/OracleComp/ProbComp/Basic.lean#L31); [`ArkLib/Interaction/Core/Protocol.lean#L70`][r247], `challengeSpec` (`Interaction/Protocol.lean:69–71`) | accepted upstream limit (large-move probability: `ProbComp` and shared challenge/message universe; [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes `ProbComp` universe-polymorphic; the pin includes it since `f1a4a8ec`, and ArkLib has not adopted it yet) | [`ArkLib/Interaction/Core/Security/RoundByRound.lean#L141`][r248], `sampleAt`. `sampleAt`, `BoundedAt`, `LocallyBounded` and round-by-round probability bounds use the small-move instance of the general certificate. `challengeSpec` returns `Move l` in the same universe as oracle/public messages; At the previous pin `ProbComp` could not sample these moves at `u > 0`. Measured specializations also keep small stage inputs, as recorded above. |
 
 [r1]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Oracle/Security/Knowledge.lean#L37
 [r2]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/Security/RoundByRound.lean#L368

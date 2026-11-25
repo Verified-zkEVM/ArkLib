@@ -14,6 +14,7 @@ gives no running-time bound.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
+open PFunctor.FreeM (MeasuredProgram)
 
 section Search
 

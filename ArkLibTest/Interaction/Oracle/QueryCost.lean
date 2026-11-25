@@ -127,7 +127,8 @@ example (v : View combined combinedPath) : ¬ WorstCaseCostBound (routedSuffix v
       let fresh : Nat ← liftM ((ambient + rawBundle.spec).query (.inr suffixSlot))
       pure (left + right + fresh)) (0 : Nat) rawCost _ middle
   rw [routedSuffix_eq] at certificate
-  exact absurd (certificate _ member) (by decide)
+  exact absurd ((worstCaseCostBound_iff_support_bound _ _ _).mp certificate _ member)
+    (by decide)
 
 end Interaction.QueryCostTests
 
@@ -182,9 +183,11 @@ theorem suffix_budget (p : Path bitSecond) (v : View bitSecond p) :
   exact (worstCaseCostBound_pure _ _ _).mpr le_rfl
 
 -- RuntimeQueryBounds 7, restated: the route is `suffixRoute … withAmbient`. On every composed
--- path and view, the routed suffix decision costs at most 5.
+-- path and view, the routed suffix decision costs at most 5. The fixture's oracle-node query
+-- universe is fixed to `0` because `OracleMap.withAmbient_worstCaseCost` keeps its indices in
+-- `Type`.
 /-- Routing preserves the suffix decision's weighted cost bound of five. -/
-theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
+theorem routed_suffix_budget (p : Path bitCombined.{0}) (v : View bitCombined p) :
     WorstCaseCostBound (routedSuffix p v) (bitRawCost p) 5 := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
   refine OracleMap.withAmbient_worstCaseCost
