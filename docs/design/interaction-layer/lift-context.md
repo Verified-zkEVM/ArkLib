@@ -25,6 +25,11 @@ The core's design principles stay as they are:
 | `OracleStatement.ExecutableLens` | `OracleStatementLens` | a statement lens, `projOracle : OuterIn → OracleMap outerInputs innerInputs`, and `liftOracle : OuterIn → (p : Path s) → OracleMap (outerInputs.sum (outputs p)) (outerOutputs p)` |
 | `Witness.InvLens`, `Extractor.Lens` | `ExtractorLens` | a statement lens, `witOutProj` from outer to inner output witnesses, and `witInLift` from inner to outer input witnesses |
 
+Statements, witnesses, output families and oracle index families of every lens lie in `Type`,
+as the [universe policy](../interaction-rebuild/D2-ownership-and-universes.md#universe-policy)
+requires. The lenses take a move functor whose moves lie in `Type`, as the core's verifiers and
+provers do.
+
 Three differences from the legacy shapes follow from the core's types.
 
 1. **The statement lift is indexed by the shape path.** Core output statements have type
@@ -127,8 +132,7 @@ implication from `validAcceptance_iff_support` and the lens condition.
 - The lifted knowledge state carries the completed transcript and the outer output witness
   beside the inner intermediate witness. Its predicate is the inner predicate, or the shortcut
   that every inner input witness lifts to a valid outer one. Root extraction applies
-  `witInLift` to the inner root extraction. This raises the witness universe to
-  `max uO uK`.
+  `witInLift` to the inner root extraction.
 
 Both round-by-round transfers keep the inner draw and the inner error unchanged.
 
@@ -171,7 +175,3 @@ then lifting on every run.
   `OracleVerifier.liftContext` needs an `OracleMap` from a legacy `ExecutableLens`, built with
   `OracleMap.ofLegacySimulation`, and a commuting lemma for the embedded decision's query
   routing. It is left for a follow-up.
-- **Output index families outside universe `u`.** `OracleVerifier.Output` requires the output
-  oracle index family `J : Path s → Type u`, so `OracleStatementLens` fixes both output index
-  families in universe `u`. Generalizing this is a change to the core's oracle verifier, not to
-  the lens.

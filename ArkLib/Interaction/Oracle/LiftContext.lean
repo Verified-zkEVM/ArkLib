@@ -29,15 +29,13 @@ with their oracle data. A lifted run is a post-map of the inner run along it
 
 @[expose] public section
 
-universe u q uι uS uS' uI uI' dI dI' wJ wJ' uX uY uZ dX dY dZ uW uW' uO uO' uK
-
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 open scoped ENNReal
 
 /-- Answer two bundles' queries from the same input bundle. -/
-def OracleMap.pair {In : OracleBundle.{u, uX, dX}} {Mid : OracleBundle.{u, uY, dY}}
-    {Out : OracleBundle.{u, uZ, dZ}} (h : OracleMap In Mid) (g : OracleMap In Out) :
+def OracleMap.pair {In : OracleBundle} {Mid : OracleBundle}
+    {Out : OracleBundle} (h : OracleMap In Mid) (g : OracleMap In Out) :
     OracleMap In (Mid.sum Out) where
   f x := (h.f x, g.f x)
   impl
@@ -51,13 +49,13 @@ def OracleMap.pair {In : OracleBundle.{u, uX, dX}} {Mid : OracleBundle.{u, uY, d
 /-- A statement lens with oracle maps for the input and output oracles. The input map answers
 inner input queries from outer input data. The output map builds the outer output oracles from
 the outer input oracles and the inner output oracles. -/
-structure OracleStatementLens (s : OracleProtocol.{u, q}) (OuterIn : Type uS)
-    (InnerIn : Type uS') (OuterOut InnerOut : Path s → Type u)
-    (inputsO : OracleBundle.{u, uI, dI}) (inputsI : OracleBundle.{u, uI', dI'})
-    {JO JI : Path s → Type u}
-    {BO : (p : Path s) → JO p → Type u} {BI : (p : Path s) → JI p → Type u}
-    (outputsO : (p : Path s) → OracleFamily.{u, u, wJ} (JO p) (BO p))
-    (outputsI : (p : Path s) → OracleFamily.{u, u, wJ'} (JI p) (BI p)) where
+structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
+    (InnerIn : Type) (OuterOut InnerOut : Path s → Type)
+    (inputsO : OracleBundle) (inputsI : OracleBundle)
+    {JO JI : Path s → Type}
+    {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
+    (outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p))
+    (outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)) where
   /-- The statement part. -/
   stmt : StatementLens s OuterIn InnerIn OuterOut InnerOut
   /-- Inner input oracles, answered from outer input oracles. -/
@@ -69,13 +67,13 @@ structure OracleStatementLens (s : OracleProtocol.{u, q}) (OuterIn : Type uS)
 
 namespace OracleStatementLens
 
-variable {s : OracleProtocol.{u, q}} {OuterIn : Type uS} {InnerIn : Type uS'}
-  {OuterOut InnerOut : Path s → Type u}
-  {inputsO : OracleBundle.{u, uI, dI}} {inputsI : OracleBundle.{u, uI', dI'}}
-  {JO JI : Path s → Type u}
-  {BO : (p : Path s) → JO p → Type u} {BI : (p : Path s) → JI p → Type u}
-  {outputsO : (p : Path s) → OracleFamily.{u, u, wJ} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{u, u, wJ'} (JI p) (BI p)}
+variable {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+  {OuterOut InnerOut : Path s → Type}
+  {inputsO : OracleBundle} {inputsI : OracleBundle}
+  {JO JI : Path s → Type}
+  {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
+  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
+  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
 
 /-- The statement lens on statements paired with their oracle data. -/
 def toStatementLens
@@ -98,9 +96,9 @@ def inputRoute
 def toExtractorLens
     (lens : OracleStatementLens s OuterIn InnerIn OuterOut InnerOut inputsO inputsI outputsO
       outputsI)
-    {OuterWitIn : OuterIn × inputsO.Data → Type uW} {InnerWitIn : InnerIn × inputsI.Data → Type uW'}
-    {OuterWitOut : OuterIn × inputsO.Data → Transcript oracleSig s → Type uO}
-    {InnerWitOut : InnerIn × inputsI.Data → Transcript oracleSig s → Type uO'}
+    {OuterWitIn : OuterIn × inputsO.Data → Type} {InnerWitIn : InnerIn × inputsI.Data → Type}
+    {OuterWitOut : OuterIn × inputsO.Data → Transcript oracleSig s → Type}
+    {InnerWitOut : InnerIn × inputsI.Data → Transcript oracleSig s → Type}
     (witOutProj : ∀ x tr, OuterWitOut x tr → InnerWitOut (lens.toStatementLens.proj x) tr)
     (witInLift : ∀ x tr, OuterWitOut x tr → InnerWitIn (lens.toStatementLens.proj x) →
       OuterWitIn x) :
@@ -117,14 +115,14 @@ namespace OracleVerifier
 
 section Lift
 
-variable {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
-  {s : OracleProtocol.{u, q}} {OuterIn : Type uS} {InnerIn : Type uS'}
-  {OuterOut InnerOut : Path s → Type u}
-  {inputsO : OracleBundle.{u, uI, dI}} {inputsI : OracleBundle.{u, uI', dI'}}
-  {JO JI : Path s → Type u}
-  {BO : (p : Path s) → JO p → Type u} {BI : (p : Path s) → JI p → Type u}
-  {outputsO : (p : Path s) → OracleFamily.{u, u, wJ} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{u, u, wJ'} (JI p) (BI p)}
+variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+  {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+  {OuterOut InnerOut : Path s → Type}
+  {inputsO : OracleBundle} {inputsI : OracleBundle}
+  {JO JI : Path s → Type}
+  {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
+  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
+  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
 
 /-- Decide with the inner verifier on the projected statement, routing its input queries
 through the lens's input map, and lift an accepted output. The output map is the lens's output
@@ -181,15 +179,15 @@ end Lift
 
 section Run
 
-variable {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-  {s : OracleProtocol.{u, q}} {OuterIn : Type uS} {InnerIn : Type uS'}
-  {OuterOut InnerOut : Path s → Type u}
-  {inputsO : OracleBundle.{u, uI, dI}} {inputsI : OracleBundle.{u, uI', dI'}}
-  {JO : Path s → Type u} {JI : Path s → Type u}
-  {BO : (p : Path s) → JO p → Type u} {BI : (p : Path s) → JI p → Type u}
-  {outputsO : (p : Path s) → OracleFamily.{u, u, wJ} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{u, u, wJ'} (JI p) (BI p)}
-  {Out : Transcript oracleSig s → Type u}
+variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+  {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+  {OuterOut InnerOut : Path s → Type}
+  {inputsO : OracleBundle} {inputsI : OracleBundle}
+  {JO : Path s → Type} {JI : Path s → Type}
+  {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
+  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
+  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
+  {Out : Transcript oracleSig s → Type}
 
 /-- A lifted oracle verifier's run against any prover is the inner run on the projected
 statement and data, with an accepted output and its data lifted. -/
@@ -212,7 +210,7 @@ theorem liftContext_run
 
 /-- Running against a prover with a mapped output maps the prover output of the outcome. -/
 theorem run_mapOutput (V : OracleVerifier ambient s InnerIn InnerOut inputsI outputsI)
-    (stmt : InnerIn) (data : inputsI.Data) {A B : Transcript oracleSig s → Type u}
+    (stmt : InnerIn) (data : inputsI.Data) {A B : Transcript oracleSig s → Type}
     (f : ∀ tr, A tr → B tr) (prover : Prover oracleSig ambient s A) :
     V.run stmt data (Strategy.mapOutput f prover) =
       (fun obs => ⟨obs.1, f obs.1 obs.2.1, obs.2.2⟩) <$> V.run stmt data prover := by
@@ -240,13 +238,13 @@ end Run
 
 section Security
 
-variable {ι σ : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
-  {OuterIn : Type uS} {InnerIn : Type uS'} {OuterOut InnerOut : Path s → Type}
-  {inputsO : OracleBundle.{0, uI, dI}} {inputsI : OracleBundle.{0, uI', dI'}}
+variable {ι σ : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+  {OuterIn : Type} {InnerIn : Type} {OuterOut InnerOut : Path s → Type}
+  {inputsO : OracleBundle} {inputsI : OracleBundle}
   {JO : Path s → Type} {JI : Path s → Type}
   {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
-  {outputsO : (p : Path s) → OracleFamily.{0, 0, wJ} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{0, 0, wJ'} (JI p) (BI p)}
+  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
+  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
 
 /-- Every accepted output with positive acceptance probability is compatible with its input
 statement and data. -/
@@ -311,7 +309,7 @@ theorem liftContext_soundness
 
 /-- Oracle completeness lifts along a complete context lens on statements paired with their
 oracle data, at the same error. With `ε = 0` this is the transfer of perfect completeness. -/
-theorem liftContext_completeness {OuterWit : Type uW} {InnerWit : Type uW'}
+theorem liftContext_completeness {OuterWit : Type} {InnerWit : Type}
     {OuterO InnerO : Transcript oracleSig s → Type}
     (lens : OracleStatementLens s OuterIn InnerIn OuterOut InnerOut inputsO inputsI outputsO
       outputsI)
@@ -398,9 +396,9 @@ theorem liftContext_rbrSoundness
 /-- Oracle round-by-round knowledge soundness lifts along a knowledge-sound extractor lens on
 statements paired with their oracle data, with the same draw and error. -/
 theorem liftContext_rbrKnowledgeSoundness
-    {OuterWitIn : OuterIn × inputsO.Data → Type uW} {InnerWitIn : InnerIn × inputsI.Data → Type uW'}
-    {OuterWitOut : OuterIn × inputsO.Data → Transcript oracleSig s → Type uO}
-    {InnerWitOut : InnerIn × inputsI.Data → Transcript oracleSig s → Type uO'}
+    {OuterWitIn : OuterIn × inputsO.Data → Type} {InnerWitIn : InnerIn × inputsI.Data → Type}
+    {OuterWitOut : OuterIn × inputsO.Data → Transcript oracleSig s → Type}
+    {InnerWitOut : InnerIn × inputsI.Data → Transcript oracleSig s → Type}
     (lens : OracleStatementLens s OuterIn InnerIn OuterOut InnerOut inputsO inputsI outputsO
       outputsI)
     (witOutProj : ∀ x tr, OuterWitOut x tr → InnerWitOut (lens.toStatementLens.proj x) tr)
@@ -418,10 +416,8 @@ theorem liftContext_rbrKnowledgeSoundness
     {draw : PrefixDraw viewSig ProbComp s} {ε : PrefixError oracleSig s}
     (hlens : (lens.toExtractorLens witOutProj witInLift).IsKnowledgeSound admissibleO admissibleI
       relInO relInI relOutO relOutI V.Compatible)
-    (h : V.rbrKnowledgeSoundness.{uS', uW', uK, uO', uI', wJ', dI', q} impl admissibleI relInI
-      relOutI draw ε) :
-    (V.liftContext lens).rbrKnowledgeSoundness.{uS, uW, max uO uK, uO, uI, wJ, dI, q} impl
-      admissibleO relInO relOutO draw ε := by
+    (h : V.rbrKnowledgeSoundness impl admissibleI relInI relOutI draw ε) :
+    (V.liftContext lens).rbrKnowledgeSoundness impl admissibleO relInO relOutO draw ε := by
   refine rbrKnowledgeSoundness_liftContext lens.toStatementLens.proj witOutProj witInLift
     hlens.proj_admissible hlens.lift_knowledgeSound (fun x tr wo hacc => ?_) h
   rw [validAcceptance_liftContext, validAcceptance_iff_support] at hacc

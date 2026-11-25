@@ -36,7 +36,7 @@ between the leaf acceptance predicates. See `docs/design/interaction-layer/lift-
 
 @[expose] public section
 
-universe u uA uι uS uS' uW uW' uO uO' uK v v'
+universe u uA
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp
@@ -46,9 +46,9 @@ open scoped ENNReal
 
 /-- Project an outer input statement to an inner one, and lift an inner output statement at a
 shape path back to an outer one. Output statement types are indexed by the shape path. -/
-structure StatementLens {P : PFunctor.{uA, u}} (s : FreeM P PUnit.{u + 1})
-    (OuterIn : Type uS) (InnerIn : Type uS') (OuterOut : Path s → Type v)
-    (InnerOut : Path s → Type v') where
+structure StatementLens {P : PFunctor.{uA, 0}} (s : FreeM P PUnit.{1})
+    (OuterIn : Type) (InnerIn : Type) (OuterOut : Path s → Type)
+    (InnerOut : Path s → Type) where
   /-- The inner input statement. -/
   proj : OuterIn → InnerIn
   /-- The outer output statement from the outer input and an inner output at a path. -/
@@ -56,20 +56,20 @@ structure StatementLens {P : PFunctor.{uA, u}} (s : FreeM P PUnit.{u + 1})
 
 /-- Project an outer input witness to an inner one, and lift the inner prover's output on a
 completed transcript back to an outer one. -/
-structure WitnessLens {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    (s : FreeM P PUnit.{u + 1}) (OuterIn : Type uS) (OuterWit : Type uW) (InnerWit : Type uW')
-    (OuterOut : Transcript l s → Type v) (InnerOut : Transcript l s → Type v') where
+structure WitnessLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+    (s : FreeM P PUnit.{1}) (OuterIn : Type) (OuterWit : Type) (InnerWit : Type)
+    (OuterOut : Transcript l s → Type) (InnerOut : Transcript l s → Type) where
   /-- The inner input witness. -/
   proj : OuterIn → OuterWit → InnerWit
   /-- The outer prover output from the outer input and the inner prover output. -/
   lift : OuterIn → OuterWit → (tr : Transcript l s) → InnerOut tr → OuterOut tr
 
 /-- A statement lens and a witness lens over the same outer input statement. -/
-structure ContextLens {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    (s : FreeM P PUnit.{u + 1}) (OuterIn : Type uS) (InnerIn : Type uS')
-    (OuterWit : Type uW) (InnerWit : Type uW')
-    (OuterStmtOut InnerStmtOut : Path s → Type v)
-    (OuterOut InnerOut : Transcript l s → Type v') where
+structure ContextLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+    (s : FreeM P PUnit.{1}) (OuterIn : Type) (InnerIn : Type)
+    (OuterWit : Type) (InnerWit : Type)
+    (OuterStmtOut InnerStmtOut : Path s → Type)
+    (OuterOut InnerOut : Transcript l s → Type) where
   /-- The statement part. -/
   stmt : StatementLens s OuterIn InnerIn OuterStmtOut InnerStmtOut
   /-- The witness part. -/
@@ -78,12 +78,12 @@ structure ContextLens {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
 /-- A statement lens with the maps that knowledge extraction runs backwards: an outer output
 witness projects to an inner one, and an inner input witness lifts to an outer one using the
 completed transcript and the outer output witness. -/
-structure ExtractorLens {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
-    (s : FreeM P PUnit.{u + 1}) (OuterIn : Type uS) (InnerIn : Type uS')
-    (OuterStmtOut InnerStmtOut : Path s → Type v)
-    (OuterWitIn : OuterIn → Type uW) (InnerWitIn : InnerIn → Type uW')
-    (OuterWitOut : OuterIn → Transcript l s → Type uO)
-    (InnerWitOut : InnerIn → Transcript l s → Type uO') where
+structure ExtractorLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+    (s : FreeM P PUnit.{1}) (OuterIn : Type) (InnerIn : Type)
+    (OuterStmtOut InnerStmtOut : Path s → Type)
+    (OuterWitIn : OuterIn → Type) (InnerWitIn : InnerIn → Type)
+    (OuterWitOut : OuterIn → Transcript l s → Type)
+    (InnerWitOut : InnerIn → Transcript l s → Type) where
   /-- The statement part. -/
   stmt : StatementLens s OuterIn InnerIn OuterStmtOut InnerStmtOut
   /-- The inner output witness extracted from an outer one. -/
@@ -95,27 +95,27 @@ structure ExtractorLens {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u}
 
 /-- Run the inner prover on the projected input and map its output through the witness lens.
 Every node slot is the inner prover's slot. -/
-def Prover.liftContext {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-    {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : FreeM P PUnit.{u + 1}}
-    {OuterIn : Type uS} {InnerIn : Type uS'} {OuterWit : Type uW} {InnerWit : Type uW'}
-    {OuterOut InnerOut : Transcript l s → Type u}
+def Prover.liftContext {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+    {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : FreeM P PUnit.{1}}
+    {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
+    {OuterOut InnerOut : Transcript l s → Type}
     (proj : OuterIn → InnerIn) (lens : WitnessLens l s OuterIn OuterWit InnerWit OuterOut InnerOut)
     (prover : InnerIn → InnerWit → Prover l ambient s InnerOut)
     (stmt : OuterIn) (wit : OuterWit) : Prover l ambient s OuterOut :=
   Strategy.mapOutput (lens.lift stmt wit) (prover (proj stmt) (lens.proj stmt wit))
 
 /-- Decide with the inner verifier on the projected statement and lift an accepted output. -/
-def Verifier.liftContext {ι : Type uι} {ambient : OracleSpec.{uι, u} ι} {s : Protocol.{u}}
-    {OuterIn : Type uS} {InnerIn : Type uS'} {OuterOut InnerOut : Path s → Type u}
+def Verifier.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol.{0}}
+    {OuterIn : Type} {InnerIn : Type} {OuterOut InnerOut : Path s → Type}
     (lens : StatementLens s OuterIn InnerIn OuterOut InnerOut)
     (V : Verifier ambient s InnerIn InnerOut) : Verifier ambient s OuterIn OuterOut where
   decide stmt p v := lens.lift stmt p <$> V.decide (lens.proj stmt) p v
 
 /-- Lift both parties of a reduction along a context lens. -/
-def Reduction.liftContext {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : Protocol.{u}}
-    {OuterIn : Type uS} {InnerIn : Type uS'} {OuterWit : Type uW} {InnerWit : Type uW'}
-    {OuterStmtOut InnerStmtOut : Path s → Type u}
-    {OuterOut InnerOut : Transcript plainSig s → Type u}
+def Reduction.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol.{0}}
+    {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
+    {OuterStmtOut InnerStmtOut : Path s → Type}
+    {OuterOut InnerOut : Transcript plainSig s → Type}
     (lens : ContextLens plainSig s OuterIn InnerIn OuterWit InnerWit OuterStmtOut InnerStmtOut
       OuterOut InnerOut)
     (R : Reduction ambient s InnerIn InnerWit InnerStmtOut InnerOut) :
@@ -126,10 +126,10 @@ def Reduction.liftContext {ι : Type u} {ambient : OracleSpec.{u, u} ι} {s : Pr
 /-! ### Run laws -/
 
 /-- Simulating a prover commutes with mapping its output. -/
-theorem Prover.simulate_mapOutput {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-    {ι : Type u} {ambient : OracleSpec.{u, u} ι} {m : Type u → Type u} [Monad m] [LawfulMonad m]
+theorem Prover.simulate_mapOutput {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+    {ι : Type} {ambient : OracleSpec.{0, 0} ι} {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) :
-    (s : FreeM P PUnit.{u + 1}) → {A B : Transcript l s → Type u} →
+    (s : FreeM P PUnit.{1}) → {A B : Transcript l s → Type} →
     (f : ∀ tr, A tr → B tr) → (p : Prover l ambient s A) →
     Prover.simulate impl (Strategy.mapOutput f p) = Strategy.mapOutput f (Prover.simulate impl p)
   | .pure _, _, _, f, p => by
@@ -161,8 +161,8 @@ theorem run_mapOutput_focal {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly
   rfl
 
 /-- Running against a prover with a mapped output maps the prover output of the outcome. -/
-theorem Verifier.run_mapOutput {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {S : Type uS} {T : Path s → Type u} {A B : Transcript plainSig s → Type u}
+theorem Verifier.run_mapOutput {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {A B : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (f : ∀ tr, A tr → B tr)
     (p : Prover plainSig ambient s A) :
     V.run stmt (Strategy.mapOutput f p) =
@@ -182,9 +182,9 @@ theorem Verifier.run_mapOutput {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
 /-- A lifted verifier's run against any prover is the inner run on the projected statement,
 with an accepted output lifted. -/
-theorem Verifier.liftContext_run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {OuterIn : Type uS} {InnerIn : Type uS'}
-    {OuterOut InnerOut : Path s → Type u} {Out : Transcript plainSig s → Type u}
+theorem Verifier.liftContext_run {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+    {s : Protocol.{0}} {OuterIn : Type} {InnerIn : Type}
+    {OuterOut InnerOut : Path s → Type} {Out : Transcript plainSig s → Type}
     (lens : StatementLens s OuterIn InnerIn OuterOut InnerOut)
     (V : Verifier ambient s InnerIn InnerOut) (stmt : OuterIn) (p : Prover plainSig ambient s Out) :
     (V.liftContext lens).run stmt p =
@@ -199,10 +199,10 @@ theorem Verifier.liftContext_run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
 /-- A lifted reduction's run is the inner run on the projected input, with the prover output
 mapped through the witness lens and an accepted output lifted. -/
-theorem Reduction.liftContext_runOutcome {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {OuterIn : Type uS} {InnerIn : Type uS'} {OuterWit : Type uW}
-    {InnerWit : Type uW'} {OuterStmtOut InnerStmtOut : Path s → Type u}
-    {OuterOut InnerOut : Transcript plainSig s → Type u}
+theorem Reduction.liftContext_runOutcome {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+    {s : Protocol.{0}} {OuterIn : Type} {InnerIn : Type} {OuterWit : Type}
+    {InnerWit : Type} {OuterStmtOut InnerStmtOut : Path s → Type}
+    {OuterOut InnerOut : Transcript plainSig s → Type}
     (lens : ContextLens plainSig s OuterIn InnerIn OuterWit InnerWit OuterStmtOut InnerStmtOut
       OuterOut InnerOut)
     (R : Reduction ambient s InnerIn InnerWit InnerStmtOut InnerOut) (stmt : OuterIn)
@@ -218,14 +218,14 @@ theorem Reduction.liftContext_runOutcome {ι : Type u} {ambient : OracleSpec.{u,
 
 /-- An inner output statement is compatible with an inner input statement at a path when the
 decision can return it on some view of that path. -/
-def Verifier.Compatible {ι : Type uι} {ambient : OracleSpec.{uι, u} ι} {s : Protocol.{u}}
-    {S : Type uS} {T : Path s → Type u} (V : Verifier ambient s S T) (stmt : S) (p : Path s)
+def Verifier.Compatible {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol.{0}}
+    {S : Type} {T : Path s → Type} (V : Verifier ambient s S T) (stmt : S) (p : Path s)
     (t : T p) : Prop :=
   ∃ v : PlainView s p, some t ∈ support (V.decide stmt p v).run
 
 /-- Every accepted output of a run is compatible with its input statement. -/
-theorem Verifier.compatible_of_mem_support_run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : Protocol.{u}} {S : Type uS} {T : Path s → Type u} {Out : Transcript plainSig s → Type u}
+theorem Verifier.compatible_of_mem_support_run {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out)
     {obs : Outcome plainSig s Out T} (h : obs ∈ support (V.run stmt p)) {t : T obs.1.path}
     (ht : obs.2.2 = some t) : V.Compatible stmt obs.1.path t := by
@@ -236,7 +236,7 @@ theorem Verifier.compatible_of_mem_support_run {ι : Type u} {ambient : OracleSp
 /-- Every accepted output with positive acceptance probability is compatible with its input
 statement. -/
 theorem Verifier.compatible_of_mem_support_simulateQ {ι σ : Type} {ambient : OracleSpec ι}
-    {s : Protocol} {S : Type uS} {T : Path s → Type} (V : Verifier ambient s S T)
+    {s : Protocol} {S : Type} {T : Path s → Type} (V : Verifier ambient s S T)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (stmt : S) (tr : Transcript plainSig s)
     {state final : σ} {t : T tr.path}
     (h : (some t, final) ∈ support
@@ -248,9 +248,9 @@ theorem Verifier.compatible_of_mem_support_simulateQ {ι σ : Type} {ambient : O
 
 section Conditions
 
-variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}} {s : FreeM P PUnit.{u + 1}}
-  {OuterIn : Type uS} {InnerIn : Type uS'} {OuterWit : Type uW} {InnerWit : Type uW'}
-  {OuterStmtOut InnerStmtOut : Path s → Type v} {OuterOut InnerOut : Transcript l s → Type v'}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P PUnit.{1}}
+  {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
+  {OuterStmtOut InnerStmtOut : Path s → Type} {OuterOut InnerOut : Transcript l s → Type}
 
 /-- A statement lens preserves soundness: an admissible false outer input projects to an
 admissible false inner input, and on such an input a compatible inner output whose lift is in
@@ -297,12 +297,12 @@ end Conditions
 admissible inputs, and valid inner input witnesses lift to valid outer ones. A compatible
 accepted outer output witness either projects to a valid inner one, or lifts every inner input
 witness to a valid outer one. -/
-structure ExtractorLens.IsKnowledgeSound {P : PFunctor.{uA, u}}
-    {l : PFunctor.Lens P rolePoly.{u}} {s : FreeM P PUnit.{u + 1}}
-    {OuterIn : Type uS} {InnerIn : Type uS'} {OuterStmtOut InnerStmtOut : Path s → Type v}
-    {OuterWitIn : OuterIn → Type uW} {InnerWitIn : InnerIn → Type uW'}
-    {OuterWitOut : OuterIn → Transcript l s → Type uO}
-    {InnerWitOut : InnerIn → Transcript l s → Type uO'}
+structure ExtractorLens.IsKnowledgeSound {P : PFunctor.{uA, 0}}
+    {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P PUnit.{1}}
+    {OuterIn : Type} {InnerIn : Type} {OuterStmtOut InnerStmtOut : Path s → Type}
+    {OuterWitIn : OuterIn → Type} {InnerWitIn : InnerIn → Type}
+    {OuterWitOut : OuterIn → Transcript l s → Type}
+    {InnerWitOut : InnerIn → Transcript l s → Type}
     (lens : ExtractorLens l s OuterIn InnerIn OuterStmtOut InnerStmtOut OuterWitIn InnerWitIn
       OuterWitOut InnerWitOut)
     (admissibleO : OuterIn → Prop) (admissibleI : InnerIn → Prop)
@@ -330,8 +330,8 @@ structure ExtractorLens.IsKnowledgeSound {P : PFunctor.{uA, u}}
 
 section Generic
 
-variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}} {s : FreeM P PUnit.{u + 1}}
-  {SO : Type uS} {SI : Type uS'}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P PUnit.{1}}
+  {SO : Type} {SI : Type}
 
 /-- Pull a state function back along a statement map. The new state is true on a statement
 outside the admissible false region, and otherwise is the old state at the mapped statement. -/
@@ -357,8 +357,8 @@ def StateFunction.liftContext {admO langO : SO → Prop} {admI langI : SI → Pr
 witness carries a completed transcript and an outer output witness beside the old intermediate
 witness. The new state is the old state, or the shortcut that every inner input witness lifts
 to a valid outer one. -/
-def KnowledgeStateFunction.liftContext {WO : SO → Transcript l s → Type uO}
-    {WI : SI → Transcript l s → Type uO'} {WinO : SO → Type uW} {WinI : SI → Type uW'}
+def KnowledgeStateFunction.liftContext {WO : SO → Transcript l s → Type}
+    {WI : SI → Transcript l s → Type} {WinO : SO → Type} {WinI : SI → Type}
     {admO : SO → Prop} {admI : SI → Prop}
     {relInO : (x : SO) → WinO x → Prop} {relInI : (y : SI) → WinI y → Prop}
     {validO : (x : SO) → (tr : Transcript l s) → WO x tr → Prop}
@@ -369,8 +369,8 @@ def KnowledgeStateFunction.liftContext {WO : SO → Transcript l s → Type uO}
     (hlift : ∀ x, admO x → ∀ tr wo v, relInI (proj x) v → relInO x (witInLift x tr wo v))
     (hvalid : ∀ x tr wo, validO x tr wo →
       validI (proj x) tr (witOutProj x tr wo) ∨ ∀ v, relInO x (witInLift x tr wo v))
-    (F : KnowledgeStateFunction.{uS', uW', uK, uO'} l s SI WI WinI admI relInI validI) :
-    KnowledgeStateFunction.{uS, uW, max u uO uK, uO} l s SO WO WinO admO relInO validO where
+    (F : KnowledgeStateFunction l s SI WI WinI admI relInI validI) :
+    KnowledgeStateFunction l s SO WO WinO admO relInO validO where
   Witness x _ sp history := ((tr : Transcript l s) × WO x tr) × F.Witness (proj x) sp history
   toFun x _ sp history w :=
     F.toFun (proj x) sp history w.2 ∨ ∀ v, relInO x (witInLift x w.1.1 w.1.2 v)
@@ -382,13 +382,6 @@ def KnowledgeStateFunction.liftContext {WO : SO → Transcript l s → Type uO}
     (fun hF => hlift x ha _ _ _ (F.root (proj x) (hadm x ha) w.2 hF)) (fun hs => hs _)
   send sp history x ho m w h := h.imp (F.send sp history (proj x) ho m w.2) id
   leaf sp history x wo h := (hvalid x _ wo h).imp (F.leaf sp history (proj x) _) id
-
-end Generic
-
-section GenericBounds
-
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly} {s : FreeM P PUnit.{1}}
-  {SO : Type uS} {SI : Type uS'}
 
 /-- Round-by-round soundness pulls back along a statement map that sends admissible false
 statements to admissible false statements, when acceptance on such a statement implies
@@ -408,10 +401,9 @@ theorem rbrSoundness_liftContext {admO langO : SO → Prop} {admI langI : SI →
     hF (proj x) hadmI hlangI a next sp ho history
 
 /-- Round-by-round knowledge soundness pulls back along an extractor lens's maps. The draw and
-the error are unchanged; intermediate witnesses move to a universe that also holds the outer
-output witnesses. -/
-theorem rbrKnowledgeSoundness_liftContext {WO : SO → Transcript l s → Type uO}
-    {WI : SI → Transcript l s → Type uO'} {WinO : SO → Type uW} {WinI : SI → Type uW'}
+the error are unchanged. -/
+theorem rbrKnowledgeSoundness_liftContext {WO : SO → Transcript l s → Type}
+    {WI : SI → Transcript l s → Type} {WinO : SO → Type} {WinI : SI → Type}
     {admO : SO → Prop} {admI : SI → Prop}
     {relInO : (x : SO) → WinO x → Prop} {relInI : (y : SI) → WinI y → Prop}
     {validO : (x : SO) → (tr : Transcript l s) → WO x tr → Prop}
@@ -423,8 +415,8 @@ theorem rbrKnowledgeSoundness_liftContext {WO : SO → Transcript l s → Type u
     (hlift : ∀ x, admO x → ∀ tr wo v, relInI (proj x) v → relInO x (witInLift x tr wo v))
     (hvalid : ∀ x tr wo, validO x tr wo →
       validI (proj x) tr (witOutProj x tr wo) ∨ ∀ v, relInO x (witInLift x tr wo v))
-    (h : rbrKnowledgeSoundness.{uS', uW', uK, uO'} l s admI relInI validI draw ε) :
-    rbrKnowledgeSoundness.{uS, uW, max uO uK, uO} l s admO relInO validO draw ε := by
+    (h : rbrKnowledgeSoundness l s admI relInI validI draw ε) :
+    rbrKnowledgeSoundness l s admO relInO validO draw ε := by
   obtain ⟨F, hF⟩ := h
   refine ⟨F.liftContext proj witOutProj witInLift hadm hlift hvalid,
     fun x ha a next sp ho history => ?_⟩
@@ -433,7 +425,7 @@ theorem rbrKnowledgeSoundness_liftContext {WO : SO → Transcript l s → Type u
   simp only [KnowledgeStateFunction.liftContext, not_or] at hnot hafter
   exact ⟨wi, hnot.1, hafter.resolve_right hnot.2⟩
 
-end GenericBounds
+end Generic
 
 /-! ### Probability lemmas -/
 
@@ -468,7 +460,7 @@ theorem prEvent_le_map_of_support {α β : Type} (mx : ProbComp α) (f : α → 
 section Plain
 
 variable {ι σ : Type} {ambient : OracleSpec ι} {s : Protocol}
-  {OuterIn : Type uS} {InnerIn : Type uS'} {OuterOut InnerOut : Path s → Type}
+  {OuterIn : Type} {InnerIn : Type} {OuterOut InnerOut : Path s → Type}
 
 /-- The lifted decision accepts with positive probability exactly when the inner decision
 accepts, at the projected statement, an output whose lift satisfies the event. -/
@@ -514,7 +506,7 @@ theorem Verifier.liftContext_soundness
 
 /-- Completeness lifts along a complete context lens, at the same error. With `ε = 0` this is
 the transfer of perfect completeness. -/
-theorem Reduction.liftContext_completeness {OuterWit : Type uW} {InnerWit : Type uW'}
+theorem Reduction.liftContext_completeness {OuterWit : Type} {InnerWit : Type}
     {OuterStmtOut InnerStmtOut : Path s → Type} {OuterO InnerO : Transcript plainSig s → Type}
     (lens : ContextLens plainSig s OuterIn InnerIn OuterWit InnerWit OuterStmtOut InnerStmtOut
       OuterO InnerO)
@@ -582,12 +574,11 @@ theorem Verifier.liftContext_rbrSoundness
     (V.compatible_of_mem_support_simulateQ impl _ tr hmem) hout⟩
 
 /-- Round-by-round knowledge soundness lifts along a knowledge-sound extractor lens, with the
-same draw and error. Intermediate witnesses move to a universe that also holds the outer output
-witnesses. -/
+same draw and error. -/
 theorem Verifier.liftContext_rbrKnowledgeSoundness
-    {OuterWitIn : OuterIn → Type uW} {InnerWitIn : InnerIn → Type uW'}
-    {OuterWitOut : OuterIn → Transcript plainSig s → Type uO}
-    {InnerWitOut : InnerIn → Transcript plainSig s → Type uO'}
+    {OuterWitIn : OuterIn → Type} {InnerWitIn : InnerIn → Type}
+    {OuterWitOut : OuterIn → Transcript plainSig s → Type}
+    {InnerWitOut : InnerIn → Transcript plainSig s → Type}
     (lens : ExtractorLens plainSig s OuterIn InnerIn OuterOut InnerOut OuterWitIn InnerWitIn
       OuterWitOut InnerWitOut)
     (V : Verifier ambient s InnerIn InnerOut) (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -601,9 +592,8 @@ theorem Verifier.liftContext_rbrKnowledgeSoundness
     {draw : PrefixDraw plainSig ProbComp s} {ε : PrefixError plainSig s}
     (hlens : lens.IsKnowledgeSound admissibleO admissibleI relInO relInI relOutO relOutI
       V.Compatible)
-    (h : V.rbrKnowledgeSoundness.{uS', uW', uK, uO'} impl admissibleI relInI relOutI draw ε) :
-    (V.liftContext lens.stmt).rbrKnowledgeSoundness.{uS, uW, max uO uK, uO} impl admissibleO
-      relInO relOutO draw ε := by
+    (h : V.rbrKnowledgeSoundness impl admissibleI relInI relOutI draw ε) :
+    (V.liftContext lens.stmt).rbrKnowledgeSoundness impl admissibleO relInO relOutO draw ε := by
   refine rbrKnowledgeSoundness_liftContext lens.stmt.proj lens.witOutProj lens.witInLift
     hlens.proj_admissible hlens.lift_knowledgeSound (fun x tr wo hacc => ?_) h
   rw [Verifier.validAcceptance_liftContext, Verifier.validAcceptance_iff_support] at hacc
