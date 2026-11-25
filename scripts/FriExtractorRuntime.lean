@@ -151,16 +151,20 @@ then metadata. -/
 def arithmeticCounts (cost : ArithmeticCost) : List ℕ :=
   [.add, .sub, .mul, .inv, .eq, .coefficientRead, .nodeRead, .valueRead, .metadata].map cost
 
-/-- Protect exact padded arithmetic and data-dependent trim behavior. -/
+/-- Check raw convolution charges, interpolation, and data-dependent trimming. -/
 def arithmeticChecks : IO Unit := do
   let rightEmpty := profileArithmetic (Arithmetic.mulRaw (#[3, 4] : Array F) #[])
-  check "raw convolution keeps shifted empty-right padding" fun _ ↦
+  check "raw convolution preserves padding with an empty right factor" fun _ ↦
     rightEmpty.1.val == #[0] &&
-    arithmeticCounts rightEmpty.2 == [1, 0, 0, 0, 0, 4, 0, 0, 8]
+    arithmeticCounts rightEmpty.2 == [0, 0, 0, 0, 0, 0, 0, 0, 2]
   let leftEmpty := profileArithmetic (Arithmetic.mulRaw (#[] : Array F) #[3, 4])
   check "empty raw left has one terminal tick" fun _ ↦
     leftEmpty.1.val.isEmpty &&
     arithmeticCounts leftEmpty.2 == [0, 0, 0, 0, 0, 0, 0, 0, 1]
+  let rightShort := profileArithmetic (Arithmetic.mulRaw ((Array.replicate 15 (2 : F)).push 0) #[3])
+  check "short right factor charges each stored coefficient pair" fun _ ↦
+    rightShort.1.val == (Array.replicate 15 (6 : F)).push 0 &&
+    arithmeticCounts rightShort.2 == [16, 0, 16, 0, 0, 32, 0, 0, 33]
   let emptyEval := profileArithmetic (Arithmetic.evalRaw (#[] : Array F) 3)
   check "empty power sum has one terminal tick" fun _ ↦
     emptyEval.1.val == 0 &&
@@ -172,7 +176,7 @@ def arithmeticChecks : IO Unit := do
   let zeroInterp := profileArithmetic (Arithmetic.interpolate (#[3] : Array F) #[0] 1)
   check "zero sample retains raw singleton scalar before trimming" fun _ ↦
     zeroInterp.1.val.val.isEmpty &&
-    arithmeticCounts zeroInterp.2 == [2, 0, 1, 0, 2, 8, 0, 1, 14]
+    arithmeticCounts zeroInterp.2 == [2, 0, 1, 0, 2, 6, 0, 1, 11]
   let collide := profileArithmetic (Arithmetic.interpolate (#[3, 3] : Array F) #[0, 0] 2)
   check "colliding nodes still request every inverse" fun _ ↦ collide.2 .inv == 2
   let zeros := profileArithmetic (Arithmetic.trimRaw (#[0, 0, 0] : Array F))
