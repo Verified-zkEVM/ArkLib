@@ -50,6 +50,10 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsSampling.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/LinearClaimsExact.lean
   - ArkLib/ToMathlib/Finset/AffineZeros.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingRound.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Folding.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingSampling.lean
+  - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/FoldingComputable.lean
   - ArkLib/ToMathlib/Finset/TripleCount.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeTheorem.lean
 ---
@@ -141,12 +145,16 @@ challenges in `K`, the counts use `q = |K|`.
 | Theorem 5.1, first inequality of (5.5) | `ReedSolomon.LinearClaimInstance`, `ReedSolomon.IsLinearClaimExceptional`, `ReedSolomon.linearClaimMcaError`, `ReedSolomon.HasCorrectLinearClaims`, `ReedSolomon.linearClaimMcaError_le_affineMcaError_add` | For loss one and `nd < (A - 1)²`, the linear-claim error is at most the affine error plus `2ℓ₀/q`. The prover message is any function of `θ`, so every deterministic prover is covered. |
 | Theorem 5.1, second inequality of (5.5) | `ReedSolomon.linearClaimMcaError_le` | The hypotheses of the second inequality of (5.4), with bound `(4/η + 2ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)`. |
 | Theorem 5.1, sampling form of (5.5) | `ReedSolomon.linearClaimMcaError_eq_iSup_prob`, `ReedSolomon.prob_isLinearClaimExceptional_le` | Native uniform sampling of `(θ, α, β)`. |
+| Theorem 5.1 for `t` rows, (5.4) | `ReedSolomon.interleavedEqualDegreeMcaError_le_interleavedAffineMcaError_add`, `ReedSolomon.interleavedEqualDegreeMcaError_le`, `ReedSolomon.interleavedEqualDegreeMcaError_one` | For loss one and `nd < (A - 1)²`, the interleaved equal-degree error is at most the interleaved affine error plus `ℓ₀/q`. Under the Theorem 1.1 hypotheses this gives `(4/η + ℓ₀)/q + 2¹⁴ n²/(ρ³ η¹⁰ q²)` for any number `t` of rows. At `t = 1` the error equals the equal-degree error. |
+| Theorem 5.2, row folding | `ReedSolomon.foldRoundWords`, `ReedSolomon.foldWords`, `ReedSolomon.foldPolynomials` | Rows are indexed from zero: Lean row `j` is the paper's `f_{j+1}`, so rows `2i` and `2i+1` are `f_{2i+1}` and `f_{2i+2}`. Challenge `c j` is round `j + 1`. |
+| Theorem 5.2 | `ReedSolomon.IsFoldingExceptional`, `ReedSolomon.foldingMcaError`, `ReedSolomon.exists_foldPolynomials_eq_of_not_hasBadFoldingRound`, `ReedSolomon.foldingMcaError_le_mul`, `ReedSolomon.prob_isFoldingExceptional_le_mul` | If no round is bad, every `P` of degree at most `d + r` agreeing with the folded word on `A + r` points has witnesses of degree at most `d` that fold to `P` and lose at most `r` points. The probability of an exceptional folded candidate is at most `rε`, where `ε` bounds the `t`-row equal-degree error of every round. |
 
 ## Port Ledger
 
 The units describe the port plan, including results without Lean declarations.
 A unit is done when its declarations are on `main`.
-A result described as formalized is available in the corresponding branch of the stack.
+A result described as formalized has a Lean implementation.
+A linked PR identifies where the work was introduced.
 A part of a unit is open when no Lean statement covers it.
 A unit is deferred when the port plan postpones it.
 
@@ -161,7 +169,7 @@ A unit is deferred when the port plan postpones it.
 | 7 | Lemma 3.11 | Rational Taylor coefficients `Nⱼ/S^(2j-1)` for `j ≥ 1`, numerator degree bounds, and polynomial-root reconstruction | — | coefficients and polynomial roots done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508)); existence, uniqueness and the coefficient formula for power series formalized in [#1519](https://github.com/Verified-zkEVM/ArkLib/pull/1519) |
 | 8 | Claims 4.8–4.9 and Lemma 4.7 | The nonpersistent count for one factor, through an incidence bound on a hypersurface in three chart coordinates. The hypersurface takes the place of the cover of dimension at most two. The proof of the incidence bound inducts on dimension over the agreement cuts, in place of the agreement-hyperplane induction. The sum over factors is part of the unit 9 count | 2, 6, 7 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)) |
 | 9 | Lemma 4.1 and Theorems 1.1, 4.10 | Parameter bounds and the final affine error bounds | 2, 5, 6, 8 | done ([#1508](https://github.com/Verified-zkEVM/ArkLib/pull/1508), [#1509](https://github.com/Verified-zkEVM/ArkLib/pull/1509)), except the floored Johnson factor of (4.13), which is open |
-| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | base-field counts, packing and interleaved bound (5.7) formalized; folding open |
+| 10 | Theorem 5.2 | For `k = 2ʳ` rows, shared folding with degree `d + r`, threshold `A + r`, loss `r`, and error at most `rε`, where `ε` bounds every round. The proof packs rows into `F_{q^t}` with base-field challenges | 9 | formalized through the folding bound; the interleaved extension of the linear-claims bound remains open |
 | 11 | Theorem 7.1 and Appendix A | Reed–Muller extension on subfield grids through the Pellikaan–Wu reduction | 9 | formalized through Theorem 7.1 in [#1547](https://github.com/Verified-zkEVM/ArkLib/pull/1547) |
 
 In unit 3, `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the Johnson list bound from Theorem 5.1.
@@ -293,8 +301,7 @@ Both arguments are complete.
 
 ## Open Formalization Gaps
 
-The folding conclusion of Theorem 5.2 is open, and so are the interleaved equal-degree and
-linear-claim conclusions of its proof.
+The interleaved extension of the linear-claims bound (5.5) has no Lean statement.
 
 `ReedSolomon.exists_affineExceptional_finset_card_le_of_interpolation` and
 `ReedSolomon.affineMcaError_le_of_interpolation` differ from Theorem 4.10 in two ways.

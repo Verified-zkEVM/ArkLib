@@ -55,5 +55,19 @@ example : 2 ≤ ⌊(5 : ℝ) * ((3 : ℝ) - 1) / ((3 : ℝ) ^ 2 - 5 * 1)⌋₊ :
   exact_mod_cast le_floor_johnson_of_mul_le (k := 2) (n := 5) (d := 1) (L := 3)
     (by norm_num) (by norm_num)
 
+/-- info: 'ReedSolomon.equalDegreeMcaError_le_affineMcaError_add' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.equalDegreeMcaError_le_affineMcaError_add
+
+/-- info: 'ReedSolomon.card_badEqualDegreeChallenges_mul_le' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.card_badEqualDegreeChallenges_mul_le
+
+/-- info: 'ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq' depends on
+axioms: [propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq
+
 #print axioms ReedSolomon.equalDegreeMcaError_eq_iSup_prob

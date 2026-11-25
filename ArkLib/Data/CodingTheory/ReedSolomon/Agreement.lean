@@ -36,6 +36,9 @@ Reed–Solomon statements must supply their strict message-degree hypotheses sep
 * `card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet` is the Johnson bound for
   polynomial pairs with large common agreement.
 * `le_floor_johnson_of_mul_le` turns the integer Johnson count into the rounded-down real bound.
+* `interleavedCommonAgreementSet` records the positions where every row of two tuples agrees.
+* `card_inter_interleavedCommonAgreementSet_le` bounds the common agreement of distinct pairs of
+  tuples.
 
 These are exact finite sets, with no decoding threshold, probability convention, or
 mutual-correlated-agreement hypothesis.
@@ -196,6 +199,41 @@ theorem le_floor_johnson_of_mul_le {k n d L : ℕ} (hJ : n * d < L ^ 2)
         rw [show L - d = 0 by omega, mul_zero] at h
         omega
     simp [hk]
+
+/-- The positions where every row of `F₀` and `G₀` agrees with the matching rows of `f` and `g`. -/
+def interleavedCommonAgreementSet {F : Type*} [Semiring F] [DecidableEq F] {ι κ : Type*}
+    [Fintype ι] [Fintype κ] (domain : ι ↪ F) (f g : κ → ι → F) (F₀ G₀ : κ → F[X]) : Finset ι :=
+  Finset.univ.filter fun i ↦ ∀ r, (F₀ r).eval (domain i) = f r i ∧ (G₀ r).eval (domain i) = g r i
+
+/-- Shared common agreement keeps both equalities in every row at the same coordinate. -/
+@[simp] theorem mem_interleavedCommonAgreementSet
+    {F ι κ : Type*} [Semiring F] [DecidableEq F] [Fintype ι] [Fintype κ]
+    (domain : ι ↪ F) (f g : κ → ι → F) (F₀ G₀ : κ → F[X]) (i : ι) :
+    i ∈ interleavedCommonAgreementSet domain f g F₀ G₀ ↔
+      ∀ r, (F₀ r).eval (domain i) = f r i ∧ (G₀ r).eval (domain i) = g r i := by
+  simp [interleavedCommonAgreementSet]
+
+/-- Two distinct pairs of tuples of degree at most `d` share at most `d` common agreements.
+
+Some row differs, and the shared common set lies in the common set of that row. -/
+theorem card_inter_interleavedCommonAgreementSet_le
+    {F : Type*} [Field F] [DecidableEq F] {ι κ : Type*} [Fintype ι] [DecidableEq ι] [Fintype κ]
+    (domain : ι ↪ F) (f g : κ → ι → F) {d : ℕ} {F₀ G₀ F₁ G₁ : κ → F[X]}
+    (hF₀ : ∀ r, (F₀ r).degree ≤ d) (hG₀ : ∀ r, (G₀ r).degree ≤ d)
+    (hF₁ : ∀ r, (F₁ r).degree ≤ d) (hG₁ : ∀ r, (G₁ r).degree ≤ d) (hne : (F₀, G₀) ≠ (F₁, G₁)) :
+    #(interleavedCommonAgreementSet domain f g F₀ G₀ ∩
+      interleavedCommonAgreementSet domain f g F₁ G₁) ≤ d := by
+  obtain ⟨r, hr⟩ : ∃ r, (F₀ r, G₀ r) ≠ (F₁ r, G₁ r) := by
+    by_contra h
+    push Not at h
+    exact hne (Prod.ext (funext fun r ↦ (Prod.mk.inj (h r)).1)
+      (funext fun r ↦ (Prod.mk.inj (h r)).2))
+  refine (Finset.card_le_card fun i hi ↦ ?_).trans
+    (card_inter_commonPolynomialAgreementSet_le domain (f r) (g r) (hF₀ r) (hG₀ r) (hF₁ r)
+      (hG₁ r) hr)
+  simp only [Finset.mem_inter, mem_interleavedCommonAgreementSet,
+    mem_commonPolynomialAgreementSet] at hi ⊢
+  exact ⟨hi.1 r, hi.2 r⟩
 
 end
 end ReedSolomon

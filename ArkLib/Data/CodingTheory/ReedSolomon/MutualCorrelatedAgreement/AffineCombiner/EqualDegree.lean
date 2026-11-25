@@ -242,7 +242,8 @@ theorem card_filter_isAffineExceptional_le_mul_affineMcaError [Fintype F] (domai
 
 /-- If `nd < (A - 1)²`, the equal-degree error at agreement loss one is
 at most the affine error plus `ℓ₀/q`, where `n = |ι|`, `q = |F|`, and
-`ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the rounded-down Johnson bound. -/
+`ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋` is the rounded-down Johnson bound.
+This is the `t = 1` case of the `t`-row bound in `FoldingRound`, proved here directly. -/
 theorem equalDegreeMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hJ : Fintype.card ι * d < (A - 1) ^ 2) :
     equalDegreeMcaError domain d A 1 ≤ affineMcaError domain d A 1 +
