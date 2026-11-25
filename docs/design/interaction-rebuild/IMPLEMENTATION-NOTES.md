@@ -228,8 +228,9 @@ Neither P1 nor P2 retires an Agreement output or witness contract.
 decision's full query log, which records bundle queries. Its input query index and oracle-node
 query type must remain in `Type`. A large-query full-log API needs a parent logging interface
 whose log can be returned by the small computation monad. VCVio
-[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which aims to
-lift this limit; ArkLib picks it up through a later VCVio pin bump. Input data has its independent universe
+[#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst`, which can
+lift this limit. The VCVio pin includes it since the `f1a4a8ec` bump, and rebuilding `runWithLog` on
+it is follow-up work. Input data has its independent universe
 even in this API, because the log never stores realizations. Only this full-log API keeps the
 restriction, for clients that need the bundle queries. Extraction does not use it. `OracleVerifier.runWithAmbientLog` puts the logger on the
 ambient handler before adding the pure bundle handler, so its result holds only two ambient
@@ -585,8 +586,9 @@ including KC-065 as equivalent because its frozen schedule was already constant.
 
 ### Measured extraction
 
-`Security/MeasuredExtraction.lean` names one VCVio `BudgetedProgram` for each root, step and leaf
-map. `programAlong` composes those programs using VCVio's `BudgetedProgram.comp` and `contramap`.
+`Security/MeasuredExtraction.lean` names one PolyFun `PFunctor.FreeM.BudgetedProgram` for each
+root, step and leaf map. `programAlong` composes those programs using PolyFun's
+`BudgetedProgram.comp` and `contramap`.
 `BudgetAtMost rootBound stepBound leafBound` gives
 `leafBound + (completeSpine l tr).length • stepBound + rootBound`.
 The frozen `length • bound` result is recovered by explicitly supplying zero root and leaf
@@ -605,7 +607,11 @@ every state function a measured certificate with zero declared cost, so an opera
 result names its stage programs and prices. Measured append and a uniform game-extractor
 contract are follow-up work.
 
-The measured API retains these small carriers because of pinned VCVio declarations:
+The measured API retains these small carriers. At the previous VCVio pin the declarations below
+forced them. At the current pin `f1a4a8ec` the measured programs live in PolyFun
+(`PolyFun/PFunctor/Free/Cost/Measured.lean`) with independent input, result and cost universes.
+ArkLib's own `Type` binders in `MeasuredExtraction.lean` now keep the carriers small, and lifting
+them is follow-up work.
 
 | Restricted carrier | Forcing declaration at VCVio `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db` |
 | --- | --- |
@@ -622,9 +628,11 @@ universe. KC-318 and KC-322 now send the frozen oracle message `m : ULift.{1} Na
 `ULift.{2} (Fin (m.down + 1))` witnesses and prove extraction returns six. The measured code
 takes `P : PFunctor.{uA, 0}`, so its positions also have their own universe.
 
-Probability bounds use the small-move instance of this general certificate. Pinned VCVio's
-`ProbComp : Type → Type` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forces `sampleAt` to return
-a small move. `challengeSpec` (`Interaction/Protocol.lean:69–71`) returns `Move l`, whose universe is
+Probability bounds use the small-move instance of this general certificate. VCVio's
+`ProbComp : Type → Type` at the previous pin `f8d7f8ef` (`VCVio/OracleComp/ProbComp/Basic.lean:31`)
+forced `sampleAt` to return a small move. The current pin makes `ProbComp` universe-polymorphic,
+and ArkLib has not yet generalized `sampleAt`. `challengeSpec` (`Interaction/Protocol.lean:69–71`)
+returns `Move l`, whose universe is
 shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
 remaining probabilistic limitation. It does not restrict pure backward maps or large output
 and seam witnesses in the verifier wrappers.
@@ -731,8 +739,11 @@ forgets that witness for the probability bound. The [parent inventory](../intera
 describes the shared certificate signatures; the [restoration record](../interaction-layer/state-restoration-disposition.md)
 identifies this branch's consumers and source assertions.
 
-The remaining small carriers follow these exact declarations at VCVio pin
-`f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`:
+The remaining small carriers followed these exact declarations at the previous VCVio pin
+`f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`. At the current pin `f1a4a8ec`, `SampleableType` is
+unchanged, `ProbComp` is universe-polymorphic, and the measured programs moved to PolyFun with
+independent universes. ArkLib has not yet generalized the code behind the second and third items,
+so their restrictions remain:
 
 - `SampleableType (β : Type)` in
   `VCVio/OracleComp/Constructions/SampleableType/Basic.lean:51` forces
@@ -750,9 +761,10 @@ The remaining small carriers follow these exact declarations at VCVio pin
   small input, intermediate and output witnesses. `OracleComp.MeasuredProgram` at line 66
   also fixes the cost carrier `ω` to `Type`.
 
-The planned VCVio-to-PolyFun program repin includes the measured restoration test
-(`ArkLibTest/Interaction/Security/StateRestorationBudget.lean`) and the local straight-line
-branch. It keeps the finite count profile `Kind → ℕ` and the named realization evidence
+The VCVio-to-PolyFun program repin (VCVio#1220, adopted with the `f1a4a8ec` bump) covers the
+measured restoration test (`ArkLibTest/Interaction/Security/StateRestorationBudget.lean`) and the
+local straight-line branch. It keeps the finite count profile `Kind → ℕ` and the named realization
+evidence
 (`BudgetedProgram.realizes`, `run_programAlong`, `run_extractionProgram`).
 
 ### Frozen-source dispositions
