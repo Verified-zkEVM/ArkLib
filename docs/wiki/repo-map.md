@@ -228,15 +228,18 @@ home_page/            site assets and assembled website root
     experiments `Commitment.bindingExperiment`, `Commitment.functionBindingExperiment`,
     `Commitment.extractabilityExperiment` and `Commitment.extractability`). KZG and Hachi are the
     concrete functional schemes.
-- KZG commitment-scheme modules live under `ArkLib/Commitments/Functional/KZG/`: `Basic` for the
-  construction and scheme instance, `Algebra` for the powers-of-τ SRS and prime-order group
-  lemmas, `Sampling` for setup sampling helpers, `HardnessAssumptions` for t-SDH and ARSDH games
-  over explicit adversary classes, `Correctness` for correctness proofs, `Binding` for evaluation
-  binding, and `FunctionBinding/` for function binding. Binding is stated as reductions:
-  `KZG.CommitmentScheme.binding_reduces_to_tSdh` bounds an adversary's binding advantage by the
-  t-SDH success of its reduction, and `KZG.CommitmentScheme.function_binding_reduces_to_arsdh`
-  does the same for function binding and ARSDH. Shared CPolynomial/Polynomial division bridge
-  lemmas live under `ArkLib/ToCompPoly/`.
+- KZG commitment-scheme modules live under `ArkLib/Commitments/Functional/KZG/`. The scheme uses
+  VCVio's additive conventions: a field `F`, `F`-modules `G₁`, `G₂`, `Gₜ` and a bilinear pairing.
+  `Basic` holds the keys, `keygen`, the computable commitment, opening and verification, and the
+  opening equation `KZG.verifyOpening_eq`. `Correctness` proves honest openings are accepted.
+  `EvaluationBinding` reduces evaluation binding to VCVio's `TSDH.experiment`.
+  `FunctionBinding/Reduction` defines the efficient reduction from function binding to
+  `ARSDH.experiment`, and `FunctionBinding/Wins` proves its answer wins pointwise in the
+  trapdoor. `Security` defines the two binding games and their reduction adversaries and proves
+  the game-level bounds `KZG.evalBinding_le_tsdh` and `KZG.functionBinding_le_arsdh`, with
+  corollaries over an explicit adversary class. The
+  partial-fraction identity for Lagrange interpolants lives in
+  `ArkLib/ToMathlib/LinearAlgebra/LagrangePartialFraction.lean`.
 - `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
   scalars an algebraic adversary reports for each group element it outputs.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
@@ -680,7 +683,7 @@ home_page/            site assets and assembled website root
   (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
   a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
   hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
-  it. (`Commitments/Functional/KZG/Correctness.lean` applies the VCVio lemma directly.)
+  it.
   The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
   message-round case: there the run-support half is a closed-form computation of `Prover.run`
   (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.
