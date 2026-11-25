@@ -216,10 +216,11 @@ Unit 10 applies the equal-degree guarantee in each folding round.
 - [`AffineCombiner/Theorem.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Theorem.lean)
   proves the finite interpolation bound and the explicit bound of Theorem 1.1.
 - [`AffineCombiner/EqualDegreeTheorem.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeTheorem.lean)
+  derives the one-row equal-degree reduction from the `t`-row one in `FoldingRound.lean` and
   proves the explicit equal-degree and linear-claim bounds of Theorem 5.1.
 
 - [`AffineCombiner/EqualDegree.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegree.lean)
-  defines the equal-degree error and proves its reduction to the affine error with the rounded Johnson bound.
+  defines the equal-degree error and proves the one-row lemmas behind its reduction to the affine error with the rounded Johnson bound.
 
 - [`AffineCombiner/EqualDegreeSampling.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/EqualDegreeSampling.lean)
   identifies this error with the supremum of native uniform probabilities over three challenges.
