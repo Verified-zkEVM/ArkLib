@@ -785,8 +785,9 @@ home_page/            site assets and assembled website root
   `OracleVerifier.soundness_of_rbrSoundness_of_guarded`).
 - Measured extraction lives in `Security/Resources.lean`. Its game-independent core is
   `PFunctor.FreeM.MeasuredProgram` in
-  `PolyFun.PFunctor.Free.Cost.Measured`:
-  an uncharged input view, an instruction program, deterministic handlers and declared charges.
+  `PolyFun.PFunctor.Free.Cost.Measured`, with oracle-cost lemmas in
+  `VCVio.OracleComp.QueryTracking.MeasuredProgram`:
+  an uncharged input view, an instruction program, deterministic answers and declared charges.
   `Realizes` is output equality; `CostAtMost` bounds every permitted completed instruction path.
   `BudgetedProgram f` bundles both proofs, and `ofFun` realizes every function with zero budget.
   These facts do not certify host computation time or operational identity with arbitrary code.

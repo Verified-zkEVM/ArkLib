@@ -103,14 +103,15 @@ both programs. The fixture's `converted_game_bound` and `convertedObservation_pa
 The identity-conversion fixture still records two stage additions.
 
 These are declared instruction bounds. Pure work, carrier conversions, program construction,
-handlers, witness size and adversary/replay/restoration work remain uncharged, as in the frozen
-contract, unless a conversion program is charged as above. ArkLib's measured stages keep small
-measured input/result carriers, which VCVio's `BudgetedProgram {Input Result : Type}` forced at the
-previous pin `f8d7f8ef`. The restoration games keep small random outputs, which
-`ProbComp : Type → Type` forced at that pin. `SampleableType (β : Type)` forces small sampled
-challenges. Unmeasured witness maps retain their
-independent universes, and deterministic verdicts and shared extraction laws accept general
-move universes. Entry 20 records the forcing declarations and dependency pin.
+answers, witness size and adversary/replay/restoration work remain uncharged, as in the frozen
+contract, unless a conversion program is charged as above. The binders of `MeasuredStages` and
+`MeasuredKnowledgeStateFunction` keep small measured input/result carriers. VCVio's
+`BudgetedProgram {Input Result : Type}` forced them at the previous pin `f8d7f8ef`; PolyFun's
+`BudgetedProgram` at the current pins does not. The restoration games keep small random outputs,
+which `ProbComp : Type → Type` forced at the previous pin. `SampleableType (β : Type)` forces small
+sampled challenges. Unmeasured witness maps retain their independent universes, and deterministic
+verdicts and shared extraction laws accept general move universes. Entry 20 records the forcing
+declarations and dependency pin.
 
 ## Correspondence with the papers
 

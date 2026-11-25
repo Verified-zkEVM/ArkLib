@@ -39,7 +39,7 @@ theorem addProgram_costAtMost_one {Input : Type} (view : Input → ℕ × ℕ) :
   MeasuredProgram.costAtMost_of_runAdd_le _ 1 (fun _ _ u => Subtype.ext u.2)
     (fun _ => le_rfl)
 
-/-- The same addition instruction program and handlers, charged in a single count coordinate. -/
+/-- The same addition instruction program and answers, charged in a single count coordinate. -/
 def addCountProgram {Input : Type} (view : Input → ℕ × ℕ) :
     MeasuredProgram Input ℕ (Unit → Nat) :=
   { addProgram view with cost := fun _ _ => 1 }

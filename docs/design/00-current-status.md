@@ -88,7 +88,7 @@ commutativity assumption). It must not restore the legacy unrestricted compositi
 | Tracing, logging, caching, and cost instrumentation | available | reuse `withTrace*`, `withLogging`, and existing erasure/failure bridges |
 | Query and resource accounting | available | reuse query bounds, `ResourceProfile`, `QueryCost`, and `CostModel` |
 | Stateless weighted handler substitution | available | `WorstCaseCostBound.simulateQ` in `VCVio.OracleComp.QueryTracking.CostModel.Simulation`; transfers bounds through stateless handlers with per-query completed-run budgets; availability and termination are separate |
-| Named measured programs and composition | available | `PFunctor.FreeM.MeasuredProgram`, `BudgetedProgram`, and `MeasuredProgram.comp` in `PolyFun.PFunctor.Free.Cost.Measured`, with the `OracleComp` bridge in `VCVio.OracleComp.QueryTracking.MeasuredProgram`; both instruction traces run and weighted budgets add; views, handlers and pure work remain uncharged |
+| Named measured programs and composition | available | `MeasuredProgram`, `BudgetedProgram`, and `MeasuredProgram.comp` in PolyFun's `PolyFun.PFunctor.Free.Cost.Measured`, with the oracle-cost lemmas in `VCVio.OracleComp.QueryTracking.MeasuredProgram`. Both instruction traces run and weighted budgets add. Views, answers and pure work remain uncharged |
 | Cost-aware reductions | available, cost-only | reuse `SecurityGame.ReductionWithCost`; add no parallel cost hierarchy |
 | Closed probability semantics | available | VCVio's native `Measure`/kernel semantics; ArkLib's PMF surface is retired (#913) |
 | Probabilistic responders and wired machines | available | reuse `ProbResponder`, oracle strategies, and machine runs |

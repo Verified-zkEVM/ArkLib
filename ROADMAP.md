@@ -156,8 +156,9 @@ entry says so, the specification is not claimed to be executable.
   (`ArkLib/Interaction/Oracle/`) has been deleted; the
   [migration list](docs/design/interaction-layer/migration-list.md) records its replacements. The
   [interaction-layer status page](docs/design/00-current-status.md) has the details.
-- **Measured extraction**: VCVio's game-independent measured programs and declared instruction
-  budgets (`VCVio.OracleComp.QueryTracking.MeasuredProgram`), their
+- **Measured extraction**: PolyFun's game-independent measured programs and declared instruction
+  budgets (`PolyFun.PFunctor.Free.Cost.Measured`, with oracle-cost lemmas in
+  `VCVio.OracleComp.QueryTracking.MeasuredProgram`), their
   [knowledge-soundness adapter](ArkLib/OracleReduction/Security/Resources.lean), and native measured
   stages for knowledge state functions and state restoration
   (`Interaction/Security/{MeasuredExtraction,StateRestorationBudget}.lean`).

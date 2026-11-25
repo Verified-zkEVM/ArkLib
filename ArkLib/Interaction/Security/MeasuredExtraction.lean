@@ -15,8 +15,8 @@ A knowledge state function extracts backwards in three kinds of stage: the leaf 
 output witness into a leaf witness, the step map at an interaction node turns a move and the
 witness after it into the witness before it (`KnowledgeStateFunction.stageMap`), and the root map
 returns an input witness. `KnowledgeStateFunction.MeasuredStages` names a budgeted instruction
-program (`PFunctor.FreeM.BudgetedProgram`) for every stage, indexed by the statement and the
-full transcript prefix. `MeasuredStages.programAlong` composes these programs along a completed
+program (`PFunctor.FreeM.BudgetedProgram`) for every stage, indexed by the statement and the full
+transcript prefix. `MeasuredStages.programAlong` composes these programs along a completed
 transcript; it realizes `KnowledgeStateFunction.extractAlong` on output witnesses at that
 transcript, whose type depends on it, and its budget is the sum of the stage budgets along that
 transcript.
@@ -34,12 +34,12 @@ by node kind: message and oracle-message steps by one bound, challenge steps by 
 ## Scope
 
 Each budget bounds the declared instructions of one stage under the accounting of
-`PFunctor.FreeM.MeasuredProgram`, which lists what is uncharged. Every map has a budgeted program
-with budget zero (`MeasuredStages.zero`), so only a named program with a stated instruction set is
-evidence. In addition:
+`PFunctor.FreeM.MeasuredProgram`. The docstring of that structure lists what is uncharged. Every
+map has a budgeted program with budget zero (`MeasuredStages.zero`), so only a named program with a
+stated instruction set is evidence. In addition:
 
 * Stages are indexed by the statement and the actual earlier moves, including oracle messages, so
-  a stage program, view and handlers may compute anything from them without charge, and stages at
+  a stage program, view and answers may compute anything from them without charge, and stages at
   different prefixes may carry different budgets. A common bound is the hypothesis
   `MeasuredStages.BudgetAtMost`.
 * Witness carriers are chosen with the state function, so stage budgets bound extraction only
@@ -66,7 +66,7 @@ uses `Unit → Nat`.
 universe uS uA
 
 namespace Interaction
-open PFunctor FreeM TwoParty.Lens OracleComp
+open PFunctor FreeM TwoParty.Lens
 
 variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
