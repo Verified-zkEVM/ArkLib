@@ -79,7 +79,7 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   cut of `Λ` is `S ^ τ` times `Λ` of the reconstruction.
 * `ReedSolomon.aeval_chartAgreementCut` and `ReedSolomon.chartAgreementCut_eq_zero_iff`: the
   agreement cut says `Λ` of the reconstruction is the target value.
-* `ReedSolomon.chartPolynomial_point`: recover `P` when `expand (p^e) P` is a regular root.
+* `ReedSolomon.chartPolynomial_point`: recover `P` when `expand (p^r) P` is a regular root.
 * `ReedSolomon.totalDegree_aeval_chartSubstitution_le`,
   `ReedSolomon.totalDegree_chartEquation_le`, `ReedSolomon.totalDegree_chartSeparant_le` and
   `ReedSolomon.chartSeparant_eq_zero`: the chart does not raise the `(Y, Z)`-degree.
@@ -445,12 +445,12 @@ theorem chartAgreementCut_eq_zero_iff (c : E) (θ : κ → Polynomial E)
   rw [aeval_chartAgreementCut c θ R hτ Λ T pt hS, mul_eq_zero,
     or_iff_right (pow_ne_zero _ hS), sub_eq_zero]
 
-/-- Let `s = p ^ e`, where `p` is the exponential characteristic, and `L = ∑ⱼ aⱼ θⱼ`.
+/-- Let `s = p ^ r`, where `p` is the exponential characteristic, and `L = ∑ⱼ aⱼ θⱼ`.
 Let `expand s P` be a root of `R(X, L(X), Z)` with `R_Z ≠ 0` at `c`.
 
 If `deg P ≤ d`, the reconstruction at the point of the root is `P`. -/
 theorem chartPolynomial_point (c : E) (θ : κ → Polynomial E) (R : MvPolynomial AffineVar E)
-    {p e s d : ℕ} [ExpChar E p] (hs : s = p ^ e) {a : κ → E} {P : Polynomial E}
+    {p r s d : ℕ} [ExpChar E p] (hs : s = p ^ r) {a : κ → E} {P : Polynomial E}
     (hP : P.degree ≤ d)
     (hroot : multiplierEval (familyMultiplier θ a) (Polynomial.expand E s P) R = 0)
     (hsep : (multiplierEval (familyMultiplier θ a) (Polynomial.expand E s P)
