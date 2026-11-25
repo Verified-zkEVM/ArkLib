@@ -5,8 +5,8 @@ on:
     paths:
       - 'ArkLib/Interaction/**'
       - 'ArkLibTest/Interaction/**'
-      - 'ArkLib/ProofSystem/Sumcheck/Interaction/**'
-      - 'ArkLibTest/ProofSystem/Sumcheck/Interaction/**'
+      - 'ArkLib/ProofSystem/Sumcheck/Core/**'
+      - 'ArkLibTest/ProofSystem/Sumcheck/Core/**'
       - 'lakefile.toml'
       - 'lake-manifest.json'
       - 'lean-toolchain'
@@ -83,8 +83,8 @@ jobs:
           set -euo pipefail
           mapfile -t modules < <(
             git ls-files -- 'ArkLib/Interaction/*.lean' 'ArkLibTest/Interaction/*.lean' \
-              'ArkLib/ProofSystem/Sumcheck/Interaction/*.lean' \
-              'ArkLibTest/ProofSystem/Sumcheck/Interaction/*.lean' |
+              'ArkLib/ProofSystem/Sumcheck/Core/*.lean' \
+              'ArkLibTest/ProofSystem/Sumcheck/Core/*.lean' |
               LC_ALL=C sort | sed 's/\.lean$//;s,/,.,g'
           )
           if (( ${#modules[@]} == 0 )); then
@@ -102,6 +102,6 @@ jobs:
           uv run --no-project --python 3.12 python scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
             --path-prefix ArkLibTest/Interaction/ --label 'Interaction acceptance warnings'
           uv run --no-project --python 3.12 python scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
-            --path-prefix ArkLib/ProofSystem/Sumcheck/Interaction/ --label 'Typed Sumcheck warnings'
+            --path-prefix ArkLib/ProofSystem/Sumcheck/Core/ --label 'Sumcheck core warnings'
           uv run --no-project --python 3.12 python scripts/check-warning-log.py "$RUNNER_TEMP/interaction-build.log" \
-            --path-prefix ArkLibTest/ProofSystem/Sumcheck/Interaction/ --label 'Typed Sumcheck acceptance warnings'
+            --path-prefix ArkLibTest/ProofSystem/Sumcheck/Core/ --label 'Sumcheck core acceptance warnings'

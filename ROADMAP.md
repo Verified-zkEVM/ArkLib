@@ -19,7 +19,7 @@ The legacy layer is sorry-free and reasonably stable. Every protocol and commitm
 (`liftContext`, in [`OracleReduction/LiftContext/`](ArkLib/OracleReduction/LiftContext/)) and
 the [legacy security notions](#framework). The interaction layer is not yet ready to replace it:
 it has generic execution, composition and security theory, and one protocol, Sum-check
-([`ProofSystem/Sumcheck/Interaction/`](ArkLib/ProofSystem/Sumcheck/Interaction/)).
+([`ProofSystem/Sumcheck/Core/`](ArkLib/ProofSystem/Sumcheck/Core/)).
 
 Developing the interaction layer is now the project's priority. The migration has three stages.
 
@@ -29,16 +29,15 @@ Developing the interaction layer is now the project's priority. The migration ha
    [design roadmap](docs/design/05-roadmap.md) sequences this work.
 2. **Port protocols one at a time, each with a proved equivalence.** For each ported protocol,
    prove a theorem that relates the legacy protocol, embedded into the interaction layer, to the
-   interaction-layer protocol, so that the port is checked to be faithful. The single-round
-   Sum-check correspondence
-   ([`Sumcheck/Interaction/Legacy.lean`](ArkLib/ProofSystem/Sumcheck/Interaction/Legacy.lean)) is
-   the first instance. `legacy_input_iff` and `legacy_output_iff` show that the two layers' input
-   and output relations agree in both directions, and `legacy_verifier_correspondence` shows that
-   the two single-round verifiers return the same output statement for every round message and
-   challenge, including rejection. It covers one round and compares the two directly: it does not
-   relate the full protocol, the provers or the security games, and no general embedding of the
-   legacy layer exists yet. Spartan and Plonk are complete in the legacy layer (below); their
-   interaction-layer versions are not yet written.
+   interaction-layer protocol, so that the port is checked to be faithful. Sum-check is the first
+   instance
+   ([`Sumcheck/Core/LegacyEquivalence.lean`](ArkLib/ProofSystem/Sumcheck/Core/LegacyEquivalence.lean)).
+   `Sumcheck.Core.run_eq_legacy` shows that the run of the interaction-layer compatibility
+   verifier is the run of the embedded legacy verifier, as a program, and
+   `Sumcheck.Core.verifier_agrees` carries completeness, soundness, knowledge soundness and
+   round-by-round soundness across that equality. No theorem relates the interaction-layer
+   `indexedVerifier` to the legacy verifier. Spartan and Plonk are complete in the legacy layer
+   (below); their interaction-layer versions are not yet written.
 3. **Delete the legacy layer.** Once the protocols are ported, delete the legacy layer as a whole.
 
 Until the port is complete, ArkLib makes no backward-compatibility guarantees and does not
@@ -64,11 +63,11 @@ entry says so, the specification is not claimed to be executable.
   `Sumcheck.Spec.oracleVerifier_knowledgeSoundness`, with the sum of those errors. The reduction
   `Sumcheck.Spec.oracleReduction` is noncomputable; `Sumcheck.Impl.Computable.generalOracleProver`
   computes the same messages and outputs as its honest prover. In the interaction layer
-  ([`Sumcheck/Interaction/`](ArkLib/ProofSystem/Sumcheck/Interaction/)):
-  `Sumcheck.Interaction.Native.execute_perfectCompleteness`,
-  `Sumcheck.Interaction.Native.execute_soundness` and
-  `Sumcheck.Interaction.Native.roundByRound_soundness`, with a CompPoly-backed computable honest
-  prover, `Sumcheck.Interaction.Computable.honestProver`.
+  ([`Sumcheck/Core/`](ArkLib/ProofSystem/Sumcheck/Core/)):
+  `Sumcheck.Core.perfectCompleteness`, `Sumcheck.Core.indexedVerifier_soundness` with error
+  `n * (deg / |R|)`, and `Sumcheck.Core.indexedVerifier_rbrSoundness` with error `deg / |R|` per
+  challenge, with a CompPoly-backed computable verifier and honest prover,
+  `Sumcheck.Core.Computable.verifier` and `Sumcheck.Core.Computable.honestProver`.
 - **FRI** ([`ProofSystem/Fri/`](ArkLib/ProofSystem/Fri/)): perfect and noisy-input completeness,
   soundness, round-by-round soundness, and knowledge soundness for a named straightline
   extractor: `Fri.Spec.perfect_completeness`, `Fri.Spec.soundness` and
