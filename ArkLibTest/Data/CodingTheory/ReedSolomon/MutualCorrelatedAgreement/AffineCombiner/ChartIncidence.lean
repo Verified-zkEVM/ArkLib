@@ -78,7 +78,7 @@ private noncomputable def zeroPoint : ChartVar (Fin 3) → K := chartPoint 0 1 0
 /-- The reconstruction at the zero point is the root `0`. -/
 private theorem chartPolynomial_zeroPoint :
     chartPolynomial 0 quadraticFamily regularR 1 2 zeroPoint = 0 := by
-  refine chartPolynomial_point (p := 7) (e := 0) 0 quadraticFamily regularR (by simp)
+  refine chartPolynomial_point (p := 7) (r := 0) 0 quadraticFamily regularR (by simp)
     (by simp) ?_ ?_
   · simp [regularR, multiplierEval, familyMultiplier_apply]
   · simp [regularR, multiplierEval, familyMultiplier_apply]

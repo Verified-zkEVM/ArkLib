@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Relation.OracleInterface
 
 /-!
 # Claims and relations

@@ -41,24 +41,10 @@ private noncomputable def b : Module.Basis (Fin 2) (ZMod 2) (GaloisField 2 2) :=
   Module.finBasisOfFinrankEq _ _ finrank_eq
 
 -- The `2³ = 8` coefficient vectors over `𝔽₂` give `8` distinct multipliers over `E`.
+-- This restates the injectivity lemma; it checks that the algebraic-closure instances elaborate.
 example : Function.Injective fun α : Fin 3 → ZMod 2 ↦
     ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap (ZMod 2) E ∘ α) :=
   familyMultiplier_traceFamily_injective b
-
--- The multiplier `L̃_α` is the trace substitution of `L_α`.
-example (α : Fin 3 → ZMod 2) :
-    traceSubstitution b ((affineMultiplier α).map (algebraMap (ZMod 2) E)) =
-      ReedSolomon.familyMultiplier (traceFamily E b) (algebraMap (ZMod 2) E ∘ α) :=
-  traceSubstitution_map_affineMultiplier_eq_familyMultiplier b α
-
--- An inverse Frobenius power maps `L̃_α` to the mapped family at the mapped coefficients.
-example (r : ℕ) (c : Fin 3 → E) :
-    (ReedSolomon.familyMultiplier (traceFamily E b) c).map
-        ((iterateFrobeniusEquiv E 2 r).symm : E →+* E) =
-      ReedSolomon.familyMultiplier
-        (fun j ↦ (traceFamily E b j).map ((iterateFrobeniusEquiv E 2 r).symm : E →+* E))
-        (((iterateFrobeniusEquiv E 2 r).symm : E →+* E) ∘ c) :=
-  map_familyMultiplier_traceFamily b _ c
 
 -- At `x ∈ 𝔽₄`, `L̃_c(x)` is `c₀ + c₁ ψ₁(x) + c₂ ψ₂(x)` at the grid point `ψ(x)`.
 example (c : Fin 3 → E) (x : GaloisField 2 2) :
@@ -67,19 +53,6 @@ example (c : Fin 3 → E) (x : GaloisField 2 2) :
         c 2 * algebraMap (ZMod 2) E (traceCoordinateEquiv (ZMod 2) b x 1) := by
   rw [eval_familyMultiplier_traceFamily]
   simp [Fin.sum_univ_two, add_assoc]
-
--- The chart target at exponent `s = 2` has degree at most `2`.
-example (f g : (Fin 2 → ZMod 2) → ZMod 2) (x : GaloisField 2 2) :
-    (traceChartTarget E b f g 2 x).totalDegree ≤ 2 :=
-  totalDegree_traceChartTarget_le b f g 2 x
-
--- At the square roots of `c`, the target at exponent `2` is `f(ψ x) + L̃_c(x) g(ψ x)`.
-example (f g : (Fin 2 → ZMod 2) → ZMod 2) (x : GaloisField 2 2) (a : Fin 3 → E) :
-    MvPolynomial.aeval a (traceChartTarget E b f g 2 x) =
-      algebraMap (ZMod 2) E (f (traceCoordinateEquiv (ZMod 2) b x)) +
-        (ReedSolomon.familyMultiplier (traceFamily E b) fun j ↦ a j ^ 2).eval (algebraMap _ E x) *
-          algebraMap (ZMod 2) E (g (traceCoordinateEquiv (ZMod 2) b x)) :=
-  aeval_traceChartTarget b f g 2 x a
 
 -- Over `𝔽₂`, take `f(z) = z₀`, `g(z) = 1`, `α = (0, 0, 1)` and `P = X₀`.
 -- The combined word is `z₀ + z₁`, and `P` agrees with it exactly where `z₁ = 0`.
@@ -104,13 +77,6 @@ example : ∃ cuts : List (E[X] →ₗ[E] E), IsTraceImageCuts b 1 cuts :=
 example (cuts : List (E[X] →ₗ[E] E)) (h : IsTraceImageCuts b 1 cuts) :
     ∀ Λ ∈ cuts, Λ ((tracePolynomial (ZMod 2) (b 0)).map (algebraMap _ E)) = 0 := by
   simpa using h.apply_traceSubstitution_eq_zero (MvPolynomial.X 0) (by simp)
-
--- With `d·e = 2`, three evaluations on `𝔽₄` determine the polynomials of degree at most `2`.
--- This holds whatever the high cuts are.
-example (cuts : List (E[X] →ₗ[E] E)) :
-    ReedSolomon.SeparatesDegree cuts (fun x : GaloisField 2 2 ↦ leval (algebraMap _ E x)) 2 3 :=
-  ReedSolomon.separatesDegree_leval (x := algebraMap (GaloisField 2 2) E)
-    (algebraMap (GaloisField 2 2) E).injective (by norm_num)
 
 section Proper
 

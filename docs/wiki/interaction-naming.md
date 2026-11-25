@@ -1,8 +1,13 @@
 # Typed interaction names
 
-The typed interaction API names describe the mathematical data and its interpretation. The source
-layer lives in [`Source.lean`](../../ArkLib/Interaction/Oracle/Source.lean); named contexts and their
-models live in [`Resource.lean`](../../ArkLib/Interaction/Oracle/Resource.lean).
+The typed interaction API names describe the mathematical data and its interpretation. The
+naming conventions in the first section still apply. Most later sections name declarations of the
+old generic interaction layer: its source layer in `Oracle/Source.lean`, its named contexts and
+models in `Oracle/Resource.lean`, and the rest of `ArkLib/Interaction/Oracle/`. That layer has
+been deleted, and these sections stay as a record of its names. The interaction core under
+`ArkLib/Interaction/` replaces it, and the
+[migration list](../design/interaction-layer/migration-list.md) maps each deleted module to its
+core counterpart.
 
 ## Public names and explanations
 
@@ -163,6 +168,9 @@ messages for unvisited branches or assert that arbitrary structural paths are in
 
 ## Sumcheck oracle roles
 
+This section and the next two describe the deleted Sumcheck interaction layer. The
+Sumcheck core in `ArkLib/ProofSystem/Sumcheck/` replaces it.
+
 The single-round verifier checks the sent polynomial and evaluates it for the next target. Its
 `outputOracle` instead retains the input oracle. This distinction allows a dishonest message to
 pass the local sum check while the closed output relation fails; it is essential for soundness.
@@ -195,7 +203,7 @@ Verifier execution and completeness keep the commutative-semiring generality.
 
 ## Consecutive multivariate rounds
 
-`MultivariateRound.polynomialFamily` declares the persistent multivariate evaluation interface.
+`Spec.polynomialFamily` declares the persistent multivariate evaluation interface.
 Its `outputOracle` retains the supplied input behavior, while each round's newly sent univariate
 polynomial supplies the sum check and next target. The two-round executor passes the first actual
 closed claim to the second and skips the second after rejection. Sampled equations preserve the
@@ -362,7 +370,9 @@ For virtual oracles, rename old `mapSource` uses to `substSource` before renamin
 (previously `Context`) in the plain reduction API. The legacy `Reduction` API outside
 `Interaction` is unchanged. File and import paths remain unchanged.
 
-After migration, run `lake build` and `lake test`. The
-[source examples](../../ArkLibTest/Interaction/Oracle/SourceExample.lean) distinguish query sums
-from paired queries; the [context examples](../../ArkLibTest/Interaction/Oracle/ResourceExample.lean)
-exercise disjointness, aliasing, dependent interpretation, and promise preservation.
+After migration, run `lake build` and `lake test`. The deleted source examples
+(`ArkLibTest/Interaction/Oracle/SourceExample.lean`) distinguished query sums from paired queries,
+and the deleted context examples (`ArkLibTest/Interaction/Oracle/ResourceExample.lean`) exercised
+disjointness, aliasing, dependent interpretation, and promise preservation. Their core ports are
+`ArkLibTest/Interaction/Oracle/OracleMaps.lean` and
+`ArkLibTest/Interaction/Oracle/BundleFamilies.lean`.
