@@ -537,6 +537,70 @@ answers are effectful, such as stateful or randomized oracles stored as data. Am
 oracles do not count: they live in the verifier's `ambient` specification and go through
 `simulateQ`.
 
+### Effectful answers
+
+Design D keeps the answer of an interface pure. Effects belong in the handler a verifier runs its
+queries against and in oracle maps, not in the interface. This was considered for compiling oracle
+reductions into arguments (BCS and hash-based polynomial commitments), where answers come from
+Merkle openings checked through a random oracle.
+
+**Where the effect goes.** A passive verifier's decision is an `OracleComp` over the path's
+oracles, and the ideal run answers it with pure reads of the data. After BCS, the verifier holds
+only the roots and a final prover message with the openings, and it runs the same decision against
+a checking handler:
+
+```lean
+-- sketch: looks up the answer in the openings and checks its path against the root
+def merkleHandler (root : Digest) (openings : Openings) :
+    QueryImpl (vectorSpec n α) (OptionT (OracleComp ro)) := fun i => do
+  let (v, path) ← OptionT.mk (pure (openings.lookup i))
+  guard (← Merkle.verify root i v path)
+  pure v
+
+compiledDecide := simulateQ (QueryImpl.id ambient + merkleHandler roots openings) (decide …)
+```
+
+The arkworks BCS crate has the same structure: its verifier's query phase is written once against
+a round-oracle trait, with one implementation that records queries and one that answers from the
+proof. The other two parts of BCS already have homes:
+
+- Each oracle slot needs a commitment for its interface. `Commitment.Scheme`
+  (`ArkLib/Commitments/Functional/Basic.lean`) commits to `Data` with an `OracleInterface Data`
+  and opens a claim `answer d q = y` by an interactive proof. A Merkle tree is the instance for the
+  point-query vector interface with a one-message opening, and VCVio proves Merkle extractability
+  in the random-oracle model (`VCVio/CryptoFoundations/MerkleTree/`).
+- The protocol is rewritten: each `oracle X I` node becomes a message carrying the root, and one
+  final prover message carries the openings for the queries the decision makes on that path. The
+  passive-verifier premise P1 is the shape Chiesa and Yogev's construction assumes (public coin,
+  queries after the interaction). The legacy stub `ArkLib/OracleReduction/BCS/Basic.lean` and
+  [design 04](../04-oracle-elimination-compiler.md) describe the same pipeline.
+
+**Polynomial and vector oracles.** A codeword entry is an evaluation of the polynomial, so a
+vector oracle is simulated exactly from a polynomial oracle by an `OracleMap`, whose `impl` is
+already monadic in the source oracle. The reverse is not a map: a cheating prover's vector can be
+far from every codeword, so an evaluation claim needs a proximity proof (FRI, STIR, WHIR) with a
+soundness error. That is an oracle reduction appended to the protocol. A hash-based polynomial
+commitment is therefore an encoding map, a proximity reduction, and BCS on the vector oracle.
+
+**Why the interface stays pure.**
+
+1. Soundness of an oracle reduction assumes that a repeated query gets the same answer. Under raw
+   `OracleComp` semantics, a random-oracle query answers each call independently, and only a
+   shared cache restores agreement (VCVio's test `VCVioTest/MerkleTreeExtractability.lean`,
+   `repeatedQuery`). `OracleMap.law`, agreement, `distanceLE` and the knowledge-state functions
+   all read answers as a function of the data and would need restating relative to a cache.
+2. After compilation a possibly cheating prover supplies the answers. A monadic answer can
+   describe an honest opening but not an adversary. The security content (binding, straight-line
+   extraction from the query trace, state-restoration soundness in
+   `ArkLib/Interaction/Security/StateRestoration.lean`) is a theorem relating the compiled run to
+   the ideal run, not a field type.
+3. By the test above, the handler varies across uses (ideal read, recording, checked opening) and
+   the data's semantics does not. `decide` is already generic in its handler through `simulateQ`,
+   so no interface change is needed, and the existing instances keep their pure answers.
+
+An interface with a monadic answer is the same as a pure bundle followed by an effectful map out of
+it (`OracleMap.withAmbient` adds the random oracle), so keeping interfaces pure loses nothing.
+
 ### Answer to record D1 open point and alignment with record D6
 
 **Record D1 open point (`docs/design/interaction-rebuild/D1-signatures-and-shape.md:110-113`).**
