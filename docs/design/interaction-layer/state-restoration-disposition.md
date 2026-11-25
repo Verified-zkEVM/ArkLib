@@ -103,13 +103,13 @@ both programs. The fixture's `converted_game_bound` and `convertedObservation_pa
 The identity-conversion fixture still records two stage additions.
 
 These are declared instruction bounds. Pure work, carrier conversions, program construction,
-handlers, witness size and adversary/replay/restoration work remain uncharged, as in the frozen
-contract, unless a conversion program is charged as above. Pinned VCVio
-`BudgetedProgram {Input Result : Type}` forces small measured input/result
-carriers; `ProbComp : Type → Type` forces small random outputs, and
-`SampleableType (β : Type)` forces small sampled challenges. Unmeasured witness maps retain their
-independent universes, and deterministic verdicts and shared extraction laws accept general
-move universes. Entry 20 records the forcing declarations and dependency pin.
+answers, witness size and adversary/replay/restoration work remain uncharged, as in the frozen
+contract, unless a conversion program is charged as above. The binders of `MeasuredStages` and
+`MeasuredKnowledgeStateFunction` keep small measured input/result carriers. PolyFun's
+`BudgetedProgram` does not force them. Pinned VCVio's `ProbComp : Type → Type` forces small random
+outputs, and `SampleableType (β : Type)` forces small sampled challenges. Unmeasured witness maps
+retain their independent universes, and deterministic verdicts and shared extraction laws accept
+general move universes. Entry 20 records the forcing declarations and dependency pin.
 
 ## Correspondence with the papers
 

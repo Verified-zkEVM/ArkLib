@@ -142,7 +142,7 @@ complete-execution work below; see the roadmap.
 
 `knowledgeSoundnessWithResources` in `ArkLib/OracleReduction/Security/Resources.lean` packages
 the existing game for a named `E` with a named `MeasuredProgram` `P` and budget `B : Kind → ℕ`.
-The program contains its view, instructions, deterministic handlers and charges; these are not
+The program contains its view, instructions, deterministic answers and charges; these are not
 separate arguments to the security contract. Public count contracts require `[Finite Kind]`.
 For an uncharged `view` from the extractor's inputs `x` to the program's view `v`, the current
 obligations are schematically
@@ -153,19 +153,20 @@ knowledgeSoundnessWith(init, impl, relIn, relOut, verifier, E, κ)
 P.CostAtMost B                   (all views, all permitted response paths).
 ```
 
-`P.run` constructs `P.view x` and uses deterministic `Id` handlers. The legacy contract takes
+`P.run` constructs `P.view x` and answers each operation with `answer`. The legacy contract takes
 one budget at fixed parameters, uniformly over its views; a representation-size-dependent budget
 is not part of that API. The native state-restoration wrapper instead allows a family
 `messageBound challengeBound : Input → Kind → ℕ`. Those state separate bounds for each
 statement and role, with no growth-rate or uniform implementation claim. A dependent
-specification can certify responses, as FRI's does. Representation choices, the view, handlers,
+specification can certify responses, as FRI's does. Representation choices, the view, answers,
 charges and budget remain inspectable through the named program. Its output equality connects it
 to the same `E` as the game theorem; it is not a backend execution-cost bound or a uniform-code
 proof.
 
 The legacy measured contract has the following API scope:
 
-- **Deterministic handlers.** Handlers have type `QueryImpl (spec v) Id`.
+- **Deterministic answers.** Each answer `answer v o` has type `spec v o`. `queryImpl v` gives
+  the same answers as a `QueryImpl (spec v) Id`.
   `RealizesExtractor` identifies the extractor's monadic run with `pure` of the measured result;
   ambient `oSpec` queries are outside this contract.
 - **Uniform budget.** One budget bounds every view at fixed protocol parameters. The legacy
@@ -213,10 +214,10 @@ algebraic substitution identity alone does not price a handler or establish its 
 
 This is the authoritative accounting boundary for the current E2 certificates. Each named
 program's bound covers **all views and all completed instruction paths permitted by its
-specification**, not just views reached in a successful game or the chosen handler's path.
+specification**, not just views reached in a successful game or the path that the answers select.
 Only declared instruction charges are counted. The **common E2 exclusions** are:
 
-- constructing and evaluating input views, and evaluating handlers beyond their declared charges;
+- constructing and evaluating input views, and evaluating answers beyond their declared charges;
 - uninstrumented pure Lean computation, including control flow, allocation, copying, storage and
   index/address arithmetic between charged instructions;
 - representation, input-decoding and field bit costs beyond the declared interface charges.
@@ -287,10 +288,11 @@ from a proved correspondence to a standard machine, which neither route supplies
 ## API placement and erasure
 
 A measured program is independent of any game: it contains an input view, a charged instruction
-program, deterministic handlers, and charges. Each security layer supplies its resource contract
-for that layer's extractor shape. The generic core lives in
-`VCVio.OracleComp.QueryTracking.MeasuredProgram`, which imports no game. The legacy game conjunctions
-and their erasure lemmas live in `ArkLib/OracleReduction/Security/Resources.lean`. The FRI
+program, deterministic answers, and charges. Each security layer supplies its resource contract
+for that layer's extractor shape. PolyFun owns the game-independent programs in `PolyFun.PFunctor.Free.Cost.Measured`.
+VCVio supplies the oracle-cost lemmas in `VCVio.OracleComp.QueryTracking.MeasuredProgram`.
+The legacy game conjunctions and erasure lemmas live in
+`ArkLib/OracleReduction/Security/Resources.lean`. The FRI
 certificate lives in `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean`; the Toy decoding
 certificate remains proposed. Interaction-layer games consume the same measured programs through
 their own adapter: `ArkLib/Interaction/Security/MeasuredExtraction.lean` defines
@@ -301,8 +303,8 @@ their own adapter: `ArkLib/Interaction/Security/MeasuredExtraction.lean` defines
 same `KnowledgeStateFunction.extractAlong` on each completed transcript and output witness. Its accounting boundary and the role/depth bounds are stated
 above, rather than being additional execution-time guarantees.
 
-CompPoly owns polynomial algorithms and their generic semantic and size facts. VCVio owns generic
-cost instrumentation, measured programs and their composition. ArkLib currently hosts arithmetic
+CompPoly owns polynomial algorithms and their generic semantic and size facts. PolyFun owns
+measured programs and their composition. VCVio supplies oracle-cost instrumentation. ArkLib hosts arithmetic
 instrumentation adapters under `ArkLib/ToCompPoly/Univariate/` and owns the protocol-specific
 extraction/game connections. Extract shared cross-library adapters into an appropriate owner when
 a demonstrated API need calls for them; their current location is not a permanent ownership rule.
@@ -310,7 +312,7 @@ The deeper execution backend proposed for PolyFun remains later work; these oper
 do not establish its adequacy or a full running-time bound.
 
 The measured security contract retains `E`, the named `MeasuredProgram` `P`, and `B` as parameters.
-The view, handlers and charges remain public fields of `P`. The realized
+The view, answers and charges remain public fields of `P`. The realized
 contract of the execution-backend chapter additionally retains `Q`, `bd`, the response contract and
 `T`. Its evidence contains the actual implementing code/realization and its semantic and run-bound
 proofs. Operational code must be executable; a proof using classical reasoning is compatible with

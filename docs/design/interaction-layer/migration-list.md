@@ -63,7 +63,7 @@ or P2, removed and open. This list uses one vocabulary:
   - **P2 (shape):** neither a challenge nor an oracle message selects the subtree.
 - **moved-upstream:** the content is generic theory that now lives in PolyFun (pin
   `713d8857e49d20927c1447b3ba7397acc5537319`) or VCVio (pin
-  `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`).
+  `7e6e986584a72d47fc26bc1f938eab120f0b296d`).
 - **unresolved:** a parent interface is missing. The row names it, and
   [Unresolved rows and options](#unresolved-rows-and-options) lists the choices.
 

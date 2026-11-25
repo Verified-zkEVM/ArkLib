@@ -24,9 +24,9 @@ open PFunctor PFunctor.FreeM Interaction OracleComp AddProgramTest
 
 namespace Interaction.MeasuredPathBudgetsTests
 
-/-- Runs a measured program with its handlers and records its additive cost. -/
+/-- Runs a measured program with its answers and records its additive cost. -/
 def recorded {A B : Type} (program : MeasuredProgram A B Nat) (input : A) : B × Nat :=
-  (simulateQ ((program.answer (program.view input)).withAddCost program.cost)
+  (simulateQ ((program.queryImpl (program.view input)).withAddCost program.cost)
     (program.program (program.view input))).runAdd.run
 
 -- Disposition MP-031.

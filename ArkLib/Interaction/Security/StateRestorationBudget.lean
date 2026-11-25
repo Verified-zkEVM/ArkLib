@@ -6,7 +6,7 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Interaction.Security.StateRestoration
-public import VCVio.OracleComp.QueryTracking.CostModel
+public import VCVio.OracleComp.QueryTracking.CostModel.Simulation
 public import ArkLib.Interaction.Security.MeasuredExtraction
 
 /-!
@@ -111,7 +111,7 @@ theorem queryBound_round_cost {Input Salt A : Type} {rounds : List Round}
       rw [isTotalQueryBound_query_bind_iff] at bounded
       apply (worstCaseCostBound_query_bind_iff _ _ _ _).mpr
       intro response result supported
-      have tail := ih response (Q - 1) (bounded.2 response) result supported
+      have tail := (worstCaseCostBound_iff_support_bound ..).1 (ih _ _ (bounded.2 _)) _ supported
       calc
         keyError errors key + Multiplicative.toAdd result.2 ≤
             Finset.univ.sup errors + (Q - 1 : Nat) * Finset.univ.sup errors :=
@@ -154,7 +154,7 @@ theorem complete_round_cost {Input Salt : Type} (rounds : List Round) (errors : 
         (pure (⟨message, ⟨challenge, tr⟩⟩ : Transcript oracleSig (protocol (round :: rounds))))
           (⟨keyError errors⟩ : CostModel (oracleSpec Input Salt (round :: rounds)) ENNReal) 0 from
             by simp)
-      have hcost := combined result supported
+      have hcost := (worstCaseCostBound_iff_support_bound _ _ _).mp combined result supported
       simpa only [keyError, add_zero, zero_add, add_comm] using add_le_add_left hcost (errors 0)
 
 /-- The adversary's and completion's charges add in the restored execution. -/
