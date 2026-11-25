@@ -67,17 +67,23 @@ example (P₁ P₂ : MvPolynomial (Fin 2) (ZMod 2)) (h₁ : P₁.totalDegree ≤
     (h : traceSubstitution b (P₁.map (algebraMap (ZMod 2) (GaloisField 2 2))) =
       traceSubstitution b (P₂.map (algebraMap (ZMod 2) (GaloisField 2 2)))) :
     P₁ = P₂ :=
-  injOn_traceSubstitution_map b (by simp [ZMod.card]; omega) (by simp [ZMod.card]; omega) h
+  injOn_traceSubstitution_map_totalDegree_lt b (by simp [ZMod.card]; omega)
+    (by simp [ZMod.card]; omega) h
 
--- Over `F₂`, a polynomial of degree at most `1` in each variable is still determined.
-example (P₁ P₂ : MvPolynomial (Fin 2) (ZMod 2))
-    (h₁ : P₁ ∈ MvPolynomial.restrictDegree (Fin 2) (ZMod 2) 1)
-    (h₂ : P₂ ∈ MvPolynomial.restrictDegree (Fin 2) (ZMod 2) 1)
-    (h : traceSubstitution b (P₁.map (algebraMap (ZMod 2) (GaloisField 2 2))) =
-      traceSubstitution b (P₂.map (algebraMap (ZMod 2) (GaloisField 2 2)))) :
-    P₁ = P₂ :=
-  injOn_traceSubstitution_map_restrictDegree b (by simpa [ZMod.card] using h₁)
-    (by simpa [ZMod.card] using h₂) h
+-- Over `F₂`, `X₀ X₁` has total degree `2 = q₀` but degree `1 < q₀` in each variable.
+-- After mapping into `F₄`, it is still determined among such polynomials by its substitution.
+example (P : MvPolynomial (Fin 2) (ZMod 2))
+    (hP : P ∈ MvPolynomial.restrictDegree (Fin 2) (ZMod 2) 1)
+    (h : traceSubstitution b (P.map (algebraMap (ZMod 2) (GaloisField 2 2))) =
+      traceSubstitution b ((MvPolynomial.X 0 * MvPolynomial.X 1 : MvPolynomial (Fin 2) (ZMod 2)).map
+        (algebraMap (ZMod 2) (GaloisField 2 2)))) :
+    P = MvPolynomial.X 0 * MvPolynomial.X 1 := by
+  refine injOn_traceSubstitution_map b (by simpa [ZMod.card] using hP) ?_ h
+  rw [SetLike.mem_coe, ZMod.card, MvPolynomial.mem_restrictDegree_iff_sup]
+  intro i
+  rw [MvPolynomial.degrees_mul_eq (MvPolynomial.X_ne_zero _) (MvPolynomial.X_ne_zero _),
+    MvPolynomial.degrees_X, MvPolynomial.degrees_X]
+  fin_cases i <;> simp
 
 /-- info: 'ReedMuller.natDegree_traceSubstitution_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -110,7 +116,7 @@ example (P₁ P₂ : MvPolynomial (Fin 2) (ZMod 2))
 #guard_msgs (whitespace := lax) in
 #print axioms ReedMuller.injOn_traceSubstitution_map
 
-/-- info: 'ReedMuller.injOn_traceSubstitution_map_restrictDegree' depends on axioms:
+/-- info: 'ReedMuller.injOn_traceSubstitution_map_totalDegree_lt' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedMuller.injOn_traceSubstitution_map_restrictDegree
+#print axioms ReedMuller.injOn_traceSubstitution_map_totalDegree_lt
