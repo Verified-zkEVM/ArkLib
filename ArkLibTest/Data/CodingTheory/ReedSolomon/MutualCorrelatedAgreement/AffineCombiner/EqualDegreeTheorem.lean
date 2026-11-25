@@ -5,12 +5,42 @@ Authors: Thomas Coratger
 -/
 
 import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
+import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeTheorem
+import Mathlib.Algebra.Field.ZMod
 import Mathlib.FieldTheory.Finite.GaloisField
 
 /-! # Acceptance cases for the explicit equal-degree and linear-claim bounds -/
 
 open ReedSolomon
+
+private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
+
+/-- The whole field `F₅` as the evaluation domain. -/
+private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
+
+/-- At `d = 1`, `A = 4` on `F₅`, the Johnson quotient is `5 / 2`.
+Its floor gives an additive error term of `2 / 5`. -/
+example :
+    equalDegreeMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 2 / 5 := by
+  have h := equalDegreeMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
+    (by simp [ZMod.card])
+  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
+  exact h
+
+open scoped ProbabilityTheory
+
+-- The bound controls native probabilities for independently uniform triples.
+example (f g : ZMod 5 → ZMod 5) :
+    Pr{let c ← $ᵗ (ZMod 5 × ZMod 5 × ZMod 5)}[∃ P,
+      IsEqualDegreeExceptional fullDomain f g 1 4 1 c.1 c.2.1 c.2.2 P] ≤
+        affineMcaError fullDomain 1 4 1 + 2 / 5 := by
+  refine (prob_isEqualDegreeExceptional_le fullDomain f g 1 4 1).trans ?_
+  have h := equalDegreeMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
+    (by simp [ZMod.card])
+  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
+  exact h
 
 private theorem sqrt_degreeFraction : √((16 : ℝ) / 100) = 2 / 5 := by
   rw [Real.sqrt_eq_iff_mul_self_eq_of_pos (by norm_num)]
@@ -87,6 +117,11 @@ example : linearClaimMcaError largeDomain 16 90 1 < (1 : ENNReal) / 2 ^ 60 := by
     norm_num [ENNReal.ofReal_div_of_pos, one_div]
   rw [← hone]
   exact (ENNReal.ofReal_lt_ofReal_iff (by positivity)).mpr (by norm_num)
+
+/-- info: 'ReedSolomon.equalDegreeMcaError_le_affineMcaError_add' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.equalDegreeMcaError_le_affineMcaError_add
 
 /-- info: 'ReedSolomon.equalDegreeMcaError_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
