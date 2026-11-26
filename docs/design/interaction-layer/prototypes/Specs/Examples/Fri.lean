@@ -332,6 +332,10 @@ instance : TypeName (ZMod 17) := ⟨"\\mathbb{F}_{17}"⟩
 example (tr : (friSpec (ZMod 17) 2 3 2).Tr) : tr⟦fold, 1, f⟧ = tr.2.2.2.1 := rfl
 /-- The final constant. -/
 example (tr : (friSpec (ZMod 17) 2 3 2).Tr) : tr⟦c⟧ = tr.2.2.2.2.2.1 := rfl
+/-- The last folding challenge `α_2`, after the fold block, by its subscript. With the base alone
+the accessor reads `α_0`. -/
+example (tr : (friSpec (ZMod 17) 2 3 2).Tr) : tr⟦"\\alpha_2"⟧ = tr.2.2.2.2.1 := rfl
+example (tr : (friSpec (ZMod 17) 2 3 2).Tr) : tr⟦"\\alpha"⟧ = tr⟦fold, 0, "\\alpha"⟧ := rfl
 /-- The position of the second query. -/
 example (tr : (friSpec (ZMod 17) 2 3 2).Tr) : tr⟦query, 1, t⟧ = tr.2.2.2.2.2.2.2.1 := rfl
 

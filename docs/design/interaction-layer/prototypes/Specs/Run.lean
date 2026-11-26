@@ -624,9 +624,11 @@ syntax ident " = " str : specLabel
 
 /-- `tr⟦a, …, x⟧` is the move with name base `x` inside the enclosing stages, blocks and rounds
 `a, …`, in a transcript of type `Spec.Tr s` or a view of type `Spec.Vw s p`. It elaborates to a
-chain of projections. A component `m = v` enters the case labelled `v` of the branch on the
-message `m`. Then the accessor has type `Option α`: `some` of the move when the transcript's
-message is that case, and `none` otherwise. -/
+chain of projections. The last component may also be the base with the name's subscript
+(`v_A`, `"\\alpha_{2}"`), which tells apart moves that share a base in one context; with the
+base alone the accessor reads the first such move. A component `m = v` enters the case labelled
+`v` of the branch on the message `m`. Then the accessor has type `Option α`: `some` of the move
+when the transcript's message is that case, and `none` otherwise. -/
 syntax:max term noWs "⟦" specLabel,+ "⟧" : term
 
 private def labelComp : TSyntax `specLabel → TermElabM LabelComp
@@ -659,6 +661,21 @@ private def isSubseq : List LabelComp → List LabelComp → Bool
 private def nameBase (nm : Expr) : MetaM String := do
   let nm ← whnfD nm
   readString nm.getAppArgs[0]!
+
+/-- The subscript of a name as a label reads it: the symbol of `v_A`, or the number of `g_2` and
+of `α_k` at `k = 2`. `none` for a name without one. -/
+private def subText (nm : Expr) : MetaM (Option String) := do
+  let nm ← whnfD nm
+  let sub ← whnfD nm.getAppArgs[1]!
+  match sub.getAppFn.constName? with
+  | some ``Subscript.sym => return some (← readString sub.getAppArgs[0]!)
+  | some ``Subscript.at =>
+    let e ← whnfD sub.getAppArgs[0]!
+    match e.getAppFn.constName? with
+    | some ``Ix.rnd | some ``Ix.num | some ``Ix.count =>
+      return (← readNat e.getAppArgs[0]!).map toString
+    | _ => return none
+  | _ => return none
 
 /-- The elements of a list expression. -/
 private partial def listElems (l : Expr) : MetaM (List Expr) := do
@@ -704,7 +721,12 @@ private partial def findMove (label : List LabelComp) (cases : List (String × S
   let ks ← whnfD ks
   let args := ks.getAppArgs
   let hit (nm : Expr) : MetaM Bool := do
-    pure ((← nameBase nm) == base && isSubseq label ctx.toList)
+    unless isSubseq label ctx.toList do return false
+    let b ← nameBase nm
+    if b == base then return true
+    match ← subText nm with
+    | some t => return base == b ++ "_" ++ t || base == b ++ "_{" ++ t ++ "}"
+    | none => return false
   match ks.getAppFn.constName? with
   | some ``Skel.cons =>
     let it ← whnfD args[0]!

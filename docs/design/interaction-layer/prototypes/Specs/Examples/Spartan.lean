@@ -369,6 +369,13 @@ collide. -/
 example (tr : (spartanSpec ℚ 2 2).Tr) :
     tr⟦inner, sumcheck, 0, g⟧ = tr.2.2.2.2.2.2.2.2.2.2.2.2.1 := rfl
 
+/-- Moves that share a base in one stage are told apart by their subscript: `v_B` and `ρ_C`. With
+the base alone, `tr⟦outer, v⟧` reads the first of them, `v_A`. -/
+example (tr : (spartanSpec ℚ 2 2).Tr) : tr⟦outer, v_B⟧ = tr.2.2.2.2.2.2.2.1 := rfl
+example (tr : (spartanSpec ℚ 2 2).Tr) : tr⟦outer, v⟧ = tr⟦outer, v_A⟧ := rfl
+example (tr : (spartanSpec ℚ 2 2).Tr) :
+    tr⟦inner, "\\rho_C"⟧ = tr.2.2.2.2.2.2.2.2.2.2.2.1 := rfl
+
 /-- The labels and the expanded TeX of the checks. -/
 def checkTex (ks : Skel) : List (String × String) :=
   ks.checks.map fun (c : String × Syn) => (c.1, c.2.tex Mode.expanded)

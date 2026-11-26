@@ -225,10 +225,18 @@ work.
 
 **Decision.** Labels are paths of stage names, block names, round numbers and the label. A branch
 component `m = v` enters case `v`. Inside a branch the accessor returns an `Option`, because the
-transcript type after the branch message depends on the message.
+transcript type after the branch message depends on the message. When moves in one context share
+a base, the label adds the subscript: `tr⟦outer, v_B⟧`, `tr⟦"\\alpha_2"⟧`. With the base alone the
+accessor reads the first such move.
+
+**Why the subscript form.** Spartan's row values `v_A`, `v_B`, `v_C` and FRI's last folding
+challenge share a base with other moves in their context, so a base alone cannot reach all of
+them. Matching the subscript reuses the name the figure prints instead of adding a second label to
+each move.
 
 **Evidence.** In Spartan, `tr⟦outer, sumcheck, 0, g⟧` and `tr⟦inner, sumcheck, 0, g⟧` are
-different moves. In the branching example `tr⟦m = 2, sumcheck, 1, r⟧` is `some` on a transcript
+different moves, and `tr⟦outer, v_B⟧` and `tr⟦inner, "\\rho_C"⟧` read the second and third
+moves of their kind, by `rfl`. In the branching example `tr⟦m = 2, sumcheck, 1, r⟧` is `some` on a transcript
 whose message is 2 and `none` on one whose message is 1, both by `rfl`.
 
 ### 6. Figures could not show dependent shapes
