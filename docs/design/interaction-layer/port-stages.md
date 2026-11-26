@@ -58,7 +58,7 @@ The ports follow the universe policy of record D2: data lies in `Type`.
 - `StageChain` ([stages]) puts every statement type, oracle index type and oracle data type of a
   chain in `Type`, which is the old-layer `ExecutionInterface.{u}` at `u = 0`. It takes
   `ambient : OracleSpec ι` with `ι : Type`.
-- A chain's oracle families have their queries in `Type`, as do the binary
+- A chain's oracle bundles have their queries in `Type`, as do the binary
   `OracleVerifier.append` and its decision laws. Step 4 of the universe migration removed the
   adapters that changed a family's query universe (`OracleFamily.liftQueries`,
   `OracleMap.liftQueries`, `OracleMap.lowerQueries`, `OracleVerifier.liftInputs`,

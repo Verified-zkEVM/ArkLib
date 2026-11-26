@@ -384,7 +384,7 @@ end Prover
 section Transcript
 
 omit Oₘ in
-theorem decodeFrom_succ {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly.{0})
+theorem decodeFrom_succ {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly0)
     (pos : Fin n → P.A) (e : (j : Fin n) → Move l (pos j) ≃ pSpec.«Type» j) (k m : ℕ)
     (h : k + (m + 1) = n) (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec)
       (d : Move l (pos ⟨k, by omega⟩))
@@ -395,7 +395,7 @@ theorem decodeFrom_succ {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 omit Oₘ in
 /-- The round read at a node is its move. -/
-theorem decodeFrom_succ_self {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly.{0})
+theorem decodeFrom_succ_self {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly0)
     (pos : Fin n → P.A) (e : (j : Fin n) → Move l (pos j) ≃ pSpec.«Type» j) (k m : ℕ)
     (h : k + (m + 1) = n) (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec)
       (d : Move l (pos ⟨k, by omega⟩))
@@ -434,7 +434,7 @@ theorem viewChallenge_eraseOracle (j : Fin n) : (D : Direction) → (hD : pSpec.
   | .V_to_P, _, _, _ => rfl
 
 omit Oₘ in
-theorem mapMoves_chain_succ {P : PFunctor.{1, 0}} {l l' : PFunctor.Lens P rolePoly.{0}}
+theorem mapMoves_chain_succ {P : PFunctor.{1, 0}} {l l' : PFunctor.Lens P rolePoly0}
     (g : PathAlong.MoveMap l l') (pos : Fin n → P.A) (k m : ℕ) (h : k + (m + 1) = n)
     (d : Move l (pos ⟨k, by omega⟩)) (rest : Transcript l (chain pos (k + 1) m (by omega))) :
     Transcript.mapMoves g (s := (chain pos k (m + 1) h)) ⟨d, rest⟩ =

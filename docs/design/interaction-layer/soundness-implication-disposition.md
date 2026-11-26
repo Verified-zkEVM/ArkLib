@@ -179,10 +179,10 @@ state. Bundle answers and the oracle output map remain those of the fixed transc
 [Ordinary-import checks][test-bridges] expose all four laws. The classical implication wrappers
 use them and the generic implication, without a separate run-to-decision or acceptance proof.
 
-Statement, input-index, input-query and output-query universes remain independent; acceptance
-and soundness retain path-indexed outputs. The execution and bundle-query universe
-constraints are inherited from [IMPLEMENTATION-NOTES entry 18][universes], rather than introduced
-by this implication. This record adds no second inventory of those constraints.
+Statements, input indices, input queries and output queries lie in `Type`, as record D2's
+universe policy requires; acceptance and soundness retain path-indexed outputs. The execution and
+bundle-query universes follow [IMPLEMENTATION-NOTES entry 18][universes], rather than being
+introduced by this implication. This record adds no second inventory of them.
 
 [source-state]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Oracle/Security/Soundness.lean#L43
 [source-sound]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Oracle/Security/Soundness.lean#L157

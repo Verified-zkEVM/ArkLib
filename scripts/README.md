@@ -273,9 +273,9 @@ lake exe universe-rule --report --explain-skips
 
 Each line of `universe_rule_allowlist.txt` is a violation line, then ` # `, then a reason:
 `adversary` for the policy exception (`AdversaryModel`, `ExtractionInterface` and the
-declarations that take them), or `pending: ...` for a violation that a planned change removes
-(universe step 5 of record D2, or the oracle consolidation). The check fails when a violation is
-not on the allowlist, and also when an entry matches no violation. A change that fixes a violation
+declarations that take them), or `pending: ...` for a violation that a planned change removes.
+The allowlist holds only the policy exception. The check fails when a violation is not on the
+allowlist, and also when an entry matches no violation. A change that fixes a violation
 therefore deletes its entry in the same PR. Exit status `1` is a rule verdict and `2` an
 infrastructure failure. `./scripts/validate.sh`, and therefore CI, runs
 `./scripts/test-universe-rule.sh` and then the check.

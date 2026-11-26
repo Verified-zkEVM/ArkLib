@@ -36,7 +36,7 @@ example {I : Type} (A : I → Type) (O : ∀ i, OracleInterface (A i)) :
 example {I : Type} (A : I → Type) (O : ∀ i, OracleInterface (A i)) :
     (OracleBundle.ofIndexed A O).spec = @OracleInterface.toOracleSpec I A O := rfl
 
-example {I : Type} (spec : OracleSpec.{0, 0} I) :
+example {I : Type} (spec : OracleSpec I) :
     (OracleBundle.ofSpec spec).answer = id := rfl
 
 /-! ### Reducible combinators -/

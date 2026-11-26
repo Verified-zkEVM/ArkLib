@@ -50,7 +50,7 @@ theorem chain_succ {P : PFunctor.{1, 0}} (pos : Fin n → P.A) (k m : ℕ) (h : 
 
 section Decode
 
-variable {pSpec : ProtocolSpec n} {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly.{0})
+variable {pSpec : ProtocolSpec n} {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly0)
   (pos : Fin n → P.A) (e : (j : Fin n) → Move l (pos j) ≃ pSpec.«Type» j)
 
 /-- Read a legacy transcript off a runtime path, extending the transcript `pre` of the rounds

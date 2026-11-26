@@ -179,6 +179,14 @@ the port of V1, which quantifies over arbitrary handlers.
 
 ## Universe contracts
 
+The contracts below describe the port at the pinned commit. The universe policy of record D2
+retired them: since step 4 of its migration, `OracleBundle` lies in `Type 1` with no universe
+parameters, and its queries, responses and data lie in `Type`. Step 4 also deleted
+`OracleBundle.liftResponse` and `OracleBundle.Equiv.liftResponse`. S12 to S15 therefore have no
+counterpart. `ArkLibTest/Interaction/Oracle/OracleMaps.lean` checks the S10 and S11 carriers in
+`Type`, and `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` checks the R26 and R27 bundles in
+`Type`.
+
 **SourceExample S10.** `OracleBundle.sum` takes query universes `u`, `u'`, shared response universe
 `v`, and data universes `w`, `w'`. Its result is
 `OracleBundle.{v, max u u', max w w'}`. Further tests assert the exact disjoint index carrier,
@@ -223,7 +231,9 @@ Neither P1 nor P2 excludes any part of these contracts.
 
 ## Remaining interface restrictions
 
-[Implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md) states:
+Step 4 of the D2 migration closed the restriction below. Every bundle query index now lies in
+`Type`, and `OracleVerifier.runWithLog` accepts every oracle verifier. At the pinned commit,
+[implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md) stated:
 “Its input query index and oracle-node query type must remain in `Type`.” This applies to
 `OracleVerifier.runWithLog`, whose returned full log records bundle queries. It does not
 restrict R26/R27, which use general `OracleBundle` as inputs to `OracleVerifier.run`.
@@ -233,6 +243,11 @@ general verifier inputs. The shared interface is unchanged. The source sum, tens
 raw-routing canaries also keep all their old-layer universe instantiations.
 
 ## Cost universes
+
+Under the universe policy of record D2, query indices, responses and costs are data and lie in
+`Type`. The restriction below is therefore the policy rather than an upstream limit. Since step 4 bundle
+data also lies in `Type`, and `OracleMap.withAmbient_worstCaseCost` has no universe parameters.
+The rest of this section describes the port at the pinned commit.
 
 [`OracleMap.withAmbient_worstCaseCost`][cost] has independent backing-data universes `dX`, `dY`.
 Its ambient index, both bundle-query indices, response/result types and cost carrier `ω` remain

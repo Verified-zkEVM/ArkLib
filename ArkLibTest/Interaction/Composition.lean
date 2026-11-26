@@ -59,7 +59,7 @@ run_cmd do
 open Interaction.OracleTests
 
 /-- A suffix computes a virtual output from an embedded prefix oracle. -/
-def virtualSuffix : OracleVerifier noAmbient emptyTree Nat (fun _ => Unit) functions
+def virtualSuffix : OracleVerifier emptySpec0 emptyTree Nat (fun _ => Unit) functions
     (fun _ => functions) where
   decide _ _ _ := pure ()
   outputMap _ _ _ := doubled.comp (OracleMap.fst _ _)
@@ -74,12 +74,12 @@ def compatible : OracleVerifier.OutputCompatibility queryDecision (fun _ => virt
 def combined := queryDecision.append (fun _ => virtualSuffix) compatible
 
 /-- The prover sends the function `n ↦ n + 5` and finishes. -/
-def oracleProver : Prover oracleSig noAmbient
+def oracleProver : Prover oracleSig emptySpec0
     (tree.append (fun _ => emptyTree)) (fun _ => PUnit) :=
   pure ⟨fun n => n + 5, pure ⟨⟩⟩
 
 def oracleHandler : QueryImpl
-    (noAmbient + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
+    (emptySpec0 + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
   | .inl i => i.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim

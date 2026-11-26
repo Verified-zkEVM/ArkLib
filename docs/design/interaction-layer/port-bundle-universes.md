@@ -4,7 +4,7 @@ This port table records the universe assertions reviewed as F3 and F4 for PR #14
 old-layer sources at `9829e83ced`. The ports import only the interaction Core APIs.
 The R26/R27 acceptance client is
 [`BundleFamilies.lean`](../../../ArkLibTest/Interaction/Oracle/BundleFamilies.lean).
-`ArkLibTest/Interaction/UniverseCanary.lean` keeps the separate oracle-node protocol canary.
+`ArkLibTest/Interaction/UniversePolicy.lean` checks the policy that retired these contracts.
 
 | Old-layer assertion | Status | Port and evidence |
 | --- | --- | --- |

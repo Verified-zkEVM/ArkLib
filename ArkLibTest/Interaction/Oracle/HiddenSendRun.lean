@@ -22,7 +22,7 @@ abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
 /-- No input oracles. -/
 def noInputs : OracleBundle :=
-  OracleBundle.ofIndexed (fun i : PEmpty.{1} => PEmpty.elim i) fun i => i.elim
+  OracleBundle.ofIndexed (fun i : PEmpty => PEmpty.elim i) fun i => i.elim
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim

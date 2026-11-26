@@ -54,7 +54,7 @@ structure Layout (pSpec : ProtocolSpec n) where
   /-- The node polynomial. -/
   P : PFunctor.{1, 0}
   /-- The ownership lens. -/
-  l : PFunctor.Lens P rolePoly.{0}
+  l : PFunctor.Lens P rolePoly0
   /-- The node of each round. -/
   pos : Fin n → P.A
   /-- A round's runtime moves are its legacy payloads. -/

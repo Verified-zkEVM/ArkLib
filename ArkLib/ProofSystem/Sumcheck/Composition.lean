@@ -63,7 +63,7 @@ end InputRoute
 
 section Check
 
-variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec.{0, 0} ι)
+variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec ι)
   (inputs : OracleBundle)
 
 
@@ -183,7 +183,7 @@ end SplitView
 
 section Append
 
-variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec.{0, 0} ι)
+variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec ι)
   (inputs : OracleBundle)
   {middle : OracleBundle} {outputs : OracleBundle}
   {s : OracleProtocol} {S : Type} {T U : Type}

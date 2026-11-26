@@ -73,7 +73,7 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
 
-variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
 
 /-- The partial transcript at a round position `sp`: the full moves made so far along the cursor,
 including the oracle messages the verifier's view erases. -/
@@ -118,7 +118,7 @@ same cursor. Each move keeps its source branch, so the cursor is unchanged.
 This is the prefix counterpart of `Transcript.mapMoves`. It belongs next to PolyFun's cursor and
 move-map operations (`PolyFun.PFunctor.Free.Cursor` and `PolyFun.PFunctor.Free.Path.MapMoves`)
 and should move there with them. -/
-def PartialTranscriptAt.mapMoves {l' : PFunctor.Lens P rolePoly.{0}}
+def PartialTranscriptAt.mapMoves {l' : PFunctor.Lens P rolePoly0}
     (g : PathAlong.MoveMap l l') :
     {s t : FreeM P Unit} → (sp : Cursor.Spine s t) →
     PartialTranscriptAt l sp → PartialTranscriptAt l' sp

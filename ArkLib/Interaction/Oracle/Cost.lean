@@ -21,15 +21,12 @@ the routed program. This is VCVio's `WorstCaseCostBound.simulateQ` for the handl
 Query multiplicities of a recorded run are counted with VCVio's `QueryLog.countQ`, which adds
 over appended logs (`QueryLog.countQ_append`).
 
-The ambient index, bundle-query indices, responses, results and cost carrier are restricted to
-`Type`. Only backing-data universes are independent here. ArkLib accepts this restriction as an
-upstream limit: VCVio's `CostModel`, `costDist`, `WorstCaseCostBound` and
-`WorstCaseCostBound.simulateQ` required `Type` until VCVio PR #1220
-(https://github.com/Verified-zkEVM/VCVio/pull/1220) generalized their universes. The pinned
-VCVio includes that PR, and generalizing this wrapper is follow-up work. Query indices and the
-cost carrier are not restricted by the protocol semantics. A caller at a larger universe can
-already prove a structural bound with PolyFun's universe-polymorphic completed-path transfer
-`PFunctor.FreeM.Path.charge_liftM_le_of_forall`.
+The ambient index, bundle-query indices, responses, results, backing data and cost carrier lie
+in `Type`, as the universe policy of record D2 puts all data there. VCVio's `CostModel`,
+`costDist`, `WorstCaseCostBound` and `WorstCaseCostBound.simulateQ` are universe-polymorphic since
+VCVio PR #1220 (https://github.com/Verified-zkEVM/VCVio/pull/1220), and this wrapper instantiates
+them at `Type`. A caller at a larger universe can prove a structural bound with PolyFun's
+universe-polymorphic completed-path transfer `PFunctor.FreeM.Path.charge_liftM_le_of_forall`.
 -/
 
 @[expose] public section
@@ -45,9 +42,8 @@ the original charge of that output query.
 As with `WorstCaseCostBound` itself, the bound covers completed paths only. A query with an empty
 response type ends no completed path, so the bound says nothing about its charge.
 
-The indices, responses and cost carrier lie in `Type` because VCVio's cost API required it before
-VCVio PR #1220. The pinned VCVio includes that PR, and generalizing this theorem is follow-up
-work; the module docstring has the details. -/
+The indices, responses and cost carrier lie in `Type`, as the universe policy of record D2 puts
+all data there; the module docstring has the details. -/
 theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}
     {In : OracleBundle} {Out : OracleBundle}
     [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMonoid ω]

@@ -72,6 +72,31 @@ The scan is a short meta program: for each constant, open its type with
 `collectLevelParams`, and report the constant's level parameters that were not collected. The
 CI linter of migration step 7 is this program with an allowlist.
 
+## After the migration
+
+These counts were taken on the branch of migration steps 6 and 7 (2026-11-25), with the same
+commands as the tables above.
+
+| Code | Lines | Annotations | Per thousand lines |
+|---|---:|---:|---:|
+| ArkLib core (`Interaction/`, `Relation/`) | 21.7k | 204 | 9.4 |
+
+Of the 204 annotations, 147 are in generic code over an arbitrary `P : PFunctor`
+(`PFunctor.{uA, 0}` 65, `PUnit.{u + 1}` 40, `PFunctor.{uA, u}` 23, `rolePoly.{u}` 19). Another 36
+are `OracleSpec.{0, 0}` in structure fields and binders, which fix the universes of VCVio's
+generic oracle specification at `Type`. The rest are 14 `PFunctor.{1, 0}`, 3 `Participant.{u}`,
+the two aliases `rolePoly0` and `emptySpec0`, one `OracleSpec.{u, u}` and one
+`AdversaryModel.{w}`. The core has no `ULift`. The tests under `ArkLibTest/Interaction/` have 39
+annotations and 4 `ULift`s, all 4 in `UniversePolicy.lean`, which checks a move that is itself a
+type. The clients in `ProofSystem/` and `Commitments/` have 5 annotations, on `PUnit.unit`,
+`PFunctor` and the legacy class `Prover.OutputIsPure`, where Lean cannot infer the universe.
+
+The scan of the core outside `Legacy/` lists 1,388 declarations, 661 of them
+universe-polymorphic, and reports one: `AdversaryModel` in `w`, the policy's exception. This run
+skipped matchers, recursors, `noConfusion` and equation lemmas. Its declaration count is therefore
+not comparable with the 1,247 above. `lake exe universe-rule`, which also covers `Legacy/`, checks
+1,349 constants and reports the same single violation.
+
 ## The three failures
 
 Each example is checked in the prototype file against VCVio `f1a4a8ec`.

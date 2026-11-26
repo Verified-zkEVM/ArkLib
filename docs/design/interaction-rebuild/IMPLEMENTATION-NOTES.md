@@ -155,7 +155,7 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 ## 18. Run outputs are tied to the monad universe
 
 **Superseded by record D2's [universe policy](D2-ownership-and-universes.md#universe-policy)
-(2026-11-25); migration in progress.** Under the policy, data lies in `Type`, descriptions of data
+(2026-11-25); migration complete.** Under the policy, data lies in `Type`, descriptions of data
 in `Type 1`, adversaries in one universe that the model argument determines, and generic
 polynomial code in PolyFun's universes. Step 2 removed the security definitions' independent
 universes and both `.lift` lemmas. Step 3 removed the independent statement, witness and index
@@ -164,9 +164,9 @@ universes of execution, reductions, oracle verifiers, composition and stage chai
 adapters that changed a query or response universe. That also retired the full-log limit below.
 Step 5 removed the universe parameters of the vocabulary: `OracleInterface` has its message,
 queries and responses in `Type`, and `ClaimFamily`, `Problem`, `Relation`, the positions, the
-signatures and the protocols have none. Protocol leaves are `Unit`. This entry is retired with
-the last [migration step](D2-ownership-and-universes.md#migration). Until then, the rest of this
-entry describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
+signatures and the protocols have none. Protocol leaves are `Unit`. Steps 6 and 7 removed the remaining
+pins in tests and clients and added the CI check `lake exe universe-rule`. The rest of this entry
+describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
 records the reasons.
 
 **Retained runner contract.** Run outputs lie in `Type`: the output statement `StmtOut p`, the
@@ -183,7 +183,7 @@ the value universe to equal the response universe. A run output in another unive
 All execution, path-bundle and security APIs use those default trivial leaves, preserving their
 previous carriers by definitional equality. An explicit leaf type describes return values in the
 authored `FreeM` tree. The parameter is used by the tree representation and is not a phantom:
-the universe canary constructs and reads a natural-number leaf.
+the universe policy test constructs and reads a natural-number leaf.
 
 **Bundle data in `Type`.** A decision reads `pathBundle inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
@@ -236,9 +236,8 @@ result universe `v`.
 **Security wrappers.** The security definitions now take their data in `Type`, as step 2 of the
 [policy migration](D2-ownership-and-universes.md#migration). Statements, input, intermediate and
 output witnesses, problem claims and witnesses, input oracle data and query indices, and the
-values of the runner monad lie in `Type` in every file of `Interaction/Security/`. The protocol
-and family arguments are pinned at `0` until the vocabulary step removes their universes. Bundles
-have had no universe parameters since step 4.
+values of the runner monad lie in `Type` in every file of `Interaction/Security/`. Protocols,
+claim families and bundles have no universe parameters.
 `AdversaryModel` keeps one universe `w` for its adversaries, and an `ExtractionInterface` over a
 model takes its extractors in the same universe. The generic round-by-round definitions keep
 the position universe `uA` of `P : PFunctor.{uA, 0}`. Generic monads keep their result
@@ -255,9 +254,12 @@ have one form now, with no `...Aux` duplicate. Extracted witnesses returned by t
 games are values of the runner and stay in `Type`. Neither P1 nor P2 retires any of these
 contracts; both premises concern scheduling and shape rather than universes.
 
-`ArkLibTest/Interaction/UniverseCanary.lean` checks oracle maps, the oracle append, the routing
-law `append_decideWith` and two oracle runs with all bundle data in `Type`. Step 5 removed its
-oracle node whose queries were types, because `OracleInterface` puts its queries in `Type`.
+`ArkLibTest/Interaction/UniversePolicy.lean` checks the policy: the vocabulary has no universe
+parameters, generic code runs at a polynomial in `PFunctor.{u + 1, u}`, an `AdversaryModel` with
+adversaries in `Type 1` and a monad `Type → Type 1` need no annotation. It also checks oracle
+maps, the oracle append, the routing law `append_decideWith` and two oracle runs with all bundle
+data in `Type`. Because `OracleInterface` puts its queries in `Type`, no oracle node has
+queries that are types.
 The R26/R27 constructors in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` and their
 verifier and run examples also work in `Type`.
 
@@ -266,7 +268,7 @@ verifier and run examples also work in `Type`.
 ### Verifier outputs are indexed by the shape path
 
 Record D6 fixed the output family for the first milestone. Both verifiers now index their outputs
-by the public shape path: `Verifier ambient s StmtIn StmtOut` takes `StmtOut : Path s → Type u`,
+by the public shape path: `Verifier ambient s StmtIn StmtOut` takes `StmtOut : Path s → Type`,
 and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type` and
 `outputs : Path s → OracleBundle`. The decision returns `T p` and the output map
 targets `outputs p`; `OracleVerifier.Output T outputs p := T p × (outputs p).Data` is the accepted
@@ -293,7 +295,7 @@ through the passive append `OracleVerifier.append` (record D5).
   `StageChain.cons s V draw rest` has a first stage with protocol `s`, verifier `V` and challenge
   draws `draw`. At each path `p` of `s`, the chain `rest p` follows. Its inputs are `V`'s output
   statement type and output bundle at `p`. Statement types and bundles may change at every
-  boundary and may depend on the paths. Statements live in the computation universe `u`.
+  boundary and may depend on the paths. Statements lie in `Type`.
 - `StageChain.Compatibility c` is the evidence: at every boundary, an
   `OracleVerifier.OutputCompatibility` certificate between the stage's verifier and the composed
   verifier of the stages after it. `StageChain.compose` computes the evidence type and the composed

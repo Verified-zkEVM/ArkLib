@@ -341,7 +341,7 @@ universe v
 /-- Ambient routing permits distinct input and output bundles and a larger lawful target
 monad. -/
 example {ι : Type}
-    {ambient : OracleSpec.{0, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {ambient : OracleSpec ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
     {inputs outputs : OracleBundle}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)
     {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
@@ -370,7 +370,7 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
 
 
 /-- Ambient routing preserves distinct bundle indices and data. -/
-example {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+example {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     {inputs : OracleBundle} {outputs : OracleBundle}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)

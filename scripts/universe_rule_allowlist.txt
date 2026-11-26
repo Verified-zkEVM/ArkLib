@@ -8,37 +8,7 @@
 # Reasons:
 # - `adversary`: the policy exception. The adversary universe is the one universe that D2 keeps
 #   without an argument to determine it.
-# - `pending: oracle consolidation`: `OracleFamily`, which the oracle consolidation PR deletes.
-# - `pending: universe step 5`: D2 migration step 5 puts `OracleInterface`, `Relation`, the
-#   problem bundles, signatures and protocols at `Type`, which removes these universes.
+# - `pending: <one line>`: a violation that a planned change removes, with that change named.
 
 # Policy exception
 ArkLib.Interaction.Security.Completeness Interaction.AdversaryModel w # adversary
-
-# Pending: oracle consolidation
-ArkLib.Relation.Basic Interaction.Oracle.OracleFamily w # pending: oracle consolidation
-
-# Pending: universe step 5
-ArkLib.Interaction.Protocol Interaction.OracleProtocol q # pending: universe step 5
-ArkLib.Interaction.Protocol Interaction.Protocol u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.OraclePoly q # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.OraclePoly u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.OraclePos q # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.OraclePos u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.PlainPoly u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.PlainPos u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.eraseOracle q # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.eraseOracle u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.oracleSig q # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.oracleSig u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.owner_oracle_challenge q # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.owner_oracle_message q # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.plainSig u # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.viewSig q # pending: universe step 5
-ArkLib.Interaction.Signature Interaction.viewSig u # pending: universe step 5
-ArkLib.Relation.Basic Interaction.Oracle.ClaimFamily v # pending: universe step 5
-ArkLib.Relation.Basic Interaction.Oracle.Problem w # pending: universe step 5
-ArkLib.Relation.Basic Interaction.Oracle.Relation w # pending: universe step 5
-ArkLib.Relation.OracleInterface OracleInterface v # pending: universe step 5
-ArkLib.Relation.OracleInterface OracleInterface.instElim0 u_1 # pending: universe step 5
-ArkLib.Relation.OracleInterface OracleInterface.instElim0 u_2 # pending: universe step 5

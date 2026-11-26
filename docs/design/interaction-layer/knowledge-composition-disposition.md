@@ -27,6 +27,15 @@ Each row has exactly one status:
 - **unresolved:** the row names the exact missing parent interface and declaration. No such gap
   prevents this branch's pure move, output or seam universe port.
 
+Record D2's [universe policy](../interaction-rebuild/D2-ownership-and-universes.md#universe-policy)
+superseded the universe contracts in this record, and its migration is complete. Statements,
+input, intermediate, seam and output witnesses, moves and costs now lie in `Type`. The rows and
+sections below describe the port at the pinned commits. The independent witness universes and
+the large-carrier canaries of KC-316, KC-318 and KC-322 are retired with the deleted
+`UniverseCanary.lean`. The small-move restriction of PROB-031 and the small carriers of
+`MeasuredStages` are what the policy requires, not limits. The adversary universe of
+`AdversaryModel` remains, and `ArkLibTest/Interaction/UniversePolicy.lean` checks it at `Type 1`.
+
 ## Scope and correspondence
 
 The tables include the production laws used by this branch's extraction, certificate composition

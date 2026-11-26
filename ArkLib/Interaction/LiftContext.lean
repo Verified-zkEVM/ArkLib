@@ -56,7 +56,7 @@ structure StatementLens {P : PFunctor.{uA, 0}} (s : FreeM P Unit)
 
 /-- Project an outer input witness to an inner one, and lift the inner prover's output on a
 completed transcript back to an outer one. -/
-structure WitnessLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+structure WitnessLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     (s : FreeM P Unit) (OuterIn : Type) (OuterWit : Type) (InnerWit : Type)
     (OuterOut : Transcript l s → Type) (InnerOut : Transcript l s → Type) where
   /-- The inner input witness. -/
@@ -65,7 +65,7 @@ structure WitnessLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
   lift : OuterIn → OuterWit → (tr : Transcript l s) → InnerOut tr → OuterOut tr
 
 /-- A statement lens and a witness lens over the same outer input statement. -/
-structure ContextLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+structure ContextLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     (s : FreeM P Unit) (OuterIn : Type) (InnerIn : Type)
     (OuterWit : Type) (InnerWit : Type)
     (OuterStmtOut InnerStmtOut : Path s → Type)
@@ -78,7 +78,7 @@ structure ContextLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 /-- A statement lens with the maps that knowledge extraction runs backwards: an outer output
 witness projects to an inner one, and an inner input witness lifts to an outer one using the
 completed transcript and the outer output witness. -/
-structure ExtractorLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+structure ExtractorLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     (s : FreeM P Unit) (OuterIn : Type) (InnerIn : Type)
     (OuterStmtOut InnerStmtOut : Path s → Type)
     (OuterWitIn : OuterIn → Type) (InnerWitIn : InnerIn → Type)
@@ -95,7 +95,7 @@ structure ExtractorLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0}
 
 /-- Run the inner prover on the projected input and map its output through the witness lens.
 Every node slot is the inner prover's slot. -/
-def Prover.liftContext {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+def Prover.liftContext {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : FreeM P Unit}
     {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
     {OuterOut InnerOut : Transcript l s → Type}
@@ -126,7 +126,7 @@ def Reduction.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Prot
 /-! ### Run laws -/
 
 /-- Simulating a prover commutes with mapping its output. -/
-theorem Prover.simulate_mapOutput {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+theorem Prover.simulate_mapOutput {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {ι : Type} {ambient : OracleSpec.{0, 0} ι} {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) :
     (s : FreeM P Unit) → {A B : Transcript l s → Type} →
@@ -248,7 +248,7 @@ theorem Verifier.compatible_of_mem_support_simulateQ {ι σ : Type} {ambient : O
 
 section Conditions
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P Unit}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0} {s : FreeM P Unit}
   {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
   {OuterStmtOut InnerStmtOut : Path s → Type} {OuterOut InnerOut : Transcript l s → Type}
 
@@ -298,7 +298,7 @@ admissible inputs, and valid inner input witnesses lift to valid outer ones. A c
 accepted outer output witness either projects to a valid inner one, or lifts every inner input
 witness to a valid outer one. -/
 structure ExtractorLens.IsKnowledgeSound {P : PFunctor.{uA, 0}}
-    {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P Unit}
+    {l : PFunctor.Lens P rolePoly0} {s : FreeM P Unit}
     {OuterIn : Type} {InnerIn : Type} {OuterStmtOut InnerStmtOut : Path s → Type}
     {OuterWitIn : OuterIn → Type} {InnerWitIn : InnerIn → Type}
     {OuterWitOut : OuterIn → Transcript l s → Type}
@@ -330,7 +330,7 @@ structure ExtractorLens.IsKnowledgeSound {P : PFunctor.{uA, 0}}
 
 section Generic
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P Unit}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0} {s : FreeM P Unit}
   {SO : Type} {SI : Type}
 
 /-- Pull a state function back along a statement map. The new state is true on a statement

@@ -33,9 +33,14 @@ inductive PlainPos : Type 1 where
 def PlainPoly : PFunctor.{1, 0} :=
   ⟨PlainPos, fun | .message X => X | .challenge _ => Unit⟩
 
+/-- PolyFun's role polynomial `rolePoly` at `Type`. A lens `PFunctor.Lens P Q` has independent
+universes for `P` and `Q`. No argument therefore determines the universe of `rolePoly` in a
+signature's type. This alias has no universe parameters. -/
+abbrev rolePoly0 : PFunctor.{1, 0} := rolePoly.{0}
+
 /-- Plain messages belong to the prover; challenges belong to the sampler. -/
 @[implicit_reducible]
-def plainSig : PFunctor.Lens PlainPoly rolePoly.{0} where
+def plainSig : PFunctor.Lens PlainPoly rolePoly0 where
   toFunA | .message X => (.sender, X) | .challenge C => (.receiver, C)
   toFunB | .message _ => id | .challenge _ => fun _ => ⟨⟩
 
@@ -52,7 +57,7 @@ def OraclePoly : PFunctor.{1, 0} :=
 
 /-- The oracle signature records all moves and erases private payloads from branching. -/
 @[implicit_reducible]
-def oracleSig : PFunctor.Lens OraclePoly rolePoly.{0} where
+def oracleSig : PFunctor.Lens OraclePoly rolePoly0 where
   toFunA
     | .message X | .oracle X _ => (.sender, X)
     | .challenge C => (.receiver, C)
@@ -62,7 +67,7 @@ def oracleSig : PFunctor.Lens OraclePoly rolePoly.{0} where
 
 /-- The verifier sees public messages and challenges, and a marker for each oracle payload. -/
 @[implicit_reducible]
-def viewSig : PFunctor.Lens OraclePoly rolePoly.{0} where
+def viewSig : PFunctor.Lens OraclePoly rolePoly0 where
   toFunA
     | .message X => (.sender, X)
     | .challenge C => (.receiver, C)

@@ -1045,7 +1045,7 @@ section GeneralMoves
 
 universe uA
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
   {S : Type} {Win : S → Type} {a : P.A} {next : P.B a → FreeM P Unit}
   {W : S → Transcript l (.liftBind a next) → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}

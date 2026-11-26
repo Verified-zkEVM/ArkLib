@@ -272,7 +272,10 @@ universe instantiations of the old tests. Row 17 uses `OracleInterface.{1, 0}` o
 [OracleBundle.sum][bundle-sum] extends an arbitrary prior query handler with the given interface and
 its message realization. Neither test restricts the prior polynomial, replaces a family with a
 constant, or uses a universe lift. These tests cover bundle extension; DecorationExample 2
-separately checks interfaces inside protocol oracle nodes.
+separately checks interfaces inside protocol oracle nodes. Since step 5 of the D2 migration,
+`OracleInterface` has no universe parameters and puts messages, queries and responses in `Type`,
+so the universe policy retires the independent universes of rows 17 and 18. `AccessTyping.lean`
+now checks the same bundle extension with every carrier in `Type`.
 
 ## DecorationExample: 13 assertions
 

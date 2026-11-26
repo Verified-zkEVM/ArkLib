@@ -231,7 +231,7 @@ theorem Verifier.support_append {ι : Type} {σ : Type} {ambient : OracleSpec ι
 abbrev Prover.append := @Focal.compFlat
 
 /-- The sampler of a concatenation, with its pure prefix end, uses counterpart append. -/
-def appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+def appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {m : Type → Type} [Monad m]
     (s₁ : FreeM P Unit) (s₂ : Path s₁ → FreeM P Unit)
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c))
@@ -241,7 +241,7 @@ def appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
     (fun tr _ => sampler l _ (draw₂ (Transcript.path tr)))
 
 /-- Combine challenge implementations using only the canonical prefix path. -/
-def combineDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+def combineDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     {m : Type → Type v} :
     (s₁ : FreeM P Unit) → (s₂ : Path s₁ → FreeM P Unit) →
     ((c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
@@ -255,7 +255,7 @@ def combineDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
       (fun p => draw₂ ⟨b, p⟩) ⟨c, h⟩
 
 /-- Restrict challenge draws of an appended protocol to the challenge nodes of its prefix. -/
-def prefixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+def prefixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     {m : Type → Type v} :
     (s₁ : FreeM P Unit) → (s₂ : Path s₁ → FreeM P Unit) →
     ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
@@ -268,7 +268,7 @@ def prefixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 /-- Restrict challenge draws of an appended protocol to the challenge nodes of the suffix at a
 completed prefix path. -/
-def suffixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+def suffixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     {m : Type → Type v} :
     (s₁ : FreeM P Unit) → (s₂ : Path s₁ → FreeM P Unit) →
     ((c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
@@ -279,7 +279,7 @@ def suffixDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
       (fun c => draw ⟨.inr ⟨b, c.val⟩, c.property⟩) p c
 
 section draws
-variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
   {m : Type → Type v} {m' : Type → Type w}
 
 /-- Restricting draws to the prefix commutes with transforming every draw. -/
@@ -308,7 +308,7 @@ end draws
 
 /-- Combining the prefix and suffix restrictions of challenge draws recovers the draws. -/
 theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, 0}}
-    (l : PFunctor.Lens P rolePoly.{0}) {m : Type → Type v} :
+    (l : PFunctor.Lens P rolePoly0) {m : Type → Type v} :
     (s₁ : FreeM P Unit) → (s₂ : Path s₁ → FreeM P Unit) →
     (draw : (c : ChallengeNode l (s₁.append s₂)) → m (challengeSpec l (s₁.append s₂) c)) →
     combineDraw l s₁ s₂ (prefixDraw l s₁ s₂ draw) (suffixDraw l s₁ s₂ draw) = draw
@@ -322,7 +322,7 @@ theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, 0}}
 
 /-- Restricting combined challenge draws to the prefix recovers the prefix draws. -/
 @[simp] theorem prefixDraw_combineDraw {P : PFunctor.{uA, 0}}
-    (l : PFunctor.Lens P rolePoly.{0}) {m : Type → Type v} :
+    (l : PFunctor.Lens P rolePoly0) {m : Type → Type v} :
     (s₁ : FreeM P Unit) → (s₂ : Path s₁ → FreeM P Unit) →
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
@@ -340,7 +340,7 @@ theorem combineDraw_prefixDraw_suffixDraw {P : PFunctor.{uA, 0}}
 
 /-- Restricting combined challenge draws to each suffix recovers that suffix's draws. -/
 @[simp] theorem suffixDraw_combineDraw {P : PFunctor.{uA, 0}}
-    (l : PFunctor.Lens P rolePoly.{0}) {m : Type → Type v} :
+    (l : PFunctor.Lens P rolePoly0) {m : Type → Type v} :
     (s₁ : FreeM P Unit) → (s₂ : Path s₁ → FreeM P Unit) →
     (draw₁ : (c : ChallengeNode l s₁) → m (challengeSpec l s₁ c)) →
     (draw₂ : (p : Path s₁) → (c : ChallengeNode l (s₂ p)) →
@@ -437,7 +437,7 @@ theorem plainSampler_append_eq {m : Type → Type} [Monad m] [LawfulMonad m]
   rw [appendSampler_eq, combineDraw_prefixDraw_suffixDraw]
 
 /-- Composed execution preserves seam effects in their actual order. -/
-theorem run_appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+theorem run_appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {m : Type → Type} [Monad m] [LawfulMonad m]
     {s₁ : FreeM P Unit} {s₂ : Path s₁ → FreeM P Unit}
     {Mid : Transcript l s₁ → Type} {Out : Transcript l (s₁.append s₂) → Type}
@@ -456,7 +456,7 @@ theorem run_appendSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{
   run_compFlat_appendFlat p f (samplerEnd l s₁ draw₁) _
 
 /-- An arbitrary composed prover splits with its actual continuation and private memory. -/
-theorem run_splitSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+theorem run_splitSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {m : Type → Type} [Monad m] [LawfulMonad m]
     {s₁ : FreeM P Unit} {s₂ : Path s₁ → FreeM P Unit}
     {Out : Transcript l (s₁.append s₂) → Type}

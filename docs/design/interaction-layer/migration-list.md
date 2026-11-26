@@ -157,7 +157,7 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLibTest/Interaction/Oracle/PhasedRun.lean` | premise-required (P1). Logged table: 11 ported, 2 P1 on this branch; 10 ported, 2 P1, 1 retired after #1567. Access table: 4 ported, 2 P1, 1 retired | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean); `Oracle/HiddenSendRun.lean` (#1478) | [port-logged-execution.md](port-logged-execution.md); `port-oracle-access.md` (#1478) |
 | `ArkLibTest/Interaction/Oracle/Prefix.lean` | ported: 8 ported | `Oracle/PartialTranscripts.lean` (#1478) | `port-oracle-access.md` (#1478) |
 | `ArkLibTest/Interaction/Oracle/QueryBounds.lean` | ported: 18 ported (logged table), 17 ported (access table) | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean); `Oracle/QueryCost.lean`, `Oracle/RoutedAccess.lean` (#1478) | [port-logged-execution.md](port-logged-execution.md); `port-oracle-access.md` (#1478) |
-| `ArkLibTest/Interaction/Oracle/ResourceExample.lean` | retired: 21 ported, 7 retired (named-context and property-symbol mechanisms) | `Oracle/BundleFamilies.lean` (#1476); R26 and R27 in [`Interaction/UniverseCanary.lean`](../../../ArkLibTest/Interaction/UniverseCanary.lean) | `port-oracle-bundles.md` (#1476); [port-bundle-universes.md](port-bundle-universes.md) |
+| `ArkLibTest/Interaction/Oracle/ResourceExample.lean` | retired: 21 ported, 7 retired (named-context and property-symbol mechanisms) | `Oracle/BundleFamilies.lean` (#1476), which also checks the R26 and R27 bundles in `Type`; the universe policy retires their independent universes | `port-oracle-bundles.md` (#1476); [port-bundle-universes.md](port-bundle-universes.md) |
 | `ArkLibTest/Interaction/Oracle/RunSourcesExample.lean` | ported: 12 ported | `Oracle/RunBundles.lean` (#1476) | `port-oracle-bundles.md` (#1476) |
 | `ArkLibTest/Interaction/Oracle/RuntimeExample.lean` | ported: 2 ported | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean) | [port-logged-execution.md](port-logged-execution.md) |
 | `ArkLibTest/Interaction/Oracle/RuntimeQueryBounds.lean` | premise-required (P1). Logged table: 15 ported, 3 P1 on this branch, 4 P1 after #1567. Access table: 14 ported, 4 P1 | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean); `Oracle/HiddenBitAccess.lean`, `Oracle/QueryCost.lean` (#1478); rows 12, 16 and 17 also in [`Interaction/Security/RuntimeSoundness.lean`](../../../ArkLibTest/Interaction/Security/RuntimeSoundness.lean) | [port-logged-execution.md](port-logged-execution.md); `port-oracle-access.md` (#1478); PR #1485 |
@@ -173,7 +173,7 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLibTest/Interaction/Oracle/Terminal/Examples.lean` | retired: the `Terminal`, `.fault` and `decodeRuntime` mechanism is gone. Three of its four cases are covered; the fourth has no core test (see below) | `decision_outcomes` and `close_optional_ok` in [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean) | None. This list is its only record |
 | `ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean` | premise-required (P1). Logged table: 9 ported, 1 P1 on this branch; 7 ported, 1 P1, 2 retired after #1567. Bundles table: 7 ported, 2 retired | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean) | [port-logged-execution.md](port-logged-execution.md) (revised by #1567); `port-oracle-bundles.md` (#1476) |
 | `ArkLibTest/Interaction/Oracle/TypeTree/AccessExample.lean` | retired: 15 ported, 3 retired | `Oracle/ProtocolTree/AccessTyping.lean` (#1478) | `port-oracle-access.md` (#1478) |
-| `ArkLibTest/Interaction/Oracle/TypeTree/DecorationExample.lean` | premise-required (P2): 8 ported, 1 P2, 4 retired | `Oracle/ProtocolTree/PositionsAndOwners.lean` (#1478); decoration canaries in [`Interaction/UniverseCanary.lean`](../../../ArkLibTest/Interaction/UniverseCanary.lean) | `port-oracle-access.md` (#1478); [port-bundle-universes.md](port-bundle-universes.md) |
+| `ArkLibTest/Interaction/Oracle/TypeTree/DecorationExample.lean` | premise-required (P2): 8 ported, 1 P2, 4 retired | `Oracle/ProtocolTree/PositionsAndOwners.lean` (#1478); the decoration universe canary is ported to `Type` by the universe policy | `port-oracle-access.md` (#1478); [port-bundle-universes.md](port-bundle-universes.md) |
 | `ArkLibTest/Interaction/Oracle/TypeTree/MixedExample.lean` | ported: 9 ported | `Oracle/ProtocolTree/MixedTranscripts.lean` (#1478) | `port-oracle-access.md` (#1478) |
 | `ArkLibTest/Interaction/Oracle/Virtual.lean` | ported: 3 ported | `Oracle/DerivedOracles.lean` (#1476) | `port-oracle-bundles.md` (#1476) |
 | `ArkLibTest/Interaction/Reduction/DependentExample.lean` | retired: 5 ported, 3 retired | `Reduction/DependentAppend.lean` (#1477) | `port-stages.md` (#1477) |
@@ -204,11 +204,14 @@ runtime mass as a fault: it keeps missing mass distinct from rejection, as row T
 ## Unresolved rows and options
 
 The three items below are restrictions of the core port that the ledgers record without tying
-them to one old declaration. Each came from a pinned upstream library, and ArkLib accepts each as
-an upstream limit: the code site documents it. The VCVio pin `f1a4a8ec` now includes the upstream
-change behind each item (VCVio PRs #1220 and #1236). ArkLib has not adopted them yet, and each limit
-stays until a follow-up change lifts it. Two further items, `run_append` and the degree guarantee,
-are resolved; the last two subsections record why.
+them to one old declaration. Each came from a pinned upstream library, and ArkLib first accepted
+each as an upstream limit. The VCVio pin `f1a4a8ec` now includes the upstream change behind each
+item (VCVio PRs #1220 and #1236). The universe policy of record D2
+([universe policy](../interaction-rebuild/D2-ownership-and-universes.md#universe-policy)) closes
+all three: step 4 of its migration retired item 1, and the policy puts moves, query indices and
+costs in `Type`. Items 2 and 3 are therefore no longer limits. Each item ends with its status under the
+policy. Two further items, `run_append` and the degree guarantee, are resolved; the last two
+subsections record why.
 
 **1. The full-log runner cannot return large query indices.**
 [departures.md](departures.md) lists this as entry 18, and `port-oracle-access.md`
@@ -229,6 +232,10 @@ Decision: accepted as an upstream limit. The ambient-log runners `runWithAmbient
 [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst` and a
 universe-general `pathLogResult`, and the current pin includes them. Lifting the limit means
 rebuilding `runWithLog` on `subst` and reproving its laws, which is follow-up work.
+
+Status under the policy: retired. Since step 4 every bundle query index lies in `Type`, so
+`runWithLog` accepts every oracle verifier and needs no larger logging interface
+([implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe)).
 
 **2. PROB-031: probability bounds use small moves only.**
 Row PROB-031 of [knowledge-composition-disposition.md](knowledge-composition-disposition.md)
@@ -251,6 +258,9 @@ documents it. VCVio PR [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236
 with `𝒟[·]` can now take large moves. Bounds stated with `Pr{}` stay small because VCVio's `Pr{}`
 still requires `Type`. Generalizing them is follow-up work.
 
+Status under the policy: not a limit. Challenges are data, and the policy puts every move in
+`Type`. The small-move bounds therefore cover every protocol.
+
 **3. VCVio cost universes.**
 `port-oracle-bundles.md` (#1476), section Cost universes, records it.
 `OracleMap.withAmbient_worstCaseCost` in `ArkLib/Interaction/Oracle/Cost.lean` (#1476) keeps
@@ -271,6 +281,9 @@ holds `OracleMap.withAmbient_worstCaseCost`, documents it. VCVio PR
 API, and the current pin includes it. The wrapper can now take those universes, with results kept
 in the response universe as `simulateQ` requires. The change is about ten lines and is follow-up
 work.
+
+Status under the policy: not a limit. Query indices, responses and costs are data, and the
+policy puts them in `Type`, which is what the wrapper takes.
 
 ### Resolved: `run_append`
 
