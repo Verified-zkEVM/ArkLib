@@ -81,10 +81,10 @@ example {F : Type*} [Field F] [DecidableEq F] [Fintype F] (domain : Fin 100 ↪ 
   field_simp
   ring
 
--- At the same parameters, the linear-claim bound is `(8 + 2ℓ₀)/q + 2²² 5¹⁰/q²` with `ℓ₀ = 1`.
+-- At the same parameters, the linear-claim bound is `(8 + ℓ₀)/q + 2²² 5¹⁰/q²` with `ℓ₀ = 1`.
 example {F : Type*} [Field F] [DecidableEq F] [Fintype F] (domain : Fin 100 ↪ F) :
     linearClaimMcaError domain 16 90 1 ≤
-      ENNReal.ofReal (10 / Fintype.card F + 2 ^ 22 * 5 ^ 10 / (Fintype.card F : ℝ) ^ 2) := by
+      ENNReal.ofReal (9 / Fintype.card F + 2 ^ 22 * 5 ^ 10 / (Fintype.card F : ℝ) ^ 2) := by
   have hsqrt : √((16 : ℕ) / ((Fintype.card (Fin 100) : ℕ) : ℝ)) = 2 / 5 := by
     simpa using sqrt_degreeFraction
   have h := linearClaimMcaError_le domain (d := 16) (η := 1 / 2) (by norm_num) (by simp)
