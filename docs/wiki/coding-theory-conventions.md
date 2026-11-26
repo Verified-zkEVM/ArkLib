@@ -298,11 +298,6 @@ Each such `sorry` should correspond to a row in
 [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md);
 if an admit decomposes into sub-goals, record the decomposition there.
 
-The axiom baseline's `sorry` list is empty. The remaining admitted external results in
-`ArkLib/Data/CodingTheory/` are *solicited proofs*: true, faithfully stated results listed in the
-`solicited` array of `scripts/axiom_baseline.json`, currently all tied to
-[issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352). A solicited declaration's
-docstring must contain its issue URL, it must still depend on `sorryAx`, and no declaration outside
-the solicited list may depend on it; [`scripts/README.md`](../../scripts/README.md) states the full
-rules. New or changed admissions must use this comment form, be reviewed into that list, and pass
-the exhaustive axiom sweep.
+`main` has no such `sorry`: the axiom sweep rejects every declaration that depends on `sorryAx`
+([`scripts/README.md`](../../scripts/README.md)). The comment form is for working branches. An
+external result whose proof stays open is tracked as an issue rather than merged.

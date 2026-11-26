@@ -20,7 +20,6 @@ Explain each difference.
 <!--
 List the admissions (`sorry`) that this pull request adds or closes.
 For each headline theorem, give the output of `#print axioms`.
-If `scripts/axiom_baseline.json` changes, say why.
 -->
 
 ## Validation

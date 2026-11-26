@@ -22,8 +22,9 @@ Let `f = 0`, and let `g` be zero on a set `C` of size `A - 1` and one elsewhere.
 For `z` outside `C` and `β ≠ 0`, the affine multiplier of the challenge `(-β z, β)` vanishes
 at `z` and nowhere else.
 The zero candidate therefore agrees on `C ∪ {z}`, a set of size `A`.
-If `d + 1 < A`, a witness of degree below `d` that vanishes on `C` must be zero, so it
+If `d < A`, a witness of degree below `d` that vanishes on `C` must be zero, so it
 cannot agree with `g` at `z`.
+The paper assumes `d + 1 < A`, but the bound already holds at `A = d + 1`.
 The `(n - A + 1)(q - 1)` distinct challenges give the zero-loss lower bound.
 
 ## Scalar combiner with agreement loss
@@ -86,10 +87,10 @@ private theorem card_filter_equivFin_mem (U : Finset ℕ) (hU : ∀ k ∈ U, k <
   · intro hk
     exact ⟨(Fintype.equivFin ι).symm ⟨k, hU k hk⟩, by simpa using hk, by simp⟩
 
-/-- If `d + 1 < A ≤ n`, the affine error at loss zero is at least
+/-- If `d < A ≤ n`, the affine error at loss zero is at least
 `(n - A + 1)(q - 1) / q²`, where `n = |ι|` and `q = |F|`. -/
 theorem le_affineMcaError_zero_loss [Fintype F] (domain : ι ↪ F) {d A : ℕ}
-    (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
+    (hdA : d < A) (hAn : A ≤ Fintype.card ι) :
     ENNReal.ofReal (((Fintype.card ι - A + 1 : ℕ) : ℝ) * ((Fintype.card F : ℝ) - 1) /
         (Fintype.card F : ℝ) ^ 2) ≤
       affineMcaError domain d A 0 := by
@@ -136,10 +137,13 @@ theorem le_affineMcaError_zero_loss [Fintype F] (domain : ι ↪ F) {d A : ℕ}
         have hmem : i ∈ agreementLoss domain 0 g (affineMultiplier (-(β * domain z)) β) 0
             F₀ G₀ := mem_filter.mpr ⟨hS z β i hi, Or.inr hne⟩
         exact (card_pos.mpr ⟨i, hmem⟩).ne' (Nat.le_zero.mp hloss)
-      -- So `G₀` vanishes on `A - 1 > d` points, hence is zero, but `g z = 1`.
+      -- So `G₀` has degree below `d ≤ A - 1` and vanishes on `A - 1` points, hence is zero,
+      -- but `g z = 1`.
       have hG0 : G₀ = 0 := by
-        refine eq_zero_of_natDegree_lt_card_of_eval_eq_zero' G₀
-          ((univ.filter fun i : ι ↦ pos i ∈ range (A - 1)).map domain) ?_ ?_
+        by_contra hne
+        have hdeg : G₀.natDegree < d := (natDegree_lt_iff_degree_lt hne).mpr hG
+        refine hne (eq_zero_of_natDegree_lt_card_of_eval_eq_zero' G₀
+          ((univ.filter fun i : ι ↦ pos i ∈ range (A - 1)).map domain) ?_ ?_)
         · intro x hx
           obtain ⟨i, hi, rfl⟩ := mem_map.mp hx
           have hi : pos i < A - 1 := by simpa using hi
@@ -147,7 +151,6 @@ theorem le_affineMcaError_zero_loss [Fintype F] (domain : ι ↪ F) {d A : ℕ}
           simp [g, hi]
         · rw [card_map, card_filter_equivFin_mem _ fun k hk ↦ by
             have := mem_range.mp hk; omega, card_range]
-          have := natDegree_le_of_degree_le hG.le
           omega
       have := hagree z (Or.inr rfl)
       simp [hG0, g, not_lt.mpr hz] at this
@@ -181,10 +184,10 @@ theorem le_affineMcaError_zero_loss [Fintype F] (domain : ι ↪ F) {d A : ℕ}
         ring
     _ ≤ _ := by exact_mod_cast card_le_card hEsub
 
-/-- If `d + 1 < A ≤ n`, the affine error at loss zero is at least `(n - A + 1) / (2q)`,
+/-- If `d < A ≤ n`, the affine error at loss zero is at least `(n - A + 1) / (2q)`,
 where `n = |ι|` and `q = |F|`. -/
 theorem le_affineMcaError_zero_loss_div_two [Fintype F] (domain : ι ↪ F) {d A : ℕ}
-    (hdA : d + 1 < A) (hAn : A ≤ Fintype.card ι) :
+    (hdA : d < A) (hAn : A ≤ Fintype.card ι) :
     ENNReal.ofReal (((Fintype.card ι - A + 1 : ℕ) : ℝ) /
         (2 * (Fintype.card F : ℝ))) ≤
       affineMcaError domain d A 0 := by
