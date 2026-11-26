@@ -15,7 +15,8 @@ The first-order certificate theorems need the slot inequality
 parameters. Both sides are `Finset.range` sums, which the kernel does not reduce well. This file
 restates them over a structurally recursive `sumRange` and proves that the restatements agree
 with the library definitions, so that a proof can check the inequality block by block with
-`decide +kernel` and state it in library terms.
+`decide +kernel` and state it in library terms. The equalities in `GrandChallenges.SlotClosedForm`
+provide closed forms for the inner sums as an alternative.
 
 ## Main results
 
