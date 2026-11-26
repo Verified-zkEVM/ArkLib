@@ -53,7 +53,7 @@ abbrev foldDecision {State : ℕ → Type} {T : Type}
 
 /-- A passive verifier that retains its input oracle and checks all messages at the end. -/
 abbrev foldVerifier (R : Type) [CommSemiring R] (deg : ℕ) {ι : Type} (ambient : OracleSpec ι)
-    {I : Type} {A : I → Type} (inputs : OracleFamily I A)
+    (inputs : OracleBundle)
     {State : ℕ → Type} {T : Type} (V : RoundChecks R State) (finish : State 0 → T) (k : ℕ) :
     OracleVerifier ambient (protocol R deg k) (State k) (fun _ => T) inputs
       (fun _ => inputs) :=

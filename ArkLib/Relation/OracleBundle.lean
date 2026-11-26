@@ -18,8 +18,8 @@ between two bundles maps the data of the first to the data of the second, and si
 of the second bundle by queries to the first, so that both agree on every input.
 
 This file defines the bundle constructors (`of`, `ofInst`, `empty`, `sum`, `tensor`, `ofSpec`,
-`indexed`, `ofIndexed`), the bundle of an `OracleFamily`, and the oracle maps that compose,
-project, regroup and rename bundles. None of them depends on a protocol tree or on execution.
+`indexed`, `ofIndexed`) and the oracle maps that compose, project, regroup and rename bundles.
+None of them depends on a protocol tree or on execution.
 
 The combinators `of`, `ofInst`, `empty`, `sum`, `tensor`, `indexed` and `ofIndexed` are
 `@[reducible]`, so a bundle built from them unfolds to its four fields during unification and
@@ -129,23 +129,6 @@ def ofIndexed {I : Type} (A : I → Type) (O : ∀ i, OracleInterface (A i)) :
   indexed fun i => of (A i) (O i)
 
 end OracleBundle
-
-/-- The oracle bundle of an oracle family: queries through its interfaces, answered from concrete
-realizations in `Type`.
--/
-@[reducible] def OracleBundle.ofFamily {I : Type} {A : I → Type}
-    (F : OracleFamily I A) : OracleBundle where
-  Query := (i : I) × (F.interface i).Query
-  spec := F.spec
-  Data := ∀ i, A i
-  answer := F.behaviorOfRealizations
-
-attribute [coe] OracleBundle.ofFamily
-
-/-- An oracle family is used as an oracle bundle through its interfaces. -/
-instance {I : Type} {A : I → Type} :
-    CoeOut (OracleFamily I A) OracleBundle :=
-  ⟨OracleBundle.ofFamily⟩
 
 /-- A concrete oracle map and its query-by-query implementation agree on all input data. -/
 structure OracleMap (In : OracleBundle) (Out : OracleBundle) where
@@ -266,18 +249,6 @@ def ofImpl (R : OracleBundle) {J : Type}
   law _ _ := rfl
 
 end OracleBundle
-
-section Families
-variable {I : Type} {J : Type} {A : I → Type}
-
-/-- Embeddings are oracle maps that retain or rename existing input slots. -/
-def embedding (In : OracleFamily I A) (rename : J → I) :
-    OracleMap In (In.reindex rename) where
-  f x j := x (rename j)
-  impl q := liftM (In.spec.query ⟨rename q.1, q.2⟩)
-  law _ _ := rfl
-
-end Families
 
 end OracleMap
 

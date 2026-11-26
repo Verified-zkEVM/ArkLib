@@ -20,7 +20,7 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
   OracleComp OracleSpec
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily I A)
+  (inputs : OracleBundle)
   {State : ℕ → Type} {T : Type} (V : RoundChecks R State) (finish : State 0 → T)
 
 /-- Check just the next round, leaving its successor state for the suffix. -/
@@ -38,14 +38,14 @@ def foldCompatibility (k : ℕ) :
   agrees _ _ _ _ _ _ := rfl
 
 /-- The decision with bundle queries answered is the pure transcript verdict. -/
-theorem decideWith_foldVerifier (k : ℕ) (stmt : State k) (data : ∀ i, A i)
+theorem decideWith_foldVerifier (k : ℕ) (stmt : State k) (data : inputs.Data)
     (tr : Transcript oracleSig (protocol R deg k)) :
     (foldVerifier R deg ambient inputs V finish k).decideWith stmt _ (toView _ tr)
       (data, oracleMessages _ tr) = pure (foldVerdict V finish k stmt tr) :=
   Interpreted.simulate_verifier (QueryImpl.id' ambient) V finish k stmt data tr
 
 /-- The next round's decision computes exactly its local verdict. -/
-theorem decideWith_foldHeadVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i)
+theorem decideWith_foldHeadVerifier (k : ℕ) (stmt : State (k + 1)) (data : inputs.Data)
     (msg : R⦃≤ deg⦄[X]) (r : R) :
     (foldHeadVerifier (deg := deg) ambient inputs V k).decideWith stmt _
       (toView _ (roundTranscript msg r)) (data, oracleMessages _ (roundTranscript msg r)) =
@@ -55,7 +55,7 @@ theorem decideWith_foldHeadVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀
   rfl
 
 /-- The suffix receives the original input and precisely its own oracle messages. -/
-theorem suffixRoute_foldHead (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i)
+theorem suffixRoute_foldHead (k : ℕ) (stmt : State (k + 1)) (data : inputs.Data)
     (msg : R⦃≤ deg⦄[X]) (r : R) (tail : Transcript oracleSig (protocol R deg k)) :
     (OracleVerifier.suffixRoute (s₂ := fun _ => protocol R deg k)
       (foldHeadVerifier (deg := deg) ambient inputs V k) stmt _
@@ -66,7 +66,7 @@ theorem suffixRoute_foldHead (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i
   · rfl
 
 /-- The appended decision agrees with the interaction-layer fold on every completed transcript. -/
-theorem decideWith_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i)
+theorem decideWith_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : inputs.Data)
     (tr : Transcript oracleSig (protocol R deg (k + 1))) :
     ((foldHeadVerifier (deg := deg) ambient inputs V k).append
       (fun _ => foldVerifier R deg ambient inputs V finish k)
@@ -90,7 +90,7 @@ theorem decideWith_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : 
     exact decideWith_foldVerifier ambient inputs V finish k mid data tail
 
 /-- Appending a round to the remaining checks gives the actual interaction-layer fold run. -/
-theorem run_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : ∀ i, A i)
+theorem run_append_foldVerifier (k : ℕ) (stmt : State (k + 1)) (data : inputs.Data)
     {Out : Transcript oracleSig (protocol R deg (k + 1)) → Type}
     (prover : Prover oracleSig ambient (protocol R deg (k + 1)) Out) :
     ((foldHeadVerifier (deg := deg) ambient inputs V k).append

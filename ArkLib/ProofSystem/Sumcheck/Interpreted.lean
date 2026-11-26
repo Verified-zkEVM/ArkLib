@@ -81,8 +81,8 @@ theorem simulate_decision {State : ℕ → Type} {T : Type} (checks : RoundCheck
       simp [verdict, h, message, challenge, tail]
 
 /-- A passive oracle verifier for any evaluated message representation and retained input. -/
-def verifier {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I → Type}
-    (inputs : OracleFamily I A) {State : ℕ → Type} {T : Type}
+def verifier {ι : Type} (ambient : OracleSpec ι) (inputs : OracleBundle)
+    {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) :
     OracleVerifier ambient (protocol R M evaluate k) (State k) (fun _ => T) inputs
       (fun _ => inputs) where
@@ -91,11 +91,11 @@ def verifier {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I → Type}
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- The interpreted verifier's final decision is pure once its bundle queries are answered. -/
-theorem simulate_verifier {ι : Type} {ambient : OracleSpec ι} {I : Type} {A : I → Type}
-    {inputs : OracleFamily I A} {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem simulate_verifier {ι : Type} {ambient : OracleSpec ι} {inputs : OracleBundle}
+    {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) (st : State k)
-    (data : ∀ i, A i) (tr : Transcript oracleSig (protocol R M evaluate k)) :
+    (data : inputs.Data) (tr : Transcript oracleSig (protocol R M evaluate k)) :
     simulateQ (QueryImpl.addLift impl ((pathBundle inputs _
       tr.path).answer (data, oracleMessages _ tr)))
       ((verifier ambient inputs checks finish k).decide st _ (toView _ tr)).run =
@@ -106,10 +106,10 @@ theorem simulate_verifier {ι : Type} {ambient : OracleSpec ι} {I : Type} {A : 
 
 /-- Actual execution preserves the transcript, private output and original oracle data for
 any evaluated message carrier. -/
-theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I → Type}
-    (inputs : OracleFamily I A) {State : ℕ → Type} {T : Type}
+theorem verifier_run {ι : Type} (ambient : OracleSpec ι) (inputs : OracleBundle)
+    {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) (st : State k)
-    (data : ∀ i, A i) {Out : Transcript oracleSig (protocol R M evaluate k) → Type}
+    (data : inputs.Data) {Out : Transcript oracleSig (protocol R M evaluate k) → Type}
     (prover : Prover oracleSig ambient (protocol R M evaluate k) Out) :
     (verifier ambient inputs checks finish k).run st data prover = (do
       let ⟨tr, out, _⟩ ← Interaction.TwoParty.Lens.run (protocol R M evaluate k)
@@ -118,7 +118,7 @@ theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I →
         (sampler oracleSig _ (fun c => liftM
           ((ambient + challengeSpec oracleSig (protocol R M evaluate k)).query (.inr c))))
       pure (⟨tr, out, (verdict evaluate checks finish k st tr).map (fun t => (t, data))⟩ :
-        Outcome oracleSig _ Out (fun _ => T × (∀ i, A i)))) := by
+        Outcome oracleSig _ Out (fun _ => T × inputs.Data))) := by
   rw [OracleVerifier.run_eq]
   refine bind_congr fun result => ?_
   rcases result with ⟨tr, out, u⟩

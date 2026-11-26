@@ -26,9 +26,12 @@ def natInterface : OracleInterface Nat where
   spec := Unit →ₒ Nat
   answer m _ := m
 
+/-- The natural-number input oracle at each Boolean index. -/
+abbrev bigInputSlot (_ : Bool) : OracleBundle := OracleBundle.of Nat natInterface
+
 /-- Input oracles indexed by Boolean values with natural-number data. -/
 @[instance_reducible]
-def bigInputs : OracleFamily Bool (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def bigInputs : OracleBundle := OracleBundle.indexed bigInputSlot
 
 /-- The protocol with no rounds. -/
 abbrev done : Protocol := .pure ⟨⟩
@@ -37,19 +40,20 @@ abbrev done : Protocol := .pure ⟨⟩
 abbrev oracleDone : OracleProtocol := .pure ⟨⟩
 
 /-- Routing through an oracle map agrees with materialized data. -/
-theorem embedding_simulate_eq (x : Bool → Nat) {α : Type}
-    (program : OracleComp (bigInputs.reindex (fun X : Bool => X)).spec α) :
-    simulateQ (bigInputs.behaviorOfRealizations x)
-        (simulateQ (OracleMap.embedding bigInputs (fun X : Bool => X)).impl program) =
-      simulateQ ((bigInputs.reindex (fun X : Bool => X)).behaviorOfRealizations
-        ((OracleMap.embedding bigInputs (fun X : Bool => X)).f x)) program :=
-  OracleMap.simulate_eq (OracleMap.embedding bigInputs (fun X : Bool => X)) x program
+theorem reindex_simulate_eq (x : Bool → Nat) {α : Type}
+    (program : OracleComp (OracleBundle.indexed (bigInputSlot ∘ fun X : Bool => X)).spec α) :
+    simulateQ (bigInputs.answer x)
+        (simulateQ (OracleMap.reindex bigInputSlot (fun X : Bool => X)).impl program) =
+      simulateQ ((OracleBundle.indexed (bigInputSlot ∘ fun X : Bool => X)).answer
+        ((OracleMap.reindex bigInputSlot (fun X : Bool => X)).f x)) program :=
+  OracleMap.simulate_eq (OracleMap.reindex bigInputSlot (fun X : Bool => X)) x program
 
 /-! ### An oracle run at `Type` -/
 
 /-- One natural-number output oracle with an index in `Type 0`, as a run requires. -/
 @[instance_reducible]
-def smallOutputs : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def smallOutputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => natInterface
 
 /-- An oracle verifier with all indices, data and statements in `Type`. -/
 def runnable : OracleVerifier smallAmbient oracleDone Unit (fun _ => Nat) bigInputs
@@ -58,7 +62,7 @@ def runnable : OracleVerifier smallAmbient oracleDone Unit (fun _ => Nat) bigInp
     cases p
     exact liftM ((smallAmbient + (pathBundle bigInputs oracleDone ⟨⟩).spec).query
       (.inr (.inl ⟨true, ()⟩)))
-  outputMap _ _ _ := (OracleMap.embedding bigInputs (fun _ : Unit => true)).comp
+  outputMap _ _ _ := (OracleMap.reindex bigInputSlot (fun _ : Unit => true)).comp
     (OracleMap.fst _ _)
 
 /-- The ambient oracle answers `true`; the protocol has no challenges. -/
@@ -87,16 +91,17 @@ def bigTypeQueries : OracleInterface Nat where
 
 /-- One input oracle with unit queries and natural-number data and responses. -/
 @[instance_reducible]
-def typeQueryInputs : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def typeQueryInputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => natInterface
 
 /-- One oracle with Boolean queries, distinct from the input's unit queries. -/
 @[instance_reducible]
-def bigQueryOracles : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => bigTypeQueries⟩
+def bigQueryOracles : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => bigTypeQueries
 
 /-- The output oracle answers each query by asking the input oracle at `()`. -/
 def forwardQueries (p : Path oracleDone) :
-    OracleMap (pathBundle typeQueryInputs oracleDone p) (OracleBundle.ofFamily bigQueryOracles)
-    where
+    OracleMap (pathBundle typeQueryInputs oracleDone p) bigQueryOracles where
   f x _ := x.1 ()
   impl _ := (OracleMap.fst typeQueryInputs (oracleMessageBundle oracleDone p)).impl ⟨(), ()⟩
   law _ _ := rfl
@@ -114,7 +119,7 @@ def typeQueryVerifier : OracleVerifier smallAmbient oracleDone Unit (fun _ => Na
 answers a Boolean query with the same value. -/
 example :
     (simulateQ handler (typeQueryVerifier.run () (fun _ => 5) idle)).2.2.map
-      (fun out => (out.1, bigQueryOracles.behaviorOfRealizations out.2 ⟨(), true⟩)) =
+      (fun out => (out.1, bigQueryOracles.answer out.2 ⟨(), true⟩)) =
       some ((5, 5) : Nat × Nat) := rfl
 
 /-- A suffix with Boolean input queries and unit output queries.

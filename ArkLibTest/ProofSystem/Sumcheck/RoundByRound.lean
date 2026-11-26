@@ -58,7 +58,7 @@ theorem false_claim_bound {Out : Transcript oracleSig (protocol F deg n) → Typ
       (fun _ => Spec.StatementRound F n (Fin.last n) × (∀ i, Spec.OracleStatement F n deg i))) := ⊤
   have h := verifier_soundness_rounds_of_legacy F deg n D amb init impl Out (stmt, oStmt) trivial
     (by simpa only [langProblem_language] using hfalse) P
-  rw [soundnessEvent_eq] at h
+  erw [soundnessEvent_eq] at h
   refine h.trans (le_of_eq ?_)
   rw [ENNReal.coe_mul, ENNReal.coe_div (by simp), mul_div_assoc]
   simp

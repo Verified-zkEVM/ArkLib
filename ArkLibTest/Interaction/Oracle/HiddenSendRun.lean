@@ -21,8 +21,8 @@ namespace Interaction.HiddenSendRunTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
 /-- No input oracles. -/
-def noInputs : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
-  ⟨fun i => i.elim⟩
+def noInputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun i : PEmpty.{1} => PEmpty.elim i) fun i => i.elim
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim
@@ -46,8 +46,8 @@ def prover (payload hidden : Nat) : Prover oracleSig ambient phased (fun _ => Na
 sent value or rejects. -/
 def verifier (accept : Bool) :
     OracleVerifier ambient phased Unit (fun _ => Nat)
-      (noInputs : OracleFamily _ _)
-      (fun _ => (noInputs : OracleFamily _ _)) where
+      noInputs
+      (fun _ => noInputs) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do

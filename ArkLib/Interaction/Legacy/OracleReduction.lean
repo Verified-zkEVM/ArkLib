@@ -297,9 +297,9 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
   {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
 
-/-- The oracle family given by the legacy instances. -/
+/-- The indexed oracle bundle given by the legacy instances. -/
 abbrev family {I : Type} (T : I → Type) [O : ∀ i, OracleInterface (T i)] :
-    OracleFamily I T := ⟨O⟩
+    OracleBundle := OracleBundle.ofIndexed T O
 
 /-- Route legacy input-statement and message queries to the oracle bundle of a path. -/
 def pathBundleImpl (p : Path (oracleProtocol pSpec)) :
@@ -343,7 +343,7 @@ def _root_.Interaction.OracleMap.ofLegacySimulation [∀ t, Inhabited (oSpec.Ran
     (S : OracleOutputSimulation oSpec OStmtIn OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
     OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
-      (OracleBundle.ofFamily (family OStmtOut)) where
+      (family OStmtOut) where
   f r := S.materializeOutput challenges r.1 (pathMessages p r.2)
   impl q :=
     simulateQ (pathBundleImpl p) (simulateQ dropAmbient (S.simulateOutputQuery challenges q))
@@ -374,7 +374,7 @@ def legacyOutputMap [∀ t, Inhabited (oSpec.Range t)]
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (challenges : pSpec.Challenges) (p : Path (oracleProtocol pSpec)) :
     OracleMap (pathBundle (family OStmtIn) (oracleProtocol pSpec) p)
-      (OracleBundle.ofFamily (family OStmtOut)) :=
+      (family OStmtOut) :=
   OracleMap.ofLegacySimulation ⟨V.materializeOutput, V.simulateOutputQuery,
     V.simulateOutputQuery_eq⟩ challenges p
 
