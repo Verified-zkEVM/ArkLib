@@ -37,6 +37,52 @@ private def binaryDomain : ZMod 2 ↪ ZMod 2 := Function.Embedding.refl _
 #guard_msgs in
 #eval linearClaimMcaErrorRat binaryDomain 0 3 1 == 0
 
+/-- The linear-claim decision from the definition, which enumerates witness pairs `(U, V)`. -/
+private def pairSearch (A s : ℕ) (w : LinearClaimInstance (ZMod 2) (ZMod 2) 1) (θ α β : ZMod 2)
+    (P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 2) 2)) : Bool :=
+  @decide (Computable.IsLinearClaimExceptional binaryDomain w A s θ α β P)
+    (by unfold Computable.IsLinearClaimExceptional; infer_instance)
+
+-- Check that the two compiled searches agree over the binary field for `d = 1`, `A = 2`,
+-- `s = 0`, and message `c(θ) = θ`.
+/-- info: true -/
+#guard_msgs in
+#eval decide (∀ f g : ZMod 2 → ZMod 2, ∀ v : Fin 2 → ZMod 2, ∀ γ₀ γ₁ : ZMod 2,
+    ∀ c : ZMod 2 × ZMod 2 × ZMod 2, ∀ P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 2) 2),
+      let w : LinearClaimInstance (ZMod 2) (ZMod 2) 1 := ⟨f, g, v, γ₀, γ₁, id⟩
+      decide (Computable.IsLinearClaimExceptional binaryDomain w 2 0 c.1 c.2.1 c.2.2 P) =
+        pairSearch 2 0 w c.1 c.2.1 c.2.2 P)
+
+-- At `θ = α = β = 0`, the multiplier is zero, so the combined word is `g = id`.
+-- The weight `![0, 1]` reads the coefficient of `X`, and `P = X` has the required coefficient
+-- `γ₁ = 1` and meets the agreement threshold `A = 2`. Every `W` reconstructs `V = X`, which
+-- exceeds the witness degree bound. Without the degree check, `W = 0` would give witnesses
+-- satisfying `γ₀ = 0`, `γ₁ = 1`, and message zero. Their loss would be zero, so allowing them
+-- as witnesses at `s = 0` would make `P` nonexceptional.
+/-- info: true -/
+#guard_msgs in
+#eval
+  let P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 2) 2) :=
+    ⟨CompPoly.CPolynomial.ofFn ![0, 1], CompPoly.CPolynomial.ofFn_mem_degreeLT _⟩
+  let w : LinearClaimInstance (ZMod 2) (ZMod 2) 1 := ⟨0, id, ![0, 1], 0, 1, 0⟩
+  decide (Computable.IsLinearClaimExceptional binaryDomain w 2 0 0 0 0 P)
+
+-- With both words equal to one, `θ = β = 1`, and `α = 0`, the combined word is the evaluation
+-- of `P = 1 + 2X`, so the candidate meets the threshold `A = 5`. The weight `![0, 1]`
+-- reads the coefficient of `X`. With `γ₀ = γ₁ = 0` and `α = 0`, the combined claim is
+-- `β * c`, which equals two because `β = 1` and the message `c` is two.
+-- The candidate has coefficient two.
+-- Only `W = 2` reconstructs a constant `V`, giving `U = V = 1`. Both witnesses have `X`
+-- coefficient zero and lose no agreements (`s = 0`). The coefficient of `X` in `X W` is two,
+-- as required by the message. Using `X U` would give coefficient one and reject the pair.
+/-- info: false -/
+#guard_msgs in
+#eval
+  let P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 5) 2) :=
+    ⟨CompPoly.CPolynomial.ofFn ![1, 2], CompPoly.CPolynomial.ofFn_mem_degreeLT _⟩
+  let w : LinearClaimInstance (ZMod 5) (ZMod 5) 1 := ⟨1, 1, ![0, 1], 0, 0, fun _ ↦ 2⟩
+  decide (Computable.IsLinearClaimExceptional fullDomain w 5 0 1 0 1 P)
+
 -- Honest claims on `F₅` with `v = (1, 2)`, `F = 1`, `G = 2`, `θ = 1`:
 -- `⟨coef(G), v⟩ = 2`, `⟨coef(F), v⟩ = 1`, and `⟨coef(X(F + θ G)), v⟩ = 3 · 2 = 1`.
 example (α β : ZMod 5) :
