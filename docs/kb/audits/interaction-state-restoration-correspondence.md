@@ -51,7 +51,10 @@ These items were left open in October and remain open on `main`:
 - adversaries whose private coin sampling interleaves with oracle queries;
 - exact adapters to the legacy layer and to the textbook statements;
 - the relation between WARP's extractor, which sees the completed challenges, and ARC's
-  challenge-erased extractor interface.
+  challenge-erased extractor interface;
+- one extractor and one error bound for a whole range of proximity parameters `δ`. Indexing
+  `relIn`, `relOut`, `admissible` and the knowledge state function by `δ` gives a separate
+  theorem for each `δ`, whose extractor may depend on `δ`.
 
 ## WARP's probability statement and the native statement
 
@@ -173,7 +176,8 @@ function.
   code, an `overhead` function and a proof `cost_le` that the loop costs at most the summed step
   costs plus that overhead. To use it, backward extraction must be encoded as one state type and
   one step function, so the varying witness carriers and step maps of a `KnowledgeStateFunction`
-  need a common encoding first. `polyRealizer` gives a polynomial bound from
+  need a common encoding first. Given a polynomial realizer for the step
+  (`step : Q.PolyRealizer state state next`), `polyRealizer` gives a polynomial bound from
   `PolynomialBounds`, which requires a polynomial bound on the iteration count, a polynomial bound
   on the initial state size, an additive bound on size growth per step, and a polynomial bound on
   the loop overhead. The module notes that a polynomial bound for one step alone is insufficient,

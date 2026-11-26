@@ -194,7 +194,8 @@ terminal law still executes a verifier from fresh initialization; a native effec
 must refer to the actual retained runtime state. The runtime results of
 [`CompositionSoundness`][runtime-soundness] (`Verifier.append_soundness_runtime`,
 `OracleVerifier.append_soundness_runtime`) follow the latter discipline. The native
-`validAcceptance` quantifies over every ambient state at the end of the run.
+`validAcceptance` asks for positive acceptance probability from some ambient state, so the leaf
+obligations cover every state the run may retain.
 
 The pinned VCVio already provides [`RoundByRound.GameFamily`][vc-rbr] with context-dependent
 sampling, `IsBounded` and an event-probability characterization. The interaction layer's

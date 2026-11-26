@@ -18,26 +18,31 @@ to 5 of section 5 together with universe migration steps 5 and 6:
   `spec` and `answer`, put `OraclePos` in `Type 1`, and added `emptySpec0`.
 - #1603 (universe step 6) finished the universe migration.
 
-The prototype now checks against `main`. Part 2 compares the prototype's `Consolidated`
-definitions with `main`'s `OracleInterface`, `Interaction.OracleBundle`, `OracleBundle.ofIndexed`
-and `emptySpec0`, and each comparison holds by `rfl`. The rest of this document is the proposal as
-it stood before implementation. Where sections 1 to 3 and 5 say "current" or cite lines in
-`ArkLib/`, they describe the code before the stack, and many of those declarations have since been
-deleted or moved. The citations into the prototype, and those in section 4's list of elaboration
-invariants, point at `main`.
+The Lean prototype that accompanied this proposal is no longer in the repository, because the
+definitions it prototyped now live in `ArkLib/`. Its last version, at
+[`f4fe656d73`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean), compiled against `main` at `44d1d1d4bf`. Its Part 2 compared the
+prototype's `Consolidated` definitions with `main`'s `OracleInterface`, `Interaction.OracleBundle`,
+`OracleBundle.ofIndexed` and `emptySpec0`, and each comparison held by `rfl`. The version written
+against the API before the stack is at [`c698148e86`](https://github.com/Verified-zkEVM/ArkLib/blob/c698148e8656cc02ccadb444d6f00737a3491a4c/docs/design/interaction-layer/prototypes/OracleConsolidation.lean). Citations into the prototype in this
+document point at `f4fe656d73`.
+
+The rest of this document is the proposal as it stood before implementation. Where sections 1 to 3
+and 5 say "current" or cite lines in `ArkLib/`, they describe the code before the stack, and many
+of those declarations have since been deleted or moved. The citations in section 4's list of
+elaboration invariants point at `main`.
 
 ArkLib's interaction layer should consolidate onto two oracle-access concepts: a flattened typeclass
 `OracleInterface` and a four-field structure `OracleBundle`, deleting `OracleFamily` and its ten
 bridge combinators. Both definitions move into `ArkLib/Relation/` at `Type` / `Type 1` with zero
 universe parameters, and `OracleVerifier` becomes symmetric with `OracleBundle` inputs and
-path-indexed `OracleBundle` outputs. The companion prototype
-[`prototypes/OracleConsolidation.lean`](prototypes/OracleConsolidation.lean) checks the core
+path-indexed `OracleBundle` outputs. The companion prototype, last at
+[`f4fe656d73`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean), checked the core
 definitions, their equivalences with the declarations on `main` that implement them, the
 transparency and erasure constraints in Part 3, and a multi-stage routing example, without `sorry`.
-Its Design D definitions and its comparisons with `main` need no universe pins. Only the comparisons
-with VCVio's polymorphic `OracleContext` pin its universes at `0`.
+Its Design D definitions and its comparisons with `main` needed no universe pins. Only the
+comparisons with VCVio's polymorphic `OracleContext` pinned its universes at `0`.
 
-The prototype does not cover `SentOracles.queryNode` (the map from a query to the node that sent
+The prototype did not cover `SentOracles.queryNode` (the map from a query to the node that sent
 it). On `main`, `queryNode` works on the binary-sum layout of `sentOracleMessageBundle`, which #1595
 introduced.
 All usage counts in this document were measured on commit `06caa6290d` (branch
@@ -171,9 +176,9 @@ its interface. `OracleFamily` adds no expressiveness beyond an indexed function 
 `(Query : Type) × ...` and introduces a `ReaderM` mismatch on heterogeneous sums.
 
 Every claim in the tables below is checked in
-[`prototypes/OracleConsolidation.lean`](prototypes/OracleConsolidation.lean). References cite the
-flattened `Consolidated.OracleInterface` (`OracleConsolidation.lean:58`) and four-field
-`Consolidated.OracleBundle` (`OracleConsolidation.lean:171`). The comparisons with `OracleInterface`,
+[`prototypes/OracleConsolidation.lean`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean). References cite the
+flattened `Consolidated.OracleInterface` ([`OracleConsolidation.lean:58`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L58)) and four-field
+`Consolidated.OracleBundle` ([`OracleConsolidation.lean:171`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L171)). The comparisons with `OracleInterface`,
 `Interaction.OracleBundle`, `OracleBundle.ofIndexed` and `emptySpec0` now check that `main`
 implements the design.
 
@@ -181,19 +186,19 @@ implements the design.
 
 | Relationship | Lean statement | Status | Prototype citation |
 |---|---|---|---|
-| Flattened interface vs VCVio `OracleContext` | `Consolidated.OracleInterface X ≃ (Query : Type) × OracleContext.{0, 0, 0} Query (ReaderM X)` | `rfl` both ways | `OracleConsolidation.lean:691` |
-| Four-field `OracleBundle` vs Sigma of `OracleInterface` | `Consolidated.OracleBundle ≃ (Data : Type) × Consolidated.OracleInterface Data` | `rfl` both ways | `OracleConsolidation.lean:701` |
-| `main`'s flat `OracleInterface X` vs flattened | `_root_.OracleInterface X ≃ Consolidated.OracleInterface X` | `rfl` both ways | `OracleConsolidation.lean:715` |
-| `main`'s `OracleBundle` vs consolidated | `Interaction.OracleBundle ≃ Consolidated.OracleBundle` | `rfl` both ways | `OracleConsolidation.lean:725` |
-| Arguments of `main`'s `OracleBundle.ofIndexed` vs indexed bundles | `((I : Type) × (A : I → Type) × ((i : I) → OracleInterface (A i))) ≃ ((I : Type) × (I → Consolidated.OracleBundle))` | `rfl` both ways | `OracleConsolidation.lean:738` |
+| Flattened interface vs VCVio `OracleContext` | `Consolidated.OracleInterface X ≃ (Query : Type) × OracleContext.{0, 0, 0} Query (ReaderM X)` | `rfl` both ways | [`OracleConsolidation.lean:691`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L691) |
+| Four-field `OracleBundle` vs Sigma of `OracleInterface` | `Consolidated.OracleBundle ≃ (Data : Type) × Consolidated.OracleInterface Data` | `rfl` both ways | [`OracleConsolidation.lean:701`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L701) |
+| `main`'s flat `OracleInterface X` vs flattened | `_root_.OracleInterface X ≃ Consolidated.OracleInterface X` | `rfl` both ways | [`OracleConsolidation.lean:715`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L715) |
+| `main`'s `OracleBundle` vs consolidated | `Interaction.OracleBundle ≃ Consolidated.OracleBundle` | `rfl` both ways | [`OracleConsolidation.lean:725`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L725) |
+| Arguments of `main`'s `OracleBundle.ofIndexed` vs indexed bundles | `((I : Type) × (A : I → Type) × ((i : I) → OracleInterface (A i))) ≃ ((I : Type) × (I → Consolidated.OracleBundle))` | `rfl` both ways | [`OracleConsolidation.lean:738`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L738) |
 
 Both round-trips hold by `rfl` because `ReaderT`, `Id`, `QueryImpl`, and structure eta all reduce
 definitionally when the argument order matches.
 
-Two further `rfl` checks compare `main` with the prototype. `main`'s `emptySpec0` equals
-`Consolidated.emptySpec0` (`OracleConsolidation.lean:733`), and `main`'s
+Two further `rfl` checks compared `main` with the prototype. `main`'s `emptySpec0` equals
+`Consolidated.emptySpec0` ([`OracleConsolidation.lean:733`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L733)), and `main`'s
 `Interaction.OracleBundle.ofIndexed A O` maps to `Consolidated.OracleBundle.ofIndexed` under the
-equivalences above (`OracleConsolidation.lean:750`).
+equivalences above ([`OracleConsolidation.lean:750`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L750)).
 
 Before the stack, the table also compared `OracleFamily.{0, 0, 0} I A` with
 `(i : I) → Consolidated.OracleInterface (A i)`, and compared the total space of `OracleFamily` with
@@ -219,20 +224,20 @@ OracleBundle.ofIndexed A O = OracleBundle.of (∀ i, A i) (instProdForall A)
 (OracleBundle.ofSpec spec).answer = id
 ```
 
-Each equation is checked by `rfl` at `OracleConsolidation.lean:759-776`.
+Each equation is checked by `rfl` at [`OracleConsolidation.lean:759-776`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L759-L776).
 
 ### Relationships that need a proof or fail
 
 | Statement or operation | Result | Reason and prototype citation |
 |---|---|---|
-| `C₁.add C₂` for `C₁ : OracleContext Q₁ (ReaderM D₁)` and `C₂ : OracleContext Q₂ (ReaderM D₂)` | **Fails to typecheck** | `OracleContext.add` (`.lake/packages/VCVio/VCVio/OracleComp/OracleContext.lean:54`) fixes one monad `m` for both summands and cannot unify `ReaderM D₁` with `ReaderM D₂` (`OracleConsolidation.lean:796`). |
-| `(fun q => (C₁.impl.addReaderT C₂.impl q).run x) = (fun q => (C₁.impl q).run x.1) + (fun q => (C₂.impl q).run x.2)` | **Fails `rfl`; needs proof** | `QueryImpl.addReaderT` pattern-matches `q` inside `ReaderT` rather than outside; proving equality requires `funext q; cases q <;> rfl` (`OracleConsolidation.lean:813-829`). |
-| `B.spec` on `abbrev SigmaBundle := (Data : Type) × OracleInterface Data` | **Fails to typecheck** | Lean resolves dot notation on `Sigma`, not on the abbreviation; `Sigma.spec` does not exist (`OracleConsolidation.lean:833-842`). |
-| `((indexed F).sum (indexed G)).Data = (indexed (Sum.elim F G)).Data` | **Fails `rfl`; needs a proof** | Left side is `(∀ i, (F i).Data) × (∀ j, (G j).Data)`; right side is `∀ k, (Sum.elim F G k).Data`. The two are equivalent, as `sumData_eta` ([`OracleVerifier.lean:92` at `c698148e86`](https://github.com/Verified-zkEVM/ArkLib/blob/c698148e8656cc02ccadb444d6f00737a3491a4c/ArkLib/Interaction/OracleVerifier.lean#L92)) showed for the families before #1595 deleted it (`OracleConsolidation.lean:857`). Design D adds no isomorphism structure for this (section 6). |
-| `OracleBundle.ofIndexed A O` for `O : ∀ i, OracleInterface (A i)`, which replaced `OracleBundle.ofFamily : OracleFamily I A → OracleBundle` ([original row](https://github.com/Verified-zkEVM/ArkLib/blob/c698148e8656cc02ccadb444d6f00737a3491a4c/docs/design/interaction-layer/oracle-consolidation.md?plain=1#L194)) | **Not an equivalence** | Forgets the slot decomposition `I`; its image always has `Data = ∀ i, A i` and `Query = (i : I) × Q i`, missing `OracleBundle.ofSpec`, `OracleBundle.sum`, `OracleBundle.tensor`, and unindexed single oracles (`OracleConsolidation.lean:216-250`). Each bundle `B` is reached up to a `Unit` index, from `ofIndexed` on `fun _ : Unit => B.Data` with interface `B.toInterface`; for `ofSpec spec` the data type is `QueryImpl spec Id`. |
-| A single-query lens `R` to `S` (the shape of `OracleBundle.Lens R S`, which #1591 deleted) as an `OracleMap S R` | **Strict special case** | A lens routes each query to exactly one query and pulls the answer back purely, so it gives an `OracleMap` through VCVio's `QueryImpl.comapLens`. An `OracleMap` also expresses 0-query constants and multi-query adaptive simulations such as `doubleQueryMap` (`OracleConsolidation.lean:864`). |
-| `instance : BadInterface (Polynomial R)` with `answer : Message → QueryImpl spec Id` | **Fails typeclass synthesis** | `Id` is semireducible in Lean 4, exposing `Semiring (Id ((ofFn fun x => R).Range point))` when elaborating `p.eval point` (`OracleConsolidation.lean:890-907`). |
-| `rw` on `simulateQ` over 2-field `structure NestedBundle where Data : Type; interface : OracleInterface Data` | **Fails `.implicit` transparency check** | Unfolding `In.spec` exposes primitive projection `In.interface.2 : OracleSpec In.interface.1` while `@simulateQ`'s implicit index holds the semireducible class projection `OracleInterface.Query In.Data` (`OracleConsolidation.lean:913-976`). |
+| `C₁.add C₂` for `C₁ : OracleContext Q₁ (ReaderM D₁)` and `C₂ : OracleContext Q₂ (ReaderM D₂)` | **Fails to typecheck** | `OracleContext.add` (`.lake/packages/VCVio/VCVio/OracleComp/OracleContext.lean:54`) fixes one monad `m` for both summands and cannot unify `ReaderM D₁` with `ReaderM D₂` ([`OracleConsolidation.lean:796`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L796)). |
+| `(fun q => (C₁.impl.addReaderT C₂.impl q).run x) = (fun q => (C₁.impl q).run x.1) + (fun q => (C₂.impl q).run x.2)` | **Fails `rfl`; needs proof** | `QueryImpl.addReaderT` pattern-matches `q` inside `ReaderT` rather than outside; proving equality requires `funext q; cases q <;> rfl` ([`OracleConsolidation.lean:813-829`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L813-L829)). |
+| `B.spec` on `abbrev SigmaBundle := (Data : Type) × OracleInterface Data` | **Fails to typecheck** | Lean resolves dot notation on `Sigma`, not on the abbreviation; `Sigma.spec` does not exist ([`OracleConsolidation.lean:833-842`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L833-L842)). |
+| `((indexed F).sum (indexed G)).Data = (indexed (Sum.elim F G)).Data` | **Fails `rfl`; needs a proof** | Left side is `(∀ i, (F i).Data) × (∀ j, (G j).Data)`; right side is `∀ k, (Sum.elim F G k).Data`. The two are equivalent, as `sumData_eta` ([`OracleVerifier.lean:92` at `c698148e86`](https://github.com/Verified-zkEVM/ArkLib/blob/c698148e8656cc02ccadb444d6f00737a3491a4c/ArkLib/Interaction/OracleVerifier.lean#L92)) showed for the families before #1595 deleted it ([`OracleConsolidation.lean:857`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L857)). Design D adds no isomorphism structure for this (section 6). |
+| `OracleBundle.ofIndexed A O` for `O : ∀ i, OracleInterface (A i)`, which replaced `OracleBundle.ofFamily : OracleFamily I A → OracleBundle` ([original row](https://github.com/Verified-zkEVM/ArkLib/blob/c698148e8656cc02ccadb444d6f00737a3491a4c/docs/design/interaction-layer/oracle-consolidation.md?plain=1#L194)) | **Not an equivalence** | Forgets the slot decomposition `I`; its image always has `Data = ∀ i, A i` and `Query = (i : I) × Q i`, missing `OracleBundle.ofSpec`, `OracleBundle.sum`, `OracleBundle.tensor`, and unindexed single oracles ([`OracleConsolidation.lean:216-250`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L216-L250)). Each bundle `B` is reached up to a `Unit` index, from `ofIndexed` on `fun _ : Unit => B.Data` with interface `B.toInterface`; for `ofSpec spec` the data type is `QueryImpl spec Id`. |
+| A single-query lens `R` to `S` (the shape of `OracleBundle.Lens R S`, which #1591 deleted) as an `OracleMap S R` | **Strict special case** | A lens routes each query to exactly one query and pulls the answer back purely, so it gives an `OracleMap` through VCVio's `QueryImpl.comapLens`. An `OracleMap` also expresses 0-query constants and multi-query adaptive simulations such as `doubleQueryMap` ([`OracleConsolidation.lean:864`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L864)). |
+| `instance : BadInterface (Polynomial R)` with `answer : Message → QueryImpl spec Id` | **Fails typeclass synthesis** | `Id` is semireducible in Lean 4, exposing `Semiring (Id ((ofFn fun x => R).Range point))` when elaborating `p.eval point` ([`OracleConsolidation.lean:890-907`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L890-L907)). |
+| `rw` on `simulateQ` over 2-field `structure NestedBundle where Data : Type; interface : OracleInterface Data` | **Fails `.implicit` transparency check** | Unfolding `In.spec` exposes primitive projection `In.interface.2 : OracleSpec In.interface.1` while `@simulateQ`'s implicit index holds the semireducible class projection `OracleInterface.Query In.Data` ([`OracleConsolidation.lean:913-976`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L913-L976)). |
 
 ## 3. Design options
 
@@ -302,12 +307,12 @@ def OracleBundle.sum (R S : OracleBundle) : OracleBundle :=
 ```
 
 **Operations and users.** Every `B.Data`, `B.spec`, `B.answer`, `R.sum S`, and `R.tensor S` call
-breaks dot notation (`OracleConsolidation.lean:842`) and becomes prefix calls or `.1` / `.2.1` /
+breaks dot notation ([`OracleConsolidation.lean:842`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L842)) and becomes prefix calls or `.1` / `.2.1` /
 `.2.2` projections. Every `simulateQ (B.answer x)` call must unpack `ReaderM` via `fun q =>
 (B.2.2.impl q).run x`. `OracleContext.add` cannot implement `OracleBundle.sum` because `ReaderM
-R.Data` and `ReaderM S.Data` are distinct monads (`OracleConsolidation.lean:796`). Using
+R.Data` and `ReaderM S.Data` are distinct monads ([`OracleConsolidation.lean:796`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L796)). Using
 `QueryImpl.addReaderT` breaks definitional equality `(R.sum S).answer x = R.answer x.1 + S.answer
-x.2` (`OracleConsolidation.lean:813`). Every `OracleMap.fst` / `snd` / `par` / `sumAssoc` law loses
+x.2` ([`OracleConsolidation.lean:813`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L813)). Every `OracleMap.fst` / `snd` / `par` / `sumAssoc` law loses
 `rfl` and requires `funext` and `cases`.
 
 **Costs and risks.**
@@ -402,19 +407,19 @@ Two Lean 4 implementation details discovered during prototyping shape Design D's
 1. **`OracleInterface.answer` uses `Message → (q : Query) → spec q`, not `Message → QueryImpl spec
    Id`.** Because `Id` is semireducible in Lean 4, typing the class field as `QueryImpl spec Id`
    puts `Id` in the expected return type of instance bodies and causes `Polynomial.eval` to fail
-   `Semiring (Id ...)` synthesis (`OracleConsolidation.lean:890-907`). Using `(q : Query) → spec q`
+   `Semiring (Id ...)` synthesis ([`OracleConsolidation.lean:890-907`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L890-L907)). Using `(q : Query) → spec q`
    keeps `Polynomial.eval` elaborating cleanly while still unifying with `QueryImpl spec Id` by
-   `rfl` (`OracleConsolidation.lean:71,200`).
+   `rfl` ([`OracleConsolidation.lean:71,200`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L71)).
 2. **`OracleBundle` keeps four flat fields rather than nesting `interface : OracleInterface Data`.**
    A two-field structure `{ Data : Type; interface : OracleInterface Data }` is `rfl`-equivalent to
    the four-field structure, but defining `B.Query := B.interface.Query` and `B.spec :=
    B.interface.spec` routes `B.spec` through the semireducible class projection
    `OracleInterface.Query`. When `simp` unfolds `B.spec` to the primitive projection `In.interface.2
    : OracleSpec In.interface.1`, subsequent `rw` steps fail Lean 4's `.implicit` transparency check
-   against `OracleSpec (OracleInterface.Query In.Data)` (`OracleConsolidation.lean:913-976`).
+   against `OracleSpec (OracleInterface.Query In.Data)` ([`OracleConsolidation.lean:913-976`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L913-L976)).
    Keeping four direct structure fields eliminates that mismatch completely while preserving a
    two-way `rfl` equivalence with `(Data : Type) × OracleInterface Data`
-   (`OracleConsolidation.lean:701`).
+   ([`OracleConsolidation.lean:701`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L701)).
 
 **Operations and users.**
 - Every `OracleInterface` instance simplifies from `toOC.spec := ...; toOC.impl q := do return (←
@@ -422,7 +427,7 @@ Two Lean 4 implementation details discovered during prototyping shape Design D's
 - `OracleInterface.instProd` uses `QueryImpl.add` directly (`Oα.answerImpl x.1 + Oβ.answerImpl
   x.2`), deleting its dependence on `QueryImpl.addReaderT` and making `OracleBundle.of (α × β)
   instProd = (OracleBundle.of α Oα).sum (OracleBundle.of β Oβ)` hold by `rfl`
-  (`OracleConsolidation.lean:762`).
+  ([`OracleConsolidation.lean:762`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L762)).
 - `OracleInterface.spec` becomes the structure projection itself, cleaning up
   `RandomQuery.lean:225,235` and `OracleInterface.lean:85,249,268`.
 - `OracleBundle` and `OracleMap` move to `ArkLib/Relation/OracleBundle.lean` (tree-independent,
@@ -433,7 +438,7 @@ Two Lean 4 implementation details discovered during prototyping shape Design D's
   `Sumcheck` gain the same simplifications as Design C: symmetric `OracleBundle` inputs and outputs,
   no `{J}` / `{B}`, no `ofFamily` / `ofSumFamily` / `toSumFamily` / `sumData` / `sumData_eta` /
   `familySumAssoc`, and first-class derived `OracleBundle.ofSpec` outputs
-  (`OracleConsolidation.lean:1101-1203`).
+  ([`OracleConsolidation.lean:1101-1203`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L1101-L1203)).
 - `SentOracles.lean` replaces `sentOracleMessageFamily` with `sentOracleMessageBundle` built from
   `OracleBundle.empty` and `OracleBundle.sum`, eliminating `erw [OracleMap.sum_impl_inr]`
   (`SentOracles.lean:258`) in favor of `rfl` on `OracleMap.par`. `SentOracleMessageIndex` and
@@ -471,7 +476,7 @@ carriers and `OracleBundle` for first-class explicit oracle specifications with 
 deletes `OracleFamily`, eliminates all ten family-to-bundle bridges, removes the unused
 `OracleContext` / `ReaderM` indirection, and satisfies the elaboration, transparency, and
 executability constraints checked in
-[`prototypes/OracleConsolidation.lean`](prototypes/OracleConsolidation.lean).
+[`prototypes/OracleConsolidation.lean`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean).
 
 ### Reasons for Design D
 
@@ -489,7 +494,7 @@ executability constraints checked in
    `StageChain`, `LoggedExecution`, `QueriesByMove*`, `Reassociation`, `Routing`, and all 10
    `Security/` files. It eliminates `OracleBundle.ofFamily` coercions at every stage seam and lets
    behavior-only outputs (`OracleBundle.ofSpec`) compose across stages without a singleton-family
-   wrapper (`OracleConsolidation.lean:1101-1203`). The bundle form removes the wrapping; it does
+   wrapper ([`OracleConsolidation.lean:1101-1203`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L1101-L1203)). The bundle form removes the wrapping; it does
    not make new behavior expressible, since a singleton family can already take `QueryImpl spec Id`
    as its realization type.
 3. **Flattening `OracleInterface` finishes the cleanup at low marginal cost.** Only 35 files across
@@ -518,7 +523,7 @@ executability constraints checked in
   `oracleMessageBundle` produces nested binary sum queries (`Q₁ ⊕ (Q₂ ⊕ Empty)`) and tuple data (`X₁
   × (X₂ × Unit)`) rather than `(i : PUnit ⊕ ...) × Q i`. This removes `PUnit` noise from every
   oracle-message query and replaces 25-line `sumData_eta` proofs with one-line `Prod.ext` proofs
-  (`OracleConsolidation.lean:470-498`), at the cost of updating concrete query patterns in
+  ([`OracleConsolidation.lean:470-498`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L470-L498)), at the cost of updating concrete query patterns in
   `Sumcheck/Execution.lean`, `Legacy/OracleReduction.lean`, and interaction tests.
 - **No global `OracleInterface B.Data` instance.** Users passing a bundle's data into a
   typeclass-driven legacy helper must supply `B.toInterface` explicitly. Registering `instance (B :
@@ -657,7 +662,7 @@ protocol append and path operation would have to thread and split a second tree-
 alongside `s`. The only technical motive for separating `interface` from `OraclePos` under the old
 universe ledger was avoiding an extra query universe parameter `q` on `OraclePos : Type (max (u + 1)
 (q + 1))`. After universe migration step 5, `X : Type` and `OracleInterface X : Type 1` both yield
-`OraclePos : Type 1` with zero universe parameters (`OracleConsolidation.lean:383`), removing that
+`OraclePos : Type 1` with zero universe parameters ([`OracleConsolidation.lean:383`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L383)), removing that
 motive entirely. Section 6 records the decision to keep the two arguments `(X : Type) (interface :
 OracleInterface X)` rather than one `(B : OracleBundle)`. Either form keeps `Γ` empty.
 
@@ -670,36 +675,41 @@ output map separately. The composite therefore exports the suffix's output data 
 intermediate statement (`appendSimple_outputMap`). Production `append` keeps its
 `OutputCompatibility` hypothesis for output maps that read the statement. Replacing `oracleMessageFamily` and `OracleVerifier.outputs` with `OracleBundle`
 removes the legacy family representation leak from D6's core equations
-(`OracleConsolidation.lean:419-681`).
+([`OracleConsolidation.lean:419-681`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L419-L681)).
 
 ### Instance search, reducibility, transparency, and compiler erasure
 
 Design D preserves every elaboration and code-generation invariant required by ArkLib and verifies
-each in Part 3 of [`prototypes/OracleConsolidation.lean`](prototypes/OracleConsolidation.lean):
+each in Part 3 of [`prototypes/OracleConsolidation.lean`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean):
 
 1. **`OracleSpec` remains `@[implicit_reducible]`**
    (`.lake/packages/VCVio/VCVio/OracleComp/OracleSpec.lean:44`), and `OracleBundle.Query`, `spec`,
    `Data`, `answer` are direct structure fields on a four-field structure, avoiding the `.implicit`
    transparency mismatch exhibited by a two-field nested bundle
-   (`OracleConsolidation.lean:913-976`).
+   ([`OracleConsolidation.lean:913-976`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L913-L976)).
 2. **`OracleInterface.answer` avoids `Id` in its field type**, preventing `Semiring (Id ...)`
-   synthesis failure in polynomial instances (`OracleConsolidation.lean:890-907`).
+   synthesis failure in polynomial instances ([`OracleConsolidation.lean:890-907`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L890-L907)).
 3. **`OracleInterface.toOracleSpec` (`[v]ₒ`) stays semireducible**, preserving `[v]ₒ` as a stable
    head for `HasQuery` / `MonadLiftT` matching and keeping `simulateQ_simOracle2_liftM_query_snd`
-   provable by `rfl` (`OracleConsolidation.lean:997`) and `OracleReduction/Basic.lean:518`'s `erw`
+   provable by `rfl` ([`OracleConsolidation.lean:997`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L997)) and `OracleReduction/Basic.lean:518`'s `erw`
    pattern working identically.
 4. **Class projections (`OracleInterface.Query`) remain non-reducible in `synthInstance`** on both
-   `main`'s and the consolidated `OracleInterface` (`OracleConsolidation.lean:989`).
+   `main`'s and the consolidated `OracleInterface` ([`OracleConsolidation.lean:989`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L989)).
    `OracleInterface.lean:276-278`'s explicit `Fintype` instance on `Query (R⦃≤ d⦄[X σ])` therefore
-   stays needed and intact. Concrete flat bundles such as `OracleBundle.ofSpec (ZMod 7 →ₒ ZMod 7)`
-   synthesize `Fintype` and `DecidableEq` directly (`OracleConsolidation.lean:991-992`).
+   stays needed and intact. In the prototype, whose `ofSpec` was `@[reducible]`, the `Query` of
+   `ofSpec (ZMod 7 →ₒ ZMod 7)` synthesized `Fintype` and `DecidableEq` directly
+   ([`OracleConsolidation.lean:991-992`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L991-L992)). On `main`,
+   `OracleBundle.ofSpec` is an ordinary `def`, and instance search finds neither instance for
+   `(OracleBundle.ofSpec (ZMod 7 →ₒ ZMod 7)).Query` (checked at `44d1d1d4bf`).
 5. **Core bundle combinators stay `@[reducible]`** (`of`, `ofInst`, `empty`, `sum`, `tensor`,
-   `ofSpec`, `indexed`, `ofIndexed`) and `oracleMessageBundle` stays `@[implicit_reducible]`,
+   `indexed`, `ofIndexed`) and `oracleMessageBundle` stays `@[implicit_reducible]`,
    matching today's unfolding discipline for `QueryImpl.add`, `simulateQ`, and `pathBundle`.
+   `ofSpec` is the exception on `main`: it is an ordinary `def`, as the module docstring of
+   `ArkLib/Relation/OracleBundle.lean` records, while the prototype made it `@[reducible]`.
 6. **Compiler erasure via `@[macro_inline]` stays intact.** `OracleMap.fst`
-   (`OracleConsolidation.lean:283`) and `pathLift` (`OracleConsolidation.lean:525`) remain
+   ([`OracleConsolidation.lean:283`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L283)) and `pathLift` ([`OracleConsolidation.lean:525`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L525)) remain
    `@[macro_inline]`. Defining `computableMvPolyVerifier` against the `noncomputable` bundle
-   `mathMvPolyBundle` compiles without `noncomputable` (`OracleConsolidation.lean:1011-1032`),
+   `mathMvPolyBundle` compiles without `noncomputable` ([`OracleConsolidation.lean:1011-1032`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L1011-L1032)),
    matching `Sumcheck/Execution.lean:399-414`.
 
 ### Boundary with upstream VCVio
@@ -831,7 +841,7 @@ land in the order 2, 3, 4, 5, then 1 as part of step 5.
      does not cover it yet.
    - **Changes:** Replace `oracleMessageFamily`, `oracleMessages`, `oracleMessageImpl`,
      `oracleMessageFamily_append`, `oracleMessageFamily_split`, and `splitOracleMessages` with the
-     direct `OracleBundle.empty` / `OracleBundle.sum` versions (`OracleConsolidation.lean:419-517`).
+     direct `OracleBundle.empty` / `OracleBundle.sum` versions ([`OracleConsolidation.lean:419-517`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L419-L517)).
      Update `SentOracles.lean` to use `sentOracleMessageBundle` and `OracleMap.par`. Simplify
      `splitPathBundle` (`Composition.lean:547`) by dropping `ofSumFamily`. Update
      `Oracle/Routing.lean`, `Oracle/Reassociation.lean`, `Interaction/Legacy/OracleReduction.lean` &
@@ -878,8 +888,8 @@ The maintainer settled these questions on 2026-11-25.
    - The two arguments lose no expressiveness. For any bundle `B`, the node
      `.oracle B.Data B.toInterface` sends it, and the node's message bundle
      `OracleBundle.of B.Data B.toInterface` is `B` by `rfl` (the round trip of `bundleEquivSigma`).
-     The query type, specification and answers therefore agree. The prototype checks this for a
-     behavior-only bundle (`ofSpec`) and for a tensor (`OracleConsolidation.lean:1205-1235`).
+     The query type, specification and answers therefore agree. The prototype checked this for a
+     behavior-only bundle (`ofSpec`) and for a tensor ([`OracleConsolidation.lean:1205-1235`](https://github.com/Verified-zkEVM/ArkLib/blob/f4fe656d7393e135ff460cb43934f34facb832d1/docs/design/interaction-layer/prototypes/OracleConsolidation.lean#L1205-L1235)).
    - What this gives up: the node exposes `B.Data` and `B.toInterface` rather than the bundle
      itself. A client writes `.oracle B.Data B.toInterface` where a one-argument form would take
      `B`, and a match on `.oracle X I` recovers the bundle only as `OracleBundle.of X I`. Changing it
