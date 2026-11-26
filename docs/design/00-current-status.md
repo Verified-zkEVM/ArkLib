@@ -135,6 +135,7 @@ core counterpart or records why it was retired.
 | State restoration with per-round errors | `Security/StateRestoration`, `Security/StateRestorationBudget` | #1483 |
 | Agreeing oracle verifiers | `Security/Agreement` | #1484 |
 | Embedding of legacy reductions and security transfers | `Legacy/*`, `LegacyAppend`; see [legacy-embedding.md](interaction-layer/legacy-embedding.md) | #1480, #1481 |
+| Context lifting along lenses, run laws and security transfers | `LiftContext`, `Oracle/LiftContext`, `Legacy/LiftContext`; see [lift-context.md](interaction-layer/lift-context.md) | this branch |
 
 Sumcheck on the interaction layer is the Sumcheck core. The frozen Sumcheck interaction layer under
 `ArkLib/ProofSystem/Sumcheck/Interaction/` has been deleted; its last version is at commit
