@@ -7,6 +7,7 @@ Authors: Quang Dao
 import ArkLib.Commitments.Functional.KZG.Correctness
 import ArkLib.Commitments.Functional.KZG.Security
 import ArkLib.Commitments.Functional.KZG.AGM.Security
+import ArkLib.Commitments.Functional.KZG.AGM.RandomizedSecurity
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -176,5 +177,36 @@ private def constantForgery : AGM.Output F F F (List (F × F)) :=
 #guard_msgs in
 #eval (AGM.extractWins (n := 0) e 1 vk id constantForgery,
   AGM.recover (n := 0) 1 vk enumeratingRoots id constantForgery)
+
+end KZGTest
+
+namespace KZGTest
+
+open CompPoly CompPoly.CPolynomial.Roots.FiniteField
+
+/-- Explicit finite-field data for the executable Las Vegas example. -/
+private def rootContext : FiniteFieldContext F where
+  q := 7
+  finite := inferInstance
+  card_eq := by simp [Nat.card_eq_fintype_card]
+  frobenius_fixed := by decide
+
+/-- The seven residues supply the splitter's enumeration fallback. -/
+private def rootEnumeration : FieldEnumeration F :=
+  fieldEnumerationOfArray #[0, 1, 2, 3, 4, 5, 6] (by
+    unfold ContainsAllFieldElements
+    decide)
+
+-- Both a nonzero probe and a zero probe find exactly the roots 2 and 5 of (X - 2)(X - 5).
+-- The zero probe exercises the enumeration fallback after the bounded splitting attempt.
+/-- info: true -/
+#guard_msgs in
+#eval
+  let p := (CPolynomial.X - CPolynomial.C (2 : F)) *
+    (CPolynomial.X - CPolynomial.C (5 : F))
+  [CPolynomial.X, (0 : CPolynomial F)].all fun probe =>
+    let roots := AGM.lasVegasRoots CPolynomial.Raw.MulContext.naive
+      CPolynomial.Raw.ModContext.naive rootContext rootEnumeration { cutoff := 1 } [probe] p
+    roots.length == 2 && roots.contains 2 && roots.contains 5
 
 end KZGTest

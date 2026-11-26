@@ -17,6 +17,8 @@ binding by computable reductions to $(n,1)$-PairingDLog with additive error $1/|
 assuming only $e(g_1,g_2)\neq 0$ and a complete polynomial root finder.
 These bounds include $n=0$, and CompPoly's executable finite-field root finder satisfies the
 completeness contract under its splitter-validity hypothesis.
+The randomized bounds also instantiate CompPoly's Las Vegas splitter with sampled probe tables;
+enumeration fallback gives unconditional completeness, with no running-time claim.
 
 \begin{definition}[KZG commitment scheme]\label{def:kzg}
 \lean{KZG.committerKey, KZG.verifierKey, KZG.keygen, KZG.commit, KZG.generateOpening,

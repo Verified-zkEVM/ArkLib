@@ -61,6 +61,7 @@ public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 public import ArkLib.Commitments.Functional.KZG.AGM.Adversary
 public import ArkLib.Commitments.Functional.KZG.AGM.Polynomial
+public import ArkLib.Commitments.Functional.KZG.AGM.RandomizedSecurity
 public import ArkLib.Commitments.Functional.KZG.AGM.Reduction
 public import ArkLib.Commitments.Functional.KZG.AGM.Sampling
 public import ArkLib.Commitments.Functional.KZG.AGM.Security
@@ -1356,3 +1357,4 @@ public import ArkLib.ToMathlib.RingTheory.Polynomial.GenericZeroPattern
 public import ArkLib.ToMathlib.RingTheory.PowerSeries.SimpleRoot
 public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
+public import ArkLib.ToVCVio.PairingDLog
