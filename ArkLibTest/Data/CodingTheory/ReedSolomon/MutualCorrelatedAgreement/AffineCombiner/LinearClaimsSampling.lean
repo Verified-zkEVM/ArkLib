@@ -24,11 +24,11 @@ private def roundSaving {ι F : Type*} [Field F] {d : ℕ} (f g : ι → F) (v :
   ⟨f, g, v, γ₀, γ₁, fun θ ↦ cF + θ * cG⟩
 
 -- The round-saving prover is covered: for uniform `(θ, α, β)` on `F₅`, its exceptional
--- probability is at most the affine error plus `2ℓ₀/q = 4/5`.
+-- probability is at most the affine error plus `ℓ₀/q = 2/5`.
 example (f g : ZMod 5 → ZMod 5) (v : Fin 2 → ZMod 5) (γ₀ γ₁ cF cG : ZMod 5) :
     Pr{let c ← $ᵗ (ZMod 5 × ZMod 5 × ZMod 5)}[∃ P,
       IsLinearClaimExceptional fullDomain f g 1 4 1 v γ₀ γ₁ (cF + c.1 * cG) c.1 c.2.1 c.2.2 P] ≤
-        affineMcaError fullDomain 1 4 1 + 4 / 5 := by
+        affineMcaError fullDomain 1 4 1 + 2 / 5 := by
   refine (prob_isLinearClaimExceptional_le fullDomain 1 4 1
     (roundSaving f g v γ₀ γ₁ cF cG)).trans ?_
   have h := linearClaimMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)

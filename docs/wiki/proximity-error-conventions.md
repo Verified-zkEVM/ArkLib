@@ -182,8 +182,11 @@ The affine, scalar, and equal-degree combiner errors also have exact computable 
 `ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
 `ReedSolomon.ofReal_equalDegreeMcaErrorRat` prove that `ENNReal.ofReal` of the real cast of each
 value is the semantic `ENNReal` error.
-The evaluators enumerate received word pairs, challenges, and bounded-degree CompPoly candidates
-and witnesses, and count with `Probability.maxEventProbability` from
+The evaluators enumerate received word pairs, challenges, and bounded-degree CompPoly candidates.
+The affine and scalar searches enumerate the second witness.
+The equal-degree search enumerates `W = F₀ + θ G₀`.
+It skips each `W` whose reconstructed second witness has degree at least `d`.
+The evaluators count exceptional challenges with `Probability.maxEventProbability` from
 [`MaxEventProbability.lean`](../../ArkLib/Data/Probability/MaxEventProbability.lean).
 The evaluators use no classical decision procedure and no sampler.
 The module docstring of
@@ -194,7 +197,7 @@ Evaluating the generic `mcaError` would require executable code membership and r
 For the affine-line generator and `ReedSolomon.code domain (d + 1)`, the scalar evaluator computes
 `mcaError` exactly from the matching integer threshold. Let `n` be the domain size and
 `A = ⌈n(1 - δ)⌉₊`.
-By `ReedSolomon.scalarMcaError_zero_eq_mcaError` and `ReedSolomon.ofReal_scalarMcaErrorRat`,
+`ReedSolomon.mcaError_affineLine_eq_ofReal_scalarMcaErrorRat` states that
 `mcaError (AffineLineGenerator F) (ReedSolomon.code domain (d + 1)) δ` equals
 `ENNReal.ofReal` of the real cast of `scalarMcaErrorRat domain d A 0`.
 
