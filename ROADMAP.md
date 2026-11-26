@@ -130,6 +130,10 @@ entry says so, the specification is not claimed to be executable.
   `KZG.evalBinding_le_tsdh` and `KZG.functionBinding_le_arsdh` bound each binding game by the
   matching VCVio experiment run on the reduction, and `KZG.evalBinding_le_of_tsdh` and
   `KZG.functionBinding_le_of_arsdh` assume the hardness bound over an explicit adversary class.
+  In the AGM, extractability and both binding games reduce computably to `(n, 1)`-PairingDLog
+  with additive error `1 / |F|`, assuming a nonzero pairing value and a complete root finder.
+  The reduction covers `n = 0`; CompPoly's finite-field root backend meets the root-finder
+  contract under its splitter-validity hypothesis.
 - **Hachi** ([`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/)): the
   nonrecursive opening argument, with coordinate-wise special soundness of each iteration
   (`ArkLib.Lattices.Ajtai.InnerOuter.hachi_iteration_coordinateWiseSpecialSoundWithEscape`) and a
