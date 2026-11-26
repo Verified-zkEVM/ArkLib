@@ -37,6 +37,81 @@ private def binaryDomain : ZMod 2 ↪ ZMod 2 := Function.Embedding.refl _
 #guard_msgs in
 #eval linearClaimMcaErrorRat binaryDomain 0 3 1 == 0
 
+/-- The linear-claim decision from the definition, which enumerates witness pairs `(U, V)`. -/
+private def pairSearch (A s : ℕ) (w : LinearClaimInstance (ZMod 2) (ZMod 2) 1) (θ α β : ZMod 2)
+    (P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 2) 2)) : Bool :=
+  @decide (Computable.IsLinearClaimExceptional binaryDomain w A s θ α β P)
+    (by unfold Computable.IsLinearClaimExceptional; infer_instance)
+
+-- Check that the two compiled searches agree over the binary field for `d = 1`, `A = 2`,
+-- `s = 0`, and message `c(θ) = θ`.
+/-- info: true -/
+#guard_msgs in
+#eval decide (∀ f g : ZMod 2 → ZMod 2, ∀ v : Fin 2 → ZMod 2, ∀ γ₀ γ₁ : ZMod 2,
+    ∀ c : ZMod 2 × ZMod 2 × ZMod 2, ∀ P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 2) 2),
+      let w : LinearClaimInstance (ZMod 2) (ZMod 2) 1 := ⟨f, g, v, γ₀, γ₁, id⟩
+      decide (Computable.IsLinearClaimExceptional binaryDomain w 2 0 c.1 c.2.1 c.2.2 P) =
+        pairSearch 2 0 w c.1 c.2.1 c.2.2 P)
+
+-- At `θ = α = β = 0`, the multiplier is zero, so the combined word is `g = id`.
+-- The weight `![0, 1]` reads the coefficient of `X`, and `P = X` has the required coefficient
+-- `γ₁ = 1` and meets the agreement threshold `A = 2`. Every `W` reconstructs `V = X`, which
+-- exceeds the witness degree bound. Without the degree check, `W = 0` would give witnesses
+-- satisfying `γ₀ = 0`, `γ₁ = 1`, and message zero. Their loss would be zero, so allowing them
+-- as witnesses at `s = 0` would make `P` nonexceptional.
+/-- info: true -/
+#guard_msgs in
+#eval
+  let P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 2) 2) :=
+    ⟨CompPoly.CPolynomial.ofFn ![0, 1], CompPoly.CPolynomial.ofFn_mem_degreeLT _⟩
+  let w : LinearClaimInstance (ZMod 2) (ZMod 2) 1 := ⟨0, id, ![0, 1], 0, 1, 0⟩
+  decide (Computable.IsLinearClaimExceptional binaryDomain w 2 0 0 0 0 P)
+
+-- With both words equal to one, `θ = β = 1`, and `α = 0`, the combined word is the evaluation
+-- of `P = 1 + 2X`, so the candidate meets the threshold `A = 5`. The weight `![0, 1]`
+-- reads the coefficient of `X`. With `γ₀ = γ₁ = 0` and `α = 0`, the combined claim is
+-- `β * c`, which equals two because `β = 1` and the message `c` is two.
+-- The candidate has coefficient two.
+-- Only `W = 2` reconstructs a constant `V`, giving `U = V = 1`. Both witnesses have `X`
+-- coefficient zero and lose no agreements (`s = 0`). The coefficient of `X` in `X W` is two,
+-- as required by the message. Using `X U` would give coefficient one and reject the pair.
+/-- info: false -/
+#guard_msgs in
+#eval
+  let P : ↥(CompPoly.CPolynomial.degreeLT (R := ZMod 5) 2) :=
+    ⟨CompPoly.CPolynomial.ofFn ![1, 2], CompPoly.CPolynomial.ofFn_mem_degreeLT _⟩
+  let w : LinearClaimInstance (ZMod 5) (ZMod 5) 1 := ⟨1, 1, ![0, 1], 0, 0, fun _ ↦ 2⟩
+  decide (Computable.IsLinearClaimExceptional fullDomain w 5 0 1 0 1 P)
+
+/-- The exceptional event on the binary domain for `f = 0`, `g = id`, and degree bound one.
+The weight reads the coefficient of `X`. The first claim is zero and the second is one.
+The agreement threshold is two and the allowed loss is zero. -/
+private def linearCoefficientClaimEvent (θ c : ZMod 2) (ab : ZMod 2 × ZMod 2) : Bool :=
+  Computable.hasLinearClaimExceptionalCandidate binaryDomain
+    ⟨0, id, ![0, 1], 0, 1, fun _ ↦ c⟩ 2 0 θ ab.1 ab.2
+
+/-- The number of exceptional challenge triples when the reply is the constant `c`. -/
+private def constantReplyCount (c : ZMod 2) : ℕ :=
+  Probability.maxEventCount fun (_ : Unit) (trial : ZMod 2 × ZMod 2 × ZMod 2) ↦
+    linearCoefficientClaimEvent trial.1 c trial.2
+
+-- No constant second witness satisfies the second claim. The candidate through both
+-- points has slope `1 + θ * (α + β)`. Its combined claim holds exactly when `β * θ = β * c`.
+-- A reply of `c = θ` admits all four pairs at each `θ`, for eight exceptional triples.
+/-- info: true -/
+#guard_msgs in
+#eval Probability.maxEventCountWithReply (fun (_ : Unit) ↦ linearCoefficientClaimEvent) == 8
+
+-- A constant reply admits four pairs when `θ = c` and two when `θ ≠ c`.
+/-- info: true -/
+#guard_msgs in
+#eval constantReplyCount 0 == 6 && constantReplyCount 1 == 6
+
+-- Exercise the full evaluator at degree one. The context above attains error one.
+/-- info: true -/
+#guard_msgs in
+#eval linearClaimMcaErrorRat binaryDomain 1 2 0 == 1
+
 -- Honest claims on `F₅` with `v = (1, 2)`, `F = 1`, `G = 2`, `θ = 1`:
 -- `⟨coef(G), v⟩ = 2`, `⟨coef(F), v⟩ = 1`, and `⟨coef(X(F + θ G)), v⟩ = 3 · 2 = 1`.
 example (α β : ZMod 5) :
@@ -48,9 +123,9 @@ example (α β : ZMod 5) :
   linear_combination β * h6
 
 -- At `d = 1`, `A = 4` on `F₅`, the Johnson quotient is `5 · 2 / (9 - 5) = 5 / 2`.
--- So `ℓ₀ = 2`, and the paper's additive term `2ℓ₀/q` is `4 / 5`.
+-- So `ℓ₀ = 2`, and the additive term `ℓ₀/q` is `2 / 5`. The paper's `2ℓ₀/q` is `4 / 5`.
 example :
-    linearClaimMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 4 / 5 := by
+    linearClaimMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 2 / 5 := by
   have h := linearClaimMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
     (by simp [ZMod.card])
   norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
@@ -110,12 +185,12 @@ private theorem paper_johnson_floor :
   norm_num
 
 -- At the paper's parameters `n = 2²⁰`, `d = 2¹⁸`, `A = 576717`, and `q = 2¹²⁸`:
--- linear claims add `2ℓ₀/q = 10 · 2⁻¹²⁸` to the affine error.
--- That is `5 · 2⁻¹²⁸` more than the equal-degree combiner.
+-- linear claims add `ℓ₀/q = 5 · 2⁻¹²⁸` to the affine error, as the equal-degree combiner does.
+-- The paper's term `2ℓ₀/q` is `10 · 2⁻¹²⁸`.
 example {F ι : Type*} [Field F] [DecidableEq F] [Fintype F] [Fintype ι] (domain : ι ↪ F)
     (hn : Fintype.card ι = 2 ^ 20) (hq : Fintype.card F = 2 ^ 128) :
     linearClaimMcaError domain (2 ^ 18) 576717 1 ≤
-      affineMcaError domain (2 ^ 18) 576717 1 + ENNReal.ofReal (2 * 5 / 2 ^ 128) := by
+      affineMcaError domain (2 ^ 18) 576717 1 + ENNReal.ofReal (5 / 2 ^ 128) := by
   have hJ : Fintype.card ι * 2 ^ 18 < (576717 - 1) ^ 2 := by
     rw [hn]
     norm_num
@@ -151,3 +226,8 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.le_floor_johnson_of_mul_le
+
+/-- info: 'ReedSolomon.ofReal_linearClaimMcaErrorRat' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.ofReal_linearClaimMcaErrorRat

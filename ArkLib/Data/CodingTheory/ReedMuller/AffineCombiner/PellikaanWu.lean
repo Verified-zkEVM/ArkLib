@@ -81,10 +81,13 @@ variable [Algebra K₀ F'] [IsScalarTower K₀ L F']
 Distinct coefficient vectors over `F` give distinct substituted affine multipliers. -/
 theorem traceSubstitution_map_affineMultiplier_injective (b : Module.Basis (Fin k) K₀ L) :
     Function.Injective fun α : Fin (k + 1) → F ↦
-      traceSubstitution b ((affineMultiplier α).map (algebraMap F F')) :=
-  fun _ _ h ↦ affineMultiplier_injective <| injOn_traceSubstitution_map b
-    ((totalDegree_affineMultiplier_le _).trans_lt Fintype.one_lt_card)
-    ((totalDegree_affineMultiplier_le _).trans_lt Fintype.one_lt_card) h
+      traceSubstitution b ((affineMultiplier α).map (algebraMap F F')) := by
+  have hmem (α : Fin (k + 1) → F) :
+      affineMultiplier α ∈ MvPolynomial.restrictDegree (Fin k) F (Fintype.card K₀ - 1) :=
+    MvPolynomial.restrictTotalDegree_le_restrictDegree (Fin k) F _
+      ((MvPolynomial.mem_restrictTotalDegree _ _ _).mpr
+        ((totalDegree_affineMultiplier_le α).trans (Nat.le_sub_one_of_lt Fintype.one_lt_card)))
+  exact fun α β h ↦ affineMultiplier_injective <| injOn_traceSubstitution_map b (hmem α) (hmem β) h
 
 variable [Algebra K₀ F] [IsScalarTower K₀ F F'] [Fintype L] [DecidableEq F] [DecidableEq F']
 

@@ -22,12 +22,15 @@ example : (1 : ENNReal) / 2 ≤
     rw [← Nat.card_eq_fintype_card, GaloisField.card 2 4 (by norm_num)]
     norm_num
   have h := le_scalarMcaError_of_addSubgroup (⊤ : AddSubgroup (GaloisField 2 4))
-    (Function.Embedding.refl _) (fun x ↦ by simp) (by rw [hq])
+    (Function.Embedding.refl _) (fun x ↦ by simp)
     (A := 9) (s := 2) (by rw [hq]) (by rw [hq]; norm_num)
   rw [hq] at h
   norm_num [ENNReal.ofReal_div_of_pos] at h
   simpa only [one_div] using h
 
+/-- info: 'ReedSolomon.le_scalarMcaError_of_addSubgroup' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.le_scalarMcaError_of_addSubgroup
 
 private noncomputable instance : Fintype (GaloisField 2 5) := Fintype.ofFinite _
@@ -40,7 +43,7 @@ example (V : AddSubgroup (GaloisField 2 5)) (hV : Fintype.card V = 16) :
     rw [← Nat.card_eq_fintype_card, GaloisField.card 2 5 (by norm_num)]
     norm_num
   have h := le_scalarMcaError_of_addSubgroup V (Function.Embedding.subtype (· ∈ V))
-    (fun x ↦ by simp) (by rw [hV]) (A := 9) (s := 2) (by rw [hV]) (by rw [hV]; norm_num)
+    (fun x ↦ by simp) (A := 9) (s := 2) (by rw [hV]) (by rw [hV]; norm_num)
   rw [hV, hq] at h
   norm_num [ENNReal.ofReal_div_of_pos] at h
   simpa only [one_div] using h
