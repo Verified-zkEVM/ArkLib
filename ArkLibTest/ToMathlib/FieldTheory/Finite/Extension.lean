@@ -8,8 +8,10 @@ import ArkLib.ToMathlib.FieldTheory.Finite.Extension
 
 /-! # Acceptance cases for the basis of a finite-field extension -/
 
--- Over any finite field, the field and module instances of the extension are found,
--- and the basis gives it `q³` elements.
+open scoped FiniteField
+
+-- Over any finite field, the scoped instance lets instance search find the field and module
+-- instances of the extension, and the basis gives it `q³` elements.
 example (K : Type) [Field K] [Fintype K] [Fintype (FiniteField.Extension K (ringChar K) 3)] :
     Fintype.card (FiniteField.Extension K (ringChar K) 3) = Fintype.card K ^ 3 := by
   rw [Module.card_fintype (FiniteField.Extension.finBasis K 3), Fintype.card_fin]
