@@ -393,7 +393,7 @@ theorem decide_eq_legacy (stmt : Spec.StatementRound R n 0)
       ((embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)).decide stmt _
         (toView _ (cast (congrArg (Transcript oracleSig) (protocol_eq R deg n)) tr))) := by
     dsimp only [legacyVerifier]
-    convert hc using 1 <;> rfl
+    convert hc using 1
   exact eq_of_heq ((decide_heq_embed stmt tr _ htr).trans hc'.symm)
 
 omit [SampleableType R] in

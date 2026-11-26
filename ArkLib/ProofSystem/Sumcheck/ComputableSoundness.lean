@@ -147,6 +147,7 @@ theorem execute_soundness [BEq R] [LawfulBEq R] [IsDomain R] [Fintype R] (D : Fi
   have bound := h (fun _ => Out) (stmt, data) trivial
     (by simpa [intervalInputProblem, Problem.language] using hfalse)
     (Interpreted.transportProver (Impl.Representation.toMessage R deg) count prover)
-  simpa [intervalOutputProblem, Problem.language] using bound
+  simp only [intervalOutputProblem, Problem.language, exists_const] at bound
+  exact bound
 
 end Sumcheck.Computable

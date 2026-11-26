@@ -68,8 +68,4 @@ example {I : Type} (F : I → OracleBundle) (i : I) (x : (OracleBundle.indexed F
     (OracleMap.reindex F fun (_ : Bool) => i).f x false =
       (OracleMap.reindex F fun (_ : Bool) => i).f x true := rfl
 
-/-- The family bundle of explicit interfaces is the indexed bundle of the same interfaces. -/
-example {I : Type} {A : I → Type} (F : OracleFamily I A) :
-    OracleBundle.ofFamily F = OracleBundle.ofIndexed A F.interface := rfl
-
 end Interaction.OracleBundleTests

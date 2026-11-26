@@ -10,51 +10,13 @@ public import ArkLib.Relation.OracleInterface
 /-!
 # Claims and relations
 
-This file defines indexed claims, witness relations with an explicit admissibility boundary,
-and families of concrete oracle data with their observable interfaces. None depends on a
-protocol tree or an execution strategy.
+This file defines indexed claims and witness relations with an explicit admissibility boundary.
+Neither depends on a protocol tree or an execution strategy.
 -/
 
 @[expose] public section
 
-universe u u'
-
 namespace Interaction.Oracle
-
-/-- An indexed family of realization types with explicitly selected oracle interfaces. -/
-structure OracleFamily (Index : Type u) (Realization : Index → Type) where
-  /-- Observable interface, supplied as data rather than inferred. -/
-  interface : ∀ i, OracleInterface (Realization i)
-
-namespace OracleFamily
-
-variable {I : Type u} {Data : I → Type}
-
-/-- Index carrier of the interface family. -/
-abbrev Index (_ : OracleFamily I Data) := I
-
-/-- The admissible realization type at each index. -/
-abbrev Realization (O : OracleFamily I Data) : O.Index → Type := Data
-
-/-- The dependent query signature of the explicit interfaces. -/
-abbrev spec (O : OracleFamily I Data) := [O.Realization]ₒ' O.interface
-
-/-- Arbitrary deterministic answers, without a representability assumption. -/
-abbrev Behavior (O : OracleFamily I Data) := QueryImpl O.spec Id
-
-/-- Interpret a family of admissible realizations through its declared interfaces. -/
-def behaviorOfRealizations (O : OracleFamily I Data)
-    (data : ∀ i, O.Realization i) : O.Behavior :=
-  fun q => (O.interface q.1).answer (data q.1) q.2
-
-/-- Pull back the indexed interface family along an arbitrary map.
-
-Repeated indices copy interface types; they do not force independently supplied realizations or
-behaviors to agree. Use a named-context view when aliases must share a realization. -/
-def reindex (O : OracleFamily I Data) {J : Type u'} (f : J → O.Index) :
-    OracleFamily J (O.Realization ∘ f) := ⟨fun j => O.interface (f j)⟩
-
-end OracleFamily
 
 /-- Public contexts and the claim type visible in each context. -/
 structure ClaimFamily (PublicCtx : Type) : Type 1 where

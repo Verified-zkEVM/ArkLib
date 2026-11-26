@@ -161,8 +161,7 @@ theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : Transcri
   exact Prod.ext (Subtype.ext h.1) (Subtype.ext (eq_of_heq h.2))
 
 
-variable {I : Type} {A : I → Type}
-  (inputs : Interaction.Oracle.OracleFamily I A)
+variable (inputs : OracleBundle)
 
 /-- The first round of a transcript of a round followed by `s`. -/
 def appendHead (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :
@@ -175,7 +174,7 @@ def appendTail (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :
   tr.2.2
 
 /-- The first round of a run of a round followed by `s` sees the inputs and its own message. -/
-theorem prefixRoute_round (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
+theorem prefixRoute_round (x : inputs.Data) (msg : R⦃≤ deg⦄[X]) (chal : R)
     (tail : Transcript oracleSig s) :
     (OracleVerifier.prefixRoute (inputs := inputs) (s₁ := round R deg) (s₂ := fun _ => s)
         (Transcript.path (l := oracleSig) (s := _) ⟨msg, ⟨chal, tail⟩⟩)).f

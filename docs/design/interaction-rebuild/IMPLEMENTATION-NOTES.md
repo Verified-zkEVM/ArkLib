@@ -188,13 +188,15 @@ the universe canary constructs and reads a natural-number leaf.
 **Bundle data in `Type`.** A decision reads `pathBundle inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
 (`OracleBundle.sum`). Since step 4, both query types and all bundle data lie in `Type`.
-`OracleBundle.ofFamily` takes an `OracleFamily`, whose realizations lie in `Type`. The oracle
+Consolidation PR 5 deleted `OracleFamily`, `OracleBundle.ofFamily` and `OracleMap.embedding`: an
+indexed family of oracles is the bundle `OracleBundle.ofIndexed A O`, and `OracleMap.reindex`
+renames its indices. Record D6 still describes outputs that form an `OracleFamily`. The oracle
 messages on a path form the bundle `oracleMessageBundle s p`, built from `OracleBundle.empty`,
 `OracleBundle.sum` and `OracleBundle.of`. It and `splitOracleMessages` take an `OracleProtocol`,
-as the verifier APIs do. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` still
-checks the named and visible query carriers, the whole-context data, the verifiers and the shared
-run, now in `Type`. Its assertions of independent universes are retired under the policy adopted
-in #1580.
+as the verifier APIs do. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
+still checks the named and visible query carriers, the whole-context data, the verifiers and the
+shared run, now in `Type`. Its assertions of independent universes are retired under the policy
+adopted in #1580.
 
 **Equivalent: Agreement output and witness families (F7 and 3A).** `Security/Agreement.lean`
 now preserves path-dependent `T p` and `outputs p` in every agreement and tree
@@ -948,7 +950,7 @@ under those rules.
 ## 25. Routing owners and transparency
 
 **Code.** Forwarding subexpressions in the interaction layer and Sumcheck Core, including their
-tests, use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.embedding`, `Interaction.pathLift`
+tests, use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.reindex`, `Interaction.pathLift`
 and VCVio's `QueryImpl.id'` restrictions (or `QueryImpl.ofLift` for universe-polymorphic sums).
 Coverage includes prover-setup injection, carrier-changing `renameQueries`, routing exports and
 path reads, the independent-query-universe verifier, and state-restoration oracle message reads

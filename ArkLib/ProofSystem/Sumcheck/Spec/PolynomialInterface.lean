@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.Relation.Basic
+public import ArkLib.Relation.OracleBundle
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 
 /-!
@@ -19,7 +19,7 @@ is used by the specification and by the computational polynomial handler.
 
 namespace Sumcheck.Spec
 
-open _root_.Interaction.Oracle
+open _root_.Interaction
 
 variable (R : Type) [CommSemiring R] (n deg : ℕ)
 
@@ -28,7 +28,8 @@ available at every round boundary.
 
 It is noncomputable because the legacy evaluation interface of multivariate polynomials is. A
 verifier that uses only its types stays executable. -/
-noncomputable def polynomialFamily : OracleFamily Unit (OracleStatement R n deg) :=
-  ⟨fun _ => inferInstance⟩
+@[instance_reducible]
+noncomputable def polynomialFamily : OracleBundle :=
+  OracleBundle.ofIndexed (OracleStatement R n deg) fun _ => inferInstance
 
 end Sumcheck.Spec

@@ -633,8 +633,8 @@ theorem simulateQ_oracleChallengeReindex_run
     runWith_oracleLegacySampler]
   rfl
 
-variable {I S : Type} {T : Path (oracleProtocol pSpec) → Type} {A : I → Type}
-  {inputs : OracleFamily I A}
+variable {S : Type} {T : Path (oracleProtocol pSpec) → Type}
+  {inputs : OracleBundle}
   {outputs : Path (oracleProtocol pSpec) → OracleBundle}
 
 /-- Run an oracle verifier on the oracle tree of a legacy protocol under `order`, in the legacy
@@ -642,7 +642,7 @@ query monad. The prover runs against the legacy sampler; the decision and the ou
 the input data and the oracle messages of the actual run, as in `Interaction.OracleVerifier.run`. -/
 def oracleObserveWith (order : Schedule)
     (V : Interaction.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
-    (data : ∀ i, A i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
+    (data : inputs.Data) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
     (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     OracleComp (oSpec + [pSpec.Challenge]ₒ)
       (Outcome oracleSig (oracleProtocol pSpec) Out
@@ -663,7 +663,7 @@ protocol's oracle tree, with its challenges answered by the legacy challenge ora
 focal-first oracle outcome. -/
 theorem simulateQ_oracleVerifier_run
     (V : Interaction.OracleVerifier oSpec (oracleProtocol pSpec) S T inputs outputs) (stmt : S)
-    (data : ∀ i, A i) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
+    (data : inputs.Data) {Out : Transcript oracleSig (oracleProtocol pSpec) → Type}
     (p : Interaction.Prover oracleSig oSpec (oracleProtocol pSpec) Out) :
     simulateQ (oracleChallengeReindex oSpec pSpec) (V.run stmt data p) =
       oracleObserveWith .focalFirst V stmt data p := by

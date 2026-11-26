@@ -17,8 +17,8 @@ open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp OracleSpe
 namespace Interaction.AccessTypingTests
 
 /-- One scalar input oracle. -/
-def inputs : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+def inputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The input data: the single input oracle holds 7. -/
 def seven : ∀ _ : Unit, Nat := fun _ => 7

@@ -200,7 +200,7 @@ omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 theorem inputImpl_eq_behavior (poly : CMvPolynomial n R) {deg : ℕ}
     (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
     inputImpl poly deg =
-      (Spec.polynomialFamily R n deg).behaviorOfRealizations
+      (Spec.polynomialFamily R n deg).answer
         (fun _ => toOracleStatement poly hpoly) := by
   funext query
   change poly.eval query.2 = MvPolynomial.eval query.2 (CPoly.fromCMvPolynomial poly)

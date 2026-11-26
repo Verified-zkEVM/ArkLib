@@ -32,8 +32,9 @@ def PolynomialData (R : Type) [CommSemiring R] (n deg : ℕ) : Unit → Type :=
 
 /-- The input and output evaluation oracle for the multivariate polynomial.
 Polynomial evaluation uses Mathlib's noncomputable representations. -/
-noncomputable def polynomialFamily (R : Type) [CommSemiring R] (n deg : ℕ) :
-    OracleFamily Unit (PolynomialData R n deg) := ⟨fun _ => inferInstance⟩
+@[instance_reducible]
+noncomputable def polynomialFamily (R : Type) [CommSemiring R] (n deg : ℕ) : OracleBundle :=
+  OracleBundle.ofIndexed (PolynomialData R n deg) fun _ => inferInstance
 
 /-- Assign all variables except the round's free coordinate: the challenges drawn so far,
 followed by a point of the remaining domain. This is the interaction layer's only definition.

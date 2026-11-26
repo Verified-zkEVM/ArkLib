@@ -28,11 +28,11 @@ namespace Interaction.RunBundlesTests
   answer m _ := m.1
 
 /-- One scalar input oracle. -/
-def inputs : OracleFamily PUnit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+def inputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The input oracle holds 7. -/
-def inputData : ∀ i, inputs.Realization i := fun _ => 7
+def inputData : inputs.Data := fun _ => 7
 
 /-- A prover message `Bool`, then two oracle sends of equal signature. -/
 def tree : OracleProtocol :=
@@ -158,7 +158,7 @@ example (branch : Bool) (hidden : Nat) :
 
 /-- The component bundle: the input, the prefix oracles and the suffix oracles. -/
 abbrev splitPathBundle (branch : Bool) (hidden : Nat) :=
-  (OracleBundle.ofFamily inputs).sum
+  inputs.sum
     ((oracleMessageBundle firstTree (Transcript.path (firstPath branch hidden))).sum
       (oracleMessageBundle _ (Transcript.path (secondPath branch hidden))))
 
@@ -197,7 +197,7 @@ theorem readSplit_split (branch : Bool) (hidden : Nat) :
 /-- Route component queries into the appended run's bundle: the input stays, and the oracle
 nodes go through `oracleMessageBundle_split`. -/
 def splitRoute (branch : Bool) (hidden : Nat) :=
-  (OracleMap.id (OracleBundle.ofFamily inputs)).par
+  (OracleMap.id inputs).par
     (oracleMessageBundle_split firstTree secondTree
       (Transcript.path (firstPath branch hidden))
       (Transcript.path (secondPath branch hidden)))

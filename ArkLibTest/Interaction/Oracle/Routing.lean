@@ -21,8 +21,8 @@ namespace Interaction.RoutingTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- Two scalar input slots; slot `true` is never exported. -/
-@[instance_reducible] def inputs : OracleFamily Bool (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def inputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Bool => Nat) fun _ => OracleInterface.instDefault
 
 /-- Input data: slot `false` holds 3, slot `true` holds the hidden value. -/
 def inputData (hidden : Nat) : ∀ _ : Bool, Nat
@@ -48,8 +48,8 @@ def inputData (hidden : Nat) : ∀ _ : Bool, Nat
 abbrev combined : OracleProtocol := firstProtocol.append (fun _ => secondProtocol)
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily PUnit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def exported : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The prefix bundle on its only path. -/
 abbrev prefixBundle := pathBundle inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
@@ -338,32 +338,31 @@ end Interaction.DependentRoutingTests
 
 universe v
 
-/-- Ambient routing permits distinct family indices and a larger lawful target
+/-- Ambient routing permits distinct input and output bundles and a larger lawful target
 monad. -/
-example {ι : Type} {I : Type} {J : Type}
+example {ι : Type}
     {ambient : OracleSpec.{0, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
-    {A : I → Type} {B : J → Type}
-    {inputs : OracleFamily I A} {outputs : OracleFamily J B}
-    (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : ∀ i, A i)
+    {inputs outputs : OracleBundle}
+    (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)
     {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
-    simulateQ (QueryImpl.addLift handler (inputs.behaviorOfRealizations data) :
+    simulateQ (QueryImpl.addLift handler (inputs.answer data) :
         QueryImpl (ambient + inputs.spec) m)
         (simulateQ (route.withAmbient ambient) program) =
-      simulateQ (QueryImpl.addLift handler (outputs.behaviorOfRealizations (route.f data)) :
+      simulateQ (QueryImpl.addLift handler (outputs.answer (route.f data)) :
         QueryImpl (ambient + outputs.spec) m) program :=
   OracleMap.simulate_withAmbient_addLift handler route data program
 
-/-- Split execution uses input indices, statements and output oracle bundles in `Type`. Both
+/-- Split execution uses input bundles, statements and output oracle bundles in `Type`. Both
 output bundles may depend on their paths. -/
 example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
-    {I : Type} {A : I → Type} {inputs : OracleFamily I A} {S : Type}
+    {inputs : OracleBundle} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {middle : Path s₁ → OracleBundle}
     {outputs : (p : Path s₁) → Path (s₂ p) → OracleBundle}
     {ambient : OracleSpec Nat}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
-    (compatible : OracleVerifier.OutputCompatibility V₁ V₂) (stmt : S) (data : ∀ i, A i)
+    (compatible : OracleVerifier.OutputCompatibility V₁ V₂) (stmt : S) (data : inputs.Data)
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :=
   OracleVerifier.run_append V₁ V₂ compatible stmt data prover

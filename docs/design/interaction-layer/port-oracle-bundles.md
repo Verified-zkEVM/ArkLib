@@ -69,7 +69,7 @@ other row is excluded, and no row is open.
 | R10 [117][fr10] | Zero fails bound zero | ported as a false numerical property: [test][nr10] |
 | R11 [122][fr11] | Universal bound zero fails | ported as a numerical contradiction: [test][nr11] |
 | R12 [130][fr12] | Different indices have equal answers | ported: [test][nr12] |
-| R13 [133][fr13] | The two names differ | ported as distinct family indices: [test][nr13] |
+| R13 [133][fr13] | The two names differ | ported as distinct bundle indices: [test][nr13] |
 | R14 [134][fr14] | The two owners differ | removed: resource owner metadata no longer exists |
 | R15 [137][fr15] | No name-preserving inclusion | removed: no name-preserving reindex API exists |
 | R16 [166][fr16] | Renaming transports carrier data | ported: [test][nr16] |
@@ -136,12 +136,12 @@ other row is excluded, and no row is open.
 
 ## Representation changes and removed mechanisms
 
-Bundle indices replace separate oracle names. A sum of families creates distinct bundle
+Bundle indices replace separate oracle names. A sum of indexed bundles creates distinct bundle
 indices directly. It does not take the named-context `Disjoint` certificate that R3 and R5 test.
 Reindexing may be non-injective and need not preserve external names, so the exclusion in R15 no
 longer applies. Owner and origin metadata is absent, so R14's owner inequality has no
 bundle-level object. R7 keeps query and data sharing and does not claim equality of a removed
-`name` field. R13's concrete inequality is the same `false ≠ true` on the two ported family
+`name` field. R13's concrete inequality is the same `false ≠ true` on the two ported bundle
 indices.
 
 The sparse property-symbol languages in R1/R2, and promised-symbol membership in R25, are removed.
@@ -227,10 +227,10 @@ Neither P1 nor P2 excludes any part of these contracts.
 “Its input query index and oracle-node query type must remain in `Type`.” This applies to
 `OracleVerifier.runWithLog`, whose returned full log records bundle queries. It does not
 restrict R26/R27, which use general `OracleBundle` as inputs to `OracleVerifier.run`.
-`OracleBundle.ofFamily` keeps the shared `OracleInterface` specialization, whose response types
-lie in the universe of the data. That specialization no longer restricts general verifier inputs.
-The shared interface is unchanged. The source sum, tensor, lifting and raw-routing canaries also
-keep all their old-layer universe instantiations.
+`OracleBundle.of` and `OracleBundle.ofIndexed` keep the shared `OracleInterface` specialization,
+whose response types lie in the universe of the data. That specialization no longer restricts
+general verifier inputs. The shared interface is unchanged. The source sum, tensor, lifting and
+raw-routing canaries also keep all their old-layer universe instantiations.
 
 ## Cost universes
 

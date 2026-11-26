@@ -48,7 +48,7 @@ example : WorstCaseCostBound
         OracleComp (OracleSpec.emptySpec + exported.spec) Nat) exportCost 2 :=
     worstCaseCostBound_query (.inr ⟨⟨⟩, ()⟩) exportCost
   exact OracleMap.withAmbient_worstCaseCost
-    (In := prefixBundle) (Out := OracleBundle.ofFamily exported)
+    (In := prefixBundle) (Out := exported)
     (ambient := OracleSpec.emptySpec) (sourceCost := exportCost) (targetCost := unitCost _)
     exportMap hquery (fun q => q.elim) exportMap_cost
 
@@ -75,7 +75,7 @@ theorem prog_cost : WorstCaseCostBound prog srcCost (3 + 2) := by
 -- The ambient hypothesis of `OracleMap.withAmbient_worstCaseCost` with a nonempty ambient
 -- interface: the ambient query costs one unit after routing instead of three.
 example : WorstCaseCostBound (simulateQ (exportMap.withAmbient amb) prog) tgtCost (3 + 2) :=
-  OracleMap.withAmbient_worstCaseCost (In := prefixBundle) (Out := OracleBundle.ofFamily exported)
+  OracleMap.withAmbient_worstCaseCost (In := prefixBundle) (Out := exported)
     exportMap prog_cost (fun _ => (by decide : (1 : Nat) ≤ 3)) exportMap_cost
 
 -- `WorstCaseCostBound` bounds completed paths only. A query with an empty response type ends no

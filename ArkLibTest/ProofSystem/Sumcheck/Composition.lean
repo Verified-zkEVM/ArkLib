@@ -28,13 +28,11 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 
 section UnequalUniverses
 
-variable (clientAmbient : OracleSpec Unit) {I : Type} {A : I → Type}
-  (inputs : OracleFamily I A)
-  {J : Type} {B : J → Type} (outputs : OracleFamily J B)
+variable (clientAmbient : OracleSpec Unit) (inputs : OracleBundle) (outputs : OracleBundle)
   (check : ℕ → (Spec.SingleRound.pSpec ℕ 1).Challenges →
     OptionT (OracleComp [(Spec.SingleRound.pSpec ℕ 1).Message]ₒ) ℕ)
   (out : ℕ → (p : Path (round ℕ 1)) → View (round ℕ 1) p →
-    OracleMap (pathBundle inputs (round ℕ 1) p) (OracleBundle.ofFamily outputs))
+    OracleMap (pathBundle inputs (round ℕ 1) p) outputs)
 
 /-- Input bundle queries in `Type` pass through the round verifier. -/
 def largeQueryVerifier :
@@ -61,7 +59,7 @@ theorem projection_bilinear :
 
 /-- A projected query at `x` is answered from `bilinear` with `5 + 8 x`. -/
 theorem projection_answer (x : K) :
-    simulateQ ((Spec.polynomialFamily K 2 1).behaviorOfRealizations fun _ => bilinear)
+    simulateQ ((Spec.polynomialFamily K 2 1).answer fun _ => bilinear)
       ((projectionMap K 1 2 D₂ 0 ⟨1, Fin.elim0⟩).impl ⟨(), x⟩) = 5 + 8 * x :=
   (simulateQ_projectionMap 0 ⟨1, Fin.elim0⟩ (fun _ => bilinear) x).trans (projected_eval x)
 

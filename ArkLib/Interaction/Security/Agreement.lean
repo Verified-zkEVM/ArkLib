@@ -259,11 +259,11 @@ def cast (e : s' = s)
     OracleVerifier ambient s S T inputs outputs :=
   _root_.cast (by subst e; rfl) V
 
-/-- With constant output families, verifier transport is ordinary equality substitution.
+/-- With constant output statements and bundles, verifier transport is ordinary equality
+substitution.
 The constant specialization is needed because ordinary substitution keeps the output carriers
 fixed while changing the tree. -/
-theorem cast_const {T : Type} {J : Type} {B : J → Type}
-    {outputs : OracleFamily J B} (e : s' = s)
+theorem cast_const {T : Type} {outputs : OracleBundle} (e : s' = s)
     (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ => outputs)) :
     V.cast (T := fun _ => T) (outputs := fun _ => outputs) e = e ▸ V := by
   subst e; rfl
