@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.Commitments.Functional.KZG.Correctness
 import ArkLib.Commitments.Functional.KZG.Security
+import ArkLib.Commitments.Functional.KZG.AGM.Security
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -155,5 +156,25 @@ example {Adv : Set (ARSDH.Adversary F F F 1)} {ε : ENNReal}
     (A : FunctionBindingAdversary F F F 1) (hA : functionBindingAdversary pts₁ A ∈ Adv) :
     Pr{let b ← functionBindingExperiment e 1 1 A}[b = true] ≤ ε :=
   functionBinding_le_of_arsdh e_one_one one_smul_surjective pts₁ hε A hA
+
+end KZGTest
+
+namespace KZGTest
+
+/-- Exhaustive roots for the small executable regression example. -/
+private def enumeratingRoots (p : CompPoly.CPolynomial F) : List F :=
+  ((List.range 7).map fun i => (i : F)).filter fun x => p.eval x == 0
+
+/-- For degree zero, `cm = 0` and `π = 1` have explanations `[0]` and `[1]`.
+The accepted claim `f(0) = -τ` disagrees with the extracted constant polynomial. -/
+private def constantForgery : AGM.Output F F F (List (F × F)) :=
+  ⟨⟨[(0, -τ)], AGM.groupInputs [0, 1] []⟩,
+    fun | false => [[0], [1]] | true => []⟩
+
+-- Recovery uses the verifier key, even though the committer key has no trapdoor entry.
+/-- info: (true, 3) -/
+#guard_msgs in
+#eval (AGM.extractWins (n := 0) e 1 vk id constantForgery,
+  AGM.recover (n := 0) 1 vk enumeratingRoots id constantForgery)
 
 end KZGTest

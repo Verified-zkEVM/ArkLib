@@ -5,12 +5,18 @@
 
 ArkLib formalizes the KZG polynomial commitment scheme~\cite{KZG10} in additive notation over a
 finite field $\mathbb{F}$. Fix $\mathbb{F}$-modules $G_1,G_2,G_T$ with elements $g_1\in G_1$ and
-$g_2\in G_2$, and an $\mathbb{F}$-bilinear pairing $e:G_1\times G_2\to G_T$. The security
-statements assume $e(g_1,g_2)\neq 0$ and that $a\mapsto a\cdot g_1$ is surjective. Fix a maximal
+$g_2\in G_2$, and an $\mathbb{F}$-bilinear pairing $e:G_1\times G_2\to G_T$. The SDH-based security
+statements below assume $e(g_1,g_2)\neq 0$ and that $a\mapsto a\cdot g_1$ is surjective. Fix a maximal
 degree $n$. The committed data is a coefficient vector $(a_0,\ldots,a_n)\in\mathbb{F}^{n+1}$,
 that is, a polynomial $f$ of degree at most $n$; a query is a point $q\in\mathbb{F}$ and its
 response is $f(q)$. Only $\mathbb{F}=\mathbb{Z}_r$ for the prime order $r$ of the groups is
 realizable in practice.
+
+In the algebraic group model, ArkLib also proves extractability, evaluation binding, and function
+binding by computable reductions to $(n,1)$-PairingDLog with additive error $1/|\mathbb{F}|$,
+assuming only $e(g_1,g_2)\neq 0$ and a complete polynomial root finder.
+These bounds include $n=0$, and CompPoly's executable finite-field root finder satisfies the
+completeness contract under its splitter-validity hypothesis.
 
 \begin{definition}[KZG commitment scheme]\label{def:kzg}
 \lean{KZG.committerKey, KZG.verifierKey, KZG.keygen, KZG.commit, KZG.generateOpening,
