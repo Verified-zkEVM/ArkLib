@@ -158,7 +158,9 @@ Each step also updates the tests and client annotations that name the declaratio
    polynomial, an `AdversaryModel` with `Adv : Type 1`), drop the remaining pins, and update the
    port tables and disposition records that describe universes.
 7. CI: a linter that checks the rule on `Interaction/` and `Relation/`, allowing only the
-   adversary universe and the generic files.
+   adversary universe and the generic files. The checker is `scripts/UniverseRule.lean`
+   (`lake exe universe-rule`), and its allowlist `scripts/universe_rule_allowlist.txt` records
+   the adversary universe and the violations that the earlier steps have yet to remove.
 
 ## Open points
 
