@@ -14,9 +14,9 @@ This file states KZG evaluation binding and function binding as games, and bound
 VCVio's `TSDH.experiment` or `ARSDH.experiment` run on an explicit reduction.
 
 Both games sample the trapdoor `τ` with `SDH.sampleTrapdoor F`, as the VCVio experiments do, and
-give the adversary `committerKey g₁ τ n` and `verifierKey g₂ τ`. These are by definition the
-reference strings `(fun i => τ ^ (i : ℕ) • g₁)` and `![g₂, τ • g₂]` that the VCVio experiments
-build inline (`committerKey_eq` and `verifierKey_eq`).
+give the adversary `committerKey g₁ τ n` and `verifierKey g₂ τ`. Together these are VCVio's
+reference string `SDH.srs g₁ g₂ τ n`, which the experiments give their adversaries
+(`KZG.srs_eq`, by definition).
 
 * In the evaluation-binding game the adversary returns a commitment `cm`, a point `q` and two
   openings `(r₁, π₁)` and `(r₂, π₂)`. It wins when both openings are accepted and `r₁ ≠ r₂`.
@@ -59,15 +59,10 @@ variable {G₁ G₂ Gₜ : Type} [AddCommGroup G₁] [Module F G₁] [AddCommGro
   [AddCommGroup Gₜ] [Module F Gₜ]
 variable {n : ℕ}
 
-/-- The committer key is the first-source reference string of `TSDH.experiment` and
-`ARSDH.experiment`. -/
-theorem committerKey_eq (g₁ : G₁) (τ : F) (n : ℕ) :
-    committerKey g₁ τ n = fun i : Fin (n + 1) => τ ^ (i : ℕ) • g₁ :=
-  rfl
-
-/-- The verifier key is the second-source reference string of `TSDH.experiment` and
-`ARSDH.experiment`. -/
-theorem verifierKey_eq (g₂ : G₂) (τ : F) : verifierKey g₂ τ = ![g₂, τ • g₂] :=
+/-- The committer and verifier keys are VCVio's reference string `SDH.srs`, which
+`TSDH.experiment` and `ARSDH.experiment` give their adversaries. -/
+theorem srs_eq (g₁ : G₁) (g₂ : G₂) (τ : F) (n : ℕ) :
+    SDH.srs g₁ g₂ τ n = (committerKey g₁ τ n, verifierKey g₂ τ) :=
   rfl
 
 section EvaluationBinding

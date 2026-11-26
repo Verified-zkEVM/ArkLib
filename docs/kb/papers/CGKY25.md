@@ -20,6 +20,8 @@ the ARSDH-style extraction argument for functional commitments.
 
 ## What ArkLib Uses From This Paper
 
+- Function binding (Definition 3.17), which `KZG.functionBindingExperiment` states for KZG: every
+  opening is accepted and no message fits all of them.
 - The ARSDH assumption (Definition 9.6), which VCVio states as `ARSDH.experiment`.
 - The reduction from KZG function binding to ARSDH. ArkLib's version,
   `KZG.FunctionBinding.functionBindingReduction`, treats three cases: two conflicting openings,
