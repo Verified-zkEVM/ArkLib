@@ -20,6 +20,13 @@ completeness contract under its splitter-validity hypothesis.
 The randomized bounds also instantiate CompPoly's Las Vegas splitter with sampled probe tables;
 enumeration fallback gives unconditional completeness, with no running-time claim.
 
+In the Type~3 generic group model, both existing binding games have advantage at most
+$((n+1)(q+2n+3)(q+2n+4)+2)/|\mathbb{F}|$, assuming only $e(g_1,g_2)\neq 0$, with no
+generator-surjectivity assumption. Root finding is scalar work, so the proof can use field
+enumeration without changing the operation count.
+The FKL translation followed by recovery from the first inconsistent claim uses at most
+$q+n+1$ group operations, independently of the number of openings.
+
 \begin{definition}[KZG commitment scheme]\label{def:kzg}
 \lean{KZG.committerKey, KZG.verifierKey, KZG.keygen, KZG.commit, KZG.generateOpening,
 KZG.verifyOpening}
