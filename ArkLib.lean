@@ -829,7 +829,6 @@ public import ArkLib.Interaction.Legacy.Security
 public import ArkLib.Interaction.Legacy.Verifier
 public import ArkLib.Interaction.LegacyAppend
 public import ArkLib.Interaction.LiftContext
-public import ArkLib.Interaction.Oracle.BundleOps
 public import ArkLib.Interaction.Oracle.Cost
 public import ArkLib.Interaction.Oracle.LiftContext
 public import ArkLib.Interaction.Oracle.LoggedExecution
@@ -1206,6 +1205,7 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 public import ArkLib.Relation.Basic
+public import ArkLib.Relation.OracleBundle
 public import ArkLib.Relation.OracleInterface
 public import ArkLib.Relation.Prelude
 public import ArkLib.ToCompPoly.Multilinear.Basic

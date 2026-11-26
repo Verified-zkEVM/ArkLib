@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Oracle.BundleOps
+import ArkLib.Interaction.OracleVerifier
+import ArkLib.Relation.OracleBundle
 
 /-!
 # Oracle families and oracle maps: dependent answers, routing and hidden data
@@ -210,7 +211,7 @@ example (S : OracleBundle) (T : OracleBundle) :
 
 /-- Disjoint queries keep their original index carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :
-    OracleSpec.{0, 0} (S.Index ⊕ T.Index) := (S.sum T).spec
+    OracleSpec.{0, 0} (S.Query ⊕ T.Query) := (S.sum T).spec
 
 /-- Disjoint data remains a pair of the original carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :
@@ -227,7 +228,7 @@ example (S : OracleBundle) (T : OracleBundle) :
 
 /-- Tensor queries use the exact product of the two original query carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :
-    OracleSpec.{0, 0} (S.Index × T.Index) := (S.tensor T).spec
+    OracleSpec.{0, 0} (S.Query × T.Query) := (S.tensor T).spec
 
 /-- Tensor backing data remains the exact product of the two original data carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :

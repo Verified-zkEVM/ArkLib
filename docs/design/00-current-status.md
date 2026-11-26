@@ -127,7 +127,7 @@ core counterpart or records why it was retired.
 | Sequential composition | `Composition` | #1473 |
 | Finite heterogeneous stage chains | `StageChain` | #1477 |
 | Logged execution, queries by move, routing and sent oracle messages | `Oracle/LoggedExecution`, `Oracle/QueriesByMove`, `Oracle/QueriesByMoveLaws`, `Oracle/Routing`, `Oracle/SentOracles` | #1475, #1567 |
-| Oracle bundle operations and weighted cost of routed programs | `Oracle/BundleOps`, `Oracle/Cost` | #1476 |
+| Weighted cost of routed programs | `Oracle/Cost` | #1476 |
 | Completeness, soundness, round-by-round security and extraction interfaces | `Security/Completeness`, `Security/Soundness`, `Security/RoundByRound`, `Security/Knowledge` | #1473 |
 | Composition soundness | `Security/CompositionSoundness` | #1485 |
 | Round-by-round soundness implies soundness | `Security/Implications` | #1486 |
@@ -136,6 +136,10 @@ core counterpart or records why it was retired.
 | Agreeing oracle verifiers | `Security/Agreement` | #1484 |
 | Embedding of legacy reductions and security transfers | `Legacy/*`, `LegacyAppend`; see [legacy-embedding.md](interaction-layer/legacy-embedding.md) | #1480, #1481 |
 | Context lifting along lenses, run laws and security transfers | `LiftContext`, `Oracle/LiftContext`, `Legacy/LiftContext`; see [lift-context.md](interaction-layer/lift-context.md) | this branch |
+
+Oracle bundles, their constructors and the oracle maps between them are in
+[`ArkLib/Relation/OracleBundle.lean`](../../ArkLib/Relation/OracleBundle.lean), beside
+`OracleInterface`, because they depend on no protocol tree.
 
 Sumcheck on the interaction layer is the Sumcheck core. The frozen Sumcheck interaction layer under
 `ArkLib/ProofSystem/Sumcheck/Interaction/` has been deleted; its last version is at commit
