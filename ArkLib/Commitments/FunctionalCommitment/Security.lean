@@ -44,7 +44,8 @@ fixed-claim binding game runs all opening interactions before it runs the decisi
   `FixedClaimBinding L Adv ε` bounds the advantage of each adversary in `Adv` by `ε`.
 
 For one-message openings, which have no challenges, fixed-claim binding is [CGKY25] Definition
-3.17. For interactive openings it is weaker than the joint game planned for a later PR.
+3.17. In `ArkLib.Commitments.FunctionalCommitment.JointBinding`, the joint adversary can also
+choose later claims after seeing earlier challenges.
 
 The planned extraction game uses the query interface. The extractor outputs data `d` at
 commitment time, and the adversary wins if the verifier accepts an opening of `(q, r)` with
@@ -217,7 +218,8 @@ abbrev FixedClaimAdversary (L : ℕ) :=
 /-- The adversary fixes all claims and provers before any opening runs. The game returns
 `true` if the verifier accepts every opening and no data agrees with all claims.
 For one-message openings, which have no challenges, this is [CGKY25] Definition 3.17.
-For interactive openings it is weaker than the joint game planned for a later PR. -/
+The joint adversary in `ArkLib.Commitments.FunctionalCommitment.JointBinding` can also choose
+later claims after seeing earlier challenges. -/
 noncomputable def fixedClaimBindingGame (chal : FC.ChallengeSampler) (L : ℕ)
     (A : FC.FixedClaimAdversary L) : OracleComp (unifSpec + ambient) Bool := do
   let pp ← FC.setup
@@ -243,8 +245,9 @@ noncomputable def fixedClaimBindingAdvantage {σ : Type} (init : ProbComp σ)
 
 /-- Every adversary in `Adv` has fixed-claim binding advantage at most `ε`.
 The adversary fixes all claims and provers before any opening runs. For one-message openings,
-which have no challenges, the game is [CGKY25] Definition 3.17. For interactive openings it is
-weaker than the joint game planned for a later PR. -/
+which have no challenges, the game is [CGKY25] Definition 3.17.
+`ArkLib.Commitments.FunctionalCommitment.JointBinding` defines function binding for joint
+adversaries that can use earlier challenges when choosing later claims. -/
 def FixedClaimBinding {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (chal : FC.ChallengeSampler) (L : ℕ) (Adv : Set (FC.FixedClaimAdversary L))
     (ε : ℝ≥0∞) : Prop :=
