@@ -24,7 +24,7 @@ Its value at `x ∈ L` is the value of `P` at the grid point `ψ(x)`.
 Polynomials of degree below `q₀` in each variable are determined by their substitutions.
 
 Polynomials over a field `F` that need not contain `L` are first mapped into `F'`.
-Those of total degree below `q₀` are still determined by their substitutions.
+Those of degree below `q₀` in each variable are still determined by their substitutions.
 
 This is the reduction to univariate polynomials in Appendix A of [CWYZ26], following [PW04].
 The paper takes the trace with respect to an arbitrary basis `γ`; here the basis `b` is that `γ`.
@@ -47,7 +47,8 @@ The [paper page](../../../../docs/kb/papers/CWYZ26.md) records the correspondenc
 * `ReedMuller.eval_traceSubstitution`: `P̃(x) = P(ψ(x))` for `x ∈ L`.
 * `ReedMuller.injOn_traceSubstitution`: injectivity for degrees below `q₀` in each variable.
 * `ReedMuller.injOn_traceSubstitution_totalDegree_lt`: injectivity for total degree below `q₀`.
-* `ReedMuller.injOn_traceSubstitution_map`: the same for polynomials over a subfield of `F'`.
+* `ReedMuller.injOn_traceSubstitution_map`, `ReedMuller.injOn_traceSubstitution_map_totalDegree_lt`:
+  the same two statements for polynomials over a subfield of `F'`.
 
 ## References
 
@@ -141,17 +142,32 @@ theorem injOn_traceSubstitution_totalDegree_lt (b : Module.Basis (Fin k) K₀ L)
 
 /-- Let `b` be a basis of `L` over `K₀`, where `q₀ = |K₀|`, and let `F` be a field inside `F'`.
 Map polynomials over `F` into `F'`, then substitute.
-This is injective on polynomials of total degree below `q₀`. -/
+This is injective on polynomials of degree below `q₀` in each variable. -/
 theorem injOn_traceSubstitution_map {F : Type*} [Field F] [Algebra F F']
     (b : Module.Basis (Fin k) K₀ L) :
     Set.InjOn (fun P : MvPolynomial (Fin k) F ↦ traceSubstitution b (P.map (algebraMap F F')))
-      {P | P.totalDegree < Fintype.card K₀} := by
-  have hdeg (P : MvPolynomial (Fin k) F) :
-      (P.map (algebraMap F F')).totalDegree ≤ P.totalDegree :=
-    Finset.sup_mono (MvPolynomial.support_map_subset (algebraMap F F') P)
+      (MvPolynomial.restrictDegree (Fin k) F (Fintype.card K₀ - 1)) := by
+  have hmap (P : MvPolynomial (Fin k) F)
+      (hP : P ∈ MvPolynomial.restrictDegree (Fin k) F (Fintype.card K₀ - 1)) :
+      P.map (algebraMap F F') ∈ MvPolynomial.restrictDegree (Fin k) F' (Fintype.card K₀ - 1) :=
+    (MvPolynomial.mem_restrictDegree _ _ _).mpr fun s hs ↦
+      (MvPolynomial.mem_restrictDegree _ _ _).mp hP s
+        (MvPolynomial.support_map_subset (algebraMap F F') P hs)
   intro P₁ h₁ P₂ h₂ h
   exact MvPolynomial.map_injective _ (algebraMap F F').injective
-    (injOn_traceSubstitution_totalDegree_lt b ((hdeg P₁).trans_lt h₁)
-      ((hdeg P₂).trans_lt h₂) h)
+    (injOn_traceSubstitution b (hmap P₁ h₁) (hmap P₂ h₂) h)
+
+/-- Let `b` be a basis of `L` over `K₀`, where `q₀ = |K₀|`, and let `F` be a field inside `F'`.
+Map polynomials over `F` into `F'`, then substitute.
+This is injective on polynomials of total degree below `q₀`. -/
+theorem injOn_traceSubstitution_map_totalDegree_lt {F : Type*} [Field F] [Algebra F F']
+    (b : Module.Basis (Fin k) K₀ L) :
+    Set.InjOn (fun P : MvPolynomial (Fin k) F ↦ traceSubstitution b (P.map (algebraMap F F')))
+      {P | P.totalDegree < Fintype.card K₀} := by
+  have hmem (P : MvPolynomial (Fin k) F) (hP : P.totalDegree < Fintype.card K₀) :
+      P ∈ MvPolynomial.restrictDegree (Fin k) F (Fintype.card K₀ - 1) :=
+    MvPolynomial.restrictTotalDegree_le_restrictDegree (Fin k) F (Fintype.card K₀ - 1)
+      ((MvPolynomial.mem_restrictTotalDegree _ _ _).mpr (by omega))
+  exact fun P₁ h₁ P₂ h₂ h ↦ injOn_traceSubstitution_map b (hmem P₁ h₁) (hmem P₂ h₂) h
 
 end ReedMuller
