@@ -490,7 +490,7 @@ namespace OracleVerifier
 
 /-- Every entry in the queries by move of a run has a partial transcript that is below the whole
 transcript of the run. -/
-theorem runWithQueriesByMove_before_le {ι : Type} {S : Type u} {ambient : OracleSpec ι}
+theorem runWithQueriesByMove_before_le {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, dI}}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
@@ -513,7 +513,7 @@ theorem runWithQueriesByMove_before_le {ι : Type} {S : Type u} {ambient : Oracl
   · exact ⟨PartialTranscript.Le.refl _⟩
 
 /-- An oracle message sent before an entry of the run is still sent at the decision. -/
-theorem isSent_at_decision {ι : Type} {S : Type u} {ambient : OracleSpec ι}
+theorem isSent_at_decision {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, dI}}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
@@ -528,8 +528,8 @@ theorem isSent_at_decision {ι : Type} {S : Type u} {ambient : OracleSpec ι}
 
 /-- The ambient queries by move also give every entry a partial transcript that is below the whole
 transcript, for arbitrary bundle-query universes. -/
-theorem runWithAmbientQueriesByMove_before_le {ι : Type} {S : Type u} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, q}} {T : Path s → Type} {J : Path s → Type}
+theorem runWithAmbientQueriesByMove_before_le {ι : Type} {S : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
     {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, uI, dI}}
     {outputs : (p : Path s) → OracleFamily (J p) (B p)}
     {Out : Transcript oracleSig s → Type}

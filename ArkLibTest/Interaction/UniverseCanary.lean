@@ -7,25 +7,20 @@ Authors: Quang Dao
 import ArkLib.Interaction.Composition
 
 /-!
-# Components that are not run outputs live in their own universes
+# Oracle bundles, families and queries in their own universes
 
-Ambient oracle indices, input oracle indices, output oracle indices, input and output oracle
-query types, input statements and input witnesses each take their own universe. The instances
-below put an oracle index in `Type 1` with responses in `Type 0`, input oracle queries in
-`Type 1`, output oracle queries in `Type 2`, an input statement in `Type 2` and an input witness
-in `Type 1`, while the initial examples keep moves, run outputs and oracle responses in `Type 0`.
-They typecheck against `Verifier`, `OracleVerifier`, `Reduction`, both appends, the oracle routing
-laws and oracle runs. A run returns the output oracle data `∀ j, B p j`. The run's output index is
-in `Type 0`. The security definitions take their data in `Type`, so this file does not instantiate
-them.
+Statements, witnesses, ambient oracle indices, output oracle indices, moves and run outputs lie
+in `Type`. Input oracle indices, input and output oracle query types and the query types of
+oracle nodes keep their own universes until the later migration steps of record D2. The instances
+below put an input oracle index in `Type 1`, input oracle queries in `Type 1` and output oracle
+queries in `Type 2`, with data and responses in `Type 0`. They typecheck against
+`OracleVerifier`, the oracle append, the oracle routing laws and oracle runs. A run returns the
+output oracle data `∀ j, B p j`. The security definitions take their data in `Type`, so this file
+does not instantiate them.
 -/
-
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp
 
 namespace Interaction.UniverseCanaryTests
-
-/-- Ambient oracles indexed by types, answering in `Bool`: the index lies in `Type 1`. -/
-abbrev bigAmbient : OracleSpec.{1, 0} Type := Type →ₒ Bool
 
 /-- An ambient oracle with an index in `Type 0`, which a prover can query. -/
 abbrev smallAmbient : OracleSpec.{0, 0} Unit := Unit →ₒ Bool
@@ -47,72 +42,6 @@ abbrev done : Protocol := .pure ⟨⟩
 /-- The oracle protocol with no rounds. -/
 abbrev oracleDone : OracleProtocol.{0, 0} := .pure ⟨⟩
 
-/-! ### Plain verifiers and reductions -/
-
-/-- A plain verifier with an ambient index in `Type 1` and an input statement in `Type 2`. -/
-def plainVerifier : Verifier bigAmbient done (Type 1) (fun _ => Bool) where
-  decide _ _ _ := liftM (bigAmbient.query Nat)
-
-/-- A suffix whose input statement is the prefix's `Bool` output. -/
-def plainSuffix : Verifier bigAmbient done Bool (fun _ => Bool) where
-  decide b _ _ := pure (!b)
-
-/-- Plain append with the large ambient index and input statement. -/
-def plainAppend : Verifier bigAmbient (done.append (fun _ => done)) (Type 1) (fun _ => Bool) :=
-  plainVerifier.append (fun _ => plainSuffix)
-
-/-- A reduction with an input statement in `Type 2` and an input witness in `Type 1`. The ambient
-index stays in `Type 0`, because the prover runs in `OracleComp smallAmbient`. -/
-def reduction : Reduction smallAmbient done (Type 1) Type (fun _ => Unit) (fun _ => PUnit) where
-  prover _ _ := pure ⟨⟩
-  verifier := { decide := fun _ _ _ => pure () }
-
-/-! ### Oracle verifiers -/
-
-/-- An oracle verifier whose ambient, input and output indices lie in `Type 1` and whose input
-statement lies in `Type 2`. It queries the input oracle at index `Nat`. -/
-def oracleVerifier : OracleVerifier bigAmbient oracleDone (Type 1) (fun _ => Nat) bigInputs
-    (fun _ => bigInputs) where
-  decide _ p _ := by
-    cases p
-    exact liftM ((bigAmbient + (pathBundle bigInputs oracleDone ⟨⟩).spec).query
-      (.inr (.inl ⟨Nat, ()⟩)))
-  outputMap _ _ _ := OracleMap.fst _ _
-
-/-- A suffix whose middle oracle family is indexed by types. -/
-def oracleSuffix : OracleVerifier bigAmbient oracleDone Nat (fun _ => Nat) bigInputs
-    (fun _ => bigInputs) where
-  decide n _ _ := pure (n + 1)
-  outputMap _ _ _ := OracleMap.fst _ _
-
-/-- The composite output map ignores the intermediate statement, so any certificate holds. -/
-def oracleCompatible :
-    OracleVerifier.OutputCompatibility oracleVerifier (fun _ => oracleSuffix) where
-  outputMap stmt p v :=
-    (oracleSuffix.outputMap 0 (Path.split oracleDone (fun _ => oracleDone) p).2
-      (View.split oracleDone (fun _ => oracleDone) p v).2).comp
-      (OracleVerifier.suffixRoute oracleVerifier stmt p v)
-  agrees _ _ _ _ _ _ := rfl
-
-/-- Oracle append with large ambient, input, middle and output indices. -/
-def oracleAppend := oracleVerifier.append (fun _ => oracleSuffix) oracleCompatible
-
-/-- The oracle routing law at large indices. -/
-theorem oracleAppend_decideWith (stmt : Type 1)
-    (p : Path (oracleDone.append (fun _ => oracleDone)))
-    (v : View (oracleDone.append (fun _ => oracleDone)) p)
-    (data : (pathBundle bigInputs (oracleDone.append (fun _ => oracleDone)) p).Data) :
-    oracleAppend.decideWith stmt p v data =
-      oracleVerifier.decideWith stmt (Path.split oracleDone (fun _ => oracleDone) p).1
-          (View.split oracleDone (fun _ => oracleDone) p v).1
-          ((OracleVerifier.prefixRoute (inputs := bigInputs) p).f data) >>= fun
-        | none => pure none
-        | some mid => oracleSuffix.decideWith mid
-            (Path.split oracleDone (fun _ => oracleDone) p).2
-            (View.split oracleDone (fun _ => oracleDone) p v).2
-            ((OracleVerifier.suffixRoute oracleVerifier stmt p v).f data) :=
-  OracleVerifier.append_decideWith _ _ _ _ _ _ _
-
 /-- Routing through an oracle map with a large input index agrees with materialized data. -/
 theorem embedding_simulate_eq (x : Type → Nat) {α : Type}
     (program : OracleComp (bigInputs.reindex (fun X : Type => X)).spec α) :
@@ -128,9 +57,9 @@ theorem embedding_simulate_eq (x : Type → Nat) {α : Type}
 @[instance_reducible]
 def smallOutputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
-/-- An oracle verifier that a prover can run against. Its ambient index and output index are in
-`Type 0`, while its input oracle index and input statement stay in `Type 1` and `Type 2`. -/
-def runnable : OracleVerifier smallAmbient oracleDone (Type 1) (fun _ => Nat) bigInputs
+/-- An oracle verifier that a prover can run against. Its ambient index, output index and
+statement are in `Type 0`, while its input oracle index stays in `Type 1`. -/
+def runnable : OracleVerifier smallAmbient oracleDone Unit (fun _ => Nat) bigInputs
     (fun _ => smallOutputs) where
   decide _ p _ := by
     cases p
@@ -148,7 +77,7 @@ def handler : QueryImpl (smallAmbient + challengeSpec oracleSig oracleDone) Id
 def idle : Prover oracleSig smallAmbient oracleDone (fun _ => PUnit) := pure ⟨⟩
 
 /-- The run on input data that is `3` at every type. -/
-def observation := simulateQ handler (runnable.run (Type 0) (fun _ => 3) idle)
+def observation := simulateQ handler (runnable.run () (fun _ => 3) idle)
 
 /-- The run answers the input query at index `Bool` from the data, and the output oracle at `()`
 is the input oracle at `Bool`. -/
@@ -263,29 +192,5 @@ example : (match returningTree with | .pure n => n | .liftBind _ _ => 0) = 23 :=
 /-- A small payload with queries in `Type 1` is attached to an actual oracle node. -/
 def typeQueryProtocol : OracleProtocol.{0, 1} :=
   .liftBind (.oracle Nat typeQueries) (fun _ => .pure ⟨⟩)
-
-/-- Query the payload through its interface and return its answer. -/
-def nodeQueryVerifier : OracleVerifier smallAmbient typeQueryProtocol Unit (fun _ => Nat)
-    typeQueryInputs (fun _ => smallOutputs) where
-  decide _ p _ := pathLift smallAmbient typeQueryInputs (s := typeQueryProtocol) p ⟨.inl ⟨⟩, Bool⟩
-  outputMap _ p _ :=
-    { f := fun x _ => x.1 ()
-      impl := fun _ =>
-        (OracleMap.fst typeQueryInputs (oracleMessageFamily typeQueryProtocol p)).impl ⟨(), Bool⟩
-      law := fun _ _ => rfl }
-
-/-- The prover sends a natural-number oracle payload and terminates. -/
-def nodeProver : Prover oracleSig smallAmbient typeQueryProtocol (fun _ => PUnit) :=
-  pure ⟨(17 : Nat), pure ⟨⟩⟩
-
-/-- No challenges occur; the ambient oracle is unused by this run. -/
-def nodeHandler : QueryImpl (smallAmbient + challengeSpec oracleSig typeQueryProtocol) Id
-  | .inl _ => true
-  | .inr ⟨.inl _, h⟩ => nomatch h
-  | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim
-
-/-- The decision reads the sent payload, independently of the input bundle's data. -/
-example : (simulateQ nodeHandler (nodeQueryVerifier.run () (fun _ => 5) nodeProver)).2.2.map
-    Prod.fst = some 17 := rfl
 
 end Interaction.UniverseCanaryTests

@@ -22,7 +22,7 @@ the projection laws combine `runWithQueriesByMove_toLog` with `runWithLog_eq`.
 
 @[expose] public section
 
-universe u uS dI wJ
+universe u dI wJ
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -31,7 +31,7 @@ namespace OracleVerifier
 
 section Execution
 
-variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
   {inputs : OracleBundle.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}

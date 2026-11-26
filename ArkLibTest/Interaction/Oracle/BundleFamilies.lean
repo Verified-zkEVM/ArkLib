@@ -294,49 +294,54 @@ example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
   ⟨rfl, rfl⟩
 
 /-- No output oracles are needed to test the verifier's input-bundle boundary. -/
-def noOutputs : OracleFamily.{e, e, e} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
+def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
 
-/-- A verifier consumes an R27-shaped view, with independent realization `a` and response `e`.
-Its decision reads the selected query from the whole context's unencoded data. -/
-def viewVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+/-- A verifier consumes an R27-shaped view, with realizations in the independent universe `a`.
+Verifier responses lie in `Type`. Its decision reads the selected query from the whole
+context's unencoded data. -/
+def viewVerifier {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index)
     (x : Visible) (query : Query (name (select x))) :
-    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
-      PUnit.{e + 1} (fun _ => Response (name (select x)) query)
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+      PUnit (fun _ => Response (name (select x)) query)
       (viewBundle answer name select) (fun _ => noOutputs) where
   decide _ p _ := liftM
-    (((PEmpty.{e + 1} →ₒ PUnit.{e + 1}) +
+    (((PEmpty →ₒ PUnit) +
       (pathBundle (viewBundle answer name select)
-        (.pure ⟨⟩ : OracleProtocol.{e, q}) p).spec).query (.inr (.inl ⟨x, query⟩)))
+        (.pure ⟨⟩ : OracleProtocol.{0, 0}) p).spec).query (.inr (.inl ⟨x, query⟩)))
   outputMap _ _ _ :=
     { f := fun _ x => x.elim
       impl := fun query => query.1.elim
       law := fun _ query => query.1.elim }
 
 /-- The R26 verifier is the identity-view specialization of the R27 verifier. -/
-abbrev namedVerifier (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+abbrev namedVerifier {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x)) :
-    OracleVerifier (PEmpty.{e + 1} →ₒ PUnit.{e + 1}) (.pure ⟨⟩ : OracleProtocol.{e, q})
-      PUnit.{e + 1} (fun _ => Response (name x) query) (namedBundle answer name)
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+      PUnit (fun _ => Response (name x) query) (namedBundle answer name)
       (fun _ => noOutputs) :=
   viewVerifier answer name id x query
 
 /-- The run also accepts the unencoded realization family at the independent universe `a`. -/
-example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+example {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) (x : Index) (query : Query (name x))
     (data : (x : Index) → Realization (name x)) :=
-  (namedVerifier answer name x query).run (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩)
+  (namedVerifier answer name x query).run (Out := fun _ => PUnit) ⟨⟩ data (pure ⟨⟩)
 
 /-- Both R26 and R27 are verifier inputs with the same original realization family. The view
 changes only which queries are visible, without encoding or restricting the backing data. -/
-example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
+example {Response : (n : Name) → Query n → Type}
+    (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type s} (name : Index → Name) {Visible : Type h} (select : Visible → Index)
     (x : Visible) (query : Query (name (select x)))
     (data : (x : Index) → Realization (name x)) :=
   ((namedVerifier answer name (select x) query).run
-      (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩),
+      (Out := fun _ => PUnit) ⟨⟩ data (pure ⟨⟩),
     (viewVerifier answer name select x query).run
-      (Out := fun _ => PUnit.{e + 1}) ⟨⟩ data (pure ⟨⟩))
+      (Out := fun _ => PUnit) ⟨⟩ data (pure ⟨⟩))
 
 end IndependentRealizations
 

@@ -244,12 +244,12 @@ verifier queries at intermediate boundaries. P1 excludes those actions and their
 assignments, as the rows marked excluded by P1 say.
 
 The earlier restriction on full logs with large query universes remains recorded in implementation
-note 18. `runWithAmbientQueriesByMove` keeps the queries by move at independent input-query and
-oracle-node-query universes, with erasure to `runWithAmbientLog` and to the ordinary run.
+note 18. `runWithAmbientQueriesByMove` keeps the queries by move at an independent input-query
+universe, with erasure to `runWithAmbientLog` and to the ordinary run.
 `toAmbient_runWithQueriesByMove` equates its produced entries with the full queries by move at
-small universes. [liftedQueriesByMove] executes an actual `Nat` oracle node with queries in
-`Type 1`. Its decision reads the sent oracle message, and the test checks the partial transcript
-at the produced decision entry.
+small universes. [liftedQueriesByMove] executed an actual `Nat` oracle node with queries in
+`Type 1` until step 3 of the D2 migration, which pins the node-query universe of the verifier APIs
+at `0` and removed that test.
 
 The rows above link the access port table for their full statements, exact targets and the
 qualifications from P1. Proofs that an oracle was sent use [sentOracles]. Observations of produced

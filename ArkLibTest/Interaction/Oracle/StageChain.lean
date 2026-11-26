@@ -598,7 +598,7 @@ def narrowVerifier :
 abbrev liftedInputs : OracleFamily.{0, 0, 1} Unit (fun _ => Nat) := inputs.liftQueries.{0, 1}
 
 /-- The first stage alone: small-query inputs, larger-query outputs. -/
-def wideStages : StageChain.{0, 1} ambient Unit liftedInputs :=
+def wideStages : StageChain.{1} ambient Unit liftedInputs :=
   .cons done wideVerifier.liftInputs (fun c => c.val.elim) fun _ => .nil wideBooleans
 
 /-- The first stage's output map does not read its input statement. -/
@@ -616,7 +616,7 @@ example (p : Path wideStages.protocol) (v : View _ p)
 
 /-- Both stages: the input query lies in `Type 0`, the middle query in `Type 1`, and the output
 query, lifted inside the chain, in `Type 0`. -/
-def wideNarrow : StageChain.{0, 1} ambient Unit liftedInputs :=
+def wideNarrow : StageChain.{1} ambient Unit liftedInputs :=
   .cons done wideVerifier.liftInputs (fun c => c.val.elim) fun _ =>
     .cons done narrowVerifier.liftOutputs (fun c => c.val.elim) fun _ =>
       .nil booleans.liftQueries.{0, 1}
