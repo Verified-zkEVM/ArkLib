@@ -51,6 +51,8 @@ nonnegative rational by finite searches.
 * `ReedSolomon.equalDegreeMcaError_le_one`: the error is at most one.
 * `ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq`: an exceptional
   candidate is affine exceptional for `(g, f + θ g)`, or `θ` is bad.
+* `ReedSolomon.card_badEqualDegreeChallenges_add_card_mul_le`: the integer count of bad `θ`
+  values together with a list of lower-degree pairs.
 * `ReedSolomon.card_badEqualDegreeChallenges_mul_le`: the integer count of bad `θ` values.
 * `ReedSolomon.card_filter_isAffineExceptional_le_mul_affineMcaError`: the affine pair count.
 
@@ -194,25 +196,32 @@ noncomputable def badEqualDegreeChallenges [Fintype F] (domain : ι ↪ F) (f g 
     F₀.coeff d + θ * G₀.coeff d = 0 ∧
     L ≤ #(commonPolynomialAgreementSet domain f g F₀ G₀)}
 
-/-- The bad-challenge count satisfies `#B · (L² - nd) ≤ n · (L - d)`,
-where `B = badEqualDegreeChallenges domain f g d L` and both subtractions are in `ℕ`.
+/-- The bad challenges and a list of pairs together satisfy the Johnson count:
+`(#B + #T) · (L² - nd) ≤ n · (L - d)`, where `B = badEqualDegreeChallenges domain f g d L`.
+Both subtractions are in `ℕ`.
+
+Here `T` is any finite set of pairs with first degree at most `d`, second degree below `d`,
+and at least `L` common agreements with `(f, g)`.
 
 A bad `θ` comes with a pair `F₀, G₀` of degree at most `d`, with `deg G₀ = d`.
 The pair agrees with `(f, g)` on at least `L` points, and `[X^d] F₀ + θ [X^d] G₀ = 0`.
-The pair fixes `θ`, so distinct bad values give distinct pairs. -/
-theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
-    (d L : ℕ) :
-    #(badEqualDegreeChallenges domain f g d L) *
+The pair fixes `θ`, so distinct bad values give distinct pairs.
+These pairs are not in `T`, since their second degree is exactly `d`. -/
+theorem card_badEqualDegreeChallenges_add_card_mul_le [Fintype F] (domain : ι ↪ F)
+    (f g : ι → F) (d L : ℕ) (T : Finset (F[X] × F[X]))
+    (hT : ∀ p ∈ T, p.1.degree ≤ d ∧ p.2.degree < d ∧
+      L ≤ #(commonPolynomialAgreementSet domain f g p.1 p.2)) :
+    (#(badEqualDegreeChallenges domain f g d L) + #T) *
       (L * L - Fintype.card ι * d) ≤ Fintype.card ι * (L - d) := by
   classical
-  set T := badEqualDegreeChallenges domain f g d L
-  have hT : ∀ θ ∈ T, ∃ F₀ G₀ : F[X], F₀.degree ≤ d ∧ G₀.degree = d ∧
+  set B := badEqualDegreeChallenges domain f g d L
+  have hB : ∀ θ ∈ B, ∃ F₀ G₀ : F[X], F₀.degree ≤ d ∧ G₀.degree = d ∧
       F₀.coeff d + θ * G₀.coeff d = 0 ∧
       L ≤ #(commonPolynomialAgreementSet domain f g F₀ G₀) := fun θ hθ ↦ by
-    simpa [T, badEqualDegreeChallenges] using hθ
-  choose! F₀ G₀ hF hG hc hL using hT
+    simpa [B, badEqualDegreeChallenges] using hθ
+  choose! F₀ G₀ hF hG hc hL using hB
   -- The leading coefficient of `G₀` is nonzero, so the pair fixes `θ`.
-  have hinj : Set.InjOn (fun θ ↦ (F₀ θ, G₀ θ)) T := by
+  have hinj : Set.InjOn (fun θ ↦ (F₀ θ, G₀ θ)) B := by
     intro θ hθ θ' hθ' heq
     obtain ⟨h₁, h₂⟩ := Prod.mk.inj heq
     have hlead : (G₀ θ).coeff d ≠ 0 := by
@@ -221,13 +230,30 @@ theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f 
     have := (hc θ hθ).trans (hc θ' hθ').symm
     rw [h₁, h₂] at this
     exact mul_right_cancel₀ (h₂ ▸ hlead) (add_left_cancel this)
-  rw [← Finset.card_image_of_injOn hinj]
+  have hdisj : Disjoint (B.image fun θ ↦ (F₀ θ, G₀ θ)) T := by
+    refine Finset.disjoint_left.mpr fun p hp hpT ↦ ?_
+    obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp hp
+    exact (hT _ hpT).2.1.ne (hG θ hθ)
+  rw [← Finset.card_image_of_injOn hinj, ← Finset.card_union_of_disjoint hdisj]
   refine card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet domain f g _
     (fun p hp ↦ ?_) (fun p hp ↦ ?_)
-  · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp hp
-    exact ⟨hF θ hθ, (hG θ hθ).le⟩
-  · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp hp
-    exact hL θ hθ
+  · rcases Finset.mem_union.mp hp with h | h
+    · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp h
+      exact ⟨hF θ hθ, (hG θ hθ).le⟩
+    · exact ⟨(hT p h).1, (hT p h).2.1.le⟩
+  · rcases Finset.mem_union.mp hp with h | h
+    · obtain ⟨θ, hθ, rfl⟩ := Finset.mem_image.mp h
+      exact hL θ hθ
+    · exact (hT p h).2.2
+
+/-- The bad-challenge count satisfies `#B · (L² - nd) ≤ n · (L - d)`,
+where `B = badEqualDegreeChallenges domain f g d L` and both subtractions are in `ℕ`.
+This is `card_badEqualDegreeChallenges_add_card_mul_le` with no listed pairs. -/
+theorem card_badEqualDegreeChallenges_mul_le [Fintype F] (domain : ι ↪ F) (f g : ι → F)
+    (d L : ℕ) :
+    #(badEqualDegreeChallenges domain f g d L) *
+      (L * L - Fintype.card ι * d) ≤ Fintype.card ι * (L - d) := by
+  simpa using card_badEqualDegreeChallenges_add_card_mul_le domain f g d L ∅ (by simp)
 
 open Classical in
 /-- For one word pair, the affine error bounds the exceptional challenge pairs.
