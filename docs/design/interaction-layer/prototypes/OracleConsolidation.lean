@@ -24,7 +24,8 @@ Companion to `docs/design/interaction-layer/oracle-consolidation.md`.
   `.implicit` transparency (why `OracleInterface.answer` avoids `Id` and why `OracleBundle` keeps
   four flat fields), and `@[macro_inline]` compiler erasure for noncomputable input bundles.
 - Part 4 elaborates realistic end-to-end examples (sums, tensors, indexed families, reindexing,
-  derived behavior-only outputs, and two-stage passive verifier routing) with zero universe pins.
+  derived behavior-only outputs, two-stage passive verifier routing, and one-node encodings of
+  arbitrary bundles) with zero universe pins.
 
 Check with `lake env lean docs/design/interaction-layer/prototypes/OracleConsolidation.lean`.
 -/
@@ -572,16 +573,32 @@ abbrev splitOutputs {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol
     (p : Path (s₁.append s₂)) : OracleBundle :=
   outputs (FreeM.Path.split s₁ s₂ p).1 (FreeM.Path.split s₁ s₂ p).2
 
-/-- Sequential composition of passive oracle verifiers (statement-free output map for brevity). -/
+/-- A passive oracle verifier whose output map ignores the input statement. -/
+@[reducible]
+def ofStatementFree {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
+    {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
+    (decide : S → (p : Path s) → View s p →
+      OptionT (OracleComp (ambient + (pathBundle inputs s p).spec)) (T p))
+    (outputMap : (p : Path s) → View s p → OracleMap (pathBundle inputs s p) (outputs p)) :
+    OracleVerifier ambient s S T inputs outputs where
+  decide := decide
+  outputMap _ := outputMap
+
+/-- Sequential composition of passive oracle verifiers whose suffix output map ignores the
+intermediate statement. The suffix supplies its decision and its output map separately, and the
+output map takes no statement. The composite's output data therefore equals the suffix's output
+data for whichever intermediate statement the prefix decision accepts (`appendSimple_outputMap`). Production
+`append` drops this restriction and takes an `OutputCompatibility` proof instead. -/
 def appendSimple {ι : Type} {ambient : OracleSpec ι} {inputs : OracleBundle}
     {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
     {T : Path s₁ → Type} {U : (p₁ : Path s₁) → Path (s₂ p₁) → Type}
     {middle : Path s₁ → OracleBundle}
     {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
-    (V₂ : (p₁ : Path s₁) → OracleVerifier ambient (s₂ p₁) (T p₁) (U p₁) (middle p₁) (outputs p₁))
-    (midStmt : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p →
-      T (FreeM.Path.split s₁ s₂ p).1) :
+    (decide₂ : (p₁ : Path s₁) → T p₁ → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
+      OptionT (OracleComp (ambient + (pathBundle (middle p₁) (s₂ p₁) p₂).spec)) (U p₁ p₂))
+    (outputMap₂ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
+      OracleMap (pathBundle (middle p₁) (s₂ p₁) p₂) (outputs p₁ p₂)) :
     OracleVerifier ambient (s₁.append s₂) S
       (fun p => U (FreeM.Path.split s₁ s₂ p).1 (FreeM.Path.split s₁ s₂ p).2)
       inputs (splitOutputs outputs) where
@@ -594,11 +611,11 @@ def appendSimple {ι : Type} {ambient : OracleSpec ι} {inputs : OracleBundle}
     | none => pure none
     | some mid =>
       simulateQ ((suffixRoute V₁ stmt p v).withAmbient ambient)
-        ((V₂ z.1).decide mid z.2 views.2).run
+        (decide₂ z.1 mid z.2 views.2).run
   outputMap stmt p v :=
     let z := FreeM.Path.split s₁ s₂ p
     let views := Interaction.TranscriptAt.split viewSig s₁ s₂ p v
-    ((V₂ z.1).outputMap (midStmt stmt p v) z.2 views.2).comp (suffixRoute V₁ stmt p v)
+    (outputMap₂ z.1 z.2 views.2).comp (suffixRoute V₁ stmt p v)
 
 theorem appendSimple_decideWith {ι : Type} {ambient : OracleSpec ι} {inputs : OracleBundle}
     {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
@@ -606,17 +623,19 @@ theorem appendSimple_decideWith {ι : Type} {ambient : OracleSpec ι} {inputs : 
     {middle : Path s₁ → OracleBundle}
     {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
-    (V₂ : (p₁ : Path s₁) → OracleVerifier ambient (s₂ p₁) (T p₁) (U p₁) (middle p₁) (outputs p₁))
-    (midStmt : S → (p : Path (s₁.append s₂)) → View (s₁.append s₂) p →
-      T (FreeM.Path.split s₁ s₂ p).1)
+    (decide₂ : (p₁ : Path s₁) → T p₁ → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
+      OptionT (OracleComp (ambient + (pathBundle (middle p₁) (s₂ p₁) p₂).spec)) (U p₁ p₂))
+    (outputMap₂ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
+      OracleMap (pathBundle (middle p₁) (s₂ p₁) p₂) (outputs p₁ p₂))
     (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p)
     (data : (pathBundle inputs (s₁.append s₂) p).Data) :
-    (V₁.appendSimple V₂ midStmt).decideWith stmt p v data =
+    (V₁.appendSimple decide₂ outputMap₂).decideWith stmt p v data =
       V₁.decideWith stmt (FreeM.Path.split s₁ s₂ p).1
           (Interaction.TranscriptAt.split viewSig s₁ s₂ p v).1
           ((prefixRoute (inputs := inputs) p).f data) >>= fun
         | none => pure none
-        | some mid => (V₂ (FreeM.Path.split s₁ s₂ p).1).decideWith mid
+        | some mid => (ofStatementFree (decide₂ (FreeM.Path.split s₁ s₂ p).1)
+              (outputMap₂ (FreeM.Path.split s₁ s₂ p).1)).decideWith mid
             (FreeM.Path.split s₁ s₂ p).2
             (Interaction.TranscriptAt.split viewSig s₁ s₂ p v).2
             ((suffixRoute V₁ stmt p v).f data) := by
@@ -627,6 +646,27 @@ theorem appendSimple_decideWith {ι : Type} {ambient : OracleSpec ι} {inputs : 
     cases mid with
     | none => simp
     | some mid => exact OracleMap.simulate_withAmbient (suffixRoute V₁ stmt p v) data _
+
+/-- The composite's output data is the suffix's output data on the routed data, for every
+intermediate statement `mid`, in particular for every one the prefix decision accepts. -/
+theorem appendSimple_outputMap {ι : Type} {ambient : OracleSpec ι} {inputs : OracleBundle}
+    {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
+    {T : Path s₁ → Type} {U : (p₁ : Path s₁) → Path (s₂ p₁) → Type}
+    {middle : Path s₁ → OracleBundle}
+    {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
+    (V₁ : OracleVerifier ambient s₁ S T inputs middle)
+    (decide₂ : (p₁ : Path s₁) → T p₁ → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
+      OptionT (OracleComp (ambient + (pathBundle (middle p₁) (s₂ p₁) p₂).spec)) (U p₁ p₂))
+    (outputMap₂ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
+      OracleMap (pathBundle (middle p₁) (s₂ p₁) p₂) (outputs p₁ p₂))
+    (stmt : S) (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p)
+    (data : (pathBundle inputs (s₁.append s₂) p).Data) (mid : T (FreeM.Path.split s₁ s₂ p).1) :
+    ((V₁.appendSimple decide₂ outputMap₂).outputMap stmt p v).f data =
+      ((ofStatementFree (decide₂ (FreeM.Path.split s₁ s₂ p).1)
+          (outputMap₂ (FreeM.Path.split s₁ s₂ p).1)).outputMap mid
+        (FreeM.Path.split s₁ s₂ p).2 (Interaction.TranscriptAt.split viewSig s₁ s₂ p v).2).f
+        ((suffixRoute V₁ stmt p v).f data) :=
+  rfl
 
 end OracleVerifier
 end Consolidated
@@ -1028,8 +1068,10 @@ example (f : ZMod 7 → ZMod 7) (c : ZMod 7) (i : Fin 2) (x : ZMod 7) :
     (OracleBundle.indexed (twoSlotFamily ∘ fun (_ : Fin 2) => false)).answer
       (duplicateFirstSlot.f data) ⟨i, x⟩ = f x := rfl
 
-/-- 4.3: Derived behavior-only output (`OracleBundle.ofSpec`) as a first-class `OracleVerifier`
-output (not expressible when `OracleVerifier.outputs` required `OracleFamily`). -/
+/-- 4.3: Derived behavior-only output (`OracleBundle.ofSpec`) as a direct `OracleVerifier` output.
+When `OracleVerifier.outputs` required an `OracleFamily`, the same behavior needed a singleton
+family whose realization type is `QueryImpl shiftedSpec Id`; the bundle form removes that wrapping
+and makes no new behavior expressible. -/
 def shiftedSpec : OracleSpec (ZMod 7) := ZMod 7 →ₒ ZMod 7
 
 def shiftedVerifier :
@@ -1067,16 +1109,10 @@ def stage2Verifier :
     if a = target then pure (some r) else pure none
   outputMap _ _ _ := OracleMap.fst _ _
 
-def composedMidStmt : ZMod 7 →
-    (p : Path (oneOracleProto.append fun _ => oneOracleProto)) →
-    View (oneOracleProto.append fun _ => oneOracleProto) p → ZMod 7 :=
-  fun _ p v =>
-    let r : ZMod 7 :=
-      (Interaction.TranscriptAt.split viewSig oneOracleProto (fun _ => oneOracleProto) p v).1.1.2.1
-    r + 1
-
+/-- The suffix's output map `OracleMap.fst _ _` ignores the statement. `appendSimple` takes it
+without an intermediate statement. -/
 def composedVerifier :=
-  shiftedVerifier.appendSimple (fun _ => stage2Verifier) composedMidStmt
+  shiftedVerifier.appendSimple (fun _ => stage2Verifier.decide) fun _ _ _ => OracleMap.fst _ _
 
 /--
 info: composedVerifier : OracleVerifier emptySpec0 (PFunctor.FreeM.append.{0, 0, 1, 0} oneOracleProto fun x => oneOracleProto)
@@ -1128,5 +1164,50 @@ info: composedVerifier_decideWith : ∀ (stmt : ZMod 7)
 -/
 #guard_msgs in
 #check @composedVerifier_decideWith
+
+/-- Output check on the composed verifier: for every intermediate statement `mid`, the composite
+exports the data that `stage2Verifier`'s output map computes from the routed data. -/
+example (stmt : ZMod 7) (p : Path (oneOracleProto.append fun _ => oneOracleProto))
+    (v : View (oneOracleProto.append fun _ => oneOracleProto) p)
+    (data : (pathBundle fnBundle (oneOracleProto.append fun _ => oneOracleProto) p).Data)
+    (mid : ZMod 7) :
+    (composedVerifier.outputMap stmt p v).f data =
+      (stage2Verifier.outputMap mid
+          (PFunctor.FreeM.Path.split oneOracleProto (fun _ => oneOracleProto) p).2
+          (Interaction.TranscriptAt.split viewSig oneOracleProto (fun _ => oneOracleProto) p v).2).f
+        ((OracleVerifier.suffixRoute shiftedVerifier stmt p v).f data) :=
+  OracleVerifier.appendSimple_outputMap _ _ _ stmt p v data mid
+
+/-- 4.5: One `oracle` node sends any bundle `B` as `.oracle B.Data B.toInterface`, including a
+behavior-only bundle (`ofSpec`) and a tensor. The node's message bundle is `B` itself, by `rfl`
+(the round trip of `bundleEquivSigma`), so its query type, specification and answers are `B`'s. -/
+def bundleNode (B : OracleBundle) : OraclePos := .oracle B.Data B.toInterface
+
+/-- A protocol whose only move sends the bundle `B` through one `oracle` node. -/
+def oneBundleProto (B : OracleBundle) : OracleProtocol := .liftBind (bundleNode B) fun _ => .pure ()
+
+example (B : OracleBundle) : OracleBundle.of B.Data B.toInterface = B := rfl
+
+example (B : OracleBundle) (p : Path (oneBundleProto B)) :
+    oracleMessageBundle (oneBundleProto B) p = B.sum OracleBundle.empty := by
+  rcases p with ⟨_, _⟩
+  rfl
+
+/-- The behavior-only bundle `ofSpec shiftedSpec` sent by one node: the node's data is the
+handler, and a query answers by applying it. -/
+example (p : Path (oneBundleProto (OracleBundle.ofSpec shiftedSpec)))
+    (h : QueryImpl shiftedSpec Id) (q : ZMod 7) :
+    (oracleMessageBundle (oneBundleProto (OracleBundle.ofSpec shiftedSpec)) p).answer (h, ())
+      (.inl q) = h q := by
+  rcases p with ⟨_, _⟩
+  rfl
+
+/-- The tensor `fnBundle.tensor fnBundle` sent by one node: a query is a pair of points, and the
+answer is the pair of evaluations. -/
+example (p : Path (oneBundleProto tensorBundle)) (f g : ZMod 7 → ZMod 7) (x y : ZMod 7) :
+    (oracleMessageBundle (oneBundleProto tensorBundle) p).answer ((f, g), ()) (.inl (x, y)) =
+      (f x, g y) := by
+  rcases p with ⟨_, _⟩
+  rfl
 
 end Examples
