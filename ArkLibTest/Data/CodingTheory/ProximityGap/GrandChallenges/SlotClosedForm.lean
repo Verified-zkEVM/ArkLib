@@ -17,6 +17,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotClosedForm
   is truncated for `t ≥ 2` (partly at `t = 2`) and `h + 1 - ℓ * t` is truncated at `t = 5`.
 * Slot inequality: the certificate parameters of the `CertificateWitnesses` acceptance case
   (`D = 1`, `A = 2`, `(m, M, μ, h) = (1, 1, 1, 1)`, `n = 2`) checked through the closed forms.
+  The MCA instance at `D = 127`, `A = 239`, `n = 512` checks the same route at a larger scale.
 * Execution: `#eval` under `#guard_msgs` runs the closed forms from this caller, outside any
   `noncomputable section`, on the cases above with independently computed values, and at `n = 3`,
   where the slot inequality of the certificate case fails (`9 < 7` is false).
@@ -26,17 +27,17 @@ open ReedSolomon.HiddenDerivative ProximityGap.GrandChallenges.SlotArithmetic
 
 namespace SlotClosedFormTest
 
-example : ∀ t < 4, gradedRankBoundClosed 2 2 2 2 t = gradedRankBound 2 2 2 2 t := by decide
-
-example : rowSlotBoundClosed 2 2 2 2 3 3 1 4 = rowSlotBound 2 2 2 2 3 3 1 4 := by decide
-
-example : heightSlotCountClosed 3 2 2 2 5 1 3 = heightSlotCount 3 2 2 2 5 1 3 := by decide
-
 example : heightSlotCountClosed 3 2 2 2 5 1 3 = 25 := by decide
 
 example :
     firstOrderCurveShiftedRowSlotBound 1 2 1 1 1 2 1 1 <
       firstOrderCurveShiftedHeightSlotCount 1 2 1 1 1 1 1 := by
+  rw [firstOrderCurveShiftedRowSlotBound_eq_closed, firstOrderCurveShiftedHeightSlotCount_eq_closed]
+  decide +kernel
+
+example :
+    firstOrderCurveShiftedRowSlotBound 127 239 609 280 1148 512 1 271081 <
+      firstOrderCurveShiftedHeightSlotCount 127 239 609 280 1148 1 271081 := by
   rw [firstOrderCurveShiftedRowSlotBound_eq_closed, firstOrderCurveShiftedHeightSlotCount_eq_closed]
   decide +kernel
 

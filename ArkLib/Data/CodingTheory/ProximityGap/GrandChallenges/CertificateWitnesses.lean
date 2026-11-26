@@ -43,8 +43,9 @@ To certify `RS[n, k]` over a field `F` at threshold `ε*`:
    `firstOrderCurveShiftedRowSlotBound (k - 1) A m M μ n 1 h <
      firstOrderCurveShiftedHeightSlotCount (k - 1) A m M μ 1 h`.
    It is a closed computation on natural numbers, and small instances close it by `decide`.
-   For large ones, the restatements of `GrandChallenges.SlotArithmetic` let blocks of the sums
-   be checked with `decide +kernel`. Then
+   For large ones, the equalities in `GrandChallenges.SlotClosedForm` rewrite the inner sums to
+   closed forms that the kernel can evaluate. Alternatively, the restatements in
+   `GrandChallenges.SlotArithmetic` allow the sums to be checked block by block. Then
    `lineExactAgreementBound_of_heightSlotCount` gives a line bound `B`, and
    `McaLowerWitness.ofLineExactAgreement` gives the witness once `B ≤ ε* · |F|`.
    `lambda_interleaved_le_of_heightSlotCount` does the same for list decoding, for every

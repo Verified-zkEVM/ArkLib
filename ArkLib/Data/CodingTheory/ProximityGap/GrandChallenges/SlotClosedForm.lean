@@ -47,15 +47,16 @@ evaluates with one multiplication and one division, while `Nat.choose` unfolds i
 def triangle (x : Nat) : Nat := x * (x - 1) / 2
 
 /-- `triangle x` is the range sum `∑_{i < x} i`. -/
-theorem triangle_eq_sum (x : Nat) : triangle x = ∑ i ∈ Finset.range x, i :=
+private theorem triangle_eq_sum (x : Nat) : triangle x = ∑ i ∈ Finset.range x, i :=
   (Finset.sum_range_id x).symm
 
 /-- `triangle (y + 1) = triangle y + y`. -/
-theorem triangle_succ (y : Nat) : triangle (y + 1) = triangle y + y := by
-  rw [triangle_eq_sum, triangle_eq_sum, Finset.sum_range_succ]
+private theorem triangle_succ (y : Nat) : triangle (y + 1) = triangle y + y := by
+  exact Nat.triangle_succ y
 
 /-- `triangle` is monotone. -/
-theorem triangle_mono {x y : Nat} (hxy : x ≤ y) : triangle x ≤ triangle y := by
+theorem triangle_mono : Monotone triangle := by
+  intro x y hxy
   rw [triangle_eq_sum, triangle_eq_sum]
   exact Finset.sum_le_sum_of_subset (Finset.range_mono hxy)
 
@@ -76,33 +77,36 @@ theorem sumRange_add_sub_eq (c d : Nat) :
       omega
 
 /-- A constant factor comes out of `sumRange`. -/
-theorem sumRange_mul_const (k : Nat) (f : Nat → Nat) :
-    ∀ n, sumRange n (fun b ↦ f b * k) = sumRange n f * k
-  | 0 => by simp [sumRange]
-  | n + 1 => by
-    change sumRange n (fun b ↦ f b * k) + f n * k = (sumRange n f + f n) * k
-    rw [sumRange_mul_const k f n, Nat.add_mul]
+private theorem sumRange_mul_const (k : Nat) (f : Nat → Nat) (n : Nat) :
+    sumRange n (fun b ↦ f b * k) = sumRange n f * k := by
+  simp only [sumRange_eq, Finset.sum_mul]
 
 /-- `sumRange n f` depends only on the values of `f` below `n`. -/
-theorem sumRange_congr {n : Nat} {f g : Nat → Nat} (h : ∀ i, i < n → f i = g i) :
+private theorem sumRange_congr {n : Nat} {f g : Nat → Nat} (h : ∀ i, i < n → f i = g i) :
     sumRange n f = sumRange n g := by
-  induction n with
-  | zero => rfl
-  | succ n ih =>
-    change sumRange n f + f n = sumRange n g + g n
-    rw [ih (fun i hi ↦ h i (by omega)), h n (by omega)]
+  simp only [sumRange_eq]
+  apply Finset.sum_congr rfl
+  intro i hi
+  exact h i (Finset.mem_range.mp hi)
 
-/-- `∑_{i < n} (a - i) = triangle (a + 1) - triangle (a + 1 - n)` for `n ≤ a`. -/
+/-- `∑_{i < n} (a - i) = triangle (a + 1) - triangle (a + 1 - n)`. -/
 theorem sumRange_sub_eq (a : Nat) :
-    ∀ n, n ≤ a → sumRange n (fun i ↦ a - i) = triangle (a + 1) - triangle (a + 1 - n)
-  | 0, _ => by simp [sumRange]
-  | n + 1, hn => by
+    ∀ n, sumRange n (fun i ↦ a - i) = triangle (a + 1) - triangle (a + 1 - n)
+  | 0 => by simp [sumRange]
+  | n + 1 => by
     change sumRange n (fun i ↦ a - i) + (a - n) = triangle (a + 1) - triangle (a + 1 - (n + 1))
-    rw [sumRange_sub_eq a n (by omega), show a + 1 - n = (a - n) + 1 by omega,
-      triangle_succ (a - n), show a + 1 - (n + 1) = a - n by omega]
-    have hm := triangle_mono (show a - n + 1 ≤ a + 1 by omega)
-    rw [triangle_succ (a - n)] at hm
-    omega
+    rw [sumRange_sub_eq a n]
+    by_cases hn : n ≤ a
+    · rw [show a + 1 - n = (a - n) + 1 by omega,
+        triangle_succ (a - n), show a + 1 - (n + 1) = a - n by omega]
+      have hm := triangle_mono (show a - n + 1 ≤ a + 1 by omega)
+      rw [triangle_succ (a - n)] at hm
+      omega
+    · have h₁ : a - n = 0 := by omega
+      have h₂ : a + 1 - n = 0 := by omega
+      have h₃ : a + 1 - (n + 1) = 0 := by omega
+      rw [h₁, h₂, h₃]
+      simp
 
 /-! ### Height count -/
 
@@ -127,64 +131,79 @@ theorem firstOrderCurveShiftedHeightSlotCount_eq_closed (D A m M μ ℓ h : Nat)
 /-! ### Sums over intervals -/
 
 /-- The sum of `f` over the interval `[lo, hi)`. -/
-def sumIco (lo hi : Nat) (f : Nat → Nat) : Nat := sumRange (hi - lo) fun i ↦ f (lo + i)
+private def sumIco (lo hi : Nat) (f : Nat → Nat) : Nat := sumRange (hi - lo) fun i ↦ f (lo + i)
+
+/-- The kernel-reducible interval sum agrees with the finite-set sum. -/
+private theorem sumIco_eq_sum (lo hi : Nat) (f : Nat → Nat) :
+    sumIco lo hi f = ∑ i ∈ Finset.Ico lo hi, f i := by
+  rw [sumIco, sumRange_eq, Finset.sum_Ico_eq_sum_range]
 
 /-- `sumIco lo hi f` depends only on the values of `f` on `[lo, hi)`. -/
-theorem sumIco_congr {lo hi : Nat} {f g : Nat → Nat} (h : ∀ s, lo ≤ s → s < hi → f s = g s) :
+private theorem sumIco_congr {lo hi : Nat} {f g : Nat → Nat}
+    (h : ∀ s, lo ≤ s → s < hi → f s = g s) :
     sumIco lo hi f = sumIco lo hi g := by
-  unfold sumIco
-  exact sumRange_congr fun i hi' ↦ h (lo + i) (by omega) (by omega)
+  rw [sumIco_eq_sum, sumIco_eq_sum]
+  apply Finset.sum_congr rfl
+  intro i hi
+  exact h i (Finset.mem_Ico.mp hi).1 (Finset.mem_Ico.mp hi).2
 
 /-- Splitting `[lo, hi)` at `mid`. -/
-theorem sumIco_split (f : Nat → Nat) {lo mid hi : Nat} (h1 : lo ≤ mid) (h2 : mid ≤ hi) :
+private theorem sumIco_split (f : Nat → Nat) {lo mid hi : Nat} (h1 : lo ≤ mid) (h2 : mid ≤ hi) :
     sumIco lo hi f = sumIco lo mid f + sumIco mid hi f := by
-  unfold sumIco
-  rw [show hi - lo = (mid - lo) + (hi - mid) by omega, sumRange_add]
-  congr 1
-  apply sumRange_congr
-  intro i _
-  show f (lo + (mid - lo + i)) = f (mid + i)
-  rw [show lo + (mid - lo + i) = mid + i by omega]
+  rw [sumIco_eq_sum, sumIco_eq_sum, sumIco_eq_sum]
+  exact (Finset.sum_Ico_consecutive f h1 h2).symm
 
 /-- The sum of a constant over `[lo, hi)`. -/
-theorem sumIco_const (lo hi c : Nat) : sumIco lo hi (fun _ ↦ c) = (hi - lo) * c := by
-  unfold sumIco
-  dsimp only
-  generalize hi - lo = n
-  induction n with
-  | zero => simp [sumRange]
-  | succ n ih =>
-    change sumRange n (fun _ ↦ c) + c = (n + 1) * c
-    rw [ih, Nat.succ_mul]
+private theorem sumIco_const (lo hi c : Nat) : sumIco lo hi (fun _ ↦ c) = (hi - lo) * c := by
+  rw [sumIco_eq_sum]
+  simp [Nat.card_Ico]
 
 /-- `∑_{s ∈ [lo, hi)} (s + 1 - q)` in closed form. -/
-theorem sumIco_add_one_sub (lo hi q : Nat) (h : lo ≤ hi) :
+private theorem sumIco_add_one_sub (lo hi q : Nat) :
     sumIco lo hi (fun s ↦ s + 1 - q) = triangle (hi + 1 - q) - triangle (lo + 1 - q) := by
-  unfold sumIco
-  dsimp only
-  have key := sumRange_add_sub_eq (lo + 1) q (hi - lo)
-  rw [show hi - lo + (lo + 1) - q = hi + 1 - q by omega] at key
-  rw [← key]
-  apply sumRange_congr
-  intro i _
-  omega
+  by_cases h : lo ≤ hi
+  · unfold sumIco
+    dsimp only
+    have key := sumRange_add_sub_eq (lo + 1) q (hi - lo)
+    rw [show hi - lo + (lo + 1) - q = hi + 1 - q by omega] at key
+    rw [← key]
+    apply sumRange_congr
+    intro i _
+    omega
+  · have hs : hi - lo = 0 := by omega
+    have ht : triangle (hi + 1 - q) ≤ triangle (lo + 1 - q) := triangle_mono (by omega)
+    simp [sumIco, hs, sumRange, Nat.sub_eq_zero_of_le ht]
 
-/-- `∑_{s ∈ [lo, hi)} (m - s)` in closed form, for `hi ≤ m`. -/
-theorem sumIco_sub (lo hi m : Nat) (h1 : lo ≤ hi) (h2 : hi ≤ m) :
+/-- `∑_{s ∈ [lo, hi)} (m - s)` in closed form. -/
+private theorem sumIco_sub (lo hi m : Nat) :
     sumIco lo hi (fun s ↦ m - s) = triangle (m - lo + 1) - triangle (m - hi + 1) := by
-  unfold sumIco
-  dsimp only
-  rw [show (fun i ↦ m - (lo + i)) = (fun i ↦ (m - lo) - i) from funext fun i ↦ by omega,
-    sumRange_sub_eq (m - lo) (hi - lo) (by omega),
-    show m - lo + 1 - (hi - lo) = m - hi + 1 by omega]
+  by_cases h1 : lo ≤ hi
+  · unfold sumIco
+    dsimp only
+    rw [show (fun i ↦ m - (lo + i)) = (fun i ↦ (m - lo) - i) from funext fun i ↦ by omega,
+      sumRange_sub_eq (m - lo) (hi - lo)]
+    by_cases h2 : hi ≤ m
+    · rw [show m - lo + 1 - (hi - lo) = m - hi + 1 by omega]
+    · have hu : m - lo + 1 - (hi - lo) ≤ 1 := by omega
+      have hv : m - hi + 1 ≤ 1 := by omega
+      have hu0 : triangle (m - lo + 1 - (hi - lo)) = 0 := by
+        generalize m - lo + 1 - (hi - lo) = x at hu ⊢
+        interval_cases x <;> norm_num [triangle]
+      have hv0 : triangle (m - hi + 1) = 0 := by
+        generalize m - hi + 1 = x at hv ⊢
+        interval_cases x <;> norm_num [triangle]
+      rw [hu0, hv0]
+  · have hs : hi - lo = 0 := by omega
+    have ht : triangle (m - lo + 1) ≤ triangle (m - hi + 1) := triangle_mono (by omega)
+    simp [sumIco, hs, sumRange, Nat.sub_eq_zero_of_le ht]
 
 /-! ### Row count -/
 
 /-- The summand of `gradedRankBound D A m M t` at `s`. -/
-def gradedRankTerm (D A m M t s : Nat) : Nat := min (m - s) (gradedSourceCount D A m M s t)
+private def gradedRankTerm (D A m M t s : Nat) : Nat := min (m - s) (gradedSourceCount D A m M s t)
 
 /-- `gradedRankBound` as a sum of `gradedRankTerm` over `[0, m)`. -/
-theorem gradedRankBound_eq_sumIco (D A m M t : Nat) :
+private theorem gradedRankBound_eq_sumIco (D A m M t : Nat) :
     gradedRankBound D A m M t = sumIco 0 m (gradedRankTerm D A m M t) := by
   unfold gradedRankBound sumIco gradedRankTerm
   simp only [Nat.sub_zero, Nat.zero_add]
@@ -194,7 +213,7 @@ theorem gradedRankBound_eq_sumIco (D A m M t : Nat) :
 constant side `c2`, and `[b1, n1)`, `[b2, N)` the decreasing side `m - s`. The interval ends are
 named by hypotheses; their `min`/`max` definitions are first turned into linear facts, and each
 `omega` call sees only the facts it needs. -/
-theorem gradedRankBound_eq_pieces (D A m M t N q c2 n1 lo b1 b2 : Nat)
+private theorem gradedRankBound_eq_pieces (D A m M t N q c2 n1 lo b1 b2 : Nat)
     (hN : N = min m (m * A - (D - 1) * t)) (hq : q = t - M) (hc2 : c2 = t + 1 - q)
     (hn1 : n1 = min N t) (hlo : lo = min q n1) (hb1 : b1 = min n1 (max lo ((m + q + 1) / 2)))
     (hb2 : b2 = min N (max n1 (m + 1 - c2))) :
@@ -266,8 +285,8 @@ theorem gradedRankBound_eq_pieces (D A m M t N q c2 n1 lo b1 b2 : Nat)
     beta_reduce
     split <;> omega
   rw [sumIco_congr e0, sumIco_congr e1, sumIco_congr e2, sumIco_congr e3, sumIco_congr e4,
-    sumIco_congr e5, sumIco_const, sumIco_const, sumIco_add_one_sub lo b1 q hlob1,
-    sumIco_sub b1 n1 m hb1n (hn1N.trans hNm), sumIco_const, sumIco_sub b2 N m hb2N hNm]
+    sumIco_congr e5, sumIco_const, sumIco_const, sumIco_add_one_sub lo b1 q,
+    sumIco_sub b1 n1 m, sumIco_const, sumIco_sub b2 N m]
   clear * -
   omega
 
@@ -293,13 +312,13 @@ theorem gradedRankBoundClosed_eq (D A m M t : Nat) :
 def rowSlotBoundClosed (D A m M μ n ℓ h : Nat) : Nat :=
   sumRange (μ + 1) fun t ↦ n * gradedRankBoundClosed D A m M t * (h + 1 - ℓ * t)
 
-/-- The closed row count equals `rowSlotBound`, for all parameters. -/
+/-- The closed row bound equals `rowSlotBound`, for all parameters. -/
 theorem rowSlotBoundClosed_eq (D A m M μ n ℓ h : Nat) :
     rowSlotBoundClosed D A m M μ n ℓ h = rowSlotBound D A m M μ n ℓ h := by
   unfold rowSlotBoundClosed rowSlotBound
   simp only [gradedRankBoundClosed_eq]
 
-/-- The library row count equals its closed form, for all parameters. -/
+/-- The library row bound equals its closed form, for all parameters. -/
 theorem firstOrderCurveShiftedRowSlotBound_eq_closed (D A m M μ n ℓ h : Nat) :
     firstOrderCurveShiftedRowSlotBound D A m M μ n ℓ h = rowSlotBoundClosed D A m M μ n ℓ h := by
   rw [firstOrderCurveShiftedRowSlotBound_eq, rowSlotBoundClosed_eq]
