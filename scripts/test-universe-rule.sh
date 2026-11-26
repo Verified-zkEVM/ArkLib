@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 
 # Check `lake exe universe-rule` against the fixtures in scripts/UniverseRuleTestFixtures/:
-# the passing module, the failing module, and the allowlist directions (an unlisted violation,
-# a stale entry, a malformed entry).
+# the passing module, the failing module, the phantom-universe limitation, and the allowlist
+# directions (an unlisted violation, a stale entry, a malformed entry).
 
 set -euo pipefail
 
@@ -15,6 +15,7 @@ trap 'rm -rf -- "$FIXTURE_TMP"' EXIT
 FIXTURES=scripts/UniverseRuleTestFixtures
 PASS=UniverseRuleTestFixtures.Pass
 FAIL=UniverseRuleTestFixtures.Fail
+PHANTOM=UniverseRuleTestFixtures.Phantom
 
 # Run the checker, require exit status $1, and keep standard output in $FIXTURE_TMP/$2.out.
 expect_status() {
@@ -66,15 +67,26 @@ expect_status 2 pass-no-reason --root "$PASS" --allowlist "$FIXTURE_TMP/no-reaso
 # The failing module: a constant without arguments, a universe that only a structure field
 # mentions, one that only the result type mentions, a hand-written instance, and one that only
 # a `Prop` body mentions. Each structure is reported once, not its constructor, projection or
-# derived instance.
+# derived instance. The module also has hand-written declarations named like generated ones
+# (`eq_def`, `eq_unfold`, `match_1`, `proof_1`, `Box.inj`, `Box._proof_1`, `Box._f`) and a
+# hand-written instance that starts on its structure's line (`sameLine`). The checker must
+# report each of them.
 expect_status 1 fail --root "$FAIL" --allowlist "$FIXTURE_TMP/empty.txt"
 expect_lines fail \
+  "$FAIL $FAIL.Box._f u" \
+  "$FAIL $FAIL.Box._proof_1 u" \
+  "$FAIL $FAIL.Box.inj v" \
   "$FAIL $FAIL.Bundle u" \
   "$FAIL $FAIL.HasWitness k" \
   "$FAIL $FAIL.Marker u" \
+  "$FAIL $FAIL.eq_def u" \
+  "$FAIL $FAIL.eq_unfold u" \
   "$FAIL $FAIL.instInhabitedMarker u" \
   "$FAIL $FAIL.lift v" \
-  "$FAIL $FAIL.noArgs u"
+  "$FAIL $FAIL.match_1 u" \
+  "$FAIL $FAIL.noArgs u" \
+  "$FAIL $FAIL.proof_1 u" \
+  "$FAIL $FAIL.sameLine u"
 
 # Report mode lists the same violations and exits 0. `--explain-skips` shows that the skip rules
 # hid the generated constants: the derived instances, the constructor and the `sizeOf` instance.
@@ -91,5 +103,16 @@ for skipped in \
     exit 1
   fi
 done
+
+# A documented limitation, not a goal: the checker accepts the phantom-universe module. The rule
+# is syntactic. `hidden.{u}` takes `x : Carrier PUnit.{u + 1}`, whose type mentions `u`, but that
+# type reduces to `Nat` for every `u`, so unification cannot determine `u` at a use. If the
+# checker starts to reject this module, update this case and the documentation of the rule.
+expect_status 0 phantom --root "$PHANTOM" --allowlist "$FIXTURE_TMP/empty.txt"
+if [[ -s "$FIXTURE_TMP/phantom.out" ]]; then
+  echo "ERROR: phantom: expected no violations" >&2
+  cat "$FIXTURE_TMP/phantom.out" >&2
+  exit 1
+fi
 
 echo "Universe rule fixtures passed"

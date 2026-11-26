@@ -356,8 +356,8 @@ the old-layer two-stage tests with the history `[0, 2, 1, 3]` and the rejection 
 `[0, 2, 1]`. It runs three stages with a sampled challenge, with history
 `[0, 2, 4, 5, 1, 3, 6]`, or `[0, 2, 4, 5, 1]` when the first decision rejects. It selects a second
 stage by the first stage's prover message. It also composes a stage whose output map reads its
-input statement, both alone and followed by a second stage. It composes stages whose families
-have their queries in `Type` and `Type 1`. Finally, it derives a property of a three-stage
+input statement, both alone and followed by a second stage. It composes stages whose oracle
+families have distinct query interfaces, all in `Type`. Finally, it derives a property of a three-stage
 decision from one hypothesis per boundary. A one-stage decision that queries an ambient `Bool`
 and rejects on `false` accepts almost surely under the answer measure `alwaysTrue`, although its
 support contains the rejection.
@@ -497,8 +497,9 @@ doubled-export execution has a matching node at its decision entry.
 `RoutedAccessTests.routed_available` applies that permission to the routed program, and
 `QueryCostTests.routed_available_and_cost` pairs it with cost five for the same program.
 `RoutedAccessTests.loggedSummary_eq` and `RoutedAccessTests.composed_decisionQueries` check the
-actual ordered decision queries. The oracle-message splitting checks remain. The parent's large-query
-full-log limitation in entry 18 is unchanged.
+actual ordered decision queries. The oracle-message splitting checks remain. Step 4 of the D2
+migration retired the parent's large-query full-log limitation of entry 18: every bundle query
+index now lies in `Type`.
 
 ## 26. Knowledge composition and measured extraction
 
@@ -584,9 +585,9 @@ every state function a measured certificate with zero declared cost, so an opera
 result names its stage programs and prices. Measured append and a uniform game-extractor
 contract are follow-up work.
 
-The measured API retains these small carriers through the binders of `MeasuredStages`. These
-restrictions also apply to `programAlong` and `MeasuredKnowledgeStateFunction`, and lifting them
-is follow-up work. At the previous VCVio pin `f8d7f8ef`, VCVio's `OracleComp.BudgetedProgram` and
+The measured API keeps these carriers in `Type` through the binders of `MeasuredStages`, and so do
+`programAlong` and `MeasuredKnowledgeStateFunction`. Record D2's universe policy requires that:
+the carriers are data, and keeping them in `Type` is not a limit to lift. At the previous VCVio pin `f8d7f8ef`, VCVio's `OracleComp.BudgetedProgram` and
 `OracleComp.MeasuredProgram` forced the carriers to `Type`. The pinned PolyFun declarations below
 do not:
 
@@ -597,22 +598,20 @@ do not:
 | Output witnesses `W stmt tr : Type` | The `BudgetedProgram` input binder takes any universe. `BudgetedProgram.ofFun` at line 210, which `MeasuredStages.zero` uses, puts its input in the universe of its result. |
 | Cost type `ω : Type`, instruction names and views | `PFunctor.FreeM.MeasuredProgram (Input : Type uI) (Result : Type u) (ω : Type w)` at line 52, with fields `View : Type u` and `Op : Type u`. `BudgetedProgram` bundles this program. VCVio's bridge `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:51` at VCVio `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3` states the oracle-cost lemmas for `Input Result ω : Type`. |
 
-The statement universe remains arbitrary. The pure `PartialTranscriptAt`, `KnowledgeStateFunction`,
-lifting, extraction, extraction failure, append and restriction laws accept
-`P : PFunctor.{uA, u}` and a lens to `rolePoly.{u}`, with leaves `PUnit.{u + 1}`.
-The move, statement and witness universes are independent; branches and leaves share the move
-universe. KC-318 and KC-322 now send the frozen oracle message `m : ULift.{1} Nat`, retain
-`ULift.{2} (Fin (m.down + 1))` witnesses and prove extraction returns six. The measured code
-takes `P : PFunctor.{uA, 0}`, so its positions also have their own universe.
+Statements, witnesses and moves lie in `Type`. The pure `PartialTranscriptAt`,
+`KnowledgeStateFunction`, lifting, extraction, extraction failure, append and restriction laws
+take `P : PFunctor.{uA, 0}` and a lens to `rolePoly0`, with leaves `Unit`, as the measured code
+does. Positions keep their own universe `uA`. The large-carrier canaries of KC-318 and KC-322,
+which sent the oracle message `m : ULift.{1} Nat` and retained `ULift.{2} (Fin (m.down + 1))`
+witnesses, were deleted with `UniverseCanary.lean` in step 6 of the D2 migration (see the
+[disposition record](../interaction-layer/knowledge-composition-disposition.md)).
 
-Probability bounds use the small-move instance of this general certificate. VCVio's
-`ProbComp : Type → Type` at the previous pin `f8d7f8ef` (`VCVio/OracleComp/ProbComp/Basic.lean:31`)
-forced `sampleAt` to return a small move. The current pin makes `ProbComp` universe-polymorphic,
-and ArkLib has not yet generalized `sampleAt`. `challengeSpec` (`Interaction/Protocol.lean:69–71`)
-returns `Move l`, whose universe is
-shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
-remaining probabilistic limitation. It does not restrict pure backward maps or large output
-and seam witnesses in the verifier wrappers.
+Probability bounds draw moves with `sampleAt` in `ProbComp`. VCVio's `ProbComp : Type → Type`
+at the previous pin `f8d7f8ef` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forced `sampleAt` to
+return a small move. The current pin makes `ProbComp` universe-polymorphic. Record D2's policy
+puts every move in `Type`, and the small-move restriction that the disposition record's PROB-031
+names is therefore what the policy requires, not a remaining limitation. `challengeSpec` returns
+`Move l`, the move type that challenges share with public and oracle messages.
 
 ### Acceptance evidence
 
@@ -622,10 +621,12 @@ remain available on each selected shape. `Fin (n + 1)` carriers that depend on t
 extraction composition, leaf relations and the exported oracle from the same execution are checked on
 both shapes. The selector change is premise-required under P2, not missing parent support.
 
-The ordinary-import universe canary composes with `Type` itself as the output and seam carrier,
-both in `Type 1`, and tests both verifier wrappers and lifting with large output witnesses.
-Separate clients retain statement-indexed witnesses at unequal universes, empty carriers,
-standalone plain verifier composition and the actual shared ambient state at the seam.
+Until step 6 of the D2 migration, the ordinary-import universe canary `UniverseCanary.lean`
+composed with `Type` itself as the output and seam carrier. It also tested both verifier wrappers
+and lifting with large output witnesses. Step 6 deleted it, and
+`ArkLibTest/Interaction/UniversePolicy.lean` replaces it. Separate clients retain
+statement-indexed witnesses, empty carriers, standalone plain verifier composition and the actual
+shared ambient state at the seam, all in `Type`.
 The axiom collectors check the new laws against `propext`, `Classical.choice` and `Quot.sound`.
 
 ### Restoration under P2
@@ -701,10 +702,10 @@ This branch adds the following restoration interfaces on the parent's state func
 | `programAlong_budget_le_protocol`, `programAlong_budget_le_protocol_zero` | Count message/challenge stages per round, with explicit root/leaf terms and the frozen zero-endpoint specialization. |
 | Authored-selector fixtures | A public prover Boolean selects exact `Fin 8`/`Fin 9` statement carriers; challenges still control acceptance and knowledge transitions. |
 
-Unmeasured restoration retains independent input, intermediate and output witness universes.
-Probabilistic game outputs remain small; deterministic verdicts accept general move universes.
-The record explains these constraints and the change from the frozen layer's arbitrary final
-results to optional passive decisions and explicit output-law implications.
+Restoration keeps its input, intermediate and output witnesses, its game outputs and its moves in
+`Type`, as record D2's universe policy requires. The record explains the change from the frozen
+layer's arbitrary final results to optional passive decisions and explicit output-law
+implications.
 
 ### Shared extraction laws and carrier constraints
 
@@ -719,8 +720,8 @@ identifies this branch's consumers and source assertions.
 The remaining small carriers followed these exact declarations at the previous VCVio pin
 `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`. At the current pin `f1a4a8ec`, `SampleableType` is
 unchanged, `ProbComp` is universe-polymorphic, and the measured programs moved to PolyFun with
-independent universes. ArkLib has not yet generalized the code behind the second and third items,
-so their restrictions remain:
+independent universes. Record D2's universe policy puts these carriers in `Type`, and ArkLib keeps
+the second and third items there by design:
 
 - `SampleableType (β : Type)` in
   `VCVio/OracleComp/Constructions/SampleableType/Basic.lean:51` forces
@@ -728,8 +729,8 @@ so their restrictions remain:
   whose messages and challenges share the move universe. Round-specific pure keyed laws
   therefore remain on this small protocol; the shared extraction laws are general.
 - `ProbComp : Type → Type` in `VCVio/OracleComp/ProbComp/Basic.lean:31` keeps random
-  outputs small in the restoration games and bounds. It does not restrict `readOut`
-  or the certificate's input, intermediate or output witness universes.
+  outputs small in the restoration games and bounds. Under the policy, the witnesses that `readOut`
+  and the certificate read and produce also lie in `Type`.
 - `KnowledgeStateFunction.MeasuredStages` (`Interaction/Security/MeasuredExtraction.lean:104`)
   fixes root results, step inputs/results, leaf inputs and the cost carrier `ω` to `Type`. At the
   previous pin, VCVio's `OracleComp.BudgetedProgram {Input Result : Type}` forced this. It now

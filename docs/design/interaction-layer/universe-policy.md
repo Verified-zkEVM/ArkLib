@@ -70,7 +70,8 @@ All 8 `ULift`s in the core are inside the adapters.
 The scan is a short meta program: for each constant, open its type with
 `forallTelescopeReducing`, collect the level parameters of every binder type with
 `collectLevelParams`, and report the constant's level parameters that were not collected. The
-CI linter of migration step 7 is this program with an allowlist.
+CI checker of migration step 7 is this program with an allowlist. "What the rule and the checker
+guarantee" below states what it covers.
 
 ## After the migration
 
@@ -95,7 +96,38 @@ The scan of the core outside `Legacy/` lists 1,388 declarations, 661 of them
 universe-polymorphic, and reports one: `AdversaryModel` in `w`, the policy's exception. This run
 skipped matchers, recursors, `noConfusion` and equation lemmas. Its declaration count is therefore
 not comparable with the 1,247 above. `lake exe universe-rule`, which also covers `Legacy/`, checks
-1,349 constants and reports the same single violation.
+1,530 constants and reports the same single violation.
+
+## What the rule and the checker guarantee
+
+The rule is a syntactic condition: each universe parameter of a declaration occurs in the type of
+one of its arguments. It catches the shapes behind the failures below: a constant without
+arguments, and a universe that only a structure field, the result type or a `Prop` body mentions.
+
+The rule does not guarantee that unification determines each universe at a use. An occurrence can
+vanish under reduction, as in this example from `scripts/UniverseRuleTestFixtures/Phantom.lean`:
+
+```lean
+def Carrier.{u} (_ : Type u) : Type := Nat
+
+def hidden.{u} (x : Carrier PUnit.{u + 1}) : Prop :=
+  ∃ β : Type u, Nonempty β ∧ x = x
+```
+
+The argument type `Carrier PUnit.{u + 1}` mentions `u`, and `hidden` therefore satisfies the rule.
+That type reduces to `Nat` for every `u`, and the client
+`theorem reuseHidden (x : Nat) (h : hidden x) : hidden x := h` fails as `HasWitness` does below:
+`h` has type `hidden.{u_1} x`, and the goal is `hidden.{u_2} x`. Likewise, an argument of type
+`Type (max u v)` mentions both universes and determines neither.
+
+`lake exe universe-rule` is a regression gate for the rule. It fails on each violation that its
+allowlist does not record and on each allowlist entry that matches no violation. Every exception
+therefore stays explicit in `scripts/universe_rule_allowlist.txt`. The checker does not prevent
+every universe failure: it accepts the example above, and `scripts/test-universe-rule.sh` asserts
+that it does. The evidence that clients need no universe annotations is
+[`ArkLibTest/Interaction/UniversePolicy.lean`](../../../ArkLibTest/Interaction/UniversePolicy.lean).
+It uses the vocabulary, the security definitions with an adversary model in `Type 1`, and a monad
+`Type → Type 1` without universe annotations, and it checks generic code at a large polynomial.
 
 ## The three failures
 
@@ -153,7 +185,7 @@ Only the first statement of a chain has its own universe.
 |---|---|---|---|
 | Independent universes per component (the earlier ledger) | All three; 15 adapters | Independent input, index and query universes; no client uses them, and composition ties most of them | Rejected |
 | One polymorphic data universe `u` | Removes the second and third; keeps pins on constants without arguments (240 `PUnit.{u + 1}` in the core) and `Type u` throughout | Data in `Type u` for `u > 0`; no client needs it, and it does not serve quantum provers (below) | Not now; reachable later by a mechanical edit |
-| Data in `Type`, one adversary universe, PolyFun universes for generic code | None; the linter prevents new ones | Everything a named client uses | **Adopted** |
+| Data in `Type`, one adversary universe, PolyFun universes for generic code | None in current code; the checker reports new declarations that break the rule, but the rule does not catch every failure (see "What the rule and the checker guarantee") | Everything a named client uses | **Adopted** |
 | Everything in `Type`, including adversaries and generic code | None | Less | Rejected: blocks record D9 and PolyFun upstreaming |
 
 **Quantum provers need a separate universe, not a larger data universe.** A quantum register

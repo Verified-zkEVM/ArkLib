@@ -217,8 +217,8 @@ subsections record why.
 [departures.md](departures.md) lists this as entry 18, and `port-oracle-access.md`
 (#1478) lists it as its only open item. `OracleVerifier.runWithLog` returns bundle-query entries
 through a small computation monad. Its complete log therefore cannot record large query indices.
-`runWithAmbientLog` and `runWithAmbientQueriesByMove` keep independent universes because they
-return only ambient decision queries. What is missing is a parent logging interface whose result
+`runWithAmbientLog` and `runWithAmbientQueriesByMove` kept independent universes because they
+returned only ambient decision queries. What is missing is a parent logging interface whose result
 universe is large enough. Options:
 
 - implement that logging interface in VCVio or PolyFun and generalize `runWithLog`;
@@ -254,9 +254,9 @@ universe. Options:
 
 Decision: accepted as an upstream limit. The module docstring of `Interaction/Security/RoundByRound.lean`
 documents it. VCVio PR [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes
-`ProbComp` universe-polymorphic, and the current pin includes it. `sampleAt` and the bounds stated
-with `𝒟[·]` can now take large moves. Bounds stated with `Pr{}` stay small because VCVio's `Pr{}`
-still requires `Type`. Generalizing them is follow-up work.
+`ProbComp` universe-polymorphic, and the current pin includes it. Before the policy put every move
+in `Type`, `sampleAt` and the bounds stated with `𝒟[·]` could take large moves, while bounds
+stated with `Pr{}` stayed small because VCVio's `Pr{}` requires `Type`.
 
 Status under the policy: not a limit. Challenges are data, and the policy puts every move in
 `Type`. The small-move bounds therefore cover every protocol.
@@ -278,9 +278,9 @@ was missing is a VCVio cost API with explicit query-index, response and cost uni
 Decision: accepted as an upstream limit. The module docstring of `Interaction/Oracle/Cost.lean`, which
 holds `OracleMap.withAmbient_worstCaseCost`, documents it. VCVio PR
 [#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the universes of the cost
-API, and the current pin includes it. The wrapper can now take those universes, with results kept
-in the response universe as `simulateQ` requires. The change is about ten lines and is follow-up
-work.
+API, and the current pin includes it. Generalizing the wrapper to those universes, with results
+kept in the response universe as `simulateQ` requires, would have been a change of about ten
+lines.
 
 Status under the policy: not a limit. Query indices, responses and costs are data, and the
 policy puts them in `Type`, which is what the wrapper takes.

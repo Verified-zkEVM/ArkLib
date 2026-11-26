@@ -24,8 +24,9 @@ This directory contains various utility scripts for the ArkLib project.
   the type of one of its arguments. It checks against the allowlist `universe_rule_allowlist.txt`;
   see "Universe Rule" below
 - **`test-universe-rule.sh`** - Fixtures for the universe-rule checker in
-  `UniverseRuleTestFixtures/`: a module it must accept, a module it must reject, and the
-  allowlist directions
+  `UniverseRuleTestFixtures/`: a module it must accept, a module it must reject (including
+  hand-written declarations named like generated ones), a phantom-universe module it accepts as a
+  documented limitation, and the allowlist directions
 - **`source-trust-audit.py`** - Deterministic source-token inventory for constructs outside
   the environment sweep's visibility, with optional Git-ref comparison
 - **`test-source-trust-audit.py`** - Focused lexer/diff fixtures for the source inventory
@@ -258,7 +259,23 @@ under `ArkLib.Interaction` or `ArkLib.Relation`. It opens the constant's type wi
 level parameter it did not collect as one line `module declaration universe`. It skips constants
 that Lean generates from a user declaration (recursors, matchers, equation lemmas, compiler
 auxiliaries, constructors, projections and derived instances) and checks their source
-declaration instead. Requires a completed `lake build`.
+declaration instead. It recognizes a generated constant from Lean's data, not from its name
+alone. Recursors, auxiliary recursors, `noConfusion`, matchers, constructors and projections are
+marked by Lean itself. A constant recognized only by its name is skipped under three more
+conditions. It has no declaration range of its own. Its parent name is a constant with exactly the
+same level parameters. Lean's predicate for the kind holds where one exists: a reserved
+equation-lemma name, or a theorem for an auxiliary lemma. `skipReason?` in `UniverseRule.lean`
+lists the rules. Requires a completed `lake build`.
+
+The rule is a syntactic condition, and the checker is a regression gate for it. It catches
+constants without arguments and universes that only a structure field, the result type or a
+`Prop` body mentions, and the allowlist keeps each exception explicit. It does not guarantee that
+unification determines each universe at a use. An occurrence can vanish under reduction, as in
+`UniverseRuleTestFixtures/Phantom.lean`, which the checker accepts, and an argument of type
+`Type (max u v)` determines neither universe. The evidence that clients need no universe
+annotations is `ArkLibTest/Interaction/UniversePolicy.lean`. The design note
+`docs/design/interaction-layer/universe-policy.md` ("What the rule and the checker guarantee")
+gives the details.
 
 ```bash
 # Check against scripts/universe_rule_allowlist.txt

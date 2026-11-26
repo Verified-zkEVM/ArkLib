@@ -158,10 +158,16 @@ Each step also updated the tests and client annotations that name the declaratio
 6. Done in this PR: tests and clients: replace `UniverseCanary.lean` with a policy test (generic
    code at a large polynomial, an `AdversaryModel` with `Adv : Type 1`), drop the remaining pins,
    and update the port tables and disposition records that describe universes.
-7. Done in this PR: CI: a linter that checks the rule on `Interaction/` and `Relation/`, allowing
-   only the adversary universe and the generic files. The checker is `scripts/UniverseRule.lean`
-   (`lake exe universe-rule`), and its allowlist `scripts/universe_rule_allowlist.txt` holds only
-   the adversary universe.
+7. Done in this PR: CI: a checker for the rule on `Interaction/` and `Relation/`,
+   `scripts/UniverseRule.lean` (`lake exe universe-rule`). Its allowlist
+   `scripts/universe_rule_allowlist.txt` holds only the adversary universe. The generic files need
+   no entry, because `P` determines their universes. The rule is a syntactic condition, and the
+   checker is a regression gate that keeps exceptions explicit in the allowlist. It catches
+   constants without arguments and universes that only a field, the result type or a `Prop` body
+   mentions. It does not guarantee that unification determines every universe: an occurrence can
+   vanish under reduction, and `max u v` determines neither universe. The evidence that clients
+   need no annotations is `ArkLibTest/Interaction/UniversePolicy.lean`; see
+   [What the rule and the checker guarantee](../interaction-layer/universe-policy.md#what-the-rule-and-the-checker-guarantee).
 
 ## Open points
 

@@ -362,16 +362,15 @@ oracle message bundle `oracleMessageBundle` and `pathBundle` take an `OracleProt
 `OracleBundle` keeps its queries, responses and data in `Type`. The earlier node-universe and
 input-data coupling entries are closed, as recorded in [implementation note 18][universes].
 
-The remaining item is the large-query result interface of the full-log runner. ArkLib accepts it
-as an upstream limit (departures entry 18); [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236)
-adds `OracleComp.subst`, which can lift it. The VCVio pin includes it since the `f1a4a8ec` bump,
-and adopting it is follow-up work.
-[OracleVerifier.runWithLog][logged-runner] returns bundle-query entries through a small
-computation monad. Returning large query indices in that complete heterogeneous log needs a parent
-logging interface with a sufficiently large result universe. `runWithAmbientLog` and
-`runWithAmbientQueriesByMove` return only ambient decision queries. The full-log [loggedSummary][q-log-summary] keeps the
-strongest supported output-query universe. P1 and P2 impose no universe restrictions. Run outputs
-continue to follow the parent monad's value universe, as documented in note 18.
+This table once listed one remaining item: the large-query result interface of the full-log
+runner (departures entry 18). At the pinned commit,
+[OracleVerifier.runWithLog][logged-runner] returned bundle-query entries through a small
+computation monad and could not record large query indices, and `runWithAmbientLog` and
+`runWithAmbientQueriesByMove` returned only ambient decision queries. Step 4 of the D2 migration
+retired the item: every bundle query index now lies in `Type`, and `runWithLog` accepts every
+oracle verifier ([migration list](migration-list.md#unresolved-rows-and-options), item 1). P1 and
+P2 impose no universe restrictions. Run outputs continue to follow the parent monad's value
+universe, as documented in note 18.
 
 ## Definition-site transparency
 
