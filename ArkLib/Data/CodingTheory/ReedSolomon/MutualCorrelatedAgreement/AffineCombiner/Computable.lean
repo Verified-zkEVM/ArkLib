@@ -21,14 +21,15 @@ The affine, scalar, and equal-degree combiner errors are suprema of counting pro
 `ReedSolomon.equalDegreeMcaErrorRat` enumerate the received word pairs and the challenges, and
 take the largest fraction of exceptional challenges with `Probability.maxEventProbability`.
 
-For a fixed candidate, the predicates in `ReedSolomon.Computable` have `Decidable` instances that
-search the witnesses, and the evaluators search the candidates. Candidates and witnesses are
-CompPoly polynomials in the finite subtypes `↥(CompPoly.CPolynomial.degreeLT k)`, whose enumeration
-is `CompPoly.CPolynomial.instFintypeDegreeLT`. A degree bound `deg P ≤ d` corresponds to the
-subtype `degreeLT (d + 1)`. In the affine and scalar combiners, the candidate `P` and the second
-witness `G₀` determine the first witness `F₀ = P - L G₀`, where `L` is the affine or scalar
-multiplier. Their searches therefore run over `G₀` only. The equal-degree search runs over both
-witnesses.
+The evaluator enumerates candidates of degree at most `d` in `degreeLT (d + 1)`.
+Finite polynomial searches use `CompPoly.CPolynomial.instFintypeDegreeLT` to enumerate
+`degreeLT k` at the required bound `k`. The affine search enumerates the second witness `G₀`
+in `degreeLT d`, and the scalar search enumerates it in `degreeLT (d + 1)`.
+Both recover `F₀ = P - L G₀` from the candidate `P` and multiplier `L`.
+
+An equal-degree witness pair satisfies `P = G₀ + L W`, where `L` is the affine multiplier and
+`W = F₀ + θ G₀`. The search enumerates `W` of degree below `d` and computes `G₀ = P - L W`.
+It tests the agreement loss of `(W - θ G₀, G₀)` only when `G₀` also has degree below `d`.
 
 The theorems `ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
 `ReedSolomon.ofReal_equalDegreeMcaErrorRat` prove that `ENNReal.ofReal` of the real cast of each
@@ -58,20 +59,19 @@ resulting word enumeration with the one built from the equality instance used in
 
 Let `q` be the field size, `n` the domain size, `d` the output degree bound, and `A` the agreement
 threshold. Each evaluator visits all `q^(2n)` received word pairs. The affine and scalar
-evaluators examine up to `q^(2n+2d+3)` combinations of a word pair, a challenge, a candidate, and
-a witness. The equal-degree evaluator examines up to `q^(2n+3d+4)` combinations of a word pair, a
-challenge, a candidate, and a witness pair. Charge one unit for each field operation, equality
-test, natural-number operation, and evaluation of `domain`, as well as for each other primitive
-step, such as an array access, a list-cell allocation, or a closure call. Suppose the `Fintype`
+evaluators examine up to `q^(2n+2d+3)` tuples of a word pair, a challenge, a candidate, and a
+second witness. The equal-degree evaluator examines up to `q^(2n+2d+4)` tuples with `W` in place
+of the second witness. Charge one unit for each field operation, equality test, natural-number
+operation, and evaluation of `domain`. Also charge one unit for each other primitive step, such
+as an array access, a list-cell allocation, or a closure call. Suppose the `Fintype`
 instances of `F` and `ι` list their elements in `O(q)` and `O(n)` steps, as those of `ZMod q`
 and `Fin n` do. In this model, the running time is at most the corresponding number of
-combinations times a factor that is polynomial in `n` and `d`.
+tuples times a factor that is polynomial in `n` and `d`.
 
-Each search over candidates or witnesses stops at the first element that decides it, but it builds
-its whole enumeration before the first test. Each evaluator skips the witness search for a
-candidate with fewer than `A` agreements and rebuilds the witness enumeration for each candidate
-that meets the threshold. In the equal-degree search, it also builds the enumeration of the
-second witness again for each first witness.
+Each finite search builds its enumeration before it tests any element and stops at the first
+element that decides it. Each evaluator skips the inner search for candidates with fewer than
+`A` agreements. For each candidate that meets the threshold, it builds the enumeration of
+second witnesses or of `W`.
 
 ## Main definitions
 
@@ -83,6 +83,8 @@ second witness again for each first witness.
 
 ## Main statements
 
+* `ReedSolomon.Computable.forall_eq_equalDegreePolynomial_iff`: the correspondence between
+  bounded witness pairs and the combinations used in the equal-degree search.
 * `ReedSolomon.Computable.exists_isAffineExceptional_iff`,
   `ReedSolomon.Computable.exists_isScalarExceptional_iff`, and
   `ReedSolomon.Computable.exists_isEqualDegreeExceptional_iff`: the finite searches detect
@@ -305,10 +307,53 @@ def IsEqualDegreeExceptional (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) 
         s < (lostPositions domain f g (equalDegreeWord domain f g θ α β)
           P.val F₀.val G₀.val).card
 
+/-- Let `Q` be a predicate on pairs of polynomials. Consider the pairs `(F₀, G₀)` in `degreeLT d`
+that satisfy `P = G₀ + (α + β X)(F₀ + θ G₀)`. All these pairs satisfy `Q` exactly when
+`Q (W - θ V) V` holds for every `W ∈ degreeLT d` with `V = P - (α + β X) W` of degree below `d`.
+
+The pairs and these `W` correspond through `(F₀, G₀) ↦ F₀ + θ G₀`. -/
+theorem forall_eq_equalDegreePolynomial_iff (P : CPolynomial F) (θ α β : F) (d : ℕ)
+    (Q : CPolynomial F → CPolynomial F → Prop) :
+    (∀ F₀ G₀ : ↥(CPolynomial.degreeLT (R := F) d),
+      P = equalDegreePolynomial θ α β F₀.val G₀.val → Q F₀.val G₀.val) ↔
+      ∀ W : ↥(CPolynomial.degreeLT (R := F) d),
+        (P - affineMultiplier α β * W.val).degree < d →
+          Q (W.val - CPolynomial.C θ * (P - affineMultiplier α β * W.val))
+            (P - affineMultiplier α β * W.val) := by
+  have hC (G : CPolynomial F) : (CPolynomial.C θ * G).degree ≤ G.degree :=
+    (CPolynomial.degree_mul_le _ _).trans <|
+      (add_le_add_left (CPolynomial.degree_C_le θ) G.degree).trans_eq (zero_add _)
+  simp only [equalDegreePolynomial]
+  constructor
+  · intro h W hG
+    refine h ⟨_, CPolynomial.mem_degreeLT.mpr <| (CPolynomial.degree_sub_le _ _).trans_lt
+      (max_lt (CPolynomial.mem_degreeLT.mp W.property) ((hC _).trans_lt hG))⟩
+      ⟨_, CPolynomial.mem_degreeLT.mpr hG⟩ (by ring)
+  · intro h F₀ G₀ hP
+    let W := F₀.val + CPolynomial.C θ * G₀.val
+    have hW : W ∈ CPolynomial.degreeLT d :=
+      CPolynomial.mem_degreeLT.mpr <| (CPolynomial.degree_add_le _ _).trans_lt
+        (max_lt (CPolynomial.mem_degreeLT.mp F₀.property)
+          ((hC G₀.val).trans_lt (CPolynomial.mem_degreeLT.mp G₀.property)))
+    have hG : P - affineMultiplier α β * W = G₀.val := by rw [hP]; ring
+    simpa only [hG, W, add_sub_cancel_right] using
+      h ⟨W, hW⟩ (hG ▸ CPolynomial.mem_degreeLT.mp G₀.property)
+
+/-- The decision procedure searches the combinations `W = F₀ + θ G₀ ∈ degreeLT d`. Each
+`W` determines the witnesses `G₀ = P - (α + β X) W` and `F₀ = W - θ G₀`. The search skips `W` if
+`G₀` has degree at least `d`. -/
 instance [Fintype F] (domain : ι ↪ F) (f g : ι → F) (d A s : ℕ) (θ α β : F)
     (P : ↥(CPolynomial.degreeLT (R := F) (d + 1))) :
     Decidable (IsEqualDegreeExceptional domain f g d A s θ α β P) :=
-  inferInstanceAs (Decidable (_ ∧ _))
+  let word := equalDegreeWord domain f g θ α β
+  decidable_of_iff
+    (A ≤ #{i : ι | P.val.eval (domain i) = word i} ∧
+      ∀ W : ↥(CPolynomial.degreeLT (R := F) d),
+        let G₀ := P.val - affineMultiplier α β * W.val
+        G₀.degree < d → s < (lostPositions domain f g word P.val
+          (W.val - CPolynomial.C θ * G₀) G₀).card)
+    (and_congr_right fun _ ↦ (forall_eq_equalDegreePolynomial_iff P.val θ α β d
+      fun F₀ G₀ ↦ s < (lostPositions domain f g word P.val F₀ G₀).card).symm)
 
 /-- The computable equal-degree predicate holds exactly when
 `ReedSolomon.IsEqualDegreeExceptional` holds for the converted candidate. -/

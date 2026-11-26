@@ -22,6 +22,9 @@ At loss one, the Johnson bound limits the list of witness pairs of degree below 
 with `A - 1` common agreements. Except for the first challenges excluded by the
 equal-degree argument, each false pair needs a nonzero affine residual in `(α, β)`
 to vanish. This gives the first inequality of (5.5) in Theorem 5.1 of [CWYZ26].
+Each excluded challenge also gives a pair of degree at most `d` whose second polynomial has
+degree exactly `d`. So the excluded challenges and the list fit one Johnson list, and the
+additive term `2ℓ₀/q` of (5.5) improves to `ℓ₀/q`.
 See the [paper page](../../../../../../docs/kb/papers/CWYZ26.md) for the correspondence.
 
 ## Main definitions and statements
@@ -34,7 +37,7 @@ See the [paper page](../../../../../../docs/kb/papers/CWYZ26.md) for the corresp
 * `ReedSolomon.linearClaimMcaError`: the worst-case exceptional-event probability.
   Its exact rational evaluator is in the sibling `LinearClaimsExact` module.
 * `ReedSolomon.linearClaimMcaError_le_affineMcaError_add`: the error is at most the
-  affine error plus `2ℓ₀/q`, where `ℓ₀` is the Johnson list bound.
+  affine error plus `ℓ₀/q`, where `ℓ₀` is the Johnson list bound.
 
 ## References
 
@@ -76,14 +79,14 @@ structure LinearClaimInstance (ι F : Type*) (d : ℕ) where
 
 namespace LinearClaimInstance
 
-/-- The instance fields as a product that can be enumerated over finite `ι` and `F`. -/
+/-- An instance as the product of data fixed before the first challenge and a message function. -/
 def equivProd (ι F : Type*) (d : ℕ) :
     LinearClaimInstance ι F d ≃
-      (ι → F) × (ι → F) × (Fin (d + 1) → F) × F × F × (F → F) where
-  toFun w := (w.f, w.g, w.v, w.γ₀, w.γ₁, w.message)
-  invFun := fun ⟨f, g, v, γ₀, γ₁, message⟩ ↦ ⟨f, g, v, γ₀, γ₁, message⟩
+      ((ι → F) × (ι → F) × (Fin (d + 1) → F) × F × F) × (F → F) where
+  toFun w := ((w.f, w.g, w.v, w.γ₀, w.γ₁), w.message)
+  invFun := fun ⟨⟨f, g, v, γ₀, γ₁⟩, message⟩ ↦ ⟨f, g, v, γ₀, γ₁, message⟩
   left_inv := by intro w; cases w; rfl
-  right_inv := by rintro ⟨f, g, v, γ₀, γ₁, message⟩; rfl
+  right_inv := by rintro ⟨⟨f, g, v, γ₀, γ₁⟩, message⟩; rfl
 
 instance [DecidableEq ι] [Fintype F] (d : ℕ) : Fintype (LinearClaimInstance ι F d) :=
   Fintype.ofEquiv _ (equivProd ι F d).symm
@@ -250,16 +253,21 @@ theorem IsLinearClaimExceptional.isEqualDegreeExceptional_or_exists {domain : ι
     unfold linearClaimResidual
     linear_combination hclaim
 
-/-- At loss one, the linear-claim error is at most the affine error plus `2ℓ₀/q`.
+/-- At loss one, the linear-claim error is at most the affine error plus `ℓ₀/q`.
 
 Here `n = |ι|` is the domain size, and `q = |F|` is the field size.
 The rounded-down Johnson bound is `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`.
-Assume `nd < (A - 1)²`. -/
+Assume `nd < (A - 1)²`.
+
+Each bad first challenge gives a pair of degree at most `d` whose second polynomial has
+degree exactly `d`, and distinct challenges give distinct pairs.
+The listed pairs with a false claim have both degrees below `d`.
+Both kinds have `A - 1` common agreements, so one Johnson list bounds them together. -/
 theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F) {d A : ℕ}
     (hJ : Fintype.card ι * d < (A - 1) ^ 2) :
     linearClaimMcaError domain d A 1 ≤ affineMcaError domain d A 1 +
       ENNReal.ofReal
-        (2 * ((⌊(Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) /
+        (((⌊(Fintype.card ι : ℝ) * ((A : ℝ) - 1 - d) /
           (((A : ℝ) - 1) ^ 2 - Fintype.card ι * d)⌋₊ : ℕ) : ℝ) / Fintype.card F) := by
   classical
   refine iSup_le fun w ↦ ?_
@@ -290,13 +298,14 @@ theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
         fun p hp ↦ ⟨⟨p, mem_degreeLT.mpr hp⟩, rfl⟩
     exact (hS.prod hS).subset fun p hp ↦ ⟨hp.1, hp.2.1⟩
   set T := hfin.toFinset
-  have hT : (#T : ℝ) ≤ ℓ₀ := by
-    refine hfloor _ (card_mul_sq_sub_card_mul_le_of_commonPolynomialAgreementSet domain f g T
-      (fun p hp ↦ ?_) (fun p hp ↦ (hfin.mem_toFinset.mp hp).2.2))
-    obtain ⟨h₁, h₂, -⟩ := hfin.mem_toFinset.mp hp
-    exact ⟨h₁.le, h₂.le⟩
-  -- An exceptional triple is affine exceptional, has a bad `θ`, or has a listed false pair.
   set B := badEqualDegreeChallenges domain f g d (A - 1)
+  -- The bad first challenges and the listed pairs fit one Johnson list.
+  have hsum : (((#T + #B : ℕ) : ℝ)) ≤ ℓ₀ := by
+    refine hfloor _ ?_
+    rw [add_comm]
+    refine card_badEqualDegreeChallenges_add_card_mul_le domain f g d (A - 1) T fun p hp ↦ ?_
+    obtain ⟨h₁, h₂, h₃⟩ := hfin.mem_toFinset.mp hp
+    exact ⟨h₁.le, h₂, h₃⟩
   set X₃ : Finset (F × F × F) := {c | ∃ p ∈ T,
     ¬ HasCorrectLinearClaims v γ₀ γ₁ (msg c.1) c.1 p.1 p.2 ∧
       linearClaimResidual v γ₀ γ₁ (msg c.1) c.1 p.1 p.2 c.2.1 c.2.2 = 0}
@@ -346,19 +355,17 @@ theorem linearClaimMcaError_le_affineMcaError_add [Fintype F] (domain : ι ↪ F
             rw [Nat.cast_mul] at h
             exact h
       _ = q ^ 2 * (E + #T / q) := by field_simp
-  have hBfloor : (#B : ℝ) ≤ (ℓ₀ : ℝ) :=
-    hfloor _ (card_badEqualDegreeChallenges_mul_le domain f g d (A - 1))
   have hcount : (#{c : F × F × F | ∃ P, IsLinearClaimExceptional domain f g d A 1 v γ₀ γ₁
-      (msg c.1) c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤ E + 2 * (ℓ₀ : ℝ) / q := by
+      (msg c.1) c.1 c.2.1 c.2.2 P} : ℝ) / q ^ 3 ≤ E + (ℓ₀ : ℝ) / q := by
     have key := Finset.card_filter_triples_le_of_imp_or B hp ha
     rw [div_le_iff₀ (by positivity)]
     calc _ ≤ q ^ 3 * (E + #T / q) + #B * q ^ 2 := key
       _ = q ^ 3 * E + #T * q ^ 2 + #B * q ^ 2 := by field_simp
-      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 + (ℓ₀ : ℝ) * q ^ 2 := by gcongr
-      _ = (E + 2 * (ℓ₀ : ℝ) / q) * q ^ 3 := by
+      _ = q ^ 3 * E + (((#T + #B : ℕ) : ℝ)) * q ^ 2 := by push_cast; ring
+      _ ≤ q ^ 3 * E + (ℓ₀ : ℝ) * q ^ 2 := by gcongr
+      _ = (E + (ℓ₀ : ℝ) / q) * q ^ 3 := by
           field_simp
-          ring
-  calc _ ≤ ENNReal.ofReal (E + 2 * (ℓ₀ : ℝ) / q) :=
+  calc _ ≤ ENNReal.ofReal (E + (ℓ₀ : ℝ) / q) :=
         ENNReal.ofReal_le_ofReal hcount
     _ = _ := by
       rw [ENNReal.ofReal_add ENNReal.toReal_nonneg (by positivity), ENNReal.ofReal_toReal hE]

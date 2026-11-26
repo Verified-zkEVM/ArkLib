@@ -35,7 +35,7 @@ The rounded-down Johnson bound is `ℓ₀ = ⌊n(A - 1 - d)/((A - 1)² - nd)⌋`
 * `ReedSolomon.equalDegreeMcaError_le`: the equal-degree bound
   `(4 / η + ℓ₀) / q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 * `ReedSolomon.linearClaimMcaError_le`: the linear-claim bound
-  `(4 / η + 2 ℓ₀) / q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
+  `(4 / η + ℓ₀) / q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`, the same as the equal-degree bound.
 
 ## References
 
@@ -89,7 +89,7 @@ theorem equalDegreeMcaError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : �
 
 /-- With one point of loss, the linear-claim MCA error is at most the explicit bound.
 
-The bound is `(4/η + 2ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
+The bound is `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)`.
 
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, and `ρ = d / n`.
 Assume `0 < η < 1 - √ρ` and `n η² ≥ 4 / ρ`.
@@ -99,7 +99,7 @@ theorem linearClaimMcaError_le [Fintype F] (domain : ι ↪ F) {d : ℕ} {η : �
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
     (hn : 4 / ((d : ℝ) / Fintype.card ι) ≤ Fintype.card ι * η ^ 2) :
     linearClaimMcaError domain d ⌈(√((d : ℝ) / Fintype.card ι) + η) * Fintype.card ι⌉₊ 1 ≤
-      ENNReal.ofReal ((4 / η + 2 *
+      ENNReal.ofReal ((4 / η +
         ((⌊(Fintype.card ι : ℝ) *
           ((⌈(√((d : ℝ) / Fintype.card ι) + η) * Fintype.card ι⌉₊ : ℝ) - 1 - d) /
           (((⌈(√((d : ℝ) / Fintype.card ι) + η) * Fintype.card ι⌉₊ : ℝ) - 1) ^ 2 -
