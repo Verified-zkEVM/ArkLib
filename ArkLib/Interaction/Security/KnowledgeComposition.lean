@@ -33,29 +33,29 @@ state at the seam.
 
 @[expose] public section
 
-universe uS uW uK uO uM uO₂ uS' uW' uT uI dI wI wJ wK uW₂ uA u q
+universe uA
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
-variable {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePoly.{u})
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 namespace KnowledgeStateFunction
 
-variable {l} {S : Type uS}
+variable {l} {S : Type}
 
 section restrict
 
-variable {s : FreeM P PUnit.{u + 1}} {Win : S → Type uW} {W : S → Transcript l s → Type uO}
+variable {s : FreeM P PUnit.{1}} {Win : S → Type} {W : S → Transcript l s → Type}
     {admissible : S →
     Prop}
   {relIn : (stmt : S) → Win stmt → Prop} {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt
     tr → Prop}
 
 /-- The state function whose states, and valid outputs, apply to admissible statements only. -/
-def guard (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput) :
-    KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn
+def guard (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput) :
+    KnowledgeStateFunction l s S W Win admissible relIn
       (fun stmt tr w => admissible stmt → validOutput stmt tr w) where
   Witness := F.Witness
   toFun stmt {_} sp history w := admissible stmt → F.toFun stmt sp history w
@@ -68,11 +68,11 @@ def guard (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn va
 
 /-- Conjoin a statement predicate to all states and to the extracted input relation.
 The output obligation supplies the same predicate at every leaf cursor. -/
-def condition (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput)
+def condition (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
     (gate : S → Prop)
     {validOutput' : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
     (hout : ∀ stmt tr w, validOutput' stmt tr w → gate stmt ∧ validOutput stmt tr w) :
-    KnowledgeStateFunction.{_, _, uK} l s S W Win admissible (fun stmt w => gate stmt ∧ relIn
+    KnowledgeStateFunction l s S W Win admissible (fun stmt w => gate stmt ∧ relIn
     stmt w)
       validOutput' where
   Witness := F.Witness
@@ -86,14 +86,14 @@ def condition (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relI
     ⟨(hout stmt _ w h).1, F.leaf sp history stmt w (hout stmt _ w h).2⟩
 
 /-- Pull back statements and output witnesses, and map the extracted input witnesses. -/
-def comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → Transcript l s → Type uO₂}
-    (f : S' → S) (F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput)
+def comap {S' : Type} {Win' : S' → Type} {W' : S' → Transcript l s → Type}
+    (f : S' → S) (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
     (inputMap : ∀ stmt, Win (f stmt) → Win' stmt)
     (outputMap : ∀ stmt tr, W' stmt tr → W (f stmt) tr)
     {validOutput' : (stmt : S') → (tr : Transcript l s) → W' stmt tr → Prop}
     (hout : ∀ stmt tr w, validOutput' stmt tr w →
       validOutput (f stmt) tr (outputMap stmt tr w)) :
-    KnowledgeStateFunction.{_, _, uK} l s S' W' Win' (fun stmt => admissible (f stmt))
+    KnowledgeStateFunction l s S' W' Win' (fun stmt => admissible (f stmt))
       (fun stmt w => ∃ v, relIn (f stmt) v ∧ inputMap stmt v = w) validOutput' where
   Witness stmt := F.Witness (f stmt)
   toFun stmt := F.toFun (f stmt)
@@ -110,13 +110,13 @@ variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 section restrictBounds
 
-variable {s : FreeM P PUnit.{1}} {Win : S → Type uW}
-  {W : S → Transcript l s → Type uO} {admissible : S → Prop}
+variable {s : FreeM P PUnit.{1}} {Win : S → Type}
+  {W : S → Transcript l s → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
 
 /-- Guarding keeps the bound at an admissible statement. -/
-theorem BoundedAt.guard {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn
+theorem BoundedAt.guard {F : KnowledgeStateFunction l s S W Win admissible relIn
     validOutput}
     {draw : PrefixDraw l ProbComp s} {ε : PrefixError l s} {stmt : S}
     (h : F.BoundedAt draw ε stmt) (hadm : admissible stmt) : F.guard.BoundedAt draw ε stmt :=
@@ -126,7 +126,7 @@ theorem BoundedAt.guard {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admis
     exact ⟨wit, fun h' => hbad fun _ => h', hgood hadm⟩
 
 /-- Conjoining a statement predicate does not enlarge the local bad-challenge event. -/
-theorem BoundedAt.condition {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn
+theorem BoundedAt.condition {F : KnowledgeStateFunction l s S W Win admissible relIn
     validOutput}
     {gate : S → Prop}
     {validOutput' : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
@@ -139,8 +139,8 @@ theorem BoundedAt.condition {F : KnowledgeStateFunction.{_, _, uK} l s S W Win a
   exact ⟨w, fun h' => hbad ⟨hgood.1, h'⟩, hgood.2⟩
 
 /-- Pulling back statements and witness maps keeps the original local bound. -/
-theorem BoundedAt.comap {S' : Type uS'} {Win' : S' → Type uW'} {W' : S' → Transcript l s → Type uO₂}
-    {f : S' → S} {F : KnowledgeStateFunction.{_, _, uK} l s S W Win admissible relIn validOutput}
+theorem BoundedAt.comap {S' : Type} {Win' : S' → Type} {W' : S' → Transcript l s → Type}
+    {f : S' → S} {F : KnowledgeStateFunction l s S W Win admissible relIn validOutput}
     {inputMap : ∀ stmt, Win (f stmt) → Win' stmt}
     {outputMap : ∀ stmt tr, W' stmt tr → W (f stmt) tr}
     {validOutput' : (stmt : S') → (tr : Transcript l s) → W' stmt tr → Prop}
@@ -155,8 +155,8 @@ end restrictBounds
 section security
 
 variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
-  {Wmid : S → Transcript l s₁ → Type uM}
-    {W : S → Transcript l (s₁.append s₂) → Type uO} {Win : S → Type uW}
+  {Wmid : S → Transcript l s₁ → Type}
+    {W : S → Transcript l (s₁.append s₂) → Type} {Win : S → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop}
   {admissible₂ : Transcript l s₁ → S → Prop}
@@ -167,8 +167,8 @@ variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
 composite is bounded by the prefix errors at prefix challenges and the suffix errors at suffix
 challenges. -/
 theorem LocallyBounded.append
-    {F₁ : KnowledgeStateFunction.{_, _, uK} l s₁ S Wmid Win admissible relIn validMid}
-    {F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction.{_, _, uK} l (s₂ tr₁.path)
+    {F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid}
+    {F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
       S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
         (admissible₂ tr₁)
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)}
@@ -190,8 +190,8 @@ theorem LocallyBounded.append
 
 /-- Node-indexed local bounds compose by specializing full-prefix composition. -/
 theorem LocallyBoundedOfNodes.append
-    {F₁ : KnowledgeStateFunction.{_, _, uK} l s₁ S Wmid Win admissible relIn validMid}
-    {F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction.{_, _, uK} l (s₂ tr₁.path)
+    {F₁ : KnowledgeStateFunction l s₁ S Wmid Win admissible relIn validMid}
+    {F₂ : (tr₁ : Transcript l s₁) → KnowledgeStateFunction l (s₂ tr₁.path)
       S (fun stmt tr₂ => W stmt (Transcript.append s₁ s₂ tr₁ tr₂)) (fun stmt => Wmid stmt tr₁)
         (admissible₂ tr₁)
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)}
@@ -217,9 +217,9 @@ variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 section security
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {S : Type uS}
-    {Win : S → Type uW}
-  {Wmid : S → Transcript l s₁ → Type uM} {W : S → Transcript l (s₁.append s₂) → Type uO}
+variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {S : Type}
+    {Win : S → Type}
+  {Wmid : S → Transcript l s₁ → Type} {W : S → Transcript l (s₁.append s₂) → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validMid : (stmt : S) → (tr : Transcript l s₁) → Wmid stmt tr → Prop}
   {validOutput : (stmt : S) → (tr : Transcript l (s₁.append s₂)) → W stmt tr → Prop}
@@ -236,14 +236,14 @@ output. The composite error is the prefix error at prefix challenges and the suf
 suffix challenges, selecting the suffix family by the full first transcript. -/
 theorem rbrKnowledgeSoundness_append_prefix {admissible₂ : Transcript l s₁ → S → Prop}
     {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop}
-    (h₁ : rbrKnowledgeSoundness.{_, _, uK} l s₁ admissible relIn validMid draw₁ ε₁)
-    (h₂ : ∀ tr₁, rbrKnowledgeSoundness.{_, _, uK} l (s₂ tr₁.path)
+    (h₁ : rbrKnowledgeSoundness l s₁ admissible relIn validMid draw₁ ε₁)
+    (h₂ : ∀ tr₁, rbrKnowledgeSoundness l (s₂ tr₁.path)
     (admissible₂ tr₁)
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)
       (draw₂ tr₁) (ε₂ tr₁))
     (hadm : ∀ tr₁ stmt, admissible stmt → admissible₂ tr₁ stmt)
     (glue : ∀ tr₁ stmt w, admissible stmt → relMid tr₁ stmt w → validMid stmt tr₁ w) :
-    rbrKnowledgeSoundness.{_, _, uK} l (s₁.append s₂) admissible relIn validOutput
+    rbrKnowledgeSoundness l (s₁.append s₂) admissible relIn validOutput
       (combinePrefixDraw l s₁ s₂ draw₁ draw₂) (combinePrefixDraw
       (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
   obtain ⟨F₁, hF₁⟩ := h₁
@@ -257,19 +257,19 @@ theorem rbrKnowledgeSoundness_append_prefix {admissible₂ : Transcript l s₁ �
 /-- Sequential composition through a deterministic intermediate statement. The suffix is knowledge
 sound for its own statements; `mid` computes the suffix statement from the input statement and
 the prefix transcript, and composite valid outputs are suffix valid outputs at that statement. -/
-theorem rbrKnowledgeSoundness_append_of_mid_prefix {T : Transcript l s₁ → Type uT} (mid :
+theorem rbrKnowledgeSoundness_append_of_mid_prefix {T : Transcript l s₁ → Type} (mid :
     (stmt : S) →
     (tr : Transcript l s₁) → T tr)
-    {Wmid₂ : (tr₁ : Transcript l s₁) → T tr₁ → Type uW₂}
+    {Wmid₂ : (tr₁ : Transcript l s₁) → T tr₁ → Type}
     {W₂ : (tr₁ : Transcript l s₁) → T tr₁ →
-      Transcript l (s₂ tr₁.path) → Type uO₂}
+      Transcript l (s₂ tr₁.path) → Type}
     {admissible₂ : (tr₁ : Transcript l s₁) → T tr₁ → Prop}
     {relMid : (tr₁ : Transcript l s₁) → (t : T tr₁) → Wmid₂ tr₁ t → Prop}
     {validOutput₂ : (tr₁ : Transcript l s₁) → (t : T tr₁) →
       (tr₂ : Transcript l (s₂ tr₁.path)) → W₂ tr₁ t tr₂ → Prop}
-    (h₁ : rbrKnowledgeSoundness.{_, _, uK} l s₁ admissible relIn
+    (h₁ : rbrKnowledgeSoundness l s₁ admissible relIn
       (fun stmt tr w => validMid stmt tr w) draw₁ ε₁)
-    (h₂ : ∀ tr₁, rbrKnowledgeSoundness.{_, _, uK} l (s₂ tr₁.path)
+    (h₂ : ∀ tr₁, rbrKnowledgeSoundness l (s₂ tr₁.path)
       (admissible₂ tr₁) (relMid tr₁) (validOutput₂ tr₁)
       (draw₂ tr₁) (ε₂ tr₁))
     (midWitness : ∀ stmt tr₁, Wmid₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
@@ -280,7 +280,7 @@ theorem rbrKnowledgeSoundness_append_of_mid_prefix {T : Transcript l s₁ → Ty
       validMid stmt tr₁ (midWitness stmt tr₁ w))
     (hout : ∀ stmt tr₁ tr₂ w, validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w →
       validOutput₂ tr₁ (mid stmt tr₁) tr₂ (outWitness stmt tr₁ tr₂ w)) :
-    rbrKnowledgeSoundness.{_, _, uK} l (s₁.append s₂) admissible relIn validOutput
+    rbrKnowledgeSoundness l (s₁.append s₂) admissible relIn validOutput
       (combinePrefixDraw l s₁ s₂ draw₁ draw₂)
       (combinePrefixDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
   apply rbrKnowledgeSoundness_append_prefix l (admissible₂ := fun tr stmt =>
@@ -301,14 +301,14 @@ theorem rbrKnowledgeSoundness_append {draw₁ : QueryImpl (challengeSpec l s₁)
     {ε₁ : ChallengeNode l s₁ → ℝ≥0∞}
     {ε₂ : (p : Path s₁) → ChallengeNode l (s₂ p) → ℝ≥0∞} {admissible₂ : Transcript l s₁ → S → Prop}
     {relMid : (tr₁ : Transcript l s₁) → (stmt : S) → Wmid stmt tr₁ → Prop}
-    (h₁ : rbrKnowledgeSoundnessOfNodes.{_, _, uK} l s₁ admissible relIn validMid draw₁ ε₁)
-    (h₂ : ∀ tr₁, rbrKnowledgeSoundnessOfNodes.{_, _, uK} l (s₂ tr₁.path)
+    (h₁ : rbrKnowledgeSoundnessOfNodes l s₁ admissible relIn validMid draw₁ ε₁)
+    (h₂ : ∀ tr₁, rbrKnowledgeSoundnessOfNodes l (s₂ tr₁.path)
     (admissible₂ tr₁)
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)
       (draw₂ tr₁.path) (ε₂ tr₁.path))
     (hadm : ∀ tr₁ stmt, admissible stmt → admissible₂ tr₁ stmt)
     (glue : ∀ tr₁ stmt w, admissible stmt → relMid tr₁ stmt w → validMid stmt tr₁ w) :
-    rbrKnowledgeSoundnessOfNodes.{_, _, uK} l (s₁.append s₂) admissible relIn validOutput
+    rbrKnowledgeSoundnessOfNodes l (s₁.append s₂) admissible relIn validOutput
       (combineDraw l s₁ s₂ draw₁ draw₂) (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
   simpa only [combinePrefixDraw_ofNodes, combinePrefixError_ofNodes] using
     (rbrKnowledgeSoundness_append_prefix l (draw₁ := PrefixDraw.ofNodes l draw₁)
@@ -320,19 +320,19 @@ theorem rbrKnowledgeSoundness_append {draw₁ : QueryImpl (challengeSpec l s₁)
 theorem rbrKnowledgeSoundness_append_of_mid {draw₁ : QueryImpl (challengeSpec l s₁) ProbComp}
     {draw₂ : (p : Path s₁) → QueryImpl (challengeSpec l (s₂ p)) ProbComp}
     {ε₁ : ChallengeNode l s₁ → ℝ≥0∞}
-    {ε₂ : (p : Path s₁) → ChallengeNode l (s₂ p) → ℝ≥0∞} {T : Transcript l s₁ → Type uT} (mid :
+    {ε₂ : (p : Path s₁) → ChallengeNode l (s₂ p) → ℝ≥0∞} {T : Transcript l s₁ → Type} (mid :
     (stmt : S) →
     (tr : Transcript l s₁) → T tr)
-    {Wmid₂ : (tr₁ : Transcript l s₁) → T tr₁ → Type uW₂}
+    {Wmid₂ : (tr₁ : Transcript l s₁) → T tr₁ → Type}
     {W₂ : (tr₁ : Transcript l s₁) → T tr₁ →
-      Transcript l (s₂ tr₁.path) → Type uO₂}
+      Transcript l (s₂ tr₁.path) → Type}
     {admissible₂ : (tr₁ : Transcript l s₁) → T tr₁ → Prop}
     {relMid : (tr₁ : Transcript l s₁) → (t : T tr₁) → Wmid₂ tr₁ t → Prop}
     {validOutput₂ : (tr₁ : Transcript l s₁) → (t : T tr₁) →
       (tr₂ : Transcript l (s₂ tr₁.path)) → W₂ tr₁ t tr₂ → Prop}
-    (h₁ : rbrKnowledgeSoundnessOfNodes.{_, _, uK} l s₁ admissible relIn
+    (h₁ : rbrKnowledgeSoundnessOfNodes l s₁ admissible relIn
       (fun stmt tr w => validMid stmt tr w) draw₁ ε₁)
-    (h₂ : ∀ tr₁, rbrKnowledgeSoundnessOfNodes.{_, _, uK} l (s₂ tr₁.path)
+    (h₂ : ∀ tr₁, rbrKnowledgeSoundnessOfNodes l (s₂ tr₁.path)
       (admissible₂ tr₁) (relMid tr₁) (validOutput₂ tr₁)
       (draw₂ tr₁.path) (ε₂ tr₁.path))
     (midWitness : ∀ stmt tr₁, Wmid₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
@@ -343,7 +343,7 @@ theorem rbrKnowledgeSoundness_append_of_mid {draw₁ : QueryImpl (challengeSpec 
       validMid stmt tr₁ (midWitness stmt tr₁ w))
     (hout : ∀ stmt tr₁ tr₂ w, validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w →
       validOutput₂ tr₁ (mid stmt tr₁) tr₂ (outWitness stmt tr₁ tr₂ w)) :
-    rbrKnowledgeSoundnessOfNodes.{_, _, uK} l (s₁.append s₂) admissible relIn validOutput
+    rbrKnowledgeSoundnessOfNodes l (s₁.append s₂) admissible relIn validOutput
       (combineDraw l s₁ s₂ draw₁ draw₂)
       (combineDraw (m := fun _ => ℝ≥0∞) l s₁ s₂ ε₁ ε₂) := by
   simpa only [combinePrefixDraw_ofNodes, combinePrefixError_ofNodes] using
@@ -357,9 +357,9 @@ end security
 
 section view
 
-variable {s₁ : OracleProtocol.{0, q}} {s₂ : Path s₁ → OracleProtocol.{0, q}} {S : Type uS}
-  {Win : S → Type uW} {Wmid : S → Transcript oracleSig s₁ → Type uM}
-  {W : S → Transcript oracleSig (s₁.append s₂) → Type uO}
+variable {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {Win : S → Type} {Wmid : S → Transcript oracleSig s₁ → Type}
+  {W : S → Transcript oracleSig (s₁.append s₂) → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validMid : (stmt : S) → (tr : Transcript oracleSig s₁) → Wmid stmt tr → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig (s₁.append s₂)) → W stmt tr → Prop}
@@ -374,14 +374,14 @@ theorem rbrKnowledgeSoundness_append_view {admissible₂ : Transcript oracleSig 
     {draw₂ : (p : Path s₁) → View s₁ p → PrefixDraw viewSig ProbComp (s₂ p)}
     {ε₁ : PrefixError oracleSig s₁}
     {ε₂ : (tr₁ : Transcript oracleSig s₁) → PrefixError oracleSig (s₂ tr₁.path)}
-    (h₁ : rbrKnowledgeSoundness.{_, _, uK} oracleSig s₁ admissible relIn validMid
+    (h₁ : rbrKnowledgeSoundness oracleSig s₁ admissible relIn validMid
       (PrefixDraw.ofView draw₁) ε₁)
-    (h₂ : ∀ tr₁, rbrKnowledgeSoundness.{_, _, uK} oracleSig (s₂ tr₁.path) (admissible₂ tr₁)
+    (h₂ : ∀ tr₁, rbrKnowledgeSoundness oracleSig (s₂ tr₁.path) (admissible₂ tr₁)
       (relMid tr₁) (fun stmt tr₂ w => validOutput stmt (Transcript.append s₁ s₂ tr₁ tr₂) w)
       (PrefixDraw.ofView (draw₂ tr₁.path (toView s₁ tr₁))) (ε₂ tr₁))
     (hadm : ∀ tr₁ stmt, admissible stmt → admissible₂ tr₁ stmt)
     (glue : ∀ tr₁ stmt w, admissible stmt → relMid tr₁ stmt w → validMid stmt tr₁ w) :
-    rbrKnowledgeSoundness.{_, _, uK} oracleSig (s₁.append s₂) admissible relIn validOutput
+    rbrKnowledgeSoundness oracleSig (s₁.append s₂) admissible relIn validOutput
       (PrefixDraw.ofView (combineViewPrefixDraw s₁ s₂ draw₁ draw₂))
       (combinePrefixDraw (m := fun _ => ℝ≥0∞) oracleSig s₁ s₂ ε₁ ε₂) := by
   rw [ofView_combineViewPrefixDraw]
@@ -391,7 +391,7 @@ end view
 
 /-- A positive composite acceptance decomposes into two supported accepted decisions, with
 exactly the same ambient state at their boundary. -/
-theorem Verifier.validAcceptance_append {ι σ : Type} {S : Type uS}
+theorem Verifier.validAcceptance_append {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι} {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     (V₁ : Verifier ambient s₁ S T)
@@ -431,16 +431,16 @@ theorem Verifier.validAcceptance_append {ι σ : Type} {S : Type uS}
 /-- Standalone verifier knowledge theorems compose at an identified middle claim. The prefix
 may use ambient effects; every supported accepted prefix result must equal the named claim.
 The suffix theorem is stated solely for the suffix verifier and its own output relation. -/
-theorem Verifier.rbrKnowledgeSoundness_append_prefix {ι σ : Type} {S : Type uS}
+theorem Verifier.rbrKnowledgeSoundness_append_prefix {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι}
     {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {Win : S → Type uW} {Wmid : S → Transcript plainSig s₁ → Type uM}
+    {Win : S → Type} {Wmid : S → Transcript plainSig s₁ → Type}
     {Win₂ : (tr₁ : Transcript plainSig s₁) →
-      T tr₁.path → Type uW₂}
-    {W : S → Transcript plainSig (s₁.append s₂) → Type uO}
+      T tr₁.path → Type}
+    {W : S → Transcript plainSig (s₁.append s₂) → Type}
     {W₂ : (tr₁ : Transcript plainSig s₁) → T tr₁.path →
-      Transcript plainSig (s₂ tr₁.path) → Type uO₂}
+      Transcript plainSig (s₂ tr₁.path) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ ProbComp))
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -468,8 +468,8 @@ theorem Verifier.rbrKnowledgeSoundness_append_prefix {ι σ : Type} {S : Type uS
     (midWitness : ∀ stmt tr₁, Win₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
     (outWitness : ∀ stmt tr₁ tr₂,
       W stmt (Transcript.append s₁ s₂ tr₁ tr₂) → W₂ tr₁ (mid stmt tr₁) tr₂)
-    (h₁ : Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uM} V₁ impl admissible relIn relOut₁ draw₁ ε₁)
-    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundness.{0, uW₂, uK}
+    (h₁ : Verifier.rbrKnowledgeSoundness V₁ impl admissible relIn relOut₁ draw₁ ε₁)
+    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundness
       (V₂ tr₁.path) impl
       (admissible₂ tr₁) (relMid tr₁) (relOut₂ tr₁) (draw₂ tr₁)
       (ε₂ tr₁))
@@ -479,7 +479,7 @@ theorem Verifier.rbrKnowledgeSoundness_append_prefix {ι σ : Type} {S : Type uS
     (hout : ∀ stmt tr₁ tr₂ out original w, HEq out original →
       relOut stmt (Transcript.append s₁ s₂ tr₁ tr₂) original w →
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
-    Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uO} (V₁.append V₂) impl admissible relIn relOut
+    Verifier.rbrKnowledgeSoundness (V₁.append V₂) impl admissible relIn relOut
       (combinePrefixDraw plainSig s₁ s₂ draw₁ draw₂)
       (combinePrefixDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
   let valid := fun stmt tr w =>
@@ -516,16 +516,16 @@ theorem Verifier.rbrKnowledgeSoundness_append_prefix {ι σ : Type} {S : Type uS
 
 /-- A prefix that returns its middle claim without effects satisfies verifier knowledge
 composition from the two standalone knowledge theorems. -/
-theorem Verifier.rbrKnowledgeSoundness_append_of_pure_prefix {ι σ : Type} {S : Type uS}
+theorem Verifier.rbrKnowledgeSoundness_append_of_pure_prefix {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι}
     {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {Win : S → Type uW} {Wmid : S → Transcript plainSig s₁ → Type uM}
+    {Win : S → Type} {Wmid : S → Transcript plainSig s₁ → Type}
     {Win₂ : (tr₁ : Transcript plainSig s₁) →
-      T tr₁.path → Type uW₂}
-    {W : S → Transcript plainSig (s₁.append s₂) → Type uO}
+      T tr₁.path → Type}
+    {W : S → Transcript plainSig (s₁.append s₂) → Type}
     {W₂ : (tr₁ : Transcript plainSig s₁) → T tr₁.path →
-      Transcript plainSig (s₂ tr₁.path) → Type uO₂}
+      Transcript plainSig (s₂ tr₁.path) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ ProbComp))
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -551,8 +551,8 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure_prefix {ι σ : Type} {S :
     (midWitness : ∀ stmt tr₁, Win₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
     (outWitness : ∀ stmt tr₁ tr₂,
       W stmt (Transcript.append s₁ s₂ tr₁ tr₂) → W₂ tr₁ (mid stmt tr₁) tr₂)
-    (h₁ : Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uM} V₁ impl admissible relIn relOut₁ draw₁ ε₁)
-    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundness.{0, uW₂, uK}
+    (h₁ : Verifier.rbrKnowledgeSoundness V₁ impl admissible relIn relOut₁ draw₁ ε₁)
+    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundness
       (V₂ tr₁.path) impl
       (admissible₂ tr₁) (relMid tr₁) (relOut₂ tr₁) (draw₂ tr₁)
       (ε₂ tr₁))
@@ -562,7 +562,7 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure_prefix {ι σ : Type} {S :
     (hout : ∀ stmt tr₁ tr₂ out original w, HEq out original →
       relOut stmt (Transcript.append s₁ s₂ tr₁ tr₂) original w →
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
-    Verifier.rbrKnowledgeSoundness.{uS, uW, uK, uO} (V₁.append V₂) impl admissible relIn relOut
+    Verifier.rbrKnowledgeSoundness (V₁.append V₂) impl admissible relIn relOut
       (combinePrefixDraw plainSig s₁ s₂ draw₁ draw₂)
       (combinePrefixDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
   apply Verifier.rbrKnowledgeSoundness_append_prefix V₁ V₂ impl mid _ midWitness outWitness
@@ -575,15 +575,15 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure_prefix {ι σ : Type} {S :
   exact h.1
 
 /-- Node-indexed standalone verifier composition specializes the full-prefix law. -/
-theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
+theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {Win : S → Type uW} {Wmid : S → Transcript plainSig s₁ → Type uM}
+    {Win : S → Type} {Wmid : S → Transcript plainSig s₁ → Type}
     {Win₂ : (tr₁ : Transcript plainSig s₁) →
-      T tr₁.path → Type uW₂}
-    {W : S → Transcript plainSig (s₁.append s₂) → Type uO}
+      T tr₁.path → Type}
+    {W : S → Transcript plainSig (s₁.append s₂) → Type}
     {W₂ : (tr₁ : Transcript plainSig s₁) → T tr₁.path →
-      Transcript plainSig (s₂ tr₁.path) → Type uO₂}
+      Transcript plainSig (s₂ tr₁.path) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ ProbComp))
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -609,9 +609,9 @@ theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambi
     (midWitness : ∀ stmt tr₁, Win₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
     (outWitness : ∀ stmt tr₁ tr₂,
       W stmt (Transcript.append s₁ s₂ tr₁ tr₂) → W₂ tr₁ (mid stmt tr₁) tr₂)
-    (h₁ : Verifier.rbrKnowledgeSoundnessOfNodes.{uS, uW, uK, uM} V₁
+    (h₁ : Verifier.rbrKnowledgeSoundnessOfNodes V₁
     impl admissible relIn relOut₁ draw₁ ε₁)
-    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundnessOfNodes.{0, uW₂, uK}
+    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundnessOfNodes
       (V₂ tr₁.path) impl
       (admissible₂ tr₁) (relMid tr₁) (relOut₂ tr₁) (draw₂ tr₁.path)
       (ε₂ tr₁.path))
@@ -621,7 +621,7 @@ theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambi
     (hout : ∀ stmt tr₁ tr₂ out original w, HEq out original →
       relOut stmt (Transcript.append s₁ s₂ tr₁ tr₂) original w →
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
-    Verifier.rbrKnowledgeSoundnessOfNodes.{uS, uW, uK, uO} (V₁.append V₂)
+    Verifier.rbrKnowledgeSoundnessOfNodes (V₁.append V₂)
     impl admissible relIn relOut
       (combineDraw plainSig s₁ s₂ draw₁ draw₂)
       (combineDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
@@ -633,16 +633,16 @@ theorem Verifier.rbrKnowledgeSoundness_append {ι σ : Type} {S : Type uS} {ambi
       V₁ V₂ impl mid accepted midWitness outWitness h₁ h₂ hadm glue hout)
 
 /-- Node-indexed standalone verifier composition specializes the full-prefix law. -/
-theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type uS}
+theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι}
     {s₁ : Protocol} {s₂ : Path s₁ → Protocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {Win : S → Type uW} {Wmid : S → Transcript plainSig s₁ → Type uM}
+    {Win : S → Type} {Wmid : S → Transcript plainSig s₁ → Type}
     {Win₂ : (tr₁ : Transcript plainSig s₁) →
-      T tr₁.path → Type uW₂}
-    {W : S → Transcript plainSig (s₁.append s₂) → Type uO}
+      T tr₁.path → Type}
+    {W : S → Transcript plainSig (s₁.append s₂) → Type}
     {W₂ : (tr₁ : Transcript plainSig s₁) → T tr₁.path →
-      Transcript plainSig (s₂ tr₁.path) → Type uO₂}
+      Transcript plainSig (s₂ tr₁.path) → Type}
     (V₁ : Verifier ambient s₁ S T) (V₂ : (p : Path s₁) → Verifier ambient (s₂ p) (T p) (U p))
     (impl : QueryImpl ambient (StateT σ ProbComp))
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -666,9 +666,9 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
     (midWitness : ∀ stmt tr₁, Win₂ tr₁ (mid stmt tr₁) → Wmid stmt tr₁)
     (outWitness : ∀ stmt tr₁ tr₂,
       W stmt (Transcript.append s₁ s₂ tr₁ tr₂) → W₂ tr₁ (mid stmt tr₁) tr₂)
-    (h₁ : Verifier.rbrKnowledgeSoundnessOfNodes.{uS, uW, uK, uM} V₁
+    (h₁ : Verifier.rbrKnowledgeSoundnessOfNodes V₁
     impl admissible relIn relOut₁ draw₁ ε₁)
-    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundnessOfNodes.{0, uW₂, uK}
+    (h₂ : ∀ tr₁, Verifier.rbrKnowledgeSoundnessOfNodes
       (V₂ tr₁.path) impl
       (admissible₂ tr₁) (relMid tr₁) (relOut₂ tr₁) (draw₂ tr₁.path)
       (ε₂ tr₁.path))
@@ -678,7 +678,7 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
     (hout : ∀ stmt tr₁ tr₂ out original w, HEq out original →
       relOut stmt (Transcript.append s₁ s₂ tr₁ tr₂) original w →
       relOut₂ tr₁ (mid stmt tr₁) tr₂ out (outWitness stmt tr₁ tr₂ w)) :
-    Verifier.rbrKnowledgeSoundnessOfNodes.{uS, uW, uK, uO} (V₁.append V₂)
+    Verifier.rbrKnowledgeSoundnessOfNodes (V₁.append V₂)
     impl admissible relIn relOut
       (combineDraw plainSig s₁ s₂ draw₁ draw₂)
       (combineDraw (m := fun _ => ℝ≥0∞) plainSig s₁ s₂ ε₁ ε₂) := by
@@ -691,18 +691,17 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type u
       V₁ V₂ impl mid decision midWitness outWitness h₁ h₂ hadm glue hout)
 
 /-- Positive oracle acceptance decomposes into supported accepted middle and final results.
-The suffix uses the prefix's final ambient state and the actual routed bundle data. The input
-bundle's query indices and data have their own universes. -/
-theorem OracleVerifier.validAcceptance_append {ι σ : Type} {S : Type uS}
-    {ambient : OracleSpec ι} {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
+The suffix uses the prefix's final ambient state and the actual routed bundle data. -/
+theorem OracleVerifier.validAcceptance_append {ι σ : Type} {S : Type}
+    {ambient : OracleSpec ι} {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
     {K : (p : Path s₁) → Path (s₂ p) → Type}
     {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-    {inputs : OracleBundle.{0, uI, dI}}
-    {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {inputs : OracleBundle.{0, 0, 0}}
+    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
-      OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
+      OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : V₁.OutputCompatibility V₂) (impl : QueryImpl ambient (StateT σ ProbComp))

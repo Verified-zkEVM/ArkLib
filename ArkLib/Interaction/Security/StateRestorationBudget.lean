@@ -48,8 +48,6 @@ correspondence.
 -/
 @[expose] public section
 
-universe uK uW uO wI wJ uS uI
-
 namespace Interaction.StateRestoration
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec Oracle
 
@@ -176,9 +174,9 @@ theorem restoredExecution_round_cost {Input Salt W : Type} (rounds : List Round)
 
 section Knowledge
 
-variable {S W Salt : Type} {Win : S → Type uW} {rounds : List Round} {admissible : S → Prop}
+variable {S W Salt : Type} {Win : S → Type} {rounds : List Round} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
-  {Wout : S → Transcript oracleSig (protocol rounds) → Type uO}
+  {Wout : S → Transcript oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) → Wout stmt tr → Prop}
 
 /-- Knowledge soundness of the restored execution with per-round errors: for every adversary with
@@ -186,7 +184,7 @@ at most `Q` queries, the probability that the selected input is admissible, the 
 completed transcript is valid and extraction fails is at most `Q * max_j errors j + ∑ j, errors j`.
 -/
 theorem restoredExecution_knowledge_soundness_nonuniform [DecidableEq (Key S Salt rounds)]
-    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds)
       S Wout Win admissible relIn validOutput)
     (errors : RoundErrors rounds)
     (bounded : F.LocallyBoundedOfNodes (uniformDraw rounds) (roundEps errors))
@@ -212,11 +210,11 @@ section Games
 variable {rounds : List Round} {I S Salt W : Type} {A : I → Type}
   {T : Path (protocol rounds) → Type} {J : Path (protocol rounds) → Type}
   {B : (p : Path (protocol rounds)) → J p → Type}
-  {Win : S × (∀ i, A i) → Type uW}
-  {inputs : OracleFamily.{0, 0, wI} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {Win : S × (∀ i, A i) → Type}
+  {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
-  {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type uO}
+  {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) →
     Wout stmt tr → Prop}
 
@@ -226,7 +224,7 @@ theorem stateRestoration_knowledge_soundness_nonuniform
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
       T tr.path → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
@@ -257,7 +255,7 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
       OracleVerifier.Output T B tr.path → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
@@ -291,7 +289,7 @@ theorem stateRestoration_knowledge_soundness_nonuniform_privateCoins
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
       T tr.path → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds)
       (S × (∀ i, A i)) Wout Win admissible relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
       Wout stmt tr)
@@ -323,7 +321,7 @@ theorem stateRestoration_oracle_knowledge_soundness_nonuniform_privateCoins
     (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
       OracleVerifier.Output T B tr.path → W → Prop)
-    (F : KnowledgeStateFunction.{0, uW, uK, uO, 1, 0} oracleSig (protocol rounds)
+    (F : KnowledgeStateFunction oracleSig (protocol rounds)
       (S × (∀ i, A i)) Wout Win admissible relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
       Wout stmt tr)
@@ -358,10 +356,11 @@ namespace Interaction.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens OracleComp
 open Interaction.StateRestoration
 
-variable {s : OracleProtocol} {S : Type uS} {Win : S → Type} {W : S → Transcript oracleSig s → Type}
+variable {s : OracleProtocol.{0, 0}} {S : Type} {Win : S → Type}
+  {W : S → Transcript oracleSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → W stmt tr → Prop}
-  {F : KnowledgeStateFunction.{uS, 0, 0, 0, 1, 0} oracleSig s S W Win admissible relIn validOutput}
+  {F : KnowledgeStateFunction oracleSig s S W Win admissible relIn validOutput}
   {ω : Type}
 
 variable [AddCommMonoid ω] [PartialOrder ω] [IsOrderedAddMonoid ω]
@@ -396,7 +395,7 @@ bound. -/
 theorem programAlong_budget_le_protocol {rounds : List Round}
     {Wout : S → Transcript oracleSig (protocol rounds) → Type}
     {valid : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) → Wout stmt tr → Prop}
-    {G : KnowledgeStateFunction.{uS, 0, 0, 0, 1, 0} oracleSig (protocol rounds)
+    {G : KnowledgeStateFunction oracleSig (protocol rounds)
       S Wout Win admissible relIn valid}
     (stages : MeasuredStages G ω) {stmt : S}
     {rootBound messageBound challengeBound leafBound : ω}
@@ -410,7 +409,7 @@ theorem programAlong_budget_le_protocol {rounds : List Round}
 theorem programAlong_budget_le_protocol_zero {rounds : List Round}
     {Wout : S → Transcript oracleSig (protocol rounds) → Type}
     {valid : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) → Wout stmt tr → Prop}
-    {G : KnowledgeStateFunction.{uS, 0, 0, 0, 1, 0} oracleSig (protocol rounds)
+    {G : KnowledgeStateFunction oracleSig (protocol rounds)
       S Wout Win admissible relIn valid}
     (stages : MeasuredStages G ω) {stmt : S} {messageBound challengeBound : ω}
     (h : stages.ProtocolBudgetAtMost stmt 0 messageBound challengeBound 0)
@@ -423,7 +422,7 @@ most the protocol budget. -/
 theorem programAlong_costAtMost_protocol {rounds : List Round}
     {Wout : S → Transcript oracleSig (protocol rounds) → Type}
     {valid : (stmt : S) → (tr : Transcript oracleSig (protocol rounds)) → Wout stmt tr → Prop}
-    {G : KnowledgeStateFunction.{uS, 0, 0, 0, 1, 0} oracleSig (protocol rounds)
+    {G : KnowledgeStateFunction oracleSig (protocol rounds)
       S Wout Win admissible relIn valid}
     (stages : MeasuredStages G ω) {stmt : S}
     {rootBound messageBound challengeBound leafBound : ω}
@@ -441,7 +440,7 @@ open Interaction.StateRestoration
 
 section ReadOut
 
-variable {Kind : Type} [Finite Kind] {s : OracleProtocol} {S : Type uS} {W : Type}
+variable {Kind : Type} [Finite Kind] {s : OracleProtocol.{0, 0}} {S : Type} {W : Type}
   {Win : S → Type} {Wout : S → Transcript oracleSig s → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → Wout stmt tr → Prop}
@@ -482,8 +481,8 @@ variable {rounds : List Round} {I S Salt W Kind : Type} [Finite Kind]
   {A : I → Type} {T : Path (protocol rounds) → Type}
   {J : Path (protocol rounds) → Type} {B : (p : Path (protocol rounds)) → J p → Type}
     {Win : S × (∀ i, A i) → Type}
-  {inputs : OracleFamily.{0, 0, wI} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleFamily.{0, 0, 0} I A}
+  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
   {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) →

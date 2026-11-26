@@ -261,7 +261,7 @@ def valid (_ : Stmt) (tr : Transcript oracleSig (protocol rounds)) (w : Nat) : P
 /-- Before any move a witness is at most the input; after the message no witness is known; after
 the challenge `c` a witness is known when `c` is `true` and it is at most the message. Extraction
 adds the message at the message step and copies the witness otherwise. -/
-def knowledge : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol rounds) Stmt
+def knowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
     (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) Rin valid where
   Witness _ {_} _ _ := Nat
   toFun z {_} sp history w := match sp, history with
@@ -358,7 +358,7 @@ theorem bounded :
       exact half.le
     | down _ tail => cases tail
 
-example : rbrKnowledgeSoundnessOfNodes.{0, 0, 0, 0} oracleSig (protocol rounds) (fun _ => True)
+example : rbrKnowledgeSoundnessOfNodes oracleSig (protocol rounds) (fun _ => True)
     Rin valid (uniformDraw rounds) (uniformEps rounds (1 / 2)) :=
   ⟨knowledge, bounded⟩
 
@@ -484,7 +484,7 @@ def validFin (_ : Stmt) (tr : Transcript oracleSig (protocol rounds)) (_ : FinOu
 
 /-- The state function `knowledge` with the indexed output witness; the leaf map forgets the
 bound. -/
-def knowledgeFin : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol rounds) Stmt
+def knowledgeFin : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
     (fun _ => FinOut) (fun _ => Nat) (fun _ => True) Rin validFin where
   Witness := knowledge.Witness
   toFun := knowledge.toFun
@@ -550,7 +550,7 @@ def indexedValid (z : Stmt) (tr : Transcript oracleSig (protocol rounds))
     (w : IndexedWitness z) : Prop := valid z tr w.1
 
 /-- Backward extraction retains the statement-indexed component through every cursor. -/
-def indexedKnowledge : KnowledgeStateFunction.{0, 0, 0, 0, 1, 0} oracleSig (protocol rounds) Stmt
+def indexedKnowledge : KnowledgeStateFunction oracleSig (protocol rounds) Stmt
     (fun z _ => IndexedWitness z) IndexedWitness (fun _ => True) indexedRin indexedValid where
   Witness z {_} _ _ := IndexedWitness z
   toFun z {_} sp history w := knowledge.toFun z sp history w.1
@@ -602,46 +602,6 @@ theorem indexed_game_bound :
 /-- Indexed extraction preserves the input-dependent index while adding the message. -/
 example (z : Stmt) (c : Bool) (i : Fin (z.1 + 1)) :
     indexedKnowledge.extractAlong z (path 7 c) (6, i) = (13, i) := rfl
-
-/-- Keyed failure localization keeps the supplied witness at a larger certificate universe. -/
-example (table : Table Stmt Unit rounds) (htrue : table key = true) :
-    ∃ k ∈ completionKeys rounds (stmt 0) messages,
-      BadChallengeOnCompletion (knowledge.lift.{0, 0, 0, 0, 1, 0, 1}) (stmt 0) messages
-        table 6 k := by
-  apply exists_badChallenge_of_extraction_failure (knowledge.lift.{0, 0, 0, 0, 1, 0, 1})
-    (stmt 0) messages table 6
-  · exact ⟨htrue, show 6 ≤ 7 by omega⟩
-  · change ¬ (6 + 7 ≤ 0)
-    omega
-
-/-- An output witness carrier in `Type 1` stays independent of the small extraction stages. -/
-def largeOutputKnowledge :
-    KnowledgeStateFunction.{0, 0, 0, 1, 1, 0} oracleSig (protocol rounds) Stmt
-      (fun _ _ => ULift.{1} Nat) (fun _ => Nat) (fun _ => True)
-      (fun z w => ∃ v, Rin z v ∧ v = w) (fun z tr w => valid z tr w.down) :=
-  knowledge.comap id (fun _ w => w) (fun _ _ (w : ULift.{1} Nat) => w.down)
-    (fun _ _ _ h => h)
-
-/-- Keyed localization accepts a large output witness and an independently lifted certificate. -/
-example (table : Table Stmt Unit rounds) (htrue : table key = true) :
-    ∃ k ∈ completionKeys rounds (stmt 0) messages,
-      BadChallengeOnCompletion (largeOutputKnowledge.lift.{0, 0, 0, 1, 1, 0, 2})
-        (stmt 0) messages table ⟨6⟩ k := by
-  apply exists_badChallenge_of_extraction_failure
-    (largeOutputKnowledge.lift.{0, 0, 0, 1, 1, 0, 2}) (stmt 0) messages table ⟨6⟩
-  · exact ⟨htrue, show 6 ≤ 7 by omega⟩
-  · change ¬ (6 + 7 ≤ 0)
-    omega
-
-/-- The uniform game bound accepts a large output carrier without enlarging its random output. -/
-example :
-    Pr{let r ← (simulateQ randomOracle (restoredExecution rounds adversary)).run' ∅}[
-      True ∧ valid r.1 r.2.1 r.2.2 ∧
-        ¬ (∃ v, Rin r.1 v ∧ v = largeOutputKnowledge.extractAlong r.1 r.2.1 ⟨r.2.2⟩)] ≤
-      (0 + rounds.length) * (1 / 2) := by
-  simpa only [Nat.cast_zero] using
-    restoredExecution_knowledge_soundness largeOutputKnowledge (1 / 2)
-      (fun z hz => bounded z hz) (fun _ _ w => ⟨w⟩) adversary 0 trivial
 
 /-! ### Public selection of dependent output carriers -/
 
@@ -1068,18 +1028,18 @@ example (b : Bool) (z : Stmt) (m : Fin 8)
 
 end Interaction.StateRestorationTests
 
-section GeneralMoveUniverses
+section GeneralMoves
 
-universe uS uW uK uO uA u
+universe uA
 
-variable {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly.{u}}
-  {S : Type uS} {Win : S → Type uW} {a : P.A} {next : P.B a → FreeM P PUnit.{u + 1}}
-  {W : S → Transcript l (.liftBind a next) → Type uO} {admissible : S → Prop}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+  {S : Type} {Win : S → Type} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+  {W : S → Transcript l (.liftBind a next) → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {valid : (stmt : S) → (tr : Transcript l (.liftBind a next)) → W stmt tr → Prop}
 
-/-- The shared first-move law keeps all six universes independent through an ordinary import. -/
-example (F : KnowledgeStateFunction.{uS, uW, uK, uO, uA, u} l (.liftBind a next)
+/-- The shared first-move law applies to any move functor through an ordinary import. -/
+example (F : KnowledgeStateFunction l (.liftBind a next)
     S W Win admissible relIn valid) (stmt : S) (x : Move l a)
     (tr : Transcript l (next (l.toFunB a x))) (w : W stmt ⟨x, tr⟩) :
     F.BadChallengeAlong stmt ⟨x, tr⟩ w ↔
@@ -1092,7 +1052,7 @@ example (F : KnowledgeStateFunction.{uS, uW, uK, uO, uA, u} l (.liftBind a next)
       (F.child x).BadChallengeAlong stmt tr w :=
   F.badChallengeAlong_liftBind stmt x tr w
 
-end GeneralMoveUniverses
+end GeneralMoves
 
 run_cmd do
   for decl in [``Interaction.StateRestoration.complete_support_matches,

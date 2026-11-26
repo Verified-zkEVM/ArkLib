@@ -29,8 +29,6 @@ oracle notions are defined through the induced plain verifier `OracleVerifier.to
 
 @[expose] public section
 
-universe uK
-
 noncomputable section
 
 namespace Interaction.Legacy
@@ -266,7 +264,7 @@ theorem rbrSoundness_of_embedOracleVerifier (init : ProbComp σ)
 /-- **Round-by-round knowledge soundness of an oracle verifier, legacy to interaction layer.**
 The supplied extraction functions are kept, reindexed by legacy transcript prefixes. The
 hypothesis `hcert` gives every legacy knowledge state function of `V.toVerifier` an all-state
-terminal certificate. The conclusion holds for intermediate witnesses in every universe `uK`. -/
+terminal certificate. -/
 theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : _root_.OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
@@ -278,7 +276,7 @@ theorem embedOracleVerifier_rbrKnowledgeSoundness (init : ProbComp σ)
       (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E),
       KnowledgeTerminalCertificate K)
     (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
-    Interaction.OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0, 0, 0, 0}
+    Interaction.OracleVerifier.rbrKnowledgeSoundnessOfNodes
     (embedOracleVerifier V) impl
       (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
@@ -295,7 +293,7 @@ theorem rbrKnowledgeSoundness_of_embedOracleVerifier [Nonempty WitIn] (init : Pr
     (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
     (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
     (ε : pSpec.ChallengeIdx → ℝ≥0)
-    (h : Interaction.OracleVerifier.rbrKnowledgeSoundnessOfNodes.{0, 0, uK, 0, 0, 0, 0}
+    (h : Interaction.OracleVerifier.rbrKnowledgeSoundnessOfNodes
       (embedOracleVerifier V) impl (fun _ => True)
       (fun stmt w => (stmt, w) ∈ relIn) (fun _ _ t w => (t, w) ∈ relOut)
       (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)

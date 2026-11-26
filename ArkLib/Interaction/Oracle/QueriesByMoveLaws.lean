@@ -22,16 +22,54 @@ the projection laws combine `runWithQueriesByMove_toLog` with `runWithLog_eq`.
 
 @[expose] public section
 
-universe u q uS uI dI wJ
+universe u uS dI wJ
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 
 namespace OracleVerifier
 
+section Execution
+
 variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
   {inputs : OracleBundle.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {Out : Transcript oracleSig s → Type}
+
+/-- Execute an explicit prover setup action and log it as a separate entry at the empty partial
+transcript. -/
+def runWithProverSetup (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
+    (data : inputs.Data) (setup : OracleComp ambient (Prover oracleSig ambient s Out)) :
+    OracleComp (ambient + challengeSpec oracleSig s) (QueriesByMove V Out) := do
+  let (prover, queries) ← simulateQ
+    ((QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft) setup.withQueryLog
+  let result ← V.runWithQueriesByMove stmt data prover
+  pure (result.withProverSetup queries)
+
+/-- Keep only the ambient queries of the decision and the same moves' entries. -/
+def QueriesByMove.toAmbient {V : OracleVerifier ambient s S T inputs outputs}
+    (r : QueriesByMove V Out) : AmbientQueriesByMove V Out :=
+  ⟨r.outcome, r.moves, r.decisionQueries.fst⟩
+
+/-- The full and the ambient queries by move have exactly the same partial transcripts, queriers
+and query groups. -/
+theorem toAmbient_runWithQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
+    (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
+    QueriesByMove.toAmbient <$> V.runWithQueriesByMove stmt data prover =
+      V.runWithAmbientQueriesByMove stmt data prover := by
+  simp only [runWithQueriesByMove, runWithAmbientQueriesByMove, executeWith, Functor.map_map,
+    _root_.map_bind]
+  refine bind_congr fun r => ?_
+  rw [← map_run_withLogging_addLift_fst, bind_map_left]
+  simp [QueriesByMove.toAmbient]
+
+end Execution
+
+section Logged
+
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
+  {inputs : OracleBundle.{0, 0, 0}} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the move boundaries gives exactly the existing full logged run. -/
@@ -57,16 +95,6 @@ theorem toAmbientLog_runWithQueriesByMove (V : OracleVerifier ambient s S T inpu
   rw [← V.map_runWithLog_eq_runWithAmbientLog stmt data prover,
     ← V.toLog_runWithQueriesByMove stmt data prover, Functor.map_map]
   rfl
-
-/-- Execute an explicit prover setup action and log it as a separate entry at the empty partial
-transcript. -/
-def runWithProverSetup (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
-    (data : inputs.Data) (setup : OracleComp ambient (Prover oracleSig ambient s Out)) :
-    OracleComp (ambient + challengeSpec oracleSig s) (QueriesByMove V Out) := do
-  let (prover, queries) ← simulateQ
-    ((QueryImpl.id' (ambient + challengeSpec oracleSig s)).restrictLeft) setup.withQueryLog
-  let result ← V.runWithQueriesByMove stmt data prover
-  pure (result.withProverSetup queries)
 
 /-- Forgetting the boundaries of the setup entry and the moves' entries gives the existing
 logged execution, with the setup queries in front of its prover log. -/
@@ -116,28 +144,13 @@ theorem simulateQ_toLog_runWithQueriesByMove {m : Type → Type u} [Monad m] [La
       simulateQ handler (V.runWithLog stmt data prover) := by
   rw [← simulateQ_map, toLog_runWithQueriesByMove]
 
-/-- Keep only the ambient queries of the decision and the same moves' entries. -/
-def QueriesByMove.toAmbient {V : OracleVerifier ambient s S T inputs outputs}
-    (r : QueriesByMove V Out) : AmbientQueriesByMove V Out :=
-  ⟨r.outcome, r.moves, r.decisionQueries.fst⟩
-
-/-- The full and the ambient queries by move have exactly the same partial transcripts, queriers
-and query groups. -/
-theorem toAmbient_runWithQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
-    (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
-    QueriesByMove.toAmbient <$> V.runWithQueriesByMove stmt data prover =
-      V.runWithAmbientQueriesByMove stmt data prover := by
-  simp only [runWithQueriesByMove, runWithAmbientQueriesByMove, executeWith, Functor.map_map,
-    _root_.map_bind]
-  refine bind_congr fun r => ?_
-  rw [← map_run_withLogging_addLift_fst, bind_map_left]
-  simp [QueriesByMove.toAmbient]
+end Logged
 
 section AmbientQueriesByMove
 
-variable {ι : Type} {S : Type uS} {ambient : OracleSpec ι} {s : OracleProtocol.{0, q}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, uI, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle.{0, 0, 0}} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the move boundaries of the ambient queries by move gives exactly the existing ambient
@@ -149,8 +162,7 @@ theorem toLog_runWithAmbientQueriesByMove (V : OracleVerifier ambient s S T inpu
   (V.runWithAmbientQueriesByMove_toLog stmt data prover).trans
     (V.runWithAmbientLog_eq stmt data prover).symm
 
-/-- Forgetting the ambient queries by move gives the ordinary run, with independent bundle-query
-universes. -/
+/-- Forgetting the ambient queries by move gives the ordinary run. -/
 theorem map_fst_runWithAmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     AmbientQueriesByMove.outcome <$> V.runWithAmbientQueriesByMove stmt data prover =
