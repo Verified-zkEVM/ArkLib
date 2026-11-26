@@ -30,8 +30,8 @@ This module writes FRI with a domain that halves each round.
   verdict accepts every honest transcript. The proof applies `Spec.verdict_isSome`, the generic
   loop lemma `rounds_complete` for each of the three loops with the invariant `FoldInv`, and the
   identity `fold_check`.
-* The tests read `f_1`, `c` and the second query position by their label paths, and check the
-  folded and expanded TeX of the two checks.
+* The tests read the word `f_2` of fold round 1, `c` and the second query position by their label
+  paths, and check the folded and expanded TeX of the two checks.
 
 What is not proved: soundness, and that `ω` has order `2^(k+1)`. Honest acceptance does not need
 the order, since the honest prover and the checks use the same index maps (`loJ`, `loI`, `hiI`,
@@ -382,7 +382,7 @@ section Tests
 instance : Fact (Nat.Prime 17) := ⟨by decide⟩
 instance : TypeName (ZMod 17) := ⟨"\\mathbb{F}_{17}"⟩
 
-/-- The word `f_1` of the fold block by its label path. -/
+/-- The word `f_2`, which fold round 1 sends, by its label path. -/
 example (tr : (friSpec (ZMod 17) 2 3 2).Tr) : tr⟦fold, 1, f⟧ = tr.2.2.2.1 := rfl
 /-- The final constant. -/
 example (tr : (friSpec (ZMod 17) 2 3 2).Tr) : tr⟦c⟧ = tr.2.2.2.2.2.1 := rfl
