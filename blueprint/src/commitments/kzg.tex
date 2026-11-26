@@ -3,82 +3,95 @@
 
 \section{KZG}\label{sec:kzg}
 
-ArkLib formalizes the KZG polynomial commitment scheme~\cite{KZG10} and its evaluation
-binding proof from the extended version~\cite{KZG10TR}. Fix a prime $p$, groups
-$G_1,G_2,G_T$ of order $p$ with generators $g_1\in G_1$ and $g_2\in G_2$, and a
-$\mathbb{Z}_p$-bilinear pairing $e:G_1\times G_2\to G_T$. Fix a maximal degree $n$. The
-committed data is a coefficient vector $(a_0,\ldots,a_n)\in\mathbb{Z}_p^{n+1}$, that is,
-a polynomial $f$ of degree at most $n$; a query is a point $z\in\mathbb{Z}_p$ and its
-response is $f(z)$.
+ArkLib formalizes the KZG polynomial commitment scheme~\cite{KZG10} in additive notation over a
+finite field $\mathbb{F}$. Fix $\mathbb{F}$-modules $G_1,G_2,G_T$ with elements $g_1\in G_1$ and
+$g_2\in G_2$, and an $\mathbb{F}$-bilinear pairing $e:G_1\times G_2\to G_T$. The security
+statements assume $e(g_1,g_2)\neq 0$ and that $a\mapsto a\cdot g_1$ is surjective. Fix a maximal
+degree $n$. The committed data is a coefficient vector $(a_0,\ldots,a_n)\in\mathbb{F}^{n+1}$,
+that is, a polynomial $f$ of degree at most $n$; a query is a point $q\in\mathbb{F}$ and its
+response is $f(q)$. Only $\mathbb{F}=\mathbb{Z}_r$ for the prime order $r$ of the groups is
+realizable in practice.
 
 \begin{definition}[KZG commitment scheme]\label{def:kzg}
-\lean{KZG.CommitmentScheme.kzg, KZG.commit, KZG.generateOpening, KZG.verifyOpening}
+\lean{KZG.committerKey, KZG.verifierKey, KZG.keygen, KZG.commit, KZG.generateOpening,
+KZG.verifyOpening}
 \leanok
 \begin{itemize}
-  \item \textbf{Key generation.} Sample a uniform nonzero $\tau\in\mathbb{Z}_p$. Both keys
-    are the reference string $\bigl((g_1^{\tau^i})_{i\leq n},(g_2,g_2^{\tau})\bigr)$.
-  \item \textbf{Commitment.} $C=\prod_{i\leq n}(g_1^{\tau^i})^{a_i}=g_1^{f(\tau)}$.
-  \item \textbf{Opening.} To open at $z$ with value $v$, the prover sends one element
-    $\pi\in G_1$, the commitment to the quotient $(f(X)-f(z))/(X-z)$.
-  \item \textbf{Verification.} Accept when $e(C\cdot g_1^{-v},g_2)=e(\pi,g_2^{\tau}\cdot g_2^{-z})$.
+  \item \textbf{Key generation.} Sample a uniform nonzero $\tau\in\mathbb{F}$. The committer key
+    is $(\tau^i\cdot g_1)_{i\leq n}$ and the verifier key is $(g_2,\tau\cdot g_2)$.
+  \item \textbf{Commitment.} $C=\sum_{i\leq n}a_i\cdot(\tau^i\cdot g_1)=f(\tau)\cdot g_1$.
+  \item \textbf{Opening.} To open at $q$ with value $r$, the prover sends one element
+    $\pi\in G_1$, the commitment to the quotient $(f(X)-f(q))/(X-q)$.
+  \item \textbf{Verification.} Accept when $e(C-r\cdot g_1,g_2)=e(\pi,\tau\cdot g_2-q\cdot g_2)$.
 \end{itemize}
 \end{definition}
 
 \begin{theorem}[KZG correctness]\label{thm:kzg_correctness}
-\lean{KZG.CommitmentScheme.correctness}
+\lean{KZG.verifyOpening_generateOpening}
 \leanok
 \uses{def:kzg}
-If $|G_1|=p$, the KZG scheme is perfectly correct, with the random oracle started from an
-empty cache.
+For every trapdoor $\tau$, coefficient vector and point $q$, the verifier accepts the honest
+commitment, the value $f(q)$ and the honest opening proof.
 \end{theorem}
 
-\begin{definition}[$t$-SDH]\label{def:tsdh}
-\lean{Groups.tSdhCondition, Groups.tSdhExperiment, Groups.tSdhAssumption}
+\begin{lemma}[Opening equation]\label{lem:kzg_opening_eq}
+\lean{KZG.verifyOpening_eq}
 \leanok
-A $t$-SDH adversary receives the reference string for $t=n$ and a uniform nonzero $\tau$,
-and outputs $(c,h)\in\mathbb{Z}_p\times G_1$. It wins when $\tau+c\neq 0$ and
-$h=g_1^{1/(\tau+c)}$. For a set $\mathcal{A}$ of adversaries and $\varepsilon\geq 0$, the
-$t$-SDH assumption over $\mathcal{A}$ with error $\varepsilon$ states that every adversary in
-$\mathcal{A}$ wins with probability at most $\varepsilon$.
-\end{definition}
-
-\begin{lemma}[The assumption needs a restricted class]\label{lem:tsdh_not_univ}
-\lean{Groups.not_tSdhAssumption_univ}
-\leanok
-\uses{def:tsdh}
-If $g_2\neq 1$ and $\varepsilon<1$, the $t$-SDH assumption fails over the class of all
-adversaries: a classical inverse of $a\mapsto g_2^{a}$ recovers $\tau$ from the reference
-string. A meaningful instance restricts $\mathcal{A}$, for example to generic, algebraic or
-resource-bounded adversaries.
+\uses{def:kzg}
+Assume $e(g_1,g_2)\neq 0$ and that $g_1$ generates $G_1$. If the verifier accepts $(C,q,r,\pi)$
+under the verifier key for $\tau$, then $C-r\cdot g_1=(\tau-q)\cdot\pi$.
 \end{lemma}
 
-\begin{theorem}[KZG evaluation binding]\label{thm:kzg_binding}
-\lean{KZG.CommitmentScheme.bindingReduction,
-KZG.CommitmentScheme.binding_reduces_to_tSdh, KZG.CommitmentScheme.binding}
+\begin{theorem}[KZG evaluation binding, pointwise]\label{thm:kzg_binding}
+\lean{KZG.evalBindingReduction, KZG.evalBindingReduction_wins, TSDH.experiment}
 \leanok
-\uses{def:kzg,def:tsdh}
-Assume $g_1\neq 1$ and $e(g_1,g_2)\neq 1_{G_T}$. A binding adversary outputs a commitment,
-a point $z$, two values $v_1,v_2$ and two prover states, and then runs the opening prover
-from each state. It wins when $v_1\neq v_2$ and both openings are accepted. Uniform queries
-are forwarded to private sampling, from an empty cache. For every binding adversary
-$\mathcal{B}$, the probability that $\mathcal{B}$ wins is at most the probability that the
-explicit reduction $R(\mathcal{B})$ wins the $t$-SDH game. Consequently, if the $t$-SDH
-assumption holds over $\mathcal{A}$ with error $\varepsilon$ and $R(\mathcal{B})\in\mathcal{A}$,
-then $\mathcal{B}$ wins with probability at most $\varepsilon$.
+\uses{def:kzg,lem:kzg_opening_eq}
+A $t$-SDH adversary receives the keys and outputs $(c,h)\in\mathbb{F}\times G_1$; it wins when
+$\tau+c\neq 0$ and $h=(\tau+c)^{-1}\cdot g_1$. Assume $e(g_1,g_2)\neq 0$ and that $g_1$ generates
+$G_1$. If two openings $(r_1,\pi_1)$ and $(r_2,\pi_2)$ of one commitment at one point $q$ are
+both accepted and $r_1\neq r_2$, then $(-q,(r_2-r_1)^{-1}\cdot(\pi_1-\pi_2))$ wins.
 \end{theorem}
 
-\begin{theorem}[KZG function binding]\label{thm:kzg_function_binding}
-\lean{Groups.arsdhCondition, Groups.arsdhAssumption,
-KZG.CommitmentScheme.function_binding_reduces_to_arsdh, KZG.CommitmentScheme.function_binding}
+\begin{corollary}[KZG evaluation binding from $t$-SDH]\label{cor:kzg_binding_game}
+\lean{KZG.evalBindingExperiment, KZG.evalBindingAdversary, KZG.evalBinding_le_tsdh,
+KZG.evalBinding_le_of_tsdh}
 \leanok
-\uses{def:kzg}
-An ARSDH adversary receives the same reference string and outputs a set
-$S\subseteq\mathbb{Z}_p$ and $h_1,h_2\in G_1$. With $Z_S(X)=\prod_{s\in S}(X-s)$, it wins when
-$|S|=n+1$, $Z_S(\tau)\neq 0$, $h_1\neq 1$ and $h_2=h_1^{1/Z_S(\tau)}$. A function-binding
-adversary outputs a commitment and $L$ query-value pairs, and wins when every opening is
-accepted but no polynomial of degree at most $n$ takes all $L$ values. Assume $n\geq 1$,
-$p\geq n+2$, $g_1\neq 1$ and $e(g_1,g_2)\neq 1_{G_T}$. Then every function-binding adversary
-wins with probability at most the ARSDH success probability of an explicit reduction, and at
-most $\varepsilon$ when ARSDH holds with error $\varepsilon$ over a class containing that
-reduction.
+\uses{thm:kzg_binding}
+In the evaluation-binding game the trapdoor $\tau$ is sampled uniformly from $\mathbb{F}^\times$,
+and the adversary $\mathcal{A}$ receives the keys and wins when it outputs two accepted openings
+of one commitment at one point with different values. Under the assumptions of
+Theorem~\ref{thm:kzg_binding}, the probability that $\mathcal{A}$ wins is at most the
+probability that the $t$-SDH adversary $\mathcal{B}$ wins, where $\mathcal{B}$ runs
+$\mathcal{A}$ once on its keys and applies the reduction of Theorem~\ref{thm:kzg_binding}. If
+every adversary in a class containing $\mathcal{B}$ wins the $t$-SDH game with probability at
+most $\varepsilon$, then $\mathcal{A}$ wins with probability at most $\varepsilon$.
+\end{corollary}
+
+\begin{theorem}[KZG function binding, pointwise]\label{thm:kzg_function_binding}
+\lean{KZG.FunctionBinding.functionBindingReduction,
+KZG.FunctionBinding.functionBindingReduction_wins, ARSDH.experiment}
+\leanok
+\uses{def:kzg,lem:kzg_opening_eq,thm:kzg_binding}
+An ARSDH adversary~\cite{CGKY25} receives the keys and outputs a set $S\subseteq\mathbb{F}$ and
+$h_1,h_2\in G_1$. With $Z_S(X)=\prod_{s\in S}(X-s)$, it wins when $|S|=n+1$, $Z_S(\tau)\neq 0$,
+$h_1\neq 0$ and $h_2=Z_S(\tau)^{-1}\cdot h_1$. Assume $e(g_1,g_2)\neq 0$ and that $g_1$
+generates $G_1$, and fix $n+2$ distinct points of $\mathbb{F}$. If every opening in a list is
+accepted for a commitment and no polynomial of degree at most $n$ takes all the opened values,
+then an explicit reduction computes a winning ARSDH answer with $O(n+L)$ group operations for
+$L$ openings.
 \end{theorem}
+
+\begin{corollary}[KZG function binding from ARSDH]\label{cor:kzg_function_binding_game}
+\lean{KZG.functionBindingExperiment, KZG.functionBindingAdversary,
+KZG.functionBinding_le_arsdh, KZG.functionBinding_le_of_arsdh}
+\leanok
+\uses{thm:kzg_function_binding}
+In the function-binding game the trapdoor is sampled as above, and the adversary $\mathcal{A}$
+wins when it outputs a commitment and a list of accepted openings that no polynomial of degree at
+most $n$ fits. Under the assumptions of Theorem~\ref{thm:kzg_function_binding}, the probability
+that $\mathcal{A}$ wins is at most the probability that the ARSDH adversary $\mathcal{B}$ wins,
+where $\mathcal{B}$ runs $\mathcal{A}$ once on its keys and applies the reduction of
+Theorem~\ref{thm:kzg_function_binding}. If every adversary in a class containing $\mathcal{B}$
+wins the ARSDH game with probability at most $\varepsilon$, then $\mathcal{A}$ wins with
+probability at most $\varepsilon$.
+\end{corollary}

@@ -727,12 +727,10 @@ module defines algebraic representations (Section 5.9).
 
 A Lean function has no resource bound. A statement "every adversary has advantage at most
 $\varepsilon$" therefore quantifies over computationally unbounded adversaries, and for a
-computational assumption such a statement is false. ArkLib proves this for its pairing
-assumptions: `Groups.not_tSdhAssumption_univ` shows that $t$-SDH over all Lean adversaries cannot
-have error below 1 when the verifier's generator is nontrivial, because a classical inverse of the
-exponent map recovers the trapdoor from the structured reference string.
-`Groups.not_arsdhAssumption_univ` is the corresponding result for ARSDH, under its stated
-hypotheses.
+computational assumption such a statement is false. For the pairing assumptions $t$-SDH and
+ARSDH, a classical inverse of the map $a\mapsto a\cdot g_2$ recovers the trapdoor from the
+structured reference string, so no Lean adversary class containing that inverse has error
+below 1.
 
 ArkLib therefore states computational security as an explicit reduction. For each adversary
 against the scheme, the theorem constructs an adversary against the assumption, and bounds the
@@ -740,17 +738,19 @@ first adversary's advantage by the second adversary's success probability. The t
 each adversary and relates its advantage to that of its constructed reduction, without assuming a
 uniformly small hardness bound over unrestricted adversaries.
 
-- `KZG.CommitmentScheme.binding_reduces_to_tSdh` bounds the evaluation-binding advantage of any
-  adversary against KZG by the $t$-SDH success probability of `KZG.CommitmentScheme.bindingReduction`
-  applied to it.
-- `KZG.CommitmentScheme.function_binding_reduces_to_arsdh` does the same for function binding and
-  ARSDH, following [CGKY25].
+- `KZG.evalBindingReduction_wins` shows that two accepted conflicting KZG openings give an answer
+  that wins VCVio's `TSDH.experiment`, pointwise in the trapdoor. `KZG.evalBinding_le_tsdh`
+  lifts this to the game: the evaluation-binding advantage of `A` is at most the probability
+  that `KZG.evalBindingAdversary A` wins `TSDH.experiment`.
+- `KZG.FunctionBinding.functionBindingReduction_wins` does the same for function binding and
+  `ARSDH.experiment`, following [CGKY25]. `KZG.functionBinding_le_arsdh` is the game-level bound,
+  with the reduction `KZG.functionBindingAdversary pts A`.
 - `ArkLib.Lattices.Ajtai.Simple.bindingAdvantage_le_moduleSIS` bounds the binding advantage of the
   simple Ajtai commitment by a Module-SIS advantage.
 
-A corollary such as `KZG.CommitmentScheme.binding` then assumes the hardness bound over an explicit
-class of adversaries (`Groups.tSdhAssumption` takes the class as an argument) and requires the
-reduction to belong to that class. The corollary is as strong as the class one can justify, for
+A corollary then assumes the hardness bound over an explicit class of adversaries and requires the
+reduction to belong to that class (for KZG, `KZG.evalBinding_le_of_tsdh` and
+`KZG.functionBinding_le_of_arsdh`). The corollary is as strong as the class one can justify, for
 example generic, algebraic or resource-bounded adversaries. VCVio also provides asymptotic
 vocabulary in `VCVio/CryptoFoundations/Asymptotics/`: security games indexed by a security
 parameter, reductions with polynomial loss, and a backend-relative notion of polynomial time.
@@ -1100,11 +1100,15 @@ None of this is formalized yet.
   `Commitment.functionBinding` (adapted from [CGKY25]) and `Commitment.extractability`, whose
   straightline extractor sees the commitment and the log of the committer's oracle queries. The
   setup and commitment phases run in the oracle state that later phases continue from.
-  `Commitment.binding` bounds the experiment for every adversary; computational schemes such as
-  KZG instead bound `Commitment.bindingExperiment` adversary by adversary (Section 5.5).
+  `Commitment.binding` bounds the experiment for every adversary. A computational scheme would
+  instead bound `Commitment.bindingExperiment` adversary by adversary (Section 5.5).
 - **KZG.** [`Commitments/Functional/KZG/`](ArkLib/Commitments/Functional/KZG/) defines the scheme
-  (`KZG.CommitmentScheme.kzg`), the $t$-SDH and ARSDH games (`Groups.tSdhExperiment`,
-  `Groups.arsdhExperiment`) and the reductions of Section 5.5.
+  (`KZG.commit`, `KZG.generateOpening`, `KZG.verifyOpening`) and the reductions of Section 5.5 to
+  VCVio's $t$-SDH and ARSDH games (`TSDH.experiment`, `ARSDH.experiment`). KZG is not a
+  `Commitment.Scheme` instance. Its binding games are its own (`KZG.evalBindingExperiment`,
+  `KZG.functionBindingExperiment`), with the same bad events as `Commitment.bindingExperiment`
+  and `Commitment.functionBindingExperiment` but no theorem relating them. Connecting KZG to a
+  generic functional-commitment interface is future work.
 - **Lattice commitments.** [`Commitments/Ordinary/Ajtai/`](ArkLib/Commitments/Ordinary/Ajtai/) has
   the simple Ajtai commitment, and [`Data/Lattices/ModuleSIS.lean`](ArkLib/Data/Lattices/ModuleSIS.lean)
   the Module-SIS game. [`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/)
