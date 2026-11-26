@@ -1012,6 +1012,7 @@ public import ArkLib.ProofSystem.Fri.Spec.Extraction.BlockArrays
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.Check
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.ClosedCost
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.Cost
+public import ArkLib.ProofSystem.Fri.Spec.Extraction.DomainCost
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.DriverCost
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.ExtractCost
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.FullCost

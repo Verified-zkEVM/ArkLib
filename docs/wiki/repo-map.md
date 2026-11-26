@@ -193,8 +193,9 @@ home_page/            site assets and assembled website root
   soundness with this extractor and the existing error. `Spec/MeasuredKnowledgeSoundness` adds
   the program's operation-count vector through `knowledgeSoundnessWithResources`.
   `Spec/Extraction/` owns the immutable access backend, generated domain points, driver, and
-  resource proofs; reusable measured
-  polynomial operations live in `ToCompPoly/Univariate/Arithmetic*.lean`. Raw coefficient-array
+  resource proofs. `Spec/Extraction/DomainCost.lean` bounds the charge of each instruction kind by
+  a polynomial in the initial domain size. Reusable measured polynomial operations
+  live in `ToCompPoly/Univariate/Arithmetic*.lean`. Raw coefficient-array
   size facts come from `CompPoly.Univariate.Raw.Size`; canonical-polynomial bounds remain in
   `ToCompPoly/Univariate/Size.lean`. These size facts count stored coefficients, not execution cost.
   Compiled small cases run
