@@ -444,7 +444,7 @@ def sampleOf {p : Path first} (v : View first p) : Fin 3 := v.1.1
 def exportMap (sample : Fin 3) (p : Path first) :
     OracleMap (pathBundle nats first p) nats where
   f x _ := (show Nat from x.1 ()) + sample.val
-  impl _ := do
+  impl.toFun _ := do
     let value : Nat ← (OracleMap.fst nats (oracleMessageFamily first p)).impl ⟨(), ()⟩
     pure (value + sample.val)
   law _ _ := rfl
@@ -711,15 +711,15 @@ theorem append_soundness_of_pure_decide
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
     (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
     (hpure : ∀ p v, ∃ r, (V₁.decide stmt p v).run = pure r)
-    (hprefix : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hprefix : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
-    (hadmissible : Pr{let o ← (experiment init impl (prefixDraw plainSig s₁ s₂ challenges)
+    (hadmissible : Pr{let o ← (experiment init impl ⟨prefixDraw plainSig s₁ s₂ challenges⟩
       (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t, o.2.2 = some t ∧
         ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state) impl
-        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        ⟨suffixDraw plainSig s₁ s₂ challenges p⟩) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init impl challenges ((V₁.append V₂).run stmt prover))}[
       ∃ u, obs.2.2 = some u ∧ output.language () u] ≤ ε₁ + δ + ε₂ :=
@@ -737,16 +737,16 @@ theorem append_soundness_of_stateless
     (middle : StatementProblem T) (output : StatementProblem U) (stmt : S)
     (prover : Prover plainSig ambient (s₁.append s₂) Out) (ε₁ δ ε₂ : ℝ≥0∞)
     (hprefix : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
-      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+      ⟨prefixDraw plainSig s₁ s₂ challenges⟩ (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
         o.2.2 = some t ∧ middle.language () t] ≤ ε₁)
     (hadmissible : Pr{let o ← (experiment init (g.liftTarget (StateT σ ProbComp))
-      (prefixDraw plainSig s₁ s₂ challenges) (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
+      ⟨prefixDraw plainSig s₁ s₂ challenges⟩ (V₁.run stmt (Focal.splitPrefix prover)))}[∃ t,
         o.2.2 = some t ∧ ¬ middle.admissible () t] ≤ δ)
     (hsuffix : ∀ p state (Out : Transcript plainSig (s₂ p) → Type),
       letI : MeasurableSpace (Outcome plainSig (s₂ p) Out (fun _ => U)) := ⊤
       Interaction.soundness ((V₂ p).classicalModel (Out := Out) (pure state)
         (g.liftTarget (StateT σ ProbComp))
-        (suffixDraw plainSig s₁ s₂ challenges p)) middle output
+        ⟨suffixDraw plainSig s₁ s₂ challenges p⟩) middle output
         (fun _ => ()) (fun obs => obs.2.2) ε₂) :
     Pr{let obs ← (experiment init (g.liftTarget (StateT σ ProbComp)) challenges
       ((V₁.append V₂).run stmt prover))}[∃ u, obs.2.2 = some u ∧ output.language () u] ≤

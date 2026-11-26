@@ -554,7 +554,7 @@ lemma Prover.processRoundFS_randomOracle
     apply EvalDistEq.bind_right
     rintro ⟨⟨msg, st'⟩, s'⟩
     simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
-      PFunctor.Handler.liftTarget_self, simulateQ_pure, StateT.run_pure, bind_pure_comp,
+      QueryImpl.liftTarget_self, simulateQ_pure, StateT.run_pure, bind_pure_comp,
       map_pure, Transcript.toMessagesUpTo_concat_message,
       Transcript.challengeCache_concat_message]
     exact EvalDistEq.rfl
@@ -688,7 +688,7 @@ theorem fiatShamir_perfectCompleteness
   obtain ⟨y, hy, heq⟩ := R.fiatShamir_run_support impl stmt wit s f z (by
     convert hz using 1
     congr 3
-    funext q
+    ext q : 1
     rcases q with q | q
     · rfl
     · exact isEmptyElim q.1)
@@ -739,7 +739,7 @@ theorem fiatShamir_completeness_randomOracle
   apply bind_congr
   intro s
   congr 3
-  funext q
+  ext q : 1
   rcases q with q | q
   · rfl
   · exact isEmptyElim q.1

@@ -33,7 +33,8 @@ def counterProver : _root_.Prover []ₒ Nat Nat Nat Nat twoWay where
   output st := pure (st, st + 100)
 
 /-- The empty ambient spec has no queries, so it is interpreted in `Id`. -/
-def noQueries : QueryImpl []ₒ Id := fun q => q.elim
+def noQueries : QueryImpl []ₒ Id where
+  toFun q := q.elim
 
 /-- The embedded prover, with its slots interpreted in `Id`. -/
 def counterEmbedded : Focal plainSig Id (protocol twoWay) (fun _ => Nat × Nat) :=

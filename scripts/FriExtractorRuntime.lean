@@ -136,7 +136,7 @@ def oneOutput : Witness F schedule 1 (Fin.last 1) :=
 /-- Observe the public straightline wrapper through the empty ambient oracle. -/
 def extracted (queries : Fin 3 → (domain8.subdomain 0).toFinset)
     (w : Witness F schedule 1 (Fin.last 1)) : Option (Array F) :=
-  ((simulateQ (r := Id) (fun i ↦ PEmpty.elim i)
+  ((simulateQ (r := Id) ⟨fun i ↦ PEmpty.elim i⟩
       ((extract schedule 1 (by decide) 3
         ⟨Fin.elim0, fun _ _ ↦ 0⟩ w (transcript queries) [] []).run)) :
       Option (Witness F schedule 1 0)).map (fun p ↦ p.val.val)

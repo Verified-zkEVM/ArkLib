@@ -192,8 +192,8 @@ omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Direct original-polynomial oracle behavior. Every answer evaluates the computational
 multivariate data; no mathematical polynomial is reconstructed at runtime. -/
 def inputImpl (poly : CMvPolynomial n R) (deg : ℕ) :
-    (Spec.polynomialFamily R n deg).Behavior :=
-  fun query => (poly.eval query.2 : R)
+    (Spec.polynomialFamily R n deg).Behavior where
+  toFun query := (poly.eval query.2 : R)
 
 omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- The direct original handler realizes exactly the mathematical interpretation of its data. -/
@@ -202,7 +202,7 @@ theorem inputImpl_eq_behavior (poly : CMvPolynomial n R) {deg : ℕ}
     inputImpl poly deg =
       (Spec.polynomialFamily R n deg).behaviorOfRealizations
         (fun _ => toOracleStatement poly hpoly) := by
-  funext query
+  ext query : 1
   change poly.eval query.2 = MvPolynomial.eval query.2 (CPoly.fromCMvPolynomial poly)
   exact eval_equiv
 

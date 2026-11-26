@@ -38,7 +38,7 @@ def OracleBundle.ofSpec {I : Type u} (spec : OracleSpec.{u, v} I) :
 def OracleMap.ofImpl (R : OracleBundle.{v, u, w}) {J : Type u'}
     (spec : OracleSpec.{u', v} J) (query : QueryImpl spec (OracleComp R.spec)) :
     OracleMap R (OracleBundle.ofSpec spec) where
-  f data q := simulateQ (R.answer data) (query q)
+  f data := ⟨fun q => simulateQ (R.answer data) (query q)⟩
   impl := query
   law _ _ := rfl
 
@@ -48,7 +48,7 @@ def OracleBundle.tensor (R : OracleBundle.{v, u, w}) (S : OracleBundle.{v', u', 
   Index := R.Index × S.Index
   spec := OracleSpec.ofPFunctor (PFunctor.tensor R.spec.toPFunctor S.spec.toPFunctor)
   Data := R.Data × S.Data
-  answer data query := (R.answer data.1 query.1, S.answer data.2 query.2)
+  answer data := ⟨fun query => (R.answer data.1 query.1, S.answer data.2 query.2)⟩
 
 /-- A tensor query returns the pair of answers from its two backing data components. -/
 @[simp]
@@ -61,7 +61,7 @@ def OracleBundle.liftResponse (R : OracleBundle.{v, u, w}) : OracleBundle.{max v
   Index := R.Index
   spec query := ULift.{v'} (R.spec query)
   Data := R.Data
-  answer data query := ⟨R.answer data query⟩
+  answer data := ⟨fun query => ⟨R.answer data query⟩⟩
 
 /-- A lifted answer contains exactly the original answer. -/
 @[simp]
@@ -85,8 +85,9 @@ variable {R : OracleBundle.{v, u, w}} {S : OracleBundle.{v', u', w'}}
     {T : OracleBundle.{v'', u'', w''}}
 
 /-- Pull back arbitrary pure answers, including answers not represented by backing data. -/
-def pullAnswer (f : OracleBundle.Lens R S) (answer : QueryImpl S.spec Id) : QueryImpl R.spec Id :=
-  fun query => f.route.toFunB query (answer (f.route.toFunA query))
+def pullAnswer (f : OracleBundle.Lens R S) (answer : QueryImpl S.spec Id) :
+    QueryImpl R.spec Id where
+  toFun query := f.route.toFunB query (answer (f.route.toFunA query))
 
 /-- Identity routing preserves queries, responses and backing data. -/
 def id (R : OracleBundle.{v, u, w}) : OracleBundle.Lens R R where
@@ -118,7 +119,7 @@ theorem pullAnswer_comp (g : OracleBundle.Lens S T) (f : OracleBundle.Lens R S)
 @[simp]
 theorem pullAnswer_answer (f : OracleBundle.Lens R S) (data : S.Data) :
     f.pullAnswer (S.answer data) = R.answer (f.pullData data) := by
-  funext query
+  ext query : 1
   exact (f.commutes data query).symm
 
 /-- Route into lifted responses, unwrapping each answer and preserving the backing data. -/

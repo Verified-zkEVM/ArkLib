@@ -327,7 +327,8 @@ theorem prefixDraw_ofNodesView_cast {m : Type u → Type vDraw} [Functor m] (e :
     (draw : QueryImpl (challengeSpec oracleSig s') m) :
     @Eq (PrefixDraw viewSig m s)
       (fun {a next} => e ▸ (PrefixDraw.ofNodesView (s := s') draw (a := a) (next := next)))
-      (PrefixDraw.ofNodesView (s := s) (e ▸ draw)) := by
+      (PrefixDraw.ofNodesView (s := s)
+        (e ▸ draw : QueryImpl (challengeSpec oracleSig s) m)) := by
   subst e; rfl
 
 /-- Lifting a node-indexed error to full prefixes commutes with tree transport. -/
@@ -378,7 +379,7 @@ variable {ι σ : Type} {S : Type uS} {ambient : OracleSpec ι}
 theorem queryImpl_eq_cast (e : s' = s) (f : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (g : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (h : ∀ c c', HEq c c' → HEq (f c) (g c')) : f = e ▸ g := by
-  subst e; exact funext fun c => eq_of_heq (h c c HEq.rfl)
+  subst e; exact QueryImpl.ext fun c => eq_of_heq (h c c HEq.rfl)
 
 /-- Transporting a verifier and its challenge oracle along a tree equality preserves soundness,
 for every prover output family. -/

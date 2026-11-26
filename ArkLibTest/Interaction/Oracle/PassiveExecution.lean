@@ -35,7 +35,7 @@ def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun i => i.elim) :=
 /-- The output map from any bundle into no oracles. -/
 def noOutputMap (In : OracleBundle.{0, uX, dX}) : OracleMap In noOutputs where
   f _ i := i.elim
-  impl q := q.1.elim
+  impl.toFun q := q.1.elim
   law _ q := q.1.elim
 
 /-- A public `Bool`, a pair oracle, a challenge, and a final pair oracle. -/
@@ -81,7 +81,8 @@ def prover (hidden : Nat) : Prover oracleSig ambient protocol (fun _ => Nat × N
 
 /-- Record each ambient tag and answer it with itself; answer the only challenge with `draw`. -/
 def logger (draw : Nat) : QueryImpl (ambient + challengeSpec oracleSig protocol)
-    (StateM (List Nat))
+    (StateM (List Nat)) where
+  toFun
   | .inl tag => do modify (· ++ [tag]); pure tag
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
@@ -151,13 +152,13 @@ example (hidden : Nat) :
     verifier.run () seven (prover hidden) = (do
       let ⟨tr, out, _⟩ ← TwoParty.Lens.run protocol
         ((prover hidden).simulate
-          (fun q => liftM ((ambient + challengeSpec oracleSig protocol).query (.inl q))))
+          ⟨fun q => liftM ((ambient + challengeSpec oracleSig protocol).query (.inl q))⟩)
         (sampler oracleSig protocol (fun c =>
           liftM ((ambient + challengeSpec oracleSig protocol).query (.inr c))))
       let p := Transcript.path tr
       let verdict ← simulateQ
         (QueryImpl.addLift
-          ((fun q => liftM ((ambient + challengeSpec oracleSig protocol).query (.inl q))) :
+          (⟨fun q => liftM ((ambient + challengeSpec oracleSig protocol).query (.inl q))⟩ :
             QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig protocol)))
           ((pathBundle inputs protocol p).answer (seven, oracleMessages protocol tr)))
         (verifier.decide () p (toView protocol tr)).run
@@ -260,7 +261,8 @@ def prover (hidden : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
 
 /-- Record each ambient tag and answer it with itself; answer the only challenge with `draw`. -/
 def logger (draw : Nat) : QueryImpl (ambient + challengeSpec oracleSig combined)
-    (StateM (List Nat))
+    (StateM (List Nat)) where
+  toFun
   | .inl tag => do modify (· ++ [tag]); pure tag
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, _⟩ => pure (draw : Nat)
@@ -374,9 +376,9 @@ theorem noChallengeOpaque : ChallengeNode oracleSig pairSend → False := by
 /-- Interpret a run without challenges in the ambient oracle. -/
 def ambientOnly {s : OracleProtocol} (none : ChallengeNode oracleSig s → False) {α : Type}
     (program : OracleComp (ambient + challengeSpec oracleSig s) α) : OracleComp ambient α :=
-  simulateQ (fun
+  simulateQ (⟨fun
       | .inl q => liftM (ambient.query q)
-      | .inr c => (none c).elim :
+      | .inr c => (none c).elim⟩ :
     QueryImpl (ambient + challengeSpec oracleSig s) (OracleComp ambient)) program
 
 /-- The prover of the completed part has no effects. -/
@@ -394,9 +396,10 @@ def movedThen : OracleComp ambient Unit := do
   let _ ← ambientOnly noChallengeOpaque (movedVerifier.run () seven nextProver)
 
 /-- Record each ambient tag and answer it with itself. -/
-def tagLogger : QueryImpl ambient (StateM (List Nat)) := fun tag => do
-  modify (· ++ [tag])
-  pure tag
+def tagLogger : QueryImpl ambient (StateM (List Nat)) where
+  toFun tag := do
+    modify (· ++ [tag])
+    pure tag
 
 -- ExecutionExample 25, restated: run in sequence, the completed decision's effect 40 precedes the
 -- next prover's effect 41.
@@ -475,7 +478,8 @@ def publicProver (hidden : Nat) : Prover oracleSig ambient combinedPublic (fun _
 
 /-- Record each ambient tag; record the challenge draw as its value. -/
 def publicLogger (draw : Nat) : QueryImpl (ambient + challengeSpec oracleSig combinedPublic)
-    (StateM (List Nat))
+    (StateM (List Nat)) where
+  toFun
   | .inl tag => do modify (· ++ [tag]); pure tag
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, _⟩ => do modify (· ++ [draw]); pure (draw : Nat)

@@ -226,7 +226,7 @@ def simplifiedIdentityLens : OracleStatement.ExecutableLens
   simulateInput_eq := by intros; rfl
   liftStmt := fun _ stmt ↦ stmt
   materializeOutput := fun _ oStmt ↦ oStmt
-  simulateOutput := fun q ↦ QueryImpl.id'
+  simulateOutput.toFun q := QueryImpl.id'
     ([ToyProblem.Spec.OracleStatement (Fin 4) (Fin 2 → TestField)]ₒ +
       [ToyProblem.SimplifiedIOR.OutputOracleStatement
         (Fin 4) (Fin 2 → TestField)]ₒ) (Sum.inr q)
@@ -373,7 +373,7 @@ def downstreamVirtualVerifier : OracleVerifier []ₒ
   verify := fun stmt _ ↦ pure stmt
   outputOracle := .inr {
     materializeOutput := fun _ oStmt _ ↦ oStmt
-    simulateOutputQuery := fun _ q ↦ by
+    simulateOutputQuery _ := ⟨fun q ↦ by
       rcases q with ⟨i, j⟩
       change OracleComp
         ([]ₒ + ([ToyProblem.SimplifiedIOR.OutputOracleStatement
@@ -387,7 +387,7 @@ def downstreamVirtualVerifier : OracleVerifier []ₒ
                 (Fin 4) (Fin 2 → TestField)]ₒ + [!p[].Message]ₒ) _) :
           OracleComp
             ([]ₒ + ([ToyProblem.SimplifiedIOR.OutputOracleStatement
-              (Fin 4) (Fin 2 → TestField)]ₒ + [!p[].Message]ₒ)) _)
+              (Fin 4) (Fin 2 → TestField)]ₒ + [!p[].Message]ₒ)) _)⟩
     simulateOutputQuery_eq := by
       intro _ oStmt messages q
       rcases q with ⟨i, j⟩

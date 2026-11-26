@@ -200,12 +200,12 @@ def outputSimulation :
       (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1))) (batchSpec S) where
   materializeOutput := fun challenges oStmt _ =>
     combinedOracle (s := s) m G (challenges ⟨0, by simp⟩) oStmt
-  simulateOutputQuery := fun challenges q => do
+  simulateOutputQuery challenges := ⟨fun q => do
     let x := initialDomainPoint (s := s) q.1 q.2
     let fs ← (List.finRange (m + 1)).mapM fun (i : Fin (m + 1)) => do
       let fi ← queryInput (F := F) (S := S) m i x
       pure (G (challenges ⟨0, by simp⟩) i * fi)
-    pure fs.sum
+    pure fs.sum⟩
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rcases q with ⟨j, v⟩

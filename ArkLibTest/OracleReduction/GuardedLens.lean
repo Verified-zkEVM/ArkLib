@@ -109,7 +109,7 @@ example : ((optionalExtractor none).liftContext shortcutLens
 
 /-- Execute the lifted extractor over the empty oracle interface. -/
 def runOptionalExtractor (result : Option Nat) (flag : Bool) : Option Nat :=
-  Id.run (simulateQ (fun q => nomatch q)
+  Id.run (simulateQ ⟨fun q => nomatch q⟩
     (((optionalExtractor result).liftContext shortcutLens
       (false, flag) 7 default default default).run))
 

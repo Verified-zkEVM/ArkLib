@@ -74,10 +74,10 @@ shared `Interaction.pathLift`. -/
 def checkRoute : (p : Path (round R deg)) →
     QueryImpl [(Spec.SingleRound.pSpec R deg).Message]ₒ
       (OracleComp (ambient + (pathBundle inputs (round R deg) p).spec))
-  | ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ => fun ⟨i, q⟩ => by
+  | ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ => ⟨fun ⟨i, q⟩ => by
     obtain rfl := Unique.eq_default i
     exact Interaction.pathLift ambient inputs (s := round R deg) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-      ⟨.inl ⟨⟩, q⟩
+      ⟨.inl ⟨⟩, q⟩⟩
 
 /-- The legacy challenges of a round view. -/
 def roundChallenges {p : Path (round R deg)} (v : View (round R deg) p) :
@@ -162,8 +162,8 @@ theorem run_checkVerifier {Out : Transcript oracleSig (round R deg) → Type}
           (t, (out stmt _ (toView _ y.1)).f ((x, oracleMessages _ y.1)))⟩ :
           Outcome oracleSig (round R deg) Out (fun _ => T × ∀ j, B j))) <$>
         Interaction.TwoParty.Lens.run (round R deg)
-          (prover.simulate fun q =>
-            liftM ((ambient + challengeSpec oracleSig (round R deg)).query (.inl q)))
+          (prover.simulate ⟨fun q =>
+            liftM ((ambient + challengeSpec oracleSig (round R deg)).query (.inl q))⟩)
           (sampler oracleSig (round R deg) fun c =>
             liftM ((ambient + challengeSpec oracleSig (round R deg)).query (.inr c))) := by
   rw [OracleVerifier.run_eq_decideWith, map_eq_bind_pure_comp]
@@ -263,13 +263,13 @@ theorem run_append_checkVerifier
     ((checkVerifier ambient inputs check out).append (fun _ => V₂) compatible).run stmt x
         prover = (do
       let ⟨tr, o, _⟩ ← Interaction.TwoParty.Lens.run ((round R deg).append fun _ => s)
-        (prover.simulate fun q => liftM ((ambient + challengeSpec oracleSig
-          ((round R deg).append fun _ => s)).query (.inl q)))
+        (prover.simulate ⟨fun q => liftM ((ambient + challengeSpec oracleSig
+          ((round R deg).append fun _ => s)).query (.inl q))⟩)
         (sampler oracleSig _ fun c => liftM ((ambient + challengeSpec oracleSig
           ((round R deg).append fun _ => s)).query (.inr c)))
       let verdict ← simulateQ
-        (fun q => liftM ((ambient + challengeSpec oracleSig
-            ((round R deg).append fun _ => s)).query (.inl q)) :
+        (⟨fun q => liftM ((ambient + challengeSpec oracleSig
+            ((round R deg).append fun _ => s)).query (.inl q))⟩ :
           QueryImpl ambient (OracleComp (ambient + challengeSpec oracleSig
             ((round R deg).append fun _ => s))))
         (match checkVerdict check stmt (appendHead tr) with

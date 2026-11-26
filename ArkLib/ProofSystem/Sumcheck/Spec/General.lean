@@ -200,10 +200,12 @@ private theorem messageOnlyRoundProgram_lift {α : Type}
       exact ih answer (hn answer)
 
 /-- Embed a round's message queries in the prefix of a sum-check transcript. -/
+@[simps]
 def leftMessageQuery (rounds : ℕ) :
     QueryImpl [(SingleRound.pSpec R deg).Message]ₒ
-      (OracleComp [((SingleRound.pSpec R deg) ++ₚ pSpec R deg rounds).Message]ₒ) :=
-  fun ⟨i, q⟩ => by
+      (OracleComp [((SingleRound.pSpec R deg) ++ₚ pSpec R deg rounds).Message]ₒ) where
+  toFun
+  | ⟨i, q⟩ => by
     have hType : (SingleRound.pSpec R deg).Message i =
         ((SingleRound.pSpec R deg) ++ₚ pSpec R deg rounds).Message (MessageIdx.inl i) := by
       simp [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left]
@@ -213,10 +215,12 @@ def leftMessageQuery (rounds : ℕ) :
         ⟨MessageIdx.inl i, point⟩)) q
 
 /-- Embed the remaining message queries in the suffix of a sum-check transcript. -/
+@[simps]
 def rightMessageQuery (rounds : ℕ) :
     QueryImpl [(pSpec R deg rounds).Message]ₒ
-      (OracleComp [((SingleRound.pSpec R deg) ++ₚ pSpec R deg rounds).Message]ₒ) :=
-  fun ⟨i, q⟩ => by
+      (OracleComp [((SingleRound.pSpec R deg) ++ₚ pSpec R deg rounds).Message]ₒ) where
+  toFun
+  | ⟨i, q⟩ => by
     have hType : (pSpec R deg rounds).Message i =
         ((SingleRound.pSpec R deg) ++ₚ pSpec R deg rounds).Message (MessageIdx.inr i) := by
       simp [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]

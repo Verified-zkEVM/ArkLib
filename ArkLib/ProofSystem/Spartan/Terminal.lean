@@ -30,14 +30,14 @@ def matrixInterface (i : R1CS.MatrixIdx) :
     OracleInterface (R1CS.OracleStatement R pp.toSizeR1CS i) where
   Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)
   toOC.spec := fun _ => R
-  toOC.impl q := do return matrixEval (← read) q.1 q.2
+  toOC.impl.toFun q := do return matrixEval (← read) q.1 q.2
 
 /-- The executable witness-extension oracle interface. -/
 @[instance_reducible]
 def witnessInterface : OracleInterface (R1CS.Witness R pp.toSizeR1CS) where
   Query := Fin pp.ℓ_w → R
   toOC.spec := fun _ => R
-  toOC.impl q := do return tableEval (← read) q
+  toOC.impl.toFun q := do return tableEval (← read) q
 
 instance oracleInterface : ∀ i, OracleInterface (OracleStatement (R := R) pp i) := by
   letI : ∀ i, OracleInterface (R1CS.OracleStatement R pp.toSizeR1CS i) := matrixInterface pp

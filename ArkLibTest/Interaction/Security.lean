@@ -105,7 +105,8 @@ def loggedExtractor : Extractor.StraightLine service zero (fun _ : Unit => Nat) 
     let n ← liftM (service.query 9)
     pure (out + proverLog.length + verifierLog.length + n)
 
-def logHandler : QueryImpl (service + challengeSpec plainSig zero) (StateM (List Nat))
+def logHandler : QueryImpl (service + challengeSpec plainSig zero) (StateM (List Nat)) where
+  toFun
   | .inl n => do
     modify (· ++ [n])
     pure n
@@ -124,7 +125,8 @@ def readState : Verifier service zero Unit (fun _ => Bool) where
     let n ← liftM (service.query 0)
     pure (n == 1)
 
-def stateImpl : QueryImpl service (StateT Nat ProbComp) := fun _ => get
+def stateImpl : QueryImpl service (StateT Nat ProbComp) where
+  toFun _ := get
 
 example : readState.validAcceptance stateImpl () ⟨⟩ (· = true) := by
   refine ⟨1, ?_⟩
@@ -141,7 +143,8 @@ def oracleExtractor : Extractor.OracleStraightLine OracleSpec.emptySpec tree
     (fun _ : Unit × (∀ i, emptyFamily.Realization i) => Nat) (fun _ => Nat) :=
   fun _ _ out proveLog verifyLog => pure (out + proveLog.length + verifyLog.length)
 
-def oracleHandler : QueryImpl (OracleSpec.emptySpec + challengeSpec oracleSig tree) Id
+def oracleHandler : QueryImpl (OracleSpec.emptySpec + challengeSpec oracleSig tree) Id where
+  toFun
   | .inl i => i.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim
@@ -166,7 +169,8 @@ run_cmd do
 
 abbrev coin : Protocol := .liftBind (.challenge Bool) (fun _ => .pure ⟨⟩)
 
-def draw : QueryImpl (challengeSpec plainSig coin) ProbComp
+def draw : QueryImpl (challengeSpec plainSig coin) ProbComp where
+  toFun
   | ⟨.inl _, _⟩ => (show ProbComp Bool from $ᵗ Bool)
   | ⟨.inr ⟨_, i⟩, _⟩ => i.elim
 
@@ -228,7 +232,7 @@ def promisedState : KnowledgeStateFunction plainSig zero Bool (fun _ _ => Unit) 
 /-- The promise excludes `false`, so its accepted runs need no witness. -/
 example (err : ChallengeNode plainSig zero → ℝ≥0∞) :
     rbrKnowledgeSoundnessOfNodes.{0, 0, 0} plainSig zero (· = true) (fun b (_ : Unit) => b = true)
-      (fun (_ : Bool) _ (_ : Unit) => True) (fun c => c.val.elim) err :=
+      (fun (_ : Bool) _ (_ : Unit) => True) ⟨fun c => c.val.elim⟩ err :=
   ⟨promisedState, fun _ _ _ _ sp => nomatch sp⟩
 
 /-! ### A classical one-challenge protocol
@@ -240,10 +244,11 @@ reads the counter before and after the challenge, so the verifier's reading reco
 abbrev counter : OracleSpec Unit := Unit →ₒ Nat
 
 /-- A shared counter: each query returns the current value and increments it. -/
-def tick : QueryImpl counter (StateT Nat ProbComp) := fun _ => do
-  let n ← get
-  set (n + 1)
-  pure n
+def tick : QueryImpl counter (StateT Nat ProbComp) where
+  toFun _ := do
+    let n ← get
+    set (n + 1)
+    pure n
 
 /-- Reads the counter, then accepts a true statement or a true challenge with that reading. -/
 def coinVerifier : Verifier counter coin Bool (fun _ => Nat) where
@@ -556,7 +561,8 @@ def payloadExtractor :
   fun _ _ w _ _ => pure w.val
 
 /-- Answers every ambient query with zero; the payload protocol has no challenge. -/
-def payloadHandler : QueryImpl (counter + challengeSpec plainSig payloadMsg) Id
+def payloadHandler : QueryImpl (counter + challengeSpec plainSig payloadMsg) Id where
+  toFun
   | .inl _ => (0 : Nat)
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim
@@ -722,7 +728,8 @@ example : knowledgeSoundnessWith coinModel coinInput anyOutput coinJudgement
 
 /-- Records ambient queries and challenges in order, answering every challenge with `b`. -/
 def traceHandler (b : Bool) :
-    QueryImpl (counter + challengeSpec plainSig coin) (StateM (List String × Nat))
+    QueryImpl (counter + challengeSpec plainSig coin) (StateM (List String × Nat)) where
+  toFun
   | .inl _ => do
     let (trace, n) ← get
     set (trace ++ ["ambient"], n + 1)

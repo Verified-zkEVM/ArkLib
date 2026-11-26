@@ -267,7 +267,8 @@ abbrev twoChallenges : Protocol :=
 def isZero (x : Fin 4) : Bool := x == 0
 
 /-- Each of the two challenges is drawn uniformly from `Fin 4`. -/
-def drawTwo : QueryImpl (challengeSpec plainSig twoChallenges) ProbComp
+def drawTwo : QueryImpl (challengeSpec plainSig twoChallenges) ProbComp where
+  toFun
   | ⟨.inl _, _⟩ => (show ProbComp (Fin 4) from $ᵗ Fin 4)
   | ⟨.inr ⟨_, .inl _⟩, _⟩ => (show ProbComp (Fin 4) from $ᵗ Fin 4)
   | ⟨.inr ⟨_, .inr ⟨_, i⟩⟩, _⟩ => i.elim
@@ -414,7 +415,8 @@ theorem execution : runPrefixChallenges plainSig protocol prover draws =
   rfl
 
 /-- The ambient service answers with a uniform bit. -/
-def uniformBit : QueryImpl ambient ProbComp := fun _ => $ᵗ Bool
+def uniformBit : QueryImpl ambient ProbComp where
+  toFun _ := $ᵗ Bool
 
 /-- Whether two challenges are equal. -/
 def same (x y : Bool) : Bool := x == y
@@ -528,8 +530,9 @@ example {α : Type} (author : OptionT ProbComp α) {Result : α → Type}
 /-! ### A handler with missing probability mass -/
 
 /-- Each ambient call succeeds with probability one half, independently of the challenge. -/
-def optionalAmbient : QueryImpl counter (OptionT ProbComp) := fun _ =>
-  OptionT.mk do
+def optionalAmbient : QueryImpl counter (OptionT ProbComp) where
+  toFun _ :=
+    OptionT.mk do
     let b ← ($ᵗ Bool : ProbComp Bool)
     pure (if b then some 0 else none)
 
@@ -543,7 +546,7 @@ example {m : Type → Type 1} [Monad m] [LawfulMonad m] [EvalDistSemantics m]
     (input : StatementProblem S) (output : PathProblem s T)
     (ε : ChallengeNode plainSig s → ℝ≥0∞) (fresh : FreshChallenges H draw)
     (h : rbrSoundness plainSig s (input.admissible ()) (input.language ())
-      (V.validAcceptanceWith (fun q => H (.inl q)) (output.language)) draw ε) :
+      (V.validAcceptanceWith ⟨fun q => H (.inl q)⟩ (output.language)) draw ε) :
     V.soundnessWith H input output (∑' c, ε c) :=
   Verifier.soundnessWith_of_rbrSoundness_tsum fresh h
 
@@ -653,7 +656,8 @@ namespace EmptyResponse
 abbrev ambient : OracleSpec Unit := Unit →ₒ Empty
 
 /-- Interpret every service request by failure. -/
-def handler : QueryImpl ambient (OptionT ProbComp) := fun _ => failure
+def handler : QueryImpl ambient (OptionT ProbComp) where
+  toFun _ := failure
 
 /-- One public sender move. -/
 def protocol : Protocol := .liftBind (.message Unit) (fun _ => .pure ⟨⟩)
@@ -674,11 +678,12 @@ theorem interpreted_action : simulateQ handler prover =
   simp [prover, handler, simulateQ_bind]
 
 /-- There are no challenge nodes in the one-message protocol. -/
-def noChallenges : QueryImpl (challengeSpec plainSig protocol) ProbComp := fun c => by
-  rcases c with ⟨node, h⟩
-  rcases node with root | ⟨_, node⟩
-  · cases h
-  · nomatch node
+def noChallenges : QueryImpl (challengeSpec plainSig protocol) ProbComp where
+  toFun c := by
+    rcases c with ⟨node, h⟩
+    rcases node with root | ⟨_, node⟩
+    · cases h
+    · nomatch node
 
 /-- The actual verifier run has no returned outcome, including returned rejection. -/
 theorem run_mass :

@@ -56,13 +56,13 @@ def sumVerifier : _root_.OracleVerifier []ₒ Nat InStmt Nat OutSum twoWay where
   outputOracle := .inr {
     materializeOutput _ o msgs _ :=
       (show Nat from o ()) + (show Nat from msgs ⟨0, rfl⟩) + (show Nat from msgs ⟨2, rfl⟩)
-    simulateOutputQuery _ _ := do
+    simulateOutputQuery _ := ⟨fun _ => do
       let a ← query (spec := []ₒ + ([InStmt]ₒ + [twoWay.Message]ₒ)) (.inr (.inl ⟨(), ()⟩))
       let b ← query (spec := []ₒ + ([InStmt]ₒ + [twoWay.Message]ₒ))
         (.inr (.inr ⟨⟨0, rfl⟩, ()⟩))
       let c ← query (spec := []ₒ + ([InStmt]ₒ + [twoWay.Message]ₒ))
         (.inr (.inr ⟨⟨2, rfl⟩, ()⟩))
-      pure ((show Nat from a) + (show Nat from b) + (show Nat from c))
+      pure ((show Nat from a) + (show Nat from b) + (show Nat from c))⟩
     simulateOutputQuery_eq _ _ _ _ := rfl }
 
 /-- The output oracles are forwarded: the input oracle and the first message. -/
@@ -145,14 +145,14 @@ def constChallenge (b : Bool) : (i : twoWay.ChallengeIdx) → twoWay.Challenge i
 
 /-- Answer legacy challenge queries with a constant, in `Id`. -/
 def legacyAnswers (b : Bool) : QueryImpl ([]ₒ + [twoWay.Challenge]ₒ) Id :=
-  QueryImpl.add (fun q => q.elim) (fun q => constChallenge b q.1)
+  QueryImpl.add ⟨fun q => q.elim⟩ ⟨fun q => constChallenge b q.1⟩
 
 /-- The oracle tree's challenge oracle, answered by the same constants. -/
 def oracleAnswers (b : Bool) :
     QueryImpl ([]ₒ + challengeSpec oracleSig (oracleProtocol twoWay)) Id :=
-  QueryImpl.add (fun q => q.elim) fun c =>
+  QueryImpl.add ⟨fun q => q.elim⟩ ⟨fun c =>
     (oracleChallengeMove 0 3 (Nat.zero_add 3) c).symm
-      (constChallenge b (oracleChallengeRound 0 3 (Nat.zero_add 3) c))
+      (constChallenge b (oracleChallengeRound 0 3 (Nat.zero_add 3) c))⟩
 
 /-- The outputs of a run with a virtual output oracle: the last message, the prover's output
 statement, oracle data and witness, and the verifier's output statement and oracle data. -/

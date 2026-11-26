@@ -175,7 +175,7 @@ theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
     {Out : Transcript l s → Type u} (k : Prover l ambient s Out)
     (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) :
     simulateQ h (TwoParty.Lens.run s (k.simulate ιm) (sampler l s draw)) =
-      TwoParty.Lens.run s (k.simulate fun q => simulateQ h (ιm q))
+      TwoParty.Lens.run s (k.simulate ⟨fun q => simulateQ h (ιm q)⟩)
         (sampler l s fun c => simulateQ h (draw c)) := by
   rw [TwoParty.Lens.run, simulateQ_runWith_sampler, Prover.simulate_simulate]
   rfl
@@ -232,7 +232,7 @@ theorem Verifier.onAccept_run_none {ι : Type u} {ambient : OracleSpec.{u, u} ι
     (V : Verifier ambient s T U) (prover : Prover plainSig ambient s Out) :
     V.onAccept.run none prover =
       (fun r => ⟨r.1, r.2.1, none⟩) <$> TwoParty.Lens.run s
-        (prover.simulate (fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))))
+        (prover.simulate ⟨fun q => liftM ((ambient + challengeSpec plainSig s).query (.inl q))⟩)
         (sampler plainSig s (fun c =>
           liftM ((ambient + challengeSpec plainSig s).query (.inr c)))) := by
   simp only [Verifier.run, Verifier.onAccept, map_eq_bind_pure_comp]

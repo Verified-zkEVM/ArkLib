@@ -30,7 +30,8 @@ abbrev protocol : ProtocolSpec 1 := ⟨!v[.V_to_P], fun _ => Bool⟩
 instance : ∀ i, SampleableType (protocol.Challenge i) :=
   fun _ => inferInstanceAs (SampleableType Bool)
 
-def impl : QueryImpl oracle (StateT Unit ProbComp) := fun q => nomatch q
+def impl : QueryImpl oracle (StateT Unit ProbComp) where
+  toFun q := nomatch q
 
 def inner : Verifier oracle Bool Bool protocol :=
   ⟨fun stmt _ => if stmt then pure stmt else failure⟩

@@ -705,7 +705,7 @@ instance challengeOracleInterface {pSpec : ProtocolSpec n} :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query := Unit
     toOC.spec := fun _ => pSpec.Challenge i
-    toOC.impl := fun _ => do read }
+    toOC.impl.toFun _ := do read }
 
 -- dtumad: Longer term I think you want this, but need to change `[_]ₒ` stuff for that
 @[instance_reducible]
@@ -713,7 +713,7 @@ def challengeOracleInterface' {pSpec : ProtocolSpec n} :
     OracleInterface (∀ i, pSpec.Challenge i) where
   Query := pSpec.ChallengeIdx
   toOC.spec := pSpec.Challenge
-  toOC.impl i := do return (← read) i
+  toOC.impl.toFun i := do return (← read) i
 
 /-- Query a verifier's challenge for a given challenge round `i`, given the default challenge
   oracle interface `challengeOracleInterface`.
@@ -731,9 +731,10 @@ def getChallenge (pSpec : ProtocolSpec n) (i : pSpec.ChallengeIdx) :
 This is a randomness oracle: it simply calls the `selectElem` method inherited from the
   `SampleableType` instance on the challenge types.
 -/
+@[simps]
 def challengeQueryImpl {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)] :
-    QueryImpl ([pSpec.Challenge]ₒ'challengeOracleInterface) ProbComp :=
-  fun q => $ᵗ (pSpec.Challenge q.1)
+    QueryImpl ([pSpec.Challenge]ₒ'challengeOracleInterface) ProbComp where
+  toFun q := $ᵗ (pSpec.Challenge q.1)
 
 section ChallengeReindex
 
@@ -833,7 +834,7 @@ def challengeOracleInterfaceSR (StmtIn : Type) (pSpec : ProtocolSpec n) :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query := StmtIn × pSpec.MessagesUpTo i.1.castSucc
     toOC.spec := fun _ => pSpec.Challenge i
-    toOC.impl := fun _ => read }
+    toOC.impl.toFun _ := read }
 
 alias challengeOracleInterfaceFS := challengeOracleInterfaceSR
 
@@ -867,21 +868,22 @@ alias fsChallengeOracle := srChallengeOracle
   For implementation where the whole function is sampled ahead of time, and we answer with that
   function, see `srChallengeQueryImpl'`.
 -/
-@[reducible, inline, specialize, simp]
+@[inline, specialize, simps]
 def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
     [∀ i, SampleableType (pSpec.Challenge i)] :
-    QueryImpl (srChallengeOracle Statement pSpec) ProbComp :=
-  fun q => $ᵗ (pSpec.Challenge q.1)
+    QueryImpl (srChallengeOracle Statement pSpec) ProbComp where
+  toFun q := $ᵗ (pSpec.Challenge q.1)
 
 /-- Alternate version of query implementation that takes in a cached function `f` and returns
   the result and the updated function.
 
   TODO: upstream this as a more general construction in VCVio -/
-@[reducible, inline, specialize, simp]
+@[inline, specialize, simps]
 def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n} :
     QueryImpl (srChallengeOracle Statement pSpec)
-      (StateT (QueryImpl (srChallengeOracle Statement pSpec) Id) ProbComp) :=
-  fun | ⟨i, t⟩ => fun f => pure (f ⟨i, t⟩, f)
+      (StateT (QueryImpl (srChallengeOracle Statement pSpec) Id) ProbComp) where
+  toFun
+  | ⟨i, t⟩ => fun f => pure (f ⟨i, t⟩, f)
 
 alias fsChallengeQueryImpl' := srChallengeQueryImpl'
 

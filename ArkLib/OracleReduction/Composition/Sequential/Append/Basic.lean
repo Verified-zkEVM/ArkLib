@@ -423,8 +423,8 @@ abbrev AppendSpec :=
   oSpec + ([OStmt₁]ₒ + [(pSpec₁ ++ₚ pSpec₂).Message]ₒ)
 
 def messageQueryInl : QueryImpl [pSpec₁.Message]ₒ (OracleComp
-    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
-  fun q => by
+    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) where
+  toFun q := by
     rcases q with ⟨i, q⟩
     have hType : pSpec₁.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i) := by
       simp [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left]
@@ -434,8 +434,8 @@ def messageQueryInl : QueryImpl [pSpec₁.Message]ₒ (OracleComp
           ⟨MessageIdx.inl i, t⟩) q
 
 def messageQueryInr : QueryImpl [pSpec₂.Message]ₒ (OracleComp
-    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
-  fun q => by
+    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) where
+  toFun q := by
     rcases q with ⟨i, q⟩
     have hType : pSpec₂.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i) := by
       simp [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]
@@ -543,10 +543,12 @@ def secondQueryImpl
   ((QueryImpl.id' oSpec).liftTarget (OracleComp
     (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
       (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)))) +
-    ((fun q => simulateQ
+    ((⟨fun q => simulateQ
       (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁)
         (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))
-      (V₁.simulateOutputQuery challenges q)) +
+      (V₁.simulateOutputQuery challenges q)⟩ : QueryImpl [OStmt₂]ₒ (OracleComp
+        (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
+          (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)))) +
       messageQueryInr (oSpec := oSpec) (OStmt₁ := OStmt₁)
         (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))
 
@@ -605,9 +607,9 @@ def appendOutputSimulation
   materializeOutput := fun challenges oStmt messages =>
     V₂.materializeOutput challenges.snd
       (V₁.materializeOutput challenges.fst oStmt messages.fst) messages.snd
-  simulateOutputQuery := fun challenges q =>
+  simulateOutputQuery challenges := ⟨fun q =>
     simulateQ (secondQueryImpl V₁ challenges.fst)
-      (V₂.simulateOutputQuery challenges.snd q)
+      (V₂.simulateOutputQuery challenges.snd q)⟩
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rw [simulateQ_simulateQ_secondQueryImpl]

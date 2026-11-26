@@ -33,7 +33,7 @@ def inputData (hidden : Nat) : ∀ _ : Bool, Nat
 @[reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  toOC.impl.toFun _ := do return (← read).1
 
 /-- The prefix sends one pair oracle. -/
 @[instance_reducible] def firstProtocol : OracleProtocol :=
@@ -57,7 +57,7 @@ abbrev prefixBundle := pathBundle inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
 /-- Export input slot `false` plus the observable coordinate of the prefix message. -/
 def exportMap : OracleMap prefixBundle exported where
   f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
-  impl _ := do
+  impl.toFun _ := do
     let a : Nat ←
       (OracleMap.fst inputs (oracleMessageFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨false, ()⟩
     let b : Nat ←
@@ -69,14 +69,16 @@ def exportMap : OracleMap prefixBundle exported where
 /-- Interpret the raw bundle signature, recording visible input, hidden input and sent-slot
 requests distinctly. The hidden slot is present and would be recorded if it were queried. -/
 def exportTraceHandler (old hidden visible secret : Nat) :
-    QueryImpl prefixBundle.spec (StateM (List Nat)) := fun q => do
-  let label := match q with
-    | .inl ⟨false, _⟩ => 0
-    | .inl ⟨true, _⟩ => 1
-    | .inr _ => 2
-  modify (· ++ [label])
-  pure (prefixBundle.answer
-    ((fun b => if b then hidden else old), oracleMessages firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
+    QueryImpl prefixBundle.spec (StateM (List Nat)) where
+  toFun q := do
+    let label := match q with
+      | .inl ⟨false, _⟩ => 0
+      | .inl ⟨true, _⟩ => 1
+      | .inr _ => 2
+    modify (· ++ [label])
+    pure (prefixBundle.answer
+      ((fun b => if b then hidden else old),
+        oracleMessages firstProtocol ⟨(visible, secret), ⟨⟩⟩) q)
 
 /-- Every exported request reads the visible input followed by the sent oracle, exactly once.
 The complete trace omits label 1, so the hidden input is never queried, even and in particular
@@ -156,7 +158,8 @@ def prover (secret : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
   Prover.append (prefixProver secret) (fun _ memory => suffixProver memory)
 
 /-- Record ambient tags and answer each with its tag; answer the suffix challenge with 23. -/
-def traceHandler : QueryImpl (ambient + challengeSpec oracleSig combined) (StateM (List Nat))
+def traceHandler : QueryImpl (ambient + challengeSpec oracleSig combined) (StateM (List Nat)) where
+  toFun
   | .inl n => do modify (· ++ [n]); pure n
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, _⟩ => pure (23 : Nat)
@@ -197,7 +200,7 @@ abbrev closingBundle := pathBundle exported closingSuffix ⟨⟨⟩, ⟨⟨⟩, 
 /-- The final export adds the prefix export to the fresh observable coordinate. -/
 def closingMap : OracleMap closingBundle exported where
   f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
-  impl _ := do
+  impl.toFun _ := do
     let old : Nat ← (OracleMap.fst exported
       (oracleMessageFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨⟨⟩, ()⟩
     let fresh : Nat ← (OracleMap.snd exported
@@ -246,7 +249,8 @@ def closingProver (secret : Nat) : Prover oracleSig ambient closingProtocol (fun
 
 /-- The challenge service answers 23 without querying the input or either sent pair. -/
 def closingHandler : QueryImpl (ambient + challengeSpec oracleSig closingProtocol)
-    (StateM (List Nat))
+    (StateM (List Nat)) where
+  toFun
   | .inl tag => do modify (· ++ [tag]); pure tag
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h

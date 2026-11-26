@@ -468,8 +468,8 @@ theorem extractionGame_embed (V : _root_.Verifier oSpec StmtIn StmtOut pSpec)
         extractionGame (embedVerifier V) (fun _ o => o.2) (liftExtractor E) stmt adv =
       ((fun z => ((decode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (protocol pSpec)
-          (adv.simulate (fun q =>
-            liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q))))
+          (adv.simulate ⟨fun q =>
+            liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q))⟩)
           (sampler plainSig (protocol pSpec) (fun c =>
             liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))))) >>=
         knowledgeTail (challengeSpec plainSig (protocol pSpec)) V E stmt := by

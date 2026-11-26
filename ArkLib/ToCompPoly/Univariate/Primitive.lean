@@ -79,8 +79,10 @@ def arithmeticCost {F : Type} (op : ArithmeticOp F) : ArithmeticCost :=
   fun kind ↦ if kind = op.costKind then 1 else 0
 
 /-- Execute an arithmetic instruction and certify its result. -/
+@[simps]
 def arithmeticAnswer {F : Type} [Zero F] [Add F] [Sub F] [Mul F] [Inv F] [DecidableEq F] :
-    QueryImpl (ArithmeticSpec F) Id
+    QueryImpl (ArithmeticSpec F) Id where
+  toFun
   | .add a b => ⟨a + b, rfl⟩
   | .sub a b => ⟨a - b, rfl⟩
   | .mul a b => ⟨a * b, rfl⟩

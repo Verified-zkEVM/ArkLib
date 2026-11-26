@@ -38,7 +38,7 @@ def booleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
 def addEleven (messages : OracleBundle.{0, uX, dX}) :
     OracleMap (OracleBundle.sum inputs messages) inputs where
   f x _ := (show Nat from x.1 ()) + 11
-  impl _ := do
+  impl.toFun _ := do
     let old : Nat ← liftM ((OracleBundle.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (old + 11)
   law _ _ := by
@@ -49,7 +49,7 @@ def addEleven (messages : OracleBundle.{0, uX, dX}) :
 def isEven (messages : OracleBundle.{0, uX, dX}) :
     OracleMap (OracleBundle.sum inputs messages) booleans where
   f x _ := (show Nat from x.1 ()) % 2 == 0
-  impl _ := do
+  impl.toFun _ := do
     let value : Nat ← liftM ((OracleBundle.sum inputs messages).spec.query (.inl ⟨(), ()⟩))
     pure (value % 2 == 0)
   law _ _ := by
@@ -146,7 +146,9 @@ theorem noChallenge : ChallengeNode oracleSig composedProtocol → False := by
     all_goals exact nomatch h
 
 /-- Log each ambient event. -/
-def logger : QueryImpl (ambient + challengeSpec oracleSig composedProtocol) (StateM (List Nat))
+def logger :
+    QueryImpl (ambient + challengeSpec oracleSig composedProtocol) (StateM (List Nat)) where
+  toFun
   | .inl tag => modify (· ++ [tag])
   | .inr c => (noChallenge c).elim
 

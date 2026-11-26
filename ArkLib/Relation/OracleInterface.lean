@@ -61,7 +61,7 @@ class OracleInterface (Message : Type u) where
 def OracleContext.ofFunction (α β : Type _) :
     OracleContext α (ReaderM (α → β)) where
   spec := α →ₒ β
-  impl q := do return (← read) q
+  impl.toFun q := do return (← read) q
 
 namespace OracleInterface
 
@@ -94,7 +94,7 @@ instance instDecidablePredAnswerEq {Message : Type*} [O : OracleInterface Messag
 def instDefault {Message : Type u} : OracleInterface Message where
   Query := Unit
   toOC.spec := fun _ => Message
-  toOC.impl _ := read
+  toOC.impl.toFun _ := read
 
 instance {Message : Type*} : Inhabited (OracleInterface Message) :=
   ⟨instDefault⟩
@@ -111,9 +111,11 @@ def toOracleSpec {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (
 
 /-- Given an underlying data for an indexed type family of oracle interfaces `v`,
     we can give an implementation of all queries to the interface defined by `v` -/
+@[simps]
 def toOracleImpl {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
-    (data : ∀ i, v i) : QueryImpl [v]ₒ Id :=
-  fun | ⟨i, t⟩ => (O i).answer (data i) t
+    (data : ∀ i, v i) : QueryImpl [v]ₒ Id where
+  toFun
+  | ⟨i, t⟩ => (O i).answer (data i) t
 
 /-- Any function type has a canonical `OracleInterface` instance, whose `answer` is the function
   itself. -/
@@ -144,9 +146,9 @@ instance (priority := low) instTensorProd {α β : Type*}
     [Oα : OracleInterface α] [Oβ : OracleInterface β] : OracleInterface (α × β) where
   Query := Oα.Query × Oβ.Query
   toOC.spec := fun | (q₁, q₂) => Oα.Response q₁ × Oβ.Response q₂
-  toOC.impl := fun | (q₁, q₂) => do
+  toOC.impl := ⟨fun | (q₁, q₂) => do
     let (a, b) ← read
-    return (Oα.answer a q₁, Oβ.answer b q₂)
+    return (Oα.answer a q₁, Oβ.answer b q₂)⟩
 
 /-- The product oracle interface for the product of two types `α` and `β`, each with its own oracle
   interface, is defined as:
@@ -177,7 +179,7 @@ instance (priority := low) instTensorForall {ι : Type u} (v : ι → Type _)
     [O : ∀ i, OracleInterface (v i)] : OracleInterface (∀ i, v i) where
   Query := (i : ι) × (O i).Query
   toOC.spec := fun q => (O q.1).Response q.2
-  toOC.impl q := do return (O q.1).answer ((← read) q.1) q.2
+  toOC.impl.toFun q := do return (O q.1).answer ((← read) q.1) q.2
 
 /-- The indexed product oracle interface for the dependent product of a type family `v`, indexed by
     `ι`, each having an oracle interface, is defined as:
@@ -193,13 +195,14 @@ instance instProdForall {ι : Type u} (v : ι → Type _) [O : ∀ i, OracleInte
     OracleInterface (∀ i, v i) where
   Query := (i : ι) × (O i).Query
   toOC.spec := fun q => (O q.1).Response q.2
-  toOC.impl q := do return (O q.1).answer ((← read) q.1) q.2
+  toOC.impl.toFun q := do return (O q.1).answer ((← read) q.1) q.2
 
 /-- Auto apply the `ReaderM` monad in the underlying `QueryImpl` to get an `Id` final monad. -/
+@[simps]
 def simOracle0 {ι : Type _} (T : ι → Type _)
     [O : ∀ i, OracleInterface (T i)]
-    (t : (i : ι) → T i) : QueryImpl [T]ₒ Id :=
-  fun q => (O q.1).answer (t q.1) q.2
+    (t : (i : ι) → T i) : QueryImpl [T]ₒ Id where
+  toFun q := (O q.1).answer (t q.1) q.2
 
 /-- Combines multiple oracle specifications into a single oracle by routing queries to the
       appropriate underlying oracle. Takes:
@@ -279,34 +282,34 @@ variable (R : Type _) [CommSemiring R] (d : ℕ) (σ : Type*)
 instance instPolynomial : OracleInterface (Polynomial R) where
   Query := R
   toOC.spec := R →ₒ R
-  toOC.impl point := do return (← read).eval point
+  toOC.impl.toFun point := do return (← read).eval point
 
 /-- Univariate polynomials with degree at most `d` can be accessed via evaluation queries. -/
 @[reducible, inline]
 instance instPolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X]) where
   Query := R
   toOC.spec := R →ₒ R
-  toOC.impl point := do return (← read).1.eval point
+  toOC.impl.toFun point := do return (← read).1.eval point
 
 /-- Univariate polynomials with degree less than `d` can be accessed via evaluation queries. -/
 @[reducible, inline]
 instance instPolynomialDegreeLT : OracleInterface (R⦃< d⦄[X]) where
   Query := R
   toOC.spec := R →ₒ R
-  toOC.impl point := do return (← read).1.eval point
+  toOC.impl.toFun point := do return (← read).1.eval point
 
 /-- Multivariate polynomials can be accessed via evaluation queries. -/
 noncomputable instance instMvPolynomial : OracleInterface (R[X σ]) where
   Query := (σ → R)
   toOC.spec := (σ → R) →ₒ R
-  toOC.impl points := do return (← read).eval points
+  toOC.impl.toFun points := do return (← read).eval points
 
 /-- Multivariate polynomials with individual degree at most `d` can be accessed via evaluation
 queries. -/
 noncomputable instance instMvPolynomialDegreeLE : OracleInterface (R⦃≤ d⦄[X σ]) where
   Query := (σ → R)
   toOC.spec := (σ → R) →ₒ R
-  toOC.impl points := do return (← read).1.eval points
+  toOC.impl.toFun points := do return (← read).1.eval points
 
 instance [Fintype σ] [DecidableEq σ] [Fintype R] :
     Fintype (OracleInterface.Query (R⦃≤ d⦄[X σ])) :=
@@ -322,13 +325,13 @@ variable {n : ℕ} {α : Type*}
 instance instListVector : OracleInterface (List.Vector α n) where
   Query := (Fin n)
   toOC.spec := Fin n →ₒ α
-  toOC.impl i := do return (← read)[i]
+  toOC.impl.toFun i := do return (← read)[i]
 
 /-- Vectors of the form `Vector α n` can be accessed via queries on their indices. -/
 instance instVector : OracleInterface (Vector α n) where
   Query := (Fin n)
   toOC.spec := Fin n →ₒ α
-  toOC.impl i := do return (← read)[i]
+  toOC.impl.toFun i := do return (← read)[i]
 
 end Vector
 

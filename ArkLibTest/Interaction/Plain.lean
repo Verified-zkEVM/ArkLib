@@ -51,12 +51,10 @@ example : Interaction.TwoParty.Lens.run (OutC := fun _ => PUnit) coin optionEcho
     (publicCoinSampler plainSig coin failingDraw).toCounterpart = none := rfl
 
 /-- Replay follows the recorded challenge without executing the failing draw. -/
-example : (publicCoinSampler plainSig coin failingDraw).replay ⟨true, ⟨⟩⟩ = some ⟨⟩ :=
+example : (publicCoinSampler plainSig coin failingDraw).replay ⟨true, ⟨⟩⟩ = PUnit.unit :=
   replay_publicCoinSampler coin failingDraw ⟨true, ⟨⟩⟩
 
 run_cmd do
-  unless ((publicCoinSampler plainSig coin failingDraw).replay ⟨false, ⟨⟩⟩).isSome do
-    throwError "replay executed the stored draw"
   unless (Interaction.TwoParty.Lens.run (OutC := fun _ => PUnit) coin optionEcho
       (sampler plainSig coin failingDraw)).isNone do
     throwError "the runner's sampler did not execute its draw"

@@ -63,8 +63,8 @@ theorem run_verifier_eq {Out : Transcript oracleSig (protocol R deg n) → Type}
             (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, Spec.OracleStatement R n deg i)))
               <$>
         Interaction.TwoParty.Lens.run (protocol R deg n)
-          (P.simulate fun q => liftM ((amb + challengeSpec oracleSig (protocol R deg n)).query
-            (.inl q)))
+          (P.simulate ⟨fun q => liftM ((amb + challengeSpec oracleSig (protocol R deg n)).query
+            (.inl q))⟩)
           (sampler oracleSig (protocol R deg n) fun c =>
             liftM ((amb + challengeSpec oracleSig (protocol R deg n)).query (.inr c))) := by
   rw [Interaction.OracleVerifier.run_eq]
@@ -298,7 +298,8 @@ theorem range_eq (c : ChallengeNode oracleSig (protocol K 1 2)) :
 
 /-- A handler that records each query, writing `1` for a challenge: events answer `7, 3, 5, 11`
 and every challenge answers `3`. -/
-def record : QueryImpl Q (StateM (List ℕ))
+def record : QueryImpl Q (StateM (List ℕ)) where
+  toFun
   | .inl i => do modify (· ++ [i.val]); pure (![7, 3, 5, 11] i : K)
   | .inr c => do modify (· ++ [1]); pure (cast (range_eq c).symm (3 : K))
 

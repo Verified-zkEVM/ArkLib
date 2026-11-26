@@ -43,9 +43,10 @@ abbrev spec (O : OracleFamily.{u, v, w} I Data) := [O.Realization]ₒ' O.interfa
 abbrev Behavior (O : OracleFamily.{u, v, w} I Data) := QueryImpl O.spec Id
 
 /-- Interpret a family of admissible realizations through its declared interfaces. -/
+@[simps]
 def behaviorOfRealizations (O : OracleFamily.{u, v, w} I Data)
-    (data : ∀ i, O.Realization i) : O.Behavior :=
-  fun q => (O.interface q.1).answer (data q.1) q.2
+    (data : ∀ i, O.Realization i) : O.Behavior where
+  toFun q := (O.interface q.1).answer (data q.1) q.2
 
 /-- Pull back the indexed interface family along an arbitrary map.
 

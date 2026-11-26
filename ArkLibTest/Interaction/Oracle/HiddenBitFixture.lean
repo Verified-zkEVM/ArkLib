@@ -61,7 +61,7 @@ abbrev secondBundle (guess : Bool) := pathBundle bits bitSecond ⟨guess, ⟨⟩
 /-- Export `guess ^^ pad`, reading the pad from the exported input. -/
 def xorMap (guess : Bool) : OracleMap (secondBundle guess) bits where
   f x _ := guess ^^ (show Bool from x.1 ())
-  impl _ := do
+  impl.toFun _ := do
     let pad : Bool ← (OracleMap.fst bits (oracleMessageFamily bitSecond ⟨guess, ⟨⟩⟩)).impl ⟨(), ()⟩
     pure (guess ^^ pad)
   law _ _ := rfl
@@ -105,7 +105,8 @@ def informedProver (secret : Nat) : Prover oracleSig bitAmbient bitCombined (fun
       pure (pure ⟨hidden, pure memory⟩))
 
 /-- The challenge is `()`. -/
-def bitChallenges : QueryImpl (challengeSpec oracleSig bitCombined) Id
+def bitChallenges : QueryImpl (challengeSpec oracleSig bitCombined) Id where
+  toFun
   | ⟨.inl _, _⟩ => pure ()
   | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
@@ -118,7 +119,7 @@ abbrev bitRuntime :
   setup := do
     let hidden : Bool ← liftM (coinSpec.query ())
     pure (hidden, 0)
-  handler
+  handler.toFun
     | .inl request => fun state =>
       pure (if request then state.1 else false, (state.1, state.2 + 1))
     | .inr c => fun state => pure (bitChallenges c, state)

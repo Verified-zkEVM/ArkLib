@@ -48,7 +48,7 @@ example : owner plainSig (plainRound mixed 2) = .receiver := rfl
 
 /-- A legacy message oracle interface for the oracle tree. -/
 instance mixedOracles : ∀ i, OracleInterface.{0, 0} (mixed.Message i) := fun _ =>
-  { Query := Unit, toOC := { spec := Unit →ₒ Unit, impl := fun _ => pure () } }
+  { Query := Unit, toOC := { spec := Unit →ₒ Unit, impl := ⟨fun _ => pure ()⟩ } }
 
 example : oracleProtocol mixed =
     .liftBind (.oracle Nat (mixedOracles ⟨0, rfl⟩)) fun _ =>

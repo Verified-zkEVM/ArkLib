@@ -39,7 +39,7 @@ open OracleSpec OracleComp PFunctor
 -/
 @[inline, reducible]
 def Statement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type) :=
-  PFunctor.Lens (OuterStmtIn X^ OuterStmtOut) (InnerStmtIn X^ InnerStmtOut)
+  PFunctor.Lens (OuterStmtIn y^ OuterStmtOut) (InnerStmtIn y^ InnerStmtOut)
 
 namespace Statement.Lens
 
@@ -196,8 +196,8 @@ end OracleStatement.ExecutableLens
 @[inline, reducible]
 def Witness.Lens
     (OuterStmtIn InnerStmtOut OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
-  PFunctor.Lens ((OuterStmtIn × OuterWitIn) X^ OuterWitOut)
-    (InnerWitIn X^ (InnerStmtOut × InnerWitOut))
+  PFunctor.Lens ((OuterStmtIn × OuterWitIn) y^ OuterWitOut)
+    (InnerWitIn y^ (InnerStmtOut × InnerWitOut))
 
 namespace Witness.Lens
 
@@ -347,7 +347,7 @@ and requires in addition the outer input statement.
 -/
 @[inline, reducible]
 def Witness.InvLens (OuterStmtIn OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) :=
-  PFunctor.Lens ((OuterStmtIn × OuterWitOut) X^ OuterWitIn) (InnerWitOut X^ InnerWitIn)
+  PFunctor.Lens ((OuterStmtIn × OuterWitOut) y^ OuterWitIn) (InnerWitOut y^ InnerWitIn)
 
 namespace Witness.InvLens
 

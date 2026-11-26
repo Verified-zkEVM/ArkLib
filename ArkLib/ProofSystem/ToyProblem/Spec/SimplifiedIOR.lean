@@ -275,11 +275,11 @@ def outputSimulation :
   materializeOutput := fun challenges oStmt _ _ j ↦
     let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
     oStmt 0 j + γ • oStmt 1 j
-  simulateOutputQuery := fun challenges q ↦ do
+  simulateOutputQuery challenges := ⟨fun q => do
     let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
     let f₀ : A ← queryInput (A := A) (pSpec (F := F)) 0 q.2
     let f₁ : A ← queryInput (A := A) (pSpec (F := F)) 1 q.2
-    pure (f₀ + γ • f₁)
+    pure (f₀ + γ • f₁)⟩
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rcases q with ⟨i, j⟩

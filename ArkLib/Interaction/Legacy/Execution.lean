@@ -387,7 +387,7 @@ variable {StmtIn WitIn StmtOut WitOut : Type}
 def Layout.challengeReindex (L : Layout pSpec) (oSpec : OracleSpec ι) :
     QueryImpl (oSpec + challengeSpec L.l L.protocol) (OracleComp (oSpec + [pSpec.Challenge]ₒ)) :=
   QueryImpl.add (liftShared oSpec pSpec)
-    (L.draw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n))
+    ⟨L.draw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n)⟩
 
 /-- Answer the challenge queries of the plain tree with the legacy challenge oracle. -/
 abbrev challengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n) :
@@ -400,16 +400,16 @@ focal-first run against the legacy sampler. -/
 theorem simulateQ_challengeReindex_run {Out : Transcript plainSig (protocol pSpec) → Type}
     (p : Interaction.Prover plainSig oSpec (protocol pSpec) Out) :
     simulateQ (challengeReindex oSpec pSpec) (TwoParty.Lens.run (protocol pSpec)
-      (p.simulate (fun q => liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query
-        (.inl q))))
+      (p.simulate ⟨fun q => liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query
+        (.inl q))⟩)
       (sampler plainSig (protocol pSpec) (fun c =>
         liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c))))) =
       runWith .focalFirst (protocol pSpec) (p.simulate (liftShared oSpec pSpec))
         (legacySampler pSpec (challengeOracle oSpec pSpec)) := by
-  have hl : (fun q => simulateQ (challengeReindex oSpec pSpec)
-      (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q)))) =
-      liftShared oSpec pSpec :=
-    funext fun q => QueryImpl.simulateQ_add_liftM_query_left _ _ q
+  have hl : (⟨fun q => simulateQ (challengeReindex oSpec pSpec)
+      (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q)))⟩ :
+        QueryImpl oSpec _) = liftShared oSpec pSpec :=
+    QueryImpl.ext fun q => QueryImpl.simulateQ_add_liftM_query_left _ _ q
   have hr : (fun c => simulateQ (challengeReindex oSpec pSpec)
       (liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c)))) =
       legacyDraw (challengeOracle oSpec pSpec) 0 n (Nat.zero_add n) :=
@@ -432,17 +432,18 @@ theorem simulateQ_verifier_run (V : Interaction.Verifier oSpec (protocol pSpec) 
   congr 1
   rw [liftComp_def, liftComp_def]
   refine QueryImpl.simulateQ_simulateQ_eq_of_apply (fun t => ?_) _
-  rw [OracleComp.liftM_eq_liftM_liftM, OracleQuery.liftM_add_left_query]
+  rw [QueryImpl.mk_apply, OracleComp.liftM_eq_liftM_liftM, OracleQuery.liftM_add_left_query]
   refine (QueryImpl.simulateQ_add_liftM_query_left _ _ t).trans ?_
-  simp only [liftShared, QueryImpl.restrictLeft, QueryImpl.id'_apply]
+  simp only [liftShared, QueryImpl.restrictLeft_apply, QueryImpl.id'_apply]
   rw [OracleComp.liftM_eq_liftM_liftM (spec := oSpec)]
   rfl
 
 /-- The challenge implementation of a layout's tree induced by a legacy challenge
 implementation: each challenge node draws its round's legacy challenge. -/
+@[simps]
 def Layout.challengeImpl (L : Layout pSpec) (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp) :
-    QueryImpl (challengeSpec L.l L.protocol) ProbComp :=
-  fun c => (L.challengeMove 0 n (Nat.zero_add n) c).symm <$>
+    QueryImpl (challengeSpec L.l L.protocol) ProbComp where
+  toFun c := (L.challengeMove 0 n (Nat.zero_add n) c).symm <$>
     chImpl ⟨L.challengeRound 0 n (Nat.zero_add n) c, ()⟩
 
 /-- The challenge implementation of the plain tree induced by a legacy challenge
@@ -711,9 +712,10 @@ section Logging
 variable {κ σ : Type} {ambient : OracleSpec ι} {chal : OracleSpec κ}
 
 /-- Record each shared-oracle query and its answer in the state, beside the shared state. -/
+@[simps]
 def logImpl (impl : QueryImpl ambient (StateT σ ProbComp)) :
-    QueryImpl ambient (StateT (σ × QueryLog ambient) ProbComp) :=
-  fun q => StateT.mk fun p => (fun r => (r.1, (r.2, p.2 ++ [⟨q, r.1⟩]))) <$> (impl q).run p.1
+    QueryImpl ambient (StateT (σ × QueryLog ambient) ProbComp) where
+  toFun q := StateT.mk fun p => (fun r => (r.1, (r.2, p.2 ++ [⟨q, r.1⟩]))) <$> (impl q).run p.1
 
 /-- Log every query of a program, then keep the shared-oracle entries. Challenge entries are
 dropped, so their position relative to shared-oracle queries does not matter. -/
@@ -747,7 +749,7 @@ theorem run_ambientLogged (impl : QueryImpl ambient (StateT σ ProbComp))
     rw [ambientLogged_query_bind]
     rcases t with q | c
     · simp only [expHandler, QueryImpl.addLift_def, QueryImpl.liftTarget_self] at ih
-      simp [expHandler, logImpl, ← ih, QueryLog.fst]
+      simp [expHandler, ← ih, QueryLog.fst]
     · simp only [expHandler, QueryImpl.addLift_def, QueryImpl.liftTarget_self] at ih
       simp [expHandler, ← ih, QueryLog.fst]
 
@@ -820,7 +822,7 @@ theorem runEq_liftComp {κ₁ κ₂ : Type} {chal₁ : OracleSpec κ₁} {chal�
 
 /-- Logging the shared-oracle queries of a lifted program is lifting its logged run. -/
 theorem run_withLogging_inl {β : Type} (y : OracleComp ambient β) :
-    (simulateQ (QueryImpl.withLogging ((fun q => liftM ((ambient + chal).query (.inl q))) :
+    (simulateQ (QueryImpl.withLogging (⟨fun q => liftM ((ambient + chal).query (.inl q))⟩ :
         QueryImpl ambient (OracleComp (ambient + chal)))) y).run =
       liftComp ((simulateQ ambient.loggingOracle y).run) (ambient + chal) := by
   induction y using OracleComp.inductionOn with
@@ -866,8 +868,8 @@ theorem runEq_ambientLogged_prover (impl : QueryImpl oSpec (StateT σ ProbComp))
     RunEq (expHandler impl (plainChallengeImpl chImpl)) (expHandler impl chImpl)
       ((fun z => ((decode pSpec z.1.1, z.1.2.1), z.2)) <$> ambientLogged
         (TwoParty.Lens.run (protocol pSpec)
-          ((embedProver P stmt wit).simulate (fun q =>
-            liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q))))
+          ((embedProver P stmt wit).simulate ⟨fun q =>
+            liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inl q))⟩)
           (sampler plainSig (protocol pSpec) (fun c =>
             liftM ((oSpec + challengeSpec plainSig (protocol pSpec)).query (.inr c))))))
       (ambientLogged (P.run stmt wit)) := fun st => by

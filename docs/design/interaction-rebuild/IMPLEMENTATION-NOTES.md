@@ -116,11 +116,11 @@ Record D4 describes the sampler as the public-coin counterpart determined by the
 replay from PolyFun. The code keeps `samplerEnd` and `sampler`, the pure-end form on which the
 runner, `appendSampler` and the composition run laws are stated, and adds `publicCoinSampler` as a
 PolyFun `PublicCoinCounterpart`. `toCounterpart_publicCoinSampler` and
-`toCounterpart_publicCoinOracleSampler` prove that its conversion is the runner's sampler, and
-`replay_publicCoinSampler` and `replay_publicCoinOracleSampler` that its replay draws nothing. The
-bridge theorems are stated for `plainSig` and `oracleSig` rather than an arbitrary lens: the
-definition casts along the owner of each position, and that cast reduces only once the signature
-fixes the owner.
+`toCounterpart_publicCoinOracleSampler` prove that its conversion is the runner's sampler. PolyFun's
+replay is pure, so it draws nothing; `replay_publicCoinSampler` and
+`replay_publicCoinOracleSampler` state its output. The bridge theorems are stated for `plainSig` and
+`oracleSig` rather than an arbitrary lens: the definition casts along the owner of each position,
+and that cast reduces only once the signature fixes the owner.
 
 ## 12. Path-fiber splitting stays in ArkLib
 

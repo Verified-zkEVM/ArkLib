@@ -52,7 +52,7 @@ def twist : OracleMap dependent dependent where
   f x
     | false => !(show Bool from x false)
     | true => (show Fin 3 from x true) + 1
-  impl
+  impl.toFun
     | ⟨false, _⟩ => do
       let bit : Bool ← liftM (dependent.spec.query ⟨false, ()⟩)
       pure (!bit)
@@ -79,7 +79,7 @@ example : dependent.behaviorOfRealizations (twist.f (env true 2)) ⟨false, ()�
 @[reducible] def taggedInterface (b : Bool) : OracleInterface (Carrier b × Nat) where
   Query := Unit
   toOC.spec := fun _ => Carrier b
-  toOC.impl _ := do return (← read).1
+  toOC.impl.toFun _ := do return (← read).1
 
 /-- Realizations carry a private tag. -/
 def tagged : OracleFamily Bool (fun b => Carrier b × Nat) :=
@@ -107,7 +107,7 @@ def numbers : OracleFamily Bool (fun _ => Nat) :=
 /-- Read the other oracle and add three. -/
 def shift : OracleMap numbers numbers where
   f x q := x (!q) + 3
-  impl q := do
+  impl.toFun q := do
     let a : Nat ← liftM (numbers.spec.query ⟨!q.1, ()⟩)
     pure (a + 3)
   law _ _ := rfl
@@ -115,7 +115,7 @@ def shift : OracleMap numbers numbers where
 /-- Double the answer of the same oracle. -/
 def double : OracleMap numbers numbers where
   f x q := x q * 2
-  impl q := do
+  impl.toFun q := do
     let a : Nat ← liftM (numbers.spec.query ⟨q.1, ()⟩)
     pure (a * 2)
   law _ _ := rfl
@@ -167,7 +167,7 @@ example : simulateQ (numbers.behaviorOfRealizations answers)
 @[reducible] def pairInterface : OracleInterface ((∀ b, Carrier b) × (∀ _ : Bool, Nat)) where
   Query := Bool × Bool
   toOC.spec := fun q => Carrier q.1 × Nat
-  toOC.impl q := do
+  toOC.impl.toFun q := do
     let x ← read
     return (x.1 q.1, x.2 q.2)
 
@@ -177,7 +177,7 @@ abbrev both := sumFamily dependent numbers
 /-- Query both components and return both answers. -/
 def tensor : OracleMap both (singletonFamily pairInterface) where
   f x _ := (fun b => x (.inl b), fun b => x (.inr b))
-  impl q := do
+  impl.toFun q := do
     let u : Carrier q.2.1 ← liftM (both.spec.query ⟨.inl q.2.1, ()⟩)
     let v : Nat ← liftM (both.spec.query ⟨.inr q.2.2, ()⟩)
     pure (u, v)

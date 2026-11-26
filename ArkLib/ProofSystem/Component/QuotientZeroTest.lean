@@ -55,7 +55,7 @@ variable [DecidableEq F]
 instance (d : ℕ) : OracleInterface (Poly F d) where
   Query := F
   toOC.spec := fun _ => F
-  toOC.impl z := do return eval (← read) z
+  toOC.impl.toFun z := do return eval (← read) z
 
 variable (D : Domain F) (d : ℕ)
 

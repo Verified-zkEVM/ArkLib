@@ -119,9 +119,11 @@ theorem experiment_map {ι κ σ α β : Type} {ambient : OracleSpec ι} {chal :
     _root_.map_bind]
 
 /-- The usual fresh challenge implementation, sampled separately from shared oracle state. -/
+@[simps]
 def challengeQueryImpl {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
     (s : FreeM P PUnit) [∀ c, SampleableType (challengeSpec l s c)] :
-    QueryImpl (challengeSpec l s) ProbComp := fun c => $ᵗ (challengeSpec l s c)
+    QueryImpl (challengeSpec l s) ProbComp where
+  toFun c := $ᵗ (challengeSpec l s c)
 
 /-- The default classical model contains every focal prover over the ambient oracle interface.
 The input statement is an argument of the run, so its type may lie in any universe. -/

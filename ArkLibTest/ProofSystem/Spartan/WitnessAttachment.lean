@@ -96,7 +96,8 @@ example : ZeroCheck.inputRelation params (embedStatement size publicInput)
   apply (Spartan.WitnessAttachment.attached_relation_iff size publicInput matrices _).mpr
   decide
 
-def emptyImpl : QueryImpl emptySpec (StateT Unit ProbComp) := fun q => isEmptyElim q
+def emptyImpl : QueryImpl emptySpec (StateT Unit ProbComp) where
+  toFun q := isEmptyElim q
 
 example : (Spartan.WitnessAttachment.oracleReduction (R := F) size emptySpec).perfectCompleteness
     (pure ()) emptyImpl (Spartan.WitnessAttachment.relIn size)

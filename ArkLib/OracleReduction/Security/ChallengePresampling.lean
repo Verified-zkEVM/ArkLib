@@ -78,8 +78,10 @@ theorem lift {α : Type} (oa : OracleComp oSpec α) (lo hi : ℕ) (h : lo ≤ hi
 end OrderedChallenges
 
 /-- Answer protocol challenges from a fixed vector and leave ambient queries in place. -/
+@[simps -isSimp]
 def fixedChallengeImpl (c : ∀ i, pSpec.Challenge i) :
-    QueryImpl (oSpec + [pSpec.Challenge]ₒ) (OracleComp oSpec)
+    QueryImpl (oSpec + [pSpec.Challenge]ₒ) (OracleComp oSpec) where
+  toFun
   | .inl t => liftM (oSpec.query t)
   | .inr ⟨i, ()⟩ => pure (c i)
 

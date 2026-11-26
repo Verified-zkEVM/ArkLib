@@ -19,8 +19,8 @@ linter.style.header = false
 # (doc-gen4, checkdecls) are therefore required by the separate package in `docbuild/`.
 [[require]]
 name = "VCVio"
-git = "https://github.com/Verified-zkEVM/VCVio"
-rev = "621d01149403647811ed7b4a46998c15570e4650"
+git = "https://github.com/dtumad/VCVio"
+rev = "002a51ef05b7fe53f4104d91ecdcccaaf9dca94e"
 
 [[require]]
 name = "CompPoly"

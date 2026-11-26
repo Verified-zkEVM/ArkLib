@@ -124,7 +124,8 @@ def runSummary (s : InputStatement (R := ZMod 5) params)
 #guard_msgs in
 #eval runSummary falseInput revealingCoefficients
 
-private def sampleZero (n : ℕ) : Id (unifSpec.Range n) := pure 0
+private def sampleZero : QueryImpl unifSpec Id where
+  toFun _ := pure 0
 
 /-- info: [0, 0, 0] -/
 #guard_msgs in

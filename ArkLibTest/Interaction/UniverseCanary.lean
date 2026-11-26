@@ -40,7 +40,7 @@ abbrev smallAmbient : OracleSpec.{0, 0} Unit := Unit →ₒ Bool
 def natInterface : OracleInterface Nat where
   Query := Unit
   toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := read
+  toOC.impl.toFun _ := read
 
 /-- Input oracles indexed by types (`Type 1`) with natural-number data (`Type 0`). -/
 @[instance_reducible]
@@ -145,7 +145,8 @@ def runnable : OracleVerifier smallAmbient oracleDone (Type 1) (fun _ => Nat) bi
     (OracleMap.fst _ _)
 
 /-- The ambient oracle answers `true`; the protocol has no challenges. -/
-def handler : QueryImpl (smallAmbient + challengeSpec oracleSig oracleDone) Id
+def handler : QueryImpl (smallAmbient + challengeSpec oracleSig oracleDone) Id where
+  toFun
   | .inl _ => true
   | .inr c => c.val.elim
 
@@ -167,7 +168,7 @@ example : observation.2.2.map (fun out => (out.1, out.2 ())) = some (3, 3) := rf
 def typeQueries : OracleInterface.{0, 1} Nat where
   Query := Type
   toOC.spec := Type →ₒ Nat
-  toOC.impl _ := read
+  toOC.impl.toFun _ := read
 
 /-- A natural number answers every query `X : Type 1` with itself; the query type lies in
 `Type 2`. -/
@@ -175,7 +176,7 @@ def typeQueries : OracleInterface.{0, 1} Nat where
 def bigTypeQueries : OracleInterface.{0, 2} Nat where
   Query := Type 1
   toOC.spec := Type 1 →ₒ Nat
-  toOC.impl _ := read
+  toOC.impl.toFun _ := read
 
 /-- One input oracle whose queries are types, with natural-number data and responses. -/
 @[instance_reducible]
@@ -190,7 +191,7 @@ def forwardQueries (p : Path oracleDone) :
     OracleMap (pathBundle typeQueryInputs oracleDone p) (OracleBundle.ofFamily bigQueryOracles)
     where
   f x _ := x.1 ()
-  impl _ := (OracleMap.fst typeQueryInputs (oracleMessageFamily oracleDone p)).impl ⟨(), Nat⟩
+  impl.toFun _ := (OracleMap.fst typeQueryInputs (oracleMessageFamily oracleDone p)).impl ⟨(), Nat⟩
   law _ _ := rfl
 
 /-- An oracle verifier whose input queries lie in `Type 1` and whose output queries lie in
@@ -222,8 +223,8 @@ def typeQuerySuffix : OracleVerifier smallAmbient oracleDone Nat (fun _ => Nat)
         (.inr (.inl ⟨(), Type⟩)))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ =>
-        (OracleMap.fst bigQueryOracles (oracleMessageFamily oracleDone p)).impl ⟨(), Type⟩
+      impl := ⟨fun _ =>
+        (OracleMap.fst bigQueryOracles (oracleMessageFamily oracleDone p)).impl ⟨(), Type⟩⟩
       law := fun _ _ => rfl }
 
 /-- The composite output map ignores the intermediate statement, so any certificate holds. -/
@@ -275,8 +276,8 @@ def nodeQueryVerifier : OracleVerifier smallAmbient typeQueryProtocol Unit (fun 
   decide _ p _ := pathLift smallAmbient typeQueryInputs (s := typeQueryProtocol) p ⟨.inl ⟨⟩, Bool⟩
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ =>
-        (OracleMap.fst typeQueryInputs (oracleMessageFamily typeQueryProtocol p)).impl ⟨(), Bool⟩
+      impl := ⟨fun _ =>
+        (OracleMap.fst typeQueryInputs (oracleMessageFamily typeQueryProtocol p)).impl ⟨(), Bool⟩⟩
       law := fun _ _ => rfl }
 
 /-- The prover sends a natural-number oracle payload and terminates. -/
@@ -284,7 +285,8 @@ def nodeProver : Prover oracleSig smallAmbient typeQueryProtocol (fun _ => PUnit
   pure ⟨(17 : Nat), pure ⟨⟩⟩
 
 /-- No challenges occur; the ambient oracle is unused by this run. -/
-def nodeHandler : QueryImpl (smallAmbient + challengeSpec oracleSig typeQueryProtocol) Id
+def nodeHandler : QueryImpl (smallAmbient + challengeSpec oracleSig typeQueryProtocol) Id where
+  toFun
   | .inl _ => true
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, n⟩, _⟩ => n.elim
@@ -301,10 +303,12 @@ instance : MeasurableSpace (Outcome oracleSig oracleDone (fun _ => PUnit)
     (OracleVerifier.Output (fun _ => Nat) (fun _ (_ : Unit) => Nat))) := ⊤
 
 /-- The ambient oracle of the security experiments answers `true` and keeps no state. -/
-def ambientTrue : QueryImpl smallAmbient (StateT Unit ProbComp) := fun _ => pure true
+def ambientTrue : QueryImpl smallAmbient (StateT Unit ProbComp) where
+  toFun _ := pure true
 
 /-- The protocol with no rounds samples no challenges. -/
-def noChallenges : QueryImpl (challengeSpec oracleSig oracleDone) ProbComp := fun c => c.val.elim
+def noChallenges : QueryImpl (challengeSpec oracleSig oracleDone) ProbComp where
+  toFun c := c.val.elim
 
 /-- The classical model of `runnable`. Its statements pair an input statement in `Type 2` with
 input data indexed by `Type`, while its outcomes stay in `Type 0`. -/
@@ -338,10 +342,12 @@ def anyOutput : PathProblem done (fun _ => Unit) where
   rel_admissible _ _ _ _ := trivial
 
 /-- The ambient oracle of the plain experiments answers `true` and keeps no state. -/
-def plainAmbientTrue : QueryImpl smallAmbient (StateT Unit ProbComp) := fun _ => pure true
+def plainAmbientTrue : QueryImpl smallAmbient (StateT Unit ProbComp) where
+  toFun _ := pure true
 
 /-- The plain protocol with no rounds samples no challenges. -/
-def noPlainChallenges : QueryImpl (challengeSpec plainSig done) ProbComp := fun c => c.val.elim
+def noPlainChallenges : QueryImpl (challengeSpec plainSig done) ProbComp where
+  toFun c := c.val.elim
 
 /-- The reduction with an input statement in `Type 2` and an input witness in `Type 1` has an
 exported completeness statement, which holds with error one. -/
@@ -423,7 +429,7 @@ def typeCertificate {P : PFunctor.{1, 0}} (l : PFunctor.Lens P TwoParty.Lens.rol
 /-- Round-by-round knowledge with intermediate witnesses in `Type 1`, a small input witness and an
 input statement in `Type 2`. -/
 example : rbrKnowledgeSoundnessOfNodes.{2, 0, 1} plainSig done (fun (_ : Type 1) => True)
-    (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) (fun c => c.val.elim) (fun _ => 0) :=
+    (fun _ (_ : Unit) => True) (fun _ _ (_ : Unit) => True) ⟨fun c => c.val.elim⟩ (fun _ => 0) :=
   ⟨typeCertificate plainSig _, fun _ _ _ _ sp => nomatch sp⟩
 
 /-- The plain verifier wrapper at the same unequal universes. -/
@@ -554,7 +560,7 @@ example : OracleVerifier.rbrKnowledgeSoundnessOfNodes.{2, 0, 1, 1} runnable ambi
 def largePayloadInterface : OracleInterface.{1, 1} (ULift.{1} Nat) where
   Query := PUnit.{2}
   toOC.spec := fun _ => ULift.{1} Nat
-  toOC.impl _ := read
+  toOC.impl.toFun _ := read
 
 /-- A prover sends a natural-number oracle message in `Type 1`. -/
 def largePayloadProtocol : OracleProtocol.{1} :=

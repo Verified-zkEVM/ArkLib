@@ -54,9 +54,9 @@ variable {ι : Type} (oSpec : OracleSpec ι)
 def outputSimulation : OracleOutputSimulation oSpec OStmtIn
     (GrandProduct.OStmtIn F n) (pSpec F n) where
   materializeOutput _ _ msg := msg ⟨0, rfl⟩
-  simulateOutputQuery _ q := liftM <| OracleSpec.query
+  simulateOutputQuery _ := ⟨fun q => liftM <| OracleSpec.query
     (show (oSpec + ([OStmtIn]ₒ + [(pSpec F n).Message]ₒ)).Domain from
-      .inr (.inr ⟨⟨0, rfl⟩, q⟩))
+      .inr (.inr ⟨⟨0, rfl⟩, q⟩))⟩
   simulateOutputQuery_eq _ _ _ _ := rfl
 
 /-- The shared witness sender exposes the table through three evaluation-only oracles. -/

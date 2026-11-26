@@ -114,7 +114,7 @@ abbrev firstBundle :=
 `r`. -/
 def exportMap (r : K) : OracleMap (firstBundle (K := K)) (Spec.polynomialFamily K 1 1) where
   f x _ := exportPoly r (x.1 ()) (x.2 (.inl ⟨⟩))
-  impl q := do
+  impl.toFun q := do
     let old : K ← (OracleMap.fst (Spec.polynomialFamily K 2 1)
       (oracleMessageFamily (round K 1) (roundPath K 1))).impl ⟨(), ![r, q.2 0]⟩
     let sent : K ← (OracleMap.snd (Spec.polynomialFamily K 2 1)
@@ -441,7 +441,8 @@ def roundOf : ChallengeNode oracleSig (protocol K 1 2) → ℕ
 
 /-- A handler that records each query: the round of a challenge, and `i + 1` for event `i`. The
 challenges answer `2` and then `3`; events `2` and `3` answer `50` and `60`. -/
-def record : QueryImpl Q (StateM (List ℕ))
+def record : QueryImpl Q (StateM (List ℕ)) where
+  toFun
   | .inl i => do modify (· ++ [i.val + 1]); pure (if i = 2 then 50 else 60 : ℕ)
   | .inr c => do
       modify (· ++ [roundOf c])

@@ -40,7 +40,8 @@ def seven : ∀ _ : Unit, Nat := fun _ => 7
 
 /-- Record each ambient tag and answer it with itself; answer challenges with `draw`. -/
 def logger {s : OracleProtocol} (draw : QueryImpl (challengeSpec oracleSig s) Id) :
-    QueryImpl (ambient + challengeSpec oracleSig s) (StateM (List Nat))
+    QueryImpl (ambient + challengeSpec oracleSig s) (StateM (List Nat)) where
+  toFun
   | .inl n => do modify (· ++ [n]); pure n
   | .inr c => pure (draw c)
 
@@ -51,7 +52,7 @@ abbrev counter {s : OracleProtocol} (start : Nat)
     OracleRuntime []ₒ (ambient + challengeSpec oracleSig s) where
   State := Nat
   setup := pure start
-  handler
+  handler.toFun
     | .inl _ => do
       let count ← get
       set (count + 1)
@@ -60,7 +61,7 @@ abbrev counter {s : OracleProtocol} (start : Nat)
 
 /-- Evaluate a computation with no imports. -/
 def runImport {α : Type} (program : OracleComp []ₒ α) : α :=
-  simulateQ (fun q => q.elim : QueryImpl []ₒ Id) program
+  simulateQ (⟨fun q => q.elim⟩ : QueryImpl []ₒ Id) program
 
 /-! ## One pair send: the scheduling fixture
 
@@ -72,7 +73,7 @@ with the sent value or rejects. The output data closes to `input + sent.1`. -/
 @[reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  toOC.impl.toFun _ := do return (← read).1
 
 /-- The prover sends one pair oracle. -/
 @[instance_reducible] def pairSend : OracleProtocol :=
@@ -84,7 +85,7 @@ abbrev pairBundle := pathBundle inputs pairSend ⟨⟨⟩, ⟨⟩⟩
 /-- Close to the input plus the observable coordinate of the sent pair. -/
 def closeMap : OracleMap pairBundle exported where
   f x _ := (show Nat from x.1 ()) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
-  impl _ := do
+  impl.toFun _ := do
     let a : Nat ← (OracleMap.fst inputs (oracleMessageFamily pairSend ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
     let b : Nat ← (OracleMap.snd inputs (oracleMessageFamily pairSend ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (a + b)
@@ -112,7 +113,8 @@ def pairProver (setup : List Nat) (message hidden : Nat) :
   pure ⟨(message, hidden), pure hidden⟩
 
 /-- `pairSend` has no challenges. -/
-def pairChallenges : QueryImpl (challengeSpec oracleSig pairSend) Id
+def pairChallenges : QueryImpl (challengeSpec oracleSig pairSend) Id where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
@@ -193,10 +195,11 @@ def decisionVerifier (mode : Nat) :
 
 /-- Answered ambient requests update a persistent history; two requests fail with distinct labels.
 An unanswered failing request has no query-answer entry. -/
-def decisionHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun tag => do
-  if tag = 17 ∨ tag = 23 then throw tag
-  modify (· ++ [tag])
-  pure tag
+def decisionHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) where
+  toFun tag := do
+    if tag = 17 ∨ tag = 23 then throw tag
+    modify (· ++ [tag])
+    pure tag
 
 /-- Execute the actual prover, then interpret its final decision with recoverable labelled
 failure from `handler`. The private output and transcript are captured before interpreting that
@@ -241,8 +244,9 @@ theorem decision_closing_examples (hidden : Nat) :
     (decisionObserved 3 13 19 hidden).1.2.1 = .ok (some (19, 32)) := ⟨rfl, rfl⟩
 
 /-- A total handler answers every request, including 17 and 23, and records each one. -/
-def totalHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) := fun tag => do
-  modify (· ++ [tag]); pure tag
+def totalHandler : QueryImpl ambient (ExceptT Nat (StateM (List Nat))) where
+  toFun tag := do
+    modify (· ++ [tag]); pure tag
 
 /-- The run of `observedWith` under the total handler `totalHandler`. -/
 def totalObserved (mode old message hidden : Nat) :=
@@ -325,7 +329,7 @@ def unitVerifier :
 abbrev unitCounter : OracleRuntime []ₒ (unitAmbient + challengeSpec oracleSig pairSend) where
   State := Nat
   setup := pure 7
-  handler
+  handler.toFun
     | .inl _ => do
       modify (· + 1)
       pure ()
@@ -383,7 +387,8 @@ def twiceVerifier (program : Decision) :
   outputMap _ p _ := OracleMap.fst _ _
 
 /-- `sendTwice` has no challenges. -/
-def twiceChallenges : QueryImpl (challengeSpec oracleSig sendTwice) Id
+def twiceChallenges : QueryImpl (challengeSpec oracleSig sendTwice) Id where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
@@ -492,7 +497,8 @@ def mixedVerifier :
   outputMap _ p _ := OracleMap.fst _ _
 
 /-- The challenge bit is `true`. -/
-def mixedChallenges : QueryImpl (challengeSpec oracleSig mixed) Id
+def mixedChallenges : QueryImpl (challengeSpec oracleSig mixed) Id where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inl _⟩, _⟩ => pure true
   | ⟨.inr ⟨_, .inr ⟨_, .inl _⟩⟩, h⟩ => nomatch h
@@ -504,7 +510,7 @@ abbrev digits (draw : QueryImpl (challengeSpec oracleSig mixed) Id) :
     OracleRuntime []ₒ (ambient + challengeSpec oracleSig mixed) where
   State := Nat
   setup := pure 1
-  handler
+  handler.toFun
     | .inl n => do modify (· * 10 + n + 1); pure n
     | .inr c => pure (draw c)
 
@@ -590,7 +596,8 @@ def scheduleVerifier : OracleVerifier ambient schedule Unit (fun _ => Nat) input
 
 /-- The challenge service records both parts of its draw, without reading the bundle. -/
 def scheduleHandler : QueryImpl (ambient + challengeSpec oracleSig schedule)
-    (StateM (List Nat))
+    (StateM (List Nat)) where
+  toFun
   | .inl tag => do modify (· ++ [tag]); pure tag
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
@@ -625,7 +632,7 @@ abbrev prefixBundle := pathBundle inputs single ⟨⟨⟩, ⟨⟩⟩
 /-- Export the input plus the prefix message. -/
 def sumExport : OracleMap prefixBundle exported where
   f x _ := (show Nat from x.1 ()) + (show Nat from x.2 (.inl ⟨⟩))
-  impl _ := do
+  impl.toFun _ := do
     let a : Nat ← (OracleMap.fst inputs (oracleMessageFamily single ⟨⟨⟩, ⟨⟩⟩)).impl ⟨(), ()⟩
     let b : Nat ← (OracleMap.snd inputs (oracleMessageFamily single ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
     pure (a + b)
@@ -689,7 +696,8 @@ def appendProver (out : Nat) : Prover oracleSig ambient pair (fun _ => Nat) :=
       pure ⟨second, pure memory⟩)
 
 /-- `pair` has no challenges. -/
-def appendChallenges : QueryImpl (challengeSpec oracleSig pair) Id
+def appendChallenges : QueryImpl (challengeSpec oracleSig pair) Id where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
@@ -746,8 +754,8 @@ def prefixData : prefixBundle.Data :=
 def exportQuery : OracleComp exported.spec Nat := liftM (exported.spec.query ⟨(), ()⟩)
 
 /-- Answer prefix bundle queries from `prefixData`. -/
-def answerPrefix : QueryImpl prefixBundle.spec Id :=
-  fun q => pure (prefixBundle.answer prefixData q)
+def answerPrefix : QueryImpl prefixBundle.spec Id where
+  toFun q := pure (prefixBundle.answer prefixData q)
 
 /-- Name and answer of a log entry for a prefix bundle query. -/
 def nameEntry : (z : (i : prefixBundle.spec.Domain) × prefixBundle.spec.Range i) →
@@ -950,7 +958,8 @@ theorem queries_by_move_contract : queriesByMoveSummary = pure
 
 /-- Answer ambient requests by their tags and use the designated challenge interpreter. -/
 def answerTags {s : OracleProtocol} (draw : QueryImpl (challengeSpec oracleSig s) Id) :
-    QueryImpl (ambient + challengeSpec oracleSig s) Id
+    QueryImpl (ambient + challengeSpec oracleSig s) Id where
+  toFun
   | .inl n => n
   | .inr c => draw c
 
@@ -1024,7 +1033,8 @@ theorem moved_query_same_log :
   kernel_rfl
 
 /-- The fixed-message protocol has no receiver nodes. -/
-def fixedDraw : QueryImpl (challengeSpec oracleSig fixedMessage) Id
+def fixedDraw : QueryImpl (challengeSpec oracleSig fixedMessage) Id where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
@@ -1064,7 +1074,8 @@ def twoOracleVerifier :
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- This fixed two-send protocol has no challenge draws. -/
-def twoOracleDraw : QueryImpl (challengeSpec oracleSig twoOracles) Id
+def twoOracleDraw : QueryImpl (challengeSpec oracleSig twoOracles) Id where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
@@ -1180,7 +1191,7 @@ namespace Interaction.LoggedExecutionTests
 @[reducible] def liftedQueries : OracleInterface.{0, 1} Nat where
   Query := ULift.{1, 0} Unit
   toOC.spec _ := Nat
-  toOC.impl _ := do return (← read)
+  toOC.impl.toFun _ := do return (← read)
 
 /-- Attach the larger query interface to an actual small-move oracle node. -/
 @[instance_reducible] def liftedNode : OracleProtocol.{0, 1} :=
@@ -1197,7 +1208,8 @@ def liftedVerifier : OracleVerifier ambient liftedNode Unit (fun _ => Nat) input
   outputMap _ _ _ := OracleMap.fst _ _
 
 /-- No receiver node occurs in this larger-query protocol. -/
-def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id
+def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id where
+  toFun
   | ⟨.inl _, h⟩ => nomatch h
   | ⟨.inr ⟨_, n⟩, _⟩ => n.elim
 
@@ -1205,7 +1217,7 @@ def liftedDraw : QueryImpl (challengeSpec oracleSig liftedNode) Id
 bundle query indices. -/
 def liftedQueriesByMove : OracleVerifier.AmbientQueriesByMove liftedVerifier (fun _ => Nat) :=
   simulateQ (show QueryImpl (ambient + challengeSpec oracleSig liftedNode) Id from
-    fun q => match q with | .inl n => n | .inr c => liftedDraw c)
+    ⟨fun q => match q with | .inl n => n | .inr c => liftedDraw c⟩)
     (liftedVerifier.runWithAmbientQueriesByMove () seven (pure ⟨(17 : Nat), pure 23⟩))
 
 /-- The same larger-query run returns its oracle message, its private output and the partial

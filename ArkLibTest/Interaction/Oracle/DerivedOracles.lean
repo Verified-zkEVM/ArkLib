@@ -39,7 +39,7 @@ example (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
       ([]ₒ + ([ToyProblem.Spec.OracleStatement ι A]ₒ +
         [(ToyProblem.SimplifiedIOR.pSpec (F := F)).Message]ₒ)) Id)
     (q : [ToyProblem.SimplifiedIOR.OutputOracleStatement ι A]ₒ.Domain) :
-    (toyMap (ι := ι) (A := A) challenges).f impl q =
+    QueryImpl.toFun ((toyMap (ι := ι) (A := A) challenges).f impl) q =
       simulateQ impl (ToyProblem.SimplifiedIOR.outputSimulation.simulateOutputQuery challenges q) :=
   rfl
 
@@ -60,7 +60,7 @@ def suffix : OracleFamily Unit (fun _ => Nat) :=
 /-- Both source queries matter, with different coefficients. -/
 def weightedQueries : OracleMap source scalarFamily where
   f x _ := 2 * x false + x true
-  impl _ := do
+  impl.toFun _ := do
     let x : Nat ← liftM (source.spec.query ⟨false, ()⟩)
     let y : Nat ← liftM (source.spec.query ⟨true, ()⟩)
     pure (2 * x + y)
@@ -69,7 +69,7 @@ def weightedQueries : OracleMap source scalarFamily where
 /-- The downstream map consumes the derived scalar and the suffix oracle. -/
 def withSuffix : OracleMap (sumFamily scalarFamily (suffix.reindex id)) scalarFamily where
   f x _ := 10 * (show Nat from x (.inl ())) + (show Nat from x (.inr ()))
-  impl _ := do
+  impl.toFun _ := do
     let x : Nat ← liftM ((sumFamily scalarFamily (suffix.reindex id)).spec.query ⟨.inl (), ()⟩)
     let y : Nat ← liftM ((sumFamily scalarFamily (suffix.reindex id)).spec.query ⟨.inr (), ()⟩)
     pure (10 * x + y)

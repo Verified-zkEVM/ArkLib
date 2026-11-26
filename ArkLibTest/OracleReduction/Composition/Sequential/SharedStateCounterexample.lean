@@ -34,9 +34,11 @@ instance : ∀ i, SampleableType ((pSpec ++ₚ !p[]).Challenge i) :=
   ProtocolSpec.instSampleableTypeChallengeAppend (pSpec₁ := pSpec) (pSpec₂ := !p[])
 
 /-- `true` sets the bit; both query forms return its current value. -/
-def impl : QueryImpl spec (StateT Bool ProbComp) := fun setTrue => do
-  if setTrue then set true
-  get
+@[simps]
+def impl : QueryImpl spec (StateT Bool ProbComp) where
+  toFun setTrue := do
+    if setTrue then set true
+    get
 
 /-- The first stage changes state while sending its message, then outputs `false`. -/
 def first : Reduction spec Unit Unit Bool Unit pSpec where
@@ -94,7 +96,7 @@ theorem second_perfectCompleteness :
     second.perfectCompleteness (pure false) impl Set.univ Set.univ := by
   intro stmt wit h
   simp [↓OptionT.prEvent_mk, second, Reduction.run, Prover.run, Prover.runToRound,
-    Verifier.run, impl, monadLift_liftM_OptionT]
+    Verifier.run, monadLift_liftM_OptionT]
 
 /-- Fixed-initial-state component completeness does not imply appended completeness,
 even with pure left prover output and pure verifiers. -/
@@ -109,7 +111,7 @@ theorem not_append_perfectCompleteness :
   dsimp only [Reduction.run, Reduction.append] at hbad
   -- Keep the concrete execution normalization explicit before inspecting its result.
   simp only [Nat.add_zero, ChallengeIdx, Fin.vcons_fin_zero, Nat.reduceAdd, Fin.vappend_zero,
-    Challenge, QueryImpl.addLift_def, PFunctor.Handler.liftTarget_self, Prover.run,
+    Challenge, QueryImpl.addLift_def, QueryImpl.liftTarget_self, Prover.run,
     Fin.reduceLast, first, Fin.isValue, MessageIdx, Fin.vcons_of_one, Message,
     HasQuery.instOfMonadLift_query, second, Prover.append, Function.comp_apply, Fin.cast_eq_self,
     eq_mpr_eq_cast, Fin.val_eq_zero, Order.lt_one_iff, zero_add, Order.lt_two_iff, Std.le_refl,
@@ -120,12 +122,12 @@ theorem not_append_perfectCompleteness :
     monadLift_liftM_OptionT, Verifier.run, Verifier.append, map_pure, OptionT.run_pure,
     liftM_pure, Option.getM_some, map_bind, OptionT.run_bind, run_lift, OptionT.run_map,
     Option.map_some, Option.elimM_map, Option.elim_some, simulateQ_bind, simulateQ_map,
-    simulate_query, impl, StateT.run'_eq, StateT.run_bind,
+    simulate_query, impl_apply, StateT.run'_eq, StateT.run_bind,
     StateT.run_map, Set.mem_univ, true_and, ENNReal.coe_zero, tsub_zero,
     ge_iff_le] at hbad
   simp only [Fin.isValue, Fin.append, Fin.addCases, Nat.add_zero, Fin.coe_ofNat_eq_mod,
     Nat.mod_succ, Order.lt_two_iff, Std.le_refl, ↓dreduceDIte, Fin.reduceCastLT,
-    Fin.castAdd_zero, Fin.cast_eq_self, id_eq, liftM_map, simulateQ_map, simulate_query, impl,
+    Fin.castAdd_zero, Fin.cast_eq_self, id_eq, liftM_map, simulateQ_map, simulate_query, impl_apply,
     Bool.false_eq_true, ↓reduceIte, LawfulMonadStateOf.set_bind_get, bind_pure_comp,
     Functor.map_map, StateT.run_map, StateT.run_set, StateT.run_get, map_pure] at hbad
   have hone := le_antisymm (prEvent_le_one _) hbad

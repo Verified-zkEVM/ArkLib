@@ -71,9 +71,11 @@ private theorem prime_three : ∀ q ∈ ({3} : Finset ℕ), q.Prime := by
   subst q
   decide
 
-private def sampleLast (n : ℕ) : Id (unifSpec.Range n) := pure (Fin.last n)
+private def sampleLast : QueryImpl unifSpec Id where
+  toFun n := pure (Fin.last n)
 
-private def sampleZero (n : ℕ) : Id (unifSpec.Range n) := pure 0
+private def sampleZero : QueryImpl unifSpec Id where
+  toFun _ := pure 0
 
 /-- info: [2, 2] -/
 #guard_msgs in

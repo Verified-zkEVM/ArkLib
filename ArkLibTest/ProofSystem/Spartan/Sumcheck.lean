@@ -133,7 +133,8 @@ def acceptsTwo (tr : (Sumcheck.Spec.pSpec F 2 paramsTwo.ℓ_n).FullTranscript) :
   acceptsSecond {secondInput with c := secondInput.c + 1},
   acceptsTwo secondRunTwo.1, acceptsTwo alteredTranscriptTwo)
 
-def emptyImpl : QueryImpl []ₒ (StateT Unit ProbComp) := fun q => isEmptyElim q
+def emptyImpl : QueryImpl []ₒ (StateT Unit ProbComp) where
+  toFun q := isEmptyElim q
 
 example : (FirstSumcheck.oracleReduction (R := F) params []ₒ).perfectCompleteness
     (pure ()) emptyImpl (FirstSumcheck.relIn params) (FirstSumcheck.relOut params) :=

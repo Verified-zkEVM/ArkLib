@@ -230,7 +230,7 @@ def sentOracleMessageMap : {s : OracleProtocol.{u, q}} → {h k : PartialTranscr
   | s, _, _, .empty _ => by
     cases s <;> exact
       { f := fun _ i => PEmpty.elim i
-        impl := fun r => PEmpty.elim r.1
+        impl.toFun r := PEmpty.elim r.1
         law := fun _ r => PEmpty.elim r.1 }
   | _, _, _, @Le.cons (.message _) next x h k tail =>
     sentOracleMessageMap (s := next x) (h := h) (k := k) tail
@@ -306,7 +306,7 @@ def oracleMessagesToSent : (s : OracleProtocol.{u, q}) → (tr : Transcript orac
     OracleMap (oracleMessageFamily s tr.path) (sentOracleMessageFamily (ofTranscript s tr))
   | .pure _, _ =>
     { f := fun _ i => i.elim
-      impl := fun r => r.1.elim
+      impl := ⟨fun r => r.1.elim⟩
       law := fun _ r => r.1.elim }
   | .liftBind (.message _) next, ⟨x, tr⟩ => oracleMessagesToSent (next x) tr
   | .liftBind (.challenge _) next, ⟨_, tr⟩ => oracleMessagesToSent (next ⟨⟩) tr

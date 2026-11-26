@@ -117,7 +117,7 @@ example : oracleMessageSpec accessTree leftPath.path =
 @[instance_reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  toOC.impl.toFun _ := do return (← read).1
 
 /-- One pair send followed by the leaf. -/
 def terminalTree : OracleProtocol :=
@@ -154,7 +154,7 @@ example (hidden : Nat) : simulateQ (terminalBundle.answer
 example (visible hidden₁ hidden₂ : Nat) :
     oracleMessageImpl terminalTree ⟨(visible, hidden₁), ⟨⟩⟩ =
       oracleMessageImpl terminalTree ⟨(visible, hidden₂), ⟨⟩⟩ := by
-  funext q
+  ext q : 1
   rcases q with ⟨i | i, q⟩
   · rfl
   · exact i.elim
@@ -195,7 +195,7 @@ example (Messages : Type 1) (interface : OracleInterface.{1, 0} Messages)
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
   let latest : OracleBundle.{1, 0, 1} :=
     ⟨interface.Query, interface.toOC.spec, Messages,
-      fun message query => (interface.toOC.impl query).run message⟩
+      fun message => ⟨fun query => (interface.toOC.impl query).run message⟩⟩
   (prior.sum latest).spec.toPFunctor
 
 /-- Query types may lie above the message and response types when extending a bundle. -/
@@ -206,7 +206,7 @@ example (Messages : Type) (interface : OracleInterface.{0, 1} Messages)
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
   let latest : OracleBundle.{0, 1, 0} :=
     ⟨interface.Query, interface.toOC.spec, Messages,
-      fun message query => (interface.toOC.impl query).run message⟩
+      fun message => ⟨fun query => (interface.toOC.impl query).run message⟩⟩
   (prior.sum latest).spec.toPFunctor
 
 end Interaction.AccessTypingTests

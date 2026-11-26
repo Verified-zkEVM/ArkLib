@@ -25,7 +25,7 @@ namespace Interaction.RunBundlesTests
 @[reducible] def interface : OracleInterface (Nat × Nat) where
   Query := Unit
   toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  toOC.impl.toFun _ := do return (← read).1
 
 /-- One scalar input oracle. -/
 def inputs : OracleFamily PUnit (fun _ => Nat) :=
@@ -70,7 +70,7 @@ example (hidden₁ hidden₂ : Nat) :
       ).behaviorOfRealizations (sumData inputData (oracleMessages tree (path hidden₁))) =
     (sumFamily inputs (oracleMessageFamily tree (Transcript.path (path hidden₂)))
       ).behaviorOfRealizations (sumData inputData (oracleMessages tree (path hidden₂))) := by
-  funext q
+  ext q : 1
   rcases q with ⟨_ | (_ | (_ | i)), _⟩
   · rfl
   · rfl
@@ -251,7 +251,7 @@ example (branch : Bool) (hidden₁ hidden₂ : Nat) :
     HEq ((combinedBundle branch hidden₁).behaviorOfRealizations (combinedData branch hidden₁))
       ((combinedBundle branch hidden₂).behaviorOfRealizations
         (combinedData branch hidden₂)) := by
-  cases branch <;> apply heq_of_eq <;> funext q
+  cases branch <;> apply heq_of_eq <;> ext q : 1
   · rcases q with ⟨_ | _ | _ | _ | i, _⟩ <;> rfl
   · rcases q with ⟨_ | _ | _ | i, _⟩ <;> rfl
 

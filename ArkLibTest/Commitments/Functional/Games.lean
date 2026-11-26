@@ -27,10 +27,11 @@ private instance : ∀ i, VCVCompatible (protocol.Challenge i) := by
 private abbrev Data := Unit → Fin 4
 private def ask : OracleComp spec (Fin 4) := liftM (spec.query ())
 
-private def counter : QueryImpl spec (StateT ℕ ProbComp) := fun _ => do
-  let s ← get
-  set (s + 1)
-  pure ⟨s % 4, Nat.mod_lt _ (by decide)⟩
+private def counter : QueryImpl spec (StateT ℕ ProbComp) where
+  toFun _ := do
+    let s ← get
+    set (s + 1)
+    pure ⟨s % 4, Nat.mod_lt _ (by decide)⟩
 
 private def prover : Prover spec (Unit × (_q : Unit) × Fin 4) Unit Bool Unit protocol where
   PrvState _ := Unit

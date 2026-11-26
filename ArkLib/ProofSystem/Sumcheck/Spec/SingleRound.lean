@@ -733,17 +733,18 @@ for every remaining suffix in the sum-check domain and summing the answers. -/
 def simulateProjectedRoundPolynomial (i : Fin n)
     (stmt : StatementRound R n i.castSucc) :
     QueryImpl [Simple.OStmtIn R deg]ₒ
-      (OracleComp [OracleStatement R n deg]ₒ) := fun q => by
-  rcases q with ⟨u, r⟩
-  rcases u with ⟨⟩
-  match h : n with
-  | 0 => exact Fin.elim0 (h ▸ i)
-  | n + 1 =>
-      exact do
-        let evals ← ((univ.map D) ^ᶠ (n - i)).toList.mapM fun x =>
-          queryRoundInput R (n + 1) deg <| Fin.insertNth i r
-            (roundSuffix R (n + 1) i stmt.challenges x)
-        pure evals.sum
+      (OracleComp [OracleStatement R n deg]ₒ) where
+  toFun q := by
+    rcases q with ⟨u, r⟩
+    rcases u with ⟨⟩
+    match h : n with
+    | 0 => exact Fin.elim0 (h ▸ i)
+    | n + 1 =>
+        exact do
+          let evals ← ((univ.map D) ^ᶠ (n - i)).toList.mapM fun x =>
+            queryRoundInput R (n + 1) deg <| Fin.insertNth i r
+              (roundSuffix R (n + 1) i stmt.challenges x)
+          pure evals.sum
 
 theorem simulateProjectedRoundPolynomial_eq (i : Fin n)
     (stmt : StatementRound R n i.castSucc)
@@ -796,8 +797,8 @@ def oStmtExecutableLens (i : Fin n) : OracleStatement.ExecutableLens
   liftStmt := fun stmt ⟨newTarget, chal⟩ =>
     ⟨newTarget, Fin.snoc stmt.challenges chal⟩
   materializeOutput := fun outerOStmt _ => outerOStmt
-  simulateOutput := fun q => liftM <| OracleSpec.query
-    (show ([OracleStatement R n deg]ₒ + [Simple.OStmtOut R deg]ₒ).Domain from Sum.inl q)
+  simulateOutput := ⟨fun q => liftM <| OracleSpec.query
+    (show ([OracleStatement R n deg]ₒ + [Simple.OStmtOut R deg]ₒ).Domain from Sum.inl q)⟩
   simulateOutput_eq := by
     intro outerOStmt innerOStmt q
     rcases q with ⟨u, point⟩
@@ -817,9 +818,9 @@ def liftOutputSimulation {ι : Type} (oSpec : OracleSpec ι) :
     OracleOutputSimulation oSpec (OracleStatement R n deg)
       (OracleStatement R n deg) (pSpec R deg) where
   materializeOutput := fun _ oStmt _ => oStmt
-  simulateOutputQuery := fun _ q => liftM <| OracleSpec.query
+  simulateOutputQuery _ := ⟨fun q => liftM <| OracleSpec.query
     (show (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)).Domain from
-      Sum.inr (Sum.inl q))
+      Sum.inr (Sum.inl q))⟩
   simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rcases q with ⟨u, point⟩
@@ -880,10 +881,10 @@ def verifierQueryImpl : QueryImpl
     (oSpec + ([Simple.OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ))
     (OracleComp (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ))) :=
   QueryImpl.addLift (QueryImpl.id' oSpec)
-    (QueryImpl.addLift ((fun q => by
+    (QueryImpl.addLift (⟨fun q => by
       rcases q with ⟨u, point⟩
       rcases u with ⟨⟩
-      exact pure (0 : R)) : QueryImpl [Simple.OStmtIn R deg]ₒ
+      exact pure (0 : R)⟩ : QueryImpl [Simple.OStmtIn R deg]ₒ
         (OracleComp [OracleStatement R n deg]ₒ))
       (QueryImpl.id' [(pSpec R deg).Message]ₒ) :
       QueryImpl ([Simple.OStmtIn R deg]ₒ + [(pSpec R deg).Message]ₒ)
