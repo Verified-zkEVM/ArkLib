@@ -24,26 +24,37 @@ open OracleComp OracleSpec GroupModel.Interaction
 
 namespace KZG.AGM
 
+/-- The two source groups, indexed separately even when their carrier types coincide. This
+mirrors `BLS.AGM.Group` in VCVio. -/
 abbrev Group (G₁ G₂ : Type) : Bool → Type
   | false => G₁
   | true => G₂
 
+/-- Each source sort inherits its own additive operations. -/
 instance {G₁ G₂ : Type} [AddMonoid G₁] [AddMonoid G₂] (s : Bool) :
     AddMonoid (Group G₁ G₂ s) := by cases s <;> dsimp [Group] <;> infer_instance
 
+/-- Scalar actions are inherited separately at each source sort. -/
 instance {F G₁ G₂ : Type} [SMul F G₁] [SMul F G₂] (s : Bool) :
     SMul F (Group G₁ G₂ s) := by cases s <;> dsimp [Group] <;> infer_instance
 
+/-- Lists of received points in the two source groups. -/
 def groupInputs {G₁ G₂ : Type} (xs : List G₁) (ys : List G₂) : Groups (Group G₁ G₂)
   | false => xs
   | true => ys
 
+/-- An algebraic KZG adversary: a `GroupModel.Interaction.Adversary` over the two source groups
+whose only oracle is uniform sampling (`k ↦ Fin (k + 1)`) and whose result carries plain data
+`D` (the claimed points and values) with explained `G₁` outputs: the commitment first, then the
+opening proofs. -/
 abbrev Adversary (F G₁ G₂ D : Type) [Zero F] [AddMonoid G₁] [AddMonoid G₂]
     [SMul F G₁] [SMul F G₂] :=
   GroupModel.Interaction.Adversary F (Group G₁ G₂) Unit ℕ (fun k => Fin (k + 1)) D
 
+/-- An explained output: plain data `D` and explained group elements of each sort. -/
 abbrev Output (F G₁ G₂ D : Type) := Explained F D (Group G₁ G₂)
 
+/-- The initial message: the committer key in `G₁` and the verifier key in `G₂`. -/
 def initialInput {G₁ G₂ : Type} {n : ℕ} (ck : Fin (n + 1) → G₁) (vk : Fin 2 → G₂) :
     Message Unit (Group G₁ G₂) := ⟨(), groupInputs (List.ofFn ck) (List.ofFn vk)⟩
 
