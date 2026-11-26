@@ -401,11 +401,18 @@ inversions ≤ 1 + N Σ_i b_i(b_i − 1) + D(D − 1)
 add/sub, mul, eq ≤ fieldBudget n s d                  each listed category.
 ```
 
-Other coordinates, including explicit metadata ticks and local coefficient/cache accesses, have
-their existing `extractorProfileBound`. This is not a full machine-operation count. The [scope table](#proof-and-accounting-boundary)
-applies; in particular arbitrary retained domain/word functions need their own implementation
-costs. The [FRI audit](../kb/audits/fri-soundness.md#extraction-correctness-and-operation-profile)
-specializes this boundary.
+The `extractorProfileBound` vector also covers metadata ticks and reads of coefficients and
+caches. Under `D ≤ N`, the
+[domain-size envelope](../../ArkLib/ProofSystem/Fri/Spec/Extraction/DomainCost.lean) theorem
+`extractorProfileBound_le_domainEnvelope` bounds each coordinate of that vector by an explicit
+polynomial in `N`.
+
+The budget charges only the declared instructions. View construction, handler work beyond each
+instruction's price, and local computation stay outside the budget. Retained domain and word
+functions therefore need their own implementation costs. The
+[accounting boundary](#proof-and-accounting-boundary) and the
+[FRI audit](../kb/audits/fri-soundness.md#extraction-correctness-and-operation-profile) give the
+full scope.
 
 ## Toy IOP integration
 

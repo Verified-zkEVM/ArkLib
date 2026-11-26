@@ -7,6 +7,7 @@ module
 
 public import ArkLib.ProofSystem.Fri.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.ClosedCost
+public import ArkLib.ProofSystem.Fri.Spec.Extraction.DomainCost
 public import ArkLib.OracleReduction.Security.Resources
 public import VCVio.OracleComp.QueryTracking.MeasuredProgram
 
@@ -111,5 +112,24 @@ theorem knowledgeSoundnessWithResources_extract
   ⟨knowledge_soundness_with s d l hdom θ δ hrate init impl,
     Extractor.measuredProgram_realizesExtractor s d l (round_bound hdom),
     Extractor.measuredProgram_costAtMost s d l (round_bound hdom)⟩
+
+/-- The FRI knowledge-soundness certificate with the per-kind polynomial budget evaluated at the
+initial domain size. -/
+theorem knowledgeSoundnessWithResources_extract_domainEnvelope
+    (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
+    (θ : ℝ) (δ : ℝ≥0)
+    (hrate : min θ δ ≤ 1 - (2 ^ (∑ j, (s j).val) * d.val : ℕ) / (2 ^ n : ℝ))
+    [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
+    (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundnessWithResources init impl
+      (inputRelation k s d δ) (outputRelation k s d δ)
+      (Extractor.extract s d (round_bound hdom) l)
+      (soundnessError (ω := ω) s d l θ δ)
+      (Extractor.measuredProgram s d l (round_bound hdom))
+      (Extractor.extractorDomainEnvelope (2 ^ n)) :=
+  OracleVerifier.knowledgeSoundnessWithResources.mono init impl
+    (knowledgeSoundnessWithResources_extract s d l hdom θ δ hrate init impl)
+    (Extractor.extractorProfileBound_le_domainEnvelope s d hdom)
 
 end Fri.Spec

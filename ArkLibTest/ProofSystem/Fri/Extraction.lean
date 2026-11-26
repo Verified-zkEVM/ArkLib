@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 import ArkLib.ProofSystem.Fri.Spec.KnowledgeSoundness
 import ArkLib.ProofSystem.Fri.Spec.Extraction.ClosedCost
 import ArkLib.ProofSystem.Fri.Spec.MeasuredKnowledgeSoundness
+import Mathlib.Tactic.ComputeDegree
 
 /-!
 # Certified FRI extractor acceptance checks
@@ -141,3 +142,36 @@ info: 'Fri.Spec.knowledgeSoundnessWithResources_extract' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Fri.Spec.knowledgeSoundnessWithResources_extract
+
+/--
+info: 'Fri.Spec.Extractor.extractorProfileBound_le_domainEnvelope' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.Spec.Extractor.extractorProfileBound_le_domainEnvelope
+
+/--
+info: 'Fri.Spec.knowledgeSoundnessWithResources_extract_domainEnvelope' depends on axioms:
+[propext, Classical.choice, Quot.sound]
+-/
+#guard_msgs (whitespace := lax) in
+#print axioms Fri.Spec.knowledgeSoundnessWithResources_extract_domainEnvelope
+
+open Fri.Spec.Extractor in
+example (N : ℕ) : extractorDomainEnvelope N (.inr .wordRead) = 2 * N ^ 2 + N := by
+  simp [extractorDomainEnvelope, extractorDomainPolynomial]
+
+open Fri.Spec.Extractor in
+example (kind : CostKind) : (extractorDomainPolynomial kind).natDegree ≤ 4 := by
+  rcases kind with kind | kind <;> cases kind <;>
+    simp only [extractorDomainPolynomial] <;> compute_degree!
+
+open Fri.Spec.Extractor in
+example : (extractorDomainPolynomial (.inl .mul)).natDegree = 4 := by
+  simp only [extractorDomainPolynomial]
+  compute_degree!
+
+open Fri.Spec.Extractor in
+example : (extractorDomainPolynomial (.inr .wordRead)).natDegree = 2 := by
+  simp only [extractorDomainPolynomial]
+  compute_degree!

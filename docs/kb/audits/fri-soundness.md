@@ -30,7 +30,7 @@ author credit are recorded on the paper page.
 | Dense returned-witness recovery | `Fri.Spec.Extractor.extractHistory_eq_some_of_density` | Inclusive rate boundary; agreement within the stated distance |
 | Literal measured extractor | `Fri.Spec.Extractor.extractHistory_eq_profile` | Public result is the first projection of the measured program |
 | End-to-end knowledge soundness with named extractor | `Fri.Spec.knowledge_soundness_with` | Every input statement; actual logged knowledge game; extraction failure includes `none` |
-| Named knowledge game with operation profile | `Fri.Spec.knowledgeSoundnessWithResources_extract` | Same extractor and `extractorProfileBound`; excludes input-view preparation, handler evaluation and uncharged local computation |
+| Knowledge game with the extractor's operation profile | `Fri.Spec.knowledgeSoundnessWithResources_extract` and `Fri.Spec.knowledgeSoundnessWithResources_extract_domainEnvelope` | The budget is the schedule-specific profile or its polynomial bound at the initial domain size. View preparation, handler evaluation beyond the declared prices, and local computation are outside the budget. |
 | End-to-end existential knowledge soundness | `Fri.Spec.knowledge_soundness` | Forgets the named extractor and its costs; equivalent to relation soundness for this game |
 | End-to-end round-by-round soundness | `Fri.Spec.rbr_soundness` | Fixed-prefix `OracleVerifier.rbrSoundness` and original input/output relations |
 
@@ -188,10 +188,16 @@ rewrite has been shown to replace FRI's measured program with that separate eval
 [algorithm map](../../design/03a-extractor-efficiency.md#polynomial-algorithm-accounting) records
 this distinction; semantic equality alone cannot transfer costs.
 
-Under the reduction's `D ≤ N` constraint these envelopes are polynomial in `N`, rather than in
-`log N`. They do not imply a cryptographic polynomial-time or bit-runtime bound. The compiled
-fixtures include rejection of a canonical polynomial with 4097 coefficients before other input
-accesses, and a total rejecting execution with `D > N`.
+Under the reduction's `D ≤ N` constraint, the
+[domain-size envelope](../../../ArkLib/ProofSystem/Fri/Spec/Extraction/DomainCost.lean) theorem
+`extractorProfileBound_le_domainEnvelope` bounds the schedule-specific profile by the polynomials
+in `extractorDomainPolynomial`. The size variable for those polynomials is the domain cardinality
+`N = 2 ^ n`, rather than its logarithm. The bounds count declared instruction charges. A
+cryptographic polynomial-time or bit-runtime claim needs separate bounds on representation and
+execution.
+
+The compiled fixtures include rejection of a canonical polynomial with 4097 coefficients before
+other input accesses, and a total rejecting execution with `D > N`.
 
 ## Scope and trust boundary
 
