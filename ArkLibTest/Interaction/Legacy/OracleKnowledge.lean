@@ -18,18 +18,18 @@ namespace Interaction.Legacy.OracleKnowledgeTests
 /-- A message, a challenge, then a second message. -/
 def twoWay : ProtocolSpec 3 := ⟨!v[.P_to_V, .V_to_P, .P_to_V], !v[Nat, Bool, Nat]⟩
 
-instance twoWayOracles : ∀ i, OracleInterface.{0, 0} (twoWay.Message i) :=
+instance twoWayOracles : ∀ i, OracleInterface (twoWay.Message i) :=
   fun _ => OracleInterface.instDefault
 
 /-- One input oracle statement. -/
 abbrev InStmt : Unit → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (InStmt i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (InStmt i) := fun _ => OracleInterface.instDefault
 
 /-- Two forwarded output oracles: the input oracle (`true`) and the first message (`false`). -/
 abbrev OutCopy : Bool → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (OutCopy i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (OutCopy i) := fun _ => OracleInterface.instDefault
 
 /-- A shared oracle answering natural numbers. -/
 abbrev shared : OracleSpec Unit := Unit →ₒ Nat

@@ -175,7 +175,7 @@ section MapOutput
 /-- Interpreting the slots commutes with PolyFun's `Strategy.mapOutput`. -/
 theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}} {κ : Type}
     {spec : OracleSpec κ} {M : Type → Type} [Monad M] [LawfulMonad M] (F : QueryImpl spec M) :
-    (s : FreeM P PUnit.{1}) → {Out Out' : Transcript l s → Type} → (f : ∀ tr, Out tr → Out' tr) →
+    (s : FreeM P Unit) → {Out Out' : Transcript l s → Type} → (f : ∀ tr, Out tr → Out' tr) →
     (p : Interaction.Prover l spec s Out) →
     Prover.simulate F (Strategy.mapOutput f p) = Strategy.mapOutput f (Prover.simulate F p)
   | .pure _, _, _, f, p => simulateQ_map F p (f ⟨⟩)
@@ -191,7 +191,7 @@ theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{
 
 /-- The verifier's run of a strategy with mapped outputs maps the outputs of its outcome. It
 is PolyFun's `runWith_mapOutput_mapOutput` with the identity map on the sampler. -/
-theorem verifier_run_mapOutput {S : Type} {s : Protocol.{0}} {T : Path s → Type}
+theorem verifier_run_mapOutput {S : Type} {s : Protocol} {T : Path s → Type}
     (V : Interaction.Verifier oSpec s S T) (stmt : S) {Out Out' : Transcript plainSig s → Type}
     (f : ∀ tr, Out tr → Out' tr) (p : Interaction.Prover plainSig oSpec s Out) :
     V.run stmt (Strategy.mapOutput f p) =
@@ -635,7 +635,7 @@ variable (L : Layout pSpec)
 transcript `pre` of the rounds before `k`. Each recorded move is the legacy payload of its
 round. -/
 def prefixFrom : (k m : ℕ) → (h : k + m = n) → ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec →
-    {t : FreeM L.P PUnit.{1}} → (sp : Cursor.Spine (L.tree k m h) t) →
+    {t : FreeM L.P Unit} → (sp : Cursor.Spine (L.tree k m h) t) →
     PartialTranscriptAt L.l sp → (j : Fin (n + 1)) × ProtocolSpec.Transcript j pSpec
   | k, 0, _, pre, _, .root _, _ => ⟨⟨k, by omega⟩, pre⟩
   | k, _ + 1, _, pre, _, .root _, _ => ⟨⟨k, by omega⟩, pre⟩
@@ -677,7 +677,7 @@ node, the node's legacy challenge index is `j`, and the node's draw is the legac
 `j` up to the payload equivalence. -/
 theorem prefixFrom_step : (k m : ℕ) → (h : k + m = n) →
     (pre : ProtocolSpec.Transcript ⟨k, by omega⟩ pSpec) →
-    {a : L.P.A} → {next : L.P.B a → FreeM L.P PUnit.{1}} →
+    {a : L.P.A} → {next : L.P.B a → FreeM L.P Unit} →
     (sp : Cursor.Spine (L.tree k m h) (.liftBind a next)) →
     (hist : PartialTranscriptAt L.l sp) →
     ∃ (j : Fin n) (ha : a = L.pos j) (tr : ProtocolSpec.Transcript j.castSucc pSpec),
@@ -699,7 +699,7 @@ theorem prefixFrom_step : (k m : ℕ) → (h : k + m = n) →
     prefixFrom_step (k + 1) m (by omega) _ tail hist.2
 
 /-- The legacy transcript prefix of a full prefix of a layout's tree, with its round. -/
-def legacyPrefix {t : FreeM L.P PUnit.{1}} (sp : Cursor.Spine L.protocol t)
+def legacyPrefix {t : FreeM L.P Unit} (sp : Cursor.Spine L.protocol t)
     (hist : PartialTranscriptAt L.l sp) : (j : Fin (n + 1)) × ProtocolSpec.Transcript j pSpec :=
   L.prefixFrom 0 n (Nat.zero_add n) default sp hist
 
@@ -717,7 +717,7 @@ theorem legacyPrefix_complete (sp : Cursor.Spine L.protocol (.pure ⟨⟩))
   L.prefixFrom_complete 0 n _ default sp hist
 
 /-- A full prefix ending at a node is a legacy prefix before the last round. -/
-theorem legacyPrefix_val_lt {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
+theorem legacyPrefix_val_lt {a : L.P.A} {next : L.P.B a → FreeM L.P Unit}
     (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PartialTranscriptAt L.l sp) :
     (L.legacyPrefix sp hist).1.val < n := by
   obtain ⟨j, -, tr, h1, -⟩ := L.prefixFrom_step 0 n _ default sp hist
@@ -726,7 +726,7 @@ theorem legacyPrefix_val_lt {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
   exact j.isLt
 
 /-- One move advances the legacy round by one. -/
-theorem legacyPrefix_snoc_fst {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
+theorem legacyPrefix_snoc_fst {a : L.P.A} {next : L.P.B a → FreeM L.P Unit}
     (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PartialTranscriptAt L.l sp)
     (x : Move L.l a) :
     (L.legacyPrefix (sp.comp (.down (L.l.toFunB a x) (.root _)))
@@ -751,7 +751,7 @@ theorem legacyPrefix_complete_ne (sp : Cursor.Spine L.protocol (.pure ⟨⟩))
 
 /-- The challenge draw at a node under the reindexed legacy challenge implementation. -/
 theorem sampleAt_challengeImpl (chImpl : QueryImpl [pSpec.Challenge]ₒ ProbComp)
-    {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
+    {a : L.P.A} {next : L.P.B a → FreeM L.P Unit}
     (sp : Cursor.Spine L.protocol (.liftBind a next)) (hc : owner L.l a = .receiver) :
     sampleAt L.l (L.challengeImpl chImpl) sp hc =
       (fun x => Eq.mp (congrArg (Move L.l) (spineNode_position sp)) x) <$>
@@ -778,7 +778,7 @@ theorem heq_snd_of_eq {p : (j : Fin (n + 1)) × ProtocolSpec.Transcript j pSpec}
   rfl
 
 /-- The legacy transcript prefix of a full prefix of the plain tree. -/
-abbrev legacyPrefix {t : Protocol.{0}} (sp : Cursor.Spine (protocol pSpec) t)
+abbrev legacyPrefix {t : Protocol} (sp : Cursor.Spine (protocol pSpec) t)
     (hist : PartialTranscriptAt plainSig sp) : (j : Fin (n + 1)) × ProtocolSpec.Transcript j
       pSpec :=
   (plainLayout pSpec).legacyPrefix sp hist
@@ -1004,7 +1004,7 @@ def legacyStateFunction (hacc : L.AcceptanceAgrees impl V acc) {langIn : Set Stm
     (F : StateFunction L.l L.protocol StmtIn ((langProblem langIn).admissible ())
       ((langProblem langIn).language ()) (acc ((langProblem langOut).language ()))) :
     V.StateFunction init impl langIn langOut where
-  toFun j stmt tr := ∀ (t : FreeM L.P PUnit.{1}) (sp : Cursor.Spine L.protocol t)
+  toFun j stmt tr := ∀ (t : FreeM L.P Unit) (sp : Cursor.Spine L.protocol t)
     (hist : PartialTranscriptAt L.l sp), L.legacyPrefix sp hist = ⟨j, tr⟩ → F.toFun sp hist stmt
   toFun_empty stmt h :=
     (langProblem_language _ _).mp (F.root stmt trivial (h _ (.root _) ⟨⟩ L.legacyPrefix_root))
@@ -1146,7 +1146,7 @@ variable (L : Layout pSpec) {StmtIn WitIn StmtOut WitOut σ : Type} {WitMid : Fi
 
 /-- The legacy backwards extraction across the move `x` after the full prefix `sp`. -/
 def embedExtractStep (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    {a : L.P.A} {next : L.P.B a → FreeM L.P PUnit.{1}}
+    {a : L.P.A} {next : L.P.B a → FreeM L.P Unit}
     (sp : Cursor.Spine L.protocol (.liftBind a next)) (hist : PartialTranscriptAt L.l sp)
     (stmt : StmtIn) (x : Move L.l a)
     (w : WitMid (L.legacyPrefix (sp.comp (.down (L.l.toFunB a x) (.root _)))
@@ -1163,7 +1163,7 @@ and the extracted state before it are the legacy states at `tr.concat`. -/
 theorem embedExtractStep_congr {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid}
     (K : V.KnowledgeStateFunction init impl relIn relOut E) (j : Fin n)
-    {next : L.P.B (L.pos j) → FreeM L.P PUnit.{1}}
+    {next : L.P.B (L.pos j) → FreeM L.P Unit}
     (sp : Cursor.Spine L.protocol (.liftBind (L.pos j) next))
     (hist : PartialTranscriptAt L.l sp) (tr : ProtocolSpec.Transcript j.castSucc pSpec)
     (h1 : L.legacyPrefix sp hist = ⟨j.castSucc, tr⟩)

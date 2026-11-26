@@ -31,7 +31,7 @@ variable (R : Type) [CommSemiring R] (deg : ℕ)
 
 /-- One round: an evaluation oracle for the round polynomial, then one ring challenge. -/
 @[implicit_reducible]
-def round : OracleProtocol.{0} :=
+def round : OracleProtocol :=
   .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
     .liftBind (.challenge R) fun _ => .pure ⟨⟩
 
@@ -162,7 +162,7 @@ theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : Transcri
 
 
 variable {I : Type} {A : I → Type}
-  (inputs : Interaction.Oracle.OracleFamily.{0, 0, 0} I A)
+  (inputs : Interaction.Oracle.OracleFamily I A)
 
 /-- The first round of a transcript of a round followed by `s`. -/
 def appendHead (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :

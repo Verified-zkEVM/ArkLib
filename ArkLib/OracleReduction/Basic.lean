@@ -86,7 +86,7 @@ open OracleComp OracleSpec SubSpec ProtocolSpec
 structure Indexer {ι : Type} (oSpec : OracleSpec ι) {n : ℕ} (pSpec : ProtocolSpec n) (Index : Type)
     (Encoding : Type) where
   encode : Index → OracleComp oSpec Encoding
-  [OracleInterface : OracleInterface.{0, 0} Encoding]
+  [OracleInterface : OracleInterface Encoding]
 
 /-
 Sketch of the upcoming refactor to the prover's type (dependent on VCVio refactor):

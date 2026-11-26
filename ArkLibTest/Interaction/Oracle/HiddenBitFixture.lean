@@ -26,7 +26,7 @@ namespace Interaction.HiddenBitFixture
 abbrev bitAmbient : OracleSpec Bool := Bool →ₒ Bool
 
 /-- One bit-valued oracle slot, used for the input and the exports. -/
-@[instance_reducible] def bits : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
+@[instance_reducible] def bits : OracleFamily Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input slot holds `false`. -/

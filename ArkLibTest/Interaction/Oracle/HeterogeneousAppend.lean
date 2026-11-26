@@ -30,7 +30,7 @@ namespace Interaction.HeterogeneousAppendTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
 /-- A distinct scalar Boolean oracle. -/
-def booleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
+def booleans : OracleFamily Unit (fun _ => Bool) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Export the scalar input plus 11, next to any message bundle. -/

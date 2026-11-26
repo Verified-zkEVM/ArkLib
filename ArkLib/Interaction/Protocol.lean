@@ -18,36 +18,36 @@ and never contain erased moves.
 
 @[expose] public section
 
-universe u q uA
+universe u uA
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens
 
 /-- A plain protocol is authored directly over the plain polynomial. -/
-abbrev Protocol := FreeM PlainPoly.{u} PUnit.{u + 1}
+abbrev Protocol := FreeM PlainPoly Unit
 
-/-- An oracle tree with leaves of type `Result`. Protocols use the default `PUnit` leaves;
+/-- An oracle tree with leaves of type `Result`. Protocols use the default `Unit` leaves;
 explicit result types describe trees whose leaves retain authored return values. -/
-abbrev OracleProtocol (Result : Type u := PUnit.{u + 1}) := FreeM OraclePoly.{u, q} Result
+abbrev OracleProtocol (Result : Type := Unit) := FreeM OraclePoly Result
 
 /-- The oracle verifier's view of a run: the transcripts at `viewSig` that follow the shape
 path `p`. -/
 @[reducible]
-def View (s : OracleProtocol.{u, q}) (p : Path s) : Type u :=
+def View (s : OracleProtocol) (p : Path s) : Type :=
   TranscriptAt viewSig s p
 
 /-- Erase oracle payloads from a completed run, retaining its exact shape path. -/
-def toView (s : OracleProtocol.{u, q}) (tr : Transcript oracleSig s) :
+def toView (s : OracleProtocol) (tr : Transcript oracleSig s) :
     View s tr.path :=
   ⟨Transcript.mapMoves eraseOracle tr, Transcript.path_mapMoves eraseOracle tr⟩
 
 /-- All plain moves are visible, including the challenges erased from the shape: the transcripts
 at `plainSig` that follow the shape path `p`. -/
-def PlainView (s : Protocol.{u}) (p : Path s) : Type u :=
+def PlainView (s : Protocol) (p : Path s) : Type :=
   TranscriptAt plainSig s p
 
 /-- The full plain transcript with its shape certificate. -/
-def toPlainView (s : Protocol.{u}) (tr : Transcript plainSig s) :
+def toPlainView (s : Protocol) (tr : Transcript plainSig s) :
     PlainView s tr.path := ⟨tr, rfl⟩
 
 /-- A node occurrence selected by source branches, in the branch universe. -/
@@ -168,14 +168,14 @@ def ChallengeNode.appendEquiv {P : PFunctor.{uA, u}} (l : PFunctor.Lens P rolePo
       right_inv := fun _ => rfl }))
 
 /-- A challenge value changes the transcript but not the projected branch. -/
-theorem plain_challenge_shape (C : Type u) (s : Protocol.{u})
+theorem plain_challenge_shape (C : Type) (s : Protocol)
     (x y : C) (tr : Transcript plainSig s) :
     Transcript.path (l := plainSig) (s := (.liftBind (.challenge C) (fun _ => s))) ⟨x, tr⟩ =
       Transcript.path (l := plainSig) (s := (.liftBind (.challenge C) (fun _ => s))) ⟨y, tr⟩ := rfl
 
 /-- An oracle payload likewise changes no branch of the source path. -/
-theorem oracle_payload_shape (X : Type u) (I : OracleInterface.{u, q} X)
-    (s : OracleProtocol.{u, q}) (x y : X) (tr : Transcript oracleSig s) :
+theorem oracle_payload_shape (X : Type) (I : OracleInterface X)
+    (s : OracleProtocol) (x y : X) (tr : Transcript oracleSig s) :
     Transcript.path (l := oracleSig) (s := (.liftBind (.oracle X I) (fun _ => s))) ⟨x, tr⟩ =
       Transcript.path (l := oracleSig) (s := (.liftBind (.oracle X I) (fun _ => s))) ⟨y, tr⟩ := rfl
 

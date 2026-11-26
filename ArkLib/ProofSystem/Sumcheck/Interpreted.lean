@@ -82,7 +82,7 @@ theorem simulate_decision {State : ℕ → Type} {T : Type} (checks : RoundCheck
 
 /-- A passive oracle verifier for any evaluated message representation and retained input. -/
 def verifier {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I → Type}
-    (inputs : OracleFamily.{0, 0, 0} I A) {State : ℕ → Type} {T : Type}
+    (inputs : OracleFamily I A) {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) :
     OracleVerifier ambient (protocol R M evaluate k) (State k) (fun _ => T) inputs
       (fun _ => inputs) where
@@ -92,7 +92,7 @@ def verifier {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I → Type}
 
 /-- The interpreted verifier's final decision is pure once its bundle queries are answered. -/
 theorem simulate_verifier {ι : Type} {ambient : OracleSpec ι} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} {m : Type → Type} [Monad m] [LawfulMonad m]
+    {inputs : OracleFamily I A} {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) (st : State k)
     (data : ∀ i, A i) (tr : Transcript oracleSig (protocol R M evaluate k)) :
@@ -107,7 +107,7 @@ theorem simulate_verifier {ι : Type} {ambient : OracleSpec ι} {I : Type} {A : 
 /-- Actual execution preserves the transcript, private output and original oracle data for
 any evaluated message carrier. -/
 theorem verifier_run {ι : Type} (ambient : OracleSpec ι) {I : Type} {A : I → Type}
-    (inputs : OracleFamily.{0, 0, 0} I A) {State : ℕ → Type} {T : Type}
+    (inputs : OracleFamily I A) {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ) (st : State k)
     (data : ∀ i, A i) {Out : Transcript oracleSig (protocol R M evaluate k) → Type}
     (prover : Prover oracleSig ambient (protocol R M evaluate k) Out) :

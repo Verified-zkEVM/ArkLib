@@ -70,7 +70,7 @@ open scoped ENNReal
 the counterpart's midpoint output. The continuation carries the prover's private memory and
 effects. -/
 abbrev AppendBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    (m : Type → Type) (s₁ : FreeM P PUnit.{1}) (s₂ : Path s₁ → FreeM P PUnit.{1})
+    (m : Type → Type) (s₁ : FreeM P Unit) (s₂ : Path s₁ → FreeM P Unit)
     (OutP : Transcript l (s₁.append s₂) → Type) (MidC : Transcript l s₁ → Type) :=
   (tr : Transcript l s₁) ×
     Focal l m (s₂ tr.path)
@@ -302,7 +302,7 @@ variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
 returns, over the full run interface of the appended protocol. -/
 abbrev RunBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
     {ι : Type} (ambient : OracleSpec.{0, 0} ι)
-    (s₁ : FreeM P PUnit.{1}) (s₂ : Path s₁ → FreeM P PUnit.{1})
+    (s₁ : FreeM P Unit) (s₂ : Path s₁ → FreeM P Unit)
     (Out : Transcript l (s₁.append s₂) → Type) :=
   AppendBoundary l (OracleComp (ambient + challengeSpec l (s₁.append s₂))) s₁ s₂ Out
     (fun _ => PUnit)
@@ -311,7 +311,7 @@ abbrev RunBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 boundary: the prefix transcript and the continuation the whole prover returns, which keeps the
 prover's private memory. Ambient and challenge queries go to the full run interface. -/
 def appendPrefixRun {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
-    {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
+    {s₁ : FreeM P Unit} {s₂ : Path s₁ → FreeM P Unit}
     {Out : Transcript l (s₁.append s₂) → Type}
     (prover : Prover l ambient (s₁.append s₂) Out) :
     OracleComp (ambient + challengeSpec l (s₁.append s₂)) (RunBoundary l ambient s₁ s₂ Out) :=
@@ -324,7 +324,7 @@ def appendPrefixRun {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
 
 /-- The rest of a plain run after the append boundary: the suffix interaction against the
 returned continuation, then the end decision on the whole transcript. -/
-def Verifier.suffixRun {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}} {S : Type}
+def Verifier.suffixRun {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript plainSig (s₁.append s₂) → Type}
     (V : Verifier ambient (s₁.append s₂) S T) (stmt : S)
@@ -344,7 +344,7 @@ def Verifier.suffixRun {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}}
 
 /-- A run on an appended plain protocol is its prefix interaction followed by the rest of the
 run at the actual boundary. The verifier is arbitrary, so this covers `Verifier.append`. -/
-theorem Verifier.run_eq_bind {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protocol.{0}} {S : Type}
+theorem Verifier.run_eq_bind {s₁ : Protocol} {s₂ : Path s₁ → Protocol} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript plainSig (s₁.append s₂) → Type}
     (V : Verifier ambient (s₁.append s₂) S T) (stmt : S)
@@ -358,7 +358,7 @@ theorem Verifier.run_eq_bind {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protoco
 /-- The rest of an oracle run after the append boundary: the suffix interaction against the
 returned continuation, then the final decision with bundle queries answered from the input data and
 the oracle messages of the whole transcript. -/
-def OracleVerifier.suffixRun {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+def OracleVerifier.suffixRun {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     {inputs : OracleBundle}
     {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
@@ -388,8 +388,8 @@ def OracleVerifier.suffixRun {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ �
 /-- An oracle run on an appended protocol is its prefix interaction followed by the rest of the
 run at the actual boundary. The verifier is arbitrary, so this covers `OracleVerifier.append`;
 `OracleVerifier.run_append` describes the rest of that run. -/
-theorem OracleVerifier.run_eq_bind {s₁ : OracleProtocol.{0, 0}}
-    {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+theorem OracleVerifier.run_eq_bind {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
     {inputs : OracleBundle}
     {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
@@ -560,8 +560,8 @@ distribution of false admissible midpoints. Midpoint truth and admissibility are
 the boundary and the ambient state; they may use the prefix's oracle messages. The suffix
 premise bounds the actual run resumed from the boundary, including the end decision, and only
 holds almost everywhere. The verifier is arbitrary, so this covers `OracleVerifier.append`. -/
-theorem OracleVerifier.append_soundness_weighted_ae {s₁ : OracleProtocol.{0, 0}}
-    {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+theorem OracleVerifier.append_soundness_weighted_ae {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
     {inputs : OracleBundle}
     {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
@@ -594,8 +594,8 @@ theorem OracleVerifier.append_soundness_weighted_ae {s₁ : OracleProtocol.{0, 0
 at most `εtruth + εinvalid + ε`, the oracle form of `ε₁ + δ + ε₂` with `εinvalid` for
 inadmissible midpoints. The suffix premise bounds the actual run resumed from almost every false
 admissible boundary, including the end decision. Oracle verifiers have no standalone form. -/
-theorem OracleVerifier.append_soundness_ae {s₁ : OracleProtocol.{0, 0}}
-    {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+theorem OracleVerifier.append_soundness_ae {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
     {inputs : OracleBundle}
     {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
@@ -625,8 +625,8 @@ theorem OracleVerifier.append_soundness_ae {s₁ : OracleProtocol.{0, 0}}
 /-- The weighted bound for the oracle run program itself, under any lawful distribution
 semantics of the full run interface. Midpoint predicates are on the boundary alone, and the
 suffix premise bounds the actual rest of the run from almost every false admissible boundary. -/
-theorem OracleVerifier.run_append_soundness_weighted_ae {s₁ : OracleProtocol.{0, 0}}
-    {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+theorem OracleVerifier.run_append_soundness_weighted_ae {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
     {inputs : OracleBundle}
     {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
@@ -659,8 +659,8 @@ interaction against the returned continuation and the final decision. The theore
 that bound to the whole run and adds the probability of the exceptional set. The whole prover is
 fixed before setup. `OracleVerifier.append_soundness_runtime_ae` takes a pointwise premise
 instead. -/
-theorem OracleVerifier.append_soundness_runtime {s₁ : OracleProtocol.{0, 0}}
-    {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+theorem OracleVerifier.append_soundness_runtime {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
     {inputs : OracleBundle}
     {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
@@ -717,8 +717,8 @@ theorem Verifier.append_soundness_runtime {s₁ : Protocol} {s₂ : Path s₁ �
 /-- Runtime form of `OracleVerifier.append_soundness_runtime` with a pointwise premise: from
 almost every non-exceptional joint boundary, the resumed run succeeds with probability at most
 `error` at that boundary. -/
-theorem OracleVerifier.append_soundness_runtime_ae {s₁ : OracleProtocol.{0, 0}}
-    {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+theorem OracleVerifier.append_soundness_runtime_ae {s₁ : OracleProtocol}
+    {s₂ : Path s₁ → OracleProtocol}
     {inputs : OracleBundle}
     {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
@@ -786,7 +786,7 @@ variable {ι σ : Type} {ambient : OracleSpec ι}
 
 /-- Answer the queries of a standalone prefix run from the run interface of the appended
 protocol. -/
-def prefixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) :
+def prefixQueries (s₁ : Protocol) (s₂ : Path s₁ → Protocol) :
     QueryImpl (ambient + challengeSpec plainSig s₁)
       (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
   (((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictLeft) :
@@ -796,7 +796,7 @@ def prefixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) :
 
 /-- Answer the queries of a standalone suffix run from the run interface of the appended
 protocol. -/
-def suffixQueries (s₁ : Protocol.{0}) (s₂ : Path s₁ → Protocol) (p : Path s₁) :
+def suffixQueries (s₁ : Protocol) (s₂ : Path s₁ → Protocol) (p : Path s₁) :
     QueryImpl (ambient + challengeSpec plainSig (s₂ p))
       (OracleComp (ambient + challengeSpec plainSig (s₁.append s₂))) :=
   (((QueryImpl.id' (ambient + challengeSpec plainSig (s₁.append s₂))).restrictLeft) :

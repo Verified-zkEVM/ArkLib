@@ -32,7 +32,7 @@ has probability at most the sum of the folding MCA errors and `(1 - min θ δ)^l
 theorem terminalEvent_prob_le (hs : (∑ j, (s j).val) ≤ n) (θ δ : ℝ)
     [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ WitIn WitOut StmtOut : Type}
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp))
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp))
     (prover : Prover []ₒ
       (Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
       WitIn StmtOut WitOut (pSpec k (ω := ω) s l))

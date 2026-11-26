@@ -232,7 +232,7 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  {I : Type} {A : I → Type} (inputs : OracleFamily I A)
   {M : Type} {eval : M → R → R}
 
 /-- Construction over an input family with queries in `Type`. -/
@@ -256,7 +256,7 @@ theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
 
 /-- The review's constant-evaluation constructor also accepts bundle queries in `Type`. -/
 example (domain : Fin 1 ↪ R) {J : Type} {B : J → Type}
-    (family : OracleFamily.{0, 0, 0} J B) :
+    (family : OracleFamily J B) :
     OracleVerifier emptySpec (protocolOn R R (fun x _ => x) 1)
       (Sumcheck.Spec.StatementRound R 1 0)
       (fun _ => Sumcheck.Spec.StatementRound R 1 (Fin.last 1)) family (fun _ => family) :=

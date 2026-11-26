@@ -291,7 +291,7 @@ example (answer : ∀ n, Realization n → (q : Query n) → Response n q)
   ⟨rfl, rfl⟩
 
 /-- No output oracles are needed to test the verifier's input-bundle boundary. -/
-def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
+def noOutputs : OracleFamily PEmpty (fun _ => PUnit) := ⟨fun x => x.elim⟩
 
 /-- A verifier consumes an R27-shaped view at `Type`.
 Its decision reads the selected query from the whole
@@ -300,13 +300,13 @@ def viewVerifier {Response : (n : Name) → Query n → Type}
     (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index)
     (x : Visible) (query : Query (name (select x))) :
-    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol)
       PUnit (fun _ => Response (name (select x)) query)
       (viewBundle answer name select) (fun _ => noOutputs) where
   decide _ p _ := liftM
     (((PEmpty →ₒ PUnit) +
       (pathBundle (viewBundle answer name select)
-        (.pure ⟨⟩ : OracleProtocol.{0, 0}) p).spec).query (.inr (.inl ⟨x, query⟩)))
+        (.pure ⟨⟩ : OracleProtocol) p).spec).query (.inr (.inl ⟨x, query⟩)))
   outputMap _ _ _ :=
     { f := fun _ x => x.elim
       impl := fun query => query.1.elim
@@ -316,7 +316,7 @@ def viewVerifier {Response : (n : Name) → Query n → Type}
 abbrev namedVerifier {Response : (n : Name) → Query n → Type}
     (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type} (name : Index → Name) (x : Index) (query : Query (name x)) :
-    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol)
       PUnit (fun _ => Response (name x) query) (namedBundle answer name)
       (fun _ => noOutputs) :=
   viewVerifier answer name id x query
@@ -348,35 +348,35 @@ variable {Name : Type} {Realization : Name → Type} {Index : Type} {View : Type
 
 -- OracleFamily specializes the bundle contracts through OracleBundle.ofFamily.
 /-- A bundle of selected oracles keeps the context, query and data-index carriers at `Type`. -/
-example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name) :
+example (C : OracleFamily Name Realization) (name : Index → Name) :
     OracleBundle := OracleBundle.ofFamily (C.reindex name)
 
 /-- Selecting interfaces preserves the context's query indices. -/
-example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name) :
+example (C : OracleFamily Name Realization) (name : Index → Name) :
     OracleSpec.{0, 0} ((x : Index) × (C.interface (name x)).Query) :=
   (C.reindex name).spec
 
 /-- Context data answers all selected queries. -/
-example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name) :
+example (C : OracleFamily Name Realization) (name : Index → Name) :
     (∀ x, Realization (name x)) → QueryImpl (C.reindex name).spec Id :=
   (C.reindex name).behaviorOfRealizations
 
 -- The family specialization keeps the original context when routing through a view.
 /-- An arbitrary view changes query indices without changing the original context data. -/
-example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name)
+example (C : OracleFamily Name Realization) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x)) :
     QueryImpl (C.reindex (name ∘ view)).spec Id :=
   (C.reindex (name ∘ view)).behaviorOfRealizations
     ((OracleMap.embedding (C.reindex name) view).f data)
 
 /-- View queries keep the selected name's dependent query carrier. -/
-example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name)
+example (C : OracleFamily Name Realization) (name : Index → Name)
     (view : View → Index) :
     OracleSpec.{0, 0} ((x : View) × (C.interface (name (view x))).Query) :=
   (C.reindex (name ∘ view)).spec
 
 /-- Routing through a view answers from the original context at the selected index. -/
-example (C : OracleFamily.{0, 0, 0} Name Realization) (name : Index → Name)
+example (C : OracleFamily Name Realization) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x))
     (x : View) (query : (C.interface (name (view x))).Query) :
     (C.reindex (name ∘ view)).behaviorOfRealizations

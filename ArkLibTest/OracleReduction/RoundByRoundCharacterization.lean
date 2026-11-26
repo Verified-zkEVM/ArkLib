@@ -21,13 +21,13 @@ open scoped NNReal
 namespace RoundByRoundCharacterization
 
 /-- A zero-round verifier that rejects every statement. -/
-def rejectAll : Verifier emptySpec.{0, 0} Unit Unit !p[] := ⟨fun _ _ => failure⟩
+def rejectAll : Verifier emptySpec0 Unit Unit !p[] := ⟨fun _ _ => failure⟩
 
-variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl emptySpec.{0, 0} (StateT σ ProbComp))
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl emptySpec0 (StateT σ ProbComp))
 
 /-- No round-by-round extractor has an empty input-witness type here. -/
 example (WitMid : Fin 1 → Type) :
-    IsEmpty (Extractor.RoundByRound emptySpec.{0, 0} Unit Empty Unit !p[] WitMid) :=
+    IsEmpty (Extractor.RoundByRound emptySpec0 Unit Empty Unit !p[] WitMid) :=
   Extractor.RoundByRound.isEmpty_of_isEmpty_witIn () default ()
 
 /-- The rejecting verifier outputs no statement. -/
@@ -38,7 +38,7 @@ theorem rejectAll_prEvent_eq_zero (langOut : Set Unit) (stmt : Unit) (tr : !p[].
   intro x hx
   change some x ∈ support (do
     let s ← init
-    (simulateQ impl (pure none : OracleComp emptySpec.{0, 0} (Option Unit))).run' s) at hx
+    (simulateQ impl (pure none : OracleComp emptySpec0 (Option Unit))).run' s) at hx
   simp at hx
 
 /-- For every output relation, round-by-round soundness holds and round-by-round knowledge

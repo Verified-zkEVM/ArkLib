@@ -662,7 +662,7 @@ def pSpec : ProtocolSpec 1 :=
   ⟨!v[.V_to_P], !v[Fin l → (ω.subdomain 0).toFinset]⟩
 
 /- `OracleInterface` instances for the query round `pSpec`. -/
-instance : ∀ j, OracleInterface.{0, 0} ((pSpec (ω := ω) l).Message j) := fun j ↦
+instance : ∀ j, OracleInterface ((pSpec (ω := ω) l).Message j) := fun j ↦
   match j with
   | ⟨0, h⟩ => nomatch h
 

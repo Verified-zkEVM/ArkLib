@@ -101,7 +101,7 @@ theorem knowledgeSoundnessWithResources_extract
     (hrate : min θ δ ≤ 1 - (2 ^ (∑ j, (s j).val) * d.val : ℕ) / (2 ^ n : ℝ))
     [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundnessWithResources init impl
       (inputRelation k s d δ) (outputRelation k s d δ)
       (Extractor.extract s d (round_bound hdom) l)

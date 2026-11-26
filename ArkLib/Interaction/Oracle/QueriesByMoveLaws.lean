@@ -31,7 +31,7 @@ namespace OracleVerifier
 
 section Execution
 
-variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
@@ -66,7 +66,7 @@ end Execution
 
 section Logged
 
-variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
@@ -146,7 +146,7 @@ end Logged
 
 section AmbientQueriesByMove
 
-variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 

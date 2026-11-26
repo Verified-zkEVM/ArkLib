@@ -63,7 +63,7 @@ def toInterface (B : OracleBundle) : OracleInterface B.Data where
 
 /-- Package a data type and an explicit interface for it as an oracle bundle. -/
 @[reducible]
-def of (Data : Type) (I : OracleInterface.{0, 0} Data) : OracleBundle where
+def of (Data : Type) (I : OracleInterface Data) : OracleBundle where
   Query := I.Query
   spec := I.spec
   Data := Data
@@ -134,7 +134,7 @@ end OracleBundle
 realizations in `Type`.
 -/
 @[reducible] def OracleBundle.ofFamily {I : Type} {A : I → Type}
-    (F : OracleFamily.{0, 0, 0} I A) : OracleBundle where
+    (F : OracleFamily I A) : OracleBundle where
   Query := (i : I) × (F.interface i).Query
   spec := F.spec
   Data := ∀ i, A i
@@ -144,7 +144,7 @@ attribute [coe] OracleBundle.ofFamily
 
 /-- An oracle family is used as an oracle bundle through its interfaces. -/
 instance {I : Type} {A : I → Type} :
-    CoeOut (OracleFamily.{0, 0, 0} I A) OracleBundle :=
+    CoeOut (OracleFamily I A) OracleBundle :=
   ⟨OracleBundle.ofFamily⟩
 
 /-- A concrete oracle map and its query-by-query implementation agree on all input data. -/
@@ -271,7 +271,7 @@ section Families
 variable {I : Type} {J : Type} {A : I → Type}
 
 /-- Embeddings are oracle maps that retain or rename existing input slots. -/
-def embedding (In : OracleFamily.{0, 0, 0} I A) (rename : J → I) :
+def embedding (In : OracleFamily I A) (rename : J → I) :
     OracleMap In (In.reindex rename) where
   f x j := x (rename j)
   impl q := liftM (In.spec.query ⟨rename q.1, q.2⟩)

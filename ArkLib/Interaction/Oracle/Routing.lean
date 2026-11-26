@@ -28,13 +28,13 @@ namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 /-- Component paths of an appended protocol with data for both component oracle bundles. -/
-abbrev SplitOracleMessages (s₁ : OracleProtocol.{0, 0}) (s₂ : Path s₁ → OracleProtocol.{0, 0}) :=
+abbrev SplitOracleMessages (s₁ : OracleProtocol) (s₂ : Path s₁ → OracleProtocol) :=
   (z : (p : Path s₁) × Path (s₂ p)) ×
     ((oracleMessageBundle s₁ z.1).sum (oracleMessageBundle (s₂ z.1) z.2)).Data
 
 /-- Splitting the oracles of an appended path recovers the routed component data. -/
-theorem splitOracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem splitOracleMessages_append : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : (oracleMessageBundle (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂)).Data) →
     (⟨Path.split s₁ s₂ (Path.append s₁ s₂ p₁ p₂),
       (splitOracleMessages s₁ s₂ (Path.append s₁ s₂ p₁ p₂)).f x⟩ : SplitOracleMessages s₁ s₂) =
@@ -56,8 +56,8 @@ theorem splitOracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
 
 /-- In an appended run, the oracle messages routed to either component are that component's
 own. -/
-theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{0, 0})
-    (s₂ : Path s₁ → OracleProtocol.{0, 0})
+theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol)
+    (s₂ : Path s₁ → OracleProtocol)
     (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨Path.split s₁ s₂
@@ -75,7 +75,7 @@ theorem splitOracleMessages_oracleMessages (s₁ : OracleProtocol.{0, 0})
 namespace OracleVerifier
 variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
-  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {middle : Path s₁ → OracleBundle}
   {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}

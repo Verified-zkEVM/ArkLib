@@ -46,8 +46,8 @@ def prover (payload hidden : Nat) : Prover oracleSig ambient phased (fun _ => Na
 sent value or rejects. -/
 def verifier (accept : Bool) :
     OracleVerifier ambient phased Unit (fun _ => Nat)
-      (noInputs : OracleFamily.{0, 0, 0} _ _)
-      (fun _ => (noInputs : OracleFamily.{0, 0, 0} _ _)) where
+      (noInputs : OracleFamily _ _)
+      (fun _ => (noInputs : OracleFamily _ _)) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do

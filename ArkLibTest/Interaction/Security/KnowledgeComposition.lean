@@ -28,13 +28,13 @@ namespace Interaction.KnowledgeCompositionTests
 abbrev NoData : PEmpty.{1} → Type := fun i => i.elim
 
 /-- No input oracles. -/
-@[instance_reducible] def noInputs : OracleFamily.{0, 0, 0} PEmpty NoData := ⟨fun i => i.elim⟩
+@[instance_reducible] def noInputs : OracleFamily PEmpty NoData := ⟨fun i => i.elim⟩
 
 /-- The input data of `noInputs`. -/
 def noData : ∀ i, NoData i := fun i => i.elim
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exportFamily : OracleFamily.{0, 0, 0} PUnit (fun _ => Nat) :=
+@[instance_reducible] def exportFamily : OracleFamily PUnit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix sends an oracle, draws a challenge and sends a public shape selector. -/
@@ -52,7 +52,7 @@ def noData : ∀ i, NoData i := fun i => i.elim
 abbrev payload : Move oracleSig (.oracle Nat OracleInterface.instDefault) → Nat := id
 
 /-- A Boolean challenge. -/
-abbrev bit : Move oracleSig.{0, 0} (.challenge Bool) → Bool := id
+abbrev bit : Move oracleSig (.challenge Bool) → Bool := id
 
 /-- The suffix shape depends only on the public prover selector. -/
 abbrev suffix : Path firstProtocol → OracleProtocol := fun p => secondProtocol p.2.2.1
@@ -887,7 +887,7 @@ example : ((simulateQ largeCounterHandler
 -- Disposition KC-312.
 /-- Empty message carriers and empty witnesses need no fabricated message or witness. -/
 def emptyState : KnowledgeStateFunction plainSig
-    (.liftBind (.message Empty) fun _ => .pure ⟨⟩ : Protocol.{0}) Unit (fun _ _ => Empty) (fun _ =>
+    (.liftBind (.message Empty) fun _ => .pure ⟨⟩ : Protocol) Unit (fun _ _ => Empty) (fun _ =>
       Empty)
     (fun _ => True) (fun _ _ => False) (fun _ _ _ => True) where
   Witness _ {_} _ _ := Empty

@@ -7,10 +7,10 @@ Authors: Quang Dao
 import ArkLib.Interaction.Composition
 
 /-!
-# Oracle bundles at `Type` and independent oracle-node queries
+# Oracle bundles at `Type`
 
-Bundle routing, append and runs use data in `Type`. The final examples retain the independent
-oracle-node query universe until the vocabulary migration.
+Bundle routing, append and runs use data in `Type`. The final examples check the default and
+explicit leaf types of oracle protocols.
 -/
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp
 
@@ -28,13 +28,13 @@ def natInterface : OracleInterface Nat where
 
 /-- Input oracles indexed by Boolean values with natural-number data. -/
 @[instance_reducible]
-def bigInputs : OracleFamily.{0, 0, 0} Bool (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def bigInputs : OracleFamily Bool (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
 /-- The protocol with no rounds. -/
 abbrev done : Protocol := .pure ⟨⟩
 
 /-- The oracle protocol with no rounds. -/
-abbrev oracleDone : OracleProtocol.{0, 0} := .pure ⟨⟩
+abbrev oracleDone : OracleProtocol := .pure ⟨⟩
 
 /-- Routing through an oracle map agrees with materialized data. -/
 theorem embedding_simulate_eq (x : Bool → Nat) {α : Type}
@@ -49,7 +49,7 @@ theorem embedding_simulate_eq (x : Bool → Nat) {α : Type}
 
 /-- One natural-number output oracle with an index in `Type 0`, as a run requires. -/
 @[instance_reducible]
-def smallOutputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def smallOutputs : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
 /-- An oracle verifier with all indices, data and statements in `Type`. -/
 def runnable : OracleVerifier smallAmbient oracleDone Unit (fun _ => Nat) bigInputs
@@ -78,28 +78,20 @@ example : observation.2.2.map (fun out => (out.1, out.2 ())) = some (3, 3) := rf
 
 /-! ### Distinct input and output query types -/
 
-/-- A natural number answers every query `X : Type` with itself. The query type `Type` lies in
-`Type 1`, while the data and the responses lie in `Type 0`. -/
-@[reducible]
-def typeQueries : OracleInterface.{0, 1} Nat where
-  Query := Type
-  spec := Type →ₒ Nat
-  answer m _ := m
-
 /-- A natural number answers every Boolean query with itself. -/
 @[reducible]
-def bigTypeQueries : OracleInterface.{0, 0} Nat where
+def bigTypeQueries : OracleInterface Nat where
   Query := Bool
   spec := Bool →ₒ Nat
   answer m _ := m
 
 /-- One input oracle with unit queries and natural-number data and responses. -/
 @[instance_reducible]
-def typeQueryInputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def typeQueryInputs : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
 
 /-- One oracle with Boolean queries, distinct from the input's unit queries. -/
 @[instance_reducible]
-def bigQueryOracles : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) := ⟨fun _ => bigTypeQueries⟩
+def bigQueryOracles : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => bigTypeQueries⟩
 
 /-- The output oracle answers each query by asking the input oracle at `()`. -/
 def forwardQueries (p : Path oracleDone) :
@@ -168,19 +160,15 @@ theorem typeQueryAppend_decideWith (stmt : Unit)
             ((OracleVerifier.suffixRoute typeQueryVerifier stmt p v).f data) :=
   OracleVerifier.append_decideWith _ _ _ _ _ _ _
 
-/-! ### Independent oracle-node queries -/
+/-! ### Leaf types of oracle protocols -/
 
 /-- The default leaves retain the original protocol carrier by definitional equality. -/
-example : OracleProtocol.{0, 1} = FreeM OraclePoly.{0, 1} PUnit.{1} := rfl
+example : OracleProtocol = FreeM OraclePoly Unit := rfl
 
 /-- A nontrivial leaf type is an actual return type of the authored tree. -/
-def returningTree : OracleProtocol.{0, 1} Nat := .pure 23
+def returningTree : OracleProtocol Nat := .pure 23
 
 /-- The explicit leaf parameter stores a value that can be read from the tree. -/
 example : (match returningTree with | .pure n => n | .liftBind _ _ => 0) = 23 := rfl
-
-/-- A small payload with queries in `Type 1` is attached to an actual oracle node. -/
-def typeQueryProtocol : OracleProtocol.{0, 1} :=
-  .liftBind (.oracle Nat typeQueries) (fun _ => .pure ⟨⟩)
 
 end Interaction.UniverseCanaryTests

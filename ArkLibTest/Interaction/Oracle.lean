@@ -37,7 +37,7 @@ example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
 abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
 
 /-- The empty input family, with its index in `Type 0`. -/
-def emptyFamily : OracleFamily.{0, 0, 0} PEmpty.{1} (fun i => PEmpty.elim i) :=
+def emptyFamily : OracleFamily PEmpty.{1} (fun i => PEmpty.elim i) :=
   ⟨fun i => i.elim⟩
 
 @[instance_reducible] def tree : OracleProtocol :=
@@ -75,7 +75,7 @@ end Interaction.OracleTests
 namespace Interaction.OracleTests
 
 /-- The small oracle protocol with no rounds. -/
-abbrev emptyTree : OracleProtocol.{0, 0} := .pure ⟨⟩
+abbrev emptyTree : OracleProtocol := .pure ⟨⟩
 /-- The oracle bundle of the protocol with no rounds and no input oracles: both parts are empty. -/
 abbrev emptyBundle := pathBundle emptyFamily emptyTree ⟨⟩
 

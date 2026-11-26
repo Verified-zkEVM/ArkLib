@@ -21,7 +21,7 @@ namespace Interaction.RoutingTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- Two scalar input slots; slot `true` is never exported. -/
-@[instance_reducible] def inputs : OracleFamily.{0, 0, 0} Bool (fun _ => Nat) :=
+@[instance_reducible] def inputs : OracleFamily Bool (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- Input data: slot `false` holds 3, slot `true` holds the hidden value. -/
@@ -48,7 +48,7 @@ def inputData (hidden : Nat) : ∀ _ : Bool, Nat
 abbrev combined : OracleProtocol := firstProtocol.append (fun _ => secondProtocol)
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily.{0, 0, 0} PUnit (fun _ => Nat) :=
+@[instance_reducible] def exported : OracleFamily PUnit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The prefix bundle on its only path. -/
@@ -343,7 +343,7 @@ monad. -/
 example {ι : Type} {I : Type} {J : Type}
     {ambient : OracleSpec.{0, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
     {A : I → Type} {B : J → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily.{0, 0, 0} J B}
+    {inputs : OracleFamily I A} {outputs : OracleFamily J B}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : ∀ i, A i)
     {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
     simulateQ (QueryImpl.addLift handler (inputs.behaviorOfRealizations data) :
@@ -356,7 +356,7 @@ example {ι : Type} {I : Type} {J : Type}
 /-- Split execution uses input indices, statements and output oracle bundles in `Type`. Both
 output bundles may depend on their paths. -/
 example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
-    {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} {S : Type}
+    {I : Type} {A : I → Type} {inputs : OracleFamily I A} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {middle : Path s₁ → OracleBundle}
     {outputs : (p : Path s₁) → Path (s₂ p) → OracleBundle}

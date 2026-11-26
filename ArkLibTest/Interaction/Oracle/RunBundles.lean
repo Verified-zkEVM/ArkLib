@@ -254,12 +254,12 @@ The general signature permits a receiver move to select a suffix shape. Ownershi
 positions, without converting a separate role decoration. -/
 
 /-- A receiver bit followed by one sender pair. -/
-abbrev receiverPrefix : FreeM rolePoly.{0} PUnit.{1} :=
+abbrev receiverPrefix : FreeM rolePoly.{0} Unit :=
   .liftBind (.receiver, Bool) fun _ =>
     .liftBind (.sender, Nat × Nat) fun _ => .pure ⟨⟩
 
 /-- One sender pair, or a sender unit followed by two sender pairs. -/
-abbrev receiverSuffix : Path receiverPrefix → FreeM rolePoly.{0} PUnit.{1}
+abbrev receiverSuffix : Path receiverPrefix → FreeM rolePoly.{0} Unit
   | ⟨true, _, _⟩ => .liftBind (.sender, Nat × Nat) fun _ => .pure ⟨⟩
   | ⟨false, _, _⟩ => .liftBind (.sender, Unit) fun _ =>
       .liftBind (.sender, Nat × Nat) fun _ =>

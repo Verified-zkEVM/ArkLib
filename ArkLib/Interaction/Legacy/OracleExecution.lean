@@ -43,7 +43,7 @@ embedded oracle verifier on the oracle tree to legacy oracle reduction runs.
 namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle
 
-variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
+variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
 
 /-! ### Transport from the oracle tree to the plain tree -/
 
@@ -110,8 +110,8 @@ theorem bind_pure_bind_pure {M : Type → Type} [Monad M] [LawfulMonad M] {α β
 
 /-- One node of the runner commutes with the transport, given that the rest of the tree does. -/
 theorem runWith_node_toPlain {M : Type → Type} [Monad M] [LawfulMonad M] (order : Schedule)
-    (j : Fin n) (D : Direction) (hD : pSpec.dir j = D) (restO : OracleProtocol.{0})
-    (restP : Protocol.{0}) (g : Transcript plainSig restP → Transcript oracleSig restO)
+    (j : Fin n) (D : Direction) (hD : pSpec.dir j = D) (restO : OracleProtocol)
+    (restP : Protocol) (g : Transcript plainSig restP → Transcript oracleSig restO)
     {OutP OutC : Transcript oracleSig (.liftBind (oraclePos pSpec j D hD) fun _ => restO) → Type}
     (p : Focal oracleSig M (.liftBind (oraclePos pSpec j D hD) fun _ => restO) OutP)
     (c : Counterpart oracleSig M (.liftBind (oraclePos pSpec j D hD) fun _ => restO) OutC)
@@ -263,7 +263,7 @@ theorem map_oracleLegacyDraw {M : Type → Type} [Functor M] [LawfulFunctor M]
 /-! ### The sampler -/
 
 theorem oracle_sampler_payload {M : Type → Type} [Monad M] [LawfulMonad M] (j : Fin n)
-    (hD : pSpec.dir j = .P_to_V) (rest : OracleProtocol.{0})
+    (hD : pSpec.dir j = .P_to_V) (rest : OracleProtocol)
     (draw : (c : ChallengeNode oracleSig
         (.liftBind (oraclePos pSpec j .P_to_V hD) fun _ => rest)) →
       M (challengeSpec oracleSig (.liftBind (oraclePos pSpec j .P_to_V hD) fun _ => rest) c)) :
@@ -274,7 +274,7 @@ theorem oracle_sampler_payload {M : Type → Type} [Monad M] [LawfulMonad M] (j 
   rfl
 
 theorem oracle_sampler_challenge {M : Type → Type} [Monad M] [LawfulMonad M] (j : Fin n)
-    (hD : pSpec.dir j = .V_to_P) (rest : OracleProtocol.{0})
+    (hD : pSpec.dir j = .V_to_P) (rest : OracleProtocol)
     (draw : (c : ChallengeNode oracleSig
         (.liftBind (oraclePos pSpec j .V_to_P hD) fun _ => rest)) →
       M (challengeSpec oracleSig (.liftBind (oraclePos pSpec j .V_to_P hD) fun _ => rest) c)) :
@@ -287,7 +287,7 @@ theorem oracle_sampler_challenge {M : Type → Type} [Monad M] [LawfulMonad M] (
 
 /-- One node of the sampler commutes with the transport. -/
 theorem sampler_node_toPlain {M : Type → Type} [Monad M] [LawfulMonad M] (j : Fin n)
-    (D : Direction) (hD : pSpec.dir j = D) (restO : OracleProtocol.{0}) (restP : Protocol.{0})
+    (D : Direction) (hD : pSpec.dir j = D) (restO : OracleProtocol) (restP : Protocol)
     (drawO : (c : ChallengeNode oracleSig (.liftBind (oraclePos pSpec j D hD) fun _ => restO)) →
       M (challengeSpec oracleSig (.liftBind (oraclePos pSpec j D hD) fun _ => restO) c))
     (drawP : (c : ChallengeNode plainSig
@@ -469,7 +469,7 @@ theorem viewChallenges_toView (tr : Transcript oracleSig (oracleProtocol pSpec))
 
 /-- One node of the message reader reads the decoded transcript. -/
 theorem readMsgNode_decode (j : Fin n) (D : Direction) (hD : pSpec.dir j = D)
-    (rest : OracleProtocol.{0})
+    (rest : OracleProtocol)
     (recur : (p : Path rest) → (oracleMessageBundle rest p).Data → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i)
     (x : Move oracleSig (oraclePos pSpec j D hD)) (tr : Transcript oracleSig rest)
@@ -520,8 +520,8 @@ end Transcript
 section Decision
 
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
-  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface.{0, 0} (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
+  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
 
 /-- Routing the legacy decision's queries to the oracle bundle of a path and answering them from
 concrete data is legacy `simOracle2` on the input data and the path's messages. The ambient
@@ -570,7 +570,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- Answer the challenge queries of the oracle tree with the legacy challenge oracle. -/
 abbrev oracleChallengeReindex (oSpec : OracleSpec ι) (pSpec : ProtocolSpec n)
-    [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
+    [∀ i, OracleInterface (pSpec.Message i)] :
     QueryImpl (oSpec + challengeSpec oracleSig (oracleProtocol pSpec))
       (OracleComp (oSpec + [pSpec.Challenge]ₒ)) :=
   (oracleLayout pSpec).challengeReindex oSpec
@@ -691,8 +691,8 @@ section Embedded
 
 variable {ι : Type} {oSpec : OracleSpec ι} [∀ t, Inhabited (oSpec.Range t)]
   {StmtIn WitIn StmtOut WitOut : Type}
-  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface.{0, 0} (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
+  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
 
 omit [∀ t, Inhabited (oSpec.Range t)] Oₘ in
 private theorem map_bind_map_pure {m : Type → Type} [Monad m] [LawfulMonad m] {α β γ δ : Type}

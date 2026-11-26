@@ -70,7 +70,7 @@ namespace OracleVerifier
 
 section Adapters
 
-variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
   {T : Path s → Type} {inputs inputs' : OracleBundle}
   {outputs : Path s → OracleBundle}
   {outputs' : Path s → OracleBundle}
@@ -125,7 +125,7 @@ end Adapters
 data. The equality holds after the decision's bundle queries are answered from the supplied data.
 It does not count the source queries that the map issues for each routed query; a bound on those
 is a separate statement. -/
-theorem comapInputs_run {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+theorem comapInputs_run {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {S : Type} {T : Path s → Type} {inputs inputs' : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
@@ -143,7 +143,7 @@ theorem comapInputs_run {ι : Type} {ambient : OracleSpec ι} {s : OracleProtoco
 
 variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
-  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {middle : Path s₁ → OracleBundle}
   {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
@@ -275,7 +275,7 @@ inductive StageChain {ι : Type} (ambient : OracleSpec ι) :
       StageChain ambient S inputs
   /-- A first stage, then the remaining stages selected by its path. -/
   | cons {S : Type} {inputs : OracleBundle}
-      (s : OracleProtocol.{0, 0}) {T : Path s → Type} {middle : Path s → OracleBundle}
+      (s : OracleProtocol) {T : Path s → Type} {middle : Path s → OracleBundle}
       (verifier : OracleVerifier ambient s S T inputs middle)
       (draw : (c : ChallengeNode oracleSig s) → OracleComp ambient (challengeSpec oracleSig s c))
       (rest : (p : Path s) → StageChain ambient (T p) (middle p)) :
@@ -288,7 +288,7 @@ variable {ι : Type} {ambient : OracleSpec ι}
 /-- The composed protocol: the first stage's protocol, followed at each of its paths by the
 composed protocol of the remaining stages. -/
 def protocol {S : Type} {inputs : OracleBundle} :
-    StageChain ambient S inputs → OracleProtocol.{0, 0}
+    StageChain ambient S inputs → OracleProtocol
   | .nil _ => .pure ⟨⟩
   | .cons s _ _ rest => s.append fun p => (rest p).protocol
 
@@ -419,7 +419,7 @@ theorem StatementFree.outputMap_eq {S : Type} {inputs : OracleBundle}
 section Laws
 
 variable {S : Type} {inputs : OracleBundle}
-  (s : OracleProtocol.{0, 0}) {T : Path s → Type} {middle : Path s → OracleBundle}
+  (s : OracleProtocol) {T : Path s → Type} {middle : Path s → OracleBundle}
   (V : OracleVerifier ambient s S T inputs middle)
   (draw₁ : (c : ChallengeNode oracleSig s) → OracleComp ambient (challengeSpec oracleSig s c))
   (rest : (p : Path s) → StageChain ambient (T p) (middle p))
@@ -487,7 +487,7 @@ end Laws
 /-- A chain of one stage decides as that stage: its composed decision is the stage's decision at
 the split path, on the data that `prefixRoute` selects. -/
 theorem decideWith_one {S : Type} {inputs : OracleBundle}
-    (s : OracleProtocol.{0, 0}) {T : Path s → Type} {middle : Path s → OracleBundle}
+    (s : OracleProtocol) {T : Path s → Type} {middle : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs middle)
     (draw₁ : (c : ChallengeNode oracleSig s) → OracleComp ambient (challengeSpec oracleSig s c))
     (e : (p : Path s) → (nil (ambient := ambient) (S := T p) (middle p)).Compatibility)

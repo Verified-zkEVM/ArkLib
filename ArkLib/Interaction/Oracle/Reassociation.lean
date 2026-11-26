@@ -36,7 +36,7 @@ client rewrites a decision or output data on a run, which these laws state direc
 
 @[expose] public section
 
-universe u q w uY uA v z
+universe u w uY uA v z
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -47,12 +47,12 @@ attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
 /-! ## Views and bundle data of an appended run -/
 
 /-- Split views, packaged with their split path. -/
-abbrev SplitViews (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q}) :=
+abbrev SplitViews (s₁ : OracleProtocol) (s₂ : Path s₁ → OracleProtocol) :=
   (z : (p : Path s₁) × Path (s₂ p)) × View s₁ z.1 × View (s₂ z.1) z.2
 
 /-- Splitting the view of an appended path gives the views of the two parts of its transcript
 split, at the split path. -/
-theorem View.split_mk (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+theorem View.split_mk (s₁ : OracleProtocol) (s₂ : Path s₁ → OracleProtocol)
     (x : Transcript viewSig (s₁.append s₂)) :
     (⟨Path.split s₁ s₂ x.path, View.split s₁ s₂ x.path ⟨x, rfl⟩⟩ : SplitViews s₁ s₂) =
       ⟨⟨(Transcript.split s₁ s₂ x).1.path, (Transcript.split s₁ s₂ x).2.path⟩,
@@ -67,8 +67,8 @@ theorem View.split_mk (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → Oracl
 
 /-- Erasing the oracle messages of an appended transcript and splitting the result gives the
 paths and views of the two parts. -/
-theorem split_mapMoves_append : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) →
+theorem split_mapMoves_append : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) →
     (tr₁ : Transcript oracleSig s₁) → (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
     (⟨⟨(Transcript.split s₁ s₂ (Transcript.mapMoves eraseOracle
           (Transcript.append s₁ s₂ tr₁ tr₂))).1.path,
@@ -106,7 +106,7 @@ theorem split_mapMoves_append : (s₁ : OracleProtocol.{u, q}) →
       (split_mapMoves_append (next ⟨⟩) (fun p => s₂ ⟨⟨⟩, p⟩) tr₁ tr₂)
 
 /-- The view of an appended transcript splits into the views of its parts. -/
-theorem toView_split_append (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+theorem toView_split_append (s₁ : OracleProtocol) (s₂ : Path s₁ → OracleProtocol)
     (tr₁ : Transcript oracleSig s₁) (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨Path.split s₁ s₂ (Transcript.append s₁ s₂ tr₁ tr₂).path,
       View.split s₁ s₂ _ (toView _ (Transcript.append s₁ s₂ tr₁ tr₂))⟩ : SplitViews s₁ s₂) =
@@ -151,7 +151,7 @@ namespace OracleVerifier
 
 section Transcripts
 
-variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
   {T : Path s → Type} {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
 
@@ -171,15 +171,15 @@ end Transcripts
 
 variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
-  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {middle : Path s₁ → OracleBundle}
   {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
 
 /-- The split path of an appended run with the split views, the prefix bundle data and the suffix
 oracle messages. -/
-abbrev SplitRun (inputs : OracleBundle) (s₁ : OracleProtocol.{0, 0})
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) :=
+abbrev SplitRun (inputs : OracleBundle) (s₁ : OracleProtocol)
+    (s₂ : Path s₁ → OracleProtocol) :=
   (z : (p : Path s₁) × Path (s₂ p)) × (View s₁ z.1 × View (s₂ z.1) z.2) ×
     ((pathBundle inputs s₁ z.1).Data ×
       (oracleMessageBundle (s₂ z.1) z.2).Data)
@@ -285,7 +285,7 @@ theorem append_decideOn_sigma (V₁ : OracleVerifier ambient s₁ S T inputs mid
     ⟨U tr₁.path tr₂.path, V₁.decideOn stmt data tr₁ >>= fun
       | none => pure none
       | some mid => (V₂ tr₁.path).decideOn mid (V₁.outputOn stmt data tr₁) tr₂⟩ := by
-  have h := append_decideOn_bind (Y := fun _ _ => PUnit.{1}) (Z := fun p₁ p₂ _ => U p₁ p₂)
+  have h := append_decideOn_bind (Y := fun _ _ => Unit) (Z := fun p₁ p₂ _ => U p₁ p₂)
     V₁ V₂ compatible (fun _ _ _ out _ => pure (some out)) stmt data tr₁ tr₂ ⟨⟩ ⟨⟩ HEq.rfl
   refine Eq.trans ?_ (h.trans ?_)
   · exact congrArg (Sigma.mk _)
@@ -462,7 +462,7 @@ end Helpers
 
 namespace OracleVerifier
 
-variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
   {T : Path s → Type} {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
 
@@ -478,7 +478,7 @@ end OracleVerifier
 decision functions. -/
 theorem OracleVerifier.append_decide_congr {ι : Type} {ambient : OracleSpec ι}
     {inputs : OracleBundle}
-    {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+    {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {middle : Path s₁ → OracleBundle}
     {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
@@ -500,8 +500,8 @@ section Reassociation
 
 variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
-  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-  {s₃ : (p₁ : Path s₁) → Path (s₂ p₁) → OracleProtocol.{0, 0}} {S : Type}
+  {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
+  {s₃ : (p₁ : Path s₁) → Path (s₂ p₁) → OracleProtocol} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {W : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type}
   {middle : Path s₁ → OracleBundle}

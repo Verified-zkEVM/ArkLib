@@ -162,7 +162,7 @@ section VerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ} {d : ℕ}
   (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type}
-  {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  {A : I → Type} (inputs : OracleFamily I A)
 
 
 variable {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
@@ -192,7 +192,7 @@ section RunVerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n d : ℕ}
   (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R}
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  {I : Type} {A : I → Type} (inputs : OracleFamily I A)
   {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
 
 include hf
@@ -225,7 +225,7 @@ omit [SampleableType R] in
 /-- A run over the carrier `M`, with its queries renamed and its outcome mapped, is the run
 of the interpreted prover against the verifier at the polynomial carrier. Messages are mapped by
 `f`, the prover output by `g` and the output oracle data by `dmap`. -/
-theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily.{0, 0, 0} I A')
+theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily I A')
     (dmap : (∀ i, A i) → ∀ i, A' i) (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
     {Out : Transcript oracleSig (protocolOn R M eval n) → Type}
     {Out' : Transcript oracleSig (protocol R deg n) → Type}
@@ -355,7 +355,7 @@ variable (R : Type) [CommSemiring R] (deg n : ℕ)
 
 /-- The computable Sumcheck protocol: each round message is a CompPoly coefficient array of
 degree at most `deg`, and its evaluation queries are answered by Horner evaluation. -/
-abbrev protocol : OracleProtocol.{0} := protocolOn R (Message R deg) (evaluate R deg) n
+abbrev protocol : OracleProtocol := protocolOn R (Message R deg) (evaluate R deg) n
 
 /-- Every challenge of the computable protocol is a ring element, sampled uniformly. -/
 instance [SampleableType R] :

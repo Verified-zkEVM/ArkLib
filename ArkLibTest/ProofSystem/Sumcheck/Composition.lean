@@ -29,8 +29,8 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 section UnequalUniverses
 
 variable (clientAmbient : OracleSpec Unit) {I : Type} {A : I → Type}
-  (inputs : OracleFamily.{0, 0, 0} I A)
-  {J : Type} {B : J → Type} (outputs : OracleFamily.{0, 0, 0} J B)
+  (inputs : OracleFamily I A)
+  {J : Type} {B : J → Type} (outputs : OracleFamily J B)
   (check : ℕ → (Spec.SingleRound.pSpec ℕ 1).Challenges →
     OptionT (OracleComp [(Spec.SingleRound.pSpec ℕ 1).Message]ₒ) ℕ)
   (out : ℕ → (p : Path (round ℕ 1)) → View (round ℕ 1) p →

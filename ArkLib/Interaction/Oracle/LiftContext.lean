@@ -49,7 +49,7 @@ def OracleMap.pair {In : OracleBundle} {Mid : OracleBundle}
 /-- A statement lens with oracle maps for the input and output oracles. The input map answers
 inner input queries from outer input data. The output map builds the outer output oracles from
 the outer input oracles and the inner output oracles. -/
-structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
+structure OracleStatementLens (s : OracleProtocol) (OuterIn : Type)
     (InnerIn : Type) (OuterOut InnerOut : Path s → Type)
     (inputsO : OracleBundle) (inputsI : OracleBundle)
     (outputsO : Path s → OracleBundle)
@@ -64,7 +64,7 @@ structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
 
 namespace OracleStatementLens
 
-variable {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+variable {s : OracleProtocol} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}
@@ -111,7 +111,7 @@ namespace OracleVerifier
 section Lift
 
 variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-  {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+  {s : OracleProtocol} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}
@@ -173,7 +173,7 @@ end Lift
 section Run
 
 variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-  {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+  {s : OracleProtocol} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}
@@ -230,7 +230,7 @@ end Run
 
 section Security
 
-variable {ι σ : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι σ : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {OuterIn : Type} {InnerIn : Type} {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}

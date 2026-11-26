@@ -28,7 +28,7 @@ open Interaction.DependentRoutingTests (done)
 namespace Interaction.PassiveExecutionTests
 
 /-- No output oracles. -/
-def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun i => i.elim) :=
+def noOutputs : OracleFamily PEmpty (fun i => i.elim) :=
   ⟨fun i => i.elim⟩
 
 /-- The output map from any bundle into no oracles. -/

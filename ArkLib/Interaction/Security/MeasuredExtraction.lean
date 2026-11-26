@@ -72,26 +72,26 @@ variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 namespace KnowledgeStateFunction
 
-variable {s : FreeM P PUnit.{1}} {S : Type} {Win : S → Type} {W : S → Transcript l s → Type}
+variable {s : FreeM P Unit} {S : Type} {Win : S → Type} {W : S → Transcript l s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
   (F : KnowledgeStateFunction l s S W Win admissible relIn validOutput)
 
 /-- The input of the step at an interaction node: a move and a witness of the state after it. -/
-def StageInput (stmt : S) {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+def StageInput (stmt : S) {a : P.A} {next : P.B a → FreeM P Unit}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PartialTranscriptAt l sp) : Type :=
   (x : Move l a) × F.Witness stmt (sp.comp (.down (l.toFunB a x) (.root _)))
     (PartialTranscriptAt.snoc l sp history x)
 
 /-- The backward witness map at an interaction node. -/
-def stageMap (stmt : S) {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+def stageMap (stmt : S) {a : P.A} {next : P.B a → FreeM P Unit}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PartialTranscriptAt l sp)
     (input : F.StageInput stmt sp history) : F.Witness stmt sp history :=
   F.extractStep stmt sp history input.1 input.2
 
 /-- Backward extraction at an interaction node applies the stage map to the witness extracted
 from the rest of the transcript. -/
-theorem extractFrom_eq_stageMap (stmt : S) {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+theorem extractFrom_eq_stageMap (stmt : S) {a : P.A} {next : P.B a → FreeM P Unit}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PartialTranscriptAt l sp)
     (x : Move l a) (tr : Transcript l (next (l.toFunB a x)))
     (w : W stmt (PartialTranscriptAt.completeWith l sp history (t := .liftBind a next) ⟨x, tr⟩)) :
@@ -105,7 +105,7 @@ structure MeasuredStages (ω : Type) [AddCommMonoid ω] [Preorder ω] where
   /-- The input-witness map. -/
   root : ∀ stmt, BudgetedProgram (F.extractRoot stmt) ω
   /-- The step map at every interaction node. -/
-  step : ∀ stmt {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+  step : ∀ stmt {a : P.A} {next : P.B a → FreeM P Unit}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PartialTranscriptAt l sp),
     BudgetedProgram (F.stageMap stmt sp history) ω
   /-- The leaf-witness map at every completed prefix, from output witnesses at its
@@ -127,7 +127,7 @@ structure BudgetAtMost (stages : MeasuredStages F ω) (rootBound stepBound leafB
   /-- The root budget is bounded. -/
   root : ∀ stmt, (stages.root stmt).budget ≤ rootBound
   /-- Every step budget is bounded. -/
-  step : ∀ stmt {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+  step : ∀ stmt {a : P.A} {next : P.B a → FreeM P Unit}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PartialTranscriptAt l sp),
     (stages.step stmt sp history).budget ≤ stepBound
   /-- Every leaf budget is bounded. -/
@@ -157,7 +157,7 @@ variable [AddCommMonoid ω] [PartialOrder ω] [IsOrderedAddMonoid ω]
 /-- The stage programs composed along the rest of a transcript from a prefix: the leaf program,
 then the step program at every move, from the last move to the first. -/
 def programFrom (stages : MeasuredStages F ω) (stmt : S) :
-    {t : FreeM P PUnit.{1}} → (sp : Cursor.Spine s t) → (history : PartialTranscriptAt l sp) →
+    {t : FreeM P Unit} → (sp : Cursor.Spine s t) → (history : PartialTranscriptAt l sp) →
     (tr : Transcript l t) → BudgetedProgram (F.extractFrom stmt sp history tr) ω
   | .pure _, sp, history, _ => stages.leaf stmt sp history
   | .liftBind _ _, sp, history, ⟨x, tr⟩ =>
@@ -187,7 +187,7 @@ theorem run_programAlong (stages : MeasuredStages F ω) (stmt : S) (tr : Transcr
 
 /-- At an interaction node, the composed budget is the budget of the rest plus the step budget. -/
 theorem programFrom_budget_liftBind (stages : MeasuredStages F ω) (stmt : S) {a : P.A}
-    {next : P.B a → FreeM P PUnit.{1}} (sp : Cursor.Spine s (.liftBind a next))
+    {next : P.B a → FreeM P Unit} (sp : Cursor.Spine s (.liftBind a next))
     (history : PartialTranscriptAt l sp) (x : Move l a) (tr : Transcript l (next (l.toFunB a x))) :
     (stages.programFrom stmt sp history ⟨x, tr⟩).budget =
       (stages.programFrom stmt _ (PartialTranscriptAt.snoc l sp history x) tr).budget +
@@ -202,7 +202,7 @@ theorem programAlong_budget (stages : MeasuredStages F ω) (stmt : S) (tr : Tran
 each remaining move. -/
 theorem programFrom_budget_le (stages : MeasuredStages F ω) {rootBound stepBound leafBound : ω}
     (h : stages.BudgetAtMost rootBound stepBound leafBound) (stmt : S) :
-    {t : FreeM P PUnit.{1}} → (sp : Cursor.Spine s t) → (history : PartialTranscriptAt l sp) →
+    {t : FreeM P Unit} → (sp : Cursor.Spine s t) → (history : PartialTranscriptAt l sp) →
     (tr : Transcript l t) →
     (stages.programFrom stmt sp history tr).budget ≤
       leafBound + (completeSpine l tr).length • stepBound
@@ -259,7 +259,7 @@ instruction cost is zero on every transcript. An operation-count result names th
 and the price of each instruction. Stage selection, uncharged host computations and carrier
 conversions stay outside that cost. -/
 structure MeasuredKnowledgeStateFunction (Kind : Type) [Finite Kind] (l : PFunctor.Lens P rolePoly)
-    (s : FreeM P PUnit.{1}) (S : Type) (W : S → Transcript l s → Type) (Win : S → Type)
+    (s : FreeM P Unit) (S : Type) (W : S → Transcript l s → Type) (Win : S → Type)
     (admissible : S → Prop) (relIn : (stmt : S) → Win stmt → Prop)
     (validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop)
     extends KnowledgeStateFunction l s S W Win admissible relIn validOutput where
@@ -273,7 +273,7 @@ end Interaction
 namespace Interaction.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens
 
-variable {s : OracleProtocol.{0, 0}} {S : Type} {Win : S → Type}
+variable {s : OracleProtocol} {S : Type} {Win : S → Type}
   {W : S → Transcript oracleSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → W stmt tr → Prop}
@@ -281,7 +281,7 @@ variable {s : OracleProtocol.{0, 0}} {S : Type} {Win : S → Type}
 
 /-- The step bound at a node: `challengeBound` at a challenge, `messageBound` at a message or an
 oracle message. -/
-def stepBound (messageBound challengeBound : ω) : OraclePos.{0, 0} → ω
+def stepBound (messageBound challengeBound : ω) : OraclePos → ω
   | .challenge _ => challengeBound
   | _ => messageBound
 
@@ -293,7 +293,7 @@ structure ProtocolBudgetAtMost [AddCommMonoid ω] [Preorder ω] (stages : Measur
   /-- The root budget is bounded. -/
   root : (stages.root stmt).budget ≤ rootBound
   /-- Every step budget is bounded by the bound of its node's kind. -/
-  step : ∀ {a : OraclePos} {next : OraclePoly.B a → OracleProtocol.{0, 0}}
+  step : ∀ {a : OraclePos} {next : OraclePoly.B a → OracleProtocol}
     (sp : Cursor.Spine s (.liftBind a next)) (history : PartialTranscriptAt oracleSig sp),
     (stages.step stmt sp history).budget ≤ stepBound messageBound challengeBound a
   /-- Every leaf budget is bounded. -/

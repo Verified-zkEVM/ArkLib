@@ -548,13 +548,13 @@ All query and data carriers are in `Type`. -/
 
 /-- A Boolean answers its one query, which lies in `Type`, with itself. -/
 @[reducible]
-def wideInterface : OracleInterface.{0, 0} Bool where
+def wideInterface : OracleInterface Bool where
   Query := Unit
   spec := Unit →ₒ Bool
   answer m _ := m
 
 /-- One Boolean oracle whose query lies in `Type`. -/
-def wideBooleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
+def wideBooleans : OracleFamily Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
 
 /-- Export the parity of the scalar input as a wide oracle. -/
 def wideParity (messages : OracleBundle) :

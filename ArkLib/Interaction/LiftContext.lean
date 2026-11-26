@@ -46,7 +46,7 @@ open scoped ENNReal
 
 /-- Project an outer input statement to an inner one, and lift an inner output statement at a
 shape path back to an outer one. Output statement types are indexed by the shape path. -/
-structure StatementLens {P : PFunctor.{uA, 0}} (s : FreeM P PUnit.{1})
+structure StatementLens {P : PFunctor.{uA, 0}} (s : FreeM P Unit)
     (OuterIn : Type) (InnerIn : Type) (OuterOut : Path s → Type)
     (InnerOut : Path s → Type) where
   /-- The inner input statement. -/
@@ -57,7 +57,7 @@ structure StatementLens {P : PFunctor.{uA, 0}} (s : FreeM P PUnit.{1})
 /-- Project an outer input witness to an inner one, and lift the inner prover's output on a
 completed transcript back to an outer one. -/
 structure WitnessLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    (s : FreeM P PUnit.{1}) (OuterIn : Type) (OuterWit : Type) (InnerWit : Type)
+    (s : FreeM P Unit) (OuterIn : Type) (OuterWit : Type) (InnerWit : Type)
     (OuterOut : Transcript l s → Type) (InnerOut : Transcript l s → Type) where
   /-- The inner input witness. -/
   proj : OuterIn → OuterWit → InnerWit
@@ -66,7 +66,7 @@ structure WitnessLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 /-- A statement lens and a witness lens over the same outer input statement. -/
 structure ContextLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    (s : FreeM P PUnit.{1}) (OuterIn : Type) (InnerIn : Type)
+    (s : FreeM P Unit) (OuterIn : Type) (InnerIn : Type)
     (OuterWit : Type) (InnerWit : Type)
     (OuterStmtOut InnerStmtOut : Path s → Type)
     (OuterOut InnerOut : Transcript l s → Type) where
@@ -79,7 +79,7 @@ structure ContextLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 witness projects to an inner one, and an inner input witness lifts to an outer one using the
 completed transcript and the outer output witness. -/
 structure ExtractorLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    (s : FreeM P PUnit.{1}) (OuterIn : Type) (InnerIn : Type)
+    (s : FreeM P Unit) (OuterIn : Type) (InnerIn : Type)
     (OuterStmtOut InnerStmtOut : Path s → Type)
     (OuterWitIn : OuterIn → Type) (InnerWitIn : InnerIn → Type)
     (OuterWitOut : OuterIn → Transcript l s → Type)
@@ -96,7 +96,7 @@ structure ExtractorLens {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0}
 /-- Run the inner prover on the projected input and map its output through the witness lens.
 Every node slot is the inner prover's slot. -/
 def Prover.liftContext {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
-    {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : FreeM P PUnit.{1}}
+    {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : FreeM P Unit}
     {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
     {OuterOut InnerOut : Transcript l s → Type}
     (proj : OuterIn → InnerIn) (lens : WitnessLens l s OuterIn OuterWit InnerWit OuterOut InnerOut)
@@ -105,14 +105,14 @@ def Prover.liftContext {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
   Strategy.mapOutput (lens.lift stmt wit) (prover (proj stmt) (lens.proj stmt wit))
 
 /-- Decide with the inner verifier on the projected statement and lift an accepted output. -/
-def Verifier.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol.{0}}
+def Verifier.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol}
     {OuterIn : Type} {InnerIn : Type} {OuterOut InnerOut : Path s → Type}
     (lens : StatementLens s OuterIn InnerIn OuterOut InnerOut)
     (V : Verifier ambient s InnerIn InnerOut) : Verifier ambient s OuterIn OuterOut where
   decide stmt p v := lens.lift stmt p <$> V.decide (lens.proj stmt) p v
 
 /-- Lift both parties of a reduction along a context lens. -/
-def Reduction.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol.{0}}
+def Reduction.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol}
     {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
     {OuterStmtOut InnerStmtOut : Path s → Type}
     {OuterOut InnerOut : Transcript plainSig s → Type}
@@ -129,7 +129,7 @@ def Reduction.liftContext {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Prot
 theorem Prover.simulate_mapOutput {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
     {ι : Type} {ambient : OracleSpec.{0, 0} ι} {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) :
-    (s : FreeM P PUnit.{1}) → {A B : Transcript l s → Type} →
+    (s : FreeM P Unit) → {A B : Transcript l s → Type} →
     (f : ∀ tr, A tr → B tr) → (p : Prover l ambient s A) →
     Prover.simulate impl (Strategy.mapOutput f p) = Strategy.mapOutput f (Prover.simulate impl p)
   | .pure _, _, _, f, p => by
@@ -162,7 +162,7 @@ theorem run_mapOutput_focal {P : PFunctor.{uA, u}} {l : PFunctor.Lens P rolePoly
 
 /-- Running against a prover with a mapped output maps the prover output of the outcome. -/
 theorem Verifier.run_mapOutput {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {A B : Transcript plainSig s → Type}
+    {s : Protocol} {S : Type} {T : Path s → Type} {A B : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (f : ∀ tr, A tr → B tr)
     (p : Prover plainSig ambient s A) :
     V.run stmt (Strategy.mapOutput f p) =
@@ -183,7 +183,7 @@ theorem Verifier.run_mapOutput {ι : Type} {ambient : OracleSpec.{0, 0} ι}
 /-- A lifted verifier's run against any prover is the inner run on the projected statement,
 with an accepted output lifted. -/
 theorem Verifier.liftContext_run {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-    {s : Protocol.{0}} {OuterIn : Type} {InnerIn : Type}
+    {s : Protocol} {OuterIn : Type} {InnerIn : Type}
     {OuterOut InnerOut : Path s → Type} {Out : Transcript plainSig s → Type}
     (lens : StatementLens s OuterIn InnerIn OuterOut InnerOut)
     (V : Verifier ambient s InnerIn InnerOut) (stmt : OuterIn) (p : Prover plainSig ambient s Out) :
@@ -200,7 +200,7 @@ theorem Verifier.liftContext_run {ι : Type} {ambient : OracleSpec.{0, 0} ι}
 /-- A lifted reduction's run is the inner run on the projected input, with the prover output
 mapped through the witness lens and an accepted output lifted. -/
 theorem Reduction.liftContext_runOutcome {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-    {s : Protocol.{0}} {OuterIn : Type} {InnerIn : Type} {OuterWit : Type}
+    {s : Protocol} {OuterIn : Type} {InnerIn : Type} {OuterWit : Type}
     {InnerWit : Type} {OuterStmtOut InnerStmtOut : Path s → Type}
     {OuterOut InnerOut : Transcript plainSig s → Type}
     (lens : ContextLens plainSig s OuterIn InnerIn OuterWit InnerWit OuterStmtOut InnerStmtOut
@@ -218,14 +218,14 @@ theorem Reduction.liftContext_runOutcome {ι : Type} {ambient : OracleSpec.{0, 0
 
 /-- An inner output statement is compatible with an inner input statement at a path when the
 decision can return it on some view of that path. -/
-def Verifier.Compatible {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol.{0}}
+def Verifier.Compatible {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol}
     {S : Type} {T : Path s → Type} (V : Verifier ambient s S T) (stmt : S) (p : Path s)
     (t : T p) : Prop :=
   ∃ v : PlainView s p, some t ∈ support (V.decide stmt p v).run
 
 /-- Every accepted output of a run is compatible with its input statement. -/
 theorem Verifier.compatible_of_mem_support_run {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
+    {s : Protocol} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out)
     {obs : Outcome plainSig s Out T} (h : obs ∈ support (V.run stmt p)) {t : T obs.1.path}
     (ht : obs.2.2 = some t) : V.Compatible stmt obs.1.path t := by
@@ -248,7 +248,7 @@ theorem Verifier.compatible_of_mem_support_simulateQ {ι σ : Type} {ambient : O
 
 section Conditions
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P PUnit.{1}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P Unit}
   {OuterIn : Type} {InnerIn : Type} {OuterWit : Type} {InnerWit : Type}
   {OuterStmtOut InnerStmtOut : Path s → Type} {OuterOut InnerOut : Transcript l s → Type}
 
@@ -298,7 +298,7 @@ admissible inputs, and valid inner input witnesses lift to valid outer ones. A c
 accepted outer output witness either projects to a valid inner one, or lifts every inner input
 witness to a valid outer one. -/
 structure ExtractorLens.IsKnowledgeSound {P : PFunctor.{uA, 0}}
-    {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P PUnit.{1}}
+    {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P Unit}
     {OuterIn : Type} {InnerIn : Type} {OuterStmtOut InnerStmtOut : Path s → Type}
     {OuterWitIn : OuterIn → Type} {InnerWitIn : InnerIn → Type}
     {OuterWitOut : OuterIn → Transcript l s → Type}
@@ -330,7 +330,7 @@ structure ExtractorLens.IsKnowledgeSound {P : PFunctor.{uA, 0}}
 
 section Generic
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P PUnit.{1}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}} {s : FreeM P Unit}
   {SO : Type} {SI : Type}
 
 /-- Pull a state function back along a statement map. The new state is true on a statement

@@ -18,8 +18,8 @@ open PFunctor FreeM Interaction Interaction.OracleVerifier Interaction.Oracle Or
 namespace Interaction.AgreementUniversesTests
 
 variable {ι : Type} {S : Type} {I : Type}
-  {ambient : OracleSpec ι} {s s' : OracleProtocol.{0, 0}} {A : I → Type}
-  {T : Path s → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {ambient : OracleSpec ι} {s s' : OracleProtocol} {A : I → Type}
+  {T : Path s → Type} {inputs : OracleFamily I A}
   {outputs : Path s → OracleBundle}
   {V V' : OracleVerifier ambient s S T inputs outputs}
 
@@ -58,7 +58,7 @@ variable {Win : (S × (∀ i, A i)) → Type}
   (inputs := inputs) (outputs := outputs) (Win := Win) (W := W)
 end KnowledgeCast
 section LegacyOutputs
-variable {J T : Type} {B : J → Type} {outputs : OracleFamily.{0, 0, 0} J B}
+variable {J T : Type} {B : J → Type} {outputs : OracleFamily J B}
 
 -- These legacy relation adapters transport completeness and knowledge soundness along a tree
 -- equality.

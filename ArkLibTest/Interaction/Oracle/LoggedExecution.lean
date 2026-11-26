@@ -28,11 +28,11 @@ updated count. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
+@[instance_reducible] def inputs : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
+@[instance_reducible] def exported : OracleFamily Unit (fun _ => Nat) :=
   ⟨fun _ => OracleInterface.instDefault⟩
 
 /-- The input data: the single slot holds 7. -/
@@ -265,7 +265,7 @@ universe v
 alone and mentions no actual run. An absent verdict stays a rejection and creates no failure.
 `decision_outcomes` checks the closed output of actual runs. -/
 theorem close_optional_ok {ε : Type v} {ι : Type} {S : Type}
-    {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
     {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -917,8 +917,8 @@ end Interaction.DependentRoutingTests
 universe v
 
 /-- Log erasure holds in a lawful target monad with any result universe. -/
-example {ι I : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-    {T : FreeM.Path s → Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+example {ι I : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {T : FreeM.Path s → Type} {A : I → Type} {inputs : OracleFamily I A}
     {outputs : FreeM.Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs)
@@ -1160,7 +1160,7 @@ end Interaction.LoggedExecutionTests
 
 /-- Forgetting the ambient queries by move recovers the parent verifier's run. -/
 example {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : FreeM.Path s → Type}
+    {s : OracleProtocol} {T : FreeM.Path s → Type}
     {inputs : OracleBundle}
     {outputs : FreeM.Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}

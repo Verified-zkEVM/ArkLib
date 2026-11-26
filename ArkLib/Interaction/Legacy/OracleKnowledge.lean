@@ -41,11 +41,11 @@ namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle MeasureTheory
 open scoped ENNReal NNReal
 
-variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
+variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
   {ι : Type} {oSpec : OracleSpec ι} [∀ t, Inhabited (oSpec.Range t)]
   {StmtIn WitIn StmtOut WitOut : Type}
-  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface.{0, 0} (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
+  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
   {σ : Type}
 
 /-! ### Extractors -/
@@ -323,7 +323,7 @@ theorem oracleKnowledgeSoundness_iff (init : ProbComp σ)
 section TreeTransport
 variable {κ J T WIn WOut : Type} {S : Type} {I : Type}
   {ambient : OracleSpec κ} {s s' : OracleProtocol} {A : I → Type} {B : J → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily.{0, 0, 0} J B}
+  {inputs : OracleFamily I A} {outputs : OracleFamily J B}
 
 /-- The output judgement of a legacy relation on any oracle tree: the output statement and its
 output witness are read from the prover's output, and the verdict from the verifier's output.

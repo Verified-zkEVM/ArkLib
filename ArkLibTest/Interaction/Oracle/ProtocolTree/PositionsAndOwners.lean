@@ -17,25 +17,23 @@ namespace Interaction.PositionsAndOwnersTests
 
 section UniverseCanary
 
-universe uProtocol uQuery
+/-- Oracle protocols with a given leaf type, in `Type`. -/
+abbrev UniverseProtocol (Leaf : Type := Unit) :=
+  OracleProtocol Leaf
 
-/-- Oracle protocols quantify message and query universes independently. -/
-abbrev UniverseProtocol (Leaf : Type uProtocol := PUnit) :=
-  OracleProtocol.{uProtocol, uQuery} Leaf
-
-/-- An arbitrary interface attaches to an oracle node without identifying its universes. -/
-def universeNode (Message : Type uProtocol)
-    (interface : OracleInterface.{uProtocol, uQuery} Message) :
-    UniverseProtocol.{uProtocol, uQuery} :=
+/-- An arbitrary interface attaches to an oracle node. -/
+def universeNode (Message : Type)
+    (interface : OracleInterface Message) :
+    UniverseProtocol :=
   .liftBind (.oracle Message interface) (fun _ => .pure ⟨⟩)
 
-/-- A small protocol node accepts every interface whose queries lie in the next universe. -/
-example (interface : OracleInterface.{0, 1} Nat) :
+/-- The position of the node carries the interface. -/
+example (interface : OracleInterface Nat) :
     Node.position (universeNode Nat interface) (.inl ⟨⟩) = .oracle Nat interface := rfl
 
 /-- The node's path bundle has the interface's query type, beside the empty bundle of the leaf. -/
-example (interface : OracleInterface.{0, 0} Nat) :
-    (oracleMessageBundle (universeNode.{0, 0} Nat interface) ⟨⟨⟩, ⟨⟩⟩).Query =
+example (interface : OracleInterface Nat) :
+    (oracleMessageBundle (universeNode Nat interface) ⟨⟨⟩, ⟨⟩⟩).Query =
       (interface.Query ⊕ Empty) := rfl
 
 end UniverseCanary

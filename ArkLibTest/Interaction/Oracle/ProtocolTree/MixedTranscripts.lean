@@ -16,23 +16,21 @@ namespace Interaction.MixedTranscriptsTests
 
 section UniverseCanary
 
-universe uPosition uTree uBranch uExecution
-
 -- MixedExample 1, restated: oracle positions are `OraclePos`.
-/-- Oracle positions are not pinned to the default universe. -/
-abbrev UniversePosition := OraclePos.{uPosition, uPosition}
+/-- Oracle positions, in `Type 1`. -/
+abbrev UniversePosition := OraclePos
 
 -- MixedExample 2, restated: oracle trees are `OracleProtocol`.
-/-- Oracle protocols are not pinned to the default universe. -/
-abbrev UniverseTypeTree := OracleProtocol.{uTree, uTree}
+/-- Oracle protocols, in `Type 1`. -/
+abbrev UniverseTypeTree := OracleProtocol
 
 -- MixedExample 3, restated: structural branch paths are paths `Path s`.
-/-- Paths elaborate at any universe. -/
-abbrev UniverseBranchPath (s : OracleProtocol.{uBranch}) := Path s
+/-- Branch paths of an oracle protocol. -/
+abbrev UniverseBranchPath (s : OracleProtocol) := Path s
 
 -- MixedExample 4, restated: execution paths are full transcripts `Transcript oracleSig s`.
-/-- Full transcripts elaborate at any universe. -/
-abbrev UniverseExecutionPath (s : OracleProtocol.{uExecution}) := Transcript oracleSig s
+/-- Full transcripts of an oracle protocol. -/
+abbrev UniverseExecutionPath (s : OracleProtocol) := Transcript oracleSig s
 
 end UniverseCanary
 

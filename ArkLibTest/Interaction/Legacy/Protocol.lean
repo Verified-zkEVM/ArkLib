@@ -47,7 +47,7 @@ example : owner plainSig (plainRound mixed 1) = .sender := rfl
 example : owner plainSig (plainRound mixed 2) = .receiver := rfl
 
 /-- A legacy message oracle interface for the oracle tree. -/
-instance mixedOracles : ∀ i, OracleInterface.{0, 0} (mixed.Message i) := fun _ =>
+instance mixedOracles : ∀ i, OracleInterface (mixed.Message i) := fun _ =>
   { Query := Unit, spec := Unit →ₒ Unit, answer := fun _ _ => () }
 
 example : oracleProtocol mixed =

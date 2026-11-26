@@ -50,12 +50,12 @@ private theorem simulate_guarded_finRange {ι : Type} {spec : OracleSpec ι}
 theorem simulate_lift (o : ∀ j, FinalOracleStatement s ω j)
     (msgs : (pSpec (ω := ω) l).Messages) {A : Type}
     (c : OracleComp [FinalOracleStatement s ω]ₒ A) :
-    simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) o msgs)
-      (liftM c : OracleComp ((emptySpec.{0, 0}) + ([FinalOracleStatement s ω]ₒ +
+    simulateQ (OracleInterface.simOracle2 emptySpec0 o msgs)
+      (liftM c : OracleComp (emptySpec0 + ([FinalOracleStatement s ω]ₒ +
         [(pSpec (ω := ω) l).Message]ₒ)) A) =
       pure (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o) c).run := by
-  exact QueryImpl.simulateQ_addLift_add_liftM_left (target := OracleComp (emptySpec.{0, 0}))
-    (QueryImpl.id (emptySpec.{0, 0}))
+  exact QueryImpl.simulateQ_addLift_add_liftM_left (target := OracleComp emptySpec0)
+    (QueryImpl.id emptySpec0)
     (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
     (OracleInterface.simOracle0 (pSpec (ω := ω) l).Message msgs) c
 
@@ -141,7 +141,7 @@ theorem eval_verifyQueries_ne_none_iff {l : ℕ} (hs : (∑ j, (s j).val) ≤ n)
 theorem simulate_queryVerifier (hs : (∑ j, (s j).val) ≤ n)
     (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
     (ch : (pSpec (ω := ω) l).Challenges) (msgs : (pSpec (ω := ω) l).Messages) :
-    simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) o msgs)
+    simulateQ (OracleInterface.simOracle2 emptySpec0 o msgs)
       ((queryVerifier s hs l).verify α ch).run =
       pure (if ∀ j i,
         (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)

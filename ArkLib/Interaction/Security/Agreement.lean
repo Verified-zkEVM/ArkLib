@@ -39,7 +39,7 @@ open PFunctor FreeM TwoParty.Lens Oracle OracleComp OracleSpec
 
 section Agree
 variable {ι : Type} {S : Type} {ambient : OracleSpec.{0, 0} ι}
-  {s : OracleProtocol.{0, 0}}
+  {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
 
@@ -74,7 +74,7 @@ theorem Agrees.of_decide_eq
 end Agree
 
 section Run
-variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
   {V V' : OracleVerifier ambient s S T inputs outputs}
@@ -91,7 +91,7 @@ theorem Agrees.run_eq (h : Agrees V V') (stmt : S) (data : inputs.Data)
 end Run
 
 section Classical
-variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
   {V V' : OracleVerifier ambient s S T inputs outputs}
@@ -100,7 +100,7 @@ variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol
 agree, have equal logged runs: the same outcome, prover log and decision log before
 routing. `OracleVerifier.runWithLog` in `Security/Knowledge.lean` requires small input
 indices and input queries because its full decision log is a run output. -/
-theorem runWithLog_eq_of_decide_eq {s : OracleProtocol.{0, 0}}
+theorem runWithLog_eq_of_decide_eq {s : OracleProtocol}
     {T : Path s → Type} {outputs : Path s → OracleBundle}
     {inputs : OracleBundle}
     {V V' : OracleVerifier ambient s S T inputs outputs}
@@ -248,7 +248,7 @@ end Classical
 
 section Cast
 variable {ι : Type} {S : Type} {ambient : OracleSpec.{0, 0} ι}
-  {s s' : OracleProtocol.{0, 0}} {T : Path s → Type}
+  {s s' : OracleProtocol} {T : Path s → Type}
   {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
 
@@ -263,7 +263,7 @@ def cast (e : s' = s)
 The constant specialization is needed because ordinary substitution keeps the output carriers
 fixed while changing the tree. -/
 theorem cast_const {T : Type} {J : Type} {B : J → Type}
-    {outputs : OracleFamily.{0, 0, 0} J B} (e : s' = s)
+    {outputs : OracleFamily J B} (e : s' = s)
     (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _ => outputs)) :
     V.cast (T := fun _ => T) (outputs := fun _ => outputs) e = e ▸ V := by
   subst e; rfl
@@ -337,7 +337,7 @@ end Cast
 
 section RunCast
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι}
-  {s s' : OracleProtocol.{0, 0}} {T : Path s → Type}
+  {s s' : OracleProtocol} {T : Path s → Type}
   {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
 
@@ -364,7 +364,7 @@ end RunCast
 
 section ClassicalCast
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
-  {s s' : OracleProtocol.{0, 0}} {T : Path s → Type}
+  {s s' : OracleProtocol} {T : Path s → Type}
   {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
 
