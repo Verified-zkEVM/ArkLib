@@ -7,8 +7,8 @@ if that recovery is explicit. A different experiment should be named and compare
 
 These are working research notes, not an adopted replacement architecture or a novelty claim.
 They preserve promising directions alongside objections and unresolved alternatives. The
-[roadmap investigation](../../design/05-roadmap.md#bounded-interaction-theory-investigation)
-owns the proposed execution plan; this page owns the literature comparison.
+[design roadmap](../../design/05-roadmap.md) owns the execution plan; this page owns the
+literature comparison.
 
 The [broader literature map](interaction-literature-map.md) adds ARC, WARP, FICS/FACS,
 functional-query compilers, duplex-sponge FS, and later IOR work. In particular, the library's
@@ -26,6 +26,10 @@ Checked on October 2, 2026, America/New_York, against:
 - [CY version 1.2, March 25, 2026][cy], official TeX at
   `305fa3d9d19ee6dba135de64b3156d1760df8426`; see [source metadata][metadata].
 
+The statements about ArkLib code were rechecked against `main` on November 25, 2026. Where
+`main` differs from `ace55c3e29`, the text says so and links the earlier statement at a pinned
+commit.
+
 The observations below come from source inspection. Statements described as proved have proof
 bodies in the inspected source; this research comparison is not a new transitive axiom audit.
 Proposed theorems and counterexamples below have not been formalized by this investigation.
@@ -34,26 +38,32 @@ claims must not be copied into a description of current native code.
 
 ## Where progress stands
 
-The native C1-C8 foundation sequence is implemented: execution and continuation access,
-routing and closing, persistent runtime and log composition, ordinary soundness, and query
-budget certificates. See [current status](../../design/00-current-status.md) and the
+On `main`, the interaction layer under `ArkLib/Interaction/` has its execution core, logged
+execution, oracle composition and generic security results. The security results are
+round-by-round soundness and the theorem that it implies soundness, knowledge state functions and
+their composition, state-restoration knowledge soundness, and measured extraction stages. See
+[current status](../../design/00-current-status.md#interaction-layer-security) and the
 [execution design](../../design/03-adversarial-oracle-execution.md).
 
-Native Sumcheck has an ordinary soundness theorem for arbitrary native prover strategies,
-with error at most `count * deg / |F|`, starting from a false claim about a realized bounded
-polynomial input oracle and ending in a true closed evaluation claim. The output equality to
-the original polynomial is a relation, not an extra verifier query silently performed at the
-end. Computable messages/verifier and a general finite-enumeration honest prover have
-whole-execution correspondence and completeness theorems. Computability is not an efficiency
-claim. The current witness is `Unit`; this does not extract a hidden polynomial.
+The Sumcheck core's passive `indexedVerifier` has a soundness theorem for every prover, with error
+`n * (deg / |R|)`. It starts from a false claim about the input polynomial oracle and bounds the
+probability that the run returns a claim satisfying the final evaluation relation
+(`indexedVerifier_soundness`, `indexedVerifier_run_soundness`). The final evaluation equality is
+an output relation, not an extra verifier query performed at the end. `indexedVerifier_rbrSoundness`
+gives round-by-round error `deg / |R|` at every challenge. A computable instance has completeness
+and soundness theorems; computability is not an efficiency claim. The witness is `Unit`, and the
+Sumcheck knowledge theorems are transfers from the legacy layer; this does not extract a hidden
+polynomial.
 
-Sources: [protocol and output relation][sumcheck-protocol],
-[ordinary soundness][sumcheck-soundness], [computable soundness][sumcheck-computable],
-[computable completeness][sumcheck-completeness].
+Sources: [protocol][sumcheck-protocol], [soundness][sumcheck-soundness],
+[round-by-round soundness][sumcheck-indexed], [computable instance][sumcheck-computable],
+[completeness][sumcheck-completeness].
 
-The central missing layer is the precise security theory connecting those native executions
-to arbitrary-prefix games, state restoration, extraction and the compiler. Existing execution
-infrastructure makes that work possible; it does not itself prove those connections.
+What remains open is the use of the generic results. No protocol under `ArkLib/ProofSystem/`
+instantiates the interaction-layer knowledge or state-restoration certificates. There is no
+interaction-layer rewinding extractor, and no Fiat–Shamir or BCS bridge from state restoration.
+At `ace55c3e29`, these security results did not yet exist and this paragraph named them as the
+missing layer.
 
 ## Whole-book direction, without a false coverage claim
 
@@ -63,9 +73,9 @@ infrastructure makes that work possible; it does not itself prove those connecti
 | Sigma protocols, IPs and Fiat-Shamir | Protocol and ROM infrastructure; legacy FS constructions | Exact transform, backtracking, malformed-query simulation and security correspondence |
 | Commitments and online Merkle extraction | VCVio deterministic binding and strong raw-digest extraction results | Encoded payload, salt/configuration, event and resource transport |
 | PCPs, Kilian and Micali | General proof-system and commitment ingredients | Source-specific constructions and theorem inventory not audited here |
-| IOPs, interactive BCS and BCS | Native oracle reductions, output interfaces and compiler design | SR games, interactive lowering, hash-chain compiler and composed security |
-| Special soundness and RBR | Legacy transcript-tree algebra and fixed-prefix conditions; native Sumcheck challenge lemma | Native contracts, source specialization, tree finding and probability/time bounds |
-| Knowledge and zero knowledge | Several legacy extraction notions and modern runtime/log semantics | Observation/timing correspondence, efficient extractors, verifier views and simulation |
+| IOPs, interactive BCS and BCS | Native oracle reductions, output interfaces, compiler design, and native state-restoration knowledge soundness for fixed-round protocols | Source-exact SR games, interactive lowering, hash-chain compiler and composed security |
+| Special soundness and RBR | Legacy transcript-tree algebra and fixed-prefix conditions; native round-by-round soundness and knowledge state functions, with Sumcheck's `indexedVerifier_rbrSoundness` | Source specialization, tree finding and probability/time bounds |
+| Knowledge and zero knowledge | Several legacy extraction notions, modern runtime/log semantics, and native knowledge composition with measured extraction stages | Observation/timing correspondence, efficient extractors, verifier views and simulation |
 | Preprocessing, commit-and-open, witness indistinguishability | Potentially reusable general interfaces | Coverage deliberately unassessed; retain as targets |
 
 This is a navigation map, not an exhaustive theorem matrix. A later coverage inventory should
@@ -109,11 +119,17 @@ algebraic abstraction; see the broader map's functional-query discussion.
 
 ### 3. Dependent schedules, early rejection and public coins
 
-The native [type tree][type-tree] and [protocol][native-protocol] permit a public move to choose
-the continuation, including future message types. Native Sumcheck queries its round message
-before returning an optional challenge, with `none` closing the interaction. The book's
-[public-coin IOP][cy-public-coin] uses fixed rounds and independently uniform verifier messages;
-queries can be postponed because they do not determine these messages.
+The native [protocol][native-protocol] is a tree in which a public move may choose the
+continuation, including future message types. At `ace55c3e29`, this was the
+[type tree][type-tree] of the old layer. The book's [public-coin IOP][cy-public-coin] uses fixed
+rounds and independently uniform verifier messages; queries can be postponed because they do not
+determine these messages.
+
+The Sumcheck interaction layer at [`7cd7828303`][sumcheck-frozen-protocol], deleted by #1571,
+queried its round message before returning an optional challenge, with `none` closing the
+interaction. The Sumcheck core on `main` has a fixed shape instead: each round sends a polynomial
+and draws a challenge, and the passive verifier decides after the last round. A failed sum check
+leaves a `none` state that the verifier carries to rejection, so every challenge is still drawn.
 
 One possible route is a certified fixed-schedule specialization for compiler theorems. Another
 is a theorem for bounded dependent schedules with a proved fixed-round corollary. Neither is
@@ -133,11 +149,17 @@ verifier challenges**. Only the selected next challenge is sampled freshly. The 
 at zero, stays zero on prover moves, and a complete zero-state transcript must reject. The
 bound is conditioned on the pre-challenge state being zero.
 
-The legacy [round-by-round module][legacy-rbr] already contains two different conditions:
+At `ace55c3e29`, the legacy [round-by-round module][legacy-rbr] contained two different
+conditions:
 
-- `rbrSoundness`, near line 357, averages the bad-edge conjunction over `prover.runToRound`.
-- `rbrSoundnessWorstCase`, near line 523, fixes a prefix; the implication to the averaged
-  condition is proved near line 592.
+- `rbrSoundness`, near line 357, averaged the bad-edge conjunction over `prover.runToRound`.
+- `rbrSoundnessWorstCase`, near line 523, fixed a prefix; the implication to the averaged
+  condition was proved near line 592.
+
+On `main`, the fixed-prefix notions have the default names `rbrSoundness` and
+`rbrKnowledgeSoundness` (#1413), and the averaged and one-shot variants are deleted (#1421). See
+the [current module][legacy-rbr-main]. The comparison below still explains why the averaged
+condition was not a substitute.
 
 For a fixed stateless prefix with preceding state zero, the latter conjunction has CY's local
 meaning. Recovering the randomized-prefix formulation requires a mixture/conditioning lemma,
@@ -164,24 +186,26 @@ soundness error `delta` gives an RBR state with error at most `delta^(1/r)`
 desired quantitative bound and experiment, not claiming that no ordinary-to-RBR implication
 exists. That converse remains a useful later coverage target; its state need not be efficient.
 
-The legacy initial-state law instead identifies state truth with input-language membership.
-Restricting ordinary security to false inputs resolves that initial discrepancy. It does not
-resolve the all-input knowledge definition. Also, the legacy terminal law executes a verifier
-from fresh initialization; a native effectful theorem must refer to the actual retained runtime
-state. The [native runtime soundness boundary][runtime-soundness] already follows the latter
-discipline.
+At `ace55c3e29`, the legacy initial-state law identified state truth with input-language
+membership (an iff). On `main`, `toFun_empty` is one-way: a true initial state implies
+membership (#1373). Restricting ordinary security to false inputs resolves the initial
+discrepancy with CY. It does not resolve the all-input knowledge definition. Also, the legacy
+terminal law still executes a verifier from fresh initialization; a native effectful theorem
+must refer to the actual retained runtime state. The runtime results of
+[`CompositionSoundness`][runtime-soundness] (`Verifier.append_soundness_runtime`,
+`OracleVerifier.append_soundness_runtime`) follow the latter discipline. The native
+`validAcceptance` quantifies over every ambient state at the end of the run.
 
 The pinned VCVio already provides [`RoundByRound.GameFamily`][vc-rbr] with context-dependent
-sampling, `IsBounded` and an event-probability characterization. A first native package can
-reuse it, adding prefix/state laws and a theorem identifying its local experiment with the
-existing verifier interpreter. Sumcheck's guarded `Option` challenge fits this interface:
-failing the sum check returns `none` and contributes zero; the passing branch uses the proved
-uniform challenge lemma. Preserve the actual response effects even on `none`.
+sampling, `IsBounded` and an event-probability characterization. The interaction layer's
+[round-by-round module][native-rbr] does not use it. It defines its own prefix draws
+(`PrefixDraw`, `sampleAt`) and bounds the local event at every fixed prefix.
 
-One state-law subtlety remains: the current closed relation may be true at the empty prefix,
-where CY requires zero for every input. A proposed positive-round construction resets the
-scalar state before the first challenge and thereafter uses the current closed relation, with
-abort false. Local soundness is only required on false original inputs. Zero-round false-input
+One state-law subtlety remains. The native `StateFunction.root` law requires only that a true
+root state at an admissible statement implies the language, so the state may be true at the root
+for a true input; CY requires zero for every input. A proposed positive-round construction resets
+the scalar state before the first challenge and thereafter uses the closed relation, with abort
+false. Local soundness is only required on false original inputs. Zero-round false-input
 security needs its separate terminal case; do not assert a zero-initial all-input certificate
 for an immediately accepting zero-round protocol.
 
@@ -197,11 +221,15 @@ This restriction concerns this particular RBR definition. Other book extractors 
 transcripts, logs or black-box prover access; do not erase those distinctions.
 
 The legacy edge-local extractor instead transports a later witness backward using a transcript
-prefix that contains challenges. Its worst-case bad event existentially quantifies an
-intermediate witness inside the event. The one-shot variant has another timing contract. These
-are different notions, not automatically a hierarchy with CY at the bottom.
+prefix that contains challenges. Its fixed-prefix bad event existentially quantifies an
+intermediate witness inside the event. At `ace55c3e29`, a one-shot variant had another timing
+contract; #1421 deleted it. These are different notions, not automatically a hierarchy with CY at
+the bottom. The interaction layer's `KnowledgeStateFunction` has the same backward transport and
+existential bad event, with carriers that may read the whole prefix.
 WARP gives a closely matching local witness-transport notion and proves an offline SR
-extraction theorem; ArkLib's current code explicitly compares its laws to ABF26 A.5.
+extraction theorem. At `ace55c3e29`, the legacy code compared its laws to ABF26 A.5. On `main`,
+the interaction layer's module compares its notion to BCFW25 Definitions 4.1–4.2 and ABF26
+Appendix A.1.
 The [source crosswalk](interaction-literature-map.md#arc-warp-and-the-librarys-actual-knowledge-notion)
 records the genuine lineage and remaining generalizations.
 
@@ -237,10 +265,13 @@ The [RBR-to-SR theorem][cy-rbr-sr] loses a factor `B + r`. Its proof needs:
    complete prior adaptive history, so the arbitrary-prefix bound applies.
 
 Neither independent suffix replay nor an ordinary union bound over an honestly sampled run
-establishes this experiment. The legacy SR soundness declaration lacks a move-budget parameter
-and assumes a distribution of response functions; it does not itself certify the required
-independent random-function law. Its knowledge extractor type admits logs, but the game passes
-empty default logs. See [legacy SR][legacy-sr].
+establishes this experiment. The [legacy SR definitions][legacy-sr], last present at
+`2f713ebb6d` and removed by #1409, had these gaps. The soundness declaration lacked a
+move-budget parameter and assumed a distribution of response functions; it did not itself
+certify the required independent random-function law. Its knowledge extractor type admitted
+logs, but the game passed empty default logs. On `main`, state restoration exists only in the
+interaction layer; the [state-restoration correspondence](interaction-state-restoration-correspondence.md)
+compares it with WARP.
 
 ### 7. The compiler needs causal extraction and actual promise transport
 
@@ -283,21 +314,25 @@ algorithms, oracle query counts and implementation running time must remain dist
 
 ## What to preserve from the old oracle-reduction layer
 
-| Component | Evidence in the legacy source | Disposition |
-|---|---|---|
-| Transcript trees, structure predicates and witness fibers | [Basic][legacy-trees]; split/glue and `TreeBased.append` in [Composition][legacy-tree-composition] | Preserve algebra and prove a native correspondence; current arity is indexed by round, not arbitrary dependent path |
-| Named coordinate/scalar extraction and backward composition | [Composition][legacy-cwss-composition], especially the right certificate establishing intermediate-language membership before the left runs | Reuse algorithms and proof structure; distinguish supplied-tree extraction from efficient tree finding |
-| Committed scalar extraction-or-collision | [CommittedScalar][legacy-committed-scalar] and the non-`Unit` [ring-switching Lift client][lift] | Strong concrete target for a small native bridge |
-| Guarded rejection and honest composition | [Guarded][legacy-guarded] and [GuardedCompleteness][legacy-guarded-complete] | Retain rejection and actual-state seam hypotheses, replace old operational interfaces selectively |
-| Fixed-prefix ordinary RBR append | [Append/RoundByRound][legacy-rbr-append], with pure first verifier | Useful proof skeleton; do not drop purity or inherit fresh-state terminal assumptions |
-| Salt construction and output-query simulation | [Salt][legacy-salt] | Keep concrete syntax/simulation lemmas; whole-execution and SR security transport remain obligations |
-| General knowledge composition and RBR implications | [Append/Security][legacy-security-append] and [Implications][legacy-implications] contain admissions | Desired conclusions to restate and prove, not established infrastructure |
-| Rewinding and SR operational interfaces | [Rewinding][legacy-rewinding] lacks an implemented runner; [SR][legacy-sr] discards actual logs in its knowledge game | Preserve intended capabilities in notes, replace deficient game contracts |
-| BCS, slow FS and sponge security | [BCS][legacy-bcs] has a message rename with larger transforms commented; [FS][legacy-fs] has admitted completeness and unfinished security | No proved shortcut to the book's compiler |
+The table describes the legacy layer at `ace55c3e29`, with links pinned there. The last column
+records what changed on `main`.
 
-The existing `RoundByRound` conversion using classical choice of an input witness makes no
-time claim. Likewise, functional commitment `extractability` currently ends in a `False`
-placeholder. Neither should be used to satisfy compiler knowledge obligations.
+| Component | Evidence in the legacy source | Disposition | Change on `main` |
+|---|---|---|---|
+| Transcript trees, structure predicates and witness fibers | [Basic][legacy-trees]; split/glue and `TreeBased.append` in [Composition][legacy-tree-composition] | Preserve algebra and prove a native correspondence; current arity is indexed by round, not arbitrary dependent path | No change to this assessment found |
+| Named coordinate/scalar extraction and backward composition | [Composition][legacy-cwss-composition], especially the right certificate establishing intermediate-language membership before the left runs | Reuse algorithms and proof structure; distinguish supplied-tree extraction from efficient tree finding | No change to this assessment found |
+| Committed scalar extraction-or-collision | [CommittedScalar][legacy-committed-scalar] and the non-`Unit` [ring-switching Lift client][lift] | Strong concrete target for a small native bridge | No change to this assessment found |
+| Guarded rejection and honest composition | [Guarded][legacy-guarded] and [GuardedCompleteness][legacy-guarded-complete] | Retain rejection and actual-state seam hypotheses, replace old operational interfaces selectively | Guarded round-by-round knowledge composition (#1295) and bridges from guarded round-by-round guarantees to ordinary soundness (#1349) are proved |
+| Fixed-prefix ordinary RBR append | [Append/RoundByRound][legacy-rbr-append], with pure first verifier | Useful proof skeleton; do not drop purity or inherit fresh-state terminal assumptions | No change to this assessment found |
+| Salt construction and output-query simulation | [Salt][legacy-salt] | Keep concrete syntax/simulation lemmas; whole-execution and SR security transport remain obligations | No change to this assessment found |
+| General knowledge composition and RBR implications | [Append/Security][legacy-security-append] and [Implications][legacy-implications] contain admissions | Desired conclusions to restate and prove, not established infrastructure | Neither file contains `sorry`. #1360 proved soundness and knowledge soundness of append; the state-restoration implications left with #1409 |
+| Rewinding and SR operational interfaces | [Rewinding][legacy-rewinding] lacks an implemented runner; [SR][legacy-sr] discards actual logs in its knowledge game | Preserve intended capabilities in notes, replace deficient game contracts | Rewinding still has no runner; its docstring says execution is not yet formalized. #1409 removed legacy SR |
+| BCS, slow FS and sponge security | [BCS][legacy-bcs] has a message rename with larger transforms commented; [FS][legacy-fs] has admitted completeness and unfinished security | No proved shortcut to the book's compiler | #1426 removed the commented BCS transforms; BCS keeps only the message rename. #1362 proved FS completeness; FS security is still not stated |
+
+On `main`, the `RoundByRound.ofRelation` extractor chooses an input witness by classical choice
+and makes no time claim. It should not be used to satisfy compiler knowledge obligations. At
+`ace55c3e29`, functional commitment `extractability` also ended in a `False` placeholder; #1422
+replaced it with a real experiment (`extractabilityExperiment`).
 
 A promising small reuse experiment is to encode a native committed-scalar fork bundle as a
 legacy extraction tree, read leaf witnesses from actual opening messages, define a direct
@@ -352,29 +387,33 @@ than the formal empty/prover/full-transcript clauses.
 [cy-bcs-knowledge]: https://github.com/hash-based-snargs-book/hash-based-snargs-book/blob/305fa3d9d19ee6dba135de64b3156d1760df8426/snargs-book.tex#L18533
 [cy-mixture]: https://github.com/hash-based-snargs-book/hash-based-snargs-book/blob/305fa3d9d19ee6dba135de64b3156d1760df8426/snargs-book.tex#L24122
 [cy-knowledge-sr]: https://github.com/hash-based-snargs-book/hash-based-snargs-book/blob/305fa3d9d19ee6dba135de64b3156d1760df8426/snargs-book.tex#L24162
-[type-tree]: ../../../ArkLib/Interaction/Oracle/TypeTree.lean
-[native-protocol]: ../../../ArkLib/Interaction/Oracle/Protocol.lean
-[runtime-soundness]: ../../../ArkLib/Interaction/Oracle/RuntimeSoundness.lean
-[sumcheck-protocol]: ../../../ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean
-[sumcheck-soundness]: ../../../ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean
-[sumcheck-computable]: ../../../ArkLib/ProofSystem/Sumcheck/Interaction/ComputableSoundness.lean
-[sumcheck-completeness]: ../../../ArkLib/ProofSystem/Sumcheck/Interaction/ComputableCompleteness.lean
-[legacy-rbr]: ../../../ArkLib/OracleReduction/Security/RoundByRound.lean
-[legacy-sr]: ../../../ArkLib/OracleReduction/Security/StateRestoration.lean
-[legacy-trees]: ../../../ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean
-[legacy-tree-composition]: ../../../ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean
-[legacy-cwss-composition]: ../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean
-[legacy-committed-scalar]: ../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean
-[lift]: ../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean
-[legacy-guarded]: ../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean
-[legacy-guarded-complete]: ../../../ArkLib/OracleReduction/Composition/Sequential/GuardedCompleteness.lean
-[legacy-rbr-append]: ../../../ArkLib/OracleReduction/Composition/Sequential/Append/RoundByRound.lean
-[legacy-salt]: ../../../ArkLib/OracleReduction/Salt.lean
-[legacy-security-append]: ../../../ArkLib/OracleReduction/Composition/Sequential/Append/Security.lean
-[legacy-implications]: ../../../ArkLib/OracleReduction/Security/Implications.lean
-[legacy-rewinding]: ../../../ArkLib/OracleReduction/Security/Rewinding.lean
-[legacy-bcs]: ../../../ArkLib/OracleReduction/BCS/Basic.lean
-[legacy-fs]: ../../../ArkLib/OracleReduction/FiatShamir/Basic.lean
+[type-tree]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/Interaction/Oracle/TypeTree.lean
+[native-protocol]: ../../../ArkLib/Interaction/Protocol.lean
+[native-rbr]: ../../../ArkLib/Interaction/Security/RoundByRound.lean
+[runtime-soundness]: ../../../ArkLib/Interaction/Security/CompositionSoundness.lean
+[sumcheck-protocol]: ../../../ArkLib/ProofSystem/Sumcheck/Protocol.lean
+[sumcheck-soundness]: ../../../ArkLib/ProofSystem/Sumcheck/Soundness.lean
+[sumcheck-indexed]: ../../../ArkLib/ProofSystem/Sumcheck/Indexed.lean
+[sumcheck-computable]: ../../../ArkLib/ProofSystem/Sumcheck/Computable.lean
+[sumcheck-completeness]: ../../../ArkLib/ProofSystem/Sumcheck/Completeness.lean
+[sumcheck-frozen-protocol]: https://github.com/Verified-zkEVM/ArkLib/blob/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/Protocol.lean
+[legacy-rbr]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/RoundByRound.lean
+[legacy-rbr-main]: ../../../ArkLib/OracleReduction/Security/RoundByRound.lean
+[legacy-sr]: https://github.com/Verified-zkEVM/ArkLib/blob/2f713ebb6d8ba14c6395def8b959a04b46e2c3a5/ArkLib/OracleReduction/Security/StateRestoration.lean
+[legacy-trees]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean
+[legacy-tree-composition]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean
+[legacy-cwss-composition]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean
+[legacy-committed-scalar]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean
+[lift]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean
+[legacy-guarded]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean
+[legacy-guarded-complete]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Composition/Sequential/GuardedCompleteness.lean
+[legacy-rbr-append]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Composition/Sequential/Append/RoundByRound.lean
+[legacy-salt]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Salt.lean
+[legacy-security-append]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Composition/Sequential/Append/Security.lean
+[legacy-implications]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/Implications.lean
+[legacy-rewinding]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/Rewinding.lean
+[legacy-bcs]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/BCS/Basic.lean
+[legacy-fs]: https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/FiatShamir/Basic.lean
 [vc-hashing]: https://github.com/Verified-zkEVM/VCVio/blob/f5119c64ebb055d69c143704e12eba6df7dc386c/VCVio/CryptoFoundations/MerkleTree/Hashing/Defs.lean
 [vc-binding]: https://github.com/Verified-zkEVM/VCVio/blob/f5119c64ebb055d69c143704e12eba6df7dc386c/VCVio/CryptoFoundations/MerkleTree/Hashing/Binding.lean
 [vc-stateful]: https://github.com/Verified-zkEVM/VCVio/blob/f5119c64ebb055d69c143704e12eba6df7dc386c/VCVio/CryptoFoundations/MerkleTree/MultiExtractability/Stateful.lean

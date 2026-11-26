@@ -10,9 +10,10 @@ canonical_url: https://snargsbook.org/
 related_concepts:
   - interactive-oracle-proofs
 related_modules:
-  - ArkLib/Interaction/Oracle/Protocol.lean
+  - ArkLib/Interaction/Protocol.lean
+  - ArkLib/Interaction/Security/CompositionSoundness.lean
   - ArkLib/OracleReduction/Security/RoundByRound.lean
-  - ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean
+  - ArkLib/ProofSystem/Sumcheck/Soundness.lean
 ---
 
 # ChiesaYogev2024
@@ -40,19 +41,21 @@ source definitions, implemented results, proposed bridges and unanswered design 
 
 ## Main ArkLib Touchpoints
 
-- [Native interaction protocols](../../../ArkLib/Interaction/Oracle/Protocol.lean) and
-  [runtime soundness](../../../ArkLib/Interaction/Oracle/RuntimeSoundness.lean) supply execution
-  and reduction semantics, including persistent oracle state.
-- [Native Sumcheck soundness](../../../ArkLib/ProofSystem/Sumcheck/Interaction/ProtocolSoundness.lean)
-  is an ordinary-security client, not yet a formalization of the book's whole security pipeline.
+- [Native interaction protocols](../../../ArkLib/Interaction/Protocol.lean) and the runtime
+  results of [composition soundness](../../../ArkLib/Interaction/Security/CompositionSoundness.lean)
+  supply execution and reduction semantics, including persistent oracle state.
+- [Sumcheck soundness](../../../ArkLib/ProofSystem/Sumcheck/Soundness.lean) is an
+  ordinary-security client, not yet a formalization of the book's whole security pipeline.
 - [Legacy round-by-round security](../../../ArkLib/OracleReduction/Security/RoundByRound.lean)
-  contains both execution-averaged and fixed-prefix notions; their knowledge variants need
-  separate access and timing comparisons.
+  has one fixed-prefix notion; #1413 and #1421 removed the execution-averaged and one-shot
+  variants. Its knowledge variant needs separate access and timing comparisons.
 - [Legacy transcript-tree extraction](../../../ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean)
   contains reusable mathematical composition results, distinct from an efficient tree-finding
   algorithm with black-box prover access.
-- The [roadmap](../../design/05-roadmap.md#bounded-interaction-theory-investigation)
-  records the proposed first bounded investigation.
+- The [state-restoration module](../../../ArkLib/Interaction/Security/StateRestoration.lean)
+  cites Definitions 23.2.1 and 23.2.3 and Theorem 31.3.1 for fixed-round protocols; see the
+  [correspondence note](../audits/interaction-state-restoration-correspondence.md).
+- The [design roadmap](../../design/05-roadmap.md) lists the remaining interaction-layer work.
 
 ## Known Divergences From ArkLib
 

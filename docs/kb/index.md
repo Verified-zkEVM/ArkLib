@@ -131,6 +131,9 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
   knowledge lineage, FIOPs and Funky, duplex-sponge FS, and later IOR compiler/privacy targets.
 - [`audits/chiesa-yogev-interaction.md`](audits/chiesa-yogev-interaction.md) - textbook pipeline,
   native and legacy security differences, reusable extraction theory, and open research questions.
+- [`audits/interaction-state-restoration-correspondence.md`](audits/interaction-state-restoration-correspondence.md) -
+  state-restoration knowledge soundness against WARP and the legacy layer, and its open runtime
+  and cost questions.
 - [`audits/fri-soundness.md`](audits/fri-soundness.md) - revised FRI analysis, algebraic
   binding and proximity consequences, and the executable-protocol soundness correspondence.
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code

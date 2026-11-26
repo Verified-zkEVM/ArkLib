@@ -12,7 +12,7 @@ related_concepts:
 related_modules:
   - ArkLib/Data/CodingTheory/ExtensionCodes.lean
   - ArkLib/OracleReduction/Security/RoundByRound.lean
-  - ArkLib/Interaction/Oracle/Claim.lean
+  - ArkLib/Interaction/Security/RoundByRound.lean
 ---
 
 # BCFW25
@@ -30,12 +30,13 @@ scheme or its compiler theorem has been formalized.
 
 ## What ArkLib Uses From This Paper
 
-- **Definitions 4.1-4.2 and Appendix B.** These guide the proposed native relational RBR
-  package. The [source crosswalk](../audits/interaction-literature-map.md#arc-warp-and-the-librarys-actual-knowledge-notion)
+- **Definitions 4.1-4.2 and Appendix B.** The interaction layer's `KnowledgeStateFunction` and
+  `rbrKnowledgeSoundness` generalize Definitions 4.1–4.2 and cite them. The
+  [source crosswalk](../audits/interaction-literature-map.md#arc-warp-and-the-librarys-actual-knowledge-notion)
   records the fixed-prefix bad event, endpoint laws, extractor observations and computational
-  requirements. The code explicitly cites ABF26 A.5; a structural match to WARP does not by
-  itself establish historical authorship of a code change. Appendix C's comparison carries
-  an extractor-consistency premise and is not an unconditional equivalence.
+  requirements. At `ace55c3e29`, the legacy code cited ABF26 A.5 instead; a structural match to
+  WARP does not by itself establish historical authorship of a code change. Appendix C's
+  comparison carries an extractor-consistency premise and is not an unconditional equivalence.
 - **Lemma D.3 (extension-code list size).** Formalized as
   `CodingTheory.lambda_extensionCode_eq_lambda_interleaved`:
   `Λ(C_F, δ) = Λ(C_B^{⋈e}, δ)`, both sides being `ListDecodability.Lambda` (the sup over centers),
@@ -49,10 +50,13 @@ scheme or its compiler theorem has been formalized.
 ## Main ArkLib Touchpoints
 
 - [Legacy security](../../../ArkLib/OracleReduction/Security/RoundByRound.lean): `WitMid`,
-  `extractMid`, `KnowledgeStateFunction`, and fixed-prefix versus averaged games.
-- [Native claims](../../../ArkLib/Interaction/Oracle/Claim.lean) and
-  [prefixes](../../../ArkLib/Interaction/Oracle/Prefix.lean): target carriers for the
-  [proposed backward-extraction experiment](../../design/05-roadmap.md#bounded-interaction-theory-investigation).
+  `extractMid`, `KnowledgeStateFunction`, and the fixed-prefix `rbrKnowledgeSoundness`.
+  #1421 deleted the averaged variant.
+- [Interaction-layer round-by-round security](../../../ArkLib/Interaction/Security/RoundByRound.lean):
+  `KnowledgeStateFunction` and `rbrKnowledgeSoundness`, with witness carriers that read the whole
+  prefix. The [state-restoration module](../../../ArkLib/Interaction/Security/StateRestoration.lean)
+  cites Theorem B.4 and Construction B.5; see the
+  [correspondence note](../audits/interaction-state-restoration-correspondence.md).
 - [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
   — `ExtensionFieldPresentation`, `IsSystematic`, `extensionEncode`, its `F`-linear-map packaging,
   systematic identity and range bridge, `extensionCode` / `extensionCodeSubmodule`, presentation
@@ -113,9 +117,11 @@ scheme or its compiler theorem has been formalized.
   prover and its security have no completed ArkLib counterpart. The Appendix D coding result
   and the structural knowledge-state precedent should be distinguished from such a theorem.
   Accumulation would require development at the `ProofSystem`/`Commitments` layer.
-- **A native WARP specialization remains proposed.** ArkLib permits witness transformations
-  and has a weaker one-way terminal clause; its legacy API also omits the source's extraction
-  time accounting. These differences require explicit bridge theorems.
+- **An exact WARP specialization remains open.** The interaction layer's
+  `KnowledgeStateFunction` permits witness transformations across prover moves and has one-way
+  root and leaf laws. Its backward maps carry no time bound; measured extraction counts declared
+  instructions only. Recovering Definitions 4.1–4.2 and the source's extraction-time accounting
+  requires explicit bridge theorems.
 
 ## Source Access
 

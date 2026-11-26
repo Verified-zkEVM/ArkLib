@@ -7,15 +7,17 @@ the native framework before its knowledge and compiler interfaces are fixed.
 
 This page supplements the [textbook comparison](chiesa-yogev-interaction.md). It corrects the
 impression that every difference from the book is an unsupported generalization. In particular,
-ArkLib's witness-indexed round-by-round state has a close literature antecedent in WARP, and
-the source explicitly compares its definition with ABF26 Appendix A.5. Conversely, an inherited
-paper idea is not evidence that the implemented game or theorem is equivalent to that paper.
+ArkLib's witness-indexed round-by-round state has a close literature antecedent in WARP. The
+interaction layer's `KnowledgeStateFunction` cites WARP (BCFW25) Definitions 4.1–4.2 and ABF26
+Appendix A.1 as the notions it generalizes. Conversely, an inherited paper idea is not evidence
+that the implemented game or theorem is equivalent to that paper.
 
-Checked on October 3, 2026 UTC, against ArkLib's code at
+The literature was checked on October 3, 2026 UTC, against ArkLib's code at
 `ace55c3e29da1fc55a321378ada55ea4f7ed8790`, the research notes at `9afef7477`, and the
-VCVio revisions recorded in the textbook comparison. This is source research, not a new proof
-or transitive axiom audit. The [roadmap](../../design/05-roadmap.md#bounded-interaction-theory-investigation)
-owns implementation sequencing.
+VCVio revisions recorded in the textbook comparison. The statements about ArkLib code were
+rechecked against `main` on November 25, 2026; a statement that holds only at an earlier commit
+names that commit. This is source research, not a new proof or transitive axiom audit. The
+[design roadmap](../../design/05-roadmap.md) owns implementation sequencing.
 
 ## Source map and chronology
 
@@ -66,25 +68,36 @@ for every later witness, including one selected after the remainder of the proto
 the precise reason offline backward composition can work. An online middle-witness supplier
 is not a universal prerequisite.
 
-The closest explicit code citation is **ABF26 A.5**, in
-[`KnowledgeStateFunction`](../../../ArkLib/OracleReduction/Security/RoundByRound.lean).
-The fixed-prefix API was added in commit `5cfd3e8a4` as the ABF26 split. The earlier generalized
-extractor structure appears in `06a6e4d70`. The structural match to WARP is verified; these
-facts alone do not prove which paper historically motivated that earlier commit.
+At `ace55c3e29`, the closest explicit code citation was **ABF26 A.5**, in the legacy
+[`KnowledgeStateFunction`](https://github.com/Verified-zkEVM/ArkLib/blob/ace55c3e29da1fc55a321378ada55ea4f7ed8790/ArkLib/OracleReduction/Security/RoundByRound.lean#L159-L163).
+Its docstring named two deliberate departures from A.5. The legacy docstring on `main` no longer
+names A.5. The fixed-prefix API was added in commit `5cfd3e8a4` as the ABF26 split. The earlier
+generalized extractor structure appears in `06a6e4d70`. The structural match to WARP is verified;
+these facts alone do not prove which paper historically motivated that earlier commit. On `main`,
+the interaction layer's
+[`KnowledgeStateFunction`](../../../ArkLib/Interaction/Security/RoundByRound.lean) cites BCFW25
+Definitions 4.1–4.2 and ABF26 Appendix A.1 instead.
 
-| Clause | Literature-shaped contract | Current ArkLib difference or match |
-|---|---|---|
-| Initial state | Witness membership in the input relation, possibly relaxed | `toFun_empty` has this relation-based shape, unlike CY's scalar all-input zero law |
-| Prover move | Preserve falsity for the same witness | ArkLib permits `extractMid` to change the witness even across a prover move |
-| Witness carrier | Witness-bearing state with source-specific typing | ArkLib explicitly exposes a round-indexed `WitMid` and a final `extractOut` |
-| Terminal state | Iff membership in the output relation | ArkLib requires only positive-probability related verifier output to imply final knowledge state |
-| Local challenge | Every fixed prefix; existential later witness inside the sampled event | `rbrKnowledgeSoundnessWorstCase` has this quantifier shape |
-| Execution average | Not a replacement for the local premise of the SR proof | Default `rbrKnowledgeSoundness` samples earlier prefixes; it is a separate consequence |
-| Algorithm and resources | Deterministic extraction with explicit time bounds | The legacy API permits noncomputable functions and carries no such complexity proof |
-| Effects | The inspected paper clauses have a definite terminal verifier interpretation | The legacy clause runs from fresh `init`; a persistent-world specialization needs additional evidence |
+The table compares the literature contract with the legacy definitions in
+[`OracleReduction/Security/RoundByRound`](../../../ArkLib/OracleReduction/Security/RoundByRound.lean)
+and the interaction-layer definitions in
+[`Interaction/Security/RoundByRound`](../../../ArkLib/Interaction/Security/RoundByRound.lean),
+both on `main`.
+
+| Clause | Literature-shaped contract | Legacy layer | Interaction layer |
+|---|---|---|---|
+| Initial state | Witness membership in the input relation, possibly relaxed | `toFun_empty`: a true initial state yields a related witness through `extractIn`. This is relation-based, unlike CY's scalar all-input zero law. At `ace55c3e29` it was an iff | `root`: at an admissible statement, a true root state yields a witness in `relIn` through `extractRoot` |
+| Prover move | Preserve falsity for the same witness | `extractMid` may change the witness even across a prover move | `extractStep` may change the witness across any move; `send` is the prover-move law |
+| Witness carrier | Witness-bearing state with source-specific typing | A round-indexed `WitMid` and a final `extractOut` | `Witness` depends on the statement, the cursor and the full prefix, oracle messages included; `extractLeaf` starts from the output witness |
+| Terminal state | Iff membership in the output relation | `toFun_full`: positive-probability related verifier output implies the final knowledge state | `leaf`: a valid output implies the leaf state; one direction only |
+| Local challenge | Every fixed prefix; existential later witness inside the sampled event | `rbrKnowledgeSoundness` has this quantifier shape. At `ace55c3e29` this was `rbrKnowledgeSoundnessWorstCase`; #1413 gave it the default name | `rbrKnowledgeSoundness` has this shape; the draw and the error may depend on the whole earlier history |
+| Execution average | Not a replacement for the local premise of the SR proof | At `ace55c3e29`, the default `rbrKnowledgeSoundness` sampled earlier prefixes. #1421 deleted that variant | No averaged variant |
+| Algorithm and resources | Deterministic extraction with explicit time bounds | Noncomputable functions are allowed, with no complexity proof | Backward maps are total functions with no computational restriction. `MeasuredExtraction` attaches declared instruction budgets, not time bounds |
+| Effects | The inspected paper clauses have a definite terminal verifier interpretation | The terminal clause runs the verifier from fresh `init`; a persistent-world specialization needs additional evidence | The verifier forms read the leaf through `validAcceptance`: positive acceptance from some ambient state |
 
 The right native target is therefore a **WARP/ABF-compatible witness-transport specialization**,
-alongside CY-compatible scalar/whole-message notions. It is inaccurate to call ArkLib's notion
+alongside CY-compatible scalar/whole-message notions. The interaction layer's
+`KnowledgeStateFunction` takes this route. It is inaccurate to call ArkLib's notion
 simply "stronger than CY": the allowed information, witness typing, terminal laws and efficiency
 requirements differ. A generalization may weaken some assumptions while strengthening an event.
 
@@ -132,7 +145,7 @@ and the commitment definitions in [CGKY25][funky25].
 Consequences for ArkLib:
 
 - The [functional commitment interface](../../../ArkLib/Commitments/Functional/Basic.lean)
-  already cites CGKY25, and the [KZG reduction](../../../ArkLib/Commitments/Functional/KZG/FunctionBinding/Basic.lean)
+  already cites CGKY25, and the [KZG reduction](../../../ArkLib/Commitments/Functional/KZG/FunctionBinding/Reduction.lean)
   is a substantive client. These do not establish the whole Funky compiler theorem.
 - Backend capabilities must be selected by the compiler proof. Merkle multi-extraction and
   functional-binding/solver arguments are different sufficient mechanisms; requiring the same
@@ -142,11 +155,16 @@ Consequences for ArkLib:
   not a free substitution in the published result.
 - Keep ideal message guarantees distinct from allowed queries. A general query interface does
   not itself enforce a degree bound or prove a decoding promise.
-- Native `Behavior` can be an answer function not represented by any single message. A
-  FIOP/commitment bridge must identify realized behaviors and enforce joint consistency;
-  it cannot treat every handler as a concrete committed string. See
-  [Virtual](../../../ArkLib/Interaction/Oracle/Virtual.lean) and
-  [Claim](../../../ArkLib/Interaction/Oracle/Claim.lean).
+- At `5baa170967`, before #1573 deleted it, the old interaction layer's closed claims carried
+  an arbitrary `Behavior`: an answer function not necessarily represented by any single message.
+  See [Virtual](https://github.com/Verified-zkEVM/ArkLib/blob/5baa1709670941c73817202fabf8b012fe433ad4/ArkLib/Interaction/Oracle/Virtual.lean)
+  and [Claim](https://github.com/Verified-zkEVM/ArkLib/blob/5baa1709670941c73817202fabf8b012fe433ad4/ArkLib/Interaction/Oracle/Claim.lean).
+  A FIOP/commitment bridge over such claims must identify realized behaviors and enforce joint
+  consistency; it cannot treat every handler as a concrete committed string. On `main`, a
+  verifier's `outputMap` is an `OracleMap` in
+  [`OracleVerifier`](../../../ArkLib/Interaction/OracleVerifier.lean), which carries concrete
+  output data and a law that query simulation agrees with that data. Verifier outputs are therefore
+  realized by data, and the bridge obligation moves to that data's encoding and commitment.
 
 BCG2020 additionally permits queries jointly inspecting the instance and several messages;
 query-dependent challenges and public-coin restrictions are separate choices. Funky's theorem
@@ -214,21 +232,23 @@ reductions of knowledge, and protocol-specific WHIR/STIR/FRI and code-switching 
 Those are retained targets, not audited equivalences. The current pass is broad enough to
 change the architecture questions, not to close the literature search.
 
-## What this changes in the proposed overnight work
+## What this changes in the proposed work
 
 1. Preserve the ordinary arbitrary-prefix/Sumcheck work. It remains a useful execution test,
    but no longer serves as the only conceptual anchor for the next security layer.
 2. Make a WARP/ABF-shaped relational RBR certificate and one backward-composition theorem the
    primary knowledge experiment. Require explicit source specialization and a non-`Unit`
    witness. Retain the same-prefix/existential-witness event and account for the paper's time
-   claim separately.
+   claim separately. On `main`, `KnowledgeStateFunction` and `KnowledgeComposition` supply the
+   certificate and the composition theorem; no protocol under `ArkLib/ProofSystem/` instantiates
+   them yet, and the Sumcheck witness is still `Unit`.
 3. Keep CY whole-message extraction, BGTZ escape-trigger extraction, and FICS/FACS tree
    extraction as named comparison targets. No universal implication diagram is adopted yet.
 4. Keep the Funky and duplex paths in the compiler scope. A duplex-sponge implementation is a
    distinct package that starts from fresh statements, not from the retired skeleton.
 5. Before accepting an interface, test whether it can express the CFW output-observing privacy
-   experiment and the CDHZ reduction endpoint. This is a design test, not an overnight demand
-   to formalize zero knowledge or quantum cryptography.
+   experiment and the CDHZ reduction endpoint. This is a design test, not a demand to formalize
+   zero knowledge or quantum cryptography.
 
 Open questions now have better evidence: how to generalize WARP's same-witness laws to native
 dependent witness fibers; how to relate the distinct extraction capabilities; how to combine

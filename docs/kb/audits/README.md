@@ -21,6 +21,9 @@ Current audit pages:
 - [`chiesa-yogev-interaction.md`](chiesa-yogev-interaction.md) - the
   [`ChiesaYogev2024`](../papers/ChiesaYogev2024.md) pipeline against native interactions and
   legacy oracle reductions, including source-faithful security and extraction obligations.
+- [`interaction-state-restoration-correspondence.md`](interaction-state-restoration-correspondence.md) -
+  the interaction layer's state-restoration theorems against WARP and the legacy layer, with the
+  pull requests that produced them and the obligations that remain open.
 - [`fri-soundness.md`](fri-soundness.md) - the revised FRI analysis, executable specification
   review, and end-to-end ordinary and round-by-round protocol soundness.
 

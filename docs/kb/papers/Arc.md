@@ -10,6 +10,7 @@ status: investigated
 related_modules:
   - ArkLib/OracleReduction/Basic.lean
   - ArkLib/OracleReduction/Security/RoundByRound.lean
+  - ArkLib/Interaction/Security/RoundByRound.lean
 ---
 
 # Arc
@@ -30,9 +31,12 @@ equivalence theorem or a claim that ARC originated every earlier use of IORs.
 ## Main ArkLib Touchpoints
 
 - [Oracle reductions](../../../ArkLib/OracleReduction/Basic.lean): input/output claims and oracle interfaces.
-- [Round-by-round security](../../../ArkLib/OracleReduction/Security/RoundByRound.lean): several
-  extractor and state variants that must be compared separately.
-- [Native claims](../../../ArkLib/Interaction/Oracle/Claim.lean): dependent target relations.
+- [Legacy round-by-round security](../../../ArkLib/OracleReduction/Security/RoundByRound.lean):
+  state functions, knowledge state functions and their extractors, which must be compared
+  separately.
+- [Interaction-layer round-by-round security](../../../ArkLib/Interaction/Security/RoundByRound.lean):
+  `KnowledgeStateFunction`, whose input and output relations may depend on the statement and the
+  completed transcript.
 
 ## Version Notes
 
