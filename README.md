@@ -99,7 +99,6 @@ Around the core:
 - [`ArkLib/Commitments/`](ArkLib/Commitments/) holds commitment schemes and opening arguments.
 - [`ArkLib/Data/`](ArkLib/Data/) holds supporting mathematics: coding theory, proximity gaps,
   polynomials and probability.
-- [`ArkLib/AGM/`](ArkLib/AGM/) holds algebraic group model representations.
 - [`ArkLib/ToCompPoly/`](ArkLib/ToCompPoly/) and [`ArkLib/ToMathlib/`](ArkLib/ToMathlib/) hold
   local bridges to, and extensions of, ArkLib's dependencies.
 - [`ArkLibTest/`](ArkLibTest/) holds compile-time acceptance tests.
@@ -162,12 +161,9 @@ Contributions are welcome. Start with [CONTRIBUTING.md](CONTRIBUTING.md) for the
 style and naming, and [AGENTS.md](AGENTS.md) for the one-screen guide to the repository. Open
 tasks are in the [issue tracker](https://github.com/Verified-zkEVM/ArkLib/issues).
 
-No admitted proof may merge into `main`. The only admitted statements in the library are
-*solicited proofs*: true, faithfully stated external results whose research-sized proofs are open
-for contributors. They are listed in
-[`scripts/axiom_baseline.json`](scripts/axiom_baseline.json) and tracked in
-[issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352); no other declaration may
-depend on them.
+No admitted proof may merge into `main`: every declaration in the library depends only on
+`propext`, `Classical.choice` and `Quot.sound`. A result whose proof is still open is tracked as
+an issue until it is proved.
 
 To discuss larger contributions, open an issue or contact
 [the maintainers](mailto:qvd@andrew.cmu.edu).

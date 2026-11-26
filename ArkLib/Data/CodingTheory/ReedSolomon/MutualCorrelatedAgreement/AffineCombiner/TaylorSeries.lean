@@ -204,7 +204,6 @@ theorem coeff_C_add_eq_chartCoefficient (R : MvPolynomial AffineVar K) (t₀ α 
       chartCoefficient t₀ affineFamily R (Sum.elim (fun _ ↦ z) ![α, β]) j := by
   set F := PowerSeries.C z + E
   set Q := specializedFamilyEquation affineFamily R ![α, β]
-  have hF : (affineSeriesEquation t₀ α β R).eval F = 0 := hE
   have hF0 : PowerSeries.coeff 0 F = z := by
     simp [F, hE0]
   have hSQ : aeval (fun _ : Fin 1 ↦ z) (initialJetSeparant t₀ Q) ≠ 0 := by
@@ -234,7 +233,7 @@ theorem coeff_C_add_eq_chartCoefficient (R : MvPolynomial AffineVar K) (t₀ α 
   rw [hprefix] at hres
   rw [hres, ← Polynomial.coeff_coe, Nat.sub_zero]
   rw [coe_taylor_multiplierEval_affineMultiplier, hTP, ← eval_affineSeriesEquation]
-  exact PowerSeries.coeff_eval_trunc_eq_zero hF (Nat.lt_succ_self l)
+  exact PowerSeries.coeff_eval_trunc_eq_zero hE (Nat.lt_succ_self l)
 
 /-- Positive-order coefficients are quotients of chart numerators by separant powers.
 

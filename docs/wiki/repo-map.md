@@ -13,7 +13,6 @@ ArkLib/
   Relation/           claims, witness relations, oracle interfaces and oracle data families
   OracleReduction/    core IOR abstractions and security theory
   Commitments/        commitments and opening arguments
-  AGM/                algebraic group model representations
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
   ToCompPoly/         local additions not upstreamed to CompPoly
@@ -226,19 +225,21 @@ home_page/            site assets and assembled website root
     itself). These have their own, unrelated definition in
     `ArkLib/Commitments/Functional/Basic.lean` (`Commitment.Scheme`, plus correctness and the
     experiments `Commitment.bindingExperiment`, `Commitment.functionBindingExperiment`,
-    `Commitment.extractabilityExperiment` and `Commitment.extractability`). KZG and Hachi are the
-    concrete functional schemes.
-- KZG commitment-scheme modules live under `ArkLib/Commitments/Functional/KZG/`: `Basic` for the
-  construction and scheme instance, `Algebra` for the powers-of-τ SRS and prime-order group
-  lemmas, `Sampling` for setup sampling helpers, `HardnessAssumptions` for t-SDH and ARSDH games
-  over explicit adversary classes, `Correctness` for correctness proofs, `Binding` for evaluation
-  binding, and `FunctionBinding/` for function binding. Binding is stated as reductions:
-  `KZG.CommitmentScheme.binding_reduces_to_tSdh` bounds an adversary's binding advantage by the
-  t-SDH success of its reduction, and `KZG.CommitmentScheme.function_binding_reduces_to_arsdh`
-  does the same for function binding and ARSDH. Shared CPolynomial/Polynomial division bridge
-  lemmas live under `ArkLib/ToCompPoly/`.
-- `ArkLib/AGM/Basic.lean` defines algebraic group representations (`GroupRepresentation`): the
-  scalars an algebraic adversary reports for each group element it outputs.
+    `Commitment.extractabilityExperiment` and `Commitment.extractability`). Hachi is a
+    `Commitment.Scheme` instance. KZG is a functional scheme with its own binding games and no
+    `Commitment.Scheme` instance.
+- KZG commitment-scheme modules live under `ArkLib/Commitments/Functional/KZG/`. The scheme uses
+  VCVio's additive conventions: a field `F`, `F`-modules `G₁`, `G₂`, `Gₜ` and a bilinear pairing.
+  `Basic` holds the keys, `keygen`, the computable commitment, opening and verification, and the
+  opening equation `KZG.verifyOpening_eq`. `Correctness` proves honest openings are accepted.
+  `EvaluationBinding` reduces evaluation binding to VCVio's `TSDH.experiment`.
+  `FunctionBinding/Reduction` defines the efficient reduction from function binding to
+  `ARSDH.experiment`, and `FunctionBinding/Wins` proves its answer wins pointwise in the
+  trapdoor. `Security` defines the two binding games and their reduction adversaries and proves
+  the game-level bounds `KZG.evalBinding_le_tsdh` and `KZG.functionBinding_le_arsdh`, with
+  corollaries over an explicit adversary class. The
+  partial-fraction identity for Lagrange interpolants lives in
+  `ArkLib/ToMathlib/LinearAlgebra/LagrangePartialFraction.lean`.
 - `ArkLib/Commitments/Functional/BitZ/` holds the supporting algebra and probability bounds of
   BitZ: `ExponentLift` for the bit inner product in an exponent, `CrtVariant` for its relaxation
   by a second grand product modulo `ℓ₁`, `Round1` for the honest first message, its bounds and the
@@ -680,7 +681,7 @@ home_page/            site assets and assembled website root
   (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
   a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
   hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
-  it. (`Commitments/Functional/KZG/Correctness.lean` applies the VCVio lemma directly.)
+  it.
   The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
   message-round case: there the run-support half is a closed-form computation of `Prover.run`
   (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.
@@ -742,6 +743,11 @@ home_page/            site assets and assembled website root
   events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
+  `Security/CoordinateWiseSpecialSoundness/Layout.lean` defines the blocks and layouts of one vector
+  challenge (a star per block, a nested tree across blocks). `BlockStructure.lean` defines
+  `BlockCWSSStructure`, a layout per round, and maps `CWSSStructure` into it with the same tree
+  shape. `LayoutVecTree.lean` is the only file of this folder that imports the VCVio rewinding
+  finder: it reads a tree of a layout as a structured `Rewinding.VecTree`.
 - `Security/UnboundedExtraction.lean` records what `Verifier.knowledgeSoundness` means without
   an extractor cost bound: the classical selector `Extractor.Straightline.choose` makes it
   equivalent to `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`).
@@ -885,19 +891,17 @@ home_page/            site assets and assembled website root
   [consumer guide](ring-switching-consumers.md).
 
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
-  domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
-  interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
-  reference points, and `Codegen.lean` enforces compiler-IR availability. The simplified IOR
+  domain-generic protocol and extraction theorems. `Impl/IRS.lean` supplies the computable
+  interleaved Reed--Solomon extractor, and `Impl/FRS.lean` contains neutral KoalaBear folded-RS
+  reference points. `Codegen.lean` enforces compiler-IR availability. The simplified IOR
   (`SimplifiedIOR`) is an `OracleReduction` with a query-by-query virtual output oracle and
   exact named interleaved-RS straightline and RBR extractors. The compiled small-parameter
-  checks run with
-  `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
-  radius, and the repetition count, so they apply at production sizes without evaluation. Turning
-  such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
-  `Data/CodingTheory/ProximityGap/CapacityBounds`, all proven except ABF26 Theorem 4.16 (a
-  solicited proof, [#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)),
-  deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
-  any production shape.
+  checks run with `lake exe toyproblem-runtime`. The security theorems themselves are parametric
+  in the code, the radius, and the repetition count, so they apply at production sizes without
+  evaluation. Turning
+  such a theorem into a *numeric* error value also needs the MCA/CA capacity bounds in
+  `Data/CodingTheory/ProximityGap/CapacityBounds`. Those are all proven and deliberately outside
+  the toy-problem import cone. No numeric error value is proven in-tree at any production shape.
 - Batched FRI takes a proximity generator `G : S → Fin (m + 1) → F`. Its single
   uniformly sampled seed selects the coefficients of the virtual output word. Compose
   `BatchingRound.batchOracleReduction s d m G` directly with `Fri.Spec.reduction`, as

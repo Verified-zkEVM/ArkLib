@@ -6,39 +6,11 @@ Authors: Thomas Coratger
 
 import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
-import Mathlib.Algebra.Field.ZMod
 
 /-! # Acceptance cases for the equal-degree combiner -/
 
 open ReedSolomon
 open scoped Finset
-
-private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
-
-/-- The whole field `F₅` as the evaluation domain. -/
-private def fullDomain : ZMod 5 ↪ ZMod 5 := Function.Embedding.refl _
-
-/-- At `d = 1`, `A = 4` on `F₅`, the Johnson quotient is `5 / 2`.
-Its floor gives an additive error term of `2 / 5`. -/
-example :
-    equalDegreeMcaError fullDomain 1 4 1 ≤ affineMcaError fullDomain 1 4 1 + 2 / 5 := by
-  have h := equalDegreeMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
-    (by simp [ZMod.card])
-  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
-  exact h
-
-open scoped ProbabilityTheory
-
--- The bound controls native probabilities for independently uniform triples.
-example (f g : ZMod 5 → ZMod 5) :
-    Pr{let c ← $ᵗ (ZMod 5 × ZMod 5 × ZMod 5)}[∃ P,
-      IsEqualDegreeExceptional fullDomain f g 1 4 1 c.1 c.2.1 c.2.2 P] ≤
-        affineMcaError fullDomain 1 4 1 + 2 / 5 := by
-  refine (prob_isEqualDegreeExceptional_le fullDomain f g 1 4 1).trans ?_
-  have h := equalDegreeMcaError_le_affineMcaError_add fullDomain (d := 1) (A := 4)
-    (by simp [ZMod.card])
-  norm_num [ZMod.card, ENNReal.ofReal_div_of_pos] at h
-  exact h
 
 -- The agreement lemma accepts the caller's decidable equality instance.
 example {F ι : Type*} [Field F] [DecidableEq F] [Fintype ι] [DecidableEq ι] (domain : ι ↪ F)
@@ -55,10 +27,10 @@ example : 2 ≤ ⌊(5 : ℝ) * ((3 : ℝ) - 1) / ((3 : ℝ) ^ 2 - 5 * 1)⌋₊ :
   exact_mod_cast le_floor_johnson_of_mul_le (k := 2) (n := 5) (d := 1) (L := 3)
     (by norm_num) (by norm_num)
 
-/-- info: 'ReedSolomon.equalDegreeMcaError_le_affineMcaError_add' depends on axioms:
+/-- info: 'ReedSolomon.card_badEqualDegreeChallenges_add_card_mul_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.equalDegreeMcaError_le_affineMcaError_add
+#print axioms ReedSolomon.card_badEqualDegreeChallenges_add_card_mul_le
 
 /-- info: 'ReedSolomon.card_badEqualDegreeChallenges_mul_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
@@ -70,4 +42,7 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.IsEqualDegreeExceptional.isAffineExceptional_or_exists_degree_eq
 
+/-- info: 'ReedSolomon.equalDegreeMcaError_eq_iSup_prob' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.equalDegreeMcaError_eq_iSup_prob
