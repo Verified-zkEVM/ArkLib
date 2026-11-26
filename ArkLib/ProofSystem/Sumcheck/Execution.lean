@@ -386,8 +386,7 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
 
 section On
 
-variable (M : Type) (eval : M → R → R) {I : Type} {A : I → Type}
-  (inputs : OracleFamily.{0, 0, 0} I A)
+variable (M : Type) (eval : M → R → R) (inputs : OracleBundle)
 
 /-- The Sumcheck oracle verifier over the message carrier `M` and the input family `inputs`: the
 legacy decision fold on the view's challenges, with every message query routed to its oracle
@@ -419,7 +418,7 @@ omit [SampleableType R] in
 theorem verifier_outputMap (stmt : Spec.StatementRound R n 0) (p : Path (protocol R deg n))
     (v : View (protocol R deg n) p) :
     (verifier R deg n D ambient).outputMap stmt p v =
-      OracleMap.fst (OracleBundle.ofFamily (Spec.polynomialFamily R n deg))
+      OracleMap.fst (Spec.polynomialFamily R n deg)
         (oracleMessageBundle (protocol R deg n) p) :=
   rfl
 
@@ -452,7 +451,7 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
     (data : ∀ i, Spec.OracleStatement R n deg i)
     (pl : (oracleMessageBundle (protocol R deg n) p).Data) {α : Type}
     (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
-    simulateQ (QueryImpl.addLift amb ((Spec.polynomialFamily R n deg).behaviorOfRealizations data +
+    simulateQ (QueryImpl.addLift amb ((Spec.polynomialFamily R n deg).answer data +
         (oracleMessageBundle (protocol R deg n) p).answer pl))
       (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((oracleMessageBundle (protocol R deg n) p).answer pl) oa) :
@@ -464,7 +463,7 @@ omit [SampleableType R] in
 theorem simulateQ_decide {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (stmt : Spec.StatementRound R n 0)
     (data : ∀ i, Spec.OracleStatement R n deg i) (tr : Transcript oracleSig (protocol R deg n)) :
-    simulateQ (QueryImpl.addLift amb ((Spec.polynomialFamily R n deg).behaviorOfRealizations data +
+    simulateQ (QueryImpl.addLift amb ((Spec.polynomialFamily R n deg).answer data +
         (oracleMessageBundle (protocol R deg n) tr.path).answer (oracleMessages _ tr)))
       ((verifier R deg n D ambient).decide stmt _ (toView _ tr)).run =
       (pure (legacyVerdict R deg n D ambient stmt (decodeTranscript n tr)) :

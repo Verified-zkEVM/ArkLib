@@ -297,11 +297,11 @@ def execute {m : Type → Type} [Monad m] {Out Data : Type} {State : ℕ → Typ
 
 /-- The closed executor is exactly the actual oracle verifier run under the supplied ambient
 and public challenge implementations. -/
-theorem execute_eq_verifier {ι I : Type} (ambient : OracleSpec ι) {A : I → Type}
-    (inputs : OracleFamily I A) {m : Type → Type} [Monad m] [LawfulMonad m]
+theorem execute_eq_verifier {ι : Type} (ambient : OracleSpec ι)
+    (inputs : OracleBundle) {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) (next : m R) {Out : Type} {State : ℕ → Type} {T : Type}
     (checks : RoundChecks R State) (finish : State 0 → T) (k : ℕ)
-    (st : State k) (data : ∀ i, A i)
+    (st : State k) (data : inputs.Data)
     (prover : Prover oracleSig ambient (protocol R M evaluate k) (fun _ => Out)) :
     (fun result => (result.2.1, result.2.2)) <$>
       simulateQ (QueryImpl.addLift impl (draw next k))

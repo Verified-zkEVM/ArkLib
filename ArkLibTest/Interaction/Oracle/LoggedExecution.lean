@@ -28,12 +28,12 @@ updated count. -/
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- One scalar input slot. -/
-@[instance_reducible] def inputs : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def inputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => OracleInterface.instDefault
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily.{0, 0, 0} Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def exported : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The input data: the single slot holds 7. -/
 def seven : ∀ _ : Unit, Nat := fun _ => 7
@@ -720,10 +720,11 @@ example (secret : Nat) : appendSummary (prefixVerifier (pure 0) sumExport) secre
       [⟨.inl 1, (1 : Nat)⟩, ⟨.inl 2, (2 : Nat)⟩, ⟨.inl 3, (3 : Nat)⟩]) := by
   kernel_rfl
 
-/-! Additional QueryBounds execution coverage: the input is an `OracleFamily` slot. Composition is
-`OracleVerifier.append`. The prefix reads its message and exports it; the suffix's export query
-reads the prefix message again. The log keeps the repeat: `[prefix 1, tag 3, prefix 1, suffix 2]`,
-the claim is `1 + 1 + 2 = 4` and the private output is 3. -/
+/-! Additional QueryBounds execution coverage: the input is a slot of an indexed bundle.
+Composition is `OracleVerifier.append`. The prefix reads its message and exports it; the suffix's
+export query reads the prefix message again. The log keeps the repeat:
+`[prefix 1, tag 3, prefix 1, suffix 2]`, the claim is `1 + 1 + 2 = 4` and the private output is 3.
+-/
 example : appendSummary (prefixVerifier readPrefix messageExport) 3 =
     pure (3, some (4, 1), [("prefix", 1), ("tag", 3), ("prefix", 1), ("suffix", 2)], 3,
       [⟨.inl 1, (1 : Nat)⟩, ⟨.inl 2, (2 : Nat)⟩, ⟨.inl 3, (3 : Nat)⟩]) := rfl
@@ -737,7 +738,7 @@ run_cmd do
         log == [("tag", 3), ("input", 7), ("prefix", 1), ("suffix", 2)] do
       throwError "the composed counter execution is wrong: {log}"
 
-/-- Realizations of the prefix bundle: input 7 and message 1. -/
+/-- Data of the prefix bundle: input 7 and message 1. -/
 def prefixData : prefixBundle.Data :=
   (seven, oracleMessages single ⟨(1 : Nat), ⟨⟩⟩)
 
@@ -907,7 +908,7 @@ example (input : Nat) : loggedObserved input = observed input := by
     simulateQ noQueries (composite.run () (fun _ => input) (prover input)) at h
   dsimp only [loggedObserved, observed]
   exact congrArg (fun (obs : Outcome oracleSig combined (fun _ => Nat)
-    (OracleVerifier.Output finalStmt fun p => OracleBundle.ofFamily (finalFamily p))) =>
+    (OracleVerifier.Output finalStmt fun p => finalFamily p)) =>
       ((Transcript.path obs.1).1, obs.2.1,
     obs.2.2.map (readClaim (Transcript.path obs.1)))) h
 
@@ -917,13 +918,13 @@ end Interaction.DependentRoutingTests
 universe v
 
 /-- Log erasure holds in a lawful target monad with any result universe. -/
-example {ι I : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-    {T : FreeM.Path s → Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+example {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    {T : FreeM.Path s → Type} {inputs : OracleBundle}
     {outputs : FreeM.Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl (ambient + challengeSpec oracleSig s) m) (stmt : S)
-    (data : ∀ i, A i) (prover : Prover oracleSig ambient s Out) :
+    (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     Sigma.fst <$> simulateQ handler (V.runWithLog stmt data prover) =
       simulateQ handler (V.run stmt data prover) :=
   OracleVerifier.simulateQ_runWithLog_erase V handler stmt data prover

@@ -19,9 +19,9 @@ namespace Interaction.AgreementUniversesTests
 
 variable {ι : Type} {S : Type} {I : Type}
   {ambient : OracleSpec ι} {s s' : OracleProtocol.{0, 0}} {A : I → Type}
-  {T : Path s → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+  {T : Path s → Type} {O : ∀ i, OracleInterface.{0, 0} (A i)}
   {outputs : Path s → OracleBundle}
-  {V V' : OracleVerifier ambient s S T inputs outputs}
+  {V V' : OracleVerifier ambient s S T (.ofIndexed A O) outputs}
 
 example (h : Agrees V V') (stmt : S) (data : ∀ i, A i)
     {Out : Transcript oracleSig s → Type} (p : Prover oracleSig ambient s Out) :
@@ -48,22 +48,22 @@ example {σ : Type} {Win : (S × (∀ i, A i)) → Type}
 
 -- These applications specialize the Cast APIs before any tree equality is supplied.
 #check OracleVerifier.soundness_cast (S := S) (T := T) (ambient := ambient)
-  (inputs := inputs) (outputs := outputs)
+  (inputs := .ofIndexed A O) (outputs := outputs)
 
 section KnowledgeCast
 variable {Win : (S × (∀ i, A i)) → Type}
   {W : (S × (∀ i, A i)) → Transcript oracleSig s → Type}
 
 #check OracleVerifier.rbrKnowledgeSoundness_cast (S := S) (T := T) (ambient := ambient)
-  (inputs := inputs) (outputs := outputs) (Win := Win) (W := W)
+  (inputs := .ofIndexed A O) (outputs := outputs) (Win := Win) (W := W)
 end KnowledgeCast
 section LegacyOutputs
-variable {J T : Type} {B : J → Type} {outputs : OracleFamily.{0, 0, 0} J B}
+variable {J T : Type} {B : J → Type} {Oₒ : ∀ j, OracleInterface.{0, 0} (B j)}
 
 -- These legacy relation adapters transport completeness and knowledge soundness along a tree
 -- equality.
-#check Legacy.completeness_cast (S := S) (inputs := inputs) (outputs := outputs)
-#check Legacy.knowledgeSoundness_cast (S := S) (inputs := inputs) (outputs := outputs)
+#check Legacy.completeness_cast (S := S) (Oᵢ := O) (Oₒ := Oₒ)
+#check Legacy.knowledgeSoundness_cast (S := S) (Oᵢ := O) (Oₒ := Oₒ)
 end LegacyOutputs
 
 section Bundles

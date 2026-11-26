@@ -53,8 +53,8 @@ noncomputable def errors : RoundErrors rounds :=
     fun j : Fin 2 => if j.val = 0 then 1 / 8 else 1 / 16
 
 /-- The output is one `Fin 8` oracle. -/
-@[instance_reducible] def outputFamily : OracleFamily PUnit (fun _ => Fin 8) :=
-  ⟨fun _ => messageInterface⟩
+@[instance_reducible] def outputFamily : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Fin 8) fun _ => messageInterface
 
 /-- The input statement: a number with no input oracles. -/
 abbrev Stmt : Type := Nat × (∀ i : PEmpty.{1}, (PEmpty.elim i : Type))
@@ -941,7 +941,7 @@ def finishSelected (z : Stmt)
     (r : (_ : Transcript oracleSig selectedProtocol) × PUnit.{1} × PUnit.{1}) :
     Outcome oracleSig selectedProtocol (fun _ => PUnit.{1})
       (OracleVerifier.Output (fun p => SelectedValue p.1)
-        fun p => OracleBundle.ofFamily (selectedFamily p.1)) :=
+        fun p => selectedFamily p.1) :=
   let p := Transcript.path r.1
   let view := toView selectedProtocol r.1
   let pathData : (pathBundle emptyFamily selectedProtocol p).Data :=

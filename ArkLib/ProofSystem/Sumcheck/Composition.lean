@@ -51,11 +51,11 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 
 section InputRoute
 
-variable {s : OracleProtocol} {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+variable {s : OracleProtocol} (inputs : OracleBundle)
 
 /-- The input oracles of a path's bundle, as an oracle map. -/
 abbrev inputRoute (p : Path s) : OracleMap (pathBundle inputs s p) inputs :=
-  OracleMap.fst (OracleBundle.ofFamily inputs) (oracleMessageBundle s p)
+  OracleMap.fst inputs (oracleMessageBundle s p)
 
 end InputRoute
 
@@ -64,7 +64,7 @@ end InputRoute
 section Check
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec.{0, 0} ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  (inputs : OracleBundle)
 
 
 /-- Route the legacy round message's queries to the oracle node of a round, then lift them with the
@@ -81,8 +81,7 @@ def roundChallenges {p : Path (round R deg)} (v : View (round R deg) p) :
     (Spec.SingleRound.pSpec R deg).Challenges :=
   fun j => roundChallengeFn (deg := deg) (viewChallenge v) j.1 j.2
 
-variable {S : Type} {T : Type} {J : Type} {B : J → Type}
-  {outputs : OracleFamily.{0, 0, 0} J B}
+variable {S : Type} {T : Type} {outputs : OracleBundle}
 
 /-- A single round verified by `check` on the round message and challenge. The output oracle is
 `out` applied to the input data and the round's oracle message. -/
@@ -90,7 +89,7 @@ def checkVerifier
     (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
     (out : S → (p : Path (round R deg)) → View (round R deg) p →
-      OracleMap (pathBundle inputs (round R deg) p) (OracleBundle.ofFamily outputs)) :
+      OracleMap (pathBundle inputs (round R deg) p) outputs) :
     OracleVerifier ambient (round R deg) S (fun _ => T) inputs (fun _ => outputs) where
   decide stmt p v := OptionT.mk
     (simulateQ (checkRoute ambient inputs p) (check stmt (roundChallenges v)).run)
@@ -112,8 +111,8 @@ theorem decideWith_checkVerifier
     (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
     (out : S → (p : Path (round R deg)) → View (round R deg) p →
-      OracleMap (pathBundle inputs (round R deg) p) (OracleBundle.ofFamily outputs))
-    (stmt : S) (x : ∀ i, A i) (tr : Transcript oracleSig (round R deg)) :
+      OracleMap (pathBundle inputs (round R deg) p) outputs)
+    (stmt : S) (x : inputs.Data) (tr : Transcript oracleSig (round R deg)) :
     (checkVerifier ambient inputs check out).decideWith stmt _ (toView _ tr)
         ((x, oracleMessages _ tr)) =
       pure (simulateQ (OracleInterface.simOracle0 _
@@ -143,8 +142,7 @@ def checkVerdict
     (check stmt (roundFullTranscript (roundMessage tr) (roundChallenge tr)).challenges).run
 
 variable {ι : Type} (ambient : OracleSpec ι)
-  (inputs : OracleFamily.{0, 0, 0} I A) {J : Type} {B : J → Type}
-  {outputs : OracleFamily.{0, 0, 0} J B}
+  (inputs : OracleBundle) {outputs : OracleBundle}
 
 /-- The run of a single round: the interaction, then the verdict of the check on the completed
 round, with the output oracle mapped from the input data and the round's oracle messages. -/
@@ -152,12 +150,12 @@ theorem run_checkVerifier {Out : Transcript oracleSig (round R deg) → Type}
     (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
     (out : S → (p : Path (round R deg)) → View (round R deg) p →
-      OracleMap (pathBundle inputs (round R deg) p) (OracleBundle.ofFamily outputs))
-    (stmt : S) (x : ∀ i, A i) (prover : Prover oracleSig ambient (round R deg) Out) :
+      OracleMap (pathBundle inputs (round R deg) p) outputs)
+    (stmt : S) (x : inputs.Data) (prover : Prover oracleSig ambient (round R deg) Out) :
     (checkVerifier ambient inputs check out).run stmt x prover =
       (fun y => (⟨y.1, y.2.1, (checkVerdict check stmt y.1).map fun t =>
           (t, (out stmt _ (toView _ y.1)).f ((x, oracleMessages _ y.1)))⟩ :
-          Outcome oracleSig (round R deg) Out (fun _ => T × ∀ j, B j))) <$>
+          Outcome oracleSig (round R deg) Out (fun _ => T × outputs.Data))) <$>
         Interaction.TwoParty.Lens.run (round R deg)
           (prover.simulate fun q =>
             liftM ((ambient + challengeSpec oracleSig (round R deg)).query (.inl q)))
@@ -186,9 +184,8 @@ end SplitView
 section Append
 
 variable {R : Type} [CommSemiring R] {deg : ℕ} {ι : Type} (ambient : OracleSpec.{0, 0} ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
-  {J : Type} {B : J → Type} {middle : OracleFamily.{0, 0, 0} J B}
-  {K : Type} {C : K → Type} {outputs : OracleFamily.{0, 0, 0} K C}
+  (inputs : OracleBundle)
+  {middle : OracleBundle} {outputs : OracleBundle}
   {s : OracleProtocol} {S : Type} {T U : Type}
 
 
@@ -202,7 +199,7 @@ variable (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
       fun _ => V₂)
 
 /-- The verifier after a round sees the round's output oracle and its own messages. -/
-theorem suffixRoute_round (stmt : S) (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
+theorem suffixRoute_round (stmt : S) (x : inputs.Data) (msg : R⦃≤ deg⦄[X]) (chal : R)
     (tail : Transcript oracleSig s) :
     (OracleVerifier.suffixRoute (s₂ := fun _ => s) (checkVerifier ambient inputs check out) stmt
         _ (toView ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)).f
@@ -219,7 +216,7 @@ theorem suffixRoute_round (stmt : S) (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) 
 /-- The decision of a round appended to `V₂`, on a completed run: the round's check on its
 message and challenge, and, only if it accepts, the decision of `V₂` on the round's output oracle
 and the messages of `s`. -/
-theorem decideWith_append_checkVerifier (stmt : S) (x : ∀ i, A i)
+theorem decideWith_append_checkVerifier (stmt : S) (x : inputs.Data)
     (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :
     ((checkVerifier ambient inputs check out).append (fun _ => V₂) compatible).decideWith stmt _
         (toView _ tr) ((x, oracleMessages _ tr)) =
@@ -240,8 +237,7 @@ theorem decideWith_append_checkVerifier (stmt : S) (x : ∀ i, A i)
   rfl
 
 variable {ι : Type} (ambient : OracleSpec ι)
-  (inputs : OracleFamily.{0, 0, 0} I A) {K : Type} {C : K → Type}
-  {outputs : OracleFamily.{0, 0, 0} K C}
+  (inputs : OracleBundle) {outputs : OracleBundle}
   (check : S → (Spec.SingleRound.pSpec R deg).Challenges →
     OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) T)
   (out : S → (p : Path (round R deg)) → View (round R deg) p →
@@ -255,7 +251,7 @@ round's check and, only after it accepts, the decision of `V₂` on the round's 
 the messages of `s`. -/
 theorem run_append_checkVerifier
     {Out : Transcript oracleSig ((round R deg).append fun _ => s) → Type}
-    (stmt : S) (x : ∀ i, A i)
+    (stmt : S) (x : inputs.Data)
     (prover : Prover oracleSig ambient ((round R deg).append fun _ => s) Out) :
     ((checkVerifier ambient inputs check out).append (fun _ => V₂) compatible).run stmt x
         prover = (do
@@ -290,7 +286,7 @@ end Append
 section Fold
 
 variable (R : Type) [CommSemiring R] (deg : ℕ) {ι : Type} (ambient : OracleSpec ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily I A)
+  (inputs : OracleBundle)
 
 
 /-- Lift path-oracle queries into a decision's query interface: the path lift `pathLift`. -/
@@ -323,7 +319,7 @@ variable {R deg ambient inputs}
 effects. -/
 theorem simulateQ_foldLift {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) {s : OracleProtocol} (p : Path s)
-    (x : ∀ i, A i) (pl : (oracleMessageBundle s p).Data) {α : Type}
+    (x : inputs.Data) (pl : (oracleMessageBundle s p).Data) {α : Type}
     (oa : OracleComp (oracleMessageSpec s p) α) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs s p).answer
         ((x, pl)))) (simulateQ (foldLift ambient inputs p) oa) =
@@ -336,7 +332,7 @@ transcript, without ambient effects. -/
 theorem decideWith_legacyFoldVerifier (k : ℕ) (S : Fin (k + 1) → Type)
     (V : (i : Fin k) → S i.castSucc → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ))
-    (stmt : S 0) (x : ∀ i, A i) (tr : Transcript oracleSig (protocol R deg k)) :
+    (stmt : S 0) (x : inputs.Data) (tr : Transcript oracleSig (protocol R deg k)) :
     (legacyFoldVerifier R deg ambient inputs k S V).decideWith stmt _ (toView _ tr)
         ((x, oracleMessages _ tr)) =
       pure (simulateQ (OracleInterface.simOracle0 _ (decodeTranscript k tr).messages)
@@ -373,7 +369,7 @@ verifier of all rounds. -/
 theorem decideWith_append_legacyFoldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
     (V : (i : Fin (k + 1)) → S i.castSucc → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ))
-    (stmt : S 0) (x : ∀ i, A i) (tr : Transcript oracleSig (protocol R deg (k + 1))) :
+    (stmt : S 0) (x : inputs.Data) (tr : Transcript oracleSig (protocol R deg (k + 1))) :
     ((checkVerifier ambient inputs (foldHead V) fun _ p _ => inputRoute inputs p).append
         (fun _ => legacyFoldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ)
         (legacyFoldCompatibility R deg ambient inputs k S V)).decideWith stmt _ (toView _ tr)
@@ -397,7 +393,7 @@ of all rounds, as programs, against every prover. -/
 theorem run_append_legacyFoldVerifier (k : ℕ) (S : Fin (k + 2) → Type)
     (V : (i : Fin (k + 1)) → S i.castSucc → (Spec.SingleRound.pSpec R deg).Challenges →
       OptionT (OracleComp [(Spec.SingleRound.pSpec R deg).Message]ₒ) (S i.succ))
-    (stmt : S 0) (x : ∀ i, A i) {Out : Transcript oracleSig (protocol R deg (k + 1)) → Type}
+    (stmt : S 0) (x : inputs.Data) {Out : Transcript oracleSig (protocol R deg (k + 1)) → Type}
     (prover : Prover oracleSig ambient (protocol R deg (k + 1)) Out) :
     ((checkVerifier ambient inputs (foldHead V) fun _ p _ => inputRoute inputs p).append
         (fun _ => legacyFoldVerifier R deg ambient inputs k (S ∘ Fin.succ) fun i => V i.succ)
@@ -432,9 +428,8 @@ theorem run_append_verifier [DecidableEq R] [SampleableType R] {d : ℕ} (D : Fi
         (Interaction.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) =
       (verifier R deg (k + 1) D ambient).run stmt x
         (Interaction.Prover.append (s₂ := fun _ => protocol R deg k) (Out := Out) p f) :=
-  run_append_legacyFoldVerifier k (Spec.StatementRound R (k + 1))
-    (roundCheck R deg (k + 1) D ambient)
-    stmt x _
+  run_append_legacyFoldVerifier (inputs := Spec.polynomialFamily R (k + 1) deg) k
+    (Spec.StatementRound R (k + 1)) (roundCheck R deg (k + 1) D ambient) stmt x _
 
 end Fold
 

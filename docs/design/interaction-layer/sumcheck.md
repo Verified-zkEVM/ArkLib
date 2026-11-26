@@ -602,7 +602,7 @@ above rather than adding independent security claims.
 | `LegacyProjection` | `messageFamily`, `projectionMap`, `projectionMap_f`, `simulateQ_projectionMap`: the univariate output interface and lawful projection. |
 | `Interaction/OracleVerifier` | `Interaction.pathLift`, `Interaction.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.run_eq_decideWith` expresses a run through `decideWith` for any input bundle, at the protocol query universe of `OracleVerifier.run_eq`, using the shared owner lemma `OracleVerifier.simulateQ_decideWith` in reverse. |
 | `Interaction/Composition` | `Interaction.TranscriptAt.split_val`: the split of a transcript at a path carries the transcripts of `Transcript.split`. |
-| `Composition`, input route | `inputRoute`: the existing `OracleMap.embedding` for the input oracles. |
+| `Composition`, input route | `inputRoute`: the projection `OracleMap.fst` onto the input oracles. |
 | `Composition`, round | `checkRoute`, `roundChallenges`, `checkVerifier`, `roundChallenges_eq`, `decideWith_checkVerifier`, `checkVerdict`, `run_checkVerifier`: reuse the legacy per-round check, with no ambient queries in that check. |
 | `Composition`, append | `split_toView_round`, `appendHead`, `appendTail`, `prefixRoute_round`, `suffixRoute_round`, `decideWith_append_checkVerifier`, `run_append_checkVerifier`: specialize the Core append routing to one Sumcheck round. The generic routing of part D, commit 1 is not duplicated. |
 | `Composition`, fold | `foldLift`, `legacyFoldVerifier`, `verifier_eq_legacyFoldVerifier`, `simulateQ_foldLift`, `decideWith_legacyFoldVerifier`, `foldHead`, `legacyFoldCompatibility`, `decideWith_append_legacyFoldVerifier`, `run_append_legacyFoldVerifier`, `run_append_verifier`: reuse `Spec.oracleVerifierProgram` and C's `simulateQ_oracleVerifierProgram_succ`, allowing a suffix that starts from a round-1 statement. |
@@ -652,7 +652,7 @@ keeps those output carriers fixed while changing the tree. Classical probability
 the move and returned-value universe to zero, as their owners require.
 
 Agreement accepts general `OracleBundle.{u, uI, dI}` inputs, with independent query and data
-universes. Family-shaped inputs specialize this API through `OracleBundle.ofFamily`.
+universes. Indexed inputs specialize this API through `OracleBundle.ofIndexed`.
 Round-by-round knowledge agreement and transport retain `Win stmt`, `W stmt tr`, and relations
 `relOut stmt tr output witness`, with independent witness universes. They also preserve the
 parent's challenge draws, which read the verifier's view of each prefix (`PrefixDraw viewSig`),

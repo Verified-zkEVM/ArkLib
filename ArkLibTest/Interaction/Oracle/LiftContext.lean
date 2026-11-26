@@ -37,12 +37,12 @@ abbrev path : Path protocol := ⟨⟨⟩, ⟨⟩, ⟨⟩⟩
 def view (r : Bool) : View protocol path := ⟨⟨r, ⟨⟩, ⟨⟩⟩, rfl⟩
 
 /-- One function `Bool → Bool`, queried pointwise. -/
-@[instance_reducible] def fn : OracleFamily.{0, 0, 0} PUnit (fun _ => Bool → Bool) :=
-  ⟨fun _ => OracleInterface.instFunction⟩
+@[instance_reducible] def fn : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Bool → Bool) fun _ => OracleInterface.instFunction
 
 /-- Two functions `Bool → Bool`, indexed by `Bool` and queried pointwise. -/
-@[instance_reducible] def fnPair : OracleFamily.{0, 0, 0} Bool (fun _ => Bool → Bool) :=
-  ⟨fun _ => OracleInterface.instFunction⟩
+@[instance_reducible] def fnPair : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Bool => Bool → Bool) fun _ => OracleInterface.instFunction
 
 /-- No ambient oracles. -/
 abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
@@ -78,12 +78,12 @@ def projOracle (b : Bool) : OracleMap fnPair fn where
 
 /-- Export `x ↦ F (!b) x && g x` from the outer inputs `F` and the inner output `g`. -/
 def liftOracle (b : Bool) :
-    OracleMap ((fnPair : OracleBundle).sum (fn : OracleBundle)) fn where
+    OracleMap (fnPair.sum fn) fn where
   f x _ y := x.1 (!b) y && x.2 ⟨⟩ y
   impl q := do
-    let a : Bool ← liftM (((fnPair : OracleBundle).sum (fn : OracleBundle)).spec.query
+    let a : Bool ← liftM ((fnPair.sum fn).spec.query
       (.inl ⟨!b, q.2⟩))
-    let c : Bool ← liftM (((fnPair : OracleBundle).sum (fn : OracleBundle)).spec.query
+    let c : Bool ← liftM ((fnPair.sum fn).spec.query
       (.inr ⟨⟨⟩, q.2⟩))
     pure (a && c)
   law _ _ := by
@@ -151,14 +151,14 @@ example (r : Bool) :
 /-! ### Soundness through the transfer -/
 
 /-- Inner inputs whose oracle answers `true` at `true`. -/
-@[instance_reducible] def innerInput : StatementProblem (Unit × (fn : OracleBundle).Data) where
+@[instance_reducible] def innerInput : StatementProblem (Unit × fn.Data) where
   Witness _ _ := Unit
   admissible _ _ := True
   rel _ x _ := x.2 ⟨⟩ true = true
   rel_admissible _ _ _ _ := trivial
 
 /-- Outer inputs whose oracle `F b` answers `true` at `false`. -/
-@[instance_reducible] def outerInput : StatementProblem (Bool × (fnPair : OracleBundle).Data) where
+@[instance_reducible] def outerInput : StatementProblem (Bool × fnPair.Data) where
   Witness _ _ := Unit
   admissible _ _ := True
   rel _ x _ := x.2 x.1 false = true
@@ -166,7 +166,7 @@ example (r : Bool) :
 
 /-- An output statement `Bool` with one output oracle `Bool → Bool`, at every path. -/
 abbrev Output : Path protocol → Type :=
-  OracleVerifier.Output (s := protocol) (fun _ => Bool) (fun _ => (fn : OracleBundle))
+  OracleVerifier.Output (s := protocol) (fun _ => Bool) (fun _ => fn)
 
 /-- Outputs whose output oracle answers `true` at `true`. -/
 @[instance_reducible] def outputProblem : PathProblem protocol Output where

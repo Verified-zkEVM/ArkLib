@@ -210,7 +210,7 @@ decision on routed data. `OracleVerifier.run_append` in `Oracle/Routing.lean` sp
 appended oracle verifier against an arbitrary prover into the two interactions and the two
 decisions. The statement is an equality of open oracle programs, so the order of ambient and
 challenge queries is preserved exactly. `StageChain` composes a finite chain of passive oracle
-verifiers whose statement types and oracle families may change at every stage.
+verifiers whose statement types and oracle bundles may change at every stage.
 
 Every oracle verifier in the core is passive: its only moves before the final decision are
 challenge draws, and every bundle query happens in the final decision. The old layer allowed
