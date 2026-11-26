@@ -8,10 +8,12 @@ import Specs.Bench
 /-!
 # Bench case: sum-check with 8 rounds, skeleton export
 
-The export of the skeleton of `sumcheckSpec ℚ 2 8 D` to JSON and to TeX. Its cost grows as
-`2^n`, because computing the skeleton builds the domain `D^n` of the input claim (see
-`Specs.Bench`), so the static export cases stop at 20 rounds.
+The export of the skeleton of `sumcheckSpec ℚ 2 8 D` to JSON and to TeX. With
+`Specs.Bench.Export128` it shows how the export cost grows with the number of rounds (see
+`Specs.Bench`).
 -/
+
+set_option linter.hashCommand false
 
 namespace Specs.Bench.Export8
 

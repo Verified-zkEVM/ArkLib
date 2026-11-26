@@ -13,6 +13,8 @@ The tree agreement by `rfl` and one accessor by label at the first and at the la
 `Specs.Bench`.
 -/
 
+set_option linter.hashCommand false
+
 namespace Specs.Bench.Sumcheck32
 open Interaction
 

@@ -18,6 +18,8 @@ This module collects the bridge between a specification's `rounds` block and the
 * `Specs.Bridge.Sumcheck`: the acceptance instance. `Bridge.sumcheckSpec_sound` proves soundness
   of the verifier that `sumcheckSpec` derives, with ArkLib's error `n · (d / |R|)`, through the
   bridge theorem and `Kit.sumcheck_roundSound`, without `Sumcheck.indexedVerifier`.
+  `Bridge.sumcheckSpec_agrees` shows that this verifier agrees with the kit's iteration verifier
+  for the check program `Bridge.scCheck`.
 
 ## Design choices
 
@@ -31,3 +33,4 @@ This module collects the bridge between a specification's `rounds` block and the
 #print axioms Specs.Bridge.sound_of_kit
 #print axioms Specs.Bridge.sumcheckSpec_rbrSound
 #print axioms Specs.Bridge.sumcheckSpec_sound
+#print axioms Specs.Bridge.sumcheckSpec_agrees

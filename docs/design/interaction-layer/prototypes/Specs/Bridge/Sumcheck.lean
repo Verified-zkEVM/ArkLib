@@ -24,6 +24,10 @@ sum-check round obligation `Kit.sumcheck_roundSound`. It does not use `Sumcheck.
 * `scSpec_roundSound`: the per-round obligation for `scSpecStep`, moved from
   `Kit.sumcheck_roundSound`.
 * `sumcheckSpec_rbrSound` and `sumcheckSpec_sound`: the main theorems.
+* `scCheck`, `scStartProg`, `scFinishProg`: sum-check as query programs of the kit's iteration
+  verifier. `scCheck_step`: the check's queries compute `scSpecStep`. `sumcheckSpec_agrees`: the
+  specification's verifier agrees (`OracleVerifier.Agrees`) with the kit's `Rounds.verifier` for
+  these programs, by the generic `Bridge.agrees_of_kit`.
 
 ## Design choices
 
@@ -33,6 +37,11 @@ sum-check round obligation `Kit.sumcheck_roundSound`. It does not use `Sumcheck.
 * **The input and output problems are ArkLib's `indexedInputProblem` and
   `indexedOutputProblem`.** *Why:* this matches the statement of
   `Sumcheck.indexedVerifier_soundness`, so the two theorems can be compared directly.
+  `Specs.Claims.sumcheckSpec_claimSound` restates the theorem with the problems that the stage's
+  own claim formulas denote.
+* **The round formulas evaluate by `Specs.eval_round_value` and `Specs.eval_round_check` of
+  `Specs.Examples.Sumcheck`.** *Why:* `simp` and `rw` time out on `Curry.app`, and these lemmas
+  evaluate the two round formulas by `rfl` at their exact hole lists.
 -/
 
 set_option linter.hashCommand false
@@ -44,29 +53,6 @@ open Specs.Kit Sumcheck Polynomial MvPolynomial
 open scoped ENNReal NNReal
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [TypeName R] {d k n : ℕ}
-
-omit [DecidableEq R] [TypeName R] in
-/-- The local value `g_i(r_i)` of a round evaluates by one query to `g_i` (a copy of the private
-lemma of `Specs.Examples.Sumcheck`). -/
-private theorem eval_round_value (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
-    {nm nm' : Name} (h : Ref (OracleInterface.Query (R⦃≤ d⦄[X])) R) (c : R) :
-    Fml.eval ask' (Curry.app (v := fun α => α) (o := Ref) (β := R)
-      (Γ := [Hole.orc nm (OracleInterface.Query (R⦃≤ d⦄[X])) R] ++ [Hole.val nm' R])
-      (fun g r => ask g r) (Args.orc h (Args.val c Args.nil))) = ask' h c := rfl
-
-omit [TypeName R] in
-/-- The round check `Σ_{a ∈ D} g_i(a) = c_i` evaluates to a sum over the domain indices (a copy
-of the private lemma of `Specs.Examples.Sumcheck`). -/
-private theorem eval_round_check (D : Fin k → R) (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
-    {nm nm' : Name} (h : Ref (OracleInterface.Query (R⦃≤ d⦄[X])) R) (x : R) :
-    Fml.eval ask' (Curry.app (v := fun α => α) (o := Ref) (β := Bool)
-      (Γ := [Hole.orc nm (OracleInterface.Query (R⦃≤ d⦄[X])) R] ++ [Hole.val nm' R])
-      (fun g c => (∑∈ a ∈ Dom.ofFn "D" D, ask g a) =' .var c)
-      (Args.orc h (Args.val x Args.nil))) = decide (∑ a : Fin k, ask' h (D a) = x) := by
-  change Fml.eval ask' ((∑∈ a ∈ Dom.ofFn "D" D, ask h a) =' .var x) = _
-  simp only [Fml.eval_eq, Fml.eval_sum, Fml.eval_query, Fml.eval_var, Dom.ofFn, List.map_ofFn,
-    List.sum_ofFn]
-  rfl
 
 variable (R d) in
 /-- The kit's round family of sum-check, as the bridge builds it. -/
@@ -206,6 +192,66 @@ theorem sumcheckSpec_sound [IsDomain R] [Fintype R] [SampleableType R] (D : Fin 
   simp only [Finset.sum_const, Finset.card_univ, Fintype.card_fin, nsmul_eq_mul] at h
   exact h
 
+/-! ### The kit's iteration verifier for sum-check -/
+
+/-- A query to the round polynomial, from a program on the round's block. -/
+noncomputable def scAsk (a : R) :
+    OracleComp ((polynomialFamily R n d).sum (Block.bundle (scRound R d).msgs)).spec R :=
+  liftM (((polynomialFamily R n d).sum (Block.bundle (scRound R d).msgs)).spec.query
+    (.inr (.inl a)))
+
+/-- **The kit's round check of sum-check**, as a query program on the description's state: sum
+the round polynomial over `D`, compare with `c_i`, then move to `c_{i+1} = g_i(r_i)`. -/
+noncomputable def scCheck (D : Fin k → R) :
+    Check (polynomialFamily R n d) (scFam R d n) (fun i => Claim R i.val) :=
+  fun _ st _ r => OptionT.mk do
+    let values ← (List.finRange k).mapM fun a => scAsk (n := n) (d := d) (D a)
+    if values.sum = st.c.val then
+      let value ← scAsk (n := n) (d := d) r
+      return some ⟨⟨value⟩, Fin.snoc st.rs r⟩
+    else return none
+
+omit [TypeName R] in
+/-- The check's queries compute the description's round step. -/
+theorem scCheck_step (D : Fin k → R) (data : (polynomialFamily R n d).Data) :
+    (scCheck (n := n) (d := d) D).step data = scSpecStep D := by
+  funext i st vals r
+  unfold Check.step Block.run scCheck scSpecStep
+  change simulateQ _ ((List.finRange k).mapM
+      (fun a => scAsk (n := n) (d := d) (D a)) >>= _) = _
+  simp only [simulateQ_bind, simulateQ_list_mapM]
+  change ((List.finRange k).mapM (fun a => (pure (vals.1.val.eval (D a)) : Id R)) >>= _) = _
+  simp only [List.mapM_pure, LawfulMonad.pure_bind]
+  rw [← List.ofFn_eq_map, List.sum_ofFn]
+  split <;> rfl
+
+/-- The kit's start program of sum-check: the input statement as the initial state. -/
+def scStartProg : RoundStatement R n 0 → Block.ViewValues [] →
+    Block.Program (polynomialFamily R n d) [] (Claim R 0) :=
+  fun stmt _ => OptionT.mk (pure (some ⟨⟨stmt.target⟩, stmt.challenges⟩))
+
+/-- The kit's finish program of sum-check: the final state as the output. -/
+def scFinishProg : Claim R n → Block.ViewValues [] →
+    Block.Program (polynomialFamily R n d) [] (RoundStatement R n (Fin.last n)) :=
+  fun st _ => OptionT.mk (pure (some ⟨st.c.val, st.rs⟩))
+
+/-- **The sum-check specification's verifier agrees with the kit's iteration verifier** for the
+check program `scCheck`, in ArkLib's sense (`OracleVerifier.Agrees`), so every security notion
+transfers between them. -/
+theorem sumcheckSpec_agrees (D : Fin k → R) {ι : Type} (ambient : OracleSpec ι) :
+    OracleVerifier.Agrees ((sumcheckSpec R d n D).verifier ambient)
+      (Rounds.verifier (pre := []) (polynomialFamily R n d) (scStartProg (n := n) (d := d))
+        (scCheck D) (scFinishProg (n := n) (d := d)) ambient (scCert R d n)) := by
+  refine agrees_of_kit (pre := []) (K := fun i : Fin (n + 1) => Claim R i.val)
+    (sumcheckSpec R d n D) ambient (scCert R d n) scStartProg (scCheck D) scFinishProg ?_
+  intro x tr
+  refine (sumcheckSpec_verdict_eq D x tr).trans ?_
+  have hs : (fun x : RoundStatement R n 0 × (polynomialFamily R n d).Data =>
+      (scCheck (n := n) (d := d) D).step x.2) = fun _ => scSpecStep D :=
+    funext fun x => scCheck_step D x.2
+  rw [hs]
+  rfl
+
 end Specs.Bridge
 
 #print axioms Specs.Bridge.sumcheckRound_verdict
@@ -213,3 +259,5 @@ end Specs.Bridge
 #print axioms Specs.Bridge.scSpec_roundSound
 #print axioms Specs.Bridge.sumcheckSpec_rbrSound
 #print axioms Specs.Bridge.sumcheckSpec_sound
+#print axioms Specs.Bridge.scCheck_step
+#print axioms Specs.Bridge.sumcheckSpec_agrees

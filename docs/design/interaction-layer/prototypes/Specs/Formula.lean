@@ -36,8 +36,22 @@ names of transcript values.
   prover, the verifier's decision and its pure verdict instantiate the formula at the same carriers
   and differ only in `ask`. A theorem about all three then follows by induction on the one formula
   term, and needs no parametricity, which Lean cannot prove.
-* A sum takes a `Dom`, a printed name and the list of its elements. *Why:* the verifier evaluates
-  the sum by enumeration, and the figure prints `\sum_{a \in D}` without enumerating.
+* A sum or a product takes a `Dom`, a printed name and the list of its elements. *Why:* the
+  verifier evaluates the sum by enumeration, and the figure prints `\sum_{a \in D}` without
+  enumerating.
+* A domain holds its elements behind a function from `Unit` (`Dom.elemsFn`), not as a list. *Why:*
+  compiled code evaluates every argument of a constructor, so a domain that stored its list would
+  build all `k^n` points of `Dom.pow` whenever the export computes a formula's syntax, which keeps
+  only the domain's printed name. That made the export exponential in the number of rounds. A
+  function from `Unit` rather than a `Thunk` keeps the elements reducible by `simp only` (projection
+  and beta reduction), so proofs that unfold `Dom.ofFn` or `Dom.pow` see the list itself.
+* `index f i` reads the entry `i` of a vector-valued formula `f`. *Why:* a product binder such as
+  `\prod_{j} (\tau_j r_j + (1 - \tau_j)(1 - r_j))` ranges over coordinates, so its body must read
+  coordinate `j` of a vector. It prints as a subscript (`\tau_{j}`, `r_{x,j}`).
+* An index of a name can be a fixed number with a symbol (`Ix.count k "k"`), which the folded
+  figure prints as the symbol and the expanded figure as the number. *Why:* a value after a block
+  of `k` rounds, read inside a later round, is indexed by the count `k`, and a round index there
+  would print as an offset from the later round.
 * A literal carries its printed form. *Why:* a literal's value can be a polynomial or another
   object with no canonical printing.
 * The display of a subscript is computed at export time from `Ix.rnd k`, the absolute round. *Why:*
@@ -58,10 +72,12 @@ namespace Specs
 /-! ## Names -/
 
 /-- A subscript index: `rnd k` is the absolute round `k` of a `rounds` block, which the folded
-figure prints relative to the displayed round. `num k` is a fixed number. -/
+figure prints relative to the displayed round. `num k` is a fixed number. `count k sym` is the fixed
+number `k`, which the folded figure prints as `sym` (the count of a block, such as `k`). -/
 inductive Ix
   | rnd (k : ℕ)
   | num (k : ℕ)
+  | count (k : ℕ) (sym : String)
   deriving DecidableEq, Repr, Inhabited
 
 /-- The subscript of a name: none, an index (`g_i`), the indices below an index (`r_{<i}`), or a
@@ -86,6 +102,10 @@ def ix (b : String) (i : ℕ) : Name := ⟨b, .at (.rnd i)⟩
 
 /-- The name `b_{<i}` of the values of the rounds before `i`. -/
 def below (b : String) (i : ℕ) : Name := ⟨b, .below (.rnd i)⟩
+
+/-- The name `b_k` of a value indexed by the fixed number `k`, which the folded figure prints as
+`b_{sym}` and the expanded figure as `b_{k}`. -/
+def ixCount (b : String) (k : ℕ) (sym : String) : Name := ⟨b, .at (.count k sym)⟩
 
 /-- How names render. In the folded figure (`round = some j`) the round `j` prints as `var` and
 round `k` as `var+(k-j)`. Outside a round, a round number listed in `counts` prints as its symbol
@@ -112,6 +132,7 @@ def Ix.tex (m : Mode) : Ix → String
         else m.var ++ "-" ++ toString (j - k)
       | none => ((m.counts.find? (·.1 = k)).map (·.2)).getD (toString k)
     else toString k
+  | .count k sym => if m.folded then sym else toString k
 
 /-- Render a name in a mode. -/
 def Name.tex (m : Mode) (nm : Name) : String :=
@@ -122,6 +143,15 @@ def Name.tex (m : Mode) (nm : Name) : String :=
     | .below e => "_{<" ++ e.tex m ++ "}"
     | .sym s => "_{" ++ s ++ "}"
 
+/-- Render a name with the extra index `i` appended to its subscript: `b_{i}`, `b_{s,i}`, or, for a
+name with a `below` subscript, `{b_{<s}}_{i}`. -/
+def Name.texAt (m : Mode) (nm : Name) (i : String) : String :=
+  match nm.sub with
+  | .none => nm.base ++ "_{" ++ i ++ "}"
+  | .at e => nm.base ++ "_{" ++ e.tex m ++ "," ++ i ++ "}"
+  | .sym s => nm.base ++ "_{" ++ s ++ "," ++ i ++ "}"
+  | .below _ => "{" ++ nm.tex m ++ "}_{" ++ i ++ "}"
+
 /-- The folded mode inside round `j` of a block. -/
 def Mode.inRound (m : Mode) (j : ℕ) : Mode := { m with round := some j }
 
@@ -131,17 +161,28 @@ def Mode.inRound (m : Mode) (j : ℕ) : Mode := { m with round := some j }
 #guard (below "r" 2).tex { folded := true, round := some 2 } == "r_{<i}"
 #guard (ix "c" 3).tex { folded := true, counts := [(3, "n")] } == "c_{n}"
 #guard (ix "c" 0).tex { folded := true, counts := [(3, "n")] } == "c_{0}"
+#guard (ixCount "a" 2 "k").tex { folded := true, round := some 1 } == "a_{k}"
+#guard (ixCount "a" 2 "k").tex Mode.expanded == "a_{2}"
 
 /-! ## Domains and formulas -/
 
-/-- A finite domain for a sum: its printed name and its elements. -/
+/-- A finite domain for a sum or a product: its printed name and its elements, computed on demand
+(see the design choices). -/
 structure Dom (α : Type) where
   tex : String
-  elems : List α
+  /-- The elements, computed when the function is applied. -/
+  elemsFn : Unit → List α
+
+/-- The elements of a domain. -/
+abbrev Dom.elems {α : Type} (D : Dom α) : List α := D.elemsFn ()
+
+/-- The domain with the elements `l`, printed as `tex`. -/
+def Dom.ofList {α : Type} (tex : String) (l : List α) : Dom α :=
+  ⟨tex, fun _ => l⟩
 
 /-- The domain `{D 0, …, D (k-1)}` of a function `D : Fin k → α`, printed as `tex`. -/
 def Dom.ofFn {α : Type} {k : ℕ} (tex : String) (D : Fin k → α) : Dom α :=
-  ⟨tex, List.ofFn D⟩
+  ⟨tex, fun _ => List.ofFn D⟩
 
 /-- All tuples of `n` elements of `D`. -/
 def Dom.tuples {α : Type} (D : List α) : (n : ℕ) → List (Fin n → α)
@@ -150,7 +191,12 @@ def Dom.tuples {α : Type} (D : List α) : (n : ℕ) → List (Fin n → α)
 
 /-- The domain `D^n` of `n`-tuples, printed with the exponent `ntex`. -/
 def Dom.pow {α : Type} (D : Dom α) (n : ℕ) (ntex : String := toString n) : Dom (Fin n → α) :=
-  ⟨D.tex ++ "^{" ++ ntex ++ "}", Dom.tuples D.elems n⟩
+  ⟨D.tex ++ "^{" ++ ntex ++ "}", fun _ => Dom.tuples (D.elemsFn ()) n⟩
+
+/-- The domain `[k] = {0, …, k-1}` of the coordinates of a vector in `Fin k → α`, printed as
+`tex`. -/
+def Dom.fin (k : ℕ) (tex : String := "[" ++ toString k ++ "]") : Dom (Fin k) :=
+  ⟨tex, fun _ => List.finRange k⟩
 
 /-- A typed formula in PHOAS. Values bound by a sum or supplied for a hole live in `v`, oracle
 handles in `o`. -/
@@ -174,6 +220,11 @@ inductive Fml (v : Type → Type) (o : Type → Type → Type) : Type → Type 1
   | query {Q A : Type} (h : o Q A) (q : Fml v o Q) : Fml v o A
   /-- A named opaque function, printed `name(x)`. -/
   | app {α β : Type} (name : String) (f : α → β) (x : Fml v o α) : Fml v o β
+  /-- The product of `body x` over the elements `x` of `dom`. The binder prints as `x`. -/
+  | prod {α β : Type} [CommMonoid β] (x : Name) (dom : Dom α) (body : v α → Fml v o β) :
+      Fml v o β
+  /-- The entry `i` of the vector `f`, printed as a subscript. -/
+  | index {ι α : Type} (f : Fml v o (ι → α)) (i : Fml v o ι) : Fml v o α
 
 namespace Fml
 variable {v : Type → Type} {o : Type → Type → Type}
@@ -203,6 +254,11 @@ the Lean identifier. -/
 macro "∑∈ " x:ident " ∈ " D:term ", " b:term:51 : term =>
   `(Fml.sum (Name.mk $(Lean.quote x.getId.toString) .none) $D fun $x => $b)
 
+/-- `∏∈ x ∈ D, body` is the formula product of `body` over the domain `D`. The binder name prints as
+the Lean identifier. -/
+macro "∏∈ " x:ident " ∈ " D:term ", " b:term:51 : term =>
+  `(Fml.prod (Name.mk $(Lean.quote x.getId.toString) .none) $D fun $x => $b)
+
 /-! ## Evaluation -/
 
 /-- The sum of `f a` over the list, in a monad. -/
@@ -213,6 +269,15 @@ def sumM {m : Type → Type} [Monad m] {α β : Type} [AddCommMonoid β] (f : α
     let b ← f a
     let s ← sumM f l
     pure (b + s)
+
+/-- The product of `f a` over the list, in a monad. -/
+def prodM {m : Type → Type} [Monad m] {α β : Type} [CommMonoid β] (f : α → m β) :
+    List α → m β
+  | [] => pure 1
+  | a :: l => do
+    let b ← f a
+    let s ← prodM f l
+    pure (b * s)
 
 /-- Evaluate a formula in the monad `m`. `ask h q` answers the query `q` to the oracle `h`. -/
 def Fml.evalM {m : Type → Type} [Monad m] {o : Type → Type → Type}
@@ -226,9 +291,11 @@ def Fml.evalM {m : Type → Type} [Monad m] {o : Type → Type → Type}
   | _, @Fml.pow _ _ _ _ a k => do pure ((← a.evalM ask) ^ k)
   | _, @Fml.eq _ _ _ _ a b => do pure (decide ((← a.evalM ask) = (← b.evalM ask)))
   | _, .and a b => do pure ((← a.evalM ask) && (← b.evalM ask))
-  | _, @Fml.sum _ _ _ _ _ _ dom body => sumM (fun x => (body x).evalM ask) dom.elems
+  | _, @Fml.sum _ _ _ _ _ _ dom body => sumM (fun x => (body x).evalM ask) (dom.elemsFn ())
   | _, .query h q => do ask h (← q.evalM ask)
   | _, .app _ f x => do pure (f (← x.evalM ask))
+  | _, @Fml.prod _ _ _ _ _ _ dom body => prodM (fun x => (body x).evalM ask) (dom.elemsFn ())
+  | _, .index f i => do pure ((← f.evalM ask) (← i.evalM ask))
 
 /-- Evaluate a formula without effects. -/
 def Fml.eval {o : Type → Type → Type} (ask : ∀ ⦃Q A : Type⦄, o Q A → Q → A) {β : Type}
@@ -241,6 +308,13 @@ theorem sumM_id {α β : Type} [AddCommMonoid β] (f : α → Id β) (l : List �
   induction l with
   | nil => rfl
   | cons a l ih => simp [sumM, ih]; rfl
+
+/-- In the identity monad `prodM` is the product of the mapped list. -/
+theorem prodM_id {α β : Type} [CommMonoid β] (f : α → Id β) (l : List α) :
+    prodM f l = pure (l.map fun a => (f a).run).prod := by
+  induction l with
+  | nil => rfl
+  | cons a l ih => simp [prodM, ih]; rfl
 
 section EvalLemmas
 variable {o : Type → Type → Type} (ask : ∀ ⦃Q A : Type⦄, o Q A → Q → A)
@@ -264,14 +338,22 @@ variable {o : Type → Type → Type} (ask : ∀ ⦃Q A : Type⦄, o Q A → Q �
     (a ∧' b).eval ask = (a.eval ask && b.eval ask) := rfl
 @[simp] theorem Fml.eval_sum {α β : Type} [AddCommMonoid β] (x : Name) (dom : Dom α)
     (body : α → Fml (fun α => α) o β) :
-    (Fml.sum x dom body).eval ask = (dom.elems.map fun a => (body a).eval ask).sum := by
-  change Id.run (sumM _ dom.elems) = _
+    (Fml.sum x dom body).eval ask = ((dom.elemsFn ()).map fun a => (body a).eval ask).sum := by
+  change Id.run (sumM _ (dom.elemsFn ())) = _
   rw [sumM_id]
+  rfl
+@[simp] theorem Fml.eval_prod {α β : Type} [CommMonoid β] (x : Name) (dom : Dom α)
+    (body : α → Fml (fun α => α) o β) :
+    (Fml.prod x dom body).eval ask = ((dom.elemsFn ()).map fun a => (body a).eval ask).prod := by
+  change Id.run (prodM _ (dom.elemsFn ())) = _
+  rw [prodM_id]
   rfl
 @[simp] theorem Fml.eval_query {Q A : Type} (h : o Q A) (q : Fml (fun α => α) o Q) :
     (Fml.query h q).eval ask = ask h (q.eval ask) := rfl
 @[simp] theorem Fml.eval_app {α β : Type} (name : String) (f : α → β)
     (x : Fml (fun α => α) o α) : (Fml.app name f x).eval ask = f (x.eval ask) := rfl
+@[simp] theorem Fml.eval_index {ι α : Type} (f : Fml (fun α => α) o (ι → α))
+    (i : Fml (fun α => α) o ι) : (Fml.index f i).eval ask = f.eval ask (i.eval ask) := rfl
 
 end EvalLemmas
 
@@ -293,6 +375,8 @@ inductive Syn
   | sum (x : Name) (dom : String) (body : Syn)
   | query (h : Name) (q : Syn)
   | app (name : String) (x : Syn)
+  | prod (x : Name) (dom : String) (body : Syn)
+  | index (f i : Syn)
   deriving DecidableEq, Repr, Inhabited
 
 /-- The carrier of the naming instance: every value and oracle is its name. -/
@@ -314,6 +398,8 @@ def Fml.syntax : {β : Type} → Fml NameV NameO β → Syn
   | _, @Fml.sum _ _ _ _ _ x dom body => .sum x dom.tex (body x).syntax
   | _, .query h q => .query h q.syntax
   | _, .app name _ x => .app name x.syntax
+  | _, @Fml.prod _ _ _ _ _ x dom body => .prod x dom.tex (body x).syntax
+  | _, .index f i => .index f.syntax i.syntax
 
 /-- The binding strength of an operation: a child binds weaker than its context gets
 parentheses. -/
@@ -334,7 +420,7 @@ def BinOp.tex : BinOp → String
 /-- The binding strength of a tree's top operation. Atoms bind tightest. -/
 def Syn.prec : Syn → ℕ
   | .bin op _ _ => op.prec
-  | .sum .. => 25
+  | .sum .. | .prod .. => 25
   | .neg _ => 35
   | _ => 100
 
@@ -354,6 +440,10 @@ def Syn.tex (m : Mode) : Syn → String
       parenIf (body.prec ≤ 30) (body.tex m)
   | .query h q => h.tex m ++ "(" ++ q.tex m ++ ")"
   | .app name x => "\\mathrm{" ++ name ++ "}(" ++ x.tex m ++ ")"
+  | .prod x dom body => "\\prod_{" ++ x.tex m ++ " \\in " ++ dom ++ "} " ++
+      parenIf (body.prec ≤ 30) (body.tex m)
+  | .index (.var nm) i => nm.texAt m (i.tex m)
+  | .index f i => "{" ++ parenIf (f.prec < 100) (f.tex m) ++ "}_{" ++ i.tex m ++ "}"
 
 /-- The TeX reading of a formula: instantiate both carriers at names and print. -/
 def Fml.tex (m : Mode) : {β : Type} → Fml NameV NameO β → String
@@ -369,6 +459,8 @@ def Fml.tex (m : Mode) : {β : Type} → Fml NameV NameO β → String
   | _, @Fml.sum _ _ _ _ _ x dom body => (Syn.sum x dom.tex (body x).syntax).tex m
   | _, .query h q => h.tex m ++ "(" ++ q.tex m ++ ")"
   | _, .app name _ x => "\\mathrm{" ++ name ++ "}(" ++ x.tex m ++ ")"
+  | _, @Fml.prod _ _ _ _ _ x dom body => (Syn.prod x dom.tex (body x).syntax).tex m
+  | _, .index f i => (Syn.index f.syntax i.syntax).tex m
 
 /-- Printing a formula and printing its syntax tree agree. -/
 theorem Fml.tex_eq (m : Mode) : ∀ {β : Type} (φ : Fml NameV NameO β), φ.tex m = φ.syntax.tex m
@@ -384,6 +476,8 @@ theorem Fml.tex_eq (m : Mode) : ∀ {β : Type} (φ : Fml NameV NameO β), φ.te
   | _, @Fml.sum _ _ _ _ _ _ _ _ => rfl
   | _, .query _ q => by simp only [Fml.tex, Fml.syntax, Syn.tex, Fml.tex_eq m q]
   | _, .app _ _ x => by simp only [Fml.tex, Fml.syntax, Syn.tex, Fml.tex_eq m x]
+  | _, @Fml.prod _ _ _ _ _ _ _ _ => rfl
+  | _, .index _ _ => rfl
 
 /-! ## Formulas with named holes -/
 
@@ -470,6 +564,8 @@ inductive FO : Type → Type 1
   | sum {α β : Type} [AddCommMonoid β] (x : Name) (dom : Dom α) (body : FO β) : FO β
   | query {Q A : Type} (h : Name) (q : FO Q) : FO A
   | app {α β : Type} (name : String) (f : α → β) (x : FO α) : FO β
+  | prod {α β : Type} [CommMonoid β] (x : Name) (dom : Dom α) (body : FO β) : FO β
+  | index {ι α : Type} (f : FO (ι → α)) (i : FO ι) : FO α
 
 /-- An environment: a typed value for each name, and a typed answer function for each oracle
 name. -/
@@ -494,9 +590,12 @@ noncomputable def FO.eval (E : Env) : {β : Type} → FO β → Option β
   | _, @FO.eq _ _ a b => do pure (decide ((← a.eval E) = (← b.eval E)))
   | _, .and a b => do pure ((← a.eval E) && (← b.eval E))
   | _, @FO.sum _ _ _ x dom body =>
-    (dom.elems.mapM fun a => body.eval (E.bind x a)).map List.sum
+    ((dom.elemsFn ()).mapM fun a => body.eval (E.bind x a)).map List.sum
   | _, @FO.query Q A h q => do pure ((← E.orc h Q A) (← q.eval E))
   | _, .app _ f x => do pure (f (← x.eval E))
+  | _, @FO.prod _ _ _ x dom body =>
+    ((dom.elemsFn ()).mapM fun a => body.eval (E.bind x a)).map List.prod
+  | _, .index f i => do pure ((← f.eval E) (← i.eval E))
 
 /-- Convert a formula at the naming carriers into a typed first-order formula. -/
 def Fml.toFO : {β : Type} → Fml NameV NameO β → FO β
@@ -512,6 +611,8 @@ def Fml.toFO : {β : Type} → Fml NameV NameO β → FO β
   | _, @Fml.sum _ _ _ _ _ x dom body => .sum x dom (body x).toFO
   | _, .query h q => .query h q.toFO
   | _, .app name f x => .app name f x.toFO
+  | _, @Fml.prod _ _ _ _ _ x dom body => .prod x dom (body x).toFO
+  | _, .index f i => .index f.toFO i.toFO
 
 /-- Forget the types of a first-order formula. -/
 def FO.erase : {β : Type} → FO β → Syn
@@ -527,16 +628,18 @@ def FO.erase : {β : Type} → FO β → Syn
   | _, @FO.sum _ _ _ x dom body => .sum x dom.tex body.erase
   | _, .query h q => .query h q.erase
   | _, .app name _ x => .app name x.erase
+  | _, @FO.prod _ _ _ x dom body => .prod x dom.tex body.erase
+  | _, .index f i => .index f.erase i.erase
 
 /-- The exported syntax tree is the typed first-order tree with its types forgotten. -/
 theorem Fml.erase_toFO : ∀ {β : Type} (φ : Fml NameV NameO β), φ.toFO.erase = φ.syntax
   | _, .var _ | _, .lit _ _ => rfl
   | _, @Fml.add _ _ _ _ a b | _, @Fml.sub _ _ _ _ a b | _, @Fml.mul _ _ _ _ a b
-  | _, @Fml.eq _ _ _ _ a b | _, .and a b => by
+  | _, @Fml.eq _ _ _ _ a b | _, .and a b | _, .index a b => by
     simp only [Fml.toFO, FO.erase, Fml.syntax, Fml.erase_toFO a, Fml.erase_toFO b]
   | _, @Fml.neg _ _ _ _ a | _, @Fml.pow _ _ _ _ a _ | _, .query _ a | _, .app _ _ a => by
     simp only [Fml.toFO, FO.erase, Fml.syntax, Fml.erase_toFO a]
-  | _, @Fml.sum _ _ _ _ _ x _ body => by
+  | _, @Fml.sum _ _ _ _ _ x _ body | _, @Fml.prod _ _ _ _ _ x _ body => by
     simp only [Fml.toFO, FO.erase, Fml.syntax, Fml.erase_toFO (body x)]
 
 /-! ## Tests -/
@@ -546,9 +649,9 @@ private def testSum (D : Dom ℤ) :
     Closed [.orc (ix "g" 2) ℤ ℤ, .val (ix "c" 2) ℤ] Bool :=
   ⟨fun g c => (∑∈ a ∈ D, ask g a) =' .var c⟩
 
-#guard (testSum ⟨"D", [0, 1]⟩).tex { folded := true, round := some 2 } ==
+#guard (testSum (.ofList "D" [0, 1])).tex { folded := true, round := some 2 } ==
   "\\sum_{a \\in D} g_{i}(a) = c_{i}"
-#guard (testSum ⟨"D", [0, 1]⟩).tex Mode.expanded == "\\sum_{a \\in D} g_{2}(a) = c_{2}"
+#guard (testSum (.ofList "D" [0, 1])).tex Mode.expanded == "\\sum_{a \\in D} g_{2}(a) = c_{2}"
 
 /-- A test of precedence: `(x + 1) · y - z^{2}`. -/
 private def testPrec : Closed [.val "x" ℤ, .val "y" ℤ, .val "z" ℤ] ℤ :=
@@ -558,12 +661,31 @@ private def testPrec : Closed [.val "x" ℤ, .val "y" ℤ, .val "z" ℤ] ℤ :=
 
 /-- The test formula evaluates by enumeration: with `g a = a + 1` and `D = {0, 1}`, the sum is
 `3`. -/
-example : ((testSum ⟨"D", [0, 1]⟩).inst (v := fun α => α) (o := fun Q A => Q → A)
+example : ((testSum (.ofList "D" [0, 1])).inst (v := fun α => α) (o := fun Q A => Q → A)
     (.orc (fun a : ℤ => a + 1) (.val (3 : ℤ) .nil))).eval (fun ⦃_ _⦄ f q => f q) = true := by
+  decide
+
+/-- A test of the product binder and of indexing: `Π_{j ∈ [2]} (τ_j x_j + (1 - τ_j)(1 - x_j))`,
+the weight `eq(τ, x)`. -/
+private def testProd : Closed [.val "\\tau" (Fin 2 → ℤ), .val (ix "x" 1) (Fin 2 → ℤ)] ℤ :=
+  ⟨fun τ x => ∏∈ j ∈ Dom.fin 2, Fml.index (.var τ) (.var j) * Fml.index (.var x) (.var j) +
+    (1 - Fml.index (.var τ) (.var j)) * (1 - Fml.index (.var x) (.var j))⟩
+
+#guard testProd.tex { folded := true, round := some 1 } ==
+  "\\prod_{j \\in [2]} (\\tau_{j} \\cdot x_{i,j} + (1 - \\tau_{j}) \\cdot (1 - x_{i,j}))"
+
+/-- The product evaluates by enumeration: with `τ = x = (1, 1)` every factor is `1`, and with
+`x = (0, 0)` every factor is `0`. -/
+example : (testProd.inst (v := fun α => α) (o := fun Q A => Q → A)
+    (.val (fun _ => 1) (.val (fun _ => 1) .nil))).eval (fun ⦃_ _⦄ f q => f q) = 1 := by
+  decide
+example : (testProd.inst (v := fun α => α) (o := fun Q A => Q → A)
+    (.val (fun _ => 1) (.val (fun _ => 0) .nil))).eval (fun ⦃_ _⦄ f q => f q) = 0 := by
   decide
 
 #print axioms Fml.tex_eq
 #print axioms Fml.erase_toFO
 #print axioms Fml.eval_sum
+#print axioms Fml.eval_prod
 
 end Specs

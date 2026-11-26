@@ -18,13 +18,12 @@ This module writes a protocol in which a plain prover message selects the shape 
   tree `Sumcheck.protocol R d m`. Lean proves it by `rfl`.
 * `branching_verdict_isSome`: if the witness polynomial sums to `c` over `D^m`, the verdict accepts
   every honest transcript. It applies the generic `Spec.verdict_isSome`.
-* `sumcheck_complete`: every check of the sum-check loop holds on the honest messages, for any
-  continuation that is complete when its claim holds. `Frozen` states that the handler table keeps
-  the oracles recorded before the loop, so a continuation can still query them. Spartan uses both.
-* `roundsGo_complete`: a `rounds` block is complete if each round preserves an invariant of the
-  state, the handler table and the level. FRI uses it for its three blocks.
-* The tests read the branching message by its label (`tr⟦m⟧`) and check that the skeleton has one
-  case per value of `m` with the expected checks in expanded TeX.
+* `Frozen` states that the handler table keeps the oracles recorded before a loop, so a
+  continuation can still query them. This module and Spartan use it with `sumcheck_complete` of
+  `Specs.Examples.Sumcheck`.
+* The tests read the branching message by its label (`tr⟦m⟧`), read moves inside a case
+  (`tr⟦m = 2, sumcheck, 0, g⟧`), and check that the skeleton has one case per value of `m` with the
+  expected checks in expanded TeX.
 
 This module proves no soundness statement. The protocol demonstrates the shape mechanism only: the
 prover chooses `p`, so the claim it proves holds for every `c` that some polynomial sums to.
@@ -36,11 +35,10 @@ prover chooses `p`, so the claim it proves holds for every `c` that some polynom
 * The honest functions read the whole witness `⟨m, p⟩`, so the honest oracle message of case `m`
   is `polyAt m w`, which is `p` when `m` matches and `0` in the cases the honest prover never
   takes (`polyAt_self`).
-* The accessor addresses only the branching message. *Why:* the accessor stops at a branch, since
-  the transcript type after it depends on the message. Lean reports for `tr⟦p⟧`: "the label is not
-  found before a branch; a label inside a branch is not supported".
-* `sumcheck_complete` belongs in `Specs.Examples.Sumcheck`, and `roundsGo_complete` in
-  `Specs.Run`. They live here because this task may not edit those modules.
+* A label inside a branch names the case first (`tr⟦m = 2, p⟧`), and the accessor returns an
+  `Option`: `some` of the move when the transcript's message `m` is `2`, and `none` otherwise.
+  *Why:* the transcript type after the message depends on the message, so the case must be fixed
+  before any move inside it has a type.
 -/
 
 set_option linter.hashCommand false
@@ -57,119 +55,6 @@ variable {R : Type} [CommSemiring R] [DecidableEq R] [TypeName R] {d k : ℕ}
 local instance : Inhabited R := ⟨0⟩
 
 variable {In : OracleBundle} {W T : Type}
-
-/-! ## Completeness of the sum-check loop -/
-
-section Retree
-variable {w : W} {ans : QueryImpl In.spec Id}
-
-/-- Moving a description to an equal tree keeps its completeness condition. -/
-theorem Desc.complete_retree {t t' : OracleProtocol} {ks : Skel} (h : t = t')
-    (d : Desc In W T t ks) (env : Handlers Id) (ℓ : ℕ) :
-    (d.retree h).Complete w ans env ℓ ↔ d.Complete w ans env ℓ := by
-  subst h; rfl
-
-end Retree
-
-omit [TypeName R] in
-/-- The round check `Σ_{a ∈ D} g_i(a) = c_i` evaluates to a sum over the domain indices. -/
-private theorem eval_round_check' (D : Fin k → R) (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
-    {nm nm' : Name} (h : Ref (OracleInterface.Query (R⦃≤ d⦄[X])) R) (x : R) :
-    Fml.eval ask' (Curry.app (v := fun α => α) (o := Ref) (β := Bool)
-      (Γ := [Hole.orc nm (OracleInterface.Query (R⦃≤ d⦄[X])) R] ++ [Hole.val nm' R])
-      (fun g c => (∑∈ a ∈ Dom.ofFn "D" D, ask g a) =' .var c)
-      (Args.orc h (Args.val x Args.nil))) = decide (∑ a : Fin k, ask' h (D a) = x) := by
-  change Fml.eval ask' ((∑∈ a ∈ Dom.ofFn "D" D, ask h a) =' .var x) = _
-  simp only [Fml.eval_eq, Fml.eval_sum, Fml.eval_query, Fml.eval_var, Dom.ofFn, List.map_ofFn,
-    List.sum_ofFn]
-  rfl
-
-omit [DecidableEq R] [TypeName R] in
-/-- The local value `g_i(r_i)` of a round evaluates by one query to `g_i`. -/
-private theorem eval_round_value' (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
-    {nm nm' : Name} (h : Ref (OracleInterface.Query (R⦃≤ d⦄[X])) R) (c : R) :
-    Fml.eval ask' (Curry.app (v := fun α => α) (o := Ref) (β := R)
-      (Γ := [Hole.orc nm (OracleInterface.Query (R⦃≤ d⦄[X])) R] ++ [Hole.val nm' R])
-      (fun g r => ask g r) (Args.orc h (Args.val c Args.nil))) = ask' h c := rfl
-
-/-- **Completeness of the sum-check loop.** If the claim `c_j` of the rounds `j, …, n - 1` is the
-remaining sum of `poly w` over the domain, every check of these rounds holds on the honest
-messages, for every choice of challenges, provided the continuation is complete whenever its
-claim `p(r) = c_n` holds. `P` is any invariant of the handler table that survives the oracle
-messages of the rounds, so the continuation can still read the oracles recorded before. -/
-theorem sumcheck_complete {n : ℕ} (D : Fin k → R) (poly : W → R⦃≤ d⦄[X Fin n]) (w : W)
-    (ans : QueryImpl In.spec Id) {t : OracleProtocol} {ks : Skel}
-    (next : Claim R n → Desc In W T t ks) (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
-    (hS : ∀ j k, τ j (k + 1) = roundTree R d (τ (j + 1) k))
-    (P : Handlers Id → ℕ → Prop)
-    (hP : ∀ env ℓ {Q A : Type} (f : Q → Id A), P env ℓ → P (env.ext ℓ f) (ℓ + 1))
-    (hnext : ∀ st env ℓ, P env ℓ → (poly w).val.eval st.rs = st.c.val →
-      (next st).Complete w ans env ℓ) :
-    ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (env : Handlers Id) (ℓ : ℕ), P env ℓ →
-      Sumcheck.roundSum D ⟨j, by omega⟩ st.rs (poly w).val = st.c.val →
-      (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|") (sumcheckRound n D poly) next
-        τ h0 hS r j h st).Complete w ans env ℓ := by
-  intro r
-  induction r with
-  | zero =>
-    intro j h st env ℓ hp hs
-    subst h
-    rw [roundsGo, Desc.complete_retree]
-    refine hnext st env ℓ hp ?_
-    exact (Sumcheck.indexedRelation_last D ⟨st.c.val, st.rs⟩ (poly w)).1 hs
-  | succ r ih =>
-    intro j h st env ℓ hp hs
-    rw [roundsGo, Desc.complete_retree]
-    rw [sumcheckRound]
-    simp only [oracle, check, challenge, compute]
-    erw [Desc.Complete.eq_11, Desc.Complete.eq_3, Desc.Complete.eq_5, Desc.Complete.eq_4]
-    simp only [Closed.inst, ToArgs.toArgs_prod, ToArgs.toArgs_ohdl, ToArgs.toArgs_val,
-      Args.append, eval_round_check', askId, Handlers.find_ext_self]
-    refine ⟨?_, fun r => ?_⟩
-    · dsimp only [Desc.honestEntry, Id.run_pure, cast_eq,
-        OracleInterface.instPolynomialDegreeLE]
-      exact decide_eq_true ((Sumcheck.sum_projectedRoundPolynomial D ⟨j, by omega⟩ st.rs
-        (poly w)).trans hs)
-    · erw [Desc.Complete.eq_6]
-      simp only [Closed.inst, eval_round_value', askId, Handlers.find_ext_self]
-      erw [Desc.Complete.eq_11]
-      refine ih (j + 1) (by omega) _ _ _ (hP _ _ _ hp) ?_
-      dsimp only [Desc.honestEntry, Id.run_pure, cast_eq,
-        OracleInterface.instPolynomialDegreeLE]
-      exact Sumcheck.roundSum_succ D ⟨j, by omega⟩ st.rs (poly w) r
-
-/-- **Completeness of a `rounds` block.** If every round is complete whenever its continuation is
-complete, the block is complete. `I i st env ℓ` is an invariant of the state before round `i`
-together with the handler table and the next level. -/
-theorem roundsGo_complete {State : ℕ → Type} {F : ℕ → OracleProtocol → OracleProtocol}
-    {G : ℕ → Skel → Skel} (block : String) (n : ℕ) (countName : String) (error : ℕ → String)
-    (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
-      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G i ks))
-    {t : OracleProtocol} {ks : Skel} (next : State n → Desc In W T t ks)
-    (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
-    (hS : ∀ j k, τ j (k + 1) = F j (τ (j + 1) k)) (w : W) (ans : QueryImpl In.spec Id)
-    (I : (i : ℕ) → State i → Handlers Id → ℕ → Prop)
-    (hbody : ∀ {t' : OracleProtocol} {ks' : Skel} (i : ℕ) (hi : i < n) (st : State i)
-      (next' : State (i + 1) → Desc In W T t' ks') (env : Handlers Id) (ℓ : ℕ), I i st env ℓ →
-      (∀ st' env' ℓ', I (i + 1) st' env' ℓ' → (next' st').Complete w ans env' ℓ') →
-      (body i hi st next').Complete w ans env ℓ)
-    (hnext : ∀ st env ℓ, I n st env ℓ → (next st).Complete w ans env ℓ) :
-    ∀ (r j : ℕ) (h : j + r = n) (st : State j) (env : Handlers Id) (ℓ : ℕ), I j st env ℓ →
-      (roundsGo block n countName error body next τ h0 hS r j h st).Complete w ans env ℓ := by
-  intro r
-  induction r with
-  | zero =>
-    intro j h st env ℓ hI
-    subst h
-    rw [roundsGo, Desc.complete_retree]
-    exact hnext _ env ℓ hI
-  | succ r ih =>
-    intro j h st env ℓ hI
-    rw [roundsGo, Desc.complete_retree]
-    erw [Desc.Complete.eq_11]
-    refine hbody j (by omega) st _ env ℓ hI fun st' env' ℓ' hI' => ?_
-    erw [Desc.Complete.eq_11]
-    exact ih (j + 1) (by omega) st' env' ℓ' hI'
 
 /-! ## Handler tables that keep the earlier levels -/
 
@@ -284,6 +169,28 @@ section Tests
 /-- The branching message by its label. -/
 example (tr : (branchingSpec ℚ 2 ![(0 : ℚ), 1]).Tr) : tr⟦m⟧ = tr.1 := rfl
 
+/-- Moves inside the case `m = 2`: the oracle `p` and the first round polynomial of the stage. -/
+example (tr : (branchingSpec ℚ 2 ![(0 : ℚ), 1]).Tr) :
+    tr⟦m = 2, p⟧ = (caseOf tr 2).map (·.1) := rfl
+example (tr : (branchingSpec ℚ 2 ![(0 : ℚ), 1]).Tr) :
+    tr⟦m = 2, sumcheck, 0, g⟧ = (caseOf tr 2).map (·.2.1) := rfl
+example (tr : (branchingSpec ℚ 2 ![(0 : ℚ), 1]).Tr) :
+    tr⟦m = 2, sumcheck, 1, r⟧ = (caseOf tr 2).map (·.2.2.2.2.1) := rfl
+
+/-- The transcript type of the case `m`. -/
+abbrev CaseTr (m : Fin 4) : Type :=
+  Transcript oracleSig (.liftBind (.oracle (ℚ⦃≤ 2⦄[X Fin m]) inferInstance) fun _ =>
+    Sumcheck.protocol ℚ 2 m)
+
+/-- On a transcript whose message is `2` the accessor returns the move, and on any other message it
+returns `none`. -/
+example (x : CaseTr 2) (tr : (branchingSpec ℚ 2 ![(0 : ℚ), 1]).Tr) (h : tr = ⟨(2 : Fin 4), x⟩) :
+    tr⟦m = 2, sumcheck, 0, g⟧ = some x.2.1 := by
+  subst h; rfl
+example (x : CaseTr 1) (tr : (branchingSpec ℚ 2 ![(0 : ℚ), 1]).Tr) (h : tr = ⟨(1 : Fin 4), x⟩) :
+    tr⟦m = 2, p⟧ = none := by
+  subst h; rfl
+
 /-- The labels and expanded TeX of the checks of each case of the skeleton. -/
 def caseChecks (ks : Skel) (mode : Mode) : List (String × List (String × String)) :=
   match ks with
@@ -307,8 +214,6 @@ end Tests
 
 end Branching
 
-#print axioms sumcheck_complete
-#print axioms roundsGo_complete
 #print axioms roundSum_zero
 #print axioms branching_tree
 #print axioms branching_verdict_isSome

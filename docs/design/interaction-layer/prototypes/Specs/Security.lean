@@ -30,6 +30,13 @@ ArkLib's statements about the specification's derived prover (`Spec.prover`) and
 * `Spec.verdict_of_validAcceptance`: an accepting decision of the specification's verifier is an
   accepting pure verdict. Soundness proofs through the kit use it for the leaf obligation.
 * `Spec.Sound.mono`: soundness is monotone in the input and output languages.
+* Stage contracts: `Spec.ClaimSound` and `Spec.ClaimRBRSound` (soundness and round-by-round
+  soundness with `Spec.inputProblem` and `Spec.outputProblem`), `Spec.ClaimComplete` (a true input
+  claim makes every check hold on the honest values and the output claim true on every honest
+  transcript) and `Spec.StageContract` (both). `Spec.ClaimComplete.accepts` turns completeness into
+  acceptance with a true output claim, and `Spec.ClaimSound.of_sound` derives the soundness contract
+  from soundness on other problems by comparing languages. `Specs.Claims` instantiates them for
+  sum-check.
 
 ## Design choices
 
@@ -50,7 +57,15 @@ ArkLib's statements about the specification's derived prover (`Spec.prover`) and
   claim true. *Why:* ArkLib's output language reads only the output and the path, while a stage's
   output claim reads values of the transcript. When the claim reads only values that the output
   determines, as sum-check's `p(r) = c_n` does, the language is the claim on the output
-  (`Specs.Bridge` proves this for sum-check).
+  (`Specs.Claims` proves the inclusion in ArkLib's output language for sum-check).
+* The stage contracts are about the input claim of the first stage and the output claim of the
+  last stage. *Why:* these are the claims `Spec.inClaim` and `Spec.outClaim` read, so a contract of
+  a single-stage specification is the contract of its stage. A contract for each stage of a
+  multi-stage specification needs the state between stages and is not stated here.
+* The completeness contract is deterministic and takes a witness relation `wit`. *Why:* the stage
+  claims read the statement and the input oracles, not the witness, so the contract must say
+  which witness the honest prover uses, and a description's checks hold or fail for each choice of
+  challenges, with no probability involved.
 -/
 
 set_option linter.hashCommand false
@@ -289,8 +304,92 @@ theorem verdict_of_validAcceptance (impl : QueryImpl ambient (StateT σ ProbComp
 
 end Statements
 
+/-! ## Stage contracts
+
+A stage contract states what a specification's stage claims mean for its verifier and its honest
+prover, in the two directions of a reduction. Each is a thin definition over the statements
+above. -/
+
+section Contracts
+variable (s : Spec In S W T t ks)
+
+/-- The output claim holds along the transcript. A specification without an output claim has the
+claim `true`. -/
+def OutClaim (stmt : S) (data : In.Data) (tr : Transcript oracleSig t) : Prop :=
+  (s.outClaim stmt data tr).getD true = true
+
+theorem outputProblem_language_of_verdict {stmt : S} {data : In.Data}
+    {tr : Transcript oracleSig t} {o : T} (hv : s.verdict stmt data tr = some o)
+    (hc : s.OutClaim stmt data tr) : s.outputProblem.language (Transcript.path tr) (o, data) :=
+  (s.outputProblem_language _ _).mpr ⟨stmt, tr, rfl, hv, hc⟩
+
+variable {ι σ : Type} (ambient : OracleSpec ι)
+
+/-- **Soundness contract of the stage claims.** If the input claim is false, the verifier accepts
+an output whose output claim is true with probability at most `ε`: `Spec.Sound` with the
+problems that the claims denote, `Spec.inputProblem` and `Spec.outputProblem`. -/
+def ClaimSound (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (draw : QueryImpl (challengeSpec oracleSig t) ProbComp) (ε : ℝ≥0∞) : Prop :=
+  s.Sound ambient init impl draw s.inputProblem s.outputProblem ε
+
+/-- **Round-by-round soundness contract of the stage claims**: `Spec.RBRSound` with the problems
+that the claims denote. -/
+def ClaimRBRSound (impl : QueryImpl ambient (StateT σ ProbComp))
+    (draw : QueryImpl (challengeSpec oracleSig t) ProbComp)
+    (ε : ChallengeNode oracleSig t → ℝ≥0∞) : Prop :=
+  s.RBRSound ambient impl s.inputProblem s.outputProblem draw ε
+
+/-- **Completeness contract of the stage claims.** For every input `x` and witness `w` that `wit`
+relates, if the input claim holds, then every check holds on the honest values for every choice
+of challenges (`Desc.Complete`, so the verdict accepts every honest transcript by
+`Spec.verdict_isSome`), and the output claim holds on every honest transcript. `wit` says which
+witness the honest prover runs with, for example that the witness is the input oracle. -/
+def ClaimComplete (wit : S × In.Data → W → Prop) : Prop :=
+  ∀ x w, wit x w → s.InClaim x →
+    (s.desc x.1).Complete w (In.answer x.2) .empty 0 ∧
+      ∀ tr, (s.desc x.1).Honest w (In.answer x.2) tr .empty 0 → s.OutClaim x.1 x.2 tr
+
+/-- **The stage contract**: the soundness and completeness contracts of the stage claims. A
+protocol author proves it once per stage. -/
+structure StageContract (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (draw : QueryImpl (challengeSpec oracleSig t) ProbComp) (ε : ℝ≥0∞)
+    (wit : S × In.Data → W → Prop) : Prop where
+  sound : s.ClaimSound ambient init impl draw ε
+  complete : s.ClaimComplete wit
+
+variable {s ambient}
+
+/-- Under the completeness contract, an honest run with a true input claim is accepted, its
+output claim is true, and its output is in the output language. -/
+theorem ClaimComplete.accepts {wit : S × In.Data → W → Prop} (h : s.ClaimComplete wit)
+    {x : S × In.Data} {w : W} (hw : wit x w) (hin : s.InClaim x) (tr : Transcript oracleSig t)
+    (hh : (s.desc x.1).Honest w (In.answer x.2) tr .empty 0) :
+    ∃ o, s.verdict x.1 x.2 tr = some o ∧ s.OutClaim x.1 x.2 tr ∧
+      s.outputProblem.language (Transcript.path tr) (o, x.2) := by
+  obtain ⟨hc, hout⟩ := h x w hw hin
+  obtain ⟨o, ho⟩ := Option.isSome_iff_exists.mp (s.verdict_isSome x.1 w x.2 tr hc hh)
+  exact ⟨o, ho, hout tr hh, s.outputProblem_language_of_verdict ho (hout tr hh)⟩
+
+/-- **Soundness on the stage claims from soundness on other problems.** The input claim's
+language must contain the other input language on admissible inputs, and the other output
+language must contain the output claim's language. -/
+theorem ClaimSound.of_sound {init : ProbComp σ} {impl : QueryImpl ambient (StateT σ ProbComp)}
+    {draw : QueryImpl (challengeSpec oracleSig t) ProbComp}
+    {input : StatementProblem (S × In.Data)} {output : PathProblem t (fun _ => T × In.Data)}
+    {ε : ℝ≥0∞} (hadm : ∀ x, input.admissible () x)
+    (hin : ∀ x, input.language () x → s.InClaim x)
+    (hout : ∀ p o, s.outputProblem.language p o → output.language p o)
+    (h : s.Sound ambient init impl draw input output ε) :
+    s.ClaimSound ambient init impl draw ε :=
+  Spec.Sound.mono s ambient
+    (fun x _ hx => ⟨hadm x, fun hl => hx ((s.inputProblem_language x).mpr (hin x hl))⟩) hout h
+
+end Contracts
+
 end Spec
 
+#print axioms Spec.ClaimComplete.accepts
+#print axioms Spec.ClaimSound.of_sound
 #print axioms Spec.Sound.mono
 #print axioms Spec.verdict_of_validAcceptance
 #print axioms Spec.sound_iff

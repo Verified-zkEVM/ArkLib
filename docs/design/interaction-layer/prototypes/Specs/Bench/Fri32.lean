@@ -15,6 +15,8 @@ in `ZMod 17`. The tree and the skeleton do not depend on `ω`, so the bench uses
 See `Specs.Bench`.
 -/
 
+set_option linter.hashCommand false
+
 namespace Specs.Bench.Fri32
 open Interaction Specs.Fri
 

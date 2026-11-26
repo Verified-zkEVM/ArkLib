@@ -24,8 +24,12 @@ This module turns a description into ArkLib objects and proves the two generic t
   `Spec.decide_eq_verdict` is its instance for ArkLib's `decide`.
 * `Desc.verdict_isSome` (honest acceptance): on an honest transcript the verdict accepts when
   every check holds on the honest values for every choice of challenges (`Desc.Complete`).
+* `roundsGo_complete`: a `rounds` block is complete if each round preserves an invariant of the
+  state, the handler table and the level. `Desc.complete_retree` moves completeness along
+  `Desc.retree`.
 * `tr⟦a, …, x⟧` reads a move by hierarchical label: the stages and rounds that enclose it,
-  then the base of its name.
+  then the base of its name. A component `m = v` enters the case `v` of the branch on `m`, and
+  then the accessor returns an `Option` through `caseOf`.
 
 ## Design choices
 
@@ -44,6 +48,13 @@ This module turns a description into ArkLib objects and proves the two generic t
 * The accessor is an elaborator that walks the skeleton in the specification's type and emits a
   chain of `.2` and `.1` projections. *Why:* the result is a projection term, so it reduces by
   `rfl` and `simp` for every `n` at which the skeleton prefix up to the move is concrete.
+* Inside a branch the accessor returns `Option α`: `caseOf tr v` is `some` of the rest of the
+  transcript when its branching message is `v`, and `none` otherwise. *Why:* the type of the rest of
+  a transcript depends on the message, which a transcript of type `Spec.Tr s` does not fix, so no
+  projection reaches a move inside a case. `caseOf_self` and `caseOf_ne` state the two cases. On a
+  concrete specification whose message has decidable equality, `rfl` reduces the accessor on a
+  transcript `⟨v, x⟩`. The label names the case by its label in the skeleton (`m = 2`), so the
+  accessor reads the case's value and sub-skeleton from the branch's list of cases.
 -/
 
 namespace Specs
@@ -317,7 +328,46 @@ theorem verdict_isSome (w : W) (ans : QueryImpl In.spec Id) :
   | _, _, .stageOut _ _ _ rest, tr, env, ℓ, hc, hh => verdict_isSome w ans rest tr env ℓ hc hh
   | _, _, .mark _ rest, tr, env, ℓ, hc, hh => verdict_isSome w ans rest tr env ℓ hc hh
 
+/-- Moving a description to an equal tree keeps its completeness condition. -/
+theorem complete_retree {w : W} {ans : QueryImpl In.spec Id} {t t' : OracleProtocol} {ks : Skel}
+    (h : t = t') (d : Desc In W T t ks) (env : Handlers Id) (ℓ : ℕ) :
+    (d.retree h).Complete w ans env ℓ ↔ d.Complete w ans env ℓ := by
+  subst h; rfl
+
 end Desc
+
+/-- **Completeness of a `rounds` block.** If every round is complete whenever its continuation is
+complete, the block is complete. `I i st env ℓ` is an invariant of the state before round `i`
+together with the handler table and the next level. -/
+theorem roundsGo_complete {State : ℕ → Type} {F : ℕ → OracleProtocol → OracleProtocol}
+    {G : ℕ → Skel → Skel} (block : String) (n : ℕ) (countName : String) (error : ℕ → String)
+    (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
+      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G i ks))
+    {t : OracleProtocol} {ks : Skel} (next : State n → Desc In W T t ks)
+    (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
+    (hS : ∀ j k, τ j (k + 1) = F j (τ (j + 1) k)) (w : W) (ans : QueryImpl In.spec Id)
+    (I : (i : ℕ) → State i → Handlers Id → ℕ → Prop)
+    (hbody : ∀ {t' : OracleProtocol} {ks' : Skel} (i : ℕ) (hi : i < n) (st : State i)
+      (next' : State (i + 1) → Desc In W T t' ks') (env : Handlers Id) (ℓ : ℕ), I i st env ℓ →
+      (∀ st' env' ℓ', I (i + 1) st' env' ℓ' → (next' st').Complete w ans env' ℓ') →
+      (body i hi st next').Complete w ans env ℓ)
+    (hnext : ∀ st env ℓ, I n st env ℓ → (next st).Complete w ans env ℓ) :
+    ∀ (r j : ℕ) (h : j + r = n) (st : State j) (env : Handlers Id) (ℓ : ℕ), I j st env ℓ →
+      (roundsGo block n countName error body next τ h0 hS r j h st).Complete w ans env ℓ := by
+  intro r
+  induction r with
+  | zero =>
+    intro j h st env ℓ hI
+    subst h
+    rw [roundsGo, Desc.complete_retree]
+    exact hnext _ env ℓ hI
+  | succ r ih =>
+    intro j h st env ℓ hI
+    rw [roundsGo, Desc.complete_retree]
+    erw [Desc.Complete.eq_11]
+    refine hbody j (by omega) st _ env ℓ hI fun st' env' ℓ' hI' => ?_
+    erw [Desc.Complete.eq_11]
+    exact ih (j + 1) (by omega) st' env' ℓ' hI'
 
 /-! ## Monad morphisms and the decision -/
 
@@ -352,6 +402,11 @@ theorem sumM_hom (hφ : IsHom @φ) {α β : Type} [AddCommMonoid β] (f : α →
   | [] => hφ.map_pure 0
   | a :: l => by simp only [sumM, hφ.map_bind, hφ.map_pure, sumM_hom hφ f l]
 
+theorem prodM_hom (hφ : IsHom @φ) {α β : Type} [CommMonoid β] (f : α → m β) :
+    ∀ l : List α, φ (prodM f l) = prodM (fun a => φ (f a)) l
+  | [] => hφ.map_pure 1
+  | a :: l => by simp only [prodM, hφ.map_bind, hφ.map_pure, prodM_hom hφ f l]
+
 /-- A monad morphism commutes with formula evaluation. -/
 theorem Fml.evalM_hom (hφ : IsHom @φ) {o : Type → Type → Type}
     (ask : ∀ ⦃Q A : Type⦄, o Q A → Q → m A) :
@@ -381,11 +436,20 @@ theorem Fml.evalM_hom (hφ : IsHom @φ) {o : Type → Type → Type}
   | _, @Fml.sum _ _ _ _ _ _ dom body => by
     simp only [Fml.evalM]
     rw [sumM_hom hφ]
-    exact congrArg (fun g => sumM g dom.elems) (funext fun x => Fml.evalM_hom hφ ask (body x))
+    exact congrArg (fun g => sumM g (dom.elemsFn ()))
+      (funext fun x => Fml.evalM_hom hφ ask (body x))
   | _, .query h q => by
     simp only [Fml.evalM, hφ.map_bind, Fml.evalM_hom hφ ask q]
   | _, .app _ f x => by
     simp only [Fml.evalM, hφ.map_bind, hφ.map_pure, Fml.evalM_hom hφ ask x]
+  | _, @Fml.prod _ _ _ _ _ _ dom body => by
+    simp only [Fml.evalM]
+    rw [prodM_hom hφ]
+    exact congrArg (fun g => prodM g (dom.elemsFn ()))
+      (funext fun x => Fml.evalM_hom hφ ask (body x))
+  | _, .index f i => by
+    simp only [Fml.evalM, hφ.map_bind, hφ.map_pure, Fml.evalM_hom hφ ask f,
+      Fml.evalM_hom hφ ask i]
 
 /-- A monad morphism that sends every oracle answer to `pure` of a pure answer sends the
 evaluation to `pure` of the pure evaluation. -/
@@ -510,13 +574,43 @@ end Spec
 
 /-! ## Accessors by hierarchical label -/
 
+/-- The rest of a transcript after a branching message, if the message is `x`, and `none`
+otherwise. The accessor `tr⟦m = x, …⟧` reads moves inside the case `x` through it. -/
+def caseOf {X : Type} [DecidableEq X] {t : X → OracleProtocol}
+    (tr : Transcript oracleSig (FreeM.liftBind (P := OraclePoly) (OraclePos.message X) t))
+    (x : X) : Option (Transcript oracleSig (t x)) :=
+  if h : tr.1 = x then some (cast (congrArg (fun y => Transcript oracleSig (t y)) h) tr.2)
+  else none
+
+/-- `caseOf` for the verifier's view: the rest of a view's transcript after a branching message,
+if the message is `x`. -/
+def caseOfView {X : Type} [DecidableEq X] {t : X → OracleProtocol}
+    (tr : Transcript viewSig (FreeM.liftBind (P := OraclePoly) (OraclePos.message X) t))
+    (x : X) : Option (Transcript viewSig (t x)) :=
+  if h : tr.1 = x then some (cast (congrArg (fun y => Transcript viewSig (t y)) h) tr.2)
+  else none
+
+@[simp] theorem caseOf_self {X : Type} [DecidableEq X] {t : X → OracleProtocol} (x : X)
+    (tr : Transcript oracleSig (t x)) :
+    caseOf (t := t) (⟨x, tr⟩ : Transcript oracleSig
+      (FreeM.liftBind (P := OraclePoly) (OraclePos.message X) t)) x = some tr := by
+  simp only [caseOf, dite_true, cast_eq]
+
+theorem caseOf_ne {X : Type} [DecidableEq X] {t : X → OracleProtocol} {x y : X} (h : x ≠ y)
+    (tr : Transcript oracleSig (t x)) :
+    caseOf (t := t) (⟨x, tr⟩ : Transcript oracleSig
+      (FreeM.liftBind (P := OraclePoly) (OraclePos.message X) t)) y = none := by
+  simp [caseOf, h]
+
 section Accessor
 open Lean Elab Term Meta
 
-/-- A component of a hierarchical label: a stage or block name, or a round number. -/
+/-- A component of a hierarchical label: a stage or block name, a round number, or a case of a
+branch (`msg = value`, with the base of the branching message's name and the case's label). -/
 inductive LabelComp
   | name (s : String)
   | num (n : ℕ)
+  | case (msg value : String)
   deriving BEq, Inhabited
 
 /-- A component of a hierarchical label. -/
@@ -524,16 +618,24 @@ declare_syntax_cat specLabel
 syntax ident : specLabel
 syntax num : specLabel
 syntax str : specLabel
+syntax ident " = " num : specLabel
+syntax ident " = " ident : specLabel
+syntax ident " = " str : specLabel
 
 /-- `tr⟦a, …, x⟧` is the move with name base `x` inside the enclosing stages, blocks and rounds
 `a, …`, in a transcript of type `Spec.Tr s` or a view of type `Spec.Vw s p`. It elaborates to a
-chain of projections. -/
+chain of projections. A component `m = v` enters the case labelled `v` of the branch on the
+message `m`. Then the accessor has type `Option α`: `some` of the move when the transcript's
+message is that case, and `none` otherwise. -/
 syntax:max term noWs "⟦" specLabel,+ "⟧" : term
 
 private def labelComp : TSyntax `specLabel → TermElabM LabelComp
   | `(specLabel| $x:ident) => pure (.name x.getId.toString)
   | `(specLabel| $n:num) => pure (.num n.getNat)
   | `(specLabel| $s:str) => pure (.name s.getString)
+  | `(specLabel| $m:ident = $n:num) => pure (.case m.getId.toString (toString n.getNat))
+  | `(specLabel| $m:ident = $v:ident) => pure (.case m.getId.toString v.getId.toString)
+  | `(specLabel| $m:ident = $v:str) => pure (.case m.getId.toString v.getString)
   | _ => throwUnsupportedSyntax
 
 private def readString (e : Expr) : MetaM String := do
@@ -558,9 +660,47 @@ private def nameBase (nm : Expr) : MetaM String := do
   let nm ← whnfD nm
   readString nm.getAppArgs[0]!
 
-/-- The position among the moves of the first move that matches the label. -/
-private partial def findMove (label : List LabelComp) (base : String) (ks : Expr)
-    (ctx : Array LabelComp) (pos : ℕ) : MetaM ℕ := do
+/-- The elements of a list expression. -/
+private partial def listElems (l : Expr) : MetaM (List Expr) := do
+  let l ← whnfD l
+  if l.isAppOfArity ``List.cons 3 then return l.getAppArgs[1]! :: (← listElems l.getAppArgs[2]!)
+  else return []
+
+/-- The value and the sub-skeleton of the case labelled `v` of a branch on `msg`, from the branch's
+list of cases. `Skel.ofBranch` builds that list as `List.map f l` from the author's list `l` of
+labels and values, so the value is read from `l` and the sub-skeleton is the second component of
+`f` at that element. -/
+private def branchCase (casesE : Expr) (msg v : String) : MetaM (Expr × Expr) := do
+  let casesE ← instantiateMVars casesE
+  unless casesE.isAppOfArity ``List.map 4 do
+    throwError "cannot read the case values of the branch on `{msg}`"
+  let f := casesE.getAppArgs[2]!
+  let mut labels : Array String := #[]
+  for e in ← listElems casesE.getAppArgs[3]! do
+    let e' ← whnfD e
+    unless e'.isAppOfArity ``Prod.mk 4 do
+      throwError "cannot read the case values of the branch on `{msg}`"
+    let s ← readString e'.getAppArgs[2]!
+    if s == v then
+      let sub ← whnfD (Expr.headBeta (mkApp f e))
+      unless sub.isAppOfArity ``Prod.mk 4 do
+        throwError "cannot read the skeleton of the case `{v}` of the branch on `{msg}`"
+      return (e'.getAppArgs[3]!, sub.getAppArgs[3]!)
+    labels := labels.push s
+  throwError "the branch on `{msg}` has no case `{v}`; its cases are {labels.toList}"
+
+/-- A segment of the path to a move: the number of moves to skip, and the value of the case to
+enter at the branch that follows, if the path continues into a branch. -/
+private structure Seg where
+  pos : ℕ
+  case : Option Expr
+
+/-- The path to the first move that matches the label: the label's names and numbers must be a
+subsequence of the enclosing stages, blocks and rounds, and `cases` lists the branch cases to
+enter, in order. -/
+private partial def findMove (label : List LabelComp) (cases : List (String × String))
+    (base : String) (ks : Expr) (ctx : Array LabelComp) (pos : ℕ) (acc : Array Seg) :
+    MetaM (Array Seg) := do
   let ks ← whnfD ks
   let args := ks.getAppArgs
   let hit (nm : Expr) : MetaM Bool := do
@@ -572,7 +712,8 @@ private partial def findMove (label : List LabelComp) (base : String) (ks : Expr
     let rest := args[1]!
     match it.getAppFn.constName? with
     | some ``Item.move =>
-      if ← hit iargs[1]! then return pos else findMove label base rest ctx (pos + 1)
+      if ← hit iargs[1]! then return acc.push ⟨pos, none⟩
+      else findMove label cases base rest ctx (pos + 1) acc
     | some ``Item.beginRound =>
       let block ← readString iargs[0]!
       let i ← readNat iargs[1]!
@@ -580,15 +721,26 @@ private partial def findMove (label : List LabelComp) (base : String) (ks : Expr
       let ctx := match i with
         | some i => ctx.push (.num i)
         | none => ctx.push (.name "?")
-      findMove label base rest ctx pos
-    | some ``Item.endRound => findMove label base rest ctx.pop.pop pos
+      findMove label cases base rest ctx pos acc
+    | some ``Item.endRound => findMove label cases base rest ctx.pop.pop pos acc
     | some ``Item.beginStage =>
-      findMove label base rest (ctx.push (.name (← readString iargs[0]!))) pos
-    | some ``Item.endStage => findMove label base rest ctx.pop pos
-    | _ => findMove label base rest ctx pos
-  | some ``Skel.branch | some ``Skel.opaque =>
-    if ← hit args[0]! then return pos
-    throwError "the label is not found before a branch; a label inside a branch is not supported"
+      findMove label cases base rest (ctx.push (.name (← readString iargs[0]!))) pos acc
+    | some ``Item.endStage => findMove label cases base rest ctx.pop pos acc
+    | _ => findMove label cases base rest ctx pos acc
+  | some ``Skel.branch =>
+    if ← hit args[0]! then return acc.push ⟨pos, none⟩
+    let msg ← nameBase args[0]!
+    match cases with
+    | [] => throwError "the label is not found before the branch on `{msg}`; name the case to \
+        enter, as in `{msg} = <case>`"
+    | (m, v) :: cs =>
+      unless m == msg do
+        throwError "the next branch is on `{msg}`, but the label names a case of `{m}`"
+      let (value, sub) ← branchCase args[3]! msg v
+      findMove label cs base sub ctx 0 (acc.push ⟨pos, some value⟩)
+  | some ``Skel.opaque =>
+    if ← hit args[0]! then return acc.push ⟨pos, none⟩
+    throwError "the label is not found before the opaque branch on `{← nameBase args[0]!}`"
   | _ => throwError "no move matches the label (the skeleton ends at {ks})"
 
 /-- The skeleton of the specification in the type of a transcript or a view, and whether it is a
@@ -604,19 +756,36 @@ private def skelOf (ty : Expr) : MetaM (Expr × Bool) := do
   unless sty.isAppOf ``Spec do throwError "not a specification: {sty}"
   pure (sty.getAppArgs[5]!, isView)
 
+/-- `stx` with `n` second projections. -/
+private def proj2 (stx : Term) : ℕ → TermElabM Term
+  | 0 => pure stx
+  | n + 1 => do proj2 (← `(($stx).2)) n
+
+/-- The term of a path: projections to the move, through `caseOf` at each branch. -/
+private def pathTerm (isView : Bool) (stx : Term) : List Seg → TermElabM Term
+  | [] => throwError "empty accessor path"
+  | [s] => do `(($(← proj2 stx s.pos)).1)
+  | s :: rest => do
+    let some value := s.case | throwError "accessor path without a case"
+    let x ← proj2 stx s.pos
+    let v ← exprToSyntax value
+    let o ← if isView then `(Specs.caseOfView $x $v) else `(Specs.caseOf $x $v)
+    let inner ← pathTerm isView (← `(tr')) rest
+    if rest.length == 1 then `(($o).map fun tr' => $inner)
+    else `(($o).bind fun tr' => $inner)
+
 elab_rules : term
   | `($tr⟦$cs,*⟧) => do
     let comps ← cs.getElems.toList.mapM labelComp
     let some (.name base) := comps.getLast? | throwError "a label ends with a name"
+    let names := comps.dropLast.filter fun | .case .. => false | _ => true
+    let cases := comps.filterMap fun | .case m v => some (m, v) | _ => none
     let trE ← elabTerm tr none
     let (ks, isView) ← skelOf (← inferType trE)
-    let pos ← findMove comps.dropLast base ks #[] 0
+    let segs ← findMove names cases base ks #[] 0 #[]
     let mut stx ← exprToSyntax trE
     if isView then stx ← `(($stx).1)
-    for _ in [0:pos] do
-      stx ← `(($stx).2)
-    stx ← `(($stx).1)
-    elabTerm stx none
+    elabTerm (← pathTerm isView stx segs.toList) none
 
 end Accessor
 
@@ -625,5 +794,8 @@ end Accessor
 #print axioms Desc.run_hom
 #print axioms Spec.decide_eq_verdict
 #print axioms Spec.verdict_isSome
+#print axioms roundsGo_complete
+#print axioms caseOf_self
+#print axioms caseOf_ne
 
 end Specs

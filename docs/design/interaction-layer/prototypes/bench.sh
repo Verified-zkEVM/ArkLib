@@ -4,9 +4,7 @@
 # The script builds `Specs.Bench`, then runs each case file under `Specs/Bench/` through the build
 # lock with `lake env lean -Dprofiler=true`, and writes the Markdown table `out/bench.md`: case,
 # size, wall time and the profiler's top categories. The Spartan and FRI cases run when their bench
-# files exist and their example modules build. It also runs the skeleton export at 32 rounds
-# as a probe under a time limit (`PROBE_LIMIT` seconds, default 60), because the export cost is
-# exponential in the number of rounds (see `Specs/Bench.lean`). Times are single runs.
+# files exist and their example modules build. Times are single runs.
 #
 # Usage: bash docs/design/interaction-layer/prototypes/bench.sh
 set -euo pipefail
@@ -16,7 +14,6 @@ HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT="$(cd "$HERE/../../../.." && pwd)"
 REL="docs/design/interaction-layer/prototypes"
 OUT="$HERE/out"
-PROBE_LIMIT="${PROBE_LIMIT:-60}"
 mkdir -p "$OUT"
 TMP="$(mktemp -d)"
 trap 'rm -rf "$TMP"' EXIT
@@ -35,6 +32,7 @@ CASES=(
   "sum-check: skeleton export|n = 8|$REL/Specs/Bench/Export8.lean|0"
   "sum-check: skeleton export|n = 16|$REL/Specs/Bench/Export16.lean|0"
   "sum-check: skeleton export|n = 20|$REL/Specs/Bench/Export20.lean|0"
+  "sum-check: skeleton export|n = 128|$REL/Specs/Bench/Export128.lean|0"
 )
 
 # Cases for the Spartan and FRI examples: label | size | bench file | example module. A case runs
@@ -58,10 +56,6 @@ for c in "${EXTRA[@]}"; do
   fi
 done
 
-# The probe runs last: it allocates memory until the time limit stops it, and the cases after it
-# would pay for the memory the system then reclaims.
-CASES+=("sum-check: skeleton export (probe)|n = 32|PROBE:32|$PROBE_LIMIT")
-
 # Warm-up: import each module the cases import once, untimed, so that no timed case pays for a
 # cold file cache when it loads the `.olean` files.
 WARM=(Specs.Bench)
@@ -75,12 +69,6 @@ i=0
 for c in "${CASES[@]}"; do
   IFS='|' read -r label size file limit <<<"$c"
   i=$((i + 1))
-  if [[ "$file" == PROBE:* ]]; then
-    n="${file#PROBE:}"
-    file="$TMP/ExportProbe$n.lean"
-    printf 'import Specs.Bench\n#guard Specs.Bench.jsonSize (Specs.sumcheckSpec ℚ 2 %s Specs.Bench.D).skeleton > 0\n' \
-      "$n" >"$file"
-  fi
   echo "bench: $label, $size"
   status=0
   if [[ "$file" == SKIP:* ]]; then
@@ -159,12 +147,11 @@ with open(out, 'w') as f:
     f.write("| case | size | wall time | profiler top categories | import |\n")
     f.write("|---|---|---|---|---|\n")
     f.write('\n'.join(rows) + '\n\n')
-    f.write("The skeleton export costs time exponential in the number of rounds: computing the "
-            "skeleton builds the list of all `2^n` points of the input claim's domain "
-            "(`Dom.pow` in `Specs.Formula`). The probe at 32 rounds therefore stops at the time "
-            "limit, and the bench has no export case at 128 rounds. The accessor at round 127 of the "
-            "128-round case needs `maxRecDepth` 1024; Lean's default of 512 suffices up to round "
-            "120. See `Specs/Bench.lean`.\n")
+    f.write("The skeleton export does not build the `2^n` points of the input claim's domain: "
+            "`Dom` in `Specs.Formula` computes its elements only when a formula is evaluated. "
+            "The export at 128 rounds therefore takes about as long as at 8 rounds. The accessor "
+            "at round 127 of the 128-round case needs `maxRecDepth` 1024; Lean's default of 512 "
+            "suffices up to round 120. See `Specs/Bench.lean`.\n")
 PY
 echo "bench: wrote $OUT/bench.md"
 cat "$OUT/bench.md"

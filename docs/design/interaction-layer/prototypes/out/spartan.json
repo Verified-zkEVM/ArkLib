@@ -146,7 +146,7 @@
    "kind": "stage",
    "input":
    {"tex":
-    "\\sum_{x \\in \\{0,1\\}^{m}} \\mathrm{\\prod}(\\tau \\cdot x + (1 - \\tau) \\cdot (1 - x)) \\cdot ((\\sum_{y \\in \\{0,1\\}^{n}} \\tilde{A}(\\mathrm{\\iota_1}(x) + \\mathrm{\\iota_2}(y)) \\cdot \\tilde{z}(y)) \\cdot (\\sum_{y \\in \\{0,1\\}^{n}} \\tilde{B}(\\mathrm{\\iota_1}(x) + \\mathrm{\\iota_2}(y)) \\cdot \\tilde{z}(y)) - (\\sum_{y \\in \\{0,1\\}^{n}} \\tilde{C}(\\mathrm{\\iota_1}(x) + \\mathrm{\\iota_2}(y)) \\cdot \\tilde{z}(y))) = 0",
+    "\\sum_{x \\in \\{0,1\\}^{m}} (\\prod_{j \\in [m]} (\\tau_{j} \\cdot x_{j} + (1 - \\tau_{j}) \\cdot (1 - x_{j}))) \\cdot ((\\sum_{y \\in \\{0,1\\}^{n}} \\tilde{A}(\\mathrm{\\iota_1}(x) + \\mathrm{\\iota_2}(y)) \\cdot \\tilde{z}(y)) \\cdot (\\sum_{y \\in \\{0,1\\}^{n}} \\tilde{B}(\\mathrm{\\iota_1}(x) + \\mathrm{\\iota_2}(y)) \\cdot \\tilde{z}(y)) - (\\sum_{y \\in \\{0,1\\}^{n}} \\tilde{C}(\\mathrm{\\iota_1}(x) + \\mathrm{\\iota_2}(y)) \\cdot \\tilde{z}(y))) = 0",
     "syntax":
     {"op": "eq",
      "args":
@@ -156,28 +156,43 @@
        "body":
        {"op": "mul",
         "args":
-        [{"op": "app",
-          "fn": "\\prod",
-          "arg":
+        [{"var": {"tex": "j", "sub": null, "base": "j"},
+          "op": "prod",
+          "domain": "[m]",
+          "body":
           {"op": "add",
            "args":
            [{"op": "mul",
              "args":
-             [{"op": "var",
-               "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}},
-              {"op": "var", "name": {"tex": "x", "sub": null, "base": "x"}}]},
+             [{"op": "index",
+               "args":
+               [{"op": "var",
+                 "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}},
+                {"op": "var", "name": {"tex": "j", "sub": null, "base": "j"}}]},
+              {"op": "index",
+               "args":
+               [{"op": "var", "name": {"tex": "x", "sub": null, "base": "x"}},
+                {"op": "var",
+                 "name": {"tex": "j", "sub": null, "base": "j"}}]}]},
             {"op": "mul",
              "args":
              [{"op": "sub",
                "args":
                [{"tex": "1", "op": "lit"},
-                {"op": "var",
-                 "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}}]},
+                {"op": "index",
+                 "args":
+                 [{"op": "var",
+                   "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}},
+                  {"op": "var",
+                   "name": {"tex": "j", "sub": null, "base": "j"}}]}]},
               {"op": "sub",
                "args":
                [{"tex": "1", "op": "lit"},
-                {"op": "var",
-                 "name": {"tex": "x", "sub": null, "base": "x"}}]}]}]}},
+                {"op": "index",
+                 "args":
+                 [{"op": "var", "name": {"tex": "x", "sub": null, "base": "x"}},
+                  {"op": "var",
+                   "name": {"tex": "j", "sub": null, "base": "j"}}]}]}]}]}},
          {"op": "sub",
           "args":
           [{"op": "mul",
@@ -271,7 +286,7 @@
    [{"round": 0,
      "kind": "round",
      "error": {"text": "3/|F|", "checked": false},
-     "countName": "n",
+     "countName": "m",
      "count": 2,
      "body":
      [{"type": "\\mathbb{F}_{\\le 3}[X]",
@@ -343,7 +358,7 @@
     {"round": 1,
      "kind": "round",
      "error": {"text": "3/|F|", "checked": false},
-     "countName": "n",
+     "countName": "m",
      "count": 2,
      "body":
      [{"type": "\\mathbb{F}_{\\le 3}[X]",
@@ -441,41 +456,58 @@
      "kind": "check",
      "formula":
      {"tex":
-      "\\mathrm{\\prod}(\\tau \\cdot r_{x} + (1 - \\tau) \\cdot (1 - r_{x})) \\cdot (v_{A} \\cdot v_{B} - v_{C}) = c_{2}",
+      "(\\prod_{j \\in [m]} (\\tau_{j} \\cdot r_{x,j} + (1 - \\tau_{j}) \\cdot (1 - r_{x,j}))) \\cdot (v_{A} \\cdot v_{B} - v_{C}) = c_{2}",
       "syntax":
       {"op": "eq",
        "args":
        [{"op": "mul",
          "args":
-         [{"op": "app",
-           "fn": "\\prod",
-           "arg":
+         [{"var": {"tex": "j", "sub": null, "base": "j"},
+           "op": "prod",
+           "domain": "[m]",
+           "body":
            {"op": "add",
             "args":
             [{"op": "mul",
               "args":
-              [{"op": "var",
-                "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}},
-               {"op": "var",
-                "name":
-                {"tex": "r_{x}",
-                 "sub": {"symbol": "x", "kind": "sym"},
-                 "base": "r"}}]},
+              [{"op": "index",
+                "args":
+                [{"op": "var",
+                  "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}},
+                 {"op": "var",
+                  "name": {"tex": "j", "sub": null, "base": "j"}}]},
+               {"op": "index",
+                "args":
+                [{"op": "var",
+                  "name":
+                  {"tex": "r_{x}",
+                   "sub": {"symbol": "x", "kind": "sym"},
+                   "base": "r"}},
+                 {"op": "var",
+                  "name": {"tex": "j", "sub": null, "base": "j"}}]}]},
              {"op": "mul",
               "args":
               [{"op": "sub",
                 "args":
                 [{"tex": "1", "op": "lit"},
-                 {"op": "var",
-                  "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}}]},
+                 {"op": "index",
+                  "args":
+                  [{"op": "var",
+                    "name": {"tex": "\\tau", "sub": null, "base": "\\tau"}},
+                   {"op": "var",
+                    "name": {"tex": "j", "sub": null, "base": "j"}}]}]},
                {"op": "sub",
                 "args":
                 [{"tex": "1", "op": "lit"},
-                 {"op": "var",
-                  "name":
-                  {"tex": "r_{x}",
-                   "sub": {"symbol": "x", "kind": "sym"},
-                   "base": "r"}}]}]}]}},
+                 {"op": "index",
+                  "args":
+                  [{"op": "var",
+                    "name":
+                    {"tex": "r_{x}",
+                     "sub": {"symbol": "x", "kind": "sym"},
+                     "base": "r"}},
+                   {"op": "var",
+                    "name": {"tex": "j", "sub": null, "base": "j"}}]}]}]}]}},
           {"op": "sub",
            "args":
            [{"op": "mul",

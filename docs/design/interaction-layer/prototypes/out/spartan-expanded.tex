@@ -10,7 +10,7 @@
  \< \< \text{input oracle } [\![\tilde{C}]\!] \in \mathbb{F}^{2^m \times 2^n} \\
 \tilde{z} \gets \specannot{\mathsf{assignment}} \< \sendmessageright*{[\![\tilde{z}]\!] \in \mathbb{F}^{2^{3}}} \<  \\
  \< \sendmessageleft*{\tau} \< \tau \sample \mathbb{F}^{2} \pclb
-\pcintertext[dotted]{stage \textsf{outer}: $\sum_{x \in \{0,1\}^{m}} \mathrm{\prod}(\tau \cdot x + (1 - \tau) \cdot (1 - x)) \cdot ((\sum_{y \in \{0,1\}^{n}} \tilde{A}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y)) \cdot (\sum_{y \in \{0,1\}^{n}} \tilde{B}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y)) - (\sum_{y \in \{0,1\}^{n}} \tilde{C}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y))) = 0$; \textsf{sumcheck}: round 0}
+\pcintertext[dotted]{stage \textsf{outer}: $\sum_{x \in \{0,1\}^{m}} (\prod_{j \in [m]} (\tau_{j} \cdot x_{j} + (1 - \tau_{j}) \cdot (1 - x_{j}))) \cdot ((\sum_{y \in \{0,1\}^{n}} \tilde{A}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y)) \cdot (\sum_{y \in \{0,1\}^{n}} \tilde{B}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y)) - (\sum_{y \in \{0,1\}^{n}} \tilde{C}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y))) = 0$; \textsf{sumcheck}: round 0}
 g_{0} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{0}]\!] \in \mathbb{F}_{\le 3}[X]} \<  \\
  \< \< \text{check } \sum_{a \in D} g_{0}(a) = c_{0} \\
  \< \sendmessageleft*{r_{0}} \< r_{0} \sample \mathbb{F} \\
@@ -23,7 +23,7 @@ g_{1} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{1}]\!] \in \m
 v_{A} \gets \specannot{\mathsf{row}_A} \< \sendmessageright*{v_{A} \in \mathbb{F}} \<  \\
 v_{B} \gets \specannot{\mathsf{row}_B} \< \sendmessageright*{v_{B} \in \mathbb{F}} \<  \\
 v_{C} \gets \specannot{\mathsf{row}_C} \< \sendmessageright*{v_{C} \in \mathbb{F}} \<  \\
- \< \< \text{check } \mathrm{\prod}(\tau \cdot r_{x} + (1 - \tau) \cdot (1 - r_{x})) \cdot (v_{A} \cdot v_{B} - v_{C}) = c_{2} \pclb
+ \< \< \text{check } (\prod_{j \in [m]} (\tau_{j} \cdot r_{x,j} + (1 - \tau_{j}) \cdot (1 - r_{x,j}))) \cdot (v_{A} \cdot v_{B} - v_{C}) = c_{2} \pclb
 \pcintertext[dotted]{end of stage \textsf{outer}: $\sum_{y \in \{0,1\}^{n}} \tilde{A}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y) = v_{A} \land (\sum_{y \in \{0,1\}^{n}} \tilde{B}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y) = v_{B} \land \sum_{y \in \{0,1\}^{n}} \tilde{C}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y) = v_{C})$; stage \textsf{inner}: $\sum_{y \in \{0,1\}^{n}} \tilde{A}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y) = v_{A} \land (\sum_{y \in \{0,1\}^{n}} \tilde{B}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y) = v_{B} \land \sum_{y \in \{0,1\}^{n}} \tilde{C}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y) = v_{C})$}
  \< \sendmessageleft*{\rho_{A}} \< \rho_{A} \sample \mathbb{F} \\
  \< \sendmessageleft*{\rho_{B}} \< \rho_{B} \sample \mathbb{F} \\

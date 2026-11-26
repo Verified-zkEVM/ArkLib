@@ -22,6 +22,11 @@ This module writes sum-check with formulas and proves that it agrees with ArkLib
   transcript (`sumcheck_decide`), and both keep the input polynomial (`sumcheck_outputMap`).
 * `prove_roundsGo` and `verdict_roundsGo` are the round inductions behind `sumcheck_prover` and
   `sumcheck_verdict`. `Claim.toIndexed` turns a claim after `j` rounds into ArkLib's indexed claim.
+* `sumcheck_complete`: every check of the loop holds on the honest messages when the input claim
+  is the true sum, for any continuation that is complete when its claim holds. Spartan and the
+  branching example use it.
+* `eval_round_value` and `eval_round_check` evaluate the two round formulas. Proofs about the loop
+  in other modules use them.
 * The tests check the transcript accessors (`tr⟦sumcheck, 1, g⟧`), the folded and expanded TeX of
   the round check, and that the first-order form of the round check evaluates like the formula.
 
@@ -36,8 +41,8 @@ This module writes sum-check with formulas and proves that it agrees with ArkLib
 * `sumcheck_decide` follows from the generic theorem `Spec.decide_eq_verdict` and
   `sumcheck_verdict`. The only sum-check-specific induction is `verdict_roundsGo`, which compares
   two pure functions on transcripts.
-* The private lemmas `eval_round_value` and `eval_round_check` evaluate the two round formulas
-  by `rfl` at their exact hole lists. *Why:* `simp` and `rw` time out on `Curry.app`, because the
+* `eval_round_value` and `eval_round_check` evaluate the two round formulas by `rfl` at their
+  exact hole lists. *Why:* `simp` and `rw` time out on `Curry.app`, because the
   formula is a `Curry` function only after unfolding.
 -/
 
@@ -82,13 +87,16 @@ noncomputable def sumcheckRound (n : ℕ) (D : Fin k → R) (poly : W → R⦃�
 abbrev roundTree (R : Type) [CommSemiring R] (d : ℕ) (t : OracleProtocol) : OracleProtocol :=
   .liftBind (.oracle (R⦃≤ d⦄[X]) inferInstance) fun _ => .liftBind (.challenge R) fun _ => t
 
-/-- Sum-check: `n` rounds from the claim `input`. `tree` names the tree family of the rounds. -/
+/-- Sum-check: `n` rounds from the claim `input`. `tree` names the tree family of the rounds.
+`block` names the loop in the skeleton and `countName` is the symbol of its round count in the
+folded figure. -/
 noncomputable abbrev sumcheck (n : ℕ) (D : Fin k → R) (poly : W → R⦃≤ d⦄[X Fin n])
     (input : Claim R 0) {t : OracleProtocol} {ks : Skel} (next : Claim R n → Desc In W T t ks)
     (tree : ℕ → ℕ → OracleProtocol := roundsTree (fun _ => roundTree R d) t)
     (h0 : ∀ j, tree j 0 = t := by intros; rfl)
-    (hS : ∀ j k, tree j (k + 1) = roundTree R d (tree (j + 1) k) := by intros; rfl) :=
-  rounds "sumcheck" n input (sumcheckRound n D poly) next (fun _ => toString d ++ "/|F|") "n"
+    (hS : ∀ j k, tree j (k + 1) = roundTree R d (tree (j + 1) k) := by intros; rfl)
+    (block : String := "sumcheck") (countName : String := "n") :=
+  rounds block n input (sumcheckRound n D poly) next (fun _ => toString d ++ "/|F|") countName
     tree h0 hS
 
 omit [DecidableEq R] [TypeName R] in
@@ -125,7 +133,7 @@ def Claim.toIndexed {n j r : ℕ} (h : j + r = n) (st : Claim R j) :
 
 omit [DecidableEq R] [TypeName R] in
 /-- The local value `g_i(r_i)` of a round evaluates by one query to `g_i`. -/
-private theorem eval_round_value (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
+theorem eval_round_value (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
     {nm nm' : Name} (h : Ref (OracleInterface.Query (R⦃≤ d⦄[X])) R) (c : R) :
     Fml.eval ask' (Curry.app (v := fun α => α) (o := Ref) (β := R)
       (Γ := [Hole.orc nm (OracleInterface.Query (R⦃≤ d⦄[X])) R] ++ [Hole.val nm' R])
@@ -166,7 +174,7 @@ theorem prove_roundsGo {n : ℕ} (D : Fin k → R) (p : R⦃≤ d⦄[X Fin n]) {
 
 omit [TypeName R] in
 /-- The round check `Σ_{a ∈ D} g_i(a) = c_i` evaluates to a sum over the domain indices. -/
-private theorem eval_round_check (D : Fin k → R) (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
+theorem eval_round_check (D : Fin k → R) (ask' : ∀ ⦃Q A : Type⦄, Ref Q A → Q → A)
     {nm nm' : Name} (h : Ref (OracleInterface.Query (R⦃≤ d⦄[X])) R) (x : R) :
     Fml.eval ask' (Curry.app (v := fun α => α) (o := Ref) (β := Bool)
       (Γ := [Hole.orc nm (OracleInterface.Query (R⦃≤ d⦄[X])) R] ++ [Hole.val nm' R])
@@ -176,6 +184,53 @@ private theorem eval_round_check (D : Fin k → R) (ask' : ∀ ⦃Q A : Type⦄,
   simp only [Fml.eval_eq, Fml.eval_sum, Fml.eval_query, Fml.eval_var, Dom.ofFn, List.map_ofFn,
     List.sum_ofFn]
   rfl
+
+/-- **Completeness of the sum-check loop.** If the claim `c_j` of the rounds `j, …, n - 1` is the
+remaining sum of `poly w` over the domain, every check of these rounds holds on the honest
+messages, for every choice of challenges, provided the continuation is complete whenever its
+claim `p(r) = c_n` holds. `P` is any invariant of the handler table that survives the oracle
+messages of the rounds, so the continuation can still read the oracles recorded before. -/
+theorem sumcheck_complete {block countName : String} {n : ℕ} (D : Fin k → R)
+    (poly : W → R⦃≤ d⦄[X Fin n]) (w : W) (ans : QueryImpl In.spec Id) {t : OracleProtocol}
+    {ks : Skel}
+    (next : Claim R n → Desc In W T t ks) (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
+    (hS : ∀ j k, τ j (k + 1) = roundTree R d (τ (j + 1) k))
+    (P : Handlers Id → ℕ → Prop)
+    (hP : ∀ env ℓ {Q A : Type} (f : Q → Id A), P env ℓ → P (env.ext ℓ f) (ℓ + 1))
+    (hnext : ∀ st env ℓ, P env ℓ → (poly w).val.eval st.rs = st.c.val →
+      (next st).Complete w ans env ℓ) :
+    ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (env : Handlers Id) (ℓ : ℕ), P env ℓ →
+      Sumcheck.roundSum D ⟨j, by omega⟩ st.rs (poly w).val = st.c.val →
+      (roundsGo block n countName (fun _ => toString d ++ "/|F|") (sumcheckRound n D poly) next
+        τ h0 hS r j h st).Complete w ans env ℓ := by
+  intro r
+  induction r with
+  | zero =>
+    intro j h st env ℓ hp hs
+    subst h
+    rw [roundsGo, Desc.complete_retree]
+    refine hnext st env ℓ hp ?_
+    exact (Sumcheck.indexedRelation_last D ⟨st.c.val, st.rs⟩ (poly w)).1 hs
+  | succ r ih =>
+    intro j h st env ℓ hp hs
+    rw [roundsGo, Desc.complete_retree]
+    rw [sumcheckRound]
+    simp only [oracle, check, challenge, compute]
+    erw [Desc.Complete.eq_11, Desc.Complete.eq_3, Desc.Complete.eq_5, Desc.Complete.eq_4]
+    simp only [Closed.inst, ToArgs.toArgs_prod, ToArgs.toArgs_ohdl, ToArgs.toArgs_val,
+      Args.append, eval_round_check, askId, Handlers.find_ext_self]
+    refine ⟨?_, fun r => ?_⟩
+    · dsimp only [Desc.honestEntry, Id.run_pure, cast_eq,
+        OracleInterface.instPolynomialDegreeLE]
+      exact decide_eq_true ((Sumcheck.sum_projectedRoundPolynomial D ⟨j, by omega⟩ st.rs
+        (poly w)).trans hs)
+    · erw [Desc.Complete.eq_6]
+      simp only [Closed.inst, eval_round_value, askId, Handlers.find_ext_self]
+      erw [Desc.Complete.eq_11]
+      refine ih (j + 1) (by omega) _ _ _ (hP _ _ _ hp) ?_
+      dsimp only [Desc.honestEntry, Id.run_pure, cast_eq,
+        OracleInterface.instPolynomialDegreeLE]
+      exact Sumcheck.roundSum_succ D ⟨j, by omega⟩ st.rs (poly w) r
 
 open Sumcheck in
 /-- The verdict of the rounds `j, …, j + r - 1` is ArkLib's indexed verdict from the corresponding
@@ -311,6 +366,7 @@ end Tests
 
 end Sumcheck
 
+#print axioms sumcheck_complete
 #print axioms sumcheck_tree
 #print axioms sumcheck_prover
 #print axioms sumcheck_verdict

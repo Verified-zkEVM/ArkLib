@@ -13,6 +13,8 @@ The tree agreement by `rfl`, one accessor by label in each sum-check, and the sk
 `spartanSpec ℚ 4 4`. See `Specs.Bench`.
 -/
 
+set_option linter.hashCommand false
+
 namespace Specs.Bench.Spartan4
 open Interaction Specs.Spartan
 

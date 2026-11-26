@@ -45,10 +45,11 @@ the order, since the honest prover and the checks use the same index maps (`loJ`
   `RoundConsistency.roundConsistencyCheck`. *Why:* that check interpolates an arbitrary list of
   points over ArkLib's FFT domains, so as a named function it would hide the fold relation in the
   figure, and completeness would need its Lagrange-interpolation lemmas.
-* The values of the check `final` have the names `a_k`, `b_k`, `x_k` and `f_k` with the symbolic
-  index `k`, in both figures. *Why:* inside a round, the folded figure prints a round index as an
-  offset from the innermost open round, so `ix "a" k` would print as an offset from the index of
-  the query round.
+* The values of the check `final` have the names `a_k`, `b_k`, `x_k` and `f_k`, built with
+  `ixCount`: the folded figure prints the index as the symbol `k`, and the expanded figure prints
+  the number (`a_{2}` when `k = 2`). *Why:* inside a round, the folded figure prints a round index
+  as an offset from the innermost open round, so `ix "a" k` would print as an offset from the
+  index of the query round.
 * The state of the fold block (`FoldState`) keeps the challenges and the handles of all words, so
   a query round can read every round oracle.
 -/
@@ -157,12 +158,14 @@ noncomputable def queryRound (ω : F) (l : ℕ) (st : FoldState F k k)
   challenge "t" (Fin (size k 0)) fun t =>
   rounds "consistency" k () (checkRound ω st t) (countName := "k") (tree := fun _ _ => tr)
     fun _ =>
-  compute ⟨"a", .sym "k"⟩ F ⟪(⟨(st.f k le_rfl).ref⟩ : OHdl ⟨"f", .sym "k"⟩ (Fin (size k k)) F), t⟫
+  compute (ixCount "a" k "k") F
+      ⟪(⟨(st.f k le_rfl).ref⟩ : OHdl (ixCount "f" k "k") (Fin (size k k)) F), t⟫
     (fun f t => Fml.query f (Fml.app "lo" (loI k k) (Fml.var t))) fun a =>
-  compute ⟨"b", .sym "k"⟩ F ⟪(⟨(st.f k le_rfl).ref⟩ : OHdl ⟨"f", .sym "k"⟩ (Fin (size k k)) F), t⟫
+  compute (ixCount "b" k "k") F
+      ⟪(⟨(st.f k le_rfl).ref⟩ : OHdl (ixCount "f" k "k") (Fin (size k k)) F), t⟫
     (fun f t => Fml.query f (Fml.app "hi" (hiI k k) (Fml.var t))) fun b =>
-  compute ⟨"x", .sym "k"⟩ F ⟪t⟫ (fun t => Fml.app "pt" (ptI ω k k) (Fml.var t)) fun x =>
-  check "final" ⟪c, (⟨αk.val⟩ : Val ⟨"\\alpha", .sym "k"⟩ F), a, b, x⟫
+  compute (ixCount "x" k "k") F ⟪t⟫ (fun t => Fml.app "pt" (ptI ω k k) (Fml.var t)) fun x =>
+  check "final" ⟪c, (⟨αk.val⟩ : Val (ixCount "\\alpha" k "k") F), a, b, x⟫
     (fun c α a b x => 2 * Fml.var x * Fml.var c ='
       Fml.var x * (Fml.var a + Fml.var b) + Fml.var α * (Fml.var a - Fml.var b)) <|
   next ()
@@ -345,8 +348,14 @@ def checkTex (ks : Skel) : List (String × String) :=
       \\alpha_{0} \\cdot (a_{0} - b_{0})"),
    ("fold", "2 \\cdot x_{1} \\cdot f_{2}(\\mathrm{lo}(t)) = x_{1} \\cdot (a_{1} + b_{1}) + \
       \\alpha_{1} \\cdot (a_{1} - b_{1})"),
-   ("final", "2 \\cdot x_{k} \\cdot c = x_{k} \\cdot (a_{k} + b_{k}) + \
-      \\alpha_{k} \\cdot (a_{k} - b_{k})")]
+   ("final", "2 \\cdot x_{2} \\cdot c = x_{2} \\cdot (a_{2} + b_{2}) + \
+      \\alpha_{2} \\cdot (a_{2} - b_{2})")]
+
+/-! The folded figure prints the final check with the symbol `k`. -/
+#guard ((friSpec (ZMod 17) 2 3 2).skeleton.checks.lookup "final").map
+    (·.tex { folded := true }) == some
+  "2 \\cdot x_{k} \\cdot c = x_{k} \\cdot (a_{k} + b_{k}) + \
+    \\alpha_{k} \\cdot (a_{k} - b_{k})"
 
 end Tests
 

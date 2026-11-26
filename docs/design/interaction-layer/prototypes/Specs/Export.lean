@@ -36,13 +36,14 @@ node     = { "kind": "move", "move": "message" | "oracle" | "challenge",
          | { "kind": "end", "of": "stage" | "round" }
 name     = { "base", "sub": null | { "kind": "at" | "below", "index": index }
                            | { "kind": "sym", "symbol" }, "tex" }
-index    = { "round": k } | { "num": k }
+index    = { "round": k } | { "num": k } | { "count": k, "symbol" }
 formula  = { "syntax": syn, "tex" }
 syn      = { "op": "var", "name": name } | { "op": "lit", "tex" }
          | { "op": "add" | "sub" | "mul" | "eq" | "and" | "neg", "args": [syn] }
          | { "op": "pow", "exp", "args": [syn] }
-         | { "op": "sum", "var": name, "domain", "body": syn }
+         | { "op": "sum" | "prod", "var": name, "domain", "body": syn }
          | { "op": "query", "oracle": name, "arg": syn } | { "op": "app", "fn", "arg": syn }
+         | { "op": "index", "args": [syn, syn] }
 note     = null | { "text", "checked": false }
 ```
 
@@ -66,6 +67,9 @@ expanded as `Name.tex` does. Every `"tex"` field is the expanded rendering.
   count as its symbol, and skips the later rounds of that block. *Why:* a paper shows one generic
   round, and the names in the skeleton carry the absolute round, so `Name.tex` prints `g_i`,
   `c_{i+1}` and, after the block, `c_n`.
+* The folded figure identifies a block by its stage path and its name. *Why:* two stages may run
+  the same block (Spartan's `outer` and `inner` both run `sumcheck`), and each stage's rounds
+  belong in the figure.
 * A stage prints its input claim where it opens and its output claim where it closes. *Why:* the
   output claim names values of the block's last round, which the folded figure prints with the
   round count only after the block.
@@ -82,6 +86,7 @@ open Lean (Json)
 def Ix.toJson : Ix → Json
   | .rnd k => Json.mkObj [("round", Lean.toJson k)]
   | .num k => Json.mkObj [("num", Lean.toJson k)]
+  | .count k sym => Json.mkObj [("count", Lean.toJson k), ("symbol", sym)]
 
 /-- A subscript as JSON. -/
 def Subscript.toJson : Subscript → Json
@@ -113,6 +118,9 @@ def Syn.toJson : Syn → Json
       ("body", body.toJson)]
   | .query h q => Json.mkObj [("op", "query"), ("oracle", h.toJson), ("arg", q.toJson)]
   | .app name x => Json.mkObj [("op", "app"), ("fn", name), ("arg", x.toJson)]
+  | .prod x dom body => Json.mkObj [("op", "prod"), ("var", x.toJson), ("domain", dom),
+      ("body", body.toJson)]
+  | .index f i => Json.mkObj [("op", "index"), ("args", Json.arr #[f.toJson, i.toJson])]
 
 /-- A formula as JSON: its syntax tree and its expanded TeX. -/
 def Syn.toFormulaJson (φ : Syn) : Json :=
@@ -223,7 +231,8 @@ def Skel.toJson (name title : String) (ks : Skel) : Json :=
 structure TexState where
   /-- The mode that names render in. -/
   mode : Mode
-  /-- The blocks whose first round the folded figure already shows. -/
+  /-- The blocks whose first round the folded figure already shows, each as its stage path and
+  name (`outer/sumcheck`). -/
   shown : List String := []
   /-- The depth of skipped rounds: positive while the folded figure skips a round. -/
   skip : ℕ := 0
@@ -283,12 +292,13 @@ def item (st : TexState) (it : Item) : TexState :=
     | .let_ nm _ φ note => st.emit (withNote (" \\< \\< " ++ nm.tex m ++ " := " ++ φ.tex m) note)
     | .beginRound b i count cn err =>
       if m.folded then
-        if st.shown.contains b then { st with skip := 1 }
+        let key := String.intercalate "/" ((st.stages.map (·.1)).reverse ++ [b])
+        if st.shown.contains key then { st with skip := 1 }
         else
           let err := if err.isEmpty then "" else "; error $" ++ texAnnot err ++ "$"
           let st := st.divide ("\\textsf{" ++ b ++ "}: round $" ++ m.var ++ "$ of $" ++ cn ++
             "$" ++ err)
-          { st with shown := b :: st.shown, rounds := m.round :: st.rounds,
+          { st with shown := key :: st.shown, rounds := m.round :: st.rounds,
                     mode := { m with round := some i, counts := (count, cn) :: m.counts } }
       else
         let st := st.divide ("\\textsf{" ++ b ++ "}: round " ++ toString i)
@@ -371,6 +381,15 @@ private def testSkel : Skel :=
   .cons (.beginStage "s" (.var (ix "c" 0)) (.var (ix "c" 2))) <|
     round 0 <| round 1 <| .cons .endStage .done
 
+/-- Two stages that run the same one-round block `loop`. -/
+private def testTwoStages : Skel :=
+  let stage (s : String) (rest : Skel) : Skel :=
+    .cons (.beginStage s (.var (ix "c" 0)) (.var (ix "c" 1))) <|
+    .cons (.beginRound "loop" 0 1 "n" "") <|
+    .cons (.move .challenge (ix "r" 0) "R" "" "") <|
+    .cons .endRound <| .cons .endStage rest
+  stage "a" <| stage "b" .done
+
 /-- The number of occurrences of `pat` in `s`. -/
 private def occurrences (s pat : String) : ℕ := (s.splitOn pat).length - 1
 
@@ -388,6 +407,7 @@ private def firstKind (j : Json) : Option String :=
 #guard occurrences (testSkel.toTex "T" true) "\\specannot{uniform}" == 1
 #guard occurrences (testSkel.toTex "T" false) "\\text{check } g_{1}(r_{1}) = c_{1}" == 1
 #guard occurrences (testSkel.toTex "T" false) "\\specannot{uniform}" == 2
+#guard occurrences (testTwoStages.toTex "T" true) "\\textsf{loop}: round $i$" == 2
 
 #print axioms Skel.toJson
 #print axioms Skel.toTex

@@ -26,10 +26,10 @@ c \gets \specannot{\mathsf{fold}} \< \sendmessageright*{c \in \mathbb{F}_{17}} \
  \< \< b_{1} := f_{1}(\mathrm{hi}(t)) \\
  \< \< x_{1} := \mathrm{pt}(t) \\
  \< \< \text{check } 2 \cdot x_{1} \cdot f_{2}(\mathrm{lo}(t)) = x_{1} \cdot (a_{1} + b_{1}) + \alpha_{1} \cdot (a_{1} - b_{1}) \\
- \< \< a_{k} := f_{k}(\mathrm{lo}(t)) \\
- \< \< b_{k} := f_{k}(\mathrm{hi}(t)) \\
- \< \< x_{k} := \mathrm{pt}(t) \\
- \< \< \text{check } 2 \cdot x_{k} \cdot c = x_{k} \cdot (a_{k} + b_{k}) + \alpha_{k} \cdot (a_{k} - b_{k}) \pclb
+ \< \< a_{2} := f_{2}(\mathrm{lo}(t)) \\
+ \< \< b_{2} := f_{2}(\mathrm{hi}(t)) \\
+ \< \< x_{2} := \mathrm{pt}(t) \\
+ \< \< \text{check } 2 \cdot x_{2} \cdot c = x_{2} \cdot (a_{2} + b_{2}) + \alpha_{2} \cdot (a_{2} - b_{2}) \pclb
 \pcintertext[dotted]{\textsf{query}: round 1}
  \< \sendmessageleft*{t} \< t \sample [8] \pclb
 \pcintertext[dotted]{\textsf{consistency}: round 0}
@@ -42,10 +42,10 @@ c \gets \specannot{\mathsf{fold}} \< \sendmessageright*{c \in \mathbb{F}_{17}} \
  \< \< b_{1} := f_{1}(\mathrm{hi}(t)) \\
  \< \< x_{1} := \mathrm{pt}(t) \\
  \< \< \text{check } 2 \cdot x_{1} \cdot f_{2}(\mathrm{lo}(t)) = x_{1} \cdot (a_{1} + b_{1}) + \alpha_{1} \cdot (a_{1} - b_{1}) \\
- \< \< a_{k} := f_{k}(\mathrm{lo}(t)) \\
- \< \< b_{k} := f_{k}(\mathrm{hi}(t)) \\
- \< \< x_{k} := \mathrm{pt}(t) \\
- \< \< \text{check } 2 \cdot x_{k} \cdot c = x_{k} \cdot (a_{k} + b_{k}) + \alpha_{k} \cdot (a_{k} - b_{k}) \pclb
+ \< \< a_{2} := f_{2}(\mathrm{lo}(t)) \\
+ \< \< b_{2} := f_{2}(\mathrm{hi}(t)) \\
+ \< \< x_{2} := \mathrm{pt}(t) \\
+ \< \< \text{check } 2 \cdot x_{2} \cdot c = x_{2} \cdot (a_{2} + b_{2}) + \alpha_{2} \cdot (a_{2} - b_{2}) \pclb
 \pcintertext[dotted]{\textsf{query}: round 2}
  \< \sendmessageleft*{t} \< t \sample [8] \pclb
 \pcintertext[dotted]{\textsf{consistency}: round 0}
@@ -58,10 +58,10 @@ c \gets \specannot{\mathsf{fold}} \< \sendmessageright*{c \in \mathbb{F}_{17}} \
  \< \< b_{1} := f_{1}(\mathrm{hi}(t)) \\
  \< \< x_{1} := \mathrm{pt}(t) \\
  \< \< \text{check } 2 \cdot x_{1} \cdot f_{2}(\mathrm{lo}(t)) = x_{1} \cdot (a_{1} + b_{1}) + \alpha_{1} \cdot (a_{1} - b_{1}) \\
- \< \< a_{k} := f_{k}(\mathrm{lo}(t)) \\
- \< \< b_{k} := f_{k}(\mathrm{hi}(t)) \\
- \< \< x_{k} := \mathrm{pt}(t) \\
- \< \< \text{check } 2 \cdot x_{k} \cdot c = x_{k} \cdot (a_{k} + b_{k}) + \alpha_{k} \cdot (a_{k} - b_{k})
+ \< \< a_{2} := f_{2}(\mathrm{lo}(t)) \\
+ \< \< b_{2} := f_{2}(\mathrm{hi}(t)) \\
+ \< \< x_{2} := \mathrm{pt}(t) \\
+ \< \< \text{check } 2 \cdot x_{2} \cdot c = x_{2} \cdot (a_{2} + b_{2}) + \alpha_{2} \cdot (a_{2} - b_{2})
 }
 \caption{FRI, generated from the skeleton. Gray text is annotation that Lean does not check.}
 \end{figure}

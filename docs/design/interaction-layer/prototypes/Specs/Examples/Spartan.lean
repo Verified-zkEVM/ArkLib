@@ -32,8 +32,8 @@ This module writes Spartan for the constraint system `(A z) ∘ (B z) = C z` as 
   `Spec.verdict_isSome`, `sumcheck_complete` for both stages and ArkLib's identities
   (`firstVirtual_cubeSum_eq_residualMLE`, `firstVirtual_eval`, `secondVirtual_cubeSum_eq`,
   `secondVirtual_eval`).
-* The tests read the round-0 `g` of each stage by its label path and check the labels and the
-  expanded TeX of the checks.
+* The tests read the round-0 `g` of each stage by its label path, check the labels and the
+  expanded TeX of the checks, and check that the two stages share the row claims.
 
 What is not proved: soundness, and any link between the stage claims and the checks. The verdict
 never evaluates a stage claim, so the claims are documentation that Lean only type-checks.
@@ -46,16 +46,20 @@ never evaluates a stage claim, so the claims are documentation that Lean only ty
 * A matrix query is the pair `(r_x, r_y)`, the row point first, as in ArkLib's `matrixEval`. The
   formula language has no pair constructor, so `pairF` writes the pair as `ι₁(r_x) + ι₂(r_y)` in
   the product group. This helper is the one gap in the formula API that this module works around.
-* `eq(τ, x)` is the named function `\prod` applied to the coordinatewise expression
-  `τ x + (1 − τ)(1 − x)` in `Fin m → R`. *Why:* the formula language has a sum binder but no
-  product binder.
+* `eq(τ, x)` is the product binder over the coordinates (`eqF`), so the figure prints
+  `\prod_{j \in [m]} (\tau_{j} \cdot r_{x,j} + (1 - \tau_{j}) \cdot (1 - r_{x,j}))`. *Why:* it is
+  the definition of `eq` in the paper. The proof turns it into ArkLib's `eqWeight` with `prodM_id`
+  and `Fin.prod_univ_def`.
+* The row claims are one value, `rowClaims`, that both stages receive. *Why:* the output claim of
+  `outer` and the input claim of `inner` are then the same formula by construction. A test checks
+  that the two erased claims in the skeleton are equal.
 * The row products `(M z̃)(x)` in the stage claims are sums over `{0,1}^n` of matrix and
   assignment queries (`rowF`), the definition of `M z` as a multilinear extension.
-* Both stages reuse `sumcheck`, so both blocks are named `sumcheck` and count with `n`. The stage
-  names scope the labels: `tr⟦outer, sumcheck, 0, g⟧` and `tr⟦inner, sumcheck, 0, g⟧` are
-  different messages. The folded figure of `Specs.Export` draws a block once per block name, so
-  it shows the rounds of `outer` only, and it prints the outer target as `c_{n}`. The expanded
-  figure shows every round.
+* Both stages reuse `sumcheck` with the block name `sumcheck`, and count their rounds with `m`
+  and `n` (`countName`). The stage names scope the labels: `tr⟦outer, sumcheck, 0, g⟧` and
+  `tr⟦inner, sumcheck, 0, g⟧` are different messages. The folded figure of `Specs.Export` keys a
+  block by its stage path, so it shows one generic round of each stage, and it prints the outer
+  target as `c_{m}` and the inner one as `c_{n}`.
 -/
 
 set_option linter.hashCommand false
@@ -128,10 +132,12 @@ def bits : Fin 2 → R := fun b => (b.val : R)
 /-- The Boolean cube `{0,1}^k`, printed with the exponent `ktex`. -/
 def cube (k : ℕ) (ktex : String) : Dom (Fin k → R) := (Dom.ofFn "\\{0,1\\}" bits).pow k ktex
 
-/-- `eq(τ, x) = ∏_i (τ_i x_i + (1 - τ_i)(1 - x_i))`. The argument of the named product is computed
-coordinatewise in the ring `Fin k → R`. -/
-def eqF {k : ℕ} (τ x : Fml v o (Fin k → R)) : Fml v o R :=
-  Fml.app "\\prod" (fun w : Fin k → R => ∏ i, w i) (τ * x + (1 - τ) * (1 - x))
+/-- `eq(τ, x) = ∏_{j ∈ [k]} (τ_j x_j + (1 - τ_j)(1 - x_j))`, a product over the coordinates. The
+index set prints as `ktex`. -/
+def eqF {k : ℕ} (τ x : Fml v o (Fin k → R)) (ktex : String := "[" ++ toString k ++ "]") :
+    Fml v o R :=
+  ∏∈ j ∈ Dom.fin k ktex, Fml.index τ (.var j) * Fml.index x (.var j) +
+    (1 - Fml.index τ (.var j)) * (1 - Fml.index x (.var j))
 
 /-- `(M z)(x) = Σ_{y ∈ {0,1}^n} M(x, y) · z(y)`: the multilinear extension of `M z` at `x`. -/
 def rowF (M : o ((Fin m → R) × (Fin n → R)) R) (z : o (Fin n → R) R)
@@ -182,6 +188,21 @@ structure FinalClaim (R : Type) (n : ℕ) where
   /-- The point `r_y` and the final claim of the inner sum-check. -/
   claim : Claim R n
 
+/-- The holes of the row claims: the matrices, the assignment, the point `r_x` and the claimed
+values. -/
+abbrev RowHoles (R : Type) (m n : ℕ) : List Hole :=
+  [.orc "\\tilde{A}" ((Fin m → R) × (Fin n → R)) R,
+    .orc "\\tilde{B}" ((Fin m → R) × (Fin n → R)) R,
+    .orc "\\tilde{C}" ((Fin m → R) × (Fin n → R)) R, .orc "\\tilde{z}" (Fin n → R) R,
+    .val rxN (Fin m → R), .val (vN "A") R, .val (vN "B") R, .val (vN "C") R]
+
+/-- The row claims `(Ãz̃)(r_x) = v_A`, `(B̃z̃)(r_x) = v_B` and `(C̃z̃)(r_x) = v_C`: the output claim
+of the stage `outer` and the input claim of the stage `inner`. -/
+def rowClaims {v : Type → Type} {o : Type → Type → Type} : Curry v o (RowHoles R m n) Bool :=
+  fun A B C z rx a b c =>
+    (rowF A z (Fml.var rx) =' Fml.var a) ∧' (rowF B z (Fml.var rx) =' Fml.var b) ∧'
+      (rowF C z (Fml.var rx) =' Fml.var c)
+
 /-! ## The specification -/
 
 /-- The degree-3 polynomial of the outer sum-check, `eq(τ, X) · (Az(X) · Bz(X) - Cz(X))`. -/
@@ -216,26 +237,20 @@ noncomputable def spartanSpec (m n : ℕ) :=
   challenge "\\tau" (Fin m → R) fun τ =>
   stage "outer" ⟪A, B, C, z, τ⟫
     (fun A B C z τ => (∑∈ x ∈ cube m "m",
-      eqF (Fml.var τ) (Fml.var x) *
+      eqF (Fml.var τ) (Fml.var x) "[m]" *
         (rowF A z (Fml.var x) * rowF B z (Fml.var x) - rowF C z (Fml.var x))) =' 0)
-    (fun e : RowClaim R m => ⟪A, B, C, z, e.rx, e.vA, e.vB, e.vC⟫)
-    (fun A B C z rx a b c =>
-      (rowF A z (Fml.var rx) =' Fml.var a) ∧' (rowF B z (Fml.var rx) =' Fml.var b) ∧'
-        (rowF C z (Fml.var rx) =' Fml.var c))
+    (fun e : RowClaim R m => ⟪A, B, C, z, e.rx, e.vA, e.vB, e.vC⟫) rowClaims
     (fun next =>
-      sumcheck m bits (outerPoly τ.val) ⟨⟨0⟩, Fin.elim0⟩ fun st =>
+      sumcheck m bits (outerPoly τ.val) ⟨⟨0⟩, Fin.elim0⟩ (countName := "m") fun st =>
       message (vN "A") R "\\mathsf{row}_A" (fun w => rowEval (w.mats .A) w.z st.rs) fun a =>
       message (vN "B") R "\\mathsf{row}_B" (fun w => rowEval (w.mats .B) w.z st.rs) fun b =>
       message (vN "C") R "\\mathsf{row}_C" (fun w => rowEval (w.mats .C) w.z st.rs) fun c =>
       check "outer" ⟪τ, (⟨st.rs⟩ : Val rxN (Fin m → R)), a, b, c, st.c⟫
         (fun τ rx a b c e =>
-          eqF (Fml.var τ) (Fml.var rx) * (Fml.var a * Fml.var b - Fml.var c) =' Fml.var e) <|
+          eqF (Fml.var τ) (Fml.var rx) "[m]" * (Fml.var a * Fml.var b - Fml.var c) =' Fml.var e) <|
       next ⟨⟨st.rs⟩, a, b, c⟩)
     fun e =>
-  stage "inner" ⟪A, B, C, z, e.rx, e.vA, e.vB, e.vC⟫
-    (fun A B C z rx a b c =>
-      (rowF A z (Fml.var rx) =' Fml.var a) ∧' (rowF B z (Fml.var rx) =' Fml.var b) ∧'
-        (rowF C z (Fml.var rx) =' Fml.var c))
+  stage "inner" ⟪A, B, C, z, e.rx, e.vA, e.vB, e.vC⟫ rowClaims
     (fun f : FinalClaim R n =>
       ⟪A, B, C, z, e.rx, (⟨f.claim.rs⟩ : Val ryN (Fin n → R)), f.ρA, f.ρB, f.ρC, f.claim.c⟫)
     (fun A B C z rx ry ρa ρb ρc e =>
@@ -248,7 +263,7 @@ noncomputable def spartanSpec (m n : ℕ) :=
         (fun ρa a ρb b ρc c =>
           Fml.var ρa * Fml.var a + Fml.var ρb * Fml.var b + Fml.var ρc * Fml.var c) fun c0 =>
       sumcheck n bits (innerPoly e.rx.val (ρFun ρa.val ρb.val ρc.val)) ⟨c0, Fin.elim0⟩
-        fun st => next ⟨ρa, ρb, ρc, st⟩)
+        (countName := "n") fun st => next ⟨ρa, ρb, ρc, st⟩)
     fun f =>
   check "final" ⟪A, B, C, z, e.rx, (⟨f.claim.rs⟩ : Val ryN (Fin n → R)), f.ρA, f.ρB, f.ρC,
       f.claim.c⟫
@@ -292,6 +307,11 @@ theorem spartan_verdict_isSome (w : Witness R m n) (data : (SpartanIn R m n).Dat
     erw [Desc.Complete.eq_2, Desc.Complete.eq_2, Desc.Complete.eq_2, Desc.Complete.eq_5]
     refine ⟨?_, ?_⟩
     · simp only [Closed.inst, ToArgs.toArgs_prod, ToArgs.toArgs_val, Args.append]
+      change decide ((prodM (m := Id) (fun j : Fin m =>
+          pure (τ j * st.rs j + (1 - τ j) * (1 - st.rs j))) (List.finRange m)).run *
+        (rowEval (w.mats .A) w.z st.rs * rowEval (w.mats .B) w.z st.rs -
+          rowEval (w.mats .C) w.z st.rs) = st.c.val) = true
+      rw [prodM_id, Id.run_pure, ← Fin.prod_univ_def]
       change decide (eqWeight τ st.rs * (rowEval (w.mats .A) w.z st.rs *
         rowEval (w.mats .B) w.z st.rs - rowEval (w.mats .C) w.z st.rs) = st.c.val) = true
       refine decide_eq_true ?_
@@ -359,8 +379,20 @@ check. -/
   ["sum", "sum", "outer", "sum", "sum", "sum", "final"]
 
 #guard (checkTex (spartanSpec ℚ 2 3).skeleton).lookup "outer" == some
-  "\\mathrm{\\prod}(\\tau \\cdot r_{x} + (1 - \\tau) \\cdot (1 - r_{x})) \\cdot \
+  "(\\prod_{j \\in [m]} (\\tau_{j} \\cdot r_{x,j} + (1 - \\tau_{j}) \\cdot (1 - r_{x,j}))) \\cdot \
   (v_{A} \\cdot v_{B} - v_{C}) = c_{2}"
+
+/-- The stages of a skeleton without branches, each with its input and output claims. -/
+def stageClaims : Skel → List (String × Syn × Syn)
+  | .cons (.beginStage s φ ψ) rest => (s, φ, ψ) :: stageClaims rest
+  | .cons _ rest => stageClaims rest
+  | _ => []
+
+/-! The two stages share the row claims: the output claim of `outer` is the input claim of
+`inner`, as erased syntax. -/
+#guard match stageClaims (spartanSpec ℚ 2 3).skeleton with
+  | [("outer", _, out), ("inner", inp, _)] => out == inp
+  | _ => false
 
 #guard (checkTex (spartanSpec ℚ 2 3).skeleton).lookup "final" == some
   "(\\rho_{A} \\cdot \\tilde{A}(\\mathrm{\\iota_1}(r_{x}) + \\mathrm{\\iota_2}(r_{y})) + \

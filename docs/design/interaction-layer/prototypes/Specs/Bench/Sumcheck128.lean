@@ -17,6 +17,8 @@ label lookup `tr⟦sumcheck, 127, r⟧` stops with "maximum recursion depth has 
 default suffices up to round 120. The file raises the limit to 1024 for that one definition.
 -/
 
+set_option linter.hashCommand false
+
 namespace Specs.Bench.Sumcheck128
 open Interaction
 
