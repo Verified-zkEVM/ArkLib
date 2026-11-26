@@ -6,8 +6,10 @@ Authors: Quang Dao
 import ArkLib.Relation.OracleInterface
 import ArkLib.Relation.Basic
 import ArkLib.Interaction.OracleVerifier
-import ArkLib.Interaction.Oracle.BundleOps
+import ArkLib.Relation.OracleBundle
 import ArkLib.Interaction.Composition
+import VCVio.OracleComp.OracleContext
+import VCVio.OracleComp.SimSemantics.ReaderT.Basic
 import Mathlib.Data.ZMod.Basic
 
 /-!
@@ -18,8 +20,9 @@ Companion to `docs/design/interaction-layer/oracle-consolidation.md`.
 - Part 1 defines the recommended consolidated API (Design D) in namespace `Consolidated`, at
   `Type` / `Type 1` with zero universe parameters per the post-step-5 universe policy.
 - Part 2 checks the exact relationships (equivalences, `rfl` equalities, proof-only equalities,
-  and failures recorded via `#guard_msgs`) between `Consolidated` and the current types
-  (`OracleInterface`, `OracleContext`, `OracleFamily`, `OracleBundle`).
+  and failures recorded via `#guard_msgs`) between `Consolidated` and VCVio's `OracleContext`,
+  and between `Consolidated` and the ArkLib declarations on `main` that implement it
+  (`emptySpec0`, `OracleInterface`, `Interaction.OracleBundle`, `OracleBundle.ofIndexed`).
 - Part 3 checks reducibility, typeclass synthesis, `toOracleSpec` semireducibility, Lean 4.28
   `.implicit` transparency (why `OracleInterface.answer` avoids `Id` and why `OracleBundle` keeps
   four flat fields), and `@[macro_inline]` compiler erasure for noncomputable input bundles.
@@ -28,6 +31,12 @@ Companion to `docs/design/interaction-layer/oracle-consolidation.md`.
   arbitrary bundles) with zero universe pins.
 
 Check with `lake env lean docs/design/interaction-layer/prototypes/OracleConsolidation.lean`.
+
+PR #1588 wrote this file against the API before the universe and consolidation stack (#1591 to
+#1603). That stack implemented much of Design D, so the comparisons in Part 2 now check that
+`main` implements the design. The stack deleted `OracleFamily`, `OracleBundle.ofFamily` and
+`OracleInterface.toOC`, and this file no longer compares against them. The version at commit
+`c698148e86` keeps the comparisons with those declarations.
 -/
 
 set_option linter.dupNamespace false
@@ -671,7 +680,7 @@ theorem appendSimple_outputMap {ι : Type} {ambient : OracleSpec ι} {inputs : O
 end OracleVerifier
 end Consolidated
 
-/-! ## Part 2. Exact relationships with current ArkLib and VCVio types -/
+/-! ## Part 2. Exact relationships with ArkLib on `main` and VCVio types -/
 
 section Relationships
 
@@ -696,45 +705,53 @@ def bundleEquivSigma :
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- 2.3: Current `OracleInterface.{0, 0} X` is equivalent (`rfl` both ways) to
-`Consolidated.OracleInterface X`. -/
+/-! ### 2.3 to 2.6: comparisons with the declarations on `main`
+
+The stack #1591 to #1603 implemented the consolidated interface and bundle, so each comparison
+below checks that a declaration on `main` matches its `Consolidated` counterpart. -/
+
+/-- 2.3: `main`'s flat `OracleInterface X` is equivalent (`rfl` both ways) to
+`Consolidated.OracleInterface X`. Both classes have the fields `Query`, `spec` and `answer`. -/
 def currentInterfaceEquivConsolidated (X : Type) :
-    _root_.OracleInterface.{0, 0} X ≃ Consolidated.OracleInterface X where
-  toFun O := ⟨O.Query, O.toOC.spec, fun m q => (O.toOC.impl q).run m⟩
-  invFun O := ⟨O.Query, ⟨O.spec, fun q => ReaderT.mk fun m => O.answer m q⟩⟩
+    _root_.OracleInterface X ≃ Consolidated.OracleInterface X where
+  toFun O := ⟨O.Query, O.spec, O.answer⟩
+  invFun O := ⟨O.Query, O.spec, O.answer⟩
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- 2.4: Current `Interaction.OracleBundle.{0, 0, 0}` is equivalent (`rfl` both ways) to
-`Consolidated.OracleBundle`. -/
+/-- 2.4: `main`'s `Interaction.OracleBundle` is equivalent (`rfl` both ways) to
+`Consolidated.OracleBundle`. Both structures have the fields `Query`, `spec`, `Data` and
+`answer`. -/
 def currentBundleEquivConsolidated :
-    Interaction.OracleBundle.{0, 0, 0} ≃ Consolidated.OracleBundle where
-  toFun B := ⟨B.Index, B.spec, B.Data, B.answer⟩
+    Interaction.OracleBundle ≃ Consolidated.OracleBundle where
+  toFun B := ⟨B.Query, B.spec, B.Data, B.answer⟩
   invFun B := ⟨B.Query, B.spec, B.Data, B.answer⟩
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- 2.5: Current `OracleFamily.{0, 0, 0} I A` is equivalent (`rfl` both ways) to
-`(i : I) → Consolidated.OracleInterface (A i)`. -/
-def currentFamilyEquivPi (I : Type) (A : I → Type) :
-    Interaction.Oracle.OracleFamily.{0, 0, 0} I A ≃
-      ((i : I) → Consolidated.OracleInterface (A i)) where
-  toFun F i := (currentInterfaceEquivConsolidated (A i)) (F.interface i)
-  invFun G := ⟨fun i => (currentInterfaceEquivConsolidated (A i)).symm (G i)⟩
+/-- 2.5: `main`'s `emptySpec0` is the prototype's `Consolidated.emptySpec0`. -/
+example : _root_.emptySpec0 = Consolidated.emptySpec0 := rfl
+
+/-- 2.6: The arguments of `main`'s `Interaction.OracleBundle.ofIndexed`, a type family with an
+interface at each index, form a total space equivalent (`rfl` both ways) to the total space of
+`I → Consolidated.OracleBundle`. -/
+def currentIndexedSigmaEquivIndexedBundle :
+    ((I : Type) × (A : I → Type) × ((i : I) → _root_.OracleInterface (A i))) ≃
+      ((I : Type) × (I → Consolidated.OracleBundle)) where
+  toFun x := ⟨x.1, fun i => Consolidated.OracleBundle.of (x.2.1 i)
+    ((currentInterfaceEquivConsolidated (x.2.1 i)) (x.2.2 i))⟩
+  invFun y := ⟨y.1, fun i => (y.2 i).Data,
+    fun i => (currentInterfaceEquivConsolidated (y.2 i).Data).symm (y.2 i).toInterface⟩
   left_inv _ := rfl
   right_inv _ := rfl
 
-/-- 2.6: The total space of `OracleFamily` is equivalent (`rfl` both ways) to the total space of
-`I → Consolidated.OracleBundle`. -/
-def currentFamilySigmaEquivIndexedBundle :
-    ((I : Type) × (A : I → Type) × Interaction.Oracle.OracleFamily.{0, 0, 0} I A) ≃
-      ((I : Type) × (I → Consolidated.OracleBundle)) where
-  toFun x := ⟨x.1, fun i => Consolidated.OracleBundle.of (x.2.1 i)
-    ((currentInterfaceEquivConsolidated (x.2.1 i)) (x.2.2.interface i))⟩
-  invFun y := ⟨y.1, fun i => (y.2 i).Data,
-    ⟨fun i => (currentInterfaceEquivConsolidated (y.2 i).Data).symm (y.2 i).toInterface⟩⟩
-  left_inv _ := rfl
-  right_inv _ := rfl
+/-- 2.6 (continued): `main`'s `Interaction.OracleBundle.ofIndexed` maps to
+`Consolidated.OracleBundle.ofIndexed` under the equivalences of 2.3 and 2.4, by `rfl`. -/
+example {I : Type} (A : I → Type) (O : ∀ i, _root_.OracleInterface (A i)) :
+    currentBundleEquivConsolidated (Interaction.OracleBundle.ofIndexed A O) =
+      Consolidated.OracleBundle.ofIndexed A
+        (fun i => currentInterfaceEquivConsolidated (A i) (O i)) :=
+  rfl
 
 /-! ### 2.7 Key definitional equalities that hold by `rfl` in Design D -/
 section RflChecks
@@ -825,8 +842,8 @@ of type
 def sigmaDotFails (B : SigmaBundle) := B.spec
 
 -- Failure 4 (Family sum vs bundle sum): `(indexed F).sum (indexed G)` is not definitionally equal
--- to `indexed (Sum.elim F G)`. The two data types are equivalent, as `sumData_eta` shows for the
--- current families, and Design D adds no isomorphism structure for them.
+-- to `indexed (Sum.elim F G)`. The two data types are equivalent, as `sumData_eta` showed for the
+-- families before the stack deleted them, and Design D adds no isomorphism structure for them.
 /--
 error: Type mismatch
   rfl
@@ -862,7 +879,10 @@ end Relationships
 
 section Invariants
 
-open OracleSpec OracleComp Consolidated
+open OracleSpec OracleComp
+-- `main` now defines `emptySpec0` at the root, equal to `Consolidated.emptySpec0` by 2.5.
+-- Hiding the prototype's copy keeps the name `emptySpec0` unambiguous.
+open Consolidated hiding emptySpec0
 
 -- 3.1: Why `OracleInterface.answer` uses `(q : Query) → spec q` rather than `QueryImpl spec Id`:
 -- `Id` is semireducible in Lean 4, so `QueryImpl spec Id` puts `Id` in the expected return type
@@ -956,8 +976,9 @@ example {ι : Type} {ambient : OracleSpec ι} {In : NestedBundle} (x : In.Data)
 end NestedBundleFails
 
 -- 3.3: Lean 4 class projections (`OracleInterface.Query`) are not unfolded during `synthInstance`
--- (true on BOTH current and consolidated `OracleInterface`, which is why `OracleInterface.lean:311`
--- supplies explicit `Fintype` instances). Direct flat bundles (e.g. `ofSpec`) unfold directly.
+-- (true on both `main`'s `OracleInterface` and `Consolidated.OracleInterface`, which is why
+-- `ArkLib/Relation/OracleInterface.lean:276` supplies explicit `Fintype` instances). Direct flat
+-- bundles (e.g. `ofSpec`) unfold directly.
 /--
 error: failed to synthesize instance of type class
   Fintype (Consolidated.OracleInterface.Query (Polynomial (ZMod 7)))
@@ -972,7 +993,7 @@ example (q : (OracleBundle.ofSpec (ZMod 7 →ₒ ZMod 7)).Query) :
     DecidableEq ((OracleBundle.ofSpec (ZMod 7 →ₒ ZMod 7)).spec q) := inferInstance
 
 -- 3.4: `toOracleSpec` remains semireducible, preserving single-step `rfl` simulation matching
--- `ArkLib/Relation/OracleInterface.lean:238` and `ArkLib/OracleReduction/Basic.lean:515`.
+-- `ArkLib/Relation/OracleInterface.lean:203` and `ArkLib/OracleReduction/Basic.lean:518`.
 theorem simulateQ_simOracle2_liftM_query_snd {ι : Type} {oSpec : OracleSpec ι}
     {ι₁ : Type} {T₁ : ι₁ → Type} [∀ i, Consolidated.OracleInterface (T₁ i)]
     {ι₂ : Type} {T₂ : ι₂ → Type} [∀ i, Consolidated.OracleInterface (T₂ i)]
@@ -1018,7 +1039,10 @@ section Examples
 
 set_option pp.universes true
 
-open OracleSpec OracleComp Consolidated
+open OracleSpec OracleComp
+-- `main` now defines `emptySpec0` at the root, equal to `Consolidated.emptySpec0` by 2.5.
+-- Hiding the prototype's copy keeps the name `emptySpec0` unambiguous.
+open Consolidated hiding emptySpec0
 
 /-- 4.1: Single-oracle bundle (no dummy `Unit` index) and sums/tensors without universe pins. -/
 def fnBundle : OracleBundle := OracleBundle.ofInst (ZMod 7 → ZMod 7)
