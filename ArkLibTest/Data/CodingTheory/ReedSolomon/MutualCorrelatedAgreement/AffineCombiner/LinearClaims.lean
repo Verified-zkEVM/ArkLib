@@ -83,6 +83,35 @@ private def pairSearch (A s : ℕ) (w : LinearClaimInstance (ZMod 2) (ZMod 2) 1)
   let w : LinearClaimInstance (ZMod 5) (ZMod 5) 1 := ⟨1, 1, ![0, 1], 0, 0, fun _ ↦ 2⟩
   decide (Computable.IsLinearClaimExceptional fullDomain w 5 0 1 0 1 P)
 
+/-- The exceptional event on the binary domain for `f = 0`, `g = id`, and degree bound one.
+The weight reads the coefficient of `X`. The first claim is zero and the second is one.
+The agreement threshold is two and the allowed loss is zero. -/
+private def linearCoefficientClaimEvent (θ c : ZMod 2) (ab : ZMod 2 × ZMod 2) : Bool :=
+  Computable.hasLinearClaimExceptionalCandidate binaryDomain
+    ⟨0, id, ![0, 1], 0, 1, fun _ ↦ c⟩ 2 0 θ ab.1 ab.2
+
+/-- The number of exceptional challenge triples when the reply is the constant `c`. -/
+private def constantReplyCount (c : ZMod 2) : ℕ :=
+  Probability.maxEventCount fun (_ : Unit) (trial : ZMod 2 × ZMod 2 × ZMod 2) ↦
+    linearCoefficientClaimEvent trial.1 c trial.2
+
+-- No constant second witness satisfies the second claim. The candidate through both
+-- points has slope `1 + θ * (α + β)`. Its combined claim holds exactly when `β * θ = β * c`.
+-- A reply of `c = θ` admits all four pairs at each `θ`, for eight exceptional triples.
+/-- info: true -/
+#guard_msgs in
+#eval Probability.maxEventCountWithReply (fun (_ : Unit) ↦ linearCoefficientClaimEvent) == 8
+
+-- A constant reply admits four pairs when `θ = c` and two when `θ ≠ c`.
+/-- info: true -/
+#guard_msgs in
+#eval constantReplyCount 0 == 6 && constantReplyCount 1 == 6
+
+-- Exercise the full evaluator at degree one. The context above attains error one.
+/-- info: true -/
+#guard_msgs in
+#eval linearClaimMcaErrorRat binaryDomain 1 2 0 == 1
+
 -- Honest claims on `F₅` with `v = (1, 2)`, `F = 1`, `G = 2`, `θ = 1`:
 -- `⟨coef(G), v⟩ = 2`, `⟨coef(F), v⟩ = 1`, and `⟨coef(X(F + θ G)), v⟩ = 3 · 2 = 1`.
 example (α β : ZMod 5) :
@@ -197,3 +226,8 @@ axioms: [propext, Classical.choice, Quot.sound] -/
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.le_floor_johnson_of_mul_le
+
+/-- info: 'ReedSolomon.ofReal_linearClaimMcaErrorRat' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms ReedSolomon.ofReal_linearClaimMcaErrorRat

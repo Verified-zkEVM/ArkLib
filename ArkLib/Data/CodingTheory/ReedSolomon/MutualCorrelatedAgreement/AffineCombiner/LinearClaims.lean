@@ -79,14 +79,14 @@ structure LinearClaimInstance (ι F : Type*) (d : ℕ) where
 
 namespace LinearClaimInstance
 
-/-- The instance fields as a product that can be enumerated over finite `ι` and `F`. -/
+/-- An instance as the product of data fixed before the first challenge and a message function. -/
 def equivProd (ι F : Type*) (d : ℕ) :
     LinearClaimInstance ι F d ≃
-      (ι → F) × (ι → F) × (Fin (d + 1) → F) × F × F × (F → F) where
-  toFun w := (w.f, w.g, w.v, w.γ₀, w.γ₁, w.message)
-  invFun := fun ⟨f, g, v, γ₀, γ₁, message⟩ ↦ ⟨f, g, v, γ₀, γ₁, message⟩
+      ((ι → F) × (ι → F) × (Fin (d + 1) → F) × F × F) × (F → F) where
+  toFun w := ((w.f, w.g, w.v, w.γ₀, w.γ₁), w.message)
+  invFun := fun ⟨⟨f, g, v, γ₀, γ₁⟩, message⟩ ↦ ⟨f, g, v, γ₀, γ₁, message⟩
   left_inv := by intro w; cases w; rfl
-  right_inv := by rintro ⟨f, g, v, γ₀, γ₁, message⟩; rfl
+  right_inv := by rintro ⟨⟨f, g, v, γ₀, γ₁⟩, message⟩; rfl
 
 instance [DecidableEq ι] [Fintype F] (d : ℕ) : Fintype (LinearClaimInstance ι F d) :=
   Fintype.ofEquiv _ (equivProd ι F d).symm
