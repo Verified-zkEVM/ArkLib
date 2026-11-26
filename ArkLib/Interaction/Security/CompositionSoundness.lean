@@ -359,17 +359,15 @@ theorem Verifier.run_eq_bind {s₁ : Protocol.{0}} {s₂ : Path s₁ → Protoco
 returned continuation, then the final decision with bundle queries answered from the input data and
 the oracle messages of the whole transcript. -/
 def OracleVerifier.suffixRun {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-    {J : Path (s₁.append s₂) → Type}
-    {B : (p : Path (s₁.append s₂)) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
+    {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : inputs.Data)
     (b : RunBoundary oracleSig ambient s₁ s₂ Out) :
     OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂))
-      (Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B)) := do
+      (Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T outputs)) := do
   let ⟨tail, out, _⟩ ← TwoParty.Lens.run _ b.2.1
     (sampler oracleSig _ (suffixDraw oracleSig s₁ s₂
       (QueryImpl.ofLift (challengeSpec oracleSig (s₁.append s₂))
@@ -392,10 +390,8 @@ run at the actual boundary. The verifier is arbitrary, so this covers `OracleVer
 `OracleVerifier.run_append` describes the rest of that run. -/
 theorem OracleVerifier.run_eq_bind {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-    {J : Path (s₁.append s₂) → Type}
-    {B : (p : Path (s₁.append s₂)) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
+    {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
@@ -566,10 +562,8 @@ premise bounds the actual run resumed from the boundary, including the end decis
 holds almost everywhere. The verifier is arbitrary, so this covers `OracleVerifier.append`. -/
 theorem OracleVerifier.append_soundness_weighted_ae {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-    {J : Path (s₁.append s₂) → Type}
-    {B : (p : Path (s₁.append s₂)) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
+    {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (init : ProbComp σ)
@@ -577,7 +571,7 @@ theorem OracleVerifier.append_soundness_weighted_ae {s₁ : OracleProtocol.{0, 0
     (challenges : QueryImpl (challengeSpec oracleSig (s₁.append s₂)) ProbComp) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (TruthMid Admissible : RunBoundary oracleSig ambient s₁ s₂ Out × σ → Prop)
-    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
+    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T outputs) → Prop)
     (error : RunBoundary oracleSig ambient s₁ s₂ Out × σ → ℝ≥0∞) (εtruth εinvalid : ℝ≥0∞)
     (htruth : Pr{let b ← (experimentWithState init impl challenges
       (appendPrefixRun prover))}[TruthMid b] ≤ εtruth)
@@ -602,10 +596,8 @@ inadmissible midpoints. The suffix premise bounds the actual run resumed from al
 admissible boundary, including the end decision. Oracle verifiers have no standalone form. -/
 theorem OracleVerifier.append_soundness_ae {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-    {J : Path (s₁.append s₂) → Type}
-    {B : (p : Path (s₁.append s₂)) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
+    {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (init : ProbComp σ)
@@ -613,7 +605,7 @@ theorem OracleVerifier.append_soundness_ae {s₁ : OracleProtocol.{0, 0}}
     (challenges : QueryImpl (challengeSpec oracleSig (s₁.append s₂)) ProbComp) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (TruthMid Admissible : RunBoundary oracleSig ambient s₁ s₂ Out × σ → Prop)
-    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
+    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T outputs) → Prop)
     (εtruth εinvalid ε : ℝ≥0∞)
     (htruth : Pr{let b ← (experimentWithState init impl challenges
       (appendPrefixRun prover))}[TruthMid b] ≤ εtruth)
@@ -635,10 +627,8 @@ semantics of the full run interface. Midpoint predicates are on the boundary alo
 suffix premise bounds the actual rest of the run from almost every false admissible boundary. -/
 theorem OracleVerifier.run_append_soundness_weighted_ae {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-    {J : Path (s₁.append s₂) → Type}
-    {B : (p : Path (s₁.append s₂)) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
+    {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
     [EvalDistSemantics (OracleComp (ambient + challengeSpec oracleSig (s₁.append s₂)))]
@@ -646,7 +636,7 @@ theorem OracleVerifier.run_append_soundness_weighted_ae {s₁ : OracleProtocol.{
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (TruthMid Admissible : RunBoundary oracleSig ambient s₁ s₂ Out → Prop)
-    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
+    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T outputs) → Prop)
     (error : RunBoundary oracleSig ambient s₁ s₂ Out → ℝ≥0∞) (εtruth εinvalid : ℝ≥0∞)
     (htruth : Pr{let b ← appendPrefixRun prover}[TruthMid b] ≤ εtruth)
     (hinvalid : Pr{let b ← appendPrefixRun prover}[¬ TruthMid b ∧ ¬ Admissible b] ≤ εinvalid)
@@ -671,10 +661,8 @@ fixed before setup. `OracleVerifier.append_soundness_runtime_ae` takes a pointwi
 instead. -/
 theorem OracleVerifier.append_soundness_runtime {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-    {J : Path (s₁.append s₂) → Type}
-    {B : (p : Path (s₁.append s₂)) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
+    {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type} {κ : Type} {imports : OracleSpec κ}
     [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
@@ -682,7 +670,7 @@ theorem OracleVerifier.append_soundness_runtime {s₁ : OracleProtocol.{0, 0}}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (Exceptional : RunResult runtime (RunBoundary oracleSig ambient s₁ s₂ Out) → Prop)
-    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
+    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T outputs) → Prop)
     (error : RunResult runtime (RunBoundary oracleSig ambient s₁ s₂ Out) → ℝ≥0∞)
     (hsuffix : letI : MeasurableSpace (RunResult runtime
         (RunBoundary oracleSig ambient s₁ s₂ Out)) := ⊤
@@ -731,10 +719,8 @@ almost every non-exceptional joint boundary, the resumed run succeeds with proba
 `error` at that boundary. -/
 theorem OracleVerifier.append_soundness_runtime_ae {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-    {J : Path (s₁.append s₂) → Type}
-    {B : (p : Path (s₁.append s₂)) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
+    {outputs : Path (s₁.append s₂) → OracleBundle} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type} {κ : Type} {imports : OracleSpec κ}
     [EvalDistSemantics (OracleComp imports)] [LawfulEvalDistSemantics (OracleComp imports)]
@@ -742,7 +728,7 @@ theorem OracleVerifier.append_soundness_runtime_ae {s₁ : OracleProtocol.{0, 0}
     (V : OracleVerifier ambient (s₁.append s₂) S T inputs outputs) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient (s₁.append s₂) Out)
     (Exceptional : RunResult runtime (RunBoundary oracleSig ambient s₁ s₂ Out) → Prop)
-    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T B) → Prop)
+    (Success : Outcome oracleSig (s₁.append s₂) Out (OracleVerifier.Output T outputs) → Prop)
     (error : RunResult runtime (RunBoundary oracleSig ambient s₁ s₂ Out) → ℝ≥0∞)
     (hsuffix : letI : MeasurableSpace (RunResult runtime
         (RunBoundary oracleSig ambient s₁ s₂ Out)) := ⊤

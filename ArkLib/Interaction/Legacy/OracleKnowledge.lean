@@ -277,8 +277,10 @@ theorem oracleKnowledgeSoundnessWith_iff (init : ProbComp σ)
         (toPlainFrom_embedOracleProver P stmt.1 stmt.2 aux) hW)
       (h stmt trivial (embedOracleProver P stmt.1 stmt.2 aux)).2.2
   · intro h stmt _ adv
-    refine ⟨Interaction.OracleVerifier.classicalStraightLine_marginal _ _ _ _ _ _ _ stmt adv,
-      le_rfl, ?_⟩
+    have hm := Interaction.OracleVerifier.classicalStraightLine_marginal (fun _ => WitIn)
+      (embedOracleVerifier V) init impl (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun _ o => o.2) (liftOracleExtractor E) stmt adv
+    refine ⟨hm, le_rfl, ?_⟩
     have h' := h PUnit stmt ⟨⟩ (translate (toPlainFrom .focal 0 n (Nat.zero_add n) adv))
     dsimp only at h'
     rw [legacy_exec_run] at h'

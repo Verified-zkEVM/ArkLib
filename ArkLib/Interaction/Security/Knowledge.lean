@@ -334,14 +334,13 @@ The decision log records input queries, so it is returned by the run. Like `run`
 `runWithQueriesByMove`, it executes through `executeWith`, and it logs the interaction and the
 decision directly with `withLogging`. -/
 def runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-    {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      ((obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
+      ((obs : Outcome oracleSig s Out (OracleVerifier.Output T outputs)) × QueryLog ambient ×
         QueryLog (ambient +
           (pathBundle inputs s (Transcript.path obs.1)).spec)) :=
   let full := ambient + challengeSpec oracleSig s
@@ -360,9 +359,8 @@ def runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProto
 
 /-- The full logged specialization retains the original interaction and decision equations. -/
 theorem runWithLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-    {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
@@ -388,9 +386,8 @@ theorem runWithLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Orac
 /-- The ambient part of the decision log is the log of an ambient-only logger, which the oracle
 extraction interfaces receive; `map_runWithLog_eq_runWithAmbientLog` names the right side. -/
 theorem runWithLog_fst {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-    {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
@@ -416,9 +413,8 @@ theorem runWithLog_fst {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Ora
 /-- Forgetting both logs preserves the entire oracle run. -/
 theorem map_fst_runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}}
-    {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     Sigma.fst <$> V.runWithLog stmt data prover = V.run stmt data prover := by
@@ -431,7 +427,7 @@ theorem map_fst_runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
       pure (⟨a.1.1, a.1.2.1, verdict.map fun t =>
         (t, (V.outputMap stmt (Transcript.path a.1.1) (toView s a.1.1)).f
           ((data, oracleMessages s a.1.1) : (pathBundle inputs s _).Data))⟩ :
-            Outcome oracleSig s Out (OracleVerifier.Output T B)))]
+            Outcome oracleSig s Out (OracleVerifier.Output T outputs)))]
   rw [bind_logged (QueryImpl.id' (ambient + challengeSpec oracleSig s)) _
     (fun result : (tr : Transcript oracleSig s) × Out tr × PUnit => do
       let verdict ← simulateQ (QueryImpl.addLift
@@ -443,7 +439,7 @@ theorem map_fst_runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
       pure (⟨result.1, result.2.1, verdict.map fun t =>
         (t, (V.outputMap stmt (Transcript.path result.1) (toView s result.1)).f
           ((data, oracleMessages s result.1) : (pathBundle inputs s _).Data))⟩ :
-        Outcome oracleSig s Out (OracleVerifier.Output T B)))]
+        Outcome oracleSig s Out (OracleVerifier.Output T outputs)))]
   rw [simulateQ_id']
 
 /-- Execute an oracle verifier, logging the prover's ambient queries and the decision's ambient
@@ -451,14 +447,13 @@ queries. The decision's bundle queries are answered from the input data and the 
 messages and are not logged, so the result holds only ambient logs. It executes through
 `executeWith` and logs both phases directly with `withLogging`. -/
 def runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      (Outcome oracleSig s Out (OracleVerifier.Output T B) × QueryLog ambient ×
+      (Outcome oracleSig s Out (OracleVerifier.Output T outputs) × QueryLog ambient ×
         QueryLog ambient) :=
   let full := ambient + challengeSpec oracleSig s
   let toFull : QueryImpl ambient (OracleComp full) := (QueryImpl.id' full).restrictLeft
@@ -474,9 +469,8 @@ def runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
 
 /-- The ambient logged specialization retains the original interaction and decision equation. -/
 theorem runWithAmbientLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
@@ -500,9 +494,8 @@ theorem runWithAmbientLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι}
 /-- The ambient-log run is the full-log run with the decision log restricted to its ambient
 entries. -/
 theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
@@ -514,8 +507,8 @@ theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type} {ambient : Or
 /-- Forgetting both ambient logs preserves the entire oracle run. -/
 theorem map_fst_runWithAmbientLog {ι : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {inputs : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     Prod.fst <$> V.runWithAmbientLog stmt data prover = V.run stmt data prover := by
@@ -559,9 +552,8 @@ end Extractor
 
 namespace OracleVerifier
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle}
+  {outputs : Path s → OracleBundle}
   {Out Wout : Transcript oracleSig s → Type}
 
 /-- Oracle extraction uses actual inputs, full transcripts, and the ambient logs of the run.
@@ -572,7 +564,7 @@ def extractionGame (V : OracleVerifier ambient s S T inputs outputs)
     (E : Extractor.OracleStraightLine ambient s Witness Wout)
     (stmt : S × inputs.Data) (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
-      (Outcome oracleSig s Out (OracleVerifier.Output T B) × Option (Witness stmt)) := do
+      (Outcome oracleSig s Out (OracleVerifier.Output T outputs) × Option (Witness stmt)) := do
   let ⟨obs, proveLog, verifyLog⟩ ← V.runWithAmbientLog stmt.1 stmt.2 prover
   match obs.2.2 with
   | none => pure (obs, none)
@@ -584,7 +576,7 @@ def extractionGame (V : OracleVerifier ambient s S T inputs outputs)
 
 /-- The classical logged extraction interface for passive oracle verifiers. -/
 noncomputable def classicalStraightLine (Witness : (S × inputs.Data) → Type)
-    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]
+    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T outputs))]
     [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -598,7 +590,7 @@ noncomputable def classicalStraightLine (Witness : (S × inputs.Data) → Type)
 
 /-- Oracle transcript-only extraction uses the same game without access to the query logs. -/
 noncomputable def classicalTranscriptOnly (Witness : (S × inputs.Data) → Type)
-    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]
+    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T outputs))]
     [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -613,7 +605,7 @@ noncomputable def classicalTranscriptOnly (Witness : (S × inputs.Data) → Type
 /-- Classical straight-line oracle extraction preserves the run's outcome law: the
 extractor runs after the outcome is fixed. -/
 theorem classicalStraightLine_marginal (Witness : (S × inputs.Data) → Type)
-    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]
+    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T outputs))]
     [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -651,7 +643,7 @@ theorem classicalStraightLine_marginal (Witness : (S × inputs.Data) → Type)
 
 /-- Oracle transcript-only extraction also preserves the run's outcome law. -/
 theorem classicalTranscriptOnly_marginal (Witness : (S × inputs.Data) → Type)
-    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]
+    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T outputs))]
     [∀ stmt, MeasurableSpace (Witness stmt)]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))

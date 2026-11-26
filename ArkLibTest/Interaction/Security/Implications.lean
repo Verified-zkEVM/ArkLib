@@ -63,12 +63,12 @@ example {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
 -- Disposition S2, oracle form: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleFamily.{0, 0, 0} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
+    (input : StatementProblem (S × (∀ i, A i)))
+    (output : PathProblem s (OracleVerifier.Output T outputs))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞)
     (h : V.rbrSoundness impl input output draw ε) :
@@ -80,12 +80,12 @@ example {ι σ : Type} {I : Type} {S : Type}
 -- Disposition S3, oracle form: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleFamily.{0, 0, 0} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
+    (input : StatementProblem (S × (∀ i, A i)))
+    (output : PathProblem s (OracleVerifier.Output T outputs))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (e : ℝ≥0∞) (k : ℕ)
     (hcount : ∀ path, (challengeNodesOn oracleSig s path).card ≤ k)
     (h : V.rbrSoundness impl input output draw fun _ => e) :
@@ -96,13 +96,12 @@ example {ι σ : Type} {I : Type} {S : Type}
 -- examples above use the coercion from a family to its bundle.
 example {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (input : StatementProblem (S × inputs.Data))
-    (output : PathProblem s (OracleVerifier.Output T B))
+    (output : PathProblem s (OracleVerifier.Output T outputs))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
     (ε : ChallengeNode oracleSig s → ℝ≥0∞)
     (h : V.rbrSoundness impl input output draw ε) :
@@ -113,16 +112,16 @@ example {ι σ : Type} {S : Type}
 -- from the verdict and the output oracle data of the outcome.
 example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleFamily.{0, 0, 0} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
-    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
+    (input : StatementProblem (S × (∀ i, A i)))
+    (output : PathProblem s (OracleVerifier.Output T outputs))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp) (ε : ℝ≥0∞) :
     V.soundness init impl draw input output ε ↔
       ∀ Out : Transcript oracleSig s → Type,
-        letI : MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B)) := ⊤
+        letI : MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T outputs)) := ⊤
         soundness (V.classicalModel (Out := Out) init impl draw) input output
           (fun obs => Transcript.path obs.1) (fun obs => obs.2.2) ε :=
   Iff.rfl
@@ -606,13 +605,13 @@ theorem optional_counting_bound :
 Its challenge premise is discharged by the separate lifted draw. -/
 example {ι : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
-    {A : I → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+    {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs)
     (impl : QueryImpl ambient (OptionT ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s) ProbComp)
-    (input : StatementProblem (S × (∀ i, A i))) (output : PathProblem s (OracleVerifier.Output T B))
+    (input : StatementProblem (S × (∀ i, A i)))
+    (output : PathProblem s (OracleVerifier.Output T outputs))
     (ε : ChallengeNode oracleSig s → ℝ≥0∞)
     (h : rbrSoundness oracleSig s (input.admissible ()) (input.language ())
       (V.validAcceptanceWith impl (output.language)) draw ε) :

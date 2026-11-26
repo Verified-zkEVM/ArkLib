@@ -119,6 +119,6 @@ theorem simulateQ_decisionLift_monad {n : ℕ} {ι : Type} {ambient : OracleSpec
       p).answer (data, pl))) (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         m α) :=
-  simulateQ_pathLift impl p data pl oa
+  simulateQ_pathLift (inputs := polynomialFamily R n deg) impl p data pl oa
 
 end Sumcheck

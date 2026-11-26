@@ -457,7 +457,7 @@ theorem simulateQ_decisionLift {κ : Type} {spec' : OracleSpec κ}
       (simulateQ (decisionLift R deg n ambient p) oa) =
       (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
         OracleComp spec' α) :=
-  simulateQ_pathLift amb p data pl oa
+  simulateQ_pathLift (inputs := Spec.polynomialFamily R n deg) amb p data pl oa
 
 omit [SampleableType R] in
 /-- On any completed run, the decision returns the legacy verdict of the decoded transcript. -/

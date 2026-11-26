@@ -92,7 +92,8 @@ def finalMap : (p : Path suffix) → OracleMap (suffixBundle p) (finalFamily p)
 
 /-- The suffix checks the announced Boolean against one input query. It returns `()` after a
 correct `true` and the queried value after a correct `false`. -/
-def announce : OracleVerifier ambient suffix Unit finalStmt inputFamily finalFamily where
+def announce : OracleVerifier ambient suffix Unit finalStmt inputFamily
+    (fun p => finalFamily p) where
   decide _ p _ := by
     rcases p with ⟨_ | _, ⟨⟩⟩
     · exact do

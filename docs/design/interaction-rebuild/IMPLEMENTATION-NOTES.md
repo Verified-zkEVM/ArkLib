@@ -168,7 +168,7 @@ entry describes the current code. [`universe-policy.md`](../interaction-layer/un
 records the reasons.
 
 **Retained runner contract.** Run outputs lie in `Type`: the output statement `StmtOut p`, the
-output oracle data `B p j` returned by a run, the output index `J p`, prover outputs, extracted
+output oracle data `(outputs p).Data` returned by a run, prover outputs, extracted
 witnesses and the state `σ` of a security experiment. The execution APIs pin their protocols at
 `Protocol.{0}` and `OracleProtocol.{0, 0}`, so positions lie in `Type 1`. Moves and returned
 values lie in `Type`. The prover's monad is `OracleComp ambient : Type → Type`, with the ambient
@@ -197,8 +197,8 @@ run, now in `Type`. Its assertions of independent universes are retired under th
 in #1580.
 
 **Equivalent: Agreement output and witness families (F7 and 3A).** `Security/Agreement.lean`
-now preserves path-dependent `T p`, `J p`, `B p j` and `outputs p` in every agreement and tree
-transport law. The output type is `OracleVerifier.Output T B`. Since step 2 of the policy
+now preserves path-dependent `T p` and `outputs p` in every agreement and tree
+transport law. The output type is `OracleVerifier.Output T outputs`. Since step 2 of the policy
 migration, agreement and every agreement and cast law take their data in `Type`.
 
 Round-by-round knowledge agreement and transport quantify over `Win stmt` and `W stmt tr`.
@@ -265,12 +265,12 @@ verifier and run examples also work in `Type`.
 
 Record D6 fixed the output family for the first milestone. Both verifiers now index their outputs
 by the public shape path: `Verifier ambient s StmtIn StmtOut` takes `StmtOut : Path s → Type u`,
-and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type u` and
-`outputs : (p : Path s) → OracleFamily (J p) (B p)`. The decision returns `T p` and the output map
-targets `outputs p`; `OracleVerifier.Output T B p := T p × ∀ j, B p j` is the accepted claim of a
-run. In an append the composite's output at a path of `s₁.append s₂` is the suffix's output at the
-split path (`splitFamily`, `OracleVerifier.splitOutputs`), so composed decisions return the
-suffix's output without a cast. `Outcome` takes the indexed family, and the security
+and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type` and
+`outputs : Path s → OracleBundle`. The decision returns `T p` and the output map
+targets `outputs p`; `OracleVerifier.Output T outputs p := T p × (outputs p).Data` is the accepted
+claim of a run. In an append the composite's output at a path of `s₁.append s₂` is the suffix's
+output at the split path (`splitFamily` for statements, `OracleVerifier.splitOutputs` for
+bundles), so composed decisions return the suffix's output without a cast. `Outcome` takes the indexed family, and the security
 definitions take output problems over the path context (`PathProblem s T`), with acceptance
 predicates typed at the transcript's path (`validAcceptance impl stmt tr (event : T p → Prop)`).
 Constant families `fun _ => T` recover every earlier user; the legacy embedding and the sumcheck
@@ -287,10 +287,10 @@ right-associated passive composition API: a chain appends its first stage to the
 through the passive append `OracleVerifier.append` (record D5).
 
 - `StageChain ambient S inputs` is the plan of a finite chain of passive oracle verifiers from the
-  statement type `S` and the oracle family `inputs`. `StageChain.nil` has no stages.
+  statement type `S` and the oracle bundle `inputs`. `StageChain.nil` has no stages.
   `StageChain.cons s V draw rest` has a first stage with protocol `s`, verifier `V` and challenge
   draws `draw`. At each path `p` of `s`, the chain `rest p` follows. Its inputs are `V`'s output
-  statement type and output family at `p`. Statement types and families may change at every
+  statement type and output bundle at `p`. Statement types and bundles may change at every
   boundary and may depend on the paths. Statements live in the computation universe `u`.
 - `StageChain.Compatibility c` is the evidence: at every boundary, an
   `OracleVerifier.OutputCompatibility` certificate between the stage's verifier and the composed

@@ -58,10 +58,8 @@ output oracle can therefore depend on a challenge only through the inner output 
 structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
     (InnerIn : Type) (OuterOut InnerOut : Path s → Type)
     (inputsO : OracleBundle) (inputsI : OracleBundle)
-    {JO JI : Path s → Type}
-    {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
-    (outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p))
-    (outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)) where
+    (outputsO : Path s → OracleBundle)
+    (outputsI : Path s → OracleBundle) where
   /-- The statement part. -/
   stmt : StatementLens s OuterIn InnerIn OuterOut InnerOut
   /-- Inner input oracles, answered from outer input oracles. -/
@@ -70,25 +68,22 @@ structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
   receives the outer input statement and the shape path, not the verifier's view, so it cannot
   read challenge values. -/
   liftOracle : OuterIn → (p : Path s) →
-    OracleMap (inputsO.sum (OracleBundle.ofFamily (outputsI p)))
-      (OracleBundle.ofFamily (outputsO p))
+    OracleMap (inputsO.sum (outputsI p)) (outputsO p)
 
 namespace OracleStatementLens
 
 variable {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
-  {JO JI : Path s → Type}
-  {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
-  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
+  {outputsO : Path s → OracleBundle}
+  {outputsI : Path s → OracleBundle}
 
 /-- The statement lens on statements paired with their oracle data. -/
 def toStatementLens
     (lens : OracleStatementLens s OuterIn InnerIn OuterOut InnerOut inputsO inputsI outputsO
       outputsI) :
     StatementLens s (OuterIn × inputsO.Data) (InnerIn × inputsI.Data)
-      (OracleVerifier.Output OuterOut BO) (OracleVerifier.Output InnerOut BI) where
+      (OracleVerifier.Output OuterOut outputsO) (OracleVerifier.Output InnerOut outputsI) where
   proj x := (lens.stmt.proj x.1, (lens.projOracle x.1).f x.2)
   lift x p o := (lens.stmt.lift x.1 p o.1, (lens.liftOracle x.1 p).f (x.2, o.2))
 
@@ -111,7 +106,7 @@ def toExtractorLens
     (witInLift : ∀ x tr, OuterWitOut x tr → InnerWitIn (lens.toStatementLens.proj x) →
       OuterWitIn x) :
     ExtractorLens oracleSig s (OuterIn × inputsO.Data) (InnerIn × inputsI.Data)
-      (OracleVerifier.Output OuterOut BO) (OracleVerifier.Output InnerOut BI)
+      (OracleVerifier.Output OuterOut outputsO) (OracleVerifier.Output InnerOut outputsI)
       OuterWitIn InnerWitIn OuterWitOut InnerWitOut where
   stmt := lens.toStatementLens
   witOutProj := witOutProj
@@ -127,10 +122,8 @@ variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
   {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
-  {JO JI : Path s → Type}
-  {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
-  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
+  {outputsO : Path s → OracleBundle}
+  {outputsI : Path s → OracleBundle}
 
 /-- Decide with the inner verifier on the projected statement, routing its input queries
 through the lens's input map, and lift an accepted output. The output map is the lens's output
@@ -177,7 +170,7 @@ theorem liftContext_outputMap_f
 path when the decision can return the statement on some view and oracle messages of that path,
 and the data is the output map's value there. -/
 def Compatible (V : OracleVerifier ambient s InnerIn InnerOut inputsI outputsI)
-    (stmt : InnerIn × inputsI.Data) (p : Path s) (t : OracleVerifier.Output InnerOut BI p) :
+    (stmt : InnerIn × inputsI.Data) (p : Path s) (t : OracleVerifier.Output InnerOut outputsI p) :
     Prop :=
   ∃ (v : View s p) (msgs : ∀ i, OracleMessage s p i),
     some t.1 ∈ support (V.decideWith stmt.1 p v (stmt.2, msgs)) ∧
@@ -191,10 +184,8 @@ variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
   {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
-  {JO : Path s → Type} {JI : Path s → Type}
-  {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
-  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
+  {outputsO : Path s → OracleBundle}
+  {outputsI : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
 /-- A lifted oracle verifier's run against any prover is the inner run on the projected
@@ -233,8 +224,9 @@ and data. -/
 theorem compatible_of_mem_support_run
     (V : OracleVerifier ambient s InnerIn InnerOut inputsI outputsI) (stmt : InnerIn)
     (data : inputsI.Data) (prover : Prover oracleSig ambient s Out)
-    {obs : Outcome oracleSig s Out (OracleVerifier.Output InnerOut BI)}
-    (h : obs ∈ support (V.run stmt data prover)) {t : OracleVerifier.Output InnerOut BI obs.1.path}
+    {obs : Outcome oracleSig s Out (OracleVerifier.Output InnerOut outputsI)}
+    (h : obs ∈ support (V.run stmt data prover))
+    {t : OracleVerifier.Output InnerOut outputsI obs.1.path}
     (ht : obs.2.2 = some t) : V.Compatible (stmt, data) obs.1.path t := by
   rw [run_eq_decideWith] at h
   simp only [mem_support_bind_iff, support_pure, Set.mem_singleton_iff] at h
@@ -249,10 +241,8 @@ section Security
 variable {ι σ : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {OuterIn : Type} {InnerIn : Type} {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
-  {JO : Path s → Type} {JI : Path s → Type}
-  {BO : (p : Path s) → JO p → Type} {BI : (p : Path s) → JI p → Type}
-  {outputsO : (p : Path s) → OracleFamily.{0, 0, 0} (JO p) (BO p)}
-  {outputsI : (p : Path s) → OracleFamily.{0, 0, 0} (JI p) (BI p)}
+  {outputsO : Path s → OracleBundle}
+  {outputsI : Path s → OracleBundle}
 
 /-- Every accepted output with positive acceptance probability is compatible with its input
 statement and data. -/
@@ -273,7 +263,8 @@ theorem validAcceptance_liftContext
       outputsI)
     (V : OracleVerifier ambient s InnerIn InnerOut inputsI outputsI)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (stmt : OuterIn × inputsO.Data)
-    (tr : Transcript oracleSig s) (event : OracleVerifier.Output OuterOut BO tr.path → Prop) :
+    (tr : Transcript oracleSig s)
+    (event : OracleVerifier.Output OuterOut outputsO tr.path → Prop) :
     (V.liftContext lens).validAcceptance impl stmt tr event ↔
       V.validAcceptance impl (lens.toStatementLens.proj stmt) tr
         (fun t => event (lens.toStatementLens.lift stmt tr.path t)) := by
@@ -297,8 +288,8 @@ theorem liftContext_soundness
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
     {inputO : StatementProblem (OuterIn × inputsO.Data)}
     {inputI : StatementProblem (InnerIn × inputsI.Data)}
-    {outputO : PathProblem s (OracleVerifier.Output OuterOut BO)}
-    {outputI : PathProblem s (OracleVerifier.Output InnerOut BI)} {ε : ℝ≥0∞}
+    {outputO : PathProblem s (OracleVerifier.Output OuterOut outputsO)}
+    {outputI : PathProblem s (OracleVerifier.Output InnerOut outputsI)} {ε : ℝ≥0∞}
     (hlens : lens.toStatementLens.IsSound inputO inputI outputO outputI V.Compatible)
     (h : V.soundness init impl challenges inputI outputI ε) :
     (V.liftContext lens).soundness init impl challenges inputO outputO ε := by
@@ -328,13 +319,15 @@ theorem liftContext_completeness {OuterWit : Type} {InnerWit : Type}
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp)
     {inputO : StatementProblem (OuterIn × inputsO.Data)}
     {inputI : StatementProblem (InnerIn × inputsI.Data)}
-    {outputO : PathProblem s (OracleVerifier.Output OuterOut BO)}
-    {outputI : PathProblem s (OracleVerifier.Output InnerOut BI)}
-    {readStatementO : ∀ tr, OuterO tr → OracleVerifier.Output OuterOut BO tr.path}
-    {readStatementI : ∀ tr, InnerO tr → OracleVerifier.Output InnerOut BI tr.path}
-    {readWitnessO : ∀ obs : Outcome oracleSig s OuterO (OracleVerifier.Output OuterOut BO), ∀ t,
+    {outputO : PathProblem s (OracleVerifier.Output OuterOut outputsO)}
+    {outputI : PathProblem s (OracleVerifier.Output InnerOut outputsI)}
+    {readStatementO : ∀ tr, OuterO tr → OracleVerifier.Output OuterOut outputsO tr.path}
+    {readStatementI : ∀ tr, InnerO tr → OracleVerifier.Output InnerOut outputsI tr.path}
+    {readWitnessO :
+      ∀ obs : Outcome oracleSig s OuterO (OracleVerifier.Output OuterOut outputsO), ∀ t,
       obs.2.2 = some t → outputO.Witness (Transcript.path obs.1) t}
-    {readWitnessI : ∀ obs : Outcome oracleSig s InnerO (OracleVerifier.Output InnerOut BI), ∀ t,
+    {readWitnessI :
+      ∀ obs : Outcome oracleSig s InnerO (OracleVerifier.Output InnerOut outputsI), ∀ t,
       obs.2.2 = some t → outputI.Witness (Transcript.path obs.1) t}
     {witnessO : ∀ stmt, inputO.Witness () stmt → OuterWit}
     {witnessI : ∀ stmt, inputI.Witness () stmt → InnerWit} {ε : ℝ≥0∞}
@@ -342,18 +335,20 @@ theorem liftContext_completeness {OuterWit : Type} {InnerWit : Type}
       witnessI (OutputJudgement.ofOutcome outputO readStatementO readWitnessO).honest
       (OutputJudgement.ofOutcome outputI readStatementI readWitnessI).honest V.Compatible)
     (h : letI : MeasurableSpace (Outcome oracleSig s InnerO
-          (OracleVerifier.Output InnerOut BI)) := ⊤
+          (OracleVerifier.Output InnerOut outputsI)) := ⊤
       Interaction.completeness (V.classicalModel init impl challenges) inputI outputI
         (OutputJudgement.ofOutcome outputI readStatementI readWitnessI)
         (fun x w => prover x (witnessI x w)) ε) :
     letI : MeasurableSpace (Outcome oracleSig s OuterO
-        (OracleVerifier.Output OuterOut BO)) := ⊤
+        (OracleVerifier.Output OuterOut outputsO)) := ⊤
     Interaction.completeness ((V.liftContext lens).classicalModel init impl challenges) inputO
       outputO (OutputJudgement.ofOutcome outputO readStatementO readWitnessO)
       (fun x w => Prover.liftContext lens.toStatementLens.proj witLens prover x (witnessO x w))
       ε := by
-  let : MeasurableSpace (Outcome oracleSig s OuterO (OracleVerifier.Output OuterOut BO)) := ⊤
-  let : MeasurableSpace (Outcome oracleSig s InnerO (OracleVerifier.Output InnerOut BI)) := ⊤
+  let : MeasurableSpace
+      (Outcome oracleSig s OuterO (OracleVerifier.Output OuterOut outputsO)) := ⊤
+  let : MeasurableSpace
+      (Outcome oracleSig s InnerO (OracleVerifier.Output InnerOut outputsI)) := ⊤
   refine ⟨MeasurableSpace.measurableSet_top, fun stmt w hrel => ?_⟩
   obtain ⟨w', hrel', hw'⟩ := hlens.proj_complete stmt w hrel
   have hI := h.2 _ w' hrel'
@@ -386,8 +381,8 @@ theorem liftContext_rbrSoundness
     (impl : QueryImpl ambient (StateT σ ProbComp))
     {inputO : StatementProblem (OuterIn × inputsO.Data)}
     {inputI : StatementProblem (InnerIn × inputsI.Data)}
-    {outputO : PathProblem s (OracleVerifier.Output OuterOut BO)}
-    {outputI : PathProblem s (OracleVerifier.Output InnerOut BI)}
+    {outputO : PathProblem s (OracleVerifier.Output OuterOut outputsO)}
+    {outputI : PathProblem s (OracleVerifier.Output InnerOut outputsI)}
     {draw : QueryImpl (challengeSpec oracleSig s) ProbComp}
     {ε : ChallengeNode oracleSig s → ℝ≥0∞}
     (hlens : lens.toStatementLens.IsSound inputO inputI outputO outputI V.Compatible)
@@ -418,9 +413,9 @@ theorem liftContext_rbrKnowledgeSoundness
     {relInO : (stmt : OuterIn × inputsO.Data) → OuterWitIn stmt → Prop}
     {relInI : (stmt : InnerIn × inputsI.Data) → InnerWitIn stmt → Prop}
     {relOutO : (stmt : OuterIn × inputsO.Data) → (tr : Transcript oracleSig s) →
-      OracleVerifier.Output OuterOut BO tr.path → OuterWitOut stmt tr → Prop}
+      OracleVerifier.Output OuterOut outputsO tr.path → OuterWitOut stmt tr → Prop}
     {relOutI : (stmt : InnerIn × inputsI.Data) → (tr : Transcript oracleSig s) →
-      OracleVerifier.Output InnerOut BI tr.path → InnerWitOut stmt tr → Prop}
+      OracleVerifier.Output InnerOut outputsI tr.path → InnerWitOut stmt tr → Prop}
     {draw : PrefixDraw viewSig ProbComp s} {ε : PrefixError oracleSig s}
     (hlens : (lens.toExtractorLens witOutProj witInLift).IsKnowledgeSound admissibleO admissibleI
       relInO relInI relOutO relOutI V.Compatible)

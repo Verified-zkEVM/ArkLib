@@ -253,8 +253,7 @@ theorem concatQueries_fst {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
 namespace OracleVerifier
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
 /-- The queries of a completed run by move: the entries of the prover and the sampler, and the full
@@ -262,7 +261,7 @@ query log of the final decision. -/
 structure QueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (Out : Transcript oracleSig s → Type) where
   /-- The ordinary run outcome, including rejection and private prover output. -/
-  outcome : Outcome oracleSig s Out (OracleVerifier.Output T B)
+  outcome : Outcome oracleSig s Out (OracleVerifier.Output T outputs)
   /-- The entries of the moves before the final decision, in execution order. -/
   moves : List (QueriesAt (ambient + challengeSpec oracleSig s) s)
   /-- The decision's queries, before the bundle queries are routed. -/
@@ -274,7 +273,7 @@ namespace QueriesByMove
 /-- Forget the move boundaries and keep exactly the two existing query logs. -/
 def toLog {V : OracleVerifier ambient s S T inputs outputs} (r : QueriesByMove V Out) :=
   (⟨r.outcome, (concatQueries r.moves).fst, r.decisionQueries⟩ :
-    (obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
+    (obs : Outcome oracleSig s Out (OracleVerifier.Output T outputs)) × QueryLog ambient ×
       QueryLog (ambient + (pathBundle inputs s (Transcript.path obs.1)).spec))
 
 /-- The verifier's decision as an entry. Its partial transcript is the whole transcript of the
@@ -397,8 +396,7 @@ theorem runWithQueriesByMove_toLog (V : OracleVerifier ambient s S T inputs outp
 section AmbientQueriesByMove
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
 /-- The ambient queries by move let the input oracles have an independent query universe. It
@@ -406,7 +404,7 @@ returns only ambient requests and challenge draws, whose indices are small. -/
 structure AmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (Out : Transcript oracleSig s → Type) where
   /-- The ordinary completed outcome, including output oracles and rejection. -/
-  outcome : Outcome oracleSig s Out (OracleVerifier.Output T B)
+  outcome : Outcome oracleSig s Out (OracleVerifier.Output T outputs)
   /-- The entries of the moves, produced by the same runner as in `QueriesByMove`. -/
   moves : List (QueriesAt (ambient + challengeSpec oracleSig s) s)
   /-- The decision's ambient requests and the responses it received. -/

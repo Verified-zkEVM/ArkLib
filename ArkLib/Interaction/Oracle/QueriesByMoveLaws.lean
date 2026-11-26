@@ -32,8 +32,7 @@ namespace OracleVerifier
 section Execution
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
 /-- Execute an explicit prover setup action and log it as a separate entry at the empty partial
@@ -68,8 +67,7 @@ end Execution
 section Logged
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the move boundaries gives exactly the existing full logged run. -/
@@ -104,7 +102,7 @@ theorem toLog_runWithProverSetup (V : OracleVerifier ambient s S T inputs output
       let (prover, queries) ← simulateQ
         (fun q => liftM ((ambient + challengeSpec oracleSig s).query (.inl q))) setup.withQueryLog
       (fun z => (⟨z.1, queries ++ z.2.1, z.2.2⟩ :
-        (obs : Outcome oracleSig s Out (OracleVerifier.Output T B)) × QueryLog ambient ×
+        (obs : Outcome oracleSig s Out (OracleVerifier.Output T outputs)) × QueryLog ambient ×
           QueryLog (ambient + (pathBundle inputs s (Transcript.path obs.1)).spec)))
         <$> V.runWithLog stmt data prover) := by
   simp only [runWithProverSetup, _root_.map_bind, LawfulApplicative.map_pure]
@@ -149,8 +147,7 @@ end Logged
 section AmbientQueriesByMove
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the move boundaries of the ambient queries by move gives exactly the existing ambient

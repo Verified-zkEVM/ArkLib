@@ -153,16 +153,17 @@ same run; `oracleMessageFamily_append` on a composed oracle protocol.
 - **Open: where `OracleInterface` instances live** (record D1), which fixes how `oracleMessageSpec` reads
   interfaces from positions or from `Γ`.
 - **Path-indexed outputs, not open.** The output statement type and the output oracle family are
-  indexed by the shape path: `StmtOut : Path s → Type u`, `J : Path s → Type uJ`,
-  `B : (p : Path s) → J p → Type u` and `outputs : (p : Path s) → OracleFamily (J p) (B p)`
-  (`OracleVerifier` in `OracleVerifier.lean`; the plain `Verifier` in `Reduction.lean` likewise).
+  indexed by the shape path: `StmtOut : Path s → Type` and `outputs : Path s → OracleBundle`
+  (`OracleVerifier` in `OracleVerifier.lean`; the plain `Verifier` in `Reduction.lean` indexes
+  its output statement type the same way).
   The decision returns `StmtOut p` and the output map targets `outputs p`, so a public message may
   change both, as in the frozen layer's `SourceRoutingDependentExample`. The shape path is public
   and fixed before the decision, so no cast is needed in a run. In an append the composite's
   output at a path of `s₁.append s₂` is the suffix's output at the split path (`splitFamily`,
   `OracleVerifier.splitOutputs` in `Composition.lean`); PolyFun's `Path.LiftAppend` is the same
   family by `liftAppend_split`. Security definitions index output languages and relations by the
-  path through `PathProblem`. A verifier with one output type and family uses the constant
-  families `fun _ => T` and `fun _ => OStmtOut`; the legacy embedding does so. The test
+  path through `PathProblem`. A verifier with one output type and bundle uses the constant
+  functions `fun _ => T` and `fun _ => OStmtOut`; the legacy embedding does so. A caller whose
+  outputs form an `OracleFamily` passes `fun p => OracleBundle.ofFamily (F p)`. The test
   `ArkLibTest/Interaction/Core/Oracle/DependentRouting.lean` ports the frozen example, with the
   Boolean sent by the prover because a passive verifier sends no messages.

@@ -168,7 +168,7 @@ example (r : Bool) :
 
 /-- An output statement `Bool` with one output oracle `Bool → Bool`, at every path. -/
 abbrev Output : Path protocol → Type :=
-  @OracleVerifier.Output protocol (fun _ => Bool) (fun _ => PUnit) (fun _ _ => Bool → Bool)
+  OracleVerifier.Output (s := protocol) (fun _ => Bool) (fun _ => (fn : OracleBundle))
 
 /-- Outputs whose output oracle answers `true` at `true`. -/
 @[instance_reducible] def outputProblem : PathProblem protocol Output where

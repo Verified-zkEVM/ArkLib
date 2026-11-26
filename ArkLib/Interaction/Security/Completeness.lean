@@ -143,16 +143,15 @@ The verifier itself obtains that data only through its declared query interface.
 noncomputable def OracleVerifier.classicalModel {ι σ : Type}
     {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
-    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]
+    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T outputs))]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp) :
     AdversaryModel (S × inputs.Data)
-      (Outcome oracleSig s Out (OracleVerifier.Output T B)) where
+      (Outcome oracleSig s Out (OracleVerifier.Output T outputs)) where
   Adv _ := Prover oracleSig ambient s Out
   outcome stmt adv := 𝒟[experiment init impl challenges (V.run stmt.1 stmt.2 adv)]
   mass_le_one _ _ := evalDist_apply_univ_le_one _
