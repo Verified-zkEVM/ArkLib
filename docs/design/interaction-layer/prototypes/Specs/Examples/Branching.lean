@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import Specs.Examples.Sumcheck
+import Specs.Export
 
 /-!
 # A protocol whose shape depends on a prover message
@@ -119,12 +120,14 @@ noncomputable def branchingSpec (d : ℕ) (D : Fin k → R) :=
   oracle "p" (R⦃≤ d⦄[X Fin m.val]) R "\\mathsf{poly}" (polyAt m.val) fun p =>
   stage "sumcheck" ⟪p, (⟨c⟩ : Val (ix "c" 0) R)⟫
     (fun p c => (∑∈ x ∈ (Dom.ofFn "D" D).pow m.val "m", ask p x) =' .var c)
-    (fun st : Claim R m.val => ⟪p, (⟨st.rs⟩ : Val "r" (Fin m.val → R)), st.c⟫)
+    (fun st : Claim R m.val => ⟪p, (⟨st.rs⟩ : Val "r" (Fin m.val → R)),
+      (⟨st.c.val⟩ : Val (iv "c" (v := "m")) R)⟫)
     (fun p r c => ask p r =' .var c)
     (fun next => sumcheck m.val D (polyAt m.val) ⟨⟨c⟩, Fin.elim0⟩ next
-      (tree := fun _ r => Sumcheck.protocol R d r))
+      (tree := fun _ r => Sumcheck.protocol R d r) (countName := "m"))
     fun st =>
-  check "final" ⟪p, (⟨st.rs⟩ : Val "r" (Fin m.val → R)), st.c⟫ (fun p r c => ask p r =' .var c) <|
+  check "final" ⟪p, (⟨st.rs⟩ : Val "r" (Fin m.val → R)), (⟨st.c.val⟩ : Val (iv "c" (v := "m")) R)⟫
+    (fun p r c => ask p r =' .var c) <|
   done ⟨m.val, st.rs, st.c.val⟩
 
 variable (R) in
@@ -147,7 +150,7 @@ theorem branching_verdict_isSome (D : Fin k → R) (c : R) (w : BranchWitness R 
     ((branchingSpec R d D).verdict c data tr).isSome := by
   refine Spec.verdict_isSome _ c w data tr ?_ hh
   unfold branchingSpec
-  erw [Desc.Complete.eq_8, Desc.Complete.eq_3, Desc.Complete.eq_9]
+  erw [Desc.Complete.eq_8, Desc.Complete.eq_3, Desc.Complete.eq_9, Desc.Complete.eq_12]
   refine sumcheck_complete D (polyAt w.1) w _ _ _ _ _ (Frozen _ 1) Frozen.ext ?_ _ 0 _ _ _ _
     (Frozen.refl _ _) ?_
   · intro st env ℓ hp hev
@@ -191,7 +194,7 @@ example (x : CaseTr 1) (tr : (branchingSpec ℚ 2 ![(0 : ℚ), 1]).Tr) (h : tr =
     tr⟦m = 2, p⟧ = none := by
   subst h; rfl
 
-/-- The labels and expanded TeX of the checks of each case of the skeleton. -/
+/-- The labels and TeX of the checks of each case of the skeleton. -/
 def caseChecks (ks : Skel) (mode : Mode) : List (String × List (String × String)) :=
   match ks with
   | .branch _ _ _ cases =>
@@ -199,16 +202,21 @@ def caseChecks (ks : Skel) (mode : Mode) : List (String × List (String × Strin
       (c.1, c.2.checks.map fun (e : String × Syn) => (e.1, e.2.tex mode))
   | _ => []
 
-/-! The skeleton has one case per value of `m`. The case `m = j` has `j` round checks and the final
-check, and its final check reads the target `c_j`. -/
-#guard caseChecks (branchingSpec ℚ 2 ![(0 : ℚ), 1]).skeleton Mode.expanded ==
-  [("0", [("final", "p(r) = c_{0}")]),
-   ("1", [("sum", "\\sum_{a \\in D} g_{0}(a) = c_{0}"), ("final", "p(r) = c_{1}")]),
-   ("2", [("sum", "\\sum_{a \\in D} g_{0}(a) = c_{0}"),
-     ("sum", "\\sum_{a \\in D} g_{1}(a) = c_{1}"), ("final", "p(r) = c_{2}")]),
-   ("3", [("sum", "\\sum_{a \\in D} g_{0}(a) = c_{0}"),
-     ("sum", "\\sum_{a \\in D} g_{1}(a) = c_{1}"),
-     ("sum", "\\sum_{a \\in D} g_{2}(a) = c_{2}"), ("final", "p(r) = c_{3}")])]
+/-! The skeleton has one case per value of `m`. Each case has the generic round check of the loop
+and the final check, which reads the target `c_m`. -/
+#guard caseChecks (branchingSpec ℚ 2 ![(0 : ℚ), 1]).skeleton { folded := true } ==
+  ["0", "1", "2", "3"].map fun j =>
+    (j, [("sum", "\\sum_{a \\in D} g_{i}(a) = c_{i}"), ("final", "p(r) = c_{m}")])
+
+/-- The number of occurrences of `pat` in `s`. -/
+private def count (s pat : String) : ℕ := (s.splitOn pat).length - 1
+
+/-! The expanded figure unrolls the loop of case `m = j` into `j` rounds and binds `m` to `j`:
+case `m = 2` prints round checks for rounds 0 and 1 and the final check on `c_2`. -/
+#guard count ((branchingSpec ℚ 2 ![(0 : ℚ), 1]).skeleton.toTex "T" false)
+  "\\text{check } \\sum_{a \\in D} g_{1}(a) = c_{1}" == 2
+#guard count ((branchingSpec ℚ 2 ![(0 : ℚ), 1]).skeleton.toTex "T" false)
+  "\\text{check } p(r) = c_{2}" == 1
 
 end Tests
 

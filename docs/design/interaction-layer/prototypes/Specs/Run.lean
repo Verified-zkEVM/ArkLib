@@ -198,6 +198,7 @@ noncomputable def run {m : Type → Type} [Monad m] (inp : QueryImpl In.spec m) 
   | _, _, .stageIn _ _ _ _ _ _ rest, p, v, lift, env, ℓ => rest.run inp p v lift env ℓ
   | _, _, .stageOut _ _ _ rest, p, v, lift, env, ℓ => rest.run inp p v lift env ℓ
   | _, _, .mark _ rest, p, v, lift, env, ℓ => rest.run inp p v lift env ℓ
+  | _, _, .loop _ _ _ inner, p, v, lift, env, ℓ => inner.run inp p v lift env ℓ
 
 /-- The handler entry of the oracle message `x`: it answers from the value. -/
 abbrev honestEntry {X : Type} (I : OracleInterface X) {A : Type} (hA : ∀ q, I.spec q = A)
@@ -225,6 +226,7 @@ noncomputable def verdict (ans : QueryImpl In.spec Id) :
   | _, _, .stageIn _ _ _ _ _ _ rest, tr, env, ℓ => rest.verdict ans tr env ℓ
   | _, _, .stageOut _ _ _ rest, tr, env, ℓ => rest.verdict ans tr env ℓ
   | _, _, .mark _ rest, tr, env, ℓ => rest.verdict ans tr env ℓ
+  | _, _, .loop _ _ _ inner, tr, env, ℓ => inner.verdict ans tr env ℓ
 
 /-- The honest prover. It sends `honest w` at each message, answers input queries by `ans` and
 its own oracle queries from its honest messages, and computes the local values. -/
@@ -249,6 +251,7 @@ noncomputable def prove {m : Type → Type} [Monad m] (w : W) (ans : QueryImpl I
   | _, _, .stageIn _ _ _ _ _ _ rest, env, ℓ => rest.prove w ans env ℓ
   | _, _, .stageOut _ _ _ rest, env, ℓ => rest.prove w ans env ℓ
   | _, _, .mark _ rest, env, ℓ => rest.prove w ans env ℓ
+  | _, _, .loop _ _ _ inner, env, ℓ => inner.prove w ans env ℓ
 
 /-! ## Honest acceptance -/
 
@@ -272,6 +275,7 @@ def Complete (w : W) (ans : QueryImpl In.spec Id) :
   | _, _, .stageIn _ _ _ _ _ _ rest, env, ℓ => rest.Complete w ans env ℓ
   | _, _, .stageOut _ _ _ rest, env, ℓ => rest.Complete w ans env ℓ
   | _, _, .mark _ rest, env, ℓ => rest.Complete w ans env ℓ
+  | _, _, .loop _ _ _ inner, env, ℓ => inner.Complete w ans env ℓ
 
 /-- The transcript `tr` is a run of the honest prover with witness `w`: every message and
 oracle message is the honest one. The challenges are arbitrary. -/
@@ -296,6 +300,7 @@ def Honest (w : W) (ans : QueryImpl In.spec Id) :
   | _, _, .stageIn _ _ _ _ _ _ rest, tr, env, ℓ => rest.Honest w ans tr env ℓ
   | _, _, .stageOut _ _ _ rest, tr, env, ℓ => rest.Honest w ans tr env ℓ
   | _, _, .mark _ rest, tr, env, ℓ => rest.Honest w ans tr env ℓ
+  | _, _, .loop _ _ _ inner, tr, env, ℓ => inner.Honest w ans tr env ℓ
 
 /-- Honest acceptance: if every check holds on the honest values, the verdict accepts every
 honest transcript. -/
@@ -327,6 +332,7 @@ theorem verdict_isSome (w : W) (ans : QueryImpl In.spec Id) :
       verdict_isSome w ans rest tr env ℓ hc hh
   | _, _, .stageOut _ _ _ rest, tr, env, ℓ, hc, hh => verdict_isSome w ans rest tr env ℓ hc hh
   | _, _, .mark _ rest, tr, env, ℓ, hc, hh => verdict_isSome w ans rest tr env ℓ hc hh
+  | _, _, .loop _ _ _ inner, tr, env, ℓ, hc, hh => verdict_isSome w ans inner tr env ℓ hc hh
 
 /-- Moving a description to an equal tree keeps its completeness condition. -/
 theorem complete_retree {w : W} {ans : QueryImpl In.spec Id} {t t' : OracleProtocol} {ks : Skel}
@@ -334,15 +340,21 @@ theorem complete_retree {w : W} {ans : QueryImpl In.spec Id} {t t' : OracleProto
     (d.retree h).Complete w ans env ℓ ↔ d.Complete w ans env ℓ := by
   subst h; rfl
 
+/-- Moving a description to an equal skeleton keeps its completeness condition. -/
+theorem complete_reskel {w : W} {ans : QueryImpl In.spec Id} {t : OracleProtocol} {ks ks' : Skel}
+    (h : ks = ks') (d : Desc In W T t ks) (env : Handlers Id) (ℓ : ℕ) :
+    (d.reskel h).Complete w ans env ℓ ↔ d.Complete w ans env ℓ := by
+  subst h; rfl
+
 end Desc
 
-/-- **Completeness of a `rounds` block.** If every round is complete whenever its continuation is
-complete, the block is complete. `I i st env ℓ` is an invariant of the state before round `i`
-together with the handler table and the next level. -/
+/-- **Completeness of the rounds of a loop.** If every round is complete whenever its
+continuation is complete, the rounds are complete. `I i st env ℓ` is an invariant of the state
+before round `i` together with the handler table and the next level. -/
 theorem roundsGo_complete {State : ℕ → Type} {F : ℕ → OracleProtocol → OracleProtocol}
-    {G : ℕ → Skel → Skel} (block : String) (n : ℕ) (countName : String) (error : ℕ → String)
+    (l : Loop) (n : ℕ) (B : Skel)
     (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
-      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G i ks))
+      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (B.seq ks))
     {t : OracleProtocol} {ks : Skel} (next : State n → Desc In W T t ks)
     (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
     (hS : ∀ j k, τ j (k + 1) = F j (τ (j + 1) k)) (w : W) (ans : QueryImpl In.spec Id)
@@ -353,7 +365,7 @@ theorem roundsGo_complete {State : ℕ → Type} {F : ℕ → OracleProtocol →
       (body i hi st next').Complete w ans env ℓ)
     (hnext : ∀ st env ℓ, I n st env ℓ → (next st).Complete w ans env ℓ) :
     ∀ (r j : ℕ) (h : j + r = n) (st : State j) (env : Handlers Id) (ℓ : ℕ), I j st env ℓ →
-      (roundsGo block n countName error body next τ h0 hS r j h st).Complete w ans env ℓ := by
+      (roundsGo l n B body next τ h0 hS r j h st).Complete w ans env ℓ := by
   intro r
   induction r with
   | zero =>
@@ -368,6 +380,29 @@ theorem roundsGo_complete {State : ℕ → Type} {F : ℕ → OracleProtocol →
     refine hbody j (by omega) st _ env ℓ hI fun st' env' ℓ' hI' => ?_
     erw [Desc.Complete.eq_11]
     exact ih (j + 1) (by omega) st' env' ℓ' hI'
+
+/-- **Completeness of a `rounds` block.** If every round is complete whenever its continuation is
+complete, the block is complete, from any table that satisfies the invariant `I` before round
+`0`. -/
+theorem rounds_complete (block : String) (n : ℕ) {State : ℕ → Type} (init : State 0)
+    {F : ℕ → OracleProtocol → OracleProtocol} {G : Skel → Skel}
+    (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
+      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G ks))
+    {t : OracleProtocol} {ks : Skel} (next : State n → Desc In W T t ks)
+    (error countName var : String) (tree : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, tree j 0 = t)
+    (hS : ∀ j k, tree j (k + 1) = F j (tree (j + 1) k)) (hG : ∀ ks, G ks = (G .done).seq ks)
+    (w : W) (ans : QueryImpl In.spec Id) (I : (i : ℕ) → State i → Handlers Id → ℕ → Prop)
+    (hbody : ∀ {t' : OracleProtocol} {ks' : Skel} (i : ℕ) (hi : i < n) (st : State i)
+      (next' : State (i + 1) → Desc In W T t' ks') (env : Handlers Id) (ℓ : ℕ), I i st env ℓ →
+      (∀ st' env' ℓ', I (i + 1) st' env' ℓ' → (next' st').Complete w ans env' ℓ') →
+      (body i hi st next').Complete w ans env ℓ)
+    (hnext : ∀ st env ℓ, I n st env ℓ → (next st).Complete w ans env ℓ)
+    (env : Handlers Id) (ℓ : ℕ) (hI : I 0 init env ℓ) :
+    (rounds block n init body next error countName var tree h0 hS hG).Complete w ans env ℓ := by
+  erw [Desc.Complete.eq_12]
+  refine roundsGo_complete _ n _ _ next tree h0 hS w ans I ?_ hnext n 0 _ init env ℓ hI
+  intro t' ks' i hi st next' env ℓ hI hn
+  exact (Desc.complete_reskel _ _ env ℓ).2 (hbody i hi st next' env ℓ hI hn)
 
 /-! ## Monad morphisms and the decision -/
 
@@ -522,6 +557,8 @@ theorem Desc.run_hom [LawfulMonad m] [LawfulMonad m'] (hφ : IsHom @φ) (inp : Q
       Desc.run_hom hφ inp ans hinp rest tr lift env envV ℓ hl he
   | _, _, .mark _ rest, tr, lift, env, envV, ℓ, hl, he =>
       Desc.run_hom hφ inp ans hinp rest tr lift env envV ℓ hl he
+  | _, _, .loop _ _ _ inner, tr, lift, env, envV, ℓ, hl, he =>
+      Desc.run_hom hφ inp ans hinp inner tr lift env envV ℓ hl he
 
 end Hom
 
@@ -662,9 +699,20 @@ private def nameBase (nm : Expr) : MetaM String := do
   let nm ← whnfD nm
   readString nm.getAppArgs[0]!
 
-/-- The subscript of a name as a label reads it: the symbol of `v_A`, or the number of `g_2` and
-of `α_k` at `k = 2`. `none` for a name without one. -/
-private def subText (nm : Expr) : MetaM (Option String) := do
+/-- An integer literal, or `none`. -/
+private def readInt (e : Expr) : MetaM (Option ℤ) := do
+  let e ← instantiateMVars e
+  if let some n ← evalNat e then return some n
+  let e ← whnfD e
+  match e.getAppFn.constName? with
+  | some ``Int.ofNat => return (← readNat e.appArg!).map Int.ofNat
+  | some ``Int.negSucc => return (← readNat e.appArg!).map Int.negSucc
+  | _ => return none
+
+/-- The subscript of a name as a label reads it: the symbol of `v_A`, the number of `c_0`, or the
+value of `g_i` and of `α_{i+1}` with the symbols bound in `binds` (the round variables of the
+enclosing rounds and the counts of the loops so far). `none` for a name without one. -/
+private def subText (binds : List (String × ℕ)) (nm : Expr) : MetaM (Option String) := do
   let nm ← whnfD nm
   let sub ← whnfD nm.getAppArgs[1]!
   match sub.getAppFn.constName? with
@@ -672,10 +720,20 @@ private def subText (nm : Expr) : MetaM (Option String) := do
   | some ``Subscript.at =>
     let e ← whnfD sub.getAppArgs[0]!
     match e.getAppFn.constName? with
-    | some ``Ix.rnd | some ``Ix.num | some ``Ix.count =>
-      return (← readNat e.getAppArgs[0]!).map toString
+    | some ``Ix.num => return (← readNat e.getAppArgs[0]!).map toString
+    | some ``Ix.var =>
+      let v ← readString e.getAppArgs[0]!
+      let some off ← readInt e.getAppArgs[1]! | return none
+      return (binds.lookup v).map fun k => toString ((k : ℤ) + off)
     | _ => return none
   | _ => return none
+
+/-- The block, round variable and count symbol of a loop's display data. -/
+private def loopInfo (l : Expr) : MetaM (String × String × String) := do
+  let l ← whnfD l
+  unless l.isAppOfArity ``Loop.mk 4 do throwError "cannot read the display data of a loop: {l}"
+  return (← readString l.getAppArgs[0]!, ← readString l.getAppArgs[1]!,
+    ← readString l.getAppArgs[2]!)
 
 /-- The elements of a list expression. -/
 private partial def listElems (l : Expr) : MetaM (List Expr) := do
@@ -714,17 +772,18 @@ private structure Seg where
 
 /-- The path to the first move that matches the label: the label's names and numbers must be a
 subsequence of the enclosing stages, blocks and rounds, and `cases` lists the branch cases to
-enter, in order. -/
+enter, in order. A loop is entered through its unrolled rounds, so its count must reduce to a
+numeral. `binds` holds the values of the symbols in scope. -/
 private partial def findMove (label : List LabelComp) (cases : List (String × String))
-    (base : String) (ks : Expr) (ctx : Array LabelComp) (pos : ℕ) (acc : Array Seg) :
-    MetaM (Array Seg) := do
+    (base : String) (ks : Expr) (ctx : Array LabelComp) (binds : List (String × ℕ)) (pos : ℕ)
+    (acc : Array Seg) : MetaM (Array Seg) := do
   let ks ← whnfD ks
   let args := ks.getAppArgs
   let hit (nm : Expr) : MetaM Bool := do
     unless isSubseq label ctx.toList do return false
     let b ← nameBase nm
     if b == base then return true
-    match ← subText nm with
+    match ← subText binds nm with
     | some t => return base == b ++ "_" ++ t || base == b ++ "_{" ++ t ++ "}"
     | none => return false
   match ks.getAppFn.constName? with
@@ -735,20 +794,25 @@ private partial def findMove (label : List LabelComp) (cases : List (String × S
     match it.getAppFn.constName? with
     | some ``Item.move =>
       if ← hit iargs[1]! then return acc.push ⟨pos, none⟩
-      else findMove label cases base rest ctx (pos + 1) acc
+      else findMove label cases base rest ctx binds (pos + 1) acc
     | some ``Item.beginRound =>
-      let block ← readString iargs[0]!
-      let i ← readNat iargs[1]!
-      let ctx := ctx.push (.name block)
-      let ctx := match i with
-        | some i => ctx.push (.num i)
-        | none => ctx.push (.name "?")
-      findMove label cases base rest ctx pos acc
-    | some ``Item.endRound => findMove label cases base rest ctx.pop.pop pos acc
+      let (block, var, _) ← loopInfo iargs[0]!
+      let some j ← readNat iargs[1]! | throwError "a round number is not a numeral"
+      findMove label cases base rest ((ctx.push (.name block)).push (.num j)) ((var, j) :: binds)
+        pos acc
+    | some ``Item.endRound => findMove label cases base rest ctx.pop.pop binds.tail pos acc
     | some ``Item.beginStage =>
-      findMove label cases base rest (ctx.push (.name (← readString iargs[0]!))) pos acc
-    | some ``Item.endStage => findMove label cases base rest ctx.pop pos acc
-    | _ => findMove label cases base rest ctx pos acc
+      findMove label cases base rest (ctx.push (.name (← readString iargs[0]!))) binds pos acc
+    | some ``Item.endStage => findMove label cases base rest ctx.pop binds pos acc
+    | _ => findMove label cases base rest ctx binds pos acc
+  | some ``Skel.loop =>
+    let (block, _, count) ← loopInfo args[0]!
+    let some n ← readNat args[1]! | throwError "the label is not found before the loop `{block}`, \
+      whose count `{args[1]!}` is not a numeral; an accessor into or after a loop needs a \
+      numeral count"
+    let unrolled := mkAppN (mkConst ``Skel.unroll) #[args[0]!, args[2]!, args[3]!, mkNatLit 0,
+      args[1]!]
+    findMove label cases base unrolled ctx ((count, n) :: binds) pos acc
   | some ``Skel.branch =>
     if ← hit args[0]! then return acc.push ⟨pos, none⟩
     let msg ← nameBase args[0]!
@@ -759,7 +823,7 @@ private partial def findMove (label : List LabelComp) (cases : List (String × S
       unless m == msg do
         throwError "the next branch is on `{msg}`, but the label names a case of `{m}`"
       let (value, sub) ← branchCase args[3]! msg v
-      findMove label cs base sub ctx 0 (acc.push ⟨pos, some value⟩)
+      findMove label cs base sub ctx binds 0 (acc.push ⟨pos, some value⟩)
   | some ``Skel.opaque =>
     if ← hit args[0]! then return acc.push ⟨pos, none⟩
     throwError "the label is not found before the opaque branch on `{← nameBase args[0]!}`"
@@ -804,7 +868,7 @@ elab_rules : term
     let cases := comps.filterMap fun | .case m v => some (m, v) | _ => none
     let trE ← elabTerm tr none
     let (ks, isView) ← skelOf (← inferType trE)
-    let segs ← findMove names cases base ks #[] 0 #[]
+    let segs ← findMove names cases base ks #[] [] 0 #[]
     let mut stx ← exprToSyntax trE
     if isView then stx ← `(($stx).1)
     elabTerm (← pathTerm isView stx segs.toList) none
@@ -817,6 +881,7 @@ end Accessor
 #print axioms Spec.decide_eq_verdict
 #print axioms Spec.verdict_isSome
 #print axioms roundsGo_complete
+#print axioms rounds_complete
 #print axioms caseOf_self
 #print axioms caseOf_ne
 

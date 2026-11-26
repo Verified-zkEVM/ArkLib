@@ -14,8 +14,8 @@ This module provides the typed formula language that a protocol specification us
 verifier's checks, its local values and the claims of its stages, together with the display
 names of transcript values.
 
-* `Name` is a display name: a base and a subscript over a round index. `Name.tex` renders it
-  folded (round `j` prints as `i`, `j + 1` as `i+1`) or expanded (round `j` prints as `j`).
+* `Name` is a display name: a base and a subscript over a number or a symbol. `Name.tex` renders
+  it folded (`g_i`, `c_{i+1}`, `c_n`) or expanded, with each symbol bound to a number (`g_2`).
 * `Fml v o β` is a formula with result type `β` in parametric higher-order abstract syntax
   (PHOAS). The carrier `v` holds the bound values and `o` the oracle handles.
 * `Fml.evalM` runs a formula in a monad, `Fml.syntax` converts it to the first-order tree `Syn`,
@@ -48,15 +48,12 @@ names of transcript values.
 * `index f i` reads the entry `i` of a vector-valued formula `f`. *Why:* a product binder such as
   `\prod_{j} (\tau_j r_j + (1 - \tau_j)(1 - r_j))` ranges over coordinates, so its body must read
   coordinate `j` of a vector. It prints as a subscript (`\tau_{j}`, `r_{x,j}`).
-* An index of a name can be a fixed number with a symbol (`Ix.count k "k"`), which the folded
-  figure prints as the symbol and the expanded figure as the number. *Why:* a value after a block
-  of `k` rounds, read inside a later round, is indexed by the count `k`, and a round index there
-  would print as an offset from the later round.
+* An index is a fixed number or a symbol with an offset (`i`, `i+1`, `n`), never the number of a
+  round. *Why:* a loop's body is one skeleton for all of its rounds (see `Specs.Core`), so a name in
+  it cannot depend on the round. The folded figure prints the symbol, and the expanded figure binds
+  each round variable to its round and each count to its value.
 * A literal carries its printed form. *Why:* a literal's value can be a polynomial or another
   object with no canonical printing.
-* The display of a subscript is computed at export time from `Ix.rnd k`, the absolute round. *Why:*
-  the same skeleton then renders folded (`g_i`) and expanded (`g_2`), and the round index stays a
-  natural number that `simp` and `rfl` reduce.
 * `Syn` is untyped and holds only strings and names. *Why:* the skeleton stores it as a type index,
   and an untyped tree keeps that index computable even when a formula's values are noncomputable.
   `FO` is the typed counterpart used to evaluate the exported structure.
@@ -71,13 +68,11 @@ namespace Specs
 
 /-! ## Names -/
 
-/-- A subscript index: `rnd k` is the absolute round `k` of a `rounds` block, which the folded
-figure prints relative to the displayed round. `num k` is a fixed number. `count k sym` is the fixed
-number `k`, which the folded figure prints as `sym` (the count of a block, such as `k`). -/
+/-- A subscript index: the fixed number `num k`, or the symbol `v` plus the offset `off`
+(`var "i" 1` is `i+1`). A symbol is the variable of a loop (`i`) or the count of a loop (`n`). -/
 inductive Ix
-  | rnd (k : ℕ)
   | num (k : ℕ)
-  | count (k : ℕ) (sym : String)
+  | var (v : String) (off : ℤ)
   deriving DecidableEq, Repr, Inhabited
 
 /-- The subscript of a name: none, an index (`g_i`), the indices below an index (`r_{<i}`), or a
@@ -97,42 +92,44 @@ structure Name where
 
 instance : Coe String Name := ⟨fun s => ⟨s, .none⟩⟩
 
-/-- The name `b_i` of a value of round `i`. -/
-def ix (b : String) (i : ℕ) : Name := ⟨b, .at (.rnd i)⟩
+/-- The name `b_k` with the fixed number `k`. -/
+def ix (b : String) (k : ℕ) : Name := ⟨b, .at (.num k)⟩
 
-/-- The name `b_{<i}` of the values of the rounds before `i`. -/
-def below (b : String) (i : ℕ) : Name := ⟨b, .below (.rnd i)⟩
+/-- The name `b_{v+off}` over the symbol `v`, by default the round variable `i`: `iv "g"` is `g_i`,
+`iv "c" 1` is `c_{i+1}`, and `iv "c" (v := "n")` is `c_n`, the value after a loop of `n` rounds. -/
+def iv (b : String) (off : ℤ := 0) (v : String := "i") : Name := ⟨b, .at (.var v off)⟩
 
-/-- The name `b_k` of a value indexed by the fixed number `k`, which the folded figure prints as
-`b_{sym}` and the expanded figure as `b_{k}`. -/
-def ixCount (b : String) (k : ℕ) (sym : String) : Name := ⟨b, .at (.count k sym)⟩
+/-- The name `b_{<v}` of the values of the rounds before round `v`. -/
+def ivBelow (b : String) (v : String := "i") : Name := ⟨b, .below (.var v 0)⟩
 
-/-- How names render. In the folded figure (`round = some j`) the round `j` prints as `var` and
-round `k` as `var+(k-j)`. Outside a round, a round number listed in `counts` prints as its symbol
-(`n`), so `c_n` names the claim after an `n`-round block. The expanded figure prints numbers. -/
+/-- How names render. The folded figure prints every symbol as itself (`g_i`, `c_{i+1}`, `c_n`).
+The expanded figure prints the value of a symbol bound in `env`: a round variable is bound to the
+round, a count to the loop's count. An unbound symbol prints as itself. -/
 structure Mode where
   folded : Bool := false
-  round : Option ℕ := none
-  var : String := "i"
-  counts : List (ℕ × String) := []
+  env : List (String × ℕ) := []
   deriving Inhabited
 
-/-- The expanded mode: every round index prints as its number. -/
+/-- The expanded mode with no symbol bound. -/
 def Mode.expanded : Mode := {}
+
+/-- Bind the symbol `v` to `k`. -/
+def Mode.bind (m : Mode) (v : String) (k : ℕ) : Mode := { m with env := (v, k) :: m.env }
+
+/-- The symbol `v` with the offset `off`: `v`, `v+off` or `v-|off|`. -/
+def Ix.symTex (v : String) (off : ℤ) : String :=
+  if off = 0 then v
+  else if 0 < off then v ++ "+" ++ toString off
+  else v ++ "-" ++ toString (-off)
 
 /-- Render an index in a mode. -/
 def Ix.tex (m : Mode) : Ix → String
   | .num k => toString k
-  | .rnd k =>
-    if m.folded then
-      match m.round with
-      | some j =>
-        if k = j then m.var
-        else if j < k then m.var ++ "+" ++ toString (k - j)
-        else m.var ++ "-" ++ toString (j - k)
-      | none => ((m.counts.find? (·.1 = k)).map (·.2)).getD (toString k)
-    else toString k
-  | .count k sym => if m.folded then sym else toString k
+  | .var v off =>
+    if m.folded then Ix.symTex v off
+    else match m.env.lookup v with
+      | some k => toString ((k : ℤ) + off)
+      | none => Ix.symTex v off
 
 /-- Render a name in a mode. -/
 def Name.tex (m : Mode) (nm : Name) : String :=
@@ -152,17 +149,16 @@ def Name.texAt (m : Mode) (nm : Name) (i : String) : String :=
   | .sym s => nm.base ++ "_{" ++ s ++ "," ++ i ++ "}"
   | .below _ => "{" ++ nm.tex m ++ "}_{" ++ i ++ "}"
 
-/-- The folded mode inside round `j` of a block. -/
-def Mode.inRound (m : Mode) (j : ℕ) : Mode := { m with round := some j }
-
-#guard (ix "g" 2).tex Mode.expanded == "g_{2}"
-#guard (ix "g" 2).tex { folded := true, round := some 2 } == "g_{i}"
-#guard (ix "c" 3).tex { folded := true, round := some 2 } == "c_{i+1}"
-#guard (below "r" 2).tex { folded := true, round := some 2 } == "r_{<i}"
-#guard (ix "c" 3).tex { folded := true, counts := [(3, "n")] } == "c_{n}"
-#guard (ix "c" 0).tex { folded := true, counts := [(3, "n")] } == "c_{0}"
-#guard (ixCount "a" 2 "k").tex { folded := true, round := some 1 } == "a_{k}"
-#guard (ixCount "a" 2 "k").tex Mode.expanded == "a_{2}"
+#guard (iv "g").tex { folded := true } == "g_{i}"
+#guard (iv "g").tex (Mode.expanded.bind "i" 2) == "g_{2}"
+#guard (iv "c" 1).tex { folded := true } == "c_{i+1}"
+#guard (iv "c" 1).tex (Mode.expanded.bind "i" 2) == "c_{3}"
+#guard (iv "f" (-1)).tex { folded := true } == "f_{i-1}"
+#guard (ivBelow "r").tex { folded := true } == "r_{<i}"
+#guard (iv "c" (v := "n")).tex { folded := true } == "c_{n}"
+#guard (iv "c" (v := "n")).tex (Mode.expanded.bind "n" 3) == "c_{3}"
+#guard (iv "c" (v := "n")).tex Mode.expanded == "c_{n}"
+#guard (ix "c" 0).tex { folded := true } == "c_{0}"
 
 /-! ## Domains and formulas -/
 
@@ -646,12 +642,13 @@ theorem Fml.erase_toFO : ∀ {β : Type} (φ : Fml NameV NameO β), φ.toFO.eras
 
 /-- A test formula: `Σ_{a ∈ D} g_i(a) = c_i`, with an oracle hole `g_i` and a value hole `c_i`. -/
 private def testSum (D : Dom ℤ) :
-    Closed [.orc (ix "g" 2) ℤ ℤ, .val (ix "c" 2) ℤ] Bool :=
+    Closed [.orc (iv "g") ℤ ℤ, .val (iv "c") ℤ] Bool :=
   ⟨fun g c => (∑∈ a ∈ D, ask g a) =' .var c⟩
 
-#guard (testSum (.ofList "D" [0, 1])).tex { folded := true, round := some 2 } ==
+#guard (testSum (.ofList "D" [0, 1])).tex { folded := true } ==
   "\\sum_{a \\in D} g_{i}(a) = c_{i}"
-#guard (testSum (.ofList "D" [0, 1])).tex Mode.expanded == "\\sum_{a \\in D} g_{2}(a) = c_{2}"
+#guard (testSum (.ofList "D" [0, 1])).tex (Mode.expanded.bind "i" 2) ==
+  "\\sum_{a \\in D} g_{2}(a) = c_{2}"
 
 /-- A test of precedence: `(x + 1) · y - z^{2}`. -/
 private def testPrec : Closed [.val "x" ℤ, .val "y" ℤ, .val "z" ℤ] ℤ :=
@@ -667,11 +664,11 @@ example : ((testSum (.ofList "D" [0, 1])).inst (v := fun α => α) (o := fun Q A
 
 /-- A test of the product binder and of indexing: `Π_{j ∈ [2]} (τ_j x_j + (1 - τ_j)(1 - x_j))`,
 the weight `eq(τ, x)`. -/
-private def testProd : Closed [.val "\\tau" (Fin 2 → ℤ), .val (ix "x" 1) (Fin 2 → ℤ)] ℤ :=
+private def testProd : Closed [.val "\\tau" (Fin 2 → ℤ), .val (iv "x") (Fin 2 → ℤ)] ℤ :=
   ⟨fun τ x => ∏∈ j ∈ Dom.fin 2, Fml.index (.var τ) (.var j) * Fml.index (.var x) (.var j) +
     (1 - Fml.index (.var τ) (.var j)) * (1 - Fml.index (.var x) (.var j))⟩
 
-#guard testProd.tex { folded := true, round := some 1 } ==
+#guard testProd.tex { folded := true } ==
   "\\prod_{j \\in [2]} (\\tau_{j} \\cdot x_{i,j} + (1 - \\tau_{j}) \\cdot (1 - x_{i,j}))"
 
 /-- The product evaluates by enumeration: with `τ = x = (1, 1)` every factor is `1`, and with

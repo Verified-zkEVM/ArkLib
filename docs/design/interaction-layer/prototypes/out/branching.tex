@@ -8,35 +8,40 @@
 m \gets \specannot{\mathsf{arity}} \< \sendmessageright*{m \in [4]} \<  \pclb
 \pcintertext[dotted]{case $m = 0$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{0}]} \<  \pclb
-\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; end of stage \textsf{sumcheck}: $p(r) = c_{0}$}
- \< \< \text{check } p(r) = c_{0} \pclb
+\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; \textsf{sumcheck}: round $i$ of $m$; error $\specannot{2/|F|}$}
+g_{i} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{i}]\!] \in \mathbb{F}_{\le 2}[X]} \<  \\
+ \< \< \text{check } \sum_{a \in D} g_{i}(a) = c_{i} \\
+ \< \sendmessageleft*{r_{i}} \< r_{i} \sample \mathbb{F} \\
+ \< \< c_{i+1} := g_{i}(r_{i}) \pclb
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{m}$}
+ \< \< \text{check } p(r) = c_{m} \pclb
 \pcintertext[dotted]{case $m = 1$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{1}]} \<  \pclb
-\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; \textsf{sumcheck}: round $i$ of $n$; error $\specannot{2/|F|}$}
+\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; \textsf{sumcheck}: round $i$ of $m$; error $\specannot{2/|F|}$}
 g_{i} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{i}]\!] \in \mathbb{F}_{\le 2}[X]} \<  \\
  \< \< \text{check } \sum_{a \in D} g_{i}(a) = c_{i} \\
  \< \sendmessageleft*{r_{i}} \< r_{i} \sample \mathbb{F} \\
  \< \< c_{i+1} := g_{i}(r_{i}) \pclb
-\pcintertext[dotted]{end of stage \textsf{sumcheck}: $p(r) = c_{n}$}
- \< \< \text{check } p(r) = c_{n} \pclb
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{m}$}
+ \< \< \text{check } p(r) = c_{m} \pclb
 \pcintertext[dotted]{case $m = 2$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{2}]} \<  \pclb
-\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; \textsf{sumcheck}: round $i$ of $n$; error $\specannot{2/|F|}$}
+\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; \textsf{sumcheck}: round $i$ of $m$; error $\specannot{2/|F|}$}
 g_{i} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{i}]\!] \in \mathbb{F}_{\le 2}[X]} \<  \\
  \< \< \text{check } \sum_{a \in D} g_{i}(a) = c_{i} \\
  \< \sendmessageleft*{r_{i}} \< r_{i} \sample \mathbb{F} \\
  \< \< c_{i+1} := g_{i}(r_{i}) \pclb
-\pcintertext[dotted]{end of stage \textsf{sumcheck}: $p(r) = c_{n}$}
- \< \< \text{check } p(r) = c_{n} \pclb
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{m}$}
+ \< \< \text{check } p(r) = c_{m} \pclb
 \pcintertext[dotted]{case $m = 3$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{3}]} \<  \pclb
-\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; \textsf{sumcheck}: round $i$ of $n$; error $\specannot{2/|F|}$}
+\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; \textsf{sumcheck}: round $i$ of $m$; error $\specannot{2/|F|}$}
 g_{i} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{i}]\!] \in \mathbb{F}_{\le 2}[X]} \<  \\
  \< \< \text{check } \sum_{a \in D} g_{i}(a) = c_{i} \\
  \< \sendmessageleft*{r_{i}} \< r_{i} \sample \mathbb{F} \\
  \< \< c_{i+1} := g_{i}(r_{i}) \pclb
-\pcintertext[dotted]{end of stage \textsf{sumcheck}: $p(r) = c_{n}$}
- \< \< \text{check } p(r) = c_{n}
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{m}$}
+ \< \< \text{check } p(r) = c_{m}
 }
-\caption{Sum-check with a prover-chosen number of variables, one round of each block, generated from the skeleton. Gray text is annotation that Lean does not check.}
+\caption{Sum-check with a prover-chosen number of variables, one generic round of each loop, generated from the skeleton. Gray text is annotation that Lean does not check.}
 \end{figure}

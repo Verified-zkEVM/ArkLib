@@ -19,9 +19,9 @@ obligation.
   `(rsN i).then` is certified as the kit's rounds (`Kit.Rounds`). Each case is a cast along the
   tree equation, so with `rfl` equations, as `rounds` uses by default, the certificate computes.
 * `Bridge.verdict_roundsGo` (**the bridge theorem**): the verdict of the rounds `j, …, j + k - 1`
-  of a `rounds` block is the kit's verdict `Kit.Rounds.verdict` on the certificate, followed by
-  the continuation's verdict. The hypotheses are one round (`hbody`) and the continuation
-  (`hnext`), each for an arbitrary transcript.
+  of a `rounds` block (`roundsFrom`) is the kit's verdict `Kit.Rounds.verdict` on the
+  certificate, followed by the continuation's verdict. The hypotheses are one round (`hbody`) and
+  the continuation (`hnext`), each for an arbitrary transcript.
 * `Bridge.decide_eq_iterVerdict` and `Bridge.agrees_of_kit`: when the verdict factors through the
   kit (`hverdict`), the specification's derived verifier decides as the kit's `iterVerdict` on every
   transcript, and it agrees (ArkLib's `OracleVerifier.Agrees`) with the kit's iteration verifier
@@ -73,6 +73,13 @@ theorem Desc.verdict_retree {t t' : OracleProtocol} {ks : Skel} (e : t = t')
   subst e
   rfl
 
+/-- Moving a description to an equal skeleton keeps its verdict. -/
+theorem Desc.verdict_reskel {t : OracleProtocol} {ks ks' : Skel} (e : ks = ks')
+    (d : Desc In W T t ks) (ans : QueryImpl In.spec Id) (tr : Transcript oracleSig t)
+    (env : Handlers Id) (ℓ : ℕ) : (d.reskel e).verdict ans tr env ℓ = d.verdict ans tr env ℓ := by
+  subst e
+  rfl
+
 namespace Bridge
 
 variable {n : ℕ} {rsN : ℕ → Round} {suf : Block}
@@ -102,7 +109,7 @@ def cert (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = suf.then (.
   | k + 1, j, h => cast (congrArg (Rounds (fam n rsN) suf j (k + 1) h) (hS j k).symm)
       (.round j k h (cert τ h0 hS k (j + 1) (by omega)))
 
-variable {State : ℕ → Type} {F : ℕ → OracleProtocol → OracleProtocol} {G : ℕ → Skel → Skel}
+variable {State : ℕ → Type} {F : ℕ → OracleProtocol → OracleProtocol} {G : Skel → Skel}
 
 /-- **The bridge theorem.** The verdict of the rounds `j, …, j + k - 1` of a `rounds` block is
 the kit's verdict on the certificate `cert`, followed by the continuation's verdict `fin`, when
@@ -110,13 +117,13 @@ the kit's verdict on the certificate `cert`, followed by the continuation's verd
 * `hbody`: one round's verdict is the kit step `step`, then the continuation's verdict on the
   rest of the transcript with some handler table that keeps the invariant `Inv`;
 * `hnext`: the continuation's verdict is `fin` of the final state and the suffix values. -/
-theorem verdict_roundsGo (ans : QueryImpl In.spec Id) (block countName : String)
-    (error : ℕ → String)
+theorem verdict_roundsGo (ans : QueryImpl In.spec Id) (l : Loop)
     (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
-      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G i ks))
+      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G ks))
     {ks : Skel} (next : State n → Desc In W T (suf.then (.pure PUnit.unit)) ks)
     (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = suf.then (.pure PUnit.unit))
-    (hS : ∀ j k, τ j (k + 1) = F j (τ (j + 1) k)) (hF : ∀ i t, F i t = (rsN i).then t)
+    (hS : ∀ j k, τ j (k + 1) = F j (τ (j + 1) k)) (hG : ∀ ks, G ks = (G .done).seq ks)
+    (hF : ∀ i t, F i t = (rsN i).then t)
     (step : Step (fam n rsN) (fun i => State i.val)) (fin : State n → suf.Values → Option T)
     (Inv : Handlers Id → ℕ → Prop)
     (hbody : ∀ {t : OracleProtocol} {ks : Skel} (i : ℕ) (hi : i < n) (st : State i)
@@ -133,7 +140,7 @@ theorem verdict_roundsGo (ans : QueryImpl In.spec Id) (block countName : String)
       (next st).verdict ans tr env ℓ = fin st (Block.split suf tr).1) :
     ∀ (k j : ℕ) (h : j + k = n) (st : State j) (tr : Transcript oracleSig (τ j k))
       (env : Handlers Id) (ℓ : ℕ), Inv env ℓ →
-      (roundsGo block n countName error body next τ h0 hS k j h st).verdict ans tr env ℓ =
+      (roundsFrom l n body next τ h0 hS hG k j h st).verdict ans tr env ℓ =
         ((cert τ h0 (fun j k => (hS j k).trans (hF j _)) k j h).verdict step (some st)
           tr).bind fun p => fin p.1 p.2 := by
   intro k
@@ -141,16 +148,18 @@ theorem verdict_roundsGo (ans : QueryImpl In.spec Id) (block countName : String)
   | zero =>
     intro j h st tr env ℓ hinv
     subst h
+    dsimp only [roundsFrom]
     rw [roundsGo, Desc.verdict_retree, hnext _ _ _ _ hinv, cert,
       verdict_cast (e := (h0 _).symm)]
     rfl
   | succ k ih =>
     intro j h st tr env ℓ hinv
+    dsimp only [roundsFrom]
     rw [roundsGo, Desc.verdict_retree]
-    erw [Desc.verdict.eq_11]
+    erw [Desc.verdict.eq_11, Desc.verdict_reskel]
     obtain ⟨env', ℓ', hinv', hb⟩ := hbody j (by omega) st
-      (fun st' => .mark .endRound (roundsGo block n countName error body next τ h0 hS k (j + 1)
-        (by omega) st')) _ env ℓ hinv
+      (fun st' => .mark .endRound (roundsFrom l n body next τ h0 hS hG k (j + 1) (by omega) st'))
+      _ env ℓ hinv
     rw [hb, cert, verdict_cast (e := ((hS j k).trans (hF j _)).symm), Rounds.verdict, cast_cast]
     simp only [Option.bind_some]
     generalize hc : cast _ tr = tr'

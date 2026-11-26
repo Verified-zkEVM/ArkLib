@@ -27,6 +27,8 @@ This module writes sum-check with formulas and proves that it agrees with ArkLib
   branching example use it.
 * `eval_round_value` and `eval_round_check` evaluate the two round formulas. Proofs about the loop
   in other modules use them.
+* `sumcheck_erase`: the erased skeleton, which the JSON and the folded figure read, is the same
+  for every number of rounds.
 * The tests check the transcript accessors (`tr⟦sumcheck, 1, g⟧`), the folded and expanded TeX of
   the round check, and that the first-order form of the round check evaluates like the formula.
 
@@ -36,8 +38,11 @@ This module writes sum-check with formulas and proves that it agrees with ArkLib
   the agreement theorems then typecheck at a variable `n` with no cast. The loop `sumcheck` keeps
   the default tree, and `roundsTree_sumcheck` proves by induction that the two agree.
 * The claim between rounds is a structure of handles: the target `c_i` as a named value and the
-  challenges so far. *Why:* the target's name carries the round, so the check and the local value
-  print as `c_{i}` and `c_{i+1}`.
+  challenges so far. *Why:* the check and the local value print as `c_{i}` and `c_{i+1}`.
+* Every name in the round is symbolic in the round variable (`iv "g"`, `iv "c" 1`). *Why:*
+  `rounds` requires the round's skeleton to be the same for every round, so a name that mentions
+  the round number does not typecheck. The output claim renames the final target to `c_n`, and
+  `sumcheck_erase` proves that the erased skeleton does not depend on `n`.
 * `sumcheck_decide` follows from the generic theorem `Spec.decide_eq_verdict` and
   `sumcheck_verdict`. The only sum-check-specific induction is `verdict_roundsGo`, which compares
   two pure functions on transcripts.
@@ -66,7 +71,7 @@ local instance : Inhabited R := ⟨0⟩
 /-- The claim after `i` rounds: the target `c_i` and the challenges `r_{<i}`. -/
 structure Claim (R : Type) (i : ℕ) where
   /-- The current target. -/
-  c : Val (ix "c" i) R
+  c : Val (iv "c") R
   /-- The challenges so far. -/
   rs : Fin i → R
 
@@ -76,27 +81,26 @@ variable {In : OracleBundle} {W T : Type}
 noncomputable def sumcheckRound (n : ℕ) (D : Fin k → R) (poly : W → R⦃≤ d⦄[X Fin n])
     {t : OracleProtocol} {ks : Skel} (i : ℕ) (hi : i < n) (st : Claim R i)
     (next : Claim R (i + 1) → Desc In W T t ks) :=
-  oracle (ix "g" i) (R⦃≤ d⦄[X]) R "\\mathsf{proj}"
+  oracle (iv "g") (R⦃≤ d⦄[X]) R "\\mathsf{proj}"
     (fun w => Sumcheck.projectedRoundPolynomial D ⟨i, hi⟩ st.rs (poly w)) fun g =>
   check "sum" ⟪g, st.c⟫ (fun g c => (∑∈ a ∈ Dom.ofFn "D" D, ask g a) =' .var c) <|
-  challenge (ix "r" i) R fun r =>
-  compute (ix "c" (i + 1)) R ⟪g, r⟫ (fun g r => ask g r) fun c =>
-  next ⟨c, Fin.snoc st.rs r.val⟩
+  challenge (iv "r") R fun r =>
+  compute (iv "c" 1) R ⟪g, r⟫ (fun g r => ask g r) fun c =>
+  next ⟨⟨c.val⟩, Fin.snoc st.rs r.val⟩
 
 /-- The tree of one sum-check round followed by `t`. -/
 abbrev roundTree (R : Type) [CommSemiring R] (d : ℕ) (t : OracleProtocol) : OracleProtocol :=
   .liftBind (.oracle (R⦃≤ d⦄[X]) inferInstance) fun _ => .liftBind (.challenge R) fun _ => t
 
 /-- Sum-check: `n` rounds from the claim `input`. `tree` names the tree family of the rounds.
-`block` names the loop in the skeleton and `countName` is the symbol of its round count in the
-folded figure. -/
+`block` names the loop in the skeleton and `countName` is the symbol of its round count. -/
 noncomputable abbrev sumcheck (n : ℕ) (D : Fin k → R) (poly : W → R⦃≤ d⦄[X Fin n])
     (input : Claim R 0) {t : OracleProtocol} {ks : Skel} (next : Claim R n → Desc In W T t ks)
     (tree : ℕ → ℕ → OracleProtocol := roundsTree (fun _ => roundTree R d) t)
     (h0 : ∀ j, tree j 0 = t := by intros; rfl)
     (hS : ∀ j k, tree j (k + 1) = roundTree R d (tree (j + 1) k) := by intros; rfl)
     (block : String := "sumcheck") (countName : String := "n") :=
-  rounds block n input (sumcheckRound n D poly) next (fun _ => toString d ++ "/|F|") countName
+  rounds block n input (sumcheckRound n D poly) next (toString d ++ "/|F|") countName "i"
     tree h0 hS
 
 omit [DecidableEq R] [TypeName R] in
@@ -116,11 +120,17 @@ noncomputable def sumcheckSpec (d n : ℕ) (D : Fin k → R) :=
   input "p" (Fin n → R) R "R_{\\le d}[X_{1..n}]" (fun x => ⟨(), x⟩) (fun _ => rfl) fun p =>
   stage "sumcheck" ⟪p, (⟨stmt.target⟩ : Val (ix "c" 0) R)⟫
     (fun p c => (∑∈ x ∈ (Dom.ofFn "D" D).pow n "n", ask p x) =' .var c)
-    (fun st : Claim R n => ⟪p, (⟨st.rs⟩ : Val "r" (Fin n → R)), st.c⟫)
+    (fun st : Claim R n => ⟪p, (⟨st.rs⟩ : Val "r" (Fin n → R)),
+      (⟨st.c.val⟩ : Val (iv "c" (v := "n")) R)⟫)
     (fun p r c => ask p r =' .var c)
     (fun next => sumcheck n D id ⟨⟨stmt.target⟩, stmt.challenges⟩ next
       (tree := fun _ r => Sumcheck.protocol R d r))
     fun st => done ⟨st.c.val, st.rs⟩
+
+/-- The erased skeleton of the specification, which the JSON and the folded figure read, does not
+depend on the number of rounds. -/
+theorem sumcheck_erase (d n n' : ℕ) (D : Fin k → R) :
+    (sumcheckSpec R d n D).skeleton.erase = (sumcheckSpec R d n' D).skeleton.erase := rfl
 
 /-- The tree of the specification is ArkLib's sum-check tree. -/
 theorem sumcheck_tree (d n : ℕ) (D : Fin k → R) :
@@ -148,9 +158,9 @@ theorem prove_roundsGo {n : ℕ} (D : Fin k → R) (p : R⦃≤ d⦄[X Fin n]) {
       (RoundStatement R n (Fin.last n)) (Sumcheck.protocol R d 0) ks)
     (hnext : ∀ st env ℓ, (next st).prove (m := m) p ans env ℓ = (pure ⟨st.c.val, st.rs⟩ : m _)) :
     ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (env : Handlers Id) (ℓ : ℕ),
-    Desc.prove (m := m) p ans (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|")
+    Desc.prove (m := m) p ans (roundsFrom ⟨"sumcheck", "i", "n", toString d ++ "/|F|"⟩ n
         (sumcheckRound n D id) next (fun _ r => Sumcheck.protocol R d r) (fun _ => rfl)
-        (fun _ _ => rfl) r j h st) env ℓ =
+        (fun _ _ => rfl) (fun _ => rfl) r j h st) env ℓ =
       intervalProver D p r (Claim.toIndexed h st)
   := by
   intro r
@@ -161,6 +171,7 @@ theorem prove_roundsGo {n : ℕ} (D : Fin k → R) (p : R⦃≤ d⦄[X Fin n]) {
     exact hnext st env ℓ
   | succ r ih =>
     intro j h st env ℓ
+    dsimp only [roundsFrom]
     rw [roundsGo]
     simp only [Desc.retree_rfl]
     rw [sumcheckRound]
@@ -190,7 +201,7 @@ remaining sum of `poly w` over the domain, every check of these rounds holds on 
 messages, for every choice of challenges, provided the continuation is complete whenever its
 claim `p(r) = c_n` holds. `P` is any invariant of the handler table that survives the oracle
 messages of the rounds, so the continuation can still read the oracles recorded before. -/
-theorem sumcheck_complete {block countName : String} {n : ℕ} (D : Fin k → R)
+theorem sumcheck_complete {l : Loop} {n : ℕ} (D : Fin k → R)
     (poly : W → R⦃≤ d⦄[X Fin n]) (w : W) (ans : QueryImpl In.spec Id) {t : OracleProtocol}
     {ks : Skel}
     (next : Claim R n → Desc In W T t ks) (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
@@ -201,22 +212,25 @@ theorem sumcheck_complete {block countName : String} {n : ℕ} (D : Fin k → R)
       (next st).Complete w ans env ℓ) :
     ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (env : Handlers Id) (ℓ : ℕ), P env ℓ →
       Sumcheck.roundSum D ⟨j, by omega⟩ st.rs (poly w).val = st.c.val →
-      (roundsGo block n countName (fun _ => toString d ++ "/|F|") (sumcheckRound n D poly) next
-        τ h0 hS r j h st).Complete w ans env ℓ := by
+      (roundsFrom l n (sumcheckRound n D poly) next τ h0 hS (fun _ => rfl) r j h st).Complete
+        w ans env ℓ := by
   intro r
   induction r with
   | zero =>
     intro j h st env ℓ hp hs
     subst h
+    dsimp only [roundsFrom]
     rw [roundsGo, Desc.complete_retree]
     refine hnext st env ℓ hp ?_
     exact (Sumcheck.indexedRelation_last D ⟨st.c.val, st.rs⟩ (poly w)).1 hs
   | succ r ih =>
     intro j h st env ℓ hp hs
+    dsimp only [roundsFrom]
     rw [roundsGo, Desc.complete_retree]
+    erw [Desc.Complete.eq_11, Desc.complete_reskel]
     rw [sumcheckRound]
     simp only [oracle, check, challenge, compute]
-    erw [Desc.Complete.eq_11, Desc.Complete.eq_3, Desc.Complete.eq_5, Desc.Complete.eq_4]
+    erw [Desc.Complete.eq_3, Desc.Complete.eq_5, Desc.Complete.eq_4]
     simp only [Closed.inst, ToArgs.toArgs_prod, ToArgs.toArgs_ohdl, ToArgs.toArgs_val,
       Args.append, eval_round_check, askId, Handlers.find_ext_self]
     refine ⟨?_, fun r => ?_⟩
@@ -241,9 +255,9 @@ theorem verdict_roundsGo {n : ℕ} (D : Fin k → R) (ans : QueryImpl (polynomia
     (hnext : ∀ st tr env ℓ, (next st).verdict ans tr env ℓ = some ⟨st.c.val, st.rs⟩) :
     ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (tr : Transcript oracleSig (protocol R d r))
       (env : Handlers Id) (ℓ : ℕ),
-    Desc.verdict ans (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|")
+    Desc.verdict ans (roundsFrom ⟨"sumcheck", "i", "n", toString d ++ "/|F|"⟩ n
         (sumcheckRound n D id) next (fun _ r => protocol R d r) (fun _ => rfl)
-        (fun _ _ => rfl) r j h st) tr env ℓ =
+        (fun _ _ => rfl) (fun _ => rfl) r j h st) tr env ℓ =
       indexedVerdict D r (some (Claim.toIndexed h st)) tr := by
   intro r
   induction r with
@@ -255,6 +269,7 @@ theorem verdict_roundsGo {n : ℕ} (D : Fin k → R) (ans : QueryImpl (polynomia
     intro j h st tr env ℓ
     rw [indexedVerdict_succ]
     obtain ⟨g, x, tr⟩ := tr
+    dsimp only [roundsFrom]
     rw [roundsGo]
     simp only [Desc.retree_rfl]
     rw [sumcheckRound]
@@ -328,28 +343,26 @@ example (tr : (sumcheckSpec ℚ 2 3 D).Tr) : tr⟦g⟧ = tr.1 := rfl
 example (p : Path (sumcheckSpec ℚ 2 3 D).tree) (v : (sumcheckSpec ℚ 2 3 D).Vw p) :
     v⟦sumcheck, 1, g⟧ = v.1.2.2.1 := rfl
 
-/-! The round check prints folded with the round variable `i`, and expanded with the round. -/
-#guard ((sumcheckSpec ℚ 2 3 ![0, 1]).skeleton.checks.map fun c => c.2.tex
-    { folded := true, round := some 1 }) ==
-  ["\\sum_{a \\in D} g_{i-1}(a) = c_{i-1}", "\\sum_{a \\in D} g_{i}(a) = c_{i}",
-    "\\sum_{a \\in D} g_{i+1}(a) = c_{i+1}"]
-#guard ((sumcheckSpec ℚ 2 3 ![0, 1]).skeleton.checks.map fun c => c.2.tex Mode.expanded) ==
-  ["\\sum_{a \\in D} g_{0}(a) = c_{0}", "\\sum_{a \\in D} g_{1}(a) = c_{1}",
-    "\\sum_{a \\in D} g_{2}(a) = c_{2}"]
+/-! The loop has one round check. It prints with the round variable `i` folded, and with the
+round's number once `i` is bound. -/
+#guard ((sumcheckSpec ℚ 2 3 ![0, 1]).skeleton.checks.map fun c => c.2.tex { folded := true }) ==
+  ["\\sum_{a \\in D} g_{i}(a) = c_{i}"]
+#guard ((sumcheckSpec ℚ 2 3 ![0, 1]).skeleton.checks.map fun c =>
+    c.2.tex (Mode.expanded.bind "i" 1)) == ["\\sum_{a \\in D} g_{1}(a) = c_{1}"]
 
-/-- The round check of round 1 over `ℚ` with `D = {0, 1}`, written again as a closed formula. The
-first test shows that its syntax is the check that the skeleton exports. -/
-private def roundCheck : Closed [.orc (ix "g" 1) ℚ ℚ, .val (ix "c" 1) ℚ] Bool :=
+/-- The round check over `ℚ` with `D = {0, 1}`, written again as a closed formula. The first
+test shows that its syntax is the check that the skeleton exports. -/
+private def roundCheck : Closed [.orc (iv "g") ℚ ℚ, .val (iv "c") ℚ] Bool :=
   ⟨fun g c => (∑∈ a ∈ Dom.ofFn "D" ![(0 : ℚ), 1], ask g a) =' .var c⟩
 
-#guard roundCheck.syntax == ((sumcheckSpec ℚ 2 3 ![0, 1]).skeleton.checks[1]!).2
+#guard roundCheck.syntax == ((sumcheckSpec ℚ 2 3 ![0, 1]).skeleton.checks[0]!).2
 
 open Classical in
-/-- An environment for the first-order tree: `c_1` is `x`, and `g_1` answers by `f`. -/
+/-- An environment for the first-order tree: `c_i` is `x`, and `g_i` answers by `f`. -/
 private noncomputable def roundEnv (f : ℚ → ℚ) (x : ℚ) : Env :=
   Env.bind ⟨fun _ _ => none, fun nm Q A =>
-    if h : nm = ix "g" 1 ∧ Q = ℚ ∧ A = ℚ then some (by obtain ⟨-, rfl, rfl⟩ := h; exact f)
-    else none⟩ (ix "c" 1) x
+    if h : nm = iv "g" ∧ Q = ℚ ∧ A = ℚ then some (by obtain ⟨-, rfl, rfl⟩ := h; exact f)
+    else none⟩ (iv "c") x
 
 /-- The exported first-order tree of the round check evaluates as the check itself does. -/
 example (f : ℚ → ℚ) (x : ℚ) :
@@ -357,7 +370,7 @@ example (f : ℚ → ℚ) (x : ℚ) :
       some ((roundCheck.inst (v := fun α => α) (o := fun Q A => Q → A)
         (.orc f (.val x .nil))).eval fun ⦃_ _⦄ h q => h q) := by
   change FO.eval (roundEnv f x) (Fml.toFO (((∑∈ a ∈ Dom.ofFn "D" ![(0 : ℚ), 1],
-      ask (v := NameV) (o := NameO) (Q := ℚ) (A := ℚ) (ix "g" 1) a) =' .var (ix "c" 1)))) =
+      ask (v := NameV) (o := NameO) (Q := ℚ) (A := ℚ) (iv "g") a) =' .var (iv "c")))) =
     some (Fml.eval (fun ⦃_ _⦄ h q => h q) ((∑∈ a ∈ Dom.ofFn "D" ![(0 : ℚ), 1],
       ask (v := fun α => α) (o := fun Q A => Q → A) f a) =' .var x))
   simp [roundEnv, Env.bind, FO.eval, Fml.toFO, Dom.ofFn, List.ofFn_succ]
@@ -367,6 +380,7 @@ end Tests
 end Sumcheck
 
 #print axioms sumcheck_complete
+#print axioms sumcheck_erase
 #print axioms sumcheck_tree
 #print axioms sumcheck_prover
 #print axioms sumcheck_verdict

@@ -8,8 +8,8 @@
  \< \< \text{input oracle } [\![\tilde{A}]\!] \in \mathbb{F}^{2^m \times 2^n} \\
  \< \< \text{input oracle } [\![\tilde{B}]\!] \in \mathbb{F}^{2^m \times 2^n} \\
  \< \< \text{input oracle } [\![\tilde{C}]\!] \in \mathbb{F}^{2^m \times 2^n} \\
-\tilde{z} \gets \specannot{\mathsf{assignment}} \< \sendmessageright*{[\![\tilde{z}]\!] \in \mathbb{F}^{2^{3}}} \<  \\
- \< \sendmessageleft*{\tau} \< \tau \sample \mathbb{F}^{2} \pclb
+\tilde{z} \gets \specannot{\mathsf{assignment}} \< \sendmessageright*{[\![\tilde{z}]\!] \in \mathbb{F}^{2^{n}}} \<  \\
+ \< \sendmessageleft*{\tau} \< \tau \sample \mathbb{F}^{m} \pclb
 \pcintertext[dotted]{stage \textsf{outer}: $\sum_{x \in \{0,1\}^{m}} (\prod_{j \in [m]} (\tau_{j} \cdot x_{j} + (1 - \tau_{j}) \cdot (1 - x_{j}))) \cdot ((\sum_{y \in \{0,1\}^{n}} \tilde{A}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y)) \cdot (\sum_{y \in \{0,1\}^{n}} \tilde{B}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y)) - (\sum_{y \in \{0,1\}^{n}} \tilde{C}(\mathrm{\iota_1}(x) + \mathrm{\iota_2}(y)) \cdot \tilde{z}(y))) = 0$; \textsf{sumcheck}: round 0}
 g_{0} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{0}]\!] \in \mathbb{F}_{\le 3}[X]} \<  \\
  \< \< \text{check } \sum_{a \in D} g_{0}(a) = c_{0} \\
@@ -19,7 +19,8 @@ g_{0} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{0}]\!] \in \m
 g_{1} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{1}]\!] \in \mathbb{F}_{\le 3}[X]} \<  \\
  \< \< \text{check } \sum_{a \in D} g_{1}(a) = c_{1} \\
  \< \sendmessageleft*{r_{1}} \< r_{1} \sample \mathbb{F} \\
- \< \< c_{2} := g_{1}(r_{1}) \\
+ \< \< c_{2} := g_{1}(r_{1}) \pclb
+\pcintertext[dotted]{end of loop \textsf{sumcheck}}
 v_{A} \gets \specannot{\mathsf{row}_A} \< \sendmessageright*{v_{A} \in \mathbb{F}} \<  \\
 v_{B} \gets \specannot{\mathsf{row}_B} \< \sendmessageright*{v_{B} \in \mathbb{F}} \<  \\
 v_{C} \gets \specannot{\mathsf{row}_C} \< \sendmessageright*{v_{C} \in \mathbb{F}} \<  \\
@@ -44,7 +45,7 @@ g_{2} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{2}]\!] \in \m
  \< \< \text{check } \sum_{a \in D} g_{2}(a) = c_{2} \\
  \< \sendmessageleft*{r_{2}} \< r_{2} \sample \mathbb{F} \\
  \< \< c_{3} := g_{2}(r_{2}) \pclb
-\pcintertext[dotted]{end of stage \textsf{inner}: $(\rho_{A} \cdot \tilde{A}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y})) + \rho_{B} \cdot \tilde{B}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y})) + \rho_{C} \cdot \tilde{C}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y}))) \cdot \tilde{z}(r_{y}) = c_{3}$}
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{inner}: $(\rho_{A} \cdot \tilde{A}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y})) + \rho_{B} \cdot \tilde{B}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y})) + \rho_{C} \cdot \tilde{C}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y}))) \cdot \tilde{z}(r_{y}) = c_{3}$}
  \< \< \text{check } (\rho_{A} \cdot \tilde{A}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y})) + \rho_{B} \cdot \tilde{B}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y})) + \rho_{C} \cdot \tilde{C}(\mathrm{\iota_1}(r_{x}) + \mathrm{\iota_2}(r_{y}))) \cdot \tilde{z}(r_{y}) = c_{3}
 }
 \caption{Spartan, generated from the skeleton. Gray text is annotation that Lean does not check.}

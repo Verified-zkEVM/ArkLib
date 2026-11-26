@@ -8,7 +8,7 @@
 m \gets \specannot{\mathsf{arity}} \< \sendmessageright*{m \in [4]} \<  \pclb
 \pcintertext[dotted]{case $m = 0$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{0}]} \<  \pclb
-\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; end of stage \textsf{sumcheck}: $p(r) = c_{0}$}
+\pcintertext[dotted]{stage \textsf{sumcheck}: $\sum_{x \in D^{m}} p(x) = c_{0}$; end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{0}$}
  \< \< \text{check } p(r) = c_{0} \pclb
 \pcintertext[dotted]{case $m = 1$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{1}]} \<  \pclb
@@ -17,7 +17,7 @@ g_{0} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{0}]\!] \in \m
  \< \< \text{check } \sum_{a \in D} g_{0}(a) = c_{0} \\
  \< \sendmessageleft*{r_{0}} \< r_{0} \sample \mathbb{F} \\
  \< \< c_{1} := g_{0}(r_{0}) \pclb
-\pcintertext[dotted]{end of stage \textsf{sumcheck}: $p(r) = c_{1}$}
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{1}$}
  \< \< \text{check } p(r) = c_{1} \pclb
 \pcintertext[dotted]{case $m = 2$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{2}]} \<  \pclb
@@ -31,7 +31,7 @@ g_{1} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{1}]\!] \in \m
  \< \< \text{check } \sum_{a \in D} g_{1}(a) = c_{1} \\
  \< \sendmessageleft*{r_{1}} \< r_{1} \sample \mathbb{F} \\
  \< \< c_{2} := g_{1}(r_{1}) \pclb
-\pcintertext[dotted]{end of stage \textsf{sumcheck}: $p(r) = c_{2}$}
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{2}$}
  \< \< \text{check } p(r) = c_{2} \pclb
 \pcintertext[dotted]{case $m = 3$}
 p \gets \specannot{\mathsf{poly}} \< \sendmessageright*{[\![p]\!] \in \mathbb{F}_{\le 2}[X_1, \dots, X_{3}]} \<  \pclb
@@ -50,7 +50,7 @@ g_{2} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{2}]\!] \in \m
  \< \< \text{check } \sum_{a \in D} g_{2}(a) = c_{2} \\
  \< \sendmessageleft*{r_{2}} \< r_{2} \sample \mathbb{F} \\
  \< \< c_{3} := g_{2}(r_{2}) \pclb
-\pcintertext[dotted]{end of stage \textsf{sumcheck}: $p(r) = c_{3}$}
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{3}$}
  \< \< \text{check } p(r) = c_{3}
 }
 \caption{Sum-check with a prover-chosen number of variables, generated from the skeleton. Gray text is annotation that Lean does not check.}

@@ -117,8 +117,8 @@ theorem sumcheckSpec_verdict_eq (D : Fin k → R)
         (scFinish x) :=
   verdict_roundsGo (In := polynomialFamily R n d) (W := R⦃≤ d⦄[X Fin n])
     (T := RoundStatement R n (Fin.last n)) (rsN := fun _ => scRound R d) (suf := []) _
-    "sumcheck" "n" _ (sumcheckRound n D id) _ (fun _ r => protocol R d r) (fun _ => rfl)
-    (fun _ _ => rfl) (fun _ _ => rfl) (scSpecStep D) (fun st v => scFinish x (st, v))
+    _ (sumcheckRound n D id) _ (fun _ r => protocol R d r) (fun _ => rfl)
+    (fun _ _ => rfl) (fun _ => rfl) (fun _ _ => rfl) (scSpecStep D) (fun st v => scFinish x (st, v))
     (fun _ _ => True)
     (fun i hi st nx tr env ℓ _ => sumcheckRound_verdict D id _ i hi st nx tr env ℓ)
     (by intros; rfl) n 0 (Nat.zero_add n) _ tr _ _ trivial

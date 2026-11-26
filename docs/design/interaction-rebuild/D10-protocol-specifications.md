@@ -11,9 +11,11 @@ and every theorem depends only on `propext`, `Classical.choice` and `Quot.sound`
 that name a declaration exist in it. Blocks marked "intended, not existing" specify later work.
 
 The first version of the prototype (two standalone files) left eight open points. Review judged
-them to be limitations, not open questions. The second version fixes each of them. The section
-"Limitations of the first prototype and how this record resolves them" gives the decision, the
-reason and the evidence for each.
+them to be limitations, not open questions. The second version fixes each of them. Review of the
+second version found a ninth: a loop was written out round by round for one fixed count, so each
+figure and each JSON file described one instance. The current version represents a loop once,
+generic in its count. The section "Limitations of the prototype and how this record resolves them"
+gives the decision, the reason and the evidence for each of the nine.
 
 ## Decision
 
@@ -29,12 +31,12 @@ interaction layer's objects are computed from that value.
 noncomputable def sumcheckRound (n : ℕ) (D : Fin k → R) (poly : W → R⦃≤ d⦄[X Fin n])
     {t : OracleProtocol} {ks : Skel} (i : ℕ) (hi : i < n) (st : Claim R i)
     (next : Claim R (i + 1) → Desc In W T t ks) :=
-  oracle (ix "g" i) (R⦃≤ d⦄[X]) R "\\mathsf{proj}"
+  oracle (iv "g") (R⦃≤ d⦄[X]) R "\\mathsf{proj}"
     (fun w => Sumcheck.projectedRoundPolynomial D ⟨i, hi⟩ st.rs (poly w)) fun g =>
   check "sum" ⟪g, st.c⟫ (fun g c => (∑∈ a ∈ Dom.ofFn "D" D, ask g a) =' .var c) <|
-  challenge (ix "r" i) R fun r =>
-  compute (ix "c" (i + 1)) R ⟪g, r⟫ (fun g r => ask g r) fun c =>
-  next ⟨c, Fin.snoc st.rs r.val⟩
+  challenge (iv "r") R fun r =>
+  compute (iv "c" 1) R ⟪g, r⟫ (fun g r => ask g r) fun c =>
+  next ⟨⟨c.val⟩, Fin.snoc st.rs r.val⟩
 
 noncomputable def sumcheckSpec (d n : ℕ) (D : Fin k → R) :=
   Spec.mk (In := Sumcheck.polynomialFamily R n d) (W := R⦃≤ d⦄[X Fin n])
@@ -42,12 +44,18 @@ noncomputable def sumcheckSpec (d n : ℕ) (D : Fin k → R) :=
   input "p" (Fin n → R) R "R_{\\le d}[X_{1..n}]" (fun x => ⟨(), x⟩) (fun _ => rfl) fun p =>
   stage "sumcheck" ⟪p, (⟨stmt.target⟩ : Val (ix "c" 0) R)⟫
     (fun p c => (∑∈ x ∈ (Dom.ofFn "D" D).pow n "n", ask p x) =' .var c)
-    (fun st : Claim R n => ⟪p, (⟨st.rs⟩ : Val "r" (Fin n → R)), st.c⟫)
+    (fun st : Claim R n => ⟪p, (⟨st.rs⟩ : Val "r" (Fin n → R)),
+      (⟨st.c.val⟩ : Val (iv "c" (v := "n")) R)⟫)
     (fun p r c => ask p r =' .var c)
     (fun next => sumcheck n D id ⟨⟨stmt.target⟩, stmt.challenges⟩ next
       (tree := fun _ r => Sumcheck.protocol R d r))
     fun st => done ⟨st.c.val, st.rs⟩
 ```
+
+Names inside a round are indexed by the loop's round variable: `iv "g"` is `g_i`, `iv "c" 1` is
+`c_{i+1}`, and after the loop `iv "c" (v := "n")` is `c_n`. `ix "c" 0` is the fixed index `c_0`.
+`sumcheck n D poly input next` is `rounds "sumcheck" n input (sumcheckRound n D poly) next` with
+error annotation `d/|F|`, count symbol `n` and round variable `i`.
 
 The description `Desc In W T t ks` is in continuation-passing style. `In` is the input oracle
 bundle, `W` the witness and `T` the output. Its two indices are the protocol tree `t` and the
@@ -86,6 +94,15 @@ and the premise that nothing rejects early.
 point on dependent iteration state: `rounds` and the kit certificate own the state, not
 `FreeM.replicate`.
 
+**A loop is one node, generic in its count.** `rounds` records the skeleton node
+`Skel.loop l n body rest`. `l` names the block, the round variable, the count symbol and the error
+annotation, and `body` is one round's skeleton, whose names are indexed by the round variable.
+`rounds` requires that a round's skeleton not depend on the round number (the argument `hG`,
+proved by `rfl` by default), so one body is correct for every round. The JSON and the folded
+figure read the skeleton with every count erased (`Skel.erase`), so they are the same for every
+count, and `sumcheck_erase`, `spartan_erase` and `fri_erase` prove that by `rfl`. The expanded
+figure unrolls each loop at the sizes the author picks.
+
 **Stages declare their claims as formulas, and security statements are about those claims.**
 `stage name inArgs inClaim outArgs outClaim body next` records the claim the stage consumes and
 the claim it produces. `Spec.inputProblem` and `Spec.outputProblem` are the languages those
@@ -117,11 +134,14 @@ verdict, and concludes `Spec.Sound` from per-round `RoundSound` (`sound_of_kit`,
 `rbrSound_of_kit`). A protocol written in the spec layer thus gets its soundness from the kit
 without a hand-written verifier.
 
-**One skeleton schema.** The exporter writes `arklib-protocol-skeleton/1` JSON and a `cryptocode`
-figure. The JSON has nested stages, rounds and branch cases. Each step carries its label, kind,
-owner, display name, printed type, formula syntax tree and stage claims, and any annotation text
-carries `"checked": false`. The figure comes in two forms: folded (one round per block, with the
-round variable `i`) and expanded. The Binary Jolt Book's book-graph reads the same schema.
+**One skeleton schema.** The exporter writes `arklib-protocol-skeleton/2` JSON and a `cryptocode`
+figure. The JSON has nested stages, loops and branch cases. A loop node carries its block name,
+round variable, count symbol, error annotation and one round's body. Each step carries its label,
+kind, owner, display name, printed type, formula syntax tree and stage claims, and any annotation
+text carries `"checked": false`. An index in a name is a numeral (`{"num": 0}`) or a symbol with
+an offset (`{"symbol": "i", "offset": 1}`). The figure comes in two forms: folded (one generic
+round per loop, the same for every count) and expanded (every round at given sizes). The Binary
+Jolt Book's book-graph reads the same schema.
 
 ## What the prototype proves
 
@@ -140,11 +160,13 @@ round variable `i`) and expanded. The Binary Jolt Book's book-graph reads the sa
 | Soundness and round-by-round soundness on the claims the figure shows: `Σ_{x ∈ D^n} p(x) = c` in, `p(r) = c_n` out | `sumcheckSpec_claimSound`, `sumcheckSpec_claimRBRSound` | `Claims.lean` |
 | Completeness on those claims: a true input claim makes every check pass and the output claim true | `sumcheckSpec_claimComplete`, `sumcheckSpec_contract` | `Claims.lean` |
 | Spartan (input oracles `Ã`, `B̃`, `C̃`, two stages reusing sum-check), FRI (halving domain, input oracle `f₀`) and a branching protocol: trees by `rfl`, accessors by label path, honest acceptance | `spartan_tree`, `fri_tree`, `branching_tree`, `*_verdict_isSome` | `Examples/*.lean` |
+| The JSON and the folded figure of sum-check, Spartan and FRI do not depend on the round counts | `sumcheck_erase`, `spartan_erase`, `fri_erase` | `Examples/*.lean` |
 
-## Limitations of the first prototype and how this record resolves them
+## Limitations of the prototype and how this record resolves them
 
-Each item names the first prototype's limitation, the decision, why, the alternatives rejected,
-and the evidence in the second prototype.
+Items 1 to 8 are the first prototype's limitations, and item 9 is the second prototype's. Each
+item names the limitation, the decision, why, the alternatives rejected, and the evidence in the
+current prototype.
 
 ### 1. Display text was not checked
 
@@ -168,7 +190,8 @@ has no semantics in Lean.
 **Evidence.** `Fml.tex_eq` proves that printing a formula and printing its erased syntax agree.
 `Fml.erase_toFO` proves that the erased syntax is the erasure of the typed first-order form.
 `#guard` tests fix the printed text of every example's checks. The generated sum-check check is
-`\sum_{a \in D} g_{i}(a) = c_{i}`.
+`\sum_{a \in D} g_{i}(a) = c_{i}` in the folded figure and `\sum_{a \in D} g_{1}(a) = c_{1}` in
+round 1 of the expanded one.
 
 **Gap.** That the exported tree evaluates like the formula (`FO.eval (toFO φ) = some (Fml.eval φ)`)
 is tested on the examples' formulas, not proved in general. A general proof relates a PHOAS term
@@ -227,7 +250,9 @@ work.
 component `m = v` enters case `v`. Inside a branch the accessor returns an `Option`, because the
 transcript type after the branch message depends on the message. When moves in one context share
 a base, the label adds the subscript: `tr⟦outer, v_B⟧`, `tr⟦"\\alpha_2"⟧`. With the base alone the
-accessor reads the first such move.
+accessor reads the first such move. A subscript is matched as the expanded figure prints it, with
+each enclosing round variable and each finished loop's count bound to its numeral: in FRI with
+`k = 2`, the final challenge `α_k` matches `"\\alpha_2"`.
 
 **Why the subscript form.** Spartan's row values `v_A`, `v_B`, `v_C` and FRI's last folding
 challenge share a base with other moves in their context, so a base alone cannot reach all of
@@ -241,7 +266,7 @@ whose message is 2 and `none` on one whose message is 1, both by `rfl`.
 
 ### 6. Figures could not show dependent shapes
 
-**Decision.** The skeleton is a tree with stage, round and branch nodes. `branch` records one
+**Decision.** The skeleton is a tree with stage, loop and branch nodes. `branch` records one
 sub-skeleton per case of a finite message type, and `branchOpaque` marks a shape-selecting message
 of infinite type.
 
@@ -273,16 +298,73 @@ are stage 3 work.
 
 | case | size | wall time |
 |---|---|---|
-| sum-check: tree by `rfl`, accessors | n = 8 / 32 / 128 | 2.21 s / 2.22 s / 2.30 s |
-| sum-check: skeleton export | n = 8 / 128 | 2.21 s / 2.21 s |
-| Spartan: tree, accessors, export | m = n = 4 / 8 | 2.29 s / 2.28 s |
-| FRI: tree, accessors, export | k = 4 / 32 | 2.23 s / 2.36 s |
+| sum-check: tree by `rfl`, accessors | n = 8 / 32 / 128 | 2.24 s / 2.26 s / 2.34 s |
+| sum-check: skeleton export | n = 8 / 128 | 2.26 s / 2.26 s |
+| Spartan: tree, accessors, export | m = n = 4 / 8 | 2.36 s / 2.33 s |
+| FRI: tree, accessors, export | k = 4 / 32 | 2.31 s / 2.41 s |
 
 About 1 s of each row is importing the library. Cost does not grow with the protocol's size: the
-tree agreement is `rfl` for every size, and the skeleton is computed without enumerating any
-domain, because a domain stores its elements behind a function. One limit remains: the accessor at
+tree agreement is `rfl` for every size, the exported skeleton holds each loop once, and the
+skeleton is computed without enumerating any domain, because a domain stores its elements behind a
+function. One limit remains: the accessor at
 round 127 of a 128-round sum-check exceeds Lean's default `maxRecDepth` of 512, and the bench file
 raises the limit for that definition.
+
+### 9. Loops were written out for one round count
+
+**Decision.** A loop is one skeleton node, `Skel.loop l n body rest`, generic in its count `n`.
+`l : Loop` names the block, the round variable (`i`), the count symbol (`n`) and the error
+annotation, and `body` is one round's skeleton. Names inside a round carry symbolic indices
+(`iv "g"` is `g_i`), and a name after the loop can use the count (`c_n`). `rounds` requires that a
+round's skeleton not depend on the round number (`hG`, by `rfl` by default). `Skel.erase` sets
+every count to 0. The JSON (schema `/2`) and the folded figure read the erased skeleton. The
+expanded figure unrolls each loop, binding the round variable to each round and the count after
+the loop. The description's skeleton index still unrolls the rounds (`Skel.unroll`), so accessors
+and tree agreement at concrete sizes work as before. Proofs state their round induction on
+`roundsFrom`, the rest of a loop from round `j`.
+
+**Why.** A paper draws one generic round with a variable index, and the reader instantiates it.
+With one skeleton per count, the JSON and the figure grew with `n`, and no single exported object
+described the protocol. Keeping the unrolled index in the description's type leaves accessors and
+the `rfl` tree agreements unchanged.
+
+**Rejected.**
+
+- *An unrolled skeleton per count* (the second prototype). Each exported file describes one
+  instance, and a reader cannot tell which parts are generic.
+- *Names that carry only an offset from the innermost round.* They cannot name a value after the
+  loop, such as `c_n`, or the round variable of an outer loop, such as FRI's query index `j`
+  inside the consistency loop over `i`.
+- *Dropping the unrolled index.* Accessors would then need symbolic rounds, which this version does
+  not have (see the gaps).
+
+**Evidence.** `sumcheck_erase`, `spartan_erase` and `fri_erase` prove by `rfl` that the erased
+skeleton is the same for all counts, and `Specs.Bench.Export128` checks that the sum-check JSON
+has the same size at 8 and 128 rounds. `#guard` tests fix the folded checks
+(`\sum_{a \in D} g_{i}(a) = c_{i}`), the expanded ones (`g_{1}` in round 1), Spartan's `c_m` and
+`c_n`, and the branching example's final check `p(r) = c_{m}` in each case. The FRI spec has three
+loops, one nested: folding over `i < k`, queries over `j < l`, and a consistency loop over `i < k`
+inside each query. On the generated page, a port of the printer reproduces every TeX string Lean
+exported (21 for sum-check, 160 for Spartan, 47 for FRI and 101 for the branching example).
+
+**Gaps.**
+
+- An accessor needs a numeral count and a numeral round. An accessor at a symbolic round
+  (`tr⟦sumcheck, i, g⟧` for a variable `i`) needs the loop's tree as a function of the round and a
+  transcript split at round `i`. `Transcript.split` and `Transcript.append` in
+  `ArkLib/Interaction/Transcript.lean` could provide the split.
+- Accessors into a branch inside a loop body are not supported.
+- Parameters other than counts print their values: sum-check's degree `d` appears as its value in
+  the error annotation (`2/|F|` in the example), so the JSON depends on `d`.
+- Printed types are annotation. A type that depends on a count or the round, such as the word
+  type `F^{2^{k-i}}` in FRI's folding loop, is written symbolically with `ty := …`, and the
+  expanded figure prints it symbolically too.
+- When hole types depend on the round, as in FRI's consistency loop, the author passes the round
+  skeleton explicitly (`G := checkSkel F ω k`), and Lean checks by evaluation that every round
+  has it.
+- `Skel.checks` lists a loop body's checks once.
+- The expanded figure binds a branch variable in each case, so `c_m` prints as `c_{2}` in the case
+  `m = 2`. The folded figure keeps `c_m`.
 
 ### Further gaps found while fixing the limitations
 
@@ -304,13 +386,15 @@ raises the limit for that definition.
   `completeness` in the classical model is not instantiated.
 - **The general evaluation theorem for exported syntax** (item 1) and **simp support for formula
   arguments** (item 4).
+- **Accessors at a symbolic round**, accessors into a branch inside a loop, and the other gaps of
+  item 9.
 
 ## Why
 
 **Readability.** Today's sum-check spreads one round over 12 files and 2,351 lines under
 `ArkLib/ProofSystem/Sumcheck/`: the tree, the claim with a proof field, the honest message, the
 prover fold and the verifier fold. Proofs reach moves by position (`tr.2.1`). The spec's round is
-six lines in protocol order, and the whole specification with its claims is 11 more. Its figure,
+six lines in protocol order, and the whole specification with its claims is 12 more. Its figure,
 claim-flow graph and timeline are generated from those lines.
 
 **Modularity.** Protocol-specific mathematics is 8–45% of each security proof today. The rest is
@@ -356,6 +440,7 @@ statement's languages.
 **Acceptance tests** for each stage that moves the prototype into `ArkLib/`:
 
 - Tree agreement by `rfl` with every hand-written tree a spec replaces.
+- The erased skeleton does not depend on the round counts, by `rfl`.
 - Honest-prover and verdict agreement for every size.
 - Accessor tests by label path, including inside branches.
 - No hand-written display text on checks, local values or claims; `#guard` tests on the printed

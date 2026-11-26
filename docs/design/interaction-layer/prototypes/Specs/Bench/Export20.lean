@@ -9,7 +9,7 @@ import Specs.Bench
 # Bench case: sum-check with 20 rounds, skeleton export
 
 The export of the skeleton of `sumcheckSpec ℚ 2 20 D` to JSON and to TeX. With
-`Specs.Bench.Export128` it shows how the export cost grows with the number of rounds (see
+`Specs.Bench.Export128` it shows that the export cost does not grow with the number of rounds (see
 `Specs.Bench`).
 -/
 

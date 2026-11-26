@@ -98,6 +98,7 @@ noncomputable def inClaim (ans : QueryImpl In.spec Id) :
   | _, _, .stageIn _ _ φ args _ _ _, env, _ => some ((φ.inst args).eval (askId env))
   | _, _, .stageOut .., _, _ => none
   | _, _, .mark _ rest, env, ℓ => rest.inClaim ans env ℓ
+  | _, _, .loop _ _ _ inner, env, ℓ => inner.inClaim ans env ℓ
 
 /-- The output claim of a description along a full transcript: the claim of the last stage that
 ends on the way, evaluated with the input oracles answered by `ans` and the oracle messages read
@@ -121,6 +122,7 @@ noncomputable def outClaim (ans : QueryImpl In.spec Id) :
   | _, _, .stageOut _ ψ args rest, tr, env, ℓ, _ =>
       rest.outClaim ans tr env ℓ (some ((ψ.inst args).eval (askId env)))
   | _, _, .mark _ rest, tr, env, ℓ, acc => rest.outClaim ans tr env ℓ acc
+  | _, _, .loop _ _ _ inner, tr, env, ℓ, acc => inner.outClaim ans tr env ℓ acc
 
 end Desc
 

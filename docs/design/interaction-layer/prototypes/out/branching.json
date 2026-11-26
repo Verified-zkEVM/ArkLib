@@ -1,5 +1,5 @@
 {"title": "Sum-check with a prover-chosen number of variables",
- "schema": "arklib-protocol-skeleton/1",
+ "schema": "arklib-protocol-skeleton/2",
  "name": "branching",
  "body":
  [{"type": "[4]",
@@ -17,7 +17,7 @@
        "kind": "move",
        "honest": {"text": "\\mathsf{poly}", "checked": false}},
       {"output":
-       {"tex": "p(r) = c_{0}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -27,8 +27,8 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}},
        "name": "sumcheck",
        "kind": "stage",
@@ -48,14 +48,85 @@
           {"op": "var",
            "name":
            {"tex": "c_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+            "sub": {"kind": "at", "index": {"num": 0}},
             "base": "c"}}]}},
-       "body": []},
+       "body":
+       [{"var": "i",
+         "kind": "loop",
+         "error": {"text": "2/|F|", "checked": false},
+         "count": "m",
+         "body":
+         [{"type": "\\mathbb{F}_{\\le 2}[X]",
+           "owner": "prover",
+           "note": null,
+           "name":
+           {"tex": "g_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
+            "base": "g"},
+           "move": "oracle",
+           "kind": "move",
+           "honest": {"text": "\\mathsf{proj}", "checked": false}},
+          {"note": null,
+           "label": "sum",
+           "kind": "check",
+           "formula":
+           {"tex": "\\sum_{a \\in D} g_{i}(a) = c_{i}",
+            "syntax":
+            {"op": "eq",
+             "args":
+             [{"var": {"tex": "a", "sub": null, "base": "a"},
+               "op": "sum",
+               "domain": "D",
+               "body":
+               {"oracle":
+                {"tex": "g_{i}",
+                 "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
+                 "base": "g"},
+                "op": "query",
+                "arg":
+                {"op": "var", "name": {"tex": "a", "sub": null, "base": "a"}}}},
+              {"op": "var",
+               "name":
+               {"tex": "c_{i}",
+                "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
+                "base": "c"}}]}}},
+          {"type": "\\mathbb{F}",
+           "owner": "verifier",
+           "note": null,
+           "name":
+           {"tex": "r_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
+            "base": "r"},
+           "move": "challenge",
+           "kind": "move",
+           "honest": null},
+          {"type": "\\mathbb{F}",
+           "note": null,
+           "name":
+           {"tex": "c_{i+1}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 1}},
+            "base": "c"},
+           "kind": "let",
+           "formula":
+           {"tex": "g_{i}(r_{i})",
+            "syntax":
+            {"oracle":
+             {"tex": "g_{i}",
+              "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
+              "base": "g"},
+             "op": "query",
+             "arg":
+             {"op": "var",
+              "name":
+              {"tex": "r_{i}",
+               "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
+               "base": "r"}}}}}],
+         "block": "sumcheck"}]},
       {"note": null,
        "label": "final",
        "kind": "check",
        "formula":
-       {"tex": "p(r) = c_{0}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -65,8 +136,8 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}}}]},
     {"value": "1",
      "body":
@@ -78,7 +149,7 @@
        "kind": "move",
        "honest": {"text": "\\mathsf{poly}", "checked": false}},
       {"output":
-       {"tex": "p(r) = c_{1}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -88,8 +159,8 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}},
        "name": "sumcheck",
        "kind": "stage",
@@ -109,21 +180,20 @@
           {"op": "var",
            "name":
            {"tex": "c_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+            "sub": {"kind": "at", "index": {"num": 0}},
             "base": "c"}}]}},
        "body":
-       [{"round": 0,
-         "kind": "round",
+       [{"var": "i",
+         "kind": "loop",
          "error": {"text": "2/|F|", "checked": false},
-         "countName": "n",
-         "count": 1,
+         "count": "m",
          "body":
          [{"type": "\\mathbb{F}_{\\le 2}[X]",
            "owner": "prover",
            "note": null,
            "name":
-           {"tex": "g_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "g_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
             "base": "g"},
            "move": "oracle",
            "kind": "move",
@@ -132,7 +202,7 @@
            "label": "sum",
            "kind": "check",
            "formula":
-           {"tex": "\\sum_{a \\in D} g_{0}(a) = c_{0}",
+           {"tex": "\\sum_{a \\in D} g_{i}(a) = c_{i}",
             "syntax":
             {"op": "eq",
              "args":
@@ -141,23 +211,23 @@
                "domain": "D",
                "body":
                {"oracle":
-                {"tex": "g_{0}",
-                 "sub": {"kind": "at", "index": {"round": 0}},
+                {"tex": "g_{i}",
+                 "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                  "base": "g"},
                 "op": "query",
                 "arg":
                 {"op": "var", "name": {"tex": "a", "sub": null, "base": "a"}}}},
               {"op": "var",
                "name":
-               {"tex": "c_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
+               {"tex": "c_{i}",
+                "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                 "base": "c"}}]}}},
           {"type": "\\mathbb{F}",
            "owner": "verifier",
            "note": null,
            "name":
-           {"tex": "r_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "r_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
             "base": "r"},
            "move": "challenge",
            "kind": "move",
@@ -165,30 +235,30 @@
           {"type": "\\mathbb{F}",
            "note": null,
            "name":
-           {"tex": "c_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
+           {"tex": "c_{i+1}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 1}},
             "base": "c"},
            "kind": "let",
            "formula":
-           {"tex": "g_{0}(r_{0})",
+           {"tex": "g_{i}(r_{i})",
             "syntax":
             {"oracle":
-             {"tex": "g_{0}",
-              "sub": {"kind": "at", "index": {"round": 0}},
+             {"tex": "g_{i}",
+              "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
               "base": "g"},
              "op": "query",
              "arg":
              {"op": "var",
               "name":
-              {"tex": "r_{0}",
-               "sub": {"kind": "at", "index": {"round": 0}},
+              {"tex": "r_{i}",
+               "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                "base": "r"}}}}}],
          "block": "sumcheck"}]},
       {"note": null,
        "label": "final",
        "kind": "check",
        "formula":
-       {"tex": "p(r) = c_{1}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -198,8 +268,8 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}}}]},
     {"value": "2",
      "body":
@@ -211,7 +281,7 @@
        "kind": "move",
        "honest": {"text": "\\mathsf{poly}", "checked": false}},
       {"output":
-       {"tex": "p(r) = c_{2}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -221,8 +291,8 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{2}",
-            "sub": {"kind": "at", "index": {"round": 2}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}},
        "name": "sumcheck",
        "kind": "stage",
@@ -242,21 +312,20 @@
           {"op": "var",
            "name":
            {"tex": "c_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+            "sub": {"kind": "at", "index": {"num": 0}},
             "base": "c"}}]}},
        "body":
-       [{"round": 0,
-         "kind": "round",
+       [{"var": "i",
+         "kind": "loop",
          "error": {"text": "2/|F|", "checked": false},
-         "countName": "n",
-         "count": 2,
+         "count": "m",
          "body":
          [{"type": "\\mathbb{F}_{\\le 2}[X]",
            "owner": "prover",
            "note": null,
            "name":
-           {"tex": "g_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "g_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
             "base": "g"},
            "move": "oracle",
            "kind": "move",
@@ -265,7 +334,7 @@
            "label": "sum",
            "kind": "check",
            "formula":
-           {"tex": "\\sum_{a \\in D} g_{0}(a) = c_{0}",
+           {"tex": "\\sum_{a \\in D} g_{i}(a) = c_{i}",
             "syntax":
             {"op": "eq",
              "args":
@@ -274,23 +343,23 @@
                "domain": "D",
                "body":
                {"oracle":
-                {"tex": "g_{0}",
-                 "sub": {"kind": "at", "index": {"round": 0}},
+                {"tex": "g_{i}",
+                 "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                  "base": "g"},
                 "op": "query",
                 "arg":
                 {"op": "var", "name": {"tex": "a", "sub": null, "base": "a"}}}},
               {"op": "var",
                "name":
-               {"tex": "c_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
+               {"tex": "c_{i}",
+                "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                 "base": "c"}}]}}},
           {"type": "\\mathbb{F}",
            "owner": "verifier",
            "note": null,
            "name":
-           {"tex": "r_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "r_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
             "base": "r"},
            "move": "challenge",
            "kind": "move",
@@ -298,102 +367,30 @@
           {"type": "\\mathbb{F}",
            "note": null,
            "name":
-           {"tex": "c_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
+           {"tex": "c_{i+1}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 1}},
             "base": "c"},
            "kind": "let",
            "formula":
-           {"tex": "g_{0}(r_{0})",
+           {"tex": "g_{i}(r_{i})",
             "syntax":
             {"oracle":
-             {"tex": "g_{0}",
-              "sub": {"kind": "at", "index": {"round": 0}},
+             {"tex": "g_{i}",
+              "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
               "base": "g"},
              "op": "query",
              "arg":
              {"op": "var",
               "name":
-              {"tex": "r_{0}",
-               "sub": {"kind": "at", "index": {"round": 0}},
-               "base": "r"}}}}}],
-         "block": "sumcheck"},
-        {"round": 1,
-         "kind": "round",
-         "error": {"text": "2/|F|", "checked": false},
-         "countName": "n",
-         "count": 2,
-         "body":
-         [{"type": "\\mathbb{F}_{\\le 2}[X]",
-           "owner": "prover",
-           "note": null,
-           "name":
-           {"tex": "g_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
-            "base": "g"},
-           "move": "oracle",
-           "kind": "move",
-           "honest": {"text": "\\mathsf{proj}", "checked": false}},
-          {"note": null,
-           "label": "sum",
-           "kind": "check",
-           "formula":
-           {"tex": "\\sum_{a \\in D} g_{1}(a) = c_{1}",
-            "syntax":
-            {"op": "eq",
-             "args":
-             [{"var": {"tex": "a", "sub": null, "base": "a"},
-               "op": "sum",
-               "domain": "D",
-               "body":
-               {"oracle":
-                {"tex": "g_{1}",
-                 "sub": {"kind": "at", "index": {"round": 1}},
-                 "base": "g"},
-                "op": "query",
-                "arg":
-                {"op": "var", "name": {"tex": "a", "sub": null, "base": "a"}}}},
-              {"op": "var",
-               "name":
-               {"tex": "c_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "c"}}]}}},
-          {"type": "\\mathbb{F}",
-           "owner": "verifier",
-           "note": null,
-           "name":
-           {"tex": "r_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
-            "base": "r"},
-           "move": "challenge",
-           "kind": "move",
-           "honest": null},
-          {"type": "\\mathbb{F}",
-           "note": null,
-           "name":
-           {"tex": "c_{2}",
-            "sub": {"kind": "at", "index": {"round": 2}},
-            "base": "c"},
-           "kind": "let",
-           "formula":
-           {"tex": "g_{1}(r_{1})",
-            "syntax":
-            {"oracle":
-             {"tex": "g_{1}",
-              "sub": {"kind": "at", "index": {"round": 1}},
-              "base": "g"},
-             "op": "query",
-             "arg":
-             {"op": "var",
-              "name":
-              {"tex": "r_{1}",
-               "sub": {"kind": "at", "index": {"round": 1}},
+              {"tex": "r_{i}",
+               "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                "base": "r"}}}}}],
          "block": "sumcheck"}]},
       {"note": null,
        "label": "final",
        "kind": "check",
        "formula":
-       {"tex": "p(r) = c_{2}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -403,8 +400,8 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{2}",
-            "sub": {"kind": "at", "index": {"round": 2}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}}}]},
     {"value": "3",
      "body":
@@ -416,7 +413,7 @@
        "kind": "move",
        "honest": {"text": "\\mathsf{poly}", "checked": false}},
       {"output":
-       {"tex": "p(r) = c_{3}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -426,8 +423,8 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{3}",
-            "sub": {"kind": "at", "index": {"round": 3}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}},
        "name": "sumcheck",
        "kind": "stage",
@@ -447,21 +444,20 @@
           {"op": "var",
            "name":
            {"tex": "c_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+            "sub": {"kind": "at", "index": {"num": 0}},
             "base": "c"}}]}},
        "body":
-       [{"round": 0,
-         "kind": "round",
+       [{"var": "i",
+         "kind": "loop",
          "error": {"text": "2/|F|", "checked": false},
-         "countName": "n",
-         "count": 3,
+         "count": "m",
          "body":
          [{"type": "\\mathbb{F}_{\\le 2}[X]",
            "owner": "prover",
            "note": null,
            "name":
-           {"tex": "g_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "g_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
             "base": "g"},
            "move": "oracle",
            "kind": "move",
@@ -470,7 +466,7 @@
            "label": "sum",
            "kind": "check",
            "formula":
-           {"tex": "\\sum_{a \\in D} g_{0}(a) = c_{0}",
+           {"tex": "\\sum_{a \\in D} g_{i}(a) = c_{i}",
             "syntax":
             {"op": "eq",
              "args":
@@ -479,23 +475,23 @@
                "domain": "D",
                "body":
                {"oracle":
-                {"tex": "g_{0}",
-                 "sub": {"kind": "at", "index": {"round": 0}},
+                {"tex": "g_{i}",
+                 "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                  "base": "g"},
                 "op": "query",
                 "arg":
                 {"op": "var", "name": {"tex": "a", "sub": null, "base": "a"}}}},
               {"op": "var",
                "name":
-               {"tex": "c_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
+               {"tex": "c_{i}",
+                "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                 "base": "c"}}]}}},
           {"type": "\\mathbb{F}",
            "owner": "verifier",
            "note": null,
            "name":
-           {"tex": "r_{0}",
-            "sub": {"kind": "at", "index": {"round": 0}},
+           {"tex": "r_{i}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
             "base": "r"},
            "move": "challenge",
            "kind": "move",
@@ -503,174 +499,30 @@
           {"type": "\\mathbb{F}",
            "note": null,
            "name":
-           {"tex": "c_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
+           {"tex": "c_{i+1}",
+            "sub": {"kind": "at", "index": {"symbol": "i", "offset": 1}},
             "base": "c"},
            "kind": "let",
            "formula":
-           {"tex": "g_{0}(r_{0})",
+           {"tex": "g_{i}(r_{i})",
             "syntax":
             {"oracle":
-             {"tex": "g_{0}",
-              "sub": {"kind": "at", "index": {"round": 0}},
+             {"tex": "g_{i}",
+              "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
               "base": "g"},
              "op": "query",
              "arg":
              {"op": "var",
               "name":
-              {"tex": "r_{0}",
-               "sub": {"kind": "at", "index": {"round": 0}},
-               "base": "r"}}}}}],
-         "block": "sumcheck"},
-        {"round": 1,
-         "kind": "round",
-         "error": {"text": "2/|F|", "checked": false},
-         "countName": "n",
-         "count": 3,
-         "body":
-         [{"type": "\\mathbb{F}_{\\le 2}[X]",
-           "owner": "prover",
-           "note": null,
-           "name":
-           {"tex": "g_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
-            "base": "g"},
-           "move": "oracle",
-           "kind": "move",
-           "honest": {"text": "\\mathsf{proj}", "checked": false}},
-          {"note": null,
-           "label": "sum",
-           "kind": "check",
-           "formula":
-           {"tex": "\\sum_{a \\in D} g_{1}(a) = c_{1}",
-            "syntax":
-            {"op": "eq",
-             "args":
-             [{"var": {"tex": "a", "sub": null, "base": "a"},
-               "op": "sum",
-               "domain": "D",
-               "body":
-               {"oracle":
-                {"tex": "g_{1}",
-                 "sub": {"kind": "at", "index": {"round": 1}},
-                 "base": "g"},
-                "op": "query",
-                "arg":
-                {"op": "var", "name": {"tex": "a", "sub": null, "base": "a"}}}},
-              {"op": "var",
-               "name":
-               {"tex": "c_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "c"}}]}}},
-          {"type": "\\mathbb{F}",
-           "owner": "verifier",
-           "note": null,
-           "name":
-           {"tex": "r_{1}",
-            "sub": {"kind": "at", "index": {"round": 1}},
-            "base": "r"},
-           "move": "challenge",
-           "kind": "move",
-           "honest": null},
-          {"type": "\\mathbb{F}",
-           "note": null,
-           "name":
-           {"tex": "c_{2}",
-            "sub": {"kind": "at", "index": {"round": 2}},
-            "base": "c"},
-           "kind": "let",
-           "formula":
-           {"tex": "g_{1}(r_{1})",
-            "syntax":
-            {"oracle":
-             {"tex": "g_{1}",
-              "sub": {"kind": "at", "index": {"round": 1}},
-              "base": "g"},
-             "op": "query",
-             "arg":
-             {"op": "var",
-              "name":
-              {"tex": "r_{1}",
-               "sub": {"kind": "at", "index": {"round": 1}},
-               "base": "r"}}}}}],
-         "block": "sumcheck"},
-        {"round": 2,
-         "kind": "round",
-         "error": {"text": "2/|F|", "checked": false},
-         "countName": "n",
-         "count": 3,
-         "body":
-         [{"type": "\\mathbb{F}_{\\le 2}[X]",
-           "owner": "prover",
-           "note": null,
-           "name":
-           {"tex": "g_{2}",
-            "sub": {"kind": "at", "index": {"round": 2}},
-            "base": "g"},
-           "move": "oracle",
-           "kind": "move",
-           "honest": {"text": "\\mathsf{proj}", "checked": false}},
-          {"note": null,
-           "label": "sum",
-           "kind": "check",
-           "formula":
-           {"tex": "\\sum_{a \\in D} g_{2}(a) = c_{2}",
-            "syntax":
-            {"op": "eq",
-             "args":
-             [{"var": {"tex": "a", "sub": null, "base": "a"},
-               "op": "sum",
-               "domain": "D",
-               "body":
-               {"oracle":
-                {"tex": "g_{2}",
-                 "sub": {"kind": "at", "index": {"round": 2}},
-                 "base": "g"},
-                "op": "query",
-                "arg":
-                {"op": "var", "name": {"tex": "a", "sub": null, "base": "a"}}}},
-              {"op": "var",
-               "name":
-               {"tex": "c_{2}",
-                "sub": {"kind": "at", "index": {"round": 2}},
-                "base": "c"}}]}}},
-          {"type": "\\mathbb{F}",
-           "owner": "verifier",
-           "note": null,
-           "name":
-           {"tex": "r_{2}",
-            "sub": {"kind": "at", "index": {"round": 2}},
-            "base": "r"},
-           "move": "challenge",
-           "kind": "move",
-           "honest": null},
-          {"type": "\\mathbb{F}",
-           "note": null,
-           "name":
-           {"tex": "c_{3}",
-            "sub": {"kind": "at", "index": {"round": 3}},
-            "base": "c"},
-           "kind": "let",
-           "formula":
-           {"tex": "g_{2}(r_{2})",
-            "syntax":
-            {"oracle":
-             {"tex": "g_{2}",
-              "sub": {"kind": "at", "index": {"round": 2}},
-              "base": "g"},
-             "op": "query",
-             "arg":
-             {"op": "var",
-              "name":
-              {"tex": "r_{2}",
-               "sub": {"kind": "at", "index": {"round": 2}},
+              {"tex": "r_{i}",
+               "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                "base": "r"}}}}}],
          "block": "sumcheck"}]},
       {"note": null,
        "label": "final",
        "kind": "check",
        "formula":
-       {"tex": "p(r) = c_{3}",
+       {"tex": "p(r) = c_{m}",
         "syntax":
         {"op": "eq",
          "args":
@@ -680,6 +532,6 @@
            {"op": "var", "name": {"tex": "r", "sub": null, "base": "r"}}},
           {"op": "var",
            "name":
-           {"tex": "c_{3}",
-            "sub": {"kind": "at", "index": {"round": 3}},
+           {"tex": "c_{m}",
+            "sub": {"kind": "at", "index": {"symbol": "m", "offset": 0}},
             "base": "c"}}]}}}]}]}]}

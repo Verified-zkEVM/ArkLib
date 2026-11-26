@@ -12,31 +12,31 @@ import Lean.Data.Json
 This module turns the skeleton of a specification into data and into a figure. The examples call
 `writeExample` from their `main`.
 
-* `Skel.toJson` writes the skeleton as JSON with schema `arklib-protocol-skeleton/1`.
-* `Skel.toTex` writes a `cryptocode` figure, folded (one round of each block, with round variable
-  `i`) or expanded (every round, with its number).
+* `Skel.toJson` writes the skeleton as JSON with schema `arklib-protocol-skeleton/2`.
+* `Skel.toTex` writes a `cryptocode` figure, folded (each loop as one generic round over its round
+  variable and count symbol) or expanded (each loop unrolled with its count, every symbol printed
+  as its value).
 * `writeExample dir name title ks` writes `name.json`, `name.tex` (folded) and
   `name-expanded.tex`.
 
 ## The JSON schema
 
 ```
-{ "schema": "arklib-protocol-skeleton/1", "name", "title", "body": [node] }
+{ "schema": "arklib-protocol-skeleton/2", "name", "title", "body": [node] }
 node     = { "kind": "move", "move": "message" | "oracle" | "challenge",
              "owner": "prover" | "verifier", "name": name, "type", "honest": note, "note": note }
          | { "kind": "input", "name": name, "type" }
          | { "kind": "check", "label", "formula": formula, "note": note }
          | { "kind": "let", "name": name, "type", "formula": formula, "note": note }
          | { "kind": "stage", "name", "input": formula, "output": formula, "body": [node] }
-         | { "kind": "round", "block", "round", "count", "countName", "error": note,
-             "body": [node] }
+         | { "kind": "loop", "block", "var", "count", "error": note, "body": [node] }
          | { "kind": "branch", "on": name, "type", "honest": note,
              "cases": [ { "value", "body": [node] } ] }
          | { "kind": "opaque", "on": name, "type", "honest": note }
-         | { "kind": "end", "of": "stage" | "round" }
+         | { "kind": "end", "of": "stage" }
 name     = { "base", "sub": null | { "kind": "at" | "below", "index": index }
                            | { "kind": "sym", "symbol" }, "tex" }
-index    = { "round": k } | { "num": k } | { "count": k, "symbol" }
+index    = { "num": k } | { "symbol", "offset" }
 formula  = { "syntax": syn, "tex" }
 syn      = { "op": "var", "name": name } | { "op": "lit", "tex" }
          | { "op": "add" | "sub" | "mul" | "eq" | "and" | "neg", "args": [syn] }
@@ -47,32 +47,30 @@ syn      = { "op": "var", "name": name } | { "op": "lit", "tex" }
 note     = null | { "text", "checked": false }
 ```
 
-A `round` index is the absolute round of its block, so a consumer can render it folded or
-expanded as `Name.tex` does. Every `"tex"` field is the expanded rendering.
+A `loop` node is one generic round: its `body` is written over the round variable `var` (`i`) and
+its count's symbol `count` (`n`), and the nodes after it follow the loop. An index is a number or a
+symbol with an offset (`i+1`, `n`). Every `"tex"` field is the folded rendering, with symbols.
+Version 1 unrolled every round with its number, so it existed only for one round count.
 
 ## Design choices
 
-* The JSON nests stages and rounds, while the skeleton in `Specs.Core` keeps flat begin and end
-  markers. *Why:* a consumer reads a stage or a round as one node with its body, and the skeleton
-  stays a simple list that `simp` and `rfl` reduce.
+* **The JSON and the folded figure read only the erased skeleton** (`Skel.erase`, every count set
+  to `0`). *Why:* each example proves by `rfl` that its erased skeleton does not depend on the
+  round counts, so these two exports describe the protocol for every count. The expanded figure is
+  an instance: it reads each loop's count and prints every symbol as its value.
+* The JSON nests stages and loops, while the skeleton in `Specs.Core` keeps flat stage markers.
+  *Why:* a consumer reads a stage as one node with its body, and the skeleton stays a list that
+  `simp` and `rfl` reduce. A loop is already one node with its body.
 * A branch ends the sequence it occurs in, and each case continues the rest of the protocol. An
-  end marker inside a case whose stage or round opened before the branch stays a node of kind
-  `end`. *Why:* the case's skeleton is the rest of the protocol, so the stage or round closes in
-  every case, and the export does not guess where.
-* Every annotation (a move's note, the name of an honest function, a block's error) exports as
+  end marker inside a case whose stage opened before the branch stays a node of kind `end`.
+  *Why:* the case's skeleton is the rest of the protocol, so the stage closes in every case, and
+  the export does not guess where.
+* Every annotation (a move's note, the name of an honest function, a loop's error) exports as
   `{"text": …, "checked": false}` and prints with `\specannot`, which the figure defines in gray.
   *Why:* nothing in Lean checks this text, unlike the formulas of checks, local values and claims,
   which come from the checked term.
-* The folded figure prints the first round of each block, with the round as `i` and the round
-  count as its symbol, and skips the later rounds of that block. *Why:* a paper shows one generic
-  round, and the names in the skeleton carry the absolute round, so `Name.tex` prints `g_i`,
-  `c_{i+1}` and, after the block, `c_n`.
-* The folded figure identifies a block by its stage path and its name. *Why:* two stages may run
-  the same block (Spartan's `outer` and `inner` both run `sumcheck`), and each stage's rounds
-  belong in the figure.
 * A stage prints its input claim where it opens and its output claim where it closes. *Why:* the
-  output claim names values of the block's last round, which the folded figure prints with the
-  round count only after the block.
+  output claim names values after the loop (`c_n`), which print with the count's symbol.
 -/
 
 set_option linter.hashCommand false
@@ -82,11 +80,13 @@ open Lean (Json)
 
 /-! ## JSON -/
 
-/-- An index as JSON: a round of a block or a fixed number. -/
+/-- An index as JSON: a fixed number, or a symbol with an offset. -/
 def Ix.toJson : Ix → Json
-  | .rnd k => Json.mkObj [("round", Lean.toJson k)]
   | .num k => Json.mkObj [("num", Lean.toJson k)]
-  | .count k sym => Json.mkObj [("count", Lean.toJson k), ("symbol", sym)]
+  | .var v off => Json.mkObj [("symbol", v), ("offset", Lean.toJson off)]
+
+/-- The mode of the folded figure and of the JSON's TeX: every symbol prints as itself. -/
+def Mode.symbolic : Mode := { folded := true }
 
 /-- A subscript as JSON. -/
 def Subscript.toJson : Subscript → Json
@@ -95,9 +95,9 @@ def Subscript.toJson : Subscript → Json
   | .below e => Json.mkObj [("kind", "below"), ("index", e.toJson)]
   | .sym s => Json.mkObj [("kind", "sym"), ("symbol", s)]
 
-/-- A name as JSON, with its expanded TeX. -/
+/-- A name as JSON, with its folded TeX. -/
 def Name.toJson (nm : Name) : Json :=
-  Json.mkObj [("base", nm.base), ("sub", nm.sub.toJson), ("tex", nm.tex Mode.expanded)]
+  Json.mkObj [("base", nm.base), ("sub", nm.sub.toJson), ("tex", nm.tex Mode.symbolic)]
 
 /-- The JSON name of an operation. -/
 def BinOp.name : BinOp → String
@@ -122,9 +122,9 @@ def Syn.toJson : Syn → Json
       ("body", body.toJson)]
   | .index f i => Json.mkObj [("op", "index"), ("args", Json.arr #[f.toJson, i.toJson])]
 
-/-- A formula as JSON: its syntax tree and its expanded TeX. -/
+/-- A formula as JSON: its syntax tree and its folded TeX. -/
 def Syn.toFormulaJson (φ : Syn) : Json :=
-  Json.mkObj [("syntax", φ.toJson), ("tex", φ.tex Mode.expanded)]
+  Json.mkObj [("syntax", φ.toJson), ("tex", φ.tex Mode.symbolic)]
 
 /-- Annotation text as JSON. Nothing checks it, so it carries `"checked": false`. Empty text is
 `null`. -/
@@ -152,13 +152,17 @@ def Item.toJson : Item → Json
       ("formula", φ.toFormulaJson), ("note", annotationJson note)]
   | .let_ nm ty φ note => Json.mkObj [("kind", "let"), ("name", nm.toJson), ("type", ty),
       ("formula", φ.toFormulaJson), ("note", annotationJson note)]
-  | .beginRound b i count cn err => Json.mkObj [("kind", "round"), ("block", b),
-      ("round", Lean.toJson i), ("count", Lean.toJson count), ("countName", cn),
-      ("error", annotationJson err)]
+  | .beginRound l j => Json.mkObj [("kind", "round"), ("block", l.block),
+      ("round", Lean.toJson j)]
   | .endRound => Json.mkObj [("kind", "end"), ("of", "round")]
   | .beginStage name φ ψ => Json.mkObj [("kind", "stage"), ("name", name),
       ("input", φ.toFormulaJson), ("output", ψ.toFormulaJson)]
   | .endStage => Json.mkObj [("kind", "end"), ("of", "stage")]
+
+/-- A loop's display data as the fields of its JSON node. -/
+def Loop.toJson (l : Loop) : Json :=
+  Json.mkObj [("kind", "loop"), ("block", l.block), ("var", l.var), ("count", l.count),
+    ("error", annotationJson l.error)]
 
 /-- An open stage or round while the export nests the items: its node and its children so far.
 The bottom frame of a stack is the root, with node `null`. -/
@@ -212,6 +216,8 @@ def Skel.nodes (stack : List Frame) : Skel → Array Json
       ("cases", Json.arr (Skel.casesNodes cases).toArray)]) stack)
   | .opaque nm ty hn => Frame.finish (Frame.add (Json.mkObj [("kind", "opaque"),
       ("on", nm.toJson), ("type", ty), ("honest", annotationJson hn)]) stack)
+  | .loop l _ body rest =>
+    rest.nodes (Frame.add (l.toJson.setObjVal! "body" (Json.arr (body.nodes [Frame.root]))) stack)
 
 /-- The cases of a branch as JSON, each with the nodes of its skeleton. -/
 def Skel.casesNodes : List (String × Skel) → List Json
@@ -220,10 +226,10 @@ def Skel.casesNodes : List (String × Skel) → List Json
     Json.mkObj [("value", v), ("body", Json.arr (k.nodes [Frame.root]))] :: Skel.casesNodes cs
 end
 
-/-- The skeleton as JSON with schema `arklib-protocol-skeleton/1`. -/
+/-- The skeleton as JSON with schema `arklib-protocol-skeleton/2`, from the erased skeleton. -/
 def Skel.toJson (name title : String) (ks : Skel) : Json :=
-  Json.mkObj [("schema", "arklib-protocol-skeleton/1"), ("name", name), ("title", title),
-    ("body", Json.arr (ks.nodes [Frame.root]))]
+  Json.mkObj [("schema", "arklib-protocol-skeleton/2"), ("name", name), ("title", title),
+    ("body", Json.arr (ks.erase.nodes [Frame.root]))]
 
 /-! ## The figure -/
 
@@ -231,13 +237,8 @@ def Skel.toJson (name title : String) (ks : Skel) : Json :=
 structure TexState where
   /-- The mode that names render in. -/
   mode : Mode
-  /-- The blocks whose first round the folded figure already shows, each as its stage path and
-  name (`outer/sumcheck`). -/
-  shown : List String := []
-  /-- The depth of skipped rounds: positive while the folded figure skips a round. -/
-  skip : ℕ := 0
-  /-- The displayed round outside each open round, to restore at its end. -/
-  rounds : List (Option ℕ) := []
+  /-- The modes outside each open round marker, to restore at its end. -/
+  saved : List Mode := []
   /-- The open stages, with their output claims. -/
   stages : List (String × Syn) := []
   /-- Divisions that open before the next line. -/
@@ -275,49 +276,44 @@ def moveLine (m : Mode) (k : MoveKind) (nm : Name) (ty hn note : String) : Strin
         "} \\< "
     | .challenge => " \\< \\sendmessageleft*{" ++ n ++ "} \\< " ++ n ++ " \\sample " ++ ty) note
 
+/-- The division that opens one round of the loop `l`: the generic round in the folded figure,
+round `j` in the expanded one. -/
+def roundDivision (l : Loop) (folded : Bool) (j : ℕ) : String :=
+  if folded then
+    let err := if l.error.isEmpty then "" else "; error $" ++ texAnnot l.error ++ "$"
+    "\\textsf{" ++ l.block ++ "}: round $" ++ l.var ++ "$ of $" ++ l.count ++ "$" ++ err
+  else "\\textsf{" ++ l.block ++ "}: round " ++ toString j
+
 /-- Process one item. -/
 def item (st : TexState) (it : Item) : TexState :=
-  if st.skip > 0 then
-    match it with
-    | .beginRound .. => { st with skip := st.skip + 1 }
-    | .endRound => { st with skip := st.skip - 1 }
-    | _ => st
-  else
-    let m := st.mode
-    match it with
-    | .move k nm ty hn note => st.emit (moveLine m k nm ty hn note)
-    | .input nm ty =>
-      st.emit (" \\< \\< \\text{input oracle } [\\![" ++ nm.tex m ++ "]\\!] \\in " ++ ty)
-    | .check _ φ note => st.emit (withNote (" \\< \\< \\text{check } " ++ φ.tex m) note)
-    | .let_ nm _ φ note => st.emit (withNote (" \\< \\< " ++ nm.tex m ++ " := " ++ φ.tex m) note)
-    | .beginRound b i count cn err =>
-      if m.folded then
-        let key := String.intercalate "/" ((st.stages.map (·.1)).reverse ++ [b])
-        if st.shown.contains key then { st with skip := 1 }
-        else
-          let err := if err.isEmpty then "" else "; error $" ++ texAnnot err ++ "$"
-          let st := st.divide ("\\textsf{" ++ b ++ "}: round $" ++ m.var ++ "$ of $" ++ cn ++
-            "$" ++ err)
-          { st with shown := key :: st.shown, rounds := m.round :: st.rounds,
-                    mode := { m with round := some i, counts := (count, cn) :: m.counts } }
-      else
-        let st := st.divide ("\\textsf{" ++ b ++ "}: round " ++ toString i)
-        { st with rounds := m.round :: st.rounds }
-    | .endRound =>
-      match st.rounds with
-      | r :: rs => { st with rounds := rs, mode := { m with round := r } }
-      | [] => st
-    | .beginStage name φ ψ =>
-      { st.divide ("stage \\textsf{" ++ name ++ "}: $" ++ φ.tex m ++ "$") with
-        stages := (name, ψ) :: st.stages }
-    | .endStage =>
-      match st.stages with
-      | (name, ψ) :: ss =>
-        { st.divide ("end of stage \\textsf{" ++ name ++ "}: $" ++ ψ.tex m ++ "$") with
-          stages := ss }
-      | [] => st
+  let m := st.mode
+  match it with
+  | .move k nm ty hn note => st.emit (moveLine m k nm ty hn note)
+  | .input nm ty =>
+    st.emit (" \\< \\< \\text{input oracle } [\\![" ++ nm.tex m ++ "]\\!] \\in " ++ ty)
+  | .check _ φ note => st.emit (withNote (" \\< \\< \\text{check } " ++ φ.tex m) note)
+  | .let_ nm _ φ note => st.emit (withNote (" \\< \\< " ++ nm.tex m ++ " := " ++ φ.tex m) note)
+  | .beginRound l j =>
+    let st := st.divide (roundDivision l m.folded j)
+    { st with saved := m :: st.saved, mode := m.bind l.var j }
+  | .endRound =>
+    match st.saved with
+    | m' :: ms => { st with saved := ms, mode := m' }
+    | [] => st
+  | .beginStage name φ ψ =>
+    { st.divide ("stage \\textsf{" ++ name ++ "}: $" ++ φ.tex m ++ "$") with
+      stages := (name, ψ) :: st.stages }
+  | .endStage =>
+    match st.stages with
+    | (name, ψ) :: ss =>
+      { st.divide ("end of stage \\textsf{" ++ name ++ "}: $" ++ ψ.tex m ++ "$") with
+        stages := ss }
+    | [] => st
 
 end TexState
+
+/-! A loop prints its body once in the folded figure and once per round, with the round variable
+bound, in the expanded one. After the loop its count stays bound, so `c_n` prints as `c_3`. -/
 
 mutual
 /-- Walk a skeleton for the figure. -/
@@ -329,6 +325,19 @@ def Skel.texGo (st : TexState) : Skel → TexState
   | .opaque nm ty hn =>
     (st.emit (TexState.moveLine st.mode .message nm ty hn "")).emit
       (" \\< \\< \\text{the rest depends on } " ++ nm.tex st.mode)
+  | .loop l n body rest =>
+    let m := st.mode
+    let st :=
+      if m.folded then
+        let st := body.texGo (st.divide (TexState.roundDivision l true 0))
+        { st with mode := m }
+      else
+        let m := m.bind l.count n
+        (List.range n).foldl (fun st j =>
+          let st := st.divide (TexState.roundDivision l false j)
+          let st := body.texGo { st with mode := m.bind l.var j }
+          { st with mode := m }) { st with mode := m }
+    rest.texGo (st.divide ("end of loop \\textsf{" ++ l.block ++ "}"))
 
 /-- Walk the cases of a branch on `nm`, each from the state at the branch. -/
 def Skel.texCases (nm : Name) (st : TexState) : List (String × Skel) → TexState
@@ -338,10 +347,12 @@ def Skel.texCases (nm : Name) (st : TexState) : List (String × Skel) → TexSta
     Skel.texCases nm { st with lines := st'.lines } cs
 end
 
-/-- The `cryptocode` figure of a skeleton, folded or expanded. A dotted division opens each
-stage, round and case. `cryptocode` needs `\pclb` instead of `\\` before a division. -/
+/-- The `cryptocode` figure of a skeleton, folded (from the erased skeleton) or expanded. A
+dotted division opens each stage, round and case. `cryptocode` needs `\pclb` instead of `\\`
+before a division. -/
 def Skel.toTex (title : String) (folded : Bool) (ks : Skel) : String :=
-  let st := ks.texGo { mode := { folded := folded } }
+  let st := if folded then ks.erase.texGo { mode := Mode.symbolic }
+    else ks.texGo { mode := Mode.expanded }
   let lines := #[(none, "\\textbf{Prover} \\< \\< \\textbf{Verifier}")] ++ st.lines
   let body := (List.range lines.size).map fun k =>
     let (div, line) := lines[k]!
@@ -356,7 +367,7 @@ def Skel.toTex (title : String) (folded : Bool) (ks : Skel) : String :=
     "\\providecommand{\\specannot}[1]{\\textcolor{gray}{#1}}\n" ++
     "\\begin{figure}\n\\centering\n\\procedure{" ++ title ++ "}{%\n" ++
     String.intercalate "\n" body ++
-    "\n}\n\\caption{" ++ title ++ (if folded then ", one round of each block" else "") ++
+    "\n}\n\\caption{" ++ title ++ (if folded then ", one generic round of each loop" else "") ++
     ", generated from the skeleton. Gray text is annotation that Lean does not check.}\n" ++
     "\\end{figure}\n"
 
@@ -369,25 +380,22 @@ def writeExample (dir : System.FilePath) (name title : String) (ks : Skel) : IO 
 
 /-! ## Tests -/
 
-/-- A test skeleton: a stage with a two-round block of one oracle message, one challenge and one
+/-- A test skeleton: a stage with a two-round loop of one oracle message, one challenge and one
 check, with a note on the challenge. -/
 private def testSkel : Skel :=
-  let round (i : ℕ) (rest : Skel) : Skel :=
-    .cons (.beginRound "loop" i 2 "n" "1/|F|") <|
-    .cons (.move .oracle (ix "g" i) "R[X]" "\\mathsf{f}" "") <|
-    .cons (.move .challenge (ix "r" i) "R" "" "uniform") <|
-    .cons (.check "eq" (.bin .eq (.query (ix "g" i) (.var (ix "r" i))) (.var (ix "c" i))) "") <|
-    .cons .endRound rest
-  .cons (.beginStage "s" (.var (ix "c" 0)) (.var (ix "c" 2))) <|
-    round 0 <| round 1 <| .cons .endStage .done
+  .cons (.beginStage "s" (.var (ix "c" 0)) (.var (iv "c" (v := "n")))) <|
+  .loop { block := "loop", error := "1/|F|" } 2
+    (.cons (.move .oracle (iv "g") "R[X]" "\\mathsf{f}" "") <|
+     .cons (.move .challenge (iv "r") "R" "" "uniform") <|
+     .cons (.check "eq" (.bin .eq (.query (iv "g") (.var (iv "r"))) (.var (iv "c"))) "") .done) <|
+  .cons .endStage .done
 
-/-- Two stages that run the same one-round block `loop`. -/
+/-- Two stages that run the same one-round loop `loop`. -/
 private def testTwoStages : Skel :=
   let stage (s : String) (rest : Skel) : Skel :=
-    .cons (.beginStage s (.var (ix "c" 0)) (.var (ix "c" 1))) <|
-    .cons (.beginRound "loop" 0 1 "n" "") <|
-    .cons (.move .challenge (ix "r" 0) "R" "" "") <|
-    .cons .endRound <| .cons .endStage rest
+    .cons (.beginStage s (.var (ix "c" 0)) (.var (iv "c" (v := "n")))) <|
+    .loop { block := "loop" } 1 (.cons (.move .challenge (iv "r") "R" "" "") .done) <|
+    .cons .endStage rest
   stage "a" <| stage "b" .done
 
 /-- The number of occurrences of `pat` in `s`. -/
@@ -400,13 +408,14 @@ private def firstKind (j : Json) : Option String :=
   | .error _ => none
 
 #guard firstKind (testSkel.toJson "t" "T") == some "stage"
-#guard occurrences (testSkel.toJson "t" "T").compress "\"checked\":false" == 6
-#guard occurrences (testSkel.toJson "t" "T").compress "\"kind\":\"round\"" == 2
+#guard occurrences (testSkel.toJson "t" "T").compress "\"checked\":false" == 3
+#guard occurrences (testSkel.toJson "t" "T").compress "\"kind\":\"loop\"" == 1
 #guard occurrences (testSkel.toTex "T" true) "\\text{check } g_{i}(r_{i}) = c_{i}" == 1
 #guard occurrences (testSkel.toTex "T" true) "end of stage \\textsf{s}: $c_{n}$" == 1
 #guard occurrences (testSkel.toTex "T" true) "\\specannot{uniform}" == 1
 #guard occurrences (testSkel.toTex "T" false) "\\text{check } g_{1}(r_{1}) = c_{1}" == 1
 #guard occurrences (testSkel.toTex "T" false) "\\specannot{uniform}" == 2
+#guard occurrences (testSkel.toTex "T" false) "end of stage \\textsf{s}: $c_{2}$" == 1
 #guard occurrences (testTwoStages.toTex "T" true) "\\textsf{loop}: round $i$" == 2
 
 #print axioms Skel.toJson

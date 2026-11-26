@@ -1,60 +1,32 @@
 {"title": "FRI",
- "schema": "arklib-protocol-skeleton/1",
+ "schema": "arklib-protocol-skeleton/2",
  "name": "fri",
  "body":
- [{"type": "\\mathbb{F}_{17}^{8}",
+ [{"type": "\\mathbb{F}_{17}^{2^{k+1}}",
    "name":
-   {"tex": "f_{0}", "sub": {"kind": "at", "index": {"round": 0}}, "base": "f"},
+   {"tex": "f_{0}", "sub": {"kind": "at", "index": {"num": 0}}, "base": "f"},
    "kind": "input"},
-  {"round": 0,
-   "kind": "round",
+  {"var": "i",
+   "kind": "loop",
    "error": null,
-   "countName": "k",
-   "count": 2,
+   "count": "k",
    "body":
    [{"type": "\\mathbb{F}_{17}",
      "owner": "verifier",
      "note": null,
      "name":
-     {"tex": "\\alpha_{0}",
-      "sub": {"kind": "at", "index": {"round": 0}},
+     {"tex": "\\alpha_{i}",
+      "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
       "base": "\\alpha"},
      "move": "challenge",
      "kind": "move",
      "honest": null},
-    {"type": "\\mathbb{F}_{17}^{4}",
+    {"type": "\\mathbb{F}_{17}^{2^{k-i}}",
      "owner": "prover",
      "note": null,
      "name":
-     {"tex": "f_{1}",
-      "sub": {"kind": "at", "index": {"round": 1}},
-      "base": "f"},
-     "move": "oracle",
-     "kind": "move",
-     "honest": {"text": "\\mathsf{fold}", "checked": false}}],
-   "block": "fold"},
-  {"round": 1,
-   "kind": "round",
-   "error": null,
-   "countName": "k",
-   "count": 2,
-   "body":
-   [{"type": "\\mathbb{F}_{17}",
-     "owner": "verifier",
-     "note": null,
-     "name":
-     {"tex": "\\alpha_{1}",
-      "sub": {"kind": "at", "index": {"round": 1}},
-      "base": "\\alpha"},
-     "move": "challenge",
-     "kind": "move",
-     "honest": null},
-    {"type": "\\mathbb{F}_{17}^{2}",
-     "owner": "prover",
-     "note": null,
-     "name":
-     {"tex": "f_{2}",
-      "sub": {"kind": "at", "index": {"round": 2}},
+     {"tex": "f_{i+1}",
+      "sub": {"kind": "at", "index": {"symbol": "i", "offset": 1}},
       "base": "f"},
      "move": "oracle",
      "kind": "move",
@@ -64,8 +36,8 @@
    "owner": "verifier",
    "note": null,
    "name":
-   {"tex": "\\alpha_{2}",
-    "sub": {"kind": "at", "index": {"round": 2}},
+   {"tex": "\\alpha_{k}",
+    "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
     "base": "\\alpha"},
    "move": "challenge",
    "kind": "move",
@@ -77,85 +49,98 @@
    "move": "message",
    "kind": "move",
    "honest": {"text": "\\mathsf{fold}", "checked": false}},
-  {"round": 0,
-   "kind": "round",
+  {"var": "j",
+   "kind": "loop",
    "error": null,
-   "countName": "l",
-   "count": 3,
+   "count": "l",
    "body":
-   [{"type": "[8]",
+   [{"type": "[2^{k+1}]",
      "owner": "verifier",
      "note": null,
-     "name": {"tex": "t", "sub": null, "base": "t"},
+     "name":
+     {"tex": "t_{j}",
+      "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+      "base": "t"},
      "move": "challenge",
      "kind": "move",
      "honest": null},
-    {"round": 0,
-     "kind": "round",
+    {"var": "i",
+     "kind": "loop",
      "error": null,
-     "countName": "k",
-     "count": 2,
+     "count": "k",
      "body":
      [{"type": "\\mathbb{F}_{17}",
        "note": null,
        "name":
-       {"tex": "a_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
+       {"tex": "a_{i}",
+        "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
         "base": "a"},
        "kind": "let",
        "formula":
-       {"tex": "f_{0}(\\mathrm{lo}(t))",
+       {"tex": "f_{i}(\\mathrm{lo}(t_{j}))",
         "syntax":
         {"oracle":
-         {"tex": "f_{0}",
-          "sub": {"kind": "at", "index": {"round": 0}},
+         {"tex": "f_{i}",
+          "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
           "base": "f"},
          "op": "query",
          "arg":
          {"op": "app",
           "fn": "lo",
           "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
+          {"op": "var",
+           "name":
+           {"tex": "t_{j}",
+            "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+            "base": "t"}}}}}},
       {"type": "\\mathbb{F}_{17}",
        "note": null,
        "name":
-       {"tex": "b_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
+       {"tex": "b_{i}",
+        "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
         "base": "b"},
        "kind": "let",
        "formula":
-       {"tex": "f_{0}(\\mathrm{hi}(t))",
+       {"tex": "f_{i}(\\mathrm{hi}(t_{j}))",
         "syntax":
         {"oracle":
-         {"tex": "f_{0}",
-          "sub": {"kind": "at", "index": {"round": 0}},
+         {"tex": "f_{i}",
+          "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
           "base": "f"},
          "op": "query",
          "arg":
          {"op": "app",
           "fn": "hi",
           "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
+          {"op": "var",
+           "name":
+           {"tex": "t_{j}",
+            "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+            "base": "t"}}}}}},
       {"type": "\\mathbb{F}_{17}",
        "note": null,
        "name":
-       {"tex": "x_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
+       {"tex": "x_{i}",
+        "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
         "base": "x"},
        "kind": "let",
        "formula":
-       {"tex": "\\mathrm{pt}(t)",
+       {"tex": "\\mathrm{pt}(t_{j})",
         "syntax":
         {"op": "app",
          "fn": "pt",
          "arg":
-         {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
+         {"op": "var",
+          "name":
+          {"tex": "t_{j}",
+           "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+           "base": "t"}}}}},
       {"note": null,
        "label": "fold",
        "kind": "check",
        "formula":
        {"tex":
-        "2 \\cdot x_{0} \\cdot f_{1}(\\mathrm{lo}(t)) = x_{0} \\cdot (a_{0} + b_{0}) + \\alpha_{0} \\cdot (a_{0} - b_{0})",
+        "2 \\cdot x_{i} \\cdot f_{i+1}(\\mathrm{lo}(t_{j})) = x_{i} \\cdot (a_{i} + b_{i}) + \\alpha_{i} \\cdot (a_{i} - b_{i})",
         "syntax":
         {"op": "eq",
          "args":
@@ -166,249 +151,136 @@
              [{"tex": "2", "op": "lit"},
               {"op": "var",
                "name":
-               {"tex": "x_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
+               {"tex": "x_{i}",
+                "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                 "base": "x"}}]},
             {"oracle":
-             {"tex": "f_{1}",
-              "sub": {"kind": "at", "index": {"round": 1}},
+             {"tex": "f_{i+1}",
+              "sub": {"kind": "at", "index": {"symbol": "i", "offset": 1}},
               "base": "f"},
              "op": "query",
              "arg":
              {"op": "app",
               "fn": "lo",
               "arg":
-              {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}]},
-          {"op": "add",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "x_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "x"}},
-              {"op": "add",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "b"}}]}]},
-            {"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "\\alpha_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "\\alpha"}},
-              {"op": "sub",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "b"}}]}]}]}]}}}],
-     "block": "consistency"},
-    {"round": 1,
-     "kind": "round",
-     "error": null,
-     "countName": "k",
-     "count": 2,
-     "body":
-     [{"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "a_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "a"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{1}(\\mathrm{lo}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{1}",
-          "sub": {"kind": "at", "index": {"round": 1}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "lo",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "b_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "b"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{1}(\\mathrm{hi}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{1}",
-          "sub": {"kind": "at", "index": {"round": 1}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "hi",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "x_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "x"},
-       "kind": "let",
-       "formula":
-       {"tex": "\\mathrm{pt}(t)",
-        "syntax":
-        {"op": "app",
-         "fn": "pt",
-         "arg":
-         {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
-      {"note": null,
-       "label": "fold",
-       "kind": "check",
-       "formula":
-       {"tex":
-        "2 \\cdot x_{1} \\cdot f_{2}(\\mathrm{lo}(t)) = x_{1} \\cdot (a_{1} + b_{1}) + \\alpha_{1} \\cdot (a_{1} - b_{1})",
-        "syntax":
-        {"op": "eq",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"tex": "2", "op": "lit"},
               {"op": "var",
                "name":
-               {"tex": "x_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "x"}}]},
-            {"oracle":
-             {"tex": "f_{2}",
-              "sub": {"kind": "at", "index": {"round": 2}},
-              "base": "f"},
-             "op": "query",
-             "arg":
-             {"op": "app",
-              "fn": "lo",
-              "arg":
-              {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}]},
+               {"tex": "t_{j}",
+                "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+                "base": "t"}}}}]},
           {"op": "add",
            "args":
            [{"op": "mul",
              "args":
              [{"op": "var",
                "name":
-               {"tex": "x_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
+               {"tex": "x_{i}",
+                "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                 "base": "x"}},
               {"op": "add",
                "args":
                [{"op": "var",
                  "name":
-                 {"tex": "a_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
+                 {"tex": "a_{i}",
+                  "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                   "base": "a"}},
                 {"op": "var",
                  "name":
-                 {"tex": "b_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
+                 {"tex": "b_{i}",
+                  "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                   "base": "b"}}]}]},
             {"op": "mul",
              "args":
              [{"op": "var",
                "name":
-               {"tex": "\\alpha_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
+               {"tex": "\\alpha_{i}",
+                "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                 "base": "\\alpha"}},
               {"op": "sub",
                "args":
                [{"op": "var",
                  "name":
-                 {"tex": "a_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
+                 {"tex": "a_{i}",
+                  "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                   "base": "a"}},
                 {"op": "var",
                  "name":
-                 {"tex": "b_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
+                 {"tex": "b_{i}",
+                  "sub": {"kind": "at", "index": {"symbol": "i", "offset": 0}},
                   "base": "b"}}]}]}]}]}}}],
      "block": "consistency"},
     {"type": "\\mathbb{F}_{17}",
      "note": null,
      "name":
-     {"tex": "a_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+     {"tex": "a_{k}",
+      "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
       "base": "a"},
      "kind": "let",
      "formula":
-     {"tex": "f_{2}(\\mathrm{lo}(t))",
+     {"tex": "f_{k}(\\mathrm{lo}(t_{j}))",
       "syntax":
       {"oracle":
-       {"tex": "f_{2}",
-        "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+       {"tex": "f_{k}",
+        "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
         "base": "f"},
        "op": "query",
        "arg":
        {"op": "app",
         "fn": "lo",
         "arg":
-        {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
+        {"op": "var",
+         "name":
+         {"tex": "t_{j}",
+          "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+          "base": "t"}}}}}},
     {"type": "\\mathbb{F}_{17}",
      "note": null,
      "name":
-     {"tex": "b_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+     {"tex": "b_{k}",
+      "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
       "base": "b"},
      "kind": "let",
      "formula":
-     {"tex": "f_{2}(\\mathrm{hi}(t))",
+     {"tex": "f_{k}(\\mathrm{hi}(t_{j}))",
       "syntax":
       {"oracle":
-       {"tex": "f_{2}",
-        "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+       {"tex": "f_{k}",
+        "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
         "base": "f"},
        "op": "query",
        "arg":
        {"op": "app",
         "fn": "hi",
         "arg":
-        {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
+        {"op": "var",
+         "name":
+         {"tex": "t_{j}",
+          "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+          "base": "t"}}}}}},
     {"type": "\\mathbb{F}_{17}",
      "note": null,
      "name":
-     {"tex": "x_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+     {"tex": "x_{k}",
+      "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
       "base": "x"},
      "kind": "let",
      "formula":
-     {"tex": "\\mathrm{pt}(t)",
+     {"tex": "\\mathrm{pt}(t_{j})",
       "syntax":
       {"op": "app",
        "fn": "pt",
-       "arg": {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
+       "arg":
+       {"op": "var",
+        "name":
+        {"tex": "t_{j}",
+         "sub": {"kind": "at", "index": {"symbol": "j", "offset": 0}},
+         "base": "t"}}}}},
     {"note": null,
      "label": "final",
      "kind": "check",
      "formula":
      {"tex":
-      "2 \\cdot x_{2} \\cdot c = x_{2} \\cdot (a_{2} + b_{2}) + \\alpha_{2} \\cdot (a_{2} - b_{2})",
+      "2 \\cdot x_{k} \\cdot c = x_{k} \\cdot (a_{k} + b_{k}) + \\alpha_{k} \\cdot (a_{k} - b_{k})",
       "syntax":
       {"op": "eq",
        "args":
@@ -419,8 +291,8 @@
            [{"tex": "2", "op": "lit"},
             {"op": "var",
              "name":
-             {"tex": "x_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+             {"tex": "x_{k}",
+              "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
               "base": "x"}}]},
           {"op": "var", "name": {"tex": "c", "sub": null, "base": "c"}}]},
         {"op": "add",
@@ -429,812 +301,38 @@
            "args":
            [{"op": "var",
              "name":
-             {"tex": "x_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+             {"tex": "x_{k}",
+              "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
               "base": "x"}},
             {"op": "add",
              "args":
              [{"op": "var",
                "name":
-               {"tex": "a_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+               {"tex": "a_{k}",
+                "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
                 "base": "a"}},
               {"op": "var",
                "name":
-               {"tex": "b_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+               {"tex": "b_{k}",
+                "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
                 "base": "b"}}]}]},
           {"op": "mul",
            "args":
            [{"op": "var",
              "name":
-             {"tex": "\\alpha_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+             {"tex": "\\alpha_{k}",
+              "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
               "base": "\\alpha"}},
             {"op": "sub",
              "args":
              [{"op": "var",
                "name":
-               {"tex": "a_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+               {"tex": "a_{k}",
+                "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
                 "base": "a"}},
               {"op": "var",
                "name":
-               {"tex": "b_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "b"}}]}]}]}]}}}],
-   "block": "query"},
-  {"round": 1,
-   "kind": "round",
-   "error": null,
-   "countName": "l",
-   "count": 3,
-   "body":
-   [{"type": "[8]",
-     "owner": "verifier",
-     "note": null,
-     "name": {"tex": "t", "sub": null, "base": "t"},
-     "move": "challenge",
-     "kind": "move",
-     "honest": null},
-    {"round": 0,
-     "kind": "round",
-     "error": null,
-     "countName": "k",
-     "count": 2,
-     "body":
-     [{"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "a_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
-        "base": "a"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{0}(\\mathrm{lo}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{0}",
-          "sub": {"kind": "at", "index": {"round": 0}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "lo",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "b_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
-        "base": "b"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{0}(\\mathrm{hi}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{0}",
-          "sub": {"kind": "at", "index": {"round": 0}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "hi",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "x_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
-        "base": "x"},
-       "kind": "let",
-       "formula":
-       {"tex": "\\mathrm{pt}(t)",
-        "syntax":
-        {"op": "app",
-         "fn": "pt",
-         "arg":
-         {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
-      {"note": null,
-       "label": "fold",
-       "kind": "check",
-       "formula":
-       {"tex":
-        "2 \\cdot x_{0} \\cdot f_{1}(\\mathrm{lo}(t)) = x_{0} \\cdot (a_{0} + b_{0}) + \\alpha_{0} \\cdot (a_{0} - b_{0})",
-        "syntax":
-        {"op": "eq",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"tex": "2", "op": "lit"},
-              {"op": "var",
-               "name":
-               {"tex": "x_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "x"}}]},
-            {"oracle":
-             {"tex": "f_{1}",
-              "sub": {"kind": "at", "index": {"round": 1}},
-              "base": "f"},
-             "op": "query",
-             "arg":
-             {"op": "app",
-              "fn": "lo",
-              "arg":
-              {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}]},
-          {"op": "add",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "x_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "x"}},
-              {"op": "add",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "b"}}]}]},
-            {"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "\\alpha_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "\\alpha"}},
-              {"op": "sub",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "b"}}]}]}]}]}}}],
-     "block": "consistency"},
-    {"round": 1,
-     "kind": "round",
-     "error": null,
-     "countName": "k",
-     "count": 2,
-     "body":
-     [{"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "a_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "a"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{1}(\\mathrm{lo}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{1}",
-          "sub": {"kind": "at", "index": {"round": 1}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "lo",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "b_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "b"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{1}(\\mathrm{hi}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{1}",
-          "sub": {"kind": "at", "index": {"round": 1}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "hi",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "x_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "x"},
-       "kind": "let",
-       "formula":
-       {"tex": "\\mathrm{pt}(t)",
-        "syntax":
-        {"op": "app",
-         "fn": "pt",
-         "arg":
-         {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
-      {"note": null,
-       "label": "fold",
-       "kind": "check",
-       "formula":
-       {"tex":
-        "2 \\cdot x_{1} \\cdot f_{2}(\\mathrm{lo}(t)) = x_{1} \\cdot (a_{1} + b_{1}) + \\alpha_{1} \\cdot (a_{1} - b_{1})",
-        "syntax":
-        {"op": "eq",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"tex": "2", "op": "lit"},
-              {"op": "var",
-               "name":
-               {"tex": "x_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "x"}}]},
-            {"oracle":
-             {"tex": "f_{2}",
-              "sub": {"kind": "at", "index": {"round": 2}},
-              "base": "f"},
-             "op": "query",
-             "arg":
-             {"op": "app",
-              "fn": "lo",
-              "arg":
-              {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}]},
-          {"op": "add",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "x_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "x"}},
-              {"op": "add",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "b"}}]}]},
-            {"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "\\alpha_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "\\alpha"}},
-              {"op": "sub",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "b"}}]}]}]}]}}}],
-     "block": "consistency"},
-    {"type": "\\mathbb{F}_{17}",
-     "note": null,
-     "name":
-     {"tex": "a_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-      "base": "a"},
-     "kind": "let",
-     "formula":
-     {"tex": "f_{2}(\\mathrm{lo}(t))",
-      "syntax":
-      {"oracle":
-       {"tex": "f_{2}",
-        "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-        "base": "f"},
-       "op": "query",
-       "arg":
-       {"op": "app",
-        "fn": "lo",
-        "arg":
-        {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-    {"type": "\\mathbb{F}_{17}",
-     "note": null,
-     "name":
-     {"tex": "b_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-      "base": "b"},
-     "kind": "let",
-     "formula":
-     {"tex": "f_{2}(\\mathrm{hi}(t))",
-      "syntax":
-      {"oracle":
-       {"tex": "f_{2}",
-        "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-        "base": "f"},
-       "op": "query",
-       "arg":
-       {"op": "app",
-        "fn": "hi",
-        "arg":
-        {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-    {"type": "\\mathbb{F}_{17}",
-     "note": null,
-     "name":
-     {"tex": "x_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-      "base": "x"},
-     "kind": "let",
-     "formula":
-     {"tex": "\\mathrm{pt}(t)",
-      "syntax":
-      {"op": "app",
-       "fn": "pt",
-       "arg": {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
-    {"note": null,
-     "label": "final",
-     "kind": "check",
-     "formula":
-     {"tex":
-      "2 \\cdot x_{2} \\cdot c = x_{2} \\cdot (a_{2} + b_{2}) + \\alpha_{2} \\cdot (a_{2} - b_{2})",
-      "syntax":
-      {"op": "eq",
-       "args":
-       [{"op": "mul",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"tex": "2", "op": "lit"},
-            {"op": "var",
-             "name":
-             {"tex": "x_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-              "base": "x"}}]},
-          {"op": "var", "name": {"tex": "c", "sub": null, "base": "c"}}]},
-        {"op": "add",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"op": "var",
-             "name":
-             {"tex": "x_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-              "base": "x"}},
-            {"op": "add",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "a_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "a"}},
-              {"op": "var",
-               "name":
-               {"tex": "b_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "b"}}]}]},
-          {"op": "mul",
-           "args":
-           [{"op": "var",
-             "name":
-             {"tex": "\\alpha_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-              "base": "\\alpha"}},
-            {"op": "sub",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "a_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "a"}},
-              {"op": "var",
-               "name":
-               {"tex": "b_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "b"}}]}]}]}]}}}],
-   "block": "query"},
-  {"round": 2,
-   "kind": "round",
-   "error": null,
-   "countName": "l",
-   "count": 3,
-   "body":
-   [{"type": "[8]",
-     "owner": "verifier",
-     "note": null,
-     "name": {"tex": "t", "sub": null, "base": "t"},
-     "move": "challenge",
-     "kind": "move",
-     "honest": null},
-    {"round": 0,
-     "kind": "round",
-     "error": null,
-     "countName": "k",
-     "count": 2,
-     "body":
-     [{"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "a_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
-        "base": "a"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{0}(\\mathrm{lo}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{0}",
-          "sub": {"kind": "at", "index": {"round": 0}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "lo",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "b_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
-        "base": "b"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{0}(\\mathrm{hi}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{0}",
-          "sub": {"kind": "at", "index": {"round": 0}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "hi",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "x_{0}",
-        "sub": {"kind": "at", "index": {"round": 0}},
-        "base": "x"},
-       "kind": "let",
-       "formula":
-       {"tex": "\\mathrm{pt}(t)",
-        "syntax":
-        {"op": "app",
-         "fn": "pt",
-         "arg":
-         {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
-      {"note": null,
-       "label": "fold",
-       "kind": "check",
-       "formula":
-       {"tex":
-        "2 \\cdot x_{0} \\cdot f_{1}(\\mathrm{lo}(t)) = x_{0} \\cdot (a_{0} + b_{0}) + \\alpha_{0} \\cdot (a_{0} - b_{0})",
-        "syntax":
-        {"op": "eq",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"tex": "2", "op": "lit"},
-              {"op": "var",
-               "name":
-               {"tex": "x_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "x"}}]},
-            {"oracle":
-             {"tex": "f_{1}",
-              "sub": {"kind": "at", "index": {"round": 1}},
-              "base": "f"},
-             "op": "query",
-             "arg":
-             {"op": "app",
-              "fn": "lo",
-              "arg":
-              {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}]},
-          {"op": "add",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "x_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "x"}},
-              {"op": "add",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "b"}}]}]},
-            {"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "\\alpha_{0}",
-                "sub": {"kind": "at", "index": {"round": 0}},
-                "base": "\\alpha"}},
-              {"op": "sub",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{0}",
-                  "sub": {"kind": "at", "index": {"round": 0}},
-                  "base": "b"}}]}]}]}]}}}],
-     "block": "consistency"},
-    {"round": 1,
-     "kind": "round",
-     "error": null,
-     "countName": "k",
-     "count": 2,
-     "body":
-     [{"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "a_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "a"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{1}(\\mathrm{lo}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{1}",
-          "sub": {"kind": "at", "index": {"round": 1}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "lo",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "b_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "b"},
-       "kind": "let",
-       "formula":
-       {"tex": "f_{1}(\\mathrm{hi}(t))",
-        "syntax":
-        {"oracle":
-         {"tex": "f_{1}",
-          "sub": {"kind": "at", "index": {"round": 1}},
-          "base": "f"},
-         "op": "query",
-         "arg":
-         {"op": "app",
-          "fn": "hi",
-          "arg":
-          {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-      {"type": "\\mathbb{F}_{17}",
-       "note": null,
-       "name":
-       {"tex": "x_{1}",
-        "sub": {"kind": "at", "index": {"round": 1}},
-        "base": "x"},
-       "kind": "let",
-       "formula":
-       {"tex": "\\mathrm{pt}(t)",
-        "syntax":
-        {"op": "app",
-         "fn": "pt",
-         "arg":
-         {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
-      {"note": null,
-       "label": "fold",
-       "kind": "check",
-       "formula":
-       {"tex":
-        "2 \\cdot x_{1} \\cdot f_{2}(\\mathrm{lo}(t)) = x_{1} \\cdot (a_{1} + b_{1}) + \\alpha_{1} \\cdot (a_{1} - b_{1})",
-        "syntax":
-        {"op": "eq",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"tex": "2", "op": "lit"},
-              {"op": "var",
-               "name":
-               {"tex": "x_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "x"}}]},
-            {"oracle":
-             {"tex": "f_{2}",
-              "sub": {"kind": "at", "index": {"round": 2}},
-              "base": "f"},
-             "op": "query",
-             "arg":
-             {"op": "app",
-              "fn": "lo",
-              "arg":
-              {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}]},
-          {"op": "add",
-           "args":
-           [{"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "x_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "x"}},
-              {"op": "add",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "b"}}]}]},
-            {"op": "mul",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "\\alpha_{1}",
-                "sub": {"kind": "at", "index": {"round": 1}},
-                "base": "\\alpha"}},
-              {"op": "sub",
-               "args":
-               [{"op": "var",
-                 "name":
-                 {"tex": "a_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "a"}},
-                {"op": "var",
-                 "name":
-                 {"tex": "b_{1}",
-                  "sub": {"kind": "at", "index": {"round": 1}},
-                  "base": "b"}}]}]}]}]}}}],
-     "block": "consistency"},
-    {"type": "\\mathbb{F}_{17}",
-     "note": null,
-     "name":
-     {"tex": "a_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-      "base": "a"},
-     "kind": "let",
-     "formula":
-     {"tex": "f_{2}(\\mathrm{lo}(t))",
-      "syntax":
-      {"oracle":
-       {"tex": "f_{2}",
-        "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-        "base": "f"},
-       "op": "query",
-       "arg":
-       {"op": "app",
-        "fn": "lo",
-        "arg":
-        {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-    {"type": "\\mathbb{F}_{17}",
-     "note": null,
-     "name":
-     {"tex": "b_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-      "base": "b"},
-     "kind": "let",
-     "formula":
-     {"tex": "f_{2}(\\mathrm{hi}(t))",
-      "syntax":
-      {"oracle":
-       {"tex": "f_{2}",
-        "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-        "base": "f"},
-       "op": "query",
-       "arg":
-       {"op": "app",
-        "fn": "hi",
-        "arg":
-        {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}}},
-    {"type": "\\mathbb{F}_{17}",
-     "note": null,
-     "name":
-     {"tex": "x_{2}",
-      "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-      "base": "x"},
-     "kind": "let",
-     "formula":
-     {"tex": "\\mathrm{pt}(t)",
-      "syntax":
-      {"op": "app",
-       "fn": "pt",
-       "arg": {"op": "var", "name": {"tex": "t", "sub": null, "base": "t"}}}}},
-    {"note": null,
-     "label": "final",
-     "kind": "check",
-     "formula":
-     {"tex":
-      "2 \\cdot x_{2} \\cdot c = x_{2} \\cdot (a_{2} + b_{2}) + \\alpha_{2} \\cdot (a_{2} - b_{2})",
-      "syntax":
-      {"op": "eq",
-       "args":
-       [{"op": "mul",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"tex": "2", "op": "lit"},
-            {"op": "var",
-             "name":
-             {"tex": "x_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-              "base": "x"}}]},
-          {"op": "var", "name": {"tex": "c", "sub": null, "base": "c"}}]},
-        {"op": "add",
-         "args":
-         [{"op": "mul",
-           "args":
-           [{"op": "var",
-             "name":
-             {"tex": "x_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-              "base": "x"}},
-            {"op": "add",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "a_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "a"}},
-              {"op": "var",
-               "name":
-               {"tex": "b_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "b"}}]}]},
-          {"op": "mul",
-           "args":
-           [{"op": "var",
-             "name":
-             {"tex": "\\alpha_{2}",
-              "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-              "base": "\\alpha"}},
-            {"op": "sub",
-             "args":
-             [{"op": "var",
-               "name":
-               {"tex": "a_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
-                "base": "a"}},
-              {"op": "var",
-               "name":
-               {"tex": "b_{2}",
-                "sub": {"kind": "at", "index": {"symbol": "k", "count": 2}},
+               {"tex": "b_{k}",
+                "sub": {"kind": "at", "index": {"symbol": "k", "offset": 0}},
                 "base": "b"}}]}]}]}]}}}],
    "block": "query"}]}

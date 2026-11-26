@@ -14,9 +14,10 @@ skeleton `Skel`, the combinators that authors write, and the specification struc
 
 * Handles: `Val nm α` is a transcript value named `nm`, and `OHdl nm Q A` is an oracle named
   `nm` with queries `Q` and answers `A`. A handle's name is part of its type.
-* `Skel` is the skeleton: a list of items (moves, input reads, checks, local values, round and
-  stage markers) that ends in `done`, in a `branch` node with one sub-skeleton per case, or in an
-  `opaque` node.
+* `Skel` is the skeleton: a list of items (moves, input reads, checks, local values and stage
+  markers) that ends in `done`, in a `branch` node with one sub-skeleton per case, in an `opaque`
+  node, or in a `loop` node: one generic round of a loop, over the round variable `i` and the count
+  `n`, followed by the rest.
 * `Desc In W T t ks` describes a protocol with input oracle bundle `In`, witness `W`, output `T`,
   tree `t` and skeleton `ks`.
 * Combinators: `message`, `oracle`, `challenge`, `input`, `check`, `compute`, `rounds`, `stage`,
@@ -51,6 +52,29 @@ skeleton `Skel`, the combinators that authors write, and the specification struc
   noncomputable polynomials.
 * The skeleton stores the syntax of each formula with its holes replaced by their names. *Why:*
   a hole's name is in its type, so the skeleton never depends on transcript values.
+* **A loop is one node with a generic body.** `rounds` produces `Skel.loop l n body rest`, where
+  `body` is the skeleton of one round, written over the round variable `i` and the count's symbol
+  `n`, and `n` is the count itself, a Lean term that may be a variable. The display data `l` holds
+  the block name, the round variable, the count's symbol and the per-round error. *Why:* a paper
+  writes a loop once, for a generic round, and so must the figure and the JSON. An unrolled
+  skeleton exists only for a numeral `n`, so a specification with a variable round count had no
+  skeleton that the export could compute, and the folded figure had to guess one round from the
+  first.
+* **Lean checks that the body is generic.** The body's skeleton is inferred as `G ks`, with `G` a
+  function of the continuation's skeleton only, not of the round number, and `rounds` requires
+  `G ks = (G .done).seq ks`, by `rfl` by default. *Why:* if any name, type or formula in a round
+  mentioned the round number, `G` would have to depend on it and elaboration fails. So the one
+  displayed round is, by typing, the skeleton of every round. Names in a body therefore use
+  symbols (`iv "g"` for `g_i`, `iv "c" 1` for `c_{i+1}`), and a type whose printed name depends on
+  the round passes its symbolic name (`ty := "\\mathbb{F}^{2^{k-i}}"`).
+* **The count stays in the skeleton.** *Why:* the expanded figure and the accessors into later
+  rounds need its value, and `Skel.erase` sets every count to `0`: each example proves by `rfl`
+  that its erased skeleton is the same for every count, so the JSON and the folded figure, which
+  read only the erased data, describe the protocol for every `n`.
+* **The description keeps the unrolled rounds.** `Desc.loop l n body inner` holds the rounds as a
+  description of skeleton `Skel.unroll l body rest 0 n`, with begin and end markers per round.
+  *Why:* the interpreters and the proofs about them run on the unrolled description unchanged,
+  and the index ties the generic body to the rounds that run.
 * `rounds` passes the absolute round to the body and lets the round's tree vary with it
   (`F : ℕ → OracleProtocol → OracleProtocol`). *Why:* FRI's oracle in round `i` lives on a domain
   of size `2^(k-i)`. A `rounds` block may name the tree family of its rounds (`tree`) when each
@@ -62,7 +86,8 @@ skeleton `Skel`, the combinators that authors write, and the specification struc
   state to the continuation with a cast along `j + 0 = n`. *Why:* the state of round `i` has type
   `State i`, and ArkLib's trees peel the first round. The cast is internal: no statement in these
   modules mentions it, and `subst` removes it in a proof about the last round.
-* Hierarchical labels: a move is addressed by its stage path, its round and the base of its name.
+* Hierarchical labels: a move is addressed by its stage path, its loop and round, and the base of
+  its name.
   `Specs.Run` computes the position at elaboration time. *Why:* the position is then a numeral, so
   the accessor elaborates to a chain of projections that `rfl` and `simp` handle without unfolding
   string comparisons.
@@ -156,6 +181,15 @@ inductive MoveKind
   | message | oracle | challenge
   deriving DecidableEq, Repr, Inhabited
 
+/-- The display data of a loop: the name of its block, its round variable, the symbol of its count
+and the soundness error of one round, as annotation text over the round variable. -/
+structure Loop where
+  block : String
+  var : String := "i"
+  count : String := "n"
+  error : String := ""
+  deriving Inhabited, DecidableEq, Repr
+
 /-- One item of a skeleton. `note` is free-form annotation text, never checked. -/
 inductive Item
   /-- A move: its name, printed type and, for a prover move, the name of the honest function. -/
@@ -166,8 +200,9 @@ inductive Item
   | check (label : String) (φ : Syn) (note : String)
   /-- A local value and the syntax of its formula. -/
   | let_ (nm : Name) (ty : String) (φ : Syn) (note : String)
-  /-- Round `i` of the block `block` of `count` rounds, whose count prints as `countName`. -/
-  | beginRound (block : String) (i count : ℕ) (countName : String) (error : String)
+  /-- Round `j` of the loop `l`. Only the unrolled rounds of a loop (`Skel.unroll`) have round
+  markers. -/
+  | beginRound (l : Loop) (j : ℕ)
   | endRound
   /-- A stage and the syntax of its input and output claims. -/
   | beginStage (name : String) (input output : Syn)
@@ -175,12 +210,15 @@ inductive Item
   deriving Inhabited
 
 /-- The skeleton of a description: items in protocol order, ending in a leaf, a branch on a
-message with one sub-skeleton per case, or an opaque branch. -/
+message with one sub-skeleton per case, an opaque branch, or a loop. -/
 inductive Skel
   | done
   | cons (it : Item) (rest : Skel)
   | branch (nm : Name) (ty honest : String) (cases : List (String × Skel))
   | opaque (nm : Name) (ty honest : String)
+  /-- A loop of `n` rounds with display data `l`: the skeleton `body` of one round, the same for
+  every round, then `rest`. The body ends in `done` where the next round starts. -/
+  | loop (l : Loop) (n : ℕ) (body rest : Skel)
   deriving Inhabited
 
 /-- The skeleton node of a branching message: one case per listed value, or opaque. -/
@@ -191,18 +229,59 @@ def Skel.ofBranch {X : Type} (nm : Name) (ty honest : String)
   | none => .opaque nm ty honest
 
 mutual
-/-- The checks of a skeleton in protocol order, with their labels, through every branch. -/
+/-- The checks of a skeleton in protocol order, with their labels, through every branch. A loop
+contributes the checks of its generic round once. -/
 def Skel.checks : Skel → List (String × Syn)
   | .done => []
   | .opaque .. => []
   | .cons (.check label φ _) rest => (label, φ) :: rest.checks
   | .cons _ rest => rest.checks
   | .branch _ _ _ cases => Skel.casesChecks cases
+  | .loop _ _ body rest => body.checks ++ rest.checks
 
 /-- The checks of the cases of a branch, case by case. -/
 def Skel.casesChecks : List (String × Skel) → List (String × Syn)
   | [] => []
   | (_, k) :: cs => k.checks ++ Skel.casesChecks cs
+end
+
+mutual
+/-- The skeleton `s` followed by `k`: every `done` leaf of `s` becomes `k`. An opaque branch
+keeps no continuation. -/
+def Skel.seq : Skel → Skel → Skel
+  | .done, k => k
+  | .cons it rest, k => .cons it (rest.seq k)
+  | .branch nm ty hn cases, k => .branch nm ty hn (Skel.seqCases cases k)
+  | .opaque nm ty hn, _ => .opaque nm ty hn
+  | .loop l n body rest, k => .loop l n body (rest.seq k)
+
+/-- The cases of a branch, each followed by `k`. -/
+def Skel.seqCases : List (String × Skel) → Skel → List (String × Skel)
+  | [], _ => []
+  | (v, s) :: cs, k => (v, s.seq k) :: Skel.seqCases cs k
+end
+
+/-- The rounds `j, …, j + k - 1` of the loop `l` with generic round `body`, each between round
+markers, followed by `ks`. -/
+@[reducible] def Skel.unroll (l : Loop) (body ks : Skel) : ℕ → ℕ → Skel
+  | _, 0 => ks
+  | j, k + 1 =>
+    .cons (.beginRound l j) (body.seq (.cons .endRound (Skel.unroll l body ks (j + 1) k)))
+
+mutual
+/-- The skeleton with the count of every loop set to `0`: the data that the JSON and the folded
+figure read. -/
+def Skel.erase : Skel → Skel
+  | .done => .done
+  | .cons it rest => .cons it rest.erase
+  | .branch nm ty hn cases => .branch nm ty hn (Skel.eraseCases cases)
+  | .opaque nm ty hn => .opaque nm ty hn
+  | .loop l _ body rest => .loop l 0 body.erase rest.erase
+
+/-- The cases of a branch, erased. -/
+def Skel.eraseCases : List (String × Skel) → List (String × Skel)
+  | [] => []
+  | (v, s) :: cs => (v, s.erase) :: Skel.eraseCases cs
 end
 
 /-! ## Descriptions -/
@@ -245,6 +324,11 @@ inductive Desc (In : OracleBundle) (W T : Type) : OracleProtocol → Skel → Ty
       Desc In W T t (.cons .endStage ks)
   | mark (it : Item) {t : OracleProtocol} {ks : Skel} (rest : Desc In W T t ks) :
       Desc In W T t (.cons it ks)
+  /-- A loop of `n` rounds: the unrolled rounds `inner`, which the skeleton shows as the generic
+  round `body` with the display data `l`. -/
+  | loop (l : Loop) (n : ℕ) (body : Skel) {t : OracleProtocol} {ks : Skel}
+      (inner : Desc In W T t (Skel.unroll l body ks 0 n)) :
+      Desc In W T t (.loop l n body ks)
 
 variable {In : OracleBundle} {W T : Type}
 
@@ -257,6 +341,15 @@ def Desc.retree {t t' : OracleProtocol} {ks : Skel} (h : t = t') (d : Desc In W 
 @[simp] theorem Desc.retree_rfl {t : OracleProtocol} {ks : Skel} (h : t = t)
     (d : Desc In W T t ks) : d.retree h = d := rfl
 
+/-- Move a description to a skeleton that is equal to its own. With an `rfl` proof, as `rounds`
+uses, it reduces to the description. -/
+def Desc.reskel {t : OracleProtocol} {ks ks' : Skel} (h : ks = ks') (d : Desc In W T t ks) :
+    Desc In W T t ks' :=
+  h ▸ d
+
+@[simp] theorem Desc.reskel_rfl {t : OracleProtocol} {ks : Skel} (h : ks = ks)
+    (d : Desc In W T t ks) : d.reskel h = d := rfl
+
 /-! ## Combinators -/
 
 /-- The protocol ends with output `out`. -/
@@ -266,21 +359,22 @@ abbrev done (out : T) : Desc In W T (.pure ⟨⟩) .done := .done out
 `hn`. The continuation's tree may depend on the message. -/
 abbrev message (nm : Name) (X : Type) [TypeName X] (hn : String) (honest : W → X)
     {t : Val nm X → OracleProtocol} {ks : Skel} (rest : (x : Val nm X) → Desc In W T (t x) ks)
-    (note : String := "") :=
-  Desc.message (t := fun x => t ⟨x⟩) nm X (TypeName.name X) hn note honest fun x => rest ⟨x⟩
+    (note : String := "") (ty : String := TypeName.name X) :=
+  Desc.message (t := fun x => t ⟨x⟩) nm X ty hn note honest fun x => rest ⟨x⟩
 
 /-- The prover sends the oracle message `nm : X`, honestly `honest w`. The verifier gets a handle
-that answers queries in `A`. -/
+that answers queries in `A`. `ty` prints the type, by default its `TypeName`. -/
 abbrev oracle (nm : Name) (X : Type) [I : OracleInterface X] [TypeName X] (A : Type)
     [Inhabited A] (hn : String) (honest : W → X) {t : OracleProtocol} {ks : Skel}
     (rest : OHdl nm I.Query A → Desc In W T t ks) (note : String := "")
-    (hA : ∀ q, I.spec q = A := by intros; rfl) :=
-  Desc.oracle nm X I A hA default (TypeName.name X) hn note honest rest
+    (ty : String := TypeName.name X) (hA : ∀ q, I.spec q = A := by intros; rfl) :=
+  Desc.oracle nm X I A hA default ty hn note honest rest
 
 /-- The verifier samples the public challenge `nm : C`. -/
 abbrev challenge (nm : Name) (C : Type) [TypeName C] {t : OracleProtocol} {ks : Skel}
-    (rest : Val nm C → Desc In W T t ks) (note : String := "") :=
-  Desc.challenge nm C (TypeName.name C) note fun c => rest ⟨c⟩
+    (rest : Val nm C → Desc In W T t ks) (note : String := "")
+    (ty : String := TypeName.name C) :=
+  Desc.challenge nm C ty note fun c => rest ⟨c⟩
 
 /-- The description reads the input oracle `nm`: the query `q : Q` goes to `embed q` of the input
 bundle, and `resp` shows that its answer has type `A` (usually `fun _ => rfl`). `resp` has no
@@ -327,44 +421,55 @@ abbrev branchOpaque (nm : Name) (X : Type) [TypeName X] (hn : String) (honest : 
   | _, 0 => t
   | j, k + 1 => F j (roundsTree F t (j + 1) k)
 
-/-- The skeleton of the rounds `j, …, j + k - 1` of an `n`-round block, each between round
-markers. -/
-@[reducible] def roundsSkel (block : String) (n : ℕ) (countName : String) (error : ℕ → String)
-    (G : ℕ → Skel → Skel) (ks : Skel) : ℕ → ℕ → Skel
-  | _, 0 => ks
-  | j, k + 1 => .cons (.beginRound block j n countName (error j))
-      (G j (.cons .endRound (roundsSkel block n countName error G ks (j + 1) k)))
-
-/-- The rounds `j, …, j + k - 1` of a `rounds` block, on the tree family `τ`. -/
+/-- The rounds `j, …, j + k - 1` of a loop with display data `l` and generic round skeleton
+`body`, on the tree family `τ`. -/
 def roundsGo {State : ℕ → Type} {F : ℕ → OracleProtocol → OracleProtocol}
-    {G : ℕ → Skel → Skel} (block : String) (n : ℕ) (countName : String) (error : ℕ → String)
+    (l : Loop) (n : ℕ) (B : Skel)
     (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
-      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G i ks))
+      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (B.seq ks))
     {t : OracleProtocol} {ks : Skel} (next : State n → Desc In W T t ks)
     (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
     (hS : ∀ j k, τ j (k + 1) = F j (τ (j + 1) k)) :
-    (k j : ℕ) → j + k = n → State j →
-      Desc In W T (τ j k) (roundsSkel block n countName error G ks j k)
+    (k j : ℕ) → j + k = n → State j → Desc In W T (τ j k) (Skel.unroll l B ks j k)
   | 0, j, h, st => (next (h ▸ st)).retree (h0 j).symm
   | k + 1, j, h, st =>
-    (Desc.mark (.beginRound block j n countName (error j)) <|
+    (Desc.mark (.beginRound l j) <|
       body j (by omega) st fun st' =>
-        .mark .endRound (roundsGo block n countName error body next τ h0 hS k (j + 1)
-          (by omega) st')).retree (hS j k).symm
+        .mark .endRound (roundsGo l n B body next τ h0 hS k (j + 1) (by omega) st')).retree
+      (hS j k).symm
 
-/-- `n` rounds with round-indexed state: round `i`, counting up from `0`, maps `State i` to
-`State (i + 1)` and has tree `F i`. `tree` names the tree family of the block, by default
-`roundsTree F t`. `countName` prints the count in the folded figure. -/
-abbrev rounds (block : String) (n : ℕ) {State : ℕ → Type} (init : State 0)
-    {F : ℕ → OracleProtocol → OracleProtocol} {G : ℕ → Skel → Skel}
+/-- The rounds `j, …, j + k - 1` of a `rounds` block whose round `body` has skeleton `G ks`:
+`roundsGo` with each round moved to the skeleton `(G .done).seq ks` along `hG`. Proofs about a
+loop state their round induction on this term. -/
+abbrev roundsFrom {State : ℕ → Type} {F : ℕ → OracleProtocol → OracleProtocol} {G : Skel → Skel}
+    (l : Loop) (n : ℕ)
     (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
-      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G i ks))
+      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G ks))
     {t : OracleProtocol} {ks : Skel} (next : State n → Desc In W T t ks)
-    (error : ℕ → String := fun _ => "") (countName : String := "n")
+    (τ : ℕ → ℕ → OracleProtocol) (h0 : ∀ j, τ j 0 = t)
+    (hS : ∀ j k, τ j (k + 1) = F j (τ (j + 1) k)) (hG : ∀ ks, G ks = (G .done).seq ks) :
+    (k j : ℕ) → j + k = n → State j → Desc In W T (τ j k) (Skel.unroll l (G .done) ks j k) :=
+  roundsGo l n (G .done) (fun i hi st k => (body i hi st k).reskel (hG _)) next τ h0 hS
+
+/-- A loop of `n` rounds with round-indexed state: round `i`, counting up from `0`, maps `State i`
+to `State (i + 1)` and has tree `F i`. The skeleton is one loop node whose body is the skeleton
+of a generic round, `G .done`. The body's skeleton `G ks` may not depend on the round number:
+`hG` checks that it is the generic round followed by `ks`. `block` names the loop, `var` is its
+round variable and `countName` the symbol of `n`. `error` is the soundness error of one round, as
+annotation text. `tree` names the tree family of the rounds, by default `roundsTree F t`. -/
+abbrev rounds (block : String) (n : ℕ) {State : ℕ → Type} (init : State 0)
+    {F : ℕ → OracleProtocol → OracleProtocol} {G : Skel → Skel}
+    (body : ∀ {t : OracleProtocol} {ks : Skel}, (i : ℕ) → i < n → State i →
+      (State (i + 1) → Desc In W T t ks) → Desc In W T (F i t) (G ks))
+    {t : OracleProtocol} {ks : Skel} (next : State n → Desc In W T t ks)
+    (error : String := "") (countName : String := "n") (var : String := "i")
     (tree : ℕ → ℕ → OracleProtocol := roundsTree F t)
     (h0 : ∀ j, tree j 0 = t := by intros; rfl)
-    (hS : ∀ j k, tree j (k + 1) = F j (tree (j + 1) k) := by intros; rfl) :=
-  roundsGo block n countName error body next tree h0 hS n 0 (Nat.zero_add n) init
+    (hS : ∀ j k, tree j (k + 1) = F j (tree (j + 1) k) := by intros; rfl)
+    (hG : ∀ ks, G ks = (G .done).seq ks := by intros; rfl) :=
+  Desc.loop ⟨block, var, countName, error⟩ n (G .done)
+    (roundsFrom ⟨block, var, countName, error⟩ n body next tree h0 hS hG n 0 (Nat.zero_add n)
+      init)
 
 /-- A named stage. It consumes the claim `φ` on `inArgs` and produces the claim `ψ` on
 `outArgs s`, where `s` is the value it passes to the continuation. -/
@@ -403,6 +508,7 @@ abbrev Vw (_ : Spec In S W T t ks) (p : Path t) : Type := View t p
 end Spec
 
 #print axioms Desc.retree_rfl
+#print axioms Desc.reskel_rfl
 #print axioms ToArgs.toArgs_prod
 
 end Specs

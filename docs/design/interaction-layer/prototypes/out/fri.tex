@@ -5,23 +5,27 @@
 \centering
 \procedure{FRI}{%
 \textbf{Prover} \< \< \textbf{Verifier} \\
- \< \< \text{input oracle } [\![f_{0}]\!] \in \mathbb{F}_{17}^{8} \pclb
+ \< \< \text{input oracle } [\![f_{0}]\!] \in \mathbb{F}_{17}^{2^{k+1}} \pclb
 \pcintertext[dotted]{\textsf{fold}: round $i$ of $k$}
  \< \sendmessageleft*{\alpha_{i}} \< \alpha_{i} \sample \mathbb{F}_{17} \\
-f_{i+1} \gets \specannot{\mathsf{fold}} \< \sendmessageright*{[\![f_{i+1}]\!] \in \mathbb{F}_{17}^{4}} \<  \\
+f_{i+1} \gets \specannot{\mathsf{fold}} \< \sendmessageright*{[\![f_{i+1}]\!] \in \mathbb{F}_{17}^{2^{k-i}}} \<  \pclb
+\pcintertext[dotted]{end of loop \textsf{fold}}
  \< \sendmessageleft*{\alpha_{k}} \< \alpha_{k} \sample \mathbb{F}_{17} \\
 c \gets \specannot{\mathsf{fold}} \< \sendmessageright*{c \in \mathbb{F}_{17}} \<  \pclb
-\pcintertext[dotted]{\textsf{query}: round $i$ of $l$}
- \< \sendmessageleft*{t} \< t \sample [8] \pclb
+\pcintertext[dotted]{\textsf{query}: round $j$ of $l$}
+ \< \sendmessageleft*{t_{j}} \< t_{j} \sample [2^{k+1}] \pclb
 \pcintertext[dotted]{\textsf{consistency}: round $i$ of $k$}
- \< \< a_{i} := f_{i}(\mathrm{lo}(t)) \\
- \< \< b_{i} := f_{i}(\mathrm{hi}(t)) \\
- \< \< x_{i} := \mathrm{pt}(t) \\
- \< \< \text{check } 2 \cdot x_{i} \cdot f_{i+1}(\mathrm{lo}(t)) = x_{i} \cdot (a_{i} + b_{i}) + \alpha_{i} \cdot (a_{i} - b_{i}) \\
- \< \< a_{k} := f_{k}(\mathrm{lo}(t)) \\
- \< \< b_{k} := f_{k}(\mathrm{hi}(t)) \\
- \< \< x_{k} := \mathrm{pt}(t) \\
- \< \< \text{check } 2 \cdot x_{k} \cdot c = x_{k} \cdot (a_{k} + b_{k}) + \alpha_{k} \cdot (a_{k} - b_{k})
+ \< \< a_{i} := f_{i}(\mathrm{lo}(t_{j})) \\
+ \< \< b_{i} := f_{i}(\mathrm{hi}(t_{j})) \\
+ \< \< x_{i} := \mathrm{pt}(t_{j}) \\
+ \< \< \text{check } 2 \cdot x_{i} \cdot f_{i+1}(\mathrm{lo}(t_{j})) = x_{i} \cdot (a_{i} + b_{i}) + \alpha_{i} \cdot (a_{i} - b_{i}) \pclb
+\pcintertext[dotted]{end of loop \textsf{consistency}}
+ \< \< a_{k} := f_{k}(\mathrm{lo}(t_{j})) \\
+ \< \< b_{k} := f_{k}(\mathrm{hi}(t_{j})) \\
+ \< \< x_{k} := \mathrm{pt}(t_{j}) \\
+ \< \< \text{check } 2 \cdot x_{k} \cdot c = x_{k} \cdot (a_{k} + b_{k}) + \alpha_{k} \cdot (a_{k} - b_{k}) \pclb
+\pcintertext[dotted]{end of loop \textsf{query}}
+ \< \< 
 }
-\caption{FRI, one round of each block, generated from the skeleton. Gray text is annotation that Lean does not check.}
+\caption{FRI, one generic round of each loop, generated from the skeleton. Gray text is annotation that Lean does not check.}
 \end{figure}

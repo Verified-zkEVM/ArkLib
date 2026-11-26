@@ -24,14 +24,17 @@ specification writes most often:
 The script `bench.sh` (next to `Specs/`) runs each case file through the build lock with
 `lake env lean -Dprofiler=true` and writes the table `out/bench.md`.
 
-## The export cost does not depend on the size of the domain
+## The export cost does not depend on the number of rounds
 
-The stage's input claim of `sumcheckSpec ℚ 2 n D` sums over `(Dom.ofFn "D" D).pow n`, a domain
-with `2^n` points. `Dom` stores its elements as a function `Unit → List α`, so compiled code
-builds the list only when a formula is evaluated, never when it builds the skeleton, whose syntax
-keeps only the domain's TeX name. The export at 128 rounds therefore takes about as long as the
-export at 8 rounds. Before this change `Dom.pow` stored the list itself, and the export took
-2 s at 20 rounds and more than 60 s at 24.
+The skeleton of `sumcheckSpec ℚ 2 n D` holds the loop once, as one node that records its count,
+and the JSON and the folded TeX read the skeleton with every count erased. `sumcheck_erase`
+proves that this erased skeleton is the same for every `n`, and `Specs.Bench.Export128` checks
+that the JSON at 128 rounds has the size of the JSON at 8. The stage's input claim sums over
+`(Dom.ofFn "D" D).pow n`, a domain with `2^n` points. `Dom` stores its elements as a function
+`Unit → List α`, so compiled code builds the list only when a formula is evaluated, never when it
+builds the skeleton, whose syntax keeps only the domain's TeX name. The export at 128 rounds
+therefore takes as long as the export at 8 rounds. When `Dom.pow` stored the list itself, the
+export took 2 s at 20 rounds and more than 60 s at 24.
 
 ## The accessor at round 127 needs a higher recursion limit
 

@@ -20,7 +20,9 @@ lake env lean --run docs/design/interaction-layer/prototypes/Specs/Main.lean
 ```
 
 The skeleton of a specification is part of its type, so the export never runs a description. The
-examples are instantiated at small sizes, since the skeleton fixes the number of rounds:
+JSON and the folded figure read the erased skeleton, which each example proves to be the same for
+every round count (`sumcheck_erase`, `spartan_erase`, …). Only the expanded figure depends on the
+sizes below, at which the examples are instantiated:
 
 * `sumcheck`: three variables over `ℚ`, degree 2, domain `{0, 1}`.
 * `spartan`: `2^2` rows and `2^3` columns over `ℚ`.

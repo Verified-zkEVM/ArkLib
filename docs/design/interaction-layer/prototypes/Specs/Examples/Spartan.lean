@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import Specs.Examples.Branching
+import Specs.Export
 import ArkLib.ProofSystem.Spartan.Algebra.Realization
 
 /-!
@@ -57,9 +58,11 @@ never evaluates a stage claim, so the claims are documentation that Lean only ty
   assignment queries (`rowF`), the definition of `M z` as a multilinear extension.
 * Both stages reuse `sumcheck` with the block name `sumcheck`, and count their rounds with `m`
   and `n` (`countName`). The stage names scope the labels: `tr⟦outer, sumcheck, 0, g⟧` and
-  `tr⟦inner, sumcheck, 0, g⟧` are different messages. The folded figure of `Specs.Export` keys a
-  block by its stage path, so it shows one generic round of each stage, and it prints the outer
-  target as `c_{m}` and the inner one as `c_{n}`.
+  `tr⟦inner, sumcheck, 0, g⟧` are different messages. Each stage's loop is one node with a
+  generic round, so the folded figure prints the outer target after the loop as `c_{m}` and the
+  inner one as `c_{n}`.
+* The types of `z̃` and `τ` print with the symbols `n` and `m` (`ty := …`), not their values.
+  *Why:* `spartan_erase` then proves that the erased skeleton is the same for all `m` and `n`.
 -/
 
 set_option linter.hashCommand false
@@ -233,8 +236,9 @@ noncomputable def spartanSpec (m n : ℕ) :=
     (fun q => ⟨.B, q⟩) (fun _ => rfl) fun B =>
   input "\\tilde{C}" ((Fin m → R) × (Fin n → R)) R "\\mathbb{F}^{2^m \\times 2^n}"
     (fun q => ⟨.C, q⟩) (fun _ => rfl) fun C =>
-  oracle "\\tilde{z}" (Table R n) R "\\mathsf{assignment}" (fun w => w.z) fun z =>
-  challenge "\\tau" (Fin m → R) fun τ =>
+  oracle "\\tilde{z}" (Table R n) R "\\mathsf{assignment}" (fun w => w.z)
+    (ty := TypeName.name R ++ "^{2^{n}}") fun z =>
+  challenge "\\tau" (Fin m → R) (ty := TypeName.name R ++ "^{m}") fun τ =>
   stage "outer" ⟪A, B, C, z, τ⟫
     (fun A B C z τ => (∑∈ x ∈ cube m "m",
       eqF (Fml.var τ) (Fml.var x) "[m]" *
@@ -245,14 +249,16 @@ noncomputable def spartanSpec (m n : ℕ) :=
       message (vN "A") R "\\mathsf{row}_A" (fun w => rowEval (w.mats .A) w.z st.rs) fun a =>
       message (vN "B") R "\\mathsf{row}_B" (fun w => rowEval (w.mats .B) w.z st.rs) fun b =>
       message (vN "C") R "\\mathsf{row}_C" (fun w => rowEval (w.mats .C) w.z st.rs) fun c =>
-      check "outer" ⟪τ, (⟨st.rs⟩ : Val rxN (Fin m → R)), a, b, c, st.c⟫
+      check "outer" ⟪τ, (⟨st.rs⟩ : Val rxN (Fin m → R)), a, b, c,
+          (⟨st.c.val⟩ : Val (iv "c" (v := "m")) R)⟫
         (fun τ rx a b c e =>
           eqF (Fml.var τ) (Fml.var rx) "[m]" * (Fml.var a * Fml.var b - Fml.var c) =' Fml.var e) <|
       next ⟨⟨st.rs⟩, a, b, c⟩)
     fun e =>
   stage "inner" ⟪A, B, C, z, e.rx, e.vA, e.vB, e.vC⟫ rowClaims
     (fun f : FinalClaim R n =>
-      ⟪A, B, C, z, e.rx, (⟨f.claim.rs⟩ : Val ryN (Fin n → R)), f.ρA, f.ρB, f.ρC, f.claim.c⟫)
+      ⟪A, B, C, z, e.rx, (⟨f.claim.rs⟩ : Val ryN (Fin n → R)), f.ρA, f.ρB, f.ρC,
+        (⟨f.claim.c.val⟩ : Val (iv "c" (v := "n")) R)⟫)
     (fun A B C z rx ry ρa ρb ρc e =>
       finalF A B C z (Fml.var rx) (Fml.var ry) (Fml.var ρa) (Fml.var ρb) (Fml.var ρc) =' Fml.var e)
     (fun next =>
@@ -262,11 +268,11 @@ noncomputable def spartanSpec (m n : ℕ) :=
       compute (ix "c" 0) R ⟪ρa, e.vA, ρb, e.vB, ρc, e.vC⟫
         (fun ρa a ρb b ρc c =>
           Fml.var ρa * Fml.var a + Fml.var ρb * Fml.var b + Fml.var ρc * Fml.var c) fun c0 =>
-      sumcheck n bits (innerPoly e.rx.val (ρFun ρa.val ρb.val ρc.val)) ⟨c0, Fin.elim0⟩
+      sumcheck n bits (innerPoly e.rx.val (ρFun ρa.val ρb.val ρc.val)) ⟨⟨c0.val⟩, Fin.elim0⟩
         (countName := "n") fun st => next ⟨ρa, ρb, ρc, st⟩)
     fun f =>
   check "final" ⟪A, B, C, z, e.rx, (⟨f.claim.rs⟩ : Val ryN (Fin n → R)), f.ρA, f.ρB, f.ρC,
-      f.claim.c⟫
+      (⟨f.claim.c.val⟩ : Val (iv "c" (v := "n")) R)⟫
     (fun A B C z rx ry ρa ρb ρc e =>
       finalF A B C z (Fml.var rx) (Fml.var ry) (Fml.var ρa) (Fml.var ρb) (Fml.var ρc) ='
         Fml.var e) <|
@@ -285,6 +291,11 @@ noncomputable abbrev spartanTree (m n : ℕ) : OracleProtocol :=
       .liftBind (.challenge R) fun _ => .liftBind (.challenge R) fun _ =>
       roundsTree (fun _ => roundTree R 2) (.pure ⟨⟩) 0 n) 0 m
 
+/-- The erased skeleton of the specification, which the JSON and the folded figure read, does not
+depend on the numbers of rounds `m` and `n`. -/
+theorem spartan_erase (m n m' n' : ℕ) :
+    (spartanSpec R m n).skeleton.erase = (spartanSpec R m' n').skeleton.erase := rfl
+
 /-- The tree of the specification is the expected tree. -/
 theorem spartan_tree (m n : ℕ) : (spartanSpec R m n).tree = spartanTree R m n := rfl
 
@@ -300,7 +311,7 @@ theorem spartan_verdict_isSome (w : Witness R m n) (data : (SpartanIn R m n).Dat
   erw [Desc.Complete.eq_7, Desc.Complete.eq_7, Desc.Complete.eq_7, Desc.Complete.eq_3,
     Desc.Complete.eq_4]
   intro τ
-  erw [Desc.Complete.eq_9]
+  erw [Desc.Complete.eq_9, Desc.Complete.eq_12]
   refine sumcheck_complete bits (outerPoly τ) w _ _ _ _ _ (Frozen _ 4) Frozen.ext ?_ m 0 _ _
     _ _ (Frozen.refl _ _) ?_
   · intro st env ℓ hp hev
@@ -323,7 +334,7 @@ theorem spartan_verdict_isSome (w : Witness R m n) (data : (SpartanIn R m n).Dat
       intro ρb
       erw [Desc.Complete.eq_4]
       intro ρc
-      erw [Desc.Complete.eq_6]
+      erw [Desc.Complete.eq_6, Desc.Complete.eq_12]
       refine sumcheck_complete bits (innerPoly st.rs (ρFun ρa ρb ρc)) w _ _ _ _ _ (Frozen _ 4)
         Frozen.ext ?_ n 0 _ _ _ _ hp ?_
       · intro st' env' ℓ' hp' hev'
@@ -376,23 +387,36 @@ example (tr : (spartanSpec ℚ 2 2).Tr) : tr⟦outer, v⟧ = tr⟦outer, v_A⟧ 
 example (tr : (spartanSpec ℚ 2 2).Tr) :
     tr⟦inner, "\\rho_C"⟧ = tr.2.2.2.2.2.2.2.2.2.2.2.1 := rfl
 
-/-- The labels and the expanded TeX of the checks. -/
+/-- The labels and the folded TeX of the checks. -/
 def checkTex (ks : Skel) : List (String × String) :=
-  ks.checks.map fun (c : String × Syn) => (c.1, c.2.tex Mode.expanded)
+  ks.checks.map fun (c : String × Syn) => (c.1, c.2.tex { folded := true })
 
-/-! With `m = 2` and `n = 3`: two outer rounds, the outer check, three inner rounds and the final
-check. -/
-#guard (checkTex (spartanSpec ℚ 2 3).skeleton).map (·.1) ==
-  ["sum", "sum", "outer", "sum", "sum", "sum", "final"]
+/-! The generic round check of the outer loop, the outer check, the generic round check of the
+inner loop and the final check, for every `m` and `n`. -/
+#guard (checkTex (spartanSpec ℚ 2 3).skeleton).map (·.1) == ["sum", "outer", "sum", "final"]
 
 #guard (checkTex (spartanSpec ℚ 2 3).skeleton).lookup "outer" == some
   "(\\prod_{j \\in [m]} (\\tau_{j} \\cdot r_{x,j} + (1 - \\tau_{j}) \\cdot (1 - r_{x,j}))) \\cdot \
-  (v_{A} \\cdot v_{B} - v_{C}) = c_{2}"
+  (v_{A} \\cdot v_{B} - v_{C}) = c_{m}"
+
+/-- The number of occurrences of `pat` in `s`. -/
+private def count (s pat : String) : ℕ := (s.splitOn pat).length - 1
+
+/-- The expanded figure with `m = 2` and `n = 3`. -/
+private def expanded : String := (spartanSpec ℚ 2 3).skeleton.toTex "T" false
+
+/-! The expanded figure unrolls both loops, five rounds in all, and prints each target with its
+value: the outer check reads `c_2`, and the final check and the end of stage `inner` read
+`c_3`. -/
+#guard count expanded "\\textsf{sumcheck}: round " == 5
+#guard count expanded "(v_{A} \\cdot v_{B} - v_{C}) = c_{2}" == 1
+#guard count expanded "\\tilde{z}(r_{y}) = c_{3}" == 2
 
 /-- The stages of a skeleton without branches, each with its input and output claims. -/
 def stageClaims : Skel → List (String × Syn × Syn)
   | .cons (.beginStage s φ ψ) rest => (s, φ, ψ) :: stageClaims rest
   | .cons _ rest => stageClaims rest
+  | .loop _ _ _ rest => stageClaims rest
   | _ => []
 
 /-! The two stages share the row claims: the output claim of `outer` is the input claim of
@@ -405,7 +429,7 @@ def stageClaims : Skel → List (String × Syn × Syn)
   "(\\rho_{A} \\cdot \\tilde{A}(\\mathrm{\\iota_1}(r_{x}) + \\mathrm{\\iota_2}(r_{y})) + \
   \\rho_{B} \\cdot \\tilde{B}(\\mathrm{\\iota_1}(r_{x}) + \\mathrm{\\iota_2}(r_{y})) + \
   \\rho_{C} \\cdot \\tilde{C}(\\mathrm{\\iota_1}(r_{x}) + \\mathrm{\\iota_2}(r_{y}))) \\cdot \
-  \\tilde{z}(r_{y}) = c_{3}"
+  \\tilde{z}(r_{y}) = c_{n}"
 
 end Tests
 
@@ -413,6 +437,7 @@ end Spartan
 
 #print axioms outerPoly
 #print axioms innerPoly
+#print axioms spartan_erase
 #print axioms spartan_tree
 #print axioms spartan_verdict_isSome
 

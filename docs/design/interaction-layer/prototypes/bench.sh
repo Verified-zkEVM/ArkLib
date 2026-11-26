@@ -147,9 +147,11 @@ with open(out, 'w') as f:
     f.write("| case | size | wall time | profiler top categories | import |\n")
     f.write("|---|---|---|---|---|\n")
     f.write('\n'.join(rows) + '\n\n')
-    f.write("The skeleton export does not build the `2^n` points of the input claim's domain: "
-            "`Dom` in `Specs.Formula` computes its elements only when a formula is evaluated. "
-            "The export at 128 rounds therefore takes about as long as at 8 rounds. The accessor "
+    f.write("The skeleton holds each loop as one node, and the export reads it with the counts "
+            "erased, so the JSON and the folded TeX are the same at every count. The export also "
+            "does not build the `2^n` points of the input claim's domain: `Dom` in "
+            "`Specs.Formula` computes its elements only when a formula is evaluated. The export "
+            "at 128 rounds therefore takes about as long as at 8 rounds. The accessor "
             "at round 127 of the 128-round case needs `maxRecDepth` 1024; Lean's default of 512 "
             "suffices up to round 120. See `Specs/Bench.lean`.\n")
 PY

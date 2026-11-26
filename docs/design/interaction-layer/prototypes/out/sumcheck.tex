@@ -11,8 +11,8 @@ g_{i} \gets \specannot{\mathsf{proj}} \< \sendmessageright*{[\![g_{i}]\!] \in \m
  \< \< \text{check } \sum_{a \in D} g_{i}(a) = c_{i} \\
  \< \sendmessageleft*{r_{i}} \< r_{i} \sample \mathbb{F} \\
  \< \< c_{i+1} := g_{i}(r_{i}) \pclb
-\pcintertext[dotted]{end of stage \textsf{sumcheck}: $p(r) = c_{n}$}
+\pcintertext[dotted]{end of loop \textsf{sumcheck}; end of stage \textsf{sumcheck}: $p(r) = c_{n}$}
  \< \< 
 }
-\caption{Sum-check, one round of each block, generated from the skeleton. Gray text is annotation that Lean does not check.}
+\caption{Sum-check, one generic round of each loop, generated from the skeleton. Gray text is annotation that Lean does not check.}
 \end{figure}

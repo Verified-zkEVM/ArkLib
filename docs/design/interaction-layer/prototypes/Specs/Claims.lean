@@ -168,12 +168,12 @@ theorem outClaim_roundsGo_of_verdict {n : ℕ} (D : Fin k → R)
     ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (tr : Transcript oracleSig (protocol R d r))
       (env : Handlers Id) (ℓ : ℕ) (acc : Option Bool) (o : RoundStatement R n (Fin.last n)),
       PolyInv P env ℓ →
-      Desc.verdict ans (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|")
+      Desc.verdict ans (roundsFrom ⟨"sumcheck", "i", "n", toString d ++ "/|F|"⟩ n
         (sumcheckRound n D id) next (fun _ r => protocol R d r) (fun _ => rfl)
-        (fun _ _ => rfl) r j h st) tr env ℓ = some o →
-      Desc.outClaim ans (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|")
+        (fun _ _ => rfl) (fun _ => rfl) r j h st) tr env ℓ = some o →
+      Desc.outClaim ans (roundsFrom ⟨"sumcheck", "i", "n", toString d ++ "/|F|"⟩ n
         (sumcheckRound n D id) next (fun _ r => protocol R d r) (fun _ => rfl)
-        (fun _ _ => rfl) r j h st) tr env ℓ acc = good o := by
+        (fun _ _ => rfl) (fun _ => rfl) r j h st) tr env ℓ acc = good o := by
   intro r
   induction r with
   | zero =>
@@ -183,6 +183,7 @@ theorem outClaim_roundsGo_of_verdict {n : ℕ} (D : Fin k → R)
   | succ r ih =>
     intro j h st tr env ℓ acc o hinv hv
     obtain ⟨g, x, tr⟩ := tr
+    dsimp only [roundsFrom] at hv ⊢
     rw [roundsGo] at hv ⊢
     simp only [Desc.retree_rfl] at hv ⊢
     rw [sumcheckRound] at hv ⊢
@@ -205,8 +206,8 @@ theorem sumcheckSpec_outClaim_of_verdict (D : Fin k → R) (stmt : RoundStatemen
       some (decide ((data ()).val.eval o.challenges = o.target)) := by
   unfold Spec.outClaim Spec.verdict sumcheckSpec at *
   dsimp only [input, stage] at *
-  erw [Desc.verdict.eq_7, Desc.verdict.eq_9] at hv
-  erw [Desc.outClaim.eq_7, Desc.outClaim.eq_9]
+  erw [Desc.verdict.eq_7, Desc.verdict.eq_9, Desc.verdict.eq_12] at hv
+  erw [Desc.outClaim.eq_7, Desc.outClaim.eq_9, Desc.outClaim.eq_12]
   refine outClaim_roundsGo_of_verdict D _ (data ()) _
     (fun o => some (decide ((data ()).val.eval o.challenges = o.target))) ?_ n 0 _ _ tr _ _
     none o ⟨Nat.one_pos, fun dflt q => by rw [Handlers.find_ext_self]; rfl⟩ hv
@@ -229,9 +230,9 @@ theorem complete_roundsGo {n : ℕ} (D : Fin k → R)
       (next st).Complete w ans env ℓ) :
     ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (env : Handlers Id) (ℓ : ℕ),
       st.c.val = roundSum D ⟨j, by omega⟩ st.rs w.val →
-      Desc.Complete w ans (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|")
+      Desc.Complete w ans (roundsFrom ⟨"sumcheck", "i", "n", toString d ++ "/|F|"⟩ n
         (sumcheckRound n D id) next (fun _ r => protocol R d r) (fun _ => rfl)
-        (fun _ _ => rfl) r j h st) env ℓ := by
+        (fun _ _ => rfl) (fun _ => rfl) r j h st) env ℓ := by
   intro r
   induction r with
   | zero =>
@@ -240,6 +241,7 @@ theorem complete_roundsGo {n : ℕ} (D : Fin k → R)
     exact hnext st env ℓ hc
   | succ r ih =>
     intro j h st env ℓ hc
+    dsimp only [roundsFrom]
     rw [roundsGo]
     simp only [Desc.retree_rfl]
     rw [sumcheckRound]
@@ -273,12 +275,12 @@ theorem outClaim_roundsGo_of_honest {n : ℕ} (D : Fin k → R)
     ∀ (r j : ℕ) (h : j + r = n) (st : Claim R j) (tr : Transcript oracleSig (protocol R d r))
       (env : Handlers Id) (ℓ : ℕ) (acc : Option Bool), PolyInv P env ℓ →
       st.c.val = roundSum D ⟨j, by omega⟩ st.rs w.val →
-      Desc.Honest w ans (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|")
+      Desc.Honest w ans (roundsFrom ⟨"sumcheck", "i", "n", toString d ++ "/|F|"⟩ n
         (sumcheckRound n D id) next (fun _ r => protocol R d r) (fun _ => rfl)
-        (fun _ _ => rfl) r j h st) tr env ℓ →
-      Desc.outClaim ans (roundsGo "sumcheck" n "n" (fun _ => toString d ++ "/|F|")
+        (fun _ _ => rfl) (fun _ => rfl) r j h st) tr env ℓ →
+      Desc.outClaim ans (roundsFrom ⟨"sumcheck", "i", "n", toString d ++ "/|F|"⟩ n
         (sumcheckRound n D id) next (fun _ r => protocol R d r) (fun _ => rfl)
-        (fun _ _ => rfl) r j h st) tr env ℓ acc = some true := by
+        (fun _ _ => rfl) (fun _ => rfl) r j h st) tr env ℓ acc = some true := by
   intro r
   induction r with
   | zero =>
@@ -288,6 +290,7 @@ theorem outClaim_roundsGo_of_honest {n : ℕ} (D : Fin k → R)
   | succ r ih =>
     intro j h st tr env ℓ acc hinv hc hh
     obtain ⟨g, x, tr⟩ := tr
+    dsimp only [roundsFrom] at hh ⊢
     rw [roundsGo] at hh ⊢
     simp only [Desc.retree_rfl] at hh ⊢
     rw [sumcheckRound] at hh ⊢
@@ -313,7 +316,7 @@ theorem sumcheckSpec_complete (D : Fin k → R)
   have hc := (sumcheckSpec_InClaim_iff D x).mp hin
   unfold sumcheckSpec
   dsimp only [input, stage]
-  erw [Desc.Complete.eq_7, Desc.Complete.eq_9]
+  erw [Desc.Complete.eq_7, Desc.Complete.eq_9, Desc.Complete.eq_12]
   exact complete_roundsGo D _ (x.2 ()) _ (fun _ _ _ _ => by erw [Desc.Complete.eq_10]; trivial)
     n 0 (Nat.zero_add n) _ _ _ hc.symm
 
@@ -328,8 +331,8 @@ theorem sumcheckSpec_outClaim_of_honest (D : Fin k → R)
   have hc := (sumcheckSpec_InClaim_iff D x).mp hin
   unfold Spec.outClaim sumcheckSpec at *
   dsimp only [input, stage] at *
-  erw [Desc.Honest.eq_7, Desc.Honest.eq_9] at hh
-  erw [Desc.outClaim.eq_7, Desc.outClaim.eq_9]
+  erw [Desc.Honest.eq_7, Desc.Honest.eq_9, Desc.Honest.eq_12] at hh
+  erw [Desc.outClaim.eq_7, Desc.outClaim.eq_9, Desc.outClaim.eq_12]
   refine outClaim_roundsGo_of_honest D _ (x.2 ()) (x.2 ()) _ ?_ n 0 _ _ tr _ _ none
     ⟨Nat.one_pos, fun dflt q => by rw [Handlers.find_ext_self]; rfl⟩ hc.symm hh
   intro st tr env ℓ acc hinv hst
