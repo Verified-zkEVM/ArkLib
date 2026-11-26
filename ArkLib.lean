@@ -72,6 +72,7 @@ public import ArkLib.Commitments.Functional.KZG.Correctness
 public import ArkLib.Commitments.Functional.KZG.EvaluationBinding
 public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Reduction
 public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Wins
+public import ArkLib.Commitments.Functional.KZG.FunctionalCommitment
 public import ArkLib.Commitments.Functional.KZG.Generic.Adversary
 public import ArkLib.Commitments.Functional.KZG.Generic.Cost
 public import ArkLib.Commitments.Functional.KZG.Generic.Equivalence
@@ -79,6 +80,10 @@ public import ArkLib.Commitments.Functional.KZG.Generic.Program
 public import ArkLib.Commitments.Functional.KZG.Generic.Security
 public import ArkLib.Commitments.Functional.KZG.Generic.Translation
 public import ArkLib.Commitments.Functional.KZG.Security
+public import ArkLib.Commitments.FunctionalCommitment.Basic
+public import ArkLib.Commitments.FunctionalCommitment.Merkle
+public import ArkLib.Commitments.FunctionalCommitment.OneMessage
+public import ArkLib.Commitments.FunctionalCommitment.Security
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
