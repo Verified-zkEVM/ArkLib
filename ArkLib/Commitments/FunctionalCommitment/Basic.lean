@@ -27,8 +27,10 @@ A scheme `FC : FunctionalCommitment ambient Data I` has
 
 Setup, commit and the honest prover run in `OracleComp (unifSpec + ambient)`: `unifSpec` gives
 them private coins and `ambient` is an oracle shared by every party, such as a random oracle.
-The verifier only queries `ambient`, so the opening is public-coin. Group models are not oracles
-here. They restrict the adversary class of a security game.
+The verifier can query only `ambient` and cannot call the private-coin oracle. The security
+games take a challenge sampler as a parameter. The paper notions assume uniform challenges,
+which `FunctionalCommitment.ChallengeSampler.uniform` samples using
+`Interaction.challengeQueryImpl`. Group models restrict the adversary class of a security game.
 
 `Verifier.liftAmbient` runs a verifier over `ambient` inside `unifSpec + ambient`.
 
@@ -81,8 +83,8 @@ structure FunctionalCommitment {ι : Type} (ambient : OracleSpec.{0, 0} ι)
 namespace Interaction
 open PFunctor FreeM
 
-/-- Run a verifier over `ambient` inside `unifSpec + ambient`. The lifted verifier makes no
-`unifSpec` query, so it stays public-coin. -/
+/-- Run a verifier over `ambient` inside `unifSpec + ambient`. The lifted verifier calls only
+the shared oracle. -/
 def Verifier.liftAmbient {ι : Type} {ambient : OracleSpec.{0, 0} ι} {s : Protocol}
     {S : Type} {T : Path s → Type} (V : Verifier ambient s S T) :
     Verifier (unifSpec + ambient) s S T where

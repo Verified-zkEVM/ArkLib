@@ -25,21 +25,23 @@ committer keeps that whole tree, and the opening proof at `idx` is the authentic
 
 ## Main statements
 
-* `FunctionalCommitment.Merkle.correctness`: with the lazy random oracle as the ambient
-  implementation, the scheme is correct with error `0` from every starting cache.
-* `FunctionalCommitment.Merkle.exists_collision_of_accepts`: if every claim recomputes the same
-  root under a hash function `h` and no tree of leaf values is consistent with the claims, then
-  `h` has a collision. This is the deterministic core of function binding.
-* `FunctionalCommitment.Merkle.exists_collision_of_check`: the same statement for the Merkle
-  check run with a fixed hash table `f`.
-* `FunctionalCommitment.Merkle.exists_collision_of_plainGame`: if the plain function-binding game
-  can return `true` when the hash answers with the table `f`, then `f` has a collision.
+* `FunctionalCommitment.Merkle.correctness` gives adaptive correctness with error `0` from
+  every starting cache of the lazy random oracle.
+* `FunctionalCommitment.Merkle.exists_collision_of_accepts` shows that a fixed hash function
+  has a collision if all claims recompute the same root and no leaf data agrees with all claims.
+* `FunctionalCommitment.Merkle.exists_collision_of_check` gives the same conclusion when the
+  Merkle check accepts every claim under a fixed hash table.
+* `FunctionalCommitment.Merkle.exists_collision_of_plainGame` gives the same conclusion when
+  the plain fixed-claim binding game can return `true` under a fixed hash table.
 
-A probability bound for function binding in the random oracle model, through a birthday bound
-on the game's hash queries, is left for later work.
+The collision theorems give deterministic existence results about a fixed hash function. A
+security bound in the random oracle model will require bounding the probability of a collision
+among the queries the game actually makes.
 
 ## References
 
+* [Kate, A., Zaverucha, G. M., and Goldberg, I.,
+  *Constant-Size Commitments to Polynomials and Their Applications*][KZG10]
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat–Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
@@ -93,19 +95,19 @@ abbrev functionalCommitment :
     (fun _ _ _ tree idx => pure (generateProof tree idx))
     (check α s)
 
-/-- **Correctness.** With the lazy random oracle as the ambient implementation, the Merkle
-functional commitment is correct with error `0` from every starting cache, for every challenge
-sampler and every set of query choosers. -/
+/-- The Merkle functional commitment satisfies adaptive evaluation correctness ([KZG10]
+Definition 5, evaluation clause) with error `0` under the lazy random oracle. The result holds
+for every starting cache, challenge sampler and set of data choosers. -/
 theorem correctness [SampleableType α] (cache : (InductiveMerkleTree.spec α).QueryCache)
     (chal : (functionalCommitment α s).ChallengeSampler)
-    (Adv : Set (functionalCommitment α s).QueryChooser) :
+    (Adv : Set (functionalCommitment α s).DataChooser) :
     (functionalCommitment α s).Correctness (pure cache) (InductiveMerkleTree.spec α).randomOracle
       chal Adv 0 := by
-  intro d chooser _
+  intro chooser _
   rw [tsub_zero]
   refine le_of_eq (Eq.symm ?_)
   have key := (prEvent_eq_one_simulateQ_romImpl_run_iff
-    ((functionalCommitment α s).correctnessGame chal d chooser) cache (fun b => b = true)).2 ?_
+    ((functionalCommitment α s).correctnessGame chal chooser) cache (fun b => b = true)).2 ?_
   · simp only [correctnessExperiment, runGame, LawfulMonad.pure_bind, StateT.run'_eq,
       Functor.map_map]
     exact key
@@ -117,18 +119,17 @@ theorem correctness [SampleableType α] (cache : (InductiveMerkleTree.spec α).Q
     simulateQ_unifFwdAnswerImpl_liftComp, simulateQ_buildMerkleTree, check, verifyProof,
     simulateQ_getPutativeRoot, mem_support_bind_iff, support_pure, support_map,
     Set.mem_singleton_iff, Set.mem_image] at hb
-  obtain ⟨-, -, _, ⟨_, rfl, rfl⟩, idx, -, _, rfl, rfl⟩ := hb
+  obtain ⟨-, -, ⟨d, _⟩, -, _, ⟨_, rfl, rfl⟩, idx, -, _, rfl, rfl⟩ := hb
   change ((_ : α) == _) = true
   rw [beq_iff_eq]
   exact functional_completeness idx d fun left right => f (left, right)
 
-/-! ### Function binding -/
+/-! ### Collisions under a fixed hash function -/
 
 omit [DecidableEq α] in
-/-- **Binding, deterministic core.** Fix a hash function `h`. Suppose every claim
-`(idxᵢ, xᵢ, πᵢ)` recomputes the root `root` under `h`, and no tree of leaf values is consistent
-with the claimed leaf values. Then two claims share a leaf index and differ in value, and `h` has
-a collision. -/
+/-- If every claim recomputes `root` and no leaf data agrees with all claimed values, the
+fixed hash function `h` has a collision. The conclusion gives a collision somewhere in
+`h`'s domain. -/
 theorem exists_collision_of_accepts (h : α → α → α) {L : ℕ} (root : α)
     (claims : Fin L → (idx : SkeletonLeafIndex s) × α × List.Vector α idx.depth)
     (hacc : ∀ i, getPutativeRootWithHash (claims i).1 (claims i).2.1 (claims i).2.2 h = root)
@@ -155,9 +156,8 @@ theorem exists_collision_of_accepts (h : α → α → α) {L : ℕ} (root : α)
   rw [LeafData.get_ofFun, dite_eq_left_of_eq_true (eq_true hex)]
   exact hagree _ _ hex.choose_spec
 
-/-- **Binding through the plain game.** Fix the hash function to a table `f`. If the Merkle check
-under `f` accepts every claim of a plain function-binding output and no data is consistent with
-the claims, then `f` has a collision. -/
+/-- If the Merkle check under the fixed hash table `f` accepts every claim and no leaf data
+agrees with all claims, then `f` has a collision somewhere in its domain. -/
 theorem exists_collision_of_check (f : QueryImpl (InductiveMerkleTree.spec α) Id) {L : ℕ}
     (root : α) (claims : Fin L → (idx : SkeletonLeafIndex s) × α × List.Vector α idx.depth)
     (hacc : ∀ i, simulateQ f (check α s ⟨⟩ root (claims i).1 (claims i).2.1 (claims i).2.2) = true)
@@ -179,17 +179,17 @@ theorem simulateQ_mOfFn {ι' : Type} {spec' : OracleSpec ι'} {m : Type → Type
   | L + 1, g => by
     simp only [Fin.mOfFn_succ, simulateQ_bind, simulateQ_pure, simulateQ_mOfFn impl L]
 
-/-- **Binding in the plain game with a fixed hash table.** If the plain function-binding game of
-the Merkle scheme can return `true` when the hash answers with the table `f`, then `f` has a
-collision. -/
+/-- If the plain fixed-claim binding game can return `true` under the fixed hash table `f`,
+then `f` has a collision somewhere in its domain. The probability of a collision among the
+game's actual queries remains a follow-up. -/
 theorem exists_collision_of_plainGame
     (f : QueryImpl (InductiveMerkleTree.spec α) Id) {L : ℕ}
     (B : PlainAdversary (InductiveMerkleTree.spec α) PUnit α
       (I := leafInterface α s) (fun idx => List.Vector α idx.depth) L)
     (hwin : true ∈ support (simulateQ (unifFwdAnswerImpl f)
-      (plainFunctionBindingGame (pure ⟨⟩) (check α s) L B))) :
+      (plainFixedClaimBindingGame (pure ⟨⟩) (check α s) L B))) :
     ∃ l₁ r₁ l₂ r₂, Collision (fun l r => f (l, r)) l₁ r₁ l₂ r₂ := by
-  simp only [plainFunctionBindingGame, simulateQ_bind, simulateQ_pure, simulateQ_mOfFn,
+  simp only [plainFixedClaimBindingGame, simulateQ_bind, simulateQ_pure, simulateQ_mOfFn,
     simulateQ_unifFwdAnswerImpl_liftComp, Fin.mOfFn_pure, LawfulMonad.pure_bind,
     mem_support_bind_iff, support_pure, Set.mem_singleton_iff] at hwin
   obtain ⟨out, -, hout⟩ := hwin

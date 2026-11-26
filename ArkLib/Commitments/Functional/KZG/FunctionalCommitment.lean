@@ -22,19 +22,18 @@ KZG uses no shared oracle, so the ambient oracle is the empty specification `emp
 
 ## Main statements
 
-* `KZG.correctness_functionalCommitment`: the scheme is correct with error `0` ([KZG10] Def. 5).
-* `KZG.functionBindingAdvantage_eq`: the function-binding advantage of an adversary `A` ([CGKY25]
-  Def. 3.17) equals the probability that `toKZGAdversary A` wins
-  `KZG.functionBindingExperiment`.
-* `KZG.functionBindingAdvantage_le_arsdh`: if `e g₁ g₂ ≠ 0` and `g₁` generates `G₁`, the
-  function-binding advantage of `A` is at most the ARSDH advantage of the reduction
-  `functionBindingAdversary pts (toKZGAdversary A)`.
+* `KZG.correctness_functionalCommitment` gives adaptive correctness with error `0`
+  ([KZG10] Definition 5, evaluation clause).
+* `KZG.fixedClaimBindingAdvantage_eq` equates the fixed-claim binding advantage of `A`
+  with the probability that `toKZGAdversary A` wins `KZG.functionBindingExperiment`.
+* `KZG.fixedClaimBindingAdvantage_le_arsdh` bounds the fixed-claim binding advantage of `A`
+  by the ARSDH advantage of `functionBindingAdversary pts (toKZGAdversary A)` when
+  `e g₁ g₂ ≠ 0` and `g₁` generates `G₁`.
 
-`KZG.functionBindingAdvantage_eq` moves every bound on `KZG.functionBindingExperiment` to the
-functional commitment. For example, the algebraic group model bound
-`KZG.AGM.functionBinding_le_pairingDLog` and the generic group model bound
-`KZG.Generic.functionBinding_le_generic` apply when `toKZGAdversary A` is the KZG adversary of an
-algebraic or a generic adversary.
+KZG openings have one message and no challenges. The adversary fixes all claims and provers
+before any opening runs, as in [CGKY25] Definition 3.17. The
+`ArkLib.Commitments.Functional.KZG.FunctionalCommitmentBounds` module transfers the algebraic
+and generic group model bounds to this interface.
 
 ## References
 
@@ -115,12 +114,13 @@ noncomputable abbrev functionalCommitment (e : G₁ →ₗ[F] G₂ →ₗ[F] G�
 
 variable (e : G₁ →ₗ[F] G₂ →ₗ[F] Gₜ) (g₁ : G₁) (g₂ : G₂)
 
-/-- **Correctness.** KZG is correct with error `0` for every ambient implementation, challenge
-sampler and set of query choosers ([KZG10] Def. 5). -/
+/-- KZG satisfies adaptive correctness with error `0` for every initial state computation,
+ambient implementation, challenge sampler and set of data choosers ([KZG10] Definition 5,
+evaluation clause). -/
 theorem correctness_functionalCommitment {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl emptySpec0 (StateT σ ProbComp))
     (chal : (functionalCommitment e g₁ g₂ n).ChallengeSampler)
-    (Adv : Set (functionalCommitment e g₁ g₂ n).QueryChooser) :
+    (Adv : Set (functionalCommitment e g₁ g₂ n).DataChooser) :
     (functionalCommitment e g₁ g₂ n).Correctness init impl chal Adv 0 := by
   refine correctness_oneMessage _ _ _ _ ?_ init impl chal Adv
   intro pp hpp d ca hca q π hπ b hb
@@ -130,28 +130,28 @@ theorem correctness_functionalCommitment {σ : Type} (init : ProbComp σ)
   subst hca hπ hb
   exact verifyOpening_generateOpening e g₁ g₂ τ d q
 
-/-- The KZG function-binding adversary of an adversary `A` against the functional commitment: it
-runs `toPlainAdversary A` on the keys and returns the commitment and the claims as a list of
-openings. -/
+/-- The projected KZG adversary runs `toPlainAdversary A` on the keys and returns the commitment
+and the claims as a list of openings. -/
 noncomputable def toKZGAdversary {L : ℕ}
     (A : OneMessageAdversary emptySpec0 ((Fin (n + 1) → G₁) × (Fin 2 → G₂)) G₁
       (I := oracleInterface F n) (fun _ => G₁) L) :
-    FunctionBindingAdversary F G₁ G₂ n := fun ck vk =>
-  (fun out => (out.1, List.ofFn fun i => ((out.2 i).1, (out.2 i).2.1, (out.2 i).2.2))) <$>
-    simulateQ coinsImpl (toPlainAdversary A (ck, vk))
+    (Fin (n + 1) → G₁) → (Fin 2 → G₂) → ProbComp (G₁ × List (FunctionBinding.Opening F G₁)) :=
+  fun ck vk =>
+    (fun out => (out.1, List.ofFn fun i => ((out.2 i).1, (out.2 i).2.1, (out.2 i).2.2))) <$>
+      simulateQ coinsImpl (toPlainAdversary A (ck, vk))
 
-/-- The function-binding advantage of `A` against the functional commitment equals the
+/-- The fixed-claim binding advantage of `A` against the functional commitment equals the
 probability that `toKZGAdversary A` wins `KZG.functionBindingExperiment`. -/
-theorem functionBindingAdvantage_eq {σ : Type} (init : ProbComp σ)
+theorem fixedClaimBindingAdvantage_eq {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl emptySpec0 (StateT σ ProbComp))
     (chal : (functionalCommitment e g₁ g₂ n).ChallengeSampler) (L : ℕ)
-    (A : (functionalCommitment e g₁ g₂ n).FunctionBindingAdversary L) :
-    (functionalCommitment e g₁ g₂ n).functionBindingAdvantage init impl chal L A =
+    (A : (functionalCommitment e g₁ g₂ n).FixedClaimAdversary L) :
+    (functionalCommitment e g₁ g₂ n).fixedClaimBindingAdvantage init impl chal L A =
       Pr{let b ← functionBindingExperiment e g₁ g₂ (toKZGAdversary A)}[b = true] := by
-  rw [functionBindingAdvantage_oneMessage, plainFunctionBindingAdvantage,
+  rw [fixedClaimBindingAdvantage_oneMessage, plainFixedClaimBindingAdvantage,
     runGame_emptySpec0, _root_.map_bind, OracleComp.prEvent_bind_const]
   congr 2
-  simp only [plainFunctionBindingGame, functionBindingExperiment, toKZGAdversary, keygen,
+  simp only [plainFixedClaimBindingGame, functionBindingExperiment, toKZGAdversary, keygen,
     liftComp_pure, Fin.mOfFn_pure, LawfulMonad.pure_bind, simulateQ_bind, simulateQ_pure,
     coinsImpl, QueryImpl.simulateQ_add_liftComp_left, simulateQ_ofLift_eq_self, bind_assoc,
     bind_map_left, liftComp_bind]
@@ -164,19 +164,19 @@ theorem functionBindingAdvantage_eq {σ : Type} (init : ProbComp σ)
     simp only [List.forall_mem_ofFn_iff]
     rfl
 
-/-- **Function binding from ARSDH.** If `e g₁ g₂ ≠ 0` and `g₁` generates `G₁`, the
-function-binding advantage of every adversary `A` against KZG, for every ambient implementation
-and challenge sampler, is at most the ARSDH advantage of `functionBindingAdversary pts
-(toKZGAdversary A)`, for any `n + 2` distinct points `pts`. -/
-theorem functionBindingAdvantage_le_arsdh [DecidableEq G₁] [DecidableEq G₂] (he : e g₁ g₂ ≠ 0)
+/-- If `e g₁ g₂ ≠ 0` and `g₁` generates `G₁`, the fixed-claim binding advantage of every
+adversary `A` against KZG is at most the ARSDH advantage of
+`functionBindingAdversary pts (toKZGAdversary A)`. The bound holds for every ambient
+implementation, challenge sampler and choice of `n + 2` distinct points `pts`. -/
+theorem fixedClaimBindingAdvantage_le_arsdh [DecidableEq G₁] [DecidableEq G₂] (he : e g₁ g₂ ≠ 0)
     (hg₁ : Function.Surjective (· • g₁ : F → G₁)) (pts : Fin (n + 2) ↪ F) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl emptySpec0 (StateT σ ProbComp))
     (chal : (functionalCommitment e g₁ g₂ n).ChallengeSampler) (L : ℕ)
-    (A : (functionalCommitment e g₁ g₂ n).FunctionBindingAdversary L) :
-    (functionalCommitment e g₁ g₂ n).functionBindingAdvantage init impl chal L A ≤
+    (A : (functionalCommitment e g₁ g₂ n).FixedClaimAdversary L) :
+    (functionalCommitment e g₁ g₂ n).fixedClaimBindingAdvantage init impl chal L A ≤
       Pr{let b ← ARSDH.experiment g₁ g₂ (functionBindingAdversary pts (toKZGAdversary A))}[
         b = true] := by
-  rw [functionBindingAdvantage_eq]
+  rw [fixedClaimBindingAdvantage_eq]
   exact functionBinding_le_arsdh he hg₁ pts _
 
 end KZG

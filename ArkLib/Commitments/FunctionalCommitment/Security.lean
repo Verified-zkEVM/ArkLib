@@ -6,15 +6,15 @@ Authors: Quang Dao
 module
 
 public import ArkLib.Commitments.FunctionalCommitment.Basic
+public import ArkLib.Interaction.Security.Completeness
 public import ToMathlib.Control.Monad.Fold
 public import VCVio.OracleComp.SimSemantics.StateT.Basic
 
 /-!
 # Security games for functional commitments
 
-This file states correctness and `L`-claim function binding of a functional commitment as games
-with setup. Both games are adaptive: the adversary sees the public parameters before it chooses
-the query or the claims.
+This file defines adaptive correctness and `L`-claim fixed-claim binding for functional
+commitments. Both games give the public parameters to the chooser or adversary.
 
 ## Running a game
 
@@ -25,26 +25,30 @@ stateful implementation `impl`, whose initial state `init` samples. This is the 
 phase of the game, so a random oracle answers the commit phase and the opening phase
 consistently.
 
-An opening runs with `interact`: the prover interacts with the sampler, which draws each
-challenge with the challenge sampler `chal q` (for example `Interaction.challengeQueryImpl`).
-`interact` returns the verifier's decision as a computation that has not run yet. The
-function-binding game first runs every opening interaction and then every decision. With
-one-message openings this is the order of the non-interactive game of [CGKY25]: the adversary
-outputs all proofs, and then the verifier checks them.
+The verifier can query only `ambient` and cannot call the private-coin oracle. The games take a
+challenge sampler `chal` as a parameter. The paper notions assume uniform challenges, which
+`ChallengeSampler.uniform` draws using `Interaction.challengeQueryImpl`. The `interact` function
+runs the prover against `chal q` and returns the verifier's decision as a computation. The
+fixed-claim binding game runs all opening interactions before it runs the decisions.
 
 ## Games
 
-* `correctnessExperiment`: setup gives `pp`, the honest committer commits to `d`, an adaptive
-  chooser picks the query `q` from `pp` and `cm`, and the honest prover opens `cm` to
-  `I.answer d q`. `Correctness Adv ε` says that this run accepts with probability at least
-  `1 - ε` for every `d` and every chooser in `Adv` ([KZG10] Def. 5).
-* `functionBindingExperiment L`: setup gives `pp`, and the adversary returns a commitment `cm`,
-  `L` claims `(qᵢ, rᵢ)` and `L` opening provers. The adversary wins when every opening is
-  accepted and no `d : Data` has `I.answer d qᵢ = rᵢ` for all `i` ([CGKY25] Def. 3.17).
-  `FunctionBinding L Adv ε` bounds the advantage of every adversary in `Adv` by `ε`.
+* `correctnessExperiment` gives `pp` to the chooser, who supplies data `d` and a continuation.
+  The honest committer commits to `d`, the continuation sees `cm` and chooses `q`, and the
+  honest prover opens `cm` to `I.answer d q`. `Correctness Adv ε` requires acceptance with
+  probability at least `1 - ε` for every chooser in `Adv` ([KZG10] Definition 5, evaluation
+  clause).
+* `fixedClaimBindingExperiment L` gives `pp` to the adversary, who returns a commitment `cm`
+  and fixes every claim and opening prover before any opening runs. The adversary wins when
+  the verifier accepts every opening and no data agrees with all claimed answers.
+  `FixedClaimBinding L Adv ε` bounds the advantage of each adversary in `Adv` by `ε`.
 
-The opening relation `Opens`, hiding, extractability and the state-restoration game with setup
-are planned for later work.
+For one-message openings, which have no challenges, fixed-claim binding is [CGKY25] Definition
+3.17. For interactive openings it is weaker than the joint game planned for a later PR.
+
+The planned extraction game uses the query interface. The extractor outputs data `d` at
+commitment time, and the adversary wins if the verifier accepts an opening of `(q, r)` with
+`r ≠ I.answer d q`. Hiding and the state-restoration game with setup are also planned.
 
 ## References
 
@@ -94,6 +98,12 @@ variable (FC : FunctionalCommitment ambient Data I)
 abbrev ChallengeSampler :=
   (q : I.Query) → QueryImpl (challengeSpec plainSig (FC.openSpec q)) ProbComp
 
+/-- Sample fresh challenges with the uniform sampler from `Interaction.challengeQueryImpl`
+for each opening protocol. -/
+def ChallengeSampler.uniform [∀ q c, SampleableType (challengeSpec plainSig (FC.openSpec q) c)] :
+    FC.ChallengeSampler :=
+  fun q => Interaction.challengeQueryImpl plainSig (FC.openSpec q)
+
 /-- Run the opening interaction for the query `q` and return the verifier's decision on
 `stmt` as a computation that has not run yet. The prover interacts with the sampler, whose
 challenges `chal q` draws with private coins. -/
@@ -107,13 +117,44 @@ def interact (chal : FC.ChallengeSampler) (q : I.Query) (stmt : FC.PP × FC.Cm �
 
 /-! ### Correctness -/
 
+/-- A data chooser sees the public parameters and returns data and a continuation. The
+continuation sees the public commitment and chooses the query. -/
+abbrev DataChooser :=
+  FC.PP → OracleComp (unifSpec + ambient) (Data × (FC.Cm → OracleComp (unifSpec + ambient) I.Query))
+
+/-- The chooser supplies data after setup and chooses the query after seeing the commitment.
+The game returns the verifier's decision on the honest opening. -/
+def correctnessGame (chal : FC.ChallengeSampler) (chooser : FC.DataChooser) :
+    OracleComp (unifSpec + ambient) Bool := do
+  let pp ← FC.setup
+  let (d, next) ← chooser pp
+  let (cm, aux) ← FC.commit pp d
+  let q ← next cm
+  let r := I.answer d q
+  let decision ← FC.interact chal q (pp, cm, r) (FC.prover q pp cm r d aux)
+  decision
+
+/-- Run the correctness game with initial state sampled by `init` and ambient handler `impl`. -/
+def correctnessExperiment {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp)) (chal : FC.ChallengeSampler)
+    (chooser : FC.DataChooser) : ProbComp Bool :=
+  runGame init impl (FC.correctnessGame chal chooser)
+
+/-- For each chooser in `Adv`, the verifier accepts the honest evaluation opening with
+probability at least `1 - ε` ([KZG10] Definition 5, evaluation clause). -/
+def Correctness {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chal : FC.ChallengeSampler) (Adv : Set FC.DataChooser) (ε : ℝ≥0∞) : Prop :=
+  ∀ chooser ∈ Adv, 1 - ε ≤ Pr{let b ← FC.correctnessExperiment init impl chal chooser}[b = true]
+
+/-! ### Fixed-data correctness -/
+
 /-- An adaptive query chooser sees the public parameters and the commitment. -/
 abbrev QueryChooser := FC.PP → FC.Cm → OracleComp (unifSpec + ambient) I.Query
 
-/-- The correctness game for data `d`: setup, honest commitment to `d`, a query chosen by
-`chooser`, and the honest opening of `cm` to `I.answer d q`. It returns the verifier's
-decision. -/
-def correctnessGame (chal : FC.ChallengeSampler) (d : Data) (chooser : FC.QueryChooser) :
+/-- The committer uses the fixed data `d`. After seeing the public parameters and the
+commitment, the chooser picks a query. The game returns the verifier's decision on the honest
+opening. -/
+def fixedDataCorrectnessGame (chal : FC.ChallengeSampler) (d : Data) (chooser : FC.QueryChooser) :
     OracleComp (unifSpec + ambient) Bool := do
   let pp ← FC.setup
   let ca ← FC.commit pp d
@@ -122,20 +163,36 @@ def correctnessGame (chal : FC.ChallengeSampler) (d : Data) (chooser : FC.QueryC
     (FC.prover q pp ca.1 (I.answer d q) d ca.2)
   decision
 
-/-- The correctness experiment: the correctness game run with `init` and `impl`. -/
-def correctnessExperiment {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl ambient (StateT σ ProbComp)) (chal : FC.ChallengeSampler) (d : Data)
-    (chooser : FC.QueryChooser) : ProbComp Bool :=
-  runGame init impl (FC.correctnessGame chal d chooser)
-
-/-- **Correctness.** For every data `d` and every chooser in `Adv`, the honest opening accepts
-with probability at least `1 - ε`. -/
-def Correctness {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+/-- For every fixed data value and each query chooser in `Adv`, the verifier accepts the honest
+opening with probability at least `1 - ε`. -/
+def FixedDataCorrectness {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl ambient (StateT σ ProbComp))
     (chal : FC.ChallengeSampler) (Adv : Set FC.QueryChooser) (ε : ℝ≥0∞) : Prop :=
   ∀ d : Data, ∀ chooser ∈ Adv,
-    1 - ε ≤ Pr{let b ← FC.correctnessExperiment init impl chal d chooser}[b = true]
+    1 - ε ≤ Pr{let b ← runGame init impl (FC.fixedDataCorrectnessGame chal d chooser)}[b = true]
 
-/-! ### Function binding -/
+/-- Embed a fixed data value and a query chooser into the adaptive chooser class. -/
+def fixed (d : Data) (chooser : FC.QueryChooser) : FC.DataChooser :=
+  fun pp => pure (d, chooser pp)
+
+/-- The correctness game with an embedded chooser runs the fixed-data game. -/
+theorem correctnessGame_fixed (chal : FC.ChallengeSampler) (d : Data)
+    (chooser : FC.QueryChooser) :
+    FC.correctnessGame chal (FC.fixed d chooser) = FC.fixedDataCorrectnessGame chal d chooser := by
+  simp [correctnessGame, fixed, fixedDataCorrectnessGame]
+
+variable {FC} in
+/-- Adaptive correctness implies fixed-data correctness when the adaptive class contains
+every embedding of the fixed-data class. -/
+theorem Correctness.toFixedData {σ : Type} {init : ProbComp σ}
+    {impl : QueryImpl ambient (StateT σ ProbComp)} {chal : FC.ChallengeSampler}
+    {D : Set FC.DataChooser} {Q : Set FC.QueryChooser} {ε : ℝ≥0∞}
+    (ok : FC.Correctness init impl chal D ε) (incl : ∀ d, ∀ a ∈ Q, FC.fixed d a ∈ D) :
+    FC.FixedDataCorrectness init impl chal Q ε := by
+  intro d a ha
+  simpa only [correctnessExperiment, correctnessGame_fixed] using ok (FC.fixed d a) (incl d a ha)
+
+/-! ### Fixed-claim binding -/
 
 /-- No data is consistent with all claims `(qᵢ, rᵢ)`, as a Boolean. It is decided
 classically. -/
@@ -147,21 +204,22 @@ theorem noConsistentData_eq_true_iff {L : ℕ} (claims : Fin L → (q : I.Query)
     noConsistentData claims = true ↔ ¬ ∃ d : Data, ∀ i, I.answer d (claims i).1 = (claims i).2 :=
   @decide_eq_true_iff _ (Classical.propDecidable _)
 
-/-- A function-binding claim: a query `q`, a claimed answer `r` and a malicious opening prover
-for `q`. -/
+/-- A claim for fixed-claim binding consists of a query `q`, a claimed answer `r` and an opening
+prover for `q`. -/
 abbrev Claim :=
   (q : I.Query) × I.spec q × Prover plainSig (unifSpec + ambient) (FC.openSpec q) (fun _ => PUnit)
 
-/-- An `L`-claim function-binding adversary sees the public parameters and returns a commitment
-and `L` claims with their opening provers. -/
-abbrev FunctionBindingAdversary (L : ℕ) :=
+/-- The adversary sees the public parameters and fixes its commitment, all `L` claims and all
+opening provers before any opening runs. -/
+abbrev FixedClaimAdversary (L : ℕ) :=
   FC.PP → OracleComp (unifSpec + ambient) (FC.Cm × (Fin L → FC.Claim))
 
-/-- The `L`-claim function-binding game. Setup gives `pp`, and the adversary returns `cm` and
-the claims. The game runs every opening interaction, then every decision, and returns whether
-every opening is accepted and no data is consistent with the claims. -/
-noncomputable def functionBindingGame (chal : FC.ChallengeSampler) (L : ℕ)
-    (A : FC.FunctionBindingAdversary L) : OracleComp (unifSpec + ambient) Bool := do
+/-- The adversary fixes all claims and provers before any opening runs. The game returns
+`true` if the verifier accepts every opening and no data agrees with all claims.
+For one-message openings, which have no challenges, this is [CGKY25] Definition 3.17.
+For interactive openings it is weaker than the joint game planned for a later PR. -/
+noncomputable def fixedClaimBindingGame (chal : FC.ChallengeSampler) (L : ℕ)
+    (A : FC.FixedClaimAdversary L) : OracleComp (unifSpec + ambient) Bool := do
   let pp ← FC.setup
   let out ← A pp
   let decisions ← Fin.mOfFn L fun i =>
@@ -170,23 +228,26 @@ noncomputable def functionBindingGame (chal : FC.ChallengeSampler) (L : ℕ)
   return (decide (∀ i, verdicts i = true) &&
     noConsistentData fun i => ⟨(out.2 i).1, (out.2 i).2.1⟩)
 
-/-- The function-binding experiment: the function-binding game run with `init` and `impl`. -/
-noncomputable def functionBindingExperiment {σ : Type} (init : ProbComp σ)
+/-- Run the fixed-claim binding game with initial state sampled by `init` and ambient handler
+`impl`. -/
+noncomputable def fixedClaimBindingExperiment {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (chal : FC.ChallengeSampler) (L : ℕ)
-    (A : FC.FunctionBindingAdversary L) : ProbComp Bool :=
-  runGame init impl (FC.functionBindingGame chal L A)
+    (A : FC.FixedClaimAdversary L) : ProbComp Bool :=
+  runGame init impl (FC.fixedClaimBindingGame chal L A)
 
-/-- The function-binding advantage of one adversary. -/
-noncomputable def functionBindingAdvantage {σ : Type} (init : ProbComp σ)
+/-- The probability that the adversary wins the fixed-claim binding experiment. -/
+noncomputable def fixedClaimBindingAdvantage {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (chal : FC.ChallengeSampler) (L : ℕ)
-    (A : FC.FunctionBindingAdversary L) : ℝ≥0∞ :=
-  Pr{let b ← FC.functionBindingExperiment init impl chal L A}[b = true]
+    (A : FC.FixedClaimAdversary L) : ℝ≥0∞ :=
+  Pr{let b ← FC.fixedClaimBindingExperiment init impl chal L A}[b = true]
 
-/-- **`L`-claim function binding.** Every adversary in `Adv` has function-binding advantage at
-most `ε`. -/
-def FunctionBinding {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
-    (chal : FC.ChallengeSampler) (L : ℕ) (Adv : Set (FC.FunctionBindingAdversary L))
+/-- Every adversary in `Adv` has fixed-claim binding advantage at most `ε`.
+The adversary fixes all claims and provers before any opening runs. For one-message openings,
+which have no challenges, the game is [CGKY25] Definition 3.17. For interactive openings it is
+weaker than the joint game planned for a later PR. -/
+def FixedClaimBinding {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
+    (chal : FC.ChallengeSampler) (L : ℕ) (Adv : Set (FC.FixedClaimAdversary L))
     (ε : ℝ≥0∞) : Prop :=
-  ∀ A ∈ Adv, FC.functionBindingAdvantage init impl chal L A ≤ ε
+  ∀ A ∈ Adv, FC.fixedClaimBindingAdvantage init impl chal L A ≤ ε
 
 end FunctionalCommitment

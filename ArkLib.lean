@@ -73,6 +73,7 @@ public import ArkLib.Commitments.Functional.KZG.EvaluationBinding
 public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Reduction
 public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Wins
 public import ArkLib.Commitments.Functional.KZG.FunctionalCommitment
+public import ArkLib.Commitments.Functional.KZG.FunctionalCommitmentBounds
 public import ArkLib.Commitments.Functional.KZG.Generic.Adversary
 public import ArkLib.Commitments.Functional.KZG.Generic.Cost
 public import ArkLib.Commitments.Functional.KZG.Generic.Equivalence

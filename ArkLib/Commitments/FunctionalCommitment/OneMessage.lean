@@ -21,26 +21,28 @@ commitment from
 The opening protocol for `q` is `oneMessageSpec (Proof q)`: the prover sends one proof, and the
 verifier accepts when `check` returns `true`.
 
-For such schemes, function binding is the plain game of [CGKY25] Def. 3.17: the adversary
-returns a commitment `cm` and claims `(qᵢ, rᵢ, πᵢ)`, and wins when `check` accepts every claim and
-no data is consistent with the claimed answers (`plainFunctionBindingGame`). The adversaries of
-the two games convert into each other (`ofPlainAdversary`, `toPlainAdversary`), and each
-conversion preserves the game exactly.
+One-message openings have no challenges, so fixed-claim binding is the plain game of [CGKY25]
+Definition 3.17. The adversary fixes its commitment `cm` and all claims and proofs
+`(qᵢ, rᵢ, πᵢ)` before any opening runs. The adversary wins when `check` accepts every claim
+and no data agrees with all claimed answers (`plainFixedClaimBindingGame`).
+`ofPlainAdversary` and `toPlainAdversary` convert the adversaries and preserve the game.
 
 ## Main statements
 
-* `FunctionalCommitment.functionBindingGame_oneMessage`: the function-binding game of
-  `oneMessage` against `A` is the plain game against `toPlainAdversary A`.
-* `FunctionalCommitment.functionBindingGame_ofPlainAdversary`: the function-binding game of
-  `oneMessage` against `ofPlainAdversary B` is the plain game against `B`.
-* `FunctionalCommitment.correctnessGame_oneMessage`: the correctness game of `oneMessage` runs
-  `setup`, `commit`, the chooser, `prove` and `check`.
-* `FunctionalCommitment.correctness_oneMessage`: if every possible result of `check` on an honest
-  proof is `true`, then `oneMessage` is correct with error `0` for every ambient
+* `FunctionalCommitment.fixedClaimBindingGame_oneMessage` identifies the fixed-claim game of
+  `oneMessage` against `A` with the plain game against `toPlainAdversary A`.
+* `FunctionalCommitment.fixedClaimBindingGame_ofPlainAdversary` identifies the fixed-claim game
+  of `oneMessage` against `ofPlainAdversary B` with the plain game against `B`.
+* `FunctionalCommitment.correctnessGame_oneMessage` expands the adaptive correctness game into
+  setup, data choice, commitment, query choice, proof and check.
+* `FunctionalCommitment.correctness_oneMessage` shows that if every possible result of `check`
+  on an honest proof is `true`, then `oneMessage` is correct with error `0` for every ambient
   implementation and every chooser.
 
 ## References
 
+* [Kate, A., Zaverucha, G. M., and Goldberg, I.,
+  *Constant-Size Commitments to Polynomials and Their Applications*][KZG10]
 * [Chiesa, A., Guan, Z., Knabenhans, C., and Yu, Z.,
   *On the Fiat–Shamir Security of Succinct Arguments from Functional Commitments*][CGKY25]
 -/
@@ -203,26 +205,25 @@ theorem interact_oneMessage (chal : (oneMessage setup commit prove check).Challe
   funext b
   cases b <;> rfl
 
-/-! ### Function binding -/
+/-! ### Fixed-claim binding -/
 
 variable (ambient PP Cm Proof) in
-/-- A plain function-binding adversary sees the public parameters and returns a commitment and
-`L` claims `(qᵢ, rᵢ, πᵢ)`, each with a proof. -/
+/-- The plain adversary sees the public parameters and fixes the commitment, all `L` claims and
+their proofs before any opening runs. -/
 abbrev PlainAdversary (L : ℕ) :=
   PP → OracleComp (unifSpec + ambient) (Cm × (Fin L → (q : I.Query) × I.spec q × Proof q))
 
 variable (ambient PP Cm Proof) in
-/-- A function-binding adversary against `oneMessage`: its opening provers are one-message
-provers. This type is the type `(oneMessage setup commit prove check).FunctionBindingAdversary L`
-written out. -/
+/-- The fixed-claim adversary against `oneMessage` fixes every claim and one-message prover
+before any opening runs. -/
 abbrev OneMessageAdversary (L : ℕ) :=
   PP → OracleComp (unifSpec + ambient) (Cm × (Fin L → (q : I.Query) × I.spec q ×
     Prover plainSig (unifSpec + ambient) (oneMessageSpec (Proof q)) (fun _ => PUnit)))
 
-/-- The plain `L`-claim function-binding game ([CGKY25] Def. 3.17). Setup gives `pp`, and the
-adversary returns `cm` and the claims `(qᵢ, rᵢ, πᵢ)`. The game runs `check` on every claim and
-returns whether `check` accepts every claim and no data is consistent with the claims. -/
-noncomputable def plainFunctionBindingGame (L : ℕ) (B : PlainAdversary ambient PP Cm Proof L) :
+/-- The plain game implements [CGKY25] Definition 3.17 for one-message openings without
+challenges. The adversary fixes the commitment and all claims and proofs before the game runs
+`check`. It wins if `check` accepts every claim and no data agrees with all claims. -/
+noncomputable def plainFixedClaimBindingGame (L : ℕ) (B : PlainAdversary ambient PP Cm Proof L) :
     OracleComp (unifSpec + ambient) Bool := do
   let pp ← setup
   let out ← B pp
@@ -231,12 +232,11 @@ noncomputable def plainFunctionBindingGame (L : ℕ) (B : PlainAdversary ambient
   return (decide (∀ i, verdicts i = true) &&
     noConsistentData fun i => ⟨(out.2 i).1, (out.2 i).2.1⟩)
 
-/-- The plain function-binding advantage of `B`: the probability that the plain game, run with
-`init` and `impl`, returns `true`. -/
-noncomputable def plainFunctionBindingAdvantage {σ : Type} (init : ProbComp σ)
+/-- The probability that `B` wins the plain fixed-claim game run with `init` and `impl`. -/
+noncomputable def plainFixedClaimBindingAdvantage {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp)) (L : ℕ)
     (B : PlainAdversary ambient PP Cm Proof L) : ℝ≥0∞ :=
-  Pr{let b ← runGame init impl (plainFunctionBindingGame setup check L B)}[b = true]
+  Pr{let b ← runGame init impl (plainFixedClaimBindingGame setup check L B)}[b = true]
 
 /-- Turn a plain adversary into an adversary against `oneMessage`: each opening prover sends the
 plain adversary's proof. -/
@@ -262,14 +262,14 @@ theorem toPlainAdversary_ofPlainAdversary {L : ℕ} (B : PlainAdversary ambient 
     piMOfFn_pure, LawfulMonad.pure_bind]
   exact _root_.bind_pure _
 
-/-- **Reduction to the plain game.** The function-binding game of `oneMessage` against `A` is the
+/-- The fixed-claim binding game of `oneMessage` against `A` is the
 plain game against `toPlainAdversary A`. -/
-theorem functionBindingGame_oneMessage
+theorem fixedClaimBindingGame_oneMessage
     (chal : (oneMessage setup commit prove check).ChallengeSampler) (L : ℕ)
     (A : OneMessageAdversary ambient PP Cm Proof L) :
-    (oneMessage setup commit prove check).functionBindingGame chal L A =
-      plainFunctionBindingGame setup check L (toPlainAdversary A) := by
-  simp only [functionBindingGame, plainFunctionBindingGame, toPlainAdversary, bind_assoc]
+    (oneMessage setup commit prove check).fixedClaimBindingGame chal L A =
+      plainFixedClaimBindingGame setup check L (toPlainAdversary A) := by
+  simp only [fixedClaimBindingGame, plainFixedClaimBindingGame, toPlainAdversary, bind_assoc]
   refine bind_congr fun pp => bind_congr fun out => ?_
   rw [show (Fin.mOfFn L fun i => (oneMessage setup commit prove check).interact chal (out.2 i).1
       (pp, out.1, (out.2 i).2.1) (out.2 i).2.2) = Fin.mOfFn L fun i =>
@@ -279,84 +279,87 @@ theorem functionBindingGame_oneMessage
     mOfFn_map_eq_map_piMOfFn, bind_map_left]
   simp only [LawfulMonad.pure_bind]
 
-/-- **Reduction from the plain game.** The function-binding game of `oneMessage` against
+/-- The fixed-claim binding game of `oneMessage` against
 `ofPlainAdversary B` is the plain game against `B`. -/
-theorem functionBindingGame_ofPlainAdversary
+theorem fixedClaimBindingGame_ofPlainAdversary
     (chal : (oneMessage setup commit prove check).ChallengeSampler) (L : ℕ)
     (B : PlainAdversary ambient PP Cm Proof L) :
-    (oneMessage setup commit prove check).functionBindingGame chal L (ofPlainAdversary B) =
-      plainFunctionBindingGame setup check L B := by
-  exact (functionBindingGame_oneMessage setup commit prove check chal L _).trans
+    (oneMessage setup commit prove check).fixedClaimBindingGame chal L (ofPlainAdversary B) =
+      plainFixedClaimBindingGame setup check L B := by
+  exact (fixedClaimBindingGame_oneMessage setup commit prove check chal L _).trans
     (congrArg _ (toPlainAdversary_ofPlainAdversary B))
 
-/-- The function-binding advantage of `A` against `oneMessage` equals the plain advantage of
+/-- The fixed-claim binding advantage of `A` against `oneMessage` equals the plain advantage of
 `toPlainAdversary A`. -/
-theorem functionBindingAdvantage_oneMessage {σ : Type} (init : ProbComp σ)
+theorem fixedClaimBindingAdvantage_oneMessage {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (chal : (oneMessage setup commit prove check).ChallengeSampler) (L : ℕ)
     (A : OneMessageAdversary ambient PP Cm Proof L) :
-    (oneMessage setup commit prove check).functionBindingAdvantage init impl chal L A =
-      plainFunctionBindingAdvantage setup check init impl L (toPlainAdversary A) := by
-  simp only [functionBindingAdvantage, functionBindingExperiment, plainFunctionBindingAdvantage,
-    functionBindingGame_oneMessage]
+    (oneMessage setup commit prove check).fixedClaimBindingAdvantage init impl chal L A =
+      plainFixedClaimBindingAdvantage setup check init impl L (toPlainAdversary A) := by
+  simp only [fixedClaimBindingAdvantage, fixedClaimBindingExperiment,
+    plainFixedClaimBindingAdvantage, fixedClaimBindingGame_oneMessage]
 
-/-- The function-binding advantage of `ofPlainAdversary B` against `oneMessage` equals the plain
+/-- The fixed-claim binding advantage of `ofPlainAdversary B` against `oneMessage` equals the plain
 advantage of `B`. -/
-theorem functionBindingAdvantage_ofPlainAdversary {σ : Type} (init : ProbComp σ)
+theorem fixedClaimBindingAdvantage_ofPlainAdversary {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (chal : (oneMessage setup commit prove check).ChallengeSampler) (L : ℕ)
     (B : PlainAdversary ambient PP Cm Proof L) :
-    (oneMessage setup commit prove check).functionBindingAdvantage init impl chal L
+    (oneMessage setup commit prove check).fixedClaimBindingAdvantage init impl chal L
         (ofPlainAdversary B) =
-      plainFunctionBindingAdvantage setup check init impl L B := by
-  simp only [functionBindingAdvantage, functionBindingExperiment, plainFunctionBindingAdvantage]
-  rw [functionBindingGame_ofPlainAdversary]
+      plainFixedClaimBindingAdvantage setup check init impl L B := by
+  simp only [fixedClaimBindingAdvantage, fixedClaimBindingExperiment,
+    plainFixedClaimBindingAdvantage]
+  rw [fixedClaimBindingGame_ofPlainAdversary]
 
 /-! ### Correctness -/
 
-/-- The correctness game of `oneMessage` written out: setup, honest commitment to `d`, the
-chooser's query, the honest proof and the check. -/
-def oneMessageCorrectnessGame (d : Data)
-    (chooser : PP → Cm → OracleComp (unifSpec + ambient) I.Query) :
+/-- The chooser selects the data after setup and the query after commitment. The game
+generates the honest proof for that query and runs the check. -/
+def oneMessageCorrectnessGame (chooser : (oneMessage setup commit prove check).DataChooser) :
     OracleComp (unifSpec + ambient) Bool := do
   let pp ← setup
-  let ca ← commit pp d
-  let q ← chooser pp ca.1
-  let π ← prove pp ca.1 d ca.2 q
-  liftComp (check pp ca.1 q (I.answer d q) π) (unifSpec + ambient)
+  let (d, next) ← chooser pp
+  let (cm, aux) ← commit pp d
+  let q ← next cm
+  let π ← prove pp cm d aux q
+  liftComp (check pp cm q (I.answer d q) π) (unifSpec + ambient)
 
 /-- The correctness game of `oneMessage` is `oneMessageCorrectnessGame`. -/
 theorem correctnessGame_oneMessage
-    (chal : (oneMessage setup commit prove check).ChallengeSampler) (d : Data)
-    (chooser : PP → Cm → OracleComp (unifSpec + ambient) I.Query) :
-    (oneMessage setup commit prove check).correctnessGame chal d chooser =
-      oneMessageCorrectnessGame setup commit prove check d chooser := by
+    (chal : (oneMessage setup commit prove check).ChallengeSampler)
+    (chooser : (oneMessage setup commit prove check).DataChooser) :
+    (oneMessage setup commit prove check).correctnessGame chal chooser =
+      oneMessageCorrectnessGame setup commit prove check chooser := by
   simp only [correctnessGame, oneMessageCorrectnessGame]
-  refine bind_congr fun pp => bind_congr fun ca => bind_congr fun q => ?_
-  have h := interact_oneMessage setup commit prove check chal q (pp, ca.1, I.answer d q)
-    (oneMessageProver (prove pp ca.1 d ca.2 q))
+  refine bind_congr fun pp => bind_congr fun ⟨d, _⟩ => bind_congr fun ⟨cm, aux⟩ =>
+    bind_congr fun q => ?_
+  have h := interact_oneMessage setup commit prove check chal q (pp, cm, I.answer d q)
+    (oneMessageProver (prove pp cm d aux q))
   rw [oneMessageProof_oneMessageProver] at h
   exact (congrArg (· >>= id) h).trans (bind_map_left _ _ _)
 
-/-- **Correctness of one-message schemes.** Suppose every possible result of `check` on an honest
-proof of an honest commitment is `true`. Then `oneMessage` is correct with error `0` for every
-initial state, ambient implementation, challenge sampler and set of choosers. -/
+/-- If `check` always accepts an honest proof of an honest commitment, then `oneMessage`
+satisfies adaptive correctness with error `0` ([KZG10] Definition 5, evaluation clause). The
+result holds for every initial state computation, ambient implementation, challenge sampler
+and set of data choosers. -/
 theorem correctness_oneMessage
     (h : ∀ pp ∈ support setup, ∀ d : Data, ∀ ca ∈ support (commit pp d), ∀ q : I.Query,
       ∀ π ∈ support (prove pp ca.1 d ca.2 q),
       ∀ b ∈ support (check pp ca.1 q (I.answer d q) π), b = true)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (chal : (oneMessage setup commit prove check).ChallengeSampler)
-    (Adv : Set (oneMessage setup commit prove check).QueryChooser) :
+    (Adv : Set (oneMessage setup commit prove check).DataChooser) :
     (oneMessage setup commit prove check).Correctness init impl chal Adv 0 := by
-  intro d chooser _
+  intro chooser _
   rw [tsub_zero]
   refine le_of_eq ((prEvent_eq_one_iff _ _).2 fun b hb => ?_).symm
-  have hb : b ∈ support (oneMessageCorrectnessGame setup commit prove check d chooser) := by
+  have hb : b ∈ support (oneMessageCorrectnessGame setup commit prove check chooser) := by
     rw [← correctnessGame_oneMessage setup commit prove check chal]
     exact support_runGame_subset init impl _ hb
   simp only [oneMessageCorrectnessGame, mem_support_bind_iff, support_liftComp] at hb
-  obtain ⟨pp, hpp, ca, hca, q, -, π, hπ, hb⟩ := hb
+  obtain ⟨pp, hpp, ⟨d, _⟩, -, ca, hca, q, -, π, hπ, hb⟩ := hb
   exact h pp hpp d ca hca q π hπ b hb
 
 end FunctionalCommitment

@@ -11,8 +11,9 @@ import ArkLib.Commitments.Functional.KZG.FunctionalCommitment
 # Functional commitment checks
 
 These examples check that the KZG and Merkle functional commitments have the intended public
-parameters, commitments and opening proofs, and that a plain function-binding adversary converts
-to a one-message adversary and back.
+parameters, commitments and opening proofs. The examples also check that a plain fixed-claim
+adversary converts to a one-message adversary and back, and that a fixed-data chooser gives
+the fixed-data correctness game.
 -/
 
 open OracleComp OracleSpec Interaction FunctionalCommitment BinaryTree
@@ -52,6 +53,14 @@ example (idx : SkeletonLeafIndex s) :
   rfl
 
 end Merkle
+
+/-- The adaptive game recovers the fixed-data game for a one-leaf Merkle tree. -/
+example (chal : (Merkle.functionalCommitment Bool .leaf).ChallengeSampler) :
+    let FC := Merkle.functionalCommitment Bool .leaf
+    let d : LeafData Bool .leaf := .leaf true
+    let choose : FC.QueryChooser := fun _ _ => pure .ofLeaf
+    FC.correctnessGame chal (FC.fixed d choose) = FC.fixedDataCorrectnessGame chal d choose := by
+  simp only [correctnessGame_fixed]
 
 /-- Converting a plain adversary to a one-message adversary and back gives it again. -/
 example {ι : Type} {ambient : OracleSpec.{0, 0} ι} {Data : Type} {I : OracleInterface Data}
