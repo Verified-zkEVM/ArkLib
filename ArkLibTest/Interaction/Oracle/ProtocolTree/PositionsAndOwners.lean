@@ -33,22 +33,10 @@ def universeNode (Message : Type uProtocol)
 example (interface : OracleInterface.{0, 1} Nat) :
     Node.position (universeNode Nat interface) (.inl ⟨⟩) = .oracle Nat interface := rfl
 
-/-- The actual node's path bundle retains the interface's larger query type. -/
-example (interface : OracleInterface.{0, 1} Nat) :
-    @OracleInterface.Query Nat
-      ((oracleMessageFamily (universeNode Nat interface) ⟨⟨⟩, ⟨⟩⟩).interface (.inl ⟨⟩)) =
-      interface.Query := rfl
-
-/-- The oracle interfaces that an arbitrary oracle tree carries along a path, with query universe
-independent of the message universe. Oracle positions carry their interfaces, so the
-interaction layer reads the decoration of a tree off the tree itself. -/
-abbrev UniverseOracleDecoration (tree : UniverseProtocol.{uProtocol, uQuery}) (p : Path tree) :=
-  oracleMessageFamily tree p
-
-/-- On an arbitrary small tree, the decoration along any path is the tree's own path family, with
-queries in the next universe. -/
-example (tree : OracleProtocol.{0, 1}) (p : Path tree) :
-    UniverseOracleDecoration.{0, 1} tree p = oracleMessageFamily tree p := rfl
+/-- The node's path bundle has the interface's query type, beside the empty bundle of the leaf. -/
+example (interface : OracleInterface.{0, 0} Nat) :
+    (oracleMessageBundle (universeNode.{0, 0} Nat interface) ⟨⟨⟩, ⟨⟩⟩).Query =
+      (interface.Query ⊕ Empty) := rfl
 
 end UniverseCanary
 
@@ -86,11 +74,10 @@ def trueNode : Node mixedTree := .inr ⟨true, .inl ⟨⟩⟩
 def falsePath : Path mixedTree := ⟨false, ⟨⟩, ⟨(0 : Fin 2), ⟨⟩⟩⟩
 
 -- DecorationExample 7, restated: the selector is a message, and the interface is read from the
--- oracle family of a completed path through the `false` branch.
+-- oracle message bundle of a completed path through the `false` branch.
 /-- The `false` oracle node answers `Unit` queries. -/
 example :
-    @OracleInterface.Query Bool ((oracleMessageFamily mixedTree falsePath).interface (.inl ⟨⟩)) =
-      Unit := rfl
+    (oracleMessageBundle mixedTree falsePath).Query = (Unit ⊕ Empty) := rfl
 
 -- DecorationExample 8, restated: decoration restriction is removed. The position at the `false`
 -- oracle node carries the `Bool` interface, and the cursor through `false` selects the `Bool`

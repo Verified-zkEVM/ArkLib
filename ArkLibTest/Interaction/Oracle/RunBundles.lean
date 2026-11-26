@@ -45,33 +45,32 @@ def path (hidden : Nat) : Transcript oracleSig tree :=
   ⟨true, (11, hidden), (19, hidden + 1), ⟨⟩⟩
 
 /-- The decision bundle on the path of `path`. -/
-abbrev pathData := sumFamily inputs (oracleMessageFamily tree ⟨true, ⟨⟩, ⟨⟩, ⟨⟩⟩)
+abbrev pathData := pathBundle inputs tree ⟨true, ⟨⟩, ⟨⟩, ⟨⟩⟩
 
 /-- Read the input, first sent and last sent oracles. -/
 def readAll : OracleComp pathData.spec (Nat × Nat × Nat) := do
-  let old : Nat ← liftM (pathData.spec.query ⟨.inl ⟨⟩, ()⟩)
-  let first : Nat ← liftM (pathData.spec.query ⟨.inr (.inl ⟨⟩), ()⟩)
-  let last : Nat ← liftM (pathData.spec.query ⟨.inr (.inr (.inl ⟨⟩)), ()⟩)
+  let old : Nat ← liftM (pathData.spec.query (.inl ⟨⟨⟩, ()⟩))
+  let first : Nat ← liftM (pathData.spec.query (.inr (.inl ())))
+  let last : Nat ← liftM (pathData.spec.query (.inr (.inr (.inl ()))))
   return (old, first, last)
 
 -- RunSourcesExample RS1, restated: the old-layer closing handler becomes the bundle of the
--- completed run, `sumFamily inputs (oracleMessageFamily tree p)` answered from the input data and
--- the oracle messages of the same transcript. The old-layer public `Bool` is a prover message, and
--- the old-layer behaviour-only input `fun _ => 7` is input data 7. Holds for every hidden value.
+-- completed run, `pathBundle inputs tree p` answered from the input data and the oracle messages
+-- of the same transcript. The old-layer public `Bool` is a prover message, and the old-layer
+-- behaviour-only input `fun _ => 7` is input data 7. Holds for every hidden value.
 example (hidden : Nat) :
-    simulateQ ((sumFamily inputs (oracleMessageFamily tree (Transcript.path (path hidden)))
-      ).behaviorOfRealizations (sumData inputData (oracleMessages tree (path hidden)))) readAll =
-      (7, 11, 19) := rfl
+    simulateQ ((pathBundle inputs tree (Transcript.path (path hidden))).answer
+      (inputData, oracleMessages tree (path hidden))) readAll = (7, 11, 19) := rfl
 
 -- RunSourcesExample RS2, restated: the bundle handler of the run does not depend on the private
 -- coordinate of either message.
 example (hidden₁ hidden₂ : Nat) :
-    (sumFamily inputs (oracleMessageFamily tree (Transcript.path (path hidden₁)))
-      ).behaviorOfRealizations (sumData inputData (oracleMessages tree (path hidden₁))) =
-    (sumFamily inputs (oracleMessageFamily tree (Transcript.path (path hidden₂)))
-      ).behaviorOfRealizations (sumData inputData (oracleMessages tree (path hidden₂))) := by
+    (pathBundle inputs tree (Transcript.path (path hidden₁))).answer
+      (inputData, oracleMessages tree (path hidden₁)) =
+    (pathBundle inputs tree (Transcript.path (path hidden₂))).answer
+      (inputData, oracleMessages tree (path hidden₂)) := by
   funext q
-  rcases q with ⟨_ | (_ | (_ | i)), _⟩
+  rcases q with _ | (_ | (_ | i))
   · rfl
   · rfl
   · rfl
@@ -159,101 +158,95 @@ example (branch : Bool) (hidden : Nat) :
 
 /-- The component bundle: the input, the prefix oracles and the suffix oracles. -/
 abbrev splitPathBundle (branch : Bool) (hidden : Nat) :=
-  sumFamily inputs (sumFamily
-    (oracleMessageFamily firstTree (Transcript.path (firstPath branch hidden)))
-    (oracleMessageFamily _ (Transcript.path (secondPath branch hidden))))
+  (OracleBundle.ofFamily inputs).sum
+    ((oracleMessageBundle firstTree (Transcript.path (firstPath branch hidden))).sum
+      (oracleMessageBundle _ (Transcript.path (secondPath branch hidden))))
 
 /-- The component data of the two runs. -/
-def splitData (branch : Bool) (hidden : Nat) : ∀ i, (splitPathBundle branch hidden).Realization i :=
-  sumData inputData (sumData (oracleMessages firstTree (firstPath branch hidden))
-    (oracleMessages _ (secondPath branch hidden)))
+def splitData (branch : Bool) (hidden : Nat) : (splitPathBundle branch hidden).Data :=
+  (inputData, (oracleMessages firstTree (firstPath branch hidden),
+    oracleMessages _ (secondPath branch hidden)))
 
 /-- Query the input and each prefix and suffix oracle, in oracle order. -/
 def readSplit (branch : Bool) (hidden : Nat) :
     OracleComp (splitPathBundle branch hidden).spec (List Nat) :=
   match branch with
   | true => do
-    let old : Nat ← liftM ((splitPathBundle true hidden).spec.query ⟨.inl ⟨⟩, ()⟩)
-    let first : Nat ← liftM ((splitPathBundle true hidden).spec.query ⟨.inr (.inl (.inl ⟨⟩)), ()⟩)
-    let last : Nat ← liftM ((splitPathBundle true hidden).spec.query ⟨.inr (.inr (.inl ⟨⟩)), ()⟩)
+    let old : Nat ← liftM ((splitPathBundle true hidden).spec.query (.inl ⟨⟨⟩, ()⟩))
+    let first : Nat ← liftM ((splitPathBundle true hidden).spec.query (.inr (.inl (.inl ()))))
+    let last : Nat ← liftM ((splitPathBundle true hidden).spec.query (.inr (.inr (.inl ()))))
     return [old, first, last]
   | false => do
-    let old : Nat ← liftM ((splitPathBundle false hidden).spec.query ⟨.inl ⟨⟩, ()⟩)
-    let first : Nat ← liftM ((splitPathBundle false hidden).spec.query ⟨.inr (.inl (.inl ⟨⟩)), ()⟩)
-    let next : Nat ← liftM ((splitPathBundle false hidden).spec.query ⟨.inr (.inr (.inl ⟨⟩)), ()⟩)
+    let old : Nat ← liftM ((splitPathBundle false hidden).spec.query (.inl ⟨⟨⟩, ()⟩))
+    let first : Nat ← liftM ((splitPathBundle false hidden).spec.query (.inr (.inl (.inl ()))))
+    let next : Nat ← liftM ((splitPathBundle false hidden).spec.query (.inr (.inr (.inl ()))))
     let last : Nat ←
-      liftM ((splitPathBundle false hidden).spec.query ⟨.inr (.inr (.inr (.inl ⟨⟩))), ()⟩)
+      liftM ((splitPathBundle false hidden).spec.query (.inr (.inr (.inr (.inl ())))))
     return [old, first, next, last]
 
 -- RunSourcesExample RS9, restated: the old-layer prefix-then-suffix closing becomes the component
--- bundle `sumFamily inputs (sumFamily (oracleMessageFamily …) (oracleMessageFamily …))` with the
+-- bundle `inputs.sum ((oracleMessageBundle …).sum (oracleMessageBundle …))` with the
 -- oracle messages of the two component runs. Both suffix shapes answer each oracle. Holds for every
 -- hidden value.
 /-- Closing the two component runs answers each queried oracle in the selected suffix shape. -/
 theorem readSplit_split (branch : Bool) (hidden : Nat) :
-    simulateQ ((splitPathBundle branch hidden).behaviorOfRealizations (splitData branch hidden))
+    simulateQ ((splitPathBundle branch hidden).answer (splitData branch hidden))
       (readSplit branch hidden) = if branch then [7, 11, 19] else [7, 11, 23, 29] := by
   cases branch <;> rfl
 
 /-- Route component queries into the appended run's bundle: the input stays, and the oracle
-nodes go through `oracleMessageFamily_split`. -/
+nodes go through `oracleMessageBundle_split`. -/
 def splitRoute (branch : Bool) (hidden : Nat) :=
-  (OracleMap.embedding inputs id).sum
-    (oracleMessageFamily_split firstTree secondTree
+  (OracleMap.id (OracleBundle.ofFamily inputs)).par
+    (oracleMessageBundle_split firstTree secondTree
       (Transcript.path (firstPath branch hidden))
       (Transcript.path (secondPath branch hidden)))
 
 /-- The appended run's bundle and data. -/
 abbrev combinedBundle (branch : Bool) (hidden : Nat) :=
-  sumFamily inputs (oracleMessageFamily combined
-    (Transcript.path (combinedPath branch hidden)))
+  pathBundle inputs combined (Transcript.path (combinedPath branch hidden))
 
 /-- The input data and oracle messages of the appended transcript. -/
-def combinedData (branch : Bool) (hidden : Nat) :
-    ∀ i, (combinedBundle branch hidden).Realization i :=
-  sumData inputData (oracleMessages combined (combinedPath branch hidden))
+def combinedData (branch : Bool) (hidden : Nat) : (combinedBundle branch hidden).Data :=
+  (inputData, oracleMessages combined (combinedPath branch hidden))
 
 /-- On this run, the appended path materializes exactly the routed component oracle messages. -/
 theorem payloads_combined (branch : Bool) (hidden : Nat) :
     oracleMessages combined (combinedPath branch hidden) =
-      (oracleMessageFamily_append firstTree secondTree
+      (oracleMessageBundle_append firstTree secondTree
         (Transcript.path (firstPath branch hidden))
         (Transcript.path (secondPath branch hidden))).f
-        (sumData (oracleMessages firstTree (firstPath branch hidden))
-          (oracleMessages _ (secondPath branch hidden))) :=
+        (oracleMessages firstTree (firstPath branch hidden),
+          oracleMessages _ (secondPath branch hidden)) :=
   eq_of_heq (Sigma.mk.inj (oracleMessages_append firstTree secondTree (firstPath branch hidden)
     (secondPath branch hidden))).2
 
 -- RunSourcesExample RS10, restated: the old-layer append query law for closing handlers becomes the
--- appended run's bundle answering the component program through `oracleMessageFamily_split`. The
+-- appended run's bundle answering the component program through `oracleMessageBundle_split`. The
 -- proof uses the oracle map law (`OracleMap.simulate_eq`), the append law for oracle messages
--- (`oracleMessages_append`) and `oracleMessageFamily_split_append`, then RS9. Holds for every
+-- (`oracleMessages_append`) and `oracleMessageBundle_split_append`, then RS9. Holds for every
 -- branch and hidden value.
 example (branch : Bool) (hidden : Nat) :
-    simulateQ ((combinedBundle branch hidden).behaviorOfRealizations
-        (combinedData branch hidden))
+    simulateQ ((combinedBundle branch hidden).answer (combinedData branch hidden))
       (simulateQ (splitRoute branch hidden).impl (readSplit branch hidden)) =
       if branch then [7, 11, 19] else [7, 11, 23, 29] := by
   refine (OracleMap.simulate_eq (splitRoute branch hidden) (combinedData branch hidden)
     (readSplit branch hidden)).trans ((congrArg (fun x => simulateQ
-      ((splitPathBundle branch hidden).behaviorOfRealizations x) (readSplit branch hidden))
+      ((splitPathBundle branch hidden).answer x) (readSplit branch hidden))
       ?_).trans (readSplit_split branch hidden))
-  funext i
-  rcases i with i | i
-  · rfl
-  · exact (congrArg (fun d => (oracleMessageFamily_split firstTree secondTree _ _).f d i)
+  refine Prod.ext rfl ?_
+  exact (congrArg (oracleMessageBundle_split firstTree secondTree _ _).f
       (payloads_combined branch hidden)).trans
-      (congrFun (oracleMessageFamily_split_append firstTree secondTree _ _ _) i)
+    (oracleMessageBundle_split_append firstTree secondTree _ _ _)
 
 -- RunSourcesExample RS11, restated: in both suffix shapes, the appended run's bundle handler
 -- does not depend on the private coordinates.
 example (branch : Bool) (hidden₁ hidden₂ : Nat) :
-    HEq ((combinedBundle branch hidden₁).behaviorOfRealizations (combinedData branch hidden₁))
-      ((combinedBundle branch hidden₂).behaviorOfRealizations
-        (combinedData branch hidden₂)) := by
+    HEq ((combinedBundle branch hidden₁).answer (combinedData branch hidden₁))
+      ((combinedBundle branch hidden₂).answer (combinedData branch hidden₂)) := by
   cases branch <;> apply heq_of_eq <;> funext q
-  · rcases q with ⟨_ | _ | _ | _ | i, _⟩ <;> rfl
-  · rcases q with ⟨_ | _ | _ | i, _⟩ <;> rfl
+  · rcases q with _ | _ | _ | _ | i <;> rfl
+  · rcases q with _ | _ | _ | i <;> rfl
 
 /-! ## Receiver-selected shapes in the general two-party signature
 

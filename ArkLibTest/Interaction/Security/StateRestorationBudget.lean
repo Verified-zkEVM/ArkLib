@@ -54,7 +54,7 @@ noncomputable def errors : RoundErrors rounds :=
 
 /-- The output is one `Fin 8` oracle. -/
 @[instance_reducible] def outputFamily : OracleFamily PUnit (fun _ => Fin 8) :=
-  singletonFamily messageInterface
+  ⟨fun _ => messageInterface⟩
 
 /-- The input statement: a number with no input oracles. -/
 abbrev Stmt : Type := Nat × (∀ i : PEmpty.{1}, (PEmpty.elim i : Type))
@@ -86,11 +86,13 @@ def verifier : OracleVerifier []ₒ (protocol rounds) Nat (fun _ => Fin 8)
     (fun _ => outputFamily) where
   decide _ p v :=
     if (show Fin 8 from v.1.2.1) = 0 ∨ (show Fin 16 from v.1.2.2.2.1) = 0 then
-      pathLift []ₒ emptyFamily (s := protocol rounds) p ⟨.inr (.inl ⟨⟩), ()⟩
+      pathLift []ₒ emptyFamily (s := protocol rounds) p (.inr (.inl ()))
     else failure
   outputMap _ p _ :=
-    (OracleMap.embedding (oracleMessageFamily (protocol rounds) p)
-      (fun _ => .inr (.inl ⟨⟩))).comp (OracleMap.snd _ _)
+    { f := fun x _ => x.2.2.1
+      impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds) p).spec.query
+        (.inr (.inr (.inl q.2))))
+      law := fun _ _ => rfl }
 
 /-- The transcript with messages 5 and 7 and challenges `first` and `second`. -/
 def path (first : Fin 8) (second : Fin 16) : Transcript oracleSig (protocol rounds) :=
@@ -793,14 +795,16 @@ abbrev selectedProtocol : OracleProtocol := .liftBind (.message Bool) fun _ => p
 def readSelected (b : Bool) (p : Path (protocol rounds)) :
     OptionT (OracleComp ([]ₒ + (pathBundle emptyFamily (protocol rounds) p).spec))
       (SelectedValue b) := do
-  let m ← pathLift []ₒ emptyFamily (s := protocol rounds) p ⟨.inr (.inl ⟨⟩), ()⟩
+  let m ← pathLift []ₒ emptyFamily (s := protocol rounds) p (.inr (.inl ()))
   pure (selectedMessage b m)
 
 /-- The frozen output-oracle family routes the second message without changing its carrier. -/
 def selectedMap (_b : Bool) (p : Path (protocol rounds)) :
     OracleMap (pathBundle emptyFamily (protocol rounds) p) outputFamily :=
-  (OracleMap.embedding (oracleMessageFamily (protocol rounds) p)
-    (fun _ => .inr (.inl ⟨⟩))).comp (OracleMap.snd _ _)
+  { f := fun x _ => x.2.2.1
+    impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds) p).spec.query
+      (.inr (.inr (.inl q.2))))
+    law := fun _ _ => rfl }
 
 /-- Carrier selection is fixed by the authored bit; acceptance still reads both challenges. -/
 def suffixVerifier (b : Bool) : OracleVerifier []ₒ (protocol rounds) Nat

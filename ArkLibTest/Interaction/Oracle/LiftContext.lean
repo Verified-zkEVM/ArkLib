@@ -38,7 +38,7 @@ def view (r : Bool) : View protocol path := ⟨⟨r, ⟨⟩, ⟨⟩⟩, rfl⟩
 
 /-- One function `Bool → Bool`, queried pointwise. -/
 @[instance_reducible] def fn : OracleFamily.{0, 0, 0} PUnit (fun _ => Bool → Bool) :=
-  singletonFamily OracleInterface.instFunction
+  ⟨fun _ => OracleInterface.instFunction⟩
 
 /-- Two functions `Bool → Bool`, indexed by `Bool` and queried pointwise. -/
 @[instance_reducible] def fnPair : OracleFamily.{0, 0, 0} Bool (fun _ => Bool → Bool) :=
@@ -53,8 +53,8 @@ abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
 def messageOut (p : Path protocol) : OracleMap (pathBundle fn protocol p) fn := by
   rcases p with ⟨⟨⟩, ⟨⟩, ⟨⟩⟩
   exact
-    { f x _ := x.2 (.inl ⟨⟩)
-      impl q := liftM ((pathBundle fn protocol path).spec.query (.inr ⟨.inl ⟨⟩, q.2⟩))
+    { f x _ := x.2.1
+      impl q := liftM ((pathBundle fn protocol path).spec.query (.inr (.inl q.2)))
       law _ _ := rfl }
 
 /-- Query the input oracle at `true`, accept with the challenge on `true`, and export the
@@ -110,9 +110,7 @@ def outerData : ∀ _ : Bool, Bool → Bool
   | false => id
 
 /-- The oracle message `g = id`. -/
-def message : ∀ i, OracleMessage protocol path i
-  | .inl _ => id
-  | .inr i => i.elim
+def message : (oracleMessageBundle protocol path).Data := (id, ())
 
 /-- With tag `true`, the inner input oracle is `x ↦ not (!x) = x`, so `f true = true` and the
 lifted verifier accepts `xor true r`. -/

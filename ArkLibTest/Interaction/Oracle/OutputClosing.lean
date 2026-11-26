@@ -32,7 +32,7 @@ def verifier (accept : Bool) : OracleVerifier ambient pairSend Unit (fun _ => Na
     exact OptionT.mk do
       let _ ← liftM ((ambient + pairBundle.spec).query (.inl 1))
       let _ ← liftM ((ambient + pairBundle.spec).query (.inl 2))
-      let sent : Nat ← liftM ((ambient + pairBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let sent : Nat ← liftM ((ambient + pairBundle.spec).query (.inr (.inr (.inl ()))))
       pure (if accept then some sent else none)
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩

@@ -200,14 +200,14 @@ theorem heq_path_liftBind {a a' : OraclePos.{0}} {t t' : OracleProtocol.{0}} (ha
 theorem heq_query_root {X X' : Type} {I : OracleInterface X} {I' : OracleInterface X'}
     (hX : X = X') (hI : HEq I I') {t t' : OracleProtocol.{0}} (ht : t = t') {r : Path t}
     {r' : Path t'} (hr : HEq r r') {q : I.Query} {q' : I'.Query} (hq : HEq q q') :
-    HEq (liftM ((oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
-          ⟨⟨⟩, r⟩).spec.query ⟨.inl ⟨⟩, q⟩) :
-        OracleComp (oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
-          ⟨⟨⟩, r⟩).spec (I.Response q))
-      (liftM ((oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X' I') fun _ => t')
-          ⟨⟨⟩, r'⟩).spec.query ⟨.inl ⟨⟩, q'⟩) :
-        OracleComp (oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X' I') fun _ => t')
-          ⟨⟨⟩, r'⟩).spec (I'.Response q')) := by
+    HEq (liftM ((oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
+          ⟨⟨⟩, r⟩).query (.inl q)) :
+        OracleComp (oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
+          ⟨⟨⟩, r⟩) (I.Response q))
+      (liftM ((oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X' I') fun _ => t')
+          ⟨⟨⟩, r'⟩).query (.inl q')) :
+        OracleComp (oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X' I') fun _ => t')
+          ⟨⟨⟩, r'⟩) (I'.Response q')) := by
   subst hX ht
   cases eq_of_heq hI
   cases eq_of_heq hr
@@ -227,15 +227,15 @@ theorem response_eq {X X' : Type} {I : OracleInterface X} {I' : OracleInterface 
 theorem heq_simulateQ_liftRight {X X' : Type} {I : OracleInterface X}
     {I' : OracleInterface X'} (hX : X = X') (hI : HEq I I') {t t' : OracleProtocol.{0}}
     (ht : t = t') {r : Path t} {r' : Path t'} (hr : HEq r r') {α α' : Type} (hα : α = α')
-    {x : OracleComp (oracleMessageFamily t r).spec α}
-    {x' : OracleComp (oracleMessageFamily t' r').spec α'}
+    {x : OracleComp (oracleMessageSpec t r) α}
+    {x' : OracleComp (oracleMessageSpec t' r') α'}
     (hx : HEq x x') :
-    HEq (simulateQ (liftRight (singletonFamily I) (oracleMessageFamily t r)) x :
-        OracleComp (oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
-          ⟨⟨⟩, r⟩).spec α)
-      (simulateQ (liftRight (singletonFamily I') (oracleMessageFamily t' r')) x' :
-        OracleComp (oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X' I') fun _ => t')
-          ⟨⟨⟩, r'⟩).spec α') := by
+    HEq (simulateQ (liftRight (OracleBundle.of X I) (oracleMessageBundle t r)) x :
+        OracleComp (oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
+          ⟨⟨⟩, r⟩) α)
+      (simulateQ (liftRight (OracleBundle.of X' I') (oracleMessageBundle t' r')) x' :
+        OracleComp (oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X' I') fun _ => t')
+          ⟨⟨⟩, r'⟩) α') := by
   subst hX ht hα
   cases eq_of_heq hI
   cases eq_of_heq hr
@@ -250,9 +250,9 @@ when the rounds and the messages correspond and so do the queries of the rest of
 theorem queryMsgNode_heq (j : Fin N) (j' : Fin N') {rest rest' : OracleProtocol.{0}}
     (hrest : rest = rest')
     (recur : (p : Path rest) → (i : P.MessageIdx) → j.val < i.1.val →
-      (q : (O i).Query) → OracleComp (oracleMessageFamily rest p).spec ((O i).Response q))
+      (q : (O i).Query) → OracleComp (oracleMessageSpec rest p) ((O i).Response q))
     (recur' : (p : Path rest') → (i : P'.MessageIdx) → j'.val < i.1.val →
-      (q : (O' i).Query) → OracleComp (oracleMessageFamily rest' p).spec ((O' i).Response q))
+      (q : (O' i).Query) → OracleComp (oracleMessageSpec rest' p) ((O' i).Response q))
     (hT : P.«Type» j = P'.«Type» j') (hO : ∀ h h', HEq (O ⟨j, h⟩) (O' ⟨j', h'⟩))
     (i : P.MessageIdx) (i' : P'.MessageIdx) (hii : i.1.val = j.val ↔ i'.1.val = j'.val)
     (hTi : P.«Type» i.1 = P'.«Type» i'.1) (hOi : HEq (O i) (O' i'))
@@ -286,17 +286,17 @@ theorem queryMsgNode_heq (j : Fin N) (j' : Fin N') {rest rest' : OracleProtocol.
 /-- Routing a message query at the node of its own round is the query to that node's message. -/
 theorem queryMsgNode_heq_root (j : Fin N) (rest : OracleProtocol.{0})
     (recur : (p : Path rest) → (i : P.MessageIdx) → j.val < i.1.val →
-      (q : (O i).Query) → OracleComp (oracleMessageFamily rest p).spec ((O i).Response q))
+      (q : (O i).Query) → OracleComp (oracleMessageSpec rest p) ((O i).Response q))
     (d : Direction) (hd : P.dir j = d) (hdP : d = .P_to_V)
     (p : Path (FreeM.liftBind (oraclePos P j d hd) fun _ => rest)) (i : P.MessageIdx)
     (hij : i.1 = j) (hi : j.val ≤ i.1.val) (q : (O i).Query) {X : Type} {I : OracleInterface X}
     {t : OracleProtocol.{0}} {r : Path t} {q' : I.Query} (hX : P.«Type» j = X)
     (hI : ∀ h, HEq (O ⟨j, h⟩) I) (ht : rest = t) (hr : HEq p.2 r) (hq : HEq q q') :
     HEq (queryMsgNode j rest recur d hd p i hi q)
-      (liftM ((oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
-          ⟨⟨⟩, r⟩).spec.query ⟨.inl ⟨⟩, q'⟩) :
-        OracleComp (oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
-          ⟨⟨⟩, r⟩).spec (I.Response q')) := by
+      (liftM ((oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
+          ⟨⟨⟩, r⟩).query (.inl q')) :
+        OracleComp (oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
+          ⟨⟨⟩, r⟩) (I.Response q')) := by
   subst hdP
   obtain ⟨b, p⟩ := p
   obtain ⟨i, i2⟩ := i
@@ -308,18 +308,18 @@ theorem queryMsgNode_heq_root (j : Fin N) (rest : OracleProtocol.{0})
 chain, lifted past the node's message. -/
 theorem queryMsgNode_heq_liftRight (j : Fin N) (rest : OracleProtocol.{0})
     (recur : (p : Path rest) → (i : P.MessageIdx) → j.val < i.1.val →
-      (q : (O i).Query) → OracleComp (oracleMessageFamily rest p).spec ((O i).Response q))
+      (q : (O i).Query) → OracleComp (oracleMessageSpec rest p) ((O i).Response q))
     (d : Direction) (hd : P.dir j = d) (hdP : d = .P_to_V)
     (p : Path (FreeM.liftBind (oraclePos P j d hd) fun _ => rest)) (i : P.MessageIdx)
     (hij : i.1.val ≠ j.val) (hi : j.val ≤ i.1.val) (q : (O i).Query) {X : Type}
     {I : OracleInterface X} {t : OracleProtocol.{0}} {r : Path t} {α : Type}
-    {x : OracleComp (oracleMessageFamily t r).spec α} (hX : P.«Type» j = X)
+    {x : OracleComp (oracleMessageSpec t r) α} (hX : P.«Type» j = X)
     (hI : ∀ h, HEq (O ⟨j, h⟩) I) (ht : rest = t) (hr : HEq p.2 r) (hα : (O i).Response q = α)
     (hx : ∀ hlt, HEq (recur p.2 i hlt q) x) :
     HEq (queryMsgNode j rest recur d hd p i hi q)
-      (simulateQ (liftRight (singletonFamily I) (oracleMessageFamily t r)) x :
-        OracleComp (oracleMessageFamily (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
-          ⟨⟨⟩, r⟩).spec α) := by
+      (simulateQ (liftRight (OracleBundle.of X I) (oracleMessageBundle t r)) x :
+        OracleComp (oracleMessageSpec (FreeM.liftBind (OraclePos.oracle X I) fun _ => t)
+          ⟨⟨⟩, r⟩) α) := by
   subst hdP
   obtain ⟨b, p⟩ := p
   simp only [queryMsgNode, hij, ↓reduceDIte]
@@ -328,7 +328,7 @@ theorem queryMsgNode_heq_liftRight (j : Fin N) (rest : OracleProtocol.{0})
 /-- Routing a message query at a challenge node routes it in the rest of the chain. -/
 theorem queryMsgNode_heq_challenge (j : Fin N) (rest : OracleProtocol.{0})
     (recur : (p : Path rest) → (i : P.MessageIdx) → j.val < i.1.val →
-      (q : (O i).Query) → OracleComp (oracleMessageFamily rest p).spec ((O i).Response q))
+      (q : (O i).Query) → OracleComp (oracleMessageSpec rest p) ((O i).Response q))
     (d : Direction) (hd : P.dir j = d) (hdV : d = .V_to_P)
     (p : Path (FreeM.liftBind (oraclePos P j d hd) fun _ => rest)) (i : P.MessageIdx)
     (hi : j.val ≤ i.1.val) (q : (O i).Query) (hlt : j.val < i.1.val) :

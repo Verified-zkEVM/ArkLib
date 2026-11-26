@@ -113,16 +113,16 @@ abbrev firstBundle :=
 /-- The export map at the challenge `r`: one input query at `(r, y)` and one message query at
 `r`. -/
 def exportMap (r : K) : OracleMap (firstBundle (K := K)) (Spec.polynomialFamily K 1 1) where
-  f x _ := exportPoly r (x.1 ()) (x.2 (.inl ⟨⟩))
+  f x _ := exportPoly r (x.1 ()) x.2.1
   impl q := do
     let old : K ← (OracleMap.fst (Spec.polynomialFamily K 2 1)
-      (oracleMessageFamily (round K 1) (roundPath K 1))).impl ⟨(), ![r, q.2 0]⟩
+      (oracleMessageBundle (round K 1) (roundPath K 1))).impl ⟨(), ![r, q.2 0]⟩
     let sent : K ← (OracleMap.snd (Spec.polynomialFamily K 2 1)
-      (oracleMessageFamily (round K 1) (roundPath K 1))).impl ⟨.inl ⟨⟩, r⟩
+      (oracleMessageBundle (round K 1) (roundPath K 1))).impl (.inl r)
     pure (old + sent)
   law x q := by
     rcases q with ⟨⟨⟩, y⟩
-    exact (eval_exportPoly r (x.1 ()) (x.2 (.inl ⟨⟩)) y).symm
+    exact (eval_exportPoly r (x.1 ()) x.2.1 y).symm
 
 /-- The output map of the first round: the export map at the round's challenge. -/
 def exportOut : K → (p : Path (round K 1)) → View (round K 1) p →

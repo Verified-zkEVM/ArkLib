@@ -58,12 +58,12 @@ def verifier : OracleVerifier ambient protocol Unit (fun _ => Nat) inputs (fun _
       let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 0))
       let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 5))
       let sent : Nat ← liftM ((ambient + (pathData announced).spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+        (.inr (.inr (.inl ()))))
       let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 2))
       let old : Nat ← liftM ((ambient + (pathData announced).spec).query (.inr (.inl ⟨(), ()⟩)))
       let _ ← liftM ((ambient + (pathData announced).spec).query (.inl 3))
       let latest : Nat ← liftM ((ambient + (pathData announced).spec).query
-        (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+        (.inr (.inr (.inr (.inl ())))))
       let challenge : Nat := v.val.2.2.1
       pure (if challenge = old + sent then
         some (if show Bool from announced then latest + challenge else 0) else none)
@@ -139,7 +139,7 @@ example : OracleVerifier ambient pairSend Unit (fun _ => Nat) inputs
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact liftM ((ambient + (pathBundle inputs pairSend ⟨⟨⟩, ⟨⟩⟩).spec).query
-      (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      (.inr (.inr (.inl ()))))
   outputMap _ p _ := noOutputMap (pathBundle inputs pairSend p)
 
 -- ExecutionExample 10, restated: the old-layer row erases the oracle executor to an ordinary
@@ -206,7 +206,7 @@ def firstVerifier (proceed : Bool) :
     rcases p with ⟨⟨⟩, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
       let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 11))
-      let sent : Nat ← liftM ((ambient + prefixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+      let sent : Nat ← liftM ((ambient + prefixBundle.spec).query (.inr (.inr (.inl ()))))
       let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 12))
       let _ ← liftM ((ambient + prefixBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
       if proceed then pure (some sent) else do
@@ -223,7 +223,7 @@ def secondVerifier :
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 16))
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 17))
       let latest : Nat ← liftM ((ambient + suffixBundle.spec).query
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+        (.inr (.inr (.inl ()))))
       pure (latest + mid)
   outputMap _ p _ := noOutputMap (pathBundle inputs pairSend p)
 
@@ -318,12 +318,12 @@ example (draw hidden : Nat) :
 example : OracleComp (ambient +
     (pathBundle inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec) Nat :=
   liftM ((ambient + (pathBundle inputs combined ⟨⟨⟩, ⟨⟩, ⟨⟩, ⟨⟩⟩).spec).query
-    (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+    (.inr (.inr (.inr (.inl ())))))
 
 example : True := by
   fail_if_success
     have _ : OracleComp (ambient + prefixBundle.spec) Nat :=
-      liftM ((ambient + prefixBundle.spec).query (.inr (.inr ⟨.inr (.inl ⟨⟩), ()⟩)))
+      liftM ((ambient + prefixBundle.spec).query (.inr (.inr (.inr (.inl ())))))
   trivial
 
 /-! ### A completed prefix decision is not moved before the next prover send

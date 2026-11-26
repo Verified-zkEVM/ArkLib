@@ -11,7 +11,7 @@ import ArkLib.Relation.OracleBundle
 # Oracle families and oracle maps: dependent answers, routing and hidden data
 
 Queries with different response types both affect a result. Answer-transforming oracle maps are
-observable in both composition orders. Sum embeddings read the matching component, and a constant
+observable in both composition orders. Sum projections read the matching component, and a constant
 renaming gives two indices to one realization. A pair interface answers both of its queries, and
 an unqueried coordinate of a realization is not observable.
 -/
@@ -143,20 +143,19 @@ example : simulateQ (numbers.behaviorOfRealizations ((shift.comp double).f answe
     twoQueries = (13, 7) :=
   (OracleMap.simulate_eq (shift.comp double) answers twoQueries).symm.trans rfl
 
-/-- Data for two copies of `numbers`: the left copy holds `answers`, the right copy holds 29. -/
-def pairData : ∀ k, (sumFamily numbers numbers).Realization k :=
-  sumData answers (fun _ => 29)
+/-- Two copies of `numbers`. -/
+abbrev twoCopies := (OracleBundle.ofFamily numbers).sum (OracleBundle.ofFamily numbers)
 
--- SourceExample S6 (two examples), restated: `SourceHom.inl`/`inr` become the embeddings of
--- `sumFamily numbers numbers` along `Sum.inl`/`Sum.inr`. Each reads its own copy. Not weaker.
-example : simulateQ ((sumFamily numbers numbers).behaviorOfRealizations pairData)
-    (simulateQ (OracleMap.embedding (sumFamily numbers numbers) Sum.inr).impl
-      (show OracleComp ((sumFamily numbers numbers).reindex Sum.inr).spec (Nat × Nat) from
-        twoQueries)) = (29, 29) := rfl
-example : simulateQ ((sumFamily numbers numbers).behaviorOfRealizations pairData)
-    (simulateQ (OracleMap.embedding (sumFamily numbers numbers) Sum.inl).impl
-      (show OracleComp ((sumFamily numbers numbers).reindex Sum.inl).spec (Nat × Nat) from
-        twoQueries)) = (2, 5) := rfl
+/-- Data for two copies of `numbers`: the left copy holds `answers`, the right copy holds 29. -/
+def pairData : twoCopies.Data := (answers, fun _ => 29)
+
+-- SourceExample S6 (two examples), restated: `SourceHom.inl`/`inr` become the projections
+-- `OracleMap.fst` and `OracleMap.snd` of the sum bundle of two copies of `numbers`. Each reads its
+-- own copy. Not weaker.
+example : simulateQ (twoCopies.answer pairData)
+    (simulateQ (OracleMap.snd numbers numbers).impl twoQueries) = (29, 29) := rfl
+example : simulateQ (twoCopies.answer pairData)
+    (simulateQ (OracleMap.fst numbers numbers).impl twoQueries) = (2, 5) := rfl
 
 -- SourceExample S7, restated: `SourceCtx.reindex` becomes the embedding along a constant
 -- renaming; output index `false` reads input index `true`. Not weaker.
@@ -172,21 +171,21 @@ example : simulateQ (numbers.behaviorOfRealizations answers)
     return (x.1 q.1, x.2 q.2)
 
 /-- The bundle whose data the pair interface packages. -/
-abbrev both := sumFamily dependent numbers
+abbrev both := (OracleBundle.ofFamily dependent).sum (OracleBundle.ofFamily numbers)
 
 /-- Query both components and return both answers. -/
-def tensor : OracleMap both (singletonFamily pairInterface) where
-  f x _ := (fun b => x (.inl b), fun b => x (.inr b))
+def tensor : OracleMap both (OracleBundle.of _ pairInterface) where
+  f x := (x.1, x.2)
   impl q := do
-    let u : Carrier q.2.1 ← liftM (both.spec.query ⟨.inl q.2.1, ()⟩)
-    let v : Nat ← liftM (both.spec.query ⟨.inr q.2.2, ()⟩)
+    let u : Carrier q.1 ← liftM (both.spec.query (.inl ⟨q.1, ()⟩))
+    let v : Nat ← liftM (both.spec.query (.inr ⟨q.2, ()⟩))
     pure (u, v)
   law _ _ := rfl
 
 -- SourceExample S8, restated: `SourceCtx.tensor` becomes an oracle map into a pair interface whose
 -- implementation queries both components. The answer is a pair, not a sum. Not weaker.
-example : simulateQ (both.behaviorOfRealizations (sumData (env true 2) answers))
-    (tensor.impl ⟨⟨⟩, (true, false)⟩) = ((2 : Fin 3), (2 : Nat)) := rfl
+example : simulateQ (both.answer (env true 2, answers))
+    (tensor.impl (true, false)) = ((2 : Fin 3), (2 : Nat)) := rfl
 
 -- SourceExample S8, through the library tensor: `OracleBundle.tensor` answers the same paired
 -- query on the same data with the same pair.

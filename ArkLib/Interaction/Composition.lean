@@ -473,19 +473,19 @@ theorem run_splitSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0
 /-- Split the oracle messages of an arbitrary completed appended path. -/
 def splitOracleMessages : (s₁ : OracleProtocol.{0, 0}) → (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
     (p : Path (s₁.append s₂)) →
-    OracleMap (oracleMessageFamily (s₁.append s₂) p)
-      (sumFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1)
-        (oracleMessageFamily (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2))
-  | .pure _, s₂, p => oracleMessageFamily_split (.pure ⟨⟩) s₂ ⟨⟩ p
+    OracleMap (oracleMessageBundle (s₁.append s₂) p)
+      ((oracleMessageBundle s₁ (Path.split s₁ s₂ p).1).sum
+        (oracleMessageBundle (s₂ (Path.split s₁ s₂ p).1) (Path.split s₁ s₂ p).2))
+  | .pure _, s₂, p => oracleMessageBundle_split (.pure ⟨⟩) s₂ ⟨⟩ p
   | .liftBind (.message _) next, s₂, ⟨x, p⟩ =>
     splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p
   | .liftBind (.challenge _) next, s₂, ⟨x, p⟩ =>
     splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p
-  | .liftBind (.oracle _ I) next, s₂, ⟨x, p⟩ =>
-    (OracleMap.familySumAssocSymm (singletonFamily I)
-      (oracleMessageFamily (next x) (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).1)
-      (oracleMessageFamily _ (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).2)).comp
-      ((OracleMap.embedding (singletonFamily I) id).sum
+  | .liftBind (.oracle X I) next, s₂, ⟨x, p⟩ =>
+    (OracleMap.sumAssocSymm (OracleBundle.of X I)
+      (oracleMessageBundle (next x) (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).1)
+      (oracleMessageBundle _ (Path.split (next x) (fun q => s₂ ⟨x, q⟩) p).2)).comp
+      ((OracleMap.id (OracleBundle.of X I)).par
         (splitOracleMessages (next x) (fun q => s₂ ⟨x, q⟩) p))
 
 /-- Preserve ambient queries while routing bundle queries through an oracle map. -/
@@ -543,13 +543,12 @@ variable {ι : Type} {ambient : OracleSpec ι}
 /-- Reassociate inputs and both sets of messages into the prefix bundle and the suffix messages. -/
 def splitPathBundle (p : Path (s₁.append s₂)) :
     OracleMap (pathBundle inputs (s₁.append s₂) p)
-      (OracleBundle.sum (pathBundle inputs s₁ (Path.split s₁ s₂ p).1)
-        (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))) :=
+      ((pathBundle inputs s₁ (Path.split s₁ s₂ p).1).sum
+        (oracleMessageBundle _ (Path.split s₁ s₂ p).2)) :=
   (OracleMap.sumAssocSymm inputs
-    (OracleBundle.ofFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1))
-    (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2))).comp
-    ((OracleMap.id inputs).par
-      ((OracleMap.ofSumFamily _ _).comp (splitOracleMessages s₁ s₂ p)))
+    (oracleMessageBundle s₁ (Path.split s₁ s₂ p).1)
+    (oracleMessageBundle _ (Path.split s₁ s₂ p).2)).comp
+    ((OracleMap.id inputs).par (splitOracleMessages s₁ s₂ p))
 
 /-- Prefix decisions see the original inputs and only prefix messages. -/
 def prefixRoute (p : Path (s₁.append s₂)) :
@@ -564,7 +563,7 @@ def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     OracleMap (pathBundle inputs (s₁.append s₂) p)
       (pathBundle (middle (Path.split s₁ s₂ p).1) _ (Path.split s₁ s₂ p).2) :=
   ((V₁.outputMap stmt (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).par
-    (OracleMap.id (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
+    (OracleMap.id (oracleMessageBundle _ (Path.split s₁ s₂ p).2))).comp
       (splitPathBundle (inputs := inputs) p)
 
 /-- The output oracle bundle of an appended oracle protocol: at a path of the appended tree, the

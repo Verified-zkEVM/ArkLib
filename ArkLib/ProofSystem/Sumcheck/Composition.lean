@@ -55,7 +55,7 @@ variable {s : OracleProtocol} {I : Type} {A : I → Type} (inputs : OracleFamily
 
 /-- The input oracles of a path's bundle, as an oracle map. -/
 abbrev inputRoute (p : Path s) : OracleMap (pathBundle inputs s p) inputs :=
-  OracleMap.fst (OracleBundle.ofFamily inputs) (OracleBundle.ofFamily (oracleMessageFamily s p))
+  OracleMap.fst (OracleBundle.ofFamily inputs) (oracleMessageBundle s p)
 
 end InputRoute
 
@@ -74,8 +74,7 @@ def checkRoute : (p : Path (round R deg)) →
       (OracleComp (ambient + (pathBundle inputs (round R deg) p).spec))
   | ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ => fun ⟨i, q⟩ => by
     obtain rfl := Unique.eq_default i
-    exact Interaction.pathLift ambient inputs (s := round R deg) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-      ⟨.inl ⟨⟩, q⟩
+    exact Interaction.pathLift ambient inputs (s := round R deg) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl q)
 
 /-- The legacy challenges of a round view. -/
 def roundChallenges {p : Path (round R deg)} (v : View (round R deg) p) :
@@ -324,11 +323,11 @@ variable {R deg ambient inputs}
 effects. -/
 theorem simulateQ_foldLift {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) {s : OracleProtocol} (p : Path s)
-    (x : ∀ i, A i) (pl : ∀ i, OracleMessage s p i) {α : Type}
+    (x : ∀ i, A i) (pl : (oracleMessageBundle s p).Data) {α : Type}
     (oa : OracleComp (oracleMessageSpec s p) α) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs s p).answer
         ((x, pl)))) (simulateQ (foldLift ambient inputs p) oa) =
-      (pure (simulateQ ((oracleMessageFamily s p).behaviorOfRealizations pl) oa) :
+      (pure (simulateQ ((oracleMessageBundle s p).answer pl) oa) :
         OracleComp spec' α) :=
   simulateQ_pathLift (inputs := inputs) amb p x pl oa
 

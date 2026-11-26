@@ -189,9 +189,10 @@ universe remains independent, without a linter suppression or source-policy exce
 input specification and the path's specification, with their data kept as a pair
 (`OracleBundle.sum`). Since step 4, both query types and all bundle data lie in `Type`.
 `OracleBundle.ofFamily` takes an `OracleFamily.{0, 0, 0}`. Step 4 did not change the definitions
-of `OracleFamily` and `OracleInterface`. The oracle-message families (`oracleMessageFamily`,
-`splitOracleMessages`) keep the node-query universe of `OracleProtocol.{u, q}`, and the verifier
-APIs pin it at `0`. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` still
+of `OracleFamily` and `OracleInterface`. The oracle messages on a path form the bundle
+`oracleMessageBundle s p`, built from `OracleBundle.empty`, `OracleBundle.sum` and
+`OracleBundle.of`. It and `splitOracleMessages` take `OracleProtocol.{0, 0}`, as the verifier APIs
+do. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` still
 checks the named and visible query carriers, the whole-context data, the verifiers and the shared
 run, now in `Type`. Its assertions of independent universes are retired under the policy adopted
 in #1580.
@@ -960,14 +961,14 @@ Theorem-statement handlers, direct input reads in decisions, legacy transcript q
 primitive owner implementations retain their explicit query forms. Legacy index
 elimination, equality transport, challenge-node transport, setup logging, path elimination,
 export arithmetic and surrounding effects are preserved. `OracleMap.par` uses the bundle
-projections. The parent's `OracleMap.sum` already composes `par` and the family/bundle
-representation maps. `oracleMessageFamily_split` delegates its empty-prefix family routing to
-`embedding`. The ordinary runner and the queries-by-move runners forward ambient queries and
+projections. `oracleMessageBundle_split` routes an empty prefix through
+`OracleMap.emptyLeft`. The ordinary runner and the queries-by-move runners forward ambient queries and
 challenge requests through the identity handler, without substituting a sampler. Legacy
 `decisionImpl` retains its substantive bundle query translation and delegates only the outer sum
 routing to identity restrictions.
 
-**Parent fixes retained.** `Interpreted.headQuery` and `tailLift` already use `embedding`.
+**Parent fixes retained.** `Interpreted.headQuery` and `tailLift` query the two sides of the
+message bundle's sum directly, as `OracleMap.fst` and `OracleMap.snd` do.
 The parent's `Execution.verifier_outputMap` only stated equality to `fst`; this cleanup fixes
 `verifierOn.outputMap` through `fst`, including its specialization `verifier`.
 `roundRoute` already specializes `roundRouteOn`; the latter now delegates to `headQuery`.
@@ -980,7 +981,7 @@ restrictions as the queries-by-move runners. They log directly through `executeW
 Imported replication and transcript path definitions retain their definition-site transparency;
 proofs use explicit reduction and their equations where needed. The existing definition-site
 annotations on `PlainPoly`, `plainSig`, `OraclePoly`, `oracleSig`, `viewSig`,
-`OracleMessageIndex`, `OracleMessage`, `sumFamily`, `singletonFamily`, `oracleMessageFamily`,
+`OracleMessageIndex`, `OracleMessage`, `oracleMessageBundle`,
 `PartialTranscriptAt` and Sumcheck `round` keep `implicit_reducible`.
 `perfectCompleteness_uniform` names the existing `challengeSampleable R deg n` instance
 explicitly when constructing `challengeQueryImpl`. `OracleMap.fst` is `macro_inline` so the

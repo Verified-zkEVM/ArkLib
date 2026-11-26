@@ -160,7 +160,7 @@ def appendOutputMap
     OracleMap (pathBundle inputs (s₁.append s₂) p) (splitOutputs outputs p) :=
   (map₂ (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2 (View.split s₁ s₂ p v).2).comp
     (((map₁ (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).par
-      (OracleMap.id (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
+      (OracleMap.id (oracleMessageBundle _ (Path.split s₁ s₂ p).2))).comp
       (splitPathBundle (inputs := inputs) p))
 
 /-- Compatibility when neither output map reads its input statement. The composite output map is

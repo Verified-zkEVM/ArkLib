@@ -181,12 +181,7 @@ theorem prefixRoute_round (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
         (Transcript.path (l := oracleSig) (s := _) ⟨msg, ⟨chal, tail⟩⟩)).f
         ((x, oracleMessages ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)) =
       (x, oracleMessages (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩) := by
-  refine Prod.ext ?_ ?_
-  · rfl
-  · funext i
-    rcases i with i | i
-    · rfl
-    · exact i.elim
+  rfl
 
 end Routing
 

@@ -113,12 +113,11 @@ any lawful monad, is a pure computation of the transcript's oracle messages. -/
 theorem simulateQ_decisionLift_monad {n : ℕ} {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type} [Monad m] [LawfulMonad m]
     (impl : QueryImpl ambient m) (p : Path (protocol R deg n))
-    (data : ∀ i, PolynomialData R n deg i) (pl : ∀ i, OracleMessage (protocol R deg n) p i)
+    (data : ∀ i, PolynomialData R n deg i) (pl : (oracleMessageBundle (protocol R deg n) p).Data)
     {α : Type} (oa : OracleComp (oracleMessageSpec (protocol R deg n) p) α) :
     simulateQ (QueryImpl.addLift impl ((pathBundle (polynomialFamily R n deg) (protocol R deg n)
       p).answer (data, pl))) (simulateQ (decisionLift R deg n ambient p) oa) =
-      (pure (simulateQ ((oracleMessageFamily (protocol R deg n) p).behaviorOfRealizations pl) oa) :
-        m α) :=
+      (pure (simulateQ ((oracleMessageBundle (protocol R deg n) p).answer pl) oa) : m α) :=
   simulateQ_pathLift (inputs := polynomialFamily R n deg) impl p data pl oa
 
 end Sumcheck

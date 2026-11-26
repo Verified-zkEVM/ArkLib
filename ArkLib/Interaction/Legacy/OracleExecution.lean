@@ -470,7 +470,7 @@ theorem viewChallenges_toView (tr : Transcript oracleSig (oracleProtocol pSpec))
 /-- One node of the message reader reads the decoded transcript. -/
 theorem readMsgNode_decode (j : Fin n) (D : Direction) (hD : pSpec.dir j = D)
     (rest : OracleProtocol.{0})
-    (recur : (p : Path rest) → (∀ o, OracleMessage rest p o) → (i : pSpec.MessageIdx) →
+    (recur : (p : Path rest) → (oracleMessageBundle rest p).Data → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i)
     (x : Move oracleSig (oraclePos pSpec j D hD)) (tr : Transcript oracleSig rest)
     (T : FullTranscript pSpec) (hhead : T j = oracleMoveEquiv pSpec j D hD x)
@@ -523,7 +523,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface.{0, 0} (OStmtIn i)]
   {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
 
-/-- Routing the legacy decision's queries to the oracle family of a path and answering them from
+/-- Routing the legacy decision's queries to the oracle bundle of a path and answering them from
 concrete data is legacy `simOracle2` on the input data and the path's messages. The ambient
 queries go to any implementation `amb`: plain, stateful or logging. -/
 theorem simulateQ_decisionImpl {m : Type → Type} [Monad m] [LawfulMonad m]

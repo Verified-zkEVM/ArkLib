@@ -31,8 +31,8 @@ open Interaction.RoutedAccessTests
 def rawCost : CostModel (ambient + rawBundle.spec) Nat := ⟨fun q => match q with
   | .inl _ => 1
   | .inr (.inl ⟨i, _⟩) => i.elim
-  | .inr (.inr ⟨.inl _, _⟩) => 1
-  | .inr (.inr ⟨.inr _, _⟩) => 3⟩
+  | .inr (.inr (.inl _)) => 1
+  | .inr (.inr (.inr _)) => 3⟩
 
 /-- Source charges on the suffix bundle: 2 for the export, 3 for the suffix's own oracle. -/
 def sourceCost : CostModel (ambient + suffixBundle.spec) Nat := ⟨fun q => match q with
@@ -46,7 +46,7 @@ def sourceCost : CostModel (ambient + suffixBundle.spec) Nat := ⟨fun q => matc
 /-- Routing each suffix query costs at most its assigned source charge. -/
 theorem route_cost (v : View combined combinedPath) (q : (ambient + suffixBundle.spec).Domain) :
     WorstCaseCostBound (route v q) rawCost (sourceCost.queryCost q) := by
-  rcases q with n | (⟨⟨⟩, q⟩ | ⟨⟨⟩ | i, q⟩)
+  rcases q with n | (⟨⟨⟩, q⟩ | (q | i))
   · exact worstCaseCostBound_query (.inl n) rawCost
   · cases q
     change WorstCaseCostBound (do
@@ -69,7 +69,7 @@ theorem program_cost : WorstCaseCostBound suffixProgram sourceCost 5 := by
   refine WorstCaseCostBound.bind (A := 2) (B := 3)
     (worstCaseCostBound_query (.inr (.inl ⟨(), ()⟩)) sourceCost) fun _ => ?_
   refine WorstCaseCostBound.bind (A := 3) (B := 0)
-    (worstCaseCostBound_query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)) sourceCost) fun _ => ?_
+    (worstCaseCostBound_query (.inr (.inr (.inl ()))) sourceCost) fun _ => ?_
   exact (worstCaseCostBound_pure _ _ _).mpr le_rfl
 
 -- QueryBounds 3, restated: the routed suffix decision has raw cost at most 5.
@@ -98,7 +98,7 @@ theorem route_export (v : View combined combinedPath) :
 
 /-- The routed fresh query is the suffix-oracle query. -/
 theorem route_fresh (v : View combined combinedPath) :
-    route v (.inr (.inr ⟨.inl ⟨⟩, ()⟩)) =
+    route v (.inr (.inr (.inl ()))) =
       (liftM ((ambient + rawBundle.spec).query (.inr suffixSlot)) :
         OracleComp (ambient + rawBundle.spec) Nat) := rfl
 
@@ -189,7 +189,7 @@ theorem routed_suffix_budget (p : Path bitCombined) (v : View bitCombined p) :
     (In := pathBundle bits bitCombined (combinedPath guess)) (Out := secondBundle guess)
     (OracleVerifier.suffixRoute bitPrefix () (combinedPath guess) v)
     (suffix_budget _ (View.split bitFirst (fun _ => bitSecond) _ v).2) (fun _ => le_rfl) ?_
-  rintro (⟨i, q⟩ | ⟨i, q⟩)
+  rintro (⟨i, q⟩ | i)
   · cases i
     cases q
     exact worstCaseCostBound_query

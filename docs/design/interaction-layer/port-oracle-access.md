@@ -351,8 +351,9 @@ inclusion, together with query routing. The [parent port table][parent-port-tabl
 above identify their exact assertion targets. P1 excludes intermediate verifier effects, not the
 produced prover moves.
 
-`OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig`, `OracleProtocol`, `oracleMessageFamily` and
-`pathBundle` keep independent node-query universes. General `OracleBundle.{u, uI, dI}` also
+`OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig` and `OracleProtocol` keep independent
+node-query universes. The oracle message bundle `oracleMessageBundle` and `pathBundle` take
+`OracleProtocol.{0, 0}`. General `OracleBundle.{u, uI, dI}` also
 separates response, bundle-query and data universes without changing the shared
 `OracleInterface`; families are a specialization. The earlier node-universe and input-data
 coupling entries are therefore closed by the parent, as recorded in

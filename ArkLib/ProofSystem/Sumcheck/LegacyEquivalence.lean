@@ -302,7 +302,7 @@ private abbrev decisionSpec (x : Σ s : OracleProtocol.{0}, Path s) :=
 `Interaction.pathLift` at the polynomial input family, packaged over a sigma so that the
 transport proof below can move along the tree. -/
 private def pathLift (x : Σ s : OracleProtocol.{0}, Path s) :
-    QueryImpl (oracleMessageFamily x.1 x.2).spec (OracleComp (decisionSpec R deg n ambient x)) :=
+    QueryImpl (oracleMessageSpec x.1 x.2) (OracleComp (decisionSpec R deg n ambient x)) :=
   Interaction.pathLift ambient (Spec.polynomialFamily R n deg) x.2
 
 variable {R deg n ambient}
@@ -364,7 +364,7 @@ theorem decide_heq_embed (stmt : Spec.StatementRound R n 0)
     [(Spec.pSpec R deg n).Message]ₒ)).query (.inr (.inr ⟨i, q⟩))))
   rw [simulateQ_spec_query]
   refine HEq.trans ?_ (heq_of_eq (decisionImpl_message _ ⟨i, q⟩).symm)
-  exact simulateQ_heq_of_heq (fun x => (oracleMessageFamily x.1 x.2).spec)
+  exact simulateQ_heq_of_heq (fun x => oracleMessageSpec x.1 x.2)
     (decisionSpec R deg n ambient) (pathLift R deg n ambient) hx
     (route_heq_queryMsg n _ _ hp i q)
 

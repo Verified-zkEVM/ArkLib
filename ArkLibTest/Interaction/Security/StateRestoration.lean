@@ -37,7 +37,7 @@ def rounds : List Round := [round]
 
 /-- The output is one `Fin 8` oracle. -/
 @[instance_reducible] def outputFamily : OracleFamily PUnit (fun _ => Fin 8) :=
-  singletonFamily messageInterface
+  ⟨fun _ => messageInterface⟩
 
 /-- The input statement: a number with no input oracles. -/
 abbrev Stmt : Type := Nat × (∀ i : PEmpty.{1}, (PEmpty.elim i : Type))
@@ -61,12 +61,15 @@ def verifier : OracleVerifier []ₒ (protocol rounds) Nat (fun _ => Fin 8)
   decide _ p v := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact if (show Bool from v.1.2.1) then
-      pathLift []ₒ emptyFamily (s := protocol rounds) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      pathLift []ₒ emptyFamily (s := protocol rounds) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
     else failure
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-    exact (OracleMap.embedding (oracleMessageFamily (protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+    exact
+      { f := fun x _ => x.2.1
+        impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds)
+          ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec.query (.inr (.inl q.2)))
+        law := fun _ _ => rfl }
 
 /-- The transcript with message `m` and challenge `c`. -/
 def path (m : Fin 8) (c : Bool) : Transcript oracleSig (protocol rounds) := ⟨m, ⟨c, ⟨⟩⟩⟩
@@ -178,7 +181,7 @@ def constantPlainVerifier : OracleVerifier []ₒ (protocol rounds) Nat (fun
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact liftM (pathLift []ₒ emptyFamily (s := protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩)
+      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ()))
   outputMap := verifier.outputMap
 
 /-- Replaying the plain verifier returns the oracle message for every challenge. -/
@@ -636,7 +639,7 @@ def selectedMessage : (b : Bool) → Fin 8 → SelectedValue b
 @[instance_reducible] def varyingFamily :
     (b : Bool) → OracleFamily PUnit (fun _ => SelectedValue b)
   | true => outputFamily
-  | false => singletonFamily wideInterface
+  | false => ⟨fun _ => wideInterface⟩
 
 /-- The frozen output oracle always has its original eight-element carrier. -/
 @[instance_reducible] def selectedFamily (_b : Bool) :
@@ -649,7 +652,7 @@ def readSelected (b : Bool) (p : Path (protocol rounds)) :
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   exact do
     let m ← pathLift []ₒ emptyFamily (s := protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
     pure (selectedMessage b m)
 
 /-- The selected output oracle answers from the actual sent oracle message. -/
@@ -658,21 +661,27 @@ def varyingMap (b : Bool) (p : Path (protocol rounds)) :
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   cases b
   · exact
-      { f := fun x _ => selectedMessage false (x.2 (.inl ⟨⟩))
+      { f := fun x _ => selectedMessage false x.2.1
         impl := fun _ => do
-          let m ← (OracleMap.snd emptyFamily (oracleMessageFamily (protocol rounds)
-            ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+          let m ← (OracleMap.snd emptyFamily (oracleMessageBundle (protocol rounds)
+            ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl (.inl ())
           pure (selectedMessage false m)
         law := fun _ _ => rfl }
-  · exact (OracleMap.embedding (oracleMessageFamily (protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+  · exact
+      { f := fun x _ => x.2.1
+        impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds)
+          ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec.query (.inr (.inl q.2)))
+        law := fun _ _ => rfl }
 
 /-- Frozen output-oracle data is routed unchanged from the sent oracle message. -/
 def selectedMap (_b : Bool) (p : Path (protocol rounds)) :
     OracleMap (pathBundle emptyFamily (protocol rounds) p) outputFamily := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-  exact (OracleMap.embedding (oracleMessageFamily (protocol rounds)
-    ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+  exact
+    { f := fun x _ => x.2.1
+      impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds)
+        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec.query (.inr (.inl q.2)))
+      law := fun _ _ => rfl }
 
 /-- The suffix of the plain verifier at a fixed authored selector. -/
 def plainSuffixVerifier (b : Bool) : OracleVerifier []ₒ (protocol rounds) Nat
