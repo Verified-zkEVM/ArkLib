@@ -8,27 +8,13 @@ module
 public import ArkLib.OracleReduction.Security.Basic
 
 /-!
-  # The Basic Fiat-Shamir Transformation
+# Canonical Fiat–Shamir construction
 
-  This file defines the basic Fiat-Shamir transformation. This transformation takes in a
-  (public-coin) interactive reduction (IR) `R` and transforms it into a non-interactive reduction in
-  the following way:
-  - Each verifier's challenge, instead of being sent from the verifier, will be obtained from a
-    Fiat-Shamir oracle, which for the `i`-th challenge requires the input statement and all messages
-    up to round `i`
+The construction compiles a public-coin interactive reduction into a one-message
+non-interactive reduction. Each verifier-message query uses the round index, input
+statement, and preceding prover messages.
 
-  This is the _basic_ (or slow) version, as opposed to the more efficient duplex-sponge version,
-  which is not formalized here.
-
-  We will show that the transformation satisfies security properties as follows:
-
-  - Completeness is preserved
-  - State-restoration (knowledge) soundness implies (knowledge) soundness
-  - Honest-verifier zero-knowledge implies zero-knowledge
-
-  ## Notes
-
-  Our formalization mostly follows the treatment in the Chiesa-Yogev textbook.
+The formalization follows the treatment in the Chiesa–Yogev textbook.
 -/
 
 @[expose] public section
@@ -102,15 +88,16 @@ Prover's function for processing the next round, given the current result of the
 @[inline, specialize]
 def Prover.processRoundFS (j : Fin n)
     (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (currentResult : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
+    (currentResult : OracleComp (oSpec + fsVerifierMessageOracle StmtIn pSpec)
       (pSpec.MessagesUpTo j.castSucc × StmtIn × prover.PrvState j.castSucc)) :
-      OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
+      OracleComp (oSpec + fsVerifierMessageOracle StmtIn pSpec)
         (pSpec.MessagesUpTo j.succ × StmtIn × prover.PrvState j.succ) := do
   let ⟨messages, stmtIn, state⟩ ← currentResult
   match hDir : pSpec.dir j with
   | .V_to_P => do
     let f ← prover.receiveChallenge ⟨j, hDir⟩ state
-    let challenge ← query (spec := fsChallengeOracle StmtIn pSpec) ⟨⟨j, hDir⟩, ⟨stmtIn, messages⟩⟩
+    let challenge ← query (spec := fsVerifierMessageOracle StmtIn pSpec)
+      ⟨⟨j, hDir⟩, ⟨stmtIn, messages⟩⟩
     return ⟨messages.extend hDir, stmtIn, f challenge⟩
   | .P_to_V => do
     let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
@@ -125,7 +112,7 @@ Run the prover in an interactive reduction up to round index `i`, via first inpu
 def Prover.runToRoundFS (i : Fin (n + 1))
     (stmt : StmtIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (state : prover.PrvState 0) :
-        OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
+        OracleComp (oSpec + fsVerifierMessageOracle StmtIn pSpec)
           (pSpec.MessagesUpTo i × StmtIn × prover.PrvState i) :=
   Fin.induction
     (pure ⟨default, stmt, state⟩)
@@ -134,7 +121,7 @@ def Prover.runToRoundFS (i : Fin (n + 1))
 
 /-- The (slow) Fiat-Shamir transformation for the prover. -/
 def Prover.fiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-    NonInteractiveProver (∀ i, pSpec.Message i) (oSpec + fsChallengeOracle StmtIn pSpec)
+    NonInteractiveProver (∀ i, pSpec.Message i) (oSpec + fsVerifierMessageOracle StmtIn pSpec)
       StmtIn WitIn StmtOut WitOut where
   PrvState := fun i => match i with
     | 0 => StmtIn × P.PrvState 0
@@ -150,7 +137,7 @@ def Prover.fiatShamir (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
 
 /-- The (slow) Fiat-Shamir transformation for the verifier. -/
 def Verifier.fiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
-    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec + fsChallengeOracle StmtIn pSpec)
+    NonInteractiveVerifier (∀ i, pSpec.Message i) (oSpec + fsVerifierMessageOracle StmtIn pSpec)
       StmtIn StmtOut where
   verify := fun stmtIn proof => do
     let messages : pSpec.Messages := proof 0
@@ -160,7 +147,7 @@ def Verifier.fiatShamir (V : Verifier oSpec StmtIn StmtOut pSpec) :
 /-- The Fiat-Shamir transformation for an (interactive) reduction, which consists of applying the
   Fiat-Shamir transformation to both the prover and the verifier. -/
 def Reduction.fiatShamir (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) :
-    NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec + fsChallengeOracle StmtIn pSpec)
+    NonInteractiveReduction (∀ i, pSpec.Message i) (oSpec + fsVerifierMessageOracle StmtIn pSpec)
       StmtIn WitIn StmtOut WitOut where
   prover := R.prover.fiatShamir
   verifier := R.verifier.fiatShamir

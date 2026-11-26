@@ -12,6 +12,9 @@ ArkLib/
     Core/             interaction layer: protocols as PolyFun trees, execution, security
   Relation/           claims, witness relations, oracle interfaces and oracle data families
   OracleReduction/    core IOR abstractions and security theory
+  InteractiveProof/   honest protocols and public-coin security
+  NonInteractiveArgument/  honest arguments, adaptive games, and Fiat–Shamir
+  Security/           shared game execution and private-coin operations
   Commitments/        commitments and opening arguments
   ProofSystem/        protocol families and higher-level proofs
   ToMathlib/          local additions not upstreamed to Mathlib
@@ -57,11 +60,35 @@ home_page/            site assets and assembled website root
   gives exact ownership and migration dispositions. Tests live in
   `ArkLibTest/ProofSystem/Sumcheck/`.
 - `ArkLib/OracleReduction/` remains the conceptual center of the legacy reduction and security
-  layer while protocol clients migrate. `FiatShamir/Basic.lean` owns the transform;
-  `FiatShamir/Completeness.lean` adds fixed-table perfect completeness and shared lazy
-  random-oracle completeness.
-  Generic transcript projection and reconstruction equations live in `ProtocolSpec/Basic.lean`;
-  round and optional-run factorization lemmas live in `Execution.lean`.
+  layer while protocol clients migrate. Core transcript operations live in `ProtocolSpec/Basic.lean`.
+  Message and challenge prefix lemmas live in `ProtocolSpec/PrefixLemmas.lean`. Round and
+  optional-run factorization lemmas live in `Execution.lean`.
+- `ArkLib/InteractiveProof/IP.lean` owns the honest protocol interface and its compatibility
+  with the legacy reduction. `Soundness.lean` owns adaptive interactive security.
+  `StateRestorationSoundness.lean` owns the general and ordinary `IP` state-restoration
+  games and private-coin preservation lemmas. `ZeroKnowledge.lean` defines honest-verifier zero
+  knowledge. These modules reuse the legacy protocol specification and executor.
+- `ArkLib/NonInteractiveArgument/NARG.lean` owns the honest argument interface and completeness,
+  along with adaptive soundness and knowledge-soundness games and statement-size restrictions.
+  `ZeroKnowledge.lean` defines the two-stage adaptive simulation games.
+  `Legacy.lean` adapts legacy one-message reductions and transports their experiments across
+  private-sampling adapters.
+- `ArkLib/NonInteractiveArgument/FiatShamir/Canonical.lean` exports the [canonical transform
+  and its completeness results](fiat-shamir.md). Its `Construction.lean`
+  defines the statement-keyed transform. `Completeness.lean` states fixed-table perfect
+  completeness and shared lazy random-oracle completeness, with execution lemmas in
+  `Completeness/Shared.lean`.
+- `ArkLib/Security/` contains only shared security machinery: `Game.lean` initializes
+  and executes a shared oracle, and `PrivateCoins.lean` separates private samples from
+  public-query budgets and logs. With `open scoped QueryImpl`, `left + right` also combines
+  handlers in different monads when one lifts into the other. Same-monad sums keep their existing
+  meaning; otherwise the left monad is preferred, then the right. Use `addLift` with an explicit
+  target when both handlers need lifting into a third monad. The lemmas `QueryImpl.add_lift_right`
+  and `QueryImpl.add_lift_left` normalize the inferred lifts for existing sum lemmas.
+  These modules import neither interaction layer. The `NARG.lean` and `ZeroKnowledge.lean` tests
+  in `ArkLibTest/NonInteractiveArgument/` exercise this boundary; `Legacy.lean` tests its adapters.
+  Shared private-coin tests live in `ArkLibTest/Security/PrivateCoins.lean`, and interactive-proof
+  clients, including SR sampling tests, live in `ArkLibTest/InteractiveProof/`.
 - `ArkLib/Relation/Basic.lean` is the neutral owner of claims, witness relations with an
   admissibility boundary, and oracle data families; it depends on no protocol tree.
   `Relation/OracleInterface.lean` defines the `OracleInterface` class and its instances for

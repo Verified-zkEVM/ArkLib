@@ -5,14 +5,15 @@ Authors: Quang Dao
 -/
 module
 
-public import ArkLib.OracleReduction.FiatShamir.Basic
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Construction
 public import ArkLib.OracleReduction.Security.RbrGame
 public import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 
 /-!
-# Completeness of the Fiat-Shamir transformation
+# Execution laws for canonical Fiat–Shamir completeness
 
-Fixed tables preserve perfect completeness; a shared lazy random oracle preserves error.
+These lemmas relate the interactive execution to the compiled execution under a fixed
+verifier-message table or a shared lazy random oracle.
 -/
 
 @[expose] public section
@@ -57,10 +58,10 @@ omit samples in
 lemma Prover.processRoundFS_simulate (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (j : Fin n) (messages : pSpec.MessagesUpTo j.castSucc) (stmt : StmtIn)
     (st : P.PrvState j.castSucc) (s : σ)
-    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) :
+    (f : QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) :
     (simulateQ (impl.addLift fsChallengeQueryImpl' :
-      QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-        (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
+      QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec)
+        (StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp))
       (P.processRoundFS j (pure (messages, stmt, st)))).run (s, f) =
       (match h : pSpec.dir j with
       | .V_to_P => do
@@ -86,7 +87,7 @@ lemma Prover.processRoundFS_simulate (P : Prover oSpec StmtIn WitIn StmtOut WitO
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Separate the previous FS rounds from the current round. -/
 lemma Prover.processRoundFS_bind (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (j : Fin n) (current : OracleComp (oSpec + fsChallengeOracle StmtIn pSpec)
+    (j : Fin n) (current : OracleComp (oSpec + fsVerifierMessageOracle StmtIn pSpec)
       (pSpec.MessagesUpTo j.castSucc × StmtIn × P.PrvState j.castSucc)) :
     P.processRoundFS j current = current >>= fun x => P.processRoundFS j (pure x) := by
   simp [processRoundFS]
@@ -102,7 +103,7 @@ omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Reconstruction replays a transcript whenever its challenge keys return the recorded
 answers without changing the simulation state. -/
 lemma simulateQ_deriveTranscriptSRAux {μ : Type → Type} [Monad μ] [LawfulMonad μ]
-    {ρ : Type} (handler : QueryImpl (oSpec + srChallengeOracle StmtIn pSpec) (StateT ρ μ))
+    {ρ : Type} (handler : QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec) (StateT ρ μ))
     {k : Fin (n + 1)} (tr : pSpec.Transcript k) (stmt : StmtIn) (state : ρ)
     (hit : ∀ (i : Fin k) (h : pSpec.dir (i.castLE (by omega)) = .V_to_P),
       (handler (.inr ⟨⟨i.castLE (by omega), h⟩, stmt,
@@ -137,10 +138,10 @@ lemma simulateQ_deriveTranscriptSRAux {μ : Type → Type} [Monad μ] [LawfulMon
 omit samples in
 /-- Full verifier reconstruction replays the fixed table. -/
 lemma simulateQ_deriveTranscriptFS (messages : pSpec.Messages) (stmt : StmtIn)
-    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) (s : σ) :
+    (f : QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) (s : σ) :
     (simulateQ (impl.addLift fsChallengeQueryImpl' :
-      QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-        (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
+      QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec)
+        (StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp))
       (messages.deriveTranscriptFS (oSpec := oSpec) stmt)).run (s, f) =
       pure (Messages.transcriptOfTable messages stmt f, s, f) := by
   let tr := MessagesUpTo.transcriptOfTable (k := Fin.last n) messages stmt f
@@ -151,8 +152,8 @@ lemma simulateQ_deriveTranscriptFS (messages : pSpec.Messages) (stmt : StmtIn)
     (impl.addLift fsChallengeQueryImpl') tr stmt (s, f) (j := Fin.last n)
   have hit (i : Fin (Fin.last n)) (h : pSpec.dir (i.castLE (by omega)) = .V_to_P) :
       ((impl.addLift fsChallengeQueryImpl' :
-        QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-          (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
+        QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec)
+          (StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp))
         (.inr ⟨⟨i.castLE (by omega), h⟩, stmt,
           tr.toMessagesUpTo.take i.castSucc⟩)).run (s, f) = pure (tr i, s, f) := by
     dsimp only [tr]
@@ -166,8 +167,8 @@ lemma simulateQ_deriveTranscriptFS (messages : pSpec.Messages) (stmt : StmtIn)
   have result := replay hit
   have eqRun := congrArg (fun msgs : pSpec.MessagesUpTo (Fin.last n) =>
     (simulateQ (impl.addLift fsChallengeQueryImpl' :
-      QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-        (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
+      QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec)
+        (StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp))
       (msgs.deriveTranscriptSRAux (oSpec := oSpec) stmt (Fin.last n) (Fin.last n))).run (s, f)) hm
   exact eqRun.symm.trans result
 
@@ -182,9 +183,9 @@ lemma Reduction.fiatShamir_run_option
       let tr ← messages.toMessages.deriveTranscriptFS (oSpec := oSpec) stmt
       let vr ← liftM (R.verifier.verify stmt tr).run
       pure (vr.map (fun v => ((messages.toMessages.fsTranscript, ctx), v))) :
-        OracleComp (oSpec + fsChallengeOracle StmtIn pSpec) _).liftComp
-          (spec := oSpec + fsChallengeOracle StmtIn pSpec)
-          ((oSpec + fsChallengeOracle StmtIn pSpec) +
+        OracleComp (oSpec + fsVerifierMessageOracle StmtIn pSpec) _).liftComp
+          (spec := oSpec + fsVerifierMessageOracle StmtIn pSpec)
+          ((oSpec + fsVerifierMessageOracle StmtIn pSpec) +
             [(⟨!v[.P_to_V], !v[(i : pSpec.MessageIdx) → pSpec.Message i]⟩ :
               ProtocolSpec 1).Challenge]ₒ'challengeOracleInterface)
           (h := ⟨fun q => ⟨Sum.inl q.input, q.cont⟩⟩) := by
@@ -212,10 +213,10 @@ lemma Reduction.fiatShamir_run_option
 with the same base-oracle state and the reconstructed transcript. -/
 lemma Prover.runToRoundFS_support (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
     (stmt : StmtIn) (wit : WitIn) (s : σ)
-    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) (k : Fin (n + 1)) :
+    (f : QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) (k : Fin (n + 1)) :
     ∀ z ∈ support ((simulateQ (impl.addLift fsChallengeQueryImpl' :
-      QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-        (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
+      QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec)
+        (StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp))
       (P.runToRoundFS k stmt (P.input (stmt, wit)))).run (s, f)),
       z.1.2.1 = stmt ∧ z.2.2 = f ∧
       ((z.1.1.transcriptOfTable stmt f, z.1.2.2), z.2.1) ∈
@@ -273,15 +274,15 @@ lemma Prover.runToRoundFS_support (P : Prover oSpec StmtIn WitIn StmtOut WitOut 
 /-- Fixed-table FS execution preserves the output pair and verdict of some interactive branch. -/
 lemma Reduction.fiatShamir_run_support
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (stmt : StmtIn) (wit : WitIn)
-    (s : σ) (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) :
+    (s : σ) (f : QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) :
     ∀ z ∈ support ((simulateQ
       ((impl.addLift fsChallengeQueryImpl' :
-        QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-          (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)).addLift
+        QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec)
+          (StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp)).addLift
           (n := ProbComp)
-          (r := StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp)
+          (r := StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp)
           challengeQueryImpl :
-        QueryImpl _ (StateT (σ × QueryImpl (srChallengeOracle StmtIn pSpec) Id) ProbComp))
+        QueryImpl _ (StateT (σ × QueryImpl (srVerifierMessageOracle StmtIn pSpec) Id) ProbComp))
       (R.fiatShamir.run stmt wit).run).run (s, f)),
     ∃ y ∈ support ((simulateQ (impl.addLift challengeQueryImpl :
         QueryImpl _ (StateT σ ProbComp)) (R.run stmt wit).run).run s),
@@ -324,19 +325,19 @@ section RandomOracle
 
 omit [∀ i, SampleableType (pSpec.Challenge i)]
 
-variable [DecidableEq (srChallengeOracle StmtIn pSpec).Domain]
+variable [DecidableEq (srVerifierMessageOracle StmtIn pSpec).Domain]
 
 /-- The random-oracle key used at a challenge round in a transcript. -/
 abbrev ProtocolSpec.Transcript.challengeKey {k : Fin (n + 1)}
     (tr : pSpec.Transcript k) (stmt : StmtIn) (j : pSpec.ChallengeIdx)
-    (h : j.1.val ≤ k.val) : (srChallengeOracle StmtIn pSpec).Domain :=
+    (h : j.1.val ≤ k.val) : (srVerifierMessageOracle StmtIn pSpec).Domain :=
   ⟨j, stmt, tr.messagesBefore j.1 h⟩
 
 /-- The shared cache containing exactly the challenge queries recorded in a transcript.
 The decidable equality premise is needed for comparing statement and message-prefix keys. -/
 def ProtocolSpec.Transcript.challengeCache {k : Fin (n + 1)}
     (tr : pSpec.Transcript k) (stmt : StmtIn) :
-    (srChallengeOracle StmtIn pSpec).QueryCache :=
+    (srVerifierMessageOracle StmtIn pSpec).QueryCache :=
   QueryCache.ofFn fun q =>
     if h : q.1.1.val < k.val then
       if q = tr.challengeKey stmt q.1 (Nat.le_of_lt h) then
@@ -347,7 +348,7 @@ def ProtocolSpec.Transcript.challengeCache {k : Fin (n + 1)}
 /-- No future round has an entry in the transcript's cache. -/
 lemma ProtocolSpec.Transcript.challengeCache_future {k : Fin (n + 1)}
     (tr : pSpec.Transcript k) (stmt : StmtIn)
-    (q : (srChallengeOracle StmtIn pSpec).Domain) (h : k.val ≤ q.1.1.val) :
+    (q : (srVerifierMessageOracle StmtIn pSpec).Domain) (h : k.val ≤ q.1.1.val) :
     tr.challengeCache stmt q = none := by
   simp [challengeCache, Nat.not_lt_of_ge h]
 
@@ -370,7 +371,7 @@ lemma ProtocolSpec.Transcript.challengeCache_zero (tr : pSpec.Transcript 0)
 /-- Adding a round leaves entries at every other round unchanged. -/
 lemma ProtocolSpec.Transcript.challengeCache_concat_of_ne {j : Fin n}
     (tr : pSpec.Transcript j.castSucc) (x : pSpec.Type j) (stmt : StmtIn)
-    (q : (srChallengeOracle StmtIn pSpec).Domain) (hne : q.1.1 ≠ j) :
+    (q : (srVerifierMessageOracle StmtIn pSpec).Domain) (hne : q.1.1 ≠ j) :
     (tr.concat x).challengeCache stmt q = tr.challengeCache stmt q := by
   by_cases hlt : q.1.1.val < j.val
   · have hs : q.1.1.val < j.succ.val := Nat.lt_trans hlt (Nat.lt_succ_self _)
@@ -453,23 +454,23 @@ lemma ProtocolSpec.Transcript.challengeCache_concat_challenge {j : Fin n}
 
 include samples
 
-local instance : ∀ q : (srChallengeOracle StmtIn pSpec).Domain,
-    SampleableType ((srChallengeOracle StmtIn pSpec).Range q) :=
+local instance : ∀ q : (srVerifierMessageOracle StmtIn pSpec).Domain,
+    SampleableType ((srVerifierMessageOracle StmtIn pSpec).Range q) :=
   fun q => inferInstanceAs (SampleableType (pSpec.Challenge q.1))
 
 /-- Shared base state and lazy challenge cache for honest FS execution. -/
-def FiatShamir.fsRandomOracleImpl : QueryImpl (oSpec + srChallengeOracle StmtIn pSpec)
-    (StateT (σ × (srChallengeOracle StmtIn pSpec).QueryCache) ProbComp) :=
-  impl.addLift (srChallengeOracle StmtIn pSpec).randomOracle
+def FiatShamir.fsRandomOracleImpl : QueryImpl (oSpec + srVerifierMessageOracle StmtIn pSpec)
+    (StateT (σ × (srVerifierMessageOracle StmtIn pSpec).QueryCache) ProbComp) :=
+  impl.addLift (srVerifierMessageOracle StmtIn pSpec).randomOracle
 
 open FiatShamir
 
 /-- Challenge queries operate on the shared cache and preserve the base state. -/
-lemma simulateQ_fsRandom_query (q : (srChallengeOracle StmtIn pSpec).Domain) (s : σ)
-    (c : (srChallengeOracle StmtIn pSpec).QueryCache) :
+lemma simulateQ_fsRandom_query (q : (srVerifierMessageOracle StmtIn pSpec).Domain) (s : σ)
+    (c : (srVerifierMessageOracle StmtIn pSpec).QueryCache) :
     (simulateQ (fsRandomOracleImpl impl)
-      (liftM ((oSpec + srChallengeOracle StmtIn pSpec).query (.inr q)))).run (s, c) =
-      (do let (a, c') ← ((srChallengeOracle StmtIn pSpec).randomOracle q).run c
+      (liftM ((oSpec + srVerifierMessageOracle StmtIn pSpec).query (.inr q)))).run (s, c) =
+      (do let (a, c') ← ((srVerifierMessageOracle StmtIn pSpec).randomOracle q).run c
           pure (a, s, c')) := by
   rw [simulateQ_spec_query, fsRandomOracleImpl, QueryImpl.addLift_def,
     QueryImpl.add_apply_inr]
@@ -479,7 +480,7 @@ lemma simulateQ_fsRandom_query (q : (srChallengeOracle StmtIn pSpec).Domain) (s 
 lemma simulateQ_fsRandom_fresh {j : Fin n} (tr : pSpec.Transcript j.castSucc)
     (stmt : StmtIn) (hd : pSpec.dir j = .V_to_P) (s : σ) :
     (simulateQ (fsRandomOracleImpl impl)
-      (liftM ((oSpec + srChallengeOracle StmtIn pSpec).query
+      (liftM ((oSpec + srVerifierMessageOracle StmtIn pSpec).query
         (.inr ⟨⟨j, hd⟩, stmt, tr.toMessagesUpTo⟩)))).run
       (s, tr.challengeCache stmt) = (do
         let ch ← $ᵗ pSpec.Challenge ⟨j, hd⟩
@@ -513,7 +514,7 @@ lemma Prover.processRoundFS_randomOracle
     have hstep (recv : pSpec.Challenge ⟨j, hd⟩ → P.PrvState j.succ) (s' : σ) :
         (simulateQ (fsRandomOracleImpl impl) (do
           let ch : pSpec.Challenge ⟨j, hd⟩ ← liftM
-            ((oSpec + srChallengeOracle StmtIn pSpec).query
+            ((oSpec + srVerifierMessageOracle StmtIn pSpec).query
               (.inr ⟨⟨j, hd⟩, stmt, tr.toMessagesUpTo⟩))
           pure (tr.toMessagesUpTo.extend hd, stmt, recv ch))).run
           (s', tr.challengeCache stmt) = (do
@@ -523,9 +524,9 @@ lemma Prover.processRoundFS_randomOracle
                 ⟨⟨j, hd⟩, stmt, tr.toMessagesUpTo⟩ ch)) := by
       have hb := congrArg (fun x => x.run (s', tr.challengeCache stmt))
         (simulateQ_bind (fsRandomOracleImpl impl)
-          (liftM ((oSpec + srChallengeOracle StmtIn pSpec).query
+          (liftM ((oSpec + srVerifierMessageOracle StmtIn pSpec).query
             (.inr ⟨⟨j, hd⟩, stmt, tr.toMessagesUpTo⟩)) :
-              OracleComp (oSpec + srChallengeOracle StmtIn pSpec) (pSpec.Challenge ⟨j, hd⟩))
+              OracleComp (oSpec + srVerifierMessageOracle StmtIn pSpec) (pSpec.Challenge ⟨j, hd⟩))
           (fun ch => pure (tr.toMessagesUpTo.extend hd, stmt, recv ch)))
       refine hb.trans ?_
       erw [StateT.run_bind, simulateQ_fsRandom_fresh]
@@ -592,7 +593,7 @@ lemma Prover.runToRoundFS_randomOracle
 lemma simulateQ_fsRandom_hit {k : Fin (n + 1)} (tr : pSpec.Transcript k)
     (stmt : StmtIn) (j : pSpec.ChallengeIdx) (h : j.1.val < k.val) (s : σ) :
     (simulateQ (fsRandomOracleImpl impl)
-      (liftM ((oSpec + srChallengeOracle StmtIn pSpec).query
+      (liftM ((oSpec + srVerifierMessageOracle StmtIn pSpec).query
         (.inr (tr.challengeKey stmt j (Nat.le_of_lt h)))))).run
         (s, tr.challengeCache stmt) = pure (tr ⟨j.1.val, h⟩, s, tr.challengeCache stmt) := by
   rw [simulateQ_fsRandom_query, randomOracle.run_eq,
@@ -620,7 +621,7 @@ lemma Reduction.fiatShamir_randomOracle_outputs
     (s : σ) :
     (fun z => (z.1.map (fun r => (r.1.2, r.2)), z.2.1)) <$>
       ((simulateQ ((fsRandomOracleImpl impl).addLift challengeQueryImpl :
-        QueryImpl _ (StateT (σ × (srChallengeOracle StmtIn pSpec).QueryCache) ProbComp))
+        QueryImpl _ (StateT (σ × (srVerifierMessageOracle StmtIn pSpec).QueryCache) ProbComp))
         (R.fiatShamir.run stmt wit).run).run (s, ∅)) =ᵈ
     (fun z => (z.1.map (fun r => (r.1.2, r.2)), z.2)) <$>
       ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
@@ -651,101 +652,3 @@ lemma Reduction.fiatShamir_randomOracle_outputs
 end RandomOracle
 
 end Execution
-
-open FiatShamir
-
-section Security
-
-omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
-
-noncomputable section
-
-open scoped NNReal
-
-variable [samples : ∀ i, SampleableType (pSpec.Challenge i)]
-  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-
-/-- Perfect completeness is preserved for every fixed challenge table. Full support of each
-uniform interactive challenge ensures that every transformed honest execution is an interactive
-branch; verifier reconstruction replays exactly that branch. -/
-theorem fiatShamir_perfectCompleteness
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (hR : R.perfectCompleteness init impl relIn relOut)
-    (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) :
-    R.fiatShamir.perfectCompleteness (do return (← init, f))
-      (impl.addLift fsChallengeQueryImpl') relIn relOut := by
-  erw [Reduction.perfectCompleteness_eq_prob_one] at hR ⊢
-  intro stmt wit hin
-  have hgood := (OracleComp.OptionT.prEvent_mk_eq_one_iff _ _).mp (hR stmt wit hin)
-  apply (OracleComp.OptionT.prEvent_mk_eq_one_iff _ _).mpr
-  intro result hresult
-  simp only [bind_assoc, pure_bind] at hresult
-  obtain ⟨s, hs, hresult⟩ := mem_support_bind_peel _ _ hresult
-  rw [StateT.run'_eq] at hresult
-  obtain ⟨z, hz, hresult⟩ := mem_support_map_peel _ _ hresult
-  subst result
-  obtain ⟨y, hy, heq⟩ := R.fiatShamir_run_support impl stmt wit s f z (by
-    convert hz using 1
-    congr 3
-    funext q
-    rcases q with q | q
-    · rfl
-    · exact isEmptyElim q.1)
-  have hyInit : y.1 ∈ support (do
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (R.run stmt wit).run).run' (← init)) := by
-    apply (mem_support_bind_iff _ _ _).mpr
-    refine ⟨s, hs, ?_⟩
-    rw [StateT.run'_eq]
-    rw [support_map]
-    exact ⟨y, hy, rfl⟩
-  obtain ⟨r, hr, hrel, hagree⟩ := hgood y.1 hyInit
-  cases hzopt : z.1 with
-  | none => simp [hzopt, hr] at heq
-  | some zr =>
-    refine ⟨zr, rfl, ?_⟩
-    have hout : (zr.1.2, zr.2) = (r.1.2, r.2) := by
-      simpa [hzopt, hr] using heq
-    rcases zr with ⟨⟨_, _, _⟩, _⟩
-    rcases r with ⟨⟨_, _, _⟩, _⟩
-    simp only [Prod.mk.injEq] at hout
-    rcases hout with ⟨⟨rfl, rfl⟩, rfl⟩
-    exact ⟨hrel, hagree⟩
-
-/-- Completeness error is preserved by a lazy random challenge oracle shared by the
-transformed prover and verifier. The cache starts empty; distinct round indices make every
-honest prover query fresh, and reconstruction replays the cached answers. Decidable equality
-of query keys suffices, with no finite statement, message, or base-state assumption. -/
-theorem fiatShamir_completeness_randomOracle
-    [DecidableEq (srChallengeOracle StmtIn pSpec).Domain]
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) (ε : ℝ≥0)
-    (hR : R.completeness init impl relIn relOut ε) :
-    R.fiatShamir.completeness
-      (do return (← init, (∅ : (srChallengeOracle StmtIn pSpec).QueryCache)))
-      (fsRandomOracleImpl impl) relIn relOut ε := by
-  intro stmt wit hin
-  have hd := EvalDistEq.bind_right init fun s =>
-    R.fiatShamir_randomOracle_outputs impl stmt wit s
-  have hp := hd.prEvent_eq (fun z => z.1.elim False (fun r =>
-    (r.2, r.1.2) ∈ relOut ∧ r.1.1 = r.2))
-  have h := hR stmt wit hin
-  simp only [OptionT.prEvent_mk, StateT.run'_eq, bind_assoc, pure_bind,
-    map_bind] at h ⊢
-  simp only [map_bind, Functor.map_map, Option.elim_map, Function.comp_def] at hp h ⊢
-  convert h.trans hp.ge using 1
-  apply congrArg prEvent
-  apply bind_congr
-  intro s
-  congr 3
-  funext q
-  rcases q with q | q
-  · rfl
-  · exact isEmptyElim q.1
-
--- TODO: state-restoration (knowledge) soundness implies (knowledge) soundness after Fiat-Shamir
-
-end
-
-end Security

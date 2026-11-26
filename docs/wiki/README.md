@@ -10,6 +10,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 
 - [`quickstart.md`](quickstart.md) - canonical agent command and validation playbook.
 - [`repo-map.md`](repo-map.md) - where to edit and how the main subtrees relate.
+- [`fiat-shamir.md`](fiat-shamir.md) - honest protocol and argument interfaces.
 - [`generated-files.md`](generated-files.md) - derived outputs and their sources of truth.
 - [`module-system.md`](module-system.md) - Lean's module system: the canonical file shape, the
   error-to-fix table, what the boundary buys, and what tightening is still on the table.

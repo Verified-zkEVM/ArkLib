@@ -855,6 +855,17 @@ public import ArkLib.Interaction.Security.StateRestorationBudget
 public import ArkLib.Interaction.Signature
 public import ArkLib.Interaction.StageChain
 public import ArkLib.Interaction.Transcript
+public import ArkLib.InteractiveProof.IP
+public import ArkLib.InteractiveProof.Soundness
+public import ArkLib.InteractiveProof.StateRestorationSoundness
+public import ArkLib.InteractiveProof.ZeroKnowledge
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Completeness.Shared
+public import ArkLib.NonInteractiveArgument.FiatShamir.Canonical.Construction
+public import ArkLib.NonInteractiveArgument.Legacy
+public import ArkLib.NonInteractiveArgument.NARG
+public import ArkLib.NonInteractiveArgument.ZeroKnowledge
 public import ArkLib.OracleReduction.BCS.Basic
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.OracleReduction.Cast
@@ -883,8 +894,6 @@ public import ArkLib.OracleReduction.Composition.Sequential.NoAmbient
 public import ArkLib.OracleReduction.Composition.Sequential.OracleCompleteness
 public import ArkLib.OracleReduction.Equiv
 public import ArkLib.OracleReduction.Execution
-public import ArkLib.OracleReduction.FiatShamir.Basic
-public import ArkLib.OracleReduction.FiatShamir.Completeness
 public import ArkLib.OracleReduction.LiftContext.Lens
 public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
@@ -893,6 +902,8 @@ public import ArkLib.OracleReduction.LogicStep
 public import ArkLib.OracleReduction.Prelude
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
+public import ArkLib.OracleReduction.ProtocolSpec.DeriveTranscript
+public import ArkLib.OracleReduction.ProtocolSpec.PrefixLemmas
 public import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 public import ArkLib.OracleReduction.Salt
 public import ArkLib.OracleReduction.Security.Acceptance
@@ -919,6 +930,7 @@ public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.KnowledgeSoundnessRun
+public import ArkLib.OracleReduction.Security.OracleSampling
 public import ArkLib.OracleReduction.Security.RbrGame
 public import ArkLib.OracleReduction.Security.Resources
 public import ArkLib.OracleReduction.Security.Rewinding
@@ -1208,6 +1220,8 @@ public import ArkLib.Relation.Basic
 public import ArkLib.Relation.OracleBundle
 public import ArkLib.Relation.OracleInterface
 public import ArkLib.Relation.Prelude
+public import ArkLib.Security.Game
+public import ArkLib.Security.PrivateCoins
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 public import ArkLib.ToCompPoly.Univariate.Arithmetic
