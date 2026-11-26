@@ -82,6 +82,7 @@ public import ArkLib.Commitments.Functional.KZG.Generic.Security
 public import ArkLib.Commitments.Functional.KZG.Generic.Translation
 public import ArkLib.Commitments.Functional.KZG.Security
 public import ArkLib.Commitments.FunctionalCommitment.Basic
+public import ArkLib.Commitments.FunctionalCommitment.JointBinding
 public import ArkLib.Commitments.FunctionalCommitment.Merkle
 public import ArkLib.Commitments.FunctionalCommitment.OneMessage
 public import ArkLib.Commitments.FunctionalCommitment.Security
