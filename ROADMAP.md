@@ -134,6 +134,12 @@ entry says so, the specification is not claimed to be executable.
   with additive error `1 / |F|`, assuming a nonzero pairing value and a complete root finder.
   The reduction covers `n = 0`; CompPoly's finite-field root backend meets the root-finder
   contract under its splitter-validity hypothesis.
+  In the Type 3 generic group model, `KZG.Generic.evalBinding_le_generic` and
+  `KZG.Generic.functionBinding_le_generic` bound the existing games by
+  `((n + 1) * (q + 2*n + 3) * (q + 2*n + 4) + 2) / |F|`, assuming only `e g₁ g₂ ≠ 0`, with no
+  source-group surjectivity assumption. FKL translation and first-inconsistent-claim recovery
+  use at most `q + n + 1`
+  group operations, independently of the number of openings.
 - **Hachi** ([`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/)): the
   nonrecursive opening argument, with coordinate-wise special soundness of each iteration
   (`ArkLib.Lattices.Ajtai.InnerOuter.hachi_iteration_coordinateWiseSpecialSoundWithEscape`) and a

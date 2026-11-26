@@ -60,6 +60,8 @@ public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 public import ArkLib.Commitments.Functional.KZG.AGM.Adversary
+public import ArkLib.Commitments.Functional.KZG.AGM.FirstReduction
+public import ArkLib.Commitments.Functional.KZG.AGM.FirstSecurity
 public import ArkLib.Commitments.Functional.KZG.AGM.Polynomial
 public import ArkLib.Commitments.Functional.KZG.AGM.RandomizedSecurity
 public import ArkLib.Commitments.Functional.KZG.AGM.Reduction
@@ -70,6 +72,12 @@ public import ArkLib.Commitments.Functional.KZG.Correctness
 public import ArkLib.Commitments.Functional.KZG.EvaluationBinding
 public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Reduction
 public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Wins
+public import ArkLib.Commitments.Functional.KZG.Generic.Adversary
+public import ArkLib.Commitments.Functional.KZG.Generic.Cost
+public import ArkLib.Commitments.Functional.KZG.Generic.Equivalence
+public import ArkLib.Commitments.Functional.KZG.Generic.Program
+public import ArkLib.Commitments.Functional.KZG.Generic.Security
+public import ArkLib.Commitments.Functional.KZG.Generic.Translation
 public import ArkLib.Commitments.Functional.KZG.Security
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness

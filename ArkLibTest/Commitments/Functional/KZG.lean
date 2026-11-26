@@ -8,6 +8,7 @@ import ArkLib.Commitments.Functional.KZG.Correctness
 import ArkLib.Commitments.Functional.KZG.Security
 import ArkLib.Commitments.Functional.KZG.AGM.Security
 import ArkLib.Commitments.Functional.KZG.AGM.RandomizedSecurity
+import ArkLib.Commitments.Functional.KZG.Generic.Security
 import Mathlib.Algebra.Field.ZMod
 
 /-!
@@ -208,5 +209,32 @@ private def rootEnumeration : FieldEnumeration F :=
     let roots := AGM.lasVegasRoots CPolynomial.Raw.MulContext.naive
       CPolynomial.Raw.ModContext.naive rootContext rootEnumeration { cutoff := 1 } [probe] p
     roots.length == 2 && roots.contains 2 && roots.contains 5
+-- The first claim agrees with the extracted constant; the second disagrees. Later claims
+-- must not increase the candidate count. The supplied root list has duplicates and non-roots.
+private def firstClaimForgery : AGM.Output F F F (List (F × F)) :=
+  ⟨⟨[(0, 0), (0, 4), (0, 5)], AGM.groupInputs [0, 0, 1, 1] []⟩,
+    fun | false => [[0], [0], [1], [1]] | true => []⟩
+
+private def noisyRoots (_ : CompPoly.CPolynomial F) : List F := [0, 3, 3, 1]
+
+/-- info: ([3], 3, []) -/
+#guard_msgs in
+#eval (AGM.candidatesFirst (n := 0) noisyRoots id firstClaimForgery,
+  AGM.recoverFirst (n := 0) 1 vk noisyRoots id firstClaimForgery,
+  AGM.candidatesFirstData noisyRoots (fun _ => (fun _ : Fin 1 => (0 : F))) [(0, 0)])
+
+open OracleComp OracleSpec GroupModel GroupModel.Interaction in
+private def genericConstantForgery : Generic.Adversary F (List (F × F)) := fun _ => do
+  let zeroHandle ← (Generic.adversarySpec F).query (.inl (.smul .g₁ 0 0))
+  return ⟨[(0, 4)], fun | .g₁ => [zeroHandle, 0] | .g₂ => [] | .gₜ => []⟩
+
+-- This deterministic adversary needs one group operation and the recovery needs one root test.
+-- Interpreting its generic reduction over real keys exercises compiled coefficient tracking.
+/-- info: 3 -/
+#guard_msgs in
+#eval Id.run (simulateQ
+  (fun k => (pure (⟨0, Nat.succ_pos k⟩ : Fin (k + 1)) : Id _))
+  (PairingDLog.Adversary.ofGeneric (q₁ := 0) (q₂ := 1) e
+    (Generic.program 0 noisyRoots id genericConstantForgery) (committerKey 1 τ 0) vk))
 
 end KZGTest
