@@ -13,7 +13,7 @@ open PFunctor.FreeM (MeasuredProgram)
 namespace AddProgramTest
 
 /-- One addition instruction, whose response is certified to be the sum. -/
-def addSpec (v : ℕ × ℕ) : OracleSpec.{0, 0} Unit :=
+def addSpec (v : ℕ × ℕ) : OracleSpec Unit :=
   fun _ => {r : ℕ // r = v.1 + v.2}
 
 /-- A program performing one charged addition on the view of its input. -/

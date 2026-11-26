@@ -380,7 +380,7 @@ example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name) :
 
 /-- Selecting interfaces preserves the context's query indices. -/
 example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name) :
-    OracleSpec.{0, 0} ((x : Index) × (O (name x)).Query) :=
+    OracleSpec ((x : Index) × (O (name x)).Query) :=
   (OracleBundle.indexed (namedSlot O ∘ name)).spec
 
 /-- Context data answers all selected queries. -/
@@ -399,7 +399,7 @@ example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name)
 /-- View queries keep the selected name's dependent query carrier. -/
 example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name)
     (view : View → Index) :
-    OracleSpec.{0, 0} ((x : View) × (O (name (view x))).Query) :=
+    OracleSpec ((x : View) × (O (name (view x))).Query) :=
   (OracleBundle.indexed (namedSlot O ∘ (name ∘ view))).spec
 
 /-- Routing through a view answers from the original context at the selected index. -/

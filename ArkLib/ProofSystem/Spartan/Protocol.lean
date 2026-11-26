@@ -108,7 +108,7 @@ instance challengeSampling : ∀ i j, SampleableType ((stageSpec (R := R) sz i).
   | 5 => inferInstanceAs (∀ j, SampleableType ((Sumcheck.Spec.pSpec R 2 (params).ℓ_n).Challenge j))
   | 6 => inferInstanceAs (∀ j, SampleableType ((!p[] : ProtocolSpec 0).Challenge j))
 
-variable {ι : Type} (oSpec : OracleSpec.{0, 0} ι)
+variable {ι : Type} (oSpec : OracleSpec ι)
 
 /-- Each component uses the preceding component's exact output context. -/
 def stage : (i : Fin 7) → OracleReduction oSpec
@@ -160,7 +160,7 @@ instance : ∀ i, SampleableType ((pSpec (R := R) sz).Challenge i) :=
     ((ProtocolSpec.seqCompose (Assembly.stageSpec (R := R) sz)).Challenge i))
 
 /-- The seven-stage Spartan PIOP, including an executable honest prover. -/
-def oracleReduction {ι : Type} (oSpec : OracleSpec.{0, 0} ι) :
+def oracleReduction {ι : Type} (oSpec : OracleSpec ι) :
     OracleReduction oSpec (R1CS.Statement R sz) (R1CS.OracleStatement R sz)
       (R1CS.Witness R sz) Unit (OracleStatement (R := R) params) Unit (pSpec (R := R) sz) :=
   OracleReduction.seqCompose (Assembly.Statement (R := R) sz) (Assembly.Oracles sz)
@@ -168,14 +168,14 @@ def oracleReduction {ι : Type} (oSpec : OracleSpec.{0, 0} ι) :
 
 /-- The conjunction of all component guards, with their retained-context outputs.
 Its semantic sumcheck views use nonconstructive polynomial equality. -/
-noncomputable def guardedForm {ι : Type} (oSpec : OracleSpec.{0, 0} ι) :
+noncomputable def guardedForm {ι : Type} (oSpec : OracleSpec ι) :
     (oracleReduction (R := R) sz oSpec).verifier.toVerifier.GuardedForm :=
   OracleVerifier.seqComposeGuardedForm (Assembly.Statement (R := R) sz)
     (Assembly.Oracles (R := R) sz)
     (V := fun i => (Assembly.stage (R := R) sz oSpec i).verifier)
     (Assembly.stageGuardedForm (R := R) sz oSpec)
 
-variable {ι : Type} (oSpec : OracleSpec.{0, 0} ι)
+variable {ι : Type} (oSpec : OracleSpec ι)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- The actual honest prover is perfectly complete for the original R1CS relation. -/

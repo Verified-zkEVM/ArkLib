@@ -33,7 +33,7 @@ open PFunctor FreeM TwoParty.Lens OracleComp
 
 /-- A completed interaction, including a possibly rejecting verifier verdict. The verdict's type
 is the output statement type at the shape path of the transcript. -/
-abbrev Outcome {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+abbrev Outcome {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     (s : FreeM P Unit) (Out : Transcript l s → Type) (StmtOut : Path s → Type) :=
   (tr : Transcript l s) × Out tr × Option (StmtOut tr.path)
 
@@ -137,7 +137,7 @@ theorem simulateQ_step {X : Type} {A B : X → Type} {R : Type}
 every challenge draw, for any ownership lens. The law holds for arbitrary challenge draws; it
 assumes nothing about their distribution. -/
 theorem simulateQ_runWith_sampler {P : PFunctor.{uA, 0}}
-    {l : PFunctor.Lens P rolePoly.{0}} (F : QueryImpl spec n) (order : Schedule) :
+    {l : PFunctor.Lens P rolePoly0} (F : QueryImpl spec n) (order : Schedule) :
     (s : FreeM P Unit) → {Out : Transcript l s → Type} →
     (p : Prover l spec s Out) →
     (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) →
@@ -163,7 +163,7 @@ end Simulate
 
 section SplitSimulation
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
   {ι κ : Type} {ambient : OracleSpec ι} {spec : OracleSpec κ}
   {n : Type → Type}
   [Monad n] [LawfulMonad n]

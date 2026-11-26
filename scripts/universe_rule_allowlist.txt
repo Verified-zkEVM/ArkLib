@@ -1,0 +1,14 @@
+# Allowlist for `lake exe universe-rule` (scripts/UniverseRule.lean), the universe rule of
+# record D2 on ArkLib.Interaction and ArkLib.Relation.
+#
+# Each entry is a violation line, `module declaration universe`, then ` # ` and a reason.
+# The check fails when a violation is missing here and when an entry matches no violation. A
+# change that fixes a violation therefore deletes its entry in the same PR.
+#
+# Reasons:
+# - `adversary`: the policy exception. The adversary universe is the one universe that D2 keeps
+#   without an argument to determine it.
+# - `pending: <one line>`: a violation that a planned change removes, with that change named.
+
+# Policy exception
+ArkLib.Interaction.Security.Completeness Interaction.AdversaryModel w # adversary

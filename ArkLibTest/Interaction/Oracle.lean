@@ -36,12 +36,9 @@ example : simulateQ (functions.answer (fun _ n => n + 5))
 example : simulateQ (functions.answer (fun _ n => n + 5))
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩) = (16 : Nat) := rfl
 
-/-- No ambient oracles, with the index in `Type 0`. -/
-abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
-
 /-- The empty indexed input bundle, with its index in `Type 0`. -/
 @[instance_reducible] def emptyFamily : OracleBundle :=
-  OracleBundle.ofIndexed (fun i : PEmpty.{1} => PEmpty.elim i) fun i => i.elim
+  OracleBundle.ofIndexed (fun i : PEmpty => PEmpty.elim i) fun i => i.elim
 
 @[instance_reducible] def tree : OracleProtocol :=
   .liftBind (.oracle (Nat → Nat) OracleInterface.instFunction) (fun _ => .pure ⟨⟩)
@@ -53,12 +50,12 @@ example : first.path = second.path := rfl
 example : (toView tree first).val = (toView tree second).val := rfl
 
 /-- The decision can name an evaluation query but receives no function payload. -/
-def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamily
+def queryDecision : OracleVerifier emptySpec0 tree Unit (fun _ => Nat) emptyFamily
     (fun _ => functions) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let n : Nat ← pathLift noAmbient emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ (.inl (3 : Nat))
+      let n : Nat ← pathLift emptySpec0 emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ (.inl (3 : Nat))
       pure n
   outputMap _ p _ :=
     { f := fun x _ => x.2.1

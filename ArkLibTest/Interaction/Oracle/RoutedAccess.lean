@@ -26,7 +26,7 @@ abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- No input oracles; also the empty output family. -/
 @[instance_reducible] def none' : OracleBundle :=
-  OracleBundle.ofIndexed (fun i : PEmpty.{1} => PEmpty.elim i) fun i => i.elim
+  OracleBundle.ofIndexed (fun i : PEmpty => PEmpty.elim i) fun i => i.elim
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim

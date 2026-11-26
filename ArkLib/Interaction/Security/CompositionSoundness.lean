@@ -69,7 +69,7 @@ open scoped ENNReal
 /-- The actual append boundary: the prefix transcript, the prover's returned suffix strategy and
 the counterpart's midpoint output. The continuation carries the prover's private memory and
 effects. -/
-abbrev AppendBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+abbrev AppendBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     (m : Type → Type) (s₁ : FreeM P Unit) (s₂ : Path s₁ → FreeM P Unit)
     (OutP : Transcript l (s₁.append s₂) → Type) (MidC : Transcript l s₁ → Type) :=
   (tr : Transcript l s₁) ×
@@ -78,7 +78,7 @@ abbrev AppendBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 section seam
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
   {m : Type → Type} [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
   {s₁ : FreeM P PUnit} {s₂ : Path s₁ → FreeM P PUnit}
   {MidC : Transcript l s₁ → Type} {OutP OutC : Transcript l (s₁.append s₂) → Type}
@@ -300,7 +300,7 @@ variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
 
 /-- The append boundary of a run: the prefix transcript and the continuation the whole prover
 returns, over the full run interface of the appended protocol. -/
-abbrev RunBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+abbrev RunBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     {ι : Type} (ambient : OracleSpec.{0, 0} ι)
     (s₁ : FreeM P Unit) (s₂ : Path s₁ → FreeM P Unit)
     (Out : Transcript l (s₁.append s₂) → Type) :=
@@ -310,7 +310,7 @@ abbrev RunBoundary {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 /-- The prefix interaction of a run on an appended protocol. It returns the actual append
 boundary: the prefix transcript and the continuation the whole prover returns, which keeps the
 prover's private memory. Ambient and challenge queries go to the full run interface. -/
-def appendPrefixRun {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+def appendPrefixRun {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {s₁ : FreeM P Unit} {s₂ : Path s₁ → FreeM P Unit}
     {Out : Transcript l (s₁.append s₂) → Type}
     (prover : Prover l ambient (s₁.append s₂) Out) :

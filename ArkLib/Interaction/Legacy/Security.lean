@@ -173,7 +173,7 @@ end Completeness
 section MapOutput
 
 /-- Interpreting the slots commutes with PolyFun's `Strategy.mapOutput`. -/
-theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly.{0}} {κ : Type}
+theorem simulate_mapOutput {P : PFunctor.{1, 0}} {l : PFunctor.Lens P rolePoly0} {κ : Type}
     {spec : OracleSpec κ} {M : Type → Type} [Monad M] [LawfulMonad M] (F : QueryImpl spec M) :
     (s : FreeM P Unit) → {Out Out' : Transcript l s → Type} → (f : ∀ tr, Out tr → Out' tr) →
     (p : Interaction.Prover l spec s Out) →

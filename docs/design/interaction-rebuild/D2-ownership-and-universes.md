@@ -1,8 +1,8 @@
 # D2. Ownership from the signature, the universe policy, and role-free metadata
 
 **Status:** Proposed: awaiting maintainer approval. The universe policy replaced the earlier
-universe ledger on 2026-11-25; the code still follows the ledger until the
-[migration](#migration) lands.
+universe ledger on 2026-11-25. The [migration](#migration) is complete: the code follows the
+policy, and `lake exe universe-rule` checks it in CI.
 **Implemented by:** PolyFun PR P (commit 1, signature vocabulary; commit 5, swap) and ArkLib PR A
 (commit 2, ArkLib signatures).
 
@@ -138,27 +138,36 @@ clients check `owner` on every ArkLib position kind.
 
 ## Migration
 
-The code follows the earlier ledger until these steps land. Each is one PR or part of one.
+All seven steps are done. Each was one PR or part of one.
 
-The steps run from the consumers to the foundations. A monomorphic definition can use a
-polymorphic one at `Type`, so each step compiles on its own. The reverse order cannot: once
+The steps ran from the consumers to the foundations. A monomorphic definition can use a
+polymorphic one at `Type`, so each step compiled on its own. The reverse order cannot: once
 `OracleInterface` or `Protocol` loses a universe, every polymorphic user breaks at once. Until the
-vocabulary step, the changed files pin the foundations at `0`, and that step removes the pins.
-Each step also updates the tests and client annotations that name the declarations it changes.
+vocabulary step, the changed files pinned the foundations at `0`, and that step removed the pins.
+Each step also updated the tests and client annotations that name the declarations it changed.
 
-1. This record and [implementation note 18](IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe).
-2. Security definitions: drop the statement and witness universes and both `.lift` lemmas; keep
-   the adversary universe.
-3. Execution, reductions, oracle verifiers, composition and stage chains.
-4. Oracle bundles, families, routing, sent oracles and reassociation; delete the universe
-   adapters (`liftQueries`, `lowerQueries`, `liftResponse`, `liftInputs`, `liftOutputs`).
-5. Vocabulary: `OracleInterface` and `Relation` in `Relation/`, signatures and protocols at
-   `Type`; leaves become `Unit`; add the `Type` alias for `[]ₒ`.
-6. Tests and clients: replace `UniverseCanary.lean` with a policy test (generic code at a large
-   polynomial, an `AdversaryModel` with `Adv : Type 1`), drop the remaining pins, and update the
-   port tables and disposition records that describe universes.
-7. CI: a linter that checks the rule on `Interaction/` and `Relation/`, allowing only the
-   adversary universe and the generic files.
+1. Done in #1580: this record and
+   [implementation note 18](IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe).
+2. Done in #1582: security definitions: drop the statement and witness universes and both `.lift`
+   lemmas; keep the adversary universe.
+3. Done in #1583: execution, reductions, oracle verifiers, composition and stage chains.
+4. Done in #1590: oracle bundles, families, routing, sent oracles and reassociation; delete the
+   universe adapters (`liftQueries`, `lowerQueries`, `liftResponse`, `liftInputs`, `liftOutputs`).
+5. Done in #1599: vocabulary: `OracleInterface` and `Relation` in `Relation/`, signatures and
+   protocols at `Type`; leaves become `Unit`; add the `Type` alias for `[]ₒ`.
+6. Done in this PR: tests and clients: replace `UniverseCanary.lean` with a policy test (generic
+   code at a large polynomial, an `AdversaryModel` with `Adv : Type 1`), drop the remaining pins,
+   and update the port tables and disposition records that describe universes.
+7. Done in this PR: CI: a checker for the rule on `Interaction/` and `Relation/`,
+   `scripts/UniverseRule.lean` (`lake exe universe-rule`). Its allowlist
+   `scripts/universe_rule_allowlist.txt` holds only the adversary universe. The generic files need
+   no entry, because `P` determines their universes. The rule is a syntactic condition, and the
+   checker is a regression gate that keeps exceptions explicit in the allowlist. It catches
+   constants without arguments and universes that only a field, the result type or a `Prop` body
+   mentions. It does not guarantee that unification determines every universe: an occurrence can
+   vanish under reduction, and `max u v` determines neither universe. The evidence that clients
+   need no annotations is `ArkLibTest/Interaction/UniversePolicy.lean`; see
+   [What the rule and the checker guarantee](../interaction-layer/universe-policy.md#what-the-rule-and-the-checker-guarantee).
 
 ## Open points
 

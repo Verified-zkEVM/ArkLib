@@ -210,7 +210,7 @@ example (S : OracleBundle) (T : OracleBundle) :
 
 /-- Disjoint queries keep their original index carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :
-    OracleSpec.{0, 0} (S.Query ⊕ T.Query) := (S.sum T).spec
+    OracleSpec (S.Query ⊕ T.Query) := (S.sum T).spec
 
 /-- Disjoint data remains a pair of the original carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :
@@ -227,7 +227,7 @@ example (S : OracleBundle) (T : OracleBundle) :
 
 /-- Tensor queries use the exact product of the two original query carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :
-    OracleSpec.{0, 0} (S.Query × T.Query) := (S.tensor T).spec
+    OracleSpec (S.Query × T.Query) := (S.tensor T).spec
 
 /-- Tensor backing data remains the exact product of the two original data carriers. -/
 example (S : OracleBundle) (T : OracleBundle) :

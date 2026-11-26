@@ -109,7 +109,7 @@ end Append
 /-! ## Decoding -/
 
 section Path
-variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly.{0})
+variable {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly0)
 
 
 /-- Heterogeneously equal paths through equal nodes have heterogeneously equal moves and

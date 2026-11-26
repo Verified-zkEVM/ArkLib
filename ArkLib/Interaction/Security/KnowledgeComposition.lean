@@ -39,7 +39,7 @@ namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
-variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
 
 namespace KnowledgeStateFunction
 

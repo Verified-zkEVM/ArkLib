@@ -189,7 +189,7 @@ example (first second : Nat × Nat) :
 
 /-- Extend a bundle with message and response carriers in `Type`. -/
 example (Messages : Type) (interface : OracleInterface Messages)
-    (initial : PFunctor.{0, 0}) : PFunctor.{0, 0} :=
+    (initial : PFunctor) : PFunctor :=
   let prior : OracleBundle :=
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩
@@ -199,7 +199,7 @@ example (Messages : Type) (interface : OracleInterface Messages)
 
 /-- Extend a bundle with query carriers in `Type`. -/
 example (Messages : Type) (interface : OracleInterface Messages)
-    (initial : PFunctor.{0, 0}) : PFunctor.{0, 0} :=
+    (initial : PFunctor) : PFunctor :=
   let prior : OracleBundle :=
     ⟨initial.A, OracleSpec.ofPFunctor initial,
       QueryImpl (OracleSpec.ofPFunctor initial) Id, id⟩

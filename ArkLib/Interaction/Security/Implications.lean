@@ -65,7 +65,7 @@ open scoped ENNReal
 
 section Escape
 
-variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
 
 /-- The challenge nodes met along a shape path. -/
 def challengeNodesOn : (s : FreeM P Unit) → Path s → Finset (ChallengeNode l s)
@@ -253,7 +253,7 @@ end Escape
 
 section Run
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
 
 /-- The node errors along a path through a sender node are those of the subpath. -/
 private theorem sum_challengeNodesOn_sender {a : P.A} {next : P.B a → FreeM P Unit}
@@ -657,7 +657,7 @@ end PrefixExecution
 
 section PathBounds
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
   {s : FreeM P Unit}
 
 /-- The path supremum of summed node errors is at most the sum of all node errors. -/

@@ -29,7 +29,7 @@ namespace Interaction.PassiveExecutionTests
 
 /-- No output oracles. -/
 def noOutputs : OracleBundle :=
-  OracleBundle.ofIndexed (fun i : PEmpty.{1} => i.elim) fun i => i.elim
+  OracleBundle.ofIndexed (fun i : PEmpty => i.elim) fun i => i.elim
 
 /-- The output map from any bundle into no oracles. -/
 def noOutputMap (In : OracleBundle) : OracleMap In noOutputs where
