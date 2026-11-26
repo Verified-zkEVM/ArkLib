@@ -37,7 +37,7 @@ variable {n : ℕ}
 /-- The chain of rounds `k, k + 1, …, n - 1`, where `h` records that `m` rounds remain. The node
 for round `j` sits at position `pos j`, and its continuation ignores the branch. -/
 def chain {P : PFunctor.{1, 0}} (pos : Fin n → P.A) :
-    (k m : ℕ) → k + m = n → FreeM P PUnit.{1}
+    (k m : ℕ) → k + m = n → FreeM P Unit
   | _, 0, _ => .pure ⟨⟩
   | k, m + 1, h => .liftBind (pos ⟨k, by omega⟩) (fun _ => chain pos (k + 1) m (by omega))
 
@@ -50,7 +50,7 @@ theorem chain_succ {P : PFunctor.{1, 0}} (pos : Fin n → P.A) (k m : ℕ) (h : 
 
 section Decode
 
-variable {pSpec : ProtocolSpec n} {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly.{0})
+variable {pSpec : ProtocolSpec n} {P : PFunctor.{1, 0}} (l : PFunctor.Lens P rolePoly0)
   (pos : Fin n → P.A) (e : (j : Fin n) → Move l (pos j) ≃ pSpec.«Type» j)
 
 /-- Read a legacy transcript off a runtime path, extending the transcript `pre` of the rounds
@@ -126,7 +126,7 @@ end Decode
 /-! ### Plain trees -/
 
 /-- The plain position of a round with direction `d` and payload type `T`. -/
-def plainPos : Direction → Type → PlainPos.{0}
+def plainPos : Direction → Type → PlainPos
   | .P_to_V, T => .message T
   | .V_to_P, T => .challenge T
 
@@ -142,15 +142,15 @@ def plainMoveEquiv : (d : Direction) → (T : Type) → Move plainSig (plainPos 
     owner plainSig (plainPos .V_to_P T) = .receiver := rfl
 
 /-- The plain position of round `j`. -/
-abbrev plainRound (pSpec : ProtocolSpec n) (j : Fin n) : PlainPos.{0} :=
+abbrev plainRound (pSpec : ProtocolSpec n) (j : Fin n) : PlainPos :=
   plainPos (pSpec.dir j) (pSpec.«Type» j)
 
 /-- The legacy protocol from round `k` onwards, as a plain tree. -/
-abbrev suffix (pSpec : ProtocolSpec n) (k m : ℕ) (h : k + m = n) : Protocol.{0} :=
+abbrev suffix (pSpec : ProtocolSpec n) (k m : ℕ) (h : k + m = n) : Protocol :=
   chain (plainRound pSpec) k m h
 
 /-- The legacy protocol as a plain tree. -/
-abbrev protocol (pSpec : ProtocolSpec n) : Protocol.{0} := suffix pSpec 0 n (Nat.zero_add n)
+abbrev protocol (pSpec : ProtocolSpec n) : Protocol := suffix pSpec 0 n (Nat.zero_add n)
 
 /-- Read the legacy transcript off a plain runtime path, after the prefix `pre`. -/
 abbrev decodePlainFrom (pSpec : ProtocolSpec n) (k m : ℕ) (h : k + m = n)
@@ -176,41 +176,41 @@ theorem decode_eq (pSpec : ProtocolSpec n) (tr : Transcript plainSig (protocol p
 
 /-- The oracle position of round `j`, given its direction `d`. Prover messages become oracle
 payloads with their legacy query interface. -/
-def oraclePos (pSpec : ProtocolSpec n) [Oₘ : ∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
-    (j : Fin n) : (d : Direction) → pSpec.dir j = d → OraclePos.{0}
+def oraclePos (pSpec : ProtocolSpec n) [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+    (j : Fin n) : (d : Direction) → pSpec.dir j = d → OraclePos
   | .P_to_V, h => .oracle (pSpec.«Type» j) (Oₘ ⟨j, h⟩)
   | .V_to_P, _ => .challenge (pSpec.«Type» j)
 
 /-- An oracle round's runtime move is its legacy payload. -/
-def oracleMoveEquiv (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
+def oracleMoveEquiv (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)]
     (j : Fin n) : (d : Direction) → (h : pSpec.dir j = d) →
     Move oracleSig (oraclePos pSpec j d h) ≃ pSpec.«Type» j
   | .P_to_V, _ => Equiv.refl _
   | .V_to_P, _ => Equiv.refl _
 
 /-- The oracle position of round `j`. -/
-abbrev oracleRound (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
-    (j : Fin n) : OraclePos.{0} :=
+abbrev oracleRound (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)]
+    (j : Fin n) : OraclePos :=
   oraclePos pSpec j (pSpec.dir j) rfl
 
 /-- The legacy protocol from round `k` onwards, as an oracle tree. -/
-abbrev oracleSuffix (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
-    (k m : ℕ) (h : k + m = n) : OracleProtocol.{0} :=
+abbrev oracleSuffix (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)]
+    (k m : ℕ) (h : k + m = n) : OracleProtocol :=
   chain (oracleRound pSpec) k m h
 
 /-- The legacy protocol as an oracle tree. -/
-abbrev oracleProtocol (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
-    OracleProtocol.{0} :=
+abbrev oracleProtocol (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)] :
+    OracleProtocol :=
   oracleSuffix pSpec 0 n (Nat.zero_add n)
 
 /-- Legacy full transcripts are the runtime paths of the oracle tree. -/
 def oracleTranscriptEquiv (pSpec : ProtocolSpec n)
-    [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
+    [∀ i, OracleInterface (pSpec.Message i)] :
     Transcript oracleSig (oracleProtocol pSpec) ≃ FullTranscript pSpec :=
   chainEquiv oracleSig (oracleRound pSpec) (fun j => oracleMoveEquiv pSpec j _ rfl)
 
 /-- Read the legacy full transcript off a completed oracle run. -/
-abbrev oracleDecode (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
+abbrev oracleDecode (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)]
     (tr : Transcript oracleSig (oracleProtocol pSpec)) : FullTranscript pSpec :=
   oracleTranscriptEquiv pSpec tr
 

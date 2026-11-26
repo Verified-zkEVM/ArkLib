@@ -816,6 +816,7 @@ public import ArkLib.Data.Probability.Uniform
 public import ArkLib.Interaction.Composition
 public import ArkLib.Interaction.Execution
 public import ArkLib.Interaction.Legacy.Execution
+public import ArkLib.Interaction.Legacy.LiftContext
 public import ArkLib.Interaction.Legacy.OracleAppend
 public import ArkLib.Interaction.Legacy.OracleExecution
 public import ArkLib.Interaction.Legacy.OracleKnowledge
@@ -827,8 +828,9 @@ public import ArkLib.Interaction.Legacy.PureSlots
 public import ArkLib.Interaction.Legacy.Security
 public import ArkLib.Interaction.Legacy.Verifier
 public import ArkLib.Interaction.LegacyAppend
-public import ArkLib.Interaction.Oracle.BundleOps
+public import ArkLib.Interaction.LiftContext
 public import ArkLib.Interaction.Oracle.Cost
+public import ArkLib.Interaction.Oracle.LiftContext
 public import ArkLib.Interaction.Oracle.LoggedExecution
 public import ArkLib.Interaction.Oracle.QueriesByMove
 public import ArkLib.Interaction.Oracle.QueriesByMoveLaws
@@ -1203,6 +1205,7 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 public import ArkLib.Relation.Basic
+public import ArkLib.Relation.OracleBundle
 public import ArkLib.Relation.OracleInterface
 public import ArkLib.Relation.Prelude
 public import ArkLib.ToCompPoly.Multilinear.Basic

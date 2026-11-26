@@ -480,7 +480,7 @@ def echoEvidence : echoStages.Compatibility :=
 
 /-- The input data of a run of the echo stage: the input oracle holds 3. -/
 def echoData : (pathBundle inputs echoStages.protocol ⟨⟩).Data :=
-  (fun _ => 3, fun i => i.elim)
+  (fun _ => 3, ())
 
 -- The composed output data is the input statement, whatever the input oracle holds.
 example :
@@ -493,7 +493,7 @@ example :
 /-- No statement-free output map describes the echo stage: inputs 0 and 1 export different
 data. -/
 theorem echoStages_not_statementFree : echoStages.StatementFree → False := fun m => by
-  have h := congrArg (fun map => (map ⟨⟩ ⟨⟨⟩, rfl⟩).f (fun _ => 3, fun i => i.elim) ())
+  have h := congrArg (fun map => (map ⟨⟩ ⟨⟨⟩, rfl⟩).f (fun _ => 3, ()) ())
     ((m.2.1 0).trans (m.2.1 1).symm)
   exact Nat.zero_ne_one (h : (0 : Nat) = 1)
 
@@ -548,13 +548,14 @@ All query and data carriers are in `Type`. -/
 
 /-- A Boolean answers its one query, which lies in `Type`, with itself. -/
 @[reducible]
-def wideInterface : OracleInterface.{0, 0} Bool where
+def wideInterface : OracleInterface Bool where
   Query := Unit
-  toOC.spec := Unit →ₒ Bool
-  toOC.impl _ := read
+  spec := Unit →ₒ Bool
+  answer m _ := m
 
 /-- One Boolean oracle whose query lies in `Type`. -/
-def wideBooleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
+def wideBooleans : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Bool) fun _ => wideInterface
 
 /-- Export the parity of the scalar input as a wide oracle. -/
 def wideParity (messages : OracleBundle) :
@@ -575,7 +576,7 @@ def wideVerifier :
     let value : Nat ← liftM ((ambient + (pathBundle inputs done p).spec).query
       (.inr (.inl ⟨(), ()⟩)))
     pure (some (value % 2 == 0))
-  outputMap _ p _ := wideParity (oracleMessageFamily done p)
+  outputMap _ p _ := wideParity (oracleMessageBundle done p)
 
 /-- Read the wide oracle, accept its answer with the statement, and export the answer as a small
 oracle. -/
@@ -822,7 +823,7 @@ end AlwaysTrue
 /-- The support law's hypothesis fails for the coin stage: rejection is a possible result. -/
 theorem coinStages_not_acceptsOnSupport (b : coinStages.Boundaries (· → Prop)) :
     ¬ coinStages.AcceptsOnSupport (fun _ => True) b := fun h => by
-  obtain ⟨_, h, _⟩ := h.1 () trivial ⟨⟩ ⟨⟨⟩, rfl⟩ (fun _ => 3, fun i => i.elim) none
+  obtain ⟨_, h, _⟩ := h.1 () trivial ⟨⟩ ⟨⟨⟩, rfl⟩ (fun _ => 3, ()) none
     (coinVerifier_none_mem_support _ _ _ _)
   cases h
 

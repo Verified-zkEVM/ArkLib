@@ -283,7 +283,7 @@ def oracleReduction (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F) :
 alphabet.  Its output is a virtual oracle answered by querying both input
 codewords and taking their challenge-linear combination. -/
 def simplifiedOracleReduction (k s : ℕ) :
-    OracleReduction (emptySpec.{0, 0})
+    OracleReduction emptySpec0
       (Spec.Statement (F := F) k)
       (Spec.OracleStatement ι (Fin s → F))
       (Spec.Witness (F := F) k)

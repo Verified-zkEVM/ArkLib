@@ -19,6 +19,14 @@ This directory contains various utility scripts for the ArkLib project.
 - **`test-axiomsweep.sh`** - Executable fixture matrix certifying the axiomsweep tool itself
   (gate directions, exit-code contract), against the synthetic-taint
   fixtures in `AxiomSweepTestFixtures/`
+- **`UniverseRule.lean`** (`lake exe universe-rule`) - The universe rule of record D2 on
+  `ArkLib.Interaction` and `ArkLib.Relation`: every universe parameter of a declaration occurs in
+  the type of one of its arguments. It checks against the allowlist `universe_rule_allowlist.txt`;
+  see "Universe Rule" below
+- **`test-universe-rule.sh`** - Fixtures for the universe-rule checker in
+  `UniverseRuleTestFixtures/`: a module it must accept, a module it must reject (including
+  hand-written declarations named like generated ones), a phantom-universe module it accepts as a
+  documented limitation, and the allowlist directions
 - **`source-trust-audit.py`** - Deterministic source-token inventory for constructs outside
   the environment sweep's visibility, with optional Git-ref comparison
 - **`test-source-trust-audit.py`** - Focused lexer/diff fixtures for the source inventory
@@ -211,6 +219,55 @@ report determinism, every gate direction, and the exit-code contract (`1` = tain
 lake build AxiomSweepTestFixtures
 ./scripts/test-axiomsweep.sh
 ```
+
+### Universe Rule
+
+Record D2 (`docs/design/interaction-rebuild/D2-ownership-and-universes.md`, "Universe policy")
+requires every universe parameter of an ArkLib declaration to occur in the type of one of its
+arguments. A universe that only the result type, a structure field or a `Prop` body mentions gets
+a fresh value at each use. `lake exe universe-rule` checks the rule on every constant in a module
+under `ArkLib.Interaction` or `ArkLib.Relation`. It opens the constant's type with
+`forallTelescopeReducing`, collects the level parameters of the binder types, and reports each
+level parameter it did not collect as one line `module declaration universe`. It skips constants
+that Lean generates from a user declaration (recursors, matchers, equation lemmas, compiler
+auxiliaries, constructors, projections and derived instances) and checks their source
+declaration instead. It recognizes a generated constant from Lean's data, not from its name
+alone. Recursors, auxiliary recursors, `noConfusion`, matchers, constructors and projections are
+marked by Lean itself. A constant recognized only by its name is skipped under three more
+conditions. It has no declaration range of its own. Its parent name is a constant with exactly the
+same level parameters. Lean's predicate for the kind holds where one exists: a reserved
+equation-lemma name, or a theorem for an auxiliary lemma. `skipReason?` in `UniverseRule.lean`
+lists the rules. Requires a completed `lake build`.
+
+The rule is a syntactic condition, and the checker is a regression gate for it. It catches
+constants without arguments and universes that only a structure field, the result type or a
+`Prop` body mentions, and the allowlist keeps each exception explicit. It does not guarantee that
+unification determines each universe at a use. An occurrence can vanish under reduction, as in
+`UniverseRuleTestFixtures/Phantom.lean`, which the checker accepts, and an argument of type
+`Type (max u v)` determines neither universe. The evidence that clients need no universe
+annotations is `ArkLibTest/Interaction/UniversePolicy.lean`. The design note
+`docs/design/interaction-layer/universe-policy.md` ("What the rule and the checker guarantee")
+gives the details.
+
+```bash
+# Check against scripts/universe_rule_allowlist.txt
+lake exe universe-rule
+
+# List every violation and exit 0
+lake exe universe-rule --report
+
+# Also list the skipped generated constants that would break the rule, with the skip reason
+lake exe universe-rule --report --explain-skips
+```
+
+Each line of `universe_rule_allowlist.txt` is a violation line, then ` # `, then a reason:
+`adversary` for the policy exception (`AdversaryModel`, `ExtractionInterface` and the
+declarations that take them), or `pending: ...` for a violation that a planned change removes.
+The allowlist holds only the policy exception. The check fails when a violation is not on the
+allowlist, and also when an entry matches no violation. A change that fixes a violation
+therefore deletes its entry in the same PR. Exit status `1` is a rule verdict and `2` an
+infrastructure failure. `./scripts/validate.sh`, and therefore CI, runs
+`./scripts/test-universe-rule.sh` and then the check.
 
 ### Source Trust Inventory
 

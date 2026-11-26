@@ -18,7 +18,8 @@ open PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
 /-- Evaluation access to an arbitrary message representation. -/
 @[reducible] def messageInterface {R M : Type} (evaluate : M → R → R) : OracleInterface M where
   Query := R
-  toOC := { spec := R →ₒ R, impl x := do return evaluate (← read) x }
+  spec := R →ₒ R
+  answer m x := evaluate m x
 
 /-- A fixed sequence of oracle messages and public challenges. -/
 @[reducible] def protocol (R M : Type) (evaluate : M → R → R) : ℕ → OracleProtocol

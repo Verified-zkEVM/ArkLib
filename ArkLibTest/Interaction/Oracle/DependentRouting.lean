@@ -11,8 +11,8 @@ import ArkLib.Interaction.Composition
 
 A prefix exports its input oracle unchanged. The prover then announces whether the exported
 input is zero, and the suffix verifier checks the announcement with one query. That public
-Boolean changes both the final statement type and the realization type of the final oracle
-family: on `true` the statement is `()` and the final oracle is the input itself; on `false` the
+Boolean changes both the final statement type and the data type of the final oracle
+bundle: on `true` the statement is `()` and the final oracle is the input itself; on `false` the
 statement is the input value and the final oracle is a pair answering its first component.
 -/
 
@@ -27,28 +27,31 @@ abbrev ambient : OracleSpec Empty := Empty →ₒ Nat
 @[reducible]
 def natInterface : OracleInterface Nat where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := read
+  spec := Unit →ₒ Nat
+  answer m _ := m
 
 /-- A pair answers the unit query with its first component. -/
 @[reducible]
 def pairInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := do return (← read).1
+  spec := Unit →ₒ Nat
+  answer m _ := m.1
+
+/-- The single natural-number input oracle. -/
+abbrev inputSlot (_ : Unit) : OracleBundle := OracleBundle.of Nat natInterface
 
 /-- One natural-number input oracle. -/
 @[instance_reducible]
-def inputFamily : OracleFamily Unit (fun _ => Nat) := ⟨fun _ => natInterface⟩
+def inputFamily : OracleBundle := OracleBundle.indexed inputSlot
 
 /-- The prefix has no rounds. -/
-abbrev done : OracleProtocol.{0, 0} := .pure ⟨⟩
+abbrev done : OracleProtocol := .pure ⟨⟩
 
 /-- The suffix receives one public Boolean from the prover. -/
-abbrev suffix : OracleProtocol.{0, 0} := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
+abbrev suffix : OracleProtocol := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
 
 /-- The composed protocol. -/
-abbrev combined : OracleProtocol.{0, 0} := done.append (fun _ => suffix)
+abbrev combined : OracleProtocol := done.append (fun _ => suffix)
 
 /-- The final statement type: `Unit` after `true`, a natural number after `false`. -/
 def finalStmt : Path suffix → Type
@@ -60,10 +63,10 @@ def finalData : (p : Path suffix) → Unit → Type
   | ⟨true, _⟩, _ => Nat
   | ⟨false, _⟩, _ => Nat × Nat
 
-/-- The final oracle family, whose realization type depends on the public Boolean. -/
-def finalFamily : (p : Path suffix) → OracleFamily Unit (finalData p)
-  | ⟨true, _⟩ => ⟨fun _ => natInterface⟩
-  | ⟨false, _⟩ => ⟨fun _ => pairInterface⟩
+/-- The final oracle bundle, whose data type depends on the public Boolean. -/
+def finalFamily : (p : Path suffix) → OracleBundle
+  | ⟨true, x⟩ => OracleBundle.ofIndexed (finalData ⟨true, x⟩) fun _ => natInterface
+  | ⟨false, x⟩ => OracleBundle.ofIndexed (finalData ⟨false, x⟩) fun _ => pairInterface
 
 /-- The prefix accepts with `()` and exports its input oracle unchanged. -/
 def exportInput : OracleVerifier ambient done Unit (fun _ => Unit) inputFamily
@@ -82,17 +85,18 @@ def queryInput (p : Path suffix) :
 /-- Route the final unit query to the input, which answers the input value. -/
 def finalMap : (p : Path suffix) → OracleMap (suffixBundle p) (finalFamily p)
   | ⟨true, ⟨⟩⟩ =>
-    (OracleMap.embedding inputFamily (fun _ : Unit => ())).comp
-      (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨true, ⟨⟩⟩))
+    (OracleMap.reindex inputSlot (fun _ : Unit => ())).comp
+      (OracleMap.fst inputFamily (oracleMessageBundle suffix ⟨true, ⟨⟩⟩))
   | ⟨false, ⟨⟩⟩ =>
     { f := fun x _ => (x.1 (), x.1 ())
       impl := fun q =>
-        (OracleMap.fst inputFamily (oracleMessageFamily suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
+        (OracleMap.fst inputFamily (oracleMessageBundle suffix ⟨false, ⟨⟩⟩)).impl ⟨(), q.2⟩
       law := fun _ _ => rfl }
 
 /-- The suffix checks the announced Boolean against one input query. It returns `()` after a
 correct `true` and the queried value after a correct `false`. -/
-def announce : OracleVerifier ambient suffix Unit finalStmt inputFamily finalFamily where
+def announce : OracleVerifier ambient suffix Unit finalStmt inputFamily
+    (fun p => finalFamily p) where
   decide _ p _ := by
     rcases p with ⟨_ | _, ⟨⟩⟩
     · exact do
@@ -108,7 +112,7 @@ def compatible :
     OracleVerifier.OutputCompatibility exportInput (fun _ => announce) :=
   .ofStatement _ _ (fun _ _ _ => ()) fun _ _ _ _ _ _ => rfl
 
-/-- The composed verifier. Its output statement and oracle family follow the public Boolean. -/
+/-- The composed verifier. Its output statement and oracle bundle follow the public Boolean. -/
 def composite := exportInput.append (fun _ => announce) compatible
 
 /-- The prover announces whether its input is zero and keeps a branch-dependent private result.
@@ -121,12 +125,12 @@ def announcer (b : Bool) : Prover oracleSig ambient combined (fun _ => Nat) :=
   pure ⟨b, pure 0⟩
 
 /-- Read the statement (zero for the unit statement) and the final oracle's answer at the unit
-query, through the family selected by the actual path. -/
-def readClaim : (p : Path suffix) → finalStmt p × (∀ j, finalData p j) → Nat × Nat
+query, through the bundle selected by the actual path. -/
+def readClaim : (p : Path suffix) → finalStmt p × (finalFamily p).Data → Nat × Nat
   | ⟨true, ⟨⟩⟩, claim =>
-    (0, (finalFamily ⟨true, ⟨⟩⟩).behaviorOfRealizations claim.2 ⟨(), ()⟩)
+    (0, (finalFamily ⟨true, ⟨⟩⟩).answer claim.2 ⟨(), ()⟩)
   | ⟨false, ⟨⟩⟩, claim =>
-    (claim.1, (finalFamily ⟨false, ⟨⟩⟩).behaviorOfRealizations claim.2 ⟨(), ()⟩)
+    (claim.1, (finalFamily ⟨false, ⟨⟩⟩).answer claim.2 ⟨(), ()⟩)
 
 /-- The composed run never queries an oracle: the ambient spec is empty and there are no
 challenges. -/

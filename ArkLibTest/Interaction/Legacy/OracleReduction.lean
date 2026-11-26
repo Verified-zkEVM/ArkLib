@@ -18,23 +18,23 @@ namespace Interaction.Legacy.Tests
 /-- An oracle message followed by a challenge, both natural numbers. -/
 def msgChal : ProtocolSpec 2 := ⟨!v[.P_to_V, .V_to_P], fun _ => Nat⟩
 
-instance msgChalOracles : ∀ i, OracleInterface.{0, 0} (msgChal.Message i) :=
+instance msgChalOracles : ∀ i, OracleInterface (msgChal.Message i) :=
   fun _ => OracleInterface.instDefault
 
 /-- One input oracle statement. -/
 abbrev InStmt : Unit → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (InStmt i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (InStmt i) := fun _ => OracleInterface.instDefault
 
 /-- Two output oracles: a copy of the input oracle and a copy of the message. -/
 abbrev OutCopy : Bool → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (OutCopy i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (OutCopy i) := fun _ => OracleInterface.instDefault
 
 /-- One virtual output oracle. -/
 abbrev OutSum : Unit → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (OutSum i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (OutSum i) := fun _ => OracleInterface.instDefault
 
 instance : ∀ t, Inhabited (([]ₒ : OracleSpec PEmpty).Range t) := fun t => t.elim
 

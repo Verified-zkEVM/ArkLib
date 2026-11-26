@@ -13,8 +13,11 @@ open OracleComp
 
 namespace Interaction.OracleTests
 
-@[instance_reducible] def functions : OracleFamily PUnit (fun _ => Nat → Nat) :=
-  singletonFamily OracleInterface.instFunction
+/-- The one function oracle, at the only index. -/
+abbrev functionSlot (_ : PUnit) : OracleBundle :=
+  OracleBundle.of (Nat → Nat) OracleInterface.instFunction
+
+@[instance_reducible] def functions : OracleBundle := OracleBundle.indexed functionSlot
 
 def doubled : OracleMap functions functions where
   f x _ n := 2 * x ⟨⟩ n
@@ -25,20 +28,17 @@ def doubled : OracleMap functions functions where
     simp only [simulateQ_bind, simulateQ_pure]
     rfl
 
-def embedded := OracleMap.embedding functions (fun _ : PUnit => PUnit.unit)
+def embedded := OracleMap.reindex functionSlot (fun _ : PUnit => PUnit.unit)
 
-example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
+example : simulateQ (functions.answer (fun _ n => n + 5))
     (embedded.impl ⟨⟨⟩, (3 : Nat)⟩) = (8 : Nat) := rfl
 
-example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
+example : simulateQ (functions.answer (fun _ n => n + 5))
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩) = (16 : Nat) := rfl
 
-/-- No ambient oracles, with the index in `Type 0`. -/
-abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
-
-/-- The empty input family, with its index in `Type 0`. -/
-def emptyFamily : OracleFamily.{0, 0, 0} PEmpty.{1} (fun i => PEmpty.elim i) :=
-  ⟨fun i => i.elim⟩
+/-- The empty indexed input bundle, with its index in `Type 0`. -/
+@[instance_reducible] def emptyFamily : OracleBundle :=
+  OracleBundle.ofIndexed (fun i : PEmpty => PEmpty.elim i) fun i => i.elim
 
 @[instance_reducible] def tree : OracleProtocol :=
   .liftBind (.oracle (Nat → Nat) OracleInterface.instFunction) (fun _ => .pure ⟨⟩)
@@ -50,21 +50,23 @@ example : first.path = second.path := rfl
 example : (toView tree first).val = (toView tree second).val := rfl
 
 /-- The decision can name an evaluation query but receives no function payload. -/
-def queryDecision : OracleVerifier noAmbient tree Unit (fun _ => Nat) emptyFamily
+def queryDecision : OracleVerifier emptySpec0 tree Unit (fun _ => Nat) emptyFamily
     (fun _ => functions) where
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
-      let n : Nat ← pathLift noAmbient emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, (3 : Nat)⟩
+      let n : Nat ← pathLift emptySpec0 emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ (.inl (3 : Nat))
       pure n
   outputMap _ p _ :=
-    (OracleMap.embedding (oracleMessageFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+    { f := fun x _ => x.2.1
+      impl := fun q => liftM ((pathBundle emptyFamily tree p).spec.query (.inr (.inl q.2)))
+      law := fun _ _ => rfl }
 
-example : oracleMessageImpl tree first ⟨.inl ⟨⟩, (3 : Nat)⟩ = (8 : Nat) := rfl
-example : oracleMessageImpl tree second ⟨.inl ⟨⟩, (3 : Nat)⟩ = (6 : Nat) := rfl
+example : oracleMessageImpl tree first (.inl (3 : Nat)) = (8 : Nat) := rfl
+example : oracleMessageImpl tree second (.inl (3 : Nat)) = (6 : Nat) := rfl
 
 run_cmd do
-  let answer : Nat := simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
+  let answer : Nat := simulateQ (functions.answer (fun _ n => n + 5))
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩)
   unless answer == 16 do throwError "virtual routing disagrees with materialized output"
 
@@ -73,12 +75,12 @@ end Interaction.OracleTests
 namespace Interaction.OracleTests
 
 /-- The small oracle protocol with no rounds. -/
-abbrev emptyTree : OracleProtocol.{0, 0} := .pure ⟨⟩
+abbrev emptyTree : OracleProtocol := .pure ⟨⟩
 /-- The oracle bundle of the protocol with no rounds and no input oracles: both parts are empty. -/
 abbrev emptyBundle := pathBundle emptyFamily emptyTree ⟨⟩
 
 /-- The empty pair of input data and path oracle messages. -/
-def emptyData : emptyBundle.Data := (fun i => i.elim, fun i => i.elim)
+def emptyData : emptyBundle.Data := (fun i => i.elim, ())
 
 /-- The prefix can return a statement obtained from an ambient query. -/
 def ambientPrefix : OracleVerifier (Unit →ₒ Bool) emptyTree Unit (fun _ => Bool)
@@ -119,8 +121,8 @@ run_cmd do
   for decl in [``Interaction.plain_challenge_shape,
       ``Interaction.oracle_payload_shape, ``Interaction.Reduction.run,
       ``Interaction.OracleMap.comp, ``Interaction.OracleMap.simulate_eq,
-      ``Interaction.oracleMessageFamily_split_append,
-      ``Interaction.oracleMessageFamily_append_split,
+      ``Interaction.oracleMessageBundle_split_append,
+      ``Interaction.oracleMessageBundle_append_split,
       ``Interaction.oracleMessages_append, ``Interaction.oracleMessageImpl_append,
       ``Interaction.OracleVerifier.run] do
     for ax in ← Lean.collectAxioms decl do

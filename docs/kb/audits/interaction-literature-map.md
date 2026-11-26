@@ -161,8 +161,8 @@ Consequences for ArkLib:
   and [Claim](https://github.com/Verified-zkEVM/ArkLib/blob/5baa1709670941c73817202fabf8b012fe433ad4/ArkLib/Interaction/Oracle/Claim.lean).
   A FIOP/commitment bridge over such claims must identify realized behaviors and enforce joint
   consistency; it cannot treat every handler as a concrete committed string. On `main`, a
-  verifier's `outputMap` is an `OracleMap` in
-  [`OracleVerifier`](../../../ArkLib/Interaction/OracleVerifier.lean), which carries concrete
+  verifier's `outputMap` (in [`OracleVerifier`](../../../ArkLib/Interaction/OracleVerifier.lean))
+  is an `OracleMap` (in [`OracleBundle`](../../../ArkLib/Relation/OracleBundle.lean)), which carries concrete
   output data and a law that query simulation agrees with that data. Verifier outputs are therefore
   realized by data, and the bridge obligation moves to that data's encoding and commitment.
 

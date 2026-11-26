@@ -23,7 +23,7 @@ namespace Plonk.Quotient
 open OracleSpec OracleComp OracleQuery ProtocolSpec
 open scoped NNReal ENNReal ProbabilityTheory
 
-local instance : ∀ i, OracleInterface.{0, 0} (QuotientZeroTest.OStmtOut i) :=
+local instance : ∀ i, OracleInterface (QuotientZeroTest.OStmtOut i) :=
   fun i => nomatch i
 
 variable {F : Type} [Field F] [DecidableEq F] {n : ℕ}

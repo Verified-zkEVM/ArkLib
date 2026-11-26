@@ -27,24 +27,24 @@ namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp
 
 /-- The prover uses only the shared oracle interface, and cannot query the challenge service. -/
-abbrev Prover {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    {ι : Type} (ambient : OracleSpec ι) (s : FreeM P PUnit.{1})
+abbrev Prover {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
+    {ι : Type} (ambient : OracleSpec ι) (s : FreeM P Unit)
     (Out : Transcript l s → Type) := Focal l (OracleComp ambient) s Out
 
 /-- Interpret each prover slot through an oracle handler, node by node and at the leaf.
 
 The recursion is the generic strategy map at this homomorphism, written out so that its node and
 leaf equations are available to importing modules. -/
-def Prover.simulate {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+def Prover.simulate {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {ι : Type} {ambient : OracleSpec ι} {m : Type → Type} [Monad m]
-    (impl : QueryImpl ambient m) : {s : FreeM P PUnit.{1}} →
+    (impl : QueryImpl ambient m) : {s : FreeM P Unit} →
     {Out : Transcript l s → Type} → Prover l ambient s Out → Focal l m s Out
   | .pure _, _, p => simulateQ impl p
   | .liftBind a _, _, p =>
     Choice.map .focal (owner l a) (fun _ next => Prover.simulate impl next) <$> simulateQ impl p
 
 /-- At a leaf, simulation interprets the prover's final action. -/
-theorem Prover.simulate_done {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+theorem Prover.simulate_done {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {ι : Type} {ambient : OracleSpec ι} {m : Type → Type} [Monad m]
     (impl : QueryImpl ambient m)
     {Out : Transcript l (Pure.pure (f := FreeM P) PUnit.unit) → Type}
@@ -52,9 +52,9 @@ theorem Prover.simulate_done {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePol
     Prover.simulate impl p = (simulateQ impl p : m (Out ⟨⟩)) := rfl
 
 /-- At a node, simulation interprets the slot and simulates every continuation. -/
-theorem Prover.simulate_node {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+theorem Prover.simulate_node {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {ι : Type} {ambient : OracleSpec ι} {m : Type → Type} [Monad m]
-    (impl : QueryImpl ambient m) (a : P.A) (rest : P.B a → FreeM P PUnit.{1})
+    (impl : QueryImpl ambient m) (a : P.A) (rest : P.B a → FreeM P Unit)
     {Out : Transcript l (.liftBind a rest) → Type}
     (p : Prover l ambient (.liftBind a rest) Out) :
     Prover.simulate impl p =
@@ -63,9 +63,9 @@ theorem Prover.simulate_node {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePol
 
 /-- Simulation interprets a computation that constructs a prover, then simulates its moves. -/
 theorem Prover.simulate_joinSlot {P : PFunctor.{uA, 0}}
-    {l : PFunctor.Lens P rolePoly.{0}} {ι : Type}
+    {l : PFunctor.Lens P rolePoly0} {ι : Type}
     {ambient : OracleSpec ι} {m : Type → Type} [Monad m] [LawfulMonad m]
-    (impl : QueryImpl ambient m) {s : FreeM P PUnit.{1}}
+    (impl : QueryImpl ambient m) {s : FreeM P Unit}
     {Out : Transcript l s → Type} (p : OracleComp ambient (Prover l ambient s Out)) :
     Prover.simulate impl (Strategy.joinSlot p) =
       Strategy.joinSlot (Prover.simulate impl <$> simulateQ impl p) := by
@@ -79,11 +79,11 @@ theorem Prover.simulate_joinSlot {P : PFunctor.{uA, 0}}
       rfl
 
 /-- Simulating a simulated prover composes the two handlers. -/
-theorem Prover.simulate_simulate {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+theorem Prover.simulate_simulate {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
     {κ κ' : Type} {spec : OracleSpec κ} {spec' : OracleSpec κ'}
     {n : Type → Type} [Monad n] [LawfulMonad n]
     (F : QueryImpl spec' n) (G : QueryImpl spec (OracleComp spec')) :
-    (s : FreeM P PUnit.{1}) → {Out : Transcript l s → Type} →
+    (s : FreeM P Unit) → {Out : Transcript l s → Type} →
     (p : Prover l spec s Out) →
     Prover.simulate F (Prover.simulate G p) = Prover.simulate (fun q => simulateQ F (G q)) p
   | .pure _, _, p => by
@@ -98,16 +98,16 @@ theorem Prover.simulate_simulate {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rol
       (funext fun x => funext fun r => Prover.simulate_simulate F G _ r)
 
 /-- Restrict a node-indexed draw family to a child subtree. -/
-def childDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    {m : Type → Type v} (a : P.A) (next : P.B a → FreeM P PUnit.{1})
+def childDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
+    {m : Type → Type v} (a : P.A) (next : P.B a → FreeM P Unit)
     (draw : (c : ChallengeNode l (.liftBind a next)) →
       m (challengeSpec l (.liftBind a next) c)) (b : P.B a)
     (c : ChallengeNode l (next b)) : m (challengeSpec l (next b) c) :=
   draw ⟨.inr ⟨b, c.val⟩, c.property⟩
 
 /-- The challenge draw at a receiver root, taken from the draw family at the root node. -/
-def rootDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    {m : Type → Type v} (a : P.A) (next : P.B a → FreeM P PUnit.{1})
+def rootDraw {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
+    {m : Type → Type v} (a : P.A) (next : P.B a → FreeM P Unit)
     (draw : (c : ChallengeNode l (.liftBind a next)) →
       m (challengeSpec l (.liftBind a next) c)) (h : owner l a = .receiver) :
     m (Move l a) := draw ⟨.inl ⟨⟩, h⟩
@@ -163,11 +163,11 @@ theorem simulateQ_samplerNode {ι : Type} {spec : OracleSpec ι}
 
 /-- A sampler that returns a pure value at each leaf. Its challenge draws depend only on the
 indexed source node. -/
-def samplerEnd {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+def samplerEnd {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     {m : Type → Type} [Monad m] :
-    (s : FreeM P PUnit.{1}) →
+    (s : FreeM P Unit) →
     ((c : ChallengeNode l s) → m (challengeSpec l s c)) →
-    PureEnd l m .counterpart s (fun _ => PUnit.{1})
+    PureEnd l m .counterpart s (fun _ => Unit)
   | .pure _, _ => ⟨⟩
   | .liftBind a next, draw =>
     samplerNode (owner l a) (rootDraw l a next draw) (fun x =>
@@ -176,20 +176,20 @@ def samplerEnd {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 /-- The counterpart that makes the challenge draws, obtained by giving the sampler a pure leaf
 action. The draws may be any computations. Uniform public-coin sampling is a condition on the
 draw family that an interpretation supplies, not an assumption of the sampler. -/
-def sampler {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    {m : Type → Type} [Monad m] (s : FreeM P PUnit.{1})
+def sampler {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
+    {m : Type → Type} [Monad m] (s : FreeM P Unit)
     (draw : (c : ChallengeNode l s) → m (challengeSpec l s c)) :
-    Counterpart l m s (fun _ => PUnit.{1}) := (samplerEnd l s draw).toStrategy
+    Counterpart l m s (fun _ => Unit) := (samplerEnd l s draw).toStrategy
 
 /-- At a node, the sampler makes the node's challenge draw, if any, and attaches each child
 sampler to the move. -/
-theorem sampler_node {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+theorem sampler_node {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     {m : Type → Type} [Monad m] [LawfulApplicative m]
-    (a : P.A) (next : P.B a → FreeM P PUnit.{1})
+    (a : P.A) (next : P.B a → FreeM P Unit)
     (draw : (c : ChallengeNode l (.liftBind a next)) →
       m (challengeSpec l (.liftBind a next) c)) :
     sampler l (.liftBind a next) draw =
-      Choice.map .counterpart (owner l a) (fun x (_ : PUnit.{1}) =>
+      Choice.map .counterpart (owner l a) (fun x (_ : Unit) =>
         sampler l (next (l.toFunB a x)) (childDraw l a next draw (l.toFunB a x))) <$>
           samplerNode (owner l a) (rootDraw l a next draw) (fun _ => PUnit.unit) := by
   simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd, samplerNode_map]
@@ -197,7 +197,7 @@ theorem sampler_node {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 /-- At a message node, the sampler draws nothing and continues on the sent message. -/
 theorem sampler_message {M : Type → Type} [Monad M] [LawfulApplicative M] (X : Type)
-    (rest : X → Protocol.{0})
+    (rest : X → Protocol)
     (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.message X) rest)) →
       M (challengeSpec plainSig (.liftBind (PlainPos.message X) rest) c)) :
     sampler plainSig (.liftBind (PlainPos.message X) rest) draw =
@@ -208,7 +208,7 @@ theorem sampler_message {M : Type → Type} [Monad M] [LawfulApplicative M] (X :
 
 /-- At a challenge node, the sampler draws the challenge and continues on it. -/
 theorem sampler_challenge {M : Type → Type} [Monad M] [LawfulFunctor M] (C : Type)
-    (rest : PUnit → Protocol.{0})
+    (rest : PUnit → Protocol)
     (draw : (c : ChallengeNode plainSig (.liftBind (PlainPos.challenge C) rest)) →
       M (challengeSpec plainSig (.liftBind (PlainPos.challenge C) rest) c)) :
     sampler plainSig (.liftBind (PlainPos.challenge C) rest) draw =
@@ -220,7 +220,7 @@ theorem sampler_challenge {M : Type → Type} [Monad M] [LawfulFunctor M] (C : T
 
 section SamplerLaws
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
 
 section Sampler
 
@@ -228,11 +228,11 @@ variable {m : Type → Type} [Monad m]
 
 /-- The sampler passes over a sender node. -/
 private theorem sampler_sender [LawfulApplicative m] {a : P.A}
-    {next : P.B a → FreeM P PUnit.{1}}
+    {next : P.B a → FreeM P Unit}
     (h : owner l a = .sender)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c)) :
     cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
-      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit.{1})))) h)
+      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => Unit)))) h)
       (sampler l (.liftBind a next) d) =
     pure fun x => sampler l (next (l.toFunB a x))
       fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩ := by
@@ -241,17 +241,17 @@ private theorem sampler_sender [LawfulApplicative m] {a : P.A}
 
 /-- The sampler draws at a receiver node, then samples the rest of the protocol. -/
 private theorem sampler_receiver [LawfulFunctor m] {a : P.A}
-    {next : P.B a → FreeM P PUnit.{1}}
+    {next : P.B a → FreeM P Unit}
     (h : owner l a = .receiver)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c)) :
     cast (congrArg (fun r => m (Choice .counterpart r (Move l a)
-      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit.{1})))) h)
+      (fun x => Counterpart l m (next (l.toFunB a x)) (fun _ => Unit)))) h)
       (sampler l (.liftBind a next) d) =
     (fun x => ⟨x, sampler l (next (l.toFunB a x))
       fun c => d ⟨.inr ⟨l.toFunB a x, c.val⟩, c.property⟩⟩) <$> d ⟨.inl ⟨⟩, h⟩ := by
   change _ = (fun x => (⟨x, sampler l (next (l.toFunB a x))
       (childDraw l a next d (l.toFunB a x))⟩ :
-      (x : Move l a) × Counterpart l m (next (l.toFunB a x)) (fun _ => PUnit.{1}))) <$>
+      (x : Move l a) × Counterpart l m (next (l.toFunB a x)) (fun _ => Unit))) <$>
     rootDraw l a next d h
   simp only [sampler, PureEnd.toStrategy, PureEnd.mapOutput, samplerEnd]
   generalize rootDraw l a next d = draw at *
@@ -262,11 +262,11 @@ private theorem sampler_receiver [LawfulFunctor m] {a : P.A}
 
 /-- At a sender node the prover sends a move, then the rest of the protocol runs. -/
 theorem run_sampler_sender [LawfulMonad m] {β : Type} {a : P.A}
-    {next : P.B a → FreeM P PUnit.{1}}
+    {next : P.B a → FreeM P Unit}
     (h : owner l a = .sender) {Out : Transcript l (.liftBind a next) → Type}
     (p : Focal l m (.liftBind a next) Out)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c))
-    (g : ((tr : Transcript l (.liftBind a next)) × Out tr × PUnit.{1}) → m β) :
+    (g : ((tr : Transcript l (.liftBind a next)) × Out tr × Unit) → m β) :
     (TwoParty.Lens.run (.liftBind a next) p (sampler l _ d) >>= g) =
       (cast (congrArg (fun r => m (Choice .focal r (Move l a)
           (fun x => Focal l m (next (l.toFunB a x)) (fun tr => Out ⟨x, tr⟩)))) h) p >>= fun v =>
@@ -284,11 +284,11 @@ theorem run_sampler_sender [LawfulMonad m] {β : Type} {a : P.A}
 /-- At a receiver node the prover fixes a reply to each move, the move is drawn, then the rest of
 the protocol runs. -/
 theorem run_sampler_receiver [LawfulMonad m] {β : Type} {a : P.A}
-    {next : P.B a → FreeM P PUnit.{1}}
+    {next : P.B a → FreeM P Unit}
     (h : owner l a = .receiver) {Out : Transcript l (.liftBind a next) → Type}
     (p : Focal l m (.liftBind a next) Out)
     (d : (c : ChallengeNode l (.liftBind a next)) → m (challengeSpec l (.liftBind a next) c))
-    (g : ((tr : Transcript l (.liftBind a next)) × Out tr × PUnit.{1}) → m β) :
+    (g : ((tr : Transcript l (.liftBind a next)) × Out tr × Unit) → m β) :
     (TwoParty.Lens.run (.liftBind a next) p (sampler l _ d) >>= g) =
       (cast (congrArg (fun r => m (Choice .focal r (Move l a)
           (fun x => Focal l m (next (l.toFunB a x)) (fun tr => Out ⟨x, tr⟩)))) h) p >>= fun f =>
@@ -313,11 +313,11 @@ end SamplerLaws
 Its conversion to an ordinary counterpart is the runner's sampler, and replaying it follows
 recorded challenges without executing any draw.
 -/
-def publicCoinSampler {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
+def publicCoinSampler {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly0)
     {m : Type → Type} [Monad m] :
-    (s : FreeM P PUnit.{1}) →
+    (s : FreeM P Unit) →
     ((c : ChallengeNode l s) → m (challengeSpec l s c)) →
-    PublicCoinCounterpart l m s (fun _ => PUnit.{1})
+    PublicCoinCounterpart l m s (fun _ => Unit)
   | .pure _, _ => pure ⟨⟩
   | .liftBind a next, draw =>
     match h : owner l a with
@@ -336,7 +336,7 @@ def publicCoinSampler {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
 
 /-- The public-coin presentation converts to the plain runner's sampler. -/
 theorem toCounterpart_publicCoinSampler {m : Type → Type} [Monad m] [LawfulMonad m]
-    (s : Protocol.{0}) (draw : (c : ChallengeNode plainSig s) → m (challengeSpec plainSig s c)) :
+    (s : Protocol) (draw : (c : ChallengeNode plainSig s) → m (challengeSpec plainSig s c)) :
     (publicCoinSampler plainSig s draw).toCounterpart = sampler plainSig s draw := by
   induction s using FreeM.rec with
   | pure a => rfl
@@ -362,7 +362,7 @@ theorem toCounterpart_publicCoinSampler {m : Type → Type} [Monad m] [LawfulMon
 
 /-- The public-coin presentation converts to the oracle runner's sampler. -/
 theorem toCounterpart_publicCoinOracleSampler {m : Type → Type} [Monad m] [LawfulMonad m]
-    (s : OracleProtocol.{0, 0})
+    (s : OracleProtocol)
     (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c)) :
     (publicCoinSampler oracleSig s draw).toCounterpart = sampler oracleSig s draw := by
   induction s using FreeM.rec with
@@ -397,7 +397,7 @@ theorem toCounterpart_publicCoinOracleSampler {m : Type → Type} [Monad m] [Law
 
 /-- Replay follows recorded plain challenges and executes no draw, even a failing one. -/
 theorem replay_publicCoinSampler {m : Type → Type} [Monad m] [LawfulMonad m]
-    (s : Protocol.{0}) (draw : (c : ChallengeNode plainSig s) → m (challengeSpec plainSig s c))
+    (s : Protocol) (draw : (c : ChallengeNode plainSig s) → m (challengeSpec plainSig s c))
     (tr : Transcript plainSig s) :
     (publicCoinSampler plainSig s draw).replay tr = pure ⟨⟩ := by
   induction s using FreeM.rec with
@@ -410,7 +410,7 @@ theorem replay_publicCoinSampler {m : Type → Type} [Monad m] [LawfulMonad m]
 
 /-- Replay follows recorded oracle-protocol challenges and executes no draw. -/
 theorem replay_publicCoinOracleSampler {m : Type → Type} [Monad m] [LawfulMonad m]
-    (s : OracleProtocol.{0, 0})
+    (s : OracleProtocol)
     (draw : (c : ChallengeNode oracleSig s) → m (challengeSpec oracleSig s c))
     (tr : Transcript oracleSig s) :
     (publicCoinSampler oracleSig s draw).replay tr = pure ⟨⟩ := by
@@ -429,13 +429,13 @@ The output statement type `StmtOut p` may depend on the public shape path `p` of
 verifier with one output type `T` uses the constant family `fun _ => T`.
 -/
 structure Verifier {ι : Type} (ambient : OracleSpec.{0, 0} ι)
-    (s : Protocol.{0}) (StmtIn : Type) (StmtOut : Path s → Type) where
+    (s : Protocol) (StmtIn : Type) (StmtOut : Path s → Type) where
   /-- Decide from the public transcript after every interaction slot has run. -/
   decide : StmtIn → (p : Path s) → PlainView s p → OptionT (OracleComp ambient) (StmtOut p)
 
 /-- An honest reduction with separately retained prover and verifier outputs. The verifier's
 output statement type is indexed by the shape path. -/
-structure Reduction {ι : Type} (ambient : OracleSpec ι) (s : Protocol.{0})
+structure Reduction {ι : Type} (ambient : OracleSpec ι) (s : Protocol)
     (StmtIn : Type) (WitIn : Type) (StmtOut : Path s → Type)
     (Out : Transcript plainSig s → Type) where
   /-- Honest focal strategy, including its action at the leaf. -/
@@ -447,7 +447,7 @@ structure Reduction {ι : Type} (ambient : OracleSpec ι) (s : Protocol.{0})
 interaction still takes place after a rejected statement and the decision then rejects
 (`Verifier.onAccept_run_none`). -/
 def Verifier.onAccept {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-    {s : Protocol.{0}} {T : Type} {U : Path s → Type} (V : Verifier ambient s T U) :
+    {s : Protocol} {T : Type} {U : Path s → Type} (V : Verifier ambient s T U) :
     Verifier ambient s (Option T) U where
   decide mid p v := match mid with
     | none => failure

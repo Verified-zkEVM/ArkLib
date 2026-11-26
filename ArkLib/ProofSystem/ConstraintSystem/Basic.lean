@@ -41,24 +41,22 @@ The goals are:
 
 @[expose] public section
 
-universe u v w
-
 open Interaction.Oracle
 
 /-- A promise-free problem with public contexts and claims split into clear and oracle data. -/
-structure ConstraintSystem : Type (max (u + 1) (v + 1) (w + 1)) where
+structure ConstraintSystem : Type 1 where
   /-- Public context parametrising the family (sizes, shape parameters, etc.). -/
-  Index : Type u
+  Index : Type
   /-- In-the-clear component of each claim. -/
-  Stmt : Index → Type v
+  Stmt : Index → Type
   /-- Oracle component of each claim; use `PUnit` when absent. -/
-  OStmt : Index → Type v
+  OStmt : Index → Type
   /-- The underlying promise-free problem on pairs of statement components. -/
-  toRelation : Relation.{u, v, w} ⟨fun i => Stmt i × OStmt i⟩
+  toRelation : Relation ⟨fun i => Stmt i × OStmt i⟩
 
 namespace ConstraintSystem
 
-variable (C : ConstraintSystem.{u, v, w})
+variable (C : ConstraintSystem)
 
 /-- The underlying problem, whose admissibility is universally true. -/
 abbrev toProblem := C.toRelation.val
@@ -73,8 +71,8 @@ abbrev satisfies (i : C.Index) (s : C.Stmt i) (o : C.OStmt i) (w : C.Wit i s o) 
 
 /-- Build a constraint system from a plain indexed relation (no oracle statement slot). -/
 def ofRelation
-    {Idx : Type u} {S : Idx → Type v} {W : Idx → Type w}
-    (rel : (i : Idx) → S i → W i → Prop) : ConstraintSystem.{u, v, w} where
+    {Idx : Type} {S : Idx → Type} {W : Idx → Type}
+    (rel : (i : Idx) → S i → W i → Prop) : ConstraintSystem where
   Index := Idx
   Stmt := S
   OStmt := fun _ => PUnit
@@ -82,8 +80,8 @@ def ofRelation
 
 /-- Build a witness-free constraint system over the public and oracle statement components. -/
 def ofWitnessFree
-    {Idx : Type u} {S O : Idx → Type v}
-    (rel : (i : Idx) → S i → O i → Prop) : ConstraintSystem.{u, v, 0} where
+    {Idx : Type} {S O : Idx → Type}
+    (rel : (i : Idx) → S i → O i → Prop) : ConstraintSystem where
   Index := Idx
   Stmt := S
   OStmt := O
@@ -116,7 +114,7 @@ namespace ConstraintSystem
 
 /-- A completeness-preserving morphism between constraint systems. -/
 @[ext]
-structure Hom (C D : ConstraintSystem.{u, v, w}) where
+structure Hom (C D : ConstraintSystem) where
   /-- Map on index types. -/
   index : C.Index → D.Index
   /-- Map on in-the-clear statements. -/
@@ -135,7 +133,7 @@ structure Hom (C D : ConstraintSystem.{u, v, w}) where
 namespace Hom
 
 /-- The identity morphism on a constraint system. -/
-def id (C : ConstraintSystem.{u, v, w}) : Hom C C where
+def id (C : ConstraintSystem) : Hom C C where
   index := _root_.id
   stmt := fun _ => _root_.id
   oStmt := fun _ _ => _root_.id
@@ -143,7 +141,7 @@ def id (C : ConstraintSystem.{u, v, w}) : Hom C C where
   preserves := fun _ _ _ _ h => h
 
 /-- Composition of two morphisms. Reads right-to-left as usual. -/
-def comp {C D E : ConstraintSystem.{u, v, w}} (g : Hom D E) (f : Hom C D) : Hom C E where
+def comp {C D E : ConstraintSystem} (g : Hom D E) (f : Hom C D) : Hom C E where
   index := g.index ∘ f.index
   stmt := fun i s => g.stmt (f.index i) (f.stmt i s)
   oStmt := fun i s o => g.oStmt (f.index i) (f.stmt i s) (f.oStmt i s o)
@@ -152,7 +150,7 @@ def comp {C D E : ConstraintSystem.{u, v, w}} (g : Hom D E) (f : Hom C D) : Hom 
   preserves := fun i s o w h =>
     g.preserves (f.index i) (f.stmt i s) (f.oStmt i s o) (f.wit i s o w) (f.preserves i s o w h)
 
-variable {C D E F : ConstraintSystem.{u, v, w}}
+variable {C D E F : ConstraintSystem}
 
 @[simp] theorem id_comp (f : Hom C D) : (id D).comp f = f := rfl
 
@@ -164,7 +162,7 @@ theorem comp_assoc (h : Hom E F) (g : Hom D E) (f : Hom C D) :
 end Hom
 
 /-- Morphisms preserve membership in the underlying problem's language. -/
-theorem Hom.isSatisfiable_map {C D : ConstraintSystem.{u, v, w}} (f : Hom C D)
+theorem Hom.isSatisfiable_map {C D : ConstraintSystem} (f : Hom C D)
     {i : C.Index} {s : C.Stmt i} {o : C.OStmt i} (hs : C.toProblem.language i (s, o)) :
     D.toProblem.language (f.index i) (f.stmt i s, f.oStmt i s o) := by
   obtain ⟨w, h⟩ := hs
@@ -192,7 +190,7 @@ namespace ConstraintSystem
 `Assumptions` precondition on the in-the-clear statement and a `Spec` postcondition
 relating statement and witness, together with soundness and completeness proofs tying the
 contract to the underlying satisfiability relation. -/
-structure BehavioralContract (C : ConstraintSystem.{u, v, w}) (i : C.Index) where
+structure BehavioralContract (C : ConstraintSystem) (i : C.Index) where
   /-- Precondition on the in-the-clear statement under which the contract applies. -/
   Assumptions : C.Stmt i → Prop
   /-- High-level specification relating the full claim and its witness. -/
@@ -206,7 +204,7 @@ structure BehavioralContract (C : ConstraintSystem.{u, v, w}) (i : C.Index) wher
 
 namespace BehavioralContract
 
-variable {C : ConstraintSystem.{u, v, w}} {i : C.Index} (B : BehavioralContract C i)
+variable {C : ConstraintSystem} {i : C.Index} (B : BehavioralContract C i)
 
 /-- Under the assumptions, the constraint system is satisfiable at `i` for every statement.
 This is the most immediately useful corollary of `completeness`. -/

@@ -150,7 +150,7 @@ The old-layer file is named `NativeRuntime.lean`. This heading describes what it
 
 [sentOracles] identifies the oracle messages sent at a partial transcript, includes them in the
 bundles of longer partial transcripts, and keeps node names and typed query routing. Its `toPathBundle_data` law
-connects the family of sent oracles to the same transcript's `pathBundle`.
+connects the bundle of sent oracles to the same transcript's `pathBundle`.
 `OracleVerifier.prefixRoute_oracleMessages` connects the append route, whose outputs use
 `splitOutputs`, to that prefix's inputs and oracle messages. [joinEntryNode], [joinEntryIsSent] and
 [decisionEntryIsSent] exercise the node names on actual produced entries. The [oracle-access
@@ -217,9 +217,9 @@ specializes it with `QueryImpl.id' ambient`.
 [decideCatching] interprets a final decision at a supplied path, view and bundle data, with
 labelled failures, and keeps the log of answered queries. It prepends each answer and reverses the
 log once at the end. Its handler has type `QueryImpl ambient (ExceptT ε m)` and it requires only `[Monad m]`.
-Its input-statement and output-query universes match the full-decision-log interface.
+Its input statements and output queries lie in `Type`, as in the full-decision-log interface.
 [optionalClosing] states the optional-closing correspondence for the output map and bundle of
-any completed transcript, with independent input-index, input-query and output-query universes.
+any completed transcript, with input indices, input queries and output queries in `Type`.
 
 The obligations about the queries by move are ported under the passive schedule. The runner
 instruments both strategies before calling `TwoParty.Lens.run`. `OracleVerifier.executeWith`
@@ -243,9 +243,10 @@ aggregate logs, with a query at different actual partial transcripts. These fact
 verifier queries at intermediate boundaries. P1 excludes those actions and their original move
 assignments, as the rows marked excluded by P1 say.
 
-The earlier restriction on full logs with large query universes remains recorded in implementation
-note 18. `runWithAmbientQueriesByMove` keeps the queries by move at an independent input-query
-universe, with erasure to `runWithAmbientLog` and to the ordinary run.
+Step 4 of the D2 migration retired the earlier restriction on full logs with large query
+universes, which implementation note 18 records: every bundle query index now lies in `Type`.
+`runWithAmbientQueriesByMove` keeps the queries by move, with erasure to `runWithAmbientLog` and to
+the ordinary run.
 `toAmbient_runWithQueriesByMove` equates its produced entries with the full queries by move at
 small universes. [liftedQueriesByMove] executed an actual `Nat` oracle node with queries in
 `Type 1` until step 3 of the D2 migration, which pins the node-query universe of the verifier APIs

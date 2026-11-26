@@ -59,7 +59,7 @@ run_cmd do
 open Interaction.OracleTests
 
 /-- A suffix computes a virtual output from an embedded prefix oracle. -/
-def virtualSuffix : OracleVerifier noAmbient emptyTree Nat (fun _ => Unit) functions
+def virtualSuffix : OracleVerifier emptySpec0 emptyTree Nat (fun _ => Unit) functions
     (fun _ => functions) where
   decide _ _ _ := pure ()
   outputMap _ _ _ := doubled.comp (OracleMap.fst _ _)
@@ -74,12 +74,12 @@ def compatible : OracleVerifier.OutputCompatibility queryDecision (fun _ => virt
 def combined := queryDecision.append (fun _ => virtualSuffix) compatible
 
 /-- The prover sends the function `n ↦ n + 5` and finishes. -/
-def oracleProver : Prover oracleSig noAmbient
+def oracleProver : Prover oracleSig emptySpec0
     (tree.append (fun _ => emptyTree)) (fun _ => PUnit) :=
   pure ⟨fun n => n + 5, pure ⟨⟩⟩
 
 def oracleHandler : QueryImpl
-    (noAmbient + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
+    (emptySpec0 + challengeSpec oracleSig (tree.append (fun _ => emptyTree))) Id
   | .inl i => i.elim
   | .inr ⟨.inl _, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, i⟩, _⟩ => i.elim
@@ -103,7 +103,9 @@ abbrev PrefixOutput :=
   (p : Path tree) → OracleMap (pathBundle emptyFamily tree p) functions
 
 def embeddedOutput : PrefixOutput := fun p =>
-  (OracleMap.embedding (oracleMessageFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+  { f := fun x _ => x.2.1
+    impl := fun q => liftM ((pathBundle emptyFamily tree p).spec.query (.inr (.inl q.2)))
+    law := fun _ _ => rfl }
 
 def virtualOutput : PrefixOutput := fun p => doubled.comp (embeddedOutput p)
 
@@ -115,7 +117,7 @@ def routedPrefix (out : PrefixOutput) :
     exact do
       let _ ← liftM ((labels + (pathBundle emptyFamily tree ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inl 10))
-      let n : Nat ← pathLift labels emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, (3 : Nat)⟩
+      let n : Nat ← pathLift labels emptyFamily (s := tree) ⟨⟨⟩, ⟨⟩⟩ (.inl (3 : Nat))
       pure n
   outputMap _ p _ := out p
 
@@ -130,12 +132,14 @@ def routedSuffix :
       let input : Nat ← liftM
         ((labels + (pathBundle functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
           (.inr (.inl ⟨⟨⟩, (1 : Nat)⟩)))
-      let message : Nat ← pathLift labels functions (s := tree) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, (1 : Nat)⟩
+      let message : Nat ← pathLift labels functions (s := tree) ⟨⟨⟩, ⟨⟩⟩ (.inl (1 : Nat))
       let _ ← liftM ((labels + (pathBundle functions tree ⟨⟨⟩, ⟨⟩⟩).spec).query
         (.inl 30))
       pure (mid, input, message)
   outputMap _ p _ :=
-    (OracleMap.embedding (oracleMessageFamily tree p) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+    { f := fun x _ => x.2.1
+      impl := fun q => liftM ((pathBundle functions tree p).spec.query (.inr (.inl q.2)))
+      law := fun _ _ => rfl }
 
 /-- The suffix output map ignores the intermediate statement. -/
 def routedCompatible (out : PrefixOutput) :

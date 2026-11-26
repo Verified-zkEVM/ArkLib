@@ -41,11 +41,11 @@ namespace Interaction.Legacy
 open PFunctor FreeM TwoParty.Lens OracleComp OracleSpec ProtocolSpec Oracle MeasureTheory
 open scoped ENNReal NNReal
 
-variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
+variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
   {ι : Type} {oSpec : OracleSpec ι} [∀ t, Inhabited (oSpec.Range t)]
   {StmtIn WitIn StmtOut WitOut : Type}
-  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface.{0, 0} (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
+  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
   {σ : Type}
 
 /-! ### Extractors -/
@@ -277,8 +277,10 @@ theorem oracleKnowledgeSoundnessWith_iff (init : ProbComp σ)
         (toPlainFrom_embedOracleProver P stmt.1 stmt.2 aux) hW)
       (h stmt trivial (embedOracleProver P stmt.1 stmt.2 aux)).2.2
   · intro h stmt _ adv
-    refine ⟨Interaction.OracleVerifier.classicalStraightLine_marginal _ _ _ _ _ _ _ stmt adv,
-      le_rfl, ?_⟩
+    have hm := Interaction.OracleVerifier.classicalStraightLine_marginal (fun _ => WitIn)
+      (embedOracleVerifier V) init impl (oracleChallengeImpl ProtocolSpec.challengeQueryImpl)
+      (fun _ o => o.2) (liftOracleExtractor E) stmt adv
+    refine ⟨hm, le_rfl, ?_⟩
     have h' := h PUnit stmt ⟨⟩ (translate (toPlainFrom .focal 0 n (Nat.zero_add n) adv))
     dsimp only at h'
     rw [legacy_exec_run] at h'
@@ -321,7 +323,7 @@ theorem oracleKnowledgeSoundness_iff (init : ProbComp σ)
 section TreeTransport
 variable {κ J T WIn WOut : Type} {S : Type} {I : Type}
   {ambient : OracleSpec κ} {s s' : OracleProtocol} {A : I → Type} {B : J → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily.{0, 0, 0} J B}
+  {Oᵢ : ∀ i, OracleInterface (A i)} {Oₒ : ∀ j, OracleInterface (B j)}
 
 /-- The output judgement of a legacy relation on any oracle tree: the output statement and its
 output witness are read from the prover's output, and the verdict from the verifier's output.
@@ -333,8 +335,8 @@ abbrev knowledgeJudgementOn (s : OracleProtocol) (relOut : Set ((T × ∀ j, B j
 
 /-- Transporting a verifier and its challenge oracle along a tree equality preserves knowledge
 soundness for legacy relations. -/
-theorem knowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs
-    (fun _ => outputs))
+theorem knowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T)
+    (OracleBundle.ofIndexed A Oᵢ) (fun _ => OracleBundle.ofIndexed B Oₒ))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (relIn : Set ((S × ∀ i, A i) × WIn)) (relOut : Set ((T × ∀ j, B j) × WOut))
@@ -358,8 +360,8 @@ theorem knowledgeSoundness_cast (e : s' = s) (V : OracleVerifier ambient s' S (f
 
 /-- Transporting a verifier, its challenge oracle and its honest prover along a tree equality
 preserves completeness for legacy relations. -/
-theorem completeness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T) inputs (fun _
-    => outputs))
+theorem completeness_cast (e : s' = s) (V : OracleVerifier ambient s' S (fun _ => T)
+    (OracleBundle.ofIndexed A Oᵢ) (fun _ => OracleBundle.ofIndexed B Oₒ))
     (init : ProbComp σ) (impl : QueryImpl ambient (StateT σ ProbComp))
     (draw : QueryImpl (challengeSpec oracleSig s') ProbComp)
     (relIn : Set ((S × ∀ i, A i) × WIn)) (relOut : Set ((T × ∀ j, B j) × WOut))

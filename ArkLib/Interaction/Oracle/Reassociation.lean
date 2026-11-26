@@ -36,7 +36,7 @@ client rewrites a decision or output data on a run, which these laws state direc
 
 @[expose] public section
 
-universe u q w uY uA v z
+universe u w uY uA v z
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -47,12 +47,12 @@ attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
 /-! ## Views and bundle data of an appended run -/
 
 /-- Split views, packaged with their split path. -/
-abbrev SplitViews (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q}) :=
+abbrev SplitViews (s₁ : OracleProtocol) (s₂ : Path s₁ → OracleProtocol) :=
   (z : (p : Path s₁) × Path (s₂ p)) × View s₁ z.1 × View (s₂ z.1) z.2
 
 /-- Splitting the view of an appended path gives the views of the two parts of its transcript
 split, at the split path. -/
-theorem View.split_mk (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+theorem View.split_mk (s₁ : OracleProtocol) (s₂ : Path s₁ → OracleProtocol)
     (x : Transcript viewSig (s₁.append s₂)) :
     (⟨Path.split s₁ s₂ x.path, View.split s₁ s₂ x.path ⟨x, rfl⟩⟩ : SplitViews s₁ s₂) =
       ⟨⟨(Transcript.split s₁ s₂ x).1.path, (Transcript.split s₁ s₂ x).2.path⟩,
@@ -67,8 +67,8 @@ theorem View.split_mk (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → Oracl
 
 /-- Erasing the oracle messages of an appended transcript and splitting the result gives the
 paths and views of the two parts. -/
-theorem split_mapMoves_append : (s₁ : OracleProtocol.{u, q}) →
-    (s₂ : Path s₁ → OracleProtocol.{u, q}) →
+theorem split_mapMoves_append : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) →
     (tr₁ : Transcript oracleSig s₁) → (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
     (⟨⟨(Transcript.split s₁ s₂ (Transcript.mapMoves eraseOracle
           (Transcript.append s₁ s₂ tr₁ tr₂))).1.path,
@@ -106,7 +106,7 @@ theorem split_mapMoves_append : (s₁ : OracleProtocol.{u, q}) →
       (split_mapMoves_append (next ⟨⟩) (fun p => s₂ ⟨⟨⟩, p⟩) tr₁ tr₂)
 
 /-- The view of an appended transcript splits into the views of its parts. -/
-theorem toView_split_append (s₁ : OracleProtocol.{u, q}) (s₂ : Path s₁ → OracleProtocol.{u, q})
+theorem toView_split_append (s₁ : OracleProtocol) (s₂ : Path s₁ → OracleProtocol)
     (tr₁ : Transcript oracleSig s₁) (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨Path.split s₁ s₂ (Transcript.append s₁ s₂ tr₁ tr₂).path,
       View.split s₁ s₂ _ (toView _ (Transcript.append s₁ s₂ tr₁ tr₂))⟩ : SplitViews s₁ s₂) =
@@ -151,10 +151,9 @@ namespace OracleVerifier
 
 section Transcripts
 
-variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
+  {T : Path s → Type} {inputs : OracleBundle}
+  {outputs : Path s → OracleBundle}
 
 /-- The decision on a completed transcript: at its path and view, with the bundle queries answered
 from the input data and the transcript's oracle messages. -/
@@ -165,28 +164,25 @@ def decideOn (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data 
 /-- The output data on a completed transcript: the output map at its path and view, applied to
 the input data and the transcript's oracle messages. -/
 def outputOn (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
-    (tr : Transcript oracleSig s) : ∀ j, B tr.path j :=
+    (tr : Transcript oracleSig s) : (outputs tr.path).Data :=
   (V.outputMap stmt tr.path (toView s tr)).f (data, oracleMessages s tr)
 
 end Transcripts
 
 variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
-  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+  {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
+  {middle : Path s₁ → OracleBundle}
+  {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
 
 /-- The split path of an appended run with the split views, the prefix bundle data and the suffix
 oracle messages. -/
-abbrev SplitRun (inputs : OracleBundle) (s₁ : OracleProtocol.{0, 0})
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) :=
+abbrev SplitRun (inputs : OracleBundle) (s₁ : OracleProtocol)
+    (s₂ : Path s₁ → OracleProtocol) :=
   (z : (p : Path s₁) × Path (s₂ p)) × (View s₁ z.1 × View (s₂ z.1) z.2) ×
     ((pathBundle inputs s₁ z.1).Data ×
-      (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data)
+      (oracleMessageBundle (s₂ z.1) z.2).Data)
 
 /-- In an appended run, the split path, views and bundle data are those of the two parts. -/
 theorem splitRun_append (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
@@ -200,12 +196,12 @@ theorem splitRun_append (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
         ((data, oracleMessages s₁ tr₁), oracleMessages _ tr₂))⟩ := by
   refine sigma_extend' (B := fun z : (p : Path s₁) × Path (s₂ p) =>
     (pathBundle inputs s₁ z.1).Data ×
-      (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data)
+      (oracleMessageBundle (s₂ z.1) z.2).Data)
     (toView_split_append s₁ s₂ tr₁ tr₂) ?_
   exact congrArg (fun z : SplitOracleMessages s₁ s₂ =>
-      (⟨z.1, ((data, fun i => z.2 (.inl i)), fun j => z.2 (.inr j))⟩ :
+      (⟨z.1, ((data, z.2.1), z.2.2)⟩ :
         (z : (p : Path s₁) × Path (s₂ p)) × (pathBundle inputs s₁ z.1).Data ×
-          (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data))
+          (oracleMessageBundle (s₂ z.1) z.2).Data))
     (splitOracleMessages_oracleMessages s₁ s₂ tr₁ tr₂)
 
 /-- The decision of an appended verifier on an appended run, followed by a continuation `k` that
@@ -218,7 +214,8 @@ theorem append_decideOn_bind {Y : (p₁ : Path s₁) → Path (s₂ p₁) → Ty
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (compatible : OutputCompatibility V₁ V₂)
-    (k : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (y : Y p₁ p₂) → U p₁ p₂ → (∀ j, C p₁ p₂ j) →
+    (k : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (y : Y p₁ p₂) → U p₁ p₂ →
+      (outputs p₁ p₂).Data →
       OracleComp ambient (Option (Z p₁ p₂ y)))
     (stmt : S) (data : inputs.Data) (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path))
@@ -241,7 +238,7 @@ theorem append_decideOn_bind {Y : (p₁ : Path s₁) → Path (s₂ p₁) → Ty
     (splitRun_append (inputs := inputs) data tr₁ tr₂) hy
   have h2 := congrArg (fun Ξ : (z : (p : Path s₁) × Path (s₂ p)) ×
       ((View s₁ z.1 × View (s₂ z.1) z.2) × ((pathBundle inputs s₁ z.1).Data ×
-        (OracleBundle.ofFamily (oracleMessageFamily (s₂ z.1) z.2)).Data)) × Y z.1 z.2 =>
+        (oracleMessageBundle (s₂ z.1) z.2).Data)) × Y z.1 z.2 =>
     (⟨Z Ξ.1.1 Ξ.1.2 Ξ.2.2, V₁.decideWith stmt Ξ.1.1 Ξ.2.1.1.1 Ξ.2.1.2.1 >>= fun
       | none => pure none
       | some mid => (V₂ Ξ.1.1).decideWith mid Ξ.1.2 Ξ.2.1.1.2
@@ -288,7 +285,7 @@ theorem append_decideOn_sigma (V₁ : OracleVerifier ambient s₁ S T inputs mid
     ⟨U tr₁.path tr₂.path, V₁.decideOn stmt data tr₁ >>= fun
       | none => pure none
       | some mid => (V₂ tr₁.path).decideOn mid (V₁.outputOn stmt data tr₁) tr₂⟩ := by
-  have h := append_decideOn_bind (Y := fun _ _ => PUnit.{1}) (Z := fun p₁ p₂ _ => U p₁ p₂)
+  have h := append_decideOn_bind (Y := fun _ _ => Unit) (Z := fun p₁ p₂ _ => U p₁ p₂)
     V₁ V₂ compatible (fun _ _ _ out _ => pure (some out)) stmt data tr₁ tr₂ ⟨⟩ ⟨⟩ HEq.rfl
   refine Eq.trans ?_ (h.trans ?_)
   · exact congrArg (Sigma.mk _)
@@ -465,10 +462,9 @@ end Helpers
 
 namespace OracleVerifier
 
-variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
-  {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
+  {T : Path s → Type} {inputs : OracleBundle}
+  {outputs : Path s → OracleBundle}
 
 /-- Verifiers with the same decision function decide alike on every run. -/
 theorem decideOn_eq_of_decide_eq {V V' : OracleVerifier ambient s S T inputs outputs}
@@ -482,13 +478,10 @@ end OracleVerifier
 decision functions. -/
 theorem OracleVerifier.append_decide_congr {ι : Type} {ambient : OracleSpec ι}
     {inputs : OracleBundle}
-    {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+    {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-    {K : (p : Path s₁) → Path (s₂ p) → Type}
-    {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-    {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
+    {middle : Path s₁ → OracleBundle}
+    {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     {V₂ V₂' : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p)}
     (compatible : OracleVerifier.OutputCompatibility V₁ V₂)
@@ -507,19 +500,14 @@ section Reassociation
 
 variable {ι : Type} {ambient : OracleSpec ι}
   {inputs : OracleBundle}
-  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
-  {s₃ : (p₁ : Path s₁) → Path (s₂ p₁) → OracleProtocol.{0, 0}} {S : Type}
+  {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
+  {s₃ : (p₁ : Path s₁) → Path (s₂ p₁) → OracleProtocol} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {W : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type}
-  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
-  {L : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type}
-  {D : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (p₃ : Path (s₃ p₁ p₂)) → L p₁ p₂ p₃ → Type}
-  {finals : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (p₃ : Path (s₃ p₁ p₂)) →
-    OracleFamily.{0, 0, 0} (L p₁ p₂ p₃) (D p₁ p₂ p₃)}
+  {middle : Path s₁ → OracleBundle}
+  {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
+  {finals :
+    (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → OracleBundle}
   (V₁ : OracleVerifier ambient s₁ S T inputs middle)
   (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
   (V₃ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
@@ -643,16 +631,16 @@ theorem append_append_outputOn (stmt : S) (data : inputs.Data)
   have hX : (⟨Path.split s₁ s₂ (Transcript.append s₁ s₂ tr₁ tr₂).path,
       (tr₃, mid', (V₁.append V₂ c₁₂).outputOn stmt data (Transcript.append s₁ s₂ tr₁ tr₂))⟩ :
       (z : (p : Path s₁) × Path (s₂ p)) × Transcript oracleSig (s₃ z.1 z.2) × U z.1 z.2 ×
-        (∀ j, C z.1 z.2 j)) =
+        ((outputs z.1 z.2).Data)) =
       ⟨⟨tr₁.path, tr₂.path⟩,
         (tr₃', mid, (V₂ tr₁.path).outputOn m (V₁.outputOn stmt data tr₁) tr₂)⟩ :=
     Sigma.ext hz (heq_tuple3 (Y₁ := fun z => Transcript oracleSig (s₃ z.1 z.2))
-      (Y₂ := fun z => U z.1 z.2) (Y₃ := fun z => ∀ j, C z.1 z.2 j) hz h hmid'.symm hd)
+      (Y₂ := fun z => U z.1 z.2) (Y₃ := fun z => (outputs z.1 z.2).Data) hz h hmid'.symm hd)
   refine (append_outputOn (V₁.append V₂ c₁₂)
     (fun P => V₃ (Path.split s₁ s₂ P).1 (Path.split s₁ s₂ P).2) cL stmt data
     (Transcript.append s₁ s₂ tr₁ tr₂) tr₃ mid' hmem').trans (HEq.trans ?_ hR.symm)
   exact congr_arg_heq (fun X : (z : (p : Path s₁) × Path (s₂ p)) ×
-      Transcript oracleSig (s₃ z.1 z.2) × U z.1 z.2 × (∀ j, C z.1 z.2 j) =>
+      Transcript oracleSig (s₃ z.1 z.2) × U z.1 z.2 × (outputs z.1 z.2).Data =>
     (V₃ X.1.1 X.1.2).outputOn X.2.2.1 X.2.2.2 X.2.1) hX
 
 end Reassociation

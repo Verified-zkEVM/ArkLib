@@ -31,7 +31,7 @@ variable (R : Type) [CommSemiring R] (deg : ℕ)
 
 /-- One round: an evaluation oracle for the round polynomial, then one ring challenge. -/
 @[implicit_reducible]
-def round : OracleProtocol.{0} :=
+def round : OracleProtocol :=
   .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
     .liftBind (.challenge R) fun _ => .pure ⟨⟩
 
@@ -161,8 +161,7 @@ theorem split_toView_round (msg : R⦃≤ deg⦄[X]) (chal : R) (tail : Transcri
   exact Prod.ext (Subtype.ext h.1) (Subtype.ext (eq_of_heq h.2))
 
 
-variable {I : Type} {A : I → Type}
-  (inputs : Interaction.Oracle.OracleFamily.{0, 0, 0} I A)
+variable (inputs : OracleBundle)
 
 /-- The first round of a transcript of a round followed by `s`. -/
 def appendHead (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :
@@ -175,18 +174,13 @@ def appendTail (tr : Transcript oracleSig ((round R deg).append fun _ => s)) :
   tr.2.2
 
 /-- The first round of a run of a round followed by `s` sees the inputs and its own message. -/
-theorem prefixRoute_round (x : ∀ i, A i) (msg : R⦃≤ deg⦄[X]) (chal : R)
+theorem prefixRoute_round (x : inputs.Data) (msg : R⦃≤ deg⦄[X]) (chal : R)
     (tail : Transcript oracleSig s) :
     (OracleVerifier.prefixRoute (inputs := inputs) (s₁ := round R deg) (s₂ := fun _ => s)
         (Transcript.path (l := oracleSig) (s := _) ⟨msg, ⟨chal, tail⟩⟩)).f
         ((x, oracleMessages ((round R deg).append fun _ => s) ⟨msg, ⟨chal, tail⟩⟩)) =
       (x, oracleMessages (round R deg) ⟨msg, ⟨chal, ⟨⟩⟩⟩) := by
-  refine Prod.ext ?_ ?_
-  · rfl
-  · funext i
-    rcases i with i | i
-    · rfl
-    · exact i.elim
+  rfl
 
 end Routing
 

@@ -602,7 +602,7 @@ above rather than adding independent security claims.
 | `LegacyProjection` | `messageFamily`, `projectionMap`, `projectionMap_f`, `simulateQ_projectionMap`: the univariate output interface and lawful projection. |
 | `Interaction/OracleVerifier` | `Interaction.pathLift`, `Interaction.simulateQ_pathLift`: the path-query lift of any decision, for any input family and protocol, and its interpretation law in any lawful monad. `decisionLift`, `foldLift` and their laws `simulateQ_decisionLift`, `simulateQ_decisionLift_monad`, `simulateQ_foldLift` are instances. `OracleVerifier.run_eq_decideWith` expresses a run through `decideWith` for any input bundle, at the protocol query universe of `OracleVerifier.run_eq`, using the shared owner lemma `OracleVerifier.simulateQ_decideWith` in reverse. |
 | `Interaction/Composition` | `Interaction.TranscriptAt.split_val`: the split of a transcript at a path carries the transcripts of `Transcript.split`. |
-| `Composition`, input route | `inputRoute`: the existing `OracleMap.embedding` for the input oracles. |
+| `Composition`, input route | `inputRoute`: the projection `OracleMap.fst` onto the input oracles. |
 | `Composition`, round | `checkRoute`, `roundChallenges`, `checkVerifier`, `roundChallenges_eq`, `decideWith_checkVerifier`, `checkVerdict`, `run_checkVerifier`: reuse the legacy per-round check, with no ambient queries in that check. |
 | `Composition`, append | `split_toView_round`, `appendHead`, `appendTail`, `prefixRoute_round`, `suffixRoute_round`, `decideWith_append_checkVerifier`, `run_append_checkVerifier`: specialize the Core append routing to one Sumcheck round. The generic routing of part D, commit 1 is not duplicated. |
 | `Composition`, fold | `foldLift`, `legacyFoldVerifier`, `verifier_eq_legacyFoldVerifier`, `simulateQ_foldLift`, `decideWith_legacyFoldVerifier`, `foldHead`, `legacyFoldCompatibility`, `decideWith_append_legacyFoldVerifier`, `run_append_legacyFoldVerifier`, `run_append_verifier`: reuse `Spec.oracleVerifierProgram` and C's `simulateQ_oracleVerifierProgram_succ`, allowing a suffix that starts from a round-1 statement. |
@@ -643,18 +643,17 @@ message representation or original-oracle behavior quantified by the correspondi
 ## Agreement universes and parent limits
 
 `Interaction.OracleVerifier.Agrees` and every law in `Security/Agreement.lean` accept
-path-dependent output statements `T p`, oracle indices `J p`, carriers `B p j` and interfaces
-`outputs p`. Outcomes and output problems use `OracleVerifier.Output T B`. The decision and
-output-map cast laws retain the verifier owner's independent ambient and output-index universes;
-ordinary runs retain its move/response universe `u`. `cast_const` identifies the general
-transport with ordinary equality substitution for constant output families. Ordinary substitution
-keeps those output carriers fixed while changing the tree. Classical probability interfaces specialize
-the move and returned-value universe to zero, as their owners require.
+path-dependent output statements `T p` and output oracle bundles `outputs p`. Outcomes and
+output problems use `OracleVerifier.Output T outputs`. The decision and output-map cast laws and
+ordinary runs take the ambient index, output indices, moves and responses in `Type`, as the
+universe policy requires. `cast_const` identifies the general transport with ordinary equality
+substitution for constant output families. Ordinary substitution keeps those output carriers
+fixed while changing the tree.
 
-Agreement accepts general `OracleBundle.{u, uI, dI}` inputs, with independent query and data
-universes. Family-shaped inputs specialize this API through `OracleBundle.ofFamily`.
-Round-by-round knowledge agreement and transport retain `Win stmt`, `W stmt tr`, and relations
-`relOut stmt tr output witness`, with independent witness universes. They also preserve the
+Agreement accepts general `OracleBundle` inputs. A bundle has no universe parameters, and its
+queries and data lie in `Type`. Indexed inputs specialize this API through
+`OracleBundle.ofIndexed`. Round-by-round knowledge agreement and transport retain `Win stmt`,
+`W stmt tr`, and relations `relOut stmt tr output witness`, with witnesses in `Type`. They also preserve the
 parent's challenge draws, which read the verifier's view of each prefix (`PrefixDraw viewSig`),
 and its full-prefix local errors. Sumcheck's compatibility theorem uses
 `rbrKnowledgeSoundnessOfNodes`, the parent specialization that ignores prefix history, and
@@ -671,13 +670,13 @@ Output families depend on the shape path. Since step 2 of the
 [universe policy](../interaction-rebuild/D2-ownership-and-universes.md#migration) migration, the
 security definitions and these clients take their data in `Type`.
 
-The remaining restrictions come from these parent interfaces:
+The parent interfaces add no restriction beyond the policy's data in `Type`:
 
-| New API | Parent interface | Required restriction |
+| New API | Parent interface | Universes |
 |---|---|---|
-| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Bundle-query indices and oracle-node queries are small because the full log is a small run output. |
-| `Agrees.run_eq` and `run_cast` | `OracleVerifier.run` in `Interaction/OracleVerifier.lean` | Ambient and output indices share the move/response universe `u`. Output statements and oracle data are values in `Type u`; node and output queries remain independent. |
-| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightLine`, `validAcceptance` and the RBR wrappers | Probability computations return small values, including output statements, output indices and extracted witnesses. The security definitions take all their data in `Type`. |
+| `OracleVerifier.runWithLog_eq_of_decide_eq` | `OracleVerifier.runWithLog` in `Security/Knowledge.lean` | Bundle-query indices and oracle-node queries lie in `Type`. The full log is therefore a run output in `Type`. |
+| `Agrees.run_eq` and `run_cast` | `OracleVerifier.run` in `Interaction/OracleVerifier.lean` | Ambient and output indices, output statements, oracle data and queries lie in `Type`. |
+| Extraction and classical security laws | `classicalModel`, `extractionGame`, `classicalStraightLine`, `validAcceptance` and the RBR wrappers | Probability computations return values in `Type`, including output statements, output indices and extracted witnesses. Adversaries keep the model's universe. |
 
 ## Production declaration inventory
 

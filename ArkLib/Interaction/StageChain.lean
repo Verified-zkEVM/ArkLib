@@ -17,7 +17,7 @@ The first stage has a fixed protocol. The path of the stages before a later stag
 That path records the prover's public messages and nothing else, so only those messages directly
 select a later stage. Challenges, oracle messages and earlier verdicts do not select it directly.
 A prover can choose its messages after seeing a challenge, so a challenge can still affect the
-choice of a later stage through the prover. The statement types and oracle families at the stage
+choice of a later stage through the prover. The statement types and oracle bundles at the stage
 boundaries may all differ, and may depend on the same paths.
 
 The structural restrictions on a stage are these: every bundle query happens in the final
@@ -52,7 +52,7 @@ composed path and the view that every accepted intermediate statement equals.
 `StageChain.compose` computes the evidence from the plan instead of storing it in the plan's
 constructors. The inductive type then does not refer to the verifier computed from it.
 
-Every oracle family of a chain has its query indices, responses and data in `Type`.
+Every oracle bundle of a chain has its queries, responses and data in `Type`.
 
 The invariant laws `StageChain.decideWith_accepts_of_deterministic`,
 `StageChain.decideWith_accepts_of_onSupport` and `StageChain.decideWith_accepts_of_almostSurely`
@@ -70,17 +70,15 @@ namespace OracleVerifier
 
 section Adapters
 
-variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
-  {T : Path s → Type} {I : Type} {A : I → Type} {I' : Type} {A' : I' → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A} {inputs' : OracleFamily.{0, 0, 0} I' A'}
-  {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
-  {outputs' : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
+  {T : Path s → Type} {inputs inputs' : OracleBundle}
+  {outputs : Path s → OracleBundle}
+  {outputs' : Path s → OracleBundle}
 
 /-- Read the inputs through an oracle map from other inputs. The decision routes its input queries
 through the map, and the output map reads the mapped input data. -/
 def comapInputs (V : OracleVerifier ambient s S T inputs outputs)
-    (r : OracleMap (OracleBundle.ofFamily inputs') (OracleBundle.ofFamily inputs)) :
+    (r : OracleMap inputs' inputs) :
     OracleVerifier ambient s S T inputs' outputs where
   decide stmt p v := OptionT.mk
     (simulateQ ((r.par (OracleMap.id _)).withAmbient ambient) (V.decide stmt p v).run)
@@ -88,8 +86,7 @@ def comapInputs (V : OracleVerifier ambient s S T inputs outputs)
 
 /-- Export the outputs through an oracle map at every path. The decision is unchanged. -/
 def mapOutputs (V : OracleVerifier ambient s S T inputs outputs)
-    (r : (p : Path s) → OracleMap (OracleBundle.ofFamily (outputs p))
-      (OracleBundle.ofFamily (outputs' p))) :
+    (r : (p : Path s) → OracleMap (outputs p) (outputs' p)) :
     OracleVerifier ambient s S T inputs outputs' where
   decide := V.decide
   outputMap stmt p v := (r p).comp (V.outputMap stmt p v)
@@ -97,7 +94,7 @@ def mapOutputs (V : OracleVerifier ambient s S T inputs outputs)
 /-- Reading the inputs through an oracle map decides as the original verifier on the mapped data.
 -/
 theorem comapInputs_decideWith (V : OracleVerifier ambient s S T inputs outputs)
-    (r : OracleMap (OracleBundle.ofFamily inputs') (OracleBundle.ofFamily inputs)) (stmt : S)
+    (r : OracleMap inputs' inputs) (stmt : S)
     (p : Path s) (v : View s p) (data : (pathBundle inputs' s p).Data) :
     (V.comapInputs r).decideWith stmt p v data = V.decideWith stmt p v (r.f data.1, data.2) :=
   OracleMap.simulate_withAmbient (r.par (OracleMap.id _)) data _
@@ -105,21 +102,19 @@ theorem comapInputs_decideWith (V : OracleVerifier ambient s S T inputs outputs)
 /-- Reading the inputs through an oracle map exports the original output data of the mapped data.
 -/
 theorem comapInputs_outputData (V : OracleVerifier ambient s S T inputs outputs)
-    (r : OracleMap (OracleBundle.ofFamily inputs') (OracleBundle.ofFamily inputs)) (stmt : S)
+    (r : OracleMap inputs' inputs) (stmt : S)
     (p : Path s) (v : View s p) (data : (pathBundle inputs' s p).Data) :
     ((V.comapInputs r).outputMap stmt p v).f data =
       (V.outputMap stmt p v).f (r.f data.1, data.2) := rfl
 
 /-- Exporting the outputs through oracle maps keeps the decision. -/
 theorem mapOutputs_decideWith (V : OracleVerifier ambient s S T inputs outputs)
-    (r : (p : Path s) → OracleMap (OracleBundle.ofFamily (outputs p))
-      (OracleBundle.ofFamily (outputs' p))) :
+    (r : (p : Path s) → OracleMap (outputs p) (outputs' p)) :
     (V.mapOutputs r).decideWith = V.decideWith := rfl
 
 /-- Exporting the outputs through oracle maps applies them to the original output data. -/
 theorem mapOutputs_outputData (V : OracleVerifier ambient s S T inputs outputs)
-    (r : (p : Path s) → OracleMap (OracleBundle.ofFamily (outputs p))
-      (OracleBundle.ofFamily (outputs' p))) (stmt : S) (p : Path s) (v : View s p)
+    (r : (p : Path s) → OracleMap (outputs p) (outputs' p)) (stmt : S) (p : Path s) (v : View s p)
     (data : (pathBundle inputs s p).Data) :
     ((V.mapOutputs r).outputMap stmt p v).f data = (r p).f ((V.outputMap stmt p v).f data) :=
   rfl
@@ -130,15 +125,13 @@ end Adapters
 data. The equality holds after the decision's bundle queries are answered from the supplied data.
 It does not count the source queries that the map issues for each routed query; a bound on those
 is a separate statement. -/
-theorem comapInputs_run {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-    {S : Type} {T : Path s → Type} {I : Type} {A : I → Type} {I' : Type}
-    {A' : I' → Type} {inputs : OracleFamily.{0, 0, 0} I A}
-    {inputs' : OracleFamily.{0, 0, 0} I' A'} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+theorem comapInputs_run {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+    {S : Type} {T : Path s → Type} {inputs inputs' : OracleBundle}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs)
-    (r : OracleMap (OracleBundle.ofFamily inputs') (OracleBundle.ofFamily inputs)) (stmt : S)
-    (data : ∀ i, A' i) (prover : Prover oracleSig ambient s Out) :
+    (r : OracleMap inputs' inputs) (stmt : S)
+    (data : inputs'.Data) (prover : Prover oracleSig ambient s Out) :
     (V.comapInputs r).run stmt data prover = V.run stmt (r.f data) prover := by
   rw [OracleVerifier.run_eq, OracleVerifier.run_eq]
   refine _root_.bind_congr fun z => ?_
@@ -148,30 +141,26 @@ theorem comapInputs_run {ι : Type} {ambient : OracleSpec ι} {s : OracleProtoco
   rw [OptionT.run_mk, OracleMap.simulate_withAmbient_addLift]
   rfl
 
-variable {ι : Type} {I : Type} {ambient : OracleSpec ι} {A : I → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+variable {ι : Type} {ambient : OracleSpec ι}
+  {inputs : OracleBundle}
+  {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-  {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-  {K : (p : Path s₁) → Path (s₂ p) → Type}
-  {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
+  {middle : Path s₁ → OracleBundle}
+  {outputs : (p₁ : Path s₁) → Path (s₂ p₁) → OracleBundle}
 
 /-- The output map of an appended verifier whose component output maps do not read their input
 statements. The prefix map routes the inputs, and the suffix map reads the routed inputs and the
 suffix messages. -/
 def appendOutputMap
     (map₁ : (p : Path s₁) → View s₁ p →
-      OracleMap (pathBundle inputs s₁ p) (OracleBundle.ofFamily (middle p)))
+      OracleMap (pathBundle inputs s₁ p) (middle p))
     (map₂ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
-      OracleMap (pathBundle (middle p₁) (s₂ p₁) p₂) (OracleBundle.ofFamily (outputs p₁ p₂)))
+      OracleMap (pathBundle (middle p₁) (s₂ p₁) p₂) (outputs p₁ p₂))
     (p : Path (s₁.append s₂)) (v : View (s₁.append s₂) p) :
-    OracleMap (pathBundle inputs (s₁.append s₂) p)
-      (OracleBundle.ofFamily (splitOutputs outputs p)) :=
+    OracleMap (pathBundle inputs (s₁.append s₂) p) (splitOutputs outputs p) :=
   (map₂ (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2 (View.split s₁ s₂ p v).2).comp
     (((map₁ (Path.split s₁ s₂ p).1 (View.split s₁ s₂ p v).1).par
-      (OracleMap.id (OracleBundle.ofFamily (oracleMessageFamily _ (Path.split s₁ s₂ p).2)))).comp
+      (OracleMap.id (oracleMessageBundle _ (Path.split s₁ s₂ p).2))).comp
       (splitPathBundle (inputs := inputs) p))
 
 /-- Compatibility when neither output map reads its input statement. The composite output map is
@@ -179,10 +168,10 @@ def appendOutputMap
 def OutputCompatibility.ofStatementFree (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
     (map₁ : (p : Path s₁) → View s₁ p →
-      OracleMap (pathBundle inputs s₁ p) (OracleBundle.ofFamily (middle p)))
+      OracleMap (pathBundle inputs s₁ p) (middle p))
     (h₁ : ∀ stmt, V₁.outputMap stmt = map₁)
     (map₂ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → View (s₂ p₁) p₂ →
-      OracleMap (pathBundle (middle p₁) (s₂ p₁) p₂) (OracleBundle.ofFamily (outputs p₁ p₂)))
+      OracleMap (pathBundle (middle p₁) (s₂ p₁) p₂) (outputs p₁ p₂))
     (h₂ : ∀ p₁ mid, (V₂ p₁).outputMap mid = map₂ p₁) :
     OutputCompatibility V₁ V₂ where
   outputMap _ := appendOutputMap map₁ map₂
@@ -269,27 +258,24 @@ end OracleVerifier
 /-! ## Chains of stages -/
 
 /-- The plan of a finite chain of passive oracle verifiers from the input statement type `S` and
-the input oracle family `inputs`.
+the input oracle bundle `inputs`.
 
 `nil` is the empty chain. `cons s V draw rest` runs the protocol `s`, whose challenges are answered
 by `draw`, and then, at each path `p` of `s`, the chain `rest p`. The verifier `V` accepts a
-statement of type `T p` with the oracle family `middle p`, which are the inputs of `rest p`.
+statement of type `T p` with the oracle bundle `middle p`, which are the inputs of `rest p`.
 The draw is any program over `ambient` indexed by the challenge node. Public-coin sampling is not
 part of this type; a client that needs it states it separately.
-Statement types and index types lie in `Type`, and every oracle family of
+Statement types lie in `Type`, and every oracle bundle of
 the chain has its queries in `Type`. `StageChain.Compatibility` gives the evidence that
 composes the verifiers. -/
 inductive StageChain {ι : Type} (ambient : OracleSpec ι) :
-    (S : Type) → {I : Type} → {A : I → Type} → OracleFamily.{0, 0, 0} I A →
-      Type 1 where
+    (S : Type) → OracleBundle → Type 1 where
   /-- No stages. -/
-  | nil {S : Type} {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A) :
+  | nil {S : Type} (inputs : OracleBundle) :
       StageChain ambient S inputs
   /-- A first stage, then the remaining stages selected by its path. -/
-  | cons {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
-      (s : OracleProtocol.{0, 0}) {T : Path s → Type} {J : Path s → Type}
-      {B : (p : Path s) → J p → Type}
-      {middle : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  | cons {S : Type} {inputs : OracleBundle}
+      (s : OracleProtocol) {T : Path s → Type} {middle : Path s → OracleBundle}
       (verifier : OracleVerifier ambient s S T inputs middle)
       (draw : (c : ChallengeNode oracleSig s) → OracleComp ambient (challengeSpec oracleSig s c))
       (rest : (p : Path s) → StageChain ambient (T p) (middle p)) :
@@ -301,46 +287,30 @@ variable {ι : Type} {ambient : OracleSpec ι}
 
 /-- The composed protocol: the first stage's protocol, followed at each of its paths by the
 composed protocol of the remaining stages. -/
-def protocol {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
-    StageChain ambient S inputs → OracleProtocol.{0, 0}
+def protocol {S : Type} {inputs : OracleBundle} :
+    StageChain ambient S inputs → OracleProtocol
   | .nil _ => .pure ⟨⟩
   | .cons s _ _ rest => s.append fun p => (rest p).protocol
 
 /-- The composed output statement type at a path. It is the input statement type for no stages,
 and otherwise the output of the remaining stages at the split path. -/
-def Out {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+def Out {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → Path c.protocol → Type
   | .nil _, _ => S
   | .cons _ _ _ rest, p =>
     splitFamily (s₂ := fun p => (rest p).protocol) (fun p₁ => (rest p₁).Out) p
 
-/-- The index type of the composed output oracle family at a path. -/
-def OutIdx {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
-    (c : StageChain ambient S inputs) → Path c.protocol → Type
-  | .nil (I := I) _, _ => I
-  | .cons _ _ _ rest, p =>
-    splitFamily (s₂ := fun p => (rest p).protocol) (fun p₁ => (rest p₁).OutIdx) p
-
-/-- The data types of the composed output oracle family at a path. -/
-def OutData {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
-    (c : StageChain ambient S inputs) → (p : Path c.protocol) → c.OutIdx p → Type
-  | .nil (A := A) _, _ => A
-  | .cons s _ _ rest, p =>
-    (rest (Path.split s (fun p => (rest p).protocol) p).1).OutData
-      (Path.split s (fun p => (rest p).protocol) p).2
-
-/-- The composed output oracle family at a path. It is the inputs for no stages, and otherwise the
-output family of the remaining stages at the split path. -/
-def outputs {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
-    (c : StageChain ambient S inputs) → (p : Path c.protocol) →
-      OracleFamily.{0, 0, 0} (c.OutIdx p) (c.OutData p)
+/-- The composed output oracle bundle at a path. It is the inputs for no stages, and otherwise the
+output bundle of the remaining stages at the split path. -/
+def outputs {S : Type} {inputs : OracleBundle} :
+    (c : StageChain ambient S inputs) → Path c.protocol → OracleBundle
   | .nil inputs, _ => inputs
   | .cons s _ _ rest, p =>
     (rest (Path.split s (fun p => (rest p).protocol) p).1).outputs
       (Path.split s (fun p => (rest p).protocol) p).2
 
 /-- The verifier of no stages: it accepts the input statement and exports the inputs. -/
-def nilVerifier {S : Type} {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A) :
+def nilVerifier {S : Type} (inputs : OracleBundle) :
     OracleVerifier ambient (nil (ambient := ambient) (S := S) inputs).protocol S
       (nil (ambient := ambient) (S := S) inputs).Out inputs
       (nil (ambient := ambient) (S := S) inputs).outputs where
@@ -351,7 +321,7 @@ def nilVerifier {S : Type} {I : Type} {A : I → Type} (inputs : OracleFamily.{0
 there is no evidence. For a first stage, the evidence has two parts: evidence for the remaining
 stages at each path, and a compatibility certificate between the first stage's verifier and the
 composed verifiers of the rest. The composed verifier is their binary append. -/
-def compose {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+def compose {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) →
       (E : Type 1) × (E → OracleVerifier ambient c.protocol S c.Out inputs c.outputs)
   | .nil inputs => ⟨PUnit, fun _ => nilVerifier inputs⟩
@@ -363,20 +333,19 @@ def compose {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0,
 
 /-- The evidence that composes a chain: an output compatibility certificate at every stage
 boundary. -/
-abbrev Compatibility {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} (c : StageChain ambient S inputs) :
+abbrev Compatibility {S : Type} {inputs : OracleBundle} (c : StageChain ambient S inputs) :
     Type 1 :=
   c.compose.1
 
 /-- The composed passive oracle verifier of a chain with its compatibility evidence. -/
-def verifier {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+def verifier {S : Type} {inputs : OracleBundle}
     (c : StageChain ambient S inputs) (e : c.Compatibility) :
     OracleVerifier ambient c.protocol S c.Out inputs c.outputs :=
   c.compose.2 e
 
 /-- The composed challenge implementation, which combines the stages' draws along the path of the
 earlier stages. -/
-def draw {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+def draw {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (ch : ChallengeNode oracleSig c.protocol) →
       OracleComp ambient (challengeSpec oracleSig c.protocol ch)
   | .nil _, ch => ch.val.elim
@@ -384,7 +353,7 @@ def draw {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0}
     combineDraw oracleSig s (fun p => (rest p).protocol) draw₁ (fun p => (rest p).draw) ch
 
 /-- The composed challenge queries answered by the stages' draws; shared queries stay shared. -/
-def challengeImpl {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
+def challengeImpl {S : Type} {inputs : OracleBundle}
     (c : StageChain ambient S inputs) :
     QueryImpl (ambient + challengeSpec oracleSig c.protocol) (OracleComp ambient) :=
   QueryImpl.id' ambient + c.draw
@@ -392,12 +361,12 @@ def challengeImpl {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.
 /-- Run every stage's interaction against a prover of the composed protocol, then fold the
 decisions. The verdict is the composed accepted statement with the composed output data, or
 `none` if a decision rejects. -/
-def run {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
-    (c : StageChain ambient S inputs) (e : c.Compatibility) (stmt : S) (data : ∀ i, A i)
+def run {S : Type} {inputs : OracleBundle}
+    (c : StageChain ambient S inputs) (e : c.Compatibility) (stmt : S) (data : inputs.Data)
     {Out : Transcript oracleSig c.protocol → Type}
     (prover : Prover oracleSig ambient c.protocol Out) :
     OracleComp ambient
-      (Outcome oracleSig c.protocol Out (OracleVerifier.Output c.Out c.OutData)) :=
+      (Outcome oracleSig c.protocol Out (OracleVerifier.Output c.Out c.outputs)) :=
   simulateQ c.challengeImpl ((c.verifier e).run stmt data prover)
 
 /-! ## Statement-free output maps -/
@@ -405,21 +374,19 @@ def run {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} 
 /-- Output maps that do not read the input statement, for every stage of a chain. At a first
 stage, this is a map with the equation that the stage's output map is that map at every
 statement, together with such maps for the remaining stages at each path. -/
-def StatementFree {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} : StageChain ambient S inputs → Type
+def StatementFree {S : Type} {inputs : OracleBundle} : StageChain ambient S inputs → Type
   | .nil _ => PUnit
-  | @StageChain.cons _ _ _ _ _ inputs s _ _ _ middle V _ rest =>
+  | @StageChain.cons _ _ _ inputs s _ middle V _ rest =>
     (map : (p : Path s) → View s p →
-        OracleMap (pathBundle inputs s p) (OracleBundle.ofFamily (middle p))) ×'
+        OracleMap (pathBundle inputs s p) (middle p)) ×'
       (∀ stmt, V.outputMap stmt = map) ×' ∀ p, (rest p).StatementFree
 
 /-- The composed output map of statement-free stage maps. For no stages it forwards the inputs;
 otherwise it is `appendOutputMap` of the first stage's map and the composed map of the rest. -/
-def StatementFree.map {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+def StatementFree.map {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → c.StatementFree → (p : Path c.protocol) →
       View c.protocol p →
-        OracleMap (pathBundle inputs c.protocol p) (OracleBundle.ofFamily (c.outputs p))
+        OracleMap (pathBundle inputs c.protocol p) (c.outputs p)
   | .nil _, _, _, _ => OracleMap.fst _ _
   | .cons _ _ _ rest, m, p, v =>
     OracleVerifier.appendOutputMap (s₂ := fun p => (rest p).protocol) m.1
@@ -427,8 +394,7 @@ def StatementFree.map {S : Type} {I : Type} {A : I → Type}
 
 /-- The compatibility evidence of statement-free stage maps, with the equation that the composed
 verifier's output map is `StatementFree.map` at every statement. -/
-def StatementFree.certify {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+def StatementFree.certify {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (m : c.StatementFree) →
       {e : c.Compatibility // ∀ stmt, (c.verifier e).outputMap stmt = StatementFree.map c m}
   | .nil _, _ => ⟨⟨⟩, fun _ => rfl⟩
@@ -439,23 +405,21 @@ def StatementFree.certify {S : Type} {I : Type} {A : I → Type}
         fun p => (certify (rest p) (m.2.2 p)).2⟩, fun _ => rfl⟩
 
 /-- The compatibility evidence of statement-free stage maps. -/
-abbrev StatementFree.compatibility {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} {c : StageChain ambient S inputs} (m : c.StatementFree) :
+abbrev StatementFree.compatibility {S : Type} {inputs : OracleBundle}
+    {c : StageChain ambient S inputs} (m : c.StatementFree) :
     c.Compatibility :=
   (StatementFree.certify c m).1
 
 /-- With statement-free stage maps, the composed output map does not read the input statement. -/
-theorem StatementFree.outputMap_eq {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} {c : StageChain ambient S inputs} (m : c.StatementFree)
+theorem StatementFree.outputMap_eq {S : Type} {inputs : OracleBundle}
+    {c : StageChain ambient S inputs} (m : c.StatementFree)
     (stmt : S) : (c.verifier m.compatibility).outputMap stmt = StatementFree.map c m :=
   (StatementFree.certify c m).2 stmt
 
 section Laws
 
-variable {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A}
-  (s : OracleProtocol.{0, 0}) {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type}
-  {middle : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+variable {S : Type} {inputs : OracleBundle}
+  (s : OracleProtocol) {T : Path s → Type} {middle : Path s → OracleBundle}
   (V : OracleVerifier ambient s S T inputs middle)
   (draw₁ : (c : ChallengeNode oracleSig s) → OracleComp ambient (challengeSpec oracleSig s c))
   (rest : (p : Path s) → StageChain ambient (T p) (middle p))
@@ -483,7 +447,7 @@ stage's verifier and the composed rest, and the combined draws answer the challe
 `OracleVerifier.run_append` splits it into the first stage's interaction, the rest's interaction,
 the first decision and, after its acceptance only, the rest's decision. This is the split after
 the first stage, not a split at an arbitrary stage. -/
-theorem run_cons (stmt : S) (data : ∀ i, A i)
+theorem run_cons (stmt : S) (data : inputs.Data)
     {Out : Transcript oracleSig (s.append fun p => (rest p).protocol) → Type}
     (prover : Prover oracleSig ambient (s.append fun p => (rest p).protocol) Out) :
     (cons s V draw₁ rest).run ⟨e, compatible⟩ stmt data prover =
@@ -503,32 +467,27 @@ theorem decideWith_cons_of_reject (stmt : S) (p : Path (s.append fun p => (rest 
 end Laws
 
 /-- With no stages, the composed decision accepts the input statement. -/
-@[simp] theorem decideWith_nil {S : Type} {I : Type} {A : I → Type}
-    (inputs : OracleFamily.{0, 0, 0} I A) (e : (nil (ambient := ambient) (S := S)
-      inputs).Compatibility) (stmt : S) (p : Path (nil (ambient := ambient) (S := S)
-      inputs).protocol) (v : View _ p) (data : (pathBundle inputs (nil (ambient := ambient)
-        (S := S) inputs).protocol p).Data) :
+@[simp] theorem decideWith_nil {S : Type} (inputs : OracleBundle)
+    (e : (nil (ambient := ambient) (S := S) inputs).Compatibility) (stmt : S)
+    (p : Path (nil (ambient := ambient) (S := S) inputs).protocol) (v : View _ p)
+    (data : (pathBundle inputs (nil (ambient := ambient) (S := S) inputs).protocol p).Data) :
     ((nil (ambient := ambient) (S := S) inputs).verifier e).decideWith stmt p v data =
       pure (some stmt) := by
   simp only [OracleVerifier.decideWith, verifier, compose, nilVerifier]
   exact simulateQ_pure _ _
 
 /-- With no stages, the composed output data is the input data. -/
-@[simp] theorem outputData_nil {S : Type} {I : Type} {A : I → Type}
-    (inputs : OracleFamily.{0, 0, 0} I A) (e : (nil (ambient := ambient) (S := S)
-      inputs).Compatibility) (stmt : S) (p : Path (nil (ambient := ambient) (S := S)
-      inputs).protocol) (v : View _ p) (data : (pathBundle inputs (nil (ambient := ambient)
-        (S := S) inputs).protocol p).Data) :
+@[simp] theorem outputData_nil {S : Type} (inputs : OracleBundle)
+    (e : (nil (ambient := ambient) (S := S) inputs).Compatibility) (stmt : S)
+    (p : Path (nil (ambient := ambient) (S := S) inputs).protocol) (v : View _ p)
+    (data : (pathBundle inputs (nil (ambient := ambient) (S := S) inputs).protocol p).Data) :
     (((nil (ambient := ambient) (S := S) inputs).verifier e).outputMap stmt p v).f data =
       data.1 := rfl
 
 /-- A chain of one stage decides as that stage: its composed decision is the stage's decision at
 the split path, on the data that `prefixRoute` selects. -/
-theorem decideWith_one {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A}
-    (s : OracleProtocol.{0, 0}) {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type}
-    {middle : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+theorem decideWith_one {S : Type} {inputs : OracleBundle}
+    (s : OracleProtocol) {T : Path s → Type} {middle : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs middle)
     (draw₁ : (c : ChallengeNode oracleSig s) → OracleComp ambient (challengeSpec oracleSig s c))
     (e : (p : Path s) → (nil (ambient := ambient) (S := T p) (middle p)).Compatibility)
@@ -553,16 +512,15 @@ theorem decideWith_one {S : Type} {I : Type} {A : I → Type}
 indexed by the paths of the stages up to that boundary. For a first stage, it is the property at
 that stage's output at each of its paths, together with the properties of the remaining stages
 there. The boundary before the first stage is not included. -/
-def Boundaries (P : Type → Type) {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} : StageChain ambient S inputs → Type
+def Boundaries (P : Type → Type) {S : Type} {inputs : OracleBundle} :
+    StageChain ambient S inputs → Type
   | .nil _ => PUnit
-  | @StageChain.cons _ _ _ _ _ _ s T _ _ _ _ _ rest =>
+  | @StageChain.cons _ _ _ _ s T _ _ _ rest =>
     ((p : Path s) → P (T p)) × ((p : Path s) → (rest p).Boundaries P)
 
 /-- The property at the final boundary of a chain at a composed path. It is the entry property
 for no stages, and otherwise the final property of the remaining stages at the split path. -/
-def Boundaries.final {P : Type → Type} {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+def Boundaries.final {P : Type → Type} {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → P S → c.Boundaries P → (p : Path c.protocol) → P (c.Out p)
   | .nil _, pre, _, _ => pre
   | .cons s _ _ rest, _, b, p =>
@@ -574,8 +532,7 @@ def Boundaries.final {P : Type → Type} {S : Type} {I : Type} {A : I → Type}
 /-- Every stage decision deterministically accepts a statement satisfying the predicate after it.
 This holds from every input statement satisfying the predicate before it, at every path, view and
 bundle data. -/
-def AcceptsDeterministically {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+def AcceptsDeterministically {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (S → Prop) → c.Boundaries (· → Prop) → Prop
   | .nil _, _, _ => True
   | .cons _ V _ rest, pre, b =>
@@ -586,8 +543,7 @@ def AcceptsDeterministically {S : Type} {I : Type} {A : I → Type}
 /-- Every possible result of every stage decision is an accepted statement satisfying the
 predicate after it. This holds from every input statement satisfying the predicate before it, at
 every path, view and bundle data. -/
-def AcceptsOnSupport {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+def AcceptsOnSupport {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (S → Prop) → c.Boundaries (· → Prop) → Prop
   | .nil _, _, _ => True
   | .cons _ V _ rest, pre, b =>
@@ -598,8 +554,7 @@ def AcceptsOnSupport {S : Type} {I : Type} {A : I → Type}
 /-- The deterministic chain law. Suppose every stage decision deterministically accepts a
 statement satisfying its boundary predicate. The composed decision folds the stage decisions after
 all interactions. It then deterministically accepts a statement satisfying the final predicate. -/
-theorem decideWith_accepts_of_deterministic {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem decideWith_accepts_of_deterministic {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (e : c.Compatibility) → (pre : S → Prop) →
       (b : c.Boundaries (· → Prop)) → c.AcceptsDeterministically pre b → (stmt : S) → pre stmt →
       (p : Path c.protocol) → (v : View c.protocol p) →
@@ -621,8 +576,7 @@ theorem decideWith_accepts_of_deterministic {S : Type} {I : Type} {A : I → Typ
 statement satisfying its boundary predicate. The composed decision is the fold of the stage
 decisions after all interactions. Then every possible result of the composed decision is an
 accepted statement satisfying the final predicate. -/
-theorem decideWith_accepts_of_onSupport {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem decideWith_accepts_of_onSupport {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (e : c.Compatibility) → (pre : S → Prop) →
       (b : c.Boundaries (· → Prop)) → c.AcceptsOnSupport pre b → (stmt : S) → pre stmt →
       (p : Path c.protocol) → (v : View c.protocol p) →
@@ -656,8 +610,7 @@ structure DiscreteEvent (α : Type) where
 /-- Every stage decision accepts a statement in the event after it almost surely. This holds from
 every input statement satisfying the predicate before it, at every path, view and bundle data.
 Each boundary event carries the measurable structure of its statement type. -/
-def AcceptsAlmostSurely [ambient.AnswerMeasure] {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+def AcceptsAlmostSurely [ambient.AnswerMeasure] {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (S → Prop) → c.Boundaries DiscreteEvent → Prop
   | .nil _, _, _ => True
   | .cons _ V _ rest, pre, b =>
@@ -678,8 +631,8 @@ when the support law fails, because a rejection can lie in the structural suppor
 and still have probability zero under the chosen measure. It describes a stateless ambient
 interpretation. A persistent runtime with private state needs its own compatibility statement or
 invariant relating it to the chosen measure. -/
-theorem decideWith_accepts_of_almostSurely [ambient.AnswerMeasure] {S : Type} {I : Type}
-    {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem decideWith_accepts_of_almostSurely [ambient.AnswerMeasure] {S : Type}
+    {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (e : c.Compatibility) → (pre : DiscreteEvent S) →
       (b : c.Boundaries DiscreteEvent) → c.AcceptsAlmostSurely pre.holds b → (stmt : S) →
       pre.holds stmt → (p : Path c.protocol) → (v : View c.protocol p) →
@@ -734,14 +687,14 @@ attribute [local implicit_reducible] projectPathAlong projectPathAlongLocalMap
 from the input statement type and the inputs. With a first stage it is a suffix of the remaining
 stages at each path of that stage. `suffixAt` reads the chain at a leaf path, and `Suffix.ofFun`
 builds a suffix from a chain at every leaf path. -/
-def Suffix {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+def Suffix {S : Type} {inputs : OracleBundle} :
     StageChain ambient S inputs → Type 1
   | .nil (S := S) inputs => StageChain ambient S inputs
   | .cons s _ _ rest => (p : Path s) → (rest p).Suffix
 
 /-- The chain of a suffix at a leaf path of `c`. It starts from the composed output statement type
-and the composed output family of `c` at that path. -/
-def suffixAt {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+and the composed output bundle of `c` at that path. -/
+def suffixAt {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → c.Suffix → (p : Path c.protocol) →
       StageChain ambient (c.Out p) (c.outputs p)
   | .nil _, k, _ => k
@@ -751,15 +704,14 @@ def suffixAt {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0
       (Path.split s (fun p => (rest p).protocol) p).2
 
 /-- Concatenation: the stages of `c`, followed at each leaf by the chain of the suffix there. -/
-def «then» {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+def «then» {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → c.Suffix → StageChain ambient S inputs
   | .nil _, k => k
   | .cons s V draw rest, k => .cons s V draw fun p => (rest p).then (k p)
 
 /-- The composed protocol of a concatenation is the composed protocol of the prefix chain,
 followed at each leaf by the composed protocol of the suffix there. -/
-theorem protocol_then {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem protocol_then {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (k : c.Suffix) →
       (c.then k).protocol = c.protocol.append fun p => (c.suffixAt k p).protocol
   | .nil _, _ => rfl
@@ -769,26 +721,24 @@ theorem protocol_then {S : Type} {I : Type} {A : I → Type}
         fun p q => ((rest p).suffixAt (k p) q).protocol).symm
 
 /-- Concatenating after no stages gives the suffix. -/
-@[simp] theorem nil_then {S : Type} {I : Type} {A : I → Type}
-    (inputs : OracleFamily.{0, 0, 0} I A) (k : (nil (ambient := ambient) (S := S) inputs).Suffix) :
+@[simp] theorem nil_then {S : Type} (inputs : OracleBundle)
+    (k : (nil (ambient := ambient) (S := S) inputs).Suffix) :
     (nil inputs).then k = k := rfl
 
 /-- The suffix with no stages at every leaf. -/
-def Suffix.nil {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} :
+def Suffix.nil {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → c.Suffix
   | .nil inputs => StageChain.nil inputs
   | .cons _ _ _ rest => fun p => Suffix.nil (rest p)
 
 /-- Concatenating no stages at every leaf gives the chain. -/
-@[simp] theorem then_suffixNil {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+@[simp] theorem then_suffixNil {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → c.then (Suffix.nil c) = c
   | .nil _ => rfl
   | .cons s V draw rest => congrArg (cons s V draw) (funext fun p => then_suffixNil (rest p))
 
 /-- The suffix with no stages has no stages at every leaf. -/
-@[simp] theorem suffixAt_suffixNil {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+@[simp] theorem suffixAt_suffixNil {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (p : Path c.protocol) →
       c.suffixAt (Suffix.nil c) p = .nil (c.outputs p)
   | .nil _, _ => rfl
@@ -796,8 +746,7 @@ def Suffix.nil {S : Type} {I : Type} {A : I → Type} {inputs : OracleFamily.{0,
 
 
 /-- The decision of a composed verifier does not depend on the compatibility evidence. -/
-theorem decide_verifier {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem decide_verifier {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (e e' : c.Compatibility) →
       (c.verifier e).decide = (c.verifier e').decide
   | .nil _, _, _ => rfl
@@ -806,8 +755,7 @@ theorem decide_verifier {S : Type} {I : Type} {A : I → Type}
 
 /-- The decision of a concatenation on a run, packaged with its statement type, and the equality of
 that statement type with the suffix's. This is the induction behind `decideOn_then`. -/
-theorem then_decideOn_sigma {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem then_decideOn_sigma {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (k : c.Suffix) →
     (tr₁ : Transcript oracleSig c.protocol) →
     (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol) →
@@ -815,7 +763,7 @@ theorem then_decideOn_sigma {S : Type} {I : Type} {A : I → Type}
     HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂) →
     (c.then k).Out tr.path = (c.suffixAt k tr₁.path).Out tr₂.path ∧
     ∀ (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
-      (ek : (c.suffixAt k tr₁.path).Compatibility) (stmt : S) (data : ∀ i, A i),
+      (ek : (c.suffixAt k tr₁.path).Compatibility) (stmt : S) (data : inputs.Data),
       (⟨_, ((c.then k).verifier e).decideOn stmt data tr⟩ :
         (β : Type) × OracleComp ambient (Option β)) =
       ⟨_, (c.verifier e₁).decideOn stmt data tr₁ >>= fun
@@ -893,10 +841,9 @@ theorem then_decideOn_sigma {S : Type} {I : Type} {A : I → Type}
 
 /-- On a run that the composed verifier accepts, the composed output data does not depend on the
 compatibility evidence. -/
-theorem outputOn_eq_of_accepts {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem outputOn_eq_of_accepts {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (e e' : c.Compatibility) → (stmt : S) →
-    (data : ∀ i, A i) → (tr : Transcript oracleSig c.protocol) →
+    (data : inputs.Data) → (tr : Transcript oracleSig c.protocol) →
     (∃ out, some out ∈ support ((c.verifier e).decideOn stmt data tr)) →
     (c.verifier e).outputOn stmt data tr = (c.verifier e').outputOn stmt data tr
   | .nil _, _, _, _, _, _, _ => rfl
@@ -920,15 +867,14 @@ theorem outputOn_eq_of_accepts {S : Type} {I : Type} {A : I → Type}
 /-- The output data of a concatenation on a run, once the prefix chain accepts `mid` and the
 suffix chain accepts from `mid`, is the output data of the suffix chain. This is the statement
 behind `outputOn_then`. -/
-theorem then_outputOn_heq {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+theorem then_outputOn_heq {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) → (k : c.Suffix) →
     (tr₁ : Transcript oracleSig c.protocol) →
     (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol) →
     (tr : Transcript oracleSig (c.then k).protocol) →
     HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂) →
     ∀ (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
-      (ek : (c.suffixAt k tr₁.path).Compatibility) (stmt : S) (data : ∀ i, A i)
+      (ek : (c.suffixAt k tr₁.path).Compatibility) (stmt : S) (data : inputs.Data)
       (mid : c.Out tr₁.path), some mid ∈ support ((c.verifier e₁).decideOn stmt data tr₁) →
       (∃ out, some out ∈ support (((c.suffixAt k tr₁.path).verifier ek).decideOn mid
         ((c.verifier e₁).outputOn stmt data tr₁) tr₂)) →
@@ -981,7 +927,7 @@ theorem then_outputOn_heq {S : Type} {I : Type} {A : I → Type}
           (z : (p : Path s) × Path (rest p).protocol) ×
             Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol ×
             ((rest z.1).suffixAt (k z.1) z.2).Compatibility × (rest z.1).Out z.2 ×
-            (∀ j, (rest z.1).OutData z.2 j)) =
+            ((rest z.1).outputs z.2).Data) =
           ⟨⟨trA.path, trB.path⟩, (tr₂', ek', mid',
             ((rest trA.path).verifier (e₁.1 _)).outputOn m (V.outputOn stmt data trA) trB)⟩ :=
         Sigma.ext hz (heq_tuple4
@@ -991,11 +937,11 @@ theorem then_outputOn_heq {S : Type} {I : Type} {A : I → Type}
             ((rest z.1).suffixAt (k z.1) z.2).Compatibility)
           (Y₃ := fun z : (p : Path s) × Path (rest p).protocol => (rest z.1).Out z.2)
           (Y₄ := fun z : (p : Path s) × Path (rest p).protocol =>
-            ∀ j, (rest z.1).OutData z.2 j) hz htr₂ hek hmid' hd)
+            ((rest z.1).outputs z.2).Data) hz htr₂ hek hmid' hd)
       have hacc' := (congrArg (fun X : (z : (p : Path s) × Path (rest p).protocol) ×
             Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol ×
             ((rest z.1).suffixAt (k z.1) z.2).Compatibility × (rest z.1).Out z.2 ×
-            (∀ j, (rest z.1).OutData z.2 j) =>
+            ((rest z.1).outputs z.2).Data =>
           ∃ out, some out ∈ support ((((rest X.1.1).suffixAt (k X.1.1) X.1.2).verifier
             X.2.2.1).decideOn X.2.2.2.1 X.2.2.2.2 X.2.1)) hX).mp hacc
       refine (OracleVerifier.append_outputOn V (fun p => ((rest p).then (k p)).verifier (e.1 p))
@@ -1004,14 +950,13 @@ theorem then_outputOn_heq {S : Type} {I : Type} {A : I → Type}
       exact (congr_arg_heq (fun X : (z : (p : Path s) × Path (rest p).protocol) ×
             Transcript oracleSig ((rest z.1).suffixAt (k z.1) z.2).protocol ×
             ((rest z.1).suffixAt (k z.1) z.2).Compatibility × (rest z.1).Out z.2 ×
-            (∀ j, (rest z.1).OutData z.2 j) =>
+            ((rest z.1).outputs z.2).Data =>
           (((rest X.1.1).suffixAt (k X.1.1) X.1.2).verifier X.2.2.1).outputOn X.2.2.2.1
             X.2.2.2.2 X.2.1) hX).symm
 
 
 /-- The suffix that runs the chain `k p` at each leaf path `p` of `c`. -/
-def Suffix.ofFun {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+def Suffix.ofFun {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) →
       ((p : Path c.protocol) → StageChain ambient (c.Out p) (c.outputs p)) → c.Suffix
   | .nil _, k => k ⟨⟩
@@ -1022,8 +967,7 @@ def Suffix.ofFun {S : Type} {I : Type} {A : I → Type}
       (k (Path.append s (fun p => (rest p).protocol) p₁ p₂))
 
 /-- The suffix built from a chain at every leaf path gives back that chain at each leaf path. -/
-@[simp] theorem suffixAt_ofFun {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} :
+@[simp] theorem suffixAt_ofFun {S : Type} {inputs : OracleBundle} :
     (c : StageChain ambient S inputs) →
     (k : (p : Path c.protocol) → StageChain ambient (c.Out p) (c.outputs p)) →
     (p : Path c.protocol) → c.suffixAt (Suffix.ofFun c k) p = k p
@@ -1035,8 +979,7 @@ def Suffix.ofFun {S : Type} {I : Type} {A : I → Type}
 
 /-- The final decision type of a concatenation on a run is the final decision type of the suffix
 chain on the suffix part of the run. -/
-theorem Out_then {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} (c : StageChain ambient S inputs) (k : c.Suffix)
+theorem Out_then {S : Type} {inputs : OracleBundle} (c : StageChain ambient S inputs) (k : c.Suffix)
     (tr₁ : Transcript oracleSig c.protocol)
     (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol)
     (tr : Transcript oracleSig (c.then k).protocol)
@@ -1049,13 +992,13 @@ concatenation `c.then k` decides on a run `tr` as the append of the composed ver
 the composed verifiers of the suffix chains decides on the corresponding run of the appended
 protocol. The hypothesis `h` transports `tr` along `protocol_then`. The concatenation and the two
 parts carry their own compatibility evidence, and the decision does not depend on it. -/
-theorem decideOn_then {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} (c : StageChain ambient S inputs) (k : c.Suffix)
+theorem decideOn_then {S : Type} {inputs : OracleBundle} (c : StageChain ambient S inputs)
+    (k : c.Suffix)
     (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
     (ek : (p : Path c.protocol) → (c.suffixAt k p).Compatibility)
     (compatible : OracleVerifier.OutputCompatibility (c.verifier e₁)
       fun p => (c.suffixAt k p).verifier (ek p))
-    (stmt : S) (data : ∀ i, A i) (tr₁ : Transcript oracleSig c.protocol)
+    (stmt : S) (data : inputs.Data) (tr₁ : Transcript oracleSig c.protocol)
     (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol)
     (tr : Transcript oracleSig (c.then k).protocol)
     (h : HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂)) :
@@ -1073,13 +1016,13 @@ theorem decideOn_then {S : Type} {I : Type} {A : I → Type}
 accepts, the composed verifier of `c.then k` exports the same output data as the append of the
 composed verifier of `c` and the composed verifiers of the suffix chains on the corresponding run
 of the appended protocol. -/
-theorem outputOn_then {S : Type} {I : Type} {A : I → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} (c : StageChain ambient S inputs) (k : c.Suffix)
+theorem outputOn_then {S : Type} {inputs : OracleBundle} (c : StageChain ambient S inputs)
+    (k : c.Suffix)
     (e : (c.then k).Compatibility) (e₁ : c.Compatibility)
     (ek : (p : Path c.protocol) → (c.suffixAt k p).Compatibility)
     (compatible : OracleVerifier.OutputCompatibility (c.verifier e₁)
       fun p => (c.suffixAt k p).verifier (ek p))
-    (stmt : S) (data : ∀ i, A i) (tr₁ : Transcript oracleSig c.protocol)
+    (stmt : S) (data : inputs.Data) (tr₁ : Transcript oracleSig c.protocol)
     (tr₂ : Transcript oracleSig (c.suffixAt k tr₁.path).protocol)
     (tr : Transcript oracleSig (c.then k).protocol)
     (h : HEq tr (Transcript.append c.protocol (fun p => (c.suffixAt k p).protocol) tr₁ tr₂))

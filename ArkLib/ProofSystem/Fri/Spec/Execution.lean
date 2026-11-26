@@ -165,10 +165,8 @@ theorem eval_queryCodeword (o : ∀ j, FinalOracleStatement s ω j) (i : Fin (k 
   rw [simulateQ_query]
   dsimp [OracleInterface.simOracle0, OracleInterface.answer, finalOracleStatementInterface]
   unfold finalOracleStatementInterface
-  simp only [finRangeTo, show i.val ≠ k + 1 by omega, ReaderT.run, read, readThe,
-    MonadReaderOf.read, ReaderT.read, Lean.Elab.WF.paramLet, ↓reduceDIte,
-    bind_pure_comp, committedWord]
-  simp only [Functor.map, Pure.pure]
+  simp only [finRangeTo, show i.val ≠ k + 1 by omega, ↓reduceDIte, committedWord]
+  simp only [Functor.map]
   apply eq_of_heq
   apply HEq.trans (cast_heq _ _)
   apply HEq.trans (cast_heq _ _)
@@ -184,10 +182,8 @@ theorem eval_getConst (o : ∀ j, FinalOracleStatement s ω j) :
   rw [simulateQ_query]
   dsimp [OracleInterface.simOracle0, OracleInterface.answer, finalOracleStatementInterface]
   unfold finalOracleStatementInterface
-  simp only [finRangeTo, Fin.val_last, ReaderT.run, read, readThe,
-    MonadReaderOf.read, ReaderT.read, Lean.Elab.WF.paramLet, ↓reduceDIte, cast_cast,
-    bind_pure_comp, finalPolynomial]
-  simp only [Functor.map, Pure.pure]
+  simp only [finRangeTo, Fin.val_last, ↓reduceDIte, cast_cast, finalPolynomial]
+  simp only [Functor.map]
   exact eq_of_heq ((cast_heq _ _).trans ((cast_heq _ _).trans (cast_heq _ _).symm))
 
 /-- Evaluate a local check using precisely the committed answers and the FFT block. -/

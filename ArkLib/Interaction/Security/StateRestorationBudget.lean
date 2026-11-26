@@ -208,11 +208,9 @@ end Knowledge
 section Games
 
 variable {rounds : List Round} {I S Salt W : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {J : Path (protocol rounds) → Type}
-  {B : (p : Path (protocol rounds)) → J p → Type}
-  {Win : S × (∀ i, A i) → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path (protocol rounds) → Type} {Win : S × (∀ i, A i) → Type}
+  {Oᵢ : ∀ i, OracleInterface (A i)}
+  {outputs : Path (protocol rounds) → OracleBundle}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
   {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) →
@@ -221,7 +219,7 @@ variable {rounds : List Round} {I S Salt W : Type} {A : I → Type}
 /-- State-restoration knowledge soundness of a verifier with per-round errors. -/
 theorem stateRestoration_knowledge_soundness_nonuniform
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
-    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (V : OracleVerifier []ₒ (protocol rounds) S T (.ofIndexed A Oᵢ) outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
       T tr.path → W → Prop)
     (F : KnowledgeStateFunction oracleSig (protocol rounds)
@@ -252,9 +250,9 @@ theorem stateRestoration_knowledge_soundness_nonuniform
 /-- State-restoration knowledge soundness with output oracle data and per-round errors. -/
 theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
-    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (V : OracleVerifier []ₒ (protocol rounds) S T (.ofIndexed A Oᵢ) outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
-      OracleVerifier.Output T B tr.path → W → Prop)
+      OracleVerifier.Output T outputs tr.path → W → Prop)
     (F : KnowledgeStateFunction oracleSig (protocol rounds)
     (S × (∀ i, A i)) Wout Win admissible
       relIn validOutput)
@@ -286,7 +284,7 @@ adversary has the same query bound `Q`, so averaging the fixed-coin bound gives
 `Q * max_j errors j + ∑ j, errors j`. -/
 theorem stateRestoration_knowledge_soundness_nonuniform_privateCoins
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
-    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (V : OracleVerifier []ₒ (protocol rounds) S T (.ofIndexed A Oᵢ) outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
       T tr.path → W → Prop)
     (F : KnowledgeStateFunction oracleSig (protocol rounds)
@@ -318,9 +316,9 @@ theorem stateRestoration_knowledge_soundness_nonuniform_privateCoins
 sampler may fail, and every fixed-coin adversary has the same query bound `Q`. -/
 theorem stateRestoration_oracle_knowledge_soundness_nonuniform_privateCoins
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
-    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (V : OracleVerifier []ₒ (protocol rounds) S T (.ofIndexed A Oᵢ) outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
-      OracleVerifier.Output T B tr.path → W → Prop)
+      OracleVerifier.Output T outputs tr.path → W → Prop)
     (F : KnowledgeStateFunction oracleSig (protocol rounds)
       (S × (∀ i, A i)) Wout Win admissible relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
@@ -356,7 +354,7 @@ namespace Interaction.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens OracleComp
 open Interaction.StateRestoration
 
-variable {s : OracleProtocol.{0, 0}} {S : Type} {Win : S → Type}
+variable {s : OracleProtocol} {S : Type} {Win : S → Type}
   {W : S → Transcript oracleSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → W stmt tr → Prop}
@@ -440,7 +438,7 @@ open Interaction.StateRestoration
 
 section ReadOut
 
-variable {Kind : Type} [Finite Kind] {s : OracleProtocol.{0, 0}} {S : Type} {W : Type}
+variable {Kind : Type} [Finite Kind] {s : OracleProtocol} {S : Type} {W : Type}
   {Win : S → Type} {Wout : S → Transcript oracleSig s → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → Wout stmt tr → Prop}
@@ -479,10 +477,9 @@ end ReadOut
 
 variable {rounds : List Round} {I S Salt W Kind : Type} [Finite Kind]
   {A : I → Type} {T : Path (protocol rounds) → Type}
-  {J : Path (protocol rounds) → Type} {B : (p : Path (protocol rounds)) → J p → Type}
-    {Win : S × (∀ i, A i) → Type}
-  {inputs : OracleFamily.{0, 0, 0} I A}
-  {outputs : (p : Path (protocol rounds)) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {Win : S × (∀ i, A i) → Type}
+  {Oᵢ : ∀ i, OracleInterface (A i)}
+  {outputs : Path (protocol rounds) → OracleBundle}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
   {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}
   {validOutput : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) →
@@ -504,9 +501,9 @@ separately. `stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut`
 program realizing `readOut`. -/
 theorem stateRestoration_oracle_knowledge_soundness_nonuniform
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
-    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (V : OracleVerifier []ₒ (protocol rounds) S T (.ofIndexed A Oᵢ) outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
-      OracleVerifier.Output T B tr.path → W → Prop)
+      OracleVerifier.Output T outputs tr.path → W → Prop)
     (M : MeasuredKnowledgeStateFunction Kind oracleSig (protocol rounds) (S × (∀ i, A i)) Wout
       Win admissible relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →
@@ -547,9 +544,9 @@ budget. All bounds are per statement; the statement, the transcript and the prog
 supplied. -/
 theorem stateRestoration_oracle_knowledge_soundness_nonuniform_withReadOut
     [DecidableEq (Key (S × (∀ i, A i)) Salt rounds)]
-    (V : OracleVerifier []ₒ (protocol rounds) S T inputs outputs)
+    (V : OracleVerifier []ₒ (protocol rounds) S T (.ofIndexed A Oᵢ) outputs)
     (relOut : S × (∀ i, A i) → (tr : Transcript oracleSig (protocol rounds)) →
-      OracleVerifier.Output T B tr.path → W → Prop)
+      OracleVerifier.Output T outputs tr.path → W → Prop)
     (M : MeasuredKnowledgeStateFunction Kind oracleSig (protocol rounds) (S × (∀ i, A i)) Wout
       Win admissible relIn validOutput)
     (readOut : (stmt : S × (∀ i, A i)) → (tr : Transcript oracleSig (protocol rounds)) → W →

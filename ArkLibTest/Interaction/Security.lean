@@ -136,7 +136,7 @@ def oracleProver : Prover oracleSig OracleSpec.emptySpec tree (fun _ => Nat) :=
   pure ⟨fun n => n + 5, pure 7⟩
 
 def oracleExtractor : Extractor.OracleStraightLine OracleSpec.emptySpec tree
-    (fun _ : Unit × (∀ i, emptyFamily.Realization i) => Nat) (fun _ => Nat) :=
+    (fun _ : Unit × emptyFamily.Data => Nat) (fun _ => Nat) :=
   fun _ _ out proveLog verifyLog => pure (out + proveLog.length + verifyLog.length)
 
 def oracleHandler : QueryImpl (OracleSpec.emptySpec + challengeSpec oracleSig tree) Id

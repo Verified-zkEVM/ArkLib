@@ -388,6 +388,12 @@ a concrete representation of every adversarial behavior.
 
 ## 8. Universe and notation discipline
 
+Record D2's [universe policy](interaction-rebuild/D2-ownership-and-universes.md#universe-policy)
+supersedes the universe requirements of this section for the interaction core. Data lies in
+`Type` and descriptions of data in `Type 1`. Only the adversary universe, the result universe of a
+generic monad and generic polynomial code keep universe parameters. The universe sentences below
+describe the deleted old layer.
+
 The structural layer is universe-polymorphic: `Oracle.TypeTree.{u} : Type (u + 1)`, and its
 branch and execution paths retain that generality. Later query and runtime layers preserve
 independent universes until an `OracleInterface` or `OracleSpec` operation forces a concrete

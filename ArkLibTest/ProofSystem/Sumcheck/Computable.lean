@@ -232,10 +232,10 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R]
   {deg n d : ℕ} (D : Fin d ↪ R) {ι : Type} (ambient : OracleSpec ι)
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  (inputs : OracleBundle)
   {M : Type} {eval : M → R → R}
 
-/-- Construction over an input family with queries in `Type`. -/
+/-- Construction over an input bundle with queries in `Type`. -/
 def verifierAtQueryUniverse :
     OracleVerifier ambient (protocolOn R M eval n) (Sumcheck.Spec.StatementRound R n 0)
       (fun _ => Sumcheck.Spec.StatementRound R n (Fin.last n)) inputs (fun _ => inputs) :=
@@ -246,7 +246,7 @@ omit [SampleableType R] in
 theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
     (hf : ∀ x r, eval x r = (f x).val.eval r) {κ : Type} {target : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp target)) (stmt : Sumcheck.Spec.StatementRound R n 0)
-    (data : ∀ i, A i) (tr : Transcript oracleSig (protocolOn R M eval n)) :
+    (data : inputs.Data) (tr : Transcript oracleSig (protocolOn R M eval n)) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs (protocolOn R M eval n)
       tr.path).answer (data, oracleMessages _ tr)))
       ((verifierAtQueryUniverse (deg := deg) D ambient inputs).decide stmt _ (toView _ tr)).run =
@@ -255,8 +255,7 @@ theorem simulate_decision {f : M → R⦃≤ deg⦄[X]}
   simulateQ_decideOn D inputs hf amb stmt data tr
 
 /-- The review's constant-evaluation constructor also accepts bundle queries in `Type`. -/
-example (domain : Fin 1 ↪ R) {J : Type} {B : J → Type}
-    (family : OracleFamily.{0, 0, 0} J B) :
+example (domain : Fin 1 ↪ R) (family : OracleBundle) :
     OracleVerifier emptySpec (protocolOn R R (fun x _ => x) 1)
       (Sumcheck.Spec.StatementRound R 1 0)
       (fun _ => Sumcheck.Spec.StatementRound R 1 (Fin.last 1)) family (fun _ => family) :=

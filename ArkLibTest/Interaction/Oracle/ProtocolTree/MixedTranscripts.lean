@@ -16,23 +16,21 @@ namespace Interaction.MixedTranscriptsTests
 
 section UniverseCanary
 
-universe uPosition uTree uBranch uExecution
-
 -- MixedExample 1, restated: oracle positions are `OraclePos`.
-/-- Oracle positions are not pinned to the default universe. -/
-abbrev UniversePosition := OraclePos.{uPosition, uPosition}
+/-- Oracle positions, in `Type 1`. -/
+abbrev UniversePosition := OraclePos
 
 -- MixedExample 2, restated: oracle trees are `OracleProtocol`.
-/-- Oracle protocols are not pinned to the default universe. -/
-abbrev UniverseTypeTree := OracleProtocol.{uTree, uTree}
+/-- Oracle protocols, in `Type 1`. -/
+abbrev UniverseTypeTree := OracleProtocol
 
 -- MixedExample 3, restated: structural branch paths are paths `Path s`.
-/-- Paths elaborate at any universe. -/
-abbrev UniverseBranchPath (s : OracleProtocol.{uBranch}) := Path s
+/-- Branch paths of an oracle protocol. -/
+abbrev UniverseBranchPath (s : OracleProtocol) := Path s
 
 -- MixedExample 4, restated: execution paths are full transcripts `Transcript oracleSig s`.
-/-- Full transcripts elaborate at any universe. -/
-abbrev UniverseExecutionPath (s : OracleProtocol.{uExecution}) := Transcript oracleSig s
+/-- Full transcripts of an oracle protocol. -/
+abbrev UniverseExecutionPath (s : OracleProtocol) := Transcript oracleSig s
 
 end UniverseCanary
 
@@ -72,9 +70,9 @@ example : falsePayload.path = ⟨false, ⟨⟩, ⟨⟩⟩ := rfl
 example : finPayload.path = ⟨true, ⟨⟩, ⟨⟩⟩ := rfl
 
 -- MixedExample 9, restated: tree conversion is removed. The full transcript keeps the oracle
--- message `2 : Fin 3`, which the oracle message family returns. The verifier view erases it.
+-- message `2 : Fin 3`, which `oracleMessages` returns. The verifier view erases it.
 /-- The full transcript keeps the `Fin 3` oracle message. -/
-example : oracleMessages mixedTree finPayload (.inl ⟨⟩) = (2 : Fin 3) := rfl
+example : (oracleMessages mixedTree finPayload).1 = (2 : Fin 3) := rfl
 
 /-- The verifier view of the `true` branch erases the oracle message. Any two oracle messages
 therefore have the same view. -/

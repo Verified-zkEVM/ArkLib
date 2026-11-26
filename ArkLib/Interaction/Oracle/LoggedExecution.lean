@@ -30,10 +30,9 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
 namespace OracleVerifier
 
 section Logged
-variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
-  {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
+  {T : Path s → Type} {inputs : OracleBundle}
+  {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
 /-- Interpreting a logged run in any lawful monad commutes with erasing both logs. -/
@@ -71,9 +70,8 @@ theorem runtime_runWithLog_erase {κ : Type} {Import : OracleSpec.{0, 0} κ}
 end Logged
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
-  {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {T : Path s → Type} {inputs : OracleBundle}
+  {outputs : Path s → OracleBundle}
 
 /-- Run the verifier's decision in a monad with labelled failures, and log every query that got
 an answer before a failure. The failing query has no answer and adds no log entry. The state

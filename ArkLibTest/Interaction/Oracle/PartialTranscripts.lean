@@ -50,12 +50,13 @@ example : sentPrefix true ≠ sentPrefix false := by
 
 -- Prefix 3, additional check: on every completed path the send has an oracle, which the run's
 -- oracle messages answer.
-/-- Every completed path of `mixed` has the sent oracle. -/
-def sentSlot : (p : Path mixed) → OracleMessageIndex mixed p
-  | ⟨⟨⟩, _, ⟨⟩⟩ => .inl ⟨⟩
+/-- Every completed path of `mixed` has the sent oracle, the first component of the path's oracle
+message data. -/
+def sentMessage : (p : Path mixed) → (oracleMessageBundle mixed p).Data → Bool
+  | ⟨⟨⟩, _, ⟨⟩⟩, data => data.1
 
 example (message : Bool) (choice : Fin 3) :
-    oracleMessages mixed ⟨message, choice, ⟨⟩⟩ (sentSlot _) = message := rfl
+    sentMessage _ (oracleMessages mixed ⟨message, choice, ⟨⟩⟩) = message := rfl
 
 -- Prefix 3 and 4, availability on `mixed` itself: the root oracle node is not sent at the empty
 -- partial transcript, and it is sent once the Boolean has been sent.
@@ -118,7 +119,7 @@ theorem oraclePrefix_append :
 
 /-- A decision at the crossed-send boundary can query the oracle without choosing a future. -/
 def prefixQuery : OracleComp (oracleMessageSpec oraclePrefix ⟨⟨⟩, ⟨⟩⟩) Bool :=
-  liftM ((oracleMessageSpec oraclePrefix ⟨⟨⟩, ⟨⟩⟩).query ⟨.inl ⟨⟩, ()⟩)
+  liftM ((oracleMessageSpec oraclePrefix ⟨⟨⟩, ⟨⟩⟩).query (.inl ()))
 
 /-- At the crossed-send boundary, the oracle answers from that prefix's own oracle message. -/
 theorem crossed_send_answer (message : Bool) :

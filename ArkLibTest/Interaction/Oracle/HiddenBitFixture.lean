@@ -26,8 +26,8 @@ namespace Interaction.HiddenBitFixture
 abbrev bitAmbient : OracleSpec Bool := Bool →ₒ Bool
 
 /-- One bit-valued oracle slot, used for the input and the exports. -/
-@[instance_reducible] def bits : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def bits : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Bool) fun _ => OracleInterface.instDefault
 
 /-- The input slot holds `false`. -/
 def falseData : ∀ _ : Unit, Bool := fun _ => false
@@ -62,7 +62,7 @@ abbrev secondBundle (guess : Bool) := pathBundle bits bitSecond ⟨guess, ⟨⟩
 def xorMap (guess : Bool) : OracleMap (secondBundle guess) bits where
   f x _ := guess ^^ (show Bool from x.1 ())
   impl _ := do
-    let pad : Bool ← (OracleMap.fst bits (oracleMessageFamily bitSecond ⟨guess, ⟨⟩⟩)).impl ⟨(), ()⟩
+    let pad : Bool ← (OracleMap.fst bits (oracleMessageBundle bitSecond ⟨guess, ⟨⟩⟩)).impl ⟨(), ()⟩
     pure (guess ^^ pad)
   law _ _ := rfl
 

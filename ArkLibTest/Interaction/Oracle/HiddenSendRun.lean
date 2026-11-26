@@ -21,8 +21,8 @@ namespace Interaction.HiddenSendRunTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Unit
 
 /-- No input oracles. -/
-def noInputs : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
-  ⟨fun i => i.elim⟩
+def noInputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun i : PEmpty => PEmpty.elim i) fun i => i.elim
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim
@@ -46,8 +46,8 @@ def prover (payload hidden : Nat) : Prover oracleSig ambient phased (fun _ => Na
 sent value or rejects. -/
 def verifier (accept : Bool) :
     OracleVerifier ambient phased Unit (fun _ => Nat)
-      (noInputs : OracleFamily.{0, 0, 0} _ _)
-      (fun _ => (noInputs : OracleFamily.{0, 0, 0} _ _)) where
+      noInputs
+      (fun _ => noInputs) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -56,7 +56,7 @@ def verifier (accept : Bool) :
           ambient + (pathBundle noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
       let sent : Nat ← liftM (OracleSpec.query (spec :=
         ambient + (pathBundle noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec)
-        (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+        (.inr (.inr (.inl ()))))
       for t in [6, 7] do
         let _ ← liftM (OracleSpec.query (spec :=
           ambient + (pathBundle noInputs phased ⟨b, c, ⟨⟩, ⟨⟩⟩).spec) (.inl t))
@@ -84,13 +84,13 @@ def summary (accept : Bool) (payload hidden : Nat) (bit : Bool) :
   (z.1.1, z.1.2.1, z.1.2.2.map Prod.fst, z.2)
 
 -- PhasedRun 4: for every oracle message `payload`, private output and challenge, the run's full
--- transcript is `⟨true, bit, payload⟩`. Its oracle message family returns `payload`, and its
+-- transcript is `⟨true, bit, payload⟩`. Its `oracleMessages` returns `payload`, and its
 -- verifier view erases it. The decision reads the oracle message and accepts with it.
 example (payload hidden : Nat) (bit : Bool) : summary true payload hidden bit =
     (⟨true, bit, payload, ⟨⟩⟩, hidden, some payload, [9, 9, 1, 4, 5, 2, 3, 6, 7]) := rfl
 
 example (payload : Nat) (bit : Bool) :
-    oracleMessages phased ⟨true, bit, payload, ⟨⟩⟩ (.inl ⟨⟩) = payload := rfl
+    (oracleMessages phased ⟨true, bit, payload, ⟨⟩⟩).1 = payload := rfl
 
 example (payload : Nat) (bit : Bool) :
     (toView phased ⟨true, bit, payload, ⟨⟩⟩).val = ⟨true, bit, ⟨⟩, ⟨⟩⟩ := rfl

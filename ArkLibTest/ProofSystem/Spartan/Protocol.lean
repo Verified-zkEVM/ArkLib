@@ -19,7 +19,6 @@ instance : Fact (Nat.Prime 5) := ⟨by decide⟩
 
 abbrev size : R1CS.Size := ⟨2, 2, 1, by decide⟩
 abbrev params : PublicParams := PublicParams.forSize size
-abbrev emptySpec : OracleSpec.{0, 0} PEmpty := []ₒ
 
 local instance : ∀ i, OracleInterface (R1CS.OracleStatement F size i) :=
   WitnessAttachment.sourceOracleInterface size
@@ -47,17 +46,17 @@ def challenges : (Spartan.pSpec (R := F) size).Challenges
 /-- Run the composed honest prover, including witness attachment and both sumchecks. -/
 def honestRun :=
   (simulateQ (fixedChallengeImpl challenges)
-    ((Spartan.oracleReduction size emptySpec).prover.run
+    ((Spartan.oracleReduction size emptySpec0).prover.run
       (publicInput, matrices) witness)).runEmpty
 
 /-- Run the composed oracle verifier on the actual honest transcript. -/
 def accepts : Bool :=
-  ((Spartan.oracleReduction size emptySpec).verifier.toVerifier.run
+  ((Spartan.oracleReduction size emptySpec0).verifier.toVerifier.run
     (publicInput, matrices) honestRun.1).run.runEmpty.isSome
 
 /-- Run the certified executable extractor on the actual honest transcript. -/
 def recoveredWitness : Option (R1CS.Witness F size) :=
-  ((Spartan.straightlineExtractor size emptySpec)
+  ((Spartan.straightlineExtractor size emptySpec0)
     (publicInput, matrices) () honestRun.1 [] []).run.runEmpty
 
 /-- info: (true, some 2) -/

@@ -23,7 +23,8 @@ namespace Interaction.StateRestorationTests
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
+  spec := fun _ => Fin 8
+  answer m _ := m
 
 /-- One round: a `Fin 8` oracle message, then a uniform `Bool` challenge. -/
 def round : Round where
@@ -36,8 +37,8 @@ def round : Round where
 def rounds : List Round := [round]
 
 /-- The output is one `Fin 8` oracle. -/
-@[instance_reducible] def outputFamily : OracleFamily PUnit (fun _ => Fin 8) :=
-  singletonFamily messageInterface
+@[instance_reducible] def outputFamily : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Fin 8) fun _ => messageInterface
 
 /-- The input statement: a number with no input oracles. -/
 abbrev Stmt : Type := Nat × (∀ i : PEmpty.{1}, (PEmpty.elim i : Type))
@@ -61,12 +62,15 @@ def verifier : OracleVerifier []ₒ (protocol rounds) Nat (fun _ => Fin 8)
   decide _ p v := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact if (show Bool from v.1.2.1) then
-      pathLift []ₒ emptyFamily (s := protocol rounds) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      pathLift []ₒ emptyFamily (s := protocol rounds) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
     else failure
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-    exact (OracleMap.embedding (oracleMessageFamily (protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+    exact
+      { f := fun x _ => x.2.1
+        impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds)
+          ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec.query (.inr (.inl q.2)))
+        law := fun _ _ => rfl }
 
 /-- The transcript with message `m` and challenge `c`. -/
 def path (m : Fin 8) (c : Bool) : Transcript oracleSig (protocol rounds) := ⟨m, ⟨c, ⟨⟩⟩⟩
@@ -98,7 +102,7 @@ theorem oracleObservation_false (z : Nat) (m : Fin 8) :
 
 -- Row 17 (StateRestoration L258): the `false` branch returns no claim in the fixed `Option`
 -- output, so no output relation can hold there.
-example (z : Nat) (m : Fin 8) (rel : Fin 8 × (PUnit.{1} → Fin 8) → Prop) :
+example (z : Nat) (m : Fin 8) (rel : Fin 8 × (Unit → Fin 8) → Prop) :
     ¬ ∃ claim, closedVerdict verifier (stmt z) (path m false) = some claim ∧
       rel claim := by
   rw [oracleObservation_false]
@@ -178,7 +182,7 @@ def constantPlainVerifier : OracleVerifier []ₒ (protocol rounds) Nat (fun
   decide _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
     exact liftM (pathLift []ₒ emptyFamily (s := protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩)
+      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ()))
   outputMap := verifier.outputMap
 
 /-- Replaying the plain verifier returns the oracle message for every challenge. -/
@@ -407,7 +411,7 @@ theorem actual_game_bound :
 
 /-- The oracle output relation: the witness is at most the output oracle's data. -/
 def oracleRout (_ : Stmt) (_ : Transcript oracleSig (protocol rounds))
-    (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
+    (claim : Fin 8 × (Unit → Fin 8)) (w : Nat) : Prop :=
   w ≤ (claim.2 ⟨⟩).val
 
 -- Row 15 (StateRestoration L223, oracleOutputLaw).
@@ -425,7 +429,7 @@ theorem oracleOutputLaw (z : Stmt) (tr : Transcript oracleSig (protocol rounds))
 
 /-- An accepted closed claim related to the witness is a valid output. -/
 theorem closedOutputLaw (z : Stmt) (tr : Transcript oracleSig (protocol rounds))
-    (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat)
+    (claim : Fin 8 × (Unit → Fin 8)) (w : Nat)
     (accepted : closedVerdict verifier z tr = some claim)
     (related : oracleRout z tr claim w) : valid z tr w :=
   (outputLaw z tr w).mp ((oracleOutputLaw z tr w).mpr ⟨claim, accepted, related⟩)
@@ -630,17 +634,20 @@ def selectedMessage : (b : Bool) → Fin 8 → SelectedValue b
 /-- A value in the nine-element carrier answers its unit query with itself. -/
 @[instance_reducible] def wideInterface : OracleInterface (Fin 9) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 9, impl := fun _ => do return (← read) }
+  spec := fun _ => Fin 9
+  answer m _ := m
+
+/-- The output oracle interface on the carrier selected by the authored Boolean. -/
+@[instance_reducible] def varyingInterface : (b : Bool) → OracleInterface (SelectedValue b)
+  | true => messageInterface
+  | false => wideInterface
 
 /-- The output oracle carrier and interface follow the authored Boolean too. -/
-@[instance_reducible] def varyingFamily :
-    (b : Bool) → OracleFamily PUnit (fun _ => SelectedValue b)
-  | true => outputFamily
-  | false => singletonFamily wideInterface
+@[instance_reducible] def varyingFamily (b : Bool) : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => SelectedValue b) fun _ => varyingInterface b
 
 /-- The frozen output oracle always has its original eight-element carrier. -/
-@[instance_reducible] def selectedFamily (_b : Bool) :
-    OracleFamily PUnit.{1} (fun _ => Fin 8) := outputFamily
+@[instance_reducible] def selectedFamily (_b : Bool) : OracleBundle := outputFamily
 
 /-- Read the original oracle message and return it in the selected carrier. -/
 def readSelected (b : Bool) (p : Path (protocol rounds)) :
@@ -649,7 +656,7 @@ def readSelected (b : Bool) (p : Path (protocol rounds)) :
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   exact do
     let m ← pathLift []ₒ emptyFamily (s := protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
     pure (selectedMessage b m)
 
 /-- The selected output oracle answers from the actual sent oracle message. -/
@@ -658,21 +665,27 @@ def varyingMap (b : Bool) (p : Path (protocol rounds)) :
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
   cases b
   · exact
-      { f := fun x _ => selectedMessage false (x.2 (.inl ⟨⟩))
+      { f := fun x _ => selectedMessage false x.2.1
         impl := fun _ => do
-          let m ← (OracleMap.snd emptyFamily (oracleMessageFamily (protocol rounds)
-            ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+          let m ← (OracleMap.snd emptyFamily (oracleMessageBundle (protocol rounds)
+            ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl (.inl ())
           pure (selectedMessage false m)
         law := fun _ _ => rfl }
-  · exact (OracleMap.embedding (oracleMessageFamily (protocol rounds)
-      ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+  · exact
+      { f := fun x _ => x.2.1
+        impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds)
+          ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec.query (.inr (.inl q.2)))
+        law := fun _ _ => rfl }
 
 /-- Frozen output-oracle data is routed unchanged from the sent oracle message. -/
 def selectedMap (_b : Bool) (p : Path (protocol rounds)) :
     OracleMap (pathBundle emptyFamily (protocol rounds) p) outputFamily := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
-  exact (OracleMap.embedding (oracleMessageFamily (protocol rounds)
-    ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩) (fun _ => .inl ⟨⟩)).comp (OracleMap.snd _ _)
+  exact
+    { f := fun x _ => x.2.1
+      impl := fun q => liftM ((pathBundle emptyFamily (protocol rounds)
+        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩).spec.query (.inr (.inl q.2)))
+      law := fun _ _ => rfl }
 
 /-- The suffix of the plain verifier at a fixed authored selector. -/
 def plainSuffixVerifier (b : Bool) : OracleVerifier []ₒ (protocol rounds) Nat
@@ -728,8 +741,8 @@ theorem selectedScriptedRun_eq (b c : Bool) :
   cases b <;> cases c <;> kernel_rfl
 
 /-- The exact dependent result type of a selected party run. -/
-abbrev SelectedRunResult := Outcome oracleSig selectedProtocol (fun _ => PUnit.{1})
-  (OracleVerifier.Output SelectedOutput (fun _ (_ : PUnit.{1}) => Fin 8))
+abbrev SelectedRunResult := Outcome oracleSig selectedProtocol (fun _ => Unit)
+  (OracleVerifier.Output SelectedOutput fun p => selectedFamily p.1)
 
 /-- The plain replay keeps the frozen message and challenge values, with a real dependent output. -/
 def replayResult (b c : Bool) : OracleComp []ₒ (Nat × Bool × Nat) :=
@@ -779,7 +792,7 @@ theorem oracleReplayResult_eq (b c : Bool) :
 #eval oracleReplayResult true false
 
 /-- The selected suffix's accepted statement and output oracle data. -/
-def selectedClaim (b : Bool) (m : Fin 8) : SelectedValue b × (PUnit.{1} → Fin 8) :=
+def selectedClaim (b : Bool) (m : Fin 8) : SelectedValue b × (Unit → Fin 8) :=
   (selectedMessage b m, fun _ => m)
 
 /-- The full selected verdict and the suffix game use exactly the same accepted claim. -/
@@ -804,7 +817,7 @@ theorem oracleVerdict_prepend (b : Bool) (z : Stmt)
 
 /-- The closed relation reads the output oracle without encoding its selected carrier. -/
 def selectedRelation (b : Bool) (_ : Stmt) (_ : Transcript oracleSig (protocol rounds))
-    (claim : SelectedValue b × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
+    (claim : SelectedValue b × (Unit → Fin 8)) (w : Nat) : Prop :=
   w ≤ (claim.2 ⟨⟩).val
 
 /-- The original leaf-state equivalence holds in both authored finite carriers. -/
@@ -826,7 +839,7 @@ theorem selectedOracleOutputLaw (b : Bool) (z : Stmt)
 /-- An accepted selected claim satisfies the original leaf knowledge state. -/
 theorem selectedOutputLaw (b : Bool) (z : Stmt)
     (tr : Transcript oracleSig (protocol rounds))
-    (claim : SelectedValue b × (PUnit.{1} → Fin 8)) (w : Nat)
+    (claim : SelectedValue b × (Unit → Fin 8)) (w : Nat)
     (accepted : closedVerdict (oracleSuffixVerifier b) z tr = some claim)
     (related : selectedRelation b z tr claim w) : valid z tr w :=
   (outputLaw z tr w).mp ((selectedOracleOutputLaw b z tr w).mpr ⟨claim, accepted, related⟩)
@@ -836,7 +849,7 @@ def selectedClosedGame (b : Bool)
     (adv : OracleComp (oracleSpec Stmt Unit rounds) (Stmt × Messages Unit rounds × Nat)) :
     OracleComp (oracleSpec Stmt Unit rounds)
       (Stmt × (tr : Transcript oracleSig selectedProtocol) ×
-        Option (SelectedValue tr.1 × (PUnit.{1} → Fin 8)) × Nat) :=
+        Option (SelectedValue tr.1 × (Unit → Fin 8)) × Nat) :=
   (fun r => ⟨r.1, ⟨b, r.2.1⟩,
     closedVerdict selectedVerifier r.1 ⟨b, r.2.1⟩, r.2.2⟩) <$>
     restoredExecution rounds adv
@@ -951,7 +964,7 @@ def selectedDraw : QueryImpl (challengeSpec oracleSig selectedProtocol) ProbComp
 
 /-- The prover authors its selector and oracle message before receiving the sampled challenge. -/
 def selectedProbProver (b : Bool) (m : Fin 8) :
-    Focal oracleSig ProbComp selectedProtocol (fun _ => PUnit.{1}) :=
+    Focal oracleSig ProbComp selectedProtocol (fun _ => Unit) :=
   pure ⟨b, pure ⟨m, pure fun _ => pure ⟨⟩⟩⟩
 
 /-- The full interaction's challenge marginal is uniform for every input, selector and message. -/
@@ -1006,7 +1019,7 @@ example (b c : Bool) (z : Stmt) (m : Fin 8) :
 /-- A full restoration game whose returned output oracle family actually varies by shape path. -/
 def varyingGame (b : Bool) : OracleComp (oracleSpec Stmt Unit rounds)
     (Stmt × (tr : Transcript oracleSig selectedProtocol) ×
-      Option (SelectedValue tr.1 × (PUnit.{1} → SelectedValue tr.1)) × Nat) :=
+      Option (SelectedValue tr.1 × (Unit → SelectedValue tr.1)) × Nat) :=
   (fun r => ⟨r.1, ⟨b, r.2.1⟩, closedVerdict varyingVerifier r.1 ⟨b, r.2.1⟩,
     r.2.2⟩) <$> restoredExecution rounds adversary
 
@@ -1020,7 +1033,7 @@ example (b : Bool) (table : Table Stmt Unit rounds) :
 
 /-- Rejection on false has no related claim in either authored output carrier. -/
 example (b : Bool) (z : Stmt) (m : Fin 8)
-    (relation : SelectedValue b × (PUnit.{1} → Fin 8) → Prop) :
+    (relation : SelectedValue b × (Unit → Fin 8) → Prop) :
     ¬ ∃ claim, closedVerdict selectedVerifier z (selectedPath b m false) = some claim ∧
       relation claim := by
   erw [selectedVerdict]
@@ -1032,8 +1045,8 @@ section GeneralMoves
 
 universe uA
 
-variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
-  {S : Type} {Win : S → Type} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly0}
+  {S : Type} {Win : S → Type} {a : P.A} {next : P.B a → FreeM P Unit}
   {W : S → Transcript l (.liftBind a next) → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {valid : (stmt : S) → (tr : Transcript l (.liftBind a next)) → W stmt tr → Prop}

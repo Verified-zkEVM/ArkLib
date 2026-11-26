@@ -29,7 +29,7 @@ local instance : ∀ i, SampleableType ((protocol ++ₚ protocol).Challenge i) :
   ProtocolSpec.instSampleableTypeChallengeAppend (pSpec₁ := protocol) (pSpec₂ := protocol)
 
 /-- Each component really rejects one of its two possible challenges. -/
-def stage (expected : Bool) : Verifier emptySpec.{0, 0} Bool Bool protocol :=
+def stage (expected : Bool) : Verifier emptySpec0 Bool Bool protocol :=
   ⟨fun stmt tr => if tr 0 == expected then pure stmt else failure⟩
 
 def guarded (expected : Bool) : (stage expected).GuardedForm :=
@@ -39,7 +39,7 @@ instance (expected : Bool) : (stage expected).IsGuarded := (guarded expected).is
 
 abbrev language : Set Bool := {true}
 
-variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl emptySpec.{0, 0} (StateT σ ProbComp))
+variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl emptySpec0 (StateT σ ProbComp))
 
 /-- A successful component leaves the statement unchanged, so it cannot produce a valid
 statement from an invalid one, for any prover or initial state. -/
@@ -72,7 +72,7 @@ example : (stage true).run false (fun _ => false) = failure := rfl
 example : (stage false).run false (fun _ => false) = pure false := rfl
 
 /-- A directly defined two-round adversary, with both challenges in its private state. -/
-def adversary : Prover emptySpec.{0, 0} Bool Unit Bool Unit (protocol ++ₚ protocol) where
+def adversary : Prover emptySpec0 Bool Unit Bool Unit (protocol ++ₚ protocol) where
   PrvState := fun _ => Bool × Bool
   input := fun _ => (false, false)
   sendMessage := fun ⟨i, hi⟩ _ => False.elim (by fin_cases i <;> cases hi)
@@ -141,7 +141,7 @@ theorem chain_knowledgeWith :
     (init := init)
 
 /-- A rejecting suffix makes composition meaningful even when intermediate witnesses are empty. -/
-def reject : Verifier emptySpec.{0, 0} Bool Bool protocol := ⟨fun _ _ => failure⟩
+def reject : Verifier emptySpec0 Bool Bool protocol := ⟨fun _ _ => failure⟩
 
 def rejectGuarded : reject.GuardedForm :=
   ⟨fun _ _ => false, fun x _ => x, fun _ _ => rfl⟩
@@ -196,7 +196,7 @@ run_cmd do
     throwError "Folded extraction failed"
   unless chainExtract true false (t ++ₜ (f ++ₜ emptyTranscript)) == none do
     throwError "Folded extraction did not propagate None"
-  let emptyExtract := Verifier.seqComposeExtract (oSpec := emptySpec.{0, 0})
+  let emptyExtract := Verifier.seqComposeExtract (oSpec := emptySpec0)
     (fun _ : Fin 1 => Bool) (fun _ => Bool)
     (n := fun i => Fin.elim0 i) (pSpec := fun i => Fin.elim0 i)
     (fun i => Fin.elim0 i) (fun i => Fin.elim0 i) (fun i => Fin.elim0 i)

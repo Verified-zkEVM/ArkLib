@@ -21,8 +21,8 @@ namespace Interaction.RoutingTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- Two scalar input slots; slot `true` is never exported. -/
-@[instance_reducible] def inputs : OracleFamily.{0, 0, 0} Bool (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def inputs : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Bool => Nat) fun _ => OracleInterface.instDefault
 
 /-- Input data: slot `false` holds 3, slot `true` holds the hidden value. -/
 def inputData (hidden : Nat) : ∀ _ : Bool, Nat
@@ -32,8 +32,8 @@ def inputData (hidden : Nat) : ∀ _ : Bool, Nat
 /-- Only the first coordinate of a sent pair is observable. -/
 @[reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  spec := fun _ => Nat
+  answer m _ := m.1
 
 /-- The prefix sends one pair oracle. -/
 @[instance_reducible] def firstProtocol : OracleProtocol :=
@@ -48,20 +48,20 @@ def inputData (hidden : Nat) : ∀ _ : Bool, Nat
 abbrev combined : OracleProtocol := firstProtocol.append (fun _ => secondProtocol)
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exported : OracleFamily.{0, 0, 0} PUnit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def exported : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The prefix bundle on its only path. -/
 abbrev prefixBundle := pathBundle inputs firstProtocol ⟨⟨⟩, ⟨⟩⟩
 
 /-- Export input slot `false` plus the observable coordinate of the prefix message. -/
 def exportMap : OracleMap prefixBundle exported where
-  f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
+  f x _ := (show Nat from x.1 false) + (show Nat × Nat from x.2.1).1
   impl _ := do
     let a : Nat ←
-      (OracleMap.fst inputs (oracleMessageFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨false, ()⟩
+      (OracleMap.fst inputs (oracleMessageBundle firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨false, ()⟩
     let b : Nat ←
-      (OracleMap.snd inputs (oracleMessageFamily firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+      (OracleMap.snd inputs (oracleMessageBundle firstProtocol ⟨⟨⟩, ⟨⟩⟩)).impl (.inl ())
     pure (a + b)
   law x q := by
     rfl
@@ -100,7 +100,7 @@ def prefixVerifier :
     rcases p with ⟨⟨⟩, ⟨⟩⟩
     exact do
       let _ ← liftM ((ambient + prefixBundle.spec).query (.inl 10))
-      let n : Nat ← pathLift ambient inputs (s := firstProtocol) ⟨⟨⟩, ⟨⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let n : Nat ← pathLift ambient inputs (s := firstProtocol) ⟨⟨⟩, ⟨⟩⟩ (.inl ())
       pure n
   outputMap _ p _ := by
     rcases p with ⟨⟨⟩, ⟨⟩⟩
@@ -119,7 +119,7 @@ def suffixVerifier : OracleVerifier ambient secondProtocol Nat (fun _ => Nat × 
     exact OptionT.mk do
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 30))
       let e : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
-      let m : Nat ← pathLift ambient exported (s := secondProtocol) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+      let m : Nat ← pathLift ambient exported (s := secondProtocol) ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 40))
       let _ ← liftM ((ambient + suffixBundle.spec).query (.inl 60))
       pure (if e = m then some (stmt, m) else none)
@@ -196,12 +196,12 @@ abbrev closingBundle := pathBundle exported closingSuffix ⟨⟨⟩, ⟨⟨⟩, 
 
 /-- The final export adds the prefix export to the fresh observable coordinate. -/
 def closingMap : OracleMap closingBundle exported where
-  f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2 (.inl ⟨⟩)).1
+  f x _ := x.1 ⟨⟩ + (show Nat × Nat from x.2.1).1
   impl _ := do
     let old : Nat ← (OracleMap.fst exported
-      (oracleMessageFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨⟨⟩, ()⟩
+      (oracleMessageBundle closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨⟨⟩, ()⟩
     let fresh : Nat ← (OracleMap.snd exported
-      (oracleMessageFamily closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl ⟨.inl ⟨⟩, ()⟩
+      (oracleMessageBundle closingSuffix ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩)).impl (.inl ())
     pure (old + fresh)
   law _ _ := by
     rfl
@@ -215,7 +215,7 @@ def closingVerifier : OracleVerifier ambient closingSuffix Nat (fun _ => Nat) ex
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 30))
       let old : Nat ← liftM ((ambient + closingBundle.spec).query (.inr (.inl ⟨⟨⟩, ()⟩)))
       let fresh : Nat ← pathLift ambient exported (s := closingSuffix)
-        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ ⟨.inl ⟨⟩, ()⟩
+        ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩ (.inl ())
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 40))
       let _ ← liftM ((ambient + closingBundle.spec).query (.inl 60))
       pure (old + fresh)
@@ -338,35 +338,31 @@ end Interaction.DependentRoutingTests
 
 universe v
 
-/-- Ambient routing permits distinct family indices and a larger lawful target
+/-- Ambient routing permits distinct input and output bundles and a larger lawful target
 monad. -/
-example {ι : Type} {I : Type} {J : Type}
-    {ambient : OracleSpec.{0, 0} ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
-    {A : I → Type} {B : J → Type}
-    {inputs : OracleFamily.{0, 0, 0} I A} {outputs : OracleFamily.{0, 0, 0} J B}
-    (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : ∀ i, A i)
+example {ι : Type}
+    {ambient : OracleSpec ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {inputs outputs : OracleBundle}
+    (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)
     {α : Type} (program : OracleComp (ambient + outputs.spec) α) :
-    simulateQ (QueryImpl.addLift handler (inputs.behaviorOfRealizations data) :
+    simulateQ (QueryImpl.addLift handler (inputs.answer data) :
         QueryImpl (ambient + inputs.spec) m)
         (simulateQ (route.withAmbient ambient) program) =
-      simulateQ (QueryImpl.addLift handler (outputs.behaviorOfRealizations (route.f data)) :
+      simulateQ (QueryImpl.addLift handler (outputs.answer (route.f data)) :
         QueryImpl (ambient + outputs.spec) m) program :=
   OracleMap.simulate_withAmbient_addLift handler route data program
 
-/-- Split execution uses input indices, statements and output oracle indices in `Type`. Both
-output families may depend on their paths. -/
+/-- Split execution uses input bundles, statements and output oracle bundles in `Type`. Both
+output bundles may depend on their paths. -/
 example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
-    {I : Type} {A : I → Type} {inputs : OracleFamily.{0, 0, 0} I A} {S : Type}
+    {inputs : OracleBundle} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
-    {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
-    {K : (p : Path s₁) → Path (s₂ p) → Type}
-    {C : (p : Path s₁) → (q : Path (s₂ p)) → K p q → Type}
-    {outputs : (p : Path s₁) → (q : Path (s₂ p)) → OracleFamily.{0, 0, 0} (K p q) (C p q)}
+    {middle : Path s₁ → OracleBundle}
+    {outputs : (p : Path s₁) → Path (s₂ p) → OracleBundle}
     {ambient : OracleSpec Nat}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
-    (compatible : OracleVerifier.OutputCompatibility V₁ V₂) (stmt : S) (data : ∀ i, A i)
+    (compatible : OracleVerifier.OutputCompatibility V₁ V₂) (stmt : S) (data : inputs.Data)
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
     (prover : Prover oracleSig ambient (s₁.append s₂) Out) :=
   OracleVerifier.run_append V₁ V₂ compatible stmt data prover
@@ -374,7 +370,7 @@ example {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
 
 
 /-- Ambient routing preserves distinct bundle indices and data. -/
-example {ι : Type} {ambient : OracleSpec.{0, 0} ι}
+example {ι : Type} {ambient : OracleSpec ι}
     {m : Type → Type v} [Monad m] [LawfulMonad m]
     {inputs : OracleBundle} {outputs : OracleBundle}
     (handler : QueryImpl ambient m) (route : OracleMap inputs outputs) (data : inputs.Data)

@@ -38,7 +38,7 @@ predicate agrees with the original relation by definitional equality.
 `ConstraintSystem`. The in-the-clear statement holds the public inputs, the oracle
 statement holds the three constraint matrices `A, B, C`, and the witness holds the
 private witness variables. -/
-def R1CS.toConstraintSystem (R : Type*) [CommSemiring R] : ConstraintSystem where
+def R1CS.toConstraintSystem (R : Type) [CommSemiring R] : ConstraintSystem where
   Index := R1CS.Size
   Stmt := fun sz => Fin sz.n_x → R
   OStmt := fun sz => R1CS.MatrixIdx → Matrix (Fin sz.m) (Fin sz.n) R
@@ -46,7 +46,7 @@ def R1CS.toConstraintSystem (R : Type*) [CommSemiring R] : ConstraintSystem wher
     (fun sz _ => Fin sz.n_w → R) (fun sz c w => R1CS.relation R sz c.1 c.2 w)
 
 @[simp] theorem R1CS.toConstraintSystem_satisfies
-    (R : Type*) [CommSemiring R] (sz : R1CS.Size)
+    (R : Type) [CommSemiring R] (sz : R1CS.Size)
     (stmt : Fin sz.n_x → R)
     (mats : R1CS.MatrixIdx → Matrix (Fin sz.m) (Fin sz.n) R)
     (wit : Fin sz.n_w → R) :
@@ -107,7 +107,7 @@ structure Air.Shape (F : Type*) [CommSemiring F] where
 - statement in the clear: the public values;
 - oracle statement: the preprocessed columns;
 - witness: the main trace. -/
-def Air.toConstraintSystem (F : Type*) [CommSemiring F] : ConstraintSystem where
+def Air.toConstraintSystem (F : Type) [CommSemiring F] : ConstraintSystem where
   Index := Air.Shape F
   Stmt := fun _ => ℕ → F
   OStmt := fun _ => ℕ → ℕ → F
@@ -117,7 +117,7 @@ def Air.toConstraintSystem (F : Type*) [CommSemiring F] : ConstraintSystem where
       { height := sh.height, main := main, prep := c.2, pub := c.1, periodic := sh.periodic })
 
 @[simp] theorem Air.toConstraintSystem_satisfies
-    (F : Type*) [CommSemiring F] (sh : Air.Shape F)
+    (F : Type) [CommSemiring F] (sh : Air.Shape F)
     (pub : ℕ → F) (prep : ℕ → ℕ → F) (main : ℕ → ℕ → F) :
     (Air.toConstraintSystem F).satisfies sh pub prep main ↔
       Air.SatisfiesOn sh.constraints

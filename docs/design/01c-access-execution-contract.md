@@ -16,6 +16,9 @@ deleted module to its core counterpart.
 Use the existing `PFunctor` carrier through `OracleSpec.toPFunctor` and
 `OracleSpec.ofPFunctor`; do not introduce another packed-signature record solely to change
 terminology. Preserve independent query and response universes where the upstream API does.
+Record D2's [universe policy](interaction-rebuild/D2-ownership-and-universes.md#universe-policy)
+supersedes this requirement and the universe test below for the interaction core, which puts
+query indices and responses in `Type`.
 
 `TypeTree.accessAt` computes the available signature from an initial signature, an oracle
 decoration, and a real `FreeM.Cursor`. It includes terminal cursors: a send followed by `done`

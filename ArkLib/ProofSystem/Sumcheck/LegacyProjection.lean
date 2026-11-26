@@ -23,8 +23,9 @@ section Projection
 variable (n : ℕ) {d : ℕ} (D : Fin d ↪ R)
 
 /-- The univariate round polynomial with evaluation queries. -/
-noncomputable def messageFamily : OracleFamily Unit (Spec.SingleRound.Simple.OStmtIn R deg) :=
-  ⟨fun _ => inferInstance⟩
+@[instance_reducible]
+noncomputable def messageFamily : OracleBundle :=
+  OracleBundle.ofIndexed (Spec.SingleRound.Simple.OStmtIn R deg) fun _ => inferInstance
 
 /-- The projection of the multivariate input to the univariate polynomial of round `i`: the sum of
 the input over the remaining domain, with the earlier variables fixed to the statement's
@@ -47,7 +48,7 @@ variable {R deg n D}
 polynomial at the query point. -/
 theorem simulateQ_projectionMap (i : Fin n) (stmt : Spec.StatementRound R n i.castSucc)
     (x : ∀ j, Spec.OracleStatement R n deg j) (r : R) :
-    simulateQ ((Spec.polynomialFamily R n deg).behaviorOfRealizations x)
+    simulateQ ((Spec.polynomialFamily R n deg).answer x)
         ((projectionMap R deg n D i stmt).impl ⟨(), r⟩) =
       (Spec.SingleRound.projectedRoundPolynomial R n deg D i stmt.challenges (x ())).val.eval
         r :=

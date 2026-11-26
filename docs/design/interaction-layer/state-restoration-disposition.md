@@ -38,8 +38,8 @@ The restored-execution bound maps the frozen input state predicate to `relIn`, m
 to `admissible`, and the frozen terminal-state predicate to `validOutput`. The certificate contains the
 sender preservation laws. `readOut` applies the supplied output-witness transport at the actual
 completed transcript; `extractLeaf`, the backward step maps and `extractRoot` replace the bundled
-extractor. Statement-indexed input witnesses and independent intermediate and output witness
-universes are retained. The event remains admissible input, valid supplied output, and failure of
+extractor. Statement-indexed input witnesses and intermediate and output witnesses are
+retained, all in `Type` as record D2's universe policy requires. The event remains admissible input, valid supplied output, and failure of
 the named backward extraction, bounded by `(Q + rounds.length) * error`. The per-round theorems
 bound the same event by `Q * max + sum` for a fixed adversary program. Their `_privateCoins`
 forms average that bound over private coins whose sampler may fail, when every fixed-coin
@@ -109,9 +109,9 @@ contract, unless a conversion program is charged as above. The binders of `Measu
 `BudgetedProgram {Input Result : Type}` forced them at the previous pin `f8d7f8ef`; PolyFun's
 `BudgetedProgram` at the current pins does not. The restoration games keep small random outputs,
 which `ProbComp : Type → Type` forced at the previous pin. `SampleableType (β : Type)` forces small
-sampled challenges. Unmeasured witness maps retain their independent universes, and deterministic
-verdicts and shared extraction laws accept general move universes. Entry 20 records the forcing
-declarations and dependency pin.
+sampled challenges. Under record D2's universe policy, all of these carriers, the unmeasured
+witness maps and the moves lie in `Type`. Entry 20 records the forcing declarations and dependency
+pin.
 
 ## Correspondence with the papers
 

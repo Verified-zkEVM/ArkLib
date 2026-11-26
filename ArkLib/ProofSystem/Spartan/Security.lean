@@ -26,7 +26,7 @@ open OracleComp OracleSpec ProtocolSpec Realization
 open scoped NNReal
 
 variable {R : Type} [Field R] [DecidableEq R] [Fintype R] [SampleableType R]
-    (sz : R1CS.Size) {ι : Type} (oSpec : OracleSpec.{0, 0} ι)
+    (sz : R1CS.Size) {ι : Type} (oSpec : OracleSpec ι)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 local notation "params" => PublicParams.forSize sz

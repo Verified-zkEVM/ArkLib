@@ -25,8 +25,8 @@ namespace Interaction.RoutedAccessTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- No input oracles; also the empty output family. -/
-def none' : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
-  ⟨fun i => i.elim⟩
+@[instance_reducible] def none' : OracleBundle :=
+  OracleBundle.ofIndexed (fun i : PEmpty => PEmpty.elim i) fun i => i.elim
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim
@@ -45,8 +45,8 @@ abbrev singlePath : Path single := ⟨⟨⟩, ⟨⟩⟩
 abbrev combinedPath : Path combined := ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- One exported scalar oracle. -/
-def exported : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+def exported : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The prefix decision bundle. -/
 abbrev prefixBundle := pathBundle none' single singlePath
@@ -59,10 +59,10 @@ abbrev rawBundle := pathBundle none' combined combinedPath
 
 /-- Export twice the prefix message, reading the same prefix oracle twice. -/
 def view : OracleMap prefixBundle exported where
-  f x _ := (show Nat from x.2 (.inl ⟨⟩)) + (show Nat from x.2 (.inl ⟨⟩))
+  f x _ := (show Nat from x.2.1) + (show Nat from x.2.1)
   impl _ := do
-    let left : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
-    let right : Nat ← liftM (prefixBundle.spec.query (.inr ⟨.inl ⟨⟩, ()⟩))
+    let left : Nat ← liftM (prefixBundle.spec.query (.inr (.inl ())))
+    let right : Nat ← liftM (prefixBundle.spec.query (.inr (.inl ())))
     pure (left + right)
   law _ _ := by
     simp only [simulateQ_bind]
@@ -79,7 +79,7 @@ def prefixVerifier :
 /-- The suffix decision program: read the export, then the suffix's own oracle, and add. -/
 def suffixProgram : OracleComp (ambient + suffixBundle.spec) Nat := do
   let old : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inl ⟨(), ()⟩)))
-  let fresh : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr ⟨.inl ⟨⟩, ()⟩)))
+  let fresh : Nat ← liftM ((ambient + suffixBundle.spec).query (.inr (.inr (.inl ()))))
   pure (old + fresh)
 
 /-- The empty output map. -/
@@ -115,10 +115,10 @@ def prover (a b : Nat) : Prover oracleSig ambient combined (fun _ => Nat) :=
       pure ⟨second, pure (first + second)⟩))
 
 /-- The query to the prefix oracle in the composed bundle. -/
-abbrev prefixSlot : rawBundle.spec.Domain := (.inr ⟨.inl ⟨⟩, ()⟩)
+abbrev prefixSlot : rawBundle.spec.Domain := (.inr (.inl ()))
 
 /-- The query to the suffix oracle in the composed bundle. -/
-abbrev suffixSlot : rawBundle.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
+abbrev suffixSlot : rawBundle.spec.Domain := (.inr (.inr (.inl ())))
 
 /-- The prefix and suffix queries name distinct sent oracles. -/
 theorem prefixSlot_ne_suffixSlot : prefixSlot ≠ suffixSlot := by
@@ -146,7 +146,7 @@ example (v : View combined combinedPath) :
       pure (left + right)) := rfl
 
 example (v : View combined combinedPath) :
-    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inr ⟨.inl ⟨⟩, ()⟩) =
+    (OracleVerifier.suffixRoute prefixVerifier () combinedPath v).impl (.inr (.inl ())) =
       (liftM (rawBundle.spec.query suffixSlot) : OracleComp rawBundle.spec Nat) := rfl
 
 example : prefixSlot ≠ suffixSlot := prefixSlot_ne_suffixSlot
@@ -162,18 +162,18 @@ abbrev prefixRoute :=
 -- oracle, never the suffix oracle. The budget clause of the old-layer row is moot.
 example :
     (PEmpty ⊕ OracleMessageIndex single (Path.split single (fun _ => single) combinedPath).1) =
-    (PEmpty.{1} ⊕ (PUnit.{1} ⊕ PEmpty.{1})) := rfl
+    (PEmpty.{1} ⊕ (Unit ⊕ PEmpty.{1})) := rfl
 
 example : True := by
   fail_if_success
-    have _ : prefixBundle.spec.Domain := (.inr ⟨.inr (.inl ⟨⟩), ()⟩)
+    have _ : prefixBundle.spec.Domain := (.inr (.inr (.inl ())))
   trivial
 
 /-- Routing any prefix decision excludes the suffix oracle query. -/
 theorem future_rejected {α : Type} (program : OracleComp (ambient + prefixBundle.spec) α) :
     AllQueriesSatisfy (simulateQ prefixRoute program) (· ≠ .inr suffixSlot) := by
   refine (allQueriesSatisfy_of_forall (fun _ => True.intro) program).simulateQ fun q _ => ?_
-  rcases q with q | (⟨i, q⟩ | ⟨⟨⟩ | i, q⟩)
+  rcases q with q | (⟨i, q⟩ | (q | i))
   · exact (allQueriesSatisfy_query_iff _ _).mpr Sum.inl_ne_inr
   · exact i.elim
   · cases q
@@ -218,15 +218,15 @@ example (a b : Nat) :=
   splitOracleMessages_oracleMessages single (fun _ => single)
     (⟨a, ⟨⟩⟩ : Transcript oracleSig single) (⟨b, ⟨⟩⟩ : Transcript oracleSig single)
 
-example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
+example (a b : Nat) : ((splitOracleMessages single (fun _ => single) combinedPath).f
     (oracleMessages combined
-      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
-    (.inl (.inl ⟨⟩)) = a := rfl
+      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))).1.1 = a :=
+  rfl
 
-example (a b : Nat) : (splitOracleMessages single (fun _ => single) combinedPath).f
+example (a b : Nat) : ((splitOracleMessages single (fun _ => single) combinedPath).f
     (oracleMessages combined
-      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))
-    (.inr (.inl ⟨⟩)) = b := rfl
+      (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩))).2.1 = b :=
+  rfl
 
 -- The full decision log takes its data in `Type`. See interaction rebuild implementation note 18.
 /-- Private output, verdict and every raw decision query of the composed logged run. -/
@@ -265,7 +265,7 @@ theorem composed_decisionQueries (a b : Nat) :
 
 /-- A raw query has its node name among the nodes of the available bundle at the decision entry. -/
 def rawAvailable (a b : Nat) (q : rawBundle.spec.Domain) : Prop :=
-  ∃ i : ((composedQueriesByMove a b).decision.availableContext none').Index,
+  ∃ i : ((composedQueriesByMove a b).decision.availableContext none').Query,
     PartialTranscript.queryNode none' (composedQueriesByMove a b).decision.before i =
       PartialTranscript.queryNode none'
         (PartialTranscript.ofTranscript (l := oracleSig) combined ⟨a, b, ⟨⟩⟩) q

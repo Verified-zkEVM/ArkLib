@@ -219,7 +219,7 @@ private theorem extractionTerminalEvent_prob_le [SampleableType F]
         (acceptingQueries s hs (queryHistory s l f tr) (queryFoldChallenges s l tr)).card →
       ¬ fails f tr)
     {σ WitIn WitOut StmtOut : Type}
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp))
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp))
     (prover : Prover []ₒ
       (Statement F (0 : Fin (k + 1)) × ∀ j, OracleStatement s ω 0 j)
       WitIn StmtOut WitOut (pSpec k (ω := ω) s l))
@@ -281,7 +281,7 @@ private theorem knowledge_soundness_with_of_history_extractor
       ∃ p ∈ e f tr, (Code.relHammingDist (fun z ↦ f (initialQuery z))
         (fun z ↦ p.1.eval (ω z)) : ℝ) ≤ δ)
     {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.toVerifier.knowledgeSoundnessWith init impl
       (inputRelation k s d δ) (outputRelation k s d δ)
       (Extractor.Straightline.ofTranscript
@@ -330,7 +330,7 @@ theorem knowledge_soundness_with
     (hrate : min θ δ ≤ 1 - (2 ^ (∑ j, (s j).val) * d.val : ℕ) / (2 ^ n : ℝ))
     [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundnessWith init impl
       (inputRelation k s d δ) (outputRelation k s d δ)
       (Extractor.extract s d (round_bound hdom) l)
@@ -360,7 +360,7 @@ theorem knowledge_soundness
     (hrate : min θ δ ≤ 1 - (2 ^ (∑ j, (s j).val) * d.val : ℕ) / (2 ^ n : ℝ))
     [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundness init impl
       (inputRelation k s d δ) (outputRelation k s d δ)
       (soundnessError (ω := ω) s d l θ δ) :=

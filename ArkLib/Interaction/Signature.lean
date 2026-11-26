@@ -19,43 +19,45 @@ Ownership is determined by the signature into PolyFun's role polynomial.
 
 @[expose] public section
 
-universe u q
-
 namespace Interaction
 open PFunctor
 open TwoParty.Lens
 
 /-- Positions of a plain public-coin protocol. -/
-inductive PlainPos : Type (u + 1) where
-  | message (X : Type u)
-  | challenge (C : Type u)
+inductive PlainPos : Type 1 where
+  | message (X : Type)
+  | challenge (C : Type)
 
 /-- Only public messages select the next subtree. -/
 @[implicit_reducible]
-def PlainPoly : PFunctor.{u + 1, u} :=
-  ⟨PlainPos, fun | .message X => X | .challenge _ => PUnit⟩
+def PlainPoly : PFunctor.{1, 0} :=
+  ⟨PlainPos, fun | .message X => X | .challenge _ => Unit⟩
+
+/-- PolyFun's role polynomial `rolePoly` at `Type`. A lens `PFunctor.Lens P Q` has independent
+universes for `P` and `Q`. No argument therefore determines the universe of `rolePoly` in a
+signature's type. This alias has no universe parameters. -/
+abbrev rolePoly0 : PFunctor.{1, 0} := rolePoly.{0}
 
 /-- Plain messages belong to the prover; challenges belong to the sampler. -/
 @[implicit_reducible]
-def plainSig : PFunctor.Lens PlainPoly rolePoly.{u} where
+def plainSig : PFunctor.Lens PlainPoly rolePoly0 where
   toFunA | .message X => (.sender, X) | .challenge C => (.receiver, C)
   toFunB | .message _ => id | .challenge _ => fun _ => ⟨⟩
 
-/-- Oracle protocols additionally permit payloads with an explicit query interface. The query
-universe `q` is independent of the payload and response universe `u`. -/
-inductive OraclePos : Type (max (u + 1) (q + 1)) where
-  | message (X : Type u)
-  | challenge (C : Type u)
-  | oracle (X : Type u) (interface : OracleInterface.{u, q} X)
+/-- Oracle protocols additionally permit payloads with an explicit query interface. -/
+inductive OraclePos : Type 1 where
+  | message (X : Type)
+  | challenge (C : Type)
+  | oracle (X : Type) (interface : OracleInterface X)
 
 /-- Oracle payloads, like challenges, cannot select a subtree. -/
 @[implicit_reducible]
-def OraclePoly : PFunctor.{max (u + 1) (q + 1), u} :=
-  ⟨OraclePos.{u, q}, fun | .message X => X | .challenge _ | .oracle _ _ => PUnit⟩
+def OraclePoly : PFunctor.{1, 0} :=
+  ⟨OraclePos, fun | .message X => X | .challenge _ | .oracle _ _ => Unit⟩
 
 /-- The oracle signature records all moves and erases private payloads from branching. -/
 @[implicit_reducible]
-def oracleSig : PFunctor.Lens OraclePoly.{u, q} rolePoly.{u} where
+def oracleSig : PFunctor.Lens OraclePoly rolePoly0 where
   toFunA
     | .message X | .oracle X _ => (.sender, X)
     | .challenge C => (.receiver, C)
@@ -65,36 +67,36 @@ def oracleSig : PFunctor.Lens OraclePoly.{u, q} rolePoly.{u} where
 
 /-- The verifier sees public messages and challenges, and a marker for each oracle payload. -/
 @[implicit_reducible]
-def viewSig : PFunctor.Lens OraclePoly.{u, q} rolePoly.{u} where
+def viewSig : PFunctor.Lens OraclePoly rolePoly0 where
   toFunA
     | .message X => (.sender, X)
     | .challenge C => (.receiver, C)
-    | .oracle _ _ => (.sender, PUnit)
+    | .oracle _ _ => (.sender, Unit)
   toFunB
     | .message _ => id
     | .challenge _ | .oracle _ _ => fun _ => ⟨⟩
 
 /-- Forget oracle payloads without changing the underlying tree or shape path. -/
-def eraseOracle : FreeM.PathAlong.MoveMap oracleSig.{u, q} viewSig where
+def eraseOracle : FreeM.PathAlong.MoveMap oracleSig viewSig where
   map
     | .message _, x => x
     | .challenge _, x => x
     | .oracle _ _, _ => ⟨⟩
   branch a _ := by cases a <;> rfl
 
-@[simp] theorem owner_plain_message (X : Type u) :
+@[simp] theorem owner_plain_message (X : Type) :
     owner plainSig (.message X) = .sender := rfl
 
-@[simp] theorem owner_plain_challenge (C : Type u) :
+@[simp] theorem owner_plain_challenge (C : Type) :
     owner plainSig (.challenge C) = .receiver := rfl
 
-@[simp] theorem owner_oracle_message (X : Type u) :
-    owner oracleSig.{u, q} (.message X) = .sender := rfl
+@[simp] theorem owner_oracle_message (X : Type) :
+    owner oracleSig (.message X) = .sender := rfl
 
-@[simp] theorem owner_oracle_challenge (C : Type u) :
-    owner oracleSig.{u, q} (.challenge C) = .receiver := rfl
+@[simp] theorem owner_oracle_challenge (C : Type) :
+    owner oracleSig (.challenge C) = .receiver := rfl
 
-@[simp] theorem owner_oracle_payload (X : Type u) (I : OracleInterface.{u, q} X) :
+@[simp] theorem owner_oracle_payload (X : Type) (I : OracleInterface X) :
     owner oracleSig (.oracle X I) = .sender := rfl
 
 end Interaction

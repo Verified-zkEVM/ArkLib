@@ -4,15 +4,16 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import ArkLib.Interaction.Oracle.BundleOps
+import ArkLib.Interaction.OracleVerifier
+import ArkLib.Relation.OracleBundle
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Derived oracles as oracle maps
 
 A derived scalar oracle combines two source queries. Composing it with a map that also reads a
-separate suffix oracle keeps both source routes and the suffix answer. Reindexing an interface
-family does not identify independently supplied realizations.
+separate suffix oracle keeps both source routes and the suffix answer. Reindexing an indexed
+bundle does not identify independently supplied data.
 -/
 
 open Interaction Interaction.Oracle OracleComp OracleSpec
@@ -45,17 +46,23 @@ example (challenges : (ToyProblem.SimplifiedIOR.pSpec (F := F)).Challenges)
 
 end ToyProblem
 
-/-- A scalar interface whose only query reveals its natural-number realization. -/
-def scalarFamily : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+/-- A scalar oracle whose only query reveals its natural-number data. -/
+abbrev scalarSlot (_ : Unit) : OracleBundle := OracleBundle.of Nat OracleInterface.instDefault
+
+/-- A scalar source oracle at each Boolean index. -/
+abbrev sourceSlot (_ : Bool) : OracleBundle := OracleBundle.of Nat OracleInterface.instDefault
+
+/-- The scalar oracle of the suffix. -/
+abbrev suffixSlot (_ : Unit) : OracleBundle := OracleBundle.of Nat OracleInterface.instDefault
+
+/-- One scalar oracle. -/
+def scalarFamily : OracleBundle := OracleBundle.indexed scalarSlot
 
 /-- Two scalar source oracles. -/
-def source : OracleFamily Bool (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+def source : OracleBundle := OracleBundle.indexed sourceSlot
 
 /-- The separate suffix oracle. -/
-def suffix : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+def suffix : OracleBundle := OracleBundle.indexed suffixSlot
 
 /-- Both source queries matter, with different coefficients. -/
 def weightedQueries : OracleMap source scalarFamily where
@@ -67,37 +74,43 @@ def weightedQueries : OracleMap source scalarFamily where
   law _ _ := rfl
 
 /-- The downstream map consumes the derived scalar and the suffix oracle. -/
-def withSuffix : OracleMap (sumFamily scalarFamily (suffix.reindex id)) scalarFamily where
-  f x _ := 10 * (show Nat from x (.inl ())) + (show Nat from x (.inr ()))
+def withSuffix : OracleMap
+    (scalarFamily.sum (OracleBundle.indexed (suffixSlot ∘ id)))
+    scalarFamily where
+  f x _ := 10 * (show Nat from x.1 ()) + (show Nat from x.2 ())
   impl _ := do
-    let x : Nat ← liftM ((sumFamily scalarFamily (suffix.reindex id)).spec.query ⟨.inl (), ()⟩)
-    let y : Nat ← liftM ((sumFamily scalarFamily (suffix.reindex id)).spec.query ⟨.inr (), ()⟩)
+    let x : Nat ← liftM ((scalarFamily.sum
+      (OracleBundle.indexed (suffixSlot ∘ id))).spec.query (.inl ⟨(), ()⟩))
+    let y : Nat ← liftM ((scalarFamily.sum
+      (OracleBundle.indexed (suffixSlot ∘ id))).spec.query (.inr ⟨(), ()⟩))
     pure (10 * x + y)
   law _ _ := rfl
 
 /-- Substitute the derived scalar, and pass the suffix oracle through unchanged. -/
-def substituted : OracleMap (sumFamily source suffix) scalarFamily :=
-  withSuffix.comp (weightedQueries.sum (OracleMap.embedding suffix id))
+def substituted :
+    OracleMap (source.sum suffix) scalarFamily :=
+  withSuffix.comp (weightedQueries.par (OracleMap.reindex suffixSlot id))
 
 /-- Source oracle `false` holds 3, oracle `true` holds 7, and the suffix holds 5. -/
-def data : ∀ k, (sumFamily source suffix).Realization k :=
-  sumData (fun bit => if bit then 7 else 3) (fun _ => 5)
+def data : (source.sum suffix).Data :=
+  (fun bit => if bit then 7 else 3, fun _ => 5)
 
 -- Virtual V2, restated: the old-layer `substWithSuffix` becomes `OracleMap.comp` with
--- `OracleMap.sum` of the derived map and the identity embedding of the suffix; the map also
+-- `OracleMap.par` of the derived map and the identity reindexing of the suffix; the map also
 -- supplies the materialized data. Both the simulated query and the data give
 -- `10 * (2 * 3 + 7) + 5 = 135`. Not weaker.
-example : simulateQ ((sumFamily source suffix).behaviorOfRealizations data)
-    (substituted.impl ⟨(), ()⟩) = (135 : Nat) := rfl
+example :
+    simulateQ ((source.sum suffix).answer data)
+      (substituted.impl ⟨(), ()⟩) = (135 : Nat) := rfl
 
 example : substituted.f data () = 135 := rfl
 
--- Virtual V3: unchanged, since its providers (`OracleFamily.reindex`, `behaviorOfRealizations`)
--- are outside the old interaction layer and remain available.
-/-- Reindexing interface types does not identify independently supplied realizations. -/
+-- Virtual V3, restated: reindexing is the indexed bundle of the renamed slots, and the bundle's
+-- `answer` reads its data.
+/-- Reindexing oracle slots does not identify independently supplied data. -/
 example :
-    let repeated := scalarFamily.reindex (fun _ : Bool => ())
-    let behavior := repeated.behaviorOfRealizations (fun bit => (if bit then 7 else 3 : Nat))
+    let repeated := OracleBundle.indexed (scalarSlot ∘ fun _ : Bool => ())
+    let behavior := repeated.answer (fun bit => (if bit then 7 else 3 : Nat))
     (behavior ⟨false, ()⟩, behavior ⟨true, ()⟩) = ((3 : Nat), (7 : Nat)) := rfl
 
 end Interaction.DerivedOraclesTests

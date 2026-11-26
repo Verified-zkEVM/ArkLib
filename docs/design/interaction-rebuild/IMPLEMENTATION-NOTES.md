@@ -13,8 +13,8 @@ Records D1 and D4 left open where an oracle payload's query interface lives and 
 named. The code carries the interface in the oracle position (`OraclePos.oracle X interface` in
 `Signature.lean`) and indexes challenges by structural node occurrences (`Node`, `ChallengeNode`
 in `Protocol.lean`). This resolves the open choice without a separate decoration, and node
-occurrences name each challenge independently of any transcript. Position universes remain
-separate from moves and the monad; entry 18 records the independent oracle-query universe.
+occurrences name each challenge independently of any transcript. Positions lie in `Type 1`,
+and moves, oracle payloads and oracle queries lie in `Type` (entry 18).
 
 ## 2. Observations retain the transcript and output on rejection
 
@@ -155,50 +155,52 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 ## 18. Run outputs are tied to the monad universe
 
 **Superseded by record D2's [universe policy](D2-ownership-and-universes.md#universe-policy)
-(2026-11-25); migration in progress.** Under the policy, data lies in `Type`, descriptions of data
+(2026-11-25); migration complete.** Under the policy, data lies in `Type`, descriptions of data
 in `Type 1`, adversaries in one universe that the model argument determines, and generic
 polynomial code in PolyFun's universes. Step 2 removed the security definitions' independent
 universes and both `.lift` lemmas. Step 3 removed the independent statement, witness and index
 universes of execution, reductions, oracle verifiers, composition and stage chains. Step 4 made
 `OracleBundle : Type 1`, with its query indices, responses and data in `Type`, and removed the
 adapters that changed a query or response universe. That also retired the full-log limit below.
-The universes of the oracle vocabulary disappear in later steps, and this entry is retired with
-the last [migration step](D2-ownership-and-universes.md#migration). Until then, the rest of this
-entry describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
+Step 5 removed the universe parameters of the vocabulary: `OracleInterface` has its message,
+queries and responses in `Type`, and `ClaimFamily`, `Problem`, `Relation`, the positions, the
+signatures and the protocols have none. Protocol leaves are `Unit`. Steps 6 and 7 removed the remaining
+pins in tests and clients and added the CI check `lake exe universe-rule`. The rest of this entry
+describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
 records the reasons.
 
 **Retained runner contract.** Run outputs lie in `Type`: the output statement `StmtOut p`, the
-output oracle data `B p j` returned by a run, the output index `J p`, prover outputs, extracted
-witnesses and the state `σ` of a security experiment. The execution APIs pin their protocols at
-`Protocol.{0}` and `OracleProtocol.{0, 0}`, so positions lie in `Type 1`. Moves and returned
+output oracle data `(outputs p).Data` returned by a run, prover outputs, extracted
+witnesses and the state `σ` of a security experiment. `Protocol` and `OracleProtocol` have no
+universe parameters, and positions lie in `Type 1`. Moves and returned
 values lie in `Type`. The prover's monad is `OracleComp ambient : Type → Type`, with the ambient
 index and responses in `Type`. A generic runner keeps its result universe, `m : Type → Type v`.
 `simulateQ`, which answers the decision's bundle queries in a run and in `decideWith`, also needs
 the value universe to equal the response universe. A run output in another universe would need a
 `ULift` adapter or a monad on a larger universe, which record D2 rejects.
 
-`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `PUnit`.
+`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `Unit`.
 All execution, path-bundle and security APIs use those default trivial leaves, preserving their
 previous carriers by definitional equality. An explicit leaf type describes return values in the
 authored `FreeM` tree. The parameter is used by the tree representation and is not a phantom:
-the universe canary constructs and reads a natural-number leaf. Exposing that parameter also
-lets the pinned universe linter distinguish the move universe in the alias's type; the query
-universe remains independent, without a linter suppression or source-policy exception.
+the universe policy test constructs and reads a natural-number leaf.
 
 **Bundle data in `Type`.** A decision reads `pathBundle inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
-(`OracleBundle.sum`). Since step 4, both query index types and all bundle data lie in `Type`.
-`OracleBundle.ofFamily` takes an `OracleFamily.{0, 0, 0}`. Step 4 did not change the definitions
-of `OracleFamily` and `OracleInterface`. The oracle-message families (`oracleMessageFamily`,
-`splitOracleMessages`) keep the node-query universe of `OracleProtocol.{u, q}`, and the verifier
-APIs pin it at `0`. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` still
-checks the named and visible query carriers, the whole-context data, the verifiers and the shared
-run, now in `Type`. Its assertions of independent universes are retired under the policy adopted
-in #1580.
+(`OracleBundle.sum`). Since step 4, both query types and all bundle data lie in `Type`.
+Consolidation PR 5 deleted `OracleFamily`, `OracleBundle.ofFamily` and `OracleMap.embedding`: an
+indexed family of oracles is the bundle `OracleBundle.ofIndexed A O`, and `OracleMap.reindex`
+renames its indices. Record D6 still describes outputs that form an `OracleFamily`. The oracle
+messages on a path form the bundle `oracleMessageBundle s p`, built from `OracleBundle.empty`,
+`OracleBundle.sum` and `OracleBundle.of`. It and `splitOracleMessages` take an `OracleProtocol`,
+as the verifier APIs do. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
+still checks the named and visible query carriers, the whole-context data, the verifiers and the
+shared run, now in `Type`. Its assertions of independent universes are retired under the policy
+adopted in #1580.
 
 **Equivalent: Agreement output and witness families (F7 and 3A).** `Security/Agreement.lean`
-now preserves path-dependent `T p`, `J p`, `B p j` and `outputs p` in every agreement and tree
-transport law. The output type is `OracleVerifier.Output T B`. Since step 2 of the policy
+now preserves path-dependent `T p` and `outputs p` in every agreement and tree
+transport law. The output type is `OracleVerifier.Output T outputs`. Since step 2 of the policy
 migration, agreement and every agreement and cast law take their data in `Type`.
 
 Round-by-round knowledge agreement and transport quantify over `Win stmt` and `W stmt tr`.
@@ -211,7 +213,7 @@ marks both reviewed contracts equivalent and records the ordinary-import clients
 Neither P1 nor P2 retires an Agreement output or witness contract.
 
 **Retired limit of the full-log runner.** `OracleVerifier.runWithLog` returns the decision's
-full query log, which records bundle queries, so it needs the bundle query indices in `Type`.
+full query log, which records bundle queries, so it needs the bundle query types in `Type`.
 Since step 4 every bundle has them there, so the runner accepts every oracle verifier and no
 large-query logging interface from VCVio is needed. Extraction does not use the full-log runner.
 `OracleVerifier.runWithAmbientLog` puts the logger on the ambient handler before adding the pure
@@ -234,9 +236,8 @@ result universe `v`.
 **Security wrappers.** The security definitions now take their data in `Type`, as step 2 of the
 [policy migration](D2-ownership-and-universes.md#migration). Statements, input, intermediate and
 output witnesses, problem claims and witnesses, input oracle data and query indices, and the
-values of the runner monad lie in `Type` in every file of `Interaction/Security/`. The protocol
-and family arguments are pinned at `0` until the vocabulary step removes their universes. Bundles
-have had no universe parameters since step 4.
+values of the runner monad lie in `Type` in every file of `Interaction/Security/`. Protocols,
+claim families and bundles have no universe parameters.
 `AdversaryModel` keeps one universe `w` for its adversaries, and an `ExtractionInterface` over a
 model takes its extractors in the same universe. The generic round-by-round definitions keep
 the position universe `uA` of `P : PFunctor.{uA, 0}`. Generic monads keep their result
@@ -253,9 +254,12 @@ have one form now, with no `...Aux` duplicate. Extracted witnesses returned by t
 games are values of the runner and stay in `Type`. Neither P1 nor P2 retires any of these
 contracts; both premises concern scheduling and shape rather than universes.
 
-`ArkLibTest/Interaction/UniverseCanary.lean` checks oracle maps, the oracle append, the routing
-law `append_decideWith` and two oracle runs with all bundle data in `Type`. It keeps an oracle
-node carrying `OracleInterface.{0, 1} Nat`, whose queries are types, until the vocabulary step.
+`ArkLibTest/Interaction/UniversePolicy.lean` checks the policy: the vocabulary has no universe
+parameters, generic code runs at a polynomial in `PFunctor.{u + 1, u}`, an `AdversaryModel` with
+adversaries in `Type 1` and a monad `Type → Type 1` need no annotation. It also checks oracle
+maps, the oracle append, the routing law `append_decideWith` and two oracle runs with all bundle
+data in `Type`. Because `OracleInterface` puts its queries in `Type`, no oracle node has
+queries that are types.
 The R26/R27 constructors in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` and their
 verifier and run examples also work in `Type`.
 
@@ -264,13 +268,13 @@ verifier and run examples also work in `Type`.
 ### Verifier outputs are indexed by the shape path
 
 Record D6 fixed the output family for the first milestone. Both verifiers now index their outputs
-by the public shape path: `Verifier ambient s StmtIn StmtOut` takes `StmtOut : Path s → Type u`,
-and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type u` and
-`outputs : (p : Path s) → OracleFamily (J p) (B p)`. The decision returns `T p` and the output map
-targets `outputs p`; `OracleVerifier.Output T B p := T p × ∀ j, B p j` is the accepted claim of a
-run. In an append the composite's output at a path of `s₁.append s₂` is the suffix's output at the
-split path (`splitFamily`, `OracleVerifier.splitOutputs`), so composed decisions return the
-suffix's output without a cast. `Outcome` takes the indexed family, and the security
+by the public shape path: `Verifier ambient s StmtIn StmtOut` takes `StmtOut : Path s → Type`,
+and `OracleVerifier ambient s S T inputs outputs` takes `T : Path s → Type` and
+`outputs : Path s → OracleBundle`. The decision returns `T p` and the output map
+targets `outputs p`; `OracleVerifier.Output T outputs p := T p × (outputs p).Data` is the accepted
+claim of a run. In an append the composite's output at a path of `s₁.append s₂` is the suffix's
+output at the split path (`splitFamily` for statements, `OracleVerifier.splitOutputs` for
+bundles), so composed decisions return the suffix's output without a cast. `Outcome` takes the indexed family, and the security
 definitions take output problems over the path context (`PathProblem s T`), with acceptance
 predicates typed at the transcript's path (`validAcceptance impl stmt tr (event : T p → Prop)`).
 Constant families `fun _ => T` recover every earlier user; the legacy embedding and the sumcheck
@@ -287,11 +291,11 @@ right-associated passive composition API: a chain appends its first stage to the
 through the passive append `OracleVerifier.append` (record D5).
 
 - `StageChain ambient S inputs` is the plan of a finite chain of passive oracle verifiers from the
-  statement type `S` and the oracle family `inputs`. `StageChain.nil` has no stages.
+  statement type `S` and the oracle bundle `inputs`. `StageChain.nil` has no stages.
   `StageChain.cons s V draw rest` has a first stage with protocol `s`, verifier `V` and challenge
   draws `draw`. At each path `p` of `s`, the chain `rest p` follows. Its inputs are `V`'s output
-  statement type and output family at `p`. Statement types and families may change at every
-  boundary and may depend on the paths. Statements live in the computation universe `u`.
+  statement type and output bundle at `p`. Statement types and bundles may change at every
+  boundary and may depend on the paths. Statements lie in `Type`.
 - `StageChain.Compatibility c` is the evidence: at every boundary, an
   `OracleVerifier.OutputCompatibility` certificate between the stage's verifier and the composed
   verifier of the stages after it. `StageChain.compose` computes the evidence type and the composed
@@ -352,8 +356,8 @@ the old-layer two-stage tests with the history `[0, 2, 1, 3]` and the rejection 
 `[0, 2, 1]`. It runs three stages with a sampled challenge, with history
 `[0, 2, 4, 5, 1, 3, 6]`, or `[0, 2, 4, 5, 1]` when the first decision rejects. It selects a second
 stage by the first stage's prover message. It also composes a stage whose output map reads its
-input statement, both alone and followed by a second stage. It composes stages whose families
-have their queries in `Type` and `Type 1`. Finally, it derives a property of a three-stage
+input statement, both alone and followed by a second stage. It composes stages whose oracle
+families have distinct query interfaces, all in `Type`. Finally, it derives a property of a three-stage
 decision from one hypothesis per boundary. A one-stage decision that queries an ambient `Bool`
 and rejects on `false` accepts almost surely under the answer measure `alwaysTrue`, although its
 support contains the rejection.
@@ -445,11 +449,10 @@ exactly. `withDecision_queries` states that the ambient logs concatenate in orde
 `simulateQ_toLog_runWithQueriesByMove` keeps this agreement under lawful interpreters, including
 stateful runtimes. The universe restriction on full logs in entry 18 applies to the full-log
 queries by move. `runWithAmbientQueriesByMove` uses the same instrumented strategies and the same
-sequencing. It returns only the ambient decision queries and keeps the input-data, input-query and
-oracle-node-query universes independent. `runWithAmbientLog` is its aggregate projection, and
-`map_fst_runWithAmbientQueriesByMove` gives ordinary erasure. `toAmbient_runWithQueriesByMove`
-identifies the full queries by move with this ambient view at small query universes, including
-every entry's partial transcript and querier.
+sequencing. It returns only the ambient decision queries. `runWithAmbientLog` is its aggregate
+projection, and `map_fst_runWithAmbientQueriesByMove` gives ordinary erasure.
+`toAmbient_runWithQueriesByMove` identifies the full queries by move with this ambient view,
+including every entry's partial transcript and querier.
 
 `Oracle/SentOracles.lean` defines the family of sent oracle messages at each partial transcript
 and their node names. It also includes the bundle available at a shorter partial transcript, and its
@@ -459,8 +462,7 @@ typed queries, into the bundle available at a longer one. `liftQuery_node` and
 messages that the verifier uses. `runWithQueriesByMove_before_le` shows that each produced entry
 comes before the actual completed transcript, and `isSent_at_decision` carries the proof that an
 oracle was sent over to the decision entry. `runWithAmbientQueriesByMove_before_le` gives the same
-guarantee about the ambient queries by move for independent query universes. A compile-time test
-checks these universe parameters directly. `firstMovesLe_node` keeps node names from the seam of an
+guarantee about the ambient queries by move. `firstMovesLe_node` keeps node names from the seam of an
 appended protocol to its final partial transcript. The append route still uses
 `prefixRoute_oracleMessages` and `splitOutputs`.
 
@@ -480,7 +482,9 @@ at independent message and query universes. Oracle positions carry their interfa
 `UniverseOracleDecoration` reads the decoration of an arbitrary `OracleProtocol.{uProtocol, uQuery}`
 tree off the tree, as its path family. `universeNode` additionally attaches an arbitrary
 `OracleInterface.{0, 1} Nat` to an actual small protocol node, and the path-family assertion keeps
-its query type.
+its query type. Since step 5 of the D2 migration, `OracleProtocol` and `OracleInterface` have no
+universe parameters, so `universeNode` and the universe sections of `PositionsAndOwners.lean` and
+`MixedTranscripts.lean` check these constructions in `Type`.
 
 The [oracle-access port table](../interaction-layer/port-oracle-access.md) now links two groups
 of rows directly to the parent's `LoggedExecutionTests` assertions. The first group holds the
@@ -493,8 +497,9 @@ doubled-export execution has a matching node at its decision entry.
 `RoutedAccessTests.routed_available` applies that permission to the routed program, and
 `QueryCostTests.routed_available_and_cost` pairs it with cost five for the same program.
 `RoutedAccessTests.loggedSummary_eq` and `RoutedAccessTests.composed_decisionQueries` check the
-actual ordered decision queries. The oracle-message splitting checks remain. The parent's large-query
-full-log limitation in entry 18 is unchanged.
+actual ordered decision queries. The oracle-message splitting checks remain. Step 4 of the D2
+migration retired the parent's large-query full-log limitation of entry 18: every bundle query
+index now lies in `Type`.
 
 ## 26. Knowledge composition and measured extraction
 
@@ -580,9 +585,9 @@ every state function a measured certificate with zero declared cost, so an opera
 result names its stage programs and prices. Measured append and a uniform game-extractor
 contract are follow-up work.
 
-The measured API retains these small carriers through the binders of `MeasuredStages`. These
-restrictions also apply to `programAlong` and `MeasuredKnowledgeStateFunction`, and lifting them
-is follow-up work. At the previous VCVio pin `f8d7f8ef`, VCVio's `OracleComp.BudgetedProgram` and
+The measured API keeps these carriers in `Type` through the binders of `MeasuredStages`, and so do
+`programAlong` and `MeasuredKnowledgeStateFunction`. Record D2's universe policy requires that:
+the carriers are data, and keeping them in `Type` is not a limit to lift. At the previous VCVio pin `f8d7f8ef`, VCVio's `OracleComp.BudgetedProgram` and
 `OracleComp.MeasuredProgram` forced the carriers to `Type`. The pinned PolyFun declarations below
 do not:
 
@@ -593,22 +598,20 @@ do not:
 | Output witnesses `W stmt tr : Type` | The `BudgetedProgram` input binder takes any universe. `BudgetedProgram.ofFun` at line 210, which `MeasuredStages.zero` uses, puts its input in the universe of its result. |
 | Cost type `ω : Type`, instruction names and views | `PFunctor.FreeM.MeasuredProgram (Input : Type uI) (Result : Type u) (ω : Type w)` at line 52, with fields `View : Type u` and `Op : Type u`. `BudgetedProgram` bundles this program. VCVio's bridge `VCVio/OracleComp/QueryTracking/MeasuredProgram.lean:51` at VCVio `f1a4a8ecef2e76b3af3dbe5205c604066dba85e3` states the oracle-cost lemmas for `Input Result ω : Type`. |
 
-The statement universe remains arbitrary. The pure `PartialTranscriptAt`, `KnowledgeStateFunction`,
-lifting, extraction, extraction failure, append and restriction laws accept
-`P : PFunctor.{uA, u}` and a lens to `rolePoly.{u}`, with leaves `PUnit.{u + 1}`.
-The move, statement and witness universes are independent; branches and leaves share the move
-universe. KC-318 and KC-322 now send the frozen oracle message `m : ULift.{1} Nat`, retain
-`ULift.{2} (Fin (m.down + 1))` witnesses and prove extraction returns six. The measured code
-takes `P : PFunctor.{uA, 0}`, so its positions also have their own universe.
+Statements, witnesses and moves lie in `Type`. The pure `PartialTranscriptAt`,
+`KnowledgeStateFunction`, lifting, extraction, extraction failure, append and restriction laws
+take `P : PFunctor.{uA, 0}` and a lens to `rolePoly0`, with leaves `Unit`, as the measured code
+does. Positions keep their own universe `uA`. The large-carrier canaries of KC-318 and KC-322,
+which sent the oracle message `m : ULift.{1} Nat` and retained `ULift.{2} (Fin (m.down + 1))`
+witnesses, were deleted with `UniverseCanary.lean` in step 6 of the D2 migration (see the
+[disposition record](../interaction-layer/knowledge-composition-disposition.md)).
 
-Probability bounds use the small-move instance of this general certificate. VCVio's
-`ProbComp : Type → Type` at the previous pin `f8d7f8ef` (`VCVio/OracleComp/ProbComp/Basic.lean:31`)
-forced `sampleAt` to return a small move. The current pin makes `ProbComp` universe-polymorphic,
-and ArkLib has not yet generalized `sampleAt`. `challengeSpec` (`Interaction/Protocol.lean:69–71`)
-returns `Move l`, whose universe is
-shared by challenges and public/oracle messages. The disposition record's PROB-031 names this
-remaining probabilistic limitation. It does not restrict pure backward maps or large output
-and seam witnesses in the verifier wrappers.
+Probability bounds draw moves with `sampleAt` in `ProbComp`. VCVio's `ProbComp : Type → Type`
+at the previous pin `f8d7f8ef` (`VCVio/OracleComp/ProbComp/Basic.lean:31`) forced `sampleAt` to
+return a small move. The current pin makes `ProbComp` universe-polymorphic. Record D2's policy
+puts every move in `Type`, and the small-move restriction that the disposition record's PROB-031
+names is therefore what the policy requires, not a remaining limitation. `challengeSpec` returns
+`Move l`, the move type that challenges share with public and oracle messages.
 
 ### Acceptance evidence
 
@@ -618,10 +621,12 @@ remain available on each selected shape. `Fin (n + 1)` carriers that depend on t
 extraction composition, leaf relations and the exported oracle from the same execution are checked on
 both shapes. The selector change is premise-required under P2, not missing parent support.
 
-The ordinary-import universe canary composes with `Type` itself as the output and seam carrier,
-both in `Type 1`, and tests both verifier wrappers and lifting with large output witnesses.
-Separate clients retain statement-indexed witnesses at unequal universes, empty carriers,
-standalone plain verifier composition and the actual shared ambient state at the seam.
+Until step 6 of the D2 migration, the ordinary-import universe canary `UniverseCanary.lean`
+composed with `Type` itself as the output and seam carrier. It also tested both verifier wrappers
+and lifting with large output witnesses. Step 6 deleted it, and
+`ArkLibTest/Interaction/UniversePolicy.lean` replaces it. Separate clients retain
+statement-indexed witnesses, empty carriers, standalone plain verifier composition and the actual
+shared ambient state at the seam, all in `Type`.
 The axiom collectors check the new laws against `propext`, `Classical.choice` and `Quot.sound`.
 
 ### Restoration under P2
@@ -697,10 +702,10 @@ This branch adds the following restoration interfaces on the parent's state func
 | `programAlong_budget_le_protocol`, `programAlong_budget_le_protocol_zero` | Count message/challenge stages per round, with explicit root/leaf terms and the frozen zero-endpoint specialization. |
 | Authored-selector fixtures | A public prover Boolean selects exact `Fin 8`/`Fin 9` statement carriers; challenges still control acceptance and knowledge transitions. |
 
-Unmeasured restoration retains independent input, intermediate and output witness universes.
-Probabilistic game outputs remain small; deterministic verdicts accept general move universes.
-The record explains these constraints and the change from the frozen layer's arbitrary final
-results to optional passive decisions and explicit output-law implications.
+Restoration keeps its input, intermediate and output witnesses, its game outputs and its moves in
+`Type`, as record D2's universe policy requires. The record explains the change from the frozen
+layer's arbitrary final results to optional passive decisions and explicit output-law
+implications.
 
 ### Shared extraction laws and carrier constraints
 
@@ -715,8 +720,8 @@ identifies this branch's consumers and source assertions.
 The remaining small carriers followed these exact declarations at the previous VCVio pin
 `f8d7f8ef52b9afaf4e6d897804b9dce347cdb1db`. At the current pin `f1a4a8ec`, `SampleableType` is
 unchanged, `ProbComp` is universe-polymorphic, and the measured programs moved to PolyFun with
-independent universes. ArkLib has not yet generalized the code behind the second and third items,
-so their restrictions remain:
+independent universes. Record D2's universe policy puts these carriers in `Type`, and ArkLib keeps
+the second and third items there by design:
 
 - `SampleableType (β : Type)` in
   `VCVio/OracleComp/Constructions/SampleableType/Basic.lean:51` forces
@@ -724,8 +729,8 @@ so their restrictions remain:
   whose messages and challenges share the move universe. Round-specific pure keyed laws
   therefore remain on this small protocol; the shared extraction laws are general.
 - `ProbComp : Type → Type` in `VCVio/OracleComp/ProbComp/Basic.lean:31` keeps random
-  outputs small in the restoration games and bounds. It does not restrict `readOut`
-  or the certificate's input, intermediate or output witness universes.
+  outputs small in the restoration games and bounds. Under the policy, the witnesses that `readOut`
+  and the certificate read and produce also lie in `Type`.
 - `KnowledgeStateFunction.MeasuredStages` (`Interaction/Security/MeasuredExtraction.lean:104`)
   fixes root results, step inputs/results, leaf inputs and the cost carrier `ω` to `Type`. At the
   previous pin, VCVio's `OracleComp.BudgetedProgram {Input Result : Type}` forced this. It now
@@ -948,7 +953,7 @@ under those rules.
 ## 25. Routing owners and transparency
 
 **Code.** Forwarding subexpressions in the interaction layer and Sumcheck Core, including their
-tests, use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.embedding`, `Interaction.pathLift`
+tests, use `OracleMap.fst`, `OracleMap.snd`, `OracleMap.reindex`, `Interaction.pathLift`
 and VCVio's `QueryImpl.id'` restrictions (or `QueryImpl.ofLift` for universe-polymorphic sums).
 Coverage includes prover-setup injection, carrier-changing `renameQueries`, routing exports and
 path reads, the independent-query-universe verifier, and state-restoration oracle message reads
@@ -960,14 +965,14 @@ Theorem-statement handlers, direct input reads in decisions, legacy transcript q
 primitive owner implementations retain their explicit query forms. Legacy index
 elimination, equality transport, challenge-node transport, setup logging, path elimination,
 export arithmetic and surrounding effects are preserved. `OracleMap.par` uses the bundle
-projections. The parent's `OracleMap.sum` already composes `par` and the family/bundle
-representation maps. `oracleMessageFamily_split` delegates its empty-prefix family routing to
-`embedding`. The ordinary runner and the queries-by-move runners forward ambient queries and
+projections. `oracleMessageBundle_split` routes an empty prefix through
+`OracleMap.emptyLeft`. The ordinary runner and the queries-by-move runners forward ambient queries and
 challenge requests through the identity handler, without substituting a sampler. Legacy
 `decisionImpl` retains its substantive bundle query translation and delegates only the outer sum
 routing to identity restrictions.
 
-**Parent fixes retained.** `Interpreted.headQuery` and `tailLift` already use `embedding`.
+**Parent fixes retained.** `Interpreted.headQuery` and `tailLift` query the two sides of the
+message bundle's sum directly, as `OracleMap.fst` and `OracleMap.snd` do.
 The parent's `Execution.verifier_outputMap` only stated equality to `fst`; this cleanup fixes
 `verifierOn.outputMap` through `fst`, including its specialization `verifier`.
 `roundRoute` already specializes `roundRouteOn`; the latter now delegates to `headQuery`.
@@ -980,7 +985,7 @@ restrictions as the queries-by-move runners. They log directly through `executeW
 Imported replication and transcript path definitions retain their definition-site transparency;
 proofs use explicit reduction and their equations where needed. The existing definition-site
 annotations on `PlainPoly`, `plainSig`, `OraclePoly`, `oracleSig`, `viewSig`,
-`OracleMessageIndex`, `OracleMessage`, `sumFamily`, `singletonFamily`, `oracleMessageFamily`,
+`OracleMessageIndex`, `OracleMessage`, `oracleMessageBundle`,
 `PartialTranscriptAt` and Sumcheck `round` keep `implicit_reducible`.
 `perfectCompleteness_uniform` names the existing `challengeSampleable R deg n` instance
 explicitly when constructing `challengeQueryImpl`. `OracleMap.fst` is `macro_inline` so the

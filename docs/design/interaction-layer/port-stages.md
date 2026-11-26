@@ -58,7 +58,7 @@ The ports follow the universe policy of record D2: data lies in `Type`.
 - `StageChain` ([stages]) puts every statement type, oracle index type and oracle data type of a
   chain in `Type`, which is the old-layer `ExecutionInterface.{u}` at `u = 0`. It takes
   `ambient : OracleSpec ι` with `ι : Type`.
-- A chain's oracle families have their queries in `Type`, as do the binary
+- A chain's oracle bundles have their queries in `Type`, as do the binary
   `OracleVerifier.append` and its decision laws. Step 4 of the universe migration removed the
   adapters that changed a family's query universe (`OracleFamily.liftQueries`,
   `OracleMap.liftQueries`, `OracleMap.lowerQueries`, `OracleVerifier.liftInputs`,
@@ -87,9 +87,9 @@ The ports follow the universe policy of record D2: data lies in `Type`.
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
 | L25 `observed` and L31 `answerProblem`, the relation over closed claims | ported | [claimClosedProblem] states the same claim-dependent witness relation over `Nat × tagged.Behavior`, a statement with arbitrary deterministic answers. [claimBridge] shows that on concrete data it is the relation [claimAnswerProblem]. |
-| L27, the unobservable tag vanishes from the closed claim | ported | [claimRow1]: the closed claims of statement 7 with the behaviors of `(7, true)` and `(7, false)` are equal. `ConcreteClaim.toClosed` is exactly this pair of the statement and `behaviorOfRealizations`. |
+| L27, the unobservable tag vanishes from the closed claim | ported | [claimRow1]: the closed claims of statement 7 with the behaviors of `(7, true)` and `(7, false)` are equal. `ConcreteClaim.toClosed` is exactly this pair of the statement and the bundle's `answer`. |
 | L37, the closed claim 7 is in the language | ported | [claimRow2Closed] at the old-layer closed-claim relation; [claimRow2] at the concrete-data relation. |
-| L46, `SemEquiv (.id tagged) repeated` | ported | [claimRow3]: under every deterministic handler of `tagged.spec`, the query-twice program and the identity embedding give the same answers. [claimLaws] adds that both oracle maps agree with the materialized data. |
+| L46, `SemEquiv (.id tagged) repeated` | ported | [claimRow3]: under every deterministic handler of `tagged.spec`, the query-twice program and the identity reindexing give the same answers. [claimLaws] adds that both oracle maps agree with the materialized data. |
 | L53, closing a substituted open claim | ported | [claimRow4] quantifies over every source index type in `Type`, every source specification, every virtual program `view : QueryImpl tagged.spec (OracleComp spec)` and every deterministic source handler. For all of these, closing the claim `(7, repeated)` after substituting `view` equals closing it with the evaluated view. [claimRow4Map] and [claimRow4Data] state the same substitution for `OracleMap.comp`, with its data map. |
 | L60, the relation cannot distinguish derivations with the same answers | ported | [claimRow5] quantifies over every source specification and two claims made of a statement and virtual programs. If the statements are equal and the answers are equal under every deterministic handler, the claims have the same membership in the old-layer closed-claim language under every handler. [claimRow5Map] states the oracle-map form through the maps' laws and [claimCongr]. |
 | L25 `ClosedClaim`, L27 `ConcreteClaim.toClosed`, L42 `VirtualOracle.ofQuery`, L55 `OpenClaim.subst` and `closeWith`, L65 `closeWith_congr` as API | removed | Removed mechanism: claims that carry behaviors or open query programs. Record D6 keeps concrete data with an oracle map (`f`, `impl` and the law tying them). It rejects the alternative "behavior only, without `f`". The rows above port each assertion these names carried, with `QueryImpl` programs and handlers. |

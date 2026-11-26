@@ -272,7 +272,10 @@ universe instantiations of the old tests. Row 17 uses `OracleInterface.{1, 0}` o
 [OracleBundle.sum][bundle-sum] extends an arbitrary prior query handler with the given interface and
 its message realization. Neither test restricts the prior polynomial, replaces a family with a
 constant, or uses a universe lift. These tests cover bundle extension; DecorationExample 2
-separately checks interfaces inside protocol oracle nodes.
+separately checks interfaces inside protocol oracle nodes. Since step 5 of the D2 migration,
+`OracleInterface` has no universe parameters and puts messages, queries and responses in `Type`,
+so the universe policy retires the independent universes of rows 17 and 18. `AccessTyping.lean`
+now checks the same bundle extension with every carrier in `Type`.
 
 ## DecorationExample: 13 assertions
 
@@ -319,6 +322,8 @@ family. It does not merely install the interface in the input bundle. The parent
 [lifted_queries_by_move_contract][d-node-run] ran such a node until step 3 of the D2 migration,
 which pins the node-query universe of the verifier APIs at `0` and removed that test. The optional leaf parameter makes the message universe
 visible in the alias's domain, as in the parent `OracleProtocol`; it is an actual tree return type.
+Since step 5 of the D2 migration, `OracleProtocol`, `OraclePos` and `OracleInterface` have no
+universe parameters, and these tests check the same constructions in `Type`.
 
 ## MixedExample: 9 assertions
 
@@ -351,24 +356,21 @@ inclusion, together with query routing. The [parent port table][parent-port-tabl
 above identify their exact assertion targets. P1 excludes intermediate verifier effects, not the
 produced prover moves.
 
-`OraclePos.{u, q}`, `OraclePoly`, `oracleSig`, `viewSig`, `OracleProtocol`, `oracleMessageFamily` and
-`pathBundle` keep independent node-query universes. General `OracleBundle.{u, uI, dI}` also
-separates response, bundle-query and data universes without changing the shared
-`OracleInterface`; families are a specialization. The earlier node-universe and input-data
-coupling entries are therefore closed by the parent, as recorded in
-[implementation note 18][universes].
+Since step 5 of the D2 migration, `OraclePos`, `OraclePoly`, `oracleSig`, `viewSig` and
+`OracleProtocol` have no universe parameters: oracle payloads and their queries lie in `Type`. The
+oracle message bundle `oracleMessageBundle` and `pathBundle` take an `OracleProtocol`, and
+`OracleBundle` keeps its queries, responses and data in `Type`. The earlier node-universe and
+input-data coupling entries are closed, as recorded in [implementation note 18][universes].
 
-The remaining item is the large-query result interface of the full-log runner. ArkLib accepts it
-as an upstream limit (departures entry 18); [VCVio#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236)
-adds `OracleComp.subst`, which can lift it. The VCVio pin includes it since the `f1a4a8ec` bump,
-and adopting it is follow-up work.
-[OracleVerifier.runWithLog][logged-runner] returns bundle-query entries through a small
-computation monad. Returning large query indices in that complete heterogeneous log needs a parent
-logging interface with a sufficiently large result universe. `runWithAmbientLog` and
-`runWithAmbientQueriesByMove` keep independent input-data, input-query and node-query universes by
-returning only ambient decision queries. The full-log [loggedSummary][q-log-summary] keeps the
-strongest supported output-query universe. P1 and P2 impose no universe restrictions. Run outputs
-continue to follow the parent monad's value universe, as documented in note 18.
+This table once listed one remaining item: the large-query result interface of the full-log
+runner (departures entry 18). At the pinned commit,
+[OracleVerifier.runWithLog][logged-runner] returned bundle-query entries through a small
+computation monad and could not record large query indices, and `runWithAmbientLog` and
+`runWithAmbientQueriesByMove` returned only ambient decision queries. Step 4 of the D2 migration
+retired the item: every bundle query index now lies in `Type`, and `runWithLog` accepts every
+oracle verifier ([migration list](migration-list.md#unresolved-rows-and-options), item 1). P1 and
+P2 impose no universe restrictions. Run outputs continue to follow the parent monad's value
+universe, as documented in note 18.
 
 ## Definition-site transparency
 

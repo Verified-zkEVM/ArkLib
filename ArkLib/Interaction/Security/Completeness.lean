@@ -28,7 +28,7 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle MeasureTheory
 open scoped ENNReal
 
 /-- A claim problem with no additional public context. Context can be included in the statement. -/
-abbrev StatementProblem (S : Type) := Problem.{0, 0, 0} (⟨fun _ : Unit => S⟩ : ClaimFamily Unit)
+abbrev StatementProblem (S : Type) := Problem (⟨fun _ : Unit => S⟩ : ClaimFamily Unit)
 
 /-- An adversary class and the outcome distribution it induces on each input. -/
 structure AdversaryModel (S Obs : Type) [MeasurableSpace Obs] where
@@ -37,12 +37,12 @@ structure AdversaryModel (S Obs : Type) [MeasurableSpace Obs] where
   mass_le_one : ∀ stmt adv, outcome stmt adv Set.univ ≤ 1
 
 /-- A claim problem whose claim type is indexed by a protocol's shape path. -/
-abbrev PathProblem {P : PFunctor.{uA, 0}} (s : FreeM P PUnit.{1}) (T : Path s → Type) :=
-  Problem.{0, 0, 0} (⟨T⟩ : ClaimFamily (Path s))
+abbrev PathProblem {P : PFunctor.{uA, 0}} (s : FreeM P Unit) (T : Path s → Type) :=
+  Problem (⟨T⟩ : ClaimFamily (Path s))
 
 /-- The path problem that judges a claim at every shape path by one statement problem. -/
 abbrev StatementProblem.toPathProblem {P : PFunctor.{uA, 0}} {S : Type}
-    (s : FreeM P PUnit.{1}) (problem : StatementProblem S) : PathProblem s (fun _ => S) where
+    (s : FreeM P Unit) (problem : StatementProblem S) : PathProblem s (fun _ => S) where
   Witness _ claim := problem.Witness () claim
   admissible _ claim := problem.admissible () claim
   rel _ claim wit := problem.rel () claim wit
@@ -55,8 +55,8 @@ of the run; a judgement with one claim type uses the context `Unit`. The witness
 context and the accepted claim. A rejected outcome need not supply one. The prover's claimed
 statement is retained separately to state honest output agreement.
 -/
-structure OutputJudgement (Obs : Type) {Ctx : Type} {T : ClaimFamily.{0, 0} Ctx}
-    (P : Problem.{0, 0, 0} T) where
+structure OutputJudgement (Obs : Type) {Ctx : Type} {T : ClaimFamily Ctx}
+    (P : Problem T) where
   /-- The public context of an outcome, which selects its claim type. -/
   context : Obs → Ctx
   /-- The verifier's verdict, a claim at the outcome's context. -/
@@ -81,19 +81,19 @@ def OutputJudgement.ofOutcome {P : PFunctor.{uA, 0}}
   witness := readWitness
 
 /-- Acceptance together with an output pair in the declared relation. -/
-def OutputJudgement.valid {Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} {P : Problem.{0, 0, 0} T}
+def OutputJudgement.valid {Obs Ctx : Type} {T : ClaimFamily Ctx} {P : Problem T}
     (J : OutputJudgement Obs P) (obs : Obs) : Prop :=
   ∃ stmt, ∃ h : J.verdict obs = some stmt, P.rel (J.context obs) stmt (J.witness obs stmt h)
 
 /-- Honest acceptance also requires the two parties to agree on the output statement. -/
-def OutputJudgement.honest {Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} {P : Problem.{0, 0, 0} T}
+def OutputJudgement.honest {Obs Ctx : Type} {T : ClaimFamily Ctx} {P : Problem T}
     (J : OutputJudgement Obs P) (obs : Obs) : Prop :=
   ∃ stmt, ∃ h : J.verdict obs = some stmt,
     J.proverStatement obs = stmt ∧ P.rel (J.context obs) stmt (J.witness obs stmt h)
 
 /-- Completeness is defined once over a model and an honest choice of its adversaries. -/
-def completeness {S Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} [MeasurableSpace Obs]
-    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem.{0, 0, 0} T)
+def completeness {S Obs Ctx : Type} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem T)
     (J : OutputJudgement Obs output)
     (honest : ∀ stmt, input.Witness () stmt → M.Adv stmt) (ε : ℝ≥0∞) : Prop :=
   MeasurableSet {obs | J.honest obs} ∧
@@ -142,17 +142,16 @@ The verifier itself obtains that data only through its declared query interface.
 -/
 noncomputable def OracleVerifier.classicalModel {ι σ : Type}
     {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {s : OracleProtocol} {S : Type} {T : Path s → Type}
     {inputs : OracleBundle}
-    {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+    {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
-    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T B))]
+    [MeasurableSpace (Outcome oracleSig s Out (OracleVerifier.Output T outputs))]
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
     (challenges : QueryImpl (challengeSpec oracleSig s) ProbComp) :
     AdversaryModel (S × inputs.Data)
-      (Outcome oracleSig s Out (OracleVerifier.Output T B)) where
+      (Outcome oracleSig s Out (OracleVerifier.Output T outputs)) where
   Adv _ := Prover oracleSig ambient s Out
   outcome stmt adv := 𝒟[experiment init impl challenges (V.run stmt.1 stmt.2 adv)]
   mass_le_one _ _ := evalDist_apply_univ_le_one _

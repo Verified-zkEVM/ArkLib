@@ -93,8 +93,8 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLib/Interaction/Oracle/PhasedRun.lean` | premise-required (P1) | [`Interaction/Oracle/QueriesByMove.lean`](../../../ArkLib/Interaction/Oracle/QueriesByMove.lean), [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLib/Interaction/Oracle/LoggedExecution.lean) | [port-logged-execution.md](port-logged-execution.md), section PhasedRun.lean; `port-oracle-access.md` (#1478), section PhasedRun |
 | `ArkLib/Interaction/Oracle/Prefix.lean` | ported (all 8 Prefix test rows) | `PartialTranscript` and `IsSent.mono` in [`Interaction/Oracle/SentOracles.lean`](../../../ArkLib/Interaction/Oracle/SentOracles.lean) | `port-oracle-access.md` (#1478), section Prefix |
 | `ArkLib/Interaction/Oracle/Protocol.lean` | ported | `OracleProtocol` in [`Interaction/Protocol.lean`](../../../ArkLib/Interaction/Protocol.lean). Ownership comes from the signature instead of a role decoration | `port-oracle-access.md` (#1478), sections DecorationExample and MixedExample |
-| `ArkLib/Interaction/Oracle/Resource.lean` | retired: `OracleModel.satisfies_guarantee` has no core counterpart, and no ported client needs one (see [the resolved degree guarantee](#resolved-the-degree-guarantee)). From its test: 21 ported, 7 retired | `OracleBundle` in [`Interaction/OracleVerifier.lean`](../../../ArkLib/Interaction/OracleVerifier.lean); `ArkLib/Interaction/Oracle/BundleOps.lean` (#1476). Named contexts and property-symbol languages are retired | `port-oracle-bundles.md` (#1476), sections ResourceExample and Representation changes; [sumcheck.md](sumcheck.md), Remaining work |
-| `ArkLib/Interaction/Oracle/RunSources.lean` | ported (all 12 RunSourcesExample rows) | `pathBundle` in [`Interaction/OracleVerifier.lean`](../../../ArkLib/Interaction/OracleVerifier.lean); `ArkLib/Interaction/Oracle/BundleOps.lean` (#1476) | `port-oracle-bundles.md` (#1476), section RunSourcesExample |
+| `ArkLib/Interaction/Oracle/Resource.lean` | retired: `OracleModel.satisfies_guarantee` has no core counterpart, and no ported client needs one (see [the resolved degree guarantee](#resolved-the-degree-guarantee)). From its test: 21 ported, 7 retired | `OracleBundle` and its operations in [`Relation/OracleBundle.lean`](../../../ArkLib/Relation/OracleBundle.lean). Named contexts and property-symbol languages are retired | `port-oracle-bundles.md` (#1476), sections ResourceExample and Representation changes; [sumcheck.md](sumcheck.md), Remaining work |
+| `ArkLib/Interaction/Oracle/RunSources.lean` | ported (all 12 RunSourcesExample rows) | `pathBundle` in [`Interaction/OracleVerifier.lean`](../../../ArkLib/Interaction/OracleVerifier.lean); the bundle operations in [`Relation/OracleBundle.lean`](../../../ArkLib/Relation/OracleBundle.lean) | `port-oracle-bundles.md` (#1476), section RunSourcesExample |
 | `ArkLib/Interaction/Oracle/Runtime.lean` | ported | A persistent runtime is any lawful interpreter of the logged run: `simulateQ_toLog_runWithQueriesByMove` in [`Interaction/Oracle/QueriesByMoveLaws.lean`](../../../ArkLib/Interaction/Oracle/QueriesByMoveLaws.lean) | [port-logged-execution.md](port-logged-execution.md), sections RuntimeExample.lean and Persistent-runtime tests |
 | `ArkLib/Interaction/Oracle/RuntimeSoundness.lean` | premise-required (P1): the informed prover's reveal now precedes the dummy request | [`Interaction/Security/CompositionSoundness.lean`](../../../ArkLib/Interaction/Security/CompositionSoundness.lean) | PR #1485; the port comments in [the core runtime soundness test](../../../ArkLibTest/Interaction/Security/RuntimeSoundness.lean) |
 | `ArkLib/Interaction/Oracle/Security/Knowledge.lean` | premise-required: 9 ported, 2 premise-required, 1 retired | [`Interaction/Security/RoundByRound.lean`](../../../ArkLib/Interaction/Security/RoundByRound.lean), [`Interaction/Security/KnowledgeComposition/Extraction.lean`](../../../ArkLib/Interaction/Security/KnowledgeComposition/Extraction.lean) | [knowledge-composition-disposition.md](knowledge-composition-disposition.md), rows K-* |
@@ -112,14 +112,14 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLib/Interaction/Oracle/Security/StateRestorationReplay.lean` | premise-required: 4 ported, 9 premise-required, 6 retired | [`Interaction/Security/StateRestoration.lean`](../../../ArkLib/Interaction/Security/StateRestoration.lean) | [state-restoration-disposition.md](state-restoration-disposition.md) |
 | `ArkLib/Interaction/Oracle/Security/StateRestorationResources.lean` | premise-required: 5 ported, 1 premise-required | [`Interaction/Security/StateRestorationBudget.lean`](../../../ArkLib/Interaction/Security/StateRestorationBudget.lean), [`Interaction/Security/MeasuredExtraction.lean`](../../../ArkLib/Interaction/Security/MeasuredExtraction.lean) | [state-restoration-disposition.md](state-restoration-disposition.md) |
 | `ArkLib/Interaction/Oracle/Sequential.lean` | premise-required (P1, P2): its fragments run each verifier to a decision before the next stage | `OracleVerifier.append` in [`Interaction/Composition.lean`](../../../ArkLib/Interaction/Composition.lean); `ArkLib/Interaction/StageChain.lean` (#1477) | No module ledger. ExecutionExample rows of `port-stages.md` (#1477); [D5](../interaction-rebuild/D5-composition.md); Sumcheck clients in [sumcheck.md](sumcheck.md), production section Sequential |
-| `ArkLib/Interaction/Oracle/Source.lean` | ported (all 18 SourceExample rows) | `OracleMap` in [`Interaction/OracleVerifier.lean`](../../../ArkLib/Interaction/OracleVerifier.lean); `ArkLib/Interaction/Oracle/BundleOps.lean` (#1476) | `port-oracle-bundles.md` (#1476), section SourceExample |
+| `ArkLib/Interaction/Oracle/Source.lean` | ported (all 18 SourceExample rows) | `OracleMap` and the bundle operations in [`Relation/OracleBundle.lean`](../../../ArkLib/Relation/OracleBundle.lean) | `port-oracle-bundles.md` (#1476), section SourceExample |
 | `ArkLib/Interaction/Oracle/SourceRouting.lean` | premise-required (P1) | [`Interaction/Oracle/Routing.lean`](../../../ArkLib/Interaction/Oracle/Routing.lean) | [port-logged-execution.md](port-logged-execution.md), section SourceRoutingExample.lean; `port-oracle-bundles.md` (#1476), section SourceRoutingExample; [D6](../interaction-rebuild/D6-oracle-access.md) on `appendExported` |
 | `ArkLib/Interaction/Oracle/Terminal.lean` | retired | None: a core verdict is an `Option`, and a handler failure keeps its label through `decideCatching` in [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLib/Interaction/Oracle/LoggedExecution.lean) | `port-oracle-bundles.md` (#1476), section Representation changes; the Terminal/Examples row in [Tests](#tests) |
 | `ArkLib/Interaction/Oracle/TerminalMeasure.lean` | retired | None: the core keeps missing runtime mass separate from rejection instead of decoding it as a named fault | No module ledger and no old test imports it. [soundness-implication-disposition.md](soundness-implication-disposition.md), row T2; [D7](../interaction-rebuild/D7-security-definitions.md) |
 | `ArkLib/Interaction/Oracle/TerminalRun.lean` | premise-required (P1) | `decideCatching` in [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLib/Interaction/Oracle/LoggedExecution.lean) | [port-logged-execution.md](port-logged-execution.md), section TerminalRun/Examples.lean (revised by #1567); `port-oracle-bundles.md` (#1476), section TerminalRun/Examples |
 | `ArkLib/Interaction/Oracle/TypeTree.lean` | ported (all 9 MixedExample rows) | `oracleSig` and `OraclePos` in [`Interaction/Signature.lean`](../../../ArkLib/Interaction/Signature.lean); `OracleProtocol` in [`Interaction/Protocol.lean`](../../../ArkLib/Interaction/Protocol.lean) | `port-oracle-access.md` (#1478), section MixedExample |
 | `ArkLib/Interaction/Oracle/TypeTree/Decoration.lean` | premise-required (P2), from its test: 8 ported, 1 P2, 4 retired | Role decorations are retired: ownership is read from the signature, and oracle interfaces sit in positions | `port-oracle-access.md` (#1478), section DecorationExample; [port-bundle-universes.md](port-bundle-universes.md) for the decoration canaries |
-| `ArkLib/Interaction/Oracle/Virtual.lean` | ported (all 3 Virtual rows) | `OracleMap` in [`Interaction/OracleVerifier.lean`](../../../ArkLib/Interaction/OracleVerifier.lean) | `port-oracle-bundles.md` (#1476), section Virtual; [D6](../interaction-rebuild/D6-oracle-access.md), Alternatives |
+| `ArkLib/Interaction/Oracle/Virtual.lean` | ported (all 3 Virtual rows) | `OracleMap` in [`Relation/OracleBundle.lean`](../../../ArkLib/Relation/OracleBundle.lean) | `port-oracle-bundles.md` (#1476), section Virtual; [D6](../interaction-rebuild/D6-oracle-access.md), Alternatives |
 | `ArkLib/Interaction/Oracle/WorldSegments.lean` | retired | None: world segments exist only for mid-run verifier queries. Per-move logs come from [`Interaction/Oracle/QueriesByMove.lean`](../../../ArkLib/Interaction/Oracle/QueriesByMove.lean) | No module ledger and no old test imports it directly. [D6](../interaction-rebuild/D6-oracle-access.md), Alternatives ("world segments") |
 | `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryCompleteness.lean` | ported: 5 ported | `C/IntervalCompleteness` | [sumcheck.md](sumcheck.md), production inventory |
 | `ArkLib/ProofSystem/Sumcheck/Interaction/ArbitraryRounds.lean` | premise-required: 7 ported, 6 premise-required | `C/Behavior`, `C/FoldComposition`, `C/Interval`, `C/IntervalCompleteness` | [sumcheck.md](sumcheck.md), production inventory |
@@ -157,7 +157,7 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLibTest/Interaction/Oracle/PhasedRun.lean` | premise-required (P1). Logged table: 11 ported, 2 P1 on this branch; 10 ported, 2 P1, 1 retired after #1567. Access table: 4 ported, 2 P1, 1 retired | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean); `Oracle/HiddenSendRun.lean` (#1478) | [port-logged-execution.md](port-logged-execution.md); `port-oracle-access.md` (#1478) |
 | `ArkLibTest/Interaction/Oracle/Prefix.lean` | ported: 8 ported | `Oracle/PartialTranscripts.lean` (#1478) | `port-oracle-access.md` (#1478) |
 | `ArkLibTest/Interaction/Oracle/QueryBounds.lean` | ported: 18 ported (logged table), 17 ported (access table) | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean); `Oracle/QueryCost.lean`, `Oracle/RoutedAccess.lean` (#1478) | [port-logged-execution.md](port-logged-execution.md); `port-oracle-access.md` (#1478) |
-| `ArkLibTest/Interaction/Oracle/ResourceExample.lean` | retired: 21 ported, 7 retired (named-context and property-symbol mechanisms) | `Oracle/BundleFamilies.lean` (#1476); R26 and R27 in [`Interaction/UniverseCanary.lean`](../../../ArkLibTest/Interaction/UniverseCanary.lean) | `port-oracle-bundles.md` (#1476); [port-bundle-universes.md](port-bundle-universes.md) |
+| `ArkLibTest/Interaction/Oracle/ResourceExample.lean` | retired: 21 ported, 7 retired (named-context and property-symbol mechanisms) | `Oracle/BundleFamilies.lean` (#1476), which also checks the R26 and R27 bundles in `Type`; the universe policy retires their independent universes | `port-oracle-bundles.md` (#1476); [port-bundle-universes.md](port-bundle-universes.md) |
 | `ArkLibTest/Interaction/Oracle/RunSourcesExample.lean` | ported: 12 ported | `Oracle/RunBundles.lean` (#1476) | `port-oracle-bundles.md` (#1476) |
 | `ArkLibTest/Interaction/Oracle/RuntimeExample.lean` | ported: 2 ported | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean) | [port-logged-execution.md](port-logged-execution.md) |
 | `ArkLibTest/Interaction/Oracle/RuntimeQueryBounds.lean` | premise-required (P1). Logged table: 15 ported, 3 P1 on this branch, 4 P1 after #1567. Access table: 14 ported, 4 P1 | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean); `Oracle/HiddenBitAccess.lean`, `Oracle/QueryCost.lean` (#1478); rows 12, 16 and 17 also in [`Interaction/Security/RuntimeSoundness.lean`](../../../ArkLibTest/Interaction/Security/RuntimeSoundness.lean) | [port-logged-execution.md](port-logged-execution.md); `port-oracle-access.md` (#1478); PR #1485 |
@@ -173,7 +173,7 @@ status below comes from the test rows that exercise the module, and the row says
 | `ArkLibTest/Interaction/Oracle/Terminal/Examples.lean` | retired: the `Terminal`, `.fault` and `decodeRuntime` mechanism is gone. Three of its four cases are covered; the fourth has no core test (see below) | `decision_outcomes` and `close_optional_ok` in [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean) | None. This list is its only record |
 | `ArkLibTest/Interaction/Oracle/TerminalRun/Examples.lean` | premise-required (P1). Logged table: 9 ported, 1 P1 on this branch; 7 ported, 1 P1, 2 retired after #1567. Bundles table: 7 ported, 2 retired | [`Interaction/Oracle/LoggedExecution.lean`](../../../ArkLibTest/Interaction/Oracle/LoggedExecution.lean) | [port-logged-execution.md](port-logged-execution.md) (revised by #1567); `port-oracle-bundles.md` (#1476) |
 | `ArkLibTest/Interaction/Oracle/TypeTree/AccessExample.lean` | retired: 15 ported, 3 retired | `Oracle/ProtocolTree/AccessTyping.lean` (#1478) | `port-oracle-access.md` (#1478) |
-| `ArkLibTest/Interaction/Oracle/TypeTree/DecorationExample.lean` | premise-required (P2): 8 ported, 1 P2, 4 retired | `Oracle/ProtocolTree/PositionsAndOwners.lean` (#1478); decoration canaries in [`Interaction/UniverseCanary.lean`](../../../ArkLibTest/Interaction/UniverseCanary.lean) | `port-oracle-access.md` (#1478); [port-bundle-universes.md](port-bundle-universes.md) |
+| `ArkLibTest/Interaction/Oracle/TypeTree/DecorationExample.lean` | premise-required (P2): 8 ported, 1 P2, 4 retired | `Oracle/ProtocolTree/PositionsAndOwners.lean` (#1478); the decoration universe canary is ported to `Type` by the universe policy | `port-oracle-access.md` (#1478); [port-bundle-universes.md](port-bundle-universes.md) |
 | `ArkLibTest/Interaction/Oracle/TypeTree/MixedExample.lean` | ported: 9 ported | `Oracle/ProtocolTree/MixedTranscripts.lean` (#1478) | `port-oracle-access.md` (#1478) |
 | `ArkLibTest/Interaction/Oracle/Virtual.lean` | ported: 3 ported | `Oracle/DerivedOracles.lean` (#1476) | `port-oracle-bundles.md` (#1476) |
 | `ArkLibTest/Interaction/Reduction/DependentExample.lean` | retired: 5 ported, 3 retired | `Reduction/DependentAppend.lean` (#1477) | `port-stages.md` (#1477) |
@@ -204,18 +204,21 @@ runtime mass as a fault: it keeps missing mass distinct from rejection, as row T
 ## Unresolved rows and options
 
 The three items below are restrictions of the core port that the ledgers record without tying
-them to one old declaration. Each came from a pinned upstream library, and ArkLib accepts each as
-an upstream limit: the code site documents it. The VCVio pin `f1a4a8ec` now includes the upstream
-change behind each item (VCVio PRs #1220 and #1236). ArkLib has not adopted them yet, and each limit
-stays until a follow-up change lifts it. Two further items, `run_append` and the degree guarantee,
-are resolved; the last two subsections record why.
+them to one old declaration. Each came from a pinned upstream library, and ArkLib first accepted
+each as an upstream limit. The VCVio pin `f1a4a8ec` now includes the upstream change behind each
+item (VCVio PRs #1220 and #1236). The universe policy of record D2
+([universe policy](../interaction-rebuild/D2-ownership-and-universes.md#universe-policy)) closes
+all three: step 4 of its migration retired item 1, and the policy puts moves, query indices and
+costs in `Type`. Items 2 and 3 are therefore no longer limits. Each item ends with its status under the
+policy. Two further items, `run_append` and the degree guarantee, are resolved; the last two
+subsections record why.
 
 **1. The full-log runner cannot return large query indices.**
 [departures.md](departures.md) lists this as entry 18, and `port-oracle-access.md`
 (#1478) lists it as its only open item. `OracleVerifier.runWithLog` returns bundle-query entries
 through a small computation monad. Its complete log therefore cannot record large query indices.
-`runWithAmbientLog` and `runWithAmbientQueriesByMove` keep independent universes because they
-return only ambient decision queries. What is missing is a parent logging interface whose result
+`runWithAmbientLog` and `runWithAmbientQueriesByMove` kept independent universes because they
+returned only ambient decision queries. What is missing is a parent logging interface whose result
 universe is large enough. Options:
 
 - implement that logging interface in VCVio or PolyFun and generalize `runWithLog`;
@@ -229,6 +232,10 @@ Decision: accepted as an upstream limit. The ambient-log runners `runWithAmbient
 [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) adds `OracleComp.subst` and a
 universe-general `pathLogResult`, and the current pin includes them. Lifting the limit means
 rebuilding `runWithLog` on `subst` and reproving its laws, which is follow-up work.
+
+Status under the policy: retired. Since step 4 every bundle query index lies in `Type`, so
+`runWithLog` accepts every oracle verifier and needs no larger logging interface
+([implementation note 18](../interaction-rebuild/IMPLEMENTATION-NOTES.md#18-run-outputs-are-tied-to-the-monad-universe)).
 
 **2. PROB-031: probability bounds use small moves only.**
 Row PROB-031 of [knowledge-composition-disposition.md](knowledge-composition-disposition.md)
@@ -247,9 +254,12 @@ universe. Options:
 
 Decision: accepted as an upstream limit. The module docstring of `Interaction/Security/RoundByRound.lean`
 documents it. VCVio PR [#1236](https://github.com/Verified-zkEVM/VCVio/pull/1236) makes
-`ProbComp` universe-polymorphic, and the current pin includes it. `sampleAt` and the bounds stated
-with `𝒟[·]` can now take large moves. Bounds stated with `Pr{}` stay small because VCVio's `Pr{}`
-still requires `Type`. Generalizing them is follow-up work.
+`ProbComp` universe-polymorphic, and the current pin includes it. Before the policy put every move
+in `Type`, `sampleAt` and the bounds stated with `𝒟[·]` could take large moves, while bounds
+stated with `Pr{}` stayed small because VCVio's `Pr{}` requires `Type`.
+
+Status under the policy: not a limit. Challenges are data, and the policy puts every move in
+`Type`. The small-move bounds therefore cover every protocol.
 
 **3. VCVio cost universes.**
 `port-oracle-bundles.md` (#1476), section Cost universes, records it.
@@ -268,9 +278,12 @@ was missing is a VCVio cost API with explicit query-index, response and cost uni
 Decision: accepted as an upstream limit. The module docstring of `Interaction/Oracle/Cost.lean`, which
 holds `OracleMap.withAmbient_worstCaseCost`, documents it. VCVio PR
 [#1220](https://github.com/Verified-zkEVM/VCVio/pull/1220) generalizes the universes of the cost
-API, and the current pin includes it. The wrapper can now take those universes, with results kept
-in the response universe as `simulateQ` requires. The change is about ten lines and is follow-up
-work.
+API, and the current pin includes it. Generalizing the wrapper to those universes, with results
+kept in the response universe as `simulateQ` requires, would have been a change of about ten
+lines.
+
+Status under the policy: not a limit. Query indices, responses and costs are data, and the
+policy puts them in `Type`, which is what the wrapper takes.
 
 ### Resolved: `run_append`
 

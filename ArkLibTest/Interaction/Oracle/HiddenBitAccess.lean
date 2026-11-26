@@ -122,7 +122,7 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
     AllQueriesSatisfy (routedSuffix p v) (rawAllowed p) := by
   rcases p with ⟨⟨⟩, guess, ⟨⟩⟩
   refine (suffix_access _ _).simulateQ fun q allowed => ?_
-  rcases q with request | (⟨i, q⟩ | ⟨i, q⟩)
+  rcases q with request | (⟨i, q⟩ | i)
   · exact (allQueriesSatisfy_query_iff _ _).mpr allowed
   · cases i
     cases q
@@ -133,8 +133,8 @@ theorem routed_suffix_access (p : Path bitCombined) (v : View bitCombined p) :
   · exact i.elim
 
 /-- The outcome of the hidden-bit protocol, including the materialized output oracle. -/
-abbrev BitObservation := Outcome oracleSig bitCombined.{0} (fun _ => Nat)
-  (OracleVerifier.Output (fun _ => Bool) (fun _ (_ : Unit) => Bool))
+abbrev BitObservation := Outcome oracleSig bitCombined (fun _ => Nat)
+  (OracleVerifier.Output (fun _ => Bool) (fun _ => bits))
 
 /-- Compare the actual output-oracle answer with the accepted target bit. -/
 def answers (observation : BitObservation) : Option (Bool × Bool) :=

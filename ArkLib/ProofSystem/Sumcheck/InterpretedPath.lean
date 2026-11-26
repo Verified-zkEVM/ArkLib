@@ -51,17 +51,15 @@ def tailPath {k : ℕ} : Path (protocol R M evaluate (k + 1)) → Path (protocol
 def headQuery {k : ℕ} : (p : Path (protocol R M evaluate (k + 1))) → R →
     OracleComp (oracleMessageSpec (protocol R M evaluate (k + 1)) p) R
   | ⟨⟨⟩, ⟨⟨⟩, p⟩⟩, r =>
-      (OracleMap.embedding
-        (oracleMessageFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩)
-        (fun _ : PUnit.{1} => Sum.inl PUnit.unit)).impl ⟨PUnit.unit, r⟩
+      liftM ((oracleMessageSpec (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query (.inl r))
 
 /-- A lifted query to the remaining messages. -/
 def tailLift {k : ℕ} (p : Path (protocol R M evaluate (k + 1))) :
     QueryImpl (oracleMessageSpec (protocol R M evaluate k) (tailPath p))
       (OracleComp (oracleMessageSpec (protocol R M evaluate (k + 1)) p)) := by
   rcases p with ⟨⟨⟩, ⟨⟨⟩, p⟩⟩
-  exact (OracleMap.embedding
-    (oracleMessageFamily (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩) Sum.inr).impl
+  exact fun q =>
+    liftM ((oracleMessageSpec (protocol R M evaluate (k + 1)) ⟨⟨⟩, ⟨⟨⟩, p⟩⟩).query (.inr q))
 
 /-- The challenge read from a verifier view. -/
 def viewChallenge {k : ℕ} {p : Path (protocol R M evaluate (k + 1))}

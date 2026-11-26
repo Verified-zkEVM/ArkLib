@@ -57,7 +57,7 @@ inputs at relative distance at least `δ` from the initial Reed–Solomon code. 
 theorem soundness_proximity (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     (θ δ : ℝ) [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
     (reduction k s d hdom l).verifier.toVerifier.soundness init impl
       ((initialOracle (ω := ω) s) ⁻¹' proximityLanguage s d δ) Set.univ
       (soundnessError (ω := ω) s d l θ δ) := by
@@ -81,7 +81,7 @@ relations. In fact, `soundness_proximity` bounds any acceptance, not only valid 
 theorem soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     (θ : ℝ) (δ : ℝ≥0) [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.soundness init impl
       (inputRelation k s d δ).language (outputRelation k s d δ).language
       (soundnessError (ω := ω) s d l θ δ) := by
@@ -100,7 +100,7 @@ incurs its MCA error; the final query vector incurs the repeated-query error. -/
 theorem rbr_soundness (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     (θ : ℝ) (δ : ℝ≥0) [∀ j, SampleableType ((pSpec k (ω := ω) s l).Challenge j)]
     {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
+    (impl : QueryImpl emptySpec0 (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.rbrSoundness init impl
       (inputRelation k s d δ).language (outputRelation k s d δ).language
       (challengeError (ω := ω) s d l θ δ) := by

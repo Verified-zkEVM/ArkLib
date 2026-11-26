@@ -101,7 +101,7 @@ different oracle bits and have equal verifier views. A full-prefix draw can stil
 -/
 
 /-- An oracle bit followed by a challenge. -/
-abbrev oracleThenBit : OracleProtocol.{0, 0} :=
+abbrev oracleThenBit : OracleProtocol :=
   .liftBind (.oracle Bool OracleInterface.instDefault) fun _ =>
     .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
 
@@ -129,11 +129,11 @@ def leakyDraw : PrefixDraw oracleSig ProbComp oracleThenBit := fun sp h history 
 example (b : Bool) : leakyDraw (.down ⟨⟩ (.root _)) rfl ⟨⟨b, rfl⟩, ⟨⟩⟩ = pure b := rfl
 
 /-- A first stage that sends one oracle bit. -/
-abbrev oracleBit : OracleProtocol.{0, 0} :=
+abbrev oracleBit : OracleProtocol :=
   .liftBind (.oracle Bool OracleInterface.instDefault) fun _ => .pure ⟨⟩
 
 /-- A second stage with one challenge. -/
-abbrev challengeBit : OracleProtocol.{0, 0} := .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
+abbrev challengeBit : OracleProtocol := .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
 
 /-- The view combinator chooses the suffix draw from the first-stage view, so the suffix
 challenge is drawn the same way after either first-stage oracle bit. -/

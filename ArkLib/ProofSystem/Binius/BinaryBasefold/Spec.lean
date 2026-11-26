@@ -351,8 +351,8 @@ instance instOracleStatementBinaryBasefold {i : Fin (ℓ + 1)} :
     Query := (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨j.val * ϑ, by
       calc j.val * ϑ < ℓ := by exact oraclePosition_mul_blockSize_lt_rounds ℓ ϑ i j
       _ < r := by omega⟩
-    toOC.spec := fun _ => L
-    toOC.impl := fun queryPoint => do return (← read) queryPoint
+    spec := fun _ => L
+    answer := fun f queryPoint => f queryPoint
   }
 
 /-! ## SampleableType instances -/

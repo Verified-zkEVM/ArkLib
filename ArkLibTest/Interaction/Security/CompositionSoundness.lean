@@ -399,14 +399,14 @@ noncomputable section
 abbrev ambient := branchSpec
 
 /-- One natural-number input slot, used for the exports as well. -/
-def nats : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def nats : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The input slot holds `7`. -/
 def input : ∀ _ : Unit, Nat := fun _ => 7
 
 /-- The verifier sends a `Fin 3` challenge. -/
-def first : OracleProtocol.{0, 0} :=
+def first : OracleProtocol :=
   .liftBind (.challenge (Fin 3)) (fun _ => .pure ⟨⟩)
 
 /-- The empty suffix. -/
@@ -445,7 +445,7 @@ def exportMap (sample : Fin 3) (p : Path first) :
     OracleMap (pathBundle nats first p) nats where
   f x _ := (show Nat from x.1 ()) + sample.val
   impl _ := do
-    let value : Nat ← (OracleMap.fst nats (oracleMessageFamily first p)).impl ⟨(), ()⟩
+    let value : Nat ← (OracleMap.fst nats (oracleMessageBundle first p)).impl ⟨(), ()⟩
     pure (value + sample.val)
   law _ _ := rfl
 
