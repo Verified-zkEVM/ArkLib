@@ -133,13 +133,14 @@ private theorem card_ker_inf_ker_dotHom {m : ℕ} (c c' : BinarySpace m) :
   omega
 
 /-- Let `domain` enumerate exactly the additive subgroup `V` of a finite field of characteristic
-two, with `n ≥ 16` domain points and field size `q`.
+two, with `n` domain points and field size `q`.
 The scalar error is at least `(n - 8)/q` at output degree `n/4`, threshold `A ≤ 9n/16`,
 and agreement loss `s < 3n/16`.
-The subgroup condition implies that `n` is a power of two. -/
+The subgroup condition implies that `n` is a power of two.
+The paper assumes `n ≥ 16`. Lean does not need it, since for `n ≤ 8` the bound is zero. -/
 theorem le_scalarMcaError_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [Fintype F]
     [CharP F 2] {ι : Type*} [Fintype ι] (V : AddSubgroup F) (domain : ι ↪ F)
-    (hV : ∀ x, x ∈ V ↔ ∃ i, domain i = x) (h16 : 16 ≤ Fintype.card ι)
+    (hV : ∀ x, x ∈ V ↔ ∃ i, domain i = x)
     {A s : ℕ} (hA : A ≤ 9 * Fintype.card ι / 16)
     (hs : s < 3 * Fintype.card ι / 16) :
     ENNReal.ofReal (((Fintype.card ι - 8 : ℕ) : ℝ) / Fintype.card F) ≤
@@ -157,11 +158,12 @@ theorem le_scalarMcaError_of_addSubgroup {F : Type*} [Field F] [DecidableEq F] [
       ZMod.card]
   -- Write `n = 16 N` with `N = 2 ^ m`.
   obtain ⟨k, hk⟩ := hpow
-  obtain ⟨m, rfl⟩ : ∃ m, k = m + 4 := by
-    refine ⟨k - 4, ?_⟩
-    by_contra hk4
-    have : 2 ^ k ≤ 2 ^ 3 := Nat.pow_le_pow_right (by norm_num) (by omega)
-    omega
+  -- For `n ≤ 8` the bound is zero.
+  rcases Nat.lt_or_ge k 4 with hk4 | hk4
+  · have : 2 ^ k ≤ 2 ^ 3 := Nat.pow_le_pow_right (by norm_num) (by omega)
+    have hzero : Fintype.card ι - 8 = 0 := by omega
+    simp [hzero]
+  obtain ⟨m, rfl⟩ : ∃ m, k = m + 4 := ⟨k - 4, by omega⟩
   have hn : Fintype.card ι = 16 * 2 ^ m := by rw [hk, pow_add]; ring
   set N := 2 ^ m with hN
   have hN1 : 1 ≤ N := Nat.one_le_two_pow

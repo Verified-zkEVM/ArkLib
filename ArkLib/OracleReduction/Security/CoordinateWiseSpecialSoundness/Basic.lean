@@ -75,15 +75,18 @@ protocol.
 variable {S : Type*}
 
 /-- The relation `x ≡ᵢ y`: the coordinate-vectors `x` and `y` agree in every coordinate except the
-  `i`-th, where they differ. For `ℓ = 1` this is just `x 0 ≠ y 0`. -/
-def CoordEq {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) : Prop :=
+  `i`-th, where they differ. For `ℓ = 1` this is just `x 0 ≠ y 0`. Coordinate `u` may have its own
+  alphabet `S u`; a vector over one alphabet is the case `S u = T` for all `u`, and its call sites
+  elaborate unchanged. -/
+def CoordEq {ℓ : ℕ} {S : Fin ℓ → Type*} (i : Fin ℓ) (x y : (u : Fin ℓ) → S u) : Prop :=
   x i ≠ y i ∧ ∀ j, j ≠ i → x j = y j
 
-/-- `≡ᵢ` is decidable over a decidable alphabet: finitely many coordinates, each compared by
+/-- `≡ᵢ` is decidable over decidable alphabets: finitely many coordinates, each compared by
 `DecidableEq`. This is what lets the star-center search (`CoordinateWise.SingleRound.central` /
 `sib`) run rather than choose classically, hence what keeps tree extractors executable. -/
-instance instDecidableCoordEq [DecidableEq S] {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) :
-    Decidable (CoordEq i x y) := by unfold CoordEq; infer_instance
+instance instDecidableCoordEq {ℓ : ℕ} {S : Fin ℓ → Type*} [∀ u, DecidableEq (S u)] (i : Fin ℓ)
+    (x y : (u : Fin ℓ) → S u) : Decidable (CoordEq i x y) := by
+  unfold CoordEq; infer_instance
 
 /-- A family of `ℓ·(k-1)+1` coordinate-vectors `c` is coordinate-wise special sound if its
 vectors are pairwise distinct and it has a central index with `k-1` siblings for each coordinate.
@@ -132,6 +135,84 @@ theorem isSpecialSoundFamily_one_iff_injective {k : ℕ}
   · intro j hj h0
     exact (Finset.ne_of_mem_erase hj)
       (hinj (funext fun x => by obtain rfl : x = 0 := Subsingleton.elim x 0; exact h0)).symm
+
+/-! ### A threshold per coordinate and an alphabet per coordinate
+
+The family below drops both restrictions of `IsSpecialSoundFamily`: coordinate `u` has its own
+alphabet `S u` and its own threshold `k u`. It carries the temporary name
+`IsBlockSpecialSoundFamily` while `BlockCWSSStructure` coexists with `CWSSStructure`. -/
+
+section Block
+
+variable {ℓ : ℕ} {S : Fin ℓ → Type*}
+
+/-- A family of coordinate vectors is a **star** with thresholds `k` when its vectors are pairwise
+distinct and it has a center with `k u - 1` siblings for every coordinate `u`. The siblings agree
+with the center off `u` and differ from it at `u`.
+
+The size `N` of the family is not fixed here. A star has at least `1 + ∑ u, (k u - 1)` members
+(`IsBlockSpecialSoundFamily.card_ge`). A threshold `k u` of `0` or `1` asks for no sibling at
+coordinate `u`. -/
+def IsBlockSpecialSoundFamily {N : ℕ} (k : Fin ℓ → ℕ) (c : Fin N → ((u : Fin ℓ) → S u)) : Prop :=
+  Function.Injective c ∧
+  ∃ e : Fin N, ∀ i : Fin ℓ, ∃ J : Finset (Fin N),
+    e ∉ J ∧ J.card = k i - 1 ∧ ∀ j ∈ J, CoordEq i (c e) (c j)
+
+instance instDecidableIsBlockSpecialSoundFamily [∀ u, DecidableEq (S u)] {N : ℕ} (k : Fin ℓ → ℕ)
+    (c : Fin N → ((u : Fin ℓ) → S u)) : Decidable (IsBlockSpecialSoundFamily k c) := by
+  unfold IsBlockSpecialSoundFamily
+  infer_instance
+
+/-- With one alphabet and one threshold for all coordinates, the star condition is the one of
+`IsSpecialSoundFamily`. -/
+theorem isSpecialSoundFamily_iff_isBlockSpecialSoundFamily {T : Type*} {k : ℕ}
+    (c : Fin (ℓ * (k - 1) + 1) → (Fin ℓ → T)) :
+    IsSpecialSoundFamily ℓ k c ↔ IsBlockSpecialSoundFamily (S := fun _ => T) (fun _ => k) c :=
+  Iff.rfl
+
+variable {N M : ℕ} {k : Fin ℓ → ℕ} {c : Fin N → ((u : Fin ℓ) → S u)}
+
+/-- Reindexing a star along an equivalence of index types gives a star. -/
+theorem IsBlockSpecialSoundFamily.comp_equiv (h : IsBlockSpecialSoundFamily k c)
+    (e : Fin M ≃ Fin N) : IsBlockSpecialSoundFamily k (c ∘ e) := by
+  obtain ⟨hinj, c₀, hc⟩ := h
+  refine ⟨hinj.comp e.injective, e.symm c₀, fun i => ?_⟩
+  obtain ⟨J, hJ₀, hJcard, hJ⟩ := hc i
+  refine ⟨J.map e.symm.toEmbedding, ?_, ?_, ?_⟩
+  · simpa [Finset.mem_map_equiv] using hJ₀
+  · simpa using hJcard
+  · intro j hj
+    rw [Finset.mem_map_equiv] at hj
+    simpa using hJ (e j) (by simpa using hj)
+
+/-- Being a star does not depend on how the index type is presented. -/
+theorem isBlockSpecialSoundFamily_comp_equiv_iff (e : Fin M ≃ Fin N) :
+    IsBlockSpecialSoundFamily k (c ∘ e) ↔ IsBlockSpecialSoundFamily k c := by
+  refine ⟨fun h => ?_, fun h => h.comp_equiv e⟩
+  simpa [Function.comp_def] using h.comp_equiv e.symm
+
+/-- A star with thresholds `k` has at least `1 + ∑ u, (k u - 1)` members: the siblings of
+different coordinates are different, and none is the center. -/
+theorem IsBlockSpecialSoundFamily.card_ge (h : IsBlockSpecialSoundFamily k c) :
+    ∑ u, (k u - 1) + 1 ≤ N := by
+  classical
+  obtain ⟨_, e, hstar⟩ := h
+  choose J hJe hJcard hJ using hstar
+  have hdisj : (Set.univ : Set (Fin ℓ)).PairwiseDisjoint J := by
+    intro i _ i' _ hii'
+    rw [Function.onFun, Finset.disjoint_left]
+    intro j hj hj'
+    exact (hJ i' j hj').1 ((hJ i j hj).2 i' (Ne.symm hii'))
+  have hcard : (insert e (Finset.univ.biUnion J)).card = ∑ u, (k u - 1) + 1 := by
+    rw [Finset.card_insert_of_notMem, Finset.card_biUnion (fun i _ i' _ hii' => hdisj trivial
+      trivial hii')]
+    · simp [hJcard]
+    · simpa using fun i => hJe i
+  calc ∑ u, (k u - 1) + 1 = (insert e (Finset.univ.biUnion J)).card := hcard.symm
+    _ ≤ Fintype.card (Fin N) := Finset.card_le_univ _
+    _ = N := Fintype.card_fin N
+
+end Block
 
 end CoordinateWise
 

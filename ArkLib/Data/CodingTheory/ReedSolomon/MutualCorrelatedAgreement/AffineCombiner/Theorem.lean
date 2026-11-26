@@ -45,10 +45,13 @@ The counting bounds have no sampler assumptions.
 
 ## References
 
-The general bound corresponds to Theorem 4.10 of [CWYZ26], with a stronger sufficient
-interpolation condition for freely chosen budgets, as described below.
-The full constraint count includes every order `s < m`; (4.5) stops at `min(m - 1, M)`.
-The parameter choice of Theorem 1.1 satisfies the full condition.
+The general bound corresponds to Theorem 4.10 of [CWYZ26].
+The interpolation condition here counts the constraints of every order `s < m`, whereas (4.5)
+stops at `min(m - 1, M)`.
+For `M ≥ 1` given by (4.1), the two conditions are equivalent.
+For a smaller `M`, the condition here can be stronger.
+The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) gives the argument.
+The parameter choice of Theorem 1.1 satisfies the condition.
 The final bound is Theorem 1.1 of [CWYZ26].
 
 * [Chiesa, A., Weissenberg, G., Yogev, E., and Zheng, K. Z.,
@@ -137,7 +140,7 @@ theorem exists_affineExceptional_finset_card_map_le_of_interpolation {K E : Type
   -- The persistent challenges are counted directly in `K²`.
   set Pset : Finset (K × K) := {c | ∃ P, IsAffineExceptional domain f g d A 1 (φ c.1) (φ c.2) P ∧
     IsAffinePersistent domain f g d B (φ c.1) (φ c.2) P}
-  have hpers := card_isAffineExceptional_persistent_map_le domain f g φ (A := A) hdB hJ
+  have hpers := card_isAffineExceptional_persistent_map_le domain f g φ (A := A) hdB.le hJ
   refine ⟨Pset ∪ Ex₁, ?_, fun c hc P hP ↦ ?_⟩
   · calc (#(Pset ∪ Ex₁) : ℝ) ≤ #Pset + #Ex₁ := by exact_mod_cast Finset.card_union_le _ _
       _ ≤ _ := by linarith
@@ -154,8 +157,8 @@ The interpolation multiplicity is `m`, the `(Y, Z)`-degree budget is `D`, and th
 budget is `M`.
 Set `B = ⌈(√ρ + η/2)n⌉ - 1` and assume `n(d + 1) < B²`.
 The real Johnson factor is `J = n(B - d - 1)/(B² - n(d + 1))`, without a floor.
-The bound is `#Ex ≤ J max q (n choose 2) + K`, where
-`K = D² + 4d²M²D³(n/(A - B))²`.
+The bound is `#Ex ≤ J max q (n choose 2) + N`, where
+`N = D² + 4d²M²D³(n/(A - B))²`.
 
 The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
@@ -183,7 +186,7 @@ theorem exists_affineExceptional_finset_card_le_of_interpolation [Fintype F] (do
     hη1 hsurplus hJ
 
 /-- The affine error at loss one and threshold `A = ⌈(√ρ + η)n⌉` is at most
-`ENNReal.ofReal ((J max q (n choose 2) + K)/q²)`.
+`ENNReal.ofReal ((J max q (n choose 2) + N)/q²)`.
 
 Here `n` is the domain size, `q` is the field size, `1 ≤ d < n`, `ρ = d/n`, and
 `0 < η < 1 - √ρ`.
@@ -191,7 +194,7 @@ The interpolation multiplicity is `m`, the `(Y, Z)`-degree budget is `D`, and th
 budget is `M`.
 Set `B = ⌈(√ρ + η/2)n⌉ - 1` and assume `n(d + 1) < B²`.
 The real Johnson factor is `J = n(B - d - 1)/(B² - n(d + 1))`, without a floor, and
-`K = D² + 4d²M²D³(n/(A - B))²`.
+`N = D² + 4d²M²D³(n/(A - B))²`.
 
 The sufficient interpolation condition is
 `n ∑_{s < m} (m - s)(D + 1 - s) < ∑_{j ≤ M} (mA - D - dj)(D + 1 - j)`,
@@ -300,9 +303,9 @@ theorem exists_affineExceptional_finset_card_le [Fintype F] (domain : ι ↪ F) 
     {d : ℕ} {η : ℝ} (hd : 1 ≤ d) (hdn : d < Fintype.card ι) (hη : 0 < η)
     (hη1 : η < 1 - √((d : ℝ) / Fintype.card ι))
     (hn : 4 / ((d : ℝ) / Fintype.card ι) ≤ Fintype.card ι * η ^ 2) :
-    ∃ E : Finset (F × F), (E.card : ℝ) ≤ 4 * Fintype.card F / η +
+    ∃ Ex : Finset (F × F), (Ex.card : ℝ) ≤ 4 * Fintype.card F / η +
         2 ^ 14 * (Fintype.card ι : ℝ) ^ 2 / (((d : ℝ) / Fintype.card ι) ^ 3 * η ^ 10) ∧
-      ∀ c ∉ E, ∀ P, ¬ IsAffineExceptional domain f g d
+      ∀ c ∉ Ex, ∀ P, ¬ IsAffineExceptional domain f g d
         ⌈(√((d : ℝ) / Fintype.card ι) + η) * Fintype.card ι⌉₊ 1 c.1 c.2 P :=
   exists_affineExceptional_finset_card_map_le domain f g (.refl F) hd hdn hη hη1 hn
 

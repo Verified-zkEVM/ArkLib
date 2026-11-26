@@ -33,26 +33,17 @@ Modes (run after `lake build`):
 ```
 lake exe axiomsweep                     # summary only
 lake exe axiomsweep --out report.json   # also write the full per-declaration report
-lake exe axiomsweep --check             # gate against scripts/axiom_baseline.json
-lake exe axiomsweep --update-baseline   # rewrite the baseline from the current build
+lake exe axiomsweep --check             # fail on any sorry or non-standard axiom
 ```
 
-The committed baseline (`scripts/axiom_baseline.json`) records the currently-known
-`sorryAx`-tainted declarations and any declarations depending on non-standard axioms
-(anything beyond `propext`, `Classical.choice`, `Quot.sound` — so native trust axioms
-surface here too: `native_decide`-style tactics mint per-declaration
-`…._native.<tactic>.ax_<number>_<number>` axioms, recorded under their owning
-declaration). `--check` fails exactly when a declaration is tainted that the baseline
-does not cover, or a solicited-proof condition fails. Reviewed solicited proofs are
-tracked separately from debt and may only be used by other solicited declarations. When
-gaps are closed, `--check` reports them and stays green; run `--update-baseline` to shrink
-the file in the same PR.
-
-The baseline is an allowlist for `sorryAx` debt only. Native trust is held to PolyFun's
-zero-debt rule instead: `neverAllowlistable` rejects any `._native.` axiom outside the
-explicit `grandfatheredNativeTrust` list, so no baseline edit can widen the trusted
-computing base. Exit codes are a contract with CI — `1` is a taint verdict, anything else
-an infrastructure failure — which is why `main` traps uncaught exceptions into `2`.
+`--check` is a zero-debt gate: it fails when any swept declaration depends on an axiom
+beyond `propext`, `Classical.choice` and `Quot.sound`. That covers `sorryAx` and native
+trust: `native_decide`-style tactics mint per-declaration
+`…._native.<tactic>.ax_<number>_<number>` axioms, which the report records under their
+owning declaration. There is no allowlist. A result that still needs a `sorry` starts as an
+issue and merges once it is proved. CI relies on the exit codes: `1` means a
+taint verdict and anything else an infrastructure failure. That is why `main` turns uncaught
+exceptions into exit code `2`.
 
 `scripts/test-axiomsweep.sh` exercises all of this against the `AxiomSweepTestFixtures`
 library, whose fixtures carry synthetic taint of each shape this file reasons about.
@@ -68,33 +59,6 @@ def defaultRoots : Array Name := #[`ArkLib]
 /-- Axioms that carry no extra trust assumptions beyond Lean's standard foundation. -/
 def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
 
-/-- Whether `a` names native-compiler trust: either a bare compiler axiom, or one of the
-per-declaration axioms `native_decide`-style tactics mint, which this toolchain names
-`Owner._native.<tactic>.ax_<n>_<n>` rather than routing through `Lean.ofReduceBool`. -/
-def isNativeTrust (a : String) : Bool :=
-  a == "Lean.ofReduceBool" || a == "Lean.trustCompiler" || (a.splitOn "._native.").length > 1
-
-/-- The native trust this repository has already accepted, listed by full axiom name so
-any acceptance is auditable in source rather than hidden in a JSON allowlist. ArkLib has
-accepted none: the list is empty, and the floor below keeps it that way unless an entry
-is consciously added here.
-
-Fails closed: if a private-name index or module path shifts, an entry stops matching and
-`--check` goes red until someone consciously re-accepts it. -/
-def grandfatheredNativeTrust : List String := []
-
-/-- Axioms that may never be baselined: native-compiler trust beyond what
-`grandfatheredNativeTrust` already accepts. Unlike `sorryAx` debt — honest work in
-progress, which the baseline is allowed to track — new native trust is a widening of the
-trusted computing base, so no baseline edit can green it; remove the dependency instead.
-
-This is the counterpart of PolyFun's zero-debt gate. PolyFun refuses a nonempty baseline
-outright; ArkLib cannot, since it carries genuine `sorryAx` debt, so the floor applies the
-same "cannot pre-authorize future taint" rule to the part of the baseline where widening
-the TCB is at stake. -/
-def neverAllowlistable (a : String) : Bool :=
-  isNativeTrust a && !grandfatheredNativeTrust.contains a
-
 /-- Phase 1: DFS. Compute, for every constant reachable from the work list, an
 under-approximation of the set of axioms it transitively depends on, memoised across
 roots via `memo`. Also records the finalisation order — a topological order of the
@@ -102,51 +66,48 @@ dependency graph except inside mutual-inductive cycles.
 
 `gray` marks constants whose dependencies are still being expanded. Back-edges (cycles,
 which the kernel only permits inside mutual inductive families) contribute nothing in
-this phase; `repair` below propagates to the true fixpoint. Axioms and solicited constants
-contribute themselves, without cutting off traversal of their types or values. For axioms,
-following the type matches Lean's own `CollectAxioms`. -/
-partial def collect (solicited : Std.HashSet Name) (env : Environment) (stack : List Name)
+this phase; `repair` below propagates to the true fixpoint. Axioms contribute themselves,
+and their types are still traversed, matching Lean's own `CollectAxioms`. -/
+partial def collect (env : Environment) (stack : List Name)
     (gray : Std.HashSet Name) (memo : Std.HashMap Name (Array Name)) (order : Array Name) :
     Std.HashMap Name (Array Name) × Array Name :=
   match stack with
   | [] => (memo, order)
   | n :: rest =>
     if memo.contains n then
-      collect solicited env rest gray memo order
+      collect env rest gray memo order
     else match env.find? n with
-      | none => collect solicited env rest gray (memo.insert n #[]) order
+      | none => collect env rest gray (memo.insert n #[]) order
       | some ci =>
         let deps := ci.getUsedConstantsAsSet.toList
         if gray.contains n then
-          let seed : Array Name :=
-            if solicited.contains n || (ci matches .axiomInfo _) then #[n] else #[]
+          let seed : Array Name := if ci matches .axiomInfo _ then #[n] else #[]
           let axs := deps.foldl (init := seed) fun acc d =>
             match memo[d]? with
             | some as => as.foldl (init := acc) fun acc a =>
                 if acc.contains a then acc else acc.push a
             | none => acc
-          collect solicited env rest gray (memo.insert n axs) (order.push n)
+          collect env rest gray (memo.insert n axs) (order.push n)
         else
           let pending := deps.filter fun d => !memo.contains d && !gray.contains d
-          collect solicited env (pending ++ stack) (gray.insert n) memo order
+          collect env (pending ++ stack) (gray.insert n) memo order
 
 /-- Phase 2: propagate to fixpoint. The DFS under-approximates inside mutual-inductive
 cycles (a member's taint may not reach its siblings), and — because `memo` persists
 across roots — anything finalised after reading such a member inherits the error.
 Re-deriving every set in finalisation order until nothing changes computes the least
-fixpoint of the closure equations for axioms and solicited constants. This is
+fixpoint of the closure equations for axioms. This is
 strictly more accurate than `#print axioms`, whose `CollectAxioms` has the same
 mutual-family blind spot this phase repairs. Sets grow monotonically and are bounded,
 so termination is immediate; in practice one or two passes suffice. -/
-partial def repair (solicited : Std.HashSet Name) (env : Environment) (order : Array Name)
+partial def repair (env : Environment) (order : Array Name)
     (memo : Std.HashMap Name (Array Name)) : Std.HashMap Name (Array Name) :=
   let (memo', changed) := order.foldl (init := (memo, false)) fun (memo, changed) n =>
     match env.find? n with
     | none => (memo, changed)
     | some ci =>
       let deps := ci.getUsedConstantsAsSet.toList
-      let seed : Array Name :=
-        if solicited.contains n || (ci matches .axiomInfo _) then #[n] else #[]
+      let seed : Array Name := if ci matches .axiomInfo _ then #[n] else #[]
       let axs := deps.foldl (init := seed) fun acc d =>
         match memo[d]? with
         | some as => as.foldl (init := acc) fun acc a =>
@@ -155,7 +116,7 @@ partial def repair (solicited : Std.HashSet Name) (env : Environment) (order : A
       let old := (memo[n]?.getD #[]).size
       if axs.size == old then (memo, changed)
       else (memo.insert n axs, true)
-  if changed then repair solicited env order memo' else memo'
+  if changed then repair env order memo' else memo'
 
 /-- One row of the per-declaration report. -/
 structure Entry where
@@ -166,46 +127,15 @@ structure Entry where
   axioms : Array String
   deriving ToJson
 
-/-- A declaration depending on axioms beyond the standard foundation (and `sorryAx`,
-which is tracked separately). -/
-structure NonstandardEntry where
-  name : String
-  axioms : Array String
-  deriving FromJson, ToJson
-
-/-- A reviewed external result whose proof is solicited at the linked issue. -/
-structure SolicitedEntry where
-  name : String
-  issue : String
-  deriving FromJson, ToJson
-
-/-- The committed regression baseline. -/
-structure Baseline where
-  «sorry» : Array String
-  nonstandard : Array NonstandardEntry
-  solicited : Array SolicitedEntry := #[]
-  deriving ToJson
-
-/-- Older baselines omit the reviewed solicited list; malformed present fields still fail. -/
-instance : FromJson Baseline where
-  fromJson? json := do
-    let debt ← json.getObjValAs? (Array String) "sorry"
-    let nonstandard ← json.getObjValAs? (Array NonstandardEntry) "nonstandard"
-    let solicited ← match json.getObjVal? "solicited" with
-      | .ok value => fromJson? value
-      | .error _ => pure #[]
-    return { «sorry» := debt, nonstandard, solicited }
-
 /-- Whether `s` is a nonempty string of ASCII decimal digits. -/
 def isDecimal (s : String) : Bool :=
   !s.isEmpty && s.toList.all fun c => '0' ≤ c && c ≤ '9'
 
 /-- Collapse exactly the generated counter suffix of native trust axioms
-(`Foo._native.native_decide.ax_1_1` → `Foo._native.native_decide`), so baselines key by
-owning declaration rather than a rebuild-volatile counter. Names that merely contain
-`._native.` or resemble a generated suffix are preserved: collapsing them would let two
-distinct axioms share one baseline key, so real taint could hide behind an accepted
-entry. -/
+(`Foo._native.native_decide.ax_1_1` → `Foo._native.native_decide`), so the report names
+the owning declaration rather than a rebuild-volatile counter. Names that merely contain
+`._native.` or resemble a generated suffix are preserved, so two distinct axioms never
+share one report name. -/
 def normalizeAxiomName (s : String) : String :=
   match s.splitOn "._native." with
   | [owner, tail] =>
@@ -246,9 +176,7 @@ def isReportable (n : Name) : Bool :=
 
 /-- Enumerate the reportable declarations of every module under one of `roots` and
 compute their axiom closures. -/
-def buildEntries (roots : Array Name) (listed : Array SolicitedEntry) :
-    CoreM (Array Entry × Nat × Array String) := do
-  let solicited : Std.HashSet Name := Std.HashSet.ofArray (listed.map (·.name.toName))
+def buildEntries (roots : Array Name) : CoreM (Array Entry × Nat) := do
   let env ← getEnv
   let mut targets : Array (Name × Name) := #[]
   let mut seen : Std.HashSet Name := {}
@@ -264,145 +192,56 @@ def buildEntries (roots : Array Name) (listed : Array SolicitedEntry) :
           targets := targets.push (c, mname)
   let (memo0, order) :=
     targets.foldl (init := (({} : Std.HashMap Name (Array Name)), (#[] : Array Name)))
-      fun (memo, order) (c, _) => collect solicited env [c] {} memo order
-  -- Include listed constants even when they are imported from outside the reported roots.
-  let (memo0, order) := listed.foldl (init := (memo0, order)) fun (memo, order) e =>
-    collect solicited env [e.name.toName] {} memo order
-  let memo := repair solicited env order memo0
-  -- Markers share the axiom closure, but only actual axioms enter the report.
-  let axiomsOf := fun n => (memo[n]?.getD #[]).filter fun a =>
-    match env.find? a with
-    | some (.axiomInfo _) => true
-    | _ => false
-  let mut violations : Array String := #[]
-  for e in listed do
-    let n := e.name.toName
-    if !(env.contains n) then
-      violations := violations.push s!"solicited {e.name}: stale entry (not in swept environment)"
-      continue
-    let axs := axiomsOf n
-    if !axs.contains ``sorryAx then
-      violations := violations.push
-        s!"solicited {e.name}: no sorryAx dependency; remove proved entry"
-    for a in axs do
-      if a != ``sorryAx && !standardAxioms.contains a then
-        violations := violations.push s!"solicited {e.name}: non-standard axiom {a}"
-    let doc := (← findDocString? env n).getD ""
-    if (doc.splitOn e.issue).length ≤ 1 then
-      violations := violations.push s!"solicited {e.name}: docstring missing issue URL {e.issue}"
+      fun (memo, order) (c, _) => collect env [c] {} memo order
+  let memo := repair env order memo0
   let mut entries : Array Entry := #[]
   for (c, mname) in targets do
     let some ci := env.find? c | continue
-    if !solicited.contains c then
-      for dep in memo[c]?.getD #[] do
-        if solicited.contains dep then
-          violations := violations.push s!"{c}: depends on solicited declaration {dep}"
     let line := (← findDeclarationRanges? c).map (·.range.pos.line)
     entries := entries.push {
       name := c.toString
       module := mname.toString
       kind := kindOf ci
       line := line
-      axioms := dedupSort ((axiomsOf c).map (normalizeAxiomName ·.toString)) }
-  return (entries.qsort (fun a b => a.name < b.name), moduleCount, violations)
+      axioms := dedupSort ((memo[c]?.getD #[]).map (normalizeAxiomName ·.toString)) }
+  return (entries.qsort (fun a b => a.name < b.name), moduleCount)
 
 def isStandard (a : String) : Bool :=
   standardAxioms.any (toString · == a)
 
 def sorryAxName : String := "sorryAx"
 
-/-- Non-standard axioms of an entry: everything beyond the standard foundation, with
-`sorryAx` tracked separately. -/
+/-- Axioms of an entry beyond the standard foundation, `sorryAx` included. -/
 def nonstandardOf (e : Entry) : Array String :=
-  e.axioms.filter fun a => !isStandard a && a != sorryAxName
+  e.axioms.filter (!isStandard ·)
 
-/-- Project the current build's taint sets into baseline form (deterministically
-sorted, since `entries` is sorted by name). -/
-def currentBaseline (entries : Array Entry) (solicited : Array SolicitedEntry) : Baseline where
-  solicited := solicited
-  «sorry» := (entries.filter fun e =>
-    e.axioms.contains sorryAxName && !solicited.any (·.name == e.name)).map (·.name)
-  nonstandard := entries.filterMap fun e =>
-    let bad := nonstandardOf e
-    if bad.isEmpty then none else some { name := e.name, axioms := bad }
-
-/-- Compare the current taint sets against the committed baseline. Returns the exit
-code: `1` iff there is a regression (new taint not covered by the baseline). -/
-def runCheck (cur base : Baseline) (basePath : String) : IO UInt32 := do
-  let newSorry := cur.«sorry».filter (!base.«sorry».contains ·)
-  let fixedSorry := base.«sorry».filter (!cur.«sorry».contains ·)
-  let newNonstd := cur.nonstandard.filter fun e =>
-    match base.nonstandard.find? (·.name == e.name) with
-    | none => true
-    | some b => e.axioms.any (!b.axioms.contains ·)
-  let fixedNonstd := base.nonstandard.filter fun b =>
-    match cur.nonstandard.find? (·.name == b.name) with
-    | none => true
-    | some c => b.axioms.any (!c.axioms.contains ·)
-  let mut failed := false
-  let floor := cur.nonstandard.filter fun e => e.axioms.any neverAllowlistable
-  if !floor.isEmpty then
-    failed := true
-    IO.eprintln s!"axiomsweep: {floor.size} declaration(s) depend on never-allowlistable \
-      axioms (bare native-compiler trust) — the baseline cannot green these:"
-    for e in floor do IO.eprintln s!"  {e.name} : {e.axioms.filter neverAllowlistable}"
-  if !newSorry.isEmpty then
-    failed := true
-    IO.eprintln s!"axiomsweep: {newSorry.size} declaration(s) newly depend on sorryAx \
-      (not in {basePath}):"
-    for n in newSorry do IO.eprintln s!"  {n}"
-  if !newNonstd.isEmpty then
-    failed := true
-    IO.eprintln s!"axiomsweep: {newNonstd.size} declaration(s) newly depend on \
-      non-standard axioms (not in {basePath}):"
-    for e in newNonstd do IO.eprintln s!"  {e.name} : {e.axioms}"
-  if failed then
-    IO.eprintln s!"axiomsweep: if intentional (new tagged sorry), refresh the baseline \
-      with `lake exe axiomsweep --update-baseline` and commit the diff."
-    return 1
-  if !fixedSorry.isEmpty || !fixedNonstd.isEmpty then
-    IO.println s!"axiomsweep: good news — {fixedSorry.size + fixedNonstd.size} baseline \
-      entr(y/ies) no longer tainted; run `lake exe axiomsweep --update-baseline` to shrink \
-      the baseline:"
-    for n in fixedSorry do IO.println s!"  {n}"
-    for e in fixedNonstd do IO.println s!"  {e.name}"
-  IO.println "axiomsweep: check passed (no new axiom/sorry taint)."
-  return 0
-
-/-- Rewrite the baseline from the current build. Refuses while never-allowlistable taint
-is present: `--check` would reject the result anyway (the floor is enforced there, not
-here), so writing it would only produce a baseline that looks authoritative and is not.
-Recording new `sorryAx` debt is fine — that is what the baseline is for. -/
-def runUpdate (cur : Baseline) (basePath : String) : IO UInt32 := do
-  let floor := cur.nonstandard.filter fun e => e.axioms.any neverAllowlistable
-  if !floor.isEmpty then
-    IO.eprintln s!"axiomsweep: refusing to update {basePath} while \
-      {floor.size} declaration(s) depend on never-allowlistable axioms:"
-    for e in floor do IO.eprintln s!"  {e.name} : {e.axioms.filter neverAllowlistable}"
-    IO.eprintln "axiomsweep: remove the dependency; the baseline cannot pre-authorize it."
-    return 1
-  IO.FS.writeFile basePath ((toJson cur).pretty ++ "\n")
-  IO.println s!"axiomsweep: wrote baseline to {basePath}"
-  return 0
+/-- The zero-debt gate. Returns the exit code: `1` iff some declaration depends on
+`sorryAx` or on another axiom beyond the standard foundation. -/
+def runCheck (entries : Array Entry) : IO UInt32 := do
+  let tainted := entries.filter fun e => !(nonstandardOf e).isEmpty
+  if tainted.isEmpty then
+    IO.println "axiomsweep: check passed (no sorry or non-standard axioms)."
+    return 0
+  IO.eprintln s!"axiomsweep: {tainted.size} declaration(s) depend on sorryAx or on \
+    non-standard axioms:"
+  for e in tainted do IO.eprintln s!"  {e.name} : {nonstandardOf e}"
+  IO.eprintln "axiomsweep: prove these or remove the dependency. ArkLib merges no sorry \
+    and no axiom beyond propext, Classical.choice and Quot.sound."
+  return 1
 
 structure Config where
   roots : Array Name := #[]
   out? : Option String := none
   check : Bool := false
-  update : Bool := false
-  baseline : String := "scripts/axiom_baseline.json"
 
 def parseArgs : List String → Config → Except String Config
   | [], cfg => .ok cfg
   | "--check" :: rest, cfg => parseArgs rest { cfg with check := true }
-  | "--update-baseline" :: rest, cfg => parseArgs rest { cfg with update := true }
   | "--out" :: path :: rest, cfg => parseArgs rest { cfg with out? := some path }
-  | "--baseline" :: path :: rest, cfg => parseArgs rest { cfg with baseline := path }
   | "--root" :: mod :: rest, cfg =>
     parseArgs rest { cfg with roots := cfg.roots.push mod.toName }
   | arg :: _, _ => .error s!"axiomsweep: unknown or incomplete argument: {arg}\n\
-      usage: lake exe axiomsweep [--out FILE] [--check] [--update-baseline] \
-      [--baseline FILE] [--root MOD]*\n      (--check and --update-baseline are mutually exclusive)"
+      usage: lake exe axiomsweep [--out FILE] [--check] [--root MOD]*"
 
 end AxiomSweep
 
@@ -414,21 +253,6 @@ unsafe def run (args : List String) : IO UInt32 := do
   let cfg ← match parseArgs args {} with
     | .ok cfg => pure cfg
     | .error e => IO.eprintln e; return 2
-  if cfg.check && cfg.update then
-    IO.eprintln "axiomsweep: --check and --update-baseline are mutually exclusive"
-    return 2
-  let base : Baseline ←
-    if ← System.FilePath.pathExists cfg.baseline then
-      match Json.parse (← IO.FS.readFile cfg.baseline) >>= fromJson? (α := Baseline) with
-      | .ok b => pure b
-      | .error e =>
-        IO.eprintln s!"axiomsweep: cannot parse baseline {cfg.baseline}: {e}"
-        return 2
-    else if cfg.check then
-      IO.eprintln s!"axiomsweep: baseline {cfg.baseline} not found; \
-        create it with `lake exe axiomsweep --update-baseline`"
-      return 2
-    else pure { «sorry» := #[], nonstandard := #[] }
   let roots := if cfg.roots.isEmpty then defaultRoots else cfg.roots
   initSearchPath (← findSysroot)
   enableInitializersExecution
@@ -440,16 +264,17 @@ unsafe def run (args : List String) : IO UInt32 := do
         (roots must be importable modules — glob-based libs without an umbrella \
         module cannot be swept by library name)"
       return (2 : UInt32)
-  let ((entries, moduleCount, violations), _) ← (buildEntries roots base.solicited).toIO
+  let ((entries, moduleCount), _) ← (buildEntries roots).toIO
     { fileName := "<axiomsweep>", fileMap := default } { env }
-  let cur := currentBaseline entries base.solicited
-  let distinctNonstd := cur.nonstandard.foldl (init := (#[] : Array String)) fun acc e =>
-    e.axioms.foldl (init := acc) fun acc a => if acc.contains a then acc else acc.push a
+  let sorryCount := (entries.filter (·.axioms.contains sorryAxName)).size
+  let others := entries.filter fun e => (nonstandardOf e).any (· != sorryAxName)
+  let distinctOthers := others.foldl (init := (#[] : Array String)) fun acc e =>
+    (nonstandardOf e).foldl (init := acc) fun acc a =>
+      if a == sorryAxName || acc.contains a then acc else acc.push a
   IO.println s!"axiomsweep: {entries.size} declarations across {moduleCount} modules \
     under {roots}"
-  IO.println s!"  sorryAx-tainted: {cur.«sorry».size}; solicited: {cur.solicited.size}"
-  IO.println s!"  non-standard-axiom-tainted: {cur.nonstandard.size} \
-    (axioms: {distinctNonstd})"
+  IO.println s!"  sorryAx-tainted: {sorryCount}"
+  IO.println s!"  non-standard-axiom-tainted: {others.size} (axioms: {distinctOthers})"
   if let some out := cfg.out? then
     let report := Json.mkObj [
       ("roots", toJson (roots.map (·.toString))),
@@ -457,14 +282,8 @@ unsafe def run (args : List String) : IO UInt32 := do
       ("declarations", toJson entries)]
     IO.FS.writeFile out (report.pretty ++ "\n")
     IO.println s!"axiomsweep: wrote report to {out}"
-  if (cfg.check || cfg.update) && !violations.isEmpty then
-    for v in violations do IO.eprintln s!"axiomsweep: {v}"
-    IO.eprintln "axiomsweep: solicited-proof violations; baseline will not be updated."
-    return 1
-  if cfg.update then
-    return (← runUpdate cur cfg.baseline)
   if cfg.check then
-    return (← runCheck cur base cfg.baseline)
+    return (← runCheck entries)
   return 0
 
 open AxiomSweep in

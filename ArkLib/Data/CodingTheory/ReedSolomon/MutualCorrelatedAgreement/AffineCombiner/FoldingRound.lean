@@ -30,8 +30,10 @@ Here `n` is the domain size and `q` the field size.
 This is the first inequality of (5.4) for `t` rows.
 The proof of Theorem 5.2 of [CWYZ26] uses it in every folding round.
 For `t = 1`, `interleavedEqualDegreeMcaError_one` identifies the error with
-`equalDegreeMcaError`. The one-row reduction is proved in `EqualDegree`.
-Both reductions count exceptional triples with the shared bound in `ToMathlib/Finset/TripleCount`.
+`equalDegreeMcaError`.
+`EqualDegreeTheorem` derives the one-row reduction and the one-row explicit bound from the
+`t`-row ones through this identity and `interleavedAffineMcaError_one`.
+The reduction counts exceptional triples with the shared bound in `ToMathlib/Finset/TripleCount`.
 The paper packs the rows into an extension of degree `t`.
 The direct tuple count gives the paper’s bound with no factor of `t`.
 The explicit bound `(4/η + ℓ₀)/q + 2¹⁴ n² / (ρ³ η¹⁰ q²)` follows from the bound (5.7).

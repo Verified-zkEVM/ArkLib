@@ -54,6 +54,8 @@ The [paper page](../../../../../../docs/kb/papers/CWYZ26.md) records the corresp
   `ReedSolomon.AffineParams.card_mul_add_lt_sq`: `d + e < B` and `n (d + e) < B²`.
 * `ReedSolomon.AffineParams.sixty_four_mul_lt`: `64 e < n`.
 * `ReedSolomon.affineCount_numerics_le`: the final numerical estimate for `k ≥ 1`.
+* `ReedSolomon.affineThreshold_johnson`: the Johnson condition `n d < (A - 1)²` at the
+  threshold `A`.
 
 ## References
 
