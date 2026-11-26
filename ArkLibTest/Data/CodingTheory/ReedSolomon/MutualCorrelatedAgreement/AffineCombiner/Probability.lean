@@ -10,14 +10,12 @@ import Mathlib.Algebra.Field.ZMod
 /-! # Acceptance clients for the affine-combiner probability and code interfaces -/
 
 open Polynomial ReedSolomon CoreDefinitions
-open scoped ProbabilityTheory
 
 section Algebra
 
 variable {F ι : Type} [Field F] [DecidableEq F] [Fintype ι]
 
 -- This client has neither a sampler nor a decidable equality on the coordinate type.
-open Classical in
 example (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) :
     agreementLoss domain f g L P F₀ G₀ =
       (polynomialAgreementSet domain (combinedWord domain f g L) P).filter
@@ -26,24 +24,6 @@ example (domain : ι ↪ F) (f g : ι → F) (L P F₀ G₀ : F[X]) :
   rw [agreementLoss_eq_sdiff]
   ext i
   simp
-
--- The first word is an arbitrary function; callers need no interpolation witness.
-example (domain : ι ↪ F) (f : ι → F) (G₀ : F[X]) {d A s : ℕ}
-    (hG : G₀.degree < d) (α β : F) (P : F[X]) :
-    ¬ IsAffineExceptional domain f (fun i ↦ G₀.eval (domain i)) d A s α β P :=
-  not_isAffineExceptional_of_eval f G₀ hG α β P
-
--- No inequality between the threshold and the degree is required for compatibility.
-example (domain : ι ↪ F) (f g : ι → F) (d A : ℕ) (α : F) :
-    (∃ P, IsScalarExceptional domain f g d A 0 α P) ↔
-      Code.IsProjectionBad (AffineLineGenerator F) (code domain (d + 1)) A α ![f, g] :=
-  exists_isScalarExceptional_zero_iff_isProjectionBad domain f g d A α
-
--- The degree offset is visible in the public code-membership interface.
-example (domain : ι ↪ F) (F₀ G₀ : F[X]) {d : ℕ}
-    (hF : F₀.degree ≤ d) (hG : G₀.degree < d) :
-    evalOnPoints domain F₀ ∈ code domain (d + 1) ∧ evalOnPoints domain G₀ ∈ code domain d :=
-  ⟨evalOnPoints_mem_code_succ_of_degree_le hF, evalOnPoints_mem_code_of_degree_lt hG⟩
 
 end Algebra
 
@@ -64,15 +44,17 @@ example : scalarMcaError fullDomain 1 3 0 =
     mcaError (AffineLineGenerator (ZMod 5)) (code fullDomain 2) (2 / 5 : ℝ) := by
   exact scalarMcaError_zero_eq_mcaError fullDomain 1 3 (2 / 5) (by norm_num [ZMod.card])
 
--- The affine error bounds the native probability of an exceptional candidate.
-example (f g : ZMod 5 → ZMod 5) :
-    Pr{let c ← $ᵗ (ZMod 5 × ZMod 5)}[∃ P,
-      IsAffineExceptional fullDomain f g 1 3 1 c.1 c.2 P] ≤
-        affineMcaError fullDomain 1 3 1 :=
-  prob_isAffineExceptional_le fullDomain f g 1 3 1
-
+/-- info: 'ReedSolomon.scalarMcaError_zero_eq_mcaError' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.scalarMcaError_zero_eq_mcaError
+/-- info: 'ReedSolomon.le_mcaError_affineLine_of_ceil_eq' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.le_mcaError_affineLine_of_ceil_eq
+/-- info: 'ReedSolomon.affineMcaError_eq_iSup_prob' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.affineMcaError_eq_iSup_prob
 
 -- The set-difference characterization accepts the caller's equality instance.

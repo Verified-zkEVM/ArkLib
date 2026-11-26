@@ -25,7 +25,24 @@ open Probability
 #guard_msgs in
 #eval maxEventProbability (fun (_ : Fin 2) (_ : Fin 0) ↦ true) == 0
 
+-- In either context, the best counts at the two first challenges are one and two.
+-- A constant reply gives at most two. Choosing the context after the first challenge gives four.
+/-- info: true -/
+#guard_msgs in
+#eval maxEventCountWithReply
+  (fun w t r s : Bool ↦ ((r == t) && ((t == w) || s)) || (w && !r && s)) == 3
+
+-- An empty reply type gives zero even when both challenge spaces are nonempty.
+/-- info: true -/
+#guard_msgs in
+#eval maxEventCountWithReply (fun (_ : Unit) (_ : Bool) (_ : Fin 0) (_ : Bool) ↦ true) == 0
+
 /-- info: 'Probability.ofReal_maxEventProbability_eq_iSup_of_iff' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
 #print axioms Probability.ofReal_maxEventProbability_eq_iSup_of_iff
+
+/-- info: 'Probability.maxEventCount_eq_maxEventCountWithReply' depends on axioms:
+[propext, Classical.choice, Quot.sound] -/
+#guard_msgs (whitespace := lax) in
+#print axioms Probability.maxEventCount_eq_maxEventCountWithReply

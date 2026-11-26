@@ -5,29 +5,52 @@ Authors: Tobias Rothmann, Quang Dao
 -/
 module
 
-public import ArkLib.Commitments.Functional.Basic
-public import ArkLib.Commitments.Functional.KZG.Algebra
-public import ArkLib.Commitments.Functional.KZG.Sampling
 public import CompPoly.Univariate.Basic
 public import CompPoly.Univariate.ToPoly
-public import CompPoly.Univariate.Lagrange
 public import CompPoly.Univariate.DivisionCorrectness
-public import Mathlib.Algebra.Field.ZMod
-public import Mathlib.Algebra.Order.Star.Basic
 public import Mathlib.Algebra.Polynomial.FieldDivision
-public import VCVio.OracleComp.SimSemantics.QueryImpl.Constructions.Core
-public import VCVio.OracleComp.QueryTracking.CachingOracle
+public import VCVio.CryptoFoundations.GroupModel.Typed
+public import VCVio.CryptoFoundations.HardnessAssumptions.SDH
 
 /-!
-# The KZG Polynomial Commitment Scheme
+# The KZG polynomial commitment scheme
 
-This file defines the KZG polynomial commitment scheme and instantiates it as a
-functional commitment scheme. Correctness and security proofs live in sibling files.
+This file defines the algorithms of the KZG polynomial commitment scheme [KZG10] in VCVio's
+additive conventions, together with the pointwise algebra that the security reductions use.
 
-## Notation
+## Setting
 
-* `Groups.PowerSrs.generate` builds the prover and verifier structured reference strings.
-* `commit`, `generateOpening`, and `verifyOpening` are the concrete KZG operations.
+The scalars form a field `F`. The source groups `G₁`, `G₂` and the target group `Gₜ` are
+`F`-modules, written additively, with a bilinear pairing `e : G₁ →ₗ[F] G₂ →ₗ[F] Gₜ` and generators
+`g₁ : G₁` and `g₂ : G₂`. The security lemmas assume `e g₁ g₂ ≠ 0` and that every element of `G₁`
+is a multiple of `g₁`; both hypotheses are passed unbundled.
+
+The only realizable instance is `F = ZMod r` for the prime order `r` of the groups: a cyclic group
+of prime order `r` is a `ZMod r`-module, and no other field acts on it. The generic field is a
+harmless generalization that keeps the statements free of `ZMod` casts.
+
+## Algorithms
+
+* `keygen` samples a nonzero trapdoor `τ` with `SDH.sampleTrapdoor` and returns the committer key
+  `committerKey g₁ τ n = (τ ^ i • g₁)ᵢ` and the verifier key `verifierKey g₂ τ = ![g₂, τ • g₂]`.
+  These are exactly the reference strings of `TSDH.experiment` and `ARSDH.experiment`.
+* Data is a coefficient vector `c : Fin (n + 1) → F`, the polynomial `∑ i, c i * X ^ i` of degree
+  at most `n`. `evaluate c x` evaluates it.
+* `commit ck c = ∑ i, c i • ck i`.
+* `generateOpening ck c q` commits to the quotient `(f - f(q)) / (X - q)`, computed with
+  CompPoly's `CPolynomial`.
+* `verifyOpening e g₁ vk cm q r π` checks `e (cm - r • g₁) (vk 0) = e π (vk 1 - q • vk 0)`.
+
+All algorithms except `keygen` are computable. `keygen` is noncomputable only because VCVio's
+`SDH.sampleTrapdoor` samples from a subtype through a noncomputable `SampleableType` instance.
+
+## Main statements
+
+* `commit_committerKey`: an honest commitment is `evaluate c τ • g₁`.
+* `commit_eq_ofCoeffs_point`: a commitment is the point of VCVio's algebraic representation
+  `GroupModel.AlgebraicPoint.ofCoeffs ck c`.
+* `smul_left_injective_of_pairing_ne_zero`: under `e g₁ g₂ ≠ 0`, `(· • g₁)` is injective.
+* `verifyOpening_eq`: an accepted opening `(cm, q, r, π)` satisfies `cm - r • g₁ = (τ - q) • π`.
 
 ## References
 
@@ -37,249 +60,167 @@ functional commitment scheme. Correctness and security proofs live in sibling fi
 
 @[expose] public section
 
-open CompPoly CompPoly.CPolynomial
+open CompPoly
 
 namespace KZG
 
-variable {G : Type} [Group G] {p : outParam ℕ} [hp : Fact (Nat.Prime p)] [Fact (0 < p)]
-  [PrimeOrderWith G p] {g : G}
+variable {F : Type} [Field F]
+variable {G₁ G₂ Gₜ : Type} [AddCommGroup G₁] [Module F G₁] [AddCommGroup G₂] [Module F G₂]
+  [AddCommGroup Gₜ] [Module F Gₜ]
+variable {n : ℕ}
 
-variable {G₁ : Type} [Group G₁] [PrimeOrderWith G₁ p] [DecidableEq G₁] {g₁ : G₁}
-  {G₂ : Type} [Group G₂] [PrimeOrderWith G₂ p] {g₂ : G₂}
-  {Gₜ : Type} [Group Gₜ] [PrimeOrderWith Gₜ p] [DecidableEq Gₜ]
-  [Module (ZMod p) (Additive G₁)] [Module (ZMod p) (Additive G₂)]
-  [Module (ZMod p) (Additive Gₜ)]
-  (pairing : (Additive G₁) →ₗ[ZMod p] (Additive G₂) →ₗ[ZMod p] (Additive Gₜ))
+section Algorithms
 
-variable {n : ℕ} -- the maximal degree of polynomials that can be committed to/opened.
+/-- The committer key `(τ ^ i • g₁)_{i ≤ n}`: the first-source part of the reference string of
+`TSDH.experiment` and `ARSDH.experiment`. -/
+def committerKey (g₁ : G₁) (τ : F) (n : ℕ) : Fin (n + 1) → G₁ :=
+  fun i => τ ^ (i : ℕ) • g₁
 
-/-- To commit to an `n + 1`-tuple of coefficients `coeffs` (corresponding to a polynomial of
-maximum degree `n`), we compute: `∏ i : Fin (n + 1), srs[i] ^ (p.coeff i)`. -/
-def commit (srs : Vector G₁ (n + 1)) (coeffs : Fin (n + 1) → ZMod p) : G₁ :=
-  ∏ i : Fin (n + 1), srs[i] ^ (coeffs i).val
+/-- The verifier key `![g₂, τ • g₂]`: the second-source part of the reference string of
+`TSDH.experiment` and `ARSDH.experiment`. -/
+def verifierKey (g₂ : G₂) (τ : F) : Fin 2 → G₂ :=
+  ![g₂, τ • g₂]
 
-/-- To generate an opening proving that a polynomial `poly` has a certain evaluation at `z`,
-  we return the commitment to the polynomial `q(X) = (poly(X) - poly.eval z) / (X - z)` -/
-def generateOpening (srs : Vector G₁ (n + 1))
-    (coeffs : Fin (n + 1) → ZMod p) (z : ZMod p) : G₁ :=
-    letI poly : CPolynomial (ZMod p) := CPolynomial.ofFn coeffs
-    letI q : CPolynomial (ZMod p) := divByMonic (poly - C (eval z poly)) (X - C z)
-    commit srs (fun i : Fin (n + 1) => q.coeff i)
+/-- Key generation samples a uniform nonzero trapdoor and returns both keys. It is noncomputable
+only because `SDH.sampleTrapdoor` is. -/
+noncomputable def keygen [Fintype F] [DecidableEq F] (g₁ : G₁) (g₂ : G₂) (n : ℕ) :
+    ProbComp ((Fin (n + 1) → G₁) × (Fin 2 → G₂)) := do
+  let τ ← SDH.sampleTrapdoor F
+  return (committerKey g₁ τ n, verifierKey g₂ τ)
 
-/-- To verify a KZG opening `opening` for a commitment `commitment` at point `z` with claimed
-evaluation `v`, we use the pairing to check "in the exponent" that `p(a) - p(z) = q(a) * (a - z)`,
-  where `p` is the polynomial and `q` is the quotient of `p` at `z` -/
-def verifyOpening (verifySrs : Vector G₂ 2) (commitment : G₁) (opening : G₁)
-    (z : ZMod p) (v : ZMod p) : Bool :=
-  pairing (commitment / g₁ ^ v.val) (verifySrs[0]) =
-    pairing opening (verifySrs[1] / g₂ ^ z.val)
+/-- Evaluate the polynomial with coefficient vector `c` at `x`. -/
+def evaluate [DecidableEq F] (c : Fin (n + 1) → F) (x : F) : F :=
+  (CPolynomial.ofFn c).eval x
 
-omit [Module (ZMod p) (Additive G₁)] [DecidableEq G₁] [Fact (0 < p)] in
-/-- The commitment to a mathlib polynomial `poly` of maximum degree `n` is equal to
-`g₁ ^ (poly.1.eval a).val` -/
-theorem commit_eq {a : ZMod p}
-    (poly : Polynomial.degreeLT (ZMod p) (n + 1)) :
-    commit (Groups.PowerSrs.tower g₁ a n) (Polynomial.degreeLTEquiv _ _ poly)
-      = g₁ ^ (poly.1.eval a).val := by
-  have {g₁ : G₁} (a b : ℕ) : g₁ ^ a = g₁ ^ b ↔ g₁ ^ (a : ℤ) = g₁ ^ (b : ℤ) := by
-    simp only [zpow_natCast]
-  simp only [commit, Groups.PowerSrs.tower, Fin.getElem_fin, Vector.getElem_ofFn]
-  simp_rw [← pow_mul, Finset.prod_pow_eq_pow_sum,
-    Polynomial.eval_eq_sum_degreeLTEquiv poly.property,
-      this,
-      ←orderOf_dvd_sub_iff_zpow_eq_zpow]
-  have hordg₁ : g₁ = 1 ∨ orderOf g₁ = p := by
-    have ord_g₁_dvd : orderOf g₁ ∣ p := by
-      rw [← PrimeOrderWith.hCard (G := G₁)]
-      apply orderOf_dvd_natCard
-    rw [Nat.dvd_prime hp.out, orderOf_eq_one_iff] at ord_g₁_dvd
-    exact ord_g₁_dvd
-  rcases hordg₁ with ord1 | ordp
-  · simp [ord1]
-  · simp only [ordp, Nat.cast_sum, Nat.cast_mul, Nat.cast_pow, ZMod.natCast_val, Subtype.coe_eta,
-    ← ZMod.intCast_eq_intCast_iff_dvd_sub, ZMod.intCast_cast, ZMod.cast_id', id_eq, Int.cast_sum,
-    Int.cast_mul, Int.cast_pow]
-    apply Fintype.sum_congr
-    intro x
-    exact mul_comm _ _
+/-- Commit to the coefficient vector `c`: `∑ i, c i • ck i`. -/
+def commit (ck : Fin (n + 1) → G₁) (c : Fin (n + 1) → F) : G₁ :=
+  ∑ i, c i • ck i
 
-omit [Module (ZMod p) (Additive G₁)] [DecidableEq G₁] [Fact (0 < p)] in
-/-- The commitment to a computable polynomial (CPolynomial) `poly` of
-maximum degree `n` is equal to `g₁ ^ (poly.eval a).val`. -/
-theorem commit_eq_c_polynomial {a : ZMod p}
-    (poly : CPolynomial (ZMod p)) (hn : poly.degree ≤ n) :
-    commit (Groups.PowerSrs.tower g₁ a n)
-      ((coeff poly) ∘ Fin.val)
-      = g₁ ^ (poly.eval a).val := by
-  have h_mem : poly.toPoly ∈ Polynomial.degreeLT (ZMod p) (n + 1) := by
-    rw [Polynomial.mem_degreeLT, ← degree_toPoly]
-    exact lt_of_le_of_lt hn (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self n))
-  rw [show poly.eval a = poly.toPoly.eval a from eval_toPoly a poly]
-  rw [show ((coeff poly) ∘ Fin.val : Fin (n + 1) → ZMod p) =
-      Polynomial.degreeLTEquiv (ZMod p) (n + 1) ⟨poly.toPoly, h_mem⟩ from by
-    ext i; simp only [Function.comp_apply, Polynomial.degreeLTEquiv]; exact coeff_toPoly poly i]
-  exact commit_eq ⟨poly.toPoly, h_mem⟩
+/-- The opening quotient `(f - f(q)) / (X - q)` of the polynomial `f` with coefficients `c`. -/
+def quotient [DecidableEq F] (c : Fin (n + 1) → F) (q : F) : CPolynomial F :=
+  (CPolynomial.ofFn c - CPolynomial.C (evaluate c q)).divByMonic
+    (CPolynomial.X - CPolynomial.C q)
 
-omit [DecidableEq Gₜ] [DecidableEq G₁] [Fact (0 < p)] in
-/-- A nonzero pairing value forces its first argument to be nontrivial. -/
-lemma ne_one_of_pairing_ne_zero (hpair : pairing g₁ g₂ ≠ 0) : g₁ ≠ 1 := by
-  intro h
-  apply hpair
-  rw [h]
-  exact LinearMap.map_zero₂ pairing _
+/-- The opening proof at `q`: the commitment to the quotient `(f - f(q)) / (X - q)`. -/
+def generateOpening [DecidableEq F] (ck : Fin (n + 1) → G₁) (c : Fin (n + 1) → F) (q : F) : G₁ :=
+  commit ck (fun i => (quotient c q).coeff i)
 
-omit [DecidableEq Gₜ] [DecidableEq G₁] [Fact (0 < p)] in
-/-- Linearity of the pairing in the first argument, written multiplicatively. -/
-lemma lin_fst (g₁ : G₁) (g₂ : G₂) (a : ℤ) :
-    a • (pairing g₁ g₂) = pairing (g₁ ^ a) g₂ := by
-  change a • (pairing (Additive.ofMul g₁) (Additive.ofMul g₂))
-    = pairing (Additive.ofMul (g₁ ^ a)) (Additive.ofMul g₂)
-  simp [ofMul_zpow]
+/-- Accept the claim that the committed polynomial takes value `r` at `q` with proof `π` when
+`e (cm - r • g₁) (vk 0) = e π (vk 1 - q • vk 0)`. -/
+def verifyOpening [DecidableEq Gₜ] (e : G₁ →ₗ[F] G₂ →ₗ[F] Gₜ) (g₁ : G₁) (vk : Fin 2 → G₂)
+    (cm : G₁) (q r : F) (π : G₁) : Bool :=
+  decide (e (cm - r • g₁) (vk 0) = e π (vk 1 - q • vk 0))
 
-omit [DecidableEq Gₜ] [DecidableEq G₁] [Fact (0 < p)] in
-/-- Linearity of the pairing in the second argument, written multiplicatively. -/
-lemma lin_snd (g₁ : G₁) (g₂ : G₂) (a : ℤ) :
-    a • (pairing g₁ g₂) = pairing g₁ (g₂ ^ a) := by
-  change a • (pairing (Additive.ofMul g₁) (Additive.ofMul g₂))
-    = pairing (Additive.ofMul g₁) (Additive.ofMul (g₂ ^ a))
-  simp [ofMul_zpow]
+end Algorithms
 
-omit [Fact (0 < p)] in
-/-- Powers with exponents congruent modulo `p` agree in a group of prime order `p`. -/
-lemma mod_p_eq (x y : ℤ) (g : G) (hxy : x ≡ y [ZMOD p]) : g ^ x = g ^ y := by
-  have hordg : g = 1 ∨ orderOf g = p := by
-    have ord_g_dvd : orderOf g ∣ p := by
-      have hc : Nat.card G = p := (PrimeOrderWith.hCard : Nat.card G = p)
-      simpa [hc] using (orderOf_dvd_natCard g)
-    have hdisj : orderOf g = 1 ∨ orderOf g = p := (Nat.dvd_prime hp.out).1 ord_g_dvd
-    simpa [orderOf_eq_one_iff] using hdisj
-  rcases hordg with ord1 | ordp
-  · simp [ord1]
-  · have hxmy : (orderOf g : ℤ) ∣ x - y := by
-      have hxmy_p : (p : ℤ) ∣ x - y := by
-        simpa using (Int.modEq_iff_dvd.mp hxy.symm)
-      simpa [ordp] using hxmy_p
-    exact (orderOf_dvd_sub_iff_zpow_eq_zpow).1 hxmy
+section Commitments
 
-omit [Fact (0 < p)] in
-/-- Additive form of `mod_p_eq`. -/
-lemma mod_p_eq_additive (x y : ℤ) (g : Additive G) (hxy : x ≡ y [ZMOD p]) :
-    x • g = y • g := by
-  have hxyeq : (Additive.toMul g) ^ x = (Additive.toMul g) ^ y :=
-    mod_p_eq (G := G) (p := p) (g := (Additive.toMul g)) x y hxy
-  simpa [ofMul_toMul, ofMul_zpow] using congrArg Additive.ofMul hxyeq
+section Coefficients
 
-omit [Fact (0 < p)] [DecidableEq G₁] in
-/-- Extract the exponent equation enforced by a successful KZG opening verification. -/
-lemma verify_opening_equation (α₁ β₁ τ cm prf₁ : ZMod p) (c pf₁ : G₁)
-    (srs : Vector G₁ (n + 1) × Vector G₂ 2)
-    (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-    (hpair : pairing g₁ g₂ ≠ 0) (hcm : c = g₁ ^ cm.val)
-    (hprf : pf₁ = g₁ ^ prf₁.val)
-    (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-      srs.2 c pf₁ α₁ β₁) :
-    cm - β₁ = prf₁ * (τ - α₁) := by
-    simp only [verifyOpening, decide_eq_true_eq] at hverify₁
-    rw [hsrs] at hverify₁
-    simp only [Groups.PowerSrs.generate, Groups.PowerSrs.tower, Nat.reduceAdd, Vector.getElem_ofFn,
-      pow_zero, pow_one] at hverify₁
-    rw [hcm, hprf] at hverify₁
-    simp_rw [← zpow_natCast_sub_natCast, ← zpow_natCast, ← lin_snd, ← lin_fst,
-      smul_smul] at hverify₁
-    have hne : Additive.toMul (pairing g₁ g₂ : Additive Gₜ) ≠ 1 := hpair
-    have hordE : orderOf (Additive.toMul (pairing g₁ g₂ : Additive Gₜ)) = p := by
-      have hdvd := orderOf_dvd_natCard (G := Gₜ)
-        (Additive.toMul (pairing g₁ g₂ : Additive Gₜ))
-      rw [PrimeOrderWith.hCard] at hdvd
-      rcases (Nat.dvd_prime Fact.out).1 hdvd with h1 | hp'
-      · exact absurd (orderOf_eq_one_iff.1 h1) hne
-      · exact hp'
-    have hdvd : (↑(orderOf (Additive.toMul (pairing g₁ g₂ : Additive Gₜ))) : ℤ) ∣
-        ((↑cm.val - ↑β₁.val : ℤ) - ((↑τ.val - ↑α₁.val) * ↑prf₁.val)) :=
-      orderOf_dvd_sub_iff_zpow_eq_zpow.mpr (congrArg Additive.toMul hverify₁)
-    rw [hordE] at hdvd
-    have hcast := ((ZMod.intCast_eq_intCast_iff_dvd_sub ((↑τ.val - ↑α₁.val) *
-      ↑prf₁.val : ℤ) (↑cm.val - ↑β₁.val : ℤ) p).mpr hdvd).symm
-    push_cast [ZMod.natCast_zmod_val] at hcast
-    rw [_root_.mul_comm] at hcast
-    exact hcast
+variable [DecidableEq F]
 
-omit [Fact (0 < p)] [DecidableEq G₁] in
-/-- Solve the exponent equation from `verify_opening_equation` for the proof exponent. -/
-lemma verify_opening_prf_equation (α₁ β₁ τ cm prf₁ : ZMod p) (c pf₁ : G₁)
-    (srs : Vector G₁ (n + 1) × Vector G₂ 2)
-  (hsrs : srs = Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ)
-  (hpair : pairing g₁ g₂ ≠ 0)
-  (hverify₁ : KZG.verifyOpening (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
-    srs.2 c pf₁ α₁ β₁)
-  (hcm : c = g₁ ^ cm.val) (hprf : pf₁ = g₁ ^ prf₁.val) (hτα : τ ≠ α₁) :
-    prf₁ = (cm - β₁) / (τ - α₁) := by
-  have h := verify_opening_equation pairing α₁ β₁ τ cm prf₁ c pf₁ srs hsrs hpair hcm
-    hprf hverify₁
-  rw [h, mul_div_cancel_right₀ prf₁ (sub_ne_zero.mpr hτα)]
+/-- The coefficients of `CPolynomial.ofFn c`, read through Mathlib's `Polynomial`. -/
+theorem coeff_toPoly_ofFn (c : Fin (n + 1) → F) (k : ℕ) :
+    (CPolynomial.ofFn c).toPoly.coeff k = if h : k < n + 1 then c ⟨k, h⟩ else 0 := by
+  rw [← CPolynomial.coeff_toPoly, CPolynomial.coeff_ofFn]
 
-open Commitment
+/-- A coefficient vector of length `n + 1` gives a polynomial of degree at most `n`. -/
+theorem natDegree_toPoly_ofFn_le (c : Fin (n + 1) → F) :
+    (CPolynomial.ofFn c).toPoly.natDegree ≤ n := by
+  rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+  intro k hk
+  rw [coeff_toPoly_ofFn]
+  split_ifs <;> first | rfl | omega
 
-/-- Local oracle interface for evaluating coefficient vectors as computable polynomials. -/
-local instance : OracleInterface (Fin (n + 1) → ZMod p) where
-  Query := ZMod p
-  spec := ZMod p →ₒ ZMod p
-  answer coeffs z := (CPolynomial.ofFn coeffs).eval z
+/-- Evaluation of a coefficient vector is Mathlib evaluation of the corresponding polynomial. -/
+theorem evaluate_eq_eval_toPoly (c : Fin (n + 1) → F) (x : F) :
+    evaluate c x = (CPolynomial.ofFn c).toPoly.eval x :=
+  CPolynomial.eval_toPoly x _
 
-open scoped NNReal
+/-- If `p` has degree at most `n`, the coefficient vector of its first `n + 1` coefficients
+represents `p`. -/
+theorem toPoly_ofFn_coeff {p : Polynomial F} (hp : p.natDegree ≤ n) :
+    (CPolynomial.ofFn (fun i : Fin (n + 1) => p.coeff i)).toPoly = p := by
+  ext k
+  rw [coeff_toPoly_ofFn]
+  split_ifs with hk
+  · rfl
+  · exact (Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)).symm
 
-namespace CommitmentScheme
+end Coefficients
 
-/-- The KZG instantiated as a **(functional) commitment scheme**.
+/-- An honest commitment to coefficients `c` of a polynomial `p` of degree at most `n` is
+`p.eval τ • g₁`. -/
+theorem commit_committerKey_of_coeff (g₁ : G₁) (τ : F) {p : Polynomial F} (hp : p.natDegree ≤ n)
+    (c : Fin (n + 1) → F) (hc : ∀ i, c i = p.coeff i) :
+    commit (committerKey g₁ τ n) c = p.eval τ • g₁ := by
+  simp only [commit, committerKey, smul_smul, ← Finset.sum_smul]
+  congr 1
+  rw [Polynomial.eval_eq_sum_range' (n := n + 1) (by omega),
+    ← Fin.sum_univ_eq_sum_range (fun i => p.coeff i * τ ^ i)]
+  simp [hc]
 
-  The scheme takes a pregenerated structured reference string (srs) for the
-  committer and the verifier (generated by `Groups.PowerSrs.generate`).
+/-- An honest commitment to coefficients `c` is `evaluate c τ • g₁`. -/
+theorem commit_committerKey [DecidableEq F] (g₁ : G₁) (τ : F) (c : Fin (n + 1) → F) :
+    commit (committerKey g₁ τ n) c = evaluate c τ • g₁ := by
+  rw [evaluate_eq_eval_toPoly]
+  refine commit_committerKey_of_coeff g₁ τ (natDegree_toPoly_ofFn_le c) c fun i => ?_
+  simp only [coeff_toPoly_ofFn, Fin.is_lt, dite_true]
 
-  - `commit` : a function that commits to an `n + 1`-tuple of coefficients `coeffs`
-  (corresponding to a polynomial of maximum degree `n`)
-  - `opening` : a non-interactive reduction (i.e. solely the committer sends a single
-  message) to prove the evaluation of the committed polynomial at a point `z`. The
-  message from the prover is the witness for the evaluation.
--/
-def kzg :
-    Commitment.Scheme unifSpec (Fin (n + 1) → ZMod p) G₁ Unit
-    (Vector G₁ (n + 1) × Vector G₂ 2)
-    (Vector G₁ (n + 1) × Vector G₂ 2) ⟨!v[.P_to_V], !v[G₁]⟩ where
-  keygen := do
-    let a ← Groups.sampleNonzeroZMod (p := p)
-    let srs := Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a
-    return (srs, srs)
-  commit := fun ck coeffs => return (commit ck.1 coeffs, ())
-  opening := fun (ck, vk) => {
-    prover := {
-      PrvState := fun
-        | 0 => (Fin (n + 1) → ZMod p) × ZMod p
-        | _ => Unit
+/-- A commitment is the point of VCVio's algebraic representation with coefficients `c` over the
+basis `ck`. -/
+theorem commit_eq_ofCoeffs_point (ck : Fin (n + 1) → G₁) (c : Fin (n + 1) → F) :
+    commit ck c = (GroupModel.AlgebraicPoint.ofCoeffs ck c).point :=
+  rfl
 
-      input := fun ⟨⟨commitment, z, v⟩, ⟨coefficients, _⟩⟩ =>
-        (coefficients, z)
+end Commitments
 
-      sendMessage := fun ⟨0, _⟩ => fun (coefficients, z) => do
-        let opening := generateOpening ck.1 coefficients z
-        return (opening, ())
+section Pairing
 
-      receiveChallenge := fun ⟨i, h⟩ => by
-        have : i = 0 := Fin.eq_zero i
-        subst this
-        nomatch h
+variable {e : G₁ →ₗ[F] G₂ →ₗ[F] Gₜ} {g₁ : G₁} {g₂ : G₂}
 
-      output := fun _ => return (true, ())
-    }
+/-- A nondegenerate pairing value forces a nonzero first generator. -/
+theorem ne_zero_left_of_pairing_ne_zero (he : e g₁ g₂ ≠ 0) : g₁ ≠ 0 := by
+  rintro rfl
+  simp at he
 
-    verifier := {
-      verify := fun ⟨commitment, z, v⟩ transcript => do
-        let opening : G₁ := transcript ⟨0, by decide⟩
-        return verifyOpening (g₁ := g₁) (g₂ := g₂) pairing vk.2 commitment opening z
-          (v : ZMod p)
-    }
-  }
+/-- A nondegenerate pairing value forces a nonzero second generator. -/
+theorem ne_zero_right_of_pairing_ne_zero (he : e g₁ g₂ ≠ 0) : g₂ ≠ 0 := by
+  rintro rfl
+  simp at he
 
+/-- Under `e g₁ g₂ ≠ 0`, scalars are determined by their multiples of `g₁`. -/
+theorem smul_left_injective_of_pairing_ne_zero (he : e g₁ g₂ ≠ 0) :
+    Function.Injective (· • g₁ : F → G₁) :=
+  smul_left_injective F (ne_zero_left_of_pairing_ne_zero he)
 
-end CommitmentScheme
+/-- Under `e g₁ g₂ ≠ 0`, scalars are determined by their multiples of `g₂`. -/
+theorem smul_right_injective_of_pairing_ne_zero (he : e g₁ g₂ ≠ 0) :
+    Function.Injective (· • g₂ : F → G₂) :=
+  smul_left_injective F (ne_zero_right_of_pairing_ne_zero he)
+
+/-- When `g₁` generates `G₁` and `e g₁ g₂ ≠ 0`, pairing with `g₂` is injective on `G₁`. -/
+theorem eq_of_pairing_eq (he : e g₁ g₂ ≠ 0) (hg₁ : Function.Surjective (· • g₁ : F → G₁))
+    {x y : G₁} (h : e x g₂ = e y g₂) : x = y := by
+  obtain ⟨a, ha⟩ := hg₁ (x - y)
+  have hzero : e (x - y) g₂ = 0 := by
+    rw [map_sub, LinearMap.sub_apply, h, sub_self]
+  rw [← ha] at hzero
+  simp only [map_smul, LinearMap.smul_apply, smul_eq_zero, he, or_false] at hzero
+  rw [← sub_eq_zero, ← ha, hzero]
+  exact zero_smul F g₁
+
+/-- **Opening equation.** If `e g₁ g₂ ≠ 0` and `g₁` generates `G₁`, an opening `(cm, q, r, π)`
+accepted under the honest verifier key satisfies `cm - r • g₁ = (τ - q) • π`. -/
+theorem verifyOpening_eq [DecidableEq Gₜ] (he : e g₁ g₂ ≠ 0)
+    (hg₁ : Function.Surjective (· • g₁ : F → G₁)) {τ : F} {cm : G₁} {q r : F} {π : G₁}
+    (h : verifyOpening e g₁ (verifierKey g₂ τ) cm q r π = true) :
+    cm - r • g₁ = (τ - q) • π := by
+  have h' := of_decide_eq_true h
+  simp only [verifierKey, Matrix.cons_val_zero, Matrix.cons_val_one] at h'
+  refine eq_of_pairing_eq he hg₁ ?_
+  rw [h', ← sub_smul, map_smul, map_smul, LinearMap.smul_apply]
+
+end Pairing
 
 end KZG
