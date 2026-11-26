@@ -1,0 +1,213 @@
+/*
+ * Styles of the ArkLib protocol specifications site: the protocol widget (classes `sw-…`) and the
+ * site's other blocks (classes `spec-…`). Prover is ink blue, verifier teal, checks amber: the three
+ * roles of a protocol figure.
+ */
+:root {
+  --sw-bg: #ffffff;
+  --sw-sunk: #f1f3f6;
+  --sw-ink: #161a22;
+  --sw-muted: #5a6273;
+  --sw-rule: #d9dde5;
+  --sw-prover: #3247a8;
+  --sw-prover-soft: #e6e9f8;
+  --sw-verifier: #0d7465;
+  --sw-verifier-soft: #e0f1ed;
+  --sw-check: #9a5b00;
+  --sw-check-soft: #fbefd9;
+  --sw-oracle: #7a3aa8;
+  --sw-oracle-soft: #f1e7f8;
+  --sw-good: #1d7a3a;
+  --sw-bad: #a8322a;
+  --sw-display: var(--verso-structure-font-family, "Helvetica Neue", Arial, sans-serif);
+  --sw-mono: var(--verso-code-font-family, ui-monospace, Menlo, monospace);
+}
+
+/* ---------- the widget ---------- */
+.spec-widget {
+  margin: 1.25rem 0 1.75rem;
+  background: var(--sw-bg);
+  border: 1px solid var(--sw-rule);
+  border-radius: 10px;
+  overflow: hidden;
+  color: var(--sw-ink);
+}
+.spec-widget-fallback { padding: 0.8rem 1rem; }
+.spec-widget pre.spec-src { white-space: pre; overflow-x: auto; font-size: 0.75rem; }
+.sw-bar {
+  display: flex; flex-wrap: wrap; gap: 0.6rem 1.2rem; align-items: center; justify-content: space-between;
+  padding: 0.7rem 0.9rem; border-bottom: 1px solid var(--sw-rule); background: var(--sw-sunk);
+}
+.sw-title { font-family: var(--sw-display); font-weight: 700; }
+.sw-seg {
+  display: inline-flex; flex-wrap: wrap; border: 1px solid var(--sw-rule); border-radius: 7px;
+  overflow: hidden; background: var(--sw-bg);
+}
+.sw-seg button {
+  font-family: var(--sw-display); font-size: 0.82rem; font-weight: 600; border: 0; background: transparent;
+  color: var(--sw-muted); padding: 0.4rem 0.75rem; cursor: pointer;
+}
+.sw-seg button[aria-pressed="true"] { background: var(--sw-ink); color: var(--sw-bg); }
+.spec-widget button:focus-visible, .spec-widget input:focus-visible { outline: 2px solid var(--sw-prover); outline-offset: 2px; }
+/* `position: relative` makes the scrolling body the containing block of KaTeX's absolutely
+ * positioned MathML copy, which would otherwise widen the page on a narrow screen. */
+.sw-body { padding: 1rem 0.9rem 1.2rem; overflow-x: auto; position: relative; }
+.sw-foot {
+  padding: 0.65rem 0.9rem; border-top: 1px solid var(--sw-rule); font-size: 0.82rem; line-height: 1.45;
+  color: var(--sw-muted); display: flex; flex-wrap: wrap; gap: 0.4rem 1.1rem;
+}
+.sw-foot code, .sw-cbox code { font-size: 0.9em; }
+.sw-legend i { display: inline-block; width: 0.75em; height: 0.75em; border-radius: 2px; margin-right: 0.35em; vertical-align: -0.05em; }
+.sw-sw-prover { background: var(--sw-prover); }
+.sw-sw-verifier { background: var(--sw-verifier); }
+.sw-sw-oracle { background: var(--sw-oracle); }
+.sw-sw-check { background: var(--sw-check); }
+.sw-sw-annot { background: var(--sw-muted); }
+.sw-tools { display: flex; gap: 0.6rem; align-items: center; flex-wrap: wrap; justify-content: flex-end; margin-bottom: 0.7rem; }
+.sw-tools.sw-spread { justify-content: space-between; }
+.sw-tools .sw-tools { margin-bottom: 0; }
+.sw-count { display: inline-flex; align-items: center; gap: 0.3rem; font-size: 0.85rem; }
+.sw-count input {
+  width: 3.4rem; font: inherit; padding: 0.15rem 0.3rem; color: var(--sw-ink); background: var(--sw-bg);
+  border: 1px solid var(--sw-rule); border-radius: 4px;
+}
+.sw-btn {
+  font-family: var(--sw-display); font-weight: 600; font-size: 0.82rem; border: 1px solid var(--sw-rule);
+  background: var(--sw-bg); color: var(--sw-ink); border-radius: 7px; padding: 0.35rem 0.75rem; cursor: pointer;
+}
+.sw-good { color: var(--sw-good); }
+.sw-bad { color: var(--sw-bad); }
+.sw-muted { color: var(--sw-muted); }
+.sw-small { font-size: 0.88rem; }
+.sw-annot, .sw-annot .katex { color: var(--sw-muted); }
+
+/* The figure: prover | arrow | verifier */
+.sw-fig {
+  min-width: 38rem; display: grid; grid-template-columns: minmax(0, 1fr) 11rem minmax(0, 1fr);
+  column-gap: 0.5rem; font-size: 0.95rem;
+}
+.sw-head {
+  font-family: var(--sw-display); font-weight: 700; font-size: 0.92rem; padding-bottom: 0.5rem;
+  border-bottom: 2px solid var(--sw-ink); margin-bottom: 0.4rem;
+}
+.sw-head.sw-p, .sw-who.sw-p { color: var(--sw-prover); }
+.sw-head.sw-v, .sw-who.sw-v { color: var(--sw-verifier); }
+.sw-head.sw-v { text-align: right; }
+.sw-band {
+  grid-column: 1 / -1; font-family: var(--sw-display); font-size: 0.76rem; font-weight: 600;
+  letter-spacing: 0.07em; text-transform: uppercase; color: var(--sw-muted); padding: 0.75rem 0 0.25rem;
+  border-bottom: 1px dashed var(--sw-rule); display: flex; flex-wrap: wrap; justify-content: space-between; gap: 0.3rem 1rem;
+}
+.sw-band .katex { text-transform: none; letter-spacing: 0; }
+.sw-band .sw-err { text-transform: none; letter-spacing: 0; font-weight: 500; min-width: 0; max-width: 100%; overflow-x: auto; overflow-y: hidden; }
+.sw-band.sw-stage { color: var(--sw-ink); border-bottom: 1.5px solid var(--sw-ink); padding-top: 1rem; }
+.sw-band.sw-stage-end { color: var(--sw-ink); border-bottom: 1.5px solid var(--sw-ink); }
+.sw-band.sw-case { color: var(--sw-oracle); border-bottom: 1.5px solid var(--sw-oracle); padding-top: 1rem; }
+.sw-band.sw-loop-end { border-bottom-style: solid; padding-top: 0.45rem; }
+.sw-cell { padding: 0.32rem 0.2rem; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 0.1rem; }
+.sw-cell.sw-r { text-align: right; align-items: flex-end; }
+.sw-arrow { display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 0.32rem 0; gap: 0.15rem; }
+.sw-arrow .sw-lbl { font-size: 0.85rem; text-align: center; line-height: 1.25; }
+.sw-arrow > svg { width: 100%; height: 12px; display: block; overflow: visible; }
+.sw-tag {
+  font-family: var(--sw-display); font-size: 0.66rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  padding: 0.05rem 0.4rem; border-radius: 999px; white-space: nowrap;
+}
+.sw-tag.sw-oracle { background: var(--sw-oracle-soft); color: var(--sw-oracle); }
+.sw-tag.sw-check { background: var(--sw-check-soft); color: var(--sw-check); }
+.sw-tag.sw-let, .sw-tag.sw-input { background: var(--sw-sunk); color: var(--sw-muted); }
+.sw-tag.sw-shared { background: #e3f2e7; color: var(--sw-good); }
+.sw-chk { color: var(--sw-check); }
+
+/* Claim flow */
+.sw-cflow { display: flex; flex-direction: column; align-items: stretch; max-width: 52rem; margin-inline: auto; }
+.sw-cbox { border: 1.4px solid var(--sw-rule); border-radius: 9px; padding: 0.65rem 0.9rem; background: var(--sw-sunk); display: flex; flex-direction: column; gap: 0.3rem; }
+.sw-cbox.sw-stagebox { background: var(--sw-prover-soft); border-color: var(--sw-prover); }
+.sw-cbox.sw-checkbox { background: var(--sw-check-soft); border-color: var(--sw-check); }
+.sw-cbox.sw-note { background: var(--sw-bg); border-style: dashed; }
+.sw-cbox p { margin: 0; }
+.sw-ctitle { font-family: var(--sw-display); font-weight: 700; font-size: 0.92rem; }
+.sw-cedge { border-left: 2px solid var(--sw-muted); margin-left: 1.6rem; padding: 0.5rem 0 0.5rem 1rem; display: flex; flex-direction: column; gap: 0.3rem; overflow-x: auto; }
+
+/* Transcript */
+.sw-tl { display: flex; flex-direction: column; gap: 0.85rem; min-width: 34rem; }
+.sw-tl-row { display: grid; grid-template-columns: 5.5rem minmax(0, 1fr); gap: 0.8rem; align-items: center; }
+.sw-who { font-family: var(--sw-display); font-weight: 600; font-size: 0.85rem; text-align: right; }
+.sw-tl-track { display: flex; gap: 3px; flex-wrap: wrap; align-items: stretch; }
+.sw-tl-grp { display: flex; flex-direction: column; gap: 3px; }
+.sw-tl-lab { font-family: var(--sw-display); font-size: 0.68rem; color: var(--sw-muted); white-space: nowrap; }
+.sw-tl-cells { display: flex; gap: 2px; }
+.sw-tl-cell {
+  width: 2.1rem; height: 2.1rem; border-radius: 4px; display: grid; place-items: center; font-family: var(--sw-mono);
+  font-size: 0.68rem; cursor: default; border: 1px solid transparent; padding: 0;
+}
+.sw-tl-gap { visibility: hidden; }
+.sw-k-message { background: var(--sw-prover-soft); color: var(--sw-prover); }
+.sw-k-oracle { background: var(--sw-oracle-soft); color: var(--sw-oracle); border-color: var(--sw-oracle); }
+.sw-k-challenge { background: var(--sw-verifier-soft); color: var(--sw-verifier); }
+.sw-k-check { background: var(--sw-check-soft); color: var(--sw-check); }
+.sw-k-let { background: var(--sw-sunk); color: var(--sw-muted); }
+.sw-tl-cell.sw-on { outline: 2px solid var(--sw-ink); }
+.sw-tl-detail { font-size: 0.92rem; min-height: 3.2rem; border-left: 3px solid var(--sw-rule); padding-left: 0.8rem; }
+.sw-path { font-family: var(--sw-mono); font-size: 0.85rem; }
+
+/* LaTeX and JSON */
+pre.sw-src { background: var(--sw-sunk); padding: 0.9rem; border-radius: 6px; overflow-x: auto; margin: 0; line-height: 1.45; font-size: 0.78rem; white-space: pre; }
+pre.sw-json { max-height: 34rem; overflow: auto; }
+
+/* ---------- the site's other blocks ---------- */
+.spec-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(11rem, 1fr)); gap: 1rem; margin: 1.25rem 0; }
+.spec-stat { border-top: 2px solid var(--sw-ink); padding-top: 0.55rem; display: flex; flex-direction: column; gap: 0.25rem; }
+.spec-stat b { font-family: var(--sw-display); font-size: 1.7rem; font-variant-numeric: tabular-nums; line-height: 1.1; }
+.spec-stat span { font-size: 0.9rem; color: var(--sw-muted); line-height: 1.4; }
+.spec-stat span p { margin: 0; }
+
+.spec-card { border: 1px solid var(--sw-rule); border-radius: 9px; padding: 0.9rem 1.1rem; margin: 1rem 0; background: var(--sw-bg); }
+.spec-card > .spec-card-head { display: flex; gap: 0.7rem; align-items: baseline; flex-wrap: wrap; font-family: var(--sw-display); font-weight: 700; font-size: 1.05rem; margin-bottom: 0.4rem; }
+.spec-card .spec-card-n { color: var(--sw-muted); font-variant-numeric: tabular-nums; }
+.spec-status { font-family: var(--sw-display); font-size: 0.7rem; font-weight: 700; padding: 0.1rem 0.45rem; border-radius: 999px; white-space: nowrap; letter-spacing: 0.03em; }
+.spec-status.spec-fixed { background: #e3f2e7; color: var(--sw-good); }
+.spec-status.spec-partial { background: var(--sw-check-soft); color: var(--sw-check); }
+.spec-status.spec-open { background: #f8e2e0; color: var(--sw-bad); }
+.spec-card dl { display: grid; grid-template-columns: 6.2rem minmax(0, 1fr); gap: 0.3rem 0.9rem; margin: 0; }
+.spec-card dt { font-family: var(--sw-display); font-size: 0.72rem; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: var(--sw-muted); padding-top: 0.25rem; }
+.spec-card dd { margin: 0; }
+.spec-card dd p:first-child { margin-top: 0; }
+.spec-card dd p:last-child { margin-bottom: 0; }
+@media (max-width: 640px) { .spec-card dl { grid-template-columns: minmax(0, 1fr); } .spec-card dt { padding-top: 0.4rem; } }
+.spec-card dt, .spec-card dd { min-width: 0; }
+
+.spec-sizes td.spec-num, .spec-sizes th.spec-num { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+.spec-sizes table { border-collapse: collapse; width: 100%; font-size: 0.92rem; }
+.spec-sizes th, .spec-sizes td { text-align: left; padding: 0.45rem 0.6rem; border-bottom: 1px solid var(--sw-rule); vertical-align: top; }
+.spec-sizes th { font-family: var(--sw-display); font-size: 0.76rem; letter-spacing: 0.05em; text-transform: uppercase; color: var(--sw-muted); font-weight: 600; }
+.spec-sizes code { font-size: 0.85em; }
+.spec-sizes .spec-total td { font-weight: 700; border-top: 1.5px solid var(--sw-ink); }
+.spec-sizes caption { caption-side: bottom; text-align: left; font-size: 0.82rem; color: var(--sw-muted); padding-top: 0.5rem; }
+
+/* Excerpts run up to 100 characters, about 790px of code, so two columns fit side by side only on a
+ * wide screen. There they extend past the text column into the empty space to its right. */
+.spec-columns { display: grid; grid-template-columns: minmax(0, 1fr); gap: 1rem; margin: 1rem 0 1.5rem; }
+@media (min-width: 1800px) {
+  .spec-columns { grid-template-columns: repeat(2, minmax(0, 1fr)); width: min(1700px, calc(100vw - 22rem)); }
+}
+.spec-column { border: 1px solid var(--sw-rule); border-radius: 9px; padding: 0.3rem 0.85rem 0.5rem; min-width: 0; }
+.spec-column-head { font-family: var(--sw-display); font-weight: 700; font-size: 0.92rem; padding: 0.4rem 0; border-bottom: 1px solid var(--sw-rule); margin-bottom: 0.4rem; }
+.spec-column.spec-before .spec-column-head { color: var(--sw-bad); }
+.spec-column.spec-after .spec-column-head { color: var(--sw-good); }
+.spec-column figure.spec-excerpt { margin: 0.6rem 0 0.8rem; }
+.spec-sizes .spec-note { font-size: 0.82rem; color: var(--sw-muted); }
+table.tabular td, table.tabular th { padding: 0.3rem 0.6rem; }
+/* On a narrow screen a table of long theorem names scrolls inside its own box instead of widening
+ * the page, and a name may break at any character. */
+main table.tabular { display: block; max-width: 100%; overflow-x: auto; position: relative; }
+main table.tabular code { overflow-wrap: anywhere; }
+/* File paths in captions and in running text break anywhere for the same reason, and the size tables
+ * scroll inside their own box. */
+main figcaption, main p code, main li code, main dd code { overflow-wrap: anywhere; }
+.spec-sizes { max-width: 100%; overflow-x: auto; position: relative; }
+/* Verso sets its text font on paragraphs only, so tables and the text of the widget would otherwise
+ * fall back to the browser's serif default. */
+main { font-family: var(--verso-text-font-family); }
+
+.sw-leanty { font-family: var(--sw-mono); white-space: pre-wrap; color: var(--sw-good); }

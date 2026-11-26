@@ -10,6 +10,15 @@ builds against `main`. It has no `sorry`, `admit`, `native_decide` or `smartUnfo
 and every theorem depends only on `propext`, `Classical.choice` and `Quot.sound`. Lean blocks below
 that name a declaration exist in it. Blocks marked "intended, not existing" specify later work.
 
+The site in `specsite/` presents the prototype as a Verso manual, like the Lean reference manual:
+the language, the four example protocols with their figures, the proof kit and the bridge, today's
+sum-check next to its specification, this record, and the sizes and benchmark. Lean builds the
+site from the prototype itself. It loads every code excerpt from the module that defines it,
+embeds the skeletons and figures that the specifications evaluate to, elaborates every transcript
+accessor the site shows, and checks that every theorem the site lists depends only on the three
+standard axioms. A renamed declaration, a changed figure or a broken accessor therefore fails the
+site's build. `specsite/README.md` gives the build steps.
+
 The first version of the prototype (two standalone files) left eight open points. Review judged
 them to be limitations, not open questions. The second version fixes each of them. Review of the
 second version found a ninth: a loop was written out round by round for one fixed count, so each
@@ -380,8 +389,8 @@ exported (21 for sum-check, 160 for Spartan, 47 for FRI and 101 for the branchin
   groups a round as challenge then word, while the kit groups it as words then challenge. Relating
   them is a regrouping lemma. Spartan needs per-stage contracts and their composition.
 - **FRI's commit-phase output language.** It is "the input is close or some fold fails", the bad
-  event the query phase needs. Linking it to ArkLib's `FoldTrace.Safe` and `Fri.query_soundness`
-  needs cast lemmas between the two ways of indexing subdomains.
+  event the query phase needs. Linking it to ArkLib's `FoldTrace.Safe` and
+  `Fri.FoldTrace.query_soundness` needs cast lemmas between the two ways of indexing subdomains.
 - **Probabilistic completeness.** Completeness is proved in its deterministic form, and ArkLib's
   `completeness` in the classical model is not instantiated.
 - **The general evaluation theorem for exported syntax** (item 1) and **simp support for formula
@@ -454,11 +463,11 @@ statement's languages.
 
 | Stage | Content | Exit |
 |---|---|---|
-| 0 | This record and the prototype library | The maintainer approves this record |
+| 0 | This record, the prototype library and its site | The maintainer approves this record |
 | 1 | The kit (blocks, iteration theorem, passive iteration verifier, claim reduction) in `ArkLib/Interaction/`; sum-check soundness re-proved through it | The new proof replaces the spine recursion in `Indexed.lean`, and the legacy-equivalence theorems still hold |
 | 2 | The formula language and the spec layer (descriptions, interpreters, generic lemmas, accessors, statement front end, exporter) for sum-check, with simp support for formula arguments | Sum-check's spec fits on one screen, its figure matches a paper figure line for line, and its soundness on its own claims goes through the bridge |
 | 3 | Stage contracts for inner stages and their composition along `StageChain`; oracle-verifier composition theorems; Spartan ported as a spec of stages | Spartan's total error comes from the chain theorem with no manual sum |
-| 4 | FRI (with the regrouping lemma and the link to `Fri.query_soundness`), then BinaryBasefold and RingSwitching, then WHIR | No `cast` or `Fin.vsum` in each spec, and each proof reuses the kit |
+| 4 | FRI (with the regrouping lemma and the link to `Fri.FoldTrace.query_soundness`), then BinaryBasefold and RingSwitching, then WHIR | No `cast` or `Fin.vsum` in each spec, and each proof reuses the kit |
 | 5 | Batching with placement; the Binary Jolt Book's first slice rendered from the skeleton | `spartan.outer` renders from the exported skeleton |
 
 Fiat–Shamir and BCS on the new layer run in parallel from stage 1. They need stage 3's composition

@@ -1,0 +1,41 @@
+# The protocol specification site, written in Verso's manual genre.
+#
+# A documentation-only package, set up like `docbuild/`: it requires ArkLib by path and shares the
+# root's package directory, so a warm root build is reused and the root's pins win. Its manifest is
+# not committed. See `specsite/README.md` for the build steps.
+name = "specsite"
+reservoir = false
+packagesDir = "../.lake/packages"
+defaultTargets = ["specsite"]
+
+[[require]]
+name = "Arklib"
+path = ".."
+
+[[require]]
+name = "verso"
+git = "https://github.com/leanprover/verso"
+rev = "v4.36.0"
+
+# The widget's script and the site's style sheet. Modules that `include_str` them rebuild when they
+# change.
+[[input_file]]
+name = "protocolJs"
+path = "assets/protocol.js"
+text = true
+
+[[input_file]]
+name = "siteCss"
+path = "assets/specsite.css"
+text = true
+
+# `allowNonModules`: the chapters import ArkLib modules, which use the module system, from classic
+# files, like the prototype library does.
+[[lean_lib]]
+name = "SpecSite"
+needs = ["protocolJs", "siteCss"]
+allowNonModules = true
+
+[[lean_exe]]
+name = "specsite"
+root = "SpecSiteMain"

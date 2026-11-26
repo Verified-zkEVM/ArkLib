@@ -1,0 +1,15 @@
+# The project from which the site loads highlighted Lean source. Verso runs
+# `lake build +Module:highlighted` here; SubVerso provides that facet. It requires ArkLib by path
+# and shares the root's package directory, like `specsite/`.
+name = "specsite-highlight"
+reservoir = false
+packagesDir = "../../.lake/packages"
+
+[[require]]
+name = "Arklib"
+path = "../.."
+
+[[require]]
+name = "subverso"
+git = "https://github.com/leanprover/subverso"
+rev = "f9c40d40521bc71f0c33bff422d085dd86d359bd"
