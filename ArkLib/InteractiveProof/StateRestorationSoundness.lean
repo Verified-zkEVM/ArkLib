@@ -338,8 +338,7 @@ def knowledgeSoundnessWithExtractor
 The non-rewinding extractor `E` is fixed before the prover. Failure `w_in = ⊥` is included
 in the event defined by `knowledgeSoundnessFailureProb`. The extractor is unrestricted:
 classical choice can recover a witness from any true statement, ignoring the transcript and logs.
-See `Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for
-fixed-statement interaction. -/
+See `IP.srKnowledgeSoundness_iff_srSoundness` for the ordinary public-coin SR case. -/
 def knowledgeSoundness
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -977,7 +976,9 @@ abbrev SRProver (Statement : Type) {Salt : Type} {n : ℕ} (pSpec : ProtocolSpec
 
 /-- An ordinary non-rewinding SR extractor computes `E(𝕩, τ, T, tr_sr)` from the original
 statement, chosen salt, final transcript, and SR move-response trace. It may use private coins
-and may fail; it receives no prover handle or private sampling log. -/
+and may fail; it receives no prover handle or private sampling log. This is the interface of
+[snarg-book, Definition 13.2.3]. [CO25, Definition 3.14] withholds the verifier messages, which the
+final transcript contains, so a CO25 extractor is one that ignores them. -/
 abbrev SRExtractor (Statement Witness : Type) {Salt : Type} {n : ℕ} (pSpec : ProtocolSpec n) :=
   Statement → Salt → pSpec.FullTranscript →
     QueryLog (srVerifierMessageOracle (Statement × Salt) pSpec) →
@@ -1069,6 +1070,54 @@ theorem srKnowledgeSoundnessQueryBoundedWithExtractor_to_generic
   simp only [SRProver.toReduction_ofReduction] at hResult
   exact hResult
 
+omit [DecidableEq Statement] [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)] in
+private theorem srKnowledgeSoundnessExp_prEvent
+    (V : Verifier Statement pSpec) (E : SRExtractor Statement Witness pSpec (Salt := Salt))
+    (P : SRProver Statement pSpec (Salt := Salt)) (base : Statement × Option Bool → Prop) :
+    Pr{let a ← (_root_.Verifier.StateRestoration.knowledgeSoundnessExperiment init emptyImpl
+      E.toReduction V P.toReduction)}[base (a.1, a.2.2.1)] =
+    Pr{let a ← (_root_.Verifier.StateRestoration.soundnessExperiment init emptyImpl V P)}[
+      base a] := by
+  rw [_root_.Verifier.StateRestoration.knowledgeSoundnessExperiment]
+  erw [AdaptiveGame.prEvent_runWithExtractor_eq init _ _ P.toReduction.withQueryLog _ _ _
+      (fun a : Statement × Option Witness × Option Bool × Unit => base (a.1, a.2.2.1))
+      (fun a v => base (a.1.1.1, v.2.1)) (by
+        rintro ⟨⟨⟨x, salt⟩, messages, u⟩, logP⟩ ⟨tr, y, logV⟩ w
+        rfl)]
+  have forget {ι α : Type} {spec : OracleSpec ι} (p : OracleComp spec α) :
+      Prod.fst <$> p.withQueryLog = p := loggingOracle.fst_map_run_simulateQ p
+  have erase {ι X Y T : Type} {spec : OracleSpec ι}
+      (V : _root_.Verifier spec X Y pSpec)
+      (P : Prover.StateRestoration.Soundness spec X pSpec (Salt := T))
+      (base : X × Option Y → Prop) : (do
+      let a ← P.withQueryLog
+      let v ← _root_.Verifier.StateRestoration.reconstructAndVerifyWithLog V a.1.1 a.1.2
+      pure (base (a.1.1.1, v.2.1))) = (do
+      let a ← P
+      let tr ← liftComp (a.2.deriveTranscriptSR (oSpec := spec) a.1) _
+      let y ← liftComp (V.run a.1.1 tr) _
+      pure (base (a.1.1, y))) := by
+    rw [← bind_map_left Prod.fst P.withQueryLog
+      (fun a : (X × T) × pSpec.Messages => do
+        let v ← _root_.Verifier.StateRestoration.reconstructAndVerifyWithLog V a.1 a.2
+        pure (base (a.1.1, v.2.1))), forget]
+    apply bind_congr
+    rintro ⟨input, messages⟩
+    simp only [_root_.Verifier.StateRestoration.reconstructAndVerifyWithLog,
+      bind_assoc, pure_bind]
+    apply bind_congr
+    intro tr
+    rw [← bind_map_left Prod.fst (liftComp (V.run input.1 tr).run.withQueryLog _)
+      (fun y => pure (base (input.1, y)))]
+    simp only [← liftComp_map, forget]
+    rfl
+  simp only [AdaptiveGame.run, SRProver.toReduction, withQueryLog_map, bind_map_left]
+  rw [erase V P base]
+  simp only [_root_.Verifier.StateRestoration.soundnessExperiment, AdaptiveGame.run,
+    StateT.run'_eq, simulateQ_bind, simulateQ_pure, StateT.run_bind,
+    StateT.run_pure, map_bind, map_pure, bind_assoc]
+
 end
 
 section Families
@@ -1107,11 +1156,59 @@ def srKnowledgeSoundnessWithExtractor (relation : Set (Statement × Witness)) (s
 /-- **[snarg-book, state-restoration knowledge soundness]** One non-rewinding extractor
 family satisfies `srKnowledgeSoundnessWithExtractor`. With no resource bound on the
 extractor, classical witness selection gives an extractor from soundness for the relation's
-language. See `Verifier.knowledgeSoundness_iff_relationSoundness` for this argument in the
-ordinary interactive game. -/
+language. See `IP.srKnowledgeSoundness_iff_srSoundness` for this equivalence. -/
 def srKnowledgeSoundness (relation : Set (Statement × Witness)) (size : Statement → ℕ)
     (error : ℕ → ℕ → ℕ → ENNReal) : Prop :=
   ∃ E, srKnowledgeSoundnessWithExtractor init V relation size E error
+
+omit [∀ s n i, SampleableType ((pSpec s n).Challenge i)] [DecidableEq Statement]
+    [∀ s n i, DecidableEq ((pSpec s n).Message i)]
+    [∀ s n i, DecidableEq ((pSpec s n).Challenge i)] in
+/-- Unrestricted existential SR extraction is equivalent to soundness for the input language. -/
+theorem srKnowledgeSoundness_iff_srSoundness
+    (relation : Set (Statement × Witness)) (size : Statement → ℕ)
+    (error : ℕ → ℕ → ℕ → ENNReal) :
+    srKnowledgeSoundness init V relation size error ↔
+      srSoundness init V relation.language size error := by
+  let base := _root_.Verifier.StateRestoration.soundnessFailureEvent relation.language {true}
+  constructor
+  · rintro ⟨E, hE⟩ s n t P hP
+    change Pr{let a ← (_root_.Verifier.StateRestoration.soundnessExperiment
+      (init s n) emptyImpl ((V s n).restrictSize size n) P)}[base a] ≤ _
+    rw [← srKnowledgeSoundnessExp_prEvent (init s n) _ (E s n) P base]
+    refine (prEvent_mono _ _ _ ?_).trans (hE s n t P hP)
+    rintro ⟨x, w, _ | y, u⟩ h
+    · exact False.elim h
+    · apply (relationKSFailEvent_iff _ _ _ _ _ _).2
+      exact ⟨fun v _ => (Set.not_mem_language_iff _ _).1 h.2 v,
+        y, rfl, h.1⟩
+  · intro h
+    let E : ∀ s n, SRExtractor Statement Witness (pSpec s n) (Salt := Salt s n) :=
+      fun _ _ x _ _ _ => OptionT.mk (pure (relation.chooseWitness x))
+    refine ⟨E, fun s n t P hP => ?_⟩
+    have hc (x : Statement) (y : Option Bool) (u : Unit) :
+        relationKSFailEvent relation acceptRelation (x, relation.chooseWitness x, y, u) ↔
+          base (x, y) := by
+      rw [relationKSFailEvent_iff, Set.forall_mem_chooseWitness_notMem_iff]
+      cases y <;> simp [base, _root_.Verifier.StateRestoration.soundnessFailureEvent,
+        acceptRelation, and_comm]
+    have hm := srKnowledgeSoundnessExp_prEvent (init s n)
+      ((V s n).restrictSize size n) (E s n) P base
+    change Pr{let a ← (_root_.Verifier.StateRestoration.knowledgeSoundnessExperiment
+      (init s n) emptyImpl (E s n).toReduction ((V s n).restrictSize size n) P.toReduction)}[
+      relationKSFailEvent relation acceptRelation a] ≤ _
+    have he : Pr{let a ← (_root_.Verifier.StateRestoration.knowledgeSoundnessExperiment
+        (init s n) emptyImpl (E s n).toReduction ((V s n).restrictSize size n) P.toReduction)}[
+        relationKSFailEvent relation acceptRelation a] =
+        Pr{let a ← (_root_.Verifier.StateRestoration.soundnessExperiment
+          (init s n) emptyImpl ((V s n).restrictSize size n) P)}[base a] := by
+      rw [← hm]
+      simp only [_root_.Verifier.StateRestoration.knowledgeSoundnessExperiment,
+        AdaptiveGame.runWithExtractor, AdaptiveGame.execute, E, SRExtractor.toReduction,
+        OptionT.run_mk, liftComp_pure, simulateQ_pure, simulateQ_bind,
+        StateT.run'_eq, StateT.run_bind, StateT.run_pure, map_bind, map_pure,
+        bind_assoc, pure_bind, hc]
+    exact he.le.trans (h s n t P hP)
 
 end Families
 

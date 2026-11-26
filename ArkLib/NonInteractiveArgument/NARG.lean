@@ -96,7 +96,10 @@ abbrev Prover {ι : Type} (publicSpec : OracleSpec ι) (Statement NARGString : T
 
 /-- A straight-line NARG extractor receives the statement, the NARG string, and both public
 query logs. It runs in the final shared oracle state: its public queries go to the game's oracle
-handler and its private coins are uniform. -/
+handler and its private coins are uniform. The inputs are those of [snarg-book, Definition 7.1.5].
+[CO25, Definition 3.6] also withholds the verifier log, and neither source lets the extractor
+query the public oracles; an extractor that ignores the verifier log and makes no public queries
+satisfies both. -/
 abbrev Extractor {ι : Type} (publicSpec : OracleSpec ι) (Statement Witness NARGString : Type) :=
   Statement → NARGString → QueryLog publicSpec → QueryLog publicSpec →
     OptionT (OracleComp (publicSpec + unifSpec)) Witness

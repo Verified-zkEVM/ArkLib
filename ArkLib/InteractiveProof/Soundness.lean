@@ -5,7 +5,7 @@ Authors: Yuxi Zheng, Chung Thai Nguyen, Michele Orrù
 -/
 module
 
-public import ArkLib.OracleReduction.Security.Basic
+public import ArkLib.OracleReduction.Security.UnboundedExtraction
 public import VCVio.OracleComp.QueryTracking.QueryBound.Simulation
 public import VCVio.OracleComp.QueryTracking.QueryLog
 
@@ -81,6 +81,48 @@ def IsQueryBound (P : AdaptiveProver spec Stmt Out WitOut pSpec)
 
 end AdaptiveProver
 
+private theorem fst_map_withQueryLog {ι α : Type} {spec : OracleSpec ι}
+    (p : OracleComp spec α) : Prod.fst <$> p.withQueryLog = p :=
+  loggingOracle.fst_map_run_simulateQ p
+
+/-- Relation extraction fails when every returned witness is invalid and the output is valid. -/
+theorem relationKSFailEvent_iff {X W Y Z : Type} (r : Set (X × W)) (s : Set (Y × Z))
+    (x : X) (w : Option W) (y : Option Y) (z : Z) :
+    relationKSFailEvent r s (x, w, y, z) ↔
+      (∀ v ∈ w, (x, v) ∉ r) ∧ ∃ v ∈ y, (v, z) ∈ s := by
+  cases w <;> cases y <;> simp [relationKSFailEvent, and_comm]
+
+namespace AdaptiveGame
+
+/-- An event independent of the extracted witness has the probability of the underlying run. -/
+theorem prEvent_runWithExtractor_eq {ι κ σ A B W O : Type}
+    {spec : OracleSpec ι} {eSpec : OracleSpec κ}
+    (init : ProbComp σ) (impl : QueryImpl spec (StateT σ ProbComp))
+    (eImpl : QueryImpl eSpec (StateT σ ProbComp)) (P : OracleComp spec A)
+    (V : A → OracleComp spec B) (E : A → B → OptionT (OracleComp eSpec) W)
+    (read : A → B → Option W → O) (bad : O → Prop) (base : A → B → Prop)
+    (h : ∀ a b w, bad (read a b w) ↔ base a b) :
+    Pr{let out ← runWithExtractor init impl eImpl P V E read}[bad out] =
+      prEvent (run init impl P V base) := by
+  have bindCongr {α : Type} (p : ProbComp α) (f g : α → ProbComp Prop)
+      (hfg : ∀ a, prEvent (f a) = prEvent (g a)) :
+      prEvent (p >>= f) = prEvent (p >>= g) := by
+    simpa only [id_map] using prEvent_bind_congr p f g id id
+      (fun a => by simpa only [id_map] using hfg a)
+  simp only [runWithExtractor, run, execute, simulateQ_bind, simulateQ_pure,
+    StateT.run'_eq, StateT.run_bind, StateT.run_pure, map_bind, bind_assoc, pure_bind, map_pure]
+  apply bindCongr
+  intro st
+  apply bindCongr
+  rintro ⟨a, st⟩
+  apply bindCongr
+  rintro ⟨b, st⟩
+  simp only [h]
+  simpa only [map_eq_pure_bind, bind_assoc, pure_bind, id_eq, bind_pure] using
+    (EvalDistEq.map_const ((simulateQ eImpl (E a b).run).run st) (base a b)).prEvent_eq id
+
+end AdaptiveGame
+
 namespace Verifier
 
 variable {ι σ Stmt Out Wit WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
@@ -127,6 +169,49 @@ def adaptiveKnowledgeSoundnessExp
     (fun ((x, tr, wOut), logP) (_, logV) => extract x wOut tr logP.fst.publicQueries logV)
     (fun ((x, _, wOut), _) (out, _) wIn => (x, wIn, out, wOut))
 
+/-- Run adaptive interaction, retaining the output witness supplied by the prover. -/
+def adaptiveRelationSoundnessExp
+    (P : AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec) :
+    ProbComp (Stmt × Option Out × WitOut) :=
+  AdaptiveGame.run init (impl + QueryImpl.id' unifSpec + challengeQueryImpl) P.run
+    (fun (x, tr, _) => liftCompLeft (liftCompLeft (V.run x tr).run))
+    (fun a out => (a.1, out, a.2.2))
+
+/-- Discarding extraction and query logs preserves every event on the actual output witness. -/
+theorem adaptiveKnowledgeSoundnessExp_prEvent
+    (E : Extractor.StraightlineWithCoins oSpec Stmt Wit WitOut pSpec)
+    (P : AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec)
+    (bad : Stmt × Option Wit × Option Out × WitOut → Prop)
+    (base : Stmt × Option Out × WitOut → Prop)
+    (h : ∀ x w y z, bad (x, w, y, z) ↔ base (x, y, z)) :
+    Pr{let out ← V.adaptiveKnowledgeSoundnessExp init impl E P}[bad out] =
+      Pr{let out ← V.adaptiveRelationSoundnessExp init impl P}[base out] := by
+  rw [adaptiveKnowledgeSoundnessExp]
+  rw [AdaptiveGame.prEvent_runWithExtractor_eq init _ _ P.run.withQueryLog _ _ _ bad
+    (fun a v => base (a.1.1, v.1, a.1.2.2)) (by
+      rintro ⟨⟨x, tr, z⟩, logP⟩ ⟨y, logV⟩ w
+      exact h x w y z)]
+  have erase : (do
+      let a ← P.run.withQueryLog
+      let v ← liftCompLeft (liftCompLeft (V.run a.1.1 a.1.2.1).run.withQueryLog)
+      pure (base (a.1.1, v.1, a.1.2.2))) = (do
+      let a ← P.run
+      let v ← liftCompLeft (liftCompLeft (V.run a.1 a.2.1).run)
+      pure (base (a.1, v, a.2.2))) := by
+    rw [← bind_map_left Prod.fst P.run.withQueryLog
+      (fun a : Stmt × FullTranscript pSpec × WitOut => do
+        let v ← liftCompLeft (liftCompLeft (V.run a.1 a.2.1).run.withQueryLog)
+        pure (base (a.1, v.1, a.2.2))), fst_map_withQueryLog]
+    apply bind_congr
+    rintro ⟨x, tr, z⟩
+    rw [← bind_map_left Prod.fst (liftCompLeft (liftCompLeft (V.run x tr).run.withQueryLog))
+      (fun v => pure (base (x, v, z)))]
+    simp only [liftCompLeft, ← liftComp_map, fst_map_withQueryLog]
+  simp only [adaptiveRelationSoundnessExp, AdaptiveGame.run]
+  rw [erase]
+  simp only [StateT.run'_eq, simulateQ_bind, simulateQ_pure, StateT.run_bind,
+    StateT.run_pure, map_bind, map_pure]
+
 /-- Bound extraction failure for one named straight-line extractor against every admissible
 adversary. -/
 def adaptiveKnowledgeSoundnessWithExtractor
@@ -149,13 +234,59 @@ def adaptiveKnowledgeSoundnessQueryBoundedWithExtractor
 /-- One extractor for all query budgets, chosen before the budget and adversary.
 The query bound constrains the adversary, not the extractor; no computability or efficiency
 requirement is imposed on extraction. Classical witness selection can therefore recover an
-input witness whenever one exists. See `Verifier.knowledgeSoundness_iff_relationSoundness`
-for the analogous collapse to relation soundness in the ordinary interactive game. -/
+input witness whenever one exists. See
+`Verifier.adaptiveKnowledgeSoundnessQueryBounded_iff_adaptiveRelationSoundnessQueryBounded`
+for the collapse to relation soundness. -/
 def adaptiveKnowledgeSoundnessQueryBounded
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
     (counts : ι → Prop) [DecidablePred counts] (error : ℕ → ENNReal) : Prop :=
   ∃ extract, ∀ t, V.adaptiveKnowledgeSoundnessQueryBoundedWithExtractor init impl
     relIn relOut extract counts t (error t)
+
+/-- Bound false inputs producing an actual output-witness pair in the output relation. -/
+def adaptiveRelationSoundnessQueryBounded
+    (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
+    (counts : ι → Prop) [DecidablePred counts] (t : ℕ) (error : ENNReal) : Prop :=
+  AdaptiveGame.Bounded (fun P => P.IsQueryBound (publicQuerySelector counts) t)
+    (V.adaptiveRelationSoundnessExp init impl)
+    (fun a => a.1 ∉ relIn.language ∧ ∃ y ∈ a.2.1, (y, a.2.2) ∈ relOut) error
+
+/-- With no extraction resource bound, adaptive knowledge soundness is relation soundness. -/
+theorem adaptiveKnowledgeSoundnessQueryBounded_iff_adaptiveRelationSoundnessQueryBounded
+    (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
+    (counts : ι → Prop) [DecidablePred counts] (error : ℕ → ENNReal) :
+    V.adaptiveKnowledgeSoundnessQueryBounded init impl relIn relOut counts error ↔
+      ∀ t, V.adaptiveRelationSoundnessQueryBounded init impl relIn relOut counts t (error t) := by
+  let base := fun a : Stmt × Option Out × WitOut =>
+    a.1 ∉ relIn.language ∧ ∃ y ∈ a.2.1, (y, a.2.2) ∈ relOut
+  have marginal (E : Extractor.StraightlineWithCoins oSpec Stmt Wit WitOut pSpec) P :=
+    V.adaptiveKnowledgeSoundnessExp_prEvent init impl E P
+    (fun a => base (a.1, a.2.2.1, a.2.2.2)) base (fun _ _ _ _ => Iff.rfl)
+  constructor
+  · rintro ⟨E, hE⟩ t P hP
+    change Pr{let a ← V.adaptiveRelationSoundnessExp init impl P}[base a] ≤ _
+    rw [← marginal E P]
+    refine (prEvent_mono _ _ _ ?_).trans (hE t P hP)
+    rintro ⟨x, w, y, z⟩ ⟨hx, hy⟩
+    exact (relationKSFailEvent_iff _ _ _ _ _ _).2
+      ⟨fun v _ => (Set.not_mem_language_iff _ _).1 hx v, hy⟩
+  · intro h
+    refine ⟨(Extractor.Straightline.choose relIn).withCoins, fun t P hP => ?_⟩
+    have hm := marginal (Extractor.Straightline.choose relIn).withCoins P
+    have hc (x : Stmt) (y : Option Out) (z : WitOut) :
+        relationKSFailEvent relIn relOut (x, relIn.chooseWitness x, y, z) ↔ base (x, y, z) := by
+      simp only [relationKSFailEvent_iff, Set.forall_mem_chooseWitness_notMem_iff, base]
+    have he : Pr{let a ← (V.adaptiveKnowledgeSoundnessExp init impl
+        (Extractor.Straightline.choose relIn).withCoins P)}[relationKSFailEvent relIn relOut a] =
+        Pr{let a ← V.adaptiveRelationSoundnessExp init impl P}[base a] := by
+      rw [← hm]
+      simp only [adaptiveKnowledgeSoundnessExp, AdaptiveGame.runWithExtractor,
+        AdaptiveGame.execute, simulateQ_bind, simulateQ_pure,
+        Extractor.Straightline.simulateQ_withCoins, Extractor.Straightline.choose,
+        Extractor.Straightline.ofTranscript, OptionT.run_mk, simulateQ_pure,
+        StateT.run'_eq, StateT.run_bind, StateT.run_pure, map_bind, map_pure,
+        bind_assoc, pure_bind, hc]
+    exact he.le.trans (h t P hP)
 
 end Verifier
 
@@ -202,6 +333,41 @@ theorem simulateQ_run_mapProverOracles {m : Type → Type} [Monad m] [LawfulMona
   simp only [Prover.run, simulateQ_bind, hRound]
   refine bind_congr fun ⟨tr, s⟩ => ?_
   simp [mapProverOracles, hComp, QueryImpl.simulateQ_add_liftM_left]
+
+private theorem run_mapProverOracles_inl
+    {ι Stmt Aux Out WitOut : Type} {oSpec : OracleSpec ι} {n : ℕ}
+    {pSpec : ProtocolSpec n} (P : Prover oSpec Stmt Aux Out WitOut pSpec)
+    (stmt : Stmt) (aux : Aux) :
+    (mapProverOracles (dst := oSpec + unifSpec)
+      (fun q => query (spec := oSpec + unifSpec) (.inl q)) P).run stmt aux =
+      (P.run stmt aux).insertMiddle (c := unifSpec) := by
+  let left : QueryImpl (oSpec + unifSpec)
+      (OracleComp ((oSpec + unifSpec) + [pSpec.Challenge]ₒ)) :=
+    fun q => query (spec := (oSpec + unifSpec) + [pSpec.Challenge]ₒ) (.inl q)
+  let right : QueryImpl [pSpec.Challenge]ₒ
+      (OracleComp ((oSpec + unifSpec) + [pSpec.Challenge]ₒ)) :=
+    fun q => query (spec := (oSpec + unifSpec) + [pSpec.Challenge]ₒ) (.inr q)
+  have hid : left + right = QueryImpl.id' _ := by
+    funext q
+    cases q <;> rfl
+  have h := simulateQ_run_mapProverOracles
+    (fun q => query (spec := oSpec + unifSpec) (.inl q))
+    (fun q => query (spec := (oSpec + unifSpec) + [pSpec.Challenge]ₒ) (.inl (.inl q)))
+    left right (fun q => by simp [left]) P stmt aux
+  rw [hid, simulateQ_id'] at h
+  exact h
+
+private theorem fst_insertMiddle {ι κ ν : Type} {a : OracleSpec ι}
+    {b : OracleSpec κ} {c : OracleSpec ν} (log : QueryLog (a + b)) :
+    (log.insertMiddle (c := c)).fst = log.fst.inl := by
+  induction log with
+  | nil => rfl
+  | cons e log ih =>
+    rcases e with ⟨q | q, r⟩ <;>
+      simp only [QueryLog.insertMiddle, List.map_cons, QueryLog.insertMiddleEntry, QueryLog.fst,
+        QueryLog.inl, List.filterMap_cons] at *
+    · exact congrArg (List.cons _) ih
+    · exact ih
 
 end FixedProver
 
@@ -740,9 +906,9 @@ theorem adaptiveKnowledgeSoundness_fixed_probability
     intro w
     cases w.1 <;> simp [relationKSFailEvent, and_comm]
 
-/-- Ordinary knowledge soundness for a named extractor is the adaptive predicate on
-constant choosers, using the same extractor. -/
-theorem knowledgeSoundnessWith_iff_adaptiveKnowledgeSoundnessWithExtractor_fixed
+/-- The private-coin extension of ordinary knowledge soundness for a named extractor is the
+adaptive predicate on constant choosers, using the same extractor. -/
+theorem knowledgeSoundnessWith_iff_adaptiveKnowledgeSoundnessWithExtractor_fixed_privateCoins
     (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
     (extract : Extractor.Straightline oSpec Stmt Wit WitOut pSpec) (error : ℝ≥0) :
     V.liftOracles.knowledgeSoundnessWith init (impl + QueryImpl.id' unifSpec) relIn relOut
@@ -768,6 +934,79 @@ theorem knowledgeSoundnessWith_iff_adaptiveKnowledgeSoundnessWithExtractor_fixed
       OptionT.run_bind, OptionT.run_monadLift, OptionT.lift, OptionT.run_mk,
       monadLift_self, map_eq_pure_bind, QueryImpl.addLift_def, QueryImpl.add_lift_right,
       QueryImpl.liftTarget_self] using hBound
+
+/-- Ordinary fixed-statement knowledge soundness, `knowledgeSoundnessWith`, is exactly the
+adaptive predicate restricted to
+constant choosers with public-oracle provers, using the same extractor. -/
+theorem knowledgeSoundnessWith_iff_adaptiveKnowledgeSoundnessWithExtractor_fixed
+    (relIn : Set (Stmt × Wit)) (relOut : Set (Out × WitOut))
+    (extract : Extractor.Straightline oSpec Stmt Wit WitOut pSpec) (error : ℝ≥0) :
+    V.knowledgeSoundnessWith init impl relIn relOut extract error ↔
+      V.adaptiveKnowledgeSoundnessWithExtractor init impl relIn relOut extract.withCoins
+        (fun A => ∃ (Aux : Type) (stmt : Stmt) (aux : Aux)
+          (P : Prover oSpec Stmt Aux Out WitOut pSpec),
+          A = AdaptiveProver.fixed stmt aux P) error := by
+  have hEvent {Aux : Type} (stmt : Stmt) (aux : Aux)
+      (P : Prover oSpec Stmt Aux Out WitOut pSpec) :
+      Pr{let out ← (V.adaptiveKnowledgeSoundnessExp init impl extract.withCoins
+        (AdaptiveProver.fixed (spec := oSpec) stmt aux P))}[relationKSFailEvent relIn relOut out] =
+      let exec := do
+        let ⟨⟨⟨tr, ⟨_, wOut⟩⟩, out⟩, logP, logV⟩ ← (Reduction.mk P V).runWithLog stmt aux
+        let w ← liftM (extract stmt wOut tr logP.fst logV).run
+        return (stmt, w, out, wOut)
+      Pr{let a ← OptionT.mk do
+        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+          exec.run).run' (← init)}[
+        (∀ w ∈ a.2.1, (a.1, w) ∉ relIn) ∧ (a.2.2.1, a.2.2.2) ∈ relOut] := by
+    let lifted : Prover (oSpec + unifSpec) Stmt Aux Out WitOut pSpec := mapProverOracles
+      (fun q => query (spec := oSpec + unifSpec) (.inl q)) P
+    have hFixed : (AdaptiveProver.fixed (spec := oSpec) stmt aux P :
+        AdaptiveProver (oSpec + unifSpec) Stmt Out WitOut pSpec) =
+        AdaptiveProver.fixed stmt aux lifted := by
+      simp [AdaptiveProver.fixed, lifted, liftCompLeft]
+      rfl
+    have hP : lifted.runWithLog stmt aux =
+        (fun a => (a.1, a.2.insertMiddle)) <$>
+          (P.runWithLog stmt aux).insertMiddle := by
+      exact (congrArg OracleComp.withQueryLog (run_mapProverOracles_inl P stmt aux)).trans
+        (withQueryLog_insertMiddle _)
+    have hV (tr : FullTranscript pSpec) :
+        (simulateQ loggingOracle
+          ((V.liftOracles (targetSpec := oSpec + unifSpec)).run stmt tr)).run =
+          (fun a => (a.1, QueryLog.inl a.2)) <$>
+            liftCompLeft (V.run stmt tr).run.withQueryLog := by
+      change (liftCompLeft (V.run stmt tr).run).withQueryLog = _
+      simp only [liftCompLeft, withQueryLog_liftComp_left, map_eq_pure_bind]
+    rw [hFixed, adaptiveKnowledgeSoundness_fixed_probability, OptionT.prEvent_mk,
+      OptionT.prEvent_mk]
+    simp only [Reduction.runWithLog, hP, bind_map_left,
+      hV, OptionT.run_mk, liftCompLeft,
+      OptionT.run_bind, OptionT.run_monadLift,
+      OptionT.lift, ← monadLift_liftM_OptionT, ← liftComp_eq_liftM, monadLift_self, Option.elimM,
+      Option.getM, Option.elim_some, OptionT.run_pure, bind_assoc, pure_bind, simulateQ_bind,
+      QueryImpl.addLift_def, QueryImpl.add_lift_right, QueryImpl.liftTarget_self,
+      QueryImpl.simulateQ_add_liftComp_left, simulateQ_insertMiddle,
+      simulateQ_map, StateT.run'_eq, StateT.run_bind, map_bind,
+      fst_insertMiddle, QueryLog.publicQueries, QueryLog.fst_inl,
+      Extractor.Straightline.forCombinedOracles, OptionT.run_mk]
+    congr 1
+    apply bind_congr
+    intro st
+    apply bind_congr
+    intro pr
+    apply bind_congr
+    rintro ⟨⟨out, logV⟩, st'⟩
+    cases out with
+    | none => simp [OptionT.run_failure]
+    | some out =>
+      simp [-liftComp_eq_liftM, OptionT.run_pure,
+        QueryImpl.simulateQ_add_liftComp_left]
+  constructor
+  · intro h A hA
+    obtain ⟨Aux, stmt, aux, P, rfl⟩ := hA
+    exact (hEvent stmt aux P).le.trans (h Aux stmt aux P)
+  · intro h Aux stmt aux P
+    exact (hEvent stmt aux P).ge.trans (h _ ⟨Aux, stmt, aux, P, rfl⟩)
 
 end Verifier
 
@@ -990,7 +1229,8 @@ def adaptiveNARGSoundnessQueryBounded (langIn : Set Stmt) (langOut : Set Out)
     Pr{let out ← adaptiveNARGSoundnessExp init impl V P}[
       nargSoundFailEvent langIn langOut out] ≤ error
 
-/-- **[CO25, Definition 3.6, adapted]** Adaptive NARG knowledge soundness for a named
+/-- **[snarg-book, Definition 7.1.5; CO25, Definition 3.6, adapted]** Adaptive NARG knowledge
+soundness for a named
 straight-line extractor, without a query budget: for every adversary that outputs a statement
 and a NARG string, the verifier accepts while the extractor fails with probability at most
 `error`. The extractor runs after the verifier in the same public-oracle state and receives both
@@ -1004,7 +1244,8 @@ def adaptiveNARGKnowledgeSoundnessWithExtractor
     Pr{let out ← adaptiveNARGKnowledgeSoundnessExp init impl V E P}[
       nargKSFailEvent relIn langOut out] ≤ error
 
-/-- **[CO25, Definition 3.6, adapted]** Adaptive NARG knowledge soundness for a named
+/-- **[snarg-book, Definition 7.1.5; CO25, Definition 3.6, adapted]** Adaptive NARG knowledge
+soundness for a named
 straight-line extractor and a public-query budget. The budget restricts the adversary, not the
 extractor. `adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff_adaptive` proves that it
 is query-bounded adaptive knowledge soundness of the one-message protocol. -/
@@ -1018,8 +1259,7 @@ def adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor
 /-- Adaptive knowledge soundness with one extractor for all provers.
 The existential quantifier imposes no computability or resource bound. A classical witness
 selector can ignore the logs and return a witness for any true statement. See
-`Verifier.knowledgeSoundness_iff_relationSoundness` for the analogous equivalence for the
-fixed-statement interactive game. -/
+`Verifier.adaptiveNARGKnowledgeSoundness_iff_adaptiveNARGSoundness` for this equivalence. -/
 def adaptiveNARGKnowledgeSoundness
     (relIn : Set (Stmt × Wit)) (langOut : Set Out) (error : ENNReal) : Prop :=
   ∃ E, V.adaptiveNARGKnowledgeSoundnessWithExtractor init impl relIn langOut E error
@@ -1032,6 +1272,101 @@ def adaptiveNARGKnowledgeSoundnessQueryBounded
     (counts : ι → Prop) [DecidablePred counts] (error : ℕ → ENNReal) : Prop :=
   ∃ E, ∀ t, V.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor init impl
     relIn langOut E counts t (error t)
+
+private theorem nargKSFailEvent_iff (r : Set (Stmt × Wit)) (s : Set Out)
+    (x : Stmt) (w : Option Wit) (y : Option Out) :
+    nargKSFailEvent r s (x, w, y) ↔ (∀ v ∈ w, (x, v) ∉ r) ∧ ∃ v ∈ y, v ∈ s := by
+  cases w <;> cases y <;> simp [nargKSFailEvent, and_comm]
+
+/-- Discarding extraction and query logs preserves NARG false acceptance. -/
+theorem adaptiveNARGKnowledgeSoundnessExp_prEvent
+    (E : NARG.Extractor oSpec Stmt Wit Proof) (P : NARG.Prover oSpec Stmt Proof)
+    (bad : Stmt × Option Wit × Option Out → Prop)
+    (base : Option (Stmt × Out) → Prop)
+    (h : ∀ x w y, bad (x, w, y) ↔ base (y.map (x, ·))) :
+    Pr{let a ← adaptiveNARGKnowledgeSoundnessExp init impl V E P}[bad a] =
+      Pr{let a ← adaptiveNARGSoundnessExp init impl V P}[base a] := by
+  rw [adaptiveNARGKnowledgeSoundnessExp,
+    AdaptiveGame.prEvent_runWithExtractor_eq init _ _ P.withQueryLog _ _ _ bad
+      (fun a v => base (v.1.map (a.1.1, ·))) (fun a v w => h _ _ _)]
+  have erase : (do
+      let a ← P.withQueryLog
+      let v ← liftComp (runVerifierWithLog V a.1.1 a.1.2) (oSpec + unifSpec)
+      pure (base (v.1.map (a.1.1, ·)))) = (do
+      let a ← P
+      let v ← liftComp (V.verify a.1 (Fin.cons a.2 (fun i => i.elim0))).run (oSpec + unifSpec)
+      pure (base (v.map (a.1, ·)))) := by
+    rw [← bind_map_left Prod.fst P.withQueryLog (fun a : Stmt × Proof => do
+      let v ← liftComp (runVerifierWithLog V a.1 a.2) (oSpec + unifSpec)
+      pure (base (v.1.map (a.1, ·)))), fst_map_withQueryLog]
+    apply bind_congr
+    rintro ⟨x, proof⟩
+    rw [← bind_map_left Prod.fst (liftComp (runVerifierWithLog V x proof) (oSpec + unifSpec))
+      (fun v => pure (base (v.map (x, ·))))]
+    simp only [← liftComp_map, runVerifierWithLog, fst_map_withQueryLog]
+  simp only [adaptiveNARGSoundnessExp, AdaptiveGame.run]
+  rw [erase]
+  simp only [StateT.run'_eq, simulateQ_bind, simulateQ_pure, StateT.run_bind,
+    StateT.run_pure, map_bind, map_pure]
+
+private theorem adaptiveNARGKnowledgeSoundness_admissible_iff {T : Type}
+    (relIn : Set (Stmt × Wit)) (langOut : Set Out)
+    (admissible : T → NARG.Prover oSpec Stmt Proof → Prop) (error : T → ENNReal) :
+    (∃ E, ∀ t P, admissible t P → Pr{let a ← (adaptiveNARGKnowledgeSoundnessExp
+      init impl V E P)}[nargKSFailEvent relIn langOut a] ≤ error t) ↔
+    ∀ t P, admissible t P → Pr{let a ← adaptiveNARGSoundnessExp init impl V P}[
+      nargSoundFailEvent relIn.language langOut a] ≤ error t := by
+  have marginal (E : NARG.Extractor oSpec Stmt Wit Proof) P :=
+    V.adaptiveNARGKnowledgeSoundnessExp_prEvent init impl E P
+    (fun a => nargSoundFailEvent relIn.language langOut (a.2.2.map (a.1, ·)))
+    (nargSoundFailEvent relIn.language langOut) (fun _ _ _ => Iff.rfl)
+  constructor
+  · rintro ⟨E, hE⟩ t P hP
+    rw [← marginal E P]
+    refine (prEvent_mono _ _ _ ?_).trans (hE t P hP)
+    rintro ⟨x, w, _ | y⟩ h
+    · exact False.elim h
+    · exact (nargKSFailEvent_iff _ _ _ _ _).2
+        ⟨fun v _ => (Set.not_mem_language_iff _ _).1 h.1 v, y, rfl, h.2⟩
+  · intro h
+    let E : NARG.Extractor oSpec Stmt Wit Proof := fun x _ _ _ =>
+      OptionT.mk (pure (relIn.chooseWitness x))
+    refine ⟨E, fun t P hP => ?_⟩
+    have hc (x : Stmt) (y : Option Out) : nargKSFailEvent relIn langOut
+        (x, relIn.chooseWitness x, y) ↔
+        nargSoundFailEvent relIn.language langOut (y.map (x, ·)) := by
+      rw [nargKSFailEvent_iff, Set.forall_mem_chooseWitness_notMem_iff]
+      cases y <;> simp [nargSoundFailEvent]
+    have he := marginal E P
+    have he' : Pr{let a ← adaptiveNARGKnowledgeSoundnessExp init impl V E P}[
+        nargKSFailEvent relIn langOut a] = Pr{let a ← adaptiveNARGSoundnessExp init impl V P}[
+        nargSoundFailEvent relIn.language langOut a] := by
+      rw [← he]
+      simp only [adaptiveNARGKnowledgeSoundnessExp, AdaptiveGame.runWithExtractor,
+        AdaptiveGame.execute, E, OptionT.run_mk, simulateQ_pure, simulateQ_bind,
+        StateT.run'_eq, StateT.run_bind, StateT.run_pure, map_bind, map_pure,
+        bind_assoc, pure_bind, hc]
+    exact he'.le.trans (h t P hP)
+
+/-- Unrestricted existential NARG extraction is equivalent to soundness for the input language. -/
+theorem adaptiveNARGKnowledgeSoundness_iff_adaptiveNARGSoundness
+    (relIn : Set (Stmt × Wit)) (langOut : Set Out) (error : ENNReal) :
+    V.adaptiveNARGKnowledgeSoundness init impl relIn langOut error ↔
+      V.adaptiveNARGSoundness init impl relIn.language langOut error := by
+  simpa only [adaptiveNARGKnowledgeSoundness, adaptiveNARGKnowledgeSoundnessWithExtractor,
+    adaptiveNARGSoundness, forall_const, true_implies] using
+    V.adaptiveNARGKnowledgeSoundness_admissible_iff init impl (T := Unit)
+      relIn langOut (fun _ _ => True) (fun _ => error)
+
+/-- One unrestricted extractor works for every query budget exactly when NARG soundness does. -/
+theorem adaptiveNARGKnowledgeSoundnessQueryBounded_iff_adaptiveNARGSoundnessQueryBounded
+    (relIn : Set (Stmt × Wit)) (langOut : Set Out)
+    (counts : ι → Prop) [DecidablePred counts] (error : ℕ → ENNReal) :
+    V.adaptiveNARGKnowledgeSoundnessQueryBounded init impl relIn langOut counts error ↔
+      ∀ t, V.adaptiveNARGSoundnessQueryBounded init impl
+        relIn.language langOut counts t (error t) :=
+  V.adaptiveNARGKnowledgeSoundness_admissible_iff init impl relIn langOut
+    (fun t P => P.IsQueryBoundP (publicQuerySelector counts) t) error
 
 /-- With no output statement, the verifier never accepts, so false acceptance has
 probability zero. -/

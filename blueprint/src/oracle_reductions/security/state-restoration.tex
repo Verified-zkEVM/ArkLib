@@ -62,7 +62,7 @@ State-restoration (SR) security allows a prover to explore several continuations
   \leanok
 \end{definition}
 
-\begin{definition}[State-restoration knowledge soundness {\cite[Definition~3.14]{CO25}~\cite[Definition~13.2.3]{snarg-book}}]
+\begin{definition}[State-restoration knowledge soundness {\cite[Definition~13.2.3]{snarg-book}, adapted from \cite[Definition~3.14]{CO25}}]
   \label{def:sr_knowledge_soundness}
   Fix a family of salt spaces \(\SaltType(s,\InstanceSizeBound)\), public-coin IP verifiers \(\IPVerifier\), and verifier message function distributions \(\SRChallengeOracleDistribution(s,\InstanceSizeBound)\), with a common relation \(\Relation\subseteq\InstanceSpace\times\WitnessSpace\) and size function \(\InstanceSizeOf{\cdot}\). These public parameters may determine the protocol and message spaces and are supplied to all algorithms; we suppress them in algorithm calls. The verifier has \emph{state-restoration knowledge-soundness error} \(\IPSRKnowledgeSoundnessError:\mathbb N^3\to[0,\infty]\) if there exists a probabilistic straightline knowledge extractor \(\SRExtractor\) such that, for every salt-size parameter \(s\in\mathbb N\), instance-size bound \(\InstanceSizeBound\in\mathbb N\), move budget \(\SRMoveBound\in\mathbb N\) and every \(\SRMoveBound\)-move malicious SR prover \(\IPMaliciousSRProver\),
   \begin{equation*}
@@ -79,9 +79,10 @@ State-restoration (SR) security allows a prover to explore several continuations
   \end{equation*}
   The extractor receives the original statement \(\Instance\), the chosen salt \(\SaltString\) separately, all prover messages \(\IPProverMessages\), all verifier messages \(\IPVerifierMessages\), and the prover's move--response trace \(\QueryLog^{\mathrm{sr}}\) from \Cref{def:ip_state_restoration_game}. It returns a witness for \(\Instance\) or \(\bot\), and may use fresh private randomness; by convention, \((\Instance,\bot)\notin\Relation\).
 
-  One extractor family is chosen before all \(s,\InstanceSizeBound,\SRMoveBound\) and adversaries. It may use the public salt-size and instance-size parameters, but not the move budget. The size restriction applies to the entire failure event, including missing witnesses. This is the information-theoretic straightline definition with the book's full-transcript extractor interface; no polynomial-time requirement is imposed. The single-salt game specializes the paper's vector of per-round salts to a salt supplied from the first round, with no fresh later salts.
+  One extractor family is chosen before all \(s,\InstanceSizeBound,\SRMoveBound\) and adversaries. It may use the public salt-size and instance-size parameters, but not the move budget. The size restriction applies to the entire failure event, including missing witnesses. This is the information-theoretic straightline definition with the book's full-transcript extractor interface; no polynomial-time requirement is imposed, so a theorem that claims the full paper notion also needs a running-time bound for the same named extractor. \cite[Definition~3.14]{CO25} withholds the verifier messages \(\IPVerifierMessages\) from the straightline extractor, so an extractor for that definition, which ignores them, is also one for this definition, but not conversely. The single-salt game specializes the paper's vector of per-round salts to a salt supplied from the first round, with no fresh later salts.
   \lean{IP.SRExtractor, IP.srKnowledgeSoundnessFailureProb,
-    IP.srKnowledgeSoundness, IP.srKnowledgeSoundnessWithExtractor}
+    IP.srKnowledgeSoundness, IP.srKnowledgeSoundnessWithExtractor,
+    IP.srKnowledgeSoundness_iff_srSoundness}
   \uses{def:ip_state_restoration_game, def:counted_queries, def:oracle_run}
   \leanok
 \end{definition}

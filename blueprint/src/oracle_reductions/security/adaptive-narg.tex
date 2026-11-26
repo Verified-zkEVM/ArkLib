@@ -26,7 +26,7 @@ Write \(\OracleFamily\) for the public oracles specified by the NARG's model. Fo
   \leanok
 \end{definition}
 
-\begin{definition}[Adaptive NARG knowledge soundness {\cite[Definition~3.6]{CO25}~\cite[Definition~7.1.5]{snarg-book}}]
+\begin{definition}[Adaptive NARG knowledge soundness {\cite[Definition~7.1.5]{snarg-book}, adapted from \cite[Definition~3.6]{CO25}}]
   \label{def:adaptive_narg_knowledge_soundness}
   Let \(\NARGVerifier\) be a NARG verifier for relation \(\Relation\), with oracle distribution \(\OracleDistribution(\secpar,\InstanceSizeBound)\) and the public parameter convention above.
 
@@ -45,11 +45,14 @@ Write \(\OracleFamily\) for the public oracles specified by the NARG's model. Fo
           (\Instance,\NARGString,\QueryLog_{\NARGMaliciousProver},\QueryLog_{\NARGVerifier})
     \end{array}\right]\le\NARGKnowledgeSoundnessError(\secpar,\InstanceSizeBound,\PublicOracleQueryBound).
   \end{equation*}
-  The annotated arrows record public query--answer logs. No running-time requirement is imposed.
+  The annotated arrows record public query--answer logs. No running-time requirement is imposed, so this is a distributional notion: a theorem that claims the full notion of \cite{CO25} or \cite{snarg-book} also needs a running-time bound for the same named extractor.
+  The extractor interface follows \cite[Definition~7.1.5]{snarg-book}, with one addition. \cite[Definition~3.6]{CO25} gives the extractor only \((\Instance,\NARGString,\QueryLog_{\NARGMaliciousProver})\), without the verifier log, so an extractor for that definition is also one for this definition, but not conversely. Neither source lets the extractor query the public oracles. \cite[Definition~3.6]{CO25} says ``deterministic''; we allow private randomness, which the paper's own extractor needs (its \textsf{LookAhead} step samples).
   In Lean, this definition is stated on the experiment above, and a theorem proves it equal to adaptive knowledge soundness of the one-message interactive protocol.
   \lean{Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor,
     Verifier.adaptiveNARGKnowledgeSoundnessQueryBoundedWithExtractor_iff_adaptive,
     Verifier.adaptiveNARGKnowledgeSoundnessQueryBounded, NARG.Extractor,
+    Verifier.adaptiveNARGKnowledgeSoundness_iff_adaptiveNARGSoundness,
+    Verifier.adaptiveNARGKnowledgeSoundnessQueryBounded_iff_adaptiveNARGSoundnessQueryBounded,
     adaptiveNARGKnowledgeSoundnessExp, nargKSFailEvent}
   \uses{def:oracle_run, def:counted_queries}
   \leanok
