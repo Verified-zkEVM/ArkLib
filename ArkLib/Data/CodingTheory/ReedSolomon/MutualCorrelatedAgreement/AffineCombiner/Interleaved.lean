@@ -283,6 +283,9 @@ end Packing
 
 section Bound
 
+-- The degree-`t` extension at the characteristic needs `Fact (ringChar F).Prime`.
+open scoped FiniteField
+
 /-- With one point of shared agreement loss, few shared challenges are exceptional.
 
 The number `t` of rows is arbitrary.
