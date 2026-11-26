@@ -13,7 +13,8 @@ public import ArkLib.Interaction.Composition
 
 An oracle statement lens adds two oracle maps to a statement lens. The input map answers the
 inner input oracles from the outer ones. The output map builds the outer output oracles from the
-outer inputs and the inner outputs. Both see only the outer input statement.
+outer inputs and the inner outputs. Both see the outer input statement, and the output map also
+sees the shape path. Neither sees the verifier's view, so neither can read challenge values.
 
 `OracleVerifier.liftContext` runs the inner decision with its bundle queries routed through the
 input map, beside the path's oracle messages, and lifts an accepted output statement. Bundle
@@ -48,7 +49,12 @@ def OracleMap.pair {In : OracleBundle} {Mid : OracleBundle}
 
 /-- A statement lens with oracle maps for the input and output oracles. The input map answers
 inner input queries from outer input data. The output map builds the outer output oracles from
-the outer input oracles and the inner output oracles. -/
+the outer input oracles and the inner output oracles.
+
+The input map receives the outer input statement. The output map receives the outer input
+statement and the shape path. Neither receives the verifier's view, so neither can read challenge
+values, which the shape path erases. `OracleVerifier.outputMap` does receive the view. A lifted
+output oracle can therefore depend on a challenge only through the inner output oracle data. -/
 structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
     (InnerIn : Type) (OuterOut InnerOut : Path s → Type)
     (inputsO : OracleBundle) (inputsI : OracleBundle)
@@ -58,7 +64,9 @@ structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
   stmt : StatementLens s OuterIn InnerIn OuterOut InnerOut
   /-- Inner input oracles, answered from outer input oracles. -/
   projOracle : OuterIn → OracleMap inputsO inputsI
-  /-- Outer output oracles, built from outer input oracles and inner output oracles. -/
+  /-- Outer output oracles, built from outer input oracles and inner output oracles. The map
+  receives the outer input statement and the shape path, not the verifier's view, so it cannot
+  read challenge values. -/
   liftOracle : OuterIn → (p : Path s) →
     OracleMap (inputsO.sum (outputsI p)) (outputsO p)
 
