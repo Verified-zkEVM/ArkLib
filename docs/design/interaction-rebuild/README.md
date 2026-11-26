@@ -61,6 +61,7 @@ complete when C merges.
 | [D7](D7-security-definitions.md) | Security experiments, adversary classes, admissibility, node-indexed errors, and transfer obligations | A, B, C, D | Proposed: awaiting maintainer approval |
 | [D8](D8-legacy-equivalence-observation.md) | The common observation for legacy equivalence and the Sumcheck equivalence statement | B, C | Proposed: awaiting maintainer approval |
 | [D9](D9-quantum-provers.md) | Which parties may be quantum, the quantum prover type, adversary models for the security notions, and what transfers to quantum provers | A (model argument); post-milestone quantum track | Proposed: awaiting maintainer approval |
+| [D10](D10-protocol-specifications.md) | Protocol specifications written once as descriptions, their elaboration to tree, prover, verifier, accessors and skeleton, round-indexed iteration, and the round-iteration proof kit | Post-milestone track, stages 0–5 | Proposed: awaiting maintainer approval; stage-0 prototypes on `proto/protocol-specs` |
 
 A record is committed and approved before the PR that implements it starts: D0, D2, D4 and D5
 before P; D1–D7 before A; D8 before B's execution theorem and before C.
