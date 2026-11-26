@@ -22,7 +22,7 @@ directly as `runtime.run (V.runWithLog stmt data prover)`.
 
 @[expose] public section
 
-universe v dI wJ
+universe v
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -32,7 +32,7 @@ namespace OracleVerifier
 section Logged
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
@@ -72,8 +72,8 @@ end Logged
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, dI}}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Run the verifier's decision in a monad with labelled failures, and log every query that got
 an answer before a failure. The failing query has no answer and adds no log entry. The state

@@ -19,7 +19,6 @@ open Interaction Interaction.Oracle OracleComp
 
 namespace Interaction.OracleMapsTests
 
-universe u v w u' v' w'
 
 /-- The carrier of the `false` index is `Bool`; the carrier of the `true` index is `Fin 3`. -/
 abbrev Carrier : Bool → Type
@@ -204,66 +203,35 @@ example : functions.behaviorOfRealizations
 
 section Universes
 
--- SourceExample S10: response universe v is shared. Query universes u and u' and data
--- universes w and w' are independent, exactly as for the disjoint sum of reader sources.
-/-- The sum of two bundles preserves the independent query and data universes of both. -/
-example (S : OracleBundle.{v, u, w}) (T : OracleBundle.{v, u', w'}) :
-    OracleBundle.{v, max u u', max w w'} := S.sum T
+-- SourceExample S10: disjoint sums retain their component carriers at `Type`.
+/-- The sum of two bundles preserves both query and data carriers. -/
+example (S : OracleBundle) (T : OracleBundle) :
+    OracleBundle := S.sum T
 
 /-- Disjoint queries keep their original index carriers. -/
-example (S : OracleBundle.{v, u, w}) (T : OracleBundle.{v, u', w'}) :
-    OracleSpec.{max u u', v} (S.Index ⊕ T.Index) := (S.sum T).spec
+example (S : OracleBundle) (T : OracleBundle) :
+    OracleSpec.{0, 0} (S.Index ⊕ T.Index) := (S.sum T).spec
 
 /-- Disjoint data remains a pair of the original carriers. -/
-example (S : OracleBundle.{v, u, w}) (T : OracleBundle.{v, u', w'}) :
+example (S : OracleBundle) (T : OracleBundle) :
     (S.sum T).Data = (S.Data × T.Data) := rfl
 
 /-- Each query is answered from its own component of the pair. -/
-example (S : OracleBundle.{v, u, w}) (T : OracleBundle.{v, u', w'})
+example (S : OracleBundle) (T : OracleBundle)
     (x : S.Data × T.Data) : (S.sum T).answer x = S.answer x.1 + T.answer x.2 := rfl
 
--- SourceExample S11: the two sources keep independent query, response and data universes.
-/-- A paired query and answer bundle has the maxima of the independent component universes. -/
-example (S : OracleBundle.{v, u, w}) (T : OracleBundle.{v', u', w'}) :
-    OracleBundle.{max v v', max u u', max w w'} := S.tensor T
+-- SourceExample S11: paired queries and data at `Type`.
+/-- A paired query and answer bundle also lies in `Type 1`. -/
+example (S : OracleBundle) (T : OracleBundle) :
+    OracleBundle := S.tensor T
 
 /-- Tensor queries use the exact product of the two original query carriers. -/
-example (S : OracleBundle.{v, u, w}) (T : OracleBundle.{v', u', w'}) :
-    OracleSpec.{max u u', max v v'} (S.Index × T.Index) := (S.tensor T).spec
+example (S : OracleBundle) (T : OracleBundle) :
+    OracleSpec.{0, 0} (S.Index × T.Index) := (S.tensor T).spec
 
 /-- Tensor backing data remains the exact product of the two original data carriers. -/
-example (S : OracleBundle.{v, u, w}) (T : OracleBundle.{v', u', w'}) :
+example (S : OracleBundle) (T : OracleBundle) :
     (S.tensor T).Data = (S.Data × T.Data) := rfl
-
--- SourceExample S12: lifting responses preserves the original query and backing-data universes.
-/-- The response universe can be raised independently of the query and data universes. -/
-example (S : OracleBundle.{v, u, w}) : OracleBundle.{max v v', u, w} :=
-  S.liftResponse.{v, u, w, v'}
-
--- SourceExample S13: coherent raw maps are inverse even when response universes differ.
-/-- Response lifting gives an equivalence of queries, responses and backing data. -/
-example (S : OracleBundle.{v, u, w}) : OracleBundle.Equiv S (S.liftResponse.{v, u, w, v'}) :=
-  OracleBundle.Equiv.liftResponse S
-
-/-- The forward route leaves each backing datum unchanged. -/
-example (S : OracleBundle.{v, u, w}) (data : S.Data) :
-    (OracleBundle.Equiv.liftResponse.{v, u, w, v'} S).toLens.pullData data = data := rfl
-
-/-- The inverse route leaves each backing datum unchanged. -/
-example (S : OracleBundle.{v, u, w}) (data : S.Data) :
-    (OracleBundle.Equiv.liftResponse.{v, u, w, v'} S).invLens.pullData data = data := rfl
-
--- SourceExample S14: the concrete response universe is raised from 0 to 2, with no data change.
-/-- Unwrapping the raised answer at index true recovers five. -/
-example : (OracleBundle.Lens.toLiftResponse.{0, 0, 0, 2} (OracleBundle.ofFamily numbers)).pullAnswer
-    (((OracleBundle.ofFamily numbers).liftResponse.{0, 0, 0, 2}).answer answers)
-    ⟨true, ()⟩ = (5 : Nat) := rfl
-
--- SourceExample S15: the inverse raw route rewraps the same answer in response universe 2.
-/-- Rewrapping the answer at index true has underlying value five. -/
-example : ((OracleBundle.Equiv.liftResponse.{0, 0, 0, 2}
-    (OracleBundle.ofFamily numbers)).invLens.pullAnswer
-    (numbers.behaviorOfRealizations answers) ⟨true, ()⟩).down = (5 : Nat) := rfl
 
 end Universes
 

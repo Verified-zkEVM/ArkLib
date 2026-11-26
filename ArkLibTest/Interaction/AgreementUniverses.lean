@@ -69,7 +69,7 @@ end LegacyOutputs
 
 section Bundles
 
-variable {inputs : OracleBundle.{0, 0, 0}} {V V' : OracleVerifier ambient s S T inputs outputs}
+variable {inputs : OracleBundle} {V V' : OracleVerifier ambient s S T inputs outputs}
 
 -- Agreement follows from equal decisions and outputs on every transcript.
 example

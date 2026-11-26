@@ -21,7 +21,7 @@ may depend on ambient queries.
 
 @[expose] public section
 
-universe u q dI uA v w uI uV uX uY dX dY wJ wK
+universe u uA v w uV
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -471,7 +471,7 @@ theorem run_splitSampler {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0
   run_appendFlat_splitPrefix p (samplerEnd l s₁ draw₁) _
 
 /-- Split the oracle messages of an arbitrary completed appended path. -/
-def splitOracleMessages : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ → OracleProtocol.{u, q}) →
+def splitOracleMessages : (s₁ : OracleProtocol.{0, 0}) → (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
     (p : Path (s₁.append s₂)) →
     OracleMap (oracleMessageFamily (s₁.append s₂) p)
       (sumFamily (oracleMessageFamily s₁ (Path.split s₁ s₂ p).1)
@@ -490,8 +490,8 @@ def splitOracleMessages : (s₁ : OracleProtocol.{u, q}) → (s₂ : Path s₁ �
 
 /-- Preserve ambient queries while routing bundle queries through an oracle map. -/
 def OracleMap.withAmbient {ι : Type}
-    (ambient : OracleSpec ι) {In : OracleBundle.{0, uX, dX}}
-    {Out : OracleBundle.{0, uY, dY}}
+    (ambient : OracleSpec ι) {In : OracleBundle}
+    {Out : OracleBundle}
     (route : OracleMap In Out) : QueryImpl (ambient + Out.spec) (OracleComp (ambient + In.spec))
   | .inl q => liftM ((ambient + In.spec).query (.inl q))
   | .inr q => simulateQ
@@ -501,7 +501,7 @@ def OracleMap.withAmbient {ι : Type}
 for any interpretation of the ambient queries. -/
 theorem OracleMap.simulate_withAmbient_addLift {ι : Type}
     {ambient : OracleSpec ι} {m : Type → Type v} [Monad m] [LawfulMonad m]
-    {In : OracleBundle.{0, uX, dX}} {Out : OracleBundle.{0, uY, dY}}
+    {In : OracleBundle} {Out : OracleBundle}
     (lift : QueryImpl ambient m) (route : OracleMap In Out) (x : In.Data)
     {α : Type} (program : OracleComp (ambient + Out.spec) α) :
     simulateQ (QueryImpl.addLift lift (In.answer x) :
@@ -520,8 +520,8 @@ theorem OracleMap.simulate_withAmbient_addLift {ι : Type}
 
 /-- Routing through a map and answering from data agrees with answering from the mapped data. -/
 theorem OracleMap.simulate_withAmbient {ι : Type}
-    {ambient : OracleSpec ι} {In : OracleBundle.{0, uX, dX}}
-    {Out : OracleBundle.{0, uY, dY}}
+    {ambient : OracleSpec ι} {In : OracleBundle}
+    {Out : OracleBundle}
     (route : OracleMap In Out) (x : In.Data) {α : Type}
     (program : OracleComp (ambient + Out.spec) α) :
     simulateQ (QueryImpl.addLift (QueryImpl.id' ambient) (In.answer x) :
@@ -534,14 +534,14 @@ theorem OracleMap.simulate_withAmbient {ι : Type}
 
 namespace OracleVerifier
 variable {ι : Type} {ambient : OracleSpec ι}
-  {inputs : OracleBundle.{0, uI, dI}}
+  {inputs : OracleBundle}
   {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {K : (p : Path s₁) → Path (s₂ p) → Type}
   {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
 
 /-- Reassociate inputs and both sets of messages into the prefix bundle and the suffix messages. -/
 def splitPathBundle (p : Path (s₁.append s₂)) :
@@ -573,9 +573,9 @@ def suffixRoute (V₁ : OracleVerifier ambient s₁ S T inputs middle)
 /-- The output oracle family of an appended oracle protocol: at a path of the appended tree, the
 suffix's output family at the split path. -/
 abbrev splitOutputs
-    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂))
+    (outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂))
     (p : Path (s₁.append s₂)) :
-    OracleFamily.{0, 0, wK} (splitFamily K p)
+    OracleFamily.{0, 0, 0} (splitFamily K p)
       (C (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2) :=
   outputs (Path.split s₁ s₂ p).1 (Path.split s₁ s₂ p).2
 

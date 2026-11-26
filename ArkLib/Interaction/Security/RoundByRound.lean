@@ -513,7 +513,7 @@ abbrev Verifier.rbrKnowledgeSoundnessOfNodes {ι σ : Type} {S : Type} {Win : S 
 namespace OracleVerifier
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Oracle acceptance from a possible ambient state at the end of the run, with actual input and

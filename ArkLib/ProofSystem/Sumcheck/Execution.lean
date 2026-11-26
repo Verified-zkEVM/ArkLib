@@ -47,8 +47,6 @@ The main results are:
 
 @[expose] public section
 
-universe wI
-
 namespace Sumcheck
 open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction.Oracle
   OracleComp OracleSpec ProtocolSpec
@@ -389,7 +387,7 @@ theorem legacy_verify_eq (stmt : Spec.StatementRound R n 0)
 section On
 
 variable (M : Type) (eval : M → R → R) {I : Type} {A : I → Type}
-  (inputs : OracleFamily.{0, 0, wI} I A)
+  (inputs : OracleFamily.{0, 0, 0} I A)
 
 /-- The Sumcheck oracle verifier over the message carrier `M` and the input family `inputs`: the
 legacy decision fold on the view's challenges, with every message query routed to its oracle

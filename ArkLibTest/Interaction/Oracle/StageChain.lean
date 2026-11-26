@@ -28,7 +28,7 @@ of the later interactions.
 The chains above have output maps that do not read their input statements, which
 `StageChain.StatementFree` records. A later section composes stages whose output maps read the input
 statement, with the general compatibility certificates. Another composes stages whose oracle
-families have their queries in different universes. Another derives a property of a three-stage
+families have distinct query interfaces at `Type`. Another derives a property of a three-stage
 decision from one hypothesis per stage boundary. The section on message selection composes two
 stages in which a message of the first selects the second. The last section applies the
 almost-sure law to a decision that queries an ambient `Bool`, under a chosen answer measure.
@@ -41,7 +41,6 @@ open Interaction.DependentRoutingTests (done)
 
 namespace Interaction.StageChainTests
 
-universe uX dX
 
 /-- The second stage has only message nodes. -/
 theorem branchProtocol_noChallenge : ChallengeNode oracleSig branchProtocol → False := by
@@ -446,7 +445,7 @@ statement-free map exists for it, even in a chain of one stage. The general cert
 statement. -/
 
 /-- The scalar oracle with data `n`, whose one query answers `n`, from any bundle. -/
-def statementOracle (n : Nat) (R : OracleBundle.{0, uX, dX}) : OracleMap R inputs where
+def statementOracle (n : Nat) (R : OracleBundle) : OracleMap R inputs where
   f _ _ := n
   impl _ := pure n
   law _ _ := rfl
@@ -542,26 +541,23 @@ def echoCheckSummary (stmt : Nat) : Option (Nat × Nat) :=
 example : echoCheckSummary 5 = some (5, 10) := rfl
 example : echoCheckSummary 6 = some (6, 12) := rfl
 
-/-! ## Query universes at the chain boundaries
+/-! ## Distinct oracle families at the chain boundaries
 
-The input family has its query in `Type 0`; `wideBooleans` has its query in `Type 1`. The first
-stage reads the small input family and exports a wide family directly. The chain's families have
-their queries in `Type 1`: the input family enters through `liftQueries`. A second stage reads the
-wide family and exports the small `booleans`, which enters the chain lifted and leaves it through
-`lowerOutputs`. -/
+The stages export parity and then read it through a distinct Boolean interface.
+All query and data carriers are in `Type`. -/
 
-/-- A Boolean answers its one query, which lies in `Type 1`, with itself. -/
+/-- A Boolean answers its one query, which lies in `Type`, with itself. -/
 @[reducible]
-def wideInterface : OracleInterface.{0, 1} Bool where
-  Query := ULift.{1} Unit
-  toOC.spec := ULift.{1} Unit →ₒ Bool
+def wideInterface : OracleInterface.{0, 0} Bool where
+  Query := Unit
+  toOC.spec := Unit →ₒ Bool
   toOC.impl _ := read
 
-/-- One Boolean oracle whose query lies in `Type 1`. -/
-def wideBooleans : OracleFamily.{0, 0, 1} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
+/-- One Boolean oracle whose query lies in `Type`. -/
+def wideBooleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
 
 /-- Export the parity of the scalar input as a wide oracle. -/
-def wideParity (messages : OracleBundle.{0, uX, dX}) :
+def wideParity (messages : OracleBundle) :
     OracleMap (OracleBundle.sum inputs messages) wideBooleans where
   f x _ := (show Nat from x.1 ()) % 2 == 0
   impl _ := do
@@ -571,8 +567,8 @@ def wideParity (messages : OracleBundle.{0, uX, dX}) :
     simp only [simulateQ_bind]
     rfl
 
-/-- Read the small input oracle, accept its parity, and export it as a wide oracle. The input
-query lies in `Type 0` and the output query in `Type 1`. -/
+/-- Read the small input oracle, accept its parity, and export it as a wide oracle. Both query
+carriers lie in `Type`. -/
 def wideVerifier :
     OracleVerifier ambient done Unit (fun _ => Bool) inputs (fun _ => wideBooleans) where
   decide _ p _ := OptionT.mk do
@@ -587,53 +583,48 @@ def narrowVerifier :
     OracleVerifier ambient done Bool (fun _ => Bool) wideBooleans (fun _ => booleans) where
   decide stmt p _ := OptionT.mk do
     let b : Bool ← liftM ((ambient + (pathBundle wideBooleans done p).spec).query
-      (.inr (.inl ⟨(), ⟨()⟩⟩)))
+      (.inr (.inl ⟨(), ()⟩)))
     pure (some (b && stmt))
   outputMap _ p _ :=
     { f := fun x _ => x.1 ()
-      impl := fun _ => liftM ((pathBundle wideBooleans done p).spec.query (.inl ⟨(), ⟨()⟩⟩))
+      impl := fun _ => liftM ((pathBundle wideBooleans done p).spec.query (.inl ⟨(), ()⟩))
       law := fun _ _ => rfl }
 
-/-- The small input family with its query lifted to `Type 1`. -/
-abbrev liftedInputs : OracleFamily.{0, 0, 1} Unit (fun _ => Nat) := inputs.liftQueries.{0, 1}
-
-/-- The first stage alone: small-query inputs, larger-query outputs. -/
-def wideStages : StageChain.{1} ambient Unit liftedInputs :=
-  .cons done wideVerifier.liftInputs (fun c => c.val.elim) fun _ => .nil wideBooleans
+/-- The first stage alone: natural-number inputs and Boolean outputs. -/
+def wideStages : StageChain ambient Unit inputs :=
+  .cons done wideVerifier (fun c => c.val.elim) fun _ => .nil wideBooleans
 
 /-- The first stage's output map does not read its input statement. -/
 def wideMaps : wideStages.StatementFree :=
-  ⟨wideVerifier.liftInputs.outputMap (), fun _ => rfl, fun _ => ⟨⟩⟩
+  ⟨wideVerifier.outputMap (), fun _ => rfl, fun _ => ⟨⟩⟩
 
 /-- The one-stage chain decides as the original first stage on the original input data. -/
 example (p : Path wideStages.protocol) (v : View _ p)
-    (data : (pathBundle liftedInputs wideStages.protocol p).Data) :
+    (data : (pathBundle inputs wideStages.protocol p).Data) :
     (wideStages.verifier wideMaps.compatibility).decideWith () p v data =
       wideVerifier.decideWith () (Path.split done _ p).1 (View.split done _ p v).1
-        ((OracleVerifier.prefixRoute (inputs := liftedInputs) p).f data) :=
-  (StageChain.decideWith_one done _ _ _ _ () p v data).trans
-    (wideVerifier.liftInputs_decideWith () _ _ _)
+        ((OracleVerifier.prefixRoute (inputs := inputs) p).f data) :=
+  StageChain.decideWith_one done _ _ _ _ () p v data
 
-/-- Both stages: the input query lies in `Type 0`, the middle query in `Type 1`, and the output
-query, lifted inside the chain, in `Type 0`. -/
-def wideNarrow : StageChain.{1} ambient Unit liftedInputs :=
-  .cons done wideVerifier.liftInputs (fun c => c.val.elim) fun _ =>
-    .cons done narrowVerifier.liftOutputs (fun c => c.val.elim) fun _ =>
-      .nil booleans.liftQueries.{0, 1}
+/-- Both stages: the input query lies in `Type`, the middle query in `Type`, and the output
+query in `Type`. -/
+def wideNarrow : StageChain ambient Unit inputs :=
+  .cons done wideVerifier (fun c => c.val.elim) fun _ =>
+    .cons done narrowVerifier (fun c => c.val.elim) fun _ =>
+      .nil booleans
 
 /-- No output map of the two stages reads its input statement. -/
 def wideNarrowMaps : wideNarrow.StatementFree :=
-  ⟨wideVerifier.liftInputs.outputMap (), fun _ => rfl, fun _ =>
-    ⟨narrowVerifier.liftOutputs.outputMap false, fun _ => rfl, fun _ => ⟨⟩⟩⟩
+  ⟨wideVerifier.outputMap (), fun _ => rfl, fun _ =>
+    ⟨narrowVerifier.outputMap false, fun _ => rfl, fun _ => ⟨⟩⟩⟩
 
 /-- The composed verifier, exporting the original small family. -/
 def wideNarrowVerifier :
-    OracleVerifier ambient wideNarrow.protocol Unit wideNarrow.Out liftedInputs
+    OracleVerifier ambient wideNarrow.protocol Unit wideNarrow.Out inputs
       (fun _ => booleans) :=
-  OracleVerifier.lowerOutputs (outputs := fun _ => booleans)
-    (wideNarrow.verifier wideNarrowMaps.compatibility)
+  wideNarrow.verifier wideNarrowMaps.compatibility
 
-/-- Lowering the output family keeps the decision. -/
+/-- The composed verifier keeps the decision. -/
 example : wideNarrowVerifier.decideWith =
     (wideNarrow.verifier wideNarrowMaps.compatibility).decideWith := rfl
 

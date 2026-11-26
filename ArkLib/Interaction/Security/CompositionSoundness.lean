@@ -361,7 +361,7 @@ the oracle messages of the whole transcript. -/
 def OracleVerifier.suffixRun {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {J : Path (s₁.append s₂) → Type}
     {B : (p : Path (s₁.append s₂)) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
@@ -394,7 +394,7 @@ theorem OracleVerifier.run_eq_bind {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {J : Path (s₁.append s₂) → Type}
     {B : (p : Path (s₁.append s₂)) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
@@ -568,7 +568,7 @@ theorem OracleVerifier.append_soundness_weighted_ae {s₁ : OracleProtocol.{0, 0
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {J : Path (s₁.append s₂) → Type}
     {B : (p : Path (s₁.append s₂)) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
@@ -604,7 +604,7 @@ theorem OracleVerifier.append_soundness_ae {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {J : Path (s₁.append s₂) → Type}
     {B : (p : Path (s₁.append s₂)) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
@@ -637,7 +637,7 @@ theorem OracleVerifier.run_append_soundness_weighted_ae {s₁ : OracleProtocol.{
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {J : Path (s₁.append s₂) → Type}
     {B : (p : Path (s₁.append s₂)) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type}
@@ -673,7 +673,7 @@ theorem OracleVerifier.append_soundness_runtime {s₁ : OracleProtocol.{0, 0}}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {J : Path (s₁.append s₂) → Type}
     {B : (p : Path (s₁.append s₂)) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type} {κ : Type} {imports : OracleSpec κ}
@@ -733,7 +733,7 @@ theorem OracleVerifier.append_soundness_runtime_ae {s₁ : OracleProtocol.{0, 0}
     {s₂ : Path s₁ → OracleProtocol.{0, 0}}
     {J : Path (s₁.append s₂) → Type}
     {B : (p : Path (s₁.append s₂)) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path (s₁.append s₂)) → OracleFamily.{0, 0, 0} (J p) (B p)} {S : Type}
     {T : Path (s₁.append s₂) → Type}
     {Out : Transcript oracleSig (s₁.append s₂) → Type} {κ : Type} {imports : OracleSpec κ}

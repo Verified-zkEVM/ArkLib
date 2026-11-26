@@ -34,8 +34,6 @@ already prove a structural bound with PolyFun's universe-polymorphic completed-p
 
 @[expose] public section
 
-universe dX dY
-
 namespace Interaction
 open OracleComp OracleSpec Oracle
 
@@ -51,7 +49,7 @@ The indices, responses and cost carrier lie in `Type` because VCVio's cost API r
 VCVio PR #1220. The pinned VCVio includes that PR, and generalizing this theorem is follow-up
 work; the module docstring has the details. -/
 theorem OracleMap.withAmbient_worstCaseCost {ι α ω : Type} {ambient : OracleSpec ι}
-    {In : OracleBundle.{0, 0, dX}} {Out : OracleBundle.{0, 0, dY}}
+    {In : OracleBundle} {Out : OracleBundle}
     [AddCommMonoid ω] [Preorder ω] [IsOrderedAddMonoid ω]
     (route : OracleMap In Out) {program : OracleComp (ambient + Out.spec) α}
     {sourceCost : CostModel (ambient + Out.spec) ω}

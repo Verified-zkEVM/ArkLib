@@ -81,7 +81,7 @@ abbrev shape : Path (protocol rounds) := ⟨⟨⟩, ⟨⟨⟩, ⟨⟨⟩, ⟨⟨
 
 /-- Accept when either challenge is `0`, reading the second oracle message as the claim. The
 output oracle is the second message. -/
-def verifier : OracleVerifier.{0, 0, 0} []ₒ (protocol rounds) Nat (fun _ => Fin 8)
+def verifier : OracleVerifier []ₒ (protocol rounds) Nat (fun _ => Fin 8)
     emptyFamily
     (fun _ => outputFamily) where
   decide _ p v :=
@@ -803,7 +803,7 @@ def selectedMap (_b : Bool) (p : Path (protocol rounds)) :
     (fun _ => .inr (.inl ⟨⟩))).comp (OracleMap.snd _ _)
 
 /-- Carrier selection is fixed by the authored bit; acceptance still reads both challenges. -/
-def suffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0} []ₒ (protocol rounds) Nat
+def suffixVerifier (b : Bool) : OracleVerifier []ₒ (protocol rounds) Nat
     (fun _ => SelectedValue b) emptyFamily (fun _ => selectedFamily b) where
   decide _ p v :=
     if (show Fin 8 from v.1.2.1) = 0 ∨ (show Fin 16 from v.1.2.2.2.1) = 0 then
@@ -811,7 +811,7 @@ def suffixVerifier (b : Bool) : OracleVerifier.{0, 0, 0} []ₒ (protocol rounds)
   outputMap _ p _ := selectedMap b p
 
 /-- The full verifier has a path-dependent statement and the original output oracle. -/
-def verifier : OracleVerifier.{0, 0, 0} []ₒ selectedProtocol Nat (fun p =>
+def verifier : OracleVerifier []ₒ selectedProtocol Nat (fun p =>
     SelectedValue p.1)
     emptyFamily (fun p => selectedFamily p.1) where
   decide _ p v :=
