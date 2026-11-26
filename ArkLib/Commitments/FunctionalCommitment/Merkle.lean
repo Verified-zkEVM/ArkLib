@@ -34,9 +34,9 @@ committer keeps that whole tree, and the opening proof at `idx` is the authentic
 * `FunctionalCommitment.Merkle.exists_collision_of_plainGame` gives the same conclusion when
   the plain fixed-claim binding game can return `true` under a fixed hash table.
 
-The collision theorems give deterministic existence results about a fixed hash function. A
-security bound in the random oracle model will require bounding the probability of a collision
-among the queries the game actually makes.
+The module `ArkLib.Commitments.FunctionalCommitment.MerkleBinding` proves
+`FunctionalCommitment.Merkle.fixedClaimBindingAdvantage_le_birthday` by bounding the
+probability that two distinct hash inputs queried during the game receive the same answer.
 
 ## References
 
