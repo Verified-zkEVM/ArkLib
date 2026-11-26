@@ -68,6 +68,7 @@ private theorem exists_exceptional_factorAssembly_of_budget
     ⟨contentEx, Nat.cast_le.mpr hcCard, hc⟩ hfactors
   exact ⟨ex, hcard.trans hbudget, hgood⟩
 
+omit [IsDomain R] in
 /-- Combine the content exception with the exceptions of the distinct positive-root-degree
 factors, charging the coarse per-factor charge `ordinaryFactorRaw`. If the content radical
 vanishes only for challenges in a set of size at most its height, and each factor `c` has a set of
@@ -91,6 +92,9 @@ theorem exists_exceptional_ordinaryFactorAssembly
       ∀ w ∉ ex, ∀ v, ev w v c.rep = 0 → Good w v) :
     ∃ ex : Finset W, (ex.card : ℚ) ≤ ordinaryFactorRaw theta n D mu H ∧
       ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by
+  rcases subsingleton_or_nontrivial R with hR | hR
+  · exact (hQ (Subsingleton.elim Q 0)).elim
+  let : IsDomain R := {}
   have hbudget := ordinaryFactorRaw_sum_le (positiveDegreeFactorClasses i Q)
     (fun c ↦ degreeOf i c.rep) (fun c ↦ height c.rep) theta n D mu H
     (height (radicalContent i Q)) htheta hmu
@@ -99,6 +103,7 @@ theorem exists_exceptional_ordinaryFactorAssembly
     (fun c ↦ ordinaryFactorRaw theta n D (degreeOf i c.rep) (height c.rep))
     (ordinaryFactorRaw theta n D mu H) hbudget hcontent hfactors
 
+omit [IsDomain R] in
 /-- If the content radical has an exceptional set bounded by its height and each positive-degree
 factor has an exceptional set bounded by `ordinaryCurveFactorRaw`, then the zeros of `Q` are good
 outside a set bounded by the charge of the whole polynomial, provided its root degree and the
@@ -119,6 +124,9 @@ theorem exists_exceptional_ordinaryCurveFactorAssembly
       ∀ w ∉ ex, ∀ v, ev w v c.rep = 0 → Good w v) :
     ∃ ex : Finset W, (ex.card : ℚ) ≤ ordinaryCurveFactorRaw theta n D ell mu H ∧
       ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by
+  rcases subsingleton_or_nontrivial R with hR | hR
+  · exact (hQ (Subsingleton.elim Q 0)).elim
+  let : IsDomain R := {}
   have hbudget := ordinaryCurveFactorRaw_sum_le (positiveDegreeFactorClasses i Q)
     (fun c ↦ degreeOf i c.rep) (fun c ↦ height c.rep) theta n D ell mu H
     (height (radicalContent i Q)) htheta hmu
@@ -127,6 +135,7 @@ theorem exists_exceptional_ordinaryCurveFactorAssembly
     (fun c ↦ ordinaryCurveFactorRaw theta n D ell (degreeOf i c.rep) (height c.rep))
     (ordinaryCurveFactorRaw theta n D ell mu H) hbudget hcontent hfactors
 
+omit [IsDomain R] in
 /-- Combine the content exception with the exceptions of the distinct positive-root-degree
 factors, charging the free-retention charge `ordinaryUnifiedPowerFactorRawAt` with `ell` rows and
 retention threshold `L`. The conclusion bounds the exceptional set by the free-retention charge of
@@ -150,6 +159,9 @@ theorem exists_exceptional_ordinaryUnifiedPowerFactorAssembly
       ∀ w ∉ ex, ∀ v, ev w v c.rep = 0 → Good w v) :
     ∃ ex : Finset W, (ex.card : ℚ) ≤ ordinaryUnifiedPowerFactorRawAt theta n D ell B H L ∧
       ∀ w ∉ ex, ∀ v, ev w v Q = 0 → Good w v := by
+  rcases subsingleton_or_nontrivial R with hR | hR
+  · exact (hQ (Subsingleton.elim Q 0)).elim
+  let : IsDomain R := {}
   have hbudget := ordinaryUnifiedPowerFactorRawAt_sum_le (positiveDegreeFactorClasses i Q)
     (fun c ↦ degreeOf i c.rep) (fun c ↦ height c.rep) theta n D ell B H L
     (height (radicalContent i Q)) htheta hB

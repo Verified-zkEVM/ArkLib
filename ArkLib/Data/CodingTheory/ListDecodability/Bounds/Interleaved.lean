@@ -311,7 +311,7 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
   · intro V hVT W hWT k hk
     omega
 
-private def prefixErrors {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+private def prefixErrors {ι A : Type} [Fintype ι] [DecidableEq A]
     {d : ℕ} (R V : Fin d → ι → A) (j : ℕ) : Finset ι :=
   Finset.univ.filter fun i => ∃ k : Fin d, k.val < j ∧ R k i ≠ V k i
 
@@ -319,7 +319,7 @@ private def newErrors {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A
     {d : ℕ} (R V : Fin d → ι → A) (j : ℕ) : Finset ι :=
   prefixErrors R V (j + 1) \ prefixErrors R V j
 
-private lemma prefixErrors_mono {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+private lemma prefixErrors_mono {ι A : Type} [Fintype ι] [DecidableEq A]
     {d : ℕ} (R V : Fin d → ι → A) {j k : ℕ} (hjk : j ≤ k) :
     prefixErrors R V j ⊆ prefixErrors R V k := by
   classical
@@ -352,7 +352,7 @@ private lemma card_prefixErrors_succ {ι A : Type} [Fintype ι] [DecidableEq ι]
   rw [prefixErrors_succ_eq_union, Finset.card_union_of_disjoint
     (disjoint_prefixErrors_newErrors R V j)]
 
-private lemma prefixErrors_eq_of_agreesBefore {ι A : Type} [Fintype ι] [DecidableEq ι]
+private lemma prefixErrors_eq_of_agreesBefore {ι A : Type} [Fintype ι]
     [DecidableEq A]
     {d : ℕ} (R : Fin d → ι → A) {V W : Fin d → ι → A} {j : ℕ}
     (h : agreesBeforeNat j V W) : prefixErrors R V j = prefixErrors R W j := by
@@ -548,7 +548,7 @@ private lemma red_count_le_ceil {n D e q : ℕ} {δ : ℝ}
   change q ≤ ⌈Real.log (δC / η) / Real.log 2⌉₊
   exact_mod_cast hqlog.trans (Nat.le_ceil (Real.log (δC / η) / Real.log 2))
 
-private lemma prefixErrors_transpose_all {ι A : Type} [Fintype ι] [DecidableEq ι]
+private lemma prefixErrors_transpose_all {ι A : Type} [Fintype ι]
     [DecidableEq A]
     {d : ℕ} (U V : ι → Fin d → A) :
     prefixErrors (Matrix.transpose U) (Matrix.transpose V) d = disagreementCols U V := by
@@ -600,7 +600,7 @@ private lemma row_disagreement_subset_prefix_union_new {ι A : Type} [Fintype ι
   exact (mem_disagreementCols.mp hi) (hRV.symm.trans hRW)
 
 private lemma row_disagreement_subset_all_errors {ι A : Type} [Fintype ι]
-    [DecidableEq ι] [DecidableEq A] {d : ℕ} (R V : Fin d → ι → A)
+    [DecidableEq A] {d : ℕ} (R V : Fin d → ι → A)
     {j : ℕ} (hj : j < d) :
     disagreementCols (R ⟨j, hj⟩) (V ⟨j, hj⟩) ⊆ prefixErrors R V d := by
   intro i hi
@@ -608,18 +608,17 @@ private lemma row_disagreement_subset_all_errors {ι A : Type} [Fintype ι]
   exact ⟨⟨j, hj⟩, hj, mem_disagreementCols.mp hi⟩
 
 /-- Let `C` have relative minimum distance `δ_C := minDist C / |ι|`, and let
-`δ ∈ [0, δ_C)`. With
+`δ < δ_C`. With
 
 * `η := δ_C - δ`,
 * `b := ⌈δ / η⌉`, and
 * `r := ⌈log₂(δ_C / η)⌉`,
 
-the list size of every nonempty row-wise interleaving is at most
+the list size of every row-wise interleaving is at most
 `choose (b + r) r * Lambda(C, δ)^r`. -/
 theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite A]
     [DecidableEq A]
-    (C : Set (ι → A)) (δ : ℝ) (m : ℕ) (hm : 1 ≤ m)
-    (hδ_lb : 0 ≤ δ)
+    (C : Set (ι → A)) (δ : ℝ) (m : ℕ)
     (hδ_ub : δ < (Code.minDist C : ℝ) / Fintype.card ι) :
     let δC : ℝ := (Code.minDist C : ℝ) / Fintype.card ι
     let η : ℝ := δC - δ
@@ -628,6 +627,17 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     Lambda (interleavedCodeSet (κ := Fin m) C) δ ≤
       ((b + r).choose r : ℕ∞) * (Lambda C δ) ^ r := by
   classical
+  by_cases hδ_lb : 0 ≤ δ
+  case neg =>
+    apply Lambda_le_iff_forall_encard_le.mpr
+    intro U
+    have hempty : closeCodewordsRel (interleavedCodeSet (κ := Fin m) C) U δ = ∅ := by
+      apply Set.eq_empty_iff_forall_notMem.mpr
+      intro c hc
+      have hclose := (mem_closeCodewordsRel_iff.mp hc).2
+      exact hδ_lb ((by positivity : (0 : ℝ) ≤ (δᵣ(U, c) : ℝ)).trans hclose)
+    rw [hempty, Set.encard_empty]
+    exact zero_le
   let : Fintype A := Fintype.ofFinite A
   let n := Fintype.card ι
   let D := Code.minDist C
@@ -642,7 +652,6 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     simp [n, hn0] at hδ_ub hδ_lb
     linarith
   let : Nonempty ι := Fintype.card_pos_iff.mp (by simpa [n] using hn)
-  let : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp (by omega)
   have heR : (e : ℝ) ≤ δ * n := by
     exact_mod_cast Nat.floor_le (mul_nonneg hδ_lb (Nat.cast_nonneg n))
   have hde : e < D := by
@@ -788,30 +797,22 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
       · exact blue_count_le_ceil hn (by simpa [D, n] using hδ_ub) heR hnat.1
       · exact red_count_le_ceil hn (by simpa [D, n] using hδ_ub) heR hnat.2
   · have hCempty : C = ∅ := Set.not_nonempty_iff_eq_empty.mp hC
-    subst C
-    set_option backward.isDefEq.respectTransparency false in
-      rw [Lambda_le_iff_forall_encard_le]
-    intro U
-    have hpoint : closeCodewordsRel
-        (interleavedCodeSet (κ := Fin m) (∅ : Set (ι → A))) U δ = ∅ := by
-      ext c
-      constructor
-      · intro hc
-        exact (hc.1 ⟨0, by omega⟩).elim
-      · simp
-    rw [hpoint]
-    simp only [Set.encard_empty]
-    exact (zero_le : (0 : ℕ∞) ≤ _)
+    simp [hCempty, Code.minDist] at hδ_ub
+    linarith
 
 open scoped NNReal in
-/-- Inside the base code's relative unique-decoding radius, every point list of a nonempty
+/-- Inside the base code's relative unique-decoding radius, every point list of an
 interleaving is a subsingleton, so `Λ ≤ 1`. Interleaving preserves that radius
 (`Code.relativeUniqueDecodingRadius_interleavedCodeSet`), and every code is uniquely decodable at
 its own radius (`Code.isUniquelyDecodable_relativeUniqueDecodingRadius`). -/
 theorem lambda_interleaved_le_one_of_le_relUDR {ι A : Type*} [Fintype ι] [DecidableEq A]
-    (C : Set (ι → A)) {m : ℕ} (hm : 0 < m)
+    (C : Set (ι → A)) {m : ℕ}
     {δ : ℝ≥0} (hδ : δ ≤ relativeUniqueDecodingRadius C) :
     Lambda (C^⋈(Fin m)) (δ : ℝ) ≤ 1 := by
+  rcases Nat.eq_zero_or_pos m with rfl | hm
+  · apply Lambda_le_iff_forall_encard_le.mpr
+    intro U
+    exact Set.encard_le_one_iff_subsingleton.mpr (fun _ _ _ _ => Subsingleton.elim _ _)
   have : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
   refine le_trans (Lambda_mono ?_)
     (isUniquelyDecodable_iff_Lambda_le.mp

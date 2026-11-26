@@ -17,15 +17,24 @@ public import Mathlib.Tactic.Ring
 /-!
 # Pairwise-intersection incidence bound
 
-A finite family of sets, each with at least `A` elements and with pairwise intersections of
-cardinality at most `D`, satisfies
+Let the ambient type have `n` elements.
+Take a finite family of sets, each with at least `A` elements.
+Assume pairwise intersections have at most `D` elements.
+Then the family has `|T|` members with `|T| * (A² - nD) ≤ n * (A - D)`, subtracting in `ℕ`.
 
-`|T| * (A² - nD) ≤ n * (A - D)`
+The proof is the elementary Cauchy–Schwarz count.
+It comes from the Reed–Solomon weighted Johnson development at commit
+`a5aa2677fee4e3a79d6bb05136631cce4a08587d`.
+It has no field, polynomial, or geometric hypotheses.
 
-when the ambient type has `n` elements and the denominator is positive. The proof is the
-elementary Cauchy--Schwarz count extracted from the Reed--Solomon weighted Johnson development at
-commit `a5aa2677fee4e3a79d6bb05136631cce4a08587d`. It has no field, polynomial, or geometric
-hypotheses.
+A second statement counts a family whose members share labels.
+Sets with distinct labels meet in at most `D` elements, and each label has at most `M` members.
+The family then has at most `n (A - D) / (A² - nD) · M` members.
+
+## Main statements
+
+* `Finset.card_mul_sq_sub_card_mul_le_of_inter_card_le`: the division-free Johnson count.
+* `Finset.card_le_of_fiber_card_le_of_inter_card_le`: the Johnson count for labelled members.
 -/
 
 @[expose] public section
@@ -36,21 +45,28 @@ namespace Finset
 
 `T` is the finite family of indices and `S x` is the set attached to `x`. The ambient type `ι`
 has cardinality `n = Fintype.card ι`. Every family member has at least `A` elements, while two
-members with distinct indices intersect in at most `D` elements. The hypotheses `D ≤ A` and
-`n * D < A²` make the agreement gap nonnegative and the Johnson denominator positive. -/
+members with distinct indices intersect in at most `D` elements. Both differences use natural
+subtraction, so the bound also holds when the agreement gap or denominator truncates to zero. -/
 theorem card_mul_sq_sub_card_mul_le_of_inter_card_le
     -- The ambient finite type and the type indexing the family need not carry other structure.
     {κ ι : Type*} [Fintype ι] [DecidableEq ι]
     -- `T` chooses the family members and `S` assigns their finite subsets of the ambient type.
     (T : Finset κ) (S : κ → Finset ι) (A D : ℕ)
-    -- The integral gap and denominator are in their natural mathematical range.
-    (hDA : D ≤ A) (hpositive : Fintype.card ι * D < A * A)
     -- Each member is large, while distinct indexed members have small pairwise intersection.
     (hclose : ∀ x ∈ T, A ≤ (S x).card)
     (hpair : ∀ x ∈ T, ∀ y ∈ T, x ≠ y → ((S x) ∩ (S y)).card ≤ D) :
     -- This exact integral inequality is the division-free Johnson counting conclusion.
     T.card * (A * A - Fintype.card ι * D) ≤ Fintype.card ι * (A - D) := by
   classical
+  by_cases hden : A * A ≤ Fintype.card ι * D
+  · simp [Nat.sub_eq_zero_of_le hden]
+  rcases T.eq_empty_or_nonempty with rfl | ⟨x, hx⟩
+  · simp
+  have hDA : D ≤ A := by
+    have hAn : A ≤ Fintype.card ι := (hclose x hx).trans (Finset.card_le_univ _)
+    by_contra h
+    exact hden ((Nat.mul_le_mul_left A (Nat.le_of_lt (Nat.lt_of_not_ge h))).trans
+      (Nat.mul_le_mul_right D hAn))
   let L : ℝ := T.card
   let n : ℝ := Fintype.card ι
   let a : ℝ := A
@@ -205,7 +221,7 @@ theorem card_mul_sq_sub_card_mul_le_of_inter_card_le
       exact le_of_mul_le_mul_left hmulgoal hLpos
   have hcastDen :
       ((A * A - Fintype.card ι * D : ℕ) : ℝ) = a ^ 2 - n * d := by
-    rw [Nat.cast_sub hpositive.le]
+    rw [Nat.cast_sub (Nat.le_of_lt (Nat.lt_of_not_ge hden))]
     simp [a, n, d, pow_two]
   have hcastGap : ((A - D : ℕ) : ℝ) = a - d := by
     rw [Nat.cast_sub hDA]
@@ -214,5 +230,54 @@ theorem card_mul_sq_sub_card_mul_le_of_inter_card_le
       (Fintype.card ι : ℝ) * (A - D : ℕ) by
     rw [hcastDen, hcastGap]
     simpa [L, n] using hreal)
+
+/-- A Johnson count for a family whose members are grouped by a label.
+
+Let `n` be the size of the ambient type and assume `D ≤ A` and `n D < A²`.
+
+Each member `c ∈ C` has a set `S c` of at least `A` elements.
+
+Members with distinct labels have sets meeting in at most `D` elements.
+
+Each label is shared by at most `M` members.
+
+Then `C` has at most `n (A - D) / (A² - n D) · M` members, in real arithmetic. -/
+theorem card_le_of_fiber_card_le_of_inter_card_le {α β ι : Type*} [DecidableEq β] [Fintype ι]
+    [DecidableEq ι] (C : Finset α) (π : α → β) (S : α → Finset ι) {A D M : ℕ} (hDA : D ≤ A)
+    (hden : Fintype.card ι * D < A * A) (hclose : ∀ c ∈ C, A ≤ (S c).card)
+    (hpair : ∀ c ∈ C, ∀ c' ∈ C, π c ≠ π c' → (S c ∩ S c').card ≤ D)
+    (hfiber : ∀ c ∈ C, (C.filter fun c' ↦ π c' = π c).card ≤ M) :
+    (C.card : ℝ) ≤ Fintype.card ι * ((A : ℝ) - D) / ((A : ℝ) * A - Fintype.card ι * D) * M := by
+  have hpos : (0 : ℝ) < (A : ℝ) * A - Fintype.card ι * D := by
+    rw [sub_pos]
+    exact_mod_cast hden
+  rcases C.eq_empty_or_nonempty with rfl | ⟨c₀, -⟩
+  · simp only [card_empty, Nat.cast_zero]
+    have hAD : (0 : ℝ) ≤ (A : ℝ) - D := by
+      rw [sub_nonneg]
+      exact_mod_cast hDA
+    positivity
+  have : Nonempty α := ⟨c₀⟩
+  -- Each label class has at most `M` members.
+  set T := C.image π
+  have hCT : C.card ≤ M * T.card := card_le_mul_card_image C M fun p hp ↦ by
+    obtain ⟨c, hc, rfl⟩ := mem_image.mp hp
+    exact hfiber c hc
+  -- One representative per label gives a family with small pairwise intersections.
+  have hrep : ∀ p ∈ T, ∃ c ∈ C, π c = p := fun p hp ↦ mem_image.mp hp
+  choose! rep hrepC hrepπ using hrep
+  have hJ := card_mul_sq_sub_card_mul_le_of_inter_card_le T (S ∘ rep) A D
+    (fun p hp ↦ hclose _ (hrepC p hp)) fun p hp p' hp' hne ↦
+      hpair _ (hrepC p hp) _ (hrepC p' hp') (by rwa [hrepπ p hp, hrepπ p' hp'])
+  -- Real arithmetic.
+  have hT : (T.card : ℝ) ≤
+      Fintype.card ι * ((A : ℝ) - D) / ((A : ℝ) * A - Fintype.card ι * D) := by
+    rw [le_div_iff₀ hpos]
+    have hJ' : ((T.card * (A * A - Fintype.card ι * D) : ℕ) : ℝ) ≤
+        ((Fintype.card ι * (A - D) : ℕ) : ℝ) := by exact_mod_cast hJ
+    push_cast [Nat.cast_sub hden.le, Nat.cast_sub hDA] at hJ'
+    exact hJ'
+  calc (C.card : ℝ) ≤ T.card * M := by rw [mul_comm]; exact_mod_cast hCT
+    _ ≤ _ := mul_le_mul_of_nonneg_right hT (Nat.cast_nonneg M)
 
 end Finset

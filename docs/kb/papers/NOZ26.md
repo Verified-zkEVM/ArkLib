@@ -208,9 +208,9 @@ Ring-switching layer:
 
 - Formalize §3.2 (base-field coefficients and partial evaluations); the §3.1 trace head is
   formalized in `Hachi/TraceHead/`.
-- Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
-  partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
-  soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is
+- The §4.5 recursion is not formalized. Its `Z`-packing step (Eqs. (24)–(26)) does not let the
+  extractor recover the per-slice partial evaluations, so it needs a protocol change first; see
+  [`../audits/noz26-recursion-z-packing.md`](../audits/noz26-recursion-z-packing.md). Everything through the sumcheck is
   proved in **both** directions: Lemma 8, the corrected Lemma 10 and its batching bridge, Lemma 9
   (the lift), the sumcheck bridge and summands, Lemma 11, and the final evaluation, each with
   coordinate-wise special soundness and perfect completeness, and the one-iteration soundness
@@ -221,7 +221,6 @@ Ring-switching layer:
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
   proved in their respective modules.
-- Resolve the flagged `Z`-packing/partial-evaluation knowledge-soundness gap in the recursion chain.
 
 Detailed Lemma 5–6 correspondence and proof status:
 [`../audits/noz26-subfield-lemmas5-6.md`](../audits/noz26-subfield-lemmas5-6.md).

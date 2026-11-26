@@ -3,8 +3,7 @@
 This directory holds reusable agent workflows — the *how* of a recurring task, as opposed to the
 repo facts in `docs/wiki/` and the paper knowledge in `docs/kb/`.
 
-Most skills here are subsystem-independent. `prove-milestone.md` is the exception: it is written
-against the Hachi development, and is kept because that workflow is exercised repeatedly.
+The skills here are subsystem-independent.
 
 ## Maintenance Rule
 
@@ -21,16 +20,18 @@ After using a skill, review whether it should be updated:
 
 ## Available Skills
 
+- [`write-technical-prose.md`](write-technical-prose.md) - draft or revise repository prose,
+  including documentation and PR comments, with local guidance and source evidence.
+
 - [`discharge-lemmas.md`](discharge-lemmas.md) - workflow for triaging, placing, stating, and
-  proving `sorry`s and open proof obligations, then summarizing what is proved vs. deferred.
+  proving `sorry`s and open proof obligations, including freezing statements against a paper
+  before proving them, then summarizing what is proved vs. deferred.
 - [`make-computable.md`](make-computable.md) - workflow for turning `noncomputable` definitions
   executable: classify each marker as sorried / leaf / architectural, rate it, fix everything below
   7, and verify at runtime with `#eval`.
-- [`prove-milestone.md`](prove-milestone.md) - four-stage, paper-audited workflow for freezing and
-  constructively proving one Hachi milestone, then improving the workflow from run evidence.
-  Hachi-specific; the staging discipline generalizes.
 - [`fix-lean-warnings.md`](fix-lean-warnings.md) - workflow for cleaning Lean 4 linter and style
   warnings safely and incrementally.
-- [`make-pr-ready.md`](make-pr-ready.md) - prepare a branch for review: audit API names,
-  self-contained docstrings, computability, proof structure and measured performance; validate
-  warnings and axiom boundaries, citation ownership and KB coverage; sweep stale references.
+- [`make-pr-ready.md`](make-pr-ready.md) - prepare a branch for review. The skill audits API
+  names, docstrings, computability, proofs, statements, claims, overlap, and prose. It validates
+  warnings, axioms, citations, and KB coverage, and it finds stale references. It also drafts the
+  pull request description from the template.

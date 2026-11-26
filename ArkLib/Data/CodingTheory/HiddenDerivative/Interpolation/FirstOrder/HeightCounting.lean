@@ -124,13 +124,36 @@ theorem firstOrderColumnSlotCount_eq_heightSlotCount (hD : 0 < D) :
       sum_firstOrderDimensionCoordinates_height D A m M μ h
 
 /-- The support-side height inequality in its executable nested-sum form. -/
-theorem firstOrder_rowTotal_mul_height_lt_heightSlotCount (hD : 0 < D)
+theorem firstOrder_rowTotal_mul_height_lt_heightSlotCount
     (hrank : rowTotal < (firstOrderExponents D A m M μ).card) :
     rowTotal * (firstOrderCertificateHeight D A m M μ rowTotal + 1) <
       firstOrderHeightSlotCount D A m M μ
         (firstOrderCertificateHeight D A m M μ rowTotal) := by
-  rw [← firstOrderColumnSlotCount_eq_heightSlotCount hD]
-  exact firstOrder_rowTotal_mul_height_lt_columnSlotCount hrank
+  rcases Nat.eq_zero_or_pos D with rfl | hD
+  · classical
+    apply lt_of_lt_of_le (firstOrder_rowTotal_mul_height_lt_columnSlotCount hrank)
+    rw [firstOrderColumnSlotCount, ← sum_firstOrderDimensionCoordinates_height]
+    simp only [Finset.sum_coe_sort_eq_attach]
+    rw [Finset.sum_attach _ (fun q : (Σ _ : (Σ _ : ℕ, ℕ), ℕ) ↦
+      firstOrderCertificateHeight 0 A m M μ rowTotal + 1 - (q.1.1 - q.1.2))]
+    let e : (JetVariable 1 →₀ ℕ) → (Σ _ : (Σ _ : ℕ, ℕ), ℕ) :=
+      fun u ↦ ⟨⟨u (some 0) + u (some 1), u (some 1)⟩, u none⟩
+    refine Finset.sum_le_sum_of_injOn e ?_ ?_ (fun u _ ↦ ?_) (by intros; omega)
+    · intro u hu v hv huv
+      have hcoords := Sigma.mk.inj huv
+      have hjet := Sigma.mk.inj hcoords.1
+      simp only [heq_eq_eq] at hcoords hjet
+      rw [← firstOrderMonomialExponent_eta u, ← firstOrderMonomialExponent_eta v]
+      congr 1 <;> omega
+    · rintro q hq
+      obtain ⟨u, hu, rfl⟩ := Finset.mem_image.mp hq
+      have hc := mem_firstOrderExponents_iff_coordinates.mp hu
+      simp only [e, firstOrderDimensionCoordinates, Finset.mem_sigma, Finset.mem_range]
+      simp only [Nat.zero_sub, zero_mul, add_zero] at hc
+      omega
+    · simp [e]
+  · rw [← firstOrderColumnSlotCount_eq_heightSlotCount hD]
+    exact firstOrder_rowTotal_mul_height_lt_columnSlotCount hrank
 
 /-- Enumerate every first-order support exponent as a symbolic source column. -/
 def firstOrderColumns :

@@ -78,9 +78,14 @@ lemma K_le_card {α : F} : K B i α ≤ B.card :=
   card_le_card fun _ ha ↦ (mem_filter.1 ha).2.1
 
 /-- Jensen's inequality applied to `choose_2` for nonzero coordinates. -/
-lemma sum_choose_K' [Zero F] (h_card : 2 ≤ card F) :
+lemma sum_choose_K' [Zero F] :
     (card F - 1) * choose_2 ((B.card - K B i 0) / (card F - 1)) ≤
     ∑ α with α ≠ 0, choose_2 (K B i α) := by
+  by_cases hsmall : card F ≤ 1
+  · have hc : card F = 1 := by have := Fintype.card_pos (α := F); omega
+    have : Subsingleton F := Fintype.card_le_one_iff_subsingleton.mp hc.le
+    simp [hc, show ∀ α : F, α = 0 from fun α ↦ Subsingleton.elim α 0]
+  have h_card : 2 ≤ card F := by omega
   have hx1 : (0 : ℚ) < card F - 1 := sub_pos.2 (by exact_mod_cast h_card)
   have hsum : (B.card : ℚ) - K B i 0 = ∑ α ∈ univ.erase 0, (K B i α : ℚ) := by
     rw [← sum_K_eq_card (i := i), Nat.cast_sum, ← add_sum_erase _ _ (mem_univ (0 : F)),
@@ -104,7 +109,7 @@ def sum_choose_K_i (B : Finset (Fin n → F)) (i : Fin n) : ℚ :=
 
 /-- Lower bound on `sum_choose_K_i` via convexity. -/
 @[simp]
-lemma le_sum_choose_K [Zero F] (h_card : 2 ≤ card F) :
+lemma le_sum_choose_K [Zero F] :
     choose_2 (K B i 0) + (card F - 1) *
     choose_2 ((B.card - K B i 0) / (card F - 1)) ≤ sum_choose_K_i B i := by
   simp only [sum_choose_K_i]
@@ -113,7 +118,7 @@ lemma le_sum_choose_K [Zero F] (h_card : 2 ≤ card F) :
     rw [sum_eq_sum_sdiff_singleton_add (i := (0 : F)) (by simp), add_comm]
     exact congr_arg _ (sum_congr
       (by ext x; simp [mem_sdiff, mem_singleton, mem_filter]) fun _ _ ↦ rfl)
-  linarith [sum_choose_K' h_card (B := B) (i := i)]
+  linarith [sum_choose_K' (B := B) (i := i)]
 
 /-- Average number of zero coordinates across positions, normalised by `n`. -/
 def k [Zero F] (B : Finset (Fin n → F)) : ℚ :=
@@ -144,8 +149,14 @@ lemma sum_hamming_weight_sum [Zero F] :
 
 /-- Relation between `k` and the average radius `e`. -/
 @[simp]
-lemma k_and_e [Zero F] (h_n : n ≠ 0) (h_B : B.card ≠ 0) :
+lemma k_and_e [Zero F] :
     k B = B.card * (n - e B 0) / n := by
+  by_cases h_n : n = 0
+  · subst n
+    simp [k]
+  by_cases h_B : B.card = 0
+  · have h_empty : B = ∅ := card_eq_zero.mp h_B
+    simp [h_empty, k, K, Fi]
   have hB : (B.card : ℚ) ≠ 0 := Nat.cast_ne_zero.2 h_B
   have hH : ((∑ x ∈ B, Δ₀((0 : Fin n → F), x) : ℕ) : ℚ) = n * B.card - ∑ i, K B i 0 := by
     rw [Nat.cast_sum]
@@ -158,15 +169,17 @@ lemma k_and_e [Zero F] (h_n : n ≠ 0) (h_B : B.card ≠ 0) :
 
 /-- `k / |B|` equals `(n - e) / n`. -/
 @[simp]
-lemma k_and_e' [Zero F] (h_n : n ≠ 0) (h_B : B.card ≠ 0) :
+lemma k_and_e' [Zero F] (h_B : B.card ≠ 0) :
     k B / B.card = (n - e B 0) / n := by
-  rw [k_and_e h_n h_B, mul_div_assoc, mul_div_cancel_left₀ _ (Nat.cast_ne_zero.2 h_B)]
+  rw [k_and_e, mul_div_assoc, mul_div_cancel_left₀ _ (Nat.cast_ne_zero.2 h_B)]
 
 /-- Jensen's inequality for `choose_2 ∘ K` at the zero coordinate. -/
 @[simp]
-lemma k_choose_2 [Zero F] (h_n : n ≠ 0) :
+lemma k_choose_2 [Zero F] :
     n * choose_2 (k B) ≤ ∑ i, choose_2 (K B i 0) := by
-  have hn_pos : (0 : ℚ) < n := by exact_mod_cast Nat.pos_of_ne_zero h_n
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
+  have hn_pos : (0 : ℚ) < n := by exact_mod_cast hn
   have jensen := ConvexOn.map_sum_le choose_2_convex
     (t := univ (α := Fin n)) (w := fun _ ↦ (n : ℚ)⁻¹) (p := fun i ↦ (K B i 0 : ℚ))
     (fun _ _ ↦ inv_nonneg.mpr hn_pos.le)
@@ -193,11 +206,19 @@ lemma sum_1_over_n_aux_frac_k_i [Zero F] (h_n : 0 < n) :
   rw [← sum_div, sum_sub_distrib, sum_const, card_univ, Fintype.card_fin, nsmul_eq_mul, k,
     mul_div_assoc', mul_sub, ← mul_assoc, one_div_mul_cancel hn0, one_mul, Nat.cast_sum]
 
-lemma le_sum_sum_choose_K [Zero F] (h_n : 0 < n) (h_card : 2 ≤ card F) :
+lemma le_sum_sum_choose_K [Zero F] :
     n * (choose_2 (k B) + (card F - 1) *
     choose_2 ((B.card - k B) / (card F - 1))) ≤ ∑ i, sum_choose_K_i B i := by
+  rcases Nat.eq_zero_or_pos n with rfl | h_n
+  · simp
+  by_cases hsmall : card F ≤ 1
+  · have hc : card F = 1 := by have := Fintype.card_pos (α := F); omega
+    have : Subsingleton F := Fintype.card_le_one_iff_subsingleton.mp hc.le
+    simpa [hc, sum_choose_K_i, Fintype.sum_subsingleton (a := (0 : F))] using
+      (k_choose_2 (B := B))
+  have h_card : 2 ≤ card F := by omega
   have h_ineq1 : n * choose_2 (k B) ≤ ∑ i, choose_2 (K B i 0) :=
-    k_choose_2 (Nat.pos_iff_ne_zero.1 h_n)
+    k_choose_2
   have h_ineq2 : n * ((card F - 1 : ℚ) *
       choose_2 ((B.card - k B) / (card F - 1))) ≤
       ∑ i, ((Fintype.card F - 1 : ℚ) *
@@ -223,7 +244,7 @@ lemma le_sum_sum_choose_K [Zero F] (h_n : 0 < n) (h_card : 2 ≤ card F) :
   have h_combined : ∑ i : Fin n, sum_choose_K_i B i ≥
       ∑ i : Fin n, (choose_2 (K B i 0) +
       (card F - 1) * choose_2 ((B.card - K B i 0) / (card F - 1))) :=
-    sum_le_sum fun i _ ↦ le_trans (le_sum_choose_K (show 2 ≤ card F from h_card)) le_rfl
+    sum_le_sum fun i _ ↦ le_trans le_sum_choose_K le_rfl
   rw [sum_add_distrib] at h_combined
   linarith
 
@@ -303,9 +324,19 @@ lemma choose_2_card_ne_zero (h : 2 ≤ B.card) : choose_2 ↑B.card ≠ 0 := by
 
 omit [Fintype F] in
 /-- The average distance `d` expressed as a double sum of coordinate disagreements. -/
-lemma d_eq_sum (h_B : 2 ≤ B.card) :
+lemma d_eq_sum :
     2 * choose_2 B.card * d B =
     ∑ i, ∑ x ∈ B ×ˢ B with x.1 ≠ x.2, (if x.1 i ≠ x.2 i then 1 else 0) := by
+  by_cases hsmall : B.card ≤ 1
+  · have hoff : {x ∈ B ×ˢ B | x.1 ≠ x.2} = ∅ := by
+      apply eq_empty_iff_forall_notMem.mpr
+      intro x hx
+      obtain ⟨hx, hne⟩ := mem_filter.mp hx
+      exact hne (card_le_one.mp hsmall x.1 (mem_product.mp hx).1
+        x.2 (mem_product.mp hx).2)
+    have hc : B.card = 0 ∨ B.card = 1 := by omega
+    rcases hc with hc | hc <;> simp [hc, choose_2, hoff]
+  have h_B : 2 ≤ B.card := by omega
   have hc : 2 * choose_2 (B.card : ℚ) ≠ 0 := mul_ne_zero two_ne_zero (choose_2_card_ne_zero h_B)
   rw [d, ← mul_assoc, mul_one_div_cancel hc, one_mul, Nat.cast_sum, sum_comm]
   refine sum_congr rfl fun y _ ↦ ?_
@@ -315,7 +346,7 @@ lemma d_eq_sum (h_B : 2 ≤ B.card) :
   exact (ite_not _ _ _).symm
 
 /-- Total `choose_2` over all coordinates equals `choose_2(|B|) · (n - d)`. -/
-lemma sum_sum_K_i_eq_n_sub_d (h_B : 2 ≤ B.card) :
+lemma sum_sum_K_i_eq_n_sub_d :
     ∑ i, sum_choose_K_i B i = choose_2 B.card * (n - d B) := by
   have hd_eq_sum : 2 * choose_2 (B.card : ℚ) * d B =
       n * 2 * choose_2 (B.card : ℚ) - 2 * ∑ i, ∑ α, choose_2 (K B i α) := by
@@ -331,27 +362,37 @@ lemma sum_sum_K_i_eq_n_sub_d (h_B : 2 ≤ B.card) :
       rw [h_sum_rewrite, Finset.sum_sub_distrib, mul_sum _ _ _, sum_const,
         Finset.card_fin, nsmul_eq_mul]; ring!
     convert h_sum using 1 <;> ring_nf!
-    convert d_eq_sum h_B using 1; ring!
+    convert d_eq_sum (B := B) using 1; ring!
   simp only [sum_choose_K_i]
   linear_combination hd_eq_sum / 2
 
 /-- Pre-Johnson bound: convexity yields `n · (C₂(k) + (q-1) · C₂(…)) ≤ C₂(|B|) · (n - d)`. -/
-lemma almost_johnson [Zero F] (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
+lemma almost_johnson [Zero F] :
     n * (choose_2 (k B) + (card F - 1) *
       choose_2 ((B.card - k B) / (card F - 1))) ≤
     choose_2 B.card * (n - d B) :=
-  le_trans (le_sum_sum_choose_K h_n (by grind only))
-    (sum_sum_K_i_eq_n_sub_d h_B ▸ le_refl _)
+  le_trans le_sum_sum_choose_K
+    ((sum_sum_K_i_eq_n_sub_d (B := B)) ▸ le_refl _)
 
 /-- `choose_2`-free form of `almost_johnson`. -/
 lemma almost_johnson_choose_2_elimed [Zero F]
-    (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
+    (h_B : 2 ≤ B.card) :
     (k B * (k B - 1) +
       (B.card - k B) * ((B.card - k B) / (card F - 1) - 1)) ≤
     B.card * (B.card - 1) * (n - d B) / n := by
+  have h_n : 0 < n := by
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · have := B.card_le_one_of_subsingleton
+      omega
+    · exact hn
+  have h_card : 2 ≤ card F := by
+    by_contra h
+    have : Subsingleton F := Fintype.card_le_one_iff_subsingleton.mp (by omega)
+    have := B.card_le_one_of_subsingleton
+    omega
   have hc : (card F - 1 : ℚ) ≠ 0 := sub_ne_zero_of_ne (by norm_cast; omega)
   have hn : (0 : ℚ) < n := by exact_mod_cast h_n
-  have hj := almost_johnson h_n h_B h_card
+  have hj := almost_johnson (B := B)
   have hcx : (card F - 1 : ℚ) * ((B.card - k B) / (card F - 1)) = B.card - k B :=
     mul_div_cancel₀ _ hc
   simp only [choose_2] at hj
@@ -359,62 +400,72 @@ lemma almost_johnson_choose_2_elimed [Zero F]
   linear_combination 2 * hj - n * ((B.card - k B) / (card F - 1) - 1) * hcx
 
 /-- LHS of the almost-Johnson bound divided by `|B|` in terms of `e` and `d`. -/
-lemma almost_johnson_lhs_div_B_card [Zero F] (h_n : 0 < n) (h_B : 2 ≤ B.card) :
+lemma almost_johnson_lhs_div_B_card [Zero F] (h_B : 2 ≤ B.card) :
     (k B * (k B - 1) + (B.card - k B) * ((B.card - k B) / (card F - 1) - 1)) / B.card =
     (1 - e B 0 / n) ^ 2 * B.card + B.card * (e B 0) ^ 2 / ((card F - 1) * n ^ 2) - 1 := by
+  rcases Nat.eq_zero_or_pos n with rfl | h_n
+  · have := B.card_le_one_of_subsingleton
+    omega
   have hM0 : (B.card : ℚ) ≠ 0 := by exact_mod_cast (by omega : B.card ≠ 0)
   have hk : k B = B.card * (1 - e B 0 / n) := by
-    rw [k_and_e h_n.ne' (by omega), mul_div_assoc, sub_div,
+    rw [k_and_e, mul_div_assoc, sub_div,
       div_self (by exact_mod_cast h_n.ne' : (n : ℚ) ≠ 0)]
   rw [hk, div_eq_iff hM0, ← div_div]
   ring
 
 /-- Unrefined Johnson bound in terms of `e`, `d`, and `|B|`. -/
 lemma johnson_unrefined [Zero F]
-    (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
+    (h_B : 2 ≤ B.card) :
     (1 - e B 0 / n) ^ 2 * B.card + B.card * (e B 0) ^ 2 /
       ((card F - 1) * n ^ 2) - 1 ≤
     (B.card - 1) * (1 - d B / n) := by
+  rcases Nat.eq_zero_or_pos n with rfl | h_n
+  · have := B.card_le_one_of_subsingleton
+    omega
   have h_rewrite : (k B * (k B - 1) + (B.card - k B) *
       ((B.card - k B) / (card F - 1) - 1)) / B.card ≤ (B.card - 1) *
       (1 - d B / n) := by
-    have this := almost_johnson_choose_2_elimed h_n h_B h_card
+    have this := almost_johnson_choose_2_elimed h_B
     rw [div_le_iff₀ (by positivity)]
     convert this using 1
     rw [one_sub_div (Nat.cast_ne_zero.2 h_n.ne')]
     ring
   convert h_rewrite using 1
-  convert almost_johnson_lhs_div_B_card h_n h_B |> Eq.symm using 1
+  convert almost_johnson_lhs_div_B_card h_B |> Eq.symm using 1
 
 /-- Johnson bound multiplied through by `|B|`. -/
 lemma johnson_unrefined_by_M [Zero F]
-    (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
+    (h_B : 2 ≤ B.card) :
     B.card * ((1 - e B 0 / n) ^ 2 + (e B 0) ^ 2 /
       ((card F - 1) * n ^ 2) - 1 + d B / n) ≤ d B / n := by
   suffices B.card * ((1 - e B 0 / n) ^ 2 + e B 0 ^ 2 /
       ((card F - 1) * n ^ 2)) - B.card * (1 - d B / n) + -1 +
     B.card * (1 - d B / n) ≤ (B.card - 1) * (1 - d B / n) by linarith
-  exact le_trans (le_of_eq (by ring)) (johnson_unrefined h_n h_B h_card)
+  exact le_trans (le_of_eq (by ring)) (johnson_unrefined h_B)
 
 /-- Johnson bound scaled by `|F| / (|F| - 1)`. -/
 lemma johnson_unrefined_by_M' [Zero F]
-    (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
+    (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
     B.card * (card F / (card F - 1)) *
       ((1 - e B 0 / n) ^ 2 + e B 0 ^ 2 /
         ((card F - 1) * n ^ 2) - 1 + d B / n) ≤
     (card F / (card F - 1)) * d B / n := by
   rw [mul_comm (B.card : ℚ), mul_assoc, ← mul_div]
-  exact mul_le_mul_of_nonneg_left (johnson_unrefined_by_M h_n h_B h_card)
+  exact mul_le_mul_of_nonneg_left (johnson_unrefined_by_M h_B)
     (le_of_lt (div_pos (by exact_mod_cast lt_of_lt_of_le (by decide : 0 < 2) h_card)
       (by linarith [show (2 : ℚ) ≤ (card F : ℚ) from by exact_mod_cast h_card])))
 
 /-- Algebraic identity expressing the Johnson LHS as a difference of squares. -/
-lemma johnson_denom [Zero F] (h_card : 2 ≤ card F) :
+lemma johnson_denom [Zero F] :
     (card F / (card F - 1)) *
     ((1 - e B 0 / n) ^ 2 + (e B 0) ^ 2 /
       ((card F - 1) * n ^ 2) - 1 + d B / n) =
     (1 - (card F / (card F - 1)) *
     (e B 0 / n)) ^ 2 - (1 - (card F / (card F - 1)) * (d B / n)) := by
+  by_cases hc : card F ≤ 1
+  · have hc1 : card F = 1 := by have := Fintype.card_pos (α := F); omega
+    simp [hc1]
+  have h_card : 2 ≤ card F := by omega
   set c := card F; set c1 := (c : ℚ) - 1
   have n₂ : c1 ≠ 0 := sub_ne_zero.2 (Nat.one_lt_cast.2 h_card).ne'
   suffices c / c1 * (d B / n - 2 * e B 0 / n + c / c1 * e B 0 ^ 2 / n ^ 2) =
@@ -432,13 +483,17 @@ lemma johnson_denom [Zero F] (h_card : 2 ≤ card F) :
   ring_nf
 
 /-- Johnson bound in squared-deviation form, at the zero vector. -/
-lemma johnson_bound₀ [Zero F]
-    (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
+lemma johnson_bound₀ [Zero F] (h_B : 2 ≤ B.card) :
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B 0 / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
-  rw [← johnson_denom h_card, ← mul_assoc]
-  exact johnson_unrefined_by_M' h_n h_B h_card
+  have h_card : 2 ≤ card F := by
+    by_contra h
+    have : Subsingleton F := Fintype.card_le_one_iff_subsingleton.mp (by omega)
+    have := B.card_le_one_of_subsingleton
+    omega
+  rw [← johnson_denom, ← mul_assoc]
+  exact johnson_unrefined_by_M' h_B h_card
 
 /-- The Johnson bound at an arbitrary centre `v`.
 
@@ -446,11 +501,15 @@ Recentering is done by a coordinatewise transport along `Equiv.piCongrRight` rat
 the field subtraction `x ↦ x - v`, so no field structure is needed: each `σ i` sends `v i` to
 the symbol `0` of `Fin (card F)`, and the transport preserves Hamming distance, hence `e`,
 `d`, and cardinalities. -/
-protected lemma johnson_bound_lemma {v : Fin n → F}
-    (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
+protected lemma johnson_bound_lemma {v : Fin n → F} (h_B : 2 ≤ B.card) :
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
+  have h_card : 2 ≤ card F := by
+    by_contra h
+    have : Subsingleton F := Fintype.card_le_one_iff_subsingleton.mp (by omega)
+    have := B.card_le_one_of_subsingleton
+    omega
   have : NeZero (card F) := ⟨by omega⟩
   set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
   set σ : Fin n → (F ≃ Fin (card F)) :=
@@ -467,12 +526,15 @@ protected lemma johnson_bound_lemma {v : Fin n → F}
   rw [← h_e, ← h_d, hv0, ← hcardB']
   -- rewrite `card F` to `card (Fin (card F))` in the numeric factors
   rw [show (card F : ℚ) = (card (Fin (card F)) : ℚ) by rw [hcardF']]
-  exact johnson_bound₀ h_n (hcardB' ▸ h_B) (by rw [hcardF']; exact h_card)
+  exact johnson_bound₀ (hcardB' ▸ h_B)
 
 /-- The normalised Hamming distance scaled by `q/(q-1)` stays in `[-1, 1]`. -/
-protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
-    (h_card : 2 ≤ card F) :
+protected lemma abs_one_sub_div_le_one {v a : Fin n → F} :
     |1 - (1 + 1 / ((card F : ℚ) - 1)) * Δ₀(v, a) / n| ≤ 1 := by
+  by_cases hc : card F ≤ 1
+  · have : Subsingleton F := Fintype.card_le_one_iff_subsingleton.mp hc
+    simp [Subsingleton.elim v a]
+  have h_card : 2 ≤ card F := by omega
   have hq1 : (1 : ℚ) ≤ card F - 1 := le_sub_iff_add_le.2 (by exact_mod_cast h_card)
   have hc0 : 0 ≤ 1 / ((card F : ℚ) - 1) := one_div_nonneg.2 (zero_le_one.trans hq1)
   have hc1 : 1 / ((card F : ℚ) - 1) ≤ 1 := (div_le_one (zero_lt_one.trans_le hq1)).2 hq1
@@ -487,10 +549,15 @@ protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
 
 /-- If `e ≤ n - √(n(n-d))` then `1 - d/n ≤ (1 - e/n)²`. -/
 lemma johnson_hyp_implies_div_ineq {n d e : ℕ}
-    (hn : 0 < n) (h_dn : d ≤ n)
     (h : (e : ℝ) ≤ n - √(n * (n - d))) :
     1 - (d : ℝ) / n ≤ (1 - (e : ℝ) / n) ^ 2 := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · simp
   have hn' : (0 : ℝ) < n := by exact_mod_cast hn
+  by_cases hbig : n < d
+  · have hdn : (n : ℝ) ≤ d := by exact_mod_cast hbig.le
+    exact (sub_nonpos.mpr ((one_le_div hn').mpr hdn)).trans (sq_nonneg _)
+  have h_dn : d ≤ n := Nat.le_of_not_gt hbig
   have hnn : 0 ≤ (n : ℝ) * (n - d) :=
     mul_nonneg (Nat.cast_nonneg _) (sub_nonneg_of_le (mod_cast h_dn))
   have h_mul : (n : ℝ) * (n - d) ≤ (n - e) ^ 2 :=
@@ -549,7 +616,7 @@ private lemma worst_case_quot_le {D δ a b f : ℚ} (ha0 : 0 ≤ a) (hba : b ≤
 /-- Monotonicity of the worst-case Johnson quotient. -/
 lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
     {B : Finset (Fin n → F)} {v : Fin n → F} {d e : ℕ} {frac : ℚ}
-    (hn_pos : (0 : ℚ) < n) (hd_pos : 0 < d) (d_le_n : d ≤ n)
+    (hd_pos : 0 < d) (d_le_n : d ≤ n)
     (h : (e : ℝ) ≤ n - ((n * (n - d)) : ℝ).sqrt)
     (h_d_close_n : frac * (d / n : ℚ) ≤ 1)
     (hfrac_gt1 : (1 : ℚ) < frac)
@@ -563,6 +630,7 @@ lemma johnson_worst_case_bound {n : ℕ} {F : Type*} [DecidableEq F]
       (JohnsonBound.d B / n - 2 * JohnsonBound.e B v / n +
       frac * (JohnsonBound.e B v / n) ^ 2) ≤
     (d / n) / (d / n - 2 * e / n + frac * (e / n) ^ 2) := by
+  have hn_pos : (0 : ℚ) < n := by exact_mod_cast hd_pos.trans_le d_le_n
   have hn0 : (0 : ℚ) ≤ n := hn_pos.le
   have h_e_le_d : (e : ℚ) ≤ d := by
     have hdn : (d : ℝ) ≤ n := by exact_mod_cast d_le_n
@@ -590,29 +658,36 @@ lemma johnson_den_ge_frac_d {n : ℕ} {F : Type*} [Fintype F] [DecidableEq F]
 /-- When `q · d / ((q-1) · n) > 1`, there is a positive gap of size `≥ 1/((q-1)·n)`. -/
 lemma johnson_gap_frac_d_gt_one {n d : ℕ} {F : Type*} [Fintype F] [DecidableEq F]
     {B : Finset (Fin n → F)}
-    (q_not_small : (2 : ℚ) ≤ (card F : ℚ))
-    (n_not_small : 1 ≤ n)
     (h_d_close_n : ((card F : ℚ) / (card F - 1)) * (d / n : ℚ) > 1)
     (hd_le_dB : (d : ℚ) ≤ JohnsonBound.d B) :
     (1 : ℚ) / ((n : ℚ) * ((card F : ℚ) - 1)) ≤
     ((card F : ℚ) / (card F - 1)) * (JohnsonBound.d B) / n - 1 := by
-  have hq1 : (0 : ℚ) < card F - 1 := sub_pos.2 (one_lt_two.trans_le q_not_small)
-  have hn : (0 : ℚ) < n := by exact_mod_cast n_not_small
+  have hq2 : 2 ≤ card F := by
+    by_contra hq
+    have hc : card F = 0 ∨ card F = 1 := by omega
+    rcases hc with hc | hc <;> norm_num [hc] at h_d_close_n
+  have hn : n ≠ 0 := by
+    rintro rfl
+    norm_num at h_d_close_n
+  have hq1 : (0 : ℚ) < card F - 1 := sub_pos.mpr (by exact_mod_cast hq2)
+  have hn : (0 : ℚ) < n := by exact_mod_cast Nat.pos_of_ne_zero hn
   have hqn : (0 : ℚ) < (card F - 1) * n := mul_pos hq1 hn
   have h_qd_ge : (card F : ℚ) * d ≥ (card F - 1) * n + 1 := by
     have : (card F : ℚ) * d > (card F - 1) * n := by
       rwa [div_mul_div_comm, gt_iff_lt, one_lt_div hqn] at h_d_close_n
     exact_mod_cast this
   have hD : (card F : ℚ) * d ≤ card F * JohnsonBound.d B :=
-    mul_le_mul_of_nonneg_left hd_le_dB (by linarith)
+    mul_le_mul_of_nonneg_left hd_le_dB (Nat.cast_nonneg _)
   rw [mul_comm (n : ℚ), div_mul_eq_mul_div, div_div, le_sub_iff_add_le, div_add_one hqn.ne',
     div_le_div_iff_of_pos_right hqn]
   linarith
 
 /-- Lower bound on `d/n` when `e = 0`. -/
 lemma johnson_den_lb_e_zero {n d : ℕ} {q : ℚ}
-    (hn_pos : 0 < n) (hq_ge1 : (1 : ℚ) ≤ q) (hd_ge1 : (1 : ℚ) ≤ (d : ℚ)) :
+    (hq_ge1 : (1 : ℚ) ≤ q) (hd_ge1 : (1 : ℚ) ≤ (d : ℚ)) :
     (1 : ℚ) / (q * (n : ℚ) ^ 2) ≤ (d : ℚ) / n := by
+  rcases Nat.eq_zero_or_pos n with rfl | hn_pos
+  · simp
   gcongr
   nlinarith [show (n : ℚ) ≥ 1 from by exact_mod_cast hn_pos,
     show (q : ℚ) ≥ 1 from by exact_mod_cast hq_ge1,
@@ -620,7 +695,7 @@ lemma johnson_den_lb_e_zero {n d : ℕ} {q : ℚ}
 
 /-- Lower bound on the Johnson denominator when `e > 0`. -/
 lemma johnson_den_lb_e_pos {n d e : ℕ} {q frac : ℚ}
-    (hn_pos : (0 : ℚ) < n) (he0 : e ≠ 0)
+    (he0 : e ≠ 0)
     (one_div_q_le : (1 : ℚ) / q ≤ frac - 1) (hfrac1_pos : (0 : ℚ) < frac - 1)
     (hbase_nonneg : (0 : ℚ) ≤ (d / n : ℚ) - 2 * (e / n : ℚ) + (e / n : ℚ) ^ 2) :
     (1 : ℚ) / (q * (n : ℚ) ^ 2) ≤
@@ -644,9 +719,12 @@ lemma johnson_qdn_ge_two {q : ℚ} {d n : ℕ}
 
 /-- The average pairwise distance `d(B)` is at most `n`. -/
 lemma johnson_d_le_n {n : ℕ} {F : Type*} [DecidableEq F]
-    {B : Finset (Fin n → F)} (hB : 2 ≤ B.card) :
+    {B : Finset (Fin n → F)} :
     JohnsonBound.d B ≤ (n : ℚ) := by
-  have h2 : (2 : ℚ) ≤ B.card := by exact_mod_cast hB
+  by_cases hsmall : B.card ≤ 1
+  · have hc : B.card = 0 ∨ B.card = 1 := by omega
+    rcases hc with hc | hc <;> simp [d, hc, choose_2, Nat.cast_nonneg]
+  have h2 : (2 : ℚ) ≤ B.card := by exact_mod_cast (show 2 ≤ B.card by omega)
   have hoff : ({x ∈ B ×ˢ B | x.1 ≠ x.2} : Finset _) = B.offDiag := by
     ext; simp only [mem_filter, mem_product, mem_offDiag, and_assoc]
   have hpairs : ((B.offDiag.card : ℕ) : ℚ) = 2 * choose_2 B.card := by

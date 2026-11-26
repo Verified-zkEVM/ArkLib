@@ -668,7 +668,7 @@ theorem finite_squarefree_agreement_solutions_card_le
     {n D A B M : ℕ}
     (domain : Fin n ↪ F) (received : Fin n → F)
     (Q : DifferentialPolynomial F 1) (hQ : Q ≠ 0)
-    (hD : 1 ≤ D) (hkA : D + 1 ≤ A) (hAn : A ≤ n)
+    (hD : 1 ≤ D) (hkA : D + 1 ≤ A)
     (hMB : M ≤ B)
     (hjet : jetTotalDegree Q ≤ B) (hderiv : jetDegree Q 1 ≤ M)
     (hchar : ringChar F = 0 ∨ max D M < ringChar F)
@@ -684,7 +684,7 @@ theorem finite_squarefree_agreement_solutions_card_le
     · exact Or.inl hzero
     · exact Or.inr ((Nat.le_max_right D M).trans_lt hpositive)
   exact finite_factorwise_agreement_solutions_card_le_of_regular_equation
-    domain received Q (positiveJetFactor Q) hD hkA hAn hMB
+    domain received Q (positiveJetFactor Q) hD hkA
     (positiveJetFactor_jetTotalDegree_le Q |>.trans hjet)
     (positiveJetFactor_yOneDegree_le Q |>.trans hderiv) hchar
     (fixedWordSingularTailOfBounds Q hQ B M hjet hderiv hMB htailChar)

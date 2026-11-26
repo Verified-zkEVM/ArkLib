@@ -10,12 +10,16 @@ clean.
 
 ## Basic Workflow
 
-1. Check warnings with `ReadLints` or `lake env lean path/to/File.lean`.
+1. Check warnings with `lake build ArkLib.Path.To.Module` (or `lake build ArkLibTest.Path.To.Module`
+   for an acceptance test). Lake prints each warning with its file and line. Use the module build,
+   not `lake env lean`: only the build applies the package's Lean options and the source-policy
+   plugin, so a direct `lake env lean` run can miss warnings the project rejects.
 2. Group warnings by type.
 3. Fix one category at a time, starting with the safest categories.
-4. Re-run `ReadLints` after each batch.
-5. Verify with `lake env lean path/to/File.lean` after meaningful edits and once at the end.
-6. Do not stop until `ReadLints` is clean.
+4. Rebuild the module after each batch.
+5. Do not stop until the module builds with no warnings.
+6. Finish with `./scripts/validate.sh`, which enforces the warning budgets and the source-policy
+   gate across the library and the acceptance tests.
 7. After the lint-cleanup pass, review this skill and update it if you found a new recurring
    warning pattern, a better fix strategy, or a correction to existing guidance.
 
@@ -36,7 +40,6 @@ clean.
 | 11 | Flexible `simp` | Use `simp?`, then copy the suggested `simp only [...]` |
 | 12 | Unused section variables / hypotheses | Prefer `omit [...] in` around the declaration |
 | 13 | Multi-goal tactic | Focus the tactic with `·` or restructure it |
-| 14 | Unscoped `set_option` | Delete it first; if needed, re-scope it to the declaration |
 
 ## High-Value Fixes
 
@@ -49,7 +52,7 @@ clean.
 
 - Break theorem signatures at binders and long hypotheses.
 - Break long `have` statements before the right-hand side.
-- Prefer line breaks over file-wide suppression.
+- Line breaks are the only fix: linter suppressions are rejected by the build.
 
 ### Long File
 
@@ -72,8 +75,8 @@ clean.
 ### Flexible `simp`
 
 - First replace warned calls with `simp?`.
-- Then copy the exact `simp only [...]` suggestion from the infoview or from
-  `lake env lean path/to/File.lean`.
+- Then copy the exact `simp only [...]` suggestion from the infoview or from the
+  `lake build ArkLib.Path.To.Module` output.
 - If the suggestion is poor, switch to explicit `rw`, `change`, or `dsimp`.
 
 ### Unused Section Variables
@@ -89,18 +92,21 @@ clean.
   3. attributes
   4. declaration
 
-### Unscoped `set_option`
+### `set_option` and slow proofs
 
-- First try deleting the inline `set_option`.
-- If the proof times out, move it to declaration scope instead of keeping it inline.
+- The source-policy gate rejects `set_option` for the `linter`, `pp`, `profiler` and `trace`
+  option families and for the elaboration budgets `maxHeartbeats`, `maxRecDepth` and
+  `synthInstance.*`, anywhere in the source. Delete such an option rather than re-scoping it.
+- If a proof times out without its budget option, make the proof cheaper: follow
+  [Tactic Mode & Performance](../../CONTRIBUTING.md#tactic-mode--performance).
 
 ## Persistence Rule
 
 Fixing one warning often exposes new ones.
 Only stop after:
 
-1. `ReadLints` is clean.
-2. `lake env lean path/to/File.lean` still succeeds.
+1. `lake build ArkLib.Path.To.Module` succeeds with no warnings.
+2. `./scripts/validate.sh` passes.
 3. This skill has been reviewed for any stable updates discovered during the pass.
 
 ## Skill Evolution Rule
@@ -125,6 +131,6 @@ file at a time.
 
 - Removing `omit [DecidableEq ...]` warnings can require `classical` inside the proof body when
   decidability is needed downstream.
-- Do not suppress long-line warnings wholesale with a file-wide disable if ordinary line breaks
-  will do.
+- Do not try to silence a warning with `set_option linter.*`, `@[nolint]` or a file-wide disable;
+  the build rejects every suppression, so fix the source instead.
 - If a warning fix breaks the proof, revert that local edit and use a more explicit proof step.

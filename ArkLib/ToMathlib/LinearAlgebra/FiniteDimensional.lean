@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 module
 
 public import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
+import Mathlib.LinearAlgebra.Dimension.OrzechProperty
 public import Mathlib.LinearAlgebra.Projection
 
 /-!
@@ -13,6 +14,8 @@ public import Mathlib.LinearAlgebra.Projection
 
 ## Main statements
 
+* `Submodule.exists_list_linearMap_of_injOn` — finitely many linear functionals define a
+  subspace inside a larger subspace that embeds into a finite-dimensional space.
 * `LinearMap.finrank_eq_of_map_eq` — a linear map injective on `B` and mapping `B` onto `A`
   makes the two submodules equidimensional.
 * `Submodule.exists_adapted_basis` — a finite-dimensional space has a basis whose initial
@@ -31,11 +34,32 @@ public import Mathlib.LinearAlgebra.Projection
   sum of the ranks of its components.
 * `LinearMap.exists_ne_zero_of_sum_finrank_range_lt` — if the source dimension exceeds the sum of
   the ranks of a finite family of linear maps, some nonzero vector lies in all their kernels.
+* `linearIndependent_of_span_le_of_card_le` — a family whose span contains the span of a linearly
+  independent family with at least as many members is linearly independent.
 
 Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
 @[expose] public section
+
+/-- If `c` embeds `U` into a finite-dimensional space, a finite list of linear
+functionals vanishes on `V ≤ U` and detects membership in `V` among elements of `U`. -/
+theorem Submodule.exists_list_linearMap_of_injOn {K M W : Type*} [DivisionRing K]
+    [AddCommGroup M] [Module K M] [AddCommGroup W] [Module K W] [Module.Finite K W]
+    {V U : Submodule K M} (hV : V ≤ U) (c : M →ₗ[K] W) (hc : Set.InjOn c U) :
+    ∃ l : List (M →ₗ[K] K), (∀ Λ ∈ l, ∀ v ∈ V, Λ v = 0) ∧
+      ∀ x ∈ U, (∀ Λ ∈ l, Λ x = 0) → x ∈ V := by
+  let Q := V.map c
+  let b := Module.finBasis K (W ⧸ Q)
+  refine ⟨List.ofFn fun j ↦ (b.coord j).comp (Q.mkQ.comp c), ?_, ?_⟩
+  · intro Λ hΛ v hv
+    obtain ⟨j, rfl⟩ := List.mem_ofFn.mp hΛ
+    simp [(Submodule.Quotient.mk_eq_zero Q).mpr (Submodule.mem_map_of_mem hv)]
+  · intro x hx hl
+    have hq : Q.mkQ (c x) = 0 := b.forall_coord_eq_zero_iff.mp fun j ↦
+      hl _ (List.mem_ofFn.mpr ⟨j, rfl⟩)
+    obtain ⟨v, hv, hvx⟩ := Submodule.mem_map.mp ((Submodule.Quotient.mk_eq_zero Q).mp hq)
+    exact hc (hV hv) hx hvx ▸ hv
 
 /-- If a linear map is injective on `B` and maps `B` onto `A`, then `B` and `A`
 have the same dimension. -/
@@ -208,3 +232,15 @@ theorem LinearMap.exists_ne_zero_of_sum_finrank_range_lt {K V ι : Type*} [Divis
   obtain ⟨v, hv0, hv⟩ := LinearMap.exists_ne_zero_map_eq_zero_of_finrank_range_lt
     ((LinearMap.finrank_range_pi_le_sum φ).trans_lt hsurplus)
   exact ⟨v, hv0, fun i => congrFun hv i⟩
+
+/-- A family whose span contains the span of a linearly independent family with at least as many
+members is linearly independent. -/
+theorem linearIndependent_of_span_le_of_card_le {K V : Type*} [DivisionRing K] [AddCommGroup V]
+    [Module K V] {ι ι' : Type*} [Fintype ι] [Fintype ι'] {u : ι → V} {u' : ι' → V}
+    (hu' : LinearIndependent K u')
+    (hle : Submodule.span K (Set.range u') ≤ Submodule.span K (Set.range u))
+    (hcard : Fintype.card ι ≤ Fintype.card ι') : LinearIndependent K u := by
+  have : Module.Finite K (Submodule.span K (Set.range u)) :=
+    Module.Finite.span_of_finite K (Set.finite_range u)
+  exact linearIndependent_iff_card_le_finrank_span.2 <| hcard.trans <|
+    (linearIndependent_iff_card_le_finrank_span.1 hu').trans (Submodule.finrank_mono hle)

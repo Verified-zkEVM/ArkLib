@@ -11,13 +11,13 @@ library documentation describes only the present API (see
 [`docs/wiki/porting-conventions.md`](../wiki/porting-conventions.md)). "The source" is ArkLib
 revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d` unless a note names another revision.
 
-The source cited a manuscript revision of [DKT26]; the library cites the published version
-(Cryptology ePrint Archive, Paper 2026/2056), and the notes below use its numbering. The
-manuscript locators map as follows: "Appendix A.3, Lemma A.5" (Regular Taylor
-chart) is DKT26 Appendix A.6, Lemma A.4; "Section 3 (local interpolation)" is DKT26 Section 3.5;
-equations (39)–(40) of the source revision (`eq:band-lattice-ratio`, `eq:band-geometric-rank`)
-correspond to the local-rank bound (72) of DKT26 Section 6.1 and the rank estimate (131) in its
-Appendix D.2.
+The library now cites the November 2026 revision of [DKT26] (Cryptology ePrint Archive, Paper
+2026/2056) and its numbering. The per-file notes below, and the following historical mapping from
+the source's manuscript locators, use the earlier published numbering: "Appendix A.3, Lemma A.5"
+(Regular Taylor chart) is DKT26 Appendix A.6, Lemma A.4; "Section 3 (local interpolation)" is DKT26
+Section 3.5; equations (39)–(40) of the source revision (`eq:band-lattice-ratio`,
+`eq:band-geometric-rank`) correspond to the local-rank bound (72) of DKT26 Section 6.1 and the rank
+estimate (131) in its Appendix D.2.
 
 The notes describe each file as it was merged. Later changes to a file are recorded in its pull
 request and ledger row, not here.
@@ -1514,8 +1514,10 @@ its `sum_localJet_eq_first_add_higher`, `localFirstJetExponent_eq_coordinate`, a
   `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.PowerAgreement`.
 
 Deferred: the shared-level fold and tensor-tight transfer of `TensorFoldAgreement.lean`, the
-anchored statements of `AnchoredAgreement.lean` and `AnchoredReconstruction.lean`, and the
-field-size-weighted transfer of [Jo26] for seed spaces larger than the field when `e ≥ |F|`.
+anchored statements of `AnchoredAgreement.lean` and `AnchoredReconstruction.lean`, and a
+count-level field-size-weighted transfer for seed spaces larger than the field when `e ≥ |F|`.
+The field-size-weighted transfer of [Jo26] is proved at the level of MCA error as
+`CoreDefinitions.mcaError_moduleInterleavedCode_le_fieldWeighted`.
 
 ## `ArkLib/Data/CodingTheory/InterleavedCode/Projection.lean`
 
@@ -1541,7 +1543,7 @@ statements here, at the radius `1 - a / n` and for an arbitrary code, imply the 
 `Code.Lambda_mono`. The Reed–Solomon consumers are in
 `ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AnchoredAgreement`.
 
-## `ArkLib/Data/CodingTheory/ListDecodability/Capacity/WeightedSupport.lean`
+## `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/ListDecodability/Capacity/WeightedSupport.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -1618,14 +1620,15 @@ ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`,
   `ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement`; the seedwise transfer here is derived
   from `Code.exists_forall_isProjectionBad_of_interleaved` through `isMCA_iff_isProjectionBad`.
 
-Not covered here: the field-size-weighted transfer bound of [Jo26] for seed spaces larger than the
-field.
+For seed spaces larger than the field, `mcaError_moduleInterleavedCode_le_fieldWeighted` proves
+the field-size-weighted bound of [Jo26] Theorem 4.2.
 
 `mcaError_moduleInterleavedCode_le_of_card_le`: This generalizes [Jo26] Corollary 4.5 (one direction) and `ProximityGap.mcaError_interleaved_le`,
 which is the affine-line case.
 
 `mcaError_moduleInterleavedCode_le_of_card_le`: For larger seed spaces [Jo26]
-proves a weaker, field-size-weighted bound, which is not formalized here.
+proves a weaker, field-size-weighted bound, which is
+`mcaError_moduleInterleavedCode_le_fieldWeighted`.
 
 `mcaError_moduleInterleavedCode_eq_of_card_le`: This is [Jo26] Corollary 4.5 for an arbitrary generator and module code. It combines
 
@@ -2348,7 +2351,7 @@ The retained-tail API keeps the challenge as a polynomial coordinate and constru
 
 The root-first multiplication identity, repeated in the source retained-tail module, is shared from the retained-curve owner as `jetTotalDegree_fromFlattenedRootFirst_mul`. The generic coefficient-degree bound is owned by `OptionWeightedDegree` as `degreeOf_coeff_optionEquivLeft_add_le_weight`; it generalizes the coefficient-degree argument to `Option σ` weights with the distinguished and selected coordinates positively weighted. The coefficient-variable derivative transport is owned by `PolynomialCoefficients` as `optionEquivRight_symm_pderiv` and generalizes to arbitrary variable types and commutative semirings. The arbitrary-coordinate `flattenChallenge_pderiv` law is not exposed; the needed `Y₁` case lives in the retained-curve owner. `flattenedSingularPolynomial_map_eq_zero_of_content_or_commonRoot` is generalized from domain targets to commutative-ring targets. `flattenedPositiveRootProduct_eq_one_of_rootDegree_eq_zero` is covered by the existing `MvPolynomial.radicalPrimPart_eq_one_of_degreeOf_eq_zero`. `retainedRootJetWeight` remains private coordinate-view bookkeeping, `flattened_content_add_positive_challengeDegree_le` remains a private helper, and the private `flattenChallenge_specialization` helper is inlined into `retainedRootSpecializationHom_flattenedRootFirst`.
 
-## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurveMCA.lean`
+## `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/SharpCurve.lean`
 
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/FirstOrder/Squarefree/Sharp.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
@@ -4128,7 +4131,7 @@ replaces the span-induction argument inside
 `Matrix.exists_ne_zero_mulVec_eq_zero_natDegree_le_of_rank_eq` at the same revision, which was
 specialized to polynomial matrices, `Fin` indices, and the rational function field.
 
-## `ArkLib/ToMathlib/LinearAlgebra/Matrix/RowBlocks.lean`
+## `ArkLib/ToMathlib/LinearAlgebra/Matrix/Rank.lean`
 
 Ported from the matrix rank argument in `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/Symbolic/WeightedSupport.lean` at ArkLib revision
 `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
@@ -5438,6 +5441,9 @@ An acceptance case checks a concrete scale-300 curve certificate at `δ = 1/5`.
 
 ## `ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport/MomentSource.lean`
 
+This test file was later consolidated into
+`ArkLibTest/Data/CodingTheory/HiddenDerivative/Interpolation/PartitionSupport.lean`.
+
 Ported from `ArkLib/Data/CodingTheory/ReedSolomon/HiddenDerivative/Interpolation/RatePartition/SourceEstimate.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 
 The aggregate includes a concrete `d = 500`, `W = 1` instance of `partitionSupport_dimension_gt_moment`, using the lower-tail second-moment bound at logarithm `log 3000`. It checks the numeric rate and scale hypotheses and exercises the dimension conclusion without generic theorem restatements. The source-specific wrapper is not needed because the existing theorem covers it.
@@ -5600,6 +5606,9 @@ Ported from `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/Tayl
 An acceptance example checks a concrete nonempty singleton challenge set, its regular chart, three agreements, the absence of an exact degree-bounded pair, and the resulting bound of 12.
 
 ## `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean`
+
+This test file was later consolidated into
+`ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart.lean`.
 
 Ported from `ArkLibTest/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/TaylorChart/PointRecognition.lean` at ArkLib revision `a5aa2677fee4e3a79d6bb05136631cce4a08587d`:
 

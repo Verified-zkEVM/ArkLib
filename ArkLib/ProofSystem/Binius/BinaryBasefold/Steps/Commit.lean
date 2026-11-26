@@ -26,9 +26,9 @@ oracle to the oracle statements. The step sends no challenge.
   is the content of the step's knowledge soundness
   (`hasIncrementalBadEvent_commit_step_backward`,
   `oracleFoldingConsistent_commit_step_backward`).
-* `commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`: worst-case round-by-round knowledge
-  soundness at `commitRbrExtractor` and `commitKnowledgeStateFunction`, with existential and
-  averaged forms.
+* `commitOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
+  soundness at `commitRbrExtractor` and `commitKnowledgeStateFunction`, with an existential
+  form.
 
 ## References
 
@@ -338,14 +338,14 @@ def commitKnowledgeStateFunction (i : Fin ℓ) (hCR : IsCommitmentRound ℓ ϑ i
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i hCR).check_and_of_prEvent_pos h).2
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the commit step, at the extractor
+/-- Round-by-round knowledge soundness of the commit step, at the extractor
 `commitRbrExtractor`, the knowledge-state function `commitKnowledgeStateFunction` and the error
 `commitKnowledgeError`. The step sends no challenge, so there is no extraction-failure event to
 bound; the content is the knowledge-state function's obligations. -/
-theorem commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ)
+theorem commitOracleVerifier_rbrKnowledgeSoundnessWith (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :
     (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i hCR).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      i hCR).toVerifier.rbrKnowledgeSoundnessWith init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -356,39 +356,23 @@ theorem commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ)
           h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i hCR)
       (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx _ _
+  Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx _ _
 
 omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the commit step: the existential form of
-`commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
-theorem commitOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ)
+/-- Round-by-round knowledge soundness of the commit step: the existential form of
+`commitOracleVerifier_rbrKnowledgeSoundnessWith`. -/
+theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
     (hCR : IsCommitmentRound ℓ ϑ i) :
     (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i hCR).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      i hCR).toVerifier.rbrKnowledgeSoundness init impl
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.succ)
       (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, commitOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (multpoly := multpoly)
+  (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, commitOracleVerifier_rbrKnowledgeSoundnessWith (multpoly := multpoly)
       (𝓑 := 𝓑) 𝔽q β i hCR⟩
-
-omit [SampleableType L] [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the commit step: the averaged form of
-`commitOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem commitOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ)
-    (hCR : IsCommitmentRound ℓ ϑ i) :
-    (commitOracleVerifier 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      i hCR).rbrKnowledgeSoundness init impl
-      (relIn := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
-      (relOut := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.succ)
-      (commitKnowledgeError 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (commitOracleVerifier_rbrKnowledgeSoundnessWorstCase (multpoly := multpoly) (𝓑 := 𝓑)
-      𝔽q β i hCR)
 
 end CommitStep
 end SingleIteratedSteps

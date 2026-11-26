@@ -16,105 +16,6 @@ public import Mathlib.Logic.Equiv.Fin.Basic
 
 namespace Fin
 
-section Interval
-
-open Finset
-
-variable {M : Type*} [CommMonoid M] {n : ℕ} {v : Fin (n + 1) → M}
-
--- @[to_additive]
--- theorem prod_Ioi_zero : ∏ i ∈ Ioi 0, v i = ∏ j : Fin n, v j.succ := by simp
---   -- rw [Ioi_zero_eq_map, Finset.prod_map, val_succEmb]
-
--- @[to_additive]
--- theorem prod_Ioi_succ (i : Fin n) : ∏ j ∈ Ioi i.succ, v j = ∏ j ∈ Ioi i, v j.succ := by
---   rw [Ioi_succ, Finset.prod_map, val_succEmb]
-
--- @[to_additive]
--- theorem prod_Ici_succ (i : Fin n) :
---     ∏ j ∈ Ici i.succ, v j = ∏ j ∈ Ici i, v j.succ := by
---   rw [Ici_succ, Finset.prod_map, val_succEmb]
-
-@[to_additive]
-theorem prod_Iio_succ (i : Fin n) :
-    ∏ j ∈ Iio i.succ, v j = (∏ j ∈ Iio i.castSucc, v j) * v i.castSucc := by
-  calc
-    _ = ∏ j ∈ Ico 0 i.succ, v j :=
-      prod_congr (by rw [← bot_eq_zero, Ico_bot]) (fun _ _ => rfl)
-    _ = ∏ j ∈ Icc 0 i.castSucc, v j :=
-      prod_congr rfl (fun _ _ => rfl)
-    _ = ∏ j ∈ insert i.castSucc (Ico 0 i.castSucc), v j :=
-      prod_congr (by simp only [zero_le, Ico_insert_right]) (fun _ _ => rfl)
-    _ = v i.castSucc * ∏ j ∈ Iio i.castSucc, v j :=
-      prod_insert (by simp only [mem_Ico, zero_le, lt_self_iff_false, and_false, not_false_eq_true])
-    _ = (∏ j ∈ Iio i.castSucc, v j) * v i.castSucc := mul_comm _ _
-
-@[to_additive]
-theorem prod_Iio_eq_univ (i : Fin (n + 1)) :
-    ∏ j ∈ Iio i, v j = ∏ j : Fin i, v (Fin.castLE i.isLt.le j) := by
-  induction i using Fin.induction with
-  | zero =>
-    conv_lhs => rw [← bot_eq_zero]
-    rw [Iio_bot, prod_empty]
-    exact (Fin.prod_univ_zero fun j : Fin 0 => v (Fin.castLE (by omega) j)).symm
-  | succ i hi =>
-    rw [prod_Iio_succ, hi]
-    change (∏ j : Fin ↑i, v (castLE _ j)) * v i.castSucc = ∏ j : Fin (↑i + 1), v (castLE _ j)
-    rw [Fin.prod_univ_castSucc]; congr 1
-
-@[to_additive (attr := simp)]
-theorem prod_Iic_zero : ∏ j ∈ Iic 0, v j = v 0 := by
-  rw [← bot_eq_zero, Iic_bot, prod_singleton]
-
-@[to_additive]
-theorem prod_Iic_succ (i : Fin n) :
-    ∏ j ∈ Iic i.succ, v j = (∏ j ∈ Iic i.castSucc, v j) * v i.succ := by
-  calc
-    _ = ∏ j ∈ Icc 0 i.succ, v j :=
-      prod_congr (by rw [← bot_eq_zero, Icc_bot]) (fun _ _ => rfl)
-    _ = ∏ j ∈ insert i.succ (Ico 0 i.succ), v j :=
-      prod_congr (by simp only [zero_le, Ico_insert_right]) (fun _ _ => rfl)
-    _ = v i.succ * ∏ j ∈ Iic i.castSucc, v j :=
-      prod_insert (by simp only [mem_Ico, zero_le, lt_self_iff_false, and_false, not_false_eq_true])
-    _ = (∏ j ∈ Iic i.castSucc, v j) * v i.succ := mul_comm _ _
-
-@[to_additive]
-theorem prod_Iic_eq_univ (i : Fin (n + 1)) :
-    ∏ j ∈ Iic i, v j = ∏ j : Fin (i + 1), v (Fin.castLE i.isLt j) := by
-  induction i using Fin.induction with
-  | zero =>
-    rw [prod_Iic_zero]
-    calc
-      v 0 = v (Fin.castLE (by omega) 0) := congrArg v (Fin.ext rfl)
-      _ = ∏ j : Fin 1, v (Fin.castLE (by omega) j) :=
-        (Fin.prod_univ_one fun j : Fin 1 => v (Fin.castLE (by omega) j)).symm
-  | succ i hi =>
-    rw [prod_Iic_succ, hi]
-    change (∏ j : Fin (↑i + 1), v (castLE _ j)) * v i.succ =
-      ∏ j : Fin (↑i + 1 + 1), v (castLE _ j)
-    conv_rhs => rw [Fin.prod_univ_castSucc]
-    congr 1
-
-@[simp]
-theorem Ici_zero : Ici (0 : Fin (n + 1)) = univ := by rw [← bot_eq_zero, Ici_bot]
-
-@[simp]
-theorem Iio_zero : Iio (0 : Fin (n + 1)) = ∅ := by rw [← bot_eq_zero, Iio_bot]
-
-@[simp]
-theorem Iic_zero : Iic (0 : Fin (n + 1)) = {0} := by rw [← bot_eq_zero, Iic_bot]
-
-theorem Iic_castSucc (i : Fin n) : Iic (castSucc i) = (Iic i).map Fin.castSuccEmb := by
-  rw [Iic_eq_cons_Iio, Iic_eq_cons_Iio, map_cons]
-  simp only [Iio_castSucc, cons_eq_insert, castSuccEmb_apply]
-
-@[simp]
-theorem Ici_succ (i : Fin n) : Ici i.succ = (Ici i).map (Fin.succEmb _) := by
-  rw [Ici_eq_cons_Ioi, Ici_eq_cons_Ioi, map_cons]
-  simp only [Ioi_succ, cons_eq_insert, coe_succEmb]
-
-end Interval
-
 /-- The sums of `f` over the even and over the odd naturals below `2 * m` add up to its sum
 over `Fin (m * 2)`. This is the finite analogue of `tsum_even_add_odd`. -/
 theorem sum_even_add_odd {M : Type*} [AddCommMonoid M] (m : ℕ) (f : ℕ → M) :
@@ -122,5 +23,31 @@ theorem sum_even_add_odd {M : Type*} [AddCommMonoid M] (m : ℕ) (f : ℕ → M)
   rw [← finProdFinEquiv.sum_comp, Fintype.sum_prod_type, ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun x _ => ?_
   simp [Fin.sum_univ_two, finProdFinEquiv, mul_comm, add_comm]
+
+open Finset in
+/-- A union bound for a tuple of challenges sampled one after the other.
+
+A tuple `c` of `r + 1` challenges in `α` is bad when its first entry satisfies `p`, or when
+its tail satisfies `Q` for that first entry.
+The bad tuples number at most `#{a | p a} · |α|^r + ∑ a, #{c' | Q a c'}`.
+The predicate `Q a` may depend on the first entry, which models a later round whose state
+depends on the earlier challenges. -/
+theorem card_filter_or_tail_le {α : Type*} [Fintype α] {r : ℕ} (p : α → Prop)
+    [DecidablePred p] (Q : α → (Fin r → α) → Prop) [∀ a, DecidablePred (Q a)] :
+    #{c : Fin (r + 1) → α | p (c 0) ∨ Q (c 0) (Fin.tail c)} ≤
+      #{a | p a} * Fintype.card α ^ r + ∑ a, #{c : Fin r → α | Q a c} := by
+  classical
+  have hequiv : #{c : Fin (r + 1) → α | p (c 0) ∨ Q (c 0) (Fin.tail c)} =
+      #{x : α × (Fin r → α) | p x.1 ∨ Q x.1 x.2} :=
+    Finset.card_equiv (Fin.consEquiv fun _ ↦ α).symm (by simp)
+  have hp : #{x : α × (Fin r → α) | p x.1} = #{a | p a} * Fintype.card α ^ r := by
+    rw [show ({x : α × (Fin r → α) | p x.1} : Finset _) = ({a | p a} : Finset α) ×ˢ univ by
+        ext; simp,
+      card_product, card_univ, Fintype.card_fun, Fintype.card_fin]
+  have hQ : #{x : α × (Fin r → α) | Q x.1 x.2} = ∑ a, #{c : Fin r → α | Q a c} := by
+    rw [card_filter, Fintype.sum_prod_type]
+    simp only [card_filter]
+  rw [hequiv, filter_or, ← hp, ← hQ]
+  exact card_union_le _ _
 
 end Fin

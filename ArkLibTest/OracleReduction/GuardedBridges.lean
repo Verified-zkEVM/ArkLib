@@ -56,7 +56,7 @@ noncomputable def knowledgeState : verifier.KnowledgeStateFunction (pure false) 
   toFun_full := fun stmt tr w hp => by
     exact guarded.check_and_of_prEvent_pos hp
 
-theorem fixedKnowledge : verifier.rbrKnowledgeSoundnessWorstCaseWith (pure false) impl
+theorem fixedKnowledge : verifier.rbrKnowledgeSoundnessWith (pure false) impl
     relIn relOut (fun _ => Bool) extractor knowledgeState (fun _ => 0) := by
   intro stmt i tr
   simp [knowledgeState, extractor]
@@ -64,13 +64,13 @@ theorem fixedKnowledge : verifier.rbrKnowledgeSoundnessWorstCaseWith (pure false
 /-- The mixed-schedule knowledge certificate yields ordinary knowledge soundness. -/
 theorem mixedKnowledge : verifier.knowledgeSoundnessWith (pure false) impl relIn relOut
     extractor.foldExtractor 0 := by
-  simpa using guarded.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith
+  simpa using guarded.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith
     knowledgeState fixedKnowledge
 
 /-- Project the same certificate, then apply the ordinary soundness bridge. -/
 theorem mixedSoundness : verifier.soundness (pure false) impl relIn.language relOut.language 0 := by
-  have h := Verifier.rbrSoundnessWorstCase_of_rbrKnowledgeSoundnessWorstCaseWith fixedKnowledge
-  simpa using guarded.soundness_of_rbrSoundnessWorstCase h
+  have h := Verifier.rbrSoundness_of_rbrKnowledgeSoundnessWith fixedKnowledge
+  simpa using guarded.soundness_of_rbrSoundness h
 
 /-- This prover changes ambient state while sending its message. Its auxiliary input is Unit. -/
 def effectfulProver : Prover oracle Bool Unit Bool Bool mixed where
@@ -172,14 +172,14 @@ example : rejecting.StateFunction (pure false) impl Set.univ Set.univ where
 
 /-- Zero rounds and a rejecting guard give zero ordinary soundness error. -/
 example : rejecting.soundness (pure false) impl ∅ Set.univ 0 := by
-  have h : rejecting.rbrSoundnessWorstCase (pure false) impl ∅ Set.univ (fun _ => 0) := by
+  have h : rejecting.rbrSoundness (pure false) impl ∅ Set.univ (fun _ => 0) := by
     apply Verifier.rbrSoundness_of_badEvents ∅ (fun _ _ _ => False)
       (pure false) impl Set.univ rejecting
     · intro stmt tr _ _
       exact rejectingState.toFun_full stmt tr id
     · intro _ _ i
       exact Fin.elim0 i.1
-  simpa using rejectingGuard.soundness_of_rbrSoundnessWorstCase h
+  simpa using rejectingGuard.soundness_of_rbrSoundness h
 
 /-- A concrete zero-round prover has Unit auxiliary data and an actual output witness. -/
 def zeroProver : Prover oracle Unit Unit Unit Unit zero where
@@ -222,10 +222,10 @@ noncomputable def emptyKnowledgeState : rejecting.KnowledgeStateFunction (pure f
 
 example : rejecting.knowledgeSoundnessWith (pure false) impl
     (∅ : Set (Unit × Empty)) (∅ : Set (Unit × Empty)) emptyExtractor.foldExtractor 0 := by
-  have h : rejecting.rbrKnowledgeSoundnessWorstCaseWith (pure false) impl
+  have h : rejecting.rbrKnowledgeSoundnessWith (pure false) impl
       (∅ : Set (Unit × Empty)) (∅ : Set (Unit × Empty)) (fun _ => Empty)
       emptyExtractor emptyKnowledgeState (fun _ => 0) := fun _ i => Fin.elim0 i.1
-  simpa using rejectingGuard.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith
+  simpa using rejectingGuard.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith
     emptyKnowledgeState h
 
 end GuardedBridgesRegression

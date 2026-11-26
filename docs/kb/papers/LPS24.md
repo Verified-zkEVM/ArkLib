@@ -8,28 +8,24 @@ canonical_url: https://eprint.iacr.org/2024/994
 source_metadata: ../sources/LPS24/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/AGM/Basic.lean
-  - ArkLib/ProofSystem/Plonk/Basic.lean
+  - ArkLib/ProofSystem/Plonk/Relation/Basic.lean
 ---
 
 # LPS24
 
 ## At A Glance
 
-`LPS24` is the second main reference cited by ArkLib's Algebraic Group Model file.
-It is especially relevant because it connects AGM-style reasoning back to Plonk
-knowledge-soundness, which matches ArkLib's long-term protocol ambitions.
+`LPS24` connects AGM-style reasoning back to Plonk knowledge-soundness, which matches ArkLib's
+long-term protocol ambitions.
 
 ## What ArkLib Uses From This Paper
 
-- Background for the current AGM mechanization in
-  [`ArkLib/AGM/Basic.lean`](../../../ArkLib/AGM/Basic.lean).
 - Conceptual linkage between AGM-style reasoning and Plonk knowledge-soundness questions.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/AGM/Basic.lean`](../../../ArkLib/AGM/Basic.lean) cites `LPS24` directly.
-- [`ArkLib/ProofSystem/Plonk/Basic.lean`](../../../ArkLib/ProofSystem/Plonk/Basic.lean) is the
+- No ArkLib file cites `LPS24`.
+- [`ArkLib/ProofSystem/Plonk/Relation/Basic.lean`](../../../ArkLib/ProofSystem/Plonk/Relation/Basic.lean) is the
   natural neighboring subtree when this reference matters in protocol work.
 
 ## Version Notes
@@ -41,13 +37,10 @@ knowledge-soundness, which matches ArkLib's long-term protocol ambitions.
 ## Known Divergences From ArkLib
 
 - ArkLib has not yet formalized a full `LPS24`-style knowledge-soundness development.
-- `ArkLib/AGM/Basic.lean` contains only `AGM.GroupRepresentation`, with one `ZMod p` exponent
-  per basis index in a prime-order group and the product equation, and the fully proved lemmas
-  `GroupRepresentation.pow_val_add` and `GroupRepresentation.modulus_pos`.
-- ArkLib has no group-oracle model, oracle interface, group table, or adversary execution for the
-  AGM. Generic and algebraic group models are developed in VCVio
-  (`VCVio/CryptoFoundations/GroupModel/`); relating `GroupRepresentation` to VCVio's typed
-  algebraic points is planned.
+- ArkLib has no group-oracle model, group representation, or adversary execution for the AGM.
+  Generic and algebraic group models are developed in VCVio
+  (`VCVio/CryptoFoundations/GroupModel/`), where an algebraic adversary's representation is
+  `GroupModel.AlgebraicPoint`.
 
 ## Open Formalization Gaps
 

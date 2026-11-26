@@ -9,7 +9,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.InterleavedCode.ExactAgreement
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
-public import ArkLib.Data.Polynomial.PowerBatch
+public import ArkLib.Data.Polynomial.GeneratorBatch
 public import Mathlib.Algebra.Polynomial.Expand
 public import Mathlib.Algebra.Polynomial.OfFn
 public import Mathlib.LinearAlgebra.Lagrange
@@ -501,9 +501,9 @@ theorem uniformExactPowerAgreement_singleton (domain : ι ↪ F) (w : Fin 1 → 
   · ext i
     simp [powerBatchedWord]
 
-/-- At full message dimension, one tuple of interpolants explains every candidate that agrees
-with the batched word on all coordinates, and its agreement set is the tuple's common agreement
-set. -/
+/-- At full message dimension, polynomial tuples of degree `< |ι|` exist, and every candidate
+of degree `< |ι|` that agrees with the batched word on all coordinates admits a tuple witnessing
+exact power agreement. Its witness may depend on the challenge and candidate. -/
 theorem exists_exactPower_fullDimension (domain : ι ↪ F) (w : Fin (ℓ + 1) → ι → F) :
     ∃ P : Fin (ℓ + 1) → F[X], (∀ t, (P t).degree < Fintype.card ι) ∧
       ∀ z (Q : F[X]), Q.degree < Fintype.card ι →
@@ -693,8 +693,9 @@ theorem exists_powerBatchedPolynomial_eq (domain : ι ↪ F) {k : ℕ} {z : F} {
     · exact Submodule.zero_mem _
   · dsimp only
     split_ifs <;> simp [hP₀c, hDeval]
-  · simp only [Polynomial.powerBatch, smul_add, Finset.sum_add_distrib, smul_ite, smul_zero,
-      Finset.sum_ite_eq', Finset.mem_univ, ite_true, Fin.val_zero, pow_zero, one_smul]
+  · simp only [Polynomial.powerBatch, Polynomial.generatorBatch, smul_add,
+      Finset.sum_add_distrib, smul_ite, smul_zero, Finset.sum_ite_eq', Finset.mem_univ,
+      ite_true, Fin.val_zero, pow_zero, one_smul]
     change Q = Polynomial.powerBatch P₀ z + D
     rw [hD]
     ring

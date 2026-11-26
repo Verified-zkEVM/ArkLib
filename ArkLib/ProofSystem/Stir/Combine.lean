@@ -6,6 +6,7 @@ Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Au
 -/
 module
 
+public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.Tactic.FieldSimp
 public import Mathlib.Tactic.Cases
 public import Mathlib.Tactic.LinearCombination
@@ -15,7 +16,6 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 public import ArkLib.ProofSystem.Stir.ProximityBound
-public import ArkLib.ToMathlib.Polynomial.EvalExt
 
 
 /-! Section 4.5 from STIR [ACFY24stir]
@@ -106,18 +106,6 @@ def block_size (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) := dstar - degs 
 private def block_start (dstar : ℕ) (degs : Fin m → ℕ) (i : Fin m) :=
   ∑ j ∈ univ.filter (· < i), block_size dstar degs j
 private def total_terms (dstar : ℕ) (degs : Fin m → ℕ) := ∑ i, block_size dstar degs i
-
-private lemma block_start_monotone
-  {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (h : i ≤ j) :
-  block_start dstar degs i ≤ block_start dstar degs j := by
-  have h_subset :
-    Finset.filter (· < i) Finset.univ ⊆ Finset.filter (· < j) Finset.univ := by
-      grind
-  exact Finset.sum_le_sum_of_subset h_subset
-
-private lemma block_start_zero
-  {dstar : ℕ} {degs : Fin m.succ → ℕ} :
-  block_start dstar degs 0 = 0 := by simp [block_start]
 
 private lemma block_end_le_block_start
   {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (hij : i < j) :
@@ -377,8 +365,6 @@ private lemma combine_eq_flat_final
       rw [h]
       rfl
 
--- def DegCor
-
 /-- Definition 4.12.1
     DegCor(d*, r, f, degree)(x) := f(x) * ( sum_{ l < d* - d + 1 } (r * φ(x))^l ) -/
 def degCor
@@ -410,7 +396,7 @@ private lemma glorious_lemma
     (1 - rho - 1 / (↑m))))
   (hrho : rho = n / (↑m : ℚ≥0)) :
   ↑rho + 1 / ↑(m) < 1 - δ := by
-  all_goals simp_all +decide [lt_tsub_iff_left]
+  simp_all +decide [lt_tsub_iff_left]
   ring_nf at *
   exact hδLt.2.trans_le' (by norm_cast)
 
@@ -429,7 +415,7 @@ open LinearCode ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
     [Nonempty ι]
   {φ : ι ↪ F} {dstar m : ℕ}
-  {fs : Fin m → ι → F} {degs : Fin m → ℕ} (hdegs : ∀ i, degs i ≤ dstar)
+  {fs : Fin m → ι → F} {degs : Fin m → ℕ}
   {δ : ℝ≥0}
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
     (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
@@ -441,6 +427,11 @@ lemma master_lemma
   (i : Fin m)
   (j : Fin (block_size dstar degs i)) :
   (v i j).degree < degs i + j := by
+  by_cases hdeg : degs i ≤ dstar
+  swap
+  · apply (hv_deg i j).trans_le
+    change WithBot.some dstar ≤ WithBot.some (degs i) + WithBot.some j.val
+    exact WithBot.coe_le_coe.mpr (show dstar ≤ degs i + j.val by omega)
   classical
   have hlt : dstar < Fintype.card ι := by
     by_contra contra
@@ -461,7 +452,7 @@ lemma master_lemma
     rw [←WithBot.coe_natCast,
         show WithBot.some (dstar - degs i) = Nat.cast (dstar - degs i) by rfl,
         ←WithBot.coe_natCast, ←WithBot.coe_add, ←Nat.cast_add,
-        Nat.add_sub_of_le (hdegs _)]
+        Nat.add_sub_of_le hdeg]
     exact hv_deg i ⟨j, hj⟩
   | succ j' ih =>
     intro j hj hj'
@@ -479,32 +470,30 @@ lemma master_lemma
       simp only [q, Polynomial.eval_mul, Polynomial.eval_X]
       rw [hv_eval i ⟨j, hj⟩ x hx, hv_eval i ⟨j + 1, h_fin⟩ x hx]
       ring
+    have hcard : dstar + 1 ≤ (S.image φ).card := by
+      rw [Order.add_one_le_iff, Finset.card_image_of_injective _ φ.injective]
+      have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
+        glorious_lemma
+          (by simpa using hδLt)
+          (by {
+            simp only [rate]
+            rfl
+          })
+      have h :=
+        le_trans
+          (le_of_lt <|
+            even_more_glorious_lemma (m := Fintype.card ι)
+              (by simp) (by {
+                rw [ReedSolomon.rateOfLinearCode_eq_min_div,
+                    min_eq_left (by omega)] at h
+                simpa using h
+              }))
+          hS_card
+      norm_cast at h
     have hq_coincide :=
-      Polynomial.eq_of_eval_eq_degree
-        (q := v i ⟨j + 1, h_fin⟩)
-        hq_deg (lt_trans (hv_deg _ _) (WithBot.coe_lt_coe.mpr (Nat.lt_succ_self dstar)))
-        (Finset.image φ S) (by {
-          simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
-          rw [Finset.card_image_of_injective _ φ.injective]
-          have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
-            glorious_lemma
-              (by simpa using hδLt)
-              (by {
-                simp only [rate]
-                rfl
-              })
-          have h :=
-            le_trans
-              (le_of_lt <|
-                even_more_glorious_lemma (m := Fintype.card ι)
-                  (by simp) (by {
-                    rw [ReedSolomon.rateOfLinearCode_eq_min_div,
-                        min_eq_left (by omega)] at h
-                    simpa using h
-                  }))
-              hS_card
-          norm_cast at h
-        })
+      Polynomial.eq_of_degrees_lt_of_eval_finset_eq (S.image φ)
+        (hq_deg.trans_le (Nat.cast_le.mpr hcard))
+        ((hv_deg i ⟨j + 1, h_fin⟩).trans_le (Nat.cast_le.mpr ((Nat.le_succ _).trans hcard)))
         (by
           intro y hy
           obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy
@@ -528,7 +517,7 @@ theorem combine_theorem
     [SampleableType F] {φ : ι ↪ F} {dstar m : ℕ}
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) (hdegs : ∀ i, degs i ≤ dstar)
   (hdeg_pos : 0 < dstar)
-  (δ : ℝ≥0) (hδPos : δ > 0)
+  (δ : ℝ≥0)
   (hδLt : δ < (min (1 - (ReedSolomon.sqrtRate dstar φ))
                    (1 - (rate (code φ dstar)) - 1 / Fintype.card ι)))
   (hProb : Pr{let r ← $ᵗ F}[δᵣ((combine φ dstar r fs degs), (code φ dstar)) ≤ δ] >
@@ -544,7 +533,7 @@ theorem combine_theorem
     rw [Fintype.card_eq_zero_iff] at hempty
     exists (fun i j => False.elim <| hempty.1 j)
     intro i
-    simp only [code, Submodule.mem_map]
+    simp only [ReedSolomon.code, Submodule.mem_map]
     exists 0
     simp only [zero_mem, map_zero, true_and]
     ext j
@@ -559,7 +548,7 @@ theorem combine_theorem
       · simp [total_terms, block_size] at htotal
     · have proximity_gap :=
         @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _ _
-          (total_terms dstar degs - 1) dstar φ δ hdeg_pos hδPos (lt_min_iff.mp hδLt).1
+          (total_terms dstar degs - 1) dstar φ δ hdeg_pos (lt_min_iff.mp hδLt).1
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap
           (fun l (x : ι) ↦ (
@@ -619,7 +608,7 @@ theorem combine_theorem
           exists S
           obtain ⟨v, hagr⟩ := hagr
           simp only [ge_iff_le, hcard, true_and]
-          simp only [code, Submodule.mem_map, forall_and] at hagr
+          simp only [ReedSolomon.code, Submodule.mem_map, forall_and] at hagr
           rcases hagr with ⟨hagr1, hagr2⟩
           let vaux (i : Fin m) (j : Fin (block_size dstar degs i)) :
             Fin (total_terms dstar degs - 1 + 1) :=
@@ -663,7 +652,7 @@ theorem combine_theorem
       rcases proximity_gap with ⟨S, ⟨hS_card, ⟨v, hv⟩⟩⟩
       have master_lemma :=
         @master_lemma _ _ _ _ hempty
-          _ _ _ _ hdegs _
+          _ _ _ _ _
           hδLt _ hS_card (v := v) (fs := fs)
           (fun i j => (hv i j).1)
           (fun i j x hx => (hv i j).2 x hx)
@@ -673,7 +662,8 @@ theorem combine_theorem
       exists (fun i => evalOnPoints φ <| v i (⟨0, hf i⟩))
       intro i
       constructor
-      · simp only [code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Submodule.mem_map]
+      · simp only [ReedSolomon.code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk,
+          Submodule.mem_map]
         exists (v i ⟨0, hf i⟩)
         simp only [Polynomial.degreeLT, ge_iff_le, Submodule.mem_iInf, LinearMap.mem_ker,
           Polynomial.lcoeff_apply, and_true]

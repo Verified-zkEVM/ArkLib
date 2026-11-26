@@ -52,7 +52,7 @@ variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
          {A : Type} [AddCommMonoid A] [Module F A]
          {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
-         {S : Type} [Fintype S]
+         {S : Type}
 
 /-- **Value-level MCA transport.** If the MCA bad event for `G'` on a word family `U` implies the
 bad event for `G` on some reindexed family `Φ U`, at the same radius and over the same seed space,
@@ -63,7 +63,7 @@ This is the transport skeleton behind every generator-preservation lemma in this
 exactly the event implication, and everything else is this lemma. Stating it once at the *value*
 keeps `ε_mca` out of the statement of each transport lemma; the `IsMCAGenerator` forms follow by
 `isMCAGenerator_iff_mcaError_le` and transitivity. -/
-lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] [SampleableType S]
+lemma mcaError_le_of_forall_isMCA_imp [SampleableType S]
     (G : Generator S ℓ F) (G' : Generator S ℓ' F)
     (MC : ModuleCode ι F A) (δ : ℝ) (Φ : (ℓ' → (ι → A)) → (ℓ → (ι → A)))
     (h : ∀ (U : ℓ' → (ι → A)) (x : S), IsMCA G' MC x U δ → IsMCA G MC x (Φ U) δ) :
@@ -95,7 +95,7 @@ original generator `G` with the word family transported by `M`.
 
 This event implication is the whole mathematical content of the bound; the error statements below
 follow from it by `mcaError_le_of_forall_isMCA_imp`. -/
-lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
+lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] (G : Generator S ℓ F)
     (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M)
     (U : ℓ' → (ι → A)) (γ : ℝ) (x : S) :
     IsMCA (generatorByRightMul G M) MC x U γ → IsMCA G MC x (matrixMulCodewords M U) γ := by
@@ -119,7 +119,7 @@ lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Ge
 
 /-- Right multiplication by a matrix with a left pseudoinverse does not increase the MCA error.
 Stated at the error *value*, so no error function appears. -/
-lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] [SampleableType S]
+lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [SampleableType S]
     (G : Generator S ℓ F)
     (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) (γ : ℝ) :
     mcaError (generatorByRightMul G M) MC γ ≤ mcaError G MC γ :=
@@ -130,7 +130,7 @@ lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] [Sampleabl
 with a left pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `M`
 is an MCA generator with the same error `ε_mca` as `G`.
 The `IsMCAGenerator` form of `mcaError_generatorByRightMul_le`. -/
-lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] [SampleableType S]
+lemma pseudoinverseGen [DecidableEq ℓ'] [SampleableType S]
     (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A) (hGMCA : IsMCAGenerator G ε_mca MC)
     (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
@@ -145,7 +145,7 @@ fun i => if h : i ∈ κ then U ⟨i, h⟩ else 0
 
 /-- If the MCA condition `IsMCA` holds for a projected generator, then `IsMCA` holds for the
 original generator `G` with the zero-extension defined above. -/
-lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G : Generator S ℓ F)
+lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) (G : Generator S ℓ F)
     (κ : Set ℓ) [Fintype κ] (U : κ → (ι → A)) (γ : ℝ) (x : S) :
     IsMCA (projectedGenerator G κ) MC x U γ → IsMCA G MC x (zeroExtend κ U) γ := by
   have smulSum_projectedGenerator (i : ι) :
@@ -165,7 +165,7 @@ lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G
 
 /-- Projecting a generator onto a subset of its output coordinates does not increase the MCA
 error. Stated at the error *value*, so no error function appears. -/
-lemma mcaError_projectedGenerator_le [Nonempty S] [SampleableType S]
+lemma mcaError_projectedGenerator_le [SampleableType S]
     (G : Generator S ℓ F) (MC : ModuleCode ι F A) (κ : Set ℓ) [Fintype κ] (γ : ℝ) :
     mcaError (projectedGenerator G κ) MC γ ≤ mcaError G MC γ :=
   mcaError_le_of_forall_isMCA_imp G (projectedGenerator G κ) MC γ (zeroExtend κ)
@@ -174,7 +174,7 @@ lemma mcaError_projectedGenerator_le [Nonempty S] [SampleableType S]
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a subset of `ℓ`.
 Then the projected generator over `κ` is an MCA generator with the same error as `G`.
 The `IsMCAGenerator` form of `mcaError_projectedGenerator_le`. -/
-lemma generatorSubset [Nonempty S] [SampleableType S]
+lemma generatorSubset [SampleableType S]
     (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A)
     (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
@@ -188,7 +188,7 @@ equivalences (such as `Fin.consEquiv`) that arise when iterating tensor products
 Not an instance of `mcaError_le_of_forall_isMCA_imp`: that skeleton keeps the seed space fixed,
 whereas here the seed space is relabelled along `eS`, so the probabilities are compared by
 `Finset.card_equiv` rather than by monotonicity of `Pr`. -/
-lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [SampleableType S'] [Nonempty S]
+lemma isMCAGenerator_reindex {S' : Type} [SampleableType S']
     [SampleableType S]
     (MC : ModuleCode ι F A) (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (hGMCA : IsMCAGenerator G ε_mca MC) (eS : S' ≃ S) (eL : ℓ ≃ ℓ') :

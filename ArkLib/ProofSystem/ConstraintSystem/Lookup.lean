@@ -29,12 +29,4 @@ def relation : Set (Value × Table) := { ⟨values, table⟩ | ∀ value ∈ val
 
 -- variants? vector lookups? batched lookups? indexed lookups (aka read-only memory checking)?
 
--- old stuff
--- def BatchedLookupRelation (n m : ℕ+) : Relation where
---   Statement := Fin n → List R
---   Witness := (Fin m → List R) × Matrix (Fin m) (Fin n) Bool
---   isValid := fun stmt wit =>
---     ∀ i : Fin m, ∀ j : Fin n,
---       if wit.2 i j then stmt j ⊆ wit.1 i else True
-
 end Lookup

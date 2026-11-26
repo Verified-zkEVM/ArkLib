@@ -23,10 +23,11 @@ zero.
 The bound is additive under multiplication.  Consequently, the weight-zero piece is also closed
 under multiplication, while a positive fixed bound is not in general.
 
-The finiteness and finrank results below require every variable weight to be nonzero.  This
-hypothesis is load-bearing: if a variable has weight zero, all of its powers remain in every
-bounded piece.  In particular, a downstream interpolation weight with untracked, weight-zero
-variables must add separate degree caps before using a finite-dimensional count.
+The finiteness results below require every variable weight to be nonzero: if a variable has
+weight zero, all of its powers remain in every bounded piece. The finrank formula also covers
+infinite-dimensional pieces, where both sides are zero. A downstream interpolation weight with
+untracked, weight-zero variables must add separate degree caps to obtain a finite-dimensional
+count.
 
 ## Main declarations
 
@@ -34,6 +35,8 @@ variables must add separate degree caps before using a finite-dimensional count.
 * `weightedTotalDegree_bind₁_le` and `weightedTotalDegree_aeval_le`: substitution bounds with
   induced source weights.
 * `bind₁_mem_restrictWeightedDegree`: preservation under prescribed-weight substitution.
+* `polynomial_aeval_mem_restrictWeightedDegree_zero`: the weight-zero piece is closed under
+  evaluating univariate polynomials.
 * `weightedTotalDegree_pderiv_le_sub`: a partial derivative in `X i` lowers the weighted total
   degree by at least `w i`, in every characteristic.
 * `degreeOf_le_weightedTotalDegree`: if `X i` has positive weight, its degree is bounded by the
@@ -43,7 +46,7 @@ variables must add separate degree caps before using a finite-dimensional count.
   the weighted total degree, with the weight of `i` being (a bound on) `natDegree (f i)`.
 * `basisRestrictWeightedDegree` and `restrictWeightedDegreeCoeff`: its monomial basis and
   coefficient projections.
-* `finrank_restrictWeightedDegree`: the finite positive-weight dimension formula.
+* `finrank_restrictWeightedDegree`: the weighted-degree dimension formula.
 
 ## References
 
@@ -176,6 +179,14 @@ theorem pow_mem_restrictWeightedDegree {w : σ → ℕ} {d : ℕ} {p : MvPolynom
   | succ n ih =>
       rw [pow_succ, Nat.succ_mul]
       exact mul_mem_restrictWeightedDegree ih hp
+
+/-- A univariate polynomial evaluated at a polynomial of weight `0` has weight `0`. -/
+theorem polynomial_aeval_mem_restrictWeightedDegree_zero {w : σ → ℕ} {x : MvPolynomial σ R}
+    (hx : x ∈ restrictWeightedDegree (R := R) w 0) (p : Polynomial R) :
+    Polynomial.aeval x p ∈ restrictWeightedDegree (R := R) w 0 := by
+  rw [Polynomial.aeval_eq_sum_range]
+  refine Submodule.sum_mem _ fun i _ ↦ Submodule.smul_mem _ _ ?_
+  simpa using pow_mem_restrictWeightedDegree hx i
 
 /-! ### Weighted-degree bounds under substitution -/
 
@@ -410,8 +421,7 @@ theorem eq_C_coeff_zero_of_mem_restrictWeightedDegree_zero {w : σ → ℕ} (hw 
     rw [notMem_support_iff.mp hm_support]
     exact (coeff_C_of_ne_zero (R := R) hm (p.coeff 0)).symm
 
-/-- The weight-zero bounded piece is a subalgebra.  This is the fixed-bound multiplication closure
-that remains valid without incorrectly claiming the same for a positive bound. -/
+/-- Polynomials whose monomials all have weight zero form a subalgebra. -/
 def weightedDegreeZeroSubalgebra (w : σ → ℕ) : Subalgebra R (MvPolynomial σ R) where
   carrier := restrictWeightedDegree (R := R) w 0
   add_mem' := (restrictWeightedDegree (R := R) w 0).add_mem
@@ -420,6 +430,7 @@ def weightedDegreeZeroSubalgebra (w : σ → ℕ) : Subalgebra R (MvPolynomial �
     rw [algebraMap_eq]
     exact C_mem_restrictWeightedDegree w 0 r
 
+/-- The underlying submodule is the weight-zero part. -/
 @[simp]
 theorem mem_weightedDegreeZeroSubalgebra {w : σ → ℕ} {p : MvPolynomial σ R} :
     p ∈ weightedDegreeZeroSubalgebra (R := R) w ↔
@@ -446,6 +457,7 @@ def restrictWeightedDegreeCoeff (w : σ → ℕ) (d : ℕ)
     restrictWeightedDegree (R := R) w d →ₗ[R] R :=
   lcoeff R m ∘ₗ Submodule.subtype _
 
+/-- The restricted projection returns the polynomial coefficient. -/
 @[simp]
 theorem restrictWeightedDegreeCoeff_apply (w : σ → ℕ) (d : ℕ)
     (m : {m : σ →₀ ℕ // m.weight w ≤ d})
@@ -479,22 +491,25 @@ theorem restrictWeightedDegree_fg [Finite σ] (w : σ → ℕ) (hw : ∀ i, w i 
     {m : σ →₀ ℕ // m.weight w ≤ d} _ _ _ finiteExponents
     (basisRestrictWeightedDegree (R := R) w d)
 
-/-- Over a field and with every variable assigned nonzero weight, the dimension of a bounded
-weighted-degree submodule is the number of allowed monomials.  The nonzero-weight hypothesis is
-essential; see `X_pow_mem_restrictWeightedDegree_zero`. -/
-theorem finrank_restrictWeightedDegree {K : Type*} [Field K] [Finite σ]
-    (w : σ → ℕ) (hw : ∀ i, w i ≠ 0) (d : ℕ) :
+/-- Over a field, the finrank of a bounded weighted-degree submodule is the number of allowed
+monomials. Both sides are zero when the allowed monomial set is infinite. -/
+theorem finrank_restrictWeightedDegree {K : Type*} [Field K]
+    (w : σ → ℕ) (d : ℕ) :
     Module.finrank K (restrictWeightedDegree (R := K) w d) =
       Set.ncard {m : σ →₀ ℕ | m.weight w ≤ d} := by
-  let _ : Finite {m : σ →₀ ℕ // m.weight w ≤ d} :=
-    (weightedDegreeSupport_finite w hw d).to_subtype
-  let b := basisRestrictWeightedDegree (R := K) w d
-  let _ : FiniteDimensional K (restrictWeightedDegree (R := K) w d) :=
-    b.finiteDimensional_of_finite
-  have h := congrArg Cardinal.toNat (Module.finrank_eq_card_basis' b)
-  have hcard : Module.finrank K (restrictWeightedDegree (R := K) w d) =
-      Nat.card {m : σ →₀ ℕ // m.weight w ≤ d} := by
-    simpa [Nat.card] using h
-  exact hcard.trans (Nat.card_coe_set_eq _)
+  exact (Module.finrank_eq_nat_card_basis
+    (basisRestrictWeightedDegree (R := K) w d)).trans
+      (Nat.card_coe_set_eq {m : σ →₀ ℕ | m.weight w ≤ d})
+
+/-- A partial derivative in `X i` vanishes when `w i` exceeds the weighted degree. -/
+theorem pderiv_eq_zero_of_weightedTotalDegree_lt {σ : Type*} (w : σ → ℕ) (i : σ)
+    (p : MvPolynomial σ R) (h : p.weightedTotalDegree w < w i) : pderiv i p = 0 := by
+  ext m
+  rw [coeff_pderiv, AddMonoidAlgebra.coeff_zero, Finsupp.coe_zero, Pi.zero_apply]
+  by_cases hm : p.coeff (m + Finsupp.single i 1) = 0
+  · rw [hm, zero_mul]
+  · have hle := le_weightedTotalDegree w (mem_support_iff.mpr hm)
+    rw [map_add, Finsupp.weight_single, one_smul] at hle
+    omega
 
 end MvPolynomial

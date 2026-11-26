@@ -53,7 +53,7 @@ namespace Fri.Spec.Extractor
 
 open Domain OracleComp OracleSpec CompPoly
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+)
 
@@ -117,7 +117,7 @@ end Fri.Spec.Extractor
 
 namespace Fri.Spec.Extractor
 open Domain OracleComp OracleSpec CompPoly
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+)
 
@@ -132,18 +132,17 @@ def blockNode (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   (QueryRound.queryBlock s hs i x).get
     (j.cast (QueryRound.queryBlock_length s hs i x).symm)
 
-omit [Fintype F] in
 private theorem blockNode_val (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) (j : Fin (2 ^ (s i).val)) :
     (blockNode s hs i x j).val =
       (ω 1 * (ω 0)⁻¹) ^ (2 ^ (n - (s i).val) * j.val) *
-        (QueryRound.queryPoint s hs i x).val := by
+        (QueryRound.queryPoint s i x).val := by
   have hi := round_le s hs i
   have hsize : 2 ^ (s i).val = 2 ^ (n - (n - (s i).val)) := by
     rw [Nat.sub_sub_self hi]
   let j' : Fin (2 ^ (n - (n - (s i).val))) := j.cast hsize
   have hroot := normalized_subdomain_apply_eq_ratio_pow ω (n - (s i).val) j'
-  convert congrArg (fun a : F ↦ a * (QueryRound.queryPoint s hs i x).val) hroot using 1 <;>
+  convert congrArg (fun a : F ↦ a * (QueryRound.queryPoint s i x).val) hroot using 1 <;>
     simp only [blockNode, QueryRound.queryBlock, FftDomain.toList, j',
       List.get_eq_getElem, List.getElem_map, List.getElem_finRange, Fin.val_cast]
   congr 2
@@ -167,7 +166,7 @@ def generateBlockNode (hs : (∑ j, (s j).val) ≤ n)
     (o : ∀ j, FinalOracleStatement s ω j) (α : FinalStatement F k)
     (gen : Generator ω) (i : Fin (k + 1)) (roundGen : RoundGenerator s gen i)
     (x : (ω.subdomain 0).toFinset)
-    (projected : {a : F // a = (QueryRound.queryPoint s hs i x).val})
+    (projected : {a : F // a = (QueryRound.queryPoint s i x).val})
     (j : Fin (2 ^ (s i).val)) :
     OracleComp (InstructionSpec s o α)
       {q : (ω.subdomain (foldingPrefix s i.castSucc)).toFinset //

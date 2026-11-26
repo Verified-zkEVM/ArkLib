@@ -1,5 +1,5 @@
 {
-  "count": 85,
+  "count": 104,
   "entries": {
     "ABF26": {
       "authors": [
@@ -253,6 +253,29 @@
       "venue": "Cryptology ePrint Archive",
       "year": "2024"
     },
+    "BBHR18": {
+      "authors": [
+        "Eli Ben-Sasson",
+        "Iddo Bentov",
+        "Yinon Horesh",
+        "Michael Riabzev"
+      ],
+      "authors_text": "Eli Ben-Sasson and Iddo Bentov and Yinon Horesh and Michael Riabzev",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Eli Ben-Sasson and Iddo Bentov and Yinon Horesh and Michael Riabzev",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2018/046",
+        "title": "Scalable, transparent, and post-quantum secure computational integrity",
+        "url": "https://eprint.iacr.org/2018/046",
+        "year": "2018"
+      },
+      "key": "BBHR18",
+      "title": "Scalable, transparent, and post-quantum secure computational integrity",
+      "url": "https://eprint.iacr.org/2018/046",
+      "venue": "",
+      "year": "2018"
+    },
     "BBS24": {
       "authors": [
         "Bosshard, Azucena Garvia",
@@ -423,6 +446,30 @@
       "venue": "Journal of the ACM",
       "year": "2023"
     },
+    "BCPZZ26": {
+      "authors": [
+        "Joshua Brakensiek",
+        "Yeyuan Chen",
+        "Aaron Putterman",
+        "Zihan Zhang",
+        "Kai Zhe Zheng"
+      ],
+      "authors_text": "Joshua Brakensiek and Yeyuan Chen and Aaron Putterman and Zihan Zhang and Kai Zhe Zheng",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Joshua Brakensiek and Yeyuan Chen and Aaron Putterman and Zihan Zhang and Kai Zhe Zheng",
+        "howpublished": "Electronic Colloquium on Computational Complexity, Report TR26-164",
+        "title": "Algorithmic List Decoding of {Reed--Solomon} Codes up to Capacity in the Low-Rate Regime",
+        "url": "https://eccc.weizmann.ac.il/report/2026/164/",
+        "year": "2026"
+      },
+      "key": "BCPZZ26",
+      "title": "Algorithmic List Decoding of {Reed--Solomon} Codes up to Capacity in the Low-Rate Regime",
+      "url": "https://eccc.weizmann.ac.il/report/2026/164/",
+      "venue": "",
+      "year": "2026"
+    },
     "BCS16": {
       "authors": [
         "Ben-Sasson, Eli",
@@ -470,6 +517,31 @@
       "venue": "IEEE Transactions on Information Theory",
       "year": "2024"
     },
+    "BGKLSW26": {
+      "authors": [
+        "Bloemen, Remco",
+        "Garreta, Albert",
+        "Kostrzewa, Marcin",
+        "Londhe, Shreyas",
+        "Soukhanov, Lev",
+        "Wu, John"
+      ],
+      "authors_text": "Bloemen, Remco and Garreta, Albert and Kostrzewa, Marcin and Londhe, Shreyas and Soukhanov, Lev and Wu, John",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Bloemen, Remco and Garreta, Albert and Kostrzewa, Marcin and Londhe, Shreyas and Soukhanov, Lev and Wu, John",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/2141",
+        "title": "{BitZ}: proofs and commitments in arbitrary rings through binary fields",
+        "url": "https://eprint.iacr.org/2026/2141",
+        "year": "2026"
+      },
+      "key": "BGKLSW26",
+      "title": "{BitZ}: proofs and commitments in arbitrary rings through binary fields",
+      "url": "https://eprint.iacr.org/2026/2141",
+      "venue": "",
+      "year": "2026"
+    },
     "BGM23": {
       "authors": [
         "Brakensiek, Joshua",
@@ -514,6 +586,53 @@
       "url": "",
       "venue": "Proceedings of the 47th Annual {IEEE} Symposium on Foundations of Computer Science",
       "year": "2006"
+    },
+    "BKS18": {
+      "authors": [
+        "Ben-Sasson, Eli",
+        "Kopparty, Swastik",
+        "Saraf, Shubhangi"
+      ],
+      "authors_text": "Ben-Sasson, Eli and Kopparty, Swastik and Saraf, Shubhangi",
+      "doi": "10.4230/LIPIcs.CCC.2018.24",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Ben-Sasson, Eli and Kopparty, Swastik and Saraf, Shubhangi",
+        "booktitle": "33rd Computational Complexity Conference (CCC 2018)",
+        "doi": "10.4230/LIPIcs.CCC.2018.24",
+        "pages": "24:1--24:23",
+        "series": "LIPIcs",
+        "title": "Worst-case to average case reductions for the distance to a code",
+        "volume": "102",
+        "year": "2018"
+      },
+      "key": "BKS18",
+      "title": "Worst-case to average case reductions for the distance to a code",
+      "url": "",
+      "venue": "33rd Computational Complexity Conference (CCC 2018)",
+      "year": "2018"
+    },
+    "BRW26": {
+      "authors": [
+        "Benedikt B\u00fcnz",
+        "Ron D. Rothblum",
+        "William Wang"
+      ],
+      "authors_text": "Benedikt B\u00fcnz and Ron D. Rothblum and William Wang",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Benedikt B\u00fcnz and Ron D. Rothblum and William Wang",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/1329",
+        "title": "Flock: Fast Proving for Batch Boolean Computations",
+        "url": "https://eprint.iacr.org/2026/1329",
+        "year": "2026"
+      },
+      "key": "BRW26",
+      "title": "Flock: Fast Proving for Batch Boolean Computations",
+      "url": "https://eprint.iacr.org/2026/1329",
+      "venue": "",
+      "year": "2026"
     },
     "BSS08": {
       "authors": [
@@ -565,6 +684,35 @@
       "venue": "Proceedings of the 11th Innovations in Theoretical Computer Science Conference",
       "year": "2020"
     },
+    "CCHLRRW19": {
+      "authors": [
+        "Canetti, Ran",
+        "Chen, Yilei",
+        "Holmgren, Justin",
+        "Lombardi, Alex",
+        "Rothblum, Guy N.",
+        "Rothblum, Ron D.",
+        "Wichs, Daniel"
+      ],
+      "authors_text": "Canetti, Ran and Chen, Yilei and Holmgren, Justin and Lombardi, Alex and Rothblum, Guy N. and Rothblum, Ron D. and Wichs, Daniel",
+      "doi": "10.1145/3313276.3316380",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Canetti, Ran and Chen, Yilei and Holmgren, Justin and Lombardi, Alex and Rothblum, Guy N. and Rothblum, Ron D. and Wichs, Daniel",
+        "booktitle": "Proceedings of the 51st Annual {ACM} {SIGACT} Symposium on Theory of Computing",
+        "doi": "10.1145/3313276.3316380",
+        "pages": "1082--1090",
+        "publisher": "{ACM}",
+        "series": "STOC '19",
+        "title": "{Fiat-Shamir}: from practice to theory",
+        "year": "2019"
+      },
+      "key": "CCHLRRW19",
+      "title": "{Fiat-Shamir}: from practice to theory",
+      "url": "",
+      "venue": "Proceedings of the 51st Annual {ACM} {SIGACT} Symposium on Theory of Computing",
+      "year": "2019"
+    },
     "CGKY25": {
       "authors": [
         "Alessandro Chiesa",
@@ -587,6 +735,27 @@
       "url": "https://eprint.iacr.org/2025/902",
       "venue": "",
       "year": "2025"
+    },
+    "CHA24": {
+      "authors": [
+        "Campanelli, Matteo",
+        "Hall-Andersen, Mathias"
+      ],
+      "authors_text": "Campanelli, Matteo and Hall-Andersen, Mathias",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Campanelli, Matteo and Hall-Andersen, Mathias",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2024/1548",
+        "title": "Fully succinct arguments over the integers from first principles",
+        "url": "https://eprint.iacr.org/2024/1548",
+        "year": "2024"
+      },
+      "key": "CHA24",
+      "title": "Fully succinct arguments over the integers from first principles",
+      "url": "https://eprint.iacr.org/2024/1548",
+      "venue": "",
+      "year": "2024"
     },
     "CS25": {
       "authors": [
@@ -633,6 +802,29 @@
       "url": "https://doi.org/10.1137/S0097539705447335",
       "venue": "SIAM Journal on Computing",
       "year": "2007"
+    },
+    "CWYZ26": {
+      "authors": [
+        "Alessandro Chiesa",
+        "Guy Weissenberg",
+        "Eylon Yogev",
+        "Kai Zhe Zheng"
+      ],
+      "authors_text": "Alessandro Chiesa and Guy Weissenberg and Eylon Yogev and Kai Zhe Zheng",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Alessandro Chiesa and Guy Weissenberg and Eylon Yogev and Kai Zhe Zheng",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/2863",
+        "title": "Affine Combiners for {Reed--Solomon} Proximity Gaps",
+        "url": "https://eprint.iacr.org/2026/2863",
+        "year": "2026"
+      },
+      "key": "CWYZ26",
+      "title": "Affine Combiners for {Reed--Solomon} Proximity Gaps",
+      "url": "https://eprint.iacr.org/2026/2863",
+      "venue": "",
+      "year": "2026"
     },
     "CZ25": {
       "authors": [
@@ -745,6 +937,51 @@
       "venue": "",
       "year": "2025"
     },
+    "DKT26": {
+      "authors": [
+        "Quang Dao",
+        "Scott Duke Kominers",
+        "Justin Thaler"
+      ],
+      "authors_text": "Quang Dao and Scott Duke Kominers and Justin Thaler",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Quang Dao and Scott Duke Kominers and Justin Thaler",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/2056",
+        "title": "{Reed--Solomon} Codes Beyond {Johnson}: Efficient Decoding and Smaller Cryptographic Proofs",
+        "url": "https://eprint.iacr.org/2026/2056",
+        "year": "2026"
+      },
+      "key": "DKT26",
+      "title": "{Reed--Solomon} Codes Beyond {Johnson}: Efficient Decoding and Smaller Cryptographic Proofs",
+      "url": "https://eprint.iacr.org/2026/2056",
+      "venue": "",
+      "year": "2026"
+    },
+    "DKTZ26": {
+      "authors": [
+        "Quang Dao",
+        "Scott Duke Kominers",
+        "Justin Thaler",
+        "Kai Zhe Zheng"
+      ],
+      "authors_text": "Quang Dao and Scott Duke Kominers and Justin Thaler and Kai Zhe Zheng",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Quang Dao and Scott Duke Kominers and Justin Thaler and Kai Zhe Zheng",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/2424",
+        "title": "Counterexamples to Beyond-{Johnson} Proximity Gaps over Binary Fields",
+        "url": "https://eprint.iacr.org/2026/2424",
+        "year": "2026"
+      },
+      "key": "DKTZ26",
+      "title": "Counterexamples to Beyond-{Johnson} Proximity Gaps over Binary Fields",
+      "url": "https://eprint.iacr.org/2026/2424",
+      "venue": "",
+      "year": "2026"
+    },
     "DP23": {
       "authors": [
         "Benjamin E. Diamond",
@@ -779,11 +1016,12 @@
         "author": "Diamond, Benjamin E and Posen, Jim",
         "journal": "Cryptology ePrint Archive",
         "title": "Polylogarithmic proofs for multilinears over binary towers",
+        "url": "https://eprint.iacr.org/archive/2024/504/20250922:164810",
         "year": "2024"
       },
       "key": "DP24",
       "title": "Polylogarithmic proofs for multilinears over binary towers",
-      "url": "",
+      "url": "https://eprint.iacr.org/archive/2024/504/20250922:164810",
       "venue": "Cryptology ePrint Archive",
       "year": "2024"
     },
@@ -835,6 +1073,26 @@
       "url": "",
       "venue": "",
       "year": "1957"
+    },
+    "EthStark21": {
+      "authors": [
+        "Ben-Sasson, Eli"
+      ],
+      "authors_text": "Ben-Sasson, Eli",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Ben-Sasson, Eli",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2021/582",
+        "title": "{ethSTARK} Documentation",
+        "url": "https://eprint.iacr.org/2021/582",
+        "year": "2021"
+      },
+      "key": "EthStark21",
+      "title": "{ethSTARK} Documentation",
+      "url": "https://eprint.iacr.org/2021/582",
+      "venue": "",
+      "year": "2021"
     },
     "FMN24": {
       "authors": [
@@ -980,11 +1238,11 @@
         "Raghavendra, Prasad"
       ],
       "authors_text": "Gopalan, Parikshit and Guruswami, Venkatesan and Raghavendra, Prasad",
-      "doi": "10.1137/090778280",
+      "doi": "10.1137/090778274",
       "entry_type": "article",
       "fields": {
         "author": "Gopalan, Parikshit and Guruswami, Venkatesan and Raghavendra, Prasad",
-        "doi": "10.1137/090778280",
+        "doi": "10.1137/090778274",
         "journal": "SIAM Journal on Computing",
         "number": "5",
         "pages": "1432--1462",
@@ -1077,6 +1335,29 @@
       "url": "https://doi.org/10.1109/TIT.2021.3127126",
       "venue": "IEEE Transactions on Information Theory",
       "year": "2022"
+    },
+    "GMW25": {
+      "authors": [
+        "Albert Garreta",
+        "Nicolas Mohnblatt",
+        "Benedikt Wagner"
+      ],
+      "authors_text": "Albert Garreta and Nicolas Mohnblatt and Benedikt Wagner",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Albert Garreta and Nicolas Mohnblatt and Benedikt Wagner",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/1993",
+        "note": "Revised March 27, 2026",
+        "title": "A Simplified Round-by-round Soundness Proof of {FRI}",
+        "url": "https://eprint.iacr.org/2025/1993",
+        "year": "2025"
+      },
+      "key": "GMW25",
+      "title": "A Simplified Round-by-round Soundness Proof of {FRI}",
+      "url": "https://eprint.iacr.org/2025/1993",
+      "venue": "",
+      "year": "2025"
     },
     "GR08": {
       "authors": [
@@ -1215,6 +1496,27 @@
       "venue": "",
       "year": "2024"
     },
+    "HK24": {
+      "authors": [
+        "Hab\u00f6ck, Ulrich",
+        "Al Kindi"
+      ],
+      "authors_text": "Hab\u00f6ck, Ulrich and Al Kindi",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Hab\u00f6ck, Ulrich and Al Kindi",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2024/1037",
+        "title": "A note on adding zero-knowledge to {STARKs}",
+        "url": "https://eprint.iacr.org/2024/1037",
+        "year": "2024"
+      },
+      "key": "HK24",
+      "title": "A note on adding zero-knowledge to {STARKs}",
+      "url": "https://eprint.iacr.org/2024/1037",
+      "venue": "",
+      "year": "2024"
+    },
     "HMZ25": {
       "authors": [
         "Huang, Mi-Ying Miryam",
@@ -1234,6 +1536,46 @@
       "key": "HMZ25",
       "title": "Sublinear Proofs over Polynomial Rings",
       "url": "https://eprint.iacr.org/2025/199",
+      "venue": "",
+      "year": "2025"
+    },
+    "Hab22": {
+      "authors": [
+        "Ulrich Hab\u00f6ck"
+      ],
+      "authors_text": "Ulrich Hab\u00f6ck",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Ulrich Hab\u00f6ck",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2022/1530",
+        "title": "Multivariate lookups based on logarithmic derivatives",
+        "url": "https://eprint.iacr.org/2022/1530",
+        "year": "2022"
+      },
+      "key": "Hab22",
+      "title": "Multivariate lookups based on logarithmic derivatives",
+      "url": "https://eprint.iacr.org/2022/1530",
+      "venue": "",
+      "year": "2022"
+    },
+    "Hab25": {
+      "authors": [
+        "Ulrich Hab\u00f6ck"
+      ],
+      "authors_text": "Ulrich Hab\u00f6ck",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Ulrich Hab\u00f6ck",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/2110",
+        "title": "A note on mutual correlated agreement for {Reed-Solomon} codes",
+        "url": "https://eprint.iacr.org/2025/2110",
+        "year": "2025"
+      },
+      "key": "Hab25",
+      "title": "A note on mutual correlated agreement for {Reed-Solomon} codes",
+      "url": "https://eprint.iacr.org/2025/2110",
       "venue": "",
       "year": "2025"
     },
@@ -1447,6 +1789,29 @@
       "venue": "",
       "year": "2010"
     },
+    "Kop15": {
+      "authors": [
+        "Kopparty, Swastik"
+      ],
+      "authors_text": "Kopparty, Swastik",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Kopparty, Swastik",
+        "journal": "Theory of Computing",
+        "number": "5",
+        "pages": "149--182",
+        "title": "List-Decoding Multiplicity Codes",
+        "url": "https://theoryofcomputing.org/articles/v011a005/",
+        "volume": "11",
+        "year": "2015"
+      },
+      "key": "Kop15",
+      "title": "List-Decoding Multiplicity Codes",
+      "url": "https://theoryofcomputing.org/articles/v011a005/",
+      "venue": "Theory of Computing",
+      "year": "2015"
+    },
     "LCH14": {
       "authors": [
         "Lin, Sian-Jheng",
@@ -1597,6 +1962,29 @@
       "url": "",
       "venue": "",
       "year": "2002"
+    },
+    "Lov18": {
+      "authors": [
+        "Lovett, Shachar"
+      ],
+      "authors_text": "Lovett, Shachar",
+      "doi": "",
+      "entry_type": "article",
+      "fields": {
+        "author": "Lovett, Shachar",
+        "eprint": "1803.02523",
+        "eprinttype": "arXiv",
+        "journal": "CoRR",
+        "title": "{MDS} matrices over small fields: A proof of the {GM-MDS} conjecture",
+        "url": "https://arxiv.org/abs/1803.02523",
+        "volume": "abs/1803.02523",
+        "year": "2018"
+      },
+      "key": "Lov18",
+      "title": "{MDS} matrices over small fields: A proof of the {GM-MDS} conjecture",
+      "url": "https://arxiv.org/abs/1803.02523",
+      "venue": "CoRR",
+      "year": "2018"
     },
     "MS77": {
       "authors": [
@@ -1758,6 +2146,23 @@
       "venue": "",
       "year": "2023"
     },
+    "RSG": {
+      "authors": [],
+      "authors_text": "",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "howpublished": "Note, leanEthereum/leanVM-b repository",
+        "note": "Undated note; separately based packing and evaluation extensions",
+        "title": "Ring switching, generalized",
+        "url": "https://github.com/leanEthereum/leanVM-b/blob/main/misc/ring-switching-generalized.pdf"
+      },
+      "key": "RSG",
+      "title": "Ring switching, generalized",
+      "url": "https://github.com/leanEthereum/leanVM-b/blob/main/misc/ring-switching-generalized.pdf",
+      "venue": "",
+      "year": ""
+    },
     "ST20": {
       "authors": [
         "Shangguan, Chong",
@@ -1894,6 +2299,29 @@
       "url": "https://doi.org/10.1080/00150517.1988.12429608",
       "venue": "The Fibonacci Quarterly",
       "year": "1988"
+    },
+    "ZCF24": {
+      "authors": [
+        "Zeilberger, Hadas",
+        "Chen, Binyi",
+        "Fisch, Ben"
+      ],
+      "authors_text": "Zeilberger, Hadas and Chen, Binyi and Fisch, Ben",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Zeilberger, Hadas and Chen, Binyi and Fisch, Ben",
+        "booktitle": "Advances in Cryptology -- CRYPTO 2024",
+        "isbn": "978-3-031-68402-9",
+        "title": "{BaseFold}: Efficient Field-Agnostic Polynomial Commitment Schemes from Foldable Codes",
+        "url": "https://eprint.iacr.org/archive/2023/1705/20260710:050949",
+        "year": "2024"
+      },
+      "key": "ZCF24",
+      "title": "{BaseFold}: Efficient Field-Agnostic Polynomial Commitment Schemes from Foldable Codes",
+      "url": "https://eprint.iacr.org/archive/2023/1705/20260710:050949",
+      "venue": "Advances in Cryptology -- CRYPTO 2024",
+      "year": "2024"
     },
     "codingtheory": {
       "authors": [

@@ -145,7 +145,7 @@ def stateFunctionOfBadEvents
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- Conditional bounds on fresh bad events give fixed-prefix round-by-round soundness. -/
+/-- Conditional bounds on fresh bad events give round-by-round soundness. -/
 theorem rbrSoundness_of_badEvents
     (hterminal : ∀ stmt (tr : pSpec.FullTranscript), stmt ∉ langIn →
       (∀ i : pSpec.ChallengeIdx, ¬ bad i stmt
@@ -158,7 +158,7 @@ theorem rbrSoundness_of_badEvents
       ∀ tr : Transcript i.val.castSucc pSpec,
       ¬ badEventState langIn bad i.val.castSucc stmt tr →
       Pr{let c ← $ᵗ (pSpec.Challenge i)}[bad i stmt (tr.concat c)] ≤ ε i) :
-    verifier.rbrSoundnessWorstCase init impl langIn langOut ε := by
+    verifier.rbrSoundness init impl langIn langOut ε := by
   refine ⟨stateFunctionOfBadEvents langIn bad init impl langOut verifier hterminal, ?_⟩
   intro stmt hstmt i tr
   change Pr{let c ← $ᵗ (pSpec.Challenge i)}[¬ badEventState langIn bad i.val.castSucc stmt tr ∧

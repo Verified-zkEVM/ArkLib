@@ -34,7 +34,7 @@ knowledge game for arbitrary inputs and malicious provers.
 namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec ReedSolomon Finset
 open scoped ProbabilityTheory NNReal
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -261,7 +261,7 @@ end Fri.Spec
 namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec ReedSolomon Finset
 open scoped NNReal
-variable {F : Type} [NonBinaryField F] [Fintype F] [SampleableType F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [SampleableType F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -283,7 +283,7 @@ private theorem knowledge_soundness_with_of_history_extractor
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.toVerifier.knowledgeSoundnessWith init impl
-      (inputRelation k s d hdom δ) (outputRelation k s d hdom δ)
+      (inputRelation k s d δ) (outputRelation k s d δ)
       (Extractor.Straightline.ofTranscript
         (fun stmt tr ↦ e (initialOracle s stmt) (queryPrefix s l tr)))
       (soundnessError (ω := ω) s d l θ δ) := by
@@ -307,7 +307,7 @@ private theorem knowledge_soundness_with_of_history_extractor
     apply hE
     refine ⟨hbad, ?_⟩
     intro p hp hdist
-    exact hfail p hp (mem_inputRelation_of_relHammingDist_le s d hdom δ stmt p hdist)
+    exact hfail p hp (mem_inputRelation_of_relHammingDist_le s d δ stmt p hdist)
   · intro Aux stmt wit prover os
     have hrec : ∀ f tr,
         SafeHistory s d (queryHistory s l f tr) (queryFoldChallenges s l tr) θ →
@@ -332,7 +332,7 @@ theorem knowledge_soundness_with
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundnessWith init impl
-      (inputRelation k s d hdom δ) (outputRelation k s d hdom δ)
+      (inputRelation k s d δ) (outputRelation k s d δ)
       (Extractor.extract s d (round_bound hdom) l)
       (soundnessError (ω := ω) s d l θ δ) := by
   apply knowledge_soundness_with_of_history_extractor s d l hdom θ δ
@@ -347,7 +347,13 @@ theorem knowledge_soundness_with
     funext (initialWord_queryHistory s l f tr)
   simpa only [hf] using hdist.trans (min_le_right θ (δ : ℝ))
 
-/-- The measured prefix extractor witnesses straightline knowledge soundness. -/
+/-- The measured prefix extractor witnesses straightline knowledge soundness.
+
+The existential statement forgets the extractor, and with it the operation-count bounds proved for
+its measured program `Extractor.extractProgram`; it has the content of relation soundness
+(`Verifier.knowledgeSoundness_iff_relationSoundness`). The extraction guarantee is
+`knowledge_soundness_with` together with those bounds, which do not charge the history
+reconstruction outside that program. -/
 theorem knowledge_soundness
     (hdom : 2 ^ (∑ j, (s j).val) * d.val ≤ 2 ^ n)
     (θ : ℝ) (δ : ℝ≥0)
@@ -356,7 +362,7 @@ theorem knowledge_soundness
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl (emptySpec.{0, 0}) (StateT σ ProbComp)) :
     (reduction k (ω := ω) s d hdom l).verifier.knowledgeSoundness init impl
-      (inputRelation k s d hdom δ) (outputRelation k s d hdom δ)
+      (inputRelation k s d δ) (outputRelation k s d δ)
       (soundnessError (ω := ω) s d l θ δ) :=
   OracleVerifier.knowledgeSoundness_of_with init impl
     (knowledge_soundness_with s d l hdom θ δ hrate init impl)

@@ -41,8 +41,8 @@ cap on the total degree or on the exponent of `Y₁` is used, only the weight co
 ## References
 
 * [Dao, Q., Kominers, S. D., and Thaler, J., *Reed–Solomon Codes Beyond Johnson: Efficient Decoding
-  and Smaller Cryptographic Proofs*][DKT26], Section 3.4, Definition 3.6 and (12), and Section 6.3,
-  Theorem 6.3
+  and Smaller Cryptographic Proofs*][DKT26], Appendix A.1, Definition A.1 and (86), and Section 8.3,
+  Theorem 8.4
 -/
 
 @[expose] public section

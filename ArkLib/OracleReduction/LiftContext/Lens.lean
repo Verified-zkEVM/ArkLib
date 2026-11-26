@@ -62,46 +62,26 @@ end Statement.Lens
 /-- A lens for transporting input and output statements (both oracle and non-oracle) for the
   oracle verifier of an oracle reduction.
 
-  TODO: figure out the right way to define this -/
+  This lens acts on whole oracle values, so it needs no oracle interfaces and suffices for
+  relation-level reasoning. An oracle verifier must instead answer queries, which
+  `OracleStatement.ExecutableLens` below provides together with a proof that its query
+  implementations agree with this extensional lens (see `ExecutableLens.toLens`). -/
 @[inline, reducible]
 def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
-    {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type) [∀ i, OracleInterface (OuterOStmtIn i)]
-    {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type) [∀ i, OracleInterface (OuterOStmtOut i)]
-    {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type) [∀ i, OracleInterface (InnerOStmtIn i)]
-    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type)
-    [∀ i, OracleInterface (InnerOStmtOut i)] :=
+    {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type)
+    {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type)
+    {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type)
+    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type) :=
     Statement.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
                   (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
-  -- TODO: fill in the extra conditions
-  /- For a legacy embedded output, the lens must preserve the embedding into the input oracle
-  statements and prover messages. Derived virtual outputs instead use `ExecutableLens`, which
-  transports their query implementation and materialization-agreement proof.
-
-  We also need to provide a `QueryImpl` instance for simulating the outer oracle verifier using
-  the inner oracle verifier.
-  -/
-
-  -- simulateOutputQuery : QueryImpl [InnerOStmtIn]ₒ
-  --   (ReaderT OuterStmtIn (OracleComp [OuterOStmtIn]ₒ))
-
-  -- simOStmt_neverFails : ∀ i, ∀ t, ∀ outerStmtIn,
-  --   ((simulateOutputQuery.impl (query i t)).run outerStmtIn).neverFails
-  -- To get back an output oracle statement in the outer context, we may simulate it using the input
-  -- (non-oracle) statement of the outer context, the output (non-oracle) statement of the inner
-  -- context, along with oracle access to the inner output oracle statements
-
-  -- liftOStmt : QueryImpl [OuterOStmtOut]ₒ
-  --   (ReaderT (OuterStmtIn × InnerStmtOut) (OracleComp ([OuterOStmtIn]ₒ + [InnerOStmtOut]ₒ)))
-  -- liftOStmt_neverFails : ∀ i, ∀ t, ∀ outerStmtIn, ∀ innerStmtOut,
-  --   ((liftOStmt.impl (query i t)).run (outerStmtIn, innerStmtOut)).neverFails
 
 namespace OracleStatement.Lens
 
 variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
-    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
-    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
-    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
-    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
+    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type}
+    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type}
+    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type}
+    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type}
     (lens : OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
                 OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut)
 /-- Transport input statements from the outer context to the inner context
@@ -119,11 +99,6 @@ def proj : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtIn × (∀ i, Inn
 def lift : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, InnerOStmtOut i) →
     OuterStmtOut × (∀ i, OuterOStmtOut i) :=
   lens.toFunB
-
--- def toVerifierLens : Statement.Lens
---     (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
---     (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
---   := oStmtLens
 
 end OracleStatement.Lens
 
@@ -419,15 +394,6 @@ def proj (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOu
     OuterStmtIn × OuterWitOut → InnerStmtIn × InnerWitOut :=
   fun ⟨stmtIn, witOut⟩ => ⟨lens.stmt.proj stmtIn, lens.wit.proj (stmtIn, witOut)⟩
 
--- /-- Transport the inner input witness to the outer input witness, also relying on the tuple
--- (outer--   input statement, outer output witness) -/
--- @[inline, reducible]
--- def lift (lens : Extractor.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
---               OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
---     OuterStmtIn × OuterWitOut → InnerWitIn → OuterWitIn :=
---   fun ⟨stmtIn, witOut⟩ innerWitIn =>
---     lens.wit.lift (stmtIn, witOut) innerWitIn
-
 end Extractor.Lens
 
 /-- Conditions for the lens / transformation to preserve completeness
@@ -495,10 +461,10 @@ class Statement.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut 
   statement lens -/
 @[reducible, simp]
 def OracleStatement.Lens.IsSound {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
-    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type} [∀ i, OracleInterface (OuterOStmtIn i)]
-    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type} [∀ i, OracleInterface (OuterOStmtOut i)]
-    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type} [∀ i, OracleInterface (InnerOStmtIn i)]
-    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type} [∀ i, OracleInterface (InnerOStmtOut i)]
+    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type}
+    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type}
+    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type}
+    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type}
     (outerLangIn : Set (OuterStmtIn × (∀ i, OuterOStmtIn i)))
     (outerLangOut : Set (OuterStmtOut × (∀ i, OuterOStmtOut i)))
     (innerLangIn : Set (InnerStmtIn × (∀ i, InnerOStmtIn i)))

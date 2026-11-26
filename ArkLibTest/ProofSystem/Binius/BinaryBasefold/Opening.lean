@@ -11,6 +11,7 @@ import Mathlib.FieldTheory.Finite.GaloisField
 
 open OracleSpec OracleComp ProtocolSpec AdditiveNTT MvPolynomial
 open Binius.BinaryBasefold RingSwitching Sumcheck.Structured Binius.BinaryBasefold.Opening
+open Binius.BinaryBasefold.ProductClaim (openingError openingError_sum_le_concrete)
 open scoped NNReal
 noncomputable section
 namespace BbfOpeningControls
@@ -103,10 +104,10 @@ theorem error_backend (γ : ℕ)
 example (Context : Type) (ctx : Context) (point : Fin ℓ → L) (claim : L)
     (ost : ∀ j, OracleStatement K β (ϑ := ϑ) (h_ℓ_add_R_rate := h_rate) 0 j)
     (tr : (!p[] : ProtocolSpec 0).FullTranscript) :
-    (frontVerifier K β (contextualQuery (L := L) (ℓ := ℓ) Context)
+    (ProductClaim.frontVerifier K β (toProductClaim ∘ contextualQuery (L := L) (ℓ := ℓ) Context)
       (ϑ := ϑ) (h_rate := h_rate)).toVerifier.verify ((ctx, (point, claim)), ost) tr =
         pure (statement (⟨point, claim⟩ : MLPEvalStatement L ℓ), ost) :=
-  (frontGuard K β (contextualQuery Context)).verify_eq _ _
+  (ProductClaim.frontGuard K β (toProductClaim ∘ contextualQuery Context)).verify_eq _ _
 
 -- The contextual contract uses the displayed evaluation point and the same packed source.
 example (Context : Type) (ctx : Context) (point : Fin ℓ → L) (claim : L)
@@ -153,8 +154,8 @@ local instance : Fact (Nat.Prime (ringChar (ZMod 2))) :=
 def exampleOpening : RingSwitching.MLIOPCS Gf16 1 :=
   mliopcs (ZMod 2) betaBasis 8 (ϑ := 1) (R := 1) (h_rate := by decide)
 
-theorem exampleOpening_rbrKnowledgeSoundWorstCase : exampleOpening.RbrKnowledgeSoundWorstCase :=
-  mliopcs_rbrKnowledgeSoundWorstCase (ZMod 2) betaBasis 8 (ϑ := 1) (R := 1) (h_rate := by decide)
+example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
+  exampleOpening.rbrKnowledgeSoundness (init := init) (impl := impl)
 
 theorem card_gf16 : Fintype.card Gf16 = 16 := by
   rw [← Nat.card_eq_fintype_card]
@@ -187,19 +188,12 @@ info: 'Binius.BinaryBasefold.Opening.mliopcs' depends on axioms:
 #print axioms Binius.BinaryBasefold.Opening.mliopcs
 
 /--
-info: 'Binius.BinaryBasefold.Opening.mliopcs_rbrKnowledgeSoundWorstCase' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Binius.BinaryBasefold.Opening.mliopcs_rbrKnowledgeSoundWorstCase
-
-/--
-info: 'Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundnessWorstCase' depends
+info: 'Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundness' depends
 on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundnessWorstCase
+#print axioms Binius.BinaryBasefold.Opening.contextualVerifier_rbrKnowledgeSoundness
 
 /--
 info: 'Binius.BinaryBasefold.Opening.contextualReduction_perfectCompleteness' depends on axioms:
@@ -235,10 +229,3 @@ info: 'BbfOpeningControls.false_zero_claim_no_witness' depends on axioms:
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms BbfOpeningControls.false_zero_claim_no_witness
-
-/--
-info: 'BbfGf16Parameters.exampleOpening_rbrKnowledgeSoundWorstCase' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms BbfGf16Parameters.exampleOpening_rbrKnowledgeSoundWorstCase

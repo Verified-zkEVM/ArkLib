@@ -124,9 +124,9 @@ The broad prototype predates the generic rename. Ported ArkLib declarations use 
 This table is a source-porting aid, not a compatibility layer. New modules contain no aliases for
 the prototype names.
 
-## 5. Acceptance gate for the ArkLib naming slice
+## 5. Acceptance conditions
 
-AR-2A and AR-2B establish this contract when:
+The contract holds when:
 
 1. `Oracle.Position`, `Oracle.TypeTree`, `BranchPath`, and `ExecutionPath` elaborate at independent
    relevant universes;

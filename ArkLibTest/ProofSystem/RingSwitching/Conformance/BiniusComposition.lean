@@ -83,7 +83,7 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
     (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :=
-  Binius.FRIBinius.RingSwitch.fullVerifier_rbrKnowledgeSoundnessWorstCase 2 (ZMod 2) basis
+  Binius.FRIBinius.RingSwitch.fullVerifier_rbrKnowledgeSoundness 2 (ZMod 2) basis
     (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) (ℓ := 3) rfl 8 init impl
 
 /-- The composite accepts its nonconstant honest source with probability one. -/
@@ -116,9 +116,8 @@ theorem full_error_sum_lt_one :
       (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) 8 j) < 1 := by
   apply lt_of_le_of_lt (Binius.FRIBinius.RingSwitch.fullError_sum_le 2 (ZMod 2) basis
     (ℓ' := 1) (R := 1) (ϑ := 1) (by decide) 8)
-  rw [card_gf16]
-  norm_num [Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError,
-    card_gf16]
+  norm_num [Binius.FRIBinius.RingSwitch.concreteError,
+    Binius.BinaryBasefold.FullBinaryBasefold.concreteBinaryBasefoldKnowledgeError, card_gf16]
 
 end Actual
 end ArkLibTest.RingSwitchingConformance.BiniusComposition
@@ -131,11 +130,11 @@ info: 'Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness' depends on
 #print axioms Binius.FRIBinius.RingSwitch.fullReduction_perfectCompleteness
 
 /--
-info: 'Binius.FRIBinius.RingSwitch.fullVerifier_rbrKnowledgeSoundnessWorstCase' depends on axioms:
+info: 'Binius.FRIBinius.RingSwitch.fullVerifier_rbrKnowledgeSoundness' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Binius.FRIBinius.RingSwitch.fullVerifier_rbrKnowledgeSoundnessWorstCase
+#print axioms Binius.FRIBinius.RingSwitch.fullVerifier_rbrKnowledgeSoundness
 
 /--
 info: 'Binius.FRIBinius.RingSwitch.fullError_sum_le' depends on axioms:

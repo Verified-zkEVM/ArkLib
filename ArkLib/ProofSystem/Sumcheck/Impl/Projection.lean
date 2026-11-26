@@ -6,19 +6,15 @@ Authors: Quang Dao
 module
 
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
-public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
-public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
-public import CompPoly.Multivariate.FinSuccEquiv
-public import CompPoly.Multivariate.Eval
-public import CompPoly.Univariate.ToPoly.RingHom
+public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
+public import ArkLib.ProofSystem.Sumcheck.Impl.IndexedProjection
 
 /-!
-# Computable honest sum-check round polynomials
+# Computable honest sum-check round polynomials for injective domains
 
-The honest message is constructed directly on CompPoly's polynomial carriers by splitting the
-round variable, evaluating the coefficients, and summing over an explicit finite enumeration of
-suffix domain indices. The construction supports arbitrary individual degree bounds and arbitrary
-finite domains. It is a direct enumeration and makes no running-time claim.
+`Sumcheck.Impl.IndexedProjection` owns the enumeration of suffix domain indices on CompPoly's
+carriers. This module specializes it to an injective domain `D : Fin m ↪ R`, where the indexed sum
+equals the finite-set sum of `Sumcheck.Spec`, and relates the result to the legacy specification.
 
 The mathematical polynomial maps appear only in the correspondence proofs.
 -/
@@ -55,35 +51,11 @@ theorem suffixDomain_eq (D : Fin m ↪ R) (k : ℕ) :
     choose y hy using h
     exact ⟨y, funext hy⟩
 
-/-- Direct finite enumeration of the honest round polynomial on computable polynomial data.
-This construction accepts arbitrary individual degrees and arbitrary finite domains. -/
+/-- The honest round polynomial for an injective domain: the indexed enumeration
+`indexedRoundPolynomial` at the embedding's underlying map. -/
 def projectedRoundPolynomial (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R) : CPolynomial R :=
-  ∑ x : Fin (n - i) → Fin m,
-    CPolynomial.mapRingHom (evalHom (Spec.SingleRound.roundSuffix R (n + 1) i challenges (D ∘ x)))
-      (finSuccEquivNth i poly)
-
-omit [Nontrivial R] in
-/-- Transport coefficient evaluation to mathematical multivariate evaluation. -/
-theorem evalHom_transport (v : Fin n → R) :
-    evalHom v = (MvPolynomial.eval v).comp (CPoly.polyRingEquiv (n := n) (R := R)).toRingHom := by
-  ext p
-  simp [eval_equiv, CPoly.coe_polyRingEquiv]
-
-/-- Each computational summand has precisely the polynomial interpretation used by the spec. -/
-theorem projectedSummand_toPoly (i : Fin (n + 1)) (poly : CMvPolynomial (n + 1) R)
-    (v : Fin n → R) :
-    (CPolynomial.mapRingHom (evalHom v) (finSuccEquivNth i poly)).toPoly =
-      Polynomial.map (MvPolynomial.eval v)
-        (MvPolynomial.finSuccEquivNth R i (CPoly.fromCMvPolynomial poly)) := by
-  rw [CPolynomial.toPoly_mapRingHom, evalHom_transport, ← Polynomial.map_map]
-  rw [CPoly.CMvPolynomial.finSuccEquivNth_apply, map_polyRingEquiv_toPoly_finSuccEquivNth]
-
-/-- Interpretation commutes with a finite sum of computational messages. -/
-theorem toPoly_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
-    (∑ x ∈ s, f x).toPoly = ∑ x ∈ s, (f x).toPoly := by
-  simpa only [CPolynomial.toPolyRingHom_apply] using
-    map_sum (CPolynomial.toPolyRingHom (R := R)) f s
+  indexedRoundPolynomial D i challenges poly
 
 /-- The computational finite sum agrees with the mathematical finite-domain construction. -/
 theorem projectedRoundPolynomial_toPoly_sum (D : Fin m ↪ R) (i : Fin (n + 1))
@@ -93,11 +65,8 @@ theorem projectedRoundPolynomial_toPoly_sum (D : Fin m ↪ R) (i : Fin (n + 1))
         (CPoly.fromCMvPolynomial poly).evalExcept i
           (Spec.SingleRound.roundSuffix R (n + 1) i challenges x)) := by
   classical
-  unfold projectedRoundPolynomial
-  rw [toPoly_sum]
-  simp_rw [projectedSummand_toPoly]
-  simp only [MvPolynomial.evalExcept]
-  rw [← suffixDomain_eq D (n - i), Finset.sum_map]
+  rw [projectedRoundPolynomial, indexedRoundPolynomial_toPoly, ← suffixDomain_eq D (n - i),
+    Finset.sum_map]
   rfl
 
 /-- Exact correspondence to the existing honest projected-round polynomial. -/
@@ -114,30 +83,21 @@ theorem projectedRoundPolynomial_toPoly (D : Fin m ↪ R) (i : Fin (n + 1))
 theorem projectedRoundPolynomial_natDegree_le (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R)
     {deg : ℕ} (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
-    (projectedRoundPolynomial D i challenges poly).natDegree ≤ deg := by
-  classical
-  rw [CPolynomial.natDegree_toPoly, projectedRoundPolynomial_toPoly_sum]
-  apply Polynomial.natDegree_sum_le_of_forall_le
-  intro x _
-  exact (MvPolynomial.natDegree_evalExcept_le i _ _).trans
-    ((congrFun (CPoly.degreeOf_equiv (S := R) (p := poly)) i).symm.le.trans (hpoly i))
+    (projectedRoundPolynomial D i challenges poly).natDegree ≤ deg :=
+  indexedRoundPolynomial_natDegree_le D i challenges poly hpoly
 
 /-- Individual degree bounds also bound the extended natural degree used by messages. -/
 theorem projectedRoundPolynomial_degree_le (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R)
     {deg : ℕ} (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
-    (projectedRoundPolynomial D i challenges poly).degree ≤ (deg : WithBot ℕ) := by
-  rw [CPolynomial.degree_toPoly]
-  apply Polynomial.natDegree_le_iff_degree_le.mp
-  rw [← CPolynomial.natDegree_toPoly]
-  exact projectedRoundPolynomial_natDegree_le D i challenges poly hpoly
+    (projectedRoundPolynomial D i challenges poly).degree ≤ (deg : WithBot ℕ) :=
+  indexedRoundPolynomial_degree_le D i challenges poly hpoly
 
 /-- Package the actual finite-enumeration result as a degree-bounded native message. -/
 def projectedRoundMessage (D : Fin m ↪ R) (i : Fin (n + 1))
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial (n + 1) R)
     {deg : ℕ} (hpoly : ∀ j, poly.degreeOf j ≤ deg) : Representation.Message R deg :=
-  ⟨projectedRoundPolynomial D i challenges poly,
-    projectedRoundPolynomial_degree_le D i challenges poly hpoly⟩
+  indexedRoundMessage D i challenges poly hpoly
 
 /-- The bounded native message is exactly the honest message of the existing specification. -/
 theorem projectedRoundMessage_toMessage (D : Fin m ↪ R) (i : Fin (n + 1))
@@ -146,8 +106,9 @@ theorem projectedRoundMessage_toMessage (D : Fin m ↪ R) (i : Fin (n + 1))
     (specPoly : R⦃≤ deg⦄[X Fin (n + 1)])
     (hinterpret : CPoly.fromCMvPolynomial poly = specPoly.val) :
     Representation.toMessage R deg (projectedRoundMessage D i challenges poly hpoly) =
-      Spec.SingleRound.projectedRoundPolynomial R (n + 1) deg D i challenges specPoly := by
+        Spec.SingleRound.projectedRoundPolynomial R (n + 1) deg D i challenges specPoly := by
   apply Subtype.ext
+  rw [Representation.toMessage_val]
   exact projectedRoundPolynomial_toPoly D i challenges poly specPoly hinterpret
 
 /-- Runtime Horner evaluation of the constructed message agrees with the honest spec answer. -/
@@ -163,25 +124,47 @@ theorem projectedRoundMessage_evaluate (D : Fin m ↪ R) (i : Fin (n + 1))
     projectedRoundMessage_toMessage D i challenges poly hpoly specPoly hinterpret]
 
 omit [Nontrivial R] in
-/-- Mathematical interpretation of a computational polynomial with an individual degree bound.
-This map is used only in proofs; it is never part of the honest prover's runtime computation. -/
-noncomputable def toOracleStatement (poly : CMvPolynomial n R) {deg : ℕ}
-    (hpoly : ∀ j, poly.degreeOf j ≤ deg) : Spec.OracleStatement R n deg () :=
-  ⟨CPoly.fromCMvPolynomial poly, by
-    apply (MvPolynomial.mem_restrictDegree (Fin n) _ deg).mpr
-    intro mon hmon j
-    apply MvPolynomial.degreeOf_le_iff.mp _ mon hmon
-    rw [← congrFun (CPoly.degreeOf_equiv (S := R) (p := poly)) j]
-    exact hpoly j⟩
+/-- Construct computational input data from the explicitly supported bounded polynomial. -/
+def fromOracleStatement {deg : ℕ} (poly : Spec.OracleStatement R n deg ()) :
+    CMvPolynomial n R :=
+  poly.val.coeff.support.sum fun mon =>
+    CMvPolynomial.monomial (CMvMonomial.ofFinsupp mon) (poly.val.coeff.toFun mon)
 
-/-- Total round-message construction for an arbitrary variable count. There is no round at zero
-variables, so the empty case is eliminated by its impossible round index. -/
+omit [Nontrivial R] in
+/-- The computational input has exactly the specified polynomial interpretation. -/
+theorem fromOracleStatement_interpretation {deg : ℕ}
+    (poly : Spec.OracleStatement R n deg ()) :
+    CPoly.fromCMvPolynomial (fromOracleStatement poly) = poly.val := by
+  classical
+  unfold fromOracleStatement
+  rw [fromCMvPolynomial_sum]
+  simp_rw [fromCMvPolynomial_monomial, CMvMonomial.toFinsupp_ofFinsupp]
+  exact MvPolynomial.support_sum_monomial_coeff poly.val
+
+omit [Nontrivial R] in
+/-- The computational input inherits every individual degree bound of its statement. -/
+theorem fromOracleStatement_degreeOf_le {deg : ℕ}
+    (poly : Spec.OracleStatement R n deg ()) (j : Fin n) :
+    (fromOracleStatement poly).degreeOf j ≤ deg := by
+  rw [congrFun (CPoly.degreeOf_equiv (S := R) (p := fromOracleStatement poly)) j,
+    fromOracleStatement_interpretation]
+  apply MvPolynomial.degreeOf_le_iff.mpr
+  intro mon hmon
+  exact (MvPolynomial.mem_restrictDegree (Fin n) _ deg).mp poly.property mon hmon j
+
+omit [Nontrivial R] in
+/-- Mathematical interpretation of a computational polynomial with an individual degree bound,
+as the specification's oracle statement. -/
+def toOracleStatement (poly : CMvPolynomial n R) {deg : ℕ}
+    (hpoly : ∀ j, poly.degreeOf j ≤ deg) : Spec.OracleStatement R n deg () :=
+  toRestrictDegree poly hpoly
+
+/-- Total round-message construction for an arbitrary variable count: `indexedMessage` at the
+embedding's underlying map. -/
 def projectedMessage (D : Fin m ↪ R) {n : ℕ} (i : Fin n)
     (challenges : Fin i.castSucc → R) (poly : CMvPolynomial n R)
     {deg : ℕ} (hpoly : ∀ j, poly.degreeOf j ≤ deg) : Representation.Message R deg :=
-  match n, i, challenges, poly, hpoly with
-  | 0, i, _, _, _ => i.elim0
-  | _ + 1, i, challenges, poly, hpoly => projectedRoundMessage D i challenges poly hpoly
+  indexedMessage D i challenges poly hpoly
 
 /-- The total constructor interprets to exactly the existing projected honest message. -/
 theorem projectedMessage_toMessage (D : Fin m ↪ R) {n : ℕ} (i : Fin n)
@@ -209,7 +192,7 @@ omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 /-- Direct original-polynomial oracle behavior. Every answer evaluates the computational
 multivariate data; no mathematical polynomial is reconstructed at runtime. -/
 def inputImpl (poly : CMvPolynomial n R) (deg : ℕ) :
-    (Interaction.MultivariateRound.polynomialFamily R n deg).Behavior :=
+    (Spec.polynomialFamily R n deg).Behavior :=
   fun query => (poly.eval query.2 : R)
 
 omit [BEq R] [LawfulBEq R] [Nontrivial R] in
@@ -217,7 +200,7 @@ omit [BEq R] [LawfulBEq R] [Nontrivial R] in
 theorem inputImpl_eq_behavior (poly : CMvPolynomial n R) {deg : ℕ}
     (hpoly : ∀ j, poly.degreeOf j ≤ deg) :
     inputImpl poly deg =
-      (Interaction.MultivariateRound.polynomialFamily R n deg).behaviorOfRealizations
+      (Spec.polynomialFamily R n deg).behaviorOfRealizations
         (fun _ => toOracleStatement poly hpoly) := by
   funext query
   change poly.eval query.2 = MvPolynomial.eval query.2 (CPoly.fromCMvPolynomial poly)

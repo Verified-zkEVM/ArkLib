@@ -21,7 +21,7 @@ namespace Fri.Spec
 
 open OracleComp OracleSpec ProtocolSpec Domain Finset
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F} (s : Fin (k + 1) → ℕ+)
 
 /-! ## Retained oracle history -/
@@ -71,7 +71,6 @@ namespace QueryRound
 
 /-! ## Folding block enumeration -/
 
-omit [Fintype F] in
 @[simp]
 theorem queryBlock_length (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) :
@@ -81,13 +80,12 @@ theorem queryBlock_length (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   simp only [queryBlock, FftDomain.toList, List.length_map, List.length_finRange]
   exact congrArg (fun a ↦ 2 ^ a) (Nat.sub_sub_self hi)
 
-omit [Fintype F] in
 /-- Every point in the enumerated block has the same image under folding. -/
 theorem queryBlock_pow (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset)
     (q : (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).val)).toFinset)
     (hq : q ∈ queryBlock s hs i x) :
-    q.val ^ (2 ^ (s i).val) = (queryPoint s hs i x).val ^ (2 ^ (s i).val) := by
+    q.val ^ (2 ^ (s i).val) = (queryPoint s i x).val ^ (2 ^ (s i).val) := by
   have hi : (s i).val ≤ n :=
     (Finset.single_le_sum (f := fun j ↦ (s j : ℕ)) (by simp) (by simp)).trans hs
   obtain ⟨r, _, rfl⟩ := List.mem_map.mp hq
@@ -101,10 +99,9 @@ theorem queryBlock_pow (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
       rw [Nat.sub_sub_self hi] at hcard
       exact hcard
     rw [← FftDomainClass.apply_nsmul, hn, FftDomainClass.apply_zero_eq_one]
-  change (r.val * (queryPoint s hs i x).val) ^ _ = _
+  change (r.val * (queryPoint s i x).val) ^ _ = _
   rw [mul_pow, hroot, one_mul]
 
-omit [Fintype F] in
 /-- The executable query enumeration contains each point of the folding block once. -/
 theorem queryBlock_nodup (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset) : (queryBlock s hs i x).Nodup := by
@@ -113,16 +110,15 @@ theorem queryBlock_nodup (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
   apply List.Nodup.map _ (List.nodup_finRange _)
   intro a b hab
   apply FftDomain.injective (ω := ω.toFftDomain.subdomain (n - (s i).val))
-  apply mul_right_cancel₀ (CosetFftDomainClass.ne_zero_dep (queryPoint s hs i x))
+  apply mul_right_cancel₀ (CosetFftDomainClass.ne_zero_dep (queryPoint s i x))
   exact congrArg Subtype.val hab
 
-omit [Fintype F] in
 /-- The executable query block enumerates exactly the complete folding fiber. -/
 theorem mem_queryBlock_iff_pow_eq (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 1))
     (x : (ω.subdomain 0).toFinset)
     (y : (ω.subdomain (foldingPrefix s i.castSucc)).toFinset) :
     y ∈ queryBlock s hs i x ↔
-      y.val ^ (2 ^ (s i).val) = (queryPoint s hs i x).val ^ (2 ^ (s i).val) := by
+      y.val ^ (2 ^ (s i).val) = (queryPoint s i x).val ^ (2 ^ (s i).val) := by
   constructor
   · exact queryBlock_pow s hs i x y
   · intro hy
@@ -130,7 +126,7 @@ theorem mem_queryBlock_iff_pow_eq (hs : (∑ j, (s j).val) ≤ n) (i : Fin (k + 
       ⟨Subtype.val, Subtype.val_injective⟩
     let queried := (queryBlock s hs i x).toFinset.map e
     let fiber := CosetFftDomainClass.block (ω.subdomain (foldingPrefix s i.castSucc))
-      (s i).val ((queryPoint s hs i x).val ^ (2 ^ (s i).val))
+      (s i).val ((queryPoint s i x).val ^ (2 ^ (s i).val))
     have hsub : queried ⊆ fiber := by
       intro z hz
       obtain ⟨q, hq, rfl⟩ := mem_map.mp hz
@@ -195,13 +191,13 @@ theorem eval_getConst (o : ∀ j, FinalOracleStatement s ω j) :
   exact eq_of_heq ((cast_heq _ _).trans ((cast_heq _ _).trans (cast_heq _ _).symm))
 
 /-- Evaluate a local check using precisely the committed answers and the FFT block. -/
-theorem eval_queryNext (hs : (∑ j, (s j).val) ≤ n)
+theorem eval_queryNext
     (o : ∀ j, FinalOracleStatement s ω j)
     (i : Fin (k + 1)) (x : (ω.subdomain 0).toFinset) :
     simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
-      (queryNext s hs (finalPolynomial s o) i x) =
+      (queryNext s (finalPolynomial s o) i x) =
       committedFunction s o i.succ (x.val ^ (2 ^ foldingPrefix s i.succ)) := by
-  have hpow : (queryPoint s hs i x).val ^ (2 ^ (s i).val) =
+  have hpow : (queryPoint s i x).val ^ (2 ^ (s i).val) =
       x.val ^ (2 ^ foldingPrefix s i.succ) := by
     rw [foldingPrefix_succ, pow_add, pow_mul]
     rfl
@@ -211,7 +207,7 @@ theorem eval_queryNext (hs : (∑ j, (s j).val) ≤ n)
     have hx : x.val ^ (2 ^ foldingPrefix s i.succ) ∈
         (ω.subdomain (foldingPrefix s i.succ)).toFinset :=
       CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset
-        ((foldingPrefix_le s i.succ).trans hs) x.property
+        x.property
     simp only [committedFunction, Fin.val_succ, show i.val + 1 < k + 1 by omega,
       ↓reduceDIte, hx]
     congr 1
@@ -231,7 +227,7 @@ theorem eval_checkRound (hs : (∑ j, (s j).val) ≤ n)
     RoundConsistency.roundConsistencyCheck α
       ((queryBlock s hs i x).map (fun q ↦ (q.val, committedWord s o i q))).get
       (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
-        (queryNext s hs p i x)) := by
+        (queryNext s p i x)) := by
   simp only [checkRound, bind_pure_comp, simulateQ_bind, simulateQ_list_mapM,
     simulateQ_map]
   have hanswers :
@@ -264,18 +260,18 @@ theorem eval_checkRound_eq_true_iff (hs : (∑ j, (s j).val) ≤ n)
       (fun z ↦ committedWord s o i
         ⟨ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).val) z,
           CosetFftDomain.mem_toFinset_self⟩)
-      (s i).val α ((queryPoint s hs i x).val ^ (2 ^ (s i).val)) =
+      (s i).val α ((queryPoint s i x).val ^ (2 ^ (s i).val)) =
       simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
-        (queryNext s hs p i x) := by
+        (queryNext s p i x) := by
   rw [eval_checkRound]
   let qs := queryBlock s hs i x
   have h := RoundConsistency.roundConsistencyCheck_eq_foldValue_of_domainPoints
     (ω.subdomain (∑ j ∈ finRangeTo (k + 1) i.val, (s j).val))
     (committedWord s o i) (queryBlock_length s hs i x) qs.get
     (List.nodup_iff_injective_get.mp (queryBlock_nodup s hs i x))
-    ((queryPoint s hs i x).val ^ (2 ^ (s i).val)) α
+    ((queryPoint s i x).val ^ (2 ^ (s i).val)) α
     (simulateQ (OracleInterface.simOracle0 (FinalOracleStatement s ω) o)
-      (queryNext s hs p i x))
+      (queryNext s p i x))
     (fun j ↦ queryBlock_pow s hs i x (qs.get j) (List.get_mem _ _))
   erw [RoundConsistency.roundConsistencyCheck_map_get]
   exact h
@@ -293,7 +289,7 @@ theorem eval_checkRound_iff_schedule (hs : (∑ j, (s j).val) ≤ n)
       (s i).val α (x.val ^ (2 ^ foldingPrefix s i.succ)) =
       committedFunction s o i.succ (x.val ^ (2 ^ foldingPrefix s i.succ)) := by
   rw [eval_checkRound_eq_true_iff, eval_queryNext]
-  have hpow : (queryPoint s hs i x).val ^ (2 ^ (s i).val) =
+  have hpow : (queryPoint s i x).val ^ (2 ^ (s i).val) =
       x.val ^ (2 ^ foldingPrefix s i.succ) := by
     rw [foldingPrefix_succ, pow_add, pow_mul]
     rfl

@@ -30,7 +30,7 @@ The production head computes over CompPoly's `CMlPolynomial`. Its read-back iden
 and the protocol's `observation` is a `CheckedObservation` written by hand. The packing is also
 stated in the `MvPolynomial`-based coordinate layer of `ProofSystem/RingSwitching/Packing/`,
 reached through CompPoly's `CMlPolynomial.equivMvPolynomialDeg1` and the monomial-side evaluation
-bridge `CMlPolynomial.eval_eq_eval_toMvPolynomial` (`ToCompPoly/Multilinear/Basic.lean`).
+theorem `CMlPolynomial.eval_toMvPolynomial` (`CompPoly.Multilinear.Unique`).
 
 - **Packing data.** `traceHeadData e = PackingData.ofBaseOpening (Basis.ofEquivFun e.symm)`:
   the packing basis is `ψ` (at `e = coefficientEquiv …`) and the opening algebra is the fixed
@@ -72,8 +72,8 @@ bridge `CMlPolynomial.eval_eq_eval_toMvPolynomial` (`ToCompPoly/Multilinear/Basi
   bound on both sides; `relScalarEvalMsgShort` adds the honest committer's message norm bound, and
   completeness and soundness hold for it as well.
 - **Not covered.** §3.2 (base-field coefficients and partial evaluations) and §4.5's recursion
-  handoff. `Recursion/TraceHandoff.lean` describes a trace guard of the same kind over the next
-  ring; its `traceCheck` is still `sorry`.
+  handoff, which would use a trace guard of the same kind over the next ring; see
+  [`noz26-recursion-z-packing.md`](noz26-recursion-z-packing.md).
 
 ## Paper erratum
 

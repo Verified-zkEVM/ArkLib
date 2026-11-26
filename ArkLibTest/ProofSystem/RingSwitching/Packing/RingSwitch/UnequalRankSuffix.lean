@@ -86,11 +86,11 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (RingSwitch.verifier data 1 layout codec bat.toBatchingRule
-      pc).toVerifier.rbrKnowledgeSoundnessWorstCase
+      pc).toVerifier.rbrKnowledgeSoundness
       init impl (Head.relIn data 1 layout pc)
       (pc.evalRelWithContext (layout.Query × bat.Challenge)) (RingSwitch.rbrError (M := data.ιP →
         data.E) data 1 bat) :=
-  RingSwitch.rbrKnowledgeSoundnessWorstCase data 1 layout codec bat pc functional
+  RingSwitch.rbrKnowledgeSoundness data 1 layout codec bat pc functional
     (fun _ _ h => h) init impl
 
 /-- This is the sum over the full protocol's challenge indices. -/

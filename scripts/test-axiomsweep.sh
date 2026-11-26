@@ -2,11 +2,8 @@
 
 # Execute falsifiable fixtures for the kernel-level axiom sweep.
 #
-# Ported from PolyFun's `scripts/test-axiomsweep.sh` via VCV-io, with the exit-code
-# matrix matching ArkLib's policy: the baseline is an allowlist for `sorryAx` debt
-# (PolyFun forbids a nonempty baseline outright; ArkLib carries genuine work in
-# progress), while native trust is held to the same zero-debt rule through
-# `neverAllowlistable`.
+# Ported from PolyFun's `scripts/test-axiomsweep.sh` via VCV-io. ArkLib's gate is zero-debt:
+# `--check` fails on any `sorryAx` or other non-standard axiom, with no allowlist.
 
 set -euo pipefail
 
@@ -30,18 +27,10 @@ expect_status() {
   fi
 }
 
-EMPTY_BASELINE="$FIXTURE_TMP/empty.json"
-INVALID_BASELINE="$FIXTURE_TMP/invalid.json"
-MISSING_BASELINE="$FIXTURE_TMP/missing.json"
-COVERING_BASELINE="$FIXTURE_TMP/covering.json"
-SORRY_BASELINE="$FIXTURE_TMP/sorry-growth.json"
 CLEAN_REPORT="$FIXTURE_TMP/clean.json"
 TAINTED_REPORT="$FIXTURE_TMP/tainted.json"
 TAINTED_REPORT_2="$FIXTURE_TMP/tainted-2.json"
 UNIMPORTED_REPORT="$FIXTURE_TMP/unimported.json"
-
-printf '{"sorry": [], "nonstandard": []}\n' >"$EMPTY_BASELINE"
-printf '{not-json}\n' >"$INVALID_BASELINE"
 
 # VCVio's FFI C sources live in git submodules that Lake does not fetch, and every
 # root-package executable links them.
@@ -58,11 +47,11 @@ lake exe axiomsweep --root AxiomSweepTestFixtures.Unimported --out "$UNIMPORTED_
 # The sweep must be deterministic: same build, byte-identical report.
 cmp "$TAINTED_REPORT" "$TAINTED_REPORT_2"
 
-python3 - "$CLEAN_REPORT" "$TAINTED_REPORT" "$UNIMPORTED_REPORT" "$COVERING_BASELINE" <<'PY'
+uv run --no-project --python 3.12 python - "$CLEAN_REPORT" "$TAINTED_REPORT" "$UNIMPORTED_REPORT" <<'PY'
 import json
 import sys
 
-clean_path, tainted_path, unimported_path, covering_path = sys.argv[1:]
+clean_path, tainted_path, unimported_path = sys.argv[1:]
 
 with open(clean_path, encoding="utf-8") as stream:
     clean = json.load(stream)
@@ -98,8 +87,7 @@ generated = prefix + "Generated._native.native_decide"
 assert generated in all_axioms
 assert generated + ".ax_12_34" not in all_axioms
 
-# ...and nothing else does. Collapsing these would let distinct axioms share one baseline
-# key, so real taint could hide behind an accepted entry.
+# ...and nothing else does. Collapsing these would give distinct axioms one report name.
 assert prefix + "Collision._native.native_decide.ax_12_extra" in all_axioms
 assert prefix + "Collision._native.native_decide.ax_x_34" in all_axioms
 assert prefix + "Collision._native.native_decide.ax_12_34.extra" in all_axioms
@@ -110,190 +98,36 @@ assert hidden not in tainted_entries
 assert hidden in unimported_entries
 assert "sorryAx" in unimported_entries[hidden]["axioms"]
 
-# A baseline that covers every tainted declaration of the fixture root, used below to
-# check that full coverage is accepted and that native trust is refused even so.
-covering = {
-    "sorry": sorted(n for n, e in tainted_entries.items() if "sorryAx" in e["axioms"]),
-    "nonstandard": [
-        {"name": n, "axioms": sorted(a for a in e["axioms"]
-                                     if a != "sorryAx"
-                                     and a not in ("propext", "Classical.choice", "Quot.sound"))}
-        for n, e in sorted(tainted_entries.items())
-        if any(a != "sorryAx" and a not in ("propext", "Classical.choice", "Quot.sound")
-               for a in e["axioms"])
-    ],
-}
-with open(covering_path, "w", encoding="utf-8") as stream:
-    json.dump(covering, stream)
 PY
 
 # --- gate directions -------------------------------------------------------------------
 
 expect_status 0 clean-check \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
-    --check --baseline "$EMPTY_BASELINE"
-expect_status 1 uncovered-taint \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted \
-    --check --baseline "$EMPTY_BASELINE"
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean --check
+grep -q "check passed" "$FIXTURE_TMP/clean-check.log"
 
-# Full coverage still fails: the fixtures mint `._native.` axioms outside
-# `grandfatheredNativeTrust`, and no baseline edit may green those.
-expect_status 1 native-trust-floor \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted \
-    --check --baseline "$COVERING_BASELINE"
-grep -q "never-allowlistable" "$FIXTURE_TMP/native-trust-floor.log"
+# Any `sorryAx`, direct or transitive, fails the gate: there is no allowlist.
+expect_status 1 sorry-check \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted.DirectSorry --check
+grep -q 'directSorry : #\[sorryAx\]' "$FIXTURE_TMP/sorry-check.log"
+grep -q 'transitiveSorry : #\[sorryAx\]' "$FIXTURE_TMP/sorry-check.log"
 
-# A stale allowlist must not freeze cleanup: removals stay green and prompt the
-# contributor to shrink the baseline in the same change.
-expect_status 0 stale-baseline-removal \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
-    --check --baseline "$COVERING_BASELINE"
-grep -q "good news" "$FIXTURE_TMP/stale-baseline-removal.log"
+# Native trust and other non-standard axioms fail it too.
+expect_status 1 tainted-check \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted --check
+grep -q 'Generated._native.native_decide' "$FIXTURE_TMP/tainted-check.log"
+grep -q 'AxiomSweepTestFixtures.Tainted.typeIndex' "$FIXTURE_TMP/tainted-check.log"
 
 # --- infrastructure failures must never read as a taint verdict ------------------------
 
-expect_status 2 missing-baseline \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
-    --check --baseline "$MISSING_BASELINE"
-expect_status 2 invalid-baseline \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
-    --check --baseline "$INVALID_BASELINE"
-expect_status 2 conflicting-flags \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
-    --check --update-baseline --baseline "$EMPTY_BASELINE"
 expect_status 2 unknown-flag \
   lake exe axiomsweep --bogus
+expect_status 2 removed-baseline-flag \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean --update-baseline
 expect_status 2 bad-root \
-  lake exe axiomsweep --root NoSuchModule --check --baseline "$EMPTY_BASELINE"
+  lake exe axiomsweep --root NoSuchModule --check
 expect_status 2 unwritable-out \
   lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
     --out "$FIXTURE_TMP/no-such-dir/report.json"
-
-# --- baseline writing -------------------------------------------------------------------
-
-# Intentional `sorryAx` debt can be written explicitly, reviewed, and then passes the check.
-cp "$EMPTY_BASELINE" "$SORRY_BASELINE"
-expect_status 0 allow-sorry-growth \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted.DirectSorry \
-    --update-baseline --baseline "$SORRY_BASELINE"
-grep -q 'directSorry' "$SORRY_BASELINE"
-expect_status 0 covered-sorry \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted.DirectSorry \
-    --check --baseline "$SORRY_BASELINE"
-
-# Shrinking is allowed once the debt is gone.
-cp "$COVERING_BASELINE" "$FIXTURE_TMP/shrink.json"
-expect_status 0 shrink-baseline \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Clean \
-    --update-baseline --baseline "$FIXTURE_TMP/shrink.json"
-python3 -c "
-import json,sys
-b=json.load(open(sys.argv[1]))
-assert b['sorry'] == [] and b['nonstandard'] == [], b
-" "$FIXTURE_TMP/shrink.json"
-
-# Pre-authorizing native trust is not, and the file must be left untouched.
-cp "$EMPTY_BASELINE" "$FIXTURE_TMP/growth.json"
-cp "$FIXTURE_TMP/growth.json" "$FIXTURE_TMP/growth-before.json"
-expect_status 1 reject-native-trust-growth \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted \
-    --update-baseline --baseline "$FIXTURE_TMP/growth.json"
-cmp "$FIXTURE_TMP/growth-before.json" "$FIXTURE_TMP/growth.json"
-
-# --- reviewed solicited proofs -----------------------------------------------------------
-
-python3 - "$FIXTURE_TMP" <<'PYBASE'
-import json
-import pathlib
-import sys
-root = pathlib.Path(sys.argv[1])
-prefix = "AxiomSweepTestFixtures.Solicited."
-issue = "https://github.com/Verified-zkEVM/ArkLib/issues/1352"
-entries = [{"name": prefix + n, "issue": issue} for n in ("second", "first")]
-for case in ("valid", "missing-link", "proved", "stale"):
-    listed = [dict(e) for e in entries]
-    if case == "missing-link":
-        listed[0]["issue"] = issue + "/missing"
-    elif case in ("proved", "stale"):
-        listed.append({"name": prefix + case, "issue": issue})
-    # Cover consumers to ensure failure comes from the leaf rule, not new taint.
-    baseline = {"sorry": ["AxiomSweepTestFixtures.SolicitedConsumer." + n
-                          for n in ("direct", "transitive")],
-                "nonstandard": [], "solicited": listed}
-    (root / ("solicited-" + case + ".json")).write_text(json.dumps(baseline))
-PYBASE
-
-SOLICITED_BASELINE="$FIXTURE_TMP/solicited-valid.json"
-expect_status 0 solicited-valid \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
-    --check --baseline "$SOLICITED_BASELINE" --out "$FIXTURE_TMP/solicited-report.json"
-expect_status 1 solicited-consumer \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.SolicitedConsumer \
-    --check --baseline "$SOLICITED_BASELINE"
-grep -q 'transitive: depends on solicited declaration' "$FIXTURE_TMP/solicited-consumer.log"
-grep -q 'direct: depends on solicited declaration' "$FIXTURE_TMP/solicited-consumer.log"
-grep -q 'hidden: depends on solicited declaration' "$FIXTURE_TMP/solicited-consumer.log"
-
-for case in missing-link proved stale; do
-  baseline="$FIXTURE_TMP/solicited-$case.json"
-  expect_status 1 "solicited-$case" \
-    lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
-      --check --baseline "$baseline"
-  cp "$baseline" "$baseline.before"
-  expect_status 1 "solicited-update-$case" \
-    lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
-      --update-baseline --baseline "$baseline"
-  cmp "$baseline.before" "$baseline"
-done
-grep -q 'second: docstring missing issue URL' "$FIXTURE_TMP/solicited-missing-link.log"
-grep -q 'proved: no sorryAx dependency' "$FIXTURE_TMP/solicited-proved.log"
-grep -q 'stale: stale entry' "$FIXTURE_TMP/solicited-stale.log"
-
-python3 - "$FIXTURE_TMP/solicited-nonstandard.json" <<'PYNONSTD'
-import json
-import sys
-name = "AxiomSweepTestFixtures.SolicitedNonstandard.bad"
-json.dump({"sorry": [], "nonstandard": [
-    {"name": name, "axioms": ["AxiomSweepTestFixtures.Tainted.typeIndex"]}],
-    "solicited": [{"name": name,
-                   "issue": "https://github.com/Verified-zkEVM/ArkLib/issues/1352"}]},
-          open(sys.argv[1], "w"))
-PYNONSTD
-cp "$FIXTURE_TMP/solicited-nonstandard.json" "$FIXTURE_TMP/solicited-nonstandard.before"
-for mode in check update-baseline; do
-  expect_status 1 "solicited-nonstandard-$mode" \
-    lake exe axiomsweep --root AxiomSweepTestFixtures.SolicitedNonstandard \
-      "--$mode" --baseline "$FIXTURE_TMP/solicited-nonstandard.json"
-  grep -q 'bad: non-standard axiom AxiomSweepTestFixtures.Tainted.typeIndex' \
-    "$FIXTURE_TMP/solicited-nonstandard-$mode.log"
-done
-cmp "$FIXTURE_TMP/solicited-nonstandard.before" "$FIXTURE_TMP/solicited-nonstandard.json"
-
-cp "$SOLICITED_BASELINE" "$SOLICITED_BASELINE.before"
-expect_status 1 solicited-update-consumer \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.SolicitedConsumer \
-    --update-baseline --baseline "$SOLICITED_BASELINE"
-cmp "$SOLICITED_BASELINE.before" "$SOLICITED_BASELINE"
-expect_status 0 solicited-update \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
-    --update-baseline --baseline "$SOLICITED_BASELINE"
-python3 - "$SOLICITED_BASELINE" "$FIXTURE_TMP/solicited-report.json" <<'PYASSERT'
-import json
-import sys
-path, report_path = sys.argv[1:]
-before = json.load(open(path + ".before"))
-after = json.load(open(path))
-assert after["solicited"] == before["solicited"]
-assert after["sorry"] == []
-report = json.load(open(report_path))
-entries = {e["name"]: e for e in report["declarations"]}
-for e in after["solicited"]:
-    assert entries[e["name"]]["axioms"] == ["sorryAx"]
-PYASSERT
-cp "$SOLICITED_BASELINE" "$SOLICITED_BASELINE.once"
-expect_status 0 solicited-update-deterministic \
-  lake exe axiomsweep --root AxiomSweepTestFixtures.Solicited \
-    --update-baseline --baseline "$SOLICITED_BASELINE"
-cmp "$SOLICITED_BASELINE.once" "$SOLICITED_BASELINE"
 
 echo "✓ Axiom sweep executable fixture matrix passed."

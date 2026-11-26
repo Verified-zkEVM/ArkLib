@@ -1,30 +1,50 @@
 # Current status
 
-**Status date:** 2026-09-26. **Scope:** the supported dependency baseline, what the typed
-oracle-reduction layer provides in this source revision, and its remaining proof gaps.
+**Last reviewed:** 2026-11-04. **Scope:** the supported dependency baseline, what the interaction
+layer (`ArkLib/Interaction/`) provides on `main`, and the legacy-layer results that
+bear on it. The
+[README](../../README.md#two-layers) gives an overview of the two layers,
+[Limitations of the legacy layer](legacy-layer-limitations.md) explains why the
+interaction layer replaces it, and the [roadmap](../../ROADMAP.md#priority-replace-the-legacy-layer)
+holds the migration plan. Protocol-level status for readers
+outside the framework is on the public [roadmap](../../ROADMAP.md); remaining interaction-layer
+design work is in the [design roadmap](05-roadmap.md).
 
-The typed core, the first world-backed execution artifacts, and the Sumcheck acceptance slices have
-landed (AR-1 through AR-10B; ArkLib #851–#892). Native full-protocol Sumcheck now has a
-verifier with explicit abort and soundness against arbitrary native prover continuations. Plain
-native interaction now has additive composition soundness, including an explicit admissibility
-error. No declaration under `ArkLib/Interaction/` or
-`ArkLib/ProofSystem/Sumcheck/Interaction/` uses `sorry`. The [roadmap](05-roadmap.md) defines the next implementation steps and links their tracking issues.
+The interaction core, its logged execution and oracle composition have landed; the
+[ArkLib tables](#arklib) list them. On top of them the interaction layer now has these generic
+results:
+
+- round-by-round soundness on execution prefixes, and the theorem that it implies soundness;
+- round-by-round knowledge soundness through knowledge state functions, backward extraction along
+  transcripts, and its composition across a deterministic middle claim;
+- state-restoration knowledge soundness for fixed-round public-coin protocols, including oracle
+  outputs, pre-sampled private coins and per-round errors;
+- measured extraction stages: operation-count budgets for the named backward witness maps;
+- Sumcheck with soundness, completeness, round-by-round soundness, and a computable verifier
+  and honest prover.
+
+The knowledge, state-restoration and measured-extraction results are generic definitions and
+theorems. What remains open is their use: no protocol under `ArkLib/ProofSystem/` instantiates
+them yet, there is no interaction-layer rewinding extractor, and state restoration does not yet
+cover an adversary whose private randomness interleaves with its oracle queries (see
+[below](#interaction-layer-security)).
+
+No declaration under `ArkLib/` depends on `sorryAx`; `lake exe axiomsweep --check` enforces this.
 
 ## Supported baseline
 
-| Repository | Revision | Role |
-|---|---|---|
-| VCVio | `88efe9715a9fa9e7d89635c38cf70259836766c2` (`v4.35.0`) | direct ArkLib dependency |
-| PolyFun | `ef4c157b3c6775fb55864303d96f9b400428d5f0` | revision selected and tested by VCVio |
-| Lean | `v4.35.0` | common toolchain |
+The exact dependency revisions are in [`lake-manifest.json`](../../lake-manifest.json) and the
+toolchain in [`lean-toolchain`](../../lean-toolchain); the supported Lean version is `v4.36.0`.
 
-ArkLib does not override PolyFun independently. VCVio owns the tested PolyFun revision. A later
-PolyFun update reaches ArkLib only after VCVio advances and validates its pin.
+| Repository | Role |
+|---|---|
+| VCVio | direct ArkLib dependency |
+| CompPoly | direct ArkLib dependency (computable polynomials) |
+| PolyFun | transitive dependency; revision selected and tested by VCVio |
 
-The train moved from the alignment baseline (Lean 4.33.1, VCVio `f9dc47d9`, PolyFun `c0c92369`)
-through the VCVio `Runtime`/`WithFailure` additions used by #884 and the Lean 4.34 native-measure
-upgrade (#903, #913). ArkLib's PMF probability surface is retired; new observation boundaries use
-VCVio measure semantics.
+ArkLib does not override PolyFun independently. A later PolyFun update reaches ArkLib only after
+VCVio advances and validates its pin. ArkLib's PMF probability surface is retired; new observation
+boundaries use VCVio measure semantics.
 
 ## Capability status
 
@@ -32,6 +52,7 @@ VCVio measure semantics.
 
 | Capability | Status | Primary evidence |
 |---|---|---|
+| Failure-to-return mass boundary | available | `evalDistWithFailure` in `PolyFun.Control.Monad.Measure.WithFailure`, which keeps missing runtime mass separate from rejection |
 | Typed interaction trees and complete paths | available | `Interaction.TypeTree`, `TypeTree.Path`, append and path execution |
 | Node contexts, schemas, and decorations | available | `TypeTree.Node.Context`, `TypeTree.Node.Schema`, decoration maps and context morphisms |
 | Syntax, shapes, strategies, and executions | available | `SyntaxOver`, `ShapeOver`, `StrategyOver`, `InteractionOver` |
@@ -63,20 +84,22 @@ commutativity assumption). It must not restore the legacy unrestricted compositi
 | Handler construction and composition | available | build source interpreters and substitution from `QueryImpl` and handler laws |
 | Tracing, logging, caching, and cost instrumentation | available | reuse `withTrace*`, `withLogging`, and existing erasure/failure bridges |
 | Query and resource accounting | available | reuse query bounds, `ResourceProfile`, `QueryCost`, and `CostModel` |
+| Stateless weighted handler substitution | available | `WorstCaseCostBound.simulateQ` in `VCVio.OracleComp.QueryTracking.CostModel.Simulation`; transfers bounds through stateless handlers with per-query completed-run budgets; availability and termination are separate |
+| Named measured programs and composition | available | `MeasuredProgram`, `BudgetedProgram`, and `MeasuredProgram.comp` in PolyFun's `PolyFun.PFunctor.Free.Cost.Measured`, with the oracle-cost lemmas in `VCVio.OracleComp.QueryTracking.MeasuredProgram`. Both instruction traces run and weighted budgets add. Views, answers and pure work remain uncharged |
 | Cost-aware reductions | available, cost-only | reuse `SecurityGame.ReductionWithCost`; add no parallel cost hierarchy |
-| Closed probability semantics | available | native `Measure`/kernel semantics; ArkLib's PMF surface is retired (#913) |
+| Closed probability semantics | available | VCVio's native `Measure`/kernel semantics; ArkLib's PMF surface is retired (#913) |
 | Probabilistic responders and wired machines | available | reuse `ProbResponder`, oracle strategies, and machine runs |
 | Strict oracle-PPT certificates | available | reuse ranked resources and `HandlerCertificate` |
 | Shared-ROM Merkle extraction | available | adapt the primitive theorem; do not restate its game in ArkLib |
 | Runner-produced resumable execution artifact | available | `OracleRuntime`, `RunResult`, `run`, `resume`, `GeneratedBy` in `VCVio.OracleComp.Runtime`; used by `executeWithRuntime` |
-| Failure-to-return mass boundary | available | `evalDistWithFailure` in `VCVio.EvalDist.WithFailure`; used by `Terminal.observe` |
 | Certified query-trace transducer specialization | **missing** | waits on the generic PolyFun transducer |
-| General conditioning/dynamic-programming facade | incomplete | specific theorems exist, but not the reusable state-restoration boundary |
+| General conditioning/dynamic-programming facade | not needed so far | the interaction-layer state-restoration proofs use the cached `randomOracle`, `IsTotalQueryBound` and its cost-distribution lemmas directly; add a facade only for a client that needs it |
 | Error-bearing and cost-bearing reduction package | incomplete | `ReductionWithCost` handles cost; later clients still need explicit additive/substitution error transport |
 
-Accept/reject/fault classification is protocol-level and lives in ArkLib (`Interaction.Terminal`).
-VCVio supplies only the separate failure-to-return mass, so the two kinds of absence are not
-identified.
+A core verdict is an `Option`: `none` is rejection. `OracleVerifier.decideCatching` in
+`Interaction/Oracle/LoggedExecution.lean` keeps the label of a handler failure. The core keeps
+missing runtime mass separate from rejection. PolyFun supplies the failure-to-return mass observed by
+ArkLib.
 
 These gaps are integration boundaries, not permission to introduce ArkLib-private probability,
 trace, or cost semantics. The first client should either add the smallest upstream API or provide a
@@ -84,81 +107,82 @@ temporary adapter with an upstream issue and a deletion test.
 
 ### ArkLib
 
-The typed layer lives under `ArkLib/Interaction/` and `ArkLib/ProofSystem/Sumcheck/Interaction/`,
-with acceptance clients under `ArkLibTest/Interaction/` and `ArkLibTest/ProofSystem/Sumcheck/`.
-Naming follows [`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md).
+The interaction layer is the interaction core under `ArkLib/Interaction/` (namespace
+`Interaction`), with acceptance clients under `ArkLibTest/Interaction/`. Its Sumcheck
+client lives under `ArkLib/ProofSystem/Sumcheck/`, with acceptance clients under
+`ArkLibTest/ProofSystem/Sumcheck/`. Naming follows
+[`docs/wiki/interaction-naming.md`](../wiki/interaction-naming.md).
 
-| Area | Modules | Implementation |
+The old generic layer has been deleted. At commit `8472a86f` it consisted of
+`ArkLib/Interaction/Oracle/`, `Interaction/Reduction.lean` and
+`Interaction/CompositionSoundness.lean`, beside the core's former `Core/` directory. Some of those
+paths now hold core modules. The
+[migration list](interaction-layer/migration-list.md) maps every deleted module and test to its
+core counterpart or records why it was retired.
+
+| Area | Modules under `Interaction/` | Landed in |
 |---|---|---|
-| Plain dependent reductions | `Interaction/Reduction.lean` | #851 |
-| Oracle type trees, paths, decorations | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration` | #852, #853 |
-| Accumulated access and single-run execution | `Oracle/Access`, `Oracle/Execution`, `Oracle/Protocol` | #861, #862 |
-| Sources, routing, named contexts | `Oracle/Source`, `Oracle/Resource` (`NamedContext`, `OracleModel`) | #863, #864 |
-| Virtual substitution | `Oracle/Virtual` | #869 |
-| Open/closed claims and run-derived closing | `Oracle/Claim`, `Oracle/CoreRun` | #870, #871 |
-| Concrete prefixes and available contexts | `Oracle/Prefix`, `Oracle/RunSources` | #880 |
-| Logged execution and persistent runtime | `Oracle/LoggedExecution`, `Oracle/LoggedRun`, `Oracle/Runtime` | #884 |
-| Accept/reject/fault outcomes | `Oracle/Terminal`, `Oracle/TerminalRun`, `Oracle/TerminalMeasure` | #886 |
-| Ordered world phases | `Oracle/WorldSegments`, `Oracle/PhasedExecution`, `Oracle/PhasedRun` | #889 |
-| Finite ordered composition | `Oracle/Composition` (`ExecutionInterface`) | #891 |
-| Direct native strategy execution | `Oracle/CoreRun.executeStrategiesCore` | #1216 |
-| Direct native logged, phased, and persistent-runtime execution | `Oracle/LoggedRun`, `Oracle/PhasedRun`, `Oracle/Runtime` | #1236 |
-| Native composition inside one persistent runtime | `Oracle/RuntimeSoundness` | [#1237](https://github.com/Verified-zkEVM/ArkLib/pull/1237) |
-| General native composition soundness | `Interaction/CompositionSoundness` | #1218 |
-| Restricted verifier composition for every whole native prover | `Oracle/Sequential.executeStrategies_append` | #1233 |
-| Composition through exported oracle interfaces and actual claim closing | `Oracle/SourceRouting.executeStrategies_appendExported_close` | #1234 |
-| Weighted and uniform soundness for exported oracle composition | `Oracle/CompositionSoundness` | [#1235](https://github.com/Verified-zkEVM/ArkLib/pull/1235) |
-| Available query names preserved by continuation and append | `Oracle/Prefix`, `Oracle/Access` | this revision; [#1229](https://github.com/Verified-zkEVM/ArkLib/issues/1229) |
-| Actual-route access and weighted query budgets | `Data/OracleComp/QueryBounds` | this revision; [#1229](https://github.com/Verified-zkEVM/ArkLib/issues/1229) |
-| Oracle append paths, runtime roles, access, and query answers | `Oracle/TypeTree`, `Oracle/TypeTree/Decoration`, `Oracle/Access`, `Oracle/RunSources` | #1232 |
-| Fixed-prover, reachable, and averaged native bounds | `run_appendFlat_soundness_fixed`, `_of_support`, `_ae`, and `_weighted_ae` | #1231 |
+| Signatures, protocol trees, transcripts and outcomes | `Signature`, `Protocol`, `Transcript` | #1473, #1564 |
+| Provers, passive verifiers and plain execution | `Reduction`, `Execution`, `OracleVerifier` | #1473 |
+| Sequential composition | `Composition` | #1473 |
+| Finite heterogeneous stage chains | `StageChain` | #1477 |
+| Logged execution, queries by move, routing and sent oracle messages | `Oracle/LoggedExecution`, `Oracle/QueriesByMove`, `Oracle/QueriesByMoveLaws`, `Oracle/Routing`, `Oracle/SentOracles` | #1475, #1567 |
+| Oracle bundle operations and weighted cost of routed programs | `Oracle/BundleOps`, `Oracle/Cost` | #1476 |
+| Completeness, soundness, round-by-round security and extraction interfaces | `Security/Completeness`, `Security/Soundness`, `Security/RoundByRound`, `Security/Knowledge` | #1473 |
+| Composition soundness | `Security/CompositionSoundness` | #1485 |
+| Round-by-round soundness implies soundness | `Security/Implications` | #1486 |
+| Knowledge composition and measured extraction | `Security/KnowledgeComposition`, `Security/KnowledgeComposition/Extraction`, `Security/MeasuredExtraction` | #1482 |
+| State restoration with per-round errors | `Security/StateRestoration`, `Security/StateRestorationBudget` | #1483 |
+| Agreeing oracle verifiers | `Security/Agreement` | #1484 |
+| Embedding of legacy reductions and security transfers | `Legacy/*`, `LegacyAppend`; see [legacy-embedding.md](interaction-layer/legacy-embedding.md) | #1480, #1481 |
 
-Sumcheck on the typed layer:
+Sumcheck on the interaction layer is the Sumcheck core. The frozen Sumcheck interaction layer under
+`ArkLib/ProofSystem/Sumcheck/Interaction/` has been deleted; its last version is at commit
+[`7cd7828303`](https://github.com/Verified-zkEVM/ArkLib/tree/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/).
+[`interaction-layer/sumcheck.md`](interaction-layer/sumcheck.md) lists the core modules, gives the
+exact scope of each theorem and maps every deleted declaration to its core counterpart.
 
 | Result | Evidence | Landed in |
 |---|---|---|
-| One-round honest completeness through closing | `SingleRound`, `Closing` | #872 |
-| Legacy correspondence | `legacy_input_iff`, `legacy_output_iff`, `legacy_verifier_correspondence` | #874, #1244 |
-| Round relations via multivariate projection | `Projection`, `ProjectionTransport` | #879 |
-| One-round reduction soundness, error `deg` over the field size | `executeCommitted_soundness`, `executeRandomCommitment_soundness` and measure forms | #881 |
-| Two sequential rounds through the actual closed claim | `MultivariateRound`, `Sequential` | #883 |
-| Arbitrary consecutive rounds, honest completeness | `executeRoundsSampled_perfectCompleteness`, `executeRounds_uniform_perfectCompleteness` and measure forms | #892 |
-| Actual multivariate round soundness | `MultivariateRound.executeCore_sampled_soundness` | — |
-| Native full-protocol soundness | `Native.execute_soundness` in `ProtocolSoundness` | #1214 |
-| Native honest completeness | `Native.execute_support_completeness`, `Native.execute_perfectCompleteness` in `ProtocolCompleteness` | #1214 |
-| Computable round messages and verifier | `Impl/Representation`, `Interaction/Computable` | — |
-| Soundness for computable-message strategies | `Computable.execute_soundness` in `ComputableSoundness` | — |
-| Computable honest messages and original oracle | `Impl/Projection` | — |
-| Completeness for the computable honest prover | `Computable.execute_support_completeness`, `Computable.execute_perfectCompleteness` | — |
+| Protocol, compatibility verifier and direct honest completeness | `protocol`, `verifier`, `perfectCompleteness` in `Protocol`, `Execution`, `Completeness` | #1474 |
+| Full-run soundness of the indexed verifier, error `n * deg` over the size of `R` | `indexedVerifier_soundness` in `Indexed`; `indexedVerifier_run_soundness` and its list and injective forms in `Soundness` | #1484 |
+| Round-by-round soundness, error `deg` over the size of `R` at every challenge | `indexedVerifier_rbrSoundness` in `Indexed` | #1484 |
+| One-round soundness for a committed or randomized message | `indexedVerifier_committed_soundness`, `indexedVerifier_randomized_soundness` and measure forms in `Soundness` | #1484 |
+| Equivalence with the embedded legacy verifier, and transfer of legacy security | `run_eq_legacy`, `verifier_agrees` in `LegacyEquivalence`; `LegacySoundness`, `Knowledge`, `RoundByRound` | #1484 |
+| Single-round legacy correspondence | `simpleLegacyVerifier_correspondence` in `LegacyEquivalence` | #1484 |
+| Interval verifiers: completeness for every bounded interval, soundness for suffixes | `intervalVerifier_perfectCompleteness` in `IntervalCompleteness`; `intervalVerifier_soundness` in `IntervalSoundness`; `intervalRoundExecute_soundness` in `IntervalRoundSoundness` | #1488 |
+| Computable instance at CompPoly messages and inputs | `Computable.verifier`, `Computable.honestProver`, `Computable.perfectCompleteness`, `Computable.interval_soundness` in `Computable` | #1487 |
+| Computable honest messages and original oracle | `Impl/Projection` | #1243 |
 
-`Sumcheck/Interaction/Protocol` defines one oracle interaction tree. Each round receives a
-univariate polynomial oracle, then the verifier publicly aborts or supplies a fresh challenge.
-The prover is the ordinary `Interaction.Oracle.Prover.Strategy`: its continuations retain private
-memory and may perform effects after receiving the challenge. There is no separate private-state
-kernel in the security statement. `Native.execute` passes those strategies directly to
-`executeStrategiesCore`, then closes the actual run. A prover strategy is not repackaged as a
-reduction witness. The reduction entry point `executeCore` performs prover setup and delegates to
-the same strategy entry point. Both paths use `executeStrategies` and the same paired resources.
+`indexedVerifier` is a passive verifier over an arbitrary finite indexed domain. Each round sends
+a degree-bounded polynomial as an oracle message and draws a challenge. The prover is an ordinary
+strategy whose continuations keep private memory and may perform effects after each challenge.
+The verifier queries each sent polynomial for its sum check and next target, and its output oracle
+is the original input polynomial. The output relation says that this polynomial, evaluated at the
+full challenge vector, equals the final target; it is a relation on the output, not a final
+verifier query. From a false input claim, soundness bounds by `n * (deg / |R|)` the probability
+that the run returns a claim satisfying that relation, for every prover and fresh uniform
+challenges, over a finite commutative semiring with `IsDomain`. Sumcheck has a `Unit` witness,
+since its polynomial is an input oracle. Its knowledge-soundness theorems in `Knowledge` and
+`RoundByRound` are transfers from the legacy layer.
 
-The verifier queries the sent polynomial for its sum check and next target. It exports the
-original polynomial oracle through a virtual view, retaining the accumulated access to earlier
-messages. At the last leaf, the output relation says that this retained oracle evaluated at the
-full challenge vector equals the final target. This is a relation on the output, not a final
-verifier query. From a false initial claim over an oracle realized by a polynomial of individual
-degree at most `deg`, soundness bounds the probability of a non-rejected true output by
-`count * deg / |F|` for fresh uniform challenges. The honest native strategy sends the projected
-round polynomials. From a true initial claim, every supported execution returns a true output;
-probabilistic completeness is one for any `ProbComp` challenge, whose oracle specification is
-normalized. Support preservation alone makes no assertion about total successful mass.
+The Sumcheck core now owns a protocol and verifier generic in the message carrier and its
+evaluation operation (`protocolOn`, `verifierOn`). The existing polynomial names remain their
+Mathlib instances. `Sumcheck.Computable` specializes the same definitions to bounded
+CompPoly coefficient arrays, Horner evaluation and CompPoly multivariate input data.
+`run_eq_interpret` relates complete runs through the proof-only message interpretation and
+challenge-query renaming, preserving private continuations and effects. Its `perfectCompleteness`
+holds for arbitrary challenge implementations, and `soundness` keeps the per-challenge error
+`deg / |F|` for uniform challenges and arbitrary provers. The relations read the input through its
+mathematical polynomial interpretation.
 
-`Native.Core` owns the single protocol and verifier definition, parameterized by the message
-carrier and its evaluation operation. `Native` retains the mathematical presentation;
-`Computable` specializes it to bounded CompPoly coefficient arrays and Horner evaluation.
-`execute_eq_native` proves equality of actual closed executions after interpreting each sent
-message, preserving private continuations and effects on public abort. The interpretation is
-proof-only: the computational verifier runs directly on CompPoly data. Its soundness theorem
-retains the same bound and original-oracle assumptions. `sumcheck-runtime` checks the compiled
-native path, including private memory, effect order and rejection, with fixed test challenges.
+`sumcheck-runtime` runs this computable core instance with fixed test challenges. It checks
+private memory and effect order, including both challenge draws after a failed first check,
+the honest quadratic run, zero rounds from a final round state with no draws, and one round of
+the CompPoly interval verifier after a challenge prefix. The executable emits eight checks, and
+the degree bound of the quadratic input is a compile-time proof. The eight runtime rows and their
+expected values are listed in
+[`interaction-layer/sumcheck.md`](interaction-layer/sumcheck.md#runtime-checks).
 
 `Impl/Projection` constructs each honest round message directly from a CompPoly multivariate
 polynomial. It splits out the current variable, evaluates the other variables at prior challenges
@@ -167,174 +191,160 @@ correspondence covers arbitrary individual degree bounds and finite domains. `in
 the original CompPoly polynomial directly; its equality to the mathematical oracle behavior is a
 separate theorem.
 
-`Computable.honestProver` uses this construction in ordinary native continuations. Its complete
-execution equals the mathematical honest execution, giving support completeness and perfect
-completeness under the same true-input and original-oracle assumptions. The compiled runtime
-client exercises a quadratic with a cross term over a three-element domain, its retained original
-oracle, and execution with no rounds left.
+`Sumcheck.Computable.honestProver` uses this construction in ordinary prover continuations.
+`interpretProver_honestProver` identifies it with the mathematical core honest prover; the run
+correspondence transfers support completeness and perfect completeness on true inputs. The
+compiled client evaluates the retained CompPoly input directly.
 
 This is a computable finite-enumeration prover; it makes no efficiency claim. Optimized multilinear
-algorithms, native round-by-round and knowledge-security definitions, and extraction remain
-separate work. Legacy declarations with admissions are not repaired by these results.
+algorithms remain separate work.
 
-`Oracle/Composition` and the earlier `ArbitraryRounds` clients execute sequences of separate
-reductions across explicit interfaces. Those execution results do not by themselves establish
-soundness for arbitrary strategies on a composed interaction tree. The native Sumcheck theorem
-follows the actual full-tree execution directly.
+**Composition.** `Composition.lean` appends provers, samplers and passive verifiers. The composed
+decision runs after the whole interaction: it is the prefix decision followed by the suffix
+decision on routed data. `OracleVerifier.run_append` in `Oracle/Routing.lean` splits a run of an
+appended oracle verifier against an arbitrary prover into the two interactions and the two
+decisions. The statement is an equality of open oracle programs, so the order of ambient and
+challenge queries is preserved exactly. `StageChain` composes a finite chain of passive oracle
+verifiers whose statement types and oracle families may change at every stage.
 
-`Interaction/CompositionSoundness` proves composition for arbitrary strategies on a plain native
-appended tree. Its exact execution equation extracts the actual suffix strategy and preserves
-all effects under any lawful monad. The suffix counterpart is selected purely from the prefix
-path and counterpart output; effects inside that strategy remain unrestricted.
+Every oracle verifier in the core is passive: its only moves before the final decision are
+challenge draws, and every bundle query happens in the final decision. The old layer allowed
+verifier queries during the interaction. The [migration list](interaction-layer/migration-list.md)
+records which of its results needed this premise and which mechanisms were retired.
 
-Under lawful distribution semantics, a prefix truth-transition bound `ε₁` and a suffix bound `ε₂`
-give a final bound `ε₁ + ε₂`. If suffix soundness requires admissibility, a prefix inadmissibility
-bound `δ` gives `ε₁ + δ + ε₂`. The original uniform theorem covers every false, admissible prefix
-path and output, including unreachable ones, and every native suffix strategy.
-
-The fixed-prover forms require a prefix bound only for the chosen whole prover's actual prefix.
-The reachable form requires suffix security only on its structurally supported boundary results;
-the almost-everywhere form permits a probability-zero exceptional set. The weighted form averages
-branch-dependent suffix errors outside a charged prefix event. The boundary includes the actual
-returned prover continuation and private memory. `AppendBoundary` is an abbreviation for that
-existing runner output, not another strategy or execution representation.
-
+`Security/CompositionSoundness.lean` splits an arbitrary strategy on an appended interaction at the
+seam into its prefix and the actual suffix strategy that the prefix returns, with its private
+memory and effects. The uniform bounds (`Verifier.append_soundness`,
+`OracleVerifier.append_soundness_ae`) are `ε₁ + δ + ε₂`: `ε₁` bounds reaching a good boundary,
+`δ` bounds reaching an inadmissible one, and `ε₂` bounds the resumed run from almost every other
+boundary. The weighted bounds integrate the suffix error over the actual boundary distribution.
+The runtime results transport a bound on the resumed success to a persistent `OracleRuntime`.
 These bounds concern unconditioned successful-output mass; they need neither losslessness nor
-commuting effects. Missing mass is not a classified runtime fault. A native two-guess client over
-`ZMod 17` instantiates the uniform bound as `2/17`.
+commuting effects.
 
-Oracle append now preserves the runtime tree and its roles. Concrete path append and split agree
-with public path projection, and accumulated access agrees with processing the prefix then the
-suffix. `closingImpl_append` and `simulateQ_closingImpl_append` prove that the resulting deterministic
-handlers answer all queries identically. These laws apply to supplied concrete paths; they do not
-assert that a prover and verifier generated those paths.
+**Logged execution and cost.** `OracleVerifier.runWithLog` in `Security/Knowledge.lean` records the
+prover's ambient queries and every query of the decision, and forgetting both logs gives
+`OracleVerifier.run` exactly. `Oracle/QueriesByMove.lean` records the queries of a run move by
+move, and `Oracle/QueriesByMoveLaws.lean` proves that erasing the entries gives the aggregate logs.
+`OracleMap.withAmbient_worstCaseCost` in `Oracle/Cost.lean` transfers a weighted cost bound through
+an oracle map with VCVio's `WorstCaseCostBound.simulateQ`. The full-log runner and the cost lemma
+keep some indices in `Type`; ArkLib accepts both restrictions as upstream limits, which the
+[migration list](interaction-layer/migration-list.md#unresolved-rows-and-options) records.
 
-The acceptance example selects different suffix shapes through a public Boolean move. Queries to
-the initial oracle, prefix message, and suffix messages return `[7, 11, 19]` or `[7, 11, 23, 29]`
-under both handlers. It also checks mixed prover/verifier roles and hidden message data.
-
-`Oracle/Sequential.executeStrategies_append` now connects restricted verifier append to the
-actual paired run, for every whole native prover and dependent private output family. Its prefix
-returns an ordinary value; a pure function selects the suffix verifier from that value and the
-public prefix path. The suffix uses the actual remaining prover strategy and the handler built
-from the original inputs and prefix messages. The final verifier action runs once. This is equality
-of open oracle programs, so ambient effects retain their order without a commutativity premise.
-Read-only source handlers are deterministic and total; this result introduces no probability claim.
-
-The execution clients retain private memory across a challenge and public abort, check prover-owned
-and verifier-owned first suffix moves, and check the terminal action occurs once. A separate
-counterexample distinguishes an action before a prover send from moving it after that send.
-
-`Verifier.appendExported` lets the suffix query only the prefix's exported interface and its own
-new oracle messages. `executeStrategies_appendExported_close` proves that the composed run and
-sequential interpretation return the same concrete path, private prover output, and closed claim.
-The intermediate handler is the exported oracle evaluated using the actual prefix resources.
-The theorem permits public-path-dependent final statements and oracle families, preserves ambient
-effect order, and does not require identical raw and exported query logs.
-
-The exported-interface clients hide a source slot, expand one exported query into two source
-queries, and retain private prover memory and the ordered ambient log. A separate client chooses
-between different final statement and oracle realization types through a public Boolean, then
-checks the actual closed statement and answer in both branches.
-
-`Oracle/CompositionSoundness` proves weighted and uniform bounds for this actual composed oracle
-execution. It charges true intermediate claims, false intermediate claims outside the next
-protocol's assumptions, and suffix success from false admissible claims. The suffix premise
-includes the final verifier action and closing with actual resources. It need only hold almost
-everywhere under the chosen whole prover's actual prefix distribution. The uniform bound is
-`εtruth + εinvalid + εsuffix`; the weighted bound averages the suffix error instead.
-
-A probability example exports the input value plus a public sample. The suffix queries that
-exported oracle and makes a fresh random final decision. Its true-midpoint mass is `1/2`, its
-false-inadmissible mass is zero, and its average remaining error is `1/4`, giving a `3/4` bound.
-A supported probability-zero branch violates the pointwise suffix bound, exercising the weaker
-almost-everywhere premise. True midpoint claims need not satisfy the suffix assumptions; they
-have already been charged.
-
-`Sumcheck/Interaction/Composition` proves that the existing native Sumcheck execution equals its
-first round followed by the remaining rounds through `appendExported`. It uses the same whole
-prover, including the actual continuation returned after a challenge or abort. Honest full-protocol
-completeness now follows through this execution equation, with its exported statements unchanged.
-The soundness proof also applies the generic oracle composition theorem at each round, recovering
-`count * deg / |F|` under the existing hypotheses. The previous separate induction is retired.
-The final original-polynomial equality remains an output oracle relation, with no added query.
-
-The soundness theorem uses total deterministic source handlers and lawful probability semantics
-for the ambient computation. `Oracle/RuntimeSoundness` proves composition
-inside a persistent runtime when the client bounds average suffix success over the actual prefix
-distribution. This is a separate hypothesis about that runtime, not an automatic transfer of the
-Sumcheck bound. The access and cost results below provide separate guarantees about the actual
-queries a client issues.
-
-Direct native provers can now use `executeStrategiesLoggedRun`, `executeStrategiesWithRuntime`,
-and `executeStrategiesPhasedWithRuntime`. They reuse the existing interpreters. Reduction setup
-stays inside the same initialized runtime, even when setup makes oracle queries. Erasure retains
-the core execution and actual final state; the phased/logged comparison retains paired source
-observations and ordered ambient history. These execution laws add no probability assumption.
-
-The runtime client checks counter answers `1, 2, 3` across setup and both protocol stages, final
-state `3`, and the exact query order. Another actual exported-interface client checks that one
-exported query expands to two source queries, followed by a fresh-message query. Its source answers
-are `[7, 1, 2]`. `withQueryLog_simulateQ` records the queries made by the routing programs; it does
-not equate one exported log entry with one source entry.
-
-The runtime soundness theorem fixes the whole native prover before setup. Its prefix distribution
-retains the prover continuation, intermediate claim, runtime state, and ambient history together.
-Its bound is the probability of a chosen exceptional prefix event plus the average remaining error.
-The suffix receives the actual prefix output; hidden state is handled internally by runtime
-resumption. Clients prove the average bound for this experiment. A separate execution equality
-retains the final state and history while observing the final closed claim.
-
-The hidden-bit runtime client checks both information patterns. Committing a fixed guess before
-learning the secret gives success exactly `1/2` and instantiates the main theorem. Reading the
-secret first gives success one and violates that theorem's half-error premise. Conditioning on a
-matching fixed secret also gives success one. The tests retain the actual ordered query history,
-so the proof cannot silently discard what the prover learned.
-
-Canonical source-query names now come from the concrete prefix's available context. Continuing
-execution preserves earlier names; appending a later protocol transports the same names and
-messages through its cursor map. Initial names identify raw input queries. Names for received
-oracles identify their send edges, preserving sharing across query arguments. A future send cannot
-be named by a currently available query.
-
-`Data/OracleComp/QueryBounds` proves access and cost bounds for the actual query substitution.
-If each allowed exported query routes only to allowed source queries, the whole routed program
-satisfies that access condition. If each route fits its exported query's charge, the routed program
-inherits the exported program's total budget. Charges may vary by query; repeated calls to one
-shared oracle each incur their cost. Prefix and suffix budgets add, and pure output observations
-preserve and reflect the same cost bound. These laws need no probability or independence assumption.
-
-Cost bounds cover complete paths allowed by the query types. The separate access condition also
-checks a query whose answer type is empty; a vacuous complete-path cost bound does not authorize it.
-A two-send native client checks a virtual query that reads the same old oracle twice, followed by
-one fresh-oracle query: actual source answers `[1, 1, 2]`, private output `3`, closed statement `4`,
-and weighted source budget `5` when old calls cost one and fresh calls cost three. Its phased run
-supplies the actual join and terminal prefixes used by those certificates. The prior resource name
-is preserved by that run's context inclusion, and the fresh resource fails access at the join.
-The phased/logged comparison ties the repeated source calls to the same execution; ambient phase
-logs remain distinct from source-query logs.
-
-The resource-certified runtime client imports C7's same hidden-bit fixture and half-bound theorem.
-It proves that the verifier returns the certified export, that the actual routed suffix uses allowed
-queries with cost at most five, and that the complete native runtime makes exactly one charged
-imported-randomness query. Its actual ambient history costs four under separate weights one for the
-dummy query and three for revelation. The informed prover costs seven and succeeds surely.
-These are guarantees for those fixed native provers, not a theorem that access or cost bounds alone
-imply soundness for arbitrary adversaries.
+The deleted Sumcheck interaction layer applied the old composition theorem in
+[`Sumcheck/Interaction/Composition`](https://github.com/Verified-zkEVM/ArkLib/blob/7cd7828303ca4077dcad586709e604a062d9b57e/ArkLib/ProofSystem/Sumcheck/Interaction/Composition.lean).
+The Sumcheck core does not use it. `FoldComposition` and `BehaviorComposition` prove append
+equations for its folds and public intervals, and its soundness proofs go through round-by-round
+soundness.
 
 The single-round legacy verifier correspondence identifies scalar outputs for arbitrary sent
 polynomials and fixed challenges, including rejection. Both relation directions are proved for
-arbitrary claims. This does not relate the legacy and native security games.
+arbitrary claims. This does not relate the legacy-layer and interaction-layer security games.
 
-The legacy `OracleReduction` layer remains in use. Its carrier is `ProtocolSpec n`; several
-unrestricted stateful composition theorems remain admitted. Existing legacy repairs are tracked
-separately in [#676](https://github.com/Verified-zkEVM/ArkLib/issues/676). The native results above
-do not remove admissions from legacy clients.
+### Interaction-layer security
 
-The preserved `archive/oracle-reduction-v2-pre-split` branch contains the earlier interaction-native
+The security modules live under `ArkLib/Interaction/Security/`, with acceptance clients
+under `ArkLibTest/Interaction/Security/`. The disposition records in
+[`interaction-layer/`](interaction-layer/migration-list.md) map every result of the deleted
+old-layer security modules to these modules.
+
+| Result | Modules and principal declarations | Landed in |
+|---|---|---|
+| Completeness, soundness and round-by-round definitions | `Completeness`, `Soundness`, `RoundByRound` (`rbrSoundness`, `KnowledgeStateFunction`, `rbrKnowledgeSoundness`) | #1473 |
+| Round-by-round soundness implies soundness | `Implications` (`prEvent_runPrefixChallenges_soundness`, `Verifier.soundness_of_rbrSoundness_uniform`, `OracleVerifier.soundness_of_rbrSoundness_uniform`) | #1486 |
+| Composition soundness | `CompositionSoundness` (`Verifier.append_soundness`, `OracleVerifier.append_soundness_ae`, weighted and runtime forms) | #1485 |
+| Knowledge composition | `KnowledgeComposition` (`rbrKnowledgeSoundness_append_prefix`, `Verifier.rbrKnowledgeSoundness_append_prefix`, `OracleVerifier.validAcceptance_append`); `KnowledgeComposition/Extraction` (`KnowledgeStateFunction.LocallyBounded`) | #1482 |
+| Measured extraction stages | `MeasuredExtraction` (`KnowledgeStateFunction.MeasuredStages`, `MeasuredStages.programAlong`, `MeasuredKnowledgeStateFunction`) | #1482 |
+| State-restoration knowledge soundness, with pre-sampled private coins | `StateRestoration` (`stateRestoration_knowledge_soundness`, `stateRestoration_oracle_knowledge_soundness` and their `privateCoins` forms) | #1483 |
+| Per-round errors | `StateRestorationBudget` (`stateRestoration_oracle_knowledge_soundness_nonuniform`, `MeasuredKnowledgeStateFunction.stateRestoration_oracle_knowledge_soundness_nonuniform`) | #1483 |
+| Agreeing oracle verifiers | `Agreement` | #1484 |
+
+**Round-by-round soundness.** A false statement can be accepted only if some challenge node on the
+run's path turns the round-by-round state from false to true. `Implications` bounds soundness by
+the supremum, over shape paths, of the sum of the node errors along the path. The bounds apply to
+any lawful monad with distribution semantics, and the run may lose mass in a subprobability monad.
+`Sumcheck.indexedVerifier_soundness` applies `OracleVerifier.soundness_of_rbrSoundness_uniform`.
+
+**Knowledge state functions.** A `KnowledgeStateFunction` carries intermediate witnesses and names,
+at every move, a backward map from a witness after the move to a witness before it.
+`rbrKnowledgeSoundness` asks for such a function whose local error at every receiver prefix is
+bounded before the challenge is drawn. The backward maps are total functions with no
+computational restriction. `KnowledgeComposition` composes these bounds across a deterministic
+middle claim.
+
+**State restoration.** Each round sends an oracle message and then draws a uniform public challenge.
+Each restoration key holds the input, the prover messages and a salt for every round up to its
+own, and challenges come from one cached random oracle. The adversary chooses the input, all
+messages and salts, and an output witness after adaptive queries, with at most `Q` queries in
+total. For `k` rounds, `stateRestoration_knowledge_soundness` bounds by `(Q + k) * error` the
+probability that the output relation holds while the named backward extraction fails.
+`stateRestoration_oracle_knowledge_soundness` gives the same bound for the closed-oracle game, in
+which rejection is unsuccessful. With per-round errors `error_j`,
+`stateRestoration_oracle_knowledge_soundness_nonuniform` gives
+`Q * max_j error_j + Σ_j error_j`. The `privateCoins` forms keep the `(Q + k) * error` bound when
+the adversary's possibly failing private coins are sampled before the fresh cached game; they do
+not cover arbitrary interleaving of coin and oracle effects.
+
+**Measured extraction.** `KnowledgeStateFunction.MeasuredStages` names a budgeted program for every
+extraction stage. `MeasuredStages.programAlong` composes those programs along a completed
+transcript and returns the extractor's witness; its budget is the sum of the stage budgets.
+The state-restoration wrapper combines the probability theorem with the instruction bound
+specified in the
+[resource contract](03a-extractor-efficiency.md#state-restoration-resource-contract).
+The [accounting boundary](03a-extractor-efficiency.md#proof-and-accounting-boundary) applies to all
+these certificates. The [native composition priorities](05-roadmap.md#native-resource-composition)
+own the remaining client and resource-closure work.
+
+**Open.** There is no interaction-layer rewinding extractor and no Fiat–Shamir or BCS bridge from
+state restoration. The `privateCoins` forms are the only randomized-adversary state-restoration
+results; coin sampling interleaved with oracle queries is not covered. No protocol under
+`ArkLib/ProofSystem/` instantiates the interaction-layer knowledge or state-restoration
+certificates yet; their clients are the acceptance examples. Probability bounds use small moves
+only, an upstream limit of VCVio's `ProbComp` that the module docstring of
+`Security/RoundByRound.lean` records. The [design roadmap](05-roadmap.md) lists this work.
+
+## Legacy oracle-reduction layer
+
+`ArkLib/OracleReduction/` uses `ProtocolSpec n`. The protocol developments on `main` (FRI, Binius,
+ring switching, Spartan, Plonk, Hachi and others) use this layer; their status is on the public
+[roadmap](../../ROADMAP.md). The following legacy results matter for interaction-layer design.
+
+- **One round-by-round notion.** `Verifier.rbrSoundness` and `Verifier.rbrKnowledgeSoundness`
+  in `Security/RoundByRound.lean` bound the bad event at every fixed transcript prefix. The
+  prover-averaged and one-shot variants were removed (#1413, #1421).
+  `Verifier.forall_rbrSoundness_iff_rbrKnowledgeSoundness_iff` in `Security/Implications.lean`
+  shows that round-by-round soundness of the induced languages coincides with round-by-round
+  knowledge soundness, for all relations and errors, exactly when
+  `Nonempty WitIn ∨ IsEmpty (StmtIn × FullTranscript pSpec × WitOut)` (#1396).
+- **Unbounded and measured extraction.** `Security/UnboundedExtraction.lean` proves
+  `Verifier.knowledgeSoundness_iff_relationSoundness` through the classical selector
+  `Extractor.Straightline.choose` (#1364). `Security/Resources.lean` adds
+  `Verifier.knowledgeSoundnessWithResources`, and FRI's
+  `knowledgeSoundnessWithResources_extract` certifies operation counts for its named extractor
+  (#1370).
+- **Guarded composition and bridges.** `Append/Security.lean` proves ordinary soundness and
+  knowledge soundness under a guarded first verifier and suffix bounds valid from every
+  deterministic shared oracle state, with pure extractors for knowledge soundness.
+  `Append/GuardedRoundByRound.lean` and `Sequential/GuardedRoundByRound.lean` compose
+  round-by-round knowledge soundness for binary and finite chains. `Security/GuardedBridges.lean`
+  and `Security/GuardedSoundness.lean` derive ordinary knowledge soundness and soundness from
+  round-by-round guarantees of a guarded verifier, with the sum of the per-challenge errors.
+- **End-to-end protocols.** Spartan, Plonk, Binary Basefold, FRI-Binius and the full Sumcheck
+  reduction obtain ordinary knowledge soundness through these guarded interfaces; their theorems
+  and error bounds are on the public [roadmap](../../ROADMAP.md). For interaction-layer design, they
+  fix the statements and errors that a port must reproduce or relate to.
+- **Retired.** The legacy state-restoration definitions (#1409) and the duplex-sponge
+  Fiat–Shamir skeleton (#1368) were removed; state restoration now exists only in the interaction layer.
+
+These legacy results do not relate the legacy-layer and interaction-layer security games. For
+Sumcheck, `Sumcheck.LegacyEquivalence` relates the compatibility verifier to the embedded legacy
+verifier and transfers security notions along that equivalence.
+
+The preserved `archive/oracle-reduction-v2-pre-split` branch contains the earlier interaction-layer
 prototype and protocol ports (FRI, Spartan, Fiat–Shamir, BCS, boundary transport, security
 notions). It is a source bank, not a merge base. Its code uses pre-`TypeTree` PolyFun names and
 older VCVio semantics, so each port is rewritten and re-audited on a fresh ArkLib base.
+Spartan and Plonk are now end-to-end on the legacy layer; their interaction-layer ports have not started.
 
 ## Where the remaining work is specified
 

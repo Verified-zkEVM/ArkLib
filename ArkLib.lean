@@ -1,8 +1,12 @@
 module
 
-public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
+public import ArkLib.Commitments.Functional.BitZ.Bitification
+public import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
+public import ArkLib.Commitments.Functional.BitZ.CrtVariant
 public import ArkLib.Commitments.Functional.BitZ.ExponentLift
+public import ArkLib.Commitments.Functional.BitZ.FixedWitnessError
+public import ArkLib.Commitments.Functional.BitZ.HonestMessages
 public import ArkLib.Commitments.Functional.BitZ.OutOfDomain
 public import ArkLib.Commitments.Functional.BitZ.Round1
 public import ArkLib.Commitments.Functional.BitZ.Round2
@@ -30,10 +34,6 @@ public import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Gadgets
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 public import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
-public import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
-public import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
-public import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
-public import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 public import ArkLib.Commitments.Functional.Hachi.RingSwitch.ComputableWitness
@@ -59,17 +59,26 @@ public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
-public import ArkLib.Commitments.Functional.KZG.Algebra
+public import ArkLib.Commitments.Functional.KZG.AGM.Adversary
+public import ArkLib.Commitments.Functional.KZG.AGM.FirstReduction
+public import ArkLib.Commitments.Functional.KZG.AGM.FirstSecurity
+public import ArkLib.Commitments.Functional.KZG.AGM.Polynomial
+public import ArkLib.Commitments.Functional.KZG.AGM.RandomizedSecurity
+public import ArkLib.Commitments.Functional.KZG.AGM.Reduction
+public import ArkLib.Commitments.Functional.KZG.AGM.Sampling
+public import ArkLib.Commitments.Functional.KZG.AGM.Security
 public import ArkLib.Commitments.Functional.KZG.Basic
-public import ArkLib.Commitments.Functional.KZG.Binding
 public import ArkLib.Commitments.Functional.KZG.Correctness
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Basic
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Support
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
-public import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
-public import ArkLib.Commitments.Functional.KZG.Sampling
+public import ArkLib.Commitments.Functional.KZG.EvaluationBinding
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Reduction
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Wins
+public import ArkLib.Commitments.Functional.KZG.Generic.Adversary
+public import ArkLib.Commitments.Functional.KZG.Generic.Cost
+public import ArkLib.Commitments.Functional.KZG.Generic.Equivalence
+public import ArkLib.Commitments.Functional.KZG.Generic.Program
+public import ArkLib.Commitments.Functional.KZG.Generic.Security
+public import ArkLib.Commitments.Functional.KZG.Generic.Translation
+public import ArkLib.Commitments.Functional.KZG.Security
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
@@ -86,6 +95,7 @@ public import ArkLib.Data.CodingTheory.Basic.Distance
 public import ArkLib.Data.CodingTheory.Basic.Entropy
 public import ArkLib.Data.CodingTheory.Basic.LinearCode
 public import ArkLib.Data.CodingTheory.Basic.MDSCode
+public import ArkLib.Data.CodingTheory.Basic.ParityCheck
 public import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 public import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 public import ArkLib.Data.CodingTheory.BerlekampWelch.Condition
@@ -259,9 +269,26 @@ public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Bas
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Centers
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pigeonhole
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.BerP
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Chernoff
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Defs
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Main
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.NotRare
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.ProductLaw
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.RowOrbit
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.SecondMoment
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.RandomLinear.Types
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.Certificate
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.FullRank
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.IntersectionMatrix
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.RandomDomain
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.RankLoss
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 public import ArkLib.Data.CodingTheory.ListDecodability.PairAgreementBound
+public import ArkLib.Data.CodingTheory.ListDecodability.PartitionConnected
 public import ArkLib.Data.CodingTheory.ListDecodability.SampleIncidence
 public import ArkLib.Data.CodingTheory.ListDecodability.SymbolMap
 public import ArkLib.Data.CodingTheory.PolishchukSpielman
@@ -308,6 +335,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower.BinaryBasics
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.NearCapacity
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers.Incidence
 public import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
@@ -327,7 +355,9 @@ public import ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
 public import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBounds
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CertificateWitnesses
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.ListDecoding
+public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.SlotArithmetic
 public import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 public import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 public import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
@@ -341,8 +371,22 @@ public import ArkLib.Data.CodingTheory.ProximityGenerator.Interleaving
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.MDSGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.Multilinear
+public import ArkLib.Data.CodingTheory.ProximityGenerator.MultilinearBasic
 public import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
 public import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
+public import ArkLib.Data.CodingTheory.ProximityGenerator.ZeroEvading
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Basic
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.NonpersistentCount
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.PellikaanWu
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.PersistenceDescent
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Persistent
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Probability
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.RationalPair
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Separation
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.Theorem
+public import ArkLib.Data.CodingTheory.ReedMuller.AffineCombiner.TraceChart
+public import ArkLib.Data.CodingTheory.ReedMuller.Grid
+public import ArkLib.Data.CodingTheory.ReedMuller.PellikaanWu
 public import ArkLib.Data.CodingTheory.ReedSolomon
 public import ArkLib.Data.CodingTheory.ReedSolomon.Agreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementList
@@ -350,6 +394,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.AgreementThreshold
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.Binary.TraceLine
 public import ArkLib.Data.CodingTheory.ReedSolomon.Constrained
+public import ArkLib.Data.CodingTheory.ReedSolomon.Dual
 public import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 public import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved.AgreementBounds
@@ -372,6 +417,7 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.Uni
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupport
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.Capacity.WeightedSupportInterpolant
+public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.CosetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.DirectJetList
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.FirstOrder.Bounds
 public import
@@ -387,6 +433,63 @@ public import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability.PairwiseJohn
 public import ArkLib.Data.CodingTheory.ReedSolomon.ListSpecification
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multilinear
 public import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Basic
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ChartIncidence
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Computable
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegree
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeSampling
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.EqualDegreeTheorem
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.ExceptionalCount
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Folding
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FoldingComputable
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FoldingRound
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FoldingSampling
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.FrobeniusFactor
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Interleaved
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterleavedSampling
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Interpolation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.InterpolationParams
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineEvaluation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LineRoots
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaims
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaimsExact
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.LinearClaimsSampling
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.PersistenceDescent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Persistent
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Probability
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.RationalPair
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Separation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.SubspaceSeparation
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.TaylorChart
+public import
+  ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.TaylorSeries
+public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.AffineCombiner.Theorem
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity
 public import
   ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.Capacity.CertificateBound
@@ -515,6 +618,7 @@ public import
 public import ArkLib.Data.CodingTheory.ReedSolomon.MutualCorrelatedAgreement.TupleSpecialization
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement
 public import ArkLib.Data.CodingTheory.ReedSolomon.PowerAgreement.ConstantCode
+public import ArkLib.Data.CodingTheory.ReedSolomon.PrimitiveRootDomain
 public import ArkLib.Data.CodingTheory.ReedSolomon.ReciprocalWord
 public import ArkLib.Data.CodingTheory.SubspaceDesign
 public import ArkLib.Data.Domain.CosetFftDomain.Block
@@ -533,6 +637,7 @@ public import ArkLib.Data.Domain.FftDomain.Subdomain
 public import ArkLib.Data.Domain.FftDomain.ToSubgroup
 public import ArkLib.Data.EllipticCurve.BN254
 public import ArkLib.Data.Equiv.FiberCycle
+public import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.FieldTheory.BinaryTrace
 public import ArkLib.Data.Fin.Basic
 public import ArkLib.Data.Fin.BigOperators
@@ -555,7 +660,6 @@ public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
-public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.Poseidon2
 public import ArkLib.Data.Lattices.CyclotomicRing.Core
 public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
@@ -588,6 +692,7 @@ public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceInnerProduct
 public import ArkLib.Data.Lattices.CyclotomicRing.Subfield.TraceVanishing
 public import ArkLib.Data.Lattices.ModuleSIS
 public import ArkLib.Data.Lattices.Vectors
+public import ArkLib.Data.List.NetMult
 public import ArkLib.Data.Matrix.Basic
 public import ArkLib.Data.Matrix.DotProduct
 public import ArkLib.Data.Matrix.ReadOnce
@@ -610,15 +715,14 @@ public import ArkLib.Data.MvPolynomial.PrimeFingerprintProbability
 public import ArkLib.Data.MvPolynomial.RadicalSplit.Separable
 public import ArkLib.Data.MvPolynomial.RestrictDegree
 public import ArkLib.Data.MvPolynomial.RestrictDegreeVar
-public import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 public import ArkLib.Data.MvPolynomial.Split
+public import ArkLib.Data.MvPolynomial.VecTreeInterpolation
 public import ArkLib.Data.MvPolynomial.WeightAtMost
 public import ArkLib.Data.MvPolynomial.WeightedDegree
 public import ArkLib.Data.MvPolynomial.WeightedDegree.Products
 public import ArkLib.Data.MvPolynomial.WeightedHomogeneous
 public import ArkLib.Data.MvPolynomial.WeightedOrder
 public import ArkLib.Data.Nat.BitSum
-public import ArkLib.Data.OracleComp.QueryBounds
 public import ArkLib.Data.Polynomial.AffineFactorBadChallenge
 public import ArkLib.Data.Polynomial.BinaryTrace
 public import ArkLib.Data.Polynomial.BinaryTraceQuotient
@@ -672,13 +776,14 @@ public import ArkLib.Data.Polynomial.FractionFieldFactorization
 public import ArkLib.Data.Polynomial.FractionFieldResultant
 public import ArkLib.Data.Polynomial.FractionFieldRoots
 public import ArkLib.Data.Polynomial.FrobeniusContraction
+public import ArkLib.Data.Polynomial.GeneratorBatch
 public import ArkLib.Data.Polynomial.Indicator
 public import ArkLib.Data.Polynomial.Interface
+public import ArkLib.Data.Polynomial.LogDerivative
 public import ArkLib.Data.Polynomial.PermutationFingerprint
 public import ArkLib.Data.Polynomial.PermutationFingerprintDegree
 public import ArkLib.Data.Polynomial.PointCollision
 public import ArkLib.Data.Polynomial.PointCollisionProbability
-public import ArkLib.Data.Polynomial.PowerBatch
 public import ArkLib.Data.Polynomial.Prelims
 public import ArkLib.Data.Polynomial.RationalFunctions
 public import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
@@ -694,6 +799,7 @@ public import ArkLib.Data.Polynomial.ResultantDegree
 public import ArkLib.Data.Polynomial.ResultantSpecialization
 public import ArkLib.Data.Polynomial.SpecializationAvoidance
 public import ArkLib.Data.Polynomial.SplitFold
+public import ArkLib.Data.Polynomial.SubspacePolynomial
 public import ArkLib.Data.Polynomial.SymbolicInterpolationParameters
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSupport
 public import ArkLib.Data.Polynomial.SymbolicInterpolationSurplus
@@ -701,49 +807,52 @@ public import ArkLib.Data.Polynomial.TaylorPrefix
 public import ArkLib.Data.Polynomial.Trivariate
 public import ArkLib.Data.Polynomial.UniversalHenselNumerator
 public import ArkLib.Data.Probability.Combinatorial
+public import ArkLib.Data.Probability.FiniteChernoff
+public import ArkLib.Data.Probability.FiniteEntropy
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.Probability.KoalaBear
-public import ArkLib.Data.Probability.Sequential
+public import ArkLib.Data.Probability.MaxEventProbability
 public import ArkLib.Data.Probability.Uniform
-public import ArkLib.Interaction.CompositionSoundness
-public import ArkLib.Interaction.Oracle.Access
-public import ArkLib.Interaction.Oracle.Claim
-public import ArkLib.Interaction.Oracle.Composition
-public import ArkLib.Interaction.Oracle.CompositionSoundness
-public import ArkLib.Interaction.Oracle.CoreRun
-public import ArkLib.Interaction.Oracle.Execution
+public import ArkLib.Interaction.Composition
+public import ArkLib.Interaction.Execution
+public import ArkLib.Interaction.Legacy.Execution
+public import ArkLib.Interaction.Legacy.OracleAppend
+public import ArkLib.Interaction.Legacy.OracleExecution
+public import ArkLib.Interaction.Legacy.OracleKnowledge
+public import ArkLib.Interaction.Legacy.OracleReduction
+public import ArkLib.Interaction.Legacy.OracleSecurity
+public import ArkLib.Interaction.Legacy.Protocol
+public import ArkLib.Interaction.Legacy.Prover
+public import ArkLib.Interaction.Legacy.PureSlots
+public import ArkLib.Interaction.Legacy.Security
+public import ArkLib.Interaction.Legacy.Verifier
+public import ArkLib.Interaction.LegacyAppend
+public import ArkLib.Interaction.Oracle.BundleOps
+public import ArkLib.Interaction.Oracle.Cost
 public import ArkLib.Interaction.Oracle.LoggedExecution
-public import ArkLib.Interaction.Oracle.LoggedRun
-public import ArkLib.Interaction.Oracle.PhasedExecution
-public import ArkLib.Interaction.Oracle.PhasedRun
-public import ArkLib.Interaction.Oracle.Prefix
-public import ArkLib.Interaction.Oracle.Protocol
-public import ArkLib.Interaction.Oracle.Resource
-public import ArkLib.Interaction.Oracle.RunSources
-public import ArkLib.Interaction.Oracle.Runtime
-public import ArkLib.Interaction.Oracle.RuntimeSoundness
-public import ArkLib.Interaction.Oracle.Security.Knowledge
-public import ArkLib.Interaction.Oracle.Security.KnowledgeAppend
-public import ArkLib.Interaction.Oracle.Security.KnowledgeComposition
-public import ArkLib.Interaction.Oracle.Security.RoundByRound
-public import ArkLib.Interaction.Oracle.Security.Soundness
-public import ArkLib.Interaction.Oracle.Security.StateRestoration
-public import ArkLib.Interaction.Oracle.Security.StateRestorationBudget
-public import ArkLib.Interaction.Oracle.Security.StateRestorationCoins
-public import ArkLib.Interaction.Oracle.Security.StateRestorationGame
-public import ArkLib.Interaction.Oracle.Security.StateRestorationOracle
-public import ArkLib.Interaction.Oracle.Security.StateRestorationReplay
-public import ArkLib.Interaction.Oracle.Sequential
-public import ArkLib.Interaction.Oracle.Source
-public import ArkLib.Interaction.Oracle.SourceRouting
-public import ArkLib.Interaction.Oracle.Terminal
-public import ArkLib.Interaction.Oracle.TerminalMeasure
-public import ArkLib.Interaction.Oracle.TerminalRun
-public import ArkLib.Interaction.Oracle.TypeTree
-public import ArkLib.Interaction.Oracle.TypeTree.Decoration
-public import ArkLib.Interaction.Oracle.Virtual
-public import ArkLib.Interaction.Oracle.WorldSegments
+public import ArkLib.Interaction.Oracle.QueriesByMove
+public import ArkLib.Interaction.Oracle.QueriesByMoveLaws
+public import ArkLib.Interaction.Oracle.Reassociation
+public import ArkLib.Interaction.Oracle.Routing
+public import ArkLib.Interaction.Oracle.SentOracles
+public import ArkLib.Interaction.OracleVerifier
+public import ArkLib.Interaction.Protocol
 public import ArkLib.Interaction.Reduction
+public import ArkLib.Interaction.Security.Agreement
+public import ArkLib.Interaction.Security.Completeness
+public import ArkLib.Interaction.Security.CompositionSoundness
+public import ArkLib.Interaction.Security.Implications
+public import ArkLib.Interaction.Security.Knowledge
+public import ArkLib.Interaction.Security.KnowledgeComposition
+public import ArkLib.Interaction.Security.KnowledgeComposition.Extraction
+public import ArkLib.Interaction.Security.MeasuredExtraction
+public import ArkLib.Interaction.Security.RoundByRound
+public import ArkLib.Interaction.Security.Soundness
+public import ArkLib.Interaction.Security.StateRestoration
+public import ArkLib.Interaction.Security.StateRestorationBudget
+public import ArkLib.Interaction.Signature
+public import ArkLib.Interaction.StageChain
+public import ArkLib.Interaction.Transcript
 public import ArkLib.OracleReduction.BCS.Basic
 public import ArkLib.OracleReduction.Basic
 public import ArkLib.OracleReduction.Cast
@@ -779,7 +888,6 @@ public import ArkLib.OracleReduction.LiftContext.OracleReduction
 public import ArkLib.OracleReduction.LiftContext.Purity
 public import ArkLib.OracleReduction.LiftContext.Reduction
 public import ArkLib.OracleReduction.LogicStep
-public import ArkLib.OracleReduction.OracleInterface
 public import ArkLib.OracleReduction.Prelude
 public import ArkLib.OracleReduction.ProtocolSpec.Basic
 public import ArkLib.OracleReduction.ProtocolSpec.Cast
@@ -792,10 +900,13 @@ public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.OracleReduction.Security.ChallengePresampling
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.BlockStructure
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedScalar
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Layout
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.LayoutVecTree
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
@@ -807,14 +918,15 @@ public import ArkLib.OracleReduction.Security.GuardedSoundness
 public import ArkLib.OracleReduction.Security.Implications
 public import ArkLib.OracleReduction.Security.KnowledgeSoundnessRun
 public import ArkLib.OracleReduction.Security.RbrGame
+public import ArkLib.OracleReduction.Security.Resources
 public import ArkLib.OracleReduction.Security.Rewinding
 public import ArkLib.OracleReduction.Security.RoundByRound
 public import ArkLib.OracleReduction.Security.SoundnessInitialization
 public import ArkLib.OracleReduction.Security.SpecialSoundness
-public import ArkLib.OracleReduction.Security.StateRestoration
 public import ArkLib.OracleReduction.Security.TranscriptTree
 public import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 public import ArkLib.OracleReduction.Security.TranscriptTree.Composition
+public import ArkLib.OracleReduction.Security.UnboundedExtraction
 public import ArkLib.OracleReduction.VectorIOR
 public import ArkLib.ProofSystem.BatchedFri.EndToEnd
 public import ArkLib.ProofSystem.BatchedFri.Security
@@ -833,6 +945,7 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Opening
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Fibers
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.Prelude.Folding
+public import ArkLib.ProofSystem.Binius.BinaryBasefold.ProductClaim
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Completeness
 public import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase.Execution
@@ -861,16 +974,23 @@ public import ArkLib.ProofSystem.Binius.BinaryBasefold.Steps.Relay
 public import ArkLib.ProofSystem.Binius.FRIBinius.Conformance
 public import ArkLib.ProofSystem.Binius.FRIBinius.Prelude
 public import ArkLib.ProofSystem.Binius.FRIBinius.RingSwitch
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.General
+public import ArkLib.ProofSystem.Binius.FRIBinius.Unrolled.Spec
 public import ArkLib.ProofSystem.Component.CheckClaim
 public import ArkLib.ProofSystem.Component.DoNothing
+public import ArkLib.ProofSystem.Component.GeneratorBatch
 public import ArkLib.ProofSystem.Component.NoInteraction
-public import ArkLib.ProofSystem.Component.PowerBatch
 public import ArkLib.ProofSystem.Component.QuotientZeroTest
+public import ArkLib.ProofSystem.Component.RandomEvaluation
 public import ArkLib.ProofSystem.Component.RandomQuery
 public import ArkLib.ProofSystem.Component.ReduceClaim
 public import ArkLib.ProofSystem.Component.SendChallenge
 public import ArkLib.ProofSystem.Component.SendClaim
 public import ArkLib.ProofSystem.Component.SendWitness
+public import ArkLib.ProofSystem.ConstraintSystem.Air
+public import ArkLib.ProofSystem.ConstraintSystem.Basic
+public import ArkLib.ProofSystem.ConstraintSystem.Examples
+public import ArkLib.ProofSystem.ConstraintSystem.LogUp
 public import ArkLib.ProofSystem.ConstraintSystem.Lookup
 public import ArkLib.ProofSystem.ConstraintSystem.MemoryChecking
 public import ArkLib.ProofSystem.ConstraintSystem.Plonk
@@ -916,6 +1036,7 @@ public import ArkLib.ProofSystem.Fri.Spec.HonestFolding
 public import ArkLib.ProofSystem.Fri.Spec.InputRelation
 public import ArkLib.ProofSystem.Fri.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.Fri.Spec.LocalCompleteness
+public import ArkLib.ProofSystem.Fri.Spec.MeasuredKnowledgeSoundness
 public import ArkLib.ProofSystem.Fri.Spec.QueryCompleteness
 public import ArkLib.ProofSystem.Fri.Spec.QueryExecution
 public import ArkLib.ProofSystem.Fri.Spec.QuerySoundness
@@ -924,15 +1045,27 @@ public import ArkLib.ProofSystem.Fri.Spec.SingleRound
 public import ArkLib.ProofSystem.Fri.Spec.Soundness
 public import ArkLib.ProofSystem.Fri.Spec.Transcript
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
-public import ArkLib.ProofSystem.Plonk.Accumulator
-public import ArkLib.ProofSystem.Plonk.AccumulatorComputable
-public import ArkLib.ProofSystem.Plonk.AccumulatorResidual
-public import ArkLib.ProofSystem.Plonk.Basic
-public import ArkLib.ProofSystem.Plonk.Computable
-public import ArkLib.ProofSystem.Plonk.Domain
-public import ArkLib.ProofSystem.Plonk.Encoding
-public import ArkLib.ProofSystem.Plonk.PermutationFingerprint
-public import ArkLib.ProofSystem.Plonk.Prepared
+public import ArkLib.ProofSystem.Plonk.Accumulator.Basic
+public import ArkLib.ProofSystem.Plonk.Accumulator.Computable
+public import ArkLib.ProofSystem.Plonk.Accumulator.Residual
+public import ArkLib.ProofSystem.Plonk.Assembly.CircuitExtraction
+public import ArkLib.ProofSystem.Plonk.Assembly.Data
+public import ArkLib.ProofSystem.Plonk.Assembly.Reduction
+public import ArkLib.ProofSystem.Plonk.Batch.Data
+public import ArkLib.ProofSystem.Plonk.Batch.Reduction
+public import ArkLib.ProofSystem.Plonk.Encoding.Basic
+public import ArkLib.ProofSystem.Plonk.Encoding.Computable
+public import ArkLib.ProofSystem.Plonk.Encoding.Domain
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Completeness
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Data
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Reduction
+public import ArkLib.ProofSystem.Plonk.GrandProduct.Security
+public import ArkLib.ProofSystem.Plonk.Quotient.Data
+public import ArkLib.ProofSystem.Plonk.Quotient.Reduction
+public import ArkLib.ProofSystem.Plonk.Relation.Basic
+public import ArkLib.ProofSystem.Plonk.Relation.PermutationFingerprint
+public import ArkLib.ProofSystem.Plonk.Relation.Prepared
+public import ArkLib.ProofSystem.Plonk.SendWitness
 public import ArkLib.ProofSystem.RingSwitching.Basic
 public import ArkLib.ProofSystem.RingSwitching.Lift
 public import ArkLib.ProofSystem.RingSwitching.Lift.Presentation
@@ -975,47 +1108,88 @@ public import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
 public import ArkLib.ProofSystem.RingSwitching.Transport
 public import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 public import ArkLib.ProofSystem.RingSwitching.Transport.Eval
+public import ArkLib.ProofSystem.Spartan.Algebra.Computable
+public import ArkLib.ProofSystem.Spartan.Algebra.Identities
+public import ArkLib.ProofSystem.Spartan.Algebra.Layout
+public import ArkLib.ProofSystem.Spartan.Algebra.Realization
 public import ArkLib.ProofSystem.Spartan.Basic
+public import ArkLib.ProofSystem.Spartan.Batching.Reduction
+public import ArkLib.ProofSystem.Spartan.Batching.Relation
+public import ArkLib.ProofSystem.Spartan.Context
+public import ArkLib.ProofSystem.Spartan.Error
+public import ArkLib.ProofSystem.Spartan.Evaluation.Reduction
+public import ArkLib.ProofSystem.Spartan.Evaluation.Relation
+public import ArkLib.ProofSystem.Spartan.Protocol
+public import ArkLib.ProofSystem.Spartan.Security
+public import ArkLib.ProofSystem.Spartan.Sumcheck.First
+public import ArkLib.ProofSystem.Spartan.Sumcheck.Second
+public import ArkLib.ProofSystem.Spartan.Sumcheck.VirtualOracle
+public import ArkLib.ProofSystem.Spartan.Terminal
+public import ArkLib.ProofSystem.Spartan.WitnessAttachment
+public import ArkLib.ProofSystem.Spartan.ZeroCheck.Reduction
+public import ArkLib.ProofSystem.Spartan.ZeroCheck.Relation
 public import ArkLib.ProofSystem.Stir.Combine
 public import ArkLib.ProofSystem.Stir.MainThm
 public import ArkLib.ProofSystem.Stir.OutOfDomSmpl
 public import ArkLib.ProofSystem.Stir.ProximityBound
 public import ArkLib.ProofSystem.Stir.ProximityGap
 public import ArkLib.ProofSystem.Stir.Quotienting
+public import ArkLib.ProofSystem.Sumcheck.Behavior
+public import ArkLib.ProofSystem.Sumcheck.BehaviorComposition
+public import ArkLib.ProofSystem.Sumcheck.Completeness
+public import ArkLib.ProofSystem.Sumcheck.Composition
+public import ArkLib.ProofSystem.Sumcheck.Computable
+public import ArkLib.ProofSystem.Sumcheck.ComputableInterval
+public import ArkLib.ProofSystem.Sumcheck.ComputableProjection
+public import ArkLib.ProofSystem.Sumcheck.ComputableSoundness
 public import ArkLib.ProofSystem.Sumcheck.Domain
+public import ArkLib.ProofSystem.Sumcheck.DomainEquivalence
+public import ArkLib.ProofSystem.Sumcheck.Execution
+public import ArkLib.ProofSystem.Sumcheck.Fold
+public import ArkLib.ProofSystem.Sumcheck.FoldComposition
 public import ArkLib.ProofSystem.Sumcheck.Impl.Basic
+public import ArkLib.ProofSystem.Sumcheck.Impl.IndexedProjection
+public import ArkLib.ProofSystem.Sumcheck.Impl.OracleProver
 public import ArkLib.ProofSystem.Sumcheck.Impl.Projection
 public import ArkLib.ProofSystem.Sumcheck.Impl.Representation
-public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryCompleteness
-public import ArkLib.ProofSystem.Sumcheck.Interaction.ArbitraryRounds
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Closing
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Composition
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Computable
-public import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableCompleteness
-public import ArkLib.ProofSystem.Sumcheck.Interaction.ComputableSoundness
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Legacy
-public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateRound
-public import ArkLib.ProofSystem.Sumcheck.Interaction.MultivariateSoundness
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Projection
-public import ArkLib.ProofSystem.Sumcheck.Interaction.ProjectionTransport
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Protocol
-public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolCompleteness
-public import ArkLib.ProofSystem.Sumcheck.Interaction.ProtocolSoundness
-public import ArkLib.ProofSystem.Sumcheck.Interaction.RoundByRound
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Sequential
-public import ArkLib.ProofSystem.Sumcheck.Interaction.SingleRound
-public import ArkLib.ProofSystem.Sumcheck.Interaction.Soundness
+public import ArkLib.ProofSystem.Sumcheck.Indexed
+public import ArkLib.ProofSystem.Sumcheck.IndexedDomain
+public import ArkLib.ProofSystem.Sumcheck.Interpreted
+public import ArkLib.ProofSystem.Sumcheck.InterpretedExecution
+public import ArkLib.ProofSystem.Sumcheck.InterpretedPath
+public import ArkLib.ProofSystem.Sumcheck.Interval
+public import ArkLib.ProofSystem.Sumcheck.IntervalAdaptive
+public import ArkLib.ProofSystem.Sumcheck.IntervalCompleteness
+public import ArkLib.ProofSystem.Sumcheck.IntervalExecution
+public import ArkLib.ProofSystem.Sumcheck.IntervalRoundSoundness
+public import ArkLib.ProofSystem.Sumcheck.IntervalSoundness
+public import ArkLib.ProofSystem.Sumcheck.Knowledge
+public import ArkLib.ProofSystem.Sumcheck.LegacyCompleteness
+public import ArkLib.ProofSystem.Sumcheck.LegacyEquivalence
+public import ArkLib.ProofSystem.Sumcheck.LegacyProjection
+public import ArkLib.ProofSystem.Sumcheck.LegacyProtocol
+public import ArkLib.ProofSystem.Sumcheck.LegacySoundness
 public import ArkLib.ProofSystem.Sumcheck.Message.Basic
 public import ArkLib.ProofSystem.Sumcheck.Message.CompPoly
 public import ArkLib.ProofSystem.Sumcheck.Message.Quadratic
+public import ArkLib.ProofSystem.Sumcheck.MessageTree
+public import ArkLib.ProofSystem.Sumcheck.Projection
+public import ArkLib.ProofSystem.Sumcheck.Protocol
 public import ArkLib.ProofSystem.Sumcheck.Prover.Basic
 public import ArkLib.ProofSystem.Sumcheck.Prover.Enumeration
+public import ArkLib.ProofSystem.Sumcheck.RoundByRound
+public import ArkLib.ProofSystem.Sumcheck.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Soundness
 public import ArkLib.ProofSystem.Sumcheck.Source
 public import ArkLib.ProofSystem.Sumcheck.Spec.General
+public import ArkLib.ProofSystem.Sumcheck.Spec.PolynomialInterface
+public import ArkLib.ProofSystem.Sumcheck.Spec.RoundPolynomial
 public import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 public import ArkLib.ProofSystem.Sumcheck.Structured
 public import ArkLib.ProofSystem.Sumcheck.Structured.RoundLemmas
 public import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+public import ArkLib.ProofSystem.Sumcheck.Tree
+public import ArkLib.ProofSystem.Sumcheck.Types
 public import ArkLib.ProofSystem.ToyProblem.Codegen
 public import ArkLib.ProofSystem.ToyProblem.ConstrainedCode
 public import ArkLib.ProofSystem.ToyProblem.Definitions
@@ -1028,9 +1202,11 @@ public import ArkLib.ProofSystem.ToyProblem.Spec.ErasureDecoder
 public import ArkLib.ProofSystem.ToyProblem.Spec.General
 public import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 public import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+public import ArkLib.Relation.Basic
+public import ArkLib.Relation.OracleInterface
+public import ArkLib.Relation.Prelude
 public import ArkLib.ToCompPoly.Multilinear.Basic
 public import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
-public import ArkLib.ToCompPoly.Multivariate.Eval
 public import ArkLib.ToCompPoly.Univariate.Arithmetic
 public import ArkLib.ToCompPoly.Univariate.ArithmeticConvolutionCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticCost
@@ -1042,14 +1218,14 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomial
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
-public import ArkLib.ToCompPoly.Univariate.Basic
-public import ArkLib.ToCompPoly.Univariate.Lagrange
+public import ArkLib.ToCompPoly.Univariate.DegreeLT
 public import ArkLib.ToCompPoly.Univariate.Primitive
-public import ArkLib.ToCompPoly.Univariate.Raw.Size
 public import ArkLib.ToCompPoly.Univariate.Size
+public import ArkLib.ToMathlib.Algebra.CharP.NatCast
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Ratio
 public import ArkLib.ToMathlib.Algebra.Order.Floor.RelativeError
 public import ArkLib.ToMathlib.Algebra.Order.Floor.Semiring
+public import ArkLib.ToMathlib.Algebra.Polynomial.Pack
 public import ArkLib.ToMathlib.Analysis.ExponentialStaircase
 public import ArkLib.ToMathlib.Analysis.Simplex.CenteredMoments
 public import ArkLib.ToMathlib.Analysis.Simplex.MaxCoordinate
@@ -1064,23 +1240,36 @@ public import ArkLib.ToMathlib.BigOperators.Fin
 public import ArkLib.ToMathlib.BigOperators.Intervals
 public import ArkLib.ToMathlib.BigOperators.LinearBudget
 public import ArkLib.ToMathlib.Combinatorics.CubicStaircase
+public import ArkLib.ToMathlib.Combinatorics.Enumerative.Descents
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.DoubleCounting
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.IncidenceProduct
 public import ArkLib.ToMathlib.Combinatorics.Enumerative.MonomialCount
+public import ArkLib.ToMathlib.Combinatorics.Hypergraph.GenericZeroPattern
+public import ArkLib.ToMathlib.Combinatorics.Hypergraph.PartitionConnected
 public import ArkLib.ToMathlib.Combinatorics.QuadraticStaircase
+public import ArkLib.ToMathlib.Combinatorics.SetFamily.GenericZeroPattern
+public import ArkLib.ToMathlib.Combinatorics.SetFamily.IntersectingSubmodular
 public import ArkLib.ToMathlib.Control.MonadLift
+public import ArkLib.ToMathlib.FieldTheory.Finite.Extension
+public import ArkLib.ToMathlib.FieldTheory.Finite.TracePolynomial
 public import ArkLib.ToMathlib.FieldTheory.Kummer
+public import ArkLib.ToMathlib.Finset.AffineZeros
 public import ArkLib.ToMathlib.Finset.Basic
 public import ArkLib.ToMathlib.Finset.LineAgreement
-public import ArkLib.ToMathlib.Finset.SumRangeFrom
 public import ArkLib.ToMathlib.Finset.ToListWithProof
+public import ArkLib.ToMathlib.Finset.TripleCount
 public import ArkLib.ToMathlib.Finsupp.Weight
+public import ArkLib.ToMathlib.Fintype.CardEmbedding
+public import ArkLib.ToMathlib.GroupTheory.ElementaryAbelian
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.LagrangeLine
+public import ArkLib.ToMathlib.LinearAlgebra.LagrangePartialFraction
 public import ArkLib.ToMathlib.LinearAlgebra.LineInjectivity
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.KernelDescent
+public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Pivot
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.PrimitiveKernel
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Rank
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.RowBasis
@@ -1096,6 +1285,8 @@ public import ArkLib.ToMathlib.MeasureTheory.Integral.PositivePart
 public import ArkLib.ToMathlib.MvPolynomial.ClearedSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.CoeffBound
 public import ArkLib.ToMathlib.MvPolynomial.CompleteHomogeneous
+public import ArkLib.ToMathlib.MvPolynomial.CurriedDegree
+public import ArkLib.ToMathlib.MvPolynomial.Diagonal
 public import ArkLib.ToMathlib.MvPolynomial.FirstOrderTaylor
 public import ArkLib.ToMathlib.MvPolynomial.FrobeniusPullback
 public import ArkLib.ToMathlib.MvPolynomial.OptionRoots
@@ -1104,20 +1295,21 @@ public import ArkLib.ToMathlib.MvPolynomial.PDeriv
 public import ArkLib.ToMathlib.MvPolynomial.PolynomialCoefficients
 public import ArkLib.ToMathlib.MvPolynomial.PowerMomentGeometry
 public import ArkLib.ToMathlib.MvPolynomial.PowerMomentLift
+public import ArkLib.ToMathlib.MvPolynomial.PrefixSubstitution
 public import ArkLib.ToMathlib.MvPolynomial.RadicalSplit
 public import ArkLib.ToMathlib.MvPolynomial.RootContraction
 public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippel
+public import ArkLib.ToMathlib.MvPolynomial.SchwartzZippelPrefix
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeight
 public import ArkLib.ToMathlib.MvPolynomial.SupportWeightOffset
 public import ArkLib.ToMathlib.MvPolynomial.UnivariateSpecialization
 public import ArkLib.ToMathlib.NumberTheory.Harmonic.Bounds
 public import ArkLib.ToMathlib.NumberTheory.Harmonic.Thresholds
 public import ArkLib.ToMathlib.Order.FloorHalf
-public import ArkLib.ToMathlib.Polynomial.AevalXPow
 public import ArkLib.ToMathlib.Polynomial.CompositionDegree
+public import ArkLib.ToMathlib.Polynomial.DegreeLEFunctionals
 public import ArkLib.ToMathlib.Polynomial.DegreeLT
 public import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
-public import ArkLib.ToMathlib.Polynomial.EvalExt
 public import ArkLib.ToMathlib.Polynomial.EventualGrowth
 public import ArkLib.ToMathlib.Polynomial.FrobeniusTaylor
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor
@@ -1126,10 +1318,12 @@ public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Forward
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.JetDivisibility
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Lifting
 public import ArkLib.ToMathlib.Polynomial.HasseTaylor.Shift
+public import ArkLib.ToMathlib.Polynomial.LinearIndependent
 public import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 public import ArkLib.ToMathlib.Polynomial.RectangleDifference
 public import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 public import ArkLib.ToMathlib.Polynomial.SparseContraction
+public import ArkLib.ToMathlib.RingTheory.Henselian
 public import ArkLib.ToMathlib.RingTheory.Ideal.CutFamily
 public import ArkLib.ToMathlib.RingTheory.Ideal.HeightUnder
 public import ArkLib.ToMathlib.RingTheory.Ideal.MinimalPrime.Noetherian
@@ -1167,5 +1361,8 @@ public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteQuotient
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.FiniteZeroLocus
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpen
 public import ArkLib.ToMathlib.RingTheory.Nullstellensatz.PrincipalOpenParametrization
+public import ArkLib.ToMathlib.RingTheory.Polynomial.GenericZeroPattern
+public import ArkLib.ToMathlib.RingTheory.PowerSeries.SimpleRoot
 public import ArkLib.ToMathlib.RingTheory.Radical.Representative
 public import ArkLib.ToMathlib.Set.Finite
+public import ArkLib.ToVCVio.PairingDLog

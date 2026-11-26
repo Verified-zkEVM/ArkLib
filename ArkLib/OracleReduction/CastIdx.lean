@@ -26,7 +26,7 @@ The protocol specification is untouched; casts along an equality of protocol spe
 
 * `OracleVerifier.castIdx`, `OracleReduction.castIdx`: the casts. The verifier of a cast reduction
   is the cast verifier, by definition.
-* `OracleVerifier.castIdx_rbrKnowledgeSoundnessWorstCase`: worst-case round-by-round knowledge
+* `OracleVerifier.castIdx_rbrKnowledgeSoundness`: round-by-round knowledge
   soundness moves along the cast, at the relations of the target indices and the same error.
 * `OracleReduction.castIdx_perfectCompleteness`: perfect completeness moves along the cast.
 * `OracleVerifier.castIdxGuardedForm`: a guarded form of the verifier moves along the cast.
@@ -64,16 +64,16 @@ def castIdxGuardedForm (hi : i₁ = i₂) (hj : j₁ = j₂)
 variable [∀ i, SampleableType (pSpec.Challenge i)]
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-/-- Worst-case round-by-round knowledge soundness moves along an index cast, from the relations
+/-- Round-by-round knowledge soundness moves along an index cast, from the relations
 at the source indices to those at the target indices, with the same error. -/
-theorem castIdx_rbrKnowledgeSoundnessWorstCase
+theorem castIdx_rbrKnowledgeSoundness
     {relIn : ∀ i, Set ((StmtIn i × ∀ k, OStmtIn i k) × WitIn i)}
     {relOut : ∀ j, Set ((StmtOut j × ∀ k, OStmtOut j k) × WitOut j)}
     (hi : i₁ = i₂) (hj : j₁ = j₂)
     {V : OracleVerifier oSpec (StmtIn i₁) (OStmtIn i₁) (StmtOut j₁) (OStmtOut j₁) pSpec}
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.toVerifier.rbrKnowledgeSoundnessWorstCase init impl (relIn i₁) (relOut j₁) ε) :
-    (V.castIdx hi hj).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+    (h : V.toVerifier.rbrKnowledgeSoundness init impl (relIn i₁) (relOut j₁) ε) :
+    (V.castIdx hi hj).toVerifier.rbrKnowledgeSoundness init impl
       (relIn i₂) (relOut j₂) ε := by
   subst hi hj
   exact h

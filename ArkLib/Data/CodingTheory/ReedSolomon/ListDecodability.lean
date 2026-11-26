@@ -18,6 +18,9 @@ public import ArkLib.Data.CodingTheory.ReedSolomon
   in [ACFY24].
   The bound is independent of the size of `F`.
 
+  `ReedSolomon.Lambda_code_comp_equiv`: reindexing the evaluation points by an equivalence does
+  not change the maximal list size `Code.Lambda`.
+
 ## References
 
   * [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
@@ -38,7 +41,8 @@ variable {ι F : Type*} [Fintype ι] [Field F]
 
 This is the Reed-Solomon instance of the alphabet-agnostic counting bound
 `Code.card_le_of_pairwise_agree_le`: two distinct codewords agree in fewer than `m` positions
-(`agree_lt_of_mem_code`), and `m ≤ (√ρ)² · |ι|` by definition of the rate. -/
+(`agree_lt_of_mem_code`), so their agreement is at most
+`min(m, |ι|) = (√ρ)² · |ι|` by definition of the saturated rate. -/
 lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (hm : 0 < m)
     {η : ℝ} (hη : 0 < η) (y : ι → F) (T : Finset (ι → F))
     (hT : ∀ c ∈ T, c ∈ Code.closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y
@@ -64,5 +68,13 @@ theorem listDecodable_reedSolomon [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (h
   rw [Code.isListDecodable_iff_forall_finset_card_le]
   intro y T hT
   exact card_le_of_subset_closeCodewords domain hm hη y T fun c hc ↦ hT _ hc
+
+/-- Reindexing the evaluation points of a Reed–Solomon code by an equivalence `e : κ ≃ ι` does not
+change the maximal list size. -/
+theorem Lambda_code_comp_equiv {κ : Type*} [Fintype κ] (e : κ ≃ ι) (domain : ι ↪ F) (k : ℕ)
+    (δ : ℝ) :
+    Code.Lambda (code (e.toEmbedding.trans domain) k : Set (κ → F)) δ =
+      Code.Lambda (code domain k : Set (ι → F)) δ :=
+  Code.Lambda_comp_equiv e (mem_code_comp_equiv e domain k) δ
 
 end ReedSolomon

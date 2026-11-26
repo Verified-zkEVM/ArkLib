@@ -8,6 +8,7 @@ module
 public import Mathlib.LinearAlgebra.Lagrange
 public import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 public import ArkLib.Data.MvPolynomial.Degrees
+public import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 public import Mathlib.Data.FinEnum
 
 /-!
@@ -73,70 +74,32 @@ def Function.extendDomain {α β : Type*} [DecidableEq α] [Zero β] {s : Finset
   fun x ↦ if hx : x ∈ s then f x hx else 0
 
 open _root_.MvPolynomial.Function in
-lemma schwartz_zippel' [Finite σ] {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
+lemma schwartz_zippel' {p : MvPolynomial σ R} (hp : p ≠ 0) (S : σ → Finset R) :
     #{x ∈ Finset.pi p.vars S | eval (extendDomain x) p = 0} / ∏ i ∈ p.vars, (#(S i) : ℚ≥0)
       ≤ ∑ i ∈ p.vars, (p.degreeOf i / #(S i) : ℚ≥0) := by
-  let : Fintype σ := Fintype.ofFinite σ
-  let S' : σ → Finset R := fun i ↦ if i ∈ p.vars then S i else {0}
-  have hsz := schwartz_zippel_of_fintype (p := p) hp S'
+  obtain ⟨q, hq⟩ := exists_rename_coe_vars_eq p
+  have heval (a : (i : σ) → i ∈ p.vars → R) :
+      eval (extendDomain a) p = eval (fun i : p.vars => a i i.property) q := by
+    conv_lhs => arg 2; rw [← hq]
+    simp [eval_rename, extendDomain, Function.comp_def]
+  have hsz := schwartz_zippel_of_fintype (p := q)
+    (fun hz => hp (by simpa [hz] using hq.symm)) (fun i : p.vars => S i)
   convert hsz using 1
   · congr! 1
-    · refine congr_arg _ (Finset.card_bij ?_ ?_ ?_ ?_)
-      · intro a _ i
-        exact if hi : i ∈ p.vars then a i hi else 0
+    · refine congr_arg _ (Finset.card_bij (fun a _ (i : p.vars) => a i i.property) ?_ ?_ ?_)
       · intro a ha
-        rcases Finset.mem_filter.mp ha with ⟨ha_pi, ha_eval⟩
-        have ha_mem : ∀ i, ∀ hi : i ∈ p.vars, a i hi ∈ S i := by
-          rwa [Finset.mem_pi] at ha_pi
-        refine Finset.mem_filter.mpr ?_
-        constructor
-        · rw [Fintype.mem_piFinset]
-          intro i
-          by_cases hi : i ∈ p.vars
-          · simpa [S', hi] using ha_mem i hi
-          · simp [S', hi]
-        · change eval (extendDomain a) p = 0
-          exact ha_eval
-      · intro a₁ ha₁ a₂ ha₂ h
+        simpa [mem_filter, mem_pi, Fintype.mem_piFinset, ← heval] using ha
+      · intro a ha b hb hab
         funext i hi
-        have h' := congr_fun h i
-        simpa [extendDomain, hi] using h'
+        exact congr_fun hab ⟨i, hi⟩
       · intro b hb
-        rcases Finset.mem_filter.mp hb with ⟨hb_pi, hb_eval⟩
-        have hb_mem : ∀ i, b i ∈ S' i := by
-          rwa [Fintype.mem_piFinset] at hb_pi
-        have h_extend : extendDomain (s := p.vars) (fun i _hi ↦ b i) = b := by
-          funext i
-          by_cases hi : i ∈ p.vars
-          · simp [extendDomain, hi]
-          · have hzero : b i = 0 := by
-              have : b i ∈ ({0} : Finset R) := by simpa [S', hi] using hb_mem i
-              simpa using this
-            simp [extendDomain, hi, hzero]
-        refine ⟨fun i _hi ↦ b i, ?_, h_extend⟩
-        · refine Finset.mem_filter.mpr ?_
-          constructor
-          · rw [Finset.mem_pi]
-            intro i hi
-            simpa [S', hi] using hb_mem i
-          · simpa [h_extend] using hb_eval
-    · rw [← Finset.prod_subset (Finset.subset_univ p.vars)]
-      · refine Finset.prod_congr rfl ?_
-        intro i hi
-        simp [S', hi]
-      · intro i _ hi
-        simp [S', hi]
-  · rw [← Finset.sum_subset (Finset.subset_univ p.vars)]
-    · refine Finset.sum_congr rfl ?_
-      intro x hx
-      simp [S', hx]
-    · intro x _ hx
-      have hdeg : degreeOf x p = 0 := by
-        rw [degreeOf]
-        simp only [Multiset.count_eq_zero]
-        rw [vars_def] at hx
-        exact fun h => hx (Multiset.mem_toFinset.mpr h)
-      simp [S', hx, hdeg]
+        refine ⟨fun i hi => b ⟨i, hi⟩, ?_, rfl⟩
+        simpa [mem_filter, mem_pi, Fintype.mem_piFinset, heval] using hb
+    · exact (Finset.prod_coe_sort p.vars _).symm
+  · rw [← Finset.sum_coe_sort]
+    apply Finset.sum_congr rfl
+    intro i hi
+    rw [← degreeOf_rename_of_injective Subtype.val_injective i, hq]
 
 
 end SchwartzZippel
@@ -166,40 +129,24 @@ open _root_.MvPolynomial.Function Fintype
 variable {n : ℕ}
 
 open Polynomial
-/-- A polynomial is zero if its degrees are bounded and it is zero on the product set. -/
--- This does not follow from Schwartz-Zippel!
--- Instead we should do induction on the number of variables.
--- Hence we should state the theorem for `σ = Fin n` first.
+/-- A polynomial is zero if its degrees are bounded and it is zero on the product set.
+
+This is the nested-tree zero test on the tree whose level `i` carries the elements of `S i` below
+every node (`NestedEvaluationTree.grid`). -/
 theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin {n : ℕ} {p : R[X Fin n]}
     (S : Fin n → Finset R) (hDegree : ∀ i, p.degreeOf i < (S i).card)
     (hEval : ∀ x ∈ piFinset fun i ↦ S i, eval x p = 0) :
         p = 0 := by
-  induction n with
-  | zero =>
-    rw [eq_C_of_isEmpty p] at hEval ⊢
-    simp_all only [IsEmpty.forall_iff, piFinset_of_isEmpty, univ_unique, mem_singleton, eval_C,
-      forall_eq, C_0]
-  | succ n ih =>
-    -- The head-variable root count is shared with the nested-tree zero test; only `hEvalQ`
-    -- differs between the two (product set here, `k` subtrees there).
-    refine eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero (S 0) (hDegree 0) ?_
-    intro x hx
-    let px := Polynomial.eval (C x) (finSuccEquiv R n p)
-    have hDegreePx (i : Fin n) : px.degreeOf i < (S i.succ).card :=
-      lt_of_le_of_lt (degreeOf_eval_C_finSuccEquiv p i x) (hDegree i.succ)
-    have hEvalPx : ∀ y ∈ piFinset fun (i : Fin n) ↦ S i.succ, eval y px = 0 := by
-      intro y hy
-      change eval y (Polynomial.eval (C x) (finSuccEquiv R n p)) = 0
-      rw [eval_comp_eval_C_finSuccEquiv]
-      have hy' := Fintype.mem_piFinset.mp hy
-      have : Fin.cons x y ∈ piFinset fun i ↦ S i := by
-        rw [Fintype.mem_piFinset]
-        intro a
-        induction a using Fin.inductionOn with
-        | zero => simpa using hx
-        | succ i => simpa using hy' i
-      simpa using hEval (Fin.cons x y) this
-    simpa [px] using ih (fun i => S i.succ) hDegreePx hEvalPx
+  classical
+  let label : (i : Fin n) → Fin (S i).card → R := fun i j => ((S i).equivFin.symm j : R)
+  refine NestedEvaluationTree.eq_zero_of_vanishes_comp (k := fun i => (S i).card)
+    (fun i => lt_of_le_of_lt (Nat.zero_le _) (hDegree i)) (NestedEvaluationTree.grid label) p id
+    (fun i => (Nat.zero_add _).symm) hDegree
+    (NestedEvaluationTree.isDistinct_grid label fun i =>
+      Subtype.val_injective.comp (S i).equivFin.symm.injective) ?_
+  refine (NestedEvaluationTree.vanishes_grid label _).2 fun path => hEval _ ?_
+  rw [Fintype.mem_piFinset]
+  exact fun i => ((S i).equivFin.symm (path i)).2
 
 theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero {p : R[X σ]} (S : σ → Finset R)
     (hDegree : ∀ i, p.degreeOf i < #(S i))

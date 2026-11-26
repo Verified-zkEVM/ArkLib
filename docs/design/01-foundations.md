@@ -155,9 +155,10 @@ VCVio already owns the semantics ArkLib should build on:
 theorem assumes an advantage-preserving inequality supplied separately. It does not yet package the
 additive or substitution-style error transforms required by the final compiler calculus.
 
-### 3.2 Missing integration boundaries
+### 3.2 Integration boundaries
 
-The following are current gaps, not July-era greenfield rewrites.
+These boundaries were identified as gaps between VCVio and ArkLib. The first two have since been
+provided; the others remain open.
 
 #### Runner-produced resumable artifact
 
@@ -165,18 +166,26 @@ ArkLib needs one execution result that packages the returned value, final handle
 query trace or named trace regions, and the evidence used to close derived claims. Resumption must
 continue from that final state, and two sequential regions must agree with one sequential run.
 
-VCVio has the component stateful runners and instrumentation laws, but no single supported artifact
-with this contract. The first general security client should add the smallest package upstream or a
-thin ArkLib adapter that is explicitly temporary.
+Implemented: VCVio's `OracleRuntime` and `RunResult` (`VCVio.OracleComp.Runtime`) pair the output,
+final state and ordered surface query log; `OracleRuntime.resume` continues from the final state and
+appends the log. A persistent runtime executes the interaction core's logged run directly as
+`runtime.run (V.runWithLog stmt data prover)`. `simulateQ_toLog_runWithQueriesByMove` in
+`ArkLib/Interaction/Oracle/QueriesByMoveLaws.lean` proves that interpreting the run's queries
+by move commutes with forgetting them to the full query logs, for every interpreter, stateful
+runtimes included. The deleted old layer had separate runtime and phased runners.
 
 #### One terminal failure boundary
 
 Missing probability mass retains VCVio's existing failure or nontermination meaning. Protocol
 rejection and explicit model faults are returned values. The desired bridge materializes missing
-mass only when a caller supplies the named fault value; otherwise the caller proves `NeverFail`
-before decoding a terminal outcome.
+mass only when a caller supplies the named fault value; otherwise the caller proves the program
+has full mass before decoding a terminal outcome.
 
-No supported generic accept/reject/fault materialization currently provides this boundary.
+The interaction core keeps missing runtime mass separate from rejection: a core verdict is an
+`Option`, and `OracleVerifier.decideCatching` in `ArkLib/Interaction/Oracle/LoggedExecution.lean`
+keeps the label of a handler failure. The deleted old layer decoded missing mass as a named fault
+through `Terminal.observe`; the [migration list](interaction-layer/migration-list.md) records its
+retirement.
 
 #### Certified query-trace transducers
 
@@ -187,8 +196,9 @@ transducer carrier.
 #### Conditioning and auditable dynamic programming
 
 VCVio contains concrete conditioned arguments and random-oracle programming tools, but the reusable
-finite-partition, query-before-program, and state-restoration interfaces remain incomplete. Add only
-the general lemmas demanded by a real salted state-restoration game.
+finite-partition and query-before-program interfaces remain incomplete. The
+state-restoration theorems in `ArkLib/Interaction/Security/` were proved without them, so
+add only the general lemmas that a later client, such as a salted Fiat–Shamir bridge, demands.
 
 #### Error-bearing cost-aware reductions
 
@@ -236,7 +246,5 @@ profile, or causal transducer.
 - Legacy ArkLib consumers remain until a concrete protocol has a proved two-way bridge.
 - Interface names freeze only after a real downstream client exercises all observable components.
 
-The core claim and execution interfaces now have Sumcheck clients. The next work connects native
-composition to restricted oracle access and then to persistent-world security. The
-[roadmap](05-roadmap.md) gives the implementation sequence; current dependency gaps are inventoried
-in [current status](00-current-status.md).
+The [roadmap](05-roadmap.md) gives the implementation sequence;
+[current status](00-current-status.md) records implemented interfaces and remaining gaps.

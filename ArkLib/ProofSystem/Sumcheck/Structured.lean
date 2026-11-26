@@ -38,6 +38,7 @@ modes carry independent proofs.
 - `MultilinearPoly`, `MultiquadraticPoly` — degree-1 / degree-2 `MvPolynomial` abbreviations.
 - `SumcheckMultiplierParam` — the multiplier and combinator, with per-variable degree bounds.
 - `computeInitialSumcheckPoly` — `H := m · t` with the degree-2 proof.
+- `Multiplier` — a multilinear multiplier family with a certified verifier-side evaluator.
 - `MvPolynomial.fixPrefix`, `projectToNextSumcheckPoly` — partial evaluation of `H` at
   the verifier's previous challenges.
 - `SumcheckBaseContext` — `(t_eval_point, original_claim)` shared input.
@@ -128,6 +129,29 @@ theorem coe_computeInitialSumcheckPoly (t m : MultilinearPoly L ℓ) :
     (computeInitialSumcheckPoly ℓ t m).val = m.val * t.val := by
   simp [computeInitialSumcheckPoly, computeRoundPoly]
 
+/-- A public multilinear multiplier together with the verifier's point evaluator.
+`evaluate_eq` states that the evaluator computes the multiplier polynomial; a protocol verifier
+may therefore use a succinct evaluator while its relations use the polynomial. Unlike
+`SumcheckMultiplierParam`, it has no combinator and is multilinear in every variable. -/
+structure Multiplier (Context C : Type) [CommSemiring C] (m : ℕ) where
+  /-- The multiplier polynomial of each context. -/
+  polynomial : Context → MultilinearPoly C m
+  /-- The verifier's point evaluator. -/
+  evaluate : Context → (Fin m → C) → C
+  /-- The evaluator computes the multiplier polynomial. -/
+  evaluate_eq : ∀ ctx r, evaluate ctx r = (polynomial ctx).val.eval r
+
+instance {Context C : Type} [CommSemiring C] {m : ℕ} :
+    CoeFun (Multiplier Context C m) (fun _ => Context → MultilinearPoly C m) :=
+  ⟨Multiplier.polynomial⟩
+
+/-- Polynomial evaluation supplies a multiplier evaluator. -/
+def Multiplier.ofPolynomial {Context C : Type} [CommSemiring C] {m : ℕ}
+    (A : Context → MultilinearPoly C m) : Multiplier Context C m where
+  polynomial := A
+  evaluate ctx r := (A ctx).val.eval r
+  evaluate_eq _ _ := rfl
+
 /-- Fix the next coordinate of a uniformly degree-bounded residual polynomial. The renaming
 handles the round-index equation once; prefix fixing itself is `MvPolynomial.fixPrefix`. -/
 def projectToNextSumcheckPoly {d : ℕ} (i : Fin ℓ)
@@ -159,6 +183,11 @@ structure Statement (Context : Type) (i : Fin (ℓ + 1)) where
   sumcheck_target : L              -- s_i (current sumcheck target for round i)
   challenges : Fin i → L           -- R'_i = (r'_0, ..., r'_{i-1}) from previous rounds
   ctx : Context -- external context for composition from the outer protocol
+
+/-- The statement of a claim before any round: its target and context, with no challenges. -/
+def initialStatement {Context : Type} (ctx : Context) (target : L) :
+    Statement (L := L) (ℓ := ℓ) Context 0 :=
+  ⟨target, Fin.elim0, ctx⟩
 
 end ContextAndStatement
 

@@ -25,10 +25,9 @@ unique witness consistent with the first oracle, but agrees with it at the chall
   polynomial, the extraction failure probability over the challenge alone is at most
   `foldKnowledgeError`, the Schwartz–Zippel term `2 / |L|` plus the bound of
   `prob_incrementalFoldingBadEvent_fresh_le` on the fresh incremental folding bad event.
-* `foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`: worst-case round-by-round knowledge
+* `foldOracleVerifier_rbrKnowledgeSoundnessWith`: round-by-round knowledge
   soundness at `foldRbrExtractor`, `foldKnowledgeStateFunction` and `foldKnowledgeError`;
-  `foldOracleVerifier_rbrKnowledgeSoundnessWorstCase` and
-  `foldOracleVerifier_rbrKnowledgeSoundness` are its existential and averaged forms.
+  the existential form is `foldOracleVerifier_rbrKnowledgeSoundness`.
 
 ## References
 
@@ -893,14 +892,14 @@ lemma prob_foldStep_rbrExtractionFailureEvent_le (i : Fin ℓ)
       simp
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold step, at the extractor
+/-- Round-by-round knowledge soundness of the fold step, at the extractor
 `foldRbrExtractor`, the knowledge-state function `foldKnowledgeStateFunction` and the error
 `foldKnowledgeError`: for every input statement and every sent round polynomial, the extraction
 failure probability over the challenge alone is at most the Schwartz–Zippel term plus the fresh
 incremental folding bad-event term. -/
-theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ) :
+theorem foldOracleVerifier_rbrKnowledgeSoundnessWith (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWith init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -909,7 +908,7 @@ theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ) :
       (foldKnowledgeStateFunction (multpoly := multpoly) (𝓡 := 𝓡) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) (init := init) (impl := impl) 𝔽q β i)
       (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) := by
-  refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _ ?_
+  refine Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl _ _ ?_
   intro stmtIn transcript
   have htr : transcript = FullTranscript.mk1 (transcript ⟨0, by change 0 < 1; omega⟩) := by
     funext k
@@ -921,33 +920,19 @@ theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (i : Fin ℓ) :
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
 
 omit [DecidableEq 𝔽q] in
-/-- Worst-case round-by-round knowledge soundness of the fold step, with error
+/-- Round-by-round knowledge soundness of the fold step, with error
 `foldKnowledgeError`: the existential form of
-`foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith`. -/
-theorem foldOracleVerifier_rbrKnowledgeSoundnessWorstCase (i : Fin ℓ) :
+`foldOracleVerifier_rbrKnowledgeSoundnessWith`. -/
+theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
     (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+      (multpoly := multpoly) i).toVerifier.rbrKnowledgeSoundness init impl
       (roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i.castSucc)
       (foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (𝓑 := 𝓑) i)
       (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  (Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with init impl _ _ _ _).mpr
-    ⟨_, _, _, foldOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith 𝔽q β i⟩
-
-omit [DecidableEq 𝔽q] in
-/-- Round-by-round knowledge soundness of the fold step, with error `foldKnowledgeError`: the
-averaged form of `foldOracleVerifier_rbrKnowledgeSoundnessWorstCase`. -/
-theorem foldOracleVerifier_rbrKnowledgeSoundness (i : Fin ℓ) :
-    (foldOracleVerifier 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑)
-      (multpoly := multpoly) i).rbrKnowledgeSoundness init impl
-      (relIn := roundRelation (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i.castSucc)
-      (relOut := foldStepRelOut (multpoly := multpoly) 𝔽q β (ϑ := ϑ)
-        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) i)
-      (foldKnowledgeError 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i) :=
-  Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness init impl
-    (foldOracleVerifier_rbrKnowledgeSoundnessWorstCase 𝔽q β i)
+  (Verifier.rbrKnowledgeSoundness_iff_exists_with init impl _ _ _ _).mpr
+    ⟨_, _, _, foldOracleVerifier_rbrKnowledgeSoundnessWith 𝔽q β i⟩
 
 end FoldStep
 end SingleIteratedSteps

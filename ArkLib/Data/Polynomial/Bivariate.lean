@@ -31,7 +31,7 @@ namespace Polynomial.Bivariate
 
 noncomputable section
 
-variable {F : Type} [Semiring F]
+variable {F : Type*} [Semiring F]
 
 /-- The set of coefficients of a bivariate polynomial. -/
 def coeffs [DecidableEq F] (f : F[X][Y]) : Finset F[X] := f.support.image f.coeff
@@ -39,27 +39,21 @@ def coeffs [DecidableEq F] (f : F[X][Y]) : Finset F[X] := f.support.image f.coef
 /-- A bivariate polynomial is non-zero if and only if its coefficient function is non-zero. -/
 @[grind =_]
 lemma ne_zero_iff_coeffs_ne_zero (f : F[X][Y]) : f ≠ 0 ↔ f.coeff ≠ 0 :=
-  ⟨
-    fun hf ↦ by have f_finsupp : f.toFinsupp ≠ 0 := by aesop
-                simpa [Polynomial.coeff],
-    fun f_coeffs ↦ by intro h; exact f_coeffs (by subst h; ext; simp)
-  ⟩
+  AddMonoidAlgebra.coeff_eq_zero.not.symm
 
 /-- The set of `Y`-degrees is non-empty. -/
-lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.coeff.support).Nonempty := by
-  rw [Polynomial.support_toFinsupp]
-  exact Polynomial.support_nonempty.mpr hf
+lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : f.support.Nonempty :=
+  Polynomial.support_nonempty.mpr hf
 
 variable {f : F[X][Y]}
 
 attribute [local grind] Finsupp.support_nonempty_iff natDegree_mul_le degree_eq_bot
                         WithBot.bot_lt_coe isMaxOn_iff sup_eq_of_isMaxOn monomial_eq_monomial_iff
-attribute [local grind ←] toFinsupp_eq_zero
-attribute [local grind _=_] Finsupp.mem_support_iff toFinsupp_apply smul_monomial
+attribute [local grind _=_] Finsupp.mem_support_iff smul_monomial
 attribute [local grind =] natDegree_mul natDegree_add_eq_right_of_degree_lt
                           natDegree_zero
 
-theorem natDegree_sum_lt_of_forall_lt {F : Type} [Semiring F]
+theorem natDegree_sum_lt_of_forall_lt {F : Type*} [Semiring F]
     {α : Type} {s : Finset α} {g : α → F[X]} {deg : ℕ} :
   0 < deg → (∀ x ∈ s, (g x).natDegree < deg) → (∑ x ∈ s, g x).natDegree < deg := by
   intro deg_pos h
@@ -128,12 +122,12 @@ lemma sup_eq_of_le_of_reach {α β : Type} [SemilatticeSup β] [OrderBot β] {s 
 
 /-- Evaluating a bivariate polynomial in the first variable `X` on a set of points. This results in
 a set of univariate polynomials in `Y`. -/
-def evalSetX [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset (Polynomial F) :=
+def evalSetX [DecidableEq F] (f : F[X][Y]) (P : Finset F) : Finset (Polynomial F) :=
   P.image (fun a => evalX a f)
 
 /-- Evaluating a bivariate polynomial in the second variable `Y` on a set of points resulting
 in a set of univariate polynomials in `X`. -/
-def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) [Nonempty P] : Finset (Polynomial F) :=
+def evalSetY [DecidableEq F] (f : F[X][Y]) (P : Finset F) : Finset (Polynomial F) :=
   P.image (fun a => evalY a f)
 
 /-- The bivariate quotient polynomial. -/
@@ -141,10 +135,11 @@ def quotient (f g : F[X][Y]) : Prop := ∃ q : F[X][Y], g = q * f
 
 /-- The quotient of two non-zero bivariate polynomials is non-zero. -/
 @[grind .]
-lemma quotient_nezero {f q : F[X][Y]} (hg : q * f ≠ 0) : q ≠ 0 := by by_contra h; apply hg; simp [h]
+lemma quotient_nezero {f q : F[X][Y]} (hg : q * f ≠ 0) : q ≠ 0 :=
+  left_ne_zero_of_mul hg
 
-/-- If a non-zero bivariate polynomial `f` divides a non-zero bivariate polynomial `g`, then
-all the coefficients of the quoetient are non-zero. -/
+/-- If `q * f` is non-zero, then the coefficient function of `q` is non-zero,
+equivalently some coefficient of `q` is non-zero. -/
 @[grind .]
 lemma coeff_ne_zero {f q : F[X][Y]} (hg : q * f ≠ 0) : q.coeff ≠ 0 :=
   (ne_zero_iff_coeffs_ne_zero q).1 (quotient_nezero hg)
@@ -154,10 +149,11 @@ If `q * f ≠ 0`, then the `X`-degree of `q` is bounded above by the difference 
 `X`-degrees: `degreeX q ≤ degreeX (q * f) - degreeX f`.
 -/
 @[grind .]
-lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
+lemma degreeX_le_degreeX_sub_degreeX [IsDomain F] {f q : F[X][Y]} (hg : q * f ≠ 0) :
     degreeX q ≤ degreeX (q * f) - degreeX f := by
   have hq : q ≠ 0 := quotient_nezero (f := f) (q := q) hg
-  have hmul : degreeX (q * f) = degreeX q + degreeX f := degreeX_mul q f hq hf
+  have hmul : degreeX (q * f) = degreeX q + degreeX f :=
+    degreeX_mul q f hq (right_ne_zero_of_mul hg)
   have hsum : degreeX q + degreeX f ≤ degreeX (q * f) := by
     simp [hmul]
   have hfb : degreeX f ≤ degreeX (q * f) := by
@@ -169,9 +165,9 @@ If `q * f ≠ 0`, then the `Y`-degree of `q` is bounded above by the difference 
 `Y`-degrees: `natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f`.
 -/
 @[grind .]
-lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hf : f ≠ 0) (hg : q * f ≠ 0) :
+lemma degreeY_le_degreeY_sub_degreeY [IsDomain F] {f q : F[X][Y]} (hg : q * f ≠ 0) :
     natDegreeY q ≤ natDegreeY (q * f) - natDegreeY f := by
-  simp [natDegreeY, Polynomial.natDegree_mul (quotient_nezero hg) hf]
+  simp [natDegreeY, Polynomial.natDegree_mul (quotient_nezero hg) (right_ne_zero_of_mul hg)]
 
 /-- Each coefficient's total-degree contribution is bounded by `totalDegree` when in support. -/
 theorem coeff_totalDegree_le (f : F[X][Y]) {n : ℕ} (hn : n ∈ f.support) :
@@ -463,14 +459,14 @@ def weightedDegreeMonomialXY {n m : ℕ} (a b t : ℕ) : ℕ :=
   a * (degreeX (monomialXY n m t)) + b * natDegreeY (monomialXY n m t)
 
 /-- `evalX` is multiplicative. -/
-lemma evalX_mul {F : Type} [CommSemiring F] (x : F) (f g : F[X][Y]) :
+lemma evalX_mul {F : Type*} [CommSemiring F] (x : F) (f g : F[X][Y]) :
     evalX x (f * g) = evalX x f * evalX x g := by
   simp [evalX_eq_map]
 
 end
 /-- Shifting by any point preserves nonzeroness: `shift` is composition with unit-leading
 affine substitutions in each variable, which are injective ring maps on polynomials. -/
-theorem shift_ne_zero {R : Type} [CommRing R]
+theorem shift_ne_zero {R : Type*} [CommRing R]
     (f : Polynomial (Polynomial R)) (x y : R) (hf : f ≠ 0) :
     Polynomial.Bivariate.shift f x y ≠ 0 := by
   intro hs
@@ -489,18 +485,12 @@ theorem shift_ne_zero {R : Type} [CommRing R]
 
 /-- A nonzero bivariate polynomial has a well-defined multiplicity at the origin: some
 coefficient in the truncation grid is nonzero, so the defining `min?` is over a nonempty list. -/
-theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
+theorem rootMultiplicity₀_ne_none {R : Type*} [CommSemiring R] [DecidableEq R]
     (g : Polynomial (Polynomial R)) (hg : g ≠ 0) :
     Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
-  obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact hg (Polynomial.ext h)
-  obtain ⟨s, hs⟩ : ∃ s, (g.coeff t).coeff s ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact ht (Polynomial.ext h)
-  have htmem : t ∈ g.support := Polynomial.mem_support_iff.mpr ht
+  obtain ⟨t, htmem⟩ := Polynomial.support_nonempty.mpr hg
+  obtain ⟨s, hsmem⟩ := Polynomial.support_nonempty.mpr (Polynomial.mem_support_iff.mp htmem)
+  have hs := Polynomial.mem_support_iff.mp hsmem
   have hsle : s ≤ (g.coeff t).natDegree := Polynomial.le_natDegree_of_ne_zero hs
   have htotal : (g.coeff t).natDegree + t ≤
       Polynomial.Bivariate.natWeightedDegree g 1 1 := by
@@ -527,7 +517,7 @@ theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
 
 /-- The `Y`-degree is controlled by the `(1, k)`-weighted degree: each unit of `Y`-degree costs
 `k` units of weight. Stated natively over `ℕ`, with no division. -/
-theorem mul_natDegreeY_le_natWeightedDegree {R : Type} [Semiring R]
+theorem mul_natDegreeY_le_natWeightedDegree {R : Type*} [Semiring R]
     (Q : Polynomial (Polynomial R)) (k : ℕ) :
     k * Polynomial.Bivariate.natDegreeY Q ≤ Polynomial.Bivariate.natWeightedDegree Q 1 k := by
   have hweight := Polynomial.Bivariate.weight_le_natWeightedDegree_of_lt_natDegree_succ
@@ -536,7 +526,7 @@ theorem mul_natDegreeY_le_natWeightedDegree {R : Type} [Semiring R]
 
 
 /-- The `X`-degree is a lower part of the `(1, k)`-weighted degree. -/
-theorem degreeX_le_natWeightedDegree {R : Type} [Semiring R]
+theorem degreeX_le_natWeightedDegree {R : Type*} [Semiring R]
     (Q : Polynomial (Polynomial R)) (k : ℕ) :
     Polynomial.Bivariate.degreeX Q ≤
       Polynomial.Bivariate.natWeightedDegree Q 1 k := by

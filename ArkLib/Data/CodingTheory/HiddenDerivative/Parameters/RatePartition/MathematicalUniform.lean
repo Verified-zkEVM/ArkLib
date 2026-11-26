@@ -98,7 +98,6 @@ theorem uniformDerivativeOrder_le_mathematicalJetBound {δ : ℝ}
 the length, and a multiplicity bounded by both the length and `δ² n`. -/
 theorem uniformMathematical_integer_guards {δ : ℝ} {n : ℕ}
     (hδ : 0 < δ) (hδone : δ < 1)
-    (hm : 0 < uniformMathematicalMultiplicity δ)
     (hn : uniformMathematicalLength δ ≤ n) :
     let m := uniformMathematicalMultiplicity δ
     let ν := uniformMathematicalJetBound δ
@@ -107,10 +106,11 @@ theorem uniformMathematical_integer_guards {δ : ℝ} {n : ℕ}
   let c := ⌈(m : ℝ) / δ ^ 2⌉₊
   have hδ2 : 0 < δ ^ 2 := sq_pos_of_pos hδ
   have hδ2one : δ ^ 2 < 1 := by nlinarith
-  have hm' : (0 : ℝ) < m := by exact_mod_cast hm
+  have hmorder : uniformDerivativeOrder δ + 2 ≤ m :=
+    add_two_le_closedMultiplicity (by norm_num) (uniformDerivativeOrder_pos δ)
   have hcpos : 1 < c := by
     apply Nat.lt_ceil.mpr
-    have hmone : (1 : ℝ) ≤ m := by exact_mod_cast hm
+    have hmone : (1 : ℝ) ≤ m := by exact_mod_cast (by omega : 1 ≤ m)
     apply (lt_div_iff₀ hδ2).mpr
     norm_num
     linarith
@@ -130,14 +130,14 @@ theorem uniformMathematical_integer_guards {δ : ℝ} {n : ℕ}
 
 /-- Eligible partition exponents have total jet degree at most the uniform mathematical cap. -/
 theorem uniformMathematical_totalJetDegree_le {D d W n A : ℕ} {δ : ℝ}
-    (hδ : 0 < δ) (hD : 0 < D)
+    (hδ : 0 < δ)
     (hDlower : δ ^ 2 * n ≤ D) (hAn : A ≤ n)
     {u : JetVariable d →₀ ℕ}
     (hu : PartitionSupportEligible D d W
       (uniformMathematicalMultiplicity δ * A : ℕ) u) :
     totalJetDegree u ≤ uniformMathematicalJetBound δ := by
   simpa only [uniformMathematicalJetBound] using
-    partitionSupport_totalJetDegree_le_of_ambient_lower_bound hD hδ hDlower hAn hu
+    partitionSupport_totalJetDegree_le_of_ambient_lower_bound hδ hDlower hAn hu
 
 private theorem mathematical_uniform_margin_numeric :
     (151 / 150 : ℝ) < Real.exp (3 / 2 - Real.log (40 / 9)) *
@@ -216,22 +216,21 @@ theorem uniformMathematical_high_ratio_gt {R δ : ℝ}
 /-- Choose a scale-300 mathematical envelope uniformly in the actual code rate. -/
 theorem exists_mathematicalRatePartitionEnvelope {δ : ℝ} {n k A : ℕ}
     (hδ : 0 < δ) (hδsmall : δ < 6 / 25)
-    (hn : uniformMathematicalLength δ ≤ n) (hk : 0 < k)
+    (hn : uniformMathematicalLength δ ≤ n)
     (hgap : (k : ℝ) + δ * n ≤ A) (hAn : A ≤ n) :
     Nonempty (RatePartitionEnvelope δ (uniformMathematicalMultiplicity δ) n k A) := by
   have hδone : δ < 1 := by linarith
   have hd519 := uniformDerivativeOrder_ge_519 hδ hδsmall
   have hmorder : uniformDerivativeOrder δ + 2 ≤ uniformMathematicalMultiplicity δ :=
     add_two_le_closedMultiplicity (by norm_num) (by omega)
-  have hm : 0 < uniformMathematicalMultiplicity δ := by omega
   obtain ⟨hsize, _hmn, _hν, _hνn⟩ :=
-    uniformMathematical_integer_guards hδ hδone hm hn
+    uniformMathematical_integer_guards hδ hδone hn
   have hhigh : ∀ R, δ ^ 2 ≤ R → R ≤ 1 - δ →
       (151 / 150 : ℝ) < partitionFiniteRatio R (R + δ)
         (uniformDerivativeOrder δ) (uniformMathematicalMultiplicity δ) := by
     intro R hRlow hRtop
     exact uniformMathematical_high_ratio_gt hδ hδsmall hRlow hRtop
-  exact exists_ratePartitionEnvelope hδ hδsmall hk hgap hAn hmorder hsize
+  exact exists_ratePartitionEnvelope hδ hδsmall hgap hAn hmorder hsize
     (uniformMathematical_low_ratio_gt hδ hδsmall) hhigh
 
 /-- The capacity length threshold: the mathematical length, and at least `4 ν / δ²` for the jet
@@ -239,21 +238,19 @@ cap `ν`, so that message dimensions up to the jet cap lie in the Johnson regime
 def uniformMathematicalCapacityLength (δ : ℝ) : ℕ :=
   max (uniformMathematicalLength δ) ⌈(4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2⌉₊
 
-/-- Guards of the scale-`300` certificate: for `0 < δ < 6/25` and length at least
-`uniformMathematicalLength δ`, the uniform order `d` is at least `500`, `δ < 1`,
+/-- Guards of the scale-`300` certificate: for `0 < δ < 6/25`, the uniform order `d` is
+at least `500`, `δ < 1`,
 `1 < 300 d³`, and the jet cap is positive and at least `d`. -/
-theorem uniformMathematical_certificate_guards {δ : ℝ} {n : ℕ}
-    (hδ : 0 < δ) (hδsmall : δ < 6 / 25) (hn : uniformMathematicalLength δ ≤ n) :
+theorem uniformMathematical_certificate_guards {δ : ℝ}
+    (hδ : 0 < δ) (hδsmall : δ < 6 / 25) :
     500 ≤ uniformDerivativeOrder δ ∧ δ < 1 ∧
       1 < 300 * (uniformDerivativeOrder δ : ℝ) ^ 3 ∧
       0 < uniformMathematicalJetBound δ ∧
       uniformDerivativeOrder δ ≤ uniformMathematicalJetBound δ := by
   have hd := uniformDerivativeOrder_ge_519 hδ hδsmall
   have hδone : δ < 1 := by linarith
-  have hm : 0 < uniformMathematicalMultiplicity δ :=
-    lt_of_lt_of_le (by omega) (add_two_le_closedMultiplicity (by norm_num)
-      (by omega : 1 ≤ uniformDerivativeOrder δ))
-  obtain ⟨_, _, hν, _⟩ := uniformMathematical_integer_guards hδ hδone hm hn
+  have hν : 0 < uniformMathematicalJetBound δ :=
+    lt_of_lt_of_le (by omega) (uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall)
   have hd' : (519 : ℝ) ≤ uniformDerivativeOrder δ := by exact_mod_cast hd
   exact ⟨by omega, hδone, by nlinarith [sq_nonneg (uniformDerivativeOrder δ : ℝ)], hν,
     uniformDerivativeOrder_le_mathematicalJetBound hδ hδsmall⟩
@@ -274,13 +271,17 @@ theorem uniformMathematical_ringChar_guard {F : Type*} [NonAssocSemiring F] {δ 
 /-- At length at least `uniformMathematicalCapacityLength δ`, every message dimension `k` at most
 the jet cap satisfies `4 (k - 1) ≤ δ² n`. -/
 theorem four_mul_pred_le_sq_mul_of_le_uniformMathematicalJetBound {δ : ℝ} {n k : ℕ}
-    (hδ : 0 < δ) (hn : uniformMathematicalCapacityLength δ ≤ n)
+    (hn : uniformMathematicalCapacityLength δ ≤ n)
     (hk : k ≤ uniformMathematicalJetBound δ) :
     4 * ((k : ℝ) - 1) ≤ δ ^ 2 * n := by
+  by_cases hδ : δ = 0
+  · subst δ
+    have hkzero : k = 0 := by simpa [uniformMathematicalJetBound] using hk
+    simp [hkzero]
   have hjet : (4 : ℝ) * uniformMathematicalJetBound δ / δ ^ 2 ≤ n :=
     (Nat.le_ceil _).trans (by exact_mod_cast (le_max_right _ _).trans hn)
   have hkJet : (k : ℝ) ≤ uniformMathematicalJetBound δ := by exact_mod_cast hk
-  have := (div_le_iff₀ (sq_pos_of_pos hδ)).mp hjet
+  have := (div_le_iff₀ (sq_pos_of_ne_zero hδ)).mp hjet
   nlinarith
 
 end ReedSolomon.HiddenDerivative.RatePartition

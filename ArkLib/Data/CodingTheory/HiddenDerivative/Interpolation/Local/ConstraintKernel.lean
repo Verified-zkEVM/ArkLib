@@ -14,7 +14,7 @@ public import ArkLib.Data.CodingTheory.HiddenDerivative.Interpolation.Local.Cons
 The rewrite `U = E + localJetSum d` sends the hidden-error factor `U - localJetSum d` to the
 error variable `E`. The enlarged local constraint map keeps only monomials of contact order below
 `m`, where `T` has contact weight `1` and `E` has contact weight `d`. Hence every multiple of
-`T^r (U - localJetSum d)^h` is killed by the enlarged map once `m ≤ r + d h`, and over a domain
+`T^r (U - localJetSum d)^h` is killed by the enlarged map once `m ≤ r + d h`, and
 multiplication by this factor is injective.
 
 ## Main statements
@@ -24,8 +24,7 @@ multiplication by this factor is injective.
   kernel of `enlargedLocalConstraintMap m` when `m ≤ r + d h`.
 * `exhibitedKernelMultiplier_mem_ker_contactThreshold`: the same at `h = contactThreshold d m r`,
   for `d > 0`.
-* `exhibitedKernelMultiplier_injective`: multiplication by the factor is injective over a
-  domain.
+* `exhibitedKernelMultiplier_injective`: multiplication by the factor is injective.
 
 ## References
 
@@ -137,9 +136,27 @@ theorem exhibitedKernelFactor_ne_zero [Nontrivial R] (d r h : ℕ) :
   rw [rewriteUToE_exhibitedKernelFactor, map_zero] at himage
   simp [X_pow_eq_monomial] at himage
 
-/-- Over a domain, multiplication by `T^r (U - localJetSum d)^h` is injective. -/
-theorem exhibitedKernelMultiplier_injective [IsDomain R] (d r h : ℕ) :
-    Function.Injective (exhibitedKernelMultiplier (R := R) d r h) := fun _ _ hGH =>
-  mul_left_cancel₀ (exhibitedKernelFactor_ne_zero d r h) hGH
+/-- Multiplication by `T^r (U - localJetSum d)^h` is injective. -/
+theorem exhibitedKernelMultiplier_injective (d r h : ℕ) :
+    Function.Injective (exhibitedKernelMultiplier (R := R) d r h) := by
+  let ψ : LocalPolynomial R d →ₐ[R] LocalPolynomial R d := bind₁ fun v ↦
+    match v with
+    | none => X (localT d)
+    | some none => X (localU d) - localJetSum d
+    | some (some j) => X (localY j)
+  have hinverse : Function.LeftInverse ψ (rewriteUToE (R := R) d) := by
+    have hcomp : ψ.comp (rewriteUToE d) = AlgHom.id R (LocalPolynomial R d) := by
+      ext v
+      rcases v with _ | (_ | j)
+      all_goals simp [ψ, rewriteUToE, rewriteUToEImage, localJetSum,
+        localT, localU, localE, localAux, localY]
+    intro P
+    exact DFunLike.congr_fun hcomp P
+  intro G H hGH
+  apply hinverse.injective
+  have himage := congrArg (rewriteUToE (R := R) d) hGH
+  simp only [exhibitedKernelMultiplier_apply, map_mul,
+    rewriteUToE_exhibitedKernelFactor] at himage
+  exact ((isRegular_X_pow r).mul (isRegular_X_pow h)).left himage
 
 end ReedSolomon.HiddenDerivative

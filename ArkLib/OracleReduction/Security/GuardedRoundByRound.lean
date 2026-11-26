@@ -17,14 +17,13 @@ facts a round-by-round proof needs about such a verifier.
 * `Verifier.GuardedForm.check_and_of_prEvent_pos`: a positive-probability output event of a
   guarded verifier forces its guard to pass and the event to hold at its verdict. This discharges
   the terminal obligation `KnowledgeStateFunction.toFun_full`.
-* `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message`: for a prover-message,
-  verifier-challenge protocol, worst-case round-by-round knowledge soundness
-  (`Verifier.rbrKnowledgeSoundnessWorstCaseWith`) follows from a bound on the extraction-failure
+* `Verifier.rbrKnowledgeSoundnessWith_of_two_message`: for a prover-message,
+  verifier-challenge protocol, round-by-round knowledge soundness
+  (`Verifier.rbrKnowledgeSoundnessWith`) follows from a bound on the extraction-failure
   event `rbrExtractionFailureEvent` for every input statement and every length-one transcript
-  prefix, that is, every prover message. The averaged notion follows through
-  `Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`.
-* `Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx`: a protocol with no
-  verifier challenge is worst-case round-by-round knowledge sound at any extractor, knowledge-state
+  prefix, that is, every prover message.
+* `Verifier.rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx`: a protocol with no
+  verifier challenge is round-by-round knowledge sound at any extractor, knowledge-state
   function and error, since there is no extraction-failure event to bound.
 
 The guarded form of a query-guard-return oracle verifier, which
@@ -70,12 +69,12 @@ theorem GuardedForm.check_and_of_prEvent_pos {n : ℕ} {pSpec : ProtocolSpec n}
     obtain ⟨s, -, hs⟩ := hx
     simp [StateT.run'_eq] at hs
 
-/-- **Worst-case round-by-round knowledge soundness of a message-then-challenge round.** For a
+/-- **Round-by-round knowledge soundness of a message-then-challenge round.** For a
 protocol in which the prover sends one message and the verifier then sends one challenge, a bound
 on the extraction-failure event at the challenge, for every input statement and every prover
-message, is worst-case round-by-round knowledge soundness at that error, with the given
+message, is round-by-round knowledge soundness at that error, with the given
 extractor and knowledge-state function. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith_of_two_message {pSpec : ProtocolSpec 2}
+theorem rbrKnowledgeSoundnessWith_of_two_message {pSpec : ProtocolSpec 2}
     [∀ i, SampleableType (pSpec.Challenge i)]
     (hDir0 : pSpec.dir 0 = .P_to_V) (hDir1 : pSpec.dir 1 = .V_to_P)
     {V : Verifier oSpec StmtIn StmtOut pSpec}
@@ -87,7 +86,7 @@ theorem rbrKnowledgeSoundnessWorstCaseWith_of_two_message {pSpec : ProtocolSpec 
       (transcript : Transcript (⟨1, hDir1⟩ : pSpec.ChallengeIdx).1.castSucc pSpec),
       Pr{let c ← $ᵗ (pSpec.Challenge ⟨1, hDir1⟩)}[rbrExtractionFailureEvent kSF.toFun
         extractor ⟨1, hDir1⟩ stmtIn transcript c] ≤ rbrKnowledgeError ⟨1, hDir1⟩) :
-    V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid extractor kSF
+    V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid extractor kSF
       rbrKnowledgeError := by
   intro stmtIn i transcript
   obtain ⟨j, hj⟩ := i
@@ -95,18 +94,18 @@ theorem rbrKnowledgeSoundnessWorstCaseWith_of_two_message {pSpec : ProtocolSpec 
   · exact absurd (hDir0.symm.trans hj) (by decide)
   · exact hbound stmtIn transcript
 
-/-- **Worst-case round-by-round knowledge soundness without challenges.** A protocol with no
+/-- **Round-by-round knowledge soundness without challenges.** A protocol with no
 verifier challenge has no extraction-failure event to bound, so every extractor and
-knowledge-state function give worst-case round-by-round knowledge soundness, at any error. The
+knowledge-state function give round-by-round knowledge soundness, at any error. The
 substance of such a step lies in its knowledge-state function's obligations. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith_of_isEmpty_challengeIdx {n : ℕ}
+theorem rbrKnowledgeSoundnessWith_of_isEmpty_challengeIdx {n : ℕ}
     {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
     [IsEmpty pSpec.ChallengeIdx] {V : Verifier oSpec StmtIn StmtOut pSpec}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0} {WitMid : Fin (n + 1) → Type}
     (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
     (kSF : V.KnowledgeStateFunction init impl relIn relOut extractor) :
-    V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid extractor kSF
+    V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid extractor kSF
       rbrKnowledgeError :=
   fun _ i _ => (IsEmpty.false i).elim
 

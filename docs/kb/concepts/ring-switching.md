@@ -20,12 +20,12 @@ a query `q`, an opening point `x(q)` and reconstruction weights `wᵢ(q)`. Its c
 family `α : ιP → E` determines its transpose `ιE → P`. For challenge weights `vᵤ(c)`, the verifier
 computes `derivedTarget α v = ∑ᵤ vᵤ(c) · transpose(α)ᵤ`. If `α` is honest, this equals the Boolean
 hypercube sum of the same packed polynomial times the public multiplier `A(q,c)`.
-`Multiplier` evaluates that polynomial using a read-once matrix program; the terminal
-verifier executes this evaluator. The equality certificate links it to the sumcheck polynomial.
+`Head.multiplier`, a `Sumcheck.Structured.Multiplier`, evaluates that polynomial using a
+read-once matrix program; the terminal verifier executes this evaluator. The equality certificate links it to the sumcheck polynomial.
 
 `ClaimLayout` includes prefix and suffix packing. `ClaimLayout/Quirky` gives the skipped/extra-bit
 Lagrange layout with an explicit injective node map. Hachi's monomial-coefficient layout lives
-with its native trace head. `Packing/Conformance` gives the tensor carrier's column/opening and
+with its own trace head. `Packing/Conformance` gives the tensor carrier's column/opening and
 row/slice identities and the final equality-value equation.
 
 ## One shared protocol
@@ -56,7 +56,7 @@ protocol; retaining `q` does not prove those restrictions.
 `RingSwitch.perfectCompleteness` uses a sampleable commutative challenge ring and the layout's
 reconstruction law. It does not require a separation certificate or no-zero-divisors assumption.
 
-`BatchingStrategy` adds a collision certificate to a rule. Full worst-case round-by-round
+`BatchingStrategy` adds a collision certificate to a rule. Full round-by-round
 knowledge soundness requires a finite sampleable challenge ring with no zero divisors,
 `pc.Functional`, and injectivity of `algebraMap P C`. Functionality fixes the compatible packed
 polynomial before each challenge. The explicit finite sum in `RingSwitch.rbrError_sum` is
@@ -64,13 +64,13 @@ polynomial before each challenge. The explicit finite sum in `RingSwitch.rbrErro
 `bat.error + m * (2 / card C)`.
 
 The head has one batching challenge, the loop `m` scalar challenges, and the terminal none.
-`perfectCompleteness_and_rbrKnowledgeSoundnessWorstCase` bundles completeness, security and this
+`perfectCompleteness_and_rbrKnowledgeSoundness` bundles completeness, security and this
 exact sum. It makes no ordinary knowledge-soundness claim.
 
 For the head alone, equal component evaluations at the fixed query suffice: the compatible
 polynomials need not be equal or form a finite set. `Head.pr_exists_derivedTarget_le_of_partials_eq`
 preserves this point-local collision law, and `bad_event_le_of_partials_eq` adds the guard.
-The standalone `Head.rbrKnowledgeSoundnessWorstCaseWith_of_partials_eq` uses the same weaker
+The standalone `Head.rbrKnowledgeSoundnessWith_of_partials_eq` uses the same weaker
 premise for every fixed query and oracle statement, with the extractor and knowledge states.
 `TensorPrefix.pr_exists_target_collision_le_of_embedded_eval_eq` states the carrier collision law.
 
@@ -79,7 +79,7 @@ the challenge, charging only incorrect candidates. This head bound does not impl
 tail security, adaptive-list extraction or preservation of inherited residual constraints.
 `Batching/CoordinateSample` also certifies nontrivial head separation over rings with zero divisors.
 
-`RingSwitch.append_rbrKnowledgeSoundnessWorstCase` closes any opening already typed at the
+`RingSwitch.append_rbrKnowledgeSoundness` closes any opening already typed at the
 contextual same-commitment endpoint. `append_perfectCompleteness` supplies the separate
 completeness composition. An opening complete only on exact encodings uses exact compatibility
 for the completeness relation; relaxed-radius compatibility remains the security relation.
@@ -95,14 +95,18 @@ no second certified phase implementation.
 `Binius/FRIBinius/RingSwitch` appends the Binary Basefold contextual opening. Its existing
 zero-round frontier projects the final evaluation and formats the witness, with no extra wire
 phase. Exact first-codeword encodings give completeness; unique-radius compatibility gives
-worst-case round-by-round security. `fullError_sum_le` transports the full challenge sum
-to the frontend loss plus the backend's closed-form upper bound. The concrete nonconstant
+round-by-round security. `fullError_sum_le` bounds the full challenge sum by `RingSwitch.concreteError`,
+the frontend loss plus the backend's closed-form upper bound. The concrete nonconstant
 `GF(16)/GF(2)` acceptance fixture instantiates both and bounds that sum strictly below one.
 
+`Binius/FRIBinius/Unrolled` is DP24 Construction 5.1: the batching head alone
+(`TensorPrefix.headVerifier`) hands its product claim to Binary Basefold, whose sum-check runs at
+the ring-switching multiplier (`BinaryBasefold.ProductClaim.openingVerifier`). There is one
+sum-check instead of two, and the bound is lower by `2ℓ'/|L|` (`Unrolled.concreteError_add_eq`).
+
 `OpeningAdapter` converts a standard `MLIOPCS` to a contextual opening by a zero-round
-projection, with completeness and worst-case round-by-round security transport. Averaged
-corollaries follow from the framework's worst-case implication. Conversion to ordinary
-knowledge soundness remains admitted.
+projection, with completeness and round-by-round security transport from its
+`rbrKnowledgeSoundness` field. Conversion to ordinary knowledge soundness remains admitted.
 
 The full `RingSwitch/{UnequalRankSuffix,Quirky}` fixtures use packing rank four over `GF(16)`, opening rank three
 over `GF(8)`, and challenge algebra `GF(16)`. They exercise nonconstant sources, effective packed
@@ -110,8 +114,8 @@ coordinates, honest and rejected executions, query retention and exact error sum
 Their clear polynomial oracle is a specification fixture, not a PCS. A separate zero-variable
 fixture exercises commutative-ring completeness over `ZMod 4`.
 
-Native reference-Flock obligations are maintained in the
-[consumer guide](../../wiki/ring-switching-consumers.md#native-flock-and-acceptance).
+Obligations for the reference Flock in the interaction layer are maintained in the
+[consumer guide](../../wiki/ring-switching-consumers.md#flock-in-the-interaction-layer-and-acceptance).
 
 For implementation steps and a worked example, see
 [Adding a ring-switching consumer](../../wiki/ring-switching-consumers.md).
@@ -174,8 +178,9 @@ For implementation steps and a worked example, see
   `Relations.lean`, `Multiplier.lean`, `ClaimLayout.lean`, `ClaimLayout/Quirky.lean`.
 - Operational and certified batching: `Packing/Batching.lean`, `DerivedBatching.lean`.
 - Shared protocol: `Packing/Head.lean`, `ProductSumcheck/`, `RingSwitch.lean`.
-- Tensor-prefix and Binius consumer: `Packing/TensorPrefix.lean`,
-  `Binius/FRIBinius/RingSwitch.lean`, `Binius/BinaryBasefold/Opening.lean`.
+- Tensor-prefix and Binius consumers: `Packing/TensorPrefix.lean`,
+  `Binius/FRIBinius/RingSwitch.lean`, `Binius/BinaryBasefold/Opening.lean`,
+  `Binius/FRIBinius/Unrolled/`, `Binius/BinaryBasefold/ProductClaim.lean`.
 - Deterministic trace: `Commitments/Functional/Hachi/TraceHead/`.
 - Quotient lifting: `ProofSystem/RingSwitching/Lift/`.
 

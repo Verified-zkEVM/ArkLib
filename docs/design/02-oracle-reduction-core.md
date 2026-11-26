@@ -8,6 +8,17 @@ schematic descriptions unless linked to an implemented declaration.
 [roadmap](05-roadmap.md) records implementation targets. Persistent worlds and probability
 premises belong to [the execution chapter](03-adversarial-oracle-execution.md).
 
+**The deleted old layer.** The claim layer this chapter describes (`Oracle/Claim`, `Oracle/CoreRun`,
+`Oracle/Composition`, `Oracle/Sequential`, `Oracle/SourceRouting` and `Interaction/Reduction.lean`
+at commit `8472a86f`) belonged to the old generic interaction layer, which has been deleted. The interaction core under
+`ArkLib/Interaction/` replaces it. The core removes open and closed claims: a verdict is a
+statement with concrete data, and oracle verifiers are passive, so they query oracles only in the
+final decision. `Composition.lean`, `StageChain.lean` and `Oracle/Routing.lean` hold its
+composition, and `Security/CompositionSoundness.lean` its composition soundness. The
+[migration list](interaction-layer/migration-list.md) maps every deleted module to its core
+counterpart or records why it was retired. The requirements below still apply; the old module
+names record how the old layer met them.
+
 ## 1. What an oracle reduction contains
 
 An oracle reduction transforms claims about oracles into new claims about (possibly derived) oracles. Four layers, four purposes:
@@ -31,7 +42,7 @@ cannot express the derived view; exporting only concrete data hides how later qu
 
 ## 2. Representation-indexed claims
 
-The implemented [claim layer](../../ArkLib/Interaction/Oracle/Claim.lean) uses one claim shape
+The old claim layer (`Interaction/Oracle/Claim.lean`) used one claim shape
 with three representations. Omitting universe and indexing arguments, its structure is:
 
 ```lean
@@ -144,7 +155,7 @@ def OpenClaim.closeWith (c) (ρ : QueryImpl srcSpec Id) : ClosedClaim Stmt Out :
 ```
 
 `closeWith` is a semantic helper; it accepts a handler explicitly. Supported games instead use
-[`CoreRun.closed`](../../ArkLib/Interaction/Oracle/CoreRun.lean), which closes with the input
+`CoreRun.closed`, which closes with the input
 behavior and messages paired by the same execution. The carrier alone does not certify that a run
 occurred: executor equations or support membership supply that provenance.
 
@@ -180,24 +191,25 @@ their representations do not become arguments to verifier authoring code.
 Between reductions, the suffix receives the declared exported statement and oracle behavior, plus
 any separately carried private prover payload. It queries that exported interface. The prefix's
 input resources and sent messages implement the interface, but the suffix verifier cannot inspect
-their hidden environment. [`ExecutionInterface` and `ClosedStage`](../../ArkLib/Interaction/Oracle/Composition.lean)
+their hidden environment. `ExecutionInterface` and `ClosedStage`
 express this boundary for ordered execution of separate reductions. Their sequencing laws do not
-establish equality with one flattened native tree or a general composition-security theorem.
+establish equality with one flattened interaction tree or a general composition-security theorem.
 
 An exported virtual oracle may derive one answer from several source queries, transform an answer,
 or hide a source slot entirely. Consequently, the exported-query log and source-query log need not
 be identical. A routing theorem must preserve their specified relationship, including query order,
 responses, multiplicity, and any charged expansion cost.
 
-### 5.2 Native strategies and suffix shape
+### 5.2 Direct append and suffix shape
 
-“Native” means using the existing interaction tree, prover strategy, and paired runner directly.
-The plain [`run_appendFlat_splitPrefix`](../../ArkLib/Interaction/Reduction.lean)
+Direct append uses the existing interaction tree, prover strategy, and paired runner, rather than
+sequencing separate reductions through an `ExecutionInterface`.
+The plain `run_appendFlat_splitPrefix`
 equation extracts the actual suffix strategy from every whole prover on the appended tree. It
 requires only a lawful monad. Selecting the suffix counterpart is a pure function of the prefix
 path and counterpart output; effects inside either strategy remain unrestricted.
 
-Plain native append permits the suffix tree to depend on the complete prefix path. Oracle append
+Plain append permits the suffix tree to depend on the complete prefix path. Oracle append
 selects its shape from `BranchPath`, the public structural
 path which hides concrete oracle messages. The runtime `ExecutionPath` retains those messages to
 interpret resource answers. Verifier-local query results may affect the verifier's strategy within
@@ -209,10 +221,10 @@ The append laws in `Oracle/TypeTree` and `Oracle/TypeTree/Decoration` preserve t
 and its roles under this projection. `Oracle/Access` and `Oracle/RunSources` show that a concrete
 appended path accumulates the same access and answers queries identically to its prefix followed
 by its suffix. The restricted-verifier composition layer in
-[`Oracle/Sequential.lean`](../../ArkLib/Interaction/Oracle/Sequential.lean) uses these laws.
+`Oracle/Sequential.lean` uses these laws.
 `Verifier.appendFragment` joins a prefix returning an ordinary value with a suffix selected from
 that value and the public prefix path. `toCounterpartValue_appendFragment` proves that interpreting
-this composed verifier gives native counterpart append. The suffix interpreter receives the
+this composed verifier gives counterpart append. The suffix interpreter receives the
 handler built from the actual prefix messages and the original input handler.
 
 `executeStrategies_append` lifts this to actual execution for every ordinary whole prover,
@@ -226,8 +238,8 @@ on virtual substitution describes composition through a restricted exported inte
 
 ### 5.3 Effect order and terminal computation
 
-The current [verifier interpreter](../../ArkLib/Interaction/Oracle/Execution.lean) returns a pending
-terminal computation. `executeStrategies` executes the paired interaction first and then runs that
+The old verifier interpreter (`Interaction/Oracle/Execution.lean`) returned a pending
+terminal computation. `executeStrategies` executed the paired interaction first and then ran that
 computation exactly once. Appending a suffix can remove the intermediate terminal leaf, so simply
 moving its callback to the beginning of the suffix is not an execution law. For example, a check
 performed after the first suffix send can observe a different world state from the same check
@@ -290,7 +302,7 @@ These laws concern an actual prefix's access signature; a cursor alone still doe
 particular prover reaches it.
 
 `subst` replaces queries in exported oracle programs.
-[`SourceRouting.lean`](../../ArkLib/Interaction/Oracle/SourceRouting.lean) applies this substitution
+`SourceRouting.lean` applies this substitution
 throughout a restricted verifier: its node queries, final action, and returned claim programs.
 When another oracle message arrives, the route preserves that new query slot and continues to
 expand queries to the earlier exported interface. Ambient queries retain their original order.
@@ -311,19 +323,21 @@ oracle families, while their realization types and interfaces may vary with the 
 No equality of raw and exported query logs is asserted: one exported query may require several
 source queries. This is an execution and closing theorem, with no probability or soundness premise.
 
-[`Data/OracleComp/QueryBounds.lean`](../../ArkLib/Data/OracleComp/QueryBounds.lean) accounts for the
-same routing programs used by substitution. Each exported query has a charge large enough to pay
-for every source query in its actual route. A bound on the exported program then gives the same
-bound on its routed source program. Charges may differ by query; a virtual call that reads the
-same source twice pays twice. Sequential prefix and suffix budgets add under the same cost model.
+`VCVio.OracleComp.QueryTracking.CostModel.Simulation` provides `WorstCaseCostBound.simulateQ` for
+stateless `QueryImpl exported (OracleComp base)` routes. The base queries may be interpreted by a
+stateful runtime, but the route handler has no extra handler-local `StateT` state. Each exported
+query has a charge covering the declared weight of every permitted completed run of its base-query
+route. A bound on the exported program then bounds its routed base program. Repeated base queries
+contribute their declared weight at each call. Sequential prefix and suffix budgets add under the
+same cost model.
 
-Access is a separate obligation. `allQueriesSatisfy_simulateQ` transports an allowed-query
-condition through that same route when every allowed exported query expands only to allowed source
+Access is a separate obligation. `OracleComp.AllQueriesSatisfy.simulateQ` transports an allowed-query
+condition through that same route when every allowed exported query expands only to allowed base
 queries. A cheap query may still be unavailable. In particular, a cost bound by itself does not
 certify that an oracle message has already been sent.
 
-ArkLib's [`Reduction.execute_then`](../../ArkLib/Interaction/Reduction.lean) requires a commutative
-monad for general effectful suffix construction, while the native split equation uses pure suffix
+ArkLib's `Reduction.execute_then` requires a commutative
+monad for general effectful suffix construction, while the plain split equation uses pure suffix
 selection. Neither law permits reordering arbitrary persistent-world queries.
 
 Compiler proofs need an operational relation preserving typed traces, order, multiplicity, and

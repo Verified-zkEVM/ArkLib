@@ -15,7 +15,7 @@ import Mathlib.Algebra.Field.ZMod
 
 The packing algebra has rank one and the opening algebra rank two over `ZMod 7`.
 A nonconstant source and exact functional commitment instantiate full completeness and
-worst-case RBR security. The fixture checks the derived target and same-source terminal relation,
+RBR security. The fixture checks the derived target and same-source terminal relation,
 rejection of a changed opening value, and absorbing rejection of a false head message
 for every continuation transcript.
 -/
@@ -68,10 +68,10 @@ example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ Prob
 
 example {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (RingSwitch.verifier data 1 layout codec bat.toBatchingRule
-      pc).toVerifier.rbrKnowledgeSoundnessWorstCase
+      pc).toVerifier.rbrKnowledgeSoundness
       init impl (Head.relIn data 1 layout pc) (pc.evalRelWithContext (layout.Query × bat.Challenge))
       (RingSwitch.rbrError (M := data.ιP → data.E) data 1 bat) :=
-  RingSwitch.rbrKnowledgeSoundnessWorstCase data 1 layout codec bat pc
+  RingSwitch.rbrKnowledgeSoundness data 1 layout codec bat pc
     pc_functional (fun _ _ h => h) init impl
 
 def source : Fin 1 → (ZMod 7)⦃≤ 1⦄[X Fin 1] := fun _ =>

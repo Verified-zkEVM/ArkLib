@@ -112,10 +112,10 @@ noncomputable def evalRAtPowerSeries (x₀ : F) (H : F[X][Y]) (R : F[X][X][Y])
 /-- The coefficient sequence obtained from a candidate sequence of regular numerators. -/
 noncomputable def alphaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (βseq : ℕ → 𝒪 H) (t : ℕ) : 𝕃 H :=
+    (βseq : ℕ → 𝒪 H) (t : ℕ) : 𝕃 H :=
   let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
   embeddingOf𝒪Into𝕃 _ (βseq t) /
-    (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (xi x₀ R H hHyp)) ^
+    (W ^ (t + 1) * (embeddingOf𝒪Into𝕃 _ (xi x₀ R H)) ^
       henselDenominatorExponent t)
 
 /-- The local power series `γ = ∑ αₜ Sᵗ` induced by a candidate sequence of regular numerators,
@@ -123,18 +123,18 @@ where `S = X - x₀` is the local coordinate. The `x₀`-shift is carried by
 `evalRAtPowerSeries` (`X ↦ x₀ + S`), not by `γ`, matching the paper's `γ ∈ L[[X - x₀]]`. -/
 noncomputable def gammaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (βseq : ℕ → 𝒪 H) :
+    (βseq : ℕ → 𝒪 H) :
     PowerSeries (𝕃 H) :=
-  PowerSeries.mk (alphaOfNumerators x₀ R H hHyp βseq)
+  PowerSeries.mk (alphaOfNumerators x₀ R H βseq)
 
 /-- A numerator sequence has the semantic content required of a Hensel lift: it gives the Hensel
 lift starting at `T / W`, and the induced power series is a root of `R(x₀ + S, ·, Z)`. -/
 def IsHenselNumeratorSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (βseq : ℕ → 𝒪 H) : Prop :=
-  alphaOfNumerators x₀ R H hHyp βseq 0 =
+    (βseq : ℕ → 𝒪 H) : Prop :=
+  alphaOfNumerators x₀ R H βseq 0 =
       functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff ∧
-    evalRAtPowerSeries x₀ H R (gammaOfNumerators x₀ R H hHyp βseq) = 0
+    evalRAtPowerSeries x₀ H R (gammaOfNumerators x₀ R H βseq) = 0
 
 /-- Specializing `X = x₀` cannot raise the total degree: a trivariate bound on `R` gives the same
 bound on `R(x₀,·,Z)`. -/
@@ -189,25 +189,21 @@ noncomputable def gammaFromAlpha (H : F[X][Y]) (αseq : ℕ → 𝕃 H) :
 coefficients, separated from the semantic content in `IsHenselNumeratorSequence`. -/
 def HasNumeratorShape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H) : Prop :=
-  ∀ t : ℕ, alphaOfNumerators x₀ R H hHyp βseq t = αseq t
+    (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H) : Prop :=
+  ∀ t : ℕ, alphaOfNumerators x₀ R H βseq t = αseq t
 
 /-- The base case: `β₀ = T`.  From `α₀ = T/W` and the shape `α₀ = β₀/W`, the
 numerator is forced to be the image of the polynomial variable. -/
 theorem beta_zero_eq_X_of_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) {D : ℕ}
-    (_hD_H : Bivariate.totalDegree H ≤ D)
-    (_hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
     (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
-    (_hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
-    (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq) :
+    (hshape : HasNumeratorShape x₀ R H αseq βseq) :
     βseq 0 =
       (Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.X : F[X][Y]) : 𝒪 H) := by
   classical
-  apply embeddingOf𝒪Into𝕃_injective hH
+  apply embeddingOf𝒪Into𝕃_injective _H_natDegree_pos.out
   have h0 := hshape 0
   unfold alphaOfNumerators at h0
   simp only [henselDenominatorExponent_zero, pow_zero, mul_one, zero_add, pow_one] at h0
@@ -621,9 +617,9 @@ theorem hensel_alpha_sequence_unique (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 present the coefficients. -/
 theorem gammaOfNumerators_eq_gammaFromAlpha (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
-    (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq) :
-    gammaOfNumerators x₀ R H hHyp βseq = gammaFromAlpha H αseq := by
+    (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
+    (hshape : HasNumeratorShape x₀ R H αseq βseq) :
+    gammaOfNumerators x₀ R H βseq = gammaFromAlpha H αseq := by
   unfold HasNumeratorShape at hshape
   unfold gammaOfNumerators gammaFromAlpha
   ext n
@@ -631,8 +627,8 @@ theorem gammaOfNumerators_eq_gammaFromAlpha (x₀ : F) (R : F[X][X][Y]) (H : F[X
   exact hshape n
 
 /-- The residual at step `t`: the `(t+1)`-st coefficient of `R(x₀+S, γ, Z)` with the `ζ·α_{t+1}`
-term removed.  It vanishes exactly when `α_{t+1}` solves the Hensel equation, and after clearing
-denominators it becomes the next numerator. -/
+term removed. The `(t+1)`-st coefficient equation holds exactly when
+`ζ·α_{t+1} + residual = 0`; after clearing denominators, its negative gives the next numerator. -/
 noncomputable def henselCoeffResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [Fact (Irreducible H)] [Fact (0 < H.natDegree)]
     (αseq : ℕ → 𝕃 H) (t : ℕ) : 𝕃 H :=
@@ -643,16 +639,16 @@ noncomputable def henselCoeffResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 `IsHenselNumeratorSequence`. -/
 theorem hensel_numerator_sequence_of_alpha_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
+    (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
     (hα0 : αseq 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff)
     (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
-    (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq) :
-    IsHenselNumeratorSequence x₀ R H hHyp βseq := by
+    (hshape : HasNumeratorShape x₀ R H αseq βseq) :
+    IsHenselNumeratorSequence x₀ R H βseq := by
   unfold IsHenselNumeratorSequence
   constructor
   · rw [hshape 0]
     exact hα0
-  · rw [gammaOfNumerators_eq_gammaFromAlpha x₀ R H hHyp αseq βseq hshape]
+  · rw [gammaOfNumerators_eq_gammaFromAlpha x₀ R H αseq βseq hshape]
     exact hroot
 
 /-- The defining relation of `𝕃`, in evaluated form: the class of `H̃` equals
@@ -895,24 +891,24 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       if h : i ≤ t then
         embeddingOf𝒪Into𝕃 H (βprev ⟨i, by omega⟩) /
           (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
-            (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i)
+            (embeddingOf𝒪Into𝕃 H (xi x₀ R H)) ^ henselDenominatorExponent i)
       else 0)
-    (j : ℕ) (hj : j ∈ Finset.range (R.natDegree + 1)) :
+    (j : ℕ) :
     PowerSeries.coeff (t + 1)
         (liftCoeffToPowerSeries x₀ H (R.coeff j) * (PowerSeries.mk αtrunc) ^ j) *
       (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
-        (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
+        (embeddingOf𝒪Into𝕃 H (xi x₀ R H)) ^ (henselDenominatorExponent (t + 1) - 1) *
         liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2)) ∈
       regularElementsSet H := by
   classical
+  by_cases hjle : j ≤ R.natDegree
+  case neg => simp [coeff_eq_zero_of_natDegree_lt (not_le.mp hjle)]
   set W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff with hWdef
-  set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) with hetadef
+  set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H) with hetadef
   have hWne : W ≠ 0 := liftToFunctionField_leadingCoeff_ne_zero (H := H)
   have hetane : eta ≠ 0 := by
-    rw [hetadef, embeddingOf𝒪Into𝕃_xi]
+    rw [hetadef, embeddingOf𝒪Into𝕃_xi x₀ R H hHyp]
     exact mul_ne_zero (pow_ne_zero _ hWne) (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
-  have hjle : j ≤ R.natDegree := by
-    rw [Finset.mem_range] at hj; omega
   -- regularity of cleared numerators (clearing the denominator of each `αtrunc i`, `i ≤ t`)
   have hnumReg : ∀ i, i ≤ t →
       αtrunc i * (W ^ (i + 1) * eta ^ henselDenominatorExponent i) ∈ regularElementsSet H := by
@@ -1040,7 +1036,6 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     · -- non-boundary: the `W`-budget `(t+2)+(d-2)` already covers `Pw = p.2 + j`.
       have hbudget : Pw ≤ (t + 1 + 1) + (R.natDegree - 2) := by
         rw [hPweq]
-        rw [Finset.mem_range] at hj
         -- `¬(p.2 = t+1 ∧ j = d ∧ 2 ≤ d)`; with `p.2 ≤ t+1`, `j ≤ d`
         rcases Nat.lt_or_ge R.natDegree 2 with hd | hd
         · omega
@@ -1083,16 +1078,14 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H)
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
-    (_hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
-    (_hzeta : zeta R x₀ H ≠ 0)
     (t : ℕ) (βprev : Fin (t + 1) → 𝒪 H)
     (hprev : ∀ i : Fin (t + 1),
       embeddingOf𝒪Into𝕃 H (βprev i) /
         (liftToFunctionField (H := H) H.leadingCoeff ^ (i.val + 1) *
-          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i.val) =
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H)) ^ henselDenominatorExponent i.val) =
         αseq i.val) :
     let W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff
-    let eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)
+    let eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H)
     let E : ℕ := henselDenominatorExponent (t + 1)
     let Ddiv : 𝕃 H := W ^ (t + 1 + 1) * eta ^ (E - 1) * W ^ (R.natDegree - 2)
     henselCoeffResidual x₀ R H αseq t * Ddiv ∈ regularElementsSet H := by
@@ -1110,7 +1103,7 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
       if h : i ≤ t then
         embeddingOf𝒪Into𝕃 H (βprev ⟨i, by omega⟩) /
           (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
-            (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i)
+            (embeddingOf𝒪Into𝕃 H (xi x₀ R H)) ^ henselDenominatorExponent i)
       else 0 := by
     intro i
     by_cases h : i ≤ t
@@ -1125,8 +1118,8 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
   unfold evalRAtPowerSeries
   rw [Polynomial.eval₂_eq_sum_range, map_sum, Finset.sum_mul]
   apply regularElementsSet_sum
-  intro j hj
-  exact henselClearedTerm_regular x₀ R H hHyp t βprev αtrunc hshape j hj
+  intro j _
+  exact henselClearedTerm_regular x₀ R H hHyp t βprev αtrunc hshape j
 
 
 end HenselNumerators

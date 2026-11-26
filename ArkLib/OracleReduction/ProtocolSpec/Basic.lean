@@ -7,7 +7,7 @@ module
 
 public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.OracleReduction.Prelude
-public import ArkLib.OracleReduction.OracleInterface
+public import ArkLib.Relation.OracleInterface
 
 /-!
 # Protocol Specifications for (Oracle) Reductions
@@ -507,14 +507,6 @@ instance : Unique (Transcript 0 pSpec) where
   default := fun i => Fin.elim0 i
   uniq := fun T => by ext i; exact Fin.elim0 i
 
--- Potential natural re-indexing of messages and challenges.
--- Not needed for now, but could be useful.
-
--- instance instFinEnumMessageIdx : FinEnum pSpec.MessageIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.dir x = Direction.P_to_V
--- instance instFinEnumChallengeIdx : FinEnum pSpec.ChallengeIdx :=
---   FinEnum.Subtype.finEnum fun x ↦ pSpec.dir x = Direction.V_to_P
-
 /-- Concatenate a message to the end of a partial transcript. This is definitionally equivalent to
     `Fin.snoc`. -/
 @[inline]
@@ -886,8 +878,7 @@ def srChallengeQueryImpl {Statement : Type} {pSpec : ProtocolSpec n}
 
   TODO: upstream this as a more general construction in VCVio -/
 @[reducible, inline, specialize, simp]
-def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec.Challenge i)] :
+def srChallengeQueryImpl' {Statement : Type} {pSpec : ProtocolSpec n} :
     QueryImpl (srChallengeOracle Statement pSpec)
       (StateT (QueryImpl (srChallengeOracle Statement pSpec) Id) ProbComp) :=
   fun | ⟨i, t⟩ => fun f => pure (f ⟨i, t⟩, f)
@@ -1022,7 +1013,6 @@ lemma Transcript.toMessagesUpTo_concat_challenge {j : Fin n}
     erw [Fin.dconcat_castSucc]
     exact Fin.snoc_castSucc ..
 
-
 /-- Reconstruct a transcript from messages and a fixed challenge table. -/
 def MessagesUpTo.transcriptOfTable {k : Fin (n + 1)}
     (messages : pSpec.MessagesUpTo k) (stmt : StmtIn)
@@ -1130,16 +1120,6 @@ def Messages.transcriptOfTable (messages : pSpec.Messages) (stmt : StmtIn)
     (f : QueryImpl (srChallengeOracle StmtIn pSpec) Id) : pSpec.FullTranscript :=
   MessagesUpTo.transcriptOfTable (k := Fin.last n) messages stmt f
 
-
 end TableReconstruction
 
 end ProtocolSpec
-
--- -- Notation for the type signature of an interactive protocol
--- notation "𝒫——⟦" term "⟧⟶𝒱" => (Direction.P_to_V, term)
--- notation "𝒫⟵⟦" term "⟧——𝒱" => (Direction.V_to_P, term)
-
--- -- Test notation
--- def pSpecNotationTest : ProtocolSpec 2 :=
---   ![ 𝒫——⟦ Polynomial (ZMod 101) ⟧⟶𝒱,
---      𝒫⟵⟦ ZMod 101 ⟧——𝒱]

@@ -37,7 +37,9 @@ agreement cuts yields such an admissible tuple.
 
 @[expose] public section
 
-open Polynomial MvPolynomial PolynomialDifferential
+open Polynomial PolynomialDifferential
+open MvPolynomial (aeval aeval_optionEquivRight_symm affineHilbertPolynomial map optionEquivRight
+  zeroLocus finite_principalOpen_iff_natDegree_affineHilbertPolynomial_eq_zero)
 open scoped BigOperators
 
 noncomputable section
@@ -73,7 +75,7 @@ theorem powerBatchedTaylorCoefficient_eval (iota : F →+* E) (center z : E)
         (Polynomial.powerBatch (fun t ↦ (P t).map iota) z)).coeff l := by
   rw [powerBatchedTaylorCoefficient, powerBatchedCoordinate_eval]
   simp only [Polynomial.powerBatch, map_sum, map_smul, Polynomial.finsetSum_coeff,
-    Polynomial.coeff_smul, smul_eq_mul]
+    AddMonoidAlgebra.coeff_smul_apply, smul_eq_mul]
 
 /-- Admissibility at an explicit common Taylor exponent. All high equations and reconstruction
 identities use the same numerator padding. -/
@@ -205,8 +207,8 @@ theorem IsAdmissibleChartTupleAtExponent.specialize [DecidableEq F]
       rw [map_commonTaylorNumeratorOver_eq]
       simpa only [jet, Qz, ← hφ, AlgHom.toRingHom_eq_coe,
         AlgHom.coe_toRingHom, hcenter] using hhigh l hl
-    have hleft := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts_and_exponent
-      φ (Polynomial.C center) Q K k τ hτ jet hsepφ hhighφ
+    have hleft := degree_rationalTaylorPolynomial_lt_of_symbolic_high_cuts
+      φ (Polynomial.C center) Q K k τ jet hsepφ hhighφ
     have hleft' : (rationalTaylorPolynomial center Qz K jet).degree < k := by
       simpa only [jet, Qz, ← hφ, AlgHom.toRingHom_eq_coe,
         AlgHom.coe_toRingHom, hcenter] using hleft

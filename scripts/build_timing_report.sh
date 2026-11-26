@@ -23,7 +23,7 @@ append_result() {
   local exit_code="$6"
   local measured="${7:-1}"
 
-  python3 - "$results_file" "$label" "$real_time" "$user_time" "$sys_time" "$exit_code" \
+  uv run --no-project --python 3.12 python - "$results_file" "$label" "$real_time" "$user_time" "$sys_time" "$exit_code" \
     "$measured" <<'PY'
 import json
 import pathlib
@@ -112,7 +112,7 @@ render_report() {
 
   local results_file="$1"
 
-  python3 - "$results_file" <<'PY'
+  uv run --no-project --python 3.12 python - "$results_file" <<'PY'
 import json
 import html
 import os

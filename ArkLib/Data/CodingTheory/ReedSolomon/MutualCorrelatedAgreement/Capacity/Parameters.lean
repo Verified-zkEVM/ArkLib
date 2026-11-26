@@ -51,7 +51,7 @@ private theorem binomial_pivots_below_of_characteristic {F : Type*} [Field F]
   have hk : 0 < i - r := by omega
   have hs : i - r + r ≤ n - 1 := by omega
   have hchoose := PolynomialDifferential.natCast_choose_ne_zero_of_ringChar
-    (F := F) (D := n - 1) (s := r) hchar' (i - r) hk hs
+    (F := F) (D := n - 1) (s := r) hchar' (i - r) hs
   simpa [Nat.sub_add_cancel hri.le] using hchoose
 
 /-- Prescribed interpolation parameters give a certificate and the associated size bounds. -/
@@ -79,7 +79,7 @@ theorem exists_prescribed_correlated_parameters {F : Type u} [Field F]
   obtain ⟨hn, _hm, hν, _hνm, hνn, hdK, hkK, hKn, hkA, hgap⟩ :=
     prescribed_geometric_parameters δ n k hδ hδ' hblock hA
   exact ⟨exists_prescribed_symbolic_weightedSupport_certificate δ n k centers f g
-      hδ hδ' hblock hA,
+      hδ hδ' hblock,
     hn, hν, hνn, hdK.trans_le hKn, hkK.trans hKn, hkA, hgap,
     binomial_pivots_below_of_characteristic hchar⟩
 

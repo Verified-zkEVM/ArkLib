@@ -44,8 +44,8 @@ private def zeroOracles : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
 
 omit [DecidableEq 𝔽q] [Fact (β 0 = 1)] in
 private theorem zero_input_strict (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) :
-    strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (({stmt with finalConstant := 0}, zeroOracles 𝔽q β), ()) := by
+    (({stmt with finalConstant := 0}, zeroOracles 𝔽q β), ()) ∈
+      strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) := by
   refine ⟨0, ?_, ?_⟩
   · intro j
     simp only [polynomialFromNovelCoeffsF₂, polynomialFromNovelCoeffs,
@@ -54,7 +54,7 @@ private theorem zero_input_strict (stmt : FinalSumcheckStatementOut (L := L) (�
     change (fun _ => (0 : L)) = _
     symm
     have hp (d : Fin r) : polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (domainIdx := d) (P := (0 : L[X])) = fun _ => (0 : L) := by
+        (domainIdx := d) (P := (0 : Polynomial L)) = fun _ => (0 : L) := by
       funext y
       simp [polyToOracleFunc]
     rw [hp]
@@ -215,14 +215,6 @@ info: 'Binius.BinaryBasefold.QueryPhase.queryOracleReduction_perfectCompleteness
 -/
 #guard_msgs (whitespace := lax) in
 #print axioms Binius.BinaryBasefold.QueryPhase.queryOracleReduction_perfectCompleteness
-
-/--
-info: 'Binius.BinaryBasefold.QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase'
-depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms Binius.BinaryBasefold.QueryPhase.queryOracleVerifier_rbrKnowledgeSoundnessWorstCase
 
 /--
 info: 'Binius.BinaryBasefold.QueryPhase.queryOracleVerifier_rbrKnowledgeSoundness'

@@ -71,7 +71,9 @@ def Extractor.Straightline.ofTranscript (e : StmtIn → pSpec.FullTranscript →
     Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec :=
   fun stmt _ tr _ _ ↦ OptionT.mk (pure (e stmt tr))
 
-private theorem Reduction.ofTranscript_game_eq_map
+/-- A deterministic extractor reading only the statement and transcript can discard both query
+logs. -/
+theorem Reduction.ofTranscript_game_eq_map
     {Aux : Type} (R : Reduction oSpec StmtIn Aux StmtOut WitOut pSpec)
     (e : StmtIn → pSpec.FullTranscript → Option WitIn)
     (stmt : StmtIn) (wit : Aux) :

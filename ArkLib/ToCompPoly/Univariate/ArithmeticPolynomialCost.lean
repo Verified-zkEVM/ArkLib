@@ -46,7 +46,7 @@ theorem profileArithmetic_trimRaw_le (p : CPolynomial.Raw F) (kind : ArithmeticC
       if kind = .coefficientRead ∨ kind = .eq then p.size
       else if kind = .metadata then p.size + 1 else 0 := by
   induction hs : p.size using Nat.strong_induction_on generalizing p with
-  | h n ih =>
+  | ind n ih =>
     by_cases hp : p.size = 0
     · rw [profileArithmetic_trimRaw]
       cases kind <;> simp [hp, arithmeticCost, ArithmeticOp.costKind]
@@ -115,7 +115,7 @@ end AddGroup
 section Semiring
 variable {F : Type} [Semiring F] [Sub F] [Inv F] [DecidableEq F]
 
-/-- Canonical multiplication adds a trim to its padded convolution profile. -/
+/-- Canonical multiplication adds a trim to its raw convolution profile. -/
 theorem profileArithmetic_mulPolynomial (p q : CPolynomial F) :
     (profileArithmetic (mulPolynomial p q)).2 =
       (profileArithmetic (mulRaw p.val q.val)).2 +
@@ -151,7 +151,7 @@ theorem profileArithmetic_subPolynomial_le (p q : CPolynomial F) (kind : Arithme
     simp [CPolynomial.Raw.neg]
   have hsize : (CPolynomial.Raw.addRaw p.val (CPolynomial.Raw.neg q.val)).size =
       max p.val.size q.val.size := by
-    rw [CPolynomial.Raw.add_size, hneg]
+    rw [CPolynomial.Raw.size_addRaw, hneg]
   have ht := profileArithmetic_trimRaw_le
     (CPolynomial.Raw.addRaw p.val (CPolynomial.Raw.neg q.val)) kind
   cases kind <;>

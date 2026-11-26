@@ -153,8 +153,9 @@ BCGM25 invokes Lemma 4.4 twice.
 ## Lemma 9.3: the exact-agreement route
 
 `ReedSolomon.exists_johnson_curve_exactPowerAgreement` constructs one exceptional set before
-choosing a seed or an agreeing polynomial. Its size is at most twice the curve degree times the
-finite Johnson line count. A primitive symbolic certificate at height `ℓ·(h + 1) − 1` feeds the
+choosing a seed or an agreeing polynomial. Its size is at most the curve degree times the finite
+Johnson line count at height `h + 1` (`johnsonSuccExceptionCount`), which is at most twice the
+line count at height `h`. A primitive symbolic certificate at height `ℓ·(h + 1) − 1` feeds the
 ordinary power-equation theorem, so the result has no characteristic restriction.
 
 `ProximityGap.mcaError_powers_le_of_exactPowerAgreement` converts that conclusion to MCA:

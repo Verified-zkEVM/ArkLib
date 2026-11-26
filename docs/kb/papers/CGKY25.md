@@ -9,7 +9,8 @@ source_metadata: ../sources/CGKY25/metadata.yml
 status: investigated
 related_modules:
   - ArkLib/Commitments/Functional/Basic.lean
-  - ArkLib/Commitments/Functional/KZG/FunctionBinding/Basic.lean
+  - ArkLib/Commitments/Functional/KZG/FunctionBinding/Reduction.lean
+  - ArkLib/Commitments/Functional/KZG/Security.lean
 ---
 
 # CGKY25
@@ -23,18 +24,24 @@ is an active coverage target, not an already proved consequence of that KZG clie
 
 ## What ArkLib Uses From This Paper
 
-- The case split used by `mapFunctionBindingInstanceToArsdhInstAux`.
-- The ARSDH target instance assembled by the KZG function-binding reduction.
+- Function binding (Definition 3.17), which `KZG.functionBindingExperiment` states for KZG: every
+  opening is accepted and no message fits all of them.
+- The ARSDH assumption (Definition 9.6), which VCVio states as `ARSDH.experiment`.
+- The reduction from KZG function binding to ARSDH. ArkLib's version,
+  `KZG.FunctionBinding.functionBindingReduction`, treats three cases: two conflicting openings,
+  the trapdoor among the queries, and interpolation through `n + 1` distinct openings.
 - The broader compiler target: functional query classes, state-restoration function binding,
   query solving and tail bounds. See the
   [interaction literature map](../audits/interaction-literature-map.md#fiops-iors-and-funky-separate-two-independent-axes).
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/Commitments/Functional/KZG/FunctionBinding/Basic.lean`](../../../ArkLib/Commitments/Functional/KZG/FunctionBinding/Basic.lean)
+- [`ArkLib/Commitments/Functional/KZG/FunctionBinding/Reduction.lean`](../../../ArkLib/Commitments/Functional/KZG/FunctionBinding/Reduction.lean)
   cites `CGKY25` directly.
 - [`ArkLib/Commitments/Functional/Basic.lean`](../../../ArkLib/Commitments/Functional/Basic.lean)
   cites the paper as a reference for the general interface.
+- [`ArkLib/Commitments/Functional/KZG/Security.lean`](../../../ArkLib/Commitments/Functional/KZG/Security.lean)
+  states `KZG.functionBindingExperiment` and the ARSDH bounds, and cites `CGKY25`.
 
 ## Version Notes
 
@@ -44,7 +51,13 @@ is an active coverage target, not an already proved consequence of that KZG clie
 
 ## Open Formalization Gaps
 
-- A paper-to-Lean audit of every KZG reduction lemma remains separate from this framework audit.
+- A paper-to-Lean audit of the KZG reduction remains separate from this framework audit. It should
+  record which steps of the paper reduction correspond to each major lemma in
+  `FunctionBinding/Wins.lean`.
+- ArkLib proves the pointwise statement `KZG.FunctionBinding.functionBindingReduction_wins` and the
+  game-level bound `KZG.functionBinding_le_arsdh` against VCVio's `ARSDH.experiment`. The
+  corollary `KZG.functionBinding_le_of_arsdh` assumes the ARSDH bound only over an explicit
+  adversary class.
 - The general Funky theorem needs its actual SR experiments, query solver/tail obligations,
   resource substitutions and extractor access. Full-message extractability is not a universal
   prerequisite of this route.

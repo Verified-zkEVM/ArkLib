@@ -12,7 +12,8 @@ public import ArkLib.OracleReduction.Security.TranscriptTree
 
   This file defines **coordinate-wise special soundness** for (oracle) reductions, following
   [FMN24] (*Lattice-Based Polynomial Commitments*, who introduce the notion) and [NOZ26] (*Hachi*,
-  Definition 3, the multi-round form we target).
+  Definition 3, the multi-round form we target). FMN24 numbering refers to the checked ePrint
+  2023/846, Definitions 2.29–2.30.
 
   Coordinate-wise special soundness generalizes `k`-special soundness. In `k`-special soundness one
   extracts a witness from a tree of accepting transcripts in which, at each challenge round, there
@@ -48,6 +49,10 @@ public import ArkLib.OracleReduction.Security.TranscriptTree
 
   ## References
 
+  `IsSpecialSoundFamily` renders `SS(S, ℓ, k)` from [FMN24] §2.9, used in Definitions 2.29–2.30,
+  and [NOZ26] §2.3. `Verifier.coordinateWiseSpecialSound` is the multi-round form of [NOZ26]
+  Definition 3 / [FMN24] Definition 2.30, expressed through ArkLib's tree-special-soundness API.
+
   * [Fenzi, G., Moghaddas, H., and Nguyen, N. K., *Lattice-Based Polynomial Commitments: Towards
       Asymptotic and Concrete Efficiency*][FMN24]
   * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
@@ -64,37 +69,32 @@ namespace CoordinateWise
 /-! ## The combinatorial structure `SS(S, ℓ, k)`
 
 These definitions are pure combinatorics on vectors in `S^ℓ ≃ (Fin ℓ → S)`, independent of any
-protocol. They capture exactly the set `SS(S, ℓ, k)` from [FMN24] / [NOZ26].
+protocol.
 -/
 
 variable {S : Type*}
 
 /-- The relation `x ≡ᵢ y`: the coordinate-vectors `x` and `y` agree in every coordinate except the
-  `i`-th, where they differ. For `ℓ = 1` this is just `x 0 ≠ y 0`. -/
-def CoordEq {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) : Prop :=
+  `i`-th, where they differ. For `ℓ = 1` this is just `x 0 ≠ y 0`. Coordinate `u` may have its own
+  alphabet `S u`; a vector over one alphabet is the case `S u = T` for all `u`, and its call sites
+  elaborate unchanged. -/
+def CoordEq {ℓ : ℕ} {S : Fin ℓ → Type*} (i : Fin ℓ) (x y : (u : Fin ℓ) → S u) : Prop :=
   x i ≠ y i ∧ ∀ j, j ≠ i → x j = y j
 
-/-- `≡ᵢ` is decidable over a decidable alphabet: finitely many coordinates, each compared by
+/-- `≡ᵢ` is decidable over decidable alphabets: finitely many coordinates, each compared by
 `DecidableEq`. This is what lets the star-center search (`CoordinateWise.SingleRound.central` /
 `sib`) run rather than choose classically, hence what keeps tree extractors executable. -/
-instance instDecidableCoordEq [DecidableEq S] {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) :
-    Decidable (CoordEq i x y) := by unfold CoordEq; infer_instance
+instance instDecidableCoordEq {ℓ : ℕ} {S : Fin ℓ → Type*} [∀ u, DecidableEq (S u)] (i : Fin ℓ)
+    (x y : (u : Fin ℓ) → S u) : Decidable (CoordEq i x y) := by
+  unfold CoordEq; infer_instance
 
-/-- A family of `ℓ·(k-1)+1` coordinate-vectors `c` is **coordinate-wise special sound**, i.e. lies
-  in `SS(S, ℓ, k)`, if
+/-- A family of `ℓ·(k-1)+1` coordinate-vectors `c` is coordinate-wise special sound if its
+vectors are pairwise distinct and it has a central index with `k-1` siblings for each coordinate.
+Those siblings agree with the center off that coordinate and differ from it there.
 
-  - the `ℓ·(k-1)+1` vectors are pairwise distinct (`Function.Injective c`), and
-  - there is a *central* index `e` such that for every coordinate `i ∈ Fin ℓ` there are `k-1` other
-    indices whose vectors agree with `c e` off coordinate `i` (and differ on it).
-
-  This is the precise rendering of the set `SS(S, ℓ, k)` from [FMN24] Def. 2.9 / [NOZ26] §2.3.
-  In the paper `SS(S, ℓ, k)` is a *set* `{x₁, …, x_K}` of `K := ℓ·(k-1)+1` **distinct** vectors; the
-  `Function.Injective c` clause is what encodes that distinctness. It is load-bearing: since the
-  `k-1` siblings of a coordinate `i` agree with `c e` off coordinate `i`, distinctness of the
-  vectors forces them to be pairwise distinct *in coordinate `i`*, giving the `k` distinct values
-  per coordinate that extraction relies on. (Without it, the siblings could collapse to a single
-  value, leaving only `2` distinct values in a coordinate.) The branching arity `ℓ·(k-1)+1` is
-  built into the index type. -/
+The index type fixes the branching arity. `Function.Injective c` excludes repeated vectors;
+since siblings agree off the selected coordinate, their values at that coordinate are pairwise
+distinct as well. -/
 def IsSpecialSoundFamily (ℓ k : ℕ) (c : Fin (ℓ * (k - 1) + 1) → (Fin ℓ → S)) : Prop :=
   Function.Injective c ∧
   ∃ e : Fin (ℓ * (k - 1) + 1),
@@ -135,6 +135,84 @@ theorem isSpecialSoundFamily_one_iff_injective {k : ℕ}
   · intro j hj h0
     exact (Finset.ne_of_mem_erase hj)
       (hinj (funext fun x => by obtain rfl : x = 0 := Subsingleton.elim x 0; exact h0)).symm
+
+/-! ### A threshold per coordinate and an alphabet per coordinate
+
+The family below drops both restrictions of `IsSpecialSoundFamily`: coordinate `u` has its own
+alphabet `S u` and its own threshold `k u`. It carries the temporary name
+`IsBlockSpecialSoundFamily` while `BlockCWSSStructure` coexists with `CWSSStructure`. -/
+
+section Block
+
+variable {ℓ : ℕ} {S : Fin ℓ → Type*}
+
+/-- A family of coordinate vectors is a **star** with thresholds `k` when its vectors are pairwise
+distinct and it has a center with `k u - 1` siblings for every coordinate `u`. The siblings agree
+with the center off `u` and differ from it at `u`.
+
+The size `N` of the family is not fixed here. A star has at least `1 + ∑ u, (k u - 1)` members
+(`IsBlockSpecialSoundFamily.card_ge`). A threshold `k u` of `0` or `1` asks for no sibling at
+coordinate `u`. -/
+def IsBlockSpecialSoundFamily {N : ℕ} (k : Fin ℓ → ℕ) (c : Fin N → ((u : Fin ℓ) → S u)) : Prop :=
+  Function.Injective c ∧
+  ∃ e : Fin N, ∀ i : Fin ℓ, ∃ J : Finset (Fin N),
+    e ∉ J ∧ J.card = k i - 1 ∧ ∀ j ∈ J, CoordEq i (c e) (c j)
+
+instance instDecidableIsBlockSpecialSoundFamily [∀ u, DecidableEq (S u)] {N : ℕ} (k : Fin ℓ → ℕ)
+    (c : Fin N → ((u : Fin ℓ) → S u)) : Decidable (IsBlockSpecialSoundFamily k c) := by
+  unfold IsBlockSpecialSoundFamily
+  infer_instance
+
+/-- With one alphabet and one threshold for all coordinates, the star condition is the one of
+`IsSpecialSoundFamily`. -/
+theorem isSpecialSoundFamily_iff_isBlockSpecialSoundFamily {T : Type*} {k : ℕ}
+    (c : Fin (ℓ * (k - 1) + 1) → (Fin ℓ → T)) :
+    IsSpecialSoundFamily ℓ k c ↔ IsBlockSpecialSoundFamily (S := fun _ => T) (fun _ => k) c :=
+  Iff.rfl
+
+variable {N M : ℕ} {k : Fin ℓ → ℕ} {c : Fin N → ((u : Fin ℓ) → S u)}
+
+/-- Reindexing a star along an equivalence of index types gives a star. -/
+theorem IsBlockSpecialSoundFamily.comp_equiv (h : IsBlockSpecialSoundFamily k c)
+    (e : Fin M ≃ Fin N) : IsBlockSpecialSoundFamily k (c ∘ e) := by
+  obtain ⟨hinj, c₀, hc⟩ := h
+  refine ⟨hinj.comp e.injective, e.symm c₀, fun i => ?_⟩
+  obtain ⟨J, hJ₀, hJcard, hJ⟩ := hc i
+  refine ⟨J.map e.symm.toEmbedding, ?_, ?_, ?_⟩
+  · simpa [Finset.mem_map_equiv] using hJ₀
+  · simpa using hJcard
+  · intro j hj
+    rw [Finset.mem_map_equiv] at hj
+    simpa using hJ (e j) (by simpa using hj)
+
+/-- Being a star does not depend on how the index type is presented. -/
+theorem isBlockSpecialSoundFamily_comp_equiv_iff (e : Fin M ≃ Fin N) :
+    IsBlockSpecialSoundFamily k (c ∘ e) ↔ IsBlockSpecialSoundFamily k c := by
+  refine ⟨fun h => ?_, fun h => h.comp_equiv e⟩
+  simpa [Function.comp_def] using h.comp_equiv e.symm
+
+/-- A star with thresholds `k` has at least `1 + ∑ u, (k u - 1)` members: the siblings of
+different coordinates are different, and none is the center. -/
+theorem IsBlockSpecialSoundFamily.card_ge (h : IsBlockSpecialSoundFamily k c) :
+    ∑ u, (k u - 1) + 1 ≤ N := by
+  classical
+  obtain ⟨_, e, hstar⟩ := h
+  choose J hJe hJcard hJ using hstar
+  have hdisj : (Set.univ : Set (Fin ℓ)).PairwiseDisjoint J := by
+    intro i _ i' _ hii'
+    rw [Function.onFun, Finset.disjoint_left]
+    intro j hj hj'
+    exact (hJ i' j hj').1 ((hJ i j hj).2 i' (Ne.symm hii'))
+  have hcard : (insert e (Finset.univ.biUnion J)).card = ∑ u, (k u - 1) + 1 := by
+    rw [Finset.card_insert_of_notMem, Finset.card_biUnion (fun i _ i' _ hii' => hdisj trivial
+      trivial hii')]
+    · simp [hJcard]
+    · simpa using fun i => hJe i
+  calc ∑ u, (k u - 1) + 1 = (insert e (Finset.univ.biUnion J)).card := hcard.symm
+    _ ≤ Fintype.card (Fin N) := Finset.card_le_univ _
+    _ = N := Fintype.card_fin N
+
+end Block
 
 end CoordinateWise
 
@@ -257,20 +335,13 @@ def coordinateWiseSpecialSoundWith (D : CWSSStructure pSpec)
     (Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec (CWSSStructure.toShape D).arity) : Prop :=
   treeSpecialSoundWith init impl (CWSSStructure.toShape D) relIn relOut verifier Ext
 
-/-- A verifier is **coordinate-wise special sound** with respect to a coordinate-wise structure `D`,
-  an input relation `relIn` and an output relation `relOut` if it is tree-special-sound for the
-  generic shape induced by `D`.
+/-- Coordinate-wise special soundness for the tree shape induced by `D`, with input relation
+`relIn` and output relation `relOut`. Acceptance is represented by the output relation's language.
+Specializing `D` to `CWSSStructure.ofSpecialSound k` gives ordinary `k`-special soundness.
 
-  This is the multi-round coordinate-wise special soundness of [NOZ26] Def. 3 / [FMN24] Def. 2.10,
-  phrased over ArkLib's IOR machinery. The papers' accept/reject condition is represented by the
-  language of the output relation. Specializing `D` to `CWSSStructure.ofSpecialSound k` corresponds
-  to the standard notion of `k`-special soundness.
-
-  The extractor is existential (inherited from `Verifier.treeSpecialSound`), which loses the
-  extraction *algorithm*; prefer `coordinateWiseSpecialSoundWith` at a named extractor for
-  advertised protocol statements and keep this form for plumbing. Reductions whose extraction may
-  instead break a cryptographic assumption use `coordinateWiseSpecialSoundWithEscape` / `…Escape`
-  below. -/
+This form quantifies existentially over an extractor; `coordinateWiseSpecialSoundWith` retains
+its identity. Neither form bounds extraction time. Use the escape variants when the conclusion
+may instead establish a `ChallengeTree.EscapeEvent`. -/
 def coordinateWiseSpecialSound (D : CWSSStructure pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=

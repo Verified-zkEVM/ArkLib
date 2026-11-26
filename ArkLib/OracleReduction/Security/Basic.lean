@@ -201,13 +201,6 @@ theorem perfectCompleteness_of_run_support
       obtain ⟨⟨⟨tr, prvStmtOut, witOut⟩, stmtOut⟩, hx, hrel, hstmt⟩ := h stmtIn witIn hIn x hx
       exact ⟨⟨⟨tr, prvStmtOut, witOut⟩, stmtOut⟩, hx, hrel, hstmt⟩)
 
--- /-- For a reduction without shared oracles (i.e. `oSpec = []ₒ`), perfect completeness occurs
---   when the reduction produces satisfying statement-witness pairs for all possible challenges. -/
--- theorem perfectCompleteness_forall_challenge [reduction.IsDeterministic] :
---       reduction.perfectCompleteness relIn relOut ↔
---         ∀ stmtIn witIn, relIn stmtIn witIn → ∀ chals : ∀ i, pSpec.Challenge i,
---           reduction.runWithChallenges stmtIn witIn chals = 1 := by
-
 end Completeness
 
 end Reduction
@@ -233,13 +226,16 @@ namespace Extractor
 
 variable (oSpec : OracleSpec ι) (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
 
-/-- A straightline, deterministic, non-oracle-querying extractor takes in the output witness, the
-  initial statement, the IOR transcript, and the query logs from the prover and verifier, and
-  returns a corresponding initial witness.
+/-- A straightline extractor takes in the input statement, the output witness, the IOR transcript,
+  and the query logs from the prover and verifier, and returns a corresponding input witness.
 
-  Note that the extractor does not need to take in the output statement, since it can be derived
-  via re-running the verifier on the initial statement, the transcript, and the verifier's query
-  log.
+  It runs once, after the execution, without rewinding the prover. It may query the shared oracles
+  `oSpec` and may fail. The type bounds neither its running time nor its computability: a
+  noncomputable function that picks a witness by classical choice is an extractor. A cost bound is
+  a separate statement about a named extractor (see `Verifier.knowledgeSoundnessWith`).
+
+  The extractor does not need the output statement, since re-running the verifier on the input
+  statement, the transcript, and the verifier's query log recovers it.
 
   This form of extractor suffices for proving knowledge soundness of most hash-based IOPs.
 -/
@@ -295,7 +291,10 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 Unlike `knowledgeSoundness`, this predicate keeps the extractor's identity in its type. This is
 the appropriate public contract when a caller needs to name, execute, or audit the exact
 extractor certified by a theorem. The extractor is fixed before the arbitrary malicious prover,
-which has its own private input of any type. -/
+which has its own private input of any type.
+
+The predicate bounds only the error. Knowledge soundness in the cryptographic sense also needs a
+bound on the cost of this extractor, stated separately for the same named extractor. -/
 def knowledgeSoundnessWith
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -342,6 +341,14 @@ def knowledgeSoundnessWith
   In contrast, failures of the reduction execution itself (e.g. the verifier aborting) are
   still excluded from the event, matching the convention for (plain) soundness: a run in which
   the verifier does not accept imposes no obligation on the extractor.
+
+  The extractor is unconstrained, so this contract carries no efficiency content. The classical
+  witness selector `Extractor.Straightline.choose` makes it equivalent to
+  `Verifier.relationSoundness` (`Verifier.knowledgeSoundness_iff_relationSoundness`). Extraction in
+  the cryptographic sense needs a named extractor and a bound on its complete execution.
+  `knowledgeSoundnessWith` fixes the extractor. `knowledgeSoundnessWithResources` in
+  `Security/Resources.lean` additionally bounds the declared instruction counts of a measured
+  program returning the same value, which does not bound the extractor's complete execution.
 -/
 def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) : Prop :=
@@ -369,7 +376,26 @@ theorem knowledgeSoundness_of_with
   (knowledgeSoundness_iff_exists_with init impl relIn relOut verifier knowledgeError).mpr
     ⟨extractor, h⟩
 
-/-- Type class for knowledge soundness for a verifier -/
+/-- Increasing the allowed error preserves soundness. -/
+theorem soundness_error_mono {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε ε' : ℝ≥0}
+    (hε : ε ≤ ε') (h : verifier.soundness init impl langIn langOut ε) :
+    verifier.soundness init impl langIn langOut ε' :=
+  fun WitIn WitOut witIn prover stmtIn hstmt =>
+    (h WitIn WitOut witIn prover stmtIn hstmt).trans (by exact_mod_cast hε)
+
+/-- Increasing the allowed error preserves knowledge soundness. -/
+theorem knowledgeSoundness_error_mono
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec} {ε ε' : ℝ≥0}
+    (hε : ε ≤ ε') (h : verifier.knowledgeSoundness init impl relIn relOut ε) :
+    verifier.knowledgeSoundness init impl relIn relOut ε' := by
+  obtain ⟨extractor, h⟩ := h
+  refine ⟨extractor, fun Aux stmt aux prover => ?_⟩
+  exact (h Aux stmt aux prover).trans (by exact_mod_cast hε)
+
+/-- Type class for knowledge soundness for a verifier. Like `knowledgeSoundness`, it bounds no
+extractor cost. -/
 class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   knowledgeError : ℝ≥0
@@ -408,23 +434,7 @@ structure Simulator (oSpec : OracleSpec ι) (StmtIn : Type) {n : ℕ} (pSpec : P
   oracleSim : QueryImpl oSpec (StateT SimState (OracleComp oSpec))
   proverSim : StmtIn → StateT SimState (OracleComp oSpec) pSpec.FullTranscript
 
-/-
-  We define honest-verifier zero-knowledge as follows:
-  There exists a simulator such that for all (malicious) verifier, the distributions of transcripts
-  generated by the simulator and the interaction between the verifier and the prover are
-  (statistically) indistinguishable.
--/
--- def zeroKnowledge (prover : Prover pSpec oSpec) : Prop :=
---   ∃ simulator : Simulator,
---   ∀ verifier : Verifier pSpec oSpec,
---   ∀ stmtIn : Statement,
---   ∀ witIn : Witness,
---   relIn.isValid stmtIn witIn = true →
---     let result := (Reduction.mk prover verifier).run stmtIn witIn
---     let transcript := Prod.fst <$> Prod.snd <$> result
---     let simTranscript := simulator
---     -- let prob := spec.relOut.isValid' <$> output
---     sorry
+/- Honest-verifier zero-knowledge is not yet formalized. -/
 
 end ZeroKnowledge
 
@@ -501,6 +511,16 @@ theorem knowledgeSoundness_of_with
     (h : verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError) :
     verifier.knowledgeSoundness init impl relIn relOut knowledgeError :=
   Verifier.knowledgeSoundness_of_with init impl h
+
+/-- Increasing the allowed error preserves oracle knowledge soundness. -/
+theorem knowledgeSoundness_error_mono
+    {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
+    {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
+    {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
+    {ε ε' : ℝ≥0} (hε : ε ≤ ε')
+    (h : verifier.knowledgeSoundness init impl relIn relOut ε) :
+    verifier.knowledgeSoundness init impl relIn relOut ε' :=
+  Verifier.knowledgeSoundness_error_mono init impl hε h
 
 end OracleVerifier
 

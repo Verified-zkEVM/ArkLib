@@ -12,7 +12,7 @@ import ArkLibTest.OracleReduction.GuardedLens
 
 The lifted extractor carries the outer output witness through every intermediate round.
 This remains valid when that witness type is empty, and guarded statement lenses retain
-both averaged and fixed-prefix soundness bounds.
+round-by-round soundness bounds.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -81,24 +81,16 @@ def knowledgeState : verifier.KnowledgeStateFunction (pure ()) impl
   toFun_next := fun _ _ _ _ _ _ _ => trivial
   toFun_full := fun _ _ _ _ => trivial
 
-theorem innerKnowledge : verifier.rbrKnowledgeSoundnessWorstCase (pure ()) impl
+theorem innerKnowledge : verifier.rbrKnowledgeSoundness (pure ()) impl
     (Set.univ : Set (Unit × Nat)) (Set.univ : Set (Unit × Unit)) (fun _ => 0) := by
   refine ⟨(fun _ => Nat), extractor, knowledgeState, ?_⟩
   intro stmt i tr
   simp [knowledgeState]
 
-/-- Fixed-prefix lifting does not require an inhabitant of the outer output witness type. -/
-example : (verifier.liftContext emptyOutputLens.stmt).rbrKnowledgeSoundnessWorstCase
-    (pure ()) impl (∅ : Set (Unit × Bool)) (∅ : Set (Unit × Empty)) (fun _ => 0) :=
-  verifier.liftContext_rbrKnowledgeSoundnessWorstCase innerKnowledge
-    (stmtLens := emptyOutputLens.stmt) (witLens := emptyOutputLens.wit)
-
-/-- The same empty-output lens also transports the averaged knowledge bound. -/
+/-- Lifting does not require an inhabitant of the outer output witness type. -/
 example : (verifier.liftContext emptyOutputLens.stmt).rbrKnowledgeSoundness
     (pure ()) impl (∅ : Set (Unit × Bool)) (∅ : Set (Unit × Empty)) (fun _ => 0) :=
-  verifier.liftContext_rbr_knowledgeSoundness
-    (Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
-      (pure ()) impl innerKnowledge)
+  verifier.liftContext_rbrKnowledgeSoundness innerKnowledge
     (stmtLens := emptyOutputLens.stmt) (witLens := emptyOutputLens.wit)
 
 section GuardedStatement
@@ -120,76 +112,41 @@ local instance : Statement.Lens.IsSound
     (GuardedLensRegression.orLens_sound langIn langOut extra).lift_sound
       stmt stmtOut hOuter trivial hInner
 
-/-- The auxiliary disjunct is retained in the fixed-prefix soundness lift. -/
-example (h : V.rbrSoundnessWorstCase init queryImpl langIn langOut err) :
-    (V.liftContext GuardedLensRegression.orLens).rbrSoundnessWorstCase init queryImpl
-      (GuardedLensRegression.orLanguage langIn extra)
-      (GuardedLensRegression.orLanguage langOut extra) err :=
-  V.liftContext_rbrSoundnessWorstCase h
-
-/-- The guarded OR-statement certificate also applies to the averaged soundness lift. -/
-example [Inhabited COut] (h : V.rbrSoundness init queryImpl langIn langOut err) :
+/-- The auxiliary disjunct is retained in the soundness lift. -/
+example (h : V.rbrSoundness init queryImpl langIn langOut err) :
     (V.liftContext GuardedLensRegression.orLens).rbrSoundness init queryImpl
       (GuardedLensRegression.orLanguage langIn extra)
       (GuardedLensRegression.orLanguage langOut extra) err :=
-  V.liftContext_rbr_soundness h
+  V.liftContext_rbrSoundness h
 
 end GuardedStatement
 
 end LiftContextRoundByRoundRegression
 
 /--
-info: 'Verifier.liftContext_rbr_soundness' depends on axioms:
+info: 'Verifier.liftContext_rbrSoundness' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.liftContext_rbr_soundness
+#print axioms Verifier.liftContext_rbrSoundness
 
 /--
-info: 'Verifier.liftContext_rbr_knowledgeSoundness' depends on axioms:
+info: 'Verifier.liftContext_rbrKnowledgeSoundness' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.liftContext_rbr_knowledgeSoundness
+#print axioms Verifier.liftContext_rbrKnowledgeSoundness
 
 /--
-info: 'Verifier.liftContext_rbrSoundnessWorstCase' depends on axioms:
+info: 'OracleVerifier.liftContext_rbrSoundness' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.liftContext_rbrSoundnessWorstCase
+#print axioms OracleVerifier.liftContext_rbrSoundness
 
 /--
-info: 'Verifier.liftContext_rbrKnowledgeSoundnessWorstCase' depends on axioms:
+info: 'OracleVerifier.liftContext_rbrKnowledgeSoundness' depends on axioms:
 [propext, Classical.choice, Quot.sound]
 -/
 #guard_msgs (whitespace := lax) in
-#print axioms Verifier.liftContext_rbrKnowledgeSoundnessWorstCase
-
-/--
-info: 'OracleVerifier.liftContext_rbr_soundness' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms OracleVerifier.liftContext_rbr_soundness
-
-/--
-info: 'OracleVerifier.liftContext_rbr_knowledgeSoundness' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms OracleVerifier.liftContext_rbr_knowledgeSoundness
-
-/--
-info: 'OracleVerifier.liftContext_rbrSoundnessWorstCase' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms OracleVerifier.liftContext_rbrSoundnessWorstCase
-
-/--
-info: 'OracleVerifier.liftContext_rbrKnowledgeSoundnessWorstCase' depends on axioms:
-[propext, Classical.choice, Quot.sound]
--/
-#guard_msgs (whitespace := lax) in
-#print axioms OracleVerifier.liftContext_rbrKnowledgeSoundnessWorstCase
+#print axioms OracleVerifier.liftContext_rbrKnowledgeSoundness

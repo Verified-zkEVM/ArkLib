@@ -120,7 +120,8 @@ example : ∃ z : ℚ, z ≠ 1 ∧ z ≠ 0 ∧
 
 noncomputable section
 
-open MvPolynomial
+open MvPolynomial (CoeffNatDegreeLE aeval affineHilbertPolynomial coeffNatDegreeLE_X
+  natDegree_affineHilbertPolynomial_span_singleton_add_one zeroLocus zeroLocus_span)
 
 private abbrev MCAField := ℂ
 
@@ -139,12 +140,12 @@ private def componentIdeal : Ideal (MvPolynomial (Option (Fin 1)) MCAField) :=
   Ideal.span {componentVariable}
 
 private theorem componentIdeal_prime : componentIdeal.IsPrime :=
-  (Ideal.span_singleton_prime (X_ne_zero _)).mpr X_prime
+  (Ideal.span_singleton_prime (MvPolynomial.X_ne_zero _)).mpr MvPolynomial.prime_X
 
 private theorem componentIdeal_positiveDimension :
     0 < (affineHilbertPolynomial componentIdeal).natDegree := by
   have h := natDegree_affineHilbertPolynomial_span_singleton_add_one
-    (f := componentVariable) (X_ne_zero _) componentIdeal_prime.ne_top
+    (f := componentVariable) (MvPolynomial.X_ne_zero _) componentIdeal_prime.ne_top
   simp only [Nat.card_eq_fintype_card, Fintype.card_option, Fintype.card_fin] at h
   unfold componentIdeal
   omega
@@ -556,7 +557,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
   have hbound := finite_powerBatchedBadChallenges_card_le_derivativeCapped_of_exponent
     positiveChallengeDomain regularBoundValues (RingHom.id _) 0 badChallengeEquation
     2 1 1 1 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
-    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+    (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
     hjet hheight
     (by simp [badChallengeEquation]) positiveChallenges positiveChallengeWitness
     positiveChallengeJet hchart hagree hbad
@@ -564,7 +565,7 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
     exists_exceptional_regularPowerBatchedAgreement_derivativeCapped_of_exponent
       positiveChallengeDomain regularBoundValues (RingHom.id _) badChallengeEquation
       2 1 1 1 1 1 1 2 badChallengeExponent (by omega) (by omega) (by omega)
-      (by omega) (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
+      (by omega) (by omega) (by omega) (by omega) (by omega) (by omega)
       hjet hheight
       (by simp [badChallengeEquation]) (by omega)
   have hzero : (0 : MCAField) ∈ exceptional := by
@@ -583,9 +584,9 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
       componentEquation 1 0 1 0 1 2 (by simp)
       (by norm_num) (by norm_num)
       ((taylorExponentSufficient_two_mul_sub_three 0 1).mono (by omega))
-      (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num)
       (by norm_num) (by norm_num) (coeffNatDegreeLE_X (some (0 : Fin 1)))
-      componentEquation_jetDegree (MvPolynomial.X_prime).irreducible
+      componentEquation_jetDegree (MvPolynomial.prime_X).irreducible
       (by simp [componentEquation, MvPolynomial.pderiv_X])
       (by simp [componentEquation])
   have hregularCard' : regularExceptional.card ≤ 2 := by
@@ -609,9 +610,9 @@ example : (positiveChallenges.card : ℚ) ≤ positiveDerivativeBound ∧
     exists_exceptional_frobeniusPowerFactorSolutions (n := 2) (ℓ := 1)
       positiveChallengeDomain regularBoundConstantValues (RingHom.id _)
       componentEquation 1 0 1 0 1 2
-      (by norm_num) (by norm_num) (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)
       (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
-      MvPolynomial.X_prime.irreducible (by simp [componentEquation])
+      MvPolynomial.prime_X.irreducible (by simp [componentEquation])
       (by simp [componentEquation])
   refine ⟨hbound, exceptional, hcard, hzero, regularExceptional,
     hregularCard', ⟨w, hw, hregularPair⟩,
@@ -653,7 +654,7 @@ example : ∃ exceptional : Finset MCAField,
       (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2)
       (by intro i; simp [positiveChallengeDomain])
       (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-      (by norm_num) (by norm_num) (by norm_num)
+      (by norm_num) (by norm_num)
       (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
   have hcard' : (exceptional.card : ℚ) ≤ 2 := by
     norm_num at hcard
@@ -678,11 +679,8 @@ example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 
     (roots := positiveChallengeDomain) (center := 0) (Q := componentEquation)
     (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2) (by simp)
     (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
-    (by simp [jointInitialJetEquation, initialJetEquation, componentEquation])
-    (by simpa [jointInitialJetEquation, initialJetEquation, componentEquation,
-      componentIdeal, componentVariable] using componentIdeal_prime.ne_top)
     positiveChallenges positiveChallengeWitness
     (by simp [positiveChallenges, positiveChallengeWitness])
     (by simp [positiveChallenges, positiveChallengeWitness, componentEquation,
@@ -706,7 +704,7 @@ example : positiveChallenges.Nonempty ∧ (positiveChallenges.card : ℚ) ≤ 2 
     (roots := positiveChallengeDomain) (Q := componentEquation)
     (p := 1) (e := 0) (τ := 2) (h := 0) (b := 1) (A := 2) (by simp)
     (by norm_num) (by norm_num) (taylorExponentSufficient_two_mul 0 1)
-    (by norm_num) (by norm_num) (by norm_num)
+    (by norm_num) (by norm_num)
     (coeffNatDegreeLE_X (some (0 : Fin 1))) componentEquation_jetDegree
     positiveChallenges positiveChallengeWitness
     (by simp [positiveChallenges, positiveChallengeWitness])
@@ -840,13 +838,13 @@ example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).affineAgreement 
 
 /-- The line and affine-space MCA errors at gap `1/2` over `ZMod 5`, with `n = 4` and `k = 1`. -/
 example := (capacity_lineAgreement (δ := 1 / 2) (by norm_num)).mcaError_le (k := 1)
-  capacityLineLength_half one_pos (by norm_num) (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
+  capacityLineLength_half one_pos (Or.inr (by rw [ZMod.ringChar_zmod_n]; norm_num))
   capacityFiniteDomain
 
 /-- Power batching at gap `1/2` over `ℚ` at the length threshold, with `ℓ = 1`, `k = 1` and
 `A = n`. -/
 example := capacity_powerBatchingAgreement (δ := 1 / 2) (by norm_num) 1
-  (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) one_pos le_rfl one_pos
+  (capacityPowerLength (1 / 2)) 1 (capacityPowerLength (1 / 2)) le_rfl one_pos
   (by
     have : (4 : ℝ) ≤ capacityPowerLength (1 / 2) := by
       exact_mod_cast four_le_capacityPowerLength (1 / 2)

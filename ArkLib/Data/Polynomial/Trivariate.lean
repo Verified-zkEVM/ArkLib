@@ -73,11 +73,6 @@ noncomputable def evalAtY (y : R) (p : R[Z][X][Y]) : R[Z][X] :=
 noncomputable def evalAtZ (z : R) (p : R[Z][X][Y]) : R[X][Y] :=
   p.map (Polynomial.mapRingHom (Polynomial.evalRingHom z))
 
-/-- Backwards-compatible name for `evalAtZ`. New code should use the axis-explicit API. -/
-@[deprecated evalAtZ +typeChanged (since := "2026-08-21")]
-noncomputable abbrev eval_on_Z (p : R[Z][X][Y]) (z : R) : R[X][Y] :=
-  evalAtZ z p
-
 /-- The maximum exponent of the middle `X` variable in a trivariate polynomial. -/
 noncomputable def degreeInX (p : R[Z][X][Y]) : ℕ :=
   Bivariate.degreeX p

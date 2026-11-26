@@ -9,7 +9,7 @@ public import ArkLib.ProofSystem.RingSwitching.Packing.ProductSumcheck.RoundExec
 public import ArkLib.Data.Probability.Instances
 
 /-!
-# Fixed-prefix knowledge security of a product-sumcheck round
+# Knowledge security of a product-sumcheck round
 
 The pre-challenge state requires the sent polynomial to be the residual sum polynomial.
 The post-challenge state requires only the accepted guard and equality at the sampled point.
@@ -22,6 +22,7 @@ commutative ring with no zero divisors.
 
 noncomputable section
 namespace RingSwitching.Packing.ProductSumcheck.Round
+open Sumcheck.Structured (Multiplier)
 open OracleSpec OracleComp ProtocolSpec Polynomial MvPolynomial Probability ProbabilityTheory
 open scoped NNReal ENNReal
 variable {P C Context : Type} [CommRing P] [CommRing C] [Algebra P C] {m : ℕ}
@@ -104,16 +105,17 @@ def knowledgeStateFunction {σ : Type} (init : ProbComp σ)
 def rbrError [Fintype C] (_j : (pSpec C).ChallengeIdx) : ℝ≥0 :=
   2 / Fintype.card C
 
-/-- Worst-case knowledge soundness at every fixed transcript prefix, with the round extractor. -/
-theorem rbrKnowledgeSoundnessWorstCaseWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
+/-- Round-by-round knowledge soundness at every fixed transcript prefix, with the round
+extractor. -/
+theorem rbrKnowledgeSoundnessWith [NoZeroDivisors C] [Fintype C] [SampleableType C]
     (hfunctional : pc.Functional) {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    Verifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+    Verifier.rbrKnowledgeSoundnessWith init impl
       (rel multiplier pc i.castSucc) (rel multiplier pc i.succ) (verifier pc i).toVerifier
       (WitMid (P := P) (m := m)) (extractor (C := C) (Context := Context) pc i)
       (knowledgeStateFunction multiplier pc i init impl) (rbrError (C := C)) := by
   classical
-  refine Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl _ _
+  refine Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl _ _
     fun stmt tr => ?_
   exact bad_event_le multiplier pc i hfunctional stmt.1 stmt.2
     (tr ⟨0, by change 0 < 1; decide⟩)

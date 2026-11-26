@@ -10,7 +10,7 @@ public import ArkLib.OracleReduction.Security.Basic
 /-!
   # Rewinding Knowledge Soundness
 
-  This file defines rewinding knowledge soundness for (oracle) reductions.
+  This file defines the interface for rewinding extractors; their execution is not yet formalized.
 -/
 
 @[expose] public section
@@ -36,9 +36,6 @@ def OracleSpec.proverOracle (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) :
     OracleSpec ((i : pSpec.MessageIdx) × StmtIn × pSpec.Transcript i.val.castSucc) :=
   fun q => pSpec.Message q.1
 
--- def SimOracle.proverImpl (P : Prover pSpec oSpec StmtIn WitIn StmtOut WitOut) :
---     SimOracle.Stateless (OracleSpec.proverOracle pSpec StmtIn) oSpec := sorry
-
 structure Rewinding (oSpec : OracleSpec ι)
     (StmtIn StmtOut WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The state of the extractor -/
@@ -51,14 +48,6 @@ structure Rewinding (oSpec : OracleSpec ι)
     times -/
   runExt : StmtOut → WitOut → StmtIn →
     StateT ExtState (OracleComp (OracleSpec.proverOracle StmtIn pSpec)) WitIn
-
--- Challenge: need environment to update & maintain the prover's states after each extractor query
--- This will hopefully go away after the refactor of prover's type to be an iterated monad
-
--- def Rewinding.run
---     (P : Prover.Adaptive pSpec oSpec StmtIn WitIn StmtOut WitOut)
---     (E : Extractor.Rewinding pSpec oSpec StmtIn StmtOut WitIn WitOut) :
---     OracleComp oSpec WitIn := sorry
 
 end Rewinding
 

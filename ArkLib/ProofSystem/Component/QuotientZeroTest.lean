@@ -225,12 +225,12 @@ variable [Fintype F]
 
 /-- At every fixed prefix, a false domain-vanishing claim passes with probability at most
 `d / |F|`. The message's type enforces the quotient degree even for a dishonest prover. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (hcard : D.points.card ≤ d) :
-    (oracleVerifier F D d oSpec).toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl
+theorem oracleVerifier_rbrKnowledgeSoundnessWith (hcard : D.points.card ≤ d) :
+    (oracleVerifier F D d oSpec).toVerifier.rbrKnowledgeSoundnessWith init impl
       (relIn F D d) relOut (fun _ => Unit) (rbrExtractor F D d oSpec)
       (knowledgeStateFunction F D d oSpec init impl)
       (fun _ => (d : ℝ≥0) / Fintype.card F) := by
-  apply Verifier.rbrKnowledgeSoundnessWorstCaseWith_of_two_message rfl rfl
+  apply Verifier.rbrKnowledgeSoundnessWith_of_two_message rfl rfl
   intro stmt tr
   let q : Poly F (d - D.points.card) := tr ⟨0, Nat.zero_lt_one⟩
   change Pr{let z ← $ᵗ F}[∃ _ : Unit,
@@ -253,11 +253,11 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith (hcard : D.points.card
     simpa only [ENNReal.coe_div hdenom, ENNReal.coe_natCast] using hbound
 
 /-- Existential form of the named fixed-prefix knowledge certificate. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase (hcard : D.points.card ≤ d) :
-    (oracleVerifier F D d oSpec).toVerifier.rbrKnowledgeSoundnessWorstCase init impl
+theorem oracleVerifier_rbrKnowledgeSoundness (hcard : D.points.card ≤ d) :
+    (oracleVerifier F D d oSpec).toVerifier.rbrKnowledgeSoundness init impl
       (relIn F D d) relOut (fun _ => (d : ℝ≥0) / Fintype.card F) :=
   ⟨_, rbrExtractor F D d oSpec, knowledgeStateFunction F D d oSpec init impl,
-    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith F D d oSpec init impl hcard⟩
+    oracleVerifier_rbrKnowledgeSoundnessWith F D d oSpec init impl hcard⟩
 
 /-- The guarded bridge gives ordinary knowledge soundness with the named backward-fold
 extractor. There is exactly one challenge contribution. -/
@@ -265,8 +265,8 @@ theorem oracleVerifier_knowledgeSoundnessWith (hcard : D.points.card ≤ d) :
     (oracleVerifier F D d oSpec).toVerifier.knowledgeSoundnessWith init impl
       (relIn F D d) relOut (rbrExtractor F D d oSpec).foldExtractor
       (∑ _ : (pSpec F D d).ChallengeIdx, (d : ℝ≥0) / Fintype.card F) :=
-  (guardedForm F D d oSpec).knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith
+  (guardedForm F D d oSpec).knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith
     (knowledgeStateFunction F D d oSpec init impl)
-    (oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith F D d oSpec init impl hcard)
+    (oracleVerifier_rbrKnowledgeSoundnessWith F D d oSpec init impl hcard)
 
 end QuotientZeroTest

@@ -6,10 +6,16 @@ Authors: Alexander Hicks
 module
 
 public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.RandomDomain
+public import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon.SubspaceWitness
 public import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ReedSolomon.ListDecodability
+import ArkLib.Data.FieldTheory.BinaryAddSubgroup
 public import ArkLib.Data.Probability.Uniform
+import Mathlib.Algebra.CharP.CharAndCard
 public import Mathlib.Analysis.SpecialFunctions.Pow.Real
 public import Mathlib.Analysis.SpecialFunctions.Log.Base
+import Mathlib.Combinatorics.Pigeonhole
 public import Mathlib.FieldTheory.Finite.Basic
 public import Mathlib.FieldTheory.Finiteness
 
@@ -41,6 +47,55 @@ open Code
 
 section ReedSolomonBounds
 
+/-- `⌊(2^(dn))^(a₀/d)⌋ = 2^(a₀ n)`. -/
+private theorem floor_two_pow_rpow {α : ℚ} {d a₀ n : ℕ} (hd : 0 < d)
+    (hα : (α : ℝ) = (a₀ : ℝ) / d) :
+    Nat.floor ((((2 ^ (d * n) : ℕ)) : ℝ) ^ (α : ℝ)) = 2 ^ (a₀ * n) := by
+  have h : (((2 ^ (d * n) : ℕ)) : ℝ) ^ (α : ℝ) = (2 : ℝ) ^ (a₀ * n) := by
+    rw [hα, Nat.cast_pow, Nat.cast_ofNat, ← Real.rpow_natCast (2 : ℝ) (d * n),
+      ← Real.rpow_mul (by norm_num), ← Real.rpow_natCast (2 : ℝ) (a₀ * n)]
+    congr 1
+    have : (d : ℝ) ≠ 0 := by exact_mod_cast hd.ne'
+    push_cast
+    field_simp
+  rw [h]
+  exact_mod_cast Nat.floor_natCast (R := ℝ) (2 ^ (a₀ * n))
+
+/-- `(2^(dn))^(v₀/d - 1) = 2^(v₀ n) / 2^(dn)`. -/
+private theorem two_pow_rpow_sub_one {β : ℚ} {d v₀ n : ℕ} (hd : 0 < d)
+    (hβ : (β : ℝ) = (v₀ : ℝ) / d) :
+    (((2 ^ (d * n) : ℕ)) : ℝ) ^ ((β : ℝ) - 1) = (2 : ℝ) ^ (v₀ * n) / ((2 ^ (d * n) : ℕ) : ℝ) := by
+  have hq : (((2 ^ (d * n) : ℕ)) : ℝ) = (2 : ℝ) ^ ((d * n : ℕ) : ℝ) := by
+    rw [Real.rpow_natCast]; push_cast; rfl
+  rw [Real.rpow_sub (by positivity), Real.rpow_one, hβ, hq, ← Real.rpow_mul (by norm_num),
+    ← Real.rpow_natCast (2 : ℝ) (v₀ * n)]
+  congr 2
+  have : (d : ℝ) ≠ 0 := by exact_mod_cast hd.ne'
+  push_cast
+  field_simp
+
+/-- The target bound equals `2^(v(m-v)) / q^(v-a)` with `m = dn, a = a₀n, v = v₀n`. -/
+private theorem rpow_logb_eq_two_pow_div {α β : ℚ} {d a₀ v₀ n : ℕ} (hd : 0 < d) (ha : a₀ < v₀)
+    (hv : v₀ < d) (hα : (α : ℝ) = (a₀ : ℝ) / d) (hβ : (β : ℝ) = (v₀ : ℝ) / d) :
+    (((2 ^ (d * n) : ℕ)) : ℝ) ^ (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 ((2 ^ (d * n) : ℕ) : ℝ)) =
+      (2 : ℝ) ^ (v₀ * n * (d * n - v₀ * n)) /
+        (((2 ^ (d * n) : ℕ)) : ℝ) ^ (v₀ * n - a₀ * n) := by
+  have hdr : (d : ℝ) ≠ 0 := by exact_mod_cast hd.ne'
+  have hq : (((2 ^ (d * n) : ℕ)) : ℝ) = (2 : ℝ) ^ ((d * n : ℕ) : ℝ) := by
+    rw [Real.rpow_natCast]; push_cast; rfl
+  have hlog : Real.logb 2 ((2 ^ (d * n) : ℕ) : ℝ) = ((d * n : ℕ) : ℝ) := by
+    rw [hq, Real.logb_rpow (by norm_num) (by norm_num)]
+  rw [hlog, hq, ← Real.rpow_mul (by norm_num), ← Real.rpow_natCast ((2 : ℝ) ^ ((d * n : ℕ) : ℝ)),
+    ← Real.rpow_mul (by norm_num), ← Real.rpow_natCast (2 : ℝ) (v₀ * n * (d * n - v₀ * n)),
+    ← Real.rpow_sub (by norm_num)]
+  congr 1
+  rw [hα, hβ]
+  have h1 : v₀ * n ≤ d * n := Nat.mul_le_mul_right _ hv.le
+  have h2 : a₀ * n ≤ v₀ * n := Nat.mul_le_mul_right _ ha.le
+  push_cast [Nat.cast_sub h1, Nat.cast_sub h2]
+  field_simp
+  ring
+
 /-- **Reed-Solomon codes over extension fields have superpolynomial lists** ([ABF26] Theorem 3.12,
 after [BKR06, Corollary 2.2]). Fix `0 < α < β < 1`. For infinitely many prime powers `q` there is a
 Reed-Solomon code `C := RS[F_q, F_q, ⌊q^α⌋]` and a word `w : F_q → F_q` with
@@ -61,16 +116,13 @@ subsequence `q = 2^m`, integrality of `αm` also makes `q^α = 2^(αm)` a natura
 
 **Degree convention.** [BKR06] uses degree **≤ K**, whereas [ABF26] and
 `ReedSolomon.code domain k` use degree **< k**. BKR06's codewords are differences of
-monic subspace polynomials of degree `2^v`; their degree is at most `2^u`, with varying
+monic subspace polynomials of degree `2^v`. Their degree is at most `2^u`, with varying
 leading coefficients, so subtracting a fixed member need not lower the degree.
 Instead, with `a = αm ≥ 1` and `v = βm`, apply [BKR06, Theorem 2.1] with `u = a − 1`:
 its degree bound `2^(a−1) < 2^a = k` places the witnesses inside the degree-`< k` code.
-The rational restriction remains necessary to choose integral `αm` and `βm`.
-
-Solicited proof: see
-<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
+The rational restriction remains necessary to choose integral `αm` and `βm`. -/
 theorem rs_lambda_superpoly_extension
-    (α β : ℚ) (_hα_pos : 0 < α) (_hα_lt : α < β) (_hβ_lt : β < 1) :
+    (α β : ℚ) (hα_pos : 0 < α) (hα_lt : α < β) (hβ_lt : β < 1) :
     ∃ qs : ℕ → ℕ, StrictMono qs ∧ (∀ i, IsPrimePow (qs i)) ∧
       ∀ i : ℕ,
         ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -83,7 +135,75 @@ theorem rs_lambda_superpoly_extension
             let C := ReedSolomon.code domain k
             ((closeCodewordsRel ((C : Set (ι → F))) w δ).ncard : ℝ) ≥
               (q : ℝ) ^ (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 q) := by
-  sorry -- external admit: [BKR06, Corollary 2.2].
+  have hD : (0 : ℚ) < (α.den * β.den : ℕ) := by positivity
+  have hnum (γ : ℚ) (hγ : 0 < γ) (e : ℕ) : ((γ.num.natAbs * e : ℕ) : ℚ) = γ * (γ.den * e : ℕ) := by
+    simp only [Nat.cast_mul, Nat.cast_natAbs, Int.cast_abs,
+      abs_of_pos (Int.cast_pos.2 (Rat.num_pos.2 hγ))]
+    rw [← Rat.mul_den_eq_num]; ring
+  have ha := hnum α hα_pos β.den
+  have hv := hnum β (hα_pos.trans hα_lt) α.den
+  rw [mul_comm β.den] at hv
+  obtain ⟨d, a₀, v₀, ha₀, hav, hvd, hα, hβ⟩ : ∃ d a₀ v₀ : ℕ, 0 < a₀ ∧ a₀ < v₀ ∧ v₀ < d ∧
+      (α : ℝ) = (a₀ : ℝ) / d ∧ (β : ℝ) = (v₀ : ℝ) / d :=
+    ⟨α.den * β.den, α.num.natAbs * β.den, β.num.natAbs * α.den,
+      Nat.cast_pos (α := ℚ) |>.1 (by rw [ha]; exact mul_pos hα_pos hD),
+      Nat.cast_lt (α := ℚ) |>.1 (by rw [ha, hv]; exact mul_lt_mul_of_pos_right hα_lt hD),
+      Nat.cast_lt (α := ℚ) |>.1 (by rw [hv]; exact mul_lt_of_lt_one_left hD hβ_lt),
+      (congrArg (Rat.cast (K := ℝ)) (eq_div_of_mul_eq hD.ne' ha.symm)).trans
+        (by rw [Rat.cast_div, Rat.cast_natCast, Rat.cast_natCast]),
+      (congrArg (Rat.cast (K := ℝ)) (eq_div_of_mul_eq hD.ne' hv.symm)).trans
+        (by rw [Rat.cast_div, Rat.cast_natCast, Rat.cast_natCast])⟩
+  have hd : 0 < d := by omega
+  refine ⟨fun i => 2 ^ (d * (i + 1)), ?_, ?_, ?_⟩
+  · intro i j hij
+    exact Nat.pow_lt_pow_right (by norm_num) (Nat.mul_lt_mul_of_pos_left (by omega) hd)
+  · intro i
+    exact Nat.prime_two.isPrimePow.pow (by positivity)
+  · intro i ι _ _ _ F _ _ _ hF hι
+    dsimp only at hF hι
+    have : CharP F 2 := charP_of_card_eq_prime_pow hF
+    have hvm : v₀ * (i + 1) ≤ d * (i + 1) := Nat.mul_le_mul_right _ hvd.le
+    classical
+    let T : Finset (AddSubgroup F) := Finset.univ.filter (Nat.card · = 2 ^ (v₀ * (i + 1)))
+    have hTcard : 2 ^ (v₀ * (i + 1) * (d * (i + 1) - v₀ * (i + 1))) ≤ T.card :=
+      (FiniteField.two_pow_le_card_addSubgroup hF hvm).trans
+        (by rw [Nat.card_eq_fintype_card, Fintype.card_subtype])
+    have hTV : ∀ V ∈ T, Nat.card V = 2 ^ (v₀ * (i + 1)) := fun V hV => (Finset.mem_filter.1 hV).2
+    have hN : (Fintype.card (Fin (v₀ * (i + 1) - a₀ * (i + 1)) → F) : ℝ) ≠ 0 := by
+      exact_mod_cast Fintype.card_ne_zero
+    obtain ⟨b, -, hb⟩ := Finset.exists_le_card_fiber_of_nsmul_le_card_of_maps_to (s := T)
+      (t := Finset.univ) (b := (T.card : ℝ) / Fintype.card (Fin (v₀ * (i + 1) - a₀ * (i + 1)) → F))
+      (f := fun V => Polynomial.subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1))
+        (Polynomial.subspacePolynomial V))
+      (fun _ _ => Finset.mem_univ _) Finset.univ_nonempty
+      (by rw [Finset.card_univ, nsmul_eq_mul, mul_div_cancel₀ _ hN])
+    let domain : ι ↪ F := (Fintype.equivOfCardEq (hι.trans hF.symm)).toEmbedding
+    refine ⟨domain, ReedSolomon.evalOnPoints domain
+      (Polynomial.subspaceTopPoly (a₀ * (i + 1)) (v₀ * (i + 1)) b), ?_⟩
+    have key := card_le_ncard_closeCodewordsRel_of_topCoeffs domain (hι.trans hF.symm) b
+      (T.filter fun V => Polynomial.subspaceTopCoeffs (a₀ * (i + 1)) (v₀ * (i + 1))
+        (Polynomial.subspacePolynomial V) = b)
+      (fun V hV => ⟨hTV V (Finset.mem_filter.1 hV).1, (Finset.mem_filter.1 hV).2⟩)
+    dsimp only
+    rw [floor_two_pow_rpow hd hα, two_pow_rpow_sub_one hd hβ]
+    rw [hF] at key
+    have hcardfun : (Fintype.card (Fin (v₀ * (i + 1) - a₀ * (i + 1)) → F) : ℝ) =
+        ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) := by
+      simp [hF]
+    rw [hcardfun] at hb
+    have hpos : (0 : ℝ) < ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) := by
+      positivity
+    have hT : (2 : ℝ) ^ (v₀ * (i + 1) * (d * (i + 1) - v₀ * (i + 1))) ≤ (T.card : ℝ) := by
+      exact_mod_cast hTcard
+    calc ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^
+          (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 ((2 ^ (d * (i + 1)) : ℕ) : ℝ))
+        = (2 : ℝ) ^ (v₀ * (i + 1) * (d * (i + 1) - v₀ * (i + 1))) /
+            ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) :=
+          rpow_logb_eq_two_pow_div hd hav hvd hα hβ
+      _ ≤ (T.card : ℝ) / ((2 ^ (d * (i + 1)) : ℕ) : ℝ) ^ (v₀ * (i + 1) - a₀ * (i + 1)) :=
+          div_le_div_of_nonneg_right hT hpos.le
+      _ ≤ _ := hb
+      _ ≤ _ := key
 
 /-- **Reed-Solomon codes over prime fields have large lists** ([ABF26] Theorem 3.13, after
 [GHSZ02, Corollary 20]). Fix `0 < α, β < 1`. For all sufficiently large primes `p` there is a code
@@ -100,20 +220,12 @@ code … Letting `a = (1−γ)n^ε/ε` … the expected number of codewords in a
 The local copy of [GHSZ02] is a scanned two-column paper whose text layer drops relation symbols, so
 Corollary 20's own display could not be transcribed verbatim; the proof text above could.
 
-**`_hαβ_le_one` is a source hypothesis [ABF26] drops.** The averaging bound the proof rests on
-([GHSZ02] Lemma 19: for an MDS `[n,k]_q` code and `a ≥ k`,
-`(1/e)·C(n,a)·q^{k−a} ≤ E_x[|B(x, n−a) ∩ C|] ≤ C(n,a)·q^{k−a}`) requires `a ≥ k`, i.e.
-`(1−β)/α ≥ 1`, i.e. `α + β ≤ 1`. It is carried here rather than dropped. (Dropping it looks
-harmless — `α + β > 1` gives `a < k`, hence a *larger* ball and a longer list — but the cited
-inequality is then outside its stated range, so the admit would no longer follow from the source.)
-
 **Quantifier encoding.** `Ω(·)` is the explicit constant `c > 0` bound *outside* the `∀ p`, and "all
 sufficiently large primes" is the explicit threshold `p₀`; `Nat.Prime p` is a conjunct of the
 implication's premises, not an antecedent that a non-prime could satisfy vacuously. The list is the
 *point* list at the exhibited `w`, as in the source, rather than `Lambda`. -/
 theorem rs_lambda_large_prime
-    (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < 1) (_hβ_pos : 0 < β) (_hβ_lt : β < 1)
-    (_hαβ_le_one : α + β ≤ 1) :
+    (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < 1) (_hβ_pos : 0 < β) (_hβ_lt : β < 1) :
     ∃ (c : ℝ) (_ : 0 < c) (p₀ : ℕ),
       ∀ p : ℕ, Nat.Prime p → p₀ ≤ p →
         ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -407,7 +519,11 @@ theorem rs_lambda_large_prime
   let cnt : (ι → F) → ℕ := fun w => (closeCodewordsRel ((C : Set (ι → F))) w δ).ncard
   have hsum : ∑ w : ι → F, cnt w = p ^ k * hammingBallVolume p δ p := by
     dsimp [cnt]
-    rw [sum_ncard_closeCodewordsRel_eq C δ hδ, hcardC, hFp, hιp]
+    convert sum_ncard_closeCodewordsRel_eq C δ hδ using 1
+    · congr 1
+      ext w
+      simp
+    · rw [hcardC, hFp, hιp]
   have hcardwords : Fintype.card (ι → F) = p ^ p := by
     rw [Fintype.card_fun, hFp, hιp]
   have hw : ∃ w : ι → F,
@@ -458,7 +574,7 @@ access and was not available for primary-source verification, so JH01 coverage r
 open rather than being attributed to this different result. -/
 theorem rs_codimension_one_list_size
     (j : ℕ)
-    {ι : Type} [Fintype ι] [Nonempty ι]
+    {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     (hcard_le : Fintype.card ι ≤ Fintype.card F)
     (hι : Fintype.card ι = j + 1) :
@@ -562,7 +678,7 @@ section RandomReedSolomon
 
 open scoped ProbabilityTheory
 
-open Classical in
+open Classical Finset in
 /-- **Reed-Solomon codes on a random evaluation domain are list-decodable near capacity**
 ([ABF26] Theorem 3.6, after [AGL24, Theorem 1.1]).
 
@@ -572,14 +688,13 @@ with `|F| ≥ n + k · 2^{10ℓ/η}`,
   `Pr[ |Λ(C, ℓ/(ℓ+1) · (1 − ρ − η))| ≤ ℓ ] ≥ 1 − 2^{−ℓn}` ,
 
 where the evaluation domain `L` is drawn uniformly from the size-`n` subsets of `F`, the code is
-`C := RS[F, L, k]`, and `ρ := k/n`.
+`C := RS[F, L, k]`, and `ρ := k/n`. [AGL24] proves average-radius list decodability; this theorem
+is the plain list-size (`Lambda`) form. It does not assume `η < 1`: for `η ≥ 1` the radius is at
+most `0`.
 
 **The random domain is the source's, not a reformulation.** The sample space is literally
-`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ`, and the code is
-indexed by that subset itself (`↥S → F`), so no ordering is chosen and no push-forward argument is
-needed. An earlier assessment recorded this row as blocked on missing infrastructure for a uniform
-distribution over size-`n` subsets; that gap is closed — `Finset F` is a `Fintype`, so the subtype
-is one too, and native uniform sampling applies directly.
+`\binom{F}{n}` — the subtype of `Finset F` of cardinality `n`, sampled with `$ᵗ` — and the code is
+indexed by that subset itself (`↥S → F`), so no ordering of the evaluation points is chosen.
 
 `[Nonempty {S : Finset F // S.card = n}]` is what `$ᵗ` needs, and it is implied by the field-size
 hypothesis (which forces `n ≤ |F|`, whence `Finset.exists_subset_card_eq` supplies a witness); it is
@@ -592,16 +707,13 @@ separately: its `ℓ` is real-valued, so it needs a rounding the source does not
 issue [ABF26] Theorem 3.4 raises in its `η`-form. Derive it at a call site with an explicit choice.
 
 [BGM23] (exponential alphabet) and [GZ23] (polynomial-size alphabet) are the preceding results, and
-[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem, and none is
-formalised.
-
-Solicited proof: see
-<https://github.com/Verified-zkEVM/ArkLib/issues/1352>. -/
+[AGGLZ25] combines them; [ABF26] cites all three as context for this theorem. Of these, only the
+list-size form of [BGM23] over generic evaluation points is formalised
+(`ReedSolomon.exists_ne_zero_Lambda_le_of_eval_ne_zero`). -/
 theorem rs_random_domain_lambda_le
     {F : Type} [Field F] [Fintype F]
-    (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
-    (k n : ℕ) (_hn_pos : 0 < n)
-    (_hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
+    (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (η : ℝ) (hη : 0 < η) (k n : ℕ)
+    (hF : (n : ℝ) + (k : ℝ) * 2 ^ ((10 * ℓ : ℝ) / η) ≤ Fintype.card F)
     [Nonempty {S : Finset F // S.card = n}] :
     ENNReal.ofReal (1 - 2 ^ (-(ℓ * n : ℝ))) ≤
       Pr{ let S ← $ᵗ {S : Finset F // S.card = n} }[
@@ -609,7 +721,32 @@ theorem rs_random_domain_lambda_le
               (Function.Embedding.subtype (fun x : F => x ∈ (S : Finset F))) k :
             Set (↥(S : Finset F) → F)))
             ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / n - η)) ≤ (ℓ : ℕ∞)] := by
-  sorry -- external admit: [AGL24, Theorem 1.1].
+  by_cases hn : n = 0
+  · subst n
+    simp
+  have hq : n ≤ Fintype.card F := by
+    have : (0 : ℝ) ≤ k * 2 ^ ((10 * ℓ : ℝ) / η) := by positivity
+    exact_mod_cast (le_add_of_nonneg_right this).trans hF
+  have : Nonempty (Fin n ↪ F) := Function.Embedding.nonempty_of_card_le (by simpa using hq)
+  -- The code on the image of `f : Fin n ↪ F` is the code on `f` reindexed by an equivalence.
+  have hΛ (f : Fin n ↪ F) (δ : ℝ) :
+      Lambda (ReedSolomon.code (Function.Embedding.subtype (· ∈ univ.map f)) k :
+          Set (↥(univ.map f) → F)) δ = Lambda (ReedSolomon.code f k : Set (Fin n → F)) δ := by
+    let e : Fin n ≃ ↥(univ.map f) :=
+      Equiv.ofBijective (fun i ↦ ⟨f i, mem_map_of_mem f (mem_univ i)⟩)
+        ⟨fun i j h ↦ f.injective (congrArg Subtype.val h), fun x ↦ by
+          obtain ⟨i, -, hi⟩ := mem_map.1 x.2
+          exact ⟨i, Subtype.ext hi⟩⟩
+    have hf : e.toEmbedding.trans (Function.Embedding.subtype (· ∈ univ.map f)) = f :=
+      Function.Embedding.ext fun _ ↦ rfl
+    rw [← ReedSolomon.Lambda_code_comp_equiv e, hf]
+  rw [ProbabilityTheory.prEvent_uniformSample_finsetCard_eq_card_embedding fun T : Finset F ↦
+    Lambda (ReedSolomon.code (Function.Embedding.subtype (· ∈ T)) k : Set (↥T → F))
+      ((ℓ : ℝ) / (ℓ + 1) * (1 - (k : ℝ) / n - η)) ≤ (ℓ : ℕ∞)]
+  simp only [hΛ]
+  exact ProbabilityTheory.ofReal_one_sub_le_card_filter_div (by
+    simpa only [not_le] using ReedSolomon.card_filter_lt_Lambda_le_two_pow_neg_mul (F := F)
+      hℓ hη hn hF)
 
 end RandomReedSolomon
 

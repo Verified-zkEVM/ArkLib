@@ -12,52 +12,12 @@ public import VCVio.EvalDist.Monad.Branch
 public import VCVio.OracleComp.Constructions.SampleableType.Measure
 
 /-!
-# `ProtocolSpec` glue for the round-by-round (knowledge) soundness games
+# `ProtocolSpec` glue for security games
 
-ArkLib's round-by-round soundness games (`Verifier.rbrSoundness`,
-`Verifier.rbrKnowledgeSoundness` in `ArkLib/OracleReduction/Security/RoundByRound.lean`) all
-compute, per challenge round `i`, a probability of the shape
-
-```
-Pr{let x ← (do
-  (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-    (do
-      let tr ← proverRun                                -- adversarial, arbitrary
-      let challenge ← liftComp (pSpec.getChallenge i) _
-      return (… tr … challenge …))).run' (← init))}[event x]
-```
-
-This file provides the generic ArkLib-local glue to bound such probabilities from
-per-fixed-transcript bounds `∀ tr, Pr{let c ← $ᵗ (pSpec.Challenge i)}[event tr c] ≤ ε`:
-
-* `ProtocolSpec.simulateQ_addLift_challengeQueryImpl_getChallenge` resolves the simulated
-  challenge query into an explicit uniform draw `liftM ($ᵗ (pSpec.Challenge i))`;
-* `ProtocolSpec.prEvent_simulateQ_addLift_getChallenge_bind_le` is the master mixture bound
-  for the full game shape (built on VCVio's `prEvent_bind_le_of_forall_le`);
-
-These statements are `ProtocolSpec`-specific and so live in ArkLib core, but their *content* is
-not: `challengeQueryImpl` is only `fun q => $ᵗ _`, i.e. "answer each query with a uniform sample of
-its answer type", and `QueryImpl.addLift` is already VCVio's. No notion of protocol, transcript or
-round enters any proof below — they are `prEvent_bind_le_of_forall_le` plus a `simulateQ`
-normalisation. Generalising the challenge oracle to an arbitrary uniform-answer `QueryImpl` would
-let the mixture bounds move upstream, leaving thin specialisations here. The `loggingOracle` lemmas
-they build on live upstream in `VCVio/OracleComp/QueryTracking/LoggingOracle.lean`.
-
-Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its generic
-`KnowledgeTransitionFamily.IsBounded` packages exactly the inner worst-case obligation of
-`Verifier.rbrKnowledgeSoundnessWorstCase`, but it has no averaged, prover-sampled notion, so the
-worst-case ⇒ averaged bridges in `Security/RoundByRound.lean` are not subsumed by it; and its
-transition family is law-free data, so ArkLib's `KnowledgeStateFunction` obligations do not
-transfer. Its source-shaped `ExtractionCondition` is a *different* notion from ArkLib's
-`rbrKnowledgeSoundnessOneShot`, which samples the prefix by running a prover and feeds the prover's
-query log to the extractor.
-
-Beyond the two lemmas above, this file also carries the `OptionT` challenge-first master
-bounds (`ProtocolSpec.prEvent_optionT_simulateQ_addLift_*`). Those serve the *plain* (non-rbr)
-knowledge-soundness game, whose computation is `Option`-valued and draws its challenge first;
-see the section header preceding them for why the rbr master bound does not apply there. The two
-generic `loggingOracle` lemmas used by later reductions live separately in
-`VCVio/OracleComp/QueryTracking/LoggingOracle.lean`, independently of ArkLib core.
+This file resolves simulated challenge queries into uniform draws and provides bounds for the
+`OptionT` knowledge-soundness game. The latter draws a challenge before an arbitrary adversarial
+continuation, possibly after an earlier prefix. The probabilistic bind-event inequalities live
+upstream in VCVio; these lemmas provide their `ProtocolSpec` specializations.
 -/
 
 @[expose] public section
@@ -71,7 +31,7 @@ namespace ProtocolSpec
 variable {n : ℕ} {pSpec : ProtocolSpec n} [∀ j, SampleableType (pSpec.Challenge j)]
   {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- **Challenge-query resolution for the rbr games.** Simulating the lifted challenge query
+/-- **Challenge-query resolution for security games.** Simulating the lifted challenge query
 `liftComp (pSpec.getChallenge i) _` under the game's combined implementation
 `impl.addLift challengeQueryImpl` is exactly the uniform draw `$ᵗ (pSpec.Challenge i)` lifted
 into `StateT σ ProbComp` (the oracle state is untouched).
@@ -91,76 +51,14 @@ lemma simulateQ_addLift_challengeQueryImpl_getChallenge
   exact (simulateQ_spec_query (challengeQueryImpl.liftTarget (StateT σ ProbComp))
     ⟨i, ()⟩).trans rfl
 
-/-- **Master mixture bound for the rbr game shape.** If, for every *fixed* output `tr` of the
-(adversarial, arbitrary) simulated prover run `oa`, the event holds over a fresh uniform
-challenge with probability at most `ε`, then the whole game probability — initial state
-sampled from `init`, prover run simulated under `impl.addLift challengeQueryImpl`, challenge
-obtained via `liftComp (pSpec.getChallenge i) _` — is at most `ε`.
-
-`f` packages the game's `return` expression (e.g. `fun tr c ↦ (tr.1.1, c, tr.2)` for
-`rbrKnowledgeSoundness`); when applying this lemma to a game whose `do`-block destructures
-the prover output, pass `f` explicitly and use `exact` (the match-lambdas agree only up to
-definitional structure eta). -/
-theorem prEvent_simulateQ_addLift_getChallenge_bind_le
-    {T β : Type}
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) T) (i : pSpec.ChallengeIdx)
-    (f : T → pSpec.Challenge i → β) (E : β → Prop) {ε : ℝ≥0∞}
-    (h : ∀ tr : T, Pr{let c ← $ᵗ (pSpec.Challenge i)}[E (f tr c)] ≤ ε) :
-    Pr{let x ← (do
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let tr ← oa
-          let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return f tr challenge)).run' (← init))}[E x] ≤ ε := by
-  refine prEvent_bind_le_of_forall_le init _ E fun s ↦ ?_
-  rw [simulateQ_bind, StateT.run'_eq, StateT.run_bind, map_bind]
-  refine prEvent_bind_le_of_forall_le _ _ E fun x ↦ ?_
-  rw [prEvent_map, simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge,
-    StateT.run_bind]
-  simpa only [simulateQ_pure, StateT.run_monadLift, StateT.run_pure, bind_pure_comp,
-    Functor.map_map, monadLift_self] using h x.1
-
 end ProtocolSpec
-
-section ExecutableDocumentation
-
-open ProtocolSpec
-
-variable {n : ℕ} {pSpec : ProtocolSpec n} [∀ j, SampleableType (pSpec.Challenge j)]
-  {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-
-/-- Executable documentation: the master lemma engages the exact `rbrKnowledgeSoundness` game
-shape — destructuring prover-output bind, challenge via `liftComp (pSpec.getChallenge i) _`,
-`return` of the `(transcript, challenge, log)` triple — with `f` passed explicitly. -/
-example {T₁ T₂ L : Type}
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) ((T₁ × T₂) × L)) (i : pSpec.ChallengeIdx)
-    (E : T₁ × pSpec.Challenge i × L → Prop) {ε : ℝ≥0∞}
-    (h : ∀ (t₁ : T₁) (log : L),
-      Pr{let c ← $ᵗ (pSpec.Challenge i)}[E (t₁, c, log)] ≤ ε) :
-    Pr{let x ← (do
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let ⟨⟨t₁, _⟩, log⟩ ← oa
-          let challenge ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          return (t₁, challenge, log))).run' (← init))}[E x] ≤ ε :=
-  prEvent_simulateQ_addLift_getChallenge_bind_le init impl oa i
-    (fun x c ↦ (x.1.1, c, x.2)) E (fun x ↦ h x.1.1 x.2)
-
-end ExecutableDocumentation
 
 /-! ## Knowledge-soundness game glue
 
-The plain (non-rbr) knowledge-soundness game (`Verifier.knowledgeSoundness`,
-`ArkLib/OracleReduction/Security/Basic.lean`) differs from the rbr games in two ways that
-make the master lemma above inapplicable:
-
-* the game is `Option`-valued (`OptionT.mk` of the simulated run — the reduction execution
-  may fail), and
-* for a verifier-first protocol the challenge is drawn *first*, with the adversarial tail
-  (the prover's remaining moves plus the pure verifier/extractor projections) *after* it
-  inside the same computation.
+The knowledge-soundness game (`Verifier.knowledgeSoundness`,
+`ArkLib/OracleReduction/Security/Basic.lean`) is `Option`-valued because reduction execution may
+fail. For a verifier-first protocol the challenge is drawn before the adversarial continuation,
+which comprises the prover's remaining moves and the verifier/extractor projections.
 
 The underlying probabilistic steps — the "zero off the challenge event" monotonicity step and
 its additive and convex prefix-split sharpenings (`prEvent_bind_le_prEvent_of_forall_eq_zero`,

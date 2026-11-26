@@ -181,22 +181,6 @@ def concat {pSpec : ProtocolSpec n} {NextMessage : Type}
         FullTranscript (pSpec ++ₚ ⟨!v[dir], !v[NextMessage]⟩) :=
   Fin.hconcat T msg
 
--- TODO: fill
-
--- @[simp]
--- theorem append_cast_left {n m : ℕ} {pSpec₁ pSpec₂ : ProtocolSpec n} {pSpec' : ProtocolSpec m}
---     {T₁ : FullTranscript pSpec₁} {T₂ : FullTranscript pSpec'} (n' : ℕ)
---     (h : n + m = n' + m) (hSpec : dcast h pSpec₁ = pSpec₂) :
---       dcast₂ h (by simp) (T₁ ++ₜ T₂) = (dcast₂ (Nat.add_right_cancel h) (by simp) T₁) ++ₜ T₂ :=
--- by
---   simp [append, dcast₂, ProtocolSpec.cast, Fin.append_cast_left]
-
--- @[simp]
--- theorem append_cast_right {n m : ℕ} (pSpec : ProtocolSpec n) (pSpec' : ProtocolSpec m) (m' : ℕ)
---     (h : n + m = n + m') :
---       dcast h (pSpec ++ₚ pSpec') = pSpec ++ₚ (dcast (Nat.add_left_cancel h) pSpec') := by
---   simp [append, dcast, ProtocolSpec.cast, Fin.append_cast_right]
-
 @[simp]
 theorem take_append_left (T : FullTranscript pSpec₁) (T' : FullTranscript pSpec₂) :
     (T ++ₜ T').take m (Nat.le_add_right m n) =

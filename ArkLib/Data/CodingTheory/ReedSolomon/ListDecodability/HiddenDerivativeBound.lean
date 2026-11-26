@@ -172,7 +172,7 @@ If `d < K - 1`, `Q` satisfies the local constraints, its jet degrees satisfy the
 the binomial coefficients required by the root count are nonzero, and `m * A ≤ |F|²`, then
 the agreement list has extended cardinality at most `2 * (d + 1) * |F|^(3 * d + 2)`. -/
 theorem agreeingPolynomials_encard_le_two_mul_pow_of_exactInterpolant [Finite F]
-    {messageDim K A d m M W : ℕ} (hK : 0 < K) (hmessageDim : messageDim ≤ K)
+    {messageDim K A d m M W : ℕ} (hmessageDim : messageDim ≤ K)
     (hdK : d < K - 1)
     (domain : index ↪ F) (received : index → F) {Q : DifferentialPolynomial F d}
     (hQ : Q ≠ 0)
@@ -187,9 +187,7 @@ theorem agreeingPolynomials_encard_le_two_mul_pow_of_exactInterpolant [Finite F]
     by_contra h
     have hzero : m * A = 0 := Nat.eq_zero_of_not_pos h
     exact hQ (eq_zero_of_mem_exactInterpolationSpace_of_mul_eq_zero hzero hdK hQspace)
-  have hmessageAmbient : messageDim ≤ (K - 1) + 1 := by
-    simpa [Nat.sub_add_cancel (Nat.one_le_iff_ne_zero.mpr (Nat.ne_of_gt hK))]
-      using hmessageDim
+  have hmessageAmbient : messageDim ≤ (K - 1) + 1 := by omega
   have hweighted : differentialWeightedDegree (K - 1) Q < m * A :=
     differentialWeightedDegree_lt_of_mem_exactInterpolationSpace hbudget hdK hQspace
   have hweight : differentialWeightedDegree (K - 1) Q - ((K - 1) - d) ≤ m * A :=

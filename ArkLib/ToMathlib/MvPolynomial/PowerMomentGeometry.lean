@@ -195,7 +195,7 @@ theorem powerMomentWeight_exponent_ncard_le
     _ = D * Set.ncard {b : Option σ →₀ ℕ | b.degree ≤ N} := by
       rw [show Nat.card B = D * Nat.card {b : Option σ →₀ ℕ // b.degree ≤ N} by
         simp only [B, Nat.card_prod, Nat.card_fin]]
-      exact congrArg (D * ·) (Nat.card_coe_set_eq _)
+      exact congrArg (D * ·) (Nat.card_coe_set_eq {b : Option σ →₀ ℕ | b.degree ≤ N})
     _ = D * (N + Nat.card (Option σ)).choose (Nat.card (Option σ)) := by
       exact congrArg (D * ·) (Finsupp.ncard_setOf_degree_le (Option σ) N)
 
@@ -210,7 +210,7 @@ theorem powerMomentIdeal_hilbertFunction_le
       powerMomentIdeal_hilbertFunction_le_weightedFinrank D N hD
     _ = Set.ncard {m : Option σ →₀ ℕ | m.weight (powerMomentWeight D) ≤ D * N} :=
       finrank_restrictWeightedDegree (K := E) (powerMomentWeight (σ := σ) D)
-        (fun i ↦ by cases i <;> simp [powerMomentWeight, hD.ne']) (D * N)
+        (D * N)
     _ ≤ _ := powerMomentWeight_exponent_ncard_le D N hD
 
 /-- The power-moment variety has affine degree at most `D`. -/
@@ -370,15 +370,15 @@ theorem powerMomentMap_incidence_off_excluded
   classical
   let _ : Fintype ι := Fintype.ofFinite ι
   let P : Ideal (MvPolynomial (PowerMomentIndex D σ) E) := powerMomentIdeal D
-  let gl := polynomialPowerLift D g hgHeight
-  let sl := polynomialPowerLift D s hsHeight
+  let gl := polynomialPowerLift D g
+  let sl := polynomialPowerLift D s
   let flatten : MvPolynomial σ E[X] → MvPolynomial (Option σ) E :=
     (optionEquivRight E σ).symm
   let highl : List (MvPolynomial (PowerMomentIndex D σ) E) :=
     (Finset.univ : Finset ι).toList.map fun i ↦
-      chunkedPolynomialPowerLift D M hD (high i) (hhighHeight i)
+      chunkedPolynomialPowerLift D hD (high i)
   let cutsl : Fin n → MvPolynomial (PowerMomentIndex D σ) E := fun i ↦
-    chunkedPolynomialPowerLift D M hD (cuts i) (hcutsHeight i)
+    chunkedPolynomialPowerLift D hD (cuts i)
   let excludedl : Set (PowerMomentIndex D σ → E) :=
     {x | powerMomentSourcePoint D hD x ∈ excluded}
   let Sl : Finset (PowerMomentIndex D σ → E) := S.image (powerMomentPoint D)
@@ -437,7 +437,7 @@ theorem powerMomentMap_incidence_off_excluded
     have hhighJ : ∀ i, flatten (high i) ∈ J := by
       intro i
       change (optionEquivRight E σ).symm (high i) ∈ J
-      rw [← powerMomentMap_chunkedPolynomialPowerLift D M hD (high i) (hhighHeight i)]
+      rw [← powerMomentMap_chunkedPolynomialPowerLift D hD (high i)]
       apply Ideal.mem_map_of_mem (powerMomentMap D).toRingHom
       apply hhighQ
       simp only [highl, List.mem_map, Finset.mem_toList]
@@ -457,7 +457,7 @@ theorem powerMomentMap_incidence_off_excluded
       · intro hi
         have hil : cutsl i ∈ J.comap (powerMomentMap D).toRingHom := by
           change powerMomentMap D
-            (chunkedPolynomialPowerLift D M hD (cuts i) (hcutsHeight i)) ∈ J
+            (chunkedPolynomialPowerLift D hD (cuts i)) ∈ J
           rw [powerMomentMap_chunkedPolynomialPowerLift]
           exact hi
         rwa [hcomap] at hil
@@ -466,7 +466,7 @@ theorem powerMomentMap_incidence_off_excluded
           rw [hcomap]
           exact hi
         change powerMomentMap D
-          (chunkedPolynomialPowerLift D M hD (cuts i) (hcutsHeight i)) ∈ J at hmem
+          (chunkedPolynomialPowerLift D hD (cuts i)) ∈ J at hmem
         rw [powerMomentMap_chunkedPolynomialPowerLift] at hmem
         exact hmem
     have hcutsSrc : L ≤ {i | flatten (cuts i) ∈ J}.ncard := by
@@ -519,7 +519,7 @@ theorem powerMomentMap_incidence_off_excluded
         {i | aeval y (flatten (cuts i)) = 0} := by
       ext i
       change aeval (powerMomentPoint D y)
-          (chunkedPolynomialPowerLift D M hD (cuts i) (hcutsHeight i)) = 0 ↔
+          (chunkedPolynomialPowerLift D hD (cuts i)) = 0 ↔
         aeval y (flatten (cuts i)) = 0
       rw [aeval_powerMomentPoint, powerMomentMap_chunkedPolynomialPowerLift]
     rw [heq]
@@ -543,7 +543,7 @@ theorem powerMomentMap_incidence_off_excluded
       rw [Finite.card_option, hdim])
     (by simpa only [P] using powerMomentIdeal_affineDegree_le (E := E) D hD)
     gl sl hgP
-    ((polynomialPowerLift_totalDegree_le D g.totalDegree g hgHeight le_rfl).trans hgDegree)
+    ((polynomialPowerLift_totalDegree_le D g.totalDegree g le_rfl).trans hgDegree)
     hB highl hhighl cutsl hcutsl hL hLA (by
       simpa only [Fintype.card_fin] using hAn)
     excludedl hterminalLift Sl hSlS hASl

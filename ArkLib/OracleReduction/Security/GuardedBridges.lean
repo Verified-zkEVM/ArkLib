@@ -9,7 +9,7 @@ public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.GuardedSoundness
 
 /-!
-# Guarded bridges from fixed-prefix knowledge security
+# Guarded bridges from round-by-round knowledge security
 
 The straightline extractor folds the round-by-round extractor backward over the actual
 transcript, starting with the actual output witness. A failed fold from a valid guarded
@@ -26,24 +26,6 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {WitMid : Fin (n + 1) → Type}
 
 namespace Extractor.RoundByRound
-
-/-- Fold intermediate extraction backward along a transcript prefix. -/
-def foldPrefix (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmt : StmtIn) : (m : Fin (n + 1)) → pSpec.Transcript m → WitMid m → WitIn :=
-  Fin.induction (fun _ w ↦ E.extractIn stmt w)
-    (fun j ih tr w ↦ ih (Fin.init tr) (E.extractMid j stmt tr w))
-
-@[simp]
-theorem foldPrefix_zero (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmt : StmtIn) (tr : pSpec.Transcript 0) (w : WitMid 0) :
-    E.foldPrefix stmt 0 tr w = E.extractIn stmt w := rfl
-
-@[simp]
-theorem foldPrefix_succ (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
-    (stmt : StmtIn) (j : Fin n) (tr : pSpec.Transcript j.succ) (w : WitMid j.succ) :
-    E.foldPrefix stmt j.succ tr w =
-      E.foldPrefix stmt j.castSucc (Fin.init tr) (E.extractMid j stmt tr w) := by
-  simp [foldPrefix, Fin.induction_succ]
 
 /-- A pure straightline extractor using the actual output witness and transcript. -/
 def foldExtractor (E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid) :
@@ -106,12 +88,12 @@ theorem KnowledgeStateFunction.foldPrefix_mem_of_no_badEvent
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- Fixed-prefix knowledge errors sum to ordinary knowledge error for a guarded verifier,
+/-- Round-by-round knowledge errors sum to ordinary knowledge error for a guarded verifier,
 using the pure backward fold of the specified extractor. -/
-theorem GuardedForm.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith
+theorem GuardedForm.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith
     (G : V.GuardedForm) (K : V.KnowledgeStateFunction init impl relIn relOut E)
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid E K ε) :
+    (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
     V.knowledgeSoundnessWith init impl relIn relOut E.foldExtractor (∑ i, ε i) := by
   let e := fun stmt w tr ↦ some (E.foldPrefix stmt (Fin.last n) tr (E.extractOut stmt tr w))
   change V.knowledgeSoundnessWith init impl relIn relOut
@@ -134,23 +116,23 @@ theorem GuardedForm.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith
         (α := fun k : Fin (i.1.val + 1) ↦ pSpec.«Type» ⟨k.val, by omega⟩) c tr j
     simpa only [KnowledgeStateFunction.extractionBadEvent, hinit] using h stmt i tr
 
-/-- Existential ordinary knowledge soundness from an exact fixed-prefix certificate. -/
-theorem GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCaseWith
+/-- Existential ordinary knowledge soundness from an exact round-by-round certificate. -/
+theorem GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundnessWith
     (G : V.GuardedForm) (K : V.KnowledgeStateFunction init impl relIn relOut E)
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid E K ε) :
+    (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
     V.knowledgeSoundness init impl relIn relOut (∑ i, ε i) :=
   Verifier.knowledgeSoundness_of_with init impl
-    (G.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith K h)
+    (G.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith K h)
 
-/-- A guarded verifier's existential fixed-prefix certificate yields ordinary
+/-- A guarded verifier's existential round-by-round certificate yields ordinary
 knowledge soundness. -/
-theorem GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase
+theorem GuardedForm.knowledgeSoundness_of_rbrKnowledgeSoundness
     (G : V.GuardedForm) {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε) :
+    (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     V.knowledgeSoundness init impl relIn relOut (∑ i, ε i) := by
   obtain ⟨M, E, K, h⟩ := h
-  exact G.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCaseWith K h
+  exact G.knowledgeSoundness_of_rbrKnowledgeSoundnessWith K h
 
 end Verifier
 
@@ -166,28 +148,28 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ Pro
   {E : Extractor.RoundByRound oSpec (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec WitMid}
 
 /-- The named guarded knowledge bridge for an oracle verifier, by materialization. -/
-theorem knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+theorem knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith_of_guarded
     (G : V.toVerifier.GuardedForm)
     (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E)
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid E K ε) :
+    (h : V.toVerifier.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
     V.knowledgeSoundnessWith init impl relIn relOut E.foldExtractor (∑ i, ε i) :=
-  G.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWorstCaseWith K h
+  G.knowledgeSoundnessWith_of_rbrKnowledgeSoundnessWith K h
 
 /-- Forget the named fold after applying the guarded oracle knowledge bridge. -/
-theorem knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCaseWith_of_guarded
+theorem knowledgeSoundness_of_rbrKnowledgeSoundnessWith_of_guarded
     (G : V.toVerifier.GuardedForm)
     (K : V.toVerifier.KnowledgeStateFunction init impl relIn relOut E)
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.toVerifier.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut WitMid E K ε) :
+    (h : V.toVerifier.rbrKnowledgeSoundnessWith init impl relIn relOut WitMid E K ε) :
     V.knowledgeSoundness init impl relIn relOut (∑ i, ε i) :=
-  G.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCaseWith K h
+  G.knowledgeSoundness_of_rbrKnowledgeSoundnessWith K h
 
-/-- Existential fixed-prefix knowledge security gives ordinary oracle knowledge security. -/
-theorem knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase_of_guarded
+/-- Existential round-by-round knowledge security gives ordinary oracle knowledge security. -/
+theorem knowledgeSoundness_of_rbrKnowledgeSoundness_of_guarded
     (G : V.toVerifier.GuardedForm) {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.toVerifier.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε) :
+    (h : V.toVerifier.rbrKnowledgeSoundness init impl relIn relOut ε) :
     V.knowledgeSoundness init impl relIn relOut (∑ i, ε i) :=
-  G.knowledgeSoundness_of_rbrKnowledgeSoundnessWorstCase h
+  G.knowledgeSoundness_of_rbrKnowledgeSoundness h
 
 end OracleVerifier

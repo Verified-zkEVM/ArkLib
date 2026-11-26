@@ -9,10 +9,10 @@ public import ArkLib.OracleReduction.Security.Acceptance
 public import ArkLib.OracleReduction.Security.GuardedRoundByRound
 
 /-!
-# Fixed-prefix round-by-round soundness bridges
+# Round-by-round soundness bridges
 
-This file projects fixed-prefix knowledge certificates to soundness certificates and accumulates
-fixed-prefix soundness errors through the actual stateful prover execution. The terminal step
+This file projects round-by-round knowledge certificates to soundness certificates and accumulates
+round-by-round soundness errors through the actual stateful prover execution. The terminal step
 requires a current-state certificate; guarded verifiers supply it from their fresh-`init` terminal
 field because their verdict depends only on the statement and transcript.
 -/
@@ -70,31 +70,32 @@ theorem GuardedForm.stateFunction_full {V : Verifier oSpec StmtIn StmtOut pSpec}
 
 variable [∀ i, SampleableType (pSpec.Challenge i)]
 
-/-- Fixed-prefix knowledge soundness gives fixed-prefix soundness at the same challenge errors,
+/-- Round-by-round knowledge soundness gives round-by-round soundness at the same challenge errors,
 by existentially projecting the knowledge-state witness. -/
-theorem rbrSoundnessWorstCase_of_rbrKnowledgeSoundnessWorstCaseWith
+theorem rbrSoundness_of_rbrKnowledgeSoundnessWith
     {V : Verifier oSpec StmtIn StmtOut pSpec}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {M : Fin (n + 1) → Type}
     {E : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec M}
     {K : V.KnowledgeStateFunction init impl relIn relOut E}
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.rbrKnowledgeSoundnessWorstCaseWith init impl relIn relOut M E K ε) :
-    V.rbrSoundnessWorstCase init impl relIn.language relOut.language ε := by
+    (h : V.rbrKnowledgeSoundnessWith init impl relIn relOut M E K ε) :
+    V.rbrSoundness init impl relIn.language relOut.language ε := by
   refine ⟨K.toStateFunction init impl, fun stmt _ i tr ↦ ?_⟩
   refine le_trans (prEvent_mono _ _ _ ?_) (h stmt i tr)
   rintro c ⟨hnot, w, hw⟩
   exact ⟨w, fun hx ↦ hnot ⟨_, hx⟩, hw⟩
 
-/-- The existential fixed-prefix knowledge certificate also projects to fixed-prefix soundness. -/
-theorem rbrSoundnessWorstCase_of_rbrKnowledgeSoundnessWorstCase
+/-- The existential round-by-round knowledge certificate also projects to
+round-by-round soundness. -/
+theorem rbrSoundness_of_rbrKnowledgeSoundness
     {V : Verifier oSpec StmtIn StmtOut pSpec}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.rbrKnowledgeSoundnessWorstCase init impl relIn relOut ε) :
-    V.rbrSoundnessWorstCase init impl relIn.language relOut.language ε := by
+    (h : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
+    V.rbrSoundness init impl relIn.language relOut.language ε := by
   obtain ⟨M, E, K, h⟩ := h
-  exact rbrSoundnessWorstCase_of_rbrKnowledgeSoundnessWorstCaseWith h
+  exact rbrSoundness_of_rbrKnowledgeSoundnessWith h
 
 /-- A transcript-event bound gives soundness for any output language when the verifier cannot
 output that language outside the event, from every current oracle state. -/
@@ -139,7 +140,7 @@ theorem soundness_of_output_event
 
 /-- Fixed-prefix transition errors accumulate through the actual prover execution. A terminal
 certificate from every current oracle state then gives ordinary soundness at their sum. -/
-theorem soundness_of_rbrSoundnessWorstCase_of_full
+theorem soundness_of_rbrSoundness_of_full
     {langIn : Set StmtIn} {langOut : Set StmtOut}
     {V : Verifier oSpec StmtIn StmtOut pSpec} {ε : pSpec.ChallengeIdx → ℝ≥0}
     (S : V.StateFunction init impl langIn langOut)
@@ -186,16 +187,16 @@ theorem soundness_of_rbrSoundnessWorstCase_of_full
   intro y _
   simp [simulateQ_pure, StateT.run_pure, hx]
 
-/-- For a guarded verifier, fixed-prefix round-by-round soundness gives ordinary soundness with
+/-- For a guarded verifier, round-by-round soundness gives ordinary soundness with
 error the sum of the per-challenge errors, allowing arbitrary shared oracle state and provers. -/
-theorem GuardedForm.soundness_of_rbrSoundnessWorstCase
+theorem GuardedForm.soundness_of_rbrSoundness
     {langIn : Set StmtIn} {langOut : Set StmtOut}
     {V : Verifier oSpec StmtIn StmtOut pSpec} (G : V.GuardedForm)
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.rbrSoundnessWorstCase init impl langIn langOut ε) :
+    (h : V.rbrSoundness init impl langIn langOut ε) :
     V.soundness init impl langIn langOut (∑ i, ε i) := by
   obtain ⟨S, hbound⟩ := h
-  exact soundness_of_rbrSoundnessWorstCase_of_full S hbound (G.stateFunction_full S)
+  exact soundness_of_rbrSoundness_of_full S hbound (G.stateFunction_full S)
 
 end Verifier
 
@@ -209,15 +210,15 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- The guarded soundness bridge for an oracle verifier, after materializing its input and output
-oracles. The error is the sum of the fixed-prefix challenge errors. -/
-theorem soundness_of_rbrSoundnessWorstCase_of_guarded
+oracles. The error is the sum of the per-challenge errors. -/
+theorem soundness_of_rbrSoundness_of_guarded
     {V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
     (G : V.toVerifier.GuardedForm)
     {langIn : Set (StmtIn × ∀ i, OStmtIn i)}
     {langOut : Set (StmtOut × ∀ i, OStmtOut i)}
     {ε : pSpec.ChallengeIdx → ℝ≥0}
-    (h : V.toVerifier.rbrSoundnessWorstCase init impl langIn langOut ε) :
+    (h : V.toVerifier.rbrSoundness init impl langIn langOut ε) :
     V.soundness init impl langIn langOut (∑ i, ε i) :=
-  G.soundness_of_rbrSoundnessWorstCase h
+  G.soundness_of_rbrSoundness h
 
 end OracleVerifier

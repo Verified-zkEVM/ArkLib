@@ -142,9 +142,9 @@ example {σ : Type}
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     (batchVerifier (ω := domain) schedule 1 (AffineSpaceGenerator (ZMod 17) 1)).soundness init impl
       (BatchingRound.inputRelation schedule 1 1 (1 / 8)).language
-      (BatchingRound.outputRelation schedule 1 (by decide) (1 / 8)).language
+      (BatchingRound.outputRelation schedule 1 (1 / 8)).language
       (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17)) := by
-  apply soundness_affineSpace schedule 1 1 (by decide) (1 / 8) (by norm_num)
+  apply soundness_affineSpace schedule 1 1 (1 / 8)
   exact toyParameters.1
 
 -- The composite API accepts the same concrete domain, schedule, and radius.
@@ -153,11 +153,11 @@ example {σ : Type} (init : ProbComp σ)
     (batchedFRIreduction (ω := domain) 0 schedule 1 (by decide) 1 1
       (AffineSpaceGenerator (ZMod 17) 1)).verifier.soundness
       init impl (BatchingRound.inputRelation schedule 1 1 (1 / 8)).language
-      (Fri.Spec.outputRelation 0 schedule 1 (by decide) (1 / 8)).language
+      (Fri.Spec.outputRelation 0 schedule 1 (1 / 8)).language
       (ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) +
         Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   exact batchedFRI_soundness_affineSpace schedule 1 (by decide) 1 1 (1 / 2) (1 / 8)
-    (by norm_num) toyParameters.1 init impl
+    toyParameters.1 init impl
 
 -- Powers and tensor monomials execute at the same virtual-oracle interface.
 private def fourWords : ∀ j, OracleStatement 3 domain j := fun i _ => (i.val + 1 : ℕ)
@@ -180,11 +180,11 @@ example {σ : Type} (init : ProbComp σ)
     (batchedFRIreduction (ω := domain) 0 schedule 1 (by decide) 1 3
       (univariatePowersGenerator (ZMod 17) 3)).verifier.soundness
       init impl (BatchingRound.inputRelation schedule 1 3 (1 / 8)).language
-      (Fri.Spec.outputRelation 0 schedule 1 (by decide) (1 / 8)).language
+      (Fri.Spec.outputRelation 0 schedule 1 (1 / 8)).language
       (3 * ProximityGap.errorBound (1 / 8) 2 (domain : Fin 4 ↪ ZMod 17) +
         Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   exact batchedFRI_soundness_powers schedule 1 (by decide) 1 3 (1 / 2) (1 / 8)
-    (by norm_num) toyParameters.1 init impl
+    toyParameters.1 init impl
 
 private theorem toyUniqueDecoding : (1 / 8 : ℝ≥0) ≤
     Code.relativeUniqueDecodingRadius (ReedSolomon.code (domain : Fin 4 ↪ ZMod 17) 2).carrier := by
@@ -206,13 +206,13 @@ example {σ : Type} (init : ProbComp σ)
     (batchedFRIreduction (ω := domain) 0 schedule 1 (by decide) 1 3
       (multilinearBatchGenerator (ZMod 17) 2)).verifier.soundness
       init impl (BatchingRound.inputRelation schedule 1 3 (1 / 8)).language
-      (Fri.Spec.outputRelation 0 schedule 1 (by decide) (1 / 8)).language
+      (Fri.Spec.outputRelation 0 schedule 1 (1 / 8)).language
       (2 * (4 / 17) + Fri.Spec.soundnessError (ω := domain) schedule 1 1 (1 / 2) (1 / 8)) := by
   simpa only [ZMod.card, Nat.cast_ofNat, Nat.reducePow, Nat.reduceSub,
     NNReal.coe_div, NNReal.coe_one, NNReal.coe_ofNat,
     show (2 : ℝ≥0) ^ 2 = 4 by norm_num] using
     batchedFRI_soundness_multilinear schedule 1 (by decide) 1 2 (1 / 2) (1 / 8)
-    (by norm_num) toyUniqueDecoding init impl
+    toyUniqueDecoding init impl
 
 end BatchedFriTest
 

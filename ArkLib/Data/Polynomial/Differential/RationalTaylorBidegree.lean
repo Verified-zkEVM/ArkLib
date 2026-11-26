@@ -109,7 +109,7 @@ rectangle. -/
 theorem commonTaylorNumeratorOver_mem_restrictBidegree (center : F)
     (Q : DifferentialPolynomial (Polynomial F) r) (h v K τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hheight : CoeffNatDegreeLE Q h)
-    (hv : 0 < v) (hjet : jetTotalDegree Q ≤ v) (l : Fin K) :
+    (hjet : jetTotalDegree Q ≤ v) (l : Fin K) :
     (optionEquivRight F (Fin (r + 1))).symm
       (commonTaylorNumeratorOver F (Polynomial.C center) Q τ l.val) ∈
         restrictBidegree (Fin (r + 1)) F (τ * h) (1 + τ * (v - 1)) := by
@@ -117,14 +117,14 @@ theorem commonTaylorNumeratorOver_mem_restrictBidegree (center : F)
   · exact coeffNatDegreeLE_commonTaylorNumeratorOver_le center Q h τ l.val
       (hτ l) hheight
   · exact totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent
-      (Polynomial.C center) Q v K τ hv hτ hjet l
+      (Polynomial.C center) Q v K τ hτ hjet l
 
 /-- Agreement with a received polynomial of degree at most `ell`, padded to a sufficient exponent,
 lies in the corresponding bidegree rectangle. -/
 theorem taylorAgreementEquationOver_mem_restrictBidegree (center x : F) (y : Polynomial F)
     (Q : DifferentialPolynomial (Polynomial F) r) (ell h v K τ : ℕ)
     (hτ : TaylorExponentSufficient r K τ) (hy : y.natDegree ≤ ell)
-    (hheight : CoeffNatDegreeLE Q h) (hv : 0 < v) (hjet : jetTotalDegree Q ≤ v) :
+    (hheight : CoeffNatDegreeLE Q h) (hjet : jetTotalDegree Q ≤ v) :
     (optionEquivRight F (Fin (r + 1))).symm
       (taylorAgreementEquationOver (F := F) (A := Polynomial F)
         (Polynomial.C center) Q K (Polynomial.C x) y (τ := τ)) ∈
@@ -149,7 +149,7 @@ theorem taylorAgreementEquationOver_mem_restrictBidegree (center x : F) (y : Pol
       apply (totalDegree_mul _ _).trans
       simpa only [totalDegree_C, zero_add] using
         totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent
-          (Polynomial.C center) Q v K τ hv hτ hjet l
+          (Polynomial.C center) Q v K τ hτ hjet l
     · apply (totalDegree_mul _ _).trans
       simp only [totalDegree_C, zero_add]
       have hs := (totalDegree_pow
@@ -178,7 +178,7 @@ derivative variable separately. -/
 theorem commonTaylorNumeratorOver_mem_restrictCappedBidegree (center : F)
     (Q : DifferentialPolynomial (Polynomial F) 1) (h v r K τ : ℕ)
     (hτ : TaylorExponentSufficient 1 K τ) (hheight : CoeffNatDegreeLE Q h)
-    (hv : 0 < v) (hjet : jetTotalDegree Q ≤ v) (hr : 0 < r)
+    (hjet : jetTotalDegree Q ≤ v)
     (hderiv : Q.degreeOf (some 1) ≤ r) (l : Fin K) :
     (optionEquivRight F (Fin 2)).symm
       (commonTaylorNumeratorOver F (Polynomial.C center) Q τ l.val) ∈
@@ -187,15 +187,15 @@ theorem commonTaylorNumeratorOver_mem_restrictCappedBidegree (center : F)
   apply optionEquivRight_symm_mem_restrictCappedBidegree
   · exact coeffNatDegreeLE_commonTaylorNumeratorOver_le center Q h τ l.val (hτ l) hheight
   · exact totalDegree_commonTaylorNumeratorOver_le_of_jet_and_exponent
-      (Polynomial.C center) Q v K τ hv hτ hjet l
+      (Polynomial.C center) Q v K τ hτ hjet l
   · exact (degreeOf_commonTaylorNumeratorOver_firstOrder
-      (Polynomial.C center) Q r K τ hτ hr hderiv l).trans (by omega)
+      (Polynomial.C center) Q r K τ hτ hderiv l).trans (by omega)
 
 /-- Agreement with a received polynomial of bounded degree has the same separate first-derivative
 degree bound as the common Taylor numerators. -/
 theorem degreeOf_taylorAgreementEquationOver_firstOrder (center x y : Polynomial F)
     (Q : DifferentialPolynomial (Polynomial F) 1) (r K τ : ℕ)
-    (hτ : TaylorExponentSufficient 1 K τ) (hr : 0 < r)
+    (hτ : TaylorExponentSufficient 1 K τ)
     (hderiv : Q.degreeOf (some 1) ≤ r) :
     (taylorAgreementEquationOver (F := F) center Q K x y (τ := τ)).degreeOf 1 ≤
       τ * (r - 1) + (K - 1) := by
@@ -208,7 +208,7 @@ theorem degreeOf_taylorAgreementEquationOver_firstOrder (center x y : Polynomial
     apply (degreeOf_mul_le _ _ _).trans
     simp only [degreeOf_C, zero_add]
     exact (degreeOf_commonTaylorNumeratorOver_firstOrder
-      center Q r K τ hτ hr hderiv l).trans (by omega)
+      center Q r K τ hτ hderiv l).trans (by omega)
   · apply (degreeOf_mul_le _ _ _).trans
     simp only [degreeOf_C, zero_add]
     exact (degreeOf_pow_le _ _ _).trans
@@ -219,7 +219,7 @@ theorem degreeOf_taylorAgreementEquationOver_firstOrder (center x y : Polynomial
 `τ * (r - 1) + (K - 1)` in the first-derivative variable when `Q` has degree at most `r` there. -/
 theorem degreeOf_taylorAgreementEquation_firstOrder_le (center : F)
     (Q : DifferentialPolynomial F 1) (r K τ : ℕ)
-    (hτ : TaylorExponentSufficient 1 K τ) (hr : 0 < r)
+    (hτ : TaylorExponentSufficient 1 K τ)
     (hderiv : Q.degreeOf (some 1) ≤ r) (x y : F) :
     (taylorAgreementEquation center Q K x y (τ := τ)).degreeOf 1 ≤
       τ * (r - 1) + (K - 1) := by
@@ -232,7 +232,7 @@ theorem degreeOf_taylorAgreementEquation_firstOrder_le (center : F)
     exact (Multiset.count_le_of_le (some 1)
       (MvPolynomial.degrees_map_le (p := Q) (f := Polynomial.C))).trans hderiv'
   have hover := degreeOf_taylorAgreementEquationOver_firstOrder
-    (Polynomial.C center) (Polynomial.C x) (Polynomial.C y) Qover r K τ hτ hr hQover
+    (Polynomial.C center) (Polynomial.C x) (Polynomial.C y) Qover r K τ hτ hQover
   have hmap :
       (MvPolynomial.map (Polynomial.aeval (0 : F)).toRingHom
         (taylorAgreementEquationOver (F := F) (Polynomial.C center) Qover K
@@ -272,8 +272,8 @@ third bound records the first-derivative degree. -/
 theorem taylorAgreementEquationOver_mem_restrictCappedBidegree (center x : F)
     (y : Polynomial F) (Q : DifferentialPolynomial (Polynomial F) 1)
     (ell h v r K τ : ℕ) (hτ : TaylorExponentSufficient 1 K τ)
-    (hy : y.natDegree ≤ ell) (hheight : CoeffNatDegreeLE Q h) (hv : 0 < v)
-    (hr : 0 < r) (hjet : jetTotalDegree Q ≤ v) (hderiv : Q.degreeOf (some 1) ≤ r) :
+    (hy : y.natDegree ≤ ell) (hheight : CoeffNatDegreeLE Q h)
+    (hjet : jetTotalDegree Q ≤ v) (hderiv : Q.degreeOf (some 1) ≤ r) :
     (optionEquivRight F (Fin 2)).symm
         (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
           (Polynomial.C x) y (τ := τ)) ∈
@@ -281,7 +281,7 @@ theorem taylorAgreementEquationOver_mem_restrictCappedBidegree (center x : F)
           (min (1 + τ * (v - 1)) (τ * (r - 1) + (K - 1))) := by
   apply mem_restrictCappedBidegree_of_mem_restrictBidegree
     (taylorAgreementEquationOver_mem_restrictBidegree center x y Q ell h v K τ hτ hy
-      hheight hv hjet)
+      hheight hjet)
   have heq : ((optionEquivRight F (Fin 2)).symm
       (taylorAgreementEquationOver (F := F) (Polynomial.C center) Q K
         (Polynomial.C x) y (τ := τ))).degreeOf (some 1) =
@@ -299,6 +299,6 @@ theorem taylorAgreementEquationOver_mem_restrictCappedBidegree (center x : F)
       hweighted.symm
   rw [heq]
   exact degreeOf_taylorAgreementEquationOver_firstOrder (Polynomial.C center) (Polynomial.C x) y
-    Q r K τ hτ hr hderiv
+    Q r K τ hτ hderiv
 
 end PolynomialDifferential

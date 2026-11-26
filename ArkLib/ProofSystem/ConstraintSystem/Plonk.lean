@@ -117,12 +117,6 @@ def ConstraintSystem (𝓡 : Type) (numWires numGates : ℕ) := Fin numGates →
 
 variable {𝓡 : Type} [CommRing 𝓡] {numWires numGates : ℕ}
 
--- instance [Inhabited 𝓡] : Inhabited (ConstraintSystem 𝓡 numWires numGates) :=
---   inferInstance
-
--- instance : DecidableEq (ConstraintSystem 𝓡 numWires numGates) :=
---   inferInstance
-
 namespace ConstraintSystem
 
 /-- A constraint system accepts an input vector `x` if all of its gates accept `x`. -/

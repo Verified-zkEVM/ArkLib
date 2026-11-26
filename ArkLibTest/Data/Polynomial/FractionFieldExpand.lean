@@ -19,6 +19,6 @@ example {f : Polynomial (Polynomial (Polynomial (ZMod 2)))}
       (g.map (algebraMap _ (FractionRing (Polynomial (Polynomial (ZMod 2)))))).Separable ∧
       expand _ (2 ^ n) g = f ∧ g.natDegree * 2 ^ n = f.natDegree := by
   exact exists_fractionField_separable_expand
-    (K := FractionRing (Polynomial (Polynomial (ZMod 2)))) 2 (by decide) hf
+    (K := FractionRing (Polynomial (Polynomial (ZMod 2)))) 2 hf
 
 #print axioms Polynomial.exists_fractionField_separable_expand

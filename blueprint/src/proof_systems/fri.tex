@@ -116,9 +116,8 @@ The conditional probability of each fresh bad event is bounded by the appropriat
 folding or query theorem. The executable verifier accepts exactly the final
 query event, including the terminal degree guard, so it rejects whenever the
 persistent state is false. This supplies round-by-round soundness through ArkLib's
-worst-case-prefix interface. Separately, induction over the actual stateful prover
-execution accumulates the conditional errors and proves ordinary soundness,
-without invoking unfinished general composition or implication theorems.
+fixed-prefix interface. Separately, induction over the actual stateful prover
+execution accumulates the conditional errors and proves ordinary soundness.
 \end{proof}
 
 \paragraph{Executable specification and scope.}
@@ -273,3 +272,100 @@ are included. No safe-history, honesty, radius, or $M\leq N$ premise is used.
 Under the actual reduction's $M\leq N$ constraint, these envelopes are
 polynomial in $N$, rather than in $\log N$. The unit-access model above does
 not bound bit complexity or cryptographic polynomial running time.
+
+\section{Batched FRI}\label{sec:batched_fri}
+
+Batched FRI tests $m+1$ words for proximity to one Reed--Solomon code by a single
+FRI run on a random linear combination. Keep the notation of the previous section:
+$\omega$ is a smooth coset FFT domain $D$ of size $2^n$ over a finite field of odd
+characteristic, $s_0,\ldots,s_k\geq 1$ are the folding exponents, $d\geq 1$ is the
+final degree bound, $l$ is the number of queries, and
+$d_0:=2^{\sum_i s_i}\,d\leq 2^n$ is the initial degree bound. Write
+$C_0=\mathrm{RS}(D,d_0)$. A generator $G:S\to\field^{m+1}$ supplies the batching
+coefficients from a seed in a sampleable type $S$.
+
+\begin{definition}[Batched FRI relation and reduction]\label{def:batched_fri}
+\lean{BatchedFri.Spec.BatchingRound.inputRelation,
+BatchedFri.Spec.BatchingRound.batchOracleReduction,
+BatchedFri.Spec.batchedFRIreduction}
+\leanok
+\uses{def:proximity_generator,def:reed_solomon_code}
+The input statement is $m+1$ oracle words $f_0,\ldots,f_m:D\to\field$; the witness
+is $m+1$ polynomials $p_0,\ldots,p_m$ of degree less than $d_0$. For
+$\delta\geq 0$, the input relation holds when some set $T\subseteq D$ with
+$|T|\geq(1-\delta)2^n$ satisfies $f_i(x)=p_i(x)$ for every $i$ and every
+$x\in T$. In the batching round the verifier sends one seed $c\in S$ and the
+prover sends nothing. The output is the virtual oracle
+$\sum_{i\leq m}G(c)_i f_i$, which feeds the initial FRI relation at the same
+radius. Batched FRI is the append of this round with the FRI reduction of the
+previous section.
+\end{definition}
+
+\begin{theorem}[Batched FRI soundness]\label{thm:batched_fri_soundness}
+\lean{BatchedFri.Spec.batchedFRI_soundness,
+BatchedFri.Spec.BatchingRound.soundness,
+BatchedFri.Spec.BatchingRound.round_soundness}
+\leanok
+\uses{def:batched_fri,thm:fri-soundness}
+Let $\delta,\varepsilon\geq 0$ and $\theta\in\mathbb{R}$, and assume
+$\mathsf{caError}(G,C_0,\delta,\delta)\leq\varepsilon$. For every initial
+distribution of the shared oracle state and every implementation of that oracle,
+the Batched FRI verifier is sound from the language of the input relation at
+radius $\delta$ to the language of the FRI output relation at radius $\delta$,
+with error
+\[
+  \varepsilon+\sum_i\varepsilon^{\mathrm{fold}}_i+(1-\min\{\theta,\delta\})_+^{\,l},
+\]
+where the last two terms are the FRI soundness error of
+Theorem~\ref{thm:fri-soundness}. The batching round alone is round-by-round sound
+with error $\varepsilon$.
+\end{theorem}
+
+\begin{theorem}[Batched FRI completeness]\label{thm:batched_fri_completeness}
+\lean{BatchedFri.Spec.batchedFRI_perfectCompleteness}
+\leanok
+\uses{def:batched_fri}
+For every generator, query count and shared-oracle implementation, Batched FRI is
+perfectly complete from the input relation at radius $0$ to the FRI output
+relation at radius $0$.
+\end{theorem}
+
+The generator hypothesis is discharged for four generators. Write
+$\rho$ for the rate of $C_0$, and $\varepsilon_{\mathrm{BCIKS}}(\delta)$ for the
+error that equals $2^n/|\field|$ when $\delta\leq(1-\rho)/2$, equals
+$d_0^2/\bigl((2\min\{1-\sqrt\rho-\delta,\sqrt\rho/20\})^7|\field|\bigr)$ when
+$(1-\rho)/2<\delta<1-\sqrt\rho$, and is $0$ otherwise.
+
+\begin{theorem}[Batched FRI with concrete generators]\label{thm:batched_fri_generators}
+\lean{BatchedFri.Spec.batchedFRI_soundness_affineSpace,
+BatchedFri.Spec.batchedFRI_soundness_powers,
+BatchedFri.Spec.batchedFRI_soundness_multilinear,
+BatchedFri.Spec.batchedFRI_soundness_multilinear_johnson}
+\leanok
+\uses{thm:batched_fri_soundness}
+Under the hypotheses of Theorem~\ref{thm:batched_fri_soundness} without the
+$\mathsf{caError}$ assumption, the soundness error is the FRI error plus the
+following batching error.
+\begin{itemize}
+  \item Affine space $c\mapsto(1,c_1,\ldots,c_m)$, $c\in\field^m$, with
+    $0<\delta<1-\sqrt\rho$: $\varepsilon_{\mathrm{BCIKS}}(\delta)$.
+  \item Powers $c\mapsto(1,c,\ldots,c^m)$, $c\in\field$, with
+    $0<\delta<1-\sqrt\rho$: $m\cdot\varepsilon_{\mathrm{BCIKS}}(\delta)$.
+  \item Multilinear monomials in $t$ variables, so $m+1=2^t$, with $\delta>0$
+    at most the relative unique decoding radius of $C_0$:
+    $t\cdot 2^n/|\field|$.
+  \item The same multilinear generator, with $\delta_{\min}$ the relative minimum
+    distance of $C_0$, $0<\eta<\delta_{\min}$ and
+    $0<\delta\leq 1-(1-\delta_{\min}+\eta)^{1/3}$: $t$ times the affine-line
+    MCA error
+    \[
+      \frac{1}{|\field|}\left(\frac{2^n+6}{\eta}
+      +\frac{2}{\eta\bigl((1-\delta_{\min}+\eta)^{1/3}
+      -(1-\delta_{\min}+\eta)^{1/2}\bigr)}\right),
+    \]
+    truncated below at $0$.
+\end{itemize}
+\end{theorem}
+
+Knowledge soundness of Batched FRI is not formalized: the batching round has no
+extractor.

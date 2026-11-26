@@ -44,7 +44,7 @@ against the same commitment oracle collection. The original query remains in the
 * `ProductSumcheck/` gives degree-two scalar rounds and the terminal same-commitment evaluation
   relation. A certified `Multiplier` separates its polynomial from its executable point evaluator.
 * `RingSwitch.lean` composes the shared head and product sumcheck. Completeness holds over
-  commutative rings. Worst-case round-by-round knowledge soundness additionally requires a finite
+  commutative rings. Round-by-round knowledge soundness additionally requires a finite
   challenge ring with no zero divisors, functional compatibility and injective transport `P → C`.
   Its exact challenge-error sum is `bat.error + m * (2 / card C)`.
 

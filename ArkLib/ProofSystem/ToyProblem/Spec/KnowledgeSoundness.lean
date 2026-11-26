@@ -144,7 +144,7 @@ omit [DecidableEq ι] [Fintype F] [Fintype A] in
 straightline extractor.  The combination-round premise is composed with the
 spot-check tail by the sharp convex/union expression. -/
 theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
-    {k t : ℕ} [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {k t : ℕ} [SampleableType F] [SampleableType ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (δ gammaError : ℝ≥0) (encode : (Fin k → F) →ₗ[F] (ι → A))
@@ -396,7 +396,7 @@ probability at most `winningSetDensity encode δ`.  It does not assert the
 separate optimal-adversary/lower-coupling result that would identify this
 quantity as the minimal achievable game error. -/
 theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
-    {k : ℕ} [SampleableType F] [Finite A]
+    {k : ℕ} [SampleableType F]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
@@ -410,7 +410,6 @@ theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
       (SimplifiedIOR.transitionStraightlineExtractor k
         (choiceTransition (encode : (Fin k → F) → (ι → A)) δ))
       (winningSetDensity encode δ) := by
-  let _ := Fintype.ofFinite A
   apply SimplifiedIOR.knowledgeSoundnessWith_of_transition_failure_prob_le
   exact choiceTransition_failure_sample_le encode δ
 
@@ -419,7 +418,7 @@ omit [DecidableEq ι] [Fintype A] in
 type names the classical `choiceStraightlineExtractor`; executable IRS clients
 should use the certified theorem in `Impl.IRS` instead. -/
 theorem oracleVerifier_knowledgeSoundnessWith_choiceStraightlineExtractor
-    {k t : ℕ} [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {k t : ℕ} [SampleableType F] [SampleableType ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
@@ -441,7 +440,9 @@ theorem oracleVerifier_knowledgeSoundnessWith_choiceStraightlineExtractor
 
 omit [DecidableEq ι] [Fintype A] in
 /-- Existential knowledge soundness for the winning-set/spot-check upper bound, retained as
-a corollary of the theorem naming the classical extractor.
+a corollary of the theorem naming the classical extractor. Like every existential
+knowledge-soundness statement, it has the content of relation soundness
+(`Verifier.knowledgeSoundness_iff_relationSoundness`).
 
 **Consumer note on `δ`.**  No hypothesis constrains `δ` here, and that is sound: the error
 `winningSetUpperBound encode δ t` is the winning-set/spot-check expression at
@@ -453,7 +454,7 @@ exactly `δ ∈ Set.Ioo 0 (minRelHammingDistCode …)`; the executable IRS contr
 `Impl/IRS.lean`
 carry it as an explicit argument. -/
 theorem oracleVerifier_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    [SampleableType F] [SampleableType ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :

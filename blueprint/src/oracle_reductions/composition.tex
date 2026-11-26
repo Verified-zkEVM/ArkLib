@@ -2,97 +2,6 @@
 
 In this section, we describe a suite of composition operators for building secure oracle reductions from simpler secure components. In other words, we define a number of definitions that govern how oracle reductions can be composed to form larger reductions, and how the resulting reduction inherits the security properties of the components.
 
-% The first group of rules changes relations and shared oracles.
-
-% \subsection{Changing Relations and Oracles}
-
-% Here we express the consequence rule.  Namely, if we have an oracle reduction for
-% \(\mathcal{R}_1 \implies \mathcal{R}_2\), along with
-% \(\mathcal{R}_1' \implies \mathcal{R}_1\) and \(\mathcal{R}_2 \implies \mathcal{R}_2'\),
-% then we obtain an oracle reduction for \(\mathcal{R}_1' \implies \mathcal{R}_2'\).
-
-% \[
-% \frac{%
-%   \begin{array}{c}
-%     \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\}\; \langle \mathcal{P},\, \mathcal{V},\, \mathcal{E}\rangle^{\mathcal{O}} : \tau \;\{\!\!\{\mathcal{R}_2; \,\mathsf{St};\, \epsilon\}\!\!\} \\[1.5ex]
-%     \mathcal{R}_1' \implies \mathcal{R}_1 \\[1.5ex]
-%     \mathcal{R}_2 \implies \mathcal{R}_2'
-%   \end{array}%
-% }{%
-%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1'\}\; \langle \mathcal{P},\, \mathcal{V},\, \mathcal{E}\rangle^{\mathcal{O}} : \tau \;\{\!\!\{\mathcal{R}_2'; \,\mathsf{St};\, \epsilon\}\!\!\}
-% } \quad \text{(Conseq)}
-% \]
-
-% % Lifting shared oracles: if $\mathcal{O}_1 \subset \mathcal{O}_2$, then reductions with $\mathcal{O}_1$ lift to reductions with $\mathcal{O}_2$ with the same security properties
-
-% % Frame rule
-% \[
-% \frac{%
-%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
-% }{%
-%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R} \times \mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R} \times \mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
-% } \quad \text{(Frame)}
-% \]
-
-% % Oracle lifting rule
-% \[
-% \frac{%
-%   \begin{array}{c}
-%     \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}_1} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\} \\[1.5ex]
-%     \mathcal{O}_1 \subset \mathcal{O}_2
-%   \end{array}%
-% }{%
-%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}_2} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\}
-% } \quad \text{(Oracle-Lift)}
-% \]
-
-% TODO: figure out how the state function needs to change for these rules (they are basically the same, but not exactly)
-
-% \subsection{Sequential Composition}
-
-% The reason why we consider interactive (oracle) reductions at the core of our formalism is that we
-% can \emph{compose} these reductions to form larger reductions. Equivalently, we can take a complex
-% \emph{interactive (oracle) proof} (which differs only in that it reduces a relation to the
-% \emph{trivial} relation that always outputs true) and break it down into a series of smaller
-% reductions. The advantage of this approach is that we can prove security properties (completeness
-% and soundness) for each of the smaller reductions, and these properties will automatically transfer
-% to the larger reductions.
-
-% This section is devoted to the composition of interactive (oracle) reductions, and proofs that the
-% resulting reductions inherit the security properties of the two (or more) constituent reductions.
-
-% Sequential composition can be expressed as the folowing rule:
-
-% \[
-% \frac{%
-%   \begin{array}{c}
-%     \Psi; \Theta; \varSigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}_1, \mathcal{V}_1, \mathcal{E}_1\rangle^{\mathcal{O}} : \tau_1 \; \{\!\!\{\mathcal{R}_2; \mathsf{St}_1; \epsilon_1\}\!\!\} \\[1.5ex]
-%     \Psi; (\Theta :: \tau_1) ; \varSigma \vdash \{\mathcal{R}_2\} \; \langle\mathcal{P}_2, \mathcal{V}_2, \mathcal{E}_2\rangle^{\mathcal{O}} : \tau_2 \; \{\!\!\{\mathcal{R}_3; \mathsf{St}_2; \epsilon_2\}\!\!\}
-%   \end{array}%
-% }{%
-%   \Psi; (\Theta :: \tau_1 :: \tau_2) \ ; \varSigma \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}_1 \circ \mathcal{P}_2, \mathcal{V}_1 \circ \mathcal{V}_2, \mathcal{E}_1 \circ_{\mathcal{V}_2} \mathcal{E}_2\rangle^{\mathcal{O}} : \tau_1 \oplus \tau_2 \; \{\!\!\{\mathcal{R}_3; \mathsf{St}_1 \oplus \mathsf{St}_2; \epsilon_1 \oplus \epsilon_2\}\!\!\}
-% } \quad \text{(Seq-Comp)}
-% \]
-
-% % \begin{definition}[Sequential Composition of Protocol Type Signatures]
-% %     \label{def:protocol_spec_composition}
-% %     \lean{ProtocolSpec.append}
-% % \end{definition}
-
-% % \begin{definition}[Sequential Composition of Provers]
-% %     \label{def:prover_composition}
-% %     \lean{Prover.append}
-% % \end{definition}
-
-% % \begin{definition}[Sequential Composition of Oracle Verifiers]
-% %     \label{def:oracle_verifier_composition}
-% %     \lean{OracleVerifier.append}
-% % \end{definition}
-
-% % \begin{definition}[Sequential Composition of Oracle Reductions]
-% %     \label{def:oracle_reduction_composition}
-% %     \lean{Reduction.append}
-% % \end{definition}
 
 \subsection{Sequential Composition}\label{sec:sequential_composition}
 
@@ -107,6 +16,7 @@ We begin by defining how to compose protocol specifications and their associated
     Given two protocol specifications $\pSpec_1 : \ProtocolSpec\ m$ and $\pSpec_2 : \ProtocolSpec\ n$, their sequential composition is:
     \[ \pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2 : \ProtocolSpec\ (m + n) \]
     \lean{ProtocolSpec.append}
+    \leanok
     \uses{def:protocol_spec}
 \end{definition}
 
@@ -115,6 +25,7 @@ We begin by defining how to compose protocol specifications and their associated
     Given full transcripts $T_1 : \FullTranscript\ \pSpec_1$ and $T_2 : \FullTranscript\ \pSpec_2$, their sequential composition is:
     \[ T_1 \mathrel{++_\mathsf{t}} T_2 : \FullTranscript\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2) \]
     \lean{ProtocolSpec.FullTranscript.append}
+    \leanok
     \uses{def:transcript}
 \end{definition}
 
@@ -134,6 +45,7 @@ We begin by defining how to compose protocol specifications and their associated
     Equality with two separate prover runs requires an execution condition such as the one in
     Theorem~\ref{thm:completeness_append}; output queries can otherwise cross an opening challenge.
     \lean{Prover.append}
+    \leanok
     \uses{def:prover, def:protocol_spec_append}
 \end{definition}
 
@@ -144,6 +56,7 @@ We begin by defining how to compose protocol specifications and their associated
 
     The composed verifier first runs $V_1$ on the first part of the transcript, then runs $V_2$ on the second part using the intermediate statement from $V_1$.
     \lean{Verifier.append}
+    \leanok
     \uses{def:verifier, def:protocol_spec_append}
 \end{definition}
 
@@ -152,6 +65,7 @@ We begin by defining how to compose protocol specifications and their associated
     Sequential composition of reductions combines the corresponding provers and verifiers:
     \[ R_1.\append\ R_2 : \Reduction\ (\pSpec_1 \mathrel{++_\mathsf{p}} \pSpec_2)\ \oSpec\ \StmtIn_1\ \WitIn_1\ \StmtOut_2\ \WitOut_2 \]
     \lean{Reduction.append}
+    \leanok
     \uses{def:reduction, def:prover_append, def:verifier_append}
 \end{definition}
 
@@ -159,6 +73,7 @@ We begin by defining how to compose protocol specifications and their associated
     \label{def:oracle_reduction_append}
     Sequential composition extends naturally to oracle reductions by composing the oracle provers and oracle verifiers.
     \lean{OracleReduction.append}
+    \leanok
     \uses{def:oracle_reduction, def:prover_append, def:verifier_append}
 \end{definition}
 
@@ -171,24 +86,28 @@ For composing an arbitrary number of reductions, we provide a general compositio
     Given a family of protocol specifications $\pSpec : \forall i : \Fin(m+1), \ProtocolSpec\ (n\ i)$, their composition is:
     \[ \compose\ m\ n\ \pSpec : \ProtocolSpec\ (\sum_{i} n\ i) \]
     \lean{ProtocolSpec.seqCompose}
+    \leanok
     \uses{def:protocol_spec}
 \end{definition}
 
 \begin{definition}[General Prover Composition]
     \label{def:prover_compose}
     \lean{Prover.seqCompose}
+    \leanok
     \uses{def:prover, def:protocol_spec_compose}
 \end{definition}
 
 \begin{definition}[General Verifier Composition]
     \label{def:verifier_compose}
     \lean{Verifier.seqCompose}
+    \leanok
     \uses{def:verifier, def:protocol_spec_compose}
 \end{definition}
 
 \begin{definition}[General Reduction Composition]
     \label{def:reduction_compose}
     \lean{Reduction.seqCompose}
+    \leanok
     \uses{def:reduction, def:prover_compose, def:verifier_compose}
 \end{definition}
 
@@ -199,9 +118,11 @@ oracle state. Fix one stateful oracle implementation on a state space $\Sigma$ a
 state distribution $\mu$. The second component receives the state left by the first component.
 A guarantee for the second component initialized separately from $\mu$ does not cover this state.
 
-The completeness theorems below are proved under their stated hypotheses. The generic soundness,
-knowledge-soundness, and round-by-round contracts listed afterwards remain admitted in Lean;
-execution factorization alone does not establish them.
+The composition theorems below are proved under their stated hypotheses. Soundness and
+knowledge soundness require guarded verifiers (Definition~\ref{def:guarded_verifier}): the first
+verifier for binary composition, and every verifier for finite chains. Bounds for later components
+must hold from every deterministic shared oracle state, and knowledge soundness composes extractors
+that are pure functions of the input statement, the output witness and the transcript.
 
 \begin{theorem}[Completeness Preservation under Append]
     \label{thm:completeness_append}
@@ -218,6 +139,7 @@ execution factorization alone does not establish them.
     $R_2$ is complete with error $\epsilon_2$ when initialized deterministically at $s$.
     Then $R_1.\append\ R_2$ is complete from $\mu$ with error $\epsilon_1 + \epsilon_2$.
     \lean{Reduction.append_completeness_of_pure_verifiers}
+    \leanok
     \uses{def:completeness, def:reduction_append}
 \end{theorem}
 
@@ -228,6 +150,7 @@ execution factorization alone does not establish them.
     $R_2$ is perfectly complete from every deterministic shared state.
     Then $R_1.\append\ R_2$ is perfectly complete from $\mu$.
     \lean{Reduction.append_perfectCompleteness_of_pure_verifiers}
+    \leanok
     \uses{def:perfect_completeness, def:reduction_append, thm:completeness_append}
 \end{theorem}
 
@@ -241,35 +164,27 @@ execution factorization alone does not establish them.
     because the intermediate statement is chosen after oracle answers; it holds for lazily sampled
     oracles and fails for states that hide a secret from the prover.
     \lean{Verifier.append_soundness}
-    \uses{def:soundness, def:verifier_append}
+    \leanok
+    \uses{def:guarded_verifier, def:soundness, def:verifier_append}
 \end{theorem}
 
 \begin{theorem}[Knowledge Soundness Preservation under Append]
     \label{thm:knowledge_soundness_append}
-    Suppose $V_1$ is guarded and knowledge sound with error $\epsilon_1$ from $\mu$, and $V_2$ is
-    knowledge sound with error $\epsilon_2$ from every deterministic shared state, both with pure
-    extractors that read only the transcript and the output witness. Then $V_1.\append\ V_2$ is
+    Suppose $V_1$ is guarded. Suppose there are fixed pure extractors $e_1$ and $e_2$, each a
+    function of the input statement, the transcript and the output witness, such that $e_1$
+    satisfies the knowledge game of $V_1$ with error $\epsilon_1$ from $\mu$, and this same $e_2$
+    satisfies the knowledge game of $V_2$ with error $\epsilon_2$ from every deterministic shared
+    state. Then $V_1.\append\ V_2$ is
     knowledge sound from $\mu$ with error $\epsilon_1 + \epsilon_2$, with the extractor that runs the
     second extractor and then the first.
     \lean{Verifier.append_knowledgeSoundness}
-    \uses{def:knowledge_soundness, def:verifier_append}
+    \leanok
+    \uses{def:guarded_verifier, def:knowledge_soundness, def:verifier_append}
 \end{theorem}
 
-\begin{theorem}[Round-by-Round Soundness Preservation under Append (Admitted)]
-    \label{thm:rbr_soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy round-by-round soundness, then their sequential composition also satisfies round-by-round soundness.
-    \lean{Verifier.append_rbrSoundness}
-    \uses{def:round_by_round_soundness, def:verifier_append}
-\end{theorem}
+Round-by-round guarantees and a guarded first verifier give the following composition theorem.
 
-\begin{theorem}[Round-by-Round Knowledge Soundness Preservation under Append (Admitted)]
-    \label{thm:rbr_knowledge_soundness_append}
-    If verifiers $V_1$ and $V_2$ satisfy round-by-round knowledge soundness, then their sequential composition also satisfies round-by-round knowledge soundness.
-    \lean{Verifier.append_rbrKnowledgeSoundness}
-    \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
-\end{theorem}
-
-\begin{theorem}[Worst-Case Round-by-Round Knowledge Soundness under a Guarded First Verifier]
+\begin{theorem}[Round-by-Round Knowledge Soundness under a Guarded First Verifier]
     \label{thm:rbr_knowledge_soundness_append_guarded}
     Suppose $V_1$ is guarded: it returns a deterministic verdict when its check passes and aborts
     otherwise. Suppose $V_1$ and $V_2$ are round-by-round knowledge sound for every fixed
@@ -280,13 +195,14 @@ execution factorization alone does not establish them.
     one up to the seam, and after it is the first check together with the second knowledge state at
     the first verdict. At the seam, the second knowledge state at round $0$ places the verdict in
     $R_2$, and a passing check makes that verdict a positive-probability output of $V_1$.
-    \lean{Verifier.append_rbrKnowledgeSoundnessWorstCaseWith_of_guarded_first,
-      Verifier.append_rbrKnowledgeSoundnessWorstCase_of_guarded_first}
-    \uses{def:round_by_round_knowledge_soundness, def:verifier_append}
+    \lean{Verifier.append_rbrKnowledgeSoundnessWith_of_guarded_first,
+      Verifier.append_rbrKnowledgeSoundness_of_guarded_first}
+    \leanok
+    \uses{def:guarded_verifier, def:round_by_round_knowledge_soundness, def:verifier_append}
 \end{theorem}
 
 Finite-chain completeness likewise requires guarantees from every shared state.
-Finite-chain soundness and knowledge soundness hold for guarded chains, and so does worst-case
+Finite-chain soundness and knowledge soundness hold for guarded chains, and so does
 round-by-round knowledge soundness.
 
 \begin{theorem}[General Completeness Preservation]
@@ -297,6 +213,7 @@ round-by-round knowledge soundness.
     from the deterministic initial state $s$. Then the chain is complete from any initial
     distribution $\mu$, with error $\sum_{i=0}^{k-1} \epsilon_i$.
     \lean{Reduction.seqCompose_completeness_of_pure}
+    \leanok
     \uses{def:completeness, def:reduction_compose, thm:completeness_append}
 \end{theorem}
 
@@ -306,27 +223,32 @@ round-by-round knowledge soundness.
     deterministic shared state. Then their sequential composition is sound from any initial
     distribution with error $\sum_{i=0}^{k-1} \epsilon_i$.
     \lean{Verifier.seqCompose_soundness}
-    \uses{def:soundness, def:verifier_compose}
+    \leanok
+    \uses{def:guarded_verifier, def:soundness, def:verifier_compose}
 \end{theorem}
 
 \begin{theorem}[General Knowledge Soundness Preservation]
     \label{thm:knowledge_soundness_compose}
-    Let $V_0, \ldots, V_{k-1}$ be guarded verifiers, each knowledge sound with error $\epsilon_i$
-    from every deterministic shared state with a pure transcript-and-output extractor. Then their
+    Let $V_0, \ldots, V_{k-1}$ be guarded verifiers. For each component $i$, choose one pure
+    extractor $e_i$, a function of the input statement, the transcript and the output witness, that
+    satisfies the knowledge game of $V_i$ with error $\epsilon_i$ from every deterministic initial
+    shared state. Then their
     sequential composition is knowledge sound from any initial distribution with error
     $\sum_{i=0}^{k-1} \epsilon_i$, with the extractors folded backwards over the chain.
     \lean{Verifier.seqCompose_knowledgeSoundness}
-    \uses{def:knowledge_soundness, def:verifier_compose}
+    \leanok
+    \uses{def:guarded_verifier, def:knowledge_soundness, def:verifier_compose}
 \end{theorem}
 
-\begin{theorem}[Worst-Case Round-by-Round Knowledge Soundness of a Guarded Chain]
+\begin{theorem}[Round-by-Round Knowledge Soundness of a Guarded Chain]
     \label{thm:rbr_knowledge_soundness_compose_guarded}
     If every verifier of a finite chain is guarded and round-by-round knowledge sound for every
     fixed transcript prefix between consecutive relations, so is the chain. Each combined
     challenge keeps the error of the component challenge it corresponds to. The proof iterates
     Theorem~\ref{thm:rbr_knowledge_soundness_append_guarded}.
-    \lean{Verifier.seqCompose_rbrKnowledgeSoundnessWorstCase_of_guarded}
-    \uses{def:round_by_round_knowledge_soundness, def:verifier_compose,
+    \lean{Verifier.seqCompose_rbrKnowledgeSoundness_of_guarded}
+    \leanok
+    \uses{def:guarded_verifier, def:round_by_round_knowledge_soundness, def:verifier_compose,
       thm:rbr_knowledge_soundness_append_guarded}
 \end{theorem}
 
@@ -336,40 +258,65 @@ Another essential tool for modular oracle reductions is the ability to adapt red
 
 \subsubsection{Context Lenses}
 
-The fundamental abstraction for context adaptation is a \emph{context lens}, which provides bidirectional mappings between outer and inner contexts.
+The fundamental abstraction for context adaptation is a \emph{lens}, a pair of maps between an outer
+and an inner context: one projects inputs inward, the other lifts outputs back outward.
 
 \begin{definition}[Statement Lens]
     \label{def:statement_lens}
     A statement lens between outer context types $(\StmtIn_{\mathsf{outer}}, \StmtOut_{\mathsf{outer}})$ and inner context types $(\StmtIn_{\mathsf{inner}}, \StmtOut_{\mathsf{inner}})$ consists of:
     \begin{itemize}
         \item $\projStmt : \StmtIn_{\mathsf{outer}} \to \StmtIn_{\mathsf{inner}}$ (projection to inner context)
-        \item $\liftStmt : \StmtIn_{\mathsf{outer}} \times \StmtOut_{\mathsf{inner}} \to \StmtOut_{\mathsf{outer}}$ (lifting back to outer context)
+        \item $\liftStmt : \StmtIn_{\mathsf{outer}} \to \StmtOut_{\mathsf{inner}} \to \StmtOut_{\mathsf{outer}}$ (lifting back to outer context)
     \end{itemize}
     \lean{Statement.Lens}
+    \leanok
 \end{definition}
 
 \begin{definition}[Witness Lens]
     \label{def:witness_lens}
-    A witness lens between outer witness types $(\WitIn_{\mathsf{outer}}, \WitOut_{\mathsf{outer}})$ and inner witness types $(\WitIn_{\mathsf{inner}}, \WitOut_{\mathsf{inner}})$ consists of:
+    A witness lens, used by the prover, consists of:
     \begin{itemize}
-        \item $\projWit : \WitIn_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}}$ (projection to inner context)
-        \item $\liftWit : \WitIn_{\mathsf{outer}} \times \WitOut_{\mathsf{inner}} \to \WitOut_{\mathsf{outer}}$ (lifting back to outer context)
+        \item $\projWit : \StmtIn_{\mathsf{outer}} \times \WitIn_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}}$ (projection to inner context)
+        \item $\liftWit : \StmtIn_{\mathsf{outer}} \times \WitIn_{\mathsf{outer}} \to \StmtOut_{\mathsf{inner}} \times \WitOut_{\mathsf{inner}} \to \WitOut_{\mathsf{outer}}$ (lifting back to outer context)
     \end{itemize}
+    The statements are part of both maps because the prover sees its full context.
     \lean{Witness.Lens}
+    \leanok
 \end{definition}
 
 \begin{definition}[Context Lens]
     \label{def:context_lens}
-    A context lens combines a statement lens and a witness lens for adapting complete reduction contexts.
+    A context lens pairs a statement lens with a witness lens. It adapts a whole reduction: the
+    verifier uses the statement lens and the prover uses both.
     \lean{Context.Lens}
+    \leanok
     \uses{def:statement_lens, def:witness_lens}
 \end{definition}
 
 \begin{definition}[Oracle Context Lens]
     \label{def:oracle_context_lens}
-    For oracle reductions, we additionally need lenses for oracle statements that can simulate oracle access between contexts.
-    \lean{OracleContext.Lens}
+    For oracle reductions, the statement lens acts on pairs of a statement and its oracle
+    statements, and the witness lens sees these pairs. This form suffices for relations. To run an
+    oracle verifier, an \emph{executable} oracle context lens also implements the inner input
+    oracles by queries to the outer ones, and the outer output oracles by queries to the outer
+    input and inner output oracles, each agreeing with a materialized map.
+    \lean{OracleContext.Lens, OracleContext.ExecutableLens, OracleStatement.ExecutableLens}
+    \leanok
     \uses{def:context_lens, def:oracle_interface}
+\end{definition}
+
+\begin{definition}[Extractor Lens]
+    \label{def:extractor_lens}
+    An extractor runs from output witnesses back to input witnesses, so lifting an extractor needs a
+    witness lens in the reverse direction. An \emph{inverse witness lens} consists of:
+    \begin{itemize}
+        \item a projection $\StmtIn_{\mathsf{outer}} \times \WitOut_{\mathsf{outer}} \to \WitOut_{\mathsf{inner}}$ of output witnesses;
+        \item a lifting $\StmtIn_{\mathsf{outer}} \times \WitOut_{\mathsf{outer}} \to \WitIn_{\mathsf{inner}} \to \WitIn_{\mathsf{outer}}$ of extracted input witnesses.
+    \end{itemize}
+    An extractor lens pairs a statement lens with an inverse witness lens.
+    \lean{Witness.InvLens, Extractor.Lens}
+    \leanok
+    \uses{def:statement_lens}
 \end{definition}
 
 \subsubsection{Lifting Reductions}
@@ -385,87 +332,127 @@ Given a context lens, we can lift reductions from inner contexts to outer contex
         \item Lifting the output back to the outer context
     \end{itemize}
     \lean{Prover.liftContext}
+    \leanok
     \uses{def:prover, def:context_lens}
 \end{definition}
 
 \begin{definition}[Verifier Context Lifting]
     \label{def:verifier_lift_context}
+    The lifted verifier runs the inner verifier on the projected input statement and lifts its
+    output statement with the statement lens.
     \lean{Verifier.liftContext}
+    \leanok
     \uses{def:verifier, def:statement_lens}
 \end{definition}
 
 \begin{definition}[Reduction Context Lifting]
     \label{def:reduction_lift_context}
     \lean{Reduction.liftContext}
+    \leanok
     \uses{def:reduction, def:prover_lift_context, def:verifier_lift_context}
 \end{definition}
 
 \subsubsection{Conditions for Security Preservation}
 
-For lifting to preserve security properties, the context lens must satisfy certain conditions.
+For lifting to preserve security properties, the lens must satisfy conditions relative to the
+outer and inner relations. Each condition takes a compatibility predicate between the outer input
+and the inner output. The lifting theorems instantiate it with the outputs the inner reduction or
+verifier can actually produce on the projected input, for some transcript.
 
 \begin{definition}[Completeness-Preserving Context Lens]
     \label{def:context_lens_is_complete}
-    A context lens preserves completeness if it maintains relation satisfaction under projection and lifting.
+    A context lens preserves completeness if projection maps the outer input relation into the
+    inner input relation, and lifting maps every compatible pair of a valid outer input and a valid
+    inner output into the outer output relation.
     \lean{Context.Lens.IsComplete}
+    \leanok
     \uses{def:context_lens}
 \end{definition}
 
 \begin{definition}[Soundness-Preserving Statement Lens]
     \label{def:statement_lens_is_sound}
-    A statement lens preserves soundness if it maps invalid statements to invalid statements.
+    A statement lens preserves soundness if projection maps statements outside the outer input
+    language to statements outside the inner input language, and lifting maps an outer input
+    outside its language together with a compatible inner output outside its language to an outer
+    output outside its language. The same condition serves ordinary and round-by-round soundness.
     \lean{Statement.Lens.IsSound}
+    \leanok
     \uses{def:statement_lens}
 \end{definition}
 
-\begin{definition}[RBR Soundness-Preserving Statement Lens]
-    \label{def:statement_lens_is_rbr_sound}
-    For round-by-round soundness, we need a slightly relaxed soundness condition.
-    \lean{Statement.Lens.IsSound}
-    \uses{def:statement_lens}
-\end{definition}
-
-\begin{definition}[Knowledge Soundness-Preserving Context Lens]
+\begin{definition}[Knowledge-Soundness-Preserving Extractor Lens]
     \label{def:context_lens_is_knowledge_sound}
-    A context lens preserves knowledge soundness if it maintains witness extractability.
+    An extractor lens preserves knowledge soundness if it satisfies two conditions.
+    \begin{itemize}
+        \item \emph{Lift:} if the projected outer input statement and an extracted inner input
+        witness lie in the inner input relation, then the lifted outer input witness lies in the
+        outer input relation.
+        \item \emph{Project, or shortcut:} if a lifted output statement and an outer output witness
+        lie in the outer output relation, then either the projected output witness and the inner
+        output statement lie in the inner output relation, or every inner input witness lifts to a
+        valid outer input witness.
+    \end{itemize}
+    The shortcut covers lenses whose outer output already certifies the outer input. Both
+    conditions also take a compatibility predicate on witnesses; the lifting theorems use the
+    trivial one.
     \lean{Extractor.Lens.IsKnowledgeSound}
-    \uses{def:context_lens}
+    \leanok
+    \uses{def:extractor_lens}
 \end{definition}
 
 \subsubsection{Security Preservation Theorems for Context Lifting}
 
 \begin{theorem}[Completeness Preservation under Context Lifting]
     \label{thm:lift_context_completeness}
-    If a reduction satisfies completeness and the context lens is completeness-preserving, then the lifted reduction also satisfies completeness.
-    \lean{Reduction.liftContext_completeness}
+    If a reduction is complete with error $\epsilon$ and the context lens is
+    completeness-preserving, then the lifted reduction is complete with error $\epsilon$. The same
+    holds for perfect completeness.
+    \lean{Reduction.liftContext_completeness, Reduction.liftContext_perfectCompleteness}
+    \leanok
     \uses{def:completeness, def:reduction_lift_context, def:context_lens_is_complete}
 \end{theorem}
 
 \begin{theorem}[Soundness Preservation under Context Lifting]
     \label{thm:lift_context_soundness}
-    If a verifier satisfies soundness and the statement lens is soundness-preserving, then the lifted verifier also satisfies soundness.
+    If a verifier is sound with error $\epsilon$ and the statement lens is soundness-preserving,
+    then the lifted verifier is sound with error $\epsilon$. The inner output statement type must
+    be inhabited.
     \lean{Verifier.liftContext_soundness}
+    \leanok
     \uses{def:soundness, def:verifier_lift_context, def:statement_lens_is_sound}
 \end{theorem}
 
 \begin{theorem}[Knowledge Soundness Preservation under Context Lifting]
     \label{thm:lift_context_knowledge_soundness}
-    If a verifier satisfies knowledge soundness and the context lens is knowledge soundness-preserving, then the lifted verifier also satisfies knowledge soundness.
+    If a verifier is knowledge sound with error $\epsilon$ and the extractor lens is
+    knowledge-soundness-preserving, then the verifier lifted along its statement lens is knowledge
+    sound with error $\epsilon$. The inner output statement and inner input witness types must be
+    inhabited: when the inner extractor fails, the lifted extractor lifts a default inner witness.
+    That default is a valid outer input witness when the shortcut disjunct of the lens condition
+    holds; failure in the other branch is charged to the inner knowledge error.
     \lean{Verifier.liftContext_knowledgeSoundness}
+    \leanok
     \uses{def:knowledge_soundness, def:verifier_lift_context, def:context_lens_is_knowledge_sound}
 \end{theorem}
 
 \begin{theorem}[RBR Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_soundness}
-    If a verifier satisfies round-by-round soundness and the statement lens is RBR soundness-preserving, then the lifted verifier also satisfies round-by-round soundness.
-    \lean{Verifier.liftContext_rbr_soundness}
-    \uses{def:round_by_round_soundness, def:verifier_lift_context, def:statement_lens_is_rbr_sound}
+    If a verifier is round-by-round sound with error $\epsilon$ and the statement lens is
+    soundness-preserving, then the lifted verifier is round-by-round sound with the same error at
+    every challenge.
+    \lean{Verifier.liftContext_rbrSoundness}
+    \leanok
+    \uses{def:round_by_round_soundness, def:verifier_lift_context, def:statement_lens_is_sound}
 \end{theorem}
 
 \begin{theorem}[RBR Knowledge Soundness Preservation under Context Lifting]
     \label{thm:lift_context_rbr_knowledge_soundness}
-    If a verifier satisfies round-by-round knowledge soundness and the context lens is knowledge soundness-preserving, then the lifted verifier also satisfies round-by-round knowledge soundness.
-    \lean{Verifier.liftContext_rbr_knowledgeSoundness}
+    If a verifier is round-by-round knowledge sound with error $\epsilon$ and the extractor lens is
+    knowledge-soundness-preserving, then the lifted verifier is round-by-round knowledge sound with
+    the same error at every challenge. The named form keeps the lifted extractor and knowledge
+    state function explicit.
+    \lean{Verifier.liftContext_rbrKnowledgeSoundness, Verifier.liftContext_rbrKnowledgeSoundnessWith}
+    \leanok
     \uses{def:round_by_round_knowledge_soundness, def:verifier_lift_context, def:context_lens_is_knowledge_sound}
 \end{theorem}
 
@@ -475,95 +462,37 @@ Context lifting also applies to extractors and state functions used in knowledge
 
 \begin{definition}[Straightline Extractor Lifting]
     \label{def:straightline_extractor_lift_context}
+    The lifted extractor runs the inner extractor on the projected statement and output witness
+    and lifts the result with the inverse witness lens, using a default inner witness when the
+    inner extractor fails.
     \lean{Extractor.Straightline.liftContext}
-    \uses{def:straightline_extractor, def:context_lens}
+    \leanok
+    \uses{def:straightline_extractor, def:extractor_lens}
 \end{definition}
 
 \begin{definition}[Round-by-Round Extractor Lifting]
     \label{def:rbr_extractor_lift_context}
+    The lifted round-by-round extractor keeps the outer output witness alongside each intermediate
+    inner witness.
     \lean{Extractor.RoundByRound.liftContext}
-    \uses{def:rbr_extractor, def:context_lens}
+    \leanok
+    \uses{def:rbr_extractor, def:extractor_lens}
 \end{definition}
 
 \begin{definition}[State Function Lifting]
     \label{def:state_function_lift_context}
-    \lean{Verifier.StateFunction.liftContext}
-    \uses{def:state_function, def:statement_lens}
+    The lifted state function holds when the outer input statement is in its language or the inner
+    state function holds at the projected statement.
+
+    The lifted knowledge state function carries a pair of witnesses: the outer output witness and
+    the current inner witness. It holds when the inner knowledge state function holds at the
+    projected statement for the carried inner witness, or when every inner input witness lifts,
+    using the carried outer output witness and the inverse witness lens, to a valid outer input
+    witness. The second disjunct is the shortcut of the knowledge-soundness lens condition; it is
+    not membership of the outer statement in a language.
+    \lean{Verifier.StateFunction.liftContext, Verifier.KnowledgeStateFunction.liftContext}
+    \leanok
+    \uses{def:state_function, def:knowledge_state_function, def:statement_lens}
 \end{definition}
 
 These composition and lifting operators provide the essential building blocks for constructing complex oracle reductions from simpler components while preserving their security properties.
-
-% \subsection{Virtualization}
-
-% Another tool we will repeatedly use is the ability to change the context of an oracle reduction. This is often needed when we want to adapt an oracle reduction in a simple context into one for a more complex context.
-
-% See the section on sum-check~\ref{sec:sumcheck} for an example.
-
-% \begin{definition}[Mapping into Virtual Context]
-%     \label{def:virtual_context_mapping}
-%     In order to apply an oracle reduction on virtual data, we will need to provide a mapping from the current context to the virtual context. This includes:
-%     \begin{itemize}
-%         \item A mapping from the current public inputs to the virtual public inputs.
-%         \item A simulation of the oracle inputs for the virtual context using the public and oracle
-%         inputs for the current context.
-%         \item A mapping from the current private inputs to the virtual private inputs.
-%         \item A simulation of the shared oracle for the virtual context using the shared oracle for
-%         the current context.
-%     \end{itemize}
-% \end{definition}
-
-% \begin{definition}[Virtual Oracle Reduction]
-%     \label{def:virtual_oracle_reduction}
-%     Given a suitable mapping into a virtual context, we may define an oracle reduction via the following construction:
-%     \begin{itemize}
-%         \item The prover first applies the mappings to obtain the virtual context. The verifier does the same, but only for the non-private inputs.
-%         \item The prover and verifier then run the virtual oracle reduction on the virtual context.
-%     \end{itemize}
-% \end{definition}
-
-% We will show security properties for this virtualization process. One can see that completeness and soundness are inherited from the completeness and soundness of the virtual oracle reduction. However, (round-by-round) knowledge soundness is more tricky; this is because we must extract back to the witness of the original context from the virtual context.
-
-% % virtual-ctx rule of the form: if we have an oracle reduction from R1 to R2 for context prime, a mapping `f` from ctx to ctx prime, and an inverse mapping `g` from witness of ctx prime to witness of ctx, then we have an oracle reduction from (R1 \circ f) to (R2 \circ g) for ctx. The prover & verifier & the state function are composed with `f`, and the extractor needs to be composed with both `f` and `g`.
-
-% % Virtualization rule
-% \[
-% \frac{%
-%   \begin{array}{c}
-%     \Psi'; \Theta'; \Sigma' \vdash \{\mathcal{R}_1\} \; \langle\mathcal{P}, \mathcal{V}, \mathcal{E}\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2; \mathsf{St}; \epsilon\}\!\!\} \\[1.5ex]
-%     f : (\Psi, \Theta, \Sigma) \to (\Psi', \Theta', \Sigma') \\[1.5ex]
-%     g : \Psi' \to \Psi \\[1.5ex]
-%     f.\mathsf{fst} \circ g = \mathsf{id}
-%   \end{array}%
-% }{%
-%   \Psi; \Theta; \Sigma \vdash \{\mathcal{R}_1 \circ f\} \; \langle\mathcal{P} \circ f, \mathcal{V} \circ f, \mathcal{E} \circ (f, g)\rangle^{\mathcal{O}} : \tau \; \{\!\!\{\mathcal{R}_2 \circ f; \mathsf{St} \circ f; \epsilon\}\!\!\}
-% } \quad \text{(Virtual-Ctx)}
-% \]
-
-% \subsection{Substitution}
-
-% Finally, we need a transformation / inference rule that allows us to change the message type in a given round of an oracle reduction. In other words, we substitute a value in the round with another value, followed by a reduction establishing the relationship between the new and old values.
-
-% % May need multiple rules for different types of substitutions (i.e. whether in context or in protocol type, where replacing oracle / public message with oracle / public / private message, etc.)
-
-% Examples include:
-% \begin{enumerate}
-%     \item Substituting an oracle input by a public input:
-%     \begin{itemize}
-%         \item Often by just revealing the underlying data. This has no change on the prover, and for
-%         the verifier, this means that any query to the oracle input can be locally computed.
-%         \item A variant of this is when the oracle input consists of a data along with a proof that
-%         the data satisfies some predicate. In this case, the verifier needs to additionally check
-%         that the predicate holds for the substituted data.
-%         \item Another common substitution is to replace a vector with its Merkle commitment, or a
-%         polynomial with its polynomial commitment.
-%     \end{itemize}
-%     \item Substituting an oracle input by another oracle input, followed by a reduction for each
-%     oracle query the verifier makes to the old oracle:
-%     \begin{itemize}
-%         \item This is also a variant of the previous case, where we do not fully substitute with a
-%         public input, but do a ``half-substitution'' by substituting with another oracle input. This
-%         happens e.g. when using a polynomial commitment scheme that is itself based on a vector
-%         commitment scheme. One can cast protocols like Ligero / Brakedown / FRI / STIR in this
-%         two-step process.
-%     \end{itemize}
-% \end{enumerate}

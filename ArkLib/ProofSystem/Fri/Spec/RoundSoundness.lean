@@ -23,7 +23,7 @@ namespace Fri.Spec
 open Domain OracleComp OracleSpec ProtocolSpec ProximityGap ReedSolomon CoreDefinitions
 open scoped ProbabilityTheory NNReal
 
-variable {F : Type} [NonBinaryField F] [Fintype F] [DecidableEq F]
+variable {F : Type} [NonBinaryField F] [DecidableEq F]
 variable {n k : ℕ} {ω : SmoothCosetFftDomain n F}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+) (l : ℕ)
 
@@ -42,7 +42,6 @@ noncomputable def foldingError [SampleableType F] (θ : ℝ) (i : Fin (k + 1)) :
       Fin (2 ^ (n - foldingPrefix s i.castSucc - (s i).val)) ↪ F)
       (foldingDegree s d i.succ)) θ).toNNReal
 
-omit [Fintype F] in
 /-- The bad event after appending a challenge uses that challenge and the preceding input word. -/
 theorem foldingBad_concat_iff (f : (ω.subdomain 0).toFinset → F) (θ : ℝ)
     (i : Fin (k + 1))
@@ -75,7 +74,7 @@ theorem foldingBad_prob_le [SampleableType F] (f : (ω.subdomain 0).toFinset →
       (s i).val (foldingDegree s d i.succ) θ)).le.trans ?_
   unfold foldingError
   rw [ENNReal.coe_toNNReal (mcaError_ne_top _ _ _)]
-  exact foldingAgreementFailure_prob_le_powers _ _ (foldingDegree_pos s d i.succ) θ
+  exact foldingAgreementFailure_prob_le_powers _ _ θ
 
 @[simp]
 theorem initialWord_queryHistory (f : (ω.subdomain 0).toFinset → F)
