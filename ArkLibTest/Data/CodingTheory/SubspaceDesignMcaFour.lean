@@ -1635,7 +1635,7 @@ theorem subspaceDesignMcaFour_low_rank_contradiction
   linarith
 
 theorem subspaceDesignMcaFour_rank_two_no_eight_contradiction
-    {ι : Type} {F : Type} [Field F] [Fintype ι] [Nonempty ι]
+    {s : ℕ} {ι : Type} {F : Type} [Field F] [Fintype ι] [Nonempty ι]
     [DecidableEq F] [FiniteDimensional F (ι → Fin s → F)]
     (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (hdesign : IsSubspaceDesign s τ C) (T : Finset F)
