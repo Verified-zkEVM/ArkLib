@@ -58,32 +58,24 @@ The ports follow the universe policy of record D2: data lies in `Type`.
 - `StageChain` ([stages]) puts every statement type, oracle index type and oracle data type of a
   chain in `Type`, which is the old-layer `ExecutionInterface.{u}` at `u = 0`. It takes
   `ambient : OracleSpec ι` with `ι : Type`.
-- Inside a chain, the oracle families have their query types in one universe `w`, because a
-  recursive occurrence of an inductive type keeps the type's universe parameters. This is a
-  choice of representation, not a consequence of P1 or P2. It does not restrict the families at a
-  chain's boundaries.
-  - `OracleFamily.liftQueries` ([liftQueries]) gives a family with query universe `wI` its queries
-    in `max wI w'`, as `ULift` of the original queries, with the same data and answers.
-  - `OracleVerifier.liftInputs` ([liftInputs]) and `OracleVerifier.liftOutputs` ([liftOutputs])
-    adapt a stage verifier with families in other query universes. `OracleVerifier.lowerOutputs`
-    ([lowerOutputs]) recovers the original family of a chain's output.
-  - The recovery laws keep the decision and the output data on the same data ([liftInputsDecide],
-    [liftInputsData], [liftOutputsData], [lowerOutputsData]). The adapters are instances of
-    `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs` ([comapInputs], [mapOutputs],
-    [comapInputsDecide]). Reading the inputs through an oracle map gives the same run after the
-    decision's bundle queries are answered from the supplied data ([comapInputsRun]). This
-    equality does not bound the queries that the map issues for each routed query. Two maps with
-    the same answers can charge differently. In the answer-only fixture, `repeated` issues two
-    source queries for each routed query and `identity` issues one, and both give the same
-    answers ([claimRow3]). A client that needs a charge bound proves it separately, for
-    example with `OracleMap.withAmbient_worstCaseCost` from #1476 in the universes it supports.
-    The stage API does not depend on the resource contracts of #1528.
-  - The binary `OracleVerifier.append` keeps independent query universes for its input, middle
-    and output families. So do the binary decision laws ([appendReject] to [appendMeasure]).
-  - The canary [wideStages] reads inputs with queries in `Type` and exports a family with queries
-    in `Type 1`. [wideDecide] states that the chain decides as the original stage on the original
-    data. [wideNarrow] continues to a stage that exports a family with queries in `Type`, which
-    leaves the chain through `lowerOutputs` ([wideNarrowRows]).
+- A chain's oracle families have their queries in `Type`, as do the binary
+  `OracleVerifier.append` and its decision laws. Step 4 of the universe migration removed the
+  adapters that changed a family's query universe (`OracleFamily.liftQueries`,
+  `OracleMap.liftQueries`, `OracleMap.lowerQueries`, `OracleVerifier.liftInputs`,
+  `OracleVerifier.liftOutputs` and `OracleVerifier.lowerOutputs`) with their recovery laws.
+  - `OracleVerifier.comapInputs` and `OracleVerifier.mapOutputs` remain as general maps
+    ([comapInputs], [mapOutputs], [comapInputsDecide]). Reading the inputs through an oracle map
+    gives the same run after the decision's bundle queries are answered from the supplied data
+    ([comapInputsRun]).
+  - This equality does not bound the queries that the map issues for each routed query. Two maps
+    with the same answers can charge differently. In the answer-only fixture, `repeated` issues
+    two source queries for each routed query and `identity` issues one, and both give the same
+    answers ([claimRow3]). A client that needs a charge bound proves it separately, for example
+    with `OracleMap.withAmbient_worstCaseCost` from #1476. The stage API does not depend on the
+    resource contracts of #1528.
+  - The examples in `ArkLibTest/Interaction/Oracle/StageChain.lean` that used the adapters now
+    chain a stage that exports a Boolean family after one that reads a natural-number family,
+    with all queries in `Type`.
 - The old-layer private state lies in `u`. In the port it is part of the prover's output, whose
   family lies in `Type` ([stagesRun]).
 - The dependent-reduction canary ([depCanary]) kept the shared, statement, witness and
@@ -304,10 +296,6 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 [echoNotFree]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L496
 [echoCheckEvidence]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L526
 [echoCheckRows]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L542
-[wideStages]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L601
-[wideDecide]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L609
-[wideNarrow]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L619
-[wideNarrowRows]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L651
 [sumStages]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L679
 [sumSteps]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L700
 [sumAccepts]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L714
@@ -315,18 +303,10 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 [coinAlmostSurely]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L820
 [coinNotOnSupport]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L832
 [coinRejectSupport]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLibTest/Interaction/Core/Oracle/StageChain.lean#L839
-[liftQueries]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L81
 [comapInputs]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L124
 [mapOutputs]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L132
 [comapInputsDecide]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L141
 [comapInputsRun]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L216
-[liftInputs]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L170
-[liftOutputs]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L175
-[lowerOutputs]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L180
-[liftInputsDecide]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L186
-[liftInputsData]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L193
-[liftOutputsData]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L199
-[lowerOutputsData]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L205
 [appendReject]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L285
 [appendAccept]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L293
 [appendSupport]: https://github.com/Verified-zkEVM/ArkLib/blob/8472a86fb744c8fcd22f024eba65cf494ce0a32e/ArkLib/Interaction/Core/StageChain.lean#L306

@@ -24,7 +24,6 @@ open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty
 open Interaction.LoggedExecutionTests (ambient inputs seven firstInterface pairSend)
 open Interaction.DependentRoutingTests (done)
 
-universe uX dX
 
 namespace Interaction.PassiveExecutionTests
 
@@ -33,7 +32,7 @@ def noOutputs : OracleFamily.{0, 0, 0} PEmpty (fun i => i.elim) :=
   ⟨fun i => i.elim⟩
 
 /-- The output map from any bundle into no oracles. -/
-def noOutputMap (In : OracleBundle.{0, uX, dX}) : OracleMap In noOutputs where
+def noOutputMap (In : OracleBundle) : OracleMap In noOutputs where
   f _ i := i.elim
   impl q := q.1.elim
   law _ q := q.1.elim

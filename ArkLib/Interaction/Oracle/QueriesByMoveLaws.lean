@@ -22,7 +22,7 @@ the projection laws combine `runWithQueriesByMove_toLog` with `runWithLog_eq`.
 
 @[expose] public section
 
-universe u dI wJ
+universe u
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -33,7 +33,7 @@ section Execution
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, dI}} {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- Execute an explicit prover setup action and log it as a separate entry at the empty partial
@@ -69,7 +69,7 @@ section Logged
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the move boundaries gives exactly the existing full logged run. -/
@@ -150,7 +150,7 @@ section AmbientQueriesByMove
 
 variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
+  {inputs : OracleBundle} {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out : Transcript oracleSig s → Type}
 
 /-- Forgetting the move boundaries of the ambient queries by move gives exactly the existing ambient

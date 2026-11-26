@@ -917,7 +917,7 @@ theorem OracleVerifier.soundnessUsing_of_localSoundness
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
   {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : m σ}
   {H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ m)}
@@ -979,7 +979,7 @@ theorem OracleVerifier.soundnessUsing_of_rbrSoundness
     [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
   {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : m σ}
   {H : QueryImpl (ambient + challengeSpec oracleSig s) (StateT σ m)}
@@ -1015,7 +1015,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
@@ -1066,7 +1066,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_tsum {m : Type → Type v}
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
@@ -1086,7 +1086,7 @@ theorem OracleVerifier.soundnessWith_of_rbrSoundness_uniform {m : Type → Type 
     [Monad m] [LawfulMonad m] [EvalDistSemantics m] [LawfulEvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {V : OracleVerifier ambient s S T inputs outputs}
     {H : QueryImpl (ambient + challengeSpec oracleSig s) m}
@@ -1108,7 +1108,7 @@ section OracleVerifier
 
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
   {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-  {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+  {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {V : OracleVerifier ambient s S T inputs outputs} {init : ProbComp σ}
   {impl : QueryImpl ambient (StateT σ ProbComp)}

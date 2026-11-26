@@ -335,7 +335,7 @@ The decision log records input queries, so it is returned by the run. Like `run`
 decision directly with `withLogging`. -/
 def runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -361,7 +361,7 @@ def runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProto
 /-- The full logged specialization retains the original interaction and decision equations. -/
 theorem runWithLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -389,7 +389,7 @@ theorem runWithLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Orac
 extraction interfaces receive; `map_runWithLog_eq_runWithAmbientLog` names the right side. -/
 theorem runWithLog_fst {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -417,7 +417,7 @@ theorem runWithLog_fst {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Ora
 theorem map_fst_runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-    {inputs : OracleBundle.{0, 0, 0}}
+    {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
@@ -452,7 +452,7 @@ messages and are not logged, so the result holds only ambient logs. It executes 
 `executeWith` and logs both phases directly with `withLogging`. -/
 def runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -475,7 +475,7 @@ def runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
 /-- The ambient logged specialization retains the original interaction and decision equation. -/
 theorem runWithAmbientLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -501,7 +501,7 @@ theorem runWithAmbientLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι}
 entries. -/
 theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -514,7 +514,7 @@ theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type} {ambient : Or
 /-- Forgetting both ambient logs preserves the entire oracle run. -/
 theorem map_fst_runWithAmbientLog {ι : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
-    {J : Path s → Type} {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {Out : Transcript oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
     (stmt : S) (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
@@ -560,7 +560,7 @@ end Extractor
 namespace OracleVerifier
 variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, 0, 0}}
+  {inputs : OracleBundle}
   {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {Out Wout : Transcript oracleSig s → Type}
 

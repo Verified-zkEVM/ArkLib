@@ -18,7 +18,6 @@ never reaches the suffix oracle. Both routed reads of the export name the same p
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle Interaction.TwoParty.Lens
   OracleComp OracleSpec
 
-universe uI uD wI wJ
 
 namespace Interaction.RoutedAccessTests
 
@@ -84,7 +83,7 @@ def suffixProgram : OracleComp (ambient + suffixBundle.spec) Nat := do
   pure (old + fresh)
 
 /-- The empty output map. -/
-def noOutput (In : OracleBundle.{0, uI, uD}) : OracleMap In none' where
+def noOutput (In : OracleBundle) : OracleMap In none' where
   f _ i := i.elim
   impl q := q.1.elim
   law _ q := q.1.elim
@@ -197,9 +196,9 @@ def tagHandler : QueryImpl (ambient + challengeSpec oracleSig combined) Id
   | .inr ⟨.inr ⟨_, .inl _⟩, h⟩ => nomatch h
   | .inr ⟨.inr ⟨_, .inr ⟨_, n⟩⟩, _⟩ => n.elim
 
-/-- The composed run under `tagHandler`, with independent input index and query universes. -/
-def observed.{vI, qI, qJ} (a b : Nat) :=
-  simulateQ tagHandler (composed.{vI, qI, qJ}.run () noData (prover a b))
+/-- The composed run under `tagHandler`, with input indices and queries in `Type`. -/
+def observed (a b : Nat) :=
+  simulateQ tagHandler (composed.run () noData (prover a b))
 
 -- Additional oracle message checks beside the produced partial-transcript assertions in
 -- LoggedExecution. For all tags `a` and `b`, the composed
@@ -207,8 +206,8 @@ def observed.{vI, qI, qJ} (a b : Nat) :=
 -- prefix transcript `⟨a⟩` and the suffix transcript `⟨b⟩`. Splitting its oracle messages gives
 -- the prefix oracle message `a` (row 9) and the suffix oracle message `b` (row 10).
 example (a b : Nat) :
-    ((observed.{uI, wI, wJ} a b).1, (observed.{uI, wI, wJ} a b).2.1,
-      (observed.{uI, wI, wJ} a b).2.2.map Prod.fst) =
+    ((observed a b).1, (observed a b).2.1,
+      (observed a b).2.2.map Prod.fst) =
     (Transcript.append (l := oracleSig) single (fun _ => single) ⟨a, ⟨⟩⟩ ⟨b, ⟨⟩⟩, a + b,
       some (a + a + b)) := by
   unfold observed composed
@@ -254,7 +253,7 @@ example : loggedSummary 1 2 =
 
 /-- The composed verifier's queries by move for the same tag-answering execution. -/
 def composedQueriesByMove (a b : Nat) :
-    OracleVerifier.QueriesByMove composed.{0, 0, 0} (fun _ => Nat) :=
+    OracleVerifier.QueriesByMove composed (fun _ => Nat) :=
   simulateQ tagHandler (composed.runWithQueriesByMove () noData (prover a b))
 
 /-- The queries-by-move result records the same raw decision queries as the logged run: two reads

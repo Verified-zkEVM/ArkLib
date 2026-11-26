@@ -89,7 +89,7 @@ oracle data read from the verifier's output map. The input is any oracle bundle,
 def OracleVerifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs)
     (run : {α : Type} → OracleComp (ambient + challengeSpec oracleSig s) α → m α)
@@ -106,7 +106,7 @@ def OracleVerifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSeman
 abbrev OracleVerifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs)
     (handler : QueryImpl (ambient + challengeSpec oracleSig s) m)
@@ -121,7 +121,7 @@ def OracleVerifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type
     [Monad m] [Monad n] [EvalDistSemantics n]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
     (run : {α : Type} → m α → n α)
@@ -140,7 +140,7 @@ def OracleVerifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type
 def OracleVerifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
     (langOut : (p : Path s) → OracleVerifier.Output T B p → Prop) (stmt : S × inputs.Data)
@@ -188,7 +188,7 @@ theorem Verifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type} {ambient
 with the input oracle data supplied to the run. -/
 abbrev OracleVerifier.soundness {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -205,7 +205,7 @@ abbrev OracleVerifier.soundness {ι σ : Type} {S : Type} {ambient : OracleSpec 
 theorem OracleVerifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι}
     {s : OracleProtocol.{0, 0}} {T : Path s → Type} {J : Path s → Type}
-    {B : (p : Path s) → J p → Type} {inputs : OracleBundle.{0, 0, 0}}
+    {B : (p : Path s) → J p → Type} {inputs : OracleBundle}
     {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))

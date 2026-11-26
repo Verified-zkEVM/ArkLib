@@ -36,7 +36,7 @@ client rewrites a decision or output data on a run, which these laws state direc
 
 @[expose] public section
 
-universe u q w uI uY dI wJ wK uA v z wL
+universe u q w uY uA v z
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -153,8 +153,8 @@ section Transcripts
 
 variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, uI, dI}}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- The decision on a completed transcript: at its path and view, with the bundle queries answered
 from the input data and the transcript's oracle messages. -/
@@ -171,18 +171,18 @@ def outputOn (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data 
 end Transcripts
 
 variable {ι : Type} {ambient : OracleSpec ι}
-  {inputs : OracleBundle.{0, uI, dI}}
+  {inputs : OracleBundle}
   {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {K : (p : Path s₁) → Path (s₂ p) → Type}
   {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
 
 /-- The split path of an appended run with the split views, the prefix bundle data and the suffix
 oracle messages. -/
-abbrev SplitRun (inputs : OracleBundle.{0, uI, dI}) (s₁ : OracleProtocol.{0, 0})
+abbrev SplitRun (inputs : OracleBundle) (s₁ : OracleProtocol.{0, 0})
     (s₂ : Path s₁ → OracleProtocol.{0, 0}) :=
   (z : (p : Path s₁) × Path (s₂ p)) × (View s₁ z.1 × View (s₂ z.1) z.2) ×
     ((pathBundle inputs s₁ z.1).Data ×
@@ -467,8 +467,8 @@ namespace OracleVerifier
 
 variable {ι : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
   {T : Path s → Type} {J : Path s → Type} {B : (p : Path s) → J p → Type}
-  {inputs : OracleBundle.{0, uI, dI}}
-  {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {inputs : OracleBundle}
+  {outputs : (p : Path s) → OracleFamily.{0, 0, 0} (J p) (B p)}
 
 /-- Verifiers with the same decision function decide alike on every run. -/
 theorem decideOn_eq_of_decide_eq {V V' : OracleVerifier ambient s S T inputs outputs}
@@ -481,14 +481,14 @@ end OracleVerifier
 /-- The decision of an appended verifier depends on the suffix verifiers only through their
 decision functions. -/
 theorem OracleVerifier.append_decide_congr {ι : Type} {ambient : OracleSpec ι}
-    {inputs : OracleBundle.{0, uI, dI}}
+    {inputs : OracleBundle}
     {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-    {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
     {K : (p : Path s₁) → Path (s₂ p) → Type}
     {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-    {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
+    {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
     (V₁ : OracleVerifier ambient s₁ S T inputs middle)
     {V₂ V₂' : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p)}
     (compatible : OracleVerifier.OutputCompatibility V₁ V₂)
@@ -506,20 +506,20 @@ namespace OracleVerifier
 section Reassociation
 
 variable {ι : Type} {ambient : OracleSpec ι}
-  {inputs : OracleBundle.{0, uI, dI}}
+  {inputs : OracleBundle}
   {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
   {s₃ : (p₁ : Path s₁) → Path (s₂ p₁) → OracleProtocol.{0, 0}} {S : Type}
   {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
   {W : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type}
   {J : Path s₁ → Type} {B : (p : Path s₁) → J p → Type}
-  {middle : (p : Path s₁) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+  {middle : (p : Path s₁) → OracleFamily.{0, 0, 0} (J p) (B p)}
   {K : (p : Path s₁) → Path (s₂ p) → Type}
   {C : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → K p₁ p₂ → Type}
-  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, wK} (K p₁ p₂) (C p₁ p₂)}
+  {outputs : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → OracleFamily.{0, 0, 0} (K p₁ p₂) (C p₁ p₂)}
   {L : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → Path (s₃ p₁ p₂) → Type}
   {D : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (p₃ : Path (s₃ p₁ p₂)) → L p₁ p₂ p₃ → Type}
   {finals : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) → (p₃ : Path (s₃ p₁ p₂)) →
-    OracleFamily.{0, 0, wL} (L p₁ p₂ p₃) (D p₁ p₂ p₃)}
+    OracleFamily.{0, 0, 0} (L p₁ p₂ p₃) (D p₁ p₂ p₃)}
   (V₁ : OracleVerifier ambient s₁ S T inputs middle)
   (V₂ : (p : Path s₁) → OracleVerifier ambient (s₂ p) (T p) (U p) (middle p) (outputs p))
   (V₃ : (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
