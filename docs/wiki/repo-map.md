@@ -225,8 +225,9 @@ home_page/            site assets and assembled website root
     itself). These have their own, unrelated definition in
     `ArkLib/Commitments/Functional/Basic.lean` (`Commitment.Scheme`, plus correctness and the
     experiments `Commitment.bindingExperiment`, `Commitment.functionBindingExperiment`,
-    `Commitment.extractabilityExperiment` and `Commitment.extractability`). KZG and Hachi are the
-    concrete functional schemes.
+    `Commitment.extractabilityExperiment` and `Commitment.extractability`). Hachi is a
+    `Commitment.Scheme` instance. KZG is a functional scheme with its own binding games and no
+    `Commitment.Scheme` instance.
 - KZG commitment-scheme modules live under `ArkLib/Commitments/Functional/KZG/`. The scheme uses
   VCVio's additive conventions: a field `F`, `F`-modules `G₁`, `G₂`, `Gₜ` and a bilinear pairing.
   `Basic` holds the keys, `keygen`, the computable commitment, opening and verification, and the

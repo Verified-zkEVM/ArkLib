@@ -1100,11 +1100,15 @@ None of this is formalized yet.
   `Commitment.functionBinding` (adapted from [CGKY25]) and `Commitment.extractability`, whose
   straightline extractor sees the commitment and the log of the committer's oracle queries. The
   setup and commitment phases run in the oracle state that later phases continue from.
-  `Commitment.binding` bounds the experiment for every adversary; computational schemes such as
-  KZG instead bound `Commitment.bindingExperiment` adversary by adversary (Section 5.5).
+  `Commitment.binding` bounds the experiment for every adversary. A computational scheme would
+  instead bound `Commitment.bindingExperiment` adversary by adversary (Section 5.5).
 - **KZG.** [`Commitments/Functional/KZG/`](ArkLib/Commitments/Functional/KZG/) defines the scheme
   (`KZG.commit`, `KZG.generateOpening`, `KZG.verifyOpening`) and the reductions of Section 5.5 to
-  VCVio's $t$-SDH and ARSDH games (`TSDH.experiment`, `ARSDH.experiment`).
+  VCVio's $t$-SDH and ARSDH games (`TSDH.experiment`, `ARSDH.experiment`). KZG is not a
+  `Commitment.Scheme` instance. Its binding games are its own (`KZG.evalBindingExperiment`,
+  `KZG.functionBindingExperiment`), with the same bad events as `Commitment.bindingExperiment`
+  and `Commitment.functionBindingExperiment` but no theorem relating them. Connecting KZG to a
+  generic functional-commitment interface is future work.
 - **Lattice commitments.** [`Commitments/Ordinary/Ajtai/`](ArkLib/Commitments/Ordinary/Ajtai/) has
   the simple Ajtai commitment, and [`Data/Lattices/ModuleSIS.lean`](ArkLib/Data/Lattices/ModuleSIS.lean)
   the Module-SIS game. [`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/)

@@ -62,48 +62,65 @@ private def c : Fin 3 → F := ![1, 2, 3]
   (verifyOpening e 1 vk (6 : F) 2 3 3, verifyOpening e 1 vk (6 : F) 2 4 2, r,
     decide (τ + r.1 ≠ 0 ∧ r.2 = (τ + r.1)⁻¹ • (1 : F)))
 
-/-! ### Function binding with `n = 1` -/
+/-! ### Function binding
 
-private def ck₁ : Fin 2 → F := committerKey 1 τ 1
-
-/-- The points `0, 1, 2`. -/
-private def pts : Fin 3 ↪ F := ⟨fun i => (i.val : F), by decide⟩
+`run n pts cm os` reports three things: whether `os` wins the function-binding game for `cm`
+(`functionBindingWins`, which checks every opening and that no polynomial of degree at most `n`
+fits), the reduction's answer `(|S|, h₁, h₂)`, and whether that answer wins ARSDH. -/
 
 /-- The ARSDH win predicate with `Z_S(τ)` written as `∏ s ∈ S, (τ - s)`. -/
-private def wins (out : Finset F × F × F) : Bool :=
+private def wins (n : ℕ) (out : Finset F × F × F) : Bool :=
   let Z := ∏ s ∈ out.1, (τ - s)
-  decide (out.1.card = 2 ∧ Z ≠ 0 ∧ out.2.1 ≠ 0 ∧ out.2.2 = Z⁻¹ • out.2.1)
+  decide (out.1.card = n + 1 ∧ Z ≠ 0 ∧ out.2.1 ≠ 0 ∧ out.2.2 = Z⁻¹ • out.2.1)
 
-/-- Whether every opening is accepted for `cm`. -/
-private def allAccepted (cm : F) (os : List (Opening F F)) : Bool :=
-  os.all fun o => verifyOpening e 1 vk cm o.1 o.2.1 o.2.2
+/-- Run the reduction and report the game's win predicate, `(|S|, h₁, h₂)` and the ARSDH win
+predicate. -/
+private def run (n : ℕ) (pts : Fin (n + 2) ↪ F) (cm : F) (os : List (Opening F F)) :
+    Bool × (ℕ × F × F) × Bool :=
+  let out := functionBindingReduction pts (committerKey 1 τ n) vk cm os
+  (functionBindingWins (n := n) e 1 vk (cm, os), (out.1.card, out.2.1, out.2.2), wins n out)
 
-/-- Run the reduction and report acceptance, `(|S|, h₁, h₂)` and the win predicate. -/
-private def run (cm : F) (os : List (Opening F F)) : Bool × (ℕ × F × F) × Bool :=
-  let out := functionBindingReduction pts ck₁ vk cm os
-  (allAccepted cm os, (out.1.card, out.2.1, out.2.2), wins out)
+/-- The points `0, 1, 2`. -/
+private def pts₁ : Fin 3 ↪ F := ⟨fun i => (i.val : F), by decide⟩
+
+/-- The points `0, 1`. -/
+private def pts₀ : Fin 2 ↪ F := ⟨fun i => (i.val : F), by decide⟩
 
 -- Interpolation case: `cm = 5` and values `0, 1, 5` at `0, 1, 2`, which no line fits. The
 -- interpolant through the first two openings is `X`, so `h₁ = 5 - 3 = 2`.
 /-- info: (true, (2, 2, 5), true) -/
 #guard_msgs in
-#eval run 5 [(0, 0, 4), (1, 1, 2), (2, 5, 0)]
+#eval run 1 pts₁ 5 [(0, 0, 4), (1, 1, 2), (2, 5, 0)]
 
 -- Interpolation case with the second node set: for `cm = 3` the interpolant `X` gives `h₁ = 0`,
 -- so the reduction replaces the node at `0` by the opening at `2`.
 /-- info: (true, (2, 1, 4), true) -/
 #guard_msgs in
-#eval run 3 [(0, 0, 1), (1, 1, 1), (2, 5, 5)]
+#eval run 1 pts₁ 3 [(0, 0, 1), (1, 1, 1), (2, 5, 5)]
 
 -- Conflict case: two accepted openings at `2` with values `5` and `4`.
 /-- info: (true, (2, 3, 1), true) -/
 #guard_msgs in
-#eval run 5 [(2, 5, 0), (2, 4, 1)]
+#eval run 1 pts₁ 5 [(2, 5, 0), (2, 4, 1)]
 
--- Trapdoor case: an opening at `τ = 3`.
+-- Trapdoor case: an opening at `τ = 3` with value `cm = 5`, plus openings at `0` and `1`. The
+-- line through `(3, 5)` and `(0, 0)` is `4X`, which misses `(1, 1)`, so the game is won.
 /-- info: (true, (2, 1, 6), true) -/
 #guard_msgs in
-#eval run 5 [(3, 5, 0), (0, 0, 4)]
+#eval run 1 pts₁ 5 [(3, 5, 0), (0, 0, 4), (1, 1, 2)]
+
+-- Degree `n = 0`: accepted openings with values `5` at `0` and `1` at `1`, which no constant
+-- fits. The ARSDH answer uses a single point.
+/-- info: (true, (1, 4, 2), true) -/
+#guard_msgs in
+#eval run 0 pts₀ 5 [(0, 5, 0), (1, 1, 2)]
+
+-- Outputs that do not win the game: no openings, and a repeated opening that agrees with the
+-- line `X`.
+/-- info: (false, false) -/
+#guard_msgs in
+#eval (functionBindingWins (n := 1) e 1 vk ((5 : F), []),
+  functionBindingWins (n := 1) e 1 vk ((5 : F), [(0, 0, 4), (0, 0, 4), (1, 1, 2)]))
 
 /-! ### Game-level bounds over `ZMod 7` -/
 
@@ -123,8 +140,8 @@ example (A : EvalBindingAdversary F F F 2) :
 /-- Function binding for degree-`1` commitments over `ZMod 7` is bounded by ARSDH. -/
 example (A : FunctionBindingAdversary F F F 1) :
     Pr{let b ← functionBindingExperiment e 1 1 A}[b = true] ≤
-      Pr{let b ← ARSDH.experiment (1 : F) (1 : F) (functionBindingAdversary pts A)}[b = true] :=
-  functionBinding_le_arsdh e_one_one one_smul_surjective pts A
+      Pr{let b ← ARSDH.experiment (1 : F) (1 : F) (functionBindingAdversary pts₁ A)}[b = true] :=
+  functionBinding_le_arsdh e_one_one one_smul_surjective pts₁ A
 
 /-- The class corollaries apply to any adversary class that contains the reduction. -/
 example {Adv : Set (TSDH.Adversary F F F 2)} {ε : ENNReal}
@@ -135,8 +152,8 @@ example {Adv : Set (TSDH.Adversary F F F 2)} {ε : ENNReal}
 
 example {Adv : Set (ARSDH.Adversary F F F 1)} {ε : ENNReal}
     (hε : ∀ B ∈ Adv, Pr{let b ← ARSDH.experiment (1 : F) (1 : F) B}[b = true] ≤ ε)
-    (A : FunctionBindingAdversary F F F 1) (hA : functionBindingAdversary pts A ∈ Adv) :
+    (A : FunctionBindingAdversary F F F 1) (hA : functionBindingAdversary pts₁ A ∈ Adv) :
     Pr{let b ← functionBindingExperiment e 1 1 A}[b = true] ≤ ε :=
-  functionBinding_le_of_arsdh e_one_one one_smul_surjective pts hε A hA
+  functionBinding_le_of_arsdh e_one_one one_smul_surjective pts₁ hε A hA
 
 end KZGTest
