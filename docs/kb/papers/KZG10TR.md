@@ -8,7 +8,7 @@ canonical_url: https://cacr.uwaterloo.ca/techreports/2010/cacr2010-10.pdf
 source_metadata: ../sources/KZG10TR/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/Commitments/Functional/KZG/Binding.lean
+  - ArkLib/Commitments/Functional/KZG/EvaluationBinding.lean
 ---
 
 # KZG10TR
@@ -25,7 +25,7 @@ evaluation-binding reduction because this version includes the security proofs.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/Commitments/Functional/KZG/Binding.lean`](../../../ArkLib/Commitments/Functional/KZG/Binding.lean)
+- [`ArkLib/Commitments/Functional/KZG/EvaluationBinding.lean`](../../../ArkLib/Commitments/Functional/KZG/EvaluationBinding.lean)
   cites `KZG10TR` directly.
 
 ## Version Notes
@@ -36,7 +36,10 @@ evaluation-binding reduction because this version includes the security proofs.
 ## Open Formalization Gaps
 
 - The current page is a lightweight landing page. A fuller audit should map the proof lemmas in
-  `Binding.lean` to the extended-version proof structure.
+  `EvaluationBinding.lean` to the extended-version proof structure.
+- ArkLib proves the pointwise statement `KZG.evalBindingReduction_wins` and the game-level bound
+  `KZG.evalBinding_le_tsdh` against VCVio's `TSDH.experiment`. The corollary
+  `KZG.evalBinding_le_of_tsdh` assumes the t-SDH bound only over an explicit adversary class.
 
 ## Source Access
 

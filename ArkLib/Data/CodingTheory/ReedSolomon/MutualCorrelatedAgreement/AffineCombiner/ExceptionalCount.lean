@@ -398,7 +398,9 @@ theorem exists_finset_card_le_forall_isAffinePersistent_of_interpolant [Finite F
 Assume `1 ≤ d ≤ B < A ≤ n` and an interpolant with budgets `m, D, M`.
 At agreement loss one, the excluded set has size at most the size of a given set plus
 `D² + 4 d² M² D³ (n / (A - B))²`.
-Outside the given set, exceptional candidates must not be persistent. -/
+Outside the given set, exceptional candidates must not be persistent.
+Nothing else calls this theorem; it is kept as the Lemma 4.1 statement listed on the CWYZ26
+paper page (`docs/kb/papers/CWYZ26.md`). -/
 theorem exists_affineExceptional_finset_card_le_of_interpolant [Finite F] (domain : ι ↪ F)
     (f g : ι → F) {d A B m D M : ℕ} {Q : MvPolynomial AffineVar F}
     (hQ : IsMultiplierInterpolant domain f g 1 d A m D M Q) (hd : 1 ≤ d) (hdB : d ≤ B) (hBA : B < A)

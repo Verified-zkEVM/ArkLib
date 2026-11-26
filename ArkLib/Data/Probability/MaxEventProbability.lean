@@ -5,9 +5,12 @@ Authors: Alexander Hicks
 -/
 module
 
+public import Mathlib.Algebra.BigOperators.Ring.Finset
+public import Mathlib.Algebra.Order.BigOperators.Group.Finset
 public import Mathlib.Basic.ENNReal.Real
-public import Mathlib.Data.Fintype.Card
-public import Mathlib.Data.Finset.Lattice.Fold
+public import Mathlib.Data.Finset.Lattice.Prod
+public import Mathlib.Data.Fintype.BigOperators
+public import Mathlib.Data.Fintype.Pi
 
 /-!
 # Exact worst-case probabilities for finite event families
@@ -24,6 +27,11 @@ propositional event that the Boolean event decides.
 The definitions use no classical decision procedure and no sampler. Execution requires executable
 `Fintype` enumerations and an executable Boolean event. The count evaluates the event once for each
 pair of a family member and a challenge.
+
+`Probability.maxEventCountWithReply` counts events when a reply can depend on a first challenge.
+It evaluates the event once per context, first challenge, reply, and second challenge.
+`Probability.maxEventCount_eq_maxEventCountWithReply` proves that this count agrees with the
+maximum over message functions.
 -/
 
 @[expose] public section
@@ -79,5 +87,59 @@ theorem ofReal_maxEventProbability_eq_iSup_of_iff (bad : W → S → Bool) (p : 
       ⨆ w : W, ENNReal.ofReal ((#{c : S | p w c} : ℝ) / Fintype.card S) := by
   rw [ofReal_maxEventProbability_eq_iSup]
   simp only [h]
+
+section Reply
+
+variable {T Reply : Type*} [Fintype T] [Fintype Reply]
+
+/-- The maximum event count over contexts when a reply observes the first challenge.
+
+For each context and first challenge `t : T`, the count maximizes over replies, scoring each
+reply over all second challenges `s : S`. It sums these maxima over `t` and takes the maximum
+over contexts. For nonempty challenge spaces, division by `card T * card S` gives the largest
+event probability over contexts and reply functions under independent uniform challenges. -/
+def maxEventCountWithReply (bad : W → T → Reply → S → Bool) : ℕ :=
+  (univ : Finset W).sup fun w ↦ ∑ t : T, maxEventCount (bad w t)
+
+private theorem sup_pi_sum_eq_sum_sup [DecidableEq T] (score : T → Reply → ℕ) :
+    (univ : Finset (T → Reply)).sup (fun reply ↦ ∑ t, score t (reply t)) =
+      ∑ t, (univ : Finset Reply).sup (score t) := by
+  apply le_antisymm
+  · exact Finset.sup_le_iff.mpr fun reply _ ↦ sum_le_sum fun t _ ↦
+      le_sup (f := score t) (mem_univ (reply t))
+  · rcases isEmpty_or_nonempty Reply with hReply | hReply
+    · simp
+    have hmax (t : T) : ∃ r : Reply, univ.sup (score t) = score t r := by
+      obtain ⟨r, _, hr⟩ := exists_mem_eq_sup univ univ_nonempty (score t)
+      exact ⟨r, hr⟩
+    choose reply hreply using hmax
+    calc
+      (∑ t, univ.sup (score t)) = ∑ t, score t (reply t) :=
+        sum_congr rfl fun t _ ↦ hreply t
+      _ ≤ (univ : Finset (T → Reply)).sup (fun f ↦ ∑ t, score t (f t)) :=
+        le_sup (f := fun f ↦ ∑ t, score t (f t)) (mem_univ reply)
+
+/-- The count with replies chosen separately for each first challenge equals the maximum over
+all reply functions. For a nonempty reply type, a function can choose a best reply at every first
+challenge. Both counts are zero when the reply type is empty. -/
+theorem maxEventCount_eq_maxEventCountWithReply [DecidableEq T]
+    (bad : W → T → Reply → S → Bool) :
+    maxEventCount (fun (w : W × (T → Reply)) (c : T × S) ↦ bad w.1 c.1 (w.2 c.1) c.2) =
+      maxEventCountWithReply bad := by
+  rw [maxEventCount, maxEventCountWithReply, ← univ_product_univ, sup_product_left]
+  refine sup_congr rfl fun w _ ↦ ?_
+  have hcount (reply : T → Reply) :
+      #{c : T × S | bad w c.1 (reply c.1) c.2 = true} =
+        ∑ t : T, #{s : S | bad w t (reply t) s = true} := by
+    calc
+      _ = ∑ c : T × S, if bad w c.1 (reply c.1) c.2 = true then (1 : ℕ) else 0 :=
+        (sum_boole (R := ℕ) _ univ).symm
+      _ = _ := by
+        rw [Fintype.sum_prod_type]
+        exact sum_congr rfl fun t _ ↦ sum_boole (R := ℕ) _ univ
+  simp_rw [hcount, maxEventCount]
+  exact sup_pi_sum_eq_sum_sup fun t r ↦ #{s : S | bad w t r s = true}
+
+end Reply
 
 end Probability

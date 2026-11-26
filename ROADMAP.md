@@ -121,10 +121,25 @@ entry says so, the specification is not claimed to be executable.
   `ToyProblem.Spec.oracleReduction_perfectCompleteness`;
   `ToyProblem.Spec.oracleVerifier_knowledgeSoundness_winningSetUpperBound`. Executable IRS and FRS
   implementations are in [`ToyProblem/Impl/`](ArkLib/ProofSystem/ToyProblem/Impl/).
-- **KZG** ([`Commitments/Functional/KZG/`](ArkLib/Commitments/Functional/KZG/)): correctness, and
-  binding stated as reductions: `KZG.CommitmentScheme.binding_reduces_to_tSdh` (evaluation binding
-  from t-SDH) and `KZG.CommitmentScheme.function_binding_reduces_to_arsdh` (function binding from
-  ARSDH). The hardness-based corollaries quantify over explicit adversary classes.
+- **KZG** ([`Commitments/Functional/KZG/`](ArkLib/Commitments/Functional/KZG/)): the scheme in
+  additive notation over a field, with computable commitment, opening and verification. Proved:
+  pointwise correctness (`KZG.verifyOpening_generateOpening`), and explicit reductions whose
+  output wins VCVio's games pointwise in the trapdoor: `KZG.evalBindingReduction_wins` (evaluation
+  binding to `TSDH.experiment`) and `KZG.FunctionBinding.functionBindingReduction_wins` (function
+  binding to `ARSDH.experiment`, with `O(n + L)` group operations). Game-level bounds:
+  `KZG.evalBinding_le_tsdh` and `KZG.functionBinding_le_arsdh` bound each binding game by the
+  matching VCVio experiment run on the reduction, and `KZG.evalBinding_le_of_tsdh` and
+  `KZG.functionBinding_le_of_arsdh` assume the hardness bound over an explicit adversary class.
+  In the AGM, extractability and both binding games reduce computably to `(n, 1)`-PairingDLog
+  with additive error `1 / |F|`, assuming a nonzero pairing value and a complete root finder.
+  The reduction covers `n = 0`; CompPoly's finite-field root backend meets the root-finder
+  contract under its splitter-validity hypothesis.
+  In the Type 3 generic group model, `KZG.Generic.evalBinding_le_generic` and
+  `KZG.Generic.functionBinding_le_generic` bound the existing games by
+  `((n + 1) * (q + 2*n + 3) * (q + 2*n + 4) + 2) / |F|`, assuming only `e g₁ g₂ ≠ 0`, with no
+  source-group surjectivity assumption. FKL translation and first-inconsistent-claim recovery
+  use at most `q + n + 1`
+  group operations, independently of the number of openings.
 - **Hachi** ([`Commitments/Functional/Hachi/`](ArkLib/Commitments/Functional/Hachi/)): the
   nonrecursive opening argument, with coordinate-wise special soundness of each iteration
   (`ArkLib.Lattices.Ajtai.InnerOuter.hachi_iteration_coordinateWiseSpecialSoundWithEscape`) and a
@@ -173,15 +188,9 @@ entry says so, the specification is not claimed to be executable.
   [extractor-efficiency design](docs/design/03a-extractor-efficiency.md) states their accounting scope.
 - **Commitment games**: binding and extractability experiments that keep the oracle state left by
   setup ([`Commitments/Functional/Basic.lean`](ArkLib/Commitments/Functional/Basic.lean)).
-- **Algebraic group model**: group representations for algebraic adversaries
-  ([`ArkLib/AGM/`](ArkLib/AGM/)).
 
 ## In progress
 
-- **Solicited proofs.** One coding-theory declaration, a correlated-agreement lower bound, is
-  stated faithfully and left open for contributors. It is the only admitted statement in the
-  library, and nothing else depends on it
-  ([#1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352)).
 - **Rewinding knowledge soundness.** A shared rewinding engine with legacy-layer and
   interaction-layer instances
   ([#1410](https://github.com/Verified-zkEVM/ArkLib/issues/1410)).

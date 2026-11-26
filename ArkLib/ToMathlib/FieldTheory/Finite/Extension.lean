@@ -14,8 +14,15 @@ Every finite field has a finite extension of each positive degree.
 That extension has a basis indexed by `Fin t` over the base field.
 Packing tuples along such a basis turns `t` rows over the base field into one row.
 
-The characteristic of a finite field is prime, as an instance.
-So the extension at the characteristic gets its field instances by instance search.
+The characteristic of a finite field is prime, as a scoped instance in `FiniteField`.
+After `open scoped FiniteField`, the extension at the characteristic gets its field instances by
+instance search.
+The instance is scoped because Mathlib's library note «fact non-instances» advises against global
+`Fact` instances; Mathlib states this fact locally, as in `Mathlib.FieldTheory.Finite.Trace`.
+
+`FiniteField.Extension.finBasis` is noncomputable.
+Mathlib's `FiniteField.Extension` chooses its algebra map from the base field with
+`Nonempty.some`, and `Module.finBasisOfFinrankEq` chooses a basis with classical choice.
 
 ## Main definitions
 
@@ -29,7 +36,7 @@ namespace FiniteField
 variable (K : Type*) [Field K] [Finite K]
 
 /-- The characteristic of a finite field is prime. -/
-instance fact_prime_ringChar : Fact (ringChar K).Prime :=
+scoped instance fact_prime_ringChar : Fact (ringChar K).Prime :=
   ⟨CharP.char_is_prime K _⟩
 
 /-- A basis of the degree-`t` extension of a finite field `K`, indexed by `Fin t`. -/
