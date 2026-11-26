@@ -63,7 +63,7 @@ example {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : Protocol}
 -- Disposition S2, oracle form: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
-    {O : ∀ i, OracleInterface.{0, 0} (A i)}
+    {O : ∀ i, OracleInterface (A i)}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T (.ofIndexed A O) outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -80,7 +80,7 @@ example {ι σ : Type} {I : Type} {S : Type}
 -- Disposition S3, oracle form: soundness-implication-disposition.md#soundnesslean.
 example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
-    {O : ∀ i, OracleInterface.{0, 0} (A i)}
+    {O : ∀ i, OracleInterface (A i)}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T (.ofIndexed A O) outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -112,7 +112,7 @@ example {ι σ : Type} {S : Type}
 -- from the verdict and the output oracle data of the outcome.
 example {ι σ : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type} {A : I → Type}
-    {O : ∀ i, OracleInterface.{0, 0} (A i)}
+    {O : ∀ i, OracleInterface (A i)}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T (.ofIndexed A O) outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -473,7 +473,7 @@ challenges. An oracle-verifier API that exposes a prefix draw restricts it to th
 namespace OracleMessageDraw
 
 /-- A Boolean oracle message, then a Boolean challenge. -/
-abbrev protocol : OracleProtocol.{0, 0} :=
+abbrev protocol : OracleProtocol :=
   .liftBind (.oracle Bool OracleInterface.instDefault) fun _ =>
     .liftBind (.challenge Bool) fun _ => .pure ⟨⟩
 
@@ -605,7 +605,7 @@ theorem optional_counting_bound :
 Its challenge premise is discharged by the separate lifted draw. -/
 example {ι : Type} {I : Type} {S : Type}
     {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
-    {A : I → Type} {O : ∀ i, OracleInterface.{0, 0} (A i)}
+    {A : I → Type} {O : ∀ i, OracleInterface (A i)}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T (.ofIndexed A O) outputs)
     (impl : QueryImpl ambient (OptionT ProbComp))

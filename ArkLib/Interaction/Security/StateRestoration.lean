@@ -66,7 +66,7 @@ structure Round where
 attribute [instance] Round.sampleChallenge
 
 /-- The protocol: each round is an oracle message followed by its public challenge. -/
-def protocol : List Round → OracleProtocol.{0, 0}
+def protocol : List Round → OracleProtocol
   | [] => .pure ⟨⟩
   | round :: rounds => .liftBind (.oracle round.Message round.interface)
       (fun _ => .liftBind (.challenge round.Challenge) (fun _ => protocol rounds))
@@ -355,8 +355,8 @@ theorem sampleAt_keySpine : {rounds : List Round} → (key : Key Input Salt roun
 
 section Outcome
 
-variable {s : OracleProtocol.{0, 0}} {I : Type} {S : Type} {A : I → Type}
-  {T : Path s → Type} {Oᵢ : ∀ i, OracleInterface.{0, 0} (A i)}
+variable {s : OracleProtocol} {I : Type} {S : Type} {A : I → Type}
+  {T : Path s → Type} {Oᵢ : ∀ i, OracleInterface (A i)}
   {outputs : Path s → OracleBundle}
 
 /-- The decision of a verifier with no ambient oracle on a completed transcript. Bundle queries
@@ -381,7 +381,7 @@ end Outcome
 section Verifier
 
 variable {rounds : List Round} {I S : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {Oᵢ : ∀ i, OracleInterface.{0, 0} (A i)}
+  {T : Path (protocol rounds) → Type} {Oᵢ : ∀ i, OracleInterface (A i)}
   {outputs : Path (protocol rounds) → OracleBundle}
 
 /-- The state-restoration game: the adversary queries the oracle and selects a statement, messages
@@ -552,7 +552,7 @@ theorem simulate_scriptedProver {ι κ : Type} {ambient : OracleSpec ι} {spec :
 
 /-- The runner at a challenge node: the focal party's receive step, then the counterpart draw. -/
 private theorem run_challengeNode {m : Type → Type} [Monad m] [LawfulMonad m] (C : Type)
-    (rest : OraclePoly.{0, 0}.B (OraclePos.challenge C) → OracleProtocol.{0, 0})
+    (rest : OraclePoly.B (OraclePos.challenge C) → OracleProtocol)
     {OutP OutC : Transcript oracleSig (.liftBind (OraclePos.challenge C) rest) → Type}
     (p : Focal oracleSig m (.liftBind (OraclePos.challenge C) rest) OutP)
     (c : Counterpart oracleSig m (.liftBind (OraclePos.challenge C) rest) OutC) :
@@ -584,7 +584,7 @@ private theorem evalWithAnswerFn_run_scriptedProver_cons {κ : Type} {spec : Ora
         (scriptedProver (ambient := spec) rounds messages)
         (sampler oracleSig (protocol rounds) (fun c =>
           draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
-            .inr ⟨oracleSig.{0, 0}.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)))
+            .inr ⟨oracleSig.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)))
       ⟨⟨message, ⟨x, r.1⟩⟩, r.2⟩ := by
   refine (congrArg (evalWithAnswerFn answers)
     (run_node (l := oracleSig) (.oracle round.Message round.interface) _ _ _)).trans ?_
@@ -595,30 +595,30 @@ private theorem evalWithAnswerFn_run_scriptedProver_cons {κ : Type} {spec : Ora
   have afterMessage : sampler oracleSig (protocol (round :: rounds)) draw =
       pure (fun x => sampler oracleSig
         (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
-          OracleProtocol.{0, 0})
+          OracleProtocol)
         (fun c => draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) x,
           c.val⟩, c.property⟩)) := rfl
   rw [prover, afterMessage]
   change evalWithAnswerFn answers (do
       let x ← TwoParty.Lens.run (l := oracleSig) (OutP := fun _ => PUnit) (OutC := fun _ => PUnit)
         (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
-          OracleProtocol.{0, 0})
+          OracleProtocol)
         (pure fun _ => scriptedProver (ambient := spec) rounds messages)
         (sampler oracleSig
           (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
-            OracleProtocol.{0, 0})
+            OracleProtocol)
           (fun c => draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
             c.val⟩, c.property⟩))
       pure (⟨⟨message, x.1⟩, x.2.1, x.2.2⟩ :
         (_ : Transcript oracleSig (protocol (round :: rounds))) × PUnit × PUnit)) = _
   have atChallenge : sampler oracleSig
       (FreeM.liftBind (OraclePos.challenge round.Challenge) fun _ => protocol rounds :
-        OracleProtocol.{0, 0})
+        OracleProtocol)
       (fun c => draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
         c.val⟩, c.property⟩) =
       (fun x => ⟨x, sampler oracleSig (protocol rounds) (fun c =>
         draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message,
-          .inr ⟨oracleSig.{0, 0}.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)⟩) <$>
+          .inr ⟨oracleSig.toFunB (.challenge round.Challenge) x, c.val⟩⟩, c.property⟩)⟩) <$>
         draw ⟨.inr ⟨oracleSig.toFunB (.oracle round.Message round.interface) message, .inl ⟨⟩⟩,
           rfl⟩ :=
     Functor.map_map _ _ _
@@ -651,7 +651,7 @@ theorem evalWithAnswerFn_run_scriptedProver {κ : Type} {spec : OracleSpec κ}
 section Verifier
 
 variable {rounds : List Round} {I : Type} {S : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {Oᵢ : ∀ i, OracleInterface.{0, 0} (A i)}
+  {T : Path (protocol rounds) → Type} {Oᵢ : ∀ i, OracleInterface (A i)}
   {outputs : Path (protocol rounds) → OracleBundle}
 
 /-- Running the scripted prover with the passive verifier, every challenge read from a transcript
@@ -678,7 +678,7 @@ end Verifier
 section Verifier
 
 variable {rounds : List Round} {I S : Type} {A : I → Type}
-  {T : Path (protocol rounds) → Type} {Oᵢ : ∀ i, OracleInterface.{0, 0} (A i)}
+  {T : Path (protocol rounds) → Type} {Oᵢ : ∀ i, OracleInterface (A i)}
   {outputs : Path (protocol rounds) → OracleBundle}
 
 /-- Every supported completion can be replayed by the actual parties with its recorded
@@ -882,7 +882,7 @@ theorem badKey_resample_bound [DecidableEq (Key S Salt rounds)]
   · simp only [hz, true_and]
     let : MeasurableSpace key.Challenge := ⊤
     rw [prEvent_eq_evalDist_of_discrete]
-    let : MeasurableSpace (Move oracleSig.{0, 0} (.challenge key.Challenge)) := ⊤
+    let : MeasurableSpace (Move oracleSig (.challenge key.Challenge)) := ⊤
     have h := bounded key.input hz _ _ (keySpine key) rfl (keyHistory key table)
     change 𝒟[(sampleAt oracleSig (uniformDraw rounds) (keySpine key) rfl : ProbComp key.Challenge)]
       (F.badChallenge (keySpine key) (keyHistory key table) key.input) ≤ ε (keyNode key) at h
@@ -965,7 +965,7 @@ section Games
 
 variable {rounds : List Round} {I S Salt W : Type} {A : I → Type}
   {T : Path (protocol rounds) → Type} {Win : S × (∀ i, A i) → Type}
-  {Oᵢ : ∀ i, OracleInterface.{0, 0} (A i)}
+  {Oᵢ : ∀ i, OracleInterface (A i)}
   {outputs : Path (protocol rounds) → OracleBundle}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
   {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}

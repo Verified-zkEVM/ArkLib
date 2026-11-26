@@ -77,14 +77,14 @@ open Polynomial PFunctor FreeM Interaction Interaction.TwoParty.Lens Interaction
 section Tree
 
 /-- One node followed by a fixed continuation, at equal nodes and continuations. -/
-private theorem liftBind_congr' {P : PFunctor.{1, 0}} {a a' : P.A} {t t' : FreeM P PUnit.{1}}
+private theorem liftBind_congr' {P : PFunctor.{1, 0}} {a a' : P.A} {t t' : FreeM P Unit}
     (ha : a = a') (ht : t = t') :
     (FreeM.liftBind a fun _ => t) = FreeM.liftBind a' fun _ => t' := by
   subst ha ht; rfl
 
 /-- Two nodes followed by a fixed continuation, at equal nodes and continuations. -/
 private theorem liftBind₂_congr {P : PFunctor.{1, 0}} {a a' b b' : P.A}
-    {t t' : FreeM P PUnit.{1}} (ha : a = a') (hb : b = b') (ht : t = t') :
+    {t t' : FreeM P Unit} (ha : a = a') (hb : b = b') (ht : t = t') :
     (FreeM.liftBind a fun _ => FreeM.liftBind b fun _ => t) =
       FreeM.liftBind a' fun _ => FreeM.liftBind b' fun _ => t' := by
   subst ha hb ht; rfl
@@ -295,13 +295,13 @@ variable (R : Type) [CommSemiring R] [DecidableEq R] [SampleableType R] (deg n :
 
 /-- The target of the decision's queries on a path of an oracle tree: the ambient oracle, the
 input polynomial and the path's oracles. -/
-private abbrev decisionSpec (x : Σ s : OracleProtocol.{0}, Path s) :=
+private abbrev decisionSpec (x : Σ s : OracleProtocol, Path s) :=
   ambient + (pathBundle (Spec.polynomialFamily R n deg) x.1 x.2).spec
 
 /-- Lift path-oracle queries into the decision's query interface, on any oracle tree: the shared
 `Interaction.pathLift` at the polynomial input family, packaged over a sigma so that the
 transport proof below can move along the tree. -/
-private def pathLift (x : Σ s : OracleProtocol.{0}, Path s) :
+private def pathLift (x : Σ s : OracleProtocol, Path s) :
     QueryImpl (oracleMessageSpec x.1 x.2) (OracleComp (decisionSpec R deg n ambient x)) :=
   Interaction.pathLift ambient (Spec.polynomialFamily R n deg) x.2
 
@@ -342,12 +342,12 @@ theorem decide_heq_embed (stmt : Spec.StatementRound R n 0)
       ((embedOracleVerifier (Spec.oracleVerifier R deg D n ambient)).decide stmt _
         (toView _ tr')) := by
   have hp : HEq tr.path tr'.path := by
-    have key : ∀ (s s' : OracleProtocol.{0}) (_ : s = s') (t : Transcript oracleSig s)
+    have key : ∀ (s s' : OracleProtocol) (_ : s = s') (t : Transcript oracleSig s)
         (t' : Transcript oracleSig s'), HEq t t' →
           HEq t.path t'.path := by
       intro s s' e t t' h; subst e; cases h; rfl
     exact key _ _ (protocol_eq R deg n) tr tr' htr
-  have hx : (⟨protocol R deg n, tr.path⟩ : Σ s : OracleProtocol.{0},
+  have hx : (⟨protocol R deg n, tr.path⟩ : Σ s : OracleProtocol,
       Path s) = ⟨_, tr'.path⟩ := Sigma.ext (protocol_eq R deg n) hp
   have hch : viewChallenges (toView _ tr) = Legacy.viewChallenges (toView _ tr').val := by
     rw [viewChallenges_toView, Legacy.viewChallenges_toView,

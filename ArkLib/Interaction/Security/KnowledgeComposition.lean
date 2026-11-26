@@ -47,7 +47,7 @@ variable {l} {S : Type}
 
 section restrict
 
-variable {s : FreeM P PUnit.{1}} {Win : S → Type} {W : S → Transcript l s → Type}
+variable {s : FreeM P Unit} {Win : S → Type} {W : S → Transcript l s → Type}
     {admissible : S →
     Prop}
   {relIn : (stmt : S) → Win stmt → Prop} {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt
@@ -110,7 +110,7 @@ variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly}
 
 section restrictBounds
 
-variable {s : FreeM P PUnit.{1}} {Win : S → Type}
+variable {s : FreeM P Unit} {Win : S → Type}
   {W : S → Transcript l s → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript l s) → W stmt tr → Prop}
@@ -154,7 +154,7 @@ end restrictBounds
 
 section security
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}}
+variable {s₁ : FreeM P Unit} {s₂ : Path s₁ → FreeM P Unit}
   {Wmid : S → Transcript l s₁ → Type}
     {W : S → Transcript l (s₁.append s₂) → Type} {Win : S → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -217,7 +217,7 @@ variable {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly)
 
 section security
 
-variable {s₁ : FreeM P PUnit.{1}} {s₂ : Path s₁ → FreeM P PUnit.{1}} {S : Type}
+variable {s₁ : FreeM P Unit} {s₂ : Path s₁ → FreeM P Unit} {S : Type}
     {Win : S → Type}
   {Wmid : S → Transcript l s₁ → Type} {W : S → Transcript l (s₁.append s₂) → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -357,7 +357,7 @@ end security
 
 section view
 
-variable {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}} {S : Type}
+variable {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol} {S : Type}
   {Win : S → Type} {Wmid : S → Transcript oracleSig s₁ → Type}
   {W : S → Transcript oracleSig (s₁.append s₂) → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
@@ -693,7 +693,7 @@ theorem Verifier.rbrKnowledgeSoundness_append_of_pure {ι σ : Type} {S : Type}
 /-- Positive oracle acceptance decomposes into supported accepted middle and final results.
 The suffix uses the prefix's final ambient state and the actual routed bundle data. -/
 theorem OracleVerifier.validAcceptance_append {ι σ : Type} {S : Type}
-    {ambient : OracleSpec ι} {s₁ : OracleProtocol.{0, 0}} {s₂ : Path s₁ → OracleProtocol.{0, 0}}
+    {ambient : OracleSpec ι} {s₁ : OracleProtocol} {s₂ : Path s₁ → OracleProtocol}
     {T : Path s₁ → Type} {U : (p : Path s₁) → Path (s₂ p) → Type}
     {inputs : OracleBundle}
     {middle : Path s₁ → OracleBundle}

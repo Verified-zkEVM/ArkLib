@@ -23,7 +23,8 @@ namespace Interaction.StateRestorationTests
 /-- A sent `Fin 8` answers its single query with itself. -/
 @[instance_reducible] def messageInterface : OracleInterface (Fin 8) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 8, impl := fun _ => do return (← read) }
+  spec := fun _ => Fin 8
+  answer m _ := m
 
 /-- One round: a `Fin 8` oracle message, then a uniform `Bool` challenge. -/
 def round : Round where
@@ -101,7 +102,7 @@ theorem oracleObservation_false (z : Nat) (m : Fin 8) :
 
 -- Row 17 (StateRestoration L258): the `false` branch returns no claim in the fixed `Option`
 -- output, so no output relation can hold there.
-example (z : Nat) (m : Fin 8) (rel : Fin 8 × (PUnit.{1} → Fin 8) → Prop) :
+example (z : Nat) (m : Fin 8) (rel : Fin 8 × (Unit → Fin 8) → Prop) :
     ¬ ∃ claim, closedVerdict verifier (stmt z) (path m false) = some claim ∧
       rel claim := by
   rw [oracleObservation_false]
@@ -410,7 +411,7 @@ theorem actual_game_bound :
 
 /-- The oracle output relation: the witness is at most the output oracle's data. -/
 def oracleRout (_ : Stmt) (_ : Transcript oracleSig (protocol rounds))
-    (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
+    (claim : Fin 8 × (Unit → Fin 8)) (w : Nat) : Prop :=
   w ≤ (claim.2 ⟨⟩).val
 
 -- Row 15 (StateRestoration L223, oracleOutputLaw).
@@ -428,7 +429,7 @@ theorem oracleOutputLaw (z : Stmt) (tr : Transcript oracleSig (protocol rounds))
 
 /-- An accepted closed claim related to the witness is a valid output. -/
 theorem closedOutputLaw (z : Stmt) (tr : Transcript oracleSig (protocol rounds))
-    (claim : Fin 8 × (PUnit.{1} → Fin 8)) (w : Nat)
+    (claim : Fin 8 × (Unit → Fin 8)) (w : Nat)
     (accepted : closedVerdict verifier z tr = some claim)
     (related : oracleRout z tr claim w) : valid z tr w :=
   (outputLaw z tr w).mp ((oracleOutputLaw z tr w).mpr ⟨claim, accepted, related⟩)
@@ -633,7 +634,8 @@ def selectedMessage : (b : Bool) → Fin 8 → SelectedValue b
 /-- A value in the nine-element carrier answers its unit query with itself. -/
 @[instance_reducible] def wideInterface : OracleInterface (Fin 9) where
   Query := Unit
-  toOC := { spec := fun _ => Fin 9, impl := fun _ => do return (← read) }
+  spec := fun _ => Fin 9
+  answer m _ := m
 
 /-- The output oracle interface on the carrier selected by the authored Boolean. -/
 @[instance_reducible] def varyingInterface : (b : Bool) → OracleInterface (SelectedValue b)
@@ -739,7 +741,7 @@ theorem selectedScriptedRun_eq (b c : Bool) :
   cases b <;> cases c <;> kernel_rfl
 
 /-- The exact dependent result type of a selected party run. -/
-abbrev SelectedRunResult := Outcome oracleSig selectedProtocol (fun _ => PUnit.{1})
+abbrev SelectedRunResult := Outcome oracleSig selectedProtocol (fun _ => Unit)
   (OracleVerifier.Output SelectedOutput fun p => selectedFamily p.1)
 
 /-- The plain replay keeps the frozen message and challenge values, with a real dependent output. -/
@@ -790,7 +792,7 @@ theorem oracleReplayResult_eq (b c : Bool) :
 #eval oracleReplayResult true false
 
 /-- The selected suffix's accepted statement and output oracle data. -/
-def selectedClaim (b : Bool) (m : Fin 8) : SelectedValue b × (PUnit.{1} → Fin 8) :=
+def selectedClaim (b : Bool) (m : Fin 8) : SelectedValue b × (Unit → Fin 8) :=
   (selectedMessage b m, fun _ => m)
 
 /-- The full selected verdict and the suffix game use exactly the same accepted claim. -/
@@ -815,7 +817,7 @@ theorem oracleVerdict_prepend (b : Bool) (z : Stmt)
 
 /-- The closed relation reads the output oracle without encoding its selected carrier. -/
 def selectedRelation (b : Bool) (_ : Stmt) (_ : Transcript oracleSig (protocol rounds))
-    (claim : SelectedValue b × (PUnit.{1} → Fin 8)) (w : Nat) : Prop :=
+    (claim : SelectedValue b × (Unit → Fin 8)) (w : Nat) : Prop :=
   w ≤ (claim.2 ⟨⟩).val
 
 /-- The original leaf-state equivalence holds in both authored finite carriers. -/
@@ -837,7 +839,7 @@ theorem selectedOracleOutputLaw (b : Bool) (z : Stmt)
 /-- An accepted selected claim satisfies the original leaf knowledge state. -/
 theorem selectedOutputLaw (b : Bool) (z : Stmt)
     (tr : Transcript oracleSig (protocol rounds))
-    (claim : SelectedValue b × (PUnit.{1} → Fin 8)) (w : Nat)
+    (claim : SelectedValue b × (Unit → Fin 8)) (w : Nat)
     (accepted : closedVerdict (oracleSuffixVerifier b) z tr = some claim)
     (related : selectedRelation b z tr claim w) : valid z tr w :=
   (outputLaw z tr w).mp ((selectedOracleOutputLaw b z tr w).mpr ⟨claim, accepted, related⟩)
@@ -847,7 +849,7 @@ def selectedClosedGame (b : Bool)
     (adv : OracleComp (oracleSpec Stmt Unit rounds) (Stmt × Messages Unit rounds × Nat)) :
     OracleComp (oracleSpec Stmt Unit rounds)
       (Stmt × (tr : Transcript oracleSig selectedProtocol) ×
-        Option (SelectedValue tr.1 × (PUnit.{1} → Fin 8)) × Nat) :=
+        Option (SelectedValue tr.1 × (Unit → Fin 8)) × Nat) :=
   (fun r => ⟨r.1, ⟨b, r.2.1⟩,
     closedVerdict selectedVerifier r.1 ⟨b, r.2.1⟩, r.2.2⟩) <$>
     restoredExecution rounds adv
@@ -962,7 +964,7 @@ def selectedDraw : QueryImpl (challengeSpec oracleSig selectedProtocol) ProbComp
 
 /-- The prover authors its selector and oracle message before receiving the sampled challenge. -/
 def selectedProbProver (b : Bool) (m : Fin 8) :
-    Focal oracleSig ProbComp selectedProtocol (fun _ => PUnit.{1}) :=
+    Focal oracleSig ProbComp selectedProtocol (fun _ => Unit) :=
   pure ⟨b, pure ⟨m, pure fun _ => pure ⟨⟩⟩⟩
 
 /-- The full interaction's challenge marginal is uniform for every input, selector and message. -/
@@ -1017,7 +1019,7 @@ example (b c : Bool) (z : Stmt) (m : Fin 8) :
 /-- A full restoration game whose returned output oracle family actually varies by shape path. -/
 def varyingGame (b : Bool) : OracleComp (oracleSpec Stmt Unit rounds)
     (Stmt × (tr : Transcript oracleSig selectedProtocol) ×
-      Option (SelectedValue tr.1 × (PUnit.{1} → SelectedValue tr.1)) × Nat) :=
+      Option (SelectedValue tr.1 × (Unit → SelectedValue tr.1)) × Nat) :=
   (fun r => ⟨r.1, ⟨b, r.2.1⟩, closedVerdict varyingVerifier r.1 ⟨b, r.2.1⟩,
     r.2.2⟩) <$> restoredExecution rounds adversary
 
@@ -1031,7 +1033,7 @@ example (b : Bool) (table : Table Stmt Unit rounds) :
 
 /-- Rejection on false has no related claim in either authored output carrier. -/
 example (b : Bool) (z : Stmt) (m : Fin 8)
-    (relation : SelectedValue b × (PUnit.{1} → Fin 8) → Prop) :
+    (relation : SelectedValue b × (Unit → Fin 8) → Prop) :
     ¬ ∃ claim, closedVerdict selectedVerifier z (selectedPath b m false) = some claim ∧
       relation claim := by
   erw [selectedVerdict]
@@ -1044,7 +1046,7 @@ section GeneralMoves
 universe uA
 
 variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
-  {S : Type} {Win : S → Type} {a : P.A} {next : P.B a → FreeM P PUnit.{1}}
+  {S : Type} {Win : S → Type} {a : P.A} {next : P.B a → FreeM P Unit}
   {W : S → Transcript l (.liftBind a next) → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {valid : (stmt : S) → (tr : Transcript l (.liftBind a next)) → W stmt tr → Prop}

@@ -34,9 +34,8 @@ local notation "pp" => PublicParams.forSize sz
 def sourceMatrixInterface (i : R1CS.MatrixIdx) :
     OracleInterface (R1CS.OracleStatement R sz i) where
   Query := (Fin (pp).ℓ_m → R) × (Fin (pp).ℓ_n → R)
-  toOC.spec := fun _ => R
-  toOC.impl point := do
-    return matrixEval (R1CS.embedMatrix R sz (pp).toSizeR1CS (← read)) point.1 point.2
+  spec := fun _ => R
+  answer M point := matrixEval (R1CS.embedMatrix R sz (pp).toSizeR1CS M) point.1 point.2
 
 /-- The named source interface fixes the layout used by every forwarded matrix query. -/
 @[instance_reducible]

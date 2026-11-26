@@ -34,12 +34,12 @@ open PFunctor FreeM TwoParty.Lens OracleComp
 /-- A completed interaction, including a possibly rejecting verifier verdict. The verdict's type
 is the output statement type at the shape path of the transcript. -/
 abbrev Outcome {P : PFunctor.{uA, 0}} (l : PFunctor.Lens P rolePoly.{0})
-    (s : FreeM P PUnit.{1}) (Out : Transcript l s → Type) (StmtOut : Path s → Type) :=
+    (s : FreeM P Unit) (Out : Transcript l s → Type) (StmtOut : Path s → Type) :=
   (tr : Transcript l s) × Out tr × Option (StmtOut tr.path)
 
 /-- Run the interaction against an arbitrary focal strategy, and decide at its end. -/
 def Verifier.run {ι : Type} {ambient : OracleSpec ι}
-    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
+    {s : Protocol} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out) :
     OracleComp (ambient + challengeSpec plainSig s) (Outcome plainSig s Out T) := do
   let ⟨tr, out, _⟩ ← TwoParty.Lens.run s
@@ -87,7 +87,7 @@ theorem freshChallengesAt_addLift {ι : Type} {σ : Type}
 
 /-- Every possible verdict of a run is a possible verdict of the decision on its transcript. -/
 theorem Verifier.verdict_mem_support_run {ι : Type} {ambient : OracleSpec ι}
-    {s : Protocol.{0}} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
+    {s : Protocol} {S : Type} {T : Path s → Type} {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s S T) (stmt : S) (p : Prover plainSig ambient s Out)
     {obs : Outcome plainSig s Out T} (h : obs ∈ support (V.run stmt p)) :
     obs.2.2 ∈ support
@@ -98,7 +98,7 @@ theorem Verifier.verdict_mem_support_run {ι : Type} {ambient : OracleSpec ι}
 
 /-- Execute the honest prover and the final decision, retaining explicit rejection. -/
 def Reduction.runOutcome {ι : Type} {ambient : OracleSpec ι}
-    {s : Protocol.{0}} {S : Type} {W : Type} {T : Path s → Type}
+    {s : Protocol} {S : Type} {W : Type} {T : Path s → Type}
     {Out : Transcript plainSig s → Type}
     (R : Reduction ambient s S W T Out) (stmt : S) (wit : W) :
     OracleComp (ambient + challengeSpec plainSig s) (Outcome plainSig s Out T) :=
@@ -106,7 +106,7 @@ def Reduction.runOutcome {ι : Type} {ambient : OracleSpec ι}
 
 /-- The accepting-result presentation of the same execution. -/
 def Reduction.run {ι : Type} {ambient : OracleSpec ι}
-    {s : Protocol.{0}} {S : Type} {W : Type} {T : Path s → Type}
+    {s : Protocol} {S : Type} {W : Type} {T : Path s → Type}
     {Out : Transcript plainSig s → Type}
     (R : Reduction ambient s S W T Out) (stmt : S) (wit : W) :
     OptionT (OracleComp (ambient + challengeSpec plainSig s))
@@ -138,7 +138,7 @@ every challenge draw, for any ownership lens. The law holds for arbitrary challe
 assumes nothing about their distribution. -/
 theorem simulateQ_runWith_sampler {P : PFunctor.{uA, 0}}
     {l : PFunctor.Lens P rolePoly.{0}} (F : QueryImpl spec n) (order : Schedule) :
-    (s : FreeM P PUnit.{1}) → {Out : Transcript l s → Type} →
+    (s : FreeM P Unit) → {Out : Transcript l s → Type} →
     (p : Prover l spec s Out) →
     (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) →
     simulateQ F (runWith order s p (sampler l s draw)) =
@@ -171,7 +171,7 @@ variable {P : PFunctor.{uA, 0}} {l : PFunctor.Lens P rolePoly.{0}}
 /-- Interpreting a run against a sampler interprets every prover slot and every challenge
 draw. -/
 theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
-    (ιm : QueryImpl ambient (OracleComp spec)) (s : FreeM P PUnit.{1})
+    (ιm : QueryImpl ambient (OracleComp spec)) (s : FreeM P Unit)
     {Out : Transcript l s → Type} (k : Prover l ambient s Out)
     (draw : (c : ChallengeNode l s) → OracleComp spec (challengeSpec l s c)) :
     simulateQ h (TwoParty.Lens.run s (k.simulate ιm) (sampler l s draw)) =
@@ -183,7 +183,7 @@ theorem simulateQ_run_simulate_sampler (h : QueryImpl spec n)
 /-- Splitting the first slot of a simulated prover simulates the split slot and then the
 returned strategy. -/
 theorem splitSlot_simulate (ιm : QueryImpl ambient n) :
-    (s : FreeM P PUnit.{1}) → {Out : Transcript l s → Type} →
+    (s : FreeM P Unit) → {Out : Transcript l s → Type} →
     (prover : Prover l ambient s Out) →
     Strategy.splitSlot (prover.simulate ιm) =
       (fun k => Prover.simulate ιm k) <$> simulateQ ιm (Strategy.splitSlot prover)
@@ -198,7 +198,7 @@ theorem splitSlot_simulate (ιm : QueryImpl ambient n) :
 /-- Splitting a simulated prover at the seam simulates the split prover and then each
 returned continuation. -/
 theorem splitPrefix_simulate (ιm : QueryImpl ambient n) :
-    (s₁ : FreeM P PUnit.{1}) → (s₂ : Path s₁ → FreeM P PUnit.{1}) →
+    (s₁ : FreeM P Unit) → (s₂ : Path s₁ → FreeM P Unit) →
     {Out : Transcript l (s₁.append s₂) → Type} →
     (prover : Prover l ambient (s₁.append s₂) Out) →
     Focal.splitPrefix (prover.simulate ιm) =
@@ -220,14 +220,14 @@ end SplitSimulation
 
 /-- On an accepted statement, the guarded run is the run. -/
 theorem Verifier.onAccept_run_some {ι : Type} {ambient : OracleSpec ι}
-    {s : Protocol.{0}} {T : Type} {U : Path s → Type}
+    {s : Protocol} {T : Type} {U : Path s → Type}
     {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s T U) (t : T) (prover : Prover plainSig ambient s Out) :
     V.onAccept.run (some t) prover = V.run t prover := rfl
 
 /-- On a rejected statement, the guarded run interacts and rejects. -/
 theorem Verifier.onAccept_run_none {ι : Type} {ambient : OracleSpec ι}
-    {s : Protocol.{0}} {T : Type} {U : Path s → Type}
+    {s : Protocol} {T : Type} {U : Path s → Type}
     {Out : Transcript plainSig s → Type}
     (V : Verifier ambient s T U) (prover : Prover plainSig ambient s Out) :
     V.onAccept.run none prover =

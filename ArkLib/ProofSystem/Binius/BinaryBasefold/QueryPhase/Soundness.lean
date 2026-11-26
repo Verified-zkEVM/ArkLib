@@ -63,7 +63,7 @@ private theorem step_closed_success (γ : ℕ)
     (k : Fin (ℓ / ϑ)) (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (cur next : L) (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (h : some next ∈ support
-      (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
+      (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt messages)
         (checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k cur v stmt).run)) :
     (k.val * ϑ > 0 → cur = logicalQueryFiberPoints 𝔽q β oStmt k v
@@ -89,8 +89,8 @@ private def closedStep (γ : ℕ)
     (messages : ∀ i, (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i)
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
-    (k : Fin (ℓ / ϑ)) (cur : L) : OptionT (OracleComp.{0, 0, 0} []ₒ) L :=
-  OptionT.mk (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
+    (k : Fin (ℓ / ϑ)) (cur : L) : OptionT (OracleComp emptySpec0) L :=
+  OptionT.mk (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt messages)
     (checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k cur v stmt).run)
 
@@ -172,23 +172,23 @@ private theorem repetition_simulate (γ : ℕ)
     (messages : ∀ i, (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i)
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (final : L) :
-    simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
+    simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt messages)
       (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v stmt final).run =
     (do
       let c ← (List.finRange (ℓ / ϑ)).foldlM
         (fun c k => closedStep 𝔽q β γ oStmt messages v stmt k c) 0
-      guard (c = final) : OptionT (OracleComp.{0, 0, 0} []ₒ) Unit).run := by
+      guard (c = final) : OptionT (OracleComp emptySpec0) Unit).run := by
   classical
-  change (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
+  change (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt messages)
     (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
-      v stmt final) : OptionT (OracleComp.{0, 0, 0} []ₒ) Unit) = _
+      v stmt final) : OptionT (OracleComp emptySpec0) Unit) = _
   dsimp only [checkSingleRepetition]
   rw [simulateQ_optionT_bind, simulateQ_optionT_list_forIn]
   simp only [simulateQ_optionT_bind, simulateQ_optionT_pure, Fin.eta]
   have hloop : (forIn (List.finRange (ℓ / ϑ)) (0 : L) (fun k c => do
       let next ← closedStep 𝔽q β γ oStmt messages v stmt k c
-      pure (ForInStep.yield next)) : OptionT (OracleComp.{0, 0, 0} []ₒ) L) =
+      pure (ForInStep.yield next)) : OptionT (OracleComp emptySpec0) L) =
       (List.finRange (ℓ / ϑ)).foldlM
         (fun c k => closedStep 𝔽q β γ oStmt messages v stmt k c) 0 := by
     simpa only [map_eq_bind_pure_comp, Function.comp_def, bind_pure] using
@@ -209,7 +209,7 @@ private theorem repetition_closed_success (γ : ℕ)
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (final : L)
     (h : some () ∈ support (simulateQ
-      (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
+      (OracleInterface.simOracle2 emptySpec0 oStmt messages)
       (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) v stmt final).run)) :
     LogicalCheckSingleRepetition 𝔽q β oStmt v stmt final := by
@@ -218,7 +218,7 @@ private theorem repetition_closed_success (γ : ℕ)
   have h' : () ∈ support (do
       let c ← (List.finRange (ℓ / ϑ)).foldlM
         (fun c k => closedStep 𝔽q β γ oStmt messages v stmt k c) 0
-      guard (c = final) : OptionT (OracleComp.{0, 0, 0} []ₒ) Unit) := by
+      guard (c = final) : OptionT (OracleComp emptySpec0) Unit) := by
     simpa only [OptionT.mem_support_iff] using h
   rw [mem_support_bind_iff] at h'
   obtain ⟨c, hloop, hguard⟩ := h'
@@ -243,8 +243,8 @@ private def closedRepetition (γ : ℕ)
     (messages : ∀ i, (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message i)
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (final : L) :
-    OptionT (OracleComp.{0, 0, 0} []ₒ) Unit :=
-  OptionT.mk (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt messages)
+    OptionT (OracleComp emptySpec0) Unit :=
+  OptionT.mk (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt messages)
     (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
       v stmt final).run)
 
@@ -257,14 +257,14 @@ private theorem query_each_success (γ : ℕ)
     (h : PUnit.unit ∈ support (forIn xs PUnit.unit (fun rep _ => do
       let _ ← closedRepetition 𝔽q β γ oStmt tr.messages
         (tr.challenges ⟨0, rfl⟩ rep) stmt stmt.finalConstant
-      pure (ForInStep.yield PUnit.unit)) : OptionT (OracleComp.{0, 0, 0} []ₒ) PUnit)) :
+      pure (ForInStep.yield PUnit.unit)) : OptionT (OracleComp emptySpec0) PUnit)) :
     ∀ rep ∈ xs, () ∈ support (closedRepetition 𝔽q β γ oStmt tr.messages
       (tr.challenges ⟨0, rfl⟩ rep) stmt stmt.finalConstant) := by
   let f := fun rep => closedRepetition 𝔽q β γ oStmt tr.messages
     (tr.challenges ⟨0, rfl⟩ rep) stmt stmt.finalConstant
   change PUnit.unit ∈ support (forIn xs PUnit.unit (fun rep _ => do
     let _ ← f rep
-    pure (ForInStep.yield PUnit.unit)) : OptionT (OracleComp.{0, 0, 0} []ₒ) PUnit) at h
+    pure (ForInStep.yield PUnit.unit)) : OptionT (OracleComp emptySpec0) PUnit) at h
   change ∀ rep ∈ xs, () ∈ support (f rep)
   induction xs with
   | nil => simp
@@ -286,17 +286,17 @@ private theorem query_check_simulate (γ : ℕ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (tr : FullTranscript (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) :
-    (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
+    (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt tr.messages)
       ((queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).verifierCheck stmt tr) :
-      OptionT (OracleComp.{0, 0, 0} []ₒ) Bool) =
+      OptionT (OracleComp emptySpec0) Bool) =
     (do
       for rep in List.finRange γ do
         let _ ← (OptionT.mk (simulateQ
-          (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
+          (OracleInterface.simOracle2 emptySpec0 oStmt tr.messages)
           (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
             (tr.challenges ⟨0, rfl⟩ rep) stmt stmt.finalConstant).run) :
-              OptionT (OracleComp.{0, 0, 0} []ₒ) Unit)
-      pure true : OptionT (OracleComp.{0, 0, 0} []ₒ) Bool) := by
+              OptionT (OracleComp emptySpec0) Unit)
+      pure true : OptionT (OracleComp emptySpec0) Bool) := by
   dsimp only [queryPhaseLogicStep]
   rw [simulateQ_optionT_bind, simulateQ_optionT_list_forIn]
   simp only [simulateQ_optionT_bind, simulateQ_optionT_pure, OptionT.mk, OptionT.run]
@@ -306,10 +306,10 @@ private theorem query_check_closed_success (γ : ℕ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
     (tr : FullTranscript (pSpecQuery 𝔽q β γ (h_ℓ_add_R_rate := h_ℓ_add_R_rate)))
     (stmt : FinalSumcheckStatementOut (L := L) (ℓ := ℓ)) (out : Bool)
-    (h : out ∈ support (m := OptionT (OracleComp.{0, 0, 0} []ₒ))
-      (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
+    (h : out ∈ support (m := OptionT (OracleComp emptySpec0))
+      (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt tr.messages)
       ((queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).verifierCheck stmt tr) :
-      OptionT (OracleComp.{0, 0, 0} []ₒ) Bool)) :
+      OptionT (OracleComp emptySpec0) Bool)) :
     out = true ∧ ∀ rep : Fin γ,
       LogicalCheckSingleRepetition 𝔽q β oStmt (tr.challenges ⟨0, rfl⟩ rep)
         stmt stmt.finalConstant := by
@@ -352,20 +352,20 @@ private theorem verifier_closed_success (γ : ℕ)
     dsimp only [queryOracleVerifier, OracleProofVerifier.ofVerify] at hcheck
     rw [htr] at hcheck
     change some b ∈ support (simulateQ
-      (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
+      (OracleInterface.simOracle2 emptySpec0 oStmt tr.messages)
       ((do
         let _ ← (queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).verifierCheck stmt tr
         pure true) : OptionT _ Bool).run) at hcheck
-    have h' : b ∈ support (m := OptionT (OracleComp.{0, 0, 0} []ₒ)) (do
-      let _ ← (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
+    have h' : b ∈ support (m := OptionT (OracleComp emptySpec0)) (do
+      let _ ← (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt tr.messages)
         ((queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).verifierCheck stmt tr) :
-        OptionT (OracleComp.{0, 0, 0} []ₒ) Bool)
-      pure true : OptionT (OracleComp.{0, 0, 0} []ₒ) Bool) := by
-      have ht : b ∈ support (m := OptionT (OracleComp.{0, 0, 0} []ₒ))
-          (simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
+        OptionT (OracleComp emptySpec0) Bool)
+      pure true : OptionT (OracleComp emptySpec0) Bool) := by
+      have ht : b ∈ support (m := OptionT (OracleComp emptySpec0))
+          (simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt tr.messages)
             ((do
               let _ ← (queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).verifierCheck stmt tr
-              pure true) : OptionT _ Bool) : OptionT (OracleComp.{0, 0, 0} []ₒ) Bool) := by
+              pure true) : OptionT _ Bool) : OptionT (OracleComp emptySpec0) Bool) := by
         simpa only [OptionT.mem_support_iff, OptionT.run, OptionT.mk] using hcheck
       rw [simulateQ_optionT_bind] at ht
       simpa only [simulateQ_optionT_pure] using ht

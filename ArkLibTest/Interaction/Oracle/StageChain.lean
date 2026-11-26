@@ -548,10 +548,10 @@ All query and data carriers are in `Type`. -/
 
 /-- A Boolean answers its one query, which lies in `Type`, with itself. -/
 @[reducible]
-def wideInterface : OracleInterface.{0, 0} Bool where
+def wideInterface : OracleInterface Bool where
   Query := Unit
-  toOC.spec := Unit →ₒ Bool
-  toOC.impl _ := read
+  spec := Unit →ₒ Bool
+  answer m _ := m
 
 /-- One Boolean oracle whose query lies in `Type`. -/
 def wideBooleans : OracleBundle :=

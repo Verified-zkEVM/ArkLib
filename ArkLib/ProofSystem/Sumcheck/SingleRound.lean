@@ -31,7 +31,7 @@ variable (R : Type) [CommSemiring R] (deg : ℕ)
 
 /-- One round: an evaluation oracle for the round polynomial, then one ring challenge. -/
 @[implicit_reducible]
-def round : OracleProtocol.{0} :=
+def round : OracleProtocol :=
   .liftBind (.oracle (R⦃≤ deg⦄[X]) inferInstance) fun _ =>
     .liftBind (.challenge R) fun _ => .pure ⟨⟩
 

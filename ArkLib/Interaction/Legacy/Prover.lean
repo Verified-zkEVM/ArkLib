@@ -67,10 +67,10 @@ namespace Layout
 variable (L : Layout pSpec)
 
 /-- The tree of rounds `k, …, n - 1`. -/
-abbrev tree (k m : ℕ) (h : k + m = n) : FreeM L.P PUnit.{1} := chain L.pos k m h
+abbrev tree (k m : ℕ) (h : k + m = n) : FreeM L.P Unit := chain L.pos k m h
 
 /-- The tree of the whole protocol. -/
-abbrev protocol : FreeM L.P PUnit.{1} := L.tree 0 n (Nat.zero_add n)
+abbrev protocol : FreeM L.P Unit := L.tree 0 n (Nat.zero_add n)
 
 /-- Read the legacy full transcript off a completed run. -/
 abbrev decode (tr : Transcript L.l L.protocol) : FullTranscript pSpec :=

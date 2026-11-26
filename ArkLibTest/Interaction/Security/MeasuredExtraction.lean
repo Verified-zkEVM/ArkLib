@@ -23,7 +23,7 @@ open PFunctor PFunctor.FreeM Interaction OracleComp AddProgramTest
 namespace Interaction.MeasuredExtractionTests
 
 /-- One public message in `Fin 8`. -/
-abbrev oneRound : Protocol.{0} := .liftBind (.message (Fin 8)) fun _ => .pure ⟨⟩
+abbrev oneRound : Protocol := .liftBind (.message (Fin 8)) fun _ => .pure ⟨⟩
 
 /-- Output witnesses after message `m` are numbers below `m + 1`. -/
 abbrev OutWitness (tr : Transcript plainSig oneRound) : Type := Fin (tr.1.val + 1)
@@ -81,7 +81,7 @@ example (message : Fin 8) (witness : Fin (message.val + 1)) :
 example (m : Fin 8) : (addStages.programAlong () ⟨m, ⟨⟩⟩).budget = 1 := rfl
 
 /-- On the empty protocol, an empty witness carrier needs no fabricated witness. -/
-def emptyState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) Unit (fun _ _ => Empty)
+def emptyState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol) Unit (fun _ _ => Empty)
     (fun _ => Empty)
     (fun _ => True) (fun _ _ => False) (fun _ _ _ => True) where
   Witness _ {_} _ _ := Empty
@@ -95,14 +95,14 @@ def emptyState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) U
 
 -- Disposition ME-094.
 /-- The empty protocol with no witnesses has a zero-budget extraction program. -/
-example (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) :
+example (tr : Transcript plainSig (.pure ⟨⟩ : Protocol)) :
     ((KnowledgeStateFunction.MeasuredStages.zero emptyState (ω := Nat)).programAlong () tr).budget
       = 0 := rfl
 
 -- Disposition ME-103.
 /-- Measured state functions fix natural-number profiles, needing only `[Finite Kind]`. -/
 example (Kind : Type) [Finite Kind] : Type 1 :=
-  MeasuredKnowledgeStateFunction Kind plainSig (.pure ⟨⟩ : Protocol.{0}) Unit (fun _ _ => Empty)
+  MeasuredKnowledgeStateFunction Kind plainSig (.pure ⟨⟩ : Protocol) Unit (fun _ _ => Empty)
     (fun _ => Empty)
     (fun _ => True) (fun _ _ => False) (fun _ _ _ => True)
 
@@ -133,7 +133,7 @@ example (n : Nat) (tr : Transcript plainSig oneRound) (w : Fin (n + 1)) :
 
 section FixedCountArithmetic
 
-variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → Transcript plainSig s → Type}
+variable {s : Protocol} {S : Type} {Win : S → Type} {W : S → Transcript plainSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript plainSig s) → W stmt tr → Prop}
 
@@ -196,7 +196,7 @@ end ReversedWeights
 example : True := by
   fail_if_success
     have measuredType :=
-      MeasuredKnowledgeStateFunction Nat plainSig (.pure ⟨⟩ : Protocol.{0}) Unit
+      MeasuredKnowledgeStateFunction Nat plainSig (.pure ⟨⟩ : Protocol) Unit
         (fun _ _ => Empty) (fun _ => Empty)
         (fun _ => True) (fun _ _ => False) (fun _ _ _ => True)
   trivial
@@ -205,7 +205,7 @@ end FixedCountArithmetic
 
 section ZeroStageAccounting
 
-variable {s : Protocol.{0}} {S : Type} {Win : S → Type} {W : S → Transcript plainSig s → Type}
+variable {s : Protocol} {S : Type} {Win : S → Type} {W : S → Transcript plainSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript plainSig s) → W stmt tr → Prop}
 

@@ -55,7 +55,7 @@ The input map receives the outer input statement. The output map receives the ou
 statement and the shape path. Neither receives the verifier's view, so neither can read challenge
 values, which the shape path erases. `OracleVerifier.outputMap` does receive the view. A lifted
 output oracle can therefore depend on a challenge only through the inner output oracle data. -/
-structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
+structure OracleStatementLens (s : OracleProtocol) (OuterIn : Type)
     (InnerIn : Type) (OuterOut InnerOut : Path s → Type)
     (inputsO : OracleBundle) (inputsI : OracleBundle)
     (outputsO : Path s → OracleBundle)
@@ -72,7 +72,7 @@ structure OracleStatementLens (s : OracleProtocol.{0, 0}) (OuterIn : Type)
 
 namespace OracleStatementLens
 
-variable {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+variable {s : OracleProtocol} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}
@@ -119,7 +119,7 @@ namespace OracleVerifier
 section Lift
 
 variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-  {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+  {s : OracleProtocol} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}
@@ -181,7 +181,7 @@ end Lift
 section Run
 
 variable {ι : Type} {ambient : OracleSpec.{0, 0} ι}
-  {s : OracleProtocol.{0, 0}} {OuterIn : Type} {InnerIn : Type}
+  {s : OracleProtocol} {OuterIn : Type} {InnerIn : Type}
   {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}
@@ -238,7 +238,7 @@ end Run
 
 section Security
 
-variable {ι σ : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι σ : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {OuterIn : Type} {InnerIn : Type} {OuterOut InnerOut : Path s → Type}
   {inputsO : OracleBundle} {inputsI : OracleBundle}
   {outputsO : Path s → OracleBundle}

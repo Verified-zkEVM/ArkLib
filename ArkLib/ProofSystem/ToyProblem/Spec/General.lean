@@ -563,7 +563,7 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
     (hAcc1 : ∑ j, (msgs ⟨1, rfl⟩) j * stmt1 j = mu1 + γ * mu2)
     (hAcc2 : ∀ j : Fin t, encode (msgs ⟨1, rfl⟩) (xs j)
       = oStmt 0 (xs j) + γ • oStmt 1 (xs j)) :
-    simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
+    simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt msgs)
       (do
         let g : Fin k → F ← liftM (queryMessage (ι := ι) (F := F) (k := k) (t := t))
         guard (∑ j, g j * stmt1 j = mu1 + γ * mu2)
@@ -573,7 +573,7 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
             let f₁ : A ← liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))
             (fun _ ↦ ForInStep.yield PUnit.unit) <$>
               guard (encode g (xs j) = f₀ + γ • f₁) :
-        OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
+        OptionT (OracleComp (emptySpec0 + ([OracleStatement ι A]ₒ +
             [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) Unit)
       = pure (some ()) := by
   -- Bridge each OptionT-lifted query helper to `OptionT.lift` of its OracleComp lift.
@@ -627,16 +627,16 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
   -- `hForIn`'s type is checked against the goal-shaped equation by `isDefEq` (bridging the
   -- lift-instance gaps); a `conv … change` then re-spells the goal's loop to `hForIn`'s LHS.
   have hForIn :
-      simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
+      simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt msgs)
         ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
           (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>= fun f₀ ↦
             OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>=
               fun f₁ ↦
               guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                 pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
-            OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
+            OptionT (OracleComp (emptySpec0 + ([OracleStatement ι A]ₒ +
                 [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) PUnit))
-      = (pure (some PUnit.unit) : OracleComp (emptySpec.{0, 0}) (Option PUnit)) := by
+      = (pure (some PUnit.unit) : OracleComp emptySpec0 (Option PUnit)) := by
     apply simulateQ_optionT_forIn_yield_pure_some
     intro j
     simp only [simulateQ_optionT_bind, simulateQ_optionT_lift,
@@ -697,17 +697,17 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
   -- Collapse the loop. The goal's bound `simulateQ … (forIn …)` is defeq to `hForIn`'s LHS but
   -- not `rw`-matchable (the `ForIn`/`MonadLift` instance trees differ syntactically). A
   -- `conv … change` re-spells the focused loop as `hForIn`'s exact LHS (the universes are pinned
-  -- to `0` by the `emptySpec.{0,0}` ascription in the statement), after which `rw [hForIn]` fires.
+  -- to `0` by the `emptySpec0` ascription in the statement), after which `rw [hForIn]` fires.
   conv_lhs =>
     enter [1]
-    change simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
+    change simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt msgs)
         ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
           (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>= fun f₀ ↦
             OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>=
               fun f₁ ↦
               guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                 pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
-            OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
+            OptionT (OracleComp (emptySpec0 + ([OracleStatement ι A]ₒ +
                 [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) PUnit))
   rw [hForIn]
   -- After collapsing the loop the goal is `(pure (some ()) : OracleComp []ₒ _) >>= …`; the bind
@@ -742,7 +742,7 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
     (msgs : (j : (pSpec (ι := ι) (F := F) k t).MessageIdx) →
       (pSpec (ι := ι) (F := F) k t).Message j)
     (stmt1 : Fin k → F) (mu1 mu2 : F) (γ : F) (xs : Fin t → ι) :
-    simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
+    simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt msgs)
       (do
         let g : Fin k → F ← liftM (queryMessage (ι := ι) (F := F) (k := k) (t := t))
         guard (∑ j, g j * stmt1 j = mu1 + γ * mu2)
@@ -752,7 +752,7 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
             let f₁ : A ← liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))
             (fun _ ↦ ForInStep.yield PUnit.unit) <$>
               guard (encode g (xs j) = f₀ + γ • f₁) :
-        OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
+        OptionT (OracleComp (emptySpec0 + ([OracleStatement ι A]ₒ +
             [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) Unit)
       = pure (if (∑ j, (msgs ⟨1, rfl⟩) j * stmt1 j = mu1 + γ * mu2) ∧
             (∀ j : Fin t, encode (msgs ⟨1, rfl⟩) (xs j)
@@ -818,7 +818,7 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
           = pure PUnit.unit from rfl, pure_bind]
       -- Collapse the spot-check `forIn` to `pure none` (some spot check fails, by `h2`).
       have hForIn :
-          simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
+          simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt msgs)
             ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
               (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>=
                 fun f₀ ↦
@@ -826,9 +826,9 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
               fun f₁ ↦
                   guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                     pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
-                OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
+                OptionT (OracleComp (emptySpec0 + ([OracleStatement ι A]ₒ +
                     [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) PUnit))
-          = (pure none : OracleComp (emptySpec.{0, 0}) (Option PUnit)) := by
+          = (pure none : OracleComp emptySpec0 (Option PUnit)) := by
         refine simulateQ_optionT_forIn_yield_pure_none _ _ _ _
           (fun j ↦ encode (msgs ⟨1, rfl⟩) (xs j) = oStmt 0 (xs j) + γ • oStmt 1 (xs j))
           (fun j ↦ ?_) (fun hall ↦ h2 (fun j ↦ hall j (List.mem_finRange j)))
@@ -900,7 +900,7 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
       -- Re-spell the goal's loop to `hForIn`'s LHS and collapse; failure then propagates.
       conv_lhs =>
         enter [1]
-        change simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
+        change simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt msgs)
             ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
               (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>=
                 fun f₀ ↦
@@ -908,12 +908,12 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
               fun f₁ ↦
                   guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                     pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
-                OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
+                OptionT (OracleComp (emptySpec0 + ([OracleStatement ι A]ₒ +
                     [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) PUnit))
       rw [hForIn]
-      rw [show (pure none : OracleComp (emptySpec.{0, 0}) (Option PUnit))
-          = ((failure : OptionT (OracleComp (emptySpec.{0, 0})) PUnit) :
-              OracleComp (emptySpec.{0, 0}) (Option PUnit)) from rfl,
+      rw [show (pure none : OracleComp emptySpec0 (Option PUnit))
+          = ((failure : OptionT (OracleComp emptySpec0) PUnit) :
+              OracleComp emptySpec0 (Option PUnit)) from rfl,
         failure_bind]
   case neg =>
     rw [ite_eq_right (fun hc ↦ h1 hc.1)]

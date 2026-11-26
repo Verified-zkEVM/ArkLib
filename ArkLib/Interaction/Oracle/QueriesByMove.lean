@@ -31,7 +31,7 @@ the log is named for what it holds: the queries that one querier made at one par
 
 @[expose] public section
 
-universe u q uA vC
+universe u uA vC
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle OracleSpec
@@ -51,7 +51,7 @@ def Querier.role : Querier → TwoParty.Role
 
 /-- The queries that one querier made at one partial transcript: the moves made before them, the
 querier and all its queries. -/
-structure QueriesAt {ι : Type} (spec : OracleSpec ι) (s : OracleProtocol.{0, q}) where
+structure QueriesAt {ι : Type} (spec : OracleSpec ι) (s : OracleProtocol) where
   /-- The moves made before these queries. -/
   before : PartialTranscript oracleSig s
   /-- The party that made these queries. -/
@@ -63,11 +63,11 @@ namespace QueriesAt
 
 /-- The role of the entry's querier. It is read from the querier, with no extra role
 decoration. -/
-def role {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, q}}
+def role {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol}
     (entry : QueriesAt spec s) : TwoParty.Role := entry.querier.role
 
 /-- Put the move that led to the child protocol in front of the entry's partial transcript. -/
-def cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos.{0, q}}
+def cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos}
     {next : OraclePoly.B a → OracleProtocol} (x : Move oracleSig a)
     (entry : QueriesAt spec (next (oracleSig.toFunB a x))) : QueriesAt spec (.liftBind a next) :=
   ⟨.cons x entry.before, entry.querier, entry.queries⟩
@@ -75,7 +75,7 @@ def cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos.{0, q}}
 end QueriesAt
 
 /-- Concatenate the queries of the entries, in execution order. -/
-def concatQueries {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol.{0, q}}
+def concatQueries {ι : Type} {spec : OracleSpec ι} {s : OracleProtocol}
     (entries : List (QueriesAt spec s)) : QueryLog spec := entries.flatMap (·.queries)
 
 namespace MoveInstrumentation
@@ -168,7 +168,7 @@ end MoveInstrumentation
 /-- Run one participant action and log it as an entry. The entry records the partial transcript,
 the querier and the successful queries. The querier is the prover for the focal participant and
 the sampler for the counterpart. -/
-def logMove {ι : Type} {spec : OracleSpec ι} {root s : OracleProtocol.{0, q}} {A : Type}
+def logMove {ι : Type} {spec : OracleSpec ι} {root s : OracleProtocol} {A : Type}
     (embed : PartialTranscript oracleSig s → PartialTranscript oracleSig root)
     (agent : Participant)
     (p : OracleComp spec A) : WriterT (List (QueriesAt spec root)) (OracleComp spec) A :=
@@ -178,7 +178,7 @@ def logMove {ι : Type} {spec : OracleSpec ι} {root s : OracleProtocol.{0, q}} 
 
 /-- Extend the embedding of partial transcripts into the root protocol by the move that the core
 runner delivered. -/
-def embedAfterMove {root : OracleProtocol.{0, q}} (a : OraclePos.{0, q})
+def embedAfterMove {root : OracleProtocol} (a : OraclePos)
     (next : OraclePoly.B a → OracleProtocol) (x : Move oracleSig a)
     (embed : PartialTranscript oracleSig (.liftBind a next) → PartialTranscript oracleSig root) :
     PartialTranscript oracleSig (next (oracleSig.toFunB a x)) →
@@ -187,7 +187,7 @@ def embedAfterMove {root : OracleProtocol.{0, q}} (a : OraclePos.{0, q})
 
 /-- Run the core runner `TwoParty.Lens.run` on participant strategies wrapped by `logMove`. The
 writer layer collects one logged entry per action. -/
-def runLoggingMoves {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q})
+def runLoggingMoves {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol)
     {OutP OutC : Transcript oracleSig s → Type}
     (p : Focal oracleSig (OracleComp spec) s OutP)
     (c : Counterpart oracleSig (OracleComp spec) s OutC) :
@@ -203,7 +203,7 @@ def runLoggingMoves {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q
 
 /-- Concatenating the queries of the logged entries forgets the move boundaries and gives the
 query log of the ordinary run. The proof applies `run_mapMovesWith`. -/
-theorem runLoggingMoves_log {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol.{0, q})
+theorem runLoggingMoves_log {ι : Type} {spec : OracleSpec ι} (s : OracleProtocol)
     {OutP OutC : Transcript oracleSig s → Type}
     (p : Focal oracleSig (OracleComp spec) s OutP)
     (c : Counterpart oracleSig (OracleComp spec) s OutC) :
@@ -227,7 +227,7 @@ theorem runLoggingMoves_log {ι : Type} {spec : OracleSpec ι} (s : OracleProtoc
 
 /-- Putting a move in front of the partial transcript of each child entry does not change the
 concatenated queries. -/
-theorem concatQueries_cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos.{0, q}}
+theorem concatQueries_cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos}
     {next : OraclePoly.B a → OracleProtocol} (x : Move oracleSig a)
     (entries : List (QueriesAt spec (next (oracleSig.toFunB a x)))) :
     concatQueries (entries.map (QueriesAt.cons x)) = concatQueries entries := by
@@ -240,7 +240,7 @@ theorem concatQueries_cons {ι : Type} {spec : OracleSpec ι} {a : OraclePos.{0,
 /-- Keeping only the ambient queries of each entry commutes with concatenating the entries'
 queries in order. -/
 theorem concatQueries_fst {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
-    {s : OracleProtocol.{0, q}} (entries : List (QueriesAt (a + b) s)) :
+    {s : OracleProtocol} (entries : List (QueriesAt (a + b) s)) :
     concatQueries (entries.map (fun entry =>
       (⟨entry.before, entry.querier, entry.queries.fst⟩ : QueriesAt a s))) =
       (concatQueries entries).fst := by
@@ -252,7 +252,7 @@ theorem concatQueries_fst {ι κ : Type} {a : OracleSpec ι} {b : OracleSpec κ}
 
 namespace OracleVerifier
 
-variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
@@ -395,12 +395,12 @@ theorem runWithQueriesByMove_toLog (V : OracleVerifier ambient s S T inputs outp
 
 section AmbientQueriesByMove
 
-variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle} {outputs : Path s → OracleBundle}
   {Out : Transcript oracleSig s → Type}
 
-/-- The ambient queries by move let the input oracles have an independent query universe. It
-returns only ambient requests and challenge draws, whose indices are small. -/
+/-- The moves of a run with their ambient requests and challenge draws, and the ambient requests
+of the final decision. Queries to the input oracles are not recorded. -/
 structure AmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs)
     (Out : Transcript oracleSig s → Type) where
   /-- The ordinary completed outcome, including output oracles and rejection. -/
@@ -452,8 +452,7 @@ theorem withDecision_queries {V : OracleVerifier ambient s S T inputs outputs}
 
 end AmbientQueriesByMove
 
-/-- Log the same moves, but log only the ambient queries of the final decision.
-Bundle query indices and input data keep their independent universes. -/
+/-- Log the same moves, but log only the ambient queries of the final decision. -/
 def runWithAmbientQueriesByMove (V : OracleVerifier ambient s S T inputs outputs) (stmt : S)
     (data : inputs.Data) (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s) (AmbientQueriesByMove V Out) :=

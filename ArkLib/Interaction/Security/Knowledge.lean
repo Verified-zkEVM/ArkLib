@@ -39,8 +39,8 @@ structure ExtractionInterface {S Obs : Type} [MeasurableSpace Obs]
   cost : Ext → (stmt : S) → M.Adv stmt → ℝ≥0∞
 
 /-- A named extractor preserves the run, meets its access budget and rarely misses a witness. -/
-def knowledgeSoundnessWith {S Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} [MeasurableSpace Obs]
-    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem.{0, 0, 0} T)
+def knowledgeSoundnessWith {S Obs Ctx : Type} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem T)
     [∀ stmt, MeasurableSpace (input.Witness () stmt)]
     (J : OutputJudgement Obs output)
     (I : ExtractionInterface M (input.Witness ())) (E : I.Ext) (ε : ℝ≥0∞)
@@ -52,8 +52,8 @@ def knowledgeSoundnessWith {S Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} [Meas
       ∀ wit ∈ z.2, ¬ input.rel () stmt wit} ≤ ε
 
 /-- One extractor must work for every adversary and admissible input. -/
-def knowledgeSoundness {S Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} [MeasurableSpace Obs]
-    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem.{0, 0, 0} T)
+def knowledgeSoundness {S Obs Ctx : Type} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem T)
     [∀ stmt, MeasurableSpace (input.Witness () stmt)]
     (J : OutputJudgement Obs output)
     (I : ExtractionInterface M (input.Witness ())) (ε : ℝ≥0∞)
@@ -111,14 +111,14 @@ namespace Extractor
 
 /-- Classical straight-line extraction has no strategy or continuation argument to re-enter.
 The output witness type `Wout tr` is indexed by the transcript `tr` passed with it. -/
-abbrev StraightLine {ι : Type} {S : Type} (ambient : OracleSpec ι) (s : Protocol.{0})
+abbrev StraightLine {ι : Type} {S : Type} (ambient : OracleSpec ι) (s : Protocol)
     (Witness : S → Type) (Wout : Transcript plainSig s → Type) :=
   (stmt : S) → (tr : Transcript plainSig s) → Wout tr → QueryLog ambient → QueryLog ambient →
     OptionT (OracleComp ambient) (Witness stmt)
 
 /-- A transcript-only extractor cannot inspect either participant's query log. The output
 witness type `Wout tr` is indexed by the transcript `tr`. -/
-abbrev TranscriptOnly {ι : Type} {S : Type} (ambient : OracleSpec ι) (s : Protocol.{0})
+abbrev TranscriptOnly {ι : Type} {S : Type} (ambient : OracleSpec ι) (s : Protocol)
     (Witness : S → Type) (Wout : Transcript plainSig s → Type) :=
   (stmt : S) → (tr : Transcript plainSig s) → Wout tr →
     OptionT (OracleComp ambient) (Witness stmt)
@@ -333,7 +333,7 @@ decision before routing: ambient queries and queries to the input and message or
 The decision log records input queries, so it is returned by the run. Like `run` and
 `runWithQueriesByMove`, it executes through `executeWith`, and it logs the interaction and the
 decision directly with `withLogging`. -/
-def runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+def runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
@@ -358,7 +358,7 @@ def runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProto
       (V.decide stmt p view).run).run)
 
 /-- The full logged specialization retains the original interaction and decision equations. -/
-theorem runWithLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+theorem runWithLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
@@ -385,7 +385,7 @@ theorem runWithLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Orac
 
 /-- The ambient part of the decision log is the log of an ambient-only logger, which the oracle
 extraction interfaces receive; `map_runWithLog_eq_runWithAmbientLog` names the right side. -/
-theorem runWithLog_fst {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+theorem runWithLog_fst {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
@@ -412,7 +412,7 @@ theorem runWithLog_fst {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : Ora
 
 /-- Forgetting both logs preserves the entire oracle run. -/
 theorem map_fst_runWithLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}}
+    {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
@@ -447,7 +447,7 @@ queries. The decision's bundle queries are answered from the input data and the 
 messages and are not logged, so the result holds only ambient logs. It executes through
 `executeWith` and logs both phases directly with `withLogging`. -/
 def runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {s : OracleProtocol} {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -469,7 +469,7 @@ def runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
 
 /-- The ambient logged specialization retains the original interaction and decision equation. -/
 theorem runWithAmbientLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {s : OracleProtocol} {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -494,7 +494,7 @@ theorem runWithAmbientLog_eq {ι : Type} {S : Type} {ambient : OracleSpec ι}
 /-- The ambient-log run is the full-log run with the decision log restricted to its ambient
 entries. -/
 theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {s : OracleProtocol} {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -506,7 +506,7 @@ theorem map_runWithLog_eq_runWithAmbientLog {ι : Type} {S : Type} {ambient : Or
 
 /-- Forgetting both ambient logs preserves the entire oracle run. -/
 theorem map_fst_runWithAmbientLog {ι : Type} {S : Type}
-    {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
     {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} (V : OracleVerifier ambient s S T inputs outputs)
@@ -528,7 +528,7 @@ namespace Extractor
 /-- Straight-line extraction from an oracle protocol sees the full transcript, oracle messages
 included. The output witness type `Wout tr` is indexed by that transcript `tr`. -/
 abbrev OracleStraightLine {ι : Type} {S : Type} (ambient : OracleSpec ι)
-    (s : OracleProtocol.{0, 0})
+    (s : OracleProtocol)
     (Witness : S → Type) (Wout : Transcript oracleSig s → Type) :=
   (stmt : S) → (tr : Transcript oracleSig s) → Wout tr → QueryLog ambient → QueryLog ambient →
     OptionT (OracleComp ambient) (Witness stmt)
@@ -536,14 +536,14 @@ abbrev OracleStraightLine {ι : Type} {S : Type} (ambient : OracleSpec ι)
 /-- The oracle transcript-only interface omits both ambient logs. The output witness type
 `Wout tr` is indexed by the transcript `tr`. -/
 abbrev OracleTranscriptOnly {ι : Type} {S : Type} (ambient : OracleSpec ι)
-    (s : OracleProtocol.{0, 0})
+    (s : OracleProtocol)
     (Witness : S → Type) (Wout : Transcript oracleSig s → Type) :=
   (stmt : S) → (tr : Transcript oracleSig s) → Wout tr →
     OptionT (OracleComp ambient) (Witness stmt)
 
 /-- Embed the oracle transcript-only interface by ignoring the two logs. -/
 def OracleTranscriptOnly.withLogs {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}}
+    {s : OracleProtocol}
     {Witness : S → Type} {Wout : Transcript oracleSig s → Type}
     (E : OracleTranscriptOnly ambient s Witness Wout) :
     OracleStraightLine ambient s Witness Wout := fun stmt tr out _ _ => E stmt tr out
@@ -551,7 +551,7 @@ def OracleTranscriptOnly.withLogs {ι : Type} {S : Type} {ambient : OracleSpec �
 end Extractor
 
 namespace OracleVerifier
-variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+variable {ι σ : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
   {T : Path s → Type} {inputs : OracleBundle}
   {outputs : Path s → OracleBundle}
   {Out Wout : Transcript oracleSig s → Type}

@@ -222,7 +222,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness (ε : ℝ≥0)
 section Distance
 
 variable {M} [Fintype (Query M)] [Nonempty (Query M)]
-    [∀ q, DecidableEq (O.toOC.spec q)]
+    [∀ q, DecidableEq (O.spec q)]
 
 omit [Nonempty (Query M)] in
 /-- Two distinct values of a type with oracle distance at most `d` agree at a uniform query with
@@ -232,7 +232,7 @@ theorem prob_answer_eq_le_of_distanceLE {d : ℕ} (hDist : distanceLE O d) (a b 
     Pr{let q ← $ᵗ Query M}[answer a q = answer b q] ≤
       ((d : ℝ≥0) / Fintype.card (Query M) : ℝ≥0) := by
   let decPred : DecidablePred (fun q : Query M => answer a q = answer b q) := fun q =>
-    (inferInstance : DecidableEq (O.toOC.spec q)) (answer a q) (answer b q)
+    (inferInstance : DecidableEq (O.spec q)) (answer a q) (answer b q)
   rw [@SampleableType.prEvent_uniformSample (Query M) _ _ _ decPred]
   have hfilter : Finset.univ.filter (fun q => answer a q = answer b q) =
       O.agreementQueries a b := by

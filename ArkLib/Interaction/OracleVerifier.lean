@@ -19,8 +19,6 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 @[expose] public section
 
-universe u q
-
 universe v v'
 
 namespace Interaction
@@ -29,7 +27,7 @@ open PFunctor FreeM TwoParty.Lens OracleComp Oracle
 
 /-- The indices of the oracle messages on a completed shape path, one per oracle node. -/
 @[implicit_reducible]
-def OracleMessageIndex : (s : OracleProtocol.{u, q}) → Path s → Type u
+def OracleMessageIndex : (s : OracleProtocol) → Path s → Type
   | .pure _, _ => PEmpty
   | .liftBind (.message _) next, ⟨x, p⟩ => OracleMessageIndex (next x) p
   | .liftBind (.challenge _) next, ⟨x, p⟩ => OracleMessageIndex (next x) p
@@ -37,7 +35,7 @@ def OracleMessageIndex : (s : OracleProtocol.{u, q}) → Path s → Type u
 
 /-- The type of the oracle message at each oracle node of a completed path. -/
 @[implicit_reducible]
-def OracleMessage : (s : OracleProtocol.{u, q}) → (p : Path s) → OracleMessageIndex s p → Type u
+def OracleMessage : (s : OracleProtocol) → (p : Path s) → OracleMessageIndex s p → Type
   | .pure _, _ => fun i => i.elim
   | .liftBind (.message _) next, ⟨x, p⟩ => OracleMessage (next x) p
   | .liftBind (.challenge _) next, ⟨x, p⟩ => OracleMessage (next x) p
@@ -48,7 +46,7 @@ def OracleMessage : (s : OracleProtocol.{u, q}) → (p : Path s) → OracleMessa
 message, with its query interface, on the left of the bundle of the rest of the path. A path with
 no oracle node gives the empty bundle. -/
 @[implicit_reducible]
-def oracleMessageBundle : (s : OracleProtocol.{0, 0}) → Path s → OracleBundle
+def oracleMessageBundle : (s : OracleProtocol) → Path s → OracleBundle
   | .pure _, _ => OracleBundle.empty
   | .liftBind (.message _) next, ⟨x, p⟩ => oracleMessageBundle (next x) p
   | .liftBind (.challenge _) next, ⟨x, p⟩ => oracleMessageBundle (next x) p
@@ -56,11 +54,11 @@ def oracleMessageBundle : (s : OracleProtocol.{0, 0}) → Path s → OracleBundl
     (OracleBundle.of X I).sum (oracleMessageBundle (next x) p)
 
 /-- The query specification of the oracle messages on a completed path. -/
-abbrev oracleMessageSpec (s : OracleProtocol.{0, 0}) (p : Path s) := (oracleMessageBundle s p).spec
+abbrev oracleMessageSpec (s : OracleProtocol) (p : Path s) := (oracleMessageBundle s p).spec
 
 /-- Read the oracle messages from exactly the full transcript that produced this shape, as a
 nested pair in the order of the oracle nodes. -/
-def oracleMessages : (s : OracleProtocol.{0, 0}) → (tr : Transcript oracleSig s) →
+def oracleMessages : (s : OracleProtocol) → (tr : Transcript oracleSig s) →
     (oracleMessageBundle s tr.path).Data
   | .pure _, _ => ()
   | .liftBind (.message _) next, ⟨x, tr⟩ => oracleMessages (next x) tr
@@ -68,13 +66,13 @@ def oracleMessages : (s : OracleProtocol.{0, 0}) → (tr : Transcript oracleSig 
   | .liftBind (.oracle _ _) next, ⟨x, tr⟩ => (x, oracleMessages (next ⟨⟩) tr)
 
 /-- The sole oracle message handler used by execution; it answers from the completed run. -/
-def oracleMessageImpl (s : OracleProtocol.{0, 0}) (tr : Transcript oracleSig s) :
+def oracleMessageImpl (s : OracleProtocol) (tr : Transcript oracleSig s) :
     QueryImpl (oracleMessageSpec s tr.path) Id :=
   (oracleMessageBundle s tr.path).answer (oracleMessages s tr)
 
 /-- Route the oracle messages of an appended path into its two completed component paths. -/
-def oracleMessageBundle_append : (s₁ : OracleProtocol.{0, 0}) →
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
+def oracleMessageBundle_append : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleMap ((oracleMessageBundle s₁ p₁).sum (oracleMessageBundle (s₂ p₁) p₂))
       (oracleMessageBundle (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
@@ -90,8 +88,8 @@ def oracleMessageBundle_append : (s₁ : OracleProtocol.{0, 0}) →
         (oracleMessageBundle (next x) p₁) (oracleMessageBundle (s₂ ⟨x, p₁⟩) p₂))
 
 /-- Route either component's oracle queries into the completed appended path. -/
-def oracleMessageBundle_split : (s₁ : OracleProtocol.{0, 0}) →
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) →
+def oracleMessageBundle_split : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) →
     (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     OracleMap (oracleMessageBundle (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂))
       ((oracleMessageBundle s₁ p₁).sum (oracleMessageBundle (s₂ p₁) p₂))
@@ -107,8 +105,8 @@ def oracleMessageBundle_split : (s₁ : OracleProtocol.{0, 0}) →
         (oracleMessageBundle_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂))
 
 /-- Materializing the append route and then splitting it recovers both component bundles. -/
-theorem oracleMessageBundle_split_append : (s₁ : OracleProtocol.{0, 0}) →
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem oracleMessageBundle_split_append : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : ((oracleMessageBundle s₁ p₁).sum (oracleMessageBundle (s₂ p₁) p₂)).Data) →
     (oracleMessageBundle_split s₁ s₂ p₁ p₂).f ((oracleMessageBundle_append s₁ s₂ p₁ p₂).f x) = x
   | .pure _, _, ⟨⟩, _, ⟨⟨⟩, _⟩ => rfl
@@ -126,8 +124,8 @@ theorem oracleMessageBundle_split_append : (s₁ : OracleProtocol.{0, 0}) →
     rw [ih]
 
 /-- Splitting and recombining an appended bundle preserves every concrete oracle message. -/
-theorem oracleMessageBundle_append_split : (s₁ : OracleProtocol.{0, 0}) →
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
+theorem oracleMessageBundle_append_split : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) → (p₁ : Path s₁) → (p₂ : Path (s₂ p₁)) →
     (x : (oracleMessageBundle (s₁.append s₂) (Path.append s₁ s₂ p₁ p₂)).Data) →
     (oracleMessageBundle_append s₁ s₂ p₁ p₂).f ((oracleMessageBundle_split s₁ s₂ p₁ p₂).f x) = x
   | .pure _, _, ⟨⟩, _, _ => rfl
@@ -139,11 +137,11 @@ theorem oracleMessageBundle_append_split : (s₁ : OracleProtocol.{0, 0}) →
     Prod.ext rfl (oracleMessageBundle_append_split (next x) (fun p => s₂ ⟨x, p⟩) p₁ p₂ data.2)
 
 /-- A completed shape paired with the oracle messages at its oracle nodes. -/
-abbrev PathWithOracleMessages (s : OracleProtocol.{0, 0}) :=
+abbrev PathWithOracleMessages (s : OracleProtocol) :=
   (p : Path s) × (oracleMessageBundle s p).Data
 
 /-- Prepend one full move to a materialized path. -/
-def PathWithOracleMessages.prepend : (a : OraclePos.{0, 0}) →
+def PathWithOracleMessages.prepend : (a : OraclePos) →
     (next : OraclePoly.B a → OracleProtocol) →
     (x : Move oracleSig a) → PathWithOracleMessages (next (oracleSig.toFunB a x)) →
       PathWithOracleMessages (.liftBind a next)
@@ -152,8 +150,8 @@ def PathWithOracleMessages.prepend : (a : OraclePos.{0, 0}) →
   | .oracle _ _, _, x, ⟨p, data⟩ => ⟨⟨⟨⟩, p⟩, (x, data)⟩
 
 /-- Appending full transcripts materializes exactly the two routed oracle message bundles. -/
-theorem oracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) → (tr₁ : Transcript oracleSig s₁) →
+theorem oracleMessages_append : (s₁ : OracleProtocol) →
+    (s₂ : Path s₁ → OracleProtocol) → (tr₁ : Transcript oracleSig s₁) →
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) →
     (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
       oracleMessages (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
@@ -176,8 +174,8 @@ theorem oracleMessages_append : (s₁ : OracleProtocol.{0, 0}) →
       (oracleMessages_append (next ⟨⟩) (fun p => s₂ ⟨⟨⟩, p⟩) tr₁ tr₂)
 
 /-- The appended transcript's handler agrees with routing into its component handlers. -/
-theorem oracleMessageImpl_append (s₁ : OracleProtocol.{0, 0})
-    (s₂ : Path s₁ → OracleProtocol.{0, 0}) (tr₁ : Transcript oracleSig s₁)
+theorem oracleMessageImpl_append (s₁ : OracleProtocol)
+    (s₂ : Path s₁ → OracleProtocol) (tr₁ : Transcript oracleSig s₁)
     (tr₂ : Transcript oracleSig (s₂ tr₁.path)) :
     (⟨Transcript.path (Transcript.append s₁ s₂ tr₁ tr₂),
       oracleMessageImpl (s₁.append s₂) (Transcript.append s₁ s₂ tr₁ tr₂)⟩ :
@@ -199,14 +197,14 @@ theorem oracleMessageImpl_append (s₁ : OracleProtocol.{0, 0})
 /-- The bundle a decision at path `p` may query: the input bundle and the path
 oracle messages. -/
 abbrev pathBundle (inputs : OracleBundle)
-    (s : OracleProtocol.{0, 0}) (p : Path s) : OracleBundle :=
+    (s : OracleProtocol) (p : Path s) : OracleBundle :=
   inputs.sum (oracleMessageBundle s p)
 
 /-- A passive oracle verifier. The output statement type `T p` and the output oracle bundle
 `outputs p` are indexed by the public shape path `p` of the run, so a public message may change
 both. A verifier with one output type and bundle uses constant functions of the path. -/
 structure OracleVerifier {ι : Type} (ambient : OracleSpec ι)
-    (s : OracleProtocol.{0, 0}) (S : Type) (T : Path s → Type)
+    (s : OracleProtocol) (S : Type) (T : Path s → Type)
     (inputs : OracleBundle) (outputs : Path s → OracleBundle) where
   /-- The decision has query access to inputs and path oracle messages, never their raw values. -/
   decide : S → (p : Path s) → View s p →
@@ -216,7 +214,7 @@ structure OracleVerifier {ι : Type} (ambient : OracleSpec ι)
     OracleMap (pathBundle inputs s p) (outputs p)
 
 /-- The output statement paired with the concrete output oracle data, at each shape path. -/
-abbrev OracleVerifier.Output {s : OracleProtocol.{0, 0}} (T : Path s → Type)
+abbrev OracleVerifier.Output {s : OracleProtocol} (T : Path s → Type)
     (outputs : Path s → OracleBundle) (p : Path s) : Type :=
   T p × (outputs p).Data
 
@@ -225,7 +223,7 @@ decision on that path. Compiler inlining keeps the input bundle, which only fixe
 interface, out of execution. -/
 @[macro_inline]
 def pathLift {ι : Type} (ambient : OracleSpec ι)
-    (inputs : OracleBundle) {s : OracleProtocol.{0, 0}} (p : Path s) :
+    (inputs : OracleBundle) {s : OracleProtocol} (p : Path s) :
     QueryImpl (oracleMessageSpec s p) (OracleComp (ambient + (pathBundle inputs s p).spec)) :=
   fun q => liftM ((ambient + (pathBundle inputs s p).spec).query
     (.inr (.inr q)))
@@ -236,7 +234,7 @@ make no ambient query. -/
 theorem simulateQ_pathLift {ι : Type}
     {ambient : OracleSpec ι}
     {inputs : OracleBundle} {m : Type → Type v} [Monad m] [LawfulMonad m]
-    (amb : QueryImpl ambient m) {s : OracleProtocol.{0, 0}} (p : Path s) (x : inputs.Data)
+    (amb : QueryImpl ambient m) {s : OracleProtocol} (p : Path s) (x : inputs.Data)
     (pl : (oracleMessageBundle s p).Data) {α : Type}
     (oa : OracleComp (oracleMessageSpec s p) α) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs s p).answer (x, pl)))
@@ -256,7 +254,7 @@ Its possible results, with every ambient answer allowed, are the statements the 
 return on that data and view.
 -/
 def OracleVerifier.decideWith {ι : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {s : OracleProtocol} {S : Type} {T : Path s → Type}
     {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
     (data : (pathBundle inputs s p).Data) :
@@ -267,7 +265,7 @@ def OracleVerifier.decideWith {ι : Type} {ambient : OracleSpec ι}
 /-- Interpreting ambient queries after closing bundle queries agrees with closing them
 together under the ambient handler. -/
 theorem OracleVerifier.simulateQ_decideWith {ι : Type}
-    {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {S : Type}
     {T : Path s → Type}
     {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {m : Type → Type v} [Monad m] [LawfulMonad m]
@@ -293,7 +291,7 @@ The `decision` callback receives the raw bundle data of the path. An interpreter
 data only to answer the decision's queries, for example through `(pathBundle inputs s p).answer`.
 Reading the oracle messages directly would bypass the decision's queries. -/
 def OracleVerifier.executeWith {ι : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {s : OracleProtocol} {S : Type} {T : Path s → Type}
     {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} {m : Type → Type} [Monad m]
     {ITrace : Type} {DTrace : Path s → Type}
@@ -317,7 +315,7 @@ def OracleVerifier.executeWith {ι : Type} {ambient : OracleSpec ι}
 /-- Interpret the decision's bundle queries using the input and the oracle messages of the
 actual run. -/
 def OracleVerifier.run {ι : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {s : OracleProtocol} {S : Type} {T : Path s → Type}
     {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -339,7 +337,7 @@ def OracleVerifier.run {ι : Type} {ambient : OracleSpec ι}
 /-- The ordinary specialization exposes the familiar unlogged execution equation using only
 functor and monad laws of the shared mechanism. -/
 theorem OracleVerifier.run_eq {ι : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {s : OracleProtocol} {S : Type} {T : Path s → Type}
     {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -369,7 +367,7 @@ theorem OracleVerifier.run_eq {ι : Type} {ambient : OracleSpec ι}
 messages, with its ambient queries sent to the ambient part of the run's oracle. The input is any
 oracle bundle, as in `OracleVerifier.run_eq`. -/
 theorem OracleVerifier.run_eq_decideWith {ι : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {s : OracleProtocol} {S : Type} {T : Path s → Type}
     {inputs : OracleBundle} {outputs : Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (x : inputs.Data)

@@ -31,7 +31,7 @@ variable {R : Type} [Field R] [DecidableEq R] [SampleableType R] (sz : R1CS.Size
 
 local notation "params" => PublicParams.forSize sz
 
-local instance : ∀ i, OracleInterface.{0, 0} (R1CS.OracleStatement R sz i) :=
+local instance : ∀ i, OracleInterface (R1CS.OracleStatement R sz i) :=
   WitnessAttachment.sourceOracleInterface sz
 
 namespace Assembly
@@ -63,7 +63,7 @@ abbrev Oracles : (i : Fin 8) → OracleIndex i → Type
   | 6 => OracleStatement (R := R) params
   | 7 => OracleStatement (R := R) params
 
-instance oracleInterface : ∀ i j, OracleInterface.{0, 0} (Oracles (R := R) sz i j)
+instance oracleInterface : ∀ i j, OracleInterface (Oracles (R := R) sz i j)
   | 0 => WitnessAttachment.sourceOracleInterface sz
   | 1 => Terminal.oracleInterface params
   | 2 => Terminal.oracleInterface params
@@ -88,7 +88,7 @@ abbrev stageSpec : (i : Fin 7) → ProtocolSpec (length sz i)
   | 5 => Sumcheck.Spec.pSpec R 2 (params).ℓ_n
   | 6 => !p[]
 
-instance messageInterface : ∀ i j, OracleInterface.{0, 0} ((stageSpec (R := R) sz i).Message j)
+instance messageInterface : ∀ i j, OracleInterface ((stageSpec (R := R) sz i).Message j)
   | 0 => by
     letI : OracleInterface (R1CS.Witness R (params).toSizeR1CS) := Terminal.witnessInterface params
     exact inferInstanceAs (∀ j, OracleInterface ((WitnessAttachment.pSpec (R := R) sz).Message j))

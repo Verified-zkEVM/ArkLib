@@ -19,23 +19,23 @@ namespace Interaction.Legacy.OracleExecutionTests
 /-- A message, a challenge, then a second message. -/
 def twoWay : ProtocolSpec 3 := ⟨!v[.P_to_V, .V_to_P, .P_to_V], !v[Nat, Bool, Nat]⟩
 
-instance twoWayOracles : ∀ i, OracleInterface.{0, 0} (twoWay.Message i) :=
+instance twoWayOracles : ∀ i, OracleInterface (twoWay.Message i) :=
   fun _ => OracleInterface.instDefault
 
 /-- One input oracle statement. -/
 abbrev InStmt : Unit → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (InStmt i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (InStmt i) := fun _ => OracleInterface.instDefault
 
 /-- One virtual output oracle. -/
 abbrev OutSum : Unit → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (OutSum i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (OutSum i) := fun _ => OracleInterface.instDefault
 
 /-- Two forwarded output oracles: the input oracle (`true`) and the first message (`false`). -/
 abbrev OutCopy : Bool → Type := fun _ => Nat
 
-instance : ∀ i, OracleInterface.{0, 0} (OutCopy i) := fun _ => OracleInterface.instDefault
+instance : ∀ i, OracleInterface (OutCopy i) := fun _ => OracleInterface.instDefault
 
 instance : ∀ t, Inhabited (([]ₒ : OracleSpec PEmpty).Range t) := fun t => t.elim
 
@@ -77,7 +77,7 @@ def copyVerifier : _root_.OracleVerifier []ₒ Nat InStmt Nat OutCopy twoWay whe
 /-- A legacy oracle prover with a counter state. Its output statement, oracle data and witness
 differ from the verifier's outputs. -/
 def counterProver {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type)
-    [∀ i, OracleInterface.{0, 0} (OStmtOut i)] (out : Nat → ∀ i, OStmtOut i) :
+    [∀ i, OracleInterface (OStmtOut i)] (out : Nat → ∀ i, OStmtOut i) :
     OracleProver []ₒ Nat InStmt Nat Nat OStmtOut Nat twoWay where
   PrvState _ := Nat
   input sw := sw.1.1 + (show Nat from sw.1.2 ()) + sw.2
@@ -100,7 +100,7 @@ def copyReduction :
   ⟨counterProver OutCopy (fun st b => bif b then st else st + 1), copyVerifier⟩
 
 theorem counter_pure {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type)
-    [∀ i, OracleInterface.{0, 0} (OStmtOut i)] (out : Nat → ∀ i, OStmtOut i) :
+    [∀ i, OracleInterface (OStmtOut i)] (out : Nat → ∀ i, OStmtOut i) :
     PureChallengeSlots (counterProver OStmtOut out)
   | ⟨⟨0, _⟩, h⟩, _ => nomatch h
   | ⟨⟨1, _⟩, _⟩, _ => ⟨_, rfl⟩

@@ -83,7 +83,7 @@ private theorem honest_step_pure (γ : ℕ)
     (hcur : CheckSingleRepetitionFoldRel 𝔽q β (stmtIn := stmt) (oStmtIn := oStmt) (v := v)
       ⟨k.val, by simp only [List.length_finRange]; omega⟩ cur) :
     let tr := (queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).honestProverTranscript stmt () oStmt chals
-    let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
+    let so := OracleInterface.simOracle2 emptySpec0 oStmt tr.messages
     ∃ next : L,
       simulateQ so (checkSingleFoldingStep 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) k cur v stmt).run = pure (some next) ∧
@@ -126,7 +126,7 @@ private theorem honest_loop_pure (γ : ℕ)
       strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
     let tr := (queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).honestProverTranscript stmt () oStmt chals
-    let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
+    let so := OracleInterface.simOracle2 emptySpec0 oStmt tr.messages
     let body := fun k cur => do
       let next ← (OptionT.mk (simulateQ so (checkSingleFoldingStep 𝔽q β
         (γ_repetitions := γ) (ϑ := ϑ) k cur v stmt).run) : OptionT (OracleComp []ₒ) L)
@@ -187,7 +187,7 @@ private theorem honest_repetition_pure (γ : ℕ)
       strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩) :
     let tr := (queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).honestProverTranscript stmt () oStmt chals
-    let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
+    let so := OracleInterface.simOracle2 emptySpec0 oStmt tr.messages
     simulateQ so (checkSingleRepetition 𝔽q β (γ_repetitions := γ) (ϑ := ϑ)
       v stmt stmt.finalConstant).run = pure (some ()) := by
   intro tr so
@@ -230,7 +230,7 @@ theorem queryPhaseLogicStep_simulate_honest (γ : ℕ)
       strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :
     let step := queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ
     let tr := step.honestProverTranscript stmt () oStmt chals
-    let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
+    let so := OracleInterface.simOracle2 emptySpec0 oStmt tr.messages
     simulateQ so (step.verifierCheck stmt tr).run = pure (some true) := by
   intro step tr so
   change (simulateQ so (step.verifierCheck stmt tr) : OptionT (OracleComp []ₒ) Bool) = pure true
@@ -278,11 +278,11 @@ theorem queryOracleVerifier_simulate_honest (γ : ℕ)
       strictFinalSumcheckRelOut 𝔽q β (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :
     let tr := FullTranscript.mk1 (pSpec := pSpecQuery 𝔽q β γ
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) (chals ⟨0, by rfl⟩)
-    simulateQ (OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages)
+    simulateQ (OracleInterface.simOracle2 emptySpec0 oStmt tr.messages)
       ((queryOracleVerifier 𝔽q β (ϑ := ϑ) γ).verify
         (Oₛₒ := fun i : Empty => nomatch i) stmt chals).run = pure (some true) := by
   intro tr
-  let so := OracleInterface.simOracle2.{0, 0, 0, 0, 0} []ₒ oStmt tr.messages
+  let so := OracleInterface.simOracle2 emptySpec0 oStmt tr.messages
   have hpure : (OptionT.mk (simulateQ so
       ((queryPhaseLogicStep 𝔽q β (ϑ := ϑ) γ).verifierCheck stmt tr).run) :
       OptionT (OracleComp []ₒ) Bool) = pure true :=

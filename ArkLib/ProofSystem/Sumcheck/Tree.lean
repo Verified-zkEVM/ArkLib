@@ -24,7 +24,7 @@ variable (R : Type) [CommSemiring R] (deg : ℕ)
 
 /-- The `n`-round Sumcheck protocol: `n` copies of `round R deg`. -/
 @[reducible]
-def protocol (n : ℕ) : OracleProtocol.{0} :=
+def protocol (n : ℕ) : OracleProtocol :=
   Interpreted.protocol R R⦃≤ deg⦄[X] (fun q r => q.val.eval r) n
 
 /-- One more round is one oracle node and one challenge node before the remaining rounds. -/

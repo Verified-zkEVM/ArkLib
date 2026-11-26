@@ -228,9 +228,9 @@ Neither P1 nor P2 excludes any part of these contracts.
 `OracleVerifier.runWithLog`, whose returned full log records bundle queries. It does not
 restrict R26/R27, which use general `OracleBundle` as inputs to `OracleVerifier.run`.
 `OracleBundle.of` and `OracleBundle.ofIndexed` keep the shared `OracleInterface` specialization,
-with its `ReaderM` coupling. That specialization no longer restricts general verifier inputs. The shared interface
-is unchanged. The source sum, tensor, lifting and raw-routing canaries also keep all their
-old-layer universe instantiations.
+whose response types lie in the universe of the data. That specialization no longer restricts
+general verifier inputs. The shared interface is unchanged. The source sum, tensor, lifting and
+raw-routing canaries also keep all their old-layer universe instantiations.
 
 ## Cost universes
 

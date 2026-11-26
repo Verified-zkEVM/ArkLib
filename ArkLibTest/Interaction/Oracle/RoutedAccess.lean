@@ -162,7 +162,7 @@ abbrev prefixRoute :=
 -- oracle, never the suffix oracle. The budget clause of the old-layer row is moot.
 example :
     (PEmpty ⊕ OracleMessageIndex single (Path.split single (fun _ => single) combinedPath).1) =
-    (PEmpty.{1} ⊕ (PUnit.{1} ⊕ PEmpty.{1})) := rfl
+    (PEmpty.{1} ⊕ (Unit ⊕ PEmpty.{1})) := rfl
 
 example : True := by
   fail_if_success

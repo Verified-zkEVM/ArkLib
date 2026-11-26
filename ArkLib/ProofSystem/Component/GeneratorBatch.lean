@@ -29,8 +29,8 @@ variable (S : Type)
 /-- Strictly degree-bounded input polynomials expose evaluation queries. -/
 instance (d : ℕ) : OracleInterface (Poly F d) where
   Query := F
-  toOC.spec := fun _ => F
-  toOC.impl z := do return CompPoly.CPolynomial.evalHorner z (← read).val
+  spec := fun _ => F
+  answer poly z := CompPoly.CPolynomial.evalHorner z poly.val
 
 /-- One verifier challenge, with no prover messages. -/
 @[reducible] def pSpec : ProtocolSpec 1 := ⟨!v[.V_to_P], !v[S]⟩

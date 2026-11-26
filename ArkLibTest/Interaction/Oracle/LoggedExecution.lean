@@ -71,8 +71,8 @@ with the sent value or rejects. The output data closes to `input + sent.1`. -/
 /-- Only the first coordinate of a sent pair is observable. -/
 @[reducible] def firstInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := fun _ => Nat
-  toOC.impl _ := do return (← read).1
+  spec := fun _ => Nat
+  answer m _ := match m with | (sent, _) => sent
 
 /-- The prover sends one pair oracle. -/
 @[instance_reducible] def pairSend : OracleProtocol :=
@@ -265,7 +265,7 @@ universe v
 alone and mentions no actual run. An absent verdict stays a rejection and creates no failure.
 `decision_outcomes` checks the closed output of actual runs. -/
 theorem close_optional_ok {ε : Type v} {ι : Type} {S : Type}
-    {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {T : Path s → Type}
+    {ambient : OracleSpec ι} {s : OracleProtocol} {T : Path s → Type}
     {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
@@ -918,7 +918,7 @@ end Interaction.DependentRoutingTests
 universe v
 
 /-- Log erasure holds in a lawful target monad with any result universe. -/
-example {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+example {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : FreeM.Path s → Type} {inputs : OracleBundle}
     {outputs : FreeM.Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type} {m : Type → Type v} [Monad m] [LawfulMonad m]
@@ -1161,7 +1161,7 @@ end Interaction.LoggedExecutionTests
 
 /-- Forgetting the ambient queries by move recovers the parent verifier's run. -/
 example {ι : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : FreeM.Path s → Type}
+    {s : OracleProtocol} {T : FreeM.Path s → Type}
     {inputs : OracleBundle}
     {outputs : FreeM.Path s → OracleBundle}
     {Out : Transcript oracleSig s → Type}

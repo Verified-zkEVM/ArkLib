@@ -68,7 +68,7 @@ section Node
 variable {StmtIn WitIn StmtOut WitOut : Type}
 
 theorem samplerEnd_message {M : Type → Type} [Monad M] (T : Type)
-    (rest : PlainPoly.B (plainPos .P_to_V T) → Protocol.{0})
+    (rest : PlainPoly.B (plainPos .P_to_V T) → Protocol)
     (draw : (c : ChallengeNode plainSig (.liftBind (plainPos .P_to_V T) rest)) →
       M (challengeSpec plainSig (.liftBind (plainPos .P_to_V T) rest) c)) :
     samplerEnd plainSig (.liftBind (plainPos .P_to_V T) rest) draw =
@@ -76,7 +76,7 @@ theorem samplerEnd_message {M : Type → Type} [Monad M] (T : Type)
         (fun c => draw ⟨.inr ⟨plainSig.toFunB _ x, c.val⟩, c.property⟩)) := rfl
 
 theorem samplerEnd_challenge {M : Type → Type} [Monad M] (T : Type)
-    (rest : PlainPoly.B (plainPos .V_to_P T) → Protocol.{0})
+    (rest : PlainPoly.B (plainPos .V_to_P T) → Protocol)
     (draw : (c : ChallengeNode plainSig (.liftBind (plainPos .V_to_P T) rest)) →
       M (challengeSpec plainSig (.liftBind (plainPos .V_to_P T) rest) c)) :
     samplerEnd plainSig (.liftBind (plainPos .V_to_P T) rest) draw =
@@ -89,7 +89,7 @@ generic, so the lemma applies at the node `plainPos (pSpec.dir j) _` of the tree
 theorem step_counterpartFirst_roundSlot {β : Type}
     (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (j : Fin n)
     (D : Direction) (hD : pSpec.dir j = D)
-    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
+    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol)
     (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →
       OracleComp (oSpec + [pSpec.Challenge]ₒ)
         (challengeSpec plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest) c))
@@ -140,7 +140,7 @@ whose draw at this node is the legacy challenge, is `processRound j` followed by
 theorem runWith_roundSlot {β Out : Type}
     (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (j : Fin n)
     (D : Direction) (hD : pSpec.dir j = D)
-    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
+    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol)
     (q : (x : Move plainSig (plainPos D (pSpec.«Type» j))) → P.PrvState j.succ →
       Interaction.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
     (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →
@@ -344,7 +344,7 @@ theorem stateless_query_inr (impl : QueryImpl ambient (StateT σ ProbComp))
 the two schedules give the same distribution of output and final state, for every prover. -/
 theorem distEqFrom_runWith (impl : QueryImpl ambient (StateT σ ProbComp))
     (chImpl : QueryImpl chal ProbComp) :
-    (s : Protocol.{0}) → {Out : Transcript plainSig s → Type} →
+    (s : Protocol) → {Out : Transcript plainSig s → Type} →
     (p : Focal plainSig (OracleComp (ambient + chal)) s Out) →
     (draw : (c : ChallengeNode plainSig s) →
       OracleComp (ambient + chal) (challengeSpec plainSig s c)) →
@@ -610,7 +610,7 @@ observer of the sampler. -/
 theorem pureObservers_roundSlot {Out : Type}
     (P : _root_.Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) (hP : PureChallengeSlots P)
     (j : Fin n) (D : Direction) (hD : pSpec.dir j = D)
-    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol.{0})
+    (rest : PlainPoly.B (plainPos D (pSpec.«Type» j)) → Protocol)
     (q : (x : Move plainSig (plainPos D (pSpec.«Type» j))) → P.PrvState j.succ →
       Interaction.Prover plainSig oSpec (rest (plainSig.toFunB _ x)) (fun _ => Out))
     (draw : (c : ChallengeNode plainSig (.liftBind (plainPos D (pSpec.«Type» j)) rest)) →

@@ -7,10 +7,10 @@ Authors: Quang Dao
 import ArkLib.Interaction.Composition
 
 /-!
-# Oracle bundles at `Type` and independent oracle-node queries
+# Oracle bundles at `Type`
 
-Bundle routing, append and runs use data in `Type`. The final examples retain the independent
-oracle-node query universe until the vocabulary migration.
+Bundle routing, append and runs use data in `Type`. The final examples check the default and
+explicit leaf types of oracle protocols.
 -/
 open PFunctor PFunctor.FreeM Interaction Interaction.Oracle OracleComp
 
@@ -23,8 +23,8 @@ abbrev smallAmbient : OracleSpec.{0, 0} Unit := Unit →ₒ Bool
 @[reducible]
 def natInterface : OracleInterface Nat where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := read
+  spec := Unit →ₒ Nat
+  answer m _ := m
 
 /-- The natural-number input oracle at each Boolean index. -/
 abbrev bigInputSlot (_ : Bool) : OracleBundle := OracleBundle.of Nat natInterface
@@ -37,7 +37,7 @@ def bigInputs : OracleBundle := OracleBundle.indexed bigInputSlot
 abbrev done : Protocol := .pure ⟨⟩
 
 /-- The oracle protocol with no rounds. -/
-abbrev oracleDone : OracleProtocol.{0, 0} := .pure ⟨⟩
+abbrev oracleDone : OracleProtocol := .pure ⟨⟩
 
 /-- Routing through an oracle map agrees with materialized data. -/
 theorem reindex_simulate_eq (x : Bool → Nat) {α : Type}
@@ -82,20 +82,12 @@ example : observation.2.2.map (fun out => (out.1, out.2 ())) = some (3, 3) := rf
 
 /-! ### Distinct input and output query types -/
 
-/-- A natural number answers every query `X : Type` with itself. The query type `Type` lies in
-`Type 1`, while the data and the responses lie in `Type 0`. -/
-@[reducible]
-def typeQueries : OracleInterface.{0, 1} Nat where
-  Query := Type
-  toOC.spec := Type →ₒ Nat
-  toOC.impl _ := read
-
 /-- A natural number answers every Boolean query with itself. -/
 @[reducible]
-def bigTypeQueries : OracleInterface.{0, 0} Nat where
+def bigTypeQueries : OracleInterface Nat where
   Query := Bool
-  toOC.spec := Bool →ₒ Nat
-  toOC.impl _ := read
+  spec := Bool →ₒ Nat
+  answer m _ := m
 
 /-- One input oracle with unit queries and natural-number data and responses. -/
 @[instance_reducible]
@@ -173,19 +165,15 @@ theorem typeQueryAppend_decideWith (stmt : Unit)
             ((OracleVerifier.suffixRoute typeQueryVerifier stmt p v).f data) :=
   OracleVerifier.append_decideWith _ _ _ _ _ _ _
 
-/-! ### Independent oracle-node queries -/
+/-! ### Leaf types of oracle protocols -/
 
 /-- The default leaves retain the original protocol carrier by definitional equality. -/
-example : OracleProtocol.{0, 1} = FreeM OraclePoly.{0, 1} PUnit.{1} := rfl
+example : OracleProtocol = FreeM OraclePoly Unit := rfl
 
 /-- A nontrivial leaf type is an actual return type of the authored tree. -/
-def returningTree : OracleProtocol.{0, 1} Nat := .pure 23
+def returningTree : OracleProtocol Nat := .pure 23
 
 /-- The explicit leaf parameter stores a value that can be read from the tree. -/
 example : (match returningTree with | .pure n => n | .liftBind _ _ => 0) = 23 := rfl
-
-/-- A small payload with queries in `Type 1` is attached to an actual oracle node. -/
-def typeQueryProtocol : OracleProtocol.{0, 1} :=
-  .liftBind (.oracle Nat typeQueries) (fun _ => .pure ⟨⟩)
 
 end Interaction.UniverseCanaryTests

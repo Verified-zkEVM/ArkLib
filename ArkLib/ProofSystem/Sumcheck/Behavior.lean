@@ -31,7 +31,7 @@ realization assumption. -/
 @[instance_reducible]
 def evaluationFamily (R : Type) (X : Type) : OracleBundle :=
   OracleBundle.ofIndexed (fun _ : Unit => X → R) fun _ =>
-    { Query := X, toOC := { spec := X →ₒ R, impl x := do return (← read) x } }
+    { Query := X, spec := X →ₒ R, answer f x := f x }
 
 /-- The remaining indexed sum of arbitrary original evaluation behavior. -/
 noncomputable def behaviorRoundSum (D : Fin d → R) (i : Fin (n + 1)) (c : Fin i → R)

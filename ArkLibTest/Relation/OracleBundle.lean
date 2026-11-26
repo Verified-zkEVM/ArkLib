@@ -24,15 +24,10 @@ namespace Interaction.OracleBundleTests
 example (R S : OracleBundle) (x : R.Data × S.Data) :
     (R.sum S).answer x = R.answer x.1 + S.answer x.2 := rfl
 
-/-- The bundle of the product interface is the sum of the component bundles. The queries and
-specifications agree by `rfl`. The answers agree only query by query, because `instProd` answers
-through `QueryImpl.addReaderT`. -/
+/-- The bundle of the product interface is the sum of the component bundles. -/
 example {α β : Type} (Oα : OracleInterface α) (Oβ : OracleInterface β) :
     OracleBundle.of (α × β) (@OracleInterface.instProd α β Oα Oβ) =
-      (OracleBundle.of α Oα).sum (OracleBundle.of β Oβ) := by
-  refine congrArg (OracleBundle.mk _ _ _) ?_
-  funext x q
-  cases q <;> rfl
+      (OracleBundle.of α Oα).sum (OracleBundle.of β Oβ) := rfl
 
 example {I : Type} (A : I → Type) (O : ∀ i, OracleInterface (A i)) :
     OracleBundle.ofIndexed A O =

@@ -53,12 +53,12 @@ theorem recorded_addProgram {A : Type} (view : A → Nat × Nat) (input : A) :
     recorded (addProgram view) input = ((view input).1 + (view input).2, 1) := rfl
 
 /-- Whether a cursor is the root. -/
-def isRoot {s t : Protocol.{0}} : Cursor.Spine s t → Bool
+def isRoot {s t : Protocol} : Cursor.Spine s t → Bool
   | .root _ => true
   | .down _ _ => false
 
 /-- A cursor extended by one move is not the root. -/
-@[simp] theorem isRoot_comp {s t u : Protocol.{0}} (sp : Cursor.Spine s t)
+@[simp] theorem isRoot_comp {s t u : Protocol} (sp : Cursor.Spine s t)
     (tail : Cursor.Spine t u) (h : isRoot tail = false) : isRoot (sp.comp tail) = false := by
   cases sp with
   | root => exact h
@@ -67,7 +67,7 @@ def isRoot {s t : Protocol.{0}} : Cursor.Spine s t → Bool
 /-- A state function with natural-number witnesses at every prefix and natural-number output
 witnesses at every transcript, given step maps and identity root and leaf maps. Every state
 holds. -/
-def natState (s : Protocol.{0}) (step : ∀ {a next}, Cursor.Spine s (.liftBind a next) → Nat → Nat) :
+def natState (s : Protocol) (step : ∀ {a next}, Cursor.Spine s (.liftBind a next) → Nat → Nat) :
     KnowledgeStateFunction plainSig s Unit (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) (fun _ _
       => True)
       (fun _ _ _ => True) where
@@ -99,12 +99,12 @@ theorem countProgram_budget_le {A : Type} (g : A → Nat) :
   | false => le_rfl
 
 /-- A chain with one unit message per requested step. -/
-def chain : Nat → Protocol.{0}
+def chain : Nat → Protocol
   | 0 => .pure ⟨⟩
   | n + 1 => .liftBind (.message Unit) (fun _ => chain n)
 
 /-- The first message chooses the remaining depth. -/
-def deep : Protocol.{0} := .liftBind (.message Nat) chain
+def deep : Protocol := .liftBind (.message Nat) chain
 
 /-- Every chain message adds one. -/
 def chainState (n : Nat) := natState (chain n) (fun _ w => w + 1)
@@ -245,20 +245,20 @@ example (tr : Transcript plainSig deep) :
 
 -- Disposition MP-142.
 /-- On the empty protocol, stages with zero root and leaf bounds cost nothing. -/
-example {S : Type} {Win : S → Type} {W : S → Transcript plainSig (.pure ⟨⟩ : Protocol.{0}) → Type}
+example {S : Type} {Win : S → Type} {W : S → Transcript plainSig (.pure ⟨⟩ : Protocol) → Type}
     {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
-    {validOutput : (stmt : S) → (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) → W stmt tr →
+    {validOutput : (stmt : S) → (tr : Transcript plainSig (.pure ⟨⟩ : Protocol)) → W stmt tr →
       Prop}
-    (F : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) S W Win admissible relIn
+    (F : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol) S W Win admissible relIn
       validOutput)
     (stages : F.MeasuredStages Nat) {stepBound : Nat} (h : stages.BudgetAtMost 0 stepBound 0)
-    (stmt : S) (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) :
+    (stmt : S) (tr : Transcript plainSig (.pure ⟨⟩ : Protocol)) :
     (stages.programAlong stmt tr).program.CostAtMost 0 := by
   simpa [completeSpine, Cursor.Spine.length] using stages.programAlong_costAtMost_nsmul h stmt tr
 
 -- Disposition MP-149.
 /-- The empty transcript has length zero. -/
-example (tr : Transcript plainSig (.pure ⟨⟩ : Protocol.{0})) :
+example (tr : Transcript plainSig (.pure ⟨⟩ : Protocol)) :
     (completeSpine plainSig tr).length = 0 := rfl
 
 -- Disposition MP-152.
@@ -275,7 +275,7 @@ example :
   decide
 
 /-- On the empty protocol, the leaf map doubles and the root map increments. -/
-def endpointState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol.{0}) Unit
+def endpointState : KnowledgeStateFunction plainSig (.pure ⟨⟩ : Protocol) Unit
     (fun _ _ => Nat) (fun _ => Nat) (fun _ => True) (fun _ _ => True) (fun _ _ _ => True) where
   Witness _ {_} _ _ := Nat
   toFun _ {_} _ _ _ := True
@@ -318,7 +318,7 @@ example : (recorded (endpointStages.programAlong () ⟨⟩).program 3).1 ≠ (3 
   decide
 
 /-- Three unit messages. -/
-def orderedProtocol : Protocol.{0} :=
+def orderedProtocol : Protocol :=
   .liftBind (.message Unit) fun _ => .liftBind (.message Unit) fun _ =>
     .liftBind (.message Unit) fun _ => .pure ⟨⟩
 

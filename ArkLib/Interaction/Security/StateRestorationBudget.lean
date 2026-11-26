@@ -209,7 +209,7 @@ section Games
 
 variable {rounds : List Round} {I S Salt W : Type} {A : I → Type}
   {T : Path (protocol rounds) → Type} {Win : S × (∀ i, A i) → Type}
-  {Oᵢ : ∀ i, OracleInterface.{0, 0} (A i)}
+  {Oᵢ : ∀ i, OracleInterface (A i)}
   {outputs : Path (protocol rounds) → OracleBundle}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
   {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}
@@ -354,7 +354,7 @@ namespace Interaction.KnowledgeStateFunction.MeasuredStages
 open PFunctor FreeM TwoParty.Lens OracleComp
 open Interaction.StateRestoration
 
-variable {s : OracleProtocol.{0, 0}} {S : Type} {Win : S → Type}
+variable {s : OracleProtocol} {S : Type} {Win : S → Type}
   {W : S → Transcript oracleSig s → Type}
   {admissible : S → Prop} {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → W stmt tr → Prop}
@@ -438,7 +438,7 @@ open Interaction.StateRestoration
 
 section ReadOut
 
-variable {Kind : Type} [Finite Kind] {s : OracleProtocol.{0, 0}} {S : Type} {W : Type}
+variable {Kind : Type} [Finite Kind] {s : OracleProtocol} {S : Type} {W : Type}
   {Win : S → Type} {Wout : S → Transcript oracleSig s → Type} {admissible : S → Prop}
   {relIn : (stmt : S) → Win stmt → Prop}
   {validOutput : (stmt : S) → (tr : Transcript oracleSig s) → Wout stmt tr → Prop}
@@ -478,7 +478,7 @@ end ReadOut
 variable {rounds : List Round} {I S Salt W Kind : Type} [Finite Kind]
   {A : I → Type} {T : Path (protocol rounds) → Type}
   {Win : S × (∀ i, A i) → Type}
-  {Oᵢ : ∀ i, OracleInterface.{0, 0} (A i)}
+  {Oᵢ : ∀ i, OracleInterface (A i)}
   {outputs : Path (protocol rounds) → OracleBundle}
   {admissible : S × (∀ i, A i) → Prop} {relIn : (stmt : S × (∀ i, A i)) → Win stmt → Prop}
   {Wout : (S × (∀ i, A i)) → Transcript oracleSig (protocol rounds) → Type}

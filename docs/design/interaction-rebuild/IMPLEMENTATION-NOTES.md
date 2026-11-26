@@ -13,8 +13,8 @@ Records D1 and D4 left open where an oracle payload's query interface lives and 
 named. The code carries the interface in the oracle position (`OraclePos.oracle X interface` in
 `Signature.lean`) and indexes challenges by structural node occurrences (`Node`, `ChallengeNode`
 in `Protocol.lean`). This resolves the open choice without a separate decoration, and node
-occurrences name each challenge independently of any transcript. Position universes remain
-separate from moves and the monad; entry 18 records the independent oracle-query universe.
+occurrences name each challenge independently of any transcript. Positions lie in `Type 1`,
+and moves, oracle payloads and oracle queries lie in `Type` (entry 18).
 
 ## 2. Observations retain the transcript and output on rejection
 
@@ -162,42 +162,41 @@ universes and both `.lift` lemmas. Step 3 removed the independent statement, wit
 universes of execution, reductions, oracle verifiers, composition and stage chains. Step 4 made
 `OracleBundle : Type 1`, with its query indices, responses and data in `Type`, and removed the
 adapters that changed a query or response universe. That also retired the full-log limit below.
-The universes of the oracle vocabulary disappear in later steps, and this entry is retired with
+Step 5 removed the universe parameters of the vocabulary: `OracleInterface` has its message,
+queries and responses in `Type`, and `ClaimFamily`, `Problem`, `Relation`, the positions, the
+signatures and the protocols have none. Protocol leaves are `Unit`. This entry is retired with
 the last [migration step](D2-ownership-and-universes.md#migration). Until then, the rest of this
 entry describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
 records the reasons.
 
 **Retained runner contract.** Run outputs lie in `Type`: the output statement `StmtOut p`, the
 output oracle data `(outputs p).Data` returned by a run, prover outputs, extracted
-witnesses and the state `σ` of a security experiment. The execution APIs pin their protocols at
-`Protocol.{0}` and `OracleProtocol.{0, 0}`, so positions lie in `Type 1`. Moves and returned
+witnesses and the state `σ` of a security experiment. `Protocol` and `OracleProtocol` have no
+universe parameters, and positions lie in `Type 1`. Moves and returned
 values lie in `Type`. The prover's monad is `OracleComp ambient : Type → Type`, with the ambient
 index and responses in `Type`. A generic runner keeps its result universe, `m : Type → Type v`.
 `simulateQ`, which answers the decision's bundle queries in a run and in `decideWith`, also needs
 the value universe to equal the response universe. A run output in another universe would need a
 `ULift` adapter or a monad on a larger universe, which record D2 rejects.
 
-`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `PUnit`.
+`OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `Unit`.
 All execution, path-bundle and security APIs use those default trivial leaves, preserving their
 previous carriers by definitional equality. An explicit leaf type describes return values in the
 authored `FreeM` tree. The parameter is used by the tree representation and is not a phantom:
-the universe canary constructs and reads a natural-number leaf. Exposing that parameter also
-lets the pinned universe linter distinguish the move universe in the alias's type; the query
-universe remains independent, without a linter suppression or source-policy exception.
+the universe canary constructs and reads a natural-number leaf.
 
 **Bundle data in `Type`.** A decision reads `pathBundle inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
 (`OracleBundle.sum`). Since step 4, both query types and all bundle data lie in `Type`.
-Step 4 did not change the definition of `OracleInterface`. Consolidation PR 5 deleted
-`OracleFamily`, `OracleBundle.ofFamily` and `OracleMap.embedding`: an indexed family of oracles is
-the bundle `OracleBundle.ofIndexed A O`, and `OracleMap.reindex` renames its indices. Record D6
-still describes outputs that form an `OracleFamily`. The oracle messages on a path form the bundle
-`oracleMessageBundle s p`, built from `OracleBundle.empty`, `OracleBundle.sum` and
-`OracleBundle.of`. It and `splitOracleMessages` take `OracleProtocol.{0, 0}`, as the verifier APIs
-do. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` still
-checks the named and visible query carriers, the whole-context data, the verifiers and the shared
-run, now in `Type`. Its assertions of independent universes are retired under the policy adopted
-in #1580.
+Consolidation PR 5 deleted `OracleFamily`, `OracleBundle.ofFamily` and `OracleMap.embedding`: an
+indexed family of oracles is the bundle `OracleBundle.ofIndexed A O`, and `OracleMap.reindex`
+renames its indices. Record D6 still describes outputs that form an `OracleFamily`. The oracle
+messages on a path form the bundle `oracleMessageBundle s p`, built from `OracleBundle.empty`,
+`OracleBundle.sum` and `OracleBundle.of`. It and `splitOracleMessages` take an `OracleProtocol`,
+as the verifier APIs do. The R26/R27 client `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
+still checks the named and visible query carriers, the whole-context data, the verifiers and the
+shared run, now in `Type`. Its assertions of independent universes are retired under the policy
+adopted in #1580.
 
 **Equivalent: Agreement output and witness families (F7 and 3A).** `Security/Agreement.lean`
 now preserves path-dependent `T p` and `outputs p` in every agreement and tree
@@ -257,8 +256,8 @@ games are values of the runner and stay in `Type`. Neither P1 nor P2 retires any
 contracts; both premises concern scheduling and shape rather than universes.
 
 `ArkLibTest/Interaction/UniverseCanary.lean` checks oracle maps, the oracle append, the routing
-law `append_decideWith` and two oracle runs with all bundle data in `Type`. It keeps an oracle
-node carrying `OracleInterface.{0, 1} Nat`, whose queries are types, until the vocabulary step.
+law `append_decideWith` and two oracle runs with all bundle data in `Type`. Step 5 removed its
+oracle node whose queries were types, because `OracleInterface` puts its queries in `Type`.
 The R26/R27 constructors in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean` and their
 verifier and run examples also work in `Type`.
 
@@ -448,11 +447,10 @@ exactly. `withDecision_queries` states that the ambient logs concatenate in orde
 `simulateQ_toLog_runWithQueriesByMove` keeps this agreement under lawful interpreters, including
 stateful runtimes. The universe restriction on full logs in entry 18 applies to the full-log
 queries by move. `runWithAmbientQueriesByMove` uses the same instrumented strategies and the same
-sequencing. It returns only the ambient decision queries and keeps the input-data, input-query and
-oracle-node-query universes independent. `runWithAmbientLog` is its aggregate projection, and
-`map_fst_runWithAmbientQueriesByMove` gives ordinary erasure. `toAmbient_runWithQueriesByMove`
-identifies the full queries by move with this ambient view at small query universes, including
-every entry's partial transcript and querier.
+sequencing. It returns only the ambient decision queries. `runWithAmbientLog` is its aggregate
+projection, and `map_fst_runWithAmbientQueriesByMove` gives ordinary erasure.
+`toAmbient_runWithQueriesByMove` identifies the full queries by move with this ambient view,
+including every entry's partial transcript and querier.
 
 `Oracle/SentOracles.lean` defines the family of sent oracle messages at each partial transcript
 and their node names. It also includes the bundle available at a shorter partial transcript, and its
@@ -462,8 +460,7 @@ typed queries, into the bundle available at a longer one. `liftQuery_node` and
 messages that the verifier uses. `runWithQueriesByMove_before_le` shows that each produced entry
 comes before the actual completed transcript, and `isSent_at_decision` carries the proof that an
 oracle was sent over to the decision entry. `runWithAmbientQueriesByMove_before_le` gives the same
-guarantee about the ambient queries by move for independent query universes. A compile-time test
-checks these universe parameters directly. `firstMovesLe_node` keeps node names from the seam of an
+guarantee about the ambient queries by move. `firstMovesLe_node` keeps node names from the seam of an
 appended protocol to its final partial transcript. The append route still uses
 `prefixRoute_oracleMessages` and `splitOutputs`.
 
@@ -483,7 +480,9 @@ at independent message and query universes. Oracle positions carry their interfa
 `UniverseOracleDecoration` reads the decoration of an arbitrary `OracleProtocol.{uProtocol, uQuery}`
 tree off the tree, as its path family. `universeNode` additionally attaches an arbitrary
 `OracleInterface.{0, 1} Nat` to an actual small protocol node, and the path-family assertion keeps
-its query type.
+its query type. Since step 5 of the D2 migration, `OracleProtocol` and `OracleInterface` have no
+universe parameters, so `universeNode` and the universe sections of `PositionsAndOwners.lean` and
+`MixedTranscripts.lean` check these constructions in `Type`.
 
 The [oracle-access port table](../interaction-layer/port-oracle-access.md) now links two groups
 of rows directly to the parent's `LoggedExecutionTests` assertions. The first group holds the

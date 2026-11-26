@@ -30,8 +30,8 @@ open scoped ENNReal
 The verdict's claim type may depend on a public context read from the outcome, such as the
 shape path of the run; the output language is judged at that context.
 -/
-def soundness {S Obs Ctx : Type} {T : ClaimFamily.{0, 0} Ctx} [MeasurableSpace Obs]
-    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem.{0, 0, 0} T)
+def soundness {S Obs Ctx : Type} {T : ClaimFamily Ctx} [MeasurableSpace Obs]
+    (M : AdversaryModel S Obs) (input : StatementProblem S) (output : Problem T)
     (context : Obs → Ctx) (verdict : (obs : Obs) → Option (T.Claim (context obs)))
     (ε : ℝ≥0∞) : Prop :=
   ∀ stmt, input.admissible () stmt → ¬ input.language () stmt →
@@ -87,7 +87,7 @@ def Verifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemant
 oracle data read from the verifier's output map. The input is any oracle bundle, as in
 `OracleVerifier.run`. An indexed family of oracles enters as `OracleBundle.ofIndexed A O`. -/
 def OracleVerifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSemantics m]
-    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs)
@@ -103,7 +103,7 @@ def OracleVerifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSeman
 
 /-- Interpret the whole run with a query handler. -/
 abbrev OracleVerifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
-    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs)
@@ -117,7 +117,7 @@ abbrev OracleVerifier.soundnessWith {m : Type → Type v} [Monad m] [EvalDistSem
 using the input data and the transcript's oracle messages to answer bundle queries. -/
 def OracleVerifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type v'}
     [Monad m] [Monad n] [EvalDistSemantics n]
-    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
@@ -136,7 +136,7 @@ def OracleVerifier.validAcceptanceUsing {m : Type → Type v} {n : Type → Type
 
 /-- Interpret the decision without an additional execution map. -/
 def OracleVerifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemantics m]
-    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
+    {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol}
     {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
@@ -185,7 +185,7 @@ theorem Verifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type} {ambient
 /-- Classical oracle soundness uses the full class of focal strategies over the oracle protocol,
 with the input oracle data supplied to the run. -/
 abbrev OracleVerifier.soundness {ι σ : Type} {S : Type} {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {s : OracleProtocol} {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))
@@ -201,7 +201,7 @@ abbrev OracleVerifier.soundness {ι σ : Type} {S : Type} {ambient : OracleSpec 
 /-- Classical soundness specializes the whole-computation experiment interface. -/
 theorem OracleVerifier.soundness_iff_soundnessUsing {ι σ : Type} {S : Type}
     {ambient : OracleSpec ι}
-    {s : OracleProtocol.{0, 0}} {T : Path s → Type} {inputs : OracleBundle}
+    {s : OracleProtocol} {T : Path s → Type} {inputs : OracleBundle}
     {outputs : Path s → OracleBundle}
     (V : OracleVerifier ambient s S T inputs outputs) (init : ProbComp σ)
     (impl : QueryImpl ambient (StateT σ ProbComp))

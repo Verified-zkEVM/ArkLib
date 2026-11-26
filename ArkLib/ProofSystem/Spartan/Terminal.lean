@@ -29,15 +29,15 @@ variable {R : Type} [CommRing R] (pp : PublicParams)
 def matrixInterface (i : R1CS.MatrixIdx) :
     OracleInterface (R1CS.OracleStatement R pp.toSizeR1CS i) where
   Query := (Fin pp.ℓ_m → R) × (Fin pp.ℓ_n → R)
-  toOC.spec := fun _ => R
-  toOC.impl q := do return matrixEval (← read) q.1 q.2
+  spec := fun _ => R
+  answer M q := matrixEval M q.1 q.2
 
 /-- The executable witness-extension oracle interface. -/
 @[instance_reducible]
 def witnessInterface : OracleInterface (R1CS.Witness R pp.toSizeR1CS) where
   Query := Fin pp.ℓ_w → R
-  toOC.spec := fun _ => R
-  toOC.impl q := do return tableEval (← read) q
+  spec := fun _ => R
+  answer w q := tableEval w q
 
 instance oracleInterface : ∀ i, OracleInterface (OracleStatement (R := R) pp i) := by
   letI : ∀ i, OracleInterface (R1CS.OracleStatement R pp.toSizeR1CS i) := matrixInterface pp

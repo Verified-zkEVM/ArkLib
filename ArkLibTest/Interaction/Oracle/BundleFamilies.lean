@@ -36,8 +36,8 @@ abbrev Carrier (r : Bool) : Type := Fin (if r then 5 else 3)
 /-- A `Bool` query reads the realization's value, plus one when the query is `true`. -/
 @[reducible] def countInterface (r : Bool) : OracleInterface (Carrier r) where
   Query := Bool
-  toOC.spec := fun _ => Nat
-  toOC.impl query := do return (← read).val + (if query then 1 else 0)
+  spec := fun _ => Nat
+  answer m query := m.val + (if query then 1 else 0)
 
 /-- The oracle at index `r`: the shared query interface on the carrier at `r`. -/
 abbrev slot (r : Bool) : OracleBundle := OracleBundle.of (Carrier r) (countInterface r)
@@ -183,12 +183,12 @@ and answers a `Bool`. -/
 @[reducible] def mixedInterface : (r : Bool) → OracleInterface (Carrier r)
   | false =>
     { Query := Bool
-      toOC.spec := fun _ => Nat
-      toOC.impl _ := do return (← read).val }
+      spec := fun _ => Nat
+      answer m _ := m.val }
   | true =>
     { Query := Fin 2
-      toOC.spec := fun _ => Bool
-      toOC.impl query := do return decide (query.val < (← read).val) }
+      spec := fun _ => Bool
+      answer m query := decide (query.val < m.val) }
 
 /-- The oracle at index `r` with the index-dependent interface. -/
 abbrev mixedSlot (r : Bool) : OracleBundle := OracleBundle.of (Carrier r) (mixedInterface r)
@@ -217,8 +217,8 @@ abbrev LowDegree := {p : Polynomial Nat // p.natDegree < 2}
 /-- Evaluation is the only query. -/
 @[reducible] def evaluation : OracleInterface LowDegree where
   Query := Nat
-  toOC.spec := fun _ => Nat
-  toOC.impl point := do return (← read).val.eval point
+  spec := fun _ => Nat
+  answer m point := m.val.eval point
 
 /-- One polynomial oracle. -/
 def polynomials : OracleBundle :=
@@ -323,13 +323,13 @@ def viewVerifier {Response : (n : Name) → Query n → Type}
     (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type} (name : Index → Name) {Visible : Type} (select : Visible → Index)
     (x : Visible) (query : Query (name (select x))) :
-    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol)
       PUnit (fun _ => Response (name (select x)) query)
       (viewBundle answer name select) (fun _ => noOutputs) where
   decide _ p _ := liftM
     (((PEmpty →ₒ PUnit) +
       (pathBundle (viewBundle answer name select)
-        (.pure ⟨⟩ : OracleProtocol.{0, 0}) p).spec).query (.inr (.inl ⟨x, query⟩)))
+        (.pure ⟨⟩ : OracleProtocol) p).spec).query (.inr (.inl ⟨x, query⟩)))
   outputMap _ _ _ :=
     { f := fun _ x => x.elim
       impl := fun query => query.1.elim
@@ -339,7 +339,7 @@ def viewVerifier {Response : (n : Name) → Query n → Type}
 abbrev namedVerifier {Response : (n : Name) → Query n → Type}
     (answer : ∀ n, Realization n → (q : Query n) → Response n q)
     {Index : Type} (name : Index → Name) (x : Index) (query : Query (name x)) :
-    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol.{0, 0})
+    OracleVerifier (PEmpty →ₒ PUnit) (.pure ⟨⟩ : OracleProtocol)
       PUnit (fun _ => Response (name x) query) (namedBundle answer name)
       (fun _ => noOutputs) :=
   viewVerifier answer name id x query
@@ -370,40 +370,40 @@ section Universes
 variable {Name : Type} {Realization : Name → Type} {Index : Type} {View : Type}
 
 /-- The bundle of each named oracle, with its explicit interface. -/
-abbrev namedSlot (O : ∀ n, OracleInterface.{0, 0} (Realization n)) (n : Name) : OracleBundle :=
+abbrev namedSlot (O : ∀ n, OracleInterface (Realization n)) (n : Name) : OracleBundle :=
   OracleBundle.of (Realization n) (O n)
 
 -- Indexed bundles specialize the bundle contracts.
 /-- A bundle of selected oracles keeps the context, query and data-index carriers at `Type`. -/
-example (O : ∀ n, OracleInterface.{0, 0} (Realization n)) (name : Index → Name) :
+example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name) :
     OracleBundle := OracleBundle.indexed (namedSlot O ∘ name)
 
 /-- Selecting interfaces preserves the context's query indices. -/
-example (O : ∀ n, OracleInterface.{0, 0} (Realization n)) (name : Index → Name) :
+example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name) :
     OracleSpec.{0, 0} ((x : Index) × (O (name x)).Query) :=
   (OracleBundle.indexed (namedSlot O ∘ name)).spec
 
 /-- Context data answers all selected queries. -/
-example (O : ∀ n, OracleInterface.{0, 0} (Realization n)) (name : Index → Name) :
+example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name) :
     (∀ x, Realization (name x)) → QueryImpl (OracleBundle.indexed (namedSlot O ∘ name)).spec Id :=
   (OracleBundle.indexed (namedSlot O ∘ name)).answer
 
 -- The indexed specialization keeps the original context when routing through a view.
 /-- An arbitrary view changes query indices without changing the original context data. -/
-example (O : ∀ n, OracleInterface.{0, 0} (Realization n)) (name : Index → Name)
+example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x)) :
     QueryImpl (OracleBundle.indexed (namedSlot O ∘ (name ∘ view))).spec Id :=
   (OracleBundle.indexed (namedSlot O ∘ (name ∘ view))).answer
     ((OracleMap.reindex (namedSlot O ∘ name) view).f data)
 
 /-- View queries keep the selected name's dependent query carrier. -/
-example (O : ∀ n, OracleInterface.{0, 0} (Realization n)) (name : Index → Name)
+example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name)
     (view : View → Index) :
     OracleSpec.{0, 0} ((x : View) × (O (name (view x))).Query) :=
   (OracleBundle.indexed (namedSlot O ∘ (name ∘ view))).spec
 
 /-- Routing through a view answers from the original context at the selected index. -/
-example (O : ∀ n, OracleInterface.{0, 0} (Realization n)) (name : Index → Name)
+example (O : ∀ n, OracleInterface (Realization n)) (name : Index → Name)
     (view : View → Index) (data : ∀ x, Realization (name x))
     (x : View) (query : (O (name (view x))).Query) :
     (OracleBundle.indexed (namedSlot O ∘ (name ∘ view))).answer

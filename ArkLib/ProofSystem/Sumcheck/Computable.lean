@@ -355,7 +355,7 @@ variable (R : Type) [CommSemiring R] (deg n : ℕ)
 
 /-- The computable Sumcheck protocol: each round message is a CompPoly coefficient array of
 degree at most `deg`, and its evaluation queries are answered by Horner evaluation. -/
-abbrev protocol : OracleProtocol.{0} := protocolOn R (Message R deg) (evaluate R deg) n
+abbrev protocol : OracleProtocol := protocolOn R (Message R deg) (evaluate R deg) n
 
 /-- Every challenge of the computable protocol is a ring element, sampled uniformly. -/
 instance [SampleableType R] :
@@ -371,8 +371,8 @@ abbrev Input := {p : CMvPolynomial n R // ∀ j, p.degreeOf j ≤ deg}
 def inputFamily : OracleBundle :=
   OracleBundle.ofIndexed (fun _ : Unit => Input R deg n) fun _ =>
     { Query := Fin n → R
-      toOC.spec := (Fin n → R) →ₒ R
-      toOC.impl point := do return (← read).val.eval point }
+      spec := (Fin n → R) →ₒ R
+      answer p point := p.val.eval point }
 
 /-- The mathematical polynomial of a computable input. -/
 def interpretInput [BEq R] [LawfulBEq R] (data : ∀ _ : Unit, Input R deg n) :

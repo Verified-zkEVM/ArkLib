@@ -27,15 +27,15 @@ abbrev ambient : OracleSpec Empty := Empty →ₒ Nat
 @[reducible]
 def natInterface : OracleInterface Nat where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := read
+  spec := Unit →ₒ Nat
+  answer m _ := m
 
 /-- A pair answers the unit query with its first component. -/
 @[reducible]
 def pairInterface : OracleInterface (Nat × Nat) where
   Query := Unit
-  toOC.spec := Unit →ₒ Nat
-  toOC.impl _ := do return (← read).1
+  spec := Unit →ₒ Nat
+  answer m _ := m.1
 
 /-- The single natural-number input oracle. -/
 abbrev inputSlot (_ : Unit) : OracleBundle := OracleBundle.of Nat natInterface
@@ -45,13 +45,13 @@ abbrev inputSlot (_ : Unit) : OracleBundle := OracleBundle.of Nat natInterface
 def inputFamily : OracleBundle := OracleBundle.indexed inputSlot
 
 /-- The prefix has no rounds. -/
-abbrev done : OracleProtocol.{0, 0} := .pure ⟨⟩
+abbrev done : OracleProtocol := .pure ⟨⟩
 
 /-- The suffix receives one public Boolean from the prover. -/
-abbrev suffix : OracleProtocol.{0, 0} := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
+abbrev suffix : OracleProtocol := .liftBind (.message Bool) (fun _ => .pure ⟨⟩)
 
 /-- The composed protocol. -/
-abbrev combined : OracleProtocol.{0, 0} := done.append (fun _ => suffix)
+abbrev combined : OracleProtocol := done.append (fun _ => suffix)
 
 /-- The final statement type: `Unit` after `true`, a natural number after `false`. -/
 def finalStmt : Path suffix → Type

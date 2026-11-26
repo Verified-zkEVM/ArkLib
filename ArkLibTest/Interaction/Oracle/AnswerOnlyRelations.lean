@@ -21,9 +21,10 @@ namespace Interaction.AnswerOnlyRelationsTests
 
 /-- The interface answers the number and ignores the Boolean tag. -/
 @[instance_reducible]
-def taggedInterface : OracleInterface.{0, 0} (Nat × Bool) :=
+def taggedInterface : OracleInterface (Nat × Bool) :=
   { Query := Unit
-    toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
+    spec := fun _ => Nat
+    answer := fun value _ => value.1 }
 
 /-- The single oracle of the tagged bundle. -/
 abbrev taggedSlot (_ : Unit) : OracleBundle := OracleBundle.of (Nat × Bool) taggedInterface

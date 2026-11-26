@@ -96,7 +96,7 @@ theorem supportedAnswer_mem (init : ProbComp σ) (impl : QueryImpl oSpec (StateT
 
 end SupportedAnswer
 
-variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
+variable {n : ℕ} {pSpec : ProtocolSpec n} [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
 
 /-! ### The oracle prover and sampler -/
 
@@ -112,7 +112,7 @@ theorem oracle_owner_of_dir {j : Fin n} : {d : Direction} → {hd : pSpec.dir j 
   | .V_to_P, _, _ => rfl
 
 /-- The oracle tree as a layout. -/
-abbrev oracleLayout (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
+abbrev oracleLayout (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)] :
     Layout pSpec where
   P := OraclePoly
   l := oracleSig
@@ -141,7 +141,7 @@ abbrev oracleLegacyDraw {M : Type → Type} [Functor M]
 
 /-- The public-coin sampler of the oracle tree, drawing each challenge from `src`. -/
 abbrev oracleLegacySampler {M : Type → Type} [Monad M] (pSpec : ProtocolSpec n)
-    [∀ i, OracleInterface.{0, 0} (pSpec.Message i)]
+    [∀ i, OracleInterface (pSpec.Message i)]
     (src : (i : pSpec.ChallengeIdx) → M (pSpec.Challenge i)) :
     Counterpart oracleSig M (oracleProtocol pSpec) (fun _ => PUnit) :=
   sampler oracleSig (oracleProtocol pSpec) (oracleLegacyDraw src 0 n (Nat.zero_add n))
@@ -172,12 +172,12 @@ end Prover
 /-! ### The verifier's view -/
 
 /-- The verifier's per-round view: the challenge, or a marker for an oracle payload. -/
-abbrev viewSpec (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
+abbrev viewSpec (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)] :
     ProtocolSpec n :=
   ⟨pSpec.dir, fun j => Move viewSig (oracleRound pSpec j)⟩
 
 /-- The verifier's views of a run are its per-round views. -/
-def viewEquiv (pSpec : ProtocolSpec n) [∀ i, OracleInterface.{0, 0} (pSpec.Message i)] :
+def viewEquiv (pSpec : ProtocolSpec n) [∀ i, OracleInterface (pSpec.Message i)] :
     Transcript viewSig (oracleProtocol pSpec) ≃ FullTranscript (viewSpec pSpec) :=
   chainEquiv (pSpec := viewSpec pSpec) viewSig (oracleRound pSpec) (fun _ => Equiv.refl _)
 
@@ -208,7 +208,7 @@ theorem lt_of_challenge {j : Fin n} (hd : pSpec.dir j = .V_to_P) (i : pSpec.Mess
   cases this
 
 /-- Read message `i` at the node of round `j`, or from the rest of the path. -/
-def readMsgNode (j : Fin n) (rest : OracleProtocol.{0})
+def readMsgNode (j : Fin n) (rest : OracleProtocol)
     (recur : (p : Path rest) → (oracleMessageBundle rest p).Data → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i) :
     (d : Direction) → (hd : pSpec.dir j = d) →
@@ -220,7 +220,7 @@ def readMsgNode (j : Fin n) (rest : OracleProtocol.{0})
   | .V_to_P, hd, ⟨_, p⟩, x, i, hi => recur p x i (lt_of_challenge hd i hi)
 
 /-- Query message `i` at the node of round `j`, or in the rest of the path. -/
-def queryMsgNode (j : Fin n) (rest : OracleProtocol.{0})
+def queryMsgNode (j : Fin n) (rest : OracleProtocol)
     (recur : (p : Path rest) → (i : pSpec.MessageIdx) → j.val < i.1.val →
       (q : (Oₘ i).Query) → OracleComp (oracleMessageSpec rest p) ((Oₘ i).Response q)) :
     (d : Direction) → (hd : pSpec.dir j = d) →
@@ -235,7 +235,7 @@ def queryMsgNode (j : Fin n) (rest : OracleProtocol.{0})
     else simulateQ (liftRight _ _) (recur p i (by omega) q)
   | .V_to_P, hd, ⟨_, p⟩, i, hi, q => recur p i (lt_of_challenge hd i hi) q
 
-theorem queryMsgNode_law (j : Fin n) (rest : OracleProtocol.{0})
+theorem queryMsgNode_law (j : Fin n) (rest : OracleProtocol)
     (read : (p : Path rest) → (oracleMessageBundle rest p).Data → (i : pSpec.MessageIdx) →
       j.val < i.1.val → pSpec.Message i)
     (query : (p : Path rest) → (i : pSpec.MessageIdx) → j.val < i.1.val →
@@ -294,11 +294,11 @@ def pathMessages (p : Path (oracleProtocol pSpec)) (x : (oracleMessageBundle _ p
 section Verifier
 
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
-  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface.{0, 0} (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface.{0, 0} (OStmtOut i)]
+  {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
 
 /-- The indexed oracle bundle given by the legacy instances. -/
-abbrev family {I : Type} (T : I → Type) [O : ∀ i, OracleInterface.{0, 0} (T i)] :
+abbrev family {I : Type} (T : I → Type) [O : ∀ i, OracleInterface (T i)] :
     OracleBundle := OracleBundle.ofIndexed T O
 
 /-- Route legacy input-statement and message queries to the oracle bundle of a path. -/

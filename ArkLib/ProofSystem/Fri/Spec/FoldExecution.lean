@@ -174,13 +174,13 @@ theorem finalPolynomial_materialize (d : ℕ+)
 /-- Resolve the final polynomial message using the actual message-oracle interface. -/
 theorem simulate_getConst (w : ∀ j, OracleStatement s ω (Fin.last k) j)
     (tr : (pSpec F).FullTranscript) :
-    simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) w tr.messages)
-      (liftM (getConst F) : OracleComp ((emptySpec.{0, 0}) +
+    simulateQ (OracleInterface.simOracle2 emptySpec0 w tr.messages)
+      (liftM (getConst F) : OracleComp (emptySpec0 +
         ([OracleStatement s ω (Fin.last k)]ₒ + [(pSpec F).Message]ₒ)) _) =
       pure (tr 1) := by
   have h := QueryImpl.simulateQ_addLift_add_liftM_right
-    (target := OracleComp (emptySpec.{0, 0}))
-    (QueryImpl.id (emptySpec.{0, 0}))
+    (target := OracleComp emptySpec0)
+    (QueryImpl.id emptySpec0)
     (OracleInterface.simOracle0 (OracleStatement s ω (Fin.last k)) w)
     (OracleInterface.simOracle0 (pSpec F).Message tr.messages) (getConst F)
   exact h.trans (by rfl)
@@ -195,9 +195,9 @@ theorem toVerifier_run (d : ℕ+) (α : Fin k → F)
         some (Fin.append α (fun _ : Fin 1 ↦ tr 0),
           (finalFoldVerifier s d).materializeOutput tr.challenges w tr.messages)
         else none) := by
-  have hlift : (liftM (getConst F) : OptionT (OracleComp ((emptySpec.{0, 0}) +
+  have hlift : (liftM (getConst F) : OptionT (OracleComp (emptySpec0 +
       ([OracleStatement s ω (Fin.last k)]ₒ + [(pSpec F).Message]ₒ))) _).run =
-      some <$> (liftM (getConst F) : OracleComp ((emptySpec.{0, 0}) +
+      some <$> (liftM (getConst F) : OracleComp (emptySpec0 +
         ([OracleStatement s ω (Fin.last k)]ₒ + [(pSpec F).Message]ₒ)) _) := by
     rfl
   change Option.map _ <$> simulateQ _ ((finalFoldVerifier s d).verify α tr.challenges).run = _

@@ -704,16 +704,16 @@ end OracleInterfaces
 instance challengeOracleInterface {pSpec : ProtocolSpec n} :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query := Unit
-    toOC.spec := fun _ => pSpec.Challenge i
-    toOC.impl := fun _ => do read }
+    spec := fun _ => pSpec.Challenge i
+    answer := fun c _ => c }
 
 -- dtumad: Longer term I think you want this, but need to change `[_]ₒ` stuff for that
 @[instance_reducible]
 def challengeOracleInterface' {pSpec : ProtocolSpec n} :
     OracleInterface (∀ i, pSpec.Challenge i) where
   Query := pSpec.ChallengeIdx
-  toOC.spec := pSpec.Challenge
-  toOC.impl i := do return (← read) i
+  spec := pSpec.Challenge
+  answer c i := c i
 
 /-- Query a verifier's challenge for a given challenge round `i`, given the default challenge
   oracle interface `challengeOracleInterface`.
@@ -832,8 +832,8 @@ the point of deriving a new challenge. To be precise:
 def challengeOracleInterfaceSR (StmtIn : Type) (pSpec : ProtocolSpec n) :
     ∀ i, OracleInterface (pSpec.Challenge i) := fun i =>
   { Query := StmtIn × pSpec.MessagesUpTo i.1.castSucc
-    toOC.spec := fun _ => pSpec.Challenge i
-    toOC.impl := fun _ => read }
+    spec := fun _ => pSpec.Challenge i
+    answer := fun c _ => c }
 
 alias challengeOracleInterfaceFS := challengeOracleInterfaceSR
 
