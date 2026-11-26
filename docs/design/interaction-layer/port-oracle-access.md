@@ -316,8 +316,8 @@ example instantiates it at `.{0, 1}` on an arbitrary tree. `UniverseProtocol.{uP
 and `universeNode` add a constructed node. The small-node canary attaches an arbitrary
 `OracleInterface.{0, 1} Nat` to a real oracle position and checks the query type of its path
 family. It does not merely install the interface in the input bundle. The parent's
-[lifted_queries_by_move_contract][d-node-run] also runs such a node, queries its oracle message and
-checks the partial transcript at its decision entry. The optional leaf parameter makes the message universe
+[lifted_queries_by_move_contract][d-node-run] ran such a node until step 3 of the D2 migration,
+which pins the node-query universe of the verifier APIs at `0` and removed that test. The optional leaf parameter makes the message universe
 visible in the alias's domain, as in the parent `OracleProtocol`; it is an actual tree return type.
 
 ## MixedExample: 9 assertions

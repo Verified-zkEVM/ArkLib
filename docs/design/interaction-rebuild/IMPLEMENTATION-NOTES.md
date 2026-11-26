@@ -158,34 +158,28 @@ Entry 18 below is a later core entry; number 17 belonged to an entry that was re
 (2026-11-25); migration in progress.** Under the policy, data lies in `Type`, descriptions of data
 in `Type 1`, adversaries in one universe that the model argument determines, and generic
 polynomial code in PolyFun's universes. Step 2 removed the security definitions' independent
-universes and both `.lift` lemmas. The remaining independent universes, adapters and the full-log
-limit described below disappear in later steps, and this entry is retired with the last
+universes and both `.lift` lemmas. Step 3 removed the independent statement, witness and index
+universes of execution, reductions, oracle verifiers, composition and stage chains. The remaining
+independent universes, adapters and the full-log limit described below disappear in later steps, and this entry is retired with the last
 [migration step](D2-ownership-and-universes.md#migration). Until then, the rest of this entry
 describes the current code. [`universe-policy.md`](../interaction-layer/universe-policy.md)
 records the reasons.
 
 **Status of the current code: equivalent for independent input data and query universes; an
-accepted upstream limit for the full-log oracle runner's large-query interface.** Record D2's
-earlier ledger puts moves and participant
-outputs in `Type u` and leaves the other components of a verifier unstated. The code gives every
-component that is not a run output its own universe as far as the definitions allow: the ambient
-index of a verifier, the input bundle's index and data, the output oracle index `J p` of an
-oracle verifier, the query types of the input and output oracle interfaces, the input statement, the
-input witness and the intermediate witnesses of a knowledge state function.
+accepted upstream limit for the full-log oracle runner's large-query interface.** Since step 3,
+statements, witnesses, moves, the ambient index of a verifier and the output oracle index `J p`
+of an oracle verifier lie in `Type`. The input bundle's index and data and the query types of the
+input and output oracle interfaces keep their own universes until step 4.
 
-**Retained runner contract.** Run outputs stay in `Type u`: the output statement `StmtOut p`, the output
-oracle data `B p j` returned by a run, the output index `J p` once a run returns `∀ j, B p j`,
-prover outputs, extracted witnesses and the state `σ` of a security experiment. Positions live one
-universe up for plain protocols (`PlainPos : Type (u+1)`) and in
-`Type (max (u+1) (q+1))` for oracle protocols, because an oracle position names both a payload
-type and a query type. Moves and returned values stay in `Type u`, and the runner is
-`m : Type u → Type u`
-(`OracleComp ambient` with responses in `Type u`). `simulateQ`, which answers the decision's
-bundle queries in a run and in `decideWith`, also needs the value universe to equal the response
-universe. A run output in another universe would need a `ULift` adapter or a monad on a larger
-universe, which record D2 rejects. A prover's ambient index is in `Type u` for the same reason:
-`OracleComp ambient : Type u → Type (max uι u)` is the prover's monad, so `Reduction`, `Prover`,
-both runs and the classical security models fix it.
+**Retained runner contract.** Run outputs lie in `Type`: the output statement `StmtOut p`, the
+output oracle data `B p j` returned by a run, the output index `J p`, prover outputs, extracted
+witnesses and the state `σ` of a security experiment. The execution APIs pin their protocols at
+`Protocol.{0}` and `OracleProtocol.{0, 0}`, so positions lie in `Type 1`. Moves and returned
+values lie in `Type`. The prover's monad is `OracleComp ambient : Type → Type`, with the ambient
+index and responses in `Type`. A generic runner keeps its result universe, `m : Type → Type v`.
+`simulateQ`, which answers the decision's bundle queries in a run and in `decideWith`, also needs
+the value universe to equal the response universe. A run output in another universe would need a
+`ULift` adapter or a monad on a larger universe, which record D2 rejects.
 
 `OracleProtocol` takes the tree's actual leaf type as a parameter, defaulting to `PUnit`.
 All execution, path-bundle and security APIs use those default trivial leaves, preserving their
@@ -199,17 +193,18 @@ universe remains independent, without a linter suppression or source-policy exce
 `sumFamily inputs (oracleMessageFamily s p)`. It reads `pathBundle inputs s p`, the disjoint sum of the
 input specification and the path's specification, with their data kept as a pair
 (`OracleBundle.sum`). `OracleSpec` addition allows the two index types to lie in different universes,
-and the input queries (`OracleBundle.{u, uI, dI}`), oracle-node queries (`OracleProtocol.{u, q}`)
-and output queries (`OracleFamily.{uJ, u, wJ}`) take their own universes through routing, append
-and `decideWith`. `splitFamily` was already generic in the polynomial position universe;
-`splitOutputs` and both path-routing directions now carry the independent node-query universe.
+and the input queries (`OracleBundle.{0, uI, dI}`) and output queries (`OracleFamily.{0, 0, wJ}`)
+take their own universes through routing, append and `decideWith`. The oracle-message families
+(`oracleMessageFamily`, `splitOracleMessages`) keep the node-query universe of
+`OracleProtocol.{u, q}`, and the verifier APIs pin it at `0` since step 3. `splitFamily` stays
+generic in the polynomial position universe.
 The query types never become values of the runner: they are answered by `simulateQ`, which
 returns only responses.
 
 **Equivalent: independent input data.** `OracleVerifier`, `pathBundle`, `decideWith`, `run`,
 append, the ambient-log runner and the security wrappers accept general
-`OracleBundle.{u, uI, dI}` inputs. Their data is `inputs.Data : Type dI`; only responses lie in
-`Type u`. The R26 and R27 canaries in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
+`OracleBundle.{0, uI, dI}` inputs. Their data is `inputs.Data : Type dI`; only responses lie in
+`Type`. The R26 and R27 canaries in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
 keep the exact named query and realization carriers with
 response universe `e` independent of realization universe `a`. No encoding or lift of a
 realization is needed. `OracleBundle.ofFamily` remains the specialization for existing
@@ -247,6 +242,17 @@ proves that it is the full-log run with the decision log restricted to its ambie
 oracle extraction game, the classical oracle extraction models and their marginal lemmas run on
 it.
 
+**Execution and composition.** Step 3 of the
+[policy migration](D2-ownership-and-universes.md#migration) puts the statements, witnesses,
+ambient indices and output oracle indices of `Execution.lean`, `Reduction.lean`,
+`OracleVerifier.lean`, `Composition.lean`, `StageChain.lean` and `Oracle/LoggedExecution.lean` in
+`Type`. `Verifier` and `Verifier.append` take `ambient : OracleSpec.{0, 0} ι`. `StageChain` keeps
+one query universe `w` for its families. The generic transcript-split lemmas keep their
+polynomial universes, and generic monads keep their result universe `v`. The oracle bundles,
+families, routing laws and the universe adapters (`liftQueries`, `lowerQueries`, `liftInputs`,
+`liftOutputs`) keep their universes until step 4; the verifier-level routing and reassociation
+laws pin the statement, protocol and output index universes at `0`.
+
 **Security wrappers.** The security definitions now take their data in `Type`, as step 2 of the
 [policy migration](D2-ownership-and-universes.md#migration). Statements, input, intermediate and
 output witnesses, problem claims and witnesses, input oracle data and query indices, and the
@@ -268,14 +274,14 @@ have one form now, with no `...Aux` duplicate. Extracted witnesses returned by t
 games are values of the runner and stay in `Type`. Neither P1 nor P2 retires any of these
 contracts; both premises concern scheduling and shape rather than universes.
 
-`ArkLibTest/Interaction/UniverseCanary.lean` instantiates the independent universes against
-`Verifier`, `OracleVerifier`, `Reduction`, both appends, the routing law `append_decideWith`,
-`OracleMap.simulate_eq` and two oracle runs. One input interface is an
-`OracleInterface.{0, 1} Nat` whose queries are types, and an append routes it through a middle
-family with queries in `Type 1` to an output family with queries in `Type 0`. The security
-definitions take their data in `Type`, so the canary no longer instantiates them. The same module
-now constructs an actual oracle node carrying `OracleInterface.{0, 1} Nat`, runs a verifier
-that queries its oracle message, and checks the returned value by `rfl`. The R26/R27 bundle
+`ArkLibTest/Interaction/UniverseCanary.lean` instantiates the remaining independent universes
+against `OracleVerifier`, the oracle append, the routing law `append_decideWith`,
+`OracleMap.simulate_eq` and two oracle runs. An input oracle index lies in `Type 1`. One input
+interface is an `OracleInterface.{0, 1} Nat` whose queries are types, and an append routes it
+through a middle family with queries in `Type 2` to an output family with queries in `Type 0`.
+The same module constructs an oracle node carrying `OracleInterface.{0, 1} Nat`. Step 3 removed
+the canary's instances with large statements and ambient indices, and the verifier that queried
+a large-query oracle node, because the verifier APIs now pin those universes. The R26/R27 bundle
 constructors in `ArkLibTest/Interaction/Oracle/BundleFamilies.lean`
 quantify independently over `a` and `e`. `viewVerifier`, its identity-view specialization
 `namedVerifier` and a shared run example consume the original realization family directly.

@@ -53,14 +53,11 @@ reassociation laws `OracleVerifier.append_append_decideOn` and
 
 ## Universes
 
-The ports keep the old-layer universe placement, with one restriction in the dependent-reduction
-canary.
+The ports follow the universe policy of record D2: data lies in `Type`.
 
 - `StageChain` ([stages]) puts every statement type, oracle index type and oracle data type of a
-  chain in the computation universe `u`, as `ExecutionInterface.{u}` does. It takes
-  `ambient : OracleSpec.{u, u} ι` with `ι : Type u`, as the old-layer stage does. The old-layer
-  stage passes its input resource as `I.oracles.spec.toPFunctor : PFunctor.{u, u}`, so its query
-  domain lies in `u`.
+  chain in `Type`, which is the old-layer `ExecutionInterface.{u}` at `u = 0`. It takes
+  `ambient : OracleSpec ι` with `ι : Type`.
 - Inside a chain, the oracle families have their query types in one universe `w`, because a
   recursive occurrence of an inductive type keeps the type's universe parameters. This is a
   choice of representation, not a consequence of P1 or P2. It does not restrict the families at a
@@ -88,12 +85,10 @@ canary.
     data. [wideNarrow] continues to a stage that exports a family with queries in `Type`, which
     leaves the chain through `lowerOutputs` ([wideNarrowRows]).
 - The old-layer private state lies in `u`. In the port it is part of the prover's output, whose
-  family lies in `u` ([stagesRun]).
-- The dependent-reduction canary ([depCanary]) keeps the shared, statement, witness and
-  interaction universes independent, as the old-layer canary does. There is one restriction. A
-  nonempty ambient specification lies in the interaction universe, because the prover runs in
-  `OracleComp ambient : Type u → Type u` (implementation note 18). The old-layer canary has no
-  ambient oracles, and the empty specification recovers it.
+  family lies in `Type` ([stagesRun]).
+- The dependent-reduction canary ([depCanary]) kept the shared, statement, witness and
+  interaction universes independent. Step 3 of the D2 migration removed it, because statements,
+  witnesses and moves now lie in `Type`.
 
 ## ClaimExample.lean
 
@@ -192,7 +187,7 @@ composition of the same two stages in `HeterogeneousAppend.lean` ([compRow3to5],
 
 | Old-layer assertion | Status | Where it is ported, or what remains |
 | --- | --- | --- |
-| L69, universe canary | ported | [depCanary]: the shared, statement, witness and interaction universes are independent. The output statement and prover output lie in the interaction universe, as in the old-layer canary. [depCanaryUse] instantiates it at `Type 3`, `Type 2`, `Type 1` and `Type 0`. The ambient restriction is recorded under Universes. |
+| L69, universe canary | retired | Removed mechanism: independent shared, statement, witness and interaction universes. [depCanary] and [depCanaryUse] kept them until step 3 of the D2 migration, which puts statements, witnesses and moves in `Type`. A family of reductions over a shared index is still a function from the index. |
 | L24 and L32, role decorations | removed | Removed mechanism: role decorations. The prover and verifier signatures assign each move to a participant. |
 | L99, `Reduction.then` over a shared index with `packAppend` outputs | removed | Removed mechanism: composition over a shared index that records the prefix path. [depComposed] composes with `Prover.append` and `Verifier.append`. Outputs are typed over the appended transcript, so `PFunctor.FreeM.Path.packAppend` is not needed. |
 | L107, the false prefix selects the `Bool` branch | ported | [depRow2]. |

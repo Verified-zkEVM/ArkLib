@@ -44,10 +44,10 @@ def prover (payload hidden : Nat) : Prover oracleSig ambient phased (fun _ => Na
 
 /-- The decision records 2 and 3, reads the sent oracle, records 6 and 7, then accepts with the
 sent value or rejects. -/
-def verifier.{uI, uJ, wI, wJ} (accept : Bool) :
+def verifier.{uI, wI, wJ} (accept : Bool) :
     OracleVerifier ambient phased Unit (fun _ => Nat)
       (noInputs : OracleFamily.{uI, 0, wI} _ _)
-      (fun _ => (noInputs : OracleFamily.{uJ, 0, wJ} _ _)) where
+      (fun _ => (noInputs : OracleFamily.{0, 0, wJ} _ _)) where
   decide _ p _ := by
     rcases p with ⟨b, c, ⟨⟩, ⟨⟩⟩
     exact OptionT.mk do
@@ -80,7 +80,7 @@ universe uI wI wJ
 index and the input and output query universes are independent. -/
 def summary.{vI, qI, qJ} (accept : Bool) (payload hidden : Nat) (bit : Bool) :
     Transcript oracleSig phased × Nat × Option Nat × List Nat :=
-  let z := (simulateQ (logger bit) ((verifier.{vI, 0, qI, qJ} accept).run () noData
+  let z := (simulateQ (logger bit) ((verifier.{vI, qI, qJ} accept).run () noData
     (prover payload hidden))).run []
   (z.1.1, z.1.2.1, z.1.2.2.map Prod.fst, z.2)
 

@@ -18,9 +18,9 @@ oracles are one map containing concrete data, query simulation and their agreeme
 
 @[expose] public section
 
-universe u q dI uι uS uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
+universe u q dI uI uJ uK uL uX uY uZ uW dX dY dZ dW w wI wJ
 
-universe v v' uκ uρ
+universe v v'
 
 namespace Interaction
 open PFunctor FreeM TwoParty.Lens OracleComp Oracle
@@ -496,11 +496,11 @@ abbrev pathBundle (inputs : OracleBundle.{u, uI, dI})
 /-- A passive oracle verifier. The output statement type `T p` and the output oracle family
 `outputs p` are indexed by the public shape path `p` of the run, so a public message may change
 both. A verifier with one output type and family uses constant families. -/
-structure OracleVerifier {ι : Type uι} (ambient : OracleSpec.{uι, u} ι)
-    (s : OracleProtocol.{u, q}) (S : Type uS) (T : Path s → Type u)
-    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    (inputs : OracleBundle.{u, uI, dI})
-    (outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)) where
+structure OracleVerifier {ι : Type} (ambient : OracleSpec ι)
+    (s : OracleProtocol.{0, 0}) (S : Type) (T : Path s → Type)
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    (inputs : OracleBundle.{0, uI, dI})
+    (outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)) where
   /-- The decision has query access to inputs and path oracle messages, never their raw values. -/
   decide : S → (p : Path s) → View s p →
     OptionT (OracleComp (ambient + (pathBundle inputs s p).spec)) (T p)
@@ -509,16 +509,16 @@ structure OracleVerifier {ι : Type uι} (ambient : OracleSpec.{uι, u} ι)
     OracleMap (pathBundle inputs s p) (OracleBundle.ofFamily (outputs p))
 
 /-- The output statement paired with the concrete output oracle data, at each shape path. -/
-abbrev OracleVerifier.Output {s : OracleProtocol.{u, q}} (T : Path s → Type u)
-    {J : Path s → Type u} (B : (p : Path s) → J p → Type u) (p : Path s) : Type u :=
+abbrev OracleVerifier.Output {s : OracleProtocol.{0, 0}} (T : Path s → Type)
+    {J : Path s → Type} (B : (p : Path s) → J p → Type) (p : Path s) : Type :=
   T p × (∀ j, B p j)
 
 /-- Lift the queries to the oracle nodes of a completed path into the query interface of a
 decision on that path. Compiler inlining keeps the input family, which only fixes the query
 interface, out of execution. -/
 @[macro_inline]
-def pathLift {ι : Type uι} {I : Type uI} (ambient : OracleSpec.{uι, u} ι) {A : I → Type u}
-    (inputs : OracleFamily.{uI, u, wI} I A) {s : OracleProtocol.{u}} (p : Path s) :
+def pathLift {ι : Type} {I : Type} (ambient : OracleSpec ι) {A : I → Type}
+    (inputs : OracleFamily.{0, 0, wI} I A) {s : OracleProtocol.{0, 0}} (p : Path s) :
     QueryImpl (oracleMessageSpec s p) (OracleComp (ambient + (pathBundle inputs s p).spec)) :=
   fun q => liftM ((ambient + (pathBundle inputs s p).spec).query
     (.inr (.inr q)))
@@ -526,11 +526,11 @@ def pathLift {ι : Type uι} {I : Type uI} (ambient : OracleSpec.{uι, u} ι) {A
 /-- Lifted path-oracle queries, answered from input data and path oracle messages with ambient
 queries answered in any lawful monad, are a pure computation of the path oracle messages: they
 make no ambient query. -/
-theorem simulateQ_pathLift {ι : Type uι} {I : Type uI}
-    {ambient : OracleSpec.{uι, u} ι} {A : I → Type u}
-    {inputs : OracleFamily.{uI, u, wI} I A} {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    (amb : QueryImpl ambient m) {s : OracleProtocol.{u}} (p : Path s) (x : ∀ i, A i)
-    (pl : ∀ i, OracleMessage s p i) {α : Type u} (oa : OracleComp (oracleMessageSpec s p) α) :
+theorem simulateQ_pathLift {ι : Type} {I : Type}
+    {ambient : OracleSpec ι} {A : I → Type}
+    {inputs : OracleFamily.{0, 0, wI} I A} {m : Type → Type v} [Monad m] [LawfulMonad m]
+    (amb : QueryImpl ambient m) {s : OracleProtocol.{0, 0}} (p : Path s) (x : ∀ i, A i)
+    (pl : ∀ i, OracleMessage s p i) {α : Type} (oa : OracleComp (oracleMessageSpec s p) α) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs s p).answer (x, pl)))
         (simulateQ (pathLift ambient inputs p) oa) =
       (pure (simulateQ ((oracleMessageFamily s p).behaviorOfRealizations pl) oa) : m α) := by
@@ -547,11 +547,11 @@ theorem simulateQ_pathLift {ι : Type uι} {I : Type uI}
 Its possible results, with every ambient answer allowed, are the statements the decision can
 return on that data and view.
 -/
-def OracleVerifier.decideWith {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
-    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
-    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
+def OracleVerifier.decideWith {ι : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (p : Path s) (v : View s p)
     (data : (pathBundle inputs s p).Data) :
     OracleComp ambient (Option (T p)) :=
@@ -560,13 +560,13 @@ def OracleVerifier.decideWith {ι : Type uι} {ambient : OracleSpec.{uι, u} ι}
 
 /-- Interpreting ambient queries after closing bundle queries agrees with closing them
 together under the ambient handler. -/
-theorem OracleVerifier.simulateQ_decideWith {ι : Type uι}
-    {ambient : OracleSpec.{uι, u} ι} {s : OracleProtocol.{u, q}} {S : Type uS}
-    {T : Path s → Type u}
-    {J : Path s → Type uJ} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{uJ, u, wJ} (J p) (B p)}
-    {m : Type u → Type v} [Monad m] [LawfulMonad m]
+theorem OracleVerifier.simulateQ_decideWith {ι : Type}
+    {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}} {S : Type}
+    {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {m : Type → Type v} [Monad m] [LawfulMonad m]
     (V : OracleVerifier ambient s S T inputs outputs) (impl : QueryImpl ambient m)
     (stmt : S) (p : Path s) (v : View s p)
     (data : (pathBundle inputs s p).Data) :
@@ -588,15 +588,15 @@ layer, then interpret the final decision and close its output from the same tran
 The `decision` callback receives the raw bundle data of the path. An interpreter must use that
 data only to answer the decision's queries, for example through `(pathBundle inputs s p).answer`.
 Reading the oracle messages directly would bypass the decision's queries. -/
-def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
-    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
-    {Out : Transcript oracleSig s → Type u} {m : Type u → Type u} [Monad m]
-    {ITrace : Type u} {DTrace : Path s → Type u}
+def OracleVerifier.executeWith {ι : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type} {m : Type → Type} [Monad m]
+    {ITrace : Type} {DTrace : Path s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
-    (interpret : {A : Type u} → m A →
+    (interpret : {A : Type} → m A →
       OracleComp (ambient + challengeSpec oracleSig s) (A × ITrace))
     (prover : Focal oracleSig m s Out) (coins : Counterpart oracleSig m s (fun _ => PUnit))
     (decision : (p : Path s) → View s p → (pathBundle inputs s p).Data →
@@ -614,12 +614,12 @@ def OracleVerifier.executeWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
 /-- Interpret the decision's bundle queries using the input and the oracle messages of the
 actual run. -/
-def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
-    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
-    {Out : Transcript oracleSig s → Type u}
+def OracleVerifier.run {ι : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     OracleComp (ambient + challengeSpec oracleSig s)
@@ -638,12 +638,12 @@ def OracleVerifier.run {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 
 /-- The ordinary specialization exposes the familiar unlogged execution equation using only
 functor and monad laws of the shared mechanism. -/
-theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
-    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
-    {Out : Transcript oracleSig s → Type u}
+theorem OracleVerifier.run_eq {ι : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (data : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     V.run stmt data prover = (do
@@ -670,12 +670,12 @@ theorem OracleVerifier.run_eq {ι : Type u} {ambient : OracleSpec.{u, u} ι}
 /-- A run is the interaction, then the decision answered from the input and the run's oracle
 messages, with its ambient queries sent to the ambient part of the run's oracle. The input is any
 oracle bundle, as in `OracleVerifier.run_eq`. -/
-theorem OracleVerifier.run_eq_decideWith {ι : Type u} {ambient : OracleSpec.{u, u} ι}
-    {s : OracleProtocol.{u, q}} {S : Type uS} {T : Path s → Type u}
-    {J : Path s → Type u} {B : (p : Path s) → J p → Type u}
-    {inputs : OracleBundle.{u, uI, dI}}
-    {outputs : (p : Path s) → OracleFamily.{u, u, wJ} (J p) (B p)}
-    {Out : Transcript oracleSig s → Type u}
+theorem OracleVerifier.run_eq_decideWith {ι : Type} {ambient : OracleSpec ι}
+    {s : OracleProtocol.{0, 0}} {S : Type} {T : Path s → Type}
+    {J : Path s → Type} {B : (p : Path s) → J p → Type}
+    {inputs : OracleBundle.{0, uI, dI}}
+    {outputs : (p : Path s) → OracleFamily.{0, 0, wJ} (J p) (B p)}
+    {Out : Transcript oracleSig s → Type}
     (V : OracleVerifier ambient s S T inputs outputs) (stmt : S) (x : inputs.Data)
     (prover : Prover oracleSig ambient s Out) :
     V.run stmt x prover = (do
@@ -698,13 +698,13 @@ theorem OracleVerifier.run_eq_decideWith {ι : Type u} {ambient : OracleSpec.{u,
 
 section BundleAnswers
 
-variable {ι : Type uι} {κ : Type uκ} {ρ : Type uρ} {α : Type u}
-  {ambient : OracleSpec.{uι, u} ι} {chal : OracleSpec.{uκ, u} κ}
-  {bundle : OracleSpec.{uρ, u} ρ}
+variable {ι : Type} {κ : Type} {ρ : Type} {α : Type}
+  {ambient : OracleSpec ι} {chal : OracleSpec κ}
+  {bundle : OracleSpec ρ}
 
 /-- Answering bundle queries before interpretation agrees with interpreting them beside the
 restricted ambient handler, for any lawful target monad. -/
-theorem simulateQ_bundleAnswer {m : Type u → Type v} [Monad m] [LawfulMonad m]
+theorem simulateQ_bundleAnswer {m : Type → Type v} [Monad m] [LawfulMonad m]
     (H : QueryImpl (ambient + chal) m) (answer : QueryImpl bundle Id)
     (program : OracleComp (ambient + bundle) α) :
     simulateQ H (simulateQ (QueryImpl.addLift
@@ -717,8 +717,8 @@ theorem simulateQ_bundleAnswer {m : Type u → Type v} [Monad m] [LawfulMonad m]
   · exact simulateQ_pure _ _
 
 /-- Deterministic bundle answers commute with adjoining any lifted challenge handler. -/
-theorem simulateQ_addLift_bundleAnswer {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {n : Type u → Type v'} [MonadLiftT n m]
+theorem simulateQ_addLift_bundleAnswer {m : Type → Type v} [Monad m] [LawfulMonad m]
+    {n : Type → Type v'} [MonadLiftT n m]
     (impl : QueryImpl ambient m) (draw : QueryImpl chal n) (answer : QueryImpl bundle Id)
     (program : OracleComp (ambient + bundle) α) :
     simulateQ (impl.addLift draw : QueryImpl (ambient + chal) m)
