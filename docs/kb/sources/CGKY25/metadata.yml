@@ -1,5 +1,8 @@
 bibkey: CGKY25
-source_kind: bibliography-only
+source_kind: official-pdf
 canonical_url: https://eprint.iacr.org/2025/902
+version: "June 2, 2026"
+pages: 90
+sha256: a3015f140ed9750b05e23a8b6fb3dcbb4d93be81cd388fb0ef39abb17dd06560
 committed_artifacts: []
-notes: "Scaffolded from references.bib for On the Fiat-Shamir Security of Succinct Arguments from Functional Commitments."
+notes: "Funky/FIOP compiler contracts inspected on 2026-10-03; no PDF vendored. KZG theorem-by-theorem conformance remains a separate audit."
