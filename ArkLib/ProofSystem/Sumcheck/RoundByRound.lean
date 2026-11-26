@@ -90,7 +90,7 @@ theorem verifier_rbrKnowledgeSoundness [Fintype R] [IsDomain R] :
   simp only [OracleVerifier.prefixDraw_ofNodesView_cast,
     OracleVerifier.prefixError_ofNodes_cast] at hsource
   dsimp only [legacyVerifier]
-  convert hsource using 1 <;> rfl
+  convert hsource using 1
 
 include init in
 /-- Round-by-round soundness of the compatibility `verifier`, with error `deg / |R|` at every
@@ -131,6 +131,6 @@ theorem verifier_rbrSoundness [Fintype R] [IsDomain R] :
     (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
   rw [hcast] at hsource
   dsimp only [legacyVerifier]
-  convert hsource using 1 <;> rfl
+  convert hsource using 1
 
 end Sumcheck

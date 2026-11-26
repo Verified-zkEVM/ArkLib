@@ -81,10 +81,10 @@ the interpreted sources.
 
 ## Virtual interfaces and substitution
 
-`OracleFamily` is an indexed family of realization types with explicit `interface` data. Its
-`behaviorOfRealizations` interprets those values as answers; its `asBehaviorSource` instead admits
-all deterministic handlers, including ones no realization represents. Neither injectivity nor
-surjectivity of the interpretation is assumed. Reindexing a family copies interface types and
+`OracleBundle.ofIndexed A O` bundles an indexed family of realization types with an interface at
+each index. Its `answer` interprets the bundle's `Data` as answers, and `OracleBundle.Behavior`
+admits all deterministic handlers, including ones no data represents. Neither injectivity nor
+surjectivity of the interpretation is assumed. `OracleMap.reindex` copies interface types and
 allows independently supplied values at repeated indices. It does not create a shared-realization
 view.
 

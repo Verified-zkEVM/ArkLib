@@ -28,14 +28,15 @@ namespace Interaction.KnowledgeCompositionTests
 abbrev NoData : PEmpty.{1} → Type := fun i => i.elim
 
 /-- No input oracles. -/
-@[instance_reducible] def noInputs : OracleFamily.{0, 0, 0} PEmpty NoData := ⟨fun i => i.elim⟩
+@[instance_reducible] def noInputs : OracleBundle :=
+  OracleBundle.ofIndexed NoData fun i => i.elim
 
 /-- The input data of `noInputs`. -/
 def noData : ∀ i, NoData i := fun i => i.elim
 
 /-- One exported scalar oracle. -/
-@[instance_reducible] def exportFamily : OracleFamily.{0, 0, 0} PUnit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def exportFamily : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The prefix sends an oracle, draws a challenge and sends a public shape selector. -/
 @[instance_reducible] def firstProtocol : OracleProtocol :=

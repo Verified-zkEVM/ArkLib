@@ -84,7 +84,7 @@ theorem verifier_soundness_of_legacy [Fintype R] [IsDomain R] :
     (embedOracleVerifier (Spec.oracleVerifier R deg D n ambient))
   rw [hcast] at hsource
   dsimp only [legacyVerifier]
-  convert hsource using 1; rfl
+  convert hsource using 1
 
 omit [DecidableEq R] [SampleableType R] in
 /-- The legacy Sumcheck specification has one challenge per round. -/

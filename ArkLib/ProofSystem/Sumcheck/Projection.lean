@@ -24,8 +24,9 @@ open Polynomial MvPolynomial PFunctor FreeM Interaction Interaction.TwoParty.Len
 variable {R : Type} [CommSemiring R] {deg n d : ℕ} (D : Fin d → R)
 
 /-- The evaluation oracle of one degree-bounded univariate polynomial. -/
-noncomputable def roundFamily (R : Type) [CommSemiring R] (deg : ℕ) :
-    OracleFamily Unit (fun _ => R⦃≤ deg⦄[X]) := ⟨fun _ => inferInstance⟩
+@[instance_reducible]
+noncomputable def roundFamily (R : Type) [CommSemiring R] (deg : ℕ) : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => R⦃≤ deg⦄[X]) fun _ => inferInstance
 
 /-- A query to the original multivariate polynomial. -/
 noncomputable def projectionInput (point : Fin n → R) :
@@ -35,7 +36,7 @@ noncomputable def projectionInput (point : Fin n → R) :
 /-- The realized input answers with its polynomial evaluation. -/
 @[simp] theorem simulateQ_projectionInput (data : ∀ j, PolynomialData R n deg j)
     (point : Fin n → R) :
-    simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data) (projectionInput point) =
+    simulateQ ((polynomialFamily R n deg).answer data) (projectionInput point) =
       (pure ((data ()).val.eval point) : Id R) := rfl
 
 /-- Simulate a projected evaluation by summing queries over suffix domain assignments. -/
@@ -52,7 +53,7 @@ noncomputable def projectedQuery (i : Fin n) (c : Fin i.castSucc → R) (r : R) 
 /-- Answering projected queries from the input realizes the honest round polynomial. -/
 theorem simulateQ_projectedQuery (i : Fin n) (c : Fin i.castSucc → R)
     (data : ∀ j, PolynomialData R n deg j) (r : R) :
-    simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data) (projectedQuery D i c r) =
+    simulateQ ((polynomialFamily R n deg).answer data) (projectedQuery D i c r) =
       (projectedRoundPolynomial D i c (data ())).val.eval r := by
   cases n with
   | zero => exact i.elim0
@@ -117,7 +118,7 @@ theorem projectedMap_sum (i : Fin n) (stmt : RoundStatement R n i.castSucc)
 against the original input handler. -/
 noncomputable def projectedInput (i : Fin n) (c : Fin i.castSucc → R)
     (data : ∀ j, PolynomialData R n deg j) : QueryImpl (R →ₒ R) Id := fun r =>
-  simulateQ ((polynomialFamily R n deg).behaviorOfRealizations data)
+  simulateQ ((polynomialFamily R n deg).answer data)
     ((projectedMap (deg := deg) D i c).impl ⟨(), r⟩)
 
 /-- The derived handler agrees at every query with honest projected polynomial evaluation. -/

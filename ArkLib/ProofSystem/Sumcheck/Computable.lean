@@ -161,8 +161,8 @@ end Transport
 section VerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n : ℕ} {d : ℕ}
-  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R} {I : Type}
-  {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R}
+  (inputs : OracleBundle)
 
 
 variable {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
@@ -173,7 +173,7 @@ omit [SampleableType R] in
 decoded transcript of the mapped run. -/
 theorem simulateQ_decideOn {κ : Type} {spec' : OracleSpec κ}
     (amb : QueryImpl ambient (OracleComp spec')) (stmt : Spec.StatementRound R n 0)
-    (data : ∀ i, A i) (tr : Transcript oracleSig (protocolOn R M eval n)) :
+    (data : inputs.Data) (tr : Transcript oracleSig (protocolOn R M eval n)) :
     simulateQ (QueryImpl.addLift amb ((pathBundle inputs (protocolOn R M eval n)
         tr.path).answer (data, oracleMessages _ tr)))
       ((verifierOn R deg n D ambient M eval inputs).decide stmt _ (toView _ tr)).run =
@@ -192,7 +192,7 @@ section RunVerifierOn
 
 variable {R : Type} [CommSemiring R] [DecidableEq R] [SampleableType R] {deg n d : ℕ}
   (D : Fin d ↪ R) {ι : Type} {ambient : OracleSpec ι} {M : Type} {eval : M → R → R}
-  {I : Type} {A : I → Type} (inputs : OracleFamily.{0, 0, 0} I A)
+  (inputs : OracleBundle)
   {f : M → R⦃≤ deg⦄[X]} (hf : ∀ x r, eval x r = (f x).val.eval r)
 
 include hf
@@ -201,14 +201,14 @@ omit [SampleableType R] in
 /-- Closed form of the execution over the carrier `M` against any prover: run the prover against
 the sampler, then return the legacy verdict of the decoded transcript of the mapped run, with
 the input data as output oracle. -/
-theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
+theorem run_verifierOn (stmt : Spec.StatementRound R n 0) (data : inputs.Data)
     {Out : Transcript oracleSig (protocolOn R M eval n) → Type}
     (P : Prover oracleSig ambient (protocolOn R M eval n) Out) :
     (verifierOn R deg n D ambient M eval inputs).run stmt data P =
       (fun x => (⟨x.1, x.2.1, (legacyVerdict R deg n D ambient stmt
           (decodeTranscript n (polyTranscript f n x.1))).map fun t => (t, data)⟩ :
           Outcome oracleSig (protocolOn R M eval n) Out
-            (fun _ => Spec.StatementRound R n (Fin.last n) × ∀ i, A i))) <$>
+            (fun _ => Spec.StatementRound R n (Fin.last n) × inputs.Data))) <$>
         Interaction.TwoParty.Lens.run (protocolOn R M eval n)
           (P.simulate fun q => liftM
             ((ambient + challengeSpec oracleSig (protocolOn R M eval n)).query (.inl q)))
@@ -225,8 +225,8 @@ omit [SampleableType R] in
 /-- A run over the carrier `M`, with its queries renamed and its outcome mapped, is the run
 of the interpreted prover against the verifier at the polynomial carrier. Messages are mapped by
 `f`, the prover output by `g` and the output oracle data by `dmap`. -/
-theorem run_eq_interpret {A' : I → Type} (inputs' : OracleFamily.{0, 0, 0} I A')
-    (dmap : (∀ i, A i) → ∀ i, A' i) (stmt : Spec.StatementRound R n 0) (data : ∀ i, A i)
+theorem run_eq_interpret (inputs' : OracleBundle)
+    (dmap : inputs.Data → inputs'.Data) (stmt : Spec.StatementRound R n 0) (data : inputs.Data)
     {Out : Transcript oracleSig (protocolOn R M eval n) → Type}
     {Out' : Transcript oracleSig (protocol R deg n) → Type}
     (g : ∀ tr, Out tr → Out' (polyTranscript f n tr))
@@ -286,19 +286,19 @@ end Uniform
 section InterpretedTransport
 
 variable {R M N : Type} {eval : M → R → R} {evalN : N → R → R}
-  {ι I : Type} {ambient : OracleSpec ι} {A B : I → Type}
-  (inputs : OracleFamily I A) (outputs : OracleFamily I B)
+  {ι : Type} {ambient : OracleSpec ι}
+  (inputs : OracleBundle) (outputs : OracleBundle)
   {State : ℕ → Type} {T : Type} (checks : RoundChecks R State) (finish : State 0 → T)
   (f : M → N) (hf : ∀ msg r, evalN (f msg) r = eval msg r)
 
 /-- The passive interpreted verifier is a map of the prover-sampler run. -/
-theorem run_interpreted (k : ℕ) (st : State k) (data : ∀ i, A i)
+theorem run_interpreted (k : ℕ) (st : State k) (data : inputs.Data)
     {Out : Transcript oracleSig (protocolOn R M eval k) → Type}
     (P : Prover oracleSig ambient (protocolOn R M eval k) Out) :
     (Interpreted.verifier ambient inputs checks finish k).run st data P =
       (fun x => (⟨x.1, x.2.1,
         (Interpreted.verdict eval checks finish k st x.1).map (fun t => (t, data))⟩ :
-        Outcome oracleSig _ Out (fun _ => T × (∀ i, A i)))) <$>
+        Outcome oracleSig _ Out (fun _ => T × inputs.Data))) <$>
         Interaction.TwoParty.Lens.run (protocolOn R M eval k)
           (P.simulate fun q => liftM
             ((ambient + challengeSpec oracleSig (protocolOn R M eval k)).query (.inl q)))
@@ -312,8 +312,8 @@ theorem run_interpreted (k : ℕ) (st : State k) (data : ∀ i, A i)
 include hf in
 /-- Interpreting messages and retained data preserves the whole passive verifier run,
 including every private effect and dependent prover output. -/
-theorem run_interpreted_eq (k : ℕ) (st : State k) (dmap : (∀ i, A i) → ∀ i, B i)
-    (data : ∀ i, A i) {Out : Transcript oracleSig (protocolOn R M eval k) → Type}
+theorem run_interpreted_eq (k : ℕ) (st : State k) (dmap : inputs.Data → outputs.Data)
+    (data : inputs.Data) {Out : Transcript oracleSig (protocolOn R M eval k) → Type}
     {Out' : Transcript oracleSig (protocolOn R N evalN k) → Type}
     (g : ∀ tr, Out tr → Out' (Interpreted.mapTranscript f k tr))
     (P : Prover oracleSig ambient (protocolOn R M eval k) Out) :
@@ -367,10 +367,12 @@ are at most `deg`. -/
 abbrev Input := {p : CMvPolynomial n R // ∀ j, p.degreeOf j ≤ deg}
 
 /-- The input oracle over computable polynomials, answered by evaluation at a point. -/
-def inputFamily : OracleFamily Unit (fun _ => Input R deg n) :=
-  ⟨fun _ => { Query := Fin n → R
-              toOC.spec := (Fin n → R) →ₒ R
-              toOC.impl point := do return (← read).val.eval point }⟩
+@[instance_reducible]
+def inputFamily : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Input R deg n) fun _ =>
+    { Query := Fin n → R
+      toOC.spec := (Fin n → R) →ₒ R
+      toOC.impl point := do return (← read).val.eval point }
 
 /-- The mathematical polynomial of a computable input. -/
 def interpretInput [BEq R] [LawfulBEq R] (data : ∀ _ : Unit, Input R deg n) :

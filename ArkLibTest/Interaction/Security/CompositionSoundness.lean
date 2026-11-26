@@ -399,8 +399,8 @@ noncomputable section
 abbrev ambient := branchSpec
 
 /-- One natural-number input slot, used for the exports as well. -/
-def nats : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+@[instance_reducible] def nats : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The input slot holds `7`. -/
 def input : ∀ _ : Unit, Nat := fun _ => 7

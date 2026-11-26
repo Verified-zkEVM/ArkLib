@@ -19,23 +19,29 @@ open PFunctor Interaction Interaction.Oracle OracleComp
 
 namespace Interaction.AnswerOnlyRelationsTests
 
+/-- The interface answers the number and ignores the Boolean tag. -/
+@[instance_reducible]
+def taggedInterface : OracleInterface.{0, 0} (Nat × Bool) :=
+  { Query := Unit
+    toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
+
+/-- The single oracle of the tagged bundle. -/
+abbrev taggedSlot (_ : Unit) : OracleBundle := OracleBundle.of (Nat × Bool) taggedInterface
+
 /-- A concrete representation carries an unobservable Boolean tag. -/
-def tagged : OracleFamily Unit (fun _ => Nat × Bool) where
-  interface := fun _ =>
-    { Query := Unit
-      toOC := { spec := fun _ => Nat, impl := fun _ value => value.1 } }
+def tagged : OracleBundle := OracleBundle.indexed taggedSlot
 
 -- ClaimExample 1, restated: the old-layer row compares two closed claims. A closed claim is a
 -- statement with the behavior of the realizations: the unobservable tag vanishes.
-example : ((7 : Nat), tagged.behaviorOfRealizations (fun _ => (7, true))) =
-    ((7 : Nat), tagged.behaviorOfRealizations (fun _ => (7, false))) := rfl
+example : ((7 : Nat), tagged.answer (fun _ => (7, true))) =
+    ((7 : Nat), tagged.answer (fun _ => (7, false))) := rfl
 
-/-- Claims are a statement with concrete data for the tagged family. -/
-def claims : ClaimFamily Unit := ⟨fun _ => Nat × (∀ i, tagged.Realization i)⟩
+/-- Claims are a statement with concrete data for the tagged bundle. -/
+def claims : ClaimFamily Unit := ⟨fun _ => Nat × tagged.Data⟩
 
 /-- The observable answer of a claim's data equals its statement. -/
-def observed (c : Nat × (∀ i, tagged.Realization i)) : Prop :=
-  tagged.behaviorOfRealizations c.2 ⟨(), ()⟩ = c.1
+def observed (c : Nat × tagged.Data) : Prop :=
+  tagged.answer c.2 ⟨(), ()⟩ = c.1
 
 /-- A witness is bounded by the actual statement, so its type depends on the claim. The relation
 reads the data only through its behavior. -/
@@ -50,7 +56,7 @@ def answerProblem : Problem claims where
 example : answerProblem.language () (7, fun _ => (7, true)) :=
   ⟨⟨7, by decide⟩, rfl, rfl⟩
 
-/-- Closed claims: a statement with arbitrary deterministic answers for the tagged family, which
+/-- Closed claims: a statement with arbitrary deterministic answers for the tagged bundle, which
 need not come from any realization. -/
 def closedClaims : ClaimFamily Unit := ⟨fun _ => Nat × tagged.Behavior⟩
 
@@ -65,18 +71,18 @@ def closedProblem : Problem closedClaims where
   rel_admissible := fun _ _ _ h => h.1
 
 -- The old-layer relation reads closed claims; on concrete data it is the relation above.
-example (s : Nat) (x : ∀ i, tagged.Realization i) :
+example (s : Nat) (x : tagged.Data) :
     answerProblem.language () (s, x) ↔
-      closedProblem.language () (s, tagged.behaviorOfRealizations x) := Iff.rfl
+      closedProblem.language () (s, tagged.answer x) := Iff.rfl
 
 -- ClaimExample 2, at the old-layer relation: the closed claim of statement 7 and tagged data
 -- `(7, true)` is in the language.
-example : closedProblem.language () (7, tagged.behaviorOfRealizations fun _ => (7, true)) :=
+example : closedProblem.language () (7, tagged.answer fun _ => (7, true)) :=
   ⟨⟨7, by decide⟩, rfl, rfl⟩
 
 /-- Language membership depends on the data only through its behavior. -/
-theorem language_congr (s : Nat) (x y : ∀ i, tagged.Realization i)
-    (h : tagged.behaviorOfRealizations x = tagged.behaviorOfRealizations y) :
+theorem language_congr (s : Nat) (x y : tagged.Data)
+    (h : tagged.answer x = tagged.answer y) :
     answerProblem.language () (s, x) ↔ answerProblem.language () (s, y) := by
   simp only [Problem.language, answerProblem, observed, h]
 
@@ -91,29 +97,29 @@ def repeated : OracleMap tagged tagged where
     rfl
 
 /-- The identity oracle map. -/
-def identity : OracleMap tagged tagged := OracleMap.embedding tagged id
+def identity : OracleMap tagged tagged := OracleMap.reindex taggedSlot id
 
 -- ClaimExample 3, restated: the old-layer row states `SemEquiv (.id tagged) repeated`, equality
 -- of the two programs' evaluations under every deterministic handler. The same equality holds here
--- for the query-twice map and the identity embedding, under every handler, not only those
+-- for the query-twice map and the identity reindexing, under every handler, not only those
 -- induced by data.
 example (impl : QueryImpl tagged.spec Id) (q : tagged.spec.Domain) :
     simulateQ impl (repeated.impl q) = simulateQ impl (identity.impl q) := by
-  simp only [repeated, identity, OracleMap.embedding, simulateQ_bind]
+  simp only [repeated, identity, OracleMap.reindex, simulateQ_bind]
   rfl
 
 -- Through the maps' laws, routing any program through either map agrees with answering from the
 -- same materialized data.
-example (x : ∀ i, tagged.Realization i) {α : Type} (program : OracleComp tagged.spec α) :
-    simulateQ (tagged.behaviorOfRealizations x) (simulateQ repeated.impl program) =
-      simulateQ (tagged.behaviorOfRealizations x) (simulateQ identity.impl program) :=
+example (x : tagged.Data) {α : Type} (program : OracleComp tagged.spec α) :
+    simulateQ (tagged.answer x) (simulateQ repeated.impl program) =
+      simulateQ (tagged.answer x) (simulateQ identity.impl program) :=
   (repeated.simulate_eq x program).trans (identity.simulate_eq x program).symm
 
 -- ClaimExample 4, restated: the old-layer row closes a substituted open claim. Substitution is
 -- `OracleMap.comp`. Under every deterministic handler of the inner inputs, the composite answers
 -- as the outer program closed with the evaluated inner map. Its concrete data is the outer data
 -- map applied to the inner data.
-example {I : Type} {A : I → Type} {In : OracleFamily I A} (view : OracleMap In tagged)
+example {In : OracleBundle} (view : OracleMap In tagged)
     (impl : QueryImpl In.spec Id) (q : tagged.spec.Domain) :
     simulateQ impl ((repeated.comp view).impl q) =
       simulateQ (fun r => simulateQ impl (view.impl r)) (repeated.impl q) := by
@@ -121,17 +127,17 @@ example {I : Type} {A : I → Type} {In : OracleFamily I A} (view : OracleMap In
   rw [← QueryImpl.simulateQ_compose]
   rfl
 
-example {I : Type} {A : I → Type} {In : OracleFamily I A} (view : OracleMap In tagged)
-    (x : ∀ i, A i) : (repeated.comp view).f x = repeated.f (view.f x) := rfl
+example {In : OracleBundle} (view : OracleMap In tagged)
+    (x : In.Data) : (repeated.comp view).f x = repeated.f (view.f x) := rfl
 
 -- ClaimExample 5, restated: the old-layer row shows that the relation cannot distinguish
 -- derivations with equal statements and equal semantics. Take two maps whose simulated answers
 -- agree on all input data. They give claims with the same language membership, because by their
 -- laws the materialized outputs have the same behavior.
-example {I : Type} {A : I → Type} {In : OracleFamily I A} (a b : OracleMap In tagged)
-    (ho : ∀ x q, simulateQ (In.behaviorOfRealizations x) (a.impl q) =
-      simulateQ (In.behaviorOfRealizations x) (b.impl q))
-    (s : Nat) (x : ∀ i, A i) :
+example {In : OracleBundle} (a b : OracleMap In tagged)
+    (ho : ∀ x q, simulateQ (In.answer x) (a.impl q) =
+      simulateQ (In.answer x) (b.impl q))
+    (s : Nat) (x : In.Data) :
     answerProblem.language () (s, a.f x) ↔ answerProblem.language () (s, b.f x) := by
   exact language_congr s _ _ (funext fun q => (a.law x q).symm.trans ((ho x q).trans (b.law x q)))
 

@@ -13,8 +13,11 @@ open OracleComp
 
 namespace Interaction.OracleTests
 
-@[instance_reducible] def functions : OracleFamily PUnit (fun _ => Nat → Nat) :=
-  ⟨fun _ => OracleInterface.instFunction⟩
+/-- The one function oracle, at the only index. -/
+abbrev functionSlot (_ : PUnit) : OracleBundle :=
+  OracleBundle.of (Nat → Nat) OracleInterface.instFunction
+
+@[instance_reducible] def functions : OracleBundle := OracleBundle.indexed functionSlot
 
 def doubled : OracleMap functions functions where
   f x _ n := 2 * x ⟨⟩ n
@@ -25,20 +28,20 @@ def doubled : OracleMap functions functions where
     simp only [simulateQ_bind, simulateQ_pure]
     rfl
 
-def embedded := OracleMap.embedding functions (fun _ : PUnit => PUnit.unit)
+def embedded := OracleMap.reindex functionSlot (fun _ : PUnit => PUnit.unit)
 
-example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
+example : simulateQ (functions.answer (fun _ n => n + 5))
     (embedded.impl ⟨⟨⟩, (3 : Nat)⟩) = (8 : Nat) := rfl
 
-example : simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
+example : simulateQ (functions.answer (fun _ n => n + 5))
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩) = (16 : Nat) := rfl
 
 /-- No ambient oracles, with the index in `Type 0`. -/
 abbrev noAmbient : OracleSpec.{0, 0} PEmpty := OracleSpec.emptySpec
 
-/-- The empty input family, with its index in `Type 0`. -/
-def emptyFamily : OracleFamily.{0, 0, 0} PEmpty.{1} (fun i => PEmpty.elim i) :=
-  ⟨fun i => i.elim⟩
+/-- The empty indexed input bundle, with its index in `Type 0`. -/
+@[instance_reducible] def emptyFamily : OracleBundle :=
+  OracleBundle.ofIndexed (fun i : PEmpty.{1} => PEmpty.elim i) fun i => i.elim
 
 @[instance_reducible] def tree : OracleProtocol :=
   .liftBind (.oracle (Nat → Nat) OracleInterface.instFunction) (fun _ => .pure ⟨⟩)
@@ -66,7 +69,7 @@ example : oracleMessageImpl tree first (.inl (3 : Nat)) = (8 : Nat) := rfl
 example : oracleMessageImpl tree second (.inl (3 : Nat)) = (6 : Nat) := rfl
 
 run_cmd do
-  let answer : Nat := simulateQ (functions.behaviorOfRealizations (fun _ n => n + 5))
+  let answer : Nat := simulateQ (functions.answer (fun _ n => n + 5))
     ((doubled.comp embedded).impl ⟨⟨⟩, (3 : Nat)⟩)
   unless answer == 16 do throwError "virtual routing disagrees with materialized output"
 

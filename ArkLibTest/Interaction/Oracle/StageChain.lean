@@ -554,7 +554,8 @@ def wideInterface : OracleInterface.{0, 0} Bool where
   toOC.impl _ := read
 
 /-- One Boolean oracle whose query lies in `Type`. -/
-def wideBooleans : OracleFamily.{0, 0, 0} Unit (fun _ => Bool) := ⟨fun _ => wideInterface⟩
+def wideBooleans : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Bool) fun _ => wideInterface
 
 /-- Export the parity of the scalar input as a wide oracle. -/
 def wideParity (messages : OracleBundle) :

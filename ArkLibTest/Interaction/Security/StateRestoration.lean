@@ -36,8 +36,8 @@ def round : Round where
 def rounds : List Round := [round]
 
 /-- The output is one `Fin 8` oracle. -/
-@[instance_reducible] def outputFamily : OracleFamily PUnit (fun _ => Fin 8) :=
-  ⟨fun _ => messageInterface⟩
+@[instance_reducible] def outputFamily : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => Fin 8) fun _ => messageInterface
 
 /-- The input statement: a number with no input oracles. -/
 abbrev Stmt : Type := Nat × (∀ i : PEmpty.{1}, (PEmpty.elim i : Type))
@@ -635,15 +635,17 @@ def selectedMessage : (b : Bool) → Fin 8 → SelectedValue b
   Query := Unit
   toOC := { spec := fun _ => Fin 9, impl := fun _ => do return (← read) }
 
+/-- The output oracle interface on the carrier selected by the authored Boolean. -/
+@[instance_reducible] def varyingInterface : (b : Bool) → OracleInterface (SelectedValue b)
+  | true => messageInterface
+  | false => wideInterface
+
 /-- The output oracle carrier and interface follow the authored Boolean too. -/
-@[instance_reducible] def varyingFamily :
-    (b : Bool) → OracleFamily PUnit (fun _ => SelectedValue b)
-  | true => outputFamily
-  | false => ⟨fun _ => wideInterface⟩
+@[instance_reducible] def varyingFamily (b : Bool) : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : PUnit => SelectedValue b) fun _ => varyingInterface b
 
 /-- The frozen output oracle always has its original eight-element carrier. -/
-@[instance_reducible] def selectedFamily (_b : Bool) :
-    OracleFamily PUnit.{1} (fun _ => Fin 8) := outputFamily
+@[instance_reducible] def selectedFamily (_b : Bool) : OracleBundle := outputFamily
 
 /-- Read the original oracle message and return it in the selected carrier. -/
 def readSelected (b : Bool) (p : Path (protocol rounds)) :
@@ -738,7 +740,7 @@ theorem selectedScriptedRun_eq (b c : Bool) :
 
 /-- The exact dependent result type of a selected party run. -/
 abbrev SelectedRunResult := Outcome oracleSig selectedProtocol (fun _ => PUnit.{1})
-  (OracleVerifier.Output SelectedOutput fun p => OracleBundle.ofFamily (selectedFamily p.1))
+  (OracleVerifier.Output SelectedOutput fun p => selectedFamily p.1)
 
 /-- The plain replay keeps the frozen message and challenge values, with a real dependent output. -/
 def replayResult (b c : Bool) : OracleComp []ₒ (Nat × Bool × Nat) :=

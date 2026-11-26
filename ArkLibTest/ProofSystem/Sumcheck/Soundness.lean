@@ -68,7 +68,7 @@ theorem rejection_one {Out : Type}
     change Option.map _ _ = none
     rw [verdict_fail amb D stmt q c h]
     rfl
-  rw [hall]
+  erw [hall]
   exact OracleComp.evalDist_apply_univ_eq_one _
 
 end Rejection

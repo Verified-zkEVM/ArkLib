@@ -25,8 +25,8 @@ namespace Interaction.RoutedAccessTests
 abbrev ambient : OracleSpec Nat := Nat →ₒ Nat
 
 /-- No input oracles; also the empty output family. -/
-def none' : OracleFamily PEmpty (fun i => PEmpty.elim i) :=
-  ⟨fun i => i.elim⟩
+@[instance_reducible] def none' : OracleBundle :=
+  OracleBundle.ofIndexed (fun i : PEmpty.{1} => PEmpty.elim i) fun i => i.elim
 
 /-- The empty input data. -/
 def noData : ∀ i : PEmpty, PEmpty.elim i := fun i => i.elim
@@ -45,8 +45,8 @@ abbrev singlePath : Path single := ⟨⟨⟩, ⟨⟩⟩
 abbrev combinedPath : Path combined := ⟨⟨⟩, ⟨⟨⟩, ⟨⟩⟩⟩
 
 /-- One exported scalar oracle. -/
-def exported : OracleFamily Unit (fun _ => Nat) :=
-  ⟨fun _ => OracleInterface.instDefault⟩
+def exported : OracleBundle :=
+  OracleBundle.ofIndexed (fun _ : Unit => Nat) fun _ => OracleInterface.instDefault
 
 /-- The prefix decision bundle. -/
 abbrev prefixBundle := pathBundle none' single singlePath
