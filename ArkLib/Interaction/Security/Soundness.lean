@@ -85,7 +85,7 @@ def Verifier.validAcceptanceWith {m : Type → Type v} [Monad m] [EvalDistSemant
 
 /-- Soundness of an oracle run interpreted in an arbitrary distribution monad, with the output
 oracle data read from the verifier's output map. The input is any oracle bundle, as in
-`OracleVerifier.run`; an oracle family enters through its coercion to a bundle. -/
+`OracleVerifier.run`. An indexed family of oracles enters as `OracleBundle.ofIndexed A O`. -/
 def OracleVerifier.soundnessUsing {m : Type → Type v} [Monad m] [EvalDistSemantics m]
     {ι : Type} {S : Type} {ambient : OracleSpec ι} {s : OracleProtocol.{0, 0}}
     {T : Path s → Type} {inputs : OracleBundle}

@@ -164,6 +164,8 @@ same run; `oracleMessageFamily_append` on a composed oracle protocol.
   family by `liftAppend_split`. Security definitions index output languages and relations by the
   path through `PathProblem`. A verifier with one output type and bundle uses the constant
   functions `fun _ => T` and `fun _ => OStmtOut`; the legacy embedding does so. A caller whose
-  outputs form an `OracleFamily` passes `fun p => OracleBundle.ofFamily (F p)`. The test
+  outputs form an indexed family of oracles passes `fun p => OracleBundle.ofIndexed (A p) (O p)`
+  (this record first named `OracleFamily` and `OracleBundle.ofFamily`, which consolidation PR 5
+  deleted). The test
   `ArkLibTest/Interaction/Core/Oracle/DependentRouting.lean` ports the frozen example, with the
   Boolean sent by the prover because a passive verifier sends no messages.
