@@ -35,7 +35,6 @@ Start with [`README.md`](README.md) for the project overview.
 - `ArkLib/NonInteractiveArgument/` - protocol-independent NARG games and explicit legacy adapters.
 - `ArkLib/Security/` - shared security games and private-coin operations.
 - `ArkLib/Commitments/` - commitments and opening arguments.
-- `ArkLib/AGM/` - algebraic group model representations.
 - `ArkLib/ToCompPoly/` - bridges to CompPoly's computable representations.
 - `ArkLib/ToMathlib/` - local extensions intended for Mathlib.
 - `docs/design/` - normative architecture of the interaction layer.

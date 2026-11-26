@@ -1,6 +1,5 @@
 module
 
-public import ArkLib.AGM.Basic
 public import ArkLib.Commitments.Functional.Basic
 public import ArkLib.Commitments.Functional.BitZ.Bitification
 public import ArkLib.Commitments.Functional.BitZ.BitifiedClaim
@@ -60,17 +59,12 @@ public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 public import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
-public import ArkLib.Commitments.Functional.KZG.Algebra
 public import ArkLib.Commitments.Functional.KZG.Basic
-public import ArkLib.Commitments.Functional.KZG.Binding
 public import ArkLib.Commitments.Functional.KZG.Correctness
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Basic
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.DegreeConflict
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.EvaluationBindingConflict
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Support
-public import ArkLib.Commitments.Functional.KZG.FunctionBinding.TauInQueries
-public import ArkLib.Commitments.Functional.KZG.HardnessAssumptions
-public import ArkLib.Commitments.Functional.KZG.Sampling
+public import ArkLib.Commitments.Functional.KZG.EvaluationBinding
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Reduction
+public import ArkLib.Commitments.Functional.KZG.FunctionBinding.Wins
+public import ArkLib.Commitments.Functional.KZG.Security
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
 public import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
@@ -652,7 +646,6 @@ public import ArkLib.Data.Finset.WeightedSimplex.FloorTransfer
 public import ArkLib.Data.Finset.WeightedSimplex.Moments
 public import ArkLib.Data.Finset.WeightedSimplex.RankIntegral
 public import ArkLib.Data.Finset.WeightedSimplex.Variance
-public import ArkLib.Data.GroupTheory.PrimeOrder
 public import ArkLib.Data.Hash.Poseidon2
 public import ArkLib.Data.Lattices.CyclotomicRing.Core
 public import ArkLib.Data.Lattices.CyclotomicRing.Core.Basic
@@ -1271,6 +1264,7 @@ public import ArkLib.ToMathlib.GroupTheory.ElementaryAbelian
 public import ArkLib.ToMathlib.InformationTheory.Hamming
 public import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 public import ArkLib.ToMathlib.LinearAlgebra.LagrangeLine
+public import ArkLib.ToMathlib.LinearAlgebra.LagrangePartialFraction
 public import ArkLib.ToMathlib.LinearAlgebra.LineInjectivity
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 public import ArkLib.ToMathlib.LinearAlgebra.Matrix.InvertibleCombination

@@ -49,11 +49,22 @@ For a finite family of Boolean events, `Probability.maxEventProbability` in
 `ℚ≥0` by exhaustive counting.
 `Probability.ofReal_maxEventProbability_eq_iSup` proves that `ENNReal.ofReal` of its real cast is
 the `ENNReal` supremum of the counting probabilities.
-The Reed–Solomon combiner-error evaluators in
+The Reed–Solomon affine, scalar, and equal-degree error evaluators in
 `ArkLib/Data/CodingTheory/ReedSolomon/MutualCorrelatedAgreement/AffineCombiner/Computable.lean`
 decide their events by finite searches over bounded-degree CompPoly polynomials. Their bridge
 theorems prove that `ENNReal.ofReal` of the real cast of each rational error is the semantic error.
 `maxEventProbability` and these evaluators use no classical decision procedure and no sampler.
+
+When a prover replies between two uniform challenges, `Probability.maxEventCountWithReply`
+maximizes each first challenge's count over replies and sums the maxima. It then maximizes the
+sum over contexts fixed before either challenge. For nonempty challenge spaces, dividing by the
+product of their sizes gives the largest probability over contexts and reply functions.
+
+`ReedSolomon.linearClaimMcaErrorRat` in `AffineCombiner/LinearClaimsExact.lean` uses
+`Probability.maxEventCountWithReply` and needs no classical decision procedure or sampler.
+Its correctness theorem `ReedSolomon.ofReal_linearClaimMcaErrorRat` applies
+`Probability.maxEventCount_eq_maxEventCountWithReply` to identify the exact rational result
+with the semantic `ENNReal` error.
 
 ## Event proofs
 

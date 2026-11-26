@@ -182,8 +182,11 @@ The affine, scalar, and equal-degree combiner errors also have exact computable 
 `ReedSolomon.ofReal_affineMcaErrorRat`, `ReedSolomon.ofReal_scalarMcaErrorRat`, and
 `ReedSolomon.ofReal_equalDegreeMcaErrorRat` prove that `ENNReal.ofReal` of the real cast of each
 value is the semantic `ENNReal` error.
-The evaluators enumerate received word pairs, challenges, and bounded-degree CompPoly candidates
-and witnesses, and count with `Probability.maxEventProbability` from
+The evaluators enumerate received word pairs, challenges, and bounded-degree CompPoly candidates.
+The affine and scalar searches enumerate the second witness.
+The equal-degree search enumerates `W = F₀ + θ G₀`.
+It skips each `W` whose reconstructed second witness has degree at least `d`.
+The evaluators count exceptional challenges with `Probability.maxEventProbability` from
 [`MaxEventProbability.lean`](../../ArkLib/Data/Probability/MaxEventProbability.lean).
 The evaluators use no classical decision procedure and no sampler.
 The module docstring of
