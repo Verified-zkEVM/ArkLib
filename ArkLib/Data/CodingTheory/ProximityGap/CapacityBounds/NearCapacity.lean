@@ -16,6 +16,12 @@ large `K` and every prime `p ≡ 1 (mod 2^K)` with `p ≥ n^{c+2}`, `n = 2^K`. T
 `choose_le_Lambda_rs_vanilla_of_smooth` is turned into a CA bound by `le_rs_epsCa_of_le_Lambda`,
 the contrapositive of [CS25, Theorem 2].
 
+The source's family statement, with `|F| = Θ(n^β)`, also needs infinitely many primes
+`p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]`. That is a prime number theorem in arithmetic progressions to
+the moduli `2^K`. ArkLib does not prove it, since no proof system in ArkLib needs it:
+`exists_rs_epsCa_large_near_capacity_of_primes` takes it as the hypothesis
+`NearCapacityPrimeSupply c`.
+
 ## Main definitions
 
 - `NearCapacityPrimeSupply c` — for one `β > max(c+2, 12/5)` and infinitely many `K`, there is a
@@ -285,7 +291,10 @@ theorem exists_rs_epsCa_large_near_capacity_of_prime
     simp
 
 /-- The supply of primes behind the near-capacity family: for some `β > max(c + 2, 12/5)` and
-infinitely many `K`, there is a prime `p ≡ 1 (mod 2^K)` with `n^β ≤ p ≤ 2n^β`, `n = 2^K`. -/
+infinitely many `K`, there is a prime `p ≡ 1 (mod 2^K)` with `n^β ≤ p ≤ 2n^β`, `n = 2^K`.
+
+This holds by a prime number theorem in arithmetic progressions to prime-power moduli; ArkLib
+does not prove it. -/
 def NearCapacityPrimeSupply (c : ℝ≥0) : Prop :=
   ∃ β : ℝ, max ((c : ℝ) + 2) (12 / 5) < β ∧ ∀ K₀ : ℕ, ∃ K ≥ K₀, ∃ p : ℕ,
     p.Prime ∧ 2 ^ K ∣ p - 1 ∧ ((2 : ℝ) ^ K) ^ β ≤ p ∧ (p : ℝ) ≤ 2 * ((2 : ℝ) ^ K) ^ β

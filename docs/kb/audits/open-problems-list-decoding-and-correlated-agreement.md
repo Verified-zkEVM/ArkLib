@@ -16,9 +16,6 @@ ArkLib, missing, or present in a materially different form.
 - `present`: there is a close match in ArkLib.
 - `present-but-different`: the underlying concept exists, but the interface, statement shape, or
   abstraction level differs materially from the paper.
-- `present-but-incomplete`: the relevant theorem/symbol exists, but is still `sorryAx`-tainted.
-  The test is membership of the declaration in `scripts/axiom_baseline.json`'s `sorry` list, not
-  the presence of an unrelated `sorry` somewhere in the cited file.
 - `partial`: a strict part or specialization is present, but the full paper item is missing.
 - `missing`: no close formalization was found. Where a supporting layer exists but does not by
   itself constitute the paper item, the `Lean refs` column says so.
@@ -39,10 +36,8 @@ ArkLib, missing, or present in a materially different form.
   Those are marked `present-but-different` rather than `missing`.
 - Open items are listed as `missing` or `partial`. For the narrative account of what remains, see
   [`../papers/ABF26.md`](../papers/ABF26.md) § *Open Formalization Gaps*.
-- **Verify a `present-but-incomplete` row before trusting it.** These rows go stale fastest: a
-  proof lands and the row is not refreshed. Every declaration named in a `present` row is
-  axiom-clean. Cross-check a declaration against `scripts/axiom_baseline.json` with:
-  `python3 -c "import json;print([d for d in json.load(open('scripts/axiom_baseline.json'))['sorry'] if d == 'SYMBOL' or d.endswith('.SYMBOL')])"`
+- Every declaration named in this audit is axiom-clean: `lake exe axiomsweep --check` rejects any
+  declaration that depends on `sorryAx`.
 
 ## Section 1 — Grand Challenges
 
@@ -121,7 +116,7 @@ ArkLib, missing, or present in a materially different form.
 | BCGM25 univariate-powers MCA bound | present | `univariatePowersGenerator` in [Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean), and `linear_mcaError_powers_le` in [CapacityBounds/Powers.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean) | **Proved in-tree and axiom-clean**, stated directly on canonical generator-parametric `mcaError`, with the degree-dependent [BCGM25] Definition 8.1 bound. It is the engine behind Theorem 4.11's affine-line specialization. |
 | Theorem 4.15 random RS MCA up to capacity | missing | none | No random-domain RS MCA result was found. |
 | Lemma 4.16 MCA information-set lower bound | present | `linear_mcaError_ge_information_set` in [InformationSetLowerBound.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean) | Gives `εmca(C,δ) ≥ min(⌊δn⌋/\|F\|,1)` below the minimum-distance radius. Not in the 2026-04-08 PDF. |
-| Theorem 4.17 lower bound on CA near capacity | present-but-incomplete | `exists_rs_epsCa_large_near_capacity` in [CapacityBounds.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean); `rs_epsCa_large_of_smooth`, `exists_rs_epsCa_large_near_capacity_of_prime`, and `exists_rs_epsCa_large_near_capacity_of_primes` in [CapacityBounds/NearCapacity.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/NearCapacity.lean) | **Coding part proved in-tree; prime supply admitted.** The bound is proved for all sufficiently large `K` and every prime `p ≡ 1 (mod 2^K)` with `p ≥ n^{c+2}`, `n = 2^K`, from the [KKH26] list bound `choose_le_Lambda_rs_vanilla_of_smooth` and the [CS25] Theorem 2 bound `rs_Lambda_extended_le_of_epsCa_int_radius`. The family statement follows given primes `p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]`, for one `β > max(c+2,12/5)` and infinitely many `K`; that supply is the remaining external admit. Family statement form: rate deviation and capacity slack are controlled at the source-supported `O(1/log₂ n)` scale; the field family carries `β > max(c+2,12/5)` and two-sided `\|F\| = Θ(n^β)` pins, in addition to prime-field smooth domains. The unsupported extracted `1/n` rate pin is not asserted. |
+| Theorem 4.17 lower bound on CA near capacity | partial | `rs_epsCa_large_of_smooth`, `exists_rs_epsCa_large_near_capacity_of_prime`, and `exists_rs_epsCa_large_near_capacity_of_primes` in [CapacityBounds/NearCapacity.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/NearCapacity.lean) | **Coding part proved in-tree; prime supply out of scope.** The bound is proved for all sufficiently large `K` and every prime `p ≡ 1 (mod 2^K)` with `p ≥ n^{c+2}`, `n = 2^K`. The proof combines the [KKH26] list bound `choose_le_Lambda_rs_vanilla_of_smooth` with the [CS25] Theorem 2 bound `rs_Lambda_extended_le_of_epsCa_int_radius`. The family statement follows given primes `p ≡ 1 (mod 2^K)` in `[n^β, 2n^β]`, for one `β > max(c+2,12/5)` and infinitely many `K`. That supply is a prime number theorem in arithmetic progressions, which ArkLib does not formalize. Family statement form: rate deviation and capacity slack are controlled at the source-supported `O(1/log₂ n)` scale; the field family carries `β > max(c+2,12/5)` and two-sided `\|F\| = Θ(n^β)` pins, in addition to prime-field smooth domains. The unsupported extracted `1/n` rate pin is not asserted. |
 | Theorem 4.18 base-field CA lower bound | present | `subfieldCaFactor` in [CapacityBounds/Subfield/Algebra.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield/Algebra.lean), `subfield_epsCa_lower_bound` in [CapacityBounds/Subfield.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield.lean) | **Proved in-tree and axiom-clean.** [CS25] Theorem 3, numbered `Theorem 4.18` in the current source. Stated with the proper-subfield, subfield-domain, and integral-radius conditions explicit; the unbound `g(x)` argument in the printed theorem is recorded as an inference. |
 | §4 complete CA breakdown (interpretation of Theorem 4.18) | present | `rs_epsCa_eq_one_of_entropy_rate` in [CapacityBounds/Entropy.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Entropy.lean) | **Proved in-tree and axiom-clean.** Not a numbered statement in the current source: it is the prose interpretation following Theorem 4.18 ("the lower bound is close to 1 once `H_\|B\|(δ) ≳ …`"), formalized after [CS25] Corollary 1 in the source's integer error count `f`, with `q ≥ max(10,n)` and the full entropy band. No unsupported arbitrary-real-radius extension is asserted. |
 | Theorem 4.19 CA jump at the Johnson bound | present | `exists_rs_epsCa_large_at_johnson_radius` in [CapacityBounds/JohnsonLower.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower.lean) | **Proved in-tree and axiom-clean** as an eventual-family statement after [BCHKS25] Corollary 1.7. It uses the source's pair-distance `≥ 7/8`, yielding CA at every interleaved threshold strictly below `7/8`; no fixed `q ≥ 1024`, exact length window, or unsupported `7/8+1/n` strengthening is claimed. |
@@ -210,8 +205,7 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    and extension-field codes at both encoder and image level
    ([ExtensionCodes.lean](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)) are now
    represented. Their list-decoding and MCA bounds are catalogued in the §3–§5 rows above;
-   externally sourced results remain marked `present-but-incomplete` until their proofs are
-   formalized.
+   externally sourced results that are not yet formalized are marked `missing` or `partial`.
 
 6. The code families deviate from the paper where the paper is defective.
    `ReedSolomon.Folded.Admissible` is **strictly stronger** than ABF26 Definition 2.14: the

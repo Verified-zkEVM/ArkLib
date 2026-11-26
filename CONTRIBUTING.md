@@ -6,8 +6,6 @@ issues](https://github.com/Verified-zkEVM/ArkLib/issues)
 include bugs, formalization tasks, and documentation requests. Issues labeled `good first issue`
 or `help wanted` are suitable starting points.
 
-Some true external results have statements in the library and proofs left open for contributors.
-[Issue #1352](https://github.com/Verified-zkEVM/ArkLib/issues/1352) explains these solicited proofs.
 The [wiki](docs/wiki/README.md) describes repository commands and conventions.
 [AGENTS.md](AGENTS.md) gives the entry points for agent workflows.
 
@@ -160,24 +158,14 @@ Agents must keep the user's task scope and publication instructions.
 ### Review and Merge Readiness
 
 You can open a PR for review with unfinished proofs if its remaining admissions and validation
-status are clear. Before merging into `main`, it must introduce no new `sorry`/`admit` or additional
-`sorryAx` debt relative to the canonical base. Closing one gap does not offset a new admission
-elsewhere. Updating `scripts/axiom_baseline.json` cannot authorize new debt. Baseline changes record
-verified closures or renames of debt at the base.
+status are clear. Before it merges into `main`, it must remove every `sorry`/`admit`: no
+declaration on `main` depends on `sorryAx`. A result whose proof is still open is tracked as an
+issue and merges once it is proved. `lake exe axiomsweep --check` enforces this; see
+[`scripts/README.md`](scripts/README.md).
 
-The baseline's `sorry` list is empty. Its only admitted entries are *solicited proofs*: true,
-faithfully stated external results whose research-sized proofs remain open for contributors. A
-solicited entry requires review and a tracking issue linked from its docstring. The entry must stay
-a leaf. No declaration outside the solicited list may depend on it.
-
-A PR that proves a solicited result removes its entry. [`scripts/README.md`](scripts/README.md)
-states the exact rules that
-`lake exe axiomsweep --check` enforces.
-
-New declarations may depend only on a subset of Lean's three standard axioms:
+Declarations may depend only on a subset of Lean's three standard axioms:
 `propext`, `Classical.choice`, and `Quot.sound`. Do not introduce custom axioms, `sorryAx`,
-or native-compiler trust dependencies. Solicited proofs are not an exception for new
-declarations.
+or native-compiler trust dependencies.
 
 Merge readiness also requires `./scripts/validate.sh` to pass: resolve all linter/style issues,
 all production non-`sorry` warnings, and all test warnings. Fix the source. Do not suppress linters.

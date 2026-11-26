@@ -25,7 +25,8 @@ The lemma is intended for upstreaming to Mathlib.
 
 * `IsAdicComplete.exists_isRoot_sub_mem`: a simple root modulo `I` lifts to a root.
 * `Polynomial.eq_of_isRoot_of_sub_mem`: two such roots are equal when `I` lies in the
-  Jacobson radical.
+  Jacobson radical. This generalizes `IsLocalRing.eq_of_eval_eq_zero_of_not_isUnit_sub`,
+  the case where `I` is the maximal ideal of a local ring.
 * `IsAdicComplete.existsUnique_isRoot_sub_mem`: the lift is unique.
 -/
 
@@ -38,7 +39,7 @@ open Polynomial
 Suppose `f'(a₀)` is a unit modulo `I`.
 Then `f` has at most one root `a` with `a - a₀ ∈ I`. -/
 theorem Polynomial.eq_of_isRoot_of_sub_mem {R : Type*} [CommRing R] {I : Ideal R}
-    (hI : I ≤ Ring.jacobson R) (f : R[X]) {a₀ a b : R}
+    (hI : I ≤ Ring.jacobson R) {f : R[X]} {a₀ a b : R}
     (h₂ : IsUnit (Ideal.Quotient.mk I (f.derivative.eval a₀)))
     (ha : f.IsRoot a) (ha₀ : a - a₀ ∈ I) (hb : f.IsRoot b) (hb₀ : b - a₀ ∈ I) : a = b := by
   have := isLocalHom_of_le_jacobson hI
@@ -151,6 +152,6 @@ theorem existsUnique_isRoot_sub_mem (f : R[X]) (a₀ : R) (h₁ : f.eval a₀ �
     ∃! a : R, f.IsRoot a ∧ a - a₀ ∈ I := by
   obtain ⟨a, ha, ha₀⟩ := exists_isRoot_sub_mem f a₀ h₁ h₂
   exact ⟨a, ⟨ha, ha₀⟩, fun b ⟨hb, hb₀⟩ ↦
-    eq_of_isRoot_of_sub_mem (le_jacobson I) f h₂ hb hb₀ ha ha₀⟩
+    eq_of_isRoot_of_sub_mem (le_jacobson I) h₂ hb hb₀ ha ha₀⟩
 
 end IsAdicComplete

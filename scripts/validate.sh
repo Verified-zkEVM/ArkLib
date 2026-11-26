@@ -38,7 +38,7 @@ Optional checks:
   --lint    Deprecated compatibility flag; style linting is always enforced
   --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs in docbuild/
   --site    Run ./scripts/build-web.sh (implies --docs)
-  --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
+  --axioms  Test the axiomsweep tool, then run the zero-debt axiom/sorry gate
 EOF
 }
 
@@ -166,7 +166,7 @@ if (( run_axioms )); then
   echo "# Testing the axiom sweep tool against its fixture matrix"
   ./scripts/test-axiomsweep.sh
   echo ""
-  echo "# Checking axiom/sorry regression baseline"
+  echo "# Checking that no declaration depends on sorry or a non-standard axiom"
   # VCVio's FFI C sources live in git submodules that Lake does not fetch,
   # and every root-package executable links them.
   if [ -e .lake/packages/VCVio/.git ]; then

@@ -45,7 +45,31 @@ Three differences from the legacy shapes follow from the core's types.
    `OracleMap` is exactly such a pair with its law, so the core lens stores two oracle maps.
    The input map routes the inner decision's input queries to outer input queries. The output
    map builds the outer output oracles from the outer inputs and the inner outputs. Both maps
-   see only the outer input statement, so they cannot depend on the inner decision's result.
+   receive the outer input statement, and the output map also receives the shape path. Neither
+   receives the verifier's view or the inner decision's result. See
+   [What the oracle lens sees](#what-the-oracle-lens-sees).
+
+### What the oracle lens sees
+
+`OracleStatementLens.projOracle` receives the outer input statement.
+`OracleStatementLens.liftOracle` receives the outer input statement and the shape path `p`. The
+shape path erases challenge values, so neither map can read a challenge. A verifier's own
+`OracleVerifier.outputMap` receives the view, which contains the challenges, so it can.
+
+For example, suppose a protocol draws `r : Bool` and the inner verifier keeps an input oracle
+`f : Bool → Bool` as its output oracle, unchanged. Suppose the lifted context should export
+`x ↦ f (xor x r)`. For `r = false` and `r = true` the lens receives the same outer input
+statement, the same shape path, the same outer input data and the same inner output data, so it
+returns the same output oracle for both. It cannot build `x ↦ f (xor x r)`, which differs between
+the two runs, for example when `f = id`. A directly written `outputMap` can read `r` from the view
+and build it.
+
+A lift whose output oracles depend on a challenge therefore needs the inner verifier to carry
+that dependence in its output oracle data. In the example, the inner output map would export
+`x ↦ f (xor x r)` itself. A lens whose output map also receives the view is a possible
+extension, and this pull request does not add it. The extension would also change the
+materialized statement lens `OracleStatementLens.toStatementLens`, whose `lift` receives no view,
+and the transfers built on it.
 
 ### Alternatives considered
 
@@ -61,8 +85,12 @@ Three differences from the legacy shapes follow from the core's types.
 - **Output oracle maps that read the inner output statement.** The core's `outputMap` sees
   the input statement, the path and the view, not the decision's result, because a decision
   may query ambient oracles that a pure map cannot. The lifted output map keeps this
-  restriction. A lift that needs the inner output statement must recompute it from public
-  data, as `OracleVerifier.OutputCompatibility` does for composition.
+  restriction. A lift that needs the inner output statement must recompute it. For composition,
+  `OracleVerifier.OutputCompatibility` recomputes the intermediate statement from the input
+  statement, the path and the view. The lens receives only the outer input statement and the
+  shape path, not the view, so it can recompute only values that those two determine. A value
+  that depends on a challenge must be carried in the inner output oracle data (see
+  [What the oracle lens sees](#what-the-oracle-lens-sees)).
 - **Classes for lens conditions.** Legacy uses the classes `Context.Lens.IsComplete`,
   `Statement.Lens.IsSound` and `Extractor.Lens.IsKnowledgeSound`. The core uses no class for a
   security property, so the conditions are structures passed explicitly. This also lets one
