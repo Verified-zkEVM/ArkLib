@@ -1,5 +1,5 @@
 {
-  "count": 104,
+  "count": 109,
   "entries": {
     "ABF26": {
       "authors": [
@@ -757,6 +757,28 @@
       "venue": "",
       "year": "2024"
     },
+    "CMS19": {
+      "authors": [
+        "Chiesa, Alessandro",
+        "Manohar, Peter",
+        "Spooner, Nicholas"
+      ],
+      "authors_text": "Chiesa, Alessandro and Manohar, Peter and Spooner, Nicholas",
+      "doi": "",
+      "entry_type": "inproceedings",
+      "fields": {
+        "author": "Chiesa, Alessandro and Manohar, Peter and Spooner, Nicholas",
+        "booktitle": "Theory of Cryptography Conference (TCC)",
+        "title": "Succinct Arguments in the Quantum Random Oracle Model",
+        "url": "https://eprint.iacr.org/2019/834",
+        "year": "2019"
+      },
+      "key": "CMS19",
+      "title": "Succinct Arguments in the Quantum Random Oracle Model",
+      "url": "https://eprint.iacr.org/2019/834",
+      "venue": "Theory of Cryptography Conference (TCC)",
+      "year": "2019"
+    },
     "CS25": {
       "authors": [
         "Elizabeth Crites",
@@ -891,6 +913,34 @@
       "url": "",
       "venue": "Advances in Cryptology--EUROCRYPT 2020: 39th Annual International Conference on the Theory and Applications of Cryptographic Techniques, Zagreb, Croatia, May 10--14, 2020, Proceedings, Part I 39",
       "year": "2020"
+    },
+    "DBKVBGLZT26": {
+      "authors": [
+        "Quang Dao",
+        "Omid Bodaghi",
+        "Amirhossein Khajehpour",
+        "Giuseppe Vitto",
+        "Mohammadtaghi Badakhshan",
+        "Markos Georghiades",
+        "Fengrun Liu",
+        "Jiapeng Zhang",
+        "Justin Thaler"
+      ],
+      "authors_text": "Quang Dao and Omid Bodaghi and Amirhossein Khajehpour and Giuseppe Vitto and Mohammadtaghi Badakhshan and Markos Georghiades and Fengrun Liu and Jiapeng Zhang and Justin Thaler",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Quang Dao and Omid Bodaghi and Amirhossein Khajehpour and Giuseppe Vitto and Mohammadtaghi Badakhshan and Markos Georghiades and Fengrun Liu and Jiapeng Zhang and Justin Thaler",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/1983",
+        "title": "Akita: A High-Performance Lattice-Based Polynomial Commitment Scheme",
+        "url": "https://eprint.iacr.org/2026/1983",
+        "year": "2026"
+      },
+      "key": "DBKVBGLZT26",
+      "title": "Akita: A High-Performance Lattice-Based Polynomial Commitment Scheme",
+      "url": "https://eprint.iacr.org/2026/1983",
+      "venue": "",
+      "year": "2026"
     },
     "DG25": {
       "authors": [
@@ -1789,6 +1839,26 @@
       "venue": "",
       "year": "2010"
     },
+    "Kin26": {
+      "authors": [
+        "Al Kindi"
+      ],
+      "authors_text": "Al Kindi",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Al Kindi",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/2245",
+        "title": "An improved near-capacity lower bound for {Reed--Solomon} lists on multiplicative subgroups",
+        "url": "https://eprint.iacr.org/2026/2245",
+        "year": "2026"
+      },
+      "key": "Kin26",
+      "title": "An improved near-capacity lower bound for {Reed--Solomon} lists on multiplicative subgroups",
+      "url": "https://eprint.iacr.org/2026/2245",
+      "venue": "",
+      "year": "2026"
+    },
     "Kop15": {
       "authors": [
         "Kopparty, Swastik"
@@ -2122,6 +2192,31 @@
       "venue": "Proceedings of the twenty-sixth annual ACM symposium on Theory of computing",
       "year": "1994"
     },
+    "PW04": {
+      "authors": [
+        "Ruud Pellikaan",
+        "Xin-Wen Wu"
+      ],
+      "authors_text": "Ruud Pellikaan and Xin-Wen Wu",
+      "doi": "10.1109/TIT.2004.825043",
+      "entry_type": "article",
+      "fields": {
+        "author": "Ruud Pellikaan and Xin-Wen Wu",
+        "doi": "10.1109/TIT.2004.825043",
+        "journal": "IEEE Transactions on Information Theory",
+        "number": "4",
+        "pages": "679--682",
+        "title": "List Decoding of $q$-ary {Reed--Muller} Codes",
+        "url": "https://ruudp.win.tue.nl/paper/43.pdf",
+        "volume": "50",
+        "year": "2004"
+      },
+      "key": "PW04",
+      "title": "List Decoding of $q$-ary {Reed--Muller} Codes",
+      "url": "https://ruudp.win.tue.nl/paper/43.pdf",
+      "venue": "IEEE Transactions on Information Theory",
+      "year": "2004"
+    },
     "Poseidon2": {
       "authors": [
         "Lorenzo Grassi",
@@ -2203,6 +2298,26 @@
       "url": "",
       "venue": "",
       "year": "1995"
+    },
+    "Thaler2023": {
+      "authors": [
+        "Thaler, Justin"
+      ],
+      "authors_text": "Thaler, Justin",
+      "doi": "",
+      "entry_type": "book",
+      "fields": {
+        "author": "Thaler, Justin",
+        "note": "Version of July 18, 2023",
+        "title": "Proofs, Arguments, and Zero-Knowledge",
+        "url": "https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf",
+        "year": "2023"
+      },
+      "key": "Thaler2023",
+      "title": "Proofs, Arguments, and Zero-Knowledge",
+      "url": "https://people.cs.georgetown.edu/jthaler/ProofsArgsAndZK.pdf",
+      "venue": "",
+      "year": "2023"
     },
     "WARP": {
       "authors": [
