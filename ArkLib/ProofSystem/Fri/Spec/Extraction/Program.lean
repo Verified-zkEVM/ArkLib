@@ -8,6 +8,7 @@ module
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.Check
 public import ArkLib.ProofSystem.Fri.Spec.Extraction.Scan
 public import ArkLib.ProofSystem.Fri.Spec.VerifierExecution
+public import ArkLib.ToCompPoly.Univariate.ArithmeticQuadraticInterpolation
 public import ArkLib.ToCompPoly.Univariate.Size
 
 /-!
@@ -42,7 +43,7 @@ def interpolateSelection (o : ∀ j, FinalOracleStatement s ω j) (α : FinalSta
     OracleComp (InstructionSpec s o α) (Option (Witness F s d 0)) := do
   if _ : foldingDegree s d 0 ≤ state.count then
     let p ← liftComp
-      (Arithmetic.interpolate state.nodes state.values (foldingDegree s d 0)) _
+      (Arithmetic.interpolateForReconstruction state.nodes state.values (foldingDegree s d 0)) _
     let degree ← readDegree s o α p.val
     if hd : degree.val < foldingDegree s d 0 then
       have hdegree : p.val.natDegree < foldingDegree s d 0 := by

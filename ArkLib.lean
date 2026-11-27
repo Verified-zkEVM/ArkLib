@@ -1221,6 +1221,7 @@ public import ArkLib.ToCompPoly.Univariate.ArithmeticInterpolationCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomial
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPolynomialCost
 public import ArkLib.ToCompPoly.Univariate.ArithmeticPower
+public import ArkLib.ToCompPoly.Univariate.ArithmeticQuadraticInterpolation
 public import ArkLib.ToCompPoly.Univariate.DegreeLT
 public import ArkLib.ToCompPoly.Univariate.Primitive
 public import ArkLib.ToCompPoly.Univariate.Size

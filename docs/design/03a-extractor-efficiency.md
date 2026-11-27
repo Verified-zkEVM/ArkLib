@@ -393,6 +393,16 @@ apply to every retained history, including early rejection.
 `ArkLib/ProofSystem/Fri/Spec/MeasuredKnowledgeSoundness.lean` packages these theorems without
 changing the extraction algorithm or its soundness error.
 
+Final witness reconstruction builds one nodal polynomial and uses a synthetic quotient and
+Horner evaluation at each selected node. The
+[`interpolateForReconstruction` routine](../../ArkLib/ToCompPoly/Univariate/ArithmeticQuadraticInterpolation.lean)
+uses the Lagrange-basis `interpolate` below four nodes. Both branches return the same value.
+
+The
+[`extractorReconstructionProfileBound` budget](../../ArkLib/ProofSystem/Fri/Spec/Extraction/FullCost.lean)
+charges final reconstruction quadratically in the target number of nodes. Its scan terms are those of
+`extractorProfileBound`, and it is at most `extractorProfileBound` in every coordinate.
+
 Write `N = 2^n`, `r = k+1`, `b_i = 2^(s_i)`, and `D = (∏ b_i)d`. Existing bounds include
 
 ```text
