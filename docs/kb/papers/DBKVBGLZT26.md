@@ -11,6 +11,7 @@ related_modules:
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Layout.lean
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean
   - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/LayoutVecTree.lean
+  - ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockComposition.lean
   - ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean
   - ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean
 ---
@@ -58,7 +59,12 @@ layer is milestone M0 ([#1472](https://github.com/Verified-zkEVM/ArkLib/issues/1
   and
   [`ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean`](../../../ArkLib/Data/MvPolynomial/VecTreeInterpolation.lean)
   hold the interpolation lemma and its bridge to the finders.
+- [`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockComposition.lean`](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockComposition.lean)
+  appends structures with layouts along protocol append (`BlockCWSSStructure.append`), with the
+  shape of the append the append of the shapes (`BlockCWSSStructure.toShape_append`). It is ArkLib
+  composition infrastructure for the structures with layouts, not a statement of the paper.
 - Tests: `ArkLibTest/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockStructure.lean`,
+  `ArkLibTest/OracleReduction/Security/CoordinateWiseSpecialSoundness/BlockComposition.lean`,
   `ArkLibTest/Data/MvPolynomial/VecTreeInterpolation.lean`.
 
 ## Version Notes
