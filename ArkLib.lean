@@ -902,6 +902,7 @@ public import ArkLib.OracleReduction.Security.Basic
 public import ArkLib.OracleReduction.Security.ChallengePresampling
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.BlockComposition
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.BlockStructure
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedScalar
 public import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
