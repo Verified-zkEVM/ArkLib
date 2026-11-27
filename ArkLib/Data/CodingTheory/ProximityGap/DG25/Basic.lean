@@ -17,6 +17,7 @@ public import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDe
 public import Mathlib.LinearAlgebra.AffineSpace.AffineSubspace.Defs
 public import ArkLib.Data.Probability.Instances
 public import ArkLib.Data.CodingTheory.Prelims
+public import ArkLib.Data.Fin.Tuple.EvenOdd
 public import ArkLib.ToMathlib.BigOperators.Fin
 public import Mathlib.Algebra.Lie.OfAssociative
 public import Mathlib.Data.Finset.BooleanAlgebra
@@ -209,7 +210,7 @@ pairs exactly these two halves (`multilinearCombine_recursive_form_first`), wher
 `splitHalfRowWiseInterleavedWords` pairs the halves of the last challenge. -/
 def splitEvenOddRowWiseInterleavedWords {ϑ : ℕ} (u : Fin (2 ^ (ϑ + 1)) → ι → A) :
     (Fin (2 ^ ϑ) → ι → A) × (Fin (2 ^ ϑ) → ι → A) :=
-  (fun j => u ⟨2 * j.val, by omega⟩, fun j => u ⟨2 * j.val + 1, by omega⟩)
+  (Fin.evenRows u, Fin.oddRows u)
 
 -- Preserve the public `Matrix` aliases for interleaved words. Lean v4.33 otherwise refuses
 -- to unfold them while matching the proof's implicit word types.
@@ -372,7 +373,7 @@ theorem jointProximityNat_of_jointProximityNat₂_splitEvenOdd
       have hRes₀ := congrFun hRes0 ⟨rowIdx.val / 2, by omega⟩
       dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₀
       change u rowIdx colIdx = v_rowwise_finmap rowIdx colIdx
-      simpa [v_rowwise_finmap, h_even, VSplit_even_rowwise, VSplit_rowwise,
+      simpa [Fin.evenRows, v_rowwise_finmap, h_even, VSplit_even_rowwise, VSplit_rowwise,
         Matrix.transpose, h_row_eq] using hRes₀
     · have h_row_val : rowIdx.val = 2 * (rowIdx.val / 2) + 1 := by
         have h_divmod := Nat.mod_add_div rowIdx.val 2
@@ -384,7 +385,7 @@ theorem jointProximityNat_of_jointProximityNat₂_splitEvenOdd
       have hRes₁ := congrFun hRes1 ⟨rowIdx.val / 2, by omega⟩
       dsimp [splitEvenOddRowWiseInterleavedWords] at hRes₁
       change u rowIdx colIdx = v_rowwise_finmap rowIdx colIdx
-      simpa [v_rowwise_finmap, h_even, VSplit_odd_rowwise, VSplit_rowwise,
+      simpa [Fin.oddRows, v_rowwise_finmap, h_even, VSplit_odd_rowwise, VSplit_rowwise,
         Matrix.transpose, h_row_eq] using hRes₁
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
@@ -520,6 +521,7 @@ lemma multilinearCombine_recursive_form_first {ϑ : ℕ}
   simp only [Word, Pi.smul_apply, Pi.add_apply, smul_add]
   rw [←smul_assoc, ←smul_assoc]
   rw [smul_eq_mul, smul_eq_mul]
+  rfl
 
 omit [Fintype ι] [DecidableEq ι] [Nonempty ι] [Fintype A] [DecidableEq A] [Fintype F] in
 omit [SampleableType F] in

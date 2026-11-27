@@ -12,6 +12,7 @@ import Mathlib.FieldTheory.Finite.GaloisField
 /-! # Acceptance cases for folding many words with equal-degree combiners -/
 
 open Polynomial ReedSolomon
+open Fin (evenRows oddRows interleaveRows)
 open scoped Finset
 
 private instance : Fact (Nat.Prime 5) := ⟨by decide⟩
@@ -233,20 +234,20 @@ example : #{c : Fin 2 → Fin 2 | c 0 = 0 ∨ Fin.tail c 0 = 0} ≤ 1 * 2 + 2 :=
 #guard_msgs (whitespace := lax) in
 #print axioms ReedSolomon.badFoldingRoundError_le_one
 
-/-- info: 'ReedSolomon.evenRows_interleaveRows' depends on axioms:
+/-- info: 'Fin.evenRows_interleaveRows' depends on axioms:
 [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.evenRows_interleaveRows
+#print axioms Fin.evenRows_interleaveRows
 
-/-- info: 'ReedSolomon.oddRows_interleaveRows' depends on axioms:
+/-- info: 'Fin.oddRows_interleaveRows' depends on axioms:
 [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.oddRows_interleaveRows
+#print axioms Fin.oddRows_interleaveRows
 
-/-- info: 'ReedSolomon.exists_eq_evenRows_or_eq_oddRows' depends on axioms:
+/-- info: 'Fin.exists_eq_evenRows_or_eq_oddRows' depends on axioms:
 [propext, Quot.sound] -/
 #guard_msgs (whitespace := lax) in
-#print axioms ReedSolomon.exists_eq_evenRows_or_eq_oddRows
+#print axioms Fin.exists_eq_evenRows_or_eq_oddRows
 
 /-- info: 'Fin.card_filter_or_tail_le' depends on axioms:
 [propext, Classical.choice, Quot.sound] -/

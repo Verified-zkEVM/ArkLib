@@ -645,6 +645,7 @@ public import ArkLib.Data.Fin.Fold
 public import ArkLib.Data.Fin.Lift
 public import ArkLib.Data.Fin.Sigma
 public import ArkLib.Data.Fin.Tuple.Defs
+public import ArkLib.Data.Fin.Tuple.EvenOdd
 public import ArkLib.Data.Fin.Tuple.Lemmas
 public import ArkLib.Data.Fin.Tuple.Notation
 public import ArkLib.Data.Fin.Tuple.TakeDrop
