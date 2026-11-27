@@ -22,6 +22,7 @@ The CompPoly implementation uses the row pairing and recursion from `Folding`.
 namespace ReedSolomon.Computable
 
 open CompPoly
+open Fin (evenRows oddRows)
 
 variable {F : Type*} [Field F] [DecidableEq F]
 
