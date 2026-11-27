@@ -341,7 +341,7 @@ private theorem entry_l2NormSq_le (a : Rq 𝓜(hachiQ, hachiAlpha)) :
   unfold Rq.l2NormSq
   calc _ ≤ ∑ _k ∈ Finset.range 𝓜(hachiQ, hachiAlpha).φ.natDegree, (hachiQ / 2) ^ 2 :=
       Finset.sum_le_sum fun k _ => Nat.pow_le_pow_left (ZMod.natAbs_valMinAbs_le _) 2
-    _ = _ := by rw [Finset.sum_const, Finset.card_range, smul_eq_mul, ringDim_eq]
+    _ = _ := by rw [Finset.sum_const, Finset.card_range, ringDim_eq, smul_eq_mul]
 
 private theorem twoColumnVectorAtProfile_l2NormSq_le (a b : Rq 𝓜(hachiQ, hachiAlpha)) :
     ‖twoColumnVectorAtProfile a b‖₂² ≤ 2 * hachiD * (hachiQ / 2) ^ 2 := by
